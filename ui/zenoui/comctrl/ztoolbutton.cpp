@@ -1,7 +1,6 @@
 #include "../style/zenostyle.h"
 #include "../style/zstyleoption.h"
 #include "ztoolbutton.h"
-#include <zenoedit/zenoapplication.h>
 
 
 ZToolButton::ZToolButton(QWidget* parent)
@@ -12,6 +11,7 @@ ZToolButton::ZToolButton(QWidget* parent)
     , m_bHideText(false)
     , m_bHovered(false)
     , m_radius(0)
+    , m_shortcut(nullptr)
 {
     initDefault();
     setMouseTracking(true);
@@ -30,11 +30,12 @@ ZToolButton::ZToolButton(int option, const QIcon& icon, const QSize& iconSize, c
     , m_icon(icon)
     , m_iconSize(iconSize)
     , m_radius(0)
+    , m_shortcut(nullptr)
 {
     initDefault();
     setMouseTracking(true);
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setPointSize(9);
     m_font = font;
 }
@@ -51,12 +52,13 @@ ZToolButton::ZToolButton(int option, const QString& icon, const QString& iconOn,
     , m_icon(QIcon(icon))
     , m_iconSize(iconSize)
     , m_radius(0)
+    , m_shortcut(nullptr)
 {
     initDefault();
     setIcon(m_iconSize, icon, "", iconOn, "");
     setMouseTracking(true);
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setPointSize(9);
     m_font = font;
 }
@@ -213,27 +215,34 @@ void ZToolButton::initStyleOption(ZStyleOptionToolButton* option) const
 
 QBrush ZToolButton::backgrondColor(QStyle::State state) const
 {
-    if (state & QStyle::State_MouseOver)
+    if (state & QStyle::State_Enabled)
     {
-        if (state & QStyle::State_On)
+        if (state & QStyle::State_MouseOver)
         {
-            return m_clrBgOnHovered;
+            if (state & QStyle::State_On)
+            {
+                return m_clrBgOnHovered;
+            }
+            else
+            {
+                return m_clrBgNormalHover;
+            }
         }
         else
         {
-            return m_clrBgNormalHover;
+            if (state & QStyle::State_On)
+            {
+                return m_clrBgOn;
+            }
+            else
+            {
+                return m_clrBgNormal;
+            }
         }
     }
     else
     {
-        if (state & QStyle::State_On)
-        {
-            return m_clrBgOn;
-        }
-        else
-        {
-            return m_clrBgNormal;
-        }
+        return m_clrBgDisabled;
     }
 }
 
@@ -257,12 +266,13 @@ QBrush ZToolButton::textColor(QStyle::State state) const
     }
 }
 
-void ZToolButton::setBackgroundClr(const QColor& normalClr, const QColor& hoverClr, const QColor& downClr, const QColor& checkedClr)
+void ZToolButton::setBackgroundClr(const QColor& normalClr, const QColor& hoverClr, const QColor& downClr, const QColor& checkedClr, const QColor& disabledClr)
 {
     m_clrBgNormal = normalClr;
     m_clrBgNormalHover = hoverClr;
     m_clrBgOn = downClr;
     m_clrBgOnHovered = checkedClr;
+    m_clrBgDisabled = disabledClr;
 }
 
 void ZToolButton::setTextClr(const QColor& normal, const QColor& hover, const QColor& normalOn, const QColor& hoverOn)
@@ -366,8 +376,15 @@ void ZToolButton::setChecked(bool bChecked)
 
 void ZToolButton::setShortcut(QKeySequence text)
 {
-    QShortcut *shortcut = new QShortcut(text, this);
-    connect(shortcut, &QShortcut::activated, this, &ZToolButton::clicked);
+    if (!m_shortcut)
+    {
+        m_shortcut = new QShortcut(text, this);
+        connect(m_shortcut, &QShortcut::activated, this, &ZToolButton::clicked);
+    }
+    else
+    {
+        m_shortcut->setKey(text);
+    }
 }
 
 void ZToolButton::setDown(bool bDown)

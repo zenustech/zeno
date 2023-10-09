@@ -64,7 +64,7 @@ public:
     bool isHovered() const;
     int buttonOption() const;
     virtual QSize sizeHint() const override;
-    void setBackgroundClr(const QColor& normalClr, const QColor& hoverClr, const QColor& downClr, const QColor& checkedClr);
+    void setBackgroundClr(const QColor& normalClr, const QColor& hoverClr, const QColor& downClr, const QColor& checkedClr, const QColor& disabledClr = QColor());
     void setTextClr(const QColor &normal, const QColor &hover, const QColor &normalOn, const QColor &hoverOn);
     void setMargins(const QMargins& margins);
     void setRadius(int radius);
@@ -121,6 +121,7 @@ private:
     QColor m_clrBgOn;
     QColor m_clrBgOnHovered;
     QColor m_clrBgNormal;
+    QColor m_clrBgDisabled;
 
     QColor m_clrText, m_clrTextHover, m_clrTextOn, m_clrTextOnHover;
 
@@ -136,6 +137,8 @@ private:
 
     AnimationInfo animInfo;
     int m_arrowOption;
+
+    QShortcut* m_shortcut;
 };
 
 #endif

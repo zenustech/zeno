@@ -116,6 +116,17 @@ ZENO_API void Graph::setNodeInput(std::string const &id, std::string const &par,
     safe_at(nodes, id, "node name")->inputs[par] = val;
 }
 
+ZENO_API void Graph::setKeyFrame(std::string const &id, std::string const &par, zany const &val) {
+    safe_at(nodes, id, "node name")->inputs[par] = val;
+    safe_at(nodes, id, "node name")->kframes.insert(par);
+}
+
+ZENO_API void Graph::setFormula(std::string const &id, std::string const &par, zany const &val) {
+    safe_at(nodes, id, "node name")->inputs[par] = val;
+    safe_at(nodes, id, "node name")->formulas.insert(par);
+}
+
+
 ZENO_API std::map<std::string, zany> Graph::callSubnetNode(std::string const &id,
         std::map<std::string, zany> inputs) const {
     auto se = safe_at(nodes, id, "node name").get();

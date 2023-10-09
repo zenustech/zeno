@@ -33,22 +33,23 @@ public:
     RecordVideoMgr(QObject* parent = nullptr);
     ~RecordVideoMgr();
     void setRecordInfo(const VideoRecInfo& recInfo);
+    void initRecordInfo(const VideoRecInfo& recInfo);
+    VideoRecInfo getRecordInfo() const;
 
 public slots:
     void cancelRecord();
     void onFrameDrawn(int);
+    void endRecToExportVideo();
 
 signals:
     void frameFinished(int);
     void recordFinished(QString);
     void recordFailed(QString);
 
-private slots:
-    void endRecToExportVideo();
-
 private:
     Zenovis* getZenovis();
     void disconnectSignal();
+    void recordErrorImg(int currFrame);
 
     VideoRecInfo m_recordInfo;
     QStringList m_pics;

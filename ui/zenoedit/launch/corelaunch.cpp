@@ -91,7 +91,8 @@ struct ProgramRunData {
         session->globalState->clearState();
         session->globalStatus->clearState();
 
-        bool bZenCache = initZenCache(nullptr);
+        int cacheNum = 0;
+        bool bZenCache = initZenCache(nullptr, cacheNum);
 
         auto graph = session->createGraph();
         graph->loadGraph(progJson.c_str());
@@ -265,19 +266,20 @@ void killProgram() {
     killProgramJSON();
 }
 
-bool initZenCache(char* pCachePath)
+bool initZenCache(char* pCachePath, int& cacheNum)
 {
     QSettings settings(zsCompanyName, zsEditor);
     const QString& cachenum = settings.value("zencachenum").toString();
     bool bEnableCache = settings.value("zencache-enable").toBool();
-    int cnum = cachenum.toInt();
+    cacheNum = cachenum.toInt();
 
     QString qsPath = QString::fromLocal8Bit(pCachePath);
-    bEnableCache = bEnableCache && QFileInfo(qsPath).isDir() && cnum > 0;
+    bEnableCache = bEnableCache && QFileInfo(qsPath).isDir() && cacheNum > 0;
     if (bEnableCache) {
-        zeno::getSession().globalComm->frameCache(qsPath.toStdString(), cnum);
+        zeno::getSession().globalComm->frameCache(qsPath.toStdString(), cacheNum);
     }
     else {
+        cacheNum = 0;
         zeno::getSession().globalComm->frameCache("", 0);
     }
     return bEnableCache;

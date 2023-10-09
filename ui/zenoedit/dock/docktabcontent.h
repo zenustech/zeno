@@ -92,6 +92,7 @@ public:
     explicit DockContent_Editor(QWidget* parent = nullptr);
     void onCommandDispatched(QAction* pAction, bool bTriggered);
     ZenoGraphsEditor* getEditor() const;
+    void runFinished();
 
 protected:
     void initToolbar(QHBoxLayout* pToolLayout) override;
@@ -131,6 +132,11 @@ public:
     QSize viewportSize() const;
     void onTabAboutToClose() override;
 
+    int curResComboBoxIndex();
+    void setResComboBoxIndex(int index);
+    std::tuple<int, int, bool> getOriginWindowSizeInfo();
+    void setOptixBackgroundState(bool checked);
+
 protected:
     void initToolbar(QHBoxLayout* pToolLayout) override;
     QWidget *initWidget() override;
@@ -149,7 +155,7 @@ private:
     ZToolBarButton* m_scaleBtn;
     ZToolBarButton* m_rotateBtn;
     ZToolBarButton* m_resizeViewport;
-    QCheckBox *m_background = new QCheckBox("Background");
+    QCheckBox *m_background;
 
     QComboBox* m_cbRes;
     QAction* m_pFocus;
@@ -158,12 +164,11 @@ private:
     QAction *m_back;
     QAction *m_right;
     QAction *m_left;
-    QAction *m_top;
+    QAction *m_top; 
     QAction *m_bottom;
-
-    QAction *m_move;
-    QAction *m_rotate;
-    QAction *m_scale;
+    
+    QMenu* m_menuView;
+    QMenu* m_menuViewport;
 
     const bool m_bGLView;
 };

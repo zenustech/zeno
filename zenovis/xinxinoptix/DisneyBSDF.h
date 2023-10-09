@@ -4,8 +4,6 @@
 
 #include "DisneyBRDF.h"
 
-
-
 //list of component:
 //Sheen
 //Clearcoat
@@ -80,9 +78,13 @@ namespace DisneyBSDF{
 
         return xmid;
     }
+
     static __inline__ __device__ void
     setup_subsurface_radius(float eta, vec3 albedo, vec3 &radius)
     {
+      #if _SSS_FIXED_RADIUS_
+        radius = radius * 0.25f / M_PIf;
+      #else
         float inv_eta = 1.0f/eta;
         float F_dr = inv_eta * (-1.440f * inv_eta + 0.710f) + 0.668f + 0.0636f * eta;
         float fourthirdA = (4.0f / 3.0f) * (1.0f + F_dr) /
@@ -92,7 +94,7 @@ namespace DisneyBSDF{
         alpha_prime.y = bssrdf_dipole_compute_alpha_prime(albedo.y, fourthirdA);
         alpha_prime.z = bssrdf_dipole_compute_alpha_prime(albedo.z, fourthirdA);
         radius = radius * sqrt(3.0f * abs(vec3(1.0) - alpha_prime));
-
+      #endif
     }
     static __inline__ __device__ void 
     subsurface_random_walk_remap(const float albedo,
@@ -143,14 +145,16 @@ namespace DisneyBSDF{
     }
 
     static __inline__ __device__
-    void CalculateExtinction2(vec3 albedo, vec3 radius, vec3 &sigma_t, vec3 &alpha)
+    void CalculateExtinction2(vec3 albedo, vec3 radius, vec3 &sigma_t, vec3 &alpha, float eta)
     {
         vec3 r = radius;
-        setup_subsurface_radius(3.0, albedo, r);
+        setup_subsurface_radius(eta, albedo, r);
         subsurface_random_walk_remap(albedo.x, r.x, 0, sigma_t.x, alpha.x);
         subsurface_random_walk_remap(albedo.y, r.y, 0, sigma_t.y, alpha.y);
         subsurface_random_walk_remap(albedo.z, r.z, 0, sigma_t.z, alpha.z);
         //sigma_s = sigma_t * alpha;
+
+        //printf("radius= %f %f %f, \nr= %f %f %f \n", radius.x, radius.y, radius.z, r.x, r.y, r.z);
     }
 
     static __inline__ __device__
@@ -332,9 +336,9 @@ namespace DisneyBSDF{
         float glassWt = (1.0 - metallic) * specTrans;
 
         float schlickWt = BRDFBasics::SchlickWeight(abs(dot(wo, wm)));
-        float psss = subsurface/(1.0f + subsurface);
+        float psss = subsurface;
         //event probability
-        float diffPr = dielectricWt * (1.0f - psss);
+        float diffPr = dielectricWt;
         float sssPr = dielectricWt  * psss;
         float dielectricPr = dielectricWt * Luminance(mix(Cspec0, vec3(1.0), schlickWt));
         float metalPr = metalWt * Luminance(mix(baseColor, vec3(1.0), schlickWt));
@@ -465,8 +469,9 @@ namespace DisneyBSDF{
           float FL = BRDFBasics::SchlickWeight(abs(wi.z));
           float FV = BRDFBasics::SchlickWeight(abs(wo.z));
           float term = wo.z>0?FV:FL;
-          float tmpPdf = trans?0.5/M_PIf:0.0f;
-          vec3 d = 1.0f/M_PIf * (1.0f - 0.5f * term) * (trans?vec3(1.0f):vec3(0.0f))  * dielectricWt * subsurface;
+          float tmpPdf = trans? 1.0f : 0.0f;//0.5/M_PIf:0.0f;
+          // vec3 d = 1.0f/M_PIf * (1.0f - 0.5f * term) * (trans?vec3(1.0f):vec3(0.0f))  * dielectricWt * subsurface;
+          vec3 d = (trans?vec3(1.0f):vec3(0.0f))  * dielectricWt * subsurface;
           dterm = dterm + d;
           f = f + d;
           fPdf += tmpPdf * sssPr;
@@ -622,7 +627,7 @@ namespace DisneyBSDF{
         float F0;
 
         BRDFBasics::TintColors(mix(baseColor, sssColor, subsurface), eta, specularTint, sheenTint, F0, Csheen, Cspec0);
-        Cspec0 = Cspec0 * specular;
+        Cspec0 = Cspec0;
 
         //material layer mix weight
         float dielectricWt = (1.0 - metallic) * (1.0 - specTrans);
@@ -638,11 +643,11 @@ namespace DisneyBSDF{
 
         float hov = mix(hov1, hov2, c);
         float schlickWt = BRDFBasics::SchlickWeight(hov);
-        float psss = subsurface/(1.0f + subsurface);
+        float psss = subsurface;
         //dielectricWt *= 1.0f - psub;
 
         //event probability
-        float diffPr = dielectricWt * (1.0f - psss);
+        float diffPr = dielectricWt ;
         float sssPr = dielectricWt  * psss;
         float dielectricPr = dielectricWt * Luminance(mix(Cspec0, vec3(1.0), schlickWt));
         float metalPr = metalWt * Luminance(mix(baseColor, vec3(1.0), schlickWt));
@@ -693,15 +698,14 @@ namespace DisneyBSDF{
               wi = -BRDFBasics::UniformSampleHemisphere(r1, r2);
               isSS = true;
               flag = transmissionEvent;
-              vec3 color = mix(baseColor, sssColor, subsurface) * psss;
+              vec3 color = mix(baseColor, sssColor, subsurface);
               color = clamp(color, vec3(0.05), vec3(0.99));
               vec3 sssRadius = transmiianceColor * subsurface;
               RadiancePRD *prd = getPRD();
               prd->ss_alpha = color;
               if (isSS) {
                 medium = PhaseFunctions::isotropic;
-                CalculateExtinction2(color, sssRadius, prd->sigma_t,
-                                     prd->ss_alpha);
+                CalculateExtinction2(color, sssRadius, prd->sigma_t, prd->ss_alpha, 1.4f);
               }
             }
           }

@@ -14,25 +14,34 @@ ZRecordVideoDlg::ZRecordVideoDlg(QWidget* parent)
     m_ui = new Ui::RecordVideoDlg;
     m_ui->setupUi(this);
 
-    QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
-    settings.beginGroup("recInfo");
+    const RECORD_SETTING& info = zenoApp->graphsManagment()->recordSettings();
     m_ui->fps->setValidator(new QIntValidator);
-    m_ui->fps->setText(settings.value("fps").isValid() ? settings.value("fps").toString() : "24");
+    m_ui->fps->setText(QString::number(info.fps));
     m_ui->bitrate->setValidator(new QIntValidator);
-    m_ui->bitrate->setText(settings.value("bitrate").isValid() ? settings.value("bitrate").toString() : "200000");
+    m_ui->bitrate->setText(QString::number(info.bitrate));
     m_ui->lineWidth->setValidator(new QIntValidator);
-    m_ui->lineWidth->setText(settings.value("width").isValid() ? settings.value("width").toString() : "1280");
+    m_ui->lineWidth->setText(QString::number(info.width));
     m_ui->lineHeight->setValidator(new QIntValidator);
-    m_ui->lineHeight->setText(settings.value("height").isValid() ? settings.value("height").toString() : "720");
+    m_ui->lineHeight->setText(QString::number(info.height));
     m_ui->msaaSamplerNumber->setValidator(new QIntValidator);
-    m_ui->msaaSamplerNumber->setText(settings.value("numMSAA").isValid() ? settings.value("numMSAA").toString() : "0");
+    m_ui->msaaSamplerNumber->setText(QString::number(info.numMSAA));
     m_ui->optixSamplerNumber->setValidator(new QIntValidator);
-    m_ui->optixSamplerNumber->setText(settings.value("numOptix").isValid() ? settings.value("numOptix").toString() : "1");
-    settings.endGroup();
+    m_ui->optixSamplerNumber->setText(QString::number(info.numOptix));
+    m_ui->cbRemoveAfterRender->setChecked(info.bAutoRemoveCache);
+    m_ui->cbExportVideo->setChecked(info.bExportVideo);
+    m_ui->cbNeedDenoise->setChecked(info.needDenoise);
+    m_ui->linePath->setText(info.record_path);
+    m_ui->lineName->setText(info.videoname);;
+    m_ui->cbAOV->setChecked(info.bAov);
+    m_ui->cbExportEXR->setChecked(info.bExr);
 
-    m_ui->cbRemoveAfterRender->setCheckState(Qt::Unchecked);
     m_ui->cbPresets->addItems({"540P", "720P", "1080P", "2K", "4K"});
     m_ui->cbPresets->setCurrentIndex(1);
+
+    QSettings settings(zsCompanyName, zsEditor);
+    bool enableCache = settings.value("zencache-enable").isValid() ? settings.value("zencache-enable").toBool() : true;
+    if (!enableCache)
+        m_ui->cbRemoveAfterRender->setVisible(false);
 
     connect(m_ui->cbPresets, &QComboBox::currentTextChanged, this, [=](auto res) {
         auto v = std::map<QString, std::tuple<int, int>> {
@@ -101,14 +110,22 @@ bool ZRecordVideoDlg::getInfo(VideoRecInfo &info)
         }
         fn += suffix;
     }
-    QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
-    settings.beginGroup("recInfo");
-    settings.setValue("fps", info.fps);
-    settings.setValue("bitrate", info.bitrate);
-    settings.setValue("numMSAA", info.numMSAA);
-    settings.setValue("numOptix", info.numOptix);
-    settings.setValue("width", info.res[0]);
-    settings.setValue("height", info.res[1]);
-    settings.endGroup();
+    RECORD_SETTING record_settings;
+    record_settings.record_path = m_ui->linePath->text();
+    record_settings.videoname = m_ui->lineName->text();
+    record_settings.fps = info.fps;
+    record_settings.bitrate = info.bitrate;
+    record_settings.numMSAA = info.numMSAA;
+    record_settings.numOptix = info.numOptix;
+    record_settings.width = info.res[0];
+    record_settings.height = info.res[1];
+    record_settings.bExportVideo = info.bExportVideo;
+    record_settings.needDenoise = info.needDenoise;
+    record_settings.bAutoRemoveCache = info.bAutoRemoveCache;
+    record_settings.bAov = m_ui->cbAOV->checkState() == Qt::Checked;
+    record_settings.bExr = info.bExportEXR;
+
+    zenoApp->graphsManagment()->setRecordSettings(record_settings);
+
     return true;
 }

@@ -1,5 +1,6 @@
 #include "zenosocketitem.h"
 #include "zgraphicstextitem.h"
+#include "zgraphicsnetlabel.h"
 #include <zenoui/style/zenostyle.h>
 #include <zenomodel/include/modelrole.h>
 #include <zenomodel/include/viewparammodel.h>
@@ -15,11 +16,13 @@ ZenoSocketItem::ZenoSocketItem(
     , m_status(STATUS_UNKNOWN)
     , m_size(sz)
     , m_bHovered(false)
+    , m_netLabelItem(nullptr)
 {
     PARAM_CLASS cls = (PARAM_CLASS)viewSockIdx.data(ROLE_PARAM_CLASS).toInt();
     ZASSERT_EXIT(cls == PARAM_INNER_INPUT || cls == PARAM_INPUT ||
-                 cls == PARAM_INNER_OUTPUT || cls == PARAM_OUTPUT);
-    m_bInput = (cls == PARAM_INNER_INPUT || cls == PARAM_INPUT);
+                 cls == PARAM_INNER_OUTPUT || cls == PARAM_OUTPUT ||
+                 cls == PARAM_LEGACY_INPUT || cls == PARAM_LEGACY_OUTPUT);
+    m_bInput = (cls == PARAM_INNER_INPUT || cls == PARAM_INPUT || cls == PARAM_LEGACY_INPUT);
     m_bInnerSock = (cls == PARAM_INNER_INPUT || cls == PARAM_INNER_OUTPUT);
     m_innerSockMargin = ZenoStyle::dpiScaled(15);
     m_socketXOffset = ZenoStyle::dpiScaled(24);
@@ -28,6 +31,10 @@ ZenoSocketItem::ZenoSocketItem(
         setData(GVKEY_SIZEHINT, m_size);
         setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
     }
+
+    const QString& netlabel = viewSockIdx.data(ROLE_PARAM_NETLABEL).toString();
+    initLabel(netlabel);
+
     setSockStatus(STATUS_NOCONN);
     setAcceptHoverEvents(true);
 }
@@ -129,7 +136,65 @@ void ZenoSocketItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
     _base::mouseReleaseEvent(event);
     update();
-    emit clicked(m_bInput);
+    if (this->isEnabled())
+        emit clicked(m_bInput, event->button());
+}
+
+QString ZenoSocketItem::netLabel() const
+{
+    return m_netLabelItem ? m_netLabelItem->toPlainText() : "";
+}
+
+void ZenoSocketItem::initLabel(const QString& label)
+{
+    if (label.isEmpty())
+        return;
+    m_netLabelItem = new ZGraphicsNetLabel(m_bInput, label, this);
+    QRectF rcSocket = boundingRect();
+    QRectF rcNetLabel = m_netLabelItem->boundingRect();
+    if (m_bInput) {
+        qreal x = -rcNetLabel.width();
+        qreal y = -rcNetLabel.height() + rcSocket.height() / 2;
+        m_netLabelItem->setPos(x, y);
+    }
+    else {
+        qreal x = rcSocket.width() - m_socketXOffset;
+        qreal y = -rcNetLabel.height() + rcSocket.height() / 2;
+        m_netLabelItem->setPos(x, y);
+    }
+    connect(m_netLabelItem, &ZGraphicsNetLabel::clicked, this, &ZenoSocketItem::netLabelClicked);
+    connect(m_netLabelItem, &ZGraphicsNetLabel::editingFinished, this, &ZenoSocketItem::netLabelEditFinished);
+    connect(m_netLabelItem, &ZGraphicsNetLabel::actionTriggered, this,
+        &ZenoSocketItem::netLabelMenuActionTriggered);
+    update();
+}
+
+void ZenoSocketItem::onNetLabelChanged(const QString& label)
+{
+    if (netLabel().isEmpty() && !label.isEmpty()) {
+        initLabel(label);
+    }
+    else {
+        if (label.isEmpty()) {
+            m_netLabelItem->deleteLater();
+            m_netLabelItem = nullptr;
+        }
+        else {
+            m_netLabelItem->setText(label);
+            QRectF rcSocket = boundingRect();
+            QRectF rcNetLabel = m_netLabelItem->boundingRect();
+            if (m_bInput) {
+                qreal x = -rcNetLabel.width();
+                qreal y = -rcNetLabel.height() + rcSocket.height() / 2;
+                m_netLabelItem->setPos(x, y);
+            }
+            else {
+                qreal x = rcSocket.width() - m_socketXOffset;
+                qreal y = -rcNetLabel.height() + rcSocket.height() / 2;
+                m_netLabelItem->setPos(x, y);
+            }
+        }
+    }
 }
 
 void ZenoSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
@@ -141,7 +206,10 @@ void ZenoSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
     painter->setRenderHint(QPainter::Antialiasing, true);
 
     QColor bgClr;
-    if (m_bHovered)
+    if (!isEnabled()) {
+        bgClr = QColor(83, 83, 85);
+    }
+    else if (m_bHovered)
     {
         bgClr = QColor("#5FD2FF");
     }
@@ -158,7 +226,7 @@ void ZenoSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
     static const int startAngle = 0;
     static const int spanAngle = 360;
     painter->setPen(pen);
-    bool bDrawBg = (m_status == STATUS_TRY_CONN || m_status == STATUS_CONNECTED);
+    bool bDrawBg = (m_status == STATUS_TRY_CONN || m_status == STATUS_CONNECTED || !netLabel().isEmpty());
 
     if (bDrawBg)
     {

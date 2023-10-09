@@ -12,7 +12,6 @@
 #include <comctrl/ziconbutton.h>
 #include <zenoui/style/zenostyle.h>
 #include "zenomainwindow.h"
-#include "nodesys/zenosubgraphview.h"
 #include "ui_zenographseditor.h"
 #include "nodesview/zsubnetlistitemdelegate.h"
 #include "searchitemdelegate.h"
@@ -64,7 +63,7 @@ void ZenoGraphsEditor::initUI()
     m_ui->mainStackedWidget->setCurrentWidget(m_ui->welcomeScrollPage);
     m_ui->stackedWidget->setCurrentIndex(0);
 
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setPointSize(10);
     m_ui->graphsViewTab->setFont(font);  //bug in qss font setting.
     m_ui->graphsViewTab->tabBar()->setDrawBase(false);
@@ -72,7 +71,15 @@ void ZenoGraphsEditor::initUI()
     m_ui->searchEdit->setProperty("cssClass", "searchEditor");
     m_ui->graphsViewTab->setProperty("cssClass", "graphicsediter");
     m_ui->graphsViewTab->tabBar()->setProperty("cssClass", "graphicsediter");
-
+    m_ui->graphsViewTab->setUsesScrollButtons(true);
+    m_ui->btnSearchOpt->setIcons(":/icons/collaspe.svg", ":/icons/collaspe.svg");
+    m_ui->btnSearchOpt->setToolTip(tr("Search Option"));
+    ZIconLabel* pPageListButton = new ZIconLabel(m_ui->graphsViewTab);
+    pPageListButton->setToolTip(tr("Tab List"));
+    pPageListButton->setIcons(ZenoStyle::dpiScaledSize(QSize(20, 30)), ":/icons/ic_parameter_unfold.svg", ":/icons/ic_parameter_unfold.svg");
+    connect(pPageListButton, &ZIconLabel::clicked, this, &ZenoGraphsEditor::onPageListClicked);
+    m_ui->graphsViewTab->setCornerWidget(pPageListButton);
+    m_ui->graphsViewTab->setDocumentMode(false);
     initRecentFiles();
 }
 
@@ -184,6 +191,7 @@ void ZenoGraphsEditor::resetModel(IGraphsModel* pModel)
 void ZenoGraphsEditor::onModelCleared()
 {
     m_ui->mainStackedWidget->setCurrentWidget(m_ui->welcomeScrollPage);
+    m_ui->searchEdit->clear();
 }
 
 void ZenoGraphsEditor::onSubGraphsToRemove(const QModelIndex& parent, int first, int last)
@@ -286,6 +294,48 @@ void ZenoGraphsEditor::onNewSubgraph()
     if (bOk) {
         m_model->newSubgraph(newSubgName);
     }
+}
+
+void ZenoGraphsEditor::onPageListClicked()
+{
+    QMenu* pMenu = new QMenu;
+    QSize size = ZenoStyle::dpiScaledSize(QSize(16, 16));
+    for (int i = 0; i < m_ui->graphsViewTab->count(); i++)
+    {
+        QWidgetAction* pAction = new QWidgetAction(pMenu);
+        QWidget* pWidget = new QWidget(pMenu);
+        QHBoxLayout* pLayout = new QHBoxLayout(pWidget);
+        pLayout->setContentsMargins(0, ZenoStyle::dpiScaled(5), 0, ZenoStyle::dpiScaled(5));
+        QString text = m_ui->graphsViewTab->tabText(i);
+        ZToolButton* ptextButton = new ZToolButton(ZToolButton::Opt_TextRightToIcon, m_ui->graphsViewTab->tabIcon(i), size, text);
+        ptextButton->setTextClr(QColor("#A3B1C0"), QColor("#FFFFFF"), QColor("#A3B1C0"), QColor("#FFFFFF"));
+        pWidget->setAttribute(Qt::WA_TranslucentBackground, true);
+        pLayout->addWidget(ptextButton);
+        pLayout->addSpacerItem(new QSpacerItem(10, 10, QSizePolicy::Expanding));
+        ZIconLabel* pDeleteButton = new ZIconLabel(pWidget);
+        pDeleteButton->setToolTip(tr("Close Tab"));
+        pDeleteButton->setIcons(size, ":/icons/closebtn.svg", ":/icons/closebtn_on.svg");
+        pLayout->addWidget(pDeleteButton);
+        pAction->setDefaultWidget(pWidget);
+        pAction->setIcon(m_ui->graphsViewTab->tabIcon(i));
+        pMenu->addAction(pAction);
+        connect(pDeleteButton, &ZIconLabel::clicked, this, [=]()
+        {
+            int idx = tabIndexOfName(m_ui->graphsViewTab->tabText(i));
+            if (idx >= 0)
+                m_ui->graphsViewTab->removeTab(idx);
+            pMenu->close();
+        });
+        connect(ptextButton, &ZToolButton::clicked, this, [=]() {
+            const QModelIndex& index = m_model->index(text);
+            if (index.isValid())
+                activateTab(text, index.data(ROLE_OBJPATH).toString());
+            pMenu->close();
+        });
+
+    }
+    pMenu->exec(cursor().pos());
+    pMenu->deleteLater();
 }
 
 void ZenoGraphsEditor::onSubnetOptionClicked()
@@ -446,6 +496,16 @@ void ZenoGraphsEditor::selectTab(const QString& subGraphName, const QString& pat
 
     pScene->select(objIds);
 }
+
+ZenoSubGraphView* ZenoGraphsEditor::getCurrentSubGraphView()
+{
+    if (ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget()))
+    {
+        return pView;
+    }
+    return nullptr;
+}
+
 void ZenoGraphsEditor::activateTab(const QString& subGraphName, const QString& path, const QString& objId, bool isError)
 {
 	auto graphsMgm = zenoApp->graphsManagment();
@@ -554,6 +614,8 @@ void ZenoGraphsEditor::onLogInserted(const QModelIndex& parent, int first, int l
             {
                 auto lst = objId.split('/', QtSkipEmptyParts);
                 objId = lst.last();
+                lst.removeOne(objId);
+                markSubgError(lst);
             }
 
             QList<SEARCH_RESULT> results = m_model->search(objId, SEARCH_NODEID, SEARCH_MATCH_EXACTLY);
@@ -596,6 +658,25 @@ void ZenoGraphsEditor::onLogInserted(const QModelIndex& parent, int first, int l
                 }
             }
         }
+    }
+}
+
+void ZenoGraphsEditor::markSubgError(const QStringList& idents)
+{
+    for (const auto &ident : idents)
+    {
+        QModelIndex index = m_model->nodeIndex(ident);
+        ZASSERT_EXIT(index.isValid());
+        QModelIndex subgIdx = index.data(ROLE_SUBGRAPH_IDX).toModelIndex();
+        ZASSERT_EXIT(subgIdx.isValid());
+        auto graphsMgm = zenoApp->graphsManagment();
+        ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(graphsMgm->gvScene(subgIdx));
+        if (!pScene) {
+            pScene = new ZenoSubGraphScene(graphsMgm);
+            graphsMgm->addScene(subgIdx, pScene);
+            pScene->initModel(subgIdx);
+        }
+        pScene->markError(ident);
     }
 }
 
@@ -834,7 +915,10 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
         QDialog dlg(this);
         QGridLayout *pLayout = new QGridLayout(&dlg);
         QDialogButtonBox *pButtonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
-        ZPathEdit *pathLineEdit = new ZPathEdit(v, &dlg);
+        CALLBACK_SWITCH cbSwitch = [=](bool bOn) {
+            zenoApp->getMainWindow()->setInDlgEventLoop(bOn); //deal with ubuntu dialog slow problem when update viewport.
+        };
+        ZPathEdit *pathLineEdit = new ZPathEdit(cbSwitch, v, &dlg);
         pLayout->addWidget(new QLabel("Set NASLOC"), 2, 0);
         pLayout->addWidget(pathLineEdit, 2, 1);
         pLayout->addWidget(pButtonBox, 4, 1);
@@ -845,7 +929,7 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
             text.replace('\\', '/');
             settings.setValue("nas_loc", text);
             // refresh settings (zeno::setConfigVariable), only needed in single-process mode
-            startUp();
+            startUp(true);
         }
     }
     else if (actionType == ZenoMainWindow::ACTION_ZENCACHE) 
@@ -855,25 +939,35 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
         auto &inst = ZenoSettingsManager::GetInstance();
 
         QVariant varEnableCache = inst.getValue("zencache-enable");
-        QVariant varAutoRemove = inst.getValue("zencache-autoremove");
+        QVariant varTempCacheDir = inst.getValue("zencache-autoremove");
         QVariant varCacheRoot = inst.getValue("zencachedir");
         QVariant varCacheNum = inst.getValue("zencachenum");
+        QVariant varAutoCleanCache = inst.getValue("zencache-autoclean");
 
         bool bEnableCache = varEnableCache.isValid() ? varEnableCache.toBool() : false;
-        bool bAutoRemove = varAutoRemove.isValid() ? varAutoRemove.toBool() : true;
+        bool bTempCacheDir = varTempCacheDir.isValid() ? varTempCacheDir.toBool() : false;
         QString cacheRootDir = varCacheRoot.isValid() ? varCacheRoot.toString() : "";
         int cacheNum = varCacheNum.isValid() ? varCacheNum.toInt() : 1;
+        bool bAutoCleanCache = varAutoCleanCache.isValid() ? varAutoCleanCache.toBool() : true;
 
-        ZPathEdit *pathLineEdit = new ZPathEdit(cacheRootDir);
+        CALLBACK_SWITCH cbSwitch = [=](bool bOn) {
+            zenoApp->getMainWindow()->setInDlgEventLoop(bOn); //deal with ubuntu dialog slow problem when update viewport.
+        };
+        ZPathEdit *pathLineEdit = new ZPathEdit(cbSwitch, cacheRootDir);
         pathLineEdit->setFixedWidth(256);
-        pathLineEdit->setEnabled(!bAutoRemove && bEnableCache);
-        QCheckBox *pAutoDelCache = new QCheckBox;
-        pAutoDelCache->setCheckState(bAutoRemove ? Qt::Checked : Qt::Unchecked);
-        pAutoDelCache->setEnabled(bEnableCache);
-        connect(pAutoDelCache, &QCheckBox::stateChanged, [=](bool state) {
+        pathLineEdit->setEnabled(!bTempCacheDir && bEnableCache);
+        QCheckBox *pTempCacheDir = new QCheckBox;
+        pTempCacheDir->setCheckState(bTempCacheDir ? Qt::Checked : Qt::Unchecked);
+        pTempCacheDir->setEnabled(bEnableCache);
+        QCheckBox* pAutoCleanCache = new QCheckBox;
+        pAutoCleanCache->setCheckState(bAutoCleanCache ? Qt::Checked : Qt::Unchecked);
+        pAutoCleanCache->setEnabled(bEnableCache && !bTempCacheDir);
+        connect(pTempCacheDir, &QCheckBox::stateChanged, [=](bool state) {
             pathLineEdit->setText("");
             pathLineEdit->setEnabled(!state);
-        });
+            pAutoCleanCache->setChecked(Qt::Unchecked);
+            pAutoCleanCache->setEnabled(!state);
+            });
 
         QSpinBox* pSpinBox = new QSpinBox;
         pSpinBox->setRange(1, 10000);
@@ -887,26 +981,30 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
             {
                 pSpinBox->clear();
                 pathLineEdit->clear();
-                pAutoDelCache->setCheckState(Qt::Unchecked);
+                pTempCacheDir->setCheckState(Qt::Unchecked);
+                pAutoCleanCache->setCheckState(Qt::Unchecked);
             }
             pSpinBox->setEnabled(state);
             pathLineEdit->setEnabled(state);
-            pAutoDelCache->setEnabled(state);
+            pTempCacheDir->setEnabled(state);
+            pAutoCleanCache->setEnabled(state && !pTempCacheDir->isChecked());
         });
 
         QDialogButtonBox* pButtonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
 
         QDialog dlg(this);
         QGridLayout* pLayout = new QGridLayout;
-        pLayout->addWidget(new QLabel("enable cache"), 0, 0);
+        pLayout->addWidget(new QLabel(tr("Enable cache")), 0, 0);
         pLayout->addWidget(pCheckbox, 0, 1);
-        pLayout->addWidget(new QLabel("cache num"), 1, 0);
+        pLayout->addWidget(new QLabel(tr("Cache num")), 1, 0);
         pLayout->addWidget(pSpinBox, 1, 1);
-        pLayout->addWidget(new QLabel("temp cache directory"), 2, 0);
-        pLayout->addWidget(pAutoDelCache, 2, 1);
-        pLayout->addWidget(new QLabel("cache root"), 3, 0);
+        pLayout->addWidget(new QLabel(tr("Temp cache directory")), 2, 0);
+        pLayout->addWidget(pTempCacheDir, 2, 1);
+        pLayout->addWidget(new QLabel(tr("Cache root")), 3, 0);
         pLayout->addWidget(pathLineEdit, 3, 1);
-        pLayout->addWidget(pButtonBox, 4, 1);
+        pLayout->addWidget(new QLabel(tr("Cache auto clean up")), 4, 0);
+        pLayout->addWidget(pAutoCleanCache, 4, 1);
+        pLayout->addWidget(pButtonBox, 5, 1);
 
         connect(pButtonBox, SIGNAL(accepted()), &dlg, SLOT(accept()));
         connect(pButtonBox, SIGNAL(rejected()), &dlg, SLOT(reject()));
@@ -915,9 +1013,10 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
         if (QDialog::Accepted == dlg.exec())
         {
             inst.setValue("zencache-enable", pCheckbox->checkState() == Qt::Checked);
-            inst.setValue("zencache-autoremove", pAutoDelCache->checkState() == Qt::Checked);
+            inst.setValue("zencache-autoremove", pTempCacheDir->checkState() == Qt::Checked);
             inst.setValue("zencachedir", pathLineEdit->text());
             inst.setValue("zencachenum", pSpinBox->value());
+            inst.setValue("zencache-autoclean", pAutoCleanCache->checkState() == Qt::Checked);
         }
     }
     else if (actionType == ZenoMainWindow::ACTION_ZOOM) 
@@ -933,12 +1032,14 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
     else if (actionType == ZenoMainWindow::ACTION_UNDO) 
     {
         IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-        pGraphsModel->undo();
+        if (pGraphsModel)
+            pGraphsModel->undo();
     }
     else if (actionType == ZenoMainWindow::ACTION_REDO) 
     {
         IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-        pGraphsModel->redo();
+        if (pGraphsModel)
+            pGraphsModel->redo();
     }
     else if (actionType == ZenoMainWindow::ACTION_SELECT_NODE) 
     {

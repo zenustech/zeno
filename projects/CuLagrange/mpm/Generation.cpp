@@ -73,9 +73,9 @@ struct PoissonDiskSample : INode {
     }
 };
 ZENDEFNODE(PoissonDiskSample, {
-                                  {"VDBGrid", {"float", "dx", "0.1"}, {"float", "ppc", "8"}},
+                                  {"VDBGrid", {"float", "dx", "0.1"}, {"float", "ppc", "8"}, {"string", "path", ""}},
                                   {"prim"},
-                                  {{"string", "path", ""}},
+                                  {},
                                   {"MPM"},
                               });
 
@@ -94,17 +94,15 @@ struct ZSPoissonDiskSample : INode {
             using LsT = RM_CVREF_T(ls);
             if constexpr (is_same_v<LsT, typename ZenoLevelSet::basic_ls_t>) {
                 auto &field = ls._ls;
-                match(
-                    [&sampled = sampled, dx = dx,
-                     ppc = ppc](auto &lsPtr) -> std::enable_if_t<is_spls_v<typename RM_CVREF_T(lsPtr)::element_type>> {
+                match([&sampled = sampled, dx = dx, ppc = ppc](auto &lsPtr) {
+                    if constexpr (is_spls_v<typename RM_CVREF_T(lsPtr)::element_type>) {
                         const auto &ls = *lsPtr;
                         const auto &spls = ls.memspace() != memsrc_e::host ? ls.clone({memsrc_e::host, -1}) : ls;
                         sampled = zs::sample_from_levelset(zs::proxy<zs::execspace_e::openmp>(spls), dx, ppc);
-                    },
-                    [](auto &lsPtr) -> std::enable_if_t<!is_spls_v<typename RM_CVREF_T(lsPtr)::element_type>> {
+                    } else
                         throw std::runtime_error(
                             fmt::format("levelset type [{}] not supported in sampling.", zs::get_var_type_str(lsPtr)));
-                    })(field);
+                })(field);
             } else if constexpr (is_same_v<LsT, typename ZenoLevelSet::const_sdf_vel_ls_t>) {
                 match([&sampled = sampled, dx = dx, ppc = ppc](auto lsv) {
                     sampled = zs::sample_from_levelset(SdfVelFieldView{lsv}, dx, ppc);

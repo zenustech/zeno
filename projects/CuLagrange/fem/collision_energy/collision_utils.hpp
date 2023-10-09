@@ -21,6 +21,8 @@ namespace COLLISION_UTILS {
     using MATRIX3x12 = typename zs::vec<REAL,3,12>;
     using MATRIX12 = typename zs::vec<REAL,12,12>;
 
+
+
     ///////////////////////////////////////////////////////////////////////
     // should we reverse the direction of the force?
     ///////////////////////////////////////////////////////////////////////
@@ -979,6 +981,138 @@ namespace COLLISION_UTILS {
                                 bPoint[0], bPoint[1], bPoint[2],
                                 midpoint[0], midpoint[1], midpoint[2],
                                 normal[0], normal[1], normal[2], intersect);
+    }
+
+// ps = [p_ea_0,p_ea_1,p_eb_0,p_eb_1]
+    constexpr bool compute_imminent_EE_collision_impulse(const VECTOR3 ps[4],
+        const VECTOR3 vs[4],
+        const REAL& scale,
+        const REAL& imminent_thickness,
+        const REAL minv[4],
+        VECTOR3 imps[4]) {
+            constexpr auto eps = 1e-7;
+
+            VECTOR3 int_a{},int_b{};
+            COLLISION_UTILS::IntersectLineSegments(ps[0],ps[1],ps[2],ps[3],int_a,int_b);
+            auto ra = (ps[0] - int_a).norm() / (ps[0] - ps[1]).norm();
+            auto rb = (ps[2] - int_b).norm() / (ps[2] - ps[3]).norm(); 
+
+            VECTOR4 bary{};
+            bary[0] = ra - 1;
+            bary[1] = -ra;
+            bary[2] = 1 - rb;
+            bary[3] = rb;
+
+            auto cm = (REAL).0;
+            for(int i = 0;i != 4;++i)
+                cm += bary[i] * bary[i] * minv[i];
+            if(cm < eps){
+                // for(int i = 0;i != 4;++i)
+                //     imps[i] = VECTOR3::zeros();
+                return false;;  
+            }
+
+            auto pr = VECTOR3::zeros();
+            auto vr = VECTOR3::zeros();
+            for(int i = 0;i != 4;++i) {
+                pr += bary[i] * ps[i];
+                vr += bary[i] * vs[i];
+            }
+
+            if(pr.norm() > imminent_thickness) {
+                return false;
+            }
+
+            VECTOR3 collision_nrm{};
+            if(pr.norm() < 100 * eps)
+                  collision_nrm = (ps[0] - ps[1]).cross(ps[2] - ps[3]).normalized();
+            else
+                collision_nrm = pr.normalized();    
+
+            if(collision_nrm.dot(vr) > 0)
+                collision_nrm = (REAL)-1 * collision_nrm;
+            
+            auto vr_nrm = collision_nrm.dot(vr);           
+            auto impulse = -collision_nrm * vr_nrm * scale;
+
+            for(int i = 0;i != 4;++i)
+                imps[i] = bary[i] * (minv[i] / cm) * impulse;
+
+            return true;
+    }
+
+// ps = [p_ea_0,p_ea_1,p_eb_0,p_eb_1]
+    constexpr bool compute_continous_EE_collision_impulse(
+        const VECTOR3 ps[4],
+        const VECTOR3 vs[4],
+        const REAL minv[4],
+        VECTOR3 imps[4]) {
+            constexpr auto eps = 1e-7;
+
+            auto alpha = (REAL)1.0;
+
+            auto has_dynamic_points = false;
+            for(int i = 0;i != 4;++i)
+                if(minv[i] > eps)
+                    has_dynamic_points = true;
+            
+
+            if(!has_dynamic_points || !ee_accd(ps[0],ps[1],ps[2],ps[3],vs[0],vs[1],vs[2],vs[3],(REAL)0.2,(REAL)0.0,alpha)) {
+                for(int i = 0;i != 4;++i)
+                    imps[i] = VECTOR3::zeros();
+                return false;
+            }
+
+            VECTOR3 nps[4] = {};
+            for(int i = 0;i != 4;++i)
+                nps[i] = ps[i] + alpha * vs[i];
+
+// there will surely be an imminent collision
+            return compute_imminent_EE_collision_impulse(nps,vs,(REAL)1 - alpha,std::numeric_limits<REAL>::max(),minv,imps);
+    }
+
+// ps = [t0,t1,t2,p]
+    constexpr bool compute_imminent_PT_collision_impulse(const VECTOR3 ps[4],
+        const VECTOR3 vs[4],
+        const REAL& scale,
+        const REAL& imminent_thickness,
+        const REAL minv[4],
+        VECTOR3 imps[4]) {
+            constexpr auto eps = 1e-7;
+            auto tnrm = LSL_GEO::facet_normal(ps[0],ps[1],ps[2]);
+
+            auto seg = ps[3] - ps[0];
+            auto project_dist = zs::abs(seg.dot(tnrm));
+            if(project_dist > imminent_thickness) {
+                return false;
+            }
+
+            VECTOR3 bary_centric{};
+            LSL_GEO::pointBaryCentric(ps[0],ps[1],ps[2],ps[3],bary_centric);
+
+            // if(distance > imminent_thickness)
+            //     return false;
+
+            auto bary_sum = zs::abs(bary_centric[0]) + zs::abs(bary_centric[1]) + zs::abs(bary_centric[2]);
+            if(bary_sum > (REAL)(1.0 + eps * 1000)) {
+                return false;
+            }
+
+            VECTOR4 bary{-bary_centric[0],-bary_centric[1],-bary_centric[2],1};
+
+            auto pr = VECTOR3::zeros();
+            auto vr = VECTOR3::zeros();
+            for(int i = 0;i != 4;++i) {
+                pr += bary[i] * ps[i];
+                vr += bary[i] * vs[i];
+            }
+
+            auto collision_nrm = LSL_GEO::facet_normal(ps[0],ps[1],ps[2]);
+            auto align = collision_nrm.dot(pr);
+            if(align < 0)
+                collision_nrm *= -1;
+
+            auto relative_normal_velocity = vr.dot(collision_nrm);
     }
 
 };

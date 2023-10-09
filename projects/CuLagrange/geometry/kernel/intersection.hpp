@@ -1796,14 +1796,14 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
                                     vec3 v1[3] = {};
                                     vec3 e0s[3] = {};
                                     vec3 e1s[3] = {};
-                                    for(int i = 0;i != 3;++i) {
-                                        v0[i] = verts.pack(dim_c<3>,xtag,tri_t0[i]);
-                                        v1[i] = verts.pack(dim_c<3>,xtag,tri_t1[i]);
+                                    for(int j = 0;j != 3;++j) {
+                                        v0[j] = verts.pack(dim_c<3>,xtag,tri_t0[j]);
+                                        v1[j] = verts.pack(dim_c<3>,xtag,tri_t1[j]);
                                     }
 
-                                    for(int i = 0;i != 3;++i) {
-                                        e0s[i] = v0[(i + 1) % 3] - v0[i];
-                                        e1s[i] = v1[(i + 1) % 3] - v1[i];
+                                    for(int j = 0;j != 3;++j) {
+                                        e0s[j] = v0[(j + 1) % 3] - v0[j];
+                                        e1s[j] = v1[(j + 1) % 3] - v1[j];
                                     }
 
                                     auto nrm0 = (v0[1] - v0[0]).cross(v0[2] - v0[0]).normalized();
@@ -1926,9 +1926,9 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
                                     vec3 v1[3] = {};
                                     vec3 e0s[3] = {};
                                     vec3 e1s[3] = {};
-                                    for(int i = 0;i != 3;++i) {
-                                        v0[i] = verts.pack(dim_c<3>,xtag,tri_t0[i]);
-                                        v1[i] = verts.pack(dim_c<3>,xtag,tri_t1[i]);
+                                    for(int j = 0;j != 3;++j) {
+                                        v0[j] = verts.pack(dim_c<3>,xtag,tri_t0[j]);
+                                        v1[j] = verts.pack(dim_c<3>,xtag,tri_t1[j]);
                                     }
 
                                     for(int i = 0;i != 3;++i) {
@@ -1969,7 +1969,8 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
                                         r = LSL_GEO::tri_ray_intersect(v1[j],e1s[j],v0[0],v0[1],v0[2]);
                                         if(r < (T)(1.0)) {
                                             e1_indices[nm_e1_its] = j;
-                                            e1_its[nm_e1_its] = v1[i] + e1s[j] * r;
+                                            /// @note both these should be 'j'
+                                            e1_its[nm_e1_its] = v1[j] + e1s[j] * r;
                                             ++nm_e1_its;
                                         } 
                                     }
@@ -3462,7 +3463,7 @@ int do_global_intersection_analysis_with_connected_manifolds(Pol& pol,
                         auto hi = key[0];
                         auto no = halfedges_tab.query(hi);
                         if(no >= closestTriID.size()) {
-                            printf("closestTriID overflow : %d %d\n",no,closestTriID.size());
+                            printf("closestTriID overflow : %d %d\n",(int)no, (int)closestTriID.size());
                             return;
                         }
                         auto cti = closestTriID[no];

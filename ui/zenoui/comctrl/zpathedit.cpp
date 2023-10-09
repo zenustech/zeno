@@ -1,32 +1,27 @@
 #include "zpathedit.h"
 #include "zlineedit.h"
 #include <zenomodel/include/modeldata.h>
-#include <zenoedit/zenoapplication.h>
-#include <zenoedit/zenomainwindow.h>
 
 
 
-ZPathEdit::ZPathEdit(QWidget *parent)
+ZPathEdit::ZPathEdit(const CALLBACK_SWITCH& cbSwitch, QWidget *parent)
     : ZLineEdit(parent)
 {
-    initUI();
+    initUI(cbSwitch);
 }
 
-ZPathEdit::ZPathEdit(const QString &text, QWidget *parent)
+ZPathEdit::ZPathEdit(const CALLBACK_SWITCH& cbSwitch, const QString &text, QWidget *parent)
     : ZLineEdit(text, parent)
 {
-    initUI();
+    initUI(cbSwitch);
 }
 
-void ZPathEdit::initUI()
+void ZPathEdit::initUI(const CALLBACK_SWITCH& cbSwitch)
 {
     setFocusPolicy(Qt::ClickFocus);
     setIcons(":/icons/file-loader.svg", ":/icons/file-loader-on.svg");
     setProperty("cssClass", "path_edit");
 
-    CALLBACK_SWITCH cbSwitch = [=](bool bOn) {
-        zenoApp->getMainWindow()->setInDlgEventLoop(bOn); //deal with ubuntu dialog slow problem when update viewport.
-    };
     QObject::connect(this, &ZLineEdit::btnClicked, [=]() {
         int ctrl = this->property("control").toInt();
         QString path;

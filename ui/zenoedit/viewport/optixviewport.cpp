@@ -9,12 +9,14 @@
 #include "launch/corelaunch.h"
 #include <zeno/core/Session.h>
 #include <zenovis/Camera.h>
+#include <zeno/funcs/ParseObjectFromUi.h>
 
 
 OptixWorker::OptixWorker(Zenovis *pzenoVis)
     : QObject(nullptr)
     , m_zenoVis(pzenoVis)
     , m_bRecording(false)
+    , m_pTimer(nullptr)
 {
     m_pTimer = new QTimer(this);
     connect(m_pTimer, SIGNAL(timeout()), this, SLOT(updateFrame()));
@@ -60,9 +62,84 @@ void OptixWorker::updateFrame()
 
 void OptixWorker::onPlayToggled(bool bToggled)
 {
-    //todo: priority.
     m_zenoVis->startPlay(bToggled);
-    m_pTimer->start(16);
+    if (bToggled) {
+        m_pTimer->start(m_slidFeq);
+    }
+    else {
+        m_pTimer->start(m_sampleFeq);
+    }
+}
+
+void OptixWorker::onSetSlidFeq(int feq)
+{
+    m_slidFeq = feq;
+}
+
+void OptixWorker::onModifyLightData(UI_VECTYPE posvec, UI_VECTYPE scalevec, UI_VECTYPE rotatevec, UI_VECTYPE colorvec, float intensity, QString nodename, UI_VECTYPE skipParam)
+{
+    std::string name = nodename.toStdString();
+    zeno::vec3f pos = zeno::vec3f(posvec[0], posvec[1], posvec[2]);
+    zeno::vec3f scale = zeno::vec3f(scalevec[0], scalevec[1], scalevec[2]);
+    zeno::vec3f rotate = zeno::vec3f(rotatevec[0], rotatevec[1], rotatevec[2]);
+    zeno::vec3f color = zeno::vec3f(colorvec[0], colorvec[1], colorvec[2]);
+    auto verts = ZenoLights::computeLightPrim(pos, rotate, scale);
+
+    auto scene = m_zenoVis->getSession()->get_scene();
+    ZASSERT_EXIT(scene);
+
+    std::shared_ptr<zeno::IObject> obj;
+    for (auto const& [key, ptr] : scene->objectsMan->lightObjects) {
+        if (key.find(name) != std::string::npos) {
+            obj = ptr;
+            name = key;
+        }
+    }
+    auto prim_in = dynamic_cast<zeno::PrimitiveObject*>(obj.get());
+
+    if (prim_in) {
+        auto& prim_verts = prim_in->verts;
+        prim_verts[0] = verts[0];
+        prim_verts[1] = verts[1];
+        prim_verts[2] = verts[2];
+        prim_verts[3] = verts[3];
+
+        if (skipParam[0])
+            pos = prim_in->userData().get2<zeno::vec3f>("pos");
+        if (skipParam[1])
+            scale = prim_in->userData().get2<zeno::vec3f>("scale");
+        if (skipParam[2])
+            rotate = prim_in->userData().get2<zeno::vec3f>("rotate");
+        if (skipParam[3])
+            color = prim_in->userData().get2<zeno::vec3f>("color");
+        if (skipParam[4])
+            intensity = prim_in->userData().get2<float>("intensity");
+
+        prim_in->verts.attr<zeno::vec3f>("clr")[0] = color * intensity;
+
+        prim_in->userData().setLiterial<zeno::vec3f>("pos", std::move(pos));
+        prim_in->userData().setLiterial<zeno::vec3f>("scale", std::move(scale));
+        prim_in->userData().setLiterial<zeno::vec3f>("rotate", std::move(rotate));
+        if (prim_in->userData().has("intensity")) {
+            prim_in->userData().setLiterial<zeno::vec3f>("color", std::move(color));
+            prim_in->userData().setLiterial<float>("intensity", std::move(intensity));
+        }
+
+        scene->objectsMan->needUpdateLight = true;
+        //pDisplay->setSimpleRenderOption();
+    }
+    else {
+        zeno::log_info("modifyLightData not found {}", name);
+    }
+}
+
+void OptixWorker::onUpdateCameraProp(float aperture, float disPlane, UI_VECTYPE skipParam)
+{
+    if (skipParam.size() == 0 || !skipParam[0])
+        m_zenoVis->m_camera_control->setAperture(aperture);
+    if (skipParam.size() == 0 || !skipParam[1])
+        m_zenoVis->m_camera_control->setDisPlane(disPlane);
+    m_zenoVis->m_camera_control->updatePerspective();
 }
 
 void OptixWorker::onFrameSwitched(int frame)
@@ -70,6 +147,7 @@ void OptixWorker::onFrameSwitched(int frame)
     //ui switch.
     m_zenoVis->setCurrentFrameId(frame);
     m_zenoVis->startPlay(false);
+    m_pTimer->start(m_sampleFeq);
 }
 
 void OptixWorker::cancelRecording()
@@ -93,7 +171,7 @@ void OptixWorker::recordVideo(VideoRecInfo recInfo)
     //for the case about recording after run.
     zeno::scope_exit sp([=] {
         m_bRecording = false;
-        m_pTimer->start(16);
+        m_pTimer->start(m_sampleFeq);
     });
 
     m_bRecording = true;
@@ -106,6 +184,24 @@ void OptixWorker::recordVideo(VideoRecInfo recInfo)
             emit sig_recordCanceled();
             return;
         }
+#ifdef ZENO_OPTIX_PROC
+        QString cachePath = QString::fromStdString(zeno::getSession().globalComm->cachePath());
+        QString frameDir = cachePath + "/" + QString::number(1000000 + frame).right(6);
+        if (!QDir(frameDir).exists())
+        {
+            QThread::sleep(0);
+            continue;
+        }
+        QString sLockFile = QString("%1/%2%3.lock").arg(cachePath).arg(zeno::iotags::sZencache_lockfile_prefix).arg(frame);
+        QLockFile lckFile(sLockFile);
+        bool ret = lckFile.tryLock();
+        if (!ret)
+        {
+            QThread::sleep(0);
+            continue;
+        }
+        lckFile.unlock();
+#endif
         bool bSucceed = recordFrame_impl(recInfo, frame);
         if (bSucceed)
         {
@@ -117,6 +213,24 @@ void OptixWorker::recordVideo(VideoRecInfo recInfo)
         }
     }
     emit sig_recordFinished();
+}
+
+void OptixWorker::screenShoot(QString path, QString type, int resx, int resy)
+{
+    bool aov = zeno::getSession().userData().has("output_aov") ? zeno::getSession().userData().get2<bool>("output_aov") : false;
+    bool exr = zeno::getSession().userData().has("output_exr") ? zeno::getSession().userData().get2<bool>("output_exr") : false;
+    zeno::scope_exit sp([=]() {
+        zeno::getSession().userData().set2("output_aov", aov);
+        zeno::getSession().userData().set2("output_exr", exr);
+        });
+    zeno::getSession().userData().set2("output_aov", false);
+    zeno::getSession().userData().set2("output_exr", false);
+    auto [x, y] = m_zenoVis->getSession()->get_window_size();
+    if (!m_zenoVis->getSession()->is_lock_window())
+        resx = x, resy = y;
+    m_zenoVis->getSession()->set_window_size(resx, resy);
+    m_zenoVis->getSession()->do_screenshot(path.toStdString(), type.toStdString(), true);
+    m_zenoVis->getSession()->set_window_size(x, y);
 }
 
 bool OptixWorker::recordFrame_impl(VideoRecInfo recInfo, int frame)
@@ -146,12 +260,30 @@ bool OptixWorker::recordFrame_impl(VideoRecInfo recInfo, int frame)
     if (frame < beginFrame || frame > endFrame)
         return false;
 
+    if (globalComm->isFrameBroken(frame))
+    {
+        /*
+        QImage img(QSize((int)recInfo.res.x(), (int)recInfo.res.y()), QImage::Format_RGBA8888);
+        img.fill(Qt::black);
+        QPainter painter(&img);
+        painter.setPen(Qt::white);
+        QFont fnt = zenoApp->font();
+        fnt.setPointSize(16);
+        painter.setFont(fnt);
+        painter.drawText(img.rect(), Qt::AlignCenter, QString(tr("the zencache of this frame has been removed")));
+        img.save(QString::fromStdString(record_file), "JPG");
+        */
+        zeno::log_warn("The zencache of frame {} has been removed.", frame);
+        return true;
+    }
+
     int actualFrame = m_zenoVis->setCurrentFrameId(frame);
     m_zenoVis->doFrameUpdate();
-    //todo: may be the frame has not been finished, in this case, we have to wait.
+    if (recInfo.bAutoRemoveCache)
+        zeno::getSession().globalComm->removeCache(frame);
 
     m_zenoVis->getSession()->set_window_size((int)recInfo.res.x(), (int)recInfo.res.y());
-    m_zenoVis->getSession()->do_screenshot(record_file, extname);
+    m_zenoVis->getSession()->do_screenshot(record_file, extname, true);
     m_zenoVis->getSession()->set_window_size(x, y);
 
     //todo: emit some signal to main thread(ui)
@@ -176,12 +308,11 @@ void OptixWorker::onSetLoopPlaying(bool enbale)
 void OptixWorker::stop()
 {
     m_pTimer->stop();
-    //todo: use a flag to mark, otherwise the timer will be resumed.
 }
 
 void OptixWorker::work()
 {
-    m_pTimer->start(16);
+    m_pTimer->start(m_sampleFeq);
 }
 
 QImage OptixWorker::renderImage() const
@@ -194,7 +325,7 @@ void OptixWorker::needUpdateCamera()
     //todo: update reason.
     //m_zenoVis->getSession()->get_scene()->drawOptions->needUpdateGeo = false;	//just for teset.
     m_zenoVis->getSession()->get_scene()->drawOptions->needRefresh = true;
-    m_pTimer->start(16);
+    m_pTimer->start(m_sampleFeq);
 }
 
 
@@ -248,6 +379,7 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(this, &ZOptixViewport::stopRenderOptix, m_worker, &OptixWorker::stop);
     connect(this, &ZOptixViewport::resumeWork, m_worker, &OptixWorker::work);
     connect(this, &ZOptixViewport::sigRecordVideo, m_worker, &OptixWorker::recordVideo, Qt::QueuedConnection);
+    connect(this, &ZOptixViewport::sigscreenshoot, m_worker, &OptixWorker::screenShoot, Qt::QueuedConnection);
     connect(this, &ZOptixViewport::sig_setSafeFrames, m_worker, &OptixWorker::onSetSafeFrames);
 
     connect(m_worker, &OptixWorker::sig_recordFinished, this, &ZOptixViewport::sig_recordFinished);
@@ -257,6 +389,9 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(this, &ZOptixViewport::sig_togglePlayButton, m_worker, &OptixWorker::onPlayToggled);
     connect(this, &ZOptixViewport::sig_setRenderSeparately, m_worker, &OptixWorker::setRenderSeparately);
     connect(this, &ZOptixViewport::sig_setLoopPlaying, m_worker, &OptixWorker::onSetLoopPlaying);
+    connect(this, &ZOptixViewport::sig_setSlidFeq, m_worker, &OptixWorker::onSetSlidFeq);
+    connect(this, &ZOptixViewport::sig_modifyLightData, m_worker, &OptixWorker::onModifyLightData);
+    connect(this, &ZOptixViewport::sig_updateCameraProp, m_worker, &OptixWorker::onUpdateCameraProp);
 
     setRenderSeparately(false, false);
     m_thdOptix.start();
@@ -305,6 +440,16 @@ void ZOptixViewport::killThread()
     m_thdOptix.wait();
 }
 
+void ZOptixViewport::setSlidFeq(int feq)
+{
+    emit sig_setSlidFeq(feq);
+}
+
+void ZOptixViewport::modifyLightData(UI_VECTYPE pos, UI_VECTYPE scale, UI_VECTYPE rotate, UI_VECTYPE color, float intensity, QString name, UI_VECTYPE skipParam)
+{
+    emit sig_modifyLightData(pos, scale, rotate, color, intensity, name, skipParam);
+}
+
 void ZOptixViewport::stopRender()
 {
     emit stopRenderOptix();
@@ -320,6 +465,11 @@ void ZOptixViewport::recordVideo(VideoRecInfo recInfo)
     emit sigRecordVideo(recInfo);
 }
 
+void ZOptixViewport::screenshoot(QString path, QString type, int resx, int resy)
+{
+    emit sigscreenshoot(path, type, resx, resy);
+}
+
 void ZOptixViewport::cancelRecording(VideoRecInfo recInfo)
 {
     m_worker->cancelRecording();
@@ -330,11 +480,9 @@ void ZOptixViewport::onFrameRunFinished(int frame)
     emit sig_frameRunFinished(frame);
 }
 
-void ZOptixViewport::updateCameraProp(float aperture, float disPlane)
+void ZOptixViewport::updateCameraProp(float aperture, float disPlane, UI_VECTYPE skipParam)
 {
-    m_camera->setAperture(aperture);
-    m_camera->setDisPlane(disPlane);
-    m_camera->updatePerspective();
+    emit sig_updateCameraProp(aperture, disPlane, skipParam);
 }
 
 void ZOptixViewport::updatePerspective()

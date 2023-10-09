@@ -20,6 +20,9 @@
 #define STB_IMAGE_WRITE_STATIC
 #include <tinygltf/stb_image_write.h>
 #include <vector>
+#include <glm/glm.hpp>
+//#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/transform.hpp>
 
 static const float eps = 0.0001f;
 
@@ -149,6 +152,11 @@ static vec3f Sample2DLinearClamp(vec2f texCoord, const vec3f* data, int w, int h
     return mix(mix(s1, s2, f[0]), mix(s3, s4, f[0]), f[1]);
 }
 struct PrimSample2D : zeno::INode {
+    static glm::vec3 mapplypos(glm::mat4 const &matrix, glm::vec3 const &vector) {
+        auto vector4 = matrix * glm::vec4(vector, 1.0f);
+        return glm::vec3(vector4) / vector4.w;
+    }
+
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         auto srcChannel = get_input2<std::string>("uvChannel");
@@ -158,6 +166,21 @@ struct PrimSample2D : zeno::INode {
         auto wrap = get_input2<std::string>("wrap");
         auto filter = get_input2<std::string>("filter");
         auto borderColor = get_input2<vec3f>("borderColor");
+
+        auto invertU = get_input2<bool>("invert U");
+        auto invertV = get_input2<bool>("invert V");
+        auto scale = get_input2<float>("scale");
+        auto rotate = get_input2<float>("rotate");
+        auto translate = get_input2<vec2f>("translate");
+
+        glm::vec3 pre_scale = glm::vec3(scale, scale, 0 );
+        if(invertU) pre_scale.x *= -1;
+        if(invertV) pre_scale.y *= -1;
+        glm::mat4 matScal  = glm::scale( pre_scale );
+        glm::mat4 matRot   = glm::rotate( (float)(rotate * M_PI / 180), glm::vec3(0,0,1) );
+        glm::mat4 matTrans = glm::translate(glm::vec3(translate[0], translate[1], 0));
+
+        auto matrix = glm::translate( glm::vec3(0.5,0.5,0) )*matTrans*matRot*matScal*glm::translate( glm::vec3(-0.5,-0.5,0) );
 
         if (!image->userData().has("isImage")) {
             throw zeno::Exception("not an image");
@@ -229,6 +252,10 @@ struct PrimSample2D : zeno::INode {
             auto &uv = prim->attr<zeno::vec3f>(srcChannel);
             #pragma omp parallel for
             for (auto i = 0; i < uv.size(); i++) {
+                auto coord = zeno::vec_to_other<glm::vec3>(uv[i]);
+                coord = mapplypos(matrix, coord);
+                uv[i] = zeno::other_to_vec<3>(coord);
+
                 clrs[i] = queryColor(uv[i], data, w, h, borderColor);
             }
         }
@@ -236,8 +263,20 @@ struct PrimSample2D : zeno::INode {
             auto uv0 = prim->tris.attr<vec3f>("uv0");
             auto uv1 = prim->tris.attr<vec3f>("uv1");
             auto uv2 = prim->tris.attr<vec3f>("uv2");
+
             #pragma omp parallel for
             for (auto i = 0; i < prim->tris.size(); i++) {
+                // not tested just for completeness
+                auto coord = zeno::vec_to_other<glm::vec3>(uv0[i]);
+                coord = mapplypos(matrix, coord);
+                uv0[i] = zeno::other_to_vec<3>(coord);
+                coord = zeno::vec_to_other<glm::vec3>(uv1[i]);
+                coord = mapplypos(matrix, coord);
+                uv1[i] = zeno::other_to_vec<3>(coord);
+                coord = zeno::vec_to_other<glm::vec3>(uv2[i]);
+                coord = mapplypos(matrix, coord);
+                uv2[i] = zeno::other_to_vec<3>(coord);
+
                 auto tri = prim->tris[i];
                 clrs[tri[0]] = queryColor(uv0[i], data, w, h, borderColor);
                 clrs[tri[1]] = queryColor(uv1[i], data, w, h, borderColor);
@@ -250,6 +289,13 @@ struct PrimSample2D : zeno::INode {
             #pragma omp parallel for
             for (auto i = 0; i < prim->loops.size(); i++) {
                 auto uv = prim->uvs[loopsuv[i]];
+
+                // not tested just for completeness
+                auto coord = zeno::vec_to_other<glm::vec3>({uv[0], uv[1], 0});
+                coord = mapplypos(matrix, coord);
+                auto temp = zeno::other_to_vec<3>(coord);
+                uv = {temp[0], temp[1]};
+
                 int index = prim->loops[i];
                 clrs[index] = queryColor({uv[0], uv[1], 0}, data, w, h, borderColor);
             }
@@ -274,6 +320,11 @@ ZENDEFNODE(PrimSample2D, {
         {"enum REPEAT CLAMP_TO_EDGE CLAMP_TO_BORDER", "wrap", "REPEAT"},
         {"enum nearest linear", "filter", "nearest"},
         {"vec3f", "borderColor", "0,0,0"},
+        {"bool", "invert U", "0"},
+        {"bool", "invert V", "0"},
+        {"float", "scale", "1"},
+        {"float", "rotate", "0"},
+        {"vec2f", "translate", "0,0"},
     },
     {
         {"PrimitiveObject", "outPrim"}

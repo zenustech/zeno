@@ -1,18 +1,10 @@
 #pragma once
 
-#include <nanovdb/NanoVDB.h>
+#include <Sampling.h>
 
-#define _DELTA_TRACKING_ true
-
-#ifdef __CUDACC_RTC__
-#else
+#ifndef __CUDACC_RTC__
+#include <Host.h>
 #endif
-
-#include <optix.h>
-
-#include <cuda/random.h>
-#include <cuda/helpers.h>
-#include <sutil/vec_math.h>
 
 namespace nanovdb {
     using Fp32 = float;
@@ -20,56 +12,47 @@ namespace nanovdb {
 
 namespace pbrt {
 
-__device__
-inline void CoordinateSystem(const float3& a, float3& b, float3& c) {
-    
-//    if (abs(a.x) > abs(a.y))
-//        b = float3{-a.z, 0, a.x} /
-//              sqrt(max(_FLT_EPL_, a.x * a.x + a.z * a.z));
-//    else
-//        b = float3{0, a.z, -a.y} /
-//              sqrt(max(_FLT_EPL_, a.y * a.y + a.z * a.z));
-    
-    if (fabs(a.x) > fabs(a.y))
-        b = float3{-a.z, 0, a.x};
-    else
-        b = float3{0, a.z, -a.y};
-    
-    b = normalize(b);
-    c = cross(a, b);
-}
-
-inline float3 SphericalDirection(float sinTheta, float cosTheta, float phi) {
-    return float3{sinTheta * cosf(phi), sinTheta * sinf(phi), cosTheta};
-}
-
-inline float3 SphericalDirection(float sinTheta, float cosTheta, float phi,
-                                 const float3 &x, const float3 &y, const float3 &z) {
-    return sinTheta * cosf(phi) * x + sinTheta * sinf(phi) * y + cosTheta * z;
-}
-
 struct HenyeyGreenstein {
     float g;
     __device__ HenyeyGreenstein(float g) : g(g) {}
     
     float p(const float3 &wo, const float3 &wi) const;
-    float Sample_p(const float3 &wo, float3 &wi, const float2 &uu) const;
+    float sample(const float3 &wo, float3 &wi, const float2 &uu) const;
 };
+
+inline float Schlick(float cosTheta, float k)
+{
+    return (1.0f - k * k) / (4.0f * M_PIf * pow(1.0f - k * cosTheta, 2.0f));
+}
 
 // Media Inline Functions
 inline float PhaseHG(float cosTheta, float g) {
     float gg = g * g;
     float denom = 1 + gg + 2 * g * cosTheta;
+
+    if (denom < __FLT_EPSILON__) {
+        return 1.0f;
+    }
+
     return (0.25f / M_PIf) * (1 - gg) / (denom * sqrtf(denom));
 }
 
 // HenyeyGreenstein Method Definitions
 inline float HenyeyGreenstein::p(const float3 &wo, const float3 &wi) const {
     return PhaseHG(dot(wo, wi), g);
+    
+    // float k = 1.55f*g - 0.55f*g*g*g;
+    // return Schlick(dot(wo, wi), k);
 }
 
-inline float HenyeyGreenstein::Sample_p(const float3 &wo, float3 &wi, const float2 &uu) const {
+inline float HenyeyGreenstein::sample(const float3 &wo, float3 &wi, const float2 &uu) const {
     // Compute $\cos \theta$ for Henyey--Greenstein sample
+
+    if (fabsf(g) >= 1.0f) { 
+        wi = copysignf(1.0f, -g) * wo;
+        return 1.0f;
+    }
+
     float cosTheta;
     if (fabs(g) < 1e-3f)
         cosTheta = 1 - 2 * uu.x;
@@ -85,6 +68,7 @@ inline float HenyeyGreenstein::Sample_p(const float3 &wo, float3 &wi, const floa
     
     float3 v1, v2;
     CoordinateSystem(wo, v1, v2);
+    //CoordinateSystem(wo, &v1, &v2);
     wi = SphericalDirection(sinTheta, cosTheta, phi, v1, v2, wo);
 
     return PhaseHG(cosTheta, g);
