@@ -97,7 +97,6 @@ static __inline__ __device__ MatOutput evalMat(cudaTextureObject_t zenotex[], fl
         mats.sheen = mat_sheen;
         mats.sheenTint = mat_sheenTint;
         mats.clearcoat = clamp(mat_clearcoat, 0.0f, 1.0f);
-        mats.clearcoatGloss = mat_clearcoatGloss;
         mats.clearcoatRoughness = clamp(mat_clearcoatRoughness, 0.01, 0.99);
         mats.clearcoatIOR = mat_clearcoatIOR;
         mats.opacity = mat_opacity;
