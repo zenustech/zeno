@@ -255,6 +255,10 @@
         <source>Curve Link</source>
         <translation>曲线连接</translation>
     </message>
+	<message>
+        <source>Always mode</source>
+        <translation>预览模式</translation>
+    </message>
 </context>
 <context>
     <name>DockContent_Log</name>

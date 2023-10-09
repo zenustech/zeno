@@ -1143,9 +1143,15 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 xinxinoptix::cleanupSpheresCPU();
 
                 xinxinoptix::optixupdateend();
-                std::cout<<"Finish optix update" << std::endl;
+                std::cout<< "Finish optix update" << std::endl;
             }
-            
+
+            if (scene->drawOptions->updateMatlOnly && !bMeshMatLUTChanged)
+            {
+                xinxinoptix::optixupdateend();
+                std::cout << "Finish optix update" << std::endl;
+            }
+
         }
 
         if(lightNeedUpdate){
