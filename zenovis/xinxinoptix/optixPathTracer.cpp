@@ -992,9 +992,12 @@ void buildRootIAS()
             ++optix_instance_idx;
             OptixInstance opinstance {};
 
+            auto combinedID = std::string("Light") + ":" + std::to_string(ShaderMaker::Mesh);
+            auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
+
             opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
             opinstance.instanceId = OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID-1;
-            opinstance.sbtOffset = 0;
+            opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
             opinstance.visibilityMask = LightMatMask;
             opinstance.traversableHandle = lightsWrapper.lightPlanesGas;
             memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
@@ -1007,12 +1010,12 @@ void buildRootIAS()
             ++optix_instance_idx;
             OptixInstance opinstance {};
 
-            auto combinedID = std::string("Default") + ":" + std::to_string(ShaderMaker::Sphere);
+            auto combinedID = std::string("Light") + ":" + std::to_string(ShaderMaker::Sphere);
             auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
 
             opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
             opinstance.instanceId = OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID;
-            opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;;
+            opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
             opinstance.visibilityMask = LightMatMask;
             opinstance.traversableHandle = lightsWrapper.lightSpheresGas;
             memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
