@@ -800,11 +800,13 @@ constexpr T PERM(T x) {
 #define INDEX(ix, iy, iz) PERM((ix) + PERM((iy) + PERM(iz)))
 
 //std::random_device rd;
-std::default_random_engine engine;
+//std::default_random_engine engine;
+int g_seed;
 std::uniform_real_distribution<float> d(0, 1);
 
 float impulseTab[256 * 4];
 void impulseTabInit() {
+    std::default_random_engine engine(g_seed);
     int i;
     float *f = impulseTab;
     for (i = 0; i < 256; i++) {
@@ -900,14 +902,19 @@ struct NoiseImageGen : INode {
         auto seed = get_input2<int>("seed");
         auto turbulence = get_input2<int>("turbulence");
         auto roughness = get_input2<float>("roughness");
-        auto frequency = get_input2<vec2f>("spatial frequency") * 0.001f; // tofix: scale?
+        auto exponent = get_input2<float>("exponent");
+        auto frequency = get_input2<vec2f>("spatial frequency") * 0.001f; // tofix: mysterious scale?
         auto amplitude = get_input2<vec4f>("amplitude");
 
         auto image = std::make_shared<PrimitiveObject>();
         image->verts.resize(image_size[0] * image_size[1]);
         auto &alpha = image->verts.add_attr<float>("alpha");
 
-        engine.seed(seed); // tofix: how to lock with engine
+        // tofix: how to lock engine seed
+        // try a dumb way
+//        std::default_random_engine new_engine; engine = new_engine;
+//        engine.seed(seed);
+        g_seed = seed;
 
 #pragma omp parallel for
         for (int i = 0; i < image_size[0] * image_size[1]; i++) {
@@ -937,10 +944,10 @@ struct NoiseImageGen : INode {
             }
 
             if (perC) {
-                image->verts[i] = {r, g, b};
+                image->verts[i] = pow(vec3f(r, g, b), exponent);
                 alpha[i] = r+g+b; // tofix: proper expression? as well as amplitude related
             } else {
-                image->verts[i] = {r, r, r};
+                image->verts[i] = pow(vec3f(r, r, r), exponent);
                 alpha[i] = r;
             }
         }
@@ -958,6 +965,7 @@ ZENDEFNODE(NoiseImageGen, {
         {"bool", "noise per component", "1"},
         {"int", "turbulence", "1"},
         {"float", "roughness", "0.5"},
+        {"float", "exponent", "1"},
         {"vec2f", "spatial frequency", "10,10"},
         {"vec4f", "amplitude", "1.0,1.0,1.0,1.0"},
         // image planes?
