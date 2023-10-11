@@ -40,7 +40,6 @@ static std::wstring s2ws(std::string const &s) {
 }
 
 using callback_t = std::function<void(std::optional<std::any>)>; 
-#if 0 
 static callback_t zpc_init_callback = [] (auto _) {
     auto exe_dir = zs::abs_exe_directory(); 
     Py_SetPythonHome(s2ws(exe_dir).c_str()); 
@@ -61,7 +60,6 @@ static callback_t zpc_init_callback = [] (auto _) {
     getSession().userData().set("subprogram_python", std::make_shared<GenericObject<int(*)(int, char **)>>(subprogram_python_main));
 }; 
 static int defPyZpcInit = getSession().eventCallbacks->hookEvent("init", zpc_init_callback);
-#endif 
 static callback_t zpc_exit_callback = [] (auto _) {
     Py_Finalize();
 }; 
@@ -126,24 +124,6 @@ struct PyZfx : INode {
         Py_Finalize();
         fmt::print(fg(fmt::color::blue), "done pyzfx node test.\n");
 #endif 
-        {
-            auto exe_dir = zs::abs_exe_directory(); 
-            Py_SetPythonHome(s2ws(exe_dir).c_str()); 
-            log_debug("Initializing Python...");
-            Py_Initialize(); 
-#ifdef _WIN32
-    exe_dir = replace_all(exe_dir, "\\", "/");
-#endif
-            auto zeno_lib_path = exe_dir + "/" + ZENO_PYZPC_DLL_FILE; 
-            auto py_libs_dir = exe_dir + "/resource/py_libs"; 
-            if (PyRun_SimpleString(("__import__('sys').path.insert(0, '" + 
-                py_libs_dir + "'); import zpy; zpy.init_zeno_lib('" + zeno_lib_path + 
-                "'); zpy.zeno_lib_path = '" + zeno_lib_path + "'").c_str()) < 0) {
-                log_warn("Failed to initialize Python module");
-                return;
-            }
-            log_debug("Initialized Python successfully!");
-        }
         auto args = has_input("args") ? get_input<DictObject>("args") : std::make_shared<DictObject>();
         auto path = get_input2<std::string>("path");
         int ret;
@@ -229,7 +209,6 @@ struct PyZfx : INode {
             PyDict_Clear(retsRAIIDict);
         }
         set_output("rets", std::move(rets));
-        // Py_Finalize();
     }
 };
 ZENO_DEFNODE(PyZfx)({/* inputs: */ 
