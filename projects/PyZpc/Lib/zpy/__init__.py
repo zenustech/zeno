@@ -14,8 +14,8 @@ print = partial(print, file=sys.stderr)
 
 def get_input(key):
     if key not in _args:
-        raise KeyError('invalid input key: {}'.format(key))
-    return ZenoObject(_args[key])
+        raise KeyError(f'invalid input key: {key}, _args: {_args}')
+    return ZenoObject.from_handle(_args[key])
 
 
 def set_output(key: str, value: ZenoObject):
