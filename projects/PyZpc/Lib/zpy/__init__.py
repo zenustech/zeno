@@ -32,11 +32,7 @@ def set_output2(key: str, value):
 
 
 class Args:
-    def __init__(self) -> None:
-        self.data = {}
-
-    def keys(self):
-        return self.data.keys()
+    pass 
 
 
 args = Args()
