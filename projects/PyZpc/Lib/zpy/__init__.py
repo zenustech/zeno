@@ -5,7 +5,7 @@ from functools import partial
 from .zeno import init_zeno_lib
 
 # ref: ze lib by Archibate
-zeno_lib_path = None 
+zeno_lib_path = None
 _args: dict[str, int] = {}
 _rets: dict[str, int] = {}
 _retsRAII: dict[str, Any] = {}
@@ -31,17 +31,15 @@ def set_output2(key: str, value):
     set_output(key, ZenoObject.from_literal(value))
 
 
-class Args:
-    pass 
+class _GetInputWrapper:
+    def __getattr__(self, key: str):
+        return get_input2(key)
+
+    def __getitem__(self, key: str):
+        return get_input2(key)
 
 
-args = Args()
-
-
-def update_args():
-    global args
-    for key in _args.keys():
-        setattr(args, key, get_input2(key))
+args = _GetInputWrapper()
 
 
 class _SetOutputWrapper:
