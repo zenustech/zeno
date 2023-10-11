@@ -5,6 +5,7 @@
 #include <tuple>
 #include <variant>
 #include <zeno/zeno.h>
+#include <zeno/types/PrimitiveObject.h>
 
 namespace zeno
 {
@@ -91,6 +92,41 @@ namespace zeno
                                    {"ZsVector",
                                     {"enum add max min", "op", "add"}},
                                    {"result"},
+                                   {},
+                                   {"PyZFX"},
+                               });
+
+    struct CopyZsVectorTo : INode
+    {
+        void apply() override
+        {
+            auto vectorObj = get_input<ZsVectorObject>("ZsVector");
+            auto prim = get_input<PrimitiveObject>("prim");
+            auto attr = get_input2<std::string>("attr"); 
+            auto &vector = vectorObj->value;
+
+            float result; 
+            std::visit([&prim, &attr](auto &vector){
+                using vector_t = RM_CVREF_T(vector); 
+                using val_t = typename vector_t::value_type; 
+                if constexpr (zs::is_same_v<val_t, float> || zs::is_same_v<val_t, int>) {
+                    if (prim->size() != vector.size())
+                        fmt::print("BEWARE! copy sizes mismatch!\n");
+
+                    auto &dst = prim->attr<val_t>(attr);
+
+                    std::memcpy(dst.data(), vector.data(), sizeof(val_t) * vector.size());
+                }
+            }, vector); 
+
+            set_output2("prim", prim); 
+        }
+    }; 
+
+    ZENDEFNODE(CopyZsVectorTo, {
+                                   {"ZsVector", "prim", 
+                                    {"string", "attr", "clr"}},
+                                   {"prim"},
                                    {},
                                    {"PyZFX"},
                                });
