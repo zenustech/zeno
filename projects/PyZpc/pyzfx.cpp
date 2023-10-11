@@ -161,9 +161,6 @@ struct PyZfx : INode {
             throw makeError("failed to set zpy._rets");
         if (PyDict_SetItemString(zenoModDict, "_args", argsDict) < 0)
             throw makeError("failed to set zpy._args");
-        if (PyRun_SimpleString("zpy.update_args()") < 0) {
-            throw makeError("failed to update zpy.args");
-        }
  
         if (path.empty()) {
             auto code = get_input2<std::string>("code");
