@@ -29,7 +29,7 @@ QTabBar::tab:top {
 }
 
 QTabBar::tab:selected {
-    background: #2D3239;
+    background: #2d3239;
     color: #C3D2DF;
     border-bottom: 0px;
     padding: 0px 16px 3px 16px;
@@ -49,14 +49,14 @@ QTabBar[cssClass = "propanel"]::tab:top {
 }
 
 QTabBar[cssClass = "propanel"]::tab:selected {
-    background: #2D3239;
+    background: #2d3239;
     color: #C3D2DF;
     border-bottom: 0px;
     padding: 0px 16px 3px 16px;
 }
 
 QTabBar[cssClass = "graphicsediter"] {
-    background-color: #2D3239;
+    background-color: #2d3239;
     font-weight: bold;
 }
 
@@ -64,8 +64,12 @@ QTabWidget[cssClass = "graphicsediter"]::pane {
     border: 0px;
 }
 
+QTabWidget[cssClass = "graphicsediter"] {
+    background: #2d3239;
+}
+
 QTabBar[cssClass = "graphicsediter"]::tab {
-    background: #2D3239;
+    background: #2d3239;
     color: #737B85;
     border-right: 1px solid rgb(24, 29, 33);
 	font-size: 10pt;

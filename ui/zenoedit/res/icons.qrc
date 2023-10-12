@@ -55,6 +55,8 @@
     <file>icons/rotate.png</file>
     <file>icons/move.png</file>
     <file>icons/scale.png</file>
+	<file>icons/loop_on.png</file>
+	<file>icons/loop_off.png</file>
     <file>icons/magnet.png</file>
     <file>icons/magnet_grid.png</file>
     <file>icons/magnet_point.png</file>
@@ -180,6 +182,8 @@
     <file>icons/subnet-general.svg</file>
     <file>icons/always-on.svg</file>
     <file>icons/always-off.svg</file>
+	<file>icons/Always.svg</file>
+	<file>icons/AlwaysOn.svg</file>
     <file>icons/run-off.svg</file>
     <file>icons/run-on.svg</file>
     <file>icons/kill-on.svg</file>
@@ -345,5 +349,14 @@
     <file>icons/ZENO-logo256.png</file>
     <file>icons/ZENO-logo128.png</file>
     <file>icons/ZENO-logo64.png</file>
+	<file>icons/update_main.png</file>
+	<file>icons/update-reboot.png</file>
+	<file>icons/run_all.svg</file>
+    <file>icons/run_lightcamera.svg</file>
+    <file>icons/run_material.svg</file>
+    <file>icons/down_arrow.svg</file>
+	<file>icons/run_lightcamera_disable.svg</file>
+    <file>icons/run_material_disable.svg</file>
+    <file>icons/run_all_disable.svg</file>
 </qresource>
 </RCC>

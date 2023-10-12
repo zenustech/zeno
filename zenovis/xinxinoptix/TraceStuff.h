@@ -57,7 +57,6 @@ struct RadiancePRD
     float3       direction;
     float        minSpecRough;
     bool         passed;
-    float        opacity;
     float        prob;
     float        prob2;
     unsigned int seed;
@@ -66,7 +65,6 @@ struct RadiancePRD
     bool         hitEnv;
     int          countEmitted;
     int          done;
-    int          pad;
     float3       shadowAttanuation;
     int          medium;
     float        scatterDistance;

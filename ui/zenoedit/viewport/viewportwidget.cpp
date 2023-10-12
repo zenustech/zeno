@@ -99,6 +99,22 @@ void ViewportWidget::setSimpleRenderOption() {
     m_pauseRenderDally->start(simpleRenderTime*1000);  // Second to millisecond
 }
 
+void ViewportWidget::setViewWidgetInfo(DockContentWidgetInfo& info)
+{
+    std::get<0>(viewInfo) = info.resolutionX;
+    std::get<1>(viewInfo) = info.resolutionY;
+    std::get<2>(viewInfo) = info.lock;
+    std::get<3>(viewInfo) = info.colorR;
+    std::get<4>(viewInfo) = info.colorG;
+    std::get<5>(viewInfo) = info.colorB;
+    loadSettingFromZsg = true;
+}
+
+void ViewportWidget::glDrawForCommandLine()
+{
+    QGLWidget::glDraw();
+}
+
 ViewportWidget::~ViewportWidget()
 {
     //testCleanUp();
@@ -134,6 +150,15 @@ void ViewportWidget::initializeGL()
     m_zenovis->initializeGL();
     ZASSERT_EXIT(m_picker);
     m_picker->initialize();
+    if (loadSettingFromZsg)
+    {
+        auto session = m_zenovis->getSession();
+        ZASSERT_EXIT(session);
+        auto scene = session->get_scene();
+        ZASSERT_EXIT(scene);
+        scene->camera->setResolutionInfo(std::get<2>(viewInfo), std::get<0>(viewInfo), std::get<1>(viewInfo));
+        session->set_background_color(std::get<3>(viewInfo), std::get<4>(viewInfo), std::get<5>(viewInfo));
+    }
 }
 
 void ViewportWidget::resizeGL(int nx, int ny)
@@ -210,7 +235,11 @@ void ViewportWidget::paintGL()
 
 void ViewportWidget::mousePressEvent(QMouseEvent* event)
 {
-    if(event->button() == Qt::MidButton){
+    int button = Qt::NoButton;
+    ZenoSettingsManager& settings = ZenoSettingsManager::GetInstance();
+    settings.getViewShortCut(ShortCut_MovingView, button);
+    settings.getViewShortCut(ShortCut_RotatingView, button);
+    if(event->button() & button){
         m_bMovingCamera = true;
         setSimpleRenderOption();
     }
@@ -221,7 +250,11 @@ void ViewportWidget::mousePressEvent(QMouseEvent* event)
 
 void ViewportWidget::mouseMoveEvent(QMouseEvent* event)
 {
-    if(event->button() == Qt::MidButton){
+    int button = Qt::NoButton;
+    ZenoSettingsManager& settings = ZenoSettingsManager::GetInstance();
+    settings.getViewShortCut(ShortCut_MovingView, button);
+    settings.getViewShortCut(ShortCut_RotatingView, button);
+    if(event->button() & button){
         m_bMovingCamera = true;
     }
     setSimpleRenderOption();
@@ -309,6 +342,12 @@ void ViewportWidget::keyPressEvent(QKeyEvent *event)
     if (modifiers & Qt::AltModifier) {
         uKey += Qt::ALT;
     }
+
+    if (m_camera->fakeKeyPressEvent(uKey)) {
+        zenoApp->getMainWindow()->updateViewport();
+        return;
+    }
+
     if (uKey == key)
         this->changeTransformOperation(0);
     key = settings.getShortCut(ShortCut_RevolvingHandler);

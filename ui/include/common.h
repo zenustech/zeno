@@ -2,6 +2,15 @@
 #define __ZENO_COMMON_H__
 
 #include <QModelIndex>
+#include <QSize>
+#include <QDockWidget>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/prettywriter.h>
+#include <memory>
+
+typedef rapidjson::PrettyWriter<rapidjson::StringBuffer> RAPIDJSON_WRITER;
+
+struct LayerOutNode;
 
 struct TIMELINE_INFO
 {
@@ -9,13 +18,48 @@ struct TIMELINE_INFO
     int endFrame;
     int currFrame;
     bool bAlways;
+    int timelinefps;
 
-    TIMELINE_INFO() : beginFrame(0), endFrame(0), currFrame(0), bAlways(false) {}
+    TIMELINE_INFO() : beginFrame(0), endFrame(0), currFrame(0), bAlways(false), timelinefps(24) {}
+};
+
+struct RECORD_SETTING
+{
+    QString record_path;
+    QString videoname;
+    int fps;
+    int bitrate;
+    int numMSAA;
+    int numOptix;
+    int width;
+    int height;
+    bool bExportVideo;
+    bool needDenoise;
+    bool bAutoRemoveCache;
+    bool bAov;
+    bool bExr;
+
+    RECORD_SETTING() : fps(24), bitrate(200000), numMSAA(0), numOptix(1), width(1280), height(720), bExportVideo(false), needDenoise(false), bAutoRemoveCache(true), bAov(false), bExr(false) {}
+};
+
+struct LAYOUT_SETTING {
+    std::shared_ptr<LayerOutNode> layerOutNode;
+    QSize size;
+    void(*cbDumpTabsToZsg)(QDockWidget*, RAPIDJSON_WRITER&);
+};
+
+struct USERDATA_SETTING
+{
+    bool optix_show_background;
+    USERDATA_SETTING() : optix_show_background(false) {}
 };
 
 struct APP_SETTINGS
 {
     TIMELINE_INFO timeline;
+    RECORD_SETTING recordInfo;
+    LAYOUT_SETTING layoutInfo;
+    USERDATA_SETTING userdataInfo;
     //todo: other settings.
 };
 
@@ -50,6 +94,27 @@ struct LiveObjectData{
     std::string camSrc = "";
     int verLoadCount = 0;
     int camLoadCount = 0;
+};
+
+struct ZENO_RECORD_RUN_INITPARAM {
+    QString sZsgPath = "";
+    bool bRecord = false;
+    bool bOptix = false;    //is optix view.
+    bool isExportVideo = false;
+    bool needDenoise = false;
+    bool export_exr = false;
+    int iFrame = 0;
+    int iSFrame = 0;
+    int iSample = 0;
+    int iBitrate = 0;
+    int iFps = 0;
+    QString sPixel = "";
+    QString sPath = "";
+    QString audioPath = "";
+    QString configFilePath = "";
+    QString videoName = "";
+    QString subZsg = "";
+    bool exitWhenRecordFinish = false;
 };
 
 #endif

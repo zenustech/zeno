@@ -71,6 +71,13 @@ QLabel[cssClass = "welcomepage_logo"]
 	border-image:url(":/icons/welcome_Zeno_logo.svg");
 }
 
+QLabel[cssClass="search_result"]
+{
+	font: 9pt 'FontFamily';
+    font-weight: 450;
+    color: #FCFCFC;
+}
+
 QLabel#iconManual
 {
 	border-image:url(":/icons/welcome_document.svg");
@@ -149,4 +156,20 @@ QListView[cssClass="proppanel"]
     gridline-color: rgb(23, 23, 23);
     background-color: rgb(28, 28, 28);
     alternate-background-color: rgb(20, 20, 20);
+}
+
+QListWidget[cssClass="search_view"]
+{
+    background-color: #191D21;
+    color: #222222;
+    margin: 0px;
+	border: 1px solid rgba(18,20,22,1);
+}
+
+QListWidget[cssClass="search_view"]::item
+{
+    font: 9pt 'FontFamily';
+    font-weight: 400;
+    padding: 4px 20px;
+    color: #8A939E;
 }

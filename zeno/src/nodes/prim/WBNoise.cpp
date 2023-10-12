@@ -4,6 +4,7 @@
 
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/UserData.h>
 #include <zeno/utils/log.h>
 #include <glm/gtx/quaternion.hpp>
 #include <cmath>
@@ -798,12 +799,14 @@ constexpr T PERM(T x) {
 
 #define INDEX(ix, iy, iz) PERM((ix) + PERM((iy) + PERM(iz)))
 
-std::random_device rd;
-std::default_random_engine engine(rd());
+//std::random_device rd;
+//std::default_random_engine engine;
+int g_seed;
 std::uniform_real_distribution<float> d(0, 1);
 
 float impulseTab[256 * 4];
 void impulseTabInit() {
+    std::default_random_engine engine(g_seed);
     int i;
     float *f = impulseTab;
     for (i = 0; i < 256; i++) {
@@ -881,6 +884,98 @@ float scnoise(float x, float y, float z, int pulsenum, int griddist) {
     }
     return sum / pulsenum;
 }
+
+//glm::vec4 hash42(glm::vec2 p)
+//{
+//    glm::vec4 p4 = fract(glm::vec4(p.x, p.y, p.x, p.y) * glm::vec4(.1031, .1030, .0973, .1099));
+//    p4 += dot(p4, glm::vec4(p4.w, p4.z, p4.x, p4.y)+33.33f);
+//    return fract(
+//            (glm::vec4(p4.x+p4.y, p4.x+p4.z, p4.y+p4.z, p4.z+p4.w))
+//            *glm::vec4(p4.z, p4.y, p4.w, p4.x));
+//
+//}
+
+struct NoiseImageGen : INode {
+    virtual void apply() override {
+        auto perC = get_input2<bool>("noise per component");
+        auto image_size = get_input2<vec2i>("image size");
+        auto seed = get_input2<int>("seed");
+        auto turbulence = get_input2<int>("turbulence");
+        auto roughness = get_input2<float>("roughness");
+        auto exponent = get_input2<float>("exponent");
+        auto frequency = get_input2<vec2f>("spatial frequency") * 0.001f; // tofix: mysterious scale?
+        auto amplitude = get_input2<vec4f>("amplitude");
+
+        auto image = std::make_shared<PrimitiveObject>();
+        image->verts.resize(image_size[0] * image_size[1]);
+        auto &alpha = image->verts.add_attr<float>("alpha");
+
+        // tofix: how to lock engine seed
+        // try a dumb way
+//        std::default_random_engine new_engine; engine = new_engine;
+//        engine.seed(seed);
+        g_seed = seed;
+
+#pragma omp parallel for
+        for (int i = 0; i < image_size[0] * image_size[1]; i++) {
+            vec2f p = vec2f(i % image_size[0], i / image_size[0]);
+
+            float r = 0;
+            float g = 0;
+            float b = 0;
+            vec2f freq = frequency;
+            vec4f amp = amplitude;
+            float rough = roughness;
+            for (int j = 0; j < turbulence; j++) {
+                r += scnoise(p[0] * freq[0],
+                             p[1] * freq[1],
+                             p[0] * freq[0],
+                             3, 2) * amp[0];
+                g += scnoise(p[0] * freq[0],
+                             p[0] * freq[0],
+                             p[1] * freq[1],
+                             3, 2) * amp[1];
+                b += scnoise(p[1] * freq[1],
+                             p[0] * freq[0],
+                             p[0] * freq[0],
+                             3, 2) * amp[2];
+                freq *= 2.0f;
+                amp *= rough;
+            }
+
+            if (perC) {
+                image->verts[i] = pow(vec3f(r, g, b), exponent);
+                alpha[i] = r+g+b; // tofix: proper expression? as well as amplitude related
+            } else {
+                image->verts[i] = pow(vec3f(r, r, r), exponent);
+                alpha[i] = r;
+            }
+        }
+        image->userData().set2("isImage", 1);
+        image->userData().set2("w", image_size[0]);
+        image->userData().set2("h", image_size[1]);
+        set_output("image", image);
+    }
+};
+ZENDEFNODE(NoiseImageGen, {
+    {
+        {"vec2i", "image size", "1920,1080"},
+//        {"enum sparse_convolution", "type", "sparse_convolution"},
+        {"int", "seed", "1"},
+        {"bool", "noise per component", "1"},
+        {"int", "turbulence", "1"},
+        {"float", "roughness", "0.5"},
+        {"float", "exponent", "1"},
+        {"vec2f", "spatial frequency", "10,10"},
+        {"vec4f", "amplitude", "1.0,1.0,1.0,1.0"},
+        // image planes?
+    },
+    {
+        {"PrimitiveObject", "image"},
+    },
+    {},
+    {"comp"},
+});
 
 struct erode_noise_sparse_convolution : INode {
     void apply() override {

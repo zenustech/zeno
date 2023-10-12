@@ -128,7 +128,6 @@ extern "C" __global__ void __raygen__rg()
           prd.done         = false;
           prd.seed         = seed;
           prd.eventseed    = eventseed;
-          prd.opacity      = 0;
           prd.flags        = 0;
           prd.maxDistance  = 1e16f;
           prd.medium       = DisneyBSDF::PhaseFunctions::vacuum;
@@ -360,7 +359,7 @@ extern "C" __global__ void __miss__radiance()
     vec3 channelPDF = vec3(1.0f/3.0f);
     prd->channelPDF = channelPDF;
     if (ss_alpha.x < 0.0f) { // is inside Glass
-        prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, sigma_t, sigma_t, channelPDF);
+        prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed, prd->scatterDistance);
     } else
     {
         prd->maxDistance =

@@ -4,6 +4,7 @@
 #include "zenomainwindow.h"
 #include "startup/zstartup.h"
 #include "settings/zsettings.h"
+#include "zeno/utils/log.h"
 #include "zeno/zeno.h"
 #include "zeno/extra/EventCallbacks.h"
 
@@ -37,45 +38,76 @@ int main(int argc, char *argv[])
     return a.exec();
 #endif
 
-    startUp();
+    if (argc >= 3 && !strcmp(argv[1], "--optixcmd")) {
+        extern int optixcmd(const QCoreApplication & app, int port);
+        int port = atoi(argv[2]);
+        startUp(false);
+        return optixcmd(a, port);
+    }
+
+    //entrance for the zenoedit-player.
+    if (argc >= 2 && !strcmp(argv[1], "--record"))
+    {
+        extern int record_main(const QCoreApplication & app);
+        startUp(false);
+        return record_main(a);
+    }
+
+    if (argc >= 3 && !strcmp(argv[1], "--offline")) {
+        extern int offline_main(const QCoreApplication & app);
+        startUp(false);
+        return offline_main(a);
+    }
+    if (argc >= 3 && !strcmp(argv[1], "--blender"))
+    {
+        extern int blender_main(const QCoreApplication & app);
+        startUp(false);
+        return blender_main(a);
+    }
+
+    startUp(true);
 
 #ifdef ZENO_MULTIPROCESS
     if (argc >= 2 && !strcmp(argv[1], "--runner")) {
         extern int runner_main(const QCoreApplication & app);
         return runner_main(a);
     }
+    if (argc >= 3 && !strcmp(argv[1], "-optix")) {
+        //MessageBox(0, "runner", "runner", MB_OK);
+        extern int optix_main(const QCoreApplication & app, 
+                            int port,
+                            const char* cachedir,
+                            int cachenum,
+                            int sFrame,
+                            int eFrame,
+                            int finishedFrames,
+                            const char* sessionId);
+        int port = -1;
+        if (argc >= 5 && !strcmp(argv[3], "-port"))
+            port = atoi(argv[4]);
+        char* cachedir = nullptr;
+        int cachenum = 0, sFrame = 0, eFrame = 0;
+        int finishedFrames = 0;
+        char* sessionId = nullptr;
+        if (argc >= 7 && !strcmp(argv[5], "-cachedir"))
+            cachedir = argv[6];
+        if (argc >= 9 && !strcmp(argv[7], "-cachenum"))
+            cachenum = atoi(argv[8]);
+        if (argc >= 11 && !strcmp(argv[9], "-beginFrame"))
+            sFrame = atoi(argv[10]);
+        if (argc >= 13 && !strcmp(argv[11], "-endFrame"))
+            eFrame = atoi(argv[12]);
+        if (argc >= 15 && !strcmp(argv[13], "-finishedFrames"))
+            finishedFrames = atoi(argv[14]);
+        if (argc >= 17 && !strcmp(argv[15], "-sessionId"))
+            sessionId = argv[16];
+        return optix_main(a, port, cachedir, cachenum, sFrame, eFrame, finishedFrames, sessionId);
+    }
 #endif
 
     if (argc >= 3 && !strcmp(argv[1], "-invoke")) {
         extern int invoke_main(int argc, char *argv[]);
         return invoke_main(argc - 2, argv + 2);
-    }
-
-    if (argc >= 3 && !strcmp(argv[1], "-offline")) {
-        extern int offline_main(const char *zsgfile, int beginFrame, int endFrame);
-        int begin = 0, end = 0;
-        if (argc >= 5 && !strcmp(argv[3], "-begin"))
-            begin = atoi(argv[4]);
-        if (argc >= 5 && !strcmp(argv[3], "-end"))
-            end = atoi(argv[4]);
-        if (argc >= 7 && !strcmp(argv[5], "-begin"))
-            begin = atoi(argv[6]);
-        if (argc >= 7 && !strcmp(argv[5], "-end"))
-            end = atoi(argv[6]);
-        return offline_main(argv[2], begin, end);
-    }
-
-    if (argc >= 3 && !strcmp(argv[1], "--blender"))
-    {
-        extern int blender_main(const QCoreApplication& app);
-        return blender_main(a);
-    }
-
-    //entrance for the zenoedit-player.
-    if (argc >= 2 && !strcmp(argv[1], "--record"))
-    {
-        extern int record_main(const QCoreApplication& app);
-        return record_main(a);
     }
 
     QTranslator t;

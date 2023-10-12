@@ -22,6 +22,10 @@
 #include <sutil/vec_math.h>
 #include <optix_stack_size.h>
 #include <stb_image_write.h>
+#ifdef __linux__
+#include <unistd.h>
+#include <stdio.h>
+#endif
 
 //#include <GLFW/glfw3.h>
 #include "XAS.h"
@@ -988,9 +992,12 @@ void buildRootIAS()
             ++optix_instance_idx;
             OptixInstance opinstance {};
 
+            auto combinedID = std::string("Light") + ":" + std::to_string(ShaderMaker::Mesh);
+            auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
+
             opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
             opinstance.instanceId = OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID-1;
-            opinstance.sbtOffset = 0;
+            opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
             opinstance.visibilityMask = LightMatMask;
             opinstance.traversableHandle = lightsWrapper.lightPlanesGas;
             memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
@@ -1003,12 +1010,12 @@ void buildRootIAS()
             ++optix_instance_idx;
             OptixInstance opinstance {};
 
-            auto combinedID = std::string("Default") + ":" + std::to_string(ShaderMaker::Sphere);
+            auto combinedID = std::string("Light") + ":" + std::to_string(ShaderMaker::Sphere);
             auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
 
             opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
             opinstance.instanceId = OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID;
-            opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;;
+            opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
             opinstance.visibilityMask = LightMatMask;
             opinstance.traversableHandle = lightsWrapper.lightSpheresGas;
             memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
@@ -1408,14 +1415,15 @@ void optixinit( int argc, char* argv[] )
     xinxinoptix::using_hdr_sky(true);
     xinxinoptix::show_background(false);
     std::string parent_path;
-    auto cur_path = std::filesystem::current_path().string();
-    if (zeno::ends_with(cur_path, "bin")) {
-        parent_path = std::filesystem::current_path().parent_path().parent_path().string();
-    }
-    else {
-        parent_path = cur_path;
-    }
-    OptixUtil::sky_tex = parent_path + "/hdr/studio_small_08_1k.hdr";
+#ifdef __linux__
+    char path[1024];
+    getcwd(path, sizeof(path));
+    auto cur_path = std::string(path);
+#else
+    auto cur_path = std::string(_pgmptr);
+    cur_path = cur_path.substr(0, cur_path.find_last_of("\\"));
+#endif
+    OptixUtil::sky_tex = cur_path + "/hdr/studio_small_08_1k.hdr";
     OptixUtil::addTexture(OptixUtil::sky_tex.value());
     xinxinoptix::update_hdr_sky(0, {0, 0, 0}, 0.8);
 }

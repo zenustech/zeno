@@ -12,6 +12,7 @@ class ZTextLabel;
 class DisplayWidget;
 class ZComboBox;
 class ZLineEdit;
+class ZToolMenuButton;
 
 class ZToolBarButton : public ZToolButton
 {
@@ -33,20 +34,6 @@ private:
 };
 #endif
 
-class ZToolMenuButton : public ZToolButton {
-    Q_OBJECT
-public:
-    ZToolMenuButton();
-
-protected:
-    virtual void mouseReleaseEvent(QMouseEvent* e) override;
-    virtual QSize sizeHint() const override;
-private:
-    QMenu *menu;
-    QAction *run;
-    QAction *runLightCamera;
-    QAction *runMaterial;
-};
 
 class DockToolbarWidget : public QWidget
 {
@@ -92,6 +79,7 @@ public:
     explicit DockContent_Editor(QWidget* parent = nullptr);
     void onCommandDispatched(QAction* pAction, bool bTriggered);
     ZenoGraphsEditor* getEditor() const;
+    void runFinished();
 
 protected:
     void initToolbar(QHBoxLayout* pToolLayout) override;
@@ -110,12 +98,12 @@ private:
     ZToolBarButton *pCustomParam;
     ZToolBarButton *pGroup;
     ZToolBarButton *pLinkLineShape;
+    ZToolBarButton *pAlways;
     ZToolBarButton *pSearchBtn;
     ZToolBarButton *pSettings;
 
     ZToolMenuButton *m_btnRun;
     ZToolButton* m_btnKill;
-    ZComboBox *m_btnAlways;
 
     QComboBox* cbZoom;
 };
@@ -130,6 +118,11 @@ public:
     bool isGLView() const;
     QSize viewportSize() const;
     void onTabAboutToClose() override;
+
+    int curResComboBoxIndex();
+    void setResComboBoxIndex(int index);
+    std::tuple<int, int, bool> getOriginWindowSizeInfo();
+    void setOptixBackgroundState(bool checked);
 
 protected:
     void initToolbar(QHBoxLayout* pToolLayout) override;
@@ -149,7 +142,7 @@ private:
     ZToolBarButton* m_scaleBtn;
     ZToolBarButton* m_rotateBtn;
     ZToolBarButton* m_resizeViewport;
-    QCheckBox *m_background = new QCheckBox("Background");
+    QCheckBox *m_background;
 
     QComboBox* m_cbRes;
     QAction* m_pFocus;
@@ -158,12 +151,11 @@ private:
     QAction *m_back;
     QAction *m_right;
     QAction *m_left;
-    QAction *m_top;
+    QAction *m_top; 
     QAction *m_bottom;
-
-    QAction *m_move;
-    QAction *m_rotate;
-    QAction *m_scale;
+    
+    QMenu* m_menuView;
+    QMenu* m_menuViewport;
 
     const bool m_bGLView;
 };

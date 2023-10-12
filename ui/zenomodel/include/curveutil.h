@@ -45,6 +45,9 @@ namespace curve_util
 	QPair<int, int> numframes(qreal scaleX, qreal scaleY);
 	CurveModel* deflModel(QObject* parent);
 	CURVES_DATA deflCurves();
+    void updateRange(CURVES_DATA& curves);
+    QString getCurveKey(int index);
+    bool updateCurve(const QPointF& point, CURVE_DATA &curve);
 }
 
 #endif

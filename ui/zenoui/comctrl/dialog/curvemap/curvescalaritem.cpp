@@ -2,7 +2,6 @@
 #include "curvescalaritem.h"
 #include "curvemapview.h"
 #include <zenomodel/include/curveutil.h>
-#include <zenoedit/zenoapplication.h>
 
 
 CurveSliderItem::CurveSliderItem(CurveScalarItem *parent)
@@ -34,7 +33,7 @@ void CurveSliderItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* o
     painter->setBrush(QColor(32, 32, 32));
     painter->drawRect(rc);
 
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setPointSize(10);
     painter->setFont(font);
     QString numText = QString::number(m_value);
@@ -256,7 +255,7 @@ void CurveScalarItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* o
 
     CURVE_RANGE rg = m_view->range();
 
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     QFontMetrics metrics(font);
     painter->setFont(font);
     painter->setPen(QPen(QColor(153, 153, 153)));

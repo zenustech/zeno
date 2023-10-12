@@ -9,9 +9,11 @@ ZAddTabBar::ZAddTabBar(QWidget* parent)
 {
     m_pAddBtn = new ZIconLabel(this);
     m_pAddBtn->setIcons(":/icons/addpanel.svg", ":/icons/addpanel-on.svg");
+    m_pAddBtn->setToolTip(tr("Add Tab"));
 
     m_pLayoutBtn = new ZIconLabel(this);
     m_pLayoutBtn->setIcons(":/icons/layout.svg", ":/icons/layout-on.svg");
+    m_pLayoutBtn->setToolTip(tr("Layout Manager"));
 
     setDrawBase(false);
 

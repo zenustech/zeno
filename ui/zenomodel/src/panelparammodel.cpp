@@ -12,7 +12,8 @@ PanelParamModel::PanelParamModel(
             const QModelIndex& nodeIdx,
             IGraphsModel *pModel,
             QObject *parent)
-    : ViewParamModel(false, nodeIdx, pModel, parent)
+    : ViewParamModel(nodeIdx, pModel, parent)
+    , m_bDirty(false)
 {
     if (!root.children.isEmpty())
         importPanelParam(root);
@@ -23,7 +24,8 @@ PanelParamModel::PanelParamModel(
 }
 
 PanelParamModel::PanelParamModel(const QModelIndex& nodeIdx, IGraphsModel* pModel, QObject* parent)
-    : ViewParamModel(false, nodeIdx, pModel, parent)
+    : ViewParamModel(nodeIdx, pModel, parent)
+    , m_bDirty(false)
 {
 }
 
@@ -62,9 +64,9 @@ void PanelParamModel::initParams(NodeParamModel* nodeParams)
         VParamItem *paramsGroup = new VParamItem(VPARAM_GROUP, iotags::params::panel_params);
         VParamItem *pOutputsGroup = new VParamItem(VPARAM_GROUP, iotags::params::panel_outputs);
 
-        pInputsGroup->setData(!m_bNodeUI, ROLE_VAPRAM_EDITTABLE);
-        paramsGroup->setData(!m_bNodeUI, ROLE_VAPRAM_EDITTABLE);
-        pOutputsGroup->setData(!m_bNodeUI, ROLE_VAPRAM_EDITTABLE);
+        pInputsGroup->setData(true, ROLE_VAPRAM_EDITTABLE);
+        paramsGroup->setData(true, ROLE_VAPRAM_EDITTABLE);
+        pOutputsGroup->setData(true, ROLE_VAPRAM_EDITTABLE);
         pOutputsGroup->setData(true, ROLE_VPARAM_COLLASPED);
 
         const VParamItem* pNodeInputs = nodeParams->getInputs();
@@ -98,10 +100,68 @@ void PanelParamModel::initParams(NodeParamModel* nodeParams)
         pTab->appendRow(paramsGroup);
         pTab->appendRow(pOutputsGroup);
     }
-    pTab->setData(!m_bNodeUI, ROLE_VAPRAM_EDITTABLE);
+    pTab->setData(true, ROLE_VAPRAM_EDITTABLE);
 
     pRoot->appendRow(pTab);
     appendRow(pRoot);
+}
+
+bool PanelParamModel::isDirty() const
+{
+    return m_bDirty;
+}
+
+void PanelParamModel::markDirty()
+{
+    m_bDirty = true;
+    m_pGraphsModel->markDirty();
+}
+
+QVariant PanelParamModel::data(const QModelIndex& index, int role) const
+{
+    switch (role)
+    {
+    case ROLE_OBJPATH:
+    {
+        QString path;
+        QStandardItem* pItem = itemFromIndex(index);
+        do
+        {
+            path = pItem->data(ROLE_VPARAM_NAME).toString() + path;
+            path = "/" + path;
+            pItem = pItem->parent();
+        } while (pItem);
+        path = "[panel]" + path;
+        path = m_nodeIdx.data(ROLE_OBJPATH).toString() + cPathSeperator + path;
+        return path;
+    }
+    default:
+        return ViewParamModel::data(index, role);
+    }
+}
+
+bool PanelParamModel::isEditable(const QModelIndex& current)
+{
+    bool bCoreParam = current.data(ROLE_VPARAM_IS_COREPARAM).toBool();
+    if (bCoreParam)
+        return false;
+    int type = current.data(ROLE_VPARAM_TYPE).toInt();
+    if (type == VPARAM_GROUP)
+    {
+        QString groupName = current.data(ROLE_VPARAM_NAME).toString();
+        if (groupName == iotags::params::panel_inputs ||
+            groupName == iotags::params::panel_outputs ||
+            groupName == iotags::params::panel_params)
+        {
+            return false;
+        }
+    }
+    else if (type == VPARAM_PARAM)
+    {
+        if (!m_pGraphsModel->IsSubGraphNode(m_nodeIdx))
+            return isEditable(current.parent());
+    }
+    return true;
 }
 
 void PanelParamModel::importPanelParam(const VPARAM_INFO& invisibleRoot)
@@ -123,7 +183,7 @@ void PanelParamModel::importPanelParam(const VPARAM_INFO& invisibleRoot)
 
                 //mapping core.
                 const QString& coreparam = param.refParamPath;
-                const QModelIndex& refIdx = m_model->indexFromPath(param.refParamPath);
+                const QModelIndex& refIdx = m_pGraphsModel->indexFromPath(param.refParamPath);
                 paramItem->mapCoreParam(refIdx);
                 paramItem->setData(param.m_info.control, ROLE_PARAM_CTRL);
                 paramItem->setData(param.m_info.typeDesc, ROLE_PARAM_TYPE);
@@ -159,7 +219,10 @@ void PanelParamModel::onNodeParamsInserted(const QModelIndex &parent, int first,
 
     VParamItem* pNodeParam = static_cast<VParamItem*>(pModel->itemFromIndex(idxNodeParam));
     VParamItem* parentItem = static_cast<VParamItem*>(pNodeParam->parent());
-    ZERROR_EXIT(parentItem);
+    if (!parentItem) {
+        //ignore this item, may be a legacy item.
+        return;
+    }
 
     const QString& parentName = parentItem->m_name;
     if (parentName == iotags::params::node_inputs)

@@ -256,7 +256,15 @@ struct LightNode : INode {
 
         auto exposure = get_input2<float>("exposure");
         auto intensity = get_input2<float>("intensity");
-        intensity *= pow(2.0, exposure);
+
+        auto scaler = powf(2.0f, exposure);
+        
+        if (std::isnan(scaler) || std::isinf(scaler) || scaler < 0.0f) {
+            scaler = 1.0f;
+            printf("Light exposure = %f is invalid, fallback to 0.0 \n", exposure);
+        }
+
+        intensity *= scaler;
 
         auto prim = std::make_shared<zeno::PrimitiveObject>();
         auto &verts = prim->verts;
@@ -301,6 +309,14 @@ struct LightNode : INode {
 
         auto &clr = prim->verts.add_attr<zeno::vec3f>("clr");
         auto c = color * intensity;
+
+        for (size_t i=0; i<c.size(); ++i) {
+            if (std::isnan(c[i]) || std::isinf(c[i]) || c[i] < 0.0f) {
+                c[i] = 1.0f;
+                printf("Light color component %llu is invalid, fallback to 1.0 \n", i);
+            }
+        }
+
         for(int i=0; i<verts.size(); i++){
             clr[i] = c;
         }

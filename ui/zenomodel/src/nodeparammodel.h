@@ -2,6 +2,7 @@
 #define __NODE_PARAMMODEL_H__
 
 #include "viewparammodel.h"
+#include <optional>
 
 class DictKeyModel;
 
@@ -9,7 +10,7 @@ class NodeParamModel : public ViewParamModel
 {
     Q_OBJECT
 public:
-    explicit NodeParamModel(const QPersistentModelIndex& subgIdx, const QModelIndex& nodeIdx, IGraphsModel* pModel, bool bTempModel = false, QObject* parent = nullptr);
+    explicit NodeParamModel(const QModelIndex& nodeIdx, IGraphsModel* pModel, QObject* parent = nullptr);
     ~NodeParamModel();
 
     void clearParams();
@@ -25,20 +26,25 @@ public:
     VParamItem* getInputs() const;
     VParamItem* getParams() const;
     VParamItem* getOutputs() const;
+    VParamItem* getLegacyInputs() const;
+    VParamItem* getLegacyParams() const;
+    VParamItem* getLegacyOutputs() const;
+
     QModelIndexList getInputIndice() const;
     QModelIndexList getParamIndice() const;
     QModelIndexList getOutputIndice() const;
 
     void setAddParam(
-            PARAM_CLASS cls,
-            const QString& name,
-            const QString& type,
-            const QVariant& deflValue,
-            PARAM_CONTROL ctrl,
-            QVariant ctrlProps = QVariant(),
-            SOCKET_PROPERTY prop = SOCKPROP_NORMAL,
-            DICTPANEL_INFO dictPanel = DICTPANEL_INFO(),
-            const QString& toolTip = QString()
+        PARAM_CLASS cls,
+        const QString& name,
+        const QString& type,
+        const QVariant& deflValue,
+        PARAM_CONTROL ctrl,
+        QVariant ctrlProps = QVariant(),
+        SOCKET_PROPERTY prop = SOCKPROP_NORMAL,
+        DICTPANEL_INFO dictPanel = DICTPANEL_INFO(),
+        const QString& toolTip = QString(),
+        const QString& netLabel = QString()
     );
     void removeParam(PARAM_CLASS cls, const QString& name);
     QVariant getValue(PARAM_CLASS cls, const QString& name) const;
@@ -49,14 +55,17 @@ public:
     bool removeRows(int row, int count, const QModelIndex &parent = QModelIndex()) override;
 
     QModelIndex indexFromPath(const QString& path) override;
+    bool isEditable(const QModelIndex& current) override;
 
 private:
-    void initUI() override;
+    void initUI();
+    bool isTempModel();
+
     QList<EdgeInfo> exportLinks(const PARAM_LINKS& links);
     EdgeInfo exportLink(const QModelIndex& linkIdx);
     QStringList sockNames(PARAM_CLASS cls) const;
     void onSubIOEdited(const QVariant& value, const VParamItem* pItem);
-    void onLinkAdded(const VParamItem* pItem);
+    void onLinkAdded(VParamItem* pItem);
     void clearLinks(VParamItem* pItem);
     void onModelAboutToBeReset();
     void onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last);
@@ -64,15 +73,6 @@ private:
     void exportDictkeys(DictKeyModel* pModel, DICTPANEL_INFO& panel);
     void checkExtractDict(QString &name);
     void markNodeChanged();
-
-    IGraphsModel* m_pGraphsModel;
-    const QPersistentModelIndex m_subgIdx;
-
-    VParamItem* m_inputs;
-    VParamItem* m_params;
-    VParamItem* m_outputs;
-
-    bool m_bTempModel;      //temp model on edit param dialog, no actual operation to the graph.
 };
 
 #endif

@@ -11,6 +11,7 @@
 #include <zeno/extra/GlobalStatus.h>
 #include <zeno/extra/GraphException.h>
 #include <zeno/extra/EventCallbacks.h>
+#include <zeno/extra/assetDir.h>
 #include <zeno/funcs/ObjectCodec.h>
 #include <zeno/zeno.h>
 #include <string>
@@ -23,6 +24,7 @@
 #include "corelaunch.h"
 #include "viewdecode.h"
 #include "settings/zsettings.h"
+#include <zeno/funcs/ParseObjectFromUi.h>
 
 namespace {
 
@@ -79,7 +81,7 @@ static void send_packet(std::string_view info, const char *buf, size_t len) {
 #endif
 }
 
-static int runner_start(std::string const &progJson, int sessionid, bool bZenCache, int cachenum, std::string cachedir, bool cacheautorm, bool cacheLightCameraOnly, bool cacheMaterialOnly) {
+static int runner_start(std::string const &progJson, int sessionid, bool bZenCache, int cachenum, std::string cachedir, bool cacheautorm, bool cacheLightCameraOnly, bool cacheMaterialOnly, std::string zsg_path, std::string projectFps) {
     zeno::log_trace("runner got program JSON: {}", progJson);
     //MessageBox(0, "runner", "runner", MB_OK);           //convient to attach process by debugger, at windows.
     zeno::scope_exit sp([=]() { std::cout.flush(); });
@@ -91,6 +93,14 @@ static int runner_start(std::string const &progJson, int sessionid, bool bZenCac
     session->globalComm->clearState();
     session->globalStatus->clearState();
     auto graph = session->createGraph();
+
+    //$ZSG value
+    zeno::setConfigVariable("ZSG", zsg_path);
+    //$FPS, getFrameTime value
+    zeno::setConfigVariable("FPS", projectFps);
+
+    float fps = std::stof(projectFps);
+    zeno::getSession().globalState->frame_time = (fps > 0) ? (1.f / fps) : 24;
 
     if (bZenCache) {
         zeno::getSession().globalComm->frameCache(cachedir, cachenum);
@@ -141,9 +151,14 @@ static int runner_start(std::string const &progJson, int sessionid, bool bZenCac
 
         zeno::log_debug("end frame {}", frame);
 
-        send_packet("{\"action\":\"newFrame\"}", "", 0);
+        send_packet("{\"action\":\"newFrame\",\"key\":\"" + std::to_string(frame) +"\"}", "", 0);
 
         if (bZenCache) {
+            //construct cache lock.
+            std::string sLockFile = cachedir + "/" + zeno::iotags::sZencache_lockfile_prefix + std::to_string(frame) + ".lock";
+            QLockFile lckFile(QString::fromStdString(sLockFile));
+            bool ret = lckFile.tryLock();
+            //dump cache to disk.
             session->globalComm->dumpFrameCache(frame, cacheLightCameraOnly, cacheMaterialOnly);
         } else {
             auto const& viewObjs = session->globalComm->getViewObjects();
@@ -156,7 +171,7 @@ static int runner_start(std::string const &progJson, int sessionid, bool bZenCac
             }
         }
 
-        send_packet("{\"action\":\"finishFrame\"}", "", 0);
+        send_packet("{\"action\":\"finishFrame\",\"key\":\"" + std::to_string(frame) + "\"}", "", 0);
 
         if (session->globalStatus->failed())
             return onfail();
@@ -180,6 +195,8 @@ int runner_main(const QCoreApplication& app) {
     bool cacheLightCameraOnly = false;
     bool cacheMaterialOnly = false;
     bool cacheautorm = false;
+    std::string zsg_path = "";
+    std::string projectFps = "";
     QCommandLineParser cmdParser;
     cmdParser.addHelpOption();
     cmdParser.addOptions({
@@ -192,6 +209,8 @@ int runner_main(const QCoreApplication& app) {
         {"cacheLightCameraOnly", "cacheLightCameraOnly", "only cache light and camera object"},
         {"cacheMaterialOnly", "cacheMaterialOnly", "only cache material object"},
         {"cacheautorm", "cacheautoremove", "remove cache after render"},
+        {"zsg", "zsg", "zsg"},
+        {"projectFps", "current project fps", "fps"},
         });
     cmdParser.process(app);
     if (cmdParser.isSet("sessionid"))
@@ -210,6 +229,10 @@ int runner_main(const QCoreApplication& app) {
         cacheMaterialOnly = cmdParser.value("cacheMaterialOnly").toInt();
     if (cmdParser.isSet("cacheautorm"))
         cacheautorm = cmdParser.value("cacheautorm").toInt();
+    if (cmdParser.isSet("zsg"))
+        zsg_path = cmdParser.value("zsg").toStdString();
+    if (cmdParser.isSet("projectFps"))
+        projectFps = cmdParser.value("projectFps").toStdString();
 
     std::cerr.rdbuf(std::cout.rdbuf());
     std::clog.rdbuf(std::cout.rdbuf());
@@ -246,6 +269,6 @@ int runner_main(const QCoreApplication& app) {
     }(), 0);
 #endif
 
-    return runner_start(progJson, sessionid, enablecache, cachenum, cachedir, cacheautorm, cacheLightCameraOnly, cacheMaterialOnly);
+    return runner_start(progJson, sessionid, enablecache, cachenum, cachedir, cacheautorm, cacheLightCameraOnly, cacheMaterialOnly, zsg_path, projectFps);
 }
 #endif

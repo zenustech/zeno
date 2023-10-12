@@ -47,6 +47,7 @@ public:
 
     QPersistentModelIndex index() { return m_index; }
     QPersistentModelIndex subgIndex() { return m_subGpIndex; }
+    QModelIndex getSocketIndex(QGraphicsItem* uiitem, bool bSocketText) const;
     QPointF getSocketPos(const QModelIndex& sockIdx);
     ZenoSocketItem* getNearestSocket(const QPointF& pos, bool bInput);
     ZenoSocketItem* getSocketItem(const QModelIndex& sockIdx);
@@ -67,8 +68,10 @@ public:
     GroupNode *getGroupNode();
     void addParam(const _param_ctrl &param);
 
+    virtual void setSelected(bool selected);
+
 signals:
-    void socketClicked(ZenoSocketItem*);
+    void socketClicked(ZenoSocketItem*, Qt::MouseButton);
     void doubleClicked(const QString &nodename);
     void paramChanged(const QString& nodeid, const QString& paramName, const QVariant& var);
     void socketPosInited(const QString& nodeid, const QString& sockName, bool bInput);
@@ -96,6 +99,7 @@ protected:
     bool sceneEventFilter(QGraphicsItem* watched, QEvent* event) override;
     bool sceneEvent(QEvent *event) override;
     void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override;
+    void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
     void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
     void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
@@ -104,11 +108,12 @@ protected:
 	void hoverMoveEvent(QGraphicsSceneHoverEvent* event) override;
 	void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
     void focusOutEvent(QFocusEvent *event) override;
+    bool eventFilter(QObject* obj, QEvent* event) override;
     //ZenoNode:
     QPersistentModelIndex subGraphIndex() const;
     virtual ZLayoutBackground* initBodyWidget(ZenoSubGraphScene* pScene);
     virtual ZLayoutBackground* initHeaderWidget(IGraphsModel* pGraphsModel);
-    virtual ZGraphicsLayout* initSockets(QStandardItem* socketItems, const bool bInput, ZenoSubGraphScene* pScene);
+    virtual ZGraphicsLayout* initSockets(QStandardItem* socketItems, QStandardItem* legacyItems, const bool bInput, ZenoSubGraphScene* pScene);
     virtual ZGraphicsLayout* initParams(QStandardItem* paramItems, ZenoSubGraphScene* pScene);
     virtual ZGraphicsLayout* initCustomParamWidgets();
 
@@ -118,10 +123,14 @@ protected:
     ZLayoutBackground* m_bodyWidget;
     ZLayoutBackground* m_headerWidget;
 
+private slots:
+    void onCustomNameChanged();
+
 private:
     void _drawBorderWangStyle(QPainter* painter);
     ZSocketLayout* getSocketLayout(bool bInput, const QString& sockName);
     bool removeSocketLayout(bool bInput, const QString& sockName);
+    void focusOnNode(const QModelIndex& nodeIdx);
 
     ZenoGraphsEditor* getEditorViewByViewport(QWidget* pWidget);
     QGraphicsItem* initSocketWidget(ZenoSubGraphScene* scene, const QModelIndex& paramIdx);
@@ -129,6 +138,8 @@ private:
     void updateWhole();
     ZSocketLayout* addSocket(const QModelIndex& idx, bool bInput, ZenoSubGraphScene* pScene);
     ZGraphicsLayout* addParam(const QModelIndex& idx, ZenoSubGraphScene* pScene);
+    void onUpdateFrame(QGraphicsItem* pContrl, int nFrame, QVariant val);
+    void onPasteSocketRefSlot(QModelIndex toIndex);
 
     QPersistentModelIndex m_index;
     QPersistentModelIndex m_subGpIndex;
@@ -141,7 +152,7 @@ private:
     FuckQMap<QString, _param_ctrl> m_params;
     QVector<ZSocketLayout*> m_outSockets;
 
-    ZSimpleTextItem* m_NameItem;
+    ZGraphicsTextItem* m_NameItem;
     ZSimpleTextItem *m_pCategoryItem;
     ZSimpleTextItem *m_NameItemTip;
     ZenoMinStatusBtnItem* m_pStatusWidgets;

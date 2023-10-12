@@ -4,6 +4,8 @@
 #include <unordered_set>
 #include <QtWidgets>
 #include "zenodockwidget.h"
+#include "docktabcontent.h"
+#include <zenoio/include/common.h>
 
 class ZenoMainWindow;
 class DisplayWidget;
@@ -51,6 +53,7 @@ public slots:
     void onSliderValueChanged(int);
     void onRunFinished();
     void onAddTab(PANEL_TYPE type);
+    void onAddTab(PANEL_TYPE type, DockContentWidgetInfo info);
     void onMenuActionTriggered(QAction* pAction, bool bTriggered);
 
 protected:

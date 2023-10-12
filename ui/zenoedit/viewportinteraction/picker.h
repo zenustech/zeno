@@ -45,8 +45,8 @@ public:
     const std::unordered_set<std::string>& get_picked_prims();
     const std::unordered_map<std::string, std::unordered_set<int>>& get_picked_elems();
     void sync_to_scene();
-    void load_from_str(const std::string& str, int mode);
-    std::string save_to_str(int mode);
+    void load_from_str(const std::string& str, zenovis::PICK_MODE mode);
+    std::string save_to_str(zenovis::PICK_MODE mode);
     void save_context();
     void load_context();
     void focus(const std::string& prim_name);
@@ -69,7 +69,7 @@ private:
     std::unordered_set<std::string> selected_prims;
     std::unordered_map<std::string, std::unordered_set<int>> selected_elements;
 
-    int select_mode_context;
+    zenovis::PICK_MODE select_mode_context;
     std::unordered_set<std::string> selected_prims_context;
     std::unordered_map<std::string, std::unordered_set<int>> selected_elements_context;
 

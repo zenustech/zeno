@@ -12,6 +12,7 @@
 #include "common_def.h"
 #include <zeno/funcs/ParseObjectFromUi.h>
 
+const char* g_setKey = "setKey";
 
 using namespace zeno::iotags;
 using namespace zeno::iotags::curve;
@@ -133,9 +134,9 @@ bool UiHelper::validateVariant(const QVariant& var, const QString& type)
     QVariant::Type varType = var.type();
 
     switch (control) {
-    case CONTROL_INT:   return QVariant::Int == varType;
+    case CONTROL_INT:   return (QVariant::Int == varType || QVariant::String == varType);
     case CONTROL_BOOL:  return (QVariant::Bool == varType || QVariant::Int == varType);
-    case CONTROL_FLOAT: return (QMetaType::Float == varType || QVariant::Double == varType);
+    case CONTROL_FLOAT: return (QMetaType::Float == varType || QVariant::Double == varType || QVariant::String == varType);
     case CONTROL_STRING:
     case CONTROL_WRITEPATH:
     case CONTROL_READPATH:
@@ -167,7 +168,8 @@ bool UiHelper::validateVariant(const QVariant& var, const QString& type)
     case CONTROL_VEC4_INT:
     {
         if (varType == QVariant::UserType &&
-            var.userType() == QMetaTypeId<UI_VECTYPE>::qt_metatype_id())
+            (var.userType() == QMetaTypeId<UI_VECTYPE>::qt_metatype_id() || 
+              var.userType() == QMetaTypeId<UI_VECSTRING>::qt_metatype_id()))
         {
             return true;
         }
@@ -243,7 +245,10 @@ QVariant UiHelper::parseStringByType(const QString &defaultValue, const QString 
         bool bOk = false;
         float fVal = defaultValue.toFloat(&bOk);
         //TODO: need to check OK?
-        return fVal;
+        if (bOk)
+            return fVal;
+        else
+            return defaultValue;
     }
     case CONTROL_STRING:
     case CONTROL_WRITEPATH:
@@ -731,6 +736,32 @@ QString UiHelper::getSockName(const QString& sockPath)
         }
     }
     return "";
+}
+
+QString UiHelper::getNaiveParamPath(const QModelIndex& param, int dim)
+{
+    QString str = param.data(ROLE_OBJPATH).toString();
+    QString subgName, ident, paramPath;
+    getSocketInfo(str, subgName, ident, paramPath);
+    if (paramPath.startsWith("[node]/inputs/")) {
+        paramPath = paramPath.mid(QString("[node]/inputs/").length());
+    }
+    else if (paramPath.startsWith("[node]/params/")) {
+        paramPath = paramPath.mid(QString("[node]/params/").length());
+    }
+    else if (paramPath.startsWith("[node]/outputs/")) {
+        paramPath = "[o]" + paramPath.mid(QString("[node]/outputs/").length());
+    }
+    if (dim == 0) {
+        paramPath += "/x";
+    }
+    else if (dim == 1) {
+        paramPath += "/y";
+    }
+    else if (dim == 2) {
+        paramPath += "/z";
+    }
+    return QString("%1/%2").arg(ident).arg(paramPath);
 }
 
 QString UiHelper::getSockSubgraph(const QString& sockPath)
@@ -1253,8 +1284,13 @@ QVariant UiHelper::parseJsonByType(const QString& descType, const rapidjson::Val
     {
         bool bSucc = false;
         int iVal = parseJsonNumeric(val, true, bSucc);
-        if (!bSucc)
-            return QVariant();  //will not be serialized when return null variant.
+        if (!bSucc) {
+            if (val.IsString()) {
+                return val.GetString();
+            } else {
+                return QVariant(); //will not be serialized when return null variant.
+            }
+        }
         res = iVal;
     }
     else if (descType == "float" ||
@@ -1262,8 +1298,13 @@ QVariant UiHelper::parseJsonByType(const QString& descType, const rapidjson::Val
     {
         bool bSucc = false;
         float fVal = parseJsonNumeric(val, true, bSucc);
-        if (!bSucc)
-            return QVariant();
+        if (!bSucc) {
+           if (val.IsString()) {
+                return val.GetString();
+           } else {
+                return QVariant();
+           }
+        }
         res = fVal;
     }
     else if (descType == "string" ||
@@ -1296,12 +1337,28 @@ QVariant UiHelper::parseJsonByType(const QString& descType, const rapidjson::Val
         {
             res = QVariant::fromValue(UI_VECTYPE(dim, 0));
             UI_VECTYPE vec;
+            UI_VECSTRING strVec;
             if (val.IsArray())
             {
                 auto values = val.GetArray();
                 for (int i = 0; i < values.Size(); i++)
                 {
-                    vec.append(values[i].GetFloat());
+                    if (values[i].IsFloat())
+                    {
+                        vec.append(values[i].GetFloat());
+                    }
+                    else if (values[i].IsDouble())
+                    {
+                        vec.append(values[i].GetDouble());
+                    }
+                    else if (values[i].IsInt())
+                    {
+                        vec.append(values[i].GetInt());
+                    }
+                    else if (values[i].IsString())
+                    {
+                        strVec.append(values[i].GetString());
+                    }
                 }
             }
             else if (val.IsString())
@@ -1322,7 +1379,10 @@ QVariant UiHelper::parseJsonByType(const QString& descType, const rapidjson::Val
                     }
                 }
             }
-            res = QVariant::fromValue(vec);
+            if (!vec.isEmpty())
+                res = QVariant::fromValue(vec);
+            else
+                res = QVariant::fromValue(strVec);
         }
         else
         {
@@ -1607,8 +1667,8 @@ void UiHelper::getAllParamsIndex(
     ZASSERT_EXIT(nodeParams);
 
     inputs = nodeParams->getInputIndice();
-    params = nodeParams->getInputIndice();
-    outputs = nodeParams->getInputIndice();
+    params = nodeParams->getParamIndice();
+    outputs = nodeParams->getOutputIndice();
 
     if (bEnsureSRCDST_lastKey)
     {
@@ -1809,6 +1869,59 @@ void UiHelper::reAllocIdents(const QString& targetSubgraph,
         const QString& newOutSock = UiHelper::constructObjPath(targetSubgraph, newOutputNode, outParamPath);
 
         outLinks.append(EdgeInfo(newOutSock, newInSock));
+    }
+}
+
+void UiHelper::renameNetLabels(const IGraphsModel* pModel, const QModelIndex& subgIdx, NODES_DATA& nodes)
+{
+    QMap<QString, QString> labelMap;
+    for (QString id : nodes.keys())
+    {
+        NODE_DATA& data = nodes[id];
+        OUTPUT_SOCKETS outputs = data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
+        QStringList labels = pModel->dumpLabels(subgIdx);
+        for (OUTPUT_SOCKET& outputSocket : outputs)
+        {
+            if (!outputSocket.info.netlabel.isEmpty() && labels.contains(outputSocket.info.netlabel))
+            {
+                QString newLabel = id + "/[o]" + outputSocket.info.name;
+                labelMap[outputSocket.info.netlabel] = newLabel;
+                outputSocket.info.netlabel = newLabel;
+            }
+            for (DICTKEY_INFO& info : outputSocket.info.dictpanel.keys)
+            {
+                if (!info.netLabel.isEmpty() && labels.contains(info.netLabel))
+                {
+                    QString newLabel = id + "/[o]" + outputSocket.info.name + "/" + info.key;
+                    labelMap[info.netLabel] = newLabel;
+                    info.netLabel = newLabel;
+                }
+            }
+        }
+        data[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
+    }
+
+    for (QString id : nodes.keys())
+    {
+        NODE_DATA& data = nodes[id];
+        INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
+        for (INPUT_SOCKET& inputSocket : inputs)
+        {
+            if (!inputSocket.info.netlabel.isEmpty() && labelMap.contains(inputSocket.info.netlabel))
+            {
+                QString newLabel = labelMap[inputSocket.info.netlabel];
+                inputSocket.info.netlabel = newLabel;
+            }
+            for (DICTKEY_INFO& info : inputSocket.info.dictpanel.keys)
+            {
+                if (!info.netLabel.isEmpty() && labelMap.contains(info.netLabel))
+                {
+                    QString newLabel = labelMap[info.netLabel];
+                    info.netLabel = newLabel;
+                }
+            }
+        }
+        data[ROLE_INPUTS] = QVariant::fromValue(inputs);
     }
 }
 

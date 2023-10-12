@@ -44,32 +44,43 @@ static __inline__ __device__ MatOutput evalMat(cudaTextureObject_t zenotex[], fl
     /** generated code here beg **/
     //GENERATED_BEGIN_MARK
     /* MODME */
-    float mat_base = 1.0;
-    vec3 mat_basecolor = vec3(1.0, 1.0, 1.0);
-    float mat_metallic = 0.0;
-    float mat_roughness = 0.5;
-    float mat_subsurface = 0.0;
-    float mat_specular = 0;
-    float mat_specularTint = 0.0;
-    float mat_anisotropic = 0.0;
-    float mat_anisoRotation = 0.0;
-    float mat_sheen = 0.0;
-    float mat_sheenTint = 0.0;
-    float mat_clearcoat = 0.0;
-    float mat_clearcoatGloss = 0.0;
-    float mat_clearcoatRoughness = 0.0;
-    float mat_clearcoatIOR = 1.5;
-    float mat_opacity = 0.0;
-    float mat_specTrans = 0.0;
-    float mat_ior = 1.0;
-    float mat_scatterDistance = 0.0;
-    float mat_flatness = 0.0;
-    float mat_thin = 0.0;
-    float mat_doubleSide= 0.0;
-    float mat_scatterStep = 0.0f;
-    float mat_smoothness = 0.0f;
-    vec3  mat_sssColor = vec3(0.0f,0.0f,0.0f);
+    float mat_base = 1.0f;
+    vec3 mat_basecolor = vec3(1.0f, 1.0f, 1.0f);
+    float mat_roughness = 0.5f;
+    float mat_metallic = 0.0f;
+    vec3 mat_metalColor = vec3(1.0f,1.0f,1.0f);
+    float mat_specular = 0.0f;
+    float mat_specularTint = 0.0f;
+    float mat_anisotropic = 0.0f;
+    float mat_anisoRotation = 0.0f;
+
+    float mat_subsurface = 0.0f;
     vec3  mat_sssParam = vec3(0.0f,0.0f,0.0f);
+    vec3  mat_sssColor = vec3(0.0f,0.0f,0.0f);
+    float mat_scatterDistance = 0.0f;
+    float mat_scatterStep = 0.0f;
+    
+    float mat_sheen = 0.0f;
+    float mat_sheenTint = 0.0f;
+
+
+    float mat_clearcoat = 0.0f;
+    vec3 mat_clearcoatColor = vec3(1.0f,1.0f,1.0f);
+    float mat_clearcoatRoughness = 0.0f;
+    float mat_clearcoatIOR = 1.5f;
+    float mat_opacity = 0.0f;
+
+    float mat_specTrans = 0.0f;
+    vec3 mat_transColor = vec3(1.0f,1.0f,1.0f);
+    float mat_clarity = 0.0f;
+    vec3 mat_transParam = vec3(1.0f,1.0f,1.0f);
+    float mat_transDepth = 0.0f;
+    float mat_ior = 1.0f;
+
+    float mat_flatness = 0.0f;
+    float mat_thin = 0.0f;
+    float mat_doubleSide= 0.0f;
+    float mat_smoothness = 0.0f;
     vec3  mat_normal = vec3(0.0f, 0.0f, 1.0f);
     float mat_emissionIntensity = float(0);
     vec3 mat_emission = vec3(1.0f, 1.0f, 1.0f);
@@ -77,6 +88,7 @@ static __inline__ __device__ MatOutput evalMat(cudaTextureObject_t zenotex[], fl
     float mat_NoL = 1.0f;
     float mat_LoV = 1.0f;
     vec3 mat_reflectance = att_reflectance;
+
     //GENERATED_END_MARK
     /** generated code here end **/
     MatOutput mats;
@@ -87,31 +99,47 @@ static __inline__ __device__ MatOutput evalMat(cudaTextureObject_t zenotex[], fl
     }else {
         /* MODME */
         mats.basecolor = mat_base * mat_basecolor;
-        mats.metallic = clamp(mat_metallic, 0.0f, 1.0f);
         mats.roughness = clamp(mat_roughness, 0.01, 0.99);
-        mats.subsurface = mat_subsurface;
+        mats.metallic = clamp(mat_metallic, 0.0f, 1.0f);
+        mats.metalColor = mat_metalColor;
         mats.specular = mat_specular;
         mats.specularTint = mat_specularTint;
         mats.anisotropic = clamp(mat_anisotropic, 0.0f, 1.0f);
         mats.anisoRotation = clamp(mat_anisoRotation, 0.0f, 1.0f);
+
+        mats.subsurface = mat_subsurface;
+        mats.sssColor = mat_sssColor;
+        mats.sssParam = mat_sssParam;
+        mats.scatterDistance = max(0.0f,mat_scatterDistance);
+        mats.scatterStep = clamp(mat_scatterStep,0.0f,1.0f);
+
         mats.sheen = mat_sheen;
         mats.sheenTint = mat_sheenTint;
+
         mats.clearcoat = clamp(mat_clearcoat, 0.0f, 1.0f);
-        mats.clearcoatGloss = mat_clearcoatGloss;
+        mats.clearcoatColor = mat_clearcoatColor;
         mats.clearcoatRoughness = clamp(mat_clearcoatRoughness, 0.01, 0.99);
         mats.clearcoatIOR = mat_clearcoatIOR;
+        
+        mats.specTrans = clamp(mat_specTrans, 0.0f, 1.0f);
+        mats.transColor = mat_transColor;
+        mats.clarity = clamp(mat_clarity,0.0f,1.0f);
+        mats.transParam = mat_transParam;
+        mats.transDepth = max(0.0f,mat_transDepth);
+        mats.ior = max(0.0f,mat_ior);
+
+
         mats.opacity = mat_opacity;
         mats.nrm = mat_normal;
         mats.emission = mat_emissionIntensity * mat_emission;
-        mats.specTrans = clamp(mat_specTrans, 0.0f, 1.0f);
-        mats.ior = mat_ior;
-        mats.scatterDistance = mat_scatterDistance;
+
+
+
         mats.flatness = mat_flatness;
         mats.thin = mat_thin;
         mats.doubleSide = mat_doubleSide;
-        mats.sssColor = mat_sssColor;
-        mats.sssParam = mat_sssParam;
-        mats.scatterStep = mat_scatterStep;
+
+
         mats.smoothness = mat_smoothness;
         return mats;
     }
@@ -332,7 +360,6 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     auto sheen = mats.sheen;
     auto sheenTint = mats.sheenTint;
     auto clearcoat = mats.clearcoat;
-    auto clearcoatGloss = mats.clearcoatGloss;
     auto opacity = mats.opacity;
     auto flatness = mats.flatness;
     auto specTrans = mats.specTrans;
@@ -634,56 +661,29 @@ extern "C" __global__ void __closesthit__radiance()
     }
 
     bool next_ray_is_going_inside = false;
+    mats.sssParam = mats.subsurface>0 ? mats.subsurface*mats.sssParam : mats.sssParam;
+    mats.subsurface = mats.subsurface>0 ? 1 : 0;
 
     /* MODME */
-    auto basecolor = mats.basecolor;
-    auto metallic = mats.metallic;
-    auto roughness = mats.roughness;
+
     if(prd->diffDepth>=1)
-        roughness = clamp(roughness, 0.2,0.99);
+        mats.roughness = clamp(mats.roughness, 0.2,0.99);
     if(prd->diffDepth>=2)
-        roughness = clamp(roughness, 0.3,0.99);
+        mats.roughness = clamp(mats.roughness, 0.3,0.99);
     if(prd->diffDepth>=3)
-        roughness = clamp(roughness, 0.5,0.99);
+        mats.roughness = clamp(mats.roughness, 0.5,0.99);
 
-    auto subsurface = mats.subsurface;
-    auto specular = mats.specular;
-    auto specularTint = mats.specularTint;
-    auto anisotropic = mats.anisotropic;
-    auto anisoRotation = mats.anisoRotation;
-    auto sheen = mats.sheen;
-    auto sheenTint = mats.sheenTint;
-    auto clearcoat = mats.clearcoat;
-    auto clearcoatGloss = mats.clearcoatGloss;
-    auto ccRough = mats.clearcoatRoughness;
-    auto ccIor = mats.clearcoatIOR;
-    auto opacity = mats.opacity;
-    auto flatness = mats.flatness;
-    auto specTrans = mats.specTrans;
-    auto scatterDistance = mats.scatterDistance;
-    auto ior = mats.ior;
-    auto thin = mats.thin;
-
-    auto sssColor = mats.sssColor;
-    auto sssParam = mats.sssParam;
-
-    auto scatterStep = mats.scatterStep;
     
-    sssParam = subsurface>0? sssParam*subsurface : sssParam;
-    subsurface = subsurface>0? 1 : 0;
-    //discard fully opacity pixels
-    //opacity = clamp(opacity, 0.0f, 0.99f);
-    prd->opacity = opacity;
     if(prd->isSS == true) {
-        basecolor = vec3(1.0f);
-        roughness = 1.0;
-        anisotropic = 0;
-        sheen = 0;
-        clearcoat = 0;
-        specTrans = 0;
-        ior = 1;
+        mats.basecolor = vec3(1.0f);
+        mats.roughness = 1.0;
+        mats.anisotropic = 0;
+        mats.sheen = 0;
+        mats.clearcoat = 0;
+        mats.specTrans = 0;
+        mats.ior = 1;
     }
-    if(prd->isSS == true && subsurface>0 && dot(-normalize(ray_dir), N)>0)
+    if(prd->isSS == true && mats.subsurface>0 && dot(-normalize(ray_dir), N)>0)
     {
        prd->attenuation2 = make_float3(0,0,0);
        prd->attenuation = make_float3(0,0,0);
@@ -691,12 +691,11 @@ extern "C" __global__ void __closesthit__radiance()
        prd->done = true;
        return;
     }
-    if(prd->isSS == true  && subsurface==0 )
+    if(prd->isSS == true  && mats.subsurface==0 )
     {
         prd->passed = true;
         prd->samplePdf = 1.0f;
         prd->radiance = make_float3(0.0f, 0.0f, 0.0f);
-        prd->opacity = 0;
         prd->readMat(prd->sigma_t, prd->ss_alpha);
         auto trans = DisneyBSDF::Transmission2(prd->sigma_s(), prd->sigma_t, prd->channelPDF, optixGetRayTmax(), true);
         prd->attenuation2 *= trans;
@@ -728,7 +727,7 @@ extern "C" __global__ void __closesthit__radiance()
     }
     prd->prob2 = prd->prob;
     prd->passed = false;
-    if(opacity>0.99f)
+    if(mats.opacity>0.99f)
     {
         if (prd->curMatIdx > 0) {
           vec3 sigma_t, ss_alpha;
@@ -748,11 +747,11 @@ extern "C" __global__ void __closesthit__radiance()
         prd->offsetUpdateRay(P, ray_dir);
         return;
     }
-    if(opacity<=0.99f)
+    if(mats.opacity<=0.99f)
     {
       //we have some simple transparent thing
       //roll a dice to see if just pass
-      if(rnd(prd->seed)<opacity)
+      if(rnd(prd->seed)<mats.opacity)
       {
         if (prd->curMatIdx > 0) {
           vec3 sigma_t, ss_alpha;
@@ -779,7 +778,7 @@ extern "C" __global__ void __closesthit__radiance()
         return;
       }
     }
-    if(prd->depth==0&&flatness>0.5)
+    if(prd->depth==0&&mats.flatness>0.5)
     {
         prd->radiance = make_float3(0.0f);
         prd->done = true;
@@ -820,32 +819,13 @@ extern "C" __global__ void __closesthit__radiance()
     while(DisneyBSDF::SampleDisney2(
                 prd->seed,
                 prd->eventseed,
-                basecolor,
-                sssParam,
-                sssColor,
-                metallic,
-                subsurface,
-                specular,
-                roughness,
-                specularTint,
-                anisotropic,
-                anisoRotation,
-                sheen,
-                sheenTint,
-                clearcoat,
-                clearcoatGloss,
-                ccRough,
-                ccIor,
-                flatness,
-                specTrans,
-                scatterDistance,
-                ior,
+                mats,
                 T,
                 B,
                 N,
                 prd->geometryNormal,
                 -normalize(ray_dir),
-                thin>0.5f,
+                mats.thin>0.5f,
                 next_ray_is_going_inside,
                 wi,
                 reflectance,
@@ -867,10 +847,11 @@ extern "C" __global__ void __closesthit__radiance()
             prd->done = fPdf>0?true:prd->done;
             flag = DisneyBSDF::scatterEvent;
         }
-        prd->samplePdf = fPdf;
-        reflectance = fPdf>0?reflectance/fPdf:vec3(0.0f);
-        prd->done = fPdf>0?prd->done:true;
-        prd->isSS = isSS;
+        
+    prd->samplePdf = fPdf;
+    reflectance = fPdf>0?reflectance/fPdf:vec3(0.0f);
+    prd->done = fPdf>0?prd->done:true;
+    prd->isSS = isSS;
     pdf = 1.0;
     if(isDiff || prd->diffDepth>0){
         prd->diffDepth++;
@@ -887,7 +868,7 @@ extern "C" __global__ void __closesthit__radiance()
         next_ray_is_going_inside = dot(vec3(prd->geometryNormal),vec3(wi))<=0;
     }
 
-    if(thin>0.5f || mats.doubleSide>0.5f)
+    if(mats.thin>0.5f || mats.doubleSide>0.5f)
     {
         if (prd->curMatIdx > 0) {
             vec3 sigma_t, ss_alpha;
@@ -918,7 +899,7 @@ extern "C" __global__ void __closesthit__radiance()
 
                     if (prd->curMatIdx > 0) {
                         vec3 sigma_t, ss_alpha;
-                        //vec3 sigma_t, ss_alpha;
+                        //vec3 sigma_t, ss_alpha;0
                         prd->readMat(sigma_t, ss_alpha);
                         if (ss_alpha.x < 0.0f) { // is inside Glass
                             prd->attenuation *= DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
@@ -929,9 +910,10 @@ extern "C" __global__ void __closesthit__radiance()
                     prd->channelPDF = vec3(1.0f/3.0f);
                     if (isTrans) {
                         vec3 channelPDF = vec3(1.0f/3.0f);
-                        prd->maxDistance = scatterStep>0.5f? DisneyBSDF::SampleDistance2(prd->seed, extinction, extinction, channelPDF) : 1e16f;
                         prd->pushMat(extinction);
                         prd->isSS = false;
+                        prd->scatterDistance = 1000.0f * mats.clarity * mats.clarity;
+                        prd->maxDistance = mats.scatterStep>0.5f? DisneyBSDF::SampleDistance(prd->seed, prd->scatterDistance) : 1e16f;
                     } else {
 
                         prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation) * prd->ss_alpha, prd->sigma_t, prd->channelPDF);
@@ -944,10 +926,11 @@ extern "C" __global__ void __closesthit__radiance()
                         // already calculated in BxDF
                         prd->pushMat(prd->sigma_t, prd->ss_alpha);
                         prd->isSS = true;
+                        prd->scatterDistance = mats.scatterDistance;
                     }
 
-                    prd->scatterDistance = scatterDistance;
-                    prd->scatterStep = scatterStep;
+
+                    prd->scatterStep = mats.scatterStep;
             }
             else{
                 outToIn = false;
@@ -997,7 +980,7 @@ extern "C" __global__ void __closesthit__radiance()
                     else if (ss_alpha.x<0.0f) { // Glass
                         trans = DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
                         vec3 channelPDF = vec3(1.0f/3.0f);
-                        prd->maxDistance = scatterStep>0.5f? DisneyBSDF::SampleDistance2(prd->seed, sigma_t, sigma_t, channelPDF) : 1e16f;
+                        prd->maxDistance = mats.scatterStep>0.5f? DisneyBSDF::SampleDistance2(prd->seed, sigma_t, sigma_t, channelPDF) : 1e16f;
                     } else { // SSS
                         trans = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), true);
                         prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation) * ss_alpha, sigma_t, prd->channelPDF);
@@ -1019,7 +1002,7 @@ extern "C" __global__ void __closesthit__radiance()
 
     prd->medium = next_ray_is_going_inside?DisneyBSDF::PhaseFunctions::isotropic : prd->curMatIdx==0?DisneyBSDF::PhaseFunctions::vacuum : DisneyBSDF::PhaseFunctions::isotropic;
  
-    if(thin>0.5f){
+    if(mats.thin>0.5f){
         vec3 H = normalize(vec3(normalize(wi)) + vec3(-normalize(ray_dir)));
         attrs.N = N;
         attrs.T = cross(B,N);
@@ -1027,7 +1010,7 @@ extern "C" __global__ void __closesthit__radiance()
         attrs.V = vec3(-normalize(ray_dir));
         attrs.H = normalize(H);
         attrs.reflectance = reflectance;
-        attrs.fresnel = DisneyBSDF::DisneyFresnel( basecolor, metallic, ior, specularTint, dot(attrs.H, attrs.V), dot(attrs.H, attrs.L), false);
+        attrs.fresnel = DisneyBSDF::DisneyFresnel(mats.basecolor, mats.metallic, mats.ior, mats.specularTint, dot(attrs.H, attrs.V), dot(attrs.H, attrs.L), false);
         MatOutput mat2 = evalReflectance(zenotex, rt_data->uniforms, attrs);
         reflectance = mat2.reflectance;
     }
@@ -1040,7 +1023,7 @@ extern "C" __global__ void __closesthit__radiance()
     prd->radiance = make_float3(0.0f,0.0f,0.0f);
 
     if(prd->depth>=3)
-        roughness = clamp(roughness, 0.5f,0.99f);
+        mats.roughness = clamp(mats.roughness, 0.5f,0.99f);
 
     vec3 rd, rs, rt; // captured by lambda
 
@@ -1049,14 +1032,12 @@ extern "C" __global__ void __closesthit__radiance()
         const auto& L = _wi_; // pre-normalized
         const vec3& V = _wo_; // pre-normalized
 
-        float3 lbrdf = DisneyBSDF::EvaluateDisney2(illum,
-            basecolor, sssColor, metallic, subsurface, specular, max(prd->minSpecRough,roughness), specularTint, anisotropic, anisoRotation, sheen, sheenTint,
-            clearcoat, clearcoatGloss, ccRough, ccIor, specTrans, scatterDistance, ior, flatness, L, V, T, B, N,prd->geometryNormal,
-            thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : next_ray_is_going_inside, thisPDF, rrPdf,
+        float3 lbrdf = DisneyBSDF::EvaluateDisney2(illum,mats, L, V, T, B, N,prd->geometryNormal,
+            mats.thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : next_ray_is_going_inside, thisPDF, rrPdf,
             dot(N, L), rd, rs, rt);
 
         MatOutput mat2;
-        if(thin>0.5f){
+        if(mats.thin>0.5f){
             vec3 H = normalize(vec3(normalize(L)) + V);
             attrs.N = N;
             attrs.T = cross(B,N);
@@ -1064,11 +1045,11 @@ extern "C" __global__ void __closesthit__radiance()
             attrs.V = V;
             attrs.H = normalize(H);
             attrs.reflectance = lbrdf;
-            attrs.fresnel = DisneyBSDF::DisneyFresnel( basecolor, metallic, ior, specularTint, dot(attrs.H, attrs.V), dot(attrs.H, attrs.L), false);
+            attrs.fresnel = DisneyBSDF::DisneyFresnel( mats.basecolor, mats.metallic, mats.ior, mats.specularTint, dot(attrs.H, attrs.V), dot(attrs.H, attrs.L), false);
             mat2 = evalReflectance(zenotex, rt_data->uniforms, attrs);
         }
 
-        return (thin>0.5f? float3(mat2.reflectance):lbrdf);
+        return (mats.thin>0.5f? float3(mat2.reflectance):lbrdf);
     };
 
     auto taskAux = [&](const vec3& weight) {
@@ -1080,13 +1061,13 @@ extern "C" __global__ void __closesthit__radiance()
     RadiancePRD shadow_prd {};
     shadow_prd.seed = prd->seed;
     shadow_prd.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
-    shadow_prd.nonThinTransHit = (thin == false && specTrans > 0) ? 1 : 0;
+    shadow_prd.nonThinTransHit = (mats.thin == false && mats.specTrans > 0) ? 1 : 0;
 
     prd->direction = normalize(wi);
 
     DirectLighting<true>(prd, shadow_prd, shadingP, ray_dir, evalBxDF, &taskAux);
 
-    if(thin<0.5f && mats.doubleSide<0.5f){
+    if(mats.thin<0.5f && mats.doubleSide<0.5f){
         prd->origin = rtgems::offset_ray(P, (next_ray_is_going_inside)? -prd->geometryNormal : prd->geometryNormal);
     }
     else {

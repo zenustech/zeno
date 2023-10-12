@@ -5,6 +5,7 @@
 #include <QtOpenGL>
 #include "common.h"
 #include "recordvideomgr.h"
+#include "dock/docktabcontent.h"
 
 #include <viewportinteraction/transform.h>
 #include <viewportinteraction/picker.h>
@@ -48,6 +49,8 @@ public:
     void bindNodeToPicker(const QModelIndex& node, const QModelIndex& subgraph, const std::string& sock_name);
     void unbindNodeFromPicker();
     void setSimpleRenderOption();
+    void setViewWidgetInfo(DockContentWidgetInfo& info);
+    void glDrawForCommandLine();
 
 signals:
     void frameRecorded(int);
@@ -70,6 +73,9 @@ private:
     QTimer* m_wheelEventDally;
     std::shared_ptr<zeno::Picker> m_picker;
     std::shared_ptr<zeno::FakeTransformer> m_fakeTrans;
+
+    std::tuple<int, int, bool, double, double, double>viewInfo{ 0, 0, true, 0, 0, 0 };
+    bool loadSettingFromZsg = false;
 
 public:
     int simpleRenderTime;
