@@ -450,10 +450,6 @@ void DockContent_Editor::initConnections()
     };
     connect(zenoApp->graphsManagment(), &GraphsManagment::fileOpened, this, resetAlways);
     connect(zenoApp->graphsManagment(), &GraphsManagment::modelInited, this, resetAlways);
-    connect(m_btnRun, &ZToolMenuButton::runModeChanged, this, [=]() {
-        if (pAlways->isChecked())
-            emit pAlways->toggled(true);
-    });
     connect(pAlways, &ZToolBarButton::toggled, this, [=](bool bChecked) {
         if (bChecked)
         {
@@ -551,6 +547,8 @@ void DockContent_Editor::initConnections()
     });
 
     connect(m_btnRun, &ZToolMenuButton::textChanged, this, [=]() {
+        if (pAlways->isChecked())
+            emit pAlways->toggled(true);
         QString text = m_btnRun->text();
         QColor clr;
         if (text == tr("Run"))
