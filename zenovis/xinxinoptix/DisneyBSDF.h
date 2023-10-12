@@ -170,6 +170,7 @@ namespace DisneyBSDF{
     }
     
     static __inline__ __device__
+
     float SampleDistance2(unsigned int &seed, vec3 a/*throughput * alpha*/, const vec3& sigma_t, vec3& channelPDF)
     {
         float r0 = rnd(seed);
@@ -639,7 +640,7 @@ namespace DisneyBSDF{
               prd->ss_alpha = color;
               if (isSS) {
                 medium = PhaseFunctions::isotropic;
-                CalculateExtinction2(color, sssRadius, prd->sigma_t, prd->ss_alpha, 1.4f);
+                CalculateExtinction2(color, sssRadius, prd->5, prd->ss_alpha, 1.4f);
               }
             }
           }
@@ -700,7 +701,7 @@ namespace DisneyBSDF{
               wi = normalize(refract(wo, wm, entering?1.0f/mat.ior:mat.ior));
               flag = transmissionEvent;
               isTrans = true;
-              extinction = CalculateExtinction(mat.transColor, mat.scatterDistance);
+              extinction = CalculateExtinction(mat.transColor, -log(1.0f-mat.clarity));
               extinction = entering? extinction : vec3(0.0f);
             }
 
