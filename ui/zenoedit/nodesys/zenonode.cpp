@@ -1792,6 +1792,14 @@ QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant &value)
         emit inSocketPosChanged();
         emit outSocketPosChanged();
     }
+    else if (change == ItemZValueHasChanged)
+    {
+        int type = m_index.data(ROLE_NODETYPE).toInt();
+        if ((type == BLACKBOARD_NODE || type == GROUP_NODE) && zValue() != ZVALUE_BLACKBOARD)
+        {
+            setZValue(ZVALUE_BLACKBOARD);
+        }
+    }
     return value;
 }
 
