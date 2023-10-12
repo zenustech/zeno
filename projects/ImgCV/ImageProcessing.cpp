@@ -1072,7 +1072,7 @@ struct ImageBlur : INode {
                 cv::GaussianBlur(imagecvin,imagecvout,cv::Size(kernelSize,kernelSize),sigmaX);
             }
             else if(type == "Median"){
-                cv::medianBlur(imagecvin,imagecvout,kernelSize);
+                cv::medianBlur(imagecvin,imagecvout,kernelSize);//kernel size can only be 3/5 when use CV_32FC3
             }
             else if(type == "Bilateral"){
                 cv::bilateralFilter(imagecvin,imagecvout, kernelSize, sigmaColor, sigmaSpace);
@@ -1099,8 +1099,8 @@ ZENDEFNODE(ImageBlur, {
         {"image"},
         {"int", "kernelSize", "5"},
         {"enum Gaussian Box Median Bilateral Stack", "type", "Gaussian"},
-        {"float", "GaussianSigma", "1"},//fast gaussian only effect by sigma   
-        {"vec2f", "BilateralSigma", "50,50"},//等参数分开显示再移开
+        {"float", "GaussianSigma", "1"},//fast gaussian only effect by sigma  等参数分开显示再移开
+        {"vec2f", "BilateralSigma", "50,50"},
         {"bool", "Fast Blur(Gaussian)", "1"},
     },
     {
@@ -1159,7 +1159,6 @@ ZENDEFNODE(ImageEditInvert, {
     {},
     {"deprecated"},
 });
-
 
 /* 将灰度图像转换为法线贴图 */
 struct ImageToNormalMap : INode {
