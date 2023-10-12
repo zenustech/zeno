@@ -192,7 +192,10 @@ void ZToolButton::initStyleOption(ZStyleOptionToolButton* option) const
     if (!isChecked() && !isDown() && !isPressed())
         option->state |= QStyle::State_Raised;
     if (isHovered())
+    {
         option->state |= QStyle::State_MouseOver;
+        option->borderColor = m_clrBorder;
+    }
 
     option->state |= QStyle::State_AutoRaise;
 
@@ -211,6 +214,7 @@ void ZToolButton::initStyleOption(ZStyleOptionToolButton* option) const
 
     option->hideText = m_bHideText;
     option->m_arrowOption = ZStyleOptionToolButton::ArrowOption(m_arrowOption);
+    option->buttonEnabled = isEnabled();
 }
 
 QBrush ZToolButton::backgrondColor(QStyle::State state) const
@@ -272,7 +276,8 @@ void ZToolButton::setBackgroundClr(const QColor& normalClr, const QColor& hoverC
     m_clrBgNormalHover = hoverClr;
     m_clrBgOn = downClr;
     m_clrBgOnHovered = checkedClr;
-    m_clrBgDisabled = disabledClr;
+    if (disabledClr.isValid())
+        m_clrBgDisabled = disabledClr;
 }
 
 void ZToolButton::setTextClr(const QColor& normal, const QColor& hover, const QColor& normalOn, const QColor& hoverOn)
@@ -290,7 +295,7 @@ void ZToolButton::initColors(ZStyleOptionToolButton* option) const
     option->ActiveBgColor = QColor();
 }
 
-void ZToolButton::setIcon(const QSize& size, QString icon, QString iconHover, QString iconOn, QString iconOnHover)
+void ZToolButton::setIcon(const QSize& size, QString icon, QString iconHover, QString iconOn, QString iconOnHover, QString iconDisabled)
 {
     if (size.isValid())
     {
@@ -311,6 +316,7 @@ void ZToolButton::setIcon(const QSize& size, QString icon, QString iconHover, QS
     m_icon.addFile(iconOn, m_iconSize, QIcon::Normal, QIcon::On);
     m_icon.addFile(iconOnHover, m_iconSize, QIcon::Active, QIcon::On);
     m_icon.addFile(iconOnHover, m_iconSize, QIcon::Selected, QIcon::On);
+    m_icon.addFile(iconDisabled, m_iconSize, QIcon::Disabled, QIcon::Off);
 }
 
 void ZToolButton::setFont(const QFont& font)
@@ -341,6 +347,11 @@ void ZToolButton::initAnimation() {
 
 void ZToolButton::setArrowOption(int arrOpt ) {
     m_arrowOption = arrOpt;
+}
+
+void ZToolButton::setBorderColor(const QColor& clr)
+{
+    m_clrBorder = clr;
 }
 
 void ZToolButton::setIconSize(const QSize& size)

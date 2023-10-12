@@ -12,6 +12,7 @@ class ZTextLabel;
 class DisplayWidget;
 class ZComboBox;
 class ZLineEdit;
+class ZToolMenuButton;
 
 class ZToolBarButton : public ZToolButton
 {
@@ -33,20 +34,6 @@ private:
 };
 #endif
 
-class ZToolMenuButton : public ZToolButton {
-    Q_OBJECT
-public:
-    ZToolMenuButton();
-
-protected:
-    virtual void mouseReleaseEvent(QMouseEvent* e) override;
-    virtual QSize sizeHint() const override;
-private:
-    QMenu *menu;
-    QAction *run;
-    QAction *runLightCamera;
-    QAction *runMaterial;
-};
 
 class DockToolbarWidget : public QWidget
 {
