@@ -615,8 +615,8 @@ ZenoGraphsEditor* DockContent_Editor::getEditor() const
 
 void DockContent_Editor::runFinished()
 {
-    //m_btnRun->setEnabled(true);
-    //m_btnKill->setEnabled(false);
+    m_btnRun->setEnabled(true);
+    m_btnKill->setEnabled(false);
 }
 
 void DockContent_Editor::onCommandDispatched(QAction* pAction, bool bTriggered)
