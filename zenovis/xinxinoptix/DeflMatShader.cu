@@ -88,7 +88,7 @@ static __inline__ __device__ MatOutput evalMat(cudaTextureObject_t zenotex[], fl
     float mat_NoL = 1.0f;
     float mat_LoV = 1.0f;
     vec3 mat_reflectance = att_reflectance;
-    vec3 mat_transColor = vec3(1.0f,1.0f,1.0f);
+
     //GENERATED_END_MARK
     /** generated code here end **/
     MatOutput mats;
