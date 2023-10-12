@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>402</width>
-    <height>112</height>
+    <width>442</width>
+    <height>98</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -56,6 +56,13 @@ QProgressBar::chunk {
      <property name="bottomMargin">
       <number>0</number>
      </property>
+     <item>
+      <widget class="QPushButton" name="btnOpenLoc">
+       <property name="text">
+        <string>Open file location</string>
+       </property>
+      </widget>
+     </item>
      <item>
       <spacer name="horizontalSpacer">
        <property name="orientation">

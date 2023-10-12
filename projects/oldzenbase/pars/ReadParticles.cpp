@@ -64,9 +64,9 @@ static int defReadParticles = zeno::defNodeClass<ReadParticles>("ReadParticles",
 
 struct ImportParticles : zeno::INode {
   virtual void apply() override {
-    auto path = get_input("path")->as<StringObject>();
+    auto path = get_input("path")->as<StringObject>()->get();
     auto pars = zeno::IObject::make<ParticlesObject>();
-    readpars(path->get().c_str(), pars->pos, pars->vel);
+    readpars(path.c_str(), pars->pos, pars->vel);
     set_output("pars", pars);
   }
 };

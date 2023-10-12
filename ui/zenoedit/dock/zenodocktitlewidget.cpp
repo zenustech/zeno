@@ -104,7 +104,7 @@ QAction* ZenoDockTitleWidget::createAction(const QString& text)
 void ZenoDockTitleWidget::onDockSwitchClicked()
 {
 	QMenu* menu = new QMenu(this);
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setPointSize(10);
 	font.setBold(false);
 	menu->setFont(font);
@@ -182,7 +182,7 @@ void ZenoEditorDockTitleWidget::initTitleContent(QHBoxLayout* pHLayout)
     QPalette pal = m_lblTitle->palette();
     pal.setColor(QPalette::WindowText, QColor(255, 255, 255, 128));
     m_lblTitle->setPalette(pal);
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setPointSize(10);
     m_lblTitle->setFont(font);
 
@@ -561,7 +561,7 @@ void ZenoPropDockTitleWidget::paintEvent(QPaintEvent* event)
 
 	QPainter p(this);
 	p.setPen(QPen(QColor(255, 255, 255, 128)));
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setPointSize(10);
 	p.setFont(font);
 	p.drawText(rect(), Qt::AlignCenter, m_title);

@@ -15,11 +15,14 @@ struct LAUNCH_PARAM {
     bool tempDir = false;
     QString cacheDir = "";
     int cacheNum = 1;
-    bool autoRmCurcache = false;
+    bool autoRmCurcache = false;    //auto remove cache when recording
+    bool autoCleanCacheInCacheRoot = true;    //auto remove cachedir in cache root
+    QString zsgPath;
+    int projectFps = 24;
 };
 
 void launchProgram(IGraphsModel *pModel, LAUNCH_PARAM param);
-bool initZenCache(char* cachedir);
+bool initZenCache(char* cachedir, int& cacheNum);
 void killProgram();
 
 #endif

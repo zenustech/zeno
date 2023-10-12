@@ -155,9 +155,9 @@ static int defReadVDBGrid = zeno::defNodeClass<ReadVDBGrid>(
 
 struct ImportVDBGrid : zeno::INode {
   virtual void apply() override {
-    auto path = get_input("path")->as<zeno::StringObject>();
+    auto path = get_input("path")->as<zeno::StringObject>()->get();
     // auto type = get_param<std::string>(("type"));
-    auto data = readvdb(path->get(), "");
+    auto data = readvdb(path, "");
     set_output("data", std::move(data));
   }
 };

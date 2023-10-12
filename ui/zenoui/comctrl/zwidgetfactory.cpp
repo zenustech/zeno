@@ -18,9 +18,10 @@
 #include "zassert.h"
 #include "zspinboxslider.h"
 #include "zdicttableview.h"
-#include <zenoedit/zenoapplication.h>
 #include "gv/zitemfactory.h"
 #include <zenoui/comctrl/zpathedit.h>
+#include <zenomodel/include/modeldata.h>
+#include <zenomodel/include/uihelper.h>
 
 namespace zenoui
 {
@@ -38,13 +39,21 @@ namespace zenoui
             case CONTROL_FLOAT:
             case CONTROL_STRING:
             {
-                ZLineEdit* pLineEdit = new ZLineEdit(UiHelper::variantToString(value));
+                QString text = UiHelper::variantToString(value);
+                ZLineEdit *pLineEdit = new ZLineEdit(text);
+
                 pLineEdit->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
                 pLineEdit->setProperty("cssClass", "zeno2_2_lineedit");
                 pLineEdit->setNumSlider(UiHelper::getSlideStep("", ctrl));
                 QObject::connect(pLineEdit, &ZLineEdit::editingFinished, [=]() {
                     // be careful about the dynamic type.
-                    const QVariant& newValue = UiHelper::parseStringByType(pLineEdit->text(), type);
+                    QString text = pLineEdit->text();
+                    const QVariant& newValue = UiHelper::parseStringByType(text, type);
+                    if (newValue.type() == QVariant::String && ctrl != CONTROL_STRING)
+                    {
+                        if (!text.startsWith("="))
+                            zeno::log_error("The formula '{}' need start with '='", text.toStdString());
+                    }
                     cbSet.cbEditFinished(newValue);
                     });
                 return pLineEdit;
@@ -61,7 +70,7 @@ namespace zenoui
             case CONTROL_READPATH:
             case CONTROL_WRITEPATH:
             {
-                ZPathEdit *pathLineEdit = new ZPathEdit(value.toString());
+                ZPathEdit *pathLineEdit = new ZPathEdit(cbSet.cbSwitch,value.toString());
                 pathLineEdit->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
                 pathLineEdit->setProperty("control", ctrl);
                 
@@ -76,7 +85,7 @@ namespace zenoui
                 pTextEdit->setFrameShape(QFrame::NoFrame);
                 pTextEdit->setProperty("cssClass", "proppanel");
                 pTextEdit->setProperty("control", ctrl);
-                QFont font = zenoApp->font();
+                QFont font = QApplication::font();
                 font.setPointSize(9);
                 pTextEdit->setFont(font);
                 pTextEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
@@ -129,7 +138,6 @@ namespace zenoui
             case CONTROL_VEC4_FLOAT:
             case CONTROL_VEC4_INT:
             {
-                UI_VECTYPE vec = value.value<UI_VECTYPE>();
                 int dim = -1;
                 bool bFloat = false;
                 if (ctrl == CONTROL_VEC2_INT || ctrl == CONTROL_VEC2_FLOAT)
@@ -148,11 +156,10 @@ namespace zenoui
                     bFloat = ctrl == CONTROL_VEC4_FLOAT;
                 }
 
-                ZVecEditor* pVecEdit = new ZVecEditor(vec, bFloat, dim, "zeno2_2_lineedit");
+                ZVecEditor* pVecEdit = new ZVecEditor(value, bFloat, dim, "zeno2_2_lineedit");
                 pVecEdit->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
                 QObject::connect(pVecEdit, &ZVecEditor::editingFinished, [=]() {
-                    UI_VECTYPE vec = pVecEdit->vec();
-                    const QVariant& newValue = QVariant::fromValue(vec);
+                    const QVariant &newValue = pVecEdit->vec();
                     cbSet.cbEditFinished(newValue);
                 });
                 return pVecEdit;
@@ -400,7 +407,7 @@ namespace zenoui
         }
         else if (ZVecEditor* pVecEditor = qobject_cast<ZVecEditor*>(pControl))
         {
-            pVecEditor->setVec(value.value<UI_VECTYPE>(), pVecEditor->isFloat());
+            pVecEditor->setVec(value, pVecEditor->isFloat());
         }
         else if (ZTextEdit* pTextEdit = qobject_cast<ZTextEdit*>(pControl))
         {

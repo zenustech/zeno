@@ -39,6 +39,7 @@ public:
 
     // FIXME temp function for merge
     void selectObjViaNodes();
+    void updateKeyFrame();
 
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
@@ -63,7 +64,7 @@ public slots:
 private slots:
     void reload(const QModelIndex& subGpIdx);
     void clearLayout(const QModelIndex& subGpIdx);
-    void onSocketClicked(ZenoSocketItem* pSocketItem);
+    void onSocketClicked(ZenoSocketItem* pSocketItem, Qt::MouseButton button);
     void onNodePosChanged();
 
 private:

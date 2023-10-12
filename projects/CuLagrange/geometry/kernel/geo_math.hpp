@@ -50,10 +50,10 @@ namespace zeno { namespace LSL_GEO {
         return (costheta / sintheta);
     }
 
-    template<typename DREAL,typename VecT, zs::enable_if_all<VecT::dim == 1, (VecT::extent <= 3), (VecT::extent > 1)> = 0,typename REAL = VecT::value_type>
+    template<typename DREAL,typename VecT, zs::enable_if_all<VecT::dim == 1, (VecT::extent <= 3), (VecT::extent > 1)> = 0,typename REAL = typename VecT::value_type>
     constexpr auto cotTheta(const zs::VecInterface<VecT>& e0,const zs::VecInterface<VecT>& e1){
-        auto de0 = e0.cast<DREAL>();
-        auto de1 = e1.cast<DREAL>();
+        auto de0 = e0.template cast<DREAL>();
+        auto de1 = e1.template cast<DREAL>();
         auto costheta = de0.dot(de1);
         auto sintheta = de0.cross(de1).norm();
         return (REAL)(costheta / sintheta);

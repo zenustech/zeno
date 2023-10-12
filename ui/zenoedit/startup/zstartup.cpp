@@ -12,10 +12,12 @@
 #include "exceptionhandle.h"
 
 
-void startUp()
+void startUp(bool bEnableCrashReport)
 {
 #ifdef Q_OS_WIN
-    registerExceptionFilter();
+    if (bEnableCrashReport)
+        registerExceptionFilter();
+    SetConsoleOutputCP(CP_UTF8);
 #endif
 
     zeno::setExecutableDir(QCoreApplication::applicationDirPath().toStdString());

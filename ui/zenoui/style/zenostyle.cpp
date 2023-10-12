@@ -6,7 +6,6 @@
 #include "../comctrl/zdocktabwidget.h"
 #include <QScreen>
 #include <QtSvg/QSvgRenderer>
-#include <zenoedit/zenoapplication.h>
 
 
 ZenoStyle::ZenoStyle()
@@ -53,7 +52,7 @@ QString ZenoStyle::dpiScaleSheet(const QString &sheet) {
     }
 
     QString tempStyle = sheet;
-    tempStyle.replace("FontFamily", zenoApp->font().family());
+    tempStyle.replace("FontFamily", QApplication::font().family());
 
     qreal scale = ZenoStyle::dpiScaled(1);
     if (scale == 1.0) {
@@ -169,7 +168,7 @@ void ZenoStyle::drawControl(ControlElement element, const QStyleOption* option, 
             painter->save();
             editRect.adjust(cb->textMargin, 0, 0, 0);
             painter->setClipRect(editRect);
-            QFont font = zenoApp->font();
+            QFont font = QApplication::font();
             painter->setFont(font);
             if (!cb->currentIcon.isNull()) {
                 //todo
@@ -283,9 +282,9 @@ QRect ZenoStyle::rect_ZToolButtonArrow(const QStyleOptionComplex* option, const 
     {
         QRect rcIcon = rect_ZToolButtonText(option, widget);
         QRect rc;
-        rc.setLeft(rcIcon.right() + ZenoStyle::dpiScaled(12));
-        rc.setTop(rcIcon.top() + rcIcon.height() / 3);
-        rc.setSize(ZenoStyle::dpiScaledSize(QSize(8, 9)));
+        rc.setLeft(rcIcon.right() + ZenoStyle::dpiScaled(10));
+        rc.setTop(rcIcon.top() + rcIcon.height() / 10);
+        rc.setSize(ZenoStyle::dpiScaledSize(QSize(14, 14)));
         return rc;
     }
     return QRect();
@@ -487,7 +486,7 @@ void ZenoStyle::drawZenoToolButton(const ZStyleOptionToolButton* option, QPainte
     //draw text
     if (!option->text.isEmpty())
     {
-        QColor text_color = option->buttonEnabled ? option->palette.brush(QPalette::Active, QPalette::WindowText).color() : QColor();
+        QColor text_color = option->buttonEnabled ? option->palette.brush(QPalette::Active, QPalette::WindowText).color() : option->palette.brush(QPalette::Disabled, QPalette::WindowText).color();
         if (option->buttonOpts & ZToolButton::Opt_TextUnderIcon)
         {
             QStringList textList = option->text.split('\n');
@@ -523,13 +522,24 @@ void ZenoStyle::drawZenoToolButton(const ZStyleOptionToolButton* option, QPainte
     {
         if (option->m_arrowOption == ZStyleOptionToolButton::DOWNARROW)
         {
-            QIcon icon = QApplication::style()->standardIcon(QStyle::SP_TitleBarUnshadeButton);
+            QIcon icon(":/icons/down_arrow.svg");
             icon.paint(painter, rcArrow, Qt::AlignCenter);
+            painter->setPen(QColor(255, 255, 255, 50));
+            rcArrow.adjust(ZenoStyle::dpiScaled(-4), 0, 0, 0);
+            painter->drawLine(rcArrow.topLeft(), rcArrow.bottomLeft());
         }
         else if (option->m_arrowOption == ZStyleOptionToolButton::RIGHTARROW)
         {
             //todo
         }
+    }
+
+    //draw border
+    if (option->borderColor.isValid())
+    {
+        painter->setPen(option->borderColor);
+        QRect rect = option->rect.adjusted(0, 0, -1, -1);
+        painter->drawRoundedRect(rect, option->bgRadius, option->bgRadius);
     }
 }
 

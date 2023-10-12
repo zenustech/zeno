@@ -7,6 +7,8 @@
 #include <zeno/utils/scope_exit.h>
 #include "common_def.h"
 #include <zenoio/writer/zsgwriter.h>
+#include <zeno/core/Session.h>
+#include <zeno/types/UserData.h>
 
 
 class IOBreakingScope
@@ -84,6 +86,9 @@ IGraphsModel* GraphsManagment::openZsgFile(const QString& fn)
         std::shared_ptr<IAcceptor> acceptor(zeno_model::createIOAcceptor(pModel, false));
         bool ret = ZsgReader::getInstance().openFile(fn, acceptor.get());
         m_timerInfo = acceptor->timeInfo();
+        m_recordInfo = acceptor->recordInfo();
+        m_layoutInfo = acceptor->layoutInfo();
+        m_userdataInfo = acceptor->userdataInfo();
         if (!ret)
             return nullptr;
     }
@@ -113,7 +118,7 @@ bool GraphsManagment::saveFile(const QString& filePath, APP_SETTINGS settings)
 
     f.write(strContent.toUtf8());
     f.close();
-    zeno::log_debug("saved successfully");
+    zeno::log_info("saved '{}' successfully", filePath.toStdString());
 
     m_model->setFilePath(filePath);
     m_model->clearDirty();
@@ -143,6 +148,20 @@ void GraphsManagment::importGraph(const QString& fn)
 		zeno::log_error("failed to open zsg file: {}", fn.toStdString());
 		return;
 	}
+}
+
+void GraphsManagment::importSubGraphs(const QString& fn, const QMap<QString, QString>& map)
+{
+    if (!m_model)
+        return;
+
+    IOBreakingScope batch(m_model);
+    std::shared_ptr<IAcceptor> acceptor(zeno_model::createIOAcceptor(m_model, true));    
+    if (!ZsgReader::getInstance().importSubgraphs(fn, acceptor.get(), map, m_model))
+    {
+        zeno::log_error("failed to open zsg file: {}", fn.toStdString());
+        return;
+    }
 }
 
 void GraphsManagment::clear()
@@ -223,6 +242,43 @@ void GraphsManagment::addScene(const QModelIndex& subgIdx, QGraphicsScene* scene
 TIMELINE_INFO GraphsManagment::timeInfo() const
 {
     return m_timerInfo;
+}
+
+QString GraphsManagment::zsgPath() const
+{
+    return m_model ? m_model->filePath() : "";
+}
+
+QString GraphsManagment::zsgDir() const
+{
+    const QString& zsgpath = zsgPath();
+    QFileInfo fp(zsgpath);
+    return fp.absolutePath();
+}
+
+RECORD_SETTING GraphsManagment::recordSettings() const
+{
+    return m_recordInfo;
+}
+
+void GraphsManagment::setRecordSettings(const RECORD_SETTING& info)
+{
+    m_recordInfo = info;
+}
+
+LAYOUT_SETTING GraphsManagment::layoutInfo() const
+{
+    return m_layoutInfo;
+}
+
+void GraphsManagment::setUserDataInfo(const USERDATA_SETTING& info)
+{
+    m_userdataInfo = info;
+}
+
+USERDATA_SETTING GraphsManagment::userdataInfo()
+{
+    return m_userdataInfo;
 }
 
 void GraphsManagment::appendErr(const QString& nodeName, const QString& msg)

@@ -1,6 +1,8 @@
 #include "zslider.h"
 #include <zenoui/style/zenostyle.h>
 #include <zenoedit/zenoapplication.h>
+#include <zeno/core/Session.h>
+#include <zeno/extra/GlobalComm.h>
 #include "zassert.h"
 
 
@@ -98,6 +100,12 @@ int ZSlider::value() const
     return m_value;
 }
 
+void ZSlider::updateKeyFrames(const QVector<int> &keys) 
+{
+    m_keyframes = keys;
+    update();
+}
+
 int ZSlider::_getframes()
 {
     //todo
@@ -133,12 +141,13 @@ void ZSlider::paintEvent(QPaintEvent* event)
 {
     QPainter painter(this);
 
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setPointSize(9);
     font.setWeight(QFont::DemiBold);
     QFontMetrics metrics(font);
     painter.setFont(font);
     painter.setPen(QPen(QColor("#5A646F"), 1));
+    painter.setRenderHint(QPainter::Antialiasing, false);
 
     int cellNum = ((m_to - m_from) / m_cellLength) + 1;
     int cellPixelLength = width() / cellNum;
@@ -207,6 +216,60 @@ void ZSlider::paintEvent(QPaintEvent* event)
     int right = width() - m_sHMargin;
     painter.drawLine(QPointF(left, height() - 1), QPointF(right, height() - 1));
     drawSlideHandle(&painter, scaleH);
+
+    //draw keyframes
+    for (auto frame : m_keyframes) {
+        int x = _frameToPos(frame - m_from) + painter.pen().width();
+        int h = ZenoStyle::dpiScaled(scaleH);
+        int y = height() - h;
+        int w = (qreal)(width() - 2 * m_sHMargin) / ((m_to - m_from) == 0 ? 1 : (m_to - m_from));
+        QRect rec(x, y, w, h);
+        painter.fillRect(rec, QColor("#3A6E64"));
+    }
+
+    //draw finished frame
+    //return;
+    auto& pGlobalComm = zeno::getSession().globalComm;
+    int lastStateFrame = -1;
+    zeno::GlobalComm::FRAME_STATE lastState = zeno::GlobalComm::FRAME_UNFINISH;
+    for (int frame = m_from; frame <= m_to; frame++)
+    {
+        if (frame == m_from) {
+            lastState = pGlobalComm->getFrameState(frame);
+            lastStateFrame = m_from;
+        }
+
+        zeno::GlobalComm::FRAME_STATE currState = pGlobalComm->getFrameState(frame);
+        if (currState != lastState || frame == m_to)
+        {
+            //draw lastState from lastStateFrame to frame.
+            int startFrame = lastStateFrame - m_from;
+            if (startFrame != 0)
+                startFrame -= 1;
+            int endFrame = frame - m_from;
+            if (endFrame == startFrame)
+                endFrame +=1;
+            else if (frame != m_to)
+                endFrame -= 1;
+            int x1 = _frameToPos(startFrame);
+            int x2 = _frameToPos(endFrame);
+            int y = height() - scaleH;
+
+            QRect rec(x1, y, x2 - x1 + 1, scaleH);
+            painter.setPen(Qt::NoPen);
+
+            if (lastState == zeno::GlobalComm::FRAME_COMPLETED)
+            {
+                painter.fillRect(rec, QColor(169, 169, 169, 100));
+            }
+            else if (lastState == zeno::GlobalComm::FRAME_BROKEN)
+            {
+                painter.fillRect(rec, QColor(255, 0, 0, 100));
+            }
+            lastState = currState;
+            lastStateFrame = frame;
+        }
+    }
 }
 
 void ZSlider::drawSlideHandle(QPainter* painter, int scaleH)
@@ -218,7 +281,8 @@ void ZSlider::drawSlideHandle(QPainter* painter, int scaleH)
 
     painter->setPen(Qt::NoPen);
     int y = height() - scaleH;
-    painter->fillRect(QRectF(QPointF(xleftmost, y), QPointF(xarrow_pos, y + scaleH)), QColor(76, 159, 244, 64));
+    //no need to show the progress of play frames.
+    //painter->fillRect(QRectF(QPointF(xleftmost, y), QPointF(xarrow_pos, y + scaleH)), QColor(76, 159, 244, 64));
 
     //draw handle.
     static const int handleHeight = ZenoStyle::dpiScaled(12);
@@ -229,7 +293,7 @@ void ZSlider::drawSlideHandle(QPainter* painter, int scaleH)
                              QPointF(xarrow_pos + handleWidth / 2, y + handleHeight)),
                       QColor(76, 159, 244));
 
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setPointSize(10);
     QFontMetrics metrics(font);
     painter->setFont(font);

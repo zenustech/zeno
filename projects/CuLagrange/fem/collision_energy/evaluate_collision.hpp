@@ -1298,6 +1298,7 @@ void calc_continous_self_PT_collision_impulse(Pol& pol,
         else
             triCCDBvh.build(pol,bvs);
 
+        auto execTag = wrapv<space>{};
         pol(zs::range(verts.size()),[
             invMass = proxy<space>({},invMass),
             xtag = xtag,
@@ -1309,7 +1310,7 @@ void calc_continous_self_PT_collision_impulse(Pol& pol,
             impulse_buffer = proxy<space>(impulse_buffer),
             impulse_count = proxy<space>(impulse_count),
             eps = eps,
-            exec_tag = wrapv<space>{},
+            execTag,
             bvh = proxy<space>(triCCDBvh)] ZS_LAMBDA(int vi) mutable {
                 auto p = verts.pack(dim_c<3>,xtag,vi);
                 auto v = verts.pack(dim_c<3>,vtag,vi);
@@ -1392,9 +1393,9 @@ void calc_continous_self_PT_collision_impulse(Pol& pol,
 
                     for(int i = 0;i != 4;++i) {
                         auto beta = (bary[i] * invMass("minv",inds[i])) / cm;
-                        atomic_add(exec_tag,&impulse_count[inds[i]],1);
+                        atomic_add(execTag,&impulse_count[inds[i]],1);
                         for(int d = 0;d != 3;++d)
-                            atomic_add(exec_tag,&impulse_buffer[inds[i]][d],impulse[d] * beta);
+                            atomic_add(execTag,&impulse_buffer[inds[i]][d],impulse[d] * beta);
                     }
                 };
                 bvh.iter_neighbors(bv,do_close_proximity_detection);
@@ -1435,6 +1436,7 @@ void calc_continous_self_EE_collision_impulse(Pol& pol,
         else
             edgeCCDBvh.build(pol,edgeBvs);
 
+        auto execTag = wrapv<space>{};
         pol(zs::range(edges.size()),[
             xtag = xtag,
             vtag = vtag,
@@ -1445,7 +1447,7 @@ void calc_continous_self_EE_collision_impulse(Pol& pol,
             impulse_count = proxy<space>(impulse_count),
             // thickness = thickness,
             eps = eps,
-            exec_tag = wrapv<space>{},
+            execTag,
             edgeBvs = proxy<space>(edgeBvs),
             bvh = proxy<space>(edgeCCDBvh)] ZS_LAMBDA(int ei) mutable {
                 auto ea = edges.pack(dim_c<2>,"inds",ei,int_c);
@@ -1541,9 +1543,9 @@ void calc_continous_self_EE_collision_impulse(Pol& pol,
                     if(!compute_continous_EE_collision_impulse(ps,vs,minvs,imps))
                         return;    
                     for(int i = 0;i != 4;++i) {
-                        atomic_add(exec_tag,&impulse_count[inds[i]],1);
+                        atomic_add(execTag,&impulse_count[inds[i]],1);
                         for(int d = 0;d != 3;++d)
-                            atomic_add(exec_tag,&impulse_buffer[inds[i]][d],imps[i][d]);
+                            atomic_add(execTag,&impulse_buffer[inds[i]][d],imps[i][d]);
                     }     
 #endif
                 };
@@ -1572,15 +1574,17 @@ void apply_impulse(Pol& pol,
         zs::Vector<int> impulse_count{verts.get_allocator(),verts.size()};
         pol(zs::range(impulse_count),[] ZS_LAMBDA(auto& c) mutable {c = 0;});
 
+        auto execTag = wrapv<space>{};
         pol(zs::range(imminent_collision_buffer.size()),[
             verts = proxy<space>({},verts),
             vtag = zs::SmallString(vtag),
             imminent_collision_buffer = proxy<space>({},imminent_collision_buffer),
-            exec_tag = wrapv<space>{},
+            execTag,
             eps = eps,
             restitution_rate = imminent_restitution_rate,
             impulse_count = proxy<space>(impulse_count),
-            impulse_buffer = proxy<space>(impulse_buffer)] ZS_LAMBDA(auto ci) mutable {
+            impulse_buffer = proxy<space>(impulse_buffer)
+            ] ZS_LAMBDA(auto ci) mutable {
                 auto inds = imminent_collision_buffer.pack(dim_c<4>,"inds",ci,int_c);
                 auto bary = imminent_collision_buffer.pack(dim_c<4>,"bary",ci);
                 auto impulse = imminent_collision_buffer.pack(dim_c<3>,"impulse",ci);
@@ -1594,9 +1598,9 @@ void apply_impulse(Pol& pol,
 
                 for(int i = 0;i != 4;++i) {
                     auto beta = verts("minv",inds[i]) * bary[i] / cminv;
-                    atomic_add(exec_tag,&impulse_count[inds[i]],1);
+                    atomic_add(execTag,&impulse_count[inds[i]],1);
                     for(int d = 0;d != 3;++d)
-                        atomic_add(exec_tag,&impulse_buffer[inds[i]][d],impulse[d] * beta);
+                        atomic_add(execTag,&impulse_buffer[inds[i]][d],impulse[d] * beta);
                 }
                 
         });
@@ -1607,14 +1611,14 @@ void apply_impulse(Pol& pol,
             impulse_count = proxy<space>(impulse_count),
             relaxation_rate = imminent_relaxation_rate,
             eps = eps,
-            exec_tag = wrapv<space>{}] ZS_LAMBDA(int vi) mutable {
+            execTag] ZS_LAMBDA(int vi) mutable {
             if(impulse_buffer[vi].norm() < eps || impulse_count[vi] == 0)
                 return;
             auto impulse = relaxation_rate * impulse_buffer[vi] / (T)impulse_count[vi];
             // auto dp = impulse * verts("minv",vi);
 
             for(int i = 0;i != 3;++i)   
-                atomic_add(exec_tag,&verts(vtag,i,vi),impulse[i]);
+                atomic_add(execTag,&verts(vtag,i,vi),impulse[i]);
         }); 
 }
 

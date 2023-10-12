@@ -91,6 +91,10 @@ ZENO_API void Graph::loadGraph(const char *json) {
                 g->addNode(di[1].GetString(), di[2].GetString());
             } else if (cmd == "setNodeInput") {
                 g->setNodeInput(di[1].GetString(), di[2].GetString(), generic_get<zany>(di[3]));
+            } else if (cmd == "setKeyFrame") {
+                g->setKeyFrame(di[1].GetString(), di[2].GetString(), generic_get<zany>(di[3]));
+            } else if (cmd == "setFormula") {
+                g->setFormula(di[1].GetString(), di[2].GetString(), generic_get<zany>(di[3]));
             } else if (cmd == "setNodeParam") {
                 g->setNodeParam(di[1].GetString(), di[2].GetString(), generic_get<std::variant<int, float, std::string, zany>, false>(di[3]));
             } else if (cmd == "bindNodeInput") {

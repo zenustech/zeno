@@ -68,6 +68,8 @@ struct Graph : std::enable_shared_from_this<Graph> {
         std::string const &sn, std::string const &ss);
     ZENO_API void setNodeInput(std::string const &id, std::string const &par,
         zany const &val);
+    ZENO_API void setKeyFrame(std::string const &id, std::string const &par, zany const &val);
+    ZENO_API void setFormula(std::string const &id, std::string const &par, zany const &val);
     ZENO_API void addNodeOutput(std::string const &id, std::string const &par);
     ZENO_API zany const &getNodeOutput(std::string const &sn, std::string const &ss) const;
     ZENO_API void loadGraph(const char *json);
