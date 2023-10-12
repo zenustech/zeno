@@ -170,7 +170,6 @@ namespace DisneyBSDF{
     }
     
     static __inline__ __device__
-
     float SampleDistance2(unsigned int &seed, vec3 a/*throughput * alpha*/, const vec3& sigma_t, vec3& channelPDF)
     {
         float r0 = rnd(seed);
@@ -180,6 +179,13 @@ namespace DisneyBSDF{
         
         float s = -log(max(1.0f-rnd(seed), _FLT_MIN_)) / max(c, 1e-5f);
         return s;
+    }
+
+    static __inline__ __device__
+    float SampleDistance(unsigned int &seed, float scatterDistance){
+        float r = rnd(seed);
+        return -log(max(1.0f-rnd(seed),_FLT_MIN_)) * scatterDistance;
+
     }
 
     static __inline__ __device__
@@ -382,25 +388,12 @@ namespace DisneyBSDF{
                 vec3 wm = entering?-normalize(wo + mat.ior * wi) : normalize(wo + 1.0f/mat.ior * wi);
                 float F = BRDFBasics::DielectricFresnel(abs(dot(wm, wo)), entering?mat.ior:1.0/mat.ior);
                 float tmpPdf;
-                vec3 brdf = BRDFBasics::EvalMicrofacetRefraction(mat.sssColor,
+                vec3 brdf = BRDFBasics::EvalMicrofacetRefraction(mat.transColor,
                                                                  ax, ay,
                                                                  entering? mat.ior:1.0f/mat.ior,
                                                                  wo, wi, wm,
                                                                  vec3(F), tmpPdf);
-//                float tmpPdf1;
-//                wm = normalize(wi + wo * ior);
-//                vec3 brdf1 = BRDFBasics::EvalMicrofacetRefraction(sssColor,
-//                                                      ax, ay,
-//                                                      ior,
-//                                                      wo, wi, wm,
-//                                                      vec3(F), tmpPdf1);
-//                float tmpPdf2;
-//                wm = normalize(wo + wi * ior);
-//                vec3 brdf2 = BRDFBasics::EvalMicrofacetRefraction(sssColor,
-//                                                      ax, ay,
-//                                                      ior,
-//                                                      wi, wo, wm,
-//                                                      vec3(F), tmpPdf2);
+
                 vec3 t = brdf * glassWt  * illum;
                 tterm = tterm + t;
                 f = f + t;
@@ -640,7 +633,7 @@ namespace DisneyBSDF{
               prd->ss_alpha = color;
               if (isSS) {
                 medium = PhaseFunctions::isotropic;
-                CalculateExtinction2(color, sssRadius, prd->5, prd->ss_alpha, 1.4f);
+                CalculateExtinction2(color, sssRadius, prd->sigma_t, prd->ss_alpha, 1.4f);
               }
             }
           }
@@ -701,7 +694,7 @@ namespace DisneyBSDF{
               wi = normalize(refract(wo, wm, entering?1.0f/mat.ior:mat.ior));
               flag = transmissionEvent;
               isTrans = true;
-              extinction = CalculateExtinction(mat.transColor, -log(1.0f-mat.clarity));
+              extinction = CalculateExtinction(mat.transParam, mat.transDepth);
               extinction = entering? extinction : vec3(0.0f);
             }
 

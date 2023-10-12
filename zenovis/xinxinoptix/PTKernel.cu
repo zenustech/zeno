@@ -359,7 +359,7 @@ extern "C" __global__ void __miss__radiance()
     vec3 channelPDF = vec3(1.0f/3.0f);
     prd->channelPDF = channelPDF;
     if (ss_alpha.x < 0.0f) { // is inside Glass
-        prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, sigma_t, sigma_t, channelPDF);
+        prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed, prd->scatterDistance);
     } else
     {
         prd->maxDistance =

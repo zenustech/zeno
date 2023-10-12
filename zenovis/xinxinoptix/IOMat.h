@@ -15,7 +15,7 @@ struct MatOutput {
     vec3 reflectance;
 
     float metallic;
-    vec3 matalColor;
+    vec3 metalColor;
 
     float specular;
     float specularTint;

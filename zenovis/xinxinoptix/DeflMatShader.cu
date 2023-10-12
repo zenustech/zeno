@@ -44,32 +44,43 @@ static __inline__ __device__ MatOutput evalMat(cudaTextureObject_t zenotex[], fl
     /** generated code here beg **/
     //GENERATED_BEGIN_MARK
     /* MODME */
-    float mat_base = 1.0;
-    vec3 mat_basecolor = vec3(1.0, 1.0, 1.0);
-    float mat_metallic = 0.0;
-    float mat_roughness = 0.5;
-    float mat_subsurface = 0.0;
-    float mat_specular = 0;
-    float mat_specularTint = 0.0;
-    float mat_anisotropic = 0.0;
-    float mat_anisoRotation = 0.0;
-    float mat_sheen = 0.0;
-    float mat_sheenTint = 0.0;
-    float mat_clearcoat = 0.0;
-    float mat_clearcoatGloss = 0.0;
-    float mat_clearcoatRoughness = 0.0;
-    float mat_clearcoatIOR = 1.5;
-    float mat_opacity = 0.0;
-    float mat_specTrans = 0.0;
-    float mat_ior = 1.0;
-    float mat_scatterDistance = 0.0;
-    float mat_flatness = 0.0;
-    float mat_thin = 0.0;
-    float mat_doubleSide= 0.0;
-    float mat_scatterStep = 0.0f;
-    float mat_smoothness = 0.0f;
-    vec3  mat_sssColor = vec3(0.0f,0.0f,0.0f);
+    float mat_base = 1.0f;
+    vec3 mat_basecolor = vec3(1.0f, 1.0f, 1.0f);
+    float mat_roughness = 0.5f;
+    float mat_metallic = 0.0f;
+    vec3 mat_metalColor = vec3(1.0f,1.0f,1.0f);
+    float mat_specular = 0.0f;
+    float mat_specularTint = 0.0f;
+    float mat_anisotropic = 0.0f;
+    float mat_anisoRotation = 0.0f;
+
+    float mat_subsurface = 0.0f;
     vec3  mat_sssParam = vec3(0.0f,0.0f,0.0f);
+    vec3  mat_sssColor = vec3(0.0f,0.0f,0.0f);
+    float mat_scatterDistance = 0.0f;
+    float mat_scatterStep = 0.0f;
+    
+    float mat_sheen = 0.0f;
+    float mat_sheenTint = 0.0f;
+
+
+    float mat_clearcoat = 0.0f;
+    vec3 mat_clearcoatColor = vec3(1.0f,1.0f,1.0f);
+    float mat_clearcoatRoughness = 0.0f;
+    float mat_clearcoatIOR = 1.5f;
+    float mat_opacity = 0.0f;
+
+    float mat_specTrans = 0.0f;
+    vec3 mat_transColor = vec3(1.0f,1.0f,1.0f);
+    float mat_clarity = 0.0f;
+    vec3 mat_transParam = vec3(1.0f,1.0f,1.0f);
+    float mat_transDepth = 0.0f;
+    float mat_ior = 1.0f;
+
+    float mat_flatness = 0.0f;
+    float mat_thin = 0.0f;
+    float mat_doubleSide= 0.0f;
+    float mat_smoothness = 0.0f;
     vec3  mat_normal = vec3(0.0f, 0.0f, 1.0f);
     float mat_emissionIntensity = float(0);
     vec3 mat_emission = vec3(1.0f, 1.0f, 1.0f);
@@ -77,6 +88,7 @@ static __inline__ __device__ MatOutput evalMat(cudaTextureObject_t zenotex[], fl
     float mat_NoL = 1.0f;
     float mat_LoV = 1.0f;
     vec3 mat_reflectance = att_reflectance;
+    vec3 mat_transColor = vec3(1.0f,1.0f,1.0f);
     //GENERATED_END_MARK
     /** generated code here end **/
     MatOutput mats;
@@ -87,32 +99,48 @@ static __inline__ __device__ MatOutput evalMat(cudaTextureObject_t zenotex[], fl
     }else {
         /* MODME */
         mats.basecolor = mat_base * mat_basecolor;
-        mats.metallic = clamp(mat_metallic, 0.0f, 1.0f);
         mats.roughness = clamp(mat_roughness, 0.01, 0.99);
-        mats.subsurface = mat_subsurface;
+        mats.metallic = clamp(mat_metallic, 0.0f, 1.0f);
+        mats.metalColor = mat_metalColor;
         mats.specular = mat_specular;
         mats.specularTint = mat_specularTint;
         mats.anisotropic = clamp(mat_anisotropic, 0.0f, 1.0f);
         mats.anisoRotation = clamp(mat_anisoRotation, 0.0f, 1.0f);
+
+        mats.subsurface = mat_subsurface;
+        mats.sssColor = mat_sssColor;
+        mats.sssParam = mat_sssParam;
+        mats.scatterDistance = max(0.0f,mat_scatterDistance);
+        mats.scatterStep = clamp(mat_scatterStep,0.0f,1.0f);
+
         mats.sheen = mat_sheen;
         mats.sheenTint = mat_sheenTint;
+
         mats.clearcoat = clamp(mat_clearcoat, 0.0f, 1.0f);
+        mats.clearcoatColor = mat_clearcoatColor;
         mats.clearcoatRoughness = clamp(mat_clearcoatRoughness, 0.01, 0.99);
         mats.clearcoatIOR = mat_clearcoatIOR;
+        
+        mats.specTrans = clamp(mat_specTrans, 0.0f, 1.0f);
+        mats.transColor = mat_transColor;
+        mats.clarity = clamp(mat_clarity,0.0f,1.0f);
+        mats.transParam = mat_transParam;
+        mats.transDepth = max(0.0f,mat_transDepth);
+        mats.ior = max(0.0f,mat_ior);
+
+
         mats.opacity = mat_opacity;
         mats.nrm = mat_normal;
         mats.emission = mat_emissionIntensity * mat_emission;
-        mats.specTrans = clamp(mat_specTrans, 0.0f, 1.0f);
-        mats.ior = mat_ior;
-        mats.scatterDistance = mat_scatterDistance;
+
+
+
         mats.flatness = mat_flatness;
         mats.thin = mat_thin;
         mats.doubleSide = mat_doubleSide;
-        mats.sssColor = mat_sssColor;
-        mats.sssParam = mat_sssParam;
-        mats.scatterStep = mat_scatterStep;
+
+
         mats.smoothness = mat_smoothness;
-        mats.transColor = mat_basecolor;
         return mats;
     }
 }
@@ -871,7 +899,7 @@ extern "C" __global__ void __closesthit__radiance()
 
                     if (prd->curMatIdx > 0) {
                         vec3 sigma_t, ss_alpha;
-                        //vec3 sigma_t, ss_alpha;
+                        //vec3 sigma_t, ss_alpha;0
                         prd->readMat(sigma_t, ss_alpha);
                         if (ss_alpha.x < 0.0f) { // is inside Glass
                             prd->attenuation *= DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
@@ -882,9 +910,10 @@ extern "C" __global__ void __closesthit__radiance()
                     prd->channelPDF = vec3(1.0f/3.0f);
                     if (isTrans) {
                         vec3 channelPDF = vec3(1.0f/3.0f);
-                        prd->maxDistance = mats.scatterStep>0.5f? DisneyBSDF::SampleDistance2(prd->seed, extinction, extinction, channelPDF) : 1e16f;
                         prd->pushMat(extinction);
                         prd->isSS = false;
+                        prd->scatterDistance = 1000.0f * mats.clarity * mats.clarity;
+                        prd->maxDistance = mats.scatterStep>0.5f? DisneyBSDF::SampleDistance(prd->seed, prd->scatterDistance) : 1e16f;
                     } else {
 
                         prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation) * prd->ss_alpha, prd->sigma_t, prd->channelPDF);
@@ -897,9 +926,10 @@ extern "C" __global__ void __closesthit__radiance()
                         // already calculated in BxDF
                         prd->pushMat(prd->sigma_t, prd->ss_alpha);
                         prd->isSS = true;
+                        prd->scatterDistance = mats.scatterDistance;
                     }
 
-                    prd->scatterDistance = mats.scatterDistance;
+
                     prd->scatterStep = mats.scatterStep;
             }
             else{
