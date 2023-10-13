@@ -83,10 +83,11 @@ struct DetangleImminentCollision : INode {
 
         zs::Vector<int> nm_imminent_collision{verts.get_allocator(),(size_t)1};
 
-        std::cout << "do imminent detangle" << std::endl;
+        // std::cout << "do imminent detangle" << std::endl;
 
-        auto vn_threshold = 5e-3;
-
+        float vn_threshold = 5e-3;
+        auto add_repulsion_force = get_input2<bool>("add_repulsion_force");
+        
         for(int it = 0;it != nm_iters;++it) {
 
             cudaPol(zs::range(verts.size()),[
@@ -122,89 +123,92 @@ struct DetangleImminentCollision : INode {
                 vtemp,"v",
                 imminent_restitution_rate,
                 imminent_relaxation_rate,
-                imminent_collision_buffer);
+                vn_threshold,
+                imminent_collision_buffer,
+                nm_imminent_collision);
 
- 
-            auto add_repulsion_force = get_input2<bool>("add_repulsion_force");
-            // add an impulse to repel the pair further
+            std::cout << "nm_self_imminent_collision : " << nm_imminent_collision.getVal(0) << std::endl;
+            if(nm_imminent_collision.getVal(0) == 0) 
+                break;              
 
-            nm_imminent_collision.setVal(0);
-            // if(add_repulsion_force) {
-                // std::cout << "add imminent replering force" << std::endl;
-                auto max_repel_distance = get_input2<T>("max_repel_distance");
-
-                cudaPol(zs::range(imminent_collision_buffer.size()),[
-                    imminent_collision_buffer = proxy<space>({},imminent_collision_buffer)] ZS_LAMBDA(int ci) mutable {
-                        imminent_collision_buffer.tuple(dim_c<3>,"impulse",ci) = vec3::zeros();
-                });
-
-                cudaPol(zs::range(imminent_collision_buffer.size()),[
-                    verts = proxy<space>({},verts),
-                    vtemp = proxy<space>({},vtemp),
-                    eps = eps,
-                    exec_tag = wrapv<space>{},
-                    k = repel_strength,
-                    vn_threshold = vn_threshold,
-                    max_repel_distance = max_repel_distance,
-                    thickness = imminent_collision_thickness,
-                    nm_imminent_collision = proxy<space>(nm_imminent_collision),
-                    imminent_collision_buffer = proxy<space>({},imminent_collision_buffer)] ZS_LAMBDA(auto id) mutable {
-                        auto inds = imminent_collision_buffer.pack(dim_c<4>,"inds",id,int_c);
-                        auto bary = imminent_collision_buffer.pack(dim_c<4>,"bary",id);
-
-                        vec3 ps[4] = {};
-                        vec3 vs[4] = {};
-                        auto vr = vec3::zeros();
-                        auto pr = vec3::zeros();
-                        for(int i = 0;i != 4;++i) {
-                            ps[i] = vtemp.pack(dim_c<3>,"x",inds[i]);
-                            vs[i] = vtemp.pack(dim_c<3>,"v",inds[i]);
-                            pr += bary[i] * ps[i];
-                            vr += bary[i] * vs[i];
-                        }
-
-                        auto dist = pr.norm();
-                        vec3 collision_normal = imminent_collision_buffer.pack(dim_c<3>,"collision_normal",id);
-
-                        if(dist > thickness) 
-                            return;
-
-                        auto d = thickness - dist;
-                        auto vn = vr.dot(collision_normal);
-                        if(vn < -vn_threshold) {
-                            atomic_add(exec_tag,&nm_imminent_collision[0],1);
-                            for(int i = 0;i != 4;++i)
-                                verts("imminent_fail",inds[i]) = (T)1.0;
-                        }
-                        if(vn > (T)max_repel_distance * d || d < 0) {          
-                            // if with current velocity, the collided particles can be repeled by more than 1% of collision depth, no extra repulsion is needed
-                            return;
-                        } else {
-                            // make sure the collided particles is seperated by 1% of collision depth
-                            // assume the particles has the same velocity
-                            auto I = k * d;
-                            auto I_max = (max_repel_distance * d - vn);
-                            I = I_max < I ? I_max : I;
-                            auto impulse = (T)I * collision_normal; 
-
-                            imminent_collision_buffer.tuple(dim_c<3>,"impulse",id) = impulse;
-                        }   
-                    });
-                    std::cout << "nm_imminent_collision : " << nm_imminent_collision.getVal(0) << std::endl;
-                    if(nm_imminent_collision.getVal(0) == 0) 
-                        break;              
-
-
-                // auto impulse_norm = TILEVEC_OPS::dot<3>(cudaPol,imminent_collision_buffer,"impulse","impulse");
-                // std::cout << "REPEL_impulse_norm : " << impulse_norm << std::endl;
-
-                COLLISION_UTILS::apply_impulse(cudaPol,
-                    vtemp,"v",
-                    imminent_restitution_rate,
-                    imminent_relaxation_rate,
-                    imminent_collision_buffer);
             // }
         }
+
+        if(add_repulsion_force) {
+            // if(add_repulsion_force) {
+            // std::cout << "add imminent replering force" << std::endl;
+            auto max_repel_distance = get_input2<T>("max_repel_distance");
+
+            cudaPol(zs::range(imminent_collision_buffer.size()),[
+                imminent_collision_buffer = proxy<space>({},imminent_collision_buffer)] ZS_LAMBDA(int ci) mutable {
+                    imminent_collision_buffer.tuple(dim_c<3>,"impulse",ci) = vec3::zeros();
+            });
+
+            cudaPol(zs::range(imminent_collision_buffer.size()),[
+                verts = proxy<space>({},verts),
+                vtemp = proxy<space>({},vtemp),
+                eps = eps,
+                exec_tag = wrapv<space>{},
+                k = repel_strength,
+                vn_threshold = vn_threshold,
+                max_repel_distance = max_repel_distance,
+                thickness = imminent_collision_thickness,
+                nm_imminent_collision = proxy<space>(nm_imminent_collision),
+                imminent_collision_buffer = proxy<space>({},imminent_collision_buffer)] ZS_LAMBDA(auto id) mutable {
+                    auto inds = imminent_collision_buffer.pack(dim_c<4>,"inds",id,int_c);
+                    auto bary = imminent_collision_buffer.pack(dim_c<4>,"bary",id);
+
+                    vec3 ps[4] = {};
+                    vec3 vs[4] = {};
+                    auto vr = vec3::zeros();
+                    auto pr = vec3::zeros();
+                    for(int i = 0;i != 4;++i) {
+                        ps[i] = vtemp.pack(dim_c<3>,"x",inds[i]);
+                        vs[i] = vtemp.pack(dim_c<3>,"v",inds[i]);
+                        pr += bary[i] * ps[i];
+                        vr += bary[i] * vs[i];
+                    }
+
+                    auto dist = pr.norm();
+                    vec3 collision_normal = imminent_collision_buffer.pack(dim_c<3>,"collision_normal",id);
+
+                    if(dist > thickness) 
+                        return;
+
+                    auto d = thickness - dist;
+                    auto vn = vr.dot(collision_normal);
+                    if(vn < -vn_threshold) {
+                        atomic_add(exec_tag,&nm_imminent_collision[0],1);
+                        for(int i = 0;i != 4;++i)
+                            verts("imminent_fail",inds[i]) = (T)1.0;
+                    }
+                    if(vn > (T)max_repel_distance * d || d < 0) {          
+                        // if with current velocity, the collided particles can be repeled by more than 1% of collision depth, no extra repulsion is needed
+                        return;
+                    } else {
+                        // make sure the collided particles is seperated by 1% of collision depth
+                        // assume the particles has the same velocity
+                        auto I = k * d;
+                        auto I_max = (max_repel_distance * d - vn);
+                        I = I_max < I ? I_max : I;
+                        auto impulse = (T)I * collision_normal; 
+
+                        imminent_collision_buffer.tuple(dim_c<3>,"impulse",id) = impulse;
+                    }   
+                });
+
+
+            // auto impulse_norm = TILEVEC_OPS::dot<3>(cudaPol,imminent_collision_buffer,"impulse","impulse");
+            // std::cout << "REPEL_impulse_norm : " << impulse_norm << std::endl;
+
+            COLLISION_UTILS::apply_impulse(cudaPol,
+                vtemp,"v",
+                imminent_restitution_rate,
+                imminent_relaxation_rate,
+                imminent_collision_buffer);
+        }
+
+
 
         std::cout << "finish imminent collision" << std::endl;
 
