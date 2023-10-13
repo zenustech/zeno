@@ -1570,6 +1570,47 @@ ZENDEFNODE(ImageColor, {
         {"image"},
     },
     {},
+    { "deprecated" },
+});
+struct ImageColor2 : INode {
+    virtual void apply() override {
+        auto image = std::make_shared<PrimitiveObject>();
+        auto color = get_input2<vec3f>("Color");
+        auto alpha = get_input2<float>("Alpha");
+        auto size = get_input2<vec2i>("Size");
+        auto balpha = get_input2<bool>("alpha");
+        auto vertsize = size[0] * size[1];
+        image->verts.resize(vertsize);
+        image->userData().set2("isImage", 1);
+        image->userData().set2("w", size[0]);
+        image->userData().set2("h", size[1]);
+        if(balpha){
+            auto &alphaAttr = image->verts.add_attr<float>("alpha");
+            for (int i = 0; i < vertsize ; i++) {
+                image->verts[i] = {zeno::clamp(color[0], 0.0f, 1.0f), zeno::clamp(color[1], 0.0f, 1.0f), zeno::clamp(color[2], 0.0f, 1.0f)};
+                alphaAttr[i] = zeno::clamp(alpha, 0.0f, 1.0f);
+            }
+        }
+        else{
+            for (int i = 0; i < vertsize ; i++) {
+                image->verts[i] = {zeno::clamp(color[0], 0.0f, 1.0f), zeno::clamp(color[1], 0.0f, 1.0f), zeno::clamp(color[2], 0.0f, 1.0f)};
+            }
+        }
+        set_output("image", image);
+    }
+};
+
+ZENDEFNODE(ImageColor2, {
+    {
+        {"vec3f", "Color", "1,1,1"},
+        {"float", "Alpha", "1"},
+        {"vec2i", "Size", "1024,1024"},
+        {"bool", "alpha", "1"},
+    },
+    {
+        {"image"},
+    },
+    {},
     { "image" },
 });
 
