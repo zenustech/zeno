@@ -16,16 +16,20 @@ namespace zeno { namespace CONSTRAINT {
         VECTOR3d &corr0, VECTOR3d &corr1)
     {				
         SCALER K = invMass0 + invMass1;
+        // if(K < static_cast<SCALER>(1e-7))
+        //     return true;
+
         VECTOR3d n = p0 - p1;
         SCALER d = n.norm();
         SCALER C = d - restLength;
+
         if (d > static_cast<SCALER>(1e-6))
             n /= d;
         else
         {
             corr0 = VECTOR3d::uniform(0);
             corr1 = VECTOR3d::uniform(0);
-            return false;
+            return true;
         }
 
         SCALER alpha = 0.0;
@@ -42,7 +46,7 @@ namespace zeno { namespace CONSTRAINT {
         {
             corr0 = VECTOR3d::uniform(0);
             corr1 = VECTOR3d::uniform(0);
-            return false;
+            return true;
         }
 
         const SCALER delta_lambda = -Kinv * (C + alpha * lambda);
@@ -51,7 +55,7 @@ namespace zeno { namespace CONSTRAINT {
 
         corr0 =  invMass0 * pt;
         corr1 = -invMass1 * pt;
-        return true;
+        return false;
     }
 
     template<typename VECTOR3d,typename SCALER>
@@ -159,7 +163,7 @@ namespace zeno { namespace CONSTRAINT {
             // if(n1.cross(n2).dot(e) < 0)
             //     angle = -angle;        
             // restAngle = angle;
-
+       
             restAngle = zs::acos(n12);
 
             return true;            
@@ -209,7 +213,7 @@ namespace zeno { namespace CONSTRAINT {
         //     angle = zs::sqrt((1 - n12) / 2);
         // if(n1.cross(n2).dot(e) < 0)
         //     angle = -angle;
-    
+
         SCALER lambda = 
             invMass0 * d0.l2NormSqr() +
             invMass1 * d1.l2NormSqr() +
@@ -304,13 +308,14 @@ namespace zeno { namespace CONSTRAINT {
     }
 
 // ----------------------------------------------------------------------------------------------
-    template<typename VECTOR3d,typename MATRIX4d>
+    template<typename VECTOR3d,typename MATRIX4d,typename SCALER = typename VECTOR3d::value_type>
     constexpr bool init_IsometricBendingConstraint(
         const VECTOR3d& p0,
         const VECTOR3d& p1,
         const VECTOR3d& p2,
         const VECTOR3d& p3,
-        MATRIX4d& Q)
+        MATRIX4d& Q,
+        SCALER& C0)
     {
         using SCALER = typename VECTOR3d::value_type; 
         // Compute matrix Q for quadratic bending
@@ -363,6 +368,12 @@ namespace zeno { namespace CONSTRAINT {
             Q(j, j) = (SCALER)(K[j] * K2[j]);
         }
 
+        C0 = 0.0;
+        for (unsigned char k = 0; k < 4; k++)
+            for (unsigned char j = 0; j < 4; j++)
+                C0 += Q(j, k) * (x[k].dot(x[j]));
+        C0 *= static_cast<SCALER>(0.5);        
+
         return true;
     }
 // ----------------------------------------------------------------------------------------------
@@ -375,6 +386,7 @@ namespace zeno { namespace CONSTRAINT {
         const MATRIX4d& Q,
         const SCALER& stiffness,
         const SCALER& dt,
+        const SCALER& C0,
         SCALER& lambda,
         VECTOR3d& corr0, VECTOR3d& corr1, VECTOR3d& corr2, VECTOR3d& corr3)
     {
@@ -382,11 +394,12 @@ namespace zeno { namespace CONSTRAINT {
         const VECTOR3d x[4] = { p2, p3, p0, p1 };
         SCALER invMass[4] = { invMass2, invMass3, invMass0, invMass1 };
 
-        SCALER energy = 0.0;
+        SCALER C = 0.0;
         for (unsigned char k = 0; k < 4; k++)
             for (unsigned char j = 0; j < 4; j++)
-                energy += Q(j, k) * (x[k].dot(x[j]));
-        energy *= static_cast<SCALER>(0.5);
+                C += Q(j, k) * (x[k].dot(x[j]));
+        C *= static_cast<SCALER>(0.5);
+        C -= C0;
 
         // printf("isometric_bending_energy : %f\n",(float)energy);
 
@@ -427,7 +440,7 @@ namespace zeno { namespace CONSTRAINT {
         if (sum_normGradC > eps)
         {
             // compute impulse-based scaling factor
-            SCALER delta_lambda = -(energy + alpha * lambda) / sum_normGradC;
+            SCALER delta_lambda = -(C + alpha * lambda) / sum_normGradC;
             lambda += delta_lambda;
 
             corr0 = (delta_lambda * invMass[2]) * gradC[2];
@@ -436,14 +449,14 @@ namespace zeno { namespace CONSTRAINT {
             corr3 = (delta_lambda * invMass[1]) * gradC[1];
             // printf("update corr for iso_bending energy\n");
 
-            auto gradCSum = (float)0;
-            for(int i = 0;i != 4;++i)
-                gradCSum += gradC[i].norm();
-            if(gradCSum > 1e-4) {
-                // printf("gradC : %f %f %f %f corr : %f %f %f %f\n",
-                //     (float)gradC[0].norm(),(float)gradC[1].norm(),(float)gradC[2].norm(),(float)gradC[3].norm(),
-                //     (float)corr0.norm(),(float)corr1.norm(),(float)corr2.norm(),(float)corr3.norm());
-            }
+            // auto gradCSum = (float)0;
+            // for(int i = 0;i != 4;++i)
+            //     gradCSum += gradC[i].norm();
+            // if(gradCSum > 1e-4) {
+            //     // printf("gradC : %f %f %f %f corr : %f %f %f %f\n",
+            //     //     (float)gradC[0].norm(),(float)gradC[1].norm(),(float)gradC[2].norm(),(float)gradC[3].norm(),
+            //     //     (float)corr0.norm(),(float)corr1.norm(),(float)corr2.norm(),(float)corr3.norm());
+            // }
 
             return true;
         }else {
@@ -460,16 +473,18 @@ namespace zeno { namespace CONSTRAINT {
         const VECTOR3d& p3, SCALER invMass3,
         const MATRIX4d& Q,
         const SCALER& stiffness,
+        const SCALER& C0,
         VECTOR3d& corr0, VECTOR3d& corr1, VECTOR3d& corr2, VECTOR3d& corr3){
         constexpr SCALER eps = static_cast<SCALER>(1e-6);
         const VECTOR3d x[4] = { p2, p3, p0, p1 };
         SCALER invMass[4] = { invMass2, invMass3, invMass0, invMass1 };
 
-        SCALER energy = 0.0;
+        SCALER C = 0.0;
         for (unsigned char k = 0; k < 4; k++)
             for (unsigned char j = 0; j < 4; j++)
-                energy += Q(j, k) * (x[k].dot(x[j]));
-        energy *= 0.5;
+                C += Q(j, k) * (x[k].dot(x[j]));
+        C *= 0.5;
+        C -= C0;
 
         VECTOR3d gradC[4] = {};
         gradC[0] = VECTOR3d::uniform(0);

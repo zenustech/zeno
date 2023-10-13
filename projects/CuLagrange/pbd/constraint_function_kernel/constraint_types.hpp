@@ -8,6 +8,7 @@ enum category_c : int {
     edge_length_constraint,
     isometric_bending_constraint,
     dihedral_bending_constraint,
+    dihedral_spring_constraint,
     p_kp_collision_constraint,
     p_p_collision_constraint,
     vert_bending_spring,

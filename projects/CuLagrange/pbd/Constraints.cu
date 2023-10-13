@@ -135,7 +135,7 @@ struct MakeSurfaceConstraintTopology : INode {
 			sort_topology_by_coloring_tag(cudaPol,colors,reordered_map,color_offset);
             // std::cout << "quads.size() = " << quads.size() << "\t" << "edge_topos.size() = " << edge_topos.size() << std::endl;
 
-            eles.append_channels(cudaPol,{{"inds",4},{"Q",4 * 4}});
+            eles.append_channels(cudaPol,{{"inds",4},{"Q",4 * 4},{"C0",1}});
 
             // std::cout << "halfedges.size() = " << halfedges.size() << "\t" << "bd_topos.size() = " << bd_topos.size() << std::endl;
 
@@ -152,8 +152,10 @@ struct MakeSurfaceConstraintTopology : INode {
                         x[i] = verts.pack(dim_c<3>,"x",bd_topos[ei][i]);
 
                     mat4 Q = mat4::uniform(0);
-                    CONSTRAINT::init_IsometricBendingConstraint(x[0],x[1],x[2],x[3],Q);
+                    float C0{};
+                    CONSTRAINT::init_IsometricBendingConstraint(x[0],x[1],x[2],x[3],Q,C0);
                     eles.tuple(dim_c<16>,"Q",oei) = Q;
+                    eles("C0",oei) = C0;
             });
         }
         // angle on (p2, p3) between triangles (p0, p2, p3) and (p1, p3, p2)
@@ -190,6 +192,36 @@ struct MakeSurfaceConstraintTopology : INode {
                     eles("ra",oei) = alpha;
             });      
         }
+
+        if(type == "dihedral_spring") {
+            constraint->setMeta(CONSTRAINT_KEY,category_c::dihedral_spring_constraint);
+            const auto& halfedges = (*source)[ZenoParticles::s_surfHalfEdgeTag];
+            zs::Vector<zs::vec<int,2>> ds_topos{quads.get_allocator(),0};
+
+            retrieve_dihedral_spring_topology(cudaPol,quads,halfedges,ds_topos);
+
+            topological_coloring(cudaPol,ds_topos,colors);
+			sort_topology_by_coloring_tag(cudaPol,colors,reordered_map,color_offset);
+
+            eles.resize(ds_topos.size());
+            eles.append_channels(cudaPol,{{"inds",2},{"r",1}}); 
+
+            cudaPol(zs::range(eles.size()),[
+                verts = proxy<space>({},verts),
+                eles = proxy<space>({},eles),
+                reordered_map = proxy<space>(reordered_map),
+                uniform_stiffness = uniform_stiffness,
+                colors = proxy<space>(colors),
+                edge_topos = proxy<space>(ds_topos)] ZS_LAMBDA(int oei) mutable {
+                    auto ei = reordered_map[oei];
+                    eles.tuple(dim_c<2>,"inds",oei) = edge_topos[ei].reinterpret_bits(float_c);
+                    vec3 x[2] = {};
+                    for(int i = 0;i != 2;++i)
+                        x[i] = verts.pack(dim_c<3>,"x",edge_topos[ei][i]);
+                    eles("r",oei) = (x[0] - x[1]).norm();
+            }); 
+        }
+
         if(type == "kcollision") {
             using bv_t = typename ZenoLinearBvh::lbvh_t::Box;
 
@@ -257,10 +289,22 @@ struct MakeSurfaceConstraintTopology : INode {
             color_offset.setVal(0);
         }
 
-        if(type == "attachment") {
+        // attach to the closest vertex
+        if(type == "vertex_attachment") {
             using bv_t = typename ZenoLinearBvh::lbvh_t::Box;
 
         }
+
+        // attach to the closest point on the surface
+        if(type == "surface_point_attachment") {
+
+        }
+
+        // attach to the tetmesh
+        if(type == "tetrahedra_attachment") {
+
+        }
+
 
         cudaPol(zs::range(eles.size()),[
             eles = proxy<space>({},eles),
@@ -345,7 +389,7 @@ struct VisualizePBDConstraint : INode {
 
         auto constraint_type = constraints_ptr->readMeta(CONSTRAINT_KEY,wrapt<category_c>{});
 
-        if(constraint_type == category_c::edge_length_constraint) {
+        if(constraint_type == category_c::edge_length_constraint || constraint_type == category_c::dihedral_spring_constraint) {
             pverts.resize(constraints.size() * 2);
             auto& plines = prim->lines;
             plines.resize(constraints.size());
@@ -455,7 +499,7 @@ struct XPBDSolve : INode {
                     float s = cquads("stiffness",coffset + gi);
                     float lambda = cquads("lambda",coffset + gi);
 
-                    if(category == category_c::edge_length_constraint) {
+                    if(category == category_c::edge_length_constraint || category == category_c::dihedral_spring_constraint) {
                         auto edge = cquads.pack(dim_c<2>,"inds",coffset + gi,int_c);
                         vec3 p0{},p1{};
                         p0 = verts.pack(dim_c<3>,ptag,edge[0]);
@@ -465,7 +509,7 @@ struct XPBDSolve : INode {
                         float r = cquads("r",coffset + gi);
 
                         vec3 dp0{},dp1{};
-                        if(!CONSTRAINT::solve_DistanceConstraint(
+                        if(CONSTRAINT::solve_DistanceConstraint(
                             p0,minv0,
                             p1,minv1,
                             r,
@@ -489,6 +533,7 @@ struct XPBDSolve : INode {
                         }
 
                         auto Q = cquads.pack(dim_c<4,4>,"Q",coffset + gi);
+                        auto C0 = cquads("C0",coffset + gi);
 
                         vec3 dp[4] = {};
                         if(!CONSTRAINT::solve_IsometricBendingConstraint(
@@ -499,6 +544,7 @@ struct XPBDSolve : INode {
                             Q,
                             s,
                             dt,
+                            C0,
                             lambda,
                             dp[0],dp[1],dp[2],dp[3]))
                                 return;
