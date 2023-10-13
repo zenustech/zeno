@@ -93,6 +93,54 @@ ZENDEFNODE(HeatmapFromImage,
     "visualize",
 }});
 
+struct HeatmapFromImage2 : zeno::INode {
+    virtual void apply() override {
+        auto image = get_input<zeno::PrimitiveObject>("image");
+        int w = image->userData().get2<int>("w");
+        auto heatmap = std::make_shared<HeatmapObject>();
+
+        auto spos = get_input2<float>("startPos");
+        auto epos = get_input2<float>("endPos");
+        int start = zeno::clamp(spos, 0.0f, 1.0f) * w;
+        int end = zeno::clamp(epos, 0.0f, 1.0f) * w;
+        std::vector<vec3f> temp;
+        for (auto i = start; i < end; i++) {
+            temp.push_back(image->verts[i]);
+        }
+
+        auto resample = get_input2<int>("resample");
+        if (0 < resample && resample < w) {
+            for (auto i = 0; i < resample; i++) {
+                float x = i / float(resample);
+                x = zeno::clamp(x, 0, 1) * temp.size();
+                int j = (int) zeno::floor(x);
+                j = zeno::clamp(j, 0, temp.size() - 2);
+                float f = x - j;
+                auto c = (1 - f) * temp.at(j) + f * temp.at(j + 1);
+                heatmap->colors.push_back(c);
+            }
+        }
+        else {
+            heatmap->colors = temp;
+        }
+
+        set_output("heatmap", std::move(heatmap));
+    }
+};
+
+ZENDEFNODE(HeatmapFromImage2,
+           { /* inputs: */ {
+                   "image",
+                   {"float", "startPos", "0"},
+                   {"float", "endPos", "1"},
+                   {"int", "resample", "0"},
+               }, /* outputs: */ {
+                   "heatmap",
+               }, /* params: */ {
+               }, /* category: */ {
+                   "visualize",
+               }});
+
 struct PrimitiveColorByHeatmap : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<zeno::PrimitiveObject>("prim");

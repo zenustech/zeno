@@ -255,6 +255,10 @@
         <source>Curve Link</source>
         <translation>曲线连接</translation>
     </message>
+	<message>
+        <source>Always mode</source>
+        <translation>预览模式</translation>
+    </message>
 </context>
 <context>
     <name>DockContent_Log</name>
@@ -2547,6 +2551,14 @@
     <message>
         <source>Status Bar</source>
         <translation type="unfinished">状态栏</translation>
+    </message>
+	<message>
+        <source>File Saved</source>
+        <translation>文件已保存</translation>
+    </message>
+	<message>
+        <source>File Opened</source>
+        <translation>文件已打开</translation>
     </message>
     <message>
         <source>layout format is invalid.</source>

@@ -74,7 +74,9 @@ struct GraphicSelectBox final : IGraphicDraw {
 
             prog->set_uniform("mTrans", mTrans);
 
+            glDisable(GL_DEPTH_TEST);
             CHECK_GL(glDrawArrays(GL_TRIANGLES, 0, vertex_count));
+            glEnable(GL_DEPTH_TEST);
 
             vbo->disable_attribute(0);
             vbo->unbind();

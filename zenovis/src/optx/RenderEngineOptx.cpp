@@ -928,8 +928,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
                 tmp->mark = ShaderMaker::Mesh;
                 tmp->matid = "Default";
-                tmp->source = _light_shader_template.shadtmpl;
-                tmp->fallback = std::make_shared<std::string>("");
+                tmp->source = _default_shader_template.shadtmpl;
+                tmp->fallback = _default_shader_fallback;
 
                 _mesh_shader_list.push_back(tmp);
             }
@@ -939,8 +939,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
                 tmp->mark = ShaderMaker::Sphere;
                 tmp->matid = "Default";
-                tmp->source = _light_shader_template.shadtmpl;
-                tmp->fallback = std::make_shared<std::string>("");
+                tmp->source = _default_shader_template.shadtmpl;
+                tmp->fallback = _default_shader_fallback;
 
                 _sphere_shader_list.push_back(tmp);
             }
@@ -1083,6 +1083,28 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     }
             }
 
+            {
+                auto tmp = std::make_shared<ShaderPrepared>();
+
+                tmp->mark = ShaderMaker::Mesh;
+                tmp->matid = "Light";
+                tmp->source = _light_shader_template.shadtmpl;
+                tmp->fallback = _default_shader_fallback;
+
+                _mesh_shader_list.push_back(tmp);
+            }
+
+            {
+                auto tmp = std::make_shared<ShaderPrepared>();
+
+                tmp->mark = ShaderMaker::Sphere;
+                tmp->matid = "Light";
+                tmp->source = _light_shader_template.shadtmpl;
+                tmp->fallback = _default_shader_fallback;
+
+                _sphere_shader_list.push_back(tmp);
+            }
+
             std::vector<std::shared_ptr<ShaderPrepared>> allShaders{};
             allShaders.reserve(_mesh_shader_list.size()+_sphere_shader_list.size()+_volume_shader_list.size());            
 
@@ -1143,9 +1165,15 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 xinxinoptix::cleanupSpheresCPU();
 
                 xinxinoptix::optixupdateend();
-                std::cout<<"Finish optix update" << std::endl;
+                std::cout<< "Finish optix update" << std::endl;
             }
-            
+
+            if (scene->drawOptions->updateMatlOnly && !bMeshMatLUTChanged)
+            {
+                xinxinoptix::optixupdateend();
+                std::cout << "Finish optix update" << std::endl;
+            }
+
         }
 
         if(lightNeedUpdate){

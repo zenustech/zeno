@@ -1201,11 +1201,11 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
             // read selected mode
             auto select_mode_str = zeno::NodeSyncMgr::GetInstance().getInputValString(nodes[0], "mode");
             if (select_mode_str == "triangle")
-                scene->select_mode = zenovis::PICK_MESH;
+                scene->select_mode = zenovis::PICK_MODE::PICK_MESH;
             else if (select_mode_str == "line")
-                scene->select_mode = zenovis::PICK_LINE;
+                scene->select_mode = zenovis::PICK_MODE::PICK_LINE;
             else
-                scene->select_mode = zenovis::PICK_VERTEX;
+                scene->select_mode = zenovis::PICK_MODE::PICK_VERTEX;
             // read selected elements
             string node_context;
             auto node_selected_str = zeno::NodeSyncMgr::GetInstance().getParamValString(nodes[0], "selected");
@@ -1247,13 +1247,13 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
                 auto _far = scene->camera->m_far;
                 auto fov = scene->camera->m_fov;
                 auto cz = glm::length(scene->camera->m_lodcenter);
-                if (depth != 0) {
-//                    depth = depth * 2 - 1;
-//                    cz = 2 * _near * _far / ((_far + _near) - depth * (_far - _near));
-                    glm::vec4 ndc = {0, 0, depth, 1};
-                    glm::vec4 clip_c = glm::inverse(scene->camera->m_proj) * ndc;
-                    clip_c /= clip_c.w;
-                    cz = -clip_c.z;
+                if (depth != 1) {
+                    depth = depth * 2 - 1;
+                    cz = 2 * _near * _far / ((_far + _near) - depth * (_far - _near));
+//                    glm::vec4 ndc = {0, 0, depth, 1};
+//                    glm::vec4 clip_c = glm::inverse(scene->camera->m_proj) * ndc;
+//                    clip_c /= clip_c.w;
+//                    cz = -clip_c.z;
                 }
                 auto w = scene->camera->m_nx;
                 auto h = scene->camera->m_ny;

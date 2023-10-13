@@ -100,8 +100,15 @@ bool ZenoNewnodeMenu::eventFilter(QObject* watched, QEvent* event)
             if (m_preSearchMode)
             {
                 m_searchView->setFocus();
-                m_searchView->setCurrentRow(0);
+                m_searchView->setCurrentRow(m_searchView->currentRow() + 1);
                 return true;
+            }
+        }
+        else if (watched == m_searchEdit && (pKeyEvent->key() == Qt::Key_Return || pKeyEvent->key() == Qt::Key_Enter))
+        {
+            if (m_searchView->isVisible() && m_searchView->count() > 0)
+            {
+                emit m_searchView->pressed(m_searchView->currentIndex());
             }
         }
     }
