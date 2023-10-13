@@ -2,6 +2,7 @@
 //#include "Utils.hpp"
 #include <cassert>
 #include <chrono>
+#include <thread>
 #include <zeno/types/DictObject.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/types/NumericObject.h>
@@ -18,6 +19,7 @@
 #include <zeno/VDBGrid.h>
 
 #include "zensim/execution/ConcurrencyPrimitive.hpp"
+#include "zensim/visitors/Print.hpp"
 
 namespace zeno {
 
@@ -252,18 +254,22 @@ struct ZSFileTest : INode {
 #endif
 
 #if defined(ZS_PLATFORM_LINUX)
-        // ref: https://man7.org/linux/man-pages/man2/open.2.html
-        // ref: https://www.man7.org/linux/man-pages/man2/mmap.2.html
+
+        auto v = zs::vec<float, 3, 3>::constant(1);
+        v.accept(zs::Printer{});
+
+// ref: https://man7.org/linux/man-pages/man2/open.2.html
+// ref: https://www.man7.org/linux/man-pages/man2/mmap.2.html
+#if 1
         int fd = open(fn.data(), /* int flag */ O_RDWR, /* mode_t mode */ S_IRUSR | S_IWUSR);
         struct stat st;
-        char* addr;
+        char *addr;
         if (fstat(fd, &st) == -1) {
             addr = nullptr;
             fmt::print("unable to query file size.\n");
-        }
-        else {
-            addr = (char*)mmap(NULL, st.st_size, /* int prot */ PROT_READ | PROT_WRITE, /* int flags */ MAP_SHARED,
-                /* int file_handle */ fd, /* offset */ 0);
+        } else {
+            addr = (char *)mmap(NULL, st.st_size, /* int prot */ PROT_READ | PROT_WRITE, /* int flags */ MAP_SHARED,
+                                /* int file_handle */ fd, /* offset */ 0);
         }
         /// ...
         fmt::print("====begin====\n");
@@ -275,31 +281,52 @@ struct ZSFileTest : INode {
 
         munmap(addr, st.st_size);
         close(fd);
+#else
+        int fd = open(fn.data(), /* int flag */ O_WRONLY | O_CREAT | O_TRUNC,
+                      /* mode_t mode */ S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+        size_t sz = 32;
+        char *addr;
+        {
+            addr = (char *)mmap(NULL, sz, /* int prot */ PROT_READ | PROT_WRITE, /* int flags */ MAP_SHARED,
+                                /* int file_handle */ fd, /* offset */ 0);
+        }
+        /// ...
+        fmt::print("====begin====\n");
+        for (int i = 0; i < sz; ++i) {
+            fmt::print("writing {}", 'a' + i);
+            addr[i] = ::toupper('a' + i);
+        }
+        fmt::print("\n====done====");
+
+        munmap(addr, sz);
+        close(fd);
+#endif
 #elif defined(ZS_PLATFORM_WINDOWS)
         fmt::print("error code 0: {}\n", GetLastError());
-        HANDLE fd = CreateFileA(fn.data(), /*dwDesiredAccess*/GENERIC_READ | GENERIC_WRITE, /*dwShareMode*/FILE_SHARE_READ | FILE_SHARE_WRITE, /*lpSecurityAttributes*/NULL, /*dwCreationDisposition*/OPEN_EXISTING, /*dwFlagsAndAttributes*/FILE_ATTRIBUTE_NORMAL, /*hTemplateFile*/NULL);
+        HANDLE fd = CreateFileA(fn.data(), /*dwDesiredAccess*/ GENERIC_READ | GENERIC_WRITE,
+                                /*dwShareMode*/ FILE_SHARE_READ | FILE_SHARE_WRITE, /*lpSecurityAttributes*/ NULL,
+                                /*dwCreationDisposition*/ OPEN_EXISTING, /*dwFlagsAndAttributes*/ FILE_ATTRIBUTE_NORMAL,
+                                /*hTemplateFile*/ NULL);
         fmt::print("error code after createfile: {}\n", GetLastError());
         HANDLE fm;
         size_t sz = 0;
-        char* addr = nullptr;
+        char *addr = nullptr;
         if (fd != INVALID_HANDLE_VALUE) {
             sz = GetFileSize(fd, NULL);
             fmt::print("file size: {}\n", sz);
-            fm = CreateFileMappingA(fd, NULL, /*flProtect*/PAGE_READWRITE, 0, 0, /* lpName */NULL);
+            fm = CreateFileMappingA(fd, NULL, /*flProtect*/ PAGE_READWRITE, 0, 0, /* lpName */ NULL);
             fmt::print("error code after filemapping: {}\n", GetLastError());
             if (fm != INVALID_HANDLE_VALUE) {
-                addr = (char*)MapViewOfFile(fm, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+                addr = (char *)MapViewOfFile(fm, FILE_MAP_ALL_ACCESS, 0, 0, 0);
                 fmt::print("error code after view: {}\n", GetLastError());
                 if (addr == nullptr) {
                     fmt::print("wtf??");
                     fmt::print("error code: {}\n", GetLastError());
                 }
-            }
-            else {
+            } else {
                 fmt::print("failed to create file mapping\n");
             }
-        }
-        else {
+        } else {
             fmt::print("failed to open file\n");
         }
         fmt::print("====begin====\n");
