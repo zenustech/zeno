@@ -790,7 +790,7 @@ struct DetangleImminentCollisionWithBoundary : INode {
                 imminent_collision_buffer,
                 nm_imminent_collision);
 
-            std::cout << "nm_self_imminent_collision : " << nm_imminent_collision.getVal(0) << std::endl;
+            std::cout << "nm_kinematic_imminent_collision : " << nm_imminent_collision.getVal(0) << std::endl;
             if(nm_imminent_collision.getVal(0) == 0) 
                 break;              
 
@@ -799,7 +799,7 @@ struct DetangleImminentCollisionWithBoundary : INode {
 
         if(add_repulsion_force) {
             // if(add_repulsion_force) {
-            // std::cout << "add imminent replering force" << std::endl;
+            std::cout << "add imminent replering force" << std::endl;
             auto max_repel_distance = get_input2<T>("max_repel_distance");
 
             cudaPol(zs::range(imminent_collision_buffer.size()),[
@@ -842,8 +842,12 @@ struct DetangleImminentCollisionWithBoundary : INode {
                     auto vn = vr.dot(collision_normal);
                     if(vn < -vn_threshold) {
                         atomic_add(exec_tag,&nm_imminent_collision[0],1);
-                        for(int i = 0;i != 4;++i)
+                        for(int i = 0;i != 4;++i) {
+                            if(vtemp("minv",inds[i]) < eps)
+                                continue;
+
                             verts("imminent_fail",inds[i]) = (T)1.0;
+                        }
                     }
                     if(vn > (T)max_repel_distance * d || d < 0) {          
                         // if with current velocity, the collided particles can be repeled by more than 1% of collision depth, no extra repulsion is needed
@@ -861,8 +865,8 @@ struct DetangleImminentCollisionWithBoundary : INode {
                 });
 
 
-            // auto impulse_norm = TILEVEC_OPS::dot<3>(cudaPol,imminent_collision_buffer,"impulse","impulse");
-            // std::cout << "REPEL_impulse_norm : " << impulse_norm << std::endl;
+            auto impulse_norm = TILEVEC_OPS::dot<3>(cudaPol,imminent_collision_buffer,"impulse","impulse");
+            std::cout << "REPEL_impulse_norm : " << impulse_norm << std::endl;
 
             COLLISION_UTILS::apply_impulse(cudaPol,
                 vtemp,"v",
@@ -942,6 +946,7 @@ struct DetangleCCDCollisionWithBoundary : INode {
         auto pre_kx_tag = get_input2<std::string>("previous_kx_tag");
         const auto& kverts = kboundary->getParticles();
         const auto &kedges = (*kboundary)[ZenoParticles::s_surfEdgeTag];
+        const auto& ktris = kboundary->getQuadraturePoints();
 
         dtiles_t vtemp{verts.get_allocator(),{
             {"x",3},
@@ -958,6 +963,17 @@ struct DetangleCCDCollisionWithBoundary : INode {
                 vtemp("minv",vi) = verts("minv",vi);
         });
 
+        cudaPol(zs::range(kverts.size()),[
+            voffset = verts.size(),
+            vtemp = proxy<space>({},vtemp),
+            kverts = proxy<space>({},kverts),
+            kxtag = zs::SmallString(current_kx_tag),
+            pkxtag = zs::SmallString(pre_kx_tag)] ZS_LAMBDA(int kvi) mutable {
+                vtemp.tuple(dim_c<3>,"x",kvi + voffset) = kverts.pack(dim_c<3>,pkxtag,kvi);
+                vtemp.tuple(dim_c<3>,"v",kvi + voffset) = kverts.pack(dim_c<3>,kxtag,kvi) - vtemp.pack(dim_c<3>,"x",kvi + voffset);
+                vtemp("minv",kvi + voffset) = (T)0;
+        });
+
         dtiles_t etemp{edges.get_allocator(),{
             {"inds",2}
         },edges.size() + kedges.size()};
@@ -972,17 +988,20 @@ struct DetangleCCDCollisionWithBoundary : INode {
                 etemp.tuple(dim_c<2>,"inds",kei + eoffset) = kedge.reinterpret_bits(float_c);
         });
 
-
-        cudaPol(zs::range(kverts.size()),[
-            voffset = verts.size(),
-            vtemp = proxy<space>({},vtemp),
-            kverts = proxy<space>({},kverts),
-            kxtag = zs::SmallString(current_kx_tag),
-            pkxtag = zs::SmallString(pre_kx_tag)] ZS_LAMBDA(int kvi) mutable {
-                vtemp.tuple(dim_c<3>,"x",kvi + voffset) = kverts.pack(dim_c<3>,pkxtag,kvi);
-                vtemp.tuple(dim_c<3>,"v",kvi + voffset) = kverts.pack(dim_c<3>,kxtag,kvi) - vtemp.pack(dim_c<3>,"x",kvi + voffset);
-                vtemp("minv",kvi + voffset) = (T)0;
+        dtiles_t ttemp{tris.get_allocator(),{
+            {"inds",3}
+        },tris.size() + ktris.size()};
+        TILEVEC_OPS::copy<3>(cudaPol,tris,"inds",ttemp,"inds",0);
+        cudaPol(zs::range(ktris.size()),[
+            toffset = tris.size(),
+            ttemp = proxy<space>({},ttemp),
+            ktris = proxy<space>({},ktris),
+            voffset = verts.size()] ZS_LAMBDA(int kti) mutable {
+                auto ktri = ktris.pack(dim_c<3>,"inds",kti,int_c);
+                ktri += voffset;
+                ttemp.tuple(dim_c<3>,"inds",kti + toffset) = ktri.reinterpret_bits(float_c);
         });
+
 
         lbvh_t triBvh{},eBvh{};
 
@@ -1009,27 +1028,27 @@ struct DetangleCCDCollisionWithBoundary : INode {
 
                 auto do_bvh_refit = iter > 0;
                 COLLISION_UTILS::calc_continous_self_PT_collision_impulse(cudaPol,
-                    verts,
+                    vtemp,
                     vtemp,"x","v",
-                    tris,
+                    ttemp,
                     // thickness,
                     triBvh,
                     do_bvh_refit,
                     impulse_buffer,
-                    impulse_count);
+                    impulse_count,false);
             }
 
             if(do_ee_detection) {
                 std::cout << "do continous self EE cololision impulse" << std::endl;
                 auto do_bvh_refit = iter > 0;
                 COLLISION_UTILS::calc_continous_self_EE_collision_impulse(cudaPol,
-                    verts,
+                    vtemp,
                     vtemp,"x","v",
-                    edges,
+                    etemp,
                     eBvh,
                     do_bvh_refit,
                     impulse_buffer,
-                    impulse_count);
+                    impulse_count,false);
             }
 
             std::cout << "apply CCD impulse" << std::endl;
@@ -1059,7 +1078,7 @@ struct DetangleCCDCollisionWithBoundary : INode {
                 //     atomic_add(exec_tag,&vtemp("v",i,vi),dv[i]);
             });
 
-            std::cout << "nm_ccd_collision : " << nm_ccd_collision.getVal() << std::endl;
+            std::cout << "nm_kinematic_ccd_collision : " << nm_ccd_collision.getVal() << std::endl;
             if(nm_ccd_collision.getVal() == 0)
                 break;
         }   

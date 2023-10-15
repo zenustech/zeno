@@ -607,7 +607,7 @@ struct DetangleCCDCollision : INode {
                 //     atomic_add(exec_tag,&vtemp("v",i,vi),dv[i]);
             });
 
-            std::cout << "nm_ccd_collision : " << nm_ccd_collision.getVal() << std::endl;
+            std::cout << "nm_self_ccd_collision : " << nm_ccd_collision.getVal() << std::endl;
             if(nm_ccd_collision.getVal() == 0)
                 break;
         }

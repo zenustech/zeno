@@ -423,7 +423,7 @@ namespace zeno {
             dtiles_t verts_buffer{verts.get_allocator(),{
                 {"inds",1},
                 {"x",3},
-                {"he_inds"}
+                {"he_inds",1}
             },is_tet_volume_mesh ? (*zsparticles)[ZenoParticles::s_surfVertTag].size() : verts.size()};
 
             TILEVEC_OPS::copy(cudaPol,tris,"he_inds",tri_buffer,"he_inds");

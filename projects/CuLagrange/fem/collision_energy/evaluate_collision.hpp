@@ -31,6 +31,8 @@
 #include "vertex_face_collision.hpp"
 #include "../../geometry/kernel/topology.hpp"
 #include "../../geometry/kernel/intersection.hpp"
+
+#include "../fem/Ccds.hpp"
 // #include "edge_edge_sqrt_collision.hpp"
 // #include "edge_edge_collision.hpp"
 
@@ -2042,7 +2044,8 @@ void calc_continous_self_PT_collision_impulse(Pol& pol,
     TriBvh& triCCDBvh,
     bool refit_bvh,
     ImpulseBuffer& impulse_buffer,
-    ImpulseCount& impulse_count) {
+    ImpulseCount& impulse_count,
+    bool output_debug_inform = false) {
         using namespace zs;
         constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
         // constexpr auto exec_tag = wrapv<space>{};
@@ -2069,6 +2072,7 @@ void calc_continous_self_PT_collision_impulse(Pol& pol,
             tris = proxy<space>({},tris),
             // csPT = proxy<space>(csPT),
             // thickness = thickness,
+            output_debug_inform = output_debug_inform,
             impulse_buffer = proxy<space>(impulse_buffer),
             impulse_count = proxy<space>(impulse_count),
             eps = eps,
@@ -2109,7 +2113,11 @@ void calc_continous_self_PT_collision_impulse(Pol& pol,
                     }
 
                     auto alpha = (T)1.0;
-                    if(!pt_accd(ps[3],ps[0],ps[1],ps[2],vs[3],vs[0],vs[1],vs[2],(T)0.2,(T)0,alpha))
+
+                    // if(!pt_accd(ps[3],ps[0],ps[1],ps[2],vs[3],vs[0],vs[1],vs[2],(T)0.2,(T)0,alpha))
+                    //     return;
+
+                    if(!accd::ptccd(ps[3],ps[0],ps[1],ps[2],vs[3],vs[0],vs[1],vs[2],(T)0.2,(T)0,alpha))
                         return;
 
                     vec3 nps[4] = {};
@@ -2145,14 +2153,17 @@ void calc_continous_self_PT_collision_impulse(Pol& pol,
                         return;
                     
                     auto impulse = -collision_nrm * rv_nrm * ((T)1 - alpha);
-                    // printf("find collision pairs[%d %d] with ccd : %f impulse : \n%f %f %f\n%f %fbary : %f %f %f %f\nminv : %f %f %f %f\n",ti,vi,(float)alpha,
-                    //     (float)impulse[0],(float)impulse[1],(float)impulse[2],
-                    //     (float)rv_nrm,(float)cm,
-                    //     (float)bary[0],(float)bary[1],(float)bary[2],(float)bary[3],
-                    //     (float)invMass("minv",inds[0]),
-                    //     (float)invMass("minv",inds[1]),
-                    //     (float)invMass("minv",inds[2]),
-                    //     (float)invMass("minv",inds[3]));
+                    if(output_debug_inform) {
+                        // printf("find PT collision pairs[%d %d] with ccd : %f impulse : \n%f %f %f\n%f %fbary : %f %f %f %f\nminv : %f %f %f %f\n",ti,vi,(float)alpha,
+                        //     (float)impulse[0],(float)impulse[1],(float)impulse[2],
+                        //     (float)rv_nrm,(float)cm,
+                        //     (float)bary[0],(float)bary[1],(float)bary[2],(float)bary[3],
+                        //     (float)invMass("minv",inds[0]),
+                        //     (float)invMass("minv",inds[1]),
+                        //     (float)invMass("minv",inds[2]),
+                        //     (float)invMass("minv",inds[3]));
+                        printf("find PT collision pairs[%d %d] with ccd : %f impulse : %f %f %f\n",ti,vi,(float)alpha,(float)impulse[0],(float)impulse[1],(float)impulse[2]);
+                    }
 
                     for(int i = 0;i != 4;++i) {
                         if(invMass("minv",inds[i]) < eps)
@@ -2183,7 +2194,8 @@ void calc_continous_self_EE_collision_impulse(Pol& pol,
     EdgeBvh& edgeCCDBvh,
     bool refit_bvh,
     ImpulseBuffer& impulse_buffer,
-    ImpulseCountBuffer& impulse_count) {
+    ImpulseCountBuffer& impulse_count,
+    bool output_debug_inform = false) {
         using namespace zs;
         constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
         // constexpr auto exec_tag = wrapv<space>{};
@@ -2212,8 +2224,9 @@ void calc_continous_self_EE_collision_impulse(Pol& pol,
             impulse_buffer = proxy<space>(impulse_buffer),
             impulse_count = proxy<space>(impulse_count),
             // thickness = thickness,
+            output_debug_inform = output_debug_inform,
             eps = eps,
-            execTag,
+            execTag = execTag,
             edgeBvs = proxy<space>(edgeBvs),
             bvh = proxy<space>(edgeCCDBvh)] ZS_LAMBDA(int ei) mutable {
                 auto ea = edges.pack(dim_c<2>,"inds",ei,int_c);
@@ -2259,8 +2272,11 @@ void calc_continous_self_EE_collision_impulse(Pol& pol,
                             return;
 
                     auto alpha = (T)1.0;
-                    if(!ee_accd(ps[0],ps[1],ps[2],ps[3],vs[0],vs[1],vs[2],vs[3],(T)0.2,(T)0.0,alpha))
+    
+                    if(!accd::eeccd(ps[0],ps[1],ps[2],ps[3],vs[0],vs[1],vs[2],vs[3],(T)0.2,(T)0.0,alpha))
                         return;
+
+                    // printf("coarse find EE collision pairs[%d %d] with ccd\n",ei,nei);
 
                     vec3 nps[4] = {};
                     for(int i = 0;i != 4;++i)
@@ -2290,24 +2306,32 @@ void calc_continous_self_EE_collision_impulse(Pol& pol,
                         collision_nrm = (T)-1 * collision_nrm;
 
                     auto vr_nrm = collision_nrm.dot(vr);     
+                    auto impulse = -collision_nrm * vr_nrm * ((T)1 - alpha); 
 
                     auto cm = (T).0;
                     for(int i = 0;i != 4;++i)
                         cm += bary[i] * bary[i] * invMass("minv",inds[i]);
                     if(cm < eps)
                         return;
+    
+                    // printf("find EE collision pairs[%d %d] with ccd : %f impulse : %f %f %f\n",ei,nei,
+                    //     (float)alpha,(float)impulse[0],(float)impulse[1],(float)impulse[2]);
 
-                    auto impulse = -collision_nrm * vr_nrm * ((T)1 - alpha); 
-                    
                     for(int i = 0;i != 4;++i) {
+                        if(invMass("minv",inds[i]) < eps)
+                            continue;
                         auto beta = (bary[i] * invMass("minv",inds[i])) / cm;
-                        atomic_add(exec_tag,&impulse_count[inds[i]],1);
+                        atomic_add(execTag,&impulse_count[inds[i]],1);
                         for(int d = 0;d != 3;++d)
-                            atomic_add(exec_tag,&impulse_buffer[inds[i]][d],impulse[d] * beta);
+                            atomic_add(execTag,&impulse_buffer[inds[i]][d],impulse[d] * beta);
                     }  
 #else
                     if(!compute_continous_EE_collision_impulse(ps,vs,minvs,imps))
                         return;    
+
+                    if(output_debug_inform)
+                        printf("find EE collision pairs[%d %d] with ccd\n",ei,nei);
+
                     for(int i = 0;i != 4;++i) {
                         if(invMass("minv",inds[i]) < eps)
                             continue;

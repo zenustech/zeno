@@ -4,6 +4,7 @@
 #include "Utils.hpp"
 
 #include "zensim/math/VecInterface.hpp"
+#include "../fem/Ccds.hpp"
 
 #include "../../geometry/kernel/geo_math.hpp"
 
@@ -1038,6 +1039,7 @@ namespace COLLISION_UTILS {
             for(int i = 0;i != 4;++i)
                 imps[i] = bary[i] * (minv[i] / cm) * impulse;
 
+
             return true;
     }
 
@@ -1057,7 +1059,7 @@ namespace COLLISION_UTILS {
                     has_dynamic_points = true;
             
 
-            if(!has_dynamic_points || !ee_accd(ps[0],ps[1],ps[2],ps[3],vs[0],vs[1],vs[2],vs[3],(REAL)0.2,(REAL)0.0,alpha)) {
+            if(!has_dynamic_points || !accd::eeccd(ps[0],ps[1],ps[2],ps[3],vs[0],vs[1],vs[2],vs[3],(REAL)0.2,(REAL)0.0,alpha)) {
                 for(int i = 0;i != 4;++i)
                     imps[i] = VECTOR3::zeros();
                 return false;
