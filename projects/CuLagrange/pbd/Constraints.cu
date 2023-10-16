@@ -173,7 +173,7 @@ struct MakeSurfaceConstraintTopology : INode {
 			sort_topology_by_coloring_tag(cudaPol,colors,reordered_map,color_offset);
             // std::cout << "quads.size() = " << quads.size() << "\t" << "edge_topos.size() = " << edge_topos.size() << std::endl;
 
-            eles.append_channels(cudaPol,{{"inds",4},{"ra",1}});      
+            eles.append_channels(cudaPol,{{"inds",4},{"ra",1},{"sign",1}});      
 
             cudaPol(zs::range(eles.size()),[
                 eles = proxy<space>({},eles),
@@ -183,13 +183,21 @@ struct MakeSurfaceConstraintTopology : INode {
                     auto ei = reordered_map[oei];
                     eles.tuple(dim_c<4>,"inds",oei) = bd_topos[ei].reinterpret_bits(float_c);
 
+                    // printf("topos[%d] : %d %d %d %d\n",oei
+                        // ,bd_topos[ei][0]
+                        // ,bd_topos[ei][1]
+                        // ,bd_topos[ei][2]
+                        // ,bd_topos[ei][3]);
+
                     vec3 x[4] = {};
                     for(int i = 0;i != 4;++i)
                         x[i] = verts.pack(dim_c<3>,"x",bd_topos[ei][i]);
 
                     float alpha{};
-                    CONSTRAINT::init_DihedralBendingConstraint(x[0],x[1],x[2],x[3],alpha);
+                    float alpha_sign{};
+                    CONSTRAINT::init_DihedralBendingConstraint(x[0],x[1],x[2],x[3],alpha,alpha_sign);
                     eles("ra",oei) = alpha;
+                    eles("sign",oei) = alpha_sign;
             });      
         }
 
@@ -565,6 +573,7 @@ struct XPBDSolve : INode {
                         }
 
                         auto ra = cquads("ra",coffset + gi);
+                        auto ras = cquads("sign",coffset + gi);
                         vec3 dp[4] = {};
                         if(!CONSTRAINT::solve_DihedralConstraint(
                             p[0],minv[0],
@@ -572,6 +581,7 @@ struct XPBDSolve : INode {
                             p[2],minv[2],
                             p[3],minv[3],
                             ra,
+                            ras,
                             s,
                             dt,
                             lambda,
@@ -677,6 +687,7 @@ struct XPBDSolveSmooth : INode {
                         }
 
                         auto ra = cquads("ra",ci);
+                        auto ras = cquads("sign",ci);
                         vec3 dp[4] = {};
                         if(!CONSTRAINT::solve_DihedralConstraint(
                             p[0],minv[0],
@@ -684,6 +695,7 @@ struct XPBDSolveSmooth : INode {
                             p[2],minv[2],
                             p[3],minv[3],
                             ra,
+                            ras,
                             (float)1,
                             dp[0],dp[1],dp[2],dp[3]))
                                 return;
