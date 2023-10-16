@@ -8,6 +8,7 @@
 #include <zenoui/comctrl/zcombobox.h>
 #include <zenoui/comctrl/zlabel.h>
 #include <zenoui/style/zenostyle.h>
+#include <zenoui/ColorEditor/ColorEditor.h>
 #include <zenomodel/include/graphsmanagment.h>
 #include <zenomodel/include/modelrole.h>
 #include <zenomodel/include/igraphsmodel.h>
@@ -117,16 +118,33 @@ namespace zenoui
                 });
                 return pBtn;
             }
-            case CONTROL_PURE_COLOR: {
+            case CONTROL_PURE_COLOR:
+            case CONTROL_COLOR_VEC3F:
+            {
+                QColor currentColor;
+                if (ctrl == CONTROL_PURE_COLOR) {
+                    currentColor = value.value<QColor>();
+                }
+                else if (ctrl == CONTROL_COLOR_VEC3F) {
+                    auto colorVec = value.value<UI_VECTYPE>();
+                    currentColor = QColor::fromRgbF(colorVec[0], colorVec[1], colorVec[2]);
+                }
                 QPushButton *pBtn = new QPushButton;
                 pBtn->setFixedSize(ZenoStyle::dpiScaled(100), ZenoStyle::dpiScaled(30));
-                pBtn->setStyleSheet(QString("background-color:%1; border:0;").arg(value.value<QColor>().name()));
+                pBtn->setStyleSheet(QString("background-color:%1; border:0;").arg(currentColor.name()));
                 QObject::connect(pBtn, &QPushButton::clicked, [=]() {
-                    QColor color = QColorDialog::getColor(pBtn->palette().window().color());
+                    QColor color = ColorEditor::getColor(pBtn->palette().window().color());
                     if (color.isValid()) 
                     {
                         pBtn->setStyleSheet(QString("background-color:%1; border:0;").arg(color.name()));
-                        cbSet.cbEditFinished(QVariant::fromValue(color));
+                        if (ctrl == CONTROL_PURE_COLOR) {
+                            cbSet.cbEditFinished(QVariant::fromValue(color));
+                        }
+                        else if (ctrl == CONTROL_COLOR_VEC3F) {
+                            UI_VECTYPE colorVec(3);
+                            color.getRgbF(&colorVec[0], &colorVec[1], &colorVec[2]);
+                            cbSet.cbEditFinished(QVariant::fromValue<UI_VECTYPE>(colorVec));
+                        }
                     }
                 });
                 return pBtn;

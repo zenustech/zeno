@@ -586,7 +586,18 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                 int y0 = m_boundRectStartPos.y();
                 int x1 = releasePos.x();
                 int y1 = releasePos.y();
-                m_picker->pick(x0, y0, x1, y1);
+                zeno::SELECTION_MODE mode = zeno::SELECTION_MODE::NORMAL;
+                if (shift_pressed == false && ctrl_pressed == false) {
+                    mode = zeno::SELECTION_MODE::NORMAL;
+                }
+                else if (shift_pressed == true && ctrl_pressed == false) {
+                    mode = zeno::SELECTION_MODE::APPEND;
+                }
+                else if (shift_pressed == false && ctrl_pressed == true) {
+                    mode = zeno::SELECTION_MODE::REMOVE;
+                }
+
+                m_picker->pick(x0, y0, x1, y1, mode);
                 m_picker->sync_to_scene();
                 if (scene->select_mode == zenovis::PICK_MODE::PICK_OBJECT)
                     onPrimSelected();
@@ -637,6 +648,12 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
 }
 
 bool CameraControl::fakeKeyPressEvent(int uKey) {
+    if (uKey & Qt::SHIFT) {
+        shift_pressed = true;
+    }
+    if (uKey & Qt::CTRL) {
+        ctrl_pressed = true;
+    }
     if (!middle_button_pressed) {
         return false;
     }
@@ -684,6 +701,15 @@ bool CameraControl::fakeKeyPressEvent(int uKey) {
     }
 }
 
+bool CameraControl::fakeKeyReleaseEvent(int uKey) {
+    if (uKey == Qt::Key_Shift) {
+        shift_pressed = false;
+    }
+    if (uKey == Qt::Key_Control) {
+        ctrl_pressed = false;
+    }
+    return false;
+}
 //void CameraControl::createPointNode(QPointF pnt) {
 //auto pModel = zenoApp->graphsManagment()->currentModel();
 //ZASSERT_EXIT(pModel);

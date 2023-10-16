@@ -1,17 +1,16 @@
-#include <opencv2/core/utility.hpp>
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/UserData.h>
 #include <zeno/utils/scope_exit.h>
 #include <zeno/utils/parallel_reduce.h>
+#include <zeno/utils/variantswitch.h>
+#include <zeno/utils/arrayindex.h>
 #include <stdexcept>
 #include <cmath>
 #include <zeno/utils/log.h>
 #include <filesystem>
-#include <opencv2/opencv.hpp>
 
 
-using namespace cv;
 
 namespace zeno {
 
@@ -730,8 +729,8 @@ struct Blend: INode {
 //todo： rgb1和rgb2大小不同的情况
 #pragma omp parallel for
             for (int i = 0; i < imagesize; i++) {
-                vec3f rgb1 = zeno::clamp(blend->verts[i], 0, 1) * opacity1;
-                vec3f rgb2 = zeno::clamp(base->verts[i], 0, 1) * opacity2;
+                vec3f rgb1 = blend->verts[i] * opacity1;
+                vec3f rgb2 = base->verts[i] * opacity2;
                 vec3f opacity = zeno::clamp(mask->verts[i], 0, 1) * maskopacity;
                 if(compmode == "Overlay" || compmode == "SoftLight" || compmode == "Divide"){
                     vec3f c = BlendModeV(blendalpha[i], basealpha[i], rgb1, rgb2, opacity, compmode);
@@ -863,87 +862,8 @@ ZENDEFNODE(CompBlur, {
         {"image"}
     },
     {},
-    { "comp" },
-});
-
-/*struct CompExtractChanel_gray: INode {
-    virtual void apply() override {
-        auto image = get_input<PrimitiveObject>("image");
-        auto RGB = get_input2<bool>("RGB");
-        auto R = get_input2<bool>("R");
-        auto G = get_input2<bool>("G");
-        auto B = get_input2<bool>("B");
-        auto A = get_input2<bool>("A");
-        auto &ud1 = image->userData();
-        int w = ud1.get2<int>("w");
-        int h = ud1.get2<int>("h");
-        auto image2 = std::make_shared<PrimitiveObject>();
-        image2->userData().set2("isImage", 1);
-        image2->userData().set2("w", w);
-        image2->userData().set2("h", h);
-        image2->verts.resize(image->size());
-
-        if(RGB){
-            for (auto i = 0; i < image->verts.size(); i++) {
-                float avr = (image->verts[i][0] + image->verts[i][1] + image->verts[i][2])/3;
-                image2->verts[i] = {avr,avr,avr};
-            }
-        }
-        if(R && !RGB) {
-            for (auto i = 0; i < image->verts.size(); i++) {
-                float R = image->verts[i][0];
-                zeno::clamp(image2->verts[i][0] += R,0,1);
-                zeno::clamp(image2->verts[i][1] += R,0,1);
-                zeno::clamp(image2->verts[i][2] += R,0,1);
-            }
-        }
-        if(G && !RGB) {
-            for (auto i = 0; i < image->verts.size(); i++) {
-                float G = image->verts[i][1];
-                zeno::clamp(image2->verts[i][0] += G,0,1);
-                zeno::clamp(image2->verts[i][1] += G,0,1);
-                zeno::clamp(image2->verts[i][2] += G,0,1);
-            }
-        }
-        if(B && !RGB) {
-            for (auto i = 0; i < image->verts.size(); i++) {
-                float B = image->verts[i][2];
-                zeno::clamp(image2->verts[i][0] += B,0,1);
-                zeno::clamp(image2->verts[i][1] += B,0,1);
-                zeno::clamp(image2->verts[i][2] += B,0,1);
-            }
-        }
-        if(A) {
-            if (image->verts.has_attr("alpha")) {
-                auto &Alpha = image->verts.attr<float>("alpha");
-                image2->verts.add_attr<float>("alpha");
-                image2->verts.attr<float>("alpha")=image->verts.attr<float>("alpha");
-            }
-            else{
-                image2->verts.add_attr<float>("alpha");
-                for(int i = 0;i < w * h;i++){
-                    image2->verts.attr<float>("alpha")[i] = 1.0;
-                }
-            }
-        }
-        set_output("image", image2);
-    }
-};
-ZENDEFNODE(CompExtractChanel_gray, {
-    {
-        {"image"},
-        {"bool", "RGB", "0"},
-        {"bool", "R", "0"},
-        {"bool", "G", "0"},
-        {"bool", "B", "0"},
-        {"bool", "A", "0"},
-    },
-    {
-        {"image"}
-    },
-    {},
     { "deprecated" },
-});*/
+});
 
 struct ImageExtractChannel : INode {
     virtual void apply() override {
@@ -1013,39 +933,40 @@ struct CompImport : INode {
         auto remapRange = get_input2<vec2f>("RemapRange");
         auto remap = get_input2<bool>("Remap");
         auto image = std::make_shared<PrimitiveObject>();
+        auto attributesType = get_input2<std::string>("AttributesType");
+
         image->resize(nx * ny);
         image->userData().set2("isImage", 1);
         image->userData().set2("w", nx);
         image->userData().set2("h", ny);
 
-        if (prim->verts.attr_is<float>(attrName)) {
-            auto &attr = prim->verts.attr<float>(attrName);
-            //calculate max and min attr value and remap it to 0-1
-            float minresult = zeno::parallel_reduce_array<float>(attr.size(), attr[0], [&] (size_t i) -> float { return attr[i]; },
-            [&] (float i, float j) -> float { return zeno::min(i, j); });
-            float maxresult = zeno::parallel_reduce_array<float>(attr.size(), attr[0], [&] (size_t i) -> float { return attr[i]; },
-            [&] (float i, float j) -> float { return zeno::max(i, j); });
+        std::visit([&](auto attrty) {
+            using T = decltype(attrty);
+            if (!prim->verts.has_attr(attrName)) {
+                zeno::log_error("No such attribute '{}' in prim", attrName);
+                return;
+            }
+            auto &attr = prim->verts.attr<T>(attrName);
+            auto minresult = zeno::parallel_reduce_array<T>(attr.size(), attr[0], [&] (size_t i) -> T { return attr[i]; },
+            [&] (T i, T j) -> T { return zeno::min(i, j); });
+            auto maxresult = zeno::parallel_reduce_array<T>(attr.size(), attr[0], [&] (size_t i) -> T { return attr[i]; },
+            [&] (T i, T j) -> T { return zeno::max(i, j); });
+
             if (remap) {
                 for (auto i = 0; i < nx * ny; i++) {
-                    float v = attr[i];
+                    auto v = attr[i];
                     v = (v - minresult) / (maxresult - minresult);//remap to 0-1
                     v = v * (remapRange[1] - remapRange[0]) + remapRange[0];
-                    image->verts[i] = {v, v, v};
+                    image->verts[i] = vec3f(v);
                 }
             }
             else {
                 for (auto i = 0; i < nx * ny; i++) {
-                    float v = attr[i];
-                    image->verts[i] = {v, v, v};
+                    const auto v = attr[i];
+                    image->verts[i] = vec3f(v);
                 }
             }
-        }
-        else if (prim->verts.attr_is<vec3f>(attrName)) {//todo::add remap
-            auto &attr = prim->attr<vec3f>(attrName);
-            for (auto i = 0; i < nx * ny; i++) {
-                image->verts[i] = attr[i];
-            }
-        }
+        }, enum_variant<std::variant<float, vec3f>>(array_index({"float", "vec3f"}, attributesType)));
         set_output("image", image);
     }
 };
@@ -1056,6 +977,7 @@ ZENDEFNODE(CompImport, {
         {"string", "attrName", ""},
         {"bool", "Remap", "0"},
         {"vec2f", "RemapRange", "0, 1"},
+        {"enum float vec3f", "AttributesType", "float"},
     },
     {
         {"image"},

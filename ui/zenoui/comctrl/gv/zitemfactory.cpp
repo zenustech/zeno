@@ -2,6 +2,7 @@
 #include <zenomodel/include/uihelper.h>
 #include <zenoui/render/ztfutil.h>
 #include <zenoui/comctrl/gv/zlineedititem.h>
+#include <zenoui/ColorEditor/ColorEditor.h>
 #include <zenomodel/include/curvemodel.h>
 #include "zveceditoritem.h"
 #include "style/zenostyle.h"
@@ -200,19 +201,37 @@ namespace zenoui
                 pItemWidget = pEditBtn;
                 break;
             }
-            case CONTROL_PURE_COLOR: {
+            case CONTROL_PURE_COLOR: 
+            case CONTROL_COLOR_VEC3F:
+            {
+                QColor currentColor;
+                if (ctrl == CONTROL_PURE_COLOR) {
+                    currentColor = value.value<QColor>();
+                }
+                else if (ctrl == CONTROL_COLOR_VEC3F) {
+                    auto colorVec = value.value<UI_VECTYPE>();
+                    currentColor = QColor::fromRgbF(colorVec[0], colorVec[1], colorVec[2]);
+                }
+                
                 ZenoParamPushButton *pEditBtn = new ZenoParamPushButton("", -1, QSizePolicy::Expanding);
                 pEditBtn->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(100, zenoui::g_ctrlHeight)));
                 pEditBtn->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 pEditBtn->setData(GVKEY_TYPE, type);
-                pEditBtn->setProperty("color", value.value<QColor>().name());
+                pEditBtn->setProperty("color", currentColor.name());
 
                 QObject::connect(pEditBtn, &ZenoParamPushButton::clicked, [=]() {
-                    QColor color = QColorDialog::getColor(QColor(pEditBtn->property("color").toString()));
+                    QColor color = ColorEditor::getColor(QColor(pEditBtn->property("color").toString()));
                     if (color.isValid()) 
                     {
                         pEditBtn->setProperty("color", color.name());
-                        cbSet.cbEditFinished(QVariant::fromValue(color));
+                        if (ctrl == CONTROL_PURE_COLOR) {
+                            cbSet.cbEditFinished(QVariant::fromValue(color));
+                        }
+                        else if (ctrl == CONTROL_COLOR_VEC3F) {
+                            UI_VECTYPE colorVec(3);
+                            color.getRgbF(&colorVec[0], &colorVec[1], &colorVec[2]);
+                            cbSet.cbEditFinished(QVariant::fromValue<UI_VECTYPE>(colorVec));
+                        }
                     }
                 });
                 pItemWidget = pEditBtn;
