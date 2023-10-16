@@ -396,4 +396,9 @@ void ViewportWidget::keyPressEvent(QKeyEvent *event)
 
 void ViewportWidget::keyReleaseEvent(QKeyEvent *event) {
     _base::keyReleaseEvent(event);
+    int uKey = event->key();
+    if (m_camera->fakeKeyReleaseEvent(uKey)) {
+        zenoApp->getMainWindow()->updateViewport();
+        return;
+    }
 }
