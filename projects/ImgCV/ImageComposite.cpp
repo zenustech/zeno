@@ -729,8 +729,8 @@ struct Blend: INode {
 //todo： rgb1和rgb2大小不同的情况
 #pragma omp parallel for
             for (int i = 0; i < imagesize; i++) {
-                vec3f rgb1 = zeno::clamp(blend->verts[i], 0, 1) * opacity1;
-                vec3f rgb2 = zeno::clamp(base->verts[i], 0, 1) * opacity2;
+                vec3f rgb1 = blend->verts[i] * opacity1;
+                vec3f rgb2 = base->verts[i] * opacity2;
                 vec3f opacity = zeno::clamp(mask->verts[i], 0, 1) * maskopacity;
                 if(compmode == "Overlay" || compmode == "SoftLight" || compmode == "Divide"){
                     vec3f c = BlendModeV(blendalpha[i], basealpha[i], rgb1, rgb2, opacity, compmode);
