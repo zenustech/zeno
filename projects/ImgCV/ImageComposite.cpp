@@ -575,7 +575,7 @@ ZENDEFNODE(Composite, {
 template <class T>
 static T BlendMode(const float &alpha1, const float &alpha2, const T& rgb1, const T& rgb2, const vec3f opacity, std::string compmode)
 {
-        if(compmode == std::string("Copy")) {//copy and over is different!!!
+        if(compmode == std::string("Copy")) {//copy and over is different!
                 T value = rgb1 * opacity[0] + rgb2 * (1 - opacity[0]);
                 return value;
         }
@@ -732,13 +732,15 @@ struct Blend: INode {
                 vec3f rgb1 = blend->verts[i] * opacity1;
                 vec3f rgb2 = base->verts[i] * opacity2;
                 vec3f opacity = zeno::clamp(mask->verts[i], 0, 1) * maskopacity;
+                float alpha1 = zeno::clamp(blendalpha[i], 0, 1);
+                float alpha2 = zeno::clamp(basealpha[i], 0, 1);
                 if(compmode == "Overlay" || compmode == "SoftLight" || compmode == "Divide"){
-                    vec3f c = BlendModeV(blendalpha[i], basealpha[i], rgb1, rgb2, opacity, compmode);
-                    image2->verts[i] = zeno::clamp(c, 0, 1);
+                    vec3f c = BlendModeV(alpha1, alpha2, rgb1, rgb2, opacity, compmode);
+                    image2->verts[i] = c;
                 }
                 else{
-                    vec3f c = BlendMode<zeno::vec3f>(blendalpha[i], basealpha[i], rgb1, rgb2, opacity, compmode);
-                    image2->verts[i] = zeno::clamp(c, 0, 1);
+                    vec3f c = BlendMode<zeno::vec3f>(alpha1, alpha2, rgb1, rgb2, opacity, compmode);
+                    image2->verts[i] = c;
                 }
             }
             if(alphaoutput) {//如果两个输入 其中一个没有alpha  对于rgb和alpha  alpha的默认值不一样 前者为1 后者为0？
@@ -748,8 +750,8 @@ struct Blend: INode {
 #pragma omp parallel for
                 for (int i = 0; i < imagesize; i++) {
                 vec3f opacity = zeno::clamp(mask->verts[i], 0, 1) * maskopacity;
-                float alpha = BlendMode<float>(blendalpha[i], basealpha[i], blendalpha[i], basealpha[i], opacity, alphamode);
-                image2alpha[i] = zeno::clamp(alpha, 0, 1);
+                float alpha = BlendMode<float>(zeno::clamp(blendalpha[i], 0, 1), zeno::clamp(basealpha[i], 0, 1), zeno::clamp(blendalpha[i], 0, 1), zeno::clamp(basealpha[i], 0, 1), opacity, alphamode);
+                image2alpha[i] = alpha;
                 }
             }
 
