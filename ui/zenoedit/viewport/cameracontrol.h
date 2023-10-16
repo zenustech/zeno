@@ -39,6 +39,7 @@ public:
     void setKeyFrame();
 
     bool fakeKeyPressEvent(int uKey);
+    bool fakeKeyReleaseEvent(int uKey);
     void fakeMousePressEvent(QMouseEvent* event);
     void fakeMouseReleaseEvent(QMouseEvent* event);
     void fakeMouseMoveEvent(QMouseEvent* event);
@@ -66,6 +67,8 @@ private:
     Zenovis* m_zenovis;
 
     bool middle_button_pressed = false;
+    bool shift_pressed = false;
+    bool ctrl_pressed = false;
 };
 
 
