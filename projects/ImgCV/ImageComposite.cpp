@@ -573,22 +573,22 @@ ZENDEFNODE(Composite, {
 
 
 template <class T>
-static T BlendMode(const float &alpha1, const float &alpha2, const T& rgb1, const T& rgb2, const vec3f opacity, std::string compmode)
+static T BlendMode(const float &alpha1, const float &alpha2, const T& rgb1, const T& rgb2, const T& background, const vec3f opacity, std::string compmode)
 {
         if(compmode == std::string("Copy")) {//copy and over is different!
                 T value = rgb1 * opacity[0] + rgb2 * (1 - opacity[0]);
                 return value;
         }
         else if(compmode == std::string("Over")) {
-                T value = (rgb1 + rgb2 * (1 - alpha1)) * opacity[0] + rgb2 * (1 - opacity[0]);
+                T value = (rgb1 + background * (1 - alpha1)) * opacity[0] + rgb2 * (1 - opacity[0]);
                 return value;
         }
         else if(compmode == std::string("Under")) {
-                T value = (rgb2 + rgb1 * (1 - alpha2)) * opacity[0] + rgb2 * (1 - opacity[0]);
+                T value = (background + rgb1 * (1 - alpha2)) * opacity[0] + rgb2 * (1 - opacity[0]);
                 return value;
         }
         else if(compmode == std::string("Atop")) {
-                T value = (rgb1 * alpha2 + rgb2 * (1 - alpha1)) * opacity[0] + rgb2 * (1 - opacity[0]);
+                T value = (rgb1 * alpha2 + background * (1 - alpha1)) * opacity[0] + rgb2 * (1 - opacity[0]);
                 return value;
         }
         else if(compmode == std::string("In")) {
@@ -600,53 +600,53 @@ static T BlendMode(const float &alpha1, const float &alpha2, const T& rgb1, cons
                 return value;
         }
         else if(compmode == std::string("Xor")) {
-                T value = (rgb1 * (1 - alpha2) + rgb2 * (1 - alpha1)) * opacity[0] + rgb2 * (1 - opacity[0]);
+                T value = (rgb1 * (1 - alpha2) + background * (1 - alpha1)) * opacity[0] + rgb2 * (1 - opacity[0]);
                 return value;
         }
         else if(compmode == std::string("Add")) {
-                T value = (rgb1 + rgb2) * opacity[0] + rgb2 * (1 - opacity[0]);//clamp?
+                T value = (rgb1 + background) * opacity[0] + rgb2 * (1 - opacity[0]);//clamp?
                 return value;
         }
         else if(compmode == std::string("Subtract")) {
-                T value = (rgb2 - rgb1) * opacity[0] + rgb2 * (1 - opacity[0]);
+                T value = (background - rgb1) * opacity[0] + rgb2 * (1 - opacity[0]);
                 return value;
         }
         else if(compmode == std::string("Multiply")) {
-                T value = rgb1 * rgb2 * opacity[0] + rgb2 * (1 - opacity[0]);
+                T value = rgb1 * background * opacity[0] + rgb2 * (1 - opacity[0]);
                 return value;
         }
         else if(compmode == std::string("Max(Lighten)")) {
-                T value = zeno::max(rgb1, rgb2) * opacity[0] + rgb2 * (1 - opacity[0]);
+                T value = zeno::max(rgb1, background) * opacity[0] + rgb2 * (1 - opacity[0]);
                 return value;
         }
         else if(compmode == std::string("Min(Darken)")) {
-                T value = zeno::min(rgb1, rgb2) * opacity[0] + rgb2 * (1 - opacity[0]);
+                T value = zeno::min(rgb1, background) * opacity[0] + rgb2 * (1 - opacity[0]);
                 return value;
         }
         else if(compmode == std::string("Screen")) {//A+B-AB if A and B between 0-1, else A if A>B else B
-                    T value = (1 - (1 - rgb2) * (1 - rgb1)) * opacity[0] + rgb2 * (1 - opacity[0]);//only care 0-1!
+                    T value = (1 - (1 - background) * (1 - rgb1)) * opacity[0] + rgb2 * (1 - opacity[0]);//only care 0-1!
                     return value;
         }
         else if(compmode == std::string("Difference")) {
-                    T value = zeno::abs(rgb1 - rgb2) * opacity[0] + rgb2 * (1 - opacity[0]);
+                    T value = zeno::abs(rgb1 - background) * opacity[0] + rgb2 * (1 - opacity[0]);
                     return value;
         }
         else if(compmode == std::string("Average")) {
-                    T value = (rgb1 + rgb2) / 2 * opacity[0] + rgb2 * (1 - opacity[0]);
+                    T value = (rgb1 + background) / 2 * opacity[0] + rgb2 * (1 - opacity[0]);
                     return value;
         }
         return T(0);
 }
 
-static zeno::vec3f BlendModeV(const float &alpha1, const float &alpha2, const vec3f& rgb1, const vec3f& rgb2, const vec3f opacity, std::string compmode)
+static zeno::vec3f BlendModeV(const float &alpha1, const float &alpha2, const vec3f& rgb1, const vec3f& rgb2, const vec3f& background, const vec3f opacity, std::string compmode)
 {
         if(compmode == std::string("Overlay")) {
                     vec3f value;
                     for (int k = 0; k < 3; k++) {
                         if (rgb2[k] < 0.5) {
-                            value[k] = 2 * rgb1[k] * rgb2[k];
+                            value[k] = 2 * rgb1[k] * background[k];
                         } else {
-                            value[k] = 1 - 2 * (1 - rgb1[k]) * (1 - rgb2[k]);//screen
+                            value[k] = 1 - 2 * (1 - rgb1[k]) * (1 - background[k]);//screen
                         }
                     }
                     value = value * opacity[0] + rgb2 * (1 - opacity[0]);
@@ -656,9 +656,9 @@ static zeno::vec3f BlendModeV(const float &alpha1, const float &alpha2, const ve
                     vec3f value;
                     for (int k = 0; k < 3; k++) {
                         if (rgb1[k] < 0.5) {
-                            value[k] = 2 * rgb1[k] * rgb2[k] + rgb2[k] * rgb2[k] * (1 - 2 * rgb1[k]);
+                            value[k] = 2 * rgb1[k] * background[k] + background[k] * background[k] * (1 - 2 * rgb1[k]);
                         } else {
-                            value[k] = 2 * rgb2[k] * (1 - rgb1[k]) + sqrt(rgb2[k]) * (2 * rgb1[k] - 1);
+                            value[k] = 2 * background[k] * (1 - rgb1[k]) + sqrt(background[k]) * (2 * rgb1[k] - 1);
                         }
                     }
                     /*for (int k = 0; k < 3; k++) {     Nuke method
@@ -677,7 +677,7 @@ static zeno::vec3f BlendModeV(const float &alpha1, const float &alpha2, const ve
                         if (rgb1[k] == 0) {
                             value[k] = 1;
                         } else {
-                            value[k] = rgb2[k] / rgb1[k];
+                            value[k] = background[k] / rgb1[k];
                         }
                     }
                     value = value * opacity[0] + rgb2 * (1 - opacity[0]);
@@ -686,7 +686,7 @@ static zeno::vec3f BlendModeV(const float &alpha1, const float &alpha2, const ve
         return zeno::vec3f(0);
 }
 
-struct Blend: INode {
+struct Blend: INode {//optimize
     virtual void apply() override {//todo:: add blend scope RGBA and Premultiplied / Alpha Blending(https://github.com/jamieowen/glsl-blend/issues/6)
         auto blend = get_input<PrimitiveObject>("Foreground");
         auto base = get_input<PrimitiveObject>("Background");
@@ -726,20 +726,20 @@ struct Blend: INode {
         auto &blendalpha = blend->has_attr("alpha")?blend->attr<float>("alpha"):std::vector<float>(imagesize, 1.0f);
         auto &basealpha = base->has_attr("alpha")?base->attr<float>("alpha"):std::vector<float>(imagesize, 1.0f);
 
-//todo： rgb1和rgb2大小不同的情况
 #pragma omp parallel for
             for (int i = 0; i < imagesize; i++) {
                 vec3f rgb1 = blend->verts[i] * opacity1;
-                vec3f rgb2 = base->verts[i] * opacity2;
-                vec3f opacity = zeno::clamp(mask->verts[i], 0, 1) * maskopacity;
-                float alpha1 = zeno::clamp(blendalpha[i], 0, 1);
-                float alpha2 = zeno::clamp(basealpha[i], 0, 1);
+                vec3f rgb2 = base->verts[i];
+                vec3f background = rgb2 * opacity2;
+                vec3f opacity = zeno::clamp(mask->verts[i] * maskopacity, 0, 1);
+                float alpha1 = zeno::clamp(blendalpha[i] * opacity1, 0, 1);
+                float alpha2 = zeno::clamp(basealpha[i] * opacity2, 0, 1);
                 if(compmode == "Overlay" || compmode == "SoftLight" || compmode == "Divide"){
-                    vec3f c = BlendModeV(alpha1, alpha2, rgb1, rgb2, opacity, compmode);
+                    vec3f c = BlendModeV(alpha1, alpha2, rgb1, rgb2, background, opacity, compmode);
                     image2->verts[i] = c;
                 }
                 else{
-                    vec3f c = BlendMode<zeno::vec3f>(alpha1, alpha2, rgb1, rgb2, opacity, compmode);
+                    vec3f c = BlendMode<zeno::vec3f>(alpha1, alpha2, rgb1, rgb2, background, opacity, compmode);
                     image2->verts[i] = c;
                 }
             }
@@ -749,8 +749,9 @@ struct Blend: INode {
                 //std::string alphablendmode = alphamode == "SameWithBlend" ? compmode : alphamode;
 #pragma omp parallel for
                 for (int i = 0; i < imagesize; i++) {
-                vec3f opacity = zeno::clamp(mask->verts[i], 0, 1) * maskopacity;
-                float alpha = BlendMode<float>(zeno::clamp(blendalpha[i], 0, 1), zeno::clamp(basealpha[i], 0, 1), zeno::clamp(blendalpha[i], 0, 1), zeno::clamp(basealpha[i], 0, 1), opacity, alphamode);
+                vec3f opacity = zeno::clamp(mask->verts[i] * maskopacity, 0, 1);
+                float alpha = BlendMode<float>(zeno::clamp(blendalpha[i] * opacity1, 0, 1), zeno::clamp(basealpha[i], 0, 1),
+                zeno::clamp(blendalpha[i] * opacity1, 0, 1), zeno::clamp(basealpha[i], 0, 1), zeno::clamp(basealpha[i] * opacity2, 0, 1), opacity, alphamode);
                 image2alpha[i] = alpha;
                 }
             }
