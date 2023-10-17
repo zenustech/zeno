@@ -896,6 +896,12 @@ float scnoise(float x, float y, float z, int pulsenum, int griddist) {
 //}
 
 struct NoiseImageGen : INode {
+    // quick tofix source:
+    // https://stackoverflow.com/questions/1903954/is-there-a-standard-sign-function-signum-sgn-in-c-c
+    template <typename T> int sgn(T val) {
+        return (T(0) < val) - (val < T(0));
+    }
+
     virtual void apply() override {
         auto perC = get_input2<bool>("noise per component");
         auto image_size = get_input2<vec2i>("image size");
@@ -944,10 +950,15 @@ struct NoiseImageGen : INode {
             }
 
             if (perC) {
-                image->verts[i] = pow(vec3f(r, g, b), exponent);
-                alpha[i] = r+g+b; // tofix: proper expression? as well as amplitude related
+                image->verts[i] = vec3f(
+                            sgn(r) * pow(abs(r), exponent),
+                            sgn(g) * pow(abs(g), exponent),
+                            sgn(b) * pow(abs(b), exponent)
+                        );
+                alpha[i] = r+g+b; // tofix: proper expression? is amplitude itrelated?
             } else {
-                image->verts[i] = pow(vec3f(r, r, r), exponent);
+                float er = sgn(r) * pow(abs(r), exponent);
+                image->verts[i] = vec3f(er, er, er);
                 alpha[i] = r;
             }
         }
