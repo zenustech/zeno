@@ -662,7 +662,7 @@ extern "C" __global__ void __closesthit__radiance()
 
     bool next_ray_is_going_inside = false;
     mats.sssParam = mats.subsurface>0 ? mats.subsurface*mats.sssParam : mats.sssParam;
-    mats.subsurface = mats.subsurface>0 ? 1 : 0;
+    //mats.subsurface = mats.subsurface>0 ? 1 : 0;
 
     /* MODME */
 
@@ -912,7 +912,7 @@ extern "C" __global__ void __closesthit__radiance()
                         vec3 channelPDF = vec3(1.0f/3.0f);
                         prd->pushMat(extinction);
                         prd->isSS = false;
-                        prd->scatterDistance = 1000.0f * mats.clarity * mats.clarity;
+                        prd->scatterDistance = 100.0f * mats.clarity * mats.clarity * mats.clarity;
                         prd->maxDistance = mats.scatterStep>0.5f? DisneyBSDF::SampleDistance(prd->seed, prd->scatterDistance) : 1e16f;
                     } else {
 
