@@ -906,7 +906,7 @@ struct NoiseImageGen : INode {
         auto perC = get_input2<bool>("noise per component");
         auto image_size = get_input2<vec2i>("image size");
         auto seed = get_input2<int>("seed");
-        auto turbulence = get_input2<int>("turbulence");
+        auto turbulence = get_input2<int>("turbulence")+1; // tofix: think the case that turbulence = 0
         auto roughness = get_input2<float>("roughness");
         auto exponent = get_input2<float>("exponent");
         auto frequency = get_input2<vec2f>("spatial frequency") * 0.001f; // tofix: mysterious scale?
@@ -918,48 +918,59 @@ struct NoiseImageGen : INode {
 
         // tofix: how to lock engine seed
         // try a dumb way
-//        std::default_random_engine new_engine; engine = new_engine;
-//        engine.seed(seed);
         g_seed = seed;
 
 #pragma omp parallel for
         for (int i = 0; i < image_size[0] * image_size[1]; i++) {
             vec2f p = vec2f(i % image_size[0], i / image_size[0]);
 
-            float r = 0;
-            float g = 0;
-            float b = 0;
             vec2f freq = frequency;
             vec4f amp = amplitude;
             float rough = roughness;
+
+            float r = 0;
+            float g = 0;
+            float b = 0;
+            float nval = 0;
+            vec4f max_possible_amp = vec4f(0);
             for (int j = 0; j < turbulence; j++) {
-                r += scnoise(p[0] * freq[0],
-                             p[1] * freq[1],
-                             p[0] * freq[0],
-                             3, 2) * amp[0];
-                g += scnoise(p[0] * freq[0],
-                             p[0] * freq[0],
-                             p[1] * freq[1],
-                             3, 2) * amp[1];
-                b += scnoise(p[1] * freq[1],
-                             p[0] * freq[0],
-                             p[0] * freq[0],
-                             3, 2) * amp[2];
+                max_possible_amp += amp;
+
+                if(perC) {
+                    nval = scnoise(p[0] * freq[0], p[1] * freq[1], p[0] * freq[0], 3, 2);
+                    r += nval * amp[0];
+                    nval = scnoise(p[0] * freq[0], p[0] * freq[0], p[1] * freq[1], 3, 2);
+                    g += nval * amp[1];
+                    nval = scnoise(p[1] * freq[1], p[0] * freq[0], p[0] * freq[0], 3, 2);
+                    b += nval * amp[2];
+                }
+                else{
+                    nval = scnoise(p[0] * freq[0], p[1] * freq[1], p[0] * freq[0], 3, 2);
+                    r += nval * amp[0];
+                    g += nval * amp[1];
+                    b += nval * amp[2];
+                }
+
                 freq *= 2.0f;
                 amp *= rough;
             }
 
-            if (perC) {
-                image->verts[i] = vec3f(
-                            sgn(r) * pow(abs(r), exponent),
-                            sgn(g) * pow(abs(g), exponent),
-                            sgn(b) * pow(abs(b), exponent)
-                        );
-                alpha[i] = r+g+b; // tofix: proper expression? is amplitude itrelated?
-            } else {
-                float er = sgn(r) * pow(abs(r), exponent);
-                image->verts[i] = vec3f(er, er, er);
-                alpha[i] = r;
+            r /= max_possible_amp[0];
+            g /= max_possible_amp[1];
+            b /= max_possible_amp[2];
+            image->verts[i] = vec3f(
+                    sgn(r) * pow(abs(r), exponent) * amplitude[0],
+                    sgn(g) * pow(abs(g), exponent) * amplitude[1],
+                    sgn(b) * pow(abs(b), exponent) * amplitude[2]
+                );
+            if(perC) {
+                // tofix: ??? blackbox, is isolated from rgb,
+                // value does not change with rgb amplitude,
+                // Some random thought: maybe it has some relationship with rgb value when rgb amlitude set to 1;
+                alpha[i] = r+g+b * amplitude[3]; // r+g+b for placeholder
+            }
+            else{
+                alpha[i] = image->verts[i][0];
             }
         }
         image->userData().set2("isImage", 1);
