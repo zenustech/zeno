@@ -110,7 +110,7 @@ extern "C" __global__ void __raygen__rg()
 
           float r0 = r01.x * 2.0f * M_PIf;
           float r1 = r01.y * aperture * aperture;
-          r1 = sqrt(r1);
+          r1 = sqrtf(r1);
 
           float3 eye_shake     = r1 * ( cosf(r0)* normalize(cam.right) + sinf(r0)* normalize(cam.up)); // Camera local space
           float3 ray_origin    = cam.eye + eye_shake;

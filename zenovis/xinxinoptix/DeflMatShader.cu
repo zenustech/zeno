@@ -74,7 +74,7 @@ static __inline__ __device__ MatOutput evalMat(cudaTextureObject_t zenotex[], fl
     vec3 mat_transColor = vec3(1.0f,1.0f,1.0f);
     vec3 mat_transTint = vec3(1.0f,1.0f,1.0f);
     float mat_transTintDepth = 0.0f;
-    float mat_clarity = 0.0f;
+    float mat_transDistance = 0.0f;
     vec3 mat_transScatterColor = vec3(1.0f,1.0f,1.0f);
     float mat_ior = 1.0f;
 
@@ -126,7 +126,7 @@ static __inline__ __device__ MatOutput evalMat(cudaTextureObject_t zenotex[], fl
         mats.transColor = mat_transColor;
         mats.transTint = mat_transTint;
         mats.transTintDepth = max(0.0f,mat_transTintDepth);
-        mats.clarity = clamp(mat_clarity,0.0f,1.0f);
+        mats.transDistance = max(mat_transDistance,0.1f);
         mats.transScatterColor = mat_transScatterColor;
         mats.ior = max(0.0f,mat_ior);
 
@@ -914,7 +914,7 @@ extern "C" __global__ void __closesthit__radiance()
                         vec3 channelPDF = vec3(1.0f/3.0f);
                         prd->pushMat(extinction);
                         prd->isSS = false;
-                        prd->scatterDistance = 100.0f * mats.clarity * mats.clarity * mats.clarity;
+                        prd->scatterDistance = mats.transDistance;
                         prd->maxDistance = mats.scatterStep>0.5f? DisneyBSDF::SampleDistance(prd->seed, prd->scatterDistance) : 1e16f;
                     } else {
 
