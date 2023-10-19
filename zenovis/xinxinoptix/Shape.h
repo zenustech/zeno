@@ -106,7 +106,7 @@ struct RectShape {
 
     inline bool hitAsLight(LightSampleRecord* lsr, const float3& ray_orig, const float3& ray_dir) {
 
-        // assuming vectors are all normalized
+        // assuming normal and ray_dir are normalized
         float denom = dot(normal, -ray_dir);
         if (denom <= __FLT_DENORM_MIN__) {return false;}
         
@@ -118,6 +118,9 @@ struct RectShape {
         auto P = ray_orig + ray_dir * t;
         auto delta = P - v0;
 
+        P -= normal * dot(normal, delta);
+        delta = P - v0; 
+        
         auto v1v1 = dot(v1, v1);
         auto q1 = dot(delta, v1);
         if (q1<0.0f || q1>v1v1) {return false;}
@@ -126,14 +129,15 @@ struct RectShape {
         auto q2 = dot(delta, v2);
         if (q2<0.0f || q2>v2v2) {return false;}
 
-        lsr->dir = ray_dir;
-        lsr->dist = t;
-
+        lsr->p = P;
+        lsr->PDF = 1.0f;
         lsr->n = normal;
         lsr->NoL = denom;
 
-        lsr->p = P;
-        lsr->PDF = 1.0f;
+        lsr->p = rtgems::offset_ray(lsr->p, lsr->n);
+
+        lsr->dir = ray_dir;
+        lsr->dist = length(lsr->p - ray_orig);
 
         return true;
     }
