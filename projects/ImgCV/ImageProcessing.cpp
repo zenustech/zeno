@@ -386,93 +386,6 @@ ZENDEFNODE(ImageHSV2RGB, {
     { "image" },
 });
 
-struct ImageEditRGB : INode {
-    virtual void apply() override {
-        auto image = get_input<PrimitiveObject>("image");
-        auto RGB = get_input2<std::string>("RGB");
-        auto Gray = get_input2<bool>("Gray");
-        auto Invert = get_input2<bool>("Invert");
-        float R = get_input2<float>("R");
-        float G = get_input2<float>("G");
-        float B = get_input2<float>("B");
-
-        if(RGB == "RGB") {
-            for (auto i = 0; i < image->verts.size(); i++) {
-                float R1 = R * image->verts[i][0];
-                float G1 = G * image->verts[i][1];
-                float B1 = B * image->verts[i][2];
-                image->verts[i][0] = R1 ;
-                image->verts[i][1] = G1 ;
-                image->verts[i][2] = B1 ;
-            }
-        }
-        if(RGB == "R") {
-            for (auto i = 0; i < image->verts.size(); i++) {
-                float R1 = R * image->verts[i][0];
-                float G1 = 0;
-                float B1 = 0;
-                image->verts[i][0] = R1 ;
-                image->verts[i][1] = G1 ;
-                image->verts[i][2] = B1 ;
-            }
-        }
-        if(RGB == "G") {
-            for (auto i = 0; i < image->verts.size(); i++) {
-                float R1 = 0;
-                float G1 = G * image->verts[i][1];
-                float B1 = 0;
-                image->verts[i][0] = R1 ;
-                image->verts[i][1] = G1 ;
-                image->verts[i][2] = B1 ;
-            }
-        }
-        if(RGB == "B") {
-            for (auto i = 0; i < image->verts.size(); i++) {
-                float R1 = 0;
-                float G1 = 0;
-                float B1 = B * image->verts[i][2];
-                image->verts[i][0] = R1;
-                image->verts[i][1] = G1;
-                image->verts[i][2] = B1;
-            }
-        }
-        if(Gray){
-            for (auto i = 0; i < image->verts.size(); i++) {
-                float R = image->verts[i][0];
-                float G = image->verts[i][1];
-                float B = image->verts[i][2];
-                float avr = (R + G + B)/3;
-                image->verts[i][0] = avr ;
-                image->verts[i][1] = avr ;
-                image->verts[i][2] = avr ;
-            }
-        }
-        if(Invert){
-            for (auto i = 0; i < image->verts.size(); i++) {
-                image->verts[i] = 1 - image->verts[i];
-            }
-        }
-        set_output("image", image);
-    }
-};
-
-ZENDEFNODE(ImageEditRGB, {
-    {
-        {"image"},
-        {"enum RGB R G B", "RGB", "RGB"},
-        {"float", "R", "1"},
-        {"float", "G", "1"},
-        {"float", "B", "1"},
-        {"bool", "Gray", "0"},
-        {"bool", "Invert", "0"},
-    },
-    {
-        {"image"}
-    },
-    {},
-    { "image" },
-});
-
 struct ImageEditHSV : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
@@ -1058,123 +971,137 @@ void bilateralFilter(std::shared_ptr<PrimitiveObject> &image, std::shared_ptr<Pr
     image = imagetmp;
 }
 
+
+///////////////////////////
+std::vector<int> boxesForGauss(float sigma, int n)  // standard deviation, number of boxes
+{
+	auto wIdeal = sqrt((12 * sigma*sigma / n) + 1);  // Ideal averaging filter width
+	int wl = floor(wIdeal);
+	if (wl % 2 == 0)
+		wl--;
+	int wu = wl + 2;
+
+	float mIdeal = (12 * sigma*sigma - n * wl*wl - 4 * n*wl - 3 * n) / (-4 * wl - 4);
+	int m = round(mIdeal);
+	// var sigmaActual = Math.sqrt( (m*wl*wl + (n-m)*wu*wu - n)/12 );
+
+	std::vector<int> sizes(n);
+	for (auto i = 0; i < n; i++)
+		sizes[i] = i < m ? wl : wu;
+	return sizes;
+}
+
+void boxBlurH(std::vector<zeno::vec3f>& scl, std::vector<zeno::vec3f>& tcl, int w, int h, int r) {
+	float iarr = 1.f / (r + r + 1);
+    #pragma omp parallel for
+	for (int i = 0; i < h; i++) {
+		int ti = i * w, li = ti, ri = ti + r;
+		auto fv = scl[ti], lv = scl[ti + w - 1];
+		auto val = (r + 1)*fv;
+		for (int j = 0; j < r; j++) val += scl[ti + j];
+		for (int j = 0; j <= r; j++, ri++, ti++) { val += scl[ri] - fv;   tcl[ti] = val*iarr; }
+		for (int j = r + 1; j < w - r; j++, ri++, ti++, li++) { val += scl[ri] - scl[li];   tcl[ti] = val*iarr; }
+		for (int j = w - r; j < w; j++, ti++, li++) { val += lv - scl[li];   tcl[ti] = val*iarr; }//border?
+	}
+}
+void boxBlurT(std::vector<zeno::vec3f>& scl, std::vector<zeno::vec3f>& tcl, int w, int h, int r) {
+	float iarr = 1.f / (r + r + 1);// radius range on either side of a pixel + the pixel itself
+    #pragma omp parallel for
+	for (auto i = 0; i < w; i++) {
+		int ti = i, li = ti, ri = ti + r * w;
+		auto fv = scl[ti], lv = scl[ti + w * (h - 1)];
+		auto val = (r + 1)*fv;
+		for (int j = 0; j < r; j++) val += scl[ti + j * w];
+		for (int j = 0; j <= r; j++, ri+=w, ti+=w) { val += scl[ri] - fv;  tcl[ti] = val*iarr; }
+		for (int j = r + 1; j < h - r; j++, ri+=w, ti+=w, li+=w) { val += scl[ri] - scl[li];  tcl[ti] = val*iarr; }
+		for (int j = h - r; j < h; j++, ti+=w, li+=w) { val += lv - scl[li];  tcl[ti] = val*iarr; }
+	}
+}
+void boxBlur(std::vector<zeno::vec3f>& scl, std::vector<zeno::vec3f>& tcl, int w, int h, int r) {
+    std::swap(scl, tcl);
+	boxBlurH(tcl, scl, w, h, r);
+	boxBlurT(scl, tcl, w, h, r);
+}
+void gaussBlur(std::vector<zeno::vec3f> scl, std::vector<zeno::vec3f>& tcl, int w, int h, float sigma, int blurNumber) {
+	auto bxs = boxesForGauss(sigma, blurNumber);
+	boxBlur(scl, tcl, w, h, (bxs[0] - 1) / 2);
+	boxBlur(tcl, scl, w, h, (bxs[1] - 1) / 2);
+	boxBlur(scl, tcl, w, h, (bxs[2] - 1) / 2);
+    /*for (auto i = 0; i < blurNumber; i++) {
+        boxBlur(scl, tcl, w, h, (bxs[i] - 1) / 2);
+    }*/
+}
+
 struct ImageBlur : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
-        auto xsize = get_input2<int>("xsize");
-        auto ysize = get_input2<int>("ysize");
+        auto kernelSize = get_input2<int>("kernelSize");
+        auto type = get_input2<std::string>("type");
+        auto fastgaussian = get_input2<bool>("Fast Blur(Gaussian)");
+        auto sigmaX = get_input2<float>("GaussianSigma");
+        auto sigmaColor = get_input2<vec2f>("BilateralSigma")[0];
+        auto sigmaSpace = get_input2<vec2f>("BilateralSigma")[1];
         auto &ud = image->userData();
         int w = ud.get2<int>("w");
         int h = ud.get2<int>("h");
+        auto img_out = std::make_shared<PrimitiveObject>();
+        img_out->resize(w * h);
+        img_out->userData().set2("w", w);
+        img_out->userData().set2("h", h);
+        img_out->userData().set2("isImage", 1);
 
-        cv::Mat imagecvin(h, w, CV_32FC3);
-        cv::Mat imagecvout(h, w, CV_32FC3);
-        for (auto a = 0; a < image->verts.size(); a++){
-            int i = a / w;
-            int j = a % w;
-            vec3f rgb = image->verts[i * w + j];
-            imagecvin.at<cv::Vec3f>(i, j) = {rgb[0], rgb[1], rgb[2]};
+        if(type == "Gaussian" && fastgaussian){
+            gaussBlur(image->verts, img_out->verts, w, h, sigmaX, 3);
         }
-        cv::blur(imagecvin,imagecvout,cv::Size(xsize,ysize),cv::Point(-1,-1));
-        for (auto a = 0; a < image->verts.size(); a++){
-            int i = a / w;
-            int j = a % w;
-            cv::Vec3f rgb = imagecvout.at<cv::Vec3f>(i, j);
-            image->verts[i * w + j] = {rgb[0], rgb[1], rgb[2]};
+        else{//CV BLUR
+            cv::Mat imagecvin(h, w, CV_32FC3);
+            cv::Mat imagecvout(h, w, CV_32FC3);
+            for (auto a = 0; a < image->verts.size(); a++){
+                int i = a / w;
+                int j = a % w;
+                vec3f rgb = image->verts[i * w + j];
+                imagecvin.at<cv::Vec3f>(i, j) = {rgb[0], rgb[1], rgb[2]};
+            }
+            if(kernelSize%2==0){
+                kernelSize += 1;
+            }
+            if(type == "Box"){
+                cv::boxFilter(imagecvin,imagecvout,-1,cv::Size(kernelSize,kernelSize));
+            }
+            else if(type == "Gaussian"){
+                cv::GaussianBlur(imagecvin,imagecvout,cv::Size(kernelSize,kernelSize),sigmaX);
+            }
+            else if(type == "Median"){
+                cv::medianBlur(imagecvin,imagecvout,kernelSize);//kernel size can only be 3/5 when use CV_32FC3
+            }
+            else if(type == "Bilateral"){
+                cv::bilateralFilter(imagecvin,imagecvout, kernelSize, sigmaColor, sigmaSpace);
+            }
+            else if(type == "Stack"){
+                cv::stackBlur(imagecvin,imagecvout,cv::Size(kernelSize, kernelSize));
+            }
+            else{
+                zeno::log_error("ImageBlur: Blur type does not exist");
+            }
+            for (auto a = 0; a < image->verts.size(); a++){
+                int i = a / w;
+                int j = a % w;
+                cv::Vec3f rgb = imagecvout.at<cv::Vec3f>(i, j);
+                img_out->verts[i * w + j] = {rgb[0], rgb[1], rgb[2]};
+            }
         }
-        set_output("image", image);
+        set_output("image", img_out);
     }
 };
 
 ZENDEFNODE(ImageBlur, {
     {
         {"image"},
-        {"float", "xsize", "10"},
-        {"float", "ysize", "10"},
-    },
-    {
-        {"image"}
-    },
-    {},
-    { "image" },
-});
-
-struct ImageGaussianBlur : INode {
-    virtual void apply() override {
-        auto image = get_input<PrimitiveObject>("image");
-        auto kernelsize = get_input2<int>("kernelsize");
-        auto sigmaX = get_input2<float>("sigmaX");
-        auto &ud = image->userData();
-        int w = ud.get2<int>("w");
-        int h = ud.get2<int>("h");
-        cv::Mat imagecvin(h, w, CV_32FC3);
-        cv::Mat imagecvout(h, w, CV_32FC3);
-        for (auto a = 0; a < image->verts.size(); a++){
-            int i = a / w;
-            int j = a % w;
-            vec3f rgb = image->verts[i * w + j];
-            imagecvin.at<cv::Vec3f>(i, j) = {rgb[0], rgb[1], rgb[2]};
-        }
-        if(kernelsize%2==0){
-            kernelsize += 1;
-        }
-        cv::GaussianBlur(imagecvin,imagecvout,cv::Size(kernelsize,kernelsize),sigmaX);
-        for (auto a = 0; a < image->verts.size(); a++){
-            int i = a / w;
-            int j = a % w;
-            cv::Vec3f rgb = imagecvout.at<cv::Vec3f>(i, j);
-            image->verts[i * w + j] = {rgb[0], rgb[1], rgb[2]};
-        }
-        set_output("image", image);
-    }
-};
-
-ZENDEFNODE(ImageGaussianBlur, {
-    {
-        {"image"},
-        {"int", "kernelsize", "5"},
-        {"float", "sigmaX", "2.0"},
-    },
-    {
-        {"image"}
-    },
-    {},
-    { "image" },
-});
-
-struct ImageMedianBlur : INode {
-    virtual void apply() override {
-        auto image = get_input<PrimitiveObject>("image");
-        auto kernelSize = get_input2<int>("kernelSize");
-        auto &ud = image->userData();
-        int w = ud.get2<int>("w");
-        int h = ud.get2<int>("h");
-        cv::Mat imagecvin(h, w, CV_32FC3);
-        cv::Mat imagecvout(h, w, CV_32FC3);
-        for (auto a = 0; a < image->verts.size(); a++){
-            int i = a / w;
-            int j = a % w;
-            vec3f rgb = image->verts[i * w + j];
-            imagecvin.at<cv::Vec3f>(i, j) = {rgb[0], rgb[1], rgb[2]};
-        }
-        if(kernelSize%2==0){
-            kernelSize += 1;
-        }
-        cv::medianBlur(imagecvin,imagecvout,kernelSize);
-        for (auto a = 0; a < image->verts.size(); a++){
-            int i = a / w;
-            int j = a % w;
-            cv::Vec3f rgb = imagecvout.at<cv::Vec3f>(i, j);
-            image->verts[i * w + j] = {rgb[0], rgb[1], rgb[2]};
-        }
-        set_output("image", image);
-    }
-};
-
-ZENDEFNODE(ImageMedianBlur, {
-    {
-        {"image"},
         {"int", "kernelSize", "5"},
+        {"enum Gaussian Box Median Bilateral Stack", "type", "Gaussian"},
+        {"float", "GaussianSigma", "1"},//fast gaussian only effect by sigma  等参数分开显示再移开
+        {"vec2f", "BilateralSigma", "50,50"},
+        {"bool", "Fast Blur(Gaussian)", "1"},
     },
     {
         {"image"}
@@ -1182,49 +1109,6 @@ ZENDEFNODE(ImageMedianBlur, {
     {},
     { "image" },
 });
-
-struct ImageBilateralBlur : INode {
-    virtual void apply() override {
-        auto image = get_input<PrimitiveObject>("image");
-        auto diameter = get_input2<int>("diameter");
-        auto sigmaColor = get_input2<float>("sigmaColor");
-        auto sigmaSpace = get_input2<float>("sigmaSpace");
-        auto &ud = image->userData();
-        int w = ud.get2<int>("w");
-        int h = ud.get2<int>("h");
-        cv::Mat imagecvin(h, w, CV_32FC3);
-        cv::Mat imagecvout(h, w, CV_32FC3);
-        for (auto a = 0; a < image->verts.size(); a++){
-            int i = a / w;
-            int j = a % w;
-            vec3f rgb = image->verts[i * w + j];
-            imagecvin.at<cv::Vec3f>(i, j) = {rgb[0], rgb[1], rgb[2]};
-        }
-        cv::bilateralFilter(imagecvin,imagecvout, diameter, sigmaColor, sigmaSpace);
-        for (auto a = 0; a < image->verts.size(); a++){
-            int i = a / w;
-            int j = a % w;
-            cv::Vec3f rgb = imagecvout.at<cv::Vec3f>(i, j);
-            image->verts[i * w + j] = {rgb[0], rgb[1], rgb[2]};
-        }
-        set_output("image", image);
-    }
-};
-
-ZENDEFNODE(ImageBilateralBlur, {
-    {
-        {"image"},
-        {"int", "diameter", "10"},
-        {"float", "sigmaColor", "75"},
-        {"float", "sigmaSpace", "75"},
-    },
-    {
-        {"image"}
-    },
-    {},
-    { "image" },
-});
-
 
 struct ImageEditContrast : INode {
     virtual void apply() override {
@@ -1252,35 +1136,6 @@ ZENDEFNODE(ImageEditContrast, {
     { "image" },
 });
 
-struct ImageEditSaturation : INode {
-    virtual void apply() override {
-        auto image = get_input<PrimitiveObject>("image");
-        float Si = get_input2<float>("Saturation");
-        float H = 0, S = 0, V = 0;
-        for (auto i = 0; i < image->verts.size(); i++) {
-            float R = image->verts[i][0];
-            float G = image->verts[i][1];
-            float B = image->verts[i][2];
-            zeno::RGBtoHSV(R, G, B, H, S, V);
-            S = S + (S - 0.5)*(Si-1);
-            zeno::HSVtoRGB(H, S, V, R, G, B);
-            image->verts[i][0] = R;
-            image->verts[i][1] = G;
-            image->verts[i][2] = B;
-        }
-        set_output("image", image);
-    }
-};
-
-ZENDEFNODE(ImageEditSaturation, {
-    {
-        {"image"},
-        {"float", "Saturation", "1"},
-    },
-    {"image"},
-    {},
-    { "image" },
-});
 
 struct ImageEditInvert : INode{
     virtual void apply() override {
@@ -1302,9 +1157,8 @@ ZENDEFNODE(ImageEditInvert, {
         "image",
     },
     {},
-    {"image"},
+    {"deprecated"},
 });
-
 
 /* 将灰度图像转换为法线贴图 */
 struct ImageToNormalMap : INode {
@@ -1709,6 +1563,47 @@ struct ImageColor : INode {
 ZENDEFNODE(ImageColor, {
     {
         {"vec4f", "Color", "1,1,1,1"},
+        {"vec2i", "Size", "1024,1024"},
+        {"bool", "alpha", "1"},
+    },
+    {
+        {"image"},
+    },
+    {},
+    { "deprecated" },
+});
+struct ImageColor2 : INode {
+    virtual void apply() override {
+        auto image = std::make_shared<PrimitiveObject>();
+        auto color = get_input2<vec3f>("Color");
+        auto alpha = get_input2<float>("Alpha");
+        auto size = get_input2<vec2i>("Size");
+        auto balpha = get_input2<bool>("alpha");
+        auto vertsize = size[0] * size[1];
+        image->verts.resize(vertsize);
+        image->userData().set2("isImage", 1);
+        image->userData().set2("w", size[0]);
+        image->userData().set2("h", size[1]);
+        if(balpha){
+            auto &alphaAttr = image->verts.add_attr<float>("alpha");
+            for (int i = 0; i < vertsize ; i++) {
+                image->verts[i] = {zeno::clamp(color[0], 0.0f, 1.0f), zeno::clamp(color[1], 0.0f, 1.0f), zeno::clamp(color[2], 0.0f, 1.0f)};
+                alphaAttr[i] = zeno::clamp(alpha, 0.0f, 1.0f);
+            }
+        }
+        else{
+            for (int i = 0; i < vertsize ; i++) {
+                image->verts[i] = {zeno::clamp(color[0], 0.0f, 1.0f), zeno::clamp(color[1], 0.0f, 1.0f), zeno::clamp(color[2], 0.0f, 1.0f)};
+            }
+        }
+        set_output("image", image);
+    }
+};
+
+ZENDEFNODE(ImageColor2, {
+    {
+        {"vec3f", "Color", "1,1,1"},
+        {"float", "Alpha", "1"},
         {"vec2i", "Size", "1024,1024"},
         {"bool", "alpha", "1"},
     },
@@ -2238,6 +2133,7 @@ struct ImageLevels: INode {
         auto gamma = get_input2<float>("gamma");//range  0.01 - 9.99
         auto channel = get_input2<std::string>("channel");
         auto clamp = get_input2<bool>("Clamp Output");
+        auto autolevel = get_input2<bool>("Auto Level");
         UserData &ud = image->userData();
         int w = ud.get2<int>("w");
         int h = ud.get2<int>("h");
@@ -2246,8 +2142,91 @@ struct ImageLevels: INode {
         float inputMin = inputLevels[0];
         float outputMin = outputLevels[0];
         float gammaCorrection = 1.0f / gamma;
+        float MinBlue, MaxBlue, MinRed, MaxRed, MinGreen, MaxGreen = 0.0f;
+        //calculate histogram
+        if (autolevel) {
+            std::vector<int> histogramred(256, 0);
+            std::vector<int> histogramgreen(256, 0);
+            std::vector<int> histogramblue(256, 0);
+            for (int i = 0; i < w * h; i++) {
+                histogramred[zeno::clamp(int(image->verts[i][0] * 255.99), 0, 255)]++;
+                histogramgreen[zeno::clamp(int(image->verts[i][1] * 255.99), 0, 255)]++;
+                histogramblue[zeno::clamp(int(image->verts[i][2] * 255.99), 0, 255)]++;
+            }
+            int total = w * h;
+            int sum = 0;
+            //Red channel
+            for (int i = 0; i < 256; i++) {
+                sum += histogramred[i];
+                if (sum  >= total * 0.001f) {
+                    MinRed = i;
+                    break;
+                }
+            }
+            sum = 0;
+            for (int i = 255; i >= 0; i--) {
+                sum += histogramred[i];
+                if (sum  >= total * 0.001f) {
+                    MaxRed = i;
+                    break;
+                }
+            }
+            //Green channel
+            sum = 0;
+            for (int i = 0; i < 256; i++) {
+                sum += histogramgreen[i];
+                if (sum  >= total * 0.001f) {
+                    MinGreen = i;
+                    break;
+                }
+            }
+            sum = 0;
+            for (int i = 255; i >= 0; i--) {
+                sum += histogramgreen[i];
+                if (sum  >= total * 0.001f) {
+                    MaxGreen = i;
+                    break;
+                }
+            }
+            //Blue channel
+            sum = 0;
+            for (int i = 0; i < 256; i++) {
+                sum += histogramblue[i];
+                if (sum  >= total * 0.001f) {
+                    MinBlue = i;
+                    break;
+                }
+            }
+            sum = 0;
+            for (int i = 255; i >= 0; i--) {
+                sum += histogramblue[i];
+                if (sum  >= total * 0.001f) {
+                    MaxBlue = i;
+                    break;
+                }
+            }
+            //inputMin = std::min(std::min(MinRed, MinGreen), MinBlue) / 255.0f;//auto contrast?  对于灰度图像，由于只有一个通道，自动对比度和自动色阶实际上算法相同？
+            //inputRange = (std::max(std::max(MaxRed, MaxGreen), MaxBlue) - inputMin) / 255.0f;
+            /*// 根据计算的值影响level参数
+            inputMin = min / 255.0f;
+            inputRange = (max - min) / 255.0f;*/
+        }
+        MinRed /= 255.0f, MinGreen /= 255.0f, MinBlue /= 255.0f, MaxRed /= 255.0f, MaxGreen /= 255.0f, MaxBlue /= 255.0f;
 
-        if (channel == "All") {
+        if(autolevel){
+#pragma omp parallel for
+            for (int i = 0; i < w * h; i++) {
+                vec3f &v = image->verts[i];
+                v[0] = (v[0] < MinRed) ? MinRed : v[0];
+                v[1] = (v[1] < MinGreen) ? MinGreen : v[1];
+                v[2] = (v[2] < MinBlue) ? MinBlue : v[2];
+                v[0] = (v[0] - MinRed) / (MaxRed - MinRed);
+                v[1] = (v[1] - MinGreen) / (MaxGreen - MinGreen);
+                v[2] = (v[2] - MinBlue) / (MaxBlue - MinBlue);
+                v = clamp ? zeno::clamp((v * outputRange + outputMin), 0, 1) : (v * outputRange + outputMin);
+            }
+        }
+        else if (channel == "All") {
 #pragma omp parallel for
             for (int i = 0; i < w * h; i++) {
                 vec3f &v = image->verts[i];
@@ -2269,10 +2248,9 @@ struct ImageLevels: INode {
                 }
             }
         }
-
         else if (channel == "R") {
 #pragma omp parallel for
-        for (int i = 0; i < w; i++) {
+        for (int i = 0; i < w * h; i++) {
                 float &v = image->verts[i][0];
                 if (v < inputMin) v = inputMin;
                 v = (v - inputMin) / inputRange;
@@ -2283,7 +2261,7 @@ struct ImageLevels: INode {
 
         else if (channel == "G") {
 #pragma omp parallel for
-        for (int i = 0; i < w; i++) {
+        for (int i = 0; i < w * h; i++) {
                 float &v = image->verts[i][1];
                 if (v < inputMin) v = inputMin;
                 v = (v - inputMin) / inputRange;
@@ -2294,7 +2272,7 @@ struct ImageLevels: INode {
         
         else if (channel == "B") {
 #pragma omp parallel for
-        for (int i = 0; i < w; i++) {
+        for (int i = 0; i < w * h; i++) {
                 float &v = image->verts[i][2];
                 if (v < inputMin) v = inputMin;
                 v = (v - inputMin) / inputRange;
@@ -2318,6 +2296,7 @@ struct ImageLevels: INode {
                 zeno::log_error("no alpha channel");
             }
         }
+
         set_output("image", image);
     }
 };
@@ -2327,8 +2306,8 @@ ZENDEFNODE(ImageLevels, {
         {"vec2f", "Input Levels", "0, 1"},
         {"float", "gamma", "1"},
         {"vec2f", "Output Levels", "0, 1"},
-        //{"bool", "auto level", "false"}, //auto level
         {"enum All R G B A", "channel", "RGB"},
+        {"bool", "Auto Level", "0"},
         {"bool", "Clamp Output", "1"},
     },
     {

@@ -24,6 +24,9 @@ ZenoApplication::ZenoApplication(int &argc, char **argv)
     m_errSteam.registerMsgHandler();
     verifyVersion();
 
+    //register optix log proxy
+    bool ret = connect(m_errSteam.optixLogProxy().get(), SIGNAL(optixlogReady(const QString&)), this, SLOT(onOptixlogReady(const QString&)), Qt::QueuedConnection);
+
     QStringList locations;
     locations = QStandardPaths::standardLocations(QStandardPaths::AppDataLocation);
 #ifdef Q_OS_WIN
@@ -37,6 +40,35 @@ ZenoApplication::ZenoApplication(int &argc, char **argv)
 
 ZenoApplication::~ZenoApplication()
 {
+}
+
+void ZenoApplication::onOptixlogReady(const QString& msg)
+{
+    if (msg.startsWith("["))
+    {
+        QMessageLogger logger("zeno", 0, 0);
+        QChar tip = msg.at(1);
+
+        auto& mgr = GraphsManagment::instance();
+        if (tip == 'T') {
+            mgr.appendLog(QtDebugMsg, "zeno", 0, msg);
+        }
+        else if (tip == 'D') {
+            mgr.appendLog(QtDebugMsg, "zeno", 0, msg);
+        }
+        else if (tip == 'I') {
+            mgr.appendLog(QtInfoMsg, "zeno", 0, msg);
+        }
+        else if (tip == 'C') {
+            mgr.appendLog(QtCriticalMsg, "zeno", 0, msg);
+        }
+        else if (tip == 'W') {
+            mgr.appendLog(QtWarningMsg, "zeno", 0, msg);
+        }
+        else if (tip == 'E') {
+            mgr.appendLog(QtFatalMsg, "zeno", 0, msg);
+        }
+    }
 }
 
 QString ZenoApplication::readQss(const QString& qssPath)

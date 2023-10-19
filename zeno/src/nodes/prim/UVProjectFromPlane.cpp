@@ -585,7 +585,7 @@ struct WriteImageFile : INode {
             const char* err;
             path += ".exr";
             std::string native_path = std::filesystem::u8path(path).string();
-            int ret = SaveEXR(data2.data(),w,h,n,1,native_path.c_str(),&err);
+            int ret = SaveEXR(data2.data(),w,h,n,0,native_path.c_str(),&err);
 
             if (ret != TINYEXR_SUCCESS) {
                 zeno::log_error("Error saving EXR file: {}\n", err);

@@ -145,7 +145,7 @@ void Picker::pick(int x, int y) {
     // onPrimitiveSelected();
 }
 
-void Picker::pick(int x0, int y0, int x1, int y1) {
+void Picker::pick(int x0, int y0, int x1, int y1, SELECTION_MODE mode) {
     auto scene = this->scene();
     ZASSERT_EXIT(scene);
     auto selected = picker->getPicked(x0, y0, x1, y1);
@@ -155,14 +155,10 @@ void Picker::pick(int x0, int y0, int x1, int y1) {
             selected_prims.clear();
             return;
         }
-        load_from_str(selected, zenovis::PICK_MODE::PICK_OBJECT);
+        load_from_str(selected, zenovis::PICK_MODE::PICK_OBJECT, SELECTION_MODE::NORMAL);
     }
     else {
-        if (selected.empty()) {
-            selected_elements.clear();
-            return;
-        }
-        load_from_str(selected, scene->select_mode);
+        load_from_str(selected, scene->select_mode, mode);
         if (picked_elems_callback) picked_elems_callback(selected_elements);
     }
 }
@@ -201,7 +197,7 @@ void Picker::sync_to_scene() {
 
 }
 
-void Picker::load_from_str(const string& str, zenovis::PICK_MODE mode) {
+void Picker::load_from_str(const string& str, zenovis::PICK_MODE mode, SELECTION_MODE sel_mode) {
     if (str.empty()) return;
     // parse selected string
     std::regex reg(" ");
@@ -215,6 +211,9 @@ void Picker::load_from_str(const string& str, zenovis::PICK_MODE mode) {
         }
     }
     else {
+        if (sel_mode == SELECTION_MODE::NORMAL) {
+            selected_elements.clear();
+        }
         while (p != end) {
             string result = *p++;
             // qDebug() << result.c_str();
@@ -225,7 +224,7 @@ void Picker::load_from_str(const string& str, zenovis::PICK_MODE mode) {
             int elem_id; ss >> elem_id;
             if (selected_elements.find(obj_id) != selected_elements.end()) {
                 auto &elements = selected_elements[obj_id];
-                if (elements.count(elem_id) > 0)
+                if (sel_mode == SELECTION_MODE::REMOVE)
                     elements.erase(elem_id);
                 else
                     elements.insert(elem_id);

@@ -1217,7 +1217,7 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
                         node_context += prim_name + ":" + e.toStdString() + " ";
 
                 if (picker)
-                    picker->load_from_str(node_context, scene->select_mode);
+                    picker->load_from_str(node_context, scene->select_mode, zeno::SELECTION_MODE::NORMAL);
             }
             if (picker) {
                 picker->sync_to_scene();

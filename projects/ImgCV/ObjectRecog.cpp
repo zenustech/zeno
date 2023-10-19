@@ -96,6 +96,9 @@ struct ImageEdgeDetect : INode {
         int threshold = get_input2<int>("threshold");
         int maxThreshold = get_input2<int>("maxThreshold");
         float kernelSize = get_input2<float>("kernelSize");
+        //float scale = get_input2<float>("scale");
+        //float delta = get_input2<float>("delta");
+        //int borderType = get_input2<int>("borderType");
         auto &ud = image->userData();
         int w = ud.get2<int>("w");
         int h = ud.get2<int>("h");
@@ -130,61 +133,26 @@ struct ImageEdgeDetect : INode {
             }
             set_output("image", image);
         }
-        if (mode == "sobel_gray") {
+        if (mode == "sobel") {//todo::
             cv::Mat imagecvin(h, w, CV_32F);
-            cv::Mat imagecvout(h, w, CV_32F);
-            int var = 1;
+            float grayvalue = 1;
+#pragma omp parallel for
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
                     vec3f rgb = image->verts[i * w + j];
-                    var = 255 * (rgb[0] * 0.299 + rgb[1] * 0.587 + rgb[2] *0.114) ;//average convert to gray
-                    imagecvin.at<float>(i, j) = var;
+                    grayvalue = rgb[0] * 0.299 + rgb[1] * 0.587 + rgb[2] *0.114;//todo detect rgb three channel?
+                    imagecvin.at<float>(i, j) = grayvalue;
                 }
             }
-
             cv::Mat gradX, gradY;
+            //cv::Sobel(imagecvin, gradX, CV_32F, 1, 0, kernelSize,scale,delta,borderType);
             cv::Sobel(imagecvin, gradX, CV_32F, 1, 0, kernelSize);
             cv::Sobel(imagecvin, gradY, CV_32F, 0, 1, kernelSize);
-            cv::convertScaleAbs(gradX, gradX);
-            cv::convertScaleAbs(gradY, gradY);
-
+#pragma omp parallel for
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
-                    float xg = gradX.at<uchar>(i, j);
-			        float yg = gradY.at<uchar>(i, j);
-                    float xy = xg + yg;
-                    xy = xy / 255.f;
-                    image->verts[i * w + j] = {xy, xy, xy};
-                }
-            }
-            set_output("image", image);
-        }
-
-        if (mode == "sobel_threshold") {
-            cv::Mat imagecvin(h, w, CV_32F);
-            cv::Mat imagecvout(h, w, CV_32F);
-            int var = 1;
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    vec3f rgb = image->verts[i * w + j];
-                    var = 255 * (rgb[0] * 0.299 + rgb[1] * 0.587 + rgb[2] *0.114);
-                    imagecvin.at<float>(i, j) = var;
-                }
-            }
-
-            cv::Mat gradX, gradY;
-            cv::Sobel(imagecvin, gradX, CV_32F, 1, 0);
-            cv::Sobel(imagecvin, gradY, CV_32F, 0, 1);
-
-            cv::Mat gradientMagnitude, gradientDirection;
-            cv::cartToPolar(gradX, gradY, gradientMagnitude, gradientDirection, true);
-
-            cv::threshold(gradientMagnitude, imagecvout, threshold, maxThreshold, cv::THRESH_BINARY);
-            for (int i = 0; i < h; i++) {
-
-                for (int j = 0; j < w; j++) {
-                    float r = float(imagecvout.at<float>(i, j)) / 255.f;
-                    image->verts[i * w + j] = {r, r, r};
+                    float magnitude = abs(gradX.at<float>(i, j)) + abs(gradY.at<float>(i, j));//manhattan distance？ not euclidean distance
+                    image->verts[i * w + j] = {magnitude, magnitude, magnitude};
                 }
             }
             set_output("image", image);
@@ -359,7 +327,7 @@ struct ImageEdgeDetect : INode {
 ZENDEFNODE(ImageEdgeDetect, {
     {
         { "image" },
-        { "enum zeno_gray zeno_threshold sobel_gray sobel_threshold roberts_gray roberts_threshold prewitt_gray prewitt_threshold canny_gray canny_threshold", "mode", "sobel_gray" },
+        { "enum zeno_gray zeno_threshold sobel roberts_gray roberts_threshold prewitt_gray prewitt_threshold canny_gray canny_threshold", "mode", "sobel" },
         { "float", "threshold", "50" },
         { "float", "maxThreshold", "9999" },
         { "float", "kernelSize", "3"}
@@ -472,91 +440,7 @@ ZENDEFNODE(ImageEdgeDetectDIY, {
     { "deprecated" },
 });
 
-struct ImageEdgeDetectSobel : INode {
-    void apply() override {
-        std::shared_ptr<PrimitiveObject> image = get_input2<PrimitiveObject>("image");
-        auto mode = get_input2<std::string>("mode");
-        int threshold = get_input2<int>("threshold");
-        int maxThreshold = get_input2<int>("maxThreshold");
-        float kernelSize = get_input2<float>("kernelSize");
-        auto &ud = image->userData();
-        int w = ud.get2<int>("w");
-        int h = ud.get2<int>("h");
-
-        if (mode == "sobel_gray") {
-            cv::Mat imagecvin(h, w, CV_32F);
-            cv::Mat imagecvout(h, w, CV_32F);
-            int var = 1;
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    vec3f rgb = image->verts[i * w + j];
-                    var = 255 * (rgb[0] * 0.299 + rgb[1] * 0.587 + rgb[2] *0.114) ;//average convert to gray
-                    imagecvin.at<float>(i, j) = var;
-                }
-            }
-
-            cv::Mat gradX, gradY;
-            cv::Sobel(imagecvin, gradX, CV_32F, 1, 0, kernelSize);
-            cv::Sobel(imagecvin, gradY, CV_32F, 0, 1, kernelSize);
-            cv::convertScaleAbs(gradX, gradX);
-            cv::convertScaleAbs(gradY, gradY);
-
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    float xg = gradX.at<uchar>(i, j);
-			        float yg = gradY.at<uchar>(i, j);
-                    float xy = xg + yg;
-                    xy = xy / 255.f;
-                    image->verts[i * w + j] = {xy, xy, xy};
-                }
-            }
-            set_output("image", image);
-        }
-
-        if (mode == "sobel_threshold") {
-            cv::Mat imagecvin(h, w, CV_32F);
-            cv::Mat imagecvout(h, w, CV_32F);
-            int var = 1;
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    vec3f rgb = image->verts[i * w + j];
-                    var = 255 * (rgb[0] * 0.299 + rgb[1] * 0.587 + rgb[2] *0.114);
-                    imagecvin.at<float>(i, j) = var;
-                }
-            }
-            cv::Mat gradX, gradY;
-            cv::Sobel(imagecvin, gradX, CV_32F, 1, 0);
-            cv::Sobel(imagecvin, gradY, CV_32F, 0, 1);
-            cv::Mat gradientMagnitude, gradientDirection;
-            cv::cartToPolar(gradX, gradY, gradientMagnitude, gradientDirection, true);
-            cv::threshold(gradientMagnitude, imagecvout, threshold, maxThreshold, cv::THRESH_BINARY);
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    float r = float(imagecvout.at<float>(i, j)) / 255.f;
-                    image->verts[i * w + j] = {r, r, r};
-                }
-            }
-            set_output("image", image);
-        }
-    }
-};
-
-ZENDEFNODE(ImageEdgeDetectSobel, {
-    {
-        { "image" },
-        { "enum sobel_gray sobel_threshold", "mode", "sobel_gray" },
-        { "float", "threshold", "50" },
-        { "float", "maxThreshold", "9999" },
-        { "float", "kernelSize", "3"},
-    },
-    {
-        { "image" }
-    },
-    {},
-    { "image" },
-});
-
-struct ImageEdgeDetectMarr : INode { 
+struct ImageEdgeDetectMarr : INode { //need to gray?
     void apply() override {
         std::shared_ptr<PrimitiveObject> image = get_input2<PrimitiveObject>("image");
         auto kerneldiameter = get_input2<int>("kernelDiameter");
@@ -589,7 +473,7 @@ struct ImageEdgeDetectMarr : INode {
 
                         if (kernelX >= 0 && kernelX < w && kernelY >= 0 && kernelY < h) {
 
-                            sum += (image->verts[kernelY * w + kernelX][0]) * 255 * kernel[i][j];
+                            sum += (image->verts[kernelY * w + kernelX][0]) * 255.99 * kernel[i][j];//maybe this cause problem
                         }
                     }
                 }

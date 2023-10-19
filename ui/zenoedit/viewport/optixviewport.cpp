@@ -590,6 +590,10 @@ void ZOptixViewport::keyPressEvent(QKeyEvent* event)
     if (modifiers & Qt::AltModifier) {
         uKey += Qt::ALT;
     }
+    if (m_camera->fakeKeyPressEvent(uKey)) {
+        zenoApp->getMainWindow()->updateViewport();
+        return;
+    }
     /*
     if (uKey == key)
         this->changeTransformOperation(0);
