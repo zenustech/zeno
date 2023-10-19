@@ -409,7 +409,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
     testPRD.vol_t1 = _FLT_MAX_;
     testPRD.test_distance = true;
     testPRD.isSS = false;
-    testPRD.opacity = 0.0f;
+
 
     uint16_t _mask_ = EverythingMask ^ VolumeMatMask;
 
