@@ -695,7 +695,7 @@ namespace DisneyBSDF{
               wi = normalize(refract(wo, wm, entering?1.0f/mat.ior:mat.ior));
               flag = transmissionEvent;
               isTrans = true;
-              extinction = CalculateExtinction(mat.transParam, mat.transDepth);
+              extinction = CalculateExtinction(mat.transTint, mat.transTintDepth);
               extinction = entering? extinction : vec3(0.0f);
             }
 

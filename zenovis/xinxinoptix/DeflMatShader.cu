@@ -72,9 +72,10 @@ static __inline__ __device__ MatOutput evalMat(cudaTextureObject_t zenotex[], fl
 
     float mat_specTrans = 0.0f;
     vec3 mat_transColor = vec3(1.0f,1.0f,1.0f);
+    vec3 mat_transTint = vec3(1.0f,1.0f,1.0f);
+    float mat_transTintDepth = 0.0f;
     float mat_clarity = 0.0f;
-    vec3 mat_transParam = vec3(1.0f,1.0f,1.0f);
-    float mat_transDepth = 0.0f;
+    vec3 mat_transScatterColor = vec3(1.0f,1.0f,1.0f);
     float mat_ior = 1.0f;
 
     float mat_flatness = 0.0f;
@@ -123,9 +124,10 @@ static __inline__ __device__ MatOutput evalMat(cudaTextureObject_t zenotex[], fl
         
         mats.specTrans = clamp(mat_specTrans, 0.0f, 1.0f);
         mats.transColor = mat_transColor;
+        mats.transTint = mat_transTint;
+        mats.transTintDepth = max(0.0f,mat_transTintDepth);
         mats.clarity = clamp(mat_clarity,0.0f,1.0f);
-        mats.transParam = mat_transParam;
-        mats.transDepth = max(0.0f,mat_transDepth);
+        mats.transScatterColor = mat_transScatterColor;
         mats.ior = max(0.0f,mat_ior);
 
 

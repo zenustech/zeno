@@ -30,9 +30,11 @@ struct MatOutput {
     float specTrans;
     vec3 transColor;
     vec3 transTint;
-    vec3 transSactterColor;
-    float clarity;
     float transTintDepth;
+    float clarity;
+    vec3 transScatterColor;
+
+
 
     float subsurface;
     vec3  sssColor;
