@@ -16,24 +16,27 @@
 #include "../geometry/kernel/tiled_vector_ops.hpp"
 #include "../geometry/kernel/topology.hpp"
 #include "../geometry/kernel/geo_math.hpp"
+#include "../geometry/kernel/bary_centric_weights.hpp"
 // #include "../fem/collision_energy/evaluate_collision.hpp"
 #include "constraint_function_kernel/constraint_types.hpp"
 
 namespace zeno {
-
-
 // we only need to record the topo here
 // serve triangulate mesh or strands only currently
 struct MakeSurfaceConstraintTopology : INode {
+
+    using bvh_t = ZenoLinearBvh::lbvh_t;
+    using bv_t = bvh_t::Box;
+    using dtiles_t = zs::TileVector<T,32>;
+
     template <typename TileVecT>
     void buildBvh(zs::CudaExecutionPolicy &pol, 
             TileVecT &verts, 
             const zs::SmallString& srcTag,
             const zs::SmallString& dstTag,
             const zs::SmallString& pscaleTag,
-                  ZenoLinearBvh::lbvh_t &bvh) {
+                bvh_t &bvh) {
         using namespace zs;
-        using bv_t = typename ZenoLinearBvh::lbvh_t::Box;
         constexpr auto space = execspace_e::cuda;
         Vector<bv_t> bvs{verts.get_allocator(), verts.size()};
         pol(range(verts.size()),
@@ -57,6 +60,7 @@ struct MakeSurfaceConstraintTopology : INode {
         using namespace PBD_CONSTRAINT;
 
         using vec3 = zs::vec<float,3>;
+        using vec4 = zs::vec<float,4>;
         using vec2i = zs::vec<int,2>;
         using vec3i = zs::vec<int,3>;
         using vec4i = zs::vec<int,4>;
@@ -73,7 +77,7 @@ struct MakeSurfaceConstraintTopology : INode {
         if(source->category != ZenoParticles::surface)
             throw std::runtime_error("Try adding Constraint topology to non-surface ZenoParticles");
 
-        const auto& verts = source->getParticles();
+        auto& verts = source->getParticles();
         const auto& quads = source->getQuadraturePoints();
 
         auto uniform_stiffness = get_input2<float>("stiffness");
@@ -85,6 +89,7 @@ struct MakeSurfaceConstraintTopology : INode {
         constraint->sprayedOffset = 0;
         constraint->elements = typename ZenoParticles::particles_t({{"stiffness",1},{"lambda",1},{"tclr",1}}, 0, zs::memsrc_e::device,0);
         auto &eles = constraint->getQuadraturePoints();
+        constraint->setMeta(CONSTRAINT_TARGET,source.get());
 
         if(type == "stretch") {
             constraint->setMeta(CONSTRAINT_KEY,category_c::edge_length_constraint);
@@ -116,6 +121,205 @@ struct MakeSurfaceConstraintTopology : INode {
                     eles("r",oei) = (x[0] - x[1]).norm() * rest_scale;
             });            
 
+        }
+        if(type == "volume_pin") {
+            constexpr auto eps = 1e-6;
+            constraint->setMeta(CONSTRAINT_KEY,category_c::volume_pin_constraint);
+
+            auto volume = get_input<ZenoParticles>("target");
+            const auto& kverts = volume->getParticles();
+            const auto& ktets = volume->getQuadraturePoints();
+
+            constraint->setMeta(CONSTRAINT_TARGET,volume.get());
+
+            auto pin_group_name = get_input2<std::string>("pin_point_group_name");
+            auto binder_max_length = get_input2<float>("binder_max_length");
+
+            zs::Vector<zs::vec<int,1>> point_topos{quads.get_allocator(),0};
+            if(verts.hasProperty(pin_group_name)) {
+                std::cout << "binder name : " << pin_group_name << std::endl;
+                zs::bht<int,1,int> pin_point_set{verts.get_allocator(),verts.size()};
+                pin_point_set.reset(cudaPol,true);
+
+                cudaPol(zs::range(verts.size()),[
+                    verts = proxy<space>({},verts),
+                    eps = eps,
+                    gname = zs::SmallString(pin_group_name),
+                    pin_point_set = proxy<space>(pin_point_set)] ZS_LAMBDA(int vi) mutable {
+                        auto gtag = verts(gname,vi);
+                        if(gtag > eps)
+                            pin_point_set.insert(vi);
+                });
+                point_topos.resize(pin_point_set.size());
+                cudaPol(zip(zs::range(pin_point_set.size()),pin_point_set._activeKeys),[
+                    point_topos = proxy<space>(point_topos)] ZS_LAMBDA(auto id,const auto& pvec) mutable {
+                        point_topos[id] = pvec[0];
+                });
+            }else {
+                point_topos.resize(verts.size());
+                cudaPol(zip(zs::range(point_topos.size()),point_topos),[] ZS_LAMBDA(const auto& id,auto& pi) mutable {pi = id;});
+            }
+            std::cout << "nm binder point : " << point_topos.size() << std::endl;
+            topological_coloring(cudaPol,point_topos,colors,true);
+			sort_topology_by_coloring_tag(cudaPol,colors,reordered_map,color_offset);
+            
+            eles.append_channels(cudaPol,{{"inds",2},{"bary",4}});
+            eles.resize(point_topos.size());
+            
+            auto thickness = binder_max_length / (T)2.0;
+
+            auto ktetBvh = bvh_t{};
+            auto ktetBvs = retrieve_bounding_volumes(cudaPol,kverts,ktets,wrapv<4>{},thickness,"x");
+            ktetBvh.build(cudaPol,ktetBvs);
+            
+            cudaPol(zs::range(point_topos.size()),[
+                point_topos = proxy<space>(point_topos),
+                reordered_map = proxy<space>(reordered_map),
+                verts = proxy<space>({},verts),
+                ktetBvh = proxy<space>(ktetBvh),
+                thickness = thickness,
+                eles = proxy<space>({},eles),
+                kverts = proxy<space>({},kverts),
+                ktets = proxy<space>({},ktets)] ZS_LAMBDA(int oei) mutable {
+                    auto ei = reordered_map[oei];
+                    auto pi = point_topos[ei][0];
+                    auto p = verts.pack(dim_c<3>,"x",pi);
+                    auto bv = bv_t{get_bounding_box(p - thickness,p + thickness)};
+
+                    bool found = false;
+                    int embed_kti = -1;
+                    vec4 bary{};
+                    auto find_embeded_tet = [&](int kti) {
+                        if(found == true)
+                            return;
+                        auto inds = ktets.pack(dim_c<4>,"inds",kti,int_c);
+                        vec3 ktps[4] = {};
+                        for(int i = 0;i != 4;++i)
+                            ktps[i] = kverts.pack(dim_c<3>,"x",inds[i]);
+                        auto ws = compute_barycentric_weights(p,ktps[0],ktps[1],ktps[2],ktps[3]);
+
+                        T epsilon = zs::limits<float>::epsilon();
+                        if(ws[0] > epsilon && ws[1] > epsilon && ws[2] > epsilon && ws[3] > epsilon){
+                            embed_kti = kti;
+                            bary = ws;
+                            found = true;
+                            return;
+                        }                        
+                    };  
+                    ktetBvh.iter_neighbors(bv,find_embeded_tet);
+                    if(embed_kti >= 0)
+                        verts("minv",pi) = 0;
+                    eles.tuple(dim_c<2>,"inds",oei) = vec2i{pi,embed_kti}.reinterpret_bits(float_c);
+                    eles.tuple(dim_c<4>,"bary",oei) = bary;
+            });
+        }
+
+        if(type == "point_triangle_pin") {
+            constexpr auto eps = 1e-6;
+            constraint->setMeta(CONSTRAINT_KEY,category_c::pt_pin_constraint);
+
+            auto target = get_input<ZenoParticles>("target");
+            const auto& kverts = target->getParticles();
+            const auto& ktris = target->getQuadraturePoints();
+
+            constraint->setMeta(CONSTRAINT_TARGET,target.get());
+
+            auto pin_point_group_name = get_input2<std::string>("pin_point_group_name");
+            auto binder_max_length = get_input2<float>("binder_max_length");
+            // we might further need a pin_triangle_group_name
+            zs::bht<int,1,int> pin_point_set{verts.get_allocator(),verts.size()};
+            pin_point_set.reset(cudaPol,true);
+
+            cudaPol(zs::range(verts.size()),[
+                verts = proxy<space>({},verts),
+                eps = eps,
+                gname = zs::SmallString(pin_point_group_name),
+                pin_point_set = proxy<space>(pin_point_set)] ZS_LAMBDA(int vi) mutable {
+                    auto gtag = verts(gname,vi);
+                    if(gtag > eps)
+                        pin_point_set.insert(vi);
+            });
+            zs::Vector<zs::vec<int,1>> point_topos{quads.get_allocator(),pin_point_set.size()};
+            cudaPol(zip(zs::range(pin_point_set.size()),pin_point_set._activeKeys),[
+                point_topos = proxy<space>(point_topos)] ZS_LAMBDA(auto id,const auto& pvec) mutable {
+                    point_topos[id] = pvec[0];
+            });
+
+            std::cout << "binder name : " << pin_point_group_name << std::endl;
+            std::cout << "nm binder point : " << point_topos.size() << std::endl;
+            topological_coloring(cudaPol,point_topos,colors,true);
+			sort_topology_by_coloring_tag(cudaPol,colors,reordered_map,color_offset);
+
+            eles.append_channels(cudaPol,{{"inds",2},{"bary",3},{"rd",1}});
+            eles.resize(point_topos.size());  
+
+            auto ktriBvh = bvh_t{};
+            auto thickness = binder_max_length / (T)2.0;
+
+            auto ktriBvs = retrieve_bounding_volumes(cudaPol,kverts,ktris,wrapv<3>{},thickness,"x");
+            ktriBvh.build(cudaPol,ktriBvs);
+
+            cudaPol(zs::range(point_topos.size()),[
+                verts = proxy<space>({},verts),
+                point_topos = proxy<space>(point_topos),
+                kverts = proxy<space>({},kverts),
+                ktris = proxy<space>({},ktris),
+                thickness = thickness,
+                eles = proxy<space>({},eles),
+                ktriBvh = proxy<space>(ktriBvh),
+                reordered_map = proxy<space>(reordered_map),
+                quads = proxy<space>({},quads)] ZS_LAMBDA(auto oei) mutable {
+                    auto ei = reordered_map[oei];
+                    auto pi = point_topos[ei][0];
+                    auto p = verts.pack(dim_c<3>,"x",pi);
+                    auto bv = bv_t{get_bounding_box(p - thickness,p + thickness)};
+
+                    int min_kti = -1;
+                    T min_dist = std::numeric_limits<float>::max();
+                    vec3 min_bary_centric{};
+                    auto find_closest_triangles = [&](int kti) {
+                        // printf("check binder pair[%d %d]\n",pi,kti);
+                        auto ktri = ktris.pack(dim_c<3>,"inds",kti,int_c);
+                        vec3 ts[3] = {};
+                        for(int i = 0;i != 3;++i)
+                            ts[i] = kverts.pack(dim_c<3>,"x",ktri[i]);
+
+                        vec3 bary_centric{};
+                        auto pt_dist = LSL_GEO::pointTriangleDistance(ts[0],ts[1],ts[2],p,bary_centric);  
+                        for(int i = 0;i != 3;++i)
+                            bary_centric[i] = bary_centric[i] < 0 ? 0 : bary_centric[i];
+                        // if(pt_dist > thickness * 2)
+                        //     return;
+                        
+                        auto bary_sum = zs::abs(bary_centric[0]) + zs::abs(bary_centric[1]) + zs::abs(bary_centric[2]);
+                        bary_centric /= bary_sum;
+                        // if(bary_sum > 1.0 + eps * 100)
+                        //     return;
+
+                        if(pt_dist < min_dist) {
+                            min_dist = pt_dist;
+                            min_kti = kti;
+                            min_bary_centric = bary_centric;
+                        }
+                    };
+                    ktriBvh.iter_neighbors(bv,find_closest_triangles);
+
+                    if(min_kti >= 0) {
+                        auto ktri = ktris.pack(dim_c<3>,"inds",min_kti,int_c);
+                        vec3 kps[3] = {};
+                        for(int i = 0;i != 3;++i)
+                            kps[i] = kverts.pack(dim_c<3>,"x",ktri[i]);
+                        auto knrm = LSL_GEO::facet_normal(kps[0],kps[1],kps[2]);
+                        auto seg = p - kps[0];
+                        if(seg.dot(knrm) < 0)
+                            min_dist *= -1;
+                        verts("minv",pi) = 0;
+                    }
+
+                    eles.tuple(dim_c<2>,"inds",oei) = vec2i{pi,min_kti}.reinterpret_bits(float_c);
+                    eles.tuple(dim_c<3>,"bary",oei) = min_bary_centric;
+                    eles("rd",oei) = min_dist;
+            });
         }
 
         // angle on (p2, p3) between triangles (p0, p2, p3) and (p1, p3, p2)
@@ -327,11 +531,11 @@ struct MakeSurfaceConstraintTopology : INode {
                 // auto 
         });
 
-        constraint->setMeta("color_offset",color_offset);
+        constraint->setMeta(CONSTRAINT_COLOR_OFFSET,color_offset);
 
         // set_output("source",source);
         set_output("constraint",constraint);
-    };
+    }
 };
 
 ZENDEFNODE(MakeSurfaceConstraintTopology, {{
@@ -339,7 +543,9 @@ ZENDEFNODE(MakeSurfaceConstraintTopology, {{
                                 {"target"},
                                 {"float","stiffness","0.5"},
                                 {"string","topo_type","stretch"},
-                                {"float","rest_scale","1.0"}
+                                {"float","rest_scale","1.0"},
+                                {"string","pin_point_group_name","groupName"},
+                                {"float","binder_max_length","0.1"}
                             },
 							{{"constraint"}},
 							{ 
@@ -348,104 +554,115 @@ ZENDEFNODE(MakeSurfaceConstraintTopology, {{
 							{"PBD"}});
 
 
-struct VisualizePBDConstraint : INode {
-    using T = float;
-    using vec3 = zs::vec<T,3>;
-    // using tiles_t = typename ZenoParticles::particles_t;
-    // using dtiles_t = zs::TileVector<T,32>;
 
-    virtual void apply() override {
-        using namespace zs;
-        using namespace PBD_CONSTRAINT;
 
-        constexpr auto space = execspace_e::cuda;
-        auto cudaPol = cuda_exec();
+// struct VisualizePBDConstraint : INode {
+//     using T = float;
+//     using vec3 = zs::vec<T,3>;
+//     // using tiles_t = typename ZenoParticles::particles_t;
+//     // using dtiles_t = zs::TileVector<T,32>;
 
-        auto zsparticles = get_input<ZenoParticles>("zsparticles");
-        auto constraints_ptr = get_input<ZenoParticles>("constraints");
+//     virtual void apply() override {
+//         using namespace zs;
+//         using namespace PBD_CONSTRAINT;
 
-        const auto& geo_verts = zsparticles->getParticles();
-        const auto& constraints = constraints_ptr->getQuadraturePoints();
+//         constexpr auto space = execspace_e::cuda;
+//         auto cudaPol = cuda_exec();
 
-        auto tclr_tag = get_param<std::string>("tclrTag");
+//         auto zsparticles = get_input<ZenoParticles>("zsparticles");
+//         auto constraints_ptr = get_input<ZenoParticles>("constraints");
 
-        zs::Vector<vec3> cvis{geo_verts.get_allocator(),constraints.getChannelSize("inds") * constraints.size()};
-        zs::Vector<int> cclrs{constraints.get_allocator(),constraints.size()};
-        int cdim = constraints.getChannelSize("inds");
-        cudaPol(zs::range(constraints.size()),[
-            constraints = proxy<space>({},constraints),
-            geo_verts = proxy<space>({},geo_verts),
-            cclrs = proxy<space>(cclrs),
-            tclr_tag = zs::SmallString(tclr_tag),
-            cdim = cdim,
-            cvis = proxy<space>(cvis)] ZS_LAMBDA(int ci) mutable {
-                // auto cdim = constraints.propertySize("inds");
-                for(int i = 0;i != cdim;++i) {
-                    auto vi = zs::reinterpret_bits<int>(constraints("inds",i,ci));
-                    cvis[ci * cdim + i] = geo_verts.pack(dim_c<3>,"x",vi);
-                }
-                cclrs[ci] = (int)constraints(tclr_tag,ci);
-        });
+//         const auto& geo_verts = zsparticles->getParticles();
+//         const auto& constraints = constraints_ptr->getQuadraturePoints();
 
-        constexpr auto omp_space = execspace_e::openmp;
-        auto ompPol = omp_exec();
+//         auto tclr_tag = get_param<std::string>("tclrTag");
 
-        cvis = cvis.clone({zs::memsrc_e::host});
-        cclrs = cclrs.clone({zs::memsrc_e::host});
-        auto prim = std::make_shared<zeno::PrimitiveObject>();
-        auto& pverts = prim->verts;
+//         zs::Vector<vec3> cvis{geo_verts.get_allocator(),constraints.getChannelSize("inds") * constraints.size()};
+//         zs::Vector<int> cclrs{constraints.get_allocator(),constraints.size()};
+//         int cdim = constraints.getChannelSize("inds");
+//         cudaPol(zs::range(constraints.size()),[
+//             constraints = proxy<space>({},constraints),
+//             geo_verts = proxy<space>({},geo_verts),
+//             cclrs = proxy<space>(cclrs),
+//             tclr_tag = zs::SmallString(tclr_tag),
+//             cdim = cdim,
+//             cvis = proxy<space>(cvis)] ZS_LAMBDA(int ci) mutable {
+//                 // auto cdim = constraints.propertySize("inds");
+//                 for(int i = 0;i != cdim;++i) {
+//                     auto vi = zs::reinterpret_bits<int>(constraints("inds",i,ci));
+//                     cvis[ci * cdim + i] = geo_verts.pack(dim_c<3>,"x",vi);
+//                 }
+//                 cclrs[ci] = (int)constraints(tclr_tag,ci);
+//         });
 
-        auto constraint_type = constraints_ptr->readMeta(CONSTRAINT_KEY,wrapt<category_c>{});
+//         constexpr auto omp_space = execspace_e::openmp;
+//         auto ompPol = omp_exec();
 
-        if(constraint_type == category_c::edge_length_constraint || constraint_type == category_c::dihedral_spring_constraint) {
-            pverts.resize(constraints.size() * 2);
-            auto& plines = prim->lines;
-            plines.resize(constraints.size());
-            auto& tclrs = pverts.add_attr<int>(tclr_tag);
-            auto& ltclrs = plines.add_attr<int>(tclr_tag);
+//         cvis = cvis.clone({zs::memsrc_e::host});
+//         cclrs = cclrs.clone({zs::memsrc_e::host});
+//         auto prim = std::make_shared<zeno::PrimitiveObject>();
+//         auto& pverts = prim->verts;
 
-            ompPol(zs::range(constraints.size()),[
-                &ltclrs,&pverts,&plines,&tclrs,cvis = proxy<omp_space>(cvis),cclrs = proxy<omp_space>(cclrs)] (int ci) mutable {
-                    pverts[ci * 2 + 0] = cvis[ci * 2 + 0].to_array();
-                    pverts[ci * 2 + 1] = cvis[ci * 2 + 1].to_array();
-                    tclrs[ci * 2 + 0] = cclrs[ci];
-                    tclrs[ci * 2 + 1] = cclrs[ci];
-                    plines[ci] = zeno::vec2i{ci * 2 + 0,ci * 2 + 1};
-                    ltclrs[ci] = cclrs[ci];
-            });
-        }else if(constraint_type == category_c::isometric_bending_constraint || constraint_type == category_c::dihedral_bending_constraint) {
-            pverts.resize(constraints.size() * 2);
-            auto& plines = prim->lines;
-            plines.resize(constraints.size());
-            auto& tclrs = pverts.add_attr<int>(tclr_tag);
-            auto& ltclrs = plines.add_attr<int>(tclr_tag);
+//         auto constraint_type = constraints_ptr->readMeta(CONSTRAINT_KEY,wrapt<category_c>{});
 
-            ompPol(zs::range(constraints.size()),[
-                    &ltclrs,&pverts,&plines,&tclrs,cvis = proxy<omp_space>(cvis),cclrs = proxy<omp_space>(cclrs)] (int ci) mutable {
-                zeno::vec3f cverts[4] = {};
-                for(int i = 0;i != 4;++i)
-                    cverts[i] = cvis[ci * 4 + i].to_array();
+//         if(constraint_type == category_c::edge_length_constraint || constraint_type == category_c::dihedral_spring_constraint) {
+//             pverts.resize(constraints.size() * 2);
+//             auto& plines = prim->lines;
+//             plines.resize(constraints.size());
+//             auto& tclrs = pverts.add_attr<int>(tclr_tag);
+//             auto& ltclrs = plines.add_attr<int>(tclr_tag);
 
-                pverts[ci * 2 + 0] = (cverts[0] + cverts[2] + cverts[3]) / (T)3.0;
-                pverts[ci * 2 + 1] = (cverts[1] + cverts[2] + cverts[3]) / (T)3.0;
-                tclrs[ci * 2 + 0] = cclrs[ci];
-                tclrs[ci * 2 + 1] = cclrs[ci];
-                ltclrs[ci] = cclrs[ci];
+//             ompPol(zs::range(constraints.size()),[
+//                 &ltclrs,&pverts,&plines,&tclrs,cvis = proxy<omp_space>(cvis),cclrs = proxy<omp_space>(cclrs)] (int ci) mutable {
+//                     pverts[ci * 2 + 0] = cvis[ci * 2 + 0].to_array();
+//                     pverts[ci * 2 + 1] = cvis[ci * 2 + 1].to_array();
+//                     tclrs[ci * 2 + 0] = cclrs[ci];
+//                     tclrs[ci * 2 + 1] = cclrs[ci];
+//                     plines[ci] = zeno::vec2i{ci * 2 + 0,ci * 2 + 1};
+//                     ltclrs[ci] = cclrs[ci];
+//             });
+//         }else if(constraint_type == category_c::isometric_bending_constraint || constraint_type == category_c::dihedral_bending_constraint) {
+//             pverts.resize(constraints.size() * 2);
+//             auto& plines = prim->lines;
+//             plines.resize(constraints.size());
+//             auto& tclrs = pverts.add_attr<int>(tclr_tag);
+//             auto& ltclrs = plines.add_attr<int>(tclr_tag);
 
-                plines[ci] = zeno::vec2i{ci * 2 + 0,ci * 2 + 1};  
-            });
-        }
+//             ompPol(zs::range(constraints.size()),[
+//                     &ltclrs,&pverts,&plines,&tclrs,cvis = proxy<omp_space>(cvis),cclrs = proxy<omp_space>(cclrs)] (int ci) mutable {
+//                 zeno::vec3f cverts[4] = {};
+//                 for(int i = 0;i != 4;++i)
+//                     cverts[i] = cvis[ci * 4 + i].to_array();
 
-        set_output("prim",std::move(prim));
-    }
-};
+//                 pverts[ci * 2 + 0] = (cverts[0] + cverts[2] + cverts[3]) / (T)3.0;
+//                 pverts[ci * 2 + 1] = (cverts[1] + cverts[2] + cverts[3]) / (T)3.0;
+//                 tclrs[ci * 2 + 0] = cclrs[ci];
+//                 tclrs[ci * 2 + 1] = cclrs[ci];
+//                 ltclrs[ci] = cclrs[ci];
 
-ZENDEFNODE(VisualizePBDConstraint, {{{"zsparticles"},{"constraints"}},
-							{{"prim"}},
-							{
-                                {"string","tclrTag","tclrTag"},
-                            },
-							{"PBD"}});
+//                 plines[ci] = zeno::vec2i{ci * 2 + 0,ci * 2 + 1};  
+//             });
+//         }
+//         else if(constraint_type == category_c::pt_pin_constraint) {
+//             pverts.resize(constraints.size() * 2);
+//             auto& plines = prim->lines;
+//             plines.resize(constraints.size());
+//             auto& tclrs = pverts.add_attr<int>(tclr_tag);
+//             auto& ltclrs = plines.add_attr<int>(tclr_tag);
+
+
+//         }
+
+//         set_output("prim",std::move(prim));
+//     }
+// };
+
+// ZENDEFNODE(VisualizePBDConstraint, {{{"zsparticles"},{"constraints"}},
+// 							{{"prim"}},
+// 							{
+//                                 {"string","tclrTag","tclrTag"},
+//                             },
+// 							{"PBD"}});
 
 // solve a specific type of constraint for one iterations
 struct XPBDSolve : INode {
@@ -467,28 +684,31 @@ struct XPBDSolve : INode {
         auto zsparticles = get_input<ZenoParticles>("zsparticles");
         auto constraints = get_input<ZenoParticles>("constraints");
 
+        // auto target = get_input<ZenoParticles>("kbounadry");
+
+
         auto dt = get_input2<float>("dt");   
         auto ptag = get_param<std::string>("ptag");
 
-        auto coffsets = constraints->readMeta("color_offset",zs::wrapt<zs::Vector<int>>{});  
+        auto substeps_id = get_input2<int>("substep_id");
+        auto nm_substeps = get_input2<int>("nm_substeps");
+        auto w = (float)(substeps_id + 1) / (float)nm_substeps;
+
+        // auto current_substep_id = get_input2<int>("substep_id");
+        // auto total_substeps = get_input2<int>("total_substeps");
+
+        auto coffsets = constraints->readMeta(CONSTRAINT_COLOR_OFFSET,zs::wrapt<zs::Vector<int>>{});  
         int nm_group = coffsets.size();
 
         auto& verts = zsparticles->getParticles();
         auto& cquads = constraints->getQuadraturePoints();
         auto category = constraints->readMeta(CONSTRAINT_KEY,wrapt<category_c>{});
-        auto target = get_input<ZenoParticles>("target");
+
+        auto target = constraints->readMeta(CONSTRAINT_TARGET,zs::wrapt<ZenoParticles*>{});
         const auto& kverts = target->getParticles();
-        // zs::Vector<vec3> pv_buffer{verts.get_allocator(),verts.size()};
-        // zs::Vector<float> total_ghost_impulse_X{verts.get_allocator(),1};
-        // zs::Vector<float> total_ghost_impulse_Y{verts.get_allocator(),1};
-        // zs::Vector<float> total_ghost_impulse_Z{verts.get_allocator(),1};
-
-        // std::cout << "SOVLE CONSTRAINT WITH GROUP : " << nm_group << "\t" << cquads.size() << std::endl;
-
-
+        const auto& kcells = target->getQuadraturePoints();
 
         for(int g = 0;g != nm_group;++g) {
-
             auto coffset = coffsets.getVal(g);
             int group_size = 0;
             if(g == nm_group - 1)
@@ -497,15 +717,62 @@ struct XPBDSolve : INode {
                 group_size = coffsets.getVal(g + 1) - coffsets.getVal(g);
 
             cudaPol(zs::range(group_size),[
-                coffset,
+                coffset = coffset,
                 verts = proxy<space>({},verts),
-                category,
-                dt,
+                category = category,
+                dt = dt,
+                w = w,
+                substeps_id = substeps_id,
+                nm_substeps = nm_substeps,
                 ptag = zs::SmallString(ptag),
                 kverts = proxy<space>({},kverts),
+                kcells = proxy<space>({},kcells),
                 cquads = proxy<space>({},cquads)] ZS_LAMBDA(int gi) mutable {
                     float s = cquads("stiffness",coffset + gi);
                     float lambda = cquads("lambda",coffset + gi);
+
+                    if(category == category_c::volume_pin_constraint) {
+                        auto pair = cquads.pack(dim_c<2>,"inds",coffset + gi,int_c);
+                        auto pi = pair[0];
+                        auto kti = pair[1];
+                        if(kti < 0)
+                            return;
+                        auto ktet = kcells.pack(dim_c<4>,"inds",kti,int_c);
+                        auto bary = cquads.pack(dim_c<4>,"bary",kti);
+
+                        auto ktp = vec3::zeros();
+                        for(int i = 0;i != 4;++i) 
+                            ktp += kverts.pack(dim_c<3>,"x",ktet[i]) * bary[i];
+                        auto pktp = vec3::zeros();
+                        for(int i = 0;i != 4;++i) 
+                            pktp += kverts.pack(dim_c<3>,"px",ktet[i]) * bary[i];
+                        verts.tuple(dim_c<3>,ptag,pi) = (1 - w) * pktp + w * pktp;
+                    }
+
+                    if(category == category_c::pt_pin_constraint) {
+                        auto pair = cquads.pack(dim_c<2>,"inds",coffset + gi,int_c);
+                        if(pair[0] <= 0 || pair[1] <= 0) {
+                            printf("invalid pair[%d %d] detected %d %d\n",pair[0],pair[1],coffset,gi);
+                            return;
+                        }
+                        auto pi = pair[0];
+                        auto kti = pair[1];
+                        if(kti < 0)
+                            return;
+                        auto ktri = kcells.pack(dim_c<3>,"inds",kti,int_c);
+                        auto rd = cquads("rd",coffset + gi);
+                        auto bary = cquads.pack(dim_c<3>,"bary",coffset + gi);
+
+                        vec3 kps[3] = {};
+                        auto kc = vec3::zeros();
+                        for(int i = 0;i != 3;++i){
+                            kps[i] = kverts.pack(dim_c<3>,"x",ktri[i]) * w + kverts.pack(dim_c<3>,"px",ktri[i]) * (1 - w);
+                            kc += kps[i] * bary[i];
+                        }
+                            
+                        auto knrm = LSL_GEO::facet_normal(kps[0],kps[1],kps[2]);
+                        verts.tuple(dim_c<3>,ptag,pi) = kc + knrm * rd;
+                    }
 
                     if(category == category_c::edge_length_constraint || category == category_c::dihedral_spring_constraint) {
                         auto edge = cquads.pack(dim_c<2>,"inds",coffset + gi,int_c);
@@ -526,7 +793,6 @@ struct XPBDSolve : INode {
                             lambda,
                             dp0,dp1))
                                 return;
-                        
                         
                         verts.tuple(dim_c<3>,ptag,edge[0]) = p0 + dp0;
                         verts.tuple(dim_c<3>,ptag,edge[1]) = p1 + dp1;
@@ -592,42 +858,25 @@ struct XPBDSolve : INode {
                             verts.tuple(dim_c<3>,ptag,quad[i]) = p[i] + dp[i];
                         }                        
                     }
-
-                    if(category == category_c::p_kp_collision_constraint) {
-                        auto quad = cquads.pack(dim_c<2>,"inds",coffset + gi,int_c);
-
-                        vec3 p = verts.pack(dim_c<3>,ptag,quad[0]);
-                        vec3 kp = kverts.pack(dim_c<3>,"x",quad[1]);
-                        vec3 knrm = kverts.pack(dim_c<3>,"nrm",quad[1]);
-
-                        auto pscale = verts("pscale",quad[0]);
-                        auto kpscale = kverts("pscale",quad[1]);
-
-                        T minv = verts("minv",quad[0]);
-                        // T kminv = kverts("minv",quad[1]);
-
-                        vec3 dp = {};
-                        auto thickness = pscale + kpscale;
-                        thickness *= (float)1.01;
-                        CONSTRAINT::solve_PlaneConstraint(p,minv,kp,knrm,thickness,s,dt,lambda,dp);
-                        verts.tuple(dim_c<3>,ptag,quad[0]) = p + dp;
-                    }
-
                     cquads("lambda",coffset + gi) = lambda;
             });
 
         }      
 
-        // cudaPol(zs::range(verts.size()))
-
         set_output("constraints",constraints);
         set_output("zsparticles",zsparticles);
-        set_output("target",target);
+        // set_output("target",target);
     };
 };
 
-ZENDEFNODE(XPBDSolve, {{{"zsparticles"},{"constraints"},{"target"},{"float","dt","0.5"}},
-							{{"zsparticles"},{"constraints"},{"target"}},
+ZENDEFNODE(XPBDSolve, {{{"zsparticles"},
+                            {"constraints"},
+                            {"int","substep_id","0"},
+                            {"int","nm_substeps","1"},
+                            // {"target"},
+                            // {"string","kptag","x"},
+                            {"float","dt","0.5"}},
+							{{"zsparticles"},{"constraints"}},
 							{{"string","ptag","X"}},
 							{"PBD"}});
 
@@ -732,54 +981,6 @@ struct XPBDSolveSmooth : INode {
                             atomic_add(exec_tag,&dp_count[edge[1]],(int)1);
                         }
                     }
-                    // if(category == category_c::isometric_bending_constraint) {
-                    //     return;
-                    //     auto quad = cquads.pack(dim_c<4>,"inds",ci,int_c);
-                    //     vec3 p[4] = {};
-                    //     float minv[4] = {};
-                    //     for(int i = 0;i != 4;++i) {
-                    //         p[i] = verts.pack(dim_c<3>,ptag,quad[i]);
-                    //         minv[i] = verts("minv",quad[i]);
-                    //     }
-
-                    //     auto Q = cquads.pack(dim_c<4,4>,"Q",ci);
-
-                    //     vec3 dp[4] = {};
-                    //     float lambda = 0;
-                    //     CONSTRAINT::solve_IsometricBendingConstraint(
-                    //         p[0],minv[0],
-                    //         p[1],minv[1],
-                    //         p[2],minv[2],
-                    //         p[3],minv[3],
-                    //         Q,
-                    //         (float)1,
-                    //         dp[0],
-                    //         dp[1],
-                    //         dp[2],
-                    //         dp[3]);
-
-                    //     auto has_nan = false;
-                    //     for(int i = 0;i != 4;++i)
-                    //         if(zs::isnan(dp[i].norm()))
-                    //             has_nan = true;
-                    //     if(has_nan) {
-                    //         printf("nan dp detected : %f %f %f %f %f %f %f %f\n",
-                    //             (float)p[0].norm(),
-                    //             (float)p[1].norm(),
-                    //             (float)p[2].norm(),
-                    //             (float)p[3].norm(),
-                    //             (float)dp[0].norm(),
-                    //             (float)dp[1].norm(),
-                    //             (float)dp[2].norm(),
-                    //             (float)dp[3].norm());
-                    //         return;
-                    //     }
-                    //     for(int i = 0;i != 4;++i)
-                    //         for(int j = 0;j != 3;++j)
-                    //             atomic_add(exec_tag,&dp_buffer[quad[i] * 3 + j],dp[i][j]);
-                    //     for(int i = 0;i != 4;++i)
-                    //         atomic_add(exec_tag,&dp_count[quad[i]],(int)1);
-                    // }
             });
         }      
 

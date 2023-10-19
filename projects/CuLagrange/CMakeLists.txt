@@ -36,7 +36,7 @@ target_sources(zeno PRIVATE
 # pbd
 target_sources(zeno PRIVATE
   pbd/Constraints.cu
-  pbd/SelfCollision.cu
+  # pbd/SelfCollision.cu
   pbd/KinematicCollision.cu
   # pbd/Pipeline.cu
 )

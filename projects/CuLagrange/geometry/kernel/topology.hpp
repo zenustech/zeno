@@ -1116,7 +1116,7 @@ namespace zeno {
     void topological_incidence_matrix(Pol& pol,
             // size_t nm_points,
             const TopoRangT& topos,
-            zs::SparseMatrix<zs::u32,true>& spmat) {
+            zs::SparseMatrix<zs::u32,true>& spmat,bool output_debug_inform = false) {
         using namespace zs;
         using ICoord = zs::vec<int, 2>;
         // constexpr auto CDIM = VecTI::extent;
@@ -1162,7 +1162,7 @@ namespace zeno {
                     }
             });
 
-            // std::cout << "finish computing tab_buffer" << std::endl;
+            std::cout << "finish computing tab_buffer" << std::endl;
             // pol(zs::range(cnts.size()),[cnts = proxy<space>(cnts)] ZS_LAMBDA(int pi) mutable {printf("cnts[%d] = %d\n",pi,cnts[pi]);});
             pol(zs::range(exclusive_offsets),[] ZS_LAMBDA(auto& eoffset) {eoffset = 0;});
 
@@ -1223,13 +1223,17 @@ namespace zeno {
                 }
         });
 
-        // std::cout << "finish computing tij_tab" << std::endl;
+        std::cout << "finish computing tij_tab" << std::endl;
 
         zs::Vector<int> is{topos.get_allocator(),tij_tab.size()};
         zs::Vector<int> js{topos.get_allocator(),tij_tab.size()};
-        pol(zip(zs::range(tij_tab.size()),zs::range(tij_tab._activeKeys)),[is = proxy<space>(is),js = proxy<space>(js)] ZS_LAMBDA(auto idx,const auto& pair) {
+        pol(zip(zs::range(tij_tab.size()),zs::range(tij_tab._activeKeys)),[
+                is = proxy<space>(is),
+                js = proxy<space>(js),
+                output_debug_inform = output_debug_inform] ZS_LAMBDA(auto idx,const auto& pair) {
             is[idx] = pair[0];js[idx] = pair[1];
-            // printf("pair[%d] : %d %d\n",idx,pair[0],pair[1]);
+            if(output_debug_inform)
+                printf("pair[%d] : %d %d\n",idx,pair[0],pair[1]);
         });
 
         // pol(zs::range(is.size()),[is = proxy<space>(is),js = proxy<space>(js)] ZS_LAMBDA(int i) mutable {printf("ijs[%d] : %d %d\n",i,is[i],js[i]);});
@@ -1238,6 +1242,7 @@ namespace zeno {
         //     std::cout << topos.getVal(i)[0] << "\t" << topos.getVal(i)[1] << std::endl;
 
         // spmat = zs::SparseMatrix<u32,true>{topos.get_allocator(),(int)topos.size(),(int)topos.size()};
+        std::cout << "build sparse matrix" << std::endl;
         spmat.build(pol,(int)topos.size(),(int)topos.size(),zs::range(is),zs::range(js)/*,zs::range(rs)*/,zs::true_c);
         // spmat.localOrdering(pol,zs::false_c);
         spmat._vals.resize(spmat.nnz());
@@ -1251,12 +1256,14 @@ namespace zeno {
     void topological_coloring(Pol& pol,
             // int nm_points,
             const TopoRangeT& topo,
-            ColorRangeT& colors) {
+            ColorRangeT& colors,
+            bool output_debug_information = false) {
         using namespace zs;
         constexpr auto space = Pol::exec_tag::value;
         using Ti = RM_CVREF_T(colors[0]);
 
-        std::cout << "do coloring " << std::endl;
+        if(output_debug_information)
+            std::cout << "do coloring with topos : " << topo.size() << std::endl;
 
 
         colors.resize(topo.size());
@@ -1264,7 +1271,7 @@ namespace zeno {
         std::cout << "compute incidence matrix " << std::endl;
         
 
-        topological_incidence_matrix(pol,topo,topo_incidence_matrix);
+        topological_incidence_matrix(pol,topo,topo_incidence_matrix,output_debug_information);
         std::cout << "finish compute incidence matrix " << std::endl;
 
         auto ompPol = omp_exec();

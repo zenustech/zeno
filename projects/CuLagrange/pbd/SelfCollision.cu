@@ -26,6 +26,9 @@ struct DetangleImminentCollision : INode {
     using vec3 = zs::vec<T,3>;
     using dtiles_t = zs::TileVector<T,32>;
 
+    using bvh_t = ZenoLinearBvh::lbvh_t;
+    using bv_t = bvh_t::Box;
+
     virtual void apply() override {
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
@@ -73,6 +76,10 @@ struct DetangleImminentCollision : INode {
                 {"collision_normal",3}
             },(size_t)0);
 
+        constexpr auto MAX_PT_COLLISION_PAIRS = 100000;
+        zs::bht<int,2,int> csPT{verts.get_allocator(),MAX_PT_COLLISION_PAIRS};csPT.reset(cudaPol,true);
+        zs::bht<int,2,int> csEE{edges.get_allocator(),MAX_PT_COLLISION_PAIRS};csEE.reset(cudaPol,true);
+
         auto imminent_restitution_rate = get_input2<float>("imm_restitution");
         auto imminent_relaxation_rate = get_input2<float>("imm_relaxation");
 
@@ -88,6 +95,9 @@ struct DetangleImminentCollision : INode {
         float vn_threshold = 5e-3;
         auto add_repulsion_force = get_input2<bool>("add_repulsion_force");
         
+        auto triBvh = bvh_t{};
+        auto edgeBvh = bvh_t{};
+
         for(int it = 0;it != nm_iters;++it) {
 
             cudaPol(zs::range(verts.size()),[
@@ -95,23 +105,38 @@ struct DetangleImminentCollision : INode {
 
         // we use collision cell as the collision volume, PT collision is enough prevent penertation?
             if(do_pt_detection) {
+
+                auto triBvs = retrieve_bounding_volumes(cudaPol,vtemp,tris,wrapv<3>{},imminent_collision_thickness / (T)2,"x");
+                if(it == 0) {
+                    triBvh.build(cudaPol,triBvs);
+                }else {
+                    triBvh.refit(cudaPol,triBvs);
+                }
+
                 COLLISION_UTILS::calc_imminent_self_PT_collision_impulse(cudaPol,
                     vtemp,"x","v",
                     tris,
                     halfedges,
                     imminent_collision_thickness,
-                    0,
-                    imminent_collision_buffer);
+                    0,triBvh,
+                    imminent_collision_buffer,csPT);
                 // std::cout << "nm_imminent_PT_collision : " << imminent_collision_buffer.size() << std::endl;
             }
 
             if(do_ee_detection) {
+                auto edgeBvs = retrieve_bounding_volumes(cudaPol,vtemp,edges,wrapv<2>{},imminent_collision_thickness / (T)2,"x");
+                if(it == 0) {
+                    edgeBvh.build(cudaPol,edgeBvs);
+                }else {
+                    edgeBvh.refit(cudaPol,edgeBvs);
+                }
+
                 COLLISION_UTILS::calc_imminent_self_EE_collision_impulse(cudaPol,
                     vtemp,"x","v",
                     edges,
                     imminent_collision_thickness,
-                    imminent_collision_buffer.size(),
-                    imminent_collision_buffer);
+                    csPT.size(),edgeBvh,
+                    imminent_collision_buffer,csEE);
                 // std::cout << "nm_imminent_EE_collision : " << imminent_collision_buffer.size() << std::endl;
             }
             // resolve imminent PT collision
@@ -125,7 +150,7 @@ struct DetangleImminentCollision : INode {
                 imminent_relaxation_rate,
                 vn_threshold,
                 imminent_collision_buffer,
-                nm_imminent_collision);
+                nm_imminent_collision,csPT.size() + csEE.size());
 
             std::cout << "nm_self_imminent_collision : " << nm_imminent_collision.getVal(0) << std::endl;
             if(nm_imminent_collision.getVal(0) == 0) 
@@ -205,10 +230,8 @@ struct DetangleImminentCollision : INode {
                 vtemp,"v",
                 imminent_restitution_rate,
                 imminent_relaxation_rate,
-                imminent_collision_buffer);
+                imminent_collision_buffer,csPT.size() + csEE.size());
         }
-
-
 
         std::cout << "finish imminent collision" << std::endl;
 
@@ -249,6 +272,9 @@ struct VisualizeImminentCollision : INode {
     using vec3 = zs::vec<T,3>;
     using dtiles_t = zs::TileVector<T,32>;
     
+    using bvh_t = ZenoLinearBvh::lbvh_t;
+    using bv_t = bvh_t::Box;
+
     virtual void apply() override {
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
@@ -259,7 +285,8 @@ struct VisualizeImminentCollision : INode {
         using bv_t = typename ZenoLinearBvh::lbvh_t::Box;
         constexpr auto exec_tag = wrapv<space>{};
         constexpr auto eps = (T)1e-7;
-        constexpr auto MAX_PT_COLLISION_PAIRS = 1000000;
+        constexpr auto MAX_PT_COLLISION_PAIRS = 100000;
+
 
         auto zsparticles = get_input<ZenoParticles>("zsparticles");
         auto current_x_tag = get_input2<std::string>("current_x_tag");
@@ -272,6 +299,8 @@ struct VisualizeImminentCollision : INode {
         const auto& edges = (*zsparticles)[ZenoParticles::s_surfEdgeTag];
         const auto& halfedges = (*zsparticles)[ZenoParticles::s_surfHalfEdgeTag];
 
+        zs::bht<int,2,int> csPT{verts.get_allocator(),MAX_PT_COLLISION_PAIRS};
+        zs::bht<int,2,int> csEE{edges.get_allocator(),MAX_PT_COLLISION_PAIRS};
         // auto nm_imminent_iters = get_input2<int>("nm_imminent_iters");
         dtiles_t imminent_PT_collision_buffer(verts.get_allocator(),
             {
@@ -304,22 +333,30 @@ struct VisualizeImminentCollision : INode {
             current_x_tag = zs::SmallString(current_x_tag)] ZS_LAMBDA(int vi) mutable {
                 vtemp.tuple(dim_c<3>,"v",vi) = verts.pack(dim_c<3>,current_x_tag,vi) - vtemp.pack(dim_c<3>,"x",vi);
         });
+
+        auto triBvh = bvh_t{};
+        auto edgeBvh = bvh_t{};
+        auto triBvs = retrieve_bounding_volumes(cudaPol,vtemp,tris,wrapv<3>{},imminent_collision_thickness / (T)2,"x");
+        triBvh.build(cudaPol,triBvs);
+        auto edgeBvs = retrieve_bounding_volumes(cudaPol,vtemp,edges,wrapv<2>{},imminent_collision_thickness / (T)2,"x");
+        edgeBvh.build(cudaPol,edgeBvs);
+
         // we use collision cell as the collision volume, PT collision is enough prevent penertation?
         COLLISION_UTILS::calc_imminent_self_PT_collision_impulse(cudaPol,
             vtemp,"x","v",
             tris,
             halfedges,
             imminent_collision_thickness,
-            0,
-            imminent_PT_collision_buffer);
+            0,triBvh,
+            imminent_PT_collision_buffer,csPT);
         std::cout << "nm_PT_collision : " << imminent_PT_collision_buffer.size() << std::endl;
 
         COLLISION_UTILS::calc_imminent_self_EE_collision_impulse(cudaPol,
             vtemp,"x","v",
             edges,
             imminent_collision_thickness,
-            0,
-            imminent_EE_collision_buffer);
+            0,edgeBvh,
+            imminent_EE_collision_buffer,csEE);
         std::cout << "nm_EE_collision : " << imminent_EE_collision_buffer.size() << std::endl;
         // resolve imminent PT collision
         
@@ -488,6 +525,9 @@ struct DetangleCCDCollision : INode {
     using vec4i = zs::vec<int,4>;
     using dtiles_t = zs::TileVector<T,32>;
     
+    using bvh_t = ZenoLinearBvh::lbvh_t;
+    using bv_t = bvh_t::Box;
+
     virtual void apply() override {
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
@@ -574,6 +614,8 @@ struct DetangleCCDCollision : INode {
                     verts,
                     vtemp,"x","v",
                     edges,
+                    0,
+                    edges.size(),
                     eBvh,
                     do_bvh_refit,
                     impulse_buffer,
@@ -646,6 +688,9 @@ struct VisualizeContinousCollision : INode {
     using T = float;
     using vec3 = zs::vec<T,3>;
     using dtiles_t = zs::TileVector<T,32>;
+
+    using bvh_t = ZenoLinearBvh::lbvh_t;
+    using bv_t = bvh_t::Box;
 
     virtual void apply() override {
         using namespace zs;
@@ -760,6 +805,8 @@ struct VisualizeContinousCollision : INode {
             verts,
             vtemp,"x","v",
             edges,
+            0,
+            edges.size(),
             eBvh,
             false,
             impulse_buffer,
