@@ -9,7 +9,7 @@
 #include "zeno/utils/format.h"
 #include <zeno/types/UserData.h>
 #include <zeno/types/PrimitiveObject.h>
-#include <zenoui/comctrl/zcombobox.h>
+#include "zeno/utils/vec.h"
 #include "zeno/utils/log.h"
 #include "zenoapplication.h"
 #include "zassert.h"
@@ -43,7 +43,6 @@ void ZenoImagePanel::setPrim(std::string primid) {
         return;
 
     bool enableGamma = pGamma->checkState() == Qt::Checked;
-    bool enableAlpha = pAlpha->checkState() == Qt::Checked;
     bool found = false;
     for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
         if ((key.substr(0, key.find(":"))) != primid) {
@@ -58,37 +57,8 @@ void ZenoImagePanel::setPrim(std::string primid) {
             int width = ud.get2<int>("w");
             int height = ud.get2<int>("h");
             if (image_view) {
-                QImage img(width, height, QImage::Format_RGB32);
-                int gridSize = 50;
-                if (obj->verts.has_attr("alpha")&&enableAlpha) {
-                    auto &alpha = obj->verts.attr<float>("alpha");
-                    for (auto i = 0; i < obj->verts.size(); i++) {
-                        int h = i / width;
-                        //int h = i % height;  check image vert order
-                        int w = i % width;
-                        //int w = i / height;
-                        auto foreground = obj->verts[i];
-                        if (enableGamma) {
-                            foreground = zeno::pow(foreground, 1.0f / 2.2f);
-                        }
-                        zeno::vec3f background;
-                        if ((h / gridSize) % 2 == (w / gridSize) % 2) {
-                            background = {1, 1, 1};
-                        }
-                        else {
-                            background = {0.86, 0.86, 0.86};
-                        }
-                        zeno::vec3f c = zeno::mix(background, foreground, alpha[i]);
-
-                        int r = glm::clamp(int(c[0] * 255.99), 0, 255);
-                        int g = glm::clamp(int(c[1] * 255.99), 0, 255);
-                        int b = glm::clamp(int(c[2] * 255.99), 0, 255);
-
-                        img.setPixel(w, height - 1 - h, qRgb(r, g, b));
-                        //img.setPixel(width - 1 - w, h, qRgb(r, g, b));
-                    }
-                }
-                else{
+                if (pMode->currentText() != "Alpha") {
+                    QImage img(width, height, QImage::Format_RGB32);
                     for (auto i = 0; i < obj->verts.size(); i++) {
                         int h = i / width;
                         int w = i % width;
@@ -96,14 +66,37 @@ void ZenoImagePanel::setPrim(std::string primid) {
                         if (enableGamma) {
                             c = zeno::pow(c, 1.0f / 2.2f);
                         }
-                        int r = glm::clamp(int(c[0] * 255.99), 0, 255);
-                        int g = glm::clamp(int(c[1] * 255.99), 0, 255);
-                        int b = glm::clamp(int(c[2] * 255.99), 0, 255);
+                        auto index = std::map<QString, zeno::vec3i>{
+                            {"RGB", {0, 1, 2}},
+                            {"Red", {0, 0, 0}},
+                            {"Green", {1, 1, 1}},
+                            {"Blue", {2, 2, 2}},
+                        }.at(pMode->currentText());
+                        int r = glm::clamp(int(c[index[0]] * 255.99), 0, 255);
+                        int g = glm::clamp(int(c[index[1]] * 255.99), 0, 255);
+                        int b = glm::clamp(int(c[index[2]] * 255.99), 0, 255);
 
                         img.setPixel(w, height - 1 - h, qRgb(r, g, b));
                     }
+                    image_view->setImage(img);
                 }
-                image_view->setImage(img);
+                else if (pMode->currentText() == "Alpha") {
+                    QImage img(width, height, QImage::Format_RGB32);
+                    if (obj->verts.has_attr("alpha")) {
+                        auto &alpha = obj->verts.attr<float>("alpha");
+                        for (auto i = 0; i < obj->verts.size(); i++) {
+                            int h = i / width;
+                            int w = i % width;
+                            auto c = alpha[i];
+                            int r = glm::clamp(int(c * 255.99), 0, 255);
+                            int g = glm::clamp(int(c * 255.99), 0, 255);
+                            int b = glm::clamp(int(c * 255.99), 0, 255);
+
+                            img.setPixel(w, height - 1 - h, qRgb(r, g, b));
+                        }
+                    }
+                    image_view->setImage(img);
+                }
             }
             QString statusInfo = QString(zeno::format("width: {}, height: {}", width, height).c_str());
             pStatusBar->setText(statusInfo);
@@ -140,9 +133,13 @@ ZenoImagePanel::ZenoImagePanel(QWidget *parent) : QWidget(parent) {
     pGamma->setCheckState(Qt::Checked);
     pTitleLayout->addWidget(pGamma);
 
-    pAlpha->setStyleSheet("color: white;");
-    pAlpha->setCheckState(Qt::Unchecked);
-    pTitleLayout->addWidget(pAlpha);
+    pMode->addItem("RGB");
+    pMode->addItem("Red");
+    pMode->addItem("Green");
+    pMode->addItem("Blue");
+    pMode->addItem("Alpha");
+    pMode->setCurrentIndex(0);
+    pTitleLayout->addWidget(pMode);
 
     pFit->setProperty("cssClass", "grayButton");
     pTitleLayout->addWidget(pFit);
@@ -197,7 +194,7 @@ ZenoImagePanel::ZenoImagePanel(QWidget *parent) : QWidget(parent) {
             }
         }
     });
-    connect(pAlpha, &QCheckBox::stateChanged, this, [=](int state) {
+    connect(pMode, &ZComboBox::_textActivated, [=](const QString& text) {
         std::string prim_name = pPrimName->text().toStdString();
         Zenovis* zenovis = wids[0]->getZenoVis();
         ZASSERT_EXIT(zenovis);
