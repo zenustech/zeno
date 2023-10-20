@@ -18,74 +18,6 @@
 #include "viewport/displaywidget.h"
 
 
-static float ziv_wheelZoomFactor = 1.25;
-
-class ZenoImageView: public QGraphicsView {
-public:
-    QGraphicsPixmapItem *_image = nullptr;
-    QGraphicsScene *scene = nullptr;
-    bool fitMode = true;
-    explicit ZenoImageView(QWidget *parent) : QGraphicsView(parent) {
-        scene = new QGraphicsScene;
-        this->setScene(scene);
-
-        setBackgroundBrush(QColor(37, 37, 37));
-    }
-
-    bool hasImage() {
-        return _image != nullptr;
-    }
-
-    void clearImage() {
-        if (hasImage()) {
-            scene->removeItem(_image);
-            _image = nullptr;
-        }
-    }
-
-    void setImage(const QImage &image) {
-        QPixmap pm = QPixmap::fromImage(image);
-        if (hasImage()) {
-            _image->setPixmap(pm);
-        }
-        else {
-            _image = this->scene->addPixmap(pm);
-        }
-        setSceneRect(QRectF(pm.rect()));  // Set scene size to image size.
-        updateImageView();
-    }
-
-    void updateImageView() {
-        if (!hasImage()) {
-            return;
-        }
-        if (fitMode) {
-            fitInView(sceneRect(), Qt::AspectRatioMode::KeepAspectRatio);
-        }
-    }
-    void resizeEvent(QResizeEvent *event) override {
-        updateImageView();
-    }
-    void wheelEvent(QWheelEvent* event) override {
-        fitMode = false;
-        qreal zoomFactor = 1;
-        if (event->angleDelta().y() > 0)
-            zoomFactor = ziv_wheelZoomFactor;
-        else if (event->angleDelta().y() < 0)
-            zoomFactor = 1 / ziv_wheelZoomFactor;
-        scale(zoomFactor, zoomFactor);
-    }
-    void mousePressEvent(QMouseEvent* event) override {
-        fitMode = false;
-        setDragMode(QGraphicsView::ScrollHandDrag);
-        QGraphicsView::mousePressEvent(event);
-    }
-    void mouseReleaseEvent(QMouseEvent* event) override {
-        QGraphicsView::mouseReleaseEvent(event);
-        setDragMode(QGraphicsView::NoDrag);
-    }
-};
-
 void ZenoImagePanel::clear() {
     if (image_view) {
         image_view->clearImage();
@@ -283,6 +215,53 @@ ZenoImagePanel::ZenoImagePanel(QWidget *parent) : QWidget(parent) {
     connect(pFit, &QPushButton::clicked, this, [=](bool _) {
         image_view->fitMode = true;
         image_view->updateImageView();
+    });
+    connect(image_view, &ZenoImageView::pixelChanged, this, [=](float x, float y) {
+        std::string primid = pPrimName->text().toStdString();
+        zenovis::Scene* scene = nullptr;
+        auto mainWin = zenoApp->getMainWindow();
+        ZASSERT_EXIT(mainWin);
+        QVector<DisplayWidget*> wids = mainWin->viewports();
+        if (!wids.isEmpty())
+        {
+            auto session = wids[0]->getZenoVis()->getSession();
+            ZASSERT_EXIT(session);
+            scene = session->get_scene();
+        }
+        if (!scene)
+            return;
+        bool found = false;
+        for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
+            if ((key.substr(0, key.find(":"))) != primid) {
+                continue;
+            }
+            auto &ud = ptr->userData();
+            if (ud.get2<int>("isImage", 0) == 0) {
+                continue;
+            }
+            found = true;
+            if (auto obj = dynamic_cast<zeno::PrimitiveObject *>(ptr)) {
+                int width = ud.get2<int>("w");
+                int height = ud.get2<int>("h");
+                int w = int(zeno::clamp(x, 0, width - 1));
+                int h = int(zeno::clamp(y, 0, height - 1));
+                int i = h * width + w;
+                auto c = obj->verts[i];
+                QString statusInfo = QString(zeno::format("width: {}, height: {} | ({}, {}) : ({}, {}, {})"
+                        , width
+                        , height
+                        , w
+                        , h
+                        , c[0]
+                        , c[1]
+                        , c[2]
+                        ).c_str());
+                pStatusBar->setText(statusInfo);
+            }
+        }
+        if (found == false) {
+            clear();
+        }
     });
 }
 

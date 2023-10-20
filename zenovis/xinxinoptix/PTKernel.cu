@@ -110,11 +110,11 @@ extern "C" __global__ void __raygen__rg()
 
           float r0 = r01.x * 2.0f * M_PIf;
           float r1 = r01.y * aperture * aperture;
-          r1 = sqrt(r1);
+          r1 = sqrtf(r1);
 
           float3 eye_shake     = r1 * ( cosf(r0)* normalize(cam.right) + sinf(r0)* normalize(cam.up)); // Camera local space
           float3 ray_origin    = cam.eye + eye_shake;
-          float3 ray_direction = focalPlaneDistance *(cam.right * d.x + cam.up * d.y + cam.front) - eye_shake; // Camera local space
+          float3 ray_direction = focalPlaneDistance / length(cam.front) * (cam.right * d.x + cam.up * d.y + cam.front) - eye_shake; // Camera local space
                  ray_direction = normalize(ray_direction);
 
           RadiancePRD prd;
