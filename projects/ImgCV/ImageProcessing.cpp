@@ -1410,7 +1410,7 @@ struct ImageLevels: INode {
             std::vector<int> histogramgreen(256, 0);
             std::vector<int> histogramblue(256, 0);
             for (int i = 0; i < w * h; i++) {
-                histogramred[zeno::clamp(int(image->verts[i][0] * 255.99), 0, 255)]++;//int 没问题吗
+                histogramred[zeno::clamp(int(image->verts[i][0] * 255.99), 0, 255)]++;
                 histogramgreen[zeno::clamp(int(image->verts[i][1] * 255.99), 0, 255)]++;
                 histogramblue[zeno::clamp(int(image->verts[i][2] * 255.99), 0, 255)]++;
             }
