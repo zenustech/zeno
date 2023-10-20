@@ -6,6 +6,23 @@ class ZStyleOptionToolButton;
 #include <QtWidgets>
 #include "ztoolbutton.h"
 
+class CustomIconStyle : public QProxyStyle
+{
+    Q_OBJECT
+
+public:
+    CustomIconStyle();
+    ~CustomIconStyle();
+
+    void SetCustomSize(int);
+protected:
+    virtual int pixelMetric(PixelMetric metric, const QStyleOption* option, const QWidget* widget) const;
+
+private:
+    int mSize;
+};
+
+
 class ZToolMenuButton : public ZToolButton {
     Q_OBJECT
 public:

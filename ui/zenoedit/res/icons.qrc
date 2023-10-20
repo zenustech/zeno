@@ -351,12 +351,16 @@
     <file>icons/ZENO-logo64.png</file>
 	<file>icons/update_main.png</file>
 	<file>icons/update-reboot.png</file>
+	<file>icons/run_all_btn.svg</file>
+    <file>icons/run_lightcamera_btn.svg</file>
+    <file>icons/run_material_btn.svg</file>
 	<file>icons/run_all.svg</file>
     <file>icons/run_lightcamera.svg</file>
     <file>icons/run_material.svg</file>
     <file>icons/down_arrow.svg</file>
-	<file>icons/run_lightcamera_disable.svg</file>
-    <file>icons/run_material_disable.svg</file>
-    <file>icons/run_all_disable.svg</file>
+    <file>icons/RunKill.svg</file>
+    <file>icons/RunKill_on.svg</file>
+	<file>icons/always_checkbox.svg</file>
+	<file>icons/always_checkbox_on.svg</file>
 </qresource>
 </RCC>
