@@ -242,17 +242,30 @@ ZenoImagePanel::ZenoImagePanel(QWidget *parent) : QWidget(parent) {
                 int height = ud.get2<int>("h");
                 int w = int(zeno::clamp(x, 0, width - 1));
                 int h = int(zeno::clamp(y, 0, height - 1));
-                int i = h * width + w;
+                int i = (height - 1 - h) * width + w;
                 auto c = obj->verts[i];
-                QString statusInfo = QString(zeno::format("width: {}, height: {} | ({}, {}) : ({}, {}, {})"
-                        , width
-                        , height
-                        , w
-                        , h
-                        , c[0]
-                        , c[1]
-                        , c[2]
-                        ).c_str());
+                std::string info = zeno::format("width: {}, height: {}", width, height);
+                info += zeno::format(" | x: {}, y: {}", w, h);
+                if (pMode->currentText() == "RGB") {
+                    info += zeno::format(" | value: {}, {}, {}", c[0], c[1], c[2]);
+                }
+                else if (pMode->currentText() == "Red") {
+                    info += zeno::format(" | value: {}", c[0]);
+                }
+                else if (pMode->currentText() == "Green") {
+                    info += zeno::format(" | value: {}", c[1]);
+                }
+                else if (pMode->currentText() == "Blue") {
+                    info += zeno::format(" | value: {}", c[2]);
+                }
+                else if (pMode->currentText() == "Alpha") {
+                    if (obj->verts.has_attr("alpha")) {
+                        auto &alpha = obj->verts.attr<float>("alpha");
+                        info += zeno::format(" | value: {}", alpha[i]);
+                    }
+                }
+
+                QString statusInfo = QString(info.c_str());
                 pStatusBar->setText(statusInfo);
             }
         }
