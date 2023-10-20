@@ -94,7 +94,7 @@ static void HSVtoRGB(float h, float s, float v, float &r, float &g, float &b)
 }
 
 
-struct ImageResize: INode {
+struct ImageResize: INode {//TODO::FIX BUG
     void apply() override {
         std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
         int width = get_input2<int>("width");
@@ -107,9 +107,9 @@ struct ImageResize: INode {
         image2->userData().set2("isImage", 1);
         image2->userData().set2("w", width);
         image2->userData().set2("h", height);
-        //if(image->has_attr("alpha")){
-            //image2->verts.add_attr<float>("alpha");
-        //}
+        if(image->has_attr("alpha")){
+            image2->verts.add_attr<float>("alpha");
+        }
 
         float scaleX = static_cast<float>(w) / width;
         float scaleY = static_cast<float>(h) / height;
@@ -120,7 +120,7 @@ struct ImageResize: INode {
             int srcX = static_cast<int>(x * scaleX);
             int srcY = static_cast<int>(y * scaleY);
             image2->verts[y * width + x] = image->verts[srcY * w + srcX];
-            //image2->verts.attr<float>("alpha")[y * width + x] = image->verts.attr<float>("alpha")[srcY * w + srcX];
+            image2->verts.attr<float>("alpha")[y * width + x] = image->verts.attr<float>("alpha")[srcY * w + srcX];
         }
         set_output("image", image2);
     }
@@ -358,7 +358,7 @@ ZENDEFNODE(ImageRGB2HSV, {
     { "image" },
 });
 
-struct ImageHSV2RGB : INode {//TODO::DIFF WITH HOUDINI
+struct ImageHSV2RGB : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
         float R = 0, G = 0, B = 0;
@@ -385,8 +385,8 @@ ZENDEFNODE(ImageHSV2RGB, {
     {},
     { "image" },
 });
-//TODO::add convert option↓
-struct ImageHSV : INode {//TODO::HSL HSV?? SD HSL HOUDINI HSV
+
+struct ImageEditHSV : INode {//TODO::HSL HSV?? SD HSL HOUDINI HSV
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
         float H = 0, S = 0, V = 0;
@@ -412,7 +412,7 @@ struct ImageHSV : INode {//TODO::HSL HSV?? SD HSL HOUDINI HSV
     }
 };
 
-ZENDEFNODE(ImageHSV, {
+ZENDEFNODE(ImageEditHSV, {
     {
         {"image"},
         {"float", "H", "1"},
