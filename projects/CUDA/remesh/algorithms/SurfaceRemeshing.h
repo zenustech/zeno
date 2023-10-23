@@ -41,13 +41,17 @@ private:
 
     int split_long_edges();
     void collapse_short_edges();
+    void collapse_crosses();
     void flip_edges();
-    void tangential_smoothing(unsigned int iterations);
+    void tangential_smoothing(unsigned int iterations = 1);
+    void laplacian_smoothing();
     void remove_caps();
 
     void check_triangles();
     vec3f minimize_squared_areas(int v, bool& inversable);
     vec3f weighted_centroid(int v);
+    void accumulate_laplacian(bool cot_flag = false);
+    void planar_laplacian(float delta = 0.2);
 
     void project_to_reference(int v);
 
@@ -62,6 +66,18 @@ private:
         auto& vsizing = mesh_->prim_->verts.attr<float>("v_sizing");
         return distance(points[v0], points[v1]) <
                4.0 / 5.0 * std::min(vsizing[v0], vsizing[v1]);
+    }
+    bool is_crosses(int v0, int v1) const {
+        int face_cnt = 0;
+        for (auto ff : mesh_->faces(v0)) {
+            ++face_cnt;
+        }
+        if (face_cnt == 3 || face_cnt == 4) return true;
+        face_cnt = 0;
+        for (auto ff : mesh_->faces(v1)) {
+            ++face_cnt;
+        }
+        return (face_cnt == 3 || face_cnt == 4);
     }
 
 private:
