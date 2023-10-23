@@ -35,6 +35,22 @@ private:
 #endif
 
 
+class ZTextIconButton : public QWidget
+{
+    Q_OBJECT
+public:
+    ZTextIconButton(const QString &text, QWidget *parent = nullptr);
+    ~ZTextIconButton();
+    void setShortcut(QKeySequence text);
+signals:
+    void clicked();
+
+private:
+    QPushButton* m_pButton;
+    QLabel* m_pLablel;
+    QShortcut* m_shortcut;
+};
+
 class DockToolbarWidget : public QWidget
 {
     Q_OBJECT
@@ -98,12 +114,12 @@ private:
     ZToolBarButton *pCustomParam;
     ZToolBarButton *pGroup;
     ZToolBarButton *pLinkLineShape;
-    ZToolBarButton *pAlways;
+    QCheckBox*pAlways;
     ZToolBarButton *pSearchBtn;
     ZToolBarButton *pSettings;
 
     ZToolMenuButton *m_btnRun;
-    ZToolButton* m_btnKill;
+    ZTextIconButton* m_btnKill;
 
     QComboBox* cbZoom;
 };
