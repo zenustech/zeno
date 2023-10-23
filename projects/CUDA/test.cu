@@ -5,6 +5,7 @@
 #include "zensim/cuda/memory/MemOps.hpp"
 #include "zensim/geometry/AdaptiveGrid.hpp"
 #include "zensim/memory/Allocator.h"
+#include "zensim/py_interop/BvhView.hpp"
 #include <cassert>
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -17,9 +18,70 @@
 #include <zeno/zeno.h>
 namespace zeno {
 
+struct A {
+    constexpr A(int a) noexcept : a{a} {
+    }
+    int a;
+};
+
+struct B {
+    constexpr B() {
+        printf("B created\n");
+    }
+    constexpr B(B &&o) {
+        printf("B move ctor\n");
+    }
+    constexpr B(const B &o) {
+        printf("B copy ctor\n");
+    }
+    constexpr B &operator=(B &&o) {
+        printf("B move assign\n");
+        return *this;
+    }
+    constexpr B &operator=(const B &o) {
+        printf("B copy assign\n");
+        return *this;
+    }
+    ~B() noexcept = default;
+    int a{1};
+    float b{2};
+};
+
 __global__ void test(int *a) {
     int id = blockIdx.x * blockDim.x + threadIdx.x;
-    printf("[%d]: %d\n", id, a[id]);
+    if (id == 0) {
+#if 0
+        int a = -1;
+        printf("a before : %d\n", a);
+        auto pa = zs::construct_at<A>((A *)&a, 2);
+        printf("a after : %d\n", a);
+        zs::destroy_at((A *)&a);
+#else
+        B a;
+        zs::ValueOrRef<B> b(a);
+        printf("000");
+        printf("self <a, b>: %d, %f\n", a.a, a.b);
+        b.get().a = 3;
+        printf("after proxy op\n");
+        printf("self <a, b>: %d, %f\n", a.a, a.b);
+        printf("proxy <a, b>: %d, %f\n", b.get().a, b.get().b);
+        zs::ValueOrRef<B> c{};
+        printf("new proxy <a, b>: %d, %f\n", c.get().a, c.get().b);
+        printf("before c = b\n");
+        c = b;
+        printf("after c = b\n");
+        printf("c copy-assigned from b: <a, b>: %d, %f, b validity: %d\n", c.get().a, c.get().b, b.isValid());
+        printf("before c = move(b)\n");
+        c = zs::move(b);
+        printf("after c = move(b)\n");
+        printf("c move-assigned from b: <a, b>: %d, %f, b validity: %d\n", c.get().a, c.get().b, b.isValid());
+        printf("b later: <a, b>: %d, %f\n", b.get().a, b.get().b);
+        using TTT = char[3][4][5];
+        printf("arr[3][4][5]: [%d] %d, %d, %d\n", (int)zs::rank<TTT>::value, (int)zs::extent<TTT, 0>::value,
+               (int)zs::extent<TTT, 1>::value, (int)zs::extent<TTT, 2>::value);
+#endif
+    }
+    // printf("[%d]: %d\n", id, a[id]);
 }
 
 struct ZSCULinkTest : INode {
