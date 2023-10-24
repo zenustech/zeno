@@ -59,6 +59,12 @@ void ZenoImagePanel::setPrim(std::string primid) {
             if (image_view) {
                 if (pMode->currentText() != "Alpha") {
                     QImage img(width, height, QImage::Format_RGB32);
+                    auto index = std::map<QString, zeno::vec3i>{
+                        {"RGB", {0, 1, 2}},
+                        {"Red", {0, 0, 0}},
+                        {"Green", {1, 1, 1}},
+                        {"Blue", {2, 2, 2}},
+                    }.at(pMode->currentText());
                     for (auto i = 0; i < obj->verts.size(); i++) {
                         int h = i / width;
                         int w = i % width;
@@ -66,12 +72,6 @@ void ZenoImagePanel::setPrim(std::string primid) {
                         if (enableGamma) {
                             c = zeno::pow(c, 1.0f / 2.2f);
                         }
-                        auto index = std::map<QString, zeno::vec3i>{
-                            {"RGB", {0, 1, 2}},
-                            {"Red", {0, 0, 0}},
-                            {"Green", {1, 1, 1}},
-                            {"Blue", {2, 2, 2}},
-                        }.at(pMode->currentText());
                         int r = glm::clamp(int(c[index[0]] * 255.99), 0, 255);
                         int g = glm::clamp(int(c[index[1]] * 255.99), 0, 255);
                         int b = glm::clamp(int(c[index[2]] * 255.99), 0, 255);
