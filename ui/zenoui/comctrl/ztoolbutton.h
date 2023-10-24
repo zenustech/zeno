@@ -71,7 +71,6 @@ public:
     void setFont(const QFont& font);
     void initAnimation();
     void setArrowOption(int arrOpt);
-    void setBorderColor(const QColor &clr);
 
 public slots:
     void setText(const QString& text);
@@ -125,7 +124,6 @@ private:
     QColor m_clrBgDisabled;
 
     QColor m_clrText, m_clrTextHover, m_clrTextOn, m_clrTextOnHover;
-    QColor m_clrBorder;
 
     int m_radius;
     int m_options;

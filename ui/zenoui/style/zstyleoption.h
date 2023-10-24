@@ -34,7 +34,6 @@ public:
     QColor textColor;
     QColor textHoverColor;
     QColor textDownColor;
-    QColor borderColor;
     QColor borderInColor;
     QColor hoveredBgColor;
     QColor selectedBgColor;
