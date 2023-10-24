@@ -76,6 +76,12 @@ struct RectShape {
         lsr->dir = dir;
         lsr->dist = dist;
 
+        auto delta = lsr->p - v0;
+        delta -= dot(delta, normal) * normal;
+
+        lsr->uv = { dot(delta, v1) / dot(v1, v1),
+                    dot(delta, v2) / dot(v2, v2) };
+
         lsr->PDF = lightPDF;
         lsr->NoL = lightNoL;
     }  
@@ -128,6 +134,8 @@ struct RectShape {
         auto v2v2 = dot(v2, v2);        
         auto q2 = dot(delta, v2);
         if (q2<0.0f || q2>v2v2) {return false;}
+
+        lsr->uv = float2{q1, q2} / float2{v1v1, v2v2};
 
         lsr->p = P;
         lsr->PDF = 1.0f;
