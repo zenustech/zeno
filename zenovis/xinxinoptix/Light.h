@@ -228,6 +228,7 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
             lsr.intensity = 1.0f;
             lsr.PDF = 1.0f;
             lsr.NoL = 1.0f;
+            lsr.isDelta = true;
 
         } else { // Diffuse
 
@@ -240,6 +241,11 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
                     light.sphere.SampleAsLight(&lsr, uu, shadingP); break;
                 case zeno::LightShape::Point:
                     light.point.SampleAsLight(&lsr, uu, shadingP);  break;
+                case zeno::LightShape::TriangleMesh: {
+                    float3* normalBuffer = reinterpret_cast<float3*>(params.triangleLightNormalBuffer);
+                    float2* coordsBuffer = reinterpret_cast<float2*>(params.triangleLightCoordsBuffer);
+                    light.triangle.SampleAsLight(&lsr, uu, shadingP, prd->geometryNormal, normalBuffer, coordsBuffer); break;
+                }
                 default: break;
             }
         }
@@ -248,6 +254,15 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
 
         if (light.config & zeno::LightConfigDoubleside) {
             lsr.NoL = abs(lsr.NoL);
+        }
+
+        if (light.tex != 0u) {
+            auto color = texture2D(light.tex, lsr.uv);
+            if (light.texGamma != 1.0f) 
+                color = pow(color, light.texGamma);
+
+            color = color * light.intensity;
+            emission = *(vec3*)&color;
         }
 
         if (lsr.NoL > _FLT_EPL_ && lsr.PDF > _FLT_EPL_) {

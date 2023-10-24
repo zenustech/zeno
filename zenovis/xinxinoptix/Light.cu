@@ -32,7 +32,15 @@ static __inline__ __device__ float3 sphereUV(float3 &direction) {
 } 
 
 static __inline__ __device__ bool checkLightGAS(uint instanceId) {
-    return ( instanceId >= OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID-1 );
+    return ( instanceId >= OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID-2 );
+}
+
+static __inline__ __device__ bool isPlaneLightGAS(uint instanceId) {
+    return ( instanceId == OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID-1 );
+}
+
+static __inline__ __device__ bool isTriangleLightGAS(uint instanceId) {
+    return ( instanceId == OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID-2 );
 }
 
 extern "C" __global__ void __closesthit__radiance()
@@ -74,11 +82,21 @@ extern "C" __global__ void __closesthit__radiance()
 
         ignore = params.firstSphereLightIdx == UINT_MAX;
         light_index = primitiveIndex + params.firstSphereLightIdx;
+
     } else {
 
-        ignore = params.firstRectLightIdx == UINT_MAX;
-        auto rect_idx = primitiveIndex / 2;
-        light_index = rect_idx + params.firstRectLightIdx;
+        if (isPlaneLightGAS(instanceId)) {
+
+            ignore = params.firstRectLightIdx == UINT_MAX;
+            auto rect_idx = primitiveIndex / 2;
+            light_index = rect_idx + params.firstRectLightIdx;
+
+        } else if (isTriangleLightGAS(instanceId)) {
+
+            ignore = params.firstTriangleLightIdx == UINT_MAX;
+            light_index = primitiveIndex + params.firstTriangleLightIdx;
+
+        } else { ignore = true; }
     }
 
     if (ignore) {
@@ -124,13 +142,28 @@ extern "C" __global__ void __closesthit__radiance()
             light.rect.EvalAfterHit(&lsr, lightDirection, lightDistance, prd->origin);
         } else if (light.shape == zeno::LightShape::Sphere) {
             light.sphere.EvalAfterHit(&lsr, lightDirection, lightDistance, prd->origin);
-        } else {
-            return;
+        } else if (light.shape == zeno::LightShape::TriangleMesh) {
+
+            float2 bary2 = optixGetTriangleBarycentrics();
+            float3 bary3 = { 1.0f-bary2.x-bary2.y, bary2.x, bary2.y };
+            
+            float3* normalBuffer = reinterpret_cast<float3*>(params.triangleLightNormalBuffer);
+            float2* coordsBuffer = reinterpret_cast<float2*>(params.triangleLightCoordsBuffer);
+            light.triangle.EvalAfterHit(&lsr, lightDirection, lightDistance, prd->origin, prd->geometryNormal, bary3, normalBuffer, coordsBuffer);
         }
     }
 
     if (light.config & zeno::LightConfigDoubleside) {
         lsr.NoL = abs(lsr.NoL);
+    }
+
+    if (light.tex != 0u) {
+        auto color = texture2D(light.tex, lsr.uv);
+        if (light.texGamma != 1.0f) 
+            color = pow(color, light.texGamma);
+
+        color = color * light.intensity;
+        emission = *(vec3*)&color;
     }
 
     const float _SKY_PROB_ = params.skyLightProbablity();

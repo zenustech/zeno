@@ -513,13 +513,66 @@ struct GraphicsManager {
             }
             if (prim_in->userData().get2<int>("isL", 0) == 1) {
                 //zeno::log_info("processing light key {}", key.c_str());
-                auto ivD = prim_in->userData().getLiterial<int>("ivD", 0);
+                auto type = prim_in->userData().get2<int>("type", 0);
+                auto shape = prim_in->userData().get2<int>("shape", 0);
+                auto intensity = prim_in->userData().get2<float>("intensity", 1.0f);
 
-                auto p0 = prim_in->verts[prim_in->tris[0][0]];
-                auto p1 = prim_in->verts[prim_in->tris[0][1]];
-                auto p2 = prim_in->verts[prim_in->tris[0][2]];
-                auto e1 = p0 - p2;
-                auto e2 = p1 - p2;
+                auto ivD = prim_in->userData().getLiterial<int>("ivD", 0);
+                auto visible = prim_in->userData().get2<int>("visible", 0);
+                auto doubleside = prim_in->userData().get2<int>("doubleside", 0);
+                auto lightProfilePath = prim_in->userData().get2<std::string>("lightProfile", ""); 
+                auto lightTexturePath = prim_in->userData().get2<std::string>("lightTexture", ""); 
+                auto lightGamma = prim_in->userData().get2<float>("lightGamma", 1.0f); 
+
+                if (lightProfilePath != "") {
+                    OptixUtil::addTexture(lightProfilePath);
+                }
+
+                if (lightTexturePath != "") {
+                    OptixUtil::addTexture(lightTexturePath);
+                }
+
+                if (shape == 3u) { // Triangle mesh Light
+
+                    for (size_t i=0; i<prim_in->tris->size(); ++i) {
+                        auto _p0_ = prim_in->verts[prim_in->tris[i][0]];
+                        auto _p1_ = prim_in->verts[prim_in->tris[i][1]];
+                        auto _p2_ = prim_in->verts[prim_in->tris[i][2]];
+                        auto _e1_ = _p0_ - _p2_;
+                        auto _e2_ = _p1_ - _p2_;
+
+                        auto _n0_ = prim_in->verts.attr<zeno::vec3f>("nrm")[ prim_in->tris[i][0] ];
+                        auto _n1_ = prim_in->verts.attr<zeno::vec3f>("nrm")[ prim_in->tris[i][1] ];
+                        auto _n2_ = prim_in->verts.attr<zeno::vec3f>("nrm")[ prim_in->tris[i][2] ];
+
+                        #if 1
+                        auto uv0 = prim_in->verts.attr<zeno::vec3f>("uv")[ prim_in->tris[i][0] ];
+                        auto uv1 = prim_in->verts.attr<zeno::vec3f>("uv")[ prim_in->tris[i][1] ];
+                        auto uv2 = prim_in->verts.attr<zeno::vec3f>("uv")[ prim_in->tris[i][2] ];
+                        #else
+                        auto uv0 = prim_in->tris.attr<zeno::vec3f>("uv0")[i];
+                        auto uv1 = prim_in->tris.attr<zeno::vec3f>("uv1")[i];
+                        auto uv2 = prim_in->tris.attr<zeno::vec3f>("uv2")[i];
+                        #endif
+
+                        auto nor = zeno::normalize(zeno::cross(_e1_, _e2_));
+                        auto clr = prim_in->verts.attr<zeno::vec3f>("clr")[ prim_in->tris[i][0] ];
+
+                        auto compound = key + std::to_string(i);
+                        xinxinoptix::load_triangle_light(compound, 
+                                    _p0_.data(), _p1_.data(), _p2_.data(),
+                                    _n0_.data(), _n1_.data(), _n2_.data(), 
+                                    uv0.data(), uv1.data(), uv2.data(),
+                                    nor.data(), clr.data(), intensity,
+                                    visible, doubleside, shape, type, 
+                                    lightProfilePath, lightTexturePath, lightGamma);
+                    }
+                } else {
+                    auto p0 = prim_in->verts[prim_in->tris[0][0]];
+                    auto p1 = prim_in->verts[prim_in->tris[0][1]];
+                    auto p2 = prim_in->verts[prim_in->tris[0][2]];
+                    auto e1 = p0 - p2;
+                    auto e2 = p1 - p2;
 
                 auto nor = zeno::normalize(zeno::cross(e1, e2));
                 zeno::vec3f clr;
@@ -528,14 +581,6 @@ struct GraphicsManager {
                 } else {
                     clr = zeno::vec3f(30000.0f, 30000.0f, 30000.0f);
                 }
-
-                auto type = prim_in->userData().get2<int>("type", 0);
-                auto shape = prim_in->userData().get2<int>("shape", 0);
-
-                auto visible = prim_in->userData().get2<int>("visible", 0);
-                auto doubleside = prim_in->userData().get2<int>("doubleside", 0);
-                auto lightProfilePath = prim_in->userData().get2<std::string>("lightProfile", ""); 
-                OptixUtil::addTexture(lightProfilePath);
 
                 std::cout << "light: p"<<p0[0]<<" "<<p0[1]<<" "<<p0[2]<<"\n";
                 std::cout << "light: p"<<p1[0]<<" "<<p1[1]<<" "<<p1[2]<<"\n";
@@ -546,7 +591,10 @@ struct GraphicsManager {
                 std::cout << "light: c"<<clr[0]<<" "<<clr[1]<<" "<<clr[2]<<"\n";
 
                 xinxinoptix::load_light(key, p2.data(), e1.data(), e2.data(),
-                                        nor.data(), clr.data(), visible, doubleside, shape, type, lightProfilePath);
+                                        nor.data(), clr.data(), intensity, 
+                                        visible, doubleside, shape, type, 
+                                        lightProfilePath, lightTexturePath, lightGamma);
+                }
             }
             else if (prim_in->userData().get2<int>("ProceduralSky", 0) == 1) {
                 sky_found = true;

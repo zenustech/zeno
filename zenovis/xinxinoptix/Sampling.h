@@ -43,8 +43,12 @@ inline float SafeSqrt(float x) {
     return sqrtf(fmaxf(0.f, x));
 }
 
-inline float AbsDot(Vector3f v, Vector3f n) {
-    return abs(dot(v, n));
+inline float AbsDot(const Vector3f& v, const Vector3f& n) {
+    return fabsf(dot(v, n));
+}
+
+inline float AbsDot(const float3& v, const float3& n) {
+    return fabsf(dot(v, n));
 }
 
 inline float AngleBetween(Vector3f v1, Vector3f v2) {
@@ -108,6 +112,66 @@ inline float3 SphericalDirection(float sinTheta, float cosTheta, float phi,
     return make_float3(r * cosf(phi), r * sinf(phi), z);
 }
 
+inline float Lerp(float x, float a, float b) {
+    return (1 - x) * a + x * b;
+}
+
+inline float SampleLinear(float u, float a, float b) {
+    DCHECK(a >= 0 && b >= 0);
+    if (u == 0 && a == 0)
+        return 0;
+    float x = u * (a + b) / (a + sqrtf(Lerp(u, Sqr(a), Sqr(b))));
+    return fminf(x, 1.0f - __FLT_EPSILON__);
+}
+
+inline float2 SampleBilinear(const float2& uu, const float4& v) {
+
+    float2 p;
+    // Sample $y$ for bilinear marginal distribution
+    p.y = SampleLinear(uu.y, v.x + v.y, v.z + v.w);
+    // Sample $x$ for bilinear conditional distribution
+    p.x = SampleLinear(uu.x, Lerp(p.y, v.x, v.z), Lerp(p.y, v.y, v.w));
+
+    return p;
+}
+
+inline float BilinearPDF(const float2& p, const float4& v) {
+    
+    if (p.x < 0 || p.x > 1 || p.y < 0 || p.y > 1)
+        return 0;
+    if (v.x + v.y + v.z + v.w == 0)
+        return 1;
+    return 4 *
+           ((1 - p.x) * (1 - p.y) * v.x + p.x * (1 - p.y) * v.y +
+            (1 - p.x) * p.y * v.z + p.x * p.y * v.w) /
+           (v.x + v.y + v.z + v.w);
+}
+
+inline float FMA(float a, float b, float c) {
+    //return fma(a, b, c); 
+    return a * b + c;
+}
+
+template <typename Ta, typename Tb, typename Tc, typename Td>
+inline auto DifferenceOfProducts(Ta a, Tb b, Tc c, Td d) {
+    auto cd = c * d;
+    auto differenceOfProducts = FMA(a, b, -cd);
+    auto error = FMA(-c, d, cd);
+    return differenceOfProducts + error;
+}
+
+template <typename Ta, typename Tb, typename Tc, typename Td>
+inline auto SumOfProducts(Ta a, Tb b, Tc c, Td d) {
+    auto cd = c * d;
+    auto sumOfProducts = FMA(a, b, cd);
+    auto error = FMA(c, d, -cd);
+    return sumOfProducts + error;
+}
+
+inline Vector3f GramSchmidt(Vector3f v, Vector3f w) {
+    return v - dot(v, w) * w;
+}
+
 } // namespace pbrt
 
 
@@ -161,12 +225,14 @@ static __host__ __device__ __inline__ uint32_t pcg_hash(uint32_t &seed )
     return (word >> 22u) ^ word;
 }
 
-static __host__ __device__ __inline__ uint32_t pcg_rng(uint32_t &seed) 
+static __host__ __device__ __inline__ float pcg_rng(uint32_t &seed) 
 {
 	auto state = seed;
 	seed = seed * 747796405u + 2891336453u;
 	auto word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
-	return (word >> 22u) ^ word;
+	auto tmp = (word >> 22u) ^ word;
+
+    return (float)tmp / (float)UINT_MAX;
 }
 
 static inline uint32_t hash_iqnt2d(const uint32_t x, const uint32_t y)
