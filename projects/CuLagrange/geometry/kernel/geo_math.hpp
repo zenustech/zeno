@@ -11,6 +11,7 @@ namespace zeno { namespace LSL_GEO {
     using VECTOR4 = typename zs::vec<REAL,4>;
     using VECTOR3 = typename zs::vec<REAL,3>;
     using VECTOR2 = typename zs::vec<REAL,2>;
+    using MATRIX2 = typename zs::vec<REAL,2,2>;
     using MATRIX3x12 = typename zs::vec<REAL,3,12>;
     using MATRIX12 = typename zs::vec<REAL,12,12>;
 
@@ -629,18 +630,51 @@ constexpr REAL pointTriangleDistance(const VECTOR3& v0, const VECTOR3& v1,
     }
 
 
-    constexpr void pointBaryCentric(const VECTOR3& v0, const VECTOR3& v1, 
-                const VECTOR3& v2, const VECTOR3& v,VECTOR3& bary) {
-        const VECTOR3 e1 = v1 - v0;
-        const VECTOR3 e2 = v2 - v0;
-        const VECTOR3 n = e1.cross(e2);
-        const VECTOR3 na = (v2 - v1).cross(v - v1);
-        const VECTOR3 nb = (v0 - v2).cross(v - v2);
-        const VECTOR3 nc = (v1 - v0).cross(v - v0);
-        const VECTOR3 barycentric(n.dot(na) / n.l2NormSqr(),
-                                    n.dot(nb) / n.l2NormSqr(),
-                                    n.dot(nc) / n.l2NormSqr());
-        bary = barycentric;
+    // constexpr void pointTriangleBaryCentric(const VECTOR3& v0, const VECTOR3& v1, 
+    //             const VECTOR3& v2, const VECTOR3& v,VECTOR3& bary) {
+    //     const VECTOR3 e1 = v1 - v0;
+    //     const VECTOR3 e2 = v2 - v0;
+    //     const VECTOR3 n = e1.cross(e2);
+    //     auto nl2 = n.l2NormSqr();
+    //     const VECTOR3 na = (v2 - v1).cross(v - v1);
+    //     const VECTOR3 nb = (v0 - v2).cross(v - v2);
+    //     const VECTOR3 nc = (v1 - v0).cross(v - v0);
+    //     const VECTOR3 barycentric(n.dot(na) / nl2,n.dot(nb) / nl2,n.dot(nc) / nl2);
+    //     bary = barycentric;
+    // }
+
+    constexpr void pointTriangleBaryCentric(const VECTOR3& v1, const VECTOR3& v2, const VECTOR3& v3, const VECTOR3& v4,VECTOR3& bary) {
+        constexpr auto eps = 1e-6;
+        auto x13 = v1 - v3;
+        auto x23 = v2 - v3;
+        auto x43 = v4 - v3;
+        auto A00 = x13.dot(x13);
+        auto A01 = x13.dot(x23);
+        auto A11 = x23.dot(x23);
+        auto b0 = x13.dot(x43);
+        auto b1 = x23.dot(x43);
+        auto detA = A00 * A11 - A01 * A01;
+        bary[0] = ( A11 * b0 - A01 * b1) / detA;
+        bary[1] = (-A01 * b0 + A00 * b1) / detA;
+        bary[2] = 1 - bary[0] - bary[1];
+    }
+
+
+    constexpr void edgeEdgeBaryCentric(const VECTOR3& v1, const VECTOR3& v2,const VECTOR3& v3, const VECTOR3& v4,VECTOR2& bary) {
+        constexpr auto eps = 1e-6;
+        auto x21 = v2 - v1;
+        auto x43 = v4 - v3;
+        auto x31 = v3 - v1;
+        auto A00 = x21.dot(x21);
+        auto A01 = -x21.dot(x43);
+        auto A11 = x43.dot(x43);
+        auto b0 = x21.dot(x31);
+        auto b1 = -x43.dot(x31);
+        auto detA = A00 * A11 - A01 * A01;
+        // if(abs(detA) < eps)
+        //     return false;
+        bary[0] = ( A11 * b0 - A01 * b1) / detA;
+        bary[1] = (-A01 * b0 + A00 * b1) / detA;
     }
 
     constexpr REAL pointTriangleDistance(const VECTOR3& v0, const VECTOR3& v1, 
