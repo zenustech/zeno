@@ -21,14 +21,6 @@ static __inline__ __device__ void evalSurface(float4* uniforms) {
     //GENERATED_BEGIN_MARK
 
     //GENERATED_END_MARK
-}
-
-static __inline__ __device__ float3 sphereUV(float3 &direction) {
-    
-    return float3 {
-        atan2(direction.x, direction.z) / (2.0f*M_PIf) + 0.5f,
-        direction.y * 0.5f + 0.5f, 0.0f
-    };
 } 
 
 static __inline__ __device__ bool checkLightGAS(uint instanceId) {

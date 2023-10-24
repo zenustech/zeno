@@ -137,6 +137,17 @@ namespace rtgems {
     }
 }
 
+static __host__ __device__ __inline__ float3 sphereUV(const float3 &dir, bool internal) {
+//https://en.wikipedia.org/wiki/UV_mapping
+
+    auto x = internal? dir.x:-dir.x;
+
+    auto u = 0.5f + atan2f(dir.z, x) * 0.5f / M_PIf;
+    auto v = 0.5f + asinf(dir.y) / M_PIf;
+
+    return float3 {u, v, 0.0f};
+} 
+
 // *Really* minimal PCG32 code / (c) 2014 M.E. O'Neill / pcg-random.org
 // Licensed under Apache License 2.0 (NO WARRANTY, etc. see website)
 

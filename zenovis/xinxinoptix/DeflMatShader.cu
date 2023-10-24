@@ -184,14 +184,6 @@ static __inline__ __device__ bool isBadVector(float3& vector) {
     return isBadVector(tmp);
 }
 
-static __inline__ __device__ float3 sphereUV(float3 &direction) {
-    
-    return float3 {
-        atan2(direction.x, direction.z) / (2.0f*M_PIf) + 0.5f,
-        direction.y * 0.5f + 0.5f, 0.0f
-    };
-} 
-
 extern "C" __global__ void __anyhit__shadow_cutout()
 {
 
@@ -234,7 +226,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 
     attrs.pos = P;
     attrs.nrm = N;
-    attrs.uv = sphereUV(_normal_object_);
+    attrs.uv = sphereUV(_normal_object_, false);
 
     attrs.clr = {};
     attrs.tang = {};
@@ -505,7 +497,7 @@ extern "C" __global__ void __closesthit__radiance()
 
     attrs.pos = P;
     attrs.nrm = N;
-    attrs.uv = sphereUV(_normal_object_);
+    attrs.uv = sphereUV(_normal_object_, false);
 
     attrs.clr = {};
     attrs.tang = {};
