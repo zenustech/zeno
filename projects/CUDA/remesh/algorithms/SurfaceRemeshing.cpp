@@ -159,9 +159,7 @@ void SurfaceRemeshing::adaptive_remeshing(float min_edge_length, float max_edge_
         timer.tick();
 #endif
         collapse_short_edges();
-        mesh_->garbage_collection();
         collapse_crosses();
-        mesh_->garbage_collection();
 #if PMP_ENABLE_PROFILE
         timer.tock("collapse_short_edges");
 #endif
@@ -227,6 +225,7 @@ void SurfaceRemeshing::preprocessing() {
     // properties
     auto &vfeature = mesh_->prim_->verts.add_attr<int>("v_feature", 0);
     auto &efeature = mesh_->prim_->lines.attr<int>(line_pick_tag_);
+    auto &vduplicate = mesh_->prim_->verts.attr<int>("v_duplicate");
     auto &vsizing = mesh_->prim_->verts.add_attr<float>("v_sizing");
     auto &vlocked = mesh_->prim_->verts.add_attr<int>("v_locked", 0);
     auto &elocked = mesh_->prim_->lines.add_attr<int>("e_locked", 0);
@@ -253,6 +252,9 @@ void SurfaceRemeshing::preprocessing() {
     for (int v = 0; v < mesh_->vertices_size_; ++v) {
         if (mesh_->has_garbage_ && vdeleted[v])
             continue;
+        if (vduplicate[v] != v) {
+            vlocked[v] = vlocked[vduplicate[v]] = 1;
+        }
         if (vfeature[v]) {
             int c = 0;
             for (auto h : mesh_->halfedges(v)) {
@@ -856,6 +858,7 @@ void SurfaceRemeshing::collapse_crosses() {
             }
         }
     }
+    mesh_->garbage_collection();
 }
 
 void SurfaceRemeshing::flip_edges() {
