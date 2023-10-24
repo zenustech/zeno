@@ -710,6 +710,7 @@ void SurfaceMesh::garbage_collection() {
         // remember new size
         nV = (vdeleted[i0] == 1) ? i0 : i0 + 1;
     }
+
     // remove deleted edges
     if (nE > 0) {
         i0 = 0;
