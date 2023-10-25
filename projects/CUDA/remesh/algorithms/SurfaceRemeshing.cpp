@@ -104,9 +104,7 @@ void SurfaceRemeshing::uniform_remeshing(float edge_length, unsigned int iterati
         }
         SurfaceNormals::compute_vertex_normals(mesh_);
         collapse_short_edges();
-        mesh_->garbage_collection();
         collapse_crosses();
-        mesh_->garbage_collection();
         flip_edges();
         laplacian_smoothing();
         check_triangles();
@@ -1063,35 +1061,15 @@ void SurfaceRemeshing::laplacian_smoothing() {
     vec3f u, n, t, b;
 
     auto &points = mesh_->prim_->attr<vec3f>("pos");
-    auto &vnormal = mesh_->prim_->verts.attr<vec3f>("v_normal");
     auto &vfeature = mesh_->prim_->verts.attr<int>("v_feature");
     auto &efeature = mesh_->prim_->lines.attr<int>(line_pick_tag_);
     auto &vdeleted = mesh_->prim_->verts.attr<int>("v_deleted");
     auto &vlocked = mesh_->prim_->verts.attr<int>("v_locked");
-    auto &vsizing = mesh_->prim_->verts.attr<float>("v_sizing");
     // add property
     mesh_->prim_->verts.add_attr<float>("v_lpzcnt", 0.0f);
     mesh_->prim_->verts.add_attr<vec3f>("v_lpzsum", vec3f(0.0f));
 
-    // project at the beginning to get valid sizing values and normal vectors
-    // for vertices introduced by splitting
-    if (use_projection_) {
-        for (int v = 0; v < mesh_->vertices_size_; ++v) {
-            if (mesh_->has_garbage_ && vdeleted[v])
-                continue;
-            if (!mesh_->is_boundary_v(v) && !vlocked[v]) {
-                project_to_reference(v);
-            }
-        }
-    }
-
-    // TODO(@seeeagull): select vertex from crease
-
     planar_laplacian();
-
-    // TODO(@seeeagull): select vertex from fold
-
-    // TODO(@seeeagull): relax fold
 
     // project at the end
     if (use_projection_) {
@@ -1249,12 +1227,12 @@ vec3f SurfaceRemeshing::weighted_centroid(int v) {
     return p;
 }
 
-void SurfaceRemeshing::accumulate_laplacian(bool cot_flag) {
+void SurfaceRemeshing::accumulate_laplacian() {
     auto &points = mesh_->prim_->attr<vec3f>("pos");
     auto &vlpzcnt = mesh_->prim_->verts.attr<float>("v_lpzcnt");
     auto &vlpzsum = mesh_->prim_->verts.attr<vec3f>("v_lpzsum");
+    auto &efeature = mesh_->prim_->lines.attr<int>(line_pick_tag_);
     auto &edeleted = mesh_->prim_->lines.attr<int>("e_deleted");
-    float weight = 1.0f;
 
     for (int e = 0; e < mesh_->lines_size_; ++e) {
         if (mesh_->has_garbage_ && edeleted[e])
@@ -1262,20 +1240,17 @@ void SurfaceRemeshing::accumulate_laplacian(bool cot_flag) {
         if (!mesh_->is_boundary_e(e)) {
             int v0 = mesh_->to_vertex(e << 1);
             int v1 = mesh_->to_vertex(e << 1 | 1);
-            if (cot_flag) {
-                // TODO(@seeeagull): if weighted by cotangent
-            }
-            vlpzsum[v0] += points[v1] * weight;
-            vlpzsum[v1] += points[v0] * weight;
-            vlpzcnt[v0] += weight;
-            vlpzcnt[v1] += weight;
+            vlpzsum[v0] += points[v1];
+            vlpzsum[v1] += points[v0];
+            vlpzcnt[v0] += 1.0f;
+            vlpzcnt[v1] += 1.0f;
         }
     }
     // reset border vertices
     for (int e = 0; e < mesh_->lines_size_; ++e) {
         if (mesh_->has_garbage_ && edeleted[e])
             continue;
-        if (mesh_->is_boundary_e(e)) {
+        if (mesh_->is_boundary_e(e) || efeature[e]) {
             int v0 = mesh_->to_vertex(e << 1);
             int v1 = mesh_->to_vertex(e << 1 | 1);
             vlpzsum[v0] = vlpzsum[v1] = vec3f(0.0f);
@@ -1286,13 +1261,13 @@ void SurfaceRemeshing::accumulate_laplacian(bool cot_flag) {
     for (int e = 0; e < mesh_->lines_size_; ++e) {
         if (mesh_->has_garbage_ && edeleted[e])
             continue;
-        if (mesh_->is_boundary_e(e)) {
+        if (mesh_->is_boundary_e(e) || efeature[e]) {
             int v0 = mesh_->to_vertex(e << 1);
             int v1 = mesh_->to_vertex(e << 1 | 1);
             vlpzsum[v0] += points[v1];
             vlpzsum[v1] += points[v0];
-            vlpzcnt[v0] += 1;
-            vlpzcnt[v1] += 1;
+            vlpzcnt[v0] += 1.0f;
+            vlpzcnt[v1] += 1.0f;
         }
     }
 }
@@ -1300,6 +1275,7 @@ void SurfaceRemeshing::accumulate_laplacian(bool cot_flag) {
 void SurfaceRemeshing::planar_laplacian(float delta) {
     auto &points = mesh_->prim_->attr<vec3f>("pos");
     auto &vdeleted = mesh_->prim_->verts.attr<int>("v_deleted");
+    auto &vlocked = mesh_->prim_->verts.attr<int>("v_locked");
     auto &vlpzcnt = mesh_->prim_->verts.attr<float>("v_lpzcnt");
     auto &vlpzsum = mesh_->prim_->verts.attr<vec3f>("v_lpzsum");
 
@@ -1312,7 +1288,7 @@ void SurfaceRemeshing::planar_laplacian(float delta) {
     }
 
     for (int v = 0; v < mesh_->vertices_size_; ++v) {
-        if ((mesh_->has_garbage_ && vdeleted[v]) || vlpzcnt[v] == 0)
+        if ((mesh_->has_garbage_ && vdeleted[v]) || vlocked[v] || !vlpzcnt[v])
             continue;
         points[v] = points[v] * (1 - delta) + vlpzsum[v] * delta;
     }
