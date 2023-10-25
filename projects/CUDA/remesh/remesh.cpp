@@ -329,7 +329,7 @@ struct UniformRemeshing : INode {
 ZENO_DEFNODE(UniformRemeshing)
 ({
     {{"prim"},
-     {"int", "iterations", "5"},
+     {"int", "iterations", "10"},
      {"float", "edge_length", "0"},
      {"bool", "use_min_length", "0"},
      {"string", "line_pick_tag", "line_selected"},
@@ -445,7 +445,7 @@ struct AdaptiveRemeshing : INode {
 ZENO_DEFNODE(AdaptiveRemeshing)
 ({
     {{"prim"},
-     {"int", "iterations", "5"},
+     {"int", "iterations", "10"},
      {"float", "max_length", "0"},
      {"float", "min_length", "0"},
      {"float", "approximation_tolerance", "0"},
