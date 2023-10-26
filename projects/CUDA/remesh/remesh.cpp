@@ -55,9 +55,10 @@ void splitNonManifoldEdges(std::shared_ptr<PrimitiveObject> prim,
             for (int j = 0; j < 3; ++j) {
                 if (new_vert[j]) {
                     pos.push_back(pos[it[j]]);
-                    vduplicate.push_back(it[j]);
-                    it[j] = vert_size;
-                    ++vert_size;
+                    prim->verts.foreach_attr<zeno::AttrAcceptAll>([&] (auto const &key, auto &arr) {
+                        arr.push_back(arr[it[j]]);
+                    });
+                    it[j] = vert_size++;
                 }
             }
 
@@ -140,8 +141,10 @@ void splitNonManifoldVertices(std::shared_ptr<PrimitiveObject> prim,
             // split a vert
             if (!flag) {
                 vid = vert_size++;
-                vduplicate.push_back(vduplicate[v]);
                 pos.push_back(pos[v]);
+                prim->verts.foreach_attr<zeno::AttrAcceptAll>([&] (auto const &key, auto &arr) {
+                    arr.push_back(arr[v]);
+                });
             }
             while (!q.empty()) {
                 next_f = q.front();
