@@ -402,7 +402,7 @@ int SurfaceMesh::split(int e, int v, int& new_lines, int& new_faces) {
     return t1;
 }
 
-bool SurfaceMesh::is_flip_ok(int e) const {
+bool SurfaceMesh::is_flip_ok(int e, const float angle_thrd) const {
     // boundary edges cannot be flipped
     if (is_boundary_e(e))
         return false;
@@ -419,6 +419,23 @@ bool SurfaceMesh::is_flip_ok(int e) const {
 
     if (find_halfedge(v0, v1) != PMP_MAX_INDEX)
         return false;
+
+    // check about normals for the flip
+    // if the normals change more than a given threshold angle,
+    // it is very likely to be topologically incorrect
+
+    auto& pos = prim_->attr<vec3f>("pos");
+    int old_v0 = to_vertex(h0);
+    int old_v1 = to_vertex(h1);
+
+    vec3f old_n0 = normalize(cross(pos[old_v0] - pos[v0], pos[old_v1] - pos[v0]));
+    vec3f old_n1 = normalize(cross(pos[old_v1] - pos[v1], pos[old_v0] - pos[v1]));
+    vec3f new_n0 = normalize(cross(pos[v1] - pos[old_v0], pos[v0] - pos[old_v0]));
+    vec3f new_n1 = normalize(cross(pos[v0] - pos[old_v1], pos[v1] - pos[old_v1]));
+    if(acos(clamp(dot(old_n0, new_n0), -1, 1)) > angle_thrd) return false;
+    if(acos(clamp(dot(old_n0, new_n1), -1, 1)) > angle_thrd) return false;
+    if(acos(clamp(dot(old_n1, new_n0), -1, 1)) > angle_thrd) return false;
+    if(acos(clamp(dot(old_n1, new_n1), -1, 1)) > angle_thrd) return false;
 
     return true;
 }
