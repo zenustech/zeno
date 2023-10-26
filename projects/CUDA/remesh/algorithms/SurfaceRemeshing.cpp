@@ -207,6 +207,7 @@ void SurfaceRemeshing::adaptive_remeshing(float min_edge_length, float max_edge_
 void SurfaceRemeshing::check_triangles() {
     auto &points = mesh_->prim_->attr<vec3f>("pos");
     auto &fdeleted = mesh_->prim_->tris.attr<int>("f_deleted");
+    bool degenerated = false;
 
     for (int t = 0; t < mesh_->faces_size_; ++t) {
         if (mesh_->has_garbage_ && fdeleted[t])
@@ -214,8 +215,11 @@ void SurfaceRemeshing::check_triangles() {
         auto tri = mesh_->prim_->tris[t];
         auto area = length(cross(points[tri[1]] - points[tri[0]], points[tri[2]] - points[tri[0]]));
         if (area < std::numeric_limits<float>::epsilon()) {
-            zeno::log_warn("remesh: Degenerate triangle detected!");
+            degenerated = true;
         }
+    }
+    if (degenerated) {
+        zeno::log_warn("remesh: Degenerated triangle detected!");
     }
 }
 
@@ -695,7 +699,7 @@ void SurfaceRemeshing::collapse_short_edges() {
                 if (hcol10)
                     hcol10 = collapse_ok;
 
-                // both collapses possible: collapse into vertex w/ higher valence
+                // both collapses possible: collapse into vertex with higher valence
                 if (hcol01 && hcol10) {
                     if (mesh_->valence(v0) < mesh_->valence(v1))
                         hcol10 = false;
@@ -816,7 +820,7 @@ void SurfaceRemeshing::collapse_crosses() {
                 if (hcol10)
                     hcol10 = collapse_ok;
 
-                // both collapses possible: collapse into vertex w/ higher valence
+                // both collapses possible: collapse into vertex with higher valence
                 if (hcol01 && hcol10) {
                     if (mesh_->valence(v0) < mesh_->valence(v1))
                         hcol10 = false;

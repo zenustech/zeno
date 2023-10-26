@@ -246,7 +246,7 @@ public:
     void collapse(int h);
     void garbage_collection();
     int split(int e, int v, int& new_lines, int& new_faces);
-    bool is_flip_ok(int e) const;
+    bool is_flip_ok(int e, const float angle_thrd = (M_PI * 5.0f / 180.0f)) const;
     void flip(int e);
 
     size_t valence(int v) const;
