@@ -1009,7 +1009,7 @@ template<typename Pol,
     typename EdgeBvh,
     typename T = typename PosTileVec::value_type>
 void detect_imminent_EE_close_proximity(Pol& pol,
-    const PosTileVec& verts,const zs::SmallString& xtag,
+    PosTileVec& verts,const zs::SmallString& xtag,
     const EdgeTileVec& edges,
     const T& thickness,
     size_t buffer_offset,
@@ -1093,8 +1093,13 @@ void detect_imminent_EE_close_proximity(Pol& pol,
                     if(rp.norm() > thickness)
                         return;
 
+                    
+                    vec4i inds{ea[0],ea[1],eb[0],eb[1]};
+                    for(int i = 0;i != 4;++i)
+                        verts("dcd_collision_tag",inds[i]) = 1;
+
                     auto id = csEE.insert(vec2i{ei,nei});
-                    proximity_buffer.tuple(dim_c<4>,"inds",id + buffer_offset) = vec4i{ea[0],ea[1],eb[0],eb[1]}.reinterpret_bits(float_c);
+                    proximity_buffer.tuple(dim_c<4>,"inds",id + buffer_offset) = inds.reinterpret_bits(float_c);
                     proximity_buffer.tuple(dim_c<4>,"bary",id + buffer_offset) = bary;
                 };
                 edgeBvh.iter_neighbors(bv,do_close_proximity_detection);
@@ -1110,7 +1115,7 @@ template<typename Pol,
     typename ProximityBuffer,
     typename T = typename PosTileVec::value_type>
 void detect_imminent_PT_close_proximity(Pol& pol,
-    const PosTileVec& verts,const zs::SmallString& xtag,
+    PosTileVec& verts,const zs::SmallString& xtag,
     const TriTileVec& tris,
     const T& thickness,
     size_t buffer_offset,
@@ -1176,7 +1181,12 @@ void detect_imminent_PT_close_proximity(Pol& pol,
                         return;
                     
                     auto id = csPT.insert(zs::vec<int,2>{vi,ti});
-                    proximity_buffer.tuple(dim_c<4>,"inds",id) = vec4i{tri[0],tri[1],tri[2],vi}.reinterpret_bits(float_c);
+                    vec4i inds{tri[0],tri[1],tri[2],vi};
+                    for(int i = 0;i != 4;++i)
+                        verts("dcd_collision_tag",inds[i]) = 1;
+
+                    printf("find PT pairs : V_%d T_%d {%d %d %d} \n",vi,ti,tri[0],tri[1],tri[2]);
+                    proximity_buffer.tuple(dim_c<4>,"inds",id) = inds.reinterpret_bits(float_c);
                     proximity_buffer.tuple(dim_c<4>,"bary",id) = bary;
                 };
 
@@ -1367,8 +1377,10 @@ void calc_continous_self_PT_collision_impulse(Pol& pol,
     TriBvh& triCCDBvh,
     bool refit_bvh,
     PTHashMap& csPT,
+    PTHashMap& preCSPT,
     ImpulseBuffer& impulse_buffer,
     ImpulseCount& impulse_count,
+    bool recalc_collision_pairs = true,
     bool output_debug_inform = false) {
         using namespace zs;
         constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
@@ -1381,16 +1393,18 @@ void calc_continous_self_PT_collision_impulse(Pol& pol,
         using vec4i = zs::vec<int,4>;
         constexpr auto eps = (T)1e-6;
 
+        auto execTag = wrapv<space>{};
+
+        std::cout << "do continous PT collilsion detection" << std::endl;
+
         std::cout << "build continous PT spacial structure" << std::endl;
+
+
         auto bvs = retrieve_bounding_volumes(pol,verts,tris,verts,wrapv<3>{},(T)1.0,(T)0,xtag,vtag);
         if(refit_bvh)
             triCCDBvh.refit(pol,bvs);
         else
             triCCDBvh.build(pol,bvs);
-
-        std::cout << "do continous PT collilsion detection" << std::endl;
-
-        auto execTag = wrapv<space>{};
 
         // zs::bht<int,2,int> csPT{verts.get_allocator(),100000};
         csPT.reset(pol,true);
@@ -1516,6 +1530,8 @@ void calc_continous_self_PT_collision_impulse(Pol& pol,
                 }
                         
                 auto collision_nrm = LSL_GEO::facet_normal(nps[0],nps[1],nps[2]);
+                // BUG: collision_nrm is wrong
+
                 // auto align = collision_nrm.dot(rv);
                 // if(align > 0)
                 //     collision_nrm *= -1;

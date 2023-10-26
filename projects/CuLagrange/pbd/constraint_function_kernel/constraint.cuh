@@ -8,8 +8,8 @@ namespace zeno { namespace CONSTRAINT {
 // FOR CLOTH SIMULATION
     template<typename VECTOR3d,typename SCALER>
     constexpr bool solve_DistanceConstraint(
-        const VECTOR3d &p0, SCALER invMass0, 
-        const VECTOR3d &p1, SCALER invMass1,
+        const VECTOR3d &p0, const SCALER& invMass0, 
+        const VECTOR3d &p1, const SCALER& invMass1,
         const SCALER& restLength,
         const SCALER& stiffness,
         const SCALER& dt,

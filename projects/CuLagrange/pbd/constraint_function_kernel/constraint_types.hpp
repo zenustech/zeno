@@ -21,7 +21,9 @@ enum category_c : int {
     pt_pin_constraint,
     dcd_collision_constraint,
     volume_pin_constraint,
-    bending
+    bending,
+    follow_animation_constraint,
+    empty_constraint,
 };
 
 };
