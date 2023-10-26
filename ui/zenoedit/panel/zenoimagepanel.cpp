@@ -151,6 +151,8 @@ ZenoImagePanel::ZenoImagePanel(QWidget *parent) : QWidget(parent) {
     pMainLayout->addWidget(image_view);
 
     pStatusBar->setProperty("cssClass", "proppanel");
+    QFont font("Consolas", 10);
+    pStatusBar->setFont(font);
     pStatusBar->setText("PlaceHolder");
 
 
