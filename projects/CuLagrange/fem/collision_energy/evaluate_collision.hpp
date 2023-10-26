@@ -1185,7 +1185,7 @@ void detect_imminent_PT_close_proximity(Pol& pol,
                     for(int i = 0;i != 4;++i)
                         verts("dcd_collision_tag",inds[i]) = 1;
 
-                    printf("find PT pairs : V_%d T_%d {%d %d %d} \n",vi,ti,tri[0],tri[1],tri[2]);
+                    // printf("find PT pairs : V_%d T_%d {%d %d %d} \n",vi,ti,tri[0],tri[1],tri[2]);
                     proximity_buffer.tuple(dim_c<4>,"inds",id) = inds.reinterpret_bits(float_c);
                     proximity_buffer.tuple(dim_c<4>,"bary",id) = bary;
                 };
@@ -1377,10 +1377,10 @@ void calc_continous_self_PT_collision_impulse(Pol& pol,
     TriBvh& triCCDBvh,
     bool refit_bvh,
     PTHashMap& csPT,
-    PTHashMap& preCSPT,
+    // PTHashMap& preCSPT,
     ImpulseBuffer& impulse_buffer,
     ImpulseCount& impulse_count,
-    bool recalc_collision_pairs = true,
+    // bool recalc_collision_pairs = true,
     bool output_debug_inform = false) {
         using namespace zs;
         constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
@@ -1530,7 +1530,6 @@ void calc_continous_self_PT_collision_impulse(Pol& pol,
                 }
                         
                 auto collision_nrm = LSL_GEO::facet_normal(nps[0],nps[1],nps[2]);
-                // BUG: collision_nrm is wrong
 
                 // auto align = collision_nrm.dot(rv);
                 // if(align > 0)
