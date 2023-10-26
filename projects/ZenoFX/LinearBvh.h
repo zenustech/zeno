@@ -129,6 +129,11 @@ struct LBvh : IObjectClone<LBvh> {
   template <element_e et>
   TV find_nearest(TV const &pos, Ti &id, float &dist, element_t<et>) const;
   TV find_nearest(TV const &pos, Ti &id, float &dist) const;
+
+  template <element_e et>
+  TV find_nearest_with_uv(TV const &pos, TV const &uv, Ti &id, float &dist, float &uvDist, float distEps, element_t<et>) const;
+  TV find_nearest_with_uv(TV const &pos, TV const &uv, Ti &id, float &dist, float &uvDist, float distEps = std::numeric_limits<float>::epsilon() * 4) const;
+
   template <typename SameGroupPred, element_e et = element_e::tri>
   TV find_nearest_within_group(TV const &pos, Ti &id, float &dist, SameGroupPred &&pred, 
                         element_t<et> = {}) const {
