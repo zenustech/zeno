@@ -9,6 +9,13 @@ __forceinline__ __device__ float to_degrees(float radians) {
     return radians * M_1_PIf * 180.0f;
 }
 
+template<typename T>
+__forceinline__ __device__ void swap(T& a, T& b) {
+    T t = a;
+    a = b;
+    b = t;
+}
+
 struct vec4{
     float x, y, z, w;
     __forceinline__ __device__ vec4(const float4 &_v)
@@ -36,7 +43,13 @@ struct vec4{
 struct vec3{
     float x, y, z;
 
-    __forceinline__ __device__ float operator[](unsigned int index) const {
+    __forceinline__ __device__ float& operator[](unsigned int index) {
+        auto ptr= &this->x;
+        ptr += index;
+        return *ptr;
+    }
+
+    __forceinline__ __device__ const float& operator[](unsigned int index) const {
         auto ptr= &this->x;
         ptr += index;
         return *ptr;
@@ -990,11 +1003,6 @@ __forceinline__ __device__ vec4 texture2D(cudaTextureObject_t texObj, vec2 uv)
     return vec4(res.x, res.y, res.z, res.w);
 }
 
-// __forceinline__ __device__ float textureSparse3D(nanovdb *aaa, vec3 pos)
-// {
-
-// }
-
 /////////////end of geometry math/////////////////////////////////////////////////
 
 ////////////matrix operator...////////////////////////////////////////////////////
@@ -1015,6 +1023,9 @@ struct mat4{
 
 struct mat3{
     vec3 m0, m1, m2;
+
+    __forceinline__ __device__ mat3(const vec3& v0, const vec3& v1, const vec3 v2): m0(v0), m1(v1), m2(v2) {}
+
     __forceinline__ __device__ mat3(float m00, float m01, float m02, float m10, float m11, float m12, float m20, float m21, float m22)
     {
         m0 = vec3(m00, m01, m02);
@@ -1027,6 +1038,13 @@ struct mat3{
         m0 = vec3(_v.m0);
         m1 = vec3(_v.m1);
         m2 = vec3(_v.m2);
+    }
+
+    __forceinline__ __device__ void transpose() {
+
+        swap(m0.y, m1.x);
+        swap(m0.z, m2.x);
+        swap(m1.z, m2.y);     
     }
 };
 

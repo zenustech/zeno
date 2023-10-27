@@ -2166,6 +2166,7 @@ void buildLightTree() {
     
     state.params.firstRectLightIdx = UINT_MAX;
     state.params.firstSphereLightIdx = UINT_MAX;
+    state.params.firstTriangleLightIdx = UINT_MAX;
 
     state.params.lights = 0llu;
     state.params.num_lights = 0u;
