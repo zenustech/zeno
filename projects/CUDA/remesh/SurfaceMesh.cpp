@@ -402,7 +402,7 @@ int SurfaceMesh::split(int e, int v, int& new_lines, int& new_faces) {
     return t1;
 }
 
-bool SurfaceMesh::is_flip_ok(int e, const float angle_thrd) const {
+bool SurfaceMesh::is_flip_ok(int e) const {
     // boundary edges cannot be flipped
     if (is_boundary_e(e))
         return false;
@@ -489,7 +489,7 @@ void SurfaceMesh::flip(int e) {
         vconn_[vb0].halfedge_ = b1;
 }
 
-bool SurfaceMesh::is_collapse_ok(int v0v1) {
+void SurfaceMesh::is_collapse_ok(int v0v1, bool &hcol01, bool &hcol10) {
     int v1v0 = v0v1 ^ 1;
     int v0 = to_vertex(v1v0);
     int v1 = to_vertex(v0v1);
@@ -502,8 +502,10 @@ bool SurfaceMesh::is_collapse_ok(int v0v1) {
         h1 = next_halfedge(v0v1);
         h2 = next_halfedge(h1);
         if (hconn_[h1^1].face_ == PMP_MAX_INDEX &&
-            hconn_[h2^1].face_ == PMP_MAX_INDEX)
-            return false;
+            hconn_[h2^1].face_ == PMP_MAX_INDEX) {
+            hcol01 = hcol10 = false;
+            return;
+        }
     }
 
     // the edges v0-vr and vr-v1 must not be both boundary edges
@@ -512,28 +514,75 @@ bool SurfaceMesh::is_collapse_ok(int v0v1) {
         h1 = next_halfedge(v1v0);
         h2 = next_halfedge(h1);
         if (hconn_[h1^1].face_ == PMP_MAX_INDEX &&
-            hconn_[h2^1].face_ == PMP_MAX_INDEX)
-            return false;
+            hconn_[h2^1].face_ == PMP_MAX_INDEX) {
+            hcol01 = hcol10 = false;
+            return;
+        }
     }
 
     // if vl and vr are equal or both invalid -> fail
-    if (vl == vr)
-        return false;
+    if (vl == vr) {
+        hcol01 = hcol10 = false;
+        return;
+    }
 
     // edge between two boundary vertices should be a boundary edge
     if (is_boundary_v(v0) && is_boundary_v(v1) && hconn_[v0v1].face_ != PMP_MAX_INDEX &&
-        hconn_[v1v0].face_ != PMP_MAX_INDEX)
-        return false;
+        hconn_[v1v0].face_ != PMP_MAX_INDEX) {
+        hcol01 = hcol10 = false;
+        return;
+    }
 
     // test intersection of the one-rings of v0 and v1
     for (int vv : vertices(v0)) {
         if (vv != v1 && vv != vl && vv != vr)
-            if (find_halfedge(vv, v1) != PMP_MAX_INDEX)
-                return false;
+            if (find_halfedge(vv, v1) != PMP_MAX_INDEX) {
+                hcol01 = hcol10 = false;
+                return;
+            }
     }
 
-    // passed all tests
-    return true;
+    // check whether there are triangles flipped after collapsing
+    auto& pos = prim_->attr<vec3f>("pos");
+    vec3f pos0 = pos[v0], pos1 = pos[v1];
+
+    int hv0 = halfedge(v0);
+    const int hhv0 = hv0;
+    if (hv0 != PMP_MAX_INDEX) {
+        do {
+            if (hconn_[hv0].face_ == PMP_MAX_INDEX) {
+                break;
+            }
+
+            int v01 = to_vertex(hv0);
+            int v02 = to_vertex(next_halfedge(hv0));
+            vec3f nv0 = normalize(cross(pos[v01] - pos0, pos[v02] - pos0));
+            vec3f nv1 = normalize(cross(pos[v01] - pos1, pos[v02] - pos1));
+            if(acos(clamp(dot(nv0, nv1), -1, 1)) > angle_thrd) hcol01 = false;
+
+            hv0 = next_halfedge(hv0 ^ 1);
+        } while (hv0 != hhv0);
+    }
+
+    int hv1 = halfedge(v1);
+    const int hhv1 = hv1;
+    if (hv1 != PMP_MAX_INDEX) {
+        do {
+            if (hconn_[hv1].face_ == PMP_MAX_INDEX) {
+                break;
+            }
+
+            int v11 = to_vertex(hv1);
+            int v12 = to_vertex(next_halfedge(hv1));
+            vec3f nv1 = normalize(cross(pos[v11] - pos1, pos[v12] - pos1));
+            vec3f nv0 = normalize(cross(pos[v11] - pos0, pos[v12] - pos0));
+            if(acos(clamp(dot(nv1, nv0), -1, 1)) > angle_thrd) hcol10 = false;
+
+            hv1 = next_halfedge(hv1 ^ 1);
+        } while (hv1 != hhv1);
+    }
+
+    return;
 }
 
 void SurfaceMesh::collapse(int h) {

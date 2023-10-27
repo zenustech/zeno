@@ -313,9 +313,7 @@ struct UniformRemeshing : INode {
         zeno::pmp::SurfaceRemeshing(mesh, line_pick_tag).uniform_remeshing(edge_length, iterations);
 
         returnNonManifold(prim);
-#if 0
-        prim->verts.attrs.clear();
-#else
+
         // delete v_duplicate at last
         prim->verts.erase_attr("v_duplicate");
         prim->verts.erase_attr("v_normal");
@@ -323,7 +321,6 @@ struct UniformRemeshing : INode {
         prim->lines.erase_attr("e_deleted");
         prim->tris.erase_attr("f_deleted");
         prim->verts.update();
-#endif
 
         set_output("prim", std::move(prim));
     }
@@ -423,23 +420,12 @@ struct AdaptiveRemeshing : INode {
 
         returnNonManifold(prim);
 
-#if 1
-        prim->verts.attrs.clear();
-#else
-        // delete v_duplicate at last
         prim->verts.erase_attr("v_duplicate");
-        // check existing redundant properties
-        for (auto &[key, arr] : prim->verts.attrs) {
-            auto const &k = key;
-            prim->verts.erase_attr("v_duplicate");
-            zs::match(
-                [&k](auto &arr) -> std::enable_if_t<variant_contains<RM_CVREF_T(arr[0]), AttrAcceptAll>::value> {
-                    fmt::print("key [{}] type [{}] size {}\n", k, zs::get_var_type_str(arr), arr.size());
-                },
-                [](...){})(arr);
-        }
+        prim->verts.erase_attr("v_normal");
+        prim->verts.erase_attr("v_deleted");
+        prim->lines.erase_attr("e_deleted");
+        prim->tris.erase_attr("f_deleted");
         prim->verts.update();
-#endif
 
         set_output("prim", std::move(prim));
     }

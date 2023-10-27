@@ -107,11 +107,11 @@ void SurfaceRemeshing::uniform_remeshing(float edge_length, unsigned int iterati
         collapse_crosses();
         flip_edges();
         laplacian_smoothing();
-        check_triangles();
     }
 
     remove_caps();
     postprocessing();
+    check_triangles();
 }
 
 void SurfaceRemeshing::adaptive_remeshing(float min_edge_length, float max_edge_length, float approx_error,
@@ -178,13 +178,6 @@ void SurfaceRemeshing::adaptive_remeshing(float min_edge_length, float max_edge_
         timer.tock("laplacian_smoothing");
 #endif
 
-#if PMP_ENABLE_PROFILE
-        timer.tick();
-#endif
-        check_triangles();
-#if PMP_ENABLE_PROFILE
-        timer.tock("check_triangles");
-#endif
     }
 
 #if PMP_ENABLE_PROFILE
@@ -201,6 +194,13 @@ void SurfaceRemeshing::adaptive_remeshing(float min_edge_length, float max_edge_
     postprocessing();
 #if PMP_ENABLE_PROFILE
     timer.tock("postprocessing");
+#endif
+#if PMP_ENABLE_PROFILE
+    timer.tick();
+#endif
+    check_triangles();
+#if PMP_ENABLE_PROFILE
+    timer.tock("check_triangles");
 #endif
 }
 
@@ -432,7 +432,7 @@ void SurfaceRemeshing::postprocessing() {
 
     // remove properties
     mesh_->prim_->verts.erase_attr("v_feature");
-    // mesh_->prim_->verts.erase_attr("v_locked");
+    mesh_->prim_->verts.erase_attr("v_locked");
     mesh_->prim_->lines.erase_attr("e_locked");
     mesh_->prim_->verts.erase_attr("v_sizing");
 }
@@ -582,30 +582,32 @@ int SurfaceRemeshing::split_long_edges() {
                     if (key == "v_normal") {
                         arr.push_back(SurfaceNormals::compute_vertex_normal(mesh_, vnew));
                     } else {
-                        arr.push_back(zeno::vec3f(0, 0, 0));
+                        arr.push_back(0.5f * (arr[v0] + arr[v1]));
                     }
                 } else if constexpr (std::is_same_v<T, float>) {
                     if (key == "v_sizing") {
                         arr.push_back(0.5f * (vsizing[v0] + vsizing[v1]));
                     } else {
-                        arr.push_back(0);
+                        arr.push_back(0.5f * (arr[v0] + arr[v1]));
                     }
                 } else if constexpr (std::is_same_v<T, zeno::vec3i>) {
                     arr.push_back(zeno::vec3i(0, 0, 0));
                 } else if constexpr (std::is_same_v<T, int>) {
                     if (key == "v_duplicate") {
                         arr.push_back(vnew);
-                    } else {
+                    } else if (key == "v_locked" || key == "v_feature" || key == "v_deleted") {
                         arr.push_back(0);
+                    } else {
+                        arr.push_back(0.5f * (arr[v0] + arr[v1]));
                     }
                 } else if constexpr (std::is_same_v<T, zeno::vec2f>) {
-                    arr.push_back(zeno::vec2f(0, 0));
+                    arr.push_back(0.5f * (arr[v0] + arr[v1]));
                 } else if constexpr (std::is_same_v<T, zeno::vec2i>) {
-                    arr.push_back(zeno::vec2i(0, 0));
+                    arr.push_back(0.5f * (arr[v0] + arr[v1]));
                 } else if constexpr (std::is_same_v<T, zeno::vec4f>) {
-                    arr.push_back(zeno::vec4f(0, 0, 0, 0));
+                    arr.push_back(0.5f * (arr[v0] + arr[v1]));
                 } else if constexpr (std::is_same_v<T, zeno::vec4i>) {
-                    arr.push_back(zeno::vec4i(0, 0, 0, 0));
+                    arr.push_back(0.5f * (arr[v0] + arr[v1]));
                 }
             });
 
@@ -692,12 +694,7 @@ void SurfaceRemeshing::collapse_short_edges() {
                     hcol10 = false;
 
                 // topological rules
-                bool collapse_ok = mesh_->is_collapse_ok(h01);
-
-                if (hcol01)
-                    hcol01 = collapse_ok;
-                if (hcol10)
-                    hcol10 = collapse_ok;
+                mesh_->is_collapse_ok(h01, hcol01, hcol10);
 
                 // both collapses possible: collapse into vertex with higher valence
                 if (hcol01 && hcol10) {
@@ -813,12 +810,7 @@ void SurfaceRemeshing::collapse_crosses() {
                     hcol10 = false;
 
                 // topological rules
-                bool collapse_ok = mesh_->is_collapse_ok(h01);
-
-                if (hcol01)
-                    hcol01 = collapse_ok;
-                if (hcol10)
-                    hcol10 = collapse_ok;
+                mesh_->is_collapse_ok(h01, hcol01, hcol10);
 
                 // both collapses possible: collapse into vertex with higher valence
                 if (hcol01 && hcol10) {
@@ -1064,16 +1056,11 @@ void SurfaceRemeshing::laplacian_smoothing() {
     float w, ww;
     vec3f u, n, t, b;
 
-    auto &points = mesh_->prim_->attr<vec3f>("pos");
-    auto &vfeature = mesh_->prim_->verts.attr<int>("v_feature");
-    auto &efeature = mesh_->prim_->lines.attr<int>(line_pick_tag_);
     auto &vdeleted = mesh_->prim_->verts.attr<int>("v_deleted");
     auto &vlocked = mesh_->prim_->verts.attr<int>("v_locked");
-    // add property
-    mesh_->prim_->verts.add_attr<float>("v_lpzcnt", 0.0f);
-    mesh_->prim_->verts.add_attr<vec3f>("v_lpzsum", vec3f(0.0f));
 
     planar_laplacian();
+    SurfaceNormals::compute_vertex_normals(mesh_);
 
     // project at the end
     if (use_projection_) {
@@ -1084,10 +1071,6 @@ void SurfaceRemeshing::laplacian_smoothing() {
                 project_to_reference(v);
         }
     }
-
-    // remove property
-    mesh_->prim_->verts.erase_attr("v_lpzcnt");
-    mesh_->prim_->verts.erase_attr("v_lpzsum");
 }
 
 void SurfaceRemeshing::remove_caps() {
@@ -1231,71 +1214,103 @@ vec3f SurfaceRemeshing::weighted_centroid(int v) {
     return p;
 }
 
-void SurfaceRemeshing::accumulate_laplacian() {
-    auto &points = mesh_->prim_->attr<vec3f>("pos");
+template<class T>
+void SurfaceRemeshing::accumulate_laplacian(std::vector<T>& arr, bool calculate_lpzcnt, bool only_feature) {
+    auto &vlpzsum = mesh_->prim_->verts.attr<T>("v_lpzsum");
     auto &vlpzcnt = mesh_->prim_->verts.attr<float>("v_lpzcnt");
-    auto &vlpzsum = mesh_->prim_->verts.attr<vec3f>("v_lpzsum");
     auto &efeature = mesh_->prim_->lines.attr<int>(line_pick_tag_);
     auto &edeleted = mesh_->prim_->lines.attr<int>("e_deleted");
 
-    for (int e = 0; e < mesh_->lines_size_; ++e) {
-        if (mesh_->has_garbage_ && edeleted[e])
-            continue;
-        if (!mesh_->is_boundary_e(e)) {
-            int v0 = mesh_->to_vertex(e << 1);
-            int v1 = mesh_->to_vertex(e << 1 | 1);
-            vlpzsum[v0] += points[v1];
-            vlpzsum[v1] += points[v0];
-            vlpzcnt[v0] += 1.0f;
-            vlpzcnt[v1] += 1.0f;
+    if (!only_feature) {
+        for (int e = 0; e < mesh_->lines_size_; ++e) {
+            if (mesh_->has_garbage_ && edeleted[e])
+                continue;
+            if (!mesh_->is_boundary_e(e)) {
+                int v0 = mesh_->to_vertex(e << 1);
+                int v1 = mesh_->to_vertex(e << 1 | 1);
+                vlpzsum[v0] += arr[v1];
+                vlpzsum[v1] += arr[v0];
+                if (calculate_lpzcnt) {
+                    vlpzcnt[v0] += 1.0f;
+                    vlpzcnt[v1] += 1.0f;
+                }
+            }
         }
-    }
-    // reset border vertices
-    for (int e = 0; e < mesh_->lines_size_; ++e) {
-        if (mesh_->has_garbage_ && edeleted[e])
-            continue;
-        if (mesh_->is_boundary_e(e) || efeature[e]) {
-            int v0 = mesh_->to_vertex(e << 1);
-            int v1 = mesh_->to_vertex(e << 1 | 1);
-            vlpzsum[v0] = vlpzsum[v1] = vec3f(0.0f);
-            vlpzcnt[v0] = vlpzcnt[v1] = 0.0f;
+        // reset border and feature vertices
+        for (int e = 0; e < mesh_->lines_size_; ++e) {
+            if (mesh_->has_garbage_ && edeleted[e])
+                continue;
+            if (mesh_->is_boundary_e(e) || efeature[e]) {
+                int v0 = mesh_->to_vertex(e << 1);
+                int v1 = mesh_->to_vertex(e << 1 | 1);
+                vlpzsum[v0] = vlpzsum[v1] = T(0);
+                if (calculate_lpzcnt) {
+                    vlpzcnt[v0] = vlpzcnt[v1] = 0.0f;
+                }
+            }
         }
     }
     // only accumulate neighbours connected by a border edge for border vertices
+    // same for feature vertices
     for (int e = 0; e < mesh_->lines_size_; ++e) {
         if (mesh_->has_garbage_ && edeleted[e])
             continue;
         if (mesh_->is_boundary_e(e) || efeature[e]) {
             int v0 = mesh_->to_vertex(e << 1);
             int v1 = mesh_->to_vertex(e << 1 | 1);
-            vlpzsum[v0] += points[v1];
-            vlpzsum[v1] += points[v0];
-            vlpzcnt[v0] += 1.0f;
-            vlpzcnt[v1] += 1.0f;
+            vlpzsum[v0] += arr[v1];
+            vlpzsum[v1] += arr[v0];
+            if (calculate_lpzcnt) {
+                vlpzcnt[v0] += 1.0f;
+                vlpzcnt[v1] += 1.0f;
+            }
         }
     }
 }
 
+static std::set<std::string> NO_LAPLACIAN({"v_normal", "v_sizing", "v_duplicate", "v_feature", "v_locked", "v_deleted"});
+
 void SurfaceRemeshing::planar_laplacian(float delta) {
-    auto &points = mesh_->prim_->attr<vec3f>("pos");
+    auto &pos = mesh_->prim_->attr<vec3f>("pos");
     auto &vdeleted = mesh_->prim_->verts.attr<int>("v_deleted");
     auto &vlocked = mesh_->prim_->verts.attr<int>("v_locked");
-    auto &vlpzcnt = mesh_->prim_->verts.attr<float>("v_lpzcnt");
-    auto &vlpzsum = mesh_->prim_->verts.attr<vec3f>("v_lpzsum");
+    auto &vlpzcnt = mesh_->prim_->verts.add_attr<float>("v_lpzcnt", 0.0f);
 
-    accumulate_laplacian();
-
+    auto &vlpzsum = mesh_->prim_->verts.add_attr<vec3f>("v_lpzsum", vec3f(0.0f));
+    accumulate_laplacian(pos, true, false);
     for (int v = 0; v < mesh_->vertices_size_; ++v) {
         if ((mesh_->has_garbage_ && vdeleted[v]) || vlpzcnt[v] == 0)
             continue;
-        vlpzsum[v] = (vlpzsum[v] + points[v]) / (vlpzcnt[v] + 1);
+        vlpzsum[v] = (vlpzsum[v] + pos[v]) / (vlpzcnt[v] + 1);
     }
-
     for (int v = 0; v < mesh_->vertices_size_; ++v) {
         if ((mesh_->has_garbage_ && vdeleted[v]) || vlocked[v] || !vlpzcnt[v])
             continue;
-        points[v] = points[v] * (1 - delta) + vlpzsum[v] * delta;
+        pos[v] = pos[v] * (1 - delta) + vlpzsum[v] * delta;
     }
+    mesh_->prim_->verts.erase_attr("v_lpzsum");
+
+    mesh_->prim_->verts.foreach_attr<zeno::AttrAcceptAll>([&](auto const &key, auto &arr) {
+        if (NO_LAPLACIAN.count(key) == 0) {
+            using T = std::decay_t<decltype(arr[0])>;
+            auto &vlpzsum = mesh_->prim_->verts.add_attr<T>("v_lpzsum", T(0));
+            accumulate_laplacian(arr, false, true);
+            for (int v = 0; v < mesh_->vertices_size_; ++v) {
+                if ((mesh_->has_garbage_ && vdeleted[v]) || vlpzcnt[v] < 1e-5)
+                    continue;
+                vlpzsum[v] = (vlpzsum[v] + arr[v]) / (vlpzcnt[v] + 1);
+            }
+
+            for (int v = 0; v < mesh_->vertices_size_; ++v) {
+                if ((mesh_->has_garbage_ && vdeleted[v]) || vlocked[v] || !vlpzcnt[v])
+                    continue;
+                arr[v] = arr[v] * (1 - delta) + vlpzsum[v] * delta;
+            }
+            mesh_->prim_->verts.erase_attr("v_lpzsum");
+        }
+    });
+
+    mesh_->prim_->verts.erase_attr("v_lpzcnt");
 }
 
 } // namespace pmp

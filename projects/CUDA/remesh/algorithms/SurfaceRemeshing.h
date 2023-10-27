@@ -50,7 +50,10 @@ private:
     void check_triangles();
     vec3f minimize_squared_areas(int v, bool& inversable);
     vec3f weighted_centroid(int v);
-    void accumulate_laplacian();
+    template<class T>
+    void accumulate_laplacian(std::vector<T>& arr,
+                              bool calculate_lpzcnt = true,
+                              bool only_feature = false);
     void planar_laplacian(float delta = 0.2);
 
     void project_to_reference(int v);
