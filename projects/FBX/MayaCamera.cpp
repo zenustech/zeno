@@ -30,6 +30,7 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
+#include <glm/gtx/euler_angles.hpp>
 
 #include <fstream>
 #include <regex>
@@ -247,7 +248,7 @@ ZENO_DEFNODE(CameraEval)({
 
 struct LightNode : INode {
     virtual void apply() override {
-        auto isL = get_input2<int>("islight");
+        auto isL = true; //get_input2<int>("islight");
         auto inverdir = get_input2<int>("invertdir");
         auto position = get_input2<zeno::vec3f>("position");
         auto scale = get_input2<zeno::vec3f>("scale");
@@ -370,11 +371,11 @@ struct LightNode : INode {
             auto profile = get_input2<std::string>("profile");
             prim->userData().set2("lightProfile", std::move(profile));
         }
-        if (has_input2<std::string>("texture")) {
-            auto texture = get_input2<std::string>("texture");
+        if (has_input2<std::string>("texturePath")) {
+            auto texture = get_input2<std::string>("texturePath");
             prim->userData().set2("lightTexture", std::move(texture));
 
-            auto gamma = get_input2<float>("gamma");
+            auto gamma = get_input2<float>("textureGamma");
             prim->userData().set2("lightGamma", std::move(gamma));
         }        
 
@@ -383,6 +384,9 @@ struct LightNode : INode {
         
         prim->userData().set2("visible", std::move(visible));
         prim->userData().set2("doubleside", std::move(doubleside));
+
+        auto visibleIntensity = get_input2<float>("visibleIntensity");
+        prim->userData().set2("visibleIntensity", std::move(visibleIntensity));
       
         set_output("prim", std::move(prim));
     }
@@ -433,13 +437,13 @@ ZENO_DEFNODE(LightNode)({
         {"vec3f", "color", "1, 1, 1"},
         {"float", "exposure", "0"},
         {"float", "intensity", "1"},
-        {"bool", "islight", "1"},
         {"bool", "invertdir", "1"},
         {"bool", "visible", "0"},
         {"bool", "doubleside", "0"},
         {"string", "profile", ""},
-        {"string", "texture", ""},
-        {"float", "gamma", "1.0"},
+        {"string", "texturePath", ""},
+        {"float",  "textureGamma", "1.0"},
+        {"float", "visibleIntensity", "1.0"},
         {"enum " + LightNode::lightShapeListString(), LightNode::lightShapeKey, LightNode::lightShapeDefaultString()},   
         {"enum " + LightNode::lightTypeListString(), LightNode::lightTypeKey, LightNode::lightTypeDefaultString()}, 
         {"PrimitiveObject", "prim"},

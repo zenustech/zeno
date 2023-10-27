@@ -61,12 +61,12 @@ void load_triangle_light(std::string const &key,
                         const float *n0, const float *n1, const float *n2,
                         const float *uv0, const float *uv1, const float *uv2,
                         float const *nor, float const *emi, float intensity,
-                        bool visible, bool doubleside, int shape, int type,
+                        bool visible, bool doubleside, float vIntensity, int shape, int type,
                         std::string& profileKey, std::string& textureKey, float gamma);
                         
 void load_light(std::string const &key, float const*v0, float const*v1, float const*v2, 
                 float const*nor, float const*emi, float intensity,
-                bool visible, bool doubleside, int shape, int type, 
+                bool visible, bool doubleside, float vIntensity, int shape, int type, 
                 std::string& profileKey, std::string& textureKey, float gamma);
                 
 void unload_light();

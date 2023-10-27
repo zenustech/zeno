@@ -516,6 +516,7 @@ struct GraphicsManager {
                 auto type = prim_in->userData().get2<int>("type", 0);
                 auto shape = prim_in->userData().get2<int>("shape", 0);
                 auto intensity = prim_in->userData().get2<float>("intensity", 1.0f);
+                auto visibleIntensity = prim_in->userData().get2<float>("visibleIntensity", 1.0f);
 
                 auto ivD = prim_in->userData().getLiterial<int>("ivD", 0);
                 auto visible = prim_in->userData().get2<int>("visible", 0);
@@ -564,17 +565,24 @@ struct GraphicsManager {
                                     _n0_.data(), _n1_.data(), _n2_.data(), 
                                     uv0.data(), uv1.data(), uv2.data(),
                                     nor.data(), clr.data(), intensity,
-                                    visible, doubleside, shape, type, 
+                                    visible, doubleside, visibleIntensity, shape, type, 
                                     lightProfilePath, lightTexturePath, lightGamma);
                     }
                 } else {
                     auto p0 = prim_in->verts[prim_in->tris[0][0]];
                     auto p1 = prim_in->verts[prim_in->tris[0][1]];
                     auto p2 = prim_in->verts[prim_in->tris[0][2]];
-                    auto e1 = p0 - p2;
+                    auto e1 = p2 - p0;
                     auto e2 = p1 - p2;
-
-                auto nor = zeno::normalize(zeno::cross(e1, e2));
+                    
+                    // p0 ---(+x)--> p2
+                    // |||||||||||||(-)
+                    // |||||||||||||(z)
+                    // |||||||||||||(+)
+                    // p* <--(-x)--- p1
+                
+                // facing down in local space
+                auto nor = -zeno::normalize(zeno::cross(e1, e2)); 
                 zeno::vec3f clr;
                 if (prim_in->verts.has_attr("clr")) {
                     clr = prim_in->verts.attr<zeno::vec3f>("clr")[0];
@@ -590,9 +598,9 @@ struct GraphicsManager {
                 std::cout << "light: n"<<nor[0]<<" "<<nor[1]<<" "<<nor[2]<<"\n";
                 std::cout << "light: c"<<clr[0]<<" "<<clr[1]<<" "<<clr[2]<<"\n";
 
-                xinxinoptix::load_light(key, p2.data(), e1.data(), e2.data(),
+                xinxinoptix::load_light(key, p0.data(), e1.data(), e2.data(),
                                         nor.data(), clr.data(), intensity, 
-                                        visible, doubleside, shape, type, 
+                                        visible, doubleside, visibleIntensity, shape, type, 
                                         lightProfilePath, lightTexturePath, lightGamma);
                 }
             }

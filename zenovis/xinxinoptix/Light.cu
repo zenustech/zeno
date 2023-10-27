@@ -154,7 +154,11 @@ extern "C" __global__ void __closesthit__radiance()
         if (light.texGamma != 1.0f) 
             color = pow(color, light.texGamma);
 
-        color = color * light.intensity;
+        if (prd->depth > 1) {
+            color = color * light.intensity;
+        } else {
+            color = color * light.vIntensity;
+        }
         emission = *(vec3*)&color;
     }
 
@@ -183,7 +187,7 @@ extern "C" __global__ void __closesthit__radiance()
         float scatterPDF = prd->samplePdf; //BxDF PDF from previous hit
         float misWeight = BRDFBasics::PowerHeuristic(scatterPDF, lightPDF);
 
-        prd->radiance = light.emission * misWeight;
+        prd->radiance = emission * misWeight;
         // if (scatterPDF > __FLT_DENORM_MIN__) {
         //     prd->radiance /= scatterPDF;
         // }

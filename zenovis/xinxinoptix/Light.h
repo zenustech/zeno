@@ -262,6 +262,7 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
                 color = pow(color, light.texGamma);
 
             color = color * light.intensity;
+
             emission = *(vec3*)&color;
         }
 

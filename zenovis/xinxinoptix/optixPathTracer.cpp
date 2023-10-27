@@ -1854,6 +1854,7 @@ struct LightDat{
     std::vector<float> emission;
 
     float intensity;
+    float vIntensity;
 
     bool visible, doubleside;
     uint8_t shape, type;
@@ -1863,7 +1864,7 @@ struct LightDat{
 
     std::string profileKey;
     std::string textureKey;
-    float gamma;
+    float textureGamma;
 };
 
 static std::map<std::string, LightDat> lightdats;
@@ -1881,7 +1882,7 @@ void load_triangle_light(std::string const &key,
                         const float *n0, const float *n1, const float *n2,
                         const float *uv0, const float *uv1, const float *uv2,
                         float const *nor, float const *emi, float intensity, 
-                        bool visible, bool doubleside, int shape, int type, 
+                        bool visible, bool doubleside, float vIntensity, int shape, int type, 
                         std::string& profileKey, std::string& textureKey, float gamma) {
     LightDat ld;
     ld.v0.assign(v0, v0+3);
@@ -1905,19 +1906,21 @@ void load_triangle_light(std::string const &key,
     ld.normal.assign(nor, nor+3);
     ld.emission.assign(emi, emi+3);
 
-    ld.intensity = intensity;
+    ld.visible = visible;
     ld.doubleside = doubleside;
-    ld.visible = visible; 
+    ld.intensity = intensity;
+    ld.vIntensity = vIntensity;
+
     ld.shape = shape; ld.type = type;
     ld.profileKey = profileKey;
     ld.textureKey = textureKey;
-    ld.gamma = gamma;
+    ld.textureGamma = gamma;
     lightdats[key] = ld;
 }
 
 void load_light(std::string const &key, float const*v0,float const*v1,float const*v2, 
                 float const*nor,float const*emi, float intensity, 
-                bool visible, bool doubleside, int shape, int type, 
+                bool visible, bool doubleside, float vIntensity, int shape, int type, 
                 std::string& profileKey, std::string& textureKey, float gamma) {
 
     LightDat ld;
@@ -1927,12 +1930,15 @@ void load_light(std::string const &key, float const*v0,float const*v1,float cons
     ld.normal.assign(nor, nor + 3);
     ld.emission.assign(emi, emi + 3);
 
+    ld.visible = visible;
+    ld.doubleside = doubleside;
     ld.intensity = intensity;
-    ld.visible = visible; ld.doubleside = doubleside;
+    ld.vIntensity = vIntensity;
+
     ld.shape = shape; ld.type = type;
     ld.profileKey = profileKey;
     ld.textureKey = textureKey;
-    ld.gamma = gamma;
+    ld.textureGamma = gamma;
     //zeno::log_info("light clr after read: {} {} {}", ld.emission[0],ld.emission[1],ld.emission[2]);
     lightdats[key] = ld;
 }
@@ -2217,6 +2223,7 @@ void buildLightTree() {
         light.emission.y = fmaxf(dat.emission.at(1), FLT_EPSILON);
         light.emission.z = fmaxf(dat.emission.at(2), FLT_EPSILON);
         light.intensity  = dat.intensity;
+        light.vIntensity = dat.vIntensity;
         
         float3& v0 = *(float3*)dat.v0.data();
         float3& v1 = *(float3*)dat.v1.data();
@@ -2270,7 +2277,7 @@ void buildLightTree() {
 
             auto& val = OptixUtil::g_tex.at(dat.textureKey);
             light.tex = val->texture;
-            light.texGamma = dat.gamma;
+            light.texGamma = dat.textureGamma;
         }
     }
 

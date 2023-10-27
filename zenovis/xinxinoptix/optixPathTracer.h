@@ -27,6 +27,7 @@ struct GenericLight
     float3 T, B, N;
     float3 emission;
     float intensity;
+    float vIntensity;
 
     zeno::LightType type {};
     zeno::LightShape shape{};
