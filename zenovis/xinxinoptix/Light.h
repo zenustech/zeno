@@ -250,6 +250,16 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
             }
         }
 
+        if (zeno::LightShape::Sphere == light.shape) {
+            mat3 localAxis = {
+                reinterpret_cast<vec3&>(light.T), 
+                reinterpret_cast<vec3&>(light.N), 
+                reinterpret_cast<vec3&>(light.B) };
+
+            auto sampleDir = localAxis * (lsr.n);
+            lsr.uv = vec2(sphereUV(sampleDir, false));
+        }
+
         lsr.PDF *= lightPickProb;
 
         if (light.config & zeno::LightConfigDoubleside) {

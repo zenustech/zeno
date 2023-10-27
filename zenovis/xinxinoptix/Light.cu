@@ -134,6 +134,15 @@ extern "C" __global__ void __closesthit__radiance()
             light.rect.EvalAfterHit(&lsr, lightDirection, lightDistance, prd->origin);
         } else if (light.shape == zeno::LightShape::Sphere) {
             light.sphere.EvalAfterHit(&lsr, lightDirection, lightDistance, prd->origin);
+
+            mat3 localAxis = {
+                reinterpret_cast<vec3&>(light.T), 
+                reinterpret_cast<vec3&>(light.N), 
+                reinterpret_cast<vec3&>(light.B) };
+
+            auto sampleDir = localAxis * (lsr.n);
+            lsr.uv = vec2(sphereUV(sampleDir, false));
+
         } else if (light.shape == zeno::LightShape::TriangleMesh) {
 
             float2 bary2 = optixGetTriangleBarycentrics();
