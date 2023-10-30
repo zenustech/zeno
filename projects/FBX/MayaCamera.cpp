@@ -5,6 +5,7 @@
 #include <zeno/utils/log.h>
 
 #include <zeno/zeno.h>
+#include <zeno/utils/eulerangle.h>
 #include <zeno/utils/logger.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/types/NumericObject.h>
@@ -17,7 +18,6 @@
 
 #include "assimp/scene.h"
 
-#include "magic_enum.hpp"
 #include "Definition.h"
 #include "json.hpp"
 
@@ -30,7 +30,6 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
-#include <glm/gtx/euler_angles.hpp>
 
 #include <fstream>
 #include <regex>
@@ -246,6 +245,7 @@ ZENO_DEFNODE(CameraEval)({
     {"FBX"},
 });
 
+
 struct LightNode : INode {
     virtual void apply() override {
         auto isL = true; //get_input2<int>("islight");
@@ -296,11 +296,14 @@ struct LightNode : INode {
             float rm = 1.0f;
             float cm = 1.0f;
 
-            glm::mat4 rotation = glm::mat4(1.0f);
-            glm::vec3 euler = glm::vec3(rotate[0], rotate[1], rotate[2]);
-            rotation = glm::rotate(rotation, euler.z, glm::vec3(0.0f, 0.0f, 1.0f));
-            rotation = glm::rotate(rotation, euler.y, glm::vec3(0.0f, 1.0f, 0.0f));
-            rotation = glm::rotate(rotation, euler.x, glm::vec3(1.0f, 0.0f, 0.0f));
+            auto order = get_input2<std::string>("EulerRotationOrder:");
+            auto orderTyped = magic_enum::enum_cast<EulerAngle::RotationOrder>(order).value_or(EulerAngle::RotationOrder::YXZ);
+
+            auto measure = get_input2<std::string>("EulerAngleMeasure:");
+            auto measureTyped = magic_enum::enum_cast<EulerAngle::Measure>(measure).value_or(EulerAngle::Measure::Radians);
+
+            glm::vec3 eularAngleXYZ = glm::vec3(rotate[0], rotate[1], rotate[2]);
+            glm::mat4 rotation = EulerAngle::rotate(orderTyped, measureTyped, eularAngleXYZ);
 
             // Plane Verts
             for(int i=0; i<=1; i++){
@@ -452,7 +455,8 @@ ZENO_DEFNODE(LightNode)({
         "prim"
     },
     {
-
+        {"enum " + EulerAngle::RotationOrderListString(), "EulerRotationOrder", EulerAngle::RotationOrderDefaultString()},
+        {"enum " + EulerAngle::MeasureListString(), "EulerAngleMeasure", EulerAngle::MeasureDefaultString()}
     },
     {"shader"},
 });
