@@ -2,7 +2,6 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/UserData.h>
 #include <zeno/utils/fileio.h>
-#include "zeno/utils/log.h"
 
 namespace zeno {
 struct ProceduralSky : INode {
