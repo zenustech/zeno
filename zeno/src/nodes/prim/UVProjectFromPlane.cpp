@@ -480,7 +480,7 @@ ZENDEFNODE(ImageFlipVertical, {
         {"image"},
     },
     {},
-    {"comp"},
+    {"deprecated"},
 });
 
 void write_pfm(std::string& path, int w, int h, vec3f *rgb) {
@@ -692,7 +692,7 @@ ZENDEFNODE(ImageFloatGaussianBlur, {
         {"image"},
     },
     {},
-    {"comp"},
+    {"deprecated"},
 });
 
 struct EnvMapRot : INode {
