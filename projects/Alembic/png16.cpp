@@ -9,7 +9,10 @@
 #include <filesystem>
 #include <zeno/utils/log.h>
 #include <zeno/utils/image_proc.h>
-
+#include <zeno/utils/scope_exit.h>
+#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_STATIC
+#include <tinygltf/stb_image.h>
 #include <png.h>
 #include <cstdio>
 #include <vector>
@@ -90,29 +93,6 @@ static std::shared_ptr<zeno::PrimitiveObject> read_png(const char* file_path) {
                     alpha = float(a) / 65535.0f;
                 }
             } else if (bit_depth == 8) {
-                if (channels == 1) {
-                    uint8_t value = row[x];
-                    float normalized_value = float(value) / 255.0f;
-                    color = zeno::vec3f(normalized_value);
-                } else if (channels == 3) {
-                    uint8_t r = row[x * 3];
-                    uint8_t g = row[x * 3 + 1];
-                    uint8_t b = row[x * 3 + 2];
-
-                    color[0] = float(r) / 255.0f;
-                    color[1] = float(g) / 255.0f;
-                    color[2] = float(b) / 255.0f;
-                } else if (channels == 4) {
-                    uint8_t r = row[x * 4];
-                    uint8_t g = row[x * 4 + 1];
-                    uint8_t b = row[x * 4 + 2];
-                    uint8_t a = row[x * 4 + 4];
-
-                    color[0] = float(r) / 255.0f;
-                    color[1] = float(g) / 255.0f;
-                    color[2] = float(b) / 255.0f;
-                    alpha = float(a) / 255.0f;
-                }
             }
 
             image_data.push_back(color);
@@ -134,12 +114,52 @@ static std::shared_ptr<zeno::PrimitiveObject> read_png(const char* file_path) {
     return img;
 }
 
+std::shared_ptr<zeno::PrimitiveObject> readImageFile(std::string const &native_path) {
+    int w, h, n;
+    stbi_set_flip_vertically_on_load(true);
+    float* data = stbi_loadf(native_path.c_str(), &w, &h, &n, 0);
+    if (!data) {
+        throw zeno::Exception("cannot open image file at path: " + native_path);
+    }
+    zeno::scope_exit delData = [=] { stbi_image_free(data); };
+    auto img = std::make_shared<zeno::PrimitiveObject>();
+    img->verts.resize(w * h);
+    if (n == 3) {
+        std::memcpy(img->verts.data(), data, w * h * n * sizeof(float));
+    } else if (n == 4) {
+        auto &alpha = img->verts.add_attr<float>("alpha");
+        for (int i = 0; i < w * h; i++) {
+            img->verts[i] = {data[i*4+0], data[i*4+1], data[i*4+2]};
+            alpha[i] = data[i*4+3];
+        }
+    } else if (n == 2) {
+        for (int i = 0; i < w * h; i++) {
+            img->verts[i] = {data[i*2+0], data[i*2+1], 0};
+        }
+    } else if (n == 1) {
+        for (int i = 0; i < w * h; i++) {
+            img->verts[i] = zeno::vec3f(data[i]);
+        }
+    } else {
+        throw zeno::Exception("too much number of channels");
+    }
+    img->userData().set2("isImage", 1);
+    img->userData().set2("w", w);
+    img->userData().set2("h", h);
+    return img;
+}
+
+
 namespace zeno {
 struct ReadPNG16 : INode {//todo: select custom color space
     virtual void apply() override {
         auto path = get_input2<std::string>("path");
         path = std::filesystem::u8path(path).string();
         auto img = read_png(path.c_str());
+        if(img->userData().get2<int>("bit_depth") == 8)
+        {
+            img = readImageFile(path); 
+        }
         set_output("image", img);
     }
 };
