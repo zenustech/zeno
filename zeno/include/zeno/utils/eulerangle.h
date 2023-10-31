@@ -56,22 +56,22 @@ static std::string RotationOrderListString() {
 
         if ( measure !=  Measure::Radians ) {
             angles[0] = glm::radians(angleXYZ[0]);
-            angles[0] = glm::radians(angleXYZ[1]);
-            angles[0] = glm::radians(angleXYZ[2]);
+            angles[1] = glm::radians(angleXYZ[1]);
+            angles[2] = glm::radians(angleXYZ[2]);
         }
 
         auto orderName = magic_enum::enum_name(order);
 
-        static const std::map<char, uint8_t> kv {
-            {'X', 0}, {'Y', 1}, {'Z', 2}
-        };
+        // static const std::map<char, uint8_t> kv {
+        //     {'X', 0}, {'Y', 1}, {'Z', 2}
+        // };
 
         glm::mat4 rotation = glm::mat4(1.0f);
 
         for (size_t i=0; i<3; ++i) {
-            auto k = orderName[i];
+            auto K = orderName[i];
 
-            auto index = kv.at(k);
+            auto index = K - 'X'; //kv.at(k);
             auto angle = angles[index];
 
             auto axis = glm::vec3(0,0,0);

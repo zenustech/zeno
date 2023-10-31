@@ -1062,7 +1062,7 @@ ZENDEFNODE(CreateTorus, {
     },
     {"prim"},
     {
-        {"enum " + EulerAngle::RotationOrderListString(), "EulerRotationOrder", EulerAngle::RotationOrderDefaultString()},
+        {"enum " + EulerAngle::RotationOrderListString(), "EulerRotationOrder", "XYZ"},
         {"enum " + EulerAngle::MeasureListString(), "EulerAngleMeasure", "Degree"}
     },
     {"create"},
@@ -1309,7 +1309,7 @@ ZENDEFNODE(CreateSphere, {
     },
     {"prim"},
     {
-        {"enum " + EulerAngle::RotationOrderListString(), "EulerRotationOrder", EulerAngle::RotationOrderDefaultString()},
+        {"enum " + EulerAngle::RotationOrderListString(), "EulerRotationOrder", "XYZ"},
         {"enum " + EulerAngle::MeasureListString(), "EulerAngleMeasure", "Degree"}
     },
     {"create"},
