@@ -1,5 +1,6 @@
 #include "optixPathTracer.h"
 #include "vec_math.h"
+#include "zeno/utils/vec.h"
 #include <memory>
 #ifdef ZENO_ENABLE_OPTIX
 #include "../../xinxinoptix/xinxinoptixapi.h"
@@ -542,19 +543,26 @@ struct GraphicsManager {
                         auto _e1_ = _p0_ - _p2_;
                         auto _e2_ = _p1_ - _p2_;
 
-                        auto _n0_ = prim_in->verts.attr<zeno::vec3f>("nrm")[ prim_in->tris[i][0] ];
-                        auto _n1_ = prim_in->verts.attr<zeno::vec3f>("nrm")[ prim_in->tris[i][1] ];
-                        auto _n2_ = prim_in->verts.attr<zeno::vec3f>("nrm")[ prim_in->tris[i][2] ];
+                        zeno::vec3f *pn0{}, *pn1{}, *pn2{};
+                        zeno::vec3f *uv0{}, *uv1{}, *uv2{};
 
-                        #if 1
-                        auto uv0 = prim_in->verts.attr<zeno::vec3f>("uv")[ prim_in->tris[i][0] ];
-                        auto uv1 = prim_in->verts.attr<zeno::vec3f>("uv")[ prim_in->tris[i][1] ];
-                        auto uv2 = prim_in->verts.attr<zeno::vec3f>("uv")[ prim_in->tris[i][2] ];
-                        #else
-                        auto uv0 = prim_in->tris.attr<zeno::vec3f>("uv0")[i];
-                        auto uv1 = prim_in->tris.attr<zeno::vec3f>("uv1")[i];
-                        auto uv2 = prim_in->tris.attr<zeno::vec3f>("uv2")[i];
-                        #endif
+                        if (prim_in->verts.has_attr("nrm")) {
+                            pn0 = &prim_in->verts.attr<zeno::vec3f>("nrm")[ prim_in->tris[i][0] ];
+                            pn1 = &prim_in->verts.attr<zeno::vec3f>("nrm")[ prim_in->tris[i][1] ];
+                            pn2 = &prim_in->verts.attr<zeno::vec3f>("nrm")[ prim_in->tris[i][2] ];
+                        }
+
+                        if (prim_in->verts.has_attr("uv")) {
+                            #if 1
+                            uv0 = &prim_in->verts.attr<zeno::vec3f>("uv")[ prim_in->tris[i][0] ];
+                            uv1 = &prim_in->verts.attr<zeno::vec3f>("uv")[ prim_in->tris[i][1] ];
+                            uv2 = &prim_in->verts.attr<zeno::vec3f>("uv")[ prim_in->tris[i][2] ];
+                            #else
+                            auto uv0 = prim_in->tris.attr<zeno::vec3f>("uv0")[i];
+                            auto uv1 = prim_in->tris.attr<zeno::vec3f>("uv1")[i];
+                            auto uv2 = prim_in->tris.attr<zeno::vec3f>("uv2")[i];
+                            #endif
+                        }
 
                         auto nor = zeno::normalize(zeno::cross(_e1_, _e2_));
                         auto clr = prim_in->verts.attr<zeno::vec3f>("clr")[ prim_in->tris[i][0] ];
@@ -562,8 +570,7 @@ struct GraphicsManager {
                         auto compound = key + std::to_string(i);
                         xinxinoptix::load_triangle_light(compound, 
                                     _p0_.data(), _p1_.data(), _p2_.data(),
-                                    _n0_.data(), _n1_.data(), _n2_.data(), 
-                                    uv0.data(), uv1.data(), uv2.data(),
+                                    pn0, pn1, pn2, uv0, uv1, uv2,
                                     nor.data(), clr.data(), intensity,
                                     visible, doubleside, visibleIntensity, shape, type, 
                                     lightProfilePath, lightTexturePath, lightGamma);

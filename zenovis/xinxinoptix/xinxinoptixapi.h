@@ -7,6 +7,7 @@
 #include <set>
 
 #include "optixSphere.h"
+#include "zeno/utils/vec.h"
 
 enum ShaderMaker {
     Mesh = 0,
@@ -58,8 +59,8 @@ void unload_inst(const std::string &key);
 
 void load_triangle_light(std::string const &key, 
                         const float *v0, const float *v1, const float *v2, 
-                        const float *n0, const float *n1, const float *n2,
-                        const float *uv0, const float *uv1, const float *uv2,
+                        const zeno::vec3f *pn0, const zeno::vec3f *pn1, const zeno::vec3f *pn2,
+                        const zeno::vec3f *uv0, const zeno::vec3f *uv1, const zeno::vec3f *uv2,
                         float const *nor, float const *emi, float intensity,
                         bool visible, bool doubleside, float vIntensity, int shape, int type,
                         std::string& profileKey, std::string& textureKey, float gamma);
