@@ -1,6 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/UserData.h>
+#include <zeno/utils/fileio.h>
 
 namespace zeno {
 struct ProceduralSky : INode {
@@ -46,6 +47,9 @@ struct HDRSky : INode {
         std::string path = "";
         if (has_input2<std::string>("path")) {
              path = get_input2<std::string>("path");
+             if (!path.empty() && !file_exists(path)) {
+                 throw zeno::makeError("HDRSky file not exists");
+             }
         }
         prim->userData().set2("isRealTimeObject", std::move(1));
         prim->userData().set2("HDRSky", std::move(path));
