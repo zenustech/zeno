@@ -47,7 +47,7 @@ struct HDRSky : INode {
         std::string path = "";
         if (has_input2<std::string>("path")) {
              path = get_input2<std::string>("path");
-             if (!file_exists(path)) {
+             if (!path.empty() && !file_exists(path)) {
                  throw zeno::makeError("HDRSky file not exists");
              }
         }
