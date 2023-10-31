@@ -120,8 +120,8 @@ namespace zeno {
 struct ReadPNG16 : INode {//todo: select custom color space
     virtual void apply() override {
         auto path = get_input2<std::string>("path");
-        path = std::filesystem::u8path(path).string();
-        auto img = read_png(path.c_str());
+        auto native_path = std::filesystem::u8path(path).string();
+        auto img = read_png(native_path.c_str());
         if(img->userData().get2<int>("bit_depth") == 8)
         {
             img = zeno::readImageFile(path); 
