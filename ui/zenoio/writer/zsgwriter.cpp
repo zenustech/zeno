@@ -76,6 +76,21 @@ QString ZsgWriter::dumpProgramStr(IGraphsModel* pModel, APP_SETTINGS settings)
             }
         }
 
+        const FuckQMap<QString, QString>& commandParams = pModel->commandParams();
+        if (!commandParams.isEmpty())
+        {
+            writer.Key("command");
+            {
+                writer.StartObject();
+                for (const auto& key : commandParams.keys())
+                {
+                    writer.Key(key.toUtf8());
+                    writer.String(commandParams[key].toUtf8());
+                }
+                writer.EndObject();
+            }
+        }
+
         writer.Key("views");
         {
             writer.StartObject();

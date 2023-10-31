@@ -129,6 +129,11 @@ public:
     virtual void removeNetLabel(const QModelIndex& subgIdx, const QModelIndex& trigger) = 0;
     virtual void updateNetLabel(const QModelIndex& subgIdx, const QModelIndex& trigger, const QString& oldName, const QString& newName, bool enableTransaction = false) = 0;
 
+    virtual bool addCommandParam(const QString& name, const QString& path) = 0;
+    virtual void removeCommandParam(const QString& path) = 0;
+    virtual bool updateCommandParam(const QString& path, const QString& newName) = 0;
+    virtual FuckQMap<QString, QString> commandParams() const = 0;
+
     virtual QModelIndex getNetOutput(const QModelIndex& subgIdx, const QString& name) const = 0;
 	virtual QList<QModelIndex> getNetInputs(const QModelIndex& subgIdx, const QString& name) const = 0;
     virtual QStringList dumpLabels(const QModelIndex& subgIdx) const = 0;
@@ -152,6 +157,8 @@ signals:
 	void linkInserted(const QModelIndex& subGpIdx, const QModelIndex&, int first, int last);
 	void linkAboutToBeRemoved(const QModelIndex& subGpIdx, const QModelIndex&, int first, int last);
 	void linkRemoved(const QModelIndex& subGpIdx, const QModelIndex& parent, int first, int last);
+
+    void updateCommandParamSignal(const QString& path);
 };
 
 

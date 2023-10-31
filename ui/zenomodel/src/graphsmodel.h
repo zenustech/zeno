@@ -152,6 +152,11 @@ public:
     void removeNetLabel(const QModelIndex& subgIdx, const QModelIndex& trigger) override;
     void updateNetLabel(const QModelIndex& subgIdx, const QModelIndex& trigger, const QString& oldName, const QString& newName, bool enableTransaction = false) override;
 
+    bool addCommandParam(const QString& name, const QString& path) override;
+    void removeCommandParam(const QString& path) override;
+    bool updateCommandParam(const QString& path, const QString& newName) override;
+    FuckQMap<QString, QString> commandParams() const override;
+
     QModelIndex getNetOutput(const QModelIndex& subgIdx, const QString& name) const override;
     QList<QModelIndex> getNetInputs(const QModelIndex& subgIdx, const QString& name) const override;
     QStringList dumpLabels(const QModelIndex& subgIdx) const override;
@@ -212,6 +217,8 @@ private:
     QHash<QString, LinkModel*> m_linksGroup;
     QHash<QString, LinkModel*> m_legacyLinks;
     QSet<QPersistentModelIndex> m_changedNodes;
+
+    FuckQMap<QString, QString> m_commandParams;//key:path  value:name
 
     NODE_DESCS m_nodesDesc;
     NODE_DESCS m_subgsDesc;

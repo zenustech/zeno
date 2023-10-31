@@ -96,6 +96,11 @@ bool ZsgReader::openFile(const QString& fn, IAcceptor* pAcceptor)
     pAcceptor->EndGraphs();
     pAcceptor->switchSubGraph("main");
 
+    if (doc.HasMember("command"))
+    {
+        _parseCommands(doc["command"], pAcceptor);
+    }
+
     if (doc.HasMember("views"))
     {
         _parseViews(doc["views"], pAcceptor);
@@ -883,6 +888,16 @@ NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs, IAcceptor* 
         _descs.insert(nodeCls, desc);
     }
     return _descs;
+}
+
+void ZsgReader::_parseCommands(const rapidjson::Value& value, IAcceptor* pAcceptor)
+{
+    for (const auto& obj : value.GetObject())
+    {
+        const QString& path = obj.name.GetString();
+        const rapidjson::Value& val = obj.value;
+        pAcceptor->addCommandParam(val.GetString(), path);
+    }
 }
 
 void ZsgReader::_parseParams(const QString& id, const QString& nodeName, const NODE_DESCS& descriptors, const rapidjson::Value& jsonParams, IAcceptor* pAcceptor)

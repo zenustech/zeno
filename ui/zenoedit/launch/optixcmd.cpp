@@ -56,6 +56,7 @@ int optixcmd(const QCoreApplication& app, int port)
         {"subzsg", "subgraphzsg", "subgraph zsg file path"},
         {"cacheautorm", "cacheautoremove", "remove cache after render"},
         {"optixShowBackground", "optixShowBackground", "optix record with background"},
+        {"paramsPath", "paramsPath", "paramsPath"},
         });
     cmdParser.process(app);
 

@@ -1688,6 +1688,51 @@ void GraphsModel::updateNetLabel(const QModelIndex& subgIdx, const QModelIndex& 
     }
 }
 
+bool GraphsModel::addCommandParam(const QString& name, const QString& path)
+{
+    if (!m_commandParams.contains(path))
+    {
+        for (const auto& path : m_commandParams.keys())
+        {
+            if (m_commandParams[path] == name)
+            {
+                return false;
+            }
+        }
+        m_commandParams[path] = name;
+        emit updateCommandParamSignal(path);
+
+        return true;
+    }
+    return false;
+}
+
+void GraphsModel::removeCommandParam(const QString& path)
+{
+    if (!m_commandParams.contains(path))
+        return;
+
+    m_commandParams.remove(path);
+    emit updateCommandParamSignal(path);
+}
+
+bool GraphsModel::updateCommandParam(const QString& path, const QString& newName)
+{
+    if (!m_commandParams.contains(path))
+        return false;
+    QString oldName = m_commandParams[path];
+    if (oldName == newName)
+        return false;
+    m_commandParams[path] = newName;
+    emit updateCommandParamSignal(path);
+    return true;
+}
+
+FuckQMap<QString, QString> GraphsModel::commandParams() const
+{
+    return m_commandParams;
+}
+
 QList<QModelIndex> GraphsModel::getNetInputs(const QModelIndex& subgIdx, const QString& name) const
 {
     SubGraphModel* pGraph = subGraph(subgIdx.row());
@@ -1785,6 +1830,7 @@ void GraphsModel::clear()
         clearSubGraph(subgIdx);
     }
     m_linksGroup.clear();
+    m_commandParams.clear();
     emit modelClear();
 }
 
@@ -1860,6 +1906,15 @@ void GraphsModel::on_subg_rowsAboutToBeRemoved(const QModelIndex& parent, int fi
     ZASSERT_EXIT(pSubModel);
     QModelIndex subgIdx = indexBySubModel(pSubModel);
     emit _rowsAboutToBeRemoved(subgIdx, parent, first, last);
+
+    //remove command
+    const QModelIndex& idx = index(first, subgIdx);
+    const QString& objId = idx.data(ROLE_OBJID).toString();
+    for (const auto& path : m_commandParams.keys())
+    {
+        if (UiHelper::getSockNode(path) == objId)
+            removeCommandParam(path);
+    }
 }
 
 void GraphsModel::on_subg_rowsRemoved(const QModelIndex& parent, int first, int last)

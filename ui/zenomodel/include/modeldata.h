@@ -95,6 +95,7 @@ struct PARAM_INFO {
     QVariant controlProps;
     bool bEnableConnect;     //enable connection with other out socket.
     SOCKET_PROPERTY sockProp;
+    QString paramPath;
 
     PARAM_INFO() : control(CONTROL_NONE), bEnableConnect(false), sockProp(SOCKPROP_NORMAL) {}
 };

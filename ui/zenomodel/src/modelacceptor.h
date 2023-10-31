@@ -98,6 +98,7 @@ public:
 	void addCustomUI(const QString& id, const VPARAM_INFO& invisibleRoot) override;
     void setIOVersion(zenoio::ZSG_VERSION versio) override;
     void endNode(const QString& id, const QString& nodeCls, const rapidjson::Value& objValue) override;
+    void addCommandParam(const QString& name, const QString& path) override;
 
 private:
     void resolveAllLinks();

@@ -874,6 +874,13 @@ void ModelAcceptor::endNode(const QString& id, const QString& nodeCls, const rap
     }
 }
 
+void ModelAcceptor::addCommandParam(const QString& name, const QString& path)
+{
+    QModelIndex sockIdx = m_pModel->indexFromPath(path);
+    if (sockIdx.isValid())
+        m_pModel->addCommandParam(name, path);
+}
+
 void ModelAcceptor::endParams(const QString& id, const QString& nodeCls)
 {
     if (nodeCls == "SubInput" || nodeCls == "SubOutput")

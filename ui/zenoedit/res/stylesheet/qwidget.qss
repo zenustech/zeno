@@ -156,6 +156,26 @@ QTableWidget[cssClass="select_subgraph"]::item:selected
 	background-color: transparent;
 }
 
+QTableWidget[cssClass="commandParams"]
+{
+	background-color: transparent;
+	color: #FFFFFF;
+	font-size: 9pt;
+	border-top:1px solid #191D21;
+	padding:10px;
+}
+
+QTableWidget[cssClass="commandParams"]::item
+{
+	background-color: transparent;
+	border: 0;
+}
+
+QTableWidget[cssClass="commandParams"]::item:selected
+{
+	background-color: #3C424E;
+}
+
 QDialog QFrame#line
 {
     color:#737B85;
