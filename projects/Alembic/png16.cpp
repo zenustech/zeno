@@ -13,6 +13,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_STATIC
 #include <tinygltf/stb_image.h>
+#include <zeno/types/HeatmapObject.h>
 #include <png.h>
 #include <cstdio>
 #include <vector>
@@ -114,41 +115,6 @@ static std::shared_ptr<zeno::PrimitiveObject> read_png(const char* file_path) {
     return img;
 }
 
-std::shared_ptr<zeno::PrimitiveObject> readImageFile(std::string const &native_path) {
-    int w, h, n;
-    stbi_set_flip_vertically_on_load(true);
-    float* data = stbi_loadf(native_path.c_str(), &w, &h, &n, 0);
-    if (!data) {
-        throw zeno::Exception("cannot open image file at path: " + native_path);
-    }
-    zeno::scope_exit delData = [=] { stbi_image_free(data); };
-    auto img = std::make_shared<zeno::PrimitiveObject>();
-    img->verts.resize(w * h);
-    if (n == 3) {
-        std::memcpy(img->verts.data(), data, w * h * n * sizeof(float));
-    } else if (n == 4) {
-        auto &alpha = img->verts.add_attr<float>("alpha");
-        for (int i = 0; i < w * h; i++) {
-            img->verts[i] = {data[i*4+0], data[i*4+1], data[i*4+2]};
-            alpha[i] = data[i*4+3];
-        }
-    } else if (n == 2) {
-        for (int i = 0; i < w * h; i++) {
-            img->verts[i] = {data[i*2+0], data[i*2+1], 0};
-        }
-    } else if (n == 1) {
-        for (int i = 0; i < w * h; i++) {
-            img->verts[i] = zeno::vec3f(data[i]);
-        }
-    } else {
-        throw zeno::Exception("too much number of channels");
-    }
-    img->userData().set2("isImage", 1);
-    img->userData().set2("w", w);
-    img->userData().set2("h", h);
-    return img;
-}
-
 
 namespace zeno {
 struct ReadPNG16 : INode {//todo: select custom color space
@@ -158,7 +124,7 @@ struct ReadPNG16 : INode {//todo: select custom color space
         auto img = read_png(path.c_str());
         if(img->userData().get2<int>("bit_depth") == 8)
         {
-            img = readImageFile(path); 
+            img = zeno::readImageFile(path); 
         }
         set_output("image", img);
     }
