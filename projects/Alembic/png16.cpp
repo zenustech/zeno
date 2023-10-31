@@ -9,10 +9,6 @@
 #include <filesystem>
 #include <zeno/utils/log.h>
 #include <zeno/utils/image_proc.h>
-#include <zeno/utils/scope_exit.h>
-#define STB_IMAGE_IMPLEMENTATION
-#define STB_IMAGE_STATIC
-#include <tinygltf/stb_image.h>
 #include <zeno/types/HeatmapObject.h>
 #include <png.h>
 #include <cstdio>
