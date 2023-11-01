@@ -103,8 +103,9 @@ void SurfaceRemeshing::uniform_remeshing(float edge_length, unsigned int iterati
             return;
         }
         SurfaceNormals::compute_vertex_normals(mesh_);
-        collapse_short_edges();
-        collapse_crosses();
+        collapse_edges(COLLAPSE_COND::SHORT);
+        collapse_edges(COLLAPSE_COND::CROSSES);
+        mesh_->garbage_collection();
         flip_edges();
         laplacian_smoothing();
     }
@@ -127,87 +128,29 @@ void SurfaceRemeshing::adaptive_remeshing(float min_edge_length, float max_edge_
     approx_error_ = approx_error;
     use_projection_ = use_projection;
 
-    zs::CppTimer timer;
-
-#if PMP_ENABLE_PROFILE
-    timer.tick();
-#endif
     preprocessing();
-#if PMP_ENABLE_PROFILE
-    timer.tock("preprocessing");
-#endif
 
     for (unsigned int i = 0; i < iterations; ++i) {
         if (split_long_edges() == PMP_MAX_INDEX) {
             return;
         }
-#if PMP_ENABLE_PROFILE
-        fmt::print("start iteration [{}]\n", i);
-#endif
-
-#if PMP_ENABLE_PROFILE
-        timer.tick();
-#endif
         SurfaceNormals::compute_vertex_normals(mesh_);
-#if PMP_ENABLE_PROFILE
-        timer.tock("compute_vertex_normals");
-#endif
-
-#if PMP_ENABLE_PROFILE
-        timer.tick();
-#endif
-        collapse_short_edges();
-        collapse_crosses();
-#if PMP_ENABLE_PROFILE
-        timer.tock("collapse_short_edges");
-#endif
-
-#if PMP_ENABLE_PROFILE
-        timer.tick();
-#endif
+        collapse_edges(COLLAPSE_COND::SHORT);
+        collapse_edges(COLLAPSE_COND::CROSSES);
+        mesh_->garbage_collection();
         flip_edges();
-#if PMP_ENABLE_PROFILE
-        timer.tock("flip_edges");
-#endif
-
-#if PMP_ENABLE_PROFILE
-        timer.tick();
-#endif
         laplacian_smoothing();
-#if PMP_ENABLE_PROFILE
-        timer.tock("laplacian_smoothing");
-#endif
 
     }
 
-#if PMP_ENABLE_PROFILE
-    timer.tick();
-#endif
     remove_caps();
-#if PMP_ENABLE_PROFILE
-    timer.tock("remove_caps");
-#endif
-
-#if PMP_ENABLE_PROFILE
-    timer.tick();
-#endif
     postprocessing();
-#if PMP_ENABLE_PROFILE
-    timer.tock("postprocessing");
-#endif
-#if PMP_ENABLE_PROFILE
-    timer.tick();
-#endif
     check_triangles();
-#if PMP_ENABLE_PROFILE
-    timer.tock("check_triangles");
-#endif
 }
 
 void SurfaceRemeshing::check_triangles() {
     auto &points = mesh_->prim_->attr<vec3f>("pos");
     auto &fdeleted = mesh_->prim_->tris.attr<int>("f_deleted");
-    bool degenerated = false;
 
     for (int t = 0; t < mesh_->faces_size_; ++t) {
         if (mesh_->has_garbage_ && fdeleted[t])
@@ -215,11 +158,12 @@ void SurfaceRemeshing::check_triangles() {
         auto tri = mesh_->prim_->tris[t];
         auto area = length(cross(points[tri[1]] - points[tri[0]], points[tri[2]] - points[tri[0]]));
         if (area < std::numeric_limits<float>::epsilon()) {
-            degenerated = true;
+            auto a1 = dot(normalize(points[tri[1]] - points[tri[0]]), normalize(points[tri[2]] - points[tri[0]]));
+            auto a2 = dot(normalize(points[tri[1]] - points[tri[2]]), normalize(points[tri[0]] - points[tri[2]]));
+            auto a3 = dot(normalize(points[tri[0]] - points[tri[1]]), normalize(points[tri[2]] - points[tri[1]]));
+            auto aa = acos(min(min(a1, a2), a3)) * 180.0f / M_PI;
+            zeno::log_warn("remesh: Degenerate triangle {} with area {} and max angle {}!", tri, area, aa);
         }
-    }
-    if (degenerated) {
-        zeno::log_warn("remesh: Degenerated triangle detected!");
     }
 }
 
@@ -243,12 +187,6 @@ void SurfaceRemeshing::preprocessing() {
             vfeature[mesh_->prim_->lines[e][1]] = 1;
         }
     }
-
-    zs::CppTimer timer;
-
-#if PMP_ENABLE_PROFILE
-    timer.tick();
-#endif
 
     // lock feature corners
     for (int v = 0; v < mesh_->vertices_size_; ++v) {
@@ -274,10 +212,6 @@ void SurfaceRemeshing::preprocessing() {
         }
     }
 
-#if PMP_ENABLE_PROFILE
-    timer.tock("lock feature corners");
-#endif
-
     // compute sizing field
     if (uniform_) {
         for (int v = 0; v < mesh_->vertices_size_; ++v) {
@@ -286,11 +220,6 @@ void SurfaceRemeshing::preprocessing() {
             vsizing[v] = target_edge_length_;
         }
     } else {
-
-#if PMP_ENABLE_PROFILE
-        timer.tick();
-#endif
-
         // compute curvature for all mesh vertices, using cotan or Cohen-Steiner
         // don't use two-ring neighborhood, since we otherwise compute
         // curvature over sharp features edges, leading to high curvatures.
@@ -299,13 +228,6 @@ void SurfaceRemeshing::preprocessing() {
         SurfaceCurvature curv(mesh_);
         curv.analyze_tensor(1);
 
-#if PMP_ENABLE_PROFILE
-        timer.tock("analyze_tensor");
-#endif
-
-#if PMP_ENABLE_PROFILE
-        timer.tick();
-#endif
         // use vsizing_ to store/smooth curvatures to avoid another vertex property
 
         // curvature values for feature vertices and boundary vertices
@@ -318,14 +240,6 @@ void SurfaceRemeshing::preprocessing() {
             else
                 vsizing[v] = curv.max_abs_curvature(v);
         }
-
-#if PMP_ENABLE_PROFILE
-        timer.tock("compute curvature values");
-#endif
-
-#if PMP_ENABLE_PROFILE
-        timer.tick();
-#endif
 
         // curvature values might be noisy. smooth them.
         // don't consider feature vertices' curvatures.
@@ -353,14 +267,6 @@ void SurfaceRemeshing::preprocessing() {
                 vsizing[v] = cc;
             }
         }
-
-#if PMP_ENABLE_PROFILE
-        timer.tock("smooth curvature values");
-#endif
-
-#if PMP_ENABLE_PROFILE
-        timer.tick();
-#endif
 
         // now convert per-vertex curvature into target edge length
         for (int v = 0; v < mesh_->vertices_size_; ++v) {
@@ -390,9 +296,6 @@ void SurfaceRemeshing::preprocessing() {
             // store target edge length
             vsizing[v] = h;
         }
-#if PMP_ENABLE_PROFILE
-        timer.tock("convert per-vertex curvature into target edge length");
-#endif
     }
 
     if (use_projection_) {
@@ -411,15 +314,8 @@ void SurfaceRemeshing::preprocessing() {
                 continue;
             refsizing_[v] = vsizing[v];
         }
-
-#if PMP_ENABLE_PROFILE
-        timer.tick();
-#endif
         // build kd-tree
         kd_tree_ = new TriangleKdTree(refmesh_, 0);
-#if PMP_ENABLE_PROFILE
-        timer.tock("build kd-tree");
-#endif
     }
 }
 
@@ -533,45 +429,13 @@ int SurfaceRemeshing::split_long_edges() {
             for (int ii = 1; ii <= new_lines; ++ii) {
                 mesh_->prim_->lines.foreach_attr<zeno::AttrAcceptAll>([&](auto const &key, auto &arr) {
                     using T = std::decay_t<decltype(arr[0])>;
-                    if constexpr (std::is_same_v<T, zeno::vec3f>) {
-                        arr.push_back(zeno::vec3f(0, 0, 0));
-                    } else if constexpr (std::is_same_v<T, float>) {
-                        arr.push_back(0);
-                    } else if constexpr (std::is_same_v<T, zeno::vec3i>) {
-                        arr.push_back(zeno::vec3i(0, 0, 0));
-                    } else if constexpr (std::is_same_v<T, int>) {
-                        arr.push_back(0);
-                    } else if constexpr (std::is_same_v<T, zeno::vec2f>) {
-                        arr.push_back(zeno::vec2f(0, 0));
-                    } else if constexpr (std::is_same_v<T, zeno::vec2i>) {
-                        arr.push_back(zeno::vec2i(0, 0));
-                    } else if constexpr (std::is_same_v<T, zeno::vec4f>) {
-                        arr.push_back(zeno::vec4f(0, 0, 0, 0));
-                    } else if constexpr (std::is_same_v<T, zeno::vec4i>) {
-                        arr.push_back(zeno::vec4i(0, 0, 0, 0));
-                    }
+                    arr.push_back(T(0));
                 });
             }
             for (int ii = 1; ii <= new_faces; ++ii) {
                 mesh_->prim_->tris.foreach_attr<zeno::AttrAcceptAll>([&](auto const &key, auto &arr) {
                     using T = std::decay_t<decltype(arr[0])>;
-                    if constexpr (std::is_same_v<T, zeno::vec3f>) {
-                        arr.push_back(zeno::vec3f(0, 0, 0));
-                    } else if constexpr (std::is_same_v<T, float>) {
-                        arr.push_back(0);
-                    } else if constexpr (std::is_same_v<T, zeno::vec3i>) {
-                        arr.push_back(zeno::vec3i(0, 0, 0));
-                    } else if constexpr (std::is_same_v<T, int>) {
-                        arr.push_back(0);
-                    } else if constexpr (std::is_same_v<T, zeno::vec2f>) {
-                        arr.push_back(zeno::vec2f(0, 0));
-                    } else if constexpr (std::is_same_v<T, zeno::vec2i>) {
-                        arr.push_back(zeno::vec2i(0, 0));
-                    } else if constexpr (std::is_same_v<T, zeno::vec4f>) {
-                        arr.push_back(zeno::vec4f(0, 0, 0, 0));
-                    } else if constexpr (std::is_same_v<T, zeno::vec4i>) {
-                        arr.push_back(zeno::vec4i(0, 0, 0, 0));
-                    }
+                    arr.push_back(T(0));
                 });
             }
 
@@ -623,7 +487,7 @@ int SurfaceRemeshing::split_long_edges() {
     return 0;
 }
 
-void SurfaceRemeshing::collapse_short_edges() {
+void SurfaceRemeshing::collapse_edges(COLLAPSE_COND cond) {
     int v0, v1;
     int h0, h1, h01, h10;
     bool b0, b1, l0, l1, f0, f1;
@@ -645,7 +509,8 @@ void SurfaceRemeshing::collapse_short_edges() {
             h01 = e << 1 | 1;
             v0 = mesh_->to_vertex(h10);
             v1 = mesh_->to_vertex(h01);
-            if (is_too_short(v0, v1)) {
+
+            if (should_collapse(cond, v0, v1)) {
                 // get status
                 b0 = mesh_->is_boundary_v(v0);
                 b1 = mesh_->is_boundary_v(v1);
@@ -706,11 +571,13 @@ void SurfaceRemeshing::collapse_short_edges() {
 
                 // try v1 -> v0
                 if (hcol10) {
-                    // don't create too long edges
-                    for (auto vv : mesh_->vertices(v1)) {
-                        if (is_too_long(v0, vv)) {
-                            hcol10 = false;
-                            break;
+                    if (cond != COLLAPSE_COND::DEGENERATE) {
+                        // don't create too long edges
+                        for (auto vv : mesh_->vertices(v1)) {
+                            if (is_too_long(v0, vv)) {
+                                hcol10 = false;
+                                break;
+                            }
                         }
                     }
 
@@ -721,11 +588,13 @@ void SurfaceRemeshing::collapse_short_edges() {
 
                 // try v0 -> v1
                 else if (hcol01) {
-                    // don't create too long edges
-                    for (auto vv : mesh_->vertices(v0)) {
-                        if (is_too_long(v1, vv)) {
-                            hcol01 = false;
-                            break;
+                    if (cond != COLLAPSE_COND::DEGENERATE) {
+                        // don't create too long edges
+                        for (auto vv : mesh_->vertices(v0)) {
+                            if (is_too_long(v1, vv)) {
+                                hcol01 = false;
+                                break;
+                            }
                         }
                     }
 
@@ -736,123 +605,6 @@ void SurfaceRemeshing::collapse_short_edges() {
             }
         }
     }
-}
-
-void SurfaceRemeshing::collapse_crosses() {
-    int v0, v1;
-    int h0, h1, h01, h10;
-    bool b0, b1, l0, l1, f0, f1;
-    int i;
-    bool hcol01, hcol10;
-
-    auto &vfeature = mesh_->prim_->verts.attr<int>("v_feature");
-    auto &efeature = mesh_->prim_->lines.attr<int>(line_pick_tag_);
-    auto &edeleted = mesh_->prim_->lines.attr<int>("e_deleted");
-    auto &vlocked = mesh_->prim_->verts.attr<int>("v_locked");
-    auto &elocked = mesh_->prim_->lines.attr<int>("e_locked");
-
-    int lines = mesh_->lines_size_;
-    for (int e = 0; e < lines; ++e) {
-        if (mesh_->has_garbage_ && edeleted[e])
-            continue;
-        if (!edeleted[e] && !elocked[e]) {
-            h10 = e << 1;
-            h01 = e << 1 | 1;
-            v0 = mesh_->to_vertex(h10);
-            v1 = mesh_->to_vertex(h01);
-
-            if (is_crosses(v0, v1)) {
-                // get status
-                b0 = mesh_->is_boundary_v(v0);
-                b1 = mesh_->is_boundary_v(v1);
-                l0 = vlocked[v0];
-                l1 = vlocked[v1];
-                f0 = vfeature[v0];
-                f1 = vfeature[v1];
-                hcol01 = hcol10 = true;
-
-                // boundary rules
-                if (b0 && b1) {
-                    if (!mesh_->is_boundary_e(e))
-                        continue;
-                } else if (b0)
-                    hcol01 = false;
-                else if (b1)
-                    hcol10 = false;
-
-                // locked rules
-                if (l0 && l1)
-                    continue;
-                else if (l0)
-                    hcol01 = false;
-                else if (l1)
-                    hcol10 = false;
-
-                // feature rules
-                if (f0 && f1) {
-                    // edge must be feature
-                    if (!efeature[e])
-                        continue;
-
-                    // the other two edges removed by collapse must not be features
-                    h0 = mesh_->prev_halfedge(h01);
-                    h1 = mesh_->next_halfedge(h10);
-                    if (efeature[h0 >> 1] || efeature[h1 >> 1])
-                        hcol01 = false;
-                    // the other two edges removed by collapse must not be features
-                    h0 = mesh_->prev_halfedge(h10);
-                    h1 = mesh_->next_halfedge(h01);
-                    if (efeature[h0 >> 1] || efeature[h1 >> 1])
-                        hcol10 = false;
-                } else if (f0)
-                    hcol01 = false;
-                else if (f1)
-                    hcol10 = false;
-
-                // topological rules
-                mesh_->is_collapse_ok(h01, hcol01, hcol10);
-
-                // both collapses possible: collapse into vertex with higher valence
-                if (hcol01 && hcol10) {
-                    if (mesh_->valence(v0) < mesh_->valence(v1))
-                        hcol10 = false;
-                    else
-                        hcol01 = false;
-                }
-
-                // try v1 -> v0
-                if (hcol10) {
-                    // don't create too long edges
-                    for (auto vv : mesh_->vertices(v1)) {
-                        if (is_too_long(v0, vv)) {
-                            hcol10 = false;
-                            break;
-                        }
-                    }
-
-                    if (hcol10) {
-                        mesh_->collapse(h10);
-                    }
-                }
-
-                // try v0 -> v1
-                else if (hcol01) {
-                    // don't create too long edges
-                    for (auto vv : mesh_->vertices(v0)) {
-                        if (is_too_long(v1, vv)) {
-                            hcol01 = false;
-                            break;
-                        }
-                    }
-
-                    if (hcol01) {
-                        mesh_->collapse(h01);
-                    }
-                }
-            }
-        }
-    }
-    mesh_->garbage_collection();
 }
 
 void SurfaceRemeshing::flip_edges() {
@@ -1073,11 +825,37 @@ void SurfaceRemeshing::laplacian_smoothing() {
     }
 }
 
+void SurfaceRemeshing::remove_degenerate_triangles() {
+    // properties
+    auto &vfeature = mesh_->prim_->verts.add_attr<int>("v_feature", 0);
+    auto &vduplicate = mesh_->prim_->verts.attr<int>("v_duplicate");
+    auto &vlocked = mesh_->prim_->verts.add_attr<int>("v_locked", 0);
+    auto &elocked = mesh_->prim_->lines.add_attr<int>("e_locked", 0);
+    auto &vdeleted = mesh_->prim_->verts.attr<int>("v_deleted");
+    auto &edeleted = mesh_->prim_->lines.attr<int>("e_deleted");
+
+    // lock non-manifold verts
+    for (int v = 0; v < mesh_->vertices_size_; ++v) {
+        if (vduplicate[v] != v) {
+            vlocked[v] = vlocked[vduplicate[v]] = 1;
+        }
+    }
+
+    collapse_edges(COLLAPSE_COND::DEGENERATE); // remove needles
+    mesh_->garbage_collection();
+    remove_caps();
+
+    // remove properties
+    mesh_->prim_->verts.erase_attr("v_feature");
+    mesh_->prim_->verts.erase_attr("v_locked");
+    mesh_->prim_->lines.erase_attr("e_locked");
+}
+
 void SurfaceRemeshing::remove_caps() {
     int h;
     int v, vb, vd;
     int fb, fd;
-    float a0, a1, amin, aa(::cos(170.0 * M_PI / 180.0));
+    float a0, a1, amin, bmin, aa(::cos(170.0 * M_PI / 180.0));
     vec3f a, b, c, d;
 
     auto &points = mesh_->prim_->attr<vec3f>("pos");
@@ -1089,7 +867,7 @@ void SurfaceRemeshing::remove_caps() {
     for (int e = 0; e < mesh_->lines_size_; ++e) {
         if (mesh_->has_garbage_ && edeleted[e])
             continue;
-        if (!elocked[e] && mesh_->is_flip_ok(e)) {
+        if (!elocked[e] && mesh_->is_flip_ok(e, true)) {
             h = e << 1;
             a = points[mesh_->to_vertex(h)];
 
@@ -1124,8 +902,11 @@ void SurfaceRemeshing::remove_caps() {
                     points[v] = (a + c) * 0.5f;
                 }
 
-                // flip
-                mesh_->flip(e);
+                bmin = std::min(dot(normalize(b - a), normalize(d - a)), dot(normalize(b - c), normalize(d - c)));
+                if (bmin > amin) {
+                    // flip
+                    mesh_->flip(e);
+                }
             }
         }
     }
