@@ -1,6 +1,8 @@
 #include "optixPathTracer.h"
 #include "vec_math.h"
+#include "xinxinoptixapi.h"
 #include "zeno/utils/vec.h"
+#include <limits>
 #include <memory>
 #ifdef ZENO_ENABLE_OPTIX
 #include "../../xinxinoptix/xinxinoptixapi.h"
@@ -516,6 +518,8 @@ struct GraphicsManager {
                 //zeno::log_info("processing light key {}", key.c_str());
                 auto type = prim_in->userData().get2<int>("type", 0);
                 auto shape = prim_in->userData().get2<int>("shape", 0);
+                auto maxDistance = prim_in->userData().get2<float>("maxDistance", std::numeric_limits<float>().max());
+
                 auto intensity = prim_in->userData().get2<float>("intensity", 1.0f);
                 auto vIntensity = prim_in->userData().get2<float>("visibleIntensity", 1.0f);
 
@@ -622,6 +626,7 @@ struct GraphicsManager {
                 ld.doubleside = doubleside;
                 ld.intensity = intensity;
                 ld.vIntensity = vIntensity;
+                ld.maxDistance = maxDistance;
 
                 ld.shape = shape; ld.type = type;
                 ld.profileKey = lightProfilePath;

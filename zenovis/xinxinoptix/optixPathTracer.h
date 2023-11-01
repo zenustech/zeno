@@ -29,6 +29,8 @@ struct GenericLight
     float intensity;
     float vIntensity;
 
+    float maxDistance;
+
     zeno::LightType type {};
     zeno::LightShape shape{};
     uint8_t config = zeno::LightConfigNull;

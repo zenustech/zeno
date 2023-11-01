@@ -2173,6 +2173,7 @@ void buildLightTree() {
         light.emission.z = fmaxf(dat.emission.at(2), FLT_EPSILON);
         light.intensity  = dat.intensity;
         light.vIntensity = dat.vIntensity;
+        light.maxDistance = dat.maxDistance <= 0.0? FLT_MAX:dat.maxDistance;
         
         float3& v0 = *(float3*)dat.v0.data();
         float3& v1 = *(float3*)dat.v1.data();

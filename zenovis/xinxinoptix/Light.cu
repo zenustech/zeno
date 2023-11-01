@@ -145,6 +145,7 @@ extern "C" __global__ void __closesthit__radiance()
         }
     }
 
+    if (!cihouMaxDistanceContinue(lsr, light)) { return; }
 
     float3 emission = cihouLightTexture(lsr, light, prd->depth);
 

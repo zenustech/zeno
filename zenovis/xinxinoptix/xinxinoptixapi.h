@@ -66,6 +66,7 @@ struct LightDat {
 
     float intensity;
     float vIntensity;
+    float maxDistance;
 
     bool visible, doubleside;
     uint8_t shape, type;

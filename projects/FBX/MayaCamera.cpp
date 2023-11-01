@@ -367,6 +367,9 @@ struct LightNode : INode {
         prim->userData().set2("color", std::move(color));
         prim->userData().set2("intensity", std::move(intensity));
 
+        auto maxDistance = get_input2<float>("maxDistance");
+        prim->userData().set2("maxDistance", std::move(maxDistance));
+
         auto visible = get_input2<int>("visible");
         auto doubleside = get_input2<int>("doubleside");
 
@@ -441,6 +444,8 @@ ZENO_DEFNODE(LightNode)({
         {"vec3f", "color", "1, 1, 1"},
         {"float", "exposure", "0"},
         {"float", "intensity", "1"},
+        {"float", "maxDistance", "-1.0" },
+
         {"bool", "visible", "0"},
         {"bool", "invertdir", "1"},
         {"bool", "doubleside", "0"},

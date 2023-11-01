@@ -57,6 +57,19 @@ static __inline__ __device__ void cihouSphereLightUV(LightSampleRecord &lsr, Gen
     }
 }
 
+static __inline__ __device__ bool cihouMaxDistanceContinue(LightSampleRecord &lsr, GenericLight &light) {
+    if (lsr.dist >= light.maxDistance) {
+        return false;
+    }
+    
+    if (light.maxDistance < FLT_MAX) {
+        auto delta = 1.0f - lsr.dist / light.maxDistance;
+        lsr.intensity *= smoothstep(0.0f, 1.0f, delta);
+    }
+
+    return true;
+}
+
 static __inline__ __device__ vec3 cihouLightTexture(LightSampleRecord &lsr, GenericLight &light, uint32_t depth) {
 
     if (light.tex != 0u) {
@@ -261,8 +274,8 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
             }
         }
 
+        if (!cihouMaxDistanceContinue(lsr, light)) { return; }
         
-
         float3 emission = cihouLightTexture(lsr, light, prd->depth);
 
         lsr.PDF *= lightPickProb;
