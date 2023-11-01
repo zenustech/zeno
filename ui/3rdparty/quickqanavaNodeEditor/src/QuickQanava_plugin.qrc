@@ -1,0 +1,40 @@
+<RCC>
+    <qresource prefix="/QuickQanava">
+       <file>NavigablePreview.qml</file>
+        <file>GraphPreview.qml</file>
+        <file>HeatMapPreview.qml</file>
+        <file>LineGrid.qml</file>
+        <file>Edge.qml</file>
+        <file>EdgeTemplate.qml</file>
+        <file>EdgeStraightPath.qml</file>
+        <file>EdgeOrthoPath.qml</file>
+        <file>EdgeCurvedPath.qml</file>
+        <file>EdgeSrcArrowPath.qml</file>
+        <file>EdgeSrcCirclePath.qml</file>
+        <file>EdgeSrcRectPath.qml</file>
+        <file>EdgeDstArrowPath.qml</file>
+        <file>EdgeDstCirclePath.qml</file>
+        <file>EdgeDstRectPath.qml</file>
+        <file>GraphView.qml</file>
+        <file>Node.qml</file>
+        <file>Port.qml</file>
+        <file>VerticalDock.qml</file>
+        <file>HorizontalDock.qml</file>
+        <file>Group.qml</file>
+        <file>RectGroupTemplate.qml</file>
+        <file>CanvasNodeTemplate.qml</file>
+        <file>RectNodeTemplate.qml</file>
+        <file>RectSolidBackground.qml</file>
+        <file>RectSolidShadowBackground.qml</file>
+        <file>RectShadowEffect.qml</file>
+        <file>RectSolidGlowBackground.qml</file>
+        <file>RectGlowEffect.qml</file>
+        <file>RectGradientBackground.qml</file>
+        <file>RectGradientShadowBackground.qml</file>
+        <file>RectGradientGlowBackground.qml</file>
+        <file>SelectionItem.qml</file>
+        <file>VisualConnector.qml</file>
+        <file>LabelEditor.qml</file>
+        <file alias="qmldir">qmldir_plugin</file>
+    </qresource>
+</RCC>

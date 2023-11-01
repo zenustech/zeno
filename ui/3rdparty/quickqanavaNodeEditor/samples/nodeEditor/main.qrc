@@ -1,0 +1,14 @@
+<RCC>
+    <qresource prefix="/">
+        <file>main.qml</file>
+        <file>MyCheckBox.qml</file>
+        <file>MySlider.qml</file>
+        <file>MyNode.qml</file>
+        <file>MyFileDialog.qml</file>
+        <file>MyMultiText.qml</file>
+        <file>MySingleText.qml</file>
+        <file>MyVec2Text.qml</file>
+        <file>MyVec3Text.qml</file>
+        <file>MyVec4Text.qml</file>
+    </qresource>
+</RCC>
