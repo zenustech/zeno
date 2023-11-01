@@ -7,26 +7,6 @@
 // #include "DisneyBSDF.h"
 #include "proceduralSky.h"
 
-// static __inline__ __device__
-// int GetLightIndex(float p, GenericLight* lightP, int n)
-// {
-//     int s = 0, e = n-1;
-//     while( s < e )
-//     {
-//         int j = (s+e)/2;
-//         float pc = lightP[j].CDF/lightP[n-1].CDF;
-//         if(pc<p)
-//         {
-//             s = j+1;
-//         }
-//         else
-//         {
-//             e = j;
-//         }
-//     }
-//     return e;
-// }
-
 static __inline__ __device__
 vec3 ImportanceSampleEnv(float* env_cdf, int* env_start, int nx, int ny, float p, float &pdf)
 {
@@ -62,6 +42,48 @@ vec3 ImportanceSampleEnv(float* env_cdf, int* env_start, int nx, int ny, float p
              .rotX(to_radians(-params.sky_rot_x))
              .rotY(to_radians(-params.sky_rot_y));
     return dir;
+}
+
+static __inline__ __device__ void cihouSphereLightUV(LightSampleRecord &lsr, GenericLight &light) {
+
+    if (zeno::LightShape::Sphere == light.shape) {
+        mat3 localAxis = {
+            reinterpret_cast<vec3&>(light.T), 
+            reinterpret_cast<vec3&>(light.N), 
+            reinterpret_cast<vec3&>(light.B) };
+
+        auto sampleDir = localAxis * (lsr.n);
+        lsr.uv = vec2(sphereUV(sampleDir, false));
+    }
+}
+
+static __inline__ __device__ bool cihouMaxDistanceContinue(LightSampleRecord &lsr, GenericLight &light) {
+    if (lsr.dist >= light.maxDistance) {
+        return false;
+    }
+    
+    if (light.maxDistance < FLT_MAX) {
+        auto delta = 1.0f - lsr.dist / light.maxDistance;
+        lsr.intensity *= smoothstep(0.0f, 1.0f, delta);
+    }
+
+    return true;
+}
+
+static __inline__ __device__ vec3 cihouLightTexture(LightSampleRecord &lsr, GenericLight &light, uint32_t depth) {
+
+    if (light.tex != 0u) {
+        auto color = texture2D(light.tex, lsr.uv);
+        if (light.texGamma != 1.0f) {
+            color = pow(color, light.texGamma);
+        }
+
+        auto scaler = (depth > 1)? light.intensity : light.vIntensity;
+        color = color * scaler;
+        return *(vec3*)&color;
+    }
+    
+    return light.emission;
 }
 
 static __inline__ __device__ float sampleIES(const float* iesProfile, float h_angle, float v_angle) {
@@ -194,7 +216,6 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
         lightPickProb *= pick.prob;
 
         LightSampleRecord lsr{};
-        float3 emission = light.emission;
 
         const float* iesProfile = reinterpret_cast<const float*>(light.ies);
 
@@ -211,7 +232,7 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
             auto intensity = sampleIES(iesProfile, h_angle, v_angle);
             if (intensity <= 0.0f) return;
 
-            emission *= intensity;
+            lsr.intensity *= intensity;
 
         } else if (light.type == zeno::LightType::Direction) {
 
@@ -228,6 +249,7 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
             lsr.intensity = 1.0f;
             lsr.PDF = 1.0f;
             lsr.NoL = 1.0f;
+            lsr.isDelta = true;
 
         } else { // Diffuse
 
@@ -236,13 +258,25 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
             switch (light.shape) {
                 case zeno::LightShape::Plane:
                     light.rect.SampleAsLight(&lsr, uu, shadingP);   break;
-                case zeno::LightShape::Sphere:
-                    light.sphere.SampleAsLight(&lsr, uu, shadingP); break;
+                case zeno::LightShape::Sphere: {
+                    light.sphere.SampleAsLight(&lsr, uu, shadingP); 
+                    cihouSphereLightUV(lsr, light);
+                    break; 
+                }
                 case zeno::LightShape::Point:
                     light.point.SampleAsLight(&lsr, uu, shadingP);  break;
+                case zeno::LightShape::TriangleMesh: {
+                    float3* normalBuffer = reinterpret_cast<float3*>(params.triangleLightNormalBuffer);
+                    float2* coordsBuffer = reinterpret_cast<float2*>(params.triangleLightCoordsBuffer);
+                    light.triangle.SampleAsLight(&lsr, uu, shadingP, prd->geometryNormal, normalBuffer, coordsBuffer); break;
+                }
                 default: break;
             }
         }
+
+        if (!cihouMaxDistanceContinue(lsr, light)) { return; }
+        
+        float3 emission = cihouLightTexture(lsr, light, prd->depth);
 
         lsr.PDF *= lightPickProb;
 

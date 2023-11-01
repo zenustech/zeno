@@ -126,8 +126,6 @@ namespace DisneyBSDF{
         subsurface_random_walk_remap(albedo.y, r.y, 0, sigma_t.y, alpha.y);
         subsurface_random_walk_remap(albedo.z, r.z, 0, sigma_t.z, alpha.z);
         //sigma_s = sigma_t * alpha;
-
-        //printf("radius= %f %f %f, \nr= %f %f %f \n", radius.x, radius.y, radius.z, r.x, r.y, r.z);
     }
 
     static __inline__ __device__
