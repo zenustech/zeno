@@ -44,6 +44,7 @@ public:
     void changeTransformOperation(const QString& node);
     void changeTransformOperation(int mode);
     void changeTransformCoordSys();
+    void cleanUpScene();
     void setNumSamples(int samples);
     void setPickTarget(const std::string& prim_name);
     void bindNodeToPicker(const QModelIndex& node, const QModelIndex& subgraph, const std::string& sock_name);

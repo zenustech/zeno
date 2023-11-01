@@ -3,6 +3,15 @@
 
 namespace zeno {
 
+inline bool strictly_greater(float a, float b) {
+  // return (a - b) > std::numeric_limits<float>::epsilon() * 10 * b;
+  return a > b + std::numeric_limits<float>::epsilon() * 4;
+}
+inline bool loosely_greater(float a, float b) {
+  // return (a - b) > (1 - std::numeric_limits<float>::epsilon() * 10) * b;
+  return a + std::numeric_limits<float>::epsilon() * 4 > b;
+}
+
 inline auto dist_pp_sqr(const vec3f &a, const vec3f &b, vec3f &ws) noexcept {
   ws[0] = 1.f;
   ws[1] = ws[2] = 0.f;
