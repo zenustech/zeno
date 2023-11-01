@@ -2,6 +2,7 @@
 #define __ZENO_COMMANDPARAMSPANEL_H__
 
 #include <QtWidgets>
+#include <zenomodel/include/modeldata.h>
 
 class ZenoCommandParamsPanel : public QWidget
 {
@@ -20,7 +21,7 @@ private slots:
 private:
     void initUi();
     void initConnection();
-    void appendRow(const QString &path, const QString& name);
+    void appendRow(const QString &path, const CommandParam& val);
     void initTableWidget();
 private:
     QTableWidget* m_pTableWidget;

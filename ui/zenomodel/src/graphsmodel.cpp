@@ -1688,19 +1688,22 @@ void GraphsModel::updateNetLabel(const QModelIndex& subgIdx, const QModelIndex& 
     }
 }
 
-bool GraphsModel::addCommandParam(const QString& name, const QString& path)
+bool GraphsModel::addCommandParam(const QString& path, const CommandParam& val)
 {
     if (!m_commandParams.contains(path))
     {
         for (const auto& path : m_commandParams.keys())
         {
-            if (m_commandParams[path] == name)
+            if (m_commandParams[path].name == val.name)
             {
                 return false;
             }
         }
-        m_commandParams[path] = name;
+        m_commandParams[path] = val;
         emit updateCommandParamSignal(path);
+        QString subgName = UiHelper::getSockSubgraph(path);
+        if (SubGraphModel* pSubgModel = subGraph(subgName))
+            pSubgModel->setCommandParam(indexFromPath(path), true);
 
         return true;
     }
@@ -1714,21 +1717,24 @@ void GraphsModel::removeCommandParam(const QString& path)
 
     m_commandParams.remove(path);
     emit updateCommandParamSignal(path);
+    QString subgName = UiHelper::getSockSubgraph(path);
+    if (SubGraphModel* pSubgModel = subGraph(subgName))
+        pSubgModel->setCommandParam(indexFromPath(path), false);
 }
 
-bool GraphsModel::updateCommandParam(const QString& path, const QString& newName)
+bool GraphsModel::updateCommandParam(const QString& path, const CommandParam& newVal)
 {
     if (!m_commandParams.contains(path))
         return false;
-    QString oldName = m_commandParams[path];
-    if (oldName == newName)
+    const CommandParam& oldVal = m_commandParams[path];
+    if (oldVal == newVal)
         return false;
-    m_commandParams[path] = newName;
+    m_commandParams[path] = newVal;
     emit updateCommandParamSignal(path);
     return true;
 }
 
-FuckQMap<QString, QString> GraphsModel::commandParams() const
+FuckQMap<QString, CommandParam> GraphsModel::commandParams() const
 {
     return m_commandParams;
 }

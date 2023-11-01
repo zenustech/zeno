@@ -23,7 +23,7 @@ QPushButton[cssClass="commandButton"]
 	font-weight: 500;
 	color: #9DA2A9;
 	margin:5px 10px 0 0;
-	padding:2px;
+	padding:2px 5px;
 }
 
 QPushButton[cssClass="commandButton"]:hover

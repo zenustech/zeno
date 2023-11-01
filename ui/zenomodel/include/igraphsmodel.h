@@ -129,10 +129,10 @@ public:
     virtual void removeNetLabel(const QModelIndex& subgIdx, const QModelIndex& trigger) = 0;
     virtual void updateNetLabel(const QModelIndex& subgIdx, const QModelIndex& trigger, const QString& oldName, const QString& newName, bool enableTransaction = false) = 0;
 
-    virtual bool addCommandParam(const QString& name, const QString& path) = 0;
+    virtual bool addCommandParam(const QString& path, const CommandParam& val) = 0;
     virtual void removeCommandParam(const QString& path) = 0;
-    virtual bool updateCommandParam(const QString& path, const QString& newName) = 0;
-    virtual FuckQMap<QString, QString> commandParams() const = 0;
+    virtual bool updateCommandParam(const QString& path, const CommandParam& val) = 0;
+    virtual FuckQMap<QString, CommandParam> commandParams() const = 0;
 
     virtual QModelIndex getNetOutput(const QModelIndex& subgIdx, const QString& name) const = 0;
 	virtual QList<QModelIndex> getNetInputs(const QModelIndex& subgIdx, const QString& name) const = 0;

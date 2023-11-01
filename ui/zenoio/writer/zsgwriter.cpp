@@ -76,7 +76,7 @@ QString ZsgWriter::dumpProgramStr(IGraphsModel* pModel, APP_SETTINGS settings)
             }
         }
 
-        const FuckQMap<QString, QString>& commandParams = pModel->commandParams();
+        const FuckQMap<QString, CommandParam>& commandParams = pModel->commandParams();
         if (!commandParams.isEmpty())
         {
             writer.Key("command");
@@ -85,7 +85,12 @@ QString ZsgWriter::dumpProgramStr(IGraphsModel* pModel, APP_SETTINGS settings)
                 for (const auto& key : commandParams.keys())
                 {
                     writer.Key(key.toUtf8());
-                    writer.String(commandParams[key].toUtf8());
+                    writer.StartObject();
+                    writer.Key("name");
+                    writer.String(commandParams[key].name.toUtf8());
+                    writer.Key("description");
+                    writer.String(commandParams[key].description.toUtf8());
+                    writer.EndObject();
                 }
                 writer.EndObject();
             }

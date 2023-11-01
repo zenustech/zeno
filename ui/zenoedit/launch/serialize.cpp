@@ -292,16 +292,20 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                 }
 
                 const QString& sockType = inSockIdx.data(ROLE_PARAM_TYPE).toString();
-                const FuckQMap<QString, QString>& commandParams = pGraphsModel->commandParams();
+                const FuckQMap<QString, CommandParam>& commandParams = pGraphsModel->commandParams();
                 QVariant defl = inSockIdx.data(ROLE_PARAM_VALUE);
 
                 //command params
                 const QString& objPath = inSockIdx.data(ROLE_OBJPATH).toString();
                 if (!configPath.isEmpty() && commandParams.contains(objPath))
                 {
-                    const QString& command = commandParams[objPath];
+                    const QString& command = commandParams[objPath].name;
                     if (configDoc.HasMember(command.toUtf8()))
-                        defl = UiHelper::parseJsonByType(sockType, configDoc[command.toStdString().c_str()], nullptr);
+                    {
+                        const auto& obj = configDoc[command.toStdString().c_str()];
+                        if (obj.IsObject() && obj.HasMember("value"))
+                            defl = UiHelper::parseJsonByType(sockType, obj["value"], nullptr);
+                    }
                 }
 
                 QString opStr = "setNodeInput";
@@ -342,12 +346,15 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
             QString opStr = "setNodeParam";
             getOptStr(param_info.typeDesc, param_info.value, opStr);
             if (opStr == "setNodeParam") {
-                const FuckQMap<QString, QString>& commandParams = pGraphsModel->commandParams();
+                const FuckQMap<QString, CommandParam>& commandParams = pGraphsModel->commandParams();
                 //command params
                 const QString& objPath = param_info.paramPath;
-                if (!configPath.isEmpty() && commandParams.contains(objPath) && configDoc.HasMember(commandParams[objPath].toUtf8()))
+                QString command = commandParams[objPath].name;
+                if (!configPath.isEmpty() && commandParams.contains(objPath) && configDoc.HasMember(command.toUtf8()))
                 {
-                    paramValue = UiHelper::parseJsonByType(param_info.typeDesc, configDoc[commandParams[objPath].toStdString().c_str()], nullptr);
+                    const auto& obj = configDoc[command.toStdString().c_str()];
+                    if (obj.IsObject() && obj.HasMember("value"))
+                        paramValue = UiHelper::parseJsonByType(param_info.typeDesc, obj["value"], nullptr);
                 }
                 else
                 {

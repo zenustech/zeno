@@ -165,10 +165,31 @@ QTableWidget[cssClass="commandParams"]
 	padding:10px;
 }
 
+QTableWidget[cssClass="commandParams"] QHeaderView
+{
+	background-color: #242424;
+	height: 22px;
+}
+
+QTableWidget[cssClass="commandParams"] QHeaderView:section
+{
+	background-color: #242424;
+	border:0;
+	border-bottom: 1px solid #000;
+	border-right: 1px solid #3C424E;
+	padding-left: 6px;
+}
+
+QTableWidget[cssClass="commandParams"] QHeaderView:section:horizontal:last
+{
+    border-right: 0;
+}
+
 QTableWidget[cssClass="commandParams"]::item
 {
-	background-color: transparent;
+	background-color: #191D21;
 	border: 0;
+	padding:0px 6px;
 }
 
 QTableWidget[cssClass="commandParams"]::item:selected

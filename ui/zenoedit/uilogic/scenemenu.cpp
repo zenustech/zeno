@@ -419,14 +419,16 @@ bool sceneMenuEvent(
                 IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
                 ZASSERT_EXIT(pModel, false);
                 const QString& path = selParam.data(ROLE_OBJPATH).toString();
-                const FuckQMap<QString, QString>& params = pModel->commandParams();
+                const FuckQMap<QString, CommandParam>& params = pModel->commandParams();
                 if (!params.contains(path))
                 {
                     QAction* pCreateCommParam = new QAction(QObject::tr("Create Command Param"));
                     socketMenu->addAction(pCreateCommParam);
                     QObject::connect(pCreateCommParam, &QAction::triggered, [=]() {
-                        QString name = QInputDialog::getText(nullptr, QObject::tr("Create Command Param"), QObject::tr("Param Name"), QLineEdit::Normal, paramName);
-                        if (!name.isEmpty() && !pModel->addCommandParam(name, path))
+                        CommandParam val;
+                        val.name = paramName;
+                        val.value = selParam.data(ROLE_PARAM_VALUE);
+                        if (!pModel->addCommandParam(path, val))
                         {
                             QMessageBox::warning(nullptr, QObject::tr("Create Command Param"), QObject::tr("Create Command Param Failed!"));
                         }
@@ -434,21 +436,21 @@ bool sceneMenuEvent(
                 }
                 else
                 {
-                    QString command = params[path];
-                    QAction* pEditCommParam = new QAction(QObject::tr("Edit Command Param"));
-                    socketMenu->addAction(pEditCommParam);
-                    QObject::connect(pEditCommParam, &QAction::triggered, [=]() {
-                        QString name = QInputDialog::getText(nullptr, QObject::tr("Edit Command Param"), QObject::tr("Param Name"), QLineEdit::Normal, command);
-                        if (!name.isEmpty() && !pModel->updateCommandParam(path, name))
-                        {
-                            QMessageBox::warning(nullptr, QObject::tr("Update Command Param"), QObject::tr("Update Command Param Failed!"));
-                        }
-                    });
+                    CommandParam command = params[path];
+                    //QAction* pEditCommParam = new QAction(QObject::tr("Edit Command Param"));
+                    //socketMenu->addAction(pEditCommParam);
+                    //QObject::connect(pEditCommParam, &QAction::triggered, [=]() {
+                    //    QString name = QInputDialog::getText(nullptr, QObject::tr("Edit Command Param"), QObject::tr("Param Name"), QLineEdit::Normal, command);
+                    //    if (!name.isEmpty() && !pModel->updateCommandParam(path, name))
+                    //    {
+                    //        QMessageBox::warning(nullptr, QObject::tr("Update Command Param"), QObject::tr("Update Command Param Failed!"));
+                    //    }
+                    //});
 
                     QAction* pDelCommParam = new QAction(QObject::tr("Delete Command Param"));
                     socketMenu->addAction(pDelCommParam);
                     QObject::connect(pDelCommParam, &QAction::triggered, [=]() {
-                        if (QMessageBox::question(nullptr, QObject::tr("Delete Command Param"), QObject::tr("Delete %1 Command Param").arg(command)) == QMessageBox::Yes)
+                        if (QMessageBox::question(nullptr, QObject::tr("Delete Command Param"), QObject::tr("Delete %1 Command Param").arg(command.name)) == QMessageBox::Yes)
                         {
                             pModel->removeCommandParam(path);
                         }

@@ -896,7 +896,7 @@ void ZsgReader::_parseCommands(const rapidjson::Value& value, IAcceptor* pAccept
     {
         const QString& path = obj.name.GetString();
         const rapidjson::Value& val = obj.value;
-        pAcceptor->addCommandParam(val.GetString(), path);
+        pAcceptor->addCommandParam(val, path);
     }
 }
 
