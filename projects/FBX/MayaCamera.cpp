@@ -437,15 +437,18 @@ ZENO_DEFNODE(LightNode)({
         {"vec3f", "scale", "1, 1, 1"},
         {"vec3f", "rotate", "0, 0, 0"},
         {"vec4f", "quaternion", "1, 0, 0, 0"},
+
         {"vec3f", "color", "1, 1, 1"},
         {"float", "exposure", "0"},
         {"float", "intensity", "1"},
-        {"bool", "invertdir", "1"},
         {"bool", "visible", "0"},
+        {"bool", "invertdir", "1"},
         {"bool", "doubleside", "0"},
+
         {"readpath", "profile"},
         {"readpath", "texturePath"},
         {"float",  "textureGamma", "1.0"},
+        
         {"float", "visibleIntensity", "1.0"},
         {"enum " + LightNode::lightShapeListString(), LightNode::lightShapeKey, LightNode::lightShapeDefaultString()},   
         {"enum " + LightNode::lightTypeListString(), LightNode::lightTypeKey, LightNode::lightTypeDefaultString()}, 

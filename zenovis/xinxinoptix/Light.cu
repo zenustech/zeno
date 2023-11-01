@@ -122,7 +122,6 @@ extern "C" __global__ void __closesthit__radiance()
     float  lightDistance  = optixGetRayTmax();  //length(lightDirection);
 
     LightSampleRecord lsr;
-    float3 emission = light.emission;
 
     if (light.type != zeno::LightType::Diffuse) {
         // auto pos = ray_orig + ray_dir * optixGetRayTmax();
@@ -134,15 +133,7 @@ extern "C" __global__ void __closesthit__radiance()
             light.rect.EvalAfterHit(&lsr, lightDirection, lightDistance, prd->origin);
         } else if (light.shape == zeno::LightShape::Sphere) {
             light.sphere.EvalAfterHit(&lsr, lightDirection, lightDistance, prd->origin);
-
-            mat3 localAxis = {
-                reinterpret_cast<vec3&>(light.T), 
-                reinterpret_cast<vec3&>(light.N), 
-                reinterpret_cast<vec3&>(light.B) };
-
-            auto sampleDir = localAxis * (lsr.n);
-            lsr.uv = vec2(sphereUV(sampleDir, false));
-
+            cihouSphereLightUV(lsr, light);
         } else if (light.shape == zeno::LightShape::TriangleMesh) {
 
             float2 bary2 = optixGetTriangleBarycentrics();
@@ -154,21 +145,11 @@ extern "C" __global__ void __closesthit__radiance()
         }
     }
 
+
+    float3 emission = cihouLightTexture(lsr, light, prd->depth);
+
     if (light.config & zeno::LightConfigDoubleside) {
         lsr.NoL = abs(lsr.NoL);
-    }
-
-    if (light.tex != 0u) {
-        auto color = texture2D(light.tex, lsr.uv);
-        if (light.texGamma != 1.0f) 
-            color = pow(color, light.texGamma);
-
-        if (prd->depth > 1) {
-            color = color * light.intensity;
-        } else {
-            color = color * light.vIntensity;
-        }
-        emission = *(vec3*)&color;
     }
 
     const float _SKY_PROB_ = params.skyLightProbablity();

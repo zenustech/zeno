@@ -1846,27 +1846,6 @@ void UpdateMeshGasAndIas(bool staticNeedUpdate)
 //#endif
 }
 
-struct LightDat{
-    std::vector<float> v0;
-    std::vector<float> v1;
-    std::vector<float> v2;
-    std::vector<float> normal;
-    std::vector<float> emission;
-
-    float intensity;
-    float vIntensity;
-
-    bool visible, doubleside;
-    uint8_t shape, type;
-
-    uint32_t coordsBufferOffset = UINT_MAX;
-    uint32_t normalBufferOffset = UINT_MAX;
-
-    std::string profileKey;
-    std::string textureKey;
-    float textureGamma;
-};
-
 static std::map<std::string, LightDat> lightdats;
 static std::vector<float2>  triangleLightCoords;
 static std::vector<float3>  triangleLightNormals;
@@ -1877,17 +1856,14 @@ void unload_light(){
     triangleLightNormals.clear();
 }
 
-void load_triangle_light(std::string const &key, 
-                        const float *v0, const float *v1, const float *v2, 
+void load_triangle_light(std::string const &key, LightDat& ld,
+                        const zeno::vec3f &v0,  const zeno::vec3f &v1,  const zeno::vec3f &v2, 
                         const zeno::vec3f *pn0, const zeno::vec3f *pn1, const zeno::vec3f *pn2,
-                        const zeno::vec3f *uv0, const zeno::vec3f *uv1, const zeno::vec3f *uv2,
-                        float const *nor, float const *emi, float intensity, 
-                        bool visible, bool doubleside, float vIntensity, int shape, int type, 
-                        std::string& profileKey, std::string& textureKey, float gamma) {
-    LightDat ld;
-    ld.v0.assign(v0, v0+3);
-    ld.v1.assign(v1, v1+3);
-    ld.v2.assign(v2, v2+3);
+                        const zeno::vec3f *uv0, const zeno::vec3f *uv1, const zeno::vec3f *uv2) {
+
+    ld.v0.assign(v0.begin(), v0.end());
+    ld.v1.assign(v1.begin(), v1.end());
+    ld.v2.assign(v2.begin(), v2.end());
 
     if (pn0 != nullptr && pn1 != nullptr, pn2 != nullptr) {
         ld.normalBufferOffset = triangleLightNormals.size();
@@ -1903,43 +1879,15 @@ void load_triangle_light(std::string const &key,
         triangleLightCoords.push_back(*(float2*)uv2);
     }
 
-    ld.normal.assign(nor, nor+3);
-    ld.emission.assign(emi, emi+3);
-
-    ld.visible = visible;
-    ld.doubleside = doubleside;
-    ld.intensity = intensity;
-    ld.vIntensity = vIntensity;
-
-    ld.shape = shape; ld.type = type;
-    ld.profileKey = profileKey;
-    ld.textureKey = textureKey;
-    ld.textureGamma = gamma;
     lightdats[key] = ld;
 }
 
-void load_light(std::string const &key, float const*v0,float const*v1,float const*v2, 
-                float const*nor,float const*emi, float intensity, 
-                bool visible, bool doubleside, float vIntensity, int shape, int type, 
-                std::string& profileKey, std::string& textureKey, float gamma) {
+void load_light(std::string const &key, LightDat& ld, float const*v0, float const*v1, float const*v2) {
 
-    LightDat ld;
     ld.v0.assign(v0, v0 + 3);
     ld.v1.assign(v1, v1 + 3);
     ld.v2.assign(v2, v2 + 3);
-    ld.normal.assign(nor, nor + 3);
-    ld.emission.assign(emi, emi + 3);
-
-    ld.visible = visible;
-    ld.doubleside = doubleside;
-    ld.intensity = intensity;
-    ld.vIntensity = vIntensity;
-
-    ld.shape = shape; ld.type = type;
-    ld.profileKey = profileKey;
-    ld.textureKey = textureKey;
-    ld.textureGamma = gamma;
-    //zeno::log_info("light clr after read: {} {} {}", ld.emission[0],ld.emission[1],ld.emission[2]);
+    
     lightdats[key] = ld;
 }
 void update_hdr_sky(float sky_rot, zeno::vec3f sky_rot3d, float sky_strength) {
