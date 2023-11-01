@@ -444,4 +444,53 @@ ZENO_DEFNODE(AdaptiveRemeshing)
     {},
     {"primitive"},
 });
+
+struct RepairDegenerateTriangle : INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto &pos = prim->attr<vec3f>("pos");
+        auto &efeature = prim->lines.add_attr<int>("e_feature");
+
+        // init v_duplicate attribute
+        auto &vduplicate = prim->verts.add_attr<int>("v_duplicate", 0);
+        int vert_size = prim->verts.size();
+        for (int i = 0; i < vert_size; ++i) {
+            vduplicate[i] = i;
+        }
+
+        auto &lines = prim->lines;
+        lines.clear();
+        efeature.clear();
+
+        std::set<std::pair<int, int>> marked_lines{};
+        std::map<std::pair<int, int>, int> lines_map{};
+        splitNonManifoldEdges(prim, lines_map, marked_lines, efeature);
+        splitNonManifoldVertices(prim, lines_map);
+
+        auto mesh = new zeno::pmp::SurfaceMesh(prim, "e_feature");
+
+        zeno::pmp::SurfaceRemeshing(mesh, "e_feature").remove_degenerate_triangles();
+
+        returnNonManifold(prim);
+
+        // delete v_duplicate at last
+        prim->verts.erase_attr("v_duplicate");
+        prim->verts.erase_attr("v_normal");
+        prim->verts.erase_attr("v_deleted");
+        prim->lines.erase_attr("e_deleted");
+        prim->tris.erase_attr("f_deleted");
+        prim->verts.update();
+
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENO_DEFNODE(RepairDegenerateTriangle)
+({
+    {{"prim"}},
+    {"prim"},
+    {},
+    {"primitive"},
+});
+
 } // namespace zeno

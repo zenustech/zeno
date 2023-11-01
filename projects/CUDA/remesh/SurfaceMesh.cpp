@@ -33,9 +33,9 @@ SurfaceMesh::SurfaceMesh(std::shared_ptr<zeno::PrimitiveObject> prim,
     halfedges_size_ = lines_size_ * 2;
     hconn_.resize(halfedges_size_);
 
-    auto vdeleted = prim_->verts.add_attr<int>("v_deleted", 0);
-    auto edeleted = prim_->lines.add_attr<int>("e_deleted", 0);
-    auto fdeleted = prim_->tris.add_attr<int>("f_deleted", 0);
+    prim_->verts.add_attr<int>("v_deleted", 0);
+    prim_->lines.add_attr<int>("e_deleted", 0);
+    prim_->tris.add_attr<int>("f_deleted", 0);
 
     for (auto& it : prim_->tris) {
         if (add_tri(it) == PMP_MAX_INDEX) {
@@ -402,7 +402,7 @@ int SurfaceMesh::split(int e, int v, int& new_lines, int& new_faces) {
     return t1;
 }
 
-bool SurfaceMesh::is_flip_ok(int e) const {
+bool SurfaceMesh::is_flip_ok(int e, bool relaxed) const {
     // boundary edges cannot be flipped
     if (is_boundary_e(e))
         return false;
@@ -419,6 +419,11 @@ bool SurfaceMesh::is_flip_ok(int e) const {
 
     if (find_halfedge(v0, v1) != PMP_MAX_INDEX)
         return false;
+
+    if (relaxed) {
+        // when removing caps, we don't need so strict normal checks
+        return true;
+    }
 
     // check about normals for the flip
     // if the normals change more than a given threshold angle,
@@ -728,15 +733,9 @@ void SurfaceMesh::garbage_collection() {
     auto& lines = prim_->lines;
     auto& tris = prim_->tris;
 
-    auto& vnormal = prim_->verts.attr<vec3f>("v_normal");
     auto& vdeleted = prim_->verts.attr<int>("v_deleted");
     auto& edeleted = prim_->lines.attr<int>("e_deleted");
     auto& fdeleted = prim_->tris.attr<int>("f_deleted");
-    auto& vfeature = prim_->verts.attr<int>("v_feature");
-    auto& efeature = prim_->lines.attr<int>(line_pick_tag_);
-    auto& vlocked = prim_->verts.attr<int>("v_locked");
-    auto& elocked = prim_->lines.attr<int>("e_locked");
-    auto& vsizing = prim_->verts.attr<float>("v_sizing");
     auto& vduplicate = prim_->verts.attr<int>("v_duplicate");
 
     // setup handle mapping
