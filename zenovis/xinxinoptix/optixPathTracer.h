@@ -30,6 +30,7 @@ struct GenericLight
     float vIntensity;
 
     float maxDistance;
+    float falloffExponent;
 
     zeno::LightType type {};
     zeno::LightShape shape{};
