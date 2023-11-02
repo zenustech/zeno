@@ -1,0 +1,1 @@
+Extracted from https://github.com/davisking/dlib examples/faces directory

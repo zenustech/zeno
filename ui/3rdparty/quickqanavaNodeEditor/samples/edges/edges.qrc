@@ -1,0 +1,9 @@
+<RCC>
+    <qresource prefix="/">
+        <file>edges.qml</file>
+        <file>curved.qml</file>
+        <file>endings.qml</file>
+        <file>ortho.qml</file>
+        <file>qtquickcontrols2.conf</file>
+    </qresource>
+</RCC>

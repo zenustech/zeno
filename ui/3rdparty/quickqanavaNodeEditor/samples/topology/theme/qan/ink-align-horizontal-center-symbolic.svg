@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" version="1.1" id="svg1" width="16" height="16" viewBox="0 0 16 16">
+<style id="s0">
+   .success { fill: #009909; }
+   .warning { fill: #FF1990; }
+   .error   { fill: #00AAFF; }
+  </style>
+  <style id="s2"> 
+     @import '../../highlights.css'; 
+  </style>
+   
+<metadata id="metadata199">
+    
+  </metadata>
+  <defs id="defs197"/>
+  
+  <g transform="matrix(0.666667,0,0,0.666666,-746.66667,-396.90779)" id="align-horizontal-center">
+    <path id="rect22217" d="m -1144,595.36218 h 24 v 24 h -24 z" style="opacity:0;fill:none" transform="scale(-1,1)"/>
+    <path id="rect22219" d="m 1132.7494,595.36218 h -1.5 v 24 h 1.5 z" style="opacity:1;fill-opacity:1" class="success"/>
+    <path d="m 1123.9994,607.3622 v 4 h 6 v -4 z m 9.95,0 v 4 h 6 v -4 z m -7.95,-5 v 3 h 4 v -3 z m 7.95,0 v 3 h 4 v -3 z m -10.95,-7 v 5 h 7 v -5 z m 10.95,0 v 5 h 7 v -5 z" style="opacity:1" id="rect22225"/>
+    <path transform="matrix(1.4999993,0,0,1.5000015,1119.9994,595.36228)" d="m 4.6660156,12 v 1.333984 H 0 v 1.332032 H 4.6660156 V 16 l 2,-2 z m 6.6679684,0 -1.9999996,2 1.9999996,2 V 14.666016 H 16 v -1.332032 h -4.666016 z" style="opacity:0.5" id="path22227"/>
+  </g>
+</svg>

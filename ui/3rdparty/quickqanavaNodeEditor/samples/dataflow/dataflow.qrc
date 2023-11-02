@@ -1,0 +1,14 @@
+<RCC>
+    <qresource prefix="/">
+        <file>dataflow.qml</file>
+        <file>PercentageNode.qml</file>
+        <file>OperationNode.qml</file>
+        <file>ImageNode.qml</file>
+        <file>TintNode.qml</file>
+        <file>ColorNode.qml</file>
+        <file>ColorPopup.qml</file>
+        <file>Lenna.jpeg</file>
+        <file>JS.jpeg</file>
+        <file>qtquickcontrols2.conf</file>
+    </qresource>
+</RCC>

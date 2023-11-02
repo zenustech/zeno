@@ -1,0 +1,21 @@
+<RCC>
+    <qresource prefix="/">
+    <file alias="icons/Qan/index.theme">./index.theme</file>
+
+    <file alias="icons/Qan/32x32/ink-align-horizontal-center-symbolic.png">./ink-align-horizontal-center-symbolic_32.png</file>
+    <file alias="icons/Qan/32x32@2/ink-align-horizontal-center-symbolic.png">./ink-align-horizontal-center-symbolic_64.png</file>
+
+    <file alias="icons/Qan/32x32/ink-align-horizontal-left-symbolic.png">./ink-align-horizontal-left-symbolic_32.png</file>
+    <file alias="icons/Qan/32x32@2/ink-align-horizontal-left-symbolic.png">./ink-align-horizontal-left-symbolic_64.png</file>
+    
+    <file alias="icons/Qan/32x32/ink-align-horizontal-right-symbolic.png">./ink-align-horizontal-right-symbolic_32.png</file>
+    <file alias="icons/Qan/32x32@2/ink-align-horizontal-right-symbolic.png">./ink-align-horizontal-right-symbolic_64.png</file>
+
+    <file alias="icons/Qan/32x32/ink-align-vertical-bottom-symbolic.png">./ink-align-vertical-bottom-symbolic_32.png</file>
+    <file alias="icons/Qan/32x32@2/ink-align-vertical-bottom-symbolic.png">./ink-align-vertical-bottom-symbolic_64.png</file>
+
+    <file alias="icons/Qan/32x32/ink-align-vertical-top-symbolic.png">./ink-align-vertical-top-symbolic_32.png</file>
+    <file alias="icons/Qan/32x32@2/ink-align-vertical-top-symbolic.png">./ink-align-vertical-top-symbolic_64.png</file>
+    
+    </qresource>
+</RCC>

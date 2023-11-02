@@ -1,0 +1,9 @@
+<RCC>
+    <qresource prefix="/">
+        <file>cpp_sample.qml</file>
+        <file>CustomNode.qml</file>
+        <file>CustomEdge.qml</file>
+        <file>CustomGroup.qml</file>
+        <file>qtquickcontrols2.conf</file>
+    </qresource>
+</RCC>

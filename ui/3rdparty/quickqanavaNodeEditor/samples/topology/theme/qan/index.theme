@@ -1,0 +1,14 @@
+[Icon Theme]
+Name=Qan
+Comment=QuickQanava icon theme
+
+Directories=32x32,32x32@2
+
+[32x32]
+Size=32
+Type=Fixed
+
+[32x32@2]
+Size=32
+Scale=2
+Type=Fixed

@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>selection.qml</file>
+        <file>CustomSelectionItem.qml</file>
+        <file>qtquickcontrols2.conf</file>
+    </qresource>
+</RCC>
