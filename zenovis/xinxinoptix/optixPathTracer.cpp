@@ -3272,21 +3272,6 @@ void set_perspective(float const *U, float const *V, float const *W, float const
     cam.aperture = aperture;
 }
 void set_perspective(float const *U, float const *V, float const *W, float const *E, float aspect, float fov, int fov_type, float fpd, float focal_length, float aperture) {
-    auto &cam = state.params.cam;
-
-    cam.eye = make_float3(E[0], E[1], E[2]);
-    cam.right = normalize(make_float3(U[0], U[1], U[2]));
-    cam.up = normalize(make_float3(V[0], V[1], V[2]));
-    cam.front = normalize(make_float3(W[0], W[1], W[2]));
-
-    fov *= float(M_PI) / 180;   //to radian
-    float tan_half_fov = std::tan(radfov / 2.0f);
-    cam.front /= tanfov;
-    cam.right *= aspect;
-
-    camera_changed = true;
-    cam.focalPlaneDistance = fpd;
-    cam.aperture = aperture;
 
 }
 
