@@ -43,6 +43,7 @@ private:
     void _parseBySocketKeys(const QString& id, const rapidjson::Value& objValue, IAcceptor* pAcceptor);
     void _parseDictKeys(const QString& id, const rapidjson::Value& objValue, IAcceptor* pAcceptor);
     NODE_DESCS _parseDescs(const rapidjson::Value& descs, IAcceptor *pAcceptor);
+    void _parseCommands(const rapidjson::Value& jsonViews, IAcceptor* pAcceptor);
 };
 
 #endif

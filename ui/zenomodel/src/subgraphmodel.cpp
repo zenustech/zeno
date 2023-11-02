@@ -910,6 +910,13 @@ QModelIndexList SubGraphModel::getNetInputSocks(const QString& name) const
     return inSocks;
 }
 
+void SubGraphModel::setCommandParam(const QModelIndex& sock, bool bMarked)
+{
+    auto paramModel = const_cast<QAbstractItemModel*>(sock.model());
+    ZASSERT_EXIT(paramModel);
+    paramModel->setData(sock, bMarked, ROLE_VPARAM_COMMAND);
+}
+
 QStringList SubGraphModel::dumpLabels() const
 {
     QStringList names;
