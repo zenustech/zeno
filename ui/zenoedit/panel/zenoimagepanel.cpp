@@ -250,10 +250,21 @@ ZenoImagePanel::ZenoImagePanel(QWidget *parent) : QWidget(parent) {
                 info += zeno::format(" | x: {:5}, y: {:5}", w, h);
                 if (obj->verts.has_attr("alpha")) {
                     auto &alpha = obj->verts.attr<float>("alpha");
-                    info += zeno::format(" | value: {:6f}, {:6f}, {:6f}, {:6f}", c[0], c[1], c[2], alpha[i]);
+                    info += zeno::format(
+                        " | value: {}, {}, {}, {}",
+                        QString::number(c[0], 'f', 6).toStdString(),
+                        QString::number(c[1], 'f', 6).toStdString(),
+                        QString::number(c[2], 'f', 6).toStdString(),
+                        QString::number(alpha[i], 'f', 6).toStdString()
+                    );
                 }
                 else {
-                    info += zeno::format(" | value: {:6f}, {:6f}, {:6f}", c[0], c[1], c[2]);
+                    info += zeno::format(
+                        " | value: {}, {}, {}",
+                        QString::number(c[0], 'f', 6).toStdString(),
+                        QString::number(c[1], 'f', 6).toStdString(),
+                        QString::number(c[2], 'f', 6).toStdString()
+                    );
                 }
 
                 QString statusInfo = QString(info.c_str());

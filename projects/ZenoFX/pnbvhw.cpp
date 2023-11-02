@@ -391,6 +391,149 @@ ZENDEFNODE(QueryNearestPrimitive, {
                                       {"zenofx"},
                                   });
 
+struct QueryNearestPrimitiveWithUV : zeno::INode {
+  struct KVPair {
+    zeno::vec3f w;
+    float dist, uvDist2;
+    int pid;
+    bool operator<(const KVPair &o) const noexcept { 
+#if 0
+      if (dist + std::numeric_limits<float>::epsilon() * 2 < o.dist)
+        return true;
+      else if (dist < o.dist + std::numeric_limits<float>::epsilon() * 2 && uvDist2 < o.uvDist2)
+        return true;
+#else
+      if (strictly_greater(o.dist, dist))
+        return true;
+      else if (loosely_greater(o.dist, dist) && uvDist2 < o.uvDist2)
+        return true;
+#endif
+      return false; 
+    }
+  };
+  virtual void apply() override {
+    using namespace zeno;
+
+    auto lbvh = get_input<LBvh>("lbvh");
+    if (lbvh->eleCategory == LBvh::element_e::tet)
+      throw std::runtime_error("lbvh used for QueryNearestPrimitiveWithUV cannot be built from tetrahedra");
+    auto line = std::make_shared<PrimitiveObject>();
+
+    using Ti = typename LBvh::Ti;
+    Ti pid = 0;
+    Ti bvhId = -1;
+    float dist = std::numeric_limits<float>::max();
+    float uvDist = std::numeric_limits<float>::max();
+    zeno::vec3f w{0.f, 0.f, 0.f};
+    if (has_input<PrimitiveObject>("prim")) {
+      auto prim = get_input<PrimitiveObject>("prim");
+
+      auto idTag = get_input2<std::string>("idTag");
+      auto distTag = get_input2<std::string>("distTag");
+      auto weightTag = get_input2<std::string>("weightTag");
+      auto closestPointTag = get_input2<std::string>("closestPointTag");
+
+      auto &bvhids = prim->add_attr<float>(idTag);
+      auto &dists = prim->add_attr<float>(distTag);
+      auto &ws = prim->add_attr<zeno::vec3f>(weightTag);
+      auto &closestPoints = prim->add_attr<zeno::vec3f>(closestPointTag);
+
+      const zeno::vec3f *uvs = nullptr;
+      if (prim->verts.has_attr("uv"))
+        uvs = prim->verts.attr<zeno::vec3f>("uv").data();
+
+      if (!uvs || !lbvh->primPtr.lock()->verts.has_attr("uv"))
+        throw std::runtime_error("missing vertex property [uv] in either querying prim or bvh-associated prim!");
+
+      std::vector<KVPair> kvs(prim->size());
+      std::vector<Ti> ids(prim->size(), -1);
+#if defined(_OPENMP)
+#pragma omp parallel for schedule(guided, 4)
+#endif
+      for (Ti i = 0; i < prim->size(); ++i) {
+        kvs[i].dist = std::numeric_limits<float>::max();
+        kvs[i].uvDist2 = std::numeric_limits<float>::max();
+        kvs[i].pid = i;
+        zeno::vec3f uv = uvs[i];
+        kvs[i].w = lbvh->find_nearest_with_uv(prim->verts[i], uv, ids[i], kvs[i].dist, kvs[i].uvDist2);
+        // record info as attribs
+        bvhids[i] = ids[i];
+        dists[i] = kvs[i].dist;
+        ws[i] = kvs[i].w;
+        closestPoints[i] = lbvh->retrievePrimitiveCenter(ids[i], kvs[i].w);
+      }
+
+      KVPair mi{zeno::vec3f{0.f, 0.f, 0.f}, std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), -1};
+// ref:
+// https://stackoverflow.com/questions/28258590/using-openmp-to-get-the-index-of-minimum-element-parallelly
+#ifndef _MSC_VER
+#if defined(_OPENMP)
+#pragma omp declare reduction(minimum:KVPair                                   \
+                              : omp_out = omp_in < omp_out ? omp_in : omp_out) \
+    initializer(omp_priv = KVPair{zeno::vec3f{0.f, 0.f, 0.f}, std::numeric_limits <float>::max(), -1})
+#pragma omp parallel for reduction(minimum : mi)
+#endif
+#endif
+      for (Ti i = 0; i < kvs.size(); ++i) {
+#if 0
+        if (kvs[i].dist + std::numeric_limits<float>::epsilon() * 2  < mi.dist)
+          mi = kvs[i];
+        else if (kvs[i].dist < mi.dist + std::numeric_limits<float>::epsilon() * 2 && kvs[i].uvDist2 < mi.uvDist2)
+          mi = kvs[i];
+#else
+        if (strictly_greater(mi.dist, kvs[i].dist))
+          mi = kvs[i];
+        else if (loosely_greater(mi.dist, kvs[i].dist) && kvs[i].uvDist2 < mi.uvDist2)
+          mi = kvs[i];
+#endif
+      }
+      pid = mi.pid;
+      dist = mi.dist;
+      w = mi.w;
+      bvhId = ids[pid];
+      line->verts.push_back(prim->verts[pid]);
+#if 0
+      fmt::print("done nearest reduction. dist: {}, bvh[{}] (of {})-prim[{}]"
+                 "(of {})\n",
+                 dist, bvhId, lbvh->getNumLeaves(), pid, prim->size());
+#endif
+    } else if (has_input<NumericObject>("prim")) {
+      auto p = get_input<NumericObject>("prim")->get<vec3f>();
+      w = lbvh->find_nearest(p, bvhId, dist);
+      line->verts.push_back(p);
+    } else
+      throw std::runtime_error("unknown primitive kind (only supports "
+                               "PrimitiveObject and NumericObject::vec3f).");
+
+    line->verts.push_back(lbvh->retrievePrimitiveCenter(bvhId, w));
+    line->lines.push_back({0, 1});
+
+    set_output("primid", std::make_shared<NumericObject>(pid));
+    set_output("bvh_primid", std::make_shared<NumericObject>(bvhId));
+    set_output("dist", std::make_shared<NumericObject>(dist));
+    set_output("bvh_prim", lbvh->retrievePrimitive(bvhId));
+    set_output("segment", std::move(line));
+  }
+};
+
+ZENDEFNODE(QueryNearestPrimitiveWithUV, {
+                                      {{"prim"}, {"LBvh", "lbvh"},
+                                      {"string", "idTag", "bvh_id"},
+                                      {"string", "distTag", "bvh_dist"},
+                                      {"string", "closestPointTag", "cp"},
+                                      {"string", "weightTag", "bvh_ws"}
+                                      },
+                                      {{"NumericObject", "primid"},
+                                       {"NumericObject", "bvh_primid"},
+                                       {"NumericObject", "dist"},
+                                       {"PrimitiveObject", "bvh_prim"},
+                                       {"PrimitiveObject", "segment"}},
+                                      {},
+                                      {"zenofx"},
+                                  });
+
+
+
 struct QueryNearestPrimitiveWithinGroup : zeno::INode {
   struct KVPair {
     zeno::vec3f w;

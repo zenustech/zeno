@@ -141,7 +141,7 @@ struct Blend: INode {//optimize
         auto opacity1 = get_input2<float>("Foreground Opacity");
         auto opacity2 = get_input2<float>("Background Opacity");
 
-        auto &ud1 = blend->userData();
+        auto &ud1 = base->userData();
         int w1 = ud1.get2<int>("w");
         int h1 = ud1.get2<int>("h");
         int imagesize = w1 * h1;
@@ -208,7 +208,7 @@ ZENDEFNODE(Blend, {
         {"Foreground"},
         {"Background"},
         {"Mask"},
-        {"enum Over Copy Under Atop In Out Screen Add Subtract Multiply Max(Lighten) Min(Darken) Average Difference Overlay SoftLight Divide Xor", "Blending Mode", "Normal"},
+        {"enum Over Copy Under Atop In Out Screen Add Subtract Multiply Max(Lighten) Min(Darken) Average Difference Overlay SoftLight Divide Xor", "Blending Mode", "Over"},
         //{"enum IgnoreAlpha SourceAlpha", "Alpha Blending", "Ignore Alpha"}, SUBSTANCE DESIGNER ALPHA MODE
         //{"enum SameWithBlend Over Under Atop In Out Screen Add Subtract Multiply Max(Lighten) Min(Darken) Average Difference Xor", "Alpha Mode", "SameWithBlend"},
         {"enum Over Under Atop In Out Screen Add Subtract Multiply Max(Lighten) Min(Darken) Average Difference Xor", "Alpha Mode", "Over"},
