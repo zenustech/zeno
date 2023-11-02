@@ -96,12 +96,19 @@ struct GenericLight
 
 struct CameraInfo
 {
-    float3 eye;
-    float3 right, up, front;
-    //float aspect;
-    //float fov;
-    float focalPlaneDistance;
-    float aperture;
+    //all distance in meters;
+    float3 eye; //lens center position
+    float3 right;   //lens right direction
+    float3 front;   //lens front direction, so call optical axis
+    float3 up;  //lens up direction
+    float3 shift;   //sensor center shift from lens optical axis, shift.z is useless
+    float pitch;
+    float yaw;
+    float focal_length;    //lens focal length
+    float aperture;     //diameter of aperture
+    float focal_distance;   //distance from focal plane center to lens plane
+    float width;    //sensor physical width
+    float height;   //sensor physical height
 };
 
 struct Params
@@ -204,8 +211,6 @@ struct MissData
 {
     float4 bg_color;
 };
-
-
 struct HitGroupData
 {
     //float4* vertices;

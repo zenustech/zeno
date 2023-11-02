@@ -84,7 +84,6 @@ extern "C" __global__ void __raygen__rg()
       unsigned int eventseed = tea<4>( idx.y * w + idx.x, subframe_index + 1);
       float focalPlaneDistance = cam.focalPlaneDistance>0.01f? cam.focalPlaneDistance : 0.01f;
       float aperture = clamp(cam.aperture,0.0f,100.0f);
-      aperture/=10;
 
       float3 result = make_float3( 0.0f );
       float3 result_d = make_float3( 0.0f );
