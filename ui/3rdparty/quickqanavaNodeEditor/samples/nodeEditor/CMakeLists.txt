@@ -8,6 +8,16 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 set( source_files
     main.cpp
+    main.qml
+    MyCheckBox.qml
+    MyFileDialog.qml
+    MyMultiText.qml
+    MyNode.qml
+    MySingleText.qml
+    MySlider.qml
+    MyVec2Text.qml
+    MyVec3Text.qml
+    MyVec4Text.qml
 )
 
 set (header_files )
