@@ -478,7 +478,13 @@ void ZOptixViewport::recordVideo(VideoRecInfo recInfo)
 
 void ZOptixViewport::screenshoot(QString path, QString type, int resx, int resy)
 {
-    emit sigscreenshoot(path, type, resx, resy);
+    std::string sType = type.toStdString();
+    bool ret = m_renderImage.save(path, sType.c_str());
+    if (!ret)
+    {
+        //meet some unsupported type by QImage.
+        emit sigscreenshoot(path, type, resx, resy);
+    }
 }
 
 void ZOptixViewport::cancelRecording(VideoRecInfo recInfo)
