@@ -541,7 +541,21 @@ struct GraphicsManager {
                 xinxinoptix::LightDat ld;
                 zeno::vec3f nor{}, clr{};
 
-                std::function finalStep = [](){};
+                ld.visible = visible;
+                ld.doubleside = doubleside;
+                ld.intensity = intensity;
+                ld.vIntensity = vIntensity;
+                ld.maxDistance = maxDistance;
+
+                ld.shape = shape; ld.type = type;
+                ld.profileKey = lightProfilePath;
+                ld.textureKey = lightTexturePath;
+                ld.textureGamma = lightGamma;
+
+                std::function extraStep = [&]() { 
+                    ld.normal.assign(nor.begin(), nor.end());
+                    ld.emission.assign(clr.begin(), clr.end());
+                };
 
                 if (shape == 3u) { // Triangle mesh Light
 
@@ -575,12 +589,10 @@ struct GraphicsManager {
 
                         nor = zeno::normalize(zeno::cross(_e1_, _e2_));
                         clr = prim_in->verts.attr<zeno::vec3f>("clr")[ prim_in->tris[i][0] ];
+                        extraStep();
 
                         auto compound = key + std::to_string(i);
-
-                        finalStep = [&]() {
-                            xinxinoptix::load_triangle_light(compound, ld, _p0_, _p1_, _p2_, pn0, pn1, pn2, uv0, uv1, uv2); 
-                        };
+                        xinxinoptix::load_triangle_light(compound, ld, _p0_, _p1_, _p2_, pn0, pn1, pn2, uv0, uv1, uv2); 
                     }
                 } 
                 else 
@@ -598,13 +610,14 @@ struct GraphicsManager {
                     // p* <--(-x)--- p1
                 
                     // facing down in local space
-                    nor = -zeno::normalize(zeno::cross(e1, e2)); 
-
+                    nor = -zeno::normalize(zeno::cross(e1, e2));
+                    
                     if (prim_in->verts.has_attr("clr")) {
                         clr = prim_in->verts.attr<zeno::vec3f>("clr")[0];
                     } else {
                         clr = zeno::vec3f(30000.0f, 30000.0f, 30000.0f);
                     }
+                    extraStep();
 
                     std::cout << "light: p"<<p0[0]<<" "<<p0[1]<<" "<<p0[2]<<"\n";
                     std::cout << "light: p"<<p1[0]<<" "<<p1[1]<<" "<<p1[2]<<"\n";
@@ -614,26 +627,8 @@ struct GraphicsManager {
                     std::cout << "light: n"<<nor[0]<<" "<<nor[1]<<" "<<nor[2]<<"\n";
                     std::cout << "light: c"<<clr[0]<<" "<<clr[1]<<" "<<clr[2]<<"\n";
 
-                    finalStep = [&]() {
-                        xinxinoptix::load_light(key, ld, p0.data(), e1.data(), e2.data());
-                    };
+                    xinxinoptix::load_light(key, ld, p0.data(), e1.data(), e2.data());
                 }
-
-                ld.normal.assign(nor.begin(), nor.end());
-                ld.emission.assign(clr.begin(), clr.end());
-
-                ld.visible = visible;
-                ld.doubleside = doubleside;
-                ld.intensity = intensity;
-                ld.vIntensity = vIntensity;
-                ld.maxDistance = maxDistance;
-
-                ld.shape = shape; ld.type = type;
-                ld.profileKey = lightProfilePath;
-                ld.textureKey = lightTexturePath;
-                ld.textureGamma = lightGamma;
-
-                finalStep();
             }
             else if (prim_in->userData().get2<int>("ProceduralSky", 0) == 1) {
                 sky_found = true;
