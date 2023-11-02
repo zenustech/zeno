@@ -153,6 +153,10 @@ extern "C" __global__ void __closesthit__radiance()
         lsr.NoL = abs(lsr.NoL);
     }
 
+    if (light.falloffExponent != 2.0f) {
+        lsr.intensity *= powf(lsr.dist, 2.0f-light.falloffExponent);
+    }
+
     const float _SKY_PROB_ = params.skyLightProbablity();
 
     if (lsr.NoL > _FLT_EPL_) {
@@ -178,7 +182,7 @@ extern "C" __global__ void __closesthit__radiance()
         float scatterPDF = prd->samplePdf; //BxDF PDF from previous hit
         float misWeight = BRDFBasics::PowerHeuristic(scatterPDF, lightPDF);
 
-        prd->radiance = emission * misWeight;
+        prd->radiance = lsr.intensity * emission * misWeight;
         // if (scatterPDF > __FLT_DENORM_MIN__) {
         //     prd->radiance /= scatterPDF;
         // }

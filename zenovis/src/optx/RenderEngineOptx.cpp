@@ -519,6 +519,7 @@ struct GraphicsManager {
                 auto type = prim_in->userData().get2<int>("type", 0);
                 auto shape = prim_in->userData().get2<int>("shape", 0);
                 auto maxDistance = prim_in->userData().get2<float>("maxDistance", std::numeric_limits<float>().max());
+                auto falloffExponent = prim_in->userData().get2<float>("falloffExponent", 2.0f);
 
                 auto intensity = prim_in->userData().get2<float>("intensity", 1.0f);
                 auto vIntensity = prim_in->userData().get2<float>("visibleIntensity", 1.0f);
@@ -546,6 +547,7 @@ struct GraphicsManager {
                 ld.intensity = intensity;
                 ld.vIntensity = vIntensity;
                 ld.maxDistance = maxDistance;
+                ld.falloffExponent = falloffExponent;
 
                 ld.shape = shape; ld.type = type;
                 ld.profileKey = lightProfilePath;

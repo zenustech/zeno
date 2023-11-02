@@ -2174,6 +2174,7 @@ void buildLightTree() {
         light.intensity  = dat.intensity;
         light.vIntensity = dat.vIntensity;
         light.maxDistance = dat.maxDistance <= 0.0? FLT_MAX:dat.maxDistance;
+        light.falloffExponent = dat.falloffExponent;
         
         float3& v0 = *(float3*)dat.v0.data();
         float3& v1 = *(float3*)dat.v1.data();

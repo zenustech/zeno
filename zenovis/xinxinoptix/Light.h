@@ -284,6 +284,10 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
             lsr.NoL = abs(lsr.NoL);
         }
 
+        if (light.falloffExponent != 2.0f) {
+            lsr.intensity *= powf(lsr.dist, 2.0f-light.falloffExponent);
+        }
+
         if (lsr.NoL > _FLT_EPL_ && lsr.PDF > _FLT_EPL_) {
 
             traceOcclusion(params.handle, shadingP, lsr.dir, 0, lsr.dist, &shadow_prd);
