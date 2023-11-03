@@ -1039,6 +1039,15 @@ namespace zeno {
         return tri[reinterpret_bits<int>(half_edges("local_vertex_id",hei))];
     }
 
+    template<typename HalfEdgeTileVec,typename TriTileVec>
+    constexpr zs::vec<int,2> half_edge_get_edge(int hei,const HalfEdgeTileVec& half_edges,const TriTileVec& tris) {
+        using namespace zs;
+        auto ti = zs::reinterpret_bits<int>(half_edges("to_face",hei));
+        auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
+        auto local_vertex_id = reinterpret_bits<int>(half_edges("local_vertex_id",hei));
+        return zs::vec<int,2>{tri[local_vertex_id],tri[(local_vertex_id + 1) % 3]};
+    }
+
     // some operation with half edge structure
     template<int MAX_NEIGHS,typename HalfEdgeTileVec,typename TriTileVec>
     constexpr zs::vec<int,MAX_NEIGHS> get_one_ring_neigh_points(int hei,const HalfEdgeTileVec& half_edges,const TriTileVec& tris) {

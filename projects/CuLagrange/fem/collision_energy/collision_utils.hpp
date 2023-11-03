@@ -984,7 +984,7 @@ namespace COLLISION_UTILS {
                                 normal[0], normal[1], normal[2], intersect);
     }
 
-    constexpr bool compute_imminent_collision_impulse(const VECTOR3 ps[4],const VECTOR3 vs[4],const VECTOR4& bary,const VECTOR4 minv,VECTOR3 imps[4]) {
+    constexpr bool compute_imminent_collision_impulse(const VECTOR3 ps[4],const VECTOR3 vs[4],const VECTOR4& bary,const VECTOR4 minv,VECTOR3 imps[4],const REAL& thickness,bool add_repulsion) {
         constexpr auto eps = 1e-6;
         auto pr = VECTOR3::zeros();
         auto vr = VECTOR3::zeros();
@@ -993,12 +993,34 @@ namespace COLLISION_UTILS {
             vr += bary[i] * vs[i];
         }
 
-        if(pr.norm() < eps)
+        // really need this piece, or there will be floating point explosion
+        // if(pr.norm() < eps)
+        //     return false;
+
+        auto npr = pr.norm();
+        if(npr > thickness)
             return false;
+
+
         pr = pr.normalized();
         auto vr_nrm = vr.dot(pr);
-        vr_nrm = vr_nrm < 0 ? vr_nrm : 0;
-        auto impulse = -pr * vr_nrm;
+
+
+        REAL target_repulsive_dist = (REAL)0;
+
+        if(add_repulsion) {
+            auto extra_project_dist_need = thickness - npr;
+            target_repulsive_dist = extra_project_dist_need * 0.1;
+        }
+
+        if(vr_nrm > target_repulsive_dist)
+            return false;
+
+        auto impulse = (target_repulsive_dist - vr_nrm) * pr;
+
+
+        // vr_nrm = vr_rnm < 0 ? vr_nrm : 0;
+        // auto impulse = -pr * vr_nrm;
 
         REAL cminv = 0;
         for(int i = 0;i != 4;++i){
@@ -1006,6 +1028,9 @@ namespace COLLISION_UTILS {
                 continue;
             cminv += bary[i] * bary[i] * minv[i];
         }
+
+        if(cminv < eps)
+            return false;
 
         for(int i = 0;i != 4;++i) {
             auto beta = minv[i] * bary[i] / cminv;

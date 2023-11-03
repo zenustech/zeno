@@ -40,6 +40,8 @@
 
 namespace zeno { namespace COLLISION_UTILS {
 
+// #define USE_INTERSECTION
+
 using T = float;
 using bvh_t = zs::LBvh<3,int,T>;
 using bv_t = zs::AABBBox<3, T>;
@@ -1033,6 +1035,7 @@ void detect_imminent_EE_close_proximity(Pol& pol,
             verts = proxy<space>({},verts),
             edges = proxy<space>({},edges),
             thickness = thickness,
+            thickness2 = thickness * thickness,
             buffer_offset = buffer_offset,
             eps = eps,
             proximity_buffer = proxy<space>({},proximity_buffer),
@@ -1081,26 +1084,43 @@ void detect_imminent_EE_close_proximity(Pol& pol,
                         pbs[i] = verts.pack(dim_c<3>,xtag,eb[i]);
 
                     vec2 edge_bary{};
+
+                    if((pas[0] - pas[1]).cross(pbs[0] - pbs[1]).norm() < eps * 10)
+                        return;
+
+
+#ifdef USE_INTERSECTION
+
+                    int type{};
+                    if(LSL_GEO::edgeEdgeIntersection(pas[0],pas[1],pbs[0],pbs[1],edge_bary,type) > thickness2)
+                        return;
+#else
                     LSL_GEO::edgeEdgeBaryCentric(pas[0],pas[1],pbs[0],pbs[1],edge_bary);
-
-                    if(edge_bary[0] < -eps || edge_bary[0] > 1 + eps)
-                        return;
-                    if(edge_bary[1] < -eps || edge_bary[1] > 1 + eps)
-                        return;
-
+                    for(int i = 0;i != 2;++i) {
+                        if(edge_bary[i] < -eps || edge_bary[i] > 1 + eps)
+                            return;
+                        if(edge_bary[1] < -eps || edge_bary[1] > 1 + eps)
+                            return;
+                    }
+#endif
                     vec4 bary{edge_bary[0] - 1,-edge_bary[0],1 - edge_bary[1],edge_bary[1]};
-                    auto rp = bary[0] * pas[0] + bary[1] * pas[1] + bary[2] * pbs[0] + bary[3] * pbs[1];
-                    if(rp.norm() > thickness)
-                        return;
 
-                    
+#ifndef USE_INTERSECTION
+                    auto rp = bary[0] * pas[0] + bary[1] * pas[1] + bary[2] * pbs[0] + bary[3] * pbs[1];
+                    if(rp.norm() > thickness) {
+                        return;
+                    }
+#endif
                     vec4i inds{ea[0],ea[1],eb[0],eb[1]};
                     for(int i = 0;i != 4;++i)
                         verts("dcd_collision_tag",inds[i]) = 1;
 
+
                     auto id = csEE.insert(vec2i{ei,nei});
-                    proximity_buffer.tuple(dim_c<4>,"inds",id + buffer_offset) = inds.reinterpret_bits(float_c);
                     proximity_buffer.tuple(dim_c<4>,"bary",id + buffer_offset) = bary;
+                    proximity_buffer.tuple(dim_c<4>,"inds",id + buffer_offset) = inds.reinterpret_bits(float_c);
+                    proximity_buffer("type",id + buffer_offset) = zs::reinterpret_bits<float>((int)1);
+
                 };
                 edgeBvh.iter_neighbors(bv,do_close_proximity_detection);
         });
@@ -1132,7 +1152,9 @@ void detect_imminent_PT_close_proximity(Pol& pol,
             xtag = zs::SmallString(xtag),
             verts = proxy<space>({},verts),
             tris = proxy<space>({},tris),
+            buffer_offset = buffer_offset,
             thickness = thickness,
+            thickness2 = thickness * thickness,
             triBvh = proxy<space>(triBvh),
             proximity_buffer = proxy<space>({},proximity_buffer),
             csPT = proxy<space>(csPT)] ZS_LAMBDA(int vi) mutable {
@@ -1170,24 +1192,40 @@ void detect_imminent_PT_close_proximity(Pol& pol,
                         ts[i] = verts.pack(dim_c<3>,xtag,tri[i]);
                     
                     vec3 tri_bary{};
+
+#ifdef USE_INTERSECTION
+
+                    if(LSL_GEO::pointTriangleIntersection(p,ts[0],ts[1],ts[2],tri_bary) > thickness2)
+                        return;
+#else
                     LSL_GEO::pointTriangleBaryCentric(ts[0],ts[1],ts[2],p,tri_bary);
                     for(int i = 0;i != 3;++i)
                         if(tri_bary[i] > 1 + eps || tri_bary[i] < -eps)
                             return;
+#endif
 
                     vec4 bary{-tri_bary[0],-tri_bary[1],-tri_bary[2],1};
+
+#ifndef USE_INTERSECTION
                     auto rp = ts[0] * bary[0] + ts[1] * bary[1] + ts[2] * bary[2] + p * bary[3];
                     if(rp.norm() > thickness)
                         return;
+#endif
                     
                     auto id = csPT.insert(zs::vec<int,2>{vi,ti});
                     vec4i inds{tri[0],tri[1],tri[2],vi};
                     for(int i = 0;i != 4;++i)
                         verts("dcd_collision_tag",inds[i]) = 1;
 
+                    // printf("detect imminent PT proxy : PT[%d %d] V[%d %d %d %d] BARY : [%f %f %f]\n",
+                    //     vi,ti,
+                    //     inds[0],inds[1],inds[2],inds[3],
+                    //     (float)tri_bary[0],(float)tri_bary[1],(float)tri_bary[2]);
+
                     // printf("find PT pairs : V_%d T_%d {%d %d %d} \n",vi,ti,tri[0],tri[1],tri[2]);
-                    proximity_buffer.tuple(dim_c<4>,"inds",id) = inds.reinterpret_bits(float_c);
-                    proximity_buffer.tuple(dim_c<4>,"bary",id) = bary;
+                    proximity_buffer.tuple(dim_c<4>,"inds",id + buffer_offset) = inds.reinterpret_bits(float_c);
+                    proximity_buffer.tuple(dim_c<4>,"bary",id + buffer_offset) = bary;
+                    proximity_buffer("type",id + buffer_offset) = zs::reinterpret_bits<float>((int)0);
                 };
 
                 triBvh.iter_neighbors(bv,do_close_proximity_detection);
@@ -1447,22 +1485,7 @@ void calc_continous_self_PT_collision_impulse(Pol& pol,
                     if(!has_dynamic_points)
                         return;
 
-                    vec4i inds{vi,tri[0],tri[1],tri[2]};
-                    vec3 ps[4] = {};
-                    vec3 pps[4] = {};
-                    for(int i = 0;i != 4;++i) {
-                        pps[i] = verts.pack(dim_c<3>,"x",inds[i]);
-                        ps[i] = pps[i] + verts.pack(dim_c<3>,"v",inds[i]);
-                    }
-
-                    auto ori = LSL_GEO::orient(ps[0],ps[1],ps[2],ps[3]);
-                    auto pori = LSL_GEO::orient(pps[0],pps[1],pps[2],pps[3]);
-
-                    if(ori * pori > 0)
-                        return;
-
                     csPT.insert(vec2i{vi,ti});
-                    // printf("detect PT potential collision pair[%d %d]\n",vi,ti);
                 };  
                 bvh.iter_neighbors(bv,do_close_proximity_detection);              
         });
@@ -1544,14 +1567,6 @@ void calc_continous_self_PT_collision_impulse(Pol& pol,
                 
                 auto impulse = -collision_nrm * rv_nrm * ((T)1 - alpha);
                 if(output_debug_inform) {
-                    // printf("find PT collision pairs[%d %d] with ccd : %f impulse : \n%f %f %f\n%f %fbary : %f %f %f %f\nminv : %f %f %f %f\n",ti,vi,(float)alpha,
-                    //     (float)impulse[0],(float)impulse[1],(float)impulse[2],
-                    //     (float)rv_nrm,(float)cm,
-                    //     (float)bary[0],(float)bary[1],(float)bary[2],(float)bary[3],
-                    //     (float)invMass("minv",inds[0]),
-                    //     (float)invMass("minv",inds[1]),
-                    //     (float)invMass("minv",inds[2]),
-                    //     (float)invMass("minv",inds[3]));
                     printf("find PT collision pairs[%d %d] with ccd : %f impulse : %f %f %f\n",ti,vi,(float)alpha,(float)impulse[0],(float)impulse[1],(float)impulse[2]);
                 }
 
@@ -1570,6 +1585,224 @@ void calc_continous_self_PT_collision_impulse(Pol& pol,
 
         std::cout << "finish continous PT detection" << std::endl;
 }
+
+
+
+template<typename Pol,
+    typename InverseMassTileVec,
+    // typename THICKNESS_REAL,
+    typename PosTileVec,
+    typename TrisTileVec,
+    typename ImpulseBuffer,
+    typename ImpulseCount,
+    typename TriBvh,
+    typename PTHashMap,
+    typename T = typename PosTileVec::value_type>
+void calc_continous_self_PT_collision_impulse_with_toc(Pol& pol,
+    const InverseMassTileVec& invMass,
+    const PosTileVec& verts,const zs::SmallString& xtag,const zs::SmallString& vtag,
+    const TrisTileVec& tris,
+    // const THICKNESS_REAL& thickness,
+    TriBvh& triCCDBvh,
+    bool refit_bvh,
+    PTHashMap& csPT,
+    // PTHashMap& preCSPT,
+    ImpulseBuffer& impulse_buffer,
+    ImpulseCount& impulse_count,
+    // bool recalc_collision_pairs = true,
+    bool output_debug_inform = false) {
+        using namespace zs;
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+        // constexpr auto exec_tag = wrapv<space>{};
+
+        using vec2 = zs::vec<T,2>;
+        using vec3 = zs::vec<T,3>;
+        using vec4 = zs::vec<T,4>;
+        using vec2i = zs::vec<int,2>;
+        using vec4i = zs::vec<int,4>;
+        constexpr auto eps = (T)1e-6;
+
+        auto execTag = wrapv<space>{};
+
+        std::cout << "do continous PT collilsion detection" << std::endl;
+
+        std::cout << "build continous PT spacial structure" << std::endl;
+
+
+        auto bvs = retrieve_bounding_volumes(pol,verts,tris,verts,wrapv<3>{},(T)1.0,(T)0,xtag,vtag);
+        if(refit_bvh)
+            triCCDBvh.refit(pol,bvs);
+        else
+            triCCDBvh.build(pol,bvs);
+
+        // zs::bht<int,2,int> csPT{verts.get_allocator(),100000};
+        csPT.reset(pol,true);
+
+        zs::Vector<float> tocs{verts.get_allocator(),verts.size()};
+        pol(zs::range(verts.size()),[tocs = proxy<space>(tocs)] ZS_LAMBDA(auto vi) mutable {tocs[vi] = 1;});
+
+        pol(zs::range(verts.size()),[
+            invMass = proxy<space>({},invMass),
+            xtag = xtag,
+            vtag = vtag,
+            verts = proxy<space>({},verts),
+            tris = proxy<space>({},tris),
+            // csPT = proxy<space>(csPT),
+            // thickness = thickness,
+            tocs = proxy<space>(tocs),
+            output_debug_inform = output_debug_inform,
+            impulse_buffer = proxy<space>(impulse_buffer),
+            impulse_count = proxy<space>(impulse_count),
+            eps = eps,
+            execTag = execTag,
+            csPT = proxy<space>(csPT),
+            bvh = proxy<space>(triCCDBvh)] ZS_LAMBDA(int vi) mutable {
+                if(verts.hasProperty("collision_cancel") && verts("collision_cancel",vi) > 1e-3)
+                    return;
+                auto p = verts.pack(dim_c<3>,xtag,vi);
+                auto v = verts.pack(dim_c<3>,vtag,vi);
+                bv_t bv{p, p + v};
+
+                int min_ti = -1;
+                float min_alpha = 1; 
+
+                auto do_close_proximity_detection = [&](int ti) mutable {
+                    auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
+                    for(int i = 0;i != 3;++i) {
+                        if(tri[i] == vi)
+                            return;
+                        if(verts.hasProperty("collision_cancel") && verts("collision_cancel",tri[i]) > 1e-3)
+                            return;
+                    }
+
+                    bool has_dynamic_points = verts("minv",vi) > eps;
+                    for(int i = 0;i != 3;++i) {
+                        if(invMass("minv",tri[i]) > eps)
+                            has_dynamic_points = true;
+                    }
+                    if(!has_dynamic_points)
+                        return;
+
+                    vec3 ps[4] = {};
+                    vec3 vs[4] = {};
+                    vec4 bary{0,0,0,1};
+                    vec4i inds{tri[0],tri[1],tri[2],vi};
+
+                    for(int i = 0;i != 4;++i) {
+                        ps[i] = verts.pack(dim_c<3>,xtag,inds[i]);
+                        vs[i] = verts.pack(dim_c<3>,vtag,inds[i]);
+                    }
+                    auto alpha = (T)1.0;
+                    if(!accd::ptccd(ps[3],ps[0],ps[1],ps[2],vs[3],vs[0],vs[1],vs[2],(T)0.2,(T)0,alpha))
+                        return;
+                    if(alpha < min_alpha) {
+                        min_alpha = alpha;
+                        min_ti = ti;
+                    }
+                };  
+                bvh.iter_neighbors(bv,do_close_proximity_detection);  
+
+                if(min_ti >= 0) {
+                    csPT.insert(vec2i{vi,min_ti});
+                    tocs[vi] = min_alpha;
+                }            
+        });
+
+        std::cout << "nm close PT proxy : " << csPT.size() << std::endl;
+        std::cout << "compute continouse PT proxy impulse" << std::endl;
+        pol(zip(zs::range(csPT.size()),csPT._activeKeys),[
+            invMass = proxy<space>({},invMass),
+            xtag = xtag,
+            vtag = vtag,
+            tocs = proxy<space>(tocs),
+            verts = proxy<space>({},verts),
+            tris = proxy<space>({},tris),
+            csPT = proxy<space>(csPT),
+            // thickness = thickness,
+            output_debug_inform = output_debug_inform,
+            impulse_buffer = proxy<space>(impulse_buffer),
+            impulse_count = proxy<space>(impulse_count),
+            eps = eps,
+            execTag = execTag] ZS_LAMBDA(auto id,const auto& pair) mutable {
+                auto vi = pair[0];
+                auto ti = pair[1];
+                auto p = verts.pack(dim_c<3>,xtag,vi);
+                auto v = verts.pack(dim_c<3>,vtag,vi);
+
+                bv_t bv{p, p + v};
+
+                vec3 ps[4] = {};
+                ps[3] = p;
+                vec3 vs[4] = {};
+                vs[3] = v;
+                
+
+
+                auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
+                vec4i inds{tri[0],tri[1],tri[2],vi};
+
+                for(int i = 0;i != 3;++i) {
+                    ps[i] = verts.pack(dim_c<3>,xtag,tri[i]);
+                    vs[i] = verts.pack(dim_c<3>,vtag,tri[i]);
+                    // inds[i] = tri[i];
+                }
+
+                // auto alpha = (T)1.0;
+                auto alpha = tocs[vi];
+
+                vec3 nps[4] = {};
+                for(int i = 0;i != 4;++i)
+                    nps[i] = ps[i] + vs[i] * alpha * 0.99;
+
+                vec3 bary_centric{};
+                LSL_GEO::pointTriangleBaryCentric(nps[0],nps[1],nps[2],nps[3],bary_centric);
+                vec4 bary{-bary_centric[0],-bary_centric[1],-bary_centric[2],1};
+                // for(int i = 0;i != 3;++i)
+                //     bary[i] = -bary_centric[i];
+
+                auto rv = vec3::zeros();
+                for(int i = 0;i != 4;++i) {
+                    rv += vs[i] * bary[i];
+                }
+                        
+                auto collision_nrm = LSL_GEO::facet_normal(nps[0],nps[1],nps[2]);
+                auto rv_nrm = collision_nrm.dot(rv);
+
+                auto cm = (T).0;
+                for(int i = 0;i != 4;++i)
+                    cm += bary[i] * bary[i] * invMass("minv",inds[i]);
+                if(cm < eps)
+                    return;
+                
+                auto impulse = -collision_nrm * rv_nrm * ((T)1 - alpha);
+                if(output_debug_inform) {
+                    printf("find PT collision pairs[%d %d] with ccd : %f impulse : %f %f %f\n",ti,vi,(float)alpha,(float)impulse[0],(float)impulse[1],(float)impulse[2]);
+                }
+
+                for(int i = 0;i != 4;++i) {
+                    if(invMass("minv",inds[i]) < eps)
+                        continue;
+                    auto beta = (bary[i] * invMass("minv",inds[i])) / cm;
+
+                    if((impulse * beta).norm() > 5 && output_debug_inform) {
+                        printf("large CCD-PT-impulse detected %f : %f %f %f nrm :  %f\n",
+                            (float)beta,
+                            (float)impulse[0],
+                            (float)impulse[1],
+                            (float)impulse[2],
+                            (float)collision_nrm.norm());
+                    }
+
+                    atomic_add(execTag,&impulse_count[inds[i]],1);
+                    for(int d = 0;d != 3;++d)
+                        atomic_add(execTag,&impulse_buffer[inds[i]][d],impulse[d] * beta);
+                }
+
+        });
+        std::cout << "finish computing continouse PT impulse" << std::endl;
+        std::cout << "finish continous PT detection" << std::endl;
+}
+
 
 
 template<typename Pol,  
@@ -1755,7 +1988,485 @@ void calc_continous_self_EE_collision_impulse(Pol& pol,
 
                 vec3 nps[4] = {};
                 for(int i = 0;i != 4;++i)
-                    nps[i] = ps[i] + vs[i] * alpha * 0.9;
+                    nps[i] = ps[i] + vs[i] * alpha;
+
+                vec2 edge_bary{};
+                LSL_GEO::edgeEdgeBaryCentric(nps[0],nps[1],nps[2],nps[3],edge_bary);
+                 for(int i = 0;i != 2;++i) {
+                    if(edge_bary[i] < eps || edge_bary[i] > 1 - eps)
+                        return;
+                    // edge_bary[i] = edge_bary[i] > 1 ? 1 : edge_bary[i];
+                 }
+                vec4 bary{edge_bary[0] - 1,-edge_bary[0],1 - edge_bary[1],edge_bary[1]};
+
+                auto rv = vec3::zeros();
+                auto pr = vec3::zeros();
+                for(int i = 0;i != 4;++i) {
+                    rv += vs[i] * bary[i];
+                    pr += nps[i] * bary[i];
+                }
+
+                auto collision_nrm = pr.normalized();
+                auto rv_nrm = collision_nrm.dot(rv);
+                auto cm = (T).0;
+                for(int i = 0;i != 4;++i)
+                    cm += bary[i] * bary[i] * invMass("minv",inds[i]);
+                if(cm < eps)
+                    return;
+
+                // if(cm < 0) {
+                //     printf("negative cm detected : %f\n",(float)cm);
+                // }
+
+                // cm = cm < 0.01 ? 0.01 : cm;
+                auto impulse = -collision_nrm * rv_nrm * ((T)1 - alpha);
+                // if(output_debug_inform)
+                //     printf("find EE collision pairs[%d %d] with ccd\n",ei,nei);
+
+                for(int i = 0;i != 4;++i) {
+                    if(invMass("minv",inds[i]) < eps)
+                        continue;
+                    auto beta = (bary[i] * invMass("minv",inds[i])) / cm;
+
+                    if((impulse * beta).norm() > 10 && output_debug_inform) {
+                        printf("large CCD-EE-impulse detected %f : %f %f %f : %f %f : alpha : %f\n",
+                            (float)beta,
+                            (float)impulse[0],
+                            (float)impulse[1],
+                            (float)impulse[2],
+                            (float)rv_nrm,
+                            (float)collision_nrm.norm(),
+                            (float)alpha);
+                    }
+
+                    atomic_add(execTag,&impulse_count[inds[i]],1);
+                    for(int d = 0;d != 3;++d)
+                        atomic_add(execTag,&impulse_buffer[inds[i]][d],impulse[d] * beta);
+                }   
+                // };
+                // bvh.iter_neighbors(bv,do_close_proximity_detection);
+        });
+
+        std::cout << "finish computing continous EE proxy impulse" << std::endl;
+}
+
+
+template<typename Pol,
+    typename InverseMassTileVec,
+    typename PosTileVec,
+    typename EdgeTileVec,
+    typename EdgeBvh,
+    typename TriTileVec,
+    typename TriBvh,
+    typename T = typename PosTileVec::value_type>
+void find_closest_intersection_free_configuration(Pol& pol,
+    const InverseMassTileVec& invMass,
+    const PosTileVec& verts,const zs::SmallString& xtag,const zs::SmallString& vtag,
+    const EdgeTileVec& edges,
+    bool refit_bvh,
+    const size_t& start_edge_id,
+    const size_t& end_edge_id,
+    EdgeBvh& edgeCCDBvh,
+    const TriTileVec& tris,
+    TriBvh& triCCDBvh) {
+        using namespace zs;
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+        // constexpr auto exec_tag = wrapv<space>{};
+
+        using vec2 = zs::vec<T,2>;
+        using vec3 = zs::vec<T,3>;
+        using vec4 = zs::vec<T,4>;
+        using vec2i = zs::vec<int,2>;
+        using vec4i = zs::vec<int,4>;
+        constexpr auto eps = (T)1e-6;
+
+        zs::Vector<float> tocs{verts.get_allocator(),verts.size()};
+        pol(zs::range(tocs.size()),[tocs = proxy<space>(tocs)] ZS_LAMBDA(int vi) mutable {tocs[vi] = (T)1;});
+        auto nm_test_edges = end_edge_id - start_edge_id;
+        auto execTag = wrapv<space>{};
+        
+        zs::Vector<int> nm_ccd_fail{verts.get_allocator(),1}; 
+        int nm_iters = 0;
+
+        do {
+
+        pol(zs::range(tocs.size()),[tocs = proxy<space>(tocs)] ZS_LAMBDA(int vi) mutable {tocs[vi] = (T)1;});
+        nm_ccd_fail.setVal(0);
+
+        auto edgeBvs = retrieve_bounding_volumes(pol,verts,edges,verts,wrapv<2>{},(T)1.0,(T)0,xtag,vtag);
+        if(refit_bvh)
+            edgeCCDBvh.refit(pol,edgeBvs);
+        else
+            edgeCCDBvh.build(pol,edgeBvs);
+
+        pol(zs::range(nm_test_edges),[
+                xtag = xtag,
+                vtag = vtag,
+                nm_ccd_fail = proxy<space>(nm_ccd_fail),
+                tocs = proxy<space>(tocs),
+                verts = proxy<space>({},verts),
+                edges = proxy<space>({},edges),
+                invMass = proxy<space>({},invMass),
+                eps = eps,
+                execTag = execTag,
+                edgeBvs = proxy<space>(edgeBvs),
+                bvh = proxy<space>(edgeCCDBvh)] ZS_LAMBDA(int ei) mutable {
+            auto ea = edges.pack(dim_c<2>,"inds",ei,int_c);
+            // auto bv = edgeBvs[ei];
+            for(int i = 0;i != 2;++i)
+                if(verts.hasProperty("collision_cancel") && verts("collision_cancel",ea[i]) > 1e-3)
+                    return;
+
+            auto v0 = verts.pack(dim_c<3>, xtag, ea[0]);
+            auto v1 = verts.pack(dim_c<3>, xtag, ea[1]);
+            auto dir0 = verts.pack(dim_c<3>, vtag, ea[0]);
+            auto dir1 = verts.pack(dim_c<3>, vtag, ea[1]);   
+            // T alpha = (T)1.0;
+            auto bv = bv_t{get_bounding_box(v0, v0 + dir0)};
+            merge(bv, v1);
+            merge(bv, v1 + dir1);
+            // bv._min -= xi;
+            // bv._max += xi;
+
+            int min_nei = -1;
+            float min_alpha = 1; 
+
+            auto do_close_proximity_detection = [&](int nei) mutable {
+                if(ei >= nei)
+                    return;
+                auto eb = edges.pack(dim_c<2>,"inds",nei,int_c);
+                for(int i = 0;i != 2;++i){
+                    if(eb[i] == ea[0] || eb[i] == ea[1])
+                        return;
+                }
+
+                for(int i = 0;i != 2;++i)
+                    if(verts.hasProperty("collision_cancel") && verts("collision_cancel",eb[i]) > 1e-3)
+                        return;
+
+                auto has_dynamic_points = false;
+                for(int i = 0;i != 2;++i) {
+                    if(invMass("minv",ea[i]) > eps)
+                        has_dynamic_points = true;
+                    if(invMass("minv",eb[i]) > eps)
+                        has_dynamic_points = true;
+                }
+                if(!has_dynamic_points)
+                    return;
+
+
+                vec4i inds{ea[0],ea[1],eb[0],eb[1]};
+                vec3 ps[4] = {};
+                vec3 vs[4] = {};
+                for(int i = 0;i != 4;++i) {
+                    ps[i] = verts.pack(dim_c<3>,xtag,inds[i]);
+                    vs[i] = verts.pack(dim_c<3>,vtag,inds[i]);
+                }
+
+                auto alpha = (T)1.0;
+                if(!accd::eeccd(ps[0],ps[1],ps[2],ps[3],vs[0],vs[1],vs[2],vs[3],(T)0.2,(T)0,alpha))
+                    return;     
+
+                if(alpha < min_alpha) {
+                    min_alpha = alpha;
+                    min_nei = nei;
+                }
+            };
+            bvh.iter_neighbors(bv,do_close_proximity_detection);
+
+            if(min_nei >= 0) {
+                auto eb = edges.pack(dim_c<2>,"inds",min_nei,int_c);
+                for(int i = 0;i != 2;++i) {
+                    atomic_min(execTag,&tocs[ea[i]],min_alpha);
+                    atomic_min(execTag,&tocs[eb[i]],min_alpha);
+                }
+                atomic_add(execTag,&nm_ccd_fail[0],1);
+            }
+        });
+
+        auto tribvs = retrieve_bounding_volumes(pol,verts,tris,verts,wrapv<3>{},(T)1.0,(T)0,xtag,vtag);
+        if(refit_bvh)
+            triCCDBvh.refit(pol,tribvs);
+        else
+            triCCDBvh.build(pol,tribvs);
+        
+        pol(zs::range(verts.size()),[
+            invMass = proxy<space>({},invMass),
+            xtag = xtag,
+            vtag = vtag,
+            nm_ccd_fail = proxy<space>(nm_ccd_fail),
+            verts = proxy<space>({},verts),
+            tris = proxy<space>({},tris),
+            tocs = proxy<space>(tocs),
+            eps = eps,
+            execTag = execTag,
+            bvh = proxy<space>(triCCDBvh)] ZS_LAMBDA(int vi) mutable {
+                if(verts.hasProperty("collision_cancel") && verts("collision_cancel",vi) > 1e-3)
+                    return;
+                auto p = verts.pack(dim_c<3>,xtag,vi);
+                auto v = verts.pack(dim_c<3>,vtag,vi);
+                bv_t bv{p, p + v};
+
+                int min_ti = -1;
+                float min_alpha = 1; 
+
+                auto do_close_proximity_detection = [&](int ti) mutable {
+                    auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
+                    for(int i = 0;i != 3;++i) {
+                        if(tri[i] == vi)
+                            return;
+                        if(verts.hasProperty("collision_cancel") && verts("collision_cancel",tri[i]) > 1e-3)
+                            return;
+                    }
+
+                    bool has_dynamic_points = verts("minv",vi) > eps;
+                    for(int i = 0;i != 3;++i) {
+                        if(invMass("minv",tri[i]) > eps)
+                            has_dynamic_points = true;
+                    }
+                    if(!has_dynamic_points)
+                        return;
+
+                    vec3 ps[4] = {};
+                    vec3 vs[4] = {};
+                    vec4 bary{0,0,0,1};
+                    vec4i inds{tri[0],tri[1],tri[2],vi};
+
+                    for(int i = 0;i != 4;++i) {
+                        ps[i] = verts.pack(dim_c<3>,xtag,inds[i]);
+                        vs[i] = verts.pack(dim_c<3>,vtag,inds[i]);
+                    }
+                    auto alpha = (T)1.0;
+                    if(!accd::ptccd(ps[3],ps[0],ps[1],ps[2],vs[3],vs[0],vs[1],vs[2],(T)0.2,(T)0,alpha))
+                        return;
+                    if(alpha < min_alpha) {
+                        min_alpha = alpha;
+                        min_ti = ti;
+                    }
+                };  
+                bvh.iter_neighbors(bv,do_close_proximity_detection);  
+
+                if(min_ti >= 0) {
+                    auto tri = tris.pack(dim_c<3>,"inds",min_ti,int_c);
+                    for(int i = 0;i != 3;++i) {
+                        atomic_min(execTag,&tocs[tri[i]],min_alpha);
+                    }
+                    atomic_min(execTag,&tocs[vi],min_alpha);
+                    atomic_add(execTag,&nm_ccd_fail[0],1);
+                }            
+        });        
+        pol(zs::range(verts.size()),[
+            verts = proxy<space>({},verts),
+            tocs = proxy<space>(tocs)] ZS_LAMBDA(int vi) mutable {
+                verts.tuple(dim_c<3>,"v",vi) = verts.pack(dim_c<3>,"v",vi) * tocs[vi] * 0.99;
+        });
+        ++nm_iters;
+        std::cout << "CCD_COLLISION_ELIMATION_ITER[" << nm_iters << "] : nm_ccd_fail : " << nm_ccd_fail.getVal(0) << std::endl;
+ 
+        }while(nm_ccd_fail.getVal(0) > 0);
+}
+
+template<typename Pol,  
+    typename InverseMassTileVec,
+    typename PosTileVec,
+    typename EdgeTileVec,
+    typename ImpulseBuffer,
+    typename ImpulseCountBuffer,
+    typename EdgeBvh,
+    typename EEHashMap,
+    typename T = typename PosTileVec::value_type>
+void calc_continous_self_EE_collision_impulse_with_toc(Pol& pol,
+    const InverseMassTileVec& invMass,
+    const PosTileVec& verts,const zs::SmallString& xtag,const zs::SmallString& vtag,
+    const EdgeTileVec& edges,
+    const size_t& start_edge_id,
+    const size_t& end_edge_id,
+    EdgeBvh& edgeCCDBvh,
+    bool refit_bvh,
+    EEHashMap& csEE,
+    ImpulseBuffer& impulse_buffer,
+    ImpulseCountBuffer& impulse_count,
+    bool output_debug_inform = false) {
+        using namespace zs;
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+        // constexpr auto exec_tag = wrapv<space>{};
+
+        using vec2 = zs::vec<T,2>;
+        using vec3 = zs::vec<T,3>;
+        using vec4 = zs::vec<T,4>;
+        using vec2i = zs::vec<int,2>;
+        using vec4i = zs::vec<int,4>;
+        constexpr auto eps = (T)1e-6;
+
+        // auto edgeCCDBvh = bvh_t{};
+        std::cout << "build continous EE structure" << std::endl;
+
+
+        // ALLOCATION BOTTLENECK 1
+        auto edgeBvs = retrieve_bounding_volumes(pol,verts,edges,verts,wrapv<2>{},(T)1.0,(T)0,xtag,vtag);
+        if(refit_bvh)
+            edgeCCDBvh.refit(pol,edgeBvs);
+        else
+            edgeCCDBvh.build(pol,edgeBvs);
+
+        std::cout << "do continous EE collilsion detection" << std::endl;
+
+
+        auto nm_test_edges = end_edge_id - start_edge_id;
+        zs::Vector<float> tocs{edges.get_allocator(),nm_test_edges};
+        pol(zs::range(nm_test_edges),[tocs = proxy<space>(tocs)] ZS_LAMBDA(auto ei) mutable {tocs[ei] = (T)1;});
+
+        // ALLOCATION BOTTLENECK 2
+        // zs::bht<int,2,int> csEE{edges.get_allocator(),100000};
+        csEE.reset(pol,true);
+
+        auto execTag = wrapv<space>{};
+
+        pol(zs::range(nm_test_edges),[
+            xtag = xtag,
+            vtag = vtag,
+            tocs = proxy<space>(tocs),
+            verts = proxy<space>({},verts),
+            edges = proxy<space>({},edges),
+            invMass = proxy<space>({},invMass),
+            impulse_buffer = proxy<space>(impulse_buffer),
+            impulse_count = proxy<space>(impulse_count),
+            // thickness = thickness,
+            output_debug_inform = output_debug_inform,
+            eps = eps,
+            csEE = proxy<space>(csEE),
+            execTag = execTag,
+            edgeBvs = proxy<space>(edgeBvs),
+            bvh = proxy<space>(edgeCCDBvh)] ZS_LAMBDA(int ei) mutable {
+                auto ea = edges.pack(dim_c<2>,"inds",ei,int_c);
+                // auto bv = edgeBvs[ei];
+                for(int i = 0;i != 2;++i)
+                    if(verts.hasProperty("collision_cancel") && verts("collision_cancel",ea[i]) > 1e-3)
+                        return;
+
+                auto v0 = verts.pack(dim_c<3>, xtag, ea[0]);
+                auto v1 = verts.pack(dim_c<3>, xtag, ea[1]);
+                auto dir0 = verts.pack(dim_c<3>, vtag, ea[0]);
+                auto dir1 = verts.pack(dim_c<3>, vtag, ea[1]);   
+                // T alpha = (T)1.0;
+                auto bv = bv_t{get_bounding_box(v0, v0 + dir0)};
+                merge(bv, v1);
+                merge(bv, v1 + dir1);
+                // bv._min -= xi;
+                // bv._max += xi;
+   
+                int min_nei = -1;
+                float min_alpha = 1; 
+
+                auto do_close_proximity_detection = [&](int nei) mutable {
+                    if(ei >= nei)
+                        return;
+                    auto eb = edges.pack(dim_c<2>,"inds",nei,int_c);
+                    for(int i = 0;i != 2;++i){
+                        if(eb[i] == ea[0] || eb[i] == ea[1])
+                            return;
+                    }
+
+                    for(int i = 0;i != 2;++i)
+                        if(verts.hasProperty("collision_cancel") && verts("collision_cancel",eb[i]) > 1e-3)
+                            return;
+
+                    auto has_dynamic_points = false;
+                    for(int i = 0;i != 2;++i) {
+                        if(invMass("minv",ea[i]) > eps)
+                            has_dynamic_points = true;
+                        if(invMass("minv",eb[i]) > eps)
+                            has_dynamic_points = true;
+                    }
+                    if(!has_dynamic_points)
+                        return;
+
+
+                    vec4i inds{ea[0],ea[1],eb[0],eb[1]};
+                    vec3 ps[4] = {};
+                    vec3 vs[4] = {};
+                    for(int i = 0;i != 4;++i) {
+                        ps[i] = verts.pack(dim_c<3>,xtag,inds[i]);
+                        vs[i] = verts.pack(dim_c<3>,vtag,inds[i]);
+                    }
+
+                    auto alpha = (T)1.0;
+                    if(!accd::eeccd(ps[0],ps[1],ps[2],ps[3],vs[0],vs[1],vs[2],vs[3],(T)0.2,(T)0,alpha))
+                        return;     
+
+                    if(alpha < min_alpha) {
+                        min_alpha = alpha;
+                        min_nei = nei;
+                    }
+
+
+                };
+                bvh.iter_neighbors(bv,do_close_proximity_detection);
+
+                if(min_nei >= 0) {
+                    csEE.insert(vec2i{ei,min_nei});
+                    tocs[ei] = min_alpha;
+                }
+        });
+
+        std::cout << "nm close EE proxy : " << csEE.size() << std::endl;
+        std::cout << "compute continous EE proxy impulse" << std::endl;
+
+        pol(zip(zs::range(csEE.size()),csEE._activeKeys),[
+            xtag = xtag,
+            vtag = vtag,
+            tocs = proxy<space>(tocs),
+            verts = proxy<space>({},verts),
+            edges = proxy<space>({},edges),
+            invMass = proxy<space>({},invMass),
+            impulse_buffer = proxy<space>(impulse_buffer),
+            impulse_count = proxy<space>(impulse_count),
+            // thickness = thickness,
+            output_debug_inform = output_debug_inform,
+            eps = eps,
+            execTag = execTag,
+            edgeBvs = proxy<space>(edgeBvs),
+            bvh = proxy<space>(edgeCCDBvh)] ZS_LAMBDA(auto id,const auto& pair) mutable {
+                auto ei = pair[0];
+                auto nei = pair[1];
+                auto ea = edges.pack(dim_c<2>,"inds",ei,int_c);
+                vec3 ps[4] = {};
+                ps[0] = verts.pack(dim_c<3>,xtag,ea[0]);
+                ps[1] = verts.pack(dim_c<3>,xtag,ea[1]);
+                vec3 vs[4] = {};
+                vs[0] = verts.pack(dim_c<3>,vtag,ea[0]);
+                vs[1] = verts.pack(dim_c<3>,vtag,ea[1]);
+
+                vec4i inds{ea[0],ea[1],-1,-1};
+
+                T minvs[4] = {};
+                minvs[0] = verts("minv",ea[0]);
+                minvs[1] = verts("minv",ea[1]);
+
+                vec3 imps[4] = {};
+
+                // auto do_close_proximity_detection = [&](int nei) mutable {
+                auto eb = edges.pack(dim_c<2>,"inds",nei,int_c);
+
+                for(int i = 0;i != 2;++i) {
+                    ps[i + 2] = verts.pack(dim_c<3>,xtag,eb[i]);
+                    vs[i + 2] = verts.pack(dim_c<3>,vtag,eb[i]);
+                    inds[i + 2] = eb[i];
+                    minvs[i + 2] = verts("minv",eb[i]);
+                }
+
+                // if(!compute_continous_EE_collision_impulse(ps,vs,minvs,imps))
+                //     return;    
+
+                // auto alpha = (T)1.0;
+                // if(!accd::eeccd(ps[0],ps[1],ps[2],ps[3],vs[0],vs[1],vs[2],vs[3],(T)0.2,(T)0,alpha))
+                //     return;                
+
+                auto alpha = tocs[ei];
+
+                vec3 nps[4] = {};
+                for(int i = 0;i != 4;++i)
+                    nps[i] = ps[i] + vs[i] * alpha;
 
                 vec2 edge_bary{};
                 LSL_GEO::edgeEdgeBaryCentric(nps[0],nps[1],nps[2],nps[3],edge_bary);
@@ -1797,6 +2508,7 @@ void calc_continous_self_EE_collision_impulse(Pol& pol,
 
         std::cout << "finish computing continous EE proxy impulse" << std::endl;
 }
+
 
 
 

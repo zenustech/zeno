@@ -3,6 +3,7 @@
 #include <array>
 #include <vector>
 #include <zensim/math/VecInterface.hpp>
+#include <zensim/geometry/Distance.hpp>
 
 namespace zeno { namespace LSL_GEO {
 
@@ -137,6 +138,7 @@ namespace zeno { namespace LSL_GEO {
     }
 
 
+    
 
 
     // template<typename T>
@@ -312,6 +314,8 @@ namespace zeno { namespace LSL_GEO {
 
         return barycentric;
     }
+
+
 
 
     ///////////////////////////////////////////////////////////////////////
@@ -657,8 +661,32 @@ constexpr REAL pointTriangleDistance(const VECTOR3& v0, const VECTOR3& v1,
         bary[0] = ( A11 * b0 - A01 * b1) / detA;
         bary[1] = (-A01 * b0 + A00 * b1) / detA;
         bary[2] = 1 - bary[0] - bary[1];
+
+        // if(isnan(bary.norm())) {
+        //     printf("nan triangle point bary detected : %f %f %f %f\n",
+        //         (float)bary[0],
+        //         (float)bary[1],
+        //         (float)bary[2],
+        //         (float)detA);
+        // }
     }
 
+    constexpr void pointTriangleBaryCentric(const VECTOR3& v1, const VECTOR3& v2, const VECTOR3& v3, const VECTOR3& v4,VECTOR3& bary,
+            REAL& detA,REAL& A00,REAL& A11,REAL& A01) {
+        constexpr auto eps = 1e-6;
+        auto x13 = v1 - v3;
+        auto x23 = v2 - v3;
+        auto x43 = v4 - v3;
+        A00 = x13.dot(x13);
+        A01 = x13.dot(x23);
+        A11 = x23.dot(x23);
+        auto b0 = x13.dot(x43);
+        auto b1 = x23.dot(x43);
+        detA = A00 * A11 - A01 * A01;
+        bary[0] = ( A11 * b0 - A01 * b1) / detA;
+        bary[1] = (-A01 * b0 + A00 * b1) / detA;
+        bary[2] = 1 - bary[0] - bary[1];
+    }
 
     constexpr void edgeEdgeBaryCentric(const VECTOR3& v1, const VECTOR3& v2,const VECTOR3& v3, const VECTOR3& v4,VECTOR2& bary) {
         constexpr auto eps = 1e-6;
@@ -673,8 +701,124 @@ constexpr REAL pointTriangleDistance(const VECTOR3& v0, const VECTOR3& v1,
         auto detA = A00 * A11 - A01 * A01;
         // if(abs(detA) < eps)
         //     return false;
+        // if(abs(detA)/(A00 +  A11) > eps * 10) {
         bary[0] = ( A11 * b0 - A01 * b1) / detA;
         bary[1] = (-A01 * b0 + A00 * b1) / detA;
+        // }else { // the two edge is almost parallel
+
+        // }
+    }
+
+    constexpr void intersectionBaryCentric(const VECTOR3& e0,const VECTOR3& e1,
+        const VECTOR3& t0,const VECTOR3& t1,const VECTOR3& t2,
+        VECTOR2& edge_bary,VECTOR3& tri_bary) {
+            auto tnrm = LSL_GEO::facet_normal(t0,t1,t2);
+            auto d0 = (e0 - t0).dot(tnrm);
+            auto d01 = (e0 - e1).dot(tnrm);
+
+            edge_bary[0] = (1 - d0 / d01);
+            edge_bary[1] = d0 / d01;
+
+            auto ep = edge_bary[0] * e0  + edge_bary[1] * e1;
+
+
+            pointTriangleBaryCentric(t0,t1,t2,ep,tri_bary);
+    }   
+
+
+    constexpr REAL pointEdgeBaryCentric(const VECTOR3& v1, const VECTOR3& v2,const VECTOR3& v3) {
+        auto x32 = v3 - v2;
+        // auto nx32 = x32.l2NormSqr();
+        auto x12 = v1 - v2;
+        // auto dir = (v3 - v2).normalized();
+        return x12.dot(x32)/x32.l2NormSqr();
+    }
+
+    constexpr REAL edgeEdgeIntersection(const VECTOR3& v1, const VECTOR3& v2,const VECTOR3& v3, const VECTOR3& v4,VECTOR2& bary,int& type) {
+        REAL dist2{zs::limits<REAL>::max()};
+        type = ee_distance_type(v1,v2,v3,v4);
+        switch (type) {
+            case 0:
+                dist2 = dist2_pp(v1,v3);
+                bary = VECTOR2{0,0};
+                break;
+            case 1:
+                dist2 = dist2_pp(v1,v4);
+                bary = VECTOR2{0,1};
+                break;
+            case 2:
+                dist2 = dist2_pe(v1,v3,v4);
+                bary = VECTOR2{0,pointEdgeBaryCentric(v1,v3,v4)};
+                break;
+            case 3:
+                dist2 = dist2_pp(v2,v3);
+                bary = VECTOR2{1,0};
+                break;
+            case 4:
+                dist2 = dist2_pp(v2,v4);
+                bary = VECTOR2{1,1};
+                break;
+            case 5:
+                dist2 = dist2_pe(v2,v3,v4);
+                bary = VECTOR2{1,pointEdgeBaryCentric(v2,v3,v4)};
+                break;
+            case 6:
+                dist2 = dist2_pe(v3,v1,v2);
+                bary = VECTOR2{pointEdgeBaryCentric(v3,v1,v2),0};
+                break;
+            case 7:
+                dist2 = dist2_pe(v4,v1,v2);
+                bary = VECTOR2{pointEdgeBaryCentric(v4,v1,v2),1};
+                break;
+            case 8:
+                dist2 = dist2_ee(v1,v2,v3,v4);
+                edgeEdgeBaryCentric(v1,v2,v3,v4,bary);
+                break;
+            default:
+                break;
+        }
+        return dist2;
+    }
+
+    constexpr REAL pointTriangleIntersection(const VECTOR3& p, const VECTOR3& t0,const VECTOR3& t1, const VECTOR3& t2,VECTOR3& bary) {
+        REAL dist2{zs::limits<REAL>::max()};
+        REAL eb{};
+        switch (pt_distance_type(p, t0, t1, t2)) {
+            case 0:
+                dist2 = dist2_pp(p,t0);
+                bary = VECTOR3{1,0,0};
+                break;
+            case 1:
+                dist2 = dist2_pp(p,t1);
+                bary = VECTOR3{0,1,0};
+                break;
+            case 2:
+                dist2 = dist2_pp(p,t2);
+                bary = VECTOR3{0,0,1};
+                break;
+            case 3:
+                dist2 = dist2_pe(p,t0,t1);
+                eb = pointEdgeBaryCentric(p,t0,t1);
+                bary = VECTOR3{1-eb,eb,0};
+                break;
+            case 4:
+                dist2 = dist2_pe(p,t1,t2);
+                eb = pointEdgeBaryCentric(p,t1,t2);
+                bary = VECTOR3{0,1-eb,eb};
+                break;
+            case 5:
+                dist2 = dist2_pe(p,t0,t2);
+                eb = pointEdgeBaryCentric(p,t0,t2);
+                bary = VECTOR3{1-eb,0,eb};
+                break;
+            case 6:
+                dist2 = dist2_pt(p, t0, t1, t2);
+                pointTriangleBaryCentric(t0,t1,t2,p,bary);
+                break;
+            default:
+                break;
+        }
+        return dist2;
     }
 
     constexpr REAL pointTriangleDistance(const VECTOR3& v0, const VECTOR3& v1, 
