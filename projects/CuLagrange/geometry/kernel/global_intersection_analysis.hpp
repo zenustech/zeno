@@ -189,6 +189,7 @@ namespace GIA {
             const HalfEdgeTileVecHost& halfedges,
             const HTHashMapHost& csHT,
             const zs::vec<int,2>& trace_start,
+            std::vector<int>& intersection_mask,
             std::vector<int>& loop_sides,
             std::vector<zs::vec<int,2>>& loop_buffers,
             std::vector<zs::vec<int,2>>& loop_buffers_0,
@@ -210,11 +211,16 @@ namespace GIA {
         bool use_input_buffer0 = true;
         auto cur_trace = trace_start;
 
+        auto id = csHT.query(cur_trace);
+        intersection_mask[id] = 1;
+
         if(find_intersection_turning_point(halfedges,tris,cur_trace) >= 0) {
             cur_trace[0] = zs::reinterpret_bits<int>(halfedges("opposite_he",cur_trace[0]));
             loop_buffers_0.push_back(cur_trace);
             loop_buffers.push_back(cur_trace);
             loop_sides.push_back(0);
+            auto id = csHT.query(cur_trace);
+            intersection_mask[id] = 1;
         }
 
         do {
@@ -229,6 +235,7 @@ namespace GIA {
             for(int i = 0;i != 2;++i) {
                 nhi = get_next_half_edge(nhi,halfedges,1);
                 if(auto id = csHT.query(vec2i{nhi,ti});id >= 0) {
+                    intersection_mask[id] = 1;
                     cur_trace = vec2i{nhi,ti};
                     if(use_input_buffer0) {
                         loop_sides.push_back(0); 
@@ -247,6 +254,7 @@ namespace GIA {
                 auto thi = zs::reinterpret_bits<int>(tris("he_inds",ti));
                 for(int i = 0;i != 3;++i) {
                     if(auto id = csHT.query(vec2i{thi,hti});id >= 0) {
+                        intersection_mask[id] = 1;
                         cur_trace = vec2i{thi,hti};
                         use_input_buffer0 = !use_input_buffer0;
                         if(use_input_buffer0) {
@@ -267,10 +275,14 @@ namespace GIA {
                 printf("abruptly end while the cur_trace[%d %d] is neither a turning point nor a boundary point\n",cur_trace[0],cur_trace[1]);
                 throw std::runtime_error("abruptly end while the cur_trace is neither a turning point nor a boundary point");
             }
-            if(is_boundary_halfedge(halfedges,cur_trace[0]))
+            if(is_boundary_halfedge(halfedges,cur_trace[0])) {
+                printf("find boundary halfedge %d\n",cur_trace[0]);
                 break;
+            }
 
             cur_trace[0] = zs::reinterpret_bits<int>(halfedges("opposite_he",cur_trace[0]));
+            auto id = csHT.query(cur_trace);
+            intersection_mask[id] = 1;
             if(use_input_buffer0) {
                 loop_sides.push_back(0); 
                 loop_buffers_0.push_back(cur_trace);
@@ -279,7 +291,9 @@ namespace GIA {
                 loop_buffers_1.push_back(cur_trace);
             }
             loop_buffers.push_back(cur_trace);
-        }while(cur_trace[0] != trace_start[0] && cur_trace[1] != trace_start[1]);
+        }while(cur_trace[0] != trace_start[0] || cur_trace[1] != trace_start[1]);
+
+
 
         return use_input_buffer0;
     }
@@ -580,6 +594,77 @@ namespace GIA {
         
     }
 
+    template<typename Pol,
+        typename PosTileVec,
+        typename TriTileVec,
+        typename HalfEdgeTileVec,
+        typename HTHashMap,
+        typename ICMGradTileVec,
+        auto space = Pol::exec_tag::value,
+        typename T = typename PosTileVec::value_type>
+    void eval_intersection_contour_minimization_gradient(Pol& pol,
+            const PosTileVec& verts,const zs::SmallString& xtag,
+            const HalfEdgeTileVec& halfedges,
+            const TriTileVec& tris,
+            HTHashMap& csHT,
+            ICMGradTileVec& icm_grad) {
+        using namespace zs;
+        using vec2i = zs::vec<int,2>; 
+        using vec3 = zs::vec<T,3>;
+
+        retrieve_self_intersection_tri_halfedge_pairs(pol,verts,xtag,tris,halfedges,csHT);    
+        icm_grad.resize(csHT.size());
+
+        pol(zip(zs::range(csHT.size()),csHT._activeKeys),[
+            icm_grad = proxy<space>({},icm_grad),
+            verts = proxy<space>({},verts),xtag = zs::SmallString(xtag),
+            halfedges = proxy<space>({},halfedges),
+            tris = proxy<space>({},tris)] ZS_LAMBDA(auto ci,const auto& pair) mutable {
+                auto hi = pair[0];
+                auto ti = pair[1];
+
+                auto hedge = half_edge_get_edge(hi,halfedges,tris);
+                auto hti = zs::reinterpret_bits<int>(halfedges("to_face",hi));
+                auto htri = tris.pack(dim_c<3>,"inds",hti,int_c);
+
+                auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
+
+                vec3 halfedge_vertices[2] = {};
+                vec3 tri_vertices[3] = {};
+                vec3 htri_vertices[3] = {};
+
+                for(int i = 0;i != 2;++i)
+                    halfedge_vertices[i] = verts.pack(dim_c<3>,xtag,hedge[i]);
+
+                for(int i = 0;i != 3;++i) {
+                    tri_vertices[i] = verts.pack(dim_c<3>,xtag,tri[i]);
+                    htri_vertices[i] = verts.pack(dim_c<3>,xtag,htri[i]);
+                }
+
+                auto tri_normal = LSL_GEO::facet_normal(tri_vertices[0],tri_vertices[1],tri_vertices[2]);
+                auto htri_normal = LSL_GEO::facet_normal(htri_vertices[0],htri_vertices[1],htri_vertices[2]);
+                auto halfedge_orient = (halfedge_vertices[1] - halfedge_vertices[0]).normalized();
+
+                auto R = tri_normal.cross(htri_normal).normalized();
+
+                auto halfedge_local_vertex_id = zs::reinterpret_bits<int>(halfedges("local_vertex_id",hi));
+                auto halfedge_opposite_vertex_id = htri[(halfedge_local_vertex_id + 2) % 3];
+                auto halfedge_opposite_vertex = verts.pack(dim_c<3>,xtag,halfedge_opposite_vertex_id);
+
+                if(R.dot(halfedge_opposite_vertex - halfedge_vertices[0]) < 0)
+                    R = -R;
+                
+                const auto& E = halfedge_orient;
+                const auto& N = tri_normal;
+
+                auto ER = E.dot(R);
+                auto EN = E.dot(N);
+
+                auto G = R - static_cast<T>(2.0) * ER / EN * N;
+                icm_grad.tuple(dim_c<3>,"grad",ci) = G;
+                icm_grad.tuple(dim_c<2>,"inds",ci) = pair.reinterpret_bits(float_c);
+        });    
+    }   
 
 };
 };
