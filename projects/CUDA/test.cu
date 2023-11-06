@@ -26,20 +26,15 @@ struct A {
 
 struct B {
     constexpr B() {
-        printf("B created\n");
     }
     constexpr B(B &&o) {
-        printf("B move ctor\n");
     }
     constexpr B(const B &o) {
-        printf("B copy ctor\n");
     }
     constexpr B &operator=(B &&o) {
-        printf("B move assign\n");
         return *this;
     }
     constexpr B &operator=(const B &o) {
-        printf("B copy assign\n");
         return *this;
     }
     ~B() noexcept = default;
