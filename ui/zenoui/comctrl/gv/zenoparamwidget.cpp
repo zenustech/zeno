@@ -1348,7 +1348,9 @@ ZenoMinStatusBtnItem::ZenoMinStatusBtnItem(const StatusComponent& statusComp, QG
     , m_minMute(nullptr)
     , m_minView(nullptr)
     , m_minOnce(nullptr)
+    , m_minCache(nullptr)
 {
+    m_minCache = new ZenoImageItem(statusComp.cache, ZenoStyle::dpiScaledSize(QSize(56, 75)), this);
     m_minMute = new ZenoImageItem(statusComp.mute, ZenoStyle::dpiScaledSize(QSize(56, 75)), this);
     m_minOnce = new ZenoImageItem(statusComp.once, ZenoStyle::dpiScaledSize(QSize(56, 75)), this);
     m_minView = new ZenoImageItem(statusComp.view, ZenoStyle::dpiScaledSize(QSize(42, 75)), this);
@@ -1370,7 +1372,12 @@ ZenoMinStatusBtnItem::ZenoMinStatusBtnItem(const StatusComponent& statusComp, QG
         ":/icons/VIEW_light.svg",
         ZenoStyle::dpiScaledSize(QSize(50, 42)),
         this);
-
+    m_cache = new ZenoImageItem(
+        ":/icons/ONCE_dark.svg",
+        ":/icons/ONCE_light.svg",
+        ":/icons/ONCE_light.svg",
+        ZenoStyle::dpiScaledSize(QSize(50, 42)),
+        this);
     //m_once->setFlag(QGraphicsItem::ItemIgnoresTransformations);
     //m_mute->setFlag(QGraphicsItem::ItemIgnoresTransformations);
     //m_view->setFlag(QGraphicsItem::ItemIgnoresTransformations);
@@ -1378,21 +1385,27 @@ ZenoMinStatusBtnItem::ZenoMinStatusBtnItem(const StatusComponent& statusComp, QG
     m_minMute->setCheckable(true);
     m_minView->setCheckable(true);
     m_minOnce->setCheckable(true);
+    m_minCache->setCheckable(true);
     m_once->setCheckable(true);
     m_mute->setCheckable(true);
     m_view->setCheckable(true);
+    m_cache->setCheckable(true);
     m_once->hide();
     m_mute->hide();
     m_view->hide();
+    m_cache->hide();
 
-    m_minOnce->setPos(QPointF(0, 0));
-    m_minMute->setPos(QPointF(ZenoStyle::dpiScaled(34), 0));
-    m_minView->setPos(QPointF(ZenoStyle::dpiScaled(66), 0));
+    m_minCache->setPos(QPointF(0, 0));
+    m_minOnce->setPos(QPointF(ZenoStyle::dpiScaled(34), 0));
+    m_minMute->setPos(QPointF(ZenoStyle::dpiScaled(68), 0));
+    m_minView->setPos(QPointF(ZenoStyle::dpiScaled(98), 0));
 
     QSizeF sz2 = m_once->size();
     qreal sMarginTwoBar = ZenoStyle::dpiScaled(4);
     //todo: kill these magin number.
     QPointF base = QPointF(ZenoStyle::dpiScaled(18), -sz2.height() - sMarginTwoBar);
+    m_cache->setPos(base);
+    base += QPointF(ZenoStyle::dpiScaled(38), 0);
 	m_once->setPos(base);
 	base += QPointF(ZenoStyle::dpiScaled(38), 0);
 	m_mute->setPos(base);
@@ -1404,20 +1417,25 @@ ZenoMinStatusBtnItem::ZenoMinStatusBtnItem(const StatusComponent& statusComp, QG
     m_minOnce->setZValue(ZVALUE_ELEMENT);
     m_minView->setZValue(ZVALUE_ELEMENT);
     m_minMute->setZValue(ZVALUE_ELEMENT);
+    m_minCache->setZValue(ZVALUE_ELEMENT);
 
     connect(m_minOnce, SIGNAL(hoverChanged(bool)), m_once, SLOT(setHovered(bool)));
     connect(m_minView, SIGNAL(hoverChanged(bool)), m_view, SLOT(setHovered(bool)));
     connect(m_minMute, SIGNAL(hoverChanged(bool)), m_mute, SLOT(setHovered(bool)));
+    connect(m_minCache, SIGNAL(hoverChanged(bool)), m_cache, SLOT(setHovered(bool)));
 	connect(m_once, SIGNAL(hoverChanged(bool)), m_minOnce, SLOT(setHovered(bool)));
 	connect(m_view, SIGNAL(hoverChanged(bool)), m_minView, SLOT(setHovered(bool)));
 	connect(m_mute, SIGNAL(hoverChanged(bool)), m_minMute, SLOT(setHovered(bool)));
+    connect(m_cache, SIGNAL(hoverChanged(bool)), m_minCache, SLOT(setHovered(bool)));
 
 	connect(m_minOnce, SIGNAL(toggled(bool)), m_once, SLOT(toggle(bool)));
 	connect(m_minView, SIGNAL(toggled(bool)), m_view, SLOT(toggle(bool)));
 	connect(m_minMute, SIGNAL(toggled(bool)), m_mute, SLOT(toggle(bool)));
+    connect(m_minCache, SIGNAL(toggled(bool)), m_cache, SLOT(toggle(bool)));
 	connect(m_once, SIGNAL(toggled(bool)), m_minOnce, SLOT(toggle(bool)));
 	connect(m_view, SIGNAL(toggled(bool)), m_minView, SLOT(toggle(bool)));
 	connect(m_mute, SIGNAL(toggled(bool)), m_minMute, SLOT(toggle(bool)));
+    connect(m_cache, SIGNAL(toggled(bool)), m_minCache, SLOT(toggle(bool)));
 
     connect(m_minMute, &ZenoImageItem::toggled, [=](bool hovered) {
         emit toggleChanged(STATUS_MUTE, hovered);
@@ -1428,6 +1446,9 @@ ZenoMinStatusBtnItem::ZenoMinStatusBtnItem(const StatusComponent& statusComp, QG
 	connect(m_minOnce, &ZenoImageItem::toggled, [=](bool hovered) {
         emit toggleChanged(STATUS_ONCE, hovered);
 	});
+    connect(m_minCache, &ZenoImageItem::toggled, [=](bool hovered) {
+        emit toggleChanged(STATUS_CACHE, hovered);
+    });
 
     setAcceptHoverEvents(true);
 }
@@ -1437,6 +1458,7 @@ void ZenoMinStatusBtnItem::setOptions(int options)
     setChecked(STATUS_ONCE, options & OPT_ONCE);
     setChecked(STATUS_MUTE, options & OPT_MUTE);
     setChecked(STATUS_VIEW, options & OPT_VIEW);
+    setChecked(STATUS_CACHE, options & OPT_CACHE);
 }
 
 void ZenoMinStatusBtnItem::setChecked(STATUS_BTN btn, bool bChecked)
@@ -1456,6 +1478,11 @@ void ZenoMinStatusBtnItem::setChecked(STATUS_BTN btn, bool bChecked)
 		m_view->toggle(bChecked);
 		m_minView->toggle(bChecked);
 	}
+    if (btn == STATUS_CACHE)
+    {
+        m_cache->toggle(bChecked);
+        m_minCache->toggle(bChecked);
+    }
 }
 
 void ZenoMinStatusBtnItem::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
@@ -1463,6 +1490,7 @@ void ZenoMinStatusBtnItem::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
     m_mute->show();
     m_view->show();
     m_once->show();
+    m_cache->show();
     _base::hoverEnterEvent(event);
 }
 
@@ -1476,6 +1504,7 @@ void ZenoMinStatusBtnItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
 	m_mute->hide();
 	m_view->hide();
 	m_once->hide();
+    m_cache->hide();
     _base::hoverLeaveEvent(event);
 }
 
@@ -1487,6 +1516,7 @@ QRectF ZenoMinStatusBtnItem::boundingRect() const
 		rc = m_minMute->sceneBoundingRect();
 		rc |= m_minView->sceneBoundingRect();
 		rc |= m_minOnce->sceneBoundingRect();
+        rc |= m_minCache->sceneBoundingRect();
         rc = mapRectFromScene(rc);
         return rc;
     }
@@ -1509,11 +1539,14 @@ void ZenoMinStatusBtnItem::onZoomed()
         m_once->resize(size);
         m_mute->resize(size);
         m_view->resize(size);
+        m_cache->resize(size);
         QSizeF sz2 = m_once->size();
         qreal sMarginTwoBar = ZenoStyle::dpiScaled(4);
         QPointF base = QPointF(ZenoStyle::dpiScaled(18), -sz2.height() - sMarginTwoBar);
-        m_once->setPos(base);
+        m_cache->setPos(base);
         qreal offset = ZenoStyle::scaleWidth(38);
+        base += QPointF(offset, 0);
+        m_once->setPos(base);
         base += QPointF(offset, 0);
         m_mute->setPos(base);
         base += QPointF(offset, 0);

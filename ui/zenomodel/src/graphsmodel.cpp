@@ -1570,6 +1570,26 @@ void GraphsModel::_markNodeChanged(const QModelIndex& nodeIdx)
     ZASSERT_EXIT(pModel);
     pModel->setData(nodeIdx, true, ROLE_NODE_DATACHANGED);
     m_changedNodes.insert(nodeIdx);
+    if (NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(nodeIdx.data(ROLE_NODE_PARAMS)))
+    {
+        for (const auto& sock : nodeParams->getOutputIndice())
+        {
+            PARAM_LINKS links = sock.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+            for (const auto& link : links)
+            {
+                if (link.isValid())
+                {
+                    QModelIndex insock = link.data(ROLE_INSOCK_IDX).toModelIndex();
+                    ZASSERT_EXIT(insock.isValid());
+                    const auto& inNodeIdx = insock.data(ROLE_NODE_IDX).toModelIndex();
+                    if (inNodeIdx.isValid() && inNodeIdx.data(ROLE_NODE_DATACHANGED).toBool() == false)
+                    {
+                        _markNodeChanged(inNodeIdx);
+                    }
+                }
+            }
+        }
+    }
 }
 
 void GraphsModel::clearNodeDataChanged()
@@ -1716,8 +1736,8 @@ void GraphsModel::updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO inf
 {
     QModelIndex nodeIdx = index(nodeid, subgIdx);
     ModelSetData(nodeIdx, info.newValue, info.role);
-    if (ROLE_OPTIONS == info.role)
-        markNodeDataChanged(nodeIdx);
+    //if (ROLE_OPTIONS == info.role)
+    //    markNodeDataChanged(nodeIdx);
 }
 
 void GraphsModel::updateBlackboard(const QString &id, const QVariant &newInfo, const QModelIndex &subgIdx, bool enableTransaction) 

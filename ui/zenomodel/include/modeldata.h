@@ -72,7 +72,8 @@ enum NODE_OPTION {
     OPT_ONCE = 1,
     OPT_MUTE = 1 << 1,
     OPT_VIEW = 1 << 2,
-    OPT_PREP = 1 << 3
+    OPT_PREP = 1 << 3,
+    OPT_CACHE = 1 << 4
 };
 
 enum SOCKET_PROPERTY {

@@ -15,6 +15,10 @@
 #include <zeno/utils/safe_at.h>
 #include <zeno/utils/logger.h>
 #include <zeno/extra/GlobalState.h>
+#include <filesystem>
+#include <fstream>
+#include <zeno/extra/GlobalComm.h>
+#include <zeno/types/PrimitiveObject.h>
 
 namespace zeno {
 
@@ -68,7 +72,49 @@ ZENO_API void INode::complete() {}
     return true;
 }*/
 
+ZENO_API bool zeno::INode::getTmpCache()
+{
+    GlobalComm::ViewObjects objs;
+    std::vector<std::string> vec;
+    std::string fileName = myname + ".zenocache";
+    vec.push_back(fileName);
+    log_debug("get cache {}", fileName);
+    bool ret = GlobalComm::fromDisk(zeno::getSession().globalComm->objTmpCachePath, zeno::getSession().globalState->frameid, objs, vec);
+    if (ret)
+    {
+        for (const auto& [key, obj] : objs)
+        {
+            set_output(key, obj);
+        }
+    }
+    return ret && objs.size() > 0;
+}
+
+ZENO_API void zeno::INode::writeTmpCaches()
+{
+    GlobalComm::ViewObjects objs;
+    for (auto const& [name, value] : outputs) 
+    {
+        if (auto obj = dynamic_cast<IObject*>(value.get()))
+        {
+            objs.try_emplace(name, value);
+        }
+
+    }
+    int frameid = zeno::getSession().globalState->frameid;
+    std::vector<std::string> vec;
+    std::string fileName = myname + ".zenocache";
+    vec.push_back(fileName);
+    GlobalComm::toDisk(zeno::getSession().globalComm->objTmpCachePath, frameid, objs, false, false, vec);
+}
+
 ZENO_API void INode::preApply() {
+    auto& dc = graph->getDirtyChecker();
+    if (!dc.amIDirty(myname) && bTmpCache)
+    {
+        if (getTmpCache())
+            return;
+    }
     for (auto const &[ds, bound]: inputBounds) {
         requireInput(ds);
     }
@@ -79,6 +125,8 @@ ZENO_API void INode::preApply() {
         Timer _(myname);
 #endif
         apply();
+        if (bTmpCache)
+            writeTmpCaches();
     }
     log_debug("==> leave {}", myname);
 }
