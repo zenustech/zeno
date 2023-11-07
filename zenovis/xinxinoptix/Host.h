@@ -1,6 +1,4 @@
 #pragma once
-#ifndef HOSTED
-#define HOSTED
 
 #ifndef __device__
 #define __device__ /* device */
@@ -14,11 +12,14 @@
 #define __forceinline__ __inline__
 #endif
 
+#ifndef __CUDACC_RTC__
+
+#define _USE_MATH_DEFINES
+#include <math.h>
 #include <cmath>
+
 #include <cstdint>
 #include <stdint.h>
-
-#ifndef __CUDACC_RTC__
 
 // static inline bool isnan(float f) {
 //     return f == INFINITY;
@@ -39,5 +40,16 @@ static inline float __int_as_float(int i) {
     return bitConvert<int, float>(i);;
 }
 
+// #ifndef isnan
+// static inline bool isnan(float v) {
+//     return std::isnan(v);
+// }
+// #endif
+
+// #ifndef isinf
+// static inline bool isinf(float v) {
+//     return std::isinf(v);
+// }
+// #endif
+
 #endif // __CUDACC_RTC__
-#endif // HOSTED

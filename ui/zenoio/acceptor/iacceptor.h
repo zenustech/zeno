@@ -97,6 +97,7 @@ public:
     virtual void addCustomUI(const QString& id, const VPARAM_INFO& invisibleRoot) = 0;
     virtual void setIOVersion(zenoio::ZSG_VERSION version) = 0;
     virtual void endNode(const QString& id, const QString& nodeCls, const rapidjson::Value& objValue) = 0;
+    virtual void addCommandParam(const rapidjson::Value& val, const QString& path) {};
     virtual ~IAcceptor() = default;
 };
 

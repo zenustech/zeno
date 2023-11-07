@@ -156,6 +156,47 @@ QTableWidget[cssClass="select_subgraph"]::item:selected
 	background-color: transparent;
 }
 
+QTableWidget[cssClass="commandParams"]
+{
+	background-color: transparent;
+	color: #FFFFFF;
+	font-size: 9pt;
+	border-top:1px solid #191D21;
+	padding:10px;
+}
+
+QTableWidget[cssClass="commandParams"] QHeaderView
+{
+	background-color: #242424;
+	height: 22px;
+}
+
+QTableWidget[cssClass="commandParams"] QHeaderView:section
+{
+	background-color: #242424;
+	border:0;
+	border-bottom: 1px solid #000;
+	border-right: 1px solid #3C424E;
+	padding-left: 6px;
+}
+
+QTableWidget[cssClass="commandParams"] QHeaderView:section:horizontal:last
+{
+    border-right: 0;
+}
+
+QTableWidget[cssClass="commandParams"]::item
+{
+	background-color: #191D21;
+	border: 0;
+	padding:0px 6px;
+}
+
+QTableWidget[cssClass="commandParams"]::item:selected
+{
+	background-color: #3C424E;
+}
+
 QDialog QFrame#line
 {
     color:#737B85;

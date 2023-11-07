@@ -874,6 +874,21 @@ void ModelAcceptor::endNode(const QString& id, const QString& nodeCls, const rap
     }
 }
 
+void ModelAcceptor::addCommandParam(const rapidjson::Value& val, const QString& path)
+{
+    QModelIndex sockIdx = m_pModel->indexFromPath(path);
+    if (sockIdx.isValid())
+    {
+        CommandParam param;
+        if (val.HasMember("name"))
+            param.name = val["name"].GetString();
+        if (val.HasMember("description"))
+            param.description = val["description"].GetString();
+        param.value = sockIdx.data(ROLE_PARAM_VALUE);
+        m_pModel->addCommandParam(path, param);
+    }
+}
+
 void ModelAcceptor::endParams(const QString& id, const QString& nodeCls)
 {
     if (nodeCls == "SubInput" || nodeCls == "SubOutput")
