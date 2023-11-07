@@ -97,7 +97,7 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
     }
     else
     {
-        cachepath[2] = dir / fileName;
+        cachepath[2] = std::filesystem::u8path(dir.string() + "/" + fileName);
     }
     size_t currentFrameSize = 0;
     for (int i = 0; i < 3; i++)
@@ -159,7 +159,7 @@ bool GlobalComm::fromDisk(std::string cachedir, int frameid, GlobalComm::ViewObj
     }
     else
     {
-        cachepath[2] = dir / fileName;
+        cachepath[2] = std::filesystem::u8path(dir.string() + "/" + fileName);
     }
 
     for (auto path : cachepath)
