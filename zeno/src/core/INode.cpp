@@ -75,11 +75,9 @@ ZENO_API void INode::complete() {}
 ZENO_API bool zeno::INode::getTmpCache()
 {
     GlobalComm::ViewObjects objs;
-    std::vector<std::string> vec;
     std::string fileName = myname + ".zenocache";
-    vec.push_back(fileName);
     log_debug("get cache {}", fileName);
-    bool ret = GlobalComm::fromDisk(zeno::getSession().globalComm->objTmpCachePath, zeno::getSession().globalState->frameid, objs, vec);
+    bool ret = GlobalComm::fromDisk(zeno::getSession().globalComm->objTmpCachePath, zeno::getSession().globalState->frameid, objs, fileName);
     if (ret)
     {
         for (const auto& [key, obj] : objs)
@@ -102,10 +100,8 @@ ZENO_API void zeno::INode::writeTmpCaches()
 
     }
     int frameid = zeno::getSession().globalState->frameid;
-    std::vector<std::string> vec;
     std::string fileName = myname + ".zenocache";
-    vec.push_back(fileName);
-    GlobalComm::toDisk(zeno::getSession().globalComm->objTmpCachePath, frameid, objs, false, false, vec);
+    GlobalComm::toDisk(zeno::getSession().globalComm->objTmpCachePath, frameid, objs, false, false, fileName);
 }
 
 ZENO_API void INode::preApply() {

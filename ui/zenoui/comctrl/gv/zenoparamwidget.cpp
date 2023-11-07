@@ -1373,9 +1373,9 @@ ZenoMinStatusBtnItem::ZenoMinStatusBtnItem(const StatusComponent& statusComp, QG
         ZenoStyle::dpiScaledSize(QSize(50, 42)),
         this);
     m_cache = new ZenoImageItem(
-        ":/icons/ONCE_dark.svg",
-        ":/icons/ONCE_light.svg",
-        ":/icons/ONCE_light.svg",
+        ":/icons/CACHE_dark.svg",
+        ":/icons/CACHE_light.svg",
+        ":/icons/CACHE_light.svg",
         ZenoStyle::dpiScaledSize(QSize(50, 42)),
         this);
     //m_once->setFlag(QGraphicsItem::ItemIgnoresTransformations);

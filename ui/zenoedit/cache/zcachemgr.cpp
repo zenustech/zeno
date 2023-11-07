@@ -142,3 +142,8 @@ bool ZCacheMgr::hasCacheOnly(QDir dir, bool& empty)
     }
     return bHasCacheOnly;
 }
+
+void ZCacheMgr::removeObjTmpCacheDir()
+{
+    m_objTmpCacheDir.remove();
+}

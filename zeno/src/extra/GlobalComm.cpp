@@ -25,7 +25,7 @@ std::unordered_set<std::string> lightCameraNodes({
     });
 std::string matlNode = "ShaderFinalize";
 
-void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &objs, bool cacheLightCameraOnly, bool cacheMaterialOnly, std::vector<std::string> strVec) {
+void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &objs, bool cacheLightCameraOnly, bool cacheMaterialOnly, std::string fileName) {
     if (cachedir.empty()) return;
     std::filesystem::path dir = std::filesystem::u8path(cachedir + "/" + std::to_string(1000000 + frameid).substr(1));
     if (!std::filesystem::exists(dir) && !std::filesystem::create_directories(dir))
@@ -89,18 +89,20 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
         }
     }
 
-    if (strVec.size() == 0)
+    if (fileName == "")
     {
-        strVec.push_back("lightCameraObj.zencache");
-        strVec.push_back("materialObj.zencache");
-        strVec.push_back("normalObj.zencache");
+        cachepath[0] = dir / "lightCameraObj.zencache";
+        cachepath[1] = dir / "materialObj.zencache";
+        cachepath[2] = dir / "normalObj.zencache";
+    }
+    else
+    {
+        cachepath[2] = dir / fileName;
     }
     size_t currentFrameSize = 0;
-    for (int i = 0; i < strVec.size(); i++)
+    for (int i = 0; i < 3; i++)
     {
-        if (strVec.size() == 1)
-            i = 2;
-        if (poses[i].size() == 0 && (cacheLightCameraOnly && i != 0 || cacheMaterialOnly && i != 1))
+        if (poses[i].size() == 0 && (cacheLightCameraOnly && i != 0 || cacheMaterialOnly && i != 1 || fileName != "" && i != 2))
             continue;
         keys[i].push_back('\a');
         keys[i] = "ZENCACHE" + std::to_string(poses[i].size()) + keys[i];
@@ -130,15 +132,12 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
             freeSpace = std::filesystem::space(std::filesystem::u8path(cachedir)).free;
         #endif
     }
-    for (int i = 0; i < strVec.size(); i++)
+    for (int i = 0; i < 3; i++)
     {
-        auto path = dir / strVec[i];
-        if (strVec.size() == 1)
-            i = 2;
-        if (poses[i].size() == 0 && (cacheLightCameraOnly && i != 0 || cacheMaterialOnly && i != 1))
+        if (poses[i].size() == 0 && (cacheLightCameraOnly && i != 0 || cacheMaterialOnly && i != 1 || fileName != "" && i != 2))
             continue;
-        log_critical("dump cache to disk {}", path);
-        std::ofstream ofs(path, std::ios::binary);
+        log_critical("dump cache to disk {}", cachepath[i]);
+        std::ofstream ofs(cachepath[i], std::ios::binary);
         std::ostreambuf_iterator<char> oit(ofs);
         std::copy(keys[i].begin(), keys[i].end(), oit);
         std::copy_n((const char *)poses[i].data(), poses[i].size() * sizeof(size_t), oit);
@@ -147,20 +146,24 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
     objs.clear();
 }
 
-bool GlobalComm::fromDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &objs, std::vector<std::string> strVec) {
+bool GlobalComm::fromDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &objs, std::string fileName) {
     if (cachedir.empty())
         return false;
     objs.clear();
-    if (strVec.size() == 0)
+    auto dir = std::filesystem::u8path(cachedir) / std::to_string(1000000 + frameid).substr(1);
+    if (fileName == "")
     {
-        strVec.push_back("lightCameraObj.zencache");
-        strVec.push_back("materialObj.zencache");
-        strVec.push_back("normalObj.zencache");
+        cachepath[0] = dir / "lightCameraObj.zencache";
+        cachepath[1] = dir / "materialObj.zencache";
+        cachepath[2] = dir / "normalObj.zencache";
+    }
+    else
+    {
+        cachepath[2] = dir / fileName;
     }
 
-    for (auto str : strVec)
+    for (auto path : cachepath)
     {
-        auto path = std::filesystem::u8path(cachedir) / std::to_string(1000000 + frameid).substr(1) / str;
         if (!std::filesystem::exists(path))
         {
             continue;

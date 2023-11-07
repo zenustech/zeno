@@ -24,6 +24,7 @@ public:
     cacheOption getCacheOption();
     void cleanCacheDir();
     bool hasCacheOnly(QDir dir, bool& empty);
+    void removeObjTmpCacheDir();
 
 private:
     QTemporaryDir m_objTmpCacheDir;

@@ -83,6 +83,8 @@
 	<file>icons/ONCE_light.svg</file>
 	<file>icons/VIEW_dark.svg</file>
 	<file>icons/VIEW_light.svg</file>
+	<file>icons/CACHE_dark.svg</file>
+	<file>icons/CACHE_light.svg</file>
 	<file>icons/ic_openfile.svg</file>
 	<file>icons/ic_openfile-on.svg</file>
 	<file>icons/ic_MUTE.svg</file>

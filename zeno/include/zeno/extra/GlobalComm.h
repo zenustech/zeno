@@ -60,8 +60,8 @@ struct GlobalComm {
     ZENO_API std::string cachePath();
     ZENO_API bool removeCache(int frame);
     ZENO_API void removeCachePath();
-    static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, bool cacheLightCameraOnly, bool cacheMaterialOnly, std::vector<std::string> strVec = std::vector<std::string>());
-    static bool fromDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::vector<std::string> strVec = std::vector<std::string>());
+    static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, bool cacheLightCameraOnly, bool cacheMaterialOnly, std::string fileName = "");
+    static bool fromDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::string fileName = "");
 private:
     ViewObjects const *_getViewObjects(const int frameid);
 };
