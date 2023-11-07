@@ -611,8 +611,7 @@ namespace GIA {
         using namespace zs;
         using vec2i = zs::vec<int,2>; 
         using vec3 = zs::vec<T,3>;
-
-        retrieve_self_intersection_tri_halfedge_pairs(pol,verts,xtag,tris,halfedges,csHT);    
+   
         icm_grad.resize(csHT.size());
 
         pol(zip(zs::range(csHT.size()),csHT._activeKeys),[
@@ -624,10 +623,15 @@ namespace GIA {
                 auto ti = pair[1];
 
                 auto hedge = half_edge_get_edge(hi,halfedges,tris);
+
                 auto hti = zs::reinterpret_bits<int>(halfedges("to_face",hi));
                 auto htri = tris.pack(dim_c<3>,"inds",hti,int_c);
 
                 auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
+
+                for(int i = 0;i != 3;++i)
+                    if(tri[i] == hedge[0] || tri[i] == hedge[1])
+                        return;
 
                 vec3 halfedge_vertices[2] = {};
                 vec3 tri_vertices[3] = {};

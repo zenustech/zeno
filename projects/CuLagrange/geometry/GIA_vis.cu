@@ -612,6 +612,12 @@ struct VisualizeICMGradient : zeno::INode {
         },0};
        
         GIA::eval_intersection_contour_minimization_gradient(cudaExec,
+                verts,xtag,
+                halfedges,
+                tris,csHT,
+                icm_grad); 
+       
+        GIA::eval_intersection_contour_minimization_gradient(cudaExec,
             verts,source_tag,
             halfedges,
             tris,csHT,
@@ -625,8 +631,13 @@ struct VisualizeICMGradient : zeno::INode {
         TILEVEC_OPS::fill(cudaExec,vtemp,"grad",(T)0);
         TILEVEC_OPS::copy<3>(cudaExec,verts,source_tag,vtemp,"x");
 
+        auto maximum_correction = get_input2<float>("maximum_correction");
+        auto progressive_slope = get_input2<float>("progressive_slope");
+
         cudaExec(zs::range(icm_grad.size()),[
             exec_tag = exec_tag,
+            h0 = maximum_correction,
+            g02 = progressive_slope * progressive_slope,
             xtag = zs::SmallString(source_tag),
             vtemp = proxy<space>({},vtemp),
             icm_grad = proxy<space>({},icm_grad),
@@ -636,7 +647,11 @@ struct VisualizeICMGradient : zeno::INode {
                 auto pair = icm_grad.pack(dim_c<2>,"inds",ci,int_c);
                 auto hi = pair[0];
                 auto ti = pair[1];
-                auto impulse = icm_grad.pack(dim_c<3>,"grad",ci);
+                auto G = icm_grad.pack(dim_c<3>,"grad",ci);
+
+                auto Gn = G.norm();
+                auto Gn2 = Gn * Gn;
+                auto impulse = h0 * G / zs::sqrt(Gn2 + g02);
 
                 auto hedge = half_edge_get_edge(hi,halfedges,tris);
                 auto hti = zs::reinterpret_bits<int>(halfedges("to_face",hi));
@@ -712,7 +727,9 @@ ZENDEFNODE(VisualizeICMGradient, {
     {
         {"zsparticles"},
         {"string", "source_tag", "x"},
-        {"float","scale","1.0"}
+        {"float","scale","1.0"},
+        {"float","maximum_correction","0.1"},
+        {"float","progressive_slope","0.1"}
     },
     {
         {"icm_vis"}

@@ -134,4 +134,5 @@ target_sources(zeno PRIVATE
   geometry/Topology.cu
   geometry/MarkCollisionRegion.cu # CHECK THIS
   geometry/GIA_vis.cu
+  geometry/Detangle.cu
 )
