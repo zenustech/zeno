@@ -57,9 +57,7 @@ struct ImageEdgeDetect : INode {
     void apply() override {
         std::shared_ptr<PrimitiveObject> image = get_input2<PrimitiveObject>("image");
         auto mode = get_input2<std::string>("mode");
-        int threshold = get_input2<int>("threshold");
-        int maxThreshold = get_input2<int>("maxThreshold");
-        float kernelSize = get_input2<float>("kernelSize");
+        float kernelSize = get_input2<float>("KernelSize");
         //float scale = get_input2<float>("scale");
         //float delta = get_input2<float>("delta");
         //int borderType = get_input2<int>("borderType");
@@ -227,10 +225,10 @@ struct ImageEdgeDetect : INode {
 ZENDEFNODE(ImageEdgeDetect, {
     {
         { "image" },
-        { "enum Sobel Roberts Prewitt Canny", "mode", "Sobel" },
+        { "enum Sobel Roberts Prewitt", "mode", "Sobel" },
         //{ "float", "threshold", "50" },
         //{ "float", "maxThreshold", "9999" },
-        { "float", "kernelSize", "3"}
+        { "float", "KernelSize", "3"}
     },
     {
         { "image" }
@@ -318,7 +316,7 @@ ZENDEFNODE(ImageEdgeDetectMarr, {
     { "image" },
 });
 
-
+/*
 struct ImageStitching : INode {
     void apply() override {
         auto image1 = get_input<PrimitiveObject>("image1");
@@ -1297,7 +1295,7 @@ ZENDEFNODE(Image3DAnalyze, {
     {},
     { "image" },
 });
-
+*/
 struct CreateCameraMatrix : INode {
     void apply() override {
         auto top = get_input2<vec3f>("top");

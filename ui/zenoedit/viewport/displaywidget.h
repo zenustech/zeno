@@ -28,6 +28,7 @@ public:
     Zenovis* getZenoVis() const;
     void runAndRecord(const VideoRecInfo& info);
     void testCleanUp();
+    void cleanUpScene();
     void beforeRun();
     void afterRun();
     void changeTransformOperation(const QString &node);

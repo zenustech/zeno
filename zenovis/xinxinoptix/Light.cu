@@ -21,18 +21,18 @@ static __inline__ __device__ void evalSurface(float4* uniforms) {
     //GENERATED_BEGIN_MARK
 
     //GENERATED_END_MARK
-}
-
-static __inline__ __device__ float3 sphereUV(float3 &direction) {
-    
-    return float3 {
-        atan2(direction.x, direction.z) / (2.0f*M_PIf) + 0.5f,
-        direction.y * 0.5f + 0.5f, 0.0f
-    };
 } 
 
 static __inline__ __device__ bool checkLightGAS(uint instanceId) {
-    return ( instanceId >= OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID-1 );
+    return ( instanceId >= OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID-2 );
+}
+
+static __inline__ __device__ bool isPlaneLightGAS(uint instanceId) {
+    return ( instanceId == OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID-1 );
+}
+
+static __inline__ __device__ bool isTriangleLightGAS(uint instanceId) {
+    return ( instanceId == OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID-2 );
 }
 
 extern "C" __global__ void __closesthit__radiance()
@@ -74,11 +74,21 @@ extern "C" __global__ void __closesthit__radiance()
 
         ignore = params.firstSphereLightIdx == UINT_MAX;
         light_index = primitiveIndex + params.firstSphereLightIdx;
+
     } else {
 
-        ignore = params.firstRectLightIdx == UINT_MAX;
-        auto rect_idx = primitiveIndex / 2;
-        light_index = rect_idx + params.firstRectLightIdx;
+        if (isPlaneLightGAS(instanceId)) {
+
+            ignore = params.firstRectLightIdx == UINT_MAX;
+            auto rect_idx = primitiveIndex / 2;
+            light_index = rect_idx + params.firstRectLightIdx;
+
+        } else if (isTriangleLightGAS(instanceId)) {
+
+            ignore = params.firstTriangleLightIdx == UINT_MAX;
+            light_index = primitiveIndex + params.firstTriangleLightIdx;
+
+        } else { ignore = true; }
     }
 
     if (ignore) {
@@ -112,7 +122,6 @@ extern "C" __global__ void __closesthit__radiance()
     float  lightDistance  = optixGetRayTmax();  //length(lightDirection);
 
     LightSampleRecord lsr;
-    float3 emission = light.emission;
 
     if (light.type != zeno::LightType::Diffuse) {
         // auto pos = ray_orig + ray_dir * optixGetRayTmax();
@@ -124,13 +133,28 @@ extern "C" __global__ void __closesthit__radiance()
             light.rect.EvalAfterHit(&lsr, lightDirection, lightDistance, prd->origin);
         } else if (light.shape == zeno::LightShape::Sphere) {
             light.sphere.EvalAfterHit(&lsr, lightDirection, lightDistance, prd->origin);
-        } else {
-            return;
+            cihouSphereLightUV(lsr, light);
+        } else if (light.shape == zeno::LightShape::TriangleMesh) {
+
+            float2 bary2 = optixGetTriangleBarycentrics();
+            float3 bary3 = { 1.0f-bary2.x-bary2.y, bary2.x, bary2.y };
+            
+            float3* normalBuffer = reinterpret_cast<float3*>(params.triangleLightNormalBuffer);
+            float2* coordsBuffer = reinterpret_cast<float2*>(params.triangleLightCoordsBuffer);
+            light.triangle.EvalAfterHit(&lsr, lightDirection, lightDistance, prd->origin, prd->geometryNormal, bary3, normalBuffer, coordsBuffer);
         }
     }
 
+    if (!cihouMaxDistanceContinue(lsr, light)) { return; }
+
+    float3 emission = cihouLightTexture(lsr, light, prd->depth);
+
     if (light.config & zeno::LightConfigDoubleside) {
         lsr.NoL = abs(lsr.NoL);
+    }
+
+    if (light.falloffExponent != 2.0f) {
+        lsr.intensity *= powf(lsr.dist, 2.0f-light.falloffExponent);
     }
 
     const float _SKY_PROB_ = params.skyLightProbablity();
@@ -158,7 +182,7 @@ extern "C" __global__ void __closesthit__radiance()
         float scatterPDF = prd->samplePdf; //BxDF PDF from previous hit
         float misWeight = BRDFBasics::PowerHeuristic(scatterPDF, lightPDF);
 
-        prd->radiance = light.emission * misWeight;
+        prd->radiance = lsr.intensity * emission * misWeight;
         // if (scatterPDF > __FLT_DENORM_MIN__) {
         //     prd->radiance /= scatterPDF;
         // }

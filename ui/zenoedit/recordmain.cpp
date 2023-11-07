@@ -90,6 +90,7 @@ int record_main(const QCoreApplication& app)
         {"videoname", "videoname", "export video's name"},
         {"subzsg", "subgraphzsg", "subgraph zsg file path"},
         {"cacheautorm", "cacheautoremove", "remove cache after render"},
+        {"paramsPath", "paramsPath", "paramsPath"},
     });
     cmdParser.process(app);
 
@@ -142,6 +143,10 @@ int record_main(const QCoreApplication& app)
         return -1;
         //launchparam.enableCache = true;
         //launchparam.tempDir = true;
+    }
+    if (cmdParser.isSet("paramsPath"))
+    {
+        launchparam.paramPath = cmdParser.value("paramsPath");
     }
     if (cmdParser.isSet("exitWhenRecordFinish"))
         param.exitWhenRecordFinish = cmdParser.value("exitWhenRecordFinish").toLower() == "true";

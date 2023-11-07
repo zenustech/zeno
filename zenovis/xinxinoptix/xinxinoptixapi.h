@@ -7,6 +7,7 @@
 #include <set>
 
 #include "optixSphere.h"
+#include "zeno/utils/vec.h"
 
 enum ShaderMaker {
     Mesh = 0,
@@ -56,7 +57,37 @@ void load_object(std::string const &key, std::string const &mtlid, const std::st
 void unload_object(std::string const &key);
 void load_inst(const std::string &key, const std::string &instID, const std::string &onbType, std::size_t numInsts, const float *pos, const float *nrm, const float *uv, const float *clr, const float *tang);
 void unload_inst(const std::string &key);
-void load_light(std::string const &key, float const*v0,float const*v1,float const*v2, float const*nor,float const*emi, bool visible, bool doubleside, int shape, int type, std::string& profileKey);
+
+struct LightDat {
+    std::vector<float> v0;
+    std::vector<float> v1;
+    std::vector<float> v2;
+    std::vector<float> normal;
+    std::vector<float> emission;
+
+    float intensity;
+    float vIntensity;
+    float maxDistance;
+    float falloffExponent;
+
+    bool visible, doubleside;
+    uint8_t shape, type;
+
+    uint32_t coordsBufferOffset = UINT_MAX;
+    uint32_t normalBufferOffset = UINT_MAX;
+
+    std::string profileKey;
+    std::string textureKey;
+    float textureGamma;
+};
+
+void load_triangle_light(std::string const &key, LightDat &ld,
+                        const zeno::vec3f &v0,  const zeno::vec3f &v1,  const zeno::vec3f &v2, 
+                        const zeno::vec3f *pn0, const zeno::vec3f *pn1, const zeno::vec3f *pn2,
+                        const zeno::vec3f *uv0, const zeno::vec3f *uv1, const zeno::vec3f *uv2);
+                        
+void load_light(std::string const &key, LightDat &ld, float const*v0, float const*v1, float const*v2);
+                
 void unload_light();
 void update_procedural_sky(zeno::vec2f sunLightDir, float sunLightSoftness, zeno::vec2f windDir, float timeStart, float timeSpeed,
                            float sunLightIntensity, float colorTemperatureMix, float colorTemperature);

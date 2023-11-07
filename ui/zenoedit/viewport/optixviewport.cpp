@@ -328,6 +328,11 @@ void OptixWorker::needUpdateCamera()
     m_pTimer->start(m_sampleFeq);
 }
 
+void OptixWorker::onCleanUpScene()
+{
+    m_zenoVis->cleanUpScene();
+}
+
 
 ZOptixViewport::ZOptixViewport(QWidget* parent)
     : QWidget(parent)
@@ -392,6 +397,7 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(this, &ZOptixViewport::sig_setSlidFeq, m_worker, &OptixWorker::onSetSlidFeq);
     connect(this, &ZOptixViewport::sig_modifyLightData, m_worker, &OptixWorker::onModifyLightData);
     connect(this, &ZOptixViewport::sig_updateCameraProp, m_worker, &OptixWorker::onUpdateCameraProp);
+    connect(this, &ZOptixViewport::sig_cleanUpScene, m_worker, &OptixWorker::onCleanUpScene);
 
     setRenderSeparately(false, false);
     m_thdOptix.start();
@@ -445,6 +451,11 @@ void ZOptixViewport::setSlidFeq(int feq)
     emit sig_setSlidFeq(feq);
 }
 
+void ZOptixViewport::cleanUpScene()
+{
+    emit sig_cleanUpScene();
+}
+
 void ZOptixViewport::modifyLightData(UI_VECTYPE pos, UI_VECTYPE scale, UI_VECTYPE rotate, UI_VECTYPE color, float intensity, QString name, UI_VECTYPE skipParam)
 {
     emit sig_modifyLightData(pos, scale, rotate, color, intensity, name, skipParam);
@@ -467,7 +478,13 @@ void ZOptixViewport::recordVideo(VideoRecInfo recInfo)
 
 void ZOptixViewport::screenshoot(QString path, QString type, int resx, int resy)
 {
-    emit sigscreenshoot(path, type, resx, resy);
+    std::string sType = type.toStdString();
+    bool ret = m_renderImage.save(path, sType.c_str());
+    if (!ret)
+    {
+        //meet some unsupported type by QImage.
+        emit sigscreenshoot(path, type, resx, resy);
+    }
 }
 
 void ZOptixViewport::cancelRecording(VideoRecInfo recInfo)

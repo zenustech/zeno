@@ -1,4 +1,5 @@
 #pragma once
+#include "Sampling.h"
 #include "zxxglslvec.h"
 #include "TraceStuff.h"
 
@@ -304,8 +305,8 @@ static __inline__ __device__ vec3 hdrSky2(
             .rotX(to_radians(params.sky_rot_x))
             .rotZ(to_radians(params.sky_rot_z))
             .rotY(to_radians(params.sky_rot));
-  float u = atan2(dir.z, dir.x)  / 3.1415926f * 0.5f + 0.5f;
-  float v = asin(dir.y) / 3.1415926f + 0.5f;
+            
+  vec3 uv = sphereUV(dir, true);
   vec3 col = vec3(0);
   for(int jj=-2;jj<=2;jj++)
   {
@@ -313,7 +314,7 @@ static __inline__ __device__ vec3 hdrSky2(
     {
       float dx = (float)ii / (float)(params.skynx);
       float dy = (float)jj / (float)(params.skyny);
-      col = col + (vec3)texture2D(params.sky_texture, vec2(u + dx, v + dy)) * params.sky_strength;
+      col = col + (vec3)texture2D(params.sky_texture, vec2(uv[0] + dx, uv[1] + dy)) * params.sky_strength;
     }
   }
 
@@ -328,12 +329,13 @@ static __inline__ __device__ vec3 hdrSky(
             .rotX(to_radians(params.sky_rot_x))
             .rotZ(to_radians(params.sky_rot_z))
             .rotY(to_radians(params.sky_rot));
-    float u = atan2(dir.z, dir.x)  / 3.1415926f * 0.5f + 0.5f;
-    float v = asin(dir.y) / 3.1415926f + 0.5f;
-    vec3 col = (vec3)texture2D(params.sky_texture, vec2(u, v)) * params.sky_strength;
+
+    vec3 uv = sphereUV(dir, true);
+
+    vec3 col = (vec3)texture2D(params.sky_texture, vec2(uv[0], uv[1])) * params.sky_strength;
     vec3 col2 = clamp(col, vec3(0.0f), vec3(upperBound));
-    int i = u * params.skynx;
-    int j = v * params.skyny;
+    int i = uv[0] * params.skynx;
+    int j = uv[1] * params.skyny;
     //float p = params.skycdf[params.skynx * params.skyny + j * params.skynx + i];
     pdf = luminance(col) / params.envavg / (2.0f * M_PIf * M_PIf);
     return mix(col, col2, isclamp);

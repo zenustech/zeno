@@ -122,6 +122,7 @@ public:
     QModelIndex getNetOutput(const QString& name) const;
     QStringList dumpLabels() const;
     QModelIndexList getNetInputSocks(const QString& name) const;
+    void setCommandParam(const QModelIndex& sock, bool bMarked);
 
 public slots:
     void onDoubleClicked(const QString &nodename);

@@ -365,6 +365,19 @@ QVariant ZSocketPlainTextItem::itemChange(GraphicsItemChange change, const QVari
     return _base::itemChange(change, value);
 }
 
+void ZSocketPlainTextItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* pItem, QWidget* pWidget)
+{
+    bool bMarked = m_viewSockIdx.data(ROLE_VPARAM_COMMAND).toBool();
+    if (bMarked)
+    {
+        setBrush(QColor("#599EED"));
+    }
+    else
+    {
+        setBrush(QColor("#dee6ed"));
+    }
+    _base::paint(painter, pItem, pWidget);
+}
 
 ZEditableTextItem::ZEditableTextItem(const QString &text, QGraphicsItem *parent)
     : _base(parent)

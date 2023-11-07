@@ -169,28 +169,19 @@ __forceinline__ __device__ float3 interp(float2 barys, float3 a, float3 b, float
     return w0*a + w1*b + w2*c;
 }
 
-static __inline__ __device__ bool isBadVector(vec3& vector) {
+static __inline__ __device__ bool isBadVector(const vec3& vector) {
 
     for (size_t i=0; i<3; ++i) {
-        if(isnan(vector[i]) || isinf(vector[i])) {
+        if(!isfinite(vector[i])) {
             return true;
         }
     }
-    return dot(vector, vector) <= 0;
+    return dot(vector, vector) <= 0.0f;
 }
 
-static __inline__ __device__ bool isBadVector(float3& vector) {
-    vec3 tmp = vector;
-    return isBadVector(tmp);
+static __inline__ __device__ bool isBadVector(const float3& vector) {
+    return isBadVector(reinterpret_cast<const vec3&>(vector));
 }
-
-static __inline__ __device__ float3 sphereUV(float3 &direction) {
-    
-    return float3 {
-        atan2(direction.x, direction.z) / (2.0f*M_PIf) + 0.5f,
-        direction.y * 0.5f + 0.5f, 0.0f
-    };
-} 
 
 extern "C" __global__ void __anyhit__shadow_cutout()
 {
@@ -234,7 +225,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 
     attrs.pos = P;
     attrs.nrm = N;
-    attrs.uv = sphereUV(_normal_object_);
+    attrs.uv = sphereUV(_normal_object_, false);
 
     attrs.clr = {};
     attrs.tang = {};
@@ -505,7 +496,7 @@ extern "C" __global__ void __closesthit__radiance()
 
     attrs.pos = P;
     attrs.nrm = N;
-    attrs.uv = sphereUV(_normal_object_);
+    attrs.uv = sphereUV(_normal_object_, false);
 
     attrs.clr = {};
     attrs.tang = {};

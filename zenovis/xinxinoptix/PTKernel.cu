@@ -74,6 +74,7 @@ extern "C" __global__ void __raygen__rg()
     idx.y = idxx.y + params.tile_j * params.tile_h;
     if(idx.x>w || idx.y>h)
         return;
+
     const unsigned int image_index  = idx.y * w + idx.x;
     const int    subframe_index = params.subframe_index;
     const CameraInfo cam = params.cam;
@@ -172,8 +173,10 @@ extern "C" __global__ void __raygen__rg()
         prd.maxDistance  = 1e16f;
         prd.medium       = DisneyBSDF::PhaseFunctions::vacuum;
 
+
         prd.origin = ray_origin;
         prd.direction = ray_direction;
+        prd.samplePdf = 1.0f;
 
         prd.depth = 0;
         prd.diffDepth = 0;

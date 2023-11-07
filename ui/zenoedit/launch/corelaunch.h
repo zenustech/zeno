@@ -19,6 +19,7 @@ struct LAUNCH_PARAM {
     bool autoCleanCacheInCacheRoot = true;    //auto remove cachedir in cache root
     QString zsgPath;
     int projectFps = 24;
+    QString paramPath;
 };
 
 void launchProgram(IGraphsModel *pModel, LAUNCH_PARAM param);

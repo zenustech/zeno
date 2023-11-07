@@ -59,6 +59,12 @@ void ZenoImagePanel::setPrim(std::string primid) {
             if (image_view) {
                 if (pMode->currentText() != "Alpha") {
                     QImage img(width, height, QImage::Format_RGB32);
+                    auto index = std::map<QString, zeno::vec3i>{
+                        {"RGB", {0, 1, 2}},
+                        {"Red", {0, 0, 0}},
+                        {"Green", {1, 1, 1}},
+                        {"Blue", {2, 2, 2}},
+                    }.at(pMode->currentText());
                     for (auto i = 0; i < obj->verts.size(); i++) {
                         int h = i / width;
                         int w = i % width;
@@ -66,12 +72,6 @@ void ZenoImagePanel::setPrim(std::string primid) {
                         if (enableGamma) {
                             c = zeno::pow(c, 1.0f / 2.2f);
                         }
-                        auto index = std::map<QString, zeno::vec3i>{
-                            {"RGB", {0, 1, 2}},
-                            {"Red", {0, 0, 0}},
-                            {"Green", {1, 1, 1}},
-                            {"Blue", {2, 2, 2}},
-                        }.at(pMode->currentText());
                         int r = glm::clamp(int(c[index[0]] * 255.99), 0, 255);
                         int g = glm::clamp(int(c[index[1]] * 255.99), 0, 255);
                         int b = glm::clamp(int(c[index[2]] * 255.99), 0, 255);
@@ -151,6 +151,8 @@ ZenoImagePanel::ZenoImagePanel(QWidget *parent) : QWidget(parent) {
     pMainLayout->addWidget(image_view);
 
     pStatusBar->setProperty("cssClass", "proppanel");
+    QFont font("Consolas", 10);
+    pStatusBar->setFont(font);
     pStatusBar->setText("PlaceHolder");
 
 
@@ -248,10 +250,21 @@ ZenoImagePanel::ZenoImagePanel(QWidget *parent) : QWidget(parent) {
                 info += zeno::format(" | x: {:5}, y: {:5}", w, h);
                 if (obj->verts.has_attr("alpha")) {
                     auto &alpha = obj->verts.attr<float>("alpha");
-                    info += zeno::format(" | value: {:6f}, {:6f}, {:6f}, {:6f}", c[0], c[1], c[2], alpha[i]);
+                    info += zeno::format(
+                        " | value: {}, {}, {}, {}",
+                        QString::number(c[0], 'f', 6).toStdString(),
+                        QString::number(c[1], 'f', 6).toStdString(),
+                        QString::number(c[2], 'f', 6).toStdString(),
+                        QString::number(alpha[i], 'f', 6).toStdString()
+                    );
                 }
                 else {
-                    info += zeno::format(" | value: {:6f}, {:6f}, {:6f}", c[0], c[1], c[2]);
+                    info += zeno::format(
+                        " | value: {}, {}, {}",
+                        QString::number(c[0], 'f', 6).toStdString(),
+                        QString::number(c[1], 'f', 6).toStdString(),
+                        QString::number(c[2], 'f', 6).toStdString()
+                    );
                 }
 
                 QString statusInfo = QString(info.c_str());

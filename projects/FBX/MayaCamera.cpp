@@ -5,6 +5,7 @@
 #include <zeno/utils/log.h>
 
 #include <zeno/zeno.h>
+#include <zeno/utils/eulerangle.h>
 #include <zeno/utils/logger.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/types/NumericObject.h>
@@ -17,9 +18,10 @@
 
 #include "assimp/scene.h"
 
-#include "magic_enum.hpp"
 #include "Definition.h"
 #include "json.hpp"
+
+#include <memory>
 
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
@@ -243,9 +245,10 @@ ZENO_DEFNODE(CameraEval)({
     {"FBX"},
 });
 
+
 struct LightNode : INode {
     virtual void apply() override {
-        auto isL = get_input2<int>("islight");
+        auto isL = true; //get_input2<int>("islight");
         auto inverdir = get_input2<int>("invertdir");
         auto position = get_input2<zeno::vec3f>("position");
         auto scale = get_input2<zeno::vec3f>("scale");
@@ -266,20 +269,41 @@ struct LightNode : INode {
 
         intensity *= scaler;
 
+        std::string type = get_input2<std::string>(lightTypeKey);
+        auto typeEnum = magic_enum::enum_cast<LightType>(type).value_or(LightType::Diffuse);
+        auto typeOrder = magic_enum::enum_integer(typeEnum);
+
+        std::string shapeString = get_input2<std::string>(lightShapeKey);
+        auto shapeEnum = magic_enum::enum_cast<LightShape>(shapeString).value_or(LightShape::Plane);
+        auto shapeOrder = magic_enum::enum_integer(shapeEnum);
+
         auto prim = std::make_shared<zeno::PrimitiveObject>();
+
+        if (has_input("prim")) {
+            auto mesh = get_input<PrimitiveObject>("prim");
+
+            if (mesh->size() > 0) {
+                prim = mesh;
+                shapeEnum = LightShape::TriangleMesh;
+                shapeOrder = magic_enum::enum_integer(shapeEnum);
+            }
+        } else {
+
         auto &verts = prim->verts;
         auto &tris = prim->tris;
 
-        //if(shape == "Plane"){
             auto start_point = zeno::vec3f(0.5, 0, 0.5);
             float rm = 1.0f;
             float cm = 1.0f;
 
-            glm::mat4 rotation = glm::mat4(1.0f);
-            glm::vec3 euler = glm::vec3(rotate[0], rotate[1], rotate[2]);
-            rotation = glm::rotate(rotation, euler.z, glm::vec3(0.0f, 0.0f, 1.0f));
-            rotation = glm::rotate(rotation, euler.y, glm::vec3(0.0f, 1.0f, 0.0f));
-            rotation = glm::rotate(rotation, euler.x, glm::vec3(1.0f, 0.0f, 0.0f));
+            auto order = get_input2<std::string>("EulerRotationOrder:");
+            auto orderTyped = magic_enum::enum_cast<EulerAngle::RotationOrder>(order).value_or(EulerAngle::RotationOrder::YXZ);
+
+            auto measure = get_input2<std::string>("EulerAngleMeasure:");
+            auto measureTyped = magic_enum::enum_cast<EulerAngle::Measure>(measure).value_or(EulerAngle::Measure::Radians);
+
+            glm::vec3 eularAngleXYZ = glm::vec3(rotate[0], rotate[1], rotate[2]);
+            glm::mat4 rotation = EulerAngle::rotate(orderTyped, measureTyped, eularAngleXYZ);
 
             // Plane Verts
             for(int i=0; i<=1; i++){
@@ -305,7 +329,10 @@ struct LightNode : INode {
             // Plane Indices
             tris.emplace_back(zeno::vec3i(0, 3, 1));
             tris.emplace_back(zeno::vec3i(3, 0, 2));
-        //}
+        }
+
+        auto &verts = prim->verts;
+        auto &tris = prim->tris; 
 
         auto &clr = prim->verts.add_attr<zeno::vec3f>("clr");
         auto c = color * intensity;
@@ -340,26 +367,35 @@ struct LightNode : INode {
         prim->userData().set2("color", std::move(color));
         prim->userData().set2("intensity", std::move(intensity));
 
+        auto maxDistance = get_input2<float>("maxDistance");
+        prim->userData().set2("maxDistance", std::move(maxDistance));
+        auto falloffExponent = get_input2<float>("falloffExponent");
+        prim->userData().set2("falloffExponent", std::move(falloffExponent));
+
         auto visible = get_input2<int>("visible");
         auto doubleside = get_input2<int>("doubleside");
 
-        std::string type = get_input2<std::string>(lightTypeKey);
-        auto typeEnum = magic_enum::enum_cast<LightType>(type).value_or(LightType::Diffuse);
-        auto typeOrder = magic_enum::enum_integer(typeEnum);
+        if (has_input2<std::string>("profile")) {
+            auto profile = get_input2<std::string>("profile");
+            prim->userData().set2("lightProfile", std::move(profile));
+        }
+        if (has_input2<std::string>("texturePath")) {
+            auto texture = get_input2<std::string>("texturePath");
+            prim->userData().set2("lightTexture", std::move(texture));
 
-        std::string shape = get_input2<std::string>(lightShapeKey);
-        auto shapeEnum = magic_enum::enum_cast<LightShape>(shape).value_or(LightShape::Plane);
-        auto shapeOrder = magic_enum::enum_integer(shapeEnum);
-
-        auto profile = get_input2<std::string>("profile");
+            auto gamma = get_input2<float>("textureGamma");
+            prim->userData().set2("lightGamma", std::move(gamma));
+        }        
 
         prim->userData().set2("type", std::move(typeOrder));
         prim->userData().set2("shape", std::move(shapeOrder));
         
         prim->userData().set2("visible", std::move(visible));
         prim->userData().set2("doubleside", std::move(doubleside));
-        prim->userData().set2("lightProfile", std::move(profile));
-        
+
+        auto visibleIntensity = get_input2<float>("visibleIntensity");
+        prim->userData().set2("visibleIntensity", std::move(visibleIntensity));
+      
         set_output("prim", std::move(prim));
     }
 
@@ -406,22 +442,32 @@ ZENO_DEFNODE(LightNode)({
         {"vec3f", "scale", "1, 1, 1"},
         {"vec3f", "rotate", "0, 0, 0"},
         {"vec4f", "quaternion", "1, 0, 0, 0"},
+
         {"vec3f", "color", "1, 1, 1"},
         {"float", "exposure", "0"},
         {"float", "intensity", "1"},
-        {"bool", "islight", "1"},
-        {"bool", "invertdir", "1"},
+        {"float", "maxDistance", "-1.0" },
+        {"float", "falloffExponent", "2.0"},
+
         {"bool", "visible", "0"},
+        {"bool", "invertdir", "1"},
         {"bool", "doubleside", "0"},
-        {"string", "profile", ""},
+
+        {"readpath", "profile"},
+        {"readpath", "texturePath"},
+        {"float",  "textureGamma", "1.0"},
+        
+        {"float", "visibleIntensity", "1.0"},
         {"enum " + LightNode::lightShapeListString(), LightNode::lightShapeKey, LightNode::lightShapeDefaultString()},   
-        {"enum " + LightNode::lightTypeListString(), LightNode::lightTypeKey, LightNode::lightTypeDefaultString()} 
+        {"enum " + LightNode::lightTypeListString(), LightNode::lightTypeKey, LightNode::lightTypeDefaultString()}, 
+        {"PrimitiveObject", "prim"},
     },
     {
         "prim"
     },
     {
-
+        {"enum " + EulerAngle::RotationOrderListString(), "EulerRotationOrder", EulerAngle::RotationOrderDefaultString()},
+        {"enum " + EulerAngle::MeasureListString(), "EulerAngleMeasure", EulerAngle::MeasureDefaultString()}
     },
     {"shader"},
 });

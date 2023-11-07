@@ -111,9 +111,28 @@ static void getOptStr(const QString& sockType, QVariant& defl, QString& opStr)
     }
 }
 
-static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgIdx, QString const &graphIdPrefix, bool bView, RAPIDJSON_WRITER& writer, bool bNestedSubg = true, bool applyLightAndCameraOnly = false, bool applyMaterialOnly = false)
+static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgIdx, QString const &graphIdPrefix, bool bView, RAPIDJSON_WRITER& writer, bool bNestedSubg = true, bool applyLightAndCameraOnly = false, bool applyMaterialOnly = false, const QString &configPath = "")
 {
     ZASSERT_EXIT(pGraphsModel && subgIdx.isValid());
+
+    rapidjson::Document configDoc;
+    if (!configPath.isEmpty())
+    {
+        QFile file(configPath);
+        bool ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
+        if (!ret) {
+            zeno::log_error("cannot open config file: {} ({})", configPath.toStdString(),
+                file.errorString().toStdString());
+        }
+
+        QByteArray bytes = file.readAll();
+        configDoc.Parse(bytes);
+
+        if (!configDoc.IsObject())
+        {
+            zeno::log_error("config file is corrupted");
+        }
+    }
 
     //scan all the nodes in the subgraph.
     for (int i = 0; i < pGraphsModel->itemCount(subgIdx); i++)
@@ -158,7 +177,7 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                 AddStringList({"pushSubnetScope", ident}, writer);
                 const QString& prefix = nameMangling(graphIdPrefix, idx.data(ROLE_OBJID).toString());
                 bool _bView = bView && (idx.data(ROLE_OPTIONS).toInt() & OPT_VIEW);
-                serializeGraph(pGraphsModel, pGraphsModel->index(name), prefix, _bView, writer, true, applyLightAndCameraOnly);
+                serializeGraph(pGraphsModel, pGraphsModel->index(name), prefix, _bView, writer, true, applyLightAndCameraOnly, applyMaterialOnly, configPath);
                 AddStringList({"popSubnetScope", ident}, writer);
             }
         }
@@ -272,8 +291,23 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                     }
                 }
 
-                QVariant defl = inSockIdx.data(ROLE_PARAM_VALUE);
                 const QString& sockType = inSockIdx.data(ROLE_PARAM_TYPE).toString();
+                const FuckQMap<QString, CommandParam>& commandParams = pGraphsModel->commandParams();
+                QVariant defl = inSockIdx.data(ROLE_PARAM_VALUE);
+
+                //command params
+                const QString& objPath = inSockIdx.data(ROLE_OBJPATH).toString();
+                if (!configPath.isEmpty() && commandParams.contains(objPath))
+                {
+                    const QString& command = commandParams[objPath].name;
+                    if (configDoc.HasMember(command.toUtf8()))
+                    {
+                        const auto& obj = configDoc[command.toStdString().c_str()];
+                        if (obj.IsObject() && obj.HasMember("value"))
+                            defl = UiHelper::parseJsonByType(sockType, obj["value"], nullptr);
+                    }
+                }
+
                 QString opStr = "setNodeInput";
                 getOptStr(sockType, defl, opStr);
                 if (opStr == "setNodeInput") {
@@ -312,7 +346,20 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
             QString opStr = "setNodeParam";
             getOptStr(param_info.typeDesc, param_info.value, opStr);
             if (opStr == "setNodeParam") {
-                paramValue = UiHelper::parseVarByType(param_info.typeDesc, param_info.value, nullptr);
+                const FuckQMap<QString, CommandParam>& commandParams = pGraphsModel->commandParams();
+                //command params
+                const QString& objPath = param_info.paramPath;
+                QString command = commandParams[objPath].name;
+                if (!configPath.isEmpty() && commandParams.contains(objPath) && configDoc.HasMember(command.toUtf8()))
+                {
+                    const auto& obj = configDoc[command.toStdString().c_str()];
+                    if (obj.IsObject() && obj.HasMember("value"))
+                        paramValue = UiHelper::parseJsonByType(param_info.typeDesc, obj["value"], nullptr);
+                }
+                else
+                {
+                    paramValue = UiHelper::parseVarByType(param_info.typeDesc, param_info.value, nullptr);
+                }
             }
             else {
                 //formula/keyframe
@@ -383,9 +430,9 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
     }
 }
 
-void serializeScene(IGraphsModel* pModel, RAPIDJSON_WRITER& writer, bool applyLightAndCameraOnly, bool applyMaterialOnly)
+void serializeScene(IGraphsModel* pModel, RAPIDJSON_WRITER& writer, bool applyLightAndCameraOnly, bool applyMaterialOnly, const QString& configPath)
 {
-    serializeGraph(pModel, pModel->index("main"), "", true, writer, true, applyLightAndCameraOnly, applyMaterialOnly);
+    serializeGraph(pModel, pModel->index("main"), "", true, writer, true, applyLightAndCameraOnly, applyMaterialOnly, configPath);
 }
 
 static void serializeSceneOneGraph(IGraphsModel* pModel, RAPIDJSON_WRITER& writer, QString subgName)
