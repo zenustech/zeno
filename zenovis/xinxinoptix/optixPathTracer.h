@@ -101,7 +101,8 @@ struct CameraInfo
     float3 right;   //lens right direction
     float3 front;   //lens front direction, so call optical axis
     float3 up;  //lens up direction
-    float3 shift;   //sensor center shift from lens optical axis, shift.z is useless
+    float horizontal_shift;
+    float vertical_shift;
     float pitch;
     float yaw;
     float focal_length;    //lens focal length
