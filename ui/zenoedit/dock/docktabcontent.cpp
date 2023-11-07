@@ -103,6 +103,42 @@ void ZToolRecordingButton::paintEvent(QPaintEvent *event)
 }
 #endif
 
+ZTextIconButton::ZTextIconButton(const QString& text, QWidget* parent)
+    : QWidget(parent)
+    , m_pButton(new QPushButton(this))
+    , m_pLablel(new QLabel(text, this))
+    , m_shortcut(nullptr)
+{
+    setAttribute(Qt::WA_StyledBackground, true);
+    m_pButton->setCursor(Qt::PointingHandCursor);
+    m_pButton->setMaximumWidth(ZenoStyle::dpiScaled(24));
+    m_pButton->setSizePolicy(QSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding));
+    m_pLablel->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding));
+    QHBoxLayout* pLayout = new QHBoxLayout(this);
+    pLayout->setMargin(0);
+    pLayout->addWidget(m_pLablel);
+    pLayout->addWidget(m_pButton);
+    connect(m_pButton, &QPushButton::clicked, this, &ZTextIconButton::clicked);
+}
+
+ZTextIconButton::~ZTextIconButton()
+{
+}
+
+void ZTextIconButton::setShortcut(QKeySequence text)
+{
+    if (!m_shortcut)
+    {
+        m_shortcut = new QShortcut(text, this);
+        connect(m_shortcut, &QShortcut::activated, this, &ZTextIconButton::clicked);
+    }
+    else
+    {
+        m_shortcut->setKey(text);
+    }
+}
+
+
 const int DockToolbarWidget::sToolbarHeight = 28;
 
 
@@ -267,7 +303,9 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pSearchBtn = new ZToolBarButton(true, ":/icons/toolbar_search_idle.svg", ":/icons/toolbar_search_light.svg");
     pSettings = new ZToolBarButton(false, ":/icons/toolbar_localSetting_idle.svg", ":/icons/toolbar_localSetting_light.svg");
     pLinkLineShape = new ZToolBarButton(true, ":/icons/timeline-curvemap.svg",":/icons/timeline-curvemap.svg");
-    pAlways = new ZToolBarButton(true, ":/icons/Always.svg", ":/icons/AlwaysOn.svg");
+    pAlways = new QCheckBox(tr("Auto"), this);
+    pAlways->setChecked(false);
+    pAlways->setProperty("cssClass", "AlwaysCheckBox");
 
     pListView->setToolTip(tr("Subnet List"));
     pTreeView->setToolTip(tr("Node List"));
@@ -284,37 +322,27 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     m_btnRun->addAction(tr("Run"), ":/icons/run_all.svg");
     m_btnRun->addAction(tr("RunLightCamera"), ":/icons/run_lightcamera.svg");
     m_btnRun->addAction(tr("RunMaterial"), ":/icons/run_material.svg");
-    m_btnKill = new ZToolButton;
+    m_btnKill = new ZTextIconButton(tr("Running..."), this);
 
     QFont fnt = QApplication::font();
 
-    m_btnRun->setIcon(ZenoStyle::dpiScaledSize(QSize(16, 16)), ":/icons/run_all.svg",
-                          ":/icons/run_all.svg", "", "", ":/icons/run_all_disable.svg");
+    m_btnRun->setIcon(ZenoStyle::dpiScaledSize(QSize(16, 16)), ":/icons/run_all_btn.svg",
+                          ":/icons/run_all_btn.svg", "", "");
     m_btnRun->setRadius(ZenoStyle::dpiScaled(2));
     m_btnRun->setFont(fnt);
     m_btnRun->setText(tr("Run"));
     m_btnRun->setCursor(QCursor(Qt::PointingHandCursor));
     m_btnRun->setMargins(ZenoStyle::dpiScaledMargins(QMargins(11, 5, 14, 5)));
-    m_btnRun->setBackgroundClr(QColor("#4073B6"), QColor("#4073B6"), QColor("#4073B6"), QColor("#4073B6"), QColor("#4D5561"));
+    m_btnRun->setBackgroundClr(QColor("#1978E6"), QColor("#599EED"), QColor("#1978E6"), QColor("#1978E6"));
     m_btnRun->setTextClr(QColor("#FFFFFF"), QColor("#FFFFFF"), QColor("#FFFFFF"), QColor("#FFFFFF"));
     ZenoSettingsManager &settings = ZenoSettingsManager::GetInstance();
     m_btnRun->setShortcut(settings.getShortCut(ShortCut_Run));
     m_btnRun->setCursor(QCursor(Qt::PointingHandCursor));
 
     //kill
-    m_btnKill->setButtonOptions(ZToolButton::Opt_TextRightToIcon);
-    m_btnKill->setIcon(ZenoStyle::dpiScaledSize(QSize(14, 14)), ":/icons/timeline_kill_clean.svg",
-                           ":/icons/timeline_kill_clean.svg", "", "");
-    m_btnKill->setRadius(ZenoStyle::dpiScaled(2));
     m_btnKill->setFont(fnt);
-    m_btnKill->setText(tr("Kill"));
-    m_btnKill->setCursor(QCursor(Qt::PointingHandCursor));
-    m_btnKill->setMargins(ZenoStyle::dpiScaledMargins(QMargins(11, 5, 14, 5)));
-    m_btnKill->setBackgroundClr(QColor("#4578AC"), QColor("#4578AC"), QColor("#4578AC"), QColor("#4578AC"), QColor("#4D5561"));
-    m_btnKill->setTextClr(QColor("#FFFFFF"), QColor("#FFFFFF"), QColor("#FFFFFF"), QColor("#FFFFFF"));
     m_btnKill->setShortcut(settings.getShortCut(ShortCut_Kill));
-    m_btnKill->setCursor(QCursor(Qt::PointingHandCursor));
-    m_btnKill->setEnabled(false);
+    m_btnKill->setVisible(false);
 
     QFontMetrics fontMetrics(fnt);
 
@@ -369,7 +397,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pToolLayout->addWidget(pLinkLineShape);
     pToolLayout->addWidget(pAlways);
 
-    pToolLayout->addWidget(new ZLineWidget(false, QColor("#121416")));
+    //pToolLayout->addWidget(new ZLineWidget(false, QColor("#121416")));
 
     pToolLayout->addWidget(m_btnRun);
     pToolLayout->addWidget(m_btnKill);
@@ -444,14 +472,14 @@ void DockContent_Editor::initConnections()
     ZenoMainWindow* pMainWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(pMainWin);
     std::function<void()> resetAlways = [=]() {
-        pAlways->toggle(false);
+        pAlways->setChecked(false);
         pMainWin->setAlways(false);
         pMainWin->setAlwaysLightCameraMaterial(false, false);
     };
     connect(zenoApp->graphsManagment(), &GraphsManagment::fileOpened, this, resetAlways);
     connect(zenoApp->graphsManagment(), &GraphsManagment::modelInited, this, resetAlways);
-    connect(pAlways, &ZToolBarButton::toggled, this, [=](bool bChecked) {
-        if (bChecked)
+    connect(pAlways, &QCheckBox::toggled, this, [=](bool checked) {
+        if (checked)
         {
             QSettings settings(zsCompanyName, zsEditor);
             if (!settings.value("zencache-enable").toBool()) {
@@ -506,8 +534,8 @@ void DockContent_Editor::initConnections()
         IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
         if (!pGraphsModel)
             return;
-        m_btnRun->setEnabled(false);
-        m_btnKill->setEnabled(true);
+        m_btnRun->setVisible(false);
+        m_btnKill->setVisible(true);
         std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
         ZASSERT_EXIT(mgr);
         ZenoMainWindow *pMainWin = zenoApp->getMainWindow();
@@ -548,33 +576,37 @@ void DockContent_Editor::initConnections()
 
     connect(m_btnRun, &ZToolMenuButton::textChanged, this, [=]() {
         if (pAlways->isChecked())
-            emit pAlways->toggled(true);
+            pAlways->setChecked(false);
         QString text = m_btnRun->text();
         QColor clr;
+        QColor hoverClr;
         if (text == tr("Run"))
         {
-            clr = QColor("#4073B6");
-            m_btnRun->setIcon(ZenoStyle::dpiScaledSize(QSize(16, 16)), ":/icons/run_all.svg",
-                ":/icons/run_all.svg", "", "", ":/icons/run_all_disable.svg");
+            clr = QColor("#1978E6");
+            hoverClr = QColor("#599EED");
+            m_btnRun->setIcon(ZenoStyle::dpiScaledSize(QSize(16, 16)), ":/icons/run_all_btn.svg",
+                ":/icons/run_all_btn.svg", "", "");
         }
         else if (text == tr("RunLightCamera"))
         {
-            clr = QColor("#B66A40");
-            m_btnRun->setIcon(ZenoStyle::dpiScaledSize(QSize(16, 16)), ":/icons/run_lightcamera.svg",
-                ":/icons/run_lightcamera.svg", "", "", ":/icons/run_lightcamera_disable.svg");
+            clr = QColor("#E67B19");
+            hoverClr = QColor("#EDA059");
+            m_btnRun->setIcon(ZenoStyle::dpiScaledSize(QSize(16, 16)), ":/icons/run_lightcamera_btn.svg",
+                ":/icons/run_lightcamera_btn.svg", "", "");
         }
         else if (text == tr("RunMaterial"))
         {
-            clr = QColor("#9740B6");
-            m_btnRun->setIcon(ZenoStyle::dpiScaledSize(QSize(16, 16)), ":/icons/run_material.svg",
-                ":/icons/run_material.svg", "", "", ":/icons/run_material_disable.svg");
+            clr = QColor("#BD19E6");
+            hoverClr = QColor("#CF59ED");
+            m_btnRun->setIcon(ZenoStyle::dpiScaledSize(QSize(16, 16)), ":/icons/run_material_btn.svg",
+                ":/icons/run_material_btn.svg", "", "");
         }
-        m_btnRun->setBackgroundClr(clr, clr, clr, clr);
+        m_btnRun->setBackgroundClr(clr, hoverClr, clr, clr);
     });
-    connect(m_btnKill, &ZToolButton::clicked, this, [=]() {
+    connect(m_btnKill, &ZTextIconButton::clicked, this, [=]() {
         killProgram();
-        m_btnRun->setEnabled(true);
-        m_btnKill->setEnabled(false);
+        m_btnRun->setVisible(true);
+        m_btnKill->setVisible(false);
     });
 
     connect(&ZenoSettingsManager::GetInstance(), &ZenoSettingsManager::valueChanged, this, [=](QString name) {
@@ -602,6 +634,14 @@ void DockContent_Editor::initConnections()
             m_btnKill->setShortcut(ZenoSettingsManager::GetInstance().getShortCut(ShortCut_Kill));
         }
     });
+
+    connect(pGraphsMgm, &GraphsManagment::modelDataChanged, this, [=]() {
+        if (pAlways->isChecked())
+        {
+            m_btnRun->setVisible(false);
+            m_btnKill->setVisible(true);
+        }
+    });
 }
 
 ZenoGraphsEditor* DockContent_Editor::getEditor() const
@@ -611,8 +651,8 @@ ZenoGraphsEditor* DockContent_Editor::getEditor() const
 
 void DockContent_Editor::runFinished()
 {
-    m_btnRun->setEnabled(true);
-    m_btnKill->setEnabled(false);
+    m_btnRun->setVisible(true);
+    m_btnKill->setVisible(false);
 }
 
 void DockContent_Editor::onCommandDispatched(QAction* pAction, bool bTriggered)
