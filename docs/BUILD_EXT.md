@@ -79,14 +79,9 @@ git clone https://github.com/microsoft/vcpkg.git --depth=1
 cd vcpkg
 .\bootstrap-vcpkg.bat
 .\vcpkg integrate install
-.\vcpkg install zlib:x64-windows
 .\vcpkg install blosc:x64-windows
 .\vcpkg install tbb:x64-windows
-.\vcpkg install boost-iostreams:x64-windows
-.\vcpkg install boost-any:x64-windows
-.\vcpkg install boost-algorithm:x64-windows
-.\vcpkg install boost-uuid:x64-windows
-.\vcpkg install boost-interprocess:x64-windows
+.\vcpkg install boost-uuid:x64-windows boost-interprocess:x64-windows
 .\vcpkg install eigen3:x64-windows
 .\vcpkg install cgal:x64-windows
 .\vcpkg install lapack:x64-windows
