@@ -6,7 +6,7 @@
 #include <zeno/types/PrimitiveObject.h>
 
 #include "zensim/ZpcBuiltin.hpp"
-#include "zensim/resource/Filesystem.hpp"
+#include "zensim/io/Filesystem.hpp"
 #include "zensim/zpc_tpls/fmt/color.h"
 #include "zensim/zpc_tpls/fmt/format.h"
 #include <cstdlib>
