@@ -1,6 +1,4 @@
 //{{NO_DEPENDENCIES}}
-// Microsoft Visual C++ ���ɵİ����ļ���
-// �� zenoedit.rc ʹ��
 //
 
 #include <windows.h>
