@@ -76,16 +76,17 @@ ZENO_API bool zeno::INode::getTmpCache()
 {
     GlobalComm::ViewObjects objs;
     std::string fileName = myname + ".zenocache";
-    log_debug("get cache {}", fileName);
-    bool ret = GlobalComm::fromDisk(zeno::getSession().globalComm->objTmpCachePath, zeno::getSession().globalState->frameid, objs, fileName);
-    if (ret)
+    int frameid = zeno::getSession().globalState->frameid;
+    bool ret = GlobalComm::fromDisk(zeno::getSession().globalComm->objTmpCachePath, frameid, objs, fileName);
+    if (ret && objs.size() > 0)
     {
         for (const auto& [key, obj] : objs)
         {
             set_output(key, obj);
         }
+        return true;
     }
-    return ret && objs.size() > 0;
+    return false;
 }
 
 ZENO_API void zeno::INode::writeTmpCaches()
@@ -93,9 +94,14 @@ ZENO_API void zeno::INode::writeTmpCaches()
     GlobalComm::ViewObjects objs;
     for (auto const& [name, value] : outputs) 
     {
-        if (auto obj = dynamic_cast<IObject*>(value.get()))
+        if (dynamic_cast<IObject*>(value.get()))
         {
-            objs.try_emplace(name, value);
+            auto methview = value->method_node("view");
+            if (!methview.empty()) {
+                log_warn("{} cache to disk failed", myname);
+                return;
+            }
+            objs.try_emplace(name, std::move(value->clone()));
         }
 
     }
