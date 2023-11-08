@@ -499,7 +499,7 @@ struct VisualizeIntersectionLoops : zeno::INode {
                 trace_verts.resize(trace.size() * 2);
                 trace_lines.resize(trace.size() * 2 - 2);
 
-                std::cout << "visualized the L-L trace : " << trace.size() << std::endl;
+                std::cout << "visualized the closed trace : " << trace.size() << std::endl;
                 for(int i = 0;i != trace.size();++i)
                     std::cout << "T[" << i << "] : " << trace[i][0] << "\t" << trace[i][1] << std::endl;
 
@@ -611,17 +611,26 @@ struct VisualizeICMGradient : zeno::INode {
             {"inds",2}
         },0};
        
-        GIA::eval_intersection_contour_minimization_gradient(cudaExec,
-                verts,xtag,
+        std::cout << "retrieve_self_intersection_tri_halfedge_pairs" << std::endl;
+        GIA::retrieve_self_intersection_tri_halfedge_pairs(cudaExec,
+                verts,source_tag,
+                tris,
                 halfedges,
-                tris,csHT,
-                icm_grad); 
+                csHT); 
        
+        auto halfedges_host = halfedges.clone({zs::memsrc_e::host});
+        auto tris_host = tris.clone({zs::memsrc_e::host});
+
+        std::cout << "eval_intersection_contour_minimization_gradient" << std::endl;
+        auto use_global_scheme = get_input2<bool>("use_global_scheme");
         GIA::eval_intersection_contour_minimization_gradient(cudaExec,
             verts,source_tag,
             halfedges,
             tris,csHT,
-            icm_grad);
+            icm_grad,
+            halfedges_host,
+            tris_host,
+            use_global_scheme);
 
         dtiles_t vtemp{verts.get_allocator(),{
             {"grad",3},
@@ -688,15 +697,28 @@ struct VisualizeICMGradient : zeno::INode {
 
                 for(int i = 0;i != 2;++i) {
                     auto beta = edge_bary[i] / cminv;
+                    beta = 1;
                     for(int d = 0;d != 3;++d)
                         atomic_add(exec_tag,&vtemp("grad",d,hedge[i]),impulse[d] * beta);
                 }
 
                 for(int i = 0;i != 3;++i) {
                     auto beta = -tri_bary[i] / cminv;
+                    beta = -1;
                     for(int d = 0;d != 3;++d)
                         atomic_add(exec_tag,&vtemp("grad",d,tri[i]),impulse[d] * beta);                    
                 }
+        });
+
+        cudaExec(zs::range(vtemp.size()),[
+            vtemp = proxy<space>({},vtemp),
+            h0 = maximum_correction,
+            g02 = progressive_slope * progressive_slope] ZS_LAMBDA(int vi) mutable {
+                auto G = vtemp.pack(dim_c<3>,"grad",vi);
+                auto Gn = G.norm();
+                auto Gn2 = Gn * Gn;
+                auto impulse = h0 * G / zs::sqrt(Gn2 + g02 + 1e-6);
+                vtemp.tuple(dim_c<3>,"grad",vi) = impulse;
         });
 
         vtemp = vtemp.clone({zs::memsrc_e::host});
@@ -729,7 +751,8 @@ ZENDEFNODE(VisualizeICMGradient, {
         {"string", "source_tag", "x"},
         {"float","scale","1.0"},
         {"float","maximum_correction","0.1"},
-        {"float","progressive_slope","0.1"}
+        {"float","progressive_slope","0.1"},
+        {"bool","use_global_scheme","0"}
     },
     {
         {"icm_vis"}

@@ -58,15 +58,28 @@ struct Detangle : zeno::INode {
                 {"w",1}
             },verts.size()};
 
-            
+        auto halfedges_host = halfedges.clone({zs::memsrc_e::host});
+        auto tris_host = tris.clone({zs::memsrc_e::host});
+
+        auto use_global_scheme = get_input2<bool>("use_global_scheme");
 
         for(int iter = 0;iter != nm_iters;++iter) {
             csHT.reset(cudaExec,true);
+
+            GIA::retrieve_self_intersection_tri_halfedge_pairs(cudaExec,
+                verts,xtag,
+                tris,
+                halfedges,
+                csHT); 
+
             GIA::eval_intersection_contour_minimization_gradient(cudaExec,
                 verts,xtag,
                 halfedges,
                 tris,csHT,
-                icm_grad);        
+                icm_grad,
+                halfedges_host,
+                tris_host,
+                use_global_scheme);        
 
             TILEVEC_OPS::fill(cudaExec,vtemp,"grad",(T)0.0);
             TILEVEC_OPS::fill(cudaExec,vtemp,"w",(T)0.0);
@@ -125,30 +138,38 @@ struct Detangle : zeno::INode {
 
                     for(int i = 0;i != 2;++i) {
                         auto beta = edge_bary[i] / cminv;
-                        atomic_add(exec_tag,&vtemp("w",hedge[i]),(T)1.0);
+                        beta = 1;
+                        // atomic_add(exec_tag,&vtemp("w",hedge[i]),(T)1.0);
                         for(int d = 0;d != 3;++d)
                             atomic_add(exec_tag,&vtemp("grad",d,hedge[i]),impulse[d] * beta);
                     }
 
                     for(int i = 0;i != 3;++i) {
                         auto beta = -tri_bary[i] / cminv;
-                        atomic_add(exec_tag,&vtemp("w",tri[i]),(T)1.0);
+                        beta = -1;
+                        // atomic_add(exec_tag,&vtemp("w",tri[i]),(T)1.0);
                         for(int d = 0;d != 3;++d)
                             atomic_add(exec_tag,&vtemp("grad",d,tri[i]),impulse[d] * beta);                    
                     }
             });
 
-            auto gradn = TILEVEC_OPS::dot<3>(cudaExec,vtemp,"grad","grad");
-            std::cout << "gradn : " << gradn << std::endl;
+            // auto gradn = TILEVEC_OPS::dot<3>(cudaExec,vtemp,"grad","grad");
+            // std::cout << "gradn : " << gradn << std::endl;
 
             cudaExec(zs::range(verts.size()),[
                 eps = eps,
+                h0 = maximum_correction,
+                g02 = progressive_slope * progressive_slope,
                 xtag = zs::SmallString(xtag),
                 verts = proxy<space>({},verts),
                 vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int vi) mutable {
-                    if(vtemp("w",vi) > eps)
-                        verts.tuple(dim_c<3>,xtag,vi) = verts.pack(dim_c<3>,xtag,vi) + vtemp.pack(dim_c<3>,"grad",vi) / vtemp("w",vi);
-                        verts.tuple(dim_c<3>,xtag,vi) = verts.pack(dim_c<3>,xtag,vi) + vtemp.pack(dim_c<3>,"grad",vi);
+                    // if(vtemp("w",vi) > eps)
+                    //     verts.tuple(dim_c<3>,xtag,vi) = verts.pack(dim_c<3>,xtag,vi) + vtemp.pack(dim_c<3>,"grad",vi) / vtemp("w",vi);
+                    auto G = vtemp.pack(dim_c<3>,"grad",vi);
+                    auto Gn = G.norm();
+                    auto Gn2 = Gn * Gn;
+                    auto impulse = h0 * G / zs::sqrt(Gn2 + g02 + 1e-6);
+                    verts.tuple(dim_c<3>,xtag,vi) = verts.pack(dim_c<3>,xtag,vi) + impulse;
             });
 
         }
@@ -163,6 +184,7 @@ ZENDEFNODE(Detangle, {
         {"zsparticles"},
         {"string", "xtag", "x"},
         {"int","nm_iters","1"},
+        {"bool","use_global_scheme","0"},
         {"float","maximum_correction","0.1"},
         {"float","progressive_slope","0.1"}
     },

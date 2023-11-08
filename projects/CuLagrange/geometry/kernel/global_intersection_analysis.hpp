@@ -184,20 +184,33 @@ namespace GIA {
 
     template<typename TriTileVecHost,
         typename HalfEdgeTileVecHost,
+        typename IntVector,
         typename HTHashMapHost>
-    bool trace_intersection_loop(const TriTileVecHost& tris,
+    constexpr size_t group_intersections_within_the_same_contour(const TriTileVecHost& tris,
+            const HalfEdgeTileVecHost& halfedges,
+            const HTHashMapHost& csHT,
+            IntVector& intersection_group_tag) {
+        return 0;
+    }
+
+
+
+    template<typename TriTileVecHost,
+        typename HalfEdgeTileVecHost,
+        typename IntVector,
+        typename Vec2iVector,
+        typename HTHashMapHost>
+    constexpr bool trace_intersection_loop(const TriTileVecHost& tris,
             const HalfEdgeTileVecHost& halfedges,
             const HTHashMapHost& csHT,
             const zs::vec<int,2>& trace_start,
-            std::vector<int>& intersection_mask,
-            std::vector<int>& loop_sides,
-            std::vector<zs::vec<int,2>>& loop_buffers,
-            std::vector<zs::vec<int,2>>& loop_buffers_0,
-            std::vector<zs::vec<int,2>>& loop_buffers_1) {
+            IntVector& intersection_mask,
+            IntVector& loop_sides,
+            Vec2iVector& loop_buffers,
+            Vec2iVector& loop_buffers_0,
+            Vec2iVector& loop_buffers_1) {
         using namespace zs;
-        using vec2i = zs::vec<int,2>; 
-        constexpr auto omp_space = execspace_e::openmp;
-        auto ompPol = omp_exec();          
+        using vec2i = zs::vec<int,2>;        
         // trace from the boundary loop first, find all the BB\BLI\BI path
         loop_buffers_0.clear();
         loop_buffers_1.clear();
@@ -293,12 +306,96 @@ namespace GIA {
             loop_buffers.push_back(cur_trace);
         }while(cur_trace[0] != trace_start[0] || cur_trace[1] != trace_start[1]);
 
-
-
         return use_input_buffer0;
     }
 
 
+    template<typename TriTileVecHost,
+        typename HalfEdgeTileVecHost,
+        typename IntVector,
+        typename HTHashMapHost>
+    constexpr void trace_intersection_loop(const TriTileVecHost& tris,
+            const HalfEdgeTileVecHost& halfedges,
+            const HTHashMapHost& csHT,
+            const zs::vec<int,2>& trace_start,
+            IntVector& intersection_mask,
+            IntVector& loop_sides,
+            IntVector& loop_buffers) {
+        using namespace zs;
+        using vec2i = zs::vec<int,2>;        
+        // trace from the boundary loop first, find all the BB\BLI\BI path
+        loop_buffers.clear();
+        loop_sides.clear();
+
+
+        bool use_positive_side = true;
+        auto cur_trace = trace_start;
+
+        auto update_context = [&](int pair_id) {
+            loop_buffers.push_back(pair_id);
+            if(use_positive_side) {
+                loop_sides.push_back(0); 
+            }else {
+                loop_sides.push_back(1);
+            }
+            intersection_mask[pair_id] = 1;
+        };
+
+        auto id = csHT.query(cur_trace);
+        update_context(id);
+
+        if(find_intersection_turning_point(halfedges,tris,cur_trace) >= 0) {
+            cur_trace[0] = zs::reinterpret_bits<int>(halfedges("opposite_he",cur_trace[0]));
+            auto id = csHT.query(cur_trace);
+            update_context(id);
+        }
+
+        do {
+            auto hi = cur_trace[0];
+            auto ti = cur_trace[1];
+            // check whether the current hti intersect with ti
+            if(find_intersection_turning_point(halfedges,tris,cur_trace) >= 0)
+                break;
+
+            bool find_intersection = false;
+            auto nhi = hi;
+            for(int i = 0;i != 2;++i) {
+                nhi = get_next_half_edge(nhi,halfedges,1);
+                if(auto id = csHT.query(vec2i{nhi,ti});id >= 0) {
+                    update_context(id);
+                    cur_trace = vec2i{nhi,ti};
+                    find_intersection = true;
+                    break;
+                }
+            }
+            if(!find_intersection) {
+                auto hti = zs::reinterpret_bits<int>(halfedges("to_face",hi));
+                auto thi = zs::reinterpret_bits<int>(tris("he_inds",ti));
+                for(int i = 0;i != 3;++i) {
+                    if(auto id = csHT.query(vec2i{thi,hti});id >= 0) {
+                        use_positive_side = !use_positive_side;
+                        update_context(id);
+                        cur_trace = vec2i{thi,hti};
+                        find_intersection = true;
+                        break;
+                    }
+                    thi = get_next_half_edge(thi,halfedges,1);
+                }
+            }
+            if(!find_intersection) {
+                printf("abruptly end while the cur_trace[%d %d] is neither a turning point nor a boundary point\n",cur_trace[0],cur_trace[1]);
+                throw std::runtime_error("abruptly end while the cur_trace is neither a turning point nor a boundary point");
+            }
+            if(is_boundary_halfedge(halfedges,cur_trace[0])) {
+                printf("find boundary halfedge %d\n",cur_trace[0]);
+                break;
+            }
+
+            cur_trace[0] = zs::reinterpret_bits<int>(halfedges("opposite_he",cur_trace[0]));
+            auto id = csHT.query(cur_trace);
+            update_context(id);
+        }while(cur_trace[0] != trace_start[0] || cur_trace[1] != trace_start[1]);
+    }
 
     // the input intersection loop must be one of the three types : CLOSED ring, L-L ring, B-B ring
     // for 
@@ -607,13 +704,17 @@ namespace GIA {
             const HalfEdgeTileVec& halfedges,
             const TriTileVec& tris,
             HTHashMap& csHT,
-            ICMGradTileVec& icm_grad) {
+            ICMGradTileVec& icm_grad,
+            const HalfEdgeTileVec& halfedges_host,
+            const TriTileVec& tris_host,
+            bool use_global_scheme = false) {
         using namespace zs;
+        auto exec_tag = wrapv<space>{};
         using vec2i = zs::vec<int,2>; 
         using vec3 = zs::vec<T,3>;
    
         icm_grad.resize(csHT.size());
-
+        // local scheme
         pol(zip(zs::range(csHT.size()),csHT._activeKeys),[
             icm_grad = proxy<space>({},icm_grad),
             verts = proxy<space>({},verts),xtag = zs::SmallString(xtag),
@@ -655,7 +756,11 @@ namespace GIA {
                 auto halfedge_opposite_vertex_id = htri[(halfedge_local_vertex_id + 2) % 3];
                 auto halfedge_opposite_vertex = verts.pack(dim_c<3>,xtag,halfedge_opposite_vertex_id);
 
-                if(R.dot(halfedge_opposite_vertex - halfedge_vertices[0]) < 0)
+                auto in_plane_edge_normal = halfedge_opposite_vertex - halfedge_vertices[0];
+                in_plane_edge_normal = in_plane_edge_normal - in_plane_edge_normal.dot(halfedge_orient) * halfedge_orient;
+                in_plane_edge_normal = in_plane_edge_normal.normalized();
+
+                if(R.dot(in_plane_edge_normal) < 0)
                     R = -R;
                 
                 const auto& E = halfedge_orient;
@@ -665,9 +770,123 @@ namespace GIA {
                 auto EN = E.dot(N);
 
                 auto G = R - static_cast<T>(2.0) * ER / EN * N;
+                // https://diglib.eg.org/bitstream/handle/10.2312/SCA.SCA12.311-316/311-316.pdf?sequence=1
+                // point it out the formula in the original paper by Nadia.etc is inaccurate, although the bad effect is limited
+                // auto G = R - ER / EN * N;
                 icm_grad.tuple(dim_c<3>,"grad",ci) = G;
                 icm_grad.tuple(dim_c<2>,"inds",ci) = pair.reinterpret_bits(float_c);
-        });    
+        }); 
+        // global schem
+
+        if(use_global_scheme) {
+            constexpr auto omp_space = execspace_e::openmp;
+            auto ompPol = omp_exec();
+
+            icm_grad = icm_grad.clone({zs::memsrc_e::host});
+            auto icm_grad_proxy = proxy<omp_space>({},icm_grad);
+
+            std::vector<int> mask_host{};mask_host.resize(csHT.size());
+            ompPol(zs::range(mask_host),[] (auto& m) mutable {m = 0;});
+            std::vector<int> loop_sides{};
+            std::vector<int> loop_buffers{};
+
+            auto csHT_host = csHT.clone({memsrc_e::host});
+
+            // tackling L-L loop
+            auto globally_update_icm_gradient = [&](const auto& _loop_buffers,const auto& _loop_sides) {
+                auto avg_icm_grad = zs::vec<T,3>::zeros();
+                for(int i = 0;i != _loop_buffers.size();++i) {
+                    auto pair_id = _loop_buffers[i];
+                    auto grad = icm_grad_proxy.pack(dim_c<3>,"grad",pair_id);
+                    if(_loop_sides[i] > 0)
+                        grad = -grad;
+                    avg_icm_grad += grad;
+                }
+                avg_icm_grad /= (T)_loop_buffers.size();
+                std::cout << "average icm grad : " << avg_icm_grad[0] << "\t" << avg_icm_grad[1] << "\t" << avg_icm_grad[2] << std::endl;
+                ompPol(zs::range(_loop_buffers.size()),[icm_grad_proxy = icm_grad_proxy,
+                        &_loop_sides,
+                        &_loop_buffers,
+                        avg_icm_grad = avg_icm_grad] (const auto& li) mutable {
+                    auto pi = _loop_buffers[li];
+                    auto grad = _loop_sides[li] > 0 ? -avg_icm_grad : avg_icm_grad;
+                    icm_grad_proxy.tuple(dim_c<3>,"grad",pi) = grad;
+                });                
+            };
+
+            while(true) {
+                zs::vec<int,2> res{-1,-1};
+                ompPol(zip(zs::range(csHT_host.size()),csHT_host._activeKeys),[
+                    &res,
+                    halfedges_host_proxy = proxy<omp_space>({},halfedges_host),
+                    tris_host_proxy = proxy<omp_space>({},tris_host),
+                    &mask_host] (auto ci,const auto& pair) mutable {
+                        if(mask_host[ci] == 1)
+                            return;
+                        if(find_intersection_turning_point(halfedges_host_proxy,tris_host_proxy,pair) >= 0)
+                            res = pair;
+                });
+                if(res[0] == -1)
+                    break;
+                trace_intersection_loop(proxy<omp_space>({},tris_host),
+                    proxy<omp_space>({},halfedges_host),
+                    proxy<omp_space>(csHT_host),
+                    res,
+                    mask_host,
+                    loop_sides,
+                    loop_buffers);
+                globally_update_icm_gradient(loop_buffers,loop_sides);
+            }
+            while(true){
+                int bii = -1;
+                ompPol(zip(zs::range(csHT_host.size()),csHT_host._activeKeys),[
+                    &bii,
+                    halfedges_host_proxy = proxy<omp_space>({},halfedges_host),
+                    &mask_host] (auto ci,const auto& pair) mutable {
+                        if(mask_host[ci] == 1)
+                            return;
+                        if(is_boundary_halfedge(halfedges_host_proxy,pair[0]))
+                            bii = ci;
+                });
+                if(bii == -1)
+                    break;
+
+                std::cout << "find boundary pair : " << bii << std::endl;
+                trace_intersection_loop(proxy<omp_space>({},tris_host),
+                    proxy<omp_space>({},halfedges_host),
+                    proxy<omp_space>(csHT_host),
+                    proxy<omp_space>(csHT_host._activeKeys)[bii],
+                    mask_host,
+                    loop_sides,
+                    loop_buffers);
+                globally_update_icm_gradient(loop_buffers,loop_sides);
+            }
+
+            while(true) {
+                int cii = -1;
+                ompPol(zip(zs::range(csHT_host.size()),csHT_host._activeKeys),[
+                    halfedges_host_proxy = proxy<omp_space>({},halfedges_host),
+                    &cii,
+                    &mask_host] (auto ci,const auto& pair) mutable {
+                        if(mask_host[ci] == 1)
+                            return;
+                        cii = ci;
+                });
+                if(cii == -1)
+                    break;
+                std::cout << "find closed pair : " << cii << std::endl;
+                trace_intersection_loop(proxy<omp_space>({},tris_host),
+                    proxy<omp_space>({},halfedges_host),
+                    proxy<omp_space>(csHT_host),
+                    proxy<omp_space>(csHT_host._activeKeys)[cii],
+                    mask_host,
+                    loop_sides,
+                    loop_buffers);
+                globally_update_icm_gradient(loop_buffers,loop_sides);
+            }
+
+            icm_grad = icm_grad.clone({zs::memsrc_e::device,0});
+        }
     }   
 
 };
