@@ -3364,32 +3364,71 @@ void set_window_size(int nx, int ny) {
 }
 
 void set_perspective(float const *U, float const *V, float const *W, float const *E, float aspect, float fov, float fpd, float aperture) {
+    set_perspective_by_fov(U,V,W,E,aspect,fov,0.0f,0.024f,fpd,aperture,0.0f,0.0f,0.0f,0.0f);
+}
+void set_perspective_by_fov(float const *U, float const *V, float const *W, float const *E, float aspect, float fov, int fov_type, float L, float focal_distance, float aperture, float pitch, float yaw, float h_shift, float v_shift) {
     auto &cam = state.params.cam;
-    //float c_aspect = fw/fh;
-    //float u_aspect = aspect;
-    //float r_fh = fh * 0.001;
-    //float r_fw = fw * 0.001;
-    //zeno::log_info("Camera film w {} film h {} aspect {} {}", fw, fh, u_aspect, c_aspect);
-
     cam.eye = make_float3(E[0], E[1], E[2]);
     cam.right = normalize(make_float3(U[0], U[1], U[2]));
     cam.up = normalize(make_float3(V[0], V[1], V[2]));
     cam.front = normalize(make_float3(W[0], W[1], W[2]));
 
-    float radfov = fov * float(M_PI) / 180;
-    float tanfov = std::tan(radfov / 2.0f);
-    cam.front /= tanfov;
-    cam.right *= aspect;
+    float half_radfov = fov * float(M_PI) / 360.0f;
+    float half_tanfov = std::tan(half_radfov);
+    cam.focal_length = L / 2.0f / half_tanfov;
+    if(aperture < 0.01f){
+        cam.aperture = 0.0f;
+    }else{
+        cam.aperture = cam.focal_length / aperture;
+    }
+    
 
+    // L = L/cam.focal_length;
+    // cam.focal_length = 1.0f;
+
+    switch (fov_type){
+        case 0:
+            cam.height = L;
+            break;
+        case 1:
+            cam.height = L / aspect;
+            break;
+        case 2:
+            cam.height = sqrtf(L * L / (1.0f + aspect *aspect));
+            break;
+    }            
+    cam.width = cam.height * aspect;
+
+    cam.pitch = pitch;
+    cam.yaw = yaw;
+    cam.horizontal_shift = h_shift;
+    cam.vertical_shift = v_shift;
+    cam.focal_distance = focal_distance;
     camera_changed = true;
-    //cam.aspect = aspect;
-    //cam.fov = fov;
-    //camera.setZxxViewMatrix(U, V, W);
-    //camera.setAspectRatio(aspect);
-    //camera.setFovY(fov * aspect * (float)M_PI / 180.0f);
+}
+void set_perspective_by_focal_length(float const *U, float const *V, float const *W, float const *E, float aspect, float focal_length, float w, float h, float focal_distance, float aperture, float pitch, float yaw, float h_shift, float v_shift) {
+    auto &cam = state.params.cam;
+    cam.eye = make_float3(E[0], E[1], E[2]);
+    cam.right = normalize(make_float3(U[0], U[1], U[2]));
+    cam.up = normalize(make_float3(V[0], V[1], V[2]));
+    cam.front = normalize(make_float3(W[0], W[1], W[2]));
 
-    cam.focalPlaneDistance = fpd;
-    cam.aperture = aperture;
+    cam.focal_length = focal_length;
+
+    if(aperture < 0.01f){
+        cam.aperture = 0.0f;
+    }else{
+        cam.aperture = cam.focal_length / aperture;
+    }
+
+    cam.width = w;
+    cam.height = h;
+    cam.pitch = pitch;
+    cam.yaw = yaw;
+    cam.horizontal_shift = h_shift;
+    cam.vertical_shift = v_shift;
+    cam.focal_distance = focal_distance;
+    camera_changed = true;
 }
 
 static void write_pfm(std::string& path, int w, int h, const float *rgb) {
