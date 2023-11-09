@@ -684,17 +684,15 @@ struct ReadAlembic : INode {
             traverseABC(obj, *abctree, frameid, read_done, "");
             read_done = true;
             usedPath = path;
-            {
-                std::vector<std::string> prim_paths;
-                abctree->visitPrims([&] (auto const &p) {
-                    auto &ud = p->userData();
-                    prim_paths.push_back(ud.get2<std::string>("_abc_path", ""));
-                });
-                auto &ud = abctree->userData();
-                for (auto i = 0; i < prim_paths.size(); i++) {
-                    ud.set2(zeno::format("prim{:05}", i), prim_paths[i]);
-                }
-            }
+        }
+        {
+            auto namelist = std::make_shared<zeno::ListObject>();
+            abctree->visitPrims([&] (auto const &p) {
+                auto &ud = p->userData();
+                auto _abc_path = ud.get2<std::string>("_abc_path", "");
+                namelist->arr.push_back(std::make_shared<StringObject>(_abc_path));
+            });
+            set_output("namelist", namelist);
         }
         set_output("abctree", std::move(abctree));
     }
@@ -705,7 +703,10 @@ ZENDEFNODE(ReadAlembic, {
         {"readpath", "path"},
         {"frameid"},
     },
-    {{"ABCTree", "abctree"}},
+    {
+        {"ABCTree", "abctree"},
+        "namelist",
+    },
     {},
     {"alembic"},
 });
