@@ -548,7 +548,8 @@ void traverseABC(
     Alembic::AbcGeom::IObject &obj,
     ABCTree &tree,
     int frameid,
-    bool read_done
+    bool read_done,
+    std::string path
 ) {
     {
         auto const &md = obj.getMetaData();
@@ -556,6 +557,7 @@ void traverseABC(
             log_debug("[alembic] meta data: [{}]", md.serialize());
         }
         tree.name = obj.getName();
+        path = zeno::format("{}/{}", path, tree.name);
 
         if (Alembic::AbcGeom::IPolyMesh::matches(md)) {
             if (!read_done) {
@@ -566,6 +568,7 @@ void traverseABC(
             auto &mesh = meshy.getSchema();
             tree.prim = foundABCMesh(mesh, frameid, read_done);
             tree.prim->userData().set2("_abc_name", obj.getName());
+            tree.prim->userData().set2("_abc_path", path);
         } else if (Alembic::AbcGeom::IXformSchema::matches(md)) {
             if (!read_done) {
                 log_debug("[alembic] found a Xform [{}]", obj.getName());
@@ -588,6 +591,7 @@ void traverseABC(
             auto &points_sch = points.getSchema();
             tree.prim = foundABCPoints(points_sch, frameid, read_done);
             tree.prim->userData().set2("_abc_name", obj.getName());
+            tree.prim->userData().set2("_abc_path", path);
         } else if(Alembic::AbcGeom::ICurvesSchema::matches(md)) {
             if (!read_done) {
                 log_debug("[alembic] found curves [{}]", obj.getName());
@@ -596,6 +600,7 @@ void traverseABC(
             auto &curves_sch = curves.getSchema();
             tree.prim = foundABCCurves(curves_sch, frameid, read_done);
             tree.prim->userData().set2("_abc_name", obj.getName());
+            tree.prim->userData().set2("_abc_path", path);
         } else if (Alembic::AbcGeom::ISubDSchema::matches(md)) {
             if (!read_done) {
                 log_debug("[alembic] found SubD [{}]", obj.getName());
@@ -604,6 +609,7 @@ void traverseABC(
             auto &subd_sch = subd.getSchema();
             tree.prim = foundABCSubd(subd_sch, frameid, read_done);
             tree.prim->userData().set2("_abc_name", obj.getName());
+            tree.prim->userData().set2("_abc_path", path);
         }
     }
 
@@ -621,7 +627,7 @@ void traverseABC(
         Alembic::AbcGeom::IObject child(obj, name);
 
         auto childTree = std::make_shared<ABCTree>();
-        traverseABC(child, *childTree, frameid, read_done);
+        traverseABC(child, *childTree, frameid, read_done, path);
         tree.children.push_back(std::move(childTree));
     }
 }
@@ -675,9 +681,20 @@ struct ReadAlembic : INode {
             // fmt::print("GetArchiveStartAndEndTime: {}\n", start);
             // fmt::print("archive.getNumTimeSamplings: {}\n", archive.getNumTimeSamplings());
             auto obj = archive.getTop();
-            traverseABC(obj, *abctree, frameid, read_done);
+            traverseABC(obj, *abctree, frameid, read_done, "");
             read_done = true;
             usedPath = path;
+            {
+                std::vector<std::string> prim_paths;
+                abctree->visitPrims([&] (auto const &p) {
+                    auto &ud = p->userData();
+                    prim_paths.push_back(ud.get2<std::string>("_abc_path", ""));
+                });
+                auto &ud = abctree->userData();
+                for (auto i = 0; i < prim_paths.size(); i++) {
+                    ud.set2(zeno::format("prim{:05}", i), prim_paths[i]);
+                }
+            }
         }
         set_output("abctree", std::move(abctree));
     }

@@ -306,7 +306,7 @@ struct ImportAlembicPrim : INode {
             double start, _end;
             GetArchiveStartAndEndTime(archive, start, _end);
             auto obj = archive.getTop();
-            traverseABC(obj, *abctree, frameid, read_done);
+            traverseABC(obj, *abctree, frameid, read_done, "");
         }
         bool use_xform = get_input2<bool>("use_xform");
         auto index = get_input2<int>("index");
