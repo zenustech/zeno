@@ -6,6 +6,7 @@
 #include <zeno/types/ListObject.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/types/ListObject.h>
+#include <regex>
 
 namespace zeno {
 namespace {
@@ -224,6 +225,28 @@ ZENDEFNODE(StringFormatNumStr, {
     {"string"},
 });
 
+struct StringRegexMatch : zeno::INode {
+    virtual void apply() override {
+        auto str = get_input2<std::string>("str");
+        auto regex_str = get_input2<std::string>("regex");
+        std::regex self_regex(regex_str);
+        int output = std::regex_match(str, self_regex);
+
+        set_output2("output", output);
+    }
+};
+
+ZENDEFNODE(StringRegexMatch, {
+    {
+        {"string", "str", ""},
+        {"string", "regex", ""},
+    },
+    {
+        {"int", "output"}
+    },
+    {},
+    {"string"},
+});
 
 struct FormatString : zeno::INode {
     virtual void apply() override {
