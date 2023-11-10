@@ -82,8 +82,9 @@ struct GenericLight
 
     void setConeData(const float3& p, const float3& dir, float range, float coneAngle) {
         this->cone.p = p;
-        this->cone.dir = dir;
         this->cone.range = range;
+
+        this->cone.dir = dir;
         this->cone.cosFalloffStart = cosf(coneAngle);
         this->cone.cosFalloffEnd = cosf(coneAngle + __FLT_EPSILON__);
     }

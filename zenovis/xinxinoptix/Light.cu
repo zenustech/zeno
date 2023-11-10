@@ -65,7 +65,6 @@ extern "C" __global__ void __closesthit__radiance()
     }
 
     uint light_index = 0;
-    vec3 light_normal {};
 
     bool ignore = false;
     const auto pType = optixGetPrimitiveType();
@@ -100,8 +99,10 @@ extern "C" __global__ void __closesthit__radiance()
     light_index = min(light_index, params.num_lights - 1);
     auto& light = params.lights[light_index];
 
+    vec3 light_normal {};
+
     if (pType == OptixPrimitiveType::OPTIX_PRIMITIVE_TYPE_SPHERE) {
-        light_normal = normalize(light.sphere.center - ray_orig);
+        light_normal = normalize(P - light.sphere.center);
     } else {
         light_normal = light.N;
     }

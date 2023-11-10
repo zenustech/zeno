@@ -2191,6 +2191,7 @@ void buildLightTree() {
         light.B = normalize(v2);
 
         const auto center = v0 + v1 * 0.5f + v2 * 0.5f;
+        const auto radius = fminf(length(v1), length(v2)) * 0.5f;
 
         light.type  = magic_enum::enum_cast<zeno::LightType>(dat.type).value_or(zeno::LightType::Diffuse);
         light.shape = magic_enum::enum_cast<zeno::LightShape>(dat.shape).value_or(zeno::LightShape::Plane);
@@ -2210,7 +2211,6 @@ void buildLightTree() {
 
             firstSphereLightIdx = min(idx, firstSphereLightIdx);
 
-            auto radius = fminf(length(v1), length(v2)) * 0.5f;
             light.setSphereData(center, radius);       
             addLightSphere(center, radius);
 
@@ -2229,7 +2229,6 @@ void buildLightTree() {
             light.ies = val.ptr.handle;
             light.type = zeno::LightType::IES;
             //light.shape = zeno::LightShape::Point;
-            auto radius = length(v1 + v2) * 0.5f;
             light.setConeData(center, light.N, radius, val.coneAngle);
         } 
         
