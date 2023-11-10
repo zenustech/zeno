@@ -284,8 +284,19 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
             float2 uu = {prd->rndf(), prd->rndf()};
 
             switch (light.shape) {
-                case zeno::LightShape::Plane:
-                    light.rect.SampleAsLight(&lsr, uu, shadingP);   break;
+                case zeno::LightShape::Plane: {
+
+                    auto rect = light.rect; 
+                    float2 uvScale, uvOffset;
+                    bool valid = SpreadClampRect(rect.v, rect.axisX, rect.lenX, rect.axisY, rect.lenY, 
+                                                rect.normal, shadingP, 
+                                                light.spread, uvScale, uvOffset);
+                    if (!valid) return;
+
+                    rect.SampleAsLight(&lsr, uu, shadingP);
+                    lsr.uv = uvOffset + lsr.uv * uvScale;
+                    break;
+                }
                 case zeno::LightShape::Sphere: {
                     light.sphere.SampleAsLight(&lsr, uu, shadingP); 
                     cihouSphereLightUV(lsr, light);

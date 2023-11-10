@@ -540,6 +540,54 @@ static inline float2 SphericalRectSample(SphericalRect& srect, float u, float v)
              (yv-srect.y0) / (srect.y1 - srect.y0) }; 
 }
 
+static inline bool SpreadClampRect(float3& v,
+                    const float3& axisX, float& lenX, 
+                    const float3& axisY, float& lenY,
+                    const float3& normal, const float3& shadingP, 
+                    float spread, float2& uvScale, float2& uvOffset) {
+
+    if (spread >= 1.0f) {
+        uvScale  = {1.0f, 1.0f};
+        uvOffset = {0.0f, 0.0f}; 
+        return true;
+    }
+
+    auto diff = shadingP - v;
+    
+    auto vDistance = fabsf(dot(diff, normal));
+    auto spread_angle = 0.5f * spread * M_PIf;
+    auto spread_radius = tanf(spread_angle) * vDistance;
+
+    auto posU = dot(diff, axisX);
+    auto posV = dot(diff, axisY);
+
+    // if (posU > lenU + spread_radius || posU < -spread_radius)
+    //     return false;
+    // if (posV > lenV + spread_radius || posV < -spread_radius)
+    //     return false;
+
+    auto minU = fmaxf(posU-spread_radius, 0.0f);
+    auto maxU = fminf(posU+spread_radius, lenX);
+
+    auto minV = fmaxf(posV-spread_radius, 0.0f);
+    auto maxV = fminf(posV+spread_radius, lenY);
+
+    if (minU > maxU || minV > maxV) return false;
+
+    auto lenU = maxU - minU;
+    auto lenV = maxV - minV;
+
+    uvScale  = {lenU/lenX, lenV/lenY};
+    uvOffset = {minU/lenX, minV/lenY};
+
+    v = v + minU * axisX + minV *axisY;
+    
+    lenX = lenU;
+    lenY = lenV;
+
+    return true;
+}
+
 struct RectShape {
     float3 v;
     float3 axisX; float lenX;
