@@ -182,7 +182,10 @@ extern "C" __global__ void __closesthit__radiance()
                                          reinterpret_cast<const Vector3f&>(prd->geometryNormal), light_index);
 
         auto lightPickPDF = (1.0f - _SKY_PROB_) * PMF;
-        DCHECK(lightPickPDF > 0.0f && lightPickPDF < 1.0f);
+
+        if (lightPickPDF < 0.0f || !isfinite(lightPickPDF)) {
+            lightPickPDF = 0.0f;
+        }
 
         if (1 == prd->depth) {
             if (light.config & zeno::LightConfigVisible) {
@@ -195,7 +198,11 @@ extern "C" __global__ void __closesthit__radiance()
         
         float lightPDF = lightPickPDF * lsr.PDF;
         float scatterPDF = prd->samplePdf; //BxDF PDF from previous hit
-        float misWeight = BRDFBasics::PowerHeuristic(scatterPDF, lightPDF);
+        float misWeight = 1.0f;
+        
+        if (!lsr.isDelta) {
+            misWeight = BRDFBasics::PowerHeuristic(scatterPDF, lightPDF);
+        }
 
         prd->radiance = lsr.intensity * emission * misWeight;
         // if (scatterPDF > __FLT_DENORM_MIN__) {
