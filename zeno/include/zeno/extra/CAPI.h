@@ -92,7 +92,7 @@ enum ZS_DataType {
 };
 
 ZENO_CAPI Zeno_Error ZS_CreateObjectZsSmallVecInt(Zeno_Object *objectRet_, const int *value_, size_t dim_x_, size_t dim_y_) ZENO_CAPI_NOEXCEPT; 
-ZENO_CAPI Zeno_Error ZS_GetObjectZsVecData(Zeno_Object object_, void **ptrRet_, size_t *dims_Ret_, size_t *dim_xRet_, size_t *dim_yRet_, ZS_DataType *typeRet_) ZENO_CAPI_NOEXCEPT; 
+ZENO_CAPI Zeno_Error ZS_GetObjectZsVecData(Zeno_Object object_, void **ptrRet_, size_t *dims_Ret_, size_t *dim_xRet_, size_t *dim_yRet_, ZS_DataType *typeRet_, void** data_ptr) ZENO_CAPI_NOEXCEPT; 
 
 #ifdef __cplusplus
 }
