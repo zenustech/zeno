@@ -173,6 +173,25 @@ static __inline__ __device__ void sampleSphereIES(LightSampleRecord& lsr, const 
     lsr.intensity = 1.0f / dist2;
 }
 
+static __inline__ __device__ float light_spread_attenuation(
+                                            const float3& ray_dir,
+                                            const float3& normal,
+                                            const float spread,
+                                            const float tan_void,
+                                            const float spreadNormalize)
+{
+    const float cos_a = -dot(ray_dir, normal);
+    auto angle_a = acosf(fabsf(cos_a));
+    auto angle_b = spread * 0.5f * M_PIf;
+
+    if (angle_a > angle_b) {
+        return 0.0f;
+    }
+
+    const float tan_a = tanf(angle_a);
+    return fmaxf((1.0f - tan_void * tan_a) * spreadNormalize, 0.0f);
+}
+
 namespace detail {
     template <typename T> struct is_void {
         static constexpr bool value = false;
@@ -240,13 +259,22 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
             switch (light.shape) {
                 case zeno::LightShape::Plane:
                     valid = light.rect.hitAsLight(&lsr, shadingP, -light.N);  break;
-                case zeno::LightShape::Sphere:
-                    valid = light.sphere.hitAsLight(&lsr, shadingP, -light.N); break;
+                case zeno::LightShape::Sphere: {
+                    auto dir = normalize(light.sphere.center - shadingP);
+                    valid = light.sphere.hitAsLight(&lsr, shadingP, dir); 
+                    if (valid) {
+                        cihouSphereLightUV(lsr, light);
+                        lsr.intensity *= 1.0f / (lsr.dist * lsr.dist); 
+                    } else {
+                        
+                    }
+                    break;
+                }
                 default: return;
             }
             if (!valid) { return; }
 
-            lsr.intensity = 1.0f;
+            lsr.intensity *= 2.0f * M_PIf;
             lsr.PDF = 1.0f;
             lsr.NoL = 1.0f;
             lsr.isDelta = true;
@@ -271,6 +299,18 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
                     light.triangle.SampleAsLight(&lsr, uu, shadingP, prd->geometryNormal, normalBuffer, coordsBuffer); break;
                 }
                 default: break;
+            }
+
+            if (light.spread < 1.0f) {
+                
+                auto void_angle = 0.5f * (1.0f - light.spread) * M_PIf;
+                auto atten = light_spread_attenuation(
+                                        lsr.dir,
+                                        lsr.n,
+                                        light.spread,
+                                        tanf(void_angle),
+                                        light.spreadNormalize);
+                lsr.intensity *= atten;
             }
         }
 

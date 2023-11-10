@@ -64,6 +64,7 @@ struct LightDat {
     std::vector<float> normal;
     std::vector<float> emission;
 
+    float spread;
     float intensity;
     float vIntensity;
     float maxDistance;

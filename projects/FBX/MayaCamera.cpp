@@ -372,6 +372,7 @@ struct LightNode : INode {
         auto falloffExponent = get_input2<float>("falloffExponent");
         prim->userData().set2("falloffExponent", std::move(falloffExponent));
 
+        auto spread = get_input2<float>("spread");
         auto visible = get_input2<int>("visible");
         auto doubleside = get_input2<int>("doubleside");
 
@@ -390,6 +391,7 @@ struct LightNode : INode {
         prim->userData().set2("type", std::move(typeOrder));
         prim->userData().set2("shape", std::move(shapeOrder));
         
+        prim->userData().set2("spread", std::move(spread));
         prim->userData().set2("visible", std::move(visible));
         prim->userData().set2("doubleside", std::move(doubleside));
 
@@ -449,6 +451,7 @@ ZENO_DEFNODE(LightNode)({
         {"float", "maxDistance", "-1.0" },
         {"float", "falloffExponent", "2.0"},
 
+        {"float", "spread", "1"},
         {"bool", "visible", "0"},
         {"bool", "invertdir", "1"},
         {"bool", "doubleside", "0"},

@@ -29,6 +29,8 @@ struct GenericLight
     float intensity;
     float vIntensity;
 
+    float spread;
+    float spreadNormalize;
     float maxDistance;
     float falloffExponent;
 

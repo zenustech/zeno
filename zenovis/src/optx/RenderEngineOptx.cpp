@@ -521,6 +521,7 @@ struct GraphicsManager {
                 auto maxDistance = prim_in->userData().get2<float>("maxDistance", std::numeric_limits<float>().max());
                 auto falloffExponent = prim_in->userData().get2<float>("falloffExponent", 2.0f);
 
+                auto spread = prim_in->userData().get2<float>("spread", 1.0f);
                 auto intensity = prim_in->userData().get2<float>("intensity", 1.0f);
                 auto vIntensity = prim_in->userData().get2<float>("visibleIntensity", 1.0f);
 
@@ -542,6 +543,7 @@ struct GraphicsManager {
                 xinxinoptix::LightDat ld;
                 zeno::vec3f nor{}, clr{};
 
+                ld.spread = spread;
                 ld.visible = visible;
                 ld.doubleside = doubleside;
                 ld.intensity = intensity;

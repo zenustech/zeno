@@ -143,6 +143,16 @@ extern "C" __global__ void __closesthit__radiance()
             float2* coordsBuffer = reinterpret_cast<float2*>(params.triangleLightCoordsBuffer);
             light.triangle.EvalAfterHit(&lsr, lightDirection, lightDistance, prd->origin, prd->geometryNormal, bary3, normalBuffer, coordsBuffer);
         }
+    if (light.type == zeno::LightType::Diffuse && light.spread < 1.0f) {
+
+        auto void_angle = 0.5f * (1.0f - light.spread) * M_PIf;
+        auto atten = light_spread_attenuation(
+                                lsr.dir,
+                                lsr.n,
+                                light.spread,
+                                tanf(void_angle),
+                                light.spreadNormalize);
+        lsr.intensity *= atten;
     }
 
     if (!cihouMaxDistanceContinue(lsr, light)) { return; }
