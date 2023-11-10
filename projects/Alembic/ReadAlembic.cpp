@@ -689,7 +689,7 @@ struct ReadAlembic : INode {
             auto namelist = std::make_shared<zeno::ListObject>();
             abctree->visitPrims([&] (auto const &p) {
                 auto &ud = p->userData();
-                auto _abc_path = ud.get2<std::string>("_abc_path", "");
+                auto _abc_path = ud.template get2<std::string>("_abc_path", "");
                 namelist->arr.push_back(std::make_shared<StringObject>(_abc_path));
             });
             set_output("namelist", namelist);
