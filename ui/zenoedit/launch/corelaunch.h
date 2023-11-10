@@ -14,6 +14,7 @@ struct LAUNCH_PARAM {
     bool enableCache = false;
     bool tempDir = false;
     QString cacheDir = "";
+    QString objCacheDir = "";
     int cacheNum = 1;
     bool autoRmCurcache = false;    //auto remove cache when recording
     bool autoCleanCacheInCacheRoot = true;    //auto remove cachedir in cache root

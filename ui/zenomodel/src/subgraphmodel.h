@@ -137,6 +137,7 @@ private:
     void importNodeItem(const NODE_DATA& data, const QModelIndex& nodeIdx, _NodeItem& ret);
     bool checkCustomName(const QString &name);
     void _removeNetLabels(const NodeParamModel* nodeParams);
+    void _uniqueView(const QModelIndex& index, bool bInSocket, bool bOutSocket, QModelIndexList& viewLst);
 
     QString m_name;
     QHash<QString, int> m_key2Row;
