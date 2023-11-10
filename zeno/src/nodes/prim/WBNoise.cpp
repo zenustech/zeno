@@ -799,62 +799,40 @@ constexpr T PERM(T x) {
 
 #define INDEX(ix, iy, iz) PERM((ix) + PERM((iy) + PERM(iz)))
 
-//std::random_device rd;
-//std::default_random_engine engine;
 int g_seed;
 std::uniform_real_distribution<float> d(0, 1);
 
 float impulseTab[256 * 4];
-void impulseTabInit() {
-    std::default_random_engine engine(g_seed);
+void impulseTabInit(int seed) {
+    std::default_random_engine engine(seed);
     int i;
     float *f = impulseTab;
     for (i = 0; i < 256; i++) {
         *f++ = d(engine);
         *f++ = d(engine);
         *f++ = d(engine);
-        *f++ = 1. - 2. * d(engine);
+        *f++ = 1.0f - 2.0f * d(engine);//-1~1
     }
 }
 
-float catrom2(float d, int griddist) {
-    float x;
-    int i;
-    static float table[401];
-    static bool initialized = 0;
-    if (d >= griddist * griddist)
-        return 0;
-    if (!initialized) {
-        for (i = 0; i < 4 * 100 + 1; i++) {
-            x = i / (float)100;
-            x = sqrtf(x);
-            if (x < 1)
-                table[i] = 0.5 * (2 + x * x * (-5 + x * 3));
-            else
-                table[i] = 0.5 * (4 + x * (-8 + x * (5 - x)));
-        }
-        initialized = 1;
-    }
-    d = d * 100 + 0.5;
-    i = floor(d);
-    if (i >= 4 * 100 + 1)
-        return 0;
-    return table[i];
+float QuinticInterpolatingPolynomial(float t)
+{
+	// 6t^5-15t^4+10t^3
+	return t * t * t *( t * ( t* 6.0 - 15.0 ) + 10.0 );
+    //不需要1-t  0.5f * (2.0f + t * t * (-5.0f + t * 3.0f));
 }
 
-#define NEXT(h) (((h) + 1) & 255)
-
-float scnoise(float x, float y, float z, int pulsenum, int griddist) {
+float scnoise(float x, float y, float z, int pulsenum) {
     static int initialized;
     float *fp = nullptr;
     int i, j, k, h, n;
     int ix, iy, iz;
     float sum = 0;
-    float fx, fy, fz, dx, dy, dz, distsq;
+    float fx, fy, fz, dx, dy, dz, dist;
 
     /* Initialize the random impulse table if necessary. */
     if (!initialized) {
-        impulseTabInit();
+        impulseTabInit(g_seed);
         initialized = 1;
     }
     ix = floor(x);
@@ -864,25 +842,28 @@ float scnoise(float x, float y, float z, int pulsenum, int griddist) {
     iz = floor(z);
     fz = z - iz;
 
+    int griddist = 1;
+
     /* Perform the sparse convolution. */
-    for (i = -griddist; i <= griddist; i++) { //周围的grid ： 2*griddist+1
+    for (i = -griddist; i <= griddist; i++) { //周围的grid：2*griddist+1, griddist对性能影响很大但是结果影响递减，所以这里暂为1
         for (j = -griddist; j <= griddist; j++) {
-            for (k = -griddist; k <= griddist; k++) {         /* Compute voxel hash code. */
+            for (k = -griddist; k <= griddist; k++) { 
                 h = INDEX(ix + i, iy + j, iz + k);            //PSN
-                for (n = pulsenum; n > 0; n--, h = NEXT(h)) { /* Convolve filter and impulse. */
-                                                              //每个cell内随机产生pulsenum个impulse
+                for (n = pulsenum; n > 0; n--, h = (h + 1) & 255) { //每个cell内随机产生pulsenum个impulse
                     fp = &impulseTab[h * 4];                  // get impulse
-                    dx = fx - (i + *fp++);                    //i + *fp++   周围几个晶胞的脉冲
-                    dy = fy - (j + *fp++);
-                    dz = fz - (k + *fp++);
-                    distsq = dx * dx + dy * dy + dz * dz;
-                    sum += catrom2(distsq, griddist) *
-                           *fp; // 第四个fp 指向的就是每个点的权重    filter kernel在gabor noise里面变成了gabor kernel。
+                    dx = (float(i) - fx + *fp++);//周围几个晶胞的脉冲
+                    dy = (float(j) - fy + *fp++);
+                    dz = (float(k) - fz + *fp++);
+                    dist = sqrtf(dx * dx + dy * dy + dz * dz);
+                    if (dist < griddist )
+                    {
+                        sum += QuinticInterpolatingPolynomial(1 - dist) * *fp;    // 第四个fp 指向的就是每个点的权重    filter kernel在gabor noise里面变成了gabor kernel
+                    }
                 }
             }
         }
     }
-    return sum / pulsenum;
+    return sum / float(pulsenum);
 }
 
 //glm::vec4 hash42(glm::vec2 p)
@@ -937,15 +918,15 @@ struct NoiseImageGen : INode {
                 max_possible_amp += amp;
 
                 if(perC) {
-                    nval = scnoise(p[0] * freq[0], p[1] * freq[1], p[0] * freq[0], 3, 2);
+                    nval = scnoise(p[0] * freq[0], p[1] * freq[1], p[0] * freq[0], 3);
                     r += nval * amp[0];
-                    nval = scnoise(p[0] * freq[0], p[0] * freq[0], p[1] * freq[1], 3, 2);
+                    nval = scnoise(p[0] * freq[0], p[0] * freq[0], p[1] * freq[1], 3);
                     g += nval * amp[1];
-                    nval = scnoise(p[1] * freq[1], p[0] * freq[0], p[0] * freq[0], 3, 2);
+                    nval = scnoise(p[1] * freq[1], p[0] * freq[0], p[0] * freq[0], 3);
                     b += nval * amp[2];
                 }
                 else{
-                    nval = scnoise(p[0] * freq[0], p[1] * freq[1], p[0] * freq[0], 3, 2);
+                    nval = scnoise(p[0] * freq[0], p[1] * freq[1], p[0] * freq[0], 3);
                     r += nval * amp[0];
                     g += nval * amp[1];
                     b += nval * amp[2];
@@ -1003,10 +984,11 @@ struct erode_noise_sparse_convolution : INode {
     void apply() override {
 
         auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
-        auto griddist = get_input2<int>("griddist");
         auto pulsenum = get_input2<int>("pulsenum");
         auto attrName = get_input2<std::string>("attrName:");
         auto attrType = get_input2<std::string>("attrType:");
+        auto seed = get_input2<int>("seed");
+        g_seed = seed;
 
         if (!terrain->has_attr(attrName)) {
             if (attrType == "float3")
@@ -1026,12 +1008,12 @@ struct erode_noise_sparse_convolution : INode {
 #pragma omp parallel for
             for (int i = 0; i < arr.size(); i++) {
                 if constexpr (is_decay_same_v<decltype(arr[i]), vec3f>) {
-                    float x = scnoise(pos[i][0], pos[i][1], pos[i][2], pulsenum, griddist);
-                    float y = scnoise(pos[i][1], pos[i][2], pos[i][0], pulsenum, griddist);
-                    float z = scnoise(pos[i][2], pos[i][0], pos[i][1], pulsenum, griddist);
+                    float x = scnoise(pos[i][0], pos[i][1], pos[i][2], pulsenum);
+                    float y = scnoise(pos[i][1], pos[i][2], pos[i][0], pulsenum);
+                    float z = scnoise(pos[i][2], pos[i][0], pos[i][1], pulsenum);
                     arr[i] = vec3f(x, y, z);
                 } else {
-                    arr[i] = scnoise(pos[i][0], pos[i][1], pos[i][2], pulsenum, griddist);
+                    arr[i] = scnoise(pos[i][0], pos[i][1], pos[i][2], pulsenum);
                 }
             }
         });
@@ -1043,7 +1025,7 @@ ZENDEFNODE(erode_noise_sparse_convolution, {/* inputs: */ {
                                                 "prim_2DGrid",
                                                 {"string", "posLikeAttrName", "pos"},
                                                 {"int", "pulsenum", "3"},
-                                                {"int", "griddist", "2"},
+                                                {"int", "seed", "1"},
                                             },
                                             /* outputs: */
                                             {
