@@ -792,6 +792,7 @@ std::array<int, 256> perm = {
     206, 14,  118, 127, 48,  79,  147, 85,  30,  207, 219, 54,  88,  234, 190, 122, 95,  67,  143, 109, 137, 214,
     145, 93,  92,  100, 245, 0,   216, 186, 60,  83,  105, 97,  204, 52};
 
+
 template <typename T>
 constexpr T PERM(T x) {
     return perm[(x)&255];
@@ -848,12 +849,15 @@ float scnoise(float x, float y, float z, int pulsenum) {
     for (i = -griddist; i <= griddist; i++) { //周围的grid：2*griddist+1, griddist对性能影响很大但是结果影响递减，所以这里暂为1
         for (j = -griddist; j <= griddist; j++) {
             for (k = -griddist; k <= griddist; k++) { 
-                h = INDEX(ix + i, iy + j, iz + k);            //PSN
+                h = INDEX(ix + i, iy + j, iz + k);
                 for (n = pulsenum; n > 0; n--, h = (h + 1) & 255) { //每个cell内随机产生pulsenum个impulse
                     fp = &impulseTab[h * 4];                  // get impulse
                     dx = (float(i) - fx + *fp++);//周围几个晶胞的脉冲
                     dy = (float(j) - fy + *fp++);
                     dz = (float(k) - fz + *fp++);
+                    //dx = (float(i) - fx + impulse_xcoords[h]);速度：(
+                    //dy = (float(j) - fy + impulse_ycoords[h]);
+                    //dz = (float(k) - fz + impulse_zcoords[h]);
                     dist = sqrtf(dx * dx + dy * dy + dz * dz);
                     if (dist < griddist )
                     {
