@@ -100,22 +100,25 @@ extern "C"
     ZENO_CAPI Zeno_Error ZS_GetObjectZsVecData(Zeno_Object object_, void **ptrRet_,
                                                size_t *dims_Ret_, size_t *dim_xRet_,
                                                size_t *dim_yRet_,
-                                               ZS_DataType *typeRet_) ZENO_CAPI_NOEXCEPT
+                                               ZS_DataType *typeRet_, 
+                                               void** data_ptr) ZENO_CAPI_NOEXCEPT
     {
         return PyZeno::lastError.catched([=]
                                          {
             auto optr = PyZeno::lutObject.access(object_).get();
             auto& vec = dynamic_cast<SmallVecObject *>(optr)->value;
             std::visit(
-                [dims_Ret_ = dims_Ret_, dim_xRet_ = dim_xRet_, dim_yRet_ = dim_yRet_, typeRet_ = typeRet_, ptrRet_ = ptrRet_] (auto &vec) {
+                [dims_Ret_ = dims_Ret_, dim_xRet_ = dim_xRet_, dim_yRet_ = dim_yRet_, typeRet_ = typeRet_, ptrRet_ = ptrRet_, data_ptr = data_ptr] (auto &vec) {
                     using vec_t = RM_CVREF_T(vec); 
                     if constexpr (zs::is_scalar_v<vec_t>) {
                         *typeRet_ = PyZeno::getZSdataType<vec_t>(); 
                         *dims_Ret_ = 0; 
-                        *ptrRet_ = reinterpret_cast<void *>(&vec); 
+                        *ptrRet_ = static_cast<void *>(&vec); 
+                        *data_ptr = static_cast<void *>(&vec); 
                     } else {
                         *typeRet_ = PyZeno::getZSdataType<typename vec_t::value_type>(); 
-                        *ptrRet_ = reinterpret_cast<void *>(vec.data()); 
+                        *ptrRet_ = static_cast<void *>(&vec); 
+                        *data_ptr = static_cast<void *>(vec.data()); 
                         constexpr auto dim = vec_t::dim; 
                         *dims_Ret_ = dim; 
                         *dim_xRet_ = vec_t::template range_t<0>::value;
