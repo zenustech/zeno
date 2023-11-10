@@ -1574,17 +1574,37 @@ void GraphsModel::_markNodeChanged(const QModelIndex& nodeIdx)
     {
         for (const auto& sock : nodeParams->getOutputIndice())
         {
-            PARAM_LINKS links = sock.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
-            for (const auto& link : links)
+            const int sockProp = sock.data(ROLE_PARAM_SOCKPROP).toInt();
+            QModelIndexList socketLst;
+            //dict sock
+            if (sockProp & SOCKPROP_DICTLIST_PANEL)
             {
-                if (link.isValid())
+                QAbstractItemModel* pKeyObjModel = QVariantPtr<QAbstractItemModel>::asPtr(sock.data(ROLE_VPARAM_LINK_MODEL));
+                for (int _r = 0; _r < pKeyObjModel->rowCount(); _r++)
                 {
-                    QModelIndex insock = link.data(ROLE_INSOCK_IDX).toModelIndex();
-                    ZASSERT_EXIT(insock.isValid());
-                    const auto& inNodeIdx = insock.data(ROLE_NODE_IDX).toModelIndex();
-                    if (inNodeIdx.isValid() && inNodeIdx.data(ROLE_NODE_DATACHANGED).toBool() == false)
+                    const QModelIndex& keyIdx = pKeyObjModel->index(_r, 0);
+                    ZASSERT_EXIT(keyIdx.isValid());
+                    socketLst << keyIdx;
+                }
+            }
+            else
+            {
+                socketLst << sock;
+            }
+            for (const auto& index : socketLst)
+            {
+                PARAM_LINKS links = index.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+                for (const auto& link : links)
+                {
+                    if (link.isValid())
                     {
-                        _markNodeChanged(inNodeIdx);
+                        QModelIndex insock = link.data(ROLE_INSOCK_IDX).toModelIndex();
+                        ZASSERT_EXIT(insock.isValid());
+                        const auto& inNodeIdx = insock.data(ROLE_NODE_IDX).toModelIndex();
+                        if (inNodeIdx.isValid() && inNodeIdx.data(ROLE_NODE_DATACHANGED).toBool() == false)
+                        {
+                            _markNodeChanged(inNodeIdx);
+                        }
                     }
                 }
             }
