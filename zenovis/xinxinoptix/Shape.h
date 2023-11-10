@@ -458,8 +458,93 @@ struct PointShape {
     }
 };
 
+struct SphericalRect {
+    float3 o, x, y, z;
+    float z0, z0sq;
+    float x0, y0, y0sq;
+    float x1, y1, y1sq;
+    float b0, b1, b0sq, k;
+    float S;
+};
+
+static inline void SphericalRectInit(SphericalRect& srect, 
+    const float3& o, const float3& s, 
+    const float3& axisX, const float& lenX, 
+    const float3& axisY, const float& lenY) {
+
+    srect.o = o; 
+    
+    float exl = lenX, eyl = lenY;
+    // compute local reference system ’R’
+    srect.x = axisX;
+    srect.y = axisY;
+    srect.z = cross(srect.x, srect.y);
+    // compute rectangle coords in local reference system
+    float3 d = s - o;
+    srect.z0 = dot(d, srect.z);
+    // flip ’z’ to make it point against ’Q’
+    if (srect.z0 > 0) {
+        srect.z *= -1.f;
+        srect.z0 *= -1.f;
+    }
+    srect.z0sq = srect.z0 * srect.z0;
+    srect.x0 = dot(d, srect.x);
+    srect.y0 = dot(d, srect.y);
+    srect.x1 = srect.x0 + exl;
+    srect.y1 = srect.y0 + eyl;
+    srect.y0sq = srect.y0 * srect.y0;
+    srect.y1sq = srect.y1 * srect.y1;
+    // create vectors to four vertices
+    float3 v00 = {srect.x0, srect.y0, srect.z0};
+    float3 v01 = {srect.x0, srect.y1, srect.z0};
+    float3 v10 = {srect.x1, srect.y0, srect.z0};
+    float3 v11 = {srect.x1, srect.y1, srect.z0};
+    // compute normals to edges
+    float3 n0 = normalize(cross(v00, v10));
+    float3 n1 = normalize(cross(v10, v11));
+    float3 n2 = normalize(cross(v11, v01));
+    float3 n3 = normalize(cross(v01, v00));
+    // compute internal angles (gamma_i)
+    float g0 = acosf(-dot(n0,n1));
+    float g1 = acosf(-dot(n1,n2));
+    float g2 = acosf(-dot(n2,n3));
+    float g3 = acosf(-dot(n3,n0));
+    // compute predefined constants
+    srect.b0 = n0.z;
+    srect.b1 = n2.z;
+    srect.b0sq = srect.b0 * srect.b0;
+    srect.k = 2.0f * M_PIf - g2 - g3;
+    // compute solid angle from internal angles
+    srect.S = g0 + g1 - srect.k;
+}
+
+static inline float2 SphericalRectSample(SphericalRect& srect, float u, float v) {
+    // 1. compute ’cu’
+    float au = u * srect.S + srect.k;
+    float fu = (cosf(au) * srect.b0 - srect.b1) / sinf(au);
+    float cu = (fu>0 ? +1.f:-1.f) /sqrtf(fu*fu + srect.b0sq);
+    cu = clamp(cu, -1.0f, 1.0f); // avoid NaNs
+    // 2. compute ’xu’
+    float xu = -(cu * srect.z0) / sqrtf(1.f - cu*cu);
+    xu = clamp(xu, srect.x0, srect.x1); // avoid Infs
+    // 3. compute ’yv’
+    float d = sqrtf(xu*xu + srect.z0sq);
+    float h0 = srect.y0 / sqrtf(d*d + srect.y0sq);
+    float h1 = srect.y1 / sqrtf(d*d + srect.y1sq);
+    float hv = h0 + v * (h1-h0), hv2 = hv*hv;
+    float yv = (hv2 < 1.f-__FLT_EPSILON__) ? (hv*d)/sqrtf(1.f-hv2) : srect.y1;
+    // 4. transform (xu,yv,z0) to world coords
+    //return (squad.o + xu*squad.x + yv*squad.y + squad.z0*squad.z);
+
+    return { (xu-srect.x0) / (srect.x1 - srect.x0),
+             (yv-srect.y0) / (srect.y1 - srect.y0) }; 
+}
+
 struct RectShape {
-    float3 v0, v1, v2;
+    float3 v;
+    float3 axisX; float lenX;
+    float3 axisY; float lenY;
+
     float3 normal;
     float  area;
 
@@ -487,12 +572,18 @@ struct RectShape {
         lsr->NoL = lightNoL;
     }  
 
-    inline void SampleAsLight(LightSampleRecord* lsr, const float2& uu, const float3& shadingP) {    
+    inline void SampleAsLight(LightSampleRecord* lsr, const float2& uu, const float3& shadingP) {  
+
+        auto uv = uu; 
+
+        SphericalRect squad;
+        SphericalRectInit(squad, shadingP, v, axisX, lenX, axisY, lenY); 
+        uv = SphericalRectSample(squad, uu.x, uu.y);
 
         lsr->n = normalize(normal);
-        lsr->p = v0 + v1 * uu.x + v2 * uu.y;
+        lsr->p = v + axisX * lenX * uv.x + axisY * lenY * uv.y;
 
-        lsr->uv = uu;
+        lsr->uv = uv;
 
         lsr->dir = (lsr->p - shadingP);
         //lsr->dir = normalize(lsr->dir);
@@ -505,9 +596,13 @@ struct RectShape {
 
         lsr->NoL = dot(-lsr->dir, lsr->n);
         lsr->PDF = 0.0f;
+
+        // if (fabsf(lsr->NoL) > __FLT_EPSILON__) {
+        //     lsr->PDF = lsr->dist * lsr->dist * PDF() / fabsf(lsr->NoL);
+        // }
         
-        if (fabsf(lsr->NoL) > __FLT_EPSILON__) {
-            lsr->PDF = lsr->dist * lsr->dist * PDF() / fabsf(lsr->NoL);
+        if (abs(squad.S) > __FLT_EPSILON__) {
+            lsr->PDF = 1.0f / squad.S;
         }
     }
 
