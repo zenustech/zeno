@@ -126,8 +126,6 @@ namespace DisneyBSDF{
         subsurface_random_walk_remap(albedo.y, r.y, 0, sigma_t.y, alpha.y);
         subsurface_random_walk_remap(albedo.z, r.z, 0, sigma_t.z, alpha.z);
         //sigma_s = sigma_t * alpha;
-
-        //printf("radius= %f %f %f, \nr= %f %f %f \n", radius.x, radius.y, radius.z, r.x, r.y, r.z);
     }
 
     static __inline__ __device__
@@ -164,9 +162,10 @@ namespace DisneyBSDF{
     }
 
     static __inline__ __device__ 
-    vec3 CalculateExtinction(vec3 apparantColor, float scatterDistance)
+    vec3 CalculateExtinction(vec3 apparantColor, float scaler)
     {
-        return 1.0/(max(apparantColor * scatterDistance,vec3(0.000001)));
+     //   return 1.0/(max(apparantColor * scaler,vec3(0.000001)));
+        return (1.0f - apparantColor) * scaler;
     }
     
     static __inline__ __device__
@@ -694,7 +693,7 @@ namespace DisneyBSDF{
               wi = normalize(refract(wo, wm, entering?1.0f/mat.ior:mat.ior));
               flag = transmissionEvent;
               isTrans = true;
-              extinction = CalculateExtinction(mat.transParam, mat.transDepth);
+              extinction = CalculateExtinction(mat.transTint, mat.transTintDepth);
               extinction = entering? extinction : vec3(0.0f);
             }
 

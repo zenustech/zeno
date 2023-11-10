@@ -480,7 +480,7 @@ ZENDEFNODE(ImageFlipVertical, {
         {"image"},
     },
     {},
-    {"comp"},
+    {"deprecated"},
 });
 
 void write_pfm(std::string& path, int w, int h, vec3f *rgb) {
@@ -690,6 +690,52 @@ ZENDEFNODE(ImageFloatGaussianBlur, {
     },
     {
         {"image"},
+    },
+    {},
+    {"deprecated"},
+});
+
+struct EnvMapRot : INode {
+    virtual void apply() override {
+        auto path = get_input2<std::string>("path");
+        auto img = readImageFile(path);
+        int h = img->userData().get2<int>("h");
+        int w = img->userData().get2<int>("w");
+        int maxi = 0;
+
+        float maxv = zeno::dot(img->verts[0], zeno::vec3f(0.33, 0.33, 0.33));
+        for (auto i = 1; i < img->size(); i++) {
+            float value = zeno::dot(img->verts[i], zeno::vec3f(0.33, 0.33, 0.33));
+            if (value > maxv) {
+                maxi = i;
+                maxv = value;
+            }
+        }
+        int x = maxi % w;
+        int y = h - 1 - maxi / w;
+
+        float rot_phi = x / float(w) * 360 + 180;
+        set_output2("rotation", rot_phi);
+
+        float rot_theta = y / float(h - 1) * 180;
+
+        auto dir = get_input2<vec3f>("dir");
+        dir = zeno::normalize(dir);
+        auto to_rot_theta = glm::degrees(acos(dir[1]));
+        auto diff_rot_theta = to_rot_theta - rot_theta;
+
+        float rot_phi2 = glm::degrees(atan2(dir[2], dir[0]));
+        set_output2("rotation3d", vec3f(0, -rot_phi2, diff_rot_theta));
+    }
+};
+ZENDEFNODE(EnvMapRot, {
+    {
+        {"readpath", "path", ""},
+        {"vec3f", "dir", "1, 1, 1"},
+    },
+    {
+        {"float", "rotation"},
+        {"vec3f", "rotation3d"},
     },
     {},
     {"comp"},

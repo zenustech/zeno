@@ -61,8 +61,9 @@ void ZSlider::setSliderValue(int value)
 int ZSlider::_posToFrame(int x)
 {
     int W = width();
-    qreal rate = (qreal)(x + 5 - m_sHMargin) / (W - 2 * m_sHMargin);
-    return rate * (m_to - m_from + 1) + m_from;
+    qreal distPerFrame = (qreal)(width() - 2 * m_sHMargin) / ((m_to - m_from) == 0 ? 1 : (m_to - m_from));
+    qreal rate = (qreal)(x + distPerFrame / 2 - m_sHMargin) / (W - 2 * m_sHMargin);
+    return rate * (m_to - m_from) + m_from;
 }
 
 int ZSlider::_frameToPos(int frame)

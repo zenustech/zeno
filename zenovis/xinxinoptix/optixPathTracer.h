@@ -26,6 +26,11 @@ struct GenericLight
 {
     float3 T, B, N;
     float3 emission;
+    float intensity;
+    float vIntensity;
+
+    float maxDistance;
+    float falloffExponent;
 
     zeno::LightType type {};
     zeno::LightShape shape{};
@@ -33,12 +38,14 @@ struct GenericLight
 
     unsigned long long ies=0u;
     cudaTextureObject_t tex{};
+    float texGamma = 1.0f;
     union {
         RectShape rect;
         SphereShape sphere;
 
         ConeShape cone;
         PointShape point;
+        TriangleShape triangle;
     };
 
     bool isDeltaLight() {
@@ -64,6 +71,8 @@ struct GenericLight
             return this->sphere.BoundAsLight(Phi, false);
         case zeno::LightShape::Point:
             return this->point.BoundAsLight(Phi, false);
+        case zeno::LightShape::TriangleMesh:
+            return this->triangle.BoundAsLight(Phi, false);
         }
 
         return pbrt::LightBounds();
@@ -91,17 +100,37 @@ struct GenericLight
         this->sphere.radius = radius;
         this->sphere.area = M_PIf * 4 * radius * radius;
     }
+
+    void setTriangleData(const float3& p0, const float3& p1, const float3& p2, const float3& normal, uint32_t coordsBufferOffset, uint32_t normalBufferOffset) {
+        this->triangle.p0 = p0;
+        this->triangle.p1 = p1;
+        this->triangle.p2 = p2;
+
+        this->triangle.coordsBufferOffset = coordsBufferOffset;
+        this->triangle.normalBufferOffset = normalBufferOffset;
+        
+        this->triangle.faceNormal = normal;
+        this->triangle.area = this->triangle.Area();
+    }
 };
 
 
 struct CameraInfo
 {
-    float3 eye;
-    float3 right, up, front;
-    //float aspect;
-    //float fov;
-    float focalPlaneDistance;
-    float aperture;
+    //all distance in meters;
+    float3 eye; //lens center position
+    float3 right;   //lens right direction
+    float3 front;   //lens front direction, so call optical axis
+    float3 up;  //lens up direction
+    float horizontal_shift;
+    float vertical_shift;
+    float pitch;
+    float yaw;
+    float focal_length;    //lens focal length
+    float aperture;     //diameter of aperture
+    float focal_distance;   //distance from focal plane center to lens plane
+    float width;    //sensor physical width
+    float height;   //sensor physical height
 };
 
 struct Params
@@ -137,12 +166,13 @@ struct Params
     GenericLight *lights;
     uint32_t firstRectLightIdx;
     uint32_t firstSphereLightIdx;
-    
+    uint32_t firstTriangleLightIdx;
+
     unsigned long long lightTreeSampler;
+    unsigned long long triangleLightCoordsBuffer;
+    unsigned long long triangleLightNormalBuffer;
 
     float skyLightProbablity() {
-
-        static float DefaultSkyLightProbablity = 0.5f;
 
         if (sky_strength <= 0.0f)
             return -0.0f;
@@ -150,6 +180,7 @@ struct Params
         if (sky_texture == 0llu || skycdf == nullptr) 
             return -0.0f;
 
+        static const float DefaultSkyLightProbablity = 0.5f;
         return this->num_lights>0? DefaultSkyLightProbablity : 1.0f;
     }
 
@@ -204,8 +235,6 @@ struct MissData
 {
     float4 bg_color;
 };
-
-
 struct HitGroupData
 {
     //float4* vertices;

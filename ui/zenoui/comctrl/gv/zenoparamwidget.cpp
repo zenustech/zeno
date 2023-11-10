@@ -8,6 +8,7 @@
 #include <zenomodel/include/uihelper.h>
 #include "../view/zcomboboxitemdelegate.h"
 #include <QSvgRenderer>
+#include <zeno/extra/TempNode.h>
 
 
 ZenoParamWidget::ZenoParamWidget(QGraphicsItem* parent, Qt::WindowFlags wFlags)
@@ -274,11 +275,27 @@ void ZenoParamPathEdit::mousePressEvent(QGraphicsSceneMouseEvent *event)
     QPointF pos = event->pos();
     if (buttonArea().contains(pos)) 
     {
-        QString path;
+        QString path = this->text();
+
+        // need to resolve the formula path?
+        /*
+        if (path.startsWith('=')) {
+            zeno::setConfigVariable("ZSG", zsg_path);
+            auto code = std::make_shared<zeno::StringObject>();
+            code->set(path.mid(1).toStdString());
+            auto outs = zeno::TempNodeSimpleCaller("StringEval")
+                .set("zfxCode", code)
+                .call();
+        */
+
+        QFileInfo fileInfo(path);
+        QDir dir = fileInfo.dir();
+        QString dirPath = dir.exists() ? dir.path() : "";
+
         if (m_control == CONTROL_READPATH) {
-            path = QFileDialog::getOpenFileName(nullptr, "File to Open", "", "All Files(*);;");
+            path = QFileDialog::getOpenFileName(nullptr, "File to Open", dirPath, "All Files(*);;");
         } else if (m_control == CONTROL_WRITEPATH) {
-            path = QFileDialog::getSaveFileName(nullptr, "Path to Save", "", "All Files(*);;");
+            path = QFileDialog::getSaveFileName(nullptr, "Path to Save", dirPath, "All Files(*);;");
         } else {
             path = QFileDialog::getExistingDirectory(nullptr, "Path to Save", "");
         }

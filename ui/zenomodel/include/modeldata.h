@@ -95,6 +95,7 @@ struct PARAM_INFO {
     QVariant controlProps;
     bool bEnableConnect;     //enable connection with other out socket.
     SOCKET_PROPERTY sockProp;
+    QString paramPath;
 
     PARAM_INFO() : control(CONTROL_NONE), bEnableConnect(false), sockProp(SOCKPROP_NORMAL) {}
 };
@@ -327,6 +328,17 @@ struct LINK_UPDATE_INFO {
 
 typedef QMap<QString, NODE_DATA> NODES_DATA;
 typedef QList<EdgeInfo> LINKS_DATA;
+
+struct CommandParam
+{
+    QString name;
+    QString description;
+    QVariant value;
+    bool operator==(const CommandParam& rhs) const {
+        return name == rhs.name && description == rhs.description && value == rhs.value;
+    }
+};
+Q_DECLARE_METATYPE(CommandParam)
 
 struct CURVE_RANGE {
     qreal xFrom;

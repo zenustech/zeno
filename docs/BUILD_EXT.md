@@ -79,20 +79,15 @@ git clone https://github.com/microsoft/vcpkg.git --depth=1
 cd vcpkg
 .\bootstrap-vcpkg.bat
 .\vcpkg integrate install
-.\vcpkg install zlib:x64-windows
 .\vcpkg install blosc:x64-windows
 .\vcpkg install tbb:x64-windows
-.\vcpkg install boost-iostreams:x64-windows
-.\vcpkg install boost-any:x64-windows
-.\vcpkg install boost-algorithm:x64-windows
-.\vcpkg install boost-uuid:x64-windows
-.\vcpkg install boost-interprocess:x64-windows
+.\vcpkg install boost-uuid:x64-windows boost-interprocess:x64-windows
 .\vcpkg install eigen3:x64-windows
 .\vcpkg install cgal:x64-windows
 .\vcpkg install lapack:x64-windows
 .\vcpkg install openblas:x64-windows
 .\vcpkg install hdf5:x64-windows
-.\vcpkg install opencv:x64-windows
+.\vcpkg install opencv4[core,jpeg,png,tiff,webp]:x64-windows
 ```
 
 > Notice that you must install the `English Pack` for VS2019 for vcpkg to work. This can be done by clicking the `Language` panel in the VS2019 installer. (JOKE: the maintainer of vcpkg speaks Chinese too..)

@@ -94,6 +94,7 @@ class ColorWheel : public QWidget
     Q_OBJECT
 public:
     explicit ColorWheel(QWidget* parent = nullptr);
+    ~ColorWheel();
 
     void setColorCombination(colorcombo::ICombination* combination);
     void setSelectedColor(const QColor& color);
@@ -136,6 +137,8 @@ class JumpableSlider : public QSlider
 public:
     explicit JumpableSlider(QWidget* parent);
     explicit JumpableSlider(Qt::Orientation orientation, QWidget* parent = nullptr);
+    ~JumpableSlider();
+
     void setValue(double value);
     void setMinimum(double value);
     void setMaximum(double value);
@@ -167,6 +170,8 @@ class GradientSlider : public JumpableSlider
     Q_OBJECT
 public:
     explicit GradientSlider(QWidget* parent = nullptr);
+    ~GradientSlider();
+
     void setGradient(const QColor& startColor, const QColor& stopColor);
     void setGradient(const QGradientStops& colors);
     void setColorCorrection(ColorCorrection* colorCorrection);
@@ -186,6 +191,8 @@ class ColorSpinHSlider : public QWidget
     Q_OBJECT
 public:
     explicit ColorSpinHSlider(const QString& name, QWidget* parent = nullptr);
+    ~ColorSpinHSlider();
+
     void setGradient(const QColor& startColor, const QColor& stopColor);
     void setGradient(const QGradientStops& colors);
     void setColorCorrection(ColorCorrection* colorCorrection);
@@ -208,6 +215,8 @@ class ColorButton : public QPushButton
     Q_OBJECT
 public:
     explicit ColorButton(QWidget* parent = nullptr);
+    ~ColorButton();
+
     void setColor(const QColor& color);
     void setColorCorrection(ColorCorrection* colorCorrection);
     void setBolderWidth(int top, int bottom, int left, int right);
@@ -235,6 +244,8 @@ class ColorPalette : public QScrollArea
     Q_OBJECT
 public:
     explicit ColorPalette(int column, QWidget* parent = nullptr);
+    ~ColorPalette();
+
     void addColor(const QColor& color);
     void setColor(const QColor& color, int row, int column);
     void removeColor(int row, int column);
@@ -260,6 +271,8 @@ class ColorPreview : public QWidget
     Q_OBJECT
 public:
     explicit ColorPreview(const QColor& color, QWidget* parent = nullptr);
+    ~ColorPreview();
+
     void setCurrentColor(const QColor& color);
     void setColorCorrection(ColorCorrection* colorCorrection);
     QColor currentColor() const;
@@ -279,6 +292,7 @@ class ColorComboWidget : public QWidget
     Q_OBJECT
 public:
     explicit ColorComboWidget(QWidget* parent = nullptr);
+    ~ColorComboWidget();
 
     void addCombination(colorcombo::ICombination* combo);
     void clearCombination();
@@ -317,6 +331,7 @@ class ColorPicker : public QWidget
     Q_OBJECT
 public:
     explicit ColorPicker(QWidget* parent = nullptr);
+    ~ColorPicker();
 
     QColor grabScreenColor(QPoint p) const;
     void startColorPicking();
@@ -344,6 +359,7 @@ class ColorEditor : public QDialog
 public:
     explicit ColorEditor(QWidget* parent = nullptr);
     explicit ColorEditor(const QColor& initial, QWidget* parent = nullptr);
+    ~ColorEditor();
 
     static QColor getColor(const QColor& initial, QWidget* parent = nullptr, const QString& title = "");
 

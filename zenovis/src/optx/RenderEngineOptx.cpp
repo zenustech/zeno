@@ -1,5 +1,8 @@
 #include "optixPathTracer.h"
 #include "vec_math.h"
+#include "xinxinoptixapi.h"
+#include "zeno/utils/vec.h"
+#include <limits>
 #include <memory>
 #ifdef ZENO_ENABLE_OPTIX
 #include "../../xinxinoptix/xinxinoptixapi.h"
@@ -513,40 +516,121 @@ struct GraphicsManager {
             }
             if (prim_in->userData().get2<int>("isL", 0) == 1) {
                 //zeno::log_info("processing light key {}", key.c_str());
-                auto ivD = prim_in->userData().getLiterial<int>("ivD", 0);
-
-                auto p0 = prim_in->verts[prim_in->tris[0][0]];
-                auto p1 = prim_in->verts[prim_in->tris[0][1]];
-                auto p2 = prim_in->verts[prim_in->tris[0][2]];
-                auto e1 = p0 - p2;
-                auto e2 = p1 - p2;
-
-                auto nor = zeno::normalize(zeno::cross(e1, e2));
-                zeno::vec3f clr;
-                if (prim_in->verts.has_attr("clr")) {
-                    clr = prim_in->verts.attr<zeno::vec3f>("clr")[0];
-                } else {
-                    clr = zeno::vec3f(30000.0f, 30000.0f, 30000.0f);
-                }
-
                 auto type = prim_in->userData().get2<int>("type", 0);
                 auto shape = prim_in->userData().get2<int>("shape", 0);
+                auto maxDistance = prim_in->userData().get2<float>("maxDistance", std::numeric_limits<float>().max());
+                auto falloffExponent = prim_in->userData().get2<float>("falloffExponent", 2.0f);
 
+                auto intensity = prim_in->userData().get2<float>("intensity", 1.0f);
+                auto vIntensity = prim_in->userData().get2<float>("visibleIntensity", 1.0f);
+
+                auto ivD = prim_in->userData().getLiterial<int>("ivD", 0);
                 auto visible = prim_in->userData().get2<int>("visible", 0);
                 auto doubleside = prim_in->userData().get2<int>("doubleside", 0);
                 auto lightProfilePath = prim_in->userData().get2<std::string>("lightProfile", ""); 
-                OptixUtil::addTexture(lightProfilePath);
+                auto lightTexturePath = prim_in->userData().get2<std::string>("lightTexture", ""); 
+                auto lightGamma = prim_in->userData().get2<float>("lightGamma", 1.0f); 
 
-                std::cout << "light: p"<<p0[0]<<" "<<p0[1]<<" "<<p0[2]<<"\n";
-                std::cout << "light: p"<<p1[0]<<" "<<p1[1]<<" "<<p1[2]<<"\n";
-                std::cout << "light: p"<<p2[0]<<" "<<p2[1]<<" "<<p2[2]<<"\n";
-                std::cout << "light: e"<<e1[0]<<" "<<e1[1]<<" "<<e1[2]<<"\n";
-                std::cout << "light: e"<<e2[0]<<" "<<e2[1]<<" "<<e2[2]<<"\n";
-                std::cout << "light: n"<<nor[0]<<" "<<nor[1]<<" "<<nor[2]<<"\n";
-                std::cout << "light: c"<<clr[0]<<" "<<clr[1]<<" "<<clr[2]<<"\n";
+                if (lightProfilePath != "") {
+                    OptixUtil::addTexture(lightProfilePath);
+                }
 
-                xinxinoptix::load_light(key, p2.data(), e1.data(), e2.data(),
-                                        nor.data(), clr.data(), visible, doubleside, shape, type, lightProfilePath);
+                if (lightTexturePath != "") {
+                    OptixUtil::addTexture(lightTexturePath);
+                }
+
+                xinxinoptix::LightDat ld;
+                zeno::vec3f nor{}, clr{};
+
+                ld.visible = visible;
+                ld.doubleside = doubleside;
+                ld.intensity = intensity;
+                ld.vIntensity = vIntensity;
+                ld.maxDistance = maxDistance;
+                ld.falloffExponent = falloffExponent;
+
+                ld.shape = shape; ld.type = type;
+                ld.profileKey = lightProfilePath;
+                ld.textureKey = lightTexturePath;
+                ld.textureGamma = lightGamma;
+
+                std::function extraStep = [&]() { 
+                    ld.normal.assign(nor.begin(), nor.end());
+                    ld.emission.assign(clr.begin(), clr.end());
+                };
+
+                if (shape == 3u) { // Triangle mesh Light
+
+                    for (size_t i=0; i<prim_in->tris->size(); ++i) {
+                        auto _p0_ = prim_in->verts[prim_in->tris[i][0]];
+                        auto _p1_ = prim_in->verts[prim_in->tris[i][1]];
+                        auto _p2_ = prim_in->verts[prim_in->tris[i][2]];
+                        auto _e1_ = _p0_ - _p2_;
+                        auto _e2_ = _p1_ - _p2_;
+
+                        zeno::vec3f *pn0{}, *pn1{}, *pn2{};
+                        zeno::vec3f *uv0{}, *uv1{}, *uv2{};
+
+                        if (prim_in->verts.has_attr("nrm")) {
+                            pn0 = &prim_in->verts.attr<zeno::vec3f>("nrm")[ prim_in->tris[i][0] ];
+                            pn1 = &prim_in->verts.attr<zeno::vec3f>("nrm")[ prim_in->tris[i][1] ];
+                            pn2 = &prim_in->verts.attr<zeno::vec3f>("nrm")[ prim_in->tris[i][2] ];
+                        }
+
+                        if (prim_in->verts.has_attr("uv")) {
+                            #if 1
+                            uv0 = &prim_in->verts.attr<zeno::vec3f>("uv")[ prim_in->tris[i][0] ];
+                            uv1 = &prim_in->verts.attr<zeno::vec3f>("uv")[ prim_in->tris[i][1] ];
+                            uv2 = &prim_in->verts.attr<zeno::vec3f>("uv")[ prim_in->tris[i][2] ];
+                            #else
+                            auto uv0 = prim_in->tris.attr<zeno::vec3f>("uv0")[i];
+                            auto uv1 = prim_in->tris.attr<zeno::vec3f>("uv1")[i];
+                            auto uv2 = prim_in->tris.attr<zeno::vec3f>("uv2")[i];
+                            #endif
+                        }
+
+                        nor = zeno::normalize(zeno::cross(_e1_, _e2_));
+                        clr = prim_in->verts.attr<zeno::vec3f>("clr")[ prim_in->tris[i][0] ];
+                        extraStep();
+
+                        auto compound = key + std::to_string(i);
+                        xinxinoptix::load_triangle_light(compound, ld, _p0_, _p1_, _p2_, pn0, pn1, pn2, uv0, uv1, uv2); 
+                    }
+                } 
+                else 
+                {
+                    auto p0 = prim_in->verts[prim_in->tris[0][0]];
+                    auto p1 = prim_in->verts[prim_in->tris[0][1]];
+                    auto p2 = prim_in->verts[prim_in->tris[0][2]];
+                    auto e1 = p2 - p0;
+                    auto e2 = p1 - p2;
+                    
+                    // p0 ---(+x)--> p2
+                    // |||||||||||||(-)
+                    // |||||||||||||(z)
+                    // |||||||||||||(+)
+                    // p* <--(-x)--- p1
+                
+                    // facing down in local space
+                    nor = -zeno::normalize(zeno::cross(e1, e2));
+                    
+                    if (prim_in->verts.has_attr("clr")) {
+                        clr = prim_in->verts.attr<zeno::vec3f>("clr")[0];
+                    } else {
+                        clr = zeno::vec3f(30000.0f, 30000.0f, 30000.0f);
+                    }
+                    extraStep();
+
+                    std::cout << "light: p"<<p0[0]<<" "<<p0[1]<<" "<<p0[2]<<"\n";
+                    std::cout << "light: p"<<p1[0]<<" "<<p1[1]<<" "<<p1[2]<<"\n";
+                    std::cout << "light: p"<<p2[0]<<" "<<p2[1]<<" "<<p2[2]<<"\n";
+                    std::cout << "light: e"<<e1[0]<<" "<<e1[1]<<" "<<e1[2]<<"\n";
+                    std::cout << "light: e"<<e2[0]<<" "<<e2[1]<<" "<<e2[2]<<"\n";
+                    std::cout << "light: n"<<nor[0]<<" "<<nor[1]<<" "<<nor[2]<<"\n";
+                    std::cout << "light: c"<<clr[0]<<" "<<clr[1]<<" "<<clr[2]<<"\n";
+
+                    xinxinoptix::load_light(key, ld, p0.data(), e1.data(), e2.data());
+                }
             }
             else if (prim_in->userData().get2<int>("ProceduralSky", 0) == 1) {
                 sky_found = true;

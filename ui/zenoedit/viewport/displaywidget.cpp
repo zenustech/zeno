@@ -90,6 +90,18 @@ void DisplayWidget::testCleanUp()
         m_glView->testCleanUp();
 }
 
+void DisplayWidget::cleanUpScene()
+{
+    if (m_glView)
+    {
+        m_glView->cleanUpScene();
+    }
+    else
+    {
+        m_optixView->cleanUpScene();
+    }
+}
+
 void DisplayWidget::init()
 {
     //m_camera->installEventFilter(this);

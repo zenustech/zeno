@@ -3,12 +3,14 @@
 #include <cstring>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/euler_angles.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/transform.hpp>
 #include <zeno/types/MatrixObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/zeno.h>
+#include <zeno/utils/eulerangle.h>
 
 namespace zeno {
 namespace {
@@ -104,9 +106,16 @@ struct TransformPrimitive : zeno::INode {//zhxx happy node
             pre_apply = std::get<glm::mat4>(get_input<zeno::MatrixObject>("preTransform")->m);
 
         glm::mat4 matTrans = glm::translate(glm::vec3(translate[0], translate[1], translate[2]));
-        glm::mat4 matRotx  = glm::rotate( eulerXYZ[0], glm::vec3(1,0,0) );
-        glm::mat4 matRoty  = glm::rotate( eulerXYZ[1], glm::vec3(0,1,0) );
-        glm::mat4 matRotz  = glm::rotate( eulerXYZ[2], glm::vec3(0,0,1) );
+
+            auto order = get_input2<std::string>("EulerRotationOrder:");
+            auto orderTyped = magic_enum::enum_cast<EulerAngle::RotationOrder>(order).value_or(EulerAngle::RotationOrder::YXZ);
+
+            auto measure = get_input2<std::string>("EulerAngleMeasure:");
+            auto measureTyped = magic_enum::enum_cast<EulerAngle::Measure>(measure).value_or(EulerAngle::Measure::Radians);
+
+            glm::vec3 eularAngleXYZ = glm::vec3(eulerXYZ[0], eulerXYZ[1], eulerXYZ[2]);
+            glm::mat4 matRotate = EulerAngle::rotate(orderTyped, measureTyped, eularAngleXYZ);
+
         glm::quat myQuat(rotation[3], rotation[0], rotation[1], rotation[2]);
         glm::mat4 matQuat  = glm::toMat4(myQuat);
         glm::mat4 matScal  = glm::scale( glm::vec3(scaling[0], scaling[1], scaling[2] ));
@@ -126,7 +135,7 @@ struct TransformPrimitive : zeno::INode {//zhxx happy node
             0, 0, 1, 0,
             0, 0, 0, 1));
 
-        auto matrix = pre_mat*local*matTrans*matRotz*matRoty*matRotx*matQuat*matScal*matShearZ*matShearY*matShearX*glm::translate(glm::vec3(offset[0], offset[1], offset[2]))*glm::inverse(local)*pre_apply;
+        auto matrix = pre_mat*local*matTrans*matRotate*matQuat*matScal*matShearZ*matShearY*matShearX*glm::translate(glm::vec3(offset[0], offset[1], offset[2]))*glm::inverse(local)*pre_apply;
 
         auto prim = get_input<PrimitiveObject>("prim");
         auto outprim = std::make_unique<PrimitiveObject>(*prim);
@@ -177,7 +186,10 @@ ZENDEFNODE(TransformPrimitive, {
     {
     {"PrimitiveObject", "outPrim"}
     },
-    {},
+    {
+        {"enum " + EulerAngle::RotationOrderListString(), "EulerRotationOrder", "ZYX"},
+        {"enum " + EulerAngle::MeasureListString(), "EulerAngleMeasure", EulerAngle::MeasureDefaultString()}
+    },
     {"primitive"},
 });
 
@@ -226,9 +238,16 @@ struct PrimitiveTransform : zeno::INode {
             pre_apply = std::get<glm::mat4>(get_input<zeno::MatrixObject>("preTransform")->m);
 
         glm::mat4 matTrans = glm::translate(glm::vec3(translate[0], translate[1], translate[2]));
-        glm::mat4 matRotx  = glm::rotate( (float)(eulerXYZ[0] * M_PI / 180), glm::vec3(1,0,0) );
-        glm::mat4 matRoty  = glm::rotate( (float)(eulerXYZ[1] * M_PI / 180), glm::vec3(0,1,0) );
-        glm::mat4 matRotz  = glm::rotate( (float)(eulerXYZ[2] * M_PI / 180), glm::vec3(0,0,1) );
+
+            auto order = get_input2<std::string>("EulerRotationOrder:");
+            auto orderTyped = magic_enum::enum_cast<EulerAngle::RotationOrder>(order).value_or(EulerAngle::RotationOrder::YXZ);
+
+            auto measure = get_input2<std::string>("EulerAngleMeasure:");
+            auto measureTyped = magic_enum::enum_cast<EulerAngle::Measure>(measure).value_or(EulerAngle::Measure::Radians);
+
+            glm::vec3 eularAngleXYZ = glm::vec3(eulerXYZ[0], eulerXYZ[1], eulerXYZ[2]);
+            glm::mat4 matRotate = EulerAngle::rotate(orderTyped, measureTyped, eularAngleXYZ);
+
         glm::quat myQuat(rotation[3], rotation[0], rotation[1], rotation[2]);
         glm::mat4 matQuat  = glm::toMat4(myQuat);
         glm::mat4 matScal  = glm::scale( glm::vec3(scaling[0], scaling[1], scaling[2] ));
@@ -248,7 +267,7 @@ struct PrimitiveTransform : zeno::INode {
                 0, 0, 1, 0,
                 0, 0, 0, 1));
 
-        auto matrix = pre_mat*local*matTrans*matRoty*matRotx*matRotz*matQuat*matScal*matShearZ*matShearY*matShearX*glm::translate(glm::vec3(offset[0], offset[1], offset[2]))*glm::inverse(local)*pre_apply;
+        auto matrix = pre_mat*local*matTrans*matRotate*matQuat*matScal*matShearZ*matShearY*matShearX*glm::translate(glm::vec3(offset[0], offset[1], offset[2]))*glm::inverse(local)*pre_apply;
 
         auto prim = get_input<PrimitiveObject>("prim");
 
@@ -312,7 +331,10 @@ ZENDEFNODE(PrimitiveTransform, {
     {
         {"PrimitiveObject", "outPrim"}
     },
-    {},
+    {
+        {"enum " + EulerAngle::RotationOrderListString(), "EulerRotationOrder", EulerAngle::RotationOrderDefaultString()},
+        {"enum " + EulerAngle::MeasureListString(), "EulerAngleMeasure", "Degree"}
+    },
     {"primitive"},
 });
 

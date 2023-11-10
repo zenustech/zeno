@@ -5,6 +5,8 @@
 
 #ifdef __CUDACC_RTC__
 #include "zxxglslvec.h"
+#else
+#include "Host.h"
 #endif
 
 struct LightSampleRecord {
@@ -21,6 +23,405 @@ struct LightSampleRecord {
 
     float intensity = 1.0f;
     bool isDelta = false;
+};
+
+static constexpr float MinSphericalSampleArea = 3e-4f;
+static constexpr float MaxSphericalSampleArea = 6.22f;
+
+struct TriangleShape {
+    float3 p0, p1, p2;
+    float3 faceNormal;
+    float  area;
+
+    uint32_t coordsBufferOffset;
+    uint32_t normalBufferOffset;
+
+    inline float areaPDF() {
+        return 1.0f / area;
+    }
+    
+    float Area() const {
+        return 0.5f * length(cross(p1 - p0, p2 - p0));
+    }
+
+    pbrt::Bounds3f bounds() {
+
+        float3 pmax = make_float3(-FLT_MAX);
+        float3 pmin = make_float3( FLT_MAX);
+
+        float3 tmp[3] = {p0, p1, p2};
+
+        for (int i=0; i<3; i++) {
+            pmax = fmaxf(pmax, tmp[i]);
+            pmin = fminf(pmin, tmp[i]);
+        }
+
+        pbrt::Bounds3f result;
+        result.pMax = reinterpret_cast<Vector3f&>(pmax);
+        result.pMin = reinterpret_cast<Vector3f&>(pmin);
+
+        return result;
+    }
+
+    pbrt::LightBounds BoundAsLight(float phi, bool doubleSided) {
+
+        auto& nnn = reinterpret_cast<Vector3f&>(faceNormal);
+        auto dc = pbrt::DirectionCone(nnn);
+
+        return pbrt::LightBounds(bounds(), nnn, phi * area, 
+                dc.cosTheta, fmaxf(cosf(M_PIf / 2.0f), 0.0f), doubleSided);   
+    }
+
+    // Sampling Function Definitions
+    float3 SampleSphericalTriangle(const Vector3f& v0, const Vector3f& v1, const Vector3f& v2, 
+                                   const Vector3f& p, const float2& uu, float *pdf) {
+        if (pdf)
+            *pdf = 0;
+        // Compute vectors _a_, _b_, and _c_ to spherical triangle vertices
+        Vector3f a(v0 - p), b(v1 - p), c(v2 - p);
+
+        DCHECK(lengthSquared(a) > 0);
+        DCHECK(lengthSquared(b) > 0);
+        DCHECK(lengthSquared(c) > 0);
+        a = normalize(a);
+        b = normalize(b);
+        c = normalize(c);
+
+        // Compute normalized cross products of all direction pairs
+        Vector3f n_ab = cross(a, b), n_bc = cross(b, c), n_ca = cross(c, a);
+        if (lengthSquared(n_ab) == 0 || lengthSquared(n_bc) == 0 || lengthSquared(n_ca) == 0)
+            return {};
+        n_ab = normalize(n_ab);
+        n_bc = normalize(n_bc);
+        n_ca = normalize(n_ca);
+
+        // Find angles $\alpha$, $\beta$, and $\gamma$ at spherical triangle vertices
+        float alpha = pbrt::AngleBetween(n_ab, -n_ca);
+        float beta  = pbrt::AngleBetween(n_bc, -n_ab);
+        float gamma = pbrt::AngleBetween(n_ca, -n_bc);
+
+        // Uniformly sample triangle area $A$ to compute $A'$
+        float A_pi = alpha + beta + gamma; // area + pi
+        float Ap_pi = pbrt::Lerp(uu.x, M_PIf, A_pi);
+        if (pdf) {
+            float A = A_pi - M_PIf;
+            *pdf = (A <= 0) ? 0 : 1 / A;
+        }
+
+        // Find $\cos\beta'$ for point along _b_ for sampled area
+        float cosAlpha = cosf(alpha), sinAlpha = sinf(alpha);
+        float sinPhi   = sinf(Ap_pi) * cosAlpha - cosf(Ap_pi) * sinAlpha;
+        float cosPhi   = cosf(Ap_pi) * cosAlpha + sinf(Ap_pi) * sinAlpha;
+        float k1 = cosPhi + cosAlpha;
+        float k2 = sinPhi - sinAlpha * dot(a, b) /* cos c */;
+        float cosBp = (k2 + (pbrt::DifferenceOfProducts(k2, cosPhi, k1, sinPhi)) * cosAlpha) /
+                    ((pbrt::SumOfProducts(k2, sinPhi, k1, cosPhi)) * sinAlpha);
+        // Happens if the triangle basically covers the entire hemisphere.
+        // We currently depend on calling code to detect this case, which
+        // is sort of ugly/unfortunate.
+        DCHECK(!isnan(cosBp));
+        cosBp = clamp(cosBp, -1.0f, 1.0f);
+
+        // Sample $c'$ along the arc between $b'$ and $a$
+        float sinBp = pbrt::SafeSqrt(1 - pbrt::Sqr(cosBp));
+        Vector3f cp = cosBp * a + sinBp * normalize(pbrt::GramSchmidt(c, a));
+
+        // Compute sampled spherical triangle direction and return barycentrics
+        float cosTheta = 1 - uu.y * (1 - dot(cp, b));
+        float sinTheta = pbrt::SafeSqrt(1 - pbrt::Sqr(cosTheta));
+        Vector3f w = cosTheta * b + sinTheta * normalize(pbrt::GramSchmidt(cp, b));
+
+        // Find barycentric coordinates for sampled direction _w_
+        Vector3f e1 = v1 - v0, e2 = v2 - v0;
+        Vector3f s1 = cross(w, e2);
+        float divisor = dot(s1, e1);
+
+        //CHECK_RARE(1e-6, divisor == 0);
+        if (divisor == 0) {
+            // This happens with triangles that cover (nearly) the whole
+            // hemisphere.
+            return {1.f / 3.f, 1.f / 3.f, 1.f / 3.f};
+        }
+        float invDivisor = 1.0f / divisor;
+        Vector3f s = p - v0;
+        float b1 = dot(s, s1) * invDivisor;
+        float b2 = dot(w, cross(s, e1)) * invDivisor;
+
+        // Return clamped barycentrics for sampled direction
+        b1 = clamp(b1, 0.0f, 1.0f);
+        b2 = clamp(b2, 0.0f, 1.0f);
+        if (b1 + b2 > 1) {
+            b1 /= b1 + b2;
+            b2 /= b1 + b2;
+        }
+        return {float(1 - b1 - b2), float(b1), float(b2)};
+    }
+
+    inline float SphericalTriangleArea(const float3& a, const float3& b, const float3& c) {
+        return fabsf(2 * atan2f(dot(a, cross(b, c)), 1 + dot(a, b) + dot(a, c) + dot(b, c)));
+    }
+
+    inline float3 UniformSampleTriangle(const float2 &uu) {
+        // float su0 = sqrtf(uu.x);
+        // return make_float2(1 - su0, uu.y * su0);
+        float b0, b1;
+        if (uu.x < uu.y) {
+            b0 = uu.x / 2;
+            b1 = uu.y - b0;
+        } else {
+            b1 = uu.y / 2;
+            b0 = uu.x - b1;
+        }
+        return {b0, b1, 1 - b0 - b1};
+    }
+
+    inline float SolidAngle(const float3& p) {
+
+        auto v0 = normalize(p0 - p);
+        auto v1 = normalize(p1 - p);
+        auto v2 = normalize(p2 - p);
+
+        return SphericalTriangleArea(v0, v1, v2);
+    }
+
+    inline void SampleAsLight(LightSampleRecord* lsr, float2& uu, const float3& shadingP, const float3& shadingN, 
+                              const float3* vertexNormalBuffer, const float2* vertexCoordsBuffer) { 
+
+        float solidAngle = SolidAngle(shadingP);
+        if (solidAngle > MaxSphericalSampleArea || solidAngle < MinSphericalSampleArea) {
+
+            auto bary3 = UniformSampleTriangle(uu);
+            lsr->p = bary3.x * p0 + bary3.y * p1 + bary3.z * p2;
+            lsr->n = faceNormal;
+
+            lsr->dir = (lsr->p - shadingP);
+            //lsr->dir = normalize(lsr->dir);
+            auto sign = copysignf(1.0f, dot(lsr->n, -lsr->dir));
+
+            lsr->p = rtgems::offset_ray(lsr->p, lsr->n * sign);
+            lsr->dir = lsr->p - shadingP;
+            lsr->dist = length(lsr->dir);
+
+            if (lsr->dist == 0.0f) return;
+            lsr->dir = lsr->dir / lsr->dist;
+
+            if (coordsBufferOffset != UINT_MAX && vertexCoordsBuffer != nullptr) { // has vertex UV coord
+                auto& uv0 = vertexCoordsBuffer[coordsBufferOffset + 0];
+                auto& uv1 = vertexCoordsBuffer[coordsBufferOffset + 1];
+                auto& uv2 = vertexCoordsBuffer[coordsBufferOffset + 2];
+
+                lsr->uv = bary3.x * uv0 + bary3.y * uv1 + bary3.z * uv2;
+            }
+
+            if (normalBufferOffset != UINT_MAX && vertexNormalBuffer != nullptr) { // has vertex normal
+                auto& vn0 = vertexNormalBuffer[normalBufferOffset + 0];
+                auto& vn1 = vertexNormalBuffer[normalBufferOffset + 1];
+                auto& vn2 = vertexNormalBuffer[normalBufferOffset + 2];
+
+                lsr->n = bary3.x * vn0 + bary3.y * vn1 + bary3.z * vn2;
+            } 
+
+            lsr->NoL = dot(-lsr->dir, lsr->n);
+            lsr->PDF = 0.0f;
+
+            if (fabsf(lsr->NoL) > __FLT_EPSILON__) {
+                lsr->PDF = lsr->dist * lsr->dist * areaPDF() / fabsf(lsr->NoL);
+            }
+        } // uniform area sampling
+
+        float pdf = 1.0f;
+
+        if (dot(shadingN, shadingN) > 0) { // shading point not in volume
+
+            float3 wi[3] = { normalize(p0 - shadingP), 
+                             normalize(p1 - shadingP), 
+                             normalize(p2 - shadingP) };
+
+            float4 v = {   fmaxf(0.01, fabsf(dot(shadingN, wi[1]))),
+                           fmaxf(0.01, fabsf(dot(shadingN, wi[1]))),
+                           fmaxf(0.01, fabsf(dot(shadingN, wi[0]))),
+                           fmaxf(0.01, fabsf(dot(shadingN, wi[2])))
+                        };
+            uu = pbrt::SampleBilinear(uu, v);
+            DCHECK(uu[0] >= 0 && uu[0] < 1);
+            DCHECK(uu[1] >= 0 && uu[1] < 1);
+            pdf = pbrt::BilinearPDF(uu, v);
+        }
+
+        float triPDF;
+
+        float3 bary3 = SampleSphericalTriangle(reinterpret_cast<Vector3f&>(p0),
+                                               reinterpret_cast<Vector3f&>(p1),
+                                               reinterpret_cast<Vector3f&>(p2), 
+                                               reinterpret_cast<const Vector3f&>(shadingP), uu, &triPDF);
+        if (triPDF == 0) { return; }
+        pdf *= triPDF;
+
+        float3 p = bary3.x * p0 + bary3.y * p1 + bary3.z * p2;
+        // Compute surface normal for sampled point on triangle
+        float3 n = faceNormal; //normalize( cross(p1 - p0, p2 - p0) );
+
+        lsr->p = p;
+        lsr->n = n;
+
+        lsr->dir = (lsr->p - shadingP);
+        //lsr->dir = normalize(lsr->dir);
+        auto sign = copysignf(1.0f, dot(lsr->n, -lsr->dir));
+
+        lsr->p = rtgems::offset_ray(lsr->p, lsr->n * sign);
+        lsr->dir = lsr->p - shadingP;
+        lsr->dist = length(lsr->dir);
+        lsr->dir = lsr->dir / lsr->dist;
+
+        if (coordsBufferOffset != UINT_MAX && vertexCoordsBuffer != nullptr) { // has vertex UV coord
+            auto& uv0 = vertexCoordsBuffer[coordsBufferOffset + 0];
+            auto& uv1 = vertexCoordsBuffer[coordsBufferOffset + 1];
+            auto& uv2 = vertexCoordsBuffer[coordsBufferOffset + 2];
+
+            lsr->uv = bary3.x * uv0 + bary3.y * uv1 + bary3.z * uv2;
+        }
+
+        if (normalBufferOffset != UINT_MAX && vertexNormalBuffer != nullptr) { // has vertex normal
+            auto& vn0 = vertexNormalBuffer[normalBufferOffset + 0];
+            auto& vn1 = vertexNormalBuffer[normalBufferOffset + 1];
+            auto& vn2 = vertexNormalBuffer[normalBufferOffset + 2];
+
+            lsr->n = bary3.x * vn0 + bary3.y * vn1 + bary3.z * vn2;
+        }
+
+        lsr->NoL = dot(-lsr->dir, lsr->n);
+        lsr->PDF = pdf;
+    }
+
+    // Via Jim Arvo's SphTri.C
+    float2 InvertSphericalTriangleSample(const Vector3f& v0, const Vector3f& v1, const Vector3f& v2,
+                                         const Vector3f& p, const Vector3f& w) {
+        // Compute vectors _a_, _b_, and _c_ to spherical triangle vertices
+        Vector3f a(v0 - p), b(v1 - p), c(v2 - p);
+        DCHECK(LengthSquared(a) > 0);
+        DCHECK(LengthSquared(b) > 0);
+        DCHECK(LengthSquared(c) > 0);
+        a = normalize(a);
+        b = normalize(b);
+        c = normalize(c);
+
+        // Compute normalized cross products of all direction pairs
+        Vector3f n_ab = cross(a, b), n_bc = cross(b, c), n_ca = cross(c, a);
+        if (lengthSquared(n_ab) == 0 || lengthSquared(n_bc) == 0 || lengthSquared(n_ca) == 0)
+            return {};
+        n_ab = normalize(n_ab);
+        n_bc = normalize(n_bc);
+        n_ca = normalize(n_ca);
+
+        // Find angles $\alpha$, $\beta$, and $\gamma$ at spherical triangle vertices
+        float alpha = pbrt::AngleBetween(n_ab, -n_ca);
+        float beta  = pbrt::AngleBetween(n_bc, -n_ab);
+        float gamma = pbrt::AngleBetween(n_ca, -n_bc);
+
+        // Find vertex $\VEC{c'}$ along $\VEC{a}\VEC{c}$ arc for $\w{}$
+        Vector3f cp = normalize(cross(cross(b, w), cross(c, a)));
+        if (dot(cp, a + c) < 0)
+            cp = -cp;
+
+        // Invert uniform area sampling to find _u0_
+        float u0;
+        if (dot(a, cp) > 0.99999847691f /* 0.1 degrees */)
+            u0 = 0;
+        else {
+            // Compute area $A'$ of subtriangle
+            Vector3f n_cpb = cross(cp, b), n_acp = cross(a, cp);
+            //CHECK_RARE(1e-5, lengthSquared(n_cpb) == 0 || lengthSquared(n_acp) == 0);
+            
+            if (lengthSquared(n_cpb) == 0 || lengthSquared(n_acp) == 0)
+                return make_float2(0.5, 0.5);
+
+            n_cpb = normalize(n_cpb);
+            n_acp = normalize(n_acp);
+            float Ap = alpha + pbrt::AngleBetween(n_ab, n_cpb) + pbrt::AngleBetween(n_acp, -n_cpb) - M_PIf;
+
+            // Compute sample _u0_ that gives the area $A'$
+            float A = alpha + beta + gamma - M_PIf;
+            u0 = Ap / A;
+        }
+
+        // Invert arc sampling to find _u1_ and return result
+        float u1 = (1 - dot(w, b)) / (1 - dot(cp, b));
+        return make_float2(clamp(u0, 0.f, 1.f), clamp(u1, 0.f, 1.f));
+    }
+
+    inline void EvalAfterHit(LightSampleRecord* lsr, const float3& dir, const float& dist, 
+                            const float3& shadingP, const float3& shadingN, const float3& barys3, 
+                            const float3* vertexNormalBuffer, const float2* vertexCoordsBuffer) {
+
+        lsr->p = barys3.x * p0 + barys3.y * p1 + barys3.z * p2;
+
+        lsr->n = faceNormal;
+        if (normalBufferOffset != UINT_MAX && vertexNormalBuffer != nullptr) { // has vertex normal
+            auto& vn0 = vertexNormalBuffer[normalBufferOffset + 0];
+            auto& vn1 = vertexNormalBuffer[normalBufferOffset + 1];
+            auto& vn2 = vertexNormalBuffer[normalBufferOffset + 2];
+
+            lsr->n = barys3.x * vn0 + barys3.y * vn1 + barys3.z * vn2;
+        }
+
+        if (coordsBufferOffset != UINT_MAX && vertexCoordsBuffer != nullptr) { // has vertex UV coord
+            auto& uv0 = vertexCoordsBuffer[coordsBufferOffset + 0];
+            auto& uv1 = vertexCoordsBuffer[coordsBufferOffset + 1];
+            auto& uv2 = vertexCoordsBuffer[coordsBufferOffset + 2];
+
+            lsr->uv = barys3.x * uv0 + barys3.y * uv1 + barys3.z * uv2;
+        }
+
+        float solidAngle = SolidAngle(shadingP);
+        if (solidAngle > MaxSphericalSampleArea || solidAngle < MinSphericalSampleArea) {
+            // Compute PDF in solid angle measure from shape intersection point
+
+            float lightNoL = dot(-dir, lsr->n);
+            float lightPDF = ( dist * dist / Area()) / fabsf(lightNoL);
+
+            if (isinf(lightPDF) || isnan(lightPDF))
+                lightPDF = 0;
+
+            lsr->dir = dir;
+            lsr->dist = dist;
+            lsr->NoL = lightNoL;
+            lsr->PDF = lightPDF;
+            return;   
+        }
+
+        float pdf = 1.0f / solidAngle;
+        // Adjust PDF for warp product sampling of triangle $\cos\theta$ factor
+        if (dot(shadingN, shadingN) > 0.0f) { // not in volume
+
+            float2 uu = InvertSphericalTriangleSample(reinterpret_cast<const Vector3f&>(p0),
+                                                      reinterpret_cast<const Vector3f&>(p1), 
+                                                      reinterpret_cast<const Vector3f&>(p2), 
+                                                      reinterpret_cast<const Vector3f&>(shadingP), 
+                                                      reinterpret_cast<const Vector3f&>(dir));
+                                                     
+            float3 vvv[3] { 
+                normalize(p0 - shadingP), 
+                normalize(p1 - shadingP), 
+                normalize(p2 - shadingP) 
+            };
+
+            float4 w { 
+                fmaxf(0.01, pbrt::AbsDot(shadingN, vvv[1])),
+                fmaxf(0.01, pbrt::AbsDot(shadingN, vvv[1])),
+                fmaxf(0.01, pbrt::AbsDot(shadingN, vvv[0])),
+                fmaxf(0.01, pbrt::AbsDot(shadingN, vvv[2]))
+            };
+
+            pdf *= pbrt::BilinearPDF(uu, w);
+        }
+
+        lsr->dir = dir;
+        lsr->dist = dist;
+        lsr->PDF = pdf;
+        lsr->NoL = dot(-dir, lsr->n);
+
+        return;
+    } 
 };
 
 struct PointShape {
@@ -76,6 +477,12 @@ struct RectShape {
         lsr->dir = dir;
         lsr->dist = dist;
 
+        auto delta = lsr->p - v0;
+        delta -= dot(delta, normal) * normal;
+
+        lsr->uv = { dot(delta, v1) / dot(v1, v1),
+                    dot(delta, v2) / dot(v2, v2) };
+
         lsr->PDF = lightPDF;
         lsr->NoL = lightNoL;
     }  
@@ -106,7 +513,7 @@ struct RectShape {
 
     inline bool hitAsLight(LightSampleRecord* lsr, const float3& ray_orig, const float3& ray_dir) {
 
-        // assuming vectors are all normalized
+        // assuming normal and ray_dir are normalized
         float denom = dot(normal, -ray_dir);
         if (denom <= __FLT_DENORM_MIN__) {return false;}
         
@@ -118,6 +525,9 @@ struct RectShape {
         auto P = ray_orig + ray_dir * t;
         auto delta = P - v0;
 
+        P -= normal * dot(normal, delta);
+        delta = P - v0; 
+        
         auto v1v1 = dot(v1, v1);
         auto q1 = dot(delta, v1);
         if (q1<0.0f || q1>v1v1) {return false;}
@@ -126,14 +536,17 @@ struct RectShape {
         auto q2 = dot(delta, v2);
         if (q2<0.0f || q2>v2v2) {return false;}
 
-        lsr->dir = ray_dir;
-        lsr->dist = t;
-
-        lsr->n = normal;
-        lsr->NoL = denom;
+        lsr->uv = float2{q1, q2} / float2{v1v1, v2v2};
 
         lsr->p = P;
         lsr->PDF = 1.0f;
+        lsr->n = normal;
+        lsr->NoL = denom;
+
+        lsr->p = rtgems::offset_ray(lsr->p, lsr->n);
+
+        lsr->dir = ray_dir;
+        lsr->dist = length(lsr->p - ray_orig);
 
         return true;
     }

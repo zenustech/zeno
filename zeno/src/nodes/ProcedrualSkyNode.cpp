@@ -1,6 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/UserData.h>
+#include <zeno/utils/fileio.h>
 
 namespace zeno {
 struct ProceduralSky : INode {
@@ -46,6 +47,9 @@ struct HDRSky : INode {
         std::string path = "";
         if (has_input2<std::string>("path")) {
              path = get_input2<std::string>("path");
+             if (!path.empty() && !file_exists(path)) {
+                 throw zeno::makeError("HDRSky file not exists");
+             }
         }
         prim->userData().set2("isRealTimeObject", std::move(1));
         prim->userData().set2("HDRSky", std::move(path));
@@ -67,6 +71,55 @@ ZENDEFNODE(HDRSky, {
     },
     {
         {"HDRSky"},
+    },
+    {
+    },
+    {"shader"},
+});
+
+vec3f colorTemperatureToRGB(float temperatureInKelvins)
+{
+    vec3f retColor;
+
+    temperatureInKelvins = clamp(temperatureInKelvins, 1000.0f, 40000.0f) / 100.0f;
+
+    if (temperatureInKelvins <= 66.0f)
+    {
+        retColor[0] = 1.0f;
+        retColor[1] = zeno::clamp(0.39008157876901960784f * log(temperatureInKelvins) - 0.63184144378862745098f, 0.0f, 1.0f);
+    }
+    else
+    {
+        float t = temperatureInKelvins - 60.0f;
+        retColor[0] = zeno::clamp(1.29293618606274509804f * pow(t, -0.1332047592f), 0.0f, 1.0f);
+        retColor[1] = zeno::clamp(1.12989086089529411765f * pow(t, -0.0755148492f), 0.0f, 1.0f);
+    }
+
+    if (temperatureInKelvins >= 66.0f)
+        retColor[2] = 1.0;
+    else if(temperatureInKelvins <= 19.0f)
+        retColor[2] = 0.0;
+    else
+        retColor[2] = zeno::clamp(0.54320678911019607843f * log(temperatureInKelvins - 10.0f) - 1.19625408914f, 0.0f, 1.0f);
+
+    return retColor;
+}
+
+struct Blackbody : INode {
+    virtual void apply() override {
+        float temperature = get_input2<float>("temperature");
+        temperature = zeno::clamp(temperature, 1000.0f, 40000.0f);
+        auto color = colorTemperatureToRGB(temperature);
+        set_output2("color", color);
+    }
+};
+
+ZENDEFNODE(Blackbody, {
+    {
+        {"float", "temperature", "6500"},
+    },
+    {
+        {"color"},
     },
     {
     },

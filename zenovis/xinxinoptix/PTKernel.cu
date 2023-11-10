@@ -65,75 +65,118 @@ vec3 ACESFitted(vec3 color, float gamma)
 extern "C" __global__ void __raygen__rg()
 {
 
-      const int    w   = params.windowSpace.x;
-      const int    h   = params.windowSpace.y;
-      //const float3 eye = params.eye;
-      const uint3  idxx = optixGetLaunchIndex();
-      uint3 idx;
-      idx.x = idxx.x + params.tile_i * params.tile_w;
-      idx.y = idxx.y + params.tile_j * params.tile_h;
-      if(idx.x>w || idx.y>h)
+    const int    w   = params.windowSpace.x;
+    const int    h   = params.windowSpace.y;
+    //const float3 eye = params.eye;
+    const uint3  idxx = optixGetLaunchIndex();
+    uint3 idx;
+    idx.x = idxx.x + params.tile_i * params.tile_w;
+    idx.y = idxx.y + params.tile_j * params.tile_h;
+    if(idx.x>w || idx.y>h)
         return;
-      const unsigned int image_index  = idx.y * w + idx.x;
-      const int    subframe_index = params.subframe_index;
-      const CameraInfo cam = params.cam;
 
-      int seedy = idx.y/4, seedx = idx.x/8;
-      int sid = (idx.y%4) * 8 + idx.x%8;
-      unsigned int seed = tea<4>( idx.y * w + idx.x, subframe_index);
-      unsigned int eventseed = tea<4>( idx.y * w + idx.x, subframe_index + 1);
-      float focalPlaneDistance = cam.focalPlaneDistance>0.01f? cam.focalPlaneDistance : 0.01f;
-      float aperture = clamp(cam.aperture,0.0f,100.0f);
-      aperture/=10;
+    const unsigned int image_index  = idx.y * w + idx.x;
+    const int    subframe_index = params.subframe_index;
+    const CameraInfo cam = params.cam;
 
-      float3 result = make_float3( 0.0f );
-      float3 result_d = make_float3( 0.0f );
-      float3 result_s = make_float3( 0.0f );
-      float3 result_t = make_float3( 0.0f );
-      float3 result_b = make_float3( 0.0f );
-      int i = params.samples_per_launch;
+    int seedy = idx.y/4, seedx = idx.x/8;
+    int sid = (idx.y%4) * 8 + idx.x%8;
+    unsigned int seed = tea<4>( idx.y * w + idx.x, subframe_index);
+    unsigned int eventseed = tea<4>( idx.y * w + idx.x, subframe_index + 1);
+    float focalPlaneDistance = cam.focal_distance>0.01f? cam.focal_distance: 0.01f;
+    float aperture = clamp(cam.aperture,0.0f,100.0f);
 
-      float3 tmp_albedo{};
-      float3 tmp_normal{};
-      unsigned int sobolseed = subframe_index;
-      do
-      {
-          // The center of each pixel is at fraction (0.5,0.5)
-          float2 subpixel_jitter = sobolRnd(sobolseed);
+    float3 result = make_float3( 0.0f );
+    float3 result_d = make_float3( 0.0f );
+    float3 result_s = make_float3( 0.0f );
+    float3 result_t = make_float3( 0.0f );
+    float3 result_b = make_float3( 0.0f );
+    int i = params.samples_per_launch;
 
-          float2 d = 2.0f * make_float2(
-                  ( static_cast<float>( idx.x + params.windowCrop_min.x ) + subpixel_jitter.x ) / static_cast<float>( w ),
-                  ( static_cast<float>( idx.y + params.windowCrop_min.y ) + subpixel_jitter.y ) / static_cast<float>( h )
-                  ) - 1.0f;
+    float3 tmp_albedo{};
+    float3 tmp_normal{};
+    unsigned int sobolseed = subframe_index;
+    do{
+        // The center of each pixel is at fraction (0.5,0.5)
+        float2 subpixel_jitter = sobolRnd(sobolseed);
 
-          float2 r01 = sobolRnd(sobolseed);
+        float2 d = 2.0f * make_float2(
+            ( static_cast<float>( idx.x + params.windowCrop_min.x ) + subpixel_jitter.x ) / static_cast<float>( w ),
+            ( static_cast<float>( idx.y + params.windowCrop_min.y ) + subpixel_jitter.y ) / static_cast<float>( h )
+            ) - 1.0f;
 
-          float r0 = r01.x * 2.0f * M_PIf;
-          float r1 = r01.y * aperture * aperture;
-          r1 = sqrt(r1);
+        float2 r01 = sobolRnd(sobolseed);
 
-          float3 eye_shake     = r1 * ( cosf(r0)* normalize(cam.right) + sinf(r0)* normalize(cam.up)); // Camera local space
-          float3 ray_origin    = cam.eye + eye_shake;
-          float3 ray_direction = focalPlaneDistance *(cam.right * d.x + cam.up * d.y + cam.front) - eye_shake; // Camera local space
-                 ray_direction = normalize(ray_direction);
+        float r0 = r01.x * 2.0f * M_PIf;
+        float r1 = sqrtf(r01.y) * aperture;
 
-          RadiancePRD prd;
-          prd.emission     = make_float3(0.f);
-          prd.radiance     = make_float3(0.f);
-          prd.attenuation  = make_float3(1.f);
-          prd.attenuation2 = make_float3(1.f);
-          prd.prob         = 1.0f;
-          prd.prob2        = 1.0f;
-          prd.countEmitted = true;
-          prd.done         = false;
-          prd.seed         = seed;
-          prd.eventseed    = eventseed;
-          prd.flags        = 0;
-          prd.maxDistance  = 1e16f;
-          prd.medium       = DisneyBSDF::PhaseFunctions::vacuum;
+        float sin_yaw = sinf(cam.yaw);
+        float cos_yaw = cosf(cam.yaw);
+        float sin_pitch = sinf(cam.pitch);
+        float cos_pitch = cosf(cam.pitch);
+
+        mat3 tile_transform = mat3(
+            cos_yaw, -sin_yaw * cos_pitch,  sin_pitch*sin_yaw,
+            sin_yaw, cos_yaw * cos_pitch,   - cos_yaw * sin_pitch,
+            0.0f,    sin_pitch,             cos_pitch
+        );
+
+        mat3 camera_transform = mat3(
+            cam.right.x, cam.up.x, cam.front.x,
+            cam.right.y, cam.up.y, cam.front.y,
+            cam.right.z, cam.up.z, cam.front.z
+        );
+
+        // Under camer local space, cam.eye as origin, cam.right as X axis, cam.up as Y axis, cam.front as Z axis.
+        float3 eye_shake     = r1 * (cosf(r0) * make_float3(1.0f,0.0f,0.0f) + sinf(r0) * make_float3(0.0f,1.0f,0.0f)); // r1 * ( cos(r0) , sin(r0) , 0 );
+        float3 focal_plane_center = make_float3(cam.vertical_shift*cam.height, cam.horizontal_shift*cam.width, cam.focal_length);
+        float3 old_direction =   focal_plane_center + make_float3(cam.width * d.x, cam.height*d.y, 0.0f);
+        float3 tile_normal =  make_float3(sin_pitch*sin_yaw, - cos_yaw * sin_pitch, cos_pitch);
+
+        float D = - dot(tile_normal , focal_plane_center);//surcface equaltion is Ax+By+Cz+D = 0 
+        
+        /*to sphere coordinate
+        x = r * sin(theta) * cos(phi) = r * C1;
+        y = r * sin(theta) * sin(phi) = r * C2;
+        z = r * cos(phi) = r* C3;
+        */
+        float old_r = length(old_direction);
+        float3 C_vector = old_direction/old_r;
+        float new_r = -D / dot(tile_normal,C_vector); 
+        /*
+        Ax+By+Cz+D = A*C1*r + B*C2*r + C*C3*r + D = ((A,B,C) dot (C1,C2,C3)) * r + D =0
+        old_direction/old_r = (C1,C2,C3)
+        */
+        float3 terminal_point = new_r * C_vector;
+        terminal_point = terminal_point * (cam.focal_distance/cam.focal_length);//focal_length control
+
+        //transform to world space
+        terminal_point = camera_transform * terminal_point;
+        eye_shake = camera_transform * eye_shake;
+
+        float3 ray_origin    = cam.eye + eye_shake;
+        float3 ray_direction = terminal_point - eye_shake; 
+        ray_direction = normalize(ray_direction);
+
+        RadiancePRD prd;
+        prd.emission     = make_float3(0.f);
+        prd.radiance     = make_float3(0.f);
+        prd.attenuation  = make_float3(1.f);
+        prd.attenuation2 = make_float3(1.f);
+        prd.prob         = 1.0f;
+        prd.prob2        = 1.0f;
+        prd.countEmitted = true;
+        prd.done         = false;
+        prd.seed         = seed;
+        prd.eventseed    = eventseed;
+        prd.flags        = 0;
+        prd.maxDistance  = 1e16f;
+        prd.medium       = DisneyBSDF::PhaseFunctions::vacuum;
+
 
         prd.origin = ray_origin;
         prd.direction = ray_direction;
+        prd.samplePdf = 1.0f;
 
         prd.depth = 0;
         prd.diffDepth = 0;

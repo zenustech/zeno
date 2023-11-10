@@ -1631,6 +1631,14 @@ bool ZenoMainWindow::openFile(QString filePath)
     if (!pModel)
         return false;
 
+    //cleanup
+    zeno::getSession().globalComm->clearFrameState();
+    auto views = viewports();
+    for (auto view : views)
+    {
+        view->cleanUpScene();
+    }
+
     resetTimeline(pGraphs->timeInfo());
     recordRecentFile(filePath);
     initUserdata(pGraphs->userdataInfo());
