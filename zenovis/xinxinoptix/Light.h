@@ -70,7 +70,7 @@ static __inline__ __device__ bool cihouMaxDistanceContinue(LightSampleRecord &ls
     return true;
 }
 
-static __inline__ __device__ vec3 cihouLightTexture(LightSampleRecord &lsr, GenericLight &light, uint32_t depth) {
+static __inline__ __device__ vec3 cihouLightEmission(LightSampleRecord &lsr, GenericLight &light, uint32_t depth) {
 
     if (light.tex != 0u) {
         auto color = texture2D(light.tex, lsr.uv);
@@ -78,9 +78,13 @@ static __inline__ __device__ vec3 cihouLightTexture(LightSampleRecord &lsr, Gene
             color = pow(color, light.texGamma);
         }
 
-        auto scaler = (depth > 1)? light.intensity : light.vIntensity;
+        auto scaler = (depth > 0)? light.intensity : light.vIntensity;
         color = color * scaler;
         return *(vec3*)&color;
+    }
+
+    if (depth == 0) {
+        return light.emission * light.vIntensity / light.intensity;
     }
     
     return light.emission;
@@ -327,7 +331,7 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
 
         if (!cihouMaxDistanceContinue(lsr, light)) { return; }
         
-        float3 emission = cihouLightTexture(lsr, light, prd->depth);
+        float3 emission = cihouLightEmission(lsr, light, prd->depth);
 
         lsr.PDF *= lightPickProb;
 

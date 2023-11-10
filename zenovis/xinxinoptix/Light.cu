@@ -125,25 +125,30 @@ extern "C" __global__ void __closesthit__radiance()
     LightSampleRecord lsr;
 
     if (light.type != zeno::LightType::Diffuse) {
-        // auto pos = ray_orig + ray_dir * optixGetRayTmax();
-        // prd->geometryNormal = normalize(light.sphere.center - ray_orig);
-        // prd->offsetUpdateRay(pos, ray_dir);
-        return;
-    } else {
-        if (light.shape == zeno::LightShape::Plane) {
-            light.rect.EvalAfterHit(&lsr, lightDirection, lightDistance, prd->origin);
-        } else if (light.shape == zeno::LightShape::Sphere) {
-            light.sphere.EvalAfterHit(&lsr, lightDirection, lightDistance, prd->origin);
-            cihouSphereLightUV(lsr, light);
-        } else if (light.shape == zeno::LightShape::TriangleMesh) {
+        if (prd->depth > 1) { return; }
+        lsr.PDF = 1.0f;
+        lsr.isDelta = true;
+    }
 
-            float2 bary2 = optixGetTriangleBarycentrics();
-            float3 bary3 = { 1.0f-bary2.x-bary2.y, bary2.x, bary2.y };
-            
-            float3* normalBuffer = reinterpret_cast<float3*>(params.triangleLightNormalBuffer);
-            float2* coordsBuffer = reinterpret_cast<float2*>(params.triangleLightCoordsBuffer);
-            light.triangle.EvalAfterHit(&lsr, lightDirection, lightDistance, prd->origin, prd->geometryNormal, bary3, normalBuffer, coordsBuffer);
-        }
+    const auto lightShape = light.shape;
+
+    if (lightShape == zeno::LightShape::Plane) {
+        light.rect.EvalAfterHit(&lsr, lightDirection, lightDistance, prd->origin);
+    } else if (lightShape == zeno::LightShape::Sphere) {
+        light.sphere.EvalAfterHit(&lsr, lightDirection, lightDistance, prd->origin);
+        cihouSphereLightUV(lsr, light);
+    } else if (lightShape == zeno::LightShape::TriangleMesh) {
+
+        float2 bary2 = optixGetTriangleBarycentrics();
+        float3 bary3 = { 1.0f-bary2.x-bary2.y, bary2.x, bary2.y };
+        
+        float3* normalBuffer = reinterpret_cast<float3*>(params.triangleLightNormalBuffer);
+        float2* coordsBuffer = reinterpret_cast<float2*>(params.triangleLightCoordsBuffer);
+        light.triangle.EvalAfterHit(&lsr, lightDirection, lightDistance, prd->origin, prd->geometryNormal, bary3, normalBuffer, coordsBuffer);
+    } else { 
+        return; 
+    }
+
     if (light.type == zeno::LightType::Diffuse && light.spread < 1.0f) {
 
         auto void_angle = 0.5f * (1.0f - light.spread) * M_PIf;
@@ -157,8 +162,7 @@ extern "C" __global__ void __closesthit__radiance()
     }
 
     if (!cihouMaxDistanceContinue(lsr, light)) { return; }
-
-    float3 emission = cihouLightTexture(lsr, light, prd->depth);
+    float3 emission = cihouLightEmission(lsr, light, prd->depth-1);
 
     if (light.config & zeno::LightConfigDoubleside) {
         lsr.NoL = abs(lsr.NoL);
