@@ -238,7 +238,7 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
 
         lightPickProb *= pick.prob;
 
-        LightSampleRecord lsr{};
+        LightSampleRecord lsr;
 
         const float* iesProfile = reinterpret_cast<const float*>(light.ies);
 
@@ -269,8 +269,6 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
                     if (valid) {
                         cihouSphereLightUV(lsr, light);
                         lsr.intensity *= 1.0f / (lsr.dist * lsr.dist); 
-                    } else {
-                        
                     }
                     break;
                 }

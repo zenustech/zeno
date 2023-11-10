@@ -177,6 +177,7 @@ extern "C" __global__ void __closesthit__radiance()
     if (lsr.NoL > _FLT_EPL_) {
 
         auto lightTree = reinterpret_cast<pbrt::LightTreeSampler*>(params.lightTreeSampler);
+        if (lightTree == nullptr) { return; }
 
         auto PMF = lightTree->PMF(reinterpret_cast<const Vector3f&>(ray_orig), 
                                          reinterpret_cast<const Vector3f&>(prd->geometryNormal), light_index);
