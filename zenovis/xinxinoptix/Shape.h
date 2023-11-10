@@ -610,11 +610,11 @@ struct RectShape {
         lsr->dir = dir;
         lsr->dist = dist;
 
-        auto delta = lsr->p - v0;
+        auto delta = lsr->p - v;
         delta -= dot(delta, normal) * normal;
 
-        lsr->uv = { dot(delta, v1) / dot(v1, v1),
-                    dot(delta, v2) / dot(v2, v2) };
+        lsr->uv = { dot(delta, axisX) / lenX,
+                    dot(delta, axisY) / lenY };
 
         lsr->PDF = lightPDF;
         lsr->NoL = lightNoL;
@@ -660,26 +660,24 @@ struct RectShape {
         float denom = dot(normal, -ray_dir);
         if (denom <= __FLT_DENORM_MIN__) {return false;}
         
-        float3 vector = ray_orig - v0;
+        float3 vector = ray_orig - v;
         float t = dot(normal, vector) / denom;
 
         if (t <= 0) { return false; }
 
         auto P = ray_orig + ray_dir * t;
-        auto delta = P - v0;
+        auto delta = P - v;
 
         P -= normal * dot(normal, delta);
-        delta = P - v0; 
+        delta = P - v; 
         
-        auto v1v1 = dot(v1, v1);
-        auto q1 = dot(delta, v1);
-        if (q1<0.0f || q1>v1v1) {return false;}
+        auto q1 = dot(delta, axisX);
+        if (q1<0.0f || q1>lenX) {return false;}
+       
+        auto q2 = dot(delta, axisY);
+        if (q2<0.0f || q2>lenY) {return false;}
 
-        auto v2v2 = dot(v2, v2);        
-        auto q2 = dot(delta, v2);
-        if (q2<0.0f || q2>v2v2) {return false;}
-
-        lsr->uv = float2{q1, q2} / float2{v1v1, v2v2};
+        lsr->uv = float2{q1, q2} / float2{lenX, lenY};
 
         lsr->p = P;
         lsr->PDF = 1.0f;
@@ -696,8 +694,12 @@ struct RectShape {
 
     pbrt::Bounds3f bounds() {
 
-        auto pmax = v0;
-        auto pmin = v1;
+        auto pmax = v;
+        auto pmin = v;
+
+        auto v0 = v;
+        auto v1 = axisX * lenX;
+        auto v2 = axisY * lenY;
 
         float3 tmp[3] = {v0+v1, v0+v2, v0+v1+v2};
 
@@ -822,7 +824,7 @@ struct SphereShape {
             lsr->dir = ray_dir;
             lsr->dist = fminf(c/q, q);
             lsr->p = ray_origin + ray_dir * lsr->dist;
-            // lsr->n = normalize(lsr->p - center);
+            lsr->n = normalize(lsr->p - center);
             // lsr->p = rtgems::offset_ray(lsr->p, lsr->n);
             // lsr->dist = length(lsr->p - ray_origin);
             return true;
