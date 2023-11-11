@@ -42,10 +42,11 @@ struct VisualizeIntersectionLoops : zeno::INode {
         
         zs::bht<int,2,int> csHT{verts.get_allocator(),GIA::DEFAULT_MAX_GIA_INTERSECTION_PAIR};
         csHT.reset(cudaExec,true);
-
+        
         std::cout << "retrieve_self_intersection_tri_halfedges_pairs" << std::endl;
 
-        GIA::retrieve_self_intersection_tri_halfedge_pairs(cudaExec,verts,source_tag,tris,halfedges,csHT);
+        auto tri_bvh = LBvh<3,int,T>{};
+        GIA::retrieve_self_intersection_tri_halfedge_pairs(cudaExec,verts,source_tag,tris,halfedges,tri_bvh,csHT);
 
         std::cout << "nm_csHT : " << csHT.size() << std::endl;
 
@@ -142,6 +143,9 @@ struct VisualizeIntersectionLoops : zeno::INode {
                     trace,
                     trace_0,
                     trace_1);
+                
+                std::cout << "finish tracing intersection loop" << std::endl;
+                std::cout << "trace_length : " << trace.size() << "\t" << trace_0.size() << "\t" << trace_1.size() << std::endl;
 
                 if(GIA::find_intersection_turning_point(
                     proxy<omp_space>({},halfedges_host),
@@ -152,7 +156,7 @@ struct VisualizeIntersectionLoops : zeno::INode {
                     std::cout << "is_LB_trace\n" << std::endl;
                 }
 
-                std::cout << "trace_length : " << trace.size() << "\t" << trace_0.size() << "\t" << trace_1.size() << std::endl;
+
 
                 std::cout << "compute trace baries " << std::endl;
 
@@ -184,9 +188,9 @@ struct VisualizeIntersectionLoops : zeno::INode {
                 trace_verts.resize(trace.size() * 2);
                 trace_lines.resize(trace.size() * 2 - 2);
 
-                std::cout << "visualized the L-L trace : " << trace.size() << std::endl;
-                for(int i = 0;i != trace.size();++i)
-                    std::cout << "T[" << i << "] : " << trace[i][0] << "\t" << trace[i][1] << std::endl;
+                // std::cout << "visualized the L-L trace : " << trace.size() << std::endl;
+                // for(int i = 0;i != trace.size();++i)
+                //     std::cout << "T[" << i << "] : " << trace[i][0] << "\t" << trace[i][1] << std::endl;
 
 
                 ompPol(zs::range(trace.size()),[
@@ -390,9 +394,9 @@ struct VisualizeIntersectionLoops : zeno::INode {
                 trace_verts.resize(trace.size() * 2);
                 trace_lines.resize(trace.size() * 2 - 2);
 
-                std::cout << "visualized the B-B trace : " << trace.size() << std::endl;
-                for(int i = 0;i != trace.size();++i)
-                    std::cout << "T[" << i << "] : " << trace[i][0] << "\t" << trace[i][1] << std::endl;
+                // std::cout << "visualized the B-B trace : " << trace.size() << std::endl;
+                // for(int i = 0;i != trace.size();++i)
+                //     std::cout << "T[" << i << "] : " << trace[i][0] << "\t" << trace[i][1] << std::endl;
 
                 ompPol(zs::range(trace.size()),[
                     &trace,&trace_baries,&sides,
@@ -499,9 +503,9 @@ struct VisualizeIntersectionLoops : zeno::INode {
                 trace_verts.resize(trace.size() * 2);
                 trace_lines.resize(trace.size() * 2 - 2);
 
-                std::cout << "visualized the closed trace : " << trace.size() << std::endl;
-                for(int i = 0;i != trace.size();++i)
-                    std::cout << "T[" << i << "] : " << trace[i][0] << "\t" << trace[i][1] << std::endl;
+                // std::cout << "visualized the closed trace : " << trace.size() << std::endl;
+                // for(int i = 0;i != trace.size();++i)
+                //     std::cout << "T[" << i << "] : " << trace[i][0] << "\t" << trace[i][1] << std::endl;
 
 
                 ompPol(zs::range(trace.size()),[
@@ -611,11 +615,13 @@ struct VisualizeICMGradient : zeno::INode {
             {"inds",2}
         },0};
        
-        std::cout << "retrieve_self_intersection_tri_halfedge_pairs" << std::endl;
+        std::cout << "retrieve_self_intersection_tri_halfedge_pairs" << std::endl;\
+        auto tri_bvh = LBvh<3,int,T>{};
         GIA::retrieve_self_intersection_tri_halfedge_pairs(cudaExec,
                 verts,source_tag,
                 tris,
                 halfedges,
+                tri_bvh,
                 csHT); 
        
         auto halfedges_host = halfedges.clone({zs::memsrc_e::host});

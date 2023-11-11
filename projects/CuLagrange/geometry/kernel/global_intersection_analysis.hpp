@@ -20,14 +20,23 @@ namespace zeno {
 
 namespace GIA {
 
+#define USE_FAST_TRI_SEG_INTERSECTION
+
     constexpr int GIA_BACKGROUND_COLOR = 0;
     constexpr int GIA_TURNING_POINTS_COLOR = 1;
     constexpr int GIA_RED_COLOR = 2;
     constexpr int GIA_WHITE_COLOR = 3;
     constexpr int GIA_BLACK_COLOR = 4;
     constexpr int DEFAULT_MAX_GIA_INTERSECTION_PAIR = 100000;
-    constexpr int DEFAULT_MAX_NM_TURNING_POINTS = 100;
-    constexpr int DEFAULT_MAX_BOUNDARY_POINTS = 100;
+    constexpr int DEFAULT_MAX_NM_TURNING_POINTS = 500;
+    constexpr int DEFAULT_MAX_BOUNDARY_POINTS = 500;
+    
+    constexpr auto GIA_IMC_GRAD_BUFFER_KEY = "GIA_IMC_GRAD_BUFFER_KEY";
+    constexpr auto GIA_CS_ET_BUFFER_KEY = "GIA_CS_ET_BUFFER_KEY";
+    constexpr auto GIA_CS_EKT_BUFFER_KEY = "GIA_CS_EKT_BUFFER_KEY";
+    constexpr auto GIA_VTEMP_BUFFER_KEY = "GIA_VTEMP_BUFFER_KEY";
+    constexpr auto GIA_TRI_BVH_BUFFER_KEY = "GIA_TRI_BVH_BUFFER_KEY";
+    constexpr auto GIA_KTRI_BVH_BUFFER_KEY = "GIA_TRI_BVH_BUFFER_KEY";
 
     template<typename HalfEdgeTileVecProxy>
     constexpr auto is_neighboring_halfedges(const HalfEdgeTileVecProxy& halfedges,const int& h0,const int& h1) {
@@ -82,12 +91,18 @@ namespace GIA {
 //      closed intersection
 //      turning point intersection
 //      boudary edge intersection
-    template<typename Pol,typename PosTileVec,typename TriTileVec,typename HETileVec>
+    template<typename Pol,
+        typename PosTileVec,
+        typename TriTileVec,
+        typename HETileVec,
+        typename TriBVH>
     void retrieve_self_intersection_tri_halfedge_pairs(Pol& pol,
         const PosTileVec& verts, const zs::SmallString& xtag,
         const TriTileVec& tris,
         const HETileVec& halfedges,
-        zs::bht<int,2,int>& res) {
+        TriBVH& tri_bvh,
+        zs::bht<int,2,int>& res,
+        bool refit_bvh = false) {
             using namespace zs;
             using vec2i = zs::vec<int,2>;
             using bv_t = typename ZenoParticles::lbvh_t::Box;
@@ -99,8 +114,11 @@ namespace GIA {
             constexpr auto eps = 1e-6;
 
             auto tri_bvs = retrieve_bounding_volumes(pol,verts,tris,wrapv<3>{},0,xtag);
-            auto tri_bvh = LBvh<3,int,T>{};
-            tri_bvh.build(pol,tri_bvs);   
+            
+            if(refit_bvh)
+                tri_bvh.refit(pol,tri_bvs);
+            else
+                tri_bvh.build(pol,tri_bvs);   
 
             res.reset(pol,true);
             pol(zs::range(halfedges.size()),[
@@ -125,11 +143,30 @@ namespace GIA {
                     auto hv1 = verts.pack(dim_c<3>,xtag,hedge[1]);
                     auto bv = bv_t{get_bounding_box(hv0,hv1)};
 
+                    bool has_dynamic_points = true;
+                    if(verts.hasProperty("ani_mask")) {
+                        has_dynamic_points = false;
+                        for(int i = 0;i != 2;++i)
+                            if(verts("ani_mask",hedge[i]) < 0.99)
+                                has_dynamic_points = true;
+                    }
+                        
+
                     auto process_potential_he_tri_intersection_pairs = [&](int ti) mutable {
                         auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
                         for(int i = 0;i != 3;++i)
                             if(tri[i] == hedge[0] || tri[i] == hedge[1])
                                 return;
+
+                        if(verts.hasProperty("ani_mask")) {
+                            for(int i = 0;i != 3;++i)
+                                if(verts("ani_mask",tri[i]) < 0.99)
+                                    has_dynamic_points = true;
+                        }
+
+                        if(!has_dynamic_points)
+                            return;
+
                         vec3 tvs[3] = {};
                         for(int i = 0;i != 3;++i)
                             tvs[i] = verts.pack(dim_c<3>,xtag,tri[i]);
@@ -142,6 +179,351 @@ namespace GIA {
 
                     tri_bvh.iter_neighbors(bv,process_potential_he_tri_intersection_pairs);              
             });  
+    }
+
+
+
+// retrieve all the intersection pairs and decide whether they are:
+//      closed intersection
+//      turning point intersection
+//      boudary edge intersection
+    template<typename Pol,
+        typename PosTileVec,
+        typename TriTileVec,
+        typename EdgeTileVec,
+        typename TriBVH>
+    void retrieve_self_intersection_tri_edge_pairs(Pol& pol,
+        const PosTileVec& verts, const zs::SmallString& xtag,
+        const TriTileVec& tris,
+        const EdgeTileVec& edges,
+        TriBVH& tri_bvh,
+        zs::bht<int,2,int>& res,
+        bool refit_bvh = false) {
+            using namespace zs;
+            using vec2i = zs::vec<int,2>;
+            using bv_t = typename ZenoParticles::lbvh_t::Box;
+            using vec3 = zs::vec<T,3>;
+            using table_vec2i_type = zs::bht<int,2,int>;
+
+            constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+            constexpr auto exec_tag = wrapv<space>{};
+            constexpr auto eps = 1e-6;
+
+
+            zs::CppTimer timer;
+
+            timer.tick();
+            auto tri_bvs = retrieve_bounding_volumes(pol,verts,tris,wrapv<3>{},0,xtag);
+            timer.tock("retrieve_bounding_volumes");
+
+            timer.tick();
+            if(refit_bvh)
+                tri_bvh.refit(pol,tri_bvs);
+            else
+                tri_bvh.build(pol,tri_bvs);   
+            timer.tock("refit_bvh");
+
+            res.reset(pol,true);
+            timer.tick();
+
+// #define USE_FAST_TRI_SEG_INTERSECTION
+// #define USE_TMP_BUFFER_BEFORE_HASH
+
+#ifdef USE_TMP_BUFFER_BEFORE_HASH
+            constexpr size_t MAX_NM_INTERSECTION_PER_EDGE = 5;
+            auto allocator = get_temporary_memory_source(pol);
+            zs::Vector<int> tmp{allocator, edges.size() * MAX_NM_INTERSECTION_PER_EDGE};
+            pol(zs::range(tmp),[] ZS_LAMBDA(auto& ti) mutable {ti = -1;});
+            // zs::Vector<size_t> nm_ints{allocator,1};
+            // nm_ints.setVal(0);
+#endif
+            pol(zs::range(edges.size()),[
+                exec_tag = exec_tag,
+                // use_dirty_bit = use_dirty_bit,
+                // edges = proxy<space>({},edges),
+                edges = edges.begin("inds", dim_c<2>, int_c),
+                // edges = view<space>(edges), 
+                // edgeIndsOffset = edges.getPropertyOffset("inds"),
+                // tris = proxy<space>({},tris),
+#ifdef USE_FAST_TRI_SEG_INTERSECTION
+                triNrmOffset = tris.getPropertyOffset("nrm"),
+                triDOffset = tris.getPropertyOffset("d"),
+                // triE0Offset = tris.getPropertyOffset("e0"),
+                // triE1Offset = tris.getPropertyOffset("e1"),
+                // triE2Offset = tris.getPropertyOffset("e2"),
+                // triAlignAxisOffst = tris.getPropertyOffset("max_nrm_aligned_axis"),
+
+                // triDirtyOffset = tris.getPropertyOffset("dirty"),
+                // edgeDirtyOffset = edges.getPropertyOffset("dirty"),
+#endif
+                triIndsOffset = tris.getPropertyOffset("inds"),
+                tris = view<space>(tris),
+                // verts = proxy<space>({},verts),
+                verts = view<space>(verts),
+                xOffset = verts.getPropertyOffset(xtag),
+                aniMaskOffset = verts.getPropertyOffset("ani_mask"),
+                hasAniMask = verts.hasProperty("ani_mask"),
+                // xtag = xtag,
+                eps = eps,
+#ifdef USE_TMP_BUFFER_BEFORE_HASH    
+                MAX_NM_INTERSECTION_PER_EDGE = MAX_NM_INTERSECTION_PER_EDGE,
+                tmp = proxy<space>(tmp),
+                // nm_ints = proxy<space>(nm_ints),
+#else
+                res = proxy<space>(res),
+#endif
+                tri_bvh = proxy<space>(tri_bvh)] ZS_LAMBDA(int ei) mutable {
+                    // auto edge = edges.pack(dim_c<2>,edgeIndsOffset,ei,int_c);
+                    auto edge = edges[ei];
+
+                    auto vs = verts.pack(dim_c<3>, xOffset, edge[0]);
+                    auto ve = verts.pack(dim_c<3>, xOffset, edge[1]);
+
+                    auto bv = bv_t{get_bounding_box(vs,ve)};
+
+                    bool edge_has_dynamic_points = true;
+                    if(hasAniMask) {
+                        edge_has_dynamic_points = false;
+                        for(int i = 0;i != 2;++i)
+                            // if(verts("ani_mask",edge[i]) < 0.99)
+                            if (verts(aniMaskOffset, edge[i]) < 0.99)
+                                edge_has_dynamic_points = true;
+                    }
+                        
+                    int nm_intersect_tri = 0;
+                    auto process_potential_ET_intersection_pairs = [&](int ti) mutable {
+                        // auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
+                        // if(use_dirty_bit && edges(edgeDirtyOffset,ei) < eps && tris(triDirtyOffset,ti) < eps)
+                        //     return;
+                        auto tri = tris.pack(dim_c<3>,triIndsOffset,ti,int_c);
+                        for(int i = 0;i != 3;++i)
+                            if(tri[i] == edge[0] || tri[i] == edge[1])
+                                return;
+
+                        auto has_dynamic_points = edge_has_dynamic_points;
+                        if(hasAniMask) {
+                            for(int i = 0;i != 3;++i)
+                                if(verts(aniMaskOffset,tri[i]) < 0.99)
+                                    has_dynamic_points = true;
+                        }
+
+                        if(!has_dynamic_points)
+                            return;
+
+#ifdef USE_FAST_TRI_SEG_INTERSECTION
+                        vec3 tvs[3] = {};
+                        for(int i = 0;i != 3;++i)
+                            tvs[i] = verts.pack(dim_c<3>,xOffset,tri[i]);
+
+                        auto is_intersect = et_intersected(vs,ve,
+                                verts.pack(dim_c<3>,xOffset,tri[0]),
+                                verts.pack(dim_c<3>,xOffset,tri[1]),
+                                verts.pack(dim_c<3>,xOffset,tri[2]));
+
+                    // {
+                        auto tnrm = tris.pack(dim_c<3>,triNrmOffset,ti);
+                        auto d = tris(triDOffset,ti);
+
+                        auto ts = vs.dot(tnrm) + d;
+                        auto te = ve.dot(tnrm) + d;
+
+                        if(ts * te > 0) {
+                            auto tnrm_recomp = LSL_GEO::facet_normal(tvs[0],tvs[1],tvs[2]);
+                            auto d_recomp = -tnrm_recomp.dot(tvs[0]);
+                            printf("is_intersect but ts * te > 0 : %f %f %f %f %f %f %f\n",(float)(ts * te),
+                                (float)tnrm_recomp.dot(tnrm),(float)d,(float)d_recomp,
+                                (float)(tnrm.dot(tvs[0]) + d),
+                                (float)(tnrm.dot(tvs[1]) + d),
+                                (float)(tnrm.dot(tvs[2]) + d));
+                            return;
+                        }
+
+                        auto e0 = tvs[1] - tvs[0];
+                        auto e1 = tvs[2] - tvs[0];
+                        auto e2 = tvs[1] - tvs[2];
+
+                        // auto ts_minus_te = ts - te;
+
+                        auto t = ts / (ts - te);
+                        auto p = vs + t * (ve - vs);
+                        auto q = p - tvs[0];
+
+
+                        auto n0 = e0.cross(q);
+                        auto n1 = e1.cross(q);
+                        if(n0.dot(n1) > 0) {
+                            if(is_intersect)
+                                printf("should intersect but n0 * n1 = %f > 0\n",(float)(n0.dot(n1)));
+                            return;
+                        }
+
+                        q = p - tvs[2];
+                        n1 = e1.cross(q);
+                        auto n2 = e2.cross(q);
+
+                        if(n1.dot(n2) < 0) {
+                            if(is_intersect)
+                                printf("should intersect but n1 * n2 = %f > 0\n",(float)(n0.dot(n1)));
+                            return;
+                        }
+                    // }
+                    if(!is_intersect) {
+                        printf("should not pass here\n");
+                    }
+
+                    {
+                        // if(!LSL_GEO::isRayIntersectTriangle(vs,ve - vs,tvs[0],tvs[1],tvs[2],eps))
+                        //     return;
+                    }
+#else
+                        if(!et_intersected(vs,ve,
+                                verts.pack(dim_c<3>,xOffset,tri[0]),
+                                verts.pack(dim_c<3>,xOffset,tri[1]),
+                                verts.pack(dim_c<3>,xOffset,tri[2])))
+                            return;
+#endif
+
+#ifdef USE_TMP_BUFFER_BEFORE_HASH   
+                        if(nm_intersect_tri < MAX_NM_INTERSECTION_PER_EDGE) {
+                            tmp[ei *MAX_NM_INTERSECTION_PER_EDGE + nm_intersect_tri] = ti;
+                            ++nm_intersect_tri;
+                        }
+                        // tmp[atomic_add(exec_tag,&nm_ints[0],(size_t)1)] = vec2i{ei,ti};   
+#else
+                        res.insert(vec2i{ei,ti});
+#endif
+                    }; 
+                    tri_bvh.iter_neighbors(bv,process_potential_ET_intersection_pairs);              
+            });  
+#ifdef USE_TMP_BUFFER_BEFORE_HASH  
+            // auto ints_count = nm_ints.getVal(0);
+            pol(zs::range(edges.size()),[
+                tmp = proxy<space>(tmp),
+                res = proxy<space>(res)] ZS_LAMBDA(int ei) mutable {
+                    for(int i = 0;i != MAX_NM_INTERSECTION_PER_EDGE;++i) {
+                        if(tmp[ei * MAX_NM_INTERSECTION_PER_EDGE + i] < 0)
+                            break;
+                        else
+                            res.insert(zs::vec<int,2>{ei,tmp[ei * 5 + i]});
+                    }
+                    // res.insert(tmp[i]);
+            });
+#endif
+            timer.tock("detect intersection pair");
+    }
+
+
+    template<typename Pol,
+        typename PosTileVec,
+        typename TriTileVec,
+        typename EdgeTileVec,
+        typename TriBVH>
+    void retrieve_intersection_with_edge_ktri_pairs(Pol& pol,
+        const PosTileVec& verts, const zs::SmallString& xtag,
+        const EdgeTileVec& edges,
+        const PosTileVec& kverts, const zs::SmallString& kxtag,
+        const TriTileVec& ktris,
+        const TriBVH& ktri_bvh,
+        zs::bht<int,2,int>& res) {
+            using namespace zs;
+            using vec2i = zs::vec<int,2>;
+            using bv_t = typename ZenoParticles::lbvh_t::Box;
+            using vec3 = zs::vec<T,3>;
+            using table_vec2i_type = zs::bht<int,2,int>;
+
+            constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+            constexpr auto exec_tag = wrapv<space>{};
+            constexpr auto eps = 1e-6;
+
+            zs::CppTimer timer;
+            res.reset(pol,true);
+            timer.tick();
+
+            pol(zs::range(edges.size()),[
+                exec_tag = exec_tag,
+                edges = edges.begin("inds", dim_c<2>, int_c),
+#ifdef USE_FAST_TRI_SEG_INTERSECTION
+                ktriNrmOffset = ktris.getPropertyOffset("nrm"),
+                ktriDOffset = ktris.getPropertyOffset("d"),
+#endif
+                ktriIndsOffset = ktris.getPropertyOffset("inds"),
+                ktris = view<space>(ktris),
+                verts = view<space>(verts),
+                xOffset = verts.getPropertyOffset(xtag),
+                kverts = proxy<space>({},kverts),
+                kxOffset = kverts.getPropertyOffset(kxtag),
+                aniMaskOffset = verts.getPropertyOffset("ani_mask"),
+                hasAniMask = verts.hasProperty("ani_mask"),
+                eps = eps,
+                res = proxy<space>(res),
+                ktri_bvh = proxy<space>(ktri_bvh)] ZS_LAMBDA(int ei) mutable {
+                    auto edge = edges[ei];
+
+                    bool edge_has_dynamic_points = true;
+                    if(hasAniMask) {
+                        edge_has_dynamic_points = false;
+                        for(int i = 0;i != 2;++i)
+                            // if(verts("ani_mask",edge[i]) < 0.99)
+                            if (verts(aniMaskOffset, edge[i]) < 0.99)
+                                edge_has_dynamic_points = true;
+                    }
+                    if(!edge_has_dynamic_points)
+                        return;
+
+                    auto vs = verts.pack(dim_c<3>, xOffset, edge[0]);
+                    auto ve = verts.pack(dim_c<3>, xOffset, edge[1]);
+
+                    auto bv = bv_t{get_bounding_box(vs,ve)};
+
+                    auto process_potential_EKT_intersection_pairs = [&](int kti) mutable {
+                        auto ktri = ktris.pack(dim_c<3>,ktriIndsOffset,kti,int_c);
+
+                        vec3 ktvs[3] = {};
+                        for(int i = 0;i != 3;++i)
+                            ktvs[i] = kverts.pack(dim_c<3>,kxOffset,ktri[i]);
+
+                        auto ktnrm = ktris.pack(dim_c<3>,ktriNrmOffset,kti);
+                        auto d = ktris(ktriDOffset,kti);
+
+                        auto ts = vs.dot(ktnrm) + d;
+                        auto te = ve.dot(ktnrm) + d;
+
+                        if(ts * te > 0) 
+                            return;
+
+                        auto e0 = ktvs[1] - ktvs[0];
+                        auto e1 = ktvs[2] - ktvs[0];
+                        auto e2 = ktvs[1] - ktvs[2];
+
+                        auto ts_minus_te = ts - te;
+
+                        auto t = ts;
+                        auto p = vs * ts_minus_te + t * (ve - vs);
+                        auto q = p - ktvs[0] * ts_minus_te;
+
+
+                        auto n0 = e0.cross(q);
+                        auto n1 = e1.cross(q);
+                        if(n0.dot(n1) > 0) {
+                            // if(is_intersect)
+                            //     printf("should intersect but n0 * n1 = %f > 0\n",(float)(n0.dot(n1)));
+                            return;
+                        }
+
+
+                        q = p - ktvs[2] * ts_minus_te;
+                        n1 = e1.cross(q);
+                        auto n2 = e2.cross(q);
+
+                        if(n1.dot(n2) < 0) {
+                            return;
+                        }
+                        res.insert(vec2i{ei,kti});
+
+                    }; 
+                    ktri_bvh.iter_neighbors(bv,process_potential_EKT_intersection_pairs);              
+            });  
+            timer.tock("detect EKT intersection pair");
     }
 
 // extract all the intersection loops and decide whether they are:
@@ -225,16 +607,28 @@ namespace GIA {
         auto cur_trace = trace_start;
 
         auto id = csHT.query(cur_trace);
+        if(id < 0)
+            std::cout << "fail querying start_trace" << std::endl;
         intersection_mask[id] = 1;
 
         if(find_intersection_turning_point(halfedges,tris,cur_trace) >= 0) {
             cur_trace[0] = zs::reinterpret_bits<int>(halfedges("opposite_he",cur_trace[0]));
+            if(cur_trace[0] < 0) {
+                std::cout << "init turning pair is also a boundary pair" << std::endl;
+                return use_input_buffer0;
+            }
             loop_buffers_0.push_back(cur_trace);
             loop_buffers.push_back(cur_trace);
             loop_sides.push_back(0);
             auto id = csHT.query(cur_trace);
+            // if(id < 0) {
+            //     std::cout << "fail querying the opposite pair of init turning point" << std::endl;
+            //     return use_input_buffer0;
+            // }
             intersection_mask[id] = 1;
         }
+
+        // std::cout << "entering the loop" << std::endl;
 
         do {
             auto hi = cur_trace[0];
@@ -246,6 +640,7 @@ namespace GIA {
             bool find_intersection = false;
             auto nhi = hi;
             for(int i = 0;i != 2;++i) {
+                // std::cout << "try_finding ajacent halfedge" << std::endl;
                 nhi = get_next_half_edge(nhi,halfedges,1);
                 if(auto id = csHT.query(vec2i{nhi,ti});id >= 0) {
                     intersection_mask[id] = 1;
@@ -263,6 +658,7 @@ namespace GIA {
                 }
             }
             if(!find_intersection) {
+                // std::cout << "try_finding ajacent triangle" << std::endl;
                 auto hti = zs::reinterpret_bits<int>(halfedges("to_face",hi));
                 auto thi = zs::reinterpret_bits<int>(tris("he_inds",ti));
                 for(int i = 0;i != 3;++i) {
@@ -286,7 +682,8 @@ namespace GIA {
             }
             if(!find_intersection) {
                 printf("abruptly end while the cur_trace[%d %d] is neither a turning point nor a boundary point\n",cur_trace[0],cur_trace[1]);
-                throw std::runtime_error("abruptly end while the cur_trace is neither a turning point nor a boundary point");
+                // throw std::runtime_error("abruptly end while the cur_trace is neither a turning point nor a boundary point");
+                return use_input_buffer0;
             }
             if(is_boundary_halfedge(halfedges,cur_trace[0])) {
                 printf("find boundary halfedge %d\n",cur_trace[0]);
@@ -295,6 +692,12 @@ namespace GIA {
 
             cur_trace[0] = zs::reinterpret_bits<int>(halfedges("opposite_he",cur_trace[0]));
             auto id = csHT.query(cur_trace);
+            if(id < 0)
+                std::cout << "fail querying the opposite pair of next point" << std::endl;
+            
+            if(intersection_mask[id] > 0) {
+                return use_input_buffer0;
+            }
             intersection_mask[id] = 1;
             if(use_input_buffer0) {
                 loop_sides.push_back(0); 
@@ -327,7 +730,6 @@ namespace GIA {
         loop_buffers.clear();
         loop_sides.clear();
 
-
         bool use_positive_side = true;
         auto cur_trace = trace_start;
 
@@ -346,9 +748,13 @@ namespace GIA {
 
         if(find_intersection_turning_point(halfedges,tris,cur_trace) >= 0) {
             cur_trace[0] = zs::reinterpret_bits<int>(halfedges("opposite_he",cur_trace[0]));
+            if(cur_trace[0] < 0)
+                return;
             auto id = csHT.query(cur_trace);
             update_context(id);
         }
+
+        // std::cout << "search loop " << std::endl;
 
         do {
             auto hi = cur_trace[0];
@@ -359,15 +765,18 @@ namespace GIA {
 
             bool find_intersection = false;
             auto nhi = hi;
+
             for(int i = 0;i != 2;++i) {
                 nhi = get_next_half_edge(nhi,halfedges,1);
                 if(auto id = csHT.query(vec2i{nhi,ti});id >= 0) {
                     update_context(id);
                     cur_trace = vec2i{nhi,ti};
                     find_intersection = true;
+                    // std::cout << "find_neigh halfedge" << std::endl;
                     break;
                 }
             }
+
             if(!find_intersection) {
                 auto hti = zs::reinterpret_bits<int>(halfedges("to_face",hi));
                 auto thi = zs::reinterpret_bits<int>(tris("he_inds",ti));
@@ -377,6 +786,7 @@ namespace GIA {
                         update_context(id);
                         cur_trace = vec2i{thi,hti};
                         find_intersection = true;
+                        // std::cout << "find_neigh triangle" << std::endl;
                         break;
                     }
                     thi = get_next_half_edge(thi,halfedges,1);
@@ -384,7 +794,8 @@ namespace GIA {
             }
             if(!find_intersection) {
                 printf("abruptly end while the cur_trace[%d %d] is neither a turning point nor a boundary point\n",cur_trace[0],cur_trace[1]);
-                throw std::runtime_error("abruptly end while the cur_trace is neither a turning point nor a boundary point");
+                // throw std::runtime_error("abruptly end while the cur_trace is neither a turning point nor a boundary point");
+                return;
             }
             if(is_boundary_halfedge(halfedges,cur_trace[0])) {
                 printf("find boundary halfedge %d\n",cur_trace[0]);
@@ -392,169 +803,18 @@ namespace GIA {
             }
 
             cur_trace[0] = zs::reinterpret_bits<int>(halfedges("opposite_he",cur_trace[0]));
+            // std::cout << "trace next halfedge " << cur_trace[0] << "\t" << cur_trace[1] << std::endl;
             auto id = csHT.query(cur_trace);
+
+            if(intersection_mask[id] > 0) {
+                return;
+            }
+
             update_context(id);
         }while(cur_trace[0] != trace_start[0] || cur_trace[1] != trace_start[1]);
+
+        std::cout << "finish tracing " << std::endl;
     }
-
-    // the input intersection loop must be one of the three types : CLOSED ring, L-L ring, B-B ring
-    // for 
-    // template<typename PosTileVecProxy,
-    //     typename TriTileVecProxy,
-    //     typename HalfEdgeTileVecProxy>
-    // int flood_fill_the_smallest_path_region(const PosTileVecProxy& verts,const zs::SmallString& xtag,
-    //     const TriTileVecProxy& tris,
-    //     const HalfEdgeTileVecProxy& halfedges,
-    //     const std::vector<vec2i>& path,
-    //     const zs::vec<int,2> turning_point,
-    //     int coloring_color,
-    //     int background_color,
-    //     int turning_point_color,
-    //     std::vector<int>& colors) {
-    
-    //     using namespace zs;
-
-    //     constexpr auto omp_space = execspace_e::openmp;
-    //     auto ompPol = omp_exec();
-
-    //     bool found_smaller_region = false;
-
-    //     std::fill(colors.begin(),colors.end(),background_color);
-    //     for(int i = 0;i != 2;++i)
-    //         if(turning_point[i] >= 0)
-    //             colors[turning_point[i]] = turning_point_color;
-    
-    //     std::vector<int> minimum_distance{verts.size()};
-    //     std::fill(minimum_distance.begin(),minimum_distance.end(),std::numeric_limits<float>::max());
-
-    //     std::vector<int> halfedges_mask{halfedges.size(),0};
-    //     // coloring sparsely
-    //     ompPol(zs::range(path),[&halfedges_mask] (const auto& pair) mutable {halfedges_mask[pair[0]] = 1;});
-
-    //     for(const auto& pair : path) {
-    //         auto hi = pair[0];
-    //         auto ti = pair[1];
-
-    //         auto hti = zs::reinterpret_bits<int>(halfedges("to_face",hi));
-    //         auto htri = tris.pack(dim_c<3>,"inds",hti,int_c);
-    //         auto local_vert_id = zs::reinterpret_bits<int>(halfedges("local_vertex_id",hi));
-    //         vec2i hedge{};
-    //         hedge[0] = htri[(local_vert_id + 0) % 3];
-    //         hedge[1] = htri[(local_vert_id + 1) % 3];
-
-    //         auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
-
-    //         zs::vec<T,3> tps[3] = {};
-    //         zs::vec<T,3> eps[2] = {};
-
-    //         for(int i = 0;i != 3;++i)
-    //             tps[i] = verts.pack(dim_c<3>,xtag,tri[i]);
-    //         for(int i = 0;i != 2;++i)
-    //             eps[i] = verts.pack(dim_c<3>,xtag,hedge[i]);
-
-    //         auto tnrm = LSL_GEO::facet_normal(tps[0],tps[1],tps[2]);
-    //         zs::vec<T,2> ep_dist{};
-    //         auto edge_length = (eps[0] - eps[1]).norm();
-    //         auto edge_project_length = (eps[0] - eps[1]).dot(tnrm);
-    //         for(int i = 0;i != 2;++i)
-    //             ep_dist[i] = zs::abs(tnrm.dot(eps[i] - tps[0]) / edge_project_length * edge_length);
-
-    //         zs::vec<int,2> new_color{};
-    //         if(tnrm.dot(eps[0] - tps[0]) > 0)
-    //             new_color = zs::vec<int,2>{coloring_color,-coloring_color};
-    //         else if(tnrm.dot(eps[1] - tps[0]) > 0)
-    //             new_color = zs::vec<int,2>{-coloring_color,coloring_color};
-    //         else {
-    //             std::cout << "invalid intersection pair detected during flood-fill" << std::endl;
-    //             throw std::runtime_error("invalid intersection pair detected during flood-fill");
-    //         }
-
-    //         for(int i = 0;i != 2;++i) {
-    //             if(ep_dist[i] < minimum_distance[hedge[i]]) {
-    //                 colors[hedge[i]] = new_color[i];
-    //                 flooding_fill_vertices.insert(hedge[i]);
-    //                 minimum_distance[hedge[i]] = ep_dist[i];
-    //             }
-    //         }
-    //     }
-
-    //     // initialize the flooding front
-    //     std::deque<int> flooding_front_positive{};
-    //     std::deque<int> flooding_front_negative{};
-    //     for(const auto& pair : path) {
-    //         auto ti = pair[1];
-    //         auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
-    //         auto thi = zs::reinterpret_bits<int>(("he_inds",ti));
-    //         for(int i = 0;i != 3;++i) {
-    //             if(halfedges_mask[thi] == 0) {
-    //                 // finding a front
-    //                 auto edge = half_edge_get_edge(thi,halfedges,tris);
-    //                 for(int i = 0;i != 2;++i) {
-    //                     if(colors[edge[i]] == coloring_color) {
-    //                         flooding_front_positive.push_back(thi);
-    //                          break;
-    //                     }
-    //                     else if(colors[edge[i]] == -coloring_color) {
-    //                         flooding_front_negative.push_back(thi);
-    //                         break;
-    //                     }
-    //                 }
-    //                 halfedges_mask[thi] = 1;
-    //             }
-    //             thi = zs::reinterpret_bits<int>(halfedges("next_he",thi));
-    //         }            
-    //     }
-    //     // do the coloring and move forward the front
-    //     bool has_positive_front_update = false;
-    //     bool has_negative_front_update = false;
-
-    //     auto paint_and_update_the_front = [&](int the_use_color,std::deque<int>& the_front,bool& get_updated) {
-    //         auto size_of_front = the_front.size();
-    //         get_updated = false;
-    //         for(int i = 0;i != size_of_front;++i) {
-    //             // coloring the current halfedge
-    //             auto hi = the_front.pop_front();
-    //             auto edge = half_edge_get_edge(hi,halfedges,tris);
-    //             for(int i = 0;i != 2;++i)
-    //                 if(colors[i] == background_color)
-    //                     colors[i] = the_use_color;
-                
-    //             // push in new connected halfedges
-    //             auto ohi = zs::reinterpret_bits<int>(halfedges("opposite_he",hi));
-    //             if(ohi < 0 || halfedges_mask[ohi] == 1)
-    //                 continue;
-    //             auto nohi = ohi;
-    //             for(int i = 0;i != 3;++i) {
-    //                 if(halfedges_mask[nohi] == 0) {
-    //                     halfedges_mask[nohi] = 1;
-    //                     the_front.push_back(nohi);
-    //                     get_updated = true;
-    //                 }
-    //                 nohi = get_next_half_edge(nohi,halfedges,1);
-    //             }
-    //         }
-    //     };
-
-    //     do{
-    //         paint_and_update_the_front(coloring_color,flooding_front_positive,has_positive_front_update);
-    //         paint_and_update_the_front(-coloring_color,flooding_front_negative,has_negative_front_update);
-    //     } while(has_positive_front_update && has_negative_front_update);
-
-    //     if(has_negative_front_update) {
-    //         // use the positive coloring
-    //         ompPol(zs::range(colors),[] (auto& clr) mutable {
-    //             if(clr == -coloring_color)
-    //                 clr = background_color;
-    //         });
-    //     } else if(has_positive_front_update) {
-    //         ompPol(zs::range(colors),[] (auto& clr) mutable {
-    //             if(clr == coloring_color)
-    //                 clr = background_color;
-    //             else if(clr == -coloring_color)
-    //                 clr = coloring_color;
-    //         });
-    //     }
-    // }
 
 
     // NEW VERSION
@@ -586,7 +846,8 @@ namespace GIA {
         auto ompPol = omp_exec();
 
         // find the intersection pairs and clone the result to host backend
-        retrieve_self_intersection_tri_halfedge_pairs(pol,verts,xtag,tris,halfedges,csHT);
+        auto tri_bvh = LBvh<3,int,T>{};
+        retrieve_self_intersection_tri_halfedge_pairs(pol,verts,xtag,tris,halfedges,tri_bvh,csHT);
         bht<int,2,int> boundary_pairs_set{csHT.get_allocator(),MAX_BOUNDARY_POINTS};
         boundary_pairs_set.reset(pol,true);
         bht<int,2,int> turning_pairs_set{csHT.get_allocator(),MAX_NM_TURNING_POINTS};
@@ -776,7 +1037,7 @@ namespace GIA {
                 icm_grad.tuple(dim_c<3>,"grad",ci) = G;
                 icm_grad.tuple(dim_c<2>,"inds",ci) = pair.reinterpret_bits(float_c);
         }); 
-        // global schem
+        // global scheme
 
         if(use_global_scheme) {
             constexpr auto omp_space = execspace_e::openmp;
@@ -789,6 +1050,8 @@ namespace GIA {
             ompPol(zs::range(mask_host),[] (auto& m) mutable {m = 0;});
             std::vector<int> loop_sides{};
             std::vector<int> loop_buffers{};
+            // std::vector<int> loop_buffers_0{};
+            // std::vector<int> loop_buffers_1{};
 
             auto csHT_host = csHT.clone({memsrc_e::host});
 
@@ -888,6 +1151,195 @@ namespace GIA {
             icm_grad = icm_grad.clone({zs::memsrc_e::device,0});
         }
     }   
+
+
+    template<typename VECTOR3d>
+    constexpr auto eval_HT_contour_minimization_gradient(const VECTOR3d& ht0,
+        const VECTOR3d& ht1,
+        const VECTOR3d& ht2,
+        const VECTOR3d& t0,
+        const VECTOR3d& t1,
+        const VECTOR3d& t2) {
+            auto htri_normal = LSL_GEO::facet_normal(ht0,ht1,ht2);  
+            auto tri_normal = LSL_GEO::facet_normal(t0,t1,t2); 
+            auto R = tri_normal.cross(htri_normal).normalized();
+
+            auto E = (ht1 - ht0).normalized();
+            
+            auto in_plane_edge_normal = ht2 - ht0;
+            in_plane_edge_normal = in_plane_edge_normal - in_plane_edge_normal.dot(E) * E;
+            in_plane_edge_normal = in_plane_edge_normal.normalized();
+    
+            if(R.dot(in_plane_edge_normal) < 0)
+                R = -R;
+
+            const auto& N = tri_normal;
+
+            auto ER = E.dot(R);
+            auto EN = E.dot(N);
+
+        // https://diglib.eg.org/bitstream/handle/10.2312/SCA.SCA12.311-316/311-316.pdf?sequence=1
+        // point it out the formula in the original paper by Nadia.etc is inaccurate, although the bad effect is limited
+        // auto G = R - ER / EN * N;
+            auto G = R - static_cast<T>(2.0) * ER / EN * N;
+
+            return G;
+    }
+
+    template<typename Pol,
+        typename PosTileVec,
+        typename TriTileVec,
+        typename EdgeTileVec,
+        typename HalfEdgeTileVec,
+        typename HTHashMap,
+        typename ICMGradTileVec,
+        auto space = Pol::exec_tag::value,
+        typename T = typename PosTileVec::value_type>
+    void eval_self_intersection_contour_minimization_gradient(Pol& pol,
+            const PosTileVec& verts,const zs::SmallString& xtag,
+            const EdgeTileVec& edges,
+            const HalfEdgeTileVec& halfedges,
+            const TriTileVec& tris,
+            HTHashMap& csET,
+            ICMGradTileVec& icm_grad) {
+        using namespace zs;
+        auto exec_tag = wrapv<space>{};
+        using vec2i = zs::vec<int,2>; 
+        using vec3 = zs::vec<T,3>;
+   
+        // icm_grad.resize(csET.size());
+        // local scheme
+        pol(zip(zs::range(csET.size()),csET._activeKeys),[
+            icm_grad = proxy<space>({},icm_grad),
+            verts = proxy<space>({},verts),xtag = zs::SmallString(xtag),
+            edges = proxy<space>({},edges),
+            halfedges = proxy<space>({},halfedges),
+            tris = proxy<space>({},tris)] ZS_LAMBDA(auto ci,const auto& pair) mutable {
+                auto ei = pair[0];
+                auto ti = pair[1];
+
+                auto edge = edges.pack(dim_c<2>,"inds",ei,int_c);
+                auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
+                for(int i = 0;i != 3;++i)
+                    if(tri[i] == edge[0] || tri[i] == edge[1])
+                        return;
+
+                vec3 edge_vertices[2] = {};
+                vec3 tri_vertices[3] = {};
+                for(int i = 0;i != 2;++i)
+                    edge_vertices[i] = verts.pack(dim_c<3>,xtag,edge[i]);
+                for(int i = 0;i != 3;++i)
+                    tri_vertices[i] = verts.pack(dim_c<3>,xtag,tri[i]);
+
+                auto G = vec3::zeros();
+
+                int his[2] = {};
+                his[0] = zs::reinterpret_bits<int>(edges("he_inds",ei));
+                his[1] = zs::reinterpret_bits<int>(halfedges("opposite_he",his[0]));
+                for(auto hi : his)
+                {
+                    if(hi < 0)
+                        break;
+
+                    auto hti = zs::reinterpret_bits<int>(halfedges("to_face",hi));
+                    auto htri = tris.pack(dim_c<3>,"inds",hti,int_c);
+                    auto halfedge_local_vertex_id = zs::reinterpret_bits<int>(halfedges("local_vertex_id",hi));
+                    auto halfedge_opposite_vertex_id = htri[(halfedge_local_vertex_id + 2) % 3];
+                    auto halfedge_opposite_vertex = verts.pack(dim_c<3>,xtag,halfedge_opposite_vertex_id);
+
+                    G += eval_HT_contour_minimization_gradient(edge_vertices[0],
+                        edge_vertices[1],
+                        halfedge_opposite_vertex,
+                        tri_vertices[0],
+                        tri_vertices[1],
+                        tri_vertices[2]);
+                }
+
+                // if(isnan(G.norm())) {
+                //     printf("nan G detected: %f %f %f\n",(float)G[0],(float)G[1],(float)G[2]);
+                // }
+
+                icm_grad.tuple(dim_c<3>,"grad",ci) = G;
+                // icm_grad.tuple(dim_c<2>,"inds",ci) = pair.reinterpret_bits(float_c);
+        }); 
+    }
+
+
+    template<typename Pol,
+        typename PosTileVec,
+        typename TriTileVec,
+        typename EdgeTileVec,
+        typename HalfEdgeTileVec,
+        typename HTHashMap,
+        typename ICMGradTileVec,
+        auto space = Pol::exec_tag::value,
+        typename T = typename PosTileVec::value_type>
+    void eval_intersection_contour_minimization_gradient_with_edge_and_ktri(Pol& pol,
+            const PosTileVec& verts,const zs::SmallString& xtag,
+            const EdgeTileVec& edges,
+            const HalfEdgeTileVec& halfedges,
+            const TriTileVec& tris,
+            const PosTileVec& kverts,const zs::SmallString& kxtag,
+            const TriTileVec& ktris,
+            HTHashMap& csET,
+            ICMGradTileVec& icm_grad) {
+        using namespace zs;
+        auto exec_tag = wrapv<space>{};
+        using vec2i = zs::vec<int,2>; 
+        using vec3 = zs::vec<T,3>;
+   
+        // icm_grad.resize(csET.size());
+        // local scheme
+        pol(zip(zs::range(csET.size()),csET._activeKeys),[
+            icm_grad = proxy<space>({},icm_grad),
+            kxtag = zs::SmallString(kxtag),
+            verts = proxy<space>({},verts),xtag = zs::SmallString(xtag),
+            edges = proxy<space>({},edges),
+            halfedges = proxy<space>({},halfedges),
+            tris = proxy<space>({},tris),
+            kverts = proxy<space>({},kverts),
+            ktris = proxy<space>({},ktris)] ZS_LAMBDA(auto ci,const auto& pair) mutable {
+                auto ei = pair[0];
+                auto kti = pair[1];
+
+                auto edge = edges.pack(dim_c<2>,"inds",ei,int_c);
+                auto ktri = ktris.pack(dim_c<3>,"inds",kti,int_c);
+
+                vec3 edge_vertices[2] = {};
+                vec3 ktri_vertices[3] = {};
+                for(int i = 0;i != 2;++i)
+                    edge_vertices[i] = verts.pack(dim_c<3>,xtag,edge[i]);
+                for(int i = 0;i != 3;++i)
+                    ktri_vertices[i] = kverts.pack(dim_c<3>,kxtag,ktri[i]);
+
+                auto G = vec3::zeros();
+
+                int his[2] = {};
+                his[0] = zs::reinterpret_bits<int>(edges("he_inds",ei));
+                his[1] = zs::reinterpret_bits<int>(halfedges("opposite_he",his[0]));
+                for(auto hi : his)
+                {
+                    if(hi < 0)
+                        break;
+
+                    auto hti = zs::reinterpret_bits<int>(halfedges("to_face",hi));
+                    auto htri = tris.pack(dim_c<3>,"inds",hti,int_c);
+                    auto halfedge_local_vertex_id = zs::reinterpret_bits<int>(halfedges("local_vertex_id",hi));
+                    auto halfedge_opposite_vertex_id = htri[(halfedge_local_vertex_id + 2) % 3];
+                    auto halfedge_opposite_vertex = verts.pack(dim_c<3>,xtag,halfedge_opposite_vertex_id);
+
+                    G += eval_HT_contour_minimization_gradient(edge_vertices[0],
+                        edge_vertices[1],
+                        halfedge_opposite_vertex,
+                        ktri_vertices[0],
+                        ktri_vertices[1],
+                        ktri_vertices[2]);
+                }
+
+                icm_grad.tuple(dim_c<3>,"grad",ci) = G;
+                // icm_grad.tuple(dim_c<2>,"inds",ci) = pair.reinterpret_bits(float_c);
+        }); 
+    }
 
 };
 };

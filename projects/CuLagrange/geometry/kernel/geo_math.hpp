@@ -141,6 +141,7 @@ namespace zeno { namespace LSL_GEO {
     
 
 
+
     // template<typename T>
     // constexpr T det(zs::vec<zs::vec<T,3>,4>& p) {
     //     return volume(p);
@@ -892,6 +893,48 @@ constexpr REAL pointTriangleDistance(const VECTOR3& v0, const VECTOR3& v1,
         return (vertexMin < edgeMin) ? vertexMin : edgeMin;
     }
 
+
+    constexpr VECTOR2 removeVecDoF(const VECTOR3& v,int dof) {
+        return VECTOR2{v[(dof + 1) % 3],v[(dof + 2) % 3]};
+    }
+
+
+
+    constexpr bool isRayIntersectTriangle(const VECTOR3 rayOrigin, 
+                            const VECTOR3 rayVector, 
+                            const VECTOR3& vertex0,
+                            const VECTOR3& vertex1,
+                            const VECTOR3& vertex2,
+                            const REAL& EPSILON){
+        auto edge1 = vertex1 - vertex0;
+        auto edge2 = vertex2 - vertex0;
+        auto h = rayVector.cross(edge2);
+        auto a = edge1.dot(h);
+
+        if (a > -EPSILON && a < EPSILON)
+            return false;    // This ray is parallel to this triangle.
+
+        auto f = static_cast<REAL>(1.0) / a;
+        auto s = rayOrigin - vertex0;
+        auto u = f * s.dot(h);
+
+        if (u < 0.0 || u > 1.0)
+            return false;
+
+        auto q = s.cross(edge1);
+        auto v = f * rayVector.dot(q);
+
+        if (v < 0.0 || u + v > 1.0)
+            return false;
+
+        // At this stage we can compute t to find out where the intersection point is on the line.
+        auto t = f * edge2.dot(q);
+
+        if (t > EPSILON) // ray intersection
+            return true;
+        else // This means that there is a line intersection but not a ray intersection.
+            return false;
+    }
 
     ///////////////////////////////////////////////////////////////////////
     // see if the projection of v onto the plane of v0,v1,v2 is inside 
