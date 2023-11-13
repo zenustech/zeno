@@ -825,8 +825,9 @@ struct SphereShape {
             lsr->dist = fminf(c/q, q);
             lsr->p = ray_origin + ray_dir * lsr->dist;
             lsr->n = normalize(lsr->p - center);
-            // lsr->p = rtgems::offset_ray(lsr->p, lsr->n);
-            // lsr->dist = length(lsr->p - ray_origin);
+            lsr->p = center + radius * lsr->n;
+            lsr->p = rtgems::offset_ray(lsr->p, lsr->n);
+            lsr->dist = length(lsr->p - ray_origin);
             return true;
 
 			// we don't bother testing for division by zero
