@@ -209,7 +209,7 @@ public:
         return (!(h != PMP_MAX_INDEX && hconn_[h].face_ != PMP_MAX_INDEX));
     }
     bool is_boundary_e(int e) const {
-        return (hconn_[e << 1].face_ == PMP_MAX_INDEX || hconn_[e<<1|1].face_ == PMP_MAX_INDEX);
+        return (hconn_[e << 1].face_ == PMP_MAX_INDEX || hconn_[e << 1 | 1].face_ == PMP_MAX_INDEX);
     }
     bool is_isolated(int v) const { return halfedge(v) == PMP_MAX_INDEX; }
     inline int to_vertex(int h) const { return hconn_[h].vertex_; }

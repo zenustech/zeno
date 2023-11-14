@@ -25,6 +25,15 @@ public:
         return std::max(fabs(min_curvature_[v]), fabs(max_curvature_[v]));
     }
 
+    void calculate_gaussian_curvature() {
+        auto &gaussian_curv = mesh_->prim_->verts.add_attr<float>("curv_gaussian");
+        for (int v = 0; v < mesh_->vertices_size_; ++v) {
+            if (mesh_->has_garbage_ && vdeleted[v])
+                continue;
+            gaussian_curv[v] = min_curvature_[v] * max_curvature_[v];
+        }
+    }
+
     bool symmetric_eigendecomposition(const Eigen::Matrix3f& m,
                                     float& eval1, float& eval2, float& eval3,
                                     vec3f& evec1, vec3f& evec2, vec3f& evec3) {
