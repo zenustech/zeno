@@ -498,7 +498,9 @@ struct GaussianCurvature : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         auto &pos = prim->attr<vec3f>("pos");
-        auto &efeature = prim->lines.add_attr<int>("e_feature");
+        auto &efeature = prim->lines.add_attr<int>("e_feature", 0);
+        auto &vfeature = prim->verts.add_attr<int>("v_feature", 0);
+        auto &clr = prim->verts.add_attr<zeno::vec3f>("clr", zeno::vec3f(0));
 
         // init v_duplicate attribute
         auto &vduplicate = prim->verts.add_attr<int>("v_duplicate", 0);
