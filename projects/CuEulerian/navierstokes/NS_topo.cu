@@ -67,7 +67,19 @@ struct ZSExtendSparseGrid : INode {
         nbsOffset += newNbs; // current total blocks
         spg.resizeGrid(nbsOffset);
         newNbs = nbsOffset - nbs;
-        zs::memset(mem_device, (void *)spg._grid.tileOffset(nbs), 0, (std::size_t)newNbs * spg._grid.tileBytes());
+
+        if (get_input2<bool>("fillByBackground")) {
+            pol(zs::Collapse{newNbs, spg.block_size},
+                [spgv = proxy<space>(spg), nbs, bg = spg._background,
+                 nchns = spg.numChannels()] __device__(int blockno, int cellno) mutable {
+                    int m_bno = blockno + nbs;
+                    for (int ch = 0; ch < nchns; ++ch) {
+                        spgv(ch, m_bno, cellno) = bg;
+                    }
+                });
+        } else {
+            zs::memset(mem_device, (void *)spg._grid.tileOffset(nbs), 0, (std::size_t)newNbs * spg._grid.tileBytes());
+        }
 
         bool includeMultigrid = get_input2<bool>("multigrid");
         if (includeMultigrid) {
@@ -116,14 +128,15 @@ struct ZSExtendSparseGrid : INode {
     }
 };
 
-ZENDEFNODE(ZSExtendSparseGrid, {/* inputs: */
-                                {"SparseGrid", {"int", "layers", "1"}, {"bool", "multigrid", "0"}},
-                                /* outputs: */
-                                {"SparseGrid"},
-                                /* params: */
-                                {},
-                                /* category: */
-                                {"Eulerian"}});
+ZENDEFNODE(ZSExtendSparseGrid,
+           {/* inputs: */
+            {"SparseGrid", {"int", "layers", "1"}, {"bool", "multigrid", "0"}, {"bool", "fillByBackground", "0"}},
+            /* outputs: */
+            {"SparseGrid"},
+            /* params: */
+            {},
+            /* category: */
+            {"Eulerian"}});
 
 struct ZSMaintainSparseGrid : INode {
     template <typename PredT>

@@ -5,9 +5,6 @@
 #include <sutil/vec_math.h>
 #include <sutil/Exception.h>
 
-#include <cuda/Light.h>
-#include <cuda/BufferView.h>
-
 #include <nanovdb/NanoVDB.h>
 #include <nanovdb/util/GridHandle.h>
 #include <nanovdb/util/OpenToNanoVDB.h>

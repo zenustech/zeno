@@ -403,7 +403,7 @@ namespace zeno {
         constexpr auto CODIM = VecTi::extent;
         constexpr auto NM_EDGES = (CODIM - 1) * (CODIM) / 2;
 
-        zs::vec<Ti,2> out_edges[NM_EDGES] = {};
+        zs::vec<zs::vec<Ti,2>, NM_EDGES> out_edges{};
         int nm_out_edges = 0;
         for(int i = 0;i != CODIM;++i)
             for(int j = i + 1;j != CODIM;++j)
@@ -843,12 +843,12 @@ namespace zeno {
                         tet[facet_indices[i * 3 + 2]]};
                     int min_idx = 0;
                     int min_id = facet[i];
-                    for(int i = 1;i != 3;++i)
-                        if(facet[i] < min_id){
-                            min_idx = i;
-                            min_id = facet[i];
+                    for(int j = 1;j != 3;++j)
+                        if(facet[j] < min_id){
+                            min_idx = j;
+                            min_id = facet[j];
                         }
-                    for(int i = 0;i != min_idx;++i) {
+                    for(int j = 0;j != min_idx;++j) {
                         auto tmp = facet[0];
                         facet[0] = facet[1];
                         facet[1] = facet[2];
@@ -1256,18 +1256,22 @@ namespace zeno {
         constexpr auto space = Pol::exec_tag::value;
         using Ti = RM_CVREF_T(colors[0]);
 
+        std::cout << "do coloring " << std::endl;
+
 
         colors.resize(topo.size());
         zs::SparseMatrix<u32,true> topo_incidence_matrix{topo.get_allocator(),(int)topo.size(),(int)topo.size()};
-        // std::cout << "compute incidence matrix " << std::endl;
+        std::cout << "compute incidence matrix " << std::endl;
+        
+
         topological_incidence_matrix(pol,topo,topo_incidence_matrix);
-        // std::cout << "finish compute incidence matrix " << std::endl;
+        std::cout << "finish compute incidence matrix " << std::endl;
 
         auto ompPol = omp_exec();
         constexpr auto omp_space = execspace_e::openmp;
         zs::Vector<u32> weights(/*topo.get_allocator(),*/topo.size());
         {
-            bht<int, 1, int> tab{weights.get_allocator(),topo.size() * 2};
+            bht<int, 1, int> tab{weights.get_allocator(),topo.size() * 100};
             tab.reset(ompPol, true);
             ompPol(enumerate(weights), [tab1 = proxy<omp_space>(tab)] (int seed, u32 &w) mutable {
                 using tab_t = RM_CVREF_T(tab);
@@ -1285,7 +1289,7 @@ namespace zeno {
         weights = weights.clone(colors.memoryLocation());
         // for(int i = 0;i != weights.size();++i)
         //     printf("w[%d] : %u\n",i,weights.getVal(i));
-
+        std::cout << "do maximum set " << std::endl;
         auto iterRef = maximum_independent_sets(pol, topo_incidence_matrix, weights, colors);
         std::cout << "nm_colors : " << iterRef << std::endl;
         pol(zs::range(colors),[] ZS_LAMBDA(auto& clr) mutable {clr = clr - (Ti)1;});
@@ -1314,7 +1318,7 @@ namespace zeno {
                 atomic_max(exec_tag,&max_color[0],color);
         });
 
-        int nm_total_colors = max_color.getVal(0) + 1;
+        size_t nm_total_colors = max_color.getVal(0) + 1;
         // zs::bht<int,1,int> color_buffer{}
         zs::Vector<int> nm_colors{colors.get_allocator(),nm_total_colors};
         pol(zs::range(nm_colors),[] ZS_LAMBDA(auto& nclr) mutable {nclr = 0;});
@@ -1365,6 +1369,7 @@ namespace zeno {
         return out_topo;
     }
 
+    // the topos:  triA: [idx0,idx2,idx3] triB: [idx1,idx3,idx2]
     template<typename Pol,typename TriTileVec,typename HalfEdgeTileVec>
     void retrieve_tri_bending_topology(Pol& pol,
         const TriTileVec& tris,
@@ -1406,7 +1411,8 @@ namespace zeno {
                     auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
                     auto otri = tris.pack(dim_c<3>,"inds",oti,int_c);
 
-                    tb_topos[id] = zs::vec<int,4>(tri[(vid + 0) % 3],tri[(vid + 1) % 3],tri[(vid + 2) % 3],otri[(ovid + 2) % 3]);
+                    // tb_topos[id] = zs::vec<int,4>(tri[(vid + 0) % 3],tri[(vid + 1) % 3],tri[(vid + 2) % 3],otri[(ovid + 2) % 3]);
+                    tb_topos[id] = zs::vec<int,4>(tri[(vid + 2) % 3],otri[(ovid + 2) % 3],tri[(vid + 0) % 3],tri[(vid + 1) % 3]);
             });
     }
 

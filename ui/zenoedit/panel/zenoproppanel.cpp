@@ -26,6 +26,8 @@
 #include "../dialog/zeditparamlayoutdlg.h"
 #include <zenoui/comctrl/zspinboxslider.h>
 #include "zenoblackboardpropwidget.h"
+#include "timeline/ztimeline.h"
+#include "util/apphelper.h"
 
 
 class RetryScope
@@ -57,7 +59,7 @@ ZenoPropPanel::ZenoPropPanel(QWidget* parent)
     setFocusPolicy(Qt::ClickFocus);
 
     QPalette palette = this->palette();
-    palette.setBrush(QPalette::Window, QColor("#2D3239"));
+    palette.setBrush(QPalette::Window, QColor("#2d3239"));
     setPalette(palette);
     setAutoFillBackground(true);
 }
@@ -111,6 +113,7 @@ void ZenoPropPanel::clearLayout()
     setUpdatesEnabled(true);
     m_tabWidget = nullptr;
     m_controls.clear();
+    m_floatColtrols.clear();
 
     if (m_idx.isValid())
     {
@@ -187,7 +190,7 @@ void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, cons
     m_tabWidget->setTabsClosable(false);
     m_tabWidget->setMovable(false);
 
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setWeight(QFont::Medium);
 
     m_tabWidget->setFont(font); //bug in qss font setting.
@@ -329,8 +332,18 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
         return false;
     }
 
+    bool bFloat = ctrl == CONTROL_VEC2_FLOAT || ctrl == CONTROL_VEC3_FLOAT || ctrl == CONTROL_VEC4_FLOAT || ctrl == CONTROL_FLOAT;
     cbSet.cbEditFinished = [=](QVariant newValue) {
+        if (bFloat)
+        {
+            if (!AppHelper::updateCurve(paramItem->data(ROLE_PARAM_VALUE), newValue))
+            {
+                onViewParamDataChanged(perIdx, perIdx, QVector<int>() << ROLE_PARAM_VALUE);
+                return;
+            }
+        }
         AppHelper::socketEditFinished(newValue, m_idx, perIdx);
+        AppHelper::modifyOptixObjDirectly(newValue, m_idx, perIdx, true);
     };
     cbSet.cbSwitch = [=](bool bOn) {
         zenoApp->getMainWindow()->setInDlgEventLoop(bOn);   //deal with ubuntu dialog slow problem when update viewport.
@@ -338,12 +351,17 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
     cbSet.cbGetIndexData = [=]() -> QVariant { 
         return perIdx.isValid() ? paramItem->data(ROLE_PARAM_VALUE) : QVariant();
     };
-
+    //key frame
+    bool bKeyFrame = false;
+    if (bFloat)
+    {
+        bKeyFrame = AppHelper::getCurveValue(val);
+    }
     QWidget* pControl = zenoui::createWidget(val, ctrl, typeDesc, cbSet, pros);
 
     ZTextLabel* pLabel = new ZTextLabel(paramName);
 
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setWeight(QFont::DemiBold);
     pLabel->setFont(font);
     pLabel->setToolTip(paramItem->data(ROLE_VPARAM_TOOLTIP).toString());
@@ -373,6 +391,23 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
     panelCtrl.pControl = pControl;
 
     m_controls[tabName][groupName][paramName] = panelCtrl;
+
+    if (bFloat) {
+        m_floatColtrols << panelCtrl;
+        pLabel->installEventFilter(this);
+        pControl->installEventFilter(this);   
+        ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+        ZASSERT_EXIT(mainWin, true);
+        ZTimeline* timeline = mainWin->timeline();
+        ZASSERT_EXIT(timeline, true);
+        onUpdateFrame(pControl, timeline->value(), paramItem->data(ROLE_PARAM_VALUE));
+        connect(timeline, &ZTimeline::sliderValueChanged, pControl, [=](int nFrame) {
+            onUpdateFrame(pControl, nFrame, paramItem->data(ROLE_PARAM_VALUE));
+            }, Qt::UniqueConnection);
+        connect(mainWin, &ZenoMainWindow::visFrameUpdated, pControl, [=](bool bGLView, int nFrame) {
+            onUpdateFrame(pControl, nFrame, paramItem->data(ROLE_PARAM_VALUE));
+            }, Qt::UniqueConnection);
+    }
     return true;
 }
 
@@ -596,11 +631,21 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
             {
                 PARAM_CONTROL paramCtrl = (PARAM_CONTROL)param->data(ROLE_PARAM_CTRL).toInt();
                 QString literalNum;
-                if (paramCtrl == CONTROL_FLOAT)
-                    literalNum = QString::number(value.toFloat());
-                else
-                    literalNum = value.toString();
-                pLineEdit->setText(literalNum);
+                if (paramCtrl == CONTROL_FLOAT) {
+                    QVariant newVal = value;
+                    bool bKeyFrame = AppHelper::getCurveValue(newVal);
+                    literalNum = UiHelper::variantToString(newVal);
+                    pLineEdit->setText(literalNum);
+                    QVector<QString> properties = AppHelper::getKeyFrameProperty(value);
+                    pLineEdit->setProperty(g_setKey, properties.first());
+                    pLineEdit->style()->unpolish(pLineEdit);
+                    pLineEdit->style()->polish(pLineEdit);
+                    pLineEdit->update();                    
+                    
+                } else {
+                    literalNum = UiHelper::variantToString(value);
+                    pLineEdit->setText(literalNum);
+                }
             }
             else if (QComboBox* pCombobox = qobject_cast<QComboBox*>(ctrl.pControl))
             {
@@ -612,7 +657,14 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
             }
             else if (ZVecEditor* pVecEdit = qobject_cast<ZVecEditor*>(ctrl.pControl))
             {
-                pVecEdit->setVec(value.value<UI_VECTYPE>(), pVecEdit->isFloat());
+                QVariant newVal = value;
+                bool bKeyFrame = AppHelper::getCurveValue(newVal);
+                pVecEdit->setVec(newVal, pVecEdit->isFloat());
+                if (pVecEdit->isFloat())
+                {
+                    QVector<QString> properties = AppHelper::getKeyFrameProperty(value);
+                    pVecEdit->updateProperties(properties);
+                }
             }
             else if (QCheckBox* pCheckbox = qobject_cast<QCheckBox*>(ctrl.pControl))
             {
@@ -636,8 +688,18 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
             } 
             else if (QPushButton *pBtn = qobject_cast<QPushButton *>(ctrl.pControl)) 
             {
-                if (value.canConvert<QColor>())
+                // purecolor
+                if (value.canConvert<QColor>()) {
                     pBtn->setStyleSheet(QString("background-color:%1; border:0;").arg(value.value<QColor>().name()));
+                }
+                // colorvec3f
+                else if (value.canConvert<UI_VECTYPE>()) {
+                    UI_VECTYPE vec = value.value<UI_VECTYPE>();
+                    if (vec.size() == 3) {
+                        auto color = QColor::fromRgbF(vec[0], vec[1], vec[2]);
+                        pBtn->setStyleSheet(QString("background-color:%1; border:0;").arg(color.name()));
+                    }
+                }
             }
             //...
         }
@@ -765,6 +827,52 @@ ZExpandableSection* ZenoPropPanel::findGroup(const QString& tabName, const QStri
     return nullptr;
 }
 
+void ZenoPropPanel::getDelfCurveData(CURVE_DATA &curve, float y, bool visible, const QString &key) {
+    curve.visible = visible;
+    CURVE_RANGE &rg = curve.rg;
+    rg.yFrom = rg.yFrom > y ? y : rg.yFrom;
+    rg.yTo = rg.yTo > y ? rg.yTo : y;
+    ZenoMainWindow *mainWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(mainWin);
+    ZTimeline *timeline = mainWin->timeline();
+    ZASSERT_EXIT(timeline);
+    QPair<int, int> fromTo = timeline->fromTo();
+    rg.xFrom = fromTo.first;
+    rg.xTo = fromTo.second;
+    if (curve.points.isEmpty()) {
+        curve.key = key;
+        curve.cycleType = 0;
+    }
+    float x = timeline->value();
+    CURVE_POINT point = {QPointF(x, y), QPointF(0, 0), QPointF(0, 0), HDL_ALIGNED};
+    if (!curve.points.contains(point))
+        curve.points.append(point);
+    updateHandler(curve);
+}
+
+void ZenoPropPanel::updateHandler(CURVE_DATA &curve) {
+    if (curve.points.size() > 1) {
+        qSort(curve.points.begin(), curve.points.end(),
+              [](const CURVE_POINT &p1, const CURVE_POINT &p2) { return p1.point.x() < p2.point.x(); });
+        float preX = curve.points.at(0).point.x();
+        for (int i = 1; i < curve.points.size(); i++) {
+            QPointF p1 = curve.points.at(i - 1).point;
+            QPointF p2 = curve.points.at(i).point;
+            float distance = fabs(p1.x() - p2.x());
+            float handle = distance * 0.2;
+            if (i == 1) {
+                curve.points[i - 1].leftHandler = QPointF(-handle, 0);
+                curve.points[i - 1].rightHandler = QPointF(handle, 0);
+            }
+            if (p2.y() < p1.y() && (curve.points[i - 1].rightHandler.x() < 0)) {
+                handle = -handle;
+            }
+            curve.points[i].leftHandler = QPointF(-handle, 0);
+            curve.points[i].rightHandler = QPointF(handle, 0);
+        }
+    }
+}
+
 void ZenoPropPanel::onSettings()
 {
     QMenu* pMenu = new QMenu(this);
@@ -789,4 +897,328 @@ void ZenoPropPanel::onSettings()
         dlg.exec();
     });
     pMenu->exec(QCursor::pos());
+}
+
+bool ZenoPropPanel::eventFilter(QObject *obj, QEvent *event) 
+{
+    if (event->type() == QEvent::ContextMenu) {
+        for (auto ctrl : m_floatColtrols) {
+            if (ctrl.pControl == obj || ctrl.pLabel == obj) {
+                //get curves
+                QStringList keys = getKeys(obj, ctrl);
+                CURVES_DATA curves = getCurvesData(ctrl.m_viewIdx, keys);
+                //show menu
+                QMenu *menu = new QMenu;
+                QAction setAction(tr("Set KeyFrame"));
+                QAction delAction(tr("Del KeyFrame"));
+                QAction kFramesAction(tr("KeyFrames"));
+                QAction clearAction(tr("Clear KeyFrames"));
+
+                //set action enable
+                int nSize = getKeyFrameSize(curves);
+                delAction.setEnabled(nSize != 0);
+                setAction.setEnabled(curves.isEmpty() || nSize != curves.size());
+                kFramesAction.setEnabled(!curves.isEmpty());
+                clearAction.setEnabled(!curves.isEmpty());
+                //add action
+                menu->addAction(&setAction);
+                menu->addAction(&delAction);
+                menu->addAction(&kFramesAction);
+                menu->addAction(&clearAction);
+                //set key frame
+                connect(&setAction, &QAction::triggered, this, [=]() { 
+                    setKeyFrame(ctrl, keys); 
+                });
+                //del key frame
+                connect(&delAction, &QAction::triggered, this, [=]() { 
+                    delKeyFrame(ctrl, keys); 
+                });
+                //edit key frame
+                connect(&kFramesAction, &QAction::triggered, this, [=]() {
+                    editKeyFrame(ctrl, keys);
+                });
+                //clear key frame
+                connect(&clearAction, &QAction::triggered, this, [=]() {
+                    clearKeyFrame(ctrl, keys);
+                });
+
+                menu->exec(QCursor::pos());
+                menu->deleteLater();
+                return true;
+            }
+        }
+    }
+    return QWidget::eventFilter(obj, event);
+}
+
+void ZenoPropPanel::setKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &keys) 
+{
+    CURVES_DATA newVal;
+    if (ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).canConvert<CURVES_DATA>())
+        newVal = ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).value<CURVES_DATA>();
+    UI_VECTYPE vec;
+    if (ZLineEdit *lineEdit = qobject_cast<ZLineEdit *>(ctrl.pControl)) {
+        vec << lineEdit->text().toFloat();
+    } else if (ZVecEditor *lineEdit = qobject_cast<ZVecEditor *>(ctrl.pControl)) {
+        vec = lineEdit->text();
+    }
+    for (int i = 0; i < vec.size(); i++) {
+        QString key = curve_util::getCurveKey(i);
+        if (newVal.contains(key) && !keys.contains(key))
+            continue;
+        if (!newVal.contains(key) || (!newVal[key].visible && newVal[key].points.size() < 2))
+            newVal[key] = CURVE_DATA();
+
+        bool visible = keys.contains(key);
+        getDelfCurveData(newVal[key], vec.at(i), visible, key);
+    }
+
+    AppHelper::socketEditFinished(QVariant::fromValue(newVal), m_idx, ctrl.m_viewIdx);
+    updateTimelineKeys(newVal);
+}
+
+void ZenoPropPanel::delKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &keys) 
+{
+    CURVES_DATA newVal;
+    if (ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).canConvert<CURVES_DATA>())
+        newVal = ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).value<CURVES_DATA>();
+    ZenoMainWindow *mainWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(mainWin);
+    ZTimeline *timeline = mainWin->timeline();
+    ZASSERT_EXIT(timeline);
+    int emptySize = 0;
+    for (auto &curve : newVal) {
+        QString key = curve.key;
+        if (curve.visible == false && curve.points.size() < 2) {
+            emptySize++;
+            continue;
+        }
+        if (!keys.contains(key))
+            continue;
+        for (int i = 0; i < curve.points.size(); i++) {
+            int x = curve.points.at(i).point.x();
+            if (x == timeline->value()) {
+                curve.points.remove(i);
+                break;
+            }
+        }
+        if (curve.points.isEmpty()) {
+            emptySize++;
+            if (ZVecEditor *lineEdit = qobject_cast<ZVecEditor *>(ctrl.pControl)) 
+            {
+                curve = CURVE_DATA();
+                UI_VECTYPE vec = lineEdit->text();
+                int idx = key == "x" ? 0 : key == "y" ? 1 : key == "z" ? 2 : 3;
+                if (vec.size() > idx)
+                    getDelfCurveData(curve, vec.at(idx), false, key);
+            }
+        }
+    }
+    QVariant val;
+    if (emptySize == newVal.size()) 
+    {
+        if (ZVecEditor *lineEdit = qobject_cast<ZVecEditor *>(ctrl.pControl)) {
+            val = QVariant::fromValue(lineEdit->text());
+        } else if (ZLineEdit *lineEdit = qobject_cast<ZLineEdit *>(ctrl.pControl)) {
+            val = QVariant::fromValue(lineEdit->text().toFloat());
+        }
+        newVal = CURVES_DATA();
+    }
+    else 
+    {
+        val = QVariant::fromValue(newVal);
+    }
+    AppHelper::socketEditFinished(val, m_idx, ctrl.m_viewIdx);
+    updateTimelineKeys(newVal);
+}
+
+void ZenoPropPanel::editKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &keys) 
+{
+    ZCurveMapEditor *pEditor = new ZCurveMapEditor(true);
+    connect(pEditor, &ZCurveMapEditor::finished, this, [=](int result) {
+        CURVES_DATA newCurves = pEditor->curves();
+        CURVES_DATA val;
+        if (ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).canConvert<CURVES_DATA>())
+            val = ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).value<CURVES_DATA>();
+        QVariant newVal;
+        if (!newCurves.isEmpty() || val.size() != keys.size()) {
+            for (const QString &key : keys) {
+                if (newCurves.contains(key))
+                    val[key] = newCurves[key];
+                else {
+                    val[key] = CURVE_DATA();
+                    if (ZVecEditor *lineEdit = qobject_cast<ZVecEditor *>(ctrl.pControl)) {
+                        UI_VECTYPE vec = lineEdit->text();
+                        int idx = key == "x" ? 0 : key == "y" ? 1 : key == "z" ? 2 : 3;
+                        if (vec.size() > idx)
+                            getDelfCurveData(val[key], vec.at(idx), false, key);
+                    }
+                }
+            }
+            newVal = QVariant::fromValue(val);
+        } else
+        {
+            if (ZLineEdit *lineEdit = qobject_cast<ZLineEdit *>(ctrl.pControl)) {
+                newVal = QVariant::fromValue(lineEdit->text().toFloat());
+            } else if (ZVecEditor *lineEdit = qobject_cast<ZVecEditor *>(ctrl.pControl)) {
+                newVal = QVariant::fromValue(lineEdit->text());
+            }
+            val = CURVES_DATA();
+        }
+        AppHelper::socketEditFinished(newVal, m_idx, ctrl.m_viewIdx);
+        updateTimelineKeys(val);
+    });
+    CURVES_DATA curves = getCurvesData(ctrl.m_viewIdx, keys);
+    if (curves.size() > 1)
+        curve_util::updateRange(curves);
+    pEditor->setAttribute(Qt::WA_DeleteOnClose);
+    pEditor->addCurves(curves);
+    CURVES_MODEL models = pEditor->getModel();
+    for (auto model :models) {
+        for (int i = 0; i < model->rowCount(); i++) {
+            model->setData(model->index(i, 0), true, ROLE_LOCKX);
+        }
+    }
+    pEditor->exec();
+}
+
+void ZenoPropPanel::clearKeyFrame(const _PANEL_CONTROL& ctrl, const QStringList& keys)
+{
+    CURVES_DATA val;
+    if (ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).canConvert<CURVES_DATA>())
+        val = ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).value<CURVES_DATA>();
+    int emptySize = 0;
+
+    for (auto &curve : val) {
+        QString key = curve.key;
+        if (keys.contains(key)) {
+            emptySize++;
+            if (ZVecEditor* lineEdit = qobject_cast<ZVecEditor*>(ctrl.pControl))
+            {
+                curve = CURVE_DATA();
+                UI_VECTYPE vec = lineEdit->text();
+                int idx = key == "x" ? 0 : key == "y" ? 1 : key == "z" ? 2 : 3;
+                if (vec.size() > idx)
+                {
+                    getDelfCurveData(curve, vec.at(idx), false, key);
+                }
+            }
+        }
+        else if (curve.visible == false && curve.points.size() < 2)
+        {
+            emptySize++;
+        }
+    }
+    QVariant newVal;
+    if (emptySize == val.size())
+    {
+        if (ZVecEditor* lineEdit = qobject_cast<ZVecEditor*>(ctrl.pControl)) {
+            newVal = QVariant::fromValue(lineEdit->text());
+        }
+        else if (ZLineEdit* lineEdit = qobject_cast<ZLineEdit*>(ctrl.pControl)) {
+            newVal = QVariant::fromValue(lineEdit->text().toFloat());
+        }
+        val = CURVES_DATA();
+    }
+    else
+    {
+        newVal = QVariant::fromValue(val);
+    }
+    AppHelper::socketEditFinished(newVal, m_idx, ctrl.m_viewIdx);
+    updateTimelineKeys(val);
+}
+
+int ZenoPropPanel::getKeyFrameSize(const CURVES_DATA &curves)
+{
+    int size = 0;
+    ZenoMainWindow *mainWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(mainWin, false);
+    ZTimeline *timeline = mainWin->timeline();
+    ZASSERT_EXIT(timeline, false);
+    int frame = timeline->value();
+    for (auto curve : curves) {
+        for (const auto &p : curve.points) {
+            int x = p.point.x();
+            if ((x == frame) && curve.visible) {
+                size++;
+                break;
+            }
+        }
+    }
+    return size;
+}
+
+QStringList ZenoPropPanel::getKeys(const QObject *obj, const _PANEL_CONTROL &ctrl) 
+{
+    QStringList keys;
+    if (ZLineEdit *lineEdit = qobject_cast<ZLineEdit *>(ctrl.pControl))     //control float
+    {
+        keys << "x";
+    } else if (ctrl.pLabel == obj) 
+    {  //control label
+        if (ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).canConvert<UI_VECTYPE>()) {
+            UI_VECTYPE vec = ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).value<UI_VECTYPE>();
+            for (int i = 0; i < vec.size(); i++) {
+                QString key = curve_util::getCurveKey(i);
+                if (!key.isEmpty())
+                    keys << key;
+            }
+        } else if (ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).canConvert<CURVES_DATA>()) {
+            CURVES_DATA val = ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).value<CURVES_DATA>();
+            keys << val.keys();
+        }
+    } else if (ZVecEditor *vecEdit = qobject_cast<ZVecEditor *>(ctrl.pControl)) //control vec
+    {
+        int idx = vecEdit->getCurrentEditor();
+        QString key = curve_util::getCurveKey(idx);
+        if (!key.isEmpty())
+            keys << key;
+    }
+    return keys;
+}
+
+CURVES_DATA ZenoPropPanel::getCurvesData(const QPersistentModelIndex &perIdx, const QStringList &keys) {
+    CURVES_DATA val;
+    if (perIdx.data(ROLE_PARAM_VALUE).canConvert<CURVES_DATA>())
+        val = perIdx.data(ROLE_PARAM_VALUE).value<CURVES_DATA>();
+    CURVES_DATA curves;
+    for (auto key : keys) {
+        if (val.contains(key)) {
+            curves[key] = val[key];
+        }
+    }
+    return curves;
+}
+void ZenoPropPanel::updateTimelineKeys(const CURVES_DATA &curves) 
+{
+    ZenoMainWindow *mainWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(mainWin);
+    ZTimeline *timeline = mainWin->timeline();
+    ZASSERT_EXIT(timeline);
+    QVector<int> keys = m_idx.data(ROLE_KEYFRAMES).value<QVector<int>>();
+    timeline->updateKeyFrames(keys);
+}
+
+void ZenoPropPanel::onUpdateFrame(QWidget* pContrl, int nFrame, QVariant val)
+{
+    QVariant newVal = val;
+    if (!AppHelper::getCurveValue(newVal))
+        return;
+    //vec
+    if (ZVecEditor* pVecEdit = qobject_cast<ZVecEditor*>(pContrl))
+    {
+        pVecEdit->setVec(newVal, pVecEdit->isFloat());
+        QVector<QString> properties = AppHelper::getKeyFrameProperty(val);
+        pVecEdit->updateProperties(properties);
+    }
+    else if (QLineEdit* pLineEdit = qobject_cast<QLineEdit*>(pContrl))
+    {
+        QString text = UiHelper::variantToString(newVal);
+        pLineEdit->setText(text);
+        QVector<QString> properties = AppHelper::getKeyFrameProperty(val);
+        pLineEdit->setProperty(g_setKey, properties.first());
+        pLineEdit->style()->unpolish(pLineEdit);
+        pLineEdit->style()->polish(pLineEdit);
+        pLineEdit->update();
+    }
 }

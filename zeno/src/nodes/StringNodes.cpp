@@ -3,7 +3,10 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/utils/format.h>
 #include <zeno/utils/fileio.h>
+#include <zeno/types/ListObject.h>
 #include <zeno/extra/GlobalState.h>
+#include <zeno/types/ListObject.h>
+#include <regex>
 
 namespace zeno {
 namespace {
@@ -221,6 +224,65 @@ ZENDEFNODE(StringFormatNumStr, {
     {},
     {"string"},
 });
+
+struct StringRegexMatch : zeno::INode {
+    virtual void apply() override {
+        auto str = get_input2<std::string>("str");
+        auto regex_str = get_input2<std::string>("regex");
+        std::regex self_regex(regex_str);
+        int output = std::regex_match(str, self_regex);
+
+        set_output2("output", output);
+    }
+};
+
+ZENDEFNODE(StringRegexMatch, {
+    {
+        {"string", "str", ""},
+        {"string", "regex", ""},
+    },
+    {
+        {"int", "output"}
+    },
+    {},
+    {"string"},
+});
+
+struct FormatString : zeno::INode {
+    virtual void apply() override {
+        auto formatStr = get_input2<std::string>("str");
+
+        auto list = get_input<zeno::ListObject>("args");
+        std::string output = formatStr;
+        for (auto obj : list->arr)
+        {
+            std::shared_ptr<zeno::NumericObject> num = std::dynamic_pointer_cast<zeno::NumericObject>(obj);
+            if (num) {
+                std::visit([&](const auto& v) {
+                    output = zeno::format(output, v);
+                    }, num->value);
+            }
+            std::shared_ptr<zeno::StringObject> pStr = std::dynamic_pointer_cast<zeno::StringObject>(obj);
+            if (pStr) {
+                output = zeno::format(output, pStr->get());
+            }
+        }
+
+        set_output2("str", output);
+    }
+};
+
+ZENDEFNODE(FormatString, {
+    {
+        {"string", "str", "{}"},
+        {"list", "args"},
+    },
+    {{"string", "str"}},
+    {},
+    {"string"},
+});
+
+
 /*static int objid = 0;
 
 struct ExportPath : zeno::INode {  // deprecated
@@ -312,6 +374,45 @@ ZENDEFNODE(StringToNumber, {{
                                 /* category: */
                                 "string",
                             }});
+
+struct StringToList : zeno::INode {
+    virtual void apply() override {
+        auto stringlist = get_input2<std::string>("string");
+        auto list = std::make_shared<ListObject>();
+        auto separator = get_input2<std::string>("Separator");
+        std::vector<std::string> strings;
+        size_t pos = 0;
+        size_t posbegin = 0;
+        std::string word;
+        while ((pos = stringlist.find(separator, pos)) != std::string::npos) {
+            word = stringlist.substr(posbegin, pos-posbegin);
+            strings.push_back(word);
+            pos += separator.length();
+            posbegin = pos;
+        }
+        if (posbegin < stringlist.length()) { //push last word
+            word = stringlist.substr(posbegin);
+            strings.push_back(word);
+        }
+        for(const auto &string : strings) {
+            auto obj = std::make_unique<StringObject>();
+            obj->set(string);
+            list->arr.push_back(std::move(obj));
+        }
+        set_output("list", std::move(list));
+    }
+};
+
+ZENDEFNODE(StringToList, {
+    {
+        {"string", "string", ""},
+        {"string", "Separator", ""},
+    },
+    {{"list"},
+    },
+    {},
+    {"string"},
+});
 
 }
 }

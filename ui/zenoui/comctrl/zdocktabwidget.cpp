@@ -5,7 +5,6 @@
 #include <zeno/utils/log.h>
 #include <zenoui/comctrl/zaddtabbar.h>
 #include <zenoui/comctrl/zicontoolbutton.h>
-#include <zenoedit/zenoapplication.h>
 
 
 ZDockTabWidget::ZDockTabWidget(QWidget* parent)
@@ -14,7 +13,7 @@ ZDockTabWidget::ZDockTabWidget(QWidget* parent)
     initStyleSheet();
 
     QPalette pal = palette();
-    pal.setColor(QPalette::Window, QColor("#2D3239"));
+    pal.setColor(QPalette::Window, QColor("#2d3239"));
     setAutoFillBackground(true);
     setPalette(pal);
 
@@ -32,7 +31,7 @@ ZDockTabWidget::ZDockTabWidget(QWidget* parent)
     setDocumentMode(true);
     setMouseTracking(true);
 
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setPointSize(10);
     tabBar()->setFont(font);
     tabBar()->setDrawBase(false);

@@ -2,7 +2,6 @@
 #include "common_id.h"
 #include <stdexcept>
 #include <zenoui/style/zenostyle.h>
-#include <zenoedit/zenoapplication.h>
 
 ZtfUtil& ZtfUtil::GetInstance()
 {
@@ -50,6 +49,7 @@ NodeParam ZtfUtil::loadZtf(const QString& filename)
                         header.status.mute = comp.elements[0];
                         header.status.view = comp.elements[1];
                         header.status.once = comp.elements[2];
+                        header.status.cache = comp.elements[3];
                         header.status.rc = comp.rc;
                     } else if (comp.id == COMPONENT_CONTROL) {
                         header.control = comp;
@@ -429,9 +429,11 @@ NodeUtilParam ZtfUtil::toUtilParam(const NodeParam& nodeParam)
     param.mute = nodeParam.header.status.mute;
     param.view = nodeParam.header.status.view;
     param.prep = nodeParam.header.status.once;
+    param.cache = nodeParam.header.status.cache;
     param.rcMute = nodeParam.header.status.mute.rc.translated(-base);
     param.rcView = nodeParam.header.status.view.rc.translated(-base);
     param.rcPrep = nodeParam.header.status.once.rc.translated(-base);
+    param.rcCache = nodeParam.header.status.cache.rc.translated(-base);
     param.status = nodeParam.header.status;
 
     param.collaspe = nodeParam.header.control.elements[0];
@@ -457,13 +459,13 @@ NodeUtilParam ZtfUtil::toUtilParam(const NodeParam& nodeParam)
     param.socketVMargin = ZenoStyle::dpiScaled(param.socketVMargin);
 
     //todo: parameterized.
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setPointSize(13);
 
     param.nameFont = font;
     param.nameFont.setBold(true);
 
-    font.setPointSize(11);
+    font.setPointSize(12);
     font.setWeight(QFont::DemiBold);
     param.socketFont = font;
 
@@ -473,7 +475,7 @@ NodeUtilParam ZtfUtil::toUtilParam(const NodeParam& nodeParam)
     QColor clr(226, 226, 226);
     //clr.setAlphaF(0.4);
     param.nameClr = clr;
-    param.socketClr = QColor(188, 188, 188);
+    param.socketClr = QColor("#dee6ed");
     clr = QColor(255, 255, 255);
     clr.setAlphaF(0.7);
     param.paramClr = clr;

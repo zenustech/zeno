@@ -302,6 +302,7 @@ struct WriteAlembic2 : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         bool flipFrontBack = get_input2<int>("flipFrontBack");
+        float fps = has_input("fps")? get_input2<float>("fps") : 24.0f;
         int frameid;
         if (has_input("frameid")) {
             frameid = get_input2<int>("frameid");
@@ -313,7 +314,7 @@ struct WriteAlembic2 : INode {
         if (frameid == frame_start) {
             std::string path = get_input2<std::string>("path");
             archive = {Alembic::AbcCoreOgawa::WriteArchive(), path};
-            archive.addTimeSampling(TimeSampling(1.0/24, frame_start / 24.0));
+            archive.addTimeSampling(TimeSampling(1.0/fps, frame_start / fps));
             if (prim->polys.size() || prim->tris.size()) {
                 meshyObj = OPolyMesh( OObject( archive, 1 ), "mesh" );
             }
@@ -492,6 +493,7 @@ ZENDEFNODE(WriteAlembic2, {
         {"writepath", "path", ""},
         {"int", "frame_start", "0"},
         {"int", "frame_end", "100"},
+        {"fps"},
         {"bool", "flipFrontBack", "1"},
     },
     {},

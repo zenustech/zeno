@@ -109,7 +109,9 @@ void SubGraphModel::importNodeItem(const NODE_DATA& data, const QModelIndex& nod
 {
     ret.objid = data[ROLE_OBJID].toString();
     ret.objCls = data[ROLE_OBJNAME].toString();
-    ret.customName = data[ROLE_CUSTOM_OBJNAME].toString();
+    QString customName = data[ROLE_CUSTOM_OBJNAME].toString();
+    if (checkCustomName(customName))
+        ret.customName = customName;
     ret.viewpos = data[ROLE_OBJPOS].toPointF();
     ret.bCollasped = data[ROLE_COLLASPED].toBool();
     ret.options = data[ROLE_OPTIONS].toInt();
@@ -118,7 +120,7 @@ void SubGraphModel::importNodeItem(const NODE_DATA& data, const QModelIndex& nod
 
     QModelIndex subgIdx = m_pGraphsModel->indexBySubModel(this);
 
-    ret.nodeParams = new NodeParamModel(subgIdx, nodeIdx, m_pGraphsModel, false, this);
+    ret.nodeParams = new NodeParamModel(nodeIdx, m_pGraphsModel, this);
 
     INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
     PARAMS_INFO params = data[ROLE_PARAMETERS].value<PARAMS_INFO>();
@@ -216,6 +218,7 @@ bool SubGraphModel::_removeRow(const QModelIndex& index)
     }
     if (item.nodeParams)
     {
+        _removeNetLabels(item.nodeParams);
         item.nodeParams->clearParams();
         delete item.nodeParams;
         item.nodeParams = nullptr;
@@ -243,6 +246,129 @@ bool SubGraphModel::_removeRow(const QModelIndex& index)
 
     m_pGraphsModel->markDirty();
     return true;
+}
+
+void SubGraphModel::_removeNetLabels(const NodeParamModel* nodeParams)
+{
+    for (const auto& inputSocketIdx : nodeParams->getInputIndice())
+    {
+        QString netLabel = inputSocketIdx.data(ROLE_PARAM_NETLABEL).toString();
+        if (!netLabel.isEmpty())
+        {
+            removeNetLabel(inputSocketIdx, netLabel);
+        }
+        if (QAbstractItemModel* pKeyObjModel =
+            QVariantPtr<QAbstractItemModel>::asPtr(inputSocketIdx.data(ROLE_VPARAM_LINK_MODEL)))
+        {
+            for (int i = 0; i < pKeyObjModel->rowCount(); i++)
+            {
+                const QModelIndex& idx = pKeyObjModel->index(i, 0);
+                netLabel = idx.data(ROLE_PARAM_NETLABEL).toString();
+                if (!netLabel.isEmpty())
+                {
+                    removeNetLabel(idx, netLabel);
+                }
+            }
+        }
+    }
+    for (const auto& outputSocketIdx : nodeParams->getOutputIndice())
+    {
+        QString netLabel = outputSocketIdx.data(ROLE_PARAM_NETLABEL).toString();
+        if (!netLabel.isEmpty())
+        {
+            removeNetLabel(outputSocketIdx, netLabel);
+        }
+        if (QAbstractItemModel* pKeyObjModel =
+            QVariantPtr<QAbstractItemModel>::asPtr(outputSocketIdx.data(ROLE_VPARAM_LINK_MODEL)))
+        {
+            for (int i = 0; i < pKeyObjModel->rowCount(); i++)
+            {
+                const QModelIndex& idx = pKeyObjModel->index(i, 0);
+                netLabel = idx.data(ROLE_PARAM_NETLABEL).toString();
+                if (!netLabel.isEmpty())
+                {
+                    removeNetLabel(idx, netLabel);
+                }
+            }
+        }
+    }
+}
+
+void SubGraphModel::_uniqueView(const QModelIndex& index, bool bInSocket, bool bOutSocket, QModelIndexList& viewLst)
+{
+    QString id = m_row2Key[index.row()];
+    if (m_nodes.find(id) == m_nodes.end())
+        return;
+    const _NodeItem& item = m_nodes[id];
+    if (item.nodeParams)
+    {
+        QMap<bool, QModelIndexList> sockets;
+        if (bInSocket)
+        {
+            sockets[true] = item.nodeParams->getInputIndice();
+        }
+        if (bOutSocket)
+        {
+            sockets[false] = item.nodeParams->getOutputIndice();
+        }
+        for (const auto&bInput  : sockets.keys())
+        {
+            for (const auto& sock : sockets[bInput])
+            {
+                QModelIndexList lst;
+                const int sockProp = sock.data(ROLE_PARAM_SOCKPROP).toInt();
+                //dict sock
+                if (sockProp & SOCKPROP_DICTLIST_PANEL)
+                {
+                    QAbstractItemModel* pKeyObjModel = QVariantPtr<QAbstractItemModel>::asPtr(sock.data(ROLE_VPARAM_LINK_MODEL));
+                    for (int _r = 0; _r < pKeyObjModel->rowCount(); _r++)
+                    {
+                        const QModelIndex& keyIdx = pKeyObjModel->index(_r, 0);
+                        ZASSERT_EXIT(keyIdx.isValid());
+                        lst << keyIdx;
+                    }
+                }
+                else
+                {
+                    lst << sock;
+                }
+                for (const auto& idx : lst)
+                {
+                    PARAM_LINKS links = idx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+                    for (const auto& link : links)
+                    {
+                        if (link.isValid())
+                        {
+                            QModelIndex sock;
+                            if (bInput)
+                                sock = link.data(ROLE_OUTSOCK_IDX).toModelIndex();
+                            else
+                                sock = link.data(ROLE_INSOCK_IDX).toModelIndex();
+                            ZASSERT_EXIT(sock.isValid());
+                            const auto& nodeIndex = sock.data(ROLE_NODE_IDX).toModelIndex();
+                            if (viewLst.contains(nodeIndex))
+                                continue;
+                            if (nodeIndex.isValid())
+                            {
+                                int opt = nodeIndex.data(ROLE_OPTIONS).toInt();
+                                if (opt & OPT_VIEW)
+                                {
+                                    opt ^= OPT_VIEW;
+                                    setData(nodeIndex, opt, ROLE_OPTIONS);
+                                    viewLst << nodeIndex;
+                                }
+                                else
+                                {
+                                    _uniqueView(nodeIndex, bInput, !bInput, viewLst);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    viewLst << index;
 }
 
 void SubGraphModel::removeNodeByDescName(const QString& descName)
@@ -400,6 +526,24 @@ QVariant SubGraphModel::data(const QModelIndex& index, int role) const
             const QModelIndex& subgIdx = m_pGraphsModel->indexBySubModel(const_cast<SubGraphModel*>(this));
             return subgIdx;
         }
+        case ROLE_KEYFRAMES: {
+            if (!item.nodeParams)
+                return QVariant();
+            QVector<int> keys;
+            for (const QModelIndex &index : item.nodeParams->getInputIndice()) {
+                QVariant value = index.data(ROLE_PARAM_VALUE);
+                int ctrl = index.data(ROLE_PARAM_CTRL).toInt();
+                if (value.canConvert<CURVES_DATA>() && ctrl != CONTROL_CURVE) {
+                    CURVES_DATA curves = value.value<CURVES_DATA>();
+                    for (CURVE_DATA &curve : curves)
+                    {
+                        keys << curve.pointBases();
+                    }
+                }
+            }
+            keys.erase(std::unique(keys.begin(), keys.end()), keys.end());
+            return QVariant::fromValue(keys);
+        }
         default:
             return QVariant();
     }
@@ -514,6 +658,11 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
             }
             case ROLE_OPTIONS:
             {
+                if (((item.options & OPT_VIEW) == false) && (value.toInt() & OPT_VIEW))
+                {
+                    QModelIndexList lst;
+                    _uniqueView(index, true, true, lst);
+                }
                 item.options = value.toInt();
                 break;
             }
@@ -701,6 +850,12 @@ bool SubGraphModel::_insertNode(int row, const NODE_DATA& nodeData, const QModel
 
     importNodeItem(nodeData, nodeIdx, item);
 
+    if (nodeData.find(ROLE_NODETYPE) != nodeData.end() &&
+        nodeData[ROLE_NODETYPE] == NO_VERSION_NODE)
+    {
+        m_pGraphsModel->markNotDescNode();
+    }
+
     m_pGraphsModel->markDirty();
     return true;
 }
@@ -749,3 +904,109 @@ void SubGraphModel::replaceSubGraphNode(const QString& oldName, const QString& n
     m_name2identLst.remove(oldName);
     m_name2identLst.insert(newName, sets);
 }
+
+bool SubGraphModel::addNetLabel(const QModelIndex& sock, const QString& name, bool bInput)
+{
+    int nRow = m_labels.size();
+    _LabelItem& item = m_labels[name];
+    item.name = name;
+    if (bInput)
+        item.inSocks.append(sock);
+    else
+        item.outSock = sock;
+
+    auto paramModel = const_cast<QAbstractItemModel*>(sock.model());
+    ZASSERT_EXIT(paramModel, false);
+    paramModel->setData(sock, name, ROLE_PARAM_NETLABEL);
+    return true;
+}
+
+void SubGraphModel::updateNetLabel(const QModelIndex& trigger, const QString& oldName, const QString& newName)
+{
+    if (oldName == newName
+        || m_labels.find(oldName) == m_labels.end() 
+        || m_labels.find(newName) != m_labels.end())
+        return;
+
+    auto item = m_labels[oldName];
+    for (QPersistentModelIndex insock : item.inSocks)
+    {
+        auto pModel = const_cast<QAbstractItemModel*>(insock.model());
+        pModel->setData(insock, newName, ROLE_PARAM_NETLABEL);
+    }
+    auto pModel = const_cast<QAbstractItemModel*>(item.outSock.model());
+    pModel->setData(item.outSock, newName, ROLE_PARAM_NETLABEL);
+
+    if (newName.isEmpty()) {
+        m_labels.remove(oldName);
+    }
+    else {
+        item.name = newName;
+        m_labels.insert(newName, item);
+        m_labels.remove(oldName);
+    }
+}
+
+void SubGraphModel::removeNetLabel(const QModelIndex& trigger, const QString& name)
+{
+    if (!trigger.isValid())
+        return;
+    auto pModel = const_cast<QAbstractItemModel*>(trigger.model());
+    pModel->setData(trigger, "", ROLE_PARAM_NETLABEL);
+    auto iter = m_labels.find(name);
+    if (iter != m_labels.end())
+    {
+        auto& item = iter.value();
+        if (item.outSock == trigger) {
+            for (auto inSocket : item.inSocks)
+            {
+                if (!inSocket.isValid())
+                    continue;
+                if (auto pInSocketModel = const_cast<QAbstractItemModel*>(inSocket.model()))
+                    pInSocketModel->setData(inSocket, "", ROLE_PARAM_NETLABEL);
+            }
+            m_labels.remove(name);
+        }
+        else if (item.inSocks.indexOf(trigger) != -1) {
+            item.inSocks.removeAll(trigger);
+        }
+    }
+}
+
+QModelIndex SubGraphModel::getNetOutput(const QString& name) const
+{
+    auto iter = m_labels.find(name);
+    if (iter == m_labels.end())
+        return QModelIndex();
+    return iter.value().outSock;
+}
+
+QModelIndexList SubGraphModel::getNetInputSocks(const QString& name) const
+{
+    auto iter = m_labels.find(name);
+    if (iter == m_labels.end())
+        return QList<QModelIndex>();
+    QModelIndexList inSocks;
+    for (auto inSock : iter.value().inSocks)
+        inSocks.append(inSock);
+    return inSocks;
+}
+
+void SubGraphModel::setCommandParam(const QModelIndex& sock, bool bMarked)
+{
+    auto paramModel = const_cast<QAbstractItemModel*>(sock.model());
+    ZASSERT_EXIT(paramModel);
+    paramModel->setData(sock, bMarked, ROLE_VPARAM_COMMAND);
+}
+
+QStringList SubGraphModel::dumpLabels() const
+{
+    QStringList names;
+    for (auto iter : m_labels)
+    {
+        if (!iter.name.isEmpty())
+            names.append(iter.name);
+    }
+    return names;
+}
+

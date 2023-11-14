@@ -1,9 +1,29 @@
 #pragma once
 
+#ifndef __CUDACC_RTC__ 
+
 #include <zeno/core/IObject.h>
 #include <zeno/utils/vec.h>
 
+#endif
+
 namespace zeno {
+
+    enum struct LightType {
+        Diffuse=0u, Direction=1u, IES=2u    
+    };
+
+    enum struct LightShape {
+        Plane=0u, Sphere=1u, Point=2u, TriangleMesh=3u
+    };
+
+    enum LightConfigMask {
+        LightConfigNull       = 0u,
+        LightConfigVisible    = 1u,
+        LightConfigDoubleside = 2u
+    };
+
+#ifndef __CUDACC_RTC__ 
 
 struct LightData {
     //vec3f pos{1, 1, 0};
@@ -27,4 +47,5 @@ struct LightObject : IObjectClone<LightObject>, LightData {
     }
 };
 
+#endif
 }

@@ -8,11 +8,11 @@ class ZPathEdit : public ZLineEdit
 {
     Q_OBJECT
 public:
-    explicit ZPathEdit(QWidget *parent = nullptr);
-  explicit ZPathEdit(const QString &text, QWidget *parent = nullptr);
+    explicit ZPathEdit(const CALLBACK_SWITCH& cbSwitch, QWidget *parent = nullptr);
+  explicit ZPathEdit(const CALLBACK_SWITCH& cbSwitch, const QString &text, QWidget *parent = nullptr);
 
 private:
-  void initUI();
+  void initUI(const CALLBACK_SWITCH& cbSwitch);
 };
 
 #endif

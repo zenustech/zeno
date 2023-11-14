@@ -12,6 +12,8 @@
 #include "dbg_printf.h"
 
 namespace zeno {
+    std::string preApplyRefs(const std::string& code, Graph* pGraph);
+
 namespace {
 
 static zfx::Compiler compiler;
@@ -197,6 +199,14 @@ struct TrianglesWrangle : zeno::INode {
                 opts.define_param(key, dim);
             //auto par = zeno::safe_any_cast<zeno::NumericValue>(obj);
             
+        }
+        if (1)
+        {
+            // BEGIN 引用预解析：将其他节点参数引用到此处，可能涉及提前对该参数的计算
+            // 方法是: 搜索code里所有ref(...)，然后对于每一个ref(...)，解析ref内部的引用，
+            // 然后将计算结果替换对应ref(...)，相当于预处理操作。
+            code = preApplyRefs(code, getThisGraph());
+            // END 引用预解析
         }
 
         auto prog = compiler.compile(code, opts);

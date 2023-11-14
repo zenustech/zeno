@@ -125,8 +125,11 @@ std::shared_ptr<PrimitiveObject> parse_obj(std::vector<char> &&bin) {
 
 struct ReadObjPrim : INode {
     virtual void apply() override {
-        auto path = get_input<StringObject>("path")->get();
-        auto binary = file_get_binary<std::vector<char>>(path);
+        auto path = get_input2<std::string>("path");
+        std::string native_path = std::filesystem::u8path(path).string();
+        std::ifstream file(native_path, std::ios::binary);
+        auto binary = std::vector<char>((std::istreambuf_iterator<char>(file)),
+                              std::istreambuf_iterator<char>());
         auto prim = parse_obj(std::move(binary));
         if (get_param<bool>("triangulate")) {
             primTriangulate(prim.get());
@@ -146,5 +149,31 @@ ZENDEFNODE(ReadObjPrim,
         "primitive",
         }});
 
+struct MustReadObjPrim : INode {
+    virtual void apply() override {
+        auto path = get_input2<std::string>("path");
+        auto binary = file_get_binary<std::vector<char>>(path);
+        if (binary.empty()) {
+            auto s = zeno::format("can not find {}", path);
+            throw zeno::makeError(s);
+        }
+        auto prim = parse_obj(std::move(binary));
+        if (get_param<bool>("triangulate")) {
+            primTriangulate(prim.get());
+        }
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENDEFNODE(MustReadObjPrim,
+        { /* inputs: */ {
+        {"readpath", "path"},
+        }, /* outputs: */ {
+        {"primitive", "prim"},
+        }, /* params: */ {
+        {"bool", "triangulate", "1"},
+        }, /* category: */ {
+        "primitive",
+        }});
 }
 }

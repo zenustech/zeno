@@ -68,7 +68,7 @@ LBvh::getBvFunc(const std::shared_ptr<PrimitiveObject> &prim) const {
       return bv;
     };
   else if (eleCategory == element_e::point)
-      if (radiusAttr == "") {
+      if (radiusAttr.empty() && neiRadiusAttr.empty()) {
         getBv = [&points = prim->points, &refpos = prim->attr<vec3f>("pos"),  
              defaultBox, this](Ti i) -> Box {
         auto point = points[i];
@@ -83,7 +83,7 @@ LBvh::getBvFunc(const std::shared_ptr<PrimitiveObject> &prim) const {
       return bv;
         };
       } 
-      else {
+      else if(!radiusAttr.empty() && neiRadiusAttr.empty()) {
         getBv = [&points = prim->points, &refpos = prim->attr<vec3f>("pos"), 
         &radius = prim->verts.attr<float>(radiusAttr),
              defaultBox, this](Ti i) -> Box {
@@ -93,23 +93,44 @@ LBvh::getBvFunc(const std::shared_ptr<PrimitiveObject> &prim) const {
         for (int d = 0; d != 3; ++d) {
           if (p[d] - thickness - radius[i] < bv.first[d])
             bv.first[d] = p[d] - thickness - radius[i];
-          if (p[d] + thickness + radius[i] > bv.second[d])
+          if (p[d] + thickness + radius[i]  > bv.second[d])
             bv.second[d] = p[d] + thickness + radius[i];
           }
       return bv;
       };
     }
+      else if(!radiusAttr.empty() && !neiRadiusAttr.empty()) {
+        getBv = [&points = prim->points, &refpos = prim->attr<vec3f>("pos"), 
+        &radius = prim->verts.attr<float>(radiusAttr),
+        &neiRadius = prim->verts.attr<float>(neiRadiusAttr),
+             defaultBox, this](Ti i) -> Box {
+        auto point = points[i];
+        Box bv = defaultBox;
+        const auto &p = refpos[point];
+        for (int d = 0; d != 3; ++d) {
+          if (p[d] - thickness - radius[i] - neiRadius[point] < bv.first[d])
+            bv.first[d] = p[d] - thickness - radius[i]- neiRadius[point] ;
+          if (p[d] + thickness + radius[i]  + neiRadius[point]> bv.second[d])
+            bv.second[d] = p[d] + thickness + radius[i] + neiRadius[point];
+          }
+      return bv;
+      };
+    }
+      else{
+          throw std::runtime_error("neiRadiusAttr should be empty when radiusAttr is empty");
+      }
   else if (eleCategory == element_e::unknown)
     getBv = [defaultBox](Ti) -> Box { return defaultBox; };
   return getBv;
 }
 
 template <LBvh::element_e et>
-void LBvh::build(const std::shared_ptr<PrimitiveObject> &prim, float thickness, std::string radiusAttr,
+void LBvh::build(const std::shared_ptr<PrimitiveObject> &prim, float thickness, std::string radiusAttr, std::string neiRadiusAttr,//neiprim????
                  element_t<et>) {
   this->primPtr = prim;
   this->thickness = thickness;
   this->radiusAttr = radiusAttr;
+  this->neiRadiusAttr = neiRadiusAttr;
   Ti numLeaves = 0; // refpos.size();
 
   {
@@ -469,30 +490,30 @@ void LBvh::build(const std::shared_ptr<PrimitiveObject> &prim, float thickness, 
 
 template void
 LBvh::build<LBvh::element_e::point>(const std::shared_ptr<PrimitiveObject> &,
-                                    float, std::string, element_t<element_e::point>);
+                                    float, std::string, std::string, element_t<element_e::point>);
 template void
 LBvh::build<LBvh::element_e::line>(const std::shared_ptr<PrimitiveObject> &,
-                                   float, std::string, element_t<element_e::line>);
+                                   float, std::string, std::string, element_t<element_e::line>);
 template void
 LBvh::build<LBvh::element_e::tri>(const std::shared_ptr<PrimitiveObject> &,
-                                  float, std::string, element_t<element_e::tri>);
+                                  float, std::string, std::string, element_t<element_e::tri>);
 template void
 LBvh::build<LBvh::element_e::tet>(const std::shared_ptr<PrimitiveObject> &,
-                                  float, std::string, element_t<element_e::tet>);
+                                  float, std::string, std::string, element_t<element_e::tet>);
 
 void LBvh::build(const std::shared_ptr<PrimitiveObject> &prim,
-                 float thickness, std::string radiusAttr) {
+                 float thickness, std::string radiusAttr, std::string neiRadiusAttr) {
   // determine element category
   if (prim->quads.size() > 0)
-    build(prim, thickness, radiusAttr, element_c<element_e::tet>);
+    build(prim, thickness, radiusAttr, neiRadiusAttr, element_c<element_e::tet>);
   else if (prim->tris.size() > 0)
-    build(prim, thickness, radiusAttr, element_c<element_e::tri>);
+    build(prim, thickness, radiusAttr, neiRadiusAttr, element_c<element_e::tri>);
   else if (prim->lines.size() > 0)
-    build(prim, thickness, radiusAttr, element_c<element_e::line>);
+    build(prim, thickness, radiusAttr, neiRadiusAttr, element_c<element_e::line>);
   else if (prim->points.size() > 0)
-    build(prim, thickness, radiusAttr, element_c<element_e::point>);
+    build(prim, thickness, radiusAttr, neiRadiusAttr, element_c<element_e::point>);
   else
-    build(prim, thickness, radiusAttr, element_c<element_e::point>);
+    build(prim, thickness, radiusAttr, neiRadiusAttr, element_c<element_e::point>);
 }
 
 void LBvh::refit() {
@@ -643,6 +664,116 @@ typename LBvh::TV LBvh::find_nearest(TV const &pos, Ti &id, float &dist) const {
     return find_nearest(pos, id, dist, element_c<element_e::line>);
   else // if (eleCategory == element_e::point)
     return find_nearest(pos, id, dist, element_c<element_e::point>);
+}
+
+
+template <LBvh::element_e et>
+typename LBvh::TV LBvh::find_nearest_with_uv(TV const &pos, TV const &uv, Ti &id, float &dist,
+                                     float &uvDist2, float distEps, element_t<et>) const {
+  std::shared_ptr<const PrimitiveObject> prim = primPtr.lock();
+  if (!prim)
+    throw std::runtime_error(
+        "the primitive object referenced by lbvh not available anymore");
+  const auto &refpos = prim->attr<vec3f>("pos");
+
+  const zeno::vec3f *refUvs = nullptr;
+  // if (prim->verts.has_attr("uv"))
+  // [uv] property existence is guaranteed
+  refUvs = prim->verts.attr<zeno::vec3f>("uv").data();
+
+  const Ti numNodes = sortedBvs.size();
+  Ti node = 0;
+  TV ws{0.f, 0.f, 0.f};
+  TV wsTmp{0.f, 0.f, 0.f}, wsUvTmp{};
+  while (node != -1 && node != numNodes) {
+    Ti level = levels[node];
+    // level and node are always in sync
+    for (; level; --level, ++node)
+      if (auto d = distance(sortedBvs[node], pos); d > dist + distEps)
+        break;
+    // leaf node check
+    if (level == 0) {
+      const auto eid = auxIndices[node];
+      float d = std::numeric_limits<float>::max();
+      zeno::vec3f refUv{0, 0, 0};
+
+      if constexpr (et == element_e::point) {
+        d = dist_pp(refpos[prim->points[eid]], pos, wsTmp);
+        refUv = refUvs[prim->points[eid]];
+      }
+      else if constexpr (et == element_e::line) {
+        auto line = prim->lines[eid];
+        d = dist_pe(pos, refpos[line[0]], refpos[line[1]], wsTmp);
+        refUv = refUvs[line[0]] * wsTmp[0] + refUvs[line[1]] * wsTmp[1];
+      } else if constexpr (et == element_e::tri) {
+        auto tri = prim->tris[eid];
+        d = dist_pt(pos, refpos[tri[0]], refpos[tri[1]], refpos[tri[2]], wsTmp);
+        refUv = refUvs[tri[0]] * wsTmp[0] + refUvs[tri[1]] * wsTmp[1] + refUvs[tri[2]] * wsTmp[2];
+      }
+
+
+#if 0
+      auto newUvDist2 = dist_pp_sqr(refUv, uv, wsUvTmp);
+      if (newUvDist2 < uvDist2) {
+        id = eid;
+        dist = d;
+        ws = wsTmp;
+        uvDist2 = newUvDist2;
+      } else if (strictly_greater(dist, d)) {
+        id = eid;
+        dist = d;
+        ws = wsTmp;
+        uvDist2 = newUvDist2;
+      }
+#else
+      if (
+#if 0
+        d + std::numeric_limits<float>::epsilon() * 2 < dist
+#else
+        strictly_greater(dist, d)
+#endif
+        ) {
+        id = eid;
+        dist = d;
+        ws = wsTmp;
+        uvDist2 = dist_pp_sqr(refUv, uv, wsUvTmp);
+      } else if (auto newUvDist2 = dist_pp(refUv, uv, wsUvTmp); 
+#if 0
+        d < dist + std::numeric_limits<float>::epsilon() * 2 && newUvDist2 < uvDist2
+#else
+        loosely_greater(dist, d) && newUvDist2 < uvDist2
+#endif
+        ) {
+        id = eid;
+        dist = d;
+        ws = wsTmp;
+        uvDist2 = newUvDist2;
+      }
+#endif
+      node++;
+    } else // separate at internal nodes
+      node = auxIndices[node];
+  }
+  return ws;
+}
+
+template typename LBvh::TV LBvh::find_nearest_with_uv<LBvh::element_e::point>(
+    const LBvh::TV &, TV const &uv, LBvh::Ti &, float &, float &, float distEps,
+    typename LBvh::element_t<element_e::point>) const;
+template typename LBvh::TV LBvh::find_nearest_with_uv<LBvh::element_e::line>(
+    const LBvh::TV &, TV const &uv, LBvh::Ti &, float &, float &, float distEps,
+    typename LBvh::element_t<element_e::line>) const;
+template typename LBvh::TV LBvh::find_nearest_with_uv<LBvh::element_e::tri>(
+    const LBvh::TV &, TV const &uv, LBvh::Ti &, float &, float &, float distEps,
+    typename LBvh::element_t<element_e::tri>) const;
+
+typename LBvh::TV LBvh::find_nearest_with_uv(TV const &pos, TV const &uv, Ti &id, float &dist, float &uvDist, float distEps) const {
+  if (eleCategory == element_e::tri)
+    return find_nearest_with_uv(pos, uv, id, dist, uvDist, distEps, element_c<element_e::tri>);
+  else if (eleCategory == element_e::line)
+    return find_nearest_with_uv(pos, uv, id, dist, uvDist, distEps, element_c<element_e::line>);
+  else // if (eleCategory == element_e::point)
+    return find_nearest_with_uv(pos, uv, id, dist, uvDist, distEps, element_c<element_e::point>);
 }
 
 std::shared_ptr<PrimitiveObject> LBvh::retrievePrimitive(Ti eid) const {

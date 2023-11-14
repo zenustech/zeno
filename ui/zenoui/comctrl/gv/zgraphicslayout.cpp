@@ -185,7 +185,15 @@ void ZGraphicsLayout::addSpacing(qreal sizehint, QSizePolicy policy)
         }
     }
     else {
-        //todo
+        if (policy.verticalPolicy() == QSizePolicy::Fixed)
+        {
+            item->gvItemSz.policy = policy;
+            item->gvItemSz.minSize = QSizeF(0, sizehint);
+        }
+        else
+        {
+            //todo
+        }
     }
     m_items.append(item);
 }

@@ -1,6 +1,5 @@
 //{{NO_DEPENDENCIES}}
 //
-
 #include <windows.h>
 
 // Next default values for new objects

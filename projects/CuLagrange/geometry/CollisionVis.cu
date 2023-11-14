@@ -470,8 +470,8 @@ namespace zeno {
             },tri_buffer.size()};
 
             auto& halfedges = (*zsparticles)[ZenoParticles::s_surfHalfEdgeTag];
-            auto nm_insts = do_global_self_intersection_analysis_on_surface_mesh_info(
-                cudaPol,verts_buffer,"x",tri_buffer,halfedges,inst_buffer_info,gia_res,false);  
+            // auto nm_insts = do_global_self_intersection_analysis_on_surface_mesh_info(
+            //     cudaPol,verts_buffer,"x",tri_buffer,halfedges,inst_buffer_info,gia_res,false);  
             // zs::bht<int,2,int> conn_of_first_ring{halfedges.get_allocator(),halfedges.size()};      
             auto ring_mask_width = do_global_self_intersection_analysis(cudaPol,
                 verts_buffer,"x",tri_buffer,halfedges,gia_res,tris_gia_res);    

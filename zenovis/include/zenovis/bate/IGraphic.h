@@ -37,13 +37,6 @@ enum {
     VIEW_COORD_SYS
 };
 
-enum {
-    PICK_OBJECT,
-    PICK_VERTEX,
-    PICK_LINE,
-    PICK_MESH
-};
-
 struct IGraphic {
     std::string nameid;
     std::shared_ptr<zeno::IObject> objholder;

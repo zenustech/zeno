@@ -12,6 +12,8 @@
 #include <viewport/viewportwidget.h>
 #include "launch/corelaunch.h"
 #include "settings/zsettings.h"
+#include "viewport/recordvideomgr.h"
+#include "panel/zenospreadsheet.h"
 
 class AppHelper
 {
@@ -22,8 +24,16 @@ public:
     static void ensureSRCDSTlastKey(INPUT_SOCKETS& inputs, OUTPUT_SOCKETS& outputs);
     static QString nativeWindowTitle(const QString& currentFilePath);
     static void socketEditFinished(QVariant newValue, QPersistentModelIndex nodeIdx, QPersistentModelIndex paramIdx);
-    static void modifyLightData(QPersistentModelIndex nodeIdx);
+    static void modifyOptixObjDirectly(QVariant newValue, QPersistentModelIndex nodeIdx, QPersistentModelIndex paramIdx, bool editByPropPanel = false);
+    static void modifyOptixCameraPropDirectly(QVariant newValue, QPersistentModelIndex nodeIdx, QPersistentModelIndex paramIdx);
+    static void modifyLightData(QVariant newValue, QPersistentModelIndex nodeIdx, QPersistentModelIndex paramIdx);
+    static VideoRecInfo getRecordInfo(const ZENO_RECORD_RUN_INITPARAM& param);
     static void initLaunchCacheParam(LAUNCH_PARAM& param);
+    static bool openZsgAndRun(const ZENO_RECORD_RUN_INITPARAM& param, LAUNCH_PARAM launchParam);
+    static QVector<QString> getKeyFrameProperty(const QVariant &val);
+    static bool getCurveValue(QVariant & val);
+    static bool updateCurve(QVariant oldVal, QVariant& val);
+    static void dumpTabsToZsg(QDockWidget* dockWidget, RAPIDJSON_WRITER& writer);
 };
 
 

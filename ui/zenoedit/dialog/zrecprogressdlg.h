@@ -32,6 +32,7 @@ public slots:
 private slots:
     void onBtnClicked();
     void onPauseBtnClicked();
+    void onOpenLocClicked();
 
 private:
     VideoRecInfo m_info;

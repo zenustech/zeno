@@ -35,8 +35,10 @@ target_sources(zeno PRIVATE
 
 # pbd
 target_sources(zeno PRIVATE
-  pbd/PBDInit.cu
-  pbd/PBDPipeline.cu
+  pbd/Constraints.cu
+  pbd/SelfCollision.cu
+  pbd/KinematicCollision.cu
+  # pbd/Pipeline.cu
 )
 
 # fem-cloth

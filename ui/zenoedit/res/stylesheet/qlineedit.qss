@@ -76,7 +76,7 @@ QLineEdit[cssClass="FCurve-lineedit"]:focus {
     color: #FFFFFF;
 }
 
-QLineEdit[cssClass="zeno2_2_lineedit"] {
+QLineEdit[cssClass="zeno2_2_lineedit"]{
     border: 0;
     background-color: #191D21;
     selection-background-color: #4B9EF4;
@@ -84,6 +84,18 @@ QLineEdit[cssClass="zeno2_2_lineedit"] {
 	font-size: 9pt;;
     font-weight: 500;
 	padding: 3px 5px;
+}
+
+QLineEdit[cssClass="zeno2_2_lineedit"][setKey="null"] {
+    background-color: #191D21;
+}
+
+QLineEdit[cssClass="zeno2_2_lineedit"][setKey="true"] {
+    background-color: #3A6E64;
+}
+
+QLineEdit[cssClass="zeno2_2_lineedit"][setKey="false"] {
+    background-color: #496DA0;
 }
 
 QLineEdit[cssClass="zeno2_2_lineedit"]:focus {
@@ -120,12 +132,17 @@ QTextEdit:focus {
     border: 2px solid #4B9EF4;
 }
 
+QTextEdit#m_notesText, QTextEdit#m_notesText:focus {
+    border: 0;
+	background-color:#1D2025;
+}
+
 QPlainTextEdit[cssClass="logpanel"]
 {
     color: #A3B1C0; 
     background-color: rgb(24,29,33); 
     border: 1px solid rgb(18,20,22);
-    font-weight: 500;
+    font-family:'Arial' 9pt;
 }
 
 QLineEdit[cssClass = "blackboard_title"]

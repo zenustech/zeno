@@ -34,6 +34,12 @@ void ZsgWriter::dumpToClipboard(const QMap<QString, NODE_DATA>& nodes)
             for (const QString& nodeId : nodes.keys())
             {
                 const NODE_DATA& nodeData = nodes[nodeId];
+                if (nodeData.find(ROLE_NODETYPE) != nodeData.end() &&
+                    NO_VERSION_NODE == nodeData[ROLE_NODETYPE])
+                {
+                    continue;
+                }
+
                 writer.Key(nodeId.toUtf8());
                 dumpNode(nodeData, writer);
             }
@@ -70,6 +76,26 @@ QString ZsgWriter::dumpProgramStr(IGraphsModel* pModel, APP_SETTINGS settings)
             }
         }
 
+        const FuckQMap<QString, CommandParam>& commandParams = pModel->commandParams();
+        if (!commandParams.isEmpty())
+        {
+            writer.Key("command");
+            {
+                writer.StartObject();
+                for (const auto& key : commandParams.keys())
+                {
+                    writer.Key(key.toUtf8());
+                    writer.StartObject();
+                    writer.Key("name");
+                    writer.String(commandParams[key].name.toUtf8());
+                    writer.Key("description");
+                    writer.String(commandParams[key].description.toUtf8());
+                    writer.EndObject();
+                }
+                writer.EndObject();
+            }
+        }
+
         writer.Key("views");
         {
             writer.StartObject();
@@ -81,10 +107,45 @@ QString ZsgWriter::dumpProgramStr(IGraphsModel* pModel, APP_SETTINGS settings)
         writer.Key("descs");
         _dumpDescriptors(descs, writer);
 
+        writer.Key("settings");
+        dumpSettings(settings, writer);
+
         writer.Key("version");
         writer.String("v2.5");  //distinguish the new version ui from the stable zeno2.
     }
 
+    strJson = QString::fromUtf8(s.GetString());
+    return strJson;
+}
+
+QString ZsgWriter::dumpSubgraphStr(IGraphsModel* pModel, const QModelIndexList& subgIdxs)
+{
+    QString strJson;
+    if (!pModel)
+        return strJson;
+
+    rapidjson::StringBuffer s;
+    RAPIDJSON_WRITER writer(s);
+
+    {
+        JsonObjBatch batch(writer);
+
+        NODE_DESCS descs;
+        writer.Key("graph");
+        {
+            JsonObjBatch _batch(writer);
+            for (const auto& index : subgIdxs)
+            {
+                const QString& subgName = index.data(ROLE_OBJNAME).toString();
+                writer.Key(subgName.toUtf8());
+                _dumpSubGraph(pModel, index, writer);
+                pModel->getDescriptor(subgName, descs[subgName]);
+            }
+        }
+
+        writer.Key("descs");
+        _dumpDescriptors(descs, writer);
+    }
     strJson = QString::fromUtf8(s.GetString());
     return strJson;
 }
@@ -104,6 +165,10 @@ void ZsgWriter::_dumpSubGraph(IGraphsModel* pModel, const QModelIndex& subgIdx, 
         {
             const QModelIndex& idx = pModel->index(i, subgIdx);
             const NODE_DATA& node = pModel->itemData(idx, subgIdx);
+            if (node.find(ROLE_NODETYPE) != node.end() && NO_VERSION_NODE == node[ROLE_NODETYPE])
+            {
+                continue;
+            }
             const QString& id = node[ROLE_OBJID].toString();
             writer.Key(id.toUtf8());
             dumpNode(node, writer);
@@ -170,6 +235,11 @@ void ZsgWriter::dumpSocket(SOCKET_INFO socket, bool bInput, RAPIDJSON_WRITER& wr
                     else
                         writer.String(otherLinkSock.toUtf8());
                 }
+                if (!info.netLabel.isEmpty())
+                {
+                    writer.Key("netlabel");
+                    writer.String(info.netLabel.toUtf8());
+                }
                 writer.EndObject();
             }
             writer.EndObject();
@@ -192,6 +262,12 @@ void ZsgWriter::dumpSocket(SOCKET_INFO socket, bool bInput, RAPIDJSON_WRITER& wr
         }
     }
 
+    if (!socket.netlabel.isEmpty())
+    {
+        writer.Key("netlabel");
+        writer.String(socket.netlabel.toUtf8());
+    }
+
     const QString& sockType = socket.type;
     writer.Key("type");
     writer.String(sockType.toUtf8());
@@ -200,12 +276,16 @@ void ZsgWriter::dumpSocket(SOCKET_INFO socket, bool bInput, RAPIDJSON_WRITER& wr
     {
         writer.Key("default-value");
         QVariant deflVal = socket.defaultValue;
+        bool bOK = false;
+        if (deflVal.canConvert<CURVES_DATA>() && (sockType == "float" || sockType.startsWith("vec"))) {
+            bOK = AddVariant(deflVal, "curve", writer);
+        } else {
+            bool bValid = UiHelper::validateVariant(deflVal, sockType);
+            if (!bValid)
+                deflVal = QVariant();
+            bOK = AddVariant(deflVal, sockType, writer);
+        }
 
-        bool bValid = UiHelper::validateVariant(deflVal, sockType);
-        if (!bValid)
-            deflVal = QVariant();
-
-        bool bOK = AddVariant(deflVal, sockType, writer);
         if (!bOK)
         {
             zeno::log_error("write default-value error. nodeId : {}, socket : {}", socket.nodeid.toStdString(), socket.name.toStdString());
@@ -431,6 +511,8 @@ void ZsgWriter::dumpTimeline(TIMELINE_INFO info, RAPIDJSON_WRITER& writer)
         writer.Int(info.currFrame);
         writer.Key(timeline::always);
         writer.Bool(info.bAlways);
+        writer.Key(timeline::timeline_fps);
+        writer.Int(info.timelinefps);
     }
 }
 
@@ -489,6 +571,52 @@ void ZsgWriter::dumpSubGraphDesc(const NODE_DESC &desc, RAPIDJSON_WRITER& writer
     writer.Bool(true);
 }
 
+void ZsgWriter::dumpSettings(const APP_SETTINGS settings, RAPIDJSON_WRITER& writer)
+{
+    const RECORD_SETTING& info = settings.recordInfo;
+    JsonObjBatch batch(writer);
+    {
+        writer.Key("recordinfo");
+        writer.StartObject();
+        writer.Key(recordinfo::record_path);
+        writer.String(info.record_path.toUtf8());
+        writer.Key(recordinfo::videoname);
+        writer.String(info.videoname.toUtf8());
+        writer.Key(recordinfo::fps);
+        writer.Int(info.fps);
+        writer.Key(recordinfo::bitrate);
+        writer.Int(info.bitrate);
+        writer.Key(recordinfo::numMSAA);
+        writer.Int(info.numMSAA);
+        writer.Key(recordinfo::numOptix);
+        writer.Int(info.numOptix);
+        writer.Key(recordinfo::width);
+        writer.Int(info.width);
+        writer.Key(recordinfo::height);
+        writer.Int(info.height);
+        writer.Key(recordinfo::bExportVideo);
+        writer.Bool(info.bExportVideo);
+        writer.Key(recordinfo::needDenoise);
+        writer.Bool(info.needDenoise);
+        writer.Key(recordinfo::bAutoRemoveCache);
+        writer.Bool(info.bAutoRemoveCache);
+        writer.Key(recordinfo::bAov);
+        writer.Bool(info.bAov);
+        writer.Key(recordinfo::bExr);
+        writer.Bool(info.bExr);
+        writer.EndObject();
+
+        writer.Key("layoutinfo");
+        _writeLayout(settings.layoutInfo.layerOutNode, settings.layoutInfo.size, writer, settings.layoutInfo.cbDumpTabsToZsg);
+
+        writer.Key("userdatainfo");
+        writer.StartObject();
+        writer.Key(userdatainfo::optixShowBackground);
+        writer.Bool(settings.userdataInfo.optix_show_background);
+        writer.EndObject();
+    }
+}
+
 void ZsgWriter::_dumpDescriptors(const NODE_DESCS& descs, RAPIDJSON_WRITER& writer)
 {
     JsonObjBatch batch(writer);
@@ -537,6 +665,75 @@ void ZsgWriter::_dumpDescriptors(const NODE_DESCS& descs, RAPIDJSON_WRITER& writ
 
             writer.Key("categories");
             AddStringList(desc.categories, writer);
+        }
+    }
+}
+
+void ZsgWriter::_writeLayout(PtrLayoutNode root, const QSize& szMainwin, PRETTY_WRITER& writer, void(*cbDumpTabsToZsg)(QDockWidget*, RAPIDJSON_WRITER&))
+{
+    JsonObjBatch scope(writer);
+    if (root->type == NT_HOR || root->type == NT_VERT)
+    {
+        writer.Key("orientation");
+        writer.String(root->type == NT_HOR ? "H" : "V");
+        writer.Key("left");
+        if (root->pLeft)
+            _writeLayout(root->pLeft, szMainwin, writer, cbDumpTabsToZsg);
+        else
+            writer.Null();
+
+        writer.Key("right");
+        if (root->pRight)
+            _writeLayout(root->pRight, szMainwin, writer, cbDumpTabsToZsg);
+        else
+            writer.Null();
+    }
+    else
+    {
+        writer.Key("widget");
+        if (root->pWidget == nullptr || root->pWidget->isHidden())
+        {
+            writer.Null();
+        }
+        else
+        {
+            writer.StartObject();
+            int w = szMainwin.width();
+            int h = szMainwin.height();
+            if (w == 0)
+                w = 1;
+            if (h == 0)
+                h = 1;
+
+            writer.Key("geometry");
+            writer.StartObject();
+            QRect rc = root->pWidget->geometry();
+
+            writer.Key("x");
+            float _left = (float)rc.left() / w;
+            writer.Double(_left);
+
+            writer.Key("y");
+            float _top = (float)rc.top() / h;
+            writer.Double(_top);
+
+            writer.Key("width");
+            float _width = (float)rc.width() / w;
+            writer.Double(_width);
+
+            writer.Key("height");
+            float _height = (float)rc.height() / h;
+            writer.Double(_height);
+
+            writer.EndObject();
+
+            writer.Key("tabs");
+            writer.StartArray();
+            if (cbDumpTabsToZsg)
+                cbDumpTabsToZsg(root->pWidget, writer);
+            writer.EndArray();
+
+            writer.EndObject();
         }
     }
 }

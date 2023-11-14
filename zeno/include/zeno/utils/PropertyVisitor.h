@@ -13,6 +13,7 @@
 #include <zeno/core/Descriptor.h>
 #include <zeno/types/AttrVector.h>
 #include <zeno/types/UserData.h>
+#include <zeno/types/CurveObject.h>
 #include <zeno/utils/logger.h>
 #include <zeno/zeno.h>
 
@@ -109,6 +110,11 @@ namespace zeno {
         };
 
         template<>
+        struct ValueTypeToString<zeno::vec2f> {
+            inline static std::string TypeName = "vec2f";
+        };
+
+        template<>
         struct ValueTypeToString<zeno::vec3f> {
             inline static std::string TypeName = "vec3f";
         };
@@ -131,6 +137,11 @@ namespace zeno {
         template<>
         struct ValueTypeToString<bool> {
             inline static std::string TypeName = "bool";
+        };
+
+        template<>
+        struct ValueTypeToString<std::shared_ptr<zeno::CurveObject>> {
+            inline static std::string TypeName = "curve";
         };
 
         struct TypeAutoCallbackList {
@@ -253,6 +264,8 @@ namespace zeno {
                 }
                 if constexpr (IsSharedPtr<InputType>()) {
                     ReadObject(Node);
+                } else if constexpr(std::is_base_of_v<std::string, InputType>) {
+                    ValueRef = InputType(Node->get_input2<std::string>(KeyName));
                 } else {
                     ReadPrimitiveValue(Node);
                 }
@@ -269,8 +282,6 @@ namespace zeno {
 
         template<typename ParentType, typename InputType, size_t Hash>
         struct OutputField : public Field<ParentType, InputType, Hash> {
-            using Field<ParentType, InputType, Hash>::Parent;
-            using Field<ParentType, InputType, Hash>::Type;
             using Field<ParentType, InputType, Hash>::KeyName;
             using Field<ParentType, InputType, Hash>::ValueRef;
             using Field<ParentType, InputType, Hash>::DefaultValue;

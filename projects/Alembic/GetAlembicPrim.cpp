@@ -1,6 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/utils/logger.h>
-#include <zeno/utils/prim_ops.h>
+#include <glm/glm.hpp>
 #include <zeno/types/ListObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
@@ -65,6 +65,22 @@ std::shared_ptr<PrimitiveObject> get_alembic_prim(std::shared_ptr<zeno::ABCTree>
         throw Exception("index out of range in abctree");
     }
     return prim;
+}
+
+int get_alembic_prim_index(std::shared_ptr<zeno::ABCTree> abctree, std::string name) {
+    int index = 0;
+    abctree->visitPrims([&] (auto const &p) {
+        auto &ud = p->userData();
+        auto _abc_path = ud.template get2<std::string>("_abc_path", "");
+        if (_abc_path == name) {
+            return false;
+        }
+        else {
+            index++;
+            return true;
+        }
+    });
+    return index;
 }
 void dfs_abctree(
     std::shared_ptr<ABCTree> root,
@@ -145,6 +161,9 @@ struct GetAlembicPrim : INode {
         int index = get_input<NumericObject>("index")->get<int>();
         int use_xform = get_input<NumericObject>("use_xform")->get<int>();
         std::shared_ptr<PrimitiveObject> prim;
+        if (get_input2<bool>("use_name")) {
+            index = get_alembic_prim_index(abctree, get_input2<std::string>("name"));
+        }
         if (use_xform) {
             prim = get_xformed_prim(abctree, index);
         } else {
@@ -167,6 +186,8 @@ ZENDEFNODE(GetAlembicPrim, {
         {"int", "index", "0"},
         {"bool", "use_xform", "0"},
         {"bool", "triangulate", "0"},
+        {"bool", "use_name", "0"},
+        {"string", "name", ""},
     },
     {{"PrimitiveObject", "prim"}},
     {},
@@ -242,19 +263,42 @@ struct GetAlembicCamera : INode {
         set_output("up", std::make_shared<NumericObject>(zeno::vec3f((float)up.x, (float)up.y, (float)up.z)));
         set_output("right", std::make_shared<NumericObject>(zeno::vec3f((float)right.x, (float)right.y, (float)right.z)));
 
+        auto _up = zeno::vec3f((float)up.x, (float)up.y, (float)up.z);
+        auto _right = zeno::vec3f((float)right.x, (float)right.y, (float)right.z);
+        auto view = zeno::cross(_up, _right);
+        set_output("view", std::make_shared<NumericObject>(view));
+
         set_output("focal_length", std::make_shared<NumericObject>(focal_length));
         set_output("near", std::make_shared<NumericObject>((float)cam_info.value()._near));
         set_output("far", std::make_shared<NumericObject>((float)cam_info.value()._far));
+        set_output("horizontalAperture", std::make_shared<NumericObject>((float)cam_info->horizontalAperture));
+        set_output("verticalAperture", std::make_shared<NumericObject>((float)cam_info->verticalAperture));
+        auto m_nx = get_input2<float>("nx");
+        auto m_ny = get_input2<float>("ny");
+        float m_ha = (float)cam_info->horizontalAperture;
+        float m_va = (float)cam_info->verticalAperture;
+        float c_aspect = m_ha/m_va;
+        float u_aspect = m_nx/m_ny;
+        float fov_y = glm::degrees(2.0f * std::atan(m_va/(u_aspect/c_aspect) / (2.0f * focal_length)));
+        set_output("fov_y", std::make_shared<NumericObject>(fov_y));
     }
 };
 
 ZENDEFNODE(GetAlembicCamera, {
-    {{"ABCTree", "abctree"}},
+    {
+        {"ABCTree", "abctree"},
+        {"int", "nx", "1920"},
+        {"int", "ny", "1080"},
+    },
     {
         "pos",
         "up",
+        "view",
         "right",
+        "fov_y",
         "focal_length",
+        "horizontalAperture",
+        "verticalAperture",
         "near",
         "far",
     },
@@ -283,7 +327,7 @@ struct ImportAlembicPrim : INode {
             double start, _end;
             GetArchiveStartAndEndTime(archive, start, _end);
             auto obj = archive.getTop();
-            traverseABC(obj, *abctree, frameid, read_done);
+            traverseABC(obj, *abctree, frameid, read_done, "");
         }
         bool use_xform = get_input2<bool>("use_xform");
         auto index = get_input2<int>("index");

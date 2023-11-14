@@ -16,6 +16,8 @@ public:
     static ZsgWriter& getInstance();
     QString dumpProgramStr(IGraphsModel* pModel, APP_SETTINGS settings);
     void dumpToClipboard(const QMap<QString, NODE_DATA>& nodes);
+    QString dumpSubgraphStr(IGraphsModel* pModel, const QModelIndexList &sugIndexs);
+    void _writeLayout(PtrLayoutNode root, const QSize& szMainwin, PRETTY_WRITER& writer, void(*cbDumpTabsToZsg)(QDockWidget*, RAPIDJSON_WRITER&));
 
 private:
     ZsgWriter();
@@ -26,6 +28,7 @@ private:
     void dumpTimeline(TIMELINE_INFO info, RAPIDJSON_WRITER& writer);
     void dumpParams(const PARAM_INFO &info, RAPIDJSON_WRITER &writer);
     void dumpSubGraphDesc(const NODE_DESC &desc, RAPIDJSON_WRITER &writer);
+    void dumpSettings(const APP_SETTINGS settings, RAPIDJSON_WRITER& writer);
 };
 
 #endif

@@ -10,9 +10,11 @@ struct CameraInfo {
     double _far;
     double _near;
     double focal_length;
+    double horizontalAperture;
+    double verticalAperture;
 };
 
-struct ABCTree : IObjectClone<ABCTree> {
+struct ABCTree : PrimitiveObject {
     std::string name;
     std::shared_ptr<PrimitiveObject> prim;
     Alembic::Abc::M44d xform = Alembic::Abc::M44d();

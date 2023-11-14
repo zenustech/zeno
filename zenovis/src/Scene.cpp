@@ -46,6 +46,14 @@ Scene::Scene()
         switchRenderEngine("bate");
 }
 
+void Scene::cleanUpScene()
+{
+    if (objectsMan)
+        objectsMan->clear_objects();
+    if (renderMan && renderMan->getEngine())
+        renderMan->getEngine()->update();
+}
+
 void Scene::switchRenderEngine(std::string const &name) {
     renderMan->switchDefaultEngine(name);
 }
@@ -57,29 +65,6 @@ void* Scene::getOptixImg(int& w, int& h)
 #else
     return nullptr;
 #endif
-}
-
-std::vector<float> Scene::getCameraProp(){
-    std::vector<float> camProp;
-    camProp.push_back(this->camera->m_lodcenter.x);
-    camProp.push_back(this->camera->m_lodcenter.y);
-    camProp.push_back(this->camera->m_lodcenter.z);
-    camProp.push_back(this->camera->m_lodfront.x);
-    camProp.push_back(this->camera->m_lodfront.y);
-    camProp.push_back(this->camera->m_lodfront.z);
-    camProp.push_back(this->camera->m_lodup.x);
-    camProp.push_back(this->camera->m_lodup.y);
-    camProp.push_back(this->camera->m_lodup.z);
-    camProp.push_back(this->camera->m_fov);
-    camProp.push_back(this->camera->m_aperture);
-    camProp.push_back(this->camera->focalPlaneDistance);
-    camProp.push_back(this->camera->m_zxx.cx);
-    camProp.push_back(this->camera->m_zxx.cy);
-    camProp.push_back(this->camera->m_zxx.cz);
-    camProp.push_back(this->camera->m_zxx.theta);
-    camProp.push_back(this->camera->m_zxx.phi);
-    camProp.push_back(this->camera->m_zxx.radius);
-    return camProp;
 }
 
 bool Scene::cameraFocusOnNode(std::string const &nodeid, zeno::vec3f &center, float &radius) {
@@ -95,18 +80,15 @@ bool Scene::cameraFocusOnNode(std::string const &nodeid, zeno::vec3f &center, fl
 bool Scene::loadFrameObjects(int frameid) {
     auto &ud = zeno::getSession().userData();
     ud.set2<int>("frameid", std::move(frameid));
-    bool inserted = false;
-    if (!zeno::getSession().globalComm->isFrameCompleted(frameid))
-        return inserted;
 
-    auto const *viewObjs = zeno::getSession().globalComm->getViewObjects(frameid);
-    if (viewObjs) {
-        zeno::log_trace("load_objects: {} objects at frame {}", viewObjs->size(), frameid);
-        inserted = this->objectsMan->load_objects(viewObjs->m_curr);
-    } else {
-        zeno::log_trace("load_objects: no objects at frame {}", frameid);
-        inserted = this->objectsMan->load_objects({});
-    }
+    const auto& cbLoadObjs = [this](std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs) -> bool {
+        return this->objectsMan->load_objects(objs);
+    };
+    bool isFrameValid = false;
+    bool inserted = zeno::getSession().globalComm->load_objects(frameid, cbLoadObjs, isFrameValid);
+    if (!isFrameValid)
+        return false;
+
     renderMan->getEngine()->update();
     return inserted;
 }

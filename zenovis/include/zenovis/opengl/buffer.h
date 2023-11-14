@@ -8,12 +8,16 @@ namespace zenovis::opengl {
 struct Buffer : zeno::disable_copy {
     GLuint buf;
     GLuint target{GL_ARRAY_BUFFER};
+    GLuint m_usage = GL_STATIC_DRAW;
 
     Buffer(GLuint target = GL_ARRAY_BUFFER) : target(target) {
         CHECK_GL(glGenBuffers(1, &buf));
     }
 
     ~Buffer() {
+        // force release about gpu memory
+        CHECK_GL(glBindBuffer(target, buf));
+        CHECK_GL(glBufferData(target, 0, nullptr, m_usage));
         CHECK_GL(glDeleteBuffers(1, &buf));
     }
 
@@ -27,7 +31,8 @@ struct Buffer : zeno::disable_copy {
     }
 
     void bind_data(const void *data, size_t size,
-                   GLuint usage = GL_STATIC_DRAW) const {
+                   GLuint usage = GL_STATIC_DRAW) {
+        m_usage = usage;
         CHECK_GL(glBindBuffer(target, buf));
         CHECK_GL(glBufferData(target, size, data, usage));
     }

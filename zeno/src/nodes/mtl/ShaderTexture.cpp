@@ -51,7 +51,7 @@ struct ShaderTexture2D : ShaderNodeClone<ShaderTexture2D>
 struct ShaderTexture3D : ShaderNodeClone<ShaderTexture3D>
 {
     enum struct SamplingMethod {
-        Closest, Trilinear, Triquadratic, Tricubic
+        Closest, Trilinear, Triquadratic, Tricubic, Stochastic
     };
 
     static std::string methodDefaultString() {

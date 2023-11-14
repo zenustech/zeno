@@ -33,7 +33,8 @@ void Zenovis::loadGLAPI(void *procaddr)
 
 void Zenovis::initializeGL()
 {
-    session = std::make_unique<zenovis::Session>();
+    if (!session)
+        session = std::make_unique<zenovis::Session>();
 }
 
 void Zenovis::paintGL()
@@ -54,9 +55,8 @@ int Zenovis::getCurrentFrameId()
     return session->get_curr_frameid();
 }
 
-void Zenovis::updatePerspective(QVector2D const &resolution, PerspectiveInfo const &perspective)
+void Zenovis::updatePerspective(QVector2D const &resolution)
 {
-    m_perspective = perspective;
     if (session) {
         if (session->is_lock_window())
         {
@@ -74,18 +74,17 @@ void Zenovis::updatePerspective(QVector2D const &resolution, PerspectiveInfo con
                 H = W / ratio;
                 offset[1] = std::max((h - H) / 2, 0);
             }
+            if (W != 0 && H != 0)
+            {
             session->set_window_size(W, H, offset);
+            }
         }
         else
         {
             session->set_window_size(resolution.x(), resolution.y());
         }
-        session->look_perspective(m_perspective.cx, m_perspective.cy, m_perspective.cz,
-                                  m_perspective.theta, m_perspective.phi, m_perspective.radius,
-                                  m_perspective.fov, m_perspective.ortho_mode,
-                                  m_perspective.aperture, m_perspective.focalPlaneDistance);
+        session->look_perspective();
     }
-    emit perspectiveUpdated(perspective);
 }
 
 void Zenovis::updateCameraFront(QVector3D center, QVector3D front, QVector3D up) {
@@ -103,6 +102,16 @@ void Zenovis::setLoopPlaying(bool enable) {
 bool Zenovis::isLoopPlaying()
 {
     return m_loopPlaying;
+}
+
+void Zenovis::cleanUpScene()
+{
+    if (!session)
+        return;
+
+    auto pScene = session->get_scene();
+    ZASSERT_EXIT(pScene);
+    pScene->cleanUpScene();
 }
 
 void Zenovis::startPlay(bool bPlaying)
@@ -133,6 +142,8 @@ int Zenovis::setCurrentFrameId(int frameid)
         int endFrame = frameRg.first + numOfFrames - 1;
         if (frameid < frameRg.first) {
             frameid = frameRg.first;
+        } else if (frameid > frameRg.second) {
+            frameid = frameRg.second;
         } else if (frameid > endFrame) {
             frameid = endFrame;
         }

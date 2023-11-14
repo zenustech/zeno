@@ -7,6 +7,7 @@
 #include "TraceStuff.h"
 #include "DisneyBSDF.h"
 #include "zxxglslvec.h"
+#include "proceduralSky.h"
 
 #include <cuda_fp16.h>
 
@@ -63,268 +64,272 @@ vec3 ACESFitted(vec3 color, float gamma)
 
 extern "C" __global__ void __raygen__rg()
 {
-//  for(int J=0;J<4;J++){
-//    for(int I=0;I<4;I++)
-//    {
 
-
-      const int    w   = params.windowSpace.x;
-      const int    h   = params.windowSpace.y;
-      //const float3 eye = params.eye;
-      const uint3  idxx = optixGetLaunchIndex();
-      uint3 idx;
-      idx.x = idxx.x + params.tile_i * params.tile_w;
-      idx.y = idxx.y + params.tile_j * params.tile_h;
-      if(idx.x>w || idx.y>h)
+    const int    w   = params.windowSpace.x;
+    const int    h   = params.windowSpace.y;
+    //const float3 eye = params.eye;
+    const uint3  idxx = optixGetLaunchIndex();
+    uint3 idx;
+    idx.x = idxx.x + params.tile_i * params.tile_w;
+    idx.y = idxx.y + params.tile_j * params.tile_h;
+    if(idx.x>w || idx.y>h)
         return;
-      const unsigned int image_index  = idx.y * w + idx.x;
-      const int    subframe_index = params.subframe_index;
-      const CameraInfo cam = params.cam;
 
-      int seedy = idx.y/4, seedx = idx.x/8;
-      int sid = (idx.y%4) * 8 + idx.x%8;
-      unsigned int seed = tea<4>( idx.y * w + idx.x, subframe_index);
-      unsigned int eventseed = tea<4>( idx.y * w + idx.x, subframe_index + 1);
-      float focalPlaneDistance = cam.focalPlaneDistance>0.01f? cam.focalPlaneDistance : 0.01f;
-      float aperture = clamp(cam.aperture,0.0f,100.0f);
-      aperture/=10;
+    const unsigned int image_index  = idx.y * w + idx.x;
+    const int    subframe_index = params.subframe_index;
+    const CameraInfo cam = params.cam;
 
-      float3 result = make_float3( 0.0f );
-      float3 result_d = make_float3( 0.0f );
-      float3 result_s = make_float3( 0.0f );
-      float3 result_t = make_float3( 0.0f );
-      float3 result_b = make_float3( 0.0f );
-      int i = params.samples_per_launch;
+    int seedy = idx.y/4, seedx = idx.x/8;
+    int sid = (idx.y%4) * 8 + idx.x%8;
+    unsigned int seed = tea<4>( idx.y * w + idx.x, subframe_index);
+    unsigned int eventseed = tea<4>( idx.y * w + idx.x, subframe_index + 1);
+    float focalPlaneDistance = cam.focal_distance>0.01f? cam.focal_distance: 0.01f;
+    float aperture = clamp(cam.aperture,0.0f,100.0f);
 
-      float3 tmp_albedo{};
-      float3 tmp_normal{};
-      unsigned int sobolseed = subframe_index;
-      do
-      {
-          // The center of each pixel is at fraction (0.5,0.5)
-          float2 subpixel_jitter = sobolRnd(sobolseed);
-//          {
-//              rnd(seed),
-//              rnd(seed)
-//          };
+    float3 result = make_float3( 0.0f );
+    float3 result_d = make_float3( 0.0f );
+    float3 result_s = make_float3( 0.0f );
+    float3 result_t = make_float3( 0.0f );
+    float3 result_b = make_float3( 0.0f );
+    int i = params.samples_per_launch;
 
-          float2 d = 2.0f * make_float2(
-                  ( static_cast<float>( idx.x + params.windowCrop_min.x ) + subpixel_jitter.x ) / static_cast<float>( w ),
-                  ( static_cast<float>( idx.y + params.windowCrop_min.y ) + subpixel_jitter.y ) / static_cast<float>( h )
-                  ) - 1.0f;
-          //float3 ray_direction = normalize(cam.right * d.x + cam.up * d.y + cam.front);
-          float2 r01 = sobolRnd(sobolseed);
-//          {
-//              rnd(seed),
-//              rnd(seed)
-//          };
+    float3 tmp_albedo{};
+    float3 tmp_normal{};
+    unsigned int sobolseed = subframe_index;
+    do{
+        // The center of each pixel is at fraction (0.5,0.5)
+        float2 subpixel_jitter = sobolRnd(sobolseed);
 
-          float r0 = r01.x * 2.0f * M_PIf;
-          float r1 = r01.y * aperture * aperture;
-          r1 = sqrt(r1);
+        float2 d = 2.0f * make_float2(
+            ( static_cast<float>( idx.x + params.windowCrop_min.x ) + subpixel_jitter.x ) / static_cast<float>( w ),
+            ( static_cast<float>( idx.y + params.windowCrop_min.y ) + subpixel_jitter.y ) / static_cast<float>( h )
+            ) - 1.0f;
 
-          // float3 ray_origin    = cam.eye + r1 * ( cosf(r0)* cam.right + sinf(r0)* cam.up);
-          // float3 ray_direction = cam.eye + focalPlaneDistance *(cam.right * d.x + cam.up * d.y + cam.front) - ray_origin;
+        float2 r01 = sobolRnd(sobolseed);
 
-          float3 eye_shake     = r1 * ( cosf(r0)* normalize(cam.right) + sinf(r0)* normalize(cam.up)); // Camera local space
+        float r0 = r01.x * 2.0f * M_PIf;
+        float r1 = sqrtf(r01.y) * aperture;
 
-          float3 ray_origin    = cam.eye + eye_shake;
-          float3 ray_direction = focalPlaneDistance *(cam.right * d.x + cam.up * d.y + cam.front) - eye_shake; // Camera local space
-                 ray_direction = normalize(ray_direction);
+        float sin_yaw = sinf(cam.yaw);
+        float cos_yaw = cosf(cam.yaw);
+        float sin_pitch = sinf(cam.pitch);
+        float cos_pitch = cosf(cam.pitch);
 
-          RadiancePRD prd;
-          prd.emission     = make_float3(0.f);
-          prd.radiance     = make_float3(0.f);
-          prd.attenuation  = make_float3(1.f);
-          prd.attenuation2 = make_float3(1.f);
-          prd.prob         = 1.0f;
-          prd.prob2        = 1.0f;
-          prd.countEmitted = true;
-          prd.done         = false;
-          prd.seed         = seed;
-          prd.eventseed    = eventseed;
-          prd.opacity      = 0;
-          prd.flags        = 0;
-          prd.next_ray_is_going_inside    = false;
-          prd.maxDistance  = 1e16f;
-          prd.medium       = DisneyBSDF::PhaseFunctions::vacuum;
+        mat3 tile_transform = mat3(
+            cos_yaw, -sin_yaw * cos_pitch,  sin_pitch*sin_yaw,
+            sin_yaw, cos_yaw * cos_pitch,   - cos_yaw * sin_pitch,
+            0.0f,    sin_pitch,             cos_pitch
+        );
 
-          prd.depth = 0;
-          prd.diffDepth = 0;
-          prd.isSS = false;
-          prd.direction = ray_direction;
-          prd.curMatIdx = 0;
-          prd.test_distance = false;
-          prd.ss_alpha_queue[0] = vec3(-1.0f);
-          prd.minSpecRough = 0.01;
-          prd.samplePdf = 1.0f;
-          prd.first_hit_type = 0;
-          prd.hitEnv = false;
-          auto tmin = prd.trace_tmin;
-          auto ray_mask = prd._mask_;
+        mat3 camera_transform = mat3(
+            cam.right.x, cam.up.x, cam.front.x,
+            cam.right.y, cam.up.y, cam.front.y,
+            cam.right.z, cam.up.z, cam.front.z
+        );
 
-          // prd.channelPDF= vec3(1.0f/3.0f);
-          // prd.ss_alpha = vec3(0.0f);
-          // prd.sigma_t = vec3(0.0f);
+        // Under camer local space, cam.eye as origin, cam.right as X axis, cam.up as Y axis, cam.front as Z axis.
+        float3 eye_shake     = r1 * (cosf(r0) * make_float3(1.0f,0.0f,0.0f) + sinf(r0) * make_float3(0.0f,1.0f,0.0f)); // r1 * ( cos(r0) , sin(r0) , 0 );
+        float3 focal_plane_center = make_float3(cam.vertical_shift*cam.height, cam.horizontal_shift*cam.width, cam.focal_length);
+        float3 old_direction =   focal_plane_center + make_float3(cam.width * d.x, cam.height*d.y, 0.0f);
+        float3 tile_normal =  make_float3(sin_pitch*sin_yaw, - cos_yaw * sin_pitch, cos_pitch);
+
+        float D = - dot(tile_normal , focal_plane_center);//surcface equaltion is Ax+By+Cz+D = 0 
+        
+        /*to sphere coordinate
+        x = r * sin(theta) * cos(phi) = r * C1;
+        y = r * sin(theta) * sin(phi) = r * C2;
+        z = r * cos(phi) = r* C3;
+        */
+        float old_r = length(old_direction);
+        float3 C_vector = old_direction/old_r;
+        float new_r = -D / dot(tile_normal,C_vector); 
+        /*
+        Ax+By+Cz+D = A*C1*r + B*C2*r + C*C3*r + D = ((A,B,C) dot (C1,C2,C3)) * r + D =0
+        old_direction/old_r = (C1,C2,C3)
+        */
+        float3 terminal_point = new_r * C_vector;
+        terminal_point = terminal_point * (cam.focal_distance/cam.focal_length);//focal_length control
+
+        //transform to world space
+        terminal_point = camera_transform * terminal_point;
+        eye_shake = camera_transform * eye_shake;
+
+        float3 ray_origin    = cam.eye + eye_shake;
+        float3 ray_direction = terminal_point - eye_shake; 
+        ray_direction = normalize(ray_direction);
+
+        RadiancePRD prd;
+        prd.emission     = make_float3(0.f);
+        prd.radiance     = make_float3(0.f);
+        prd.attenuation  = make_float3(1.f);
+        prd.attenuation2 = make_float3(1.f);
+        prd.prob         = 1.0f;
+        prd.prob2        = 1.0f;
+        prd.countEmitted = true;
+        prd.done         = false;
+        prd.seed         = seed;
+        prd.eventseed    = eventseed;
+        prd.flags        = 0;
+        prd.maxDistance  = 1e16f;
+        prd.medium       = DisneyBSDF::PhaseFunctions::vacuum;
 
 
+        prd.origin = ray_origin;
+        prd.direction = ray_direction;
+        prd.samplePdf = 1.0f;
 
-          //if constexpr(params.denoise)
-          if (params.denoise)
-          {
-              prd.trace_denoise_albedo = true;
-              prd.trace_denoise_normal = true;
-          }
+        prd.depth = 0;
+        prd.diffDepth = 0;
+        prd.isSS = false;
+        prd.curMatIdx = 0;
+        prd.test_distance = false;
+        prd.ss_alpha_queue[0] = vec3(-1.0f);
+        prd.minSpecRough = 0.01;
+        prd.samplePdf = 1.0f;
+        prd.first_hit_type = 0;
+        prd.hitEnv = false;
+        auto _tmin_ = prd._tmin_;
+        auto _mask_ = prd._mask_;
+        
+        //if constexpr(params.denoise) 
+        if (params.denoise) 
+        {
+            prd.trace_denoise_albedo = true;
+            prd.trace_denoise_normal = true;
+        }
 
-          // Primary Ray
-          traceRadianceMasked(params.handle, ray_origin, ray_direction, tmin, prd.maxDistance, ray_mask, &prd);
+        // Primary Ray
+        traceRadiance(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_);
 
-          tmp_albedo = prd.tmp_albedo;
-          tmp_normal = prd.tmp_normal;
+        tmp_albedo = prd.tmp_albedo;
+        tmp_normal = prd.tmp_normal;
 
-          prd.trace_denoise_albedo = false;
-          prd.trace_denoise_normal = false;
+        prd.trace_denoise_albedo = false;
+        prd.trace_denoise_normal = false;
 
-          for(;;)
-          {
-              prd.radiance_d = make_float3(0);
-              prd.radiance_s = make_float3(0);
-              prd.radiance_t = make_float3(0);
-              tmin = prd.trace_tmin;
-              prd.trace_tmin = 0;
+        for(;;)
+        {
+            prd.radiance_d = make_float3(0);
+            prd.radiance_s = make_float3(0);
+            prd.radiance_t = make_float3(0);
 
-              ray_mask = prd._mask_;
-              prd._mask_ = EverythingMask;
+            _tmin_ = prd._tmin_;
+            _mask_ = prd._mask_;
 
-              if(prd.countEmitted==false || prd.depth>0) {
-                  auto temp_radiance = prd.radiance * prd.attenuation2;
+            prd._tmin_ = 0;
+            prd._mask_ = EverythingMask; 
 
-                  //float upperBound = prd.fromDiff?1.0f:1.0f;
-                  float3 clampped = clamp(vec3(temp_radiance), vec3(0), vec3(10));
+            ray_origin = prd.origin;
+            ray_direction = prd.direction;
 
-                  result += prd.depth>1?clampped:temp_radiance;
-                  if(prd.depth==1 && prd.hitEnv == false)
-                  {
+            if(prd.countEmitted==false || prd.depth>0) {
+                auto temp_radiance = prd.radiance * prd.attenuation2;
+
+                //float upperBound = prd.fromDiff?1.0f:1.0f;
+                float3 clampped = clamp(vec3(temp_radiance), vec3(0), vec3(10));
+
+                result += prd.depth>1?clampped:temp_radiance;
+                if(prd.depth==1 && prd.hitEnv == false)
+                {
                     result_d += prd.radiance_d * prd.attenuation2;
                     result_s += prd.radiance_s * prd.attenuation2;
                     result_t += prd.radiance_t * prd.attenuation2;
-                  }
-                  if(prd.depth>1 || (prd.depth==1 && prd.hitEnv == true)) {
+                }
+                if(prd.depth>1 || (prd.depth==1 && prd.hitEnv == true)) {
                     result_d +=
                         prd.first_hit_type == 1 ? clampped : make_float3(0, 0, 0);
                     result_s +=
                         prd.first_hit_type == 2 ? clampped : make_float3(0, 0, 0);
                     result_t +=
                         prd.first_hit_type == 3 ? clampped : make_float3(0, 0, 0);
-                  }
+                }
 
-                  // fire without smoke requires this line to work.
-              }
+            }
 
-              prd.radiance = make_float3(0);
-              prd.emission = make_float3(0);
+            prd.radiance = make_float3(0);
+            prd.emission = make_float3(0);
 
-              if (ray_mask != EverythingMask && ray_mask != NothingMask) {
-                  //ray_origin = prd.origin;
-                  //ray_direction = prd.direction;
-                  traceRadianceMasked(params.handle, ray_origin, ray_direction, tmin, prd.maxDistance, ray_mask, &prd);
-                  continue; // trace again with same parameters but different mask
-              }
+            if(prd.countEmitted==true && prd.depth>0){
+                prd.done = true;
+            }
 
-              if(prd.countEmitted==true && prd.depth>0){
-                  prd.done = true;
-              }
+            if( prd.done || params.simpleRender==true){
+                break;
+            }
 
-              if( prd.done || params.simpleRender==true){
-                  break;
-              }
+            if(prd.depth>16) {
+                float RRprob = clamp(length(prd.attenuation),0.1f, 0.95f);
+                if(rnd(prd.seed) > RRprob || prd.depth > 24) {
+                    prd.done=true;
+                } else {
+                    prd.attenuation = prd.attenuation / RRprob;
+                }
+            }
+            if(prd.countEmitted == true)
+                prd.passed = true;
 
-              if(prd.depth>16){
-                  //float RRprob = clamp(length(prd.attenuation)/1.732f,0.01f,0.9f);
-                  float RRprob = clamp(length(prd.attenuation),0.1f, 0.95f);
-                  if(rnd(prd.seed) > RRprob || prd.depth > 16){
-                      prd.done=true;
-                  } else {
-                      prd.attenuation = prd.attenuation / RRprob;
-                  }
-              }
-              if(prd.countEmitted == true)
-                  prd.passed = true;
+            traceRadiance(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_);
+        }
+        result_b += prd.first_hit_type == 0 ? make_float3(0, 0, 0)
+                                            : make_float3(1, 1, 1);
+        seed = prd.seed;
+    }
+    while( --i );
 
-              ray_origin    = prd.origin;
-              ray_direction = prd.direction;
+    auto samples_per_launch = static_cast<float>( params.samples_per_launch );
 
-  //            result_d = make_float3(0,0,0);
-  //            result_s = make_float3(0,0,0);
-  //            result_t = make_float3(0,0,0);
+    float3         accum_color    = result   / samples_per_launch;
+    float3         accum_color_d  = result_d / samples_per_launch;
+    float3         accum_color_s  = result_s / samples_per_launch;
+    float3         accum_color_t  = result_t / samples_per_launch;
+    float3         accum_color_b  = result_b / samples_per_launch;
+    
+    if( subframe_index > 0 )
+    {
+        const float                 a = 1.0f / static_cast<float>( subframe_index+1 );
+        const float3 accum_color_prev = make_float3( params.accum_buffer[ image_index ]);
+        const float3 accum_color_prev_d = make_float3( params.accum_buffer_D[ image_index ]);
+        const float3 accum_color_prev_s = make_float3( params.accum_buffer_S[ image_index ]);
+        const float3 accum_color_prev_t = make_float3( params.accum_buffer_T[ image_index ]);
+        const float3 accum_color_prev_b = make_float3( params.accum_buffer_B[ image_index ]);
+        accum_color   = lerp( accum_color_prev, accum_color, a );
+        accum_color_d = lerp( accum_color_prev_d, accum_color_d, a );
+        accum_color_s = lerp( accum_color_prev_s, accum_color_s, a );
+        accum_color_t = lerp( accum_color_prev_t, accum_color_t, a );
+        accum_color_b = lerp( accum_color_prev_b, accum_color_b, a );
 
-              traceRadianceMasked(params.handle, ray_origin, ray_direction, tmin, prd.maxDistance, ray_mask, &prd);
-          }
-          result_b += prd.first_hit_type == 0 ? make_float3(0, 0, 0)
-                                              : make_float3(1, 1, 1);
-          seed = prd.seed;
-      }
-      while( --i );
+        if (params.denoise) {
 
-      float3         accum_color  = result / static_cast<float>( params.samples_per_launch );
-      float3         accum_color_d  = result_d / static_cast<float>( params.samples_per_launch );
-      float3         accum_color_s  = result_s / static_cast<float>( params.samples_per_launch );
-      float3         accum_color_t  = result_t / static_cast<float>( params.samples_per_launch );
-      float3         accum_color_b  = result_b / static_cast<float>( params.samples_per_launch );
-      //const uint3    launch_index = optixGetLaunchIndex();
-      //launch_index.y * params.width + launch_index.x;
+            const float3 accum_albedo_prev = params.albedo_buffer[ image_index ];
+            tmp_albedo = lerp(accum_albedo_prev, tmp_albedo, a);
 
-      if( subframe_index > 0 )
-      {
-          const float                 a = 1.0f / static_cast<float>( subframe_index+1 );
-          const float3 accum_color_prev = make_float3( params.accum_buffer[ image_index ]);
-          const float3 accum_color_prev_d = make_float3( params.accum_buffer_D[ image_index ]);
-          const float3 accum_color_prev_s = make_float3( params.accum_buffer_S[ image_index ]);
-          const float3 accum_color_prev_t = make_float3( params.accum_buffer_T[ image_index ]);
-          const float3 accum_color_prev_b = make_float3( params.accum_buffer_B[ image_index ]);
-          accum_color   = lerp( accum_color_prev, accum_color, a );
-          accum_color_d = lerp( accum_color_prev_d, accum_color_d, a );
-          accum_color_s = lerp( accum_color_prev_s, accum_color_s, a );
-          accum_color_t = lerp( accum_color_prev_t, accum_color_t, a );
-          accum_color_b = lerp( accum_color_prev_b, accum_color_b, a );
+            const float3 accum_normal_prev = params.normal_buffer[ image_index ];
+            tmp_normal = lerp(accum_normal_prev, tmp_normal, a);
+        }
+    }
 
-          if (params.denoise) {
+    params.accum_buffer[ image_index ] = make_float4( accum_color, 1.0f);
+    params.accum_buffer_D[ image_index ] = make_float4( accum_color_d, 1.0f);
+    params.accum_buffer_S[ image_index ] = make_float4( accum_color_s, 1.0f);
+    params.accum_buffer_T[ image_index ] = make_float4( accum_color_t, 1.0f);
+    params.accum_buffer_B[ image_index ] = make_float4( accum_color_b, 1.0f);
+    //vec3 aecs_fitted = ACESFitted(vec3(accum_color), 2.2);
+    float3 out_color = accum_color;
+    float3 out_color_d = accum_color_d;
+    float3 out_color_s = accum_color_s;
+    float3 out_color_t = accum_color_t;
+    float3 out_color_b = accum_color_b;
+    params.frame_buffer[ image_index ] = make_color ( out_color );
+    params.frame_buffer_C[ image_index ] = accum_color;
+    params.frame_buffer_D[ image_index ] = accum_color_d;
+    params.frame_buffer_S[ image_index ] = accum_color_s;
+    params.frame_buffer_T[ image_index ] = accum_color_t;
+    params.frame_buffer_B[ image_index ] = accum_color_b;
 
-              const float3 accum_albedo_prev = params.albedo_buffer[ image_index ];
-              tmp_albedo = lerp(accum_albedo_prev, tmp_albedo, a);
-
-              const float3 accum_normal_prev = params.normal_buffer[ image_index ];
-              tmp_normal = lerp(accum_normal_prev, tmp_normal, a);
-          }
-      }
-
-      /*if (launch_index.x == 0) {*/
-          /*printf("%p\n", params.accum_buffer);*/
-          /*printf("%p\n", params.frame_buffer);*/
-      /*}*/
-      params.accum_buffer[ image_index ] = make_float4( accum_color, 1.0f);
-      params.accum_buffer_D[ image_index ] = make_float4( accum_color_d, 1.0f);
-      params.accum_buffer_S[ image_index ] = make_float4( accum_color_s, 1.0f);
-      params.accum_buffer_T[ image_index ] = make_float4( accum_color_t, 1.0f);
-      params.accum_buffer_B[ image_index ] = make_float4( accum_color_b, 1.0f);
-      //vec3 aecs_fitted = ACESFitted(vec3(accum_color), 2.2);
-      float3 out_color = accum_color;
-      float3 out_color_d = accum_color_d;
-      float3 out_color_s = accum_color_s;
-      float3 out_color_t = accum_color_t;
-      float3 out_color_b = accum_color_b;
-      params.frame_buffer[ image_index ] = make_color ( out_color );
-      params.frame_buffer_D[ image_index ] = make_color ( out_color_d );
-      params.frame_buffer_S[ image_index ] = make_color ( out_color_s );
-      params.frame_buffer_T[ image_index ] = make_color ( out_color_t );
-      params.frame_buffer_B[ image_index ] = make_color ( out_color_b );
-
-      if (params.denoise) {
-          params.albedo_buffer[ image_index ] = tmp_albedo;
-          params.normal_buffer[ image_index ] = tmp_normal;
-      }
-//    }
-//  }
+    if (params.denoise) {
+        params.albedo_buffer[ image_index ] = tmp_albedo;
+        params.normal_buffer[ image_index ] = tmp_normal;
+    }
 }
 
 extern "C" __global__ void __miss__radiance()
@@ -339,7 +344,7 @@ extern "C" __global__ void __miss__radiance()
     prd->attenuation2 = prd->attenuation;
     prd->passed = false;
     prd->countEmitted = false;
-    prd->CH = 0.0;
+    
     if(prd->medium != DisneyBSDF::PhaseFunctions::isotropic){
         float upperBound = 100.0f;
         float envPdf = 0.0f;
@@ -358,13 +363,16 @@ extern "C" __global__ void __miss__radiance()
             0.0
 
         );
+
         float misWeight = BRDFBasics::PowerHeuristic(prd->samplePdf,envPdf);
 
         misWeight = misWeight>0.0f?misWeight:0.0f;
         misWeight = envPdf>0.0f?misWeight:1.0f;
         misWeight = prd->depth>=1?misWeight:1.0f;
         misWeight = prd->samplePdf>0.0f?misWeight:1.0f;
-        prd->radiance = misWeight * skysample ;
+        
+        prd->radiance = misWeight * skysample;
+
         if (params.show_background == false) {
             prd->radiance = prd->depth>=1?prd->radiance:make_float3(0,0,0);
         }
@@ -394,7 +402,7 @@ extern "C" __global__ void __miss__radiance()
     vec3 channelPDF = vec3(1.0f/3.0f);
     prd->channelPDF = channelPDF;
     if (ss_alpha.x < 0.0f) { // is inside Glass
-        prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, sigma_t, sigma_t, channelPDF);
+        prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed, prd->scatterDistance);
     } else
     {
         prd->maxDistance =

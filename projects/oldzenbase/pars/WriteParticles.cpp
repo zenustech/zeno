@@ -47,9 +47,9 @@ static int defWriteParticles = zeno::defNodeClass<WriteParticles>("WriteParticle
 
 struct ExportParticles : zeno::INode {
   virtual void apply() override {
-    auto path = get_input("path")->as<StringObject>();
+    auto path = get_input("path")->as<StringObject>()->get();
     auto pars = get_input("pars")->as<ParticlesObject>();
-    writepars(path->get().c_str(), pars->pos, pars->vel);
+    writepars(path.c_str(), pars->pos, pars->vel);
   }
 };
 

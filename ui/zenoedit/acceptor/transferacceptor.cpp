@@ -53,7 +53,7 @@ void TransferAcceptor::switchSubGraph(const QString& graphName)
 
 }
 
-bool TransferAcceptor::addNode(const QString& nodeid, const QString& name, const QString& customName, const NODE_DESCS& descriptors)
+bool TransferAcceptor::addNode(QString& nodeid, const QString& name, const QString& customName, const NODE_DESCS& descriptors)
 {
     if (m_nodes.find(nodeid) != m_nodes.end())
         return false;
@@ -96,8 +96,10 @@ void TransferAcceptor::setSocketKeys(const QString& id, const QStringList& keys)
 void TransferAcceptor::initSockets(const QString& id, const QString& name, const NODE_DESCS& legacyDescs)
 {
     NODE_DESC desc;
-    bool ret = m_pModel->getDescriptor(name, desc);
-    ZASSERT_EXIT(ret);
+    bool isCoreDesc = m_pModel->getDescriptor(name, desc);
+    if (!isCoreDesc) {
+        return; //no need to copy anything.
+    }
     ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
 
     //params
@@ -189,7 +191,8 @@ void TransferAcceptor::setInputSocket(
         const QString& inSock,
         const QString& outNode,
         const QString& outSock,
-        const rapidjson::Value& defaultValue
+        const rapidjson::Value& defaultValue,
+        const NODE_DESCS& legacyDescs
 )
 {
 
@@ -219,7 +222,8 @@ void TransferAcceptor::addInnerDictKey(
         const QString& inNode,
         const QString& sockName,
         const QString& keyName,
-        const QString& link
+        const QString& link,
+        const QString& netLabel
     )
 {
     ZASSERT_EXIT(m_nodes.find(inNode) != m_nodes.end());
@@ -232,6 +236,7 @@ void TransferAcceptor::addInnerDictKey(
         INPUT_SOCKET& inSocket = inputs[sockName];
         DICTKEY_INFO item;
         item.key = keyName;
+        item.netLabel = netLabel;
 
         QString newKeyPath = "[node]/inputs/" + sockName + "/" + keyName;
         QString inSockPath = UiHelper::constructObjPath(m_currSubgraph, inNode, newKeyPath);
@@ -252,6 +257,7 @@ void TransferAcceptor::addInnerDictKey(
         OUTPUT_SOCKET& outSocket = outputs[sockName];
         DICTKEY_INFO item;
         item.key = keyName;
+        item.netLabel = netLabel;
 
         QString newKeyPath = "[node]/outputs/" + sockName + "/" + keyName;
         outSocket.info.dictpanel.keys.append(item);
@@ -266,11 +272,14 @@ void TransferAcceptor::setInputSocket2(
                 const QString& inSock,
                 const QString& outLinkPath,
                 const QString& sockProperty,
-                const rapidjson::Value& defaultVal)
+                const rapidjson::Value& defaultVal,
+                const NODE_DESCS& legacyDescs)
 {
     NODE_DESC desc;
-    bool ret = m_pModel->getDescriptor(nodeCls, desc);
-    ZASSERT_EXIT(ret);
+    bool isCoreDesc = m_pModel->getDescriptor(nodeCls, desc);
+    if (!isCoreDesc) {
+        return;
+    }
 
     //parse default value.
     QVariant defaultValue;
@@ -280,8 +289,11 @@ void TransferAcceptor::setInputSocket2(
         if (desc.inputs.find(inSock) != desc.inputs.end()) {
             descInfo = desc.inputs[inSock].info;
         }
-
-        defaultValue = UiHelper::parseJsonByType(descInfo.type, defaultVal, nullptr);
+        QString type = descInfo.type;
+        if (defaultVal.IsObject() && defaultVal.HasMember("objectType")) {
+            type = defaultVal["objectType"].GetString();
+        }
+        defaultValue = UiHelper::parseJsonByType(type, defaultVal, nullptr);
     }
 
     ZASSERT_EXIT(m_nodes.find(inNode) != m_nodes.end());
@@ -332,6 +344,21 @@ void TransferAcceptor::setInputSocket2(
     }
 }
 
+void TransferAcceptor::setOutputSocket(const QString& inNode, const QString& inSock, const QString& netlabel, const QString& type)
+{
+    ZASSERT_EXIT(m_nodes.find(inNode) != m_nodes.end());
+    NODE_DATA& data = m_nodes[inNode];
+
+    
+        OUTPUT_SOCKETS outputs = data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
+        if (outputs.find(inSock) != outputs.end())
+        {
+            outputs[inSock].info.netlabel = netlabel;
+            outputs[inSock].info.type = type;
+            data[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
+        }
+}
+
 void TransferAcceptor::setControlAndProperties(const QString& nodeCls, const QString& inNode, const QString& inSock, PARAM_CONTROL control, const QVariant& ctrlProperties)
 {
     ZASSERT_EXIT(m_nodes.find(inNode) != m_nodes.end());
@@ -343,6 +370,31 @@ void TransferAcceptor::setControlAndProperties(const QString& nodeCls, const QSt
         inputs[inSock].info.control = control;
         inputs[inSock].info.ctrlProps = ctrlProperties.toMap();
         data[ROLE_INPUTS] = QVariant::fromValue(inputs);
+    }
+}
+
+void TransferAcceptor::setNetLabel(PARAM_CLASS cls, const QString& inNode, const QString& inSock, const QString& netlabel)
+{
+    ZASSERT_EXIT(m_nodes.find(inNode) != m_nodes.end());
+    NODE_DATA& data = m_nodes[inNode];
+
+    if (cls == PARAM_INPUT)
+    {
+        INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
+        if (inputs.find(inSock) != inputs.end())
+        {
+            inputs[inSock].info.netlabel = netlabel;
+            data[ROLE_INPUTS] = QVariant::fromValue(inputs);
+        }
+    }
+    else if (cls == PARAM_OUTPUT)
+    {
+        OUTPUT_SOCKETS outputs = data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
+        if (outputs.find(inSock) != outputs.end())
+        {
+            outputs[inSock].info.netlabel = netlabel;
+            data[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
+        }
     }
 }
 
@@ -370,13 +422,14 @@ void TransferAcceptor::setToolTip(PARAM_CLASS cls, const QString & inNode, const
         }
     } 
 }
-void TransferAcceptor::setParamValue(const QString &id, const QString &nodeCls, const QString &name,const rapidjson::Value &value) {
+void TransferAcceptor::setParamValue(const QString &id, const QString &nodeCls, const QString &name,const rapidjson::Value &value, const NODE_DESCS& legacyDescs) {
     ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
     NODE_DATA& data = m_nodes[id];
 
     NODE_DESC desc;
-    bool ret = m_pModel->getDescriptor(nodeCls, desc);
-    ZASSERT_EXIT(ret);
+    bool isCoreDesc = m_pModel->getDescriptor(nodeCls, desc);
+    if (!isCoreDesc)
+        return;
 
     QVariant var;
     if (!value.IsNull())
@@ -564,4 +617,36 @@ void TransferAcceptor::getDumpData(QMap<QString, NODE_DATA>& nodes, QList<EdgeIn
 
 void TransferAcceptor::setIOVersion(zenoio::ZSG_VERSION versio)
 {
+}
+
+void TransferAcceptor::endNode(const QString& id, const QString& nodeCls, const rapidjson::Value& objValue)
+{
+    if (objValue.HasMember("outputs"))
+    {
+        const rapidjson::Value& outputs = objValue["outputs"];
+        for (const auto& outObj : outputs.GetObject())
+        {
+            const QString& outSock = outObj.name.GetString();
+            const auto& sockObj = outObj.value;
+            if (sockObj.IsObject())
+            {
+                if (sockObj.HasMember("tooltip")) {
+                    QString toolTip = QString::fromUtf8(sockObj["tooltip"].GetString());
+                    setToolTip(PARAM_OUTPUT, id, outSock, toolTip);
+                }
+                QString netlabel;
+                if (sockObj.HasMember("netlabel"))
+                {
+                    netlabel = QString::fromUtf8(sockObj["netlabel"].GetString());
+                }
+                QString type;
+                if (sockObj.HasMember("type"))
+                {
+                    type = sockObj["type"].GetString();
+                }
+                if (!netlabel.isEmpty() || !type.isEmpty())
+                    setOutputSocket(id, outSock, netlabel, type);
+            }
+        }
+    }
 }

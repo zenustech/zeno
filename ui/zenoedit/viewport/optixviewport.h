@@ -3,6 +3,7 @@
 
 #include <QtWidgets>
 #include "recordvideomgr.h"
+#include <zenomodel/include/modeldata.h>
 
 class Zenovis;
 class CameraControl;
@@ -28,6 +29,7 @@ public slots:
     void needUpdateCamera();
     void updateFrame();
     void recordVideo(VideoRecInfo recInfo);
+    void screenShoot(QString path, QString type, int resx, int resy);
     void onPlayToggled(bool bToggled);
     void onFrameSwitched(int frame);
     void cancelRecording();
@@ -35,14 +37,19 @@ public slots:
     void onSetSafeFrames(bool bLock, int nx, int ny);
     bool recordFrame_impl(VideoRecInfo recInfo, int frame);
     void onSetLoopPlaying(bool enbale);
+    void onSetSlidFeq(int feq);
+    void onModifyLightData(UI_VECTYPE pos, UI_VECTYPE scale, UI_VECTYPE rotate, UI_VECTYPE color, float intensity, QString nodename, UI_VECTYPE skipParam);
+    void onUpdateCameraProp(float aperture, float disPlane, UI_VECTYPE skipParam = UI_VECTYPE());
+    void onCleanUpScene();
 
 private:
-
     Zenovis *m_zenoVis;
     QImage m_renderImg;
-    QTimer* m_pTimer;
+    QTimer* m_pTimer;           //optix sample timer
     bool m_bRecording;
     VideoRecInfo m_recordInfo;
+    int m_slidFeq = 1000 / 24;
+    const int m_sampleFeq = 16;
 };
 
 class ZOptixViewport : public QWidget
@@ -55,7 +62,7 @@ public:
     void setSimpleRenderOption();
     void setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly);
     void cameraLookTo(int dir);
-    void updateCameraProp(float aperture, float disPlane);
+    void updateCameraProp(float aperture, float disPlane, UI_VECTYPE skipParam = UI_VECTYPE());
     void updatePerspective();
     void setCameraRes(const QVector2D& res);
     void setSafeFrames(bool bLock, int nx, int ny);
@@ -66,8 +73,12 @@ public:
     void stopRender();
     void resumeRender();
     void recordVideo(VideoRecInfo recInfo);
+    void screenshoot(QString path, QString type, int resx, int resy);
     void cancelRecording(VideoRecInfo recInfo);
     void killThread();
+    void setSlidFeq(int feq);
+    void modifyLightData(UI_VECTYPE pos, UI_VECTYPE scale, UI_VECTYPE rotate, UI_VECTYPE color, float intensity, QString name, UI_VECTYPE skipParam);
+    void cleanUpScene();
 
 signals:
     void cameraAboutToRefresh();
@@ -83,6 +94,11 @@ signals:
     void sig_cancelRecording();
     void sig_setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly);
     void sig_setLoopPlaying(bool enable);
+    void sig_setSlidFeq(int feq);
+    void sigscreenshoot(QString, QString, int, int);
+    void sig_modifyLightData(UI_VECTYPE pos, UI_VECTYPE scale, UI_VECTYPE rotate, UI_VECTYPE color, float intensity, QString name, UI_VECTYPE skipParam);
+    void sig_updateCameraProp(float aperture, float disPlane, UI_VECTYPE skipParam = UI_VECTYPE());
+    void sig_cleanUpScene();
 
 public slots:
     void onFrameRunFinished(int frame);

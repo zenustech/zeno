@@ -9,6 +9,8 @@
 #include <string>
 #include <set>
 #include <map>
+#include <zeno/types/CurveObject.h>
+#include <zeno/extra/GlobalState.h>
 
 namespace zeno {
 
@@ -28,7 +30,11 @@ public:
     std::map<std::string, std::pair<std::string, std::string>> inputBounds;
     std::map<std::string, zany> inputs;
     std::map<std::string, zany> outputs;
+    std::set<std::string> kframes;
+    std::set<std::string> formulas;
     zany muted_output;
+
+    bool bTmpCache = false;
 
     ZENO_API INode();
     ZENO_API virtual ~INode();
@@ -41,6 +47,9 @@ public:
     ZENO_API void doComplete();
     ZENO_API void doApply();
     ZENO_API void doOnlyApply();
+    ZENO_API zany resolveInput(std::string const& id);
+    ZENO_API bool getTmpCache();
+    ZENO_API void writeTmpCaches();
 
 protected:
     ZENO_API virtual void complete();
@@ -58,6 +67,12 @@ public:
     ZENO_API bool has_input(std::string const &id) const;
     ZENO_API zany get_input(std::string const &id) const;
     ZENO_API void set_output(std::string const &id, zany obj);
+
+    ZENO_API bool has_keyframe(std::string const &id) const;
+    ZENO_API zany get_keyframe(std::string const &id) const;
+
+    ZENO_API bool has_formula(std::string const &id) const;
+    ZENO_API zany get_formula(std::string const &id) const;
 
     template <class T>
     std::shared_ptr<T> get_input(std::string const &id) const {

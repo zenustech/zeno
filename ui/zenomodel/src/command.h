@@ -107,6 +107,21 @@ private:
     const int m_role;
 };
 
+class SetNetLabelCommand : public QUndoCommand
+{
+public:
+    SetNetLabelCommand(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndex& paramIdx, const QString& oldName, const QString& newName);
+    void redo() override;
+    void undo() override;
+
+private:
+    const QString m_oldName;
+    const QString m_newName;
+    QPersistentModelIndex m_subgIdx;
+    QPersistentModelIndex m_param;
+    IGraphsModel* m_model;
+};
+
 class UpdateSubgDescCommand : public QUndoCommand
 {
 public:
