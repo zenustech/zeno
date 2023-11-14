@@ -26,6 +26,14 @@ ZSocketLayout::ZSocketLayout(
     , m_bEditable(false)
     , m_viewSockIdx(viewSockIdx)
 {
+    QObject::connect(pModel, &IGraphsModel::updateCommandParamSignal, [=](const QString& path) {
+        if (!m_text)
+            return;
+        QString socketPath = m_viewSockIdx.data(ROLE_OBJPATH).toString();
+        if (socketPath != path)
+            return;
+        m_text->update();
+    });
 }
 
 ZSocketLayout::~ZSocketLayout()

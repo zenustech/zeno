@@ -237,6 +237,16 @@ QVariant VParamItem::data(int role) const
             return QVariant();
         }
     }
+    case ROLE_VPARAM_COMMAND:
+    {
+        if (m_customData.find(role) != m_customData.end())
+        {
+            return m_customData[role];
+        }
+        else {
+            return QVariant();
+        }
+    }
     default:
         return QStandardItem::data(role);
     }
@@ -341,6 +351,11 @@ void VParamItem::setData(const QVariant& value, int role)
             break;
         }
         case ROLE_PARAM_NETLABEL:
+        {
+            m_customData[role] = value;
+            break;
+        }
+        case ROLE_VPARAM_COMMAND:
         {
             m_customData[role] = value;
             break;

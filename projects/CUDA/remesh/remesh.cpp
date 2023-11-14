@@ -1,6 +1,7 @@
 #include <cctype>
 #include <filesystem>
 #include <sstream>
+#include <queue>
 #include <zeno/core/Graph.h>
 #include <zeno/extra/assetDir.h>
 #include <zeno/funcs/PrimitiveUtils.h>
@@ -9,11 +10,205 @@
 
 #include "./SurfaceMesh.h"
 #include "./algorithms/SurfaceRemeshing.h"
+#include "./algorithms/SurfaceCurvature.h"
 
 #include "zensim/container/Bht.hpp"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
 
 namespace zeno {
+
+void splitNonManifoldEdges(std::shared_ptr<PrimitiveObject> prim,
+                           std::map<std::pair<int, int>, int>& lines_map,
+                           std::set<std::pair<int, int>>& marked_lines,
+                           std::vector<int>& efeature) {
+        // handle non-manifold edges
+        auto &pos = prim->attr<vec3f>("pos");
+        auto &lines = prim->lines;
+        auto &vduplicate = prim->verts.attr<int>("v_duplicate");
+        int vert_size = prim->verts.size();
+        int line_size = lines.size();
+        for (auto &it : prim->tris) {
+            std::vector<bool> new_vert(3, false);
+            std::vector<bool> new_line(3, false);
+            std::vector<bool> marked(3, false);
+            auto edge = std::make_pair(it[0], it[1]);
+            new_line[0] = (lines_map.count(edge) > 0);
+            marked[0] = (marked_lines.count(edge) > 0 || marked_lines.count(std::make_pair(it[1], it[0])) > 0);
+            if (new_line[0]) {
+                new_vert[0] = new_vert[1] = true;
+                efeature[lines_map[edge]] = 1;
+            }
+            edge = std::make_pair(it[1], it[2]);
+            new_line[1] = (lines_map.count(edge) > 0);
+            marked[1] = (marked_lines.count(edge) > 0 || marked_lines.count(std::make_pair(it[2], it[1])) > 0);
+            if (new_line[1]) {
+                new_vert[1] = new_vert[2] = true;
+                efeature[lines_map[edge]] = 1;
+            }
+            edge = std::make_pair(it[2], it[0]);
+            new_line[2] = (lines_map.count(edge) > 0);
+            marked[2] = (marked_lines.count(edge) > 0 || marked_lines.count(std::make_pair(it[0], it[2])) > 0);
+            if (new_line[2]) {
+                new_vert[2] = new_vert[0] = true;
+                efeature[lines_map[edge]] = 1;
+            }
+
+            for (int j = 0; j < 3; ++j) {
+                if (new_vert[j]) {
+                    pos.push_back(pos[it[j]]);
+                    prim->verts.foreach_attr<zeno::AttrAcceptAll>([&] (auto const &key, auto &arr) {
+                        arr.push_back(arr[it[j]]);
+                    });
+                    it[j] = vert_size++;
+                }
+            }
+
+            for (int j = 0; j < 3; ++j) {
+                int line_id;
+                bool flag = false;
+                if (lines_map.count(std::make_pair(it[j], it[(j + 1) % 3])) > 0) {
+                    line_id = lines_map[std::make_pair(it[j], it[(j + 1) % 3])];
+                } else if (lines_map.count(std::make_pair(it[(j + 1) % 3], it[j])) > 0) {
+                    line_id = lines_map[std::make_pair(it[(j + 1) % 3], it[j])];
+                } else {
+                    line_id = line_size;
+                    flag = true;
+                    ++line_size;
+                }
+                lines_map[std::make_pair(it[j], it[(j + 1) % 3])] = line_id;
+                if (flag) {
+                    lines.push_back(vec2i(it[j], it[(j + 1) % 3]));
+                    if (new_line[j] || marked[j]) {
+                        efeature.push_back(1);
+                    } else {
+                        efeature.push_back(0);
+                    }
+                }
+            }
+        }
+}
+
+void splitNonManifoldVertices(std::shared_ptr<PrimitiveObject> prim,
+                              std::map<std::pair<int, int>, int>& lines_map) {
+    // handle non-manifold vertices
+    auto &lines = prim->lines;
+    auto &faces = prim->tris;
+    auto &pos = prim->attr<vec3f>("pos");
+    auto &vduplicate = prim->verts.attr<int>("v_duplicate");
+    int vert_size = prim->verts.size();
+    int line_size = lines.size();
+    int tri_size = faces.size();
+    auto ef_adj = std::vector<vec2i>(line_size, vec2i(-1));
+    auto vf_adj = std::vector<std::set<int>>(vert_size, std::set<int>());
+    auto ff_adj = std::vector<vec3i>(tri_size, vec3i(-1));
+    for (int f = 0; f < tri_size; ++f) {
+        auto face = faces[f];
+        for (int i = 0; i < 3; ++i) {
+            vf_adj[face[i]].insert(f);
+            int line_id = lines_map[std::make_pair(face[i], face[(i + 1) % 3])];
+            if (ef_adj[line_id][0] == -1) {
+                ef_adj[line_id][0] = f;
+            } else {
+                ef_adj[line_id][1] = f;
+            }
+        }
+    }
+    for (int l = 0; l < line_size; ++l) {
+        int f0 = ef_adj[l][0];
+        int f1 = ef_adj[l][1];
+        if (f1 == -1)
+            continue;
+        if (ff_adj[f0][0] == -1) {
+            ff_adj[f0][0] = f1;
+        } else if (ff_adj[f0][1] == -1) {
+            ff_adj[f0][1] = f1;
+        } else {
+            ff_adj[f0][2] = f1;
+        }
+        if (ff_adj[f1][0] == -1) {
+            ff_adj[f1][0] = f0;
+        } else if (ff_adj[f1][1] == -1) {
+            ff_adj[f1][1] = f0;
+        } else {
+            ff_adj[f1][2] = f0;
+        }
+    }
+    std::queue<int> q{};
+    for (int v = vert_size - 1; v >= 0; --v) {
+        int f = -1, next_f = -1, vid = v;
+        bool flag = true;
+        while (!vf_adj[v].empty()) {
+            q.push(*(vf_adj[v].begin()));
+            // split a vert
+            if (!flag) {
+                vid = vert_size++;
+                pos.push_back(pos[v]);
+                prim->verts.foreach_attr<zeno::AttrAcceptAll>([&] (auto const &key, auto &arr) {
+                    arr.push_back(arr[v]);
+                });
+            }
+            while (!q.empty()) {
+                next_f = q.front();
+                q.pop();
+                vf_adj[v].erase(next_f);
+                f = next_f;
+                next_f = -1;
+                if (vid != v) {
+                    // modify vert index in faces and lines
+                    for (int i = 0, i1 = 1, i2 = 2; i < 3; ++i, i1 = (i1 + 1) % 3, i2 = (i2 + 1) % 3) {
+                        if (faces[f][i] == v) {
+                            faces[f][i] = vid;
+                            int l0 = lines_map[std::make_pair(v, faces[f][i1])];
+                            int l1 = lines_map[std::make_pair(faces[f][i2], v)];
+                            if (lines[l0][0] == v) {
+                                lines[l0][0] = vid;
+                            } else if (lines[l0][1] == v) {
+                                lines[l0][1] = vid;
+                            }
+                            if (lines[l1][0] == v) {
+                                lines[l1][0] = vid;
+                            } else if (lines[l1][1] == v) {
+                                lines[l1][1] = vid;
+                            }
+                            lines_map[std::make_pair(vid, faces[f][i1])] = l0;
+                            lines_map[std::make_pair(faces[f][i2], vid)] = l1;
+                            break;
+                        }
+                    }
+                }
+                for (int i = 0; i < 3; ++i) {
+                    if (vf_adj[v].count(ff_adj[f][i]) > 0) {
+                        q.push(ff_adj[f][i]);
+                    }
+                }
+            }
+            flag = false;
+        }
+    }
+}
+
+void returnNonManifold(std::shared_ptr<PrimitiveObject> prim) {
+    // delete duplicate vertices
+    auto &vduplicate = prim->verts.attr<int>("v_duplicate");
+    int tri_size = prim->tris.size();
+    for (int i = 0; i < tri_size; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            int v = prim->tris[i][j];
+            if (vduplicate[v] != v) {
+                prim->tris[i][j] = vduplicate[v];
+            }
+        }
+    }
+    int line_size = prim->lines.size();
+    for (int i = 0; i < line_size; ++i) {
+        for (int j = 0; j < 2; ++j) {
+            int v = prim->lines[i][j];
+            if (vduplicate[v] != v) {
+                prim->lines[i][j] = vduplicate[v];
+            }
+        }
+    }
+}
 
 struct UniformRemeshing : INode {
     virtual void apply() override {
@@ -91,68 +286,9 @@ struct UniformRemeshing : INode {
             efeature.clear();
         }
 #endif
-
-        // handle non-manifold edges
         std::map<std::pair<int, int>, int> lines_map{};
-        int line_size = 0;
-        for (auto &it : prim->tris) {
-            std::vector<bool> new_vert(3, false);
-            std::vector<bool> new_line(3, false);
-            std::vector<bool> marked(3, false);
-            auto edge = std::make_pair(it[0], it[1]);
-            new_line[0] = (lines_map.count(edge) > 0);
-            marked[0] = (marked_lines.count(edge) > 0 || marked_lines.count(std::make_pair(it[1], it[0])) > 0);
-            if (new_line[0]) {
-                new_vert[0] = new_vert[1] = true;
-                efeature[lines_map[edge]] = 1;
-            }
-            edge = std::make_pair(it[1], it[2]);
-            new_line[1] = (lines_map.count(edge) > 0);
-            marked[1] = (marked_lines.count(edge) > 0 || marked_lines.count(std::make_pair(it[2], it[1])) > 0);
-            if (new_line[1]) {
-                new_vert[1] = new_vert[2] = true;
-                efeature[lines_map[edge]] = 1;
-            }
-            edge = std::make_pair(it[2], it[0]);
-            new_line[2] = (lines_map.count(edge) > 0);
-            marked[2] = (marked_lines.count(edge) > 0 || marked_lines.count(std::make_pair(it[0], it[2])) > 0);
-            if (new_line[2]) {
-                new_vert[2] = new_vert[0] = true;
-                efeature[lines_map[edge]] = 1;
-            }
-
-            for (int j = 0; j < 3; ++j) {
-                if (new_vert[j]) {
-                    pos.push_back(pos[it[j]]);
-                    vduplicate.push_back(it[j]);
-                    it[j] = vert_size;
-                    ++vert_size;
-                }
-            }
-
-            for (int j = 0; j < 3; ++j) {
-                int line_id;
-                bool flag = false;
-                if (lines_map.count(std::make_pair(it[j], it[(j + 1) % 3])) > 0) {
-                    line_id = lines_map[std::make_pair(it[j], it[(j + 1) % 3])];
-                } else if (lines_map.count(std::make_pair(it[(j + 1) % 3], it[j])) > 0) {
-                    line_id = lines_map[std::make_pair(it[(j + 1) % 3], it[j])];
-                } else {
-                    line_id = line_size;
-                    flag = true;
-                    ++line_size;
-                }
-                lines_map[std::make_pair(it[j], it[(j + 1) % 3])] = line_id;
-                if (flag) {
-                    lines.push_back(vec2i(it[j], it[(j + 1) % 3]));
-                    if (new_line[j] || marked[j]) {
-                        efeature.push_back(1);
-                    } else {
-                        efeature.push_back(0);
-                    }
-                }
-            }
-        }
+        splitNonManifoldEdges(prim, lines_map, marked_lines, efeature);
+        splitNonManifoldVertices(prim, lines_map);
 
         auto mesh = new zeno::pmp::SurfaceMesh(prim, line_pick_tag);
 
@@ -177,29 +313,8 @@ struct UniformRemeshing : INode {
         }
         zeno::pmp::SurfaceRemeshing(mesh, line_pick_tag).uniform_remeshing(edge_length, iterations);
 
-        // delete duplicate vertices
-        int tri_size = prim->tris.size();
-        for (int i = 0; i < tri_size; ++i) {
-            for (int j = 0; j < 3; ++j) {
-                int v = prim->tris[i][j];
-                if (vduplicate[v] != v) {
-                    prim->tris[i][j] = vduplicate[v];
-                }
-            }
-        }
-        line_size = prim->lines.size();
-        for (int i = 0; i < line_size; ++i) {
-            for (int j = 0; j < 2; ++j) {
-                int v = prim->lines[i][j];
-                if (vduplicate[v] != v) {
-                    prim->lines[i][j] = vduplicate[v];
-                }
-            }
-        }
+        returnNonManifold(prim);
 
-#if 0
-        prim->verts.attrs.clear();
-#else
         // delete v_duplicate at last
         prim->verts.erase_attr("v_duplicate");
         prim->verts.erase_attr("v_normal");
@@ -207,7 +322,6 @@ struct UniformRemeshing : INode {
         prim->lines.erase_attr("e_deleted");
         prim->tris.erase_attr("f_deleted");
         prim->verts.update();
-#endif
 
         set_output("prim", std::move(prim));
     }
@@ -280,67 +394,10 @@ struct AdaptiveRemeshing : INode {
 #if PMP_ENABLE_PROFILE
         timer.tick();
 #endif
-        // handle non-manifold edges
         std::map<std::pair<int, int>, int> lines_map{};
-        int line_size = 0;
-        for (auto &it : prim->tris) {
-            std::vector<bool> new_vert(3, false);
-            std::vector<bool> new_line(3, false);
-            std::vector<bool> marked(3, false);
-            auto edge = std::make_pair(it[0], it[1]);
-            new_line[0] = (lines_map.count(edge) > 0);
-            marked[0] = (marked_lines.count(edge) > 0 || marked_lines.count(std::make_pair(it[1], it[0])) > 0);
-            if (new_line[0]) {
-                new_vert[0] = new_vert[1] = true;
-                efeature[lines_map[edge]] = 1;
-            }
-            edge = std::make_pair(it[1], it[2]);
-            new_line[1] = (lines_map.count(edge) > 0);
-            marked[1] = (marked_lines.count(edge) > 0 || marked_lines.count(std::make_pair(it[2], it[1])) > 0);
-            if (new_line[1]) {
-                new_vert[1] = new_vert[2] = true;
-                efeature[lines_map[edge]] = 1;
-            }
-            edge = std::make_pair(it[2], it[0]);
-            new_line[2] = (lines_map.count(edge) > 0);
-            marked[2] = (marked_lines.count(edge) > 0 || marked_lines.count(std::make_pair(it[0], it[2])) > 0);
-            if (new_line[2]) {
-                new_vert[2] = new_vert[0] = true;
-                efeature[lines_map[edge]] = 1;
-            }
+        splitNonManifoldEdges(prim, lines_map, marked_lines, efeature);
+        splitNonManifoldVertices(prim, lines_map);
 
-            for (int j = 0; j < 3; ++j) {
-                if (new_vert[j]) {
-                    pos.push_back(pos[it[j]]);
-                    vduplicate.push_back(it[j]);
-                    it[j] = vert_size;
-                    ++vert_size;
-                }
-            }
-
-            for (int j = 0; j < 3; ++j) {
-                int line_id;
-                bool flag = false;
-                if (lines_map.count(std::make_pair(it[j], it[(j + 1) % 3])) > 0) {
-                    line_id = lines_map[std::make_pair(it[j], it[(j + 1) % 3])];
-                } else if (lines_map.count(std::make_pair(it[(j + 1) % 3], it[j])) > 0) {
-                    line_id = lines_map[std::make_pair(it[(j + 1) % 3], it[j])];
-                } else {
-                    line_id = line_size;
-                    flag = true;
-                    ++line_size;
-                }
-                lines_map[std::make_pair(it[j], it[(j + 1) % 3])] = line_id;
-                if (flag) {
-                    lines.push_back(vec2i(it[j], it[(j + 1) % 3]));
-                    if (new_line[j] || marked[j]) {
-                        efeature.push_back(1);
-                    } else {
-                        efeature.push_back(0);
-                    }
-                }
-            }
-        }
 #if PMP_ENABLE_PROFILE
         timer.tock("handle non-manifold edges");
 #endif
@@ -362,43 +419,14 @@ struct AdaptiveRemeshing : INode {
         zeno::pmp::SurfaceRemeshing(mesh, line_pick_tag)
             .adaptive_remeshing(min_length, max_length, approximation_tolerance, iterations);
 
-        // delete duplicate vertices
-        int tri_size = prim->tris.size();
-        for (int i = 0; i < tri_size; ++i) {
-            for (int j = 0; j < 3; ++j) {
-                int v = prim->tris[i][j];
-                if (vduplicate[v] != v) {
-                    prim->tris[i][j] = vduplicate[v];
-                }
-            }
-        }
-        line_size = prim->lines.size();
-        for (int i = 0; i < line_size; ++i) {
-            for (int j = 0; j < 2; ++j) {
-                int v = prim->lines[i][j];
-                if (vduplicate[v] != v) {
-                    prim->lines[i][j] = vduplicate[v];
-                }
-            }
-        }
+        returnNonManifold(prim);
 
-#if 1
-        prim->verts.attrs.clear();
-#else
-        // delete v_duplicate at last
         prim->verts.erase_attr("v_duplicate");
-        // check existing redundant properties
-        for (auto &[key, arr] : prim->verts.attrs) {
-            auto const &k = key;
-            prim->verts.erase_attr("v_duplicate");
-            zs::match(
-                [&k](auto &arr) -> std::enable_if_t<variant_contains<RM_CVREF_T(arr[0]), AttrAcceptAll>::value> {
-                    fmt::print("key [{}] type [{}] size {}\n", k, zs::get_var_type_str(arr), arr.size());
-                },
-                [](...){})(arr);
-        }
+        prim->verts.erase_attr("v_normal");
+        prim->verts.erase_attr("v_deleted");
+        prim->lines.erase_attr("e_deleted");
+        prim->tris.erase_attr("f_deleted");
         prim->verts.update();
-#endif
 
         set_output("prim", std::move(prim));
     }
@@ -417,4 +445,157 @@ ZENO_DEFNODE(AdaptiveRemeshing)
     {},
     {"primitive"},
 });
+
+struct RepairDegenerateTriangle : INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto &pos = prim->attr<vec3f>("pos");
+        auto &efeature = prim->lines.add_attr<int>("e_feature");
+
+        // init v_duplicate attribute
+        auto &vduplicate = prim->verts.add_attr<int>("v_duplicate", 0);
+        int vert_size = prim->verts.size();
+        for (int i = 0; i < vert_size; ++i) {
+            vduplicate[i] = i;
+        }
+
+        auto &lines = prim->lines;
+        lines.clear();
+        efeature.clear();
+
+        std::set<std::pair<int, int>> marked_lines{};
+        std::map<std::pair<int, int>, int> lines_map{};
+        splitNonManifoldEdges(prim, lines_map, marked_lines, efeature);
+        splitNonManifoldVertices(prim, lines_map);
+
+        auto mesh = new zeno::pmp::SurfaceMesh(prim, "e_feature");
+
+        zeno::pmp::SurfaceRemeshing(mesh, "e_feature").remove_degenerate_triangles();
+
+        returnNonManifold(prim);
+
+        // delete v_duplicate at last
+        prim->verts.erase_attr("v_duplicate");
+        prim->verts.erase_attr("v_normal");
+        prim->verts.erase_attr("v_deleted");
+        prim->lines.erase_attr("e_deleted");
+        prim->tris.erase_attr("f_deleted");
+        prim->verts.update();
+
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENO_DEFNODE(RepairDegenerateTriangle)
+({
+    {{"prim"}},
+    {"prim"},
+    {},
+    {"primitive"},
+});
+
+struct GaussianCurvature : INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto &pos = prim->attr<vec3f>("pos");
+        auto &efeature = prim->lines.add_attr<int>("e_feature", 0);
+        auto &vfeature = prim->verts.add_attr<int>("v_feature", 0);
+
+        // init v_duplicate attribute
+        auto &vduplicate = prim->verts.add_attr<int>("v_duplicate", 0);
+        int vert_size = prim->verts.size();
+        for (int i = 0; i < vert_size; ++i) {
+            vduplicate[i] = i;
+        }
+
+        // if there exist marked lines
+        std::set<std::pair<int, int>> marked_lines{};
+        auto &lines = prim->lines;
+        lines.clear();
+        efeature.clear();
+
+        std::map<std::pair<int, int>, int> lines_map{};
+        splitNonManifoldEdges(prim, lines_map, marked_lines, efeature);
+        splitNonManifoldVertices(prim, lines_map);
+
+        auto mesh = new zeno::pmp::SurfaceMesh(prim, "e_feature");
+        zeno::pmp::SurfaceCurvature curv(mesh);
+        curv.analyze_tensor(1);
+        curv.calculate_gaussian_curvature();
+
+        returnNonManifold(prim);
+
+        // delete v_duplicate at last
+        prim->verts.erase_attr("v_duplicate");
+        prim->verts.erase_attr("v_normal");
+        prim->verts.erase_attr("v_deleted");
+        prim->lines.erase_attr("e_deleted");
+        prim->tris.erase_attr("f_deleted");
+        prim->verts.update();
+
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENO_DEFNODE(GaussianCurvature)
+({
+    {{"prim"}},
+    {"prim"},
+    {},
+    {"primitive"},
+});
+
+struct MarkBoundaryVertices : INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto &pos = prim->attr<vec3f>("pos");
+        auto &efeature = prim->lines.add_attr<int>("e_feature");
+
+        // init v_duplicate attribute
+        auto &vduplicate = prim->verts.add_attr<int>("v_duplicate", 0);
+        int vert_size = prim->verts.size();
+        for (int i = 0; i < vert_size; ++i) {
+            vduplicate[i] = i;
+        }
+
+        // if there exist marked lines
+        std::set<std::pair<int, int>> marked_lines{};
+        auto &lines = prim->lines;
+        lines.clear();
+        efeature.clear();
+
+        std::map<std::pair<int, int>, int> lines_map{};
+        splitNonManifoldEdges(prim, lines_map, marked_lines, efeature);
+        splitNonManifoldVertices(prim, lines_map);
+
+        auto &boundary = prim->verts.add_attr<int>("v_boundary", 0);
+        auto mesh = new zeno::pmp::SurfaceMesh(prim, "e_feature");
+        for (int line_size = lines.size(), e = 0; e < line_size; ++e) {
+            if (mesh->is_boundary_e(e)) {
+                boundary[lines[e][0]] = boundary[lines[e][1]] = 1;
+            }
+        }
+
+        returnNonManifold(prim);
+
+        // delete v_duplicate at last
+        prim->verts.erase_attr("v_duplicate");
+        prim->verts.erase_attr("v_normal");
+        prim->verts.erase_attr("v_deleted");
+        prim->lines.erase_attr("e_deleted");
+        prim->tris.erase_attr("f_deleted");
+        prim->verts.update();
+
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENO_DEFNODE(MarkBoundaryVertices)
+({
+    {{"prim"}},
+    {"prim"},
+    {},
+    {"primitive"},
+});
+
 } // namespace zeno

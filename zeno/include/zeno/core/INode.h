@@ -34,6 +34,8 @@ public:
     std::set<std::string> formulas;
     zany muted_output;
 
+    bool bTmpCache = false;
+
     ZENO_API INode();
     ZENO_API virtual ~INode();
 
@@ -46,6 +48,8 @@ public:
     ZENO_API void doApply();
     ZENO_API void doOnlyApply();
     ZENO_API zany resolveInput(std::string const& id);
+    ZENO_API bool getTmpCache();
+    ZENO_API void writeTmpCaches();
 
 protected:
     ZENO_API virtual void complete();

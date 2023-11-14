@@ -169,19 +169,18 @@ __forceinline__ __device__ float3 interp(float2 barys, float3 a, float3 b, float
     return w0*a + w1*b + w2*c;
 }
 
-static __inline__ __device__ bool isBadVector(vec3& vector) {
+static __inline__ __device__ bool isBadVector(const vec3& vector) {
 
     for (size_t i=0; i<3; ++i) {
-        if(isnan(vector[i]) || isinf(vector[i])) {
+        if(!isfinite(vector[i])) {
             return true;
         }
     }
-    return dot(vector, vector) <= 0;
+    return dot(vector, vector) <= 0.0f;
 }
 
-static __inline__ __device__ bool isBadVector(float3& vector) {
-    vec3 tmp = vector;
-    return isBadVector(tmp);
+static __inline__ __device__ bool isBadVector(const float3& vector) {
+    return isBadVector(reinterpret_cast<const vec3&>(vector));
 }
 
 extern "C" __global__ void __anyhit__shadow_cutout()

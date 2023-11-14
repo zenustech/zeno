@@ -6,6 +6,7 @@
 #include "panel/zenoproppanel.h"
 #include "../panel/zenospreadsheet.h"
 #include "../panel/zlogpanel.h"
+#include "../panel/zenocommandparamspanel.h"
 #include "viewport/viewportwidget.h"
 #include "viewport/displaywidget.h"
 #include "nodesview/zenographseditor.h"
@@ -223,6 +224,10 @@ QWidget* ZTabDockWidget::createTabWidget(PANEL_TYPE type)
             wid->initUI();
             return wid;
         }
+        case PANEL_COMMAND_PARAMS:
+        {
+            return new ZenoCommandParamsPanel;
+        }
     }
     return nullptr;
 }
@@ -239,6 +244,7 @@ QString ZTabDockWidget::type2Title(PANEL_TYPE type)
     case PANEL_LIGHT:       return tr("Light");
     case PANEL_OPTIX_VIEW:  return tr("Optix");
     case PANEL_IMAGE: return tr("Image");
+    case PANEL_COMMAND_PARAMS: return tr("Command Params");
     default:
         return "";
     }
@@ -270,6 +276,9 @@ PANEL_TYPE ZTabDockWidget::title2Type(const QString& title)
     }
     else if (title == tr("Optix")|| title == "Optix") {
         type = PANEL_OPTIX_VIEW;
+    }
+    else if (title == tr("Command Params") || title == "Command Params") {
+        type = PANEL_COMMAND_PARAMS;
     }
     return type;
 }
@@ -522,7 +531,7 @@ void ZTabDockWidget::onAddTabClicked()
     font.setBold(false);
     menu->setFont(font);
 
-    static QList<QString> panels = { tr("Parameter"), tr("Scene Viewport"), tr("Node Editor"), tr("Spreadsheet"), tr("Log"), tr("Image"), tr("Optix") };
+    static QList<QString> panels = { tr("Parameter"), tr("Scene Viewport"), tr("Node Editor"), tr("Spreadsheet"), tr("Log"), tr("Image"), tr("Optix"), tr("Command Params") };
     for (QString name : panels)
     {
         QAction* pAction = new QAction(name);
@@ -549,6 +558,7 @@ void ZTabDockWidget::onAddTabClicked()
                 case 5: m_debugPanel = PANEL_LIGHT; break;
                 case 6: m_debugPanel = PANEL_IMAGE; break;
                 case 7: m_debugPanel = PANEL_OPTIX_VIEW; break;
+                case 8: m_debugPanel = PANEL_COMMAND_PARAMS; break;
                 }
                 m_tabWidget->setCurrentIndex(idx);
             }

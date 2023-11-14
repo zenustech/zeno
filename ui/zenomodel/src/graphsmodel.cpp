@@ -1570,6 +1570,46 @@ void GraphsModel::_markNodeChanged(const QModelIndex& nodeIdx)
     ZASSERT_EXIT(pModel);
     pModel->setData(nodeIdx, true, ROLE_NODE_DATACHANGED);
     m_changedNodes.insert(nodeIdx);
+    if (NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(nodeIdx.data(ROLE_NODE_PARAMS)))
+    {
+        for (const auto& sock : nodeParams->getOutputIndice())
+        {
+            const int sockProp = sock.data(ROLE_PARAM_SOCKPROP).toInt();
+            QModelIndexList socketLst;
+            //dict sock
+            if (sockProp & SOCKPROP_DICTLIST_PANEL)
+            {
+                QAbstractItemModel* pKeyObjModel = QVariantPtr<QAbstractItemModel>::asPtr(sock.data(ROLE_VPARAM_LINK_MODEL));
+                for (int _r = 0; _r < pKeyObjModel->rowCount(); _r++)
+                {
+                    const QModelIndex& keyIdx = pKeyObjModel->index(_r, 0);
+                    ZASSERT_EXIT(keyIdx.isValid());
+                    socketLst << keyIdx;
+                }
+            }
+            else
+            {
+                socketLst << sock;
+            }
+            for (const auto& index : socketLst)
+            {
+                PARAM_LINKS links = index.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+                for (const auto& link : links)
+                {
+                    if (link.isValid())
+                    {
+                        QModelIndex insock = link.data(ROLE_INSOCK_IDX).toModelIndex();
+                        ZASSERT_EXIT(insock.isValid());
+                        const auto& inNodeIdx = insock.data(ROLE_NODE_IDX).toModelIndex();
+                        if (inNodeIdx.isValid() && inNodeIdx.data(ROLE_NODE_DATACHANGED).toBool() == false)
+                        {
+                            _markNodeChanged(inNodeIdx);
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 void GraphsModel::clearNodeDataChanged()
@@ -1688,6 +1728,57 @@ void GraphsModel::updateNetLabel(const QModelIndex& subgIdx, const QModelIndex& 
     }
 }
 
+bool GraphsModel::addCommandParam(const QString& path, const CommandParam& val)
+{
+    if (!m_commandParams.contains(path))
+    {
+        for (const auto& path : m_commandParams.keys())
+        {
+            if (m_commandParams[path].name == val.name)
+            {
+                return false;
+            }
+        }
+        m_commandParams[path] = val;
+        emit updateCommandParamSignal(path);
+        QString subgName = UiHelper::getSockSubgraph(path);
+        if (SubGraphModel* pSubgModel = subGraph(subgName))
+            pSubgModel->setCommandParam(indexFromPath(path), true);
+
+        return true;
+    }
+    return false;
+}
+
+void GraphsModel::removeCommandParam(const QString& path)
+{
+    if (!m_commandParams.contains(path))
+        return;
+
+    m_commandParams.remove(path);
+    emit updateCommandParamSignal(path);
+    QString subgName = UiHelper::getSockSubgraph(path);
+    if (SubGraphModel* pSubgModel = subGraph(subgName))
+        pSubgModel->setCommandParam(indexFromPath(path), false);
+}
+
+bool GraphsModel::updateCommandParam(const QString& path, const CommandParam& newVal)
+{
+    if (!m_commandParams.contains(path))
+        return false;
+    const CommandParam& oldVal = m_commandParams[path];
+    if (oldVal == newVal)
+        return false;
+    m_commandParams[path] = newVal;
+    emit updateCommandParamSignal(path);
+    return true;
+}
+
+FuckQMap<QString, CommandParam> GraphsModel::commandParams() const
+{
+    return m_commandParams;
+}
+
 QList<QModelIndex> GraphsModel::getNetInputs(const QModelIndex& subgIdx, const QString& name) const
 {
     SubGraphModel* pGraph = subGraph(subgIdx.row());
@@ -1716,8 +1807,8 @@ void GraphsModel::updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO inf
 {
     QModelIndex nodeIdx = index(nodeid, subgIdx);
     ModelSetData(nodeIdx, info.newValue, info.role);
-    if (ROLE_OPTIONS == info.role)
-        markNodeDataChanged(nodeIdx);
+    //if (ROLE_OPTIONS == info.role)
+    //    markNodeDataChanged(nodeIdx);
 }
 
 void GraphsModel::updateBlackboard(const QString &id, const QVariant &newInfo, const QModelIndex &subgIdx, bool enableTransaction) 
@@ -1785,6 +1876,7 @@ void GraphsModel::clear()
         clearSubGraph(subgIdx);
     }
     m_linksGroup.clear();
+    m_commandParams.clear();
     emit modelClear();
 }
 
@@ -1860,6 +1952,15 @@ void GraphsModel::on_subg_rowsAboutToBeRemoved(const QModelIndex& parent, int fi
     ZASSERT_EXIT(pSubModel);
     QModelIndex subgIdx = indexBySubModel(pSubModel);
     emit _rowsAboutToBeRemoved(subgIdx, parent, first, last);
+
+    //remove command
+    const QModelIndex& idx = index(first, subgIdx);
+    const QString& objId = idx.data(ROLE_OBJID).toString();
+    for (const auto& path : m_commandParams.keys())
+    {
+        if (UiHelper::getSockNode(path) == objId)
+            removeCommandParam(path);
+    }
 }
 
 void GraphsModel::on_subg_rowsRemoved(const QModelIndex& parent, int first, int last)

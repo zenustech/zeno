@@ -15,11 +15,12 @@
 #endif
 //#include <spdlog/spdlog.h>
 
+#include <zeno/utils/eulerangle.h>
+
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #define ROTATE_COMPUTE                          \
     auto gp = glm::vec3(p[0], p[1], p[2]);      \
@@ -1009,9 +1010,18 @@ struct CreateTorus : zeno::INode {
         auto rotate = get_input2<zeno::vec3f>("rotate");
         glm::mat4 transform = glm::mat4 (1.0);
         transform = glm::translate(transform, glm::vec3(position[0], position[1], position[2]));
-        transform = glm::rotate(transform, glm::radians(rotate[0]), glm::vec3(1, 0, 0));
-        transform = glm::rotate(transform, glm::radians(rotate[1]), glm::vec3(0, 1, 0));
-        transform = glm::rotate(transform, glm::radians(rotate[2]), glm::vec3(0, 0, 1));
+
+            auto order = get_input2<std::string>("EulerRotationOrder:");
+            auto orderTyped = magic_enum::enum_cast<EulerAngle::RotationOrder>(order).value_or(EulerAngle::RotationOrder::YXZ);
+
+            auto measure = get_input2<std::string>("EulerAngleMeasure:");
+            auto measureTyped = magic_enum::enum_cast<EulerAngle::Measure>(measure).value_or(EulerAngle::Measure::Radians);
+
+            glm::vec3 eularAngleXYZ = glm::vec3(rotate[0], rotate[1], rotate[2]);
+            glm::mat4 rotation = EulerAngle::rotate(orderTyped, measureTyped, eularAngleXYZ);
+
+        transform = transform * rotation;
+
         auto n_transform = glm::transpose(glm::inverse(transform));
         for(int i = 0; i < prim->verts.size(); i++){
             auto p = prim->verts[i];
@@ -1051,7 +1061,10 @@ ZENDEFNODE(CreateTorus, {
         {"bool", "quads", "0"},
     },
     {"prim"},
-    {},
+    {
+        {"enum " + EulerAngle::RotationOrderListString(), "EulerRotationOrder", "XYZ"},
+        {"enum " + EulerAngle::MeasureListString(), "EulerAngleMeasure", "Degree"}
+    },
     {"create"},
 });
 
@@ -1176,9 +1189,18 @@ struct CreateSphere : zeno::INode {
 
         glm::mat4 transform = glm::mat4 (1.0);
         transform = glm::translate(transform, glm::vec3(position[0], position[1], position[2]));
-        transform = glm::rotate(transform, glm::radians(rotate[0]), glm::vec3(1, 0, 0));
-        transform = glm::rotate(transform, glm::radians(rotate[1]), glm::vec3(0, 1, 0));
-        transform = glm::rotate(transform, glm::radians(rotate[2]), glm::vec3(0, 0, 1));
+
+            auto order = get_input2<std::string>("EulerRotationOrder:");
+            auto orderTyped = magic_enum::enum_cast<EulerAngle::RotationOrder>(order).value_or(EulerAngle::RotationOrder::YXZ);
+
+            auto measure = get_input2<std::string>("EulerAngleMeasure:");
+            auto measureTyped = magic_enum::enum_cast<EulerAngle::Measure>(measure).value_or(EulerAngle::Measure::Radians);
+
+            glm::vec3 eularAngleXYZ = glm::vec3(rotate[0], rotate[1], rotate[2]);
+            glm::mat4 rotation = EulerAngle::rotate(orderTyped, measureTyped, eularAngleXYZ);
+
+        transform = transform * rotation;
+ 
         transform = glm::scale(transform, glm::vec3(scale[0],scale[1],scale[2]) * radius);
 
         auto n_transform = glm::transpose(glm::inverse(transform));
@@ -1286,7 +1308,10 @@ ZENDEFNODE(CreateSphere, {
         {"bool", "SphereRT", "0"}
     },
     {"prim"},
-    {},
+    {
+        {"enum " + EulerAngle::RotationOrderListString(), "EulerRotationOrder", "XYZ"},
+        {"enum " + EulerAngle::MeasureListString(), "EulerAngleMeasure", "Degree"}
+    },
     {"create"},
 });
 

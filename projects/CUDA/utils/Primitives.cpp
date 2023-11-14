@@ -1472,6 +1472,51 @@ ZENDEFNODE(ParticleSegmentation, {
                                      {"zs_geom"},
                                  });
 
+struct CollapseClusters : INode {
+    void apply() override {
+        auto clusters = get_input<zeno::PrimitiveObject>("clusters");
+        auto numClusters = get_input2<int>("num_segments");
+        auto clusterTag = get_input2<std::string>("segment_tag");
+        auto pars = std::make_shared<PrimitiveObject>();
+        pars->resize(numClusters);
+
+        std::vector<int> sizes(numClusters, 0);
+        using namespace zs;
+        {
+            constexpr auto space = execspace_e::openmp;
+            auto pol = omp_exec();
+            const auto &clusterIds = clusters->verts.attr<float>(clusterTag);
+
+            pol(pars->verts.values, [](auto &v) { v = zeno::vec3f(0, 0, 0); });
+            pol(zip(clusters->verts.values, clusterIds),
+                [&dstPos = pars->verts.values, &sizes](const auto &p, int clusterId) {
+                    auto &dst = dstPos[clusterId];
+                    for (int d = 0; d != 3; ++d)
+                        atomic_add(exec_omp, &dst[d], p[d]);
+                    atomic_add(exec_omp, &sizes[clusterId], 1);
+                });
+
+            pol(zip(pars->verts.values, sizes), [](auto &p, int sz) {
+                if (sz > 0)
+                    p /= (float)sz;
+                else
+                    printf("there exists cluster with no actual particles.\n");
+            });
+        }
+        set_output("pars", std::move(pars));
+    }
+};
+ZENDEFNODE(CollapseClusters, {
+                                 {
+                                     {"PrimitiveObject", "clusters"},
+                                     {"NumericObject", "num_segments"},
+                                     {"string", "segment_tag", "segment_index"},
+                                 },
+                                 {{"PrimitiveObject", "pars"}},
+                                 {},
+                                 {"zs_geom"},
+                             });
+
 struct PrimitiveBFS : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
@@ -1975,9 +2020,8 @@ struct QueryClosestPrimitive : zeno::INode {
 // https://stackoverflow.com/questions/28258590/using-openmp-to-get-the-index-of-minimum-element-parallelly
 #ifndef _MSC_VER
 #if defined(_OPENMP)
-#pragma omp declare reduction(minimum:KVPair                                   \
-                              : omp_out = omp_in < omp_out ? omp_in : omp_out) \
-    initializer(omp_priv = KVPair{std::numeric_limits <float>::max(), -1})
+#pragma omp declare reduction(minimum:KVPair : omp_out = omp_in < omp_out ? omp_in : omp_out) \
+    initializer(omp_priv = KVPair{std::numeric_limits<float>::max(), -1})
 #pragma omp parallel for reduction(minimum : mi)
 #endif
 #endif

@@ -122,6 +122,7 @@ public:
     QModelIndex getNetOutput(const QString& name) const;
     QStringList dumpLabels() const;
     QModelIndexList getNetInputSocks(const QString& name) const;
+    void setCommandParam(const QModelIndex& sock, bool bMarked);
 
 public slots:
     void onDoubleClicked(const QString &nodename);
@@ -136,6 +137,7 @@ private:
     void importNodeItem(const NODE_DATA& data, const QModelIndex& nodeIdx, _NodeItem& ret);
     bool checkCustomName(const QString &name);
     void _removeNetLabels(const NodeParamModel* nodeParams);
+    void _uniqueView(const QModelIndex& index, bool bInSocket, bool bOutSocket, QModelIndexList& viewLst);
 
     QString m_name;
     QHash<QString, int> m_key2Row;

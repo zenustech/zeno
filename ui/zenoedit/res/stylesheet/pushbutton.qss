@@ -15,6 +15,22 @@ QPushButton[cssClass="grayButton"]:hover
 	color: rgb(255, 255, 255);
 }
 
+QPushButton[cssClass="commandButton"]
+{
+    border:0;
+	background:#22252C;
+	font-size: 9pt;
+	font-weight: 500;
+	color: #9DA2A9;
+	margin:5px 10px 0 0;
+	padding:2px 5px;
+}
+
+QPushButton[cssClass="commandButton"]:hover
+{
+	color: rgb(255, 255, 255);
+}
+
 QPushButton[cssClass="blueStyle"]
 {
 	padding-top: 2.5px;

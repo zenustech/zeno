@@ -25,7 +25,7 @@ std::unordered_set<std::string> lightCameraNodes({
     });
 std::string matlNode = "ShaderFinalize";
 
-static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &objs, bool cacheLightCameraOnly, bool cacheMaterialOnly) {
+void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &objs, bool cacheLightCameraOnly, bool cacheMaterialOnly, std::string fileName) {
     if (cachedir.empty()) return;
     std::filesystem::path dir = std::filesystem::u8path(cachedir + "/" + std::to_string(1000000 + frameid).substr(1));
     if (!std::filesystem::exists(dir) && !std::filesystem::create_directories(dir))
@@ -88,13 +88,21 @@ static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &o
             }
         }
     }
-    cachepath[0] = dir / "lightCameraObj.zencache";
-    cachepath[1] = dir / "materialObj.zencache";
-    cachepath[2] = dir / "normalObj.zencache";
+
+    if (fileName == "")
+    {
+        cachepath[0] = dir / "lightCameraObj.zencache";
+        cachepath[1] = dir / "materialObj.zencache";
+        cachepath[2] = dir / "normalObj.zencache";
+    }
+    else
+    {
+        cachepath[2] = std::filesystem::u8path(dir.string() + "/" + fileName);
+    }
     size_t currentFrameSize = 0;
     for (int i = 0; i < 3; i++)
     {
-        if (poses[i].size() == 0 && (cacheLightCameraOnly && i != 0 || cacheMaterialOnly && i != 1))
+        if (poses[i].size() == 0 && (cacheLightCameraOnly && i != 0 || cacheMaterialOnly && i != 1 || fileName != "" && i != 2))
             continue;
         keys[i].push_back('\a');
         keys[i] = "ZENCACHE" + std::to_string(poses[i].size()) + keys[i];
@@ -126,7 +134,7 @@ static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &o
     }
     for (int i = 0; i < 3; i++)
     {
-        if (poses[i].size() == 0 && (cacheLightCameraOnly && i != 0 || cacheMaterialOnly && i != 1))
+        if (poses[i].size() == 0 && (cacheLightCameraOnly && i != 0 || cacheMaterialOnly && i != 1 || fileName != "" && i != 2))
             continue;
         log_critical("dump cache to disk {}", cachepath[i]);
         std::ofstream ofs(cachepath[i], std::ios::binary);
@@ -138,13 +146,22 @@ static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &o
     objs.clear();
 }
 
-static bool fromDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &objs) {
+bool GlobalComm::fromDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &objs, std::string fileName) {
     if (cachedir.empty())
         return false;
     objs.clear();
-    cachepath[2] = std::filesystem::u8path(cachedir) / std::to_string(1000000 + frameid).substr(1) / "normalObj.zencache";
-    cachepath[1] = std::filesystem::u8path(cachedir) / std::to_string(1000000 + frameid).substr(1) / "materialObj.zencache";
-    cachepath[0] = std::filesystem::u8path(cachedir) / std::to_string(1000000 + frameid).substr(1) / "lightCameraObj.zencache";
+    auto dir = std::filesystem::u8path(cachedir) / std::to_string(1000000 + frameid).substr(1);
+    if (fileName == "")
+    {
+        cachepath[0] = dir / "lightCameraObj.zencache";
+        cachepath[1] = dir / "materialObj.zencache";
+        cachepath[2] = dir / "normalObj.zencache";
+    }
+    else
+    {
+        cachepath[2] = std::filesystem::u8path(dir.string() + "/" + fileName);
+    }
+
     for (auto path : cachepath)
     {
         if (!std::filesystem::exists(path))
