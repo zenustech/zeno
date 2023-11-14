@@ -523,7 +523,7 @@ struct GraphicsManager {
 
                 auto spread = prim_in->userData().get2<float>("spread", 1.0f);
                 auto intensity = prim_in->userData().get2<float>("intensity", 1.0f);
-                auto vIntensity = prim_in->userData().get2<float>("visibleIntensity", 1.0f);
+                auto vIntensity = prim_in->userData().get2<float>("visibleIntensity", -1.0f);
 
                 auto ivD = prim_in->userData().getLiterial<int>("ivD", 0);
                 auto visible = prim_in->userData().get2<int>("visible", 0);

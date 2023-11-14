@@ -72,19 +72,21 @@ static __inline__ __device__ bool cihouMaxDistanceContinue(LightSampleRecord &ls
 
 static __inline__ __device__ vec3 cihouLightEmission(LightSampleRecord &lsr, GenericLight &light, uint32_t depth) {
 
+    auto vIntensity = (light.vIntensity < 0.0f) ? light.intensity : light.vIntensity;
+
     if (light.tex != 0u) {
         auto color = texture2D(light.tex, lsr.uv);
         if (light.texGamma != 1.0f) {
             color = pow(color, light.texGamma);
         }
 
-        auto scaler = (depth > 0)? light.intensity : light.vIntensity;
+        auto scaler = (depth > 0)? light.intensity : vIntensity;
         color = color * scaler;
         return *(vec3*)&color;
     }
 
-    if (depth == 0) {
-        return light.emission * light.vIntensity / light.intensity;
+    if (depth == 0 && vIntensity >= 0.0f) {
+        return light.emission * vIntensity / light.intensity;
     }
     
     return light.emission;
