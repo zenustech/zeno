@@ -656,7 +656,7 @@ extern "C" __global__ void __closesthit__radiance()
 
     bool next_ray_is_going_inside = false;
     mats.sssParam = mats.subsurface>0 ? mats.subsurface*mats.sssParam : mats.sssParam;
-    //mats.subsurface = mats.subsurface>0 ? 1 : 0;
+    mats.subsurface = mats.subsurface>0 ? 1 : 0;
 
     /* MODME */
 

@@ -608,7 +608,7 @@ struct ImageBlur : INode {
                 cv::bilateralFilter(imagecvin,imagecvout, kernelSize, sigmaColor, sigmaSpace);
             }
             else if(type == "Stack"){
-                cv::stackBlur(imagecvin,imagecvout,cv::Size(kernelSize, kernelSize));
+//                cv::stackBlur(imagecvin,imagecvout,cv::Size(kernelSize, kernelSize));
             }
             else{
                 zeno::log_error("ImageBlur: Blur type does not exist");
