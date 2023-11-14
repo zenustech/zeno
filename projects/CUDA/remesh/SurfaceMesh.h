@@ -209,7 +209,7 @@ public:
         return (!(h != PMP_MAX_INDEX && hconn_[h].face_ != PMP_MAX_INDEX));
     }
     bool is_boundary_e(int e) const {
-        return (hconn_[e << 1].face_ == PMP_MAX_INDEX || hconn_[e<<1|1].face_ == PMP_MAX_INDEX);
+        return (hconn_[e << 1].face_ == PMP_MAX_INDEX || hconn_[e << 1 | 1].face_ == PMP_MAX_INDEX);
     }
     bool is_isolated(int v) const { return halfedge(v) == PMP_MAX_INDEX; }
     inline int to_vertex(int h) const { return hconn_[h].vertex_; }
@@ -246,7 +246,7 @@ public:
     void collapse(int h);
     void garbage_collection();
     int split(int e, int v, int& new_lines, int& new_faces);
-    bool is_flip_ok(int e) const;
+    bool is_flip_ok(int e, bool relaxed = false) const;
     void flip(int e);
 
     size_t valence(int v) const;
@@ -493,7 +493,7 @@ public:
     bool has_garbage_;
 
     // a constant for collapse and flip checks
-    const float angle_thrd = (M_PI * 5.0f / 180.0f);
+    const float angle_thrd = (M_PI * 30.0f / 180.0f);
 
     // helper data for add_tri()
     typedef std::pair<int, int> NextCacheEntry;

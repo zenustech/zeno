@@ -10,6 +10,7 @@
 
 #include "./SurfaceMesh.h"
 #include "./algorithms/SurfaceRemeshing.h"
+#include "./algorithms/SurfaceCurvature.h"
 
 #include "zensim/container/Bht.hpp"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
@@ -444,4 +445,157 @@ ZENO_DEFNODE(AdaptiveRemeshing)
     {},
     {"primitive"},
 });
+
+struct RepairDegenerateTriangle : INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto &pos = prim->attr<vec3f>("pos");
+        auto &efeature = prim->lines.add_attr<int>("e_feature");
+
+        // init v_duplicate attribute
+        auto &vduplicate = prim->verts.add_attr<int>("v_duplicate", 0);
+        int vert_size = prim->verts.size();
+        for (int i = 0; i < vert_size; ++i) {
+            vduplicate[i] = i;
+        }
+
+        auto &lines = prim->lines;
+        lines.clear();
+        efeature.clear();
+
+        std::set<std::pair<int, int>> marked_lines{};
+        std::map<std::pair<int, int>, int> lines_map{};
+        splitNonManifoldEdges(prim, lines_map, marked_lines, efeature);
+        splitNonManifoldVertices(prim, lines_map);
+
+        auto mesh = new zeno::pmp::SurfaceMesh(prim, "e_feature");
+
+        zeno::pmp::SurfaceRemeshing(mesh, "e_feature").remove_degenerate_triangles();
+
+        returnNonManifold(prim);
+
+        // delete v_duplicate at last
+        prim->verts.erase_attr("v_duplicate");
+        prim->verts.erase_attr("v_normal");
+        prim->verts.erase_attr("v_deleted");
+        prim->lines.erase_attr("e_deleted");
+        prim->tris.erase_attr("f_deleted");
+        prim->verts.update();
+
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENO_DEFNODE(RepairDegenerateTriangle)
+({
+    {{"prim"}},
+    {"prim"},
+    {},
+    {"primitive"},
+});
+
+struct GaussianCurvature : INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto &pos = prim->attr<vec3f>("pos");
+        auto &efeature = prim->lines.add_attr<int>("e_feature", 0);
+        auto &vfeature = prim->verts.add_attr<int>("v_feature", 0);
+
+        // init v_duplicate attribute
+        auto &vduplicate = prim->verts.add_attr<int>("v_duplicate", 0);
+        int vert_size = prim->verts.size();
+        for (int i = 0; i < vert_size; ++i) {
+            vduplicate[i] = i;
+        }
+
+        // if there exist marked lines
+        std::set<std::pair<int, int>> marked_lines{};
+        auto &lines = prim->lines;
+        lines.clear();
+        efeature.clear();
+
+        std::map<std::pair<int, int>, int> lines_map{};
+        splitNonManifoldEdges(prim, lines_map, marked_lines, efeature);
+        splitNonManifoldVertices(prim, lines_map);
+
+        auto mesh = new zeno::pmp::SurfaceMesh(prim, "e_feature");
+        zeno::pmp::SurfaceCurvature curv(mesh);
+        curv.analyze_tensor(1);
+        curv.calculate_gaussian_curvature();
+
+        returnNonManifold(prim);
+
+        // delete v_duplicate at last
+        prim->verts.erase_attr("v_duplicate");
+        prim->verts.erase_attr("v_normal");
+        prim->verts.erase_attr("v_deleted");
+        prim->lines.erase_attr("e_deleted");
+        prim->tris.erase_attr("f_deleted");
+        prim->verts.update();
+
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENO_DEFNODE(GaussianCurvature)
+({
+    {{"prim"}},
+    {"prim"},
+    {},
+    {"primitive"},
+});
+
+struct MarkBoundaryVertices : INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto &pos = prim->attr<vec3f>("pos");
+        auto &efeature = prim->lines.add_attr<int>("e_feature");
+
+        // init v_duplicate attribute
+        auto &vduplicate = prim->verts.add_attr<int>("v_duplicate", 0);
+        int vert_size = prim->verts.size();
+        for (int i = 0; i < vert_size; ++i) {
+            vduplicate[i] = i;
+        }
+
+        // if there exist marked lines
+        std::set<std::pair<int, int>> marked_lines{};
+        auto &lines = prim->lines;
+        lines.clear();
+        efeature.clear();
+
+        std::map<std::pair<int, int>, int> lines_map{};
+        splitNonManifoldEdges(prim, lines_map, marked_lines, efeature);
+        splitNonManifoldVertices(prim, lines_map);
+
+        auto &boundary = prim->verts.add_attr<int>("v_boundary", 0);
+        auto mesh = new zeno::pmp::SurfaceMesh(prim, "e_feature");
+        for (int line_size = lines.size(), e = 0; e < line_size; ++e) {
+            if (mesh->is_boundary_e(e)) {
+                boundary[lines[e][0]] = boundary[lines[e][1]] = 1;
+            }
+        }
+
+        returnNonManifold(prim);
+
+        // delete v_duplicate at last
+        prim->verts.erase_attr("v_duplicate");
+        prim->verts.erase_attr("v_normal");
+        prim->verts.erase_attr("v_deleted");
+        prim->lines.erase_attr("e_deleted");
+        prim->tris.erase_attr("f_deleted");
+        prim->verts.update();
+
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENO_DEFNODE(MarkBoundaryVertices)
+({
+    {{"prim"}},
+    {"prim"},
+    {},
+    {"primitive"},
+});
+
 } // namespace zeno
