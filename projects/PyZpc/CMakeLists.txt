@@ -54,3 +54,5 @@ foreach(ZPY_FILE IN LISTS ZPY_SRC)
 endforeach()
 
 configure_file(zeno_PyZpc_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/zeno_PyZpc_config.h @ONLY)
+
+add_subdirectory(interop)
