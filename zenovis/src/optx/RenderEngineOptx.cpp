@@ -601,20 +601,24 @@ struct GraphicsManager {
                 } 
                 else 
                 {
-                    auto p0 = prim_in->verts[prim_in->tris[0][0]];
-                    auto p1 = prim_in->verts[prim_in->tris[0][1]];
-                    auto p2 = prim_in->verts[prim_in->tris[0][2]];
-                    auto e1 = p2 - p0;
-                    auto e2 = p1 - p2;
+                    auto p2 = prim_in->verts[prim_in->tris[0][0]];
+                    auto p0 = prim_in->verts[prim_in->tris[0][1]];
+                    auto p1 = prim_in->verts[prim_in->tris[0][2]];
+                    auto e1 = p1 - p0;
+                    auto e2 = p2 - p1;
                     
-                    // p0 ---(+x)--> p2
+                    // p0 ---(+x)--> p1
                     // |||||||||||||(-)
                     // |||||||||||||(z)
                     // |||||||||||||(+)
-                    // p* <--(-x)--- p1
+                    // p* <--(-x)--- p2
+
+                    p0 = p0 + e2; // p* as p0
+                    e2 = -e2;     // invert e2
                 
                     // facing down in local space
-                    nor = -zeno::normalize(zeno::cross(e1, e2));
+                    nor = zeno::normalize(zeno::cross(e2, e1));
+                    if (ivD) { nor *= -1; }
                     
                     if (prim_in->verts.has_attr("clr")) {
                         clr = prim_in->verts.attr<zeno::vec3f>("clr")[0];

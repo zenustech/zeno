@@ -1942,7 +1942,7 @@ static void addTriangleLightGeo(float3 p0, float3 p1, float3 p2) {
     geo.push_back(p0); geo.push_back(p1); geo.push_back(p2);
 }
 
-static void addLightPlane(float3 p0, float3 v2, float3 v1, float3 normal, float3 emission)
+static void addLightPlane(float3 p0, float3 v1, float3 v2, float3 normal, float3 emission)
 {
     float3 vert0 = p0, vert1 = p0 + v1, vert2 = p0 + v2, vert3 = p0 + v1 + v2;
 
@@ -1950,11 +1950,11 @@ static void addLightPlane(float3 p0, float3 v2, float3 v1, float3 normal, float3
 
     geo.push_back(make_float4(vert0.x, vert0.y, vert0.z, 0.f));
     geo.push_back(make_float4(vert1.x, vert1.y, vert1.z, 0.f));
-    geo.push_back(make_float4(vert2.x, vert2.y, vert2.z, 0.f));
-
+    geo.push_back(make_float4(vert3.x, vert3.y, vert3.z, 0.f));
+   
+    geo.push_back(make_float4(vert0.x, vert0.y, vert0.z, 0.f));
     geo.push_back(make_float4(vert3.x, vert3.y, vert3.z, 0.f));
     geo.push_back(make_float4(vert2.x, vert2.y, vert2.z, 0.f));
-    geo.push_back(make_float4(vert1.x, vert1.y, vert1.z, 0.f));
 }
 
 static void addLightSphere(float3 center, float radius) 
@@ -2205,7 +2205,7 @@ void buildLightTree() {
             firstRectLightIdx = min(idx, firstRectLightIdx);
 
             light.setRectData(v0, v1, v2, light.N);
-            addLightPlane(v0, v2, v1, light.N, light.emission);
+            addLightPlane(v0, v1, v2, light.N, light.emission);
 
         } else if (light.shape == zeno::LightShape::Sphere) {
 
