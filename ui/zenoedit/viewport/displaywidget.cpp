@@ -529,6 +529,10 @@ void DisplayWidget::onSliderValueChanged(int frame)
 
     ZTimeline *timeline = mainWin->timeline();
     ZASSERT_EXIT(timeline);
+
+    for (auto displayWid : mainWin->viewports())
+        if (!displayWid->isGLViewport())
+            displayWid->setRenderSeparately(false, false);
     if (mainWin->isAlways() || mainWin->isAlwaysLightCamera() || mainWin->isAlwaysMaterial())
     {
         auto pGraphsMgr = zenoApp->graphsManagment();
@@ -546,9 +550,6 @@ void DisplayWidget::onSliderValueChanged(int frame)
         launchParam.endFrame = frame;
         launchParam.projectFps = mainWin->timelineInfo().timelinefps;
         if (mainWin->isAlwaysLightCamera() || mainWin->isAlwaysMaterial()) {
-            for (auto displayWid : mainWin->viewports())
-                if (!displayWid->isGLViewport())
-                    displayWid->setRenderSeparately(mainWin->isAlwaysLightCamera(), mainWin->isAlwaysMaterial());
             launchParam.applyLightAndCameraOnly = mainWin->isAlwaysLightCamera();
             launchParam.applyMaterialOnly = mainWin->isAlwaysMaterial();
         }
