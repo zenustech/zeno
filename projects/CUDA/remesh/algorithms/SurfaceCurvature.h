@@ -26,6 +26,7 @@ public:
     }
 
     void calculate_gaussian_curvature() {
+        auto &vdeleted = mesh_->prim_->verts.attr<int>("v_deleted");
         auto &gaussian_curv = mesh_->prim_->verts.add_attr<float>("curv_gaussian");
         for (int v = 0; v < mesh_->vertices_size_; ++v) {
             if (mesh_->has_garbage_ && vdeleted[v])
