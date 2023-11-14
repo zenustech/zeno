@@ -545,7 +545,7 @@ ZENO_DEFNODE(GaussianCurvature)
     {"primitive"},
 });
 
-struct MarkBoundary : INode {
+struct MarkBoundaryVertices : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         auto &pos = prim->attr<vec3f>("pos");
@@ -568,11 +568,11 @@ struct MarkBoundary : INode {
         splitNonManifoldEdges(prim, lines_map, marked_lines, efeature);
         splitNonManifoldVertices(prim, lines_map);
 
-        auto &boundary = prim->lines.add_attr<int>("e_boundary", 0);
+        auto &boundary = prim->verts.add_attr<int>("v_boundary", 0);
         auto mesh = new zeno::pmp::SurfaceMesh(prim, "e_feature");
         for (int line_size = lines.size(), e = 0; e < line_size; ++e) {
             if (mesh->is_boundary_e(e)) {
-                boundary[e] = 1;
+                boundary[lines[e][0]] = boundary[lines[e][1]] = 1;
             }
         }
 
@@ -590,7 +590,7 @@ struct MarkBoundary : INode {
     }
 };
 
-ZENO_DEFNODE(MarkBoundary)
+ZENO_DEFNODE(MarkBoundaryVertices)
 ({
     {{"prim"}},
     {"prim"},
