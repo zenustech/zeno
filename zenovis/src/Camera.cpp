@@ -53,7 +53,7 @@ void Camera::placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up) {
 
     m_view = glm::lookAt(m_lodcenter, m_lodcenter + m_lodfront, m_lodup);
     if (m_ortho_mode) {
-        auto radius = glm::length(m_lodcenter);
+        auto radius = m_radius;
         m_proj = glm::ortho(-radius * getAspect(), radius * getAspect(), -radius,
                 radius, m_near, m_far);
     } else {
