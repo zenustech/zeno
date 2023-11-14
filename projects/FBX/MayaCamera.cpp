@@ -452,7 +452,7 @@ ZENO_DEFNODE(LightNode)({
         {"readpath", "texturePath"},
         {"float",  "textureGamma", "1.0"},
         
-        {"float", "visibleIntensity", "1.0"},
+        {"float", "visibleIntensity", "-1.0"},
         {"enum " + LightNode::lightShapeListString(), LightNode::lightShapeKey, LightNode::lightShapeDefaultString()},   
         {"enum " + LightNode::lightTypeListString(), LightNode::lightTypeKey, LightNode::lightTypeDefaultString()}, 
         {"PrimitiveObject", "prim"},
