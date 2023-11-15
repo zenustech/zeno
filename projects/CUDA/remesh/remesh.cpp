@@ -575,6 +575,17 @@ struct CalcCurvature : INode {
         zeno::pmp::SurfaceCurvature curv(mesh, min_curv_tag, max_curv_tag, gaussian_curv_tag);
         curv.analyze_tensor(1);
 
+        auto &min_curv = prim->verts.attr<float>(min_curv_tag);
+        auto &max_curv = prim->verts.attr<float>(max_curv_tag);
+        auto &gaussian_curv = prim->verts.attr<float>(gaussian_curv_tag);
+        for (int v = 0; v < vert_size; ++v) {
+            if (vduplicate[v] != v) {
+                min_curv[v] = min_curv[vduplicate[v]] = -1e5;
+                max_curv[v] = max_curv[vduplicate[v]] = 1e5;
+                gaussian_curv[v] = gaussian_curv[vduplicate[v]] = -1e7;
+            }
+        }
+
         returnNonManifold(prim);
 
         // delete v_duplicate at last
