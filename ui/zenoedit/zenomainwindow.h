@@ -121,6 +121,7 @@ public:
         ACTION_SET_NASLOC,
         ACTION_ZENCACHE,
         ACTION_SET_SHORTCUT,
+        ACTION_PREFERENCES,
         //Others
         ACTION_CUSTOM_UI,
         ACTION_ZOOM,

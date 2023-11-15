@@ -21,7 +21,7 @@ ZenoSettingsManager::ZenoSettingsManager(QObject *parent) :
     initShortCutInfos();
 }
 
-void ZenoSettingsManager::setValue(const QString& name, const QVariant& value) 
+bool ZenoSettingsManager::setValue(const QString& name, const QVariant& value) 
 {
     QSettings settings(zsCompanyName, zsEditor);
     QVariant oldValue = settings.value(name);
@@ -30,7 +30,9 @@ void ZenoSettingsManager::setValue(const QString& name, const QVariant& value)
         settings.setValue(name, value);
         if (name != zsShortCut)
             emit valueChanged(name);
+        return true;
     }
+    return false;
 }
 
 QVariant ZenoSettingsManager::getValue(const QString& zsName) const
