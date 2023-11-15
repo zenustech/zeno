@@ -590,6 +590,8 @@ struct MakeSurfaceConstraintTopology : INode {
             zs::Vector<zs::vec<int,4>> bd_topos{quads.get_allocator(),0};
             retrieve_tri_bending_topology(cudaPol,quads,halfedges,bd_topos);
 
+            auto rest_scale = get_input2<float>("rest_scale");
+
             eles.resize(bd_topos.size());
 
             topological_coloring(cudaPol,bd_topos,colors);
@@ -601,6 +603,7 @@ struct MakeSurfaceConstraintTopology : INode {
             cudaPol(zs::range(eles.size()),[
                 eles = proxy<space>({},eles),
                 bd_topos = proxy<space>(bd_topos),
+                rest_scale = rest_scale,
                 reordered_map = proxy<space>(reordered_map),
                 verts = proxy<space>({},verts)] ZS_LAMBDA(int oei) mutable {
                     auto ei = reordered_map[oei];
@@ -618,7 +621,7 @@ struct MakeSurfaceConstraintTopology : INode {
 
                     float alpha{};
                     float alpha_sign{};
-                    CONSTRAINT::init_DihedralBendingConstraint(x[0],x[1],x[2],x[3],alpha,alpha_sign);
+                    CONSTRAINT::init_DihedralBendingConstraint(x[0],x[1],x[2],x[3],rest_scale,alpha,alpha_sign);
                     eles("ra",oei) = alpha;
                     eles("sign",oei) = alpha_sign;
             });      
@@ -1032,11 +1035,13 @@ struct XPBDSolveSmooth : INode {
             dtiles_t vtemp{verts.get_allocator(),{
                 {"x",3},
                 {"v",3},
-                {"minv",1}
+                {"minv",1},
+                {"m",1}
             },nm_verts};
 
             TILEVEC_OPS::copy<3>(cudaPol,verts,"px",vtemp,"x");
             TILEVEC_OPS::copy(cudaPol,verts,"minv",vtemp,"minv");
+            TILEVEC_OPS::copy(cudaPol,verts,"m",vtemp,"m");
             cudaPol(zs::range(verts.size()),[
                 vtemp = proxy<space>({},vtemp),
                 verts = proxy<space>({},verts)] ZS_LAMBDA(int vi) mutable {
@@ -1064,6 +1069,7 @@ struct XPBDSolveSmooth : INode {
                         auto cur_kvert = kverts.pack(dim_c<3>,"px",kvi) * (1 - w) + kverts.pack(dim_c<3>,"x",kvi) * w;
                         vtemp.tuple(dim_c<3>,"x",voffset + kvi) = pre_kvert;
                         vtemp("minv",voffset + kvi) = 0;  
+                        vtemp("m",voffset + kvi) = (T)1000;
                         vtemp.tuple(dim_c<3>,"v",voffset + kvi) = cur_kvert - pre_kvert;
                 });            
             }
@@ -1079,7 +1085,7 @@ struct XPBDSolveSmooth : INode {
                         for(int d = 0;d != 3;++d)
                             dp_buffer[vi * 3 + d] = 0;
                         // dp_buffer[vi] = vec3::zeros();
-                        dp_count[vi] = 0;
+                        // dp_count[vi] = 0;
                 });
 
                 cudaPol(zs::range(nm_dcd_collisions),[
@@ -1093,19 +1099,22 @@ struct XPBDSolveSmooth : INode {
                     dp_count = proxy<space>(dp_count)] ZS_LAMBDA(int ci) mutable {
                         auto inds = cquads.pack(dim_c<4>,"inds",ci,int_c);
                         auto bary = cquads.pack(dim_c<4>,"bary",ci);
-
+                        auto type = zs::reinterpret_bits<int>(cquads("type",ci));
+                        
                         vec3 ps[4] = {};
                         vec3 vs[4] = {};
                         vec4 minvs{};
+                        vec4 ms{};
 
                         for(int i = 0;i != 4;++i) {
                             ps[i] = vtemp.pack(dim_c<3>,"x",inds[i]);
                             vs[i] = vtemp.pack(dim_c<3>,"v",inds[i]);
                             minvs[i] = vtemp("minv",inds[i]);
+                            ms[i] = vtemp("m",inds[i]);
                         }
 
                         vec3 imps[4] = {};
-                        if(!COLLISION_UTILS::compute_imminent_collision_impulse(ps,vs,bary,minvs,imps,imminent_thickness,add_repulsion_force))
+                        if(!COLLISION_UTILS::compute_imminent_collision_impulse(ps,vs,bary,ms,minvs,imps,imminent_thickness,type,add_repulsion_force))
                             return;
                         for(int i = 0;i != 4;++i) {
                             if(minvs[i] < eps)

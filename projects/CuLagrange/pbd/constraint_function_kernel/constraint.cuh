@@ -153,6 +153,7 @@ namespace zeno { namespace CONSTRAINT {
         const VECTOR3d& p1,
         const VECTOR3d& p2,
         const VECTOR3d& p3,
+        const SCALER& restAngleScale,
         SCALER& restAngle,
         SCALER& angleSign){
             VECTOR3d e = p3 - p2;
@@ -181,9 +182,7 @@ namespace zeno { namespace CONSTRAINT {
             //     angleSign = -1.0;   
 
             
-            restAngle = zs::dihedral_angle(p0,p2,p3,p1);
-            // printf("rest_Angle : %f\n",(float)restAngle * (float)angleSign);
-
+            restAngle = zs::dihedral_angle(p0,p2,p3,p1) * restAngleScale;
             return true;            
     }
 

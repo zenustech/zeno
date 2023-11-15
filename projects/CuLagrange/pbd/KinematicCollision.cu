@@ -924,6 +924,7 @@ struct DetangleCCDCollisionWithBoundary : INode {
             {"x",3},
             {"v",3},
             {"minv",1},
+            {"m",1},
             {"collision_cancel",1}
         },verts.size() + kverts.size()};
         cudaPol(zs::range(verts.size()),[
@@ -934,6 +935,7 @@ struct DetangleCCDCollisionWithBoundary : INode {
                 vtemp.tuple(dim_c<3>,"x",vi) = verts.pack(dim_c<3>,pre_x_tag,vi);
                 vtemp.tuple(dim_c<3>,"v",vi) = verts.pack(dim_c<3>,current_x_tag,vi) - verts.pack(dim_c<3>,pre_x_tag,vi);
                 vtemp("minv",vi) = verts("minv",vi);
+                vtemp("m",vi) = verts("m",vi);
                 if(verts.hasProperty("collision_cancel") && verts("collision_cancel",vi) > 1e-3)
                     vtemp("collision_cancel",vi) = 1;
                 else
@@ -951,6 +953,7 @@ struct DetangleCCDCollisionWithBoundary : INode {
                 vtemp.tuple(dim_c<3>,"x",kvi + voffset) = pre_kvert;
                 vtemp.tuple(dim_c<3>,"v",kvi + voffset) = cur_kvert - pre_kvert;
                 vtemp("minv",kvi + voffset) = (T)0;
+                vtemp("m",kvi + voffset) = (T)1000;
                 if(kverts.hasProperty("collision_cancel") && kverts("collision_cancel",kvi) > 1e-3)
                     vtemp("collision_cancel",kvi + voffset) = 1;
                 else
@@ -996,7 +999,7 @@ struct DetangleCCDCollisionWithBoundary : INode {
         zs::Vector<int> nm_ccd_collision{verts.get_allocator(),1};
 
         auto res_threshold = thickness * 0.01;
-        res_threshold = res_threshold < 1e-3 ? 1e-3 : res_threshold;
+        res_threshold = res_threshold < 5e-3 ? 5e-3 : res_threshold;
 
         zs::Vector<int> ccd_fail_mark{verts.get_allocator(),verts.size()};
 
@@ -1013,6 +1016,7 @@ struct DetangleCCDCollisionWithBoundary : INode {
                 auto do_bvh_refit = iter > 0;
                 COLLISION_UTILS::calc_continous_self_PT_collision_impulse_with_toc(cudaPol,
                     vtemp,
+                    vtemp,
                     vtemp,"x","v",
                     ttemp,
                     // thickness,
@@ -1027,6 +1031,7 @@ struct DetangleCCDCollisionWithBoundary : INode {
                 std::cout << "do continous self EE cololision impulse" << std::endl;
                 auto do_bvh_refit = iter > 0;
                 COLLISION_UTILS::calc_continous_self_EE_collision_impulse_with_toc(cudaPol,
+                    vtemp,
                     vtemp,
                     vtemp,"x","v",
                     etemp,

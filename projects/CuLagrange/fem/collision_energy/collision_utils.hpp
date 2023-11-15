@@ -984,8 +984,8 @@ namespace COLLISION_UTILS {
                                 normal[0], normal[1], normal[2], intersect);
     }
 
-    constexpr bool compute_imminent_collision_impulse(const VECTOR3 ps[4],const VECTOR3 vs[4],const VECTOR4& bary,const VECTOR4 minv,VECTOR3 imps[4],const REAL& thickness,bool add_repulsion) {
-        constexpr auto eps = 1e-6;
+    constexpr bool compute_imminent_collision_impulse(const VECTOR3 ps[4],const VECTOR3 vs[4],const VECTOR4& bary,const VECTOR4 ms,const VECTOR4 minv,VECTOR3 imps[4],const REAL& thickness,const int& type,bool add_repulsion) {
+        constexpr auto eps = 1e-5;
         auto pr = VECTOR3::zeros();
         auto vr = VECTOR3::zeros();
         for(int i = 0;i != 4;++i) {
@@ -1000,6 +1000,16 @@ namespace COLLISION_UTILS {
         auto npr = pr.norm();
         if(npr > thickness)
             return false;
+
+        if(npr < eps)
+            return false;
+
+
+        // if(npr < 10 * eps) {
+        //     if(type == 0) {
+        //         auto nrm = LSL_GEO::facet_normal()
+        //     }
+        // }
 
 
         pr = pr.normalized();
@@ -1024,9 +1034,9 @@ namespace COLLISION_UTILS {
 
         REAL cminv = 0;
         for(int i = 0;i != 4;++i){
-            if(minv[i] < eps)
-                continue;
-            cminv += bary[i] * bary[i] * minv[i];
+            // if(minv[i] < eps)
+            //     continue;
+            cminv += bary[i] * bary[i] / ms[i];
         }
 
         if(cminv < eps)
@@ -1040,7 +1050,7 @@ namespace COLLISION_UTILS {
         return true;
     }
 
-    constexpr void compute_imminent_repulsive_impulse(const VECTOR3 ps[4],const VECTOR3 vs[4],const VECTOR4& bary,const REAL minv[4],VECTOR3 imps[4],
+    constexpr void compute_imminent_repulsive_impulse(const VECTOR3 ps[4],const VECTOR3 vs[4],const VECTOR4& bary,const REAL ms[4],const REAL minv[4],VECTOR3 imps[4],
             const REAL& repulsive_strength,const REAL& thickness,const REAL& max_repel_dist) {
         constexpr auto eps = 1e-6;
         auto pr = VECTOR3::zeros();
@@ -1066,13 +1076,17 @@ namespace COLLISION_UTILS {
 
         REAL cminv = 0;
         for(int i = 0;i != 4;++i){
-            if(minv[i] < eps)
-                continue;
-            cminv += bary[i] * bary[i] * minv[i];
+            // if(minv[i] < eps)
+            //     continue;
+            cminv += bary[i] * bary[i] / ms[i];
         }
 
+
+        if(cminv < eps * 10)
+            return;
+
         for(int i = 0;i != 4;++i) {
-            auto beta = minv[i] * bary[i] / cminv;
+            auto beta = cminv < eps * 10 ? (REAL)0 : minv[i] * bary[i] / cminv;
             imps[i] = impulse * beta;
         }
     }

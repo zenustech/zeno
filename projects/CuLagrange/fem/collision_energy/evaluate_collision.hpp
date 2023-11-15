@@ -1085,7 +1085,7 @@ void detect_imminent_EE_close_proximity(Pol& pol,
 
                     vec2 edge_bary{};
 
-                    if((pas[0] - pas[1]).cross(pbs[0] - pbs[1]).norm() < eps * 10)
+                    if((pas[0] - pas[1]).cross(pbs[0] - pbs[1]).norm() < eps)
                         return;
 
 
@@ -1590,6 +1590,7 @@ void calc_continous_self_PT_collision_impulse(Pol& pol,
 
 template<typename Pol,
     typename InverseMassTileVec,
+    typename MassTileVec,
     // typename THICKNESS_REAL,
     typename PosTileVec,
     typename TrisTileVec,
@@ -1600,6 +1601,7 @@ template<typename Pol,
     typename T = typename PosTileVec::value_type>
 void calc_continous_self_PT_collision_impulse_with_toc(Pol& pol,
     const InverseMassTileVec& invMass,
+    const MassTileVec& mass,
     const PosTileVec& verts,const zs::SmallString& xtag,const zs::SmallString& vtag,
     const TrisTileVec& tris,
     // const THICKNESS_REAL& thickness,
@@ -1712,6 +1714,7 @@ void calc_continous_self_PT_collision_impulse_with_toc(Pol& pol,
         std::cout << "compute continouse PT proxy impulse" << std::endl;
         pol(zip(zs::range(csPT.size()),csPT._activeKeys),[
             invMass = proxy<space>({},invMass),
+            mass = proxy<space>({},mass),
             xtag = xtag,
             vtag = vtag,
             tocs = proxy<space>(tocs),
@@ -1750,9 +1753,22 @@ void calc_continous_self_PT_collision_impulse_with_toc(Pol& pol,
                 // auto alpha = (T)1.0;
                 auto alpha = tocs[vi];
 
+                // TRY TO PREVENT SOME STICKY
+                // if(alpha < (T)0.1) {
+                //     printf("the ccd collision[%f] is too closed, skip it, dcd and detangle should solve it\n",(float)alpha);
+                //     return;
+                // }
+
                 vec3 nps[4] = {};
                 for(int i = 0;i != 4;++i)
                     nps[i] = ps[i] + vs[i] * alpha * 0.99;
+
+                auto collision_nrm = (nps[1] - nps[0]).cross(nps[2] - nps[0]);
+                auto area = collision_nrm.norm();
+                if(area < eps)
+                    return;
+                collision_nrm /= area;
+                // auto collision_nrm = LSL_GEO::facet_normal(nps[0],nps[1],nps[2]);
 
                 vec3 bary_centric{};
                 LSL_GEO::pointTriangleBaryCentric(nps[0],nps[1],nps[2],nps[3],bary_centric);
@@ -1765,12 +1781,12 @@ void calc_continous_self_PT_collision_impulse_with_toc(Pol& pol,
                     rv += vs[i] * bary[i];
                 }
                         
-                auto collision_nrm = LSL_GEO::facet_normal(nps[0],nps[1],nps[2]);
+
                 auto rv_nrm = collision_nrm.dot(rv);
 
                 auto cm = (T).0;
                 for(int i = 0;i != 4;++i)
-                    cm += bary[i] * bary[i] * invMass("minv",inds[i]);
+                    cm += bary[i] * bary[i] / mass("m",inds[i]);
                 if(cm < eps)
                     return;
                 
@@ -2268,6 +2284,7 @@ void find_closest_intersection_free_configuration(Pol& pol,
 
 template<typename Pol,  
     typename InverseMassTileVec,
+    typename MassTileVec,
     typename PosTileVec,
     typename EdgeTileVec,
     typename ImpulseBuffer,
@@ -2277,6 +2294,7 @@ template<typename Pol,
     typename T = typename PosTileVec::value_type>
 void calc_continous_self_EE_collision_impulse_with_toc(Pol& pol,
     const InverseMassTileVec& invMass,
+    const MassTileVec& mass,
     const PosTileVec& verts,const zs::SmallString& xtag,const zs::SmallString& vtag,
     const EdgeTileVec& edges,
     const size_t& start_edge_id,
@@ -2419,6 +2437,7 @@ void calc_continous_self_EE_collision_impulse_with_toc(Pol& pol,
             verts = proxy<space>({},verts),
             edges = proxy<space>({},edges),
             invMass = proxy<space>({},invMass),
+            mass = proxy<space>({},mass),
             impulse_buffer = proxy<space>(impulse_buffer),
             impulse_count = proxy<space>(impulse_count),
             // thickness = thickness,
@@ -2468,6 +2487,12 @@ void calc_continous_self_EE_collision_impulse_with_toc(Pol& pol,
                 for(int i = 0;i != 4;++i)
                     nps[i] = ps[i] + vs[i] * alpha;
 
+                if((nps[1] - nps[0]).norm() < eps * 100 || (nps[3] - nps[2]).norm() < eps * 100)
+                    return;
+
+                if((nps[1] - nps[0]).cross(nps[3] - nps[2]).norm() < eps)
+                    return;
+
                 vec2 edge_bary{};
                 LSL_GEO::edgeEdgeBaryCentric(nps[0],nps[1],nps[2],nps[3],edge_bary);
                  for(int i = 0;i != 2;++i) {
@@ -2487,7 +2512,7 @@ void calc_continous_self_EE_collision_impulse_with_toc(Pol& pol,
                 auto rv_nrm = collision_nrm.dot(rv);
                 auto cm = (T).0;
                 for(int i = 0;i != 4;++i)
-                    cm += bary[i] * bary[i] * invMass("minv",inds[i]);
+                    cm += bary[i] * bary[i] / mass("m",inds[i]);
                 if(cm < eps)
                     return;
                 auto impulse = -collision_nrm * rv_nrm * ((T)1 - alpha);
