@@ -3,6 +3,7 @@
 #include <QtWidgets>
 
 struct ShortCutInfo;
+class ZComboBox;
 
 class ZShortCutItemDelegate : public QStyledItemDelegate
 {
@@ -18,6 +19,23 @@ protected:
     bool eventFilter(QObject* object, QEvent* event) override;
 };
 
+class ShortcutsPane : public QWidget
+{
+    Q_OBJECT
+public:
+    explicit ShortcutsPane(QWidget* parent = nullptr);
+    void saveValue();
+private slots:
+    void onCurrentIndexChanged(int index);
+private:
+    void initUI();
+
+private:
+    QTableWidget* m_pTableWidget;
+    ZComboBox* m_pComboBox;
+    QVector<ShortCutInfo> m_shortCutInfos;
+};
+
 class ZShortCutSettingDlg : public QDialog
 {
     Q_OBJECT
@@ -25,16 +43,6 @@ class ZShortCutSettingDlg : public QDialog
 public:
     ZShortCutSettingDlg(QWidget *parent = nullptr);
     ~ZShortCutSettingDlg();
-
-signals:
-    void layoutChangedSignal();
-
-private slots:
-    void onCurrentIndexChanged(int index);
 private:
     void initUI();
-
-private:
-    QTableWidget *m_pTableWidget;
-    QVector<ShortCutInfo> m_shortCutInfos;
 };

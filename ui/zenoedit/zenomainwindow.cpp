@@ -56,6 +56,7 @@
 #include "dialog/ZImportSubgraphsDlg.h"
 #include "dialog/zcheckupdatedlg.h"
 #include "dialog/zrestartdlg.h"
+#include "dialog/zpreferencesdlg.h"
 
 const QString g_latest_layout = "LatestLayout";
 
@@ -264,6 +265,11 @@ void ZenoMainWindow::onMenuActionTriggered(bool bTriggered)
     }
     case ACTION_SET_SHORTCUT: {
         shortCutDlg();
+        break;
+    }
+    case ACTION_PREFERENCES: {
+        ZPreferencesDlg dlg;
+        dlg.exec();
         break;
     }
     case ACTION_ABOUT: {
@@ -1847,6 +1853,7 @@ void ZenoMainWindow::setActionProperty()
     m_ui->actionSet_NASLOC->setProperty("ActionType", ACTION_SET_NASLOC);
     m_ui->actionSet_ZENCACHE->setProperty("ActionType", ACTION_ZENCACHE);
     m_ui->actionSet_ShortCut->setProperty("ActionType", ACTION_SET_SHORTCUT);
+    m_ui->actionPreferences->setProperty("ActionType", ACTION_PREFERENCES);
     m_ui->actionFeedback->setProperty("ActionType", ACTION_FEEDBACK);
     m_ui->actionAbout->setProperty("ActionType", ACTION_ABOUT);
     m_ui->actionCheck_Update->setProperty("ActionType", ACTION_CHECKUPDATE);
