@@ -189,6 +189,7 @@ void splitNonManifoldVertices(std::shared_ptr<PrimitiveObject> prim,
 
 void returnNonManifold(std::shared_ptr<PrimitiveObject> prim) {
     // delete duplicate vertices
+    auto& pos = prim->attr<vec3f>("pos");
     auto &vduplicate = prim->verts.attr<int>("v_duplicate");
     int tri_size = prim->tris.size();
     for (int i = 0; i < tri_size; ++i) {
@@ -208,6 +209,58 @@ void returnNonManifold(std::shared_ptr<PrimitiveObject> prim) {
             }
         }
     }
+    int vert_size = prim->verts.size();
+    if (prim->verts.has_attr("v_boundary")) {
+        auto &vboundary = prim->verts.attr<int>("v_boundary");
+        for (int i = 0; i < vert_size; ++i) {
+            if (vduplicate[i] != i) {
+                vboundary[vduplicate[i]] = vboundary[vduplicate[i]] || vboundary[i];
+            }
+        }
+    }
+
+    auto& vmap = prim->verts.add_attr<int>("v_garbage_collection");
+
+    for (int i = 0; i < vert_size; ++i)
+        vmap[i] = i;
+
+    int i0 = 0;
+    int i1 = prim->verts.size() - 1;
+    while (1) {
+        while (i0 < i1 && vduplicate[i0] == i0)
+            ++i0;
+        while (i0 < i1 && vduplicate[i1] != i1)
+            --i1;
+        if (i0 >= i1)
+            break;
+        prim->verts.foreach_attr<zeno::AttrAcceptAll>([&] (auto const &key, auto &arr) {
+            std::swap(arr[i0], arr[i1]);
+        });
+        std::swap(pos[i0], pos[i1]);
+        ++i0;
+        --i1;
+    };
+
+    for (int v = 0; v < vert_size; ++v) {
+        vduplicate[v] = vmap[vduplicate[v]];
+    }
+    for (int e = 0; e < line_size; ++e) {
+        vec2i old = prim->lines[e];
+        prim->lines[e] = vec2i(vmap[old[0]], vmap[old[1]]);
+    }
+    for (int f = 0; f < tri_size; ++f) {
+        vec3i old = prim->tris[f];
+        prim->tris[f] = vec3i(vmap[old[0]], vmap[old[1]], vmap[old[2]]);
+    }
+
+    prim->verts.erase_attr("v_garbage_collection");
+
+    vert_size = (vduplicate[i0] != i0) ? i0 : i0 + 1;
+    prim->verts.foreach_attr<zeno::AttrAcceptAll>([&] (auto const &key, auto &arr) {
+        arr.resize(vert_size);
+    });
+    pos.resize(vert_size);
+    
 }
 
 struct UniformRemeshing : INode {
@@ -556,7 +609,7 @@ ZENO_DEFNODE(CalcCurvature)
     {"primitive"},
 });
 
-struct MarkBoundaryVertices : INode {
+struct MarkBoundary : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         auto &pos = prim->attr<vec3f>("pos");
@@ -579,17 +632,20 @@ struct MarkBoundaryVertices : INode {
         splitNonManifoldEdges(prim, lines_map, marked_lines, efeature);
         splitNonManifoldVertices(prim, lines_map);
 
-        auto &v_boundary = prim->verts.add_attr<int>("v_boundary", 0);
-        auto &e_boundary = prim->lines.add_attr<int>("e_boundary", 0);
         auto mesh = new zeno::pmp::SurfaceMesh(prim, "e_feature");
+        auto &vboundary = prim->verts.add_attr<int>("v_boundary", 0);
         for (int line_size = lines.size(), e = 0; e < line_size; ++e) {
             if (mesh->is_boundary_e(e)) {
-                v_boundary[lines[e][0]] = v_boundary[lines[e][1]] = 1;
-                e_boundary[e] = 1;
+                vboundary[lines[e][0]] = vboundary[lines[e][1]] = 1;
             }
         }
 
         returnNonManifold(prim);
+        
+        auto &eboundary = prim->lines.add_attr<int>("e_boundary", 0);
+        for (int line_size = lines.size(), e = 0; e < line_size; ++e) {
+            eboundary[e] = vboundary[lines[e][0]] || vboundary[lines[e][1]];
+        }
 
         // delete v_duplicate at last
         prim->verts.erase_attr("v_duplicate");
@@ -603,7 +659,7 @@ struct MarkBoundaryVertices : INode {
     }
 };
 
-ZENO_DEFNODE(MarkBoundaryVertices)
+ZENO_DEFNODE(MarkBoundary)
 ({
     {{"prim"}},
     {"prim"},
