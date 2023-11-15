@@ -191,6 +191,8 @@ void returnNonManifold(std::shared_ptr<PrimitiveObject> prim) {
     // delete duplicate vertices
     auto& pos = prim->attr<vec3f>("pos");
     auto &vduplicate = prim->verts.attr<int>("v_duplicate");
+    int vert_size = prim->verts.size();
+    int line_size = prim->lines.size();
     int tri_size = prim->tris.size();
     for (int i = 0; i < tri_size; ++i) {
         for (int j = 0; j < 3; ++j) {
@@ -200,7 +202,6 @@ void returnNonManifold(std::shared_ptr<PrimitiveObject> prim) {
             }
         }
     }
-    int line_size = prim->lines.size();
     for (int i = 0; i < line_size; ++i) {
         for (int j = 0; j < 2; ++j) {
             int v = prim->lines[i][j];
@@ -209,18 +210,8 @@ void returnNonManifold(std::shared_ptr<PrimitiveObject> prim) {
             }
         }
     }
-    int vert_size = prim->verts.size();
-    if (prim->verts.has_attr("v_boundary")) {
-        auto &vboundary = prim->verts.attr<int>("v_boundary");
-        for (int i = 0; i < vert_size; ++i) {
-            if (vduplicate[i] != i) {
-                vboundary[vduplicate[i]] = vboundary[vduplicate[i]] || vboundary[i];
-            }
-        }
-    }
 
     auto& vmap = prim->verts.add_attr<int>("v_garbage_collection");
-
     for (int i = 0; i < vert_size; ++i)
         vmap[i] = i;
 
@@ -614,6 +605,8 @@ struct MarkBoundary : INode {
         auto prim = get_input<PrimitiveObject>("prim");
         auto &pos = prim->attr<vec3f>("pos");
         auto &efeature = prim->lines.add_attr<int>("e_feature");
+        auto vert_boundary_tag = get_input<zeno::StringObject>("vert_boundary_tag")->get();
+        auto edge_boundary_tag = get_input<zeno::StringObject>("edge_boundary_tag")->get();
 
         // init v_duplicate attribute
         auto &vduplicate = prim->verts.add_attr<int>("v_duplicate", 0);
@@ -633,16 +626,22 @@ struct MarkBoundary : INode {
         splitNonManifoldVertices(prim, lines_map);
 
         auto mesh = new zeno::pmp::SurfaceMesh(prim, "e_feature");
-        auto &vboundary = prim->verts.add_attr<int>("v_boundary", 0);
+        auto &vboundary = prim->verts.add_attr<int>(vert_boundary_tag, 0);
         for (int line_size = lines.size(), e = 0; e < line_size; ++e) {
             if (mesh->is_boundary_e(e)) {
                 vboundary[lines[e][0]] = vboundary[lines[e][1]] = 1;
+                if (vduplicate[lines[e][0]] != lines[e][0]) {
+                    vboundary[vduplicate[lines[e][0]]] = 1;
+                }
+                if (vduplicate[lines[e][1]] != lines[e][1]) {
+                    vboundary[vduplicate[lines[e][1]]] = 1;
+                }
             }
         }
 
         returnNonManifold(prim);
         
-        auto &eboundary = prim->lines.add_attr<int>("e_boundary", 0);
+        auto &eboundary = prim->lines.add_attr<int>(edge_boundary_tag, 0);
         for (int line_size = lines.size(), e = 0; e < line_size; ++e) {
             eboundary[e] = vboundary[lines[e][0]] || vboundary[lines[e][1]];
         }
@@ -661,7 +660,9 @@ struct MarkBoundary : INode {
 
 ZENO_DEFNODE(MarkBoundary)
 ({
-    {{"prim"}},
+    {{"prim"},
+     {"string", "vert_boundary_tag", "v_boundary"},
+     {"string", "edge_boundary_tag", "e_boundary"}},
     {"prim"},
     {},
     {"primitive"},
