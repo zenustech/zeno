@@ -16,7 +16,7 @@ namespace zeno {
 namespace {
 
 template <class T>
-static T BlendMode(const float &alpha1, const float &alpha2, const T& rgb1, const T& rgb2, const T& background, const vec3f opacity, std::string compmode)
+static T BlendMode(const float &alpha1, const float &alpha2, const T& rgb1, const T& rgb2, const T& background, const vec3f opacity, std::string compmode)//rgb1 and background is premultiplied?
 {
         if(compmode == std::string("Copy")) {//copy and over is different!
                 T value = rgb1 * opacity[0] + rgb2 * (1 - opacity[0]);
@@ -171,18 +171,18 @@ struct Blend: INode {//optimize
 
 #pragma omp parallel for
             for (int i = 0; i < imagesize; i++) {
-                vec3f rgb1 = blend->verts[i] * opacity1;
+                vec3f foreground = blend->verts[i] * opacity1;
                 vec3f rgb2 = base->verts[i];
                 vec3f background = rgb2 * opacity2;
                 vec3f opacity = zeno::clamp(mask->verts[i] * maskopacity, 0, 1);
                 float alpha1 = zeno::clamp(blendalpha[i] * opacity1, 0, 1);
                 float alpha2 = zeno::clamp(basealpha[i] * opacity2, 0, 1);
                 if(compmode == "Overlay" || compmode == "SoftLight" || compmode == "Divide"){
-                    vec3f c = BlendModeV(alpha1, alpha2, rgb1, rgb2, background, opacity, compmode);
+                    vec3f c = BlendModeV(alpha1, alpha2, foreground, rgb2, background, opacity, compmode);
                     image2->verts[i] = c;
                 }
                 else{
-                    vec3f c = BlendMode<zeno::vec3f>(alpha1, alpha2, rgb1, rgb2, background, opacity, compmode);
+                    vec3f c = BlendMode<zeno::vec3f>(alpha1, alpha2, foreground, rgb2, background, opacity, compmode);
                     image2->verts[i] = c;
                 }
             }
