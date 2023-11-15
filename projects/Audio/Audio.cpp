@@ -5,13 +5,12 @@
 #include <zeno/zeno.h>
 #include "zeno/utils/logger.h"
 #include "zeno/types/UserData.h"
-#include "zeno/types/StringObject.h"
 #include "zeno/types/NumericObject.h"
 #include "aquila/aquila/aquila.h"
 #include <deque>
 #include <zeno/types/ListObject.h>
 #include "AudioFile.h"
-#include<algorithm>
+#include <algorithm>
 
 #define MINIMP3_IMPLEMENTATION
 #define MINIMP3_FLOAT_OUTPUT
@@ -371,7 +370,7 @@ static std::shared_ptr<PrimitiveObject> readMp3(std::string path) {
     struct AudioFFT : zeno::INode {
         virtual void apply() override {
             auto wave = get_input<PrimitiveObject>("wave");
-            int duration_count = 1024;
+            int duration_count = get_input2<int>("duration_count");;
             auto start_time = get_input2<float>("time");
             float sampleFrequency = wave->userData().get<zeno::NumericObject>("SampleRate")->get<float>();
             int start_index = int(sampleFrequency * start_time);
@@ -426,6 +425,7 @@ static std::shared_ptr<PrimitiveObject> readMp3(std::string path) {
             {"bool", "preEmphasis", "0"},
             {"float", "preEmphasisAlpha", "0.97"},
             {"bool", "hammingWindow", "1"},
+            {"int", "duration_count", "1024"},
         },
         {
             "FFTPrim",
@@ -433,6 +433,38 @@ static std::shared_ptr<PrimitiveObject> readMp3(std::string path) {
         {},
         {
             "audio"
+        },
+    });
+
+    struct AudioTrim : zeno::INode {
+        virtual void apply() override {
+            auto audio = get_input<PrimitiveObject>("audio");
+            auto start = get_input2<int>("start");
+            if (start < audio->size()) {
+                audio->verts->erase(audio->verts.begin(), audio->verts.begin() + start);
+            }
+            auto length = get_input2<int>("length");
+            if (length >= 0) {
+                audio->resize(length);
+            }
+            for (auto i = 0; i < length; i++) {
+
+            }
+            set_output("audio", audio);
+        }
+    };
+    ZENDEFNODE(AudioTrim, {
+        {
+            "audio",
+            {"int", "start", "0"},
+            {"int", "length", "-1"},
+        },
+        {
+            "audio",
+        },
+        {},
+        {
+            "audio",
         },
     });
     struct MelFilter : zeno::INode {
