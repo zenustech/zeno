@@ -321,6 +321,9 @@ struct UniformRemeshing : INode {
         prim->verts.erase_attr("v_deleted");
         prim->lines.erase_attr("e_deleted");
         prim->tris.erase_attr("f_deleted");
+        prim->verts.erase_attr("curv_min");
+        prim->verts.erase_attr("curv_max");
+        prim->verts.erase_attr("curv_gaussian");
         prim->verts.update();
 
         set_output("prim", std::move(prim));
@@ -426,6 +429,9 @@ struct AdaptiveRemeshing : INode {
         prim->verts.erase_attr("v_deleted");
         prim->lines.erase_attr("e_deleted");
         prim->tris.erase_attr("f_deleted");
+        prim->verts.erase_attr("curv_min");
+        prim->verts.erase_attr("curv_max");
+        prim->verts.erase_attr("curv_gaussian");
         prim->verts.update();
 
         set_output("prim", std::move(prim));
@@ -494,9 +500,12 @@ ZENO_DEFNODE(RepairDegenerateTriangle)
     {"primitive"},
 });
 
-struct GaussianCurvature : INode {
+struct CalcCurvature : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
+        auto min_curv_tag = get_input<zeno::StringObject>("min_curv_tag")->get();
+        auto max_curv_tag = get_input<zeno::StringObject>("max_curv_tag")->get();
+        auto gaussian_curv_tag = get_input<zeno::StringObject>("gaussian_curv_tag")->get();
         auto &pos = prim->attr<vec3f>("pos");
         auto &efeature = prim->lines.add_attr<int>("e_feature", 0);
         auto &vfeature = prim->verts.add_attr<int>("v_feature", 0);
@@ -519,9 +528,8 @@ struct GaussianCurvature : INode {
         splitNonManifoldVertices(prim, lines_map);
 
         auto mesh = new zeno::pmp::SurfaceMesh(prim, "e_feature");
-        zeno::pmp::SurfaceCurvature curv(mesh);
+        zeno::pmp::SurfaceCurvature curv(mesh, min_curv_tag, max_curv_tag, gaussian_curv_tag);
         curv.analyze_tensor(1);
-        curv.calculate_gaussian_curvature();
 
         returnNonManifold(prim);
 
@@ -537,9 +545,12 @@ struct GaussianCurvature : INode {
     }
 };
 
-ZENO_DEFNODE(GaussianCurvature)
+ZENO_DEFNODE(CalcCurvature)
 ({
-    {{"prim"}},
+    {{"prim"},
+     {"string", "min_curv_tag", "curv_min"},
+     {"string", "max_curv_tag", "curv_max"},
+     {"string", "gaussian_curv_tag", "curv_gaussian"}},
     {"prim"},
     {},
     {"primitive"},
@@ -568,11 +579,13 @@ struct MarkBoundaryVertices : INode {
         splitNonManifoldEdges(prim, lines_map, marked_lines, efeature);
         splitNonManifoldVertices(prim, lines_map);
 
-        auto &boundary = prim->verts.add_attr<int>("v_boundary", 0);
+        auto &v_boundary = prim->verts.add_attr<int>("v_boundary", 0);
+        auto &e_boundary = prim->lines.add_attr<int>("e_boundary", 0);
         auto mesh = new zeno::pmp::SurfaceMesh(prim, "e_feature");
         for (int line_size = lines.size(), e = 0; e < line_size; ++e) {
             if (mesh->is_boundary_e(e)) {
-                boundary[lines[e][0]] = boundary[lines[e][1]] = 1;
+                v_boundary[lines[e][0]] = v_boundary[lines[e][1]] = 1;
+                e_boundary[e] = 1;
             }
         }
 
