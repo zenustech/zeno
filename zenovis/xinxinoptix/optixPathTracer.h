@@ -25,7 +25,7 @@ enum VisibilityMask {
 struct GenericLight
 {
     float3 T, B, N;
-    float3 emission;
+    float3 color;
     float intensity;
     float vIntensity;
 
@@ -59,7 +59,7 @@ struct GenericLight
 
     pbrt::LightBounds bounds() {
 
-        auto Phi = dot(emission, make_float3(1.0f/3.0f));
+        auto Phi = intensity;
         bool doubleSided = config & zeno::LightConfigDoubleside;
 
         if (this->type == zeno::LightType::IES) {

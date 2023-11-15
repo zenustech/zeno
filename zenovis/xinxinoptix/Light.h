@@ -72,7 +72,7 @@ static __inline__ __device__ bool cihouMaxDistanceContinue(LightSampleRecord &ls
 
 static __inline__ __device__ vec3 cihouLightEmission(LightSampleRecord &lsr, GenericLight &light, uint32_t depth) {
 
-    auto vIntensity = (light.vIntensity < 0.0f) ? light.intensity : light.vIntensity;
+    auto intensity = (depth == 0 && light.vIntensity >= 0.0f) ? light.vIntensity : light.intensity;
 
     if (light.tex != 0u) {
         auto color = texture2D(light.tex, lsr.uv);
@@ -80,16 +80,11 @@ static __inline__ __device__ vec3 cihouLightEmission(LightSampleRecord &lsr, Gen
             color = pow(color, light.texGamma);
         }
 
-        auto scaler = (depth > 0)? light.intensity : vIntensity;
-        color = color * scaler;
+        color = color * intensity;
         return *(vec3*)&color;
     }
-
-    if (depth == 0 && vIntensity >= 0.0f) {
-        return light.emission * vIntensity / light.intensity;
-    }
     
-    return light.emission;
+    return light.color * intensity;
 }
 
 static __inline__ __device__ float sampleIES(const float* iesProfile, float h_angle, float v_angle) {
