@@ -654,7 +654,7 @@ struct MarkBoundary : INode {
         
         auto &eboundary = prim->lines.add_attr<int>(edge_boundary_tag, 0);
         for (int line_size = lines.size(), e = 0; e < line_size; ++e) {
-            eboundary[e] = vboundary[lines[e][0]] || vboundary[lines[e][1]];
+            eboundary[e] = vboundary[lines[e][0]] && vboundary[lines[e][1]];
         }
 
         // delete v_duplicate at last
