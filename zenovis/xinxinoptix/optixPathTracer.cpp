@@ -1942,7 +1942,7 @@ static void addTriangleLightGeo(float3 p0, float3 p1, float3 p2) {
     geo.push_back(p0); geo.push_back(p1); geo.push_back(p2);
 }
 
-static void addLightPlane(float3 p0, float3 v1, float3 v2, float3 normal, float3 emission)
+static void addLightPlane(float3 p0, float3 v1, float3 v2, float3 normal)
 {
     float3 vert0 = p0, vert1 = p0 + v1, vert2 = p0 + v2, vert3 = p0 + v1 + v2;
 
@@ -2168,9 +2168,9 @@ void buildLightTree() {
         config |= dat.doubleside? zeno::LightConfigDoubleside: zeno::LightConfigNull;
         light.config = config;
 
-        light.emission.x = fmaxf(dat.emission.at(0), FLT_EPSILON);
-        light.emission.y = fmaxf(dat.emission.at(1), FLT_EPSILON);
-        light.emission.z = fmaxf(dat.emission.at(2), FLT_EPSILON);
+        light.color.x = fmaxf(dat.color.at(0), FLT_EPSILON);
+        light.color.y = fmaxf(dat.color.at(1), FLT_EPSILON);
+        light.color.z = fmaxf(dat.color.at(2), FLT_EPSILON);
 
         light.spread = clamp(dat.spread, 0.0f, 1.0f);
         auto void_angle = 0.5f * (1.0f - light.spread) * M_PIf;
@@ -2205,7 +2205,11 @@ void buildLightTree() {
             firstRectLightIdx = min(idx, firstRectLightIdx);
 
             light.setRectData(v0, v1, v2, light.N);
-            addLightPlane(v0, v1, v2, light.N, light.emission);
+            addLightPlane(v0, v1, v2, light.N);
+
+            if (dat.fluxFixed > 0) {
+                light.intensity = dat.fluxFixed / light.rect.area; 
+            }
 
         } else if (light.shape == zeno::LightShape::Sphere) {
 
@@ -2214,8 +2218,19 @@ void buildLightTree() {
             light.setSphereData(center, radius);       
             addLightSphere(center, radius);
 
+            if (dat.fluxFixed > 0) {
+                auto intensity = dat.fluxFixed / light.sphere.area;
+                light.intensity = intensity;
+            }
+
         } else if (light.shape == zeno::LightShape::Point) {
             light.point = {center};
+
+            if (dat.fluxFixed > 0) {
+                auto intensity = dat.fluxFixed / (4 * M_PIf);
+                light.intensity = intensity;
+            }
+
         } else if (light.shape == zeno::LightShape::TriangleMesh) {
 
             firstTriangleLightIdx = min(idx, firstTriangleLightIdx);
@@ -2230,6 +2245,11 @@ void buildLightTree() {
             light.type = zeno::LightType::IES;
             //light.shape = zeno::LightShape::Point;
             light.setConeData(center, light.N, radius, val.coneAngle);
+
+            if (dat.fluxFixed > 0) {
+                auto scale = val.coneAngle / M_PIf;
+                light.intensity = dat.fluxFixed * scale * scale;
+            }
         } 
         
         if ( OptixUtil::g_tex.count(dat.textureKey) > 0 ) {
