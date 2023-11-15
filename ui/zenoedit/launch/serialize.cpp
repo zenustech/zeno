@@ -427,6 +427,10 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                 }
             }
         }
+        if (opts & OPT_CACHE)
+        {
+            AddStringList({ "cacheToDisk", ident}, writer);
+        }
     }
 }
 

@@ -309,6 +309,9 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
             QVector3D delta = right * dx + up * dy;
             auto c = getCenter();
             QVector3D center = {c[0], c[1], c[2]};
+            if (getOrthoMode()) {
+                delta = (right * dx * m_res[0] / m_res[1] + up * dy) * 2;
+            }
             center += delta * getRadius();
             setCenter({float(center.x()), float(center.y()), float(center.z())});
         } else if ((rotateKey == modifiers) && (event->buttons() & rotateButton)) {
@@ -372,8 +375,8 @@ void CameraControl::fakeWheelEvent(QWheelEvent *event) {
     ZenoSettingsManager& settings = ZenoSettingsManager::GetInstance();
     int scaleKey = settings.getViewShortCut(ShortCut_ScalingView, button);
     if (shift_pressed) {
-//        float temp = getFOV() / scale;
-//        setFOV(temp < 170 ? temp : 170);
+        float temp = getFOV() / scale;
+        setFOV(temp < 170 ? temp : 170);
 
     } else if (aperture_pressed) {
         float temp = getAperture() + delta * 0.01;

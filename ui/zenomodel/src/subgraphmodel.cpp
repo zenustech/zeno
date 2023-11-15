@@ -294,6 +294,83 @@ void SubGraphModel::_removeNetLabels(const NodeParamModel* nodeParams)
     }
 }
 
+void SubGraphModel::_uniqueView(const QModelIndex& index, bool bInSocket, bool bOutSocket, QModelIndexList& viewLst)
+{
+    QString id = m_row2Key[index.row()];
+    if (m_nodes.find(id) == m_nodes.end())
+        return;
+    const _NodeItem& item = m_nodes[id];
+    if (item.nodeParams)
+    {
+        QMap<bool, QModelIndexList> sockets;
+        if (bInSocket)
+        {
+            sockets[true] = item.nodeParams->getInputIndice();
+        }
+        if (bOutSocket)
+        {
+            sockets[false] = item.nodeParams->getOutputIndice();
+        }
+        for (const auto&bInput  : sockets.keys())
+        {
+            for (const auto& sock : sockets[bInput])
+            {
+                QModelIndexList lst;
+                const int sockProp = sock.data(ROLE_PARAM_SOCKPROP).toInt();
+                //dict sock
+                if (sockProp & SOCKPROP_DICTLIST_PANEL)
+                {
+                    QAbstractItemModel* pKeyObjModel = QVariantPtr<QAbstractItemModel>::asPtr(sock.data(ROLE_VPARAM_LINK_MODEL));
+                    for (int _r = 0; _r < pKeyObjModel->rowCount(); _r++)
+                    {
+                        const QModelIndex& keyIdx = pKeyObjModel->index(_r, 0);
+                        ZASSERT_EXIT(keyIdx.isValid());
+                        lst << keyIdx;
+                    }
+                }
+                else
+                {
+                    lst << sock;
+                }
+                for (const auto& idx : lst)
+                {
+                    PARAM_LINKS links = idx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+                    for (const auto& link : links)
+                    {
+                        if (link.isValid())
+                        {
+                            QModelIndex sock;
+                            if (bInput)
+                                sock = link.data(ROLE_OUTSOCK_IDX).toModelIndex();
+                            else
+                                sock = link.data(ROLE_INSOCK_IDX).toModelIndex();
+                            ZASSERT_EXIT(sock.isValid());
+                            const auto& nodeIndex = sock.data(ROLE_NODE_IDX).toModelIndex();
+                            if (viewLst.contains(nodeIndex))
+                                continue;
+                            if (nodeIndex.isValid())
+                            {
+                                int opt = nodeIndex.data(ROLE_OPTIONS).toInt();
+                                if (opt & OPT_VIEW)
+                                {
+                                    opt ^= OPT_VIEW;
+                                    setData(nodeIndex, opt, ROLE_OPTIONS);
+                                    viewLst << nodeIndex;
+                                }
+                                else
+                                {
+                                    _uniqueView(nodeIndex, bInput, !bInput, viewLst);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    viewLst << index;
+}
+
 void SubGraphModel::removeNodeByDescName(const QString& descName)
 {
     QStringList nodes;
@@ -581,6 +658,11 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
             }
             case ROLE_OPTIONS:
             {
+                if (((item.options & OPT_VIEW) == false) && (value.toInt() & OPT_VIEW))
+                {
+                    QModelIndexList lst;
+                    _uniqueView(index, true, true, lst);
+                }
                 item.options = value.toInt();
                 break;
             }

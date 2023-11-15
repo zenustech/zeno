@@ -193,39 +193,6 @@ ZENDEFNODE(PrimCurvature, {
     {"primitive"},
 });
 
-struct MaskByCurvature: INode {
-    void apply() override {
-        auto prim = get_input<zeno::PrimitiveObject>("prim");
-        auto minCur = get_input2<float>("min_curvature");
-        auto maxCur = get_input2<float>("max_curvature");
-        auto &mask = prim->verts.attr<float>("mask");
-        auto &cur = prim->verts.add_attr<float>("curvature");
-#pragma omp parallel for
-        for(int i = 0;i < prim->size();i++){
-            if (cur[i] > minCur && cur[i] < maxCur) {
-                mask[i] = 1;
-            }
-            else{
-                mask[i] = 0;
-            }
-        }
-        set_output("prim", prim);
-    }
-};
-ZENDEFNODE(MaskByCurvature, {
-    {
-        {"PrimitiveObject", "prim"},
-        {"float", "max_curvature", "1"},
-        {"float", "min_curvature", "0.005"},
-    },
-    {
-        {"PrimitiveObject", "prim"},
-
-    },
-    {},
-    {"erode"},
-});
-
 //struct CompCurvature: INode {
 //    void apply() override {
 //        std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");

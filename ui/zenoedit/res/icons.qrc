@@ -72,7 +72,9 @@
 	<file>icons/min_MUTE_dark.svg</file>
 	<file>icons/min_ONCE_dark.svg</file>
 	<file>icons/min_VIEW_dark.svg</file>
+	<file>icons/min_dark.svg</file>
 	<file>icons/min_MUTE_light.svg</file>
+	<file>icons/min_CACHE_light.svg</file>
 	<file>icons/min_ONCE_light.svg</file>
 	<file>icons/min_VIEW_light.svg</file>
 	<file>icons/MUTE_dark.svg</file>
@@ -81,6 +83,8 @@
 	<file>icons/ONCE_light.svg</file>
 	<file>icons/VIEW_dark.svg</file>
 	<file>icons/VIEW_light.svg</file>
+	<file>icons/CACHE_dark.svg</file>
+	<file>icons/CACHE_light.svg</file>
 	<file>icons/ic_openfile.svg</file>
 	<file>icons/ic_openfile-on.svg</file>
 	<file>icons/ic_MUTE.svg</file>

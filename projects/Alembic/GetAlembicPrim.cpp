@@ -71,7 +71,7 @@ int get_alembic_prim_index(std::shared_ptr<zeno::ABCTree> abctree, std::string n
     int index = 0;
     abctree->visitPrims([&] (auto const &p) {
         auto &ud = p->userData();
-        auto _abc_path = ud.get2<std::string>("_abc_path", "");
+        auto _abc_path = ud.template get2<std::string>("_abc_path", "");
         if (_abc_path == name) {
             return false;
         }
