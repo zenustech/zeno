@@ -130,7 +130,7 @@ extern "C" __global__ void __raygen__rg()
         // Under camer local space, cam.eye as origin, cam.right as X axis, cam.up as Y axis, cam.front as Z axis.
         float3 eye_shake     = r1 * (cosf(r0) * make_float3(1.0f,0.0f,0.0f) + sinf(r0) * make_float3(0.0f,1.0f,0.0f)); // r1 * ( cos(r0) , sin(r0) , 0 );
         float3 focal_plane_center = make_float3(cam.vertical_shift*cam.height, cam.horizontal_shift*cam.width, cam.focal_length);
-        float3 old_direction =   focal_plane_center + make_float3(cam.width * d.x, cam.height*d.y, 0.0f);
+        float3 old_direction =   focal_plane_center + make_float3(cam.width * 0.5f * d.x, cam.height * 0.5f * d.y, 0.0f);
         float3 tile_normal =  make_float3(sin_pitch*sin_yaw, - cos_yaw * sin_pitch, cos_pitch);
 
         float D = - dot(tile_normal , focal_plane_center);//surcface equaltion is Ax+By+Cz+D = 0 
