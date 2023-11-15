@@ -3,13 +3,12 @@
 //
 
 #include <zeno/zeno.h>
-#include <zeno/types/PrimitiveObject.h>
 #include <tinygltf/json.hpp>
 #include "zeno/utils/fileio.h"
 using Json = nlohmann::json;
 
 namespace zeno {
-struct JsonObject : PrimitiveObject {
+struct JsonObject : IObject {
     Json json;
 };
 struct ReadJson : zeno::INode {
