@@ -15,7 +15,8 @@ struct ReadJson : zeno::INode {
     virtual void apply() override {
         auto json = std::make_shared<JsonObject>();
         auto path = get_input2<std::string>("path");
-        auto content = zeno::file_get_content(path);
+        std::string native_path = std::filesystem::u8path(path).string();
+        auto content = zeno::file_get_content(native_path);
         json->json = Json::parse(content);
         set_output("json", json);
     }
