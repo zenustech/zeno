@@ -31,6 +31,15 @@ ZTcpServer::ZTcpServer(QObject *parent)
 {
 }
 
+ZTcpServer::~ZTcpServer()
+{
+    if (m_proc)
+    {
+        disconnect(m_proc.get(), SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(onProcFinished(int, QProcess::ExitStatus)));
+        disconnect(m_proc.get(), SIGNAL(readyRead()), this, SLOT(onProcPipeReady()));
+    }
+}
+
 void ZTcpServer::init(const QHostAddress& address)
 {
     m_tcpServer = new QTcpServer(this);
@@ -380,7 +389,8 @@ void ZTcpServer::onProcPipeReady()
         if (!line.isEmpty())
         {
             std::cout << line.data() << std::endl;
-            ZWidgetErrStream::appendFormatMsg(line.toStdString());
+            if (zenoApp->isUIApplication())
+                ZWidgetErrStream::appendFormatMsg(line.toStdString());
         }
     }
 }
@@ -413,6 +423,8 @@ void ZTcpServer::onProcFinished(int exitCode, QProcess::ExitStatus exitStatus)
             m_proc->kill();
         m_proc = nullptr;
         zeno::log_info("runner process normally exited with {}", exitCode);
+        if (exitCode != 0)
+            emit runnerError();
     }
     else if (exitStatus == QProcess::CrashExit)
     {
@@ -420,6 +432,7 @@ void ZTcpServer::onProcFinished(int exitCode, QProcess::ExitStatus exitStatus)
             m_proc->kill();
         m_proc= nullptr;
         zeno::log_error("runner process crashed with code {}", exitCode);
+        emit runnerError();
     }
     viewDecodeFinish();
 

@@ -117,6 +117,17 @@ ZENO_API void INode::preApply() {
         if (getTmpCache())
             return;
     }
+    else if (dc.amIDirty(myname) && !bTmpCache)//remove cache
+    {
+        std::string fileName = myname + ".zenocache";
+        int frameid = zeno::getSession().globalState->frameid;
+        const auto& path = std::filesystem::u8path(zeno::getSession().globalComm->objTmpCachePath + "/" + std::to_string(1000000 + frameid).substr(1) + "/" + fileName);
+        if (std::filesystem::exists(path))
+        {
+            std::filesystem::remove(path);
+            zeno::log_info("remove cache file: {}", path.string());
+        }
+    }
     for (auto const &[ds, bound]: inputBounds) {
         requireInput(ds);
     }

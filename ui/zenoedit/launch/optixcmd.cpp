@@ -129,6 +129,10 @@ int optixcmd(const QCoreApplication& app, int port)
     param.sPixel = "1200x800";
 #endif
 
+    std::cerr.rdbuf(std::cout.rdbuf());
+    std::clog.rdbuf(std::cout.rdbuf());
+    zeno::set_log_stream(std::clog);
+
     VideoRecInfo recInfo = AppHelper::getRecordInfo(param);
 
     int beginF = recInfo.frameRange.first, endF = recInfo.frameRange.second;

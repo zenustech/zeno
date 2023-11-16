@@ -1942,7 +1942,7 @@ static void addTriangleLightGeo(float3 p0, float3 p1, float3 p2) {
     geo.push_back(p0); geo.push_back(p1); geo.push_back(p2);
 }
 
-static void addLightPlane(float3 p0, float3 v1, float3 v2, float3 normal, float3 emission)
+static void addLightPlane(float3 p0, float3 v1, float3 v2, float3 normal)
 {
     float3 vert0 = p0, vert1 = p0 + v1, vert2 = p0 + v2, vert3 = p0 + v1 + v2;
 
@@ -2168,9 +2168,9 @@ void buildLightTree() {
         config |= dat.doubleside? zeno::LightConfigDoubleside: zeno::LightConfigNull;
         light.config = config;
 
-        light.emission.x = fmaxf(dat.emission.at(0), FLT_EPSILON);
-        light.emission.y = fmaxf(dat.emission.at(1), FLT_EPSILON);
-        light.emission.z = fmaxf(dat.emission.at(2), FLT_EPSILON);
+        light.color.x = fmaxf(dat.color.at(0), FLT_EPSILON);
+        light.color.y = fmaxf(dat.color.at(1), FLT_EPSILON);
+        light.color.z = fmaxf(dat.color.at(2), FLT_EPSILON);
 
         light.spread = clamp(dat.spread, 0.0f, 1.0f);
         auto void_angle = 0.5f * (1.0f - light.spread) * M_PIf;
@@ -2205,7 +2205,11 @@ void buildLightTree() {
             firstRectLightIdx = min(idx, firstRectLightIdx);
 
             light.setRectData(v0, v1, v2, light.N);
-            addLightPlane(v0, v1, v2, light.N, light.emission);
+            addLightPlane(v0, v1, v2, light.N);
+
+            if (dat.fluxFixed > 0) {
+                light.intensity = dat.fluxFixed / light.rect.area; 
+            }
 
         } else if (light.shape == zeno::LightShape::Sphere) {
 
@@ -2214,8 +2218,19 @@ void buildLightTree() {
             light.setSphereData(center, radius);       
             addLightSphere(center, radius);
 
+            if (dat.fluxFixed > 0) {
+                auto intensity = dat.fluxFixed / light.sphere.area;
+                light.intensity = intensity;
+            }
+
         } else if (light.shape == zeno::LightShape::Point) {
             light.point = {center};
+
+            if (dat.fluxFixed > 0) {
+                auto intensity = dat.fluxFixed / (4 * M_PIf);
+                light.intensity = intensity;
+            }
+
         } else if (light.shape == zeno::LightShape::TriangleMesh) {
 
             firstTriangleLightIdx = min(idx, firstTriangleLightIdx);
@@ -2230,6 +2245,11 @@ void buildLightTree() {
             light.type = zeno::LightType::IES;
             //light.shape = zeno::LightShape::Point;
             light.setConeData(center, light.N, radius, val.coneAngle);
+
+            if (dat.fluxFixed > 0) {
+                auto scale = val.coneAngle / M_PIf;
+                light.intensity = dat.fluxFixed * scale * scale;
+            }
         } 
         
         if ( OptixUtil::g_tex.count(dat.textureKey) > 0 ) {
@@ -3372,7 +3392,7 @@ void set_window_size(int nx, int ny) {
 }
 
 void set_perspective(float const *U, float const *V, float const *W, float const *E, float aspect, float fov, float fpd, float aperture) {
-    set_perspective_by_fov(U,V,W,E,aspect,fov,0.0f,0.024f,fpd,aperture,0.0f,0.0f,0.0f,0.0f);
+    set_perspective_by_fov(U,V,W,E,aspect,fov,0,0.024f,fpd,aperture,0.0f,0.0f,0.0f,0.0f);
 }
 void set_perspective_by_fov(float const *U, float const *V, float const *W, float const *E, float aspect, float fov, int fov_type, float L, float focal_distance, float aperture, float pitch, float yaw, float h_shift, float v_shift) {
     auto &cam = state.params.cam;
@@ -3384,7 +3404,8 @@ void set_perspective_by_fov(float const *U, float const *V, float const *W, floa
     float half_radfov = fov * float(M_PI) / 360.0f;
     float half_tanfov = std::tan(half_radfov);
     cam.focal_length = L / 2.0f / half_tanfov;
-    if(aperture < 0.01f){
+    cam.focal_length = std::max(0.01f,cam.focal_length);
+    if(aperture > 24.0f){
         cam.aperture = 0.0f;
     }else{
         cam.aperture = cam.focal_length / aperture;
@@ -3411,7 +3432,7 @@ void set_perspective_by_fov(float const *U, float const *V, float const *W, floa
     cam.yaw = yaw;
     cam.horizontal_shift = h_shift;
     cam.vertical_shift = v_shift;
-    cam.focal_distance = focal_distance;
+    cam.focal_distance = std::max(cam.focal_length, focal_distance);
     camera_changed = true;
 }
 void set_perspective_by_focal_length(float const *U, float const *V, float const *W, float const *E, float aspect, float focal_length, float w, float h, float focal_distance, float aperture, float pitch, float yaw, float h_shift, float v_shift) {
@@ -3422,8 +3443,9 @@ void set_perspective_by_focal_length(float const *U, float const *V, float const
     cam.front = normalize(make_float3(W[0], W[1], W[2]));
 
     cam.focal_length = focal_length;
+    cam.focal_length = std::max(0.01f,cam.focal_length);
 
-    if(aperture < 0.01f){
+    if(aperture < 24.0f){
         cam.aperture = 0.0f;
     }else{
         cam.aperture = cam.focal_length / aperture;
@@ -3435,7 +3457,7 @@ void set_perspective_by_focal_length(float const *U, float const *V, float const
     cam.yaw = yaw;
     cam.horizontal_shift = h_shift;
     cam.vertical_shift = v_shift;
-    cam.focal_distance = focal_distance;
+    cam.focal_distance = std::max(cam.focal_length, focal_distance);
     camera_changed = true;
 }
 

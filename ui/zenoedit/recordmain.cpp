@@ -16,7 +16,8 @@
 #include "common.h"
 #include <rapidjson/document.h>
 
-//#define DEBUG_DIRECTLY
+
+//--record true --zsg "C:\zeno\framenum.zsg" --cachePath "C:\tmp" --sframe 0 --frame 10 --sample 1 --optix 1 --path "C:\recordpath" --pixel 4500x3500 --aov 0 --needDenoise 0
 
 
 static int calcFrameCountByAudio(std::string path, int fps) {
@@ -64,7 +65,7 @@ int record_main(const QCoreApplication& app)
     //MessageBox(0, "recordcmd", "recordcmd", MB_OK);
 
     ZENO_RECORD_RUN_INITPARAM param;
-#ifndef DEBUG_DIRECTLY
+
     QCommandLineParser cmdParser;
     cmdParser.addHelpOption();
     cmdParser.addOptions({
@@ -169,17 +170,6 @@ int record_main(const QCoreApplication& app)
     ud.set2("output_exr", param.export_exr);
 	param.videoName = cmdParser.isSet("videoname") ? cmdParser.value("videoname") : "output.mp4";
 	param.subZsg = cmdParser.isSet("subzsg") ? cmdParser.value("subzsg") : "";
-#else
-    param.sZsgPath = "C:\\zeno\\framenum.zsg";
-    param.sPath = "C:\\recordpath";
-    param.iFps = 24;
-    param.iBitrate = 200000;
-    param.iSFrame = 0;
-    param.iFrame = 10;
-    param.iSample = 1;
-    param.bOptix = true;
-    param.sPixel = "1200x800";
-#endif
 
 
     if (!param.bOptix) {
@@ -209,23 +199,32 @@ int record_main(const QCoreApplication& app)
         launchparam.beginFrame = recInfo.frameRange.first;
         launchparam.endFrame = recInfo.frameRange.second;
 
+        //start optix proc to render
+        QProcess* optixProc = new QProcess;
+
+        QObject::connect(zenoApp->getServer(), &ZTcpServer::runnerError, [=]() {
+            std::cout << "\n[record] calculation process has error and exit.\n" << std::flush;
+            optixProc->kill();
+            QCoreApplication::exit(-2);
+        });
+
         bool ret = AppHelper::openZsgAndRun(param, launchparam);
-        ZASSERT_EXIT(ret, -1); //will launch tcp server to start a calc proc.
+        ZERROR_EXIT(ret, -1); //will launch tcp server to start a calc proc.
 
         //get the final zencache path, like `2023-07-06 18-29-14`
         std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
         QString zenCacheDir = mgr->cachePath();
-        ZASSERT_EXIT(!zenCacheDir.isEmpty(), -1);
+        ZERROR_EXIT(!zenCacheDir.isEmpty(), -1);
         QStringList args = QCoreApplication::arguments();
 
         int idxCachePath = args.indexOf("--cachePath");
-        ZASSERT_EXIT(idxCachePath != -1 && idxCachePath + 1 < args.length(), -1);
+        ZERROR_EXIT(idxCachePath != -1 && idxCachePath + 1 < args.length(), -1);
         args[idxCachePath + 1] = zenCacheDir;
 
         auto pGraphs = zenoApp->graphsManagment();
-        ZASSERT_EXIT(pGraphs, -1);
+        ZERROR_EXIT(pGraphs, -1);
 
-        ZASSERT_EXIT(args[1] == "--record", -1);
+        ZERROR_EXIT(args[1] == "--record", -1);
         args[1] = "--optixcmd";
         args[2] = QString::number(0);      //no need tcp
         args.append("--cacheautorm");
@@ -237,9 +236,6 @@ int record_main(const QCoreApplication& app)
         args.append("--exr");
         args.append(QString::number(param.export_exr));
         args.removeAt(0);
-
-        //start optix proc to render
-        QProcess* optixProc = new QProcess;
 
         optixProc->setInputChannelMode(QProcess::InputChannelMode::ManagedInputChannel);
         optixProc->setReadChannel(QProcess::ProcessChannel::StandardOutput);

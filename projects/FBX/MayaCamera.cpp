@@ -127,7 +127,7 @@ ZENO_DEFNODE(CameraNode)({
         {"vec3f", "up", "0,1,0"},
         {"vec3f", "view", "0,0,-1"},
         {"float", "fov", "45"},
-        {"float", "aperture", "0.1"},
+        {"float", "aperture", "11"},
         {"float", "focalPlaneDistance", "2.0"},
         {"string", "other", ""},
         {"int", "frame", "0"},
@@ -359,6 +359,8 @@ struct LightNode : INode {
         prim->userData().set2("color", std::move(color));
         prim->userData().set2("intensity", std::move(intensity));
 
+        auto fluxFixed = get_input2<float>("fluxFixed");
+        prim->userData().set2("fluxFixed", std::move(fluxFixed));
         auto maxDistance = get_input2<float>("maxDistance");
         prim->userData().set2("maxDistance", std::move(maxDistance));
         auto falloffExponent = get_input2<float>("falloffExponent");
@@ -440,10 +442,12 @@ ZENO_DEFNODE(LightNode)({
         {"vec3f", "color", "1, 1, 1"},
         {"float", "exposure", "0"},
         {"float", "intensity", "1"},
+        {"float", "fluxFixed", "-1.0"},
+
+        {"float", "spread", "1.0"},
         {"float", "maxDistance", "-1.0" },
         {"float", "falloffExponent", "2.0"},
-
-        {"float", "spread", "1"},
+        
         {"bool", "visible", "0"},
         {"bool", "invertdir", "0"},
         {"bool", "doubleside", "0"},

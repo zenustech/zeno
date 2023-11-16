@@ -22,6 +22,7 @@ find_package(CUDAToolkit REQUIRED COMPONENTS cufft REQUIRED)
 find_package(Eigen3 REQUIRED)
 
 set(WHEREAMI_BUILD_SHARED_LIBS ON)
+set(ZS_ENABLE_ZENO_CU_WRANGLE ON)
 add_subdirectory(zpc)
 
 add_library(zshelper INTERFACE)

@@ -11,6 +11,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
+#include <queue>
 #include <zeno/ListObject.h>
 #include <zeno/funcs/PrimitiveUtils.h>
 #include <zeno/types/PrimitiveObject.h>
@@ -2133,6 +2134,258 @@ ZENDEFNODE(FollowUpReferencePrimitive, {
                                            {},
                                            {"zs_geom"},
                                        });
+
+struct KuhnMunkres {
+    using T = float; // weight
+    int n;
+    // std::vector<std::vector<int>> weight;
+    std::function<T(int, int)> weight;
+    std::queue<int> q;
+    std::vector<T> head_l; // mark for the left node, head_l[i] + head_r[j] >= weight[i][j]
+    std::vector<T> head_r; // mark for the right node, the same
+    std::vector<T> slack;
+    std::vector<int> visit_l; // whether left node is in the tree
+    std::vector<int> visit_r; // whether right node is in the tree
+    std::vector<int> find_l;  // current match for left node
+    std::vector<int> find_r;  // current match for right node
+    std::vector<int> previous;
+
+    template <typename Func>
+    KuhnMunkres(int n, Func &&f)
+        : weight{FWD(f)}, n(n), head_l(n), head_r(n), slack(n), visit_l(n), visit_r(n), find_l(n), find_r(n),
+          previous(n) {
+        // resize the vectors
+    }
+    int check(int i) {
+        visit_l[i] = 1;
+        if (find_l[i] != -1) {
+            q.push(find_l[i]);
+            return visit_r[find_l[i]] = 1;
+        }
+        while (i != -1) {
+            find_l[i] = previous[i];
+            std::swap(i, find_r[find_l[i]]);
+        }
+        return 0;
+    }
+    void bfs(int s) {
+        // initialize
+        for (int i = 0; i < n; ++i) {
+            slack[i] = std::numeric_limits<T>::max();
+            visit_l[i] = visit_r[i] = 0;
+        }
+        while (!q.empty())
+            q.pop();
+        q.push(s);
+        visit_r[s] = 1;
+        T d = 0;
+        while (true) {
+            while (!q.empty()) {
+                for (int i = 0, j = q.front(); i < n; ++i) {
+                    d = head_l[i] + head_r[j] - weight(i, j);
+                    if (!visit_l[i] && slack[i] >= d) {
+                        previous[i] = j;
+                        if (d > 0)
+                            slack[i] = d;
+                        else if (!check(i))
+                            return;
+                    }
+                }
+                q.pop();
+            }
+            d = std::numeric_limits<T>::max();
+            for (int i = 0; i < n; ++i)
+                if (!visit_l[i] && d > slack[i])
+                    d = slack[i];
+            for (int i = 0; i < n; ++i) {
+                if (visit_l[i])
+                    head_l[i] += d;
+                else
+                    slack[i] -= d;
+                if (visit_r[i])
+                    head_r[i] -= d;
+            }
+            for (int i = 0; i < n; ++i)
+                if (!visit_l[i] && slack[i] > 0 && !check(i))
+                    return;
+        }
+    }
+    void solve() {
+        for (int i = 0; i < n; ++i) {
+            previous[i] = find_l[i] = find_r[i] = -1;
+            head_r[i] = (T)0;
+        }
+        for (int i = 0; i < n; ++i) {
+            head_l[i] = weight(i, 0);
+            for (int j = 1; j < n; ++j)
+                head_l[i] = std::max(head_l[i], weight(i, j));
+        }
+        for (int i = 0; i < n; ++i)
+            bfs(i);
+    }
+};
+
+struct KM {
+    using T = float; // weight
+    static constexpr T inf = std::numeric_limits<float>::max();
+
+    std::function<T(int, int)> w;
+
+    int n, nl, nr, py, x, y, i, j, p;
+    std::vector<int> lk, pre;
+
+    T d, ans;
+    std::vector<T> lx, ly, slk;
+
+    std::vector<int> vy;
+
+    template <typename Func>
+    KM(int n, Func &&f)
+        : w{FWD(f)}, nl(n), nr(n), n(n), lk(n + 1), pre(n + 1), lx(n + 1), ly(n + 1), slk(n + 1), vy(n + 1) {
+        for (i = 0; i <= n; i++)
+            lk[i] = pre[i] = lx[i] = ly[i] = slk[i] = 0;
+
+        for (i = 1; i <= n; i++)
+            for (j = 1; j <= n; j++)
+                lx[i] = std::max(lx[i], w(i - 1, j - 1));
+
+        for (i = 1; i <= n; i++) {
+            for (j = 1; j <= n; j++)
+                slk[j] = inf, vy[j] = 0;
+            for (lk[py = 0] = i; lk[py]; py = p) {
+                vy[py] = 1;
+                d = inf;
+                x = lk[py];
+                for (y = 1; y <= n; y++)
+                    if (!vy[y]) {
+                        if (lx[x] + ly[y] - w(x - 1, y - 1) < slk[y])
+                            slk[y] = lx[x] + ly[y] - w(x - 1, y - 1), pre[y] = py;
+                        if (slk[y] < d)
+                            d = slk[y], p = y;
+                    }
+                for (y = 0; y <= n; y++)
+                    if (vy[y])
+                        lx[lk[y]] -= d, ly[y] += d;
+                    else
+                        slk[y] -= d;
+            }
+            for (; py; py = pre[py])
+                lk[py] = lk[pre[py]];
+        }
+        for (ans = 0, i = 1; i <= n; i++) {
+            ans += lx[i] + ly[i];
+        }
+        printf("%f\n", ans);
+#if 0
+        for (i = 1; i <= nl; i++)
+            printf("%d ", lk[i]);
+#endif
+    }
+};
+
+struct AssociateParticles : INode {
+    void apply() override {
+        auto srcPrim = get_input2<PrimitiveObject>("srcPrim");
+        auto dstPrim = get_input2<PrimitiveObject>("dstPrim");
+        auto posTag = get_input2<std::string>("target_pos_tag");
+        auto indexTag = get_input2<std::string>("target_index_tag");
+
+        auto &dstPos = srcPrim->add_attr<vec3f>(posTag);
+        auto &dstIndices = srcPrim->add_attr<int>(indexTag);
+
+        auto n = srcPrim->size();
+        const auto &src = srcPrim->attr<vec3f>("pos");
+        const auto &dst = dstPrim->attr<vec3f>("pos");
+        KuhnMunkres km{(int)n, [&src, &dst](int i, int j) { return length(src[i] - dst[j]); }};
+        km.solve();
+
+        if constexpr (false) {
+            KM km{(int)n, [&src, &dst](int i, int j) { return length(src[i] - dst[j]); }};
+            // fmt::print(fg(fmt::color::green), "new candidate: {}\n", km.solve());
+            (void)km;
+        }
+
+        float refSum = 0.f;
+        for (int i = 0; i != n; ++i)
+            refSum += length(src[i] - dst[i]);
+        float curSum = 0.f;
+        for (int i = 0; i != n; ++i)
+            curSum += length(src[i] - dst[km.find_l[i]]);
+        fmt::print(fg(fmt::color::red), "ref: {}, calc: {}\n", refSum, curSum);
+
+        auto pol = zs::omp_exec();
+        pol(zs::range(n), [&, &dst = dstPrim->attr<vec3f>("pos")](int i) {
+            int id = km.find_l[i];
+            // int id = km.previous[i];
+            dstIndices[i] = id;
+            dstPos[i] = dst[id];
+        });
+        set_output("srcPrim", std::move(srcPrim));
+    }
+};
+ZENDEFNODE(AssociateParticles, {
+                                   {{"PrimitiveObject", "srcPrim"},
+                                    {"string", "target_pos_tag", "target_pos"},
+                                    {"string", "target_index_tag", "target_index"},
+                                    {"PrimitiveObject", "dstPrim"}},
+                                   {{"PrimitiveObject", "srcPrim"}},
+                                   {},
+                                   {"zs_geom"},
+                               });
+
+struct AssociateParticlesFast : INode {
+    void apply() override {
+        auto srcPrim = get_input2<PrimitiveObject>("srcPrim");
+        auto dstPrim = get_input2<PrimitiveObject>("dstPrim");
+        auto posTag = get_input2<std::string>("target_pos_tag");
+        auto indexTag = get_input2<std::string>("target_index_tag");
+
+        auto principal = get_input2<zeno::vec3f>("principal_direction");
+
+        auto &dstPos = srcPrim->add_attr<vec3f>(posTag);
+        auto &dstIndices = srcPrim->add_attr<int>(indexTag);
+
+        auto n = srcPrim->size();
+        const auto &src = srcPrim->attr<vec3f>("pos");
+        const auto &dst = dstPrim->attr<vec3f>("pos");
+        
+        float refSum = 0.f;
+        for (int i = 0; i != n; ++i)
+            refSum += length(src[i] - dst[i]);
+        float curSum = 0.f;
+        // for (int i = 0; i != n; ++i)
+        //    curSum += length(src[i] - dst[km.find_l[i]]);
+        fmt::print(fg(fmt::color::red), "ref: {}, calc: {}\n", refSum, curSum);
+
+        auto pol = zs::omp_exec();
+        std::vector<float> locs(n);
+        std::vector<int> indices(n);
+        auto sortPrim = [&pol, principal](const auto &ps, auto &distances, auto &sortedIndices) {
+            pol(enumerate(ps, distances, sortedIndices), [principal](int i, const auto &p, auto &dis, auto &id) {
+                dis = dot(p, principal);
+                id = i;
+            });
+            // merge_sort_pair(pol, );
+        };
+#if 0
+        pol(zs::range(n), [&](int i) {
+            dstIndices[i] = id;
+            dstPos[i] = dst[id];
+        });
+#endif
+        set_output("srcPrim", std::move(srcPrim));
+    }
+};
+ZENDEFNODE(AssociateParticlesFast, {
+                                   {{"PrimitiveObject", "srcPrim"},
+                                    {"string", "target_pos_tag", "target_pos"},
+                                    {"string", "target_index_tag", "target_index"},
+                                    {"vec3f", "principal_direction", "1, 0, 0"},
+                                    {"PrimitiveObject", "dstPrim"}},
+                                   {{"PrimitiveObject", "srcPrim"}},
+                                   {},
+                                   {"zs_geom"},
+                               });
 
 struct EmbedPrimitiveBvh : zeno::INode {
     virtual void apply() override {
