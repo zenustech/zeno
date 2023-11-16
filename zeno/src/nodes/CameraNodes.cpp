@@ -29,7 +29,7 @@ ZENO_DEFNODE(MakeCamera)({
         {"float", "near", "0.01"},
         {"float", "far", "20000"},
         {"float", "fov", "45"},
-        {"float", "aperture", "0.1"},
+        {"float", "aperture", "11"},
         {"float", "focalPlaneDistance", "2.0"},
     },
     {
@@ -72,7 +72,7 @@ ZENO_DEFNODE(TargetCamera)({
         {"float", "near", "0.01"},
         {"float", "far", "20000"},
         {"float", "fov", "45"},
-        {"float", "aperture", "0.1"},
+        {"float", "aperture", "11"},
         {"float", "focalPlaneDistance", "2.0"},
     },
     {
