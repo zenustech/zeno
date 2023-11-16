@@ -14,6 +14,11 @@ class SurfaceCurvature {
 public:
     SurfaceCurvature(SurfaceMesh* mesh);
 
+    SurfaceCurvature(SurfaceMesh* mesh,
+                     std::string min_curv_tag,
+                     std::string max_curv_tag,
+                     std::string gaussian_curv_tag);
+
     ~SurfaceCurvature();
 
     //! compute curvature information for each vertex, optionally followed
@@ -22,7 +27,9 @@ public:
 
     //! return maximum absolute curvature
     float max_abs_curvature(int v) const {
-        return std::max(fabs(min_curvature_[v]), fabs(max_curvature_[v]));
+        auto &min_curvature = mesh_->prim_->verts.attr<float>(min_curv_tag_);
+        auto &max_curvature = mesh_->prim_->verts.attr<float>(max_curv_tag_);
+        return std::max(fabs(min_curvature[v]), fabs(max_curvature[v]));
     }
 
     bool symmetric_eigendecomposition(const Eigen::Matrix3f& m,
@@ -123,8 +130,10 @@ private:
     SurfaceMesh* mesh_;
     int vertice_num_;
     int edge_num_;
-    AttrVector<float> min_curvature_;
-    AttrVector<float> max_curvature_;
+
+    std::string min_curv_tag_;
+    std::string max_curv_tag_;
+    std::string gaussian_curv_tag_;
 };
 
 } // namespace pmp

@@ -1,3 +1,13 @@
+QTabWidget[cssClass = "preferences"]::pane {
+    border: 1px solid #5B5B5B;
+	background:transparent;
+	color:#FFFFFF;
+}
+
+QTabWidget[cssClass = "preferences"]::pane QWidget{
+	color:#FFFFFF;
+}
+
 QTabBar::close-button {
     image: url(:/icons/closebtn.svg);
     subcontrol-position: right;
@@ -26,6 +36,16 @@ QTabBar::tab {
 
 QTabBar::tab:top {
     padding: 2px 16px 3px 16px;
+}
+
+QTabBar::tab:left {
+    padding: 16px 5px;
+	border-top: 1px solid #5B5B5B;
+}
+
+QTabBar::tab:left:selected {
+    padding: 16px 5px;
+	border-top: 1px solid #5B5B5B;
 }
 
 QTabBar::tab:selected {

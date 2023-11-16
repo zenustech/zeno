@@ -25,10 +25,12 @@ enum VisibilityMask {
 struct GenericLight
 {
     float3 T, B, N;
-    float3 emission;
+    float3 color;
     float intensity;
     float vIntensity;
 
+    float spread;
+    float spreadNormalize;
     float maxDistance;
     float falloffExponent;
 
@@ -57,7 +59,7 @@ struct GenericLight
 
     pbrt::LightBounds bounds() {
 
-        auto Phi = dot(emission, make_float3(1.0f/3.0f));
+        auto Phi = intensity;
         bool doubleSided = config & zeno::LightConfigDoubleside;
 
         if (this->type == zeno::LightType::IES) {
@@ -80,19 +82,25 @@ struct GenericLight
 
     void setConeData(const float3& p, const float3& dir, float range, float coneAngle) {
         this->cone.p = p;
-        this->cone.dir = dir;
         this->cone.range = range;
+
+        this->cone.dir = dir;
         this->cone.cosFalloffStart = cosf(coneAngle);
         this->cone.cosFalloffEnd = cosf(coneAngle + __FLT_EPSILON__);
     }
 
     void setRectData(const float3& v0, const float3& v1, const float3& v2, const float3& normal) {
-        this->rect.v0 = v0;
-        this->rect.v1 = v1;
-        this->rect.v2 = v2;
 
-        this->rect.normal = normal;
-        this->rect.area = length( cross(v1, v2) );
+        rect.v = v0;
+        rect.lenX = length(v1);
+        rect.axisX = v1 / rect.lenX;
+        
+        rect.lenY = length(v2);
+        rect.axisY = v2 / rect.lenY;
+
+        rect.normal = normal;
+         //length( cross(v1, v2) );
+        rect.area = rect.lenX * rect.lenY; 
     }
 
     void setSphereData(const float3& center, float radius) {

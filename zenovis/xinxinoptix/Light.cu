@@ -65,7 +65,6 @@ extern "C" __global__ void __closesthit__radiance()
     }
 
     uint light_index = 0;
-    vec3 light_normal {};
 
     bool ignore = false;
     const auto pType = optixGetPrimitiveType();
@@ -100,8 +99,10 @@ extern "C" __global__ void __closesthit__radiance()
     light_index = min(light_index, params.num_lights - 1);
     auto& light = params.lights[light_index];
 
+    vec3 light_normal {};
+
     if (pType == OptixPrimitiveType::OPTIX_PRIMITIVE_TYPE_SPHERE) {
-        light_normal = normalize(light.sphere.center - ray_orig);
+        light_normal = normalize(P - light.sphere.center);
     } else {
         light_normal = light.N;
     }
@@ -124,30 +125,44 @@ extern "C" __global__ void __closesthit__radiance()
     LightSampleRecord lsr;
 
     if (light.type != zeno::LightType::Diffuse) {
-        // auto pos = ray_orig + ray_dir * optixGetRayTmax();
-        // prd->geometryNormal = normalize(light.sphere.center - ray_orig);
-        // prd->offsetUpdateRay(pos, ray_dir);
-        return;
-    } else {
-        if (light.shape == zeno::LightShape::Plane) {
-            light.rect.EvalAfterHit(&lsr, lightDirection, lightDistance, prd->origin);
-        } else if (light.shape == zeno::LightShape::Sphere) {
-            light.sphere.EvalAfterHit(&lsr, lightDirection, lightDistance, prd->origin);
-            cihouSphereLightUV(lsr, light);
-        } else if (light.shape == zeno::LightShape::TriangleMesh) {
+        if (prd->depth > 1) { return; }
+        lsr.PDF = 1.0f;
+        lsr.isDelta = true;
+    }
 
-            float2 bary2 = optixGetTriangleBarycentrics();
-            float3 bary3 = { 1.0f-bary2.x-bary2.y, bary2.x, bary2.y };
-            
-            float3* normalBuffer = reinterpret_cast<float3*>(params.triangleLightNormalBuffer);
-            float2* coordsBuffer = reinterpret_cast<float2*>(params.triangleLightCoordsBuffer);
-            light.triangle.EvalAfterHit(&lsr, lightDirection, lightDistance, prd->origin, prd->geometryNormal, bary3, normalBuffer, coordsBuffer);
-        }
+    const auto lightShape = light.shape;
+
+    if (lightShape == zeno::LightShape::Plane) {
+        light.rect.EvalAfterHit(&lsr, lightDirection, lightDistance, prd->origin);
+    } else if (lightShape == zeno::LightShape::Sphere) {
+        light.sphere.EvalAfterHit(&lsr, lightDirection, lightDistance, prd->origin);
+        cihouSphereLightUV(lsr, light);
+    } else if (lightShape == zeno::LightShape::TriangleMesh) {
+
+        float2 bary2 = optixGetTriangleBarycentrics();
+        float3 bary3 = { 1.0f-bary2.x-bary2.y, bary2.x, bary2.y };
+        
+        float3* normalBuffer = reinterpret_cast<float3*>(params.triangleLightNormalBuffer);
+        float2* coordsBuffer = reinterpret_cast<float2*>(params.triangleLightCoordsBuffer);
+        light.triangle.EvalAfterHit(&lsr, lightDirection, lightDistance, prd->origin, prd->geometryNormal, bary3, normalBuffer, coordsBuffer);
+    } else { 
+        return; 
+    }
+
+    if (light.type == zeno::LightType::Diffuse && light.spread < 1.0f) {
+
+        auto void_angle = 0.5f * (1.0f - light.spread) * M_PIf;
+        auto atten = light_spread_attenuation(
+                                lsr.dir,
+                                lsr.n,
+                                light.spread,
+                                tanf(void_angle),
+                                light.spreadNormalize);
+        lsr.intensity *= atten;
     }
 
     if (!cihouMaxDistanceContinue(lsr, light)) { return; }
-
-    float3 emission = cihouLightTexture(lsr, light, prd->depth);
+    float3 emission = cihouLightEmission(lsr, light, prd->depth-1);
 
     if (light.config & zeno::LightConfigDoubleside) {
         lsr.NoL = abs(lsr.NoL);
@@ -162,12 +177,16 @@ extern "C" __global__ void __closesthit__radiance()
     if (lsr.NoL > _FLT_EPL_) {
 
         auto lightTree = reinterpret_cast<pbrt::LightTreeSampler*>(params.lightTreeSampler);
+        if (lightTree == nullptr) { return; }
 
         auto PMF = lightTree->PMF(reinterpret_cast<const Vector3f&>(ray_orig), 
                                          reinterpret_cast<const Vector3f&>(prd->geometryNormal), light_index);
 
         auto lightPickPDF = (1.0f - _SKY_PROB_) * PMF;
-        DCHECK(lightPickPDF > 0.0f && lightPickPDF < 1.0f);
+
+        if (lightPickPDF < 0.0f || !isfinite(lightPickPDF)) {
+            lightPickPDF = 0.0f;
+        }
 
         if (1 == prd->depth) {
             if (light.config & zeno::LightConfigVisible) {
@@ -180,7 +199,11 @@ extern "C" __global__ void __closesthit__radiance()
         
         float lightPDF = lightPickPDF * lsr.PDF;
         float scatterPDF = prd->samplePdf; //BxDF PDF from previous hit
-        float misWeight = BRDFBasics::PowerHeuristic(scatterPDF, lightPDF);
+        float misWeight = 1.0f;
+        
+        if (!lsr.isDelta) {
+            misWeight = BRDFBasics::PowerHeuristic(scatterPDF, lightPDF);
+        }
 
         prd->radiance = lsr.intensity * emission * misWeight;
         // if (scatterPDF > __FLT_DENORM_MIN__) {

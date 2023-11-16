@@ -69,6 +69,7 @@ void OptixWorker::onPlayToggled(bool bToggled)
     else {
         m_pTimer->start(m_sampleFeq);
     }
+    setRenderSeparately(false, false);
 }
 
 void OptixWorker::onSetSlidFeq(int feq)

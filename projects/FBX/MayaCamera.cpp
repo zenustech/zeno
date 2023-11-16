@@ -249,7 +249,7 @@ ZENO_DEFNODE(CameraEval)({
 struct LightNode : INode {
     virtual void apply() override {
         auto isL = true; //get_input2<int>("islight");
-        auto inverdir = get_input2<int>("invertdir");
+        auto invertdir = get_input2<int>("invertdir");
         auto position = get_input2<zeno::vec3f>("position");
         auto scale = get_input2<zeno::vec3f>("scale");
         auto rotate = get_input2<zeno::vec3f>("rotate");
@@ -348,18 +348,10 @@ struct LightNode : INode {
             clr[i] = c;
         }
 
-        if(inverdir){
-            for(int i=0;i<prim->tris.size(); i++){
-                int tmp = prim->tris[i][1];
-                prim->tris[i][1] = prim->tris[i][0];
-                prim->tris[i][0] = tmp;
-            }
-        }
-
         prim->userData().set2("isRealTimeObject", std::move(isL));
 
         prim->userData().set2("isL", std::move(isL));
-        prim->userData().set2("ivD", std::move(inverdir));
+        prim->userData().set2("ivD", std::move(invertdir));
         prim->userData().set2("pos", std::move(position));
         prim->userData().set2("scale", std::move(scale));
         prim->userData().set2("rotate", std::move(rotate));
@@ -367,11 +359,14 @@ struct LightNode : INode {
         prim->userData().set2("color", std::move(color));
         prim->userData().set2("intensity", std::move(intensity));
 
+        auto fluxFixed = get_input2<float>("fluxFixed");
+        prim->userData().set2("fluxFixed", std::move(fluxFixed));
         auto maxDistance = get_input2<float>("maxDistance");
         prim->userData().set2("maxDistance", std::move(maxDistance));
         auto falloffExponent = get_input2<float>("falloffExponent");
         prim->userData().set2("falloffExponent", std::move(falloffExponent));
 
+        auto spread = get_input2<float>("spread");
         auto visible = get_input2<int>("visible");
         auto doubleside = get_input2<int>("doubleside");
 
@@ -390,6 +385,7 @@ struct LightNode : INode {
         prim->userData().set2("type", std::move(typeOrder));
         prim->userData().set2("shape", std::move(shapeOrder));
         
+        prim->userData().set2("spread", std::move(spread));
         prim->userData().set2("visible", std::move(visible));
         prim->userData().set2("doubleside", std::move(doubleside));
 
@@ -446,18 +442,21 @@ ZENO_DEFNODE(LightNode)({
         {"vec3f", "color", "1, 1, 1"},
         {"float", "exposure", "0"},
         {"float", "intensity", "1"},
+        {"float", "fluxFixed", "-1.0"},
+
+        {"float", "spread", "1.0"},
         {"float", "maxDistance", "-1.0" },
         {"float", "falloffExponent", "2.0"},
-
+        
         {"bool", "visible", "0"},
-        {"bool", "invertdir", "1"},
+        {"bool", "invertdir", "0"},
         {"bool", "doubleside", "0"},
 
         {"readpath", "profile"},
         {"readpath", "texturePath"},
         {"float",  "textureGamma", "1.0"},
         
-        {"float", "visibleIntensity", "1.0"},
+        {"float", "visibleIntensity", "-1.0"},
         {"enum " + LightNode::lightShapeListString(), LightNode::lightShapeKey, LightNode::lightShapeDefaultString()},   
         {"enum " + LightNode::lightTypeListString(), LightNode::lightTypeKey, LightNode::lightTypeDefaultString()}, 
         {"PrimitiveObject", "prim"},

@@ -92,28 +92,26 @@ bool ZShortCutItemDelegate::eventFilter(QObject* object, QEvent* event)
     return _base::eventFilter(object, event);
 }
 
-//dialog
-ZShortCutSettingDlg::ZShortCutSettingDlg(QWidget *parent) :
-    QDialog(parent), 
-    m_pTableWidget(nullptr)
+//shortcuts pane
+ShortcutsPane::ShortcutsPane(QWidget* parent) : QWidget(parent)
 {
     initUI();
 }
 
-ZShortCutSettingDlg::~ZShortCutSettingDlg()
+void ShortcutsPane::saveValue()
 {
+    ZenoSettingsManager::GetInstance().writeShortCutInfo(m_shortCutInfos, m_pComboBox->currentIndex());
 }
 
-
-void ZShortCutSettingDlg::initUI()
+void ShortcutsPane::initUI()
 {
-    QVBoxLayout *pLayout = new QVBoxLayout(this);
+    QVBoxLayout* pLayout = new QVBoxLayout(this);
     QHBoxLayout* pHLayout_top = new QHBoxLayout;
-    ZComboBox* pComboBox = new ZComboBox(this);
-    pComboBox->setFixedWidth(ZenoStyle::dpiScaled(100));
-    pComboBox->addItems(QStringList() << tr("Default") << tr("Houdini") << tr("Maya"));
-    pComboBox->setCurrentIndex(ZenoSettingsManager::GetInstance().getValue(zsShortCutStyle).toInt());
-    pHLayout_top->addWidget(pComboBox);
+    m_pComboBox = new ZComboBox(this);
+    m_pComboBox->setFixedWidth(ZenoStyle::dpiScaled(100));
+    m_pComboBox->addItems(QStringList() << tr("Default") << tr("Houdini") << tr("Maya"));
+    m_pComboBox->setCurrentIndex(ZenoSettingsManager::GetInstance().getValue(zsShortCutStyle).toInt());
+    pHLayout_top->addWidget(m_pComboBox);
     pHLayout_top->addSpacerItem(new QSpacerItem(10, 10, QSizePolicy::Expanding));
     pLayout->addLayout(pHLayout_top);
 
@@ -129,28 +127,9 @@ void ZShortCutSettingDlg::initUI()
     m_pTableWidget->horizontalHeader()->setDefaultAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     m_pTableWidget->setMouseTracking(true);
     pLayout->addWidget(m_pTableWidget);
-    QHBoxLayout *pHLayout = new QHBoxLayout;
-    QPushButton *pOKButton = new QPushButton(tr("OK"), this);
-    QPushButton *pCancelButton = new QPushButton(tr("Cancel"), this);
-    qreal width = ZenoStyle::dpiScaled(80);
-    pOKButton->setFixedWidth(width);
-    pCancelButton->setFixedWidth(width);
-    pHLayout->addWidget(pOKButton);
-    pHLayout->addWidget(pCancelButton);
-    pHLayout->setAlignment(Qt::AlignRight);
-    pLayout->addLayout(pHLayout);
 
-    connect(pComboBox, &ZComboBox::_textActivated, this, [=]() {
-        onCurrentIndexChanged(pComboBox->currentIndex());
-    });
-
-    connect(pOKButton, &QPushButton::clicked, this, [=]() {
-        ZenoSettingsManager::GetInstance().writeShortCutInfo(m_shortCutInfos, pComboBox->currentIndex());
-        accept();
-    });
-
-    connect(pCancelButton, &QPushButton::clicked, this, [=]() {
-        reject();
+    connect(m_pComboBox, &ZComboBox::_textActivated, this, [=]() {
+        onCurrentIndexChanged(m_pComboBox->currentIndex());
     });
 
     //init table widget
@@ -158,31 +137,28 @@ void ZShortCutSettingDlg::initUI()
     m_pTableWidget->setRowCount(m_shortCutInfos.size());
     int row = 0;
     for (auto info : m_shortCutInfos) {
-        QTableWidgetItem *descItem = new QTableWidgetItem(info.desc);
+        QTableWidgetItem* descItem = new QTableWidgetItem(info.desc);
         descItem->setFlags(descItem->flags() & (~Qt::ItemFlag::ItemIsEditable));
         descItem->setData(Qt::DisplayPropertyRole, info.key);
         m_pTableWidget->setItem(row, 0, descItem);
         m_pTableWidget->setItem(row, 1, new QTableWidgetItem(info.shortcut));
         row++;
     }
-    connect(m_pTableWidget, &QTableWidget::itemChanged, this, [=](QTableWidgetItem *item) {
+    connect(m_pTableWidget, &QTableWidget::itemChanged, this, [=](QTableWidgetItem* item) {
         if (item->column() != 1)
-            return;
-        int row = item->row();
-        QString key = m_pTableWidget->item(row, 0)->data(Qt::DisplayPropertyRole).toString();
-        for (auto &shortcutInfo : m_shortCutInfos) {
-            if (shortcutInfo.key == key) {
-                shortcutInfo.shortcut = item->data(Qt::DisplayRole).toString();
-                break;
-            }
+        return;
+    int row = item->row();
+    QString key = m_pTableWidget->item(row, 0)->data(Qt::DisplayPropertyRole).toString();
+    for (auto& shortcutInfo : m_shortCutInfos) {
+        if (shortcutInfo.key == key) {
+            shortcutInfo.shortcut = item->data(Qt::DisplayRole).toString();
+            break;
         }
+    }
     });
-
-    this->resize(ZenoStyle::dpiScaled(280), ZenoStyle::dpiScaled(500));
-    this->setWindowTitle(tr("Shortcut Setting"));
 }
 
-void ZShortCutSettingDlg::onCurrentIndexChanged(int index)
+void ShortcutsPane::onCurrentIndexChanged(int index)
 {
     while (m_pTableWidget->rowCount() > 0)
     {
@@ -199,4 +175,46 @@ void ZShortCutSettingDlg::onCurrentIndexChanged(int index)
         m_pTableWidget->setItem(row, 1, new QTableWidgetItem(info.shortcut));
         row++;
     }
+}
+
+//dialog
+ZShortCutSettingDlg::ZShortCutSettingDlg(QWidget *parent) :
+    QDialog(parent)
+{
+    initUI();
+}
+
+ZShortCutSettingDlg::~ZShortCutSettingDlg()
+{
+}
+
+
+void ZShortCutSettingDlg::initUI()
+{
+    QVBoxLayout *pLayout = new QVBoxLayout(this);
+    QHBoxLayout* pHLayout_top = new QHBoxLayout;
+    ShortcutsPane* pShortCutPane = new ShortcutsPane(this);
+    pLayout->addWidget(pShortCutPane);
+    QHBoxLayout *pHLayout = new QHBoxLayout;
+    QPushButton *pOKButton = new QPushButton(tr("OK"), this);
+    QPushButton *pCancelButton = new QPushButton(tr("Cancel"), this);
+    qreal width = ZenoStyle::dpiScaled(80);
+    pOKButton->setFixedWidth(width);
+    pCancelButton->setFixedWidth(width);
+    pHLayout->addWidget(pOKButton);
+    pHLayout->addWidget(pCancelButton);
+    pHLayout->setAlignment(Qt::AlignRight);
+    pLayout->addLayout(pHLayout);
+
+    connect(pOKButton, &QPushButton::clicked, this, [=]() {
+        pShortCutPane->saveValue();
+        accept();
+    });
+
+    connect(pCancelButton, &QPushButton::clicked, this, [=]() {
+        reject();
+    });
+
+    this->resize(ZenoStyle::dpiScaled(280), ZenoStyle::dpiScaled(500));
+    this->setWindowTitle(tr("Shortcut Setting"));
 }

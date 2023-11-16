@@ -659,7 +659,10 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
             case ROLE_OPTIONS:
             {
                 if (((item.options & OPT_VIEW) == false) && (value.toInt() & OPT_VIEW))
-                    _uniqueView(index, true, true, QModelIndexList());
+                {
+                    QModelIndexList lst;
+                    _uniqueView(index, true, true, lst);
+                }
                 item.options = value.toInt();
                 break;
             }

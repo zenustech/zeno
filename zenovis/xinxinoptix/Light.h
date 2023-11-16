@@ -70,7 +70,9 @@ static __inline__ __device__ bool cihouMaxDistanceContinue(LightSampleRecord &ls
     return true;
 }
 
-static __inline__ __device__ vec3 cihouLightTexture(LightSampleRecord &lsr, GenericLight &light, uint32_t depth) {
+static __inline__ __device__ vec3 cihouLightEmission(LightSampleRecord &lsr, GenericLight &light, uint32_t depth) {
+
+    auto intensity = (depth == 0 && light.vIntensity >= 0.0f) ? light.vIntensity : light.intensity;
 
     if (light.tex != 0u) {
         auto color = texture2D(light.tex, lsr.uv);
@@ -78,12 +80,11 @@ static __inline__ __device__ vec3 cihouLightTexture(LightSampleRecord &lsr, Gene
             color = pow(color, light.texGamma);
         }
 
-        auto scaler = (depth > 1)? light.intensity : light.vIntensity;
-        color = color * scaler;
+        color = color * intensity;
         return *(vec3*)&color;
     }
     
-    return light.emission;
+    return light.color * intensity;
 }
 
 static __inline__ __device__ float sampleIES(const float* iesProfile, float h_angle, float v_angle) {
@@ -173,6 +174,25 @@ static __inline__ __device__ void sampleSphereIES(LightSampleRecord& lsr, const 
     lsr.intensity = 1.0f / dist2;
 }
 
+static __inline__ __device__ float light_spread_attenuation(
+                                            const float3& ray_dir,
+                                            const float3& normal,
+                                            const float spread,
+                                            const float tan_void,
+                                            const float spreadNormalize)
+{
+    const float cos_a = -dot(ray_dir, normal);
+    auto angle_a = acosf(fabsf(cos_a));
+    auto angle_b = spread * 0.5f * M_PIf;
+
+    if (angle_a > angle_b) {
+        return 0.0f;
+    }
+
+    const float tan_a = tanf(angle_a);
+    return fmaxf((1.0f - tan_void * tan_a) * spreadNormalize, 0.0f);
+}
+
 namespace detail {
     template <typename T> struct is_void {
         static constexpr bool value = false;
@@ -215,7 +235,7 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
 
         lightPickProb *= pick.prob;
 
-        LightSampleRecord lsr{};
+        LightSampleRecord lsr;
 
         const float* iesProfile = reinterpret_cast<const float*>(light.ies);
 
@@ -240,13 +260,20 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
             switch (light.shape) {
                 case zeno::LightShape::Plane:
                     valid = light.rect.hitAsLight(&lsr, shadingP, -light.N);  break;
-                case zeno::LightShape::Sphere:
-                    valid = light.sphere.hitAsLight(&lsr, shadingP, -light.N); break;
+                case zeno::LightShape::Sphere: {
+                    auto dir = normalize(light.sphere.center - shadingP);
+                    valid = light.sphere.hitAsLight(&lsr, shadingP, dir); 
+                    if (valid) {
+                        cihouSphereLightUV(lsr, light);
+                        lsr.intensity *= 1.0f / (lsr.dist * lsr.dist); 
+                    }
+                    break;
+                }
                 default: return;
             }
             if (!valid) { return; }
 
-            lsr.intensity = 1.0f;
+            lsr.intensity *= 2.0f * M_PIf;
             lsr.PDF = 1.0f;
             lsr.NoL = 1.0f;
             lsr.isDelta = true;
@@ -256,8 +283,19 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
             float2 uu = {prd->rndf(), prd->rndf()};
 
             switch (light.shape) {
-                case zeno::LightShape::Plane:
-                    light.rect.SampleAsLight(&lsr, uu, shadingP);   break;
+                case zeno::LightShape::Plane: {
+
+                    auto rect = light.rect; 
+                    float2 uvScale, uvOffset;
+                    bool valid = SpreadClampRect(rect.v, rect.axisX, rect.lenX, rect.axisY, rect.lenY, 
+                                                rect.normal, shadingP, 
+                                                light.spread, uvScale, uvOffset);
+                    if (!valid) return;
+
+                    rect.SampleAsLight(&lsr, uu, shadingP);
+                    lsr.uv = uvOffset + lsr.uv * uvScale;
+                    break;
+                }
                 case zeno::LightShape::Sphere: {
                     light.sphere.SampleAsLight(&lsr, uu, shadingP); 
                     cihouSphereLightUV(lsr, light);
@@ -272,11 +310,23 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
                 }
                 default: break;
             }
+
+            if (light.spread < 1.0f) {
+                
+                auto void_angle = 0.5f * (1.0f - light.spread) * M_PIf;
+                auto atten = light_spread_attenuation(
+                                        lsr.dir,
+                                        lsr.n,
+                                        light.spread,
+                                        tanf(void_angle),
+                                        light.spreadNormalize);
+                lsr.intensity *= atten;
+            }
         }
 
         if (!cihouMaxDistanceContinue(lsr, light)) { return; }
         
-        float3 emission = cihouLightTexture(lsr, light, prd->depth);
+        float3 emission = cihouLightEmission(lsr, light, prd->depth);
 
         lsr.PDF *= lightPickProb;
 
