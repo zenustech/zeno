@@ -485,6 +485,7 @@ struct WriteAlembic2 : INode {
             write_attrs(prim, points, samp);
             points.set( samp );
         }
+        set_output("prim", prim);
     }
 };
 
@@ -498,7 +499,9 @@ ZENDEFNODE(WriteAlembic2, {
         {"fps"},
         {"bool", "flipFrontBack", "1"},
     },
-    {},
+    {
+        {"prim"},
+    },
     {},
     {"alembic"},
 });
