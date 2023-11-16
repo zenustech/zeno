@@ -105,7 +105,7 @@ extern "C" __global__ void __raygen__rg()
             ( static_cast<float>( idx.y + params.windowCrop_min.y ) + subpixel_jitter.y ) / static_cast<float>( h )
             ) - 1.0f;
 
-        float2 r01 = sobolRnd(sobolseed);
+        float2 r01 = sobolRnd(eventseed);
 
         float r0 = r01.x * 2.0f * M_PIf;
         float r1 = sqrtf(r01.y) * aperture;
