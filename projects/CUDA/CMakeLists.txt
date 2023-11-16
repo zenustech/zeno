@@ -20,6 +20,7 @@ set(CMAKE_CUDA_RESOLVE_DEVICE_SYMBOLS ON)
 find_package(CUDAToolkit REQUIRED COMPONENTS cufft REQUIRED)
 find_package(Eigen3 REQUIRED)
 
+set(ZS_ENABLE_ZENO_CU_WRANGLE ON)
 add_subdirectory(zpc)
 
 add_library(zshelper INTERFACE)

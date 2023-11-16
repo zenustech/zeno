@@ -2297,11 +2297,11 @@ struct AssociateParticles : INode {
         auto n = srcPrim->size();
         const auto &src = srcPrim->attr<vec3f>("pos");
         const auto &dst = dstPrim->attr<vec3f>("pos");
-        KuhnMunkres km{n, [&src, &dst](int i, int j) { return length(src[i] - dst[j]); }};
+        KuhnMunkres km{(int)n, [&src, &dst](int i, int j) { return length(src[i] - dst[j]); }};
         km.solve();
 
         if constexpr (false) {
-            KM km{n, [&src, &dst](int i, int j) { return length(src[i] - dst[j]); }};
+            KM km{(int)n, [&src, &dst](int i, int j) { return length(src[i] - dst[j]); }};
             // fmt::print(fg(fmt::color::green), "new candidate: {}\n", km.solve());
             (void)km;
         }
@@ -2328,6 +2328,60 @@ ZENDEFNODE(AssociateParticles, {
                                    {{"PrimitiveObject", "srcPrim"},
                                     {"string", "target_pos_tag", "target_pos"},
                                     {"string", "target_index_tag", "target_index"},
+                                    {"PrimitiveObject", "dstPrim"}},
+                                   {{"PrimitiveObject", "srcPrim"}},
+                                   {},
+                                   {"zs_geom"},
+                               });
+
+struct AssociateParticlesFast : INode {
+    void apply() override {
+        auto srcPrim = get_input2<PrimitiveObject>("srcPrim");
+        auto dstPrim = get_input2<PrimitiveObject>("dstPrim");
+        auto posTag = get_input2<std::string>("target_pos_tag");
+        auto indexTag = get_input2<std::string>("target_index_tag");
+
+        auto principal = get_input2<zeno::vec3f>("principal_direction");
+
+        auto &dstPos = srcPrim->add_attr<vec3f>(posTag);
+        auto &dstIndices = srcPrim->add_attr<int>(indexTag);
+
+        auto n = srcPrim->size();
+        const auto &src = srcPrim->attr<vec3f>("pos");
+        const auto &dst = dstPrim->attr<vec3f>("pos");
+        
+        float refSum = 0.f;
+        for (int i = 0; i != n; ++i)
+            refSum += length(src[i] - dst[i]);
+        float curSum = 0.f;
+        // for (int i = 0; i != n; ++i)
+        //    curSum += length(src[i] - dst[km.find_l[i]]);
+        fmt::print(fg(fmt::color::red), "ref: {}, calc: {}\n", refSum, curSum);
+
+        auto pol = zs::omp_exec();
+        std::vector<float> locs(n);
+        std::vector<int> indices(n);
+        auto sortPrim = [&pol, principal](const auto &ps, auto &distances, auto &sortedIndices) {
+            pol(enumerate(ps, distances, sortedIndices), [principal](int i, const auto &p, auto &dis, auto &id) {
+                dis = dot(p, principal);
+                id = i;
+            });
+            // merge_sort_pair(pol, );
+        };
+#if 0
+        pol(zs::range(n), [&](int i) {
+            dstIndices[i] = id;
+            dstPos[i] = dst[id];
+        });
+#endif
+        set_output("srcPrim", std::move(srcPrim));
+    }
+};
+ZENDEFNODE(AssociateParticlesFast, {
+                                   {{"PrimitiveObject", "srcPrim"},
+                                    {"string", "target_pos_tag", "target_pos"},
+                                    {"string", "target_index_tag", "target_index"},
+                                    {"vec3f", "principal_direction", "1, 0, 0"},
                                     {"PrimitiveObject", "dstPrim"}},
                                    {{"PrimitiveObject", "srcPrim"}},
                                    {},
