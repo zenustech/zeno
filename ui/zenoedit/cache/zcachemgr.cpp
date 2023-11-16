@@ -86,6 +86,10 @@ void ZCacheMgr::setCacheOpt(cacheOption opt) {
 
 void ZCacheMgr::setNewCacheDir(bool setNew) {
     m_isNew = setNew;
+    if (m_isNew)
+    {
+        removeObjTmpCacheDir();
+    }
 }
 
 ZCacheMgr::cacheOption ZCacheMgr::getCacheOption() {

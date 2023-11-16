@@ -1290,9 +1290,6 @@ void ZenoMainWindow::onSplitDock(bool bHorzontal)
 
 void ZenoMainWindow::openFileDialog()
 {
-    std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
-    ZASSERT_EXIT(mgr);
-    mgr->setNewCacheDir(true);
     QString filePath = getOpenFileByDialog();
     if (filePath.isEmpty())
         return;
@@ -1652,6 +1649,9 @@ bool ZenoMainWindow::openFile(QString filePath)
     recordRecentFile(filePath);
     initUserdata(pGraphs->userdataInfo());
     //resetDocks(pGraphs->layoutInfo().layerOutNode);
+    std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
+    ZASSERT_EXIT(mgr, false);
+    mgr->setNewCacheDir(true);
 
     m_ui->statusbar->showMessage(tr("File Opened"));
     zeno::scope_exit sp([&]() {QTimer::singleShot(2000, this, [=]() {m_ui->statusbar->showMessage(tr("Status Bar")); }); });
