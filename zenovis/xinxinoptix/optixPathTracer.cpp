@@ -3376,7 +3376,7 @@ void set_perspective_by_fov(float const *U, float const *V, float const *W, floa
     float half_radfov = fov * float(M_PI) / 360.0f;
     float half_tanfov = std::tan(half_radfov);
     cam.focal_length = L / 2.0f / half_tanfov;
-    cam.focal_length = max(0.01f,cam.focal_length);
+    cam.focal_length = std::max(0.01f,cam.focal_length);
     if(aperture > 24.0f){
         cam.aperture = 0.0f;
     }else{
@@ -3404,7 +3404,7 @@ void set_perspective_by_fov(float const *U, float const *V, float const *W, floa
     cam.yaw = yaw;
     cam.horizontal_shift = h_shift;
     cam.vertical_shift = v_shift;
-    cam.focal_distance = max(cam.focal_length, focal_distance);
+    cam.focal_distance = std::max(cam.focal_length, focal_distance);
     camera_changed = true;
 }
 void set_perspective_by_focal_length(float const *U, float const *V, float const *W, float const *E, float aspect, float focal_length, float w, float h, float focal_distance, float aperture, float pitch, float yaw, float h_shift, float v_shift) {
@@ -3415,7 +3415,7 @@ void set_perspective_by_focal_length(float const *U, float const *V, float const
     cam.front = normalize(make_float3(W[0], W[1], W[2]));
 
     cam.focal_length = focal_length;
-    cam.focal_length = max(0.01f,cam.focal_length);
+    cam.focal_length = std::max(0.01f,cam.focal_length);
 
     if(aperture < 24.0f){
         cam.aperture = 0.0f;
@@ -3429,7 +3429,7 @@ void set_perspective_by_focal_length(float const *U, float const *V, float const
     cam.yaw = yaw;
     cam.horizontal_shift = h_shift;
     cam.vertical_shift = v_shift;
-    cam.focal_distance = max(cam.focal_length, focal_distance);
+    cam.focal_distance = std::max(cam.focal_length, focal_distance);
     camera_changed = true;
 }
 
