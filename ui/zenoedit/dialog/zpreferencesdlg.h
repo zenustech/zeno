@@ -32,6 +32,8 @@ private:
     QCheckBox* m_pAutoCleanCache;
     QCheckBox* m_pEnableCheckbox;
     QSpinBox* m_pCacheNumSpinBox;
+
+    QCheckBox* m_pEnableShiftChangeFOV;
 };
 
 //NASLOCPane

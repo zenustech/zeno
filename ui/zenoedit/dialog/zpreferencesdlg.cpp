@@ -75,12 +75,14 @@ ZenoCachePane::ZenoCachePane(QWidget* parent) : QWidget(parent)
     QVariant varCacheRoot = inst.getValue(zsCacheDir);
     QVariant varCacheNum = inst.getValue(zsCacheNum);
     QVariant varAutoCleanCache = inst.getValue(zsCacheAutoClean);
+    QVariant varEnableShiftChangeFOV = inst.getValue(zsEnableShiftChangeFOV);
 
     bool bEnableCache = varEnableCache.isValid() ? varEnableCache.toBool() : false;
     bool bTempCacheDir = varTempCacheDir.isValid() ? varTempCacheDir.toBool() : false;
     QString cacheRootDir = varCacheRoot.isValid() ? varCacheRoot.toString() : "";
     int cacheNum = varCacheNum.isValid() ? varCacheNum.toInt() : 1;
     bool bAutoCleanCache = varAutoCleanCache.isValid() ? varAutoCleanCache.toBool() : true;
+    bool bEnableShiftChangeFOV = varEnableShiftChangeFOV.isValid() ? varEnableShiftChangeFOV.toBool() : true;
 
     CALLBACK_SWITCH cbSwitch = [=](bool bOn) {
         zenoApp->getMainWindow()->setInDlgEventLoop(bOn); //deal with ubuntu dialog slow problem when update viewport.
@@ -94,6 +96,10 @@ ZenoCachePane::ZenoCachePane(QWidget* parent) : QWidget(parent)
     m_pAutoCleanCache = new QCheckBox;
     m_pAutoCleanCache->setCheckState(bAutoCleanCache ? Qt::Checked : Qt::Unchecked);
     m_pAutoCleanCache->setEnabled(bEnableCache && !bTempCacheDir);
+
+    m_pEnableShiftChangeFOV = new QCheckBox;
+    m_pEnableShiftChangeFOV->setCheckState(bEnableShiftChangeFOV ? Qt::Checked : Qt::Unchecked);
+
     connect(m_pTempCacheDir, &QCheckBox::stateChanged, [=](bool state) {
         m_pPathEdit->setText("");
         m_pPathEdit->setEnabled(!state);
@@ -133,6 +139,8 @@ ZenoCachePane::ZenoCachePane(QWidget* parent) : QWidget(parent)
     pLayout->addWidget(m_pPathEdit, 3, 1);
     pLayout->addWidget(new QLabel(tr("Cache auto clean up")), 4, 0);
     pLayout->addWidget(m_pAutoCleanCache, 4, 1);
+    pLayout->addWidget(new QLabel(tr("Enable Shift change FOV")), 5, 0);
+    pLayout->addWidget(m_pEnableShiftChangeFOV, 5, 1);
     QSpacerItem* pSpacerItem = new QSpacerItem(10, 10, QSizePolicy::Expanding);
     pLayout->addItem(pSpacerItem, 0, 2, 5);
     pLayout->setAlignment(Qt::AlignLeft | Qt::AlignTop);
@@ -146,6 +154,7 @@ void ZenoCachePane::saveValue()
     inst.setValue(zsCacheDir, m_pPathEdit->text());
     inst.setValue(zsCacheNum, m_pCacheNumSpinBox->value());
     inst.setValue(zsCacheAutoClean, m_pAutoCleanCache->checkState() == Qt::Checked);
+    inst.setValue(zsEnableShiftChangeFOV, m_pEnableShiftChangeFOV->checkState() == Qt::Checked);
 }
 
 //layout pane
