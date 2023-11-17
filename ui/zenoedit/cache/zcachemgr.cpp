@@ -2,6 +2,8 @@
 #include "zassert.h"
 #include <zeno/funcs/ParseObjectFromUi.h>
 #include <zeno/extra/GlobalComm.h>
+#include <zenomodel/include/graphsmanagment.h>
+#include "zenoapplication.h"
 
 
 ZCacheMgr::ZCacheMgr()
@@ -14,6 +16,7 @@ ZCacheMgr::ZCacheMgr()
 
 bool ZCacheMgr::initCacheDir(bool bTempDir, QDir dirCacheRoot, bool bAutoCleanCache)
 {
+    clearNotUsedToViewCache();
     if (!m_isNew && (m_cacheOpt == Opt_RunLightCameraMaterial || m_cacheOpt == Opt_AlwaysOn)) {
          return true;
     }
@@ -150,4 +153,35 @@ bool ZCacheMgr::hasCacheOnly(QDir dir, bool& empty)
 void ZCacheMgr::removeObjTmpCacheDir()
 {
     m_objTmpCacheDir.remove();
+}
+
+void ZCacheMgr::clearNotUsedToViewCache()
+{
+    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    if (!pModel)
+        return;
+    QModelIndex subgIdx = pModel->index("main");
+    QSet<QString> newToViewNodes;
+    for (int i = 0; i < pModel->itemCount(subgIdx); i++)
+    {
+        const QModelIndex& idx = pModel->index(i, subgIdx);
+        if (idx.data(ROLE_OPTIONS).toInt() & OPT_VIEW)
+            newToViewNodes.insert(idx.data(ROLE_OBJID).toString());
+    }
+
+    QVector<QString> toViewCachesToBeRemoved;
+    for (auto id : lastRunToViewNodes)
+        if (!newToViewNodes.contains(id))
+            toViewCachesToBeRemoved.push_back(id);
+    lastRunToViewNodes.swap(newToViewNodes);
+
+    for (auto framePath : lastRunCachePath.entryInfoList()) {
+        if (framePath.isDir()) {
+            for (auto id : toViewCachesToBeRemoved) {
+                QString toViewCacheToBeRemoved = framePath.absoluteFilePath() + "/" + id + ".zencache";
+                if (QFile(toViewCacheToBeRemoved).exists())
+                    lastRunCachePath.remove(toViewCacheToBeRemoved);
+            }
+        }
+    }
 }

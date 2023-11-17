@@ -18,13 +18,6 @@
 
 namespace zeno {
 
-std::vector<std::filesystem::path> cachepath(3);
-std::unordered_set<std::string> lightCameraNodes({
-    "CameraEval", "CameraNode", "CihouMayaCameraFov", "ExtractCameraData", "GetAlembicCamera","MakeCamera",
-    "LightNode", "BindLight", "ProceduralSky", "HDRSky",
-    });
-std::string matlNode = "ShaderFinalize";
-
 void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &objs, bool cacheLightCameraOnly, bool cacheMaterialOnly, std::string fileName) {
     if (cachedir.empty()) return;
     std::filesystem::path dir = std::filesystem::u8path(cachedir + "/" + std::to_string(1000000 + frameid).substr(1));
@@ -32,82 +25,34 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
     {
         log_critical("can not create path: {}", dir);
     }
-    std::vector<std::vector<char>> bufCaches(3);
-    std::vector<std::vector<size_t>> poses(3);
-    std::vector<std::string> keys(3);
+    std::vector<std::filesystem::path> cachepath(objs.size());
+
+    std::vector<std::vector<char>> bufCaches(objs.size());
+    std::vector<std::vector<size_t>> poses(objs.size());
+    std::vector<std::string> keys(objs.size());
+    size_t objCount = 0;
     for (auto const &[key, obj]: objs) {
+        if (encodeObject(obj.get(), bufCaches[objCount]))
+        {
+            keys[objCount].push_back('\a');
+            keys[objCount].append(key);
+            poses[objCount].push_back(0);
+            if (fileName != "")
+                cachepath[objCount] = std::filesystem::u8path(dir.string() + "/" + fileName);   //tmp zenocache
+            else
+                cachepath[objCount] = dir / (key.substr(0, key.find(":")) + ".zencache");
 
-        size_t bufsize =0;
-        std::string nodeName = key.substr(key.find("-") + 1, key.find(":") - key.find("-") -1);
-        if (cacheLightCameraOnly && (lightCameraNodes.count(nodeName) || obj->userData().get2<int>("isL", 0) || std::dynamic_pointer_cast<CameraObject>(obj)))
-        {
-            bufsize = bufCaches[0].size();
-            if (encodeObject(obj.get(), bufCaches[0]))
-            {
-                keys[0].push_back('\a');
-                keys[0].append(key);
-                poses[0].push_back(bufsize);
-            }
-        }
-        if (cacheMaterialOnly && (matlNode == nodeName || std::dynamic_pointer_cast<MaterialObject>(obj)))
-        {
-            bufsize = bufCaches[1].size();
-            if (encodeObject(obj.get(), bufCaches[1]))
-            {
-                keys[1].push_back('\a');
-                keys[1].append(key);
-                poses[1].push_back(bufsize);
-            }
-        }
-        if (!cacheLightCameraOnly && !cacheMaterialOnly)
-        {
-            if (lightCameraNodes.count(nodeName) || obj->userData().get2<int>("isL", 0) || std::dynamic_pointer_cast<CameraObject>(obj)) {
-                bufsize = bufCaches[0].size();
-                if (encodeObject(obj.get(), bufCaches[0]))
-                {
-                    keys[0].push_back('\a');
-                    keys[0].append(key);
-                    poses[0].push_back(bufsize);
-                }
-            } else if (matlNode == nodeName || std::dynamic_pointer_cast<MaterialObject>(obj)) {
-                bufsize = bufCaches[1].size();
-                if (encodeObject(obj.get(), bufCaches[1]))
-                {
-                    keys[1].push_back('\a');
-                    keys[1].append(key);
-                    poses[1].push_back(bufsize);
-                }
-            } else {
-                bufsize = bufCaches[2].size();
-                if (encodeObject(obj.get(), bufCaches[2]))
-                {
-                    keys[2].push_back('\a');
-                    keys[2].append(key);
-                    poses[2].push_back(bufsize);
-                }
-            }
+            objCount++;
         }
     }
 
-    if (fileName == "")
-    {
-        cachepath[0] = dir / "lightCameraObj.zencache";
-        cachepath[1] = dir / "materialObj.zencache";
-        cachepath[2] = dir / "normalObj.zencache";
-    }
-    else
-    {
-        cachepath[2] = std::filesystem::u8path(dir.string() + "/" + fileName);
-    }
     size_t currentFrameSize = 0;
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < objs.size(); i++)
     {
-        if (poses[i].size() == 0 && (cacheLightCameraOnly && i != 0 || cacheMaterialOnly && i != 1 || fileName != "" && i != 2))
-            continue;
         keys[i].push_back('\a');
-        keys[i] = "ZENCACHE" + std::to_string(poses[i].size()) + keys[i];
+        keys[i] = "ZENCACHE" + std::to_string(1) + keys[i];
         poses[i].push_back(bufCaches[i].size());
-        currentFrameSize += keys[i].size() + poses[i].size() * sizeof(size_t) + bufCaches[i].size();
+        currentFrameSize += keys[i].size() + 1 * sizeof(size_t) + bufCaches[i].size();
     }
     size_t freeSpace = 0;
     #ifdef __linux__
@@ -132,10 +77,8 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
             freeSpace = std::filesystem::space(std::filesystem::u8path(cachedir)).free;
         #endif
     }
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < objs.size(); i++)
     {
-        if (poses[i].size() == 0 && (cacheLightCameraOnly && i != 0 || cacheMaterialOnly && i != 1 || fileName != "" && i != 2))
-            continue;
         log_debug("dump cache to disk {}", cachepath[i]);
         std::ofstream ofs(cachepath[i], std::ios::binary);
         std::ostreambuf_iterator<char> oit(ofs);
@@ -151,67 +94,58 @@ bool GlobalComm::fromDisk(std::string cachedir, int frameid, GlobalComm::ViewObj
         return false;
     objs.clear();
     auto dir = std::filesystem::u8path(cachedir) / std::to_string(1000000 + frameid).substr(1);
-    if (fileName == "")
-    {
-        cachepath[0] = dir / "lightCameraObj.zencache";
-        cachepath[1] = dir / "materialObj.zencache";
-        cachepath[2] = dir / "normalObj.zencache";
-    }
-    else
-    {
-        cachepath[2] = std::filesystem::u8path(dir.string() + "/" + fileName);
-    }
+    if (!std::filesystem::exists(dir))
+        return false;
 
-    for (auto path : cachepath)
-    {
-        if (!std::filesystem::exists(path))
-        {
-            continue;
-        }
-        log_debug("load cache from disk {}", path);
+    for (const std::filesystem::directory_entry& entry : std::filesystem::directory_iterator(dir)) {
+        std::filesystem::path filePath = entry.path();
+        if (!std::filesystem::is_directory(filePath) && std::filesystem::exists(filePath)) {
 
-        auto szBuffer = std::filesystem::file_size(path);
-        std::vector<char> dat(szBuffer);
-        FILE *fp = fopen(path.string().c_str(), "rb");
-        if (!fp) {
-            log_error("zeno cache file does not exist");
-            return false;
-        }
-        size_t ret = fread(&dat[0], 1, szBuffer, fp);
-        assert(ret == szBuffer);
-        fclose(fp);
-        fp = nullptr;
+            log_debug("load cache from disk {}", filePath);
 
-        if (dat.size() <= 8 || std::string(dat.data(), 8) != "ZENCACHE") {
-            log_error("zeno cache file broken (1)");
-            return false;
-        }
-        size_t pos = std::find(dat.begin() + 8, dat.end(), '\a') - dat.begin();
-        if (pos == dat.size()) {
-            log_error("zeno cache file broken (2)");
-            return false;
-        }
-        size_t keyscount = std::stoi(std::string(dat.data() + 8, pos - 8));
-        pos = pos + 1;
-        std::vector<std::string> keys;
-        for (int k = 0; k < keyscount; k++) {
-            size_t newpos = std::find(dat.begin() + pos, dat.end(), '\a') - dat.begin();
-            if (newpos == dat.size()) {
-                log_error("zeno cache file broken (3.{})", k);
+            auto szBuffer = std::filesystem::file_size(filePath);
+            std::vector<char> dat(szBuffer);
+            FILE* fp = fopen(filePath.string().c_str(), "rb");
+            if (!fp) {
+                log_error("zeno cache file does not exist");
                 return false;
             }
-            keys.emplace_back(dat.data() + pos, newpos - pos);
-            pos = newpos + 1;
-        }
-        std::vector<size_t> poses(keyscount + 1);
-        std::copy_n(dat.data() + pos, (keyscount + 1) * sizeof(size_t), (char *)poses.data());
-        pos += (keyscount + 1) * sizeof(size_t);
-        for (int k = 0; k < keyscount; k++) {
-            if (poses[k] > dat.size() - pos || poses[k + 1] < poses[k]) {
-                log_error("zeno cache file broken (4.{})", k);
+            size_t ret = fread(&dat[0], 1, szBuffer, fp);
+            assert(ret == szBuffer);
+            fclose(fp);
+            fp = nullptr;
+
+            if (dat.size() <= 8 || std::string(dat.data(), 8) != "ZENCACHE") {
+                log_error("zeno cache file broken (1)");
+                return false;
             }
-            const char *p = dat.data() + pos + poses[k];
-            objs.try_emplace(keys[k], decodeObject(p, poses[k + 1] - poses[k]));
+            size_t pos = std::find(dat.begin() + 8, dat.end(), '\a') - dat.begin();
+            if (pos == dat.size()) {
+                log_error("zeno cache file broken (2)");
+                return false;
+            }
+            size_t keyscount = std::stoi(std::string(dat.data() + 8, pos - 8));
+            pos = pos + 1;
+            std::vector<std::string> keys;
+            for (int k = 0; k < keyscount; k++) {
+                size_t newpos = std::find(dat.begin() + pos, dat.end(), '\a') - dat.begin();
+                if (newpos == dat.size()) {
+                    log_error("zeno cache file broken (3.{})", k);
+                    return false;
+                }
+                keys.emplace_back(dat.data() + pos, newpos - pos);
+                pos = newpos + 1;
+            }
+            std::vector<size_t> poses(keyscount + 1);
+            std::copy_n(dat.data() + pos, (keyscount + 1) * sizeof(size_t), (char*)poses.data());
+            pos += (keyscount + 1) * sizeof(size_t);
+            for (int k = 0; k < keyscount; k++) {
+                if (poses[k] > dat.size() - pos || poses[k + 1] < poses[k]) {
+                    log_error("zeno cache file broken (4.{})", k);
+                }
+                const char* p = dat.data() + pos + poses[k];
+                objs.try_emplace(keys[k], decodeObject(p, poses[k + 1] - poses[k]));
+            }
         }
     }
     return true;

@@ -25,6 +25,7 @@ public:
     void cleanCacheDir();
     bool hasCacheOnly(QDir dir, bool& empty);
     void removeObjTmpCacheDir();
+    void clearNotUsedToViewCache();
 
 private:
     QTemporaryDir m_objTmpCacheDir;
@@ -36,6 +37,8 @@ private:
     cacheOption m_cacheOpt;
 
     QDir lastRunCachePath;
+
+    QSet<QString> lastRunToViewNodes;
 };
 
 #endif

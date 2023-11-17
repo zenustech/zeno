@@ -71,7 +71,13 @@ ZENO_API Graph *Graph::getSubnetGraph(std::string const &id) const {
 }
 
 ZENO_API void Graph::completeNode(std::string const &id) {
-    safe_at(nodes, id, "node name")->doComplete();
+    if (id.substr(id.find(":") + 1) != "TOVIEW")    //complete all nodes except toview node
+    {
+        safe_at(nodes, id, "node name")->doComplete();
+    }else if (id.substr(id.find(":") + 1) == "TOVIEW" && getDirtyChecker().amIDirty(id.substr(0, id.find(":"))))    //only complete dirty toview node
+    {
+        safe_at(nodes, id, "node name")->doComplete();
+    }
 }
 
 ZENO_API bool Graph::applyNode(std::string const &id) {
