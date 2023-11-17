@@ -3534,47 +3534,48 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         auto w = (*output_buffer_o).width();
         auto h = (*output_buffer_o).height();
         stbi_flip_vertically_on_write(true);
-        if (zeno::getSession().userData().get2<bool>("output_exr", true)) {
-            auto exr_path = path.substr(0, path.size() - 4) + ".exr";
-
-            // AOV
-            if (zeno::getSession().userData().get2<bool>("output_aov", true)) {
-                SaveMultiLayerEXR(
-                        {
+        bool enable_output_aov = zeno::getSession().userData().get2<bool>("output_aov", true);
+        bool enable_output_exr = zeno::getSession().userData().get2<bool>("output_exr", true);
+        auto exr_path = path.substr(0, path.size() - 4) + ".exr";
+        // AOV
+        if (enable_output_aov) {
+            SaveMultiLayerEXR(
+                    {
                             (float*)optixgetimg_extra("color"),
                             (float*)optixgetimg_extra("diffuse"),
                             (float*)optixgetimg_extra("specular"),
                             (float*)optixgetimg_extra("transmit"),
                             (float*)optixgetimg_extra("background"),
-                        },
-                        w,
-                        h,
-                        {
+                    },
+                    w,
+                    h,
+                    {
                             "",
                             "diffuse.",
                             "specular.",
                             "transmit.",
                             "background.",
-                        },
-                        exr_path.c_str()
-                );
-            }
-            else {
-                save_exr((float3 *)optixgetimg_extra("color"), w, h, exr_path);
-            }
+                    },
+                    exr_path.c_str()
+            );
         }
         else {
-            stbi_write_jpg(path.c_str(), w, h, 4, p, 100);
-            if (denoise) {
-                const float* _albedo_buffer = reinterpret_cast<float*>(state.albedo_buffer_p.handle);
-                //SaveEXR(_albedo_buffer, w, h, 4, 0, (path+".albedo.exr").c_str(), nullptr);
-                auto a_path = path + ".albedo.pfm";
-                write_pfm(a_path, w, h, _albedo_buffer);
+            if (enable_output_exr) {
+                save_exr((float3 *)optixgetimg_extra("color"), w, h, exr_path);
+            }
+            else {
+                stbi_write_jpg(path.c_str(), w, h, 4, p, 100);
+                if (denoise) {
+                    const float* _albedo_buffer = reinterpret_cast<float*>(state.albedo_buffer_p.handle);
+                    //SaveEXR(_albedo_buffer, w, h, 4, 0, (path+".albedo.exr").c_str(), nullptr);
+                    auto a_path = path + ".albedo.pfm";
+                    write_pfm(a_path, w, h, _albedo_buffer);
 
-                const float* _normal_buffer = reinterpret_cast<float*>(state.normal_buffer_p.handle);
-                //SaveEXR(_normal_buffer, w, h, 4, 0, (path+".normal.exr").c_str(), nullptr);
-                auto n_path = path + ".normal.pfm";
-                write_pfm(n_path, w, h, _normal_buffer);
+                    const float* _normal_buffer = reinterpret_cast<float*>(state.normal_buffer_p.handle);
+                    //SaveEXR(_normal_buffer, w, h, 4, 0, (path+".normal.exr").c_str(), nullptr);
+                    auto n_path = path + ".normal.pfm";
+                    write_pfm(n_path, w, h, _normal_buffer);
+                }
             }
         }
         zeno::log_info("optix: saving screenshot {}x{} to {}", w, h, path);
