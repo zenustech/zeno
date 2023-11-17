@@ -3377,7 +3377,7 @@ void set_perspective_by_fov(float const *U, float const *V, float const *W, floa
     float half_tanfov = std::tan(half_radfov);
     cam.focal_length = L / 2.0f / half_tanfov;
     cam.focal_length = std::max(0.01f,cam.focal_length);
-    if(aperture > 24.0f){
+    if(aperture > 24.0f || aperture <  0.5f){
         cam.aperture = 0.0f;
     }else{
         cam.aperture = cam.focal_length / aperture;
@@ -3417,7 +3417,7 @@ void set_perspective_by_focal_length(float const *U, float const *V, float const
     cam.focal_length = focal_length;
     cam.focal_length = std::max(0.01f,cam.focal_length);
 
-    if(aperture < 24.0f){
+    if(aperture > 24.0f || aperture < 0.5f){
         cam.aperture = 0.0f;
     }else{
         cam.aperture = cam.focal_length / aperture;
