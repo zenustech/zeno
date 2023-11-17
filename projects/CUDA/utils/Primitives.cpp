@@ -2348,7 +2348,7 @@ struct AssociateParticlesFast : INode {
         auto n = srcPrim->size();
         const auto &src = srcPrim->attr<vec3f>("pos");
         const auto &dst = dstPrim->attr<vec3f>("pos");
-
+        
 #if 0
         float refSum = 0.f;
         for (int i = 0; i != n; ++i)
@@ -2414,6 +2414,31 @@ ZENDEFNODE(RemovePrimitiveTopo, {
                                     {},
                                     {"zs_geom"},
                                 });
+
+struct RemovePrimitiveTopo : INode {
+    void apply() override {
+        auto prim = get_input2<PrimitiveObject>("prim");
+        auto removeAttr = [](auto &attrVector) {
+            attrVector.clear();
+        };
+        removeAttr(prim->points);
+        removeAttr(prim->lines);
+        removeAttr(prim->tris);
+        removeAttr(prim->quads);
+        removeAttr(prim->loops);
+        removeAttr(prim->polys);
+        removeAttr(prim->edges);
+        removeAttr(prim->uvs);
+        set_output("prim", std::move(prim));
+    }
+};
+ZENDEFNODE(RemovePrimitiveTopo, {
+                                   {{"PrimitiveObject", "prim"},
+                                    },
+                                   {{"PrimitiveObject", "prim"}},
+                                   {},
+                                   {"zs_geom"},
+                               });
 
 struct EmbedPrimitiveBvh : zeno::INode {
     virtual void apply() override {
