@@ -2297,11 +2297,11 @@ struct AssociateParticles : INode {
         auto n = srcPrim->size();
         const auto &src = srcPrim->attr<vec3f>("pos");
         const auto &dst = dstPrim->attr<vec3f>("pos");
-        KuhnMunkres km{(int)n, [&src, &dst](int i, int j) { return length(src[i] - dst[j]); }};
+        KuhnMunkres km{(int)n, [&src, &dst](int i, int j) { return std::numeric_limits<float>::max() - length(src[i] - dst[j]); }};
         km.solve();
 
         if constexpr (false) {
-            KM km{(int)n, [&src, &dst](int i, int j) { return length(src[i] - dst[j]); }};
+            KM km{(int)n, [&src, &dst](int i, int j) { return std::numeric_limits<float>::max() - length(src[i] - dst[j]); }};
             // fmt::print(fg(fmt::color::green), "new candidate: {}\n", km.solve());
             (void)km;
         }
