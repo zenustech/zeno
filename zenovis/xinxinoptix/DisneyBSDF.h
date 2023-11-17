@@ -164,8 +164,8 @@ namespace DisneyBSDF{
     static __inline__ __device__ 
     vec3 CalculateExtinction(vec3 apparantColor, float scaler)
     {
-     //   return 1.0/(max(apparantColor * scaler,vec3(0.000001)));
-        return (1.0f - apparantColor) * scaler;
+        return 1.0/(max(apparantColor * scaler,vec3(0.000001)));
+        // return (1.0f - apparantColor) * scaler;
     }
     
     static __inline__ __device__
