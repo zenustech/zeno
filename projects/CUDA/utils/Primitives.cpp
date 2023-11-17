@@ -2349,7 +2349,8 @@ struct AssociateParticlesFast : INode {
         auto n = srcPrim->size();
         const auto &src = srcPrim->attr<vec3f>("pos");
         const auto &dst = dstPrim->attr<vec3f>("pos");
-        
+
+#if 0
         float refSum = 0.f;
         for (int i = 0; i != n; ++i)
             refSum += length(src[i] - dst[i]);
@@ -2357,36 +2358,63 @@ struct AssociateParticlesFast : INode {
         // for (int i = 0; i != n; ++i)
         //    curSum += length(src[i] - dst[km.find_l[i]]);
         fmt::print(fg(fmt::color::red), "ref: {}, calc: {}\n", refSum, curSum);
+#endif
 
         auto pol = zs::omp_exec();
         std::vector<float> locs(n);
-        std::vector<int> indices(n);
-        auto sortPrim = [&pol, principal](const auto &ps, auto &distances, auto &sortedIndices) {
-            pol(enumerate(ps, distances, sortedIndices), [principal](int i, const auto &p, auto &dis, auto &id) {
+        std::vector<int> srcSortedIndices(n), dstSortedIndices(n);
+        auto sortPrim = [&pol, principal, n](const auto &ps, auto &distances, auto &sortedIndices) {
+            pol(zs::enumerate(ps, distances, sortedIndices), [principal](int i, const auto &p, auto &dis, auto &id) {
                 dis = dot(p, principal);
                 id = i;
             });
-            // merge_sort_pair(pol, );
+            merge_sort_pair(pol, std::begin(distances), std::begin(sortedIndices), n);
         };
-#if 0
+        sortPrim(src, locs, srcSortedIndices);
+        sortPrim(dst, locs, dstSortedIndices);
         pol(zs::range(n), [&](int i) {
-            dstIndices[i] = id;
-            dstPos[i] = dst[id];
+            auto srcId = srcSortedIndices[i];
+            auto dstId = dstSortedIndices[i];
+            dstIndices[srcId] = dstId;
+            dstPos[srcId] = dst[dstId];
         });
-#endif
         set_output("srcPrim", std::move(srcPrim));
     }
 };
 ZENDEFNODE(AssociateParticlesFast, {
-                                   {{"PrimitiveObject", "srcPrim"},
-                                    {"string", "target_pos_tag", "target_pos"},
-                                    {"string", "target_index_tag", "target_index"},
-                                    {"vec3f", "principal_direction", "1, 0, 0"},
-                                    {"PrimitiveObject", "dstPrim"}},
-                                   {{"PrimitiveObject", "srcPrim"}},
-                                   {},
-                                   {"zs_geom"},
-                               });
+                                       {{"PrimitiveObject", "srcPrim"},
+                                        {"string", "target_pos_tag", "target_pos"},
+                                        {"string", "target_index_tag", "target_index"},
+                                        {"vec3f", "principal_direction", "1, 0, 0"},
+                                        {"PrimitiveObject", "dstPrim"}},
+                                       {{"PrimitiveObject", "srcPrim"}},
+                                       {},
+                                       {"zs_geom"},
+                                   });
+
+struct RemovePrimitiveTopo : INode {
+    void apply() override {
+        auto prim = get_input2<PrimitiveObject>("prim");
+        auto removeAttr = [](auto &attrVector) { attrVector.clear(); };
+        removeAttr(prim->points);
+        removeAttr(prim->lines);
+        removeAttr(prim->tris);
+        removeAttr(prim->quads);
+        removeAttr(prim->loops);
+        removeAttr(prim->polys);
+        removeAttr(prim->edges);
+        removeAttr(prim->uvs);
+        set_output("prim", std::move(prim));
+    }
+};
+ZENDEFNODE(RemovePrimitiveTopo, {
+                                    {
+                                        {"PrimitiveObject", "prim"},
+                                    },
+                                    {{"PrimitiveObject", "prim"}},
+                                    {},
+                                    {"zs_geom"},
+                                });
 
 struct EmbedPrimitiveBvh : zeno::INode {
     virtual void apply() override {
