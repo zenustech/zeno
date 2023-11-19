@@ -2139,7 +2139,7 @@ struct KuhnMunkres {
     using T = float; // weight
     int n;
     // std::vector<std::vector<int>> weight;
-        std::function<T(int, int)> weight;
+    std::function<T(int, int)> weight;
     std::queue<int> q;
     std::vector<T> head_l; // mark for the left node, head_l[i] + head_r[j] >= weight[i][j]
     std::vector<T> head_r; // mark for the right node, the same
@@ -2348,7 +2348,7 @@ struct AssociateParticlesFast : INode {
         auto n = srcPrim->size();
         const auto &src = srcPrim->attr<vec3f>("pos");
         const auto &dst = dstPrim->attr<vec3f>("pos");
-        
+
 #if 0
         float refSum = 0.f;
         for (int i = 0; i != n; ++i)
@@ -2422,33 +2422,35 @@ struct ShuffleParticles : INode {
 
         auto &pos = prim->verts.values;
         size_t m = std::max((int)n / 3, 1);
-        size_t sd = 1;
+        zs::u64 sd = 1;
         for (int iter = 0; iter != m; ++iter) {
             auto i = zs::PCG::pcg32_random_r(sd, 1442695040888963407ull) % (size_t)n;
             auto j = zs::PCG::pcg32_random_r(sd, 1442695040888963407ull) % (size_t)n;
-            if (i == j) continue;
+            if (i == j)
+                continue;
             std::swap(pos[i], pos[j]);
             for (auto &[key, srcArr] : prim->verts.attrs) {
                 auto const &k = key;
                 zs::match(
-                    [&prim, i, j](auto &srcArr) -> std::enable_if_t<variant_contains<RM_CVREF_T(srcArr[0]), AttrAcceptAll>::value> {
+                    [&prim, i = i, j = j](auto &srcArr)
+                        -> std::enable_if_t<variant_contains<RM_CVREF_T(srcArr[0]), AttrAcceptAll>::value> {
                         using T = RM_CVREF_T(srcArr[0]);
                         std::swap(srcArr[i], srcArr[j]);
                     },
-                [](...) {})(srcArr);
+                    [](...) {})(srcArr);
             }
         }
         set_output("prim", std::move(prim));
     }
 };
 ZENDEFNODE(ShuffleParticles, {
-                                    {
-                                        {"PrimitiveObject", "prim"},
-                                    },
-                                    {{"PrimitiveObject", "prim"}},
-                                    {},
-                                    {"zs_geom"},
-                                });
+                                 {
+                                     {"PrimitiveObject", "prim"},
+                                 },
+                                 {{"PrimitiveObject", "prim"}},
+                                 {},
+                                 {"zs_geom"},
+                             });
 
 struct EmbedPrimitiveBvh : zeno::INode {
     virtual void apply() override {
