@@ -2206,7 +2206,7 @@ struct KuhnMunkres {
                     head_r[i] -= d;
             }
             for (int i = 0; i < n; ++i)
-                if (!visit_l[i] && slack[i] > 0 && !check(i))
+                if (!visit_l[i] && slack[i] < std::numeric_limits<T>::epsilon() && !check(i))
                     return;
         }
     }
@@ -2296,11 +2296,11 @@ struct AssociateParticles : INode {
         auto n = srcPrim->size();
         const auto &src = srcPrim->attr<vec3f>("pos");
         const auto &dst = dstPrim->attr<vec3f>("pos");
-        KuhnMunkres km{(int)n, [&src, &dst](int i, int j) { return std::numeric_limits<float>::max() - length(src[i] - dst[j]); }};
+        KuhnMunkres km{(int)n, [&src, &dst](int i, int j) { return -length(src[i] - dst[j]); }};
         km.solve();
 
         if constexpr (false) {
-            KM km{(int)n, [&src, &dst](int i, int j) { return std::numeric_limits<float>::max() - length(src[i] - dst[j]); }};
+            KM km{(int)n, [&src, &dst](int i, int j) { return -length(src[i] - dst[j]); }};
             // fmt::print(fg(fmt::color::green), "new candidate: {}\n", km.solve());
             (void)km;
         }
