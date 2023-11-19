@@ -2139,7 +2139,7 @@ struct KuhnMunkres {
     using T = float; // weight
     int n;
     // std::vector<std::vector<int>> weight;
-    std::function<T(int, int)> weight;
+        std::function<T(int, int)> weight;
     std::queue<int> q;
     std::vector<T> head_l; // mark for the left node, head_l[i] + head_r[j] >= weight[i][j]
     std::vector<T> head_r; // mark for the right node, the same
@@ -2407,6 +2407,41 @@ struct RemovePrimitiveTopo : INode {
     }
 };
 ZENDEFNODE(RemovePrimitiveTopo, {
+                                    {
+                                        {"PrimitiveObject", "prim"},
+                                    },
+                                    {{"PrimitiveObject", "prim"}},
+                                    {},
+                                    {"zs_geom"},
+                                });
+
+struct ShuffleParticles : INode {
+    void apply() override {
+        auto prim = get_input2<PrimitiveObject>("prim");
+        auto n = prim->size();
+
+        auto &pos = prim->verts.values;
+        size_t m = std::max((int)n / 3, 1);
+        size_t sd = 1;
+        for (int iter = 0; iter != m; ++iter) {
+            auto i = zs::PCG::pcg32_random_r(sd, 1442695040888963407ull) % (size_t)n;
+            auto j = zs::PCG::pcg32_random_r(sd, 1442695040888963407ull) % (size_t)n;
+            if (i == j) continue;
+            std::swap(pos[i], pos[j]);
+            for (auto &[key, srcArr] : prim->verts.attrs) {
+                auto const &k = key;
+                zs::match(
+                    [&prim, i, j](auto &srcArr) -> std::enable_if_t<variant_contains<RM_CVREF_T(srcArr[0]), AttrAcceptAll>::value> {
+                        using T = RM_CVREF_T(srcArr[0]);
+                        std::swap(srcArr[i], srcArr[j]);
+                    },
+                [](...) {})(srcArr);
+            }
+        }
+        set_output("prim", std::move(prim));
+    }
+};
+ZENDEFNODE(ShuffleParticles, {
                                     {
                                         {"PrimitiveObject", "prim"},
                                     },
