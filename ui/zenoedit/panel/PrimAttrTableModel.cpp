@@ -187,45 +187,52 @@ QVariant PrimAttrTableModel::headerData(int section, Qt::Orientation orientation
 
     if (orientation == Qt::Horizontal)
     {
+        auto getHeaderName = [](const QString& name, const zeno::AttrVectorIndex& index) {
+            if (index.elementDim <= 1) {
+                return name;
+            }
+            return QString("%1[%2]").arg(name).arg(vecElementName[index.elementIndex]);
+        };
+
         if (sel_attr == "Vertex") {
             auto index = m_prim->verts.attr_index(section);
             auto name = attrName(m_prim->verts, index);
-            return QString("%1[%2]").arg(name).arg(vecElementName[index.elementIndex]);
+            return getHeaderName(name, index);
         }
         else if (sel_attr == "Tris") {
             auto index = m_prim->tris.attr_index(section);
             auto name = attrName(m_prim->tris, index);
-            return QString("%1[%2]").arg(name).arg(vecElementName[index.elementIndex]);
+            return getHeaderName(name, index);
         }
         else if (sel_attr == "Points") {
             auto index = m_prim->points.attr_index(section);
             auto name = attrName(m_prim->points, index);
-            return QString("%1").arg(name);
+            return getHeaderName(name, index);
         }
         else if (sel_attr == "Lines") {
             auto index = m_prim->lines.attr_index(section);
             auto name = attrName(m_prim->lines, index);
-            return QString("%1[%2]").arg(name).arg(vecElementName[index.elementIndex]);
+            return getHeaderName(name, index);
         }
         else if (sel_attr == "Quads") {
             auto index = m_prim->quads.attr_index(section);
             auto name = attrName(m_prim->quads, index);
-            return QString("%1[%2]").arg(name).arg(vecElementName[index.elementIndex]);
+            return getHeaderName(name, index);
         }
         else if (sel_attr == "Polys") {
             auto index = m_prim->polys.attr_index(section);
             auto name = attrName(m_prim->polys, index);
-            return QString("%1[%2]").arg(name).arg(vecElementName[index.elementIndex]);
+            return getHeaderName(name, index);
         }
         else if (sel_attr == "Loops") {
             auto index = m_prim->loops.attr_index(section);
             auto name = attrName(m_prim->loops, index);
-            return QString("%1").arg(name);
+            return getHeaderName(name, index);
         }
         else if (sel_attr == "UVs") {
             auto index = m_prim->uvs.attr_index(section);
             auto name = attrName(m_prim->uvs, index);
-            return QString("%1[%2]").arg(name).arg(vecElementName[index.elementIndex]);
+            return getHeaderName(name, index);
         }
         else {
             auto it = m_prim->userData().begin();
