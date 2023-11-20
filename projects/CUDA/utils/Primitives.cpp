@@ -19,6 +19,9 @@
 #include <zeno/utils/log.h>
 #include <zeno/zeno.h>
 
+#include <Eigen/Dense>
+#include <Eigen/SVD>
+
 namespace zeno {
 
 template <typename IV>
@@ -2225,63 +2228,110 @@ struct KuhnMunkres {
     }
 };
 
-struct KM {
-    using T = float; // weight
-    static constexpr T inf = std::numeric_limits<float>::max();
+struct ComputeParticlesCenter : INode {
+    void apply() override {
+        auto prim = get_input2<PrimitiveObject>("prim");
 
-    std::function<T(int, int)> w;
+        auto n = prim->size();
+        const auto &pos = prim->attr<vec3f>("pos");
 
-    int n, nl, nr, py, x, y, i, j, p;
-    std::vector<int> lk, pre;
+        std::vector<float> locs[3];
+        for (int d = 0; d != 3; ++d)
+            locs[d].resize(n);
 
-    T d, ans;
-    std::vector<T> lx, ly, slk;
-
-    std::vector<int> vy;
-
-    template <typename Func>
-    KM(int n, Func &&f)
-        : w{FWD(f)}, nl(n), nr(n), n(n), lk(n + 1), pre(n + 1), lx(n + 1), ly(n + 1), slk(n + 1), vy(n + 1) {
-        for (i = 0; i <= n; i++)
-            lk[i] = pre[i] = lx[i] = ly[i] = slk[i] = 0;
-
-        for (i = 1; i <= n; i++)
-            for (j = 1; j <= n; j++)
-                lx[i] = std::max(lx[i], w(i - 1, j - 1));
-
-        for (i = 1; i <= n; i++) {
-            for (j = 1; j <= n; j++)
-                slk[j] = inf, vy[j] = 0;
-            for (lk[py = 0] = i; lk[py]; py = p) {
-                vy[py] = 1;
-                d = inf;
-                x = lk[py];
-                for (y = 1; y <= n; y++)
-                    if (!vy[y]) {
-                        if (lx[x] + ly[y] - w(x - 1, y - 1) < slk[y])
-                            slk[y] = lx[x] + ly[y] - w(x - 1, y - 1), pre[y] = py;
-                        if (slk[y] < d)
-                            d = slk[y], p = y;
-                    }
-                for (y = 0; y <= n; y++)
-                    if (vy[y])
-                        lx[lk[y]] -= d, ly[y] += d;
-                    else
-                        slk[y] -= d;
+        auto pol = zs::omp_exec();
+        pol(zs::enumerate(pos), [&](int col, const auto &p) {
+            for (int d = 0; d < 3; ++d) {
+                locs[d][col] = p[d];
             }
-            for (; py; py = pre[py])
-                lk[py] = lk[pre[py]];
-        }
-        for (ans = 0, i = 1; i <= n; i++) {
-            ans += lx[i] + ly[i];
-        }
-        printf("%f\n", ans);
-#if 0
-        for (i = 1; i <= nl; i++)
-            printf("%d ", lk[i]);
-#endif
+        });
+
+        zeno::vec3f trans{0, 0, 0};
+        auto calcCenter = [&](int d) {
+            std::vector<float> ret(1);
+            zs::reduce(pol, std::begin(locs[d]), std::end(locs[d]), std::begin(ret), 0.f, zs::plus<float>());
+            trans[d] = ret[0] / n;
+        };
+        calcCenter(0);
+        calcCenter(1);
+        calcCenter(2);
+
+        set_output("prim", std::move(prim));
+
+        auto ret = std::make_shared<NumericObject>(trans);
+        set_output("center", std::move(ret));
     }
 };
+ZENDEFNODE(ComputeParticlesCenter, {
+                                       {{"PrimitiveObject", "prim"}},
+                                       {{"PrimitiveObject", "prim"}, {"vec3f", "center"}},
+                                       {},
+                                       {"zs_geom"},
+                                   });
+struct ComputeParticlesDirection : INode {
+    void apply() override {
+        auto prim = get_input2<PrimitiveObject>("prim");
+
+        auto n = prim->size();
+        const auto &pos = prim->attr<vec3f>("pos");
+        auto pol = zs::omp_exec();
+        zeno::vec3f trans{0, 0, 0};
+
+        if (has_input("origin")) {
+            trans = get_input2<vec3f>("origin");
+        } else {
+            std::vector<float> locs[3];
+            for (int d = 0; d != 3; ++d) {
+                locs[d].resize(n);
+            }
+
+            pol(zs::enumerate(pos), [&](int col, const auto &p) {
+                for (int d = 0; d < 3; ++d) {
+                    locs[d][col] = p[d];
+                }
+            });
+            auto calcCenter = [&](int d) {
+                std::vector<float> ret(1);
+                zs::reduce(pol, std::begin(locs[d]), std::end(locs[d]), std::begin(ret), 0.f, zs::plus<float>());
+                trans[d] = ret[0] / n;
+            };
+            calcCenter(0);
+            calcCenter(1);
+            calcCenter(2);
+        }
+
+        ///
+        using TVStack = Eigen::Matrix<float, 3, Eigen::Dynamic>;
+        TVStack ps;
+        ps.resize(3, n);
+        pol(zs::enumerate(pos), [&](int col, const auto &p) {
+            for (int d = 0; d < 3; ++d)
+                ps.col(col)(d) = p[d] - trans[d];
+        });
+
+        Eigen::JacobiSVD<TVStack> svd(ps, Eigen::ComputeThinU | Eigen::ComputeThinV);
+        auto V = svd.matrixV();
+        auto U = svd.matrixU();
+        // auto ni = U.rows();
+        // auto nj = U.cols();
+
+#if 0
+        fmt::print(fg(fmt::color::green), "trans: {}, {}, {}. direction: {}, {}, {}.\n", trans[0], trans[1], trans[2],
+                   U(0, 0), U(1, 0), U(2, 0));
+#endif
+
+        set_output("prim", std::move(prim));
+
+        auto ret = std::make_shared<NumericObject>(vec3f{U(0, 0), U(1, 0), U(2, 0)});
+        set_output("principal_direction", std::move(ret));
+    }
+};
+ZENDEFNODE(ComputeParticlesDirection, {
+                                          {{"PrimitiveObject", "prim"}, {"vec3f", "origin"}},
+                                          {{"PrimitiveObject", "prim"}, {"vec3f", "principal_direction"}},
+                                          {},
+                                          {"zs_geom"},
+                                      });
 
 struct AssociateParticles : INode {
     void apply() override {
@@ -2290,20 +2340,34 @@ struct AssociateParticles : INode {
         auto posTag = get_input2<std::string>("target_pos_tag");
         auto indexTag = get_input2<std::string>("target_index_tag");
 
+        auto principal = get_input2<zeno::vec3f>("principal_direction");
+
         auto &dstPos = srcPrim->add_attr<vec3f>(posTag);
         auto &dstIndices = srcPrim->add_attr<int>(indexTag);
 
         auto n = srcPrim->size();
         const auto &src = srcPrim->attr<vec3f>("pos");
         const auto &dst = dstPrim->attr<vec3f>("pos");
+
+#if 0
+        {
+            std::vector<float> locs(n);
+            std::vector<int> srcSortedIndices(n), dstSortedIndices(n);
+            auto sortPrim = [&pol, principal, n](const auto &ps, auto &distances, auto &sortedIndices) {
+                pol(zs::enumerate(ps, distances, sortedIndices),
+                    [principal](int i, const auto &p, auto &dis, auto &id) {
+                        dis = dot(p, principal);
+                        id = i;
+                    });
+                merge_sort_pair(pol, std::begin(distances), std::begin(sortedIndices), n);
+            };
+            sortPrim(src, locs, srcSortedIndices);
+            sortPrim(dst, locs, dstSortedIndices);
+        }
+#endif
+
         KuhnMunkres km{(int)n, [&src, &dst](int i, int j) { return -length(src[i] - dst[j]); }};
         km.solve();
-
-        if constexpr (false) {
-            KM km{(int)n, [&src, &dst](int i, int j) { return -length(src[i] - dst[j]); }};
-            // fmt::print(fg(fmt::color::green), "new candidate: {}\n", km.solve());
-            (void)km;
-        }
 
         float refSum = 0.f;
         for (int i = 0; i != n; ++i)
@@ -2327,6 +2391,7 @@ ZENDEFNODE(AssociateParticles, {
                                    {{"PrimitiveObject", "srcPrim"},
                                     {"string", "target_pos_tag", "target_pos"},
                                     {"string", "target_index_tag", "target_index"},
+                                    {"vec3f", "principal_direction", "1, 0, 0"},
                                     {"PrimitiveObject", "dstPrim"}},
                                    {{"PrimitiveObject", "srcPrim"}},
                                    {},
