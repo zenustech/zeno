@@ -2456,6 +2456,49 @@ ZENDEFNODE(AssociateParticlesFast, {
                                        {"zs_geom"},
                                    });
 
+struct AdvanceFrame : INode {
+    void apply() override {
+        auto segmentNo_ = get_input<NumericObject>("segment_no");
+        auto localOffset_ = get_input<NumericObject>("local_offset");
+        auto segmentNo = segmentNo_->get<int>();
+        auto localOffset = localOffset_->get<int>();
+
+        auto localCap = get_input2<int>("num_local_frames");
+        auto segmentCap = get_input2<int>("num_total_segments");
+
+        // output
+        auto enterNewFrame = get_input<NumericObject>("enter_new_segment");
+        bool isNew = false;
+        if (segmentNo + 1 < segmentCap) {
+            if (++localOffset >= localCap) {
+                segmentNo_->set(segmentNo + 1);
+                localOffset_->set(0);
+                isNew = true;
+            } else {
+                localOffset_->set(localOffset);
+            }
+        } else {
+            // already the last frame
+            localOffset_->set(localOffset + 1);
+        }
+
+        set_output("segment_no", std::move(segmentNo_));
+        set_output("local_offset", std::move(localOffset_));
+        enterNewFrame->set((int)isNew);
+        set_output("enter_new_segment", std::move(enterNewFrame));
+    }
+};
+ZENDEFNODE(AdvanceFrame, {
+                             {{"int", "segment_no"},
+                              {"int", "local_offset"},
+                              {"int", "num_local_frames"},
+                              {"int", "num_total_segments"},
+                              {"bool", "enter_new_segment"}},
+                             {{"int", "segment_no"}, {"int", "local_offset"}, {"bool", "enter_new_segment"}},
+                             {},
+                             {"zs_geom"},
+                         });
+
 struct RemovePrimitiveTopo : INode {
     void apply() override {
         auto prim = get_input2<PrimitiveObject>("prim");
