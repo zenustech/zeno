@@ -14,6 +14,7 @@
 #include <unordered_map>
 #include <iostream>
 #include <Eigen/Core>
+#include <Eigen/Sparse>
 #include "../SurfaceMesh.h"
 
 
@@ -43,7 +44,7 @@ namespace zeno::directional {
         IntrinsicFaceTangentBundle(){}
         ~IntrinsicFaceTangentBundle(){}
 
-        void init(const SurfaceMesh& _mesh, const std::vector<vec3f>& pos, const std::vector<vec3f>& lines);
+        void init(zeno::pmp::SurfaceMesh* surface_mesh);
 
         // projecting intrinsic to extrinsic
         Eigen::MatrixXf project_to_extrinsic(const Eigen::VectorXi& tangentSpaces, const Eigen::MatrixXf& intDirectionals) const;
