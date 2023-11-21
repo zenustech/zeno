@@ -12,6 +12,7 @@ extern void traverseABC(
     ABCTree &tree,
     int frameid,
     bool read_done,
+    bool read_face_set,
     std::string path
 );
 
