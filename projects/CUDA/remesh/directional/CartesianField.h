@@ -12,7 +12,7 @@
 #include <vector>
 #include <iostream>
 #include <Eigen/Core>
-#include <directional/IntrinsicFaceTangentBundle.h>
+#include "./IntrinsicFaceTangentBundle.h"
 
 /***
  The class implements general cartesian fields in intrinsic dimension 2, which are attached to a tangent bundle. These fields can be of any degree N, where the unifying principle is that
@@ -39,7 +39,7 @@ namespace zeno::directional{
 
         Eigen::VectorXi matching;           //Matching(i)=j when vector k in mesh->EF(i,0) matches to vector (k+j)%N in mesh->EF(i,1)
         Eigen::VectorXf effort;             //Effort of the entire matching (sum of deviations from parallel transport)
-        std::vector<int> sing_local_cycles
+        std::vector<int> sing_local_cycles;
 
         CartesianField(){}
         CartesianField(const IntrinsicFaceTangentBundle& _tb):tb(&_tb){}
@@ -97,7 +97,7 @@ namespace zeno::directional{
         // Use Dijkstra's algorithm to find a shortest path from source to any target in the set.
         void dijkstra(const int &source,
                       const std::set<int> &targets,
-                      std::vecotr<int> &path);
+                      std::vector<int> &path);
         
     };
 }

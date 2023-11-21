@@ -10,7 +10,7 @@
 #include "./CartesianField.h"
 
 namespace zeno::directional {
-    void CartesianField::effort_to_indices(directional::CartesianField& field) {
+    void CartesianField::effort_to_indices() {
         Eigen::VectorXf effortInner(tb->inner_edges.size());
         for (int i = 0; i < tb->inner_edges.size(); i++)
             effortInner(i) = effort(tb->inner_edges(i));
@@ -32,7 +32,7 @@ namespace zeno::directional {
         matching.conservativeResize(tb->num_e);
         matching.setConstant(-1);
 
-        effort = VectorXf::Zero(tb->num_e);
+        effort = Eigen::VectorXf::Zero(tb->num_e);
         for (int i = 0; i < tb->num_e; i++) {
             if (tb->mesh->is_boundary_e(i))
                 continue;
@@ -69,14 +69,14 @@ namespace zeno::directional {
         }
 
         // getting final singularities and their indices
-        effort_to_indices(field);
+        effort_to_indices();
 
     }
 
     // TODO(@seeeagull): I will change Eigen::VectorXi &singularities to vector, since it involves in no math calculation but requires a replication
     void CartesianField::dijkstra(const int &source,
                                   const std::set<int> &targets,
-                                  std::vecotr<int> &path) {
+                                  std::vector<int> &path) {
         using node = std::pair<float, int>;
 
         std::vector<float> min_distance(tb->num_v, std::numeric_limits<float>::max());
@@ -85,11 +85,11 @@ namespace zeno::directional {
         min_distance[source] = 0;
         auto cmp = [](node left, node right) { return left.first > right.first; };
         std::priority_queue<node, std::vector<node>, decltype(cmp)> vertex_queue(cmp);
-        vertex_queue.insert(std::make_pair(min_distance[source], source));
+        vertex_queue.push(std::make_pair(min_distance[source], source));
 
         while (!vertex_queue.empty()) {
-            int u = vertex_queue.top()->second;
-            if (min_distance[u] < vertex_queue.front()->first) {
+            int u = vertex_queue.top().second;
+            if (min_distance[u] < vertex_queue.top().first) {
                 vertex_queue.pop();
                 continue;
             }
@@ -124,22 +124,23 @@ namespace zeno::directional {
         std::set<int> vertices_in_cut;
         for (int i = 0; i < singularities.rows(); ++i) {
             // add a singularity into the vertices_in_cut set using Dijkstra's algorithm
-            std::vector<int> path();
-            int vertex_found = dijkstra(singularities[i], vertices_in_cut, path);
+            std::vector<int> path{};
+            dijkstra(singularities[i], vertices_in_cut, path);
             vertices_in_cut.insert(path.begin(), path.end());
             
             // insert adjacent faces and edges in path to cuts
+            auto &faces = tb->mesh->prim->tris;
             for (int ii = 1; ii < path.size(); ++ii) {
                 const int &v0 = path[ii - 1];
                 const int &v1 = path[ii];
                 
-                std::vector<int> common_face();
-                std::set<int> vf0();
+                std::vector<int> common_face{};
+                std::set<int> vf0{};
                 for (auto ff : tb->mesh->faces(v0))
                     vf0.insert(ff);
                 for (auto ff : tb->mesh->faces(v1))
                     if (vf0.count(ff) > 0) {
-                        common_face.insert(ff);
+                        common_face.push_back(ff);
                     }
                 assert(common_face.size() == 2);
                 
@@ -165,8 +166,8 @@ namespace zeno::directional {
         
         // flood-filling through the matching to comb field
         // dual tree to find combing routes
-        std::set<int> visited_spaces();
-        std::queue<std::pair<int,int> > space_queue;
+        std::set<int> visited_spaces{};
+        std::queue<std::pair<int,int> > space_queue{};
         space_queue.push(std::pair<int,int>(0,0));
         Eigen::MatrixXf combed_int_field(combed_field.intField.rows(), combed_field.intField.cols());
         do {
@@ -183,17 +184,17 @@ namespace zeno::directional {
             
             space_turn[cur.first] = cur.second;
             
-            int h = mesh->get_halfedge_f(cur.first);
-            for (int i = 0; i < 3; ++i){
+            int h = tb->mesh->get_halfedge_f(cur.first);
+            for (int i = 0; i < 3; ++i) {
                 int e = h >> 1;
-                int f1 = mesh->get_face(h), f2 = mesh->get_face(h ^ 1);
+                int f1 = tb->mesh->get_face(h), f2 = tb->mesh->get_face(h^1);
                 int next_face = (f1 == cur.first ? f2 : f1);
                 if ((next_face != -1) && (visited_spaces.count(next_face) == 0) && (!cuts(cur.first, i))) {
                     int next_matching = matching(e) * (f1 == cur.first ? 1 : -1);
                     next_matching = (next_matching + cur.second + 10 * N) % N;  //killing negatives
                     space_queue.push(std::pair<int,int>(next_face, next_matching));
                 }
-                mesh->get_next_halfedge(h);
+                tb->mesh->next_halfedge(h);
               
             }
         } while (!space_queue.empty());
@@ -202,11 +203,11 @@ namespace zeno::directional {
         combed_field.matching.resize(tb->num_e);
         // combed matching
         for (int i = 0; i < tb->num_e;i++){
-            if (mesh->is_boundary_e(i))
+            if (tb->mesh->is_boundary_e(i))
                 combed_field.matching(i) = -1;
             else {
                 int f0 = tb->mesh->get_face(i<<1), f1 = tb->mesh->get_face(i<<1|1);
-                combed_field.matching(i) = (space_turn(f0) - space_turn(f1) + matching(i) + 10 * N) % N;
+                combed_field.matching(i) = (space_turn[f0] - space_turn[f1] + matching(i) + 10 * N) % N;
             }
         }
 

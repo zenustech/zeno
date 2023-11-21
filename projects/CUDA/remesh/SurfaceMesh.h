@@ -214,6 +214,7 @@ public:
         return (hconn_[e << 1].face_ == PMP_MAX_INDEX || hconn_[e << 1 | 1].face_ == PMP_MAX_INDEX);
     }
     bool is_isolated(int v) const { return halfedge(v) == PMP_MAX_INDEX; }
+    inline int get_halfedge_f(int f) const { return fconn_[f].halfedge_; }
     inline int get_face(int h) const { return hconn_[h].face_; }
     inline int to_vertex(int h) const { return hconn_[h].vertex_; }
     inline int from_vertex(int h) const { return to_vertex(h^1); }
