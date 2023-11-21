@@ -23,7 +23,7 @@ using AttrAcceptAll = std::variant
 struct AttrVectorIndex {
     size_t attrIndex = 0;
     size_t elementIndex = 0;
-    size_t elementDim = 1;
+    size_t attrDim = 1;
 };
 
 // AttrVector = BaseVector + attrs
@@ -320,12 +320,12 @@ struct AttrVector {
     AttrVectorIndex attr_index(size_t index) const {
         size_t attrIndex = 0;
         size_t elementIndex = 0;
-        size_t elementDim = type_dim<value_type>();
+        size_t attrDim = type_dim<value_type>();
         size_t dim = 0;
         // base
         dim += type_dim<value_type>();
         if (index < dim) {
-            return { attrIndex, index % dim, elementDim };
+            return { attrIndex, index % dim, attrDim };
         }
         attrIndex++;
         // attr
@@ -338,7 +338,7 @@ struct AttrVector {
                     auto current_dim = type_dim<T>();
                     if (index < dim + current_dim) {
                         elementIndex = (index - dim) % current_dim;
-                        elementDim = current_dim;
+                        attrDim = current_dim;
                     }
                     dim += current_dim;
                 }
@@ -348,7 +348,7 @@ struct AttrVector {
             }
             attrIndex++;
         }
-        return { attrIndex, elementIndex, elementDim };
+        return { attrIndex, elementIndex, attrDim };
     }
 
     template <class Accept = std::variant<vec3f, float>>
