@@ -12,20 +12,20 @@ namespace pmp {
 SurfaceMesh::SurfaceMesh(std::shared_ptr<zeno::PrimitiveObject> prim,
                          std::string line_pick_tag)
                          : line_pick_tag_(line_pick_tag) {
-    prim_ = prim;
+    prim = prim;
     vconn_.clear();
     hconn_.clear();
     fconn_.clear();
 
-    vertices_size_ = prim_->verts.size();
-    lines_size_ = prim_->lines.size();
+    vertices_size_ = prim->verts.size();
+    lines_size_ = prim->lines.size();
     faces_size_ = 0;
     halfedges_size_ = 0;
 
     vconn_.resize(vertices_size_);
-    fconn_.resize(prim_->tris.size());
+    fconn_.resize(prim->tris.size());
     
-    auto& lines = prim_->lines;
+    auto& lines = prim->lines;
     for (int i = 0; i < lines_size_; ++i) {
         auto line = std::make_pair(lines[i][0], lines[i][1]);
         line_map_[line] = i;
@@ -33,11 +33,11 @@ SurfaceMesh::SurfaceMesh(std::shared_ptr<zeno::PrimitiveObject> prim,
     halfedges_size_ = lines_size_ * 2;
     hconn_.resize(halfedges_size_);
 
-    prim_->verts.add_attr<int>("v_deleted", 0);
-    prim_->lines.add_attr<int>("e_deleted", 0);
-    prim_->tris.add_attr<int>("f_deleted", 0);
+    prim->verts.add_attr<int>("v_deleted", 0);
+    prim->lines.add_attr<int>("e_deleted", 0);
+    prim->tris.add_attr<int>("f_deleted", 0);
 
-    for (auto& it : prim_->tris) {
+    for (auto& it : prim->tris) {
         if (add_tri(it) == PMP_MAX_INDEX) {
             return;
         }
@@ -51,7 +51,7 @@ SurfaceMesh::SurfaceMesh(std::shared_ptr<zeno::PrimitiveObject> prim,
 }
 
 SurfaceMesh::SurfaceMesh(const SurfaceMesh& rhs) {
-    prim_ = std::static_pointer_cast<PrimitiveObject>(rhs.prim_->clone());
+    prim = std::static_pointer_cast<PrimitiveObject>(rhs.prim->clone());
 
     vertices_size_ = rhs.vertices_size_;
     halfedges_size_ = rhs.halfedges_size_;
@@ -300,7 +300,7 @@ int SurfaceMesh::split(int e, int v, int& new_lines, int& new_faces) {
     new_faces = 0;
 
     int t1 = e1^1;
-    prim_->lines[e] = vec2i(v, v4);
+    prim->lines[e] = vec2i(v, v4);
 
     int f0 = hconn_[h0].face_;
     int f3 = hconn_[o0].face_;
@@ -345,7 +345,7 @@ int SurfaceMesh::split(int e, int v, int& new_lines, int& new_faces) {
         set_next_halfedge(h2, t1);
         set_next_halfedge(t1, e0);
 
-        prim_->tris[f0] = vec3i(v, v4, v1);
+        prim->tris[f0] = vec3i(v, v4, v1);
     } else {
         set_next_halfedge(prev_halfedge(h0), t1);
         set_next_halfedge(t1, h0);
@@ -389,7 +389,7 @@ int SurfaceMesh::split(int e, int v, int& new_lines, int& new_faces) {
         set_next_halfedge(e2, o2);
         set_next_halfedge(o2, o0);
 
-        prim_->tris[f3] = vec3i(v, v3, v4);
+        prim->tris[f3] = vec3i(v, v3, v4);
     } else {
         set_next_halfedge(e1, next_halfedge(o0));
         set_next_halfedge(o0, e1);
@@ -429,7 +429,7 @@ bool SurfaceMesh::is_flip_ok(int e, bool relaxed) const {
     // if the normals change more than a given threshold angle,
     // it is very likely to be topologically incorrect
 
-    auto& pos = prim_->attr<vec3f>("pos");
+    auto& pos = prim->attr<vec3f>("pos");
     int old_v0 = to_vertex(h0);
     int old_v1 = to_vertex(h1);
 
@@ -484,9 +484,9 @@ void SurfaceMesh::flip(int e) {
     fconn_[fa].halfedge_ = a0;
     fconn_[fb].halfedge_ = b0;
 
-    prim_->lines[e] = vec2i(va1, vb1);
-    prim_->tris[fa] = vec3i(va1, vb0, vb1);
-    prim_->tris[fb] = vec3i(va1, vb1, va0);
+    prim->lines[e] = vec2i(va1, vb1);
+    prim->tris[fa] = vec3i(va1, vb0, vb1);
+    prim->tris[fb] = vec3i(va1, vb1, va0);
 
     if (halfedge(va0) == b0)
         vconn_[va0].halfedge_ = a1;
@@ -548,7 +548,7 @@ void SurfaceMesh::is_collapse_ok(int v0v1, bool &hcol01, bool &hcol10) {
     }
 
     // check whether there are triangles flipped after collapsing
-    auto& pos = prim_->attr<vec3f>("pos");
+    auto& pos = prim->attr<vec3f>("pos");
     vec3f pos0 = pos[v0], pos1 = pos[v1];
 
     int hv0 = halfedge(v0);
@@ -607,8 +607,8 @@ void SurfaceMesh::collapse(int h) {
 }
 
 void SurfaceMesh::remove_edge_helper(int h) {
-    auto& vdeleted = prim_->verts.attr<int>("v_deleted");
-    auto& edeleted = prim_->lines.attr<int>("e_deleted");
+    auto& vdeleted = prim->verts.attr<int>("v_deleted");
+    auto& edeleted = prim->lines.attr<int>("e_deleted");
     
     int hn = next_halfedge(h);
     int hp = prev_halfedge(h);
@@ -627,17 +627,17 @@ void SurfaceMesh::remove_edge_helper(int h) {
     for (const auto hc : halfedges(vo)) {
         hconn_[hc^1].vertex_ = vh;
 
-        if (prim_->lines[hc>>1][0] == vo) {
-            prim_->lines[hc>>1][0] = vh;
+        if (prim->lines[hc>>1][0] == vo) {
+            prim->lines[hc>>1][0] = vh;
         } else {
-            prim_->lines[hc>>1][1] = vh;
+            prim->lines[hc>>1][1] = vh;
         }
         
         int fit = hconn_[hc].face_;
         if (fit != PMP_MAX_INDEX) {
             for (int i = 0; i < 3; ++i) {
-                if (prim_->tris[fit][i] == vo) {
-                    prim_->tris[fit][i] = vh;
+                if (prim->tris[fit][i] == vo) {
+                    prim->tris[fit][i] = vh;
                     break;
                 }
             }
@@ -645,8 +645,8 @@ void SurfaceMesh::remove_edge_helper(int h) {
         fit = hconn_[hc^1].face_;
         if (fit != PMP_MAX_INDEX) {
             for (int i = 0; i < 3; ++i) {
-                if (prim_->tris[fit][i] == vo) {
-                    prim_->tris[fit][i] = vh;
+                if (prim->tris[fit][i] == vo) {
+                    prim->tris[fit][i] = vh;
                     break;
                 }
             }
@@ -680,8 +680,8 @@ void SurfaceMesh::remove_edge_helper(int h) {
 }
 
 void SurfaceMesh::remove_loop_helper(int h) {
-    auto& edeleted = prim_->lines.attr<int>("e_deleted");
-    auto& fdeleted = prim_->tris.attr<int>("f_deleted");
+    auto& edeleted = prim->lines.attr<int>("e_deleted");
+    auto& fdeleted = prim->tris.attr<int>("f_deleted");
 
     int h0 = h;
     int h1 = next_halfedge(h0);
@@ -729,18 +729,18 @@ void SurfaceMesh::garbage_collection() {
     int i, i0, i1, nV(vertices_size_), nE(lines_size_), nH(halfedges_size_),
         nF(faces_size_);
 
-    auto& pos = prim_->attr<vec3f>("pos");
-    auto& lines = prim_->lines;
-    auto& tris = prim_->tris;
+    auto& pos = prim->attr<vec3f>("pos");
+    auto& lines = prim->lines;
+    auto& tris = prim->tris;
 
-    auto& vdeleted = prim_->verts.attr<int>("v_deleted");
-    auto& edeleted = prim_->lines.attr<int>("e_deleted");
-    auto& fdeleted = prim_->tris.attr<int>("f_deleted");
-    auto& vduplicate = prim_->verts.attr<int>("v_duplicate");
+    auto& vdeleted = prim->verts.attr<int>("v_deleted");
+    auto& edeleted = prim->lines.attr<int>("e_deleted");
+    auto& fdeleted = prim->tris.attr<int>("f_deleted");
+    auto& vduplicate = prim->verts.attr<int>("v_duplicate");
 
     // setup handle mapping
-    auto& vmap = prim_->verts.add_attr<int>("v_garbage_collection");
-    auto& fmap = prim_->tris.add_attr<int>("f_garbage_collection");
+    auto& vmap = prim->verts.add_attr<int>("v_garbage_collection");
+    auto& fmap = prim->tris.add_attr<int>("f_garbage_collection");
     auto hmap = std::vector<int>();
     hmap.resize(nH);
 
@@ -765,7 +765,7 @@ void SurfaceMesh::garbage_collection() {
             if (i0 >= i1)
                 break;
 
-            prim_->verts.foreach_attr<zeno::AttrAcceptAll>([&] (auto const &key, auto &arr) {
+            prim->verts.foreach_attr<zeno::AttrAcceptAll>([&] (auto const &key, auto &arr) {
                 std::swap(arr[i0], arr[i1]);
             });
             std::swap(pos[i0], pos[i1]);
@@ -790,7 +790,7 @@ void SurfaceMesh::garbage_collection() {
             if (i0 >= i1)
                 break;
 
-            prim_->lines.foreach_attr<zeno::AttrAcceptAll>([&] (auto const &key, auto &arr) {
+            prim->lines.foreach_attr<zeno::AttrAcceptAll>([&] (auto const &key, auto &arr) {
                 std::swap(arr[i0], arr[i1]);
             });
             std::swap(lines[i0], lines[i1]);
@@ -822,7 +822,7 @@ void SurfaceMesh::garbage_collection() {
             if (i0 >= i1)
                 break;
 
-            prim_->tris.foreach_attr<zeno::AttrAcceptAll>([&] (auto const &key, auto &arr) {
+            prim->tris.foreach_attr<zeno::AttrAcceptAll>([&] (auto const &key, auto &arr) {
                 std::swap(arr[i0], arr[i1]);
             });
             std::swap(tris[i0], tris[i1]);
@@ -856,20 +856,20 @@ void SurfaceMesh::garbage_collection() {
 
     // update prim
     for (int e = 0; e < nE; ++e) {
-        vec2i old = prim_->lines[e];
-        prim_->lines[e] = vec2i(vmap[old[0]], vmap[old[1]]);
+        vec2i old = prim->lines[e];
+        prim->lines[e] = vec2i(vmap[old[0]], vmap[old[1]]);
     }
     for (int f = 0; f < nF; ++f) {
-        vec3i old = prim_->tris[f];
-        prim_->tris[f] = vec3i(vmap[old[0]], vmap[old[1]], vmap[old[2]]);
+        vec3i old = prim->tris[f];
+        prim->tris[f] = vec3i(vmap[old[0]], vmap[old[1]], vmap[old[2]]);
     }
 
     // remove handle maps
-    prim_->verts.erase_attr("v_garbage_collection");
-    prim_->tris.erase_attr("f_garbage_collection");
+    prim->verts.erase_attr("v_garbage_collection");
+    prim->tris.erase_attr("f_garbage_collection");
 
     // finally resize arrays
-    prim_->verts.foreach_attr<zeno::AttrAcceptAll>([&] (auto const &key, auto &arr) {
+    prim->verts.foreach_attr<zeno::AttrAcceptAll>([&] (auto const &key, auto &arr) {
         arr.resize(nV);
     });
     pos.resize(nV);
@@ -879,13 +879,13 @@ void SurfaceMesh::garbage_collection() {
     hconn_.resize(nH);
     halfedges_size_ = nH;
 
-    prim_->lines.foreach_attr<zeno::AttrAcceptAll>([&] (auto const &key, auto &arr) {
+    prim->lines.foreach_attr<zeno::AttrAcceptAll>([&] (auto const &key, auto &arr) {
         arr.resize(nE);
     });
     lines.resize(nE);
     lines_size_ = nE;
     
-    prim_->tris.foreach_attr<zeno::AttrAcceptAll>([&] (auto const &key, auto &arr) {
+    prim->tris.foreach_attr<zeno::AttrAcceptAll>([&] (auto const &key, auto &arr) {
         arr.resize(nF);
     });
     tris.resize(nF);

@@ -27,8 +27,8 @@ public:
 
     //! return maximum absolute curvature
     float max_abs_curvature(int v) const {
-        auto &min_curvature = mesh_->prim_->verts.attr<float>(min_curv_tag_);
-        auto &max_curvature = mesh_->prim_->verts.attr<float>(max_curv_tag_);
+        auto &min_curvature = mesh_->prim->verts.attr<float>(min_curv_tag_);
+        auto &max_curvature = mesh_->prim->verts.attr<float>(max_curv_tag_);
         return std::max(fabs(min_curvature[v]), fabs(max_curvature[v]));
     }
 
