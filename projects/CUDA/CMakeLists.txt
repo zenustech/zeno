@@ -37,9 +37,9 @@ target_link_options(zeno
 target_link_libraries(zeno PRIVATE Eigen3::Eigen)
 target_link_libraries(zeno PRIVATE zshelper)
 
-# target_sources(zeno PRIVATE
-#   iw_query/Query.cpp
-# )
+target_sources(zeno PRIVATE
+  iw_query/Query.cpp
+)
 
 target_sources(zeno PRIVATE
   #test1.cu
