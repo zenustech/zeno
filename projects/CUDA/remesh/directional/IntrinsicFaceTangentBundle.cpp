@@ -13,8 +13,8 @@ namespace zeno::directional {
                                                 std::vector<int>& f_depth) {
         // TODO(@seeeagull): It seems that we only construct one single tree at once.
         // So it should not be able to handle non-manifold cases.
-        auto& ev_deleted = prim->lines.add_attr<int>("ev_deleted", 0);
-        auto& ef_deleted = prim->lines.add_attr<int>("ef_deleted", 0);
+        auto& ev_deleted = mesh->prim->lines.add_attr<int>("ev_deleted", 0);
+        auto& ef_deleted = mesh->prim->lines.add_attr<int>("ef_deleted", 0);
         
         // construct primal tree with ev adj info
         for (int e = 0; e < num_e; ++e) {
@@ -36,8 +36,8 @@ namespace zeno::directional {
             ve[v1].push_back(i);
         }
 
-        std::set<int> visited();
-        std::queue<std::pair<int,int>> edge_verts();
+        std::set<int> visited{};
+        std::queue<std::pair<int,int>> edge_verts{};
 
         // find a possible root for the primal tree
         for (int i = 0; i < num_v; ++i) {
@@ -87,7 +87,6 @@ namespace zeno::directional {
         }
 
         f_fa_edge.resize(num_f);
-        edge_verts.clear();
         int edge_id = 0;
 
         for (int i = 0; i < num_f; ++i) {
@@ -130,37 +129,37 @@ namespace zeno::directional {
         for (int e : tree_edges)
             e_intree[e] = 1;
 
-        prim->lines.erase_attr("ev_deleted");
-        prim->lines.erase_attr("ef_deleted");
+        mesh->prim->lines.erase_attr("ev_deleted");
+        mesh->prim->lines.erase_attr("ef_deleted");
     }
 
     void IntrinsicFaceTangentBundle::get_boundary_loops(std::vector<std::vector<int>>& loops) {
-        std::set<int> boundary_edges();
-        std::unordered_map<int, zeno::vec2i> ve();
+        std::set<int> boundary_edges{};
+        std::unordered_map<int, zeno::vec2i> ve{};
         for (int e = 0; e < num_e; ++e) {
             if (mesh->is_boundary_e(e)) {
                 boundary_edges.insert(e);
                 int v0 = mesh->to_vertex(e << 1);
                 int v1 = mesh->to_vertex(e << 1 | 1);
                 if (ve.count(v0) == 0)
-                    ve.insert(v0, zeno::vec2i(e, -1));
+                    ve.insert({v0, zeno::vec2i(e, -1)});
                 else
                     ve[v0][1] = e;
                 if (ve.count(v1) == 0)
-                    ve.insert(v1, zeno::vec2i(e, -1));
+                    ve.insert({v1, zeno::vec2i(e, -1)});
                 else
                     ve[v1][1] = e;
             }
         }
         while (!boundary_edges.empty()) {
-            std::vector<int> loop();
+            std::vector<int> loop{};
             int e_start = *(boundary_edges.begin());
             int e_cur = e_start;
-            int v_cur = mesh->to_vertex(e << 1), v_next;
+            int v_cur = mesh->to_vertex(e_cur<<1), v_next;
             do {
                 boundary_edges.erase(e_cur);
                 loop.push_back(v_cur);
-                v_next = ((mesh->to_vertex(e << 1) == v_cur) ? mesh->to_vertex(e << 1 | 1) : mesh->to_vertex(e << 1));
+                v_next = ((mesh->to_vertex(e_cur<<1) == v_cur) ? mesh->to_vertex(e_cur<<1|1) : mesh->to_vertex(e_cur<<1));
                 e_cur = ((ve[v_cur][0] == e_cur) ? ve[v_cur][1] : ve[v_cur][0]);
                 v_cur = v_next;
             } while (e_cur != e_start);
@@ -171,12 +170,12 @@ namespace zeno::directional {
   
     void IntrinsicFaceTangentBundle::dual_cycles() {
         // TODO(@seeeagull): according to the author, it may go wrong when there is intersections of boundary cycles and generator cycles
-        std::vector<std::vector<int>> boundary_loops();
+        std::vector<std::vector<int>> boundary_loops{};
         get_boundary_loops(boundary_loops);
         int num_boundaries = boundary_loops.size();
         int num_generators = 2 - num_boundaries - (num_v - num_e + num_f);
         
-        auto& ev = mesh->prim->lines();
+        auto& ev = mesh->prim->lines;
         std::vector<Eigen::Triplet<float>> basis_cycle_tris(num_e * 2);
         // all 1-ring cycles, including boundaries
         for (int e = 0; e < num_e; ++e) {
@@ -186,12 +185,12 @@ namespace zeno::directional {
         
         int cur_generator = 0;
         if (num_generators != 0) {
-            auto& e_intree = prim->lines.add_attr<int>("e_intree", 0);
+            auto& e_intree = mesh->prim->lines.add_attr<int>("e_intree", 0);
             // construct dual tree with ev adj info
             std::vector<int> dual_fa_edges, dual_depth;
             dual_tree(e_intree, dual_fa_edges, dual_depth);
 
-            std::set<int> inner();
+            std::set<int> inner{};
             for (int e = 0; e < num_e; ++e)
                 if (!(mesh->is_boundary_v(ev[e][0])) && !(mesh->is_boundary_v(ev[e][1])))
                 inner.insert(e);
@@ -199,12 +198,12 @@ namespace zeno::directional {
             // building tree co-tree based homological cycles
             // finding dual edge which are not in the tree, and following their faces to the end
             for (int e = 0; e < num_e; e++) {
-                if (e_intree(e) == 1 || mesh->is_boundary_e(e))
+                if (e_intree[e] == 1 || mesh->is_boundary_e(e))
                     continue;
 
                 // if it is not a boundary edge,
                 // begin from both faces to their LCA and gets a dual cycle
-                std::vector<zeno::vec2f> candidates();
+                std::vector<zeno::vec2f> candidates{};
                 int cur_f0 = mesh->get_face(e<<1), cur_f1 = mesh->get_face(e<<1|1);
                 bool is_boundary_cycle = true;
 
@@ -245,22 +244,22 @@ namespace zeno::directional {
                 }
             }
           
-            mode->prim->lines.erase_attr("e_intree");
+            mesh->prim->lines.erase_attr("e_intree");
         }
         
         num_generators = cur_generator;
 
         Eigen::SparseMatrix<float> bound_loops(num_v + num_boundaries + num_generators, num_v + num_generators);
-        std::vector<Eigen::Triplet<float>> bound_loop_tris();
-        std::vector<int> inner_vert_list(), inner_edge_list();
+        std::vector<Eigen::Triplet<float>> bound_loop_tris{};
+        std::vector<int> inner_vert_list{}, inner_edge_list{};
         Eigen::VectorXi remain_rows, remain_cols;
         
         // mask for boundary vertices
         vertex2cycle.conservativeResize(num_v);
-        for (int v = 0; v < num_v; ++v){
-            if (!mesh->is_boundary_v(i)){
-                vertex2cycle(i) = inner_vert_list.size();
-                inner_vert_list.push_back(i);
+        for (int v = 0; v < num_v; ++v) {
+            if (!mesh->is_boundary_v(v)) {
+                vertex2cycle(v) = inner_vert_list.size();
+                inner_vert_list.push_back(v);
                 bound_loop_tris.push_back(Eigen::Triplet<float>(v, v, 1.f));
             } else {
                 bound_loop_tris.push_back(Eigen::Triplet<float>(v, v, 0.f));
@@ -283,8 +282,8 @@ namespace zeno::directional {
         
         // remove rows and columns
         for (int e = 0; e < num_e; ++e)
-            if (!((mesh->is_boundary_v(ev[i][0])) && (mesh->is_boundary_v(ev[i][1]))))
-                inner_edge_list.push_back(i);
+            if (!((mesh->is_boundary_v(ev[e][0])) && (mesh->is_boundary_v(ev[e][1]))))
+                inner_edge_list.push_back(e);
         remain_rows.resize(inner_vert_list.size() + num_boundaries + num_generators);
         remain_cols.resize(inner_edge_list.size());
         for (int i = 0; i < inner_vert_list.size(); i++)
@@ -309,11 +308,11 @@ namespace zeno::directional {
         inner_edges.conservativeResize(inner_edge_list.size());
         for (int i = 0; i < inner_edge_list.size(); i++)
           inner_edges(i) = inner_edge_list[i];
-        edge_corners
+        
         // correct computation of cycle curvature by adding angles
         // getting corner angle sum
         auto &pos = mesh->prim->attr<zeno::vec3f>("pos");
-        auto &faces = mesh->prim->tris();
+        auto &faces = mesh->prim->tris;
         Eigen::VectorXf all_angles(3 * num_f);
         for (int i = 0; i < num_f; i++){
             for (int j = 0; j < 3; j++){
@@ -324,8 +323,8 @@ namespace zeno::directional {
         }
         
         // for each cycle, summing up all its internal angles negatively  + either 2*pi*|cycle| for internal cycles or pi*|cycle| for boundary cycles.
-        cycle_curv = VectorXf::Zero(cycles.rows());
-        Eigen::VectorXi is_big_cycle = VectorXi::Ones(cycles.rows());  //TODO: retain it rather then reverse-engineer...
+        cycle_curv = Eigen::VectorXf::Zero(cycles.rows());
+        Eigen::VectorXi is_big_cycle = Eigen::VectorXi::Ones(cycles.rows());  //TODO: retain it rather then reverse-engineer...
         for (int i = 0; i < num_v; i++)  //inner cycles
             if (!mesh->is_boundary_v(i))
                 is_big_cycle(vertex2cycle(i)) = 0;
@@ -368,12 +367,14 @@ namespace zeno::directional {
     
     }
 
-    void IntrinsicFaceTangentBundle::init(const SurfaceMesh& _mesh, const std::vector<vec3f>& pos, const std::vector<vec3f>& lines){
-        mesh = &_mesh;
+    void IntrinsicFaceTangentBundle::init(zeno::pmp::SurfaceMesh* surface_mesh) {
+        mesh = surface_mesh;
         num_v = mesh->n_vertices();
         num_e = mesh->n_lines();
         num_f = mesh->n_faces();
 
+        auto &pos = mesh->prim->attr<zeno::vec3f>("pos");
+        auto &lines = mesh->prim->lines;
         auto &fbx = mesh->prim->tris.attr<zeno::vec3f>("fbx");
         auto &fby = mesh->prim->tris.attr<zeno::vec3f>("fby");
         // TODO(@seeeagull): remember to erase connection attr somewhere finally
@@ -390,7 +391,7 @@ namespace zeno::directional {
             connection[i] = e2g / e2f;
         }
 
-        directional::dual_cycles();
+        dual_cycles();
     }
 
     Eigen::MatrixXf IntrinsicFaceTangentBundle::project_to_extrinsic(const Eigen::VectorXi& tangentSpaces, const Eigen::MatrixXf& intDirectionals) const {
@@ -402,12 +403,17 @@ namespace zeno::directional {
         else
             actualTangentSpaces = tangentSpaces;
 
+        auto &fbx = mesh->prim->tris.attr<zeno::vec3f>("fbx");
+        auto &fby = mesh->prim->tris.attr<zeno::vec3f>("fby");
         Eigen::MatrixXf extDirectionals(actualTangentSpaces.rows(), 3);
 
         extDirectionals.conservativeResize(intDirectionals.rows(), intDirectionals.cols() * 3 / 2);
-        for (int i=0;i<intDirectionals.rows();i++)
+        for (int i=0;i<intDirectionals.rows();i++) {
+            Eigen::Vector3f fbxi = Eigen::Vector3f(fbx[actualTangentSpaces(i)].data());
+            Eigen::Vector3f fbyi = Eigen::Vector3f(fby[actualTangentSpaces(i)].data());
             for (int j=0;j<intDirectionals.cols();j+=2)
-                extDirectionals.block(i,3*j/2,1,3)=mesh->FBx.row(actualTangentSpaces(i))*intDirectionals(i,j)+mesh->FBy.row(actualTangentSpaces(i))*intDirectionals(i,j+1);
+                extDirectionals.block(i,3*j/2,1,3) = fbxi * intDirectionals(i,j) + fbyi * intDirectionals(i,j+1);
+        }
 
         return extDirectionals;
     }
