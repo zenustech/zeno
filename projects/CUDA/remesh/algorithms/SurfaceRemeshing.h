@@ -63,14 +63,14 @@ private:
     void project_to_reference(int v);
 
     bool is_too_long(int v0, int v1) const {
-        auto& points = mesh_->prim_->attr<vec3f>("pos");
-        auto& vsizing = mesh_->prim_->verts.attr<float>("v_sizing");
+        auto& points = mesh_->prim->attr<vec3f>("pos");
+        auto& vsizing = mesh_->prim->verts.attr<float>("v_sizing");
         return distance(points[v0], points[v1]) >
                4.0 / 3.0 * std::min(vsizing[v0], vsizing[v1]);
     }
     bool is_too_short(int v0, int v1) const {
-        auto& points = mesh_->prim_->attr<vec3f>("pos");
-        auto& vsizing = mesh_->prim_->verts.attr<float>("v_sizing");
+        auto& points = mesh_->prim->attr<vec3f>("pos");
+        auto& vsizing = mesh_->prim->verts.attr<float>("v_sizing");
         return distance(points[v0], points[v1]) <
                4.0 / 5.0 * std::min(vsizing[v0], vsizing[v1]);
     }
@@ -87,7 +87,7 @@ private:
         return (face_cnt == 3 || face_cnt == 4);
     }
     bool is_degenerate(int v0, int v1) const {
-        auto& points = mesh_->prim_->attr<vec3f>("pos");
+        auto& points = mesh_->prim->attr<vec3f>("pos");
         return distance(points[v0], points[v1]) < std::numeric_limits<float>::epsilon();
     }
     bool should_collapse(COLLAPSE_COND cond, int v0, int v1) const {

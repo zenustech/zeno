@@ -10,7 +10,7 @@ vec3f SurfaceNormals::compute_face_normal(const SurfaceMesh *mesh, int f) {
     int h = mesh->fconn_[f].halfedge_;
     int hend = h;
 
-    auto vpoint = mesh->prim_->attr<vec3f>("pos");
+    auto vpoint = mesh->prim->attr<vec3f>("pos");
 
     vec3f p0 = vpoint[mesh->to_vertex(h)];
     h = mesh->next_halfedge(h);
@@ -41,7 +41,7 @@ vec3f SurfaceNormals::compute_vertex_normal(const SurfaceMesh *mesh, int v) {
     vec3f nn(0.0f);
 
     if (!mesh->is_isolated(v)) {
-        auto &vpoint = mesh->prim_->attr<vec3f>("pos");
+        auto &vpoint = mesh->prim->attr<vec3f>("pos");
         const vec3f p0 = vpoint[v];
 
         vec3f n;
@@ -83,8 +83,8 @@ vec3f SurfaceNormals::compute_vertex_normal(const SurfaceMesh *mesh, int v) {
 }
 
 void SurfaceNormals::compute_vertex_normals(SurfaceMesh *mesh) {
-    auto &vnormal = mesh->prim_->verts.attr<vec3f>("v_normal");
-    auto &vdeleted = mesh->prim_->verts.attr<int>("v_deleted");
+    auto &vnormal = mesh->prim->verts.attr<vec3f>("v_normal");
+    auto &vdeleted = mesh->prim->verts.attr<int>("v_deleted");
 
     for (int v = 0; v < mesh->vertices_size_; ++v) {
         if (mesh->has_garbage_ && vdeleted[v])

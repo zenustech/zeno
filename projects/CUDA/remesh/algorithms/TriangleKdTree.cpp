@@ -161,16 +161,16 @@ TriangleKdTree::TriangleKdTree(const SurfaceMesh* mesh, unsigned int max_faces,
     // collect triangles
     root_->faces->reserve(mesh->n_faces());
     face_points_.reserve(mesh->n_faces());
-    auto &points = mesh->prim_->attr<vec3f>("pos");
+    auto &points = mesh->prim->attr<vec3f>("pos");
 
-    auto& fdeleted = mesh->prim_->tris.attr<int>("f_deleted");
+    auto& fdeleted = mesh->prim->tris.attr<int>("f_deleted");
     for (int fit = 0; fit < mesh->faces_size_; ++fit) {
         if (mesh->has_garbage_ && fdeleted[fit])
             continue;
 
         root_->faces->push_back(fit);
 
-        auto fvIt = mesh->prim_->tris[fit];
+        auto fvIt = mesh->prim->tris[fit];
         face_points_.push_back({points[fvIt[0]], points[fvIt[1]], points[fvIt[2]]});
     }
 
