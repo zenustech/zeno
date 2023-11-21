@@ -201,6 +201,8 @@ public:
 
     int add_tri(const vec3i& vertices);
 
+    size_t n_vertices() const { return vertices_size_ - deleted_vertices_; }
+    size_t n_lines() const { return lines_size_ - deleted_lines_; }
     size_t n_faces() const { return faces_size_ - deleted_faces_; }
 
     int halfedge(int v) const { return vconn_[v].halfedge_; }
@@ -212,6 +214,7 @@ public:
         return (hconn_[e << 1].face_ == PMP_MAX_INDEX || hconn_[e << 1 | 1].face_ == PMP_MAX_INDEX);
     }
     bool is_isolated(int v) const { return halfedge(v) == PMP_MAX_INDEX; }
+    inline int get_face(int h) const { return hconn_[h].face_; }
     inline int to_vertex(int h) const { return hconn_[h].vertex_; }
     inline int from_vertex(int h) const { return to_vertex(h^1); }
     inline int next_halfedge(int h) const {
@@ -263,7 +266,7 @@ public:
         const int h0 = (e << 1);
         const int h1 = (e << 1 | 1);
 
-        auto& pos = prim_->attr<vec3f>("pos");
+        auto& pos = prim->attr<vec3f>("pos");
 
         const vec3f p0 = pos[to_vertex(h0)];
         const vec3f p1 = pos[to_vertex(h1)];
@@ -305,7 +308,7 @@ public:
             float dotp, dotq, dotr, triArea;
             float cotq, cotr;
 
-            auto& pos = prim_->attr<vec3f>("pos");
+            auto& pos = prim->attr<vec3f>("pos");
 
             for (auto h : halfedges(v)) {
                 h0 = h;
@@ -366,14 +369,16 @@ public:
 
     BoundingBox bounds() {
         BoundingBox bb;
-        auto pos = prim_->attr<vec3f>("pos");
+        auto pos = prim->attr<vec3f>("pos");
         for (auto p : pos)
             bb += p;
         return bb;
     }
 
+    std::shared_ptr<zeno::PrimitiveObject> prim;
 
     private:
+    // TODO(@seeeagull): can we adjust the visibility and remove friends?
     friend class SurfaceRemeshing;
     friend class SurfaceCurvature;
     friend class SurfaceNormals;
@@ -401,7 +406,7 @@ public:
             return PMP_MAX_INDEX;
         }
 
-        prim_->verts.push_back(p);
+        prim->verts.push_back(p);
         ++vertices_size_;
         if (vertices_size_ > vconn_.size()) {
             vconn_.resize(vertices_size_);
@@ -417,7 +422,7 @@ public:
             return PMP_MAX_INDEX;
         }
 
-        prim_->lines.push_back(vec2i(start, end));
+        prim->lines.push_back(vec2i(start, end));
         ++lines_size_;
         
         halfedges_size_+=2;
@@ -456,7 +461,7 @@ public:
             return PMP_MAX_INDEX;
         }
 
-        prim_->tris.push_back(vec3i(v1, v2, v3));
+        prim->tris.push_back(vec3i(v1, v2, v3));
         
         ++faces_size_;
         if (faces_size_ > fconn_.size()) {
@@ -468,8 +473,6 @@ public:
     void adjust_outgoing_halfedge(int v);
     void remove_edge_helper(int h);
     void remove_loop_helper(int h);
-
-    std::shared_ptr<zeno::PrimitiveObject> prim_;
 
     size_t vertices_size_;
     size_t halfedges_size_;

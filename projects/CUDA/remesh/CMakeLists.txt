@@ -12,3 +12,4 @@ target_sources(zeno PRIVATE
   TriSubdiv.cpp
 )
 add_subdirectory(algorithms)
+add_subdirectory(directional)

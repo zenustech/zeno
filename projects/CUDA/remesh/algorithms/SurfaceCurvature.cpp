@@ -14,11 +14,11 @@ SurfaceCurvature::SurfaceCurvature(SurfaceMesh *mesh) : mesh_(mesh),
                                                         min_curv_tag_("curv_min"),
                                                         max_curv_tag_("curv_max"),
                                                         gaussian_curv_tag_("curv_gaussian") {
-    vertice_num_ = mesh_->prim_->verts.size();
-    edge_num_ = mesh_->prim_->lines.size();
-    mesh_->prim_->verts.add_attr<float>(min_curv_tag_);
-    mesh_->prim_->verts.add_attr<float>(max_curv_tag_);
-    mesh_->prim_->verts.add_attr<float>(gaussian_curv_tag_);
+    vertice_num_ = mesh_->prim->verts.size();
+    edge_num_ = mesh_->prim->lines.size();
+    mesh_->prim->verts.add_attr<float>(min_curv_tag_);
+    mesh_->prim->verts.add_attr<float>(max_curv_tag_);
+    mesh_->prim->verts.add_attr<float>(gaussian_curv_tag_);
 }
 
 SurfaceCurvature::SurfaceCurvature(SurfaceMesh *mesh,
@@ -29,28 +29,28 @@ SurfaceCurvature::SurfaceCurvature(SurfaceMesh *mesh,
                                           min_curv_tag_(min_curv_tag),
                                           max_curv_tag_(max_curv_tag),
                                           gaussian_curv_tag_(gaussian_curv_tag) {
-    vertice_num_ = mesh_->prim_->verts.size();
-    edge_num_ = mesh_->prim_->lines.size();
-    mesh_->prim_->verts.add_attr<float>(min_curv_tag_);
-    mesh_->prim_->verts.add_attr<float>(max_curv_tag_);
-    mesh_->prim_->verts.add_attr<float>(gaussian_curv_tag_);
+    vertice_num_ = mesh_->prim->verts.size();
+    edge_num_ = mesh_->prim->lines.size();
+    mesh_->prim->verts.add_attr<float>(min_curv_tag_);
+    mesh_->prim->verts.add_attr<float>(max_curv_tag_);
+    mesh_->prim->verts.add_attr<float>(gaussian_curv_tag_);
 }
 
 SurfaceCurvature::~SurfaceCurvature() {
     // delete outside
-    // mesh_->prim_->verts.erase_attr(min_curv_tag);
-    // mesh_->prim_->verts.erase_attr(max_curv_tag);
-    // mesh_->prim_->verts.erase_attr(gaussian_curv_tag);
+    // mesh_->prim->verts.erase_attr(min_curv_tag);
+    // mesh_->prim->verts.erase_attr(max_curv_tag);
+    // mesh_->prim->verts.erase_attr(gaussian_curv_tag);
 }
 
 void SurfaceCurvature::analyze_tensor(unsigned int post_smoothing_steps) {
-    auto &min_curvature = mesh_->prim_->verts.attr<float>(min_curv_tag_);
-    auto &max_curvature = mesh_->prim_->verts.attr<float>(max_curv_tag_);
-    auto &gaussian_curvature = mesh_->prim_->verts.attr<float>(gaussian_curv_tag_);
-    auto area = mesh_->prim_->verts.add_attr<float>("curv_area", 0.0);
-    auto normal = mesh_->prim_->tris.add_attr<vec3f>("curv_normal");
-    auto evec = mesh_->prim_->lines.add_attr<vec3f>("curv_evec", vec3f(0, 0, 0));
-    auto angle = mesh_->prim_->lines.add_attr<float>("curv_angle", 0.0);
+    auto &min_curvature = mesh_->prim->verts.attr<float>(min_curv_tag_);
+    auto &max_curvature = mesh_->prim->verts.attr<float>(max_curv_tag_);
+    auto &gaussian_curvature = mesh_->prim->verts.attr<float>(gaussian_curv_tag_);
+    auto area = mesh_->prim->verts.add_attr<float>("curv_area", 0.0);
+    auto normal = mesh_->prim->tris.add_attr<vec3f>("curv_normal");
+    auto evec = mesh_->prim->lines.add_attr<vec3f>("curv_evec", vec3f(0, 0, 0));
+    auto angle = mesh_->prim->lines.add_attr<float>("curv_angle", 0.0);
 
     vec3f p0, p1, n0, n1, ev;
     float l, A, beta, a1, a2, a3;
@@ -68,7 +68,7 @@ void SurfaceCurvature::analyze_tensor(unsigned int post_smoothing_steps) {
 #if PMP_ENABLE_PROFILE
     timer.tick();
 #endif
-    auto &vdeleted = mesh_->prim_->verts.attr<int>("v_deleted");
+    auto &vdeleted = mesh_->prim->verts.attr<int>("v_deleted");
     // precompute Voronoi area per vertex
     for (int v = 0; v < mesh_->vertices_size_; ++v) {
         if (mesh_->has_garbage_ && vdeleted[v])
@@ -82,7 +82,7 @@ void SurfaceCurvature::analyze_tensor(unsigned int post_smoothing_steps) {
 #if PMP_ENABLE_PROFILE
     timer.tick();
 #endif
-    auto &fdeleted = mesh_->prim_->tris.attr<int>("f_deleted");
+    auto &fdeleted = mesh_->prim->tris.attr<int>("f_deleted");
 #if 0
     // precompute face normals
     if (!mesh_->has_garbage_)
@@ -94,7 +94,7 @@ void SurfaceCurvature::analyze_tensor(unsigned int post_smoothing_steps) {
         }
 #else
     {
-        auto &pos = mesh_->prim_->attr<vec3f>("pos");
+        auto &pos = mesh_->prim->attr<vec3f>("pos");
         if (!mesh_->has_garbage_)
 #pragma omp parallel for
             for (int v = 0; v < mesh_->vertices_size_; ++v) {
@@ -127,8 +127,8 @@ void SurfaceCurvature::analyze_tensor(unsigned int post_smoothing_steps) {
     timer.tock("    compute_face_normal");
 #endif
 
-    auto &pos = mesh_->prim_->attr<vec3f>("pos");
-    auto &edeleted = mesh_->prim_->lines.attr<int>("e_deleted");
+    auto &pos = mesh_->prim->attr<vec3f>("pos");
+    auto &edeleted = mesh_->prim->lines.attr<int>("e_deleted");
 
 #if PMP_ENABLE_PROFILE
     timer.tick();
@@ -250,10 +250,10 @@ void SurfaceCurvature::analyze_tensor(unsigned int post_smoothing_steps) {
 #endif
 
     // clean-up properties
-    mesh_->prim_->verts.erase_attr("curv_area");
-    mesh_->prim_->lines.erase_attr("curv_evec");
-    mesh_->prim_->lines.erase_attr("curv_angle");
-    mesh_->prim_->tris.erase_attr("curv_normal");
+    mesh_->prim->verts.erase_attr("curv_area");
+    mesh_->prim->lines.erase_attr("curv_evec");
+    mesh_->prim->lines.erase_attr("curv_angle");
+    mesh_->prim->tris.erase_attr("curv_normal");
 
 #if PMP_ENABLE_PROFILE
     timer.tick();
@@ -277,12 +277,12 @@ void SurfaceCurvature::smooth_curvatures(unsigned int iterations) {
     float weight, sum_weights;
 
     // properties
-    auto vfeature = mesh_->prim_->verts.attr<int>("v_feature");
-    auto cotan = mesh_->prim_->lines.add_attr<float>("curv_cotan");
-    auto &vdeleted = mesh_->prim_->verts.attr<int>("v_deleted");
-    auto &edeleted = mesh_->prim_->lines.attr<int>("e_deleted");
-    auto &min_curvature = mesh_->prim_->verts.attr<float>(min_curv_tag_);
-    auto &max_curvature = mesh_->prim_->verts.attr<float>(max_curv_tag_);
+    auto vfeature = mesh_->prim->verts.attr<int>("v_feature");
+    auto cotan = mesh_->prim->lines.add_attr<float>("curv_cotan");
+    auto &vdeleted = mesh_->prim->verts.attr<int>("v_deleted");
+    auto &edeleted = mesh_->prim->lines.attr<int>("e_deleted");
+    auto &min_curvature = mesh_->prim->verts.attr<float>(min_curv_tag_);
+    auto &max_curvature = mesh_->prim->verts.attr<float>(max_curv_tag_);
 
     // cotan weight per edge
     for (int e = 0; e < mesh_->lines_size_; ++e) {
@@ -322,7 +322,7 @@ void SurfaceCurvature::smooth_curvatures(unsigned int iterations) {
     }
 
     // remove property
-    mesh_->prim_->lines.erase_attr("curv_cotan");
+    mesh_->prim->lines.erase_attr("curv_cotan");
 }
 
 } // namespace pmp
