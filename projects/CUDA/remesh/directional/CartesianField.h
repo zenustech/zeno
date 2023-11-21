@@ -130,12 +130,7 @@ namespace zeno::directional{
         void cut_mesh_with_singularities(Eigen::MatrixXi& cuts);
 
         // Reorders the vectors in a tangent space (preserving CCW direction) so that the prescribed matching across most TB edges is an identity, except for seams.
-        // Important: if the Raw field in not CCW ordered, the result is unpredictable.
         // Input:
-        //  rawField:   a RAW_FIELD uncombed cartesian field object
-        //  cuts: #Fx3 prescribing the TB edges (corresponding to mesh faces) that must be a seam.
-        // Output:
-        //  combed_field: the combed field object, also RAW_FIELD
         void combing(CartesianField& combed_field,
                      const Eigen::MatrixXi& cuts);
                      
