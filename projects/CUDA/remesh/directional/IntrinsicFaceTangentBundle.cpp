@@ -367,12 +367,11 @@ namespace zeno::directional {
     
     }
 
-    void IntrinsicFaceTangentBundle::init(zeno::pmp::SurfaceMesh* surface_mesh) {
+    IntrinsicFaceTangentBundle::IntrinsicFaceTangentBundle(zeno::pmp::SurfaceMesh* surface_mesh) {
         mesh = surface_mesh;
         num_v = mesh->n_vertices();
         num_e = mesh->n_lines();
         num_f = mesh->n_faces();
-
         auto &pos = mesh->prim->attr<zeno::vec3f>("pos");
         auto &lines = mesh->prim->lines;
         auto &fbx = mesh->prim->tris.attr<zeno::vec3f>("fbx");
@@ -380,7 +379,7 @@ namespace zeno::directional {
         // TODO(@seeeagull): remember to erase connection attr somewhere finally
         // connection: the angle rotated from the local basis of ef(i,0) to the local basis of ef(i,1) in a unit circle,
         // represented in complex form
-        connection.resize(num_e,1);
+        connection.resize(num_e, 1);
         for (int i = 0; i < num_e; i++) {
             if (mesh->is_boundary_e(i))
                 continue;
@@ -394,27 +393,47 @@ namespace zeno::directional {
         dual_cycles();
     }
 
-    Eigen::MatrixXf IntrinsicFaceTangentBundle::project_to_extrinsic(const Eigen::VectorXi& tangentSpaces, const Eigen::MatrixXf& intDirectionals) const {
+    Eigen::MatrixXf IntrinsicFaceTangentBundle::project_to_extrinsic(const Eigen::VectorXi& tan_spaces, const Eigen::MatrixXf& int_directionals) const {
 
-        assert(tangentSpaces.rows() == intDirectionals.rows() || tangentSpaces.rows() == 0);
-        Eigen::VectorXi actualTangentSpaces;
-        if (tangentSpaces.rows()==0)
-            actualTangentSpaces = Eigen::VectorXi::LinSpaced(num_f, 0, num_f - 1);
+        assert(tan_spaces.rows() == int_directionals.rows() || tan_spaces.rows() == 0);
+        Eigen::VectorXi actual_tan_spaces;
+        if (tan_spaces.rows()==0)
+            actual_tan_spaces = Eigen::VectorXi::LinSpaced(num_f, 0, num_f - 1);
         else
-            actualTangentSpaces = tangentSpaces;
+            actual_tan_spaces = tan_spaces;
 
         auto &fbx = mesh->prim->tris.attr<zeno::vec3f>("fbx");
         auto &fby = mesh->prim->tris.attr<zeno::vec3f>("fby");
-        Eigen::MatrixXf extDirectionals(actualTangentSpaces.rows(), 3);
+        Eigen::MatrixXf ext_directionals(actual_tan_spaces.rows(), 3);
 
-        extDirectionals.conservativeResize(intDirectionals.rows(), intDirectionals.cols() * 3 / 2);
-        for (int i=0;i<intDirectionals.rows();i++) {
-            Eigen::Vector3f fbxi = Eigen::Vector3f(fbx[actualTangentSpaces(i)].data());
-            Eigen::Vector3f fbyi = Eigen::Vector3f(fby[actualTangentSpaces(i)].data());
-            for (int j=0;j<intDirectionals.cols();j+=2)
-                extDirectionals.block(i,3*j/2,1,3) = fbxi * intDirectionals(i,j) + fbyi * intDirectionals(i,j+1);
+        ext_directionals.conservativeResize(int_directionals.rows(), int_directionals.cols() * 3 / 2);
+        for (int i = 0; i < int_directionals.rows(); i++) {
+            Eigen::Vector3f fbxi = Eigen::Vector3f(fbx[actual_tan_spaces(i)].data());
+            Eigen::Vector3f fbyi = Eigen::Vector3f(fby[actual_tan_spaces(i)].data());
+            for (int j = 0; j < int_directionals.cols(); j += 2)
+                ext_directionals.block(i,3*j/2,1,3) = fbxi * int_directionals(i,j) + fbyi * int_directionals(i,j+1);
         }
 
-        return extDirectionals;
+        return ext_directionals;
+    }
+
+    Eigen::MatrixXf IntrinsicFaceTangentBundle::project_to_intrinsic(const Eigen::VectorXi& tan_spaces, const Eigen::MatrixXf& ext_directionals) const{
+        assert(tan_spaces.rows() == ext_directionals.rows());
+
+        int N = ext_directionals.cols() / 3;
+        Eigen::MatrixXf int_directionals(tan_spaces.rows(), 2 * N);
+
+        auto &fbx = mesh->prim->tris.attr<zeno::vec3f>("fbx");
+        auto &fby = mesh->prim->tris.attr<zeno::vec3f>("fby");
+        for (int i = 0; i < tan_spaces.rows(); i++) {
+            Eigen::Vector3f fbxi = Eigen::Vector3f(fbx[tan_spaces(i)].data());
+            Eigen::Vector3f fbyi = Eigen::Vector3f(fby[tan_spaces(i)].data());
+            for (int j = 0; j < N; j++) {
+                Eigen::MatrixXf ext = ext_directionals.block(i, 3*j, 1, 3);
+                int_directionals.block(i, 2*j, 1, 2) << (ext.array() * fbxi.array()).sum(), (ext.array() * fbyi.array()).sum();
+            }
+        }
+
+        return int_directionals;
     }
 }
