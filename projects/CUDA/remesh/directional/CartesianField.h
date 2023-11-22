@@ -58,8 +58,13 @@ namespace zeno::directional{
             assert (!(fieldType==fieldTypeEnum::POWER_FIELD) || (_intField.cols()==2));
             assert ((_intField.cols() == 2 * N) || !(fieldType == fieldTypeEnum::POLYVECTOR_FIELD || fieldType == fieldTypeEnum::RAW_FIELD));
             intField = _intField;
-
             extField = tb->project_to_extrinsic(Eigen::VectorXi(), intField);
+        }
+
+        void set_extrinsic_field(const Eigen::MatrixXf& _extField){
+            assert(_extField.cols() == 3 * N);
+            extField = _extField;
+            intField = tb->project_to_intrinsic(Eigen::VectorXi::LinSpaced(extField.rows(), 0, extField.rows() - 1), extField);
         }
 
         // Takes a field in raw form and computes both the principal effort and the consequent principal matching on every edge.
@@ -76,7 +81,7 @@ namespace zeno::directional{
         // Outputs:
         //   cuts             #F by 3 list of boolean flags, indicating the edges that need to be cut
         //
-        void cut_mesh_with_singularities(const Eigen::VectorXi& singularities,
+        void cut_mesh_with_singularities(const std::vector<int>& singularities,
                                          Eigen::MatrixXi& cuts);
 
         // Reorders the vectors in a tangent space (preserving CCW direction) so that the prescribed matching across most TB edges is an identity, except for seams.

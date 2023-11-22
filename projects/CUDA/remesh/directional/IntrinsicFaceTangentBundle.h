@@ -42,12 +42,14 @@ namespace zeno::directional {
         Eigen::VectorXcf connection;                  // #V, metric connection between adjacent spaces
 
         IntrinsicFaceTangentBundle(){}
+        IntrinsicFaceTangentBundle(zeno::pmp::SurfaceMesh* surface_mesh);
         ~IntrinsicFaceTangentBundle(){}
 
-        void init(zeno::pmp::SurfaceMesh* surface_mesh);
-
         // projecting intrinsic to extrinsic
-        Eigen::MatrixXf project_to_extrinsic(const Eigen::VectorXi& tangentSpaces, const Eigen::MatrixXf& intDirectionals) const;
+        Eigen::MatrixXf project_to_extrinsic(const Eigen::VectorXi& tan_spaces, const Eigen::MatrixXf& int_directionals) const;
+
+        // projecting extrinsic to intrinsic
+        Eigen::MatrixXf project_to_intrinsic(const Eigen::VectorXi& tan_spaces, const Eigen::MatrixXf& ext_directionals) const;
     
     private:
     // Construct a dual tree (tris as verts and adjacent edges as connecting edges) from a mesh.
