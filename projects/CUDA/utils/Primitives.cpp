@@ -1316,6 +1316,7 @@ struct ParticleSegmentation : zeno::INode {
         exclusive_scan(pol, std::begin(numNeighbors), std::end(numNeighbors), std::begin(spmat._ptrs));
 
         auto numEntries = spmat._ptrs[pos.size()];
+
         spmat._inds.resize(numEntries);
 
         pol(range(pos.size()),
@@ -2373,42 +2374,45 @@ struct AssociateParticles : INode {
         auto &dstIndices = srcPrim->add_attr<int>(indexTag);
 
         auto n = srcPrim->size();
-        auto m = dstPrim->size();
 
-        auto dims = compute_dimensions(*srcPrim, *dstPrim);
-        auto furthestDistance = std::sqrt(dims[0] * dims[0] + dims[1] * dims[1] + dims[2] * dims[2]);
-        auto N = std::max(n, m);
+        if (n) {
+            auto m = dstPrim->size();
 
-        const auto &src = srcPrim->attr<vec3f>("pos");
-        const auto &dst = dstPrim->attr<vec3f>("pos");
+            auto dims = compute_dimensions(*srcPrim, *dstPrim);
+            auto furthestDistance = std::sqrt(dims[0] * dims[0] + dims[1] * dims[1] + dims[2] * dims[2]) * 1.1f;
+            auto N = std::max(n, m);
 
-        KuhnMunkres km{(int)N, [&src, &dst, n, m, v = -furthestDistance](int i, int j) {
-                           if (i < n && j < m)
-                               return -length(src[i] - dst[j]);
-                           else
-                               return v;
-                       }};
-        km.solve();
+            const auto &src = srcPrim->attr<vec3f>("pos");
+            const auto &dst = dstPrim->attr<vec3f>("pos");
 
-        float refSum = 0.f;
-        for (int i = 0; i != n; ++i)
-            refSum += length(src[i] - dst[i]);
-        float curSum = 0.f;
-        for (int i = 0; i != n; ++i)
-            curSum += length(src[i] - dst[km.find_l[i]]);
-        fmt::print(fg(fmt::color::red), "ref: {}, calc: {}\n", refSum, curSum);
+            KuhnMunkres km{(int)N, [&src, &dst, n, m, v = -furthestDistance](int i, int j) {
+                               if (i < n && j < m)
+                                   return -length(src[i] - dst[j]);
+                               else
+                                   return v;
+                           }};
+            km.solve();
 
-        auto pol = zs::omp_exec();
-        pol(zs::range(n), [&](int i) {
-            int id = km.find_l[i];
-            if (id < m) {
-                dstIndices[i] = id;
-                dstPos[i] = dst[id];
-            } else {
-                dstIndices[i] = -1;
-                dstPos[i] = src[i];
-            }
-        });
+            float refSum = 0.f;
+            for (int i = 0; i != n; ++i)
+                refSum += length(src[i] - dst[i]);
+            float curSum = 0.f;
+            for (int i = 0; i != n; ++i)
+                curSum += length(src[i] - dst[km.find_l[i]]);
+            fmt::print(fg(fmt::color::red), "ref: {}, calc: {}\n", refSum, curSum);
+
+            auto pol = zs::omp_exec();
+            pol(zs::range(n), [&](int i) {
+                int id = km.find_l[i];
+                if (id < m) {
+                    dstIndices[i] = id;
+                    dstPos[i] = dst[id];
+                } else {
+                    dstIndices[i] = -1;
+                    dstPos[i] = src[i];
+                }
+            });
+        }
         set_output("srcPrim", std::move(srcPrim));
     }
 };
@@ -2421,6 +2425,298 @@ ZENDEFNODE(AssociateParticles, {
                                    {},
                                    {"zs_geom"},
                                });
+
+#if 0
+struct SetupParticleTransition : INode {
+    void apply() override {
+        auto srcPars = get_input2<PrimitiveObject>("src_particles");
+        auto srcClusters = get_input2<PrimitiveObject>("src_clusters");
+
+        auto dstPars = get_input2<PrimitiveObject>("dst_particles");
+        auto dstClusters = get_input2<PrimitiveObject>("dst_clusters");
+
+        auto prim = get_input2<PrimitiveObject>("anim_particles");
+
+        auto particleClusterIndexTag = get_input2<std::string>("particle_cluster_index_tag");
+        auto clusterTargetIndexTag = get_input2<std::string>("cluster_target_index_tag");
+        auto transTag = get_input2<std::string>("per_frame_translation_tag");
+
+        auto numTransFrames = get_input2<int>("num_transition_frames");
+        auto numFrames = get_input2<int>("num_animating_frames");
+
+        // sizes
+        auto nSrcPars = srcPars->size();
+        auto nSrcClusters = srcClusters->size();
+        auto nDstPars = dstPars->size();
+        auto nDstClusters = dstClusters->size();
+
+        auto nPars = std::max(nSrcPars, nDstPars);
+        auto nClusters = std::max(nSrcClusters, nDstClusters);
+
+        // attribs
+        // prim->resize(nPars);
+        // auto &pos = prim->attr<vec3f>("pos");
+        // auto &trans = prim->add_attr<vec3f>(transTag);
+
+        const auto &srcParClusterIds = srcPars->attr<float>(particleClusterIndexTag);
+        const auto &dstParClusterIds = dstPars->attr<float>(particleClusterIndexTag);
+        const auto &srcParPos = srcPars->attr<vec3f>("pos");
+        const auto &dstParPos = dstPars->attr<vec3f>("pos");
+
+        const auto &targetClusterIds = srcClusters->attr<float>(particleClusterIndexTag);
+        // const auto &srcClusterPos = srcClusters->attr<vec3f>("pos");
+        // const auto &dstClusterPos = dstClusters->attr<vec3f>("pos");
+
+        auto dims = compute_dimensions(*srcPars, *dstPars);
+        auto furthestDistance = std::sqrt(dims[0] * dims[0] + dims[1] * dims[1] + dims[2] * dims[2]) * 1.1f;
+
+        auto pol = zs::omp_exec();
+
+        struct P {
+            vec3f pos{0, 0, 0};
+            int dstPar{-1};
+            float rad{5}; // 30 is visible, 5 is barely visible
+            vec3f deltaP{0, 0, 0};
+        };
+        std::vector<std::vector<P>> parGrps(nSrcClusters); // for constructing result
+
+        using namespace zs;
+        std::vector<int> missingDstClusters(nDstClusters + 1, 1); // default no cover
+        pol(range(nSrcClusters), [&](int ci) {
+            int dstClusterId = targetClusterIds[ci];
+            if (dstClusterId >= 0)
+                missingDstClusters[dstClusterId] = 0;
+        });
+        std::vector<int> missingDstClusterOffsets(nDstClusters + 1);
+        exclusive_scan(pol, std::begin(missingDstClusters), std::end(missingDstClusters),
+                       std::begin(missingDstClusterOffsets));
+        auto numTotalMissingClusters = missingDstClusterOffsets.back();
+
+        std::vector<int> parGrpSizes(nSrcClusters + numTotalMissingClusters);
+        std::vector<int> dstClusterSizes(nDstClusters);
+
+        std::vector<std::vector<int>> srcClusterIndices(nSrcClusters), dstClusterIndices(nDstClusters);
+
+        // prepare first half of [parGrps]
+        pol(range(nSrcPars), [&](int i) {
+            int ci = srcParClusterIds[i];
+            atomic_add(exec_omp, &parGrpSizes[ci], 1);
+        });
+        for (int i = 0; i < nSrcClusters; ++i) {
+            parGrps[i].resize(parGrpSizes[i]);
+            srcClusterIndices[i].resize(parGrpSizes[i]);
+        }
+
+        // prepare second half of [parGrps]
+        pol(range(nDstPars), [&](int i) {
+            int ci = dstParClusterIds[i];
+
+            atomic_add(exec_omp, &dstClusterSizes[ci], 1);
+
+            if (missingDstClusters[ci]) {
+                int id = missingDstClusterOffsets[ci] + nSrcClusters;
+                atomic_add(exec_omp, &parGrpSizes[id], 1);
+            }
+        });
+        for (int i = 0; i < numTotalMissingClusters; ++i)
+            parGrps[nSrcClusters + i].resize(parGrpSizes[nSrcClusters + i]);
+        for (int i = 0; i < nDstClusters; ++i)
+            dstClusterIndices[i].resize(dstClusterSizes[i]);
+
+        // init particle data
+        std::memset(parGrpSizes.data(), 0, sizeof(int) * parGrpSizes.size());
+        pol(range(nSrcPars), [&](int i) {
+            int id = srcParClusterIds[i];
+            auto offset = atomic_add(exec_omp, &parGrpSizes[id], 1);
+            parGrps[id][offset] = P{srcParPos[i], -1};
+            srcClusterIndices[id][offset] = i;
+        });
+        std::memset(dstClusterSizes.data(), 0, sizeof(int) * dstClusterSizes.size());
+        pol(range(nDstPars), [&](int i) {
+            int ci = dstParClusterIds[i];
+            auto offset = atomic_add(exec_omp, &dstClusterSizes[ci], 1);
+            dstClusterIndices[ci][offset] = i;
+            if (missingDstClusters[ci]) {
+                auto id = missingDstClusterOffsets[ci] + nSrcClusters;
+                // auto offset = atomic_add(exec_omp, &parGrpSizes[id], 1);
+                parGrps[id][offset] = P{dstParPos[i], -1};
+            }
+        });
+
+        /// compute first half
+        pol(range(nSrcClusters), [&](int ci) {
+            int dstClusterId = targetClusterIds[ci];
+            int n = parGrpSizes[ci]; // srcClusterIndices.size()
+            auto &grp = parGrps[ci];
+            if (dstClusterId >= 0) {
+                const auto &srcIndices = srcClusterIndices[ci];
+                const auto &dstIndices = dstClusterIndices[dstClusterId];
+                int m = dstClusterSizes[dstClusterId]; // dstClusterIndices.size()
+                int N = std::max(m, n);
+                KuhnMunkres km{(int)N, [&, v = -furthestDistance](int i, int j) {
+                                   if (i < n && j < m)
+                                       return -length(srcParPos[srcIndices[i]] - dstParPos[dstIndices[j]]);
+                                   else
+                                       return v;
+                               }};
+                km.solve();
+
+                std::vector<int> dstPicked(m);
+                for (int i = 0; i != n; ++i) {
+                    int j = km.find_l[i];
+                    if (j < m) {
+                        grp[i].deltaP = (dstParPos[dstIndices[j]] - srcParPos[srcIndices[i]]) / numTransFrames;
+                        dstPicked[j] = 1;
+                    } else {
+                        // no longer required, to be removed when transition is done
+                        grp[i].pos = srcParPos[srcIndices[i]];
+                        grp[i].rad = 5;
+                    }
+                }
+                for (int j = 0; j != m; ++j) {
+                    if (!dstPicked[j])
+                        // directly emerge at the destination
+                        grp.push_back(P{dstParPos[dstIndices[j]], -1, 30});
+                }
+            } else {
+                for (int i = 0; i != n; ++i) {
+                    // no longer required, to be removed when transition is done
+                    grp[i].pos = srcParPos[srcIndices[i]];
+                    grp[i].rad = 5;
+                }
+            }
+        });
+
+#if 0
+        // update grps to prim
+        const auto &dst = dstPrim->attr<vec3f>("pos");
+
+        pol(zs::range(n), [&](int i) {
+            int id = km.find_l[i];
+            if (id < m) {
+                dstIndices[i] = id;
+                dstPos[i] = dst[id];
+            } else {
+                dstIndices[i] = -1;
+                dstPos[i] = src[i];
+            }
+        });
+#endif
+        set_output("anim_particles", std::move(prim));
+    }
+};
+ZENDEFNODE(SetupParticleTransition, {
+                                        {
+                                            {"PrimitiveObject", "src_particles"},
+                                            {"PrimitiveObject", "src_clusters"},
+                                            {"PrimitiveObject", "dst_particles"},
+                                            {"PrimitiveObject", "dst_clusters"},
+                                            {"string", "particle_cluster_index_tag", "segment_index"}, // for pars
+                                            {"string", "cluster_target_index_tag", "target_index"},    // for clusters
+                                            {"string", "per_frame_translation_tag", "frame_translation"},
+                                            {"int", "num_transition_frames", "20"},
+                                            {"int", "num_animating_frames", "100"},
+                                            {"PrimitiveObject", "anim_particles"},
+                                        },
+                                        {{"PrimitiveObject", "anim_particles"}},
+                                        {},
+                                        {"zs_geom"},
+                                    });
+#endif
+
+struct SetupParticleTransitionDirect : INode {
+    void apply() override {
+        auto srcPars = get_input2<PrimitiveObject>("src_particles");
+
+        auto dstPars = get_input2<PrimitiveObject>("dst_particles");
+
+        auto prim = get_input2<PrimitiveObject>("anim_particles");
+
+        auto indexTag = get_input2<std::string>("target_index_tag");
+        auto transTag = get_input2<std::string>("per_frame_translation_tag");
+        auto clrTransTag = get_input2<std::string>("per_frame_clr_trans_tag");
+
+        auto numTransFrames = get_input2<int>("num_transition_frames");
+        auto radius = get_input2<float>("rad");
+
+        // sizes
+        auto nSrcPars = srcPars->size();
+        auto nDstPars = dstPars->size();
+
+        auto nPars = std::max(nSrcPars, nDstPars);
+
+        // attribs
+        prim->resize(nPars);
+        auto &pos = prim->attr<vec3f>("pos");
+        auto &rads = prim->add_attr<float>("rad");
+        auto &clrs = prim->add_attr<vec3f>("clr");
+        auto &trans = prim->add_attr<vec3f>(transTag);
+        auto &clrTrans = prim->add_attr<vec3f>(clrTransTag);
+
+        const auto &dstIndices = srcPars->attr<int>(indexTag);
+        const auto &srcParPos = srcPars->attr<vec3f>("pos");
+        const auto &dstParPos = dstPars->attr<vec3f>("pos");
+
+        std::memcpy(pos.data(), srcParPos.data(), sizeof(vec3f) * srcParPos.size());
+
+        auto pol = zs::omp_exec();
+
+        using namespace zs;
+
+        std::fill(std::begin(rads), std::end(rads), radius);
+
+        const vec3f onColor{0, 1, 0};
+        const vec3f offColor{1, 0, 0};
+
+        std::vector<int> missingDstPars(nDstPars + 1, 1); // default no cover
+        pol(range(nSrcPars), [&](int i) {
+            int j = dstIndices[i];
+            if (j >= 0) {
+                auto xi = srcParPos[i];
+                auto xj = dstParPos[j];
+                trans[i] = (xj - xi) / numTransFrames;
+                clrs[i] = onColor;
+                clrTrans[i] = vec3f{0, 0, 0};
+                missingDstPars[j] = 0;
+            } else {
+                trans[i] = vec3f{0, 0, 0};
+                clrs[i] = offColor;
+                clrTrans[i] = offColor / (-numTransFrames); // towards full black
+            }
+        });
+
+        std::vector<int> missingDstParOffsets(nDstPars + 1);
+        exclusive_scan(pol, std::begin(missingDstPars), std::end(missingDstPars), std::begin(missingDstParOffsets));
+        auto numTotalMissingPars = missingDstParOffsets.back();
+
+        pol(range(nDstPars), [&](int j) {
+            if (missingDstPars[j]) {
+                int i = missingDstParOffsets[j] + nSrcPars;
+                pos[i] = dstParPos[j];
+                trans[i] = vec3f{0, 0, 0};
+                clrs[i] = vec3f{0, 0, 0};
+                clrTrans[i] = onColor / numTransFrames; // towards full on (green)
+            }
+        });
+
+        set_output("anim_particles", std::move(prim));
+    }
+};
+ZENDEFNODE(SetupParticleTransitionDirect, {
+                                              {
+                                                  {"PrimitiveObject", "src_particles"},
+                                                  {"PrimitiveObject", "dst_particles"},
+                                                  {"string", "target_index_tag", "target_index"},
+                                                  {"string", "per_frame_translation_tag", "frame_translation"},
+                                                  {"string", "per_frame_clr_trans_tag", "trans_clr"},
+                                                  {"float", "rad", "2"},
+                                                  {"int", "num_transition_frames", "20"},
+                                                  {"PrimitiveObject", "anim_particles"},
+                                              },
+                                              {{"PrimitiveObject", "anim_particles"}},
+                                              {},
+                                              {"zs_geom"},
+                                          });
 
 struct AssociateParticlesFast : INode {
     void apply() override {
