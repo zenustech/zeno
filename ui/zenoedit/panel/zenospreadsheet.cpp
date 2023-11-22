@@ -52,10 +52,6 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
     pMode->setProperty("cssClass", "proppanel");
     pTitleLayout->addWidget(pMode);
 
-    connect(pMode, &ZComboBox::_textActivated, [=](const QString &text) {
-        this->dataModel->setSelAttr(text.toStdString());
-    });
-
     pMainLayout->addLayout(pTitleLayout);
 
     auto sortModel = new QSortFilterProxyModel(this);
@@ -89,6 +85,20 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
             if (key.find(prim_name) == 0 && key.find(zeno::format(":{}:", frame)) != std::string::npos) {
                 setPrim(key);
             }
+        }
+    });
+
+    connect(pMode, &ZComboBox::_textActivated, [=](const QString& text) {
+        this->dataModel->setSelAttr(text.toStdString());
+        // do not sort for userdata
+        if (text == "UserData") {
+            // reset sort order
+            sortModel->sort(-1);
+            prim_attr_view->horizontalHeader()->setSortIndicator(-1, Qt::SortOrder::AscendingOrder);
+            prim_attr_view->setSortingEnabled(false);
+        }
+        else {
+            prim_attr_view->setSortingEnabled(true);
         }
     });
 
