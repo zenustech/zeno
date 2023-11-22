@@ -8,6 +8,7 @@
 #include <string>
 #include <memory>
 #include <map>
+#include <set>
 
 namespace zenovis {
 
@@ -34,6 +35,18 @@ struct ObjectsManager : zeno::disable_copy {
     bool load_objects(std::map<std::string, std::shared_ptr<zeno::IObject>> const &objs);
 
     std::optional<zeno::IObject*> get(std::string nid);
+
+    //---determine update type accord to objs changes---
+    enum RenderType
+    {
+        UNDEFINED = 0,
+        UPDATE_ALL,
+        UPDATE_LIGHT_CAMERA,
+        UPDATE_MATERIAL
+    };
+    void determineRenderType(std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs);
+    RenderType renderType = UNDEFINED;
+    std::map<std::string, int> lastToViewNodesType;
 };
 
 }

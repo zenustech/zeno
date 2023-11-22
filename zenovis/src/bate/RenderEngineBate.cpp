@@ -38,7 +38,10 @@ struct RenderEngineBate : RenderEngine {
     }
 
     void update() override {
-        graphicsMan->load_objects(scene->objectsMan->pairsShared());
+        if (graphicsMan->load_objects(scene->objectsMan->pairsShared()))
+        {
+            scene->objectsMan->renderType = ObjectsManager::UNDEFINED;
+        }
     }
 
     void draw() override {

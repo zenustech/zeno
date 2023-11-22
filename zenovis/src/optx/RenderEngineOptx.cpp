@@ -844,16 +844,19 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         if (graphicsMan->load_objects(scene->objectsMan->pairs()))
         {
             meshNeedUpdate = matNeedUpdate = true;
-            if (scene->drawOptions->updateMatlOnly)
+            if (scene->objectsMan->renderType == ObjectsManager::UPDATE_MATERIAL)
             {
+                scene->drawOptions->updateMatlOnly = true;
                 lightNeedUpdate = meshNeedUpdate = false;
                 matNeedUpdate = true;
             }
-            if (scene->drawOptions->updateLightCameraOnly)
+            if (scene->objectsMan->renderType == ObjectsManager::UPDATE_LIGHT_CAMERA)
             {
+                scene->drawOptions->updateLightCameraOnly = true;
                 lightNeedUpdate = true;
                 matNeedUpdate = meshNeedUpdate = false;
             }
+            scene->objectsMan->renderType = ObjectsManager::UNDEFINED;
         }
         graphicsMan->load_shader_uniforms(scene->objectsMan->pairs());
     }
