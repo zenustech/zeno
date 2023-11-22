@@ -14,6 +14,7 @@
 #include <Alembic/AbcCoreHDF5/All.h>
 #include <Alembic/Abc/ErrorHandler.h>
 #include "ABCTree.h"
+#include "zeno/types/DictObject.h"
 #include <cstring>
 #include <cstdio>
 #include <filesystem>
@@ -338,6 +339,7 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
         auto &ud = prim->userData();
         std::vector<std::string> faceSetNames;
         mesh.getFaceSetNames(faceSetNames);
+        ud.set2("faceset_count", int(faceSetNames.size()));
         for (auto i = 0; i < faceSetNames.size(); i++) {
             auto n = faceSetNames[i];
             ud.set2(zeno::format("faceset_{:04}", i), n);
@@ -462,6 +464,7 @@ static std::shared_ptr<PrimitiveObject> foundABCSubd(Alembic::AbcGeom::ISubDSche
         auto &ud = prim->userData();
         std::vector<std::string> faceSetNames;
         subd.getFaceSetNames(faceSetNames);
+        ud.set2("faceset_count", int(faceSetNames.size()));
         for (auto i = 0; i < faceSetNames.size(); i++) {
             auto n = faceSetNames[i];
             ud.set2(zeno::format("faceset_{:04}", i), n);
@@ -751,5 +754,59 @@ ZENDEFNODE(ReadAlembic, {
     {},
     {"alembic"},
 });
+
+struct AlembicSplitByName: INode {
+    void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        int faceset_count = prim->userData().get2<int>("faceset_count");
+        {
+            auto namelist = std::make_shared<zeno::ListObject>();
+            for (auto f = 0; f < faceset_count; f++) {
+                auto name = prim->userData().get2<std::string>(zeno::format("faceset_{:04}", f));
+                namelist->arr.push_back(std::make_shared<StringObject>(name));
+            }
+            set_output("namelist", namelist);
+        }
+
+        {
+            std::map<int, AttrVector<vec2i>> faceset_map;
+            for (auto f = 0; f < faceset_count; f++) {
+                faceset_map[f] = {};
+            }
+            auto &faceset = prim->polys.add_attr<int>("faceset");
+            for (auto j = 0; j < faceset.size(); j++) {
+                auto f = faceset[j];
+                faceset_map[f].push_back(prim->polys[j]);
+            }
+            auto dict = std::make_shared<zeno::DictObject>();
+            for (auto f = 0; f < faceset_count; f++) {
+                auto name = prim->userData().get2<std::string>(zeno::format("faceset_{:04}", f));
+                auto new_prim = std::dynamic_pointer_cast<PrimitiveObject>(prim->clone());
+                if (faceset_map.count(f)) {
+                    new_prim->polys = faceset_map[f];
+                }
+                else {
+                    new_prim->polys.resize(0);
+                }
+                dict->lut[name] = std::move(new_prim);
+            }
+            set_output("dict", dict);
+
+        }
+    }
+};
+
+ZENDEFNODE(AlembicSplitByName, {
+    {
+        {"prim"},
+    },
+    {
+        {"DictObject", "dict"},
+        {"ListObject", "namelist"},
+    },
+    {},
+    {"alembic"},
+});
+
 
 } // namespace zeno
