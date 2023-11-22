@@ -105,6 +105,7 @@ public:
     void focusOn(const QString& nodeId);
     void showFloatPanel(const QModelIndex &subgIdx, const QModelIndexList &nodes);
     void selectNodes(const QModelIndexList &nodes);
+    void cameraFocus();
 
 protected:
     void keyPressEvent(QKeyEvent *event) override;

@@ -4,6 +4,7 @@
 
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/UserData.h>
 #include <zeno/utils/log.h>
 #include <glm/gtx/quaternion.hpp>
 #include <cmath>
@@ -798,12 +799,14 @@ constexpr T PERM(T x) {
 
 #define INDEX(ix, iy, iz) PERM((ix) + PERM((iy) + PERM(iz)))
 
-std::random_device rd;
-std::default_random_engine engine(rd());
+//std::random_device rd;
+//std::default_random_engine engine;
+int g_seed;
 std::uniform_real_distribution<float> d(0, 1);
 
 float impulseTab[256 * 4];
 void impulseTabInit() {
+    std::default_random_engine engine(g_seed);
     int i;
     float *f = impulseTab;
     for (i = 0; i < 256; i++) {
@@ -882,6 +885,120 @@ float scnoise(float x, float y, float z, int pulsenum, int griddist) {
     return sum / pulsenum;
 }
 
+//glm::vec4 hash42(glm::vec2 p)
+//{
+//    glm::vec4 p4 = fract(glm::vec4(p.x, p.y, p.x, p.y) * glm::vec4(.1031, .1030, .0973, .1099));
+//    p4 += dot(p4, glm::vec4(p4.w, p4.z, p4.x, p4.y)+33.33f);
+//    return fract(
+//            (glm::vec4(p4.x+p4.y, p4.x+p4.z, p4.y+p4.z, p4.z+p4.w))
+//            *glm::vec4(p4.z, p4.y, p4.w, p4.x));
+//
+//}
+
+struct NoiseImageGen : INode {
+    // quick tofix source:
+    // https://stackoverflow.com/questions/1903954/is-there-a-standard-sign-function-signum-sgn-in-c-c
+    template <typename T> int sgn(T val) {
+        return (T(0) < val) - (val < T(0));
+    }
+
+    virtual void apply() override {
+        auto perC = get_input2<bool>("noise per component");
+        auto image_size = get_input2<vec2i>("image size");
+        auto seed = get_input2<int>("seed");
+        auto turbulence = get_input2<int>("turbulence")+1; // tofix: think the case that turbulence = 0
+        auto roughness = get_input2<float>("roughness");
+        auto exponent = get_input2<float>("exponent");
+        auto frequency = get_input2<vec2f>("spatial frequency") * 0.001f; // tofix: mysterious scale?
+        auto amplitude = get_input2<vec4f>("amplitude");
+
+        auto image = std::make_shared<PrimitiveObject>();
+        image->verts.resize(image_size[0] * image_size[1]);
+        auto &alpha = image->verts.add_attr<float>("alpha");
+
+        // tofix: how to lock engine seed
+        // try a dumb way
+        g_seed = seed;
+
+#pragma omp parallel for
+        for (int i = 0; i < image_size[0] * image_size[1]; i++) {
+            vec2f p = vec2f(i % image_size[0], i / image_size[0]);
+
+            vec2f freq = frequency;
+            vec4f amp = amplitude;
+            float rough = roughness;
+
+            float r = 0;
+            float g = 0;
+            float b = 0;
+            float nval = 0;
+            vec4f max_possible_amp = vec4f(0);
+            for (int j = 0; j < turbulence; j++) {
+                max_possible_amp += amp;
+
+                if(perC) {
+                    nval = scnoise(p[0] * freq[0], p[1] * freq[1], p[0] * freq[0], 3, 2);
+                    r += nval * amp[0];
+                    nval = scnoise(p[0] * freq[0], p[0] * freq[0], p[1] * freq[1], 3, 2);
+                    g += nval * amp[1];
+                    nval = scnoise(p[1] * freq[1], p[0] * freq[0], p[0] * freq[0], 3, 2);
+                    b += nval * amp[2];
+                }
+                else{
+                    nval = scnoise(p[0] * freq[0], p[1] * freq[1], p[0] * freq[0], 3, 2);
+                    r += nval * amp[0];
+                    g += nval * amp[1];
+                    b += nval * amp[2];
+                }
+
+                freq *= 2.0f;
+                amp *= rough;
+            }
+
+            r /= max_possible_amp[0];
+            g /= max_possible_amp[1];
+            b /= max_possible_amp[2];
+            image->verts[i] = vec3f(
+                    sgn(r) * pow(abs(r), exponent) * amplitude[0],
+                    sgn(g) * pow(abs(g), exponent) * amplitude[1],
+                    sgn(b) * pow(abs(b), exponent) * amplitude[2]
+                );
+            if(perC) {
+                // tofix: ??? blackbox, is isolated from rgb,
+                // value does not change with rgb amplitude,
+                // Some random thought: maybe it has some relationship with rgb value when rgb amlitude set to 1;
+                alpha[i] = r+g+b * amplitude[3]; // r+g+b for placeholder
+            }
+            else{
+                alpha[i] = image->verts[i][0];
+            }
+        }
+        image->userData().set2("isImage", 1);
+        image->userData().set2("w", image_size[0]);
+        image->userData().set2("h", image_size[1]);
+        set_output("image", image);
+    }
+};
+ZENDEFNODE(NoiseImageGen, {
+    {
+        {"vec2i", "image size", "1920,1080"},
+//        {"enum sparse_convolution", "type", "sparse_convolution"},
+        {"int", "seed", "1"},
+        {"bool", "noise per component", "1"},
+        {"int", "turbulence", "1"},
+        {"float", "roughness", "0.5"},
+        {"float", "exponent", "1"},
+        {"vec2f", "spatial frequency", "10,10"},
+        {"vec4f", "amplitude", "1.0,1.0,1.0,1.0"},
+        // image planes?
+    },
+    {
+        {"PrimitiveObject", "image"},
+    },
+    {},
+    {"comp"},
+});
+
 struct erode_noise_sparse_convolution : INode {
     void apply() override {
 
@@ -945,7 +1062,6 @@ ZENDEFNODE(erode_noise_sparse_convolution, {/* inputs: */ {
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Gabor Noise
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//reference :https://github.com/jijup/OpenSN
 class pseudo_random_number_generator {
   public:
     void seed(unsigned s) {
@@ -1137,7 +1253,8 @@ glm::vec3 noise_random3(glm::vec3 p) {
 
 float noise_mydistance(glm::vec3 a, glm::vec3 b, int t) {
     if (t == 0) {
-        return length(a - b);
+        float d = length(a - b);
+        return d*d;
     }
     else if (t == 1) {
         float xx = abs(a.x - b.x);

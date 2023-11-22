@@ -1,0 +1,6 @@
+syntax = "proto3";
+package zeno.roads;
+
+message TestRoad {
+  string JustAnExample = 1;
+}

@@ -7,9 +7,8 @@
 #include <zeno/utils/log.h>
 #include <zenomodel/include/uihelper.h>
 #include "../view/zcomboboxitemdelegate.h"
-#include "zenoedit/zenoapplication.h"
-#include "../zpathedit.h"
 #include <QSvgRenderer>
+#include <zeno/extra/TempNode.h>
 
 
 ZenoParamWidget::ZenoParamWidget(QGraphicsItem* parent, Qt::WindowFlags wFlags)
@@ -81,6 +80,13 @@ ZenoGvLineEdit::ZenoGvLineEdit(QWidget* parent)
 void ZenoGvLineEdit::paintEvent(QPaintEvent* e)
 {
     QLineEdit::paintEvent(e);
+}
+
+void ZenoGvLineEdit::focusInEvent(QFocusEvent* e)
+{
+    QLineEdit::focusInEvent(e);
+    // Remove the text selection when the line edit gets focused
+    deselect();
 }
 
 
@@ -269,11 +275,27 @@ void ZenoParamPathEdit::mousePressEvent(QGraphicsSceneMouseEvent *event)
     QPointF pos = event->pos();
     if (buttonArea().contains(pos)) 
     {
-        QString path;
+        QString path = this->text();
+
+        // need to resolve the formula path?
+        /*
+        if (path.startsWith('=')) {
+            zeno::setConfigVariable("ZSG", zsg_path);
+            auto code = std::make_shared<zeno::StringObject>();
+            code->set(path.mid(1).toStdString());
+            auto outs = zeno::TempNodeSimpleCaller("StringEval")
+                .set("zfxCode", code)
+                .call();
+        */
+
+        QFileInfo fileInfo(path);
+        QDir dir = fileInfo.dir();
+        QString dirPath = dir.exists() ? dir.path() : "";
+
         if (m_control == CONTROL_READPATH) {
-            path = QFileDialog::getOpenFileName(nullptr, "File to Open", "", "All Files(*);;");
+            path = QFileDialog::getOpenFileName(nullptr, "File to Open", dirPath, "All Files(*);;");
         } else if (m_control == CONTROL_WRITEPATH) {
-            path = QFileDialog::getSaveFileName(nullptr, "Path to Save", "", "All Files(*);;");
+            path = QFileDialog::getSaveFileName(nullptr, "Path to Save", dirPath, "All Files(*);;");
         } else {
             path = QFileDialog::getExistingDirectory(nullptr, "Path to Save", "");
         }
@@ -555,7 +577,7 @@ ZenoParamComboBox::ZenoParamComboBox(const QStringList &items, ComboBoxParam par
     ZLineEdit* pLineEdit = new ZLineEdit(m_combobox);
     pLineEdit->setTextMargins(param.margins);
     pLineEdit->setPalette(param.palette);
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     pLineEdit->setFont(font);
     pLineEdit->setProperty("cssClass", "proppanel");
     pLineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
@@ -732,7 +754,7 @@ ZenoParamMultilineStr::ZenoParamMultilineStr(const QString &value, LineEditParam
     m_pTextEdit->setText(value);
 
 	//QTextCharFormat format;
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setPointSize(10);
     m_pTextEdit->setCurrentFont(font);
     m_pTextEdit->setFont(font);
@@ -1005,7 +1027,7 @@ QRectF ZenoParamGroupLine::boundingRect() const
 void ZenoParamGroupLine::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) 
 {
     //draw text
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     QFontMetrics fm(font);
     qreal width = fm.width(m_text);
     QPen pen;
@@ -1327,9 +1349,9 @@ ZenoMinStatusBtnItem::ZenoMinStatusBtnItem(const StatusComponent& statusComp, QG
     , m_minView(nullptr)
     , m_minOnce(nullptr)
 {
-    m_minMute = new ZenoImageItem(statusComp.mute, ZenoStyle::dpiScaledSize(QSize(48, 66)), this);
-    m_minOnce = new ZenoImageItem(statusComp.once, ZenoStyle::dpiScaledSize(QSize(48, 66)), this);
-    m_minView = new ZenoImageItem(statusComp.view, ZenoStyle::dpiScaledSize(QSize(37, 66)), this);
+    m_minMute = new ZenoImageItem(statusComp.mute, ZenoStyle::dpiScaledSize(QSize(56, 75)), this);
+    m_minOnce = new ZenoImageItem(statusComp.once, ZenoStyle::dpiScaledSize(QSize(56, 75)), this);
+    m_minView = new ZenoImageItem(statusComp.view, ZenoStyle::dpiScaledSize(QSize(42, 75)), this);
 	m_once = new ZenoImageItem(
         ":/icons/ONCE_dark.svg",
         ":/icons/ONCE_light.svg",
@@ -1364,8 +1386,8 @@ ZenoMinStatusBtnItem::ZenoMinStatusBtnItem(const StatusComponent& statusComp, QG
     m_view->hide();
 
     m_minOnce->setPos(QPointF(0, 0));
-    m_minMute->setPos(QPointF(ZenoStyle::dpiScaled(29), 0));
-    m_minView->setPos(QPointF(ZenoStyle::dpiScaled(58), 0));
+    m_minMute->setPos(QPointF(ZenoStyle::dpiScaled(34), 0));
+    m_minView->setPos(QPointF(ZenoStyle::dpiScaled(66), 0));
 
     QSizeF sz2 = m_once->size();
     qreal sMarginTwoBar = ZenoStyle::dpiScaled(4);

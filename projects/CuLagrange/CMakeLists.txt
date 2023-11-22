@@ -35,8 +35,10 @@ target_sources(zeno PRIVATE
 
 # pbd
 target_sources(zeno PRIVATE
-  pbd/PBDInit.cu
-  pbd/PBDPipeline.cu
+  pbd/Constraints.cu
+  pbd/SelfCollision.cu
+  pbd/KinematicCollision.cu
+  # pbd/Pipeline.cu
 )
 
 # fem-cloth
@@ -106,7 +108,7 @@ target_sources(zeno PRIVATE
   geometry/file_parser/vtk_types.hpp
   geometry/linear_system/mfcg.hpp
   geometry/linear_system/active_set.hpp
-  geometry/kernel/laplace_matrix.hpp
+  geometry/kernel/differential_geometry.hpp
   geometry/kernel/gradient_field.hpp
   geometry/kernel/bary_centric_weights.hpp
   geometry/kernel/compute_characteristic_length.hpp
@@ -127,6 +129,7 @@ target_sources(zeno PRIVATE
   # geometry/VectorField.cu
   geometry/CollisionVis.cu # CHECK THIS
   # geometry/CalcSurfaceArea.cu
+  geometry/BasicGeoNodes.cu
   geometry/MarkSurfaceTag.cu
   geometry/SurfaceBinder.cu
   geometry/MarkInversion.cu

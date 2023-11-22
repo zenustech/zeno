@@ -5,19 +5,26 @@ target_sources(zenovis PRIVATE
   optixPathTracer.cpp
   optixPathTracer.h
   OptiXStuff.h
+  Host.h
 
   volume/optixVolume.cpp
   volume/optixVolume.h
+  optixSphere.cpp
   optixSphere.h
-  
+  Shape.h
+  XAS.h
 
-  ies/ies_loader.cpp
-  ies/ies_loader.h
+  LightTree.cpp
+  LightTree.h
+  LightBounds.cpp
+  LightBounds.h
+  ies/ies.cpp
+  ies/ies.h
 
   SDK/sutil/Aabb.h              SDK/sutil/Quaternion.h
   SDK/sutil/Camera.cpp          SDK/sutil/Record.h
-  SDK/sutil/Camera.h            SDK/sutil/Scene.cpp
-  SDK/sutil/CUDAOutputBuffer.h  SDK/sutil/Scene.h
+  SDK/sutil/Camera.h            SDK/cuda/climits.h
+  SDK/sutil/CUDAOutputBuffer.h  SDK/cuda/cstdint.h
   SDK/sutil/Exception.h         SDK/sutil/sutilapi.h
   SDK/sutil/GLDisplay.cpp       SDK/sutil/sutil.cpp
   SDK/sutil/GLDisplay.h         SDK/sutil/sutil.h
@@ -59,6 +66,14 @@ target_include_directories(zenovis PRIVATE .)
 configure_file(sampleConfig.h.in ${CMAKE_CURRENT_BINARY_DIR}/sampleConfig.h @ONLY)
 target_include_directories(zenovis PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
+## The Chief Designer's Excellent Work BEG
+if (NOT ZENO_WITH_Alembic)
+    message(FATAL_ERROR "(Choice of the LK-99, Choice of the artists) The Chief Designer Peng requires you to enable -DZENO_WITH_Alembic=ON for building embed OpenEXR")
+else()
+    target_link_libraries(zenovis PRIVATE Alembic)
+endif()
+## The Chief Designer's Excellent Work END
+
 if (NOT DEFINED CUDAToolkit_BIN_DIR)
     message(FATAL_ERROR "CUDAToolkit_BIN_DIR not defined")
 endif()
@@ -78,24 +93,39 @@ set(FILE_LIST
     # ${CUDA_PATH}/include/@nvfunctional 
     ${CUDA_PATH}/include/@math_constants.h
     ${CUDA_PATH}/include/@vector_types.h
-    ${CUDA_PATH}/include/@vector_functions.h
+    ${CUDA_PATH}/include/@vector_functions.h    
 
     ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@cuda/random.h
     ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@cuda/helpers.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@cuda/climits.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@cuda/cstdint.h
+    
     ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@sutil/vec_math.h
     ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@sutil/Preprocessor.h
+    #include <zeno/types/LightObject.h>
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../zeno/include/@zeno/types/LightObject.h
+
     ${CMAKE_CURRENT_SOURCE_DIR}/@optixPathTracer.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@TraceStuff.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@PTKernel.cu
+    ${CMAKE_CURRENT_SOURCE_DIR}/@DefaultFallback.cu
     ${CMAKE_CURRENT_SOURCE_DIR}/@DeflMatShader.cu
     ${CMAKE_CURRENT_SOURCE_DIR}/@DisneyBRDF.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@DisneyBSDF.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@zxxglslvec.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@IOMat.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@proceduralSky.h
 
+    ${CMAKE_CURRENT_SOURCE_DIR}/@LightBounds.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@LightTree.h
+
+    ${CMAKE_CURRENT_SOURCE_DIR}/@Sampling.h    
+    ${CMAKE_CURRENT_SOURCE_DIR}/@Shape.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@Light.cu
+    ${CMAKE_CURRENT_SOURCE_DIR}/@Light.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@volume.cu
     ${CMAKE_CURRENT_SOURCE_DIR}/@volume.h
-
+    
     ${NVDB_PATH}/@nanovdb/NanoVDB.h
     ${NVDB_PATH}/@nanovdb/util/Ray.h
     ${NVDB_PATH}/@nanovdb/util/HDDA.h

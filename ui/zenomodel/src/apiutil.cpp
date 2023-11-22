@@ -117,7 +117,7 @@ QVariant ApiUtil::stdVarToQVar(const ZVARIANT& var)
         }
         case 9:
         {
-            zeno::vec4f vec = std::get<zeno::vec4f>(var);
+            zeno::vec4i vec = std::get<zeno::vec4i>(var);
             UI_VECTYPE qVec;
             qVec.push_back(vec[0]);
             qVec.push_back(vec[1]);
@@ -127,7 +127,7 @@ QVariant ApiUtil::stdVarToQVar(const ZVARIANT& var)
             break;
         }
         case 10: {
-            zeno::vec4i vec = std::get<zeno::vec4i>(var);
+            zeno::vec4f vec = std::get<zeno::vec4f>(var);
             UI_VECTYPE qVec;
             qVec.push_back(vec[0]);
             qVec.push_back(vec[1]);

@@ -10,7 +10,6 @@
 #include "zassert.h"
 #include <zenomodel/include/igraphsmodel.h>.
 #include <zenomodel/include/graphsmanagment.h>
-#include <zenoedit/zenoapplication.h>
 #include "variantptr.h"
 
 ZCurveMapEditor::ZCurveMapEditor(bool bTimeline, QWidget* parent)
@@ -210,7 +209,12 @@ void ZCurveMapEditor::addCurve(CurveModel *model)
 
     m_bate_rows.push_back(model);
     CurveGrid *pGrid = m_ui->gridview->gridItem();
-    pGrid->setCurvesColor(id, preset[id]);
+    QColor col;
+    if (!preset.contains(id))
+        col = QColor("#CE2F2F");
+    else
+        col = preset[id];
+    pGrid->setCurvesColor(id, col);
     pGrid->setCurvesVisible(id, model->getVisible());
 
     QStandardItem *pItem = new QStandardItem(model->id());
@@ -262,8 +266,7 @@ void ZCurveMapEditor::onAddCurveBtnClicked() {
     QStandardItem * pRootItem = m_channelModel->itemFromIndex(m_channelModel->index(0, 0));
     if (pRootItem->rowCount() != 3)
     {
-        IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
-        CurveModel *newCurve = curve_util::deflModel(pGraphsModel);
+        CurveModel *newCurve = curve_util::deflModel(this);
 
         if (pRootItem->child(0, 0) == NULL || pRootItem->child(0, 0)->data(Qt::DisplayRole) != "x")
         {

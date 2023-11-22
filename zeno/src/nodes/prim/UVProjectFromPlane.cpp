@@ -20,7 +20,9 @@
 #define STB_IMAGE_WRITE_STATIC
 #include <tinygltf/stb_image_write.h>
 #include <vector>
-#include <zeno/types/HeatmapObject.h>
+#include <glm/glm.hpp>
+//#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/transform.hpp>
 
 static const float eps = 0.0001f;
 
@@ -150,6 +152,11 @@ static vec3f Sample2DLinearClamp(vec2f texCoord, const vec3f* data, int w, int h
     return mix(mix(s1, s2, f[0]), mix(s3, s4, f[0]), f[1]);
 }
 struct PrimSample2D : zeno::INode {
+    static glm::vec3 mapplypos(glm::mat4 const &matrix, glm::vec3 const &vector) {
+        auto vector4 = matrix * glm::vec4(vector, 1.0f);
+        return glm::vec3(vector4) / vector4.w;
+    }
+
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         auto srcChannel = get_input2<std::string>("uvChannel");
@@ -159,6 +166,21 @@ struct PrimSample2D : zeno::INode {
         auto wrap = get_input2<std::string>("wrap");
         auto filter = get_input2<std::string>("filter");
         auto borderColor = get_input2<vec3f>("borderColor");
+
+        auto invertU = get_input2<bool>("invert U");
+        auto invertV = get_input2<bool>("invert V");
+        auto scale = get_input2<float>("scale");
+        auto rotate = get_input2<float>("rotate");
+        auto translate = get_input2<vec2f>("translate");
+
+        glm::vec3 pre_scale = glm::vec3(scale, scale, 0 );
+        if(invertU) pre_scale.x *= -1;
+        if(invertV) pre_scale.y *= -1;
+        glm::mat4 matScal  = glm::scale( pre_scale );
+        glm::mat4 matRot   = glm::rotate( (float)(rotate * M_PI / 180), glm::vec3(0,0,1) );
+        glm::mat4 matTrans = glm::translate(glm::vec3(translate[0], translate[1], 0));
+
+        auto matrix = glm::translate( glm::vec3(0.5,0.5,0) )*matTrans*matRot*matScal*glm::translate( glm::vec3(-0.5,-0.5,0) );
 
         if (!image->userData().has("isImage")) {
             throw zeno::Exception("not an image");
@@ -230,6 +252,10 @@ struct PrimSample2D : zeno::INode {
             auto &uv = prim->attr<zeno::vec3f>(srcChannel);
             #pragma omp parallel for
             for (auto i = 0; i < uv.size(); i++) {
+                auto coord = zeno::vec_to_other<glm::vec3>(uv[i]);
+                coord = mapplypos(matrix, coord);
+                uv[i] = zeno::other_to_vec<3>(coord);
+
                 clrs[i] = queryColor(uv[i], data, w, h, borderColor);
             }
         }
@@ -237,8 +263,20 @@ struct PrimSample2D : zeno::INode {
             auto uv0 = prim->tris.attr<vec3f>("uv0");
             auto uv1 = prim->tris.attr<vec3f>("uv1");
             auto uv2 = prim->tris.attr<vec3f>("uv2");
+
             #pragma omp parallel for
             for (auto i = 0; i < prim->tris.size(); i++) {
+                // not tested just for completeness
+                auto coord = zeno::vec_to_other<glm::vec3>(uv0[i]);
+                coord = mapplypos(matrix, coord);
+                uv0[i] = zeno::other_to_vec<3>(coord);
+                coord = zeno::vec_to_other<glm::vec3>(uv1[i]);
+                coord = mapplypos(matrix, coord);
+                uv1[i] = zeno::other_to_vec<3>(coord);
+                coord = zeno::vec_to_other<glm::vec3>(uv2[i]);
+                coord = mapplypos(matrix, coord);
+                uv2[i] = zeno::other_to_vec<3>(coord);
+
                 auto tri = prim->tris[i];
                 clrs[tri[0]] = queryColor(uv0[i], data, w, h, borderColor);
                 clrs[tri[1]] = queryColor(uv1[i], data, w, h, borderColor);
@@ -251,6 +289,13 @@ struct PrimSample2D : zeno::INode {
             #pragma omp parallel for
             for (auto i = 0; i < prim->loops.size(); i++) {
                 auto uv = prim->uvs[loopsuv[i]];
+
+                // not tested just for completeness
+                auto coord = zeno::vec_to_other<glm::vec3>({uv[0], uv[1], 0});
+                coord = mapplypos(matrix, coord);
+                auto temp = zeno::other_to_vec<3>(coord);
+                uv = {temp[0], temp[1]};
+
                 int index = prim->loops[i];
                 clrs[index] = queryColor({uv[0], uv[1], 0}, data, w, h, borderColor);
             }
@@ -275,6 +320,11 @@ ZENDEFNODE(PrimSample2D, {
         {"enum REPEAT CLAMP_TO_EDGE CLAMP_TO_BORDER", "wrap", "REPEAT"},
         {"enum nearest linear", "filter", "nearest"},
         {"vec3f", "borderColor", "0,0,0"},
+        {"bool", "invert U", "0"},
+        {"bool", "invert V", "0"},
+        {"float", "scale", "1"},
+        {"float", "rotate", "0"},
+        {"vec2f", "translate", "0,0"},
     },
     {
         {"PrimitiveObject", "outPrim"}
@@ -408,17 +458,6 @@ ZENDEFNODE(ReadImageFile, {
     {"comp"},
 });
 
-template<typename T>
-void image_flip_vertical(T *v, int w, int h) {
-    for (auto j = 0; j < h / 2; j++) {
-        for (auto i = 0; i < w; i++) {
-            auto index1 = i + j * w;
-            auto index2 = i + (h - j - 1) * w;
-            std::swap(v[index1], v[index2]);
-        }
-    }
-}
-
 struct ImageFlipVertical : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
@@ -441,7 +480,7 @@ ZENDEFNODE(ImageFlipVertical, {
         {"image"},
     },
     {},
-    {"comp"},
+    {"deprecated"},
 });
 
 void write_pfm(std::string& path, int w, int h, vec3f *rgb) {
@@ -529,7 +568,6 @@ struct WriteImageFile : INode {
         }
         else if(type == "exr"){
             std::vector<float> data2(w * h * n);
-            constexpr float gamma = 2.2f;
             for (int i = 0; i < w * h; i++) {
                 data2[n * i + 0] = image->verts[i][0];
                 data2[n * i + 1] = image->verts[i][1];
@@ -544,39 +582,13 @@ struct WriteImageFile : INode {
                 }
             }
 
-            // Create EXR header
-            EXRHeader header;
-            InitEXRHeader(&header);
-
-            // Set image width, height, and number of channels
-            header.num_channels = n;
-
-            // Create EXR image
-            EXRImage exrImage;
-            InitEXRImage(&exrImage);
-
-            // Set image data
-            exrImage.num_channels = n;
-            exrImage.width = w;
-            exrImage.height = h;
-            exrImage.images = reinterpret_cast<unsigned char**>(&data2[0]);
-
-            // Set image channel names (optional)
-            std::vector<std::string> channelNames = {"R", "G", "B", "A"};
-            header.channels = new EXRChannelInfo[n];
-            for (int i = 0; i < n; ++i) {
-                strncpy(header.channels[i].name, channelNames[i].c_str(), 255);
-                header.channels[i].name[strlen(channelNames[i].c_str())] = '\0';
-                header.channels[i].pixel_type = TINYEXR_PIXELTYPE_FLOAT;
-            }
-
             const char* err;
             path += ".exr";
             std::string native_path = std::filesystem::u8path(path).string();
             int ret = SaveEXR(data2.data(),w,h,n,0,native_path.c_str(),&err);
 
             if (ret != TINYEXR_SUCCESS) {
-                zeno::log_error("Error saving EXR file: %s\n", err);
+                zeno::log_error("Error saving EXR file: {}\n", err);
                 FreeEXRErrorMessage(err); // free memory allocated by the library
                 return;
             }
@@ -678,6 +690,52 @@ ZENDEFNODE(ImageFloatGaussianBlur, {
     },
     {
         {"image"},
+    },
+    {},
+    {"deprecated"},
+});
+
+struct EnvMapRot : INode {
+    virtual void apply() override {
+        auto path = get_input2<std::string>("path");
+        auto img = readImageFile(path);
+        int h = img->userData().get2<int>("h");
+        int w = img->userData().get2<int>("w");
+        int maxi = 0;
+
+        float maxv = zeno::dot(img->verts[0], zeno::vec3f(0.33, 0.33, 0.33));
+        for (auto i = 1; i < img->size(); i++) {
+            float value = zeno::dot(img->verts[i], zeno::vec3f(0.33, 0.33, 0.33));
+            if (value > maxv) {
+                maxi = i;
+                maxv = value;
+            }
+        }
+        int x = maxi % w;
+        int y = h - 1 - maxi / w;
+
+        float rot_phi = x / float(w) * 360 + 180;
+        set_output2("rotation", rot_phi);
+
+        float rot_theta = y / float(h - 1) * 180;
+
+        auto dir = get_input2<vec3f>("dir");
+        dir = zeno::normalize(dir);
+        auto to_rot_theta = glm::degrees(acos(dir[1]));
+        auto diff_rot_theta = to_rot_theta - rot_theta;
+
+        float rot_phi2 = glm::degrees(atan2(dir[2], dir[0]));
+        set_output2("rotation3d", vec3f(0, -rot_phi2, diff_rot_theta));
+    }
+};
+ZENDEFNODE(EnvMapRot, {
+    {
+        {"readpath", "path", ""},
+        {"vec3f", "dir", "1, 1, 1"},
+    },
+    {
+        {"float", "rotation"},
+        {"vec3f", "rotation3d"},
     },
     {},
     {"comp"},

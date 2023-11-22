@@ -218,6 +218,15 @@ __forceinline__ __device__ vec4 operator*(float b, vec4 a)
     return vec4(a.x*b, a.y*b, a.z*b, a.w*b);
 }
 
+__forceinline__ __device__ vec3 operator*(float3 b, vec3 a)
+{
+    return vec3(a.x*b.x, a.y*b.y, a.z*b.z);
+}
+__forceinline__ __device__ vec4 operator*(float4 b, vec4 a)
+{
+    return vec4(a.x*b.x, a.y*b.y, a.z*b.z, a.w*b.w);
+}
+
 __forceinline__ __device__ vec2 operator/(vec2 a, float b)
 {
     return vec2(a.x/b, a.y/b);
@@ -510,21 +519,21 @@ __forceinline__ __device__ vec4 inversesqrt(vec4 a)
 
 
 //////////////begin of common math/////////////////////////////////////////////////
-__forceinline__ __device__ float abs(float a)
-{
-    return float(fabsf(a));
-}
+// __forceinline__ __device__ float abs(float a)
+// {
+//     return float(fabsf(a));
+// }
 __forceinline__ __device__ vec2 abs(vec2 a)
 {
-    return vec2(abs(a.x), abs(a.y));
+    return vec2(fabsf(a.x), fabsf(a.y));
 }
 __forceinline__ __device__ vec3 abs(vec3 a)
 {
-    return vec3(abs(a.x), abs(a.y), abs(a.z));
+    return vec3(fabsf(a.x), fabsf(a.y), fabsf(a.z));
 }
 __forceinline__ __device__ vec4 abs(vec4 a)
 {
-    return vec4(abs(a.x), abs(a.y), abs(a.z), abs(a.w));
+    return vec4(fabsf(a.x), fabsf(a.y), fabsf(a.z), fabsf(a.w));
 }
 
 __forceinline__ __device__ float m_sign(float a)
@@ -924,6 +933,25 @@ __forceinline__ __device__ float length(vec4 a)
 {
     return sqrtf(dot(a,a));
 }
+
+template <typename T>
+__forceinline__ __device__ float lengthSquared(T a)
+{
+    return dot(a,a);
+}
+
+__forceinline__ __device__ float average(vec2 a)
+{
+    return (a.x + a.y) / 2.0f;
+}
+__forceinline__ __device__ float average(vec3 a)
+{
+    return (a.x + a.y + a.z) / 3.0f;
+}
+__forceinline__ __device__ float average(vec4 a)
+{
+    return (a.x + a.y + a.z + a.w) / 4.0f;
+}
 __forceinline__ __device__ vec2 normalize(vec2 a)
 {
     return a/(length(a)+1e-6f);
@@ -1149,7 +1177,7 @@ __forceinline__ __device__ float luminance(vec3 c) {
 }
 
 __forceinline__ __device__ float safepower(float in1, float in2) {
-    return sign(in1) * pow(abs(in1), in2);
+    return sign(in1) * powf(abs(in1), in2);
 }
 
 __forceinline__ __device__ vec2 safepower(vec2 in1, vec2 in2) {
@@ -1186,7 +1214,7 @@ __forceinline__ __device__ float sinTheta2(vec3 w) {
 }
 
 __forceinline__ __device__ float sinTheta(vec3 w) {
-    return sqrt(sinTheta2(w));
+    return sqrtf(sinTheta2(w));
 }
 
 __forceinline__ __device__ float tanTheta(vec3 w) {
@@ -1230,7 +1258,7 @@ __forceinline__ __device__ vec3 refract(vec3 I, vec3 N, float eta)
     return vec3(0,0,0);
   }
   else
-    return -eta * I + (eta * dot(N, I) - sqrt(k)) * N;
+    return -eta * I + (eta * dot(N, I) - sqrtf(k)) * N;
 }
 
 __forceinline__ __device__ unsigned int laine_karras_permutation(unsigned int x, unsigned int seed) {

@@ -22,10 +22,17 @@ public:
     ~PanelParamModel();
     void initParams(NodeParamModel* nodeParams);
     void importPanelParam(const VPARAM_INFO& invisibleRoot);
+    bool isDirty() const override;
+    void markDirty() override;
+    QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
+    bool isEditable(const QModelIndex& current) override;
 
 public slots:
     void onNodeParamsInserted(const QModelIndex &parent, int first, int last);
     void onNodeParamsAboutToBeRemoved(const QModelIndex &parent, int first, int last);
+
+private:
+    bool m_bDirty;
 };
 
 

@@ -2,6 +2,8 @@
 #include "znumslider.h"
 #include "style/zenostyle.h"
 #include <QSvgRenderer>
+#include "./dialog/curvemap/zcurvemapeditor.h"
+#include <zenomodel/include/uihelper.h>
 
 ZLineEdit::ZLineEdit(QWidget* parent)
     : QLineEdit(parent)
@@ -29,6 +31,7 @@ ZLineEdit::ZLineEdit(const QString& text, QWidget* parent)
 void ZLineEdit::init()
 {
     connect(this, SIGNAL(editingFinished()), this, SIGNAL(textEditFinished()));
+    //connect(this, &ZLineEdit::textChanged, this, &ZLineEdit::editingFinished);
 }
 
 void ZLineEdit::setShowingSlider(bool bShow)
@@ -69,6 +72,7 @@ void ZLineEdit::setNumSlider(const QVector<qreal>& steps)
             num = num + val;
             QString newText = QString::number(num);
             setText(newText);
+            emit editingFinished();
         }
     });
     connect(m_pSlider, &ZNumSlider::slideFinished, this, [=]() {

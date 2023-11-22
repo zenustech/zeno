@@ -9,20 +9,24 @@ class GroupTextItem : public QGraphicsWidget {
     GroupTextItem(QGraphicsItem *parent = nullptr);
     ~GroupTextItem();
     void setText(const QString &text);
+    QString text() const;
 
   signals:
     void mousePressSignal(QGraphicsSceneMouseEvent *event);
     void mouseMoveSignal(QGraphicsSceneMouseEvent *event);
     void mouseReleaseSignal(QGraphicsSceneMouseEvent *event);
+    void textChangedSignal(const QString &text);
 
   protected: 
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
+    void mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event) override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
 
   private:
     QString m_text;
+    ZEditableTextItem* m_pLineEdit;
 };
 
 
@@ -41,6 +45,7 @@ class GroupNode : public ZenoNode {
     void removeChildItem(ZenoNode *pNode);
     void updateChildRelativePos(const ZenoNode *item);
     void updateBlackboard();
+    void setSelected(bool selected) override;
 
   protected:
     ZLayoutBackground *initBodyWidget(ZenoSubGraphScene *pScene) override;

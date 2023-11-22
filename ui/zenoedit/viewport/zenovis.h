@@ -34,7 +34,6 @@ signals:
     void frameUpdated(int);
     void objectsUpdated(int);
     void frameDrawn(int);
-    void perspectiveUpdated(PerspectiveInfo);
 
 public slots:
     void startPlay(bool bPlaying);
@@ -50,18 +49,18 @@ public:
     int getCurrentFrameId();
     bool isPlaying() const;
     zenovis::Session *getSession() const;
-    void updatePerspective(QVector2D const &resolution, PerspectiveInfo const &perspective);
+    void updatePerspective(QVector2D const &resolution);
     void updateCameraFront(QVector3D center, QVector3D front, QVector3D up);
+    void setLoopPlaying(bool enable);
+    bool isLoopPlaying();
+    void cleanUpScene();
 
 //private:
     void doFrameUpdate();
 
-    //static QString sIoPath;
-
     int m_solver_frameid;
     int m_solver_interval;
     int m_render_fps;
-    PerspectiveInfo m_perspective;
     int m_cache_frames;
     bool m_playing;
     CameraKeyframeWidget* m_camera_keyframe{};
@@ -69,6 +68,7 @@ public:
     //QList<FRAME_FILE> m_frame_files;
 
     //bool m_bAddPoint = false;
+    bool m_loopPlaying = false;
 };
 
 #endif

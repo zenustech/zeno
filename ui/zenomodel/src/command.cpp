@@ -212,6 +212,55 @@ void ModelDataCommand::undo()
 }
 
 
+SetNetLabelCommand::SetNetLabelCommand(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndex& paramIdx, const QString& oldName, const QString& newName)
+    : m_model(pModel)
+    , m_param(paramIdx)
+    , m_subgIdx(subgIdx)
+    , m_oldName(oldName)
+    , m_newName(newName)
+{
+}
+
+void SetNetLabelCommand::redo()
+{
+    if (m_oldName.isEmpty()) {
+        ZASSERT_EXIT(!m_newName.isEmpty());
+        //new net label.
+        if (GraphsModel* pModel = qobject_cast<GraphsModel*>(m_model))
+            pModel->addNetLabel_impl(m_subgIdx, m_param, m_newName, false);
+    }
+    else if (m_newName.isEmpty()) {
+        //remove net label.
+        if (GraphsModel* pModel = qobject_cast<GraphsModel*>(m_model))
+            pModel->removeNetLabel_impl(m_subgIdx, m_param, m_oldName, false);
+    }
+    else {
+        //update net label.
+        m_model->updateNetLabel(m_subgIdx, m_param, m_oldName, m_newName, false);
+    }
+}
+
+void SetNetLabelCommand::undo()
+{
+    if (m_oldName.isEmpty()) {
+        if (!m_newName.isEmpty()) {
+            //remove net label.
+            if (GraphsModel* pModel = qobject_cast<GraphsModel*>(m_model))
+                pModel->removeNetLabel_impl(m_subgIdx, m_param, m_newName, false);
+        }
+    }
+    else if (m_newName.isEmpty()) {
+        //add net label.
+        if (GraphsModel* pModel = qobject_cast<GraphsModel*>(m_model))
+            pModel->addNetLabel_impl(m_subgIdx, m_param, m_oldName, false);
+    }
+    else {
+        //update net label.
+        m_model->updateNetLabel(m_subgIdx, m_param, m_newName, m_oldName, false);
+    }
+}
+
+
 UpdateSubgDescCommand::UpdateSubgDescCommand(IGraphsModel *pModel, const QString &subgraphName, const NODE_DESC newDesc)
     : m_model(pModel)
     , m_subgName(subgraphName)

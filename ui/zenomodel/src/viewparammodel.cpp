@@ -11,61 +11,15 @@
 #include "nodeitem.h"
 
 
-ViewParamModel::ViewParamModel(bool bNodeUI, IGraphsModel* pModel, QObject* parent)
+ViewParamModel::ViewParamModel(const QModelIndex& nodeIdx, IGraphsModel* pModel, QObject* parent)
     : QStandardItemModel(parent)
-    , m_bNodeUI(bNodeUI)
-    , m_model(pModel)
-    , m_bDirty(false)
+    , m_pGraphsModel(pModel)
 {
-    //initUI();
     setItemPrototype(new VParamItem(VPARAM_PARAM, ""));
 }
 
 ViewParamModel::~ViewParamModel()
 {
-}
-
-void ViewParamModel::initUI()
-{
-    /*default structure:
-                root
-                    |-- Tab (Default)
-                        |-- Inputs (Group)
-                            -- input param1 (Item)
-                            -- input param2
-                            ...
-
-                        |-- Params (Group)
-                            -- param1 (Item)
-                            -- param2 (Item)
-                            ...
-
-                        |- Outputs (Group)
-                            - output param1 (Item)
-                            - output param2 (Item)
-                ...
-            */
-    VParamItem* pRoot = new VParamItem(VPARAM_ROOT, "root");
-    pRoot->setEditable(false);
-
-    VParamItem* pTab = new VParamItem(VPARAM_TAB, "Default");
-    {
-        VParamItem* pInputsGroup = new VParamItem(VPARAM_GROUP, "In Sockets");
-        VParamItem* paramsGroup = new VParamItem(VPARAM_GROUP, "Parameters");
-        VParamItem* pOutputsGroup = new VParamItem(VPARAM_GROUP, "Out Sockets");
-
-        pInputsGroup->setData(!m_bNodeUI, ROLE_VAPRAM_EDITTABLE);
-        paramsGroup->setData(!m_bNodeUI, ROLE_VAPRAM_EDITTABLE);
-        pOutputsGroup->setData(!m_bNodeUI, ROLE_VAPRAM_EDITTABLE);
-
-        pTab->appendRow(pInputsGroup);
-        pTab->appendRow(paramsGroup);
-        pTab->appendRow(pOutputsGroup);
-    }
-    pTab->setData(!m_bNodeUI, ROLE_VAPRAM_EDITTABLE);
-
-    pRoot->appendRow(pTab);
-    appendRow(pRoot);
 }
 
 QModelIndex ViewParamModel::indexFromPath(const QString& path)
@@ -229,49 +183,6 @@ Qt::ItemFlags ViewParamModel::flags(const QModelIndex& index) const
     return itemFlags;
 }
 
-void ViewParamModel::arrangeOrder(const QStringList& inputKeys, const QStringList& outputKeys)
-{
-    if (!m_bNodeUI)
-        return;
-
-    QStandardItem* rootItem = invisibleRootItem()->child(0);
-    if (!rootItem)
-        return;
-
-    ZASSERT_EXIT(rootItem->rowCount() == 1);
-    QStandardItem* pTab = rootItem->child(0);
-
-    for (int i = 0; i < pTab->rowCount(); i++)
-    {
-        VParamItem* pGroup = static_cast<VParamItem*>(pTab->child(i));
-        const QString& groupName = pGroup->data(ROLE_VPARAM_NAME).toString();
-        if (groupName == "In Sockets")
-        {
-            for (int k = 0; k < inputKeys.size(); k++)
-            {
-                const QString &kthName = inputKeys[k];
-                int srcRow = 0;
-                pGroup->getItem(kthName, &srcRow);
-
-                QModelIndex parentIdx = pGroup->index();
-                moveRows(parentIdx, srcRow, 1, parentIdx, k);
-            }
-        }
-        else if (groupName == "Out Sockets")
-        {
-            for (int k = 0; k < outputKeys.size(); k++)
-            {
-                const QString& kthName = outputKeys[k];
-                int srcRow = 0;
-                pGroup->getItem(kthName, &srcRow);
-
-                QModelIndex parentIdx = pGroup->index();
-                moveRows(parentIdx, srcRow, 1, parentIdx, k);
-            }
-        }
-    }
-}
-
 bool ViewParamModel::moveRows(
         const QModelIndex& sourceParent,
         int srcRow,
@@ -363,7 +274,7 @@ bool ViewParamModel::dropMimeData(const QMimeData* data, Qt::DropAction action, 
 
     if (!coreparam.isEmpty())
     {
-        QModelIndex refIdx = m_model->indexFromPath(coreparam);
+        QModelIndex refIdx = m_pGraphsModel->indexFromPath(coreparam);
         pItem->mapCoreParam(refIdx);
         pItem->setData(true, ROLE_VPARAM_IS_COREPARAM);
         //copy inner type and value.
@@ -384,39 +295,6 @@ bool ViewParamModel::dropMimeData(const QMimeData* data, Qt::DropAction action, 
     return true;
 }
 
-
-void ViewParamModel::getNodeParams(QModelIndexList& inputs, QModelIndexList& params, QModelIndexList& outputs)
-{
-    if (!m_bNodeUI)
-        return;
-
-    QStandardItem *rootItem = invisibleRootItem()->child(0);
-    if (!rootItem)
-        return;
-
-    if (rootItem->rowCount() == 0)
-        return;
-
-    QStandardItem* pDefaultTab = rootItem->child(0);
-    for (int i = 0; i < pDefaultTab->rowCount(); i++)
-    {
-        QStandardItem* pGroup = pDefaultTab->child(i);
-        const QString& groupName = pGroup->data(ROLE_VPARAM_NAME).toString();
-        for (int j = 0; j < pGroup->rowCount(); j++)
-        {
-            QStandardItem* paramItem = pGroup->child(j);
-            const QModelIndex& idx = paramItem->index();
-            if (groupName == "In Sockets") {
-                inputs.append(idx);
-            } else if (groupName == "Parameters") {
-                params.append(idx);
-            } else if (groupName == "Out Sockets") {
-                outputs.append(idx);
-            }
-        }
-    }
-}
-
 VPARAM_INFO ViewParamModel::exportParams() const
 {
     VParamItem* rootItem = static_cast<VParamItem*>(invisibleRootItem()->child(0));
@@ -427,7 +305,7 @@ VPARAM_INFO ViewParamModel::exportParams() const
 
 IGraphsModel* ViewParamModel::graphsModel() const
 {
-    return m_model;
+    return m_pGraphsModel;
 }
 
 QVariant ViewParamModel::data(const QModelIndex& index, int role) const
@@ -488,13 +366,11 @@ bool ViewParamModel::isNodeModel() const
 
 bool ViewParamModel::isDirty() const
 {
-    return m_bDirty;
+    return false;
 }
 
 void ViewParamModel::markDirty()
 {
-    m_bDirty = true;
-    m_model->markDirty();
 }
 
 void ViewParamModel::clone(ViewParamModel* pModel)
@@ -514,8 +390,6 @@ void ViewParamModel::clone(ViewParamModel* pModel)
 
 bool ViewParamModel::isEditable(const QModelIndex &current) 
 {
-    bool bCoreParam = current.data(ROLE_VPARAM_IS_COREPARAM).toBool();
-    if (bCoreParam)
         return false;
     int type = current.data(ROLE_VPARAM_TYPE).toInt();
     if (type == VPARAM_GROUP) 

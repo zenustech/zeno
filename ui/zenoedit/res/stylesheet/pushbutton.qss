@@ -332,3 +332,57 @@ QPushButton[cssClass="CoreParam"]
 	color: #FFFFFF;
 	padding:3px 3px;
 }
+
+QPushButton[cssClass="select_subgraph"]
+{
+	background-color: transparent;
+	color: #FFFFFF;
+	border:0;
+	text-align:left;
+}
+
+QPushButton#closebtn
+{
+	background-color: transparent;
+    border-image: url(:/icons/closebtn.svg);
+	border:0;
+}
+
+QPushButton#closebtn:hover
+{
+	border-image: url(:/icons/closebtn_on.svg);
+}
+
+ZTextIconButton
+{
+    border-radius: 2px;
+	background-color:#465363;
+	border:0;
+}
+
+ZTextIconButton:hover
+{
+	background-color:#667890;
+}
+
+
+ZTextIconButton QPushButton
+{
+	border-image: url(:/icons/RunKill.svg);
+	background-color: transparent;
+    border-top-right-radius:2px;
+	border-bottom-right-radius:2px;
+	border:0;
+}
+
+ZTextIconButton QPushButton:hover
+{
+	border-image: url(:/icons/RunKill_on.svg);
+}
+
+ZTextIconButton QLabel
+{
+	color:#FFFFFF;
+	padding:0px 10px;
+	background-color: transparent;
+}

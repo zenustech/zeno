@@ -21,6 +21,15 @@
 #include "viewport/cameracontrol.h"
 
 
+bool sceneMenuEvent(
+    ZenoSubGraphScene* pScene,
+    const QPointF& pos,
+    const QPointF& scenePos,
+    const QList<QGraphicsItem*>& seledItems,
+    const QList<QGraphicsItem*>& items,
+    const QModelIndex& subgIdx);
+
+
 _ZenoSubGraphView::_ZenoSubGraphView(QWidget *parent)
     : QGraphicsView(parent)
     , m_scene(nullptr)
@@ -213,6 +222,9 @@ void _ZenoSubGraphView::focusOn(const QString& nodeId, const QPointF& pos, bool 
             QRectF rcBounding = pNode->sceneBoundingRect();
             //rcBounding.adjust(-rcBounding.width(), -rcBounding.height(), rcBounding.width(), rcBounding.height());
             fitInView(rcBounding, Qt::KeepAspectRatio);
+            target_scene_pos = rcBounding.center();
+            editor_factor = transform().m11();
+            emit zoomed(editor_factor);
         }
     }
 }
@@ -226,7 +238,9 @@ void _ZenoSubGraphView::initScene(ZenoSubGraphScene* pScene)
     setScene(m_scene);
     QRectF rect = m_scene->nodesBoundingRect();
     fitInView(rect, Qt::KeepAspectRatio);
-    gentle_zoom(1.0);
+    target_scene_pos = rect.center();
+    editor_factor = transform().m11();
+    emit zoomed(editor_factor);
 }
 
 void _ZenoSubGraphView::setPath(const QString& path)
@@ -257,6 +271,7 @@ void _ZenoSubGraphView::scaleBy(qreal scaleFactor)
     scale(sc, sc);
     //centerOn(target_scene_pos);
     editor_factor = transform().m11();
+    m_scene->onZoomed(editor_factor);
 }
 
 void _ZenoSubGraphView::setScale(qreal scale)
@@ -400,7 +415,7 @@ void _ZenoSubGraphView::wheelEvent(QWheelEvent* event)
         //executing zoom
         QVector<qreal> factors = UiHelper::scaleFactors();
         qreal zoomFactor = transform().m11();
-        qreal spread = zoomFactor/10;
+        qreal spread = zoomFactor / 5;
         if (event->angleDelta().y() > 0)
             zoomFactor += spread;
         else if (event->angleDelta().y() < 0)
@@ -422,6 +437,11 @@ bool _ZenoSubGraphView::eventFilter(QObject* watched, QEvent* event)
 
 void _ZenoSubGraphView::focusOutEvent(QFocusEvent* event)
 {
+    if (m_dragMove)
+    {
+        m_dragMove = false;
+        setDragMode(QGraphicsView::NoDrag);
+    }
     QGraphicsView::focusOutEvent(event);
 }
 
@@ -441,47 +461,13 @@ void _ZenoSubGraphView::resizeEvent(QResizeEvent* event)
 void _ZenoSubGraphView::contextMenuEvent(QContextMenuEvent* event)
 {
     QPoint pos = event->pos();
+    QPointF scenePos = mapToScene(pos);
 
     QList<QGraphicsItem*> seledItems = m_scene->selectedItems();
-    QSet<ZenoNode*> nodeSets;
-    for (QGraphicsItem* pItem : seledItems)
-    {
-        if (ZenoNode* pNode = qgraphicsitem_cast<ZenoNode*>(pItem))
-        {
-            nodeSets.insert(pNode);
-        }
-    }
-
-    if (nodeSets.size() > 1)
-    {
-        //todo: group operation.
-        QMenu* nodeMenu = new QMenu;
-        QAction* pCopy = new QAction("Copy");
-        QAction* pDelete = new QAction("Delete");
-
-        nodeMenu->addAction(pCopy);
-        nodeMenu->addAction(pDelete);
-
-        nodeMenu->exec(QCursor::pos());
-        nodeMenu->deleteLater();
-        return;
-    }
-
-    nodeSets.clear();
     QList<QGraphicsItem*> tempList = this->items(pos);
- 
-    for (QGraphicsItem* pItem : tempList)
-    {
-        if (ZenoNode* pNode = qgraphicsitem_cast<ZenoNode*>(pItem))
-        {
-            if (qobject_cast<GroupNode *>(pNode) == nullptr)
-                nodeSets.insert(pNode);
-        }
-    }
 
-    if (nodeSets.size() == 1)
-    {
-        //send to scene/ZenoNode.
+    bool ret = sceneMenuEvent(m_scene, pos, scenePos, seledItems, tempList, m_scene->subGraphIndex());
+    if (!ret) {
         QGraphicsView::contextMenuEvent(event);
     }
     else
@@ -498,7 +484,7 @@ void _ZenoSubGraphView::contextMenuEvent(QContextMenuEvent* event)
 void _ZenoSubGraphView::drawGrid(QPainter* painter, const QRectF& rect)
 {
     //background color
-    painter->fillRect(rect, QColor("#13191f"));
+    painter->fillRect(rect, QColor("#1d1d1d"));
     bool showGrid = ZenoSettingsManager::GetInstance().getValue(zsShowGrid).toBool();
     if (showGrid)
     {
@@ -581,7 +567,7 @@ void LayerPathWidget::setPath(const QString& path)
 
         ZTextLabel* pLabel = new ZTextLabel;
         pLabel->setText(item);
-        QFont font = zenoApp->font();
+        QFont font = QApplication::font();
         font.setPointSize(11);
         pLabel->setFont(font);
         pLabel->setTextColor(QColor(129, 125, 123));
@@ -592,7 +578,7 @@ void LayerPathWidget::setPath(const QString& path)
         {
             pLabel = new ZTextLabel;
             pLabel->setText(">");
-            QFont font = zenoApp->font();
+            QFont font = QApplication::font();
             font.setPointSize(11);
             font.setBold(true);
             pLabel->setFont(font);
@@ -704,7 +690,10 @@ void ZenoSubGraphView::focusOn(const QString& nodeId)
 
 void ZenoSubGraphView::showFloatPanel(const QModelIndex &subgIdx, const QModelIndexList &nodes) {
     if (m_floatPanelShow) {
-        if (m_prop == nullptr || nodes[0] != m_lastSelectedNode) {
+        if (nodes.isEmpty() && m_prop) {
+            m_prop->onNodesSelected(subgIdx, nodes, true);
+            m_lastSelectedNode = QModelIndex();
+        } else if (m_prop == nullptr || nodes[0] != m_lastSelectedNode) {
             if (m_prop == nullptr) {
                 m_prop = new DockContent_Parameter(this);
                 m_prop->initUI();
@@ -716,9 +705,8 @@ void ZenoSubGraphView::showFloatPanel(const QModelIndex &subgIdx, const QModelIn
             m_prop->onNodesSelected(subgIdx, nodes, true);
 
             m_lastSelectedNode = nodes[0];
-        } else {
-            m_floatPanelShow = !m_prop->isVisible();
-            m_prop->setVisible(!m_prop->isVisible());
+        } else if (!m_prop->isVisible()) {
+            m_prop->setVisible(m_floatPanelShow);
         }
         m_prop->move(this->width() - m_prop->width(), 0);
     }
@@ -731,6 +719,11 @@ void ZenoSubGraphView::selectNodes(const QModelIndexList &indexs)
     {
         scene->select(indexs);
     }
+}
+
+void ZenoSubGraphView::cameraFocus()
+{
+    m_view->cameraFocus();
 }
 
 void ZenoSubGraphView::keyPressEvent(QKeyEvent *event) {
@@ -749,10 +742,10 @@ void ZenoSubGraphView::keyPressEvent(QKeyEvent *event) {
         ZenoSubGraphScene *scene = qobject_cast<ZenoSubGraphScene *>(m_view->scene());
         if (scene != NULL)
         {
-            if (scene->selectNodesIndice().size() == 1) {
+            if (scene->selectNodesIndice().size() == 1 && (!m_prop || m_prop->isHidden())) {
                 m_floatPanelShow = true;
                 showFloatPanel(scene->subGraphIndex(), scene->selectNodesIndice());
-            } else if (scene->selectNodesIndice().size() == 0 && m_prop != NULL && m_prop->isVisible()) {
+            } else if (/*scene->selectNodesIndice().size() == 0 && */m_prop != NULL && m_prop->isVisible()) {
                 m_prop->hide();
                 m_floatPanelShow = false;
             }

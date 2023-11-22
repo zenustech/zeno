@@ -27,7 +27,7 @@ namespace zeno {
 
 namespace {
 
-static void zenoedge(std::shared_ptr<PrimitiveObject> &grayImage, int width, int height, std::vector<float> &dx,
+/*static void zenoedge(std::shared_ptr<PrimitiveObject> &grayImage, int width, int height, std::vector<float> &dx,
                      std::vector<float> &dy) {
     dx.resize(width * height);
     dy.resize(width * height);
@@ -51,83 +51,21 @@ static void zenoedge(std::shared_ptr<PrimitiveObject> &grayImage, int width, int
             dy[y * width + x] = gy;
         }
     }
-}
-
-// 计算法向量
-static void normalMap(std::shared_ptr<PrimitiveObject> &grayImage, int width, int height, std::vector<float> &normal) {
-    std::vector<float> dx, dy;
-    zenoedge(grayImage, width, height, dx, dy);
-    normal.resize(width * height * 3);
-
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
-            int i = y * width + x;
-            float gx = dx[i];
-            float gy = dy[i];
-
-            float normalX = -gx;
-            float normalY = -gy;
-            float normalZ = 1.0f;
-
-            float length = sqrt(normalX * normalX + normalY * normalY + normalZ * normalZ);
-            normalX /= length;
-            normalY /= length;
-            normalZ /= length;
-
-            normal[i * 3 + 0] = normalX;
-            normal[i * 3 + 1] = normalY;
-            normal[i * 3 + 2] = normalZ;
-        }
-    }
-}
-
-static void scharr2(std::shared_ptr<PrimitiveObject> &src, std::shared_ptr<PrimitiveObject> &dst, int width, int height,
-        int threshold) {
-    std::vector<int> gx(width * height);
-    std::vector<int> gy(width * height);
-    dst->verts.resize(width * height);
-
-    // Calculate gradients
-    for (int y = 1; y < height - 1; ++y) {
-        for (int x = 1; x < width - 1; ++x) {
-            int idx = y * width + x;
-            gx[idx] = (-3 * src->verts[(y - 1) * width + x - 1][0] - 10 * src->verts[y * width + x - 1][0] -
-                       3 * src->verts[(y + 1) * width + x - 1][0] +
-                       3 * src->verts[(y - 1) * width + x + 1][0] + 10 * src->verts[y * width + x + 1][0] +
-                       3 * src->verts[(y + 1) * width + x + 1][0]);
-            gy[idx] = (-3 * src->verts[(y - 1) * width + x - 1][0] - 10 * src->verts[(y - 1) * width + x][0] -
-                       3 * src->verts[(y - 1) * width + x + 1][0] +
-                       3 * src->verts[(y + 1) * width + x - 1][0] + 10 * src->verts[(y + 1) * width + x][0] +
-                       3 * src->verts[(y + 1) * width + x + 1][0]);
-        }
-    }
-    // Calculate gradient magnitude
-    for (int y = 1; y < height - 1; ++y) {
-        for (int x = 1; x < width - 1; ++x) {
-            int idx = y * width + x;
-            int mag = std::sqrt(gx[idx] * gx[idx] + gy[idx] * gy[idx]);
-            if (mag * 255 > threshold) {
-                dst->verts[idx] = {1, 1, 1};
-            } else {
-                dst->verts[idx] = {0, 0, 0};
-            }
-            float g = std::min(1, std::max(0, mag));
-            dst->verts[idx] = {g, g, g};
-        }
-    }
-}
+}*/
 
 struct ImageEdgeDetect : INode {
     void apply() override {
         std::shared_ptr<PrimitiveObject> image = get_input2<PrimitiveObject>("image");
         auto mode = get_input2<std::string>("mode");
-        int threshold = get_input2<int>("threshold");
-        int maxThreshold = get_input2<int>("maxThreshold");
+        float kernelSize = get_input2<float>("KernelSize");
+        //float scale = get_input2<float>("scale");
+        //float delta = get_input2<float>("delta");
+        //int borderType = get_input2<int>("borderType");
         auto &ud = image->userData();
         int w = ud.get2<int>("w");
         int h = ud.get2<int>("h");
-
-        if (mode == "zeno_gray") {
+        float var = 1;
+        /*if (mode == "zeno_gray") {
             std::vector<float> dx, dy;
             zenoedge(image, w, h, dx, dy);
             for (int i = 0; i < h; i++) {
@@ -156,73 +94,40 @@ struct ImageEdgeDetect : INode {
                 }
             }
             set_output("image", image);
-        }
-        if (mode == "sobel_gray") {
+        }*/
+        if (mode == "Sobel") {
             cv::Mat imagecvin(h, w, CV_32F);
-            cv::Mat imagecvout(h, w, CV_32F);
-            int var = 1;
+#pragma omp parallel for
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
                     vec3f rgb = image->verts[i * w + j];
-                    var = 255 * (rgb[0] + rgb[1] + rgb[2]) / 3;
+                    var = rgb[0] * 0.299 + rgb[1] * 0.587 + rgb[2] *0.114;//TODO:: detect rgb three channel?
                     imagecvin.at<float>(i, j) = var;
                 }
             }
-
             cv::Mat gradX, gradY;
-            cv::Sobel(imagecvin, gradX, CV_32F, 1, 0);
-            cv::Sobel(imagecvin, gradY, CV_32F, 0, 1);
-
-            cv::Mat gradientMagnitude, gradientDirection;
-            cv::cartToPolar(gradX, gradY, imagecvout, gradientDirection, true);
-
+            //cv::Sobel(imagecvin, gradX, CV_32F, 1, 0, kernelSize,scale,delta,borderType);
+            cv::Sobel(imagecvin, gradX, CV_32F, 1, 0, kernelSize);
+            cv::Sobel(imagecvin, gradY, CV_32F, 0, 1, kernelSize);
+#pragma omp parallel for
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
-                    float r = float(imagecvout.at<float>(i, j)) / 255.f;
-                    image->verts[i * w + j] = {r, r, r};
+                    float magnitude = abs(gradX.at<float>(i, j)) + abs(gradY.at<float>(i, j));//manhattan distance？ not euclidean distance
+                    image->verts[i * w + j] = {magnitude, magnitude, magnitude};
                 }
             }
             set_output("image", image);
         }
-        if (mode == "sobel_threshold") {
-            cv::Mat imagecvin(h, w, CV_32F);
-            cv::Mat imagecvout(h, w, CV_32F);
-            int var = 1;
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    vec3f rgb = image->verts[i * w + j];
-                    var = 255 * (rgb[0] + rgb[1] + rgb[2]) / 3;
-                    imagecvin.at<float>(i, j) = var;
-                }
-            }
-
-            cv::Mat gradX, gradY;
-            cv::Sobel(imagecvin, gradX, CV_32F, 1, 0);
-            cv::Sobel(imagecvin, gradY, CV_32F, 0, 1);
-
-            cv::Mat gradientMagnitude, gradientDirection;
-            cv::cartToPolar(gradX, gradY, gradientMagnitude, gradientDirection, true);
-
-            cv::threshold(gradientMagnitude, imagecvout, threshold, maxThreshold, cv::THRESH_BINARY);
-            for (int i = 0; i < h; i++) {
-
-                for (int j = 0; j < w; j++) {
-                    float r = float(imagecvout.at<float>(i, j)) / 255.f;
-                    image->verts[i * w + j] = {r, r, r};
-                }
-            }
-            set_output("image", image);
-        }
-        if (mode == "roberts_gray") {
+        else if (mode == "Roberts") {
             cv::Mat imagecvin(h, w, CV_32F);
             cv::Mat imagecvout(h, w, CV_32F);
             cv::Mat robertsX, robertsY;
             cv::Mat magnitude;
-            int var = 1;
+#pragma omp parallel for
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
                     vec3f rgb = image->verts[i * w + j];
-                    var = 255 * (rgb[0] + rgb[1] + rgb[2]) / 3;
+                    var = (rgb[0] * 0.299 + rgb[1] * 0.587 + rgb[2] *0.114);
                     imagecvin.at<float>(i, j) = var;
                 }
             }
@@ -233,26 +138,23 @@ struct ImageEdgeDetect : INode {
             cv::filter2D(imagecvin, robertsY, -1, kernelY);
 
             cv::magnitude(robertsX, robertsY, imagecvout);
-
+#pragma omp parallel for
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
-                    float r = float(imagecvout.at<float>(i, j)) / 255.f;
-                    image->verts[i * w + j] = {r, r, r};
+                    image->verts[i * w + j] = vec3f(imagecvout.at<float>(i, j));
                 }
             }
             set_output("image", image);
         }
-
-        if (mode == "roberts_threshold") {
+        /*if (mode == "roberts_threshold") {
             cv::Mat imagecvin(h, w, CV_32F);
             cv::Mat imagecvout(h, w, CV_32F);
             cv::Mat robertsX, robertsY;
             cv::Mat magnitude;
-            int var = 1;
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
                     vec3f rgb = image->verts[i * w + j];
-                    var = 255 * (rgb[0] + rgb[1] + rgb[2]) / 3;
+                    var = 255 * (rgb[0] * 0.299 + rgb[1] * 0.587 + rgb[2] *0.114);
                     imagecvin.at<float>(i, j) = var;
                 }
             }
@@ -269,17 +171,17 @@ struct ImageEdgeDetect : INode {
                 }
             }
             set_output("image", image);
-        }
-        if (mode == "roberts_gray") {
+        }*/
+        else if (mode == "Prewitt") {
             cv::Mat imagecvin(h, w, CV_32F);
             cv::Mat imagecvout(h, w, CV_32F);
             cv::Mat edges;
             cv::Mat prewittX, prewittY;
-            int var = 1;
+#pragma omp parallel for
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
                     vec3f rgb = image->verts[i * w + j];
-                    var = 255 * (rgb[0] + rgb[1] + rgb[2]) / 3;
+                    var =  (rgb[0] * 0.299 + rgb[1] * 0.587 + rgb[2] *0.114);
                     imagecvin.at<float>(i, j) = var;
                 }
             }
@@ -290,55 +192,15 @@ struct ImageEdgeDetect : INode {
             cv::filter2D(imagecvin, prewittY, -1, kernelY);
 
             cv::magnitude(prewittX, prewittY, imagecvout);
-
+#pragma omp parallel for
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
-                    float r = float(imagecvout.at<float>(i, j)) / 255.f;
-                    image->verts[i * w + j] = {r, r, r};
+                    image->verts[i * w + j] = vec3f(imagecvout.at<float>(i, j));
                 }
             }
             set_output("image", image);
         }
-        if (mode == "roberts_threshold") {
-            cv::Mat imagecvin(h, w, CV_32F);
-            cv::Mat imagecvout(h, w, CV_32F);
-            cv::Mat edges;
-            cv::Mat prewittX, prewittY;
-            cv::Mat magnitude;
-            int var = 1;
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    vec3f rgb = image->verts[i * w + j];
-                    var = 255 * (rgb[0] + rgb[1] + rgb[2]) / 3;
-                    imagecvin.at<float>(i, j) = var;
-                }
-            }
-            cv::Mat kernelX = (cv::Mat_<float>(3, 3) << -1, 0, 1, -1, 0, 1, -1, 0, 1);
-            cv::filter2D(imagecvin, prewittX, -1, kernelX);
-
-            cv::Mat kernelY = (cv::Mat_<float>(3, 3) << -1, -1, -1, 0, 0, 0, 1, 1, 1);
-            cv::filter2D(imagecvin, prewittY, -1, kernelY);
-
-            cv::magnitude(prewittX, prewittY, magnitude);
-
-            cv::threshold(magnitude, imagecvout, threshold, maxThreshold, cv::THRESH_BINARY);
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    float r = float(imagecvout.at<float>(i, j)) / 255.f;
-                    image->verts[i * w + j] = {r, r, r};
-                }
-            }
-            set_output("image", image);
-        }
-        if (mode == "canny_gray") {
-            cv::Mat imagecvin(h, w, CV_8U);
-            cv::Mat imagecvout(h, w, CV_8U);
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    vec3f rgb = image->verts[i * w + j];
-                    imagecvin.at<uchar>(i, j) = int(rgb[0] * 255);
-                }
-            }
+        /*if (mode == "Canny") {//TODO：： Canny opencv only accept 8bit image
             cv::Mat thresholdImage;
             int maxValue = 255;  // 最大像素值
             int blockSize = 3;  // 邻域块大小
@@ -349,32 +211,13 @@ struct ImageEdgeDetect : INode {
             int apertureSize = 3;  // 孔径大小，默认为 3
             bool L2gradient = false;  // 使用 L1 范数计算梯度幅值
             cv::Canny(thresholdImage, imagecvout, 0, 0, apertureSize, L2gradient);
-
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    float r = float(imagecvout.at<uchar>(i, j)) / 255.f;
-                    image->verts[i * w + j] = {r, r, r};
-                }
-            }
             set_output("image", image);
         }
         if (mode == "canny_threshold") {
-            cv::Mat imagecvin(h, w, CV_8U);
-            cv::Mat imagecvout(h, w, CV_8U);
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    vec3f rgb = image->verts[i * w + j];
-                    imagecvin.at<uchar>(i, j) = int(rgb[0] * 255);
-                }
-            }
             cv::Canny(imagecvin, imagecvout, threshold, maxThreshold);
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    float r = float(imagecvout.at<uchar>(i, j)) / 255.f;
-                    image->verts[i * w + j] = {r, r, r};
-                }
-            }
-            set_output("image", image);
+        }*/
+        else{
+            throw zeno::Exception("mode not supported");
         }
     }
 };
@@ -382,9 +225,10 @@ struct ImageEdgeDetect : INode {
 ZENDEFNODE(ImageEdgeDetect, {
     {
         { "image" },
-        { "enum zeno_gray zeno_threshold sobel_gray sobel_threshold roberts_gray roberts_threshold prewitt_gray prewitt_threshold canny_gray canny_threshold", "mode", "sobel_gray" },
-        { "float", "threshold", "50" },
-        { "float", "maxThreshold", "9999" },
+        { "enum Sobel Roberts Prewitt", "mode", "Sobel" },
+        //{ "float", "threshold", "50" },
+        //{ "float", "maxThreshold", "9999" },
+        { "float", "KernelSize", "3"}
     },
     {
         { "image" }
@@ -393,192 +237,11 @@ ZENDEFNODE(ImageEdgeDetect, {
     { "image" },
 });
 
-struct ImageEdgeDetectDIY : INode {
+struct ImageEdgeDetectMarr : INode {//TODO::not finished?
     void apply() override {
         std::shared_ptr<PrimitiveObject> image = get_input2<PrimitiveObject>("image");
-        auto mode = get_input2<std::string>("mode");
-        auto ktop = get_input2<vec3f>("kerneltop");
-        auto kmid = get_input2<vec3f>("kernelmid");
-        auto kbot = get_input2<vec3f>("kernelbot");
-        int threshold = get_input2<int>("threshold");
-        int maxThreshold = get_input2<int>("maxThreshold");
-        auto &ud = image->userData();
-        int w = ud.get2<int>("w");
-        int h = ud.get2<int>("h");
-
-        if (mode == "diy_gray") {
-            cv::Mat imagecvin(h, w, CV_32F);
-            cv::Mat imagecvout(h, w, CV_32F);
-            cv::Mat edges;
-            cv::Mat prewittX, prewittY;
-            int var = 1;
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    vec3f rgb = image->verts[i * w + j];
-                    var = 255 * (rgb[0] + rgb[1] + rgb[2]) / 3;
-                    imagecvin.at<float>(i, j) = var;
-                }
-            }
-            cv::Mat kernelX = (cv::Mat_<float>(3, 3) << ktop[0], kmid[0], kbot[0],
-                    ktop[1], kmid[1], kbot[1],
-                    ktop[2], kmid[2], kbot[2]);
-            cv::filter2D(imagecvin, prewittX, -1, kernelX);
-
-            cv::Mat kernelY = (cv::Mat_<float>(3, 3) << ktop[0], kmid[1], kbot[2],
-                    kmid[0], kmid[1], kbot[2],
-                    kbot[0], kmid[1], kbot[2]);
-            cv::filter2D(imagecvin, prewittY, -1, kernelY);
-            cv::magnitude(prewittX, prewittY, imagecvout);
-
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    float r = float(imagecvout.at<float>(i, j)) / 255.f;
-                    image->verts[i * w + j] = {r, r, r};
-                }
-            }
-            set_output("image", image);
-        }
-
-        if (mode == "diy_threshold") {
-            cv::Mat imagecvin(h, w, CV_32F);
-            cv::Mat imagecvout(h, w, CV_32F);
-            cv::Mat edges;
-            cv::Mat prewittX, prewittY;
-            cv::Mat magnitude;
-            int var = 1;
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    vec3f rgb = image->verts[i * w + j];
-                    var = 255 * (rgb[0] + rgb[1] + rgb[2]) / 3;
-                    imagecvin.at<float>(i, j) = var;
-                }
-            }
-            cv::Mat kernelX = (cv::Mat_<float>(3, 3) << ktop[0], kmid[0], kbot[0],
-                    ktop[1], kmid[1], kbot[1],
-                    ktop[2], kmid[2], kbot[2]);
-            cv::filter2D(imagecvin, prewittX, -1, kernelX);
-
-            cv::Mat kernelY = (cv::Mat_<float>(3, 3) << ktop[0], kmid[1], kbot[2],
-                    kmid[0], kmid[1], kbot[2],
-                    kbot[0], kmid[1], kbot[2]);
-            cv::filter2D(imagecvin, prewittY, -1, kernelY);
-
-            cv::magnitude(prewittX, prewittY, magnitude);
-
-            cv::threshold(magnitude, imagecvout, threshold, maxThreshold, cv::THRESH_BINARY);
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    float r = float(imagecvout.at<float>(i, j)) / 255.f;
-                    image->verts[i * w + j] = {r, r, r};
-                }
-            }
-            set_output("image", image);
-        }
-    }
-};
-
-ZENDEFNODE(ImageEdgeDetectDIY, {
-    {
-        { "image" },
-        { "enum diy_gray diy_threshold", "mode", "diy_gray" },
-        { "vec3f", "kerneltop", "-1,-2,-1" },
-        { "vec3f", "kernelmid", "0,0,0" },
-        { "vec3f", "kernelbot", "1,2,1" },
-        { "float", "threshold", "50" },
-        { "float", "maxThreshold", "9999" },
-    },
-    {
-        { "image" }
-    },
-    {},
-    { "deprecated" },
-});
-
-struct ImageEdgeDetectSobel : INode {
-    void apply() override {
-        std::shared_ptr<PrimitiveObject> image = get_input2<PrimitiveObject>("image");
-        auto mode = get_input2<std::string>("mode");
-        int threshold = get_input2<int>("threshold");
-        int maxThreshold = get_input2<int>("maxThreshold");
-        auto &ud = image->userData();
-        int w = ud.get2<int>("w");
-        int h = ud.get2<int>("h");
-
-        if (mode == "sobel_gray") {
-            cv::Mat imagecvin(h, w, CV_32F);
-            cv::Mat imagecvout(h, w, CV_32F);
-            int var = 1;
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    vec3f rgb = image->verts[i * w + j];
-                    var = 255 * (rgb[0] + rgb[1] + rgb[2]) / 3;
-                    imagecvin.at<float>(i, j) = var;
-                }
-            }
-            cv::Mat gradX, gradY;
-            cv::Sobel(imagecvin, gradX, CV_32F, 1, 0);
-            cv::Sobel(imagecvin, gradY, CV_32F, 0, 1);
-            cv::Mat gradientMagnitude, gradientDirection;
-            cv::cartToPolar(gradX, gradY, imagecvout, gradientDirection, true);
-
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    float r = float(imagecvout.at<float>(i, j)) / 255.f;
-                    image->verts[i * w + j] = {r, r, r};
-                }
-            }
-            set_output("image", image);
-        }
-
-        if (mode == "sobel_threshold") {
-            cv::Mat imagecvin(h, w, CV_32F);
-            cv::Mat imagecvout(h, w, CV_32F);
-            int var = 1;
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    vec3f rgb = image->verts[i * w + j];
-                    var = 255 * (rgb[0] + rgb[1] + rgb[2]) / 3;
-                    imagecvin.at<float>(i, j) = var;
-                }
-            }
-            cv::Mat gradX, gradY;
-            cv::Sobel(imagecvin, gradX, CV_32F, 1, 0);
-            cv::Sobel(imagecvin, gradY, CV_32F, 0, 1);
-            cv::Mat gradientMagnitude, gradientDirection;
-            cv::cartToPolar(gradX, gradY, gradientMagnitude, gradientDirection, true);
-            cv::threshold(gradientMagnitude, imagecvout, threshold, maxThreshold, cv::THRESH_BINARY);
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    float r = float(imagecvout.at<float>(i, j)) / 255.f;
-                    image->verts[i * w + j] = {r, r, r};
-                }
-            }
-            set_output("image", image);
-        }
-    }
-};
-
-ZENDEFNODE(ImageEdgeDetectSobel, {
-    {
-        { "image" },
-        { "enum sobel_gray sobel_threshold", "mode", "sobel_gray" },
-        { "float", "threshold", "50" },
-        { "float", "maxThreshold", "9999" },
-    },
-    {
-        { "image" }
-    },
-    {},
-    { "image" },
-});
-
-//parallel
-struct ImageEdgeDetectMarr : INode { 
-    void apply() override {
-        std::shared_ptr<PrimitiveObject> image = get_input2<PrimitiveObject>("image");
-        //auto mode = get_input2<std::string>("mode");
         auto kerneldiameter = get_input2<int>("kernelDiameter");
-        auto sigma = get_input2<float>("sigma");
+        auto sigma = get_input2<float>("Gaussian Standard deviation");
         auto threshold = get_input2<float>("threshold");
         auto &ud = image->userData();
         int w = ud.get2<int>("w");
@@ -593,42 +256,12 @@ struct ImageEdgeDetectMarr : INode {
                  kernel[i + kernel_size][j + kernel_size] = kernelvalue;
             }
         }
-        //std::vector<std::vector<float>> laplacian(w - kernel_size * 2, std::vector<float>(h - kernel_size * 2)); // too samll?
         std::vector<std::vector<float>> laplacian(w, std::vector<float>(h));
-/*
-//only gray image...
-        for (int i = kernel_size; i < w - kernel_size; i++) { // w h 的顺序？
-            for (int j = kernel_size; j < h - kernel_size; j++) {
-                double sum = 0;
-                for (int x = -kernel_size; x <= kernel_size; x++){
-                    for (int y = -kernel_size; y <= kernel_size; y++) { //bound?
-                        sum +=  image->verts[(i + x) * w + j + y][0] * 255 * kernel[x + kernel_size][y + kernel_size];
-                    }
-                }
-                laplacian[i - kernel_size][j - kernel_size] = sum;
-            }
-        }
-
-
-        for (int i = 1; i < w - kernel_size * 2 - 1; i++) {//各种优化融合，，，
-            for (int j = 1; j < h - kernel_size * 2 - 1; j++) {
-                //这里的0是threshold
-                if ((laplacian[i - 1][j] * laplacian[i + 1][j] < threshold) || (laplacian[i][j + 1] * laplacian[i][j - 1] < threshold) || 
-                (laplacian[i + 1][j - 1] * laplacian[i - 1][j + 1] < threshold) || (laplacian[i - 1][j - 1] * laplacian[i + 1][j + 1] < threshold)) 
-                {
-                    image->verts[i * w + j] = {1, 1, 1};
-                    //bound
-                }
-                else {
-                    image->verts[i * w + j] = {0, 0, 0};
-                }
-            }*/
 
 #pragma omp parallel for
-        // mix the two for loop
         for (int y = 0; y < h ; y++) {
             for (int x = 0; x < w ; x++){
-                double sum = 0;
+                float sum = 0;
                 for (int i = 0; i < kerneldiameter; i++){
                     for (int j = 0; j < kerneldiameter; j++) {
 
@@ -637,7 +270,7 @@ struct ImageEdgeDetectMarr : INode {
 
                         if (kernelX >= 0 && kernelX < w && kernelY >= 0 && kernelY < h) {
 
-                            sum += image->verts[kernelY * w + kernelX][0] * 255 * kernel[i][j];
+                            sum += (image->verts[kernelY * w + kernelX][0]) * 255.99 * kernel[i][j];//maybe this cause problem
                         }
                     }
                 }
@@ -646,12 +279,13 @@ struct ImageEdgeDetectMarr : INode {
             }
         }
 
-#pragma omp parallel for  //上面有问题 这里等下再看看
-        for (int i = 1; i < h-1; i++) {//没有i/j = 0的情况，，，
+#pragma omp parallel for  
+        for (int i = 1; i < h-1; i++) {
             for (int j = 1; j < w-1; j++) {
-                //这里的0是threshold
-                if ((laplacian[i - 1][j] * laplacian[i + 1][j] < threshold) || (laplacian[i][j + 1] * laplacian[i][j - 1] < threshold) || 
-                (laplacian[i + 1][j - 1] * laplacian[i - 1][j + 1] < threshold) || (laplacian[i - 1][j - 1] * laplacian[i + 1][j + 1] < threshold)) 
+                if ((laplacian[i - 1][j] * laplacian[i + 1][j] < threshold) 
+                || (laplacian[i][j + 1] * laplacian[i][j - 1] < threshold) 
+                || (laplacian[i + 1][j - 1] * laplacian[i - 1][j + 1] < threshold) 
+                || (laplacian[i - 1][j - 1] * laplacian[i + 1][j + 1] < threshold)) 
                 {
                     image->verts[i * w + j] = {1, 1, 1};
                     //bound
@@ -671,9 +305,9 @@ struct ImageEdgeDetectMarr : INode {
 ZENDEFNODE(ImageEdgeDetectMarr, {
     {
         { "image" },
-        { "float", "kernelDiameter", "3" },
-        { "float", "sigma", "1.6" },
-        { "float", "threshold", "0.05" },
+        { "float", "kernelDiameter", "5" },
+        { "float", "Gaussian Standard deviation", "0.8" },
+        { "float", "threshold", "0" },
     },
     {
         { "image" }
@@ -682,249 +316,7 @@ ZENDEFNODE(ImageEdgeDetectMarr, {
     { "image" },
 });
 
-struct ImageEdgeDetectRoberts : INode {
-    void apply() override {
-        std::shared_ptr<PrimitiveObject> image = get_input2<PrimitiveObject>("image");
-        auto mode = get_input2<std::string>("mode");
-        int threshold = get_input2<int>("threshold");
-        int maxThreshold = get_input2<int>("maxThreshold");
-        auto &ud = image->userData();
-        int w = ud.get2<int>("w");
-        int h = ud.get2<int>("h");
-
-        if (mode == "roberts_gray") {
-            cv::Mat imagecvin(h, w, CV_32F);
-            cv::Mat imagecvout(h, w, CV_32F);
-            cv::Mat robertsX, robertsY;
-            cv::Mat magnitude;
-            int var = 1;
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    vec3f rgb = image->verts[i * w + j];
-                    var = 255 * (rgb[0] + rgb[1] + rgb[2]) / 3;
-                    imagecvin.at<float>(i, j) = var;
-                }
-            }
-            cv::Mat kernelX = (cv::Mat_<float>(2, 2) << 1, 0, 0, -1);
-            cv::filter2D(imagecvin, robertsX, -1, kernelX);
-            cv::Mat kernelY = (cv::Mat_<float>(2, 2) << 0, 1, -1, 0);
-            cv::filter2D(imagecvin, robertsY, -1, kernelY);
-            cv::magnitude(robertsX, robertsY, imagecvout);
-
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    float r = float(imagecvout.at<float>(i, j)) / 255.f;
-                    image->verts[i * w + j] = {r, r, r};
-                }
-            }
-            set_output("image", image);
-        }
-
-        if (mode == "roberts_threshold") {
-            cv::Mat imagecvin(h, w, CV_32F);
-            cv::Mat imagecvout(h, w, CV_32F);
-            cv::Mat robertsX, robertsY;
-            cv::Mat magnitude;
-            int var = 1;
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    vec3f rgb = image->verts[i * w + j];
-                    var = 255 * (rgb[0] + rgb[1] + rgb[2]) / 3;
-                    imagecvin.at<float>(i, j) = var;
-                }
-            }
-            cv::Mat kernelX = (cv::Mat_<float>(2, 2) << 1, 0, 0, -1);
-            cv::filter2D(imagecvin, robertsX, -1, kernelX);
-            cv::Mat kernelY = (cv::Mat_<float>(2, 2) << 0, 1, -1, 0);
-            cv::filter2D(imagecvin, robertsY, -1, kernelY);
-            cv::magnitude(robertsX, robertsY, magnitude);
-            cv::threshold(magnitude, imagecvout, threshold, maxThreshold, cv::THRESH_BINARY);
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    float r = float(imagecvout.at<float>(i, j)) / 255.f;
-                    image->verts[i * w + j] = {r, r, r};
-                }
-            }
-            set_output("image", image);
-        }
-    }
-};
-
-ZENDEFNODE(ImageEdgeDetectRoberts, {
-    {
-        { "image" },
-        { "enum roberts_gray roberts_threshold", "mode", "roberts_gray" },
-        { "float", "threshold", "50" },
-        { "float", "maxThreshold", "255" },
-    },
-    {
-        { "image" }
-    },
-    {},
-    { "image" },
-});
-
-struct ImageEdgeDetectPrewitt : INode {
-    void apply() override {
-        std::shared_ptr<PrimitiveObject> image = get_input2<PrimitiveObject>("image");
-        auto mode = get_input2<std::string>("mode");
-        int threshold = get_input2<int>("threshold");
-        int maxThreshold = get_input2<int>("maxThreshold");
-        auto &ud = image->userData();
-        int w = ud.get2<int>("w");
-        int h = ud.get2<int>("h");
-
-        if (mode == "roberts_gray") {
-            cv::Mat imagecvin(h, w, CV_32F);
-            cv::Mat imagecvout(h, w, CV_32F);
-            cv::Mat edges;
-            cv::Mat prewittX, prewittY;
-            int var = 1;
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    vec3f rgb = image->verts[i * w + j];
-                    var = 255 * (rgb[0] + rgb[1] + rgb[2]) / 3;
-                    imagecvin.at<float>(i, j) = var;
-                }
-            }
-            cv::Mat kernelX = (cv::Mat_<float>(3, 3) << -1, 0, 1, -1, 0, 1, -1, 0, 1);
-            cv::filter2D(imagecvin, prewittX, -1, kernelX);
-
-            cv::Mat kernelY = (cv::Mat_<float>(3, 3) << -1, -1, -1, 0, 0, 0, 1, 1, 1);
-            cv::filter2D(imagecvin, prewittY, -1, kernelY);
-
-            cv::magnitude(prewittX, prewittY, imagecvout);
-
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    float r = float(imagecvout.at<float>(i, j)) / 255.f;
-                    image->verts[i * w + j] = {r, r, r};
-                }
-            }
-            set_output("image", image);
-        }
-
-        if (mode == "roberts_threshold") {
-            cv::Mat imagecvin(h, w, CV_32F);
-            cv::Mat imagecvout(h, w, CV_32F);
-            cv::Mat edges;
-            cv::Mat prewittX, prewittY;
-            cv::Mat magnitude;
-            int var = 1;
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    vec3f rgb = image->verts[i * w + j];
-                    var = 255 * (rgb[0] + rgb[1] + rgb[2]) / 3;
-                    imagecvin.at<float>(i, j) = var;
-                }
-            }
-            cv::Mat kernelX = (cv::Mat_<float>(3, 3) << -1, 0, 1, -1, 0, 1, -1, 0, 1);
-            cv::filter2D(imagecvin, prewittX, -1, kernelX);
-
-            cv::Mat kernelY = (cv::Mat_<float>(3, 3) << -1, -1, -1, 0, 0, 0, 1, 1, 1);
-            cv::filter2D(imagecvin, prewittY, -1, kernelY);
-
-            cv::magnitude(prewittX, prewittY, magnitude);
-
-            cv::threshold(magnitude, imagecvout, threshold, maxThreshold, cv::THRESH_BINARY);
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    float r = float(imagecvout.at<float>(i, j)) / 255.f;
-                    image->verts[i * w + j] = {r, r, r};
-                }
-            }
-            set_output("image", image);
-        }
-    }
-};
-
-ZENDEFNODE(ImageEdgeDetectPrewitt, {
-    {
-        { "image" },
-        { "enum prewitt_gray prewitt_threshold", "mode", "prewitt_gray" },
-        { "float", "threshold", "50" },
-        { "float", "maxThreshold", "255" },
-    },
-    {
-        { "image" }
-    },
-    {},
-    { "image" },
-});
-
-struct ImageEdgeDetectCanny : INode {
-    void apply() override {
-        std::shared_ptr<PrimitiveObject> image = get_input2<PrimitiveObject>("image");
-        auto mode = get_input2<std::string>("mode");
-        int threshold1 = get_input2<int>("threshold1");
-        int threshold2 = get_input2<int>("threshold2");
-        auto &ud = image->userData();
-        int w = ud.get2<int>("w");
-        int h = ud.get2<int>("h");
-
-        if (mode == "canny_gray") {
-            cv::Mat imagecvin(h, w, CV_8U);
-            cv::Mat imagecvout(h, w, CV_8U);
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    vec3f rgb = image->verts[i * w + j];
-                    imagecvin.at<uchar>(i, j) = int(rgb[0] * 255);
-                }
-            }
-            cv::Mat thresholdImage;
-            int maxValue = 255;  // 最大像素值
-            int blockSize = 3;  // 邻域块大小
-            double C = 2;
-            cv::adaptiveThreshold(imagecvin, thresholdImage, maxValue, cv::ADAPTIVE_THRESH_MEAN_C,
-                                  cv::THRESH_BINARY, blockSize, C);
-
-            int apertureSize = 3;  // 孔径大小，默认为 3
-            bool L2gradient = false;  // 使用 L1 范数计算梯度幅值
-            cv::Canny(thresholdImage, imagecvout, 0, 0, apertureSize, L2gradient);
-
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    float r = float(imagecvout.at<uchar>(i, j)) / 255.f;
-                    image->verts[i * w + j] = {r, r, r};
-                }
-            }
-            set_output("image", image);
-        }
-        if (mode == "canny_threshold") {
-            cv::Mat imagecvin(h, w, CV_8U);
-            cv::Mat imagecvout(h, w, CV_8U);
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    vec3f rgb = image->verts[i * w + j];
-                    imagecvin.at<uchar>(i, j) = int(rgb[0] * 255);
-                }
-            }
-            cv::Canny(imagecvin, imagecvout, threshold1, threshold2, 3, false);
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    float r = float(imagecvout.at<uchar>(i, j)) / 255.f;
-                    image->verts[i * w + j] = {r, r, r};
-                }
-            }
-            set_output("image", image);
-        }
-    }
-};
-
-ZENDEFNODE(ImageEdgeDetectCanny, {
-    {
-        { "image" },
-        { "enum canny_gray canny_threshold", "mode", "canny_gray" },
-        { "float", "threshold1", "100" },
-        { "float", "threshold2", "200" },
-    },
-    {
-        { "image" }
-    },
-    {},
-    { "image" },
-});
-
+/*
 struct ImageStitching : INode {
     void apply() override {
         auto image1 = get_input<PrimitiveObject>("image1");
@@ -996,79 +388,6 @@ ZENDEFNODE(ImageStitching, {
     { "image" },
 });
 
-//struct ImageStitchingList: INode {
-//    void apply() override {
-//        auto primList = get_input<ListObject>("listPrim")->getRaw<PrimitiveObject>();
-//        auto mode = get_input2<std::string>("mode");
-//        auto &ud1 = image1->userData();
-//        int w1 = ud1.get2<int>("w");
-//        int h1 = ud1.get2<int>("h");
-////        auto &ud2 = image2->userData();
-////        int w2 = ud2.get2<int>("w");
-////        int h2 = ud2.get2<int>("h");
-//        auto nFeatures = get_input2<float>("nFeatures");
-//        auto scaleFactor = get_input2<float>("scaleFactor");
-//        auto edgeThreshold = get_input2<float>("edgeThreshold");
-//        auto patchSize = get_input2<float>("patchSize");
-//        cv::Mat imagecvin1(h1, w1, CV_8UC3);
-////        cv::Mat imagecvin2(h2, w2, CV_8UC3);
-//        cv::Mat descriptors1, descriptors2;
-//        std::vector<cv::KeyPoint> ikeypoints;
-//        for (int i = 0; i < h1; i++) {
-//            for (int j = 0; j < w1; j++) {
-//                vec3f rgb1 = image1->verts[i * w1 + j];
-//                cv::Vec3b& pixel = imagecvin1.at<cv::Vec3b>(i, j);
-//                pixel[0] = rgb1[0] * 255;
-//                pixel[1] = rgb1[1] * 255;
-//                pixel[2] = rgb1[2] * 255;
-//            }
-//        }
-//        for (int i = 0; i < h2; i++) {
-//            for (int j = 0; j < w2; j++) {
-//                vec3f rgb2 = image2->verts[i * w2 + j];
-//                cv::Vec3b& pixel = imagecvin2.at<cv::Vec3b>(i, j);
-//                pixel[0] = rgb2[0] * 255;
-//                pixel[1] = rgb2[1] * 255;
-//                pixel[2] = rgb2[2] * 255;
-//            }
-//        }
-//        std::vector<cv::Mat> images;
-//        images.push_back(imagecvin1);
-//        images.push_back(imagecvin2);
-//        cv::Ptr<cv::Stitcher> stitcher = cv::Stitcher::create();
-//        cv::Mat result;
-//        cv::Stitcher::Status status = stitcher->stitch(images, result);
-//        if (status == cv::Stitcher::OK) {
-//            int w = result.cols;
-//            int h = result.rows;
-//            image1->verts.resize(w*h);
-//            ud1.set2("w",w);
-//            ud1.set2("h",h);
-//            for (int i = 0; i < h; i++) {
-//                for (int j = 0; j < w; j++) {
-//                    cv::Vec3b pixel = result.at<cv::Vec3b>(i, j);
-//                    image1->verts[i * w + j][0] = static_cast<float>(pixel[0])/255;
-//                    image1->verts[i * w + j][1] = static_cast<float>(pixel[1])/255;
-//                    image1->verts[i * w + j][2] = static_cast<float>(pixel[2])/255;
-//                }
-//            }
-//        } else {
-//            zeno::log_info("stitching failed");
-//        }
-//        set_output("image", image1);
-//    }
-//};
-//
-//ZENDEFNODE(ImageStitchingList, {
-//    {
-//        {"list", "listPrim"},
-//    },
-//    {
-//        { "image" },
-//    },
-//    {},
-//    { "image" },
-//});
 struct ImageFeatureDetectORB : INode {
     void apply() override {
         auto image = get_input<PrimitiveObject>("image");
@@ -1976,7 +1295,7 @@ ZENDEFNODE(Image3DAnalyze, {
     {},
     { "image" },
 });
-
+*/
 struct CreateCameraMatrix : INode {
     void apply() override {
         auto top = get_input2<vec3f>("top");

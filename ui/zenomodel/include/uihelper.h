@@ -56,6 +56,7 @@ public:
     static QString getSockName(const QString& sockPath);
     static QString getParamPath(const QString& sockPath);
     static QString getSockSubgraph(const QString& sockPath);
+    static QString getNaiveParamPath(const QModelIndex& param, int dim = -1);
     static float parseJsonNumeric(const rapidjson::Value& val, bool castStr, bool& bSucceed);
     static float parseNumeric(const QVariant& val, bool castStr, bool& bSucceed);
     static QVariant initVariantByControl(PARAM_CONTROL ctrl);
@@ -98,6 +99,7 @@ public:
                                const LINKS_DATA& inLinks,
                                NODES_DATA& outNodes,
                                LINKS_DATA& outLinks);
+    static void renameNetLabels(const IGraphsModel* pModel, const QModelIndex &subgIdx, NODES_DATA& nodes);
     static QString getPathFromItem(QStandardItem* pItem);
     static EdgeInfo exportLink(const QModelIndex &linkIdx);
 
@@ -105,4 +107,5 @@ private:
     static std::pair<qreal, qreal> getRxx2(QRectF r, qreal xRadius, qreal yRadius, bool AbsoluteSize);
 };
 
+extern const char* g_setKey;
 #endif

@@ -167,14 +167,14 @@ struct ZSRetrieveVectorField : zeno::INode {
 
         bool on_elm = (type == "quad" || type == "tri");
 
-        if((type == "quad" || type == "tri") && (!eles.hasProperty(gtag) || !eles.hasProperty(color_tag))){
+        if((type == "quad" || type == "tri") && (!eles.hasProperty(gtag))){
             if(!eles.hasProperty(gtag))
                 fmt::print("the elements does not contain element-wise gradient field : {}\n",gtag);
-            if(!eles.hasProperty(color_tag))
-                fmt::print("the elements does not contain element-wise color_tag field : {}\n",color_tag);
+            // if(!eles.hasProperty(color_tag))
+            //     fmt::print("the elements does not contain element-wise color_tag field : {}\n",color_tag);
             throw std::runtime_error("the volume does not contain element-wise gradient field");
         }
-        if(type == "vert" && !verts.hasProperty(gtag) && !verts.hasProperty(color_tag)){
+        if(type == "vert" && !verts.hasProperty(gtag)){
             fmt::print("the volume does not contain nodal-wize gradient field : {}\n",gtag);
             throw std::runtime_error("the volume does not contain nodal-wize gradient field");
         }
@@ -210,13 +210,18 @@ struct ZSRetrieveVectorField : zeno::INode {
                         }
                         vec_buffer.tuple<3>("x",i) = bx;
                         vec_buffer.tuple<3>("vec",i) = scale * eles.pack<3>(gtag,i)/* / eles.pack<3>(gtag,i).norm()*/;
-                        zsvec_buffer[i] = eles(color_tag,i);
-                        // vec_buffer(color_tag,i) = eles(color_tag,i);
+                        if(eles.hasProperty(color_tag))
+                            zsvec_buffer[i] = eles(color_tag,i);
+                        else
+                            zsvec_buffer[i] = (T)1.0;
                     }else{
                         vec_buffer.tuple<3>("x",i) = verts.pack<3>(xtag,i);
                         vec_buffer.tuple<3>("vec",i) = scale * verts.pack<3>(gtag,i)/* / verts.pack<3>(gtag,i).norm()*/;
                         // vec_buffer(color_tag,i) = verts(color_tag,i);
-                        zsvec_buffer[i] = verts(color_tag,i);
+                        if(verts.hasProperty(color_tag))
+                            zsvec_buffer[i] = verts(color_tag,i);
+                        else
+                            zsvec_buffer[i] = (T)1.0;
                     }
         });
 
@@ -315,26 +320,30 @@ struct ZSSampleQuadratureAttr2Vert : zeno::INode {
             fmt::print("the verts' {} attr[{}] and quads' {} attr[{}] not matched\n",attr,verts.getPropertySize(attr),attr,attr_dim);
         }
         cudaPol(range(verts.size()),
-            [verts = proxy<space>({},verts),attr_dim,attr = SmallString(attr)] 
+            [skip_bou,bou_tag = zs::SmallString(bou_tag),verts = proxy<space>({},verts),attr_dim,attr = SmallString(attr)] 
                 __device__(int vi) mutable {
+                    if(skip_bou && verts(bou_tag,vi) > 1e-6)
+                        return;
                     for(int i = 0;i != attr_dim;++i)
                         verts(attr,i,vi) = 0.;
         });
 
-        static dtiles_t vtemp(verts.get_allocator(),{{"wsum",1}},verts.size());
-        vtemp.resize(verts.size());
-        cudaPol(range(vtemp.size()),
-            [vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int vi) mutable {
-                vtemp("wsum",vi) = 0;
-        });    
+        // static dtiles_t vtemp(verts.get_allocator(),{{"wsum",1}},verts.size());
+        // vtemp.resize(verts.size());
+        // cudaPol(range(vtemp.size()),
+        //     [vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int vi) mutable {
+        //         vtemp("wsum",vi) = 0;
+        // });    
+        zs::Vector<float> wsum_vec{verts.get_allocator(),verts.size()};
+        cudaPol(zs::range(wsum_vec),[] ZS_LAMBDA(auto& wsum){wsum = (float)0;});
 
         // std::cout << "check here 2" << std::endl;
 
         cudaPol(range(quads.size()),
             [verts = proxy<space>({},verts),quads = proxy<space>({},quads),attr_dim,attr = SmallString(attr),simplex_size,weight = SmallString(weight),
-                execTag = wrapv<space>{},skip_bou,bou_tag = zs::SmallString(bou_tag),vtemp = proxy<space>({},vtemp)]
+                execTag = wrapv<space>{},skip_bou = skip_bou,bou_tag = zs::SmallString(bou_tag),wsum_vec = proxy<space>(wsum_vec)]
                 __device__(int ei) mutable {
-                    float w = quads(weight,ei);
+                    auto w = quads(weight,ei);
                     // if(ei == 0)
                     //     printf("w : %f\n",(float)w);
                     // w = 1.0;// cancel out the specified weight info
@@ -348,23 +357,28 @@ struct ZSSampleQuadratureAttr2Vert : zeno::INode {
                             // verts(attr,j,idx) += w * quads(attr,j,ei) / (float)simplex_size;
                             atomic_add(execTag,&verts(attr,j,idx),alpha * quads(attr,j,ei));
                         }
-                        atomic_add(execTag,&vtemp("wsum",idx),alpha);
+                        atomic_add(execTag,&wsum_vec[idx],alpha);
                     }   
         });
 
         // std::cout << "check here 3 aaaa" << std::endl;
         // std::cout << "attr_dim = " << attr_dim << std::endl;
 
-        cudaPol(range(verts.size()),
-            [
+        cudaPol(range(verts.size()),[skip_bou,bou_tag = zs::SmallString(bou_tag),simplex_size,
                 verts = proxy<space>({},verts),attr = SmallString(attr),
-                attr_dim,vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int vi) mutable {
+                attr_dim,wsum_vec = proxy<space>(wsum_vec)] ZS_LAMBDA(int vi) mutable {
                 // if(vi == 0)
                 //     printf("wsum : %f\n",(float)vtemp("wsum",vi));
+                if(skip_bou && verts(bou_tag,vi) > 1e-6)
+                    return;
                 for(int j = 0;j != attr_dim;++j) {
                     // verts(attr,j,idx) += w * quads(attr,j,ei) / (float)simplex_size;
-                    verts(attr,j,vi) = verts(attr,j,vi) / vtemp("wsum",vi);
+                    verts(attr,j,vi) = verts(attr,j,vi) / (wsum_vec[vi] + (float)1e-6);
+                    if(zs::isnan(verts(attr,j,vi) ))
+                        printf("nan verts attr %s detected at %d %d\n",attr.asChars(),(int)j,(int)vi);
                 }
+
+                
         });
 
         // std::cout << "check here 4" << std::endl;

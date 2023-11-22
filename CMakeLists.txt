@@ -39,6 +39,7 @@ option(ZENO_INSTALL_TARGET "Enable installation targets" OFF)
 option(ZENO_WITH_CUDA "Build ZENO with CUDA support" OFF)
 option(ZENO_MARCH_NATIVE "Build ZENO with -march=native" OFF)
 option(ZENO_USE_FAST_MATH "Build ZENO with -ffast-math" OFF)
+option(ZENO_OPTIX_PROC "Optix with a new proc" OFF)
 
 if (NOT DEFINED CMAKE_POSITION_INDEPENDENT_CODE)
     # Otherwise we can't link .so libs with .a libs
@@ -166,6 +167,8 @@ function (zeno_add_asset_dir dir)
 endfunction()
 ## --- end cihou asset dir
 
+add_subdirectory(zeno)
+
 ## --- begin cihou perf-geeks
 if (ZENO_MARCH_NATIVE)
     if (MSVC)
@@ -182,8 +185,6 @@ if (ZENO_USE_FAST_MATH)
     endif()
 endif()
 ## --- end cihou perf-geeks
-
-add_subdirectory(zeno)
 
 target_compile_options(zeno
             PUBLIC $<$<COMPILE_LANGUAGE:CXX>: $<IF:$<CXX_COMPILER_ID:MSVC>, /utf-8, >>

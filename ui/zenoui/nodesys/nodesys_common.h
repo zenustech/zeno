@@ -15,6 +15,7 @@ enum ZenoGVItemType {
     ZTYPE_COLOR_CHANNEL,
     ZTYPE_COLOR_RAMP,
     ZTYPE_HEATMAP,
+    ZTYPE_NETLABEL,
 };
 
 enum MIME_DATA_TYPE {

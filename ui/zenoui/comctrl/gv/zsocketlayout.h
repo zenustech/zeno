@@ -26,6 +26,7 @@ public:
     void setControl(QGraphicsItem* pControl);
     virtual void updateSockName(const QString &name);
     void updateSockNameToolTip(const QString &tip);
+    QGraphicsItem* socketText() const;
     QGraphicsItem* control() const;
     ZenoSocketItem* socketItem() const;
     virtual ZenoSocketItem* socketItemByIdx(const QModelIndex& sockIdx) const;

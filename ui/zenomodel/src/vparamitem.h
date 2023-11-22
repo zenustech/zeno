@@ -60,7 +60,7 @@ struct VParamItem : public QStandardItem
     VParamItem* getItem(const QString& uniqueName, int* r = 0) const;
     VParamItem* findItem(uint uuid, int* r = 0) const;
     VPARAM_INFO exportParamInfo();
-    PARAM_CLASS getParamClass();
+    PARAM_CLASS getParamClass() const;
     void importParamInfo(const VPARAM_INFO& paramInfo);
     bool operator==(VParamItem* rItem) const;
     void read(QDataStream& in) override;

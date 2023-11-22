@@ -24,7 +24,7 @@ ZenoSearchBar::ZenoSearchBar(const QModelIndex& idx, QWidget *parentWidget)
     m_pLineEdit->setFocusPolicy(Qt::StrongFocus);
     m_pLineEdit->setObjectName("searchEdit");
     m_pLineEdit->setFixedWidth(200);
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     m_pLineEdit->setFont(font);
     ZIconButton *pCloseBtn = new ZIconButton(
         QIcon(":/icons/closebtn.svg"),

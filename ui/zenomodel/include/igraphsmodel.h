@@ -45,6 +45,7 @@ public:
 	virtual QModelIndex addLink(const QModelIndex& subgIdx, const EdgeInfo& info, bool enableTransaction = false) = 0;
 	virtual void removeLink(const QModelIndex& linkIdx, bool enableTransaction = false) = 0;
 	virtual void removeLink(const QModelIndex& subgIdx, const EdgeInfo& linkIdx, bool enableTransaction = false) = 0;
+	virtual void removeLegacyLink(const QModelIndex& linkIdx) = 0;
 	virtual void removeSubGraph(const QString& name) = 0;
 	virtual QModelIndex extractSubGraph(const QModelIndexList& nodes, const QModelIndexList& links, const QModelIndex& fromSubg, const QString& toSubg, bool enableTrans = false) = 0;
     virtual bool IsSubGraphNode(const QModelIndex& nodeIdx) const = 0;
@@ -81,6 +82,8 @@ public:
 	virtual void removeGraph(int idx) = 0;
 	virtual QRectF viewRect(const QModelIndex& subgIdx) = 0;
 	virtual void markDirty() = 0;
+	virtual void markNotDescNode() = 0;
+	virtual bool hasNotDescNode() const = 0;
 	virtual void clearDirty() = 0;
 	virtual void collaspe(const QModelIndex& subgIdx) = 0;
 	virtual void expand(const QModelIndex& subgIdx) = 0;
@@ -91,6 +94,7 @@ public:
     virtual void beginApiLevel() = 0;
 	virtual void endApiLevel() = 0;
 	virtual LinkModel* linkModel(const QModelIndex& subgIdx) const = 0;
+	virtual LinkModel* legacyLinks(const QModelIndex& subgIdx) const = 0;
 	virtual QModelIndexList findSubgraphNode(const QString& subgName) = 0;
 	virtual int ModelSetData(
 			const QPersistentModelIndex& idx,
@@ -109,9 +113,19 @@ public:
     virtual QAbstractItemModel *implModel() = 0;
     virtual void markNodeDataChanged(const QModelIndex& idx) = 0;
     virtual void clearNodeDataChanged() = 0;
+    virtual QStringList subgraphsName() const = 0;
 
     virtual void onSubgrahSync(const QModelIndex& subgIdx) = 0;
 
+
+    /*net label*/
+    virtual void addNetLabel(const QModelIndex& subgIdx, const QModelIndex& sock, const QString& name) = 0;
+    virtual void removeNetLabel(const QModelIndex& subgIdx, const QModelIndex& trigger) = 0;
+    virtual void updateNetLabel(const QModelIndex& subgIdx, const QModelIndex& trigger, const QString& oldName, const QString& newName, bool enableTransaction = false) = 0;
+
+    virtual QModelIndex getNetOutput(const QModelIndex& subgIdx, const QString& name) const = 0;
+	virtual QList<QModelIndex> getNetInputs(const QModelIndex& subgIdx, const QString& name) const = 0;
+    virtual QStringList dumpLabels(const QModelIndex& subgIdx) const = 0;
 
 signals:
 	void clearLayout2();

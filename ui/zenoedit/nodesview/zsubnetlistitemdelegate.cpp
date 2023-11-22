@@ -9,7 +9,6 @@
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
 
-
 SubgEditValidator::SubgEditValidator(QObject* parent)
 {
 }
@@ -79,7 +78,8 @@ void ZSubnetListItemDelegate::paint(QPainter* painter, const QStyleOptionViewIte
     }
     else if (opt.state & QStyle::State_MouseOver)
     {
-        //textColor = QColor(255, 255, 255);
+        bgColor = QColor(59, 64, 73);
+        painter->fillRect(rc, bgColor);
     }
 
     if (!opt.icon.isNull())
@@ -90,7 +90,7 @@ void ZSubnetListItemDelegate::paint(QPainter* painter, const QStyleOptionViewIte
     }
 
     //draw text
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setPointSize(10);
     font.setBold(false);
     QFontMetricsF fontMetrics(font);
@@ -145,6 +145,7 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
             if (m_selectedIndexs.size() > 1) 
             {
                 pRename->setEnabled(false);
+                pSave->setEnabled(false);
             }
             connect(pDelete, &QAction::triggered, this, [=]() {
                 onDelete();
@@ -152,6 +153,10 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
             QSortFilterProxyModel* pProxyModel = qobject_cast<QSortFilterProxyModel*>(model);
             ZASSERT_EXIT(pProxyModel, false);
             const QModelIndex &index = pProxyModel->mapToSource(proxyIndex);
+            QSortFilterProxyModel* pProxyModel = qobject_cast<QSortFilterProxyModel*>(model);
+            ZASSERT_EXIT(pProxyModel, false);
+            const QModelIndex& index = pProxyModel->mapToSource(proxyIndex);
+
             connect(pRename, &QAction::triggered, this, [=]() {
                 onRename(index);
             });

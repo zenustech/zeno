@@ -8,7 +8,7 @@
 #include <QtWidgets>
 #include "PrimAttrTableModel.h"
 #include "ZLightsModel.h"
-#include "comctrl/zlineedit.h"
+#include <zenoui/comctrl/zlineedit.h>
 
 class DisplayWidget;
 

@@ -7,7 +7,7 @@ class ZCacheMgr
 {
 public:
     ZCacheMgr();
-    bool initCacheDir(bool bTempDir, QDir dir);
+    bool initCacheDir(bool bTempDir, QDir dir, bool bAutoCleanCache);
     QString cachePath() const;
     std::shared_ptr<QTemporaryDir> getTempDir() const;
     QDir getPersistenceDir() const;
@@ -16,20 +16,24 @@ public:
         Opt_Undefined = 0,
         Opt_RunAll,
         Opt_RunLightCameraMaterial,
-        Opt_AlwaysOnAll,
-        Opt_AlwaysOnLightCameraMaterial
+        Opt_AlwaysOn
     };
     void setCacheOpt(cacheOption opt);
     void setNewCacheDir(bool setNew);
     cacheOption getCacheOption();
+    void cleanCacheDir();
+    bool hasCacheOnly(QDir dir, bool& empty);
 
 private:
+
     std::shared_ptr<QTemporaryDir> m_spTmpCacheDir;
     QDir m_spCacheDir;
     bool m_bTempDir;
 
     bool m_isNew;
     cacheOption m_cacheOpt;
+
+    QDir lastRunCachePath;
 };
 
 #endif

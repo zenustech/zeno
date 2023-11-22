@@ -15,40 +15,30 @@ class ViewParamModel : public QStandardItemModel
 {
     Q_OBJECT
 public:
-    explicit ViewParamModel(bool bNodeUI, IGraphsModel* pModel, QObject* parent = nullptr);
+    explicit ViewParamModel(const QModelIndex& nodeIdx, IGraphsModel* pModel, QObject* parent = nullptr);
     ~ViewParamModel();
     virtual void clone(ViewParamModel* pModel);
     IGraphsModel* graphsModel() const;
     virtual QModelIndex indexFromPath(const QString& path);
     QModelIndex indexFromName(PARAM_CLASS cls, const QString& coreParam);
 
-    //for node ui params:
-    void getNodeParams(QModelIndexList& inputs, QModelIndexList& params, QModelIndexList& outputs);
-    void arrangeOrder(const QStringList &inputKeys, const QStringList &outputKeys);
-
     VPARAM_INFO exportParams() const;
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
-    bool isNodeModel() const;
-    bool isDirty() const;
-    void markDirty();
+    virtual bool isDirty() const;
+    virtual void markDirty();
     QMimeData* mimeData(const QModelIndexList& indexes) const override;
     bool canDropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent) const override;
     bool dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent) override;
     Qt::ItemFlags flags(const QModelIndex &index) const override;
     bool moveRows(const QModelIndex& sourceParent, int sourceRow, int count, const QModelIndex& destinationParent,
                   int destinationChild) override;
-
-    bool isEditable(const QModelIndex &current);
+    virtual bool isEditable(const QModelIndex &current);
 
 signals:
     void editNameChanged(const QModelIndex& itemIdx, const QString& oldPath, const QString& newName);
 
 protected:
-    virtual void initUI();
-
-    IGraphsModel* m_model;
-    const bool m_bNodeUI;
-    bool m_bDirty;
+    IGraphsModel* m_pGraphsModel;
 };
 
 #endif

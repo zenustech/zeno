@@ -8,6 +8,7 @@ class IGraphsModel;
 struct _DictItem
 {
     QString key;
+    QString netLabel;
     QList<QPersistentModelIndex> links;
 };
 

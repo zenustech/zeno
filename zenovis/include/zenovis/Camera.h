@@ -33,8 +33,15 @@ struct Camera {
     bool m_block_window = false;
     bool m_auto_radius = false;
 
+    float m_theta = 0;
+    float m_phi = 0;
+    zeno::vec3f m_center = {};
+    bool m_ortho_mode = false;
+    float m_radius = 5;
+
     zeno::vec2i viewport_offset = {};
 
+    // only used in real-shader
     struct ZxxHappyLookParam {
         float cx = 0;
         float cy = 0;
@@ -48,21 +55,22 @@ struct Camera {
         float focalPlaneDistance = 0;
     };
     struct ZxxHappyLookParam m_zxx;
-    struct ZxxHappyLookParam m_zxx_in;
 
     float getAspect() const {
         return (float)m_nx / (float)m_ny;
     }
 
     void setResolution(int nx, int ny);
+    void setResolutionInfo(bool block, int nx, int ny);
     void set_safe_frames(bool bLock, int nx, int ny);
     float get_safe_frames() const;
     bool is_locked_window() const;
     void setCamera(zeno::CameraData const &cam);
-    void placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, float fov, float fnear, float ffar);
-    void lookCamera(float cx, float cy, float cz, float theta, float phi, float radius, float fov, float aperture, float focalPlaneDistance);
+    void placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up);
+    void lookCamera(float cx, float cy, float cz, float theta, float phi, float radius, bool ortho_mode, float fov, float aperture, float focalPlaneDistance);
     void focusCamera(float cx, float cy, float cz, float radius);
     void set_program_uniforms(opengl::Program *pro);
+    void updateMatrix();
 };
 
 } // namespace zenovis

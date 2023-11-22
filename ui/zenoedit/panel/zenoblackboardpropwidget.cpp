@@ -49,7 +49,7 @@ void ZenoBlackboardPropWidget::onDataChanged(const QModelIndex &subGpIdx, const 
 
 void ZenoBlackboardPropWidget::insertRow(const QString &desc, const PARAM_CONTROL &ctrl, const QVariant &value, int row,QGridLayout *pGroupLayout) {    
     ZTextLabel *pLabel = new ZTextLabel(desc);
-    pLabel->setFont(zenoApp->font());
+    pLabel->setFont(QApplication::font());
     pLabel->setTextColor(QColor(255, 255, 255, 255 * 0.7));
     pLabel->setHoverCursor(Qt::ArrowCursor);
 

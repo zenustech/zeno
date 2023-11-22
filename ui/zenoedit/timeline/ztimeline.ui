@@ -51,7 +51,7 @@
     <number>1</number>
    </property>
    <item>
-    <layout class="QHBoxLayout" name="timelineHLayout" stretch="0,0,0,0,0,0,0,0,0">
+    <layout class="QHBoxLayout" name="timelineHLayout" stretch="0,0,0,0,0,0,0,0,0,0,0,0">
      <property name="spacing">
       <number>9</number>
      </property>
@@ -186,6 +186,123 @@
       </widget>
      </item>
      <item>
+      <widget class="QLabel" name="fpslabel">
+       <property name="text">
+        <string>FPS</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="fpsEdit">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="palette">
+        <palette>
+         <active>
+          <colorrole role="Button">
+           <brush brushstyle="SolidPattern">
+            <color alpha="255">
+             <red>25</red>
+             <green>29</green>
+             <blue>33</blue>
+            </color>
+           </brush>
+          </colorrole>
+          <colorrole role="Base">
+           <brush brushstyle="SolidPattern">
+            <color alpha="255">
+             <red>25</red>
+             <green>29</green>
+             <blue>33</blue>
+            </color>
+           </brush>
+          </colorrole>
+          <colorrole role="Window">
+           <brush brushstyle="SolidPattern">
+            <color alpha="255">
+             <red>25</red>
+             <green>29</green>
+             <blue>33</blue>
+            </color>
+           </brush>
+          </colorrole>
+         </active>
+         <inactive>
+          <colorrole role="Button">
+           <brush brushstyle="SolidPattern">
+            <color alpha="255">
+             <red>25</red>
+             <green>29</green>
+             <blue>33</blue>
+            </color>
+           </brush>
+          </colorrole>
+          <colorrole role="Base">
+           <brush brushstyle="SolidPattern">
+            <color alpha="255">
+             <red>25</red>
+             <green>29</green>
+             <blue>33</blue>
+            </color>
+           </brush>
+          </colorrole>
+          <colorrole role="Window">
+           <brush brushstyle="SolidPattern">
+            <color alpha="255">
+             <red>25</red>
+             <green>29</green>
+             <blue>33</blue>
+            </color>
+           </brush>
+          </colorrole>
+         </inactive>
+         <disabled>
+          <colorrole role="Button">
+           <brush brushstyle="SolidPattern">
+            <color alpha="255">
+             <red>25</red>
+             <green>29</green>
+             <blue>33</blue>
+            </color>
+           </brush>
+          </colorrole>
+          <colorrole role="Base">
+           <brush brushstyle="SolidPattern">
+            <color alpha="255">
+             <red>25</red>
+             <green>29</green>
+             <blue>33</blue>
+            </color>
+           </brush>
+          </colorrole>
+          <colorrole role="Window">
+           <brush brushstyle="SolidPattern">
+            <color alpha="255">
+             <red>25</red>
+             <green>29</green>
+             <blue>33</blue>
+            </color>
+           </brush>
+          </colorrole>
+         </disabled>
+        </palette>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QLineEdit
+{
+	background-color: #FF191D21;
+}</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QComboBox" name="comboBox">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -214,6 +331,9 @@
         <bool>false</bool>
        </property>
       </widget>
+     </item>
+     <item>
+      <widget class="ZToolButton" name="btnLoopPlay" native="true"/>
      </item>
      <item>
       <spacer name="horizontalSpacer_2">
@@ -370,7 +490,7 @@
   <customwidget>
    <class>ZToolButton</class>
    <extends>QWidget</extends>
-   <header>zenoui/comctrl/ztoolbutton.h</header>
+   <header location="global">zenoui/comctrl/ztoolbutton.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

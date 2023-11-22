@@ -78,9 +78,11 @@ public:
 	void removeNode(int row, const QModelIndex& subGpIdx);
     void removeLink(const QModelIndex& linkIdx, bool enableTransaction = false) override;
     void removeLink(const QModelIndex& subgIdx, const EdgeInfo& linkIdx, bool enableTransaction = false) override;
+    void removeLegacyLink(const QModelIndex& linkIdx) override;
 	void removeSubGraph(const QString& name) override;
     QModelIndex addLink(const QModelIndex& subgIdx, const QModelIndex& fromSock, const QModelIndex& toSock, bool enableTransaction = false) override;
     QModelIndex addLink(const QModelIndex& subgIdx, const EdgeInfo& info, bool enableTransaction = false) override;
+    void addLegacyLink(const QModelIndex& subgIdx, const QModelIndex& fromSock, const QModelIndex& toSock);
 
 	void updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
     void updateSocketDefl(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
@@ -101,6 +103,7 @@ public:
     QModelIndexList searchInSubgraph(const QString& objName, const QModelIndex& subgIdx) override;
     QModelIndexList subgraphsIndice() const override;
     LinkModel* linkModel(const QModelIndex& subgIdx) const override;
+    LinkModel* legacyLinks(const QModelIndex& subgIdx) const override;
     QModelIndex getSubgraphIndex(const QModelIndex& linkIdx);
     QRectF viewRect(const QModelIndex& subgIdx) override;
     QList<SEARCH_RESULT> search(
@@ -123,7 +126,7 @@ public:
         int role,
         const QString& comment = "") override;
     int undoRedo_updateSubgDesc(const QString &descName, const NODE_DESC &desc) override;
-    bool addExecuteCommand(QUndoCommand* pCommand) override;
+    bool addExecuteCommand(QUndoCommand* pCommand) override; 
     void setIOVersion(zenoio::ZSG_VERSION ver) override;
     zenoio::ZSG_VERSION ioVersion() const override;
     void setApiRunningEnable(bool bEnable) override;
@@ -134,7 +137,23 @@ public:
     }
     void onSubgrahSync(const QModelIndex& subgIdx) override;
     void markNodeDataChanged(const QModelIndex& idx) override;
+    void markNotDescNode() override;
+    bool hasNotDescNode() const override;
     void clearNodeDataChanged() override;
+    QStringList subgraphsName() const override;
+
+    void addNetLabel(const QModelIndex& subgIdx, const QModelIndex& sock, const QString& name) override;
+    void removeNetLabel(const QModelIndex& subgIdx, const QModelIndex& trigger) override;
+    void updateNetLabel(const QModelIndex& subgIdx, const QModelIndex& trigger, const QString& oldName, const QString& newName, bool enableTransaction = false) override;
+
+    QModelIndex getNetOutput(const QModelIndex& subgIdx, const QString& name) const override;
+    QList<QModelIndex> getNetInputs(const QModelIndex& subgIdx, const QString& name) const override;
+    QStringList dumpLabels(const QModelIndex& subgIdx) const override;
+    void addNetLabel_impl(const QModelIndex& subgIdx, const QModelIndex& sock, const QString& name, bool enableTransaction = false);
+    void removeNetLabel_impl(const QModelIndex& subgIdx, const QModelIndex& trigger, const QString& name, bool enableTransaction = false);
+
+signals:
+    void graphRenamed(const QString& oldName, const QString& newName);
 
 public slots:
     void onCurrentIndexChanged(int);
@@ -183,7 +202,8 @@ private:
 
     //LinkModel* m_linkModel;
     QHash<QString, LinkModel*> m_linksGroup;
-    QList<QPersistentModelIndex> m_changedNodes;
+    QHash<QString, LinkModel*> m_legacyLinks;
+    QSet<QPersistentModelIndex> m_changedNodes;
 
     QString m_filePath;
     QUndoStack* m_stack;
@@ -192,6 +212,7 @@ private:
     bool m_dirty;
     bool m_bIOProcessing;
     bool m_bApiEnableRun;
+    bool m_bHasNotDesc;         //has nodes which are not descripied by core decs.
     zenoio::ZSG_VERSION m_version;
 
     friend class ApiLevelScope;

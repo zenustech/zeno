@@ -76,6 +76,12 @@ struct UserData {
         m_data[name] = std::move(value);
     }
 
+    void merge(const UserData& name) {
+        for (const auto& pair : name.m_data) {
+            m_data.insert(pair);
+        }
+    }
+
     template <class T>
     [[deprecated("use set2(name, value)")]]
     void setLiterial(std::string const &name, T &&value) {

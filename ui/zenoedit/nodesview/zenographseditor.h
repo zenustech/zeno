@@ -3,6 +3,7 @@
 
 #include <QtWidgets>
 #include <zenoui/include/common.h>
+#include "nodesys/zenosubgraphview.h"
 
 class ZToolButton;
 class ZenoWelcomePage;
@@ -32,6 +33,7 @@ public:
     void activateTab(const QString& subGraphName, const QString& path = "", const QString& objId = "", bool isError = false);
     void showFloatPanel(const QModelIndex &subgIdx, const QModelIndexList &nodes);
     void selectTab(const QString& subGraphName, const QString& path, std::vector<QString>& objId);
+    ZenoSubGraphView* getCurrentSubGraphView();
 
 public slots:
 	void resetModel(IGraphsModel* pNodeModel, IGraphsModel* pSubgraphs);
@@ -64,6 +66,7 @@ private slots:
     void onSearchEdited(const QString& content);
     void onMenuActionTriggered(QAction* pAction);
     void onNewSubgraph();
+    void onPageListClicked();
 
 private:
     void initUI();
@@ -72,6 +75,7 @@ private:
     void initModel();
     void toggleViewForSelected(bool bOn);
     int tabIndexOfName(const QString& subGraphName);
+    void markSubgError(const QStringList &lst);
 
     ZenoMainWindow* m_mainWin;
     Ui::GraphsEditor* m_ui;

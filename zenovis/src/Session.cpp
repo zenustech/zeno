@@ -7,7 +7,11 @@
 #include <zenovis/bate/IGraphic.h>
 #include <zeno/utils/format.h>
 #include <stb_image_write.h>
+#ifdef ZENO_ENABLE_OPTIX
+#include "ChiefDesignerEXR.h"
+#else
 #include <tinyexr.h>
+#endif
 #include <functional>
 #include <map>
 #include <utility>
@@ -65,6 +69,11 @@ std::tuple<int, int> Session::get_window_size() {
     };
 }
 
+zeno::vec2i Session::get_viewportOffset()
+{
+    return impl->scene->camera->viewport_offset;
+}
+
 void Session::set_show_grid(bool show_grid) {
     impl->scene->drawOptions->show_grid = show_grid;
 }
@@ -106,7 +115,7 @@ void Session::new_frame() {
     ////});
 //}
 
-void Session::do_screenshot(std::string path, std::string type) {
+void Session::do_screenshot(std::string path, std::string type, bool bOptix) {
     auto hdrSize = std::map<std::string, int>{
         {"png", 1},
         {"jpg", 1},
@@ -118,10 +127,17 @@ void Session::do_screenshot(std::string path, std::string type) {
     auto ny = impl->scene->camera->m_ny;
 
     auto &ud = zeno::getSession().userData();
-    ud.set2("optix_image_path", path);
+    if (bOptix)
+    {
+        ud.set2("optix_image_path", path);
+        if (!ud.has("optix_image_path")) {
+            return;
+        }
+    }
+
     std::vector<char> pixels = impl->scene->record_frame_offline(hdrSize, 3);
 
-    if (!ud.has("optix_image_path") || pixels.empty()) {
+    if (pixels.empty()) {
         return;
     }
     zeno::log_info("saving screenshot {}x{} to {}", nx, ny, path);
@@ -146,8 +162,11 @@ void Session::do_screenshot(std::string path, std::string type) {
                              pixels.begin() + hdrSize * 3 * nx * (ny - line - 1));
         }
         const char *err = nullptr;
+#ifdef ZENO_ENABLE_OPTIX
+        using namespace zeno::ChiefDesignerEXR;
+#endif
         int ret = SaveEXR((float *)pixels.data(), nx, ny, 3, 1, path.c_str(), &err);
-        if (ret != TINYEXR_SUCCESS) {
+        if (ret != 0) {
             if (err) {
                 zeno::log_error("failed to perform SaveEXR to {}: {}", path, err);
                 FreeEXRErrorMessage(err);
@@ -162,19 +181,14 @@ void Session::do_screenshot(std::string path, std::string type) {
     }.at(type)();
 }
 
-void Session::look_perspective(float cx, float cy, float cz, float theta,
-                               float phi, float radius, float fov,
-                               bool ortho_mode, float aperture, float focalPlaneDistance) {
-    impl->scene->camera->lookCamera(cx, cy, cz, theta, phi, radius, ortho_mode ? 0.f : fov, aperture, focalPlaneDistance);
+void Session::look_perspective() {
+    impl->scene->camera->updateMatrix();
 }
 
 void Session::look_to_dir(float cx, float cy, float cz,
                           float dx, float dy, float dz,
                           float ux, float uy, float uz) {
-    auto fov = impl->scene->camera->m_fov;
-    auto fnear = impl->scene->camera->m_near;
-    auto ffar = impl->scene->camera->m_far;
-    impl->scene->camera->placeCamera({cx, cy, cz}, {dx, dy, dz}, {ux, uy, uz}, fov, fnear, ffar);
+    impl->scene->camera->placeCamera({cx, cy, cz}, {dx, dy, dz}, {ux, uy, uz});
 }
 
 void Session::set_background_color(float r, float g, float b) {

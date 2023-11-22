@@ -19,6 +19,41 @@ class SubGraphModel : public QAbstractItemModel
     typedef QAbstractItemModel _base;
     friend class AddNodeCommand;
 
+    struct _LabelItem
+    {
+        QString name;
+        QPersistentModelIndex outSock;
+        QList<QPersistentModelIndex> inSocks;
+    };
+    typedef QHash<QString, _LabelItem> LABELS_SET;
+
+    struct _NodeItem
+    {
+        QString objid;
+        QString objCls;
+        QString customName;
+        NODE_TYPE type;
+        QPointF viewpos;
+        int options;
+        PARAMS_INFO paramNotDesc;
+
+        PanelParamModel* panelParams;
+        NodeParamModel* nodeParams;
+
+        bool bCollasped;
+        bool bDataChanged;      //changed before next running.
+
+        _NodeItem()
+            : options(0)
+            , bCollasped(false)
+            , bDataChanged(false)
+            , type(NORMAL_NODE)
+            , panelParams(nullptr)
+            , nodeParams(nullptr)
+        {
+        }
+    };
+
 public:
 	explicit SubGraphModel(IGraphsModel* pGraphsModel, QObject* parent = nullptr);
 	~SubGraphModel();
@@ -78,6 +113,14 @@ public:
     void collaspe();
     void expand();
 
+    //net labels
+    bool addNetLabel(const QModelIndex& sock, const QString& name, bool bInput);
+    void updateNetLabel(const QModelIndex& trigger, const QString& oldName, const QString& newName);
+    void removeNetLabel(const QModelIndex& trigger, const QString& name);
+    QModelIndex getNetOutput(const QString& name) const;
+    QStringList dumpLabels() const;
+    QModelIndexList getNetInputSocks(const QString& name) const;
+
 public slots:
     void onDoubleClicked(const QString &nodename);
 
@@ -90,6 +133,7 @@ private:
     NODE_DATA item2NodeData(const NodeItem* item) const;
     NodeItem* importNodeItem(const NODE_DATA &data);
     bool checkCustomName(const QString &name);
+    void _removeNetLabels(const NodeParamModel* nodeParams);
 
     QString m_name;
     QHash<QString, int> m_key2Row;
@@ -100,6 +144,8 @@ private:
 
     QHash<uint32_t, QString> m_num2strId;
     QHash<QString, uint32_t> m_str2numId;
+
+    LABELS_SET m_labels;
 
     QRectF m_rect;
     IGraphsModel* m_pGraphsModel;

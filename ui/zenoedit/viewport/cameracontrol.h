@@ -18,6 +18,17 @@ public:
                   QObject* parent = nullptr);
     void setRes(QVector2D res);
     QVector2D res() const { return m_res; }
+
+    float getTheta() const;
+    void setTheta(float theta);
+    float getPhi() const;
+    void setPhi(float phi);
+    zeno::vec3f getCenter() const;
+    void setCenter(zeno::vec3f center);
+    bool getOrthoMode() const;
+    void setOrthoMode(bool OrthoMode);
+    float getRadius() const;
+    void setRadius(float radius);
     float getFOV() const;
     void setFOV(float fov);
     float getAperture() const;
@@ -27,6 +38,8 @@ public:
     void updatePerspective();
     void setKeyFrame();
 
+    bool fakeKeyPressEvent(int uKey);
+    bool fakeKeyReleaseEvent(int uKey);
     void fakeMousePressEvent(QMouseEvent* event);
     void fakeMouseReleaseEvent(QMouseEvent* event);
     void fakeMouseMoveEvent(QMouseEvent* event);
@@ -44,19 +57,18 @@ public:
     void resizeTransformHandler(int dir);
 
 private:
-    float m_theta;
-    float m_phi;
-    QPointF m_lastPos;
+    QPointF m_lastMidButtonPos;
     QPoint m_boundRectStartPos;
-    QVector3D  m_center;
-    bool m_ortho_mode;
-    float m_radius;
     QVector2D m_res;
     QSet<int> m_pressedKeys;
 
     std::shared_ptr<zeno::Picker> m_picker;
     std::shared_ptr<zeno::FakeTransformer> m_transformer;
     Zenovis* m_zenovis;
+
+    bool middle_button_pressed = false;
+    bool shift_pressed = false;
+    bool ctrl_pressed = false;
 };
 
 

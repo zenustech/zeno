@@ -36,6 +36,7 @@ static CONTROL_ITEM_INFO controlList[] = {
     {"Integer Vector 2",    CONTROL_VEC2_INT,       "vec2i", ":/icons/parameter_control_integerVector2.svg"},
     {"Color",               CONTROL_COLOR,          "color", ":/icons/parameter_control_color.svg"},
     {"Pure Color",          CONTROL_PURE_COLOR,     "color", ":/icons/parameter_control_color.svg"},
+    {"Color Vec3f",         CONTROL_COLOR_VEC3F,    "color", ":/icons/parameter_control_color.svg"},
     {"Curve",               CONTROL_CURVE,          "curve", ":/icons/parameter_control_curve.svg"},
     {"SpinBox",             CONTROL_HSPINBOX,       "int", ":/icons/parameter_control_spinbox.svg"},
     {"DoubleSpinBox", CONTROL_HDOUBLESPINBOX, "float", ":/icons/parameter_control_spinbox.svg"},
@@ -714,7 +715,7 @@ void ZEditParamLayoutDlg::addControlGroup(bool bInput, const QString &name, PARA
                 continue;
         NodeParamModel *nodeParams = QVariantPtr<NodeParamModel>::asPtr(subgNode.data(ROLE_NODE_PARAMS));
         nodeParams->setAddParam(bInput ? PARAM_INPUT : PARAM_OUTPUT, name, "", QVariant(), ctrl, QVariant(),
-                                SOCKPROP_NORMAL);
+            SOCKPROP_GROUP_LINE);
     }
 }
 
@@ -1104,12 +1105,13 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
                 for (auto idx : subgNodes)
                 {
                     NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(idx.data(ROLE_NODE_PARAMS));
+                    ZASSERT_EXIT(nodeParams);
                     VParamItem* pGroup = bSubInput ? nodeParams->getInputs() : nodeParams->getOutputs();
                     ZASSERT_EXIT(pGroup);
                     QModelIndex parent = pGroup->index();
                     nodeParams->moveRow(parent, srcRow, parent, dstRow);
                 }
-                if (!m_model->isNodeModel()) 
+                if (qobject_cast<NodeParamModel*>(m_model) == nullptr)
                 {
                     PanelParamModel *panelParams = QVariantPtr<PanelParamModel>::asPtr(m_nodeIdx.data(ROLE_PANEL_PARAMS));
                     ZASSERT_EXIT(panelParams);
@@ -1137,6 +1139,7 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
                         //get subinput name idx, update its value, and then sync to all subgraph node.
                         const QModelIndex &subInOutput = UiHelper::findSubInOutputIdx(m_pGraphsModel, bSubInput, oldName, subgIdx);
                         NodeParamModel *nodeParams = QVariantPtr<NodeParamModel>::asPtr(subInOutput.data(ROLE_NODE_PARAMS));
+                        ZASSERT_EXIT(nodeParams);
                         const QModelIndex &nameIdx = nodeParams->getParam(PARAM_PARAM, "name");
                         //update the value on "name" in SubInput/SubOutput.
                         m_pGraphsModel->ModelSetData(nameIdx, newName, ROLE_PARAM_VALUE);
@@ -1159,6 +1162,7 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
                         const QModelIndex &subInOutput =
                          UiHelper::findSubInOutputIdx(m_pGraphsModel, bSubInput, pTarget->m_name, subgIdx);
                         NodeParamModel *nodeParams = QVariantPtr<NodeParamModel>::asPtr(subInOutput.data(ROLE_NODE_PARAMS));
+                        ZASSERT_EXIT(nodeParams);
                         const QModelIndex &typelIdx = nodeParams->getParam(PARAM_PARAM, "type");
                         m_pGraphsModel->ModelSetData(typelIdx, typeDesc, ROLE_PARAM_VALUE);
                     } else {
@@ -1173,6 +1177,7 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
                         //get subinput defl idx, update its value, and then sync to all subgraph node.
                         const QModelIndex &subInOutput = UiHelper::findSubInOutputIdx(m_pGraphsModel, bSubInput, pTarget->m_name, subgIdx);
                         NodeParamModel *nodeParams = QVariantPtr<NodeParamModel>::asPtr(subInOutput.data(ROLE_NODE_PARAMS));
+                        ZASSERT_EXIT(nodeParams);
                         const QModelIndex &deflIdx = nodeParams->getParam(PARAM_PARAM, "defl");
                         //update the value on "defl" in SubInput/SubOutput.
                         m_pGraphsModel->ModelSetData(deflIdx, value, ROLE_PARAM_VALUE);
@@ -1188,6 +1193,7 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
                         //get subinput defl idx, update its value, and then sync to all subgraph node.
                         const QModelIndex &subInOutput = UiHelper::findSubInOutputIdx(m_pGraphsModel, bSubInput, pTarget->m_name, subgIdx);
                         NodeParamModel *nodeParams = QVariantPtr<NodeParamModel>::asPtr(subInOutput.data(ROLE_NODE_PARAMS));
+                        ZASSERT_EXIT(nodeParams);
                         const QModelIndex &deflIdx = nodeParams->getParam(PARAM_PARAM, "defl");
                         //update the control on "defl" in SubInput/SubOutput.
                         m_pGraphsModel->ModelSetData(deflIdx, ctrl, ROLE_PARAM_CTRL);
@@ -1242,15 +1248,13 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
             {
                 if (m_bSubgraphNode) 
                 {
+                    int srcRow = 0;
                     if (ctrl == CONTROL_GROUP_LINE) 
                     {
                         addControlGroup(bSubInput, name, ctrl);
                         QStandardItem *pNewItem = pCurrent->clone();
                         appliedItem->appendRow(pNewItem);
-                        //move the new item to the r-th position.
-                        QModelIndex parent = appliedItem->index();
-                        int dstRow = appliedItem->rowCount() - 1;
-                        m_model->moveRow(parent, dstRow, parent, r);
+                        srcRow = appliedItem->rowCount() - 1;
                     } 
                     else 
                     {
@@ -1276,14 +1280,43 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
                         m_pGraphsModel->addNode(node, subgIdx, true);
 
                         //the newItem is created just now, after adding the subgraph node.
-                        int dstRow = 0;
-                        VParamItem* newItem = pTargetGroup->getItem(name, &dstRow);
+                        
+                        VParamItem* newItem = pTargetGroup->getItem(name, &srcRow);
                         ZASSERT_EXIT(newItem);
                         pCurrent->m_uuid = newItem->m_uuid;
+                    }
 
-                        //move the new item to the r-th position.
-                        QModelIndex parent = pTargetGroup->index();
-                        m_model->moveRow(parent, dstRow, parent, r);
+                    if (srcRow != r)
+                    {
+                        //update desc.
+                        NODE_DESC desc;
+                        bool ret = m_pGraphsModel->getDescriptor(subgName, desc);
+                        if (bSubInput) {
+                            int sz = desc.inputs.size();
+                            if (sz > r && sz > srcRow) {
+                                desc.inputs.move(srcRow, r);
+                                m_pGraphsModel->updateSubgDesc(subgName, desc);
+                    }
+                        }
+                        else {
+                            int sz = desc.outputs.size();
+                            if (sz > r && sz > srcRow) {
+                                desc.outputs.move(srcRow, r);
+                                m_pGraphsModel->updateSubgDesc(subgName, desc);
+                            }
+                        }
+
+                        //update the corresponding order for every subgraph node.
+                        QModelIndexList subgNodes = m_pGraphsModel->findSubgraphNode(subgName);
+                        for (const auto& idx : subgNodes)
+                        {
+                            NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(idx.data(ROLE_NODE_PARAMS));
+                            ZASSERT_EXIT(nodeParams);
+                            VParamItem* pGroup = bSubInput ? nodeParams->getInputs() : nodeParams->getOutputs();
+                            ZASSERT_EXIT(pGroup);
+                            QModelIndex parent = pGroup->index();
+                            nodeParams->moveRow(parent, srcRow, parent, r);
+                        }
                     }
 
                 } 
