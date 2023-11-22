@@ -40,7 +40,7 @@ struct GlobalComm {
     ZENO_API void initFrameRange(int beg, int end);
     ZENO_API void newFrame();
     ZENO_API void finishFrame();
-    ZENO_API void dumpFrameCache(int frameid, bool cacheLightCameraOnly = false, bool cacheMaterialOnly = false);
+    ZENO_API void dumpFrameCache(int frameid);
     ZENO_API void addViewObject(std::string const &key, std::shared_ptr<IObject> object);
     ZENO_API int maxPlayFrames();
     ZENO_API int numOfFinishedFrame();
@@ -60,7 +60,7 @@ struct GlobalComm {
     ZENO_API std::string cachePath();
     ZENO_API bool removeCache(int frame);
     ZENO_API void removeCachePath();
-    static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, bool cacheLightCameraOnly, bool cacheMaterialOnly, std::string fileName = "");
+    static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::string fileName = "");
     static bool fromDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::string fileName = "");
 private:
     ViewObjects const *_getViewObjects(const int frameid);

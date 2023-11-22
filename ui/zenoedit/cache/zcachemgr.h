@@ -13,28 +13,20 @@ public:
     std::shared_ptr<QTemporaryDir> getTempDir() const;
     QDir getPersistenceDir() const;
 
-    enum cacheOption {
-        Opt_Undefined = 0,
-        Opt_RunAll,
-        Opt_RunLightCameraMaterial,
-        Opt_AlwaysOn
-    };
-    void setCacheOpt(cacheOption opt);
     void setNewCacheDir(bool setNew);
-    cacheOption getCacheOption();
     void cleanCacheDir();
     bool hasCacheOnly(QDir dir, bool& empty);
     void removeObjTmpCacheDir();
-    void clearNotUsedToViewCache();
 
 private:
+    void clearNotUsedToViewCache();
+
     QTemporaryDir m_objTmpCacheDir;
     std::shared_ptr<QTemporaryDir> m_spTmpCacheDir;
     QDir m_spCacheDir;
     bool m_bTempDir;
 
     bool m_isNew;
-    cacheOption m_cacheOpt;
 
     QDir lastRunCachePath;
 

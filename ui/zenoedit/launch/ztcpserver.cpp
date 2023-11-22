@@ -96,7 +96,6 @@ void ZTcpServer::startProc(const std::string& progJson, LAUNCH_PARAM param)
         }
         std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
         ZASSERT_EXIT(mgr);
-        mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOn);
         bool ret = mgr->initCacheDir(param.tempDir, cacheRootdir, param.autoCleanCacheInCacheRoot);
         ZASSERT_EXIT(ret);
         cachedir = mgr->cachePath();
@@ -125,8 +124,6 @@ void ZTcpServer::startProc(const std::string& progJson, LAUNCH_PARAM param)
         "--enablecache", QString::number(param.enableCache && QFileInfo(cachedir).isDir() && param.cacheNum),
         "--cachenum", QString::number(param.cacheNum),
         "--cachedir", cachedir,
-        "--cacheLightCameraOnly", QString::number(param.applyLightAndCameraOnly),
-        "--cacheMaterialOnly", QString::number(param.applyMaterialOnly),
         "--cacheautorm", QString::number(param.autoRmCurcache),
         "--zsg", param.zsgPath,
         "--projectFps", QString::number(param.projectFps),

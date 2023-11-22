@@ -129,19 +129,19 @@ void AppHelper::modifyOptixObjDirectly(QVariant newValue, QPersistentModelIndex 
     ZenoMainWindow* main = zenoApp->getMainWindow();
     if (nodeIdx.data(ROLE_OBJNAME).toString() == "LightNode" &&
         nodeIdx.data(ROLE_OPTIONS).toInt() == OPT_VIEW &&
-        (main->isAlways() || main->isAlwaysLightCamera() || editByPropPanel))
+        (main->isAlways() || editByPropPanel))
     {
         modifyLightData(newValue, nodeIdx, paramIdx);
     }
     else if ((nodeIdx.data(ROLE_OBJNAME).toString() == "CameraNode" ||
         nodeIdx.data(ROLE_OBJNAME).toString() == "MakeCamera" ||
         nodeIdx.data(ROLE_OBJNAME).toString() == "TargetCamera") &&
-        ((nodeIdx.data(ROLE_OPTIONS).toInt() == OPT_VIEW && (main->isAlways() || main->isAlwaysLightCamera())) || editByPropPanel)
+        (nodeIdx.data(ROLE_OPTIONS).toInt() == OPT_VIEW && (main->isAlways() || editByPropPanel))
         )
     {
         modifyOptixCameraPropDirectly(newValue, nodeIdx, paramIdx);
     }
-    else if (( (main->isAlways() || main->isAlwaysLightCamera() || main->isAlwaysMaterial()) || editByPropPanel))
+    else if (main->isAlways() || editByPropPanel)
     {
         socketEditFinished(newValue, nodeIdx, paramIdx);
     }

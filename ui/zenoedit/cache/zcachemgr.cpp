@@ -9,7 +9,6 @@
 ZCacheMgr::ZCacheMgr()
     : m_bTempDir(true)
     , m_isNew(true)
-    , m_cacheOpt(Opt_Undefined)
 {
     m_objTmpCacheDir.setAutoRemove(true);
 }
@@ -17,15 +16,12 @@ ZCacheMgr::ZCacheMgr()
 bool ZCacheMgr::initCacheDir(bool bTempDir, QDir dirCacheRoot, bool bAutoCleanCache)
 {
     clearNotUsedToViewCache();
-    if (!m_isNew && (m_cacheOpt == Opt_RunLightCameraMaterial || m_cacheOpt == Opt_AlwaysOn)) {
-         return true;
-    }
-    if ((bTempDir || bAutoCleanCache) &&
-            m_cacheOpt != Opt_RunLightCameraMaterial &&
-            m_cacheOpt != Opt_AlwaysOn)
-    {
+
+    if (!m_isNew)
+        return true;
+
+    if (bTempDir || bAutoCleanCache)
         cleanCacheDir();
-    }
 
     m_bTempDir = bTempDir;
     if (m_bTempDir) {
@@ -82,21 +78,12 @@ QDir ZCacheMgr::getPersistenceDir() const
     return m_spCacheDir;
 }
 
-
-void ZCacheMgr::setCacheOpt(cacheOption opt) {
-    m_cacheOpt = opt;
-}
-
 void ZCacheMgr::setNewCacheDir(bool setNew) {
     m_isNew = setNew;
     if (m_isNew)
     {
         removeObjTmpCacheDir();
     }
-}
-
-ZCacheMgr::cacheOption ZCacheMgr::getCacheOption() {
-    return m_cacheOpt;
 }
 
 void ZCacheMgr::cleanCacheDir()
@@ -167,6 +154,12 @@ void ZCacheMgr::clearNotUsedToViewCache()
         const QModelIndex& idx = pModel->index(i, subgIdx);
         if (idx.data(ROLE_OPTIONS).toInt() & OPT_VIEW)
             newToViewNodes.insert(idx.data(ROLE_OBJID).toString());
+    }
+
+    if (m_isNew)
+    {
+        lastRunToViewNodes.swap(newToViewNodes);
+        return;
     }
 
     QVector<QString> toViewCachesToBeRemoved;

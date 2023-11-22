@@ -533,26 +533,17 @@ void DisplayWidget::onSliderValueChanged(int frame)
     for (auto displayWid : mainWin->viewports())
         if (!displayWid->isGLViewport())
             displayWid->setRenderSeparately(false, false);
-    if (mainWin->isAlways() || mainWin->isAlwaysLightCamera() || mainWin->isAlwaysMaterial())
+    if (mainWin->isAlways())
     {
         auto pGraphsMgr = zenoApp->graphsManagment();
         IGraphsModel *pModel = pGraphsMgr->currentModel();
         if (!pModel)
             return;
-        std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
-        ZASSERT_EXIT(mgr);
-        ZCacheMgr::cacheOption oldCacheOpt = mgr->getCacheOption();
-        zeno::scope_exit sp([=] {mgr->setCacheOpt(oldCacheOpt); });     //restore old cache option
-        mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOn);
 
         LAUNCH_PARAM launchParam;
         launchParam.beginFrame = frame;
         launchParam.endFrame = frame;
         launchParam.projectFps = mainWin->timelineInfo().timelinefps;
-        if (mainWin->isAlwaysLightCamera() || mainWin->isAlwaysMaterial()) {
-            launchParam.applyLightAndCameraOnly = mainWin->isAlwaysLightCamera();
-            launchParam.applyMaterialOnly = mainWin->isAlwaysMaterial();
-        }
         AppHelper::initLaunchCacheParam(launchParam);
         launchProgram(pModel, launchParam);
     }
@@ -868,12 +859,6 @@ void DisplayWidget::onRecord()
             ZASSERT_EXIT(main);
             launchParam.projectFps = main->timelineInfo().timelinefps;
             launchParam.zsgPath = zenoApp->graphsManagment()->zsgDir();
-
-            std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
-            ZASSERT_EXIT(mgr);
-            ZCacheMgr::cacheOption oldCacheOpt = mgr->getCacheOption();
-            zeno::scope_exit sp([=] {mgr->setCacheOpt(oldCacheOpt);});  //restore old cache option
-            mgr->setCacheOpt(ZCacheMgr::Opt_RunAll);
 
 #ifdef ZENO_OPTIX_PROC
             if (!m_bGLView)
