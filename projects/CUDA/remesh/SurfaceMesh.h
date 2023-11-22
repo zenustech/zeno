@@ -194,7 +194,7 @@ public:
         bool is_active_; // helper for C++11 range-based for-loops
     };
 
-    SurfaceMesh(std::shared_ptr<zeno::PrimitiveObject> prim,
+    SurfaceMesh(std::shared_ptr<zeno::PrimitiveObject> prim_obj,
                 std::string line_pick_tag);
     SurfaceMesh(const SurfaceMesh& rhs);
     ~SurfaceMesh();

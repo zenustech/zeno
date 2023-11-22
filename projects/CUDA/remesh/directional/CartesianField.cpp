@@ -73,8 +73,7 @@ namespace zeno::directional {
 
     }
 
-    // TODO(@seeeagull): I will change Eigen::VectorXi &singularities to vector, since it involves in no math calculation but requires a replication
-    void CartesianField::dijkstra(const int &source,
+    void CartesianField::dijkstra (const int &source,
                                   const std::set<int> &targets,
                                   std::vector<int> &path) {
         using node = std::pair<float, int>;
@@ -118,11 +117,11 @@ namespace zeno::directional {
         path.push_back(source);
     }
 
-    void CartesianField::cut_mesh_with_singularities(const Eigen::VectorXi& singularities,
+    void CartesianField::cut_mesh_with_singularities(const std::vector<int>& singularities,
                                                      Eigen::MatrixXi& cuts) {
         
-        std::set<int> vertices_in_cut;
-        for (int i = 0; i < singularities.rows(); ++i) {
+        std::set<int> vertices_in_cut{};
+        for (int i = 0; i < singularities.size(); ++i) {
             // add a singularity into the vertices_in_cut set using Dijkstra's algorithm
             std::vector<int> path{};
             dijkstra(singularities[i], vertices_in_cut, path);
@@ -145,7 +144,7 @@ namespace zeno::directional {
                 assert(common_face.size() == 2);
                 
                 for (int j = 0; j < 2; ++j) {
-                    const int f = common_face[j];
+                    int f = common_face[j];
                     for (int k = 0; k < 3; ++k)
                         if (((faces[f][k] == v0) && (faces[f][(k+1)%3] == v1)) ||
                             ((faces[f][k] == v1) && (faces[f][(k+1)%3] == v0))) {
@@ -191,7 +190,7 @@ namespace zeno::directional {
                 int next_face = (f1 == cur.first ? f2 : f1);
                 if ((next_face != -1) && (visited_spaces.count(next_face) == 0) && (!cuts(cur.first, i))) {
                     int next_matching = matching(e) * (f1 == cur.first ? 1 : -1);
-                    next_matching = (next_matching + cur.second + 10 * N) % N;  //killing negatives
+                    next_matching = (next_matching + cur.second + 10 * N) % N;  // killing negatives
                     space_queue.push(std::pair<int,int>(next_face, next_matching));
                 }
                 tb->mesh->next_halfedge(h);
