@@ -76,7 +76,7 @@ static void getOptStr(const QString& sockType, QVariant& defl, QString& opStr)
                 return;
             }
 
-            QString code = "=vec3(";
+            QString code = "vec3(";
             bool bFormula = false;
             for (int i = 0; i < vec.size(); i++)
             {
