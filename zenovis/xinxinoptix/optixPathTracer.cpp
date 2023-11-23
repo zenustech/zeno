@@ -2200,15 +2200,17 @@ void buildLightTree() {
             light.type = zeno::LightType::Direction;
         }
 
-        if (light.shape == zeno::LightShape::Plane) {
+        if (light.shape == zeno::LightShape::Plane || light.shape == zeno::LightShape::Ellipse) {
 
             firstRectLightIdx = min(idx, firstRectLightIdx);
 
             light.setRectData(v0, v1, v2, light.N);
             addLightPlane(v0, v1, v2, light.N);
 
+            light.rect.isEllipse = (light.shape == zeno::LightShape::Ellipse);
+
             if (dat.fluxFixed > 0) {
-                light.intensity = dat.fluxFixed / light.rect.area; 
+                light.intensity = dat.fluxFixed / light.rect.Area(); 
             }
 
         } else if (light.shape == zeno::LightShape::Sphere) {

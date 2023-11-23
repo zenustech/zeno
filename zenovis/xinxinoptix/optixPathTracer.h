@@ -68,6 +68,7 @@ struct GenericLight
         
         switch (this->shape) {
         case zeno::LightShape::Plane:
+        case zeno::LightShape::Ellipse:
             return this->rect.BoundAsLight(Phi, doubleSided);
         case zeno::LightShape::Sphere:
             return this->sphere.BoundAsLight(Phi, false);

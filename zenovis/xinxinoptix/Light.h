@@ -259,7 +259,9 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
             bool valid = false;
             switch (light.shape) {
                 case zeno::LightShape::Plane:
-                    valid = light.rect.hitAsLight(&lsr, shadingP, -light.N);  break;
+                case zeno::LightShape::Ellipse: {
+                    valid = light.rect.hitAsLight(&lsr, shadingP, -light.N); break;
+                }
                 case zeno::LightShape::Sphere: {
                     auto dir = normalize(light.sphere.center - shadingP);
                     valid = light.sphere.hitAsLight(&lsr, shadingP, dir); 
@@ -296,6 +298,23 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
                     lsr.uv = uvOffset + lsr.uv * uvScale;
                     break;
                 }
+                case zeno::LightShape::Ellipse: { 
+
+                    auto rect = light.rect;
+                    float2 uvScale, uvOffset;
+                    bool valid = SpreadClampRect(rect.v, rect.axisX, rect.lenX, rect.axisY, rect.lenY, 
+                                                rect.normal, shadingP, 
+                                                light.spread, uvScale, uvOffset, light.rect.isEllipse);
+                    if (!valid) return;
+
+                    rect.isEllipse = false; // disable ellipse test for sub rect
+                    rect.SampleAsLight(&lsr, uu, shadingP);
+                    lsr.uv = uvOffset + lsr.uv * uvScale;
+                    if (length(lsr.uv-0.5f) > 0.5f) { 
+                        return; // not inside ellipse
+                    }
+                    break;
+                }   
                 case zeno::LightShape::Sphere: {
                     light.sphere.SampleAsLight(&lsr, uu, shadingP); 
                     cihouSphereLightUV(lsr, light);

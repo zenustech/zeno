@@ -564,7 +564,8 @@ struct GraphicsManager {
                     ld.color.assign(clr.begin(), clr.end());
                 };
 
-                if (shape == 3u) { // Triangle mesh Light
+                const auto shapeEnum = magic_enum::enum_cast<zeno::LightShape>(shape);
+                if (shapeEnum == zeno::LightShape::TriangleMesh) { // Triangle mesh Light
 
                     for (size_t i=0; i<prim_in->tris->size(); ++i) {
                         auto _p0_ = prim_in->verts[prim_in->tris[i][0]];

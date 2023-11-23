@@ -14,7 +14,7 @@ namespace zeno {
     };
 
     enum struct LightShape {
-        Plane=0u, Sphere=1u, Point=2u, TriangleMesh=3u
+        Plane=0u, Ellipse=1u, Sphere=2u, Point=3u, TriangleMesh=4u
     };
 
     enum LightConfigMask {
