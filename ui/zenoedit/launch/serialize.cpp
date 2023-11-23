@@ -76,7 +76,7 @@ static void getOptStr(const QString& sockType, QVariant& defl, QString& opStr)
                 return;
             }
 
-            QString code = "=vec3(";
+            QString code = "vec3(";
             bool bFormula = false;
             for (int i = 0; i < vec.size(); i++)
             {
@@ -101,6 +101,7 @@ static void getOptStr(const QString& sockType, QVariant& defl, QString& opStr)
         else if (sockType == "int" || sockType == "float")
         {
             QString str = defl.toString();
+            str.replace(0, 1, "");
             defl = str;
             opStr = "setFormula";
         }
