@@ -275,33 +275,9 @@ ZENO_API zany INode::get_formula(std::string const &id) const
     if (auto formulas = dynamic_cast<zeno::StringObject *>(value.get())) 
     {
         std::string code = formulas->get();
-
-        auto& desc = nodeClass->desc;
-        if (!desc)
-            return value;
-
-        bool isStrFmla = false;
-        for (auto const& [type, name, defl, _] : desc->inputs) {
-            if (name == id && (type == "string" || type == "writepath" || type == "readpath" || type == "multiline_string")) {
-                isStrFmla = true;
-                break;
-            }
-        }
-        if (!isStrFmla) {
-            for (auto const& [type, name, defl, _] : desc->params) {
-                auto name_ = name + ":";
-                if (id == name_ &&
-                    (type == "string" || type == "writepath" || type == "readpath" || type == "multiline_string")) {
-                    isStrFmla = true;
-                    break;
-                }
-            }
-        }
-
-        //remove '='
-        code.replace(0, 1, "");
-
-        if (isStrFmla) {
+        if (code.find("=") == 0)
+        { 
+            code.replace(0, 1, "");
             auto res = getThisGraph()->callTempNode("StringEval", { {"zfxCode", objectFromLiterial(code)} }).at("result");
             value = objectFromLiterial(std::move(res));
         }
