@@ -6,21 +6,6 @@
 namespace zeno {
 
 /// credits: du wenxin
-template <typename T = float, typename Ti = int>
-struct CsrMatrix {
-    using value_type = T;
-    using index_type = std::make_signed_t<Ti>;
-    using size_type = std::make_unsigned_t<Ti>;
-    using table_type = zs::bcht<zs::vec<int, 2>, index_type, true, zs::universal_hash<zs::vec<int, 2>>, 16>;
-    size_type nrows = 0, ncols = 0; // for square matrix, nrows = ncols
-    zs::Vector<size_type> ap{};
-    zs::Vector<int> aj{};
-    zs::Vector<value_type> ax{};
-    // for build
-    table_type tab{};
-    zs::Vector<size_type> nnz{}; // non-zero entries per row
-};
-
 template <int n = 1, typename T_ = float>
 struct HessianPiece {
     using T = T_;
@@ -145,6 +130,30 @@ inline void retrieve_bounding_volumes(zs::CudaExecutionPolicy &pol, const TileVe
         bv_t bv{x0, x0};
         for (int d = 1; d != dim; ++d)
             merge(bv, vtemp.pack(dim_c<3>, xTag, inds[d]));
+        bvs[ei] = bv;
+    });
+}
+template <typename TileVecT, int codim = 3>
+inline void retrieve_bounding_volumes(zs::CudaExecutionPolicy &pol, const TileVecT &vtemp, const zs::SmallString &xTag,
+                                      const typename ZenoParticles::particles_t &eles, zs::wrapv<codim>, int voffset,
+                                      typename TileVecT::value_type thickness,
+                                      zs::Vector<zs::AABBBox<3, typename TileVecT::value_type>> &ret) {
+    using namespace zs;
+    using T = typename TileVecT::value_type;
+    using bv_t = AABBBox<3, T>;
+    static_assert(codim >= 1 && codim <= 4, "invalid co-dimension!\n");
+    constexpr auto space = execspace_e::cuda;
+    ret.resize(eles.size());
+    pol(range(eles.size()), [eles = proxy<space>({}, eles), bvs = proxy<space>(ret), vtemp = proxy<space>({}, vtemp),
+                             codim_v = wrapv<codim>{}, thickness, xTag, voffset] ZS_LAMBDA(int ei) mutable {
+        constexpr int dim = RM_CVREF_T(codim_v)::value;
+        auto inds = eles.pack(dim_c<dim>, "inds", ei, int_c) + voffset;
+        auto x0 = vtemp.pack(dim_c<3>, xTag, inds[0]);
+        bv_t bv{x0, x0};
+        for (int d = 1; d != dim; ++d)
+            merge(bv, vtemp.pack(dim_c<3>, xTag, inds[d]));
+        bv._min -= thickness;
+        bv._max += thickness;
         bvs[ei] = bv;
     });
 }

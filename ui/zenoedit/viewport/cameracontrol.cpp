@@ -384,7 +384,7 @@ void CameraControl::fakeWheelEvent(QWheelEvent *event) {
         }
 
     } else if (aperture_pressed) {
-        float temp = getAperture() + delta * 0.01;
+        float temp = getAperture() + delta * 0.1;
         setAperture(temp >= 0 ? temp : 0);
 
     } else if (focalPlaneDistance_pressed) {

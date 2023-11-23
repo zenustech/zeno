@@ -309,9 +309,9 @@ void UnifiedIPCSystem::computeBarrierGradient(zs::CudaExecutionPolicy &pol, cons
     T activeGap2 = dHat * dHat + (T)2.0 * xi * dHat;
     using mat12 = zs::vec<T, 12, 12>;
     using mat3 = zs::vec<T, 3, 3>;
-    using Vec12View = zs::vec_view<T, zs::integer_seq<int, 12>>;
-    using Vec9View = zs::vec_view<T, zs::integer_seq<int, 9>>;
-    using Vec6View = zs::vec_view<T, zs::integer_seq<int, 6>>;
+    using Vec12View = zs::vec_view<T, zs::integer_sequence<int, 12>>;
+    using Vec9View = zs::vec_view<T, zs::integer_sequence<int, 9>>;
+    using Vec6View = zs::vec_view<T, zs::integer_sequence<int, 6>>;
     auto numPP = PP.getCount();
     pol(range(numPP), [vtemp = proxy<space>({}, vtemp), PP = PP.port(), gTag, xi2 = xi * xi, dHat = dHat, activeGap2,
                        kappa = kappa] __device__(int ppi) mutable {
@@ -528,9 +528,9 @@ void UnifiedIPCSystem::computeFrictionBarrierGradient(zs::CudaExecutionPolicy &p
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     T activeGap2 = dHat * dHat + (T)2.0 * xi * dHat;
-    using Vec12View = zs::vec_view<T, zs::integer_seq<int, 12>>;
-    using Vec9View = zs::vec_view<T, zs::integer_seq<int, 9>>;
-    using Vec6View = zs::vec_view<T, zs::integer_seq<int, 6>>;
+    using Vec12View = zs::vec_view<T, zs::integer_sequence<int, 12>>;
+    using Vec9View = zs::vec_view<T, zs::integer_sequence<int, 9>>;
+    using Vec6View = zs::vec_view<T, zs::integer_sequence<int, 6>>;
     auto numFPP = FPP.getCount();
     pol(range(numFPP), [vtemp = proxy<space>({}, vtemp), fricPP = proxy<space>({}, fricPP), FPP = FPP.port(), gTag,
                         epsvh = epsv * dt, fricMu = fricMu] __device__(int fppi) mutable {
@@ -814,9 +814,9 @@ void UnifiedIPCSystem::updateBarrierGradientAndHessian(zs::CudaExecutionPolicy &
     T activeGap2 = dHat * dHat + (T)2.0 * xi * dHat;
     using mat12 = zs::vec<T, 12, 12>;
     using mat3 = zs::vec<T, 3, 3>;
-    using Vec12View = zs::vec_view<T, zs::integer_seq<int, 12>>;
-    using Vec9View = zs::vec_view<T, zs::integer_seq<int, 9>>;
-    using Vec6View = zs::vec_view<T, zs::integer_seq<int, 6>>;
+    using Vec12View = zs::vec_view<T, zs::integer_sequence<int, 12>>;
+    using Vec9View = zs::vec_view<T, zs::integer_sequence<int, 9>>;
+    using Vec6View = zs::vec_view<T, zs::integer_sequence<int, 6>>;
 
     auto &dynHess = linsys.dynHess;
 
@@ -1171,9 +1171,9 @@ void UnifiedIPCSystem::updateFrictionBarrierGradientAndHessian(zs::CudaExecution
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     T activeGap2 = dHat * dHat + (T)2.0 * xi * dHat;
-    using Vec12View = zs::vec_view<T, zs::integer_seq<int, 12>>;
-    using Vec9View = zs::vec_view<T, zs::integer_seq<int, 9>>;
-    using Vec6View = zs::vec_view<T, zs::integer_seq<int, 6>>;
+    using Vec12View = zs::vec_view<T, zs::integer_sequence<int, 12>>;
+    using Vec9View = zs::vec_view<T, zs::integer_sequence<int, 9>>;
+    using Vec6View = zs::vec_view<T, zs::integer_sequence<int, 6>>;
 
     auto &dynHess = linsys.dynHess;
 

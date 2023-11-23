@@ -127,7 +127,7 @@ ZENO_DEFNODE(CameraNode)({
         {"vec3f", "up", "0,1,0"},
         {"vec3f", "view", "0,0,-1"},
         {"float", "fov", "45"},
-        {"float", "aperture", "0.1"},
+        {"float", "aperture", "11"},
         {"float", "focalPlaneDistance", "2.0"},
         {"string", "other", ""},
         {"int", "frame", "0"},

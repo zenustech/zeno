@@ -164,8 +164,8 @@ namespace DisneyBSDF{
     static __inline__ __device__ 
     vec3 CalculateExtinction(vec3 apparantColor, float scaler)
     {
-     //   return 1.0/(max(apparantColor * scaler,vec3(0.000001)));
-        return (1.0f - apparantColor) * scaler;
+        return 1.0/(max(apparantColor * scaler,vec3(0.000001)));
+        // return (1.0f - apparantColor) * scaler;
     }
     
     static __inline__ __device__
@@ -376,9 +376,8 @@ namespace DisneyBSDF{
               f = f + s;
               fPdf += tmpPdf * glassPr * F;
             } else {
-              if(thin || mat.ior<1.01f)
+              if(thin)
               {
-
                 vec3 t = sqrt(mat.sssColor) * glassWt;
                 tterm = tterm + t;
                 f = f + t;
@@ -554,7 +553,6 @@ namespace DisneyBSDF{
         float F0;
 
         BRDFBasics::TintColors(mix(mat.basecolor, mat.sssColor, mat.subsurface), eta, mat.specularTint, mat.sheenTint, F0, Csheen, Cspec0);
-        Cspec0 = Cspec0;
 
         //material layer mix weight
         float dielectricWt = (1.0 - mat.metallic) * (1.0 - mat.specTrans);

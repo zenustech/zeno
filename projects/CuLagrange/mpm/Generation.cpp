@@ -25,7 +25,7 @@ struct PoissonDiskSample : INode {
         else
             gridPtr = zs::load_floatgrid_from_vdb_file(get_param<std::string>("path"));
 
-        // auto spls = zs::convert_floatgrid_to_sparse_levelset(
+        // auto spls = zs::convert_floatgrid_to_sparse_grid(
         //    gridPtr, {zs::memsrc_e::host, -1});
         auto dx = get_input2<float>("dx");
 #if 0
@@ -90,19 +90,25 @@ struct ZSPoissonDiskSample : INode {
         auto dx = get_input2<float>("dx");
         auto ppc = get_input2<float>("ppc");
 
-        match([&prim, &sampled, dx, ppc, this](auto &ls) {
+        match([&prim, &sampled, dx, ppc, this](auto ls) {
             using LsT = RM_CVREF_T(ls);
             if constexpr (is_same_v<LsT, typename ZenoLevelSet::basic_ls_t>) {
                 auto &field = ls._ls;
-                match([&sampled = sampled, dx = dx, ppc = ppc](auto &lsPtr) {
-                    if constexpr (is_spls_v<typename RM_CVREF_T(lsPtr)::element_type>) {
-                        const auto &ls = *lsPtr;
-                        const auto &spls = ls.memspace() != memsrc_e::host ? ls.clone({memsrc_e::host, -1}) : ls;
-                        sampled = zs::sample_from_levelset(zs::proxy<zs::execspace_e::openmp>(spls), dx, ppc);
-                    } else
-                        throw std::runtime_error(
-                            fmt::format("levelset type [{}] not supported in sampling.", zs::get_var_type_str(lsPtr)));
-                })(field);
+                match(
+                    [&sampled = sampled, dx = dx,
+                     ppc = ppc](auto &lsPtr) {
+                        using TT = typename remove_cvref_t<decltype(lsPtr)>::element_type;
+                        if constexpr (is_spls_v<TT>) {
+                            const auto& ls = *lsPtr;
+                            const auto& spls = ls.memspace() != memsrc_e::host ? ls.clone({ memsrc_e::host, -1 }) : ls;
+                            sampled = zs::sample_from_levelset(zs::proxy<zs::execspace_e::openmp>(spls), dx, ppc);
+                        }
+                        else {
+                            throw std::runtime_error(
+                                fmt::format("levelset type [] not supported in sampling."));
+                        }
+                    }
+                )(field);
             } else if constexpr (is_same_v<LsT, typename ZenoLevelSet::const_sdf_vel_ls_t>) {
                 match([&sampled = sampled, dx = dx, ppc = ppc](auto lsv) {
                     sampled = zs::sample_from_levelset(SdfVelFieldView{lsv}, dx, ppc);
@@ -1537,18 +1543,26 @@ struct ToZSLevelSet : INode {
         if (has_input<VDBFloatGrid>("VDBGrid")) {
             // pass in FloatGrid::Ptr
             zs::OpenVDBStruct gridPtr = get_input<VDBFloatGrid>("VDBGrid")->m_grid;
-            ls->getLevelSet() = basic_ls_t{
-                zs::convert_floatgrid_to_sparse_levelset(gridPtr, zs::MemoryProperty{zs::memsrc_e::device, 0})};
+            ls->getLevelSet() =
+                basic_ls_t{zs::convert_floatgrid_to_sparse_grid(gridPtr, zs::MemoryProperty{zs::memsrc_e::device, 0})};
         } else if (has_input<VDBFloat3Grid>("VDBGrid")) {
             // pass in FloatGrid::Ptr
+#if 0
             zs::OpenVDBStruct gridPtr = get_input<VDBFloat3Grid>("VDBGrid")->m_grid;
-            ls->getLevelSet() = basic_ls_t{
-                zs::convert_vec3fgrid_to_sparse_staggered_grid(gridPtr, zs::MemoryProperty{zs::memsrc_e::device, 0})};
+            ls->getLevelSet() =
+                basic_ls_t{zs::convert_vec3fgrid_to_sparse_grid(gridPtr, zs::MemoryProperty{zs::memsrc_e::device, 0})};
+#else
+            throw std::runtime_error("does not support conversion from vec3fgrid to sparsegrid");
+#endif
         } else {
+#if 0
             auto path = get_param<std::string>("path");
             auto gridPtr = zs::load_vec3fgrid_from_vdb_file(path);
             ls->getLevelSet() = basic_ls_t{
-                zs::convert_vec3fgrid_to_sparse_levelset(gridPtr, zs::MemoryProperty{zs::memsrc_e::device, 0})};
+                zs::convert_vec3fgrid_to_sparse_grid(gridPtr, zs::MemoryProperty{zs::memsrc_e::device, 0})};
+#else
+            throw std::runtime_error("does not support conversion from vec3fgrid to sparsegrid");
+#endif
         }
 
         fmt::print(fg(fmt::color::cyan), "done executing ToZSLevelSet\n");

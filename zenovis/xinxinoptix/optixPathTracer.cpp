@@ -3392,7 +3392,7 @@ void set_window_size(int nx, int ny) {
 }
 
 void set_perspective(float const *U, float const *V, float const *W, float const *E, float aspect, float fov, float fpd, float aperture) {
-    set_perspective_by_fov(U,V,W,E,aspect,fov,0.0f,0.024f,fpd,aperture,0.0f,0.0f,0.0f,0.0f);
+    set_perspective_by_fov(U,V,W,E,aspect,fov,0,0.024f,fpd,aperture,0.0f,0.0f,0.0f,0.0f);
 }
 void set_perspective_by_fov(float const *U, float const *V, float const *W, float const *E, float aspect, float fov, int fov_type, float L, float focal_distance, float aperture, float pitch, float yaw, float h_shift, float v_shift) {
     auto &cam = state.params.cam;
@@ -3404,7 +3404,8 @@ void set_perspective_by_fov(float const *U, float const *V, float const *W, floa
     float half_radfov = fov * float(M_PI) / 360.0f;
     float half_tanfov = std::tan(half_radfov);
     cam.focal_length = L / 2.0f / half_tanfov;
-    if(aperture < 0.01f){
+    cam.focal_length = std::max(0.01f,cam.focal_length);
+    if(aperture > 24.0f || aperture <  0.5f){
         cam.aperture = 0.0f;
     }else{
         cam.aperture = cam.focal_length / aperture;
@@ -3431,7 +3432,7 @@ void set_perspective_by_fov(float const *U, float const *V, float const *W, floa
     cam.yaw = yaw;
     cam.horizontal_shift = h_shift;
     cam.vertical_shift = v_shift;
-    cam.focal_distance = focal_distance;
+    cam.focal_distance = std::max(cam.focal_length, focal_distance);
     camera_changed = true;
 }
 void set_perspective_by_focal_length(float const *U, float const *V, float const *W, float const *E, float aspect, float focal_length, float w, float h, float focal_distance, float aperture, float pitch, float yaw, float h_shift, float v_shift) {
@@ -3442,8 +3443,9 @@ void set_perspective_by_focal_length(float const *U, float const *V, float const
     cam.front = normalize(make_float3(W[0], W[1], W[2]));
 
     cam.focal_length = focal_length;
+    cam.focal_length = std::max(0.01f,cam.focal_length);
 
-    if(aperture < 0.01f){
+    if(aperture > 24.0f || aperture < 0.5f){
         cam.aperture = 0.0f;
     }else{
         cam.aperture = cam.focal_length / aperture;
@@ -3455,7 +3457,7 @@ void set_perspective_by_focal_length(float const *U, float const *V, float const
     cam.yaw = yaw;
     cam.horizontal_shift = h_shift;
     cam.vertical_shift = v_shift;
-    cam.focal_distance = focal_distance;
+    cam.focal_distance = std::max(cam.focal_length, focal_distance);
     camera_changed = true;
 }
 
@@ -3532,47 +3534,48 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         auto w = (*output_buffer_o).width();
         auto h = (*output_buffer_o).height();
         stbi_flip_vertically_on_write(true);
-        if (zeno::getSession().userData().get2<bool>("output_exr", true)) {
-            auto exr_path = path.substr(0, path.size() - 4) + ".exr";
-
-            // AOV
-            if (zeno::getSession().userData().get2<bool>("output_aov", true)) {
-                SaveMultiLayerEXR(
-                        {
+        bool enable_output_aov = zeno::getSession().userData().get2<bool>("output_aov", true);
+        bool enable_output_exr = zeno::getSession().userData().get2<bool>("output_exr", true);
+        auto exr_path = path.substr(0, path.size() - 4) + ".exr";
+        // AOV
+        if (enable_output_aov) {
+            SaveMultiLayerEXR(
+                    {
                             (float*)optixgetimg_extra("color"),
                             (float*)optixgetimg_extra("diffuse"),
                             (float*)optixgetimg_extra("specular"),
                             (float*)optixgetimg_extra("transmit"),
                             (float*)optixgetimg_extra("background"),
-                        },
-                        w,
-                        h,
-                        {
+                    },
+                    w,
+                    h,
+                    {
                             "",
                             "diffuse.",
                             "specular.",
                             "transmit.",
                             "background.",
-                        },
-                        exr_path.c_str()
-                );
-            }
-            else {
-                save_exr((float3 *)optixgetimg_extra("color"), w, h, exr_path);
-            }
+                    },
+                    exr_path.c_str()
+            );
         }
         else {
-            stbi_write_jpg(path.c_str(), w, h, 4, p, 100);
-            if (denoise) {
-                const float* _albedo_buffer = reinterpret_cast<float*>(state.albedo_buffer_p.handle);
-                //SaveEXR(_albedo_buffer, w, h, 4, 0, (path+".albedo.exr").c_str(), nullptr);
-                auto a_path = path + ".albedo.pfm";
-                write_pfm(a_path, w, h, _albedo_buffer);
+            if (enable_output_exr) {
+                save_exr((float3 *)optixgetimg_extra("color"), w, h, exr_path);
+            }
+            else {
+                stbi_write_jpg(path.c_str(), w, h, 4, p, 100);
+                if (denoise) {
+                    const float* _albedo_buffer = reinterpret_cast<float*>(state.albedo_buffer_p.handle);
+                    //SaveEXR(_albedo_buffer, w, h, 4, 0, (path+".albedo.exr").c_str(), nullptr);
+                    auto a_path = path + ".albedo.pfm";
+                    write_pfm(a_path, w, h, _albedo_buffer);
 
-                const float* _normal_buffer = reinterpret_cast<float*>(state.normal_buffer_p.handle);
-                //SaveEXR(_normal_buffer, w, h, 4, 0, (path+".normal.exr").c_str(), nullptr);
-                auto n_path = path + ".normal.pfm";
-                write_pfm(n_path, w, h, _normal_buffer);
+                    const float* _normal_buffer = reinterpret_cast<float*>(state.normal_buffer_p.handle);
+                    //SaveEXR(_normal_buffer, w, h, 4, 0, (path+".normal.exr").c_str(), nullptr);
+                    auto n_path = path + ".normal.pfm";
+                    write_pfm(n_path, w, h, _normal_buffer);
+                }
             }
         }
         zeno::log_info("optix: saving screenshot {}x{} to {}", w, h, path);

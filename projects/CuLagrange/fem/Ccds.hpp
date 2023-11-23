@@ -1,5 +1,6 @@
 #pragma once
 #include "zensim/geometry/Geometry.hpp"
+#include "zensim/ZpcFunctional.hpp"
 #include "zensim/math/Vec.h"
 
 namespace zeno {
@@ -78,7 +79,7 @@ ptccd(VecT p, VecT t0, VecT t1, VecT t2, VecT dp, VecT dt0, VecT dt1, VecT dt2,
   dt2 -= mov;
   dp -= mov;
   T dispMag2Vec[3] = {dt0.l2NormSqr(), dt1.l2NormSqr(), dt2.l2NormSqr()};
-  T tmp = zs::limits<T>::lowest();
+  T tmp = ::zs::detail::deduce_numeric_lowest<T>();
   for (int i = 0; i != 3; ++i)
     if (dispMag2Vec[i] > tmp)
       tmp = dispMag2Vec[i];
@@ -142,7 +143,7 @@ eeccd(VecT ea0, VecT ea1, VecT eb0, VecT eb1, VecT dea0, VecT dea1, VecT deb0,
     T dists[] = {(ea0 - eb0).l2NormSqr(), (ea0 - eb1).l2NormSqr(),
                  (ea1 - eb0).l2NormSqr(), (ea1 - eb1).l2NormSqr()};
     {
-      dist2_cur = zs::limits<T>::max();
+      dist2_cur = ::zs::detail::deduce_numeric_max<T>();
       for (const auto &dist : dists)
         if (dist < dist2_cur)
           dist2_cur = dist;
@@ -173,7 +174,7 @@ eeccd(VecT ea0, VecT ea1, VecT eb0, VecT eb1, VecT dea0, VecT dea1, VecT deb0,
       T dists[] = {(ea0 - eb0).l2NormSqr(), (ea0 - eb1).l2NormSqr(),
                    (ea1 - eb0).l2NormSqr(), (ea1 - eb1).l2NormSqr()};
       {
-        dist2_cur = zs::limits<T>::max();
+        dist2_cur = zs::detail::deduce_numeric_max<T>();
         for (const auto &dist : dists)
           if (dist < dist2_cur)
             dist2_cur = dist;
@@ -300,7 +301,7 @@ constexpr auto solve_quadratic(const zs::VecInterface<VecT> &c,
                                double eps = 1e-8) {
   using T = typename VecT::value_type;
   using RetT = typename VecT::template variant_vec<
-      T, zs::integer_seq<typename VecT::index_type, 2>>;
+      T, zs::integer_sequence<typename VecT::index_type, 2>>;
   auto s = RetT::zeros();
   // make sure we have a d2 equation
   if (zs::abs(c[2]) < eps) {
@@ -406,7 +407,7 @@ constexpr bool pt_ccd(VecT p, VecT t0, VecT t1, VecT t2, VecT dp, VecT dt0,
   auto dDrv = [&A = A, &B = B, &C = C](T t) {
     return 3 * A * t * t + 2 * B * t + C;
   };
-  if (d(0) < zs::limits<T>::min()) {
+  if (d(0) < ::zs::detail::deduce_numeric_epsilon<T>()) {
     printf("\n\n\n\n\nwhat the heck??? trange [%f, %f]; t0 %f d "
            "%f\n\n\n\n\n",
            (float)ts[0], (float)ts[1], 0.f, (float)d(0));
@@ -416,7 +417,7 @@ constexpr bool pt_ccd(VecT p, VecT t0, VecT t1, VecT t2, VecT dp, VecT dt0,
   bool check = false;
   // coplanarity test
   // case 1
-  if (A > zs::limits<T>::min()) {
+  if (A > ::zs::detail::deduce_numeric_epsilon<T>()) {
     // ts[0] : tmax
     // ts[1] : tmin
     if (ts[1] > 0)
@@ -450,7 +451,7 @@ constexpr bool pt_ccd(VecT p, VecT t0, VecT t1, VecT t2, VecT dp, VecT dt0,
           (float)ts[0], (float)ts[1], (float)toi, (float)d(toi));
     }
     if (toi > 0 && toi < toc) {
-      if (d(toi) < zs::limits<T>::min())
+      if (d(toi) < ::zs::detail::deduce_numeric_epsilon<T>())
         return ptaccd(p, t0, t1, t2, dp, dt0, dt1, dt2, 0.1, thickness, toc);
       toi *= 0.8;
       auto a_ = t0 + toi * dt0;
