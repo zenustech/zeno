@@ -851,7 +851,7 @@ void DisplayWidget::onRecord()
             }*/
 
             //clear cached objs.
-            zeno::getSession().globalComm->clearState();
+            //zeno::getSession().globalComm->clearState();
             launchParam.beginFrame = recInfo.frameRange.first;
             launchParam.endFrame = recInfo.frameRange.second;
             launchParam.autoRmCurcache = recInfo.bAutoRemoveCache && launchParam.enableCache;
@@ -859,6 +859,10 @@ void DisplayWidget::onRecord()
             ZASSERT_EXIT(main);
             launchParam.projectFps = main->timelineInfo().timelinefps;
             launchParam.zsgPath = zenoApp->graphsManagment()->zsgDir();
+
+            std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
+            ZASSERT_EXIT(mgr);
+            mgr->setNewCacheDir(true);
 
 #ifdef ZENO_OPTIX_PROC
             if (!m_bGLView)

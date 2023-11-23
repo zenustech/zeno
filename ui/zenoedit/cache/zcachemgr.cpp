@@ -17,8 +17,9 @@ bool ZCacheMgr::initCacheDir(bool bTempDir, QDir dirCacheRoot, bool bAutoCleanCa
 {
     clearNotUsedToViewCache();
 
-    if (!m_isNew)
+    if (nextRunSkipCreateDir(bTempDir)) {
         return true;
+    }
 
     if (bTempDir || bAutoCleanCache)
         cleanCacheDir();
@@ -140,6 +141,18 @@ bool ZCacheMgr::hasCacheOnly(QDir dir, bool& empty)
 void ZCacheMgr::removeObjTmpCacheDir()
 {
     m_objTmpCacheDir.remove();
+}
+
+bool ZCacheMgr::nextRunSkipCreateDir(bool tmpDir)
+{
+    if (m_bTempDir != tmpDir)
+    {
+        return false;
+    }
+    else if(m_isNew || !lastRunCachePath.exists()) {
+        return false;
+    }
+    return true;
 }
 
 void ZCacheMgr::clearNotUsedToViewCache()

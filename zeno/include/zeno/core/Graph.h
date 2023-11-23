@@ -47,6 +47,8 @@ struct Graph : std::enable_shared_from_this<Graph> {
     std::unique_ptr<Context> ctx;
     std::unique_ptr<DirtyChecker> dirtyChecker;
 
+    bool runDirtyNodesOnly = true;
+
     ZENO_API Graph();
     ZENO_API ~Graph();
 

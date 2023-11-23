@@ -391,6 +391,10 @@ void AppHelper::initLaunchCacheParam(LAUNCH_PARAM& param)
     param.cacheDir = settings.value("zencachedir").isValid() ? settings.value("zencachedir").toString() : "";
     param.cacheNum = settings.value("zencachenum").isValid() ? settings.value("zencachenum").toInt() : 1;
     param.autoCleanCacheInCacheRoot = settings.value("zencache-autoclean").isValid() ? settings.value("zencache-autoclean").toBool() : true;
+
+    std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
+    ZASSERT_EXIT(mgr);
+    param.runDirtyNodesOnly = mgr->nextRunSkipCreateDir(param.tempDir);
 }
 
 bool AppHelper::openZsgAndRun(const ZENO_RECORD_RUN_INITPARAM& param, LAUNCH_PARAM launchParam)

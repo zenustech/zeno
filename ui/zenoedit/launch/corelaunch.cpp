@@ -246,6 +246,7 @@ void launchProgram(IGraphsModel* pModel, LAUNCH_PARAM param)
 	RAPIDJSON_WRITER writer(s);
     {
         JsonArrayBatch batch(writer);
+        JsonHelper::AddVariantList({ "runDirtyNodesOnly", param.runDirtyNodesOnly }, "bool",  writer);
         JsonHelper::AddVariantList({"setBeginFrameNumber", param.beginFrame}, "int", writer);
         JsonHelper::AddVariantList({"setEndFrameNumber", param.endFrame}, "int", writer);
         serializeScene(pModel, writer, param.paramPath);

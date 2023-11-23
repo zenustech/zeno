@@ -2,6 +2,7 @@
 #define __ZCACHEMGR_H__
 
 #include <QtWidgets>
+#include "launch/corelaunch.h"
 
 class ZCacheMgr
 {
@@ -17,6 +18,7 @@ public:
     void cleanCacheDir();
     bool hasCacheOnly(QDir dir, bool& empty);
     void removeObjTmpCacheDir();
+    bool nextRunSkipCreateDir(bool tmpDir);
 
 private:
     void clearNotUsedToViewCache();

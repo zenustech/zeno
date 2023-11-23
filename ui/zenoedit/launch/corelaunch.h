@@ -19,6 +19,8 @@ struct LAUNCH_PARAM {
     QString zsgPath;
     int projectFps = 24;
     QString paramPath;
+
+    bool runDirtyNodesOnly = true;
 };
 
 void launchProgram(IGraphsModel *pModel, LAUNCH_PARAM param);
