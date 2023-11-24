@@ -2143,7 +2143,7 @@ struct KuhnMunkres {
     using T = float; // weight
     int n;
     // std::vector<std::vector<int>> weight;
-    std::function<T(int, int)> weight;
+    zs::function<T(int, int)> weight;
     std::queue<int> q;
     std::vector<T> head_l; // mark for the left node, head_l[i] + head_r[j] >= weight[i][j]
     std::vector<T> head_r; // mark for the right node, the same
