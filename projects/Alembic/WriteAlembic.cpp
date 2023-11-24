@@ -479,7 +479,6 @@ struct WriteAlembic2 : INode {
             points.setTimeSampling(1);
             OPointsSchema::Sample samp(V3fArraySample( ( const V3f * )prim->verts.data(), prim->verts.size() ));
             std::vector<uint64_t> ids(prim->verts.size());
-            zeno::log_info("prim->verts.attr_is<int>: {}", prim->verts.attr_is<int>("id"));
             if (prim->verts.attr_is<int>("id")) {
                 auto &ids_ = prim->verts.attr<int>("id");
                 for (auto i = 0; i < prim->verts.size(); i++) {
