@@ -536,6 +536,14 @@ static std::shared_ptr<PrimitiveObject> foundABCPoints(Alembic::AbcGeom::IPoints
             parr.emplace_back(val[0], val[1], val[2]);
         }
     }
+
+    {
+        auto &ids = prim->verts.add_attr<int>("id");
+        auto count = mesamp.getIds()->size();
+        for (auto i = 0; i < count; i++) {
+            ids[i] = mesamp.getIds()->operator[](i);
+        }
+    }
     read_velocity(prim, mesamp.getVelocities(), read_done);
     ICompoundProperty arbattrs = mesh.getArbGeomParams();
     read_attributes(prim, arbattrs, iSS, read_done);
