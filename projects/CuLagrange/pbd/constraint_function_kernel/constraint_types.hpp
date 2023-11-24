@@ -23,6 +23,7 @@ enum category_c : int {
     tri_bending_spring,
     pt_pin_constraint,
     dcd_collision_constraint,
+    ccd_boundary_collision_constraint,
     volume_pin_constraint,
     bending,
     follow_animation_constraint,

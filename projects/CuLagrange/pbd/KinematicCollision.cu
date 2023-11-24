@@ -891,6 +891,9 @@ struct DetangleCCDCollisionWithBoundary : INode {
         auto pw = (float)(substep_id) / (float)nm_substeps;
 
         auto kboundary = get_input2<ZenoParticles>("boundary");
+
+        
+        auto boundary_velocity_scale = get_input2<float>("boundary_velocity_scale");
         // auto current_kx_tag = get_input2<std::string>("current_kx_tag");
         // auto pre_kx_tag = get_input2<std::string>("previous_kx_tag");
         const auto& kverts = kboundary->getParticles();
@@ -899,26 +902,6 @@ struct DetangleCCDCollisionWithBoundary : INode {
 
         zs::bht<int,2,int> csPT{verts.get_allocator(),MAX_COLLISION_PAIRS};csPT.reset(cudaPol,true);
         zs::bht<int,2,int> csEE{edges.get_allocator(),MAX_COLLISION_PAIRS};csEE.reset(cudaPol,true);
-
-        // if(!zsparticles->hasAuxData(PREVIOUS_COLLISION_TARGET)) {
-        //     (*zsparticles)[PREVIOUS_COLLISION_TARGET] = dtiles_t{kverts.get_allocator(),{{"x",3}},kverts.size()};
-        //     auto& kverts_pre = (*zsparticles)[PREVIOUS_COLLISION_TARGET];
-        //     cudaPol(zs::range(kverts.size()),[
-        //         kverts = proxy<space>({},kverts),
-        //         kverts_pre = proxy<space>({},kverts_pre),
-        //         pw = pw] ZS_LAMBDA(int kvi) mutable {
-        //             auto pre_kvert = kverts.pack(dim_c<3>,"px",kvi) * (1-pw) + kverts.pack(dim_c<3>,"x",kvi) * pw;
-        //             kverts_pre.tuple(dim_c<3>,"x",kvi) = pre_kvert;
-        //     });            
-        // }
-        // auto& kverts_pre = (*zsparticles)[PREVIOUS_COLLISION_TARGET];
-        // if(kverts_pre.size() != kverts.size()) {
-        //     std::cout << "the previous target and the current collider have different size" << std::endl;
-        //     throw std::runtime_error("the previous target and the current collider have different size");
-        // }
-
-
-        // auto dcd_constraints = get_input<ZenoParticles>("dcd_constraints");
 
         dtiles_t vtemp{verts.get_allocator(),{
             {"x",3},
@@ -947,11 +930,12 @@ struct DetangleCCDCollisionWithBoundary : INode {
             vtemp = proxy<space>({},vtemp),
             kverts = proxy<space>({},kverts),
             pw = pw,
+            boundary_velocity_scale = boundary_velocity_scale,
             w = w] ZS_LAMBDA(int kvi) mutable {
                 auto cur_kvert = kverts.pack(dim_c<3>,"px",kvi) * (1 -  w) + kverts.pack(dim_c<3>,"x",kvi) *  w;
                 auto pre_kvert = kverts.pack(dim_c<3>,"px",kvi) * (1 - pw) + kverts.pack(dim_c<3>,"x",kvi) * pw;
                 vtemp.tuple(dim_c<3>,"x",kvi + voffset) = pre_kvert;
-                vtemp.tuple(dim_c<3>,"v",kvi + voffset) = cur_kvert - pre_kvert;
+                vtemp.tuple(dim_c<3>,"v",kvi + voffset) = (cur_kvert - pre_kvert) * boundary_velocity_scale;
                 vtemp("minv",kvi + voffset) = (T)0;
                 vtemp("m",kvi + voffset) = (T)1000;
                 if(kverts.hasProperty("collision_cancel") && kverts("collision_cancel",kvi) > 1e-3)
@@ -1081,20 +1065,6 @@ struct DetangleCCDCollisionWithBoundary : INode {
                 break;
         }   
 
-        // if(nm_ccd_collision.getVal() > 0) {
-        //     std::cout << "MAX CCD ITERS EXCEEDS, ROLL BACK!!!" << std::endl;
-        //     COLLISION_UTILS::find_closest_intersection_free_configuration(cudaPol,
-        //         vtemp,
-        //         vtemp,"x","v",
-        //         etemp,
-        //         true,
-        //         (size_t)0,
-        //         edges.size(),
-        //         eBvh,
-        //         ttemp,
-        //         triBvh);
-        // }
-
         std::cout << "finish solving continous collision " << std::endl;
         if(!verts.hasProperty("ccd_fail_mark"))
             verts.append_channels(cudaPol,{{"ccd_fail_mark",1}});
@@ -1108,16 +1078,6 @@ struct DetangleCCDCollisionWithBoundary : INode {
             verts("ccd_fail_mark",vi) = ccd_fail_mark[vi];
         });  
 
-        // cudaPol(zs::range(kverts.size()),[
-        //     vtemp = proxy<space>({},vtemp),
-        //     w = w,
-        //     kverts = proxy<space>({},kverts),
-        //     kverts_pre = proxy<space>({},kverts_pre),
-        //     v_offset = verts.size()] ZS_LAMBDA(int kvi) mutable {
-        //         // auto cur_kvert = kverts.pack(dim_c<3>,"px",kvi) * (1-w) + kverts.pack(dim_c<3>,"x",kvi) * w;
-        //         kverts_pre.tuple(dim_c<3>,"x",kvi) = vtemp.pack(dim_c<3>,"x",kvi + v_offset) + vtemp.pack(dim_c<3>,"v",kvi + v_offset);
-        //         // kverts_pre.tuple(dim_c<3>,"x",kvi) = cur_kvert;
-        // });
         set_output("zsparticles",zsparticles);   
     }
 };
@@ -1134,10 +1094,441 @@ ZENDEFNODE(DetangleCCDCollisionWithBoundary, {{{"zsparticles"},
                                 {"bool","do_pt_detection","1"},
                                 {"int","substep_id","0"},
                                 {"int","nm_substeps","1"},
+                                {"float","boundary_velocity_scale","1"},
                             },
 							{{"zsparticles"}},
 							{},
 							{"PBD"}});
 
+
+struct VisualizeCCDCollisionWithBoundary : INode {
+    using T = float;
+    using vec3 = zs::vec<T,3>;
+    using vec4 = zs::vec<T,4>;
+    using vec4i = zs::vec<int,4>;
+    using dtiles_t = zs::TileVector<T,32>;
+
+    using bvh_t = ZenoLinearBvh::lbvh_t;
+    using bv_t = bvh_t::Box;   
+    
+    virtual void apply() override {
+        using namespace zs;
+        using namespace PBD_CONSTRAINT;
+        
+        constexpr auto space = execspace_e::cuda;
+        auto cudaPol = cuda_exec();
+        using lbvh_t = typename ZenoLinearBvh::lbvh_t;
+        using bv_t = typename ZenoLinearBvh::lbvh_t::Box;
+        constexpr auto exec_tag = wrapv<space>{};
+        constexpr auto eps = (T)1e-7;
+        constexpr auto MAX_COLLISION_PAIRS = 200000;
+        
+        auto zsparticles = get_input<ZenoParticles>("zsparticles");
+        auto xtag = get_input2<std::string>("xtag");
+        auto vtag = get_input2<std::string>("vtag");
+        // auto pre_x_tag = get_input2<std::string>("previous_x_tag");  
+
+        auto& verts = zsparticles->getParticles();
+        const auto& tris = zsparticles->getQuadraturePoints();    
+        const auto &edges = (*zsparticles)[ZenoParticles::s_surfEdgeTag]; 
+
+        auto substep_id = get_input2<int>("substep_id");
+        auto nm_substeps = get_input2<int>("nm_substeps");
+        auto w = (float)(substep_id + 1) / (float)nm_substeps;
+        auto pw = (float)(substep_id) / (float)nm_substeps;
+        // auto use_barycentric_interpolator = get_input2<bool>("use_barycentric_interpolator");
+        auto kboundary = get_input2<ZenoParticles>("boundary");
+        // auto current_kx_tag = get_input2<std::string>("current_kx_tag");
+        // auto pre_kx_tag = get_input2<std::string>("previous_kx_tag");
+        const auto& kverts = kboundary->getParticles();
+        const auto& kedges = (*kboundary)[ZenoParticles::s_surfEdgeTag];
+        const auto& ktris = kboundary->getQuadraturePoints();
+
+        zs::bht<int,2,int> csPT{verts.get_allocator(),MAX_COLLISION_PAIRS};csPT.reset(cudaPol,true);
+
+        dtiles_t kvtemp{kverts.get_allocator(),{
+            {"x",3},
+            {"v",3},
+            {"inds",1}
+        },kverts.size()};
+
+        cudaPol(zs::range(kverts.size()),[
+            kvtemp = proxy<space>({},kvtemp),
+            kverts = proxy<space>({},kverts),
+            pw = pw,
+            w = w] ZS_LAMBDA(int kvi) mutable {
+                auto cur_kvert = kverts.pack(dim_c<3>,"px",kvi) * (1 -  w) + kverts.pack(dim_c<3>,"x",kvi) *  w;
+                auto pre_kvert = kverts.pack(dim_c<3>,"px",kvi) * (1 - pw) + kverts.pack(dim_c<3>,"x",kvi) * pw;
+                kvtemp.tuple(dim_c<3>,"x",kvi) = pre_kvert;
+                kvtemp.tuple(dim_c<3>,"v",kvi) = cur_kvert - pre_kvert;
+                kvtemp("inds",kvi) = zs::reinterpret_bits<float>(kvi);
+        });
+
+
+        lbvh_t ktriBvh{};
+        auto ktriBvh_bvs = retrieve_bounding_volumes(cudaPol,kvtemp,ktris,kvtemp,wrapv<3>{},(T)1.0,(T)0,"x","v");        
+        ktriBvh.build(cudaPol,ktriBvh_bvs);
+
+        zs::Vector<T> tocs{verts.get_allocator(),verts.size()};
+        cudaPol(zs::range(tocs),[] ZS_LAMBDA(auto& toc) mutable {toc = std::numeric_limits<T>::max();});
+        COLLISION_UTILS::detect_continous_PKT_collision_pairs(cudaPol,
+            verts,xtag,vtag,
+            kvtemp,"x","v",
+            ktris,
+            ktriBvh,
+            tocs,
+            csPT);
+
+        std::cout << "nm_PKT_intersections : " << csPT.size() << std::endl;
+
+        dtiles_t PKT_pairs_vis{csPT.get_allocator(),{
+                {"xts",9},
+                {"xtc",9},
+                {"xte",9},
+                {"xp",3}
+            },
+        csPT.size()};
+        
+        cudaPol(zip(zs::range(csPT.size()),csPT._activeKeys),[
+            PKT_pairs_vis = proxy<space>({},PKT_pairs_vis),
+            tocs = proxy<space>(tocs),
+            verts = proxy<space>({},verts),xtag = zs::SmallString(xtag),
+            kvtemp = proxy<space>({},kvtemp),
+            ktris = proxy<space>({},ktris)] ZS_LAMBDA(auto ci,const auto& pair) mutable {
+                auto vi = pair[0];
+                auto kti = pair[1];
+                auto p = verts.pack(dim_c<3>,xtag,vi);
+                auto ktri = ktris.pack(dim_c<3>,"inds",kti,int_c);
+
+                vec3 ktps[3] = {};
+                vec3 ktvs[3] = {};
+                for(int i = 0;i != 3;++i) {
+                    ktps[i] = kvtemp.pack(dim_c<3>,"x",ktri[i]);
+                    ktvs[i] = kvtemp.pack(dim_c<3>,"v",ktri[i]);
+                }
+
+                auto toc = tocs[vi];
+
+                vec3 tkps_collider[3] = {};
+                for(int i = 0;i != 3;++i)
+                    tkps_collider[i] = ktps[i] + toc * ktvs[i];
+
+                vec3 tkps_end[3] = {};
+                for(int i = 0;i != 3;++i)
+                    tkps_end[i] = ktps[i] + ktvs[i];
+
+                
+                PKT_pairs_vis.tuple(dim_c<9>,"xts",ci) = zs::vec<T,9>{
+                    ktps[0][0],ktps[0][1],ktps[0][2],
+                    ktps[1][0],ktps[1][1],ktps[1][2],
+                    ktps[2][0],ktps[2][1],ktps[2][2]};
+
+                PKT_pairs_vis.tuple(dim_c<9>,"xtc",ci) = zs::vec<T,9>{
+                    tkps_collider[0][0],tkps_collider[0][1],tkps_collider[0][2],
+                    tkps_collider[1][0],tkps_collider[1][1],tkps_collider[1][2],
+                    tkps_collider[2][0],tkps_collider[2][1],tkps_collider[2][2]};
+
+                PKT_pairs_vis.tuple(dim_c<9>,"xte",ci) = zs::vec<T,9>{
+                    tkps_end[0][0],tkps_end[0][1],tkps_end[0][2],
+                    tkps_end[1][0],tkps_end[1][1],tkps_end[1][2],
+                    tkps_end[2][0],tkps_end[2][1],tkps_end[2][2]};
+
+                PKT_pairs_vis.tuple(dim_c<3>,"xp",ci) = p;
+        });
+
+        auto ompPol = omp_exec();
+        constexpr auto omp_space = execspace_e::openmp;
+        PKT_pairs_vis = PKT_pairs_vis.clone({memsrc_e::host});
+        
+        auto collided_tri_start = std::make_shared<zeno::PrimitiveObject>();
+        auto& cts_verts = collided_tri_start->verts;
+        auto& cts_tris = collided_tri_start->tris;
+        cts_verts.resize(csPT.size() * 3);
+        cts_tris.resize(csPT.size());
+
+        auto collided_tri_middle = std::make_shared<zeno::PrimitiveObject>();
+        auto& ctm_verts = collided_tri_middle->verts;
+        auto& ctm_tris = collided_tri_middle->tris;
+        ctm_verts.resize(csPT.size() * 3);
+        ctm_tris.resize(csPT.size());
+
+        auto collided_tri_end = std::make_shared<zeno::PrimitiveObject>();
+        auto& cte_verts = collided_tri_end->verts;
+        auto& cte_tris = collided_tri_end->tris;
+        cte_verts.resize(csPT.size() * 3);
+        cte_tris.resize(csPT.size());
+
+        ompPol(zs::range(csPT.size()),[
+            &cts_verts,&cts_tris,
+            &ctm_verts,&ctm_tris,
+            &cte_verts,&cte_tris,
+            PKT_pairs_vis = proxy<omp_space>({},PKT_pairs_vis)] (auto ci) mutable {
+                auto tps_all = PKT_pairs_vis.pack(dim_c<9>,"xts",ci);
+                vec3 tps[3] = {};
+                for(int i = 0;i != 3;++i)
+                    tps[i] = vec3{tps_all[i * 3 + 0],tps_all[i * 3 + 1],tps_all[i * 3 + 2]};
+                for(int i = 0;i != 3;++i)
+                    cts_verts[ci * 3 + i] = tps[i].to_array();
+                cts_tris[ci] = zeno::vec3i{ci * 3 + 0,ci * 3 + 1,ci * 3 + 2};
+
+                auto tpm_all = PKT_pairs_vis.pack(dim_c<9>,"xtc",ci);
+                for(int i = 0;i != 3;++i)
+                    tps[i] = vec3{tpm_all[i * 3 + 0],tpm_all[i * 3 + 1],tpm_all[i * 3 + 2]};   
+                for(int i = 0;i != 3;++i)
+                    ctm_verts[ci * 3 + i] = tps[i].to_array();
+                ctm_tris[ci] = zeno::vec3i{ci * 3 + 0,ci * 3 + 1,ci * 3 + 2};       
+                
+                auto tpe_all = PKT_pairs_vis.pack(dim_c<9>,"xte",ci);
+                for(int i = 0;i != 3;++i)
+                    tps[i] = vec3{tpe_all[i * 3 + 0],tpe_all[i * 3 + 1],tpe_all[i * 3 + 2]};   
+                for(int i = 0;i != 3;++i)
+                    cte_verts[ci * 3 + i] = tps[i].to_array();
+                cte_tris[ci] = zeno::vec3i{ci * 3 + 0,ci * 3 + 1,ci * 3 + 2};   
+        });
+
+        set_output("collided_tri_start",std::move(collided_tri_start));
+        set_output("collided_tri_middle",std::move(collided_tri_middle));
+        set_output("collided_tri_end",std::move(collided_tri_end));
+    }
+};
+
+
+ZENDEFNODE(VisualizeCCDCollisionWithBoundary, {{{"zsparticles"},
+                                {"string","xtag","x"},
+                                {"string","vtag","v"},
+                                {"int","nm_ccd_iters","1"},
+                                {"boundary"},
+                                {"bool","do_ee_detection","1"},
+                                {"bool","do_pt_detection","1"},
+                                {"int","substep_id","0"},
+                                {"int","nm_substeps","1"},
+                            },
+							{
+                                {"collided_tri_start"},
+                                {"collided_tri_middle"},
+                                {"collided_tri_end"}
+                            },
+							{},
+							{"PBD"}});
+
+struct DetangleCCDCollisionWithBoundary2 : INode {
+    using T = float;
+    using vec3 = zs::vec<T,3>;
+    using vec4 = zs::vec<T,4>;
+    using vec4i = zs::vec<int,4>;
+    using dtiles_t = zs::TileVector<T,32>;
+
+    using bvh_t = ZenoLinearBvh::lbvh_t;
+    using bv_t = bvh_t::Box;
+
+    virtual void apply() override {
+        using namespace zs;
+        using namespace PBD_CONSTRAINT;
+
+        constexpr auto space = execspace_e::cuda;
+        auto cudaPol = cuda_exec();
+        using lbvh_t = typename ZenoLinearBvh::lbvh_t;
+        using bv_t = typename ZenoLinearBvh::lbvh_t::Box;
+        constexpr auto exec_tag = wrapv<space>{};
+        constexpr auto eps = (T)1e-7;
+        constexpr auto MAX_COLLISION_PAIRS = 200000;
+
+        auto zsparticles = get_input<ZenoParticles>("zsparticles");
+        auto xtag = get_input2<std::string>("xtag");
+        auto vtag = get_input2<std::string>("vtag");
+        // auto pre_x_tag = get_input2<std::string>("previous_x_tag");  
+        auto nm_ccd_iters = get_input2<int>("nm_ccd_iters"); 
+
+        auto thickness = get_input2<float>("thickness");    
+        auto restitution_rate = get_input2<float>("restitution");
+        auto relaxation_rate = get_input2<float>("relaxation");
+
+        auto& verts = zsparticles->getParticles();
+        const auto& tris = zsparticles->getQuadraturePoints();    
+        const auto &edges = (*zsparticles)[ZenoParticles::s_surfEdgeTag]; 
+
+        auto kxtag = get_input2<std::string>("kxtag");
+        auto kpxtag = get_input2<std::string>("kpxtag");
+
+        auto substep_id = get_input2<int>("substep_id");
+        auto nm_substeps = get_input2<int>("nm_substeps");
+        auto w = (float)(substep_id + 1) / (float)nm_substeps;
+        auto pw = (float)(substep_id) / (float)nm_substeps;
+        // auto use_barycentric_interpolator = get_input2<bool>("use_barycentric_interpolator");
+        auto kboundary = get_input2<ZenoParticles>("boundary");
+        // auto current_kx_tag = get_input2<std::string>("current_kx_tag");
+        // auto pre_kx_tag = get_input2<std::string>("previous_kx_tag");
+        const auto& kverts = kboundary->getParticles();
+        const auto& kedges = (*kboundary)[ZenoParticles::s_surfEdgeTag];
+        const auto& ktris = kboundary->getQuadraturePoints();
+
+        zs::bht<int,2,int> csPT{verts.get_allocator(),MAX_COLLISION_PAIRS};csPT.reset(cudaPol,true);
+        zs::bht<int,2,int> csEE{edges.get_allocator(),MAX_COLLISION_PAIRS};csEE.reset(cudaPol,true);
+
+        dtiles_t kvtemp{kverts.get_allocator(),{
+            {"x",3},
+            {"v",3},
+            {"inds",1}
+        },kverts.size()};
+ 
+        cudaPol(zs::range(kverts.size()),[
+            kvtemp = proxy<space>({},kvtemp),
+            kverts = proxy<space>({},kverts),
+            pw = pw,
+            kxtag = zs::SmallString(kxtag),
+            kpxtag = zs::SmallString(kpxtag),
+            w = w] ZS_LAMBDA(int kvi) mutable {
+                auto cur_kvert = kverts.pack(dim_c<3>,kpxtag,kvi) * (1 -  w) + kverts.pack(dim_c<3>,kxtag,kvi) *  w;
+                auto pre_kvert = kverts.pack(dim_c<3>,kpxtag,kvi) * (1 - pw) + kverts.pack(dim_c<3>,kxtag,kvi) * pw;
+                kvtemp.tuple(dim_c<3>,"x",kvi) = pre_kvert;
+                kvtemp.tuple(dim_c<3>,"v",kvi) = cur_kvert - pre_kvert;
+                kvtemp("inds",kvi) = zs::reinterpret_bits<float>(kvi);
+        });
+
+        lbvh_t ktriBvh{},keBvh{},kpBvh{};
+        auto ktriBvh_bvs = retrieve_bounding_volumes(cudaPol,kvtemp,ktris,kvtemp,wrapv<3>{},(T)1.0,(T)0,"x","v");
+        ktriBvh.build(cudaPol,ktriBvh_bvs);
+        auto keBvh_bvs = retrieve_bounding_volumes(cudaPol,kvtemp,kedges,kvtemp,wrapv<2>{},(T)1.0,(T)0,"x","v");
+        keBvh.build(cudaPol,keBvh_bvs);
+        auto kpBvh_bvs = retrieve_bounding_volumes(cudaPol,kvtemp,kvtemp,kvtemp,wrapv<1>{},(T)1.0,(T)0,"x","v");
+        kpBvh.build(cudaPol,kpBvh_bvs);
+
+        zs::Vector<vec3> impulse_buffer{verts.get_allocator(),verts.size()};
+        zs::Vector<int> impulse_count{verts.get_allocator(),verts.size()};
+
+        auto do_ee_detection = get_input2<bool>("do_ee_detection");
+        auto do_pt_detection = get_input2<bool>("do_pt_detection");
+
+        // auto do_self_detection = get_input2<bool>("do_self_detection");
+    
+        // zs::Vector<int> nm_ccd_collision{verts.get_allocator(),1};
+
+        auto res_threshold = thickness * 0.01;
+        res_threshold = res_threshold < 5e-3 ? 5e-3 : res_threshold;
+
+        // zs::Vector<int> ccd_fail_mark{verts.get_allocator(),verts.size()};
+
+        auto update_x = get_input2<bool>("update_x");
+
+        for(int iter = 0;iter != nm_ccd_iters;++iter) {
+            cudaPol(zs::range(impulse_buffer),[]ZS_LAMBDA(auto& imp) mutable {imp = vec3::uniform(0);});
+            cudaPol(zs::range(impulse_count),[]ZS_LAMBDA(auto& c) mutable {c = 0;});
+
+            // nm_ccd_collision.setVal(0);
+
+            if(do_pt_detection) {
+                std::cout << "do continous PKT cololision impulse" << std::endl;
+                COLLISION_UTILS::calc_continous_PKT_collision_impulse(cudaPol,
+                    verts,xtag,vtag,
+                    kvtemp,"x","v",
+                    ktris,
+                    ktriBvh,
+                    csPT,
+                    impulse_buffer,
+                    impulse_count);
+                std::cout << "do continous KPT cololision impulse" << std::endl;
+                COLLISION_UTILS::calc_continous_KPT_collision_impulse(cudaPol,
+                    kvtemp,"x","v",
+                    kpBvh,
+                    verts,xtag,vtag,
+                    tris,
+                    csPT,
+                    impulse_buffer,
+                    impulse_count);
+            }
+
+            if(do_ee_detection) {
+                std::cout << "do continous EKE cololision impulse" << std::endl;
+                COLLISION_UTILS::calc_continous_EKE_collision_impulse_with_toc(cudaPol,
+                    verts,xtag,vtag,
+                    edges,
+                    kvtemp,"x","v",
+                    kedges,
+                    keBvh,
+                    csEE,
+                    impulse_buffer,
+                    impulse_count);
+            }
+
+            // if(do_self_detection) {
+
+            // }
+
+            std::cout << "apply CCD impulse" << std::endl;
+            cudaPol(zs::range(verts.size()),[
+                verts = proxy<space>({},verts),
+                update_x = update_x,
+                xtag = zs::SmallString(xtag),vtag = zs::SmallString(vtag),
+                impulse_buffer = proxy<space>(impulse_buffer),
+                impulse_count = proxy<space>(impulse_count),
+                relaxation_rate = relaxation_rate] ZS_LAMBDA(int vi) mutable {
+                    if(impulse_count[vi] == 0)
+                        return;
+                    auto impulse = relaxation_rate * impulse_buffer[vi] / impulse_count[vi];
+                    if(update_x)
+                        verts.tuple(dim_c<3>,xtag,vi) = verts.pack(dim_c<3>,xtag,vi) + impulse;
+                    else
+                        verts.tuple(dim_c<3>,vtag,vi) = verts.pack(dim_c<3>,vtag,vi) + impulse;
+            });
+        }   
+        set_output("zsparticles",zsparticles);   
+    }
+};
+
+ZENDEFNODE(DetangleCCDCollisionWithBoundary2, {{{"zsparticles"},
+                                {"string","xtag","x"},
+                                {"string","vtag","v"},
+                                {"int","nm_ccd_iters","1"},
+                                {"float","thickness","0.1"},
+                                {"float","restitution","0.1"},
+                                {"float","relaxation","1"},
+                                {"boundary"},
+                                {"string","kxtag","x"},
+                                {"string","kpxtag","px"},
+                                {"bool","do_ee_detection","1"},
+                                {"bool","do_pt_detection","1"},
+                                {"int","substep_id","0"},
+                                {"int","nm_substeps","1"},
+                                {"bool","update_x","1"}
+                            },
+							{{"zsparticles"}},
+							{},
+							{"PBD"}});
+
+// struct CCDProjectToGeometry : INode {
+//     using T = float;
+//     using vec3 = zs::vec<T,3>;
+//     using vec4 = zs::vec<T,4>;
+//     using vec4i = zs::vec<int,4>;
+//     using dtiles_t = zs::TileVector<T,32>;
+
+//     using bvh_t = ZenoLinearBvh::lbvh_t;
+//     using bv_t = bvh_t::Box;    
+
+//     virtual void apply() override {
+//         using namespace zs;
+//         using namespace PBD_CONSTRAINT;
+
+//         constexpr auto space = execspace_e::cuda;
+//         auto cudaPol = cuda_exec();
+//         using lbvh_t = typename ZenoLinearBvh::lbvh_t;
+//         using bv_t = typename ZenoLinearBvh::lbvh_t::Box;
+//         constexpr auto exec_tag = wrapv<space>{};
+//         constexpr auto eps = (T)1e-7;
+//         constexpr auto MAX_COLLISION_PAIRS = 200000;
+        
+//         auto zsparticles = get_input<ZenoParticles>("zsparticles");
+//         auto xtag = get_input2<std::string>("xtag");
+//         auto dxtag = get_input2<std::string>("dxtag");  
+        
+//         auto nm_ccd_iters = get_input2<int>("nm_ccd_iters"); 
+
+//         auto& verts = zsparticles->getParticles();
+//         const auto& tris = zsparticles->getQuadraturePoints();    
+//         const auto &edges = (*zsparticles)[ZenoParticles::s_surfEdgeTag];
+        
+        
+//     }
+// };
 
 };

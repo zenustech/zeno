@@ -1016,6 +1016,7 @@ namespace COLLISION_UTILS {
         auto vr_nrm = vr.dot(pr);
 
 
+
         REAL target_repulsive_dist = (REAL)0;
 
         if(add_repulsion) {
@@ -1026,9 +1027,22 @@ namespace COLLISION_UTILS {
         if(vr_nrm > target_repulsive_dist)
             return false;
 
+        auto vr_tan = vr - vr_nrm * pr;
         auto impulse = (target_repulsive_dist - vr_nrm) * pr;
+        auto imp_norm = impulse.norm();
+
+        auto vr_tan_dir = vr_tan.normalized();
 
 
+        REAL friction_coeff = 0.1;
+        REAL friction_scale = 0.0;
+        auto friction = VECTOR3::zeros();
+        if(imp_norm * friction_coeff > vr_tan.norm())
+            friction = -vr_tan;
+        else
+            friction = -vr_tan_dir * imp_norm * friction_coeff;
+
+        impulse += friction * friction_scale;
         // vr_nrm = vr_rnm < 0 ? vr_nrm : 0;
         // auto impulse = -pr * vr_nrm;
 

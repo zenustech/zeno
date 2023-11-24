@@ -1587,6 +1587,501 @@ void calc_continous_self_PT_collision_impulse(Pol& pol,
 }
 
 
+template<typename Pol,
+    typename PosTileVec,
+    typename TrisTileVec,
+    typename kTriPathBvh,
+    typename PKTHashMap,  
+    typename CCDTocBuffer,
+    typename T = typename PosTileVec::value_type>
+void detect_continous_PKT_collision_pairs(Pol& pol,
+    const PosTileVec& verts,const zs::SmallString& xtag,const zs::SmallString& vtag,
+    const PosTileVec& kverts,const zs::SmallString& kxtag,const zs::SmallString& kvtag,
+    const TrisTileVec& ktris,
+    const kTriPathBvh& ktriCCDBvh,
+    CCDTocBuffer& tocs,
+    PKTHashMap& csPKT) {
+        using namespace zs;
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+
+        using vec2 = zs::vec<T,2>;
+        using vec3 = zs::vec<T,3>;
+        using vec4 = zs::vec<T,4>;
+        using vec2i = zs::vec<int,2>;
+        using vec4i = zs::vec<int,4>;
+        constexpr auto eps = (T)1e-6; 
+
+        csPKT.reset(pol,true);
+
+        pol(zs::range(verts.size()),[
+            xtag = xtag,vtag = vtag,
+            verts = proxy<space>({},verts),
+            tocs = proxy<space>(tocs),
+            csPKT = proxy<space>(csPKT),
+            kxtag = kxtag,
+            kvtag = kvtag,
+            kverts = proxy<space>({},kverts),
+            ktris = proxy<space>({},ktris),
+            eps = eps,
+            ktriCCDBvh = proxy<space>(ktriCCDBvh)] ZS_LAMBDA(int vi) mutable {
+                if(verts.hasProperty("minv") && verts("minv",vi) < eps)
+                    return;
+                // printf("testing verts[%d] for intersections\n",vi);
+               int first_collided_kti = -1;
+                T min_toc = std::numeric_limits<T>::max();
+                auto p = verts.pack(dim_c<3>,xtag,vi);
+                auto v = verts.pack(dim_c<3>,vtag,vi);
+                bv_t bv{p,p + v};
+                auto do_close_proximity_detection = [&](int kti) mutable {
+                    // printf("testing verts[%d] and ktris[%d] for intersections\n",vi,kti);
+                    auto ktri = ktris.pack(dim_c<3>,"inds",kti,int_c);
+                    vec3 ktps[3] = {};
+                    vec3 ktvs[3] = {};
+                    for(int i = 0;i != 3;++i) {
+                        ktps[i] = kverts.pack(dim_c<3>,kxtag,ktri[i]);
+                        ktvs[i] = kverts.pack(dim_c<3>,kvtag,ktri[i]);
+                    }
+
+                    auto toc = (T)1.0;
+                    if(!accd::ptccd(p,ktps[0],ktps[1],ktps[2],v,ktvs[0],ktvs[1],ktvs[2],(T)0.2,(T)0.0,toc))
+                        return;
+                    if(toc < min_toc) {
+                        min_toc = toc;
+                        first_collided_kti = kti;
+                    }
+                };
+                ktriCCDBvh.iter_neighbors(bv,do_close_proximity_detection);
+
+                if(first_collided_kti >= 0) {
+                    csPKT.insert(vec2i{vi,first_collided_kti});
+                    tocs[vi] = min_toc;
+                }
+        });        
+}
+
+
+template<typename Pol,
+    typename PosTileVec,
+    typename TrisTileVec,
+    typename ImpulseBuffer,
+    typename ImpulseCount,
+    typename kTriPathBvh,
+    typename PKTHashMap,  
+    typename T = typename PosTileVec::value_type>
+void calc_continous_PKT_collision_impulse(Pol& pol,
+    const PosTileVec& verts,const zs::SmallString& xtag,const zs::SmallString& vtag,
+    const PosTileVec& kverts,const zs::SmallString& kxtag,const zs::SmallString& kvtag,
+    const TrisTileVec& ktris,
+    const kTriPathBvh& ktriCCDBvh,
+    PKTHashMap& csPKT,
+    ImpulseBuffer& impulse_buffer,
+    ImpulseCount& impulse_count) {
+        using namespace zs;
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+
+        using vec2 = zs::vec<T,2>;
+        using vec3 = zs::vec<T,3>;
+        using vec4 = zs::vec<T,4>;
+        using vec2i = zs::vec<int,2>;
+        using vec4i = zs::vec<int,4>;
+        constexpr auto eps = (T)1e-6;
+
+        auto execTag = wrapv<space>{};     
+
+        zs::Vector<T> tocs{verts.get_allocator(),verts.size()};
+        pol(zs::range(tocs),[] ZS_LAMBDA(auto& toc) mutable {toc = std::numeric_limits<T>::max();});
+        detect_continous_PKT_collision_pairs(pol,verts,xtag,vtag,kverts,kxtag,kvtag,ktris,ktriCCDBvh,tocs,csPKT);
+
+        pol(zip(zs::range(csPKT.size()),csPKT._activeKeys),[
+            xtag = xtag,vtag = vtag,
+            tocs = proxy<space>(tocs),
+            verts = proxy<space>({},verts),
+            csPKT = proxy<space>(csPKT),
+            kxtag = kxtag,kvtag = kvtag,
+            kverts = proxy<space>({},kverts),
+            ktris = proxy<space>({},ktris),
+            impulse_buffer = proxy<space>(impulse_buffer),
+            impulse_count = proxy<space>(impulse_count)] ZS_LAMBDA(auto id,const auto& pair) mutable {
+                auto vi = pair[0];
+                auto kti = pair[1];
+                auto p = verts.pack(dim_c<3>,xtag,vi);
+                auto v = verts.pack(dim_c<3>,vtag,vi);
+
+                auto ktri = ktris.pack(dim_c<3>,"inds",kti,int_c);
+                vec3 ps[4] = {};ps[3] = p;
+                vec3 vs[4] = {};vs[3] = v;
+
+                for(int i = 0;i != 3;++i) {
+                    ps[i] = kverts.pack(dim_c<3>,kxtag,ktri[i]);
+                    vs[i] = kverts.pack(dim_c<3>,kvtag,ktri[i]);
+                }
+
+                auto toc = tocs[vi];
+                vec3 nps[4] = {};
+                for(int i = 0;i != 4;++i)
+                    nps[i] = ps[i] + vs[i] * toc * 0.99;    
+
+                auto collision_nrm = (nps[1] - nps[0]).cross(nps[2] - nps[0]);
+                auto area = collision_nrm.norm();
+                if(area < eps)
+                    return;
+                collision_nrm /= area;
+                vec3 bary_centric{};
+                LSL_GEO::pointTriangleBaryCentric(nps[0],nps[1],nps[2],nps[3],bary_centric);
+                vec4 bary{-bary_centric[0],-bary_centric[1],-bary_centric[2],1};
+
+                auto rv = vec3::zeros();
+                auto rp = vec3::zeros();
+                for(int i = 0;i != 4;++i) {
+                    rv += vs[i] * bary[i];
+                    rp += nps[i] * bary[i];
+                }
+                if(rv.dot(rp) > 0)
+                    return;
+
+                auto rv_nrm = collision_nrm.dot(rv);       
+                auto impulse = -collision_nrm * rv_nrm * ((T)1 - toc);      
+
+                impulse_count[vi] += 1;
+                impulse_buffer[vi] += impulse;                                               
+        });
+}
+
+template<typename Pol,
+    typename PosTileVec,
+    typename TrisTileVec,
+    typename ImpulseBuffer,
+    typename ImpulseCount,
+    typename kVertexPathBvh,
+    typename PKTHashMap,  
+    typename T = typename PosTileVec::value_type>
+void calc_continous_KPT_collision_impulse(Pol& pol,
+    const PosTileVec& kverts,const zs::SmallString& kxtag,const zs::SmallString& kvtag,
+    const kVertexPathBvh& kVertexCCDBvh,
+    const PosTileVec& verts,const zs::SmallString& xtag,const zs::SmallString& vtag,
+    const TrisTileVec& tris,
+    PKTHashMap& csKPT,
+    ImpulseBuffer& impulse_buffer,
+    ImpulseCount& impulse_count) {
+        using namespace zs;
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+
+        using vec2 = zs::vec<T,2>;
+        using vec3 = zs::vec<T,3>;
+        using vec4 = zs::vec<T,4>;
+        using vec2i = zs::vec<int,2>;
+        using vec4i = zs::vec<int,4>;
+        constexpr auto eps = (T)1e-6;
+
+        auto execTag = wrapv<space>{};     
+
+        csKPT.reset(pol,true);
+        zs::Vector<T> tocs{tris.get_allocator(),tris.size()};
+        pol(zs::range(tris.size()),[tocs = proxy<space>(tocs)] ZS_LAMBDA(auto ti) mutable {tocs[ti] = std::numeric_limits<T>::max();});
+        auto tri_bvs = retrieve_bounding_volumes(pol,verts,tris,verts,wrapv<3>{},(T)1.0,(T)0,xtag,vtag);
+        
+        pol(zs::range(tris.size()),[
+            xtag = xtag,vtag = vtag,
+            verts = proxy<space>({},verts),
+            tris = proxy<space>({},tris),
+            tocs = proxy<space>(tocs),
+            impulse_buffer = proxy<space>(impulse_buffer),
+            impulse_count = proxy<space>(impulse_count),
+            csKPT = proxy<space>(csKPT),
+            kxtag = kxtag,
+            kvtag = kvtag,
+            kverts = proxy<space>({},kverts),
+            eps = eps,
+            tri_bvs = proxy<space>(tri_bvs),
+            kVertexCCDBvh = proxy<space>(kVertexCCDBvh)] ZS_LAMBDA(int ti) mutable {
+                bool is_dynamic_tri = true;
+
+                auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
+                // if(verts.hasProperty("minv")) {
+                //     is_dynamic_tri = false;
+                //     for(int i = 0;i != 3;++i)
+                //         if(verts("minv",tri[i]) > eps)
+                //             is_dynamic_tri = true;
+                // }
+
+                if(!is_dynamic_tri)
+                    return;
+
+               int first_collided_kvi = -1;
+                T min_toc = std::numeric_limits<T>::max();
+
+                vec3 tps[3] = {};
+                vec3 tvs[3] = {};
+                for(int i = 0;i != 3;++i) {
+                    tps[i] = verts.pack(dim_c<3>,xtag,tri[i]);
+                    tvs[i] = verts.pack(dim_c<3>,vtag,tri[i]);
+                }
+
+                auto bv = tri_bvs[ti];
+                // bv_t bv{tps[0],tps[1]};
+                // merge(bv,tps[2]);
+
+                // auto tri_vel = vec3::zeros();
+
+                auto do_close_proximity_detection = [&](int kvi) mutable {
+                    auto kp = kverts.pack(dim_c<3>,kxtag,kvi);
+                    auto kv = kverts.pack(dim_c<3>,kvtag,kvi);
+ 
+                    auto toc = (T)1.0;
+                    if(!accd::ptccd(kp,tps[0],tps[1],tps[2],kv,tvs[0],tvs[1],tvs[2],(T)0.2,(T)0.0,toc))
+                        return;
+                    if(toc < min_toc) {
+                        min_toc = toc;
+                        first_collided_kvi = kvi;
+                    }
+                };
+                kVertexCCDBvh.iter_neighbors(bv,do_close_proximity_detection);
+
+                if(first_collided_kvi >= 0) {
+                    csKPT.insert(vec2i{first_collided_kvi,ti});
+                    tocs[ti] = min_toc;
+                }
+        });
+
+        pol(zip(zs::range(csKPT.size()),csKPT._activeKeys),[
+            xtag = xtag,vtag = vtag,
+            execTag = execTag,
+            tocs = proxy<space>(tocs),
+            verts = proxy<space>({},verts),
+            tris = proxy<space>({},tris),
+            csKPT = proxy<space>(csKPT),
+            kxtag = kxtag,kvtag = kvtag,
+            kverts = proxy<space>({},kverts),
+            impulse_buffer = proxy<space>(impulse_buffer),
+            impulse_count = proxy<space>(impulse_count)] ZS_LAMBDA(auto id,const auto& pair) mutable {
+                auto kvi = pair[0];
+                auto ti = pair[1];
+                auto kp = kverts.pack(dim_c<3>,kxtag,kvi);
+                auto kv = kverts.pack(dim_c<3>,kvtag,kvi);
+
+                auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
+                vec3 ps[4] = {};ps[3] = kp;
+                vec3 vs[4] = {};vs[3] = kv;
+
+                for(int i = 0;i != 3;++i) {
+                    ps[i] = verts.pack(dim_c<3>,xtag,tri[i]);
+                    vs[i] = verts.pack(dim_c<3>,vtag,tri[i]);
+                }
+
+                auto toc = tocs[ti];
+                vec3 nps[4] = {};
+                for(int i = 0;i != 4;++i)
+                    nps[i] = ps[i] + vs[i] * toc * 0.99;    
+
+                auto collision_nrm = (nps[1] - nps[0]).cross(nps[2] - nps[0]);
+                auto area = collision_nrm.norm();
+                if(area < eps)
+                    return;
+                collision_nrm /= area;
+                vec3 bary_centric{};
+                LSL_GEO::pointTriangleBaryCentric(nps[0],nps[1],nps[2],nps[3],bary_centric);
+                vec4 bary{-bary_centric[0],-bary_centric[1],-bary_centric[2],1};
+
+                auto rv = vec3::zeros();
+                auto rp = vec3::zeros();
+                for(int i = 0;i != 4;++i) {
+                    rv += vs[i] * bary[i];
+                    rp += nps[i] * bary[i];
+                }
+                if(rv.dot(rp) > 0)
+                    return;
+
+                auto rv_nrm = collision_nrm.dot(rv);       
+
+                auto cm = (T).0;
+                for(int i = 0;i != 3;++i)
+                    cm += bary_centric[i] * bary_centric[i] / verts("m",tri[i]);
+                if(cm < eps)
+                    return;
+
+
+                auto impulse = -collision_nrm * rv_nrm * ((T)1 - toc);      
+
+                for(int i = 0;i != 3;++i) {
+                    // if(verts("minv",tri[i]) < eps)
+                    //     return;
+                    auto beta = -(bary_centric[i] * verts("minv",tri[i])) / cm;
+                    atomic_add(execTag,&impulse_count[tri[i]],1);
+                    for(int d = 0;d != 3;++d)
+                        atomic_add(execTag,&impulse_buffer[tri[i]][d],impulse[d] * beta);
+                }                                             
+        });
+}
+
+
+template<typename Pol,  
+    typename PosTileVec,
+    typename EdgeTileVec,
+    typename ImpulseBuffer,
+    typename ImpulseCountBuffer,
+    typename kEdgePathBvh,
+    typename EKEHashMap,
+    typename T = typename PosTileVec::value_type>
+void calc_continous_EKE_collision_impulse_with_toc(Pol& pol,
+    const PosTileVec& verts,const zs::SmallString& xtag,const zs::SmallString& vtag,
+    const EdgeTileVec& edges,
+    const PosTileVec& kverts,const zs::SmallString& kxtag,const zs::SmallString& kvtag,
+    const EdgeTileVec& kedges,
+    kEdgePathBvh& keBvh,
+    EKEHashMap& csEKE,
+    ImpulseBuffer& impulse_buffer,
+    ImpulseCountBuffer& impulse_count) {
+        using namespace zs;
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+        // constexpr auto exec_tag = wrapv<space>{};
+
+        using vec2 = zs::vec<T,2>;
+        using vec3 = zs::vec<T,3>;
+        using vec4 = zs::vec<T,4>;
+        using vec2i = zs::vec<int,2>;
+        using vec4i = zs::vec<int,4>;
+        constexpr auto eps = (T)1e-6;
+
+        zs::Vector<T> tocs{edges.get_allocator(),edges.size()};
+        pol(zs::range(tocs),[] ZS_LAMBDA(auto& toc) mutable {toc = std::numeric_limits<T>::max();});
+
+        auto edge_bvs = retrieve_bounding_volumes(pol,verts,edges,verts,wrapv<2>{},(T)1.0,(T)0,xtag,vtag);        
+
+        csEKE.reset(pol,true);
+
+        auto execTag = wrapv<space>{};
+
+        pol(zs::range(edges.size()),[
+            xtag = xtag,vtag = vtag,
+            edge_bvs = proxy<space>(edge_bvs),
+            tocs = proxy<space>(tocs),
+            verts = proxy<space>({},verts),
+            edges = proxy<space>({},edges),
+            kxtag = kxtag,
+            kvtag = kvtag,
+            kverts = proxy<space>({},kverts),
+            kedges = proxy<space>({},kedges),
+            keBvh = proxy<space>(keBvh),
+            eps = eps,
+            csEKE = proxy<space>(csEKE),
+            impulse_buffer = proxy<space>(impulse_buffer),
+            impulse_count = proxy<space>(impulse_count)] ZS_LAMBDA(int ei) mutable {
+                bool is_dynamic_edge = true;
+                auto edge = edges.pack(dim_c<2>,"inds",ei,int_c);
+                // if(verts.hasProperty("minv")) {
+                //     is_dynamic_edge = false;
+                //     for(int i = 0;i != 2;++i)
+                //         if(verts("minv",edge[i]) > eps)
+                //             is_dynamic_edge = true;
+                // }
+                if(!is_dynamic_edge)
+                    return;      
+
+                vec3 eps[2] = {};
+                for(int i = 0;i != 2;++i)
+                    eps[i] = verts.pack(dim_c<3>,xtag,edge[i]);
+
+                // auto bv = bv_t{get_bounding_box(eps[0],eps[1])};
+                auto bv = edge_bvs[ei];
+
+                int first_collided_kei = -1;
+                T min_toc = std::numeric_limits<T>::max();
+
+                vec3 evs[2] = {};
+                for(int i = 0;i != 2;++i)
+                    evs[i] = verts.pack(dim_c<3>,vtag,edge[i]);
+
+                auto do_close_proximity_detection = [&](int kei) mutable {
+                    auto kedge = kedges.pack(dim_c<2>,"inds",kei,int_c);
+                    vec3 keps[2] = {};
+                    vec3 kevs[2] = {};
+                    for(int i = 0;i != 2;++i) {
+                        keps[i] = kverts.pack(dim_c<3>,kxtag,kedge[i]);
+                        kevs[i] = kverts.pack(dim_c<3>,kvtag,kedge[i]);
+                    }
+
+                    auto toc = (T)1.0;
+                    if(!accd::eeccd(eps[0],eps[1],keps[0],keps[1],evs[0],evs[1],kevs[0],kevs[1],(T)0.2,(T)0,toc))
+                        return;     
+
+                    if(toc < min_toc) {
+                        min_toc = toc;
+                        first_collided_kei = kei;
+                    }        
+                };   
+                keBvh.iter_neighbors(bv,do_close_proximity_detection);
+                if(first_collided_kei >= 0) {
+                    csEKE.insert(vec2i{ei,first_collided_kei});
+                    tocs[ei] = min_toc;
+                }
+        });
+
+    pol(zip(zs::range(csEKE.size()),csEKE._activeKeys),[
+        execTag = execTag,
+        xtag = xtag,vtag = vtag,
+        tocs = proxy<space>(tocs),
+        verts = proxy<space>({},verts),
+        edges = proxy<space>({},edges),
+        csEKE = proxy<space>(csEKE),
+        kxtag = kxtag,kvtag = kvtag,
+        impulse_count = proxy<space>(impulse_count),
+        impulse_buffer = proxy<space>(impulse_buffer),
+        kverts = proxy<space>({},kverts),
+        kedges = proxy<space>({},kedges)] ZS_LAMBDA(auto id,const auto& pair) mutable {
+            auto ei  = pair[0];
+            auto kei = pair[1];
+            auto edge = edges.pack(dim_c<2>,"inds",ei,int_c);
+            auto kedge = kedges.pack(dim_c<2>,"inds",kei,int_c);
+
+            vec3 ps[4] = {};
+            vec3 vs[4] = {};
+
+            for(int i = 0;i != 2;++i) {
+                ps[i] = verts.pack(dim_c<3>,xtag,edge[i]);
+                ps[i + 2] = kverts.pack(dim_c<3>,kxtag,kedge[i]);
+                vs[i] = verts.pack(dim_c<3>,vtag,edge[i]);
+                vs[i + 2] = kverts.pack(dim_c<3>,kvtag,kedge[i]);
+            }
+
+            vec3 nps[4] = {};
+            auto toc = tocs[ei];
+            for(int i = 0;i != 4;++i)
+                nps[i] = ps[i] + toc * vs[i];
+
+            vec2 edge_bary{};
+            LSL_GEO::edgeEdgeBaryCentric(nps[0],nps[1],nps[2],nps[3],edge_bary);
+                for(int i = 0;i != 2;++i) {
+                edge_bary[i] = edge_bary[i] < 0 ? 0 : edge_bary[i];
+                edge_bary[i] = edge_bary[i] > 1 ? 1 : edge_bary[i];
+            }            
+            vec4 bary{edge_bary[0] - 1,-edge_bary[0],1 - edge_bary[1],edge_bary[1]};
+
+            auto rv = vec3::zeros();
+            auto pr = vec3::zeros();
+            for(int i = 0;i != 4;++i) {
+                rv += vs[i] * bary[i];
+                pr += nps[i] * bary[i];
+            }
+
+            auto collision_nrm = pr.normalized();
+            auto rv_nrm = collision_nrm.dot(rv);
+            auto cm = (T).0;
+            cm += bary[0] * bary[0] / verts("m",edge[0]);
+            cm += bary[1] * bary[1] / verts("m",edge[1]);
+
+            if(cm < eps)
+                return; 
+
+            auto impulse = -collision_nrm * rv_nrm * ((T)1 - toc);     
+
+            for(int i = 0;i != 2;++i) {
+                auto beta = (bary[i] * verts("minv",edge[i])) / cm;
+                atomic_add(execTag,&impulse_count[edge[i]],1);
+                    for(int d = 0;d != 3;++d)
+                        atomic_add(execTag,&impulse_buffer[edge[i]][d],impulse[d] * beta);
+            }      
+    });
+}
 
 template<typename Pol,
     typename InverseMassTileVec,
@@ -1777,9 +2272,13 @@ void calc_continous_self_PT_collision_impulse_with_toc(Pol& pol,
                 //     bary[i] = -bary_centric[i];
 
                 auto rv = vec3::zeros();
+                auto rp = vec3::zeros();
                 for(int i = 0;i != 4;++i) {
                     rv += vs[i] * bary[i];
+                    rp += nps[i] * bary[i];
                 }
+                if(rv.dot(rp) > 0)
+                    return;
                         
 
                 auto rv_nrm = collision_nrm.dot(rv);
