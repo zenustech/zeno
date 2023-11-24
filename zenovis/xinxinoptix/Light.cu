@@ -160,13 +160,13 @@ extern "C" __global__ void __closesthit__radiance()
     default: return;
     }
 
-    if (light.type == zeno::LightType::Diffuse && light.spread < 1.0f) {
+    if (light.type == zeno::LightType::Diffuse && light.spreadMajor < 1.0f) {
 
-        auto void_angle = 0.5f * (1.0f - light.spread) * M_PIf;
+        auto void_angle = 0.5f * (1.0f - light.spreadMajor) * M_PIf;
         auto atten = light_spread_attenuation(
                                 lsr.dir,
                                 lsr.n,
-                                light.spread,
+                                light.spreadMajor,
                                 tanf(void_angle),
                                 light.spreadNormalize);
         lsr.intensity *= atten;

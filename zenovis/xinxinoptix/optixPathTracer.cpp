@@ -2172,8 +2172,10 @@ void buildLightTree() {
         light.color.y = fmaxf(dat.color.at(1), FLT_EPSILON);
         light.color.z = fmaxf(dat.color.at(2), FLT_EPSILON);
 
-        light.spread = clamp(dat.spread, 0.0f, 1.0f);
-        auto void_angle = 0.5f * (1.0f - light.spread) * M_PIf;
+        light.spreadMajor = clamp(dat.spreadMajor, 0.0f, 1.0f);
+        light.spreadMinor = clamp(dat.spreadMinor, 0.0f, 1.0f);
+
+        auto void_angle = 0.5f * (1.0f - light.spreadMajor) * M_PIf;
         light.spreadNormalize = 2.f / (2.f + (2.f * void_angle - M_PIf) * tanf(void_angle));
 
         light.intensity  = dat.intensity;
@@ -2196,7 +2198,7 @@ void buildLightTree() {
         light.type  = magic_enum::enum_cast<zeno::LightType>(dat.type).value_or(zeno::LightType::Diffuse);
         light.shape = magic_enum::enum_cast<zeno::LightShape>(dat.shape).value_or(zeno::LightShape::Plane);
 
-        if (light.spread < 0.005f) {
+        if (light.spreadMajor < 0.005f) {
             light.type = zeno::LightType::Direction;
         }
 

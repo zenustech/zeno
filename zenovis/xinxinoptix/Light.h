@@ -330,7 +330,7 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
                     float2 uvScale, uvOffset;
                     bool valid = SpreadClampRect(rect.v, rect.axisX, rect.lenX, rect.axisY, rect.lenY, 
                                                 rect.normal, shadingP, 
-                                                light.spread, uvScale, uvOffset);
+                                                light.spreadMajor, uvScale, uvOffset);
                     if (!valid) return;
 
                     rect.SampleAsLight(&lsr, uu, shadingP);
@@ -343,7 +343,7 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
                     float2 uvScale, uvOffset;
                     bool valid = SpreadClampRect(rect.v, rect.axisX, rect.lenX, rect.axisY, rect.lenY, 
                                                 rect.normal, shadingP, 
-                                                light.spread, uvScale, uvOffset, light.rect.isEllipse);
+                                                light.spreadMajor, uvScale, uvOffset, light.rect.isEllipse);
                     if (!valid) return;
 
                     rect.isEllipse = false; // disable ellipse test for sub rect
@@ -369,13 +369,13 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
                 default: break;
             }
 
-            if (light.spread < 1.0f) {
+            if (light.spreadMajor < 1.0f) {
                 
-                auto void_angle = 0.5f * (1.0f - light.spread) * M_PIf;
+                auto void_angle = 0.5f * (1.0f - light.spreadMajor) * M_PIf;
                 auto atten = light_spread_attenuation(
                                         lsr.dir,
                                         lsr.n,
-                                        light.spread,
+                                        light.spreadMajor,
                                         tanf(void_angle),
                                         light.spreadNormalize);
                 lsr.intensity *= atten;
