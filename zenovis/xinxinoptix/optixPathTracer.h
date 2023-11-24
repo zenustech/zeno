@@ -29,7 +29,8 @@ struct GenericLight
     float intensity;
     float vIntensity;
 
-    float spread;
+    float spreadMajor;
+    float spreadMinor;
     float spreadNormalize;
     float maxDistance;
     float falloffExponent;
@@ -63,7 +64,11 @@ struct GenericLight
         bool doubleSided = config & zeno::LightConfigDoubleside;
 
         if (this->type == zeno::LightType::IES) {
-            return  this->cone.BoundAsLight(Phi, false);
+            return this->cone.BoundAsLight(Phi, false);
+        }
+
+        if (this->type == zeno::LightType::Spot) {
+            return this->cone.BoundAsLight(Phi, false);
         }
         
         switch (this->shape) {
@@ -81,13 +86,13 @@ struct GenericLight
         return pbrt::LightBounds();
     }
 
-    void setConeData(const float3& p, const float3& dir, float range, float coneAngle) {
+    void setConeData(const float3& p, const float3& dir, float range, float spreadAngle, float falloffAngle=0.0f) {
         this->cone.p = p;
         this->cone.range = range;
 
         this->cone.dir = dir;
-        this->cone.cosFalloffStart = cosf(coneAngle);
-        this->cone.cosFalloffEnd = cosf(coneAngle + __FLT_EPSILON__);
+        this->cone.cosFalloffStart = cosf(spreadAngle - falloffAngle);
+        this->cone.cosFalloffEnd = cosf(spreadAngle);
     }
 
     void setRectData(const float3& v0, const float3& v1, const float3& v2, const float3& normal) {

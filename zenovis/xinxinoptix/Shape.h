@@ -803,7 +803,7 @@ struct ConeShape {
         lsr->dist = dist;
 
         lsr->n = dir;
-        lsr->NoL = dot(lsr->dir, dir);
+        lsr->NoL = dot(-lsr->dir, dir);
 
         lsr->p = p;
         lsr->PDF = 1.0f;
@@ -812,7 +812,7 @@ struct ConeShape {
         lsr->intensity = smoothstep(cosFalloffEnd, cosFalloffStart, lsr->NoL);
         #endif
 
-        lsr->intensity /= dist2;
+        lsr->intensity *= M_PIf / dist2;
     }
 
     inline float Phi() {

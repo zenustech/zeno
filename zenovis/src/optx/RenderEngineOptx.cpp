@@ -522,7 +522,7 @@ struct GraphicsManager {
                 auto falloffExponent = prim_in->userData().get2<float>("falloffExponent", 2.0f);
 
                 auto color = prim_in->userData().get2<zeno::vec3f>("color");
-                auto spread = prim_in->userData().get2<float>("spread", 1.0f);
+                auto spread = prim_in->userData().get2<zeno::vec2f>("spread", {1.0f, 0.0f});
                 auto intensity = prim_in->userData().get2<float>("intensity", 1.0f);
                 auto fluxFixed = prim_in->userData().get2<float>("fluxFixed", -1.0f);
                 auto vIntensity = prim_in->userData().get2<float>("visibleIntensity", -1.0f);
@@ -550,7 +550,8 @@ struct GraphicsManager {
                 ld.fluxFixed = fluxFixed;
                 ld.intensity = intensity;
                 ld.vIntensity = vIntensity;
-                ld.spread = spread;
+                ld.spreadMajor = spread[0];
+                ld.spreadMinor = spread[1];
                 ld.maxDistance = maxDistance;
                 ld.falloffExponent = falloffExponent;
 

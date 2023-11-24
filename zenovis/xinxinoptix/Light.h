@@ -246,15 +246,54 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
             sampleSphereIES(lsr, {}, shadingP, light.cone.p, radius);
             if (lsr.PDF <= 0.0f) return; 
 
-            auto v_angle = acos(dot(-lsr.dir, light.N));
-            auto h_angle = acos(dot(-lsr.dir, light.T));
+            auto v_angle = acosf(dot(-lsr.dir, light.N));
+            auto h_angle = acosf(dot(-lsr.dir, light.T));
 
             auto intensity = sampleIES(iesProfile, h_angle, v_angle);
             if (intensity <= 0.0f) return;
-
             lsr.intensity *= intensity;
+        } 
+        else if (light.type == zeno::LightType::Spot) {
 
-        } else if (light.type == zeno::LightType::Direction) {
+            light.cone.sample(&lsr, {0,0}, shadingP);
+            lsr.isDelta = true;
+            
+            if (lsr.intensity <= 0) { return; }
+
+            auto n_len = dot(-lsr.dir, light.N);
+            auto t_len = dot(-lsr.dir, light.T);
+            auto b_len = dot(-lsr.dir, light.B);
+
+            auto tanU = t_len / n_len;
+            auto tanV = b_len / n_len;
+
+            auto hfov = tanf(light.spreadMajor * 0.5f * M_PIf);
+            if (fabsf(tanU) > hfov || fabsf(tanV) > hfov) {return;}
+            lsr.uv = 0.5f + 0.5f * float2 { tanU/hfov, tanV/hfov };
+        }
+        else if (light.type == zeno::LightType::Projector) {
+
+            light.point.SampleAsLight(&lsr, {}, shadingP);
+            lsr.isDelta = true;
+
+            auto n_len = dot(-lsr.dir, light.N);
+            auto t_len = dot(-lsr.dir, light.T);
+            auto b_len = dot(-lsr.dir, light.B);
+
+            auto tanU = t_len / n_len;
+            auto tanV = b_len / n_len;
+
+            auto spreadU = clamp(light.spreadMajor, 0.001f, 0.999f);
+            auto spreadV = clamp(light.spreadMinor, 0.000f, 0.999f);
+            if (spreadV <= 0) { spreadV = spreadU; }
+
+            auto Ufov = tanf(spreadU * 0.5f * M_PIf);
+            auto Vfov = tanf(spreadV * 0.5f * M_PIf);
+            
+            if (fabsf(tanU) > Ufov || fabsf(tanV) > Vfov) {return;}
+            lsr.uv = 0.5f + 0.5f * float2 { tanU/Ufov, tanV/Vfov };
+        }
+        else if (light.type == zeno::LightType::Direction) {
 
             bool valid = false;
             switch (light.shape) {

@@ -2240,13 +2240,30 @@ void buildLightTree() {
             addTriangleLightGeo(v0, v1, v2);
         }
 
+        if (light.type == zeno::LightType::Spot) {
+
+            auto spread_major = clamp(light.spreadMajor, 0.01, 1.00);
+            auto spread_inner = clamp(light.spreadMinor, 0.01, 0.99);
+
+            auto major_angle = spread_major * 0.5f * M_PIf;
+            major_angle = fmaxf(major_angle, 2 * FLT_EPSILON);
+
+            auto inner_angle = spread_inner * major_angle;
+            auto falloff_angle = major_angle - inner_angle;
+
+            light.setConeData(center, light.N, 0.0f, major_angle, falloff_angle);
+        }
+        if (light.type == zeno::LightType::Projector) {
+            light.point = {center};
+        }
+
         if ( OptixUtil::g_ies.count(dat.profileKey) > 0 ) {
 
             auto& val = OptixUtil::g_ies.at(dat.profileKey);
             light.ies = val.ptr.handle;
             light.type = zeno::LightType::IES;
             //light.shape = zeno::LightShape::Point;
-            light.setConeData(center, light.N, radius, val.coneAngle);
+            light.setConeData(center, light.N, radius, val.coneAngle, FLT_EPSILON);
 
             if (dat.fluxFixed > 0) {
                 auto scale = val.coneAngle / M_PIf;

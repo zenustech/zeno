@@ -65,7 +65,8 @@ struct LightDat {
     std::vector<float> normal;
     std::vector<float> color;
 
-    float spread;
+    float spreadMajor;
+    float spreadMinor;
     float intensity;
     float vIntensity;
     float fluxFixed;
