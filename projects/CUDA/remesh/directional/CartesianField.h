@@ -15,9 +15,7 @@
 #include "./IntrinsicFaceTangentBundle.h"
 
 /***
- The class implements general cartesian fields in intrinsic dimension 2, which are attached to a tangent bundle. These fields can be of any degree N, where the unifying principle is that
- they are represented by Cartesian coordinates (intrinsically and possibly extrinsically). The class supports either direct raw fields (just a list of vectors in each
- tangent space in order), or power and polyvector fields, representing fields as root of polynomials irrespective of order.
+ The class implements general cartesian fields in intrinsic dimension 2, which are attached to a tangent bundle. These fields can be of any degree N, where the unifying principle is that they are represented by Cartesian coordinates (intrinsically and possibly extrinsically). The class supports either direct raw fields (just a list of vectors in each tangent space in order), or power and polyvector fields, representing fields as root of polynomials irrespective of order.
 
  This class assumes extrinsic representation in 3D space.
  ***/
@@ -26,19 +24,67 @@ namespace zeno::directional{
 
     enum class fieldTypeEnum{RAW_FIELD, POWER_FIELD, POLYVECTOR_FIELD};
 
+    //The data structure for seamless integration
+    struct IntegrationData {
+        int N;                                              // # uncompressed parametric functions
+        int n;                                              // # independent parameteric functions
+        Eigen::MatrixXi linRed;                             // Linear Reduction tying the n dofs to the full N
+        Eigen::MatrixXi periodMat;                          // Function spanning integers
+        Eigen::SparseMatrix<float> vertexTrans2CutMat;     // Map between the whole mesh (vertex + translational jump) representation to the vertex-based representation on the cut mesh
+        Eigen::SparseMatrix<float> constraintMat;          // Linear constraints (resulting from non-singular nodes)
+        Eigen::SparseMatrix<float> linRedMat;              // Global uncompression of n->N
+        Eigen::SparseMatrix<float> intSpanMat;             // Spanning the translational jump lattice
+        Eigen::SparseMatrix<float> singIntSpanMat;         // Layer for the singularities
+        Eigen::VectorXi constrainedVertices;                // Constrained vertices (fixed points in the parameterization)
+        Eigen::VectorXi integerVars;                        // Variables that are to be rounded.
+        Eigen::MatrixXi face2cut;                           // |F|x3 map of which edges of faces are seams
+        Eigen::VectorXf nVertexFunction;                    // Final compressed result (used for meshing)
+
+        Eigen::VectorXi fixedIndices;                       // Translation fixing indices
+        Eigen::VectorXf fixedValues;                        // Translation fixed values
+        Eigen::VectorXi singularIndices;                    // Singular-vertex indices
+
+        //integer versions, for exact seamless parameterizations (good for error-free meshing)
+        Eigen::SparseMatrix<int> vertexTrans2CutMatInteger;
+        Eigen::SparseMatrix<int> constraintMatInteger;
+        Eigen::SparseMatrix<int> linRedMatInteger;
+        Eigen::SparseMatrix<int> intSpanMatInteger;
+        Eigen::SparseMatrix<int> singIntSpanMatInteger;
+
+        float lengthRatio;                                 // Global scaling of functions
+        //Flags
+        bool integralSeamless;                              // Whether to do full translational seamless.
+        bool roundSeams;                                    // Whether to round seams or round singularities
+        bool verbose;                                       // Output the integration log.
+        bool localInjectivity;                              //Enforce local injectivity; might result in failure!
+
+        IntegrationData(int _N):lengthRatio(0.02), integralSeamless(false), roundSeams(true), verbose(false), localInjectivity(false) {
+            N = _N;
+            n = ( N % 2 == 0 ? N / 2 : N);
+            if (N%2==0) {
+                linRed.resize(N, N / 2);
+                linRed << Eigen::MatrixXi::Identity(N/2,N/2),-Eigen::MatrixXi::Identity(N/2,N/2);
+            }
+            else
+                linRed = Eigen::MatrixXi::Identity(N,n);
+            periodMat = Eigen::MatrixXi::Identity(n,n);
+        }
+        ~IntegrationData(){}
+    };
+
+
     class CartesianField{
     public:
+        const IntrinsicFaceTangentBundle* tb;           //Referencing the tangent bundle on which the field is defined
 
-        const IntrinsicFaceTangentBundle* tb;            //Referencing the tangent bundle on which the field is defined
+        int N;                                          //Degree of field (how many vectors are in each point);
+        fieldTypeEnum fieldType;                        //The representation of the field (for instance, either a raw field or a power/polyvector field)
 
-        int N;                              //Degree of field (how many vectors are in each point);
-        fieldTypeEnum fieldType;                      //The representation of the field (for instance, either a raw field or a power/polyvector field)
+        Eigen::MatrixXf intField;                       //Intrinsic representation (depending on the local basis of the face). Size #T x 2N
+        Eigen::MatrixXf extField;                       //Ambient coordinates. Size #T x 3N
 
-        Eigen::MatrixXf intField;           //Intrinsic representation (depending on the local basis of the face). Size #T x 2N
-        Eigen::MatrixXf extField;           //Ambient coordinates. Size #T x 3N
-
-        Eigen::VectorXi matching;           //Matching(i)=j when vector k in mesh->EF(i,0) matches to vector (k+j)%N in mesh->EF(i,1)
-        Eigen::VectorXf effort;             //Effort of the entire matching (sum of deviations from parallel transport)
+        Eigen::VectorXi matching;                       //Matching(i)=j when vector k in EF(i,0) matches to vector (k+j)%N in EF(i,1)
+        Eigen::VectorXf effort;                         //Effort of the entire matching (sum of deviations from parallel transport)
         std::vector<int> sing_local_cycles;
 
         CartesianField(){}
@@ -55,7 +101,7 @@ namespace zeno::directional{
         };
 
         void set_intrinsic_field(const Eigen::MatrixXf& _intField){
-            assert (!(fieldType==fieldTypeEnum::POWER_FIELD) || (_intField.cols()==2));
+            assert (!(fieldType == fieldTypeEnum::POWER_FIELD) || (_intField.cols() == 2));
             assert ((_intField.cols() == 2 * N) || !(fieldType == fieldTypeEnum::POLYVECTOR_FIELD || fieldType == fieldTypeEnum::RAW_FIELD));
             intField = _intField;
             extField = tb->project_to_extrinsic(Eigen::VectorXi(), intField);
@@ -93,6 +139,16 @@ namespace zeno::directional{
         //  combed_field: the combed field object, also RAW_FIELD
         void combing(CartesianField& combed_field,
                      const Eigen::MatrixXi& cuts);
+                     
+        // Setting up the seamless integration algorithm.
+        // Output:
+        //  intData:      updated integration data.
+        //  meshCut:      a mesh which is face-corresponding with meshWhole, but is cut so that it has disc-topology.
+        //  combedField:  The raw field combed so that all singularities are on the seams of the cut mesh
+        void setup_integration(IntegrationData& intData,
+                               Eigen::MatrixXf& cut_verts,
+                               Eigen::MatrixXi& cut_faces,
+                               CartesianField& combedField);
     
     private:
         // Computes cycle-based indices from adjaced-space efforts of a directional field.
@@ -103,7 +159,6 @@ namespace zeno::directional{
         void dijkstra(const int &source,
                       const std::set<int> &targets,
                       std::vector<int> &path);
-        
     };
 }
 
