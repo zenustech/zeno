@@ -110,7 +110,7 @@ cd zeno
 
 ## Build Zeno
 
-Quickly recall our CMake knowledge in [my parallel course](github.com/parallel101/course):
+Quickly recall our CMake knowledge in [my parallel course](https://github.com/parallel101/course):
 
 1. The first step `cmake -B build` called *configure*, it generates the `build/` directory containing `Makefile`.
 2. The second step `cmake --build build` called *build*, equivalant to `make -C build` on Linux and call MSBuild on Windows.
