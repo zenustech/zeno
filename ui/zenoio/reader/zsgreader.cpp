@@ -990,41 +990,46 @@ PtrLayoutNode ZsgReader::_readLayout(const rapidjson::Value& objValue)
         ptrNode->pRight = nullptr;
 
         const rapidjson::Value& widObj = objValue["widget"];
-
-        auto tabsObj = widObj["tabs"].GetArray();
-        QStringList tabs;
-        for (int i = 0; i < tabsObj.Size(); i++)
+        if (widObj.IsObject() && widObj.HasMember("tabs"))
         {
-            if (tabsObj[i].IsString())
+            auto tabsObj = widObj["tabs"].GetArray();
+            QStringList tabs;
+            for (int i = 0; i < tabsObj.Size(); i++)
             {
-                ptrNode->tabs.push_back(tabsObj[i].GetString());
-            }
-            else if (tabsObj[i].IsObject())
-            {
-                if (tabsObj[i].HasMember("type") && QString(tabsObj[i]["type"].GetString()) == "View")
+                if (tabsObj[i].IsString())
                 {
-                    ptrNode->tabs.push_back("View");
-                    DockContentWidgetInfo info(tabsObj[i]["resolutionX"].GetInt(), tabsObj[i]["resolutionY"].GetInt(),
-                        tabsObj[i]["blockwindow"].GetBool(), tabsObj[i]["resolution-combobox-index"].GetInt(), tabsObj[i]["backgroundcolor"][0].GetDouble(),
-                        tabsObj[i]["backgroundcolor"][1].GetDouble(), tabsObj[i]["backgroundcolor"][2].GetDouble());
-                    ptrNode->widgetInfos.push_back(info);
+                    ptrNode->tabs.push_back(tabsObj[i].GetString());
                 }
-                else if (tabsObj[i].HasMember("type") && QString(tabsObj[i]["type"].GetString()) == "Optix")
+                else if (tabsObj[i].IsObject())
                 {
-                    ptrNode->tabs.push_back("Optix");
-                    DockContentWidgetInfo info(tabsObj[i]["resolutionX"].GetInt(), tabsObj[i]["resolutionY"].GetInt(),
-                        tabsObj[i]["blockwindow"].GetBool(), tabsObj[i]["resolution-combobox-index"].GetInt());
-                    ptrNode->widgetInfos.push_back(info);
+                    if (tabsObj[i].HasMember("type") && QString(tabsObj[i]["type"].GetString()) == "View")
+                    {
+                        ptrNode->tabs.push_back("View");
+                        DockContentWidgetInfo info(tabsObj[i]["resolutionX"].GetInt(), tabsObj[i]["resolutionY"].GetInt(),
+                            tabsObj[i]["blockwindow"].GetBool(), tabsObj[i]["resolution-combobox-index"].GetInt(), tabsObj[i]["backgroundcolor"][0].GetDouble(),
+                            tabsObj[i]["backgroundcolor"][1].GetDouble(), tabsObj[i]["backgroundcolor"][2].GetDouble());
+                        ptrNode->widgetInfos.push_back(info);
+                    }
+                    else if (tabsObj[i].HasMember("type") && QString(tabsObj[i]["type"].GetString()) == "Optix")
+                    {
+                        ptrNode->tabs.push_back("Optix");
+                        DockContentWidgetInfo info(tabsObj[i]["resolutionX"].GetInt(), tabsObj[i]["resolutionY"].GetInt(),
+                            tabsObj[i]["blockwindow"].GetBool(), tabsObj[i]["resolution-combobox-index"].GetInt());
+                        ptrNode->widgetInfos.push_back(info);
+                    }
                 }
             }
         }
 
-        const rapidjson::Value& geomObj = widObj["geometry"];
-        float x = geomObj["x"].GetFloat();
-        float y = geomObj["y"].GetFloat();
-        float width = geomObj["width"].GetFloat();
-        float height = geomObj["height"].GetFloat();
-        ptrNode->geom = QRectF(x, y, width, height);
+        if (widObj.IsObject() && widObj.HasMember("geometry"))
+        {
+            const rapidjson::Value& geomObj = widObj["geometry"];
+            float x = geomObj["x"].GetFloat();
+            float y = geomObj["y"].GetFloat();
+            float width = geomObj["width"].GetFloat();
+            float height = geomObj["height"].GetFloat();
+            ptrNode->geom = QRectF(x, y, width, height);
+        }
 
         return ptrNode;
     }
