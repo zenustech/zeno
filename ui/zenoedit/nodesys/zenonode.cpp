@@ -1898,12 +1898,12 @@ void ZenoNode::onOptionsBtnToggled(STATUS_BTN btn, bool toggled)
     info.newValue = options;
     info.oldValue = oldOpts;
 
-    pGraphsModel->updateNodeStatus(nodeId(), info, m_subGpIndex, true);
-
     if (m_subGpIndex.data(ROLE_OBJNAME).toString() == "main") {
         pGraphsModel->markNodeDataChanged(m_index);
         onMarkDataChanged(true);
     }
+
+    pGraphsModel->updateNodeStatus(nodeId(), info, m_subGpIndex, true);
 }
 
 void ZenoNode::onCollaspeUpdated(bool collasped)

@@ -13,18 +13,18 @@ ZCacheMgr::ZCacheMgr()
     m_objTmpCacheDir.setAutoRemove(true);
 }
 
-bool ZCacheMgr::initCacheDir(bool bTempDir, QDir dirCacheRoot, bool bAutoCleanCache)
+bool ZCacheMgr::initCacheDir(QDir dirCacheRoot, LAUNCH_PARAM& param)
 {
     clearNotUsedToViewCache();
 
-    if (nextRunSkipCreateDir(bTempDir)) {
+    if (nextRunSkipCreateDir(param)) {
         return true;
     }
 
-    if (bTempDir || bAutoCleanCache)
+    if (param.tempDir || param.autoCleanCacheInCacheRoot)
         cleanCacheDir();
 
-    m_bTempDir = bTempDir;
+    m_bTempDir = param.tempDir;
     if (m_bTempDir) {
         m_spTmpCacheDir.reset(new QTemporaryDir);
         m_spTmpCacheDir->setAutoRemove(true);
@@ -143,14 +143,27 @@ void ZCacheMgr::removeObjTmpCacheDir()
     m_objTmpCacheDir.remove();
 }
 
-bool ZCacheMgr::nextRunSkipCreateDir(bool tmpDir)
+bool ZCacheMgr::nextRunSkipCreateDir(LAUNCH_PARAM& param)
 {
-    if (m_bTempDir != tmpDir)
+    if (m_bTempDir != param.tempDir)    //switch cache mode(tmp->notmp or notmp->tmp)
     {
         return false;
     }
-    else if(m_isNew || !lastRunCachePath.exists()) {
+    else if (!param.tempDir && lastRunCachePath.path() != "." && lastRunCachePath.path().mid(0, lastRunCachePath.path().lastIndexOf("/")) != param.cacheDir)    //cacheroot changed
+    {
         return false;
+    }
+    else if(m_isNew || !lastRunCachePath.exists()) {    //open new file or last not exist
+        return false;
+    }
+    else if(param.beginFrame != param.endFrame){
+        QDir last = QDir(lastRunCachePath);
+        last.setFilter(QDir::AllDirs | QDir::NoSymLinks | QDir::NoDotAndDotDot);
+        if (last.entryInfoList().size() != (param.endFrame - param.beginFrame + 1))     //incomplete cache
+            return false;
+        auto& globalComm = zeno::getSession().globalComm;
+        if (globalComm->numOfFinishedFrame() < (param.endFrame - param.beginFrame + 1))
+            return false;
     }
     return true;
 }

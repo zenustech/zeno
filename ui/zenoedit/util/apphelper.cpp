@@ -394,7 +394,7 @@ void AppHelper::initLaunchCacheParam(LAUNCH_PARAM& param)
 
     std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
     ZASSERT_EXIT(mgr);
-    param.runDirtyNodesOnly = mgr->nextRunSkipCreateDir(param.tempDir);
+    param.runDirtyNodesOnly = mgr->nextRunSkipCreateDir(param);
 }
 
 bool AppHelper::openZsgAndRun(const ZENO_RECORD_RUN_INITPARAM& param, LAUNCH_PARAM launchParam)

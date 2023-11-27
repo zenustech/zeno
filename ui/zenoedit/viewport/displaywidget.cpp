@@ -545,6 +545,7 @@ void DisplayWidget::onSliderValueChanged(int frame)
         launchParam.endFrame = frame;
         launchParam.projectFps = mainWin->timelineInfo().timelinefps;
         AppHelper::initLaunchCacheParam(launchParam);
+        launchParam.runDirtyNodesOnly = false;
         launchProgram(pModel, launchParam);
     }
     else
@@ -863,6 +864,7 @@ void DisplayWidget::onRecord()
             std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
             ZASSERT_EXIT(mgr);
             mgr->setNewCacheDir(true);
+            launchParam.runDirtyNodesOnly = false;
 
 #ifdef ZENO_OPTIX_PROC
             if (!m_bGLView)

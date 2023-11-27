@@ -8,7 +8,7 @@ class ZCacheMgr
 {
 public:
     ZCacheMgr();
-    bool initCacheDir(bool bTempDir, QDir dir, bool bAutoCleanCache);
+    bool initCacheDir(QDir dir, LAUNCH_PARAM& param);
     QString cachePath() const;
     QString objCachePath() const;
     std::shared_ptr<QTemporaryDir> getTempDir() const;
@@ -18,7 +18,7 @@ public:
     void cleanCacheDir();
     bool hasCacheOnly(QDir dir, bool& empty);
     void removeObjTmpCacheDir();
-    bool nextRunSkipCreateDir(bool tmpDir);
+    bool nextRunSkipCreateDir(LAUNCH_PARAM& param);
 
 private:
     void clearNotUsedToViewCache();
