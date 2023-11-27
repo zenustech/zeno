@@ -471,103 +471,98 @@ struct Detangle2 : zeno::INode {
                 }
 
                 {
-                //     timer.tick();
-                //     GIA::retrieve_intersection_with_edge_tri_pairs(cudaExec,
-                //         kvtemp,"x",
-                //         kedges,
-                //         verts,xtag,
-                //         tris,
-                //         tri_bvh,
-                //         csET,
-                //         icm_grad,
-                //         use_barycentric_interpolator);
-                //     timer.tock("retrieve_intersection_with_KET_pairs");
+                    timer.tick();
+                    GIA::retrieve_intersection_with_edge_tri_pairs(cudaExec,
+                        kvtemp,"x",
+                        kedges,
+                        verts,xtag,
+                        tris,
+                        tri_bvh,
+                        csET,
+                        icm_grad,
+                        use_barycentric_interpolator);
+                    timer.tock("retrieve_intersection_with_KET_pairs");
 
-                //     // cudaExec(zip(zs::range(csET.size()),csET._activeKeys),[] ZS_LAMBDA(auto ci,const auto& pair) mutable {
-                //     //     if(pair[1] == 31)
-                //     //         printf("KET pair[%d %d]\n",pair[0],pair[1]);
-                //     // });
-
-                //     if(csET.size() > 0)
-                //         has_kine_intersection = true;
+                    if(csET.size() > 0)
+                        has_kine_intersection = true;
 
 
-                //     nm_kinematic_intersection += csET.size();
+                    nm_kinematic_intersection += csET.size();
 
 
 
-                //     timer.tick();
-                //     GIA::eval_intersection_contour_minimization_gradient_of_edgeA_with_triB(cudaExec,
-                //         kvtemp,"x",
-                //         kedges,
-                //         khalfedges,
-                //         ktris,
-                //         verts,xtag,
-                //         tris,
-                //         maximum_correction,
-                //         progressive_slope,                        
-                //         csET,
-                //         icm_grad);      
-                //     timer.tock("eval_intersection_contour_minimization_gradient_with_KET"); 
+                    timer.tick();
+                    GIA::eval_intersection_contour_minimization_gradient_of_edgeA_with_triB(cudaExec,
+                        kvtemp,"x",
+                        kedges,
+                        khalfedges,
+                        kttemp,
+                        verts,xtag,
+                        tris,
+                        maximum_correction,
+                        progressive_slope,                        
+                        csET,
+                        icm_grad);      
+                    timer.tock("eval_intersection_contour_minimization_gradient_with_KET"); 
 
-                //     timer.tick();
-                //     cudaExec(zip(zs::range(csET.size()),csET._activeKeys),[
-                //         exec_tag = exec_tag,
-                //         impulse_count = proxy<space>(impulse_count),
-                //         eps = eps,
-                //         use_barycentric_interpolator = use_barycentric_interpolator,
-                //         mark_intersection = mark_intersection,
-                //         xtag = zs::SmallString(xtag),
-                //         gradOffset = verts.getPropertyOffset("grad"),
-                //         icm_grad = proxy<space>({},icm_grad),
-                //         relaxation_rate = relaxation_rate,
-                //         verts = proxy<space>({},verts),
-                //         tris = proxy<space>({},tris)] ZS_LAMBDA(auto ci,const auto& pair) mutable {
-                //             auto ti = pair[1];
-                //             auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
-                //             if(mark_intersection) {
-                //                 verts("icm_intersected",tri[0]) = (T)1.0;
-                //                 verts("icm_intersected",tri[1]) = (T)1.0;
-                //                 verts("icm_intersected",tri[2]) = (T)1.0;
-                //             }
+                    timer.tick();
+                    cudaExec(zip(zs::range(csET.size()),csET._activeKeys),[
+                        exec_tag = exec_tag,
+                        impulse_count = proxy<space>(impulse_count),
+                        eps = eps,
+                        use_barycentric_interpolator = use_barycentric_interpolator,
+                        mark_intersection = mark_intersection,
+                        xtag = zs::SmallString(xtag),
+                        gradOffset = verts.getPropertyOffset("grad"),
+                        icm_grad = proxy<space>({},icm_grad),
+                        relaxation_rate = relaxation_rate,
+                        verts = proxy<space>({},verts),
+                        tris = proxy<space>({},tris)] ZS_LAMBDA(auto ci,const auto& pair) mutable {
+                            auto ti = pair[1];
+                            auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
+                            if(mark_intersection) {
+                                verts("icm_intersected",tri[0]) = (T)1.0;
+                                verts("icm_intersected",tri[1]) = (T)1.0;
+                                verts("icm_intersected",tri[2]) = (T)1.0;
+                            }
 
-                //             auto impulse = icm_grad.pack(dim_c<3>,"grad",ci) * relaxation_rate;
+                            auto impulse = icm_grad.pack(dim_c<3>,"grad",ci) * relaxation_rate;
 
-                //             // printf("KET impulse[%d] : %f\n",ci,(float)icm_grad.pack(dim_c<3>,"grad",ci).norm());
-                //             // if(impulse.norm() < eps)
-                //             //     return;
-
-
-                //             T tri_cminv = 1;
-                //             zs::vec<T,3> tri_bary{};
-
-                //             if(use_barycentric_interpolator) {
-                //                 auto bary = icm_grad.pack(dim_c<4>,"bary",ci);
-                //                 tri_bary[0] = bary[1];
-                //                 tri_bary[1] = bary[2];
-                //                 tri_bary[2] = bary[3];
-
-                //                 tri_cminv = 0;
-                //                 for(int i = 0;i != 3;++i)
-                //                     tri_cminv += tri_bary[i] * tri_bary[i] / verts("m",tri[i]);
-                //                 // cminv = t * t / verts("m",edge[0]) + (1 - t) * (1 - t) / verts("m",edge[1]);
-                //             }
+                            // printf("KET impulse[%d] : %f\n",ci,(float)icm_grad.pack(dim_c<3>,"grad",ci).norm());
+                            // if(impulse.norm() < eps)
+                            //     return;
 
 
-                //             for(int i = 0;i != 3;++i) {
-                //                 T beta = 1;
-                //                 if(use_barycentric_interpolator) {
-                //                     beta = verts("minv",tri[i]) * tri_bary[i] / tri_cminv;
-                //                     // printf("tri[%d][%d]_beta : %f\n",ti,tri[i],(float)beta);
-                //                 }
-                //                 atomic_add(exec_tag,&impulse_count[tri[i]],1);
-                //                 for(int d = 0;d != 3;++d)
-                //                     atomic_add(exec_tag,&verts(gradOffset + d,tri[i]),-impulse[d] * beta);
-                //             }
-                //     });
+                            T tri_cminv = 1;
+                            zs::vec<T,3> tri_bary{};
 
-                //     std::cout << "KET IMPULSE : " << TILEVEC_OPS::dot<3>(cudaExec,verts,"grad","grad") << std::endl;
-                //     timer.tock("assemble KET icm gradient");      
+                            if(use_barycentric_interpolator) {
+                                auto bary = icm_grad.pack(dim_c<4>,"bary",ci);
+                                tri_bary[0] = bary[1];
+                                tri_bary[1] = bary[2];
+                                tri_bary[2] = bary[3];
+
+                                tri_cminv = 0;
+                                for(int i = 0;i != 3;++i)
+                                    tri_cminv += tri_bary[i] * tri_bary[i] / verts("m",tri[i]);
+                                // cminv = t * t / verts("m",edge[0]) + (1 - t) * (1 - t) / verts("m",edge[1]);
+                            }
+
+
+                            for(int i = 0;i != 3;++i) {
+                                T beta = 1;
+                                if(use_barycentric_interpolator) {
+                                    beta = verts("minv",tri[i]) * tri_bary[i] / tri_cminv;
+                                    // printf("tri[%d][%d]_beta : %f\n",ti,tri[i],(float)beta);
+                                }
+                                atomic_add(exec_tag,&impulse_count[tri[i]],1);
+                                for(int d = 0;d != 3;++d)
+                                    atomic_add(exec_tag,&verts(gradOffset + d,tri[i]),-impulse[d] * beta);
+                            }
+                    });
+
+                    std::cout << "KET IMPULSE : " << TILEVEC_OPS::dot<3>(cudaExec,verts,"grad","grad") << std::endl;
+                    timer.tock("assemble KET icm gradient");      
 
 
                 }            
