@@ -293,6 +293,9 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
             if (fabsf(tanU) > Ufov || fabsf(tanV) > Vfov) {return;}
             lsr.uv = 0.5f + 0.5f * float2 { tanU/Ufov, tanV/Vfov };
         }
+        else if(light.shape == zeno::LightShape::Point) {
+            light.point.SampleAsLight(&lsr, {}, shadingP);
+        }
         else if (light.type == zeno::LightType::Direction) {
 
             bool valid = false;
@@ -358,9 +361,7 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
                     light.sphere.SampleAsLight(&lsr, uu, shadingP); 
                     cihouSphereLightUV(lsr, light);
                     break; 
-                }
-                case zeno::LightShape::Point:
-                    light.point.SampleAsLight(&lsr, uu, shadingP);  break;
+                }   
                 case zeno::LightShape::TriangleMesh: {
                     float3* normalBuffer = reinterpret_cast<float3*>(params.triangleLightNormalBuffer);
                     float2* coordsBuffer = reinterpret_cast<float2*>(params.triangleLightCoordsBuffer);
