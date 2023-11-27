@@ -48,9 +48,9 @@ static __inline__ __device__ void cihouSphereLightUV(LightSampleRecord &lsr, Gen
 
     if (zeno::LightShape::Sphere == light.shape) {
         mat3 localAxis = {
-            reinterpret_cast<vec3&>(light.T), 
-            reinterpret_cast<vec3&>(light.N), 
-            reinterpret_cast<vec3&>(light.B) };
+            -reinterpret_cast<vec3&>(light.T), 
+            -reinterpret_cast<vec3&>(light.N), 
+            +reinterpret_cast<vec3&>(light.B) };
 
         auto sampleDir = localAxis * (lsr.n);
         lsr.uv = vec2(sphereUV(sampleDir, false));
