@@ -2,36 +2,44 @@
 
 #include "../../geometry/kernel/geo_math.hpp"
 #include "zensim/math/MathUtils.h"
+#include "zensim/math/DihedralAngle.hpp"
 
 namespace zeno { namespace CONSTRAINT {
 // FOR CLOTH SIMULATION
     template<typename VECTOR3d,typename SCALER>
     constexpr bool solve_DistanceConstraint(
-        const VECTOR3d &p0, SCALER invMass0, 
-        const VECTOR3d &p1, SCALER invMass1,
+        const VECTOR3d &p0, const SCALER& invMass0, 
+        const VECTOR3d &p1, const SCALER& invMass1,
         const SCALER& restLength,
-        const SCALER& stiffness,
+        const SCALER& xpbd_affliation,
         const SCALER& dt,
         SCALER& lambda,
         VECTOR3d &corr0, VECTOR3d &corr1)
     {				
         SCALER K = invMass0 + invMass1;
+        if(K < static_cast<SCALER>(1e-6)) {
+            // printf("abondoned stretch solve due to too small K : %f\n",(float)K);
+            return false;
+        }
+
         VECTOR3d n = p0 - p1;
         SCALER d = n.norm();
         SCALER C = d - restLength;
+
         if (d > static_cast<SCALER>(1e-6))
             n /= d;
         else
         {
             corr0 = VECTOR3d::uniform(0);
             corr1 = VECTOR3d::uniform(0);
+            // printf("abondoned stretch solve due to too small d : %f\n",(float)d);
             return false;
         }
 
         SCALER alpha = 0.0;
-        if (stiffness != 0.0)
+        if (xpbd_affliation != 0.0)
         {
-            alpha = static_cast<SCALER>(1.0) / (stiffness * dt * dt);
+            alpha = static_cast<SCALER>(1.0) / (xpbd_affliation * dt * dt);
             K += alpha;
         }
 
@@ -42,17 +50,89 @@ namespace zeno { namespace CONSTRAINT {
         {
             corr0 = VECTOR3d::uniform(0);
             corr1 = VECTOR3d::uniform(0);
+            // printf("abondoned stretch solve due to too small K2 : %f\n",(float)K);
             return false;
         }
 
+
+
         const SCALER delta_lambda = -Kinv * (C + alpha * lambda);
+        auto ori_lambda = lambda;
+        auto al = alpha * lambda;
+
         lambda += delta_lambda;
+
+        // printf("input l : %f and rl : %f delta_lambda : %f : alpha * lambda : %f ori_lambda = %f\n",
+        //     (float)d,(float)restLength,(float)delta_lambda,(float)al,(float)ori_lambda);
+
         const VECTOR3d pt = n * delta_lambda;
 
         corr0 =  invMass0 * pt;
         corr1 = -invMass1 * pt;
         return true;
     }
+
+    template<typename VECTOR3d,typename SCALER>
+    constexpr bool solve_DistanceConstraint(
+        const VECTOR3d &p0, const SCALER& invMass0, 
+        const VECTOR3d &p1, const SCALER& invMass1,
+        const VECTOR3d &pp0,
+        const VECTOR3d &pp1,
+        const SCALER& restLength,
+        const SCALER& xpbd_affiliation,
+        const SCALER& kdamp_ratio,
+        const SCALER& dt,
+        SCALER& lambda,
+        VECTOR3d &corr0, VECTOR3d &corr1)
+    {				
+        SCALER wsum = invMass0 + invMass1;
+        if(wsum < static_cast<SCALER>(1e-6)) {
+            // printf("abondoned stretch solve due to too small K : %f\n",(float)K);
+            return false;
+        }
+
+        VECTOR3d n = p0 - p1;
+        SCALER d = n.norm();
+        SCALER C = d - restLength;
+
+        if (d > static_cast<SCALER>(1e-6))
+            n /= d;
+        else
+        {
+            corr0 = VECTOR3d::uniform(0);
+            corr1 = VECTOR3d::uniform(0);
+            // printf("abondoned stretch solve due to too small d : %f\n",(float)d);
+            return false;
+        }
+
+
+        SCALER alpha = 0.0;
+        if (xpbd_affiliation != 0.0)
+        {
+            alpha = static_cast<SCALER>(1.0) / (xpbd_affiliation * dt * dt);
+        }
+
+        const auto& gradC = n;
+
+        SCALER dsum = 0.0, gamma = 1.0;
+        if(kdamp_ratio > 0) {
+            auto beta = kdamp_ratio * dt * dt;
+            gamma = alpha * beta / dt;
+            dsum = gamma * n.dot((p0 - pp0) - (p1 - pp1));
+            // gamma += 1.0;
+        }
+
+        const SCALER delta_lambda = -(C + alpha * lambda + dsum) / ((gamma + static_cast<SCALER>(1.0)) * wsum + alpha);
+
+        lambda += delta_lambda;
+
+        const VECTOR3d pt = n * delta_lambda;
+
+        corr0 =  invMass0 * pt;
+        corr1 = -invMass1 * pt;
+        return true;
+    }
+
 
     template<typename VECTOR3d,typename SCALER>
     constexpr bool solve_DistanceConstraint(
@@ -72,7 +152,7 @@ namespace zeno { namespace CONSTRAINT {
             // auto common = lambda * gradient;
             corr0 = -invMass0 * common;
             corr1 = invMass1 * common;
-            return false;
+            // return false;
         }else{
             corr0 = VECTOR3d::uniform(0);
             corr1 = VECTOR3d::uniform(0);
@@ -139,24 +219,17 @@ namespace zeno { namespace CONSTRAINT {
         const VECTOR3d& p1,
         const VECTOR3d& p2,
         const VECTOR3d& p3,
-        SCALER& restAngle){
+        const SCALER& restAngleScale,
+        SCALER& restAngle,
+        SCALER& angleSign){
             VECTOR3d e = p3 - p2;
             SCALER elen = e.norm();
-            if (elen < 1e-4)
+            if (elen < 1e-6)
                 return false;
 
-            SCALER invElen = static_cast<SCALER>(1.0) / elen;
+            angleSign = 1.0;
 
-            VECTOR3d n1 = LSL_GEO::facet_normal(p0,p2,p3);
-            VECTOR3d n2 = LSL_GEO::facet_normal(p1,p3,p2);
-
-            SCALER n12 = n1.dot(n2);
-            SCALER angle = 0;
-            if((1 - n12) > 1e-6)
-                angle = zs::sqrt((1 - n12) / 2);
-            if(n1.cross(n2).dot(e) < 0)
-                angle = -angle;
-            restAngle = angle;
+            restAngle = zs::dihedral_angle(p0,p2,p3,p1) * restAngleScale;
             return true;            
     }
 
@@ -168,142 +241,227 @@ namespace zeno { namespace CONSTRAINT {
         const VECTOR3d &p2,const SCALER& invMass2,
         const VECTOR3d &p3,const SCALER& invMass3,
         const SCALER& restAngle,
+        // const SCALER& restAngleSign,
         const SCALER& stiffness,		
         VECTOR3d &corr0, VECTOR3d &corr1, VECTOR3d &corr2, VECTOR3d &corr3)
     {
         constexpr SCALER eps = static_cast<SCALER>(1e-6);
         if (invMass0 == 0.0 && invMass1 == 0.0)
             return false;
-    
-        VECTOR3d e = p3-p2;
-        SCALER elen = e.norm();
-        if (elen < eps)
+
+        auto angle = zs::dihedral_angle(p0,p2,p3,p1);
+        auto grad = zs::dihedral_angle_gradient(p0,p2,p3,p1);
+        VECTOR3d ds[4] = {};
+        ds[0] = VECTOR3d{grad[0 * 3 + 0],grad[0 * 3 + 1],grad[0 * 3 + 2]};
+        ds[2] = VECTOR3d{grad[1 * 3 + 0],grad[1 * 3 + 1],grad[1 * 3 + 2]};
+        ds[3] = VECTOR3d{grad[2 * 3 + 0],grad[2 * 3 + 1],grad[2 * 3 + 2]};
+        ds[1] = VECTOR3d{grad[3 * 3 + 0],grad[3 * 3 + 1],grad[3 * 3 + 2]};
+        // for(int i = 0;i != 4;++i)
+        //     ds[i] = VECTOR3d{grad[i * 3 + 0],grad[i * 3 + 1],grad[i * 3 + 2]};
+
+        // for(int i = 0;i != 4;++i){
+        //     printf("ds[%d] : %f %f %f\n",i,
+        //         (float)ds[i][0],
+        //         (float)ds[i][1],
+        //         (float)ds[i][2]);
+        // }
+
+
+        // SCALER alpha = 0.0;
+        // if (stiffness != 0.0)
+        //     alpha = static_cast<SCALER>(1.0) / (stiffness * dt * dt);
+
+        SCALER sum_normGradC = 
+            invMass0 * ds[0].l2NormSqr() +
+            invMass1 * ds[1].l2NormSqr() +
+            invMass2 * ds[2].l2NormSqr() +
+            invMass3 * ds[3].l2NormSqr();
+
+        if(sum_normGradC < eps)
             return false;
-    
-        SCALER invElen = static_cast<SCALER>(1.0) / elen;
-    
-        // auto n1 = LSL_GEO::facet_normal(p0,p2,p3);
-        // auto n2 = LSL_GEO::facet_normal(p1,p3,p2);
-        VECTOR3d n1 = (p2 - p0).cross(p3 - p0); n1 /= n1.l2NormSqr();
-        VECTOR3d n2 = (p3 - p1).cross(p2 - p1); n2 /= n2.l2NormSqr();
-    
-        VECTOR3d d0 = elen*n1;
-        VECTOR3d d1 = elen*n2;
-        VECTOR3d d2 = (p0-p3).dot(e) * invElen * n1 + (p1-p3).dot(e) * invElen * n2;
-        VECTOR3d d3 = (p2-p0).dot(e) * invElen * n1 + (p2-p1).dot(e) * invElen * n2;
-    
-        // SCALER phi = (-0.6981317 * dot * dot - 0.8726646) * dot + 1.570796;	// fast approximation
-        n1 = n1.normalized();
-        n2 = n2.normalized();
-        SCALER n12 = n1.dot(n2);
-        SCALER angle = 0;
-        if((1 - n12) > 1e-6)
-            angle = zs::sqrt((1 - n12) / 2);
-        if(n1.cross(n2).dot(e) < 0)
-            angle = -angle;
-    
-        SCALER lambda = 
-            invMass0 * d0.l2NormSqr() +
-            invMass1 * d1.l2NormSqr() +
-            invMass2 * d2.l2NormSqr() +
-            invMass3 * d3.l2NormSqr();
-    
-        if (lambda == 0.0)
-            return false;	
-    
-        // stability
-        // 1.5 is the largest magic number I found to be stable in all cases :-)
-        //if (stiffness > 0.5 && fabs(phi - b.restAngle) > 1.5)		
-        //	stiffness = 0.5;
-    
-        lambda = (angle - restAngle) / lambda * stiffness;
-    
-        // if (n1.cross(n2).dot(e) > 0.0)
-        //     lambda = -lambda;	
-    
-        corr0 = invMass0 * lambda * d0;
-        corr1 = invMass1 * lambda * d1;
-        corr2 = invMass2 * lambda * d2;
-        corr3 = invMass3 * lambda * d3;
-    
+
+        // compute impulse-based scaling factor
+        // SCALER delta_lambda = (angle * angleSign - restAngle * restAngleSign + alpha * lambda) / sum_normGradC;
+        auto C = (angle - restAngle);
+        // auto al = alpha * lambda;
+        // alpha = 0;
+        // SCALER delta_lambda = -(C + alpha * lambda) / sum_normGradC;
+        SCALER beta = -C * stiffness / sum_normGradC;
+        // delta_lambda *= restAngleSign * angleSign;
+
+        // auto ori_lambda = lambda;
+        // lambda += delta_lambda;
+
+        // printf("input angle : %f and restAngle : %f delta_lambda : %f : alpha * lambda : %f ori_lambda = %f\n",
+        //     (float)angle,(float)restAngle,(float)delta_lambda,(float)al,(float)ori_lambda);
+
+        corr0 = (beta * invMass0) * ds[0];
+        corr1 = (beta * invMass1) * ds[1];
+        corr2 = (beta * invMass2) * ds[2];
+        corr3 = (beta * invMass3) * ds[3];
         return true;
     }
 
+
+   /**
+   *             v1 --- v3
+   *            /  \    /
+   *           /    \  /
+   *          v2 --- v0
+   */
     template<typename VECTOR3d,typename SCALER = typename VECTOR3d::value_type>
     constexpr bool solve_DihedralConstraint(
         const VECTOR3d& p0, const SCALER& invMass0,
         const VECTOR3d& p1, const SCALER& invMass1,
         const VECTOR3d& p2, const SCALER& invMass2,
         const VECTOR3d& p3, const SCALER& invMass3,
-        const SCALER& ra,
-        const SCALER& stiffness,
+        const SCALER& restAngle,
+        const SCALER& restAngleSign,
+        const SCALER& xpbd_affliation,
         const SCALER& dt,
         SCALER& lambda,
-        VECTOR3d& corr0, VECTOR3d& corr1, VECTOR3d& corr2, VECTOR3d& corr3){  
-        constexpr SCALER eps = static_cast<SCALER>(1e-4);
-
-        auto e = p3 - p2;
-        auto elen = e.norm();
-        if(elen < eps)
+        VECTOR3d& corr0, VECTOR3d& corr1, VECTOR3d& corr2, VECTOR3d& corr3)
+    {  
+        constexpr SCALER eps = static_cast<SCALER>(1e-6);
+        if (invMass0 == 0.0 && invMass1 == 0.0)
             return false;
-        
-        SCALER invElen = static_cast<SCALER>(1.0) / elen;   
 
-        VECTOR3d n1 = (p2 - p0).cross(p3 - p0); n1 /= n1.l2NormSqr();
-	    VECTOR3d n2 = (p3 - p1).cross(p2 - p1); n2 /= n2.l2NormSqr();
-
-        VECTOR3d gradC[4] = {};
-        gradC[0] = elen*n1;
-        gradC[1] = elen*n2;
-        gradC[2] = (p0-p3).dot(e) * invElen * n1 + (p1-p3).dot(e) * invElen * n2;
-        gradC[3] = (p2-p0).dot(e) * invElen * n1 + (p2-p1).dot(e) * invElen * n2;
-
-        n1 = n1.normalized();
-        n2 = n2.normalized();
-        SCALER n12 = n1.dot(n2);
-        SCALER angle = 0;
-        if((1 - n12) > 1e-6)
-            angle = zs::sqrt((1 - n12) / 2);
-        if(n1.cross(n2).dot(e) < 0)
-            angle = -angle;
+        auto angle = zs::dihedral_angle(p0,p2,p3,p1);
+        auto grad = zs::dihedral_angle_gradient(p0,p2,p3,p1);
+        VECTOR3d ds[4] = {};
+        ds[0] = VECTOR3d{grad[0 * 3 + 0],grad[0 * 3 + 1],grad[0 * 3 + 2]};
+        ds[2] = VECTOR3d{grad[1 * 3 + 0],grad[1 * 3 + 1],grad[1 * 3 + 2]};
+        ds[3] = VECTOR3d{grad[2 * 3 + 0],grad[2 * 3 + 1],grad[2 * 3 + 2]};
+        ds[1] = VECTOR3d{grad[3 * 3 + 0],grad[3 * 3 + 1],grad[3 * 3 + 2]};
 
         SCALER alpha = 0.0;
-        if (stiffness != 0.0)
-            alpha = static_cast<SCALER>(1.0) / (stiffness * dt * dt);
-
+        if (xpbd_affliation != 0.0)
+            alpha = static_cast<SCALER>(1.0) / (xpbd_affliation * dt * dt);
 
         SCALER sum_normGradC = 
-            invMass0 * gradC[0].l2NormSqr() +
-            invMass1 * gradC[1].l2NormSqr() +
-            invMass2 * gradC[2].l2NormSqr() +
-            invMass3 * gradC[3].l2NormSqr() + alpha;
+            invMass0 * ds[0].l2NormSqr() +
+            invMass1 * ds[1].l2NormSqr() +
+            invMass2 * ds[2].l2NormSqr() +
+            invMass3 * ds[3].l2NormSqr() + alpha;
 
         if(sum_normGradC < eps)
             return false;
 
-        auto energy = angle - ra;
-
         // compute impulse-based scaling factor
-        SCALER delta_lambda = -(energy + alpha * lambda) / sum_normGradC;
+        // SCALER delta_lambda = (angle * angleSign - restAngle * restAngleSign + alpha * lambda) / sum_normGradC;
+        auto C = (angle - restAngle);
+        auto al = alpha * lambda;
+        // alpha = 0;
+        SCALER delta_lambda = -(C + alpha * lambda) / sum_normGradC;
+        // delta_lambda *= restAngleSign * angleSign;
+
+        // auto ori_lambda = lambda;
         lambda += delta_lambda;
 
-        // if(n1.cross(n2).dot(e) > 0.0)
-        //     delta_lambda = -delta_lambda;
-        corr0 = (delta_lambda * invMass0) * gradC[0];
-        corr1 = (delta_lambda * invMass1) * gradC[1];
-        corr2 = (delta_lambda * invMass2) * gradC[2];
-        corr3 = (delta_lambda * invMass3) * gradC[3];
+        // printf("input angle : %f and restAngle : %f delta_lambda : %f : alpha * lambda : %f ori_lambda = %f\n",
+        //     (float)angle,(float)restAngle,(float)delta_lambda,(float)al,(float)ori_lambda);
+
+        corr0 = (delta_lambda * invMass0) * ds[0];
+        corr1 = (delta_lambda * invMass1) * ds[1];
+        corr2 = (delta_lambda * invMass2) * ds[2];
+        corr3 = (delta_lambda * invMass3) * ds[3];
         return true;
     }
 
+
+   /**
+   *             v1 --- v3
+   *            /  \    /
+   *           /    \  /
+   *          v2 --- v0
+   */
+   template<typename VECTOR3d,typename SCALER = typename VECTOR3d::value_type>
+   constexpr bool solve_DihedralConstraint(
+       const VECTOR3d& p0, const SCALER& invMass0,
+       const VECTOR3d& p1, const SCALER& invMass1,
+       const VECTOR3d& p2, const SCALER& invMass2,
+       const VECTOR3d& p3, const SCALER& invMass3,
+       const VECTOR3d& pp0,
+       const VECTOR3d& pp1,
+       const VECTOR3d& pp2,
+       const VECTOR3d& pp3,
+       const SCALER& restAngle,
+       const SCALER& restAngleSign,
+       const SCALER& xpbd_affliation,
+       const SCALER& dt,
+       const SCALER& kdamp_ratio,
+       SCALER& lambda,
+       VECTOR3d& corr0, VECTOR3d& corr1, VECTOR3d& corr2, VECTOR3d& corr3)
+   {  
+       constexpr SCALER eps = static_cast<SCALER>(1e-6);
+       if (invMass0 == 0.0 && invMass1 == 0.0)
+           return false;
+
+       auto angle = zs::dihedral_angle(p0,p2,p3,p1);
+       auto grad = zs::dihedral_angle_gradient(p0,p2,p3,p1);
+       VECTOR3d ds[4] = {};
+       ds[0] = VECTOR3d{grad[0 * 3 + 0],grad[0 * 3 + 1],grad[0 * 3 + 2]};
+       ds[2] = VECTOR3d{grad[1 * 3 + 0],grad[1 * 3 + 1],grad[1 * 3 + 2]};
+       ds[3] = VECTOR3d{grad[2 * 3 + 0],grad[2 * 3 + 1],grad[2 * 3 + 2]};
+       ds[1] = VECTOR3d{grad[3 * 3 + 0],grad[3 * 3 + 1],grad[3 * 3 + 2]};
+
+       SCALER alpha = 0.0;
+       if (xpbd_affliation != 0.0)
+           alpha = static_cast<SCALER>(1.0) / (xpbd_affliation * dt * dt);
+
+        SCALER dsum = 0.0;
+        SCALER gamma = 1.0;
+        if(kdamp_ratio > 0) {
+            auto beta = kdamp_ratio * dt * dt;
+            gamma = alpha * beta / dt;
+
+            dsum += gamma * ds[0].dot(p0 - pp0);
+            dsum += gamma * ds[1].dot(p1 - pp1);
+            dsum += gamma * ds[2].dot(p2 - pp2);
+            dsum += gamma * ds[3].dot(p3 - pp3);
+        }
+
+       SCALER wsum = 
+           invMass0 * ds[0].l2NormSqr() +
+           invMass1 * ds[1].l2NormSqr() +
+           invMass2 * ds[2].l2NormSqr() +
+           invMass3 * ds[3].l2NormSqr();
+        
+        wsum = (gamma + static_cast<SCALER>(1.0)) * wsum + alpha;
+
+       if(wsum < eps)
+           return false;
+
+       // compute impulse-based scaling factor
+       // SCALER delta_lambda = (angle * angleSign - restAngle * restAngleSign + alpha * lambda) / sum_normGradC;
+       auto C = (angle - restAngle);
+       auto al = alpha * lambda;
+       // alpha = 0;
+       SCALER delta_lambda = -(C + alpha * lambda + dsum) / wsum;
+       // delta_lambda *= restAngleSign * angleSign;
+
+       // auto ori_lambda = lambda;
+       lambda += delta_lambda;
+
+       // printf("input angle : %f and restAngle : %f delta_lambda : %f : alpha * lambda : %f ori_lambda = %f\n",
+       //     (float)angle,(float)restAngle,(float)delta_lambda,(float)al,(float)ori_lambda);
+
+       corr0 = (delta_lambda * invMass0) * ds[0];
+       corr1 = (delta_lambda * invMass1) * ds[1];
+       corr2 = (delta_lambda * invMass2) * ds[2];
+       corr3 = (delta_lambda * invMass3) * ds[3];
+       return true;
+   }
+
 // ----------------------------------------------------------------------------------------------
-    template<typename VECTOR3d,typename MATRIX4d>
+    template<typename VECTOR3d,typename MATRIX4d,typename SCALER = typename VECTOR3d::value_type>
     constexpr bool init_IsometricBendingConstraint(
         const VECTOR3d& p0,
         const VECTOR3d& p1,
         const VECTOR3d& p2,
         const VECTOR3d& p3,
-        MATRIX4d& Q)
+        MATRIX4d& Q,
+        SCALER& C0)
     {
         using SCALER = typename VECTOR3d::value_type; 
         // Compute matrix Q for quadratic bending
@@ -356,6 +514,12 @@ namespace zeno { namespace CONSTRAINT {
             Q(j, j) = (SCALER)(K[j] * K2[j]);
         }
 
+        C0 = 0.0;
+        for (unsigned char k = 0; k < 4; k++)
+            for (unsigned char j = 0; j < 4; j++)
+                C0 += Q(j, k) * (x[k].dot(x[j]));
+        C0 *= static_cast<SCALER>(0.5);        
+
         return true;
     }
 // ----------------------------------------------------------------------------------------------
@@ -368,6 +532,7 @@ namespace zeno { namespace CONSTRAINT {
         const MATRIX4d& Q,
         const SCALER& stiffness,
         const SCALER& dt,
+        const SCALER& C0,
         SCALER& lambda,
         VECTOR3d& corr0, VECTOR3d& corr1, VECTOR3d& corr2, VECTOR3d& corr3)
     {
@@ -375,11 +540,12 @@ namespace zeno { namespace CONSTRAINT {
         const VECTOR3d x[4] = { p2, p3, p0, p1 };
         SCALER invMass[4] = { invMass2, invMass3, invMass0, invMass1 };
 
-        SCALER energy = 0.0;
+        SCALER C = 0.0;
         for (unsigned char k = 0; k < 4; k++)
             for (unsigned char j = 0; j < 4; j++)
-                energy += Q(j, k) * (x[k].dot(x[j]));
-        energy *= static_cast<SCALER>(0.5);
+                C += Q(j, k) * (x[k].dot(x[j]));
+        C *= static_cast<SCALER>(0.5);
+        C -= C0;
 
         // printf("isometric_bending_energy : %f\n",(float)energy);
 
@@ -420,7 +586,7 @@ namespace zeno { namespace CONSTRAINT {
         if (sum_normGradC > eps)
         {
             // compute impulse-based scaling factor
-            SCALER delta_lambda = -(energy + alpha * lambda) / sum_normGradC;
+            SCALER delta_lambda = -(C + alpha * lambda) / sum_normGradC;
             lambda += delta_lambda;
 
             corr0 = (delta_lambda * invMass[2]) * gradC[2];
@@ -429,14 +595,14 @@ namespace zeno { namespace CONSTRAINT {
             corr3 = (delta_lambda * invMass[1]) * gradC[1];
             // printf("update corr for iso_bending energy\n");
 
-            auto gradCSum = (float)0;
-            for(int i = 0;i != 4;++i)
-                gradCSum += gradC[i].norm();
-            if(gradCSum > 1e-4) {
-                // printf("gradC : %f %f %f %f corr : %f %f %f %f\n",
-                //     (float)gradC[0].norm(),(float)gradC[1].norm(),(float)gradC[2].norm(),(float)gradC[3].norm(),
-                //     (float)corr0.norm(),(float)corr1.norm(),(float)corr2.norm(),(float)corr3.norm());
-            }
+            // auto gradCSum = (float)0;
+            // for(int i = 0;i != 4;++i)
+            //     gradCSum += gradC[i].norm();
+            // if(gradCSum > 1e-4) {
+            //     // printf("gradC : %f %f %f %f corr : %f %f %f %f\n",
+            //     //     (float)gradC[0].norm(),(float)gradC[1].norm(),(float)gradC[2].norm(),(float)gradC[3].norm(),
+            //     //     (float)corr0.norm(),(float)corr1.norm(),(float)corr2.norm(),(float)corr3.norm());
+            // }
 
             return true;
         }else {
@@ -453,16 +619,18 @@ namespace zeno { namespace CONSTRAINT {
         const VECTOR3d& p3, SCALER invMass3,
         const MATRIX4d& Q,
         const SCALER& stiffness,
+        const SCALER& C0,
         VECTOR3d& corr0, VECTOR3d& corr1, VECTOR3d& corr2, VECTOR3d& corr3){
         constexpr SCALER eps = static_cast<SCALER>(1e-6);
         const VECTOR3d x[4] = { p2, p3, p0, p1 };
         SCALER invMass[4] = { invMass2, invMass3, invMass0, invMass1 };
 
-        SCALER energy = 0.0;
+        SCALER C = 0.0;
         for (unsigned char k = 0; k < 4; k++)
             for (unsigned char j = 0; j < 4; j++)
-                energy += Q(j, k) * (x[k].dot(x[j]));
-        energy *= 0.5;
+                C += Q(j, k) * (x[k].dot(x[j]));
+        C *= 0.5;
+        C -= C0;
 
         VECTOR3d gradC[4] = {};
         gradC[0] = VECTOR3d::uniform(0);

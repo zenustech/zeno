@@ -15,3 +15,5 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
 
+#include "kernel/global_intersection_analysis.hpp"
+
