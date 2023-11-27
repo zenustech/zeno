@@ -987,6 +987,8 @@ struct DetangleCCDCollisionWithBoundary : INode {
 
         zs::Vector<int> ccd_fail_mark{verts.get_allocator(),verts.size()};
 
+        auto do_jacobi_iter = get_input2<bool>("do_jacobi_iter");
+
         for(int iter = 0;iter != nm_ccd_iters;++iter) {
 
             cudaPol(zs::range(impulse_buffer),[]ZS_LAMBDA(auto& imp) mutable {imp = vec3::uniform(0);});
@@ -998,34 +1000,62 @@ struct DetangleCCDCollisionWithBoundary : INode {
                 std::cout << "do continous self PT cololision impulse" << std::endl;
 
                 auto do_bvh_refit = iter > 0;
-                COLLISION_UTILS::calc_continous_self_PT_collision_impulse_with_toc(cudaPol,
-                    vtemp,
-                    vtemp,
-                    vtemp,"x","v",
-                    ttemp,
-                    // thickness,
-                    triBvh,
-                    do_bvh_refit,
-                    csPT,
-                    impulse_buffer,
-                    impulse_count,false);
+                if(do_jacobi_iter) {
+                    COLLISION_UTILS::calc_continous_self_PT_collision_impulse(cudaPol,
+                        vtemp,
+                        vtemp,
+                        vtemp,"x","v",
+                        ttemp,
+                        triBvh,
+                        do_bvh_refit,
+                        csPT,
+                        impulse_buffer,
+                        impulse_count);
+                }else {
+                    COLLISION_UTILS::calc_continous_self_PT_collision_impulse_with_toc(cudaPol,
+                        vtemp,
+                        vtemp,
+                        vtemp,"x","v",
+                        ttemp,
+                        // thickness,
+                        triBvh,
+                        do_bvh_refit,
+                        csPT,
+                        impulse_buffer,
+                        impulse_count,false);
+                }
             }
 
             if(do_ee_detection) {
                 std::cout << "do continous self EE cololision impulse" << std::endl;
                 auto do_bvh_refit = iter > 0;
-                COLLISION_UTILS::calc_continous_self_EE_collision_impulse_with_toc(cudaPol,
-                    vtemp,
-                    vtemp,
-                    vtemp,"x","v",
-                    etemp,
-                    0,
-                    edges.size(),
-                    eBvh,
-                    do_bvh_refit,
-                    csEE,
-                    impulse_buffer,
-                    impulse_count,false);
+                if(do_jacobi_iter) {
+                    COLLISION_UTILS::calc_continous_self_EE_collision_impulse(cudaPol,
+                        vtemp,
+                        vtemp,
+                        vtemp,"x","v",
+                        etemp,
+                        0,
+                        edges.size(),
+                        eBvh,
+                        do_bvh_refit,
+                        csEE,
+                        impulse_buffer,
+                        impulse_count);
+                } else {
+                    COLLISION_UTILS::calc_continous_self_EE_collision_impulse_with_toc(cudaPol,
+                        vtemp,
+                        vtemp,
+                        vtemp,"x","v",
+                        etemp,
+                        0,
+                        edges.size(),
+                        eBvh,
+                        do_bvh_refit,
+                        csEE,
+                        impulse_buffer,
+                        impulse_count,false);
+                }
             }
 
             std::cout << "apply CCD impulse" << std::endl;
@@ -1090,6 +1120,7 @@ ZENDEFNODE(DetangleCCDCollisionWithBoundary, {{{"zsparticles"},
                                 {"float","restitution","0.1"},
                                 {"float","relaxation","1"},
                                 {"boundary"},
+                                {"bool","do_jacobi_iter","0"},
                                 {"bool","do_ee_detection","1"},
                                 {"bool","do_pt_detection","1"},
                                 {"int","substep_id","0"},

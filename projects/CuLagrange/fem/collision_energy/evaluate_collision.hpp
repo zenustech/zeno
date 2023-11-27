@@ -1399,6 +1399,7 @@ void calc_imminent_self_EE_collision_impulse(Pol& pol,
 
 template<typename Pol,
     typename InverseMassTileVec,
+    typename MassTileVec,
     // typename THICKNESS_REAL,
     typename PosTileVec,
     typename TrisTileVec,
@@ -1409,6 +1410,7 @@ template<typename Pol,
     typename T = typename PosTileVec::value_type>
 void calc_continous_self_PT_collision_impulse(Pol& pol,
     const InverseMassTileVec& invMass,
+    const MassTileVec& mass,
     const PosTileVec& verts,const zs::SmallString& xtag,const zs::SmallString& vtag,
     const TrisTileVec& tris,
     // const THICKNESS_REAL& thickness,
@@ -1433,9 +1435,9 @@ void calc_continous_self_PT_collision_impulse(Pol& pol,
 
         auto execTag = wrapv<space>{};
 
-        std::cout << "do continous PT collilsion detection" << std::endl;
+        // std::cout << "do continous PT collilsion detection" << std::endl;
 
-        std::cout << "build continous PT spacial structure" << std::endl;
+        // std::cout << "build continous PT spacial structure" << std::endl;
 
 
         auto bvs = retrieve_bounding_volumes(pol,verts,tris,verts,wrapv<3>{},(T)1.0,(T)0,xtag,vtag);
@@ -1490,10 +1492,11 @@ void calc_continous_self_PT_collision_impulse(Pol& pol,
                 bvh.iter_neighbors(bv,do_close_proximity_detection);              
         });
 
-        std::cout << "nm close PT proxy : " << csPT.size() << std::endl;
-        std::cout << "compute continouse PT proxy impulse" << std::endl;
+        // std::cout << "nm close PT proxy : " << csPT.size() << std::endl;
+        // std::cout << "compute continouse PT proxy impulse" << std::endl;
         pol(zip(zs::range(csPT.size()),csPT._activeKeys),[
             invMass = proxy<space>({},invMass),
+            mass = proxy<space>({},mass),
             xtag = xtag,
             vtag = vtag,
             verts = proxy<space>({},verts),
@@ -1560,8 +1563,10 @@ void calc_continous_self_PT_collision_impulse(Pol& pol,
                 auto rv_nrm = collision_nrm.dot(rv);
 
                 auto cm = (T).0;
-                for(int i = 0;i != 4;++i)
-                    cm += bary[i] * bary[i] * invMass("minv",inds[i]);
+                for(int i = 0;i != 4;++i) {
+                    // cm += bary[i] * bary[i] * invMass("minv",inds[i]);
+                    cm += bary[i] * bary[i] / mass("m",inds[i]);
+                }
                 if(cm < eps)
                     return;
                 
@@ -1571,8 +1576,8 @@ void calc_continous_self_PT_collision_impulse(Pol& pol,
                 }
 
                 for(int i = 0;i != 4;++i) {
-                    if(invMass("minv",inds[i]) < eps)
-                        continue;
+                    // if(invMass("minv",inds[i]) < eps)
+                    //     continue;
                     auto beta = (bary[i] * invMass("minv",inds[i])) / cm;
                     atomic_add(execTag,&impulse_count[inds[i]],1);
                     for(int d = 0;d != 3;++d)
@@ -2322,6 +2327,7 @@ void calc_continous_self_PT_collision_impulse_with_toc(Pol& pol,
 
 template<typename Pol,  
     typename InverseMassTileVec,
+    typename MassTileVec,
     typename PosTileVec,
     typename EdgeTileVec,
     typename ImpulseBuffer,
@@ -2331,6 +2337,7 @@ template<typename Pol,
     typename T = typename PosTileVec::value_type>
 void calc_continous_self_EE_collision_impulse(Pol& pol,
     const InverseMassTileVec& invMass,
+    const MassTileVec& mass,
     const PosTileVec& verts,const zs::SmallString& xtag,const zs::SmallString& vtag,
     const EdgeTileVec& edges,
     const size_t& start_edge_id,
@@ -2353,7 +2360,7 @@ void calc_continous_self_EE_collision_impulse(Pol& pol,
         constexpr auto eps = (T)1e-6;
 
         // auto edgeCCDBvh = bvh_t{};
-        std::cout << "build continous EE structure" << std::endl;
+        // std::cout << "build continous EE structure" << std::endl;
 
 
         // ALLOCATION BOTTLENECK 1
@@ -2363,7 +2370,7 @@ void calc_continous_self_EE_collision_impulse(Pol& pol,
         else
             edgeCCDBvh.build(pol,edgeBvs);
 
-        std::cout << "do continous EE collilsion detection" << std::endl;
+        // std::cout << "do continous EE collilsion detection" << std::endl;
 
 
         // ALLOCATION BOTTLENECK 2
@@ -2449,8 +2456,8 @@ void calc_continous_self_EE_collision_impulse(Pol& pol,
                 bvh.iter_neighbors(bv,do_close_proximity_detection);
         });
 
-        std::cout << "nm close EE proxy : " << csEE.size() << std::endl;
-        std::cout << "compute continous EE proxy impulse" << std::endl;
+        // std::cout << "nm close EE proxy : " << csEE.size() << std::endl;
+        // std::cout << "compute continous EE proxy impulse" << std::endl;
 
         pol(zip(zs::range(csEE.size()),csEE._activeKeys),[
             xtag = xtag,
@@ -2458,6 +2465,7 @@ void calc_continous_self_EE_collision_impulse(Pol& pol,
             verts = proxy<space>({},verts),
             edges = proxy<space>({},edges),
             invMass = proxy<space>({},invMass),
+            mass = proxy<space>({},mass),
             impulse_buffer = proxy<space>(impulse_buffer),
             impulse_count = proxy<space>(impulse_count),
             // thickness = thickness,
@@ -2524,8 +2532,10 @@ void calc_continous_self_EE_collision_impulse(Pol& pol,
                 auto collision_nrm = pr.normalized();
                 auto rv_nrm = collision_nrm.dot(rv);
                 auto cm = (T).0;
-                for(int i = 0;i != 4;++i)
-                    cm += bary[i] * bary[i] * invMass("minv",inds[i]);
+                for(int i = 0;i != 4;++i) {
+                    // cm += bary[i] * bary[i] * invMass("minv",inds[i]);
+                    cm += bary[i] * bary[i] / mass("m",inds[i]);
+                }
                 if(cm < eps)
                     return;
 
@@ -2539,8 +2549,8 @@ void calc_continous_self_EE_collision_impulse(Pol& pol,
                 //     printf("find EE collision pairs[%d %d] with ccd\n",ei,nei);
 
                 for(int i = 0;i != 4;++i) {
-                    if(invMass("minv",inds[i]) < eps)
-                        continue;
+                    // if(invMass("minv",inds[i]) < eps)
+                    //     continue;
                     auto beta = (bary[i] * invMass("minv",inds[i])) / cm;
 
                     if((impulse * beta).norm() > 10 && output_debug_inform) {

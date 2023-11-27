@@ -83,6 +83,7 @@ struct MakeSurfaceConstraintTopology : INode {
 
         auto relative_stiffness = get_input2<float>("relative_stiffness");
         auto uniform_xpbd_affiliation = get_input2<float>("xpbd_affiliation");
+        auto damping_coeff = get_input2<float>("damping_coeff");
 
         auto make_empty = get_input2<bool>("make_empty_constraint");
 
@@ -97,6 +98,7 @@ struct MakeSurfaceConstraintTopology : INode {
             {"relative_stiffness",1},
             {"xpbd_affiliation",1},
             {"lambda",1},
+            {"damping_coeff",1},
             {"tclr",1}
         }, 0, zs::memsrc_e::device,0);
         auto &eles = constraint->getQuadraturePoints();
@@ -671,6 +673,7 @@ struct MakeSurfaceConstraintTopology : INode {
                 eles = proxy<space>({},eles),
                 relative_stiffness = relative_stiffness,
                 xpbd_affiliation = uniform_xpbd_affiliation,
+                damping_coeff = damping_coeff,
                 colors = proxy<space>(colors),
                 reordered_map = proxy<space>(reordered_map)] ZS_LAMBDA(int oei) mutable {
                     auto ei = reordered_map[oei];
@@ -678,6 +681,7 @@ struct MakeSurfaceConstraintTopology : INode {
                     eles("relative_stiffness",oei) = relative_stiffness;
                     eles("xpbd_affiliation",oei) = xpbd_affiliation;
                     eles("tclr",oei) = colors[ei];
+                    eles("damping_coeff",oei) = damping_coeff;
             });
 
             constraint->setMeta(CONSTRAINT_COLOR_OFFSET,color_offset);
@@ -704,7 +708,8 @@ ZENDEFNODE(MakeSurfaceConstraintTopology, {{
                                 {"float","thickness","0.1"},
                                 {"int","substep_id","0"},
                                 {"int","nm_substeps","1"},
-                                {"bool","make_empty_constraint","0"}
+                                {"bool","make_empty_constraint","0"},
+                                {"float","damping_coeff","0.0"}
                             },
 							{{"constraint"}},
 							{ 
@@ -738,6 +743,7 @@ struct XPBDSolve : INode {
 
         auto dt = get_input2<float>("dt");   
         auto ptag = get_input2<std::string>("ptag");
+        auto pptag = get_input2<std::string>("pptag");
 
         auto substeps_id = get_input2<int>("substep_id");
         auto nm_substeps = get_input2<int>("nm_substeps");
@@ -779,11 +785,13 @@ struct XPBDSolve : INode {
                 substeps_id = substeps_id,
                 nm_substeps = nm_substeps,
                 ptag = zs::SmallString(ptag),
+                pptag = zs::SmallString(pptag),
                 kverts = proxy<space>({},kverts),
                 kcells = proxy<space>({},kcells),
                 cquads = proxy<space>({},cquads)] ZS_LAMBDA(int gi) mutable {
                     float alpha = cquads("xpbd_affiliation",coffset + gi);
                     float lambda = cquads("lambda",coffset + gi);
+                    float kd = cquads("damping_coeff",coffset + gi);
 
                     if(category == category_c::volume_pin_constraint) {
                         auto pair = cquads.pack(dim_c<2>,"inds",coffset + gi,int_c);
@@ -860,27 +868,37 @@ struct XPBDSolve : INode {
                         // printf("do xpbd solve\n");
 
                         auto edge = cquads.pack(dim_c<2>,"inds",coffset + gi,int_c);
-                        vec3 p0{},p1{};
-                        p0 = verts.pack(dim_c<3>,ptag,edge[0]);
-                        p1 = verts.pack(dim_c<3>,ptag,edge[1]);
+                        // vec3 p0{},p1{};
+                        auto p0 = verts.pack(dim_c<3>,ptag,edge[0]);
+                        auto p1 = verts.pack(dim_c<3>,ptag,edge[1]);
+                        auto pp0 = verts.pack(dim_c<3>,pptag,edge[0]);
+                        auto pp1 = verts.pack(dim_c<3>,pptag,edge[1]);
+
                         float minv0 = verts("minv",edge[0]);
                         float minv1 = verts("minv",edge[1]);
                         float r = cquads("r",coffset + gi);
 
                         vec3 dp0{},dp1{};
+                        // if(!CONSTRAINT::solve_DistanceConstraint(
+                        //     p0,minv0,
+                        //     p1,minv1,
+                        //     r,
+                        //     alpha,
+                        //     dt,
+                        //     lambda,
+                        //     dp0,dp1))
+                        //         return;
                         if(!CONSTRAINT::solve_DistanceConstraint(
                             p0,minv0,
                             p1,minv1,
+                            pp0,pp1,
                             r,
                             alpha,
+                            kd,
                             dt,
                             lambda,
                             dp0,dp1))
                                 return;
-                        
-                        // printf("stretch update : %f %f %f %f %f %f\n",
-                        //     (float)dp0[0],(float)dp0[1],(float)dp0[2],
-                        //     (float)dp1[0],(float)dp1[1],(float)dp1[2]);
 
                         verts.tuple(dim_c<3>,ptag,edge[0]) = p0 + dp0;
                         verts.tuple(dim_c<3>,ptag,edge[1]) = p1 + dp1;
@@ -920,27 +938,43 @@ struct XPBDSolve : INode {
                     if(category == category_c::dihedral_bending_constraint) {
                         auto quad = cquads.pack(dim_c<4>,"inds",coffset + gi,int_c);
                         vec3 p[4] = {};
+                        vec3 pp[4] = {};
                         float minv[4] = {};
                         for(int i = 0;i != 4;++i) {
                             p[i] = verts.pack(dim_c<3>,ptag,quad[i]);
+                            pp[i] = verts.pack(dim_c<3>,pptag,quad[i]);
                             minv[i] = verts("minv",quad[i]);
                         }
 
                         auto ra = cquads("ra",coffset + gi);
                         auto ras = cquads("sign",coffset + gi);
                         vec3 dp[4] = {};
+                        // if(!CONSTRAINT::solve_DihedralConstraint(
+                        //     p[0],minv[0],
+                        //     p[1],minv[1],
+                        //     p[2],minv[2],
+                        //     p[3],minv[3],
+                        //     ra,
+                        //     ras,
+                        //     alpha,
+                        //     dt,
+                        //     lambda,
+                        //     dp[0],dp[1],dp[2],dp[3]))
+                        //         return;
                         if(!CONSTRAINT::solve_DihedralConstraint(
                             p[0],minv[0],
                             p[1],minv[1],
                             p[2],minv[2],
                             p[3],minv[3],
+                            pp[0],pp[1],pp[2],pp[3],
                             ra,
                             ras,
                             alpha,
                             dt,
+                            kd,
                             lambda,
                             dp[0],dp[1],dp[2],dp[3]))
-                                return;
+                                return;                        
                         for(int i = 0;i != 4;++i) {
                             // printf("dp[%d][%d] : %f %f %f %f\n",gi,i,s,(float)dp[i][0],(float)dp[i][1],(float)dp[i][2]);
                             verts.tuple(dim_c<3>,ptag,quad[i]) = p[i] + dp[i];
@@ -961,6 +995,7 @@ ZENDEFNODE(XPBDSolve, {{{"zsparticles"},
                             {"int","substep_id","0"},
                             {"int","nm_substeps","1"},
                             {"string","ptag","x"},
+                            {"string","pptag","px"},
                             {"float","dt","0.5"}},
 							{{"zsparticles"},{"constraints"}},
 							{},
@@ -1225,7 +1260,9 @@ struct XPBDSolveSmoothAll : INode {
 
         auto& verts = zsparticles->getParticles();
         auto ptag = get_input2<std::string>("ptag");
+        auto pptag = get_input2<std::string>("pptag");
         auto dptag = get_input2<std::string>("dptag");
+        auto dt = get_input2<float>("dt");
 
         // auto dt = get_input2<bool>("dt");
 
@@ -1240,11 +1277,14 @@ struct XPBDSolveSmoothAll : INode {
             if(category == category_c::edge_length_constraint || category == category_c::dihedral_bending_constraint) {
                 cudaPol(zs::range(cquads.size()),[
                     cquads = proxy<space>({},cquads),
+                    dt = dt,
                     stiffnessOffset = cquads.getPropertyOffset("relative_stiffness"),
                     affiliationOffset = cquads.getPropertyOffset("xpbd_affiliation"),
+                    dampingOffset = cquads.getPropertyOffset("damping_coeff"),
                     indsOffset = cquads.getPropertyOffset("inds"),
                     weight_sum = proxy<space>(weight_sum),
                     ptagOffset = verts.getPropertyOffset(ptag),
+                    pptagOffset = verts.getPropertyOffset(pptag),
                     dptagOffset = verts.getPropertyOffset(dptag),
                     minvOffset = verts.getPropertyOffset("minv"),
                     verts = view<space>(verts),
@@ -1252,10 +1292,13 @@ struct XPBDSolveSmoothAll : INode {
                     exec_tag = exec_tag] ZS_LAMBDA(int ci) mutable {
                         auto w = cquads(stiffnessOffset,ci);
                         auto aff = cquads(affiliationOffset,ci);
+                        auto kd = cquads(dampingOffset,ci);
                         if(category == category_c::edge_length_constraint) {
                             auto edge = cquads.pack(dim_c<2>,indsOffset,ci,int_c);
                             auto p0 = verts.pack(dim_c<3>,ptagOffset,edge[0]);
                             auto p1 = verts.pack(dim_c<3>,ptagOffset,edge[1]);
+                            auto pp0 = verts.pack(dim_c<3>,pptagOffset,edge[0]);
+                            auto pp1 = verts.pack(dim_c<3>,pptagOffset,edge[1]);
                             auto  minv0 = verts(minvOffset,edge[0]);
                             auto minv1 = verts(minvOffset,edge[1]);
                             auto r = cquads("r",ci);
@@ -1265,10 +1308,12 @@ struct XPBDSolveSmoothAll : INode {
                             if(!CONSTRAINT::solve_DistanceConstraint(
                                 p0,minv0,
                                 p1,minv1,
+                                pp0,pp1,
                                 r,
-                                (T)0.0,
-                                (T)1.0,
-                                (T)lambda,
+                                aff,
+                                kd,
+                                dt,
+                                lambda,
                                 dp[0],dp[1]))
                                     return;
                             // printf("smooth stretch update : %f %f\n",(float)dp[0].norm(),(float)dp[1].norm());
@@ -1284,9 +1329,11 @@ struct XPBDSolveSmoothAll : INode {
                         if(category == category_c::dihedral_bending_constraint) {
                             auto quad = cquads.pack(dim_c<4>,indsOffset,ci,int_c);
                             vec3 p[4] = {};
+                            vec3 pp[4] = {};
                             float minv[4] = {};
                             for(int i = 0;i != 4;++i) {
                                 p[i] = verts.pack(dim_c<3>,ptagOffset,quad[i]);
+                                pp[i] = verts.pack(dim_c<3>,pptagOffset,quad[i]);
                                 minv[i] = verts(minvOffset,quad[i]);
                             }
     
@@ -1299,11 +1346,13 @@ struct XPBDSolveSmoothAll : INode {
                                 p[1],minv[1],
                                 p[2],minv[2],
                                 p[3],minv[3],
+                                pp[0],pp[1],pp[2],pp[3],
                                 ra,
                                 ras,
-                                (T)0.0,
-                                (T)1.0,
-                                (T)lambda,
+                                aff,
+                                dt,
+                                kd,
+                                lambda,
                                 dp[0],dp[1],dp[2],dp[3]))
                                     return;    
                             // printf("smooth bending update : %f %f %f %f\n",
@@ -1373,7 +1422,10 @@ struct XPBDSolveSmoothAll : INode {
 ZENDEFNODE(XPBDSolveSmoothAll, {{{"zsparticles"},
                                 {"constraints"},
                                 {"string","ptag","x"},
-                                {"string","dptag","dx"}
+                                {"string","pptag","px"},
+                                {"string","dptag","dx"},
+                                {"float","dt","1.0"},
+                                // {"float","relaxation_rate","1.0"},
                                 // {"float","scale"}
                             },
 							{{"zsparticles"},{"constraints"}},
