@@ -463,7 +463,6 @@ namespace zeno { namespace CONSTRAINT {
         MATRIX4d& Q,
         SCALER& C0)
     {
-        using SCALER = typename VECTOR3d::value_type; 
         // Compute matrix Q for quadratic bending
         const VECTOR3d x[4] = { p2, p3, p0, p1 };
         // Q = MATRIX4d::uniform(0);
@@ -611,6 +610,7 @@ namespace zeno { namespace CONSTRAINT {
     }
 
 
+#if 0
     template<typename VECTOR3d,typename SCALER,typename MATRIX4d>
     constexpr bool solve_IsometricBendingConstraint(
         const VECTOR3d& p0, SCALER invMass0,
@@ -671,6 +671,7 @@ namespace zeno { namespace CONSTRAINT {
         }
         return false;
     }
+#endif
 
     template<typename VECTOR3d,typename SCALER>
     constexpr bool solve_PlaneConstraint(

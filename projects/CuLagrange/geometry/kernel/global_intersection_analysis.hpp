@@ -1042,9 +1042,9 @@ namespace GIA {
         // find the intersection pairs and clone the result to host backend
         auto tri_bvh = LBvh<3,int,T>{};
         retrieve_self_intersection_tri_halfedge_pairs(pol,verts,xtag,tris,halfedges,tri_bvh,csHT);
-        bht<int,2,int> boundary_pairs_set{csHT.get_allocator(),MAX_BOUNDARY_POINTS};
+        bht<int,2,int> boundary_pairs_set{csHT.get_allocator(),DEFAULT_MAX_BOUNDARY_POINTS};
         boundary_pairs_set.reset(pol,true);
-        bht<int,2,int> turning_pairs_set{csHT.get_allocator(),MAX_NM_TURNING_POINTS};
+        bht<int,2,int> turning_pairs_set{csHT.get_allocator(),DEFAULT_MAX_NM_TURNING_POINTS};
         turning_pairs_set.reset(pol,true);
 
         pol(zip(zs::range(csHT.size()),csHT._activeKeys),[
