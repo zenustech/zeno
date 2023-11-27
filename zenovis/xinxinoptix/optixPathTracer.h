@@ -60,7 +60,7 @@ struct GenericLight
 
     pbrt::LightBounds bounds() {
 
-        auto Phi = intensity;
+        auto Phi = intensity * dot(color, make_float3(1.f/3.f));
         bool doubleSided = config & zeno::LightConfigDoubleside;
 
         if (this->type == zeno::LightType::IES) {
