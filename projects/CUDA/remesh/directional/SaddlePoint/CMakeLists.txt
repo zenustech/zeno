@@ -1,7 +1,7 @@
 target_sources(zeno PRIVATE 
-    CartesianField.h
-    CartesianField.cpp
-    IntrinsicFaceTangentBundle.h
+    DiagonalDamping.h
+    EigenSolverWrapper.h
+    LMSolver.h
     IntrinsicFaceTangentBundle.cpp
     IterativeRoundingTraits.h
     SIInitialSolutionTraits.h

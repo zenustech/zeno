@@ -128,12 +128,23 @@ struct QuadMeshing : INode {
         for (auto &it : lines_cut_set)
             lines_cut.push_back(zeno::vec2i(it.first, it.second));
         auto meshCut = new zeno::pmp::SurfaceMesh(prim_cut, "e_feature");
+        // // TODO(@seeeagull): visualize singularities and cuts for debugging
+        // // TODO(@seeeagull): this is not right...
+        // auto &vsingular = prim_cut->verts.attr<int>("v_singularity");
+        // auto &vcuts = prim_cut->verts.attr<int>("v_cut_valance");
+        // for (int i = 0; i < prim_cut->verts.size(); ++i) {
+        //     if (vsingular[i] == 1) {
+        //         clr[i] = vec3f(0.5, 0.1, 0.1);
+        //     } else if (vcuts[i] > 0) {
+        //         clr[i] = vec3f(0.2, 0.3, 0.6);
+        //     }
+        // }
         
-        // Eigen::MatrixXd cutUVFull, cornerWholeUV;
-        // intData.verbose=false;
-        // intData.integralSeamless = true;
-        // intData.roundSeams=false;
-        // directional::integrate(combedField,  intData, meshCut, cutUVFull, cornerWholeUV);
+        Eigen::MatrixXf cutUVFull, cornerWholeUV;
+        intData.verbose=false;
+        intData.integralSeamless = true;
+        intData.roundSeams=false;
+        combedField.integrate(intData, meshCut, cutUVFull, cornerWholeUV);
         // //Extracting the UV from [U,V,-U, -V];
         // cutUVFull = cutUVFull.block(0,0,cutUVFull.rows(),2);
 
