@@ -85,7 +85,7 @@ namespace zeno::directional{
 
         Eigen::VectorXi matching;                       //Matching(i)=j when vector k in EF(i,0) matches to vector (k+j)%N in EF(i,1)
         Eigen::VectorXf effort;                         //Effort of the entire matching (sum of deviations from parallel transport)
-        std::vector<int> sing_local_cycles;
+        std::vector<int> sing_local_cycles{};
 
         CartesianField(){}
         CartesianField(const IntrinsicFaceTangentBundle& _tb):tb(&_tb){}
@@ -127,8 +127,7 @@ namespace zeno::directional{
         // Outputs:
         //   cuts             #F by 3 list of boolean flags, indicating the edges that need to be cut
         //
-        void cut_mesh_with_singularities(const std::vector<int>& singularities,
-                                         Eigen::MatrixXi& cuts);
+        void cut_mesh_with_singularities(Eigen::MatrixXi& cuts);
 
         // Reorders the vectors in a tangent space (preserving CCW direction) so that the prescribed matching across most TB edges is an identity, except for seams.
         // Important: if the Raw field in not CCW ordered, the result is unpredictable.
@@ -149,6 +148,18 @@ namespace zeno::directional{
                                Eigen::MatrixXf& cut_verts,
                                Eigen::MatrixXi& cut_faces,
                                CartesianField& combedField);
+
+        // Integrates an N-directional fields into an N-function by solving the seamless Poisson equation. Respects *valid* linear reductions where the field is reducible to an n-field for n<=M, and consequently the function is reducible to an n-function.
+        // Input:
+        //  intData:            Integration data, which must be obtained from directional::setup_integration(). This is altered by the function.
+        //  meshCut:            Cut mesh (obtained from setup_integration())
+        // Output:
+        //  NFunction:          #cV x N parameterization functions per cut vertex (full version with all symmetries unpacked)
+        //  NCornerFunctions   (3*N) x #F parameterization functions per corner of whole mesh
+        bool integrate(IntegrationData& intData,
+                       const zeno::pmp::SurfaceMesh* meshCut,
+                       Eigen::MatrixXf& NFunction,
+                       Eigen::MatrixXf& NCornerFunctions);
     
     private:
         // Computes cycle-based indices from adjaced-space efforts of a directional field.
@@ -159,6 +170,30 @@ namespace zeno::directional{
         void dijkstra(const int &source,
                       const std::set<int> &targets,
                       std::vector<int> &path);
+
+        // assuming corner functions are arranged packets of N per vertex.
+        void branched_gradient(const zeno::pmp::SurfaceMesh* meshCut,
+                               const int N,
+                               Eigen::SparseMatrix<float>& G);
+
+        bool iterative_rounding(const zeno::pmp::SurfaceMesh* meshCut,
+                                const Eigen::SparseMatrix<float>& A,
+                                const Eigen::MatrixXf& rawField,
+                                const Eigen::VectorXi& fixedIndices,
+                                const Eigen::VectorXf& fixedValues,
+                                const Eigen::VectorXi& singularIndices,
+                                const Eigen::VectorXi& integerIndices,
+                                const float lengthRatio,
+                                const Eigen::VectorXf& b,
+                                const Eigen::SparseMatrix<float> C,
+                                const Eigen::SparseMatrix<float> G,
+                                const int N,
+                                const int n,
+                                const Eigen::SparseMatrix<float>& x2CornerMat,
+                                const bool fullySeamless,
+                                const bool roundSeams,
+                                const bool localInjectivity,
+                                Eigen::VectorXf& fullx);
     };
 }
 
