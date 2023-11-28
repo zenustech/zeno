@@ -248,7 +248,7 @@ ZENO_DEFNODE(CameraEval)({
 struct ExtractCamera: zeno::INode {
 
     virtual void apply() override {
-        auto cam = get_input<zeno::CameraObject>("camobject");
+        auto cam = get_input2<zeno::CameraObject>("camobject");
 
         auto pos = std::make_shared<zeno::NumericObject>();
         auto up = std::make_shared<zeno::NumericObject>();
