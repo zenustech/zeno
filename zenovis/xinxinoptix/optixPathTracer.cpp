@@ -2172,8 +2172,10 @@ void buildLightTree() {
         light.color.y = fmaxf(dat.color.at(1), FLT_EPSILON);
         light.color.z = fmaxf(dat.color.at(2), FLT_EPSILON);
 
-        light.spread = clamp(dat.spread, 0.0f, 1.0f);
-        auto void_angle = 0.5f * (1.0f - light.spread) * M_PIf;
+        light.spreadMajor = clamp(dat.spreadMajor, 0.0f, 1.0f);
+        light.spreadMinor = clamp(dat.spreadMinor, 0.0f, 1.0f);
+
+        auto void_angle = 0.5f * (1.0f - light.spreadMajor) * M_PIf;
         light.spreadNormalize = 2.f / (2.f + (2.f * void_angle - M_PIf) * tanf(void_angle));
 
         light.intensity  = dat.intensity;
@@ -2196,19 +2198,21 @@ void buildLightTree() {
         light.type  = magic_enum::enum_cast<zeno::LightType>(dat.type).value_or(zeno::LightType::Diffuse);
         light.shape = magic_enum::enum_cast<zeno::LightShape>(dat.shape).value_or(zeno::LightShape::Plane);
 
-        if (light.spread < 0.005f) {
+        if (light.spreadMajor < 0.005f) {
             light.type = zeno::LightType::Direction;
         }
 
-        if (light.shape == zeno::LightShape::Plane) {
+        if (light.shape == zeno::LightShape::Plane || light.shape == zeno::LightShape::Ellipse) {
 
             firstRectLightIdx = min(idx, firstRectLightIdx);
 
             light.setRectData(v0, v1, v2, light.N);
             addLightPlane(v0, v1, v2, light.N);
 
+            light.rect.isEllipse = (light.shape == zeno::LightShape::Ellipse);
+
             if (dat.fluxFixed > 0) {
-                light.intensity = dat.fluxFixed / light.rect.area; 
+                light.intensity = dat.fluxFixed / light.rect.Area(); 
             }
 
         } else if (light.shape == zeno::LightShape::Sphere) {
@@ -2225,7 +2229,6 @@ void buildLightTree() {
 
         } else if (light.shape == zeno::LightShape::Point) {
             light.point = {center};
-
             if (dat.fluxFixed > 0) {
                 auto intensity = dat.fluxFixed / (4 * M_PIf);
                 light.intensity = intensity;
@@ -2238,13 +2241,30 @@ void buildLightTree() {
             addTriangleLightGeo(v0, v1, v2);
         }
 
+        if (light.type == zeno::LightType::Spot) {
+
+            auto spread_major = clamp(light.spreadMajor, 0.01, 1.00);
+            auto spread_inner = clamp(light.spreadMinor, 0.01, 0.99);
+
+            auto major_angle = spread_major * 0.5f * M_PIf;
+            major_angle = fmaxf(major_angle, 2 * FLT_EPSILON);
+
+            auto inner_angle = spread_inner * major_angle;
+            auto falloff_angle = major_angle - inner_angle;
+
+            light.setConeData(center, light.N, 0.0f, major_angle, falloff_angle);
+        }
+        if (light.type == zeno::LightType::Projector) {
+            light.point = {center};
+        }
+
         if ( OptixUtil::g_ies.count(dat.profileKey) > 0 ) {
 
             auto& val = OptixUtil::g_ies.at(dat.profileKey);
             light.ies = val.ptr.handle;
             light.type = zeno::LightType::IES;
             //light.shape = zeno::LightShape::Point;
-            light.setConeData(center, light.N, radius, val.coneAngle);
+            light.setConeData(center, light.N, radius, val.coneAngle, FLT_EPSILON);
 
             if (dat.fluxFixed > 0) {
                 auto scale = val.coneAngle / M_PIf;

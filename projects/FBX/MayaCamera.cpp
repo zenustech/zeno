@@ -366,7 +366,7 @@ struct LightNode : INode {
         auto falloffExponent = get_input2<float>("falloffExponent");
         prim->userData().set2("falloffExponent", std::move(falloffExponent));
 
-        auto spread = get_input2<float>("spread");
+        auto spread = get_input2<zeno::vec2f>("spread");
         auto visible = get_input2<int>("visible");
         auto doubleside = get_input2<int>("doubleside");
 
@@ -444,7 +444,7 @@ ZENO_DEFNODE(LightNode)({
         {"float", "intensity", "1"},
         {"float", "fluxFixed", "-1.0"},
 
-        {"float", "spread", "1.0"},
+        {"vec2f", "spread", "1.0, 0.0"},
         {"float", "maxDistance", "-1.0" },
         {"float", "falloffExponent", "2.0"},
         
