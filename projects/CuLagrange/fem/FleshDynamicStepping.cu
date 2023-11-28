@@ -690,7 +690,7 @@ struct FleshDynamicStepping : INode {
                     auto A = mat3::identity();
                     if(etemp.hasProperty("dfiber") && use_anisotropic_jiggling) {
                         auto f = etemp.pack(dim_c<3>,"dfiber",ei);
-                        A = A - dyadic_prod(f,f);
+                        A = A - dyadic_prod(f,f) * 0.99;
                     }
 
                     auto inertia = (T)1.0;
@@ -805,8 +805,10 @@ struct FleshDynamicStepping : INode {
                         vf -= vole  * dFdXT * vecAP *aniso_strength;
 
                         auto aHq = amodel.do_first_piola_derivative(FAct,fiber);
+                        make_pd(aHq);
                         // auto aHq = zs::vec<T,9,9>::zeros();
                         H += dFdAct_dFdX.transpose() * aHq * dFdAct_dFdX * vole * aniso_strength;
+                        
                         // if((int)eles("Muscle_ID",ei) == 0){
                         //     printf("fiber : %f %f %f,Fa = %f,aP = %f,aHq = %f,H = %f\n",fiber[0],fiber[1],fiber[2],(float)FAct.norm(),(float)aP.norm(),(float)aHq.norm(),(float)H.norm());
                         // }

@@ -13,6 +13,7 @@ class ZTcpServer : public QObject
     Q_OBJECT
 public:
     ZTcpServer(QObject* parent = nullptr);
+    ~ZTcpServer();
     void init(const QHostAddress &address);
     void startProc(const std::string &progJson, LAUNCH_PARAM param);
     void startOptixProc();
@@ -26,6 +27,7 @@ public:
 
 signals:
     void runFinished();
+    void runnerError();
 
 private slots:
     void onNewConnection();

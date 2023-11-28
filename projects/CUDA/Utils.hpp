@@ -194,8 +194,14 @@ ee_accd(VecT ea0, VecT ea1, VecT eb0, VecT eb1, VecT dea0, VecT dea1, VecT deb0,
   }
   T dist_cur = zs::sqrt(dist2_cur);
   T gap = eta * dFunc / (dist_cur + thickness);
+  if(gap < 1e-6) {
+    // printf("toc : %f \t %f %f %f %f\n",(float)toc,(float)dFunc,(float)dist_cur,(float)thickness,(float)gap);
+    return false;
+  }
   T toc_prev = toc;
   toc = 0;
+  int MAX_ITER = 100;
+  int iter = 0;
   while (true) {
     T tocLowerBound = (1 - eta) * dFunc / ((dist_cur + thickness) * maxDispMag);
     if (tocLowerBound < 0)
@@ -227,6 +233,12 @@ ee_accd(VecT ea0, VecT ea1, VecT eb0, VecT eb1, VecT dea0, VecT dea1, VecT deb0,
     toc += tocLowerBound;
     if (toc > toc_prev) {
       toc = toc_prev;
+      return false;
+    }
+
+    ++iter;
+    if(iter >= MAX_ITER){
+      printf("max iter reach toc : %f \t %f %f %f %f\n",(float)toc,(float)dFunc,(float)dist_cur,(float)thickness,(float)gap);
       return false;
     }
   }

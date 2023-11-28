@@ -14,6 +14,7 @@
 #include <Alembic/AbcCoreHDF5/All.h>
 #include <Alembic/Abc/ErrorHandler.h>
 #include "ABCTree.h"
+#include "zeno/types/DictObject.h"
 #include <cstring>
 #include <cstdio>
 #include <filesystem>
@@ -217,7 +218,7 @@ static void read_user_data(std::shared_ptr<PrimitiveObject> prim, ICompoundPrope
     }
 }
 
-static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMeshSchema &mesh, int frameid, bool read_done) {
+static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMeshSchema &mesh, int frameid, bool read_done, bool read_face_set) {
     auto prim = std::make_shared<PrimitiveObject>();
 
     std::shared_ptr<Alembic::AbcCoreAbstract::v12::TimeSampling> time = mesh.getTimeSampling();
@@ -332,10 +333,30 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
     ICompoundProperty usrData = mesh.getUserProperties();
     read_user_data(prim, usrData, iSS, read_done);
 
+    if (read_face_set) {
+        auto &faceset = prim->polys.add_attr<int>("faceset");
+        std::fill(faceset.begin(), faceset.end(), -1);
+        auto &ud = prim->userData();
+        std::vector<std::string> faceSetNames;
+        mesh.getFaceSetNames(faceSetNames);
+        ud.set2("faceset_count", int(faceSetNames.size()));
+        for (auto i = 0; i < faceSetNames.size(); i++) {
+            auto n = faceSetNames[i];
+            ud.set2(zeno::format("faceset_{:04}", i), n);
+            IFaceSet faceSet = mesh.getFaceSet(n);
+            IFaceSetSchema::Sample faceSetSample = faceSet.getSchema().getValue();
+            size_t s = faceSetSample.getFaces()->size();
+            for (auto j = 0; j < s; j++) {
+                int f = faceSetSample.getFaces()->get()[j];
+                faceset[f] = i;
+            }
+        }
+    }
+
     return prim;
 }
 
-static std::shared_ptr<PrimitiveObject> foundABCSubd(Alembic::AbcGeom::ISubDSchema &subd, int frameid, bool read_done) {
+static std::shared_ptr<PrimitiveObject> foundABCSubd(Alembic::AbcGeom::ISubDSchema &subd, int frameid, bool read_done, bool read_face_set) {
     auto prim = std::make_shared<PrimitiveObject>();
 
     std::shared_ptr<Alembic::AbcCoreAbstract::v12::TimeSampling> time = subd.getTimeSampling();
@@ -437,6 +458,26 @@ static std::shared_ptr<PrimitiveObject> foundABCSubd(Alembic::AbcGeom::ISubDSche
     ICompoundProperty usrData = subd.getUserProperties();
     read_user_data(prim, usrData, iSS, read_done);
 
+    if (read_face_set) {
+        auto &faceset = prim->polys.add_attr<int>("faceset");
+        std::fill(faceset.begin(), faceset.end(), -1);
+        auto &ud = prim->userData();
+        std::vector<std::string> faceSetNames;
+        subd.getFaceSetNames(faceSetNames);
+        ud.set2("faceset_count", int(faceSetNames.size()));
+        for (auto i = 0; i < faceSetNames.size(); i++) {
+            auto n = faceSetNames[i];
+            ud.set2(zeno::format("faceset_{:04}", i), n);
+            IFaceSet faceSet = subd.getFaceSet(n);
+            IFaceSetSchema::Sample faceSetSample = faceSet.getSchema().getValue();
+            size_t s = faceSetSample.getFaces()->size();
+            for (auto j = 0; j < s; j++) {
+                int f = faceSetSample.getFaces()->get()[j];
+                faceset[f] = i;
+            }
+        }
+    }
+
     return prim;
 }
 
@@ -495,6 +536,14 @@ static std::shared_ptr<PrimitiveObject> foundABCPoints(Alembic::AbcGeom::IPoints
             parr.emplace_back(val[0], val[1], val[2]);
         }
     }
+
+    {
+        auto &ids = prim->verts.add_attr<int>("id");
+        auto count = mesamp.getIds()->size();
+        for (auto i = 0; i < count; i++) {
+            ids[i] = mesamp.getIds()->operator[](i);
+        }
+    }
     read_velocity(prim, mesamp.getVelocities(), read_done);
     ICompoundProperty arbattrs = mesh.getArbGeomParams();
     read_attributes(prim, arbattrs, iSS, read_done);
@@ -549,6 +598,7 @@ void traverseABC(
     ABCTree &tree,
     int frameid,
     bool read_done,
+    bool read_face_set,
     std::string path
 ) {
     {
@@ -566,7 +616,7 @@ void traverseABC(
 
             Alembic::AbcGeom::IPolyMesh meshy(obj);
             auto &mesh = meshy.getSchema();
-            tree.prim = foundABCMesh(mesh, frameid, read_done);
+            tree.prim = foundABCMesh(mesh, frameid, read_done, read_face_set);
             tree.prim->userData().set2("_abc_name", obj.getName());
             tree.prim->userData().set2("_abc_path", path);
         } else if (Alembic::AbcGeom::IXformSchema::matches(md)) {
@@ -607,7 +657,7 @@ void traverseABC(
             }
             Alembic::AbcGeom::ISubD subd(obj);
             auto &subd_sch = subd.getSchema();
-            tree.prim = foundABCSubd(subd_sch, frameid, read_done);
+            tree.prim = foundABCSubd(subd_sch, frameid, read_done, read_face_set);
             tree.prim->userData().set2("_abc_name", obj.getName());
             tree.prim->userData().set2("_abc_path", path);
         }
@@ -627,7 +677,7 @@ void traverseABC(
         Alembic::AbcGeom::IObject child(obj, name);
 
         auto childTree = std::make_shared<ABCTree>();
-        traverseABC(child, *childTree, frameid, read_done, path);
+        traverseABC(child, *childTree, frameid, read_done, read_face_set, path);
         tree.children.push_back(std::move(childTree));
     }
 }
@@ -681,7 +731,8 @@ struct ReadAlembic : INode {
             // fmt::print("GetArchiveStartAndEndTime: {}\n", start);
             // fmt::print("archive.getNumTimeSamplings: {}\n", archive.getNumTimeSamplings());
             auto obj = archive.getTop();
-            traverseABC(obj, *abctree, frameid, read_done, "");
+            bool read_face_set = get_input2<bool>("read_face_set");
+            traverseABC(obj, *abctree, frameid, read_done, read_face_set, "");
             read_done = true;
             usedPath = path;
         }
@@ -701,6 +752,7 @@ struct ReadAlembic : INode {
 ZENDEFNODE(ReadAlembic, {
     {
         {"readpath", "path"},
+        {"bool", "read_face_set", "0"},
         {"frameid"},
     },
     {
@@ -710,5 +762,59 @@ ZENDEFNODE(ReadAlembic, {
     {},
     {"alembic"},
 });
+
+struct AlembicSplitByName: INode {
+    void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        int faceset_count = prim->userData().get2<int>("faceset_count");
+        {
+            auto namelist = std::make_shared<zeno::ListObject>();
+            for (auto f = 0; f < faceset_count; f++) {
+                auto name = prim->userData().get2<std::string>(zeno::format("faceset_{:04}", f));
+                namelist->arr.push_back(std::make_shared<StringObject>(name));
+            }
+            set_output("namelist", namelist);
+        }
+
+        {
+            std::map<int, AttrVector<vec2i>> faceset_map;
+            for (auto f = 0; f < faceset_count; f++) {
+                faceset_map[f] = {};
+            }
+            auto &faceset = prim->polys.add_attr<int>("faceset");
+            for (auto j = 0; j < faceset.size(); j++) {
+                auto f = faceset[j];
+                faceset_map[f].push_back(prim->polys[j]);
+            }
+            auto dict = std::make_shared<zeno::DictObject>();
+            for (auto f = 0; f < faceset_count; f++) {
+                auto name = prim->userData().get2<std::string>(zeno::format("faceset_{:04}", f));
+                auto new_prim = std::dynamic_pointer_cast<PrimitiveObject>(prim->clone());
+                if (faceset_map.count(f)) {
+                    new_prim->polys = faceset_map[f];
+                }
+                else {
+                    new_prim->polys.resize(0);
+                }
+                dict->lut[name] = std::move(new_prim);
+            }
+            set_output("dict", dict);
+
+        }
+    }
+};
+
+ZENDEFNODE(AlembicSplitByName, {
+    {
+        {"prim"},
+    },
+    {
+        {"DictObject", "dict"},
+        {"ListObject", "namelist"},
+    },
+    {},
+    {"alembic"},
+});
+
 
 } // namespace zeno

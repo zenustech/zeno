@@ -375,11 +375,16 @@ void CameraControl::fakeWheelEvent(QWheelEvent *event) {
     ZenoSettingsManager& settings = ZenoSettingsManager::GetInstance();
     int scaleKey = settings.getViewShortCut(ShortCut_ScalingView, button);
     if (shift_pressed) {
-        float temp = getFOV() / scale;
-        setFOV(temp < 170 ? temp : 170);
+        auto& inst = ZenoSettingsManager::GetInstance();
+        QVariant varEnableShiftChangeFOV = inst.getValue(zsEnableShiftChangeFOV);
+        bool bEnableShiftChangeFOV = varEnableShiftChangeFOV.isValid() ? varEnableShiftChangeFOV.toBool() : true;
+        if (bEnableShiftChangeFOV) {
+            float temp = getFOV() / scale;
+            setFOV(temp < 170 ? temp : 170);
+        }
 
     } else if (aperture_pressed) {
-        float temp = getAperture() + delta * 0.01;
+        float temp = getAperture() + delta * 0.1;
         setAperture(temp >= 0 ? temp : 0);
 
     } else if (focalPlaneDistance_pressed) {

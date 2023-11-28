@@ -1340,7 +1340,7 @@ ZENDEFNODE(UpdatePrimitiveAttrFromZSParticles,
            {
                {"ZSParticles"},
                {"ZSParticles"},
-               {{"string", "attr", "x"}, {"enum float vec3f", "type", "float"}, {"enum vert quad", "location", "vert"}},
+               {{"string", "attr", "x"}, {"enum float vec3f", "type", "vec3f"}, {"enum vert quad", "location", "vert"}},
                {"MPM"},
            });
 
@@ -1423,19 +1423,21 @@ struct MakeZSLevelSet : INode {
             throw std::runtime_error(fmt::format("unrecognized transfer scheme [{}]\n", ls->transferScheme));
 
         if (cateStr == "collocated") {
-            auto tmp =
-                typename ZenoLevelSet::template spls_t<zs::grid_e::collocated>{tags, dx, 1, zs::memsrc_e::device, 0};
-            tmp.reset(zs::cuda_exec(), 0);
+            auto tmp = typename ZenoLevelSet::spls_t{tags, 1, zs::memsrc_e::device, 0};
+            tmp.scale(dx);
+            // tmp.reset(zs::cuda_exec(), 0);
             ls->getLevelSet() = std::move(tmp);
         } else if (cateStr == "cellcentered") {
-            auto tmp =
-                typename ZenoLevelSet::template spls_t<zs::grid_e::cellcentered>{tags, dx, 1, zs::memsrc_e::device, 0};
-            tmp.reset(zs::cuda_exec(), 0);
+            auto tmp = typename ZenoLevelSet::spls_t{tags, 1, zs::memsrc_e::device, 0};
+            tmp.scale(dx);
+            auto trans = zs::vec<float, 3>::constant(-dx / 2);
+            tmp.translate(trans);
+            // tmp.reset(zs::cuda_exec(), 0);
             ls->getLevelSet() = std::move(tmp);
         } else if (cateStr == "staggered") {
-            auto tmp =
-                typename ZenoLevelSet::template spls_t<zs::grid_e::staggered>{tags, dx, 1, zs::memsrc_e::device, 0};
-            tmp.reset(zs::cuda_exec(), 0);
+            auto tmp = typename ZenoLevelSet::spls_t{tags, 1, zs::memsrc_e::device, 0};
+            tmp.scale(dx);
+            // tmp.reset(zs::cuda_exec(), 0);
             ls->getLevelSet() = std::move(tmp);
         } else if (cateStr == "const_velocity") {
             auto v = get_input2<zeno::vec3f>("aux");
@@ -1444,8 +1446,8 @@ struct MakeZSLevelSet : INode {
             throw std::runtime_error(fmt::format("unknown levelset (grid) category [{}].", cateStr));
 
         zs::match([](const auto &lsPtr) {
+            using spls_t = typename RM_CVREF_T(lsPtr)::element_type;
             if constexpr (zs::is_spls_v<typename RM_CVREF_T(lsPtr)::element_type>) {
-                using spls_t = typename RM_CVREF_T(lsPtr)::element_type;
                 fmt::print("levelset [{}] of dx [{}, {}], side_length [{}], block_size [{}]\n", spls_t::category,
                            1.f / lsPtr->_i2wSinv(0, 0), lsPtr->_grid.dx, spls_t::side_length, spls_t::block_size);
             } else if constexpr (zs::is_same_v<typename RM_CVREF_T(lsPtr)::element_type,
@@ -1641,7 +1643,7 @@ struct ZSParticlesToPrimitiveObject : INode {
                              // dst[pi] = zspars.pack<3>(name, pi);
                              dst[pi] = zspars.pack<3>(name, pi);
                          });
-                std::string propName = prop.name.asString();
+                std::string propName = std::string(prop.name);
                 if (propName == "x")
                     propName = "pos";
                 else if (propName == "v")
@@ -1653,7 +1655,7 @@ struct ZSParticlesToPrimitiveObject : INode {
                 cudaExec(zs::range(size),
                          [zspars = zs::proxy<execspace_e::cuda>({}, zspars), dst = zs::proxy<execspace_e::cuda>(dst),
                           name = prop.name] __device__(size_t pi) mutable { dst[pi] = zspars(name, pi); });
-                copy(zs::mem_device, prim->add_attr<float>(prop.name.asString()).data(), dst.data(),
+                copy(zs::mem_device, prim->add_attr<float>(std::string(prop.name)).data(), dst.data(),
                      sizeof(float) * size);
             }
         }

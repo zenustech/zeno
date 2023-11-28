@@ -116,7 +116,6 @@ extern "C" __global__ void __closesthit__radiance()
         return;
     }
 
-    prd->depth += 1;
     prd->done = true;
 
     float3 lightDirection = optixGetWorldRayDirection(); //light_pos - P;
@@ -125,44 +124,56 @@ extern "C" __global__ void __closesthit__radiance()
     LightSampleRecord lsr;
 
     if (light.type != zeno::LightType::Diffuse) {
-        if (prd->depth > 1) { return; }
+        if (prd->depth > 0) { return; }
         lsr.PDF = 1.0f;
         lsr.isDelta = true;
     }
 
     const auto lightShape = light.shape;
 
-    if (lightShape == zeno::LightShape::Plane) {
-        light.rect.EvalAfterHit(&lsr, lightDirection, lightDistance, prd->origin);
-    } else if (lightShape == zeno::LightShape::Sphere) {
+    switch (lightShape) {
+    case zeno::LightShape::Plane:
+    case zeno::LightShape::Ellipse: {
+        auto valid = light.rect.EvalAfterHit(&lsr, lightDirection, lightDistance, prd->origin);
+        if (!valid) {
+            prd->done = false;
+            auto pos = P;
+            prd->geometryNormal = light_normal;
+            prd->offsetUpdateRay(pos, ray_dir); 
+            return;
+        };
+        break;
+    }
+    case zeno::LightShape::Sphere: {
         light.sphere.EvalAfterHit(&lsr, lightDirection, lightDistance, prd->origin);
-        cihouSphereLightUV(lsr, light);
-    } else if (lightShape == zeno::LightShape::TriangleMesh) {
-
+        cihouSphereLightUV(lsr, light); break;
+    }
+    case zeno::LightShape::TriangleMesh: {
         float2 bary2 = optixGetTriangleBarycentrics();
         float3 bary3 = { 1.0f-bary2.x-bary2.y, bary2.x, bary2.y };
         
         float3* normalBuffer = reinterpret_cast<float3*>(params.triangleLightNormalBuffer);
         float2* coordsBuffer = reinterpret_cast<float2*>(params.triangleLightCoordsBuffer);
         light.triangle.EvalAfterHit(&lsr, lightDirection, lightDistance, prd->origin, prd->geometryNormal, bary3, normalBuffer, coordsBuffer);
-    } else { 
-        return; 
+        break;
+    }
+    default: return;
     }
 
-    if (light.type == zeno::LightType::Diffuse && light.spread < 1.0f) {
+    if (light.type == zeno::LightType::Diffuse && light.spreadMajor < 1.0f) {
 
-        auto void_angle = 0.5f * (1.0f - light.spread) * M_PIf;
+        auto void_angle = 0.5f * (1.0f - light.spreadMajor) * M_PIf;
         auto atten = light_spread_attenuation(
                                 lsr.dir,
                                 lsr.n,
-                                light.spread,
+                                light.spreadMajor,
                                 tanf(void_angle),
                                 light.spreadNormalize);
         lsr.intensity *= atten;
     }
 
     if (!cihouMaxDistanceContinue(lsr, light)) { return; }
-    float3 emission = cihouLightEmission(lsr, light, prd->depth-1);
+    float3 emission = cihouLightEmission(lsr, light, prd->depth);
 
     if (light.config & zeno::LightConfigDoubleside) {
         lsr.NoL = abs(lsr.NoL);
@@ -188,10 +199,11 @@ extern "C" __global__ void __closesthit__radiance()
             lightPickPDF = 0.0f;
         }
 
-        if (1 == prd->depth) {
+        if (0 == prd->depth) {
             if (light.config & zeno::LightConfigVisible) {
                 prd->radiance = emission;
             }
+            prd->depth = 1;
             prd->attenuation = vec3(1.0f); 
             prd->attenuation2 = vec3(1.0f);
             return;
@@ -219,8 +231,8 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     const uint           sbtGASIndex = optixGetSbtGASIndex();
     const uint          primitiveIdx = optixGetPrimitiveIndex();
 
-    // const float3 ray_orig = optixGetWorldRayOrigin();
-    // const float3 ray_dir  = optixGetWorldRayDirection();
+    const float3 ray_orig = optixGetWorldRayOrigin();
+    const float3 ray_dir  = optixGetWorldRayDirection();
     // const float3 P = ray_orig + optixGetRayTmax() * ray_dir;
 
     auto instanceId = optixGetInstanceId();
@@ -259,6 +271,11 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     auto& light = params.lights[light_index];
 
     bool visible = (light.config & zeno::LightConfigVisible);
+
+    if (zeno::LightShape::Ellipse == light.shape && light.rect.isEllipse) {
+        LightSampleRecord lsr;
+        visible &= light.rect.hitAsLight(&lsr, ray_orig, ray_dir);
+    }
 
     if (visible) {
         prd->shadowAttanuation = {};

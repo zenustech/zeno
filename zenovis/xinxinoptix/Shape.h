@@ -544,7 +544,7 @@ static inline bool SpreadClampRect(float3& v,
                     const float3& axisX, float& lenX, 
                     const float3& axisY, float& lenY,
                     const float3& normal, const float3& shadingP, 
-                    float spread, float2& uvScale, float2& uvOffset) {
+                    float spread, float2& uvScale, float2& uvOffset, bool isEllipse=false) {
 
     if (spread >= 1.0f) {
         uvScale  = {1.0f, 1.0f};
@@ -581,6 +581,35 @@ static inline bool SpreadClampRect(float3& v,
     uvOffset = {minU/lenX, minV/lenY};
 
     v = v + minU * axisX + minV *axisY;
+
+    if (isEllipse) {
+
+        float2 uvCenter {0.5f, 0.5f};
+
+        float2 subCenter {
+            uvOffset.x + uvScale.x * 0.5f,
+            uvOffset.y + uvScale.y * 0.5f };
+
+        auto delta1 = uvCenter - subCenter;
+
+        auto reX1 = copysignf(1.0f, delta1.x);
+        auto reY1 = copysignf(1.0f, delta1.y);
+
+        float2 subCorner {
+            subCenter.x + reX1 * uvScale.x * 0.5f,
+            subCenter.y + reY1 * uvScale.x * 0.5f };
+
+        auto delta2 = uvCenter - subCorner;
+
+        auto reX2 = copysignf(1.0f, delta2.x);
+        auto reY2 = copysignf(1.0f, delta2.y);
+        
+        if (reX2 == reX1 && reY2 == reY1) { // signbit()
+
+            auto lengthUV = length(subCorner - uvCenter);
+            if (lengthUV > 0.5f) { return false; }
+        }
+    }
     
     lenX = lenU;
     lenY = lenV;
@@ -589,18 +618,25 @@ static inline bool SpreadClampRect(float3& v,
 }
 
 struct RectShape {
-    float3 v;
+    float3 v; bool isEllipse:1;
     float3 axisX; float lenX;
     float3 axisY; float lenY;
 
     float3 normal;
     float  area;
 
-    inline float PDF() {
-        return 1.0f / area;
+    float Area() {
+        if (isEllipse)
+            return 0.25 * M_PIf * lenX * lenY;
+        else 
+            return lenX * lenY;
     }
 
-    inline void EvalAfterHit(LightSampleRecord* lsr, const float3& dir, const float& dist, const float3& shadingP) {
+    inline float PDF() {
+        return 1.0f / Area();
+    }
+
+    inline bool EvalAfterHit(LightSampleRecord* lsr, const float3& dir, const float& dist, const float3& shadingP) {
 
         float lightNoL = dot(-dir, normal);
         float lightPDF = dist * dist * PDF() / lightNoL;
@@ -612,21 +648,40 @@ struct RectShape {
 
         auto delta = lsr->p - v;
         delta -= dot(delta, normal) * normal;
-
+            
         lsr->uv = { dot(delta, axisX) / lenX,
                     dot(delta, axisY) / lenY };
 
+        if (isEllipse) {
+            auto uvd = lsr->uv - 0.5f;
+            if (length(uvd) > 0.5f) { return false; }
+        }
+
         lsr->PDF = lightPDF;
         lsr->NoL = lightNoL;
+
+        return true;
     }  
 
     inline void SampleAsLight(LightSampleRecord* lsr, const float2& uu, const float3& shadingP) {  
 
         auto uv = uu; 
+        auto _PDF_ = 0.0f;
 
-        SphericalRect squad;
-        SphericalRectInit(squad, shadingP, v, axisX, lenX, axisY, lenY); 
-        uv = SphericalRectSample(squad, uu.x, uu.y);
+        if (isEllipse) {
+
+            auto tt = pbrt::SampleUniformDiskConcentric(uu);
+            tt = tt * 0.5f + 0.5f;
+            uv = tt;
+            _PDF_ = PDF();
+
+        } else {
+
+            SphericalRect squad;
+            SphericalRectInit(squad, shadingP, v, axisX, lenX, axisY, lenY); 
+            uv = SphericalRectSample(squad, uu.x, uu.y);
+            _PDF_ = squad.S;
+        }
 
         lsr->n = normalize(normal);
         lsr->p = v + axisX * lenX * uv.x + axisY * lenY * uv.y;
@@ -645,12 +700,13 @@ struct RectShape {
         lsr->NoL = dot(-lsr->dir, lsr->n);
         lsr->PDF = 0.0f;
 
-        // if (fabsf(lsr->NoL) > __FLT_EPSILON__) {
-        //     lsr->PDF = lsr->dist * lsr->dist * PDF() / fabsf(lsr->NoL);
-        // }
-        
-        if (abs(squad.S) > __FLT_EPSILON__) {
-            lsr->PDF = 1.0f / squad.S;
+        if (_PDF_ > __FLT_EPSILON__ && fabsf(lsr->NoL) > __FLT_EPSILON__) 
+        {
+            if (isEllipse) {
+                lsr->PDF = lsr->dist * lsr->dist * _PDF_ / fabsf(lsr->NoL);
+            } else {
+                lsr->PDF = 1.0f / _PDF_;
+            }
         }
     }
 
@@ -678,6 +734,11 @@ struct RectShape {
         if (q2<0.0f || q2>lenY) {return false;}
 
         lsr->uv = float2{q1, q2} / float2{lenX, lenY};
+
+        if (isEllipse) {
+            auto uvd = lsr->uv - 0.5f;
+            if (length(uvd) > 0.5f) { return false; }
+        }
 
         lsr->p = P;
         lsr->PDF = 1.0f;
@@ -742,7 +803,7 @@ struct ConeShape {
         lsr->dist = dist;
 
         lsr->n = dir;
-        lsr->NoL = dot(lsr->dir, dir);
+        lsr->NoL = dot(-lsr->dir, dir);
 
         lsr->p = p;
         lsr->PDF = 1.0f;
@@ -751,7 +812,7 @@ struct ConeShape {
         lsr->intensity = smoothstep(cosFalloffEnd, cosFalloffStart, lsr->NoL);
         #endif
 
-        lsr->intensity /= dist2;
+        lsr->intensity *= M_PIf / dist2;
     }
 
     inline float Phi() {

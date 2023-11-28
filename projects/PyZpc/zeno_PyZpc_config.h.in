@@ -1,0 +1,3 @@
+#pragma once
+
+#define ZENO_PYZPC_DLL_FILE "@ZENO_PYZPC_DLL_FILE@"

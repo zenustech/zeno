@@ -136,7 +136,7 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
     {
         if (poses[i].size() == 0 && (cacheLightCameraOnly && i != 0 || cacheMaterialOnly && i != 1 || fileName != "" && i != 2))
             continue;
-        log_critical("dump cache to disk {}", cachepath[i]);
+        log_debug("dump cache to disk {}", cachepath[i]);
         std::ofstream ofs(cachepath[i], std::ios::binary);
         std::ostreambuf_iterator<char> oit(ofs);
         std::copy(keys[i].begin(), keys[i].end(), oit);
@@ -168,7 +168,7 @@ bool GlobalComm::fromDisk(std::string cachedir, int frameid, GlobalComm::ViewObj
         {
             continue;
         }
-        log_critical("load cache from disk {}", path);
+        log_debug("load cache from disk {}", path);
 
         auto szBuffer = std::filesystem::file_size(path);
         std::vector<char> dat(szBuffer);

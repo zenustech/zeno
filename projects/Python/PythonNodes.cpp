@@ -246,7 +246,7 @@ struct PythonScript : INode {
         PyObject *mainMod = PyImport_AddModule("__main__");
         if (!mainMod) throw makeError("failed to get module '__main__'");
         PyObject *globals = PyModule_GetDict(mainMod);
-        PyObject *zenoMod = PyImport_AddModule("ze");
+        PyObject *zenoMod = PyImport_AddModule("ze.zeno");
         PyObject *zenoModDict = PyModule_GetDict(zenoMod);
         if (PyDict_SetItemString(zenoModDict, "_rets", retsDict) < 0)
             throw makeError("failed to set ze._rets");

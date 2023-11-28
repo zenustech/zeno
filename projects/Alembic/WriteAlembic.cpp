@@ -200,6 +200,7 @@ struct WriteAlembic2 : INode {
     OArchive archive;
     OPolyMesh meshyObj;
     OPoints pointsObj;
+    std::string usedPath;
     std::map<std::string, OFloatGeomParam> attrs;
     std::map<std::string, std::any> user_attrs;
 
@@ -311,8 +312,9 @@ struct WriteAlembic2 : INode {
         }
         int frame_start = get_input2<int>("frame_start");
         int frame_end = get_input2<int>("frame_end");
-        if (frameid == frame_start) {
-            std::string path = get_input2<std::string>("path");
+        std::string path = get_input2<std::string>("path");
+        if (usedPath != path) {
+            usedPath = path;
             archive = {Alembic::AbcCoreOgawa::WriteArchive(), path};
             archive.addTimeSampling(TimeSampling(1.0/fps, frame_start / fps));
             if (prim->polys.size() || prim->tris.size()) {
@@ -477,12 +479,21 @@ struct WriteAlembic2 : INode {
             points.setTimeSampling(1);
             OPointsSchema::Sample samp(V3fArraySample( ( const V3f * )prim->verts.data(), prim->verts.size() ));
             std::vector<uint64_t> ids(prim->verts.size());
-            std::iota(ids.begin(), ids.end(), 0);
+            if (prim->verts.attr_is<int>("id")) {
+                auto &ids_ = prim->verts.attr<int>("id");
+                for (auto i = 0; i < prim->verts.size(); i++) {
+                    ids[i] = ids_[i];
+                }
+            }
+            else {
+                std::iota(ids.begin(), ids.end(), 0);
+            }
             samp.setIds(Alembic::Abc::UInt64ArraySample(ids.data(), ids.size()));
             write_velocity(prim, samp);
             write_attrs(prim, points, samp);
             points.set( samp );
         }
+        set_output("prim", prim);
     }
 };
 
@@ -496,7 +507,9 @@ ZENDEFNODE(WriteAlembic2, {
         {"fps"},
         {"bool", "flipFrontBack", "1"},
     },
-    {},
+    {
+        {"prim"},
+    },
     {},
     {"alembic"},
 });

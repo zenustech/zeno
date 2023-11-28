@@ -117,7 +117,7 @@ void UnifiedIPCSystem::computeInertialPotentialGradient(zs::CudaExecutionPolicy 
     // inertial
     cudaPol(zs::range(coOffset), [vtemp = proxy<space>({}, vtemp), gTag, dt = dt] ZS_LAMBDA(int i) mutable {
         auto m = vtemp("ws", i);
-        vtemp.tuple(dim_c<3>, gTag, i) =
+        vtemp.mount(dim_c<3>, gTag, i) =
             vtemp.pack(dim_c<3>, gTag, i) - m * (vtemp.pack(dim_c<3>, "xn", i) - vtemp.pack(dim_c<3>, "xtilde", i));
     });
 }
@@ -374,7 +374,7 @@ void UnifiedIPCSystem::updateInherentGradientAndHessian(zs::CudaExecutionPolicy 
 
         /// inertial gradient
         if (BCorder == 0)
-            vtemp.tuple(dim_c<3>, "grad", i) = vtemp.pack(dim_c<3>, "grad", i) -
+            vtemp.mount(dim_c<3>, "grad", i) = vtemp.pack(dim_c<3>, "grad", i) -
                                                m * (vtemp.pack(dim_c<3>, "xn", i) - vtemp.pack(dim_c<3>, "xtilde", i));
 
 #if 1
@@ -399,7 +399,7 @@ void UnifiedIPCSystem::updateInherentGradientAndHessian(zs::CudaExecutionPolicy 
         cudaPol(zs::range(coOffset), [vtemp = proxy<space>({}, vtemp), dt = dt] ZS_LAMBDA(int vi) mutable {
             int BCorder = vtemp("BCorder", vi);
             if (BCorder == 0) // BCsoft == 0 &&
-                vtemp.tuple(dim_c<3>, "grad", vi) =
+                vtemp.mount(dim_c<3>, "grad", vi) =
                     vtemp.pack(dim_c<3>, "grad", vi) + vtemp.pack(dim_c<3>, "extf", vi) * dt * dt;
         });
     }
