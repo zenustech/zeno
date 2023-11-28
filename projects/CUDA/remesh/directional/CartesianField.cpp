@@ -8,6 +8,11 @@
 #include <cmath>
 #include <queue>
 #include "./CartesianField.h"
+#include "./IterativeRoundingTraits.h"
+#include "./SIInitialSolutionTraits.h"
+#include "./SaddlePoint/LMSolver.h"
+#include "./SaddlePoint/EigenSolverWrapper.h"
+#include "./SaddlePoint/DiagonalDamping.h"
 
 namespace zeno::directional {
     void CartesianField::effort_to_indices() {
@@ -63,7 +68,7 @@ namespace zeno::directional {
             // effort for different matchings differ by 2*PI.
             // arg(complex) returns the angle in [-PI, PI), which is the principal effort.
             effort(i) = arg(effortc);
-            // @seeeagull): simplified case for 4-RoSy field
+            // @seeeagull: simplified case for 4-RoSy field
             if (update_matching)
                 matching(i) = min_id;
         }
@@ -117,14 +122,14 @@ namespace zeno::directional {
         path.push_back(source);
     }
 
-    void CartesianField::cut_mesh_with_singularities(const std::vector<int>& singularities,
-                                                     Eigen::MatrixXi& cuts) {
-        
+    void CartesianField::cut_mesh_with_singularities(Eigen::MatrixXi& cuts) {
+        cuts.conservativeResize(tb->num_f, 3);
+        cuts.setZero();
         std::set<int> vertices_in_cut{};
-        for (int i = 0; i < singularities.size(); ++i) {
+        for (int i = 0; i < sing_local_cycles.size(); ++i) {
             // add a singularity into the vertices_in_cut set using Dijkstra's algorithm
             std::vector<int> path{};
-            dijkstra(singularities[i], vertices_in_cut, path);
+            dijkstra(sing_local_cycles[i], vertices_in_cut, path);
             vertices_in_cut.insert(path.begin(), path.end());
             
             // insert adjacent faces and edges in path to cuts
@@ -212,14 +217,169 @@ namespace zeno::directional {
         combed_field.principal_matching(false);
     }
 
+    void CartesianField::branched_gradient(const zeno::pmp::SurfaceMesh* meshCut,
+                                           const int N,
+                                           Eigen::SparseMatrix<float>& G) {
+        auto &faces = meshCut->prim->tris;
+        auto &pos = meshCut->prim->attr<zeno::vec3f>("pos");
+        auto &fbx = meshCut->prim->tris.add_attr<zeno::vec3f>("fbx");
+        auto &fby = meshCut->prim->tris.add_attr<zeno::vec3f>("fby");
+        auto &fnormal = meshCut->prim->tris.add_attr<zeno::vec3f>("f_normal");
+        auto &fdblarea = meshCut->prim->tris.add_attr<float>("f_doublearea", 0.f);
+        
+        for (int f = 0; f < tb->num_f; f++) {
+            zeno::vec3f v1 = normalize(pos[faces[f][1]] - pos[faces[f][0]]);
+            zeno::vec3f t = pos[faces[f][2]] - pos[faces[f][0]];
+            zeno::vec3f v3 = normalize(cross(v1, t));
+            zeno::vec3f v2 = normalize(cross(v1, v3));
+            fbx[f] = v1;
+            fby[f] = -v2;
+            fnormal[f] = v3;
+            for(int d = 0; d < 3; d++) {
+                float rx = pos[faces[f][0]][d] - pos[faces[f][2]][d];
+                float sx = pos[faces[f][1]][d] - pos[faces[f][2]][d];
+                float ry = pos[faces[f][0]][(d+1)%3] - pos[faces[f][2]][(d+1)%3];
+                float sy = pos[faces[f][1]][(d+1)%3] - pos[faces[f][2]][(d+1)%3];
+                float dblAd = rx * sy - ry * sx;
+                fdblarea[f] += dblAd * dblAd;
+            }
+            fdblarea[f] = std::sqrt(fdblarea[f]);
+        }
+
+        std::vector<Eigen::Triplet<float>> GTri{};
+        for (int i = 0; i < tb->num_f; i++){
+            for (int k = 0; k < N; k++) { 
+                for (int j = 0; j < 3; j++) {
+                    zeno::vec3f e = pos[faces[i][(j+2)%3]] - pos[faces[i][(j+1)%3]];
+                    zeno::vec3f grad_comp = cross(fnormal[i], e) / fdblarea[i];
+                    for (int l = 0; l < 3; l++)
+                        GTri.push_back(Eigen::Triplet<float>(3*N*i+k*3+l, N*faces[i][j]+k, grad_comp[l]));
+                }
+            }
+        }
+        G.conservativeResize(3*N*tb->num_f, N*pos.size());
+        G.setFromTriplets(GTri.begin(), GTri.end());
+        meshCut->prim->tris.erase_attr("f_doublearea");
+    }
+
+    bool CartesianField::iterative_rounding(const zeno::pmp::SurfaceMesh* meshCut,
+                                            const Eigen::SparseMatrix<float>& A,
+                                            const Eigen::MatrixXf& rawField,
+                                            const Eigen::VectorXi& fixedIndices,
+                                            const Eigen::VectorXf& fixedValues,
+                                            const Eigen::VectorXi& singularIndices,
+                                            const Eigen::VectorXi& integerIndices,
+                                            const float lengthRatio,
+                                            const Eigen::VectorXf& b,
+                                            const Eigen::SparseMatrix<float> C,
+                                            const Eigen::SparseMatrix<float> G,
+                                            const int N,
+                                            const int n,
+                                            const Eigen::SparseMatrix<float>& x2CornerMat,
+                                            const bool fullySeamless,
+                                            const bool roundSeams,
+                                            const bool localInjectivity,
+                                            Eigen::VectorXf& fullx) {
+        typedef SaddlePoint::EigenSolverWrapper<Eigen::SimplicialLLT<Eigen::SparseMatrix<float> > > LinearSolver;
+        
+        SIInitialSolutionTraits<LinearSolver> slTraits;
+        LinearSolver lSolver1,lSolver2;
+        SaddlePoint::DiagonalDamping<SIInitialSolutionTraits<LinearSolver>> dISTraits(localInjectivity ? 0.01 : 0.0);
+        SaddlePoint::LMSolver<LinearSolver,SIInitialSolutionTraits<LinearSolver>, SaddlePoint::DiagonalDamping<SIInitialSolutionTraits<LinearSolver> > > initialSolutionLMSolver;
+        
+        IterativeRoundingTraits<LinearSolver> irTraits;
+        SaddlePoint::DiagonalDamping<IterativeRoundingTraits<LinearSolver>> dIRTraits(localInjectivity ? 0.01 : 0.0);
+        SaddlePoint::LMSolver<LinearSolver,IterativeRoundingTraits<LinearSolver>, SaddlePoint::DiagonalDamping<IterativeRoundingTraits<LinearSolver> > > iterativeRoundingLMSolver;
+        
+        auto &pos = meshCut->prim->attr<zeno::vec3f>("pos");
+        auto &faces = meshCut->prim->tris;
+        auto &fbx = meshCut->prim->tris.attr<zeno::vec3f>("fbx");
+        auto &fby = meshCut->prim->tris.attr<zeno::vec3f>("fby");
+        auto &fnormal = meshCut->prim->tris.attr<zeno::vec3f>("f_normal");
+        Eigen::MatrixXf FN(tb->num_f, 3), V(pos.size(), 3), B1(tb->num_f, 3), B2(tb->num_f, 3);
+        Eigen::MatrixXi F(tb->num_f, 3);
+        for (int i = 0; i < tb->num_f; ++i) {
+            F.row(i) = Eigen::RowVector3i(faces[i].data());
+            B1.row(i) = Eigen::RowVector3f(fbx[i].data());
+            B2.row(i) = Eigen::RowVector3f(fby[i].data());
+            FN.row(i) = Eigen::RowVector3f(fnormal[i].data());
+        }
+        for (int i = 0; i < pos.size(); ++i) {
+            V.row(i) = Eigen::RowVector3f(pos[i].data());
+        }
+
+        slTraits.A=A;
+        slTraits.rawField=rawField;
+        slTraits.fixedIndices=fixedIndices;
+        slTraits.fixedValues=fixedValues;
+        slTraits.singularIndices=singularIndices;
+        slTraits.b=b;
+        slTraits.C=C;
+        slTraits.G=G;
+        slTraits.B1=B1;
+        slTraits.B2=B2;
+        slTraits.FN=FN;
+        slTraits.N=N;
+        slTraits.lengthRatio=lengthRatio;
+        slTraits.n=n;
+        slTraits.V=V;
+        slTraits.F=F;
+        slTraits.x2CornerMat=x2CornerMat;
+        slTraits.integerIndices=integerIndices;
+        slTraits.localInjectivity=localInjectivity;
+        
+        // compute and initial solution
+        zeno::log_info("Compute initial solution...");
+        slTraits.init(false);
+        initialSolutionLMSolver.init(&lSolver1, &slTraits, &dISTraits, 100);
+        initialSolutionLMSolver.solve(false);
+        zeno::log_info("Initial solution got");
+        
+        irTraits.init(slTraits, initialSolutionLMSolver.x, roundSeams);
+        
+        if (!fullySeamless){
+            fullx=irTraits.x0;
+            return true;
+        }
+        
+        // iterative rounding
+        int colWidth=20;
+        // TODO(@seeeagull): show the rounding process temporarily
+        zeno::log_info("Starting Iterative rounding...");
+
+        bool success=true;
+        bool hasRounded=false;
+        while (irTraits.leftIndices.size()!=0){
+            if (!irTraits.initFixedIndices())
+                continue;
+            hasRounded=true;
+            dIRTraits.currLambda=(localInjectivity ? 0.01 : 0.0);
+            iterativeRoundingLMSolver.init(&lSolver2, &irTraits, &dIRTraits, 100, 1e-7, 1e-7);
+            iterativeRoundingLMSolver.solve(false);
+            // TODO(@seeeagull): show the rounding process temporarily
+            zeno::log_info("id:{} orig val:{} int val:{} E:{} optimality:{} #:{}", irTraits.currRoundIndex, irTraits.origValue, irTraits.roundValue, iterativeRoundingLMSolver.energy, iterativeRoundingLMSolver.fooOptimality, iterativeRoundingLMSolver.currIter);
+
+            if (!irTraits.post_checking(iterativeRoundingLMSolver.x)){
+                success=false;
+                break;
+            }
+        }
+        
+        if (hasRounded)
+            fullx=irTraits.UFull*iterativeRoundingLMSolver.x;
+        else
+            fullx=irTraits.x0;  //in case nothing happens
+        return success;
+    
+    }
+    
     void CartesianField::setup_integration(IntegrationData& intData,
                                            Eigen::MatrixXf& cut_verts,
                                            Eigen::MatrixXi& cut_faces,
                                            directional::CartesianField& combedField) {
         assert(tb->discTangType() == discTangTypeEnum::FACE_SPACES && "setup_integration() only works with face-based fields");
-        // cutting mesh and combing field.
-        intData.face2cut.conservativeResize(tb->num_f, 3);
-        cut_mesh_with_singularities(sing_local_cycles, intData.face2cut);
+        // cut mesh and combing field.
+        cut_mesh_with_singularities(intData.face2cut);
         combing(combedField, intData.face2cut);
 
         auto &pos = tb->mesh->prim->attr<zeno::vec3f>("pos");
@@ -264,10 +424,17 @@ namespace zeno::directional {
                         h = tb->mesh->next_halfedge(h);
                     }
                     eseam[h>>1] = 1;
-                    ++vcuts[v0];
-                    ++vcuts[v1];
+                    if (tb->mesh->is_boundary_e(h>>1)) {
+                        vcuts[v0] += 2;
+                        vcuts[v1] += 2;
+                    } else {
+                        ++vcuts[v0];
+                        ++vcuts[v1];
+                    }
                 }
         }
+        for (int i = 0; i < tb->num_v; ++i)
+            vcuts[i] = vcuts[i] >> 1;
 
         // establish transition variables by tracing cut curves
         Eigen::VectorXi h2transition = Eigen::VectorXi::Constant(tb->num_e*2, 32767);
@@ -302,10 +469,12 @@ namespace zeno::directional {
                 cur = tb->mesh->prev_halfedge(cur)^1;
             } while ((begin != cur) && (cur != -1));
         }
+        cut2whole.clear();
 
         cut_verts.resize(cut_verts_list.size(), 3);
         for(int i = 0; i < cut_verts_list.size(); i++)
             cut_verts.row(i) = Eigen::RowVector3f(cut_verts_list[i].data());
+        cut_verts_list.clear();
 
         // trace cut curves from every cut-graph node
         int cur_trans = 1;
@@ -325,19 +494,18 @@ namespace zeno::directional {
             do {
                 // find an unclaimed inner halfedge
                 if ((eseam[cur>>1] == 1) && (eclaimed[cur>>1] == 0) && (!tb->mesh->is_boundary_e(cur>>1))) {
-                    int next = cur;
-                    h2transition(next) = cur_trans;
-                    h2transition(next^1) = -cur_trans;
-                    eclaimed[next>>1] = 1;
-                    int next_vert = tb->mesh->to_vertex(next);
+                    h2transition(cur) = cur_trans;
+                    h2transition(cur^1) = -cur_trans;
+                    eclaimed[cur>>1] = 1;
+                    int next_vert = tb->mesh->to_vertex(cur);
                     // advance on the cut until next node
                     while ((vcuts[next_vert] == 2) && (vsingular[next_vert] == 0) && (!tb->mesh->is_boundary_v(next_vert))) {
                         int in_begin = tb->mesh->get_halfedge_v(next_vert);
                         int in_cur = in_begin;
-                        next = -1;
+                        int next = -1;
                         do {
                             // move to next unclaimed cut halfedge
-                            if ((eseam[in_cur] == 1) && (eclaimed[in_cur] == 0)) {
+                            if ((eseam[in_cur>>1] == 1) && (eclaimed[in_cur>>1] == 0)) {
                                 next = in_cur;
                                 break;
                             }
@@ -355,8 +523,8 @@ namespace zeno::directional {
         }
 
         int num_trans = cur_trans - 1;
-        std::vector<Eigen::Triplet<float>> vert_trans2cut_tris, const_tris;
-        std::vector<Eigen::Triplet<int>> vert_trans2cut_tris_int, const_tris_int;
+        std::vector<Eigen::Triplet<float>> vert_trans2cut_tris{}, const_tris{};
+        std::vector<Eigen::Triplet<int>> vert_trans2cut_tris_int{}, const_tris_int{};
         // form the constraints and the singularity positions
         int cur_const = 0;
         // this loop set up the transtions (vector field matching) across the cuts
@@ -371,7 +539,7 @@ namespace zeno::directional {
             int cur = begin;
             if (!tb->mesh->is_boundary_v(i)) {
                 do {
-                    if (eseam[cur] == 1)
+                    if (eseam[cur>>1] == 1)
                         break;
                     cur = tb->mesh->next_halfedge(cur^1);
                 } while (begin != cur);
@@ -382,6 +550,7 @@ namespace zeno::directional {
 
             // set the beginning to the edge on the cut or on the boundary
             begin = cur;
+            int cur_vert = -1;
             do {
                 int cur_face = tb->mesh->get_face(cur); // face containing the half-edge
                 int new_vert = -1;
@@ -392,13 +561,14 @@ namespace zeno::directional {
                 }
 
                 // currCorner gets the permutations so far
-                if (new_vert != -1) {
+                if (new_vert != cur_vert) {
+                    cur_vert = new_vert;
                     for(int ii = 0; ii < perm_id.size(); ii++) {
                         // place the perumtation matrix in a bigger matrix, we need to know how things are connected along the cut, no?
                         for(int j = 0; j < intData.N; j++)
                             for(int k = 0; k < intData.N; k++){
-                                vert_trans2cut_tris.emplace_back(intData.N * new_vert + j, intData.N * perm_id[ii] + k, (float) perm_mt[ii](j, k));
-                                vert_trans2cut_tris_int.emplace_back(intData.N * new_vert + j, intData.N * perm_id[ii] + k, perm_mt[ii](j, k));
+                                vert_trans2cut_tris.emplace_back(intData.N * cur_vert + j, intData.N * perm_id[ii] + k, (float) perm_mt[ii](j, k));
+                                vert_trans2cut_tris_int.emplace_back(intData.N * cur_vert + j, intData.N * perm_id[ii] + k, perm_mt[ii](j, k));
                             }
                     }
                 }
@@ -415,7 +585,7 @@ namespace zeno::directional {
                 hmatching = (intData.N + (hmatching % intData.N)) % intData.N;
                 Eigen::MatrixXi next_perm_mt = const_perm_mt[hmatching];
                 // no update needed
-                if(eseam[next] == 0) {
+                if (eseam[next>>1] == 0) {
                     cur = next;
                     continue;
                 }
@@ -445,7 +615,7 @@ namespace zeno::directional {
 
             for (int j = 0; j < clean_perm_id.size(); j++) {
                 clean_perm_mt[j] = Eigen::MatrixXi::Zero(intData.N, intData.N);
-                for (int k = 0;k < perm_id.size(); k++)
+                for (int k = 0; k < perm_id.size(); k++)
                     if (clean_perm_id[j] == perm_id[k])
                         clean_perm_mt[j] += perm_mt[k];
                 if (clean_perm_id[j] == i)
@@ -470,6 +640,7 @@ namespace zeno::directional {
                 intData.constrainedVertices(i) = 1;
             }
         }
+        const_perm_mt.clear();
 
         std::vector<Eigen::Triplet<float>> clean_tris{};
         std::vector<Eigen::Triplet<int>> clean_tris_int{};
@@ -479,7 +650,7 @@ namespace zeno::directional {
         clean_tris.clear();
         clean_tris_int.clear();
         for(int i = 0; i < vert_trans2cut_tris.size(); i++) {
-            if(vert_trans2cut_tris_int[i].value() != 0) {
+            if (vert_trans2cut_tris_int[i].value() != 0) {
                 clean_tris_int.push_back(vert_trans2cut_tris_int[i]);
                 clean_tris.push_back(vert_trans2cut_tris[i]);
             }
@@ -499,12 +670,14 @@ namespace zeno::directional {
         }
         intData.constraintMat.setFromTriplets(clean_tris.begin(), clean_tris.end());
         intData.constraintMatInteger.setFromTriplets(clean_tris_int.begin(), clean_tris_int.end());
+        const_tris.clear();
+        const_tris_int.clear();
 
         // do the integer spanning matrix
         intData.intSpanMat.resize(intData.n * (tb->num_v + num_trans), intData.n * (tb->num_v + num_trans));
         intData.intSpanMatInteger.resize(intData.n * (tb->num_v + num_trans), intData.n * (tb->num_v + num_trans));
-        std::vector<Eigen::Triplet<float>> in_span_tris;
-        std::vector<Eigen::Triplet<int>> in_span_tris_int;
+        std::vector<Eigen::Triplet<float>> in_span_tris{};
+        std::vector<Eigen::Triplet<int>> in_span_tris_int{};
         for (int i = 0; i < intData.n * num_trans; i += intData.n) {
             for (int k = 0; k < intData.n; k++)
                 for (int l = 0; l < intData.n; l++) {
@@ -518,7 +691,6 @@ namespace zeno::directional {
             in_span_tris.emplace_back(i,i,1.0);
             in_span_tris_int.emplace_back(i,i,1);
         }
-
         intData.intSpanMat.setFromTriplets(in_span_tris.begin(), in_span_tris.end());
         intData.intSpanMatInteger.setFromTriplets(in_span_tris_int.begin(), in_span_tris_int.end());
 
@@ -526,8 +698,8 @@ namespace zeno::directional {
         // TODO: this assumes n divides N!
         intData.linRedMat.resize(intData.N * (tb->num_v + num_trans), intData.n * (tb->num_v + num_trans));
         intData.linRedMatInteger.resize(intData.N * (tb->num_v + num_trans), intData.n * (tb->num_v + num_trans));
-        std::vector<Eigen::Triplet<float>> lin_red_tris;
-        std::vector<Eigen::Triplet<int>> lin_red_tris_int;
+        std::vector<Eigen::Triplet<float>> lin_red_tris{};
+        std::vector<Eigen::Triplet<int>> lin_red_tris_int{};
         for (int i = 0; i < intData.N*(tb->num_v + num_trans); i += intData.N)
             for (int k = 0; k < intData.N; k++)
                 for (int l = 0; l < intData.n; l++) {
@@ -536,7 +708,6 @@ namespace zeno::directional {
                         lin_red_tris_int.emplace_back(i + k, i*intData.n/intData.N + l, intData.linRed(k,l));
                     }
                 }
-
         intData.linRedMat.setFromTriplets(lin_red_tris.begin(), lin_red_tris.end());
         intData.linRedMatInteger.setFromTriplets(lin_red_tris_int.begin(), lin_red_tris_int.end());
 
@@ -572,8 +743,8 @@ namespace zeno::directional {
         // do the integer spanning matrix
         intData.singIntSpanMat.resize(intData.n * (tb->num_v + num_trans), intData.n * (tb->num_v + num_trans));
         intData.singIntSpanMatInteger.resize(intData.n * (tb->num_v + num_trans), intData.n * (tb->num_v + num_trans));
-        std::vector<Eigen::Triplet<float>> sing_lin_span_tris;
-        std::vector<Eigen::Triplet<int>> sing_lin_span_tris_int;
+        std::vector<Eigen::Triplet<float>> sing_lin_span_tris{};
+        std::vector<Eigen::Triplet<int>> sing_lin_span_tris_int{};
         for (int i = 0; i < tb->num_v; i++) {
             if (vsingular[i] == 0) {
                 for (int j = 0; j < intData.n; j++) {
@@ -606,4 +777,235 @@ namespace zeno::directional {
         tb->mesh->prim->lines.erase_attr("e_seam");
         tb->mesh->prim->lines.erase_attr("e_claimed");
     }
+
+    bool CartesianField::integrate(IntegrationData& intData,
+                                   const zeno::pmp::SurfaceMesh* meshCut,
+                                   Eigen::MatrixXf& NFunction,
+                                   Eigen::MatrixXf& NCornerFunctions) {
+        assert(tb->discTangType()==discTangTypeEnum::FACE_SPACES && "Integrate() only works with face-based fields");
+
+        int num_cut_v = meshCut->n_vertices();
+        auto &cut_pos = meshCut->prim->attr<zeno::vec3f>("pos");
+        auto &cut_faces = meshCut->prim->tris;
+        int num_vars = intData.linRedMat.cols();
+        //constructing face differentials
+        std::vector<Eigen::Triplet<float>> d0Triplets{};
+        std::vector<Eigen::Triplet<float>> M1Triplets{};
+        Eigen::VectorXf gamma(3 * intData.N * tb->num_f);
+        for(int i = 0; i < tb->num_f; i++) {
+            for(int j = 0; j < 3; j++) {
+                for(int k = 0; k < intData.N; k++) {
+                    d0Triplets.emplace_back(3 * intData.N * i + intData.N * j + k, intData.N * cut_faces[i][j] + k, -1.0);
+                    d0Triplets.emplace_back(3 * intData.N * i + intData.N * j + k, intData.N * cut_faces[i][(j + 1) % 3] + k, 1.0);
+                    Eigen::Vector3f edgeVector = Eigen::Vector3f((cut_pos[cut_faces[i][(j + 1) % 3]] - cut_pos[cut_faces[i][j]]).data());
+                    gamma(3 * intData.N * i + intData.N * j + k) = (extField.block(i, 3 * k, 1, 3) * edgeVector)(0, 0);
+                    M1Triplets.emplace_back(3 * intData.N * i + intData.N * j + k, 3 * intData.N * i + intData.N * j + k, 1.f);
+                }
+            }
+        }
+        Eigen::SparseMatrix<float> d0(3 * intData.N * tb->num_f, intData.N * num_cut_v);
+        d0.setFromTriplets(d0Triplets.begin(), d0Triplets.end());
+        Eigen::SparseMatrix<float> M1(3 * intData.N * tb->num_f, 3 * intData.N * tb->num_f);
+        M1.setFromTriplets(M1Triplets.begin(), M1Triplets.end());
+
+        // the variables that should be fixed in the end
+        Eigen::VectorXi fixed_mask(num_vars);
+        fixed_mask.setZero();
+        for (int i = 0; i < intData.fixedIndices.size(); i++)
+            fixed_mask(intData.fixedIndices(i)) = 1;
+
+        // the variables that were already fixed to begin with
+        Eigen::VectorXi already_fixed = Eigen::VectorXi::Zero(num_vars);
+        for (int i = 0; i < intData.fixedIndices.size(); i++)
+            already_fixed(intData.fixedIndices(i)) = 1;
+
+        // the values for the fixed variables (size is as all variables)
+        Eigen::VectorXf fixed_values(num_vars);
+        fixed_values.setZero();  //for everything but the originally fixed values
+        for (int i=0;i<intData.fixedValues.size();i++)
+            fixed_values(intData.fixedIndices(i))=intData.fixedValues(i);
+
+        Eigen::SparseMatrix<float> Efull = d0 * intData.vertexTrans2CutMat * intData.linRedMat * intData.singIntSpanMat * intData.intSpanMat;
+        Eigen::VectorXf x, xprev;
+
+        // until then all the N depedencies should be resolved?
+
+        // reduce constraintMat
+        Eigen::SparseQR<Eigen::SparseMatrix<float>, Eigen::COLAMDOrdering<int>> qrsolver;
+        Eigen::SparseMatrix<float> Cfull = intData.constraintMat * intData.linRedMat * intData.singIntSpanMat * intData.intSpanMat;
+        if (Cfull.rows()!=0) {
+            qrsolver.compute(Cfull.transpose());
+            int CRank = qrsolver.rank();
+
+            //create sliced permutation matrix
+            Eigen::VectorXi PIndices = qrsolver.colsPermutation().indices();
+
+            std::vector<Eigen::Triplet<float> > CTriplets{};
+            for(int k = 0; k < Cfull.outerSize(); ++k) {
+                for(Eigen::SparseMatrix<float>::InnerIterator it(Cfull, k); it; ++it) {
+                    for(int j = 0; j < CRank; j++)
+                        if(it.row() == PIndices(j))
+                            CTriplets.emplace_back(j, it.col(), it.value());
+                }
+            }
+
+            Cfull.resize(CRank, Cfull.cols());
+            Cfull.setFromTriplets(CTriplets.begin(), CTriplets.end());
+        }
+        
+        Eigen::SparseMatrix<float> var2AllMat;
+        Eigen::VectorXf fullx(num_vars); fullx.setZero();
+        for(int intIter = 0; intIter < fixed_mask.sum(); intIter++) {
+            //the non-fixed variables to all variables
+            var2AllMat.resize(num_vars, num_vars - already_fixed.sum());
+            int varCounter = 0;
+            std::vector<Eigen::Triplet<float> > var2AllTriplets{};
+            for(int i = 0; i < num_vars; i++) {
+                if (!already_fixed(i)) {
+                    var2AllTriplets.emplace_back(i, varCounter++, 1.0);
+                }
+            }
+            var2AllMat.setFromTriplets(var2AllTriplets.begin(), var2AllTriplets.end());
+
+            Eigen::SparseMatrix<float> Epart = Efull * var2AllMat;
+            Eigen::VectorXf torhs = -Efull * fixed_values;
+            Eigen::SparseMatrix<float> EtE = Epart.transpose() * M1 * Epart;
+            Eigen::SparseMatrix<float> Cpart = Cfull * var2AllMat;
+
+            //reducing rank on Cpart
+            int CpartRank=0;
+            Eigen::VectorXi PIndices(0);
+            if (Cpart.rows()!=0){
+                qrsolver.compute(Cpart.transpose());
+                CpartRank = qrsolver.rank();
+
+                //creating sliced permutation matrix
+                PIndices = qrsolver.colsPermutation().indices();
+
+                std::vector<Eigen::Triplet<float> > CPartTriplets{};
+
+                for(int k = 0; k < Cpart.outerSize(); ++k) {
+                    for (Eigen::SparseMatrix<float>::InnerIterator it(Cpart, k); it; ++it) {
+                        for (int j = 0; j < CpartRank; j++)
+                            if (it.row() == PIndices(j))
+                                CPartTriplets.emplace_back(j, it.col(), it.value());
+                    }
+                }
+
+                Cpart.resize(CpartRank, Cpart.cols());
+                Cpart.setFromTriplets(CPartTriplets.begin(), CPartTriplets.end());
+            }
+            Eigen::SparseMatrix<float> A(EtE.rows() + Cpart.rows(), EtE.rows() + Cpart.rows());
+
+            std::vector<Eigen::Triplet<float>> ATriplets{};
+            for(int k = 0; k < EtE.outerSize(); ++k) {
+                for (Eigen::SparseMatrix<float>::InnerIterator it(EtE, k); it; ++it)
+                    ATriplets.push_back(Eigen::Triplet<float>(it.row(), it.col(), it.value()));
+            }
+
+            for(int k = 0; k < Cpart.outerSize(); ++k) {
+                for(Eigen::SparseMatrix<float>::InnerIterator it(Cpart, k); it; ++it) {
+                    ATriplets.emplace_back(it.row() + EtE.rows(), it.col(), it.value());
+                    ATriplets.emplace_back(it.col(), it.row() + EtE.rows(), it.value());
+                }
+            }
+
+            A.setFromTriplets(ATriplets.begin(), ATriplets.end());
+
+            //Right-hand side with fixed values
+            Eigen::VectorXf b = Eigen::VectorXf::Zero(EtE.rows() + Cpart.rows());
+            b.segment(0, EtE.rows())= Epart.transpose() * M1 * (gamma + torhs);
+            Eigen::VectorXf bfull = -Cfull * fixed_values;
+            Eigen::VectorXf bpart(CpartRank);
+            for(int k = 0; k < CpartRank; k++)
+                bpart(k)=bfull(PIndices(k));
+            b.segment(EtE.rows(), Cpart.rows()) = bpart;
+
+            Eigen::SparseLU<Eigen::SparseMatrix<float> > lusolver;
+            lusolver.compute(A);
+            if(lusolver.info() != Eigen::Success) {
+                return false;
+            }
+            x = lusolver.solve(b);
+
+            fullx = var2AllMat * x.head(num_vars - already_fixed.sum()) + fixed_values;
+
+
+            if((already_fixed - fixed_mask).sum() == 0)
+                break;
+
+            float minIntDiff = std::numeric_limits<float>::max();
+            int minIntDiffIndex = -1;
+            for (int i = 0; i < num_vars; i++) {
+                if ((fixed_mask(i)) && (!already_fixed(i))) {
+                    float currIntDiff =0;
+                    float func = fullx(i);
+                    currIntDiff += std::fabs(func - std::round(func));
+                    if (currIntDiff < minIntDiff) {
+                        minIntDiff = currIntDiff;
+                        minIntDiffIndex = i;
+                    }
+                }
+            }
+
+            if (minIntDiffIndex != -1) {
+                already_fixed(minIntDiffIndex) = 1;
+                float func = fullx(minIntDiffIndex) ;
+                float funcInteger = std::round(func);
+                fixed_values(minIntDiffIndex) = funcInteger;
+            }
+
+            xprev.resize(x.rows() - 1);
+            varCounter = 0;
+            for(int i = 0; i < num_vars; i++)
+                if (!already_fixed(i))
+                    xprev(varCounter++) = fullx(i);
+
+            xprev.tail(Cpart.rows()) = x.tail(Cpart.rows());
+        }
+
+        //the results are packets of N functions for each vertex, and need to be allocated for corners
+        Eigen::VectorXf NFunctionVec = intData.vertexTrans2CutMat * intData.linRedMat * intData.singIntSpanMat * intData.intSpanMat * fullx;
+        NFunction.resize(num_cut_v, intData.N);
+        for(int i = 0; i < NFunction.rows(); i++)
+            NFunction.row(i) << NFunctionVec.segment(intData.N * i, intData.N).transpose();
+
+
+        //allocating per corner
+        NCornerFunctions.resize(tb->num_f, intData.N*3);
+        for (int i = 0; i < tb->num_f; i++)
+            for (int j = 0; j < 3; j++)
+                NCornerFunctions.block(i, intData.N*j, 1, intData.N) = NFunction.row(cut_faces[i][j]);
+
+        zeno::log_info("cp1");
+        Eigen::SparseMatrix<float> G;
+        branched_gradient(meshCut, intData.N, G);
+        Eigen::SparseMatrix<float> Gd = G * intData.vertexTrans2CutMat * intData.linRedMat * intData.singIntSpanMat * intData.intSpanMat;
+        Eigen::SparseMatrix<float> x2CornerMat = intData.vertexTrans2CutMat * intData.linRedMat * intData.singIntSpanMat * intData.intSpanMat;
+        Eigen::VectorXi integerIndices(intData.integerVars.size()*intData.n);
+        for(int i = 0; i < intData.integerVars.size(); i++)
+            for (int j = 0; j < intData.n; j++)
+                integerIndices(intData.n * i+j) = intData.n * intData.integerVars(i)+j;
+        zeno::log_info("cp2");
+
+        bool success = iterative_rounding(meshCut, Efull, extField, intData.fixedIndices, intData.fixedValues, intData.singularIndices, integerIndices, intData.lengthRatio, gamma, Cfull, Gd, intData.N, intData.n, x2CornerMat,  intData.integralSeamless, intData.roundSeams, intData.localInjectivity, fullx);
+
+        zeno::log_info("cp3");
+        //the results are packets of N functions for each vertex, and need to be allocated for corners
+        NFunctionVec = intData.vertexTrans2CutMat * intData.linRedMat * intData.singIntSpanMat * intData.intSpanMat * fullx;
+        NFunction.resize(num_cut_v, intData.N);
+        for(int i = 0; i < NFunction.rows(); i++)
+            NFunction.row(i) << NFunctionVec.segment(intData.N * i, intData.N).transpose();
+
+        intData.nVertexFunction = fullx;
+
+        // allocating per corner
+        NCornerFunctions.resize(tb->num_f, intData.N*3);
+        for (int i = 0; i < tb->num_f; i++)
+            for (int j = 0; j < 3; j++)
+                NCornerFunctions.block(i, intData.N*j, 1, intData.N) = NFunction.row(cut_faces[i][j]).array();
+
+        return success;
+    }
+
 }
