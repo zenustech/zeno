@@ -12,6 +12,8 @@
 #include "zensim/container/Bcht.hpp"
 #include "kernel/tiled_vector_ops.hpp"
 
+#include "kernel\global_intersection_analysis.hpp"
+
 #include <iostream>
 
 namespace zeno{
@@ -24,15 +26,240 @@ using mat4 = zs::vec<T,4,4>;
 
 
 // 给定一个四面网格与一组点，计算每个点在四面体网格单元中的质心坐标
-struct ZSComputeBaryCentricWeights2 : INode {
+struct ZSComputeRBFWeights : INode {
     void apply() override {
         using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        constexpr auto exec_tag = wrapv<space>{};
+        auto cudaPol = cuda_exec();
+
+        auto zspars = get_input<ZenoParticles>("zspars");
+        auto nei_zspars = get_input<ZenoParticles>("nei_zspars");
+
+        auto uniform_radius = get_input2<float>("uniform_radius");
+        auto uniform_nei_radius = get_input2<float>("uniform_neighbor_radius");
+
+        auto radius_attr = get_input2<std::string>("radius_attr");
+        auto neighbor_radius_attr = get_input2<std::string>("neighbor_radius_attr");
+
+        auto& verts = zspars->getParticles();
+        auto xtag = get_input2<std::string>("xtag");
+
+        const auto& nverts = nei_zspars->getParticles();
+        auto nei_xtag = get_input2<std::string>("neighbor_xtag");
+
+        auto max_number_binding_per_vertex = get_input2<size_t>("max_number_binders");
+        
+        zs::bht<int,2,int> close_proximity{verts.get_allocator(),max_number_binding_per_vertex * nverts.size()};
+        close_proximity.reset(cudaPol,true);
+
+        GIA::retrieve_intersected_sphere_pairs(cudaPol,
+            verts,xtag,uniform_radius,radius_attr,
+            nverts,nei_xtag,uniform_nei_radius,neighbor_radius_attr,
+            close_proximity);
+
+        zs::Vector<int> close_proximity_count_buffer{verts.get_allocator(),verts.size()};
+        cudaPol(zs::range(close_proximity_count_buffer),[] ZS_LAMBDA(auto& cnt) mutable {cnt = 0;});
+
+        cudaPol(zip(zs::range(close_proximity.size()),close_proximity._activeKeys),[
+            close_proximity_count_buffer = proxy<space>(close_proximity_count_buffer),
+            exec_tag = exec_tag
+        ] ZS_LAMBDA(auto id,const auto& pair) mutable {
+            auto vi = pair[0];
+            auto nvi = pair[1];
+            atomic_add(exec_tag,&close_proximity_count_buffer[vi],1);
+        });
+
+        cudaPol(zs::range(verts.size()),[
+            close_proximity_count_buffer = proxy<space>(close_proximity_count_buffer)] ZS_LAMBDA(int vi) mutable {
+                printf("nm_close_proximity[%d] : %d\n",vi,close_proximity_count_buffer[vi]);
+        });
+
+        zs::Vector<int> exclusive_offsets{verts.get_allocator(),verts.size()};
+        cudaPol(zs::range(exclusive_offsets),[] ZS_LAMBDA(auto& offset) mutable {offset = 0;});
+        exclusive_scan(cudaPol,std::begin(close_proximity_count_buffer),std::end(close_proximity_count_buffer),std::begin(exclusive_offsets));
+
+        cudaPol(zs::range(verts.size()),[
+            exclusive_offsets = proxy<space>(exclusive_offsets)] ZS_LAMBDA(int vi) mutable {
+                printf("exclusive_offsets[%d] : %d\n",vi,exclusive_offsets[vi]);
+        });        
+
+        auto rbf_weights_name = get_input2<std::string>("rbf_weights_name");
+        auto& rbf_weights = (*zspars)[rbf_weights_name];
+
+        auto rbf_weights_offset = std::string{rbf_weights_name + "_offset"};
+        auto rbf_weights_count = std::string{rbf_weights_name + "_count"};
+
+        verts.append_channels(cudaPol,{{rbf_weights_offset,1},{rbf_weights_count,1}});
+        cudaPol(zs::range(verts.size()),[
+            verts = proxy<space>({},verts),
+            rbf_weights_offset = zs::SmallString(rbf_weights_offset),
+            rbf_weights_count = zs::SmallString(rbf_weights_count),
+            close_proximity_count_buffer = proxy<space>(close_proximity_count_buffer),
+            exclusive_offsets = proxy<space>(exclusive_offsets)] ZS_LAMBDA(int vi) mutable {
+                verts(rbf_weights_count,vi) = zs::reinterpret_bits<float>(close_proximity_count_buffer[vi]);
+                verts(rbf_weights_offset,vi) = zs::reinterpret_bits<float>(exclusive_offsets[vi]);
+        });
 
 
+
+        // verts.append_channels(cudaPol,{{rbf_weights_count,1},{rbf_weights_offset,1}});
+
+        rbf_weights = typename ZenoParticles::particles_t({
+            {"inds",1},
+            {"w",1}},close_proximity.size(),zs::memsrc_e::device,0);
+
+        auto varience = get_input2<float>("varience");
+
+        cudaPol(zip(zs::range(close_proximity.size()),close_proximity._activeKeys),[
+            exec_tag = exec_tag,
+            varience = varience,
+            xtag = zs::SmallString(xtag),
+            nxtag = zs::SmallString(nei_xtag),
+            verts = proxy<space>({},verts),
+            nverts = proxy<space>({},nverts),
+            rbf_weights = proxy<space>({},rbf_weights),
+            close_proximity_count_buffer = proxy<space>(close_proximity_count_buffer),
+            exclusive_offsets = proxy<space>(exclusive_offsets)] ZS_LAMBDA(auto id,const auto& pair) mutable {
+                auto vi = pair[0];
+                auto nvi = pair[1];
+                auto offset = exclusive_offsets[vi];
+                auto local_idx = atomic_add(exec_tag,&close_proximity_count_buffer[vi],-1) - 1;
+                if(local_idx < 0)
+                    printf("negative_local_idx detected!!! check algorithm\n");
+                
+                auto p = verts.pack(dim_c<3>,xtag,vi);
+                auto np = nverts.pack(dim_c<3>,nxtag,nvi);
+
+                auto dist2 = (p - np).l2NormSqr();
+                auto w = zs::exp(-dist2 / varience);
+
+                rbf_weights("inds",offset + local_idx) = zs::reinterpret_bits<float>(nvi);
+                rbf_weights("w",offset + local_idx) = w;
+        });
+
+
+
+        set_output("zspars",get_input("zspars"));
+        set_output("nei_zspars",get_input("nei_zspars"));
     }
 };
 
+ZENDEFNODE(ZSComputeRBFWeights, {{{"zspars"},
+                                    {"nei_zspars"},
+                                    {"float","uniform_radius","1"},
+                                    {"float","uniform_neighbor_radius","1"},
+                                    {"string","radius_attr","r"},
+                                    {"string","neighbor_radius_attr","r"},
+                                    {"string","xtag","x"},
+                                    {"string","neighbor_xtag","x"},
+                                    {"int","max_number_binders","10"},
+                                    {"string","rbf_weights_name","rbf"},
+                                    {"float","varience","10"}
+                                },
+                            {
+                                {"zspars"},
+                                {"nei_zspars"},
+                            },
+                            {},
+                            {"ZSGeometry"}});
 
+struct ZSSample : zeno::INode {
+    virtual void apply() override {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        constexpr auto exec_tag = wrapv<space>{};
+        auto cudaPol = cuda_exec();
+
+        auto dest = get_input<ZenoParticles>("to");
+        auto source = get_input<ZenoParticles>("from");
+        auto sampler_name = get_input2<std::string>("sampler_name");
+
+        auto& dverts = dest->getParticles();
+        auto to_attr = get_input2<std::string>("to_attr");
+
+        const auto& sverts = source->getParticles();
+        auto from_attr = get_input2<std::string>("from_attr");
+
+        if(!dest->hasAuxData(sampler_name)) {
+            std::cout << "the dest particles has no specified [" << sampler_name << "] sampler" << std::endl;
+            throw std::runtime_error("the dest particles has no specified sampler name!");
+        }
+
+        auto sampler_count_attr = std::string(sampler_name + "_count");
+        auto sampler_offset_attr = std::string(sampler_name + "_offset");
+
+        if(!dverts.hasProperty(sampler_count_attr)) {
+            std::cout << "the dest particles has no specified [" << sampler_count_attr << "] channel" << std::endl;
+            throw std::runtime_error("the dest particles has no specified sampler_count_attr channel");
+        }
+
+        if(!dverts.hasProperty(sampler_offset_attr)) {
+            std::cout << "the dest particles has no specified [" << sampler_offset_attr << "] channel" << std::endl;
+            throw std::runtime_error("the dest particles has no specified sampler_offset_attr channel");
+        }
+
+        if(!dverts.hasProperty(to_attr)) {
+            std::cout << "the dest particles has no specified sample attr [" << to_attr << "]" << std::endl;
+            throw std::runtime_error("the dest particles has no specified sample_attr");
+        }
+
+        if(!sverts.hasProperty(from_attr)) {
+            std::cout << "the source particles has no specified sample attr [" << from_attr << "]" << std::endl;
+            throw std::runtime_error("the source particles has no specified sample_attr");
+        }
+
+        if(dverts.getPropertySize(to_attr) != sverts.getPropertySize(from_attr)) {
+            std::cout << "the size of two sample channels does not match"  << std::endl;
+            throw std::runtime_error("the size of two sample channels does not match");
+        }
+
+        const auto& sampler_buffer = (*dest)[sampler_name];
+
+        TILEVEC_OPS::fill(cudaPol,dverts,to_attr,(T)0);
+
+        cudaPol(zs::range(dverts.size()),[
+            attr_dim = dverts.getPropertySize(to_attr),
+            sampler_count_attr = zs::SmallString(sampler_count_attr),
+            sampler_offset_attr = zs::SmallString(sampler_offset_attr),
+            dverts = proxy<space>({},dverts),to_attr_offset = dverts.getPropertyOffset(to_attr),
+            sverts = proxy<space>({},sverts),from_attr_offset = sverts.getPropertyOffset(from_attr),
+            sampler_buffer = proxy<space>({},sampler_buffer)] ZS_LAMBDA(int dvi) mutable {
+                auto nm_samples = zs::reinterpret_bits<int>(dverts(sampler_count_attr,dvi));
+                auto sample_weight_offset = zs::reinterpret_bits<int>(dverts(sampler_offset_attr,dvi));
+                
+                // printf("nm_samples[%d] : %d\n",dvi,nm_samples);
+
+                auto wsum = (T)0.0;
+
+                for(int i = 0;i != nm_samples;++i) {
+                    auto idx = sample_weight_offset + i;
+                    auto svi = zs::reinterpret_bits<int>(sampler_buffer("inds",idx));
+                    auto w  = sampler_buffer("w",idx);
+                    wsum += w;
+                    for(int d = 0;d != attr_dim;++d)
+                        dverts(to_attr_offset + d,dvi) += sverts(from_attr_offset + d,svi) * w;
+                }
+
+                for(int d = 0;d != attr_dim;++d)
+                    dverts(to_attr_offset + d,dvi) /= (wsum + (T)1e-6);
+        });
+
+        set_output("to",get_input("to"));
+        set_output("from",get_input("from"));
+    }
+};
+
+ZENDEFNODE(ZSSample, {{
+        {"to"},
+        {"from"},
+        {"string","sampler_name","sampler_name"},
+        {"string","to_attr","to_attr"},
+        {"string","from_attr","from_attr"}
+    },
+    {{"to"},{"from"}},
+    {},
+    {"ZSGeometry"}});
 
 struct ZSComputeBaryCentricWeights : INode {
     void apply() override {
@@ -220,6 +447,8 @@ ZENDEFNODE(ZSComputeBaryCentricWeights, {{{"interpolator","zsvolume"}, {"embed s
                             {{"float","bvh_thickness","0"},{"int","fitting_in","1"},{"string","bvh_channel","x"}},
                             {"ZSGeometry"}});
 
+
+
 struct VisualizeInterpolator : zeno::INode {
     void apply() override {
         using namespace zs;
@@ -319,6 +548,8 @@ ZENDEFNODE(ZSSampleEmbedVectorField, {{{"volume"}, {"embed vec field", "vec_fiel
                             {{"out volume", "volume"}},
                             {{"string","bcw_channel","bcw"},{"string","sampleAttr","vec_field"},{"string","outAttr"," vec_field"},{"enum element vert","type","element"}},
                             {"ZSGeometry"}});
+
+
 
 struct ZSSampleEmbedTagField : zeno::INode {
     void apply() override {

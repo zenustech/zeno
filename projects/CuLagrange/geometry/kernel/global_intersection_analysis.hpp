@@ -20,8 +20,9 @@ namespace zeno {
 
 namespace GIA {
 
-// #define USE_FAST_TRI_SEG_INTERSECTION
+#define USE_FAST_TRI_SEG_INTERSECTION
 
+    
     constexpr int GIA_BACKGROUND_COLOR = 0;
     constexpr int GIA_TURNING_POINTS_COLOR = 1;
     constexpr int GIA_RED_COLOR = 2;
@@ -186,6 +187,80 @@ namespace GIA {
     }
 
 
+
+    template<typename Pol,
+        typename PosTileVec,
+        typename CloseProximityHash>
+    void retrieve_intersected_sphere_pairs(Pol& pol,
+        const PosTileVec& verts,  const zs::SmallString& xtag,  const T& uniform_radius,     const zs::SmallString& variable_radius_attr,
+        const PosTileVec& nverts, const zs::SmallString& nxtag, const T& nei_uniform_radius, const zs::SmallString& nei_variable_radius_attr,
+        CloseProximityHash& res) {
+            using namespace zs;
+            using bv_t = typename ZenoParticles::lbvh_t::Box;
+            constexpr auto space = Pol::exec_tag::value;
+            Vector<bv_t> bvs{verts.get_allocator(),0};
+            if(verts.hasProperty(variable_radius_attr))
+                retrieve_bounding_volumes(pol,verts,bvs,variable_radius_attr,xtag);
+            else
+                retrieve_bounding_volumes(pol,verts,bvs,uniform_radius,xtag);
+
+            // pol(zs::range(bvs.size()),[bvs = proxy<space>(bvs)] ZS_LAMBDA(auto vi) mutable {
+            //     auto bv = bvs[vi];
+            //     printf("box[%d] %f %f %f %f %f %f\n",vi,
+            //         (float)bv._min[0],(float)bv._min[1],(float)bv._min[2],
+            //         (float)bv._max[0],(float)bv._max[1],(float)bv._max[2]);
+            // });
+            
+            ZenoParticles::lbvh_t bvh{};
+            bvh.build(pol,bvs);
+            
+            res.reset(pol,true);
+            pol(zs::range(nverts.size()),[
+                res = proxy<space>(res),
+                bvh = proxy<space>(bvh),
+                bvs = proxy<space>(bvs),
+                nverts = proxy<space>({},nverts),
+                nxtag = nxtag,
+                nei_variable_radius_attr = nei_variable_radius_attr,
+                has_nei_variable_radius = nverts.hasProperty(nei_variable_radius_attr),
+                uniform_radius = uniform_radius,
+                verts = proxy<space>({},verts),
+                xtag = xtag,
+                variable_radius_attr = variable_radius_attr,
+                has_variable_radius = verts.hasProperty(variable_radius_attr),
+                nei_uniform_radius = nei_uniform_radius] ZS_LAMBDA(auto nvi) mutable {
+                    auto nx = nverts.pack(dim_c<3>,nxtag,nvi);
+                    auto nradius = nei_uniform_radius;
+                    if(has_nei_variable_radius)
+                        nradius = nverts(nei_variable_radius_attr,nvi);
+                    bv_t nbv{get_bounding_box(nx,nx)};
+                    nbv._min -= nradius;
+                    nbv._max += nradius;
+
+                    // printf("testing intersection with bounding box[%d] : [%f %f %f %f %f %f]\n",
+                    //     nvi,
+                    //     (float)nbv._min[0],(float)nbv._min[1],(float)nbv._min[2],
+                    //     (float)nbv._max[0],(float)nbv._max[1],(float)nbv._max[2]);
+
+                    auto process_potential_intersected_pairs = [&](auto vi) mutable {
+                        auto x = verts.pack(dim_c<3>,xtag,vi);
+                        auto dist = (x - nx).norm();
+                        auto radius = uniform_radius;
+                        if(has_variable_radius)
+                            radius = verts(variable_radius_attr,vi);
+                        if(dist < radius + nradius) {
+                            res.insert(zs::vec<int,2>{vi,nvi});
+                            // auto bv = bvs[vi];
+                            // printf("find pair[%d %d] : AABB[%f %f %f %f %f %f]\n",
+                            //     (int)vi,(int)nvi,
+                            //     (float)bv._min[0],(float)bv._min[1],(float)bv._min[2],
+                            //     (float)bv._max[0],(float)bv._max[1],(float)bv._max[2]);
+                        }
+                    };
+
+                    bvh.iter_neighbors(nbv,process_potential_intersected_pairs);
+            });
+    }
 
 // retrieve all the intersection pairs and decide whether they are:
 //      closed intersection
@@ -452,6 +527,7 @@ namespace GIA {
     }
 
 
+
     template<typename Pol,
         typename PosTileVec,
         typename TriTileVec,
@@ -507,18 +583,6 @@ namespace GIA {
                 res = proxy<space>(cs_ET),
                 ktri_bvh = proxy<space>(ktri_bvh)] ZS_LAMBDA(int ei) mutable {
                     auto edge = edges[ei];
-
-                    // bool edge_has_dynamic_points = true;
-                    // if(hasMinv) {
-                    //     edge_has_dynamic_points = false;
-                    //     for(int i = 0;i != 2;++i) {
-                    //         // if(verts("ani_mask",edge[i]) < 0.99)
-                    //         if (verts(minvOffset, edge[i]) > eps)
-                    //             edge_has_dynamic_points = true;
-                    //     }
-                    // }
-                    // if(!edge_has_dynamic_points)
-                    //     return;
 
                     auto vs = verts.pack(dim_c<3>, xOffset, edge[0]);
                     auto ve = verts.pack(dim_c<3>, xOffset, edge[1]);
