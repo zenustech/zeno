@@ -245,6 +245,49 @@ ZENO_DEFNODE(CameraEval)({
     {"FBX"},
 });
 
+struct ExtractCamera: zeno::INode {
+
+    virtual void apply() override {
+        auto cam = get_input<zeno::CameraObject>("camobject");
+
+        auto pos = std::make_shared<zeno::NumericObject>();
+        auto up = std::make_shared<zeno::NumericObject>();
+        auto view = std::make_shared<zeno::NumericObject>();
+        auto fov = std::make_shared<zeno::NumericObject>();
+        auto aperture = std::make_shared<zeno::NumericObject>();
+        auto focalPlaneDistance = std::make_shared<zeno::NumericObject>();
+
+        pos->set<zeno::vec3f>(cam->pos);
+        up->set<zeno::vec3f>(cam->up);
+        view->set<zeno::vec3f>(cam->view);
+        fov->set<float>(cam->fov);
+        aperture->set<float>(cam->aperture);
+        focalPlaneDistance->set<float>(cam->focalPlaneDistance);
+
+
+        set_output("pos", std::move(pos));
+        set_output("up", std::move(up));
+        set_output("view", std::move(view));
+        set_output("fov", std::move(fov));
+        set_output("aperture", std::move(aperture));
+        set_output("focalPlaneDistance", std::move(focalPlaneDistance));
+    }
+};
+ZENDEFNODE(ExtractCamera,
+           {       /* inputs: */
+               {
+                    "camobject"
+               },  /* outputs: */
+               {
+                   "pos", "up", "view", "fov", "aperture", "focalPlaneDistance"
+               },  /* params: */
+               {
+
+               },  /* category: */
+               {
+                   "FBX",
+               }
+           });
 
 struct LightNode : INode {
     virtual void apply() override {
