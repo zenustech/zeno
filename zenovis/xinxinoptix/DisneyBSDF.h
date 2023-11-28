@@ -164,8 +164,8 @@ namespace DisneyBSDF{
     static __inline__ __device__ 
     vec3 CalculateExtinction(vec3 apparantColor, float scaler)
     {
-     //   return 1.0/(max(apparantColor * scaler,vec3(0.000001)));
-        return (1.0f - apparantColor) * scaler;
+      return 1.0/(max(apparantColor * scaler,vec3(0.000001)));
+        //return (1.0f - apparantColor) * scaler;
     }
     
     static __inline__ __device__
@@ -332,7 +332,7 @@ namespace DisneyBSDF{
         if(diffPr > 0.0 && reflect)
         {
 
-            vec3 d = BRDFBasics::EvalDisneyDiffuse(mix(mat.basecolor,mat.sssColor,mat.subsurface), mat.subsurface, mat.roughness, mat.sheen,
+            vec3 d = BRDFBasics::EvalDisneyDiffuse(thin? mat.basecolor:mix(mat.basecolor,mat.sssColor,mat.subsurface), mat.subsurface, mat.roughness, mat.sheen,
                                              Csheen, wo, wi, wm, tmpPdf) * dielectricWt   * illum;
             dterm = dterm + d;
             f = f + d;
@@ -417,8 +417,15 @@ namespace DisneyBSDF{
           float FV = BRDFBasics::SchlickWeight(abs(wo.z));
           float term = wo.z>0?FV:FL;
           float tmpPdf = trans? 1.0f : 0.0f;//0.5/M_PIf:0.0f;
+
+//          auto wo2 = wo;
+//          wo2.z *= -1.0f;
+//          vec3 d2 = BRDFBasics::EvalDisneyDiffuse(mix(mat.basecolor,mat.sssColor,mat.subsurface), mat.subsurface, mat.roughness, mat.sheen,
+//                                                   Csheen, wo2, wi, wm, tmpPdf)  * illum;
+
+
           // vec3 d = 1.0f/M_PIf * (1.0f - 0.5f * term) * (trans?vec3(1.0f):vec3(0.0f))  * dielectricWt * subsurface;
-          vec3 d = (trans?vec3(1.0f):vec3(0.0f))  * dielectricWt * mat.subsurface;
+          vec3 d = (trans? (thin? mat.sssColor : vec3(1.0f)): vec3(0.0f))  * dielectricWt * mat.subsurface;
           dterm = dterm + d;
           f = f + d;
           fPdf += tmpPdf * sssPr;
@@ -545,16 +552,15 @@ namespace DisneyBSDF{
         rotateTangent(T, B, N, mat.anisoRotation * 2 * 3.1415926f);
         world2local(wo, T, B, N);
         float2 r = sobolRnd(eventseed);
-        float r1 = r.x;
-        float r2 = r.y;
-//        float r1 = rnd(seed);
-//        float r2 = rnd(seed);
+//        float r1 = r.x;
+//        float r2 = r.y;
+        float r1 = rnd(seed);
+        float r2 = rnd(seed);
 
         vec3 Csheen, Cspec0;
         float F0;
 
         BRDFBasics::TintColors(mix(mat.basecolor, mat.sssColor, mat.subsurface), eta, mat.specularTint, mat.sheenTint, F0, Csheen, Cspec0);
-        Cspec0 = Cspec0;
 
         //material layer mix weight
         float dielectricWt = (1.0 - mat.metallic) * (1.0 - mat.specTrans);
@@ -621,6 +627,7 @@ namespace DisneyBSDF{
               isSS = false;
             }else
             {
+
               //go inside
               wi = -BRDFBasics::UniformSampleHemisphere(r1, r2);
               isSS = true;
