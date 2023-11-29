@@ -984,7 +984,7 @@ struct PrimitiveUnfuse : INode {
         std::vector<std::set<int>> groupsPerVertex(pos.size());
 
         {
-            std::vector<Mutex> mtxs(tris.size());
+            std::vector<Mutex> mtxs(pos.size());
             pol(zip(triIds, triGroups), [&mtxs, &groupsPerVertex](auto tri, int groupNo) {
                 for (int d = 0; d != 3; ++d) {
                     int vi = tri[d];
