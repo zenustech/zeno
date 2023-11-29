@@ -26,6 +26,21 @@ struct QuadMesh : INode {
         auto input_dir = get_input2<std::string>("input_mesh_dir");
         auto output_dir = get_input2<std::string>("output_mesh_dir");
 
+        int scale_constraints = 0;
+        scale_constraints += scale > 0 ? 1 : 0;
+        scale_constraints += face_num > 0 ? 1 : 0;
+        scale_constraints += vert_num > 0 ? 1 : 0;
+        if (scale_constraints > 1) {
+            zeno::log_error("Only one of the \"scale\", \"vert_num\" and \"face_num\" parameters can be used at once.");
+            std::string native_path = std::filesystem::u8path(input_dir).string();
+            std::ifstream file(native_path, std::ios::binary);
+            auto binary = std::vector<char>((std::istreambuf_iterator<char>(file)),
+                                std::istreambuf_iterator<char>());
+            auto prim = std::shared_ptr<PrimitiveObject>(primParsedFrom(binary.data(), binary.size()));
+            set_output("prim", std::move(prim));
+            return;
+        }
+
         int argc = 1;
         char* argv[10];
         argv[0] = (char*)malloc(sizeof("./InstantMeshes\0"));
