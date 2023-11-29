@@ -12,6 +12,8 @@
 #include <opensubdiv/far/primvarRefiner.h>
 #include <opensubdiv/far/topologyDescriptor.h>
 
+#include "zensim/zpc_tpls/fmt/format.h"
+
 namespace zeno {
 namespace {
 
@@ -237,7 +239,7 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCre
 
     std::map<std::string, AttrVector<vec2i>::AttrVectorVariant> oldpolyattrs;
     if (copyFaceAttrs) { // make zhxx very happy
-        size_t offsetred = 0;
+        size_t offsetred = 0, curOffsetred;
         size_t shift = 2 * (levels - 1);
         size_t finred = prim->tris.size() * (3 << shift) + prim->quads.size() * (4 << shift);
             for (size_t i = 0; i < prim->polys.size(); i++) {
@@ -247,12 +249,16 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCre
         auto fits = [&] (auto &pat) {
             if (pat.size() < finred) pat.resize(finred);
         };
+
+        curOffsetred = offsetred;
         prim->tris.foreach_attr<AttrAcceptAll>([&](std::string const &key, auto &arr) {
             if (key == "uv0" || key == "uv1" || key == "uv2")
                 return;
             using T = std::decay_t<decltype(arr[0])>;
             auto &pat = oldpolyattrs[key].emplace<std::vector<T>>();
             fits(pat);
+
+            offsetred = curOffsetred;
             size_t stride = 3 << shift;
             for (size_t i = 0; i < prim->tris.size(); i++) {
                 for (size_t j = 0; j < stride; j++) {
@@ -261,14 +267,19 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCre
                 offsetred += stride;
             }
         });
+
+        offsetred += prim->tris.size();
+        curOffsetred = offsetred;
         prim->quads.foreach_attr<AttrAcceptAll>([&](std::string const &key, auto &arr) {
             if (key == "uv0" || key == "uv1" || key == "uv2" || key == "uv3")
                 return;
             using T = std::decay_t<decltype(arr[0])>;
             auto &pat = oldpolyattrs[key].emplace<std::vector<T>>();
             fits(pat);
+
+            auto offsetred = curOffsetred;
             size_t stride = 4 << shift;
-                /* ZENO_P(prim->quads->size()); */
+            /* ZENO_P(prim->quads->size()); */
             for (size_t i = 0; i < prim->quads.size(); i++) {
                 for (size_t j = 0; j < stride; j++) {
                     pat[offsetred + j] = arr[i];
@@ -276,11 +287,15 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCre
                 offsetred += stride;
             }
         });
+
         offsetred += prim->quads.size();
+        curOffsetred = offsetred;
         prim->polys.foreach_attr<AttrAcceptAll>([&](std::string const &key, auto &arr) {
             using T = std::decay_t<decltype(arr[0])>;
             auto &pat = oldpolyattrs[key].emplace<std::vector<T>>();
             fits(pat);
+
+            auto offsetred = curOffsetred;
             for (size_t i = 0; i < prim->polys.size(); i++) {
                 size_t stride = prim->polys[i][1] << shift;
                 for (size_t j = 0; j < stride; j++) {
