@@ -1,6 +1,7 @@
 #include "Structures.hpp"
 #include "zensim/container/Bcht.hpp"
 #include "zensim/container/Bht.hpp"
+#include "zensim/execution/ConcurrencyPrimitive.hpp"
 #include "zensim/geometry/AnalyticLevelSet.h"
 #include "zensim/geometry/Distance.hpp"
 #include "zensim/geometry/SpatialQuery.hpp"
@@ -12,6 +13,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <queue>
+#include <stdexcept>
 #include <zeno/ListObject.h>
 #include <zeno/funcs/PrimitiveUtils.h>
 #include <zeno/types/PrimitiveObject.h>
@@ -957,6 +959,110 @@ ZENDEFNODE(PrimitiveFuse, {
                               {},
                               {"zs_geom"},
                           });
+
+/// @note duplicate vertices shared by multiple groups
+struct PrimitiveUnfuse : INode {
+    void apply() override {
+        using namespace zs;
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto tag = get_input2<std::string>("partition_tag");
+
+        constexpr auto space = execspace_e::openmp;
+        auto pol = omp_exec();
+
+        auto &verts = prim->verts;
+        const auto &pos = verts.values;
+
+        auto &tris = prim->tris;
+        const auto &triIds = tris.values;
+        const auto &triGroups = tris.attr<int>(tag);
+
+        const bool hasLoops = prim->polys.size() > 1;
+        if (hasLoops)
+            throw std::runtime_error("PrimitiveUnfuse currently only works for triangle meshes");
+
+        std::vector<std::set<int>> groupsPerVertex(pos.size());
+
+        {
+            std::vector<Mutex> mtxs(tris.size());
+            pol(zip(triIds, triGroups), [&mtxs, &groupsPerVertex](auto tri, int groupNo) {
+                for (int d = 0; d != 3; ++d) {
+                    int vi = tri[d];
+                    auto &mtx = mtxs[vi];
+                    auto &group = groupsPerVertex[vi];
+                    {
+                        mtxs[vi].lock();
+                        group.insert(vi);
+                        mtxs[vi].unlock();
+                    }
+                };
+            });
+        }
+
+        std::vector<int> numGroupsPerVertex(pos.size() + 1), ptrs(pos.size() + 1);
+        pol(zip(numGroupsPerVertex, groupsPerVertex), [](int &num, const std::set<int> &g) { num = g.size(); });
+        exclusive_scan(pol, std::begin(numGroupsPerVertex), std::end(numGroupsPerVertex), std::begin(ptrs));
+
+        auto numEntries = ptrs.back();
+        std::vector<int> inds(numEntries);
+        pol(enumerate(groupsPerVertex), [&inds, &ptrs](int vi, const std::set<int> &groups) {
+            auto st = ptrs[vi], ed = ptrs[vi + 1];
+            for (auto groupNo : groups) {
+                inds[st++] = groupNo; // the first group does not need to change
+            }
+        });
+
+        auto resPrim = std::make_shared<PrimitiveObject>();
+
+        resPrim->verts.resize(numEntries);
+        auto &resVerts = resPrim->verts;
+        auto &resPos = resVerts.values;
+        verts.foreach_attr<AttrAcceptAll>([&](const auto &key, const auto &arr) {
+            using T = std::decay_t<decltype(arr[0])>;
+            resVerts.add_attr<T>(key);
+        });
+        pol(range(pos.size()), [&ptrs, &verts, &resVerts, &resPos](int vi) {
+            auto st = ptrs[vi], ed = ptrs[vi + 1];
+            for (int j = st; j != ed; ++j)
+                resPos[j] = verts.values[vi];
+            resVerts.foreach_attr<AttrAcceptAll>([&](const auto &key, auto &dst) {
+                using T = std::decay_t<decltype(dst[0])>;
+                const auto &src = verts.attr<T>(key);
+                for (int j = st; j != ed; ++j)
+                    dst[j] = src[vi];
+            });
+        });
+
+        resPrim->tris.resize(tris.size());
+        auto &resTris = resPrim->tris;
+        auto &resTriIds = resTris.values;
+        tris.foreach_attr<AttrAcceptAll>([&](const auto &key, const auto &arr) {
+            using T = std::decay_t<decltype(arr[0])>;
+            resTris.add_attr<T>(key) = arr;
+        });
+        pol(range(tris.size()), [&](int f) {
+            auto groupNo = triGroups[f];
+            for (int d = 0; d != 3; ++d) {
+                int vi = tris[f][d];
+                int st = ptrs[vi], ed = ptrs[vi + 1];
+                for (; st != ed; ++st) {
+                    if (groupNo == inds[st])
+                        break;
+                }
+                resTriIds[f][d] = st;
+            }
+        });
+        set_output("partitioned_prim", std::move(resPrim));
+    }
+};
+ZENDEFNODE(PrimitiveUnfuse, {
+                                {{"PrimitiveObject", "prim"}, {"string", "partition_tag", "triangle_index"}},
+                                {
+                                    {"PrimitiveObject", "partitioned_prim"},
+                                },
+                                {},
+                                {"zs_geom"},
+                            });
 
 struct ComputeAverageEdgeLength : INode {
     void apply() override {
