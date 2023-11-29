@@ -11,6 +11,9 @@
 #include <Alembic/Abc/ErrorHandler.h>
 #include "ABCTree.h"
 #include <numeric>
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 using namespace Alembic::AbcGeom;
 namespace zeno {
@@ -313,6 +316,11 @@ struct WriteAlembic2 : INode {
         int frame_start = get_input2<int>("frame_start");
         int frame_end = get_input2<int>("frame_end");
         std::string path = get_input2<std::string>("path");
+        auto folderPath = fs::path(path).parent_path();
+
+        if (!fs::exists(folderPath)) {
+            fs::create_directories(folderPath);
+        }
         if (usedPath != path) {
             usedPath = path;
             archive = {Alembic::AbcCoreOgawa::WriteArchive(), path};
