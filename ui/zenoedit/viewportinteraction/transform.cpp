@@ -305,7 +305,7 @@ void FakeTransformer::createNewTransformNode(NodeLocation& node_location,
 
     auto out_sock = node_sync.getPrimSockName(node_location);
     auto new_node_location = node_sync.generateNewNode(node_location,
-                                                       "TransformPrimitive",
+                                                       "PrimitiveTransform",
                                                        out_sock,
                                                        "prim");
 
@@ -430,7 +430,7 @@ void FakeTransformer::endTransform(bool moved) {
             auto& node_sync = NodeSyncMgr::GetInstance();
             auto prim_node_location = node_sync.searchNodeOfPrim(obj_name);
             auto& prim_node = prim_node_location->node;
-            if (node_sync.checkNodeType(prim_node, "TransformPrimitive") &&
+            if (node_sync.checkNodeType(prim_node, "PrimitiveTransform") &&
                 // prim comes from a exist TransformPrimitive node
                 node_sync.checkNodeInputHasValue(prim_node, "translation") &&
                 node_sync.checkNodeInputHasValue(prim_node, "quatRotation") &&
@@ -440,7 +440,7 @@ void FakeTransformer::endTransform(bool moved) {
             else {
                 // prim comes from another type node
                 auto linked_transform_node =
-                    node_sync.checkNodeLinkedSpecificNode(prim_node, "TransformPrimitive");
+                    node_sync.checkNodeLinkedSpecificNode(prim_node, "PrimitiveTransform");
                 if (linked_transform_node.has_value())
                     // prim links to a exist TransformPrimitive node
                     syncToTransformNode(linked_transform_node.value(), obj_name);

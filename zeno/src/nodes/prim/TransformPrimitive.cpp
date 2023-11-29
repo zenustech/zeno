@@ -190,7 +190,7 @@ ZENDEFNODE(TransformPrimitive, {
         {"enum " + EulerAngle::RotationOrderListString(), "EulerRotationOrder", "ZYX"},
         {"enum " + EulerAngle::MeasureListString(), "EulerAngleMeasure", EulerAngle::MeasureDefaultString()}
     },
-    {"primitive"},
+    {"deprecated"},
 });
 
 // euler rot order: roll-pitch-yaw
