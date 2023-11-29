@@ -82,6 +82,9 @@ struct QuadMesh : INode {
         if (scale > 0) {
             argv[argc] = (char*)malloc(sizeof("--scale\0"));
             strcpy(argv[argc], "--scale\0");
+            if (dominant == 0) {
+                scale *= 2;
+            }
             std::string scale_str = to_string(scale);
             argv[argc+1] = (char*)malloc((scale_str.size()+1)*sizeof(char));
             for (int i = 0; i < scale_str.size(); ++i)
@@ -92,6 +95,9 @@ struct QuadMesh : INode {
         if (vert_num > 0) {
             argv[argc] = (char*)malloc(sizeof("--vertices\0"));
             strcpy(argv[argc], "--vertices\0");
+            if (dominant == 0) {
+                vert_num /= 4;
+            }
             std::string vert_num_str = to_string(vert_num);
             argv[argc+1] = (char*)malloc((vert_num_str.size()+1)*sizeof(char));
             for (int i = 0; i < vert_num_str.size(); ++i)
@@ -102,6 +108,9 @@ struct QuadMesh : INode {
         if (face_num > 0) {
             argv[argc] = (char*)malloc(sizeof("--faces\0"));
             strcpy(argv[argc], "--faces\0");
+            if (dominant == 0) {
+                face_num /= 4;
+            }
             std::string face_num_str = to_string(face_num);
             argv[argc+1] = (char*)malloc((face_num_str.size()+1)*sizeof(char));
             for (int i = 0; i < face_num_str.size(); ++i)
@@ -125,6 +134,13 @@ struct QuadMesh : INode {
         argv[argc][input_dir.size()] = '\0';
         ++argc;
         runInstantMeshes(argc, argv);
+
+        std::string native_path = std::filesystem::u8path(output_dir).string();
+        std::ifstream file(native_path, std::ios::binary);
+        auto binary = std::vector<char>((std::istreambuf_iterator<char>(file)),
+                              std::istreambuf_iterator<char>());
+        auto prim = std::shared_ptr<PrimitiveObject>(primParsedFrom(binary.data(), binary.size()));
+        set_output("prim", std::move(prim));
     }
 };
 
@@ -142,7 +158,7 @@ ZENO_DEFNODE(QuadMesh)
     {"int", "vert_num", "0"},
     {"int", "face_num", "0"},
     {"int", "knn", "0"}},
-    {},
+    {{"prim"}},
     {},
     {"primitive"},
 });
