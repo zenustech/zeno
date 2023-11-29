@@ -992,7 +992,7 @@ struct PrimitiveUnfuse : INode {
                     auto &group = groupsPerVertex[vi];
                     {
                         mtxs[vi].lock();
-                        group.insert(vi);
+                        group.insert(groupNo);
                         mtxs[vi].unlock();
                     }
                 };
