@@ -301,14 +301,14 @@ struct MakeSurfaceConstraintTopology : INode {
             auto triBvh = bvh_t{};
             auto triBvs = retrieve_bounding_volumes(cudaPol,vtemp,ttemp,wrapv<3>{},imminent_collision_thickness/(float)2.0,"x");
             triBvh.build(cudaPol,triBvs);
-            COLLISION_UTILS::detect_imminent_PT_close_proximity(cudaPol,vtemp,"x",ttemp,imminent_collision_thickness,0,triBvh,eles,csPT);
+            COLLISION_UTILS::detect_self_imminent_PT_close_proximity(cudaPol,vtemp,"x",ttemp,imminent_collision_thickness,0,triBvh,eles,csPT);
     
             std::cout << "nm_imminent_csPT : " << csPT.size() << std::endl;
 
             auto edgeBvh = bvh_t{};
             auto edgeBvs = retrieve_bounding_volumes(cudaPol,vtemp,etemp,wrapv<2>{},imminent_collision_thickness/(float)2.0,"x");
             edgeBvh.build(cudaPol,edgeBvs);  
-            COLLISION_UTILS::detect_imminent_EE_close_proximity(cudaPol,vtemp,"x",etemp,imminent_collision_thickness,csPT.size(),edgeBvh,eles,csEE);
+            COLLISION_UTILS::detect_self_imminent_EE_close_proximity(cudaPol,vtemp,"x",etemp,imminent_collision_thickness,csPT.size(),edgeBvh,eles,csEE);
 
             std::cout << "nm_imminent_csEE : " << csEE.size() << std::endl;
             // std::cout << "csEE + csPT = " << csPT.size() + csEE.size() << std::endl;
@@ -336,22 +336,6 @@ struct MakeSurfaceConstraintTopology : INode {
             constraint->setMeta<size_t>(NM_DCD_COLLISIONS,csEE.size() + csPT.size());
             constraint->setMeta(GLOBAL_DCD_THICKNESS,imminent_collision_thickness);
         }
-
-        // if(type == "boundary_ccd_collision") {
-        //     constexpr auto eps = 1e-6;
-        //     constexpr auto MAX_CCD_BOUNDARY_COLLISION_PAIRS = 2000000;
-        //     // recording the hit point
-        //     constraint->setMeta(CONSTRAINT_KEY,category_c::ccd_boundary_collision_constraint);
-        //     eles.append_channels(cudaPol,{{"inds",2},{"bary",3}});
-        //     eles.resize(MAX_CCD_BOUNDARY_COLLISION_PAIRS);   
-            
-        //     auto substep_id = get_input2<int>("substep_id");
-        //     auto nm_substeps = get_input2<int>("nm_substeps");
-        //     auto w = (float)(substep_id + 1) / (float)nm_substeps;
-        //     auto pw = (float)(substep_id) / (float)nm_substeps;
-            
-            
-        // }
 
         if(type == "volume_pin") {
             constexpr auto eps = 1e-6;

@@ -808,6 +808,7 @@ inline int do_tetrahedra_surface_mesh_and_kinematic_boundary_collision_detection
         return csPT.size();
 }
 
+
 template<typename Pol,
     typename PosTileVec,
     typename TriTileVec,
@@ -1010,7 +1011,7 @@ template<typename Pol,
     typename EEHashMap,
     typename EdgeBvh,
     typename T = typename PosTileVec::value_type>
-void detect_imminent_EE_close_proximity(Pol& pol,
+void detect_self_imminent_EE_close_proximity(Pol& pol,
     PosTileVec& verts,const zs::SmallString& xtag,
     const EdgeTileVec& edges,
     const T& thickness,
@@ -1134,7 +1135,7 @@ template<typename Pol,
     typename TriBvh,
     typename ProximityBuffer,
     typename T = typename PosTileVec::value_type>
-void detect_imminent_PT_close_proximity(Pol& pol,
+void detect_self_imminent_PT_close_proximity(Pol& pol,
     PosTileVec& verts,const zs::SmallString& xtag,
     const TriTileVec& tris,
     const T& thickness,
