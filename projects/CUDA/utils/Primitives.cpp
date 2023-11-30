@@ -975,16 +975,19 @@ struct PrimitiveUnfuse : INode {
 
         auto &tris = prim->tris;
         const auto &triIds = tris.values;
-        const auto &triGroups = tris.attr<int>(tag);
+        const bool hasTris = tris.size() > 0;
 
-        const bool hasLoops = prim->polys.size() > 1;
-        if (hasLoops)
-            throw std::runtime_error("PrimitiveUnfuse currently only works for triangle meshes");
+        auto &polys = prim->polys;
+        const auto &loops = prim->loops;
+        const bool hasLoops = polys.size() > 1;
+
+        if ((hasTris ^ hasLoops) == 0)
+            throw std::runtime_error("The input mesh must either own active triangle topology or loop topology.");
 
         std::vector<std::set<int>> groupsPerVertex(pos.size());
-
-        {
-            std::vector<Mutex> mtxs(tris.size());
+        if (hasTris) {
+            const auto &triGroups = tris.attr<int>(tag);
+            std::vector<Mutex> mtxs(pos.size());
             pol(zip(triIds, triGroups), [&mtxs, &groupsPerVertex](auto tri, int groupNo) {
                 for (int d = 0; d != 3; ++d) {
                     int vi = tri[d];
@@ -992,10 +995,28 @@ struct PrimitiveUnfuse : INode {
                     auto &group = groupsPerVertex[vi];
                     {
                         mtxs[vi].lock();
-                        group.insert(vi);
+                        group.insert(groupNo);
                         mtxs[vi].unlock();
                     }
                 };
+            });
+        } else {
+            const auto &polyGroups = polys.attr<int>(tag);
+            std::vector<Mutex> mtxs(pos.size());
+            pol(zip(polys.values, polyGroups), [&mtxs, &groupsPerVertex, &loops](zeno::vec2i poly, int groupNo) {
+                auto st = poly[0];
+                auto ed = st + poly[1];
+                for (; st != ed; ++st) {
+                    int vi = loops.values[st];
+
+                    auto &mtx = mtxs[vi];
+                    auto &group = groupsPerVertex[vi];
+                    {
+                        mtxs[vi].lock();
+                        group.insert(groupNo);
+                        mtxs[vi].unlock();
+                    }
+                }
             });
         }
 
@@ -1033,25 +1054,63 @@ struct PrimitiveUnfuse : INode {
             });
         });
 
-        resPrim->tris.resize(tris.size());
-        auto &resTris = resPrim->tris;
-        auto &resTriIds = resTris.values;
-        tris.foreach_attr<AttrAcceptAll>([&](const auto &key, const auto &arr) {
-            using T = std::decay_t<decltype(arr[0])>;
-            resTris.add_attr<T>(key) = arr;
-        });
-        pol(range(tris.size()), [&](int f) {
-            auto groupNo = triGroups[f];
-            for (int d = 0; d != 3; ++d) {
-                int vi = tris[f][d];
-                int st = ptrs[vi], ed = ptrs[vi + 1];
-                for (; st != ed; ++st) {
-                    if (groupNo == inds[st])
-                        break;
+        if (hasTris) {
+            const auto &triGroups = tris.attr<int>(tag);
+
+            resPrim->tris.resize(tris.size());
+            auto &resTris = resPrim->tris;
+            auto &resTriIds = resTris.values;
+            tris.foreach_attr<AttrAcceptAll>([&](const auto &key, const auto &arr) {
+                using T = std::decay_t<decltype(arr[0])>;
+                resTris.add_attr<T>(key) = arr;
+            });
+            pol(range(tris.size()), [&](int f) {
+                auto groupNo = triGroups[f];
+                for (int d = 0; d != 3; ++d) {
+                    int vi = tris[f][d];
+                    int st = ptrs[vi], ed = ptrs[vi + 1];
+                    for (; st != ed; ++st) {
+                        if (groupNo == inds[st])
+                            break;
+                    }
+                    resTriIds[f][d] = st;
                 }
-                resTriIds[f][d] = st;
-            }
-        });
+            });
+        } else {
+            const auto &polyGroups = polys.attr<int>(tag);
+            bool uvExist = prim->uvs.size() > 0 && loops.has_attr("uvs");
+
+            resPrim->polys.resize(polys.size());
+            resPrim->loops.resize(loops.size());
+            auto &resPolys = resPrim->polys;
+            auto &resLoops = resPrim->loops;
+
+            resPolys.values = polys.values;
+            polys.foreach_attr<AttrAcceptAll>([&](const auto &key, const auto &arr) {
+                using T = std::decay_t<decltype(arr[0])>;
+                resPolys.add_attr<T>(key) = arr;
+            });
+
+            loops.foreach_attr<AttrAcceptAll>([&](const auto &key, const auto &arr) {
+                using T = std::decay_t<decltype(arr[0])>;
+                resLoops.add_attr<T>(key) = arr;
+            });
+            // resLoops.values = loops.values;
+            pol(zip(polys.values, polyGroups), [&](zeno::vec2i poly, int groupNo) {
+                auto st = poly[0];
+                auto ed = st + poly[1];
+                for (; st != ed; ++st) {
+                    int vi = loops.values[st];
+
+                    int l = ptrs[vi], r = ptrs[vi + 1];
+                    for (; l != r; ++l) {
+                        if (groupNo == inds[l])
+                            break;
+                    }
+                    resLoops.values[st] = l;
+                }
+            });
+        }
         set_output("partitioned_prim", std::move(resPrim));
     }
 };
