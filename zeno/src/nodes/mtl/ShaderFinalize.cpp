@@ -252,10 +252,10 @@ struct ShaderFinalize : INode {
 ZENDEFNODE(ShaderFinalize, {
     {
         {"float", "base", "1"},
-        {"vec3f", "basecolor", "1,1,1"},
+        {"colorvec3f", "basecolor", "1,1,1"},
         {"float", "roughness", "0.4"},
         {"float", "metallic", "0.0"},
-        {"vec3f", "metalColor","1.0,1.0,1.0"},
+        {"colorvec3f", "metalColor","1.0,1.0,1.0"},
         {"float", "specular", "1.0"},
         {"float", "specularTint", "0.0"},
         {"float", "anisotropic", "0.0"},
@@ -264,7 +264,7 @@ ZENDEFNODE(ShaderFinalize, {
         {"float", "subsurface", "0.0"},
         {"enum Fixed Adaptive", "sssRadius", "Fixed"},
         {"vec3f", "sssParam", "1.0,1.0,1.0"},
-        {"vec3f", "sssColor", "1.0,1.0,1.0"},
+        {"colorvec3f", "sssColor", "1.0,1.0,1.0"},
         {"float", "scatterDistance", "10000"},
         {"float", "scatterStep", "0"},
 
