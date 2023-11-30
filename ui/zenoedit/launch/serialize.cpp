@@ -389,35 +389,28 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
             AddStringList({"markNodeChanged", ident}, writer);
         }
 
-        AddStringList({ "completeNode", ident }, writer);
-
 		if (bView && (opts & OPT_VIEW))
         {
             if (name == "SubOutput")
             {
-                auto viewerIdent = ident + ":TOVIEW";
-                AddStringList({"addNode", "ToView", viewerIdent}, writer);
-                AddStringList({"bindNodeInput", viewerIdent, "object", ident, "_OUT_port"}, writer);
                 bool isStatic = opts & OPT_ONCE;
-                AddVariantList({"setNodeInput", viewerIdent, "isStatic", isStatic}, "int", writer);
-                AddStringList({"completeNode", viewerIdent}, writer);
+                AddVariantList({ "setToView", ident, "_OUT_port", isStatic }, "int", writer);
             }
             else
             {
                 for (OUTPUT_SOCKET output : outputs)
                 {
-                    //if (output.info.name == "DST" && outputs.size() > 1)
-                        //continue;
-                    auto viewerIdent = ident + ":TOVIEW";
-                    AddStringList({"addNode", "ToView", viewerIdent}, writer);
-                    AddStringList({"bindNodeInput", viewerIdent, "object", ident, output.info.name}, writer);
+                    ////if (output.info.name == "DST" && outputs.size() > 1)
+                    //    //continue;
                     bool isStatic = opts & OPT_ONCE;
-                    AddVariantList({"setNodeInput", viewerIdent, "isStatic", isStatic}, "int", writer);
-                    AddStringList({"completeNode", viewerIdent}, writer);
+                    AddVariantList({ "setToView", ident, output.info.name, isStatic }, "int", writer);
                     break;  //current node is not a subgraph node, so only one output is needed to view this obj.
                 }
             }
         }
+
+        AddStringList({ "completeNode", ident }, writer);
+
         if (opts & OPT_CACHE)
         {
             AddStringList({ "cacheToDisk", ident}, writer);

@@ -9,6 +9,7 @@
 #include <map>
 #include <set>
 #include <functional>
+#include <filesystem>
 
 namespace zeno {
 
@@ -60,10 +61,13 @@ struct GlobalComm {
     ZENO_API std::string cachePath();
     ZENO_API bool removeCache(int frame);
     ZENO_API void removeCachePath();
-    static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::string fileName = "");
-    static bool fromDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::string fileName = "");
+    ZENO_API void setToViewNodes(std::vector<std::string>& nodes);
+    static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::string key = "", bool dumpCacheVersionInfo = false);
+    static bool fromDiskByRunner(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::string filename);
+    static bool fromDiskByObjsManager(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::vector<std::string>& nodesToLoad);
 private:
     ViewObjects const *_getViewObjects(const int frameid);
+    std::vector<std::string> toViewNodesId;
 };
 
 }

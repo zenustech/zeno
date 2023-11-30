@@ -20,8 +20,10 @@ public:
     void removeObjTmpCacheDir();
     bool nextRunSkipCreateDir(LAUNCH_PARAM& param);
 
+    bool nodeCacheExist(QString& id);
+
 private:
-    void clearNotUsedToViewCache();
+    void initToViewNodesId();
 
     QTemporaryDir m_objTmpCacheDir;
     std::shared_ptr<QTemporaryDir> m_spTmpCacheDir;
@@ -31,8 +33,6 @@ private:
     bool m_isNew;
 
     QDir lastRunCachePath;
-
-    QSet<QString> lastRunToViewNodes;
 };
 
 #endif

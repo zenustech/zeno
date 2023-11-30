@@ -49,7 +49,9 @@ bool encodeListObject(ListObject const *obj, std::back_insert_iterator<std::vect
         tab[i * 2 + 1] = len;
         base += len;
     }
-    std::copy_n(tab.data(), tab.size() * sizeof(size_t), it);
+    for (size_t i : tab)
+        std::copy_n((char const*)&i, sizeof(i), it);
+    //std::copy_n(tab.data(), tab.size() * sizeof(size_t), it); //can't copy data correctly?
     std::copy(fin.begin(), fin.end(), it);
 
     return true;

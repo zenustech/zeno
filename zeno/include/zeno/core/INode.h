@@ -35,6 +35,8 @@ public:
     zany muted_output;
 
     bool bTmpCache = false;
+    bool bIsToView = false;
+    bool isStatic = false;
 
     ZENO_API INode();
     ZENO_API virtual ~INode();

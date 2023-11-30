@@ -394,7 +394,8 @@ void AppHelper::initLaunchCacheParam(LAUNCH_PARAM& param)
 
     std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
     ZASSERT_EXIT(mgr);
-    param.runDirtyNodesOnly = mgr->nextRunSkipCreateDir(param);
+    if (!mgr->nextRunSkipCreateDir(param))
+        markAllNodesInMainGraphDirty(false);
 }
 
 bool AppHelper::openZsgAndRun(const ZENO_RECORD_RUN_INITPARAM& param, LAUNCH_PARAM launchParam)
@@ -497,5 +498,20 @@ void AppHelper::dumpTabsToZsg(QDockWidget* dockWidget, RAPIDJSON_WRITER& writer)
                 writer.String("Light");
             }
         }
+    }
+}
+
+void AppHelper::markAllNodesInMainGraphDirty(bool markNodeStyle)
+{
+    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    if (!pModel)
+        return;
+    QModelIndex subgIdx = pModel->index("main");
+    for (int i = 0; i < pModel->itemCount(subgIdx); i++)
+    {
+        const QModelIndex& idx = pModel->index(i, subgIdx);
+        pModel->markNodeDataChanged(idx, false);
+        if (markNodeStyle)  //change node style in subgraphScene
+            emit pModel->_dataChanged(subgIdx, idx, ROLE_NODE_DATACHANGED);
     }
 }

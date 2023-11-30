@@ -4,6 +4,7 @@
 #include <zeno/extra/GlobalComm.h>
 #include <zenomodel/include/graphsmanagment.h>
 #include "zenoapplication.h"
+#include "zenomainwindow.h"
 
 
 ZCacheMgr::ZCacheMgr()
@@ -15,7 +16,7 @@ ZCacheMgr::ZCacheMgr()
 
 bool ZCacheMgr::initCacheDir(QDir dirCacheRoot, LAUNCH_PARAM& param)
 {
-    clearNotUsedToViewCache();
+    initToViewNodesId();
 
     if (nextRunSkipCreateDir(param)) {
         return true;
@@ -168,39 +169,32 @@ bool ZCacheMgr::nextRunSkipCreateDir(LAUNCH_PARAM& param)
     return true;
 }
 
-void ZCacheMgr::clearNotUsedToViewCache()
+bool ZCacheMgr::nodeCacheExist(QString& id)
+{
+    ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(mainWin, false);
+    if (lastRunCachePath.path() != ".")
+    {
+        QDir framPath = lastRunCachePath;
+        if (framPath.cd(QString::number(1000000 + mainWin->timelineInfo().currFrame).right(6)))
+            if (QFile(framPath.path() + "/" + id + ".zencache").exists())
+                return true;
+    }
+    return false;
+}
+
+void ZCacheMgr::initToViewNodesId()
 {
     IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
     if (!pModel)
         return;
+    std::vector<std::string> toViewNodes;
     QModelIndex subgIdx = pModel->index("main");
-    QSet<QString> newToViewNodes;
     for (int i = 0; i < pModel->itemCount(subgIdx); i++)
     {
         const QModelIndex& idx = pModel->index(i, subgIdx);
         if (idx.data(ROLE_OPTIONS).toInt() & OPT_VIEW)
-            newToViewNodes.insert(idx.data(ROLE_OBJID).toString());
+            toViewNodes.push_back(idx.data(ROLE_OBJID).toString().toStdString());
     }
-
-    if (m_isNew)
-    {
-        lastRunToViewNodes.swap(newToViewNodes);
-        return;
-    }
-
-    QVector<QString> toViewCachesToBeRemoved;
-    for (auto id : lastRunToViewNodes)
-        if (!newToViewNodes.contains(id))
-            toViewCachesToBeRemoved.push_back(id);
-    lastRunToViewNodes.swap(newToViewNodes);
-
-    for (auto framePath : lastRunCachePath.entryInfoList()) {
-        if (framePath.isDir()) {
-            for (auto id : toViewCachesToBeRemoved) {
-                QString toViewCacheToBeRemoved = framePath.absoluteFilePath() + "/" + id + ".zencache";
-                if (QFile(toViewCacheToBeRemoved).exists())
-                    lastRunCachePath.remove(toViewCacheToBeRemoved);
-            }
-        }
-    }
+    zeno::getSession().globalComm->setToViewNodes(toViewNodes);
 }

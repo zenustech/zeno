@@ -142,7 +142,7 @@ public:
     void setApiRunningEnable(bool bEnable) override;
     bool isApiRunningEnable() const override;
     bool setCustomName(const QModelIndex &subgIdx, const QModelIndex &Idx, const QString &value) const override;
-    void markNodeDataChanged(const QModelIndex& idx) override;
+    void markNodeDataChanged(const QModelIndex& idx, bool recursively = true) override;
     void markNotDescNode() override;
     bool hasNotDescNode() const override;
     void clearNodeDataChanged() override;
@@ -184,7 +184,7 @@ public slots:
 
 private:
     NODE_DESCS getCoreDescs();
-    void _markNodeChanged(const QModelIndex& idx);
+    void _markNodeChanged(const QModelIndex& idx, bool recursively = true);
     void _markSubnodesChange(SubGraphModel* pSubg);
     void _findReference(
         const QString& subgraphName,

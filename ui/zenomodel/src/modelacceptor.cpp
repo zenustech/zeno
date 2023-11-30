@@ -1040,6 +1040,7 @@ void ModelAcceptor::setOptions(const QString& id, const QStringList& options)
         else if (optName == "VIEW")
         {
             opts |= OPT_VIEW;
+            opts |= OPT_CACHE;
         }
         else if (optName == "MUTE")
         {

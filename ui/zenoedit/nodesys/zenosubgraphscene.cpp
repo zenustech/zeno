@@ -88,6 +88,10 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
         {
             blackboardVect << pNode;
         }
+        if (m_subgIdx.data(ROLE_OBJNAME).toString() == "main") {
+            pGraphsModel->markNodeDataChanged(idx, false);
+            pNode->onMarkDataChanged(true);
+        }
     }
 
     for (auto it : m_nodes)
@@ -1063,6 +1067,10 @@ void ZenoSubGraphScene::onRowsInserted(const QModelIndex& subgIdx, const QModelI
                     pGroup->appendChildItem(pChildNode);
             }
         }
+    }
+    if (m_subgIdx.data(ROLE_OBJNAME).toString() == "main") {  //new nodes mark dirty
+        pGraphsModel->markNodeDataChanged(idx, false);
+        pNode->onMarkDataChanged(true);
     }
 }
 
