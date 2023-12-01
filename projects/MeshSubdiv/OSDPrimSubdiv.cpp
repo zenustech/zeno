@@ -12,8 +12,6 @@
 #include <opensubdiv/far/primvarRefiner.h>
 #include <opensubdiv/far/topologyDescriptor.h>
 
-#include "zensim/zpc_tpls/fmt/format.h"
-
 namespace zeno {
 namespace {
 
