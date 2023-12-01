@@ -100,7 +100,6 @@
     <property name="title">
      <string>Help</string>
     </property>
-    <addaction name="actionAbout"/>
     <addaction name="actionCheck_Update"/>
    </widget>
    <widget class="QMenu" name="menuOption">

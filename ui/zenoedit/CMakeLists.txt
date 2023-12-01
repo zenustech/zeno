@@ -25,74 +25,74 @@ if (ZENO_WIN32_RC)
     set (WIN32_RESOURCES ${CMAKE_CURRENT_SOURCE_DIR}/zenoedit.rc)
 endif()
 
-add_executable(zenoedit ${source} ${WIN32_RESOURCES})
+add_executable(msst ${source} ${WIN32_RESOURCES})
 # Add a dependency to ensure that the resource file is deleted before being regenerated
 
-# add_dependencies(zenoedit clean_resource_file)
+# add_dependencies(msst clean_resource_file)
 
-set_property(TARGET zenoedit PROPERTY AUTOUIC ON)
-set_property(TARGET zenoedit PROPERTY AUTOMOC ON)
-set_property(TARGET zenoedit PROPERTY AUTORCC ON)
-set_property(TARGET zenoedit PROPERTY WIN32_EXECUTABLE OFF)
+set_property(TARGET msst PROPERTY AUTOUIC ON)
+set_property(TARGET msst PROPERTY AUTOMOC ON)
+set_property(TARGET msst PROPERTY AUTORCC ON)
+set_property(TARGET msst PROPERTY WIN32_EXECUTABLE ON)
 
 if (ZENO_DEBUG_MSVC)
-    zeno_dbg_msvc(zenoedit)
+    zeno_dbg_msvc(msst)
 endif()
 
 if (NOT ZENO_MULTIPROCESS OR NOT ZENO_IPC_USE_TCP)
     find_package(Threads REQUIRED)
-    target_link_libraries(zenoedit PRIVATE Threads::Threads)
+    target_link_libraries(msst PRIVATE Threads::Threads)
 endif()
-target_link_libraries(zenoedit PRIVATE Qt5::Widgets Qt5::OpenGL Qt5::Network)
+target_link_libraries(msst PRIVATE Qt5::Widgets Qt5::OpenGL Qt5::Network)
 
 if (WIN32)
-    target_link_libraries(zenoedit PRIVATE Dbghelp Version)
-    target_link_libraries(zenoedit PRIVATE ws2_32.lib winmm.lib wldap32.lib Advapi32.lib Crypt32.lib)
+    target_link_libraries(msst PRIVATE Dbghelp Version)
+    target_link_libraries(msst PRIVATE ws2_32.lib winmm.lib wldap32.lib Advapi32.lib Crypt32.lib)
 endif()
-target_link_libraries(zenoedit PRIVATE zenoui zenoio zenomodel zenovis)
-target_link_libraries(zenoedit PRIVATE zeno)
-target_include_directories(zenoedit PRIVATE . .. ../zenoui ../include)
-target_include_directories(zenoedit PRIVATE ${Qt5Widgets_PRIVATE_INCLUDE_DIRS})
+target_link_libraries(msst PRIVATE zenoui zenoio zenomodel zenovis)
+target_link_libraries(msst PRIVATE zeno)
+target_include_directories(msst PRIVATE . .. ../zenoui ../include)
+target_include_directories(msst PRIVATE ${Qt5Widgets_PRIVATE_INCLUDE_DIRS})
 if(ZENO_LIVESYNC)
     find_package(Crow CONFIG REQUIRED)
-    target_link_libraries(zenoedit PRIVATE Crow::Crow)
-    target_compile_definitions(zenoedit PRIVATE -DZENO_LIVESYNC)
+    target_link_libraries(msst PRIVATE Crow::Crow)
+    target_compile_definitions(msst PRIVATE -DZENO_LIVESYNC)
 endif()
 
 if (WIN32)
     if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-        target_link_libraries(zenoedit PRIVATE
+        target_link_libraries(msst PRIVATE
                 ${CMAKE_CURRENT_SOURCE_DIR}/./thr/libs/x64/static/debug/libcrypto.lib
                 ${CMAKE_CURRENT_SOURCE_DIR}/./thr/libs/x64/static/debug/libcurl.lib
                 ${CMAKE_CURRENT_SOURCE_DIR}/./thr/libs/x64/static/debug/libssl.lib)
     else()
-        target_link_libraries(zenoedit PRIVATE
+        target_link_libraries(msst PRIVATE
                 ${CMAKE_CURRENT_SOURCE_DIR}/./thr/libs/x64/static/release/libcrypto.lib
                 ${CMAKE_CURRENT_SOURCE_DIR}/./thr/libs/x64/static/release/libcurl.lib
                 ${CMAKE_CURRENT_SOURCE_DIR}/./thr/libs/x64/static/release/libssl.lib)
     endif()
 endif()
 
-target_include_directories(zenoedit PRIVATE . .. ./thr/include)
+target_include_directories(msst PRIVATE . .. ./thr/include)
 
 
 if (ZENO_MULTIPROCESS)
-    target_compile_definitions(zenoedit PRIVATE -DZENO_MULTIPROCESS)
+    target_compile_definitions(msst PRIVATE -DZENO_MULTIPROCESS)
     if (ZENO_IPC_USE_TCP)
-        target_compile_definitions(zenoedit PRIVATE -DZENO_IPC_USE_TCP)
+        target_compile_definitions(msst PRIVATE -DZENO_IPC_USE_TCP)
     endif()
 endif()
 
 if (ZENO_OPTIX_PROC)
-    target_compile_definitions(zenoedit PRIVATE -DZENO_OPTIX_PROC)
+    target_compile_definitions(msst PRIVATE -DZENO_OPTIX_PROC)
 endif()
 
 if (ZENO_WIN32_RC)
-    target_compile_definitions(zenoedit PRIVATE -DZENO_WIN32_RC)
+    target_compile_definitions(msst PRIVATE -DZENO_WIN32_RC)
 endif()
 
 if (ZENO_INSTALL_TARGET)
-    install(TARGETS zenoedit EXPORT ZenoTargets)
+    install(TARGETS msst EXPORT ZenoTargets)
 endif()
 
-add_custom_command(TARGET zenoedit PRE_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJECT_SOURCE_DIR}/hdr ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/hdr)
+add_custom_command(TARGET msst PRE_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJECT_SOURCE_DIR}/hdr ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/hdr)

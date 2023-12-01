@@ -14,7 +14,7 @@ LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
 
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
-IDI_ICON1               ICON                    "res\\zeno-logo.ico"
+IDI_ICON1               ICON                    "res\\MSST_ICON\\MSST.ico"
 
 
 #ifdef APSTUDIO_INVOKED
@@ -64,13 +64,13 @@ BEGIN
     BEGIN
         BLOCK "080404b0"
         BEGIN
-            VALUE "CompanyName", "ZENUSTECH"
-            VALUE "FileDescription", "Zeno Editor"
+            VALUE "CompanyName", ""
+            VALUE "FileDescription", "MSST"
             VALUE "FileVersion", "1.2.0.1130"
             VALUE "InternalName", "zenoedit.rc"
             VALUE "LegalCopyright", "Copyright (C) 2023"
             VALUE "OriginalFilename", "zenoedit.rc"
-            VALUE "ProductName", "Zeno"
+            VALUE "ProductName", "Msst"
             VALUE "ProductVersion", "1.2.0.1130"
         END
     END

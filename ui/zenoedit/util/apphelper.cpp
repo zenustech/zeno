@@ -102,17 +102,7 @@ void AppHelper::ensureSRCDSTlastKey(INPUT_SOCKETS& inputs, OUTPUT_SOCKETS& outpu
 
 QString AppHelper::nativeWindowTitle(const QString& currentFilePath)
 {
-    QString ver = QString::fromStdString(getZenoVersion());
-    if (currentFilePath.isEmpty())
-    {
-        QString title = QString("Zeno Editor (%1)").arg(ver);
-        return title;
-    }
-    else
-    {
-        QString title = QString::fromUtf8("%1 - Zeno Editor (%2)").arg(currentFilePath).arg(ver);
-        return title;
-    }
+    return "MSST";
 }
 
 void AppHelper::socketEditFinished(QVariant newValue, QPersistentModelIndex nodeIdx, QPersistentModelIndex paramIdx) {
