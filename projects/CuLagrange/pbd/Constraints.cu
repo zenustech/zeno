@@ -411,7 +411,7 @@ struct MakeSurfaceConstraintTopology : INode {
                         vec3 ktps[4] = {};
                         for(int i = 0;i != 4;++i)
                             ktps[i] = kverts.pack(dim_c<3>,"x",inds[i]);
-                        auto ws = compute_barycentric_weights(p,ktps[0],ktps[1],ktps[2],ktps[3]);
+                        auto ws = compute_vertex_tetrahedron_barycentric_weights(p,ktps[0],ktps[1],ktps[2],ktps[3]);
 
                         T epsilon = zs::limits<float>::epsilon();
                         if(ws[0] > epsilon && ws[1] > epsilon && ws[2] > epsilon && ws[3] > epsilon){

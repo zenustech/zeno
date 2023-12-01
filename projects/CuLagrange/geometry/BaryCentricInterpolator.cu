@@ -479,17 +479,8 @@ struct ZSDeformEmbedPrimWithSurfaceMesh : zeno::INode {
 
         auto sampler_name = get_input2<std::string>("sampler_name");
 
-        // if(!dest->hasAuxData(sampler_name)) {
-        //     std::cout << "the dest particles has no specified sampler " << sampler_name << std::endl;
-        //     throw std::runtime_error("the dest particles has no specified sampler");
-        // }
-        auto& dverts = dest->getParticles();
-        // const auto& sampler = (*dest)[sampler_name];
 
-        // if(sampler.size() != dverts.size()) {
-        //     std::cout << "the size of dest particles does not match that of sampler" << std::endl;
-        //     throw std::runtime_error("the size of dest particles does not match that of sampler");
-        // }
+        auto& dverts = dest->getParticles();
 
         auto sampler_binder_id_attr = std::string{sampler_name + "_binder_id"};
         auto sampler_binder_bary_attr = std::string{sampler_name + "_binder_bary"};
@@ -536,6 +527,274 @@ ZENDEFNODE(ZSDeformEmbedPrimWithSurfaceMesh, {{
 {{"dest"},{"source"}},
 {},
 {"ZSGeometry"}});
+
+
+
+struct ZSComputeSurfaceBaryCentricWeights3 : INode {
+    using T = float;
+    using Ti = int;
+    using dtiles_t = zs::TileVector<T,32>;
+
+    void apply() override {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        constexpr auto exec_tag = wrapv<space>{};
+        auto cudaPol = cuda_exec();
+        using bvh_t = typename ZenoParticles::lbvh_t;
+        using bv_t = typename ZenoParticles::lbvh_t::Box;
+
+        auto dest = get_input<ZenoParticles>("dest");
+        auto dp_tag = get_input2<std::string>("dest_pos_attr");
+        auto source = get_input<ZenoParticles>("source");
+        auto sp_tag = get_input2<std::string>("source_pos_attr");
+
+        auto thickness = get_input2<float>("thickness");
+
+        auto sampler_name = get_input2<std::string>("sampler_name");
+        auto& dverts = dest->getParticles();
+
+        const auto& sverts = source->getParticles();
+        const auto& stris = source->getQuadraturePoints();
+
+        auto cloth_group_id = get_input2<std::string>("cloth_group_id");
+
+        dtiles_t svtemp{sverts.get_allocator(),{
+            {"x",3},
+            {"v",3},
+            {"nrm",3}
+        },sverts.size()};
+        TILEVEC_OPS::fill(cudaPol,svtemp,"nrm",(T)0.0);
+
+        cudaPol(zs::range(stris.size()),[
+            exec_tag = exec_tag,
+            stris = stris.begin("inds",dim_c<3>,int_c),
+            svtemp = view<space>(svtemp),
+            svnrmOffset = svtemp.getPropertyOffset("nrm"),
+            sverts = sverts.begin(sp_tag,dim_c<3>)] ZS_LAMBDA(int sti) mutable {
+                auto stri = stris[sti];
+                auto nrm = LSL_GEO::facet_normal(sverts[stri[0]],sverts[stri[1]],sverts[stri[2]]);
+                auto w = LSL_GEO::area(sverts[stri[0]],sverts[stri[1]],sverts[stri[2]]);
+                for(int i = 0;i != 3;++i)
+                    for(int d = 0;d != 3;++d)
+                        atomic_add(exec_tag,&svtemp(svnrmOffset + d,stri[i]),w * nrm[d]);
+        });
+        TILEVEC_OPS::normalized_channel<3>(cudaPol,svtemp,"nrm");
+
+        cudaPol(zs::range(sverts.size()),[
+            svtemp = proxy<space>({},svtemp),
+            sverts = proxy<space>({},sverts),
+            thickness = thickness,
+            sp_tag = zs::SmallString(sp_tag)] ZS_LAMBDA(int svi) mutable {
+                auto sv = sverts.pack(dim_c<3>,sp_tag,svi);
+                auto nrm = svtemp.pack(dim_c<3>,"nrm",svi);
+
+                auto sv_start = sv - thickness * nrm;
+                auto sv_end = sv + thickness * nrm;
+
+                svtemp.tuple(dim_c<3>,"x",svi) = sv_start;
+                svtemp.tuple(dim_c<3>,"v",svi) = sv_end - sv_start;
+        });
+
+        auto stBvh = bvh_t{};
+        auto stbvs = retrieve_bounding_volumes(cudaPol,svtemp,stris,svtemp,wrapv<3>{},(T)1.0,(T)0.0,"x","v");
+        stBvh.build(cudaPol,stbvs);
+
+        // auto bind_closest_tri_only = true;
+        // bind the triangle trace, with toc closest to 0.5
+        // zs::bht<int,2,int> csPT{dverts.get_allocator(),dverts.size() * 5};
+        // csPT.reset(cudaPol,true);
+
+        auto sampler_binder_id_attr = std::string{sampler_name + "_binder_id"};
+        auto sampler_binder_bary_attr = std::string{sampler_name + "_binder_bary"};
+        auto sampler_binder_thickness_attr = std::string(sampler_name + "_binder_thickness");
+        dverts.append_channels(cudaPol,{{sampler_binder_id_attr,1},{sampler_binder_bary_attr,6},{sampler_binder_thickness_attr,1}});
+        TILEVEC_OPS::fill(cudaPol,dverts,sampler_binder_id_attr,zs::reinterpret_bits<float>((int)-1));
+        TILEVEC_OPS::fill(cudaPol,dverts,sampler_binder_thickness_attr,thickness);
+
+        auto distance_ratio = get_input2<float>("distance_ratio");
+
+        cudaPol(zs::range(dverts.size()),[
+            distance_ratio = distance_ratio,
+            sampler_binder_id_attr = zs::SmallString(sampler_binder_id_attr),
+            sampler_binder_bary_attr = zs::SmallString(sampler_binder_bary_attr),
+            dverts = proxy<space>({},dverts),dp_tag = zs::SmallString(dp_tag),
+            sverts = proxy<space>({},sverts),sp_tag = zs::SmallString(sp_tag),
+            svtemp = proxy<space>({},svtemp),
+            stris = proxy<space>({},stris),
+            thickness = thickness,
+            stBvh = proxy<space>(stBvh),
+            cloth_group_id = zs::SmallString(cloth_group_id)] ZS_LAMBDA(int dvi) mutable {
+                auto dp = dverts.pack(dim_c<3>,dp_tag,dvi);
+                auto bv = bv_t{dp,dp};
+                int closest_sti = -1;
+                T closest_toc = std::numeric_limits<T>::max();
+                zs::vec<T,6> closest_bary = {};
+                T min_toc_dist = std::numeric_limits<T>::max();
+
+                auto do_close_proximity_detection = [&](int sti) mutable {
+                    auto stri = stris.pack(dim_c<3>,"inds",sti,int_c);
+                    if(dverts.hasProperty(cloth_group_id) && sverts.hasProperty(cloth_group_id)) {
+                        for(int i = 0;i != 3;++i)
+                            if(zs::abs(dverts(cloth_group_id,dvi) - sverts(cloth_group_id,stri[i])) > 0.5)
+                                return;
+                    }
+
+                    zs::vec<T,3> as[3] = {};
+                    zs::vec<T,3> bs[3] = {};
+                    for(int i = 0;i != 3;++i) {
+                        as[i] = svtemp.pack(dim_c<3>,"x",stri[i]);
+                        bs[i] = svtemp.pack(dim_c<3>,"v",stri[i]) + as[i];
+                    }
+
+                    zs::vec<T,6> prism_bary{};
+                    T toc{};
+                    if(!compute_vertex_prism_barycentric_weights(dp,as[0],as[1],as[2],bs[0],bs[1],bs[2],toc,prism_bary,distance_ratio))
+                        return;
+
+                    auto toc_dist = zs::abs(toc - (T)0.5);
+                    if(toc_dist < min_toc_dist) {
+                        min_toc_dist = toc_dist;
+                        closest_toc = toc;
+                        closest_bary = prism_bary;
+                        closest_sti = sti;
+                    }
+                };
+                stBvh.iter_neighbors(bv,do_close_proximity_detection);
+                if(closest_sti >= 0) {
+                    dverts(sampler_binder_id_attr,dvi) = zs::reinterpret_bits<float>(closest_sti);
+                    dverts.tuple(dim_c<6>,sampler_binder_bary_attr,dvi) = closest_bary;
+                }
+        });
+
+        set_output("dest",get_input("dest"));
+        set_output("source",get_input("source"));
+    }
+};
+
+
+ZENDEFNODE(ZSComputeSurfaceBaryCentricWeights3, {{
+        {"dest"},{"string","dest_pos_attr","x"},
+        {"source"},{"string","source_pos_attr","x"},
+        {"string","sampler_name","sampler_name"},
+        {"float","thickness","0.1"},
+        {"string","cloth_group_id","clothID"},
+        {"float","distance_ratio","0.1"}
+    },
+    {{"dest"},{"source"}},
+    {},
+{"ZSGeometry"}});
+
+
+struct ZSDeformEmbedPrimWithSurfaceMesh3 : zeno::INode {
+    using T = float;
+    using Ti = int;
+    using dtiles_t = zs::TileVector<T,32>;
+
+    virtual void apply() override {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        constexpr auto exec_tag = wrapv<space>{};
+        auto cudaPol = cuda_exec();       
+        
+        auto dest = get_input<ZenoParticles>("dest");
+        auto dp_tag = get_input2<std::string>("dest_pos_attr");
+        auto source = get_input<ZenoParticles>("source");
+        auto sp_tag = get_input2<std::string>("source_pos_attr");
+
+        auto sampler_name = get_input2<std::string>("sampler_name");
+
+        auto& dverts = dest->getParticles();
+
+        auto sampler_binder_id_attr = std::string{sampler_name + "_binder_id"};
+        auto sampler_binder_bary_attr = std::string{sampler_name + "_binder_bary"};
+        auto thickness = get_input2<float>("thickness");
+
+        auto& sverts = source->getParticles();
+        const auto& stris = source->getQuadraturePoints();
+
+        dtiles_t svtemp{sverts.get_allocator(),{
+            {"x",3},
+            {"v",3},
+            {"nrm",3}
+        },sverts.size()};
+        TILEVEC_OPS::fill(cudaPol,svtemp,"nrm",(T)0.0);
+
+        cudaPol(zs::range(stris.size()),[
+            exec_tag = exec_tag,
+            stris = stris.begin("inds",dim_c<3>,int_c),
+            svtemp = view<space>(svtemp),
+            svnrmOffset = svtemp.getPropertyOffset("nrm"),
+            sverts = sverts.begin(sp_tag,dim_c<3>)] ZS_LAMBDA(int sti) mutable {
+                auto stri = stris[sti];
+                auto nrm = LSL_GEO::facet_normal(sverts[stri[0]],sverts[stri[1]],sverts[stri[2]]);
+                auto w = LSL_GEO::area(sverts[stri[0]],sverts[stri[1]],sverts[stri[2]]);
+                for(int i = 0;i != 3;++i)
+                    for(int d = 0;d != 3;++d)
+                        atomic_add(exec_tag,&svtemp(svnrmOffset + d,stri[i]),w * nrm[d]);
+        });
+        TILEVEC_OPS::normalized_channel<3>(cudaPol,svtemp,"nrm");
+
+        cudaPol(zs::range(svtemp.size()),[
+            svtemp = proxy<space>({},svtemp),
+            sverts = proxy<space>({},sverts),
+            thickness = thickness,
+            sp_tag = zs::SmallString(sp_tag)] ZS_LAMBDA(int svi) mutable {
+                auto sv = sverts.pack(dim_c<3>,sp_tag,svi);
+                auto nrm = svtemp.pack(dim_c<3>,"nrm",svi);
+
+                auto sv_start = sv - thickness * nrm;
+                auto sv_end = sv + thickness * nrm;
+
+                svtemp.tuple(dim_c<3>,"x",svi) = sv_start;
+                svtemp.tuple(dim_c<3>,"v",svi) = sv_end - sv_start;
+        });
+
+
+        cudaPol(zs::range(dverts.size()),[
+            dverts = proxy<space>({},dverts),dp_tag = zs::SmallString(dp_tag),
+            sverts = proxy<space>({},sverts),sp_tag = zs::SmallString(sp_tag),
+            stris = proxy<space>({},stris),
+            svtemp = proxy<space>({},svtemp),
+            sampler_binder_id_attr = zs::SmallString(sampler_binder_id_attr),
+            sampler_binder_bary_attr = zs::SmallString(sampler_binder_bary_attr)] ZS_LAMBDA(int dvi) mutable {
+                auto sti = zs::reinterpret_bits<int>(dverts(sampler_binder_id_attr,dvi));
+                if(sti < 0) {
+                    // printf("stop doing the interpolation for the unbinded\n");
+                    return;
+                }
+
+                
+                auto stri = stris.pack(dim_c<3>,"inds",sti,int_c);
+
+                zs::vec<T,3> tvs[6] = {};
+                for(int i = 0;i != 3;++i) {
+                    tvs[i] = svtemp.pack(dim_c<3>,"x",stri[i]);
+                    tvs[i + 3] = svtemp.pack(dim_c<3>,"v",stri[i]) + tvs[i];
+                }
+                auto bary = dverts.pack(dim_c<6>,sampler_binder_bary_attr,dvi);
+
+                auto blend_pos = zs::vec<T,3>::zeros();
+                for(int i = 0;i != 6;++i)
+                    blend_pos += bary[i] * tvs[i];
+
+                dverts.tuple(dim_c<3>,dp_tag,dvi) = blend_pos;
+        });
+
+        set_output("dest",get_input("dest"));
+        set_output("source",get_input("source"));
+    }
+}; 
+
+ZENDEFNODE(ZSDeformEmbedPrimWithSurfaceMesh3, {{
+    {"dest"},{"string","dest_pos_attr","x"},
+    {"source"},{"string","source_pos_attr","x"},
+    {"string","sampler_name","sampler_name"},
+    {"float","thickness","0.1"}
+},
+{{"dest"},{"source"}},
+{},
+{"ZSGeometry"}});
+
 
 struct ZSSample : zeno::INode {
     virtual void apply() override {
