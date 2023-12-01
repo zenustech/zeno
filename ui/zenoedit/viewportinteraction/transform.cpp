@@ -74,6 +74,7 @@ void FakeTransformer::addObject(const std::string& name) {
         user_data.setLiterial("_rotate", rotate);
         zeno::vec3f scale = {1, 1, 1};
         user_data.setLiterial("_scale", scale);
+        user_data.set2("_pivot", "bboxCenter");
     }
     auto m = zeno::vec_to_other<glm::vec3>(bmax);
     auto n = zeno::vec_to_other<glm::vec3>(bmin);
@@ -675,7 +676,7 @@ void FakeTransformer::doTransform() {
         auto scale = zeno::vec_to_other<glm::vec3>(user_data.getLiterial<zeno::vec3f>("_scale"));
 
         // inv last transform
-        auto pre_translate_matrix = glm::translate(translate + m_last_trans);
+        auto pre_translate_matrix = glm::translate(translate + m_last_trans - m_pivot);
         auto pre_quaternion = glm::quat(rotate[3], rotate[0], rotate[1], rotate[2]);
         auto last_quaternion = glm::quat(m_last_rotate[3], m_last_rotate[0], m_last_rotate[1], m_last_rotate[2]);
         auto pre_rotate_matrix = glm::toMat4(pre_quaternion);
@@ -684,7 +685,7 @@ void FakeTransformer::doTransform() {
         auto inv_pre_transform = glm::inverse(pre_transform_matrix);
 
         // do this transform
-        auto translate_matrix = glm::translate(translate + m_trans);
+        auto translate_matrix = glm::translate(translate + m_trans - m_pivot);
         auto cur_quaternion = glm::quat(m_rotate[3], m_rotate[0], m_rotate[1], m_rotate[2]);
         auto rotate_matrix = glm::toMat4(cur_quaternion) * pre_rotate_matrix;
         auto scale_matrix = glm::scale(scale * m_scale);

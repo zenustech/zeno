@@ -309,6 +309,7 @@ struct PrimitiveTransform : zeno::INode {
         vec4f rotate = {myQuat.x, myQuat.y, myQuat.z, myQuat.w};
         user_data.setLiterial("_rotate", rotate);
         user_data.setLiterial("_scale", scaling);
+        user_data.set2("_pivot", pivotType);
         //auto oMat = std::make_shared<MatrixObject>();
         //oMat->m = matrix;
         set_output("outPrim", std::move(outprim));
@@ -318,7 +319,7 @@ struct PrimitiveTransform : zeno::INode {
 ZENDEFNODE(PrimitiveTransform, {
     {
         {"PrimitiveObject", "prim"},
-        {"enum world bboxCenter", "pivot", "world"},
+        {"enum world bboxCenter", "pivot", "bboxCenter"},
         {"vec3f", "translation", "0,0,0"},
         {"vec3f", "eulerXYZ", "0,0,0"},
         {"vec4f", "quatRotation", "0,0,0,1"},
