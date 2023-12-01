@@ -875,14 +875,16 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
         pToolLayout->addWidget(m_wire_frame);
         pToolLayout->addWidget(m_smooth_shading);
         pToolLayout->addWidget(m_normal_check);
+        m_uv_mode = new QCheckBox(tr("UV"));
+        m_uv_mode->setStyleSheet("color: white;");
+        pToolLayout->addWidget(m_uv_mode);
     }
-    {
+    else {
         m_background = new QCheckBox(tr("Background"));
         m_background->setStyleSheet("color: white;");
         auto& ud = zeno::getSession().userData();
         m_background->setChecked(ud.get2<bool>("optix_show_background", false));
-        if (!m_bGLView)
-            pToolLayout->addWidget(m_background);
+        pToolLayout->addWidget(m_background);
     }
 
     pToolLayout->addWidget(new ZLineWidget(false, QColor("#121416")));
@@ -914,6 +916,13 @@ void DockContent_View::initConnections()
     connect(m_scaleBtn, &ZToolBarButton::clicked, this, [=]() {
         m_pDisplay->changeTransformOperation(2);
     });
+
+    if (m_uv_mode) {
+        connect(m_uv_mode, &QCheckBox::stateChanged, this, [=](int state) {
+            bool bChecked = (state == Qt::Checked);
+            m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_UV_MODE, bChecked);
+        });
+    }
 
     connect(m_smooth_shading, &ZToolBarButton::toggled, this, [=](bool bToggled) {
         m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_SMOOTH_SHADING, bToggled);
