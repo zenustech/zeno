@@ -366,5 +366,7 @@
     <file>icons/RunKill_on.svg</file>
 	<file>icons/always_checkbox.svg</file>
 	<file>icons/always_checkbox_on.svg</file>
+    <file>icons/msstlogo.png</file>
+    <file>icons/MSST_main.svg</file>
 </qresource>
 </RCC>

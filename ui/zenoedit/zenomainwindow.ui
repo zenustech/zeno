@@ -96,12 +96,6 @@
     <addaction name="menuCustom_Layout"/>
     <addaction name="actionLayout_Manager"/>
    </widget>
-   <widget class="QMenu" name="menuHelp">
-    <property name="title">
-     <string>Help</string>
-    </property>
-    <addaction name="actionCheck_Update"/>
-   </widget>
    <widget class="QMenu" name="menuOption">
     <property name="title">
      <string>Option</string>
@@ -117,7 +111,6 @@
    <addaction name="menuView"/>
    <addaction name="menuWindow"/>
    <addaction name="menuOption"/>
-   <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusbar">
    <property name="styleSheet">

@@ -29,6 +29,25 @@ ZenoWelcomePage::ZenoWelcomePage(QWidget* parent)
     m_ui->lblStart->setProperty("cssClass", "welcomepage");
     m_ui->lblRecentFiles->setProperty("cssClass", "welcomepage");
 
+    m_ui->lblMainLogo->clear();
+    m_ui->lblMainLogo->setFixedSize(QSize(480, 300));
+    //m_ui->lblMainLogo->setPixmap(img);
+
+    QPixmap img;
+    img.load(":/icons/msstlogo.png");
+
+    int w = m_ui->lblMainLogo->width();
+    int h = m_ui->lblMainLogo->height();
+
+    m_ui->lblMainLogo->setPixmap(img.scaled(w, h, Qt::KeepAspectRatio));
+
+    //img.scaled(QSize(480, 300));
+
+    
+    //m_ui->lblLogoIcon->load(QString(":/icons/MSST_main.svg"));
+
+    //m_ui->lblMSST->setFixedSize(QSize(ZenoStyle::dpiScaled(60), ZenoStyle::dpiScaled(60)));
+
     QSize size(ZenoStyle::dpiScaled(20), ZenoStyle::dpiScaled(20));
 
     QMargins margin(ZenoStyle::dpiScaled(10), ZenoStyle::dpiScaled(7), ZenoStyle::dpiScaled(10), ZenoStyle::dpiScaled(7));
