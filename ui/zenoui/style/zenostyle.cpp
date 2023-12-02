@@ -533,14 +533,6 @@ void ZenoStyle::drawZenoToolButton(const ZStyleOptionToolButton* option, QPainte
             //todo
         }
     }
-
-    //draw border
-    if (option->borderColor.isValid())
-    {
-        painter->setPen(option->borderColor);
-        QRect rect = option->rect.adjusted(0, 0, -1, -1);
-        painter->drawRoundedRect(rect, option->bgRadius, option->bgRadius);
-    }
 }
 
 void ZenoStyle::drawComplexControl(ComplexControl control, const QStyleOptionComplex* option, QPainter* painter, const QWidget* widget) const

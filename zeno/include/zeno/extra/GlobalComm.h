@@ -34,6 +34,7 @@ struct GlobalComm {
     int endFrameNumber = 0;
     int maxCachedFrames = 1;
     std::string cacheFramePath;
+    std::string objTmpCachePath;
 
     ZENO_API void frameCache(std::string const &path, int gcmax);
     ZENO_API void initFrameRange(int beg, int end);
@@ -59,7 +60,8 @@ struct GlobalComm {
     ZENO_API std::string cachePath();
     ZENO_API bool removeCache(int frame);
     ZENO_API void removeCachePath();
-
+    static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, bool cacheLightCameraOnly, bool cacheMaterialOnly, std::string fileName = "");
+    static bool fromDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::string fileName = "");
 private:
     ViewObjects const *_getViewObjects(const int frameid);
 };

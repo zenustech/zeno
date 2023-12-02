@@ -1339,9 +1339,12 @@ void ZenoMainWindow::closeEvent(QCloseEvent *event)
     killOptix();
 
     QSettings settings(zsCompanyName, zsEditor);
-    if (settings.value("zencache-autoclean").isValid() ? settings.value("zencache-autoclean").toBool() : true)
+    bool autoClean = settings.value("zencache-autoclean").isValid() ? settings.value("zencache-autoclean").toBool() : true;
+    bool autoRemove = settings.value("zencache-autoremove").isValid() ? settings.value("zencache-autoremove").toBool() : false;
+    std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
+    mgr->removeObjTmpCacheDir();
+    if (autoClean || autoRemove)
     {
-        std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
         mgr->cleanCacheDir();
     }
 
@@ -1630,6 +1633,14 @@ bool ZenoMainWindow::openFile(QString filePath)
     IGraphsModel* pModel = pGraphs->openZsgFile(filePath);
     if (!pModel)
         return false;
+
+    //cleanup
+    zeno::getSession().globalComm->clearFrameState();
+    auto views = viewports();
+    for (auto view : views)
+    {
+        view->cleanUpScene();
+    }
 
     resetTimeline(pGraphs->timeInfo());
     recordRecentFile(filePath);

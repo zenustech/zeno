@@ -74,6 +74,7 @@ struct StatusComponent
     ImageElement mute;
     ImageElement view;
     ImageElement once;
+    ImageElement cache;
     QRect rc;
     QString id;
 };
@@ -139,8 +140,8 @@ struct NodeUtilParam
     //set left corner of header background as origin, always (0,0).
     BackgroundComponent headerBg;
 
-    QRectF rcMute, rcView, rcPrep;
-    ImageElement mute, view, prep;
+    QRectF rcMute, rcView, rcPrep, rcCache;
+    ImageElement mute, view, prep, cache;
     StatusComponent status;
 
     QRectF rcCollasped;

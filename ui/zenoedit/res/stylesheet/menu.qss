@@ -42,6 +42,10 @@ QMenu[cssClass="menuButton"]::item:selected {
     color: #FFFFFF;
 }
 
+QMenu[cssClass="menuButton"]::item {
+    padding: 2px 28px 2px 5px;
+}
+
 QMenuBar {
     background-color: #191D21;
     spacing: 3px;

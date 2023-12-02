@@ -160,6 +160,7 @@ bool NodeParamModel::getParams(PARAMS_INFO &params)
         paramInfo.control = param->m_ctrl;
         paramInfo.controlProps = param->m_customData[ROLE_VPARAM_CTRL_PROPERTIES];
         paramInfo.toolTip = param->m_customData[ROLE_VPARAM_TOOLTIP].toString();
+        paramInfo.paramPath = param->data(ROLE_OBJPATH).toString();
         params.insert(name, paramInfo);
     }
     return true;

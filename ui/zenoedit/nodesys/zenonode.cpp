@@ -1500,6 +1500,7 @@ void ZenoNode::onZoomed()
     }
     if (m_bodyWidget)
         m_bodyWidget->setBorder(ZenoStyle::scaleWidth(2), QColor(18, 20, 22));
+    m_dirtyMarker->resize(m_dirtyMarker->rect().width(), ZenoStyle::scaleWidth(3));
 }
 
 void ZenoNode::setGroupNode(GroupNode *pNode) 
@@ -1879,6 +1880,17 @@ void ZenoNode::onOptionsBtnToggled(STATUS_BTN btn, bool toggled)
 		{
 			options ^= OPT_VIEW;
 		}
+    }
+    else if (btn == STATUS_CACHE)
+    {
+        if (toggled)
+        {
+            options |= OPT_CACHE;
+        }
+        else
+        {
+            options ^= OPT_CACHE;
+        }
     }
 
     STATUS_UPDATE_INFO info;

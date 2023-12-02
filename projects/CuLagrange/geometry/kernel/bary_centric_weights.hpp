@@ -7,10 +7,9 @@
 #include <iostream>
 
 #include "geo_math.hpp"
+#include "..\fem\Ccds.hpp"
 
 namespace zeno {
-
-
 
     template <typename TileVecT, int codim = 3>
     zs::Vector<zs::AABBBox<3, typename TileVecT::value_type>>
@@ -79,8 +78,39 @@ namespace zeno {
             return 0;
     }    
 
+
     template<typename T>
-    constexpr zs::vec<T,4> compute_barycentric_weights(const zs::vec<T,3>& p,
+    constexpr zs::vec<T,3> compute_vertex_triangle_barycentric_weights(const zs::vec<T,3>& p,
+        const zs::vec<T,3>& t0,
+        const zs::vec<T,3>& t1,
+        const zs::vec<T,3>& t2) {
+            constexpr auto eps = 1e-6;
+            const auto& v1 = t0;
+            const auto& v2 = t1;
+            const auto& v3 = t2;
+            const auto& v4 = p;
+
+            auto x13 = v1 - v3;
+            auto x23 = v2 - v3;
+            auto x43 = v4 - v3;
+            auto A00 = x13.dot(x13);
+            auto A01 = x13.dot(x23);
+            auto A11 = x23.dot(x23);
+            auto b0 = x13.dot(x43);
+            auto b1 = x23.dot(x43);
+            auto detA = A00 * A11 - A01 * A01;
+
+            zs::vec<T,3> bary{};
+
+            bary[0] = ( A11 * b0 - A01 * b1) / detA;
+            bary[1] = (-A01 * b0 + A00 * b1) / detA;
+            bary[2] = 1 - bary[0] - bary[1];
+
+            return bary;
+    }
+
+    template<typename T>
+    constexpr zs::vec<T,4> compute_vertex_tetrahedron_barycentric_weights(const zs::vec<T,3>& p,
         const zs::vec<T,3>& p0,
         const zs::vec<T,3>& p1,
         const zs::vec<T,3>& p2,
@@ -100,6 +130,44 @@ namespace zeno {
         auto vol3 = LSL_GEO::volume<T>(p0,p1,p2,p);
         #endif
         return zs::vec<T,4>{vol0/vol,vol1/vol,vol2/vol,vol3/vol};
+    }
+
+    template<typename T>
+    constexpr bool compute_vertex_prism_barycentric_weights(const zs::vec<T,3>& p,
+        const zs::vec<T,3>& a0,
+        const zs::vec<T,3>& a1,
+        const zs::vec<T,3>& a2,
+        const zs::vec<T,3>& b0,
+        const zs::vec<T,3>& b1,
+        const zs::vec<T,3>& b2,
+        T& toc,
+        zs::vec<T,6>& bary,
+        const T& eta = (T)0.1) {
+
+        auto v0 = b0 - a0;
+        auto v1 = b1 - a1;
+        auto v2 = b2 - a2;
+
+        toc = (T)1.0;
+        auto is_intersected = accd::ptccd(p,a0,a1,a2,zs::vec<T,3>::zeros(),v0,v1,v2,(T)0.01,(T)0,toc);
+        if(!is_intersected)
+            return is_intersected;
+
+        auto c0 = a0 + toc * v0;
+        auto c1 = a1 + toc * v1;
+        auto c2 = a2 + toc * v2;
+
+        auto intersected_bary = compute_vertex_triangle_barycentric_weights(p,c0,c1,c2);
+        
+        for(int i = 0;i != 3;++i) {
+            bary[i] = (1 - toc) * intersected_bary[i];
+            bary[i + 3] = toc * intersected_bary[i];
+        }
+
+        printf("find a vertex enclose by prism with tri_bary :  %f %f %f and toc : %f\n",
+            (float)intersected_bary[0],(float)intersected_bary[1],(float)intersected_bary[2],(float)toc);
+
+        return is_intersected;
     }
 
     template <typename Pol,typename VTileVec,typename ETileVec,typename EmbedTileVec,typename BCWTileVec>
@@ -189,7 +257,7 @@ namespace zeno {
                     auto p2 = verts.template pack<3>(x_tag,inds[2]);
                     auto p3 = verts.template pack<3>(x_tag,inds[3]);
 
-                    auto ws = compute_barycentric_weights(p,p0,p1,p2,p3);
+                    auto ws = compute_vertex_tetrahedron_barycentric_weights(p,p0,p1,p2,p3);
 
                     T epsilon = zs::limits<T>::epsilon();
                     if(ws[0] > epsilon && ws[1] > epsilon && ws[2] > epsilon && ws[3] > epsilon){

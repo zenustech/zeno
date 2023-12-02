@@ -194,7 +194,6 @@ void ZToolButton::initStyleOption(ZStyleOptionToolButton* option) const
     if (isHovered())
     {
         option->state |= QStyle::State_MouseOver;
-        option->borderColor = m_clrBorder;
     }
 
     option->state |= QStyle::State_AutoRaise;
@@ -347,11 +346,6 @@ void ZToolButton::initAnimation() {
 
 void ZToolButton::setArrowOption(int arrOpt ) {
     m_arrowOption = arrOpt;
-}
-
-void ZToolButton::setBorderColor(const QColor& clr)
-{
-    m_clrBorder = clr;
 }
 
 void ZToolButton::setIconSize(const QSize& size)

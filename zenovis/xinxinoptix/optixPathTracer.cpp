@@ -306,8 +306,9 @@ static std::vector<uint16_t> g_lightMark = //TRIANGLE_COUNT
 };
 
 struct LightsWrapper {
-    std::vector<Vertex> g_lightPlanes;
-    std::vector<Vertex> g_lightSpheres;
+    std::vector<Vertex> _planeLightGeo;
+    std::vector<Vertex> _sphereLightGeo;
+    std::vector<float3> _triangleLightGeo;
     std::vector<GenericLight> g_lights;
 
     OptixTraversableHandle   lightPlanesGas{};
@@ -316,9 +317,15 @@ struct LightsWrapper {
     OptixTraversableHandle  lightSpheresGas{};
     raii<CUdeviceptr> lightSpheresGasBuffer{};
 
+    OptixTraversableHandle  lightTrianglesGas{};
+    raii<CUdeviceptr> lightTrianglesGasBuffer{};
+
     raii<CUdeviceptr> lightBitTrailsPtr;
     raii<CUdeviceptr> lightTreeNodesPtr;
     raii<CUdeviceptr> lightTreeDummyPtr;
+
+    raii<CUdeviceptr> triangleLightCoords;
+    raii<CUdeviceptr> triangleLightNormals;
 
     void reset() { *this = {}; }
 
@@ -987,6 +994,24 @@ void buildRootIAS()
         }
 
         //process light
+        if (lightsWrapper.lightTrianglesGas != 0)
+        {
+            ++optix_instance_idx;
+            OptixInstance opinstance {};
+
+            auto combinedID = std::string("Light") + ":" + std::to_string(ShaderMaker::Mesh);
+            auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
+
+            opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
+            opinstance.instanceId = OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID-2;
+            opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
+            opinstance.visibilityMask = LightMatMask;
+            opinstance.traversableHandle = lightsWrapper.lightTrianglesGas;
+            memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
+
+            optix_instances.push_back( opinstance );
+        }
+
         if (lightsWrapper.lightPlanesGas != 0)
         {
             ++optix_instance_idx;
@@ -1821,34 +1846,48 @@ void UpdateMeshGasAndIas(bool staticNeedUpdate)
 //#endif
 }
 
-struct LightDat{
-    std::vector<float> v0;
-    std::vector<float> v1;
-    std::vector<float> v2;
-    std::vector<float> normal;
-    std::vector<float> emission;
-    bool visible, doubleside;
-    uint8_t shape, type;
-
-    std::string profileKey;
-};
 static std::map<std::string, LightDat> lightdats;
+static std::vector<float2>  triangleLightCoords;
+static std::vector<float3>  triangleLightNormals;
 
 void unload_light(){
     lightdats.clear();
+    triangleLightCoords.clear();
+    triangleLightNormals.clear();
 }
 
-void load_light(std::string const &key, float const*v0,float const*v1,float const*v2, float const*nor,float const*emi, bool visible, bool doubleside, int shape, int type, std::string& profileKey){
-    LightDat ld;
+void load_triangle_light(std::string const &key, LightDat& ld,
+                        const zeno::vec3f &v0,  const zeno::vec3f &v1,  const zeno::vec3f &v2, 
+                        const zeno::vec3f *pn0, const zeno::vec3f *pn1, const zeno::vec3f *pn2,
+                        const zeno::vec3f *uv0, const zeno::vec3f *uv1, const zeno::vec3f *uv2) {
+
+    ld.v0.assign(v0.begin(), v0.end());
+    ld.v1.assign(v1.begin(), v1.end());
+    ld.v2.assign(v2.begin(), v2.end());
+
+    if (pn0 != nullptr && pn1 != nullptr, pn2 != nullptr) {
+        ld.normalBufferOffset = triangleLightNormals.size();
+        triangleLightNormals.push_back(*(float3*)pn0);
+        triangleLightNormals.push_back(*(float3*)pn1);
+        triangleLightNormals.push_back(*(float3*)pn2);
+    }
+
+    if (uv0 != nullptr && uv1 != nullptr && uv2 != nullptr) {
+        ld.coordsBufferOffset = triangleLightCoords.size();
+        triangleLightCoords.push_back(*(float2*)uv0);
+        triangleLightCoords.push_back(*(float2*)uv1);
+        triangleLightCoords.push_back(*(float2*)uv2);
+    }
+
+    lightdats[key] = ld;
+}
+
+void load_light(std::string const &key, LightDat& ld, float const*v0, float const*v1, float const*v2) {
+
     ld.v0.assign(v0, v0 + 3);
     ld.v1.assign(v1, v1 + 3);
     ld.v2.assign(v2, v2 + 3);
-    ld.normal.assign(nor, nor + 3);
-    ld.emission.assign(emi, emi + 3);
-    ld.visible = visible; ld.doubleside = doubleside;
-    ld.shape = shape; ld.type = type;
-    ld.profileKey = profileKey;
-    //zeno::log_info("light clr after read: {} {} {}", ld.emission[0],ld.emission[1],ld.emission[2]);
+    
     lightdats[key] = ld;
 }
 void update_hdr_sky(float sky_rot, zeno::vec3f sky_rot3d, float sky_strength) {
@@ -1898,26 +1937,30 @@ void update_procedural_sky(
     state.params.elapsedTime = timeStart + timeSpeed * frameid;
 }
 
-static void addLightMesh(float3 corner, float3 v2, float3 v1, float3 normal, float3 emission)
+static void addTriangleLightGeo(float3 p0, float3 p1, float3 p2) {
+    auto& geo = lightsWrapper._triangleLightGeo;
+    geo.push_back(p0); geo.push_back(p1); geo.push_back(p2);
+}
+
+static void addLightPlane(float3 p0, float3 v1, float3 v2, float3 normal, float3 emission)
 {
-    float3 lc = corner;
-    float3 vert0 = lc, vert1 = lc + v1, vert2 = lc + v2, vert3 = lc + v1 + v2;
+    float3 vert0 = p0, vert1 = p0 + v1, vert2 = p0 + v2, vert3 = p0 + v1 + v2;
 
-    auto& g_lightMesh = lightsWrapper.g_lightPlanes;
+    auto& geo = lightsWrapper._planeLightGeo;
 
-    g_lightMesh.push_back(make_float4(vert0.x, vert0.y, vert0.z, 0.f));
-    g_lightMesh.push_back(make_float4(vert1.x, vert1.y, vert1.z, 0.f));
-    g_lightMesh.push_back(make_float4(vert2.x, vert2.y, vert2.z, 0.f));
-
-    g_lightMesh.push_back(make_float4(vert3.x, vert3.y, vert3.z, 0.f));
-    g_lightMesh.push_back(make_float4(vert2.x, vert2.y, vert2.z, 0.f));
-    g_lightMesh.push_back(make_float4(vert1.x, vert1.y, vert1.z, 0.f));
+    geo.push_back(make_float4(vert0.x, vert0.y, vert0.z, 0.f));
+    geo.push_back(make_float4(vert1.x, vert1.y, vert1.z, 0.f));
+    geo.push_back(make_float4(vert3.x, vert3.y, vert3.z, 0.f));
+   
+    geo.push_back(make_float4(vert0.x, vert0.y, vert0.z, 0.f));
+    geo.push_back(make_float4(vert3.x, vert3.y, vert3.z, 0.f));
+    geo.push_back(make_float4(vert2.x, vert2.y, vert2.z, 0.f));
 }
 
 static void addLightSphere(float3 center, float radius) 
 {
     Vertex vt {center.x, center.y, center.z, radius};
-    lightsWrapper.g_lightSpheres.push_back(vt);
+    lightsWrapper._sphereLightGeo.push_back(vt);
 }
 
 static int uniformBufferInitialized = false;
@@ -2021,40 +2064,104 @@ static void buildLightSpheresGAS( PathTracerState& state, std::vector<Vertex>& l
     buildXAS(state.context, accel_options, sphere_input, bufferGas, handleGas);
 }
 
+static void buildLightTrianglesGAS( PathTracerState& state, std::vector<float3>& lightMesh, raii<CUdeviceptr>& bufferGas, OptixTraversableHandle& handleGas)
+{
+    if (lightMesh.empty()) {
+        handleGas = 0;
+        bufferGas.reset();
+        return;
+    }
+
+    const size_t vertices_size_in_bytes = lightMesh.size() * sizeof( float3 );
+
+    raii<CUdeviceptr> d_lightMesh;
+    
+    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_lightMesh ), vertices_size_in_bytes ) );
+    CUDA_CHECK( cudaMemcpy(
+                reinterpret_cast<void*>( (CUdeviceptr&)d_lightMesh ),
+                lightMesh.data(), vertices_size_in_bytes,
+                cudaMemcpyHostToDevice 
+                ) );
+
+    std::vector<uint32_t> triangle_input_flags(1, OPTIX_GEOMETRY_FLAG_REQUIRE_SINGLE_ANYHIT_CALL);
+
+    OptixBuildInput triangle_input                           = {};
+    triangle_input.type                                      = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
+    triangle_input.triangleArray.vertexFormat                = OPTIX_VERTEX_FORMAT_FLOAT3;
+    triangle_input.triangleArray.vertexStrideInBytes         = sizeof( float3 );
+    triangle_input.triangleArray.numVertices                 = static_cast<uint32_t>( lightMesh.size() );
+    triangle_input.triangleArray.vertexBuffers               = lightMesh.empty() ? nullptr : &d_lightMesh;
+    triangle_input.triangleArray.flags                       = triangle_input_flags.data();
+    triangle_input.triangleArray.numSbtRecords               = 1;
+    triangle_input.triangleArray.sbtIndexOffsetBuffer        = 0;
+    // triangle_input.triangleArray.sbtIndexOffsetSizeInBytes   = sizeof( uint32_t );
+    // triangle_input.triangleArray.sbtIndexOffsetStrideInBytes = sizeof( uint32_t );
+
+    OptixAccelBuildOptions accel_options {};
+    accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
+    accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
+    
+    buildXAS(state.context, accel_options, triangle_input, bufferGas, handleGas);
+}
+
 void buildLightTree() {
     camera_changed = true;
     state.lightsbuf_p.reset();
 
     state.params.lightTreeSampler = 0llu;
+    state.params.triangleLightCoordsBuffer = 0llu;
+    state.params.triangleLightNormalBuffer = 0llu;
+    
     state.params.firstRectLightIdx = UINT_MAX;
     state.params.firstSphereLightIdx = UINT_MAX;
-    
+    state.params.firstTriangleLightIdx = UINT_MAX;
+
     state.params.lights = 0llu;
     state.params.num_lights = 0u;
 
     lightsWrapper.reset();
 
-    std::vector<LightDat> sortedLights; 
+    std::vector<LightDat*> sortedLights; 
     sortedLights.reserve(lightdats.size());
 
-    for(const auto& [_, dat] : lightdats) { 
-        sortedLights.push_back(dat);
+    for(const auto& [_, dat] : lightdats) {
+        auto ldp = (LightDat*)&dat;
+        sortedLights.push_back(std::move(ldp));
     }
 
     std::sort(sortedLights.begin(), sortedLights.end(), 
         [](const auto& a, const auto& b) {
-            return a.shape < b.shape;
+            return a->shape < b->shape;
         });
+
+    {
+        auto byte_size = triangleLightNormals.size() * sizeof(float3);
+
+        CUDA_CHECK( cudaMalloc(reinterpret_cast<void**>( &lightsWrapper.triangleLightNormals.reset() ), byte_size) );
+        CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr)lightsWrapper.triangleLightNormals ),
+                                triangleLightNormals.data(), byte_size, cudaMemcpyHostToDevice) );
+        state.params.triangleLightNormalBuffer = lightsWrapper.triangleLightNormals.handle;
+    }
+
+    {
+        auto byte_size = triangleLightCoords.size() * sizeof(float2);
+
+        CUDA_CHECK( cudaMalloc(reinterpret_cast<void**>( &lightsWrapper.triangleLightCoords.reset() ), byte_size) );
+        CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr)lightsWrapper.triangleLightCoords ),
+                                triangleLightCoords.data(), byte_size, cudaMemcpyHostToDevice) );
+        state.params.triangleLightCoordsBuffer = lightsWrapper.triangleLightCoords.handle;
+    }
 
     uint32_t idx = 0u;
 
     uint32_t firstRectLightIdx = UINT_MAX;
     uint32_t firstSphereLightIdx = UINT_MAX;
+    uint32_t firstTriangleLightIdx = UINT_MAX;
 
     for(uint32_t idx=0u; idx<sortedLights.size(); ++idx) {
 
-        auto& dat = sortedLights.at(idx);
-        auto &light = lightsWrapper.g_lights.emplace_back();
+        auto& dat = *sortedLights.at(idx);
+        auto& light = lightsWrapper.g_lights.emplace_back();
 
         uint8_t config = zeno::LightConfigNull; 
         config |= dat.visible? zeno::LightConfigVisible: zeno::LightConfigNull; 
@@ -2064,6 +2171,15 @@ void buildLightTree() {
         light.emission.x = fmaxf(dat.emission.at(0), FLT_EPSILON);
         light.emission.y = fmaxf(dat.emission.at(1), FLT_EPSILON);
         light.emission.z = fmaxf(dat.emission.at(2), FLT_EPSILON);
+
+        light.spread = clamp(dat.spread, 0.0f, 1.0f);
+        auto void_angle = 0.5f * (1.0f - light.spread) * M_PIf;
+        light.spreadNormalize = 2.f / (2.f + (2.f * void_angle - M_PIf) * tanf(void_angle));
+
+        light.intensity  = dat.intensity;
+        light.vIntensity = dat.vIntensity;
+        light.maxDistance = dat.maxDistance <= 0.0? FLT_MAX:dat.maxDistance;
+        light.falloffExponent = dat.falloffExponent;
         
         float3& v0 = *(float3*)dat.v0.data();
         float3& v1 = *(float3*)dat.v1.data();
@@ -2075,27 +2191,36 @@ void buildLightTree() {
         light.B = normalize(v2);
 
         const auto center = v0 + v1 * 0.5f + v2 * 0.5f;
+        const auto radius = fminf(length(v1), length(v2)) * 0.5f;
 
         light.type  = magic_enum::enum_cast<zeno::LightType>(dat.type).value_or(zeno::LightType::Diffuse);
         light.shape = magic_enum::enum_cast<zeno::LightShape>(dat.shape).value_or(zeno::LightShape::Plane);
+
+        if (light.spread < 0.005f) {
+            light.type = zeno::LightType::Direction;
+        }
 
         if (light.shape == zeno::LightShape::Plane) {
 
             firstRectLightIdx = min(idx, firstRectLightIdx);
 
             light.setRectData(v0, v1, v2, light.N);
-            addLightMesh(v0, v2, v1, light.N, light.emission);
+            addLightPlane(v0, v1, v2, light.N, light.emission);
 
         } else if (light.shape == zeno::LightShape::Sphere) {
 
             firstSphereLightIdx = min(idx, firstSphereLightIdx);
 
-            auto radius = fminf(length(v1), length(v2)) * 0.5f;
             light.setSphereData(center, radius);       
             addLightSphere(center, radius);
 
         } else if (light.shape == zeno::LightShape::Point) {
             light.point = {center};
+        } else if (light.shape == zeno::LightShape::TriangleMesh) {
+
+            firstTriangleLightIdx = min(idx, firstTriangleLightIdx);
+            light.setTriangleData(v0, v1, v2, light.N, dat.coordsBufferOffset, dat.normalBufferOffset);
+            addTriangleLightGeo(v0, v1, v2);
         }
 
         if ( OptixUtil::g_ies.count(dat.profileKey) > 0 ) {
@@ -2104,13 +2229,14 @@ void buildLightTree() {
             light.ies = val.ptr.handle;
             light.type = zeno::LightType::IES;
             //light.shape = zeno::LightShape::Point;
-            auto radius = length(v1 + v2) * 0.5f;
             light.setConeData(center, light.N, radius, val.coneAngle);
+        } 
+        
+        if ( OptixUtil::g_tex.count(dat.textureKey) > 0 ) {
 
-        } else if ( OptixUtil::g_tex.count(dat.profileKey) > 0 ) {
-
-            auto& val = OptixUtil::g_tex.at(dat.profileKey);
+            auto& val = OptixUtil::g_tex.at(dat.textureKey);
             light.tex = val->texture;
+            light.texGamma = dat.textureGamma;
         }
     }
 
@@ -2118,9 +2244,11 @@ void buildLightTree() {
 
     state.params.firstRectLightIdx = firstRectLightIdx;
     state.params.firstSphereLightIdx = firstSphereLightIdx;
+    state.params.firstTriangleLightIdx = firstTriangleLightIdx;
 
-    buildLightPlanesGAS(state, lightsWrapper.g_lightPlanes, lightsWrapper.lightPlanesGasBuffer, lightsWrapper.lightPlanesGas);
-    buildLightSpheresGAS(state, lightsWrapper.g_lightSpheres, lightsWrapper.lightSpheresGasBuffer, lightsWrapper.lightSpheresGas);
+    buildLightPlanesGAS(state, lightsWrapper._planeLightGeo, lightsWrapper.lightPlanesGasBuffer, lightsWrapper.lightPlanesGas);
+    buildLightSpheresGAS(state, lightsWrapper._sphereLightGeo, lightsWrapper.lightSpheresGasBuffer, lightsWrapper.lightSpheresGas);
+    buildLightTrianglesGAS(state, lightsWrapper._triangleLightGeo, lightsWrapper.lightTrianglesGasBuffer, lightsWrapper.lightTrianglesGas);
 
     CUDA_CHECK( cudaMalloc(
         reinterpret_cast<void**>( &state.lightsbuf_p.reset() ),
@@ -3244,32 +3372,71 @@ void set_window_size(int nx, int ny) {
 }
 
 void set_perspective(float const *U, float const *V, float const *W, float const *E, float aspect, float fov, float fpd, float aperture) {
+    set_perspective_by_fov(U,V,W,E,aspect,fov,0.0f,0.024f,fpd,aperture,0.0f,0.0f,0.0f,0.0f);
+}
+void set_perspective_by_fov(float const *U, float const *V, float const *W, float const *E, float aspect, float fov, int fov_type, float L, float focal_distance, float aperture, float pitch, float yaw, float h_shift, float v_shift) {
     auto &cam = state.params.cam;
-    //float c_aspect = fw/fh;
-    //float u_aspect = aspect;
-    //float r_fh = fh * 0.001;
-    //float r_fw = fw * 0.001;
-    //zeno::log_info("Camera film w {} film h {} aspect {} {}", fw, fh, u_aspect, c_aspect);
-
     cam.eye = make_float3(E[0], E[1], E[2]);
     cam.right = normalize(make_float3(U[0], U[1], U[2]));
     cam.up = normalize(make_float3(V[0], V[1], V[2]));
     cam.front = normalize(make_float3(W[0], W[1], W[2]));
 
-    float radfov = fov * float(M_PI) / 180;
-    float tanfov = std::tan(radfov / 2.0f);
-    cam.front /= tanfov;
-    cam.right *= aspect;
+    float half_radfov = fov * float(M_PI) / 360.0f;
+    float half_tanfov = std::tan(half_radfov);
+    cam.focal_length = L / 2.0f / half_tanfov;
+    if(aperture < 0.01f){
+        cam.aperture = 0.0f;
+    }else{
+        cam.aperture = cam.focal_length / aperture;
+    }
+    
 
+    // L = L/cam.focal_length;
+    // cam.focal_length = 1.0f;
+
+    switch (fov_type){
+        case 0:
+            cam.height = L;
+            break;
+        case 1:
+            cam.height = L / aspect;
+            break;
+        case 2:
+            cam.height = sqrtf(L * L / (1.0f + aspect *aspect));
+            break;
+    }            
+    cam.width = cam.height * aspect;
+
+    cam.pitch = pitch;
+    cam.yaw = yaw;
+    cam.horizontal_shift = h_shift;
+    cam.vertical_shift = v_shift;
+    cam.focal_distance = focal_distance;
     camera_changed = true;
-    //cam.aspect = aspect;
-    //cam.fov = fov;
-    //camera.setZxxViewMatrix(U, V, W);
-    //camera.setAspectRatio(aspect);
-    //camera.setFovY(fov * aspect * (float)M_PI / 180.0f);
+}
+void set_perspective_by_focal_length(float const *U, float const *V, float const *W, float const *E, float aspect, float focal_length, float w, float h, float focal_distance, float aperture, float pitch, float yaw, float h_shift, float v_shift) {
+    auto &cam = state.params.cam;
+    cam.eye = make_float3(E[0], E[1], E[2]);
+    cam.right = normalize(make_float3(U[0], U[1], U[2]));
+    cam.up = normalize(make_float3(V[0], V[1], V[2]));
+    cam.front = normalize(make_float3(W[0], W[1], W[2]));
 
-    cam.focalPlaneDistance = fpd;
-    cam.aperture = aperture;
+    cam.focal_length = focal_length;
+
+    if(aperture < 0.01f){
+        cam.aperture = 0.0f;
+    }else{
+        cam.aperture = cam.focal_length / aperture;
+    }
+
+    cam.width = w;
+    cam.height = h;
+    cam.pitch = pitch;
+    cam.yaw = yaw;
+    cam.horizontal_shift = h_shift;
+    cam.vertical_shift = v_shift;
+    cam.focal_distance = focal_distance;
+    camera_changed = true;
 }
 
 static void write_pfm(std::string& path, int w, int h, const float *rgb) {

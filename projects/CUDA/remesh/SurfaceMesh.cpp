@@ -33,9 +33,9 @@ SurfaceMesh::SurfaceMesh(std::shared_ptr<zeno::PrimitiveObject> prim,
     halfedges_size_ = lines_size_ * 2;
     hconn_.resize(halfedges_size_);
 
-    auto vdeleted = prim_->verts.add_attr<int>("v_deleted", 0);
-    auto edeleted = prim_->lines.add_attr<int>("e_deleted", 0);
-    auto fdeleted = prim_->tris.add_attr<int>("f_deleted", 0);
+    prim_->verts.add_attr<int>("v_deleted", 0);
+    prim_->lines.add_attr<int>("e_deleted", 0);
+    prim_->tris.add_attr<int>("f_deleted", 0);
 
     for (auto& it : prim_->tris) {
         if (add_tri(it) == PMP_MAX_INDEX) {
@@ -402,7 +402,7 @@ int SurfaceMesh::split(int e, int v, int& new_lines, int& new_faces) {
     return t1;
 }
 
-bool SurfaceMesh::is_flip_ok(int e) const {
+bool SurfaceMesh::is_flip_ok(int e, bool relaxed) const {
     // boundary edges cannot be flipped
     if (is_boundary_e(e))
         return false;
@@ -419,6 +419,28 @@ bool SurfaceMesh::is_flip_ok(int e) const {
 
     if (find_halfedge(v0, v1) != PMP_MAX_INDEX)
         return false;
+
+    if (relaxed) {
+        // when removing caps, we don't need so strict normal checks
+        return true;
+    }
+
+    // check about normals for the flip
+    // if the normals change more than a given threshold angle,
+    // it is very likely to be topologically incorrect
+
+    auto& pos = prim_->attr<vec3f>("pos");
+    int old_v0 = to_vertex(h0);
+    int old_v1 = to_vertex(h1);
+
+    vec3f old_n0 = normalize(cross(pos[old_v0] - pos[v0], pos[old_v1] - pos[v0]));
+    vec3f old_n1 = normalize(cross(pos[old_v1] - pos[v1], pos[old_v0] - pos[v1]));
+    vec3f new_n0 = normalize(cross(pos[v1] - pos[old_v0], pos[v0] - pos[old_v0]));
+    vec3f new_n1 = normalize(cross(pos[v0] - pos[old_v1], pos[v1] - pos[old_v1]));
+    if(acos(clamp(dot(old_n0, new_n0), -1, 1)) > angle_thrd) return false;
+    if(acos(clamp(dot(old_n0, new_n1), -1, 1)) > angle_thrd) return false;
+    if(acos(clamp(dot(old_n1, new_n0), -1, 1)) > angle_thrd) return false;
+    if(acos(clamp(dot(old_n1, new_n1), -1, 1)) > angle_thrd) return false;
 
     return true;
 }
@@ -472,7 +494,7 @@ void SurfaceMesh::flip(int e) {
         vconn_[vb0].halfedge_ = b1;
 }
 
-bool SurfaceMesh::is_collapse_ok(int v0v1) {
+void SurfaceMesh::is_collapse_ok(int v0v1, bool &hcol01, bool &hcol10) {
     int v1v0 = v0v1 ^ 1;
     int v0 = to_vertex(v1v0);
     int v1 = to_vertex(v0v1);
@@ -485,8 +507,10 @@ bool SurfaceMesh::is_collapse_ok(int v0v1) {
         h1 = next_halfedge(v0v1);
         h2 = next_halfedge(h1);
         if (hconn_[h1^1].face_ == PMP_MAX_INDEX &&
-            hconn_[h2^1].face_ == PMP_MAX_INDEX)
-            return false;
+            hconn_[h2^1].face_ == PMP_MAX_INDEX) {
+            hcol01 = hcol10 = false;
+            return;
+        }
     }
 
     // the edges v0-vr and vr-v1 must not be both boundary edges
@@ -495,28 +519,75 @@ bool SurfaceMesh::is_collapse_ok(int v0v1) {
         h1 = next_halfedge(v1v0);
         h2 = next_halfedge(h1);
         if (hconn_[h1^1].face_ == PMP_MAX_INDEX &&
-            hconn_[h2^1].face_ == PMP_MAX_INDEX)
-            return false;
+            hconn_[h2^1].face_ == PMP_MAX_INDEX) {
+            hcol01 = hcol10 = false;
+            return;
+        }
     }
 
     // if vl and vr are equal or both invalid -> fail
-    if (vl == vr)
-        return false;
+    if (vl == vr) {
+        hcol01 = hcol10 = false;
+        return;
+    }
 
     // edge between two boundary vertices should be a boundary edge
     if (is_boundary_v(v0) && is_boundary_v(v1) && hconn_[v0v1].face_ != PMP_MAX_INDEX &&
-        hconn_[v1v0].face_ != PMP_MAX_INDEX)
-        return false;
+        hconn_[v1v0].face_ != PMP_MAX_INDEX) {
+        hcol01 = hcol10 = false;
+        return;
+    }
 
     // test intersection of the one-rings of v0 and v1
     for (int vv : vertices(v0)) {
         if (vv != v1 && vv != vl && vv != vr)
-            if (find_halfedge(vv, v1) != PMP_MAX_INDEX)
-                return false;
+            if (find_halfedge(vv, v1) != PMP_MAX_INDEX) {
+                hcol01 = hcol10 = false;
+                return;
+            }
     }
 
-    // passed all tests
-    return true;
+    // check whether there are triangles flipped after collapsing
+    auto& pos = prim_->attr<vec3f>("pos");
+    vec3f pos0 = pos[v0], pos1 = pos[v1];
+
+    int hv0 = halfedge(v0);
+    const int hhv0 = hv0;
+    if (hv0 != PMP_MAX_INDEX) {
+        do {
+            if (hconn_[hv0].face_ == PMP_MAX_INDEX) {
+                break;
+            }
+
+            int v01 = to_vertex(hv0);
+            int v02 = to_vertex(next_halfedge(hv0));
+            vec3f nv0 = normalize(cross(pos[v01] - pos0, pos[v02] - pos0));
+            vec3f nv1 = normalize(cross(pos[v01] - pos1, pos[v02] - pos1));
+            if(acos(clamp(dot(nv0, nv1), -1, 1)) > angle_thrd) hcol01 = false;
+
+            hv0 = next_halfedge(hv0 ^ 1);
+        } while (hv0 != hhv0);
+    }
+
+    int hv1 = halfedge(v1);
+    const int hhv1 = hv1;
+    if (hv1 != PMP_MAX_INDEX) {
+        do {
+            if (hconn_[hv1].face_ == PMP_MAX_INDEX) {
+                break;
+            }
+
+            int v11 = to_vertex(hv1);
+            int v12 = to_vertex(next_halfedge(hv1));
+            vec3f nv1 = normalize(cross(pos[v11] - pos1, pos[v12] - pos1));
+            vec3f nv0 = normalize(cross(pos[v11] - pos0, pos[v12] - pos0));
+            if(acos(clamp(dot(nv1, nv0), -1, 1)) > angle_thrd) hcol10 = false;
+
+            hv1 = next_halfedge(hv1 ^ 1);
+        } while (hv1 != hhv1);
+    }
+
+    return;
 }
 
 void SurfaceMesh::collapse(int h) {
@@ -662,15 +733,9 @@ void SurfaceMesh::garbage_collection() {
     auto& lines = prim_->lines;
     auto& tris = prim_->tris;
 
-    auto& vnormal = prim_->verts.attr<vec3f>("v_normal");
     auto& vdeleted = prim_->verts.attr<int>("v_deleted");
     auto& edeleted = prim_->lines.attr<int>("e_deleted");
     auto& fdeleted = prim_->tris.attr<int>("f_deleted");
-    auto& vfeature = prim_->verts.attr<int>("v_feature");
-    auto& efeature = prim_->lines.attr<int>(line_pick_tag_);
-    auto& vlocked = prim_->verts.attr<int>("v_locked");
-    auto& elocked = prim_->lines.attr<int>("e_locked");
-    auto& vsizing = prim_->verts.attr<float>("v_sizing");
     auto& vduplicate = prim_->verts.attr<int>("v_duplicate");
 
     // setup handle mapping
@@ -710,6 +775,7 @@ void SurfaceMesh::garbage_collection() {
         // remember new size
         nV = (vdeleted[i0] == 1) ? i0 : i0 + 1;
     }
+
     // remove deleted edges
     if (nE > 0) {
         i0 = 0;
