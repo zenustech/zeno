@@ -149,7 +149,7 @@ namespace zeno {
         auto v2 = b2 - a2;
 
         toc = (T)1.0;
-        auto is_intersected = accd::ptccd(p,a0,a1,a2,zs::vec<T,3>::zeros(),v0,v1,v2,(T)0.01,(T)0,toc);
+        auto is_intersected = accd::ptccd(p,a0,a1,a2,zs::vec<T,3>::zeros(),v0,v1,v2,(T)eta,(T)0,toc);
         if(!is_intersected)
             return is_intersected;
 
@@ -164,8 +164,8 @@ namespace zeno {
             bary[i + 3] = toc * intersected_bary[i];
         }
 
-        printf("find a vertex enclose by prism with tri_bary :  %f %f %f and toc : %f\n",
-            (float)intersected_bary[0],(float)intersected_bary[1],(float)intersected_bary[2],(float)toc);
+        // printf("find a vertex enclose by prism with tri_bary :  %f %f %f and toc : %f\n",
+        //     (float)intersected_bary[0],(float)intersected_bary[1],(float)intersected_bary[2],(float)toc);
 
         return is_intersected;
     }
