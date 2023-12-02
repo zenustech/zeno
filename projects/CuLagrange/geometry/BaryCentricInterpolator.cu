@@ -606,10 +606,10 @@ struct ZSComputeSurfaceBaryCentricWeights3 : INode {
 
         auto sampler_binder_id_attr = std::string{sampler_name + "_binder_id"};
         auto sampler_binder_bary_attr = std::string{sampler_name + "_binder_bary"};
-        auto sampler_binder_thickness_attr = std::string(sampler_name + "_binder_thickness");
-        dverts.append_channels(cudaPol,{{sampler_binder_id_attr,1},{sampler_binder_bary_attr,6},{sampler_binder_thickness_attr,1}});
+        auto sampler_binder_success_attr = std::string(sampler_name + "_binder_success");
+        dverts.append_channels(cudaPol,{{sampler_binder_id_attr,1},{sampler_binder_bary_attr,6},{sampler_binder_success_attr,1}});
         TILEVEC_OPS::fill(cudaPol,dverts,sampler_binder_id_attr,zs::reinterpret_bits<float>((int)-1));
-        TILEVEC_OPS::fill(cudaPol,dverts,sampler_binder_thickness_attr,thickness);
+        // TILEVEC_OPS::fill(cudaPol,dverts,sampler_binder_thickness_attr,thickness);
 
         auto distance_ratio = get_input2<float>("distance_ratio");
 
@@ -617,6 +617,7 @@ struct ZSComputeSurfaceBaryCentricWeights3 : INode {
             distance_ratio = distance_ratio,
             sampler_binder_id_attr = zs::SmallString(sampler_binder_id_attr),
             sampler_binder_bary_attr = zs::SmallString(sampler_binder_bary_attr),
+            sampler_binder_success_attr = zs::SmallString(sampler_binder_success_attr),
             dverts = proxy<space>({},dverts),dp_tag = zs::SmallString(dp_tag),
             sverts = proxy<space>({},sverts),sp_tag = zs::SmallString(sp_tag),
             svtemp = proxy<space>({},svtemp),
@@ -663,6 +664,9 @@ struct ZSComputeSurfaceBaryCentricWeights3 : INode {
                 if(closest_sti >= 0) {
                     dverts(sampler_binder_id_attr,dvi) = zs::reinterpret_bits<float>(closest_sti);
                     dverts.tuple(dim_c<6>,sampler_binder_bary_attr,dvi) = closest_bary;
+                    dverts(sampler_binder_success_attr,dvi) = (T)1.0;
+                }else{
+                    dverts(sampler_binder_success_attr,dvi) = (T)0.0;
                 }
         });
 
@@ -763,7 +767,6 @@ struct ZSDeformEmbedPrimWithSurfaceMesh3 : zeno::INode {
                     return;
                 }
 
-                
                 auto stri = stris.pack(dim_c<3>,"inds",sti,int_c);
 
                 zs::vec<T,3> tvs[6] = {};
