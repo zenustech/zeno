@@ -70,7 +70,6 @@ struct RotateHandler final : IGraphicHandler {
     vec3f center;
     float bound;
     float scale;
-    int mode;
     int coord_sys;
 
     Program *lines_prog;
@@ -78,7 +77,7 @@ struct RotateHandler final : IGraphicHandler {
     size_t lines_count;
 
     explicit RotateHandler(Scene *scene_, vec3f &center_, float scale_)
-        : scene(scene_), center(center_), scale(scale_), mode(INTERACT_NONE) {
+        : scene(scene_), center(center_), scale(scale_) {
         vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
         ibo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
     }
@@ -160,10 +159,6 @@ struct RotateHandler final : IGraphicHandler {
 
     virtual void setCenter(zeno::vec3f c) override {
         center = c;
-    }
-
-    virtual void setMode(int m) override {
-        mode = m;
     }
 
     virtual void setCoordSys(int c) override {
