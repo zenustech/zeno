@@ -83,9 +83,14 @@ struct TransHandler final : IGraphicHandler {
 
         bound = dist / 5.0f * scale;
 
-        vec3f r = vec3f(0.8, 0.2, 0.2);
-        vec3f g = vec3f(0.2, 0.6, 0.2);
-        vec3f b = vec3f(0.2, 0.2, 0.8);
+        constexpr float color_factor = 0.8f;
+        vec3f color_x = vec3f(0.8, 0.2, 0.2) * (hover_mode == INTERACT_X ? 1.0 : color_factor);
+        vec3f color_y = vec3f(0.2, 0.6, 0.2) * (hover_mode == INTERACT_Y ? 1.0 : color_factor);
+        vec3f color_z = vec3f(0.2, 0.2, 0.8) * (hover_mode == INTERACT_Z ? 1.0 : color_factor);
+        vec3f color_yz = vec3f(0.6, 0.2, 0.2) * (hover_mode == INTERACT_YZ ? 1.0 : color_factor);
+        vec3f color_xz = vec3f(0.2, 0.6, 0.2) * (hover_mode == INTERACT_XZ ? 1.0 : color_factor);
+        vec3f color_xy = vec3f(0.2, 0.2, 0.6) * (hover_mode == INTERACT_XY ? 1.0 : color_factor);
+        vec3f color_xyz = vec3f(0.51, 0.17, 0.85) * (hover_mode == INTERACT_XYZ ? 1.0 : color_factor);
 
         lines_prog = scene->shaderMan->compile_program(vert_code, frag_code);
 
@@ -98,31 +103,31 @@ struct TransHandler final : IGraphicHandler {
 
         // x axis
         if (mode == INTERACT_NONE || mode == INTERACT_X) {
-            drawAxis(center, x_axis, r, bound, vbo);
-            drawCone(center + bound * x_axis, y_axis, z_axis, r, bound * 0.1f, vbo);
+            drawAxis(center, x_axis, color_x, bound, vbo);
+            drawCone(center + bound * x_axis, y_axis, z_axis, color_x, bound * 0.1f, vbo);
         }
 
         if (mode == INTERACT_NONE || mode == INTERACT_Y) {
-            drawAxis(center, y_axis, g, bound, vbo);
-            drawCone(center + bound * y_axis, z_axis, x_axis, g, bound * 0.1f, vbo);
+            drawAxis(center, y_axis, color_y, bound, vbo);
+            drawCone(center + bound * y_axis, z_axis, x_axis, color_y, bound * 0.1f, vbo);
         }
 
         if (mode == INTERACT_NONE || mode == INTERACT_Z) {
-            drawAxis(center, z_axis, b, bound, vbo);
-            drawCone(center + bound * z_axis, x_axis, y_axis, b, bound * 0.1f, vbo);
+            drawAxis(center, z_axis, color_z, bound, vbo);
+            drawCone(center + bound * z_axis, x_axis, y_axis, color_z, bound * 0.1f, vbo);
         }
 
         if (mode == INTERACT_NONE || mode == INTERACT_YZ)
-            drawSquare(center, y_axis, z_axis, {0.6, 0.2, 0.2}, bound * 0.1f, vbo);
+            drawSquare(center, y_axis, z_axis, color_yz, bound * 0.1f, vbo);
 
         if (mode == INTERACT_NONE || mode == INTERACT_XZ)
-            drawSquare(center, z_axis, x_axis, {0.2, 0.6, 0.2}, bound * 0.1f, vbo);
+            drawSquare(center, z_axis, x_axis, color_xz, bound * 0.1f, vbo);
 
         if (mode == INTERACT_NONE || mode == INTERACT_XY)
-            drawSquare(center, x_axis, y_axis, {0.2, 0.2, 0.6}, bound * 0.1f, vbo);
+            drawSquare(center, x_axis, y_axis, color_xy, bound * 0.1f, vbo);
 
         if (mode == INTERACT_NONE || mode == INTERACT_XYZ)
-            drawCube(center, y_axis, z_axis, {0.51, 0.17, 0.85}, bound * 0.08f, vbo);
+            drawCube(center, y_axis, z_axis, color_xyz, bound * 0.08f, vbo);
     }
 
     virtual int collisionTest(glm::vec3 ori, glm::vec3 dir) override {
@@ -137,7 +142,6 @@ struct TransHandler final : IGraphicHandler {
         auto xyz_handler_max = cube_size * glm::vec3(1.0f);
         auto xyz_handler_min = -xyz_handler_max;
         if (rayIntersectOBB(ori, dir, xyz_handler_min, xyz_handler_max, model_matrix, t)) {
-            mode = INTERACT_XYZ;
             return INTERACT_XYZ;
         }
 
@@ -149,7 +153,6 @@ struct TransHandler final : IGraphicHandler {
         auto x_handler_max = axis_handler_l * x_axis + axis_handler_w * y_axis + axis_handler_w * z_axis;
         auto x_handler_min = glm::vec3(0, -axis_handler_w, -axis_handler_w);
         if (rayIntersectOBB(ori, dir, x_handler_min, x_handler_max, model_matrix, t)) {
-            mode = INTERACT_X;
             return INTERACT_X;
         }
 
@@ -157,7 +160,6 @@ struct TransHandler final : IGraphicHandler {
         auto y_handler_max = axis_handler_w * x_axis + axis_handler_l * y_axis + axis_handler_w * z_axis;
         auto y_handler_min = glm::vec3(-axis_handler_w, 0, -axis_handler_w);
         if (rayIntersectOBB(ori, dir, y_handler_min, y_handler_max, model_matrix, t)) {
-            mode = INTERACT_Y;
             return INTERACT_Y;
         }
 
@@ -165,7 +167,6 @@ struct TransHandler final : IGraphicHandler {
         auto z_handler_max = axis_handler_w * x_axis + axis_handler_w * y_axis + axis_handler_l * z_axis;
         auto z_handler_min = glm::vec3(-axis_handler_w, -axis_handler_w, 0);
         if (rayIntersectOBB(ori, dir, z_handler_min, z_handler_max, model_matrix, t)) {
-            mode = INTERACT_Z;
             return INTERACT_Z;
         }
 
@@ -178,7 +179,6 @@ struct TransHandler final : IGraphicHandler {
         auto xy_handler_max = xy_base * (square_ctr_offset + square_size);
         auto xy_handler_min = xy_base * (square_ctr_offset - square_size);
         if (rayIntersectSquare(ori, dir, xy_handler_min, xy_handler_max, z_axis, model_matrix)) {
-            mode = INTERACT_XY;
             return INTERACT_XY;
         }
 
@@ -187,7 +187,6 @@ struct TransHandler final : IGraphicHandler {
         auto yz_handler_max = yz_base * (square_ctr_offset + square_size);
         auto yz_handler_min = yz_base * (square_ctr_offset - square_size);
         if (rayIntersectSquare(ori, dir, yz_handler_min, yz_handler_max, x_axis, model_matrix)) {
-            mode = INTERACT_YZ;
             return INTERACT_YZ;
         }
 
@@ -196,11 +195,9 @@ struct TransHandler final : IGraphicHandler {
         auto xz_handler_max = xz_base * (square_ctr_offset + square_size);
         auto xz_handler_min = xz_base * (square_ctr_offset - square_size);
         if (rayIntersectSquare(ori, dir, xz_handler_min, xz_handler_max, y_axis, model_matrix)) {
-            mode = INTERACT_XZ;
             return INTERACT_XZ;
         }
 
-        mode = INTERACT_NONE;
         return INTERACT_NONE;
     }
 
