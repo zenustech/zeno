@@ -87,9 +87,11 @@ struct RotateHandler final : IGraphicHandler {
 
         bound = dist / 5.0f * scale;
 
-        vec3f r = vec3f(0.8, 0.2, 0.2);
-        vec3f g = vec3f(0.2, 0.6, 0.2);
-        vec3f b = vec3f(0.2, 0.2, 0.8);
+        constexpr float color_factor = 0.8f;
+        vec3f color_yz = vec3f(0.8, 0.2, 0.2) * (hover_mode == INTERACT_YZ ? 1.0 : color_factor);
+        vec3f color_xz = vec3f(0.2, 0.6, 0.2) * (hover_mode == INTERACT_XZ ? 1.0 : color_factor);
+        vec3f color_xy = vec3f(0.2, 0.2, 0.8) * (hover_mode == INTERACT_XY ? 1.0 : color_factor);
+        vec3f color_xyz = vec3f(1.0, 1.0, 1.0) * (hover_mode == INTERACT_XYZ ? 1.0 : color_factor);
 
         lines_prog = scene->shaderMan->compile_program(vert_code, frag_code);
 
@@ -103,18 +105,18 @@ struct RotateHandler final : IGraphicHandler {
         lines_prog->set_uniform("alpha", 1.0f);
 
         if (mode == INTERACT_NONE || mode == INTERACT_YZ)
-            drawCircle(center, y_axis, z_axis, {0.6, 0.2, 0.2}, bound, vbo);
+            drawCircle(center, y_axis, z_axis, color_yz, bound, bound * 0.01f, vbo);
 
         if (mode == INTERACT_NONE || mode == INTERACT_XZ)
-            drawCircle(center, z_axis, x_axis, {0.2, 0.6, 0.2}, bound, vbo);
+            drawCircle(center, z_axis, x_axis, color_xz, bound, bound * 0.01f, vbo);
 
         if (mode == INTERACT_NONE || mode == INTERACT_XY)
-            drawCircle(center, x_axis, y_axis, {0.2, 0.2, 0.6}, bound, vbo);
+            drawCircle(center, x_axis, y_axis, color_xy, bound, bound * 0.01f, vbo);
 
         lines_prog->set_uniform("alpha", 0.3f);
 
         if (mode == INTERACT_NONE || mode == INTERACT_XYZ)
-            drawSphere(center, {1.0, 1.0, 1.0}, bound * 0.9f, vbo, ibo);
+            drawSphere(center, color_xyz, bound * 0.9f, vbo, ibo);
     }
 
     virtual int collisionTest(glm::vec3 ray_origin, glm::vec3 ray_direction) override {
@@ -131,29 +133,24 @@ struct RotateHandler final : IGraphicHandler {
 
         // xy handler
         if (rayIntersectRing(ray_origin, ray_direction, ctr, o_radius, i_radius, y_axis, z_axis, thickness, model_matrix)) {
-            mode = INTERACT_YZ;
             return INTERACT_YZ;
         }
 
         // yz handler
         if (rayIntersectRing(ray_origin, ray_direction, ctr, o_radius, i_radius, z_axis, x_axis, thickness, model_matrix)) {
-            mode = INTERACT_XZ;
             return INTERACT_XZ;
         }
 
         // xz handler
         if (rayIntersectRing(ray_origin, ray_direction, ctr, o_radius, i_radius, x_axis, y_axis, thickness, model_matrix)) {
-            mode = INTERACT_XY;
             return INTERACT_XY;
         }
 
         // xyz handler
         if (rayIntersectSphere(ray_origin, ray_direction, zeno::vec_to_other<glm::vec3>(center), i_radius).has_value()) {
-            mode = INTERACT_XYZ;
             return INTERACT_XYZ;
         }
 
-        mode = INTERACT_NONE;
         return INTERACT_NONE;
     }
 
