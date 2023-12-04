@@ -24,14 +24,25 @@ struct PrimSort : INode {
       set_output("prim", std::move(prim));
     }
     else if (mode == "ByAttribute") {
-
-        auto &tag = prim->verts.attr<float>(attr);
         auto &tris = prim->tris.values;
-        std::vector<size_t> indices(tag.size());
+        std::vector<size_t> indices(prim->verts.size());
         std::iota(indices.begin(), indices.end(), 0);
-        std::stable_sort(indices.begin(), indices.end(), [&tag, reverse] (size_t a, size_t b) {//stable sort
-            return reverse ? tag[a] > tag[b] : tag[a] < tag[b];
-        });
+        
+        if (prim->attr_is<float>(attr)){
+            auto &tag = prim->verts.attr<float>(attr);
+            std::stable_sort(indices.begin(), indices.end(), [&tag, reverse] (size_t a, size_t b) {//stable sort
+                return reverse ? tag[a] > tag[b] : tag[a] < tag[b];
+            });
+        }
+        else if (prim->attr_is<int>(attr)){
+            auto &tag = prim->verts.attr<int>(attr);
+            std::stable_sort(indices.begin(), indices.end(), [&tag, reverse] (size_t a, size_t b) {
+                return reverse ? tag[a] > tag[b] : tag[a] < tag[b];
+            });
+        }
+        else{
+            throw std::runtime_error("Attribute type not supported");
+        }
 
         prim->verts.forall_attr<AttrAcceptAll>([&] (auto &key, auto &arr) {
             auto oldarr = std::move(arr);
@@ -42,7 +53,7 @@ struct PrimSort : INode {
         });
 
         // inverse mapping
-        std::vector<size_t> reverse_indices(tag.size());
+        std::vector<size_t> reverse_indices(indices.size());
         for (size_t i = 0; i < indices.size(); ++i) {
             reverse_indices[indices[i]] = i;
         }
