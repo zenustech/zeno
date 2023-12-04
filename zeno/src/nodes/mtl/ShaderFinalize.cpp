@@ -150,17 +150,23 @@ struct ShaderFinalize : INode {
         if (has_input("extensionsCode"))
             mtl->extensions = get_input<zeno::StringObject>("extensionsCode")->get();
 
-        if (has_input("tex2dList"))
         {
-            auto tex2dList = get_input<ListObject>("tex2dList")->get<zeno::Texture2DObject>();
-            for (const auto tex: tex2dList)
-            {
-                auto texId = mtl->tex2Ds.size();
-			    mtl->tex2Ds.push_back(tex);
+            if (has_input("tex2dList")) {
+                auto tex2dList = get_input<ListObject>("tex2dList")->get<zeno::Texture2DObject>();
+                if (!tex2dList.empty() && !em.tex2Ds.empty()) {
+                    throw zeno::makeError("Can not use both way!");
+                }
+                for (const auto& tex: tex2dList) {
+                    em.tex2Ds.push_back(tex);
+                }
             }
-
-            auto texCode = "uniform sampler2D zenotex[32]; \n";
-            mtl->common.insert(0, texCode);
+            if (!em.tex2Ds.empty()) {
+                for (const auto& tex: em.tex2Ds) {
+                    mtl->tex2Ds.push_back(tex);
+                }
+                auto texCode = "uniform sampler2D zenotex[32]; \n";
+                mtl->common.insert(0, texCode);
+            }
         }
 
         if (has_input("tex3dList"))

@@ -1,6 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/extra/ShaderNode.h>
 #include <zeno/types/ShaderObject.h>
+#include <zeno/types/TextureObject.h>
 #include <zeno/utils/string.h>
 #include <algorithm>
 #include "zeno/utils/format.h"
@@ -141,6 +142,59 @@ ZENDEFNODE(ShaderTexture3D, {
         {"enum World Local", "space", "World"},
         {"enum vec2", "type", "vec2"},
         {"enum " + ShaderTexture3D::methodListString(), "method", ShaderTexture3D::methodDefaultString()} 
+    },
+    {
+        {"shader", "out"},
+    },
+    {},
+    {
+        "shader",
+    },
+});
+
+struct SmartTexture2D : ShaderNodeClone<SmartTexture2D>
+{
+    virtual int determineType(EmissionPass *em) override {
+        auto uvtiling = em->determineType(get_input("uvtiling").get());
+        if (has_input("coord")) {
+            auto coord = em->determineType(get_input("coord").get());
+            if (coord < 2)
+                throw zeno::Exception("ShaderTexture2D expect coord to be at least vec2");
+        }
+
+        auto type = get_input2<std::string>("type");
+        if (type == "float")
+            return 1;
+        else if (type == "vec2")
+            return 2;
+        else if (type == "vec3")
+            return 3;
+        else if (type == "vec4")
+            return 4;
+        else
+            throw zeno::Exception("ShaderTexture2D got bad type: " + type);
+    }
+
+    virtual void emitCode(EmissionPass *em) override {
+        auto texId = em->tex2Ds.size();
+        auto tex = get_input2<Texture2DObject>("texture");
+        em->tex2Ds.push_back(tex);
+        auto type = get_input2<std::string>("type");
+        auto uvtiling = em->determineExpr(get_input("uvtiling").get());
+        std::string coord = "att_uv";
+        if (has_input("coord")) {
+            coord = em->determineExpr(get_input("coord").get());
+        }
+        em->emitCode(zeno::format("{}(texture2D(zenotex[{}], vec2({}) * {}))", type, texId, coord, uvtiling));
+    }
+};
+
+ZENDEFNODE(SmartTexture2D, {
+    {
+        {"texture"},
+        {"coord"},
+        {"vec2f", "uvtiling", "1,1"},
+        {"enum float vec2 vec3 vec4", "type", "vec3"},
     },
     {
         {"shader", "out"},
