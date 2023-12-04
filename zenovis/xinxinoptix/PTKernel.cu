@@ -204,8 +204,6 @@ extern "C" __global__ void __raygen__rg()
             result_d = prd.radiance_d * prd.attenuation2;
             result_s = prd.radiance_s * prd.attenuation2;
             result_t = prd.radiance_t * prd.attenuation2;
-
-            result_b = { 1, 1, 1 };
         }
 
         tmp_albedo = prd.tmp_albedo;
