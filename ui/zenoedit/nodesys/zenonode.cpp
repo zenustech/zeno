@@ -340,11 +340,21 @@ QGraphicsItem* ZenoNode::initParamWidget(ZenoSubGraphScene* scene, const QModelI
         return paramIdx.data(ROLE_PARAM_VALUE);
     };
 
+    auto cbGetZsgDir = []() {
+        QString path = zenoApp->graphsManagment()->zsgPath();
+        if (path.isEmpty())
+            return QString("");
+        QFileInfo fi(path);
+        QString dirPath = fi.dir().path();
+        return dirPath;
+    };
+
     CallbackCollection cbSet;
     cbSet.cbEditFinished = cbUpdateParam;
     cbSet.cbEditFinishedWithSlider = cbUpdateSocketDefldWithSlider;
     cbSet.cbSwitch = cbSwith;
     cbSet.cbGetIndexData = cbGetIndexData;
+    cbSet.cbGetZsgDir = cbGetZsgDir;
 
     const QString& paramName = paramIdx.data(ROLE_PARAM_NAME).toString();
     QVariant deflValue = paramIdx.data(ROLE_PARAM_VALUE);
@@ -1181,11 +1191,21 @@ QGraphicsItem* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const QModel
         return perIdx.data(ROLE_PARAM_VALUE);
     };
 
+    auto cbGetZsgDir = []() {
+        QString path = zenoApp->graphsManagment()->zsgPath();
+        if (path.isEmpty())
+            return QString("");
+        QFileInfo fi(path);
+        QString dirPath = fi.dir().path();
+        return dirPath;
+    };
+
     CallbackCollection cbSet;
     cbSet.cbEditFinished = cbUpdateSocketDefl;
     cbSet.cbEditFinishedWithSlider = cbUpdateSocketDefldWithSlider;
     cbSet.cbSwitch = cbSwith;
     cbSet.cbGetIndexData = cbGetIndexData;
+    cbSet.cbGetZsgDir = cbGetZsgDir;
 
     QVariant newVal = deflVal;
     if (bFloat)

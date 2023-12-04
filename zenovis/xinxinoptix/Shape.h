@@ -928,6 +928,8 @@ struct SphereShape {
         float radius2 = radius * radius;
 
         if (dist2 <= radius2) { // inside sphere
+            lsr->PDF = 0.0f;
+            return;
             
             auto localP = pbrt::UniformSampleSphere(uu);
             auto worldP = center + localP * radius;
@@ -955,8 +957,6 @@ struct SphereShape {
             lsr->PDF = lsr->dist * lsr->dist / lsr->NoL;
             return;       
         }
-
-        assert(dist > radius);
 
         // Sample sphere uniformly inside subtended cone
         float invDc = 1.0f / dist;

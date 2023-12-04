@@ -9,6 +9,7 @@
 #include "../view/zcomboboxitemdelegate.h"
 #include <QSvgRenderer>
 #include <zeno/extra/TempNode.h>
+#include <zeno/extra/assetDir.h>
 
 
 ZenoParamWidget::ZenoParamWidget(QGraphicsItem* parent, Qt::WindowFlags wFlags)
@@ -228,9 +229,15 @@ void ZenoParamLineEdit::keyReleaseEvent(QKeyEvent* event)
 
 
 ///////////////////////////////////////////////////////////////////////////
-ZenoParamPathEdit::ZenoParamPathEdit(const QString& path, PARAM_CONTROL ctrl, LineEditParam param, QGraphicsItem* parent)
+ZenoParamPathEdit::ZenoParamPathEdit(
+        const QString& path,
+        PARAM_CONTROL ctrl,
+        LineEditParam param,
+        Callback_GetZsgDir cbGetZsg,
+        QGraphicsItem* parent)
     : ZEditableTextItem(path, parent)
     , m_control(ctrl)
+    , m_cbGetZsg(cbGetZsg)
 {
     setAcceptHoverEvents(true);
 }
@@ -277,20 +284,36 @@ void ZenoParamPathEdit::mousePressEvent(QGraphicsSceneMouseEvent *event)
     {
         QString path = this->text();
 
-        // need to resolve the formula path?
-        /*
+        QString zsgDir = m_cbGetZsg();
+        QString filePath = path;
+
+        // need to resolve the formula path
         if (path.startsWith('=')) {
-            zeno::setConfigVariable("ZSG", zsg_path);
+            zeno::setConfigVariable("ZSG", zsgDir.toStdString());
             auto code = std::make_shared<zeno::StringObject>();
             code->set(path.mid(1).toStdString());
             auto outs = zeno::TempNodeSimpleCaller("StringEval")
                 .set("zfxCode", code)
                 .call();
-        */
+            std::shared_ptr<zeno::StringObject> spStrObj = outs.get<zeno::StringObject>("result");
+            if (spStrObj)
+            {
+                filePath = QString::fromStdString(spStrObj->get());
+            }
+        }
 
-        QFileInfo fileInfo(path);
-        QDir dir = fileInfo.dir();
-        QString dirPath = dir.exists() ? dir.path() : "";
+        QString dirPath;
+        bool bMarkZsg = false;
+
+        if (filePath.isEmpty()) {
+            dirPath = zsgDir;
+            bMarkZsg = true;
+        }
+        else {
+            QFileInfo fileInfo(filePath);
+            QDir dir = fileInfo.dir();
+            dirPath = dir.path();
+        }
 
         if (m_control == CONTROL_READPATH) {
             path = QFileDialog::getOpenFileName(nullptr, "File to Open", dirPath, "All Files(*);;");
@@ -302,6 +325,10 @@ void ZenoParamPathEdit::mousePressEvent(QGraphicsSceneMouseEvent *event)
         if (path.isEmpty()) {
             return;
         }
+
+        if (path.indexOf(zsgDir) != -1)
+            path.replace(zsgDir, "=$ZSG");
+
         setText(path);
     }
     ZEditableTextItem::mousePressEvent(event);
