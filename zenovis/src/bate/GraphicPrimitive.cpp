@@ -619,6 +619,10 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
     }
 
     virtual void draw() override {
+        bool selected = scene->selected.count(nameid) > 0;
+        if (scene->drawOptions->uv_mode && !selected) {
+            return;
+        }
         if (scene->drawOptions->show_grid == false && invisible) {
             return;
         }
@@ -712,11 +716,10 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
                         /*count=*/triObj.count * 3,
                                         GL_UNSIGNED_INT, /*first=*/0));
             }
-            bool selected = scene->selected.count(nameid) > 0;
 
             if (scene->drawOptions->render_wireframe || selected || scene->drawOptions->uv_mode) {
+                CHECK_GL(glDepthFunc(GL_LEQUAL));
                 if (polyEdgeObj.count) {
-                    CHECK_GL(glDepthFunc(GL_LEQUAL));
                     if (scene->drawOptions->uv_mode) {
                         if (polyUvObj.count) {
                             polyUvObj.prog->use();
@@ -747,7 +750,6 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
                         polyEdgeObj.vbos[0]->disable_attribute(0);
                         polyEdgeObj.vbos[0]->unbind();
                     }
-                    CHECK_GL(glDepthFunc(GL_LESS));
                 }
                 else {
                     CHECK_GL(glEnable(GL_POLYGON_OFFSET_LINE));
@@ -760,6 +762,7 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
                     CHECK_GL(glPolygonMode(GL_FRONT_AND_BACK, GL_FILL));
                     CHECK_GL(glDisable(GL_POLYGON_OFFSET_LINE));
                 }
+                CHECK_GL(glDepthFunc(GL_LESS));
             }
             triObj.ebo->unbind();
             if (triObj.vbos.size()) {
