@@ -32,6 +32,7 @@ public:
     void removeObject(const std::unordered_set<std::string>& names);
     bool calcTransformStart(glm::vec3 ori, glm::vec3 dir, glm::vec3 front);
     bool clickedAnyHandler(QVector3D ori, QVector3D dir, glm::vec3 front);
+    bool hoveredAnyHandler(QVector3D ori, QVector3D dir, glm::vec3 front);
     void transform(QVector3D camera_pos, QVector3D ray_dir, glm::vec2 mouse_start, glm::vec2 mouse_pos, glm::vec3 front, glm::mat4 vp);
     void startTransform();
     void endTransform(bool moved);

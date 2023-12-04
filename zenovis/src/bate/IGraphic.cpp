@@ -14,6 +14,23 @@
 
 namespace zenovis {
 
+void IGraphicHandler::setMode(int interact_mode) 
+{ 
+    mode = interact_mode; 
+}
+
+int IGraphicHandler::handleClick(glm::vec3 ori, glm::vec3 dir) 
+{ 
+    mode = collisionTest(ori, dir); 
+    return mode; 
+}
+
+int IGraphicHandler::handleHover(glm::vec3 ori, glm::vec3 dir) 
+{ 
+    hover_mode = collisionTest(ori, dir);
+    return hover_mode;
+}
+
 std::unique_ptr<IGraphic> makeGraphic(Scene *scene, zeno::IObject *obj) {
     MakeGraphicVisitor visitor;
     visitor.in_scene = scene;

@@ -285,9 +285,18 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
     ZenoSettingsManager& settings = ZenoSettingsManager::GetInstance();
     int moveKey = settings.getViewShortCut(ShortCut_MovingView, moveButton);
     int rotateKey = settings.getViewShortCut(ShortCut_RotatingView, rotateButton);
+
     bool bTransform = false;
-    if (m_transformer)
+    if (m_transformer) {
         bTransform = m_transformer->isTransforming();
+        // check if hover a handler
+        auto front = scene->camera->m_lodfront;
+        auto dir = screenToWorldRay(event->x() / res().x(), event->y() / res().y());
+        if (!scene->selected.empty() && !(event->buttons() & Qt::LeftButton)) {
+            m_transformer->hoveredAnyHandler(realPos(), dir, front);
+        }
+    }
+
     if (!bTransform && (event->buttons() & (rotateButton | moveButton))) {
         float ratio = QApplication::desktop()->devicePixelRatio();
         float dx = xpos - m_lastMidButtonPos.x(), dy = ypos - m_lastMidButtonPos.y();
