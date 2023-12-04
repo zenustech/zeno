@@ -286,6 +286,7 @@ struct PrimitiveTransform : zeno::INode {
 
         if (prim->has_attr("pos")) {
             auto &pos = outprim->attr<zeno::vec3f>("pos");
+            outprim->verts.add_attr<zeno::vec3f>("_origin_pos") = pos;
 #pragma omp parallel for
             for (int i = 0; i < pos.size(); i++) {
                 auto p = zeno::vec_to_other<glm::vec3>(pos[i]);
@@ -296,6 +297,7 @@ struct PrimitiveTransform : zeno::INode {
 
         if (prim->has_attr("nrm")) {
             auto &nrm = outprim->attr<zeno::vec3f>("nrm");
+            outprim->verts.add_attr<zeno::vec3f>("_origin_nrm") = nrm;
 #pragma omp parallel for
             for (int i = 0; i < nrm.size(); i++) {
                 auto n = zeno::vec_to_other<glm::vec3>(nrm[i]);

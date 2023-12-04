@@ -75,6 +75,14 @@ void FakeTransformer::addObject(const std::string& name) {
         zeno::vec3f scale = {1, 1, 1};
         user_data.setLiterial("_scale", scale);
         user_data.set2("_pivot", "bboxCenter");
+        if (object->has_attr("pos") && !object->has_attr("_origin_pos")) {
+            auto &pos = object->attr<zeno::vec3f>("pos");
+            object->verts.add_attr<zeno::vec3f>("_origin_pos") = pos;
+        }
+        if (object->has_attr("nrm") && !object->has_attr("_origin_nrm")) {
+            auto &nrm = object->attr<zeno::vec3f>("nrm");
+            object->verts.add_attr<zeno::vec3f>("_origin_nrm") = nrm;
+        }
     }
     auto m = zeno::vec_to_other<glm::vec3>(bmax);
     auto n = zeno::vec_to_other<glm::vec3>(bmin);
