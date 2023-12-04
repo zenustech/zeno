@@ -206,8 +206,6 @@ extern "C" __global__ void __raygen__rg()
             result_t = prd.radiance_t * prd.attenuation2;
 
             result_b = { 1, 1, 1 };
-        } else { // backgroud
-            result_b = {};
         }
 
         tmp_albedo = prd.tmp_albedo;
@@ -273,6 +271,10 @@ extern "C" __global__ void __raygen__rg()
         }
         
         seed = prd.seed;
+
+        if (primary_hit_type > 0) {
+            result_b += make_float3(1);
+        }
     }
     while( --i );
 
