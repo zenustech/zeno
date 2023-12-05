@@ -86,6 +86,7 @@ static __inline__ __device__ MatOutput evalMat(cudaTextureObject_t zenotex[], fl
     float mat_emissionIntensity = float(0);
     vec3 mat_emission = vec3(1.0f, 1.0f, 1.0f);
     float mat_displacement = 0.0f;
+    float mat_shadowReceiver = 0.0f;
     float mat_NoL = 1.0f;
     float mat_LoV = 1.0f;
     vec3 mat_reflectance = att_reflectance;
@@ -140,6 +141,7 @@ static __inline__ __device__ MatOutput evalMat(cudaTextureObject_t zenotex[], fl
         mats.flatness = mat_flatness;
         mats.thin = mat_thin;
         mats.doubleSide = mat_doubleSide;
+        mats.shadowReceiver = mat_shadowReceiver;
 
 
         mats.smoothness = mat_smoothness;
@@ -655,7 +657,7 @@ extern "C" __global__ void __closesthit__radiance()
 
     bool next_ray_is_going_inside = false;
     mats.sssParam = mats.subsurface>0 ? mats.subsurface*mats.sssParam : mats.sssParam;
-    //mats.subsurface = mats.subsurface>0 ? 1 : 0;
+    mats.subsurface = mats.subsurface>0 ? 1 : 0;
 
     /* MODME */
 
@@ -995,18 +997,18 @@ extern "C" __global__ void __closesthit__radiance()
 
     prd->medium = next_ray_is_going_inside?DisneyBSDF::PhaseFunctions::isotropic : prd->curMatIdx==0?DisneyBSDF::PhaseFunctions::vacuum : DisneyBSDF::PhaseFunctions::isotropic;
  
-    if(mats.thin>0.5f){
-        vec3 H = normalize(vec3(normalize(wi)) + vec3(-normalize(ray_dir)));
-        attrs.N = N;
-        attrs.T = cross(B,N);
-        attrs.L = vec3(normalize(wi));
-        attrs.V = vec3(-normalize(ray_dir));
-        attrs.H = normalize(H);
-        attrs.reflectance = reflectance;
-        attrs.fresnel = DisneyBSDF::DisneyFresnel(mats.basecolor, mats.metallic, mats.ior, mats.specularTint, dot(attrs.H, attrs.V), dot(attrs.H, attrs.L), false);
-        MatOutput mat2 = evalReflectance(zenotex, rt_data->uniforms, attrs);
-        reflectance = mat2.reflectance;
-    }
+//    if(mats.thin>0.5f){
+//        vec3 H = normalize(vec3(normalize(wi)) + vec3(-normalize(ray_dir)));
+//        attrs.N = N;
+//        attrs.T = cross(B,N);
+//        attrs.L = vec3(normalize(wi));
+//        attrs.V = vec3(-normalize(ray_dir));
+//        attrs.H = normalize(H);
+//        attrs.reflectance = reflectance;
+//        attrs.fresnel = DisneyBSDF::DisneyFresnel(mats.basecolor, mats.metallic, mats.ior, mats.specularTint, dot(attrs.H, attrs.V), dot(attrs.H, attrs.L), false);
+//        MatOutput mat2 = evalReflectance(zenotex, rt_data->uniforms, attrs);
+//        reflectance = mat2.reflectance;
+//    }
 
     prd->countEmitted = false;
     prd->attenuation *= reflectance;
@@ -1029,20 +1031,20 @@ extern "C" __global__ void __closesthit__radiance()
             mats.thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : next_ray_is_going_inside, thisPDF, rrPdf,
             dot(N, L), rd, rs, rt);
 
-        MatOutput mat2;
-        if(mats.thin>0.5f){
-            vec3 H = normalize(vec3(normalize(L)) + V);
-            attrs.N = N;
-            attrs.T = cross(B,N);
-            attrs.L = vec3(normalize(L));
-            attrs.V = V;
-            attrs.H = normalize(H);
-            attrs.reflectance = lbrdf;
-            attrs.fresnel = DisneyBSDF::DisneyFresnel( mats.basecolor, mats.metallic, mats.ior, mats.specularTint, dot(attrs.H, attrs.V), dot(attrs.H, attrs.L), false);
-            mat2 = evalReflectance(zenotex, rt_data->uniforms, attrs);
-        }
+//        MatOutput mat2;
+//        if(mats.thin>0.5f){
+//            vec3 H = normalize(vec3(normalize(L)) + V);
+//            attrs.N = N;
+//            attrs.T = cross(B,N);
+//            attrs.L = vec3(normalize(L));
+//            attrs.V = V;
+//            attrs.H = normalize(H);
+//            attrs.reflectance = lbrdf;
+//            attrs.fresnel = DisneyBSDF::DisneyFresnel( mats.basecolor, mats.metallic, mats.ior, mats.specularTint, dot(attrs.H, attrs.V), dot(attrs.H, attrs.L), false);
+//            mat2 = evalReflectance(zenotex, rt_data->uniforms, attrs);
+//        }
 
-        return (mats.thin>0.5f? float3(mat2.reflectance):lbrdf);
+        return lbrdf;
     };
 
     auto taskAux = [&](const vec3& weight) {
@@ -1057,8 +1059,16 @@ extern "C" __global__ void __closesthit__radiance()
     shadow_prd.nonThinTransHit = (mats.thin == false && mats.specTrans > 0) ? 1 : 0;
 
     prd->direction = normalize(wi);
-
-    DirectLighting<true>(prd, shadow_prd, shadingP, ray_dir, evalBxDF, &taskAux);
+    float3 radianceNoShadow = make_float3(0,0,0);
+    DirectLighting<true>(prd, shadow_prd, shadingP, ray_dir, evalBxDF, radianceNoShadow, &taskAux);
+    if(mats.shadowReceiver > 0.5f)
+    {
+      auto radiance = length(prd->radiance);
+      prd->radiance.x = radiance;//the light contribution received with shadow attenuation
+      prd->radiance.y = length(radianceNoShadow);
+      prd->radiance.z = 0;
+      prd->done = true;
+    }
 
     if(mats.thin<0.5f && mats.doubleSide<0.5f){
         prd->origin = rtgems::offset_ray(P, (next_ray_is_going_inside)? -prd->geometryNormal : prd->geometryNormal);

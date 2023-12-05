@@ -43,6 +43,7 @@ struct MatOutput {
     float scatterStep;
     float smoothness;
     float displacement;
+    float shadowReceiver;
 
     vec3 nrm;
     vec3 emission;
