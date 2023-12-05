@@ -326,7 +326,7 @@ void ZenoParamPathEdit::mousePressEvent(QGraphicsSceneMouseEvent *event)
             return;
         }
 
-        if (path.indexOf(zsgDir) != -1)
+        if (!zsgDir.isEmpty() && path.indexOf(zsgDir) != -1)
             path.replace(zsgDir, "=$ZSG");
 
         setText(path);
