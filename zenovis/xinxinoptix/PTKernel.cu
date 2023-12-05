@@ -233,7 +233,7 @@ extern "C" __global__ void __raygen__rg()
 
                 result += prd.depth>1?clampped:temp_radiance;
 
-                if(prd.depth>1 && primary_hit_type > 0) {
+                if(primary_hit_type > 0 && ( prd.depth>1 || (prd.depth==1 && prd.hit_type == 0) )) {
                     *aov[primary_hit_type] += clampped;
                 }
             }
