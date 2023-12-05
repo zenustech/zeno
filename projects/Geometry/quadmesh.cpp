@@ -13,6 +13,7 @@ namespace zeno {
 
 struct QuadMesh : INode {
     virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
         float crease = get_input2<float>("crease");
         bool deterministic = get_input2<bool>("deterministic");
         int smooth = get_input2<int>("smooth_iter");
@@ -23,8 +24,23 @@ struct QuadMesh : INode {
         int vert_num = get_input2<int>("vert_num");
         int face_num = get_input2<int>("face_num");
         int knn = get_input2<int>("knn");
-        auto input_dir = get_input2<std::string>("input_mesh_dir");
-        auto output_dir = get_input2<std::string>("output_mesh_dir");
+        auto line_pick_tag = get_input<zeno::StringObject>("line_pick_tag")->get();
+
+        std::set<std::pair<int, int>> marked_lines{};
+        if (has_input("marked_lines")) {
+            const auto &markedLines = get_input<PrimitiveObject>("marked_lines")->lines.values;
+            for (vec2i line : markedLines) {
+                marked_lines.insert(std::make_pair(line[0], line[1]));
+            }
+        }
+        auto &lines = prim->lines;
+        if (lines.has_attr(line_pick_tag)) {
+            auto &efeature = lines.attr<int>(line_pick_tag);
+            for (int i = 0; i < lines.size(); ++i) {
+                if (efeature[i] == 1)
+                    marked_lines.insert(std::make_pair(lines[i][0], lines[i][1]));
+            }
+        }
 
         int scale_constraints = 0;
         scale_constraints += scale > 0 ? 1 : 0;
@@ -32,11 +48,6 @@ struct QuadMesh : INode {
         scale_constraints += vert_num > 0 ? 1 : 0;
         if (scale_constraints > 1) {
             zeno::log_error("Only one of the \"scale\", \"vert_num\" and \"face_num\" parameters can be used at once.");
-            std::string native_path = std::filesystem::u8path(input_dir).string();
-            std::ifstream file(native_path, std::ios::binary);
-            auto binary = std::vector<char>((std::istreambuf_iterator<char>(file)),
-                                std::istreambuf_iterator<char>());
-            auto prim = std::shared_ptr<PrimitiveObject>(primParsedFrom(binary.data(), binary.size()));
             set_output("prim", std::move(prim));
             return;
         }
@@ -45,15 +56,6 @@ struct QuadMesh : INode {
         char* argv[10];
         argv[0] = (char*)malloc(sizeof("./InstantMeshes\0"));
         strcpy(argv[0], "./InstantMeshes\0");
-        if (output_dir.size() > 0) {
-            argv[argc] = (char*)malloc(sizeof("--output\0"));
-            strcpy(argv[argc], "--output\0");
-            argv[argc+1] = (char*)malloc((output_dir.size()+1)*sizeof(char));
-            for (int i = 0; i < output_dir.size(); ++i)
-                argv[argc+1][i] = output_dir[i];
-            argv[argc+1][output_dir.size()] = '\0';
-            argc += 2;
-        }
         if (crease > 0) {
             argv[argc] = (char*)malloc(sizeof("--crease\0"));
             strcpy(argv[argc], "--crease\0");
@@ -143,26 +145,53 @@ struct QuadMesh : INode {
             argv[argc+1][knn_str.size()] = '\0';
             argc += 2;
         }
-        argv[argc] = (char*)malloc((input_dir.size()+1)*sizeof(char));
-        for (int i = 0; i < input_dir.size(); ++i)
-            argv[argc][i] = input_dir[i];
-        argv[argc][input_dir.size()] = '\0';
-        ++argc;
-        runInstantMeshes(argc, argv);
+        
+        std::vector<std::vector<int>> faces(prim->tris->size(), std::vector<int>{});
+        std::vector<std::vector<float>> verts(prim->verts->size(), std::vector<float>{});
+        std::vector<std::vector<int>> features(prim->tris->size(), std::vector<int>{});
+        auto &pos = prim->verts;
+        for (int i = 0; i < prim->tris->size(); ++i) {
+            for (int j = 0; j < 3; ++j) {
+                int i0 = prim->tris[i][j], i1 = prim->tris[i][(j+1)%3];
+                faces[i].push_back(i0);
+                if (marked_lines.count(std::make_pair(i0, i1)) > 0 ||
+                    marked_lines.count(std::make_pair(i1, i0)) > 0) {
+                    features[i].push_back(1);
+                } else {
+                    features[i].push_back(0);
+                }
+            }
+        }
+        for (int i = 0; i < pos.size(); ++i)
+            for (int j = 0; j < 3; ++j)
+                verts[i].push_back(prim->verts[i][j]);
 
-        std::string native_path = std::filesystem::u8path(output_dir).string();
-        std::ifstream file(native_path, std::ios::binary);
-        auto binary = std::vector<char>((std::istreambuf_iterator<char>(file)),
-                              std::istreambuf_iterator<char>());
-        auto prim = std::shared_ptr<PrimitiveObject>(primParsedFrom(binary.data(), binary.size()));
+        runInstantMeshes(faces, verts, features, argc, argv);
+
+        pos.resize(verts.size());
+        for (int i = 0; i < pos.size(); ++i)
+            for (int j = 0; j < 3; ++j)
+                pos[i][j] = verts[i][j];
+        prim->verts.foreach_attr<zeno::AttrAcceptAll>([&] (auto const &key, auto &arr) {
+            arr.resize(verts.size());
+        });
+        prim->lines.clear();
+        prim->tris.clear();
+        prim->loops.clear();
+        prim->polys.clear();
+        for (int i = 0; i < faces.size(); ++i) {
+            int beg = prim->loops.size();
+            for (auto j : faces[i])
+                prim->loops.push_back(j);
+            prim->polys.emplace_back(beg, faces[i].size());
+        }
         set_output("prim", std::move(prim));
     }
 };
 
 ZENO_DEFNODE(QuadMesh)
 ({
-    {{"readpath", "input_mesh_dir"},
-    {"readpath", "output_mesh_dir"},
+    {{"prim"},
     {"bool", "deterministic", "0"},
     {"float", "crease", "0"},
     {"int", "smooth_iter", "0"},
@@ -172,7 +201,9 @@ ZENO_DEFNODE(QuadMesh)
     {"float", "scale", "0"},
     {"int", "vert_num", "0"},
     {"int", "face_num", "0"},
-    {"int", "knn", "0"}},
+    {"int", "knn", "0"},
+    {"string", "line_pick_tag", "line_selected"},
+    {"marked_lines"}},
     {{"prim"}},
     {},
     {"primitive"},
