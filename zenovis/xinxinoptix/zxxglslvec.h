@@ -1091,7 +1091,7 @@ __forceinline__ __device__ vec4 operator*(mat4 a, vec4 b)
 //}
 
 __forceinline__ __device__ vec3 normalmap(vec3 norm, float scale) {
-    norm = norm * 2 - 1;
+    //norm = norm * 2 - 1;
     float x = norm.x * scale;
     float y = norm.y * scale;
     float z = 1 - sqrt(x * x + y * y);
