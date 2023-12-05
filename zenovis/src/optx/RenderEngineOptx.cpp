@@ -521,8 +521,10 @@ struct GraphicsManager {
                 auto maxDistance = prim_in->userData().get2<float>("maxDistance", std::numeric_limits<float>().max());
                 auto falloffExponent = prim_in->userData().get2<float>("falloffExponent", 2.0f);
 
-                auto spread = prim_in->userData().get2<float>("spread", 1.0f);
+                auto color = prim_in->userData().get2<zeno::vec3f>("color");
+                auto spread = prim_in->userData().get2<zeno::vec2f>("spread", {1.0f, 0.0f});
                 auto intensity = prim_in->userData().get2<float>("intensity", 1.0f);
+                auto fluxFixed = prim_in->userData().get2<float>("fluxFixed", -1.0f);
                 auto vIntensity = prim_in->userData().get2<float>("visibleIntensity", -1.0f);
 
                 auto ivD = prim_in->userData().getLiterial<int>("ivD", 0);
@@ -543,11 +545,13 @@ struct GraphicsManager {
                 xinxinoptix::LightDat ld;
                 zeno::vec3f nor{}, clr{};
 
-                ld.spread = spread;
                 ld.visible = visible;
                 ld.doubleside = doubleside;
+                ld.fluxFixed = fluxFixed;
                 ld.intensity = intensity;
                 ld.vIntensity = vIntensity;
+                ld.spreadMajor = spread[0];
+                ld.spreadMinor = spread[1];
                 ld.maxDistance = maxDistance;
                 ld.falloffExponent = falloffExponent;
 
@@ -556,12 +560,13 @@ struct GraphicsManager {
                 ld.textureKey = lightTexturePath;
                 ld.textureGamma = lightGamma;
 
-                std::function extraStep = [&]() { 
+                std::function extraStep = [&]() {
                     ld.normal.assign(nor.begin(), nor.end());
-                    ld.emission.assign(clr.begin(), clr.end());
+                    ld.color.assign(clr.begin(), clr.end());
                 };
 
-                if (shape == 3u) { // Triangle mesh Light
+                const auto shapeEnum = magic_enum::enum_cast<zeno::LightShape>(shape);
+                if (shapeEnum == zeno::LightShape::TriangleMesh) { // Triangle mesh Light
 
                     for (size_t i=0; i<prim_in->tris->size(); ++i) {
                         auto _p0_ = prim_in->verts[prim_in->tris[i][0]];
@@ -592,7 +597,7 @@ struct GraphicsManager {
                         }
 
                         nor = zeno::normalize(zeno::cross(_e1_, _e2_));
-                        clr = prim_in->verts.attr<zeno::vec3f>("clr")[ prim_in->tris[i][0] ];
+                        clr = color ;//prim_in->verts.attr<zeno::vec3f>("clr")[ prim_in->tris[i][0] ];
                         extraStep();
 
                         auto compound = key + std::to_string(i);
@@ -619,12 +624,14 @@ struct GraphicsManager {
                     // facing down in local space
                     nor = zeno::normalize(zeno::cross(e2, e1));
                     if (ivD) { nor *= -1; }
-                    
+
                     if (prim_in->verts.has_attr("clr")) {
                         clr = prim_in->verts.attr<zeno::vec3f>("clr")[0];
                     } else {
                         clr = zeno::vec3f(30000.0f, 30000.0f, 30000.0f);
                     }
+
+                    clr = color;
                     extraStep();
 
                     std::cout << "light: p"<<p0[0]<<" "<<p0[1]<<" "<<p0[2]<<"\n";

@@ -7,7 +7,6 @@
 #include "zensim/geometry/AnalyticLevelSet.h"
 #include "zensim/geometry/Collider.h"
 #include "zensim/geometry/SparseGrid.hpp"
-#include "zensim/geometry/SparseLevelSet.hpp"
 #include "zensim/geometry/Structure.hpp"
 #include "zensim/geometry/Structurefree.hpp"
 #include "zensim/physics/ConstitutiveModel.hpp"
@@ -24,10 +23,6 @@
 #include <zeno/types/UserData.h>
 #include <zeno/zeno.h>
 
-namespace zs {
-template <typename T>
-constexpr bool always_false = false;
-}
 namespace zeno {
 
 using ElasticModel = zs::variant<zs::FixedCorotated<float>, zs::NeoHookean<float>, zs::StvkWithHencky<float>,
@@ -327,7 +322,7 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
     struct Mapping {
         zs::Vector<int> originalToOrdered, orderedToOriginal;
     };
-    std::optional<Mapping> vertMapping;
+    std::optional<Mapping> vertMapping, eleMapping;
 
     bool hasVertexMapping() const noexcept {
         return vertMapping.has_value();
@@ -387,9 +382,28 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
                 eles(idOffset + d, i, int_c) = dsts[eles(idOffset + d, i, int_c)];
         });
     }
+    template <typename Pol, typename CodeRange, typename IndexRange>
+    void computeElementMortonCodes(Pol &pol, const bv_t &bv, const particles_t &eles, CodeRange &&codes,
+                                   IndexRange &&indices) {
+        using namespace zs;
+        constexpr execspace_e space = RM_CVREF_T(pol)::exec_tag::value;
+        const auto &pars = *particles;
+        auto nchns = eles.getPropertySize("inds");
+        pol(range(eles.size()),
+            [codes = std::begin(codes), indices = std::begin(indices), offset = eles.getPropertyOffset("inds"),
+             eles = view<space>(eles), verts = view<space>({}, pars), bv = bv, nchns] ZS_LAMBDA(int ei) mutable {
+                auto c = vec3f::zeros();
+                for (int d = 0; d != nchns; ++d)
+                    c += verts.pack(dim_c<3>, "x", eles(offset + d, ei, int_c));
+                c /= nchns;
+                auto coord = bv.getUniformCoord(c).template cast<f32>();
+                codes[ei] = (zs::u32)morton_code<3>(coord);
+                indices[ei] = ei;
+            });
+    }
 
-    template <typename Pol>
-    void orderByMortonCode(Pol &pol, const bv_t &bv) {
+    template <typename Pol, bool IncludeElement = true>
+    void orderByMortonCode(Pol &pol, const bv_t &bv, zs::wrapv<IncludeElement> = {}) {
         using namespace zs;
         constexpr execspace_e space = RM_CVREF_T(pol)::exec_tag::value;
         if (!particles)
@@ -440,9 +454,6 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
                 });
             images[s_particleTag] = std::move(dverts);
         }
-        auto update_indices = [&pol, &dsts](auto &eles) {
-
-        };
         // update indices (modified in-place)
         bool flag = false;
         if (category == category_e::curve || category == category_e::surface || category == category_e::tet)
@@ -471,6 +482,38 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
             else if (hasAuxData(s_surfHalfEdgeTag))
                 updateElementIndices(pol, operator[](s_surfHalfEdgeTag));
         }
+
+        if constexpr (!IncludeElement)
+            return;
+        {
+            auto &eles = getQuadraturePoints();
+            if (!eleMapping.has_value()) {
+                auto originalToOrdered = zs::Vector<int>{eles.get_allocator(), eles.size()};
+                auto orderedToOriginal = zs::Vector<int>{eles.get_allocator(), eles.size()};
+                eleMapping = Mapping{std::move(originalToOrdered), std::move(orderedToOriginal)};
+            }
+            auto &dsts = (*eleMapping).originalToOrdered;
+            auto &indices = (*eleMapping).orderedToOriginal;
+            dsts.resize(eles.size());
+            indices.resize(eles.size());
+            tempBuffer.resize(eles.size() * 2);
+            computeElementMortonCodes(pol, bv, eles, tempBuffer, dsts);
+            // radix sort
+            radix_sort_pair(pol, std::begin(tempBuffer), dsts.begin(), std::begin(tempBuffer) + eles.size(),
+                            indices.begin(), eles.size());
+            // compute inverse mapping
+            pol(range(eles.size()), [dsts = view<space>(dsts), indices = view<space>(indices)] ZS_LAMBDA(
+                                        int i) mutable { dsts[indices[i]] = i; });
+            auto newEles = particles_t{eles.get_allocator(), eles.getPropertyTags(), eles.size()};
+            pol(range(eles.size()),
+                [indices = view<space>(indices), newEles = view<space>(newEles), eles = view<space>(eles),
+                 nchns = (int)eles.numChannels()] ZS_LAMBDA(int i) mutable {
+                    auto srcNo = indices[i];
+                    for (int d = 0; d != nchns; ++d)
+                        newEles(d, i) = eles(d, srcNo);
+                });
+            eles = std::move(newEles);
+        }
     }
 
     std::shared_ptr<particles_t> particles{};
@@ -489,7 +532,7 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
 
 struct ZenoPartition : IObjectClone<ZenoPartition> {
     using Ti = int; // entry count
-    using table_t = zs::bcht<zs::vec<int, 3>, int, true, zs::universal_hash<zs::vec<int, 3>>, 32>;
+    using table_t = zs::bht<int, 3, int, 16>;
     using tag_t = zs::Vector<int>;
     using indices_t = zs::Vector<Ti>;
 
@@ -637,11 +680,8 @@ struct ZenoLevelSet : IObjectClone<ZenoLevelSet> {
     using const_transition_ls_t = zs::ConstTransitionLevelSetPtr<float, 3>;
     using levelset_t = zs::variant<basic_ls_t, const_sdf_vel_ls_t, const_transition_ls_t>;
 
-    template <zs::grid_e category = zs::grid_e::collocated>
-    using spls_t = typename basic_ls_t::template spls_t<category>;
-    using clspls_t = typename basic_ls_t::clspls_t;
-    using ccspls_t = typename basic_ls_t::ccspls_t;
-    using sgspls_t = typename basic_ls_t::sgspls_t;
+    using spls_t = typename basic_ls_t::spls_t;
+    using spvdb_t = typename basic_ls_t::spvdb_t;
     using dummy_ls_t = typename basic_ls_t::dummy_ls_t;
     using uniform_vel_ls_t = typename basic_ls_t::uniform_vel_ls_t;
 
@@ -655,11 +695,10 @@ struct ZenoLevelSet : IObjectClone<ZenoLevelSet> {
     bool holdsBasicLevelSet() const noexcept {
         return std::holds_alternative<basic_ls_t>(levelset);
     }
-    template <zs::grid_e category = zs::grid_e::collocated>
-    bool holdsSparseLevelSet(zs::wrapv<category> = {}) const noexcept {
+    bool holdsSparseLevelSet() const noexcept {
         return zs::match([](const auto &ls) {
             if constexpr (zs::is_same_v<RM_CVREF_T(ls), basic_ls_t>)
-                return ls.template holdsLevelSet<spls_t<category>>();
+                return ls.template holdsLevelSet<spls_t>();
             else
                 return false;
         })(levelset);
@@ -682,13 +721,17 @@ struct ZenoLevelSet : IObjectClone<ZenoLevelSet> {
     decltype(auto) getLevelSetSequence() noexcept {
         return std::get<const_transition_ls_t>(levelset);
     }
-    template <zs::grid_e category = zs::grid_e::collocated>
-    decltype(auto) getSparseLevelSet(zs::wrapv<category> = {}) const noexcept {
-        return std::get<basic_ls_t>(levelset).template getLevelSet<spls_t<category>>();
+    decltype(auto) getSparseLevelSet() const noexcept {
+        return std::get<basic_ls_t>(levelset).template getLevelSet<spls_t>();
     }
-    template <zs::grid_e category = zs::grid_e::collocated>
-    decltype(auto) getSparseLevelSet(zs::wrapv<category> = {}) noexcept {
-        return std::get<basic_ls_t>(levelset).template getLevelSet<spls_t<category>>();
+    decltype(auto) getSparseLevelSet() noexcept {
+        return std::get<basic_ls_t>(levelset).template getLevelSet<spls_t>();
+    }
+    decltype(auto) getVdbLevelSet() const noexcept {
+        return std::get<basic_ls_t>(levelset).template getLevelSet<spvdb_t>();
+    }
+    decltype(auto) getVdbLevelSet() noexcept {
+        return std::get<basic_ls_t>(levelset).template getLevelSet<spvdb_t>();
     }
 
     levelset_t levelset;
@@ -791,7 +834,6 @@ struct ZenoBoundary : IObjectClone<ZenoBoundary> {
     zs::vec<float, 3> dbdt{zs::vec<float, 3>::zeros()};
 };
 
-#if 0
 template <typename Pol, int codim, typename MarkIter>
 void mark_surface_boundary_verts(Pol &&pol, const ZenoParticles::particles_t &surf, zs::wrapv<codim>, MarkIter &&marks,
                                  int vOffset = 0) {
@@ -800,8 +842,7 @@ void mark_surface_boundary_verts(Pol &&pol, const ZenoParticles::particles_t &su
     auto allocator = get_temporary_memory_source(pol);
     using key_t = zs::vec<int, codim - 1>;
     bht<int, codim - 1, int, 16> tab{allocator, surf.size() * codim * 2};
-    tab.reset(pol);
-    pol(range(surf.size()), [tab = proxy<space>(tab), surf = view<space>(surf),
+    pol(range(surf.size()), [tab = view<space>(tab), surf = view<space>(surf),
                              indsOffset = surf.getPropertyOffset("inds")] ZS_LAMBDA(int ei) mutable {
         int i = surf(indsOffset, ei, int_c);
         for (int d = 0; d != codim; ++d) {
@@ -850,6 +891,5 @@ void mark_surface_boundary_verts(Pol &&pol, const ZenoParticles::particles_t &su
         }
     });
 }
-#endif
 
 } // namespace zeno

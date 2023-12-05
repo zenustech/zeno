@@ -208,7 +208,7 @@ struct Detangle2 : zeno::INode {
             zsparticles->setMeta(GIA::GIA_CS_ET_BUFFER_KEY,
                 zs::bht<int,2,int>{verts.get_allocator(),GIA::DEFAULT_MAX_GIA_INTERSECTION_PAIR});
         }
-        auto& csET = zsparticles->readMeta<zs::bht<int,2,int>>(GIA::GIA_CS_ET_BUFFER_KEY);
+        auto& csET = zsparticles->readMeta<zs::bht<int,2,int> &>(GIA::GIA_CS_ET_BUFFER_KEY);
 
         // if(!zsparticles->hasMeta(GIA::GIA_CS_EKT_BUFFER_KEY)) {
         //     zsparticles->setMeta(GIA::GIA_CS_EKT_BUFFER_KEY,
@@ -780,7 +780,7 @@ struct VisualizeDetanglePair : zeno::INode {
             zsparticles->setMeta(GIA::GIA_CS_ET_BUFFER_KEY,
                 zs::bht<int,2,int>{verts.get_allocator(),GIA::DEFAULT_MAX_GIA_INTERSECTION_PAIR});
         }
-        auto& csET = zsparticles->readMeta<zs::bht<int,2,int>>(GIA::GIA_CS_ET_BUFFER_KEY);  
+        auto& csET = zsparticles->readMeta<zs::bht<int,2,int> &>(GIA::GIA_CS_ET_BUFFER_KEY);  
         
         auto has_bvh = zsparticles->hasBvh(GIA::GIA_TRI_BVH_BUFFER_KEY);
         if(!zsparticles->hasBvh(GIA::GIA_TRI_BVH_BUFFER_KEY))

@@ -11,7 +11,7 @@
 #include "zensim/container/Vector.hpp"
 #include "zensim/geometry/AnalyticLevelSet.h"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
-#include "zensim/resource/Filesystem.hpp"
+#include "zensim/io/Filesystem.hpp"
 #include "zensim/zpc_tpls/fmt/color.h"
 #include "zensim/zpc_tpls/fmt/format.h"
 #include <chrono>

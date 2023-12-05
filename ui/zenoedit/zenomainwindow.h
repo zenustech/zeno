@@ -97,6 +97,7 @@ public:
         ACTION_SOLID,
         ACTION_SHADING,
         ACTION_OPTIX,
+        ACTION_UV_MODE,
         //View EnvTex
         ACTION_BLACK_WHITE,
         ACTION_GREEK,
@@ -121,6 +122,7 @@ public:
         ACTION_SET_NASLOC,
         ACTION_ZENCACHE,
         ACTION_SET_SHORTCUT,
+        ACTION_PREFERENCES,
         //Others
         ACTION_CUSTOM_UI,
         ACTION_ZOOM,

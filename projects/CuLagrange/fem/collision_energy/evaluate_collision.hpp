@@ -34,7 +34,7 @@
 
 #include "collision_utils.hpp"
 
-#include "../fem/Ccds.hpp"
+#include "../Ccds.hpp"
 // #include "edge_edge_sqrt_collision.hpp"
 // #include "edge_edge_collision.hpp"
 

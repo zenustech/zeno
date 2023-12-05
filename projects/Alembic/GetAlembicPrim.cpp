@@ -327,7 +327,8 @@ struct ImportAlembicPrim : INode {
             double start, _end;
             GetArchiveStartAndEndTime(archive, start, _end);
             auto obj = archive.getTop();
-            traverseABC(obj, *abctree, frameid, read_done, "");
+            bool read_face_set = get_input2<bool>("read_face_set");
+            traverseABC(obj, *abctree, frameid, read_done, read_face_set, "");
         }
         bool use_xform = get_input2<bool>("use_xform");
         auto index = get_input2<int>("index");
@@ -367,6 +368,7 @@ ZENDEFNODE(ImportAlembicPrim, {
         {"int", "index", "-1"},
         {"bool", "use_xform", "0"},
         {"bool", "triangulate", "0"},
+        {"bool", "read_face_set", "0"},
     },
     {
         "prim",

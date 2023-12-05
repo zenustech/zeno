@@ -2,6 +2,7 @@
 
 #include <zeno/core/INode.h>
 #include <zeno/core/IObject.h>
+#include <zeno/types/TextureObject.h>
 #include <vector>
 #include <string>
 #include <map>
@@ -53,6 +54,7 @@ struct EmissionPass {
     std::vector<CommonFunc> commons;  /* definition of common functions, including custom functions and pre-defined functions */
     std::string commonCode;           /* other common codes written directly in GLSL, e.g. "void myutilfunc() {...}" */
     std::string extensionsCode;       /* OpenGL extensions, e.g. "#extension GL_EXT_gpu_shader4 : enable" */
+    std::vector<std::shared_ptr<Texture2DObject>> tex2Ds;
 
     ZENO_API std::string typeNameOf(int type) const;
     ZENO_API std::string funcName(std::string const &fun) const;

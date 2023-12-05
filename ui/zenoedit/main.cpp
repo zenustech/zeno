@@ -65,13 +65,15 @@ int main(int argc, char *argv[])
         return blender_main(a);
     }
 
-    startUp(true);
-
 #ifdef ZENO_MULTIPROCESS
     if (argc >= 2 && !strcmp(argv[1], "--runner")) {
         extern int runner_main(const QCoreApplication & app);
+        startUp(false);
         return runner_main(a);
     }
+
+    startUp(true);
+
     if (argc >= 3 && !strcmp(argv[1], "-optix")) {
         //MessageBox(0, "runner", "runner", MB_OK);
         extern int optix_main(const QCoreApplication & app, 

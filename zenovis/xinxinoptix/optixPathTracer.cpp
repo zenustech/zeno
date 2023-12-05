@@ -1942,7 +1942,7 @@ static void addTriangleLightGeo(float3 p0, float3 p1, float3 p2) {
     geo.push_back(p0); geo.push_back(p1); geo.push_back(p2);
 }
 
-static void addLightPlane(float3 p0, float3 v1, float3 v2, float3 normal, float3 emission)
+static void addLightPlane(float3 p0, float3 v1, float3 v2, float3 normal)
 {
     float3 vert0 = p0, vert1 = p0 + v1, vert2 = p0 + v2, vert3 = p0 + v1 + v2;
 
@@ -2168,12 +2168,14 @@ void buildLightTree() {
         config |= dat.doubleside? zeno::LightConfigDoubleside: zeno::LightConfigNull;
         light.config = config;
 
-        light.emission.x = fmaxf(dat.emission.at(0), FLT_EPSILON);
-        light.emission.y = fmaxf(dat.emission.at(1), FLT_EPSILON);
-        light.emission.z = fmaxf(dat.emission.at(2), FLT_EPSILON);
+        light.color.x = fmaxf(dat.color.at(0), FLT_EPSILON);
+        light.color.y = fmaxf(dat.color.at(1), FLT_EPSILON);
+        light.color.z = fmaxf(dat.color.at(2), FLT_EPSILON);
 
-        light.spread = clamp(dat.spread, 0.0f, 1.0f);
-        auto void_angle = 0.5f * (1.0f - light.spread) * M_PIf;
+        light.spreadMajor = clamp(dat.spreadMajor, 0.0f, 1.0f);
+        light.spreadMinor = clamp(dat.spreadMinor, 0.0f, 1.0f);
+
+        auto void_angle = 0.5f * (1.0f - light.spreadMajor) * M_PIf;
         light.spreadNormalize = 2.f / (2.f + (2.f * void_angle - M_PIf) * tanf(void_angle));
 
         light.intensity  = dat.intensity;
@@ -2196,16 +2198,22 @@ void buildLightTree() {
         light.type  = magic_enum::enum_cast<zeno::LightType>(dat.type).value_or(zeno::LightType::Diffuse);
         light.shape = magic_enum::enum_cast<zeno::LightShape>(dat.shape).value_or(zeno::LightShape::Plane);
 
-        if (light.spread < 0.005f) {
+        if (light.spreadMajor < 0.005f) {
             light.type = zeno::LightType::Direction;
         }
 
-        if (light.shape == zeno::LightShape::Plane) {
+        if (light.shape == zeno::LightShape::Plane || light.shape == zeno::LightShape::Ellipse) {
 
             firstRectLightIdx = min(idx, firstRectLightIdx);
 
             light.setRectData(v0, v1, v2, light.N);
-            addLightPlane(v0, v1, v2, light.N, light.emission);
+            addLightPlane(v0, v1, v2, light.N);
+
+            light.rect.isEllipse = (light.shape == zeno::LightShape::Ellipse);
+
+            if (dat.fluxFixed > 0) {
+                light.intensity = dat.fluxFixed / light.rect.Area(); 
+            }
 
         } else if (light.shape == zeno::LightShape::Sphere) {
 
@@ -2214,13 +2222,40 @@ void buildLightTree() {
             light.setSphereData(center, radius);       
             addLightSphere(center, radius);
 
+            if (dat.fluxFixed > 0) {
+                auto intensity = dat.fluxFixed / light.sphere.area;
+                light.intensity = intensity;
+            }
+
         } else if (light.shape == zeno::LightShape::Point) {
             light.point = {center};
+            if (dat.fluxFixed > 0) {
+                auto intensity = dat.fluxFixed / (4 * M_PIf);
+                light.intensity = intensity;
+            }
+
         } else if (light.shape == zeno::LightShape::TriangleMesh) {
 
             firstTriangleLightIdx = min(idx, firstTriangleLightIdx);
             light.setTriangleData(v0, v1, v2, light.N, dat.coordsBufferOffset, dat.normalBufferOffset);
             addTriangleLightGeo(v0, v1, v2);
+        }
+
+        if (light.type == zeno::LightType::Spot) {
+
+            auto spread_major = clamp(light.spreadMajor, 0.01, 1.00);
+            auto spread_inner = clamp(light.spreadMinor, 0.01, 0.99);
+
+            auto major_angle = spread_major * 0.5f * M_PIf;
+            major_angle = fmaxf(major_angle, 2 * FLT_EPSILON);
+
+            auto inner_angle = spread_inner * major_angle;
+            auto falloff_angle = major_angle - inner_angle;
+
+            light.setConeData(center, light.N, 0.0f, major_angle, falloff_angle);
+        }
+        if (light.type == zeno::LightType::Projector) {
+            light.point = {center};
         }
 
         if ( OptixUtil::g_ies.count(dat.profileKey) > 0 ) {
@@ -2229,7 +2264,12 @@ void buildLightTree() {
             light.ies = val.ptr.handle;
             light.type = zeno::LightType::IES;
             //light.shape = zeno::LightShape::Point;
-            light.setConeData(center, light.N, radius, val.coneAngle);
+            light.setConeData(center, light.N, radius, val.coneAngle, FLT_EPSILON);
+
+            if (dat.fluxFixed > 0) {
+                auto scale = val.coneAngle / M_PIf;
+                light.intensity = dat.fluxFixed * scale * scale;
+            }
         } 
         
         if ( OptixUtil::g_tex.count(dat.textureKey) > 0 ) {
@@ -3372,7 +3412,7 @@ void set_window_size(int nx, int ny) {
 }
 
 void set_perspective(float const *U, float const *V, float const *W, float const *E, float aspect, float fov, float fpd, float aperture) {
-    set_perspective_by_fov(U,V,W,E,aspect,fov,0.0f,0.024f,fpd,aperture,0.0f,0.0f,0.0f,0.0f);
+    set_perspective_by_fov(U,V,W,E,aspect,fov,0,0.024f,fpd,aperture,0.0f,0.0f,0.0f,0.0f);
 }
 void set_perspective_by_fov(float const *U, float const *V, float const *W, float const *E, float aspect, float fov, int fov_type, float L, float focal_distance, float aperture, float pitch, float yaw, float h_shift, float v_shift) {
     auto &cam = state.params.cam;
@@ -3384,7 +3424,8 @@ void set_perspective_by_fov(float const *U, float const *V, float const *W, floa
     float half_radfov = fov * float(M_PI) / 360.0f;
     float half_tanfov = std::tan(half_radfov);
     cam.focal_length = L / 2.0f / half_tanfov;
-    if(aperture < 0.01f){
+    cam.focal_length = std::max(0.01f,cam.focal_length);
+    if(aperture > 24.0f || aperture <  0.5f){
         cam.aperture = 0.0f;
     }else{
         cam.aperture = cam.focal_length / aperture;
@@ -3411,7 +3452,7 @@ void set_perspective_by_fov(float const *U, float const *V, float const *W, floa
     cam.yaw = yaw;
     cam.horizontal_shift = h_shift;
     cam.vertical_shift = v_shift;
-    cam.focal_distance = focal_distance;
+    cam.focal_distance = std::max(cam.focal_length, focal_distance);
     camera_changed = true;
 }
 void set_perspective_by_focal_length(float const *U, float const *V, float const *W, float const *E, float aspect, float focal_length, float w, float h, float focal_distance, float aperture, float pitch, float yaw, float h_shift, float v_shift) {
@@ -3422,8 +3463,9 @@ void set_perspective_by_focal_length(float const *U, float const *V, float const
     cam.front = normalize(make_float3(W[0], W[1], W[2]));
 
     cam.focal_length = focal_length;
+    cam.focal_length = std::max(0.01f,cam.focal_length);
 
-    if(aperture < 0.01f){
+    if(aperture > 24.0f || aperture < 0.5f){
         cam.aperture = 0.0f;
     }else{
         cam.aperture = cam.focal_length / aperture;
@@ -3435,7 +3477,7 @@ void set_perspective_by_focal_length(float const *U, float const *V, float const
     cam.yaw = yaw;
     cam.horizontal_shift = h_shift;
     cam.vertical_shift = v_shift;
-    cam.focal_distance = focal_distance;
+    cam.focal_distance = std::max(cam.focal_length, focal_distance);
     camera_changed = true;
 }
 
@@ -3512,47 +3554,48 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         auto w = (*output_buffer_o).width();
         auto h = (*output_buffer_o).height();
         stbi_flip_vertically_on_write(true);
-        if (zeno::getSession().userData().get2<bool>("output_exr", true)) {
-            auto exr_path = path.substr(0, path.size() - 4) + ".exr";
-
-            // AOV
-            if (zeno::getSession().userData().get2<bool>("output_aov", true)) {
-                SaveMultiLayerEXR(
-                        {
+        bool enable_output_aov = zeno::getSession().userData().get2<bool>("output_aov", true);
+        bool enable_output_exr = zeno::getSession().userData().get2<bool>("output_exr", true);
+        auto exr_path = path.substr(0, path.size() - 4) + ".exr";
+        // AOV
+        if (enable_output_aov) {
+            SaveMultiLayerEXR(
+                    {
                             (float*)optixgetimg_extra("color"),
                             (float*)optixgetimg_extra("diffuse"),
                             (float*)optixgetimg_extra("specular"),
                             (float*)optixgetimg_extra("transmit"),
                             (float*)optixgetimg_extra("background"),
-                        },
-                        w,
-                        h,
-                        {
+                    },
+                    w,
+                    h,
+                    {
                             "",
                             "diffuse.",
                             "specular.",
                             "transmit.",
                             "background.",
-                        },
-                        exr_path.c_str()
-                );
-            }
-            else {
-                save_exr((float3 *)optixgetimg_extra("color"), w, h, exr_path);
-            }
+                    },
+                    exr_path.c_str()
+            );
         }
         else {
-            stbi_write_jpg(path.c_str(), w, h, 4, p, 100);
-            if (denoise) {
-                const float* _albedo_buffer = reinterpret_cast<float*>(state.albedo_buffer_p.handle);
-                //SaveEXR(_albedo_buffer, w, h, 4, 0, (path+".albedo.exr").c_str(), nullptr);
-                auto a_path = path + ".albedo.pfm";
-                write_pfm(a_path, w, h, _albedo_buffer);
+            if (enable_output_exr) {
+                save_exr((float3 *)optixgetimg_extra("color"), w, h, exr_path);
+            }
+            else {
+                stbi_write_jpg(path.c_str(), w, h, 4, p, 100);
+                if (denoise) {
+                    const float* _albedo_buffer = reinterpret_cast<float*>(state.albedo_buffer_p.handle);
+                    //SaveEXR(_albedo_buffer, w, h, 4, 0, (path+".albedo.exr").c_str(), nullptr);
+                    auto a_path = path + ".albedo.pfm";
+                    write_pfm(a_path, w, h, _albedo_buffer);
 
-                const float* _normal_buffer = reinterpret_cast<float*>(state.normal_buffer_p.handle);
-                //SaveEXR(_normal_buffer, w, h, 4, 0, (path+".normal.exr").c_str(), nullptr);
-                auto n_path = path + ".normal.pfm";
-                write_pfm(n_path, w, h, _normal_buffer);
+                    const float* _normal_buffer = reinterpret_cast<float*>(state.normal_buffer_p.handle);
+                    //SaveEXR(_normal_buffer, w, h, 4, 0, (path+".normal.exr").c_str(), nullptr);
+                    auto n_path = path + ".normal.pfm";
+                    write_pfm(n_path, w, h, _normal_buffer);
+                }
             }
         }
         zeno::log_info("optix: saving screenshot {}x{} to {}", w, h, path);

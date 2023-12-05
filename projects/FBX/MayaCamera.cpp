@@ -127,7 +127,7 @@ ZENO_DEFNODE(CameraNode)({
         {"vec3f", "up", "0,1,0"},
         {"vec3f", "view", "0,0,-1"},
         {"float", "fov", "45"},
-        {"float", "aperture", "0.1"},
+        {"float", "aperture", "11"},
         {"float", "focalPlaneDistance", "2.0"},
         {"string", "other", ""},
         {"int", "frame", "0"},
@@ -245,6 +245,49 @@ ZENO_DEFNODE(CameraEval)({
     {"FBX"},
 });
 
+struct ExtractCamera: zeno::INode {
+
+    virtual void apply() override {
+        auto cam = get_input2<zeno::CameraObject>("camobject");
+
+        auto pos = std::make_shared<zeno::NumericObject>();
+        auto up = std::make_shared<zeno::NumericObject>();
+        auto view = std::make_shared<zeno::NumericObject>();
+        auto fov = std::make_shared<zeno::NumericObject>();
+        auto aperture = std::make_shared<zeno::NumericObject>();
+        auto focalPlaneDistance = std::make_shared<zeno::NumericObject>();
+
+        pos->set<zeno::vec3f>(cam->pos);
+        up->set<zeno::vec3f>(cam->up);
+        view->set<zeno::vec3f>(cam->view);
+        fov->set<float>(cam->fov);
+        aperture->set<float>(cam->aperture);
+        focalPlaneDistance->set<float>(cam->focalPlaneDistance);
+
+
+        set_output("pos", std::move(pos));
+        set_output("up", std::move(up));
+        set_output("view", std::move(view));
+        set_output("fov", std::move(fov));
+        set_output("aperture", std::move(aperture));
+        set_output("focalPlaneDistance", std::move(focalPlaneDistance));
+    }
+};
+ZENDEFNODE(ExtractCamera,
+           {       /* inputs: */
+               {
+                    "camobject"
+               },  /* outputs: */
+               {
+                   "pos", "up", "view", "fov", "aperture", "focalPlaneDistance"
+               },  /* params: */
+               {
+
+               },  /* category: */
+               {
+                   "FBX",
+               }
+           });
 
 struct LightNode : INode {
     virtual void apply() override {
@@ -359,12 +402,14 @@ struct LightNode : INode {
         prim->userData().set2("color", std::move(color));
         prim->userData().set2("intensity", std::move(intensity));
 
+        auto fluxFixed = get_input2<float>("fluxFixed");
+        prim->userData().set2("fluxFixed", std::move(fluxFixed));
         auto maxDistance = get_input2<float>("maxDistance");
         prim->userData().set2("maxDistance", std::move(maxDistance));
         auto falloffExponent = get_input2<float>("falloffExponent");
         prim->userData().set2("falloffExponent", std::move(falloffExponent));
 
-        auto spread = get_input2<float>("spread");
+        auto spread = get_input2<zeno::vec2f>("spread");
         auto visible = get_input2<int>("visible");
         auto doubleside = get_input2<int>("doubleside");
 
@@ -440,10 +485,12 @@ ZENO_DEFNODE(LightNode)({
         {"vec3f", "color", "1, 1, 1"},
         {"float", "exposure", "0"},
         {"float", "intensity", "1"},
+        {"float", "fluxFixed", "-1.0"},
+
+        {"vec2f", "spread", "1.0, 0.0"},
         {"float", "maxDistance", "-1.0" },
         {"float", "falloffExponent", "2.0"},
-
-        {"float", "spread", "1"},
+        
         {"bool", "visible", "0"},
         {"bool", "invertdir", "0"},
         {"bool", "doubleside", "0"},

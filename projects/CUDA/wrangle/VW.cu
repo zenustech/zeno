@@ -148,7 +148,7 @@ struct ZSVolumeWrangler : zeno::INode {
             opts.symdims.clear();
             // PropertyTag can be used for structured binding automatically
             for (auto &&[name, nchns] : props)
-                def_sym(name.asString(), nchns, spgPtr->isDoubleBufferAttrib(name.asString()));
+                def_sym(std::string(name), nchns, spgPtr->isDoubleBufferAttrib(std::string(name)));
 
             auto prog = compiler.compile(code, opts);
             auto jitCode = assembler.assemble(prog->assembly);

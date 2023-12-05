@@ -155,7 +155,7 @@ namespace zenoui
             case CONTROL_WRITEPATH:
             {
                 const QString& path = UiHelper::variantToString(value);
-                ZenoParamPathEdit* pPathEditor = new ZenoParamPathEdit(path, ctrl, m_nodeParams.lineEditParam);
+                ZenoParamPathEdit* pPathEditor = new ZenoParamPathEdit(path, ctrl, m_nodeParams.lineEditParam, cbSet.cbGetZsgDir);
                 pPathEditor->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(200, zenoui::g_ctrlHeight)));
                 pPathEditor->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 pPathEditor->setData(GVKEY_TYPE, type);
@@ -339,7 +339,7 @@ namespace zenoui
                 break;
             }
             case CONTROL_HSLIDER: 
-			{
+            {
                 SLIDER_INFO sliderInfo;
                 if (controlProps.type() == QMetaType::QVariantMap) {
                     QVariantMap props = controlProps.toMap();
@@ -353,13 +353,13 @@ namespace zenoui
                 pSlider->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, zenoui::g_ctrlHeight)));
                 pSlider->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 QObject::connect(pSlider, &ZenoParamSlider::valueChanged, [=](int value) { 
-					cbSet.cbEditFinished(value);
-				});
+                    cbSet.cbEditFinished(value);
+                });
                 pItemWidget = pSlider;
                 break;
-			}
+            }
             case CONTROL_HSPINBOX: 
-			{
+            {
                 SLIDER_INFO sliderInfo;
                 if (controlProps.type() == QMetaType::QVariantMap) {
                     QVariantMap props = controlProps.toMap();
@@ -374,8 +374,8 @@ namespace zenoui
                 pSpinBox->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 pSpinBox->setValue(value.toInt());
                 QObject::connect(pSpinBox, &ZenoParamSpinBox::valueChanged, [=](int value) { 
-					cbSet.cbEditFinished(value); 
-				});
+                    cbSet.cbEditFinished(value); 
+                });
                 pItemWidget = pSpinBox;
                 break;
             }

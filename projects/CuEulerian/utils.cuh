@@ -2,6 +2,7 @@
 #if __CUDA_ARCH__ >= 800
 #include <cooperative_groups/reduce.h>
 #endif
+#include "EulerianStructures.hpp"
 
 namespace zeno {
 
@@ -94,8 +95,9 @@ inline T reduce(zs::CudaExecutionPolicy &cudaPol, const zs::Vector<T> &res, Op o
     return ret.getVal();
 }
 
+// sparse grid
 inline auto src_tag(ZenoSparseGrid *spg, zs::SmallString attr_) {
-    std::string attr = attr_.asString();
+    std::string attr = std::string(attr_);
     std::string metaTag = attr + "_cur";
     if (spg->hasMeta(metaTag)) {
         int cur = spg->readMeta<int>(metaTag);
@@ -108,7 +110,7 @@ inline auto src_tag(std::shared_ptr<ZenoSparseGrid> spg, zs::SmallString attr_) 
 }
 
 inline auto dst_tag(ZenoSparseGrid *spg, zs::SmallString attr_) {
-    std::string attr = attr_.asString();
+    std::string attr = std::string(attr_);
     std::string metaTag = attr + "_cur";
     if (spg->hasMeta(metaTag)) {
         int cur = spg->readMeta<int>(metaTag);
@@ -122,7 +124,7 @@ inline auto dst_tag(std::shared_ptr<ZenoSparseGrid> spg, zs::SmallString attr_) 
 }
 
 inline void update_cur(ZenoSparseGrid *spg, zs::SmallString attr_) {
-    std::string attr = attr_.asString();
+    std::string attr = std::string(attr_);
     std::string metaTag = attr + "_cur";
     if (spg->hasMeta(metaTag)) {
         int &cur = spg->readMeta<int &>(metaTag);
@@ -130,6 +132,46 @@ inline void update_cur(ZenoSparseGrid *spg, zs::SmallString attr_) {
     }
 }
 inline void update_cur(std::shared_ptr<ZenoSparseGrid> spg, zs::SmallString attr_) {
+    update_cur(spg.get(), attr_);
+}
+
+// adaptive grid
+inline auto src_tag(ZenoAdaptiveGrid *spg, zs::SmallString attr_) {
+    std::string attr = std::string(attr_);
+    std::string metaTag = attr + "_cur";
+    if (spg->hasMeta(metaTag)) {
+        int cur = spg->readMeta<int>(metaTag);
+        attr += std::to_string(cur);
+    }
+    return zs::SmallString{attr};
+}
+inline auto src_tag(std::shared_ptr<ZenoAdaptiveGrid> spg, zs::SmallString attr_) {
+    return src_tag(spg.get(), attr_);
+}
+
+inline auto dst_tag(ZenoAdaptiveGrid *spg, zs::SmallString attr_) {
+    std::string attr = std::string(attr_);
+    std::string metaTag = attr + "_cur";
+    if (spg->hasMeta(metaTag)) {
+        int cur = spg->readMeta<int>(metaTag);
+        cur ^= 1;
+        attr += std::to_string(cur);
+    }
+    return zs::SmallString{attr};
+}
+inline auto dst_tag(std::shared_ptr<ZenoAdaptiveGrid> spg, zs::SmallString attr_) {
+    return dst_tag(spg.get(), attr_);
+}
+
+inline void update_cur(ZenoAdaptiveGrid *spg, zs::SmallString attr_) {
+    std::string attr = std::string(attr_);
+    std::string metaTag = attr + "_cur";
+    if (spg->hasMeta(metaTag)) {
+        int &cur = spg->readMeta<int &>(metaTag);
+        cur ^= 1;
+    }
+}
+inline void update_cur(std::shared_ptr<ZenoAdaptiveGrid> spg, zs::SmallString attr_) {
     update_cur(spg.get(), attr_);
 }
 

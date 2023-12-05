@@ -119,7 +119,7 @@ __forceinline__ __device__ int atomicAggInc(int *ctr) noexcept {
 }
 #define USE_COALESCED 1
 
-void IPCSystem::markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol, std::true_type) {
+void IPCSystem::markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol, zs::true_type) {
     // exclSes, exclSts, stInds, seInds, seBvh
     using namespace zs;
     exclSes.reset(0);
@@ -1041,7 +1041,7 @@ void IPCSystem::precomputeFrictions(zs::CudaExecutionPolicy &pol, T dHat, T xi) 
     }
 }
 
-void IPCSystem::project(zs::CudaExecutionPolicy &pol, std::true_type, const zs::SmallString tag) {
+void IPCSystem::project(zs::CudaExecutionPolicy &pol, zs::true_type, const zs::SmallString tag) {
     using namespace zs;
     constexpr execspace_e space = execspace_e::cuda;
     // projection
@@ -1090,7 +1090,7 @@ void IPCSystem::project(zs::CudaExecutionPolicy &pol, const zs::SmallString tag)
             }
         });
 }
-void IPCSystem::precondition(zs::CudaExecutionPolicy &pol, std::true_type, const zs::SmallString srcTag,
+void IPCSystem::precondition(zs::CudaExecutionPolicy &pol, zs::true_type, const zs::SmallString srcTag,
                              const zs::SmallString dstTag) {
     using namespace zs;
     constexpr execspace_e space = execspace_e::cuda;
@@ -1133,7 +1133,7 @@ void IPCSystem::precondition(zs::CudaExecutionPolicy &pol, const zs::SmallString
     });
 }
 
-void IPCSystem::multiply(zs::CudaExecutionPolicy &pol, std::true_type, const zs::SmallString dxTag,
+void IPCSystem::multiply(zs::CudaExecutionPolicy &pol, zs::true_type, const zs::SmallString dxTag,
                          const zs::SmallString bTag) {
     using namespace zs;
     constexpr execspace_e space = execspace_e::cuda;
@@ -2854,7 +2854,7 @@ typename IPCSystem::T IPCSystem::energy(zs::CudaExecutionPolicy &pol, const zs::
     return E;
 }
 
-void IPCSystem::cgsolve(zs::CudaExecutionPolicy &cudaPol, std::true_type) {
+void IPCSystem::cgsolve(zs::CudaExecutionPolicy &cudaPol, zs::true_type) {
     // input "grad", multiply, constraints
     // output "dir"
     using namespace zs;
@@ -2877,16 +2877,16 @@ void IPCSystem::cgsolve(zs::CudaExecutionPolicy &cudaPol, std::true_type) {
         //    cgtemp.tuple<3>(dirOffset, i) = (vtemp.pack<3>(xtildeOffset, i) - vtemp.pack<3>(xnOffset, i)) * dt;
     });
     // temp = A * dir
-    multiply(cudaPol, std::true_type{}, "dir", "temp");
-    project(cudaPol, std::true_type{}, "temp"); // project production
+    multiply(cudaPol, zs::true_type{}, "dir", "temp");
+    project(cudaPol, zs::true_type{}, "temp"); // project production
     // r = grad - temp
     cudaPol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), cgtemp = proxy<space>({}, cgtemp),
                                  rOffset = cgtemp.getPropertyOffset("r"), gradOffset = vtemp.getPropertyOffset("grad"),
                                  tempOffset = cgtemp.getPropertyOffset("temp")] ZS_LAMBDA(int i) mutable {
         cgtemp.tuple<3>(rOffset, i) = vtemp.pack<3>(gradOffset, i) - cgtemp.pack<3>(tempOffset, i);
     });
-    // project(cudaPol, std::true_type{}, "r"); // project right hand side
-    precondition(cudaPol, std::true_type{}, "r", "q");
+    // project(cudaPol, zs::true_type{}, "r"); // project right hand side
+    precondition(cudaPol, zs::true_type{}, "r", "q");
     cudaPol(zs::range(numDofs), [cgtemp = proxy<space>({}, cgtemp), pOffset = cgtemp.getPropertyOffset("p"),
                                  qOffset = cgtemp.getPropertyOffset("q")] ZS_LAMBDA(int i) mutable {
         cgtemp.tuple<3>(pOffset, i) = cgtemp.pack<3>(qOffset, i);
@@ -2909,8 +2909,8 @@ void IPCSystem::cgsolve(zs::CudaExecutionPolicy &cudaPol, std::true_type) {
 
         if (residualPreconditionedNorm2 <= localTol2)
             break;
-        multiply(cudaPol, std::true_type{}, "p", "temp");
-        project(cudaPol, std::true_type{}, "temp"); // project production
+        multiply(cudaPol, zs::true_type{}, "p", "temp");
+        project(cudaPol, zs::true_type{}, "temp"); // project production
 
         double alpha = zTrk / zeno::dot(cudaPol, wrapt<double>{}, cgtemp, "temp", "p");
         cudaPol(range(numDofs), [cgtemp = proxy<space>({}, cgtemp), dirOffset = cgtemp.getPropertyOffset("dir"),
@@ -2922,7 +2922,7 @@ void IPCSystem::cgsolve(zs::CudaExecutionPolicy &cudaPol, std::true_type) {
                 cgtemp.pack(dim_c<3>, rOffset, vi) - alpha * cgtemp.pack<3>(tempOffset, vi);
         });
 
-        precondition(cudaPol, std::true_type{}, "r", "q");
+        precondition(cudaPol, zs::true_type{}, "r", "q");
         double zTrkLast = zTrk;
         zTrk = zeno::dot(cudaPol, wrapt<double>{}, cgtemp, "q", "r");
         if (zs::isnan(zTrk, zs::exec_seq)) {
@@ -2946,7 +2946,7 @@ void IPCSystem::cgsolve(zs::CudaExecutionPolicy &cudaPol, std::true_type) {
                                      gradOffset = vtemp.getPropertyOffset("grad")] ZS_LAMBDA(int i) mutable {
             cgtemp.tuple<3>(tempOffset, i) = vtemp.pack<3>(gradOffset, i);
         });
-        precondition(cudaPol, std::true_type{}, "temp", "dir");
+        precondition(cudaPol, zs::true_type{}, "temp", "dir");
         zeno::log_warn("falling back to gradient descent.");
     }
     cudaPol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), cgtemp = proxy<space>({}, cgtemp)] ZS_LAMBDA(
@@ -3387,7 +3387,7 @@ bool IPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
         // prepare float edition
         convertHessian(pol);
         // CG SOLVE
-        cgsolve(pol, std::true_type{});
+        cgsolve(pol, zs::true_type{});
 #elif 1
         systemSolve(pol);
 #else

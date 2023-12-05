@@ -11,6 +11,9 @@
 #include <Alembic/Abc/ErrorHandler.h>
 #include "ABCTree.h"
 #include <numeric>
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 using namespace Alembic::AbcGeom;
 namespace zeno {
@@ -313,6 +316,11 @@ struct WriteAlembic2 : INode {
         int frame_start = get_input2<int>("frame_start");
         int frame_end = get_input2<int>("frame_end");
         std::string path = get_input2<std::string>("path");
+        auto folderPath = fs::path(path).parent_path();
+
+        if (!fs::exists(folderPath)) {
+            fs::create_directories(folderPath);
+        }
         if (usedPath != path) {
             usedPath = path;
             archive = {Alembic::AbcCoreOgawa::WriteArchive(), path};
@@ -479,12 +487,21 @@ struct WriteAlembic2 : INode {
             points.setTimeSampling(1);
             OPointsSchema::Sample samp(V3fArraySample( ( const V3f * )prim->verts.data(), prim->verts.size() ));
             std::vector<uint64_t> ids(prim->verts.size());
-            std::iota(ids.begin(), ids.end(), 0);
+            if (prim->verts.attr_is<int>("id")) {
+                auto &ids_ = prim->verts.attr<int>("id");
+                for (auto i = 0; i < prim->verts.size(); i++) {
+                    ids[i] = ids_[i];
+                }
+            }
+            else {
+                std::iota(ids.begin(), ids.end(), 0);
+            }
             samp.setIds(Alembic::Abc::UInt64ArraySample(ids.data(), ids.size()));
             write_velocity(prim, samp);
             write_attrs(prim, points, samp);
             points.set( samp );
         }
+        set_output("prim", prim);
     }
 };
 
@@ -498,7 +515,9 @@ ZENDEFNODE(WriteAlembic2, {
         {"fps"},
         {"bool", "flipFrontBack", "1"},
     },
-    {},
+    {
+        {"prim"},
+    },
     {},
     {"alembic"},
 });

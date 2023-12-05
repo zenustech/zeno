@@ -629,13 +629,7 @@ struct TransformZSLevelSet : INode {
             match(
                 [&b](basic_ls_t &basicLs) {
                     match(
-                        [b](std::shared_ptr<typename basic_ls_t::clspls_t> lsPtr) {
-                            lsPtr->translate(zs::vec<float, 3>{b[0], b[1], b[2]});
-                        },
-                        [b](std::shared_ptr<typename basic_ls_t::ccspls_t> lsPtr) {
-                            lsPtr->translate(zs::vec<float, 3>{b[0], b[1], b[2]});
-                        },
-                        [b](std::shared_ptr<typename basic_ls_t::sgspls_t> lsPtr) {
+                        [b](std::shared_ptr<typename basic_ls_t::spls_t> lsPtr) {
                             lsPtr->translate(zs::vec<float, 3>{b[0], b[1], b[2]});
                         },
                         [](auto &lsPtr) {
@@ -655,9 +649,7 @@ struct TransformZSLevelSet : INode {
             auto s = get_input<NumericObject>("scaling")->get<float>();
             match(
                 [&s](basic_ls_t &basicLs) {
-                    match([s](std::shared_ptr<typename basic_ls_t::clspls_t> lsPtr) { lsPtr->scale(s); },
-                          [s](std::shared_ptr<typename basic_ls_t::ccspls_t> lsPtr) { lsPtr->scale(s); },
-                          [s](std::shared_ptr<typename basic_ls_t::sgspls_t> lsPtr) { lsPtr->scale(s); },
+                    match([s](std::shared_ptr<typename basic_ls_t::spls_t> lsPtr) { lsPtr->scale(s); },
                           [](auto &lsPtr) {
                               auto msg = get_var_type_str(*lsPtr);
                               throw std::runtime_error(
@@ -675,15 +667,12 @@ struct TransformZSLevelSet : INode {
             auto rot = zs::Rotation<float, 3>{yprAngles[0], yprAngles[1], yprAngles[2], zs::degree_c, zs::ypr_c};
             match(
                 [&rot](basic_ls_t &basicLs) {
-                    match(
-                        [rot](std::shared_ptr<typename basic_ls_t::clspls_t> lsPtr) { lsPtr->rotate(rot.transpose()); },
-                        [rot](std::shared_ptr<typename basic_ls_t::ccspls_t> lsPtr) { lsPtr->rotate(rot.transpose()); },
-                        [rot](std::shared_ptr<typename basic_ls_t::sgspls_t> lsPtr) { lsPtr->rotate(rot.transpose()); },
-                        [](auto &lsPtr) {
-                            auto msg = get_var_type_str(*lsPtr);
-                            throw std::runtime_error(
-                                fmt::format("levelset of type [{}] cannot be transformed yet.", msg));
-                        })(basicLs._ls);
+                    match([rot](std::shared_ptr<typename basic_ls_t::spls_t> lsPtr) { lsPtr->rotate(rot.transpose()); },
+                          [](auto &lsPtr) {
+                              auto msg = get_var_type_str(*lsPtr);
+                              throw std::runtime_error(
+                                  fmt::format("levelset of type [{}] cannot be transformed yet.", msg));
+                          })(basicLs._ls);
                 },
                 [](auto &ls) {
                     auto msg = get_var_type_str(ls);
