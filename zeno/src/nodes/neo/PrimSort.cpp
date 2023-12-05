@@ -3,6 +3,7 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/funcs/PrimitiveUtils.h>
 #include <zeno/para/parallel_for.h>
+#include <stdexcept>
 
 namespace zeno {
 
