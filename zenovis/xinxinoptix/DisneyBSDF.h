@@ -300,7 +300,7 @@ namespace DisneyBSDF{
         float diffPr = dielectricWt;
         float sssPr = dielectricWt  * psss;
         float dielectricPr = dielectricWt * Luminance(mix(Cspec0, vec3(1.0), schlickWt));
-        float metalPr = metalWt * Luminance(mix(mat.basecolor, vec3(1.0), schlickWt));
+        float metalPr = metalWt;
         float glassPr = glassWt;
         float clearCtPr = 0.25 * mat.clearcoat;
 
@@ -402,6 +402,7 @@ namespace DisneyBSDF{
         }
         if(clearCtPr>0.0 && reflect)
         {
+            vec3 wm = normalize(wi + wo);
             vec3 s = BRDFBasics::EvalClearcoat(mat.clearcoatRoughness, wo, wi,
                                          wm, tmpPdf) * 0.25 * mat.clearcoat  * illum;
             sterm = sterm + s;
@@ -581,7 +582,7 @@ namespace DisneyBSDF{
         float diffPr = dielectricWt ;
         float sssPr = dielectricWt  * psss;
         float dielectricPr = dielectricWt * Luminance(mix(Cspec0, vec3(1.0), schlickWt));
-        float metalPr = metalWt * Luminance(mix(mat.basecolor, vec3(1.0), schlickWt));
+        float metalPr = metalWt;
         float glassPr = glassWt;
         float clearCtPr = 0.25 * mat.clearcoat;
 
@@ -661,21 +662,23 @@ namespace DisneyBSDF{
             float ax, ay;
             BRDFBasics::CalculateAnisotropicParams(mat.roughness,mat.anisotropic,ax,ay);
 
-            vec3 wm = BRDFBasics::SampleGGXVNDF(wo.z>0?wo:-wo, ax, ay, r1, r2);
+            vec3 vtmp = wo;
+            vtmp.z = wo.z>0?vtmp.z:-vtmp.z;
+            vec3 wm = BRDFBasics::SampleGGXVNDF(vtmp, ax, ay, r1, r2);
 
             if (wm.z < 0.0)
-              wm = -wm;
+              wm.z = -wm.z;
 
-            wm = wo.z>0? wm:-wm;
+            wm.z = wo.z>0? wm.z:-wm.z;
 
             wi = normalize(reflect(-wo, wm));
             tbn.inverse_transform(wi);
             wi = normalize(wi);
 
-            if(dot(wi, N2)<0)
-            {
-              wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
-            }
+//            if(dot(wi, N2)<0)
+//            {
+//              wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
+//            }
         }else if(r3<p4)//glass
         {
 
@@ -721,15 +724,15 @@ namespace DisneyBSDF{
             vec3 wm = BRDFBasics::SampleGTR1(mat.clearcoatRoughness, r1, r2);
 
             if (wm.z < 0.0)
-              wm = -wm;
+              wm.z = -wm.z;
             wm = wo.z>0?wm:-wm;
             wi = normalize(reflect(-wo, wm));
             tbn.inverse_transform(wi);
             wi = normalize(wi);
-            if(dot(wi, N2)<0)
-            {
-              wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
-            }
+//            if(dot(wi, N2)<0)
+//            {
+//              wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
+//            }
         }
         tbn.inverse_transform(wo);
         float pdf, pdf2;
