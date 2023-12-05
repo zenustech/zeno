@@ -185,7 +185,14 @@ struct SmartTexture2D : ShaderNodeClone<SmartTexture2D>
         if (has_input("coord")) {
             coord = em->determineExpr(get_input("coord").get());
         }
-        em->emitCode(zeno::format("{}(texture2D(zenotex[{}], vec2({}) * {}))", type, texId, coord, uvtiling));
+        auto postprocess = get_input2<std::string>("post_process");
+        if(postprocess == "raw"){
+            em->emitCode(zeno::format("{}(texture2D(zenotex[{}], vec2({}) * {}))", type, texId, coord, uvtiling));
+        }else if (postprocess == "srgb"){
+            em->emitCode(zeno::format("pow({}(texture2D(zenotex[{}], vec2({}) * {})),2.2f)", type, texId, coord, uvtiling));
+        }else if (postprocess == "normal_map"){
+            em->emitCode(zeno::format("{}(texture2D(zenotex[{}], vec2({}) * {})) * 2.0f - 1.0f", type, texId, coord, uvtiling));
+        }
     }
 };
 
@@ -195,6 +202,7 @@ ZENDEFNODE(SmartTexture2D, {
         {"coord"},
         {"vec2f", "uvtiling", "1,1"},
         {"enum float vec2 vec3 vec4", "type", "vec3"},
+        {"enum raw srgb normal_map", "post_process", "raw"}
     },
     {
         {"shader", "out"},
