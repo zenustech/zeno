@@ -311,20 +311,6 @@ struct Detangle2 : zeno::INode {
                     kttemp("d",kti) = -kttemp.pack(dim_c<3>,"nrm",kti).dot(ktvs[0]);
             });         
 
-            // if(!kboundary->hasBvh(GIA::GIA_TRI_BVH_BUFFER_KEY)) {
-            //     kboundary->bvh(GIA::GIA_TRI_BVH_BUFFER_KEY) = LBvh<3,int,T>{};
-            //     auto& ktri_bvh = kboundary->bvh(GIA::GIA_TRI_BVH_BUFFER_KEY); 
-            //     auto kbvs = retrieve_bounding_volumes(cudaExec,kvtemp,ktris,wrapv<3>{},(T)0,"x");
-            //     ktri_bvh.build(cudaExec,kbvs);
-            // }else {
-            //     auto need_refit_bvh = get_input2<bool>("refit_kboundary_bvh");
-            //     if(need_refit_bvh) {
-            //         auto& ktri_bvh = kboundary->bvh(GIA::GIA_TRI_BVH_BUFFER_KEY); 
-            //         auto kbvs = retrieve_bounding_volumes(cudaExec,kvtemp,ktris,wrapv<3>{},(T)0,"x");
-            //         ktri_bvh.refit(cudaExec,kbvs);
-            //     }
-            // }
-
             auto kbvs = retrieve_bounding_volumes(cudaExec,kvtemp,ktris,wrapv<3>{},(T)0,"x");
             ktri_bvh.build(cudaExec,kbvs);     
         }

@@ -2105,7 +2105,7 @@ void calc_continous_self_PT_collision_impulse_with_toc(Pol& pol,
     const MassTileVec& mass,
     const PosTileVec& verts,const zs::SmallString& xtag,const zs::SmallString& vtag,
     const TrisTileVec& tris,
-    // const THICKNESS_REAL& thickness,
+    const T& thickness,
     TriBvh& triCCDBvh,
     bool refit_bvh,
     PTHashMap& csPT,
@@ -2132,7 +2132,7 @@ void calc_continous_self_PT_collision_impulse_with_toc(Pol& pol,
         std::cout << "build continous PT spacial structure" << std::endl;
 
 
-        auto bvs = retrieve_bounding_volumes(pol,verts,tris,verts,wrapv<3>{},(T)1.0,(T)0,xtag,vtag);
+        auto bvs = retrieve_bounding_volumes(pol,verts,tris,verts,wrapv<3>{},(T)1.0,(T)thickness,xtag,vtag);
         if(refit_bvh)
             triCCDBvh.refit(pol,bvs);
         else
@@ -2151,7 +2151,7 @@ void calc_continous_self_PT_collision_impulse_with_toc(Pol& pol,
             verts = proxy<space>({},verts),
             tris = proxy<space>({},tris),
             // csPT = proxy<space>(csPT),
-            // thickness = thickness,
+            thickness = thickness,
             tocs = proxy<space>(tocs),
             output_debug_inform = output_debug_inform,
             impulse_buffer = proxy<space>(impulse_buffer),
@@ -2196,7 +2196,7 @@ void calc_continous_self_PT_collision_impulse_with_toc(Pol& pol,
                         vs[i] = verts.pack(dim_c<3>,vtag,inds[i]);
                     }
                     auto alpha = (T)1.0;
-                    if(!accd::ptccd(ps[3],ps[0],ps[1],ps[2],vs[3],vs[0],vs[1],vs[2],(T)0.2,(T)0,alpha))
+                    if(!accd::ptccd(ps[3],ps[0],ps[1],ps[2],vs[3],vs[0],vs[1],vs[2],(T)0.2,(T)thickness,alpha))
                         return;
                     if(alpha < min_alpha) {
                         min_alpha = alpha;
@@ -2807,6 +2807,7 @@ void calc_continous_self_EE_collision_impulse_with_toc(Pol& pol,
     const MassTileVec& mass,
     const PosTileVec& verts,const zs::SmallString& xtag,const zs::SmallString& vtag,
     const EdgeTileVec& edges,
+    const T& thickness,
     const size_t& start_edge_id,
     const size_t& end_edge_id,
     EdgeBvh& edgeCCDBvh,
@@ -2831,7 +2832,7 @@ void calc_continous_self_EE_collision_impulse_with_toc(Pol& pol,
 
 
         // ALLOCATION BOTTLENECK 1
-        auto edgeBvs = retrieve_bounding_volumes(pol,verts,edges,verts,wrapv<2>{},(T)1.0,(T)0,xtag,vtag);
+        auto edgeBvs = retrieve_bounding_volumes(pol,verts,edges,verts,wrapv<2>{},(T)1.0,(T)thickness,xtag,vtag);
         if(refit_bvh)
             edgeCCDBvh.refit(pol,edgeBvs);
         else
@@ -2859,7 +2860,7 @@ void calc_continous_self_EE_collision_impulse_with_toc(Pol& pol,
             invMass = proxy<space>({},invMass),
             impulse_buffer = proxy<space>(impulse_buffer),
             impulse_count = proxy<space>(impulse_count),
-            // thickness = thickness,
+            thickness = thickness,
             output_debug_inform = output_debug_inform,
             eps = eps,
             csEE = proxy<space>(csEE),
@@ -2919,7 +2920,7 @@ void calc_continous_self_EE_collision_impulse_with_toc(Pol& pol,
                     }
 
                     auto alpha = (T)1.0;
-                    if(!accd::eeccd(ps[0],ps[1],ps[2],ps[3],vs[0],vs[1],vs[2],vs[3],(T)0.2,(T)0,alpha))
+                    if(!accd::eeccd(ps[0],ps[1],ps[2],ps[3],vs[0],vs[1],vs[2],vs[3],(T)0.1,(T)thickness,alpha))
                         return;     
 
                     if(alpha < min_alpha) {
