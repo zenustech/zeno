@@ -182,6 +182,8 @@ struct Params
     uint32_t firstSphereLightIdx;
     uint32_t firstTriangleLightIdx;
 
+    uint32_t maxInstanceID;
+
     unsigned long long lightTreeSampler;
     unsigned long long triangleLightCoordsBuffer;
     unsigned long long triangleLightNormalBuffer;

@@ -993,6 +993,11 @@ void buildRootIAS()
             optix_instances.push_back( optix_instance );
         }
 
+        uint32_t MAX_INSTANCE_ID;
+        optixDeviceContextGetProperty( state.context,
+            OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID, &MAX_INSTANCE_ID, sizeof(MAX_INSTANCE_ID));
+        state.params.maxInstanceID = MAX_INSTANCE_ID;
+
         //process light
         if (lightsWrapper.lightTrianglesGas != 0)
         {
@@ -1003,7 +1008,7 @@ void buildRootIAS()
             auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
 
             opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
-            opinstance.instanceId = OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID-2;
+            opinstance.instanceId = MAX_INSTANCE_ID-2;
             opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
             opinstance.visibilityMask = LightMatMask;
             opinstance.traversableHandle = lightsWrapper.lightTrianglesGas;
@@ -1021,7 +1026,7 @@ void buildRootIAS()
             auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
 
             opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
-            opinstance.instanceId = OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID-1;
+            opinstance.instanceId = MAX_INSTANCE_ID-1;
             opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
             opinstance.visibilityMask = LightMatMask;
             opinstance.traversableHandle = lightsWrapper.lightPlanesGas;
@@ -1039,7 +1044,7 @@ void buildRootIAS()
             auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
 
             opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
-            opinstance.instanceId = OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID;
+            opinstance.instanceId = MAX_INSTANCE_ID;
             opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
             opinstance.visibilityMask = LightMatMask;
             opinstance.traversableHandle = lightsWrapper.lightSpheresGas;
