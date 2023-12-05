@@ -151,9 +151,12 @@ struct BuildSurfaceHalfEdgeStructure : zeno::INode {
 #endif
 
 		zs::bht<int,1,int> edgeSet{tris.get_allocator(),tris.size() * 3};	
+		zs::bht<int,1,int> boundaryHalfEdgeSet{tris.get_allocator(),tris.size() * 3};
 		edgeSet.reset(cudaPol,true);
+		boundaryHalfEdgeSet.reset(cudaPol,true);
 		cudaPol(zs::range(halfEdge.size()),[
 			halfedges = proxy<space>({},halfEdge),
+			boundaryHalfEdgeSet = proxy<space>(boundaryHalfEdgeSet),
 			edgeSet = proxy<space>(edgeSet),
 			tris = proxy<space>({},tris)] ZS_LAMBDA(int hi) mutable {
 				auto ti = zs::reinterpret_bits<int>(halfedges("to_face",hi));
@@ -162,6 +165,8 @@ struct BuildSurfaceHalfEdgeStructure : zeno::INode {
 				zs::vec<int,2> edge{tri[local_idx],tri[(local_idx + 1) % 3]};
 
 				auto ohi = zs::reinterpret_bits<int>(halfedges("opposite_he",hi));
+				if(ohi < 0)
+					boundaryHalfEdgeSet.insert(hi);
 				if(ohi >= 0 && edge[0] > edge[1])
 					return;
 
@@ -184,8 +189,16 @@ struct BuildSurfaceHalfEdgeStructure : zeno::INode {
 				surfEdges("he_inds",ei) = reinterpret_bits<float>((int)hi);
 		});
 
+		auto& boundaryHalfEdges = (*zsparticles)[ZenoParticles::s_surfBoundaryEdgeTag];
+		boundaryHalfEdges = typename ZenoParticles::particles_t({{"he_inds",1}},
+			boundaryHalfEdgeSet.size(),zs::memsrc_e::device,0);
+
+		cudaPol(zip(zs::range(boundaryHalfEdgeSet.size()),boundaryHalfEdgeSet._activeKeys),[
+			boundaryHalfEdges = boundaryHalfEdges.begin("he_inds",dim_c<1>,int_c)] ZS_LAMBDA(int id,const auto& key) mutable {
+				boundaryHalfEdges[id] = key[0];
+		});
+
 		set_output("zsparticles",zsparticles);
-		// zsparticles->setMeta("de2fi",std::move())
 	}
 
 };

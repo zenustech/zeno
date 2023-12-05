@@ -65,6 +65,41 @@ retrieve_bounding_volumes(Pol &pol, const TileVecT &vtemp,
   return ret;
 }
 
+
+template <int codim, typename Pol, typename TileVecT>
+zs::Vector<typename ZenoParticles::lbvh_t::Box>
+retrieve_bounding_volumes(Pol &pol, const TileVecT &vtemp,
+                          float thickness = 0.f,
+                          const zs::SmallString &xTag = "xn") {
+  using namespace zs;
+  using bv_t = typename ZenoParticles::lbvh_t::Box;
+  // static_assert(codim >= 1 && codim <= 4, "invalid co-dimension!\n");
+  constexpr auto space = Pol::exec_tag::value;
+#if ZS_ENABLE_CUDA && defined(__CUDACC__)
+  // ZS_LAMBDA -> __device__
+  static_assert(space == execspace_e::cuda,
+                "specialized policy and compiler not match");
+#else
+  static_assert(space != execspace_e::cuda,
+                "specialized policy and compiler not match");
+#endif
+  size_t nm_elms = vtemp.size() / codim;
+
+  Vector<bv_t> ret{vtemp.get_allocator(), nm_elms};
+  pol(zs::range(nm_elms), [bvs = proxy<space>(ret),
+                               vtemp = proxy<space>({}, vtemp), xTag,
+                               thickness] ZS_LAMBDA(int ei) mutable {
+    auto x0 = vtemp.template pack<3>(xTag, ei * codim);
+    bv_t bv{x0, x0};
+    for (int d = 1; d != codim; ++d)
+      merge(bv, vtemp.template pack<3>(xTag, ei * codim + d));
+    bv._min -= thickness / 2;
+    bv._max += thickness / 2;
+    bvs[ei] = bv;
+  });
+  return ret;
+}
+
 template <typename Pol, typename TileVecT>
 zs::Vector<typename ZenoParticles::lbvh_t::Box>
 retrieve_bounding_volumes(Pol &pol, const TileVecT &vtemp,

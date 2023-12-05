@@ -7,6 +7,7 @@
 #include <iostream>
 
 #include "geo_math.hpp"
+#include "tiled_vector_ops.hpp"
 #include "..\fem\Ccds.hpp"
 
 namespace zeno {
@@ -345,6 +346,119 @@ namespace zeno {
 
                 });// finish iter the neighbor tets
         });
+    }
+
+    template <typename Pol,
+        typename VTileVec,
+        typename VNrmTileVec,
+        typename BoundaryTileVec,
+        typename HalfEdgeTileVec,
+        typename TriTileVec,
+        typename CellTileVec,
+        typename T = VTileVec::value_type>
+    constexpr void compute_boundary_edge_cells_and_vertex_normal(Pol& pol,const VTileVec& verts,const zs::SmallString& xtag,
+        VNrmTileVec& vertex_nrm_buffer,
+        const BoundaryTileVec& boundary_halfedges,
+        const HalfEdgeTileVec& halfedges,
+        const TriTileVec& tris,
+        CellTileVec& boundary_cell_buffer,
+        const T& thickness,
+        const T& extend_thickness) {
+            using namespace zs;
+            constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+            constexpr auto exec_tag = wrapv<space>{};
+
+            TILEVEC_OPS::fill(pol,vertex_nrm_buffer,"nrm",(T)0.0);
+            pol(zs::range(tris.size()),[
+                exec_tag = exec_tag,
+                tris = tris.begin("inds",dim_c<3>,int_c),
+                verts = verts.begin(xtag,dim_c<3>),
+                xtag = zs::SmallString(xtag),
+                nrmOffset = vertex_nrm_buffer.getPropertyOffset("nrm"),
+                vertex_nrm_buffer = view<space>(vertex_nrm_buffer)] ZS_LAMBDA(int ti) mutable {
+                    auto tri = tris[ti];
+                    auto nrm = LSL_GEO::facet_normal(verts[tri[0]],verts[tri[1]],verts[tri[2]]);
+                    auto w = LSL_GEO::area(verts[tri[0]],verts[tri[1]],verts[tri[2]]);
+                    for(int i = 0;i != 3;++i)
+                        for(int d = 0;d != 3;++d)
+                            atomic_add(exec_tag,&vertex_nrm_buffer(nrmOffset + d,tri[i]),w * nrm[d]);
+            });
+            TILEVEC_OPS::normalized_channel<3>(pol,vertex_nrm_buffer,"nrm");
+
+            TILEVEC_OPS::fill(pol,vertex_nrm_buffer,"enrm",(T)0.0);
+            pol(zs::range(boundary_halfedges.size()),[
+                exec_tag = exec_tag,
+                boundary_halfedges = boundary_halfedges.begin("he_inds",dim_c<1>,int_c),
+                verts = proxy<space>({},verts),
+                enrmOffset = vertex_nrm_buffer.getPropertyOffset("enrm"),
+                vertex_nrm_buffer = proxy<space>({},vertex_nrm_buffer),
+                xtag = zs::SmallString(xtag),
+                tris = tris.begin("inds",dim_c<3>,int_c),
+                halfedges = proxy<space>({},halfedges)] ZS_LAMBDA(int bei) mutable {
+                    auto hi = boundary_halfedges[bei];
+                    auto ti = zs::reinterpret_bits<int>(halfedges("to_face",hi));
+                    auto local_vertex_id = zs::reinterpret_bits<int>(halfedges("local_vertex_id",hi));
+
+                    auto tri = tris[ti];
+                    auto edge = zs::vec<int,2>{tri[local_vertex_id],tri[(local_vertex_id + 1) % 3]};
+
+                    auto E = verts.pack(dim_c<3>,xtag,edge[1]) - verts.pack(dim_c<3>,xtag,edge[0]);
+                    zs::vec<T,3> denrm[2] = {};
+                    for(int i = 0;i != 2;++i)
+                        denrm[i] = E.cross(vertex_nrm_buffer.pack(dim_c<3>,"nrm",edge[i]));
+                    
+                    for(int i = 0;i != 2;++i)
+                        for(int d = 0;d != 3;++d)
+                            atomic_add(exec_tag,&vertex_nrm_buffer(enrmOffset + d,edge[i]),denrm[i][d]);
+            });
+            TILEVEC_OPS::normalized_channel<3>(pol,vertex_nrm_buffer,"enrm");
+
+            pol(zs::range(boundary_halfedges.size()),[
+                boundary_halfedges = boundary_halfedges.begin("he_inds",dim_c<1>,int_c),
+                boundary_cell_buffer = proxy<space>({},boundary_cell_buffer),
+                thickness = thickness,
+                extend_thickness = extend_thickness,
+                vertex_nrm_buffer = proxy<space>({},vertex_nrm_buffer),
+                xtag = zs::SmallString(xtag),
+                verts = proxy<space>({},verts),
+                tris = tris.begin("inds",dim_c<3>,int_c),
+                halfedges = proxy<space>({},halfedges)] ZS_LAMBDA(int cell_id) mutable {
+                    auto hi = boundary_halfedges[cell_id];
+                    auto ti = zs::reinterpret_bits<int>(halfedges("to_face",hi));
+                    auto local_vertex_id = zs::reinterpret_bits<int>(halfedges("local_vertex_id",hi));
+
+                    auto tri = tris[ti];
+                    auto edge = zs::vec<int,2>{tri[local_vertex_id],tri[(local_vertex_id + 1) % 3]};
+
+                    zs::vec<T,3> snrm[2] = {};
+                    zs::vec<T,3> senrm[2] = {};
+                    zs::vec<T,3> epos[2] = {};
+
+                    for(int i = 0;i != 2;++i) {
+                        epos[i] = verts.pack(dim_c<3>,xtag,edge[i]);
+                        snrm[i] = vertex_nrm_buffer.pack(dim_c<3>,"nrm",edge[i]);
+                        senrm[i] = vertex_nrm_buffer.pack(dim_c<3>,"enrm",edge[i]);
+                    }
+
+                    auto E = (epos[1] - epos[0]).normalized();
+
+                    zs::vec<T,3> cell_vertices[8] = {};
+
+                    cell_vertices[0] = epos[1] - thickness * snrm[1] + 0.01 * thickness * E;
+                    cell_vertices[1] = epos[1] + thickness * snrm[1] + 0.01 * thickness * E;
+                    cell_vertices[2] = epos[0] - thickness * snrm[0] - 0.01 * thickness * E;
+                    cell_vertices[3] = epos[0] + thickness * snrm[0] - 0.01 * thickness * E;
+
+
+                    cell_vertices[0 + 4] = cell_vertices[0] + senrm[1] * extend_thickness;
+                    cell_vertices[1 + 4] = cell_vertices[1] + senrm[1] * extend_thickness;
+                    cell_vertices[2 + 4] = cell_vertices[2] + senrm[0] * extend_thickness;
+                    cell_vertices[3 + 4] = cell_vertices[3] + senrm[0] * extend_thickness;
+
+                    for(int i = 0;i != 8;++i)
+                        boundary_cell_buffer.tuple(dim_c<3>,"x",cell_id * 8 + i) = cell_vertices[i];
+            });
+
     }
 
 
