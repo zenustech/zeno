@@ -83,7 +83,6 @@ using namespace zeno::ChiefDesignerEXR;
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
-#define TRI_PER_MESH 4096
 #include <string_view>
 struct CppTimer {
     void tick() {
@@ -196,7 +195,8 @@ struct PathTracerState
     raii<CUdeviceptr>              d_tan;
     raii<CUdeviceptr>              d_lightMark;
     raii<CUdeviceptr>              d_mat_indices;
-    raii<CUdeviceptr>              d_meshIdxs;
+
+    raii<CUdeviceptr>              vertexAuxOffsetGlobal;
     
     raii<CUdeviceptr>              d_instPos;
     raii<CUdeviceptr>              d_instNrm;
@@ -778,17 +778,17 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
         ins.sbtOffset = 0;
         ins.visibilityMask = DefaultMatMask;
     }
+
+    std::vector<uint32_t> vertexAuxOffsetGlobal(num_instances);
+    uint32_t vertexAuxOffset = 0u;
     
-
-    std::vector<int> meshIdxs(num_instances);
-
-
     std::vector<float3> instPos(num_instances);
     std::vector<float3> instNrm(num_instances);
     std::vector<float3> instUv(num_instances);
     std::vector<float3> instClr(num_instances);
     std::vector<float3> instTang(num_instances);
     size_t sbt_offset = 0;
+
     for( size_t i = 0; i < g_staticAndDynamicMeshNum; ++i )
     {
         auto  mesh = m_meshes[i];
@@ -802,8 +802,9 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
         optix_instance.traversableHandle = mesh->gas_handle;
         memcpy( optix_instance.transform, mat3r4c, sizeof( float ) * 12 );
 
-        meshIdxs[i] = i; 
-        
+        vertexAuxOffsetGlobal[i] = vertexAuxOffset;
+        vertexAuxOffset += mesh->verts.size(); 
+
         instPos[i] = defaultInstPos;
         instNrm[i] = defaultInstNrm;
         instUv[i] = defaultInstUv;
@@ -828,7 +829,7 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
                 {
                     const auto &instMat = instMats[k];
                     float scale = instScales[k];
-                    float instMat4x4[12] = {
+                    float instMat3r4c[12] = {
                         instMat[0][0] * scale, instMat[1][0] * scale, instMat[2][0] * scale, instMat[3][0],
                         instMat[0][1] * scale, instMat[1][1] * scale, instMat[2][1] * scale, instMat[3][1],
                         instMat[0][2] * scale, instMat[1][2] * scale, instMat[2][2] * scale, instMat[3][2]};
@@ -837,9 +838,9 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
                     optix_instance.instanceId = static_cast<unsigned int>(instanceId);
                     optix_instance.visibilityMask = DefaultMatMask;
                     optix_instance.traversableHandle = mesh->gas_handle;
-                    memcpy(optix_instance.transform, instMat4x4, sizeof(float) * 12);
+                    memcpy(optix_instance.transform, instMat3r4c, sizeof(float) * 12);
 
-                    meshIdxs[instanceId] = meshesOffset; 
+                    vertexAuxOffsetGlobal[instanceId] = vertexAuxOffset; 
                     
                     instPos[instanceId] = instAttrs.pos[k];
                     instNrm[instanceId] = instAttrs.nrm[k];
@@ -849,6 +850,7 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
 
                     ++instanceId;
                 }
+                vertexAuxOffset += mesh->verts.size();
                 ++meshesOffset;
             }
         }
@@ -864,26 +866,27 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
                 optix_instance.traversableHandle = mesh->gas_handle;
                 memcpy(optix_instance.transform, mat3r4c, sizeof(float) * 12);
 
-                meshIdxs[instanceId] = meshesOffset; 
-                
+                vertexAuxOffsetGlobal[instanceId] = vertexAuxOffset; 
+
                 instPos[instanceId] = defaultInstPos;
                 instNrm[instanceId] = defaultInstNrm;
                 instUv[instanceId] = defaultInstUv;
                 instClr[instanceId] = defaultInstClr;
                 instTang[instanceId] = defaultInstTang;
-
+                
                 ++instanceId;
                 ++meshesOffset;
+
+                vertexAuxOffset += mesh->verts.size();
             }
         }
     }
 
-    state.d_meshIdxs.resize(sizeof(meshIdxs[0]) * meshIdxs.size(), 0);
-    // CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_meshIdxs.reset() ), sizeof(meshIdxs[0]) * meshIdxs.size()) );
+    state.vertexAuxOffsetGlobal.resize(sizeof(vertexAuxOffsetGlobal[0]) * vertexAuxOffsetGlobal.size(), 0);
     CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( (CUdeviceptr)state.d_meshIdxs ),
-                meshIdxs.data(),
-                sizeof(meshIdxs[0]) * meshIdxs.size(),
+                reinterpret_cast<void*>( (CUdeviceptr)state.vertexAuxOffsetGlobal ),
+                vertexAuxOffsetGlobal.data(),
+                sizeof(vertexAuxOffsetGlobal[0]) * vertexAuxOffsetGlobal.size(),
                 cudaMemcpyHostToDevice
                 ) );
     
@@ -1184,7 +1187,7 @@ static void createSBT( PathTracerState& state )
             hitgroup_records[sbt_idx].data.clr             = reinterpret_cast<float4*>( (CUdeviceptr)state.d_clr );
             hitgroup_records[sbt_idx].data.tan             = reinterpret_cast<float4*>( (CUdeviceptr)state.d_tan );
             hitgroup_records[sbt_idx].data.lightMark       = reinterpret_cast<unsigned short*>( (CUdeviceptr)state.d_lightMark );
-            hitgroup_records[sbt_idx].data.meshIdxs        = reinterpret_cast<int*>( (CUdeviceptr)state.d_meshIdxs );
+            hitgroup_records[sbt_idx].data.auxOffset       = reinterpret_cast<uint32_t*>( (CUdeviceptr)state.vertexAuxOffsetGlobal );
             
             hitgroup_records[sbt_idx].data.instPos         = reinterpret_cast<float3*>( (CUdeviceptr)state.d_instPos );
             hitgroup_records[sbt_idx].data.instNrm         = reinterpret_cast<float3*>( (CUdeviceptr)state.d_instNrm );
@@ -1542,7 +1545,10 @@ void UpdateStaticMesh(std::map<std::string, int> const &mtlidlut) {
     if(!using20xx) {
         splitMesh(g_vertices, g_mat_indices, g_meshPieces, 0, 0);
         g_staticMeshNum = g_meshPieces.size();
+
         size_t vertSize = TRI_PER_MESH * 3 * g_meshPieces.size();
+        vertSize = std::min(g_vertices.size(), vertSize);
+
         g_staticVertNum = vertSize;
         g_vertices.resize(vertSize);
         g_clr.resize(vertSize);
@@ -1560,7 +1566,10 @@ void UpdateDynamicMesh(std::map<std::string, int> const &mtlidlut) {
     if(!using20xx) {
         splitMesh(g_vertices, g_mat_indices, g_meshPieces, g_staticMeshNum, g_staticVertNum);
         g_staticAndDynamicMeshNum = g_meshPieces.size();
+
         size_t vertSize = TRI_PER_MESH * 3 * g_meshPieces.size();
+        vertSize = std::min(g_vertices.size(), vertSize);
+
         g_staticAndDynamicVertNum = vertSize;
         g_vertices.resize(vertSize);
         g_clr.resize(vertSize);
@@ -1598,7 +1607,10 @@ void UpdateStaticInstMesh(const std::map<std::string, int> &mtlidlut)
 
             splitMesh(vertices, mat_indices, meshPieces, 0, 0);
             staticMeshNum = meshPieces.size();
+
             std::size_t vertSize = TRI_PER_MESH * 3 * meshPieces.size();
+            vertSize = std::min(vertices.size(), vertSize);
+            
             staticVertNum = vertSize;
             vertices.resize(vertSize);
             clr.resize(vertSize);
@@ -1631,7 +1643,10 @@ void UpdateDynamicInstMesh(std::map<std::string, int> const &mtlidlut)
             auto &meshPieces = instData.meshPieces;
 
             splitMesh(vertices, mat_indices, meshPieces, staticMeshNum, staticVertNum);
+            
             std::size_t vertSize = TRI_PER_MESH * 3 * meshPieces.size();
+            vertSize = std::min(vertices.size(), vertSize);
+
             vertices.resize(vertSize);
             clr.resize(vertSize);
             nrm.resize(vertSize);
