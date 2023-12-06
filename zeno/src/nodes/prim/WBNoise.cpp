@@ -2024,7 +2024,6 @@ struct Primcluster : INode {//todo:: just for color ramp now
             float diff = 0.0;
             assign_clusters(cpoints, old_clusters, prim.get(), attrName);
             std::vector<float> diffs(old_clusters.size(), 0.0f);
-            //#pragma omp parallel for
             for (int i = 0; i < old_clusters.size(); i++) {
                 new_center = vec3f(0, 0, 0);
                 old_center = old_clusters[i].center;
