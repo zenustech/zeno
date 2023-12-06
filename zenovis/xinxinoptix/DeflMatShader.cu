@@ -194,8 +194,6 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 
     HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
 
-    const auto zenotex = rt_data->textures;
-
     RadiancePRD* prd = getPRD();
     MatInput attrs{};
 
@@ -295,7 +293,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     unsigned short isLight = 0;//rt_data->lightMark[vert_aux_offset + primIdx];
 #endif
 
-    MatOutput mats = evalMaterial(zenotex, rt_data->uniforms, attrs);
+    MatOutput mats = evalMaterial(rt_data->textures, rt_data->uniforms, attrs);
 
     if(length(attrs.tang)>0)
     {
@@ -436,7 +434,6 @@ extern "C" __global__ void __closesthit__radiance()
     float3 P = ray_orig + optixGetRayTmax() * ray_dir;
 
     HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
-    auto zenotex = rt_data->textures;
     MatInput attrs{};
 
 #if (_SPHERE_)
@@ -527,7 +524,7 @@ extern "C" __global__ void __closesthit__radiance()
 
 #endif
 
-    MatOutput mats = evalMaterial(zenotex, rt_data->uniforms, attrs);
+    MatOutput mats = evalMaterial(rt_data->textures, rt_data->uniforms, attrs);
 
 #if _SPHERE_
 
@@ -933,7 +930,7 @@ extern "C" __global__ void __closesthit__radiance()
         attrs.H = normalize(H);
         attrs.reflectance = reflectance;
         attrs.fresnel = DisneyBSDF::DisneyFresnel(mats.basecolor, mats.metallic, mats.ior, mats.specularTint, dot(attrs.H, attrs.V), dot(attrs.H, attrs.L), false);
-        MatOutput mat2 = evalReflectance(zenotex, rt_data->uniforms, attrs);
+        MatOutput mat2 = evalReflectance(rt_data->textures, rt_data->uniforms, attrs);
         reflectance = mat2.reflectance;
     }
 
@@ -968,7 +965,7 @@ extern "C" __global__ void __closesthit__radiance()
             attrs.H = normalize(H);
             attrs.reflectance = lbrdf;
             attrs.fresnel = DisneyBSDF::DisneyFresnel( mats.basecolor, mats.metallic, mats.ior, mats.specularTint, dot(attrs.H, attrs.V), dot(attrs.H, attrs.L), false);
-            mat2 = evalReflectance(zenotex, rt_data->uniforms, attrs);
+            mat2 = evalReflectance(rt_data->textures, rt_data->uniforms, attrs);
         }
 
         return (mats.thin>0.5f? float3(mat2.reflectance):lbrdf);
