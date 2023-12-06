@@ -1967,9 +1967,111 @@ ZENDEFNODE(erode_voronoi,
         } });
 
 
+    struct clusterset {
+        int id;
+        vec3f center;
+    };
+    struct clusterPointset {
+        int pointnumber;
+        int clusterid;
+    };
 
+void assign_clusters(std::vector<clusterPointset>& cpoints, const std::vector<clusterset>& clusters, PrimitiveObject *prim, std::string attrName) {
+#pragma omp parallel for
+    for (int i = 0; i < prim->verts.size(); i++) {
+        float smallest_dist = 1e10;
+        cpoints[i].pointnumber = i;
+        cpoints[i].clusterid = -1;
+        for (const auto& c : clusters) {
+            float dist = zeno::distance(c.center, prim->verts.attr<vec3f>(attrName)[i]);
+            if (dist < smallest_dist) {
+                smallest_dist = dist;
+                cpoints[i].clusterid = c.id;
+            }
+        }
+    }
+}
 
+struct Primcluster : INode {//todo:: just for color ramp now
+    void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto attrName = get_input2<std::string>("ControlAttr");
+        auto numberofcluster = get_input2<int>("numberofcluster");
+        auto outputattr = get_input2<std::string>("ClusterAttr");
+        auto seed = get_input2<int>("seed");
+        auto cutoff = get_input2<int>("cutoff");
+        auto maxiter = get_input2<int>("maxiter");
 
+        std::default_random_engine generator(seed);
+        std::uniform_real_distribution<float> distribution(0.0, 1.0);
+        auto &attr = prim->verts.attr<vec3f>(attrName);//only test with vec3f now
+        
+
+        std::vector<clusterset> old_clusters;
+        int k = 0;
+        while (old_clusters.size() < numberofcluster) {
+            int rpoint = floor(distribution(generator) * prim->size());
+            clusterset c = {k, attr[rpoint]};
+            old_clusters.push_back(c);
+            k++;
+        }
+        
+        int _iter = 0;
+        vec3f new_center, old_center;
+        std::vector<clusterPointset> cpoints(prim->verts.size());
+        std::vector<zeno::vec3f> P_points;
+        while (_iter < maxiter) {
+            float diff = 0.0;
+            assign_clusters(cpoints, old_clusters, prim.get(), attrName);
+            std::vector<float> diffs(old_clusters.size(), 0.0f);
+            for (int i = 0; i < old_clusters.size(); i++) {
+                new_center = vec3f(0, 0, 0);
+                old_center = old_clusters[i].center;
+                P_points.clear();
+                for (const auto& cpoint : cpoints) {
+                    if (cpoint.clusterid == i) {
+                        P_points.push_back(attr[cpoint.pointnumber]);
+                        new_center += attr[cpoint.pointnumber];
+                    }
+                }
+                if (!P_points.empty()) {
+                    new_center /= P_points.size();
+                }
+                else{
+                    //new_center = vec3f(0, 0, 0);
+                    new_center = old_center;
+                }
+                diffs[i] = distance(new_center, old_center);
+                diff = std::max(diff, distance(new_center, old_center));
+                old_clusters[i].center = new_center;
+            }
+            if (diff < cutoff) {
+                break;
+            }
+            _iter++;
+        }
+        for(int i = 0; i < old_clusters.size(); i++){
+            prim->verts.add_attr<vec3f>(outputattr)[i] = old_clusters[i].center;
+        }
+        
+            set_output("prim", get_input("prim"));
+        }
+};
+ZENDEFNODE(Primcluster,
+    { /* inputs: */ {
+            "prim",
+            {"int", "numberofcluster", "10"},
+            {"int", "seed", "9"},
+            {"int", "cutoff", "5"},
+            {"int", "maxiter", "20"},
+            {"string", "ControlAttr", "pos"},
+            {"string", "ClusterAttr", "cluster"},
+        }, /* outputs: */ {
+            "prim",
+        }, /* params: */ {
+        }, /* category: */ {
+            "erode",
+        } });
 
 } // namespace
 } // namespace zeno
