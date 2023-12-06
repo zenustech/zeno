@@ -828,7 +828,7 @@ struct CopyPosAndNrmByIndex: INode {
         auto prims = get_input<ListObject>("list")->get<PrimitiveObject>();
         for (auto p: prims) {
             size_t size = p->size();
-            auto index = p->add_attr<int>("index");
+            auto index = p->attr<int>("index");
             for (auto i = 0; i < size; i++) {
                 prim->verts[index[i]] = p->verts[i];
             }
