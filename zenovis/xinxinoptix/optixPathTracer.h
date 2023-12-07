@@ -7,6 +7,8 @@
 // #include <nanovdb/NanoVDB.h>
 #include <zeno/types/LightObject.h>
 
+#define TRI_PER_MESH (1<<29) //2^29
+
 enum RayType
 {
     RAY_TYPE_RADIANCE  = 0,
@@ -182,6 +184,8 @@ struct Params
     uint32_t firstSphereLightIdx;
     uint32_t firstTriangleLightIdx;
 
+    uint32_t maxInstanceID;
+
     unsigned long long lightTreeSampler;
     unsigned long long triangleLightCoordsBuffer;
     unsigned long long triangleLightNormalBuffer;
@@ -257,7 +261,7 @@ struct HitGroupData
     float4* clr;
     float4* tan;
     unsigned short* lightMark;
-    int* meshIdxs;
+    uint32_t* auxOffset;
     
     float3* instPos;
     float3* instNrm;

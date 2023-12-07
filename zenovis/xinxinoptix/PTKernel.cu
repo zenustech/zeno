@@ -173,7 +173,6 @@ extern "C" __global__ void __raygen__rg()
         prd.maxDistance  = 1e16f;
         prd.medium       = DisneyBSDF::PhaseFunctions::vacuum;
 
-
         prd.origin = ray_origin;
         prd.direction = ray_direction;
         prd.samplePdf = 1.0f;
@@ -186,8 +185,7 @@ extern "C" __global__ void __raygen__rg()
         prd.ss_alpha_queue[0] = vec3(-1.0f);
         prd.minSpecRough = 0.01;
         prd.samplePdf = 1.0f;
-        prd.first_hit_type = 0;
-        prd.hitEnv = false;
+        prd.hit_type = 0;
         auto _tmin_ = prd._tmin_;
         auto _mask_ = prd._mask_;
         
@@ -200,6 +198,13 @@ extern "C" __global__ void __raygen__rg()
 
         // Primary Ray
         traceRadiance(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_);
+        const auto primary_hit_type = prd.hit_type;
+
+        if(primary_hit_type > 0) {
+            result_d = prd.radiance_d * prd.attenuation2;
+            result_s = prd.radiance_s * prd.attenuation2;
+            result_t = prd.radiance_t * prd.attenuation2;
+        }
 
         tmp_albedo = prd.tmp_albedo;
         tmp_normal = prd.tmp_normal;
@@ -207,12 +212,10 @@ extern "C" __global__ void __raygen__rg()
         prd.trace_denoise_albedo = false;
         prd.trace_denoise_normal = false;
 
+        float3* aov[4] = {&result_b, &result_d, &result_s, &result_t};
+
         for(;;)
         {
-            prd.radiance_d = make_float3(0);
-            prd.radiance_s = make_float3(0);
-            prd.radiance_t = make_float3(0);
-
             _tmin_ = prd._tmin_;
             _mask_ = prd._mask_;
 
@@ -229,21 +232,10 @@ extern "C" __global__ void __raygen__rg()
                 float3 clampped = clamp(vec3(temp_radiance), vec3(0), vec3(10));
 
                 result += prd.depth>1?clampped:temp_radiance;
-                if(prd.depth==1 && prd.hitEnv == false)
-                {
-                    result_d += prd.radiance_d * prd.attenuation2;
-                    result_s += prd.radiance_s * prd.attenuation2;
-                    result_t += prd.radiance_t * prd.attenuation2;
-                }
-                if(prd.depth>1 || (prd.depth==1 && prd.hitEnv == true)) {
-                    result_d +=
-                        prd.first_hit_type == 1 ? clampped : make_float3(0, 0, 0);
-                    result_s +=
-                        prd.first_hit_type == 2 ? clampped : make_float3(0, 0, 0);
-                    result_t +=
-                        prd.first_hit_type == 3 ? clampped : make_float3(0, 0, 0);
-                }
 
+                if(primary_hit_type > 0 && ( prd.depth>1 || (prd.depth==1 && prd.hit_type == 0) )) {
+                    *aov[primary_hit_type] += clampped;
+                }
             }
 
             prd.radiance = make_float3(0);
@@ -268,11 +260,19 @@ extern "C" __global__ void __raygen__rg()
             if(prd.countEmitted == true)
                 prd.passed = true;
 
+
+            prd.radiance_d = make_float3(0);
+            prd.radiance_s = make_float3(0);
+            prd.radiance_t = make_float3(0);
+
             traceRadiance(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_);
         }
-        result_b += prd.first_hit_type == 0 ? make_float3(0, 0, 0)
-                                            : make_float3(1, 1, 1);
+        
         seed = prd.seed;
+
+        if (primary_hit_type > 0) {
+            result_b += make_float3(1);
+        }
     }
     while( --i );
 
@@ -378,7 +378,7 @@ extern "C" __global__ void __miss__radiance()
         }
 
         prd->done      = true;
-        prd->hitEnv    = true;
+        prd->hit_type  = 0;
         return;
     }
 
