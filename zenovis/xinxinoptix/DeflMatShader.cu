@@ -977,13 +977,10 @@ extern "C" __global__ void __closesthit__radiance()
 
     };
 
-    float3 radianceNoShadow = make_float3(0,0,0);
-    auto taskAux = [&](const vec3& weight, const float3& radianceNoBlock) {
+    auto taskAux = [&](const vec3& weight) {
         prd->radiance_d = rd * weight;
         prd->radiance_s = rs * weight;
         prd->radiance_t = rt * weight;
-
-        radianceNoShadow = radianceNoBlock;
     };
 
     RadiancePRD shadow_prd {};
@@ -992,8 +989,14 @@ extern "C" __global__ void __closesthit__radiance()
     shadow_prd.nonThinTransHit = (mats.thin == false && mats.specTrans > 0) ? 1 : 0;
 
     prd->direction = normalize(wi);
-    
-    DirectLighting<true>(prd, shadow_prd, shadingP, ray_dir, evalBxDF, &taskAux);
+
+    float3 radianceNoShadow = {};
+    float3* dummy_prt = nullptr;
+    if (mats.shadowReceiver > 0.5f) {
+        dummy_prt = &radianceNoShadow;
+    }
+
+    DirectLighting<true>(prd, shadow_prd, shadingP, ray_dir, evalBxDF, &taskAux, dummy_prt);
     if(mats.shadowReceiver > 0.5f)
     {
       auto radiance = length(prd->radiance);
