@@ -62,7 +62,6 @@ struct RadiancePRD
     unsigned int seed;
     unsigned int eventseed;
     unsigned int flags;
-    bool         hitEnv;
     int          countEmitted;
     int          done;
     float3       shadowAttanuation;
@@ -88,7 +87,7 @@ struct RadiancePRD
         //return pcg_rng(this->seed); 
     }
 
-    unsigned char first_hit_type;
+    unsigned char hit_type;
     vec3 extinction() {
         auto idx = clamp(curMatIdx, 0, 7);
         return sigma_t_queue[idx];

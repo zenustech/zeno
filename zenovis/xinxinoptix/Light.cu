@@ -24,15 +24,15 @@ static __inline__ __device__ void evalSurface(float4* uniforms) {
 } 
 
 static __inline__ __device__ bool checkLightGAS(uint instanceId) {
-    return ( instanceId >= OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID-2 );
+    return ( instanceId >= params.maxInstanceID-2 );
 }
 
 static __inline__ __device__ bool isPlaneLightGAS(uint instanceId) {
-    return ( instanceId == OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID-1 );
+    return ( instanceId == params.maxInstanceID-1 );
 }
 
 static __inline__ __device__ bool isTriangleLightGAS(uint instanceId) {
-    return ( instanceId == OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID-2 );
+    return ( instanceId == params.maxInstanceID-2 );
 }
 
 extern "C" __global__ void __closesthit__radiance()

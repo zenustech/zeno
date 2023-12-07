@@ -204,7 +204,8 @@ namespace detail {
 
 template<bool _MIS_, typename TypeEvalBxDF, typename TypeAux = void>
 static __forceinline__ __device__
-void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& shadingP, const float3& ray_dir, TypeEvalBxDF& evalBxDF, float3 &radianceNoShadow, TypeAux* taskAux=nullptr) {
+void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& shadingP, const float3& ray_dir, 
+                    TypeEvalBxDF& evalBxDF, TypeAux* taskAux=nullptr, float3* RadianceWithoutShadow=nullptr) {
 
     const float3 wo = normalize(-ray_dir); 
     float3 light_attenuation = vec3(1.0f);
@@ -400,24 +401,34 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
         if (lsr.NoL > _FLT_EPL_ && lsr.PDF > _FLT_EPL_) {
 
             traceOcclusion(params.handle, shadingP, lsr.dir, 0, lsr.dist, &shadow_prd);
-            
             light_attenuation = shadow_prd.shadowAttanuation;
 
-            //if (lengthSquared(light_attenuation) > 0.0f) {
+            if (nullptr==RadianceWithoutShadow && lengthSquared(light_attenuation) == 0.0f) return;
                 
                 auto bxdf_value = evalBxDF(lsr.dir, wo, scatterPDF);
                 auto misWeight = 1.0f;
 
+            if constexpr(_MIS_) {
                 if (!light.isDeltaLight() && !lsr.isDelta) {
                     misWeight = BRDFBasics::PowerHeuristic(lsr.PDF, scatterPDF);
                 }
+            }
 
                 emission *= lsr.intensity;
 
-                prd->radiance = light_attenuation * emission * bxdf_value;
-                prd->radiance *= misWeight / lsr.PDF;
-                radianceNoShadow = emission * bxdf_value * misWeight / lsr.PDF;
-            //}
+                float3 radianceNoShadow = emission * bxdf_value;
+                radianceNoShadow *= misWeight / lsr.PDF;
+
+                if (nullptr != RadianceWithoutShadow) {
+                    *RadianceWithoutShadow = radianceNoShadow;
+                }
+
+                if constexpr (!detail::is_void<TypeAux>::value) {
+                    auto tmp = light_attenuation * misWeight / lsr.PDF;
+                    (*taskAux)(tmp);
+                }// TypeAux
+
+                prd->radiance = radianceNoShadow * light_attenuation; // with shadow
         }
 
     } else {
@@ -455,13 +466,14 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
                         1e-5f, // tmin
                         1e16f, // tmax,
                         &shadow_prd);
-
             light_attenuation = shadow_prd.shadowAttanuation;
+
+            if (nullptr==RadianceWithoutShadow && lengthSquared(light_attenuation) == 0.0f) return;
 
             auto inverseProb = 1.0f/_SKY_PROB_;
             auto bxdf_value = evalBxDF(sun_dir, wo, scatterPDF, illum);
 
-            vec3 tmp(1.0f);
+            float tmp = 1.0f;
 
             if constexpr(_MIS_) {
                 float misWeight = BRDFBasics::PowerHeuristic(tmpPdf, scatterPDF);
@@ -469,18 +481,22 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
                 misWeight = scatterPDF>1e-5f?misWeight:0.0f;
                 misWeight = tmpPdf>1e-5f?misWeight:0.0f;
 
-                tmp = (1.0f / NSamples) * misWeight * inverseProb * light_attenuation  / tmpPdf;
+                tmp = (1.0f / NSamples) * misWeight * inverseProb  / tmpPdf;
             } else {
-                tmp = (1.0f / NSamples) * inverseProb * light_attenuation / tmpPdf;
+                tmp = (1.0f / NSamples) * inverseProb / tmpPdf;
             }
 
-            prd->radiance += (float3)(tmp) * bxdf_value;
-            radianceNoShadow += (float3)(tmp) * bxdf_value;
+            float3 radianceNoShadow = tmp * bxdf_value; 
+
+            if (nullptr != RadianceWithoutShadow) {
+                *RadianceWithoutShadow = radianceNoShadow;
+            }
+
             if constexpr (!detail::is_void<TypeAux>::value) {
-                if (taskAux != nullptr) {
-                    (*taskAux)(tmp);
-                }
+                (*taskAux)(tmp * light_attenuation);
             }// TypeAux
+
+            prd->radiance += radianceNoShadow * light_attenuation; // with shadow
         }
     }
 };

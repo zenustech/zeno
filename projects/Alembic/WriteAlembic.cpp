@@ -10,6 +10,8 @@
 #include <Alembic/AbcCoreOgawa/All.h>
 #include <Alembic/Abc/ErrorHandler.h>
 #include "ABCTree.h"
+#include "zeno/utils/format.h"
+#include "zeno/utils/string.h"
 #include <numeric>
 #include <filesystem>
 
@@ -211,7 +213,7 @@ struct WriteAlembic2 : INode {
     void write_attrs(std::shared_ptr<PrimitiveObject> prim, T1& schema, T2& samp) {
         OCompoundProperty arbAttrs = schema.getArbGeomParams();
         prim->verts.foreach_attr([&](auto const &key, auto &arr) {
-            if (key == "v" || key == "nrm") {
+            if (key == "v" || key == "nrm" || key == "faceset") {
                 return;
             }
             using T = std::decay_t<decltype(arr[0])>;
@@ -241,6 +243,9 @@ struct WriteAlembic2 : INode {
     void write_user_data(std::shared_ptr<PrimitiveObject> prim, OCompoundProperty& user) {
         auto &ud = prim->userData();
         for (const auto& [key, value] : ud.m_data) {
+            if (key == "faceset_count" || zeno::starts_with(key, "faceset_")) {
+                continue;
+            }
             if (ud.has<int>(key)) {
                 if (user_attrs.count(key) == 0) {
                     auto p = OInt32Property(user, key);
@@ -343,6 +348,28 @@ struct WriteAlembic2 : INode {
         if (prim->polys.size() || prim->tris.size()) {
             // Create a PolyMesh class.
             OPolyMeshSchema &mesh = meshyObj.getSchema();
+            auto &ud = prim->userData();
+            std::vector<std::string> faceSetNames;
+            std::vector<std::vector<int>> faceset_idxs;
+            if (ud.has<int>("faceset_count")) {
+                int faceset_count = ud.get2<int>("faceset_count");
+                for (auto i = 0; i < faceset_count; i++) {
+                    faceSetNames.emplace_back(ud.get2<std::string>(zeno::format("faceset_{:04}", i)));
+                }
+                faceset_idxs.resize(faceset_count);
+                auto &faceset = prim->polys.attr<int>("faceset");
+                for (auto i = 0; i < faceset.size(); i++) {
+                    faceset_idxs[faceset[i]].push_back(i);
+                }
+                for (auto i = 0; i < faceset_count; i++) {
+                    OFaceSet faceset = mesh.createFaceSet(faceSetNames[i]);
+                    OFaceSetSchema facesetSchema = faceset.getSchema ();
+                    OFaceSetSchema::Sample my_face_set_samp ( faceset_idxs[i] );
+                    // faceset is visible, doesn't change.
+                    facesetSchema.set ( my_face_set_samp );
+                    facesetSchema.setFaceExclusivity ( kFaceSetExclusive );
+                }
+            }
 
             OCompoundProperty user = mesh.getUserProperties();
             write_user_data(prim, user);

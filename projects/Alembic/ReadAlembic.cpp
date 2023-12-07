@@ -822,5 +822,41 @@ ZENDEFNODE(AlembicSplitByName, {
     {"alembic"},
 });
 
+struct CopyPosAndNrmByIndex: INode {
+    void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto prims = get_input<ListObject>("list")->get<PrimitiveObject>();
+        for (auto p: prims) {
+            size_t size = p->size();
+            auto index = p->attr<int>("index");
+            for (auto i = 0; i < size; i++) {
+                prim->verts[index[i]] = p->verts[i];
+            }
+            if (prim->verts.attr_is<vec3f>("nrm")) {
+                auto &nrm = prim->verts.attr<vec3f>("nrm");
+                auto &nrm_sub = p->verts.attr<vec3f>("nrm");
+                for (auto i = 0; i < size; i++) {
+                    nrm[index[i]] = nrm_sub[i];
+                }
+            }
+        }
+
+        set_output("out", prim);
+    }
+};
+
+ZENDEFNODE(CopyPosAndNrmByIndex, {
+    {
+        {"prim"},
+        {"list", "list"},
+    },
+    {
+        {"out"},
+    },
+    {},
+    {"alembic"},
+});
+
+
 
 } // namespace zeno
