@@ -743,6 +743,12 @@ struct ReadAlembic : INode {
                 auto _abc_path = ud.template get2<std::string>("_abc_path", "");
                 namelist->arr.push_back(std::make_shared<StringObject>(_abc_path));
             });
+            auto &ud = abctree->userData();
+            ud.set2("prim_count", int(namelist->arr.size()));
+            for (auto i = 0; i < namelist->arr.size(); i++) {
+                auto n = namelist->arr[i];
+                ud.set2(zeno::format("path_{:04}", i), n);
+            }
             set_output("namelist", namelist);
         }
         set_output("abctree", std::move(abctree));

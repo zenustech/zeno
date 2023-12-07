@@ -204,7 +204,7 @@ namespace detail {
 
 template<bool _MIS_, typename TypeEvalBxDF, typename TypeAux = void>
 static __forceinline__ __device__
-void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& shadingP, const float3& ray_dir, TypeEvalBxDF& evalBxDF, TypeAux* taskAux=nullptr) {
+void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& shadingP, const float3& ray_dir, TypeEvalBxDF& evalBxDF, float3 &radianceNoShadow, TypeAux* taskAux=nullptr) {
 
     const float3 wo = normalize(-ray_dir); 
     float3 light_attenuation = vec3(1.0f);
@@ -403,7 +403,7 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
             
             light_attenuation = shadow_prd.shadowAttanuation;
 
-            if (lengthSquared(light_attenuation) > 0.0f) {
+            //if (lengthSquared(light_attenuation) > 0.0f) {
                 
                 auto bxdf_value = evalBxDF(lsr.dir, wo, scatterPDF);
                 auto misWeight = 1.0f;
@@ -415,8 +415,9 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
                 emission *= lsr.intensity;
 
                 prd->radiance = light_attenuation * emission * bxdf_value;
-                prd->radiance *= misWeight / lsr.PDF;             
-            }
+                prd->radiance *= misWeight / lsr.PDF;
+                radianceNoShadow = emission * bxdf_value * misWeight / lsr.PDF;
+            //}
         }
 
     } else {
@@ -474,7 +475,7 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
             }
 
             prd->radiance += (float3)(tmp) * bxdf_value;
-
+            radianceNoShadow += (float3)(tmp) * bxdf_value;
             if constexpr (!detail::is_void<TypeAux>::value) {
                 if (taskAux != nullptr) {
                     (*taskAux)(tmp);

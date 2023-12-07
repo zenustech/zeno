@@ -97,6 +97,7 @@ public:
         ACTION_SOLID,
         ACTION_SHADING,
         ACTION_OPTIX,
+        ACTION_UV_MODE,
         //View EnvTex
         ACTION_BLACK_WHITE,
         ACTION_GREEK,

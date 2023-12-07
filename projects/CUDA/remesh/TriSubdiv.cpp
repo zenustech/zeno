@@ -64,16 +64,37 @@ struct TrianglePrimSubdiv : INode {
                 }
             });
 
+            auto numNewVerts = tab.size();
+
+            /// @note sort verts
+            std::vector<int> dstIndices(numNewVerts);
+            {
+                std::vector<int> indices(numNewVerts);
+                std::vector<zs::vec<int, 2>> es(numNewVerts);
+                pol(enumerate(tab._activeKeys, es, indices),
+                    [](int ei, const zs::vec<int, 2> &e, zs::vec<int, 2> &k, int &id) {
+                        id = ei;
+                        k = e;
+                    });
+                merge_sort_pair(
+                    pol, std::begin(es), std::begin(indices), numNewVerts,
+                    [](const auto &a, const auto &b) { return a[0] < b[0] || a[0] == b[0] && a[1] < b[1]; });
+                pol(zs::range(numNewVerts), [&](int i) {
+                    auto id = indices[i];
+                    dstIndices[id] = i;
+                });
+            }
+
             /// @note verts
             int vOffset = verts.size();
-            auto numNewVerts = tab.size();
             verts.resize(vOffset + numNewVerts);
             pol(range(numNewVerts), [&, edges = proxy<space>(tab._activeKeys), vOffset](int ei) mutable {
                 auto edge = edges[ei];
+                auto dst = dstIndices[ei];
                 auto p = (verts.values[edge[0]] + verts.values[edge[1]]) / 2;
-                verts.values[vOffset + ei] = p;
+                verts.values[vOffset + dst] = p;
                 verts.foreach_attr<AttrAcceptAll>(
-                    [&](auto const &key, auto &arr) { arr[vOffset + ei] = (arr[edge[0]] + arr[edge[1]]) / 2; });
+                    [&](auto const &key, auto &arr) { arr[vOffset + dst] = (arr[edge[0]] + arr[edge[1]]) / 2; });
             });
 
             /// @note tris
@@ -108,7 +129,7 @@ struct TrianglePrimSubdiv : INode {
                 for (int d = 0; d != 3; ++d) {
                     int v = tri[d];
                     auto ei = tab.query(vec2i{std::min(u, v), std::max(u, v)});
-                    ids[d] = vOffset + ei;
+                    ids[d] = vOffset + dstIndices[ei];
                     u = v;
                 }
                 tris.values[ti] = zeno::vec3i{ids[0], ids[1], ids[2]};

@@ -27,4 +27,4 @@
 	url = https://github.com/zenustech/python-cmake-buildsystem.git
 [submodule "projects/Geometry/instant_meshes"]
 	path = projects/Geometry/instant_meshes
-	url = git@github.com:seeeagull/instant-meshes.git
+	url = https://github.com/seeeagull/instant-meshes.git

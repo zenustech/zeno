@@ -62,6 +62,7 @@ struct ShaderFinalize : INode {
             {1, "mat_ior"},
 
             {1, "mat_flatness"},
+            {1, "mat_shadowReceiver"},
             {1, "mat_thin"},
             {1, "mat_doubleSide"},
             {3, "mat_normal"},
@@ -115,6 +116,7 @@ struct ShaderFinalize : INode {
             get_input<IObject>("ior", std::make_shared<NumericObject>(float(1.5f))),
 
             get_input<IObject>("flatness", std::make_shared<NumericObject>(float(0.0f))),
+            get_input<IObject>("shadowReceiver", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("thin", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("doubleSide", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("normal", std::make_shared<NumericObject>(vec3f(0, 0, 1))),
@@ -150,17 +152,23 @@ struct ShaderFinalize : INode {
         if (has_input("extensionsCode"))
             mtl->extensions = get_input<zeno::StringObject>("extensionsCode")->get();
 
-        if (has_input("tex2dList"))
         {
-            auto tex2dList = get_input<ListObject>("tex2dList")->get<zeno::Texture2DObject>();
-            for (const auto tex: tex2dList)
-            {
-                auto texId = mtl->tex2Ds.size();
-			    mtl->tex2Ds.push_back(tex);
+            if (has_input("tex2dList")) {
+                auto tex2dList = get_input<ListObject>("tex2dList")->get<zeno::Texture2DObject>();
+                if (!tex2dList.empty() && !em.tex2Ds.empty()) {
+                    throw zeno::makeError("Can not use both way!");
+                }
+                for (const auto& tex: tex2dList) {
+                    em.tex2Ds.push_back(tex);
+                }
             }
-
-            auto texCode = "uniform sampler2D zenotex[32]; \n";
-            mtl->common.insert(0, texCode);
+            if (!em.tex2Ds.empty()) {
+                for (const auto& tex: em.tex2Ds) {
+                    mtl->tex2Ds.push_back(tex);
+                }
+                auto texCode = "uniform sampler2D zenotex[32]; \n";
+                mtl->common.insert(0, texCode);
+            }
         }
 
         if (has_input("tex3dList"))
@@ -285,6 +293,7 @@ ZENDEFNODE(ShaderFinalize, {
         {"float", "ior", "1.5"},
 
         {"float", "flatness", "0.0"},
+        {"float", "shadowReceiver", "0.0"},
         {"float", "thin", "0.0"},
         {"float", "doubleSide", "0.0"},
         {"vec3f", "normal", "0,0,1"},

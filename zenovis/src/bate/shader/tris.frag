@@ -10,6 +10,7 @@ uniform bool mSmoothShading;
 uniform bool mNormalCheck;
 uniform bool mRenderWireframe;
 uniform bool mCustomColor;
+uniform bool mUvMode;
 
 in vec3 position;
 in vec3 iColor;
@@ -82,6 +83,10 @@ vec3 calcRayDir(vec3 pos)
 void main() {
   if (mRenderWireframe) {
     fColor = vec4(0.89, 0.57, 0.15, 1.0);
+    return;
+  }
+  if (mUvMode) {
+    fColor = vec4(0.8, 0.8, 0.8, 1.0);
     return;
   }
   vec3 normal;

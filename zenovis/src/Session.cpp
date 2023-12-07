@@ -78,6 +78,10 @@ void Session::set_show_grid(bool show_grid) {
     impl->scene->drawOptions->show_grid = show_grid;
 }
 
+void Session::set_uv_mode(bool enable) {
+    impl->scene->drawOptions->uv_mode = enable;
+}
+
 void Session::set_num_samples(int num_samples) {
     // TODO
 }
