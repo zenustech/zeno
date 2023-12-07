@@ -109,7 +109,6 @@ for obj in bpy.context.scene.objects:
         obj.select_set(True)
         abc_file_path = os.path.join(abc_output_dir, f"{obj_name}.abc")
         bpy.ops.wm.alembic_export(filepath=abc_file_path, selected=True)
-        obj.select_set(True)
 
         # Check if the object has a material
         if obj.material_slots:
@@ -251,6 +250,7 @@ for obj in bpy.context.scene.objects:
                             material_params["tangent"] =                {"value": tangent[:],           "name": "Tangent"}
         info[obj_name] = material_params
     print("-----")
+    obj.select_set(False)
 
 
 # Serializing json
