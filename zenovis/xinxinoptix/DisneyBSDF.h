@@ -704,13 +704,16 @@ namespace DisneyBSDF{
             tbn.inverse_transform(wi);
             wi = normalize(wi);
           minSpecRough = mat.roughness;
+          auto woo = wo;
+          tbn.inverse_transform(woo);
+          auto isReflection =  dot(wi, N) * dot(woo, N)>0?1:0;
+          prd->hit_type = (isReflection==1?SPECULAR_HIT:TRANSMIT_HIT);
           bool sameside2 = (dot(wi, N) * dot(wi, N2))>0.0f;
           if(sameside2 == false)
           {
             wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
           }
-          auto isReflection =  dot(wi, N2) * dot(wo, N2)>0?1:0;
-          prd->hit_type = (isReflection==1?SPECULAR_HIT:TRANSMIT_HIT);
+
         }else if(r3<p5)//cc
         {
             prd->hit_type = SPECULAR_HIT;
