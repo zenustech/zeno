@@ -144,7 +144,7 @@ struct Make2DGridPrimitive : INode {
 
         auto layout = get_param<std::string>("Layout");
         if (layout == "Column-major") {
-#pragma omp parallel for collapse(2)
+#pragma omp parallel for
             for (intptr_t y = 0; y < ny; y++)
                 for (intptr_t x = 0; x < nx; x++) {
                     intptr_t index = y * nx + x;
@@ -162,7 +162,7 @@ struct Make2DGridPrimitive : INode {
             }
             if (get_param<bool>("hasFaces")) {
                 prim->tris.resize((nx - 1) * (ny - 1) * 2);
-#pragma omp parallel for collapse(2)
+#pragma omp parallel for
                 for (intptr_t y = 0; y < ny - 1; y++)
                     for (intptr_t x = 0; x < nx - 1; x++) {
                         intptr_t index = y * (nx - 1) + x;
@@ -175,7 +175,7 @@ struct Make2DGridPrimitive : INode {
                     }
             }
         } else {
-#pragma omp parallel for collapse(2)
+#pragma omp parallel for
             for (intptr_t x = 0; x < nx; x++)
                 for (intptr_t y = 0; y < ny; y++) {
                     intptr_t index = x * ny + y;
@@ -195,7 +195,7 @@ struct Make2DGridPrimitive : INode {
 
             if (get_param<bool>("hasFaces")) {
                 prim->tris.resize((nx - 1) * (ny - 1) * 2);
-#pragma omp parallel for collapse(2)
+#pragma omp parallel for
                 for (intptr_t x = 0; x < nx - 1; x++)
                     for (intptr_t y = 0; y < ny - 1; y++) {
                         intptr_t index = x * (ny - 1) + y;
