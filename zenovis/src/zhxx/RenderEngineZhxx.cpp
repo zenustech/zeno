@@ -2,11 +2,13 @@
 #include <zenovis/RenderEngine.h>
 #include <zenovis/DrawOptions.h>
 #include <zenovis/bate/GraphicsManager.h>
-#include <zenovis/ObjectsManager.h>
+#include <zeno/extra/ObjectsManager.h>
 #include <zenovis/bate/IGraphic.h>
 #include <zenovis/opengl/vao.h>
 #include <zenovis/opengl/scope.h>
 #include "../../zhxxvis/zenvisapi.hpp"
+#include <zeno/core/Session.h>
+#include <zeno/extra/GlobalComm.h>
 
 namespace zenovis::zhxx {
 
@@ -77,7 +79,7 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
     }
 
     void update() override {
-        if (graphicsMan->load_objects(scene->objectsMan->pairsShared()))
+        if (graphicsMan->load_objects(zeno::getSession().globalComm->objectsMan->pairsShared()))
             giNeedUpdate = true;
     }
 

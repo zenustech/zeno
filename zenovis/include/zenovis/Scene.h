@@ -16,7 +16,7 @@ struct Camera;
 struct DrawOptions;
 struct ShaderManager;
 struct GraphicsManager;
-struct ObjectsManager;
+//struct ObjectsManager;
 struct RenderManager;
 
 enum class PICK_MODE {
@@ -35,7 +35,7 @@ struct Scene : zeno::disable_copy {
     std::unique_ptr<Camera> camera;
     std::unique_ptr<DrawOptions> drawOptions;
     std::unique_ptr<ShaderManager> shaderMan;
-    std::unique_ptr<ObjectsManager> objectsMan;
+    //std::unique_ptr<ObjectsManager> objectsMan;
     std::unique_ptr<RenderManager> renderMan;
 
     Scene();

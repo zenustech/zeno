@@ -3,7 +3,7 @@
 #include "optixviewport.h"
 #include "zoptixviewport.h"
 #include <zenovis/RenderEngine.h>
-#include <zenovis/ObjectsManager.h>
+#include <zeno/extra/ObjectsManager.h>
 #include <zenovis/Camera.h>
 #include <zeno/extra/GlobalComm.h>
 #include <zeno/extra/GlobalState.h>
@@ -482,7 +482,7 @@ void DisplayWidget::onCommandDispatched(int actionType, bool bChecked)
         {
             int frameid = m_glView->getSession()->get_curr_frameid();
             auto *scene = m_glView->getSession()->get_scene();
-            for (auto const &[key, ptr] : scene->objectsMan->pairs()) {
+            for (auto const &[key, ptr] : zeno::getSession().globalComm->objectsMan->pairs()) {
                 if (key.find("MakeCamera") != std::string::npos &&
                     key.find(zeno::format(":{}:", frameid)) != std::string::npos) {
                     auto cam = dynamic_cast<zeno::CameraObject *>(ptr)->get();
@@ -616,7 +616,7 @@ void DisplayWidget::afterRun()
         ZASSERT_EXIT(session);
         auto scene = session->get_scene();
         ZASSERT_EXIT(scene);
-        scene->objectsMan->lightObjects.clear();
+        zeno::getSession().globalComm->objectsMan->lightObjects.clear();
     }
 }
 
@@ -646,7 +646,7 @@ void DisplayWidget::onRun(LAUNCH_PARAM launchParam)
     Zenovis* pZenoVis = getZenoVis();
     ZASSERT_EXIT(pZenoVis);
     auto scene = pZenoVis->getSession()->get_scene();
-    scene->objectsMan->lightObjects.clear();
+    zeno::getSession().globalComm->objectsMan->lightObjects.clear();
     ZTimeline* timeline = mainWin->timeline();
     ZASSERT_EXIT(timeline);
 }
@@ -686,7 +686,7 @@ void DisplayWidget::onRun() {
     Zenovis* pZenoVis = getZenoVis();
     ZASSERT_EXIT(pZenoVis);
     auto scene = pZenoVis->getSession()->get_scene();
-    scene->objectsMan->lightObjects.clear();
+    zeno::getSession().globalComm->objectsMan->lightObjects.clear();
 }
 
 void DisplayWidget::runAndRecord(const VideoRecInfo &recInfo) {
@@ -1180,7 +1180,7 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
             // find prim in object manager
             auto input_node_id = input_nodes[0].get_node_id();
             string prim_name;
-            for (const auto &[k, v] : scene->objectsMan->pairsShared()) {
+            for (const auto &[k, v] : zeno::getSession().globalComm->objectsMan->pairsShared()) {
                 if (k.find(input_node_id.toStdString()) != string::npos)
                     prim_name = k;
             }

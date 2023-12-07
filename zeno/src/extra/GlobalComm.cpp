@@ -412,6 +412,7 @@ GlobalComm::ViewObjects const* GlobalComm::_getViewObjects(const int frameid) {
     if (maxCachedFrames != 0) {
         // load back one gc:
         if (!m_inCacheFrames.count(frameid)) {  // notinmem then cacheit
+            auto x = &m_inCacheFrames;
             bool ret = fromDiskByObjsManager(cacheFramePath, frameid, m_frames[frameIdx].view_objects, toViewNodesId);
             if (!ret)
                 return nullptr;
@@ -463,11 +464,11 @@ ZENO_API bool GlobalComm::load_objects(
     auto const* viewObjs = _getViewObjects(frameid);
     if (viewObjs) {
         zeno::log_trace("load_objects: {} objects at frame {}", viewObjs->size(), frameid);
-        inserted = callback(viewObjs->m_curr);
+        inserted = objectsMan->load_objects(viewObjs->m_curr);
     }
     else {
         zeno::log_trace("load_objects: no objects at frame {}", frameid);
-        inserted = callback({});
+        inserted = objectsMan->load_objects({});
     }
     return inserted;
 }

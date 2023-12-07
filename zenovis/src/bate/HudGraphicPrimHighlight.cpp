@@ -3,7 +3,9 @@
 #include <zenovis/Scene.h>
 #include <zenovis/bate/IGraphic.h>
 #include <zenovis/ShaderManager.h>
-#include <zenovis/ObjectsManager.h>
+#include <zeno/extra/ObjectsManager.h>
+#include <zeno/core/Session.h>
+#include <zeno/extra/GlobalComm.h>
 #include <zenovis/opengl/buffer.h>
 #include <zenovis/opengl/shader.h>
 #include <zenovis/opengl/vao.h>
@@ -76,12 +78,12 @@ struct PrimitiveHighlight : IGraphicDraw {
             for (const auto &prim_id : scene->selected) {
                 // ----- get primitive -----
                 PrimitiveObject *prim = nullptr;
-                auto optional_prim = scene->objectsMan->get(prim_id);
+                auto optional_prim = zeno::getSession().globalComm->objectsMan->get(prim_id);
                 if (optional_prim.has_value())
-                    prim = dynamic_cast<PrimitiveObject *>(scene->objectsMan->get(prim_id).value());
+                    prim = dynamic_cast<PrimitiveObject *>(zeno::getSession().globalComm->objectsMan->get(prim_id).value());
                 else {
                     auto node_id = prim_id.substr(0, prim_id.find_first_of(':'));
-                    for (const auto &[n, p] : scene->objectsMan->pairsShared()) {
+                    for (const auto &[n, p] : zeno::getSession().globalComm->objectsMan->pairsShared()) {
                         if (n.find(node_id) != std::string::npos) {
                             prim = dynamic_cast<PrimitiveObject *>(p.get());
                             break;
@@ -116,12 +118,12 @@ struct PrimitiveHighlight : IGraphicDraw {
         for (const auto& [prim_id, elements] : scene->selected_elements) {
             // ----- get primitive -----
             PrimitiveObject* prim = nullptr;
-            auto optional_prim = scene->objectsMan->get(prim_id);
+            auto optional_prim = zeno::getSession().globalComm->objectsMan->get(prim_id);
             if (optional_prim.has_value())
-                prim = dynamic_cast<PrimitiveObject*>(scene->objectsMan->get(prim_id).value());
+                prim = dynamic_cast<PrimitiveObject*>(zeno::getSession().globalComm->objectsMan->get(prim_id).value());
             else {
                 auto node_id = prim_id.substr(0, prim_id.find_first_of(':'));
-                for (const auto& [n, p] : scene->objectsMan->pairsShared()) {
+                for (const auto& [n, p] : zeno::getSession().globalComm->objectsMan->pairsShared()) {
                     if (n.find(node_id) != std::string::npos) {
                         prim = dynamic_cast<PrimitiveObject*>(p.get());
                         break;

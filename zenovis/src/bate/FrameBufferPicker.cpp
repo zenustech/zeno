@@ -3,7 +3,9 @@
 #include <zenovis/Scene.h>
 #include <zenovis/bate/IGraphic.h>
 #include <zenovis/ShaderManager.h>
-#include <zenovis/ObjectsManager.h>
+#include <zeno/extra/ObjectsManager.h>
+#include <zeno/core/Session.h>
+#include <zeno/extra/GlobalComm.h>
 #include <zenovis/opengl/buffer.h>
 #include <zenovis/opengl/shader.h>
 #include <zenovis/opengl/texture.h>
@@ -285,7 +287,7 @@ struct FrameBufferPicker : IPicker {
         // construct prim set
         // use focus_prim if focus_prim_name is not empty else all prims
         vector<std::pair<string, std::shared_ptr<zeno::IObject>>> prims;
-        auto prims_shared = scene->objectsMan->pairsShared();
+        auto prims_shared = zeno::getSession().globalComm->objectsMan->pairsShared();
         if (!focus_prim_name.empty()) {
             std::shared_ptr<zeno::IObject> focus_prim;
             for (const auto& [k, v] : prims_shared) {

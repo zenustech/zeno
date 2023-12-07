@@ -1,7 +1,6 @@
-#include <zenovis/ObjectsManager.h>
+#include <zeno/extra/ObjectsManager.h>
 #include <zeno/types/UserData.h>
 #include <zeno/types/PrimitiveObject.h>
-#include <zenovis/bate/IGraphic.h>
 #include <zeno/core/IObject.h>
 #include <zeno/utils/log.h>
 #include <zeno/types/MaterialObject.h>
@@ -13,7 +12,7 @@ std::set<std::string> lightCameraNodes({
     });
 std::string matlNode = "ShaderFinalize";
 
-namespace zenovis {
+namespace zeno {
 
 ObjectsManager::ObjectsManager() = default;
 ObjectsManager::~ObjectsManager() = default;
@@ -47,11 +46,11 @@ bool ObjectsManager::load_objects(std::map<std::string, std::shared_ptr<zeno::IO
     return inserted;
 }
 
-void ObjectsManager::clear_objects() {
+ZENO_API void ObjectsManager::clear_objects() {
     objects.clear();
 }
 
-std::optional<zeno::IObject* > ObjectsManager::get(std::string nid) {
+ZENO_API std::optional<zeno::IObject* > ObjectsManager::get(std::string nid) {
     for (auto &[key, ptr]: this->pairs()) {
         if (key != nid) {
             continue;

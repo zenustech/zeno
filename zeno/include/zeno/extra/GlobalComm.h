@@ -10,11 +10,14 @@
 #include <set>
 #include <functional>
 #include <filesystem>
+#include <zeno/extra/ObjectsManager.h>
 
 namespace zeno {
 
 struct GlobalComm {
     using ViewObjects = PolymorphicMap<std::map<std::string, std::shared_ptr<IObject>>>;
+
+    std::unique_ptr<ObjectsManager> objectsMan = std::make_unique<ObjectsManager>();
 
     enum FRAME_STATE {
         FRAME_UNFINISH,

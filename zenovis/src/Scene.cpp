@@ -8,13 +8,14 @@
 #include <zenovis/DrawOptions.h>
 #include <zenovis/RenderEngine.h>
 #include <zenovis/ShaderManager.h>
-#include <zenovis/ObjectsManager.h>
 #include <zenovis/opengl/buffer.h>
 #include <zenovis/opengl/common.h>
 #include <zenovis/opengl/scope.h>
 #include "../xinxinoptix/xinxinoptixapi.h"
 #include <cstdlib>
 #include <map>
+#include <zeno/extra/GlobalComm.h>
+#include <zeno/extra/ObjectsManager.h>
 
 namespace zenovis {
 
@@ -30,7 +31,7 @@ Scene::Scene()
     : camera(std::make_unique<Camera>()),
       drawOptions(std::make_unique<DrawOptions>()),
       shaderMan(std::make_unique<ShaderManager>()),
-      objectsMan(std::make_unique<ObjectsManager>()),
+      //objectsMan(std::make_unique<ObjectsManager>()),
       renderMan(std::make_unique<RenderManager>(this)) {
 
     /* gl has been removed from optix scene.
@@ -48,8 +49,8 @@ Scene::Scene()
 
 void Scene::cleanUpScene()
 {
-    if (objectsMan)
-        objectsMan->clear_objects();
+    if (zeno::getSession().globalComm->objectsMan)
+        zeno::getSession().globalComm->objectsMan->clear_objects();
     if (renderMan && renderMan->getEngine())
         renderMan->getEngine()->update();
 }
@@ -68,7 +69,7 @@ void* Scene::getOptixImg(int& w, int& h)
 }
 
 bool Scene::cameraFocusOnNode(std::string const &nodeid, zeno::vec3f &center, float &radius) {
-    for (auto const &[key, ptr]: this->objectsMan->pairs()) {
+    for (auto const &[key, ptr]: zeno::getSession().globalComm->objectsMan->pairs()) {
         if (nodeid == key.substr(0, key.find_first_of(':'))) {
             return zeno::objectGetFocusCenterRadius(ptr, center, radius);
         }
@@ -81,9 +82,7 @@ bool Scene::loadFrameObjects(int frameid) {
     auto &ud = zeno::getSession().userData();
     ud.set2<int>("frameid", std::move(frameid));
 
-    const auto& cbLoadObjs = [this](std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs) -> bool {
-        return this->objectsMan->load_objects(objs);
-    };
+    const auto& cbLoadObjs = [this](std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs) -> bool {return true; };
     bool isFrameValid = false;
     bool inserted = zeno::getSession().globalComm->load_objects(frameid, cbLoadObjs, isFrameValid);
     if (!isFrameValid)

@@ -9,7 +9,7 @@
 #include "dialog/zrecorddlg.h"
 #include "dialog/zrecprogressdlg.h"
 #include <zeno/utils/log.h>
-#include <zenovis/ObjectsManager.h>
+#include <zeno/extra/ObjectsManager.h>
 #include <zenovis/DrawOptions.h>
 #include <zeno/funcs/ObjectGeometryInfo.h>
 #include <util/log.h>
@@ -226,7 +226,7 @@ void ViewportWidget::paintGL()
     m_zenovis->paintGL();
     if(updateLightOnce){
         auto scene = m_zenovis->getSession()->get_scene();
-        if(scene->objectsMan->lightObjects.size() > 0){
+        if(zeno::getSession().globalComm->objectsMan->lightObjects.size() > 0){
             zenoApp->getMainWindow()->updateLightList();
             updateLightOnce = false;
         }

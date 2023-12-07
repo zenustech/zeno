@@ -30,11 +30,13 @@
 #include "viewport/viewportwidget.h"
 #include "viewport/displaywidget.h"
 #include "zenomainwindow.h"
-#include <zenovis/ObjectsManager.h>
+#include <zeno/extra/ObjectsManager.h>
 #include <viewportinteraction/picker.h>
 #include "settings/zenosettingsmanager.h"
 #include "timeline/ztimeline.h"
 #include <zenoui/comctrl/gv/zgraphicsnetlabel.h>
+#include <zeno/core/Session.h>
+#include <zeno/extra/GlobalComm.h>
 
 ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
     : QGraphicsScene(parent)
@@ -1094,7 +1096,7 @@ void ZenoSubGraphScene::selectObjViaNodes() {
         for (auto item : selItems) {
             if (auto *pNode = qgraphicsitem_cast<ZenoNode *>(item)) {
                 auto node_id = pNode->index().data(ROLE_OBJID).toString().toStdString();
-                for (const auto &[prim_name, _] : scene->objectsMan->pairsShared()) {
+                for (const auto &[prim_name, _] : zeno::getSession().globalComm->objectsMan->pairsShared()) {
                     if (prim_name.find(node_id) != std::string::npos)
                         picker->add(prim_name);
                 }

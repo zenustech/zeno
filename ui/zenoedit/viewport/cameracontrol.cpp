@@ -2,11 +2,13 @@
 #include "cameracontrol.h"
 #include "zenovis.h"
 //#include <zenovis/Camera.h>
-#include <zenovis/ObjectsManager.h>
+#include <zeno/extra/ObjectsManager.h>
 #include "zenomainwindow.h"
 #include "nodesview/zenographseditor.h"
 #include <zeno/types/UserData.h>
 #include "settings/zenosettingsmanager.h"
+#include <zeno/core/Session.h>
+#include <zeno/extra/GlobalComm.h>
 
 
 using std::string;
@@ -233,7 +235,7 @@ void CameraControl::changeTransformOperation(const QString &node)
     ZASSERT_EXIT(m_zenovis);
 
     auto scene = m_zenovis->getSession()->get_scene();
-    for (auto const &[key, _] : scene->objectsMan->pairs()) {
+    for (auto const &[key, _] : zeno::getSession().globalComm->objectsMan->pairs()) {
         if (key.find(node.toStdString()) != std::string::npos) {
             scene->selected.insert(key);
             m_transformer->addObject(key);
@@ -409,7 +411,7 @@ void CameraControl::fakeMouseDoubleClickEvent(QMouseEvent *event)
     auto scene = m_zenovis->getSession()->get_scene();
     auto picked_prim = m_picker->just_pick_prim(pos.x(), pos.y());
     if (!picked_prim.empty()) {
-        auto primList = scene->objectsMan->pairs();
+        auto primList = zeno::getSession().globalComm->objectsMan->pairs();
         for (auto const &[key, ptr]: primList) {
             if (picked_prim == key) {
                 auto &ud = ptr->userData();
@@ -580,7 +582,7 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                 for(auto prim:m_picker->get_picked_prims())
                 {
                     if (!prim.empty()) {
-                        auto primList = scene->objectsMan->pairs();
+                        auto primList = zeno::getSession().globalComm->objectsMan->pairs();
                         for (auto const &[key, ptr]: primList) {
                             if (prim == key) {
                                 auto &ud = ptr->userData();
@@ -617,7 +619,7 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                 for(auto prim:m_picker->get_picked_prims())
                 {
                     if (!prim.empty()) {
-                        auto primList = scene->objectsMan->pairs();
+                        auto primList = zeno::getSession().globalComm->objectsMan->pairs();
                         for (auto const &[key, ptr]: primList) {
                             if (prim == key) {
                                 auto &ud = ptr->userData();

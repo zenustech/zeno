@@ -90,7 +90,7 @@ void OptixWorker::onModifyLightData(UI_VECTYPE posvec, UI_VECTYPE scalevec, UI_V
     ZASSERT_EXIT(scene);
 
     std::shared_ptr<zeno::IObject> obj;
-    for (auto const& [key, ptr] : scene->objectsMan->lightObjects) {
+    for (auto const& [key, ptr] : zeno::getSession().globalComm->objectsMan->lightObjects) {
         if (key.find(name) != std::string::npos) {
             obj = ptr;
             name = key;
@@ -126,7 +126,7 @@ void OptixWorker::onModifyLightData(UI_VECTYPE posvec, UI_VECTYPE scalevec, UI_V
             prim_in->userData().setLiterial<float>("intensity", std::move(intensity));
         }
 
-        scene->objectsMan->needUpdateLight = true;
+        zeno::getSession().globalComm->objectsMan->needUpdateLight = true;
         //pDisplay->setSimpleRenderOption();
     }
     else {

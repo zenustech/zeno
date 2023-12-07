@@ -27,8 +27,10 @@
 #include <zenoui/comctrl/zcombobox.h>
 #include <zeno/core/Session.h>
 #include <zeno/types/UserData.h>
-#include <zenovis/ObjectsManager.h>
+#include <zeno/extra/ObjectsManager.h>
 #include <zenoui/comctrl/ztoolmenubutton.h>
+#include <zeno/core/Session.h>
+#include <zeno/extra/GlobalComm.h>
 
 
 ZToolBarButton::ZToolBarButton(bool bCheckable, const QString& icon, const QString& iconOn)
@@ -884,7 +886,7 @@ void DockContent_View::initConnections()
             ZASSERT_EXIT(session);
             auto scene = session->get_scene();
             ZASSERT_EXIT(scene);
-            scene->objectsMan->needUpdateLight = true;
+            zeno::getSession().globalComm->objectsMan->needUpdateLight = true;
             m_pDisplay->setSimpleRenderOption();
             zenoApp->getMainWindow()->updateViewport();
         }

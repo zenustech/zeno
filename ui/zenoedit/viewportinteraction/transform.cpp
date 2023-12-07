@@ -2,13 +2,15 @@
 
 #include <zeno/funcs/PrimitiveTools.h>
 #include <zeno/types/UserData.h>
-#include <zenovis/ObjectsManager.h>
+#include <zeno/extra/ObjectsManager.h>
 #include <zenomodel/include/nodesmgr.h>
 #include <zenomodel/include/uihelper.h>
 #include "zenomainwindow.h"
 #include "viewport/viewportwidget.h"
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <zeno/core/Session.h>
+#include <zeno/extra/GlobalComm.h>
 
 namespace zeno {
 
@@ -52,10 +54,10 @@ void FakeTransformer::addObject(const std::string& name) {
     ZASSERT_EXIT(sess);
     auto scene = sess->get_scene();
     ZASSERT_EXIT(scene);
-    if (!scene->objectsMan->get(name).has_value())
+    if (!zeno::getSession().globalComm->objectsMan->get(name).has_value())
         return;
 
-    auto object = dynamic_cast<PrimitiveObject*>(scene->objectsMan->get(name).value());
+    auto object = dynamic_cast<PrimitiveObject*>(zeno::getSession().globalComm->objectsMan->get(name).value());
     m_objects_center *= m_objects.size();
     auto& user_data = object->userData();
     zeno::vec3f bmin, bmax;

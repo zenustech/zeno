@@ -7,7 +7,7 @@
 
 #include <viewport/zenovis.h>
 #include <zeno/core/Session.h>
-#include <zenovis/ObjectsManager.h>
+#include <zeno/extra/ObjectsManager.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/types/UserData.h>
 #include <zeno/extra/TempNode.h>
