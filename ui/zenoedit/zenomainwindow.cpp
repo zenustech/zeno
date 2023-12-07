@@ -1949,6 +1949,7 @@ void ZenoMainWindow::save()
     if (!pModel)
         return;
 
+    /*
     if (pModel->hasNotDescNode())
     {
         int flag = QMessageBox::question(this, "",
@@ -1962,6 +1963,7 @@ void ZenoMainWindow::save()
         saveAs();
         return;
     }
+    */
 
     zenoio::ZSG_VERSION ver = pModel->ioVersion();
     if (zenoio::VER_2 == ver)
