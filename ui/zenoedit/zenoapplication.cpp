@@ -150,7 +150,7 @@ void ZenoApplication::initFonts()
     QFontDatabase::addApplicationFont(":/font/MiSans/MiSans-Demibold.ttf");
     QFontDatabase::addApplicationFont(":/font/MiSans/MiSans-Bold.ttf");
     QFont font("MiSans", 10);
-    setFont(font);
+    //setFont(font);
 }
 
 GraphsManagment *ZenoApplication::graphsManagment() const

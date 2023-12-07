@@ -74,6 +74,9 @@ int ZenoLink::type() const
 
 void ZenoLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styleOptions, QWidget* widget)
 {
+    if (editor_factor < 0.1) {
+        return;
+    }
     painter->save();
     QPen pen;
     pen.setColor(isSelected() ? QColor(0xFA6400) : QColor("#4B9EF4"));
