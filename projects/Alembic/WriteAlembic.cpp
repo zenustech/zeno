@@ -12,6 +12,7 @@
 #include "ABCTree.h"
 #include "zeno/utils/format.h"
 #include "zeno/utils/string.h"
+#include "zeno/types/ListObject.h"
 #include <numeric>
 #include <filesystem>
 
@@ -201,6 +202,105 @@ ZENDEFNODE(WriteAlembic, {
     {"deprecated"},
 });
 
+template<typename T1, typename T2>
+void write_attrs(std::map<std::string, OFloatGeomParam> &attrs, std::shared_ptr<PrimitiveObject> prim, T1& schema, T2& samp) {
+    OCompoundProperty arbAttrs = schema.getArbGeomParams();
+    prim->verts.foreach_attr([&](auto const &key, auto &arr) {
+        if (key == "v" || key == "nrm" || key == "faceset") {
+            return;
+        }
+        using T = std::decay_t<decltype(arr[0])>;
+        if constexpr (std::is_same_v<T, zeno::vec3f>) {
+            if (attrs.count(key) == 0) {
+                attrs[key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kVaryingScope, 3);
+            }
+            auto samp = OFloatGeomParam::Sample();
+            std::vector<float> v(arr.size() * 3);
+            for (auto i = 0; i < arr.size(); i++) {
+                v[i * 3 + 0] = arr[i][0];
+                v[i * 3 + 1] = arr[i][1];
+                v[i * 3 + 2] = arr[i][2];
+            }
+            samp.setVals(v);
+            attrs[key].set(samp);
+        } else if constexpr (std::is_same_v<T, float>) {
+            if (attrs.count(key) == 0) {
+                attrs[key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kVaryingScope, 1);
+            }
+            auto samp = OFloatGeomParam::Sample();
+            samp.setVals(arr);
+            attrs[key].set(samp);
+        }
+    });
+}
+void write_user_data(std::map<std::string, std::any> &user_attrs, std::shared_ptr<PrimitiveObject> prim, OCompoundProperty& user) {
+    auto &ud = prim->userData();
+    for (const auto& [key, value] : ud.m_data) {
+        if (key == "faceset_count" || zeno::starts_with(key, "faceset_")) {
+            continue;
+        }
+        if (ud.has<int>(key)) {
+            if (user_attrs.count(key) == 0) {
+                auto p = OInt32Property(user, key);
+                p.setTimeSampling(1);
+                user_attrs[key] = p;
+            }
+            std::any_cast<OInt32Property>(user_attrs[key]).set(ud.get2<int>(key));
+        }
+        else if (ud.has<float>(key)) {
+            if (user_attrs.count(key) == 0) {
+                auto p = OFloatProperty(user, key);
+                p.setTimeSampling(1);
+                user_attrs[key] = p;
+            }
+            std::any_cast<OFloatProperty>(user_attrs[key]).set(ud.get2<float>(key));
+        }
+        else if (ud.has<vec2i>(key)) {
+            if (user_attrs.count(key) == 0) {
+                auto p = OV2iProperty(user, key);
+                p.setTimeSampling(1);
+                user_attrs[key] = p;
+            }
+            auto v = ud.get2<vec2i>(key);
+            std::any_cast<OV2iProperty>(user_attrs[key]).set(Imath_3_2::V2i(v[0], v[1]));
+        }
+        else if (ud.has<vec3i>(key)) {
+            if (user_attrs.count(key) == 0) {
+                auto p = OV3iProperty(user, key);
+                p.setTimeSampling(1);
+                user_attrs[key] = p;
+            }
+            auto v = ud.get2<vec3i>(key);
+            std::any_cast<OV3iProperty>(user_attrs[key]).set(Imath_3_2::V3i(v[0], v[1], v[2]));
+        }
+        else if (ud.has<vec2f>(key)) {
+            if (user_attrs.count(key) == 0) {
+                auto p = OV2fProperty(user, key);
+                p.setTimeSampling(1);
+                user_attrs[key] = p;
+            }
+            auto v = ud.get2<vec2f>(key);
+            std::any_cast<OV2fProperty>(user_attrs[key]).set(Imath_3_2::V2f(v[0], v[1]));
+        }
+        else if (ud.has<vec3f>(key)) {
+            if (user_attrs.count(key) == 0) {
+                auto p = OV3fProperty(user, key);
+                p.setTimeSampling(1);
+                user_attrs[key] = p;
+            }
+            auto v = ud.get2<vec3f>(key);
+            std::any_cast<OV3fProperty>(user_attrs[key]).set(Imath_3_2::V3f(v[0], v[1], v[2]));
+        }
+        else if (ud.has<std::string>(key)) {
+            if (user_attrs.count(key) == 0) {
+                auto p = OStringProperty(user, key);
+                p.setTimeSampling(1);
+                user_attrs[key] = p;
+            }
+            std::any_cast<OStringProperty>(user_attrs[key]).set(ud.get2<std::string>(key));
+        }
+    }
+}
 struct WriteAlembic2 : INode {
     OArchive archive;
     OPolyMesh meshyObj;
@@ -209,105 +309,6 @@ struct WriteAlembic2 : INode {
     std::map<std::string, OFloatGeomParam> attrs;
     std::map<std::string, std::any> user_attrs;
 
-    template<typename T1, typename T2>
-    void write_attrs(std::shared_ptr<PrimitiveObject> prim, T1& schema, T2& samp) {
-        OCompoundProperty arbAttrs = schema.getArbGeomParams();
-        prim->verts.foreach_attr([&](auto const &key, auto &arr) {
-            if (key == "v" || key == "nrm" || key == "faceset") {
-                return;
-            }
-            using T = std::decay_t<decltype(arr[0])>;
-            if constexpr (std::is_same_v<T, zeno::vec3f>) {
-                if (attrs.count(key) == 0) {
-                    attrs[key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kVaryingScope, 3);
-                }
-                auto samp = OFloatGeomParam::Sample();
-                std::vector<float> v(arr.size() * 3);
-                for (auto i = 0; i < arr.size(); i++) {
-                    v[i * 3 + 0] = arr[i][0];
-                    v[i * 3 + 1] = arr[i][1];
-                    v[i * 3 + 2] = arr[i][2];
-                }
-                samp.setVals(v);
-                attrs[key].set(samp);
-            } else if constexpr (std::is_same_v<T, float>) {
-                if (attrs.count(key) == 0) {
-                    attrs[key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kVaryingScope, 1);
-                }
-                auto samp = OFloatGeomParam::Sample();
-                samp.setVals(arr);
-                attrs[key].set(samp);
-            }
-        });
-    }
-    void write_user_data(std::shared_ptr<PrimitiveObject> prim, OCompoundProperty& user) {
-        auto &ud = prim->userData();
-        for (const auto& [key, value] : ud.m_data) {
-            if (key == "faceset_count" || zeno::starts_with(key, "faceset_")) {
-                continue;
-            }
-            if (ud.has<int>(key)) {
-                if (user_attrs.count(key) == 0) {
-                    auto p = OInt32Property(user, key);
-                    p.setTimeSampling(1);
-                    user_attrs[key] = p;
-                }
-                std::any_cast<OInt32Property>(user_attrs[key]).set(ud.get2<int>(key));
-            }
-            else if (ud.has<float>(key)) {
-                if (user_attrs.count(key) == 0) {
-                    auto p = OFloatProperty(user, key);
-                    p.setTimeSampling(1);
-                    user_attrs[key] = p;
-                }
-                std::any_cast<OFloatProperty>(user_attrs[key]).set(ud.get2<float>(key));
-            }
-            else if (ud.has<vec2i>(key)) {
-                if (user_attrs.count(key) == 0) {
-                    auto p = OV2iProperty(user, key);
-                    p.setTimeSampling(1);
-                    user_attrs[key] = p;
-                }
-                auto v = ud.get2<vec2i>(key);
-                std::any_cast<OV2iProperty>(user_attrs[key]).set(Imath_3_2::V2i(v[0], v[1]));
-            }
-            else if (ud.has<vec3i>(key)) {
-                if (user_attrs.count(key) == 0) {
-                    auto p = OV3iProperty(user, key);
-                    p.setTimeSampling(1);
-                    user_attrs[key] = p;
-                }
-                auto v = ud.get2<vec3i>(key);
-                std::any_cast<OV3iProperty>(user_attrs[key]).set(Imath_3_2::V3i(v[0], v[1], v[2]));
-            }
-            else if (ud.has<vec2f>(key)) {
-                if (user_attrs.count(key) == 0) {
-                    auto p = OV2fProperty(user, key);
-                    p.setTimeSampling(1);
-                    user_attrs[key] = p;
-                }
-                auto v = ud.get2<vec2f>(key);
-                std::any_cast<OV2fProperty>(user_attrs[key]).set(Imath_3_2::V2f(v[0], v[1]));
-            }
-            else if (ud.has<vec3f>(key)) {
-                if (user_attrs.count(key) == 0) {
-                    auto p = OV3fProperty(user, key);
-                    p.setTimeSampling(1);
-                    user_attrs[key] = p;
-                }
-                auto v = ud.get2<vec3f>(key);
-                std::any_cast<OV3fProperty>(user_attrs[key]).set(Imath_3_2::V3f(v[0], v[1], v[2]));
-            }
-            else if (ud.has<std::string>(key)) {
-                if (user_attrs.count(key) == 0) {
-                    auto p = OStringProperty(user, key);
-                    p.setTimeSampling(1);
-                    user_attrs[key] = p;
-                }
-                std::any_cast<OStringProperty>(user_attrs[key]).set(ud.get2<std::string>(key));
-            }
-        }
-    }
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         bool flipFrontBack = get_input2<int>("flipFrontBack");
@@ -372,7 +373,7 @@ struct WriteAlembic2 : INode {
             }
 
             OCompoundProperty user = mesh.getUserProperties();
-            write_user_data(prim, user);
+            write_user_data(user_attrs, prim, user);
 
             mesh.setTimeSampling(1);
 
@@ -432,7 +433,7 @@ struct WriteAlembic2 : INode {
                             uvsamp);
                     write_velocity(prim, mesh_samp);
                     write_normal(prim, mesh_samp);
-                    write_attrs(prim, mesh, mesh_samp);
+                    write_attrs(attrs, prim, mesh, mesh_samp);
                     mesh.set( mesh_samp );
                 }
                 else {
@@ -442,7 +443,7 @@ struct WriteAlembic2 : INode {
                             Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ));
                     write_velocity(prim, mesh_samp);
                     write_normal(prim, mesh_samp);
-                    write_attrs(prim, mesh, mesh_samp);
+                    write_attrs(attrs, prim, mesh, mesh_samp);
                     mesh.set( mesh_samp );
                 }
             }
@@ -493,7 +494,7 @@ struct WriteAlembic2 : INode {
                             uvsamp);
                     write_velocity(prim, mesh_samp);
                     write_normal(prim, mesh_samp);
-                    write_attrs(prim, mesh, mesh_samp);
+                    write_attrs(attrs, prim, mesh, mesh_samp);
                     mesh.set( mesh_samp );
                 } else {
                     OPolyMeshSchema::Sample mesh_samp(
@@ -502,7 +503,7 @@ struct WriteAlembic2 : INode {
                             Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ));
                     write_velocity(prim, mesh_samp);
                     write_normal(prim, mesh_samp);
-                    write_attrs(prim, mesh, mesh_samp);
+                    write_attrs(attrs, prim, mesh, mesh_samp);
                     mesh.set( mesh_samp );
                 }
             }
@@ -510,7 +511,7 @@ struct WriteAlembic2 : INode {
         else {
             OPointsSchema &points = pointsObj.getSchema();
             OCompoundProperty user = points.getUserProperties();
-            write_user_data(prim, user);
+            write_user_data(user_attrs, prim, user);
             points.setTimeSampling(1);
             OPointsSchema::Sample samp(V3fArraySample( ( const V3f * )prim->verts.data(), prim->verts.size() ));
             std::vector<uint64_t> ids(prim->verts.size());
@@ -525,7 +526,7 @@ struct WriteAlembic2 : INode {
             }
             samp.setIds(Alembic::Abc::UInt64ArraySample(ids.data(), ids.size()));
             write_velocity(prim, samp);
-            write_attrs(prim, points, samp);
+            write_attrs(attrs, prim, points, samp);
             points.set( samp );
         }
         set_output("prim", prim);
@@ -548,5 +549,74 @@ ZENDEFNODE(WriteAlembic2, {
     {},
     {"alembic"},
 });
+
+struct WriteAlembicPrims : INode {
+    OArchive archive;
+    std::string usedPath;
+    std::map<std::string, OPolyMesh> objects;
+    std::map<std::string, OFloatGeomParam> attrs;
+    std::map<std::string, std::any> user_attrs;
+
+    virtual void apply() override {
+        auto prims = get_input<ListObject>("prims")->get<PrimitiveObject>();
+        bool flipFrontBack = get_input2<int>("flipFrontBack");
+        float fps = has_input("fps")? get_input2<float>("fps") : 24.0f;
+        int frameid;
+        if (has_input("frameid")) {
+            frameid = get_input2<int>("frameid");
+        } else {
+            frameid = getGlobalState()->frameid;
+        }
+        int frame_start = get_input2<int>("frame_start");
+        int frame_end = get_input2<int>("frame_end");
+        std::string path = get_input2<std::string>("path");
+        auto folderPath = fs::path(path).parent_path();
+
+        if (!fs::exists(folderPath)) {
+            fs::create_directories(folderPath);
+        }
+        if (usedPath != path) {
+            usedPath = path;
+            archive = {Alembic::AbcCoreOgawa::WriteArchive(), path};
+            archive.addTimeSampling(TimeSampling(1.0/fps, frame_start / fps));
+            objects.clear();
+            attrs.clear();
+            user_attrs.clear();
+            for (auto prim: prims) {
+                auto path = prim->userData().get2<std::string>("path");
+                auto n_path = path.substr(5);
+                auto subnames = split_str(n_path, '/');
+                OObject oObject = OObject( archive, 1 );
+                for (auto i = 0; i < subnames.size() - 1; i++) {
+                    oObject = OObject( archive, subnames[i] );
+                }
+                objects[path] = OPolyMesh (oObject, subnames[subnames.size() - 1]);
+            }
+        }
+        if (!(frame_start <= frameid && frameid <= frame_end)) {
+            return;
+        }
+        if (archive.valid() == false) {
+            zeno::makeError("Not init. Check whether in correct correct frame range.");
+        }
+    }
+};
+
+ZENDEFNODE(WriteAlembicPrims, {
+    {
+        {"list", "prims"},
+        {"frameid"},
+        {"writepath", "path", ""},
+        {"int", "frame_start", "0"},
+        {"int", "frame_end", "100"},
+        {"fps"},
+        {"bool", "flipFrontBack", "1"},
+    },
+    {
+    },
+    {},
+    {"alembic"},
+});
+
 } // namespace
 } // namespace zeno
