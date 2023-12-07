@@ -26,6 +26,11 @@ struct QuadMesh : INode {
         int knn = get_input2<int>("knn");
         auto line_pick_tag = get_input<zeno::StringObject>("line_pick_tag")->get();
 
+        if (prim->verts.size() < 4) {
+            set_output("prim", std::move(prim));
+            return;
+        }
+
         std::set<std::pair<int, int>> marked_lines{};
         if (has_input("marked_lines")) {
             const auto &markedLines = get_input<PrimitiveObject>("marked_lines")->lines.values;
