@@ -107,7 +107,14 @@ for obj in bpy.context.scene.objects:
         #for other_obj in bpy.data.objects:
         #    other_obj.select_set(other_obj == obj)
         obj.select_set(True)
-        abc_file_path = os.path.join(abc_output_dir, f"{obj_name}.abc")
+        matName = "Default"
+        if obj.material_slots:
+            for material_slot in obj.material_slots:
+                matName = material_slot.material.name
+
+        if not os.path.exists(abc_output_dir + '/' + matName):
+            os.makedirs(abc_output_dir + '/' + matName)
+        abc_file_path = os.path.join(abc_output_dir, f"{matName}/{obj_name}.abc")
         bpy.ops.wm.alembic_export(filepath=abc_file_path, selected=True)
 
         # Check if the object has a material
@@ -248,7 +255,9 @@ for obj in bpy.context.scene.objects:
                             material_params["normal"] =                 {"value": normal[:],            "name": "Normal"}
                             material_params["clearcoat_normal"] =       {"value": clearcoat_normal[:],  "name": "Clearcoat Normal"}
                             material_params["tangent"] =                {"value": tangent[:],           "name": "Tangent"}
-        info[obj_name] = material_params
+                matkey = material.name + '/' + obj_name
+                if not (matkey in info) :
+                    info[matkey] = material_params
     print("-----")
     obj.select_set(False)
 
