@@ -1016,6 +1016,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             ensure_shadtmpl(_default_shader_template);
             ensure_shadtmpl(_volume_shader_template);
             ensure_shadtmpl(_light_shader_template);
+            ensure_fallback();
 
             auto _default_shader_fallback = std::make_shared<std::string>(_fallback_shader_template.shadtmpl);
             auto _volume_shader_fallback = std::make_shared<std::string>(_volume_shader_template.shadtmpl);
