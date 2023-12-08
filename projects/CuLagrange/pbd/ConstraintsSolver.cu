@@ -352,7 +352,7 @@ struct XPBDSolveSmooth : INode {
         //     auto pw = (float)(substep_id) / (float)nm_substeps;
         // }
 
-        if(category == category_c::dcd_collision_constraint) {
+        if(category == category_c::self_dcd_collision_constraint) {
             constexpr auto eps = 1e-6;
 
             const auto& cquads = constraints->getQuadraturePoints();
@@ -658,7 +658,7 @@ struct XPBDSolveSmoothAll : INode {
                 });
             }
 
-            // if(category == category_c::dcd_collision_constraint) {
+            // if(category == category_c::self_dcd_collision_constraint) {
             //     const auto& tris = zsparticles->getQuadraturePoints();
             //     const auto &edges = (*zsparticles)[ZenoParticles::s_surfEdgeTag];
                      

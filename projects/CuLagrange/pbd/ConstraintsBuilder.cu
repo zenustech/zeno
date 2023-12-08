@@ -203,13 +203,16 @@ virtual void apply() override {
         constraint->setMeta(CONSTRAINT_TARGET,target.get());
     }   
 
-    if(type == "dcd_collision_constraint") {
+    if(type == "kinematic_dcd_collision_constraint") {
+
+    }
+
+    if(type == "self_dcd_collision_constraint") {
         constexpr auto eps = 1e-6;
-        constexpr auto MAX_IMMINENT_COLLISION_PAIRS = 2000000;
+        constexpr auto MAX_SELF_IMMINENT_COLLISION_PAIRS = 20000;
         auto dcd_source_xtag = get_input2<std::string>("dcd_source_xtag");
-        constraint->setMeta(CONSTRAINT_KEY,category_c::dcd_collision_constraint);
+        constraint->setMeta(CONSTRAINT_KEY,category_c::self_dcd_collision_constraint);
         eles.append_channels(cudaPol,{{"inds",4},{"bary",4},{"type",1}});
-        // eles.resize(MAX_IMMINENT_COLLISION_PAIRS);
 
         const auto &edges = (*source)[ZenoParticles::s_surfEdgeTag];
         auto has_input_collider = has_input<ZenoParticles>("target");
@@ -305,10 +308,10 @@ virtual void apply() override {
             });
         }
 
-        zs::bht<int,2,int> csPT{verts.get_allocator(),(size_t)MAX_IMMINENT_COLLISION_PAIRS};csPT.reset(cudaPol,true);
-        zs::bht<int,2,int> csEE{edges.get_allocator(),(size_t)MAX_IMMINENT_COLLISION_PAIRS};csEE.reset(cudaPol,true);
+        zs::bht<int,2,int> csPT{verts.get_allocator(),(size_t)MAX_SELF_IMMINENT_COLLISION_PAIRS};csPT.reset(cudaPol,true);
+        zs::bht<int,2,int> csEE{edges.get_allocator(),(size_t)MAX_SELF_IMMINENT_COLLISION_PAIRS};csEE.reset(cudaPol,true);
 
-    
+
         auto triBvh = bvh_t{};
         auto triBvs = retrieve_bounding_volumes(cudaPol,vtemp,ttemp,wrapv<3>{},imminent_collision_thickness/(float)2.0,"x");
         triBvh.build(cudaPol,triBvs);
@@ -711,7 +714,7 @@ virtual void apply() override {
         }); 
     }
 
-    if(type != "dcd_collision_constraint") {
+    if(type != "self_dcd_collision_constraint" && type != "kinematic_dcd_collison_constraint") {
         cudaPol(zs::range(eles.size()),[
             eles = proxy<space>({},eles),
             relative_stiffness = relative_stiffness,
