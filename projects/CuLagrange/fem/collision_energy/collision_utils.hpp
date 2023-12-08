@@ -1197,7 +1197,7 @@ namespace COLLISION_UTILS {
             }
 
             VECTOR3 bary_centric{};
-            LSL_GEO::get_vertex_triangle_barycentric_coordinates(ps[0],ps[1],ps[2],ps[3],bary_centric);
+            LSL_GEO::get_triangle_vertex_barycentric_coordinates(ps[0],ps[1],ps[2],ps[3],bary_centric);
 
             // if(distance > imminent_thickness)
             //     return false;

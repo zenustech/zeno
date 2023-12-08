@@ -61,6 +61,7 @@ virtual void apply() override {
     using namespace zs;
     using namespace PBD_CONSTRAINT;
 
+    using vec2 = zs::vec<float,2>;
     using vec3 = zs::vec<float,3>;
     using vec4 = zs::vec<float,4>;
     using vec2i = zs::vec<int,2>;
@@ -208,7 +209,7 @@ virtual void apply() override {
         auto dcd_source_xtag = get_input2<std::string>("dcd_source_xtag");
         constraint->setMeta(CONSTRAINT_KEY,category_c::dcd_collision_constraint);
         eles.append_channels(cudaPol,{{"inds",4},{"bary",4},{"type",1}});
-        eles.resize(MAX_IMMINENT_COLLISION_PAIRS);
+        // eles.resize(MAX_IMMINENT_COLLISION_PAIRS);
 
         const auto &edges = (*source)[ZenoParticles::s_surfEdgeTag];
         auto has_input_collider = has_input<ZenoParticles>("target");
@@ -311,37 +312,76 @@ virtual void apply() override {
         auto triBvh = bvh_t{};
         auto triBvs = retrieve_bounding_volumes(cudaPol,vtemp,ttemp,wrapv<3>{},imminent_collision_thickness/(float)2.0,"x");
         triBvh.build(cudaPol,triBvs);
-        COLLISION_UTILS::detect_self_imminent_PT_close_proximity(cudaPol,vtemp,"x",ttemp,imminent_collision_thickness,0,triBvh,eles,csPT);
+        COLLISION_UTILS::detect_self_imminent_PT_close_proximity(cudaPol,vtemp,"x",ttemp,imminent_collision_thickness,triBvh,csPT);
 
         std::cout << "nm_imminent_csPT : " << csPT.size() << std::endl;
-
         auto edgeBvh = bvh_t{};
         auto edgeBvs = retrieve_bounding_volumes(cudaPol,vtemp,etemp,wrapv<2>{},imminent_collision_thickness/(float)2.0,"x");
         edgeBvh.build(cudaPol,edgeBvs);  
-        COLLISION_UTILS::detect_self_imminent_EE_close_proximity(cudaPol,vtemp,"x",etemp,imminent_collision_thickness,csPT.size(),edgeBvh,eles,csEE);
+        COLLISION_UTILS::detect_self_imminent_EE_close_proximity(cudaPol,vtemp,"x",etemp,imminent_collision_thickness,edgeBvh,csEE);
 
         std::cout << "nm_imminent_csEE : " << csEE.size() << std::endl;
-        // std::cout << "csEE + csPT = " << csPT.size() + csEE.size() << std::endl;
-        if(!verts.hasProperty("dcd_collision_tag"))
-            verts.append_channels(cudaPol,{{"dcd_collision_tag",1}});
-        cudaPol(zs::range(verts.size()),[
-            verts = proxy<space>({},verts),
-            vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int vi) mutable {
-                verts("dcd_collision_tag",vi) = vtemp("dcd_collision_tag",vi);
+
+        eles.resize(csPT.size() + csEE.size());
+
+        // initialize self imminent PT collision data
+        cudaPol(zip(zs::range(csPT.size()),csPT._activeKeys),[
+            indsOffset = eles.getPropertyOffset("inds"),
+            baryOffset = eles.getPropertyOffset("bary"),
+            typeOffset = eles.getPropertyOffset("type"),
+            proximity_buffer = view<space>(eles),
+            xoffset = vtemp.getPropertyOffset("x"),
+            vtemp = view<space>(vtemp),
+            ttemp = ttemp.begin("inds",dim_c<3>,int_c)] ZS_LAMBDA(auto id,const auto& pair) mutable {
+                auto vi = pair[0];
+                auto ti = pair[1];
+                auto tri = ttemp[ti];
+
+                auto p = vtemp.pack(dim_c<3>,xoffset,vi);
+                vec3 ts[3] = {};
+
+                for(int i = 0;i != 3;++i)
+                    ts[i] = vtemp.pack(dim_c<3>,xoffset,tri[i]);
+
+                vec3 tri_bary{};
+                LSL_GEO::get_triangle_vertex_barycentric_coordinates(ts[0],ts[1],ts[2],p,tri_bary);
+
+                vec4 bary{-tri_bary[0],-tri_bary[1],-tri_bary[2],1};
+                vec4i inds{tri[0],tri[1],tri[2],vi};
+                proximity_buffer.tuple(dim_c<4>,indsOffset,id) = inds.reinterpret_bits(float_c);
+                proximity_buffer.tuple(dim_c<4>,baryOffset,id) = bary;
+                proximity_buffer(typeOffset,id) = zs::reinterpret_bits<float>((int)0);                
         });
 
-        if(has_input_collider) {
-            auto collider = get_input<ZenoParticles>("target");
-            auto& kverts = collider->getParticles();
-            if(!kverts.hasProperty("dcd_collision_tag"))
-                kverts.append_channels(cudaPol,{{"dcd_collision_tag",1}});
-            cudaPol(zs::range(kverts.size()),[
-                kverts = proxy<space>({},kverts),
-                voffset = verts.size(),
-                vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int kvi) mutable {
-                    kverts("dcd_collision_tag",kvi) = vtemp("dcd_collision_tag",kvi + voffset);
-            });                
-        }
+        cudaPol(zip(zs::range(csEE.size()),csEE._activeKeys),[
+            buffer_offset = csPT.size(),
+            indsOffset = eles.getPropertyOffset("inds"),
+            baryOffset = eles.getPropertyOffset("bary"),
+            typeOffset = eles.getPropertyOffset("type"),
+            proximity_buffer = view<space>(eles),
+            xoffset = vtemp.getPropertyOffset("x"),
+            vtemp = view<space>(vtemp),
+            etemp = etemp.begin("inds",dim_c<2>,int_c)] ZS_LAMBDA(auto id,const auto& pair) mutable {
+                auto ei = pair[0];
+                auto nei = pair[1];
+
+                auto ea = etemp[ei];
+                auto eb = etemp[nei];
+                vec4i inds{ea[0],ea[1],eb[0],eb[1]};
+
+                vec3 ps[4] = {};
+                for(int i = 0;i != 4;++i)
+                    ps[i] = vtemp.pack(dim_c<3>,xoffset,inds[i]);
+
+                vec2 edge_bary{};
+                LSL_GEO::get_edge_edge_barycentric_coordinates(ps[0],ps[1],ps[2],ps[3],edge_bary);
+                vec4 bary{edge_bary[0] - 1,-edge_bary[0],1 - edge_bary[1],edge_bary[1]};
+
+                proximity_buffer.tuple(dim_c<4>,baryOffset,id + buffer_offset) = bary;
+                proximity_buffer.tuple(dim_c<4>,indsOffset,id + buffer_offset) = inds.reinterpret_bits(float_c);
+                proximity_buffer(typeOffset,id + buffer_offset) = zs::reinterpret_bits<float>((int)1);
+        });
+
 
         constraint->setMeta<size_t>(NM_DCD_COLLISIONS,csEE.size() + csPT.size());
         constraint->setMeta(GLOBAL_DCD_THICKNESS,imminent_collision_thickness);
@@ -626,12 +666,6 @@ virtual void apply() override {
             verts = proxy<space>({},verts)] ZS_LAMBDA(int oei) mutable {
                 auto ei = do_constraint_topological_coloring ? reordered_map[oei] : oei;
                 eles.tuple(dim_c<4>,"inds",oei) = bd_topos[ei].reinterpret_bits(float_c);
-
-                // printf("topos[%d] : %d %d %d %d\n",oei
-                    // ,bd_topos[ei][0]
-                    // ,bd_topos[ei][1]
-                    // ,bd_topos[ei][2]
-                    // ,bd_topos[ei][3]);
 
                 vec3 x[4] = {};
                 for(int i = 0;i != 4;++i)

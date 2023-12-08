@@ -283,7 +283,7 @@ struct ZSComputeSurfaceBaryCentricWeights : INode {
                     stvs[i] = sverts.pack(dim_c<3>,sp_tag,stri[i]);
 
                 zs::vec<T,3> bary{};
-                LSL_GEO::get_vertex_triangle_barycentric_coordinates(stvs[0],stvs[1],stvs[2],dp,bary);
+                LSL_GEO::get_triangle_vertex_barycentric_coordinates(stvs[0],stvs[1],stvs[2],dp,bary);
 
                 auto normal_bary = bary;
                 for(int i = 0;i != 3;++i) {
@@ -430,7 +430,7 @@ struct ZSComputeSurfaceBaryCentricWeights2 : INode {
                     stvs[i] = sverts.pack(dim_c<3>,sp_tag,stri[i]);
 
                 zs::vec<T,3> bary{};
-                LSL_GEO::get_vertex_triangle_barycentric_coordinates(stvs[0],stvs[1],stvs[2],dp,bary);
+                LSL_GEO::get_triangle_vertex_barycentric_coordinates(stvs[0],stvs[1],stvs[2],dp,bary);
 
                 auto stnrm = LSL_GEO::facet_normal(stvs[0],stvs[1],stvs[2]);
 

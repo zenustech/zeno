@@ -119,7 +119,7 @@ void calc_imminent_self_PT_collision_impulse(Pol& pol,
                     
                     vec3 bary{};
 
-                    LSL_GEO::get_vertex_triangle_barycentric_coordinates(ts[0],ts[1],ts[2],p,bary);
+                    LSL_GEO::get_triangle_vertex_barycentric_coordinates(ts[0],ts[1],ts[2],p,bary);
                     for(int i = 0;i != 3;++i)
                         if(bary[i] > 1 + eps || bary[i] < -eps)
                             return;
@@ -159,7 +159,7 @@ void calc_imminent_self_PT_collision_impulse(Pol& pol,
                     vs[i] = verts.pack(dim_c<3>,vtag,inds[i]);
 
                 vec3 bary_centric{};
-                LSL_GEO::get_vertex_triangle_barycentric_coordinates(ps[0],ps[1],ps[2],ps[3],bary_centric);
+                LSL_GEO::get_triangle_vertex_barycentric_coordinates(ps[0],ps[1],ps[2],ps[3],bary_centric);
 
                 for(int i = 0;i != 3;++i)
                     bary_centric[i] = bary_centric[i] < 0 ? 0 : bary_centric[i];
@@ -194,7 +194,7 @@ void calc_imminent_self_PT_collision_impulse(Pol& pol,
 template<typename Pol,
     typename PosTileVec,
     typename EdgeTileVec,
-    typename ProximityBuffer,
+    // typename ProximityBuffer,
     typename EEHashMap,
     typename EdgeBvh,
     typename T = typename PosTileVec::value_type>
@@ -202,9 +202,10 @@ void detect_self_imminent_EE_close_proximity(Pol& pol,
     PosTileVec& verts,const zs::SmallString& xtag,
     const EdgeTileVec& edges,
     const T& thickness,
-    size_t buffer_offset,
+    // size_t buffer_offset,
     const EdgeBvh& edgeBvh,
-    ProximityBuffer& proximity_buffer,EEHashMap& csEE) {
+    // ProximityBuffer& proximity_buffer,
+    EEHashMap& csEE) {
         using namespace zs;
         constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
 
@@ -223,9 +224,9 @@ void detect_self_imminent_EE_close_proximity(Pol& pol,
             edges = proxy<space>({},edges),
             thickness = thickness,
             thickness2 = thickness * thickness,
-            buffer_offset = buffer_offset,
+            // buffer_offset = buffer_offset,
             eps = eps,
-            proximity_buffer = proxy<space>({},proximity_buffer),
+            // proximity_buffer = proxy<space>({},proximity_buffer),
             edgeBvh = proxy<space>(edgeBvh),
             csEE = proxy<space>(csEE)] ZS_LAMBDA(int ei) mutable {
                 auto ea = edges.pack(dim_c<2>,"inds",ei,int_c);
@@ -302,11 +303,10 @@ void detect_self_imminent_EE_close_proximity(Pol& pol,
                     for(int i = 0;i != 4;++i)
                         verts("dcd_collision_tag",inds[i]) = 1;
 
-
                     auto id = csEE.insert(vec2i{ei,nei});
-                    proximity_buffer.tuple(dim_c<4>,"bary",id + buffer_offset) = bary;
-                    proximity_buffer.tuple(dim_c<4>,"inds",id + buffer_offset) = inds.reinterpret_bits(float_c);
-                    proximity_buffer("type",id + buffer_offset) = zs::reinterpret_bits<float>((int)1);
+                    // proximity_buffer.tuple(dim_c<4>,"bary",id + buffer_offset) = bary;
+                    // proximity_buffer.tuple(dim_c<4>,"inds",id + buffer_offset) = inds.reinterpret_bits(float_c);
+                    // proximity_buffer("type",id + buffer_offset) = zs::reinterpret_bits<float>((int)1);
 
                 };
                 edgeBvh.iter_neighbors(bv,do_close_proximity_detection);
@@ -319,15 +319,15 @@ template<typename Pol,
     typename TriTileVec,
     typename PTHashMap,
     typename TriBvh,
-    typename ProximityBuffer,
+    // typename ProximityBuffer,
     typename T = typename PosTileVec::value_type>
 void detect_self_imminent_PT_close_proximity(Pol& pol,
     PosTileVec& verts,const zs::SmallString& xtag,
     const TriTileVec& tris,
     const T& thickness,
-    size_t buffer_offset,
+    // size_t buffer_offset,
     const TriBvh& triBvh,
-    ProximityBuffer& proximity_buffer,
+    // ProximityBuffer& proximity_buffer,
     PTHashMap& csPT) {
         using namespace zs;
         constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
@@ -339,11 +339,11 @@ void detect_self_imminent_PT_close_proximity(Pol& pol,
             xtag = zs::SmallString(xtag),
             verts = proxy<space>({},verts),
             tris = proxy<space>({},tris),
-            buffer_offset = buffer_offset,
+            // buffer_offset = buffer_offset,
             thickness = thickness,
             thickness2 = thickness * thickness,
             triBvh = proxy<space>(triBvh),
-            proximity_buffer = proxy<space>({},proximity_buffer),
+            // proximity_buffer = proxy<space>({},proximity_buffer),
             csPT = proxy<space>(csPT)] ZS_LAMBDA(int vi) mutable {
 
                 if(verts.hasProperty("collision_cancel") && verts("collision_cancel",vi) > 1e-3)
@@ -385,7 +385,7 @@ void detect_self_imminent_PT_close_proximity(Pol& pol,
                     if(LSL_GEO::get_vertex_triangle_intersection_barycentric_coordinates(p,ts[0],ts[1],ts[2],tri_bary) > thickness2)
                         return;
 #else
-                    LSL_GEO::get_vertex_triangle_barycentric_coordinates(ts[0],ts[1],ts[2],p,tri_bary);
+                    LSL_GEO::get_triangle_vertex_barycentric_coordinates(ts[0],ts[1],ts[2],p,tri_bary);
                     for(int i = 0;i != 3;++i)
                         if(tri_bary[i] > 1 + eps || tri_bary[i] < -eps)
                             return;
@@ -400,9 +400,7 @@ void detect_self_imminent_PT_close_proximity(Pol& pol,
 #endif
                     
                     auto id = csPT.insert(zs::vec<int,2>{vi,ti});
-                    vec4i inds{tri[0],tri[1],tri[2],vi};
-                    for(int i = 0;i != 4;++i)
-                        verts("dcd_collision_tag",inds[i]) = 1;
+
 
                     // printf("detect imminent PT proxy : PT[%d %d] V[%d %d %d %d] BARY : [%f %f %f]\n",
                     //     vi,ti,
@@ -410,9 +408,13 @@ void detect_self_imminent_PT_close_proximity(Pol& pol,
                     //     (float)tri_bary[0],(float)tri_bary[1],(float)tri_bary[2]);
 
                     // printf("find PT pairs : V_%d T_%d {%d %d %d} \n",vi,ti,tri[0],tri[1],tri[2]);
-                    proximity_buffer.tuple(dim_c<4>,"inds",id + buffer_offset) = inds.reinterpret_bits(float_c);
-                    proximity_buffer.tuple(dim_c<4>,"bary",id + buffer_offset) = bary;
-                    proximity_buffer("type",id + buffer_offset) = zs::reinterpret_bits<float>((int)0);
+                    
+                    // vec4i inds{tri[0],tri[1],tri[2],vi};
+                    // for(int i = 0;i != 4;++i)
+                    //     verts("dcd_collision_tag",inds[i]) = 1;
+                    // proximity_buffer.tuple(dim_c<4>,"inds",id + buffer_offset) = inds.reinterpret_bits(float_c);
+                    // proximity_buffer.tuple(dim_c<4>,"bary",id + buffer_offset) = bary;
+                    // proximity_buffer("type",id + buffer_offset) = zs::reinterpret_bits<float>((int)0);
                 };
 
                 triBvh.iter_neighbors(bv,do_close_proximity_detection);
@@ -727,7 +729,7 @@ void calc_continous_self_PT_collision_impulse(Pol& pol,
                     nps[i] = ps[i] + vs[i] * alpha;
 
                 vec3 bary_centric{};
-                LSL_GEO::get_vertex_triangle_barycentric_coordinates(nps[0],nps[1],nps[2],nps[3],bary_centric);
+                LSL_GEO::get_triangle_vertex_barycentric_coordinates(nps[0],nps[1],nps[2],nps[3],bary_centric);
                 auto ori_bary = bary_centric;
                 for(int i = 0;i != 3;++i)
                     bary_centric[i] = bary_centric[i] < 0 ? 0 : bary_centric[i];
@@ -919,7 +921,7 @@ void calc_continous_PKT_collision_impulse(Pol& pol,
                     return;
                 collision_nrm /= area;
                 vec3 bary_centric{};
-                LSL_GEO::get_vertex_triangle_barycentric_coordinates(nps[0],nps[1],nps[2],nps[3],bary_centric);
+                LSL_GEO::get_triangle_vertex_barycentric_coordinates(nps[0],nps[1],nps[2],nps[3],bary_centric);
                 vec4 bary{-bary_centric[0],-bary_centric[1],-bary_centric[2],1};
 
                 auto rv = vec3::zeros();
@@ -1071,7 +1073,7 @@ void calc_continous_KPT_collision_impulse(Pol& pol,
                     return;
                 collision_nrm /= area;
                 vec3 bary_centric{};
-                LSL_GEO::get_vertex_triangle_barycentric_coordinates(nps[0],nps[1],nps[2],nps[3],bary_centric);
+                LSL_GEO::get_triangle_vertex_barycentric_coordinates(nps[0],nps[1],nps[2],nps[3],bary_centric);
                 vec4 bary{-bary_centric[0],-bary_centric[1],-bary_centric[2],1};
 
                 auto rv = vec3::zeros();
@@ -1461,7 +1463,7 @@ void calc_continous_self_PT_collision_impulse_with_toc(Pol& pol,
                 // auto collision_nrm = LSL_GEO::facet_normal(nps[0],nps[1],nps[2]);
 
                 vec3 bary_centric{};
-                LSL_GEO::get_vertex_triangle_barycentric_coordinates(nps[0],nps[1],nps[2],nps[3],bary_centric);
+                LSL_GEO::get_triangle_vertex_barycentric_coordinates(nps[0],nps[1],nps[2],nps[3],bary_centric);
                 vec4 bary{-bary_centric[0],-bary_centric[1],-bary_centric[2],1};
                 // for(int i = 0;i != 3;++i)
                 //     bary[i] = -bary_centric[i];

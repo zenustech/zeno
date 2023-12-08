@@ -283,7 +283,7 @@ namespace zeno { namespace LSL_GEO {
     // get the barycentric coordinate of the projection of v[0] onto the triangle
     // formed by v[1], v[2], v[3]
     ///////////////////////////////////////////////////////////////////////
-    constexpr VECTOR3 get_vertex_triangle_barycentric_coordinates(const VECTOR3 vertices[4])
+    constexpr VECTOR3 get_triangle_vertex_barycentric_coordinates(const VECTOR3 vertices[4])
     {
         const VECTOR3 v0 = vertices[1];
         const VECTOR3 v1 = vertices[2];
@@ -318,7 +318,7 @@ namespace zeno { namespace LSL_GEO {
     ///////////////////////////////////////////////////////////////////////
     constexpr VECTOR3 get_vertex_triangle_inside_barycentric_coordinates(const VECTOR3 vertices[4])
     {
-        VECTOR3 barycentric = get_vertex_triangle_barycentric_coordinates(vertices);
+        VECTOR3 barycentric = get_triangle_vertex_barycentric_coordinates(vertices);
 
         // if it's already inside, we're all done
         if (barycentric[0] >= 0.0 &&
@@ -559,7 +559,7 @@ constexpr REAL get_vertex_triangle_distance(const VECTOR3& v0, const VECTOR3& v1
     }
 
 
-    constexpr void get_vertex_triangle_barycentric_coordinates(const VECTOR3& v1, const VECTOR3& v2, const VECTOR3& v3, const VECTOR3& v4,VECTOR3& bary) {
+    constexpr void get_triangle_vertex_barycentric_coordinates(const VECTOR3& v1, const VECTOR3& v2, const VECTOR3& v3, const VECTOR3& v4,VECTOR3& bary) {
         constexpr auto eps = 1e-6;
         auto x13 = v1 - v3;
         auto x23 = v2 - v3;
@@ -575,7 +575,7 @@ constexpr REAL get_vertex_triangle_distance(const VECTOR3& v0, const VECTOR3& v1
         bary[2] = 1 - bary[0] - bary[1];
     }
 
-    constexpr void get_vertex_triangle_barycentric_coordinates(const VECTOR3& v1, const VECTOR3& v2, const VECTOR3& v3, const VECTOR3& v4,VECTOR3& bary,
+    constexpr void get_triangle_vertex_barycentric_coordinates(const VECTOR3& v1, const VECTOR3& v2, const VECTOR3& v3, const VECTOR3& v4,VECTOR3& bary,
             REAL& detA,REAL& A00,REAL& A11,REAL& A01) {
         constexpr auto eps = 1e-6;
         auto x13 = v1 - v3;
@@ -626,7 +626,7 @@ constexpr REAL get_vertex_triangle_distance(const VECTOR3& v0, const VECTOR3& v1
             auto ep = edge_bary[0] * e0  + edge_bary[1] * e1;
 
 
-            get_vertex_triangle_barycentric_coordinates(t0,t1,t2,ep,tri_bary);
+            get_triangle_vertex_barycentric_coordinates(t0,t1,t2,ep,tri_bary);
     }   
 
 
@@ -717,7 +717,7 @@ constexpr REAL get_vertex_triangle_distance(const VECTOR3& v0, const VECTOR3& v1
                 break;
             case 6:
                 dist2 = dist2_pt(p, t0, t1, t2);
-                get_vertex_triangle_barycentric_coordinates(t0,t1,t2,p,bary);
+                get_triangle_vertex_barycentric_coordinates(t0,t1,t2,p,bary);
                 break;
             default:
                 break;

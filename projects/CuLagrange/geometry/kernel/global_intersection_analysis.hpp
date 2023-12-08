@@ -424,7 +424,7 @@ namespace GIA {
                         auto ci = res.insert(vec2i{ei,ti});
                         if(use_barycentric_interpolator) {
                             zs::vec<T,3> bary{};
-                            LSL_GEO::get_vertex_triangle_barycentric_coordinates(tvs[0],tvs[1],tvs[2],p,bary);
+                            LSL_GEO::get_triangle_vertex_barycentric_coordinates(tvs[0],tvs[1],tvs[2],p,bary);
                             bary_buffer.tuple(dim_c<4>,"bary",ci) = zs::vec<T,4>{1 - t,bary[0],bary[1],bary[2]};
                         }
                         bary_buffer.tuple(dim_c<2>,"inds",ci) = zs::vec<int,2>{ei,ti}.reinterpret_bits(float_c);
@@ -597,7 +597,7 @@ namespace GIA {
                         auto ci = res.insert(vec2i{ei,kti});
                         if(use_barycentric_interpolator) {
                             zs::vec<T,3> bary{};
-                            LSL_GEO::get_vertex_triangle_barycentric_coordinates(ktvs[0],ktvs[1],ktvs[2],p,bary);
+                            LSL_GEO::get_triangle_vertex_barycentric_coordinates(ktvs[0],ktvs[1],ktvs[2],p,bary);
                             bary_buffer.tuple(dim_c<4>,"bary",ci) = zs::vec<T,4>{1-t,bary[0],bary[1],bary[2]};
                         }
                         bary_buffer.tuple(dim_c<2>,"inds",ci) = zs::vec<int,2>{ei,kti}.reinterpret_bits(float_c);
@@ -699,7 +699,7 @@ namespace GIA {
 //                         // auto ci = res.insert(vec2i{ei,kti});
 //                         if(use_barycentric_interpolator) {
 //                             zs::vec<T,3> bary{};
-//                             LSL_GEO::get_vertex_triangle_barycentric_coordinates(tvs[0],tvs[1],tvs[2],p,bary);
+//                             LSL_GEO::get_triangle_vertex_barycentric_coordinates(tvs[0],tvs[1],tvs[2],p,bary);
 //                             bary_buffer.tuple(dim_c<4>,"bary",ci) = zs::vec<T,4>{t,bary[0],bary[1],bary[2]};
 //                         }
 
