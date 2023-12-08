@@ -92,6 +92,10 @@ ptccd(VecT p, VecT t0, VecT t1, VecT t2, VecT dp, VecT dt0, VecT dt1, VecT dt2,
   T gap = eta * (dist2_cur - thickness * thickness) / (dist_cur + thickness);
   T toc_prev = toc;
   toc = tStart;
+
+  if(gap < 0)
+    return true;
+
   int iter = 0;
   while (++iter < 1000000) {
     // while (true) {
@@ -151,10 +155,16 @@ eeccd(VecT ea0, VecT ea1, VecT eb0, VecT eb1, VecT dea0, VecT dea1, VecT deb0,
     }
     dFunc = dist2_cur - thickness * thickness;
   }
+
+
   T dist_cur = zs::sqrt(dist2_cur);
   T gap = eta * dFunc / (dist_cur + thickness);
   T toc_prev = toc;
   toc = tStart;
+
+  if(dFunc <= 0)
+    return true;
+
   int iter = 0;
   while (++iter < 1000000) {
     // while (true) {
