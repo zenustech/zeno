@@ -603,9 +603,7 @@ constexpr REAL get_vertex_triangle_distance(const VECTOR3& v0, const VECTOR3& v1
         auto b0 = x21.dot(x31);
         auto b1 = -x43.dot(x31);
         auto detA = A00 * A11 - A01 * A01;
-        // if(abs(detA) < eps)
-        //     return false;
-        // if(abs(detA)/(A00 +  A11) > eps * 10) {
+
         bary[0] = ( A11 * b0 - A01 * b1) / detA;
         bary[1] = (-A01 * b0 + A00 * b1) / detA;
         // }else { // the two edge is almost parallel

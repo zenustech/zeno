@@ -300,8 +300,8 @@ void detect_self_imminent_EE_close_proximity(Pol& pol,
                     }
 #endif
                     vec4i inds{ea[0],ea[1],eb[0],eb[1]};
-                    for(int i = 0;i != 4;++i)
-                        verts("dcd_collision_tag",inds[i]) = 1;
+                    // for(int i = 0;i != 4;++i)
+                    //     verts("dcd_collision_tag",inds[i]) = 1;
 
                     auto id = csEE.insert(vec2i{ei,nei});
                     // proximity_buffer.tuple(dim_c<4>,"bary",id + buffer_offset) = bary;
