@@ -606,7 +606,7 @@ struct ZSComputeSurfaceBaryCentricWeights3 : INode {
         auto sampler_boundary_type_attr = std::string(sampler_name + "_boundary_type");
         dverts.append_channels(cudaPol,{{sampler_binder_id_attr,1},{sampler_binder_bary_attr,6},{sampler_binder_success_attr,1},{sampler_boundary_type_attr,1}});
         TILEVEC_OPS::fill(cudaPol,dverts,sampler_binder_id_attr,zs::reinterpret_bits<float>((int)-1));
-        TILEVEC_OPS::fill(cudaPol,dverts,sampler_boundary_type_attr,zs::reinterpret_bits<float>((int)-1));
+        TILEVEC_OPS::fill(cudaPol,dverts,sampler_boundary_type_attr,(T)-1);
 
         auto distance_ratio = get_input2<float>("distance_ratio");
 
@@ -783,15 +783,6 @@ struct ZSComputeSurfaceBaryCentricWeights3 : INode {
 
                             toc = (T)1.0;
                             if(!compute_vertex_prism_barycentric_weights(dp,as[0],as[1],as[2],bs[0],bs[1],bs[2],toc,prism_bary,distance_ratio)) {
-                                // printf("testing fail [%d] dvert [%f %f %f] with [%d] cell\nfrom [%f %f %f], [%f %f %f], [%f %f %f]\n to [%f %f %f], [%f %f %f], [%f %f %f]\n",dvi,
-                                //     (float)dp[0],(float)dp[1],(float)dp[2],
-                                //     cell_id,
-                                //     (float)as[0][0],(float)as[0][1],(float)as[0][2],
-                                //     (float)as[1][0],(float)as[1][1],(float)as[1][2],
-                                //     (float)as[2][0],(float)as[2][1],(float)as[2][2],
-                                //     (float)bs[0][0],(float)bs[0][1],(float)bs[0][2],
-                                //     (float)bs[1][0],(float)bs[1][1],(float)bs[1][2],
-                                //     (float)bs[2][0],(float)bs[2][1],(float)bs[2][2]);
                                 return;
                             }
 
@@ -808,15 +799,16 @@ struct ZSComputeSurfaceBaryCentricWeights3 : INode {
                     boundaryCellBvh.iter_neighbors(bv,do_close_proximity_detection);
 
                     if(closest_cell_id >= 0) {
-                        printf("find boundary edge binders[%d -> %d]\n",dvi,closest_cell_id);
+                        // printf("find boundary edge binders[%d -> %d]\n",dvi,closest_cell_id);
                         dverts(sampler_binder_id_attr,dvi) = zs::reinterpret_bits<float>(closest_cell_id);
                         dverts.tuple(dim_c<6>,sampler_binder_bary_attr,dvi) = closest_bary;
                         dverts(sampler_binder_success_attr,dvi) = (T)1.0;
                         if(is_exterior_tri) {
-                            dverts(sampler_boundary_type_attr,dvi) = zs::reinterpret_bits<float>((int)1);
+                            dverts(sampler_boundary_type_attr,dvi) = (T)1;
                         }else {
-                            dverts(sampler_boundary_type_attr,dvi) = zs::reinterpret_bits<float>((int)0);
+                            dverts(sampler_boundary_type_attr,dvi) = (T)0;
                         }
+
                     }
             });
         }
@@ -1038,7 +1030,7 @@ struct ZSDeformEmbedPrimWithSurfaceMesh3 : zeno::INode {
             sampler_binder_success_attr = zs::SmallString(sampler_binder_success_attr),
             sampler_binder_id_attr = zs::SmallString(sampler_binder_id_attr),
             sampler_binder_bary_attr = zs::SmallString(sampler_binder_bary_attr)] ZS_LAMBDA(int dvi) mutable {
-                auto type = zs::reinterpret_bits<int>(dverts(sampler_boundary_type_attr,dvi));
+                auto type = dverts(sampler_boundary_type_attr,dvi);
                 auto blend_pos = zs::vec<T,3>::zeros();
 
                 auto cell_id = zs::reinterpret_bits<int>(dverts(sampler_binder_id_attr,dvi));
@@ -1048,7 +1040,7 @@ struct ZSDeformEmbedPrimWithSurfaceMesh3 : zeno::INode {
                 auto bary = dverts.pack(dim_c<6>,sampler_binder_bary_attr,dvi);
                 zs::vec<T,3> cvs[6] = {};
 
-                if(type == -1) {
+                if(type == (T)-1) {
                     auto stri = stris.pack(dim_c<3>,"inds",cell_id,int_c);
                     for(int i = 0;i != 3;++i) {
                         cvs[i] = svtemp.pack(dim_c<3>,"x",stri[i]);
@@ -1059,7 +1051,7 @@ struct ZSDeformEmbedPrimWithSurfaceMesh3 : zeno::INode {
                     for(int i = 0;i != 8;++i)
                         cell_vertices[i] = cell_buffer[cell_id * 8 + i];
 
-                    if(type == 0) { // interior
+                    if(type == (T)0) { // interior
                         cvs[0] = cell_vertices[0];
                         cvs[1] = cell_vertices[4];
                         cvs[2] = cell_vertices[1];
@@ -1067,7 +1059,7 @@ struct ZSDeformEmbedPrimWithSurfaceMesh3 : zeno::INode {
                         cvs[3] = cell_vertices[2];
                         cvs[4] = cell_vertices[6];
                         cvs[5] = cell_vertices[3];
-                    } else if(type == 1) { // exterior
+                    } else if(type == (T)1) { // exterior
                         cvs[0] = cell_vertices[1];
                         cvs[1] = cell_vertices[4];
                         cvs[2] = cell_vertices[5];
