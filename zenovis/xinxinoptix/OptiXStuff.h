@@ -53,6 +53,7 @@
 #include "ChiefDesignerEXR.h"
 #include <stb_image.h>
 #include <cudaMemMarco.hpp>
+#include <vector>
 
 static void context_log_cb( unsigned int level, const char* tag, const char* message, void* /*cbdata */ )
 {
@@ -733,12 +734,26 @@ inline void addTexture(std::string path)
         }
         int nx = std::max(img->userData().get2<int>("w"), 1);
         int ny = std::max(img->userData().get2<int>("h"), 1);
+        int channels = std::max(img->userData().get2<int>("channels"), 3);
         if(sky_tex.value() == path)//if this is a loading of a sky texture
         {
             calc_sky_cdf_map(nx, ny, 3, (float *)img->verts.data());
         }
+        if (channels == 3) {
+            g_tex[path] = makeCudaTexture((float *)img->verts.data(), nx, ny, 3);
+        }
+        else {
+            std::vector<zeno::vec4f> data(nx * ny);
+            auto &alpha = img->verts.attr<float>("alpha");
+            for (auto i = 0; i < nx * ny; i++) {
+                data[i][0] = img->verts[i][0];
+                data[i][1] = img->verts[i][1];
+                data[i][2] = img->verts[i][2];
+                data[i][3] = alpha[i];
 
-        g_tex[path] = makeCudaTexture((float *)img->verts.data(), nx, ny, 3);
+            }
+            g_tex[path] = makeCudaTexture((float *)data.data(), nx, ny, 4);
+        }
     }
     else if (stbi_is_hdr(native_path.c_str())) {
         float *img = stbi_loadf(native_path.c_str(), &nx, &ny, &nc, 0);
