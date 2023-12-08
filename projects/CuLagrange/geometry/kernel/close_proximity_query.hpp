@@ -133,7 +133,7 @@ namespace zeno {
 
                         vec3 bary{};
 
-                        LSL_GEO::pointTriangleBaryCentric(kts[0],kts[1],kts[2],p,bary);
+                        LSL_GEO::get_vertex_triangle_barycentric_coordinates(kts[0],kts[1],kts[2],p,bary);
                         for(int i = 0;i != 3;++i) {
                             bary[i] = bary[i] > 1 + eps ? 1 : bary[i];
                             bary[i] = bary[i] < -eps ? 0 : bary[i];
@@ -231,7 +231,7 @@ namespace zeno {
 
                         vec3 bary{};
 
-                        LSL_GEO::pointTriangleBaryCentric(kts[0],kts[1],kts[2],p,bary);
+                        LSL_GEO::get_vertex_triangle_barycentric_coordinates(kts[0],kts[1],kts[2],p,bary);
                         for(int i = 0;i != 3;++i) {
                             bary[i] = bary[i] > 1 + eps ? 1 : bary[i];
                             bary[i] = bary[i] < -eps ? 0 : bary[i];

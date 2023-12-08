@@ -87,7 +87,6 @@ namespace zeno { namespace CONSTRAINT {
     {				
         SCALER wsum = invMass0 + invMass1;
         if(wsum < static_cast<SCALER>(1e-6)) {
-            // printf("abondoned stretch solve due to too small K : %f\n",(float)K);
             return false;
         }
 
@@ -101,7 +100,6 @@ namespace zeno { namespace CONSTRAINT {
         {
             corr0 = VECTOR3d::uniform(0);
             corr1 = VECTOR3d::uniform(0);
-            // printf("abondoned stretch solve due to too small d : %f\n",(float)d);
             return false;
         }
 

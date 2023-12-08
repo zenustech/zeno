@@ -201,7 +201,7 @@ struct ZSSurfaceBind : zeno::INode {
                 T barySum = (T)0.0;
                 vec3 project_bary{};
                 vec3 bary{};
-                T distance = LSL_GEO::pointTriangleDistance(t0,t1,t2,kp,bary,project_bary);
+                T distance = LSL_GEO::get_vertex_triangle_distance(t0,t1,t2,kp,bary,project_bary);
                 barySum = fabs(bary[0]) + fabs(bary[0]) + fabs(bary[0]);
 
                 auto nrm = tris.pack(dim_c<3>,"nrm",ti);
@@ -362,7 +362,7 @@ struct VisualizeSurfaceBinder : zeno::INode {
                         cp[2] = verts.pack(dim_c<3>,"x",tri[1]);
                         cp[3] = verts.pack(dim_c<3>,"x",tri[2]);
 
-                        auto bary = LSL_GEO::getInsideBarycentricCoordinates(cp);
+                        auto bary = LSL_GEO::get_vertex_triangle_inside_barycentric_coordinates(cp);
                         auto bp = vec3::zeros();
                         for(int j = 0;j != 3;++j)
                             bp += bary[j] * cp[j + 1];
@@ -631,7 +631,7 @@ struct ZSDynamicSurfaceBind : zeno::INode {
 
                 auto intersect_point = kp + rd * (min_r - outCollisionEps);
                 T barySum = (T)0.0;
-                T distance = LSL_GEO::pointTriangleDistance(min_vs[0],min_vs[1],min_vs[2],intersect_point,barySum);            
+                T distance = LSL_GEO::get_vertex_triangle_distance(min_vs[0],min_vs[1],min_vs[2],intersect_point,barySum);            
 
                 auto seg = intersect_point - min_vs[0];
                 auto nrm = tris.pack(dim_c<3>,"nrm",min_ti);
@@ -988,7 +988,7 @@ struct ZSSurfaceClosestPoints : zeno::INode {
                         return;
 
                     vec3 bary{};
-                    T distance = LSL_GEO::pointTriangleDistance(kvs[0],kvs[1],kvs[2],p,bary);
+                    T distance = LSL_GEO::get_vertex_triangle_distance(kvs[0],kvs[1],kvs[2],p,bary);
 
                     auto seg = p - kvs[0];
                     auto knrm = ktris_buffer.pack(dim_c<3>,"nrm",kti);
@@ -1101,7 +1101,7 @@ struct ZSSurfaceClosestPoints : zeno::INode {
                     }
 
                     vec3 bary{};
-                    T distance = LSL_GEO::pointTriangleDistance(tvs[0],tvs[1],tvs[2],kp,bary);
+                    T distance = LSL_GEO::get_vertex_triangle_distance(tvs[0],tvs[1],tvs[2],kp,bary);
 
                     auto seg = kp - tvs[0];
                     auto dist = -seg.dot(tnrm);
@@ -1571,7 +1571,7 @@ struct ZSSurfaceClosestTris : zeno::INode {
                 if(distance > min_dist)
                     return;
 
-                T pt_distance = LSL_GEO::pointTriangleDistance(tvs[0],tvs[1],tvs[2],kp,bary,project_bary);
+                T pt_distance = LSL_GEO::get_vertex_triangle_distance(tvs[0],tvs[1],tvs[2],kp,bary,project_bary);
                 auto seg = tvs[0] - kp;
                 auto kpnrm = kverts.pack(dim_c<3>,"nrm",kpi);
                 auto dist = seg.dot(tnrm);
@@ -2096,7 +2096,7 @@ struct ZSSurfaceClosestPointsGrp : zeno::INode {
                     auto kv2 = kverts.pack(dim_c<3>,"x",ktri[2]);     
 
                     vec3 bary{};
-                    T distance = LSL_GEO::pointTriangleDistance(kv0,kv1,kv2,p,bary);
+                    T distance = LSL_GEO::get_vertex_triangle_distance(kv0,kv1,kv2,p,bary);
                     if(nm_valid_tri_found < 3 && distance > min_dists[nm_valid_tri_found])
                         return;
                     if(nm_valid_tri_found >= 3 && distance > min_dists[2])
@@ -2268,7 +2268,7 @@ struct ZSSurfaceClosestPointsGrp : zeno::INode {
                     auto kv2 = kverts.pack(dim_c<3>,"x",ktri[2]);     
 
                     vec3 bary{};
-                    T distance = LSL_GEO::pointTriangleDistance(kv0,kv1,kv2,p,bary);
+                    T distance = LSL_GEO::get_vertex_triangle_distance(kv0,kv1,kv2,p,bary);
                     if(nm_valid_tri_found < 3 && distance > min_dists[nm_valid_tri_found])
                         return;
                     if(nm_valid_tri_found >= 3 && distance > min_dists[2])

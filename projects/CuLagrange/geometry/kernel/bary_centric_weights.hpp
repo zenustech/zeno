@@ -197,31 +197,9 @@ namespace zeno {
         // std::cout << "QUADS : " << quads.getPropertySize(elm_tag) << "\t" << quads.size() << std::endl;
         const int mem = (int)quads.memspace();
         const int did = quads.devid();
-        // std::cout << "check location: " << mem << ", " << did << std::endl;
 
-        // check quads
-        // pol(zs::range(100),
-        //     [elm_tag] __device__(int ei) {
-        //         // auto quad = quads.template pack<4>(elm_tag, ei).template reinterpret_bits<int>();
-        //         // if(quad[0] < 0 || quad[1] < 0 || quad[2] < 0 || quad[3] < 0)
-        //         //     printf("invalid quad : %d %d %d %d\n",quad[0],quad[1],quad[2],quad[3]);
-        //         // if(quad[0] > 13572 || quad[1] > 13572 || quad[2] > 13572 || quad[3] > 13572)
-        //         //     printf("invalid quad : %d %d %d %d\n",quad[0],quad[1],quad[2],quad[3]);
-        // });
-
-        // std::cout << "VERTS : " << verts.size() << "\t" << "QUADS : " << quads.size() << std::endl;
-
-        // return;
 
         auto bvs = retrieve_bounding_volumes(pol,verts,quads,wrapv<4>{},bvh_thickness,x_tag);
-        // std::cout << "sizeof bvs : " << bvs.size() << std::endl;
-        // // std::cout << "TRY BUILDING TETS BVH" << std::endl;
-        // pol(zs::range(bvs.size()),[
-        //         bvs = proxy<space>(bvs)] ZS_LAMBDA(int bi) mutable {
-        //             printf("bv[%d] : min(%f %f %f); max(%f %f %f)\n",bi,
-        //                 (float)bvs[bi]._min[0],(float)bvs[bi]._min[1],(float)bvs[bi]._min[2],
-        //                 (float)bvs[bi]._max[0],(float)bvs[bi]._max[1],(float)bvs[bi]._max[2]);
-        // });
 
 
         auto tetsBvh = LBvh<3, int,T>{};
@@ -273,7 +251,7 @@ namespace zeno {
 
                     if(ws[0] < 0){
                         // T dist = compute_dist_2_facet(p,p1,p2,p3);
-                        T dist = LSL_GEO::pointTriangleDistance(p1,p2,p3,p,bary);
+                        T dist = LSL_GEO::get_vertex_triangle_distance(p1,p2,p3,p,bary);
                         if(dist < closest_dist){
                             closest_dist = dist;
                             bcw(elm_tag,vi) = reinterpret_bits<T>(ei);
@@ -281,7 +259,7 @@ namespace zeno {
                         }
                     }
                     if(ws[1] < 0){
-                        T dist = LSL_GEO::pointTriangleDistance(p0,p2,p3,p,bary);
+                        T dist = LSL_GEO::get_vertex_triangle_distance(p0,p2,p3,p,bary);
                         if(dist < closest_dist){
                             closest_dist = dist;
                             bcw(elm_tag,vi) = reinterpret_bits<T>(ei);
@@ -289,7 +267,7 @@ namespace zeno {
                         }
                     }
                     if(ws[2] < 0){
-                        T dist = LSL_GEO::pointTriangleDistance(p0,p1,p3,p,bary);
+                        T dist = LSL_GEO::get_vertex_triangle_distance(p0,p1,p3,p,bary);
                         if(dist < closest_dist){
                             closest_dist = dist;
                             bcw(elm_tag,vi) = reinterpret_bits<T>(ei);
@@ -297,46 +275,13 @@ namespace zeno {
                         }
                     }
                     if(ws[3] < 0){
-                        T dist = LSL_GEO::pointTriangleDistance(p0,p1,p2,p,bary);
+                        T dist = LSL_GEO::get_vertex_triangle_distance(p0,p1,p2,p,bary);
                         if(dist < closest_dist){
                             closest_dist = dist;
                             bcw(elm_tag,vi) = reinterpret_bits<T>(ei);
                             bcw.template tuple<4>(weight_tag,vi) = ws;
                         }
                     }
-
-                    // if(ws[0] < 0){
-                    //     T dist = compute_dist_2_facet(p,p1,p2,p3);
-                    //     if(dist < closest_dist){
-                    //         closest_dist = dist;
-                    //         bcw(elm_tag,vi) = reinterpret_bits<T>(ei);
-                    //         bcw.template tuple<4>(weight_tag,vi) = ws;
-                    //     }
-                    // }
-                    // if(ws[1] < 0){
-                    //     T dist = compute_dist_2_facet(p,p0,p2,p3);
-                    //     if(dist < closest_dist){
-                    //         closest_dist = dist;
-                    //         bcw(elm_tag,vi) = reinterpret_bits<T>(ei);
-                    //         bcw.template tuple<4>(weight_tag,vi) = ws;
-                    //     }
-                    // }
-                    // if(ws[2] < 0){
-                    //     T dist = compute_dist_2_facet(p,p0,p1,p3);
-                    //     if(dist < closest_dist){
-                    //         closest_dist = dist;
-                    //         bcw(elm_tag,vi) = reinterpret_bits<T>(ei);
-                    //         bcw.template tuple<4>(weight_tag,vi) = ws;
-                    //     }
-                    // }
-                    // if(ws[3] < 0){
-                    //     T dist = compute_dist_2_facet(p,p0,p1,p2);
-                    //     if(dist < closest_dist){
-                    //         closest_dist = dist;
-                    //         bcw(elm_tag,vi) = reinterpret_bits<T>(ei);
-                    //         bcw.template tuple<4>(weight_tag,vi) = ws;
-                    //     }
-                    // }
 
                     if(!fitting_in){
                         printf("bind vert %d to %d under non-fitting-in mode\n",vi,ei);

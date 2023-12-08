@@ -71,11 +71,6 @@ struct ZSComputeRBFWeights : INode {
             atomic_add(exec_tag,&close_proximity_count_buffer[vi],1);
         });
 
-        // cudaPol(zs::range(verts.size()),[
-        //     close_proximity_count_buffer = proxy<space>(close_proximity_count_buffer)] ZS_LAMBDA(int vi) mutable {
-        //         printf("nm_close_proximity[%d] : %d\n",vi,close_proximity_count_buffer[vi]);
-        // });
-
         zs::Vector<int> exclusive_offsets{verts.get_allocator(),verts.size()};
         cudaPol(zs::range(exclusive_offsets),[] ZS_LAMBDA(auto& offset) mutable {offset = 0;});
         exclusive_scan(cudaPol,std::begin(close_proximity_count_buffer),std::end(close_proximity_count_buffer),std::begin(exclusive_offsets));
@@ -97,10 +92,6 @@ struct ZSComputeRBFWeights : INode {
                 verts(rbf_weights_count,vi) = zs::reinterpret_bits<float>(close_proximity_count_buffer[vi]);
                 verts(rbf_weights_offset,vi) = zs::reinterpret_bits<float>(exclusive_offsets[vi]);
         });
-
-
-
-        // verts.append_channels(cudaPol,{{rbf_weights_count,1},{rbf_weights_offset,1}});
 
         rbf_weights = typename ZenoParticles::particles_t({
             {"inds",1},
@@ -292,7 +283,7 @@ struct ZSComputeSurfaceBaryCentricWeights : INode {
                     stvs[i] = sverts.pack(dim_c<3>,sp_tag,stri[i]);
 
                 zs::vec<T,3> bary{};
-                LSL_GEO::pointTriangleBaryCentric(stvs[0],stvs[1],stvs[2],dp,bary);
+                LSL_GEO::get_vertex_triangle_barycentric_coordinates(stvs[0],stvs[1],stvs[2],dp,bary);
 
                 auto normal_bary = bary;
                 for(int i = 0;i != 3;++i) {
@@ -439,7 +430,7 @@ struct ZSComputeSurfaceBaryCentricWeights2 : INode {
                     stvs[i] = sverts.pack(dim_c<3>,sp_tag,stri[i]);
 
                 zs::vec<T,3> bary{};
-                LSL_GEO::pointTriangleBaryCentric(stvs[0],stvs[1],stvs[2],dp,bary);
+                LSL_GEO::get_vertex_triangle_barycentric_coordinates(stvs[0],stvs[1],stvs[2],dp,bary);
 
                 auto stnrm = LSL_GEO::facet_normal(stvs[0],stvs[1],stvs[2]);
 
@@ -675,8 +666,6 @@ struct ZSComputeSurfaceBaryCentricWeights3 : INode {
             const auto& sboundaryEdges = (*source)[ZenoParticles::s_surfBoundaryEdgeTag];
             const auto& shalfedges = (*source)[ZenoParticles::s_surfHalfEdgeTag];
 
-            std::cout << "nm_boundary_edges : " << sboundaryEdges.size() << std::endl;
-
             auto cell_buffer = dtiles_t{sboundaryEdges.get_allocator(),{
                 {"x",3}
             },sboundaryEdges.size() * 8};
@@ -695,8 +684,6 @@ struct ZSComputeSurfaceBaryCentricWeights3 : INode {
 
             auto boundaryCellBvh = bvh_t{};
             boundaryCellBvh.build(cudaPol,sbeBvs);
-
-            std::cout << "do the boudary edge binding" << std::endl;
 
             cudaPol(zs::range(dverts.size()),[
                 distance_ratio = distance_ratio,
