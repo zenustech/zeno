@@ -75,120 +75,130 @@ struct PrimitiveHighlight : IGraphicDraw {
 
     virtual void draw() override {
         if (scene->select_mode == PICK_MODE::PICK_OBJECT) {
-            for (const auto &prim_id : scene->selected) {
+            const auto& cb = [&]() {
+                for (const auto& prim_id : scene->selected) {
+                    // ----- get primitive -----
+                    PrimitiveObject* prim = nullptr;
+                    auto optional_prim = zeno::getSession().globalComm->get(prim_id);
+                    if (optional_prim.has_value())
+                        prim = dynamic_cast<PrimitiveObject*>(zeno::getSession().globalComm->get(prim_id).value());
+                    else {
+                        auto node_id = prim_id.substr(0, prim_id.find_first_of(':'));
+                        for (const auto& [n, p] : zeno::getSession().globalComm->pairsShared()) {
+                            if (n.find(node_id) != std::string::npos) {
+                                prim = dynamic_cast<PrimitiveObject*>(p.get());
+                                break;
+                            }
+                        }
+                    }
+                    if (!prim) continue;
+                    // ----- draw selected particles -----
+                    if (prim->tris->empty()) {
+                        // prepare data
+                        auto const& verts = prim->verts;
+
+                        // bind buffers
+                        vbo->bind_data(verts.data(), verts.size() * sizeof(verts[0]));
+                        vbo->attribute(0, sizeof(float) * 0, sizeof(float) * 3, GL_FLOAT, 3);
+
+                        // draw particles
+                        CHECK_GL(glEnable(GL_PROGRAM_POINT_SIZE));
+                        shader->use();
+                        scene->camera->set_program_uniforms(shader);
+                        CHECK_GL(glDrawArrays(GL_POINTS, 0, verts.size()));
+                        CHECK_GL(glDisable(GL_PROGRAM_POINT_SIZE));
+
+                        // unbind buffers
+                        vbo->disable_attribute(0);
+                        vbo->unbind();
+                    }
+                    else
+                        continue;
+                }
+            };
+            zeno::getSession().globalComm->mutexCallback(cb);
+        }
+
+        bool isnull = false;
+        const auto& cb = [&]() {
+            for (const auto& [prim_id, elements] : scene->selected_elements) {
                 // ----- get primitive -----
-                PrimitiveObject *prim = nullptr;
-                auto optional_prim = zeno::getSession().globalComm->objectsMan->get(prim_id);
+                PrimitiveObject* prim = nullptr;
+                auto optional_prim = zeno::getSession().globalComm->get(prim_id);
                 if (optional_prim.has_value())
-                    prim = dynamic_cast<PrimitiveObject *>(zeno::getSession().globalComm->objectsMan->get(prim_id).value());
+                    prim = dynamic_cast<PrimitiveObject*>(zeno::getSession().globalComm->get(prim_id).value());
                 else {
                     auto node_id = prim_id.substr(0, prim_id.find_first_of(':'));
-                    for (const auto &[n, p] : zeno::getSession().globalComm->objectsMan->pairsShared()) {
+                    for (const auto& [n, p] : zeno::getSession().globalComm->pairsShared()) {
                         if (n.find(node_id) != std::string::npos) {
-                            prim = dynamic_cast<PrimitiveObject *>(p.get());
+                            prim = dynamic_cast<PrimitiveObject*>(p.get());
                             break;
                         }
                     }
                 }
-                if (!prim) continue;
-                // ----- draw selected particles -----
-                if (prim->tris->empty()) {
-                    // prepare data
-                    auto const &verts = prim->verts;
+                if (prim == nullptr) {
+                    isnull = true;
+                    return;
+                }
+                auto selected_count = elements.size();
+                // ----- prepare data -----
+                auto const& pos = prim->attr<zeno::vec3f>("pos");
 
-                    // bind buffers
-                    vbo->bind_data(verts.data(), verts.size() * sizeof(verts[0]));
-                    vbo->attribute(0, sizeof(float) * 0, sizeof(float) * 3, GL_FLOAT, 3);
+                // ----- bind buffers -----
+                vbo->bind_data(pos.data(), pos.size() * sizeof(pos[0]));
+                vbo->attribute(0, sizeof(float) * 0, sizeof(float) * 3, GL_FLOAT, 3);
 
-                    // draw particles
+                // ----- draw selected vertices -----
+                if (scene->select_mode == PICK_MODE::PICK_VERTEX) {
+                    // prepare indices
                     CHECK_GL(glEnable(GL_PROGRAM_POINT_SIZE));
+                    vector<int> ind(selected_count);
+                    int i = 0;
+                    for (const auto& idx : elements)
+                        ind[i++] = idx;
+                    // draw points
                     shader->use();
                     scene->camera->set_program_uniforms(shader);
-                    CHECK_GL(glDrawArrays(GL_POINTS, 0, verts.size()));
+                    ebo->bind_data(ind.data(), selected_count * sizeof(ind[0]));
+                    CHECK_GL(glDrawElements(GL_POINTS, selected_count, GL_UNSIGNED_INT, 0));
                     CHECK_GL(glDisable(GL_PROGRAM_POINT_SIZE));
+                }
 
-                    // unbind buffers
-                    vbo->disable_attribute(0);
-                    vbo->unbind();
-                } else
-                    continue;
-            }
-        }
+                // ----- draw selected edges -----
+                if (scene->select_mode == PICK_MODE::PICK_LINE) {
+                    if (prim->lines->empty()) return;
+                    // prepare indices
+                    vector<vec2i> ind(selected_count);
+                    int i = 0;
+                    for (const auto& idx : elements)
+                        ind[i++] = prim->lines[idx];
+                    // draw lines
+                    shader->use();
+                    scene->camera->set_program_uniforms(shader);
+                    ebo->bind_data(ind.data(), selected_count * sizeof(ind[0]));
+                    CHECK_GL(glDrawElements(GL_LINES, selected_count * 2, GL_UNSIGNED_INT, 0));
+                    ebo->unbind();
+                }
 
-        for (const auto& [prim_id, elements] : scene->selected_elements) {
-            // ----- get primitive -----
-            PrimitiveObject* prim = nullptr;
-            auto optional_prim = zeno::getSession().globalComm->objectsMan->get(prim_id);
-            if (optional_prim.has_value())
-                prim = dynamic_cast<PrimitiveObject*>(zeno::getSession().globalComm->objectsMan->get(prim_id).value());
-            else {
-                auto node_id = prim_id.substr(0, prim_id.find_first_of(':'));
-                for (const auto& [n, p] : zeno::getSession().globalComm->objectsMan->pairsShared()) {
-                    if (n.find(node_id) != std::string::npos) {
-                        prim = dynamic_cast<PrimitiveObject*>(p.get());
-                        break;
-                    }
+                // ----- draw selected meshes -----
+                if (scene->select_mode == PICK_MODE::PICK_MESH) {
+                    // prepare indices
+                    vector<vec3i> ind(selected_count);
+                    int i = 0;
+                    for (const auto& idx : elements)
+                        ind[i++] = prim->tris[idx];
+                    // draw meshes
+                    shader->use();
+                    scene->camera->set_program_uniforms(shader);
+                    ebo->bind_data(ind.data(), selected_count * sizeof(ind[0]));
+                    CHECK_GL(glDrawElements(GL_TRIANGLES, selected_count * 3, GL_UNSIGNED_INT, 0));
+                    ebo->unbind();
                 }
             }
-            if (prim == nullptr) {
-                return;
-            }
-            auto selected_count = elements.size();
-            // ----- prepare data -----
-            auto const &pos = prim->attr<zeno::vec3f>("pos");
-
-            // ----- bind buffers -----
-            vbo->bind_data(pos.data(), pos.size() * sizeof(pos[0]));
-            vbo->attribute(0, sizeof(float) * 0, sizeof(float) * 3, GL_FLOAT, 3);
-
-            // ----- draw selected vertices -----
-            if (scene->select_mode == PICK_MODE::PICK_VERTEX) {
-                // prepare indices
-                CHECK_GL(glEnable(GL_PROGRAM_POINT_SIZE));
-                vector<int> ind(selected_count);
-                int i = 0;
-                for (const auto& idx : elements)
-                    ind[i++] = idx;
-                // draw points
-                shader->use();
-                scene->camera->set_program_uniforms(shader);
-                ebo->bind_data(ind.data(), selected_count * sizeof(ind[0]));
-                CHECK_GL(glDrawElements(GL_POINTS, selected_count, GL_UNSIGNED_INT, 0));
-                CHECK_GL(glDisable(GL_PROGRAM_POINT_SIZE));
-            }
-
-            // ----- draw selected edges -----
-            if (scene->select_mode == PICK_MODE::PICK_LINE) {
-                if (prim->lines->empty()) return;
-                // prepare indices
-                vector<vec2i> ind(selected_count);
-                int i = 0;
-                for (const auto& idx : elements)
-                    ind[i++] = prim->lines[idx];
-                // draw lines
-                shader->use();
-                scene->camera->set_program_uniforms(shader);
-                ebo->bind_data(ind.data(), selected_count * sizeof(ind[0]));
-                CHECK_GL(glDrawElements(GL_LINES, selected_count * 2, GL_UNSIGNED_INT, 0));
-                ebo->unbind();
-            }
-
-            // ----- draw selected meshes -----
-            if (scene->select_mode == PICK_MODE::PICK_MESH) {
-                // prepare indices
-                vector<vec3i> ind(selected_count);
-                int i = 0;
-                for (const auto& idx : elements)
-                    ind[i++] = prim->tris[idx];
-                // draw meshes
-                shader->use();
-                scene->camera->set_program_uniforms(shader);
-                ebo->bind_data(ind.data(), selected_count * sizeof(ind[0]));
-                CHECK_GL(glDrawElements(GL_TRIANGLES, selected_count * 3, GL_UNSIGNED_INT, 0));
-                ebo->unbind();
-            }
-        }
-
+        };
+        zeno::getSession().globalComm->mutexCallback(cb);
+        if (isnull)
+            return;
         vbo->disable_attribute(0);
         vbo->unbind();
     }

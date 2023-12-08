@@ -482,14 +482,18 @@ void DisplayWidget::onCommandDispatched(int actionType, bool bChecked)
         {
             int frameid = m_glView->getSession()->get_curr_frameid();
             auto *scene = m_glView->getSession()->get_scene();
-            for (auto const &[key, ptr] : zeno::getSession().globalComm->objectsMan->pairs()) {
-                if (key.find("MakeCamera") != std::string::npos &&
-                    key.find(zeno::format(":{}:", frameid)) != std::string::npos) {
-                    auto cam = dynamic_cast<zeno::CameraObject *>(ptr)->get();
-                    scene->camera->setCamera(cam);
-                    updateFrame();
+
+            const auto& cb = [&]() {
+                for (auto const& [key, ptr] : zeno::getSession().globalComm->pairs()) {
+                    if (key.find("MakeCamera") != std::string::npos &&
+                        key.find(zeno::format(":{}:", frameid)) != std::string::npos) {
+                        auto cam = dynamic_cast<zeno::CameraObject*>(ptr)->get();
+                        scene->camera->setCamera(cam);
+                        updateFrame();
+                    }
                 }
-            }
+            };
+            zeno::getSession().globalComm->mutexCallback(cb);
         }
     }
     else if (actionType == ZenoMainWindow::ACTION_RECORD_VIDEO)
@@ -616,7 +620,7 @@ void DisplayWidget::afterRun()
         ZASSERT_EXIT(session);
         auto scene = session->get_scene();
         ZASSERT_EXIT(scene);
-        zeno::getSession().globalComm->objectsMan->lightObjects.clear();
+        zeno::getSession().globalComm->clear_lightObjects();
     }
 }
 
@@ -646,7 +650,7 @@ void DisplayWidget::onRun(LAUNCH_PARAM launchParam)
     Zenovis* pZenoVis = getZenoVis();
     ZASSERT_EXIT(pZenoVis);
     auto scene = pZenoVis->getSession()->get_scene();
-    zeno::getSession().globalComm->objectsMan->lightObjects.clear();
+    zeno::getSession().globalComm->clear_lightObjects();
     ZTimeline* timeline = mainWin->timeline();
     ZASSERT_EXIT(timeline);
 }
@@ -686,7 +690,7 @@ void DisplayWidget::onRun() {
     Zenovis* pZenoVis = getZenoVis();
     ZASSERT_EXIT(pZenoVis);
     auto scene = pZenoVis->getSession()->get_scene();
-    zeno::getSession().globalComm->objectsMan->lightObjects.clear();
+    zeno::getSession().globalComm->clear_lightObjects();
 }
 
 void DisplayWidget::runAndRecord(const VideoRecInfo &recInfo) {
@@ -1180,10 +1184,9 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
             // find prim in object manager
             auto input_node_id = input_nodes[0].get_node_id();
             string prim_name;
-            for (const auto &[k, v] : zeno::getSession().globalComm->objectsMan->pairsShared()) {
-                if (k.find(input_node_id.toStdString()) != string::npos)
-                    prim_name = k;
-            }
+            auto key = zeno::getSession().globalComm->getObjKeyByObjID(input_node_id.toStdString());
+            if (key != "")
+                prim_name = key;
             if (prim_name.empty())
                 return;
 

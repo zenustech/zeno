@@ -316,11 +316,10 @@ void ZTabDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
                     auto *scene = pZenoVis->getSession()->get_scene();
                     scene->selected.clear();
                     std::string nodeid = nodeId.toStdString();
-                    for (auto const &[key, ptr] : zeno::getSession().globalComm->objectsMan->pairs()) {
-                        if (nodeid == key.substr(0, key.find_first_of(':'))) {
-                            scene->selected.insert(key);
-                        }
-                    }
+
+                    auto& key = zeno::getSession().globalComm->getObjKeyByObjID(nodeid);
+                    if (key != "")
+                        scene->selected.insert(key);
                     onPrimitiveSelected(scene->selected);
                 }
             }

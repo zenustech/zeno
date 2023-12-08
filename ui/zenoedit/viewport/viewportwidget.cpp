@@ -226,7 +226,7 @@ void ViewportWidget::paintGL()
     m_zenovis->paintGL();
     if(updateLightOnce){
         auto scene = m_zenovis->getSession()->get_scene();
-        if(zeno::getSession().globalComm->objectsMan->lightObjects.size() > 0){
+        if(zeno::getSession().globalComm->getLightObjsSize() > 0){
             zenoApp->getMainWindow()->updateLightList();
             updateLightOnce = false;
         }

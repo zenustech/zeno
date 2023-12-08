@@ -49,8 +49,8 @@ Scene::Scene()
 
 void Scene::cleanUpScene()
 {
-    if (zeno::getSession().globalComm->objectsMan)
-        zeno::getSession().globalComm->objectsMan->clear_objects();
+    if (zeno::getSession().globalComm)
+        zeno::getSession().globalComm->clear_objects();
     if (renderMan && renderMan->getEngine())
         renderMan->getEngine()->update();
 }
@@ -69,11 +69,14 @@ void* Scene::getOptixImg(int& w, int& h)
 }
 
 bool Scene::cameraFocusOnNode(std::string const &nodeid, zeno::vec3f &center, float &radius) {
-    for (auto const &[key, ptr]: zeno::getSession().globalComm->objectsMan->pairs()) {
-        if (nodeid == key.substr(0, key.find_first_of(':'))) {
-            return zeno::objectGetFocusCenterRadius(ptr, center, radius);
+    const auto& cb = [&]() {
+        for (auto const& [key, ptr] : zeno::getSession().globalComm->pairs()) {
+            if (nodeid == key.substr(0, key.find_first_of(':'))) {
+                return zeno::objectGetFocusCenterRadius(ptr, center, radius);
+            }
         }
-    }
+    };
+    zeno::getSession().globalComm->mutexCallback(cb);
     zeno::log_warn("cannot focus: node with id {} not found, did you tagged VIEW on it?", nodeid);
     return false;
 }
@@ -82,9 +85,8 @@ bool Scene::loadFrameObjects(int frameid) {
     auto &ud = zeno::getSession().userData();
     ud.set2<int>("frameid", std::move(frameid));
 
-    const auto& cbLoadObjs = [this](std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs) -> bool {return true; };
     bool isFrameValid = false;
-    bool inserted = zeno::getSession().globalComm->load_objects(frameid, cbLoadObjs, isFrameValid);
+    bool inserted = zeno::getSession().globalComm->load_objects(frameid, isFrameValid);
     if (!isFrameValid)
         return false;
 

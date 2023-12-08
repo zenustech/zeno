@@ -40,10 +40,11 @@ struct RenderEngineBate : RenderEngine {
     }
 
     void update() override {
-        if (graphicsMan->load_objects(zeno::getSession().globalComm->objectsMan->pairsShared()))
-        {
-            zeno::getSession().globalComm->objectsMan->renderType = zeno::ObjectsManager::UNDEFINED;
-        }
+        const auto& cb = [&]() {
+            if (graphicsMan->load_objects(zeno::getSession().globalComm->pairsShared()))
+                zeno::getSession().globalComm->setRenderType(zeno::GlobalComm::UNDEFINED);
+        };
+        zeno::getSession().globalComm->mutexCallback(cb);
     }
 
     void draw() override {

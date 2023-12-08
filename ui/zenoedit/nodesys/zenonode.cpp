@@ -1431,9 +1431,11 @@ void ZenoNode::onMarkDataChanged(bool bDirty)
     {
         clrMarker = QColor(0, 0, 0, 0);
     }
-    ZASSERT_EXIT(m_dirtyMarker);
-    m_dirtyMarker->setColors(false, clrMarker);
-    updateWhole();
+    if (m_dirtyMarker)
+    {
+        m_dirtyMarker->setColors(false, clrMarker);
+        updateWhole();
+    }
 }
 
 void ZenoNode::setMoving(bool isMoving)

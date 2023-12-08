@@ -79,8 +79,11 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
     }
 
     void update() override {
-        if (graphicsMan->load_objects(zeno::getSession().globalComm->objectsMan->pairsShared()))
-            giNeedUpdate = true;
+        const auto& cb = [&]() {
+            if (graphicsMan->load_objects(zeno::getSession().globalComm->pairsShared()))
+                giNeedUpdate = true;
+        };
+        zeno::getSession().globalComm->mutexCallback(cb);
     }
 
     void draw() override {

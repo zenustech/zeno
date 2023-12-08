@@ -886,7 +886,7 @@ void DockContent_View::initConnections()
             ZASSERT_EXIT(session);
             auto scene = session->get_scene();
             ZASSERT_EXIT(scene);
-            zeno::getSession().globalComm->objectsMan->needUpdateLight = true;
+            zeno::getSession().globalComm->setNeedUpdateLight(true);
             m_pDisplay->setSimpleRenderOption();
             zenoApp->getMainWindow()->updateViewport();
         }

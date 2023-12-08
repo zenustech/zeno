@@ -1096,10 +1096,9 @@ void ZenoSubGraphScene::selectObjViaNodes() {
         for (auto item : selItems) {
             if (auto *pNode = qgraphicsitem_cast<ZenoNode *>(item)) {
                 auto node_id = pNode->index().data(ROLE_OBJID).toString().toStdString();
-                for (const auto &[prim_name, _] : zeno::getSession().globalComm->objectsMan->pairsShared()) {
-                    if (prim_name.find(node_id) != std::string::npos)
-                        picker->add(prim_name);
-                }
+                auto key = zeno::getSession().globalComm->getObjKeyByObjID(node_id);
+                if (key != "")
+                    picker->add(key);
             }
         }
         picker->sync_to_scene();

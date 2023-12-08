@@ -10,6 +10,9 @@
 #include <zeno/types/MaterialObject.h>
 #include <zeno/types/CameraObject.h>
 #include <zeno/types/ListObject.h>
+#include <zeno/types/PrimitiveObject.h>
+#include "zeno/core/Session.h"
+#include "zeno/utils/vec.h"
 #ifdef __linux__
     #include<unistd.h>
     #include <sys/statfs.h>
@@ -321,13 +324,13 @@ bool GlobalComm::fromDiskByRunner(std::string cachedir, int frameid, GlobalComm:
 }
 
 ZENO_API void GlobalComm::newFrame() {
-    std::lock_guard lck(m_mtx);
+    std::lock_guard lck(m_recur_mutex);
     log_debug("GlobalComm::newFrame {}", m_frames.size());
     m_frames.emplace_back().frame_state = FRAME_UNFINISH;
 }
 
 ZENO_API void GlobalComm::finishFrame() {
-    std::lock_guard lck(m_mtx);
+    std::lock_guard lck(m_recur_mutex);
     log_debug("GlobalComm::finishFrame {}", m_maxPlayFrame);
     if (m_maxPlayFrame >= 0 && m_maxPlayFrame < m_frames.size())
         m_frames[m_maxPlayFrame].frame_state = FRAME_COMPLETED;
@@ -335,7 +338,7 @@ ZENO_API void GlobalComm::finishFrame() {
 }
 
 ZENO_API void GlobalComm::dumpFrameCache(int frameid) {
-    std::lock_guard lck(m_mtx);
+    std::lock_guard lck(m_recur_mutex);
     int frameIdx = frameid - beginFrameNumber;
     if (frameIdx >= 0 && frameIdx < m_frames.size()) {
         log_debug("dumping frame {}", frameid);
@@ -344,14 +347,14 @@ ZENO_API void GlobalComm::dumpFrameCache(int frameid) {
 }
 
 ZENO_API void GlobalComm::addViewObject(std::string const &key, std::shared_ptr<IObject> object) {
-    std::lock_guard lck(m_mtx);
+    std::lock_guard lck(m_recur_mutex);
     log_debug("GlobalComm::addViewObject {}", m_frames.size());
     if (m_frames.empty()) throw makeError("empty frame cache");
     m_frames.back().view_objects.try_emplace(key, std::move(object));
 }
 
 ZENO_API void GlobalComm::clearState() {
-    std::lock_guard lck(m_mtx);
+    std::lock_guard lck(m_recur_mutex);
     m_frames.clear();
     m_inCacheFrames.clear();
     m_maxPlayFrame = 0;
@@ -361,47 +364,47 @@ ZENO_API void GlobalComm::clearState() {
 
 ZENO_API void GlobalComm::clearFrameState()
 {
-    std::lock_guard lck(m_mtx);
+    std::lock_guard lck(m_recur_mutex);
     m_frames.clear();
     m_inCacheFrames.clear();
     m_maxPlayFrame = 0;
 }
 
 ZENO_API void GlobalComm::frameCache(std::string const &path, int gcmax) {
-    std::lock_guard lck(m_mtx);
+    std::lock_guard lck(m_recur_mutex);
     cacheFramePath = path;
     maxCachedFrames = gcmax;
 }
 
 ZENO_API void GlobalComm::initFrameRange(int beg, int end) {
-    std::lock_guard lck(m_mtx);
+    std::lock_guard lck(m_recur_mutex);
     beginFrameNumber = beg;
     endFrameNumber = end;
 }
 
 ZENO_API int GlobalComm::maxPlayFrames() {
-    std::lock_guard lck(m_mtx);
+    std::lock_guard lck(m_recur_mutex);
     return m_maxPlayFrame + beginFrameNumber; // m_frames.size();
 }
 
 ZENO_API int GlobalComm::numOfFinishedFrame() {
-    std::lock_guard lck(m_mtx);
+    std::lock_guard lck(m_recur_mutex);
     return m_maxPlayFrame;
 }
 
 ZENO_API int GlobalComm::numOfInitializedFrame()
 {
-    std::lock_guard lck(m_mtx);
+    std::lock_guard lck(m_recur_mutex);
     return m_frames.size();
 }
 
 ZENO_API std::pair<int, int> GlobalComm::frameRange() {
-    std::lock_guard lck(m_mtx);
+    std::lock_guard lck(m_recur_mutex);
     return std::pair<int, int>(beginFrameNumber, endFrameNumber);
 }
 
 ZENO_API GlobalComm::ViewObjects const *GlobalComm::getViewObjects(const int frameid) {
-    std::lock_guard lck(m_mtx);
+    std::lock_guard lck(m_recur_mutex);
     return _getViewObjects(frameid);
 }
 
@@ -412,7 +415,6 @@ GlobalComm::ViewObjects const* GlobalComm::_getViewObjects(const int frameid) {
     if (maxCachedFrames != 0) {
         // load back one gc:
         if (!m_inCacheFrames.count(frameid)) {  // notinmem then cacheit
-            auto x = &m_inCacheFrames;
             bool ret = fromDiskByObjsManager(cacheFramePath, frameid, m_frames[frameIdx].view_objects, toViewNodesId);
             if (!ret)
                 return nullptr;
@@ -437,19 +439,15 @@ GlobalComm::ViewObjects const* GlobalComm::_getViewObjects(const int frameid) {
 }
 
 ZENO_API GlobalComm::ViewObjects const &GlobalComm::getViewObjects() {
-    std::lock_guard lck(m_mtx);
+    std::lock_guard lck(m_recur_mutex);
     return m_frames.back().view_objects;
 }
 
 ZENO_API bool GlobalComm::load_objects(
         const int frameid,
-        const std::function<bool(std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs)>& callback,
         bool& isFrameValid)
 {
-    if (!callback)
-        return false;
-
-    std::lock_guard lck(m_mtx);
+    std::lock_guard lck(m_recur_mutex);
 
     int frame = frameid;
     frame -= beginFrameNumber;
@@ -464,17 +462,17 @@ ZENO_API bool GlobalComm::load_objects(
     auto const* viewObjs = _getViewObjects(frameid);
     if (viewObjs) {
         zeno::log_trace("load_objects: {} objects at frame {}", viewObjs->size(), frameid);
-        inserted = objectsMan->load_objects(viewObjs->m_curr);
+        inserted = load_objectsToManager(viewObjs->m_curr);
     }
     else {
         zeno::log_trace("load_objects: no objects at frame {}", frameid);
-        inserted = objectsMan->load_objects({});
+        inserted = load_objectsToManager({});
     }
     return inserted;
 }
 
 ZENO_API bool GlobalComm::isFrameCompleted(int frameid) const {
-    std::lock_guard lck(m_mtx);
+    std::lock_guard lck(m_recur_mutex);
     frameid -= beginFrameNumber;
     if (frameid < 0 || frameid >= m_frames.size())
         return false;
@@ -483,7 +481,7 @@ ZENO_API bool GlobalComm::isFrameCompleted(int frameid) const {
 
 ZENO_API GlobalComm::FRAME_STATE GlobalComm::getFrameState(int frameid) const
 {
-    std::lock_guard lck(m_mtx);
+    std::lock_guard lck(m_recur_mutex);
     frameid -= beginFrameNumber;
     if (frameid < 0 || frameid >= m_frames.size())
         return FRAME_UNFINISH;
@@ -492,7 +490,7 @@ ZENO_API GlobalComm::FRAME_STATE GlobalComm::getFrameState(int frameid) const
 
 ZENO_API bool GlobalComm::isFrameBroken(int frameid) const
 {
-    std::lock_guard lck(m_mtx);
+    std::lock_guard lck(m_recur_mutex);
     frameid -= beginFrameNumber;
     if (frameid < 0 || frameid >= m_frames.size())
         return false;
@@ -501,19 +499,19 @@ ZENO_API bool GlobalComm::isFrameBroken(int frameid) const
 
 ZENO_API int GlobalComm::maxCachedFramesNum()
 {
-    std::lock_guard lck(m_mtx);
+    std::lock_guard lck(m_recur_mutex);
     return maxCachedFrames;
 }
 
 ZENO_API std::string GlobalComm::cachePath()
 {
-    std::lock_guard lck(m_mtx);
+    std::lock_guard lck(m_recur_mutex);
     return cacheFramePath;
 }
 
 ZENO_API bool GlobalComm::removeCache(int frame)
 {
-    std::lock_guard lck(m_mtx);
+    std::lock_guard lck(m_recur_mutex);
     bool hasZencacheOnly = true;
     std::filesystem::path dirToRemove = std::filesystem::u8path(cacheFramePath + "/" + std::to_string(1000000 + frame).substr(1));
     if (std::filesystem::exists(dirToRemove))
@@ -544,7 +542,7 @@ ZENO_API bool GlobalComm::removeCache(int frame)
 
 ZENO_API void GlobalComm::removeCachePath()
 {
-    std::lock_guard lck(m_mtx);
+    std::lock_guard lck(m_recur_mutex);
     std::filesystem::path dirToRemove = std::filesystem::u8path(cacheFramePath);
     if (std::filesystem::exists(dirToRemove) && cacheFramePath.find(".") == std::string::npos)
     {
@@ -555,8 +553,389 @@ ZENO_API void GlobalComm::removeCachePath()
 
 ZENO_API void GlobalComm::setToViewNodes(std::vector<std::string>&nodes)
 {
-    std::lock_guard lck(m_mtx);
+    std::lock_guard lck(m_recur_mutex);
     toViewNodesId = std::move(nodes);
+}
+
+//-----ObjectsManager-----
+bool GlobalComm::load_objectsToManager(std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs) {
+    std::lock_guard lck(m_recur_mutex);
+    bool inserted = false;
+    auto ins = objects.insertPass();
+
+    for (auto const& [key, obj] : objs) {
+        if (ins.may_emplace(key)) {
+            ins.try_emplace(key, std::move(obj));
+            inserted = true;
+        }
+    }
+
+    if (inserted || objs.size() < lastToViewNodesType.size())
+        determineRenderType(objs);
+    if (renderType != UNDEFINED) {
+        lightObjects.clear();
+        for (auto const& [key, obj] : objs) {
+            if (auto prim_in = dynamic_cast<zeno::PrimitiveObject*>(obj.get())) {
+                auto isRealTimeObject = prim_in->userData().get2<int>("isRealTimeObject", 0);
+                if (isRealTimeObject) {
+                    //printf("loading light object %s\n", key.c_str());
+                    lightObjects[key] = obj;
+                }
+            }
+        }
+    }
+
+    return inserted;
+}
+
+ZENO_API void GlobalComm::clear_objects() {
+    std::lock_guard lck(m_recur_mutex);
+    objects.clear();
+}
+
+ZENO_API void GlobalComm::clear_lightObjects()
+{
+    std::lock_guard lck(m_recur_mutex);
+    lightObjects.clear();
+}
+
+ZENO_API std::optional<zeno::IObject* > GlobalComm::get(std::string nid) {
+    std::lock_guard lck(m_recur_mutex);
+    for (auto& [key, ptr] : this->pairs()) {
+        if (key != nid) {
+            continue;
+        }
+        return ptr;
+    }
+
+    return std::nullopt;
+}
+
+void GlobalComm::determineRenderType(std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs)
+{
+    static std::set<std::string> lightCameraNodes({
+    "CameraEval", "CameraNode", "CihouMayaCameraFov", "ExtractCameraData", "GetAlembicCamera","MakeCamera",
+    "LightNode", "BindLight", "ProceduralSky", "HDRSky",
+        });
+    static std::string matlNode = "ShaderFinalize";
+
+    std::vector<size_t> count(3, 0);
+    for (auto it = lastToViewNodesType.begin(); it != lastToViewNodesType.end();)
+    {
+        if (objs.find(it->first) == objs.end())
+        {
+            count[it->second]++;
+            lastToViewNodesType.erase(it++);
+        }
+        else {
+            it++;
+        }
+    }
+    for (auto& [key, obj] : objs)
+    {
+        if (lastToViewNodesType.find(key) == lastToViewNodesType.end())
+        {
+            std::string nodeName = key.substr(key.find("-") + 1, key.find(":") - key.find("-") - 1);
+            if (lightCameraNodes.count(nodeName) || obj->userData().get2<int>("isL", 0) || std::dynamic_pointer_cast<zeno::CameraObject>(obj)) {
+                lastToViewNodesType.insert({ key, 0 });
+                count[0]++;
+            }
+            else if (matlNode == nodeName || std::dynamic_pointer_cast<zeno::MaterialObject>(obj)) {
+                lastToViewNodesType.insert({ key, 1 });
+                count[1]++;
+            }
+            else {
+                lastToViewNodesType.insert({ key, 2 });
+                count[2]++;
+            }
+        }
+    }
+    renderType = count[1] == 0 && count[2] == 0 ? UPDATE_LIGHT_CAMERA : count[0] == 0 && count[2] == 0 ? UPDATE_MATERIAL : UPDATE_ALL;
+}
+
+//------new change------
+
+void GlobalComm::mutexCallback(const std::function<void()>& callback)
+{
+    std::lock_guard lck(m_recur_mutex);
+    if (callback)
+        callback();
+}
+
+ZENO_API bool GlobalComm::lightObjsCount(std::string& id)
+{
+    std::lock_guard lck(m_recur_mutex);
+    for (auto const& [key, ptr] : lightObjects) {
+        if (key.find(id) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+ZENO_API bool GlobalComm::objsCount(std::string& id)
+{
+    std::lock_guard lck(m_recur_mutex);
+    for (auto const& [key, ptr] : objects) {
+        if (key.find(id) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+ZENO_API const std::string GlobalComm::getLightObjKeyByLightObjID(std::string id)
+{
+    std::lock_guard lck(m_recur_mutex);
+    for (auto const& [key, ptr] : lightObjects) {
+        if (key.find(id) != std::string::npos) {
+            return key;
+        }
+    }
+    return "";
+}
+
+ZENO_API const std::string GlobalComm::getObjKeyByObjID(std::string& id)
+{
+    std::lock_guard lck(m_recur_mutex);
+    for (auto const& [key, ptr] : objects) {
+        if (id == key.substr(0, key.find_first_of(':'))) {
+            return key;
+        }
+    }
+    return "";
+}
+
+ZENO_API const std::string GlobalComm::getObjKey1(std::string& id, int frame)
+{
+    std::lock_guard lck(m_recur_mutex);
+    for (auto const& [key, ptr] : objects) {
+        if (key.find(id) == 0 && key.find(zeno::format(":{}:", frame)) != std::string::npos) {
+            return key;
+        }
+    }
+    return "";
+}
+
+ZENO_API bool GlobalComm::getLightObjData(std::string& id, zeno::vec3f& pos, zeno::vec3f& scale, zeno::vec3f& rotate, zeno::vec3f& clr, float& intensity)
+{
+    std::lock_guard lck(m_recur_mutex);
+    if (lightObjects.find(id) != lightObjects.end())
+    {
+        std::shared_ptr<zeno::IObject> ptr = lightObjects[id];
+        if (ptr->userData().get2<int>("isL", 0)) {
+            if (auto prim_in = dynamic_cast<zeno::PrimitiveObject*>(ptr.get())) {
+                pos = ptr->userData().getLiterial<zeno::vec3f>("pos", zeno::vec3f(0.0f));
+                scale = ptr->userData().getLiterial<zeno::vec3f>("scale", zeno::vec3f(0.0f));
+                rotate = ptr->userData().getLiterial<zeno::vec3f>("rotate", zeno::vec3f(0.0f));
+                if (ptr->userData().has("color")) {
+                    clr = ptr->userData().getLiterial<zeno::vec3f>("color");
+                }
+                else {
+                    if (prim_in->verts.has_attr("clr")) {
+                        clr = prim_in->verts.attr<zeno::vec3f>("clr")[0];
+                    }
+                    else {
+                        clr = zeno::vec3f(30000.0f, 30000.0f, 30000.0f);
+                    }
+                }
+                intensity = ptr->userData().getLiterial<float>("intensity", 1);
+                return true;
+            }
+        }
+        else {
+            zeno::log_info("connect item not found {}", id);
+        }
+    }
+    return false;
+}
+
+ZENO_API bool GlobalComm::setLightObjData(std::string& id, zeno::vec3f& pos, zeno::vec3f& scale, zeno::vec3f& rotate, zeno::vec3f& rgb, float& intensity, std::vector<zeno::vec3f>& verts)
+{
+    std::lock_guard lck(m_recur_mutex);
+    if (lightObjects.find(id) != lightObjects.end())
+    {
+        std::shared_ptr<zeno::IObject> obj = lightObjects[id];
+        auto prim_in = dynamic_cast<zeno::PrimitiveObject*>(obj.get());
+
+        if (prim_in) {
+            auto& prim_verts = prim_in->verts;
+            prim_verts[0] = verts[0];
+            prim_verts[1] = verts[1];
+            prim_verts[2] = verts[2];
+            prim_verts[3] = verts[3];
+            prim_in->verts.attr<zeno::vec3f>("clr")[0] = rgb *intensity;
+
+            prim_in->userData().setLiterial<zeno::vec3f>("pos", zeno::vec3f(pos));
+            prim_in->userData().setLiterial<zeno::vec3f>("scale", zeno::vec3f(scale));
+            prim_in->userData().setLiterial<zeno::vec3f>("rotate", zeno::vec3f(rotate));
+            if (prim_in->userData().has("intensity")) {
+                prim_in->userData().setLiterial<zeno::vec3f>("color", zeno::vec3f(rgb));
+                prim_in->userData().setLiterial<float>("intensity", std::move(intensity));
+            }
+            needUpdateLight = true;
+            return true;
+        }
+        else {
+            zeno::log_info("modifyLightData not found {}", id);
+        }
+    }
+    return false;
+}
+
+ZENO_API bool GlobalComm::setProceduralSkyData(std::string id, zeno::vec2f& sunLightDir, float& sunSoftnessValue, zeno::vec2f& windDir, float& timeStartValue, float& timeSpeedValue, float& sunLightIntensityValue, float& colorTemperatureMixValue, float& colorTemperatureValue)
+{
+    std::lock_guard lck(m_recur_mutex);
+    auto& setFunc = [&](zeno::PrimitiveObject* prim_in) {
+        prim_in->userData().set2("sunLightDir", std::move(sunLightDir));
+        prim_in->userData().set2("sunLightSoftness", std::move(sunSoftnessValue));
+        prim_in->userData().set2("windDir", std::move(windDir));
+        prim_in->userData().set2("timeStart", std::move(timeStartValue));
+        prim_in->userData().set2("timeSpeed", std::move(timeSpeedValue));
+        prim_in->userData().set2("sunLightIntensity", std::move(sunLightIntensityValue));
+        prim_in->userData().set2("colorTemperatureMix", std::move(colorTemperatureMixValue));
+        prim_in->userData().set2("colorTemperature", std::move(colorTemperatureValue));
+    };
+    bool found = false;
+    if (id == "")
+    {
+        for (auto const& [key, obj] : lightObjects) {
+            if (key.find("ProceduralSky") != std::string::npos) {
+                found = true;
+                if (auto prim_in = dynamic_cast<zeno::PrimitiveObject*>(obj.get())) {
+                    setFunc(prim_in);
+                }
+            }
+        }
+    }
+    else {
+        if (lightObjects.find(id) != lightObjects.end())
+        {
+            found = true;
+            std::shared_ptr<zeno::IObject> obj = lightObjects[id];
+            if (auto prim_in = dynamic_cast<zeno::PrimitiveObject*>(obj.get())) {
+                setFunc(prim_in);
+            }
+        }
+    }
+    auto& ud = zeno::getSession().userData();
+    if (found) {
+        ud.erase("sunLightDir");
+        ud.erase("sunLightSoftness");
+        ud.erase("windDir");
+        ud.erase("timeStart");
+        ud.erase("timeSpeed");
+        ud.erase("sunLightIntensity");
+        ud.erase("colorTemperatureMix");
+        ud.erase("colorTemperature");
+    }
+    else {
+        ud.set2("sunLightDir", std::move(sunLightDir));
+        ud.set2("sunLightSoftness", std::move(sunSoftnessValue));
+        ud.set2("windDir", std::move(windDir));
+        ud.set2("timeStart", std::move(timeStartValue));
+        ud.set2("timeSpeed", std::move(timeSpeedValue));
+        ud.set2("sunLightIntensity", std::move(sunLightIntensityValue));
+        ud.set2("colorTemperatureMix", std::move(colorTemperatureMixValue));
+        ud.set2("colorTemperature", std::move(colorTemperatureValue));
+    }
+    needUpdateLight = true;
+    return found;
+}
+
+ZENO_API bool GlobalComm::getProceduralSkyData(std::string& id, zeno::vec2f& sunLightDir, float& sunSoftnessValue, zeno::vec2f& windDir, float& timeStartValue, float& timeSpeedValue, float& sunLightIntensityValue, float& colorTemperatureMixValue, float& colorTemperatureValue)
+{
+    std::lock_guard lck(m_recur_mutex);
+    auto& getFunc = [&](zeno::PrimitiveObject* prim_in) {
+        sunLightDir = prim_in->userData().get2<zeno::vec2f>("sunLightDir");
+        windDir = prim_in->userData().get2<zeno::vec2f>("windDir");
+        sunSoftnessValue = prim_in->userData().get2<float>("sunLightSoftness");
+        timeStartValue = prim_in->userData().get2<float>("timeStart");
+        timeSpeedValue = prim_in->userData().get2<float>("timeSpeed");
+        sunLightIntensityValue = prim_in->userData().get2<float>("sunLightIntensity");
+        colorTemperatureMixValue = prim_in->userData().get2<float>("colorTemperatureMix");
+        colorTemperatureValue = prim_in->userData().get2<float>("colorTemperature");
+    };
+    if (id == "")
+    {
+        for (auto const& [key, obj] : lightObjects) {
+            if (key.find("ProceduralSky") != std::string::npos) {
+                if (auto prim_in = dynamic_cast<zeno::PrimitiveObject*>(obj.get())) {
+                    getFunc(prim_in);
+                    return true;
+                }
+            }
+        }
+    }
+    else {
+        if (lightObjects.find(id) != lightObjects.end())
+        {
+            std::shared_ptr<zeno::IObject> obj = lightObjects[id];
+            if (auto prim_in = dynamic_cast<zeno::PrimitiveObject*>(obj.get())) {
+                getFunc(prim_in);
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+ZENO_API void GlobalComm::getAllLightsKey(std::vector<std::string>& keys)
+{
+    std::lock_guard lck(m_recur_mutex);
+    for (auto const& [key, ptr] : lightObjects) {
+        if (ptr->userData().get2<int>("isL", 0)) {
+            keys.push_back(key);
+        }
+    }
+}
+
+ZENO_API std::string GlobalComm::getObjMatId(std::string& id)
+{
+    std::lock_guard lck(m_recur_mutex);
+    for (auto const& [key, ptr] : objects) {
+        if (id == key) {
+            auto& ud = ptr->userData();
+            return ud.get2<std::string>("mtlid", "Default");
+        }
+    }
+    return "";
+}
+
+ZENO_API void GlobalComm::setRenderType(GlobalComm::RenderType type)
+{
+    std::lock_guard lck(m_recur_mutex);
+    renderType = type;
+}
+
+ZENO_API GlobalComm::RenderType GlobalComm::getRenderType()
+{
+    std::lock_guard lck(m_recur_mutex);
+    return renderType;
+}
+
+ZENO_API std::map<std::string, std::shared_ptr<zeno::IObject>>& GlobalComm::getLightObjs()
+{
+    std::lock_guard lck(m_recur_mutex);
+    return lightObjects;
+}
+
+ZENO_API int GlobalComm::getLightObjsSize()
+{
+    std::lock_guard lck(m_recur_mutex);
+    return lightObjects.size();
+}
+
+ZENO_API bool GlobalComm::getNeedUpdateLight()
+{
+    std::lock_guard lck(m_recur_mutex);
+    return needUpdateLight;
+}
+
+ZENO_API void GlobalComm::setNeedUpdateLight(bool update)
+{
+    std::lock_guard lck(m_recur_mutex);
+    needUpdateLight = update;
 }
 
 }

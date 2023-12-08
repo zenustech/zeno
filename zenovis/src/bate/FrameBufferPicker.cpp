@@ -284,162 +284,165 @@ struct FrameBufferPicker : IPicker {
         CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo->fbo));
         CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
-        // construct prim set
-        // use focus_prim if focus_prim_name is not empty else all prims
-        vector<std::pair<string, std::shared_ptr<zeno::IObject>>> prims;
-        auto prims_shared = zeno::getSession().globalComm->objectsMan->pairsShared();
-        if (!focus_prim_name.empty()) {
-            std::shared_ptr<zeno::IObject> focus_prim;
-            for (const auto& [k, v] : prims_shared) {
-                if (focus_prim_name == k)
-                    focus_prim = v;
+        const auto& cb = [&]() {
+            // construct prim set
+            // use focus_prim if focus_prim_name is not empty else all prims
+            vector<std::pair<string, std::shared_ptr<zeno::IObject>>> prims;
+            auto prims_shared = zeno::getSession().globalComm->pairsShared();
+            if (!focus_prim_name.empty()) {
+                std::shared_ptr<zeno::IObject> focus_prim;
+                for (const auto& [k, v] : prims_shared) {
+                    if (focus_prim_name == k)
+                        focus_prim = v;
+                }
+                if (focus_prim) prims.emplace_back(focus_prim_name, focus_prim);
             }
-            if (focus_prim) prims.emplace_back(focus_prim_name, focus_prim);
-        }
-        else
-            prims = std::move(prims_shared);
+            else
+                prims = std::move(prims_shared);
 
-        // shading primitive objects
-        for (unsigned int id = 0; id < prims.size(); id++) {
-            auto it = prims.begin() + id;
-            auto prim = dynamic_cast<PrimitiveObject*>(it->second.get());
-            if (prim && prim->has_attr("pos")) {
-                // prepare vertices data
-                auto const &pos = prim->attr<zeno::vec3f>("pos");
-                vao->bind();
-                vbo->bind_data(pos.data(), pos.size() * sizeof(pos[0]));
-                vbo->attribute(0, sizeof(float) * 0, sizeof(float) * 3, GL_FLOAT, 3);
+            // shading primitive objects
+            for (unsigned int id = 0; id < prims.size(); id++) {
+                auto it = prims.begin() + id;
+                auto prim = dynamic_cast<PrimitiveObject*>(it->second.get());
+                if (prim && prim->has_attr("pos")) {
+                    // prepare vertices data
+                    auto const &pos = prim->attr<zeno::vec3f>("pos");
+                    vao->bind();
+                    vbo->bind_data(pos.data(), pos.size() * sizeof(pos[0]));
+                    vbo->attribute(0, sizeof(float) * 0, sizeof(float) * 3, GL_FLOAT, 3);
 
-                bool pick_particle = false;
-                if (scene->select_mode == PICK_MODE::PICK_OBJECT) {
-                    pick_particle = prim->tris->empty() && prim->quads->empty() && prim->polys->empty() && prim->loops->empty();
-                    CHECK_GL(glEnable(GL_DEPTH_TEST));
+                    bool pick_particle = false;
+                    if (scene->select_mode == PICK_MODE::PICK_OBJECT) {
+                        pick_particle = prim->tris->empty() && prim->quads->empty() && prim->polys->empty() && prim->loops->empty();
+                        CHECK_GL(glEnable(GL_DEPTH_TEST));
 
-                    // shader uniform
-                    obj_shader->use();
-                    scene->camera->set_program_uniforms(obj_shader);
-                    CHECK_GL(glUniform1ui(glGetUniformLocation(obj_shader->pro, "gObjectIndex"), id + 1));
-                    // draw prim
-                    if (prim->tris.size()) {
-                        ebo->bind_data(prim->tris.data(), prim->tris.size() * sizeof(prim->tris[0]));
-                        CHECK_GL(glDrawElements(GL_TRIANGLES, prim->tris.size() * 3, GL_UNSIGNED_INT, 0));
-                    }
-                    else if (prim->polys.size()) {
-                        std::vector<vec3i> tris;
-                        for (auto [start, len]: prim->polys) {
-                            for (auto i = 2; i < len; i++) {
-                                tris.emplace_back(
-                                    prim->loops[start],
-                                    prim->loops[start + i - 1],
-                                    prim->loops[start + i]
-                                );
-                            }
+                        // shader uniform
+                        obj_shader->use();
+                        scene->camera->set_program_uniforms(obj_shader);
+                        CHECK_GL(glUniform1ui(glGetUniformLocation(obj_shader->pro, "gObjectIndex"), id + 1));
+                        // draw prim
+                        if (prim->tris.size()) {
+                            ebo->bind_data(prim->tris.data(), prim->tris.size() * sizeof(prim->tris[0]));
+                            CHECK_GL(glDrawElements(GL_TRIANGLES, prim->tris.size() * 3, GL_UNSIGNED_INT, 0));
                         }
-                        ebo->bind_data(tris.data(), tris.size() * sizeof(tris[0]));
-                        CHECK_GL(glDrawElements(GL_TRIANGLES, tris.size() * 3, GL_UNSIGNED_INT, 0));
-                    }
-                    ebo->unbind();
-                    CHECK_GL(glDisable(GL_DEPTH_TEST));
-                }
-
-                if (scene->select_mode == PICK_MODE::PICK_VERTEX || pick_particle) {
-                    // ----- enable depth test -----
-                    CHECK_GL(glEnable(GL_DEPTH_TEST));
-                    // CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-
-                    // ----- draw points -----
-                    vert_shader->use();
-                    scene->camera->set_program_uniforms(vert_shader);
-                    CHECK_GL(glUniform1ui(glGetUniformLocation(vert_shader->pro, "gObjectIndex"), id + 1));
-                    CHECK_GL(glDrawArrays(GL_POINTS, 0, pos.size()));
-
-                    // ----- draw object to cover invisible points -----
-                    empty_and_offset_shader->use();
-                    empty_and_offset_shader->set_uniform("offset", 0.00001f);
-                    scene->camera->set_program_uniforms(empty_and_offset_shader);
-
-                    auto tri_count = prim->tris.size();
-                    ebo->bind_data(prim->tris.data(), tri_count * sizeof(prim->tris[0]));
-                    CHECK_GL(glDrawElements(GL_TRIANGLES, tri_count * 3, GL_UNSIGNED_INT, 0));
-                    ebo->unbind();
-
-                    // ----- disable depth test -----
-                    CHECK_GL(glDisable(GL_DEPTH_TEST));
-                }
-
-                if (scene->select_mode == PICK_MODE::PICK_LINE) {
-                    // ----- enable depth test -----
-                    CHECK_GL(glEnable(GL_DEPTH_TEST));
-                    // CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-                    // ----- draw lines -----
-                    prim_shader->use();
-                    scene->camera->set_program_uniforms(prim_shader);
-                    CHECK_GL(glUniform1ui(glGetUniformLocation(prim_shader->pro, "gObjectIndex"), id + 1));
-                    auto line_count = prim->lines.size();
-                    if (!line_count) {
-                        // compute lines' indices
-                        struct cmp_line {
-                            bool operator()(vec2i v1, vec2i v2) const {
-                                return (v1[0] == v2[0] && v1[1] == v2[1]) || (v1[0] == v2[1] && v1[1] == v2[0]);
+                        else if (prim->polys.size()) {
+                            std::vector<vec3i> tris;
+                            for (auto [start, len]: prim->polys) {
+                                for (auto i = 2; i < len; i++) {
+                                    tris.emplace_back(
+                                        prim->loops[start],
+                                        prim->loops[start + i - 1],
+                                        prim->loops[start + i]
+                                    );
+                                }
                             }
-                        };
-                        struct hash_line {
-                            size_t operator()(const vec2i& v) const {
-                                return std::hash<int>()(v[0]) ^ std::hash<int>()(v[1]);
-                            }
-                        };
-                        unordered_set<zeno::vec2i, hash_line, cmp_line> lines;
-                        for (auto & tri : prim->tris) {
-                            auto& a = tri[0];
-                            auto& b = tri[1];
-                            auto& c = tri[2];
-                            lines.insert(vec2i{a, b});
-                            lines.insert(vec2i{b, c});
-                            lines.insert(vec2i{c, a});
+                            ebo->bind_data(tris.data(), tris.size() * sizeof(tris[0]));
+                            CHECK_GL(glDrawElements(GL_TRIANGLES, tris.size() * 3, GL_UNSIGNED_INT, 0));
                         }
-                        for (auto l : lines) prim->lines.push_back(l);
-                        line_count = prim->lines.size();
+                        ebo->unbind();
+                        CHECK_GL(glDisable(GL_DEPTH_TEST));
                     }
-                    ebo->bind_data(prim->lines.data(), line_count * sizeof(prim->lines[0]));
-                    CHECK_GL(glDrawElements(GL_LINES, line_count * 2, GL_UNSIGNED_INT, 0));
-                    ebo->unbind();
 
-                    // ----- draw object to cover invisible lines -----
-                    empty_shader->use();
-                    scene->camera->set_program_uniforms(empty_shader);
-                    auto tri_count = prim->tris.size();
-                    ebo->bind_data(prim->tris.data(), tri_count * sizeof(prim->tris[0]));
-                    CHECK_GL(glDrawElements(GL_TRIANGLES, tri_count * 3, GL_UNSIGNED_INT, 0));
-                    ebo->unbind();
-                    // ----- disable depth test -----
-                    CHECK_GL(glDisable(GL_DEPTH_TEST));
+                    if (scene->select_mode == PICK_MODE::PICK_VERTEX || pick_particle) {
+                        // ----- enable depth test -----
+                        CHECK_GL(glEnable(GL_DEPTH_TEST));
+                        // CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+
+                        // ----- draw points -----
+                        vert_shader->use();
+                        scene->camera->set_program_uniforms(vert_shader);
+                        CHECK_GL(glUniform1ui(glGetUniformLocation(vert_shader->pro, "gObjectIndex"), id + 1));
+                        CHECK_GL(glDrawArrays(GL_POINTS, 0, pos.size()));
+
+                        // ----- draw object to cover invisible points -----
+                        empty_and_offset_shader->use();
+                        empty_and_offset_shader->set_uniform("offset", 0.00001f);
+                        scene->camera->set_program_uniforms(empty_and_offset_shader);
+
+                        auto tri_count = prim->tris.size();
+                        ebo->bind_data(prim->tris.data(), tri_count * sizeof(prim->tris[0]));
+                        CHECK_GL(glDrawElements(GL_TRIANGLES, tri_count * 3, GL_UNSIGNED_INT, 0));
+                        ebo->unbind();
+
+                        // ----- disable depth test -----
+                        CHECK_GL(glDisable(GL_DEPTH_TEST));
+                    }
+
+                    if (scene->select_mode == PICK_MODE::PICK_LINE) {
+                        // ----- enable depth test -----
+                        CHECK_GL(glEnable(GL_DEPTH_TEST));
+                        // CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+                        // ----- draw lines -----
+                        prim_shader->use();
+                        scene->camera->set_program_uniforms(prim_shader);
+                        CHECK_GL(glUniform1ui(glGetUniformLocation(prim_shader->pro, "gObjectIndex"), id + 1));
+                        auto line_count = prim->lines.size();
+                        if (!line_count) {
+                            // compute lines' indices
+                            struct cmp_line {
+                                bool operator()(vec2i v1, vec2i v2) const {
+                                    return (v1[0] == v2[0] && v1[1] == v2[1]) || (v1[0] == v2[1] && v1[1] == v2[0]);
+                                }
+                            };
+                            struct hash_line {
+                                size_t operator()(const vec2i& v) const {
+                                    return std::hash<int>()(v[0]) ^ std::hash<int>()(v[1]);
+                                }
+                            };
+                            unordered_set<zeno::vec2i, hash_line, cmp_line> lines;
+                            for (auto & tri : prim->tris) {
+                                auto& a = tri[0];
+                                auto& b = tri[1];
+                                auto& c = tri[2];
+                                lines.insert(vec2i{a, b});
+                                lines.insert(vec2i{b, c});
+                                lines.insert(vec2i{c, a});
+                            }
+                            for (auto l : lines) prim->lines.push_back(l);
+                            line_count = prim->lines.size();
+                        }
+                        ebo->bind_data(prim->lines.data(), line_count * sizeof(prim->lines[0]));
+                        CHECK_GL(glDrawElements(GL_LINES, line_count * 2, GL_UNSIGNED_INT, 0));
+                        ebo->unbind();
+
+                        // ----- draw object to cover invisible lines -----
+                        empty_shader->use();
+                        scene->camera->set_program_uniforms(empty_shader);
+                        auto tri_count = prim->tris.size();
+                        ebo->bind_data(prim->tris.data(), tri_count * sizeof(prim->tris[0]));
+                        CHECK_GL(glDrawElements(GL_TRIANGLES, tri_count * 3, GL_UNSIGNED_INT, 0));
+                        ebo->unbind();
+                        // ----- disable depth test -----
+                        CHECK_GL(glDisable(GL_DEPTH_TEST));
+                    }
+
+                    if (scene->select_mode == PICK_MODE::PICK_MESH) {
+                        // ----- enable depth test -----
+                        CHECK_GL(glEnable(GL_DEPTH_TEST));
+                        // CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+                        // ----- draw triangles -----
+                        prim_shader->use();
+                        scene->camera->set_program_uniforms(prim_shader);
+                        CHECK_GL(glUniform1ui(glGetUniformLocation(prim_shader->pro, "gObjectIndex"), id + 1));
+                        auto tri_count = prim->tris.size();
+                        ebo->bind_data(prim->tris.data(), tri_count * sizeof(prim->tris[0]));
+                        CHECK_GL(glDrawElements(GL_TRIANGLES, tri_count * 3, GL_UNSIGNED_INT, 0));
+                        ebo->unbind();
+                        // ----- disable depth test -----
+                        CHECK_GL(glDisable(GL_DEPTH_TEST));
+                    }
+
+                    // unbind vbo
+                    vbo->disable_attribute(0);
+                    vbo->unbind();
+                    vao->unbind();
+
+                    // store object's name
+                    id_table[id + 1] = it->first;
                 }
-
-                if (scene->select_mode == PICK_MODE::PICK_MESH) {
-                    // ----- enable depth test -----
-                    CHECK_GL(glEnable(GL_DEPTH_TEST));
-                    // CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-                    // ----- draw triangles -----
-                    prim_shader->use();
-                    scene->camera->set_program_uniforms(prim_shader);
-                    CHECK_GL(glUniform1ui(glGetUniformLocation(prim_shader->pro, "gObjectIndex"), id + 1));
-                    auto tri_count = prim->tris.size();
-                    ebo->bind_data(prim->tris.data(), tri_count * sizeof(prim->tris[0]));
-                    CHECK_GL(glDrawElements(GL_TRIANGLES, tri_count * 3, GL_UNSIGNED_INT, 0));
-                    ebo->unbind();
-                    // ----- disable depth test -----
-                    CHECK_GL(glDisable(GL_DEPTH_TEST));
-                }
-
-                // unbind vbo
-                vbo->disable_attribute(0);
-                vbo->unbind();
-                vao->unbind();
-
-                // store object's name
-                id_table[id + 1] = it->first;
             }
-        }
+        };
+        zeno::getSession().globalComm->mutexCallback(cb);
         fbo->unbind();
     }
 

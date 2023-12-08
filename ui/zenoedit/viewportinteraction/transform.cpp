@@ -54,34 +54,39 @@ void FakeTransformer::addObject(const std::string& name) {
     ZASSERT_EXIT(sess);
     auto scene = sess->get_scene();
     ZASSERT_EXIT(scene);
-    if (!zeno::getSession().globalComm->objectsMan->get(name).has_value())
-        return;
 
-    auto object = dynamic_cast<PrimitiveObject*>(zeno::getSession().globalComm->objectsMan->get(name).value());
-    m_objects_center *= m_objects.size();
-    auto& user_data = object->userData();
-    zeno::vec3f bmin, bmax;
-    if (user_data.has("_bboxMin") && user_data.has("_bboxMax")) {
-        bmin = user_data.getLiterial<zeno::vec3f>("_bboxMin");
-        bmax = user_data.getLiterial<zeno::vec3f>("_bboxMax");
-    } else {
-        std::tie(bmin, bmax) = zeno::primBoundingBox(object);
-        user_data.setLiterial("_bboxMin", bmin);
-        user_data.setLiterial("_bboxMax", bmax);
-    }
-    if (!user_data.has("_translate")) {
-        zeno::vec3f translate = {0, 0, 0};
-        user_data.setLiterial("_translate", translate);
-        zeno::vec4f rotate = {0, 0, 0, 1};
-        user_data.setLiterial("_rotate", rotate);
-        zeno::vec3f scale = {1, 1, 1};
-        user_data.setLiterial("_scale", scale);
-    }
-    auto m = zeno::vec_to_other<glm::vec3>(bmax);
-    auto n = zeno::vec_to_other<glm::vec3>(bmin);
-    m_objects_center += (m + n) / 2.0f;
-    m_objects[name] = object;
-    m_objects_center /= m_objects.size();
+    const auto& cb = [&]() {
+        for (auto const& [key, ptr] : zeno::getSession().globalComm->pairs()) {
+            if (key.find(name) != std::string::npos) {
+                auto object = dynamic_cast<PrimitiveObject*>(ptr);
+                m_objects_center *= m_objects.size();
+                auto& user_data = object->userData();
+                zeno::vec3f bmin, bmax;
+                if (user_data.has("_bboxMin") && user_data.has("_bboxMax")) {
+                    bmin = user_data.getLiterial<zeno::vec3f>("_bboxMin");
+                    bmax = user_data.getLiterial<zeno::vec3f>("_bboxMax");
+                } else {
+                    std::tie(bmin, bmax) = zeno::primBoundingBox(object);
+                    user_data.setLiterial("_bboxMin", bmin);
+                    user_data.setLiterial("_bboxMax", bmax);
+                }
+                if (!user_data.has("_translate")) {
+                    zeno::vec3f translate = {0, 0, 0};
+                    user_data.setLiterial("_translate", translate);
+                    zeno::vec4f rotate = {0, 0, 0, 1};
+                    user_data.setLiterial("_rotate", rotate);
+                    zeno::vec3f scale = {1, 1, 1};
+                    user_data.setLiterial("_scale", scale);
+                }
+                auto m = zeno::vec_to_other<glm::vec3>(bmax);
+                auto n = zeno::vec_to_other<glm::vec3>(bmin);
+                m_objects_center += (m + n) / 2.0f;
+                m_objects[name] = object;
+                m_objects_center /= m_objects.size();
+            }
+        }
+    };
+    zeno::getSession().globalComm->mutexCallback(cb);
 }
 
 void FakeTransformer::addObject(const std::unordered_set<std::string>& names) {

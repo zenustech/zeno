@@ -54,11 +54,7 @@ void ZLightsModel::updateByObjectsMan() {
     auto scene = session->get_scene();
     ZERROR_EXIT(scene);
 
-    for (auto const &[key, ptr]: zeno::getSession().globalComm->objectsMan->lightObjects) {
-        if (ptr->userData().get2<int>("isL", 0)) {
-            light_names.push_back(key);
-        }
-    }
+    zeno::getSession().globalComm->getAllLightsKey(light_names);
 
     endResetModel();
 }
