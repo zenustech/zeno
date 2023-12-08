@@ -81,12 +81,12 @@ set(CUDA_PATH ${CUDAToolkit_BIN_DIR}/..)
 
 set(FILE_LIST
     ${OPTIX_PATH}/include/@optix.h
+    ${OPTIX_PATH}/include/@optix_types.h
+    ${OPTIX_PATH}/include/@optix_host.h
     ${OPTIX_PATH}/include/@optix_device.h
-    ${OPTIX_PATH}/include/@optix_7_device.h
-    ${OPTIX_PATH}/include/@optix_7_types.h
-    ${OPTIX_PATH}/include/@internal/optix_7_device_impl.h
-    ${OPTIX_PATH}/include/@internal/optix_7_device_impl_exception.h
-    ${OPTIX_PATH}/include/@internal/optix_7_device_impl_transformations.h
+    ${OPTIX_PATH}/include/@internal/optix_device_impl.h
+    ${OPTIX_PATH}/include/@internal/optix_device_impl_exception.h
+    ${OPTIX_PATH}/include/@internal/optix_device_impl_transformations.h
 
     ${CUDA_PATH}/include/@cuda_fp16.h
     ${CUDA_PATH}/include/@cuda_fp16.hpp  

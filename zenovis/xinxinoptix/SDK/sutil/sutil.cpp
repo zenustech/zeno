@@ -75,11 +75,11 @@
 #ifndef CUDA_NVRTC_ENABLED
 #define CUDA_NVRTC_ENABLED 1
 #endif
-    //extern "C" const char *zeno_header_internal_optix_7_device_impl_exception_h();
-    //extern "C" const char *zeno_header_internal_optix_7_device_impl_transformations_h();
-    //extern "C" const char *zeno_header_internal_optix_7_device_impl_h();
-    //extern "C" const char *zeno_header_optix_7_device_h();
-    //extern "C" const char *zeno_header_optix_7_types_h();
+    //extern "C" const char *zeno_header_internal_optix_device_impl_exception_h();
+    //extern "C" const char *zeno_header_internal_optix_device_impl_transformations_h();
+    //extern "C" const char *zeno_header_internal_optix_device_impl_h();
+    //extern "C" const char *zeno_header_optix_device_h();
+    //extern "C" const char *zeno_header_optix_types_h();
 
 namespace sutil
 {
@@ -1077,11 +1077,11 @@ static const char* getOptixHeader() {
 #  define __UNDEF_OPTIX_INCLUDE_INTERNAL_HEADERS_OPTIX_DEVICE_H__
 #endif
 )"
-        + ridincs(zeno_header_optix_7_types_h())
-        + ridincs(zeno_header_optix_7_device_h())
-        + ridincs(zeno_header_internal_optix_7_device_impl_exception_h())
-        + ridincs(zeno_header_internal_optix_7_device_impl_transformations_h())
-        + ridincs(zeno_header_internal_optix_7_device_impl_h())
+        + ridincs(zeno_header_optix_types_h())
+        + ridincs(zeno_header_optix_device_h())
+        + ridincs(zeno_header_internal_optix_device_impl_exception_h())
+        + ridincs(zeno_header_internal_optix_device_impl_transformations_h())
+        + ridincs(zeno_header_internal_optix_device_impl_h())
         + R"(
 #if defined( __UNDEF_OPTIX_INCLUDE_INTERNAL_HEADERS_OPTIX_DEVICE_H__ )
 #  undef __OPTIX_INCLUDE_INTERNAL_HEADERS__

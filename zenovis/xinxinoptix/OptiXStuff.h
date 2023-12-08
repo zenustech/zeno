@@ -8,7 +8,6 @@
 
 #include <memory>
 #include <optix.h>
-#include <optix_function_table_definition.h>
 #include <optix_stubs.h>
 
 #include <sampleConfig.h>
@@ -24,6 +23,7 @@
 #include <sutil/PPMLoader.h>
 #include <optix_stack_size.h>
 #include "optixVolume.h"
+#include "optix_types.h"
 #include "raiicuda.h"
 #include "zeno/types/TextureObject.h"
 #include "zeno/utils/log.h"
@@ -191,7 +191,7 @@ inline bool createModule(OptixModule &m, OptixDeviceContext &context, const char
         "-lineinfo", //"-G"//"--dopt=on",
   #endif
         //"--gpu-architecture=compute_60",
-        //"--relocatable-device-code=true"
+        "--relocatable-device-code=true"
         //"--extensible-whole-program"
     };
 
@@ -205,13 +205,13 @@ inline bool createModule(OptixModule &m, OptixDeviceContext &context, const char
     if (_c_group == nullptr) {
 
         OPTIX_CHECK(
-            optixModuleCreateFromPTX(context, &module_compile_options, &pipeline_compile_options, input, inputSize, log, &sizeof_log, &m)
+            optixModuleCreate( context, &module_compile_options, &pipeline_compile_options, input, inputSize, log, &sizeof_log, &m )
         );
     } else {
         
         OptixTask firstTask;
         OPTIX_CHECK(
-            optixModuleCreateFromPTXWithTasks( 
+            optixModuleCreateWithTasks( 
                 context, 
                 &module_compile_options, 
                 &pipeline_compile_options,
@@ -890,11 +890,12 @@ inline void createPipeline()
 {
     OptixPipelineLinkOptions pipeline_link_options = {};
     pipeline_link_options.maxTraceDepth            = 2;
-#if defined( NDEBUG )
-    pipeline_link_options.debugLevel               = OPTIX_COMPILE_DEBUG_LEVEL_MINIMAL;
-#else
-    pipeline_link_options.debugLevel               = OPTIX_COMPILE_DEBUG_LEVEL_FULL;
-#endif
+
+// #if defined( NDEBUG )
+//     pipeline_link_options.debugLevel               = OPTIX_COMPILE_DEBUG_LEVEL_MINIMAL;
+// #else
+//     pipeline_link_options.debugLevel               = OPTIX_COMPILE_DEBUG_LEVEL_FULL;
+// #endif
 
     size_t num_progs = 3 + rtMaterialShaders.size() * 2;
     OptixProgramGroup* program_groups = new OptixProgramGroup[num_progs];
@@ -927,13 +928,13 @@ inline void createPipeline()
     isPipelineCreated = true;
 
     OptixStackSizes stack_sizes = {};
-    OPTIX_CHECK( optixUtilAccumulateStackSizes( raygen_prog_group,    &stack_sizes ) );
-    OPTIX_CHECK( optixUtilAccumulateStackSizes( radiance_miss_group,  &stack_sizes ) );
-    OPTIX_CHECK( optixUtilAccumulateStackSizes( occlusion_miss_group, &stack_sizes ) );
+    OPTIX_CHECK( optixUtilAccumulateStackSizes( raygen_prog_group,    &stack_sizes, pipeline ) );
+    OPTIX_CHECK( optixUtilAccumulateStackSizes( radiance_miss_group,  &stack_sizes, pipeline ) );
+    OPTIX_CHECK( optixUtilAccumulateStackSizes( occlusion_miss_group, &stack_sizes, pipeline ) );
     for(int i=0;i<rtMaterialShaders.size();i++)
-    {
-        OPTIX_CHECK( optixUtilAccumulateStackSizes( rtMaterialShaders[i].m_radiance_hit_group, &stack_sizes ) );
-        OPTIX_CHECK( optixUtilAccumulateStackSizes( rtMaterialShaders[i].m_occlusion_hit_group, &stack_sizes ) );
+    {        
+        OPTIX_CHECK( optixUtilAccumulateStackSizes( rtMaterialShaders[i].m_radiance_hit_group, &stack_sizes, pipeline ) );
+        OPTIX_CHECK( optixUtilAccumulateStackSizes( rtMaterialShaders[i].m_occlusion_hit_group, &stack_sizes, pipeline ) );
     }
     uint32_t max_trace_depth = 2;
     uint32_t max_cc_depth = 0;
