@@ -7,6 +7,8 @@
 // #include <nanovdb/NanoVDB.h>
 #include <zeno/types/LightObject.h>
 
+#define TRI_PER_MESH (1<<29) //2^29
+
 enum RayType
 {
     RAY_TYPE_RADIANCE  = 0,
@@ -25,11 +27,12 @@ enum VisibilityMask {
 struct GenericLight
 {
     float3 T, B, N;
-    float3 emission;
+    float3 color;
     float intensity;
     float vIntensity;
 
-    float spread;
+    float spreadMajor;
+    float spreadMinor;
     float spreadNormalize;
     float maxDistance;
     float falloffExponent;
@@ -59,15 +62,20 @@ struct GenericLight
 
     pbrt::LightBounds bounds() {
 
-        auto Phi = dot(emission, make_float3(1.0f/3.0f));
+        auto Phi = intensity * dot(color, make_float3(1.f/3.f));
         bool doubleSided = config & zeno::LightConfigDoubleside;
 
         if (this->type == zeno::LightType::IES) {
-            return  this->cone.BoundAsLight(Phi, false);
+            return this->cone.BoundAsLight(Phi, false);
+        }
+
+        if (this->type == zeno::LightType::Spot) {
+            return this->cone.BoundAsLight(Phi, false);
         }
         
         switch (this->shape) {
         case zeno::LightShape::Plane:
+        case zeno::LightShape::Ellipse:
             return this->rect.BoundAsLight(Phi, doubleSided);
         case zeno::LightShape::Sphere:
             return this->sphere.BoundAsLight(Phi, false);
@@ -80,13 +88,13 @@ struct GenericLight
         return pbrt::LightBounds();
     }
 
-    void setConeData(const float3& p, const float3& dir, float range, float coneAngle) {
+    void setConeData(const float3& p, const float3& dir, float range, float spreadAngle, float falloffAngle=0.0f) {
         this->cone.p = p;
         this->cone.range = range;
 
         this->cone.dir = dir;
-        this->cone.cosFalloffStart = cosf(coneAngle);
-        this->cone.cosFalloffEnd = cosf(coneAngle + __FLT_EPSILON__);
+        this->cone.cosFalloffStart = cosf(spreadAngle - falloffAngle);
+        this->cone.cosFalloffEnd = cosf(spreadAngle);
     }
 
     void setRectData(const float3& v0, const float3& v1, const float3& v2, const float3& normal) {
@@ -176,6 +184,8 @@ struct Params
     uint32_t firstSphereLightIdx;
     uint32_t firstTriangleLightIdx;
 
+    uint32_t maxInstanceID;
+
     unsigned long long lightTreeSampler;
     unsigned long long triangleLightCoordsBuffer;
     unsigned long long triangleLightNormalBuffer;
@@ -251,7 +261,7 @@ struct HitGroupData
     float4* clr;
     float4* tan;
     unsigned short* lightMark;
-    int* meshIdxs;
+    uint32_t* auxOffset;
     
     float3* instPos;
     float3* instNrm;

@@ -57,7 +57,7 @@ std::string getZenoVersion() {
     int day = std::stoi(std::string(date + 4, 2));
     int year = std::stoi(std::string(date + 7, 4));
 
-#if 0
+#ifdef ZENO_WIN32_RC
     TCHAR szFilename[MAX_PATH + 1] = {0};
     if (GetModuleFileName(NULL, szFilename, MAX_PATH) == 0)
     {

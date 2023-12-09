@@ -25,7 +25,7 @@ class ZenoSettingsManager : public QObject
     Q_OBJECT
 public:
     static ZenoSettingsManager& GetInstance();
-    void setValue(const QString& name, const QVariant& value);
+    bool setValue(const QString& name, const QVariant& value);
     QVariant getValue(const QString& zsName) const;
 
     const int getShortCut(const QString &key);

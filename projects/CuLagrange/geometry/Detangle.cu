@@ -208,7 +208,7 @@ struct Detangle2 : zeno::INode {
             zsparticles->setMeta(GIA::GIA_CS_ET_BUFFER_KEY,
                 zs::bht<int,2,int>{verts.get_allocator(),GIA::DEFAULT_MAX_GIA_INTERSECTION_PAIR});
         }
-        auto& csET = zsparticles->readMeta<zs::bht<int,2,int>>(GIA::GIA_CS_ET_BUFFER_KEY);
+        auto& csET = zsparticles->readMeta<zs::bht<int,2,int> &>(GIA::GIA_CS_ET_BUFFER_KEY);
 
         // if(!zsparticles->hasMeta(GIA::GIA_CS_EKT_BUFFER_KEY)) {
         //     zsparticles->setMeta(GIA::GIA_CS_EKT_BUFFER_KEY,
@@ -310,20 +310,6 @@ struct Detangle2 : zeno::INode {
                     kttemp.tuple(dim_c<3>,"nrm",kti) = LSL_GEO::facet_normal(ktvs[0],ktvs[1],ktvs[2]);
                     kttemp("d",kti) = -kttemp.pack(dim_c<3>,"nrm",kti).dot(ktvs[0]);
             });         
-
-            // if(!kboundary->hasBvh(GIA::GIA_TRI_BVH_BUFFER_KEY)) {
-            //     kboundary->bvh(GIA::GIA_TRI_BVH_BUFFER_KEY) = LBvh<3,int,T>{};
-            //     auto& ktri_bvh = kboundary->bvh(GIA::GIA_TRI_BVH_BUFFER_KEY); 
-            //     auto kbvs = retrieve_bounding_volumes(cudaExec,kvtemp,ktris,wrapv<3>{},(T)0,"x");
-            //     ktri_bvh.build(cudaExec,kbvs);
-            // }else {
-            //     auto need_refit_bvh = get_input2<bool>("refit_kboundary_bvh");
-            //     if(need_refit_bvh) {
-            //         auto& ktri_bvh = kboundary->bvh(GIA::GIA_TRI_BVH_BUFFER_KEY); 
-            //         auto kbvs = retrieve_bounding_volumes(cudaExec,kvtemp,ktris,wrapv<3>{},(T)0,"x");
-            //         ktri_bvh.refit(cudaExec,kbvs);
-            //     }
-            // }
 
             auto kbvs = retrieve_bounding_volumes(cudaExec,kvtemp,ktris,wrapv<3>{},(T)0,"x");
             ktri_bvh.build(cudaExec,kbvs);     
@@ -794,7 +780,7 @@ struct VisualizeDetanglePair : zeno::INode {
             zsparticles->setMeta(GIA::GIA_CS_ET_BUFFER_KEY,
                 zs::bht<int,2,int>{verts.get_allocator(),GIA::DEFAULT_MAX_GIA_INTERSECTION_PAIR});
         }
-        auto& csET = zsparticles->readMeta<zs::bht<int,2,int>>(GIA::GIA_CS_ET_BUFFER_KEY);  
+        auto& csET = zsparticles->readMeta<zs::bht<int,2,int> &>(GIA::GIA_CS_ET_BUFFER_KEY);  
         
         auto has_bvh = zsparticles->hasBvh(GIA::GIA_TRI_BVH_BUFFER_KEY);
         if(!zsparticles->hasBvh(GIA::GIA_TRI_BVH_BUFFER_KEY))

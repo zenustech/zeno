@@ -48,9 +48,9 @@ static __inline__ __device__ void cihouSphereLightUV(LightSampleRecord &lsr, Gen
 
     if (zeno::LightShape::Sphere == light.shape) {
         mat3 localAxis = {
-            reinterpret_cast<vec3&>(light.T), 
-            reinterpret_cast<vec3&>(light.N), 
-            reinterpret_cast<vec3&>(light.B) };
+            -reinterpret_cast<vec3&>(light.T), 
+            -reinterpret_cast<vec3&>(light.N), 
+            +reinterpret_cast<vec3&>(light.B) };
 
         auto sampleDir = localAxis * (lsr.n);
         lsr.uv = vec2(sphereUV(sampleDir, false));
@@ -72,7 +72,7 @@ static __inline__ __device__ bool cihouMaxDistanceContinue(LightSampleRecord &ls
 
 static __inline__ __device__ vec3 cihouLightEmission(LightSampleRecord &lsr, GenericLight &light, uint32_t depth) {
 
-    auto vIntensity = (light.vIntensity < 0.0f) ? light.intensity : light.vIntensity;
+    auto intensity = (depth == 0 && light.vIntensity >= 0.0f) ? light.vIntensity : light.intensity;
 
     if (light.tex != 0u) {
         auto color = texture2D(light.tex, lsr.uv);
@@ -80,16 +80,11 @@ static __inline__ __device__ vec3 cihouLightEmission(LightSampleRecord &lsr, Gen
             color = pow(color, light.texGamma);
         }
 
-        auto scaler = (depth > 0)? light.intensity : vIntensity;
-        color = color * scaler;
+        color = color * intensity;
         return *(vec3*)&color;
     }
-
-    if (depth == 0 && vIntensity >= 0.0f) {
-        return light.emission * vIntensity / light.intensity;
-    }
     
-    return light.emission;
+    return light.color * intensity;
 }
 
 static __inline__ __device__ float sampleIES(const float* iesProfile, float h_angle, float v_angle) {
@@ -209,7 +204,8 @@ namespace detail {
 
 template<bool _MIS_, typename TypeEvalBxDF, typename TypeAux = void>
 static __forceinline__ __device__
-void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& shadingP, const float3& ray_dir, TypeEvalBxDF& evalBxDF, TypeAux* taskAux=nullptr) {
+void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& shadingP, const float3& ray_dir, 
+                    TypeEvalBxDF& evalBxDF, TypeAux* taskAux=nullptr, float3* RadianceWithoutShadow=nullptr) {
 
     const float3 wo = normalize(-ray_dir); 
     float3 light_attenuation = vec3(1.0f);
@@ -251,20 +247,64 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
             sampleSphereIES(lsr, {}, shadingP, light.cone.p, radius);
             if (lsr.PDF <= 0.0f) return; 
 
-            auto v_angle = acos(dot(-lsr.dir, light.N));
-            auto h_angle = acos(dot(-lsr.dir, light.T));
+            auto v_angle = acosf(dot(-lsr.dir, light.N));
+            auto h_angle = acosf(dot(-lsr.dir, light.T));
 
             auto intensity = sampleIES(iesProfile, h_angle, v_angle);
             if (intensity <= 0.0f) return;
-
             lsr.intensity *= intensity;
+        } 
+        else if (light.type == zeno::LightType::Spot) {
 
-        } else if (light.type == zeno::LightType::Direction) {
+            light.cone.sample(&lsr, {0,0}, shadingP);
+            lsr.isDelta = true;
+            
+            if (lsr.intensity <= 0) { return; }
+
+            auto n_len = dot(-lsr.dir, light.N);
+            auto t_len = dot(-lsr.dir, light.T);
+            auto b_len = dot(-lsr.dir, light.B);
+
+            auto tanU = t_len / n_len;
+            auto tanV = b_len / n_len;
+
+            auto hfov = tanf(light.spreadMajor * 0.5f * M_PIf);
+            if (fabsf(tanU) > hfov || fabsf(tanV) > hfov) {return;}
+            lsr.uv = 0.5f + 0.5f * float2 { tanU/hfov, tanV/hfov };
+        }
+        else if (light.type == zeno::LightType::Projector) {
+
+            light.point.SampleAsLight(&lsr, {}, shadingP);
+            lsr.isDelta = true;
+
+            auto n_len = dot(-lsr.dir, light.N);
+            auto t_len = dot(-lsr.dir, light.T);
+            auto b_len = dot(-lsr.dir, light.B);
+
+            auto tanU = t_len / n_len;
+            auto tanV = b_len / n_len;
+
+            auto spreadU = clamp(light.spreadMajor, 0.001f, 0.999f);
+            auto spreadV = clamp(light.spreadMinor, 0.000f, 0.999f);
+            if (spreadV <= 0) { spreadV = spreadU; }
+
+            auto Ufov = tanf(spreadU * 0.5f * M_PIf);
+            auto Vfov = tanf(spreadV * 0.5f * M_PIf);
+            
+            if (fabsf(tanU) > Ufov || fabsf(tanV) > Vfov) {return;}
+            lsr.uv = 0.5f + 0.5f * float2 { tanU/Ufov, tanV/Vfov };
+        }
+        else if(light.shape == zeno::LightShape::Point) {
+            light.point.SampleAsLight(&lsr, {}, shadingP);
+        }
+        else if (light.type == zeno::LightType::Direction) {
 
             bool valid = false;
             switch (light.shape) {
                 case zeno::LightShape::Plane:
-                    valid = light.rect.hitAsLight(&lsr, shadingP, -light.N);  break;
+                case zeno::LightShape::Ellipse: {
+                    valid = light.rect.hitAsLight(&lsr, shadingP, -light.N); break;
+                }
                 case zeno::LightShape::Sphere: {
                     auto dir = normalize(light.sphere.center - shadingP);
                     valid = light.sphere.hitAsLight(&lsr, shadingP, dir); 
@@ -294,20 +334,35 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
                     float2 uvScale, uvOffset;
                     bool valid = SpreadClampRect(rect.v, rect.axisX, rect.lenX, rect.axisY, rect.lenY, 
                                                 rect.normal, shadingP, 
-                                                light.spread, uvScale, uvOffset);
+                                                light.spreadMajor, uvScale, uvOffset);
                     if (!valid) return;
 
                     rect.SampleAsLight(&lsr, uu, shadingP);
                     lsr.uv = uvOffset + lsr.uv * uvScale;
                     break;
                 }
+                case zeno::LightShape::Ellipse: { 
+
+                    auto rect = light.rect;
+                    float2 uvScale, uvOffset;
+                    bool valid = SpreadClampRect(rect.v, rect.axisX, rect.lenX, rect.axisY, rect.lenY, 
+                                                rect.normal, shadingP, 
+                                                light.spreadMajor, uvScale, uvOffset, light.rect.isEllipse);
+                    if (!valid) return;
+
+                    rect.isEllipse = false; // disable ellipse test for sub rect
+                    rect.SampleAsLight(&lsr, uu, shadingP);
+                    lsr.uv = uvOffset + lsr.uv * uvScale;
+                    if (length(lsr.uv-0.5f) > 0.5f) { 
+                        return; // not inside ellipse
+                    }
+                    break;
+                }   
                 case zeno::LightShape::Sphere: {
                     light.sphere.SampleAsLight(&lsr, uu, shadingP); 
                     cihouSphereLightUV(lsr, light);
                     break; 
-                }
-                case zeno::LightShape::Point:
-                    light.point.SampleAsLight(&lsr, uu, shadingP);  break;
+                }   
                 case zeno::LightShape::TriangleMesh: {
                     float3* normalBuffer = reinterpret_cast<float3*>(params.triangleLightNormalBuffer);
                     float2* coordsBuffer = reinterpret_cast<float2*>(params.triangleLightCoordsBuffer);
@@ -316,13 +371,13 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
                 default: break;
             }
 
-            if (light.spread < 1.0f) {
+            if (light.spreadMajor < 1.0f) {
                 
-                auto void_angle = 0.5f * (1.0f - light.spread) * M_PIf;
+                auto void_angle = 0.5f * (1.0f - light.spreadMajor) * M_PIf;
                 auto atten = light_spread_attenuation(
                                         lsr.dir,
                                         lsr.n,
-                                        light.spread,
+                                        light.spreadMajor,
                                         tanf(void_angle),
                                         light.spreadNormalize);
                 lsr.intensity *= atten;
@@ -346,23 +401,34 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
         if (lsr.NoL > _FLT_EPL_ && lsr.PDF > _FLT_EPL_) {
 
             traceOcclusion(params.handle, shadingP, lsr.dir, 0, lsr.dist, &shadow_prd);
-            
             light_attenuation = shadow_prd.shadowAttanuation;
 
-            if (lengthSquared(light_attenuation) > 0.0f) {
+            if (nullptr==RadianceWithoutShadow && lengthSquared(light_attenuation) == 0.0f) return;
                 
                 auto bxdf_value = evalBxDF(lsr.dir, wo, scatterPDF);
                 auto misWeight = 1.0f;
 
+            if constexpr(_MIS_) {
                 if (!light.isDeltaLight() && !lsr.isDelta) {
                     misWeight = BRDFBasics::PowerHeuristic(lsr.PDF, scatterPDF);
                 }
+            }
 
                 emission *= lsr.intensity;
 
-                prd->radiance = light_attenuation * emission * bxdf_value;
-                prd->radiance *= misWeight / lsr.PDF;             
-            }
+                float3 radianceNoShadow = emission * bxdf_value;
+                radianceNoShadow *= misWeight / lsr.PDF;
+
+                if (nullptr != RadianceWithoutShadow) {
+                    *RadianceWithoutShadow = radianceNoShadow;
+                }
+
+                if constexpr (!detail::is_void<TypeAux>::value) {
+                    auto tmp = light_attenuation * misWeight / lsr.PDF;
+                    (*taskAux)(tmp);
+                }// TypeAux
+
+                prd->radiance = radianceNoShadow * light_attenuation; // with shadow
         }
 
     } else {
@@ -400,13 +466,14 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
                         1e-5f, // tmin
                         1e16f, // tmax,
                         &shadow_prd);
-
             light_attenuation = shadow_prd.shadowAttanuation;
+
+            if (nullptr==RadianceWithoutShadow && lengthSquared(light_attenuation) == 0.0f) return;
 
             auto inverseProb = 1.0f/_SKY_PROB_;
             auto bxdf_value = evalBxDF(sun_dir, wo, scatterPDF, illum);
 
-            vec3 tmp(1.0f);
+            float tmp = 1.0f;
 
             if constexpr(_MIS_) {
                 float misWeight = BRDFBasics::PowerHeuristic(tmpPdf, scatterPDF);
@@ -414,18 +481,22 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
                 misWeight = scatterPDF>1e-5f?misWeight:0.0f;
                 misWeight = tmpPdf>1e-5f?misWeight:0.0f;
 
-                tmp = (1.0f / NSamples) * misWeight * inverseProb * light_attenuation  / tmpPdf;
+                tmp = (1.0f / NSamples) * misWeight * inverseProb  / tmpPdf;
             } else {
-                tmp = (1.0f / NSamples) * inverseProb * light_attenuation / tmpPdf;
+                tmp = (1.0f / NSamples) * inverseProb / tmpPdf;
             }
 
-            prd->radiance += (float3)(tmp) * bxdf_value;
+            float3 radianceNoShadow = tmp * bxdf_value; 
+
+            if (nullptr != RadianceWithoutShadow) {
+                *RadianceWithoutShadow = radianceNoShadow;
+            }
 
             if constexpr (!detail::is_void<TypeAux>::value) {
-                if (taskAux != nullptr) {
-                    (*taskAux)(tmp);
-                }
+                (*taskAux)(tmp * light_attenuation);
             }// TypeAux
+
+            prd->radiance += radianceNoShadow * light_attenuation; // with shadow
         }
     }
 };

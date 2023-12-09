@@ -17,7 +17,6 @@
 #include "tinyexr.h"
 #include "zeno/utils/string.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#define STB_IMAGE_WRITE_STATIC
 #include <tinygltf/stb_image_write.h>
 #include <vector>
 #include <glm/glm.hpp>
@@ -736,6 +735,39 @@ ZENDEFNODE(EnvMapRot, {
     {
         {"float", "rotation"},
         {"vec3f", "rotation3d"},
+    },
+    {},
+    {"comp"},
+});
+
+struct PrimLoadExrToChannel : INode {
+    void apply() override {
+        auto path = get_input2<std::string>("path");
+        auto image = readExrFile(path);
+        int h = image->userData().get2<int>("h");
+        int w = image->userData().get2<int>("w");
+
+        auto prim = get_input<PrimitiveObject>("prim");
+        if (w * h != prim->size()) {
+            throw zeno::makeError("PrimLoadExrToChannel image prim w and h not match!");
+        }
+        auto &channel = prim->add_attr<vec3f>(get_input2<std::string>("channel"));
+        for (auto i = 0; i < w * h; i++) {
+            channel[i] = image->verts[i];
+        }
+
+        set_output2("output", prim);
+    }
+};
+
+ZENDEFNODE(PrimLoadExrToChannel, {
+    {
+        {"readpath", "path", ""},
+        {"prim"},
+        {"string", "channel", "clr"},
+    },
+    {
+        {"output"},
     },
     {},
     {"comp"},

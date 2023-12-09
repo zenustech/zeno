@@ -30,6 +30,7 @@ set(ZENO_EXTENSIONS
     CUDA
     CuEulerian
     CuLagrange
+    PyZpc
     Audio
     ImgCV
     GUI
@@ -41,6 +42,7 @@ set(ZENO_EXTENSIONS
     ChatZeno
     RPC
     Roads
+    Geometry
     )
 
 foreach (name IN ITEMS ${ZENO_EXTENSIONS})

@@ -20,7 +20,7 @@
 #include "../geometry/kernel/calculate_facet_normal.hpp"
 #include "../geometry/kernel/topology.hpp"
 #include "../geometry/kernel/compute_characteristic_length.hpp"
-#include "../geometry/kernel/calculate_bisector_normal.hpp"
+// #include "../geometry/kernel/calculate_bisector_normal.hpp"
 
 #include "../geometry/kernel/tiled_vector_ops.hpp"
 #include "../geometry/kernel/geo_math.hpp"
@@ -1109,7 +1109,7 @@ struct FleshDynamicStepping : INode {
 
                                 auto collisionEps = dist > 0 ?  out_collisionEps : in_collisionEps;
                                 auto barySum = (T)1.0;
-                                T distance = LSL_GEO::pointTriangleDistance(tvs[0],tvs[1],tvs[2],p,barySum);
+                                T distance = LSL_GEO::get_vertex_triangle_distance(tvs[0],tvs[1],tvs[2],p,barySum);
 
                                 if(distance > collisionEps)
                                     return;
@@ -1180,7 +1180,7 @@ struct FleshDynamicStepping : INode {
                                 
                                 auto collisionEps = dist > 0 ? out_collisionEps : in_collisionEps;
                                 auto barySum = (T)1.0;
-                                T distance = LSL_GEO::pointTriangleDistance(tvs[0],tvs[1],tvs[2],kp,barySum);
+                                T distance = LSL_GEO::get_vertex_triangle_distance(tvs[0],tvs[1],tvs[2],kp,barySum);
 
                                 if(distance > collisionEps)
                                     return;       
@@ -2008,10 +2008,6 @@ struct FleshDynamicStepping : INode {
             TILEVEC_OPS::fill(cudaPol,sttemp,"grad",(T)0.0);
             TILEVEC_OPS::fill(cudaPol,sttemp,"H",(T)0.0);
 
-            // if(!calculate_facet_normal(cudaPol,vtemp,"xn",tris,sttemp,"nrm")){
-            //     throw std::runtime_error("fail updating facet normal");
-            // }  
-
             A.findInversion(cudaPol,vtemp,etemp);  
 
             // match([&](auto &elasticModel,auto &anisoModel) -> std::enable_if_t<zs::is_same_v<RM_CVREF_T(anisoModel),zs::AnisotropicArap<float>>> {...},[](...) {
@@ -2079,15 +2075,15 @@ struct FleshDynamicStepping : INode {
                 zs::bht<int,2,int> csPT{vtemp.get_allocator(),10000};
                 csPT.reset(cudaPol,true);
             #if 0
-                auto nm_csPT = COLLISION_UTILS::do_tetrahedra_surface_mesh_and_kinematic_boundary_collision_detection(cudaPol,
-                    kinematics[0],
-                    vtemp,"xn",
-                    eles,
-                    points,tris,
-                    halfedges,
-                    out_collisionEps,
-                    in_collisionEps,
-                    csPT,false);
+                // auto nm_csPT = COLLISION_UTILS::do_tetrahedra_surface_mesh_and_kinematic_boundary_collision_detection(cudaPol,
+                //     kinematics[0],
+                //     vtemp,"xn",
+                //     eles,
+                //     points,tris,
+                //     halfedges,
+                //     out_collisionEps,
+                //     in_collisionEps,
+                //     csPT,false);
                 
                 COLLISION_UTILS::evaluate_tri_kvert_collision_gradient_and_hessian(cudaPol,
                     kinematics,
@@ -2099,15 +2095,15 @@ struct FleshDynamicStepping : INode {
                 std::cout << "nm_csPT = " << nm_csPT << "\tkin_cforce : " << cforce << std::endl;
             #else
                 std::cout << "apply kinematic collision" << std::endl;
-                auto nm_csPT = COLLISION_UTILS::do_tetrahedra_surface_points_and_kinematic_boundary_collision_detection(cudaPol,
-                    kinematics[0],
-                    vtemp,"xn",
-                    eles,
-                    points,tris,
-                    halfedges,
-                    out_collisionEps,
-                    in_collisionEps,
-                    csPT,false,false);
+                // auto nm_csPT = COLLISION_UTILS::do_tetrahedra_surface_points_and_kinematic_boundary_collision_detection(cudaPol,
+                //     kinematics[0],
+                //     vtemp,"xn",
+                //     eles,
+                //     points,tris,
+                //     halfedges,
+                //     out_collisionEps,
+                //     in_collisionEps,
+                //     csPT,false,false);
 
                 COLLISION_UTILS::evaluate_ktri_vert_collision_gradient_and_hessian(cudaPol,
                     kinematics[0],
@@ -2120,11 +2116,6 @@ struct FleshDynamicStepping : INode {
                 std::cout << "nm_csPT = " << nm_csPT << "\tkin_cforce : " << cforce << std::endl;
             #endif
             }
-
-
-            // if(!calculate_facet_normal(cudaPol,vtemp,"xn",tris,sttemp,"nrm")){
-            //     throw std::runtime_error("fail updating facet normal");
-            // }  
 
 
             if(turn_on_self_collision) {

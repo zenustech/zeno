@@ -20,10 +20,10 @@ ENDFOREACH(item)
 qt5_add_big_resources(source ${bigresource})  # cihou msvc: fatal error C1060: compiler is out of heap space
 qt5_add_resources(source ${resource})
 
-#if (WIN32)
-#    enable_language("RC")
-#    set (WIN32_RESOURCES ${CMAKE_CURRENT_SOURCE_DIR}/zenoedit.rc)
-#endif()
+if (ZENO_WIN32_RC)
+    enable_language("RC")
+    set (WIN32_RESOURCES ${CMAKE_CURRENT_SOURCE_DIR}/zenoedit.rc)
+endif()
 
 add_executable(zenoedit ${source} ${WIN32_RESOURCES})
 # Add a dependency to ensure that the resource file is deleted before being regenerated
@@ -85,6 +85,10 @@ endif()
 
 if (ZENO_OPTIX_PROC)
     target_compile_definitions(zenoedit PRIVATE -DZENO_OPTIX_PROC)
+endif()
+
+if (ZENO_WIN32_RC)
+    target_compile_definitions(zenoedit PRIVATE -DZENO_WIN32_RC)
 endif()
 
 if (ZENO_INSTALL_TARGET)

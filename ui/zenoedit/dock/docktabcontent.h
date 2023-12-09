@@ -159,6 +159,7 @@ private:
     ZToolBarButton* m_rotateBtn;
     ZToolBarButton* m_resizeViewport;
     QCheckBox *m_background;
+    QCheckBox *m_uv_mode = nullptr;
 
     QComboBox* m_cbRes;
     QAction* m_pFocus;

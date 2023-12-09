@@ -117,6 +117,17 @@ ZENO_API void INode::preApply() {
         if (getTmpCache())
             return;
     }
+    else if (dc.amIDirty(myname) && !bTmpCache)//remove cache
+    {
+        std::string fileName = myname + ".zenocache";
+        int frameid = zeno::getSession().globalState->frameid;
+        const auto& path = std::filesystem::u8path(zeno::getSession().globalComm->objTmpCachePath + "/" + std::to_string(1000000 + frameid).substr(1) + "/" + fileName);
+        if (std::filesystem::exists(path))
+        {
+            std::filesystem::remove(path);
+            zeno::log_info("remove cache file: {}", path.string());
+        }
+    }
     for (auto const &[ds, bound]: inputBounds) {
         requireInput(ds);
     }
@@ -264,33 +275,9 @@ ZENO_API zany INode::get_formula(std::string const &id) const
     if (auto formulas = dynamic_cast<zeno::StringObject *>(value.get())) 
     {
         std::string code = formulas->get();
-
-        auto& desc = nodeClass->desc;
-        if (!desc)
-            return value;
-
-        bool isStrFmla = false;
-        for (auto const& [type, name, defl, _] : desc->inputs) {
-            if (name == id && (type == "string" || type == "writepath" || type == "readpath" || type == "multiline_string")) {
-                isStrFmla = true;
-                break;
-            }
-        }
-        if (!isStrFmla) {
-            for (auto const& [type, name, defl, _] : desc->params) {
-                auto name_ = name + ":";
-                if (id == name_ &&
-                    (type == "string" || type == "writepath" || type == "readpath" || type == "multiline_string")) {
-                    isStrFmla = true;
-                    break;
-                }
-            }
-        }
-
-        //remove '='
-        code.replace(0, 1, "");
-
-        if (isStrFmla) {
+        if (code.find("=") == 0)
+        { 
+            code.replace(0, 1, "");
             auto res = getThisGraph()->callTempNode("StringEval", { {"zfxCode", objectFromLiterial(code)} }).at("result");
             value = objectFromLiterial(std::move(res));
         }

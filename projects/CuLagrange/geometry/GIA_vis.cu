@@ -691,7 +691,7 @@ struct VisualizeICMGradient : zeno::INode {
                 vec3 tri_bary{};
                 vec2 edge_bary{};
 
-                LSL_GEO::intersectionBaryCentric(halfedge_vertices[0],
+                LSL_GEO::get_segment_triangle_intersection_barycentric_coordinates(halfedge_vertices[0],
                     halfedge_vertices[1],
                     tri_vertices[0],
                     tri_vertices[1],

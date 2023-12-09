@@ -396,7 +396,7 @@ namespace GIA {
                     // }
 
                     // {
-                    //     // if(!LSL_GEO::isRayIntersectTriangle(vs,ve - vs,tvs[0],tvs[1],tvs[2],eps))
+                    //     // if(!LSL_GEO::is_ray_triangle_intersection(vs,ve - vs,tvs[0],tvs[1],tvs[2],eps))
                     //     //     return;
                     // }
 #else
@@ -424,7 +424,7 @@ namespace GIA {
                         auto ci = res.insert(vec2i{ei,ti});
                         if(use_barycentric_interpolator) {
                             zs::vec<T,3> bary{};
-                            LSL_GEO::pointTriangleBaryCentric(tvs[0],tvs[1],tvs[2],p,bary);
+                            LSL_GEO::get_triangle_vertex_barycentric_coordinates(tvs[0],tvs[1],tvs[2],p,bary);
                             bary_buffer.tuple(dim_c<4>,"bary",ci) = zs::vec<T,4>{1 - t,bary[0],bary[1],bary[2]};
                         }
                         bary_buffer.tuple(dim_c<2>,"inds",ci) = zs::vec<int,2>{ei,ti}.reinterpret_bits(float_c);
@@ -597,7 +597,7 @@ namespace GIA {
                         auto ci = res.insert(vec2i{ei,kti});
                         if(use_barycentric_interpolator) {
                             zs::vec<T,3> bary{};
-                            LSL_GEO::pointTriangleBaryCentric(ktvs[0],ktvs[1],ktvs[2],p,bary);
+                            LSL_GEO::get_triangle_vertex_barycentric_coordinates(ktvs[0],ktvs[1],ktvs[2],p,bary);
                             bary_buffer.tuple(dim_c<4>,"bary",ci) = zs::vec<T,4>{1-t,bary[0],bary[1],bary[2]};
                         }
                         bary_buffer.tuple(dim_c<2>,"inds",ci) = zs::vec<int,2>{ei,kti}.reinterpret_bits(float_c);
@@ -699,7 +699,7 @@ namespace GIA {
 //                         // auto ci = res.insert(vec2i{ei,kti});
 //                         if(use_barycentric_interpolator) {
 //                             zs::vec<T,3> bary{};
-//                             LSL_GEO::pointTriangleBaryCentric(tvs[0],tvs[1],tvs[2],p,bary);
+//                             LSL_GEO::get_triangle_vertex_barycentric_coordinates(tvs[0],tvs[1],tvs[2],p,bary);
 //                             bary_buffer.tuple(dim_c<4>,"bary",ci) = zs::vec<T,4>{t,bary[0],bary[1],bary[2]};
 //                         }
 
@@ -744,7 +744,7 @@ namespace GIA {
         for(int i = 0;i != 3;++i)
             tps[i] = verts.pack(dim_c<3>,xtag,tri[i]);
         
-        LSL_GEO::intersectionBaryCentric(eps[0],eps[1],tps[0],tps[1],tps[2],edge_bary,tri_bary);
+        LSL_GEO::get_segment_triangle_intersection_barycentric_coordinates(eps[0],eps[1],tps[0],tps[1],tps[2],edge_bary,tri_bary);
     }
 
     template<typename TriTileVecHost,
@@ -1031,9 +1031,9 @@ namespace GIA {
         // find the intersection pairs and clone the result to host backend
         auto tri_bvh = LBvh<3,int,T>{};
         retrieve_self_intersection_tri_halfedge_pairs(pol,verts,xtag,tris,halfedges,tri_bvh,csHT);
-        bht<int,2,int> boundary_pairs_set{csHT.get_allocator(),MAX_BOUNDARY_POINTS};
+        bht<int,2,int> boundary_pairs_set{csHT.get_allocator(),DEFAULT_MAX_BOUNDARY_POINTS};
         boundary_pairs_set.reset(pol,true);
-        bht<int,2,int> turning_pairs_set{csHT.get_allocator(),MAX_NM_TURNING_POINTS};
+        bht<int,2,int> turning_pairs_set{csHT.get_allocator(),DEFAULT_MAX_NM_TURNING_POINTS};
         turning_pairs_set.reset(pol,true);
 
         pol(zip(zs::range(csHT.size()),csHT._activeKeys),[

@@ -29,24 +29,9 @@ namespace zeno {
                 fmt::print(fg(fmt::color::red),"the input ltopo has no \"fe_inds\" channel\n");
                 return false;
             }
-
-            // std::cout << "doing assemble" << std::endl;
-
-            // constexpr auto space = execspace_e::cuda;
-            // auto cudaPol = cuda_exec();
-            // cudaPol(zs::range(ltopo.size()),
-            //     [ltopo = proxy<space>({},ltopo)] ZS_LAMBDA(int li) mutable {
-            //         auto inds = ltopo.template pack<2>("fe_inds",li).reinterpret_bits(int_c);
-            //         printf("ltopo<%d> : %d %d\n",li,inds[0],inds[1]);
-            // });
-
-
-            // TILEVEC_OPS::fill<3>(pol,etemp,dstTag,zs::vec<T,3>::zeros());
             TILEVEC_OPS::fill(pol,etemp,dstTag,(T)0.0);
             TILEVEC_OPS::assemble_from(pol,ttemp,srcTag,etemp,dstTag,ltopo,"fe_inds");
-            // std::cout << "finish assemble" << std::endl;
             TILEVEC_OPS::normalized_channel<3>(pol,etemp,dstTag);
-            // std::cout << "finish normalize" << std::endl;
             return true;
     }
 

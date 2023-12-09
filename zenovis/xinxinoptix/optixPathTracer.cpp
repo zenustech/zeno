@@ -83,7 +83,6 @@ using namespace zeno::ChiefDesignerEXR;
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
-#define TRI_PER_MESH 4096
 #include <string_view>
 struct CppTimer {
     void tick() {
@@ -196,7 +195,8 @@ struct PathTracerState
     raii<CUdeviceptr>              d_tan;
     raii<CUdeviceptr>              d_lightMark;
     raii<CUdeviceptr>              d_mat_indices;
-    raii<CUdeviceptr>              d_meshIdxs;
+
+    raii<CUdeviceptr>              vertexAuxOffsetGlobal;
     
     raii<CUdeviceptr>              d_instPos;
     raii<CUdeviceptr>              d_instNrm;
@@ -778,17 +778,17 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
         ins.sbtOffset = 0;
         ins.visibilityMask = DefaultMatMask;
     }
+
+    std::vector<uint32_t> vertexAuxOffsetGlobal(num_instances);
+    uint32_t vertexAuxOffset = 0u;
     
-
-    std::vector<int> meshIdxs(num_instances);
-
-
     std::vector<float3> instPos(num_instances);
     std::vector<float3> instNrm(num_instances);
     std::vector<float3> instUv(num_instances);
     std::vector<float3> instClr(num_instances);
     std::vector<float3> instTang(num_instances);
     size_t sbt_offset = 0;
+
     for( size_t i = 0; i < g_staticAndDynamicMeshNum; ++i )
     {
         auto  mesh = m_meshes[i];
@@ -802,8 +802,9 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
         optix_instance.traversableHandle = mesh->gas_handle;
         memcpy( optix_instance.transform, mat3r4c, sizeof( float ) * 12 );
 
-        meshIdxs[i] = i; 
-        
+        vertexAuxOffsetGlobal[i] = vertexAuxOffset;
+        vertexAuxOffset += mesh->verts.size(); 
+
         instPos[i] = defaultInstPos;
         instNrm[i] = defaultInstNrm;
         instUv[i] = defaultInstUv;
@@ -828,7 +829,7 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
                 {
                     const auto &instMat = instMats[k];
                     float scale = instScales[k];
-                    float instMat4x4[12] = {
+                    float instMat3r4c[12] = {
                         instMat[0][0] * scale, instMat[1][0] * scale, instMat[2][0] * scale, instMat[3][0],
                         instMat[0][1] * scale, instMat[1][1] * scale, instMat[2][1] * scale, instMat[3][1],
                         instMat[0][2] * scale, instMat[1][2] * scale, instMat[2][2] * scale, instMat[3][2]};
@@ -837,9 +838,9 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
                     optix_instance.instanceId = static_cast<unsigned int>(instanceId);
                     optix_instance.visibilityMask = DefaultMatMask;
                     optix_instance.traversableHandle = mesh->gas_handle;
-                    memcpy(optix_instance.transform, instMat4x4, sizeof(float) * 12);
+                    memcpy(optix_instance.transform, instMat3r4c, sizeof(float) * 12);
 
-                    meshIdxs[instanceId] = meshesOffset; 
+                    vertexAuxOffsetGlobal[instanceId] = vertexAuxOffset; 
                     
                     instPos[instanceId] = instAttrs.pos[k];
                     instNrm[instanceId] = instAttrs.nrm[k];
@@ -849,6 +850,7 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
 
                     ++instanceId;
                 }
+                vertexAuxOffset += mesh->verts.size();
                 ++meshesOffset;
             }
         }
@@ -864,26 +866,27 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
                 optix_instance.traversableHandle = mesh->gas_handle;
                 memcpy(optix_instance.transform, mat3r4c, sizeof(float) * 12);
 
-                meshIdxs[instanceId] = meshesOffset; 
-                
+                vertexAuxOffsetGlobal[instanceId] = vertexAuxOffset; 
+
                 instPos[instanceId] = defaultInstPos;
                 instNrm[instanceId] = defaultInstNrm;
                 instUv[instanceId] = defaultInstUv;
                 instClr[instanceId] = defaultInstClr;
                 instTang[instanceId] = defaultInstTang;
-
+                
                 ++instanceId;
                 ++meshesOffset;
+
+                vertexAuxOffset += mesh->verts.size();
             }
         }
     }
 
-    state.d_meshIdxs.resize(sizeof(meshIdxs[0]) * meshIdxs.size(), 0);
-    // CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_meshIdxs.reset() ), sizeof(meshIdxs[0]) * meshIdxs.size()) );
+    state.vertexAuxOffsetGlobal.resize(sizeof(vertexAuxOffsetGlobal[0]) * vertexAuxOffsetGlobal.size(), 0);
     CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( (CUdeviceptr)state.d_meshIdxs ),
-                meshIdxs.data(),
-                sizeof(meshIdxs[0]) * meshIdxs.size(),
+                reinterpret_cast<void*>( (CUdeviceptr)state.vertexAuxOffsetGlobal ),
+                vertexAuxOffsetGlobal.data(),
+                sizeof(vertexAuxOffsetGlobal[0]) * vertexAuxOffsetGlobal.size(),
                 cudaMemcpyHostToDevice
                 ) );
     
@@ -993,6 +996,11 @@ void buildRootIAS()
             optix_instances.push_back( optix_instance );
         }
 
+        uint32_t MAX_INSTANCE_ID;
+        optixDeviceContextGetProperty( state.context,
+            OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID, &MAX_INSTANCE_ID, sizeof(MAX_INSTANCE_ID));
+        state.params.maxInstanceID = MAX_INSTANCE_ID;
+
         //process light
         if (lightsWrapper.lightTrianglesGas != 0)
         {
@@ -1003,7 +1011,7 @@ void buildRootIAS()
             auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
 
             opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
-            opinstance.instanceId = OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID-2;
+            opinstance.instanceId = MAX_INSTANCE_ID-2;
             opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
             opinstance.visibilityMask = LightMatMask;
             opinstance.traversableHandle = lightsWrapper.lightTrianglesGas;
@@ -1021,7 +1029,7 @@ void buildRootIAS()
             auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
 
             opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
-            opinstance.instanceId = OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID-1;
+            opinstance.instanceId = MAX_INSTANCE_ID-1;
             opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
             opinstance.visibilityMask = LightMatMask;
             opinstance.traversableHandle = lightsWrapper.lightPlanesGas;
@@ -1039,7 +1047,7 @@ void buildRootIAS()
             auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
 
             opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
-            opinstance.instanceId = OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID;
+            opinstance.instanceId = MAX_INSTANCE_ID;
             opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
             opinstance.visibilityMask = LightMatMask;
             opinstance.traversableHandle = lightsWrapper.lightSpheresGas;
@@ -1179,7 +1187,7 @@ static void createSBT( PathTracerState& state )
             hitgroup_records[sbt_idx].data.clr             = reinterpret_cast<float4*>( (CUdeviceptr)state.d_clr );
             hitgroup_records[sbt_idx].data.tan             = reinterpret_cast<float4*>( (CUdeviceptr)state.d_tan );
             hitgroup_records[sbt_idx].data.lightMark       = reinterpret_cast<unsigned short*>( (CUdeviceptr)state.d_lightMark );
-            hitgroup_records[sbt_idx].data.meshIdxs        = reinterpret_cast<int*>( (CUdeviceptr)state.d_meshIdxs );
+            hitgroup_records[sbt_idx].data.auxOffset       = reinterpret_cast<uint32_t*>( (CUdeviceptr)state.vertexAuxOffsetGlobal );
             
             hitgroup_records[sbt_idx].data.instPos         = reinterpret_cast<float3*>( (CUdeviceptr)state.d_instPos );
             hitgroup_records[sbt_idx].data.instNrm         = reinterpret_cast<float3*>( (CUdeviceptr)state.d_instNrm );
@@ -1537,7 +1545,10 @@ void UpdateStaticMesh(std::map<std::string, int> const &mtlidlut) {
     if(!using20xx) {
         splitMesh(g_vertices, g_mat_indices, g_meshPieces, 0, 0);
         g_staticMeshNum = g_meshPieces.size();
+
         size_t vertSize = TRI_PER_MESH * 3 * g_meshPieces.size();
+        vertSize = std::min(g_vertices.size(), vertSize);
+
         g_staticVertNum = vertSize;
         g_vertices.resize(vertSize);
         g_clr.resize(vertSize);
@@ -1555,7 +1566,10 @@ void UpdateDynamicMesh(std::map<std::string, int> const &mtlidlut) {
     if(!using20xx) {
         splitMesh(g_vertices, g_mat_indices, g_meshPieces, g_staticMeshNum, g_staticVertNum);
         g_staticAndDynamicMeshNum = g_meshPieces.size();
+
         size_t vertSize = TRI_PER_MESH * 3 * g_meshPieces.size();
+        vertSize = std::min(g_vertices.size(), vertSize);
+
         g_staticAndDynamicVertNum = vertSize;
         g_vertices.resize(vertSize);
         g_clr.resize(vertSize);
@@ -1593,7 +1607,10 @@ void UpdateStaticInstMesh(const std::map<std::string, int> &mtlidlut)
 
             splitMesh(vertices, mat_indices, meshPieces, 0, 0);
             staticMeshNum = meshPieces.size();
+
             std::size_t vertSize = TRI_PER_MESH * 3 * meshPieces.size();
+            vertSize = std::min(vertices.size(), vertSize);
+            
             staticVertNum = vertSize;
             vertices.resize(vertSize);
             clr.resize(vertSize);
@@ -1626,7 +1643,10 @@ void UpdateDynamicInstMesh(std::map<std::string, int> const &mtlidlut)
             auto &meshPieces = instData.meshPieces;
 
             splitMesh(vertices, mat_indices, meshPieces, staticMeshNum, staticVertNum);
+            
             std::size_t vertSize = TRI_PER_MESH * 3 * meshPieces.size();
+            vertSize = std::min(vertices.size(), vertSize);
+
             vertices.resize(vertSize);
             clr.resize(vertSize);
             nrm.resize(vertSize);
@@ -1942,7 +1962,7 @@ static void addTriangleLightGeo(float3 p0, float3 p1, float3 p2) {
     geo.push_back(p0); geo.push_back(p1); geo.push_back(p2);
 }
 
-static void addLightPlane(float3 p0, float3 v1, float3 v2, float3 normal, float3 emission)
+static void addLightPlane(float3 p0, float3 v1, float3 v2, float3 normal)
 {
     float3 vert0 = p0, vert1 = p0 + v1, vert2 = p0 + v2, vert3 = p0 + v1 + v2;
 
@@ -2168,12 +2188,14 @@ void buildLightTree() {
         config |= dat.doubleside? zeno::LightConfigDoubleside: zeno::LightConfigNull;
         light.config = config;
 
-        light.emission.x = fmaxf(dat.emission.at(0), FLT_EPSILON);
-        light.emission.y = fmaxf(dat.emission.at(1), FLT_EPSILON);
-        light.emission.z = fmaxf(dat.emission.at(2), FLT_EPSILON);
+        light.color.x = fmaxf(dat.color.at(0), FLT_EPSILON);
+        light.color.y = fmaxf(dat.color.at(1), FLT_EPSILON);
+        light.color.z = fmaxf(dat.color.at(2), FLT_EPSILON);
 
-        light.spread = clamp(dat.spread, 0.0f, 1.0f);
-        auto void_angle = 0.5f * (1.0f - light.spread) * M_PIf;
+        light.spreadMajor = clamp(dat.spreadMajor, 0.0f, 1.0f);
+        light.spreadMinor = clamp(dat.spreadMinor, 0.0f, 1.0f);
+
+        auto void_angle = 0.5f * (1.0f - light.spreadMajor) * M_PIf;
         light.spreadNormalize = 2.f / (2.f + (2.f * void_angle - M_PIf) * tanf(void_angle));
 
         light.intensity  = dat.intensity;
@@ -2196,16 +2218,22 @@ void buildLightTree() {
         light.type  = magic_enum::enum_cast<zeno::LightType>(dat.type).value_or(zeno::LightType::Diffuse);
         light.shape = magic_enum::enum_cast<zeno::LightShape>(dat.shape).value_or(zeno::LightShape::Plane);
 
-        if (light.spread < 0.005f) {
+        if (light.spreadMajor < 0.005f) {
             light.type = zeno::LightType::Direction;
         }
 
-        if (light.shape == zeno::LightShape::Plane) {
+        if (light.shape == zeno::LightShape::Plane || light.shape == zeno::LightShape::Ellipse) {
 
             firstRectLightIdx = min(idx, firstRectLightIdx);
 
             light.setRectData(v0, v1, v2, light.N);
-            addLightPlane(v0, v1, v2, light.N, light.emission);
+            addLightPlane(v0, v1, v2, light.N);
+
+            light.rect.isEllipse = (light.shape == zeno::LightShape::Ellipse);
+
+            if (dat.fluxFixed > 0) {
+                light.intensity = dat.fluxFixed / light.rect.Area(); 
+            }
 
         } else if (light.shape == zeno::LightShape::Sphere) {
 
@@ -2214,13 +2242,40 @@ void buildLightTree() {
             light.setSphereData(center, radius);       
             addLightSphere(center, radius);
 
+            if (dat.fluxFixed > 0) {
+                auto intensity = dat.fluxFixed / light.sphere.area;
+                light.intensity = intensity;
+            }
+
         } else if (light.shape == zeno::LightShape::Point) {
             light.point = {center};
+            if (dat.fluxFixed > 0) {
+                auto intensity = dat.fluxFixed / (4 * M_PIf);
+                light.intensity = intensity;
+            }
+
         } else if (light.shape == zeno::LightShape::TriangleMesh) {
 
             firstTriangleLightIdx = min(idx, firstTriangleLightIdx);
             light.setTriangleData(v0, v1, v2, light.N, dat.coordsBufferOffset, dat.normalBufferOffset);
             addTriangleLightGeo(v0, v1, v2);
+        }
+
+        if (light.type == zeno::LightType::Spot) {
+
+            auto spread_major = clamp(light.spreadMajor, 0.01, 1.00);
+            auto spread_inner = clamp(light.spreadMinor, 0.01, 0.99);
+
+            auto major_angle = spread_major * 0.5f * M_PIf;
+            major_angle = fmaxf(major_angle, 2 * FLT_EPSILON);
+
+            auto inner_angle = spread_inner * major_angle;
+            auto falloff_angle = major_angle - inner_angle;
+
+            light.setConeData(center, light.N, 0.0f, major_angle, falloff_angle);
+        }
+        if (light.type == zeno::LightType::Projector) {
+            light.point = {center};
         }
 
         if ( OptixUtil::g_ies.count(dat.profileKey) > 0 ) {
@@ -2229,7 +2284,12 @@ void buildLightTree() {
             light.ies = val.ptr.handle;
             light.type = zeno::LightType::IES;
             //light.shape = zeno::LightShape::Point;
-            light.setConeData(center, light.N, radius, val.coneAngle);
+            light.setConeData(center, light.N, radius, val.coneAngle, FLT_EPSILON);
+
+            if (dat.fluxFixed > 0) {
+                auto scale = val.coneAngle / M_PIf;
+                light.intensity = dat.fluxFixed * scale * scale;
+            }
         } 
         
         if ( OptixUtil::g_tex.count(dat.textureKey) > 0 ) {
@@ -3372,7 +3432,7 @@ void set_window_size(int nx, int ny) {
 }
 
 void set_perspective(float const *U, float const *V, float const *W, float const *E, float aspect, float fov, float fpd, float aperture) {
-    set_perspective_by_fov(U,V,W,E,aspect,fov,0.0f,0.024f,fpd,aperture,0.0f,0.0f,0.0f,0.0f);
+    set_perspective_by_fov(U,V,W,E,aspect,fov,0,0.024f,fpd,aperture,0.0f,0.0f,0.0f,0.0f);
 }
 void set_perspective_by_fov(float const *U, float const *V, float const *W, float const *E, float aspect, float fov, int fov_type, float L, float focal_distance, float aperture, float pitch, float yaw, float h_shift, float v_shift) {
     auto &cam = state.params.cam;
@@ -3384,7 +3444,8 @@ void set_perspective_by_fov(float const *U, float const *V, float const *W, floa
     float half_radfov = fov * float(M_PI) / 360.0f;
     float half_tanfov = std::tan(half_radfov);
     cam.focal_length = L / 2.0f / half_tanfov;
-    if(aperture < 0.01f){
+    cam.focal_length = std::max(0.01f,cam.focal_length);
+    if(aperture > 24.0f || aperture <  0.5f){
         cam.aperture = 0.0f;
     }else{
         cam.aperture = cam.focal_length / aperture;
@@ -3411,7 +3472,7 @@ void set_perspective_by_fov(float const *U, float const *V, float const *W, floa
     cam.yaw = yaw;
     cam.horizontal_shift = h_shift;
     cam.vertical_shift = v_shift;
-    cam.focal_distance = focal_distance;
+    cam.focal_distance = std::max(cam.focal_length, focal_distance);
     camera_changed = true;
 }
 void set_perspective_by_focal_length(float const *U, float const *V, float const *W, float const *E, float aspect, float focal_length, float w, float h, float focal_distance, float aperture, float pitch, float yaw, float h_shift, float v_shift) {
@@ -3422,8 +3483,9 @@ void set_perspective_by_focal_length(float const *U, float const *V, float const
     cam.front = normalize(make_float3(W[0], W[1], W[2]));
 
     cam.focal_length = focal_length;
+    cam.focal_length = std::max(0.01f,cam.focal_length);
 
-    if(aperture < 0.01f){
+    if(aperture > 24.0f || aperture < 0.5f){
         cam.aperture = 0.0f;
     }else{
         cam.aperture = cam.focal_length / aperture;
@@ -3435,7 +3497,7 @@ void set_perspective_by_focal_length(float const *U, float const *V, float const
     cam.yaw = yaw;
     cam.horizontal_shift = h_shift;
     cam.vertical_shift = v_shift;
-    cam.focal_distance = focal_distance;
+    cam.focal_distance = std::max(cam.focal_length, focal_distance);
     camera_changed = true;
 }
 
@@ -3512,47 +3574,48 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         auto w = (*output_buffer_o).width();
         auto h = (*output_buffer_o).height();
         stbi_flip_vertically_on_write(true);
-        if (zeno::getSession().userData().get2<bool>("output_exr", true)) {
-            auto exr_path = path.substr(0, path.size() - 4) + ".exr";
-
-            // AOV
-            if (zeno::getSession().userData().get2<bool>("output_aov", true)) {
-                SaveMultiLayerEXR(
-                        {
+        bool enable_output_aov = zeno::getSession().userData().get2<bool>("output_aov", true);
+        bool enable_output_exr = zeno::getSession().userData().get2<bool>("output_exr", true);
+        auto exr_path = path.substr(0, path.size() - 4) + ".exr";
+        // AOV
+        if (enable_output_aov) {
+            SaveMultiLayerEXR(
+                    {
                             (float*)optixgetimg_extra("color"),
                             (float*)optixgetimg_extra("diffuse"),
                             (float*)optixgetimg_extra("specular"),
                             (float*)optixgetimg_extra("transmit"),
                             (float*)optixgetimg_extra("background"),
-                        },
-                        w,
-                        h,
-                        {
+                    },
+                    w,
+                    h,
+                    {
                             "",
                             "diffuse.",
                             "specular.",
                             "transmit.",
                             "background.",
-                        },
-                        exr_path.c_str()
-                );
-            }
-            else {
-                save_exr((float3 *)optixgetimg_extra("color"), w, h, exr_path);
-            }
+                    },
+                    exr_path.c_str()
+            );
         }
         else {
-            stbi_write_jpg(path.c_str(), w, h, 4, p, 100);
-            if (denoise) {
-                const float* _albedo_buffer = reinterpret_cast<float*>(state.albedo_buffer_p.handle);
-                //SaveEXR(_albedo_buffer, w, h, 4, 0, (path+".albedo.exr").c_str(), nullptr);
-                auto a_path = path + ".albedo.pfm";
-                write_pfm(a_path, w, h, _albedo_buffer);
+            if (enable_output_exr) {
+                save_exr((float3 *)optixgetimg_extra("color"), w, h, exr_path);
+            }
+            else {
+                stbi_write_jpg(path.c_str(), w, h, 4, p, 100);
+                if (denoise) {
+                    const float* _albedo_buffer = reinterpret_cast<float*>(state.albedo_buffer_p.handle);
+                    //SaveEXR(_albedo_buffer, w, h, 4, 0, (path+".albedo.exr").c_str(), nullptr);
+                    auto a_path = path + ".albedo.pfm";
+                    write_pfm(a_path, w, h, _albedo_buffer);
 
-                const float* _normal_buffer = reinterpret_cast<float*>(state.normal_buffer_p.handle);
-                //SaveEXR(_normal_buffer, w, h, 4, 0, (path+".normal.exr").c_str(), nullptr);
-                auto n_path = path + ".normal.pfm";
-                write_pfm(n_path, w, h, _normal_buffer);
+                    const float* _normal_buffer = reinterpret_cast<float*>(state.normal_buffer_p.handle);
+                    //SaveEXR(_normal_buffer, w, h, 4, 0, (path+".normal.exr").c_str(), nullptr);
+                    auto n_path = path + ".normal.pfm";
+                    write_pfm(n_path, w, h, _normal_buffer);
+                }
             }
         }
         zeno::log_info("optix: saving screenshot {}x{} to {}", w, h, path);

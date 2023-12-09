@@ -111,6 +111,7 @@
     <addaction name="actionSet_ZENCACHE"/>
     <addaction name="actionSet_ShortCut"/>
     <addaction name="actionEnglish_Chinese"/>
+    <addaction name="actionPreferences"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -451,6 +452,11 @@ border-top: 1px solid black;</string>
   <action name="actionAbout">
    <property name="text">
     <string>About Zeno</string>
+   </property>
+  </action>
+  <action name="actionPreferences">
+   <property name="text">
+    <string>Preferences</string>
    </property>
   </action>
  </widget>

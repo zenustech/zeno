@@ -10,6 +10,14 @@ const char *const zsTraceErrorNode = "TraceErrorNode";
 const char *const zsShortCut = "ShortCut";
 const char *const zsShortCutStyle = "ShortCutStyle";
 const char *const zsLinkLineShape = "LinkLineShape";
+const char* const zsUseChinese = "use_chinese";
+const char* const zsNASLOC = "nas_loc";
+const char* const zsCacheEnable = "zencache-enable";
+const char* const zsCacheAutoRemove = "zencache-autoremove";
+const char* const zsCacheDir= "zencachedir";
+const char* const zsCacheNum = "zencachenum";
+const char* const zsCacheAutoClean = "zencache-autoclean";
+const char* const zsEnableShiftChangeFOV = "viewport-EnableShiftChangeFOV";
 
 //short cut
 const char *const ShortCut_Save = "Save";
