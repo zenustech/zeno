@@ -85,9 +85,10 @@ void GraphsModel::initMainGraph()
     SubGraphModel* subGraphModel = new SubGraphModel(this);
     subGraphModel->setName("main");
     appendSubGraph(subGraphModel);
+    m_selection->setCurrentIndex(index(rowCount() - 1, 0), QItemSelectionModel::Current);
 }
 
-void GraphsModel::newSubgraph(const QString &graphName)
+void GraphsModel::newSubgraph(const QString &graphName, SUBGRAPH_TYPE type)
 {
     if (graphName.compare("main", Qt::CaseInsensitive) == 0)
     {
@@ -112,10 +113,57 @@ void GraphsModel::newSubgraph(const QString &graphName)
     {
         SubGraphModel *subGraphModel = new SubGraphModel(this);
         subGraphModel->setName(graphName);
+        subGraphModel->setType(type);
         appendSubGraph(subGraphModel);
         m_selection->setCurrentIndex(index(rowCount() - 1, 0), QItemSelectionModel::Current);
         markDirty();
     }
+}
+
+bool GraphsModel::newMaterialSubgraph(const QString& graphName, const QPointF& pos)
+{
+    if (subGraph(graphName))
+    {
+        zeno::log_warn("subgraph '{}' is existed.", graphName.toStdString());
+        return false;
+    }
+    beginTransaction("extract a new graph");
+
+    int currentRow = m_selection->currentIndex().row();
+    //first, new the target subgraph
+    newSubgraph(graphName, SUBGRAPH_TYPE::SUBGRAPH_METERIAL);
+    QModelIndex subgIdx = index(graphName);
+
+    //add shader node
+    const QString& ident = NodesMgr::createNewNode(this, subgIdx, "ShaderFinalize", QPointF());
+    auto nodeIdx = nodeIndex(ident);
+    //set mtlid value
+    NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(nodeIdx.data(ROLE_NODE_PARAMS));
+    ZASSERT_EXIT(nodeParams, false);
+    QModelIndex paramIdx = nodeParams->getParam(PARAM_INPUT, "mtlid");
+    ModelSetData(paramIdx, graphName, ROLE_PARAM_VALUE);
+    //add suboutput
+    const QString& outputIdent = NodesMgr::createNewNode(this, subgIdx, "SubOutput", QPointF(600, 0));
+    auto outputIdx = nodeIndex(outputIdent);
+    NodeParamModel* outputNodeParams = QVariantPtr<NodeParamModel>::asPtr(outputIdx.data(ROLE_NODE_PARAMS));
+    ZASSERT_EXIT(outputNodeParams, false);
+    //add link
+    EdgeInfo link;
+    const auto &inParam = nodeParams->getParam(PARAM_OUTPUT, "mtl");
+    const auto& outParam = outputNodeParams->getParam(PARAM_INPUT, "port");
+    link.inSockPath = outParam.data(ROLE_OBJPATH).toString();
+    link.outSockPath = inParam.data(ROLE_OBJPATH).toString();
+    addLink(subgIdx, link, false);
+    //add material subgraph node
+    QModelIndex currentSubIdx = index(currentRow, 0);
+    const QString& subIdent = NodesMgr::createNewNode(this, currentSubIdx, graphName, pos);
+    auto subgNodeIdx = nodeIndex(subIdent);
+    QVariant newValue = OPT_VIEW;
+    ModelSetData(subgNodeIdx, newValue, ROLE_OPTIONS);
+   endTransaction();
+   emit dataChanged(subgIdx, subgIdx);
+   m_selection->setCurrentIndex(currentSubIdx, QItemSelectionModel::Current);
+   return true;
 }
 
 void GraphsModel::renameSubGraph(const QString& oldName, const QString& newName)
@@ -341,6 +389,21 @@ QVariant GraphsModel::data(const QModelIndex& index, int role) const
             const QString& subgName = m_row2Key[index.row()];
             return subgName;
         }
+        case ROLE_SUBGRAPH_TYPE:
+        {
+            const QString& subgName = m_row2Key[index.row()];
+            if (SubGraphModel* pSubgModel = subGraph(subgName))
+            {
+                return pSubgModel->type();
+            }
+        }
+        case ROLE_MTLID:
+        {
+            if (SubGraphModel* pSubgModel = subGraph(m_row2Key[index.row()]) )
+            {
+                return pSubgModel->mtlid();
+            }
+        }
     }
     return QVariant();
 }
@@ -375,6 +438,22 @@ bool GraphsModel::setData(const QModelIndex& index, const QVariant& value, int r
 			}
 		}
 	} 
+    else if (role == ROLE_SUBGRAPH_TYPE)
+    {
+        const QString& name = data(index, Qt::DisplayRole).toString();
+        if (SubGraphModel* pModel = subGraph(name))
+        {
+            pModel->setType((SUBGRAPH_TYPE)value.toInt());
+        }
+    }
+    else if (role == ROLE_MTLID)
+    {
+        const QString& name = data(index, Qt::DisplayRole).toString();
+        if (SubGraphModel* pModel = subGraph(name))
+        {
+            pModel->setMtlid(value.toString());
+        }
+    }
 	return false;
 }
 
@@ -774,7 +853,47 @@ QModelIndex GraphsModel::fork(const QModelIndex& subgIdx, const QModelIndex &sub
     pCurrentModel->appendItem(subnetData, false);
 
     QModelIndex newForkNodeIdx = pCurrentModel->index(subnetData[ROLE_OBJID].toString());
+    m_selection->setCurrentIndex(subgIdx, QItemSelectionModel::Current);
     return newForkNodeIdx;
+}
+
+QModelIndex GraphsModel::forkMaterial(const QModelIndex& subnetNodeIdx, const QString& subgName, const QString& mtlid, const QString& mtlid_old)
+{
+    if (subGraph(subgName))
+        return QModelIndex();
+    if (!subnetNodeIdx.isValid())
+        return QModelIndex();
+    QModelIndex index = fork(m_selection->currentIndex(), subnetNodeIdx);
+    ModelSetData(index, OPT_VIEW, ROLE_OPTIONS);
+    
+    QString name = index.data(ROLE_OBJNAME).toString();
+    setData(this->index(name), subgName, Qt::EditRole);    
+    subGraph(subgName)->setType(SUBGRAPH_METERIAL);
+    if (SubGraphModel* pSubgModel = subGraph(subgName))
+    {
+        QVector<SubGraphModel*> vec;
+        vec << pSubgModel;
+        QList<SEARCH_RESULT> resLst = search("ShaderFinalize", SEARCH_NODECLS, SEARCH_MATCH_EXACTLY, vec);
+        if (resLst.size() == 1)
+        {
+            SEARCH_RESULT result = resLst.first();
+            auto paramIdx = pSubgModel->nodeParamIndex(result.targetIdx, PARAM_INPUT, "mtlid");
+            ModelSetData(paramIdx, mtlid, ROLE_PARAM_VALUE);
+        }
+        vec.clear();
+        vec << currentGraph();
+        resLst = search(mtlid_old, SEARCH_ARGS, SEARCH_MATCH_EXACTLY, vec);
+        for (const auto& res : resLst)
+        {
+            QPointF pos = res.targetIdx.data(ROLE_OBJPOS).toPointF();
+            ModelSetData(index, pos + QPointF(800, 0), ROLE_OBJPOS);
+            auto paramIdx = currentGraph()->nodeParamIndex(res.targetIdx, PARAM_INPUT, "mtlid");
+            ModelSetData(paramIdx, mtlid, ROLE_PARAM_VALUE);
+        }
+    }
+    QModelIndex subgIdx = this->index(subgName);
+    emit dataChanged(subgIdx, subgIdx);
+    return index;
 }
 
 NODE_DATA GraphsModel::_fork(const QString& forkSubgName)
@@ -856,6 +975,7 @@ NODE_DATA GraphsModel::_fork(const QString& forkSubgName)
     const QString& forkName = uniqueSubgraph(forkSubgName);
     SubGraphModel* pForkModel = new SubGraphModel(this);
     pForkModel->setName(forkName);
+    pForkModel->setType(pModel->type());
     appendSubGraph(pForkModel);
 
     NODES_DATA newNodes;
@@ -1899,6 +2019,19 @@ QModelIndexList GraphsModel::subgraphsIndice() const
     return persistentIndexList();
 }
 
+QModelIndexList GraphsModel::subgraphsIndice(SUBGRAPH_TYPE type) const
+{
+    QModelIndexList lst;
+    for (const auto& model : m_subGraphs)
+    {
+        if (model->type() == type)
+        {
+            lst << index(model->name());
+        }
+    }
+    return lst;
+}
+
 LinkModel* GraphsModel::linkModel(const QModelIndex& subgIdx) const
 {
     const QString &subgName = subgIdx.data(ROLE_OBJNAME).toString();
@@ -2190,7 +2323,7 @@ void GraphsModel::onSubIOAddRemove(SubGraphModel* pSubModel, const QModelIndex& 
     }
 }
 
-QList<SEARCH_RESULT> GraphsModel::search(const QString& content, int searchType, int searchOpts, QVector<SubGraphModel*> vec)
+QList<SEARCH_RESULT> GraphsModel::search(const QString& content, int searchType, int searchOpts, QVector<SubGraphModel*> vec) const
 {
     QList<SEARCH_RESULT> results;
     if (content.isEmpty())

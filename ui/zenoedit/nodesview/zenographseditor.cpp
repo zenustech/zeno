@@ -159,7 +159,7 @@ void ZenoGraphsEditor::resetModel(IGraphsModel* pModel)
     m_ui->subnetList->setSelectionMode(QAbstractItemView::ExtendedSelection);
     connect(m_ui->subnetTree->selectionModel(), &QItemSelectionModel::selectionChanged, this, &ZenoGraphsEditor::onTreeItemSelectionChanged);
 
-    SubListSortProxyModel* proxyModel = new SubListSortProxyModel(this);
+    SubListSortProxyModel* proxyModel = new SubListSortProxyModel(this);    
     proxyModel->setSourceModel(pModel);
     proxyModel->setDynamicSortFilter(true);
     m_ui->subnetList->setModel(proxyModel);
@@ -184,8 +184,15 @@ void ZenoGraphsEditor::resetModel(IGraphsModel* pModel)
 	connect(pModel, SIGNAL(rowsAboutToBeRemoved(const QModelIndex&, int, int)), this, SLOT(onSubGraphsToRemove(const QModelIndex&, int, int)));
 	connect(pModel, SIGNAL(modelReset()), this, SLOT(onModelReset()));
 	connect(pModel, SIGNAL(graphRenamed(const QString&, const QString&)), this, SLOT(onSubGraphRename(const QString&, const QString&)));
-
-    activateTab("main");
+    connect(&ZenoSettingsManager::GetInstance(), &ZenoSettingsManager::valueChanged, this, [=](QString zsName) {
+        if (zsName == zsSubgraphType)
+        {
+            proxyModel->invalidate();
+            int type = ZenoSettingsManager::GetInstance().getValue(zsName).toInt();
+            m_ui->label->setText(type == SUBGRAPH_TYPE::SUBGRAPH_NOR ? tr("Subnet") : type == SUBGRAPH_TYPE::SUBGRAPH_METERIAL ? tr("Material Subnet") : tr("Preset Subnet"));
+        }
+    });
+    activateTab("main");                
 }
 
 void ZenoGraphsEditor::onModelCleared()
@@ -346,12 +353,14 @@ void ZenoGraphsEditor::onSubnetOptionClicked()
     QAction* pSubnetMap = new QAction(tr("subnet map"));
     QAction* pImpFromFile = new QAction(tr("import from local file"));
     QAction* pImpFromSys = new QAction(tr("import system subnet"));
+    QAction* pImpFromPreset = new QAction(tr("import preset subnet"));
 
     pOptionsMenu->addAction(pNewSubg);
     pOptionsMenu->addAction(pSubnetMap);
     pOptionsMenu->addSeparator();
     pOptionsMenu->addAction(pImpFromFile);
     pOptionsMenu->addAction(pImpFromSys);
+    pOptionsMenu->addAction(pImpFromPreset);
 
     connect(pNewSubg, &QAction::triggered, this, &ZenoGraphsEditor::onNewSubgraph);
     connect(pSubnetMap, &QAction::triggered, this, [=]() {
@@ -362,6 +371,9 @@ void ZenoGraphsEditor::onSubnetOptionClicked()
     });
     connect(pImpFromSys, &QAction::triggered, this, [=]() {
 
+    });
+    connect(pImpFromPreset, &QAction::triggered, this, [=]() {
+        m_mainWin->importGraph(true);
     });
 
     pOptionsMenu->exec(QCursor::pos());

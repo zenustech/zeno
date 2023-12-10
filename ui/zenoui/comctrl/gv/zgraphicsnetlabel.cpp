@@ -56,6 +56,11 @@ void ZGraphicsNetLabel::SetTextInteraction(bool on, bool selectAll)
 
 void ZGraphicsNetLabel::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
+#ifdef ZENO_NODESVIEW_OPTIM
+    if (editor_factor < 0.1) {
+        return;
+    }
+#endif
     QStyleOptionGraphicsItem myOption(*option);
     myOption.state &= ~QStyle::State_Selected;
     myOption.state &= ~QStyle::State_HasFocus;
