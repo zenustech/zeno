@@ -248,6 +248,60 @@ ZENDEFNODE(StringRegexMatch, {
     {"string"},
 });
 
+
+struct StringSplitAndMerge: zeno::INode{
+    
+    std::vector<std::string> split(const std::string& s, std::string seperator)
+    {
+        std::vector<std::string> output;
+
+        std::string::size_type prev_pos = 0, pos = 0;
+
+        while((pos = s.find(seperator, pos)) != std::string::npos)
+        {
+            std::string substring( s.substr(prev_pos, pos-prev_pos) );
+
+            output.push_back(substring);
+
+            prev_pos = ++pos;
+        }
+
+        output.push_back(s.substr(prev_pos, pos-prev_pos)); // Last word
+
+        return output;
+    }
+    virtual void apply() override {
+        auto str = get_input2<std::string>("str");
+        auto schar = get_input2<std::string>("schar");
+        auto merge = get_input2<std::string>("merge");
+        
+        auto &strings = split(str, schar);
+        auto &merges = split(merge, ",");
+        std::string outputstr = "";
+        for(auto idx:merges)
+        {
+            outputstr += strings[std::atoi(idx.c_str())];
+        }
+
+        set_output2("output", outputstr);
+    }
+};
+
+ZENDEFNODE(StringSplitAndMerge, {
+    {
+        {"string", "str", ""},
+        {"string", "schar", "_"},
+        {"string", "merge", "0"},
+    },
+    {
+        {"string", "output"}
+    },
+    {},
+    {"string"},
+});
+
+
+
 struct FormatString : zeno::INode {
     virtual void apply() override {
         auto formatStr = get_input2<std::string>("str");
