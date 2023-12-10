@@ -319,6 +319,201 @@ template<typename Pol,
     typename TriTileVec,
     typename PTHashMap,
     typename TriBvh,
+    typename T = typename PosTileVec::value_type>
+void detect_imminent_PKT_close_proximity(Pol& pol,
+    const PosTileVec& verts,const zs::SmallString& xtag,
+    const PosTileVec& kverts,const zs::SmallString& kxtag,
+    const TriTileVec& ktris,
+    const T& thickness,
+    const TriBvh& ktriBvh,
+    PTHashMap& csPKT) {
+        using namespace zs;
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+        constexpr auto eps = (T)1e-6;
+        csPKT.reset(pol,true);
+        pol(zs::range(verts.size()),[
+            eps = eps,
+            xtag = zs::SmallString(xtag),
+            verts = proxy<space>({},verts),
+            kxtag = zs::SmallString(kxtag),
+            kverts = proxy<space>({},kverts),
+            ktris = proxy<space>({},ktris),
+            thickness = thickness,
+            thickness2 = thickness * thickness,
+            ktriBvh = proxy<space>(ktriBvh),
+            csPKT = proxy<space>(csPKT)] ZS_LAMBDA(int vi) mutable {
+                if(verts.hasProperty("collision_cancel") && verts("collision_cancel",vi) > 1e-3)
+                        return;
+                auto p = verts.pack(dim_c<3>,xtag,vi);
+                auto bv = bv_t{get_bounding_box(p - thickness/(T)2,p + thickness/(T)2)};
+
+                zs::vec<T,3> kts[3] = {};
+
+                auto is_dynamic_vert = verts.hasProperty("minv") ? (verts("minv",vi) > eps) : true;
+                auto do_close_proximity_detection = [&](int kti) {
+                    auto ktri = ktris.pack(dim_c<3>,"inds",kti,int_c);
+                    for(int i = 0;i != 3;++i)
+                        if(kverts.hasProperty("collision_cancel") && kverts("collision_cancel",ktri[i]) > eps)
+                            return;
+
+                    auto is_dynamic_ktri = true;
+                    if(kverts.hasProperty("minv")) {
+                        bool is_dynamic_ktri = false;
+                        for(int i = 0;i != 3;++i) {
+                            if(kverts("minv",ktri[i]) > eps)
+                                is_dynamic_ktri = true;
+                        }
+                    }
+                    if(!is_dynamic_vert && !is_dynamic_ktri)
+                        return;
+
+                    for(int i = 0;i != 3;++i)
+                        kts[i] = kverts.pack(dim_c<3>,kxtag,ktri[i]);
+                    
+                    vec3 ktri_bary{};
+#ifdef USE_INTERSECTION
+                    if(LSL_GEO::get_vertex_triangle_intersection_barycentric_coordinates(p,ts[0],ts[1],ts[2],tri_bary) > thickness2)
+                        return;
+#else
+                    LSL_GEO::get_triangle_vertex_barycentric_coordinates(kts[0],kts[1],kts[2],p,tri_bary);
+                    for(int i = 0;i != 3;++i)
+                        if(ktri_bary[i] > 1 + eps || ktri_bary[i] < -eps)
+                            return;
+#endif
+                    vec4 bary{-ktri_bary[0],-ktri_bary[1],-ktri_bary[2],1};
+#ifndef USE_INTERSECTION
+                    auto rp = kts[0] * bary[0] + kts[1] * bary[1] + kts[2] * bary[2] + p * bary[3];
+                    if(rp.norm() > thickness)
+                        return;
+#endif
+                    auto id = csPKT.insert(zs::vec<int,2>{vi,kti});
+                };
+                ktriBvh.iter_neighbors(bv,do_close_proximity_detection);
+        });
+}
+
+
+template<typename Pol,
+    typename PosTileVec,
+    typename EdgeTileVec,
+    typename EEHashMap,
+    typename EdgeBvh,
+    typename T = typename PosTileVec::value_type>
+void detect_imminent_EKE_close_proximity(Pol& pol,
+    const PosTileVec& verts,const zs::SmallString& xtag,
+    const EdgeTileVec& edges,
+    const PosTileVec& kverts,const zs::SmallString& kxtag,
+    const EdgeTileVec& kedges,
+    const T& thickness,
+    const EdgeBvh& kedgeBvh,
+    EEHashMap& csEKE) {
+        using namespace zs;
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+
+        using vec2 = zs::vec<T,2>;
+        using vec3 = zs::vec<T,3>;
+        using vec4 = zs::vec<T,4>;
+        using vec2i = zs::vec<int,2>;
+        using vec4i = zs::vec<int,4>;
+        constexpr auto eps = (T)1e-6;
+
+        csEKE.reset(pol,true);
+
+        pol(zs::range(edges.size()),[
+            xtag = xtag,
+            verts = proxy<space>({},verts),
+            edges = proxy<space>({},edges),
+            kxtag = kxtag,
+            kverts = proxy<space>({},kverts),
+            kedges = proxy<space>({},kedges),
+            thickness = thickness,
+            thickness2 = thickness * thickness,
+            eps = eps,
+            kedgeBvh = proxy<space>(kedgeBvh),
+            csEKE = proxy<space>(csEKE)] ZS_LAMBDA(int ei) mutable {
+                auto edge = edges.pack(dim_c<2>,"inds",ei,int_c);
+                for(int i = 0;i != 2;++i)
+                    if(verts.hasProperty("collision_cancel") && verts("collision_cancel",edge[i]) > 1e-3)
+                        return;
+
+                vec3 ps[2] = {};
+                for(int i = 0;i != 2;++i)
+                    ps[i] = verts.pack(dim_c<3>,xtag,edge[i]);
+                auto bv = bv_t{get_bounding_box(ps[0],ps[1])};
+                bv._max += thickness/2;
+                bv._min -= thickness/2;
+                auto edge_len = (ps[0] - ps[1]).norm();
+
+                auto is_dynamic_edge = true;
+                if(verts.hasProperty("minv")) {
+                    is_dynamic_edge = false;
+                    for(int i = 0;i != 2;++i) {
+                        if(verts("minv",edge[i]) > eps)
+                            is_dynamic_edge = true;
+                    }
+                }
+
+                auto do_close_proximity_detection = [&](int kei) mutable {
+                    auto kedge = kedges.pack(dim_c<2>,"inds",kei,int_c);
+                    for(int i = 0;i != 2;++i)
+                        if(kverts.hasProperty("collision_cancel") && kverts("collision_cancel",kedge[i]) > 1e-3)
+                            return;
+
+                    auto is_dynamic_kedge = true;
+                    if(kverts.hasProperty("minv")) {
+                        is_dynamic_kedge = false;
+                        for(int i = 0;i != 2;++i) {
+                            if(kverts("minv",kedge[i]) > eps)
+                                is_dynamic_kedge = true;
+                        }
+                    }
+
+                    if(!is_dynamic_edge && !is_dynamic_kedge)
+                        return;
+
+                    vec3 kps[2] = {};
+                    for(int i = 0;i != 2;++i)
+                        kps[i] = kverts.pack(dim_c<3>,kxtag,kedge[i]);
+
+                    vec2 edge_bary{};
+
+                    if((ps[0] - ps[1]).cross(kps[0] - kps[1]).norm() < eps)
+                        return;
+
+#ifdef USE_INTERSECTION
+
+                    int type{};
+                    if(LSL_GEO::get_edge_edge_intersection_barycentric_coordinates(pas[0],pas[1],pbs[0],pbs[1],edge_bary,type) > thickness2)
+                        return;
+#else
+                    LSL_GEO::get_edge_edge_barycentric_coordinates(ps[0],ps[1],kps[0],kps[1],edge_bary);
+                    for(int i = 0;i != 2;++i) {
+                        if(edge_bary[i] < -eps || edge_bary[i] > 1 + eps)
+                            return;
+                        if(edge_bary[1] < -eps || edge_bary[1] > 1 + eps)
+                            return;
+                    }
+#endif
+                    vec4 bary{edge_bary[0] - 1,-edge_bary[0],1 - edge_bary[1],edge_bary[1]};
+
+#ifndef USE_INTERSECTION
+                    auto rp = bary[0] * ps[0] + bary[1] * ps[1] + bary[2] * kps[0] + bary[3] * kps[1];
+                    if(rp.norm() > thickness) {
+                        return;
+                    }
+#endif
+                    auto id = csEKE.insert(vec2i{ei,kei});
+                };
+                kedgeBvh.iter_neighbors(bv,do_close_proximity_detection);
+        });
+}
+
+
+template<typename Pol,
+    typename PosTileVec,
+    typename TriTileVec,
+    typename PTHashMap,
+    typename TriBvh,
     // typename ProximityBuffer,
     typename T = typename PosTileVec::value_type>
 void detect_self_imminent_PT_close_proximity(Pol& pol,
@@ -401,20 +596,6 @@ void detect_self_imminent_PT_close_proximity(Pol& pol,
                     
                     auto id = csPT.insert(zs::vec<int,2>{vi,ti});
 
-
-                    // printf("detect imminent PT proxy : PT[%d %d] V[%d %d %d %d] BARY : [%f %f %f]\n",
-                    //     vi,ti,
-                    //     inds[0],inds[1],inds[2],inds[3],
-                    //     (float)tri_bary[0],(float)tri_bary[1],(float)tri_bary[2]);
-
-                    // printf("find PT pairs : V_%d T_%d {%d %d %d} \n",vi,ti,tri[0],tri[1],tri[2]);
-                    
-                    // vec4i inds{tri[0],tri[1],tri[2],vi};
-                    // for(int i = 0;i != 4;++i)
-                    //     verts("dcd_collision_tag",inds[i]) = 1;
-                    // proximity_buffer.tuple(dim_c<4>,"inds",id + buffer_offset) = inds.reinterpret_bits(float_c);
-                    // proximity_buffer.tuple(dim_c<4>,"bary",id + buffer_offset) = bary;
-                    // proximity_buffer("type",id + buffer_offset) = zs::reinterpret_bits<float>((int)0);
                 };
 
                 triBvh.iter_neighbors(bv,do_close_proximity_detection);

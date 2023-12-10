@@ -204,6 +204,72 @@ virtual void apply() override {
     }   
 
     if(type == "kinematic_dcd_collision_constraint") {
+        constexpr auto eps = 1e-6;
+        constexpr auto MAX_KINEMATIC_IMMINENT_COLLISION_PAIRS = 20000;
+        auto dcd_source_xtag = get_input2<std::string>("dcd_source_xtag");
+        const auto &edges = (*source)[ZenoParticles::s_surfEdgeTag];
+
+        auto collider = get_input<ZenoParticles>("collider");
+        auto dcd_collider_xtag = get_input2<std::string>("dcd_collider_xtag");
+        const auto& kverts = collider->getParticles();
+        const auto& kedges = (*collider)[ZenoParticles::s_surfEdgeTag];
+        const auto& ktris = collider->getQuadraturePoints();
+
+        constraint->setMeta(CONSTRAINT_KEY,category_c::kinematic_dcd_collision_constraint);
+        eles.append_channels(cudaPol,{{"inds",4},{"bary",4},{"type",1}});        
+
+        auto imminent_collision_thickness = get_input2<float>("thickness");
+
+        zs::bht<int,2,int> csPKT{verts.get_allocator(),(size_t)MAX_KINEMATIC_IMMINENT_COLLISION_PAIRS};csPKT.reset(cudaPol,true);
+        zs::bht<int,2,int> csKPT{verts.get_allocator(),(size_t)MAX_KINEMATIC_IMMINENT_COLLISION_PAIRS};csKPT.reset(cudaPol,true);
+        zs::bht<int,2,int> csEKE{edges.get_allocator(),(size_t)MAX_KINEMATIC_IMMINENT_COLLISION_PAIRS};csEKE.reset(cudaPol,true);
+
+        auto triBvh = bvh_t{};
+        auto triBvs = retrieve_bounding_volumes(cudaPol,verts,quads,wrapv<3>{},imminent_collision_thickness/static_cast<float>(2.0),dcd_source_xtag);
+        triBvh.build(cudaPol,triBvs);
+
+        auto ktriBvh = bvh_t{};
+        auto ktriBvs = retrieve_bounding_volumes(cudaPol,kverts,ktris,wrapv<3>{},imminent_collision_thickness/static_cast<float>(2.0),dcd_collider_xtag);
+        ktriBvh.build(cudaPol,ktriBvs);
+
+        auto kedgeBvh = bvh_t{};
+        auto kedgeBvs = retrieve_bounding_volumes(cudaPol,kverts,kedges,wrapv<2>{},imminent_collision_thickness/static_cast<float>(2.0),dcd_collider_xtag);
+        kedgeBvh.build(cudaPol,kedgeBvs);
+
+        COLLISION_UTILS::detect_imminent_PKT_close_proximity(cudaPol,
+            verts,dcd_source_xtag,
+            kverts,dcd_collider_xtag,
+            ktris,
+            imminent_collision_thickness,
+            ktriBvh,
+            csPKT);
+
+        COLLISION_UTILS::detect_imminent_PKT_close_proximity(cudaPol,
+            kverts,dcd_collider_xtag,
+            verts,dcd_source_xtag,
+            quads,
+            imminent_collision_thickness,
+            triBvh,
+            csKPT);
+
+        COLLISION_UTILS::detect_imminent_EKE_close_proximity(cudaPol,
+            verts,dcd_source_xtag,
+            edges,
+            kverts,dcd_collider_xtag,
+            kedges,
+            imminent_collision_thickness,
+            kedgeBvh,
+            csEKE);
+
+        eles.resize(csPKT.size() + csKPT.size() + csEKE.size());
+
+        cudaPol(zip(zs::range(csPKT.size()),csPKT._activeKeys),[
+            indsOffset = eles.getPropertyOffset("inds"),
+            baryOffset = eles.getPropertyOffset("bary"),
+            typeOffset = eles.getPropertyOffset("type"),
+            proximity_buffer = proxy<space>({},eles),
+            xoffset = verts.getProper
+        ])
 
     }
 
@@ -215,98 +281,8 @@ virtual void apply() override {
         eles.append_channels(cudaPol,{{"inds",4},{"bary",4},{"type",1}});
 
         const auto &edges = (*source)[ZenoParticles::s_surfEdgeTag];
-        // auto has_input_collider = has_input<ZenoParticles>("target");
-
-        // auto substep_id = get_input2<int>("substep_id");
-        // auto nm_substeps = get_input2<int>("nm_substeps");
-        // auto w = (float)(substep_id + 1) / (float)nm_substeps;
-        // auto pw = (float)(substep_id) / (float)nm_substeps;
-        
-        // auto nm_verts = verts.size();
-        // auto nm_tris = quads.size();
-        // auto nm_edges = edges.size();
-
-        // if(has_input_collider) {
-        //     auto collider = get_input<ZenoParticles>("target");
-        //     constraint->setMeta(CONSTRAINT_TARGET,collider.get());
-        //     const auto& kverts = collider->getParticles();
-        //     nm_verts += collider->getParticles().size();
-        //     nm_tris += collider->getQuadraturePoints().size();
-        //     nm_edges += (*collider)[ZenoParticles::s_surfEdgeTag].size();
-        // }
-
-        // dtiles_t vtemp{verts.get_allocator(),{
-        //     {"x",3},
-        //     {"X",3},
-        //     {"minv",1},
-        //     {"dcd_collision_tag",1},
-        //     {"collision_cancel",1}
-        // },nm_verts};
-        // TILEVEC_OPS::fill(cudaPol,vtemp,"dcd_collision_tag",0);
-        // TILEVEC_OPS::copy<3>(cudaPol,verts,dcd_source_xtag,vtemp,"x");
-        // TILEVEC_OPS::copy<3>(cudaPol,verts,"X",vtemp,"X");
-        // TILEVEC_OPS::copy(cudaPol,verts,"minv",vtemp,"minv");
-        // if(verts.hasProperty("collision_cancel"))
-        //     TILEVEC_OPS::copy(cudaPol,verts,"collision_cancel",vtemp,"collision_cancel");
-        // else
-        //     TILEVEC_OPS::fill(cudaPol,vtemp,"collision_cancel",0);
-
-        // dtiles_t etemp{edges.get_allocator(),{
-        //     {"inds",2}
-        // },nm_edges};
-        // TILEVEC_OPS::copy<2>(cudaPol,edges,"inds",etemp,"inds");
-
-        // dtiles_t ttemp{quads.get_allocator(),{
-        //     {"inds",3}
-        // },nm_tris};
-        // TILEVEC_OPS::copy<3>(cudaPol,quads,"inds",ttemp,"inds");
 
         auto imminent_collision_thickness = get_input2<float>("thickness");
-        // if(has_input_collider) {
-        //     auto collider = get_input<ZenoParticles>("target");
-        //     const auto& kverts = collider->getParticles();
-        //     const auto& kedges = (*collider)[ZenoParticles::s_surfEdgeTag];
-        //     const auto& ktris = collider->getQuadraturePoints();
-
-        //     auto voffset = verts.size();
-        //     auto eoffset = edges.size();
-        //     auto toffset = quads.size();
-
-        //     cudaPol(zs::range(kverts.size()),[
-        //         kverts = proxy<space>({},kverts),
-        //         voffset = voffset,
-        //         pw = pw,
-        //         // kverts_pre = proxy<space>({},kverts_pre),
-        //         vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int kvi) mutable {
-        //             auto pre_kvert = kverts.pack(dim_c<3>,"px",kvi) * (1 - pw) + kverts.pack(dim_c<3>,"x",kvi) * pw;
-        //             vtemp.tuple(dim_c<3>,"x",voffset + kvi) = pre_kvert;
-        //             vtemp("minv",voffset + kvi) = 0;
-        //             if(kverts.hasProperty("collision_cancel")) 
-        //                 vtemp("collision_cancel",voffset + kvi) = kverts("collision_cancel",kvi);
-        //             else
-        //                 vtemp("collision_cancel",voffset + kvi) = 0;
-        //     });
-
-        //     cudaPol(zs::range(kedges.size()),[
-        //         kedges = proxy<space>({},kedges),
-        //         etemp = proxy<space>({},etemp),
-        //         eoffset = eoffset,
-        //         voffset = voffset] ZS_LAMBDA(int kei) mutable {
-        //             auto kedge = kedges.pack(dim_c<2>,"inds",kei,int_c);
-        //             kedge += voffset;
-        //             etemp.tuple(dim_c<2>,"inds",eoffset + kei) = kedge.reinterpret_bits(float_c);
-        //     });
-
-        //     cudaPol(zs::range(ktris.size()),[
-        //         ktris = proxy<space>({},ktris),
-        //         ttemp = proxy<space>({},ttemp),
-        //         toffset = toffset,
-        //         voffset = voffset] ZS_LAMBDA(int kti) mutable {
-        //             auto ktri = ktris.pack(dim_c<3>,"inds",kti,int_c);
-        //             ktri += voffset;
-        //             ttemp.tuple(dim_c<3>,"inds",toffset + kti) = ktri.reinterpret_bits(float_c);
-        //     });
-        // }
 
         zs::bht<int,2,int> csPT{verts.get_allocator(),(size_t)MAX_SELF_IMMINENT_COLLISION_PAIRS};csPT.reset(cudaPol,true);
         zs::bht<int,2,int> csEE{edges.get_allocator(),(size_t)MAX_SELF_IMMINENT_COLLISION_PAIRS};csEE.reset(cudaPol,true);
@@ -384,19 +360,6 @@ virtual void apply() override {
                 proximity_buffer.tuple(dim_c<4>,indsOffset,id + buffer_offset) = inds.reinterpret_bits(float_c);
                 proximity_buffer(typeOffset,id + buffer_offset) = zs::reinterpret_bits<float>((int)1);
         });
-
-        // cudaPol(zs::range(eles.size()),[
-        //     proximity_buffer = proxy<space>({},eles)] ZS_LAMBDA(int ci) mutable {
-        //         auto bary = proximity_buffer.pack(dim_c<4>,"bary",ci);
-        //         auto inds = proximity_buffer.pack(dim_c<4>,"inds",ci,int_c);
-        //         auto type = zs::reinterpret_bits<int>(proximity_buffer("type",ci));
-        //         printf("dcd_inform[%d]  bary : %f %f %f %f  inds : %d %d %d %d  type : %d \n",
-        //             (int)ci,
-        //             (float)bary[0],(float)bary[1],(float)bary[2],(float)bary[3],
-        //             (int)inds[0],(int)inds[1],(int)inds[2],(int)inds[3],
-        //             (int)type);
-        // });
-
 
         constraint->setMeta<size_t>(NM_DCD_COLLISIONS,csEE.size() + csPT.size());
         constraint->setMeta(GLOBAL_DCD_THICKNESS,imminent_collision_thickness);
