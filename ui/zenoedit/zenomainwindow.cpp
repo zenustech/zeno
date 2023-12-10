@@ -1515,7 +1515,7 @@ void ZenoMainWindow::onCheckUpdate()
 #endif
 }
 
-void ZenoMainWindow::importGraph() {
+void ZenoMainWindow::importGraph(bool bPreset) {
     QString filePath = getOpenFileByDialog();
     if (filePath.isEmpty())
         return;
@@ -1585,6 +1585,22 @@ void ZenoMainWindow::importGraph() {
     }
     if (!subgraphNames.isEmpty())
         pGraphs->importSubGraphs(filePath, subgraphNames);
+    if (bPreset)
+    {
+        for (const auto& name : subgraphNames)
+        {
+            QModelIndex index = pGraphs->currentModel()->index(name);
+            if (index.isValid())
+            {
+                pGraphs->currentModel()->setData(index, SUBGRAPH_PRESET, ROLE_SUBGRAPH_TYPE);
+            }
+        }
+        ZenoSettingsManager::GetInstance().setValue(zsSubgraphType, SUBGRAPH_PRESET);
+    }
+    else
+    {
+        ZenoSettingsManager::GetInstance().setValue(zsSubgraphType, SUBGRAPH_NOR);
+    }
 }
 
 static bool saveContent(const QString &strContent, QString filePath) {
