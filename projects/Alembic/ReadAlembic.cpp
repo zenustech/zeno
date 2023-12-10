@@ -80,21 +80,27 @@ static void read_attributes(std::shared_ptr<PrimitiveObject> prim, ICompoundProp
                     attr[i] = { data[ 3 * i], data[3 * i + 1], data[3 * i + 2]};
                 }
             }
-            else if (prim->loops.size() == data.size()) {
-                auto &attr = prim->loops.add_attr<float>(p.getName());
-                for (auto i = 0; i < prim->loops.size(); i++) {
-                    attr[i] = data[i];
-                }
-            }
             else if (prim->polys.size() == data.size()) {
                 auto &attr = prim->polys.add_attr<float>(p.getName());
                 for (auto i = 0; i < prim->polys.size(); i++) {
                     attr[i] = data[i];
                 }
             }
+            else if (prim->polys.size() * 3 == data.size()) {
+                auto &attr = prim->polys.add_attr<zeno::vec3f>(p.getName());
+                for (auto i = 0; i < prim->verts.size(); i++) {
+                    attr[i] = { data[ 3 * i], data[3 * i + 1], data[3 * i + 2]};
+                }
+            }
+            else if (prim->loops.size() == data.size()) {
+                auto &attr = prim->loops.add_attr<float>(p.getName());
+                for (auto i = 0; i < prim->loops.size(); i++) {
+                    attr[i] = data[i];
+                }
+            }
             else {
                 if (!read_done) {
-                    log_error("[alembic] can not load attr {}. Check if link to Points channel when exported from Houdini.", p.getName());
+                    log_error("[alembic] can not load float attr {}: {}. Check if link to Points channel when exported from Houdini.", p.getName(), data.size());
                 }
             }
         }

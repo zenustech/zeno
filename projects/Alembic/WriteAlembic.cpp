@@ -13,6 +13,7 @@
 #include "zeno/utils/format.h"
 #include "zeno/utils/string.h"
 #include "zeno/types/ListObject.h"
+#include "zeno/utils/log.h"
 #include <numeric>
 #include <filesystem>
 
@@ -203,10 +204,10 @@ ZENDEFNODE(WriteAlembic, {
 });
 
 template<typename T1, typename T2>
-void write_attrs(std::map<std::string, OFloatGeomParam> &attrs, std::string path, std::shared_ptr<PrimitiveObject> prim, T1& schema, T2& samp) {
+void write_attrs(std::map<std::string, std::any> &attrs, std::string path, std::shared_ptr<PrimitiveObject> prim, T1& schema, T2& samp) {
     OCompoundProperty arbAttrs = schema.getArbGeomParams();
     prim->verts.foreach_attr([&](auto const &key, auto &arr) {
-        if (key == "v" || key == "nrm" || key == "faceset") {
+        if (key == "v" || key == "nrm") {
             return;
         }
         std::string full_key = path + '/' + key;
@@ -223,16 +224,127 @@ void write_attrs(std::map<std::string, OFloatGeomParam> &attrs, std::string path
                 v[i * 3 + 2] = arr[i][2];
             }
             samp.setVals(v);
-            attrs[full_key].set(samp);
+            std::any_cast<OFloatGeomParam>(attrs[full_key]).set(samp);
         } else if constexpr (std::is_same_v<T, float>) {
             if (attrs.count(full_key) == 0) {
                 attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kVaryingScope, 1);
             }
             auto samp = OFloatGeomParam::Sample();
             samp.setVals(arr);
-            attrs[full_key].set(samp);
+            std::any_cast<OFloatGeomParam>(attrs[full_key]).set(samp);
+        } else if constexpr (std::is_same_v<T, int>) {
+            if (attrs.count(full_key) == 0) {
+                attrs[full_key] = OInt32GeomParam (arbAttrs.getPtr(), key, false, kVaryingScope, 1);
+            }
+            auto samp = OInt32GeomParam::Sample();
+            samp.setVals(arr);
+            std::any_cast<OInt32GeomParam>(attrs[full_key]).set(samp);
         }
     });
+    if (prim->loops.size() > 0) {
+        prim->loops.foreach_attr([&](auto const &key, auto &arr) {
+            std::string full_key = path + '/' + key;
+            using T = std::decay_t<decltype(arr[0])>;
+            if constexpr (std::is_same_v<T, zeno::vec3f>) {
+                if (attrs.count(full_key) == 0) {
+                    attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kFacevaryingScope, 3);
+                }
+                auto samp = OFloatGeomParam::Sample();
+                std::vector<float> v(arr.size() * 3);
+                for (auto i = 0; i < arr.size(); i++) {
+                    v[i * 3 + 0] = arr[i][0];
+                    v[i * 3 + 1] = arr[i][1];
+                    v[i * 3 + 2] = arr[i][2];
+                }
+                samp.setVals(v);
+                std::any_cast<OFloatGeomParam>(attrs[full_key]).set(samp);
+            } else if constexpr (std::is_same_v<T, float>) {
+                if (attrs.count(full_key) == 0) {
+                    attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kFacevaryingScope, 1);
+                }
+                auto samp = OFloatGeomParam::Sample();
+                samp.setVals(arr);
+                std::any_cast<OFloatGeomParam>(attrs[full_key]).set(samp);
+            } else if constexpr (std::is_same_v<T, int>) {
+                if (attrs.count(full_key) == 0) {
+                    attrs[full_key] = OInt32GeomParam (arbAttrs.getPtr(), key, false, kFacevaryingScope, 1);
+                }
+                auto samp = OInt32GeomParam::Sample();
+                samp.setVals(arr);
+                std::any_cast<OInt32GeomParam>(attrs[full_key]).set(samp);
+            }
+        });
+    }
+    if (prim->polys.size() > 0) {
+        prim->polys.foreach_attr([&](auto const &key, auto &arr) {
+            std::string full_key = path + '/' + key;
+            using T = std::decay_t<decltype(arr[0])>;
+            if constexpr (std::is_same_v<T, zeno::vec3f>) {
+                if (attrs.count(full_key) == 0) {
+                    attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kUniformScope, 3);
+                }
+                auto samp = OFloatGeomParam::Sample();
+                std::vector<float> v(arr.size() * 3);
+                for (auto i = 0; i < arr.size(); i++) {
+                    v[i * 3 + 0] = arr[i][0];
+                    v[i * 3 + 1] = arr[i][1];
+                    v[i * 3 + 2] = arr[i][2];
+                }
+                samp.setVals(v);
+                std::any_cast<OFloatGeomParam>(attrs[full_key]).set(samp);
+            } else if constexpr (std::is_same_v<T, float>) {
+                if (attrs.count(full_key) == 0) {
+                    attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kUniformScope, 1);
+                }
+                auto samp = OFloatGeomParam::Sample();
+                samp.setVals(arr);
+                std::any_cast<OFloatGeomParam>(attrs[full_key]).set(samp);
+            } else if constexpr (std::is_same_v<T, int>) {
+                if (attrs.count(full_key) == 0) {
+                    attrs[full_key] = OInt32GeomParam (arbAttrs.getPtr(), key, false, kUniformScope, 1);
+                }
+                auto samp = OInt32GeomParam::Sample();
+                samp.setVals(arr);
+                std::any_cast<OInt32GeomParam>(attrs[full_key]).set(samp);
+            }
+        });
+    }
+    if (prim->tris.size() > 0) {
+        prim->tris.foreach_attr([&](auto const &key, auto &arr) {
+            zeno::log_info("{} {}", key, int(arr.size()));
+            std::string full_key = path + '/' + key;
+            using T = std::decay_t<decltype(arr[0])>;
+            if constexpr (std::is_same_v<T, zeno::vec3f>) {
+                if (attrs.count(full_key) == 0) {
+                    attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kUniformScope, 3);
+                }
+                auto samp = OFloatGeomParam::Sample();
+                std::vector<float> v(arr.size() * 3);
+                for (auto i = 0; i < arr.size(); i++) {
+                    v[i * 3 + 0] = arr[i][0];
+                    v[i * 3 + 1] = arr[i][1];
+                    v[i * 3 + 2] = arr[i][2];
+                }
+                samp.setVals(v);
+                std::any_cast<OFloatGeomParam>(attrs[full_key]).set(samp);
+            } else if constexpr (std::is_same_v<T, float>) {
+                zeno::log_info("std::is_same_v<T, float>");
+                if (attrs.count(full_key) == 0) {
+                    attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kUniformScope, 1);
+                }
+                auto samp = OFloatGeomParam::Sample();
+                samp.setVals(arr);
+                std::any_cast<OFloatGeomParam>(attrs[full_key]).set(samp);
+            } else if constexpr (std::is_same_v<T, int>) {
+                if (attrs.count(full_key) == 0) {
+                    attrs[full_key] = OInt32GeomParam (arbAttrs.getPtr(), key, false, kUniformScope, 1);
+                }
+                auto samp = OInt32GeomParam::Sample();
+                samp.setVals(arr);
+                std::any_cast<OInt32GeomParam>(attrs[full_key]).set(samp);
+            }
+        });
+    }
 }
 void write_user_data(std::map<std::string, std::any> &user_attrs, std::string path, std::shared_ptr<PrimitiveObject> prim, OCompoundProperty& user) {
     auto &ud = prim->userData();
@@ -308,7 +420,7 @@ struct WriteAlembic2 : INode {
     OPolyMesh meshyObj;
     OPoints pointsObj;
     std::string usedPath;
-    std::map<std::string, OFloatGeomParam> attrs;
+    std::map<std::string, std::any> attrs;
     std::map<std::string, std::any> user_attrs;
 
     virtual void apply() override {
@@ -557,7 +669,7 @@ struct WriteAlembicPrims : INode {
     std::string usedPath;
     std::map<std::string, OPolyMesh> meshyObjs;
     std::map<std::string, OPoints> pointsObjs;
-    std::map<std::string, OFloatGeomParam> attrs;
+    std::map<std::string, std::any> attrs;
     std::map<std::string, std::any> user_attrs;
 
     virtual void apply() override {
