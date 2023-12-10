@@ -802,6 +802,11 @@ struct AlembicSplitByName: INode {
                 else {
                     new_prim->polys.resize(0);
                 }
+                new_prim->userData().del("faceset_count");
+                for (auto j = 0; j < faceset_count; j++) {
+                    new_prim->userData().del(zeno::format("faceset_{:04}", j));
+                }
+                new_prim->userData().set2("_abc_faceset", name);
                 dict->lut[name] = std::move(new_prim);
             }
             set_output("dict", dict);
