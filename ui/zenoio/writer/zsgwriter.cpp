@@ -157,6 +157,9 @@ void ZsgWriter::_dumpSubGraph(IGraphsModel* pModel, const QModelIndex& subgIdx, 
         return;
 
     {
+        int type = subgIdx.data(ROLE_SUBGRAPH_TYPE).toInt();
+        writer.Key("type");
+        writer.Int(type);
         writer.Key("nodes");
         JsonObjBatch _batch(writer);
 

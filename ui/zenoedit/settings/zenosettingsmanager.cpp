@@ -19,10 +19,17 @@ ZenoSettingsManager::ZenoSettingsManager(QObject *parent) :
         setValue(zsShowGrid, true);
     }
     initShortCutInfos();
+    m_settings[zsSubgraphType] = 0;
 }
 
 bool ZenoSettingsManager::setValue(const QString& name, const QVariant& value) 
 {
+    if (zsSubgraphType == name)
+    {
+        m_settings[name] = value;
+        emit valueChanged(name);
+        return true;
+    }
     QSettings settings(zsCompanyName, zsEditor);
     QVariant oldValue = settings.value(name);
     if (oldValue != value)
@@ -41,6 +48,8 @@ QVariant ZenoSettingsManager::getValue(const QString& zsName) const
         return QVariant::fromValue(m_shortCutInfos);
     else if (zsName == zsShortCutStyle)
         return m_shortCutStyle;
+    else if (zsName == zsSubgraphType)
+        return m_settings[zsName];
 
     QSettings settings(zsCompanyName, zsEditor);
     QVariant val = settings.value(zsName);
