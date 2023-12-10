@@ -122,6 +122,7 @@ private:
     ZTextIconButton* m_btnKill;
 
     QComboBox* cbZoom;
+    ZComboBox* cbSubgType;
 };
 
 class DockContent_View : public DockToolbarWidget
