@@ -32,7 +32,8 @@ public:
     SubGraphModel *subGraph(int idx) const;
     SubGraphModel *currentGraph();
     void switchSubGraph(const QString& graphName) override;
-    void newSubgraph(const QString& graphName) override;
+    void newSubgraph(const QString& graphName, SUBGRAPH_TYPE type = SUBGRAPH_TYPE::SUBGRAPH_NOR) override;
+    bool newMaterialSubgraph(const QString& graphName, const QPointF& pos) override;
     void initMainGraph() override;
     void renameSubGraph(const QString& oldName, const QString& newName) override;
     QItemSelectionModel* selectionModel() const;
@@ -43,6 +44,7 @@ public:
     //NODE_DESC
     void appendSubGraph(SubGraphModel* pGraph);
     QModelIndex fork(const QModelIndex& subgIdx, const QModelIndex& subnetNodeIdx) override;
+    QModelIndex forkMaterial(const QModelIndex& subnetNodeIdx, const QString&subgName, const QString& mtlid, const QString& mtlid_old) override;
     void removeGraph(int idx) override;
     bool isDirty() const override;
     void markDirty() override;
@@ -110,6 +112,7 @@ public:
 	void redo() override;
     QModelIndexList searchInSubgraph(const QString& objName, const QModelIndex& subgIdx) override;
     QModelIndexList subgraphsIndice() const override;
+    QModelIndexList subgraphsIndice(SUBGRAPH_TYPE type) const;
     LinkModel* linkModel(const QModelIndex& subgIdx) const override;
     LinkModel* legacyLinks(const QModelIndex& subgIdx) const override;
     QModelIndex getSubgraphIndex(const QModelIndex& linkIdx);
@@ -118,7 +121,7 @@ public:
                         const QString &content,
                         int searchType,
                         int searchOpts,
-                        QVector<SubGraphModel*> vec = QVector<SubGraphModel *>()) override;
+                        QVector<SubGraphModel*> vec = QVector<SubGraphModel *>()) const override;
 	void collaspe(const QModelIndex& subgIdx) override;
 	void expand(const QModelIndex& subgIdx) override;
 
