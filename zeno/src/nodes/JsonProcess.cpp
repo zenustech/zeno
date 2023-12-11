@@ -144,7 +144,7 @@ ZENDEFNODE(JsonGetChild, {
     },
     {},
     {
-        "json"
+        "deprecated"
     },
 });
 struct JsonGetInt : zeno::INode {
@@ -162,7 +162,7 @@ ZENDEFNODE(JsonGetInt, {
     },
     {},
     {
-        "json"
+        "deprecated"
     },
 });
 
@@ -181,7 +181,7 @@ ZENDEFNODE(JsonGetFloat, {
     },
     {},
     {
-        "json"
+        "deprecated"
     },
 });
 
@@ -200,7 +200,7 @@ ZENDEFNODE(JsonGetString, {
     },
     {},
     {
-        "json"
+        "deprecated"
     },
 });
 struct JsonGetTypeName : zeno::INode {
@@ -218,7 +218,7 @@ ZENDEFNODE(JsonGetTypeName, {
     },
     {},
     {
-        "json"
+        "deprecated"
     },
 });
 
@@ -273,7 +273,7 @@ ZENDEFNODE(JsonData, {
     },
     {},
     {
-        "json"
+        "deprecated"
     },
 });
 
