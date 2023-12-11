@@ -116,9 +116,8 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
     });
 
     connect(prim_attr_view, &QTableView::doubleClicked, this, [=](const QModelIndex& index) {
-        int type = ZenoSettingsManager::GetInstance().getValue(zsSubgraphType).toInt();
     QString label = prim_attr_view->model()->headerData(index.row(), Qt::Vertical).toString();
-    if (type == SUBGRAPH_METERIAL && label.contains("Material", Qt::CaseInsensitive))
+    if (label.contains("Material", Qt::CaseInsensitive))
     {
         QString mtlid = index.data(Qt::DisplayRole).toString();
         IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
@@ -131,6 +130,7 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
                     QString subgraph_name = subgIdx.data(ROLE_OBJNAME).toString();
                     ZenoMainWindow* pWin = zenoApp->getMainWindow();
                     if (pWin) {
+                        ZenoSettingsManager::GetInstance().setValue(zsSubgraphType, SUBGRAPH_METERIAL);
                         ZenoGraphsEditor* pEditor = pWin->getAnyEditor();
                         if (pEditor)
                             pEditor->activateTab(subgraph_name, "", "");
@@ -272,6 +272,14 @@ bool ZenoSpreadsheet::eventFilter(QObject* watched, QEvent* event)
                     else if (mtlid.contains("EyeAO", Qt::CaseInsensitive) || mtlid.contains("Tearline", Qt::CaseInsensitive))
                     {
                         map[mtlid] = "TransmitTypeMat";
+                    }
+                    else if (mtlid.contains("Paint", Qt::CaseInsensitive))
+                    {
+                        map[mtlid] = "CarPaintTypeMat";
+                    }
+                    else 
+                    {
+                        map[mtlid] = "RegularTypeMat";
                     }
                 }
                 ZForkSubgraphDlg dlg(map, this);
