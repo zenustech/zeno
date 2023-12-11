@@ -263,7 +263,8 @@ namespace DisneyBSDF{
             float nDl,
             vec3 &dterm,
             vec3 &sterm,
-            vec3 &tterm)
+            vec3 &tterm,
+            bool reflectance = false)
 
     {
         bool sameside = (dot(wo, N)*dot(wo, N2))>0.0f;
@@ -410,9 +411,9 @@ namespace DisneyBSDF{
             f =  f + s;
             fPdf += tmpPdf * clearCtPr;
         }
-        if(sssPr>0.0)
+        if((sssPr>0.0&&reflectance) || (sssPr>0.0 && dot(wo, N2)<0.0))
         {
-          bool trans = wo.z * wi.z < 0.0f && dot(wo, N2) * dot(wi, N2)<0;
+          bool trans = dot(wo, N2) * dot(wi, N2)<0;
           float FL = BRDFBasics::SchlickWeight(abs(wi.z));
           float FV = BRDFBasics::SchlickWeight(abs(wo.z));
           float term = wo.z>0?FV:FL;
@@ -742,7 +743,7 @@ namespace DisneyBSDF{
         float pdf, pdf2;
         vec3 rd, rs, rt;
         reflectance = EvaluateDisney2(vec3(1.0f), mat, wi, wo, T, B, N, N2, thin,
-                                      is_inside, pdf, pdf2, 0, rd, rs, rt);
+                                      is_inside, pdf, pdf2, 0, rd, rs, rt, true);
         fPdf = pdf>1e-5?pdf:0.0f;
         reflectance = pdf>1e-5?reflectance:vec3(0.0f);
         return true;
