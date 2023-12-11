@@ -40,6 +40,11 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
     pPrimName->setProperty("cssClass", "proppanel");
     pTitleLayout->addWidget(pPrimName);
 
+    m_checkSortingEnabled = new QCheckBox(this);
+    m_checkSortingEnabled->setProperty("cssClass", "proppanel");
+    m_checkSortingEnabled->setText(tr("enable sort"));
+    pTitleLayout->addWidget(m_checkSortingEnabled);
+
 
     ZComboBox* pMode = new ZComboBox();
     pMode->addItem("Vertex");
@@ -61,7 +66,7 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
 
     prim_attr_view = new QTableView();
     prim_attr_view->setAlternatingRowColors(true);
-    prim_attr_view->setSortingEnabled(true);
+    prim_attr_view->setSortingEnabled(false);
     prim_attr_view->setProperty("cssClass", "proppanel");
     prim_attr_view->setModel(sortModel);
     prim_attr_view->installEventFilter(this);
@@ -101,8 +106,13 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
             prim_attr_view->setSortingEnabled(false);
         }
         else {
-            prim_attr_view->setSortingEnabled(true);
+            prim_attr_view->setSortingEnabled(m_checkSortingEnabled->checkState());
         }
+    });
+
+    // enable sort
+    connect(m_checkSortingEnabled, &QCheckBox::stateChanged, this, [this](int state) {
+        prim_attr_view->setSortingEnabled(state != Qt::CheckState::Unchecked);
     });
 
     // corner button of tableview
