@@ -298,14 +298,21 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
 
                 //command params
                 const QString& objPath = inSockIdx.data(ROLE_OBJPATH).toString();
-                if (!configPath.isEmpty() && commandParams.contains(objPath))
+                if (commandParams.contains(objPath))
                 {
-                    const QString& command = commandParams[objPath].name;
-                    if (configDoc.HasMember(command.toUtf8()))
+                    if (!configPath.isEmpty())
                     {
-                        const auto& obj = configDoc[command.toStdString().c_str()];
-                        if (obj.IsObject() && obj.HasMember("value"))
-                            defl = UiHelper::parseJsonByType(sockType, obj["value"], nullptr);
+                        const QString& command = commandParams[objPath].name;
+                        if (configDoc.HasMember(command.toUtf8()))
+                        {
+                            const auto& obj = configDoc[command.toStdString().c_str()];
+                            if (obj.IsObject() && obj.HasMember("value"))
+                                defl = UiHelper::parseJsonByType(sockType, obj["value"], nullptr);
+                        }
+                    }
+                    else if (commandParams[objPath].bIsCommand)
+                    {
+                        defl = commandParams[objPath].value;
                     }
                 }
 
