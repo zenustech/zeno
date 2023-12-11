@@ -18,6 +18,7 @@
 #include <cstring>
 #include <cstdio>
 #include <filesystem>
+#include <zeno/utils/string.h>
 
 using namespace Alembic::AbcGeom;
 
@@ -941,6 +942,57 @@ ZENDEFNODE(CopyPosAndNrmByIndex, {
     {
         {"prim"},
         {"list", "list"},
+    },
+    {
+        {"out"},
+    },
+    {},
+    {"alembic"},
+});
+
+struct PrimsFilterInUserdata: INode {
+    void apply() override {
+        auto prims = get_input<ListObject>("list")->get<PrimitiveObject>();
+        auto filter_str = get_input2<std::string>("filters");
+        std::vector<std::string> filters = zeno::split_str(filter_str);
+        std::vector<std::string> filters_;
+        auto out_list = std::make_shared<ListObject>();
+
+        for (auto &s: filters) {
+            if (s.length() > 0) {
+                filters_.push_back(s);
+            }
+        }
+
+        auto name = get_input2<std::string>("name");
+        auto contain = get_input2<bool>("contain");
+        for (auto p: prims) {
+            auto &ud = p->userData();
+            bool this_contain = false;
+            if (ud.has<std::string>(name)) {
+                this_contain = std::count(filters_.begin(), filters_.end(), ud.get2<std::string>(name)) > 0;
+            }
+            else if (ud.has<int>(name)) {
+                this_contain = std::count(filters_.begin(), filters_.end(), std::to_string(ud.get2<int>(name))) > 0;
+            }
+            else if (ud.has<float>(name)) {
+                this_contain = std::count(filters_.begin(), filters_.end(), std::to_string(ud.get2<float>(name))) > 0;
+            }
+            bool insert = (contain && this_contain) || (!contain && !this_contain);
+            if (insert) {
+                out_list->arr.push_back(p);
+            }
+        }
+        set_output("out", out_list);
+    }
+};
+
+ZENDEFNODE(PrimsFilterInUserdata, {
+    {
+        {"list", "list"},
+        {"string", "name", ""},
+        {"string", "filters"},
+        {"bool", "contain", "1"},
     },
     {
         {"out"},
