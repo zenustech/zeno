@@ -46,6 +46,8 @@ struct QuadMesh : INode {
                     marked_lines.insert(std::make_pair(lines[i][0], lines[i][1]));
             }
         }
+        if (marked_lines.size() > 0)
+            boundary = true;
 
         int scale_constraints = 0;
         scale_constraints += scale > 0 ? 1 : 0;
@@ -58,7 +60,7 @@ struct QuadMesh : INode {
         }
 
         int argc = 1;
-        char* argv[10];
+        char* argv[20];
         argv[0] = (char*)malloc(sizeof("./InstantMeshes\0"));
         strcpy(argv[0], "./InstantMeshes\0");
         if (crease > 0) {

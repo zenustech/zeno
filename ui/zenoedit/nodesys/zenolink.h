@@ -31,7 +31,7 @@ public:
     virtual QPointF getDstPos() const = 0;
 
 private:
-    static constexpr float BEZIER = 0.5f, WIDTH = 3;
+    static constexpr float BEZIER = 0.5f, WIDTH = 1;
 
     mutable QPointF lastSrcPos, lastDstPos;
     mutable bool hasLastPath{false};

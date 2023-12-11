@@ -18,6 +18,7 @@
 #include <cstring>
 #include <cstdio>
 #include <filesystem>
+#include <zeno/utils/string.h>
 
 using namespace Alembic::AbcGeom;
 
@@ -80,9 +81,27 @@ static void read_attributes(std::shared_ptr<PrimitiveObject> prim, ICompoundProp
                     attr[i] = { data[ 3 * i], data[3 * i + 1], data[3 * i + 2]};
                 }
             }
+            else if (prim->polys.size() == data.size()) {
+                auto &attr = prim->polys.add_attr<float>(p.getName());
+                for (auto i = 0; i < prim->polys.size(); i++) {
+                    attr[i] = data[i];
+                }
+            }
+            else if (prim->polys.size() * 3 == data.size()) {
+                auto &attr = prim->polys.add_attr<zeno::vec3f>(p.getName());
+                for (auto i = 0; i < prim->polys.size(); i++) {
+                    attr[i] = { data[ 3 * i], data[3 * i + 1], data[3 * i + 2]};
+                }
+            }
+            else if (prim->loops.size() == data.size()) {
+                auto &attr = prim->loops.add_attr<float>(p.getName());
+                for (auto i = 0; i < prim->loops.size(); i++) {
+                    attr[i] = data[i];
+                }
+            }
             else {
                 if (!read_done) {
-                    log_error("[alembic] can not load attr {}. Check if link to Points channel when exported from Houdini.", p.getName());
+                    log_error("[alembic] can not load float attr {}: {}. Check if link to Points channel when exported from Houdini.", p.getName(), data.size());
                 }
             }
         }
@@ -105,9 +124,21 @@ static void read_attributes(std::shared_ptr<PrimitiveObject> prim, ICompoundProp
                     attr[i] = data[i];
                 }
             }
+            else if (prim->loops.size() == data.size()) {
+                auto &attr = prim->loops.add_attr<int>(p.getName());
+                for (auto i = 0; i < prim->loops.size(); i++) {
+                    attr[i] = data[i];
+                }
+            }
+            else if (prim->polys.size() == data.size()) {
+                auto &attr = prim->polys.add_attr<int>(p.getName());
+                for (auto i = 0; i < prim->polys.size(); i++) {
+                    attr[i] = data[i];
+                }
+            }
             else {
                 if (!read_done) {
-                    log_error("[alembic] can not load attr {}. Check if link to Points channel when exported from Houdini.", p.getName());
+                    log_error("[alembic] can not load int attr {}. Check if link to Points channel when exported from Houdini.", p.getName());
                 }
             }
         }
@@ -124,6 +155,25 @@ static void read_attributes(std::shared_ptr<PrimitiveObject> prim, ICompoundProp
                     attr[i] = {v[0], v[1], v[2]};
                 }
             }
+            else if (prim->loops.size() == samp.getVals()->size()) {
+                auto &attr = prim->loops.add_attr<zeno::vec3f>(p.getName());
+                for (auto i = 0; i < prim->loops.size(); i++) {
+                    auto v = samp.getVals()->get()[i];
+                    attr[i] = {v[0], v[1], v[2]};
+                }
+            }
+            else if (prim->polys.size() == samp.getVals()->size()) {
+                auto &attr = prim->polys.add_attr<zeno::vec3f>(p.getName());
+                for (auto i = 0; i < prim->polys.size(); i++) {
+                    auto v = samp.getVals()->get()[i];
+                    attr[i] = {v[0], v[1], v[2]};
+                }
+            }
+            else {
+                if (!read_done) {
+                    log_error("[alembic] can not load vec3f attr {}. Check if link to Points channel when exported from Houdini.", p.getName());
+                }
+            }
         }
         else if (IN3fGeomParam::matches(p)) {
             if (!read_done) {
@@ -138,6 +188,25 @@ static void read_attributes(std::shared_ptr<PrimitiveObject> prim, ICompoundProp
                     attr[i] = {v[0], v[1], v[2]};
                 }
             }
+            else if (prim->loops.size() == samp.getVals()->size()) {
+                auto &attr = prim->loops.add_attr<zeno::vec3f>(p.getName());
+                for (auto i = 0; i < prim->loops.size(); i++) {
+                    auto v = samp.getVals()->get()[i];
+                    attr[i] = {v[0], v[1], v[2]};
+                }
+            }
+            else if (prim->polys.size() == samp.getVals()->size()) {
+                auto &attr = prim->polys.add_attr<zeno::vec3f>(p.getName());
+                for (auto i = 0; i < prim->polys.size(); i++) {
+                    auto v = samp.getVals()->get()[i];
+                    attr[i] = {v[0], v[1], v[2]};
+                }
+            }
+            else {
+                if (!read_done) {
+                    log_error("[alembic] can not load N3f attr {}. Check if link to Points channel when exported from Houdini.", p.getName());
+                }
+            }
         }
         else if (IC3fGeomParam::matches(p)) {
             if (!read_done) {
@@ -150,6 +219,25 @@ static void read_attributes(std::shared_ptr<PrimitiveObject> prim, ICompoundProp
                 for (auto i = 0; i < prim->verts.size(); i++) {
                     auto v = samp.getVals()->get()[i];
                     attr[i] = {v[0], v[1], v[2]};
+                }
+            }
+            else if (prim->loops.size() == samp.getVals()->size()) {
+                auto &attr = prim->loops.add_attr<zeno::vec3f>(p.getName());
+                for (auto i = 0; i < prim->loops.size(); i++) {
+                    auto v = samp.getVals()->get()[i];
+                    attr[i] = {v[0], v[1], v[2]};
+                }
+            }
+            else if (prim->polys.size() == samp.getVals()->size()) {
+                auto &attr = prim->polys.add_attr<zeno::vec3f>(p.getName());
+                for (auto i = 0; i < prim->polys.size(); i++) {
+                    auto v = samp.getVals()->get()[i];
+                    attr[i] = {v[0], v[1], v[2]};
+                }
+            }
+            else {
+                if (!read_done) {
+                    log_error("[alembic] can not load C3f attr {}. Check if link to Points channel when exported from Houdini.", p.getName());
                 }
             }
         }
@@ -736,6 +824,7 @@ struct ReadAlembic : INode {
             read_done = true;
             usedPath = path;
         }
+        zeno::log_info("...........");
         {
             auto namelist = std::make_shared<zeno::ListObject>();
             abctree->visitPrims([&] (auto const &p) {
@@ -802,6 +891,11 @@ struct AlembicSplitByName: INode {
                 else {
                     new_prim->polys.resize(0);
                 }
+                new_prim->userData().del("faceset_count");
+                for (auto j = 0; j < faceset_count; j++) {
+                    new_prim->userData().del(zeno::format("faceset_{:04}", j));
+                }
+                new_prim->userData().set2("_abc_faceset", name);
                 dict->lut[name] = std::move(new_prim);
             }
             set_output("dict", dict);
@@ -849,6 +943,57 @@ ZENDEFNODE(CopyPosAndNrmByIndex, {
     {
         {"prim"},
         {"list", "list"},
+    },
+    {
+        {"out"},
+    },
+    {},
+    {"alembic"},
+});
+
+struct PrimsFilterInUserdata: INode {
+    void apply() override {
+        auto prims = get_input<ListObject>("list")->get<PrimitiveObject>();
+        auto filter_str = get_input2<std::string>("filters");
+        std::vector<std::string> filters = zeno::split_str(filter_str);
+        std::vector<std::string> filters_;
+        auto out_list = std::make_shared<ListObject>();
+
+        for (auto &s: filters) {
+            if (s.length() > 0) {
+                filters_.push_back(s);
+            }
+        }
+
+        auto name = get_input2<std::string>("name");
+        auto contain = get_input2<bool>("contain");
+        for (auto p: prims) {
+            auto &ud = p->userData();
+            bool this_contain = false;
+            if (ud.has<std::string>(name)) {
+                this_contain = std::count(filters_.begin(), filters_.end(), ud.get2<std::string>(name)) > 0;
+            }
+            else if (ud.has<int>(name)) {
+                this_contain = std::count(filters_.begin(), filters_.end(), std::to_string(ud.get2<int>(name))) > 0;
+            }
+            else if (ud.has<float>(name)) {
+                this_contain = std::count(filters_.begin(), filters_.end(), std::to_string(ud.get2<float>(name))) > 0;
+            }
+            bool insert = (contain && this_contain) || (!contain && !this_contain);
+            if (insert) {
+                out_list->arr.push_back(p);
+            }
+        }
+        set_output("out", out_list);
+    }
+};
+
+ZENDEFNODE(PrimsFilterInUserdata, {
+    {
+        {"list", "list"},
+        {"string", "name", ""},
+        {"string", "filters"},
+        {"bool", "contain", "1"},
     },
     {
         {"out"},

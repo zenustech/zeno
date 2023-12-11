@@ -111,7 +111,7 @@ void ModelAcceptor::setUserDataInfo(const USERDATA_SETTING& info)
     m_userdatInfo = info;
 }
 
-void ModelAcceptor::BeginSubgraph(const QString& name)
+void ModelAcceptor::BeginSubgraph(const QString& name, int type)
 {
     if (m_bImport && name == "main")
     {
@@ -136,6 +136,7 @@ void ModelAcceptor::BeginSubgraph(const QString& name)
     {
         pSubModel = new SubGraphModel(m_pModel);
         pSubModel->setName(name);
+        pSubModel->setType((SUBGRAPH_TYPE)type);
         m_pModel->appendSubGraph(pSubModel);
     }
     m_currentGraph = pSubModel;

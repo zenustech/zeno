@@ -45,6 +45,7 @@ private:
     ZenoSettingsManager(QObject *parent = nullptr);
     QVector<ShortCutInfo> m_shortCutInfos;
     int m_shortCutStyle;
+    QHash<QString, QVariant> m_settings;
 };
 
 

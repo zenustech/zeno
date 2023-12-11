@@ -185,7 +185,10 @@ bool ZsgReader::_parseSubGraph(const QString& name, const rapidjson::Value& subg
         return false;
 
     //todo: should consider descript info. some info of outsock without connection show in descript info.
-    pAcceptor->BeginSubgraph(name);
+    int type = SUBGRAPH_TYPE::SUBGRAPH_NOR;
+    if (subgraph.HasMember("type"))
+        type = subgraph["type"].GetInt();
+    pAcceptor->BeginSubgraph(name, type);
 
     const auto& nodes = subgraph["nodes"];
     if (nodes.IsNull())

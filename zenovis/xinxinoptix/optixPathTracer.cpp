@@ -426,7 +426,131 @@ static void initLaunchParams( PathTracerState& state )
     state.params.subframe_index     = 0u;
 }
 
+static void updateRootIAS()
+{
+  timer.tick();
+  auto campos = state.params.cam.eye;
+  const float mat3r4c[12] = {1,0,0,-campos.x,   0,1,0,-campos.y,   0,0,1,-campos.z};
+  std::vector<OptixInstance> optix_instances{};
+  uint sbt_offset = 0u;
+  {
+    if (state.meshHandleIAS != 0u) {
+      OptixInstance inst{};
 
+      inst.flags = OPTIX_INSTANCE_FLAG_NONE;
+      inst.sbtOffset = 0;
+      inst.instanceId = 0;
+      inst.visibilityMask = DefaultMatMask;
+      inst.traversableHandle = state.meshHandleIAS;
+
+      memcpy(inst.transform, mat3r4c, sizeof(float) * 12);
+      optix_instances.push_back( inst );
+    }
+  }
+
+  auto optix_instance_idx = optix_instances.size()-1;
+
+  if (sphereHandleXAS != 0u) {
+    OptixInstance opinstance {};
+    ++optix_instance_idx;
+    sbt_offset = 0u;
+
+    opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
+    opinstance.instanceId = optix_instance_idx;
+    opinstance.sbtOffset = sbt_offset;
+    opinstance.visibilityMask = DefaultMatMask;
+    opinstance.traversableHandle = sphereHandleXAS;
+    memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
+    optix_instances.push_back( opinstance );
+  }
+
+  // process volume
+  for ( uint i=0; i<list_volume.size(); ++i ) {
+
+    OptixInstance optix_instance {};
+    ++optix_instance_idx;
+
+    sbt_offset = list_volume_index_in_shader_list[i] * RAY_TYPE_COUNT;
+
+    optix_instance.flags = OPTIX_INSTANCE_FLAG_NONE;
+    optix_instance.instanceId = optix_instance_idx;
+    optix_instance.sbtOffset = sbt_offset;
+    optix_instance.visibilityMask = VolumeMatMask; //VOLUME_OBJECT;
+    optix_instance.traversableHandle = list_volume_accel[i]->handle;
+    getOptixTransform( *(list_volume[i]), optix_instance.transform ); // transform as stored in Grid
+
+    optix_instances.push_back( optix_instance );
+  }
+
+  uint32_t MAX_INSTANCE_ID;
+  optixDeviceContextGetProperty( state.context,
+                                OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID, &MAX_INSTANCE_ID, sizeof(MAX_INSTANCE_ID));
+  state.params.maxInstanceID = MAX_INSTANCE_ID;
+
+  //process light
+  if (lightsWrapper.lightTrianglesGas != 0)
+  {
+    ++optix_instance_idx;
+    OptixInstance opinstance {};
+
+    auto combinedID = std::string("Light") + ":" + std::to_string(ShaderMaker::Mesh);
+    auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
+
+    opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
+    opinstance.instanceId = MAX_INSTANCE_ID-2;
+    opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
+    opinstance.visibilityMask = LightMatMask;
+    opinstance.traversableHandle = lightsWrapper.lightTrianglesGas;
+    memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
+
+    optix_instances.push_back( opinstance );
+  }
+
+  if (lightsWrapper.lightPlanesGas != 0)
+  {
+    ++optix_instance_idx;
+    OptixInstance opinstance {};
+
+    auto combinedID = std::string("Light") + ":" + std::to_string(ShaderMaker::Mesh);
+    auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
+
+    opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
+    opinstance.instanceId = MAX_INSTANCE_ID-1;
+    opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
+    opinstance.visibilityMask = LightMatMask;
+    opinstance.traversableHandle = lightsWrapper.lightPlanesGas;
+    memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
+
+    optix_instances.push_back( opinstance );
+  }
+
+  if (lightsWrapper.lightSpheresGas != 0)
+  {
+    ++optix_instance_idx;
+    OptixInstance opinstance {};
+
+    auto combinedID = std::string("Light") + ":" + std::to_string(ShaderMaker::Sphere);
+    auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
+
+    opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
+    opinstance.instanceId = MAX_INSTANCE_ID;
+    opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
+    opinstance.visibilityMask = LightMatMask;
+    opinstance.traversableHandle = lightsWrapper.lightSpheresGas;
+    memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
+
+    optix_instances.push_back( opinstance );
+  }
+
+  OptixAccelBuildOptions accel_options{};
+  accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
+  accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
+
+  buildIAS(state.context, accel_options, optix_instances, state.rootBufferIAS, state.rootHandleIAS);
+
+  timer.tock("update Root IAS");
+  state.params.handle = state.rootHandleIAS;
+}
 static void handleCameraUpdate( Params& params )
 {
     if( !camera_changed )
@@ -437,7 +561,11 @@ static void handleCameraUpdate( Params& params )
     //params.vp2 = cam_vp2;
     //params.vp3 = cam_vp3;
     //params.vp4 = cam_vp4;
+
     camera.setAspectRatio( static_cast<float>( params.windowSpace.x ) / static_cast<float>( params.windowSpace.y ) );
+    CUDA_SYNC_CHECK();
+    updateRootIAS();
+    CUDA_SYNC_CHECK();
     //params.eye = camera.eye();
     //camera.UVWFrame( params.U, params.V, params.W );
 }
@@ -505,6 +633,8 @@ static void updateState( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params&
     // Update params on device
     if( camera_changed || resize_dirty )
         params.subframe_index = 0;
+
+
 
     handleCameraUpdate( params );
     handleResize( output_buffer, params );
@@ -750,6 +880,7 @@ static size_t g_staticAndDynamicVertNum = 0;
 static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<std::shared_ptr<smallMesh>> m_meshes) {
     std::cout<<"IAS begin"<<std::endl;
     timer.tick();
+
     const float mat3r4c[12] = {1,0,0,0,0,1,0,0,0,0,1,0};
 
     float3 defaultInstPos = {0, 0, 0};
@@ -943,8 +1074,8 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
 void buildRootIAS()
 {
     timer.tick();
-
-    const float mat3r4c[12] = {1,0,0,0,0,1,0,0,0,0,1,0};
+    auto campos = state.params.cam.eye;
+    const float mat3r4c[12] = {1,0,0,0,   0,1,0,0,   0,0,1,0};
     std::vector<OptixInstance> optix_instances{};
     uint sbt_offset = 0u;
     {
@@ -1065,6 +1196,8 @@ void buildRootIAS()
     timer.tock("Build Root IAS");
     state.params.handle = state.rootHandleIAS;
 }
+
+
 
 static void buildMeshAccel( PathTracerState& state )
 {
@@ -3541,6 +3674,7 @@ static void save_exr(float3* ptr, int w, int h, std::string path) {
     }
 }
 void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
+
     bool imageRendered = false;
     samples = zeno::envconfig::getInt("SAMPLES", samples);
     // 张心欣老爷请添加环境变量：export ZENO_SAMPLES=256

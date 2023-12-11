@@ -47,7 +47,7 @@ ZENDEFNODE(ShaderExtractVec, {
         {"float", "w"},
     },
     {},
-    {"shader"},
+    {"deprecated"},
 });
 
 
