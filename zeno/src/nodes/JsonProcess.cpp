@@ -5,6 +5,7 @@
 #include <zeno/zeno.h>
 #include <tinygltf/json.hpp>
 #include "zeno/utils/fileio.h"
+#include "zeno/utils/string.h"
 using Json = nlohmann::json;
 
 namespace zeno {
@@ -208,6 +209,61 @@ ZENDEFNODE(JsonGetTypeName, {
     },
     {
         "string",
+    },
+    {},
+    {
+        "json"
+    },
+});
+
+struct JsonData : zeno::INode {
+    virtual void apply() override {
+        auto json = get_input<JsonObject>("json");
+        auto path = get_input2<std::string>("path");
+        auto strings = zeno::split_str(path, ':');
+        auto type = strings[1];
+        path = strings[0];
+        auto names = split_str(path, '/');
+
+        for (auto & name : names) {
+            json->json = json->json[name];
+        }
+
+
+        if (type == "json") {
+            auto out_json = std::make_shared<JsonObject>();
+            out_json->json = json->json;
+            set_output("out", out_json);
+        }
+        else if (type == "int") {
+            set_output2("out", int(json->json));
+        }
+        else if (type == "float") {
+            set_output2("out", float(json->json));
+        }
+        else if (type == "string") {
+            set_output2("out", std::string(json->json));
+        }
+        else if (type == "vec2f") {
+            float x = float(json->json[0]);
+            float y = float(json->json[1]);
+            set_output2("out", vec2f(x, y));
+        }
+        else if (type == "vec3f") {
+            float x = float(json->json[0]);
+            float y = float(json->json[1]);
+            float z = float(json->json[2]);
+            set_output2("out", vec3f(x, y, z));
+        }
+    }
+};
+ZENDEFNODE(JsonData, {
+    {
+        {"json"},
+        {"string", "path"},
+    },
+    {
+        "out",
     },
     {},
     {
