@@ -33,6 +33,26 @@ ZENDEFNODE(ReadJson, {
         "json"
     },
 });
+struct ReadJsonFromString : zeno::INode {
+    virtual void apply() override {
+        auto json = std::make_shared<JsonObject>();
+        auto content = get_input2<std::string>("content");
+        json->json = Json::parse(content);
+        set_output("json", json);
+    }
+};
+ZENDEFNODE(ReadJsonFromString, {
+    {
+        {"string", "content"},
+    },
+    {
+        "json",
+    },
+    {},
+    {
+        "json"
+    },
+});
 struct JsonGetArraySize : zeno::INode {
     virtual void apply() override {
         auto json = get_input<JsonObject>("json");
@@ -76,20 +96,44 @@ ZENDEFNODE(JsonGetArrayItem, {
 
 struct JsonGetChild : zeno::INode {
     virtual void apply() override {
-        auto out_json = std::make_shared<JsonObject>();
         auto json = get_input<JsonObject>("json");
         auto name = get_input2<std::string>("name");
-        out_json->json = json->json[name];
-        set_output("json", out_json);
+        auto type = get_input2<std::string>("type");
+        if (type == "json") {
+            auto out_json = std::make_shared<JsonObject>();
+            out_json->json = json->json[name];
+            set_output("out", out_json);
+        }
+        else if (type == "int") {
+            set_output2("out", int(json->json[name]));
+        }
+        else if (type == "float") {
+            set_output2("out", float(json->json[name]));
+        }
+        else if (type == "string") {
+            set_output2("out", std::string(json->json[name]));
+        }
+        else if (type == "vec2f") {
+            float x = float(json->json[name][0]);
+            float y = float(json->json[name][1]);
+            set_output2("out", vec2f(x, y));
+        }
+        else if (type == "vec3f") {
+            float x = float(json->json[name][0]);
+            float y = float(json->json[name][1]);
+            float z = float(json->json[name][2]);
+            set_output2("out", vec3f(x, y, z));
+        }
     }
 };
 ZENDEFNODE(JsonGetChild, {
     {
         {"json"},
-        {"string", "name"}
+        {"string", "name"},
+        {"enum json int float string vec2f vec3f", "type"},
     },
     {
-        "json",
+        "out",
     },
     {},
     {
