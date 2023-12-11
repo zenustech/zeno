@@ -1272,6 +1272,9 @@ struct PrimitiveUnmerge : INode {
         auto tag = get_input2<std::string>("tagAttr");
         auto method = get_input2<std::string>("method");
 
+        if (get_input2<bool>("preSimplify")) {
+            primSimplifyTag(prim.get(), tag);
+        }
         if (method == "faces") {
             assign_group_tag_to_verts(prim, tag);
         }
@@ -1289,6 +1292,7 @@ ZENDEFNODE(PrimitiveUnmerge, {
                                  {
                                      {"primitive", "prim"},
                                      {"string", "tagAttr", "tag"},
+                                     {"bool", "preSimplify", "0"},
                                      {"enum verts faces", "method", "verts"},
                                  },
                                  {
