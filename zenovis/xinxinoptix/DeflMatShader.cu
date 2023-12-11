@@ -491,7 +491,7 @@ extern "C" __global__ void __closesthit__radiance()
     auto P_Local = interp(barys, v0, v1, v2);
     P = optixTransformPointFromObjectToWorldSpace(P_Local); // this value has precision issue for big float
 
-    attrs.pos = P + prd->camPos;
+    attrs.pos = P;
 
     float3 N_Local = normalize( cross( normalize(v1-v0), normalize(v2-v1) ) ); // this value has precision issue for big float
     float3 N_World = normalize(optixTransformNormalFromObjectToWorldSpace(N_Local));

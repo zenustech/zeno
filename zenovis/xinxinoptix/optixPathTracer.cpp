@@ -430,7 +430,7 @@ static void updateRootIAS()
 {
   timer.tick();
   auto campos = state.params.cam.eye;
-  const float mat3r4c[12] = {1,0,0,-campos.x,   0,1,0,-campos.y,   0,0,1,-campos.z};
+  const float mat3r4c[12] = {1,0,0,0,   0,1,0,0,   0,0,1,0};
   std::vector<OptixInstance> optix_instances{};
   uint sbt_offset = 0u;
   {
@@ -563,9 +563,7 @@ static void handleCameraUpdate( Params& params )
     //params.vp4 = cam_vp4;
 
     camera.setAspectRatio( static_cast<float>( params.windowSpace.x ) / static_cast<float>( params.windowSpace.y ) );
-    CUDA_SYNC_CHECK();
-    updateRootIAS();
-    CUDA_SYNC_CHECK();
+
     //params.eye = camera.eye();
     //camera.UVWFrame( params.U, params.V, params.W );
 }
