@@ -1190,6 +1190,47 @@ static std::shared_ptr<PrimitiveObject> unfuse_primitive(std::shared_ptr<Primiti
     return resPrim;
 }
 
+static void assign_group_tag_to_verts(std::shared_ptr<PrimitiveObject> prim, std::string tag) {
+    using namespace zs;
+    constexpr auto space = execspace_e::openmp;
+    auto pol = omp_exec();
+
+    auto &verts = prim->verts;
+    const auto &pos = verts.values;
+
+    auto &tris = prim->tris;
+    const bool hasTris = tris.size() > 0;
+
+    auto &polys = prim->polys;
+    const bool hasLoops = polys.size() > 1;
+
+    auto &vertGroups = prim->verts.add_attr<int>(tag);
+
+    if (hasTris) {
+        const auto &triIds = tris.values;
+        const auto &triGroups = tris.attr<int>(tag);
+
+        pol(zs::zip(triIds, triGroups), [&vertGroups](auto tri, int groupNo) {
+            for (int d = 0; d != 3; ++d) {
+                int vi = tri[d];
+                vertGroups[vi] = groupNo;
+            }
+        });
+    } else {
+        const auto &loops = prim->loops.values;
+        const auto &polyGroups = polys.attr<int>(tag);
+
+        pol(zs::zip(polys.values, polyGroups), [&vertGroups, &loops](zeno::vec2i poly, int groupNo) {
+            auto st = poly[0];
+            auto ed = st + poly[1];
+            for (; st != ed; ++st) {
+                int vi = loops[st];
+                vertGroups[vi] = groupNo;
+            }
+        });
+    }
+}
+
 /// @note duplicate vertices shared by multiple groups
 struct PrimitiveUnfuse : INode {
     void apply() override {
@@ -1201,43 +1242,7 @@ struct PrimitiveUnfuse : INode {
         bool toList = get_input2<bool>("to_list");
 
         if (toList) {
-            constexpr auto space = zs::execspace_e::openmp;
-            auto pol = zs::omp_exec();
-
-            auto &verts = resPrim->verts;
-            const auto &pos = verts.values;
-
-            auto &tris = resPrim->tris;
-            const bool hasTris = tris.size() > 0;
-
-            auto &polys = resPrim->polys;
-            const bool hasLoops = polys.size() > 1;
-
-            auto &vertGroups = resPrim->verts.add_attr<int>(tag);
-
-            if (hasTris) {
-                const auto &triIds = tris.values;
-                const auto &triGroups = tris.attr<int>(tag);
-
-                pol(zs::zip(triIds, triGroups), [&vertGroups](auto tri, int groupNo) {
-                    for (int d = 0; d != 3; ++d) {
-                        int vi = tri[d];
-                        vertGroups[vi] = groupNo;
-                    }
-                });
-            } else {
-                const auto &loops = resPrim->loops.values;
-                const auto &polyGroups = polys.attr<int>(tag);
-
-                pol(zs::zip(polys.values, polyGroups), [&vertGroups, &loops](zeno::vec2i poly, int groupNo) {
-                    auto st = poly[0];
-                    auto ed = st + poly[1];
-                    for (; st != ed; ++st) {
-                        int vi = loops[st];
-                        vertGroups[vi] = groupNo;
-                    }
-                });
-            }
+            assign_group_tag_to_verts(resPrim, tag);
 
             auto primList = primUnmergeVerts(resPrim.get(), tag);
             auto listPrim = std::make_shared<ListObject>();
@@ -1260,6 +1265,38 @@ ZENDEFNODE(PrimitiveUnfuse, {
                                 {},
                                 {"zs_geom"},
                             });
+
+struct PrimitiveUnmerge : INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto tag = get_input2<std::string>("tagAttr");
+        auto method = get_input2<std::string>("method");
+
+        if (method == "faces") {
+            assign_group_tag_to_verts(prim, tag);
+        }
+        auto primList = primUnmergeVerts(prim.get(), tag);
+
+        auto listPrim = std::make_shared<ListObject>();
+        for (auto &primPtr : primList) {
+            listPrim->arr.push_back(std::move(primPtr));
+        }
+        set_output("listPrim", std::move(listPrim));
+    }
+};
+
+ZENDEFNODE(PrimitiveUnmerge, {
+                                 {
+                                     {"primitive", "prim"},
+                                     {"string", "tagAttr", "tag"},
+                                     {"enum verts faces", "method", "verts"},
+                                 },
+                                 {
+                                     {"list", "listPrim"},
+                                 },
+                                 {},
+                                 {"primitive"},
+                             });
 
 struct MarkSelectedVerts : INode {
     void apply() override {
