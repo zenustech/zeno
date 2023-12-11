@@ -375,23 +375,37 @@ ZENDEFNODE(StringToNumber, {{
                                 "string",
                             }});
 
+std::string& trim(std::string &s) 
+{
+    if (s.empty()) 
+    {
+        return s;
+    }
+    s.erase(0,s.find_first_not_of(" \f\n\r\t\v"));
+    s.erase(s.find_last_not_of(" \f\n\r\t\v") + 1);
+    return s;
+}
+
 struct StringToList : zeno::INode {
     virtual void apply() override {
         auto stringlist = get_input2<std::string>("string");
         auto list = std::make_shared<ListObject>();
         auto separator = get_input2<std::string>("Separator");
+        auto trimoption = get_input2<bool>("Trim");
         std::vector<std::string> strings;
         size_t pos = 0;
         size_t posbegin = 0;
         std::string word;
         while ((pos = stringlist.find(separator, pos)) != std::string::npos) {
             word = stringlist.substr(posbegin, pos-posbegin);
+            if(trimoption) trim(word);
             strings.push_back(word);
             pos += separator.length();
             posbegin = pos;
         }
         if (posbegin < stringlist.length()) { //push last word
             word = stringlist.substr(posbegin);
+            if(trimoption) trim(word);
             strings.push_back(word);
         }
         for(const auto &string : strings) {
@@ -405,8 +419,9 @@ struct StringToList : zeno::INode {
 
 ZENDEFNODE(StringToList, {
     {
-        {"string", "string", ""},
+        {"multiline_string", "string", ""},
         {"string", "Separator", ""},
+        {"bool", "Trim", "false"},
     },
     {{"list"},
     },
