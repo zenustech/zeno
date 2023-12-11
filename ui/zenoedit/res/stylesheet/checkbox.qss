@@ -61,3 +61,9 @@ QCheckBox[cssClass = "AlwaysCheckBox"]::indicator:unchecked
 {
     image: url(:/icons/always_checkbox.svg);
 }
+
+QCheckBox[cssClass = "proppanel"] {
+	font-size: 9pt;
+	font-weight: bold;
+	color: rgba(255, 255, 255, 0.7);
+}

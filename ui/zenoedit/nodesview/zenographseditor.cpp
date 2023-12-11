@@ -122,6 +122,12 @@ void ZenoGraphsEditor::initSignals()
     connect(m_ui->graphsViewTab, &QTabWidget::tabCloseRequested, this, [=](int index) {
         m_ui->graphsViewTab->removeTab(index);
     });
+    connect(m_ui->graphsViewTab, &QTabWidget::currentChanged, this, [=](int index) {
+        if (m_ui->graphsViewTab->tabText(index).compare("main", Qt::CaseInsensitive) == 0)
+        {
+            ZenoSettingsManager::GetInstance().setValue(zsSubgraphType, SUBGRAPH_NOR);
+        }
+    });
     connect(m_ui->searchEdit, SIGNAL(textChanged(const QString&)), this, SLOT(onSearchEdited(const QString&)));
     connect(m_ui->searchResView, SIGNAL(clicked(const QModelIndex&)), this, SLOT(onSearchItemClicked(const QModelIndex&)));
 
@@ -190,6 +196,8 @@ void ZenoGraphsEditor::resetModel(IGraphsModel* pModel)
             proxyModel->invalidate();
             int type = ZenoSettingsManager::GetInstance().getValue(zsName).toInt();
             m_ui->label->setText(type == SUBGRAPH_TYPE::SUBGRAPH_NOR ? tr("Subnet") : type == SUBGRAPH_TYPE::SUBGRAPH_METERIAL ? tr("Material Subnet") : tr("Preset Subnet"));
+            if (type != SUBGRAPH_METERIAL)
+                closeMaterialTab();
         }
     });
     activateTab("main");                
@@ -469,6 +477,25 @@ int ZenoGraphsEditor::tabIndexOfName(const QString& subGraphName)
 	return -1;
 }
 
+void ZenoGraphsEditor::closeMaterialTab()
+{
+    for (int i = 0; i < m_ui->graphsViewTab->count(); i++)
+    {
+        QString subGraphName = m_ui->graphsViewTab->tabText(i);
+        auto graphsMgm = zenoApp->graphsManagment();
+        IGraphsModel* pModel = graphsMgm->currentModel();
+        ZASSERT_EXIT(pModel);
+        if (pModel->index(subGraphName).isValid())
+        {
+            if (pModel->index(subGraphName).data(ROLE_SUBGRAPH_TYPE).toInt() == SUBGRAPH_METERIAL)
+            {
+                m_ui->graphsViewTab->removeTab(i);
+                break;
+            }
+        }
+    }
+}
+
 void ZenoGraphsEditor::onListItemActivated(const QModelIndex& index)
 {
 	const QString& subgraphName = index.data().toString();
@@ -525,11 +552,18 @@ void ZenoGraphsEditor::activateTab(const QString& subGraphName, const QString& p
 
     if (!pModel->index(subGraphName).isValid())
         return;
-
+    if (subGraphName.compare("main", Qt::CaseInsensitive) == 0)
+    {
+        closeMaterialTab();
+    }
 	int idx = tabIndexOfName(subGraphName);
 	if (idx == -1)
 	{
 		const QModelIndex& subgIdx = pModel->index(subGraphName);
+        if (subgIdx.data(ROLE_SUBGRAPH_TYPE).toInt() == SUBGRAPH_METERIAL)
+        {
+            closeMaterialTab();
+        }
 
             ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(graphsMgm->gvScene(subgIdx));
             if (!pScene)

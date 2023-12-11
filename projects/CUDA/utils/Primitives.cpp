@@ -765,6 +765,21 @@ ZENDEFNODE(PrimitiveReorder,
            });
 
 struct PrimitiveFuse : INode {
+    std::set<std::string> separate_string_by(const std::string &tags, const std::string &sep) {
+        std::set<std::string> res;
+        using Ti = RM_CVREF_T(std::string::npos);
+        Ti st = tags.find_first_not_of(sep, 0);
+        for (auto ed = tags.find_first_of(sep, st + 1); ed != std::string::npos; ed = tags.find_first_of(sep, st + 1)) {
+            res.insert(tags.substr(st, ed - st));
+            st = tags.find_first_not_of(sep, ed);
+            if (st == std::string::npos)
+                break;
+        }
+        if (st != std::string::npos && st < tags.size()) {
+            res.insert(tags.substr(st));
+        }
+        return res;
+    }
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
 
@@ -776,6 +791,8 @@ struct PrimitiveFuse : INode {
 
         auto &verts = prim->verts;
         const auto &pos = verts.values;
+        auto preservedAttribs_ = get_input2<std::string>("preserved_vert_attribs");
+        std::set<std::string> preservedAttribs = separate_string_by(preservedAttribs_, " :;,.");
 
         /// @brief establish vert proximity topo
         RM_CVREF_T(prim->verts) newVerts;
@@ -875,32 +892,56 @@ struct PrimitiveFuse : INode {
 
         if (hasTris) {
             auto &eles = prim->tris;
-            // add custom tris attributes
-            verts.foreach_attr<AttrAcceptAll>([&](auto const &key, auto const &arr) {
+            auto promoteVertAttribToTri = [&](auto const &key, auto const &arr) {
                 using T = std::decay_t<decltype(arr[0])>;
                 eles.add_attr<T>(key + "0");
                 eles.add_attr<T>(key + "1");
                 eles.add_attr<T>(key + "2");
-            });
-            pol(enumerate(eles.values), [&fas, &verts, &eles](int ei, auto &tri) mutable {
-                for (auto &[key, vertArr] : verts.attrs) {
-                    auto const &k = key;
-                    match(
-                        [&k, &eles, &tri, ei](auto &vertArr)
-                            -> std::enable_if_t<variant_contains<RM_CVREF_T(vertArr[0]), AttrAcceptAll>::value> {
-                            using T = RM_CVREF_T(vertArr[0]);
-                            eles.attr<T>(k + "0")[ei] = vertArr[tri[0]];
-                            eles.attr<T>(k + "1")[ei] = vertArr[tri[1]];
-                            eles.attr<T>(k + "2")[ei] = vertArr[tri[2]];
-                        },
-                        [](...) {})(vertArr);
+            };
+            // add custom tris attributes
+            if (preservedAttribs.size() > 0) {
+                for (const auto &attribTag : preservedAttribs) {
+                    if (verts.has_attr(attribTag))
+                        match([&](const auto &arr) { promoteVertAttribToTri(attribTag, arr); })(verts.attr(attribTag));
+                }
+            } else {
+                verts.foreach_attr<AttrAcceptAll>(promoteVertAttribToTri);
+            }
+            pol(enumerate(eles.values), [&fas, &verts, &eles, &preservedAttribs](int ei, auto &tri) mutable {
+                if (preservedAttribs.size() > 0) {
+                    for (const auto &attribTag : preservedAttribs) {
+                        if (verts.has_attr(attribTag))
+                            match(
+                                [&k = attribTag, &eles, &tri, ei](auto &vertArr)
+                                    -> std::enable_if_t<
+                                        variant_contains<RM_CVREF_T(vertArr[0]), AttrAcceptAll>::value> {
+                                    using T = RM_CVREF_T(vertArr[0]);
+                                    eles.attr<T>(k + "0")[ei] = vertArr[tri[0]];
+                                    eles.attr<T>(k + "1")[ei] = vertArr[tri[1]];
+                                    eles.attr<T>(k + "2")[ei] = vertArr[tri[2]];
+                                },
+                                [](...) {})(verts.attr(attribTag));
+                    }
+                } else {
+                    for (auto &[key, vertArr] : verts.attrs) {
+                        auto const &k = key;
+                        match(
+                            [&k, &eles, &tri, ei](auto &vertArr)
+                                -> std::enable_if_t<variant_contains<RM_CVREF_T(vertArr[0]), AttrAcceptAll>::value> {
+                                using T = RM_CVREF_T(vertArr[0]);
+                                eles.attr<T>(k + "0")[ei] = vertArr[tri[0]];
+                                eles.attr<T>(k + "1")[ei] = vertArr[tri[1]];
+                                eles.attr<T>(k + "2")[ei] = vertArr[tri[2]];
+                            },
+                            [](...) {})(vertArr);
+                    }
                 }
                 for (auto &e : tri)
                     e = fas[e];
             });
         } else {
             bool uv_exist = prim->uvs.size() > 0 && loops.has_attr("uvs");
-            verts.foreach_attr<AttrAcceptAll>([&](auto const &key, auto const &arr) {
+            auto promoteVertAttribToLoop = [&](auto const &key, auto const &arr) {
                 using T = std::decay_t<decltype(arr[0])>;
                 if (key != "uv")
                     loops.add_attr<T>(key);
@@ -908,35 +949,73 @@ struct PrimitiveFuse : INode {
                     loops.add_attr<int>("uvs");
                     prim->uvs.resize(loops.size());
                 }
-            });
-            pol(range(polys), [&fas, &verts, &loops, &prim, uv_exist](const auto &poly) mutable {
+            };
+            if (preservedAttribs.size() > 0) {
+                for (const auto &attribTag : preservedAttribs) {
+                    if (verts.has_attr(attribTag))
+                        match([&](const auto &arr) { promoteVertAttribToLoop(attribTag, arr); })(verts.attr(attribTag));
+                }
+            } else {
+                verts.foreach_attr<AttrAcceptAll>(promoteVertAttribToLoop);
+            }
+
+            pol(range(polys), [&fas, &verts, &loops, &prim, &preservedAttribs, uv_exist](const auto &poly) mutable {
                 auto offset = poly[0];
                 auto size = poly[1];
                 for (int i = 0; i < size; ++i) {
                     auto loopI = offset + i;
                     auto ptNo = loops[loopI];
 
-                    for (auto &[key, vertArr] : verts.attrs) {
-                        auto const &k = key;
-                        auto &lps = loops;
-                        if (k == "uv") {
-                            if (!uv_exist) {
-                                auto &loopUV = loops.attr<int>("uvs");
-                                loopUV[loopI] = loopI;
-                                auto &uvs = prim->uvs.values;
-                                const auto &srcVertUV = std::get<std::vector<vec3f>>(vertArr);
-                                auto vertUV = srcVertUV[ptNo];
-                                uvs[loopI] = vec2f(vertUV[0], vertUV[1]);
+                    if (preservedAttribs.size() > 0) {
+                        for (const auto &attribTag : preservedAttribs) {
+                            if (verts.has_attr(attribTag)) {
+                                const auto &k = attribTag;
+                                const auto &vertArr = verts.attr(attribTag);
+                                auto &lps = loops;
+                                if (k == "uv") {
+                                    if (!uv_exist) {
+                                        auto &loopUV = loops.attr<int>("uvs");
+                                        loopUV[loopI] = loopI;
+                                        auto &uvs = prim->uvs.values;
+                                        const auto &srcVertUV = std::get<std::vector<vec3f>>(vertArr);
+                                        auto vertUV = srcVertUV[ptNo];
+                                        uvs[loopI] = vec2f(vertUV[0], vertUV[1]);
+                                    }
+                                } else {
+                                    match(
+                                        [&k, &lps, loopI, ptNo](auto &vertArr)
+                                            -> std::enable_if_t<
+                                                variant_contains<RM_CVREF_T(vertArr[0]), AttrAcceptAll>::value> {
+                                            using T = RM_CVREF_T(vertArr[0]);
+                                            lps.attr<T>(k)[loopI] = vertArr[ptNo];
+                                        },
+                                        [](...) {})(vertArr);
+                                }
                             }
-                        } else {
-                            match(
-                                [&k, &lps, loopI, ptNo](auto &vertArr)
-                                    -> std::enable_if_t<
-                                        variant_contains<RM_CVREF_T(vertArr[0]), AttrAcceptAll>::value> {
-                                    using T = RM_CVREF_T(vertArr[0]);
-                                    lps.attr<T>(k)[loopI] = vertArr[ptNo];
-                                },
-                                [](...) {})(vertArr);
+                        }
+                    } else {
+                        for (auto &[key, vertArr] : verts.attrs) {
+                            auto const &k = key;
+                            auto &lps = loops;
+                            if (k == "uv") {
+                                if (!uv_exist) {
+                                    auto &loopUV = loops.attr<int>("uvs");
+                                    loopUV[loopI] = loopI;
+                                    auto &uvs = prim->uvs.values;
+                                    const auto &srcVertUV = std::get<std::vector<vec3f>>(vertArr);
+                                    auto vertUV = srcVertUV[ptNo];
+                                    uvs[loopI] = vec2f(vertUV[0], vertUV[1]);
+                                }
+                            } else {
+                                match(
+                                    [&k, &lps, loopI, ptNo](auto &vertArr)
+                                        -> std::enable_if_t<
+                                            variant_contains<RM_CVREF_T(vertArr[0]), AttrAcceptAll>::value> {
+                                        using T = RM_CVREF_T(vertArr[0]);
+                                        lps.attr<T>(k)[loopI] = vertArr[ptNo];
+                                    },
+                                    [](...) {})(vertArr);
+                            }
                         }
                     }
 
@@ -952,7 +1031,9 @@ struct PrimitiveFuse : INode {
 };
 
 ZENDEFNODE(PrimitiveFuse, {
-                              {{"PrimitiveObject", "prim"}, {"float", "proximity_theshold", "0.00001"}},
+                              {{"PrimitiveObject", "prim"},
+                               {"float", "proximity_theshold", "0.00001"},
+                               {"string", "preserved_vert_attribs", ""}},
                               {
                                   {"PrimitiveObject", "prim"},
                               },
@@ -1122,6 +1203,37 @@ ZENDEFNODE(PrimitiveUnfuse, {
                                 {},
                                 {"zs_geom"},
                             });
+
+struct MarkSelectedVerts : INode {
+    void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto tagStr = get_input2<std::string>("selection_tag");
+        auto markedLines = get_input<PrimitiveObject>("marked_lines");
+
+        auto &tags = prim->add_attr<float>(tagStr);
+        using namespace zs;
+        auto pol = omp_exec();
+
+        std::fill(std::begin(tags), std::end(tags), 0.f);
+        const auto &lines = markedLines->lines.values;
+        pol(range(lines), [&tags](auto line) {
+            tags[line[0]] = 1.f;
+            tags[line[1]] = 1.f;
+        });
+        set_output("prim", prim);
+    }
+};
+ZENDEFNODE(MarkSelectedVerts, {
+
+                                  {{"PrimitiveObject", "prim"},
+                                   {"string", "selection_tag", "selected"},
+                                   {"PrimitiveObject", "marked_lines"}},
+                                  {
+                                      {"PrimitiveObject", "prim"},
+                                  },
+                                  {},
+                                  {"zs_geom"},
+                              });
 
 struct ComputeAverageEdgeLength : INode {
     void apply() override {
