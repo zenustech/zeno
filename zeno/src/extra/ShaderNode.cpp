@@ -134,7 +134,7 @@ ZENO_API std::string EmissionPass::collectDefs() const {
     std::string res;
     int cnt = 0;
     for (auto const &var: constants) {
-        return std::visit([&] (auto const &value) -> std::string {
+        auto expr = std::visit([&] (auto const &value) -> std::string {
             using T = std::decay_t<decltype(value)>;
             if constexpr (std::is_same_v<float, T>) {
                 return typeNameOf(1) + "(" + ftos(value) + ")";
@@ -150,7 +150,7 @@ ZENO_API std::string EmissionPass::collectDefs() const {
                 throw zeno::Exception("bad numeric object type: " + (std::string)typeid(T).name());
             }
         }, var.value);
-        res += typeNameOf(var.type) + " constmp" + std::to_string(cnt) + " = " + ";\n";
+        res += typeNameOf(var.type) + " constmp" + std::to_string(cnt) + " = " + expr + ";\n";
         cnt++;
     }
     cnt = 0;
