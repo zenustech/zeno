@@ -993,10 +993,6 @@ namespace COLLISION_UTILS {
             vr += bary[i] * vs[i];
         }
 
-        // really need this piece, or there will be floating point explosion
-        // if(pr.norm() < eps)
-        //     return false;
-
         auto npr = pr.norm();
         if(npr > thickness)
             return false;
@@ -1004,17 +1000,8 @@ namespace COLLISION_UTILS {
         if(npr < eps)
             return false;
 
-
-        // if(npr < 10 * eps) {
-        //     if(type == 0) {
-        //         auto nrm = LSL_GEO::facet_normal()
-        //     }
-        // }
-
-
-        pr = pr.normalized();
+        pr = pr / (eps + npr);
         auto vr_nrm = vr.dot(pr);
-
 
 
         REAL target_repulsive_dist = (REAL)0;
@@ -1053,8 +1040,10 @@ namespace COLLISION_UTILS {
             cminv += bary[i] * bary[i] / ms[i];
         }
 
-        if(cminv < eps)
-            return false;
+        // if(cminv < eps)
+        //     return false;
+
+        cminv = cminv < eps * 10 ? eps * 10 : cminv; 
 
         for(int i = 0;i != 4;++i) {
             auto beta = minv[i] * bary[i] / cminv;
@@ -1063,6 +1052,7 @@ namespace COLLISION_UTILS {
 
         return true;
     }
+
 
     constexpr void compute_imminent_repulsive_impulse(const VECTOR3 ps[4],const VECTOR3 vs[4],const VECTOR4& bary,const REAL ms[4],const REAL minv[4],VECTOR3 imps[4],
             const REAL& repulsive_strength,const REAL& thickness,const REAL& max_repel_dist) {

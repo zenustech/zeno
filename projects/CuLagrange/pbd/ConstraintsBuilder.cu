@@ -64,6 +64,7 @@ virtual void apply() override {
     using vec2 = zs::vec<float,2>;
     using vec3 = zs::vec<float,3>;
     using vec4 = zs::vec<float,4>;
+    using vec9 = zs::vec<float,9>;
     using vec2i = zs::vec<int,2>;
     using vec3i = zs::vec<int,3>;
     using vec4i = zs::vec<int,4>;
@@ -205,18 +206,20 @@ virtual void apply() override {
 
     if(type == "kinematic_dcd_collision_constraint") {
         constexpr auto eps = 1e-6;
-        constexpr auto MAX_KINEMATIC_IMMINENT_COLLISION_PAIRS = 20000;
+        constexpr auto MAX_KINEMATIC_IMMINENT_COLLISION_PAIRS = 200000;
         auto dcd_source_xtag = get_input2<std::string>("dcd_source_xtag");
         const auto &edges = (*source)[ZenoParticles::s_surfEdgeTag];
 
-        auto collider = get_input<ZenoParticles>("collider");
+        auto collider = get_input<ZenoParticles>("target");
         auto dcd_collider_xtag = get_input2<std::string>("dcd_collider_xtag");
+        auto dcd_collider_pxtag = get_input2<std::string>("dcd_collider_pxtag");
+        auto toc = get_input2<float>("toc");
         const auto& kverts = collider->getParticles();
         const auto& kedges = (*collider)[ZenoParticles::s_surfEdgeTag];
         const auto& ktris = collider->getQuadraturePoints();
 
         constraint->setMeta(CONSTRAINT_KEY,category_c::kinematic_dcd_collision_constraint);
-        eles.append_channels(cudaPol,{{"inds",4},{"bary",4},{"type",1}});        
+        eles.append_channels(cudaPol,{{"inds",4},{"bary",4},{"type",1},{"hit_point",3},{"hit_velocity",3}});        
 
         auto imminent_collision_thickness = get_input2<float>("thickness");
 
@@ -224,28 +227,57 @@ virtual void apply() override {
         zs::bht<int,2,int> csKPT{verts.get_allocator(),(size_t)MAX_KINEMATIC_IMMINENT_COLLISION_PAIRS};csKPT.reset(cudaPol,true);
         zs::bht<int,2,int> csEKE{edges.get_allocator(),(size_t)MAX_KINEMATIC_IMMINENT_COLLISION_PAIRS};csEKE.reset(cudaPol,true);
 
+        auto substep_id = get_input2<int>("substep_id");
+        auto nm_substeps = get_input2<int>("nm_substeps");
+        auto w = (float)(substep_id + 1) / (float)nm_substeps;
+        auto pw = (float)(substep_id) / (float)nm_substeps;  
+
+        dtiles_t kvtemp{kverts.get_allocator(),{
+            {"x",3},
+            {"v",3}
+        },kverts.size()};
+
+        cudaPol(zs::range(kverts.size()),[
+            kxOffset = kverts.getPropertyOffset(dcd_collider_xtag),
+            kpxOffset = kverts.getPropertyOffset(dcd_collider_pxtag),
+            kverts = proxy<space>({},kverts),
+            toc = toc,
+            w = w,
+            pw = pw,
+            tmpXOffset = kvtemp.getPropertyOffset("x"),
+            tmpVOffset = kvtemp.getPropertyOffset("v"),
+            kvtemp = proxy<space>({},kvtemp)] ZS_LAMBDA(int kvi) mutable {
+                auto kpreVert = kverts.pack(dim_c<3>,kpxOffset,kvi) * (1 - pw) + kverts.pack(dim_c<3>,kxOffset,kvi) * pw;
+                auto kcurVert = kverts.pack(dim_c<3>,kpxOffset,kvi) * (1 - w) + kverts.pack(dim_c<3>,kxOffset,kvi) * w;
+                kpreVert = kpreVert * (static_cast<T>(1.0) - toc) + kcurVert * toc;
+                auto kvel = kcurVert - kpreVert;
+                
+                kvtemp.tuple(dim_c<3>,tmpXOffset,kvi) = kpreVert;
+                kvtemp.tuple(dim_c<3>,tmpVOffset,kvi) = kvel;
+        });
+
         auto triBvh = bvh_t{};
         auto triBvs = retrieve_bounding_volumes(cudaPol,verts,quads,wrapv<3>{},imminent_collision_thickness/static_cast<float>(2.0),dcd_source_xtag);
         triBvh.build(cudaPol,triBvs);
 
         auto ktriBvh = bvh_t{};
-        auto ktriBvs = retrieve_bounding_volumes(cudaPol,kverts,ktris,wrapv<3>{},imminent_collision_thickness/static_cast<float>(2.0),dcd_collider_xtag);
+        auto ktriBvs = retrieve_bounding_volumes(cudaPol,kvtemp,ktris,wrapv<3>{},imminent_collision_thickness/static_cast<float>(2.0),"x");
         ktriBvh.build(cudaPol,ktriBvs);
 
         auto kedgeBvh = bvh_t{};
-        auto kedgeBvs = retrieve_bounding_volumes(cudaPol,kverts,kedges,wrapv<2>{},imminent_collision_thickness/static_cast<float>(2.0),dcd_collider_xtag);
+        auto kedgeBvs = retrieve_bounding_volumes(cudaPol,kvtemp,kedges,wrapv<2>{},imminent_collision_thickness/static_cast<float>(2.0),"x");
         kedgeBvh.build(cudaPol,kedgeBvs);
 
         COLLISION_UTILS::detect_imminent_PKT_close_proximity(cudaPol,
             verts,dcd_source_xtag,
-            kverts,dcd_collider_xtag,
+            kvtemp,"x",
             ktris,
             imminent_collision_thickness,
             ktriBvh,
             csPKT);
 
         COLLISION_UTILS::detect_imminent_PKT_close_proximity(cudaPol,
-            kverts,dcd_collider_xtag,
+            kvtemp,"x",
             verts,dcd_source_xtag,
             quads,
             imminent_collision_thickness,
@@ -255,7 +287,7 @@ virtual void apply() override {
         COLLISION_UTILS::detect_imminent_EKE_close_proximity(cudaPol,
             verts,dcd_source_xtag,
             edges,
-            kverts,dcd_collider_xtag,
+            kvtemp,"x",
             kedges,
             imminent_collision_thickness,
             kedgeBvh,
@@ -267,15 +299,153 @@ virtual void apply() override {
             indsOffset = eles.getPropertyOffset("inds"),
             baryOffset = eles.getPropertyOffset("bary"),
             typeOffset = eles.getPropertyOffset("type"),
+            hitPointOffset = eles.getPropertyOffset("hit_point"),
+            hitVelocityOffset = eles.getPropertyOffset("hit_velocity"),
             proximity_buffer = proxy<space>({},eles),
-            xoffset = verts.getProper
-        ])
+            xoffset = verts.getPropertyOffset(dcd_source_xtag),
+            verts = proxy<space>({},verts),
+            kxOffset = kvtemp.getPropertyOffset("x"),
+            kvOffset = kvtemp.getPropertyOffset("v"),
+            kvtemp = proxy<space>({},kvtemp),
+            ktris = ktris.begin("inds",dim_c<3>,int_c)] ZS_LAMBDA(auto id,const auto& pair) mutable {
+                auto vi = pair[0];
+                auto kti = pair[1];
+                auto ktri = ktris[kti];
 
+                auto p = verts.pack(dim_c<3>,xoffset,vi);
+                vec3 kps[3] = {};
+                vec3 kvs[3] = {};
+                for(int i = 0;i != 3;++i) {
+                    kps[i] = kvtemp.pack(dim_c<3>,kxOffset,ktri[i]);
+                    kvs[i] = kvtemp.pack(dim_c<3>,kvOffset,ktri[i]);
+                }
+
+                vec3 tri_bary{};
+                LSL_GEO::get_triangle_vertex_barycentric_coordinates(kps[0],kps[1],kps[2],p,tri_bary);
+                vec4 bary{-tri_bary[0],-tri_bary[1],-tri_bary[2],1};
+                vec4i inds{ktri[0],ktri[1],ktri[2],vi};
+
+                auto hit_point = vec3::zeros();
+                auto hit_velocity = vec3::zeros();
+                for(int i = 0;i != 3;++i) {
+                    hit_point += kps[i] * tri_bary[i];
+                    hit_velocity += kvs[i] * tri_bary[i];
+                }
+
+                proximity_buffer.tuple(dim_c<4>,indsOffset,id) = inds.reinterpret_bits(float_c);
+                proximity_buffer.tuple(dim_c<4>,baryOffset,id) = bary;
+                proximity_buffer(typeOffset,id) = zs::reinterpret_bits<float>((int)0);
+                proximity_buffer.tuple(dim_c<3>,hitPointOffset,id) = hit_point;
+                proximity_buffer.tuple(dim_c<3>,hitVelocityOffset,id) = hit_velocity;
+        });
+
+        cudaPol(zip(zs::range(csKPT.size()),csKPT._activeKeys),[
+            buffer_offset = csPKT.size(),
+            indsOffset = eles.getPropertyOffset("inds"),
+            baryOffset = eles.getPropertyOffset("bary"),
+            typeOffset = eles.getPropertyOffset("type"), 
+            hitPointOffset = eles.getPropertyOffset("hit_point"),
+            hitVelocityOffset = eles.getPropertyOffset("hit_velocity"),
+            // hitNormalOffset = eles.getPropertyOffset("hit_normal"),
+            proximity_buffer = proxy<space>({},eles),     
+            xoffset = verts.getPropertyOffset(dcd_source_xtag),   
+            verts = proxy<space>({},verts),
+            tris = quads.begin("inds",dim_c<3>,int_c),
+            kxoffset = kvtemp.getPropertyOffset("x"),
+            kvoffset = kvtemp.getPropertyOffset("v"),
+            kvtemp = proxy<space>({},kvtemp)] ZS_LAMBDA(auto id,const auto& pair) mutable {
+                auto kvi = pair[0];
+                auto ti = pair[1];
+                auto tri = tris[ti];
+
+                auto kp = kvtemp.pack(dim_c<3>,kxoffset,kvi);
+                auto kv = kvtemp.pack(dim_c<3>,kvoffset,kvi);
+
+                vec3 ps[3] = {};
+                for(int i = 0;i != 3;++i)
+                    ps[i] = verts.pack(dim_c<3>,xoffset,tri[i]);
+
+                vec3 tri_bary{};
+                LSL_GEO::get_triangle_vertex_barycentric_coordinates(ps[0],ps[1],ps[2],kp,tri_bary);
+                vec4 bary{-tri_bary[0],-tri_bary[1],-tri_bary[2],1};
+                vec4i inds{tri[0],tri[1],tri[2],kvi};
+
+                proximity_buffer.tuple(dim_c<4>,indsOffset,id + buffer_offset) = inds.reinterpret_bits(float_c);
+                proximity_buffer.tuple(dim_c<4>,baryOffset,id + buffer_offset) = bary;
+                proximity_buffer(typeOffset,id + buffer_offset) = zs::reinterpret_bits<float>((int)1);
+                proximity_buffer.tuple(dim_c<3>,hitPointOffset,id + buffer_offset) = kp;
+                proximity_buffer.tuple(dim_c<3>,hitVelocityOffset,id + buffer_offset) = kv;
+                // proximity_buffer.tuple(dim_c<3>,hitNormalOffset,id) = hit_normal;
+        });
+
+
+        cudaPol(zip(zs::range(csEKE.size()),csEKE._activeKeys),[
+            eps = eps,
+            buffer_offset = csPKT.size() + csKPT.size(),
+            indsOffset = eles.getPropertyOffset("inds"),
+            baryOffset = eles.getPropertyOffset("bary"),
+            typeOffset = eles.getPropertyOffset("type"),
+            hitPointOffset = eles.getPropertyOffset("hit_point"),
+            hitVelocityOffset = eles.getPropertyOffset("hit_velocity"),
+            proximity_buffer = proxy<space>({},eles),
+            xoffset = verts.getPropertyOffset(dcd_source_xtag),
+            verts = proxy<space>({},verts),
+            edges = edges.begin("inds",dim_c<2>,int_c),
+            kxoffset = kvtemp.getPropertyOffset("x"),
+            kvoffset = kvtemp.getPropertyOffset("v"),
+            kvtemp = proxy<space>({},kvtemp),
+            kedges = kedges.begin("inds",dim_c<2>,int_c)] ZS_LAMBDA(auto id,const auto& pair) mutable {
+                auto ei = pair[0];
+                auto kei = pair[1];
+
+                auto edge = edges[ei];
+                auto kedge = kedges[kei];
+
+                vec4i inds{edge[0],edge[1],kedge[0],kedge[1]};
+
+                vec3 ps[2] = {};
+                for(int i = 0;i != 2;++i)
+                    ps[i] = verts.pack(dim_c<3>,xoffset,edge[i]);
+
+                vec3 kps[2] = {};
+                vec3 kvs[2] = {};
+                for(int i = 0;i != 2;++i) {
+                    kps[i] = kvtemp.pack(dim_c<3>,kxoffset,kedge[i]);
+                    kvs[i] = kvtemp.pack(dim_c<3>,kvoffset,kedge[i]);
+                }
+
+                auto hit_point = vec3::zeros();
+                auto hit_velocity = vec3::zeros();
+
+                vec2 edge_bary{};
+                LSL_GEO::get_edge_edge_barycentric_coordinates(ps[0],ps[1],kps[0],kps[1],edge_bary);
+                vec4 bary{edge_bary[0] - 1,-edge_bary[0],1 - edge_bary[1],edge_bary[1]};
+
+                hit_point = bary[2] * kps[0] + bary[3] * kps[1];
+                hit_velocity = bary[2] * kvs[0] + bary[3] * kvs[1];
+
+                // auto hit_normal = bary[0] * ps[0] + bary[1] * ps[1] + bary[2] * kps[0] + bary[3] * kps[1];
+                // if(hit_normal.norm() > eps)
+                //     hit_normal = hit_normal.normalized();
+                // else
+                //     hit_normal = (ps[1] - ps[0]).cross(kps[1] - kps[0]).normalized();
+
+                proximity_buffer.tuple(dim_c<4>,baryOffset,id + buffer_offset) = bary;
+                proximity_buffer.tuple(dim_c<4>,indsOffset,id + buffer_offset) = inds.reinterpret_bits(float_c);
+                proximity_buffer(typeOffset,id + buffer_offset) = zs::reinterpret_bits<float>((int)2);
+                proximity_buffer.tuple(dim_c<3>,hitPointOffset,id + buffer_offset) = hit_point;
+                proximity_buffer.tuple(dim_c<3>,hitVelocityOffset,id + buffer_offset) = hit_velocity;
+                // proximity_buffer.tuple(dim_c<3>,hitNormalOffset,id) = hit_normal;
+        });
+
+        constraint->setMeta<size_t>(NM_DCD_COLLISIONS,csEKE.size() + csPKT.size() + csKPT.size());
+        constraint->setMeta(GLOBAL_DCD_THICKNESS,imminent_collision_thickness);
+        constraint->setMeta<bool>(ENABLE_DCD_REPULSION_FORCE,get_input2<bool>("add_dcd_repulsion_force"));
     }
 
     if(type == "self_dcd_collision_constraint") {
         constexpr auto eps = 1e-6;
-        constexpr auto MAX_SELF_IMMINENT_COLLISION_PAIRS = 20000;
+        constexpr auto MAX_SELF_IMMINENT_COLLISION_PAIRS = 200000;
         auto dcd_source_xtag = get_input2<std::string>("dcd_source_xtag");
         constraint->setMeta(CONSTRAINT_KEY,category_c::self_dcd_collision_constraint);
         eles.append_channels(cudaPol,{{"inds",4},{"bary",4},{"type",1}});
@@ -363,6 +533,7 @@ virtual void apply() override {
 
         constraint->setMeta<size_t>(NM_DCD_COLLISIONS,csEE.size() + csPT.size());
         constraint->setMeta(GLOBAL_DCD_THICKNESS,imminent_collision_thickness);
+        constraint->setMeta<bool>(ENABLE_DCD_REPULSION_FORCE,get_input2<bool>("add_dcd_repulsion_force"));
     }
 
     if(type == "volume_pin") {
@@ -723,6 +894,10 @@ ZENDEFNODE(MakeSurfaceConstraintTopology, {{
                             {"source"},
                             {"target"},
                             {"string","dcd_source_xtag","px"},
+                            {"string","dcd_collider_xtag","x"},
+                            {"string","dcd_collider_pxtag","px"},
+                            {"float","toc","0"},
+                            {"bool","add_dcd_repulsion_force","1"},
                             {"float","relative_stiffness","1.0"},
                             {"float","xpbd_affiliation","1.0"},
                             {"string","topo_type","stretch"},

@@ -375,7 +375,7 @@ void detect_imminent_PKT_close_proximity(Pol& pol,
                     if(LSL_GEO::get_vertex_triangle_intersection_barycentric_coordinates(p,ts[0],ts[1],ts[2],tri_bary) > thickness2)
                         return;
 #else
-                    LSL_GEO::get_triangle_vertex_barycentric_coordinates(kts[0],kts[1],kts[2],p,tri_bary);
+                    LSL_GEO::get_triangle_vertex_barycentric_coordinates(kts[0],kts[1],kts[2],p,ktri_bary);
                     for(int i = 0;i != 3;++i)
                         if(ktri_bary[i] > 1 + eps || ktri_bary[i] < -eps)
                             return;
