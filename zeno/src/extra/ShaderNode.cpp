@@ -119,13 +119,36 @@ ZENO_API std::string EmissionPass::typeNameOf(int type) const {
 }
 
 ZENO_API std::string EmissionPass::collectDefs() const {
-  std::string res;
-  int cnt = 0;
-  for (auto const &var: variables) {
-    res += typeNameOf(var.type) + " tmp" + std::to_string(cnt) + ";\n";
-    cnt++;
-  }
-  return res;
+
+    std::string res;
+    int cnt = 0;
+    for (auto const &var: constants) {
+        auto expr = std::visit([&] (auto const &value) -> std::string {
+            using T = std::decay_t<decltype(value)>;
+            if constexpr (std::is_same_v<float, T>) {
+                return typeNameOf(1) + "(" + ftos(value) + ")";
+            } else if constexpr (std::is_same_v<vec2f, T>) {
+                return typeNameOf(2) + "(" + ftos(value[0]) + ", " + ftos(value[1]) + ")";
+            } else if constexpr (std::is_same_v<vec3f, T>) {
+                return typeNameOf(3) + "(" + ftos(value[0]) + ", " + ftos(value[1]) + ", "
+                + ftos(value[2]) + ")";
+            } else if constexpr (std::is_same_v<vec4f, T>) {
+                return typeNameOf(4) + "(" + ftos(value[0]) + ", " + ftos(value[1]) + ", "
+                + ftos(value[2]) + ", " + ftos(value[3]) + ")";
+            } else {
+                throw zeno::Exception("bad numeric object type: " + (std::string)typeid(T).name());
+            }
+        }, var.value);
+        res += typeNameOf(var.type) + " constmp" + std::to_string(cnt) + " = " + expr + ";\n";
+        cnt++;
+    }
+    cnt = 0;
+    for (auto const &var: variables) {
+        res += typeNameOf(var.type) + " tmp" + std::to_string(cnt) + ";\n";
+        cnt++;
+    }
+    return res;
+
 }
 
 ZENO_API std::string EmissionPass::collectCode() const {
