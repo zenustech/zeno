@@ -140,9 +140,9 @@ struct ZSParticlesTwoWrangler : zeno::INode {
                         opts.define_symbol(prefix + "pos", nchns);
                     else if (name == "v")
                         opts.define_symbol(prefix + "vel", nchns);
-                    opts.define_symbol(prefix + name.asString(), nchns);
+                    opts.define_symbol(prefix + std::string(name), nchns);
                 }
-                //def_sym(name.asString(), nchns);
+                //def_sym(std::string(name), nchns);
             };
             register_attrib_syms(props, "@");
             register_attrib_syms(props2, "@@");

@@ -1417,7 +1417,7 @@ void UnifiedIPCSystem::precondition(zs::CudaExecutionPolicy &pol, const zs::Smal
 // precondition
 #if 0
     pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), srcTag, dstTag] ZS_LAMBDA(int vi) mutable {
-        vtemp.tuple(dim_c<3>, dstTag, vi) = vtemp.pack(dim_c<3, 3>, "P", vi) * vtemp.pack(dim_c<3>, srcTag, vi);
+        vtemp.mount(dim_c<3>, dstTag, vi) = vtemp.pack(dim_c<3, 3>, "P", vi) * vtemp.pack(dim_c<3>, srcTag, vi);
     });
 #endif
     pol(zs::range(numDofs * 3), [vtemp = proxy<space>({}, vtemp), srcOffset = vtemp.getPropertyOffset(srcTag),
@@ -1442,7 +1442,7 @@ void UnifiedIPCSystem::systemMultiply(zs::CudaExecutionPolicy &pol, const zs::Sm
     using vec3 = zs::vec<T, 3>;
     // dx -> b
     pol(range(numDofs), [execTag, vtemp = proxy<space>({}, vtemp), bTag] ZS_LAMBDA(int vi) mutable {
-        vtemp.tuple(dim_c<3>, bTag, vi) = vec3::zeros();
+        vtemp.mount(dim_c<3>, bTag, vi) = vec3::zeros();
     });
     // CppTimer timer;
     // timer.tick();
@@ -1933,9 +1933,9 @@ void UnifiedIPCSystem::systemSolve(zs::CudaExecutionPolicy &cudaPol) {
         cudaPol(range(numDofs), [vtemp = proxy<space>({}, vtemp), dirOffset = vtemp.getPropertyOffset("dir"),
                                  pOffset = vtemp.getPropertyOffset("p"), rOffset = vtemp.getPropertyOffset("r"),
                                  tempOffset = vtemp.getPropertyOffset("temp"), alpha] ZS_LAMBDA(int vi) mutable {
-            vtemp.tuple(dim_c<3>, dirOffset, vi) =
+            vtemp.mount(dim_c<3>, dirOffset, vi) =
                 vtemp.pack(dim_c<3>, dirOffset, vi) + alpha * vtemp.pack<3>(pOffset, vi);
-            vtemp.tuple(dim_c<3>, rOffset, vi) =
+            vtemp.mount(dim_c<3>, rOffset, vi) =
                 vtemp.pack(dim_c<3>, rOffset, vi) - alpha * vtemp.pack<3>(tempOffset, vi);
         });
 
@@ -2141,8 +2141,8 @@ bool UnifiedIPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
             }
         // GRAD, HESS, P
         pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
-            vtemp.tuple(dim_c<3, 3>, "P", i) = mat3::zeros();
-            vtemp.tuple(dim_c<3>, "grad", i) = vec3::zeros();
+            vtemp.mount(dim_c<3, 3>, "P", i) = mat3::zeros();
+            vtemp.mount(dim_c<3>, "grad", i) = vec3::zeros();
         });
 
         /// prepare linsys.spmat
@@ -2160,9 +2160,9 @@ bool UnifiedIPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
         pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
             auto mat = vtemp.pack(dim_c<3, 3>, "P", i);
             if (zs::abs(zs::determinant(mat)) > limits<T>::epsilon() * 10)
-                vtemp.tuple(dim_c<3, 3>, "P", i) = inverse(mat);
+                vtemp.mount(dim_c<3, 3>, "P", i) = inverse(mat);
             else
-                vtemp.tuple(dim_c<3, 3>, "P", i) = mat3::identity();
+                vtemp.mount(dim_c<3, 3>, "P", i) = mat3::identity();
         });
 #endif
 
@@ -2181,7 +2181,7 @@ bool UnifiedIPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
                    newtonIter, res);
         // LINESEARCH
         pol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
-            vtemp.tuple(dim_c<3>, "xn0", i) = vtemp.pack(dim_c<3>, "xn", i);
+            vtemp.mount(dim_c<3>, "xn0", i) = vtemp.pack(dim_c<3>, "xn", i);
         });
         T alpha = 1.;
         if (enableContact) {
@@ -2199,7 +2199,7 @@ bool UnifiedIPCSystem::newtonKrylov(zs::CudaExecutionPolicy &pol) {
         }
         lineSearch(pol, alpha);
         pol(zs::range(vtemp.size()), [vtemp = proxy<space>({}, vtemp), alpha] ZS_LAMBDA(int i) mutable {
-            vtemp.tuple(dim_c<3>, "xn", i) = vtemp.pack(dim_c<3>, "xn0", i) + alpha * vtemp.pack(dim_c<3>, "dir", i);
+            vtemp.mount(dim_c<3>, "xn", i) = vtemp.pack(dim_c<3>, "xn0", i) + alpha * vtemp.pack(dim_c<3>, "dir", i);
         });
         // UPDATE RULE
         cons_res = constraintResidual(pol);

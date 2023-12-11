@@ -6,9 +6,15 @@
 #include "recordvideomgr.h"
 #include "viewportinteraction/picker.h"
 #include "launch/corelaunch.h"
+#include "dock/docktabcontent.h"
+#include <zenoio/include/common.h>
 
 class ViewportWidget;
+#ifdef ZENO_OPTIX_PROC
+class ZOptixProcViewport;
+#else
 class ZOptixViewport;
+#endif
 class CameraKeyframeWidget;
 
 class DisplayWidget : public QWidget
@@ -22,6 +28,7 @@ public:
     Zenovis* getZenoVis() const;
     void runAndRecord(const VideoRecInfo& info);
     void testCleanUp();
+    void cleanUpScene();
     void beforeRun();
     void afterRun();
     void changeTransformOperation(const QString &node);
@@ -39,12 +46,20 @@ public:
     bool isCameraMoving() const;
     bool isPlaying() const;
     bool isGLViewport() const;
+    void setViewWidgetInfo(DockContentWidgetInfo& info);
+    void setSliderFeq(int feq);
+#ifdef ZENO_OPTIX_PROC
+    ZOptixProcViewport* optixViewport() const;
+#else
     ZOptixViewport* optixViewport() const;
+#endif
     void killOptix();
     void moveToFrame(int frame);
     void setIsCurrent(bool isCurrent);
     bool isCurrent();
     void setLoopPlaying(bool enable);
+    std::tuple<int, int, bool> getOriginWindowSizeInfo();
+    void cameraLookTo(int dir);
 protected:
     void mouseReleaseEvent(QMouseEvent* event) override;
 public slots:
@@ -53,6 +68,7 @@ public slots:
     void onRun(LAUNCH_PARAM launchParam);
     void onRecord();
     void onRecord_slient(const VideoRecInfo& recInfo);
+    bool onRecord_cmd(const VideoRecInfo& recInfo);
     void onScreenShoot();
     void onKill();
     void onPlayClicked(bool);
@@ -60,24 +76,48 @@ public slots:
     void onRunFinished();
     void onCommandDispatched(int actionType, bool bTriggered);
     void onNodeSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
+    void onMouseHoverMoved();
+    void onDockViewAction(bool triggered);
 
 signals:
     void frameUpdated(int new_frame);
     void frameRunFinished(int frame);
+    void optixProcStartRecord();
+
+public:
+    enum DockViewActionType {
+        ACTION_FRONT_VIEW = 0,
+        ACTION_RIGHT_VIEW,
+        ACTION_TOP_VIEW,
+        ACTION_BACK_VIEW,
+        ACTION_LEFT_VIEW,
+        ACTION_BOTTOM_VIEW,
+        ACTION_ORIGIN_VIEW,
+        ACTION_FOCUS,
+    };
+
+private slots:
+    void onFrameFinish(int frame);
 
 private:
     bool isOptxRendering() const;
     void initRecordMgr();
 
     ViewportWidget* m_glView;
+#ifdef ZENO_OPTIX_PROC
+    ZOptixProcViewport* m_optixView;
+#else
     ZOptixViewport* m_optixView;
+#endif
     CameraKeyframeWidget* m_camera_keyframe;
     QTimer* m_pTimer;
     RecordVideoMgr m_recordMgr;
     bool m_bRecordRun;
     const bool m_bGLView;
-    static const int m_sliderFeq = 16;
+    int m_sliderFeq = 1000 / 24;
     bool bIsCurrent = false;
+
+    std::tuple<int, int, bool> originWindowSizeInfo{-1, -1, false};
 };
 
 #endif

@@ -47,6 +47,7 @@ public:
 	virtual QModelIndex addLink(const QModelIndex& subgIdx, const EdgeInfo& info, bool enableTransaction = false) = 0;
 	virtual void removeLink(const QModelIndex& linkIdx, bool enableTransaction = false) = 0;
 	virtual void removeLink(const QModelIndex& subgIdx, const EdgeInfo& linkIdx, bool enableTransaction = false) = 0;
+	virtual void removeLegacyLink(const QModelIndex& linkIdx) = 0;
 	virtual void removeSubGraph(const QString& name) = 0;
 	virtual QModelIndex extractSubGraph(const QModelIndexList& nodes, const QModelIndexList& links, const QModelIndex& fromSubg, const QString& toSubg, bool enableTrans = false) = 0;
     virtual bool IsSubGraphNode(const QModelIndex& nodeIdx) const = 0;
@@ -55,7 +56,7 @@ public:
 	 fork subnet node indexed by subnetNodeIdx under subgIdx. 
 	 */
 	virtual QModelIndex fork(const QModelIndex& subgIdx, const QModelIndex& subnetNodeIdx) = 0;
-
+    virtual QModelIndex forkMaterial(const QModelIndex& subnetNodeIdx, const QString& subgName, const QString& mtlid, const QString& mtlid_old) = 0;
 
 	virtual void updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual void updateSocketDefl(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
@@ -66,7 +67,7 @@ public:
 	virtual void setName(const QString& name, const QModelIndex& subGpIdx) = 0;
 
 	virtual NODE_DESCS descriptors() const = 0;
-    virtual bool appendSubnetDescsFromZsg(const QList<NODE_DESC>& descs) = 0;
+    virtual bool appendSubnetDescsFromZsg(const QList<NODE_DESC>& descs, bool bImport = false) = 0;
 	virtual bool getDescriptor(const QString& descName, NODE_DESC& desc) = 0;
 	virtual bool updateSubgDesc(const QString& descName, const NODE_DESC& desc) = 0;
 	virtual void clearSubGraph(const QModelIndex& subGpIdx) = 0;
@@ -74,24 +75,28 @@ public:
 	virtual void undo() = 0;
 	virtual void redo() = 0;
 	virtual void switchSubGraph(const QString& graphName) {}
-	virtual void newSubgraph(const QString& graphName) = 0;
+	virtual void newSubgraph(const QString& graphName, SUBGRAPH_TYPE type = SUBGRAPH_TYPE::SUBGRAPH_NOR) = 0;
+    virtual bool newMaterialSubgraph(const QString& graphName, const QPointF& pos) = 0;
 	virtual void initMainGraph() = 0;
 	virtual void renameSubGraph(const QString& oldName, const QString& newName) = 0;
 	virtual bool isDirty() const = 0;
 	virtual NODE_CATES getCates() = 0;
 	virtual QModelIndexList searchInSubgraph(const QString& objName, const QModelIndex& idx) = 0;
 	virtual QModelIndexList subgraphsIndice() const = 0;
+    virtual QModelIndexList subgraphsIndice(SUBGRAPH_TYPE type) const = 0;
 	virtual QList<SEARCH_RESULT> search(
 					const QString& content,
 					int searchType,
 					int searchOpts,
-					QVector<SubGraphModel *> vec = QVector<SubGraphModel *>()) = 0;
+					QVector<SubGraphModel *> vec = QVector<SubGraphModel *>()) const = 0;
 	virtual void removeGraph(int idx) = 0;
 	virtual QString fileName() const = 0;
 	virtual QString filePath() const = 0;
 	virtual void setFilePath(const QString& fn) = 0;
 	virtual QRectF viewRect(const QModelIndex& subgIdx) = 0;
 	virtual void markDirty() = 0;
+	virtual void markNotDescNode() = 0;
+	virtual bool hasNotDescNode() const = 0;
 	virtual void clearDirty() = 0;
 	virtual void collaspe(const QModelIndex& subgIdx) = 0;
 	virtual void expand(const QModelIndex& subgIdx) = 0;
@@ -102,6 +107,7 @@ public:
     virtual void beginApiLevel() = 0;
 	virtual void endApiLevel() = 0;
 	virtual LinkModel* linkModel(const QModelIndex& subgIdx) const = 0;
+	virtual LinkModel* legacyLinks(const QModelIndex& subgIdx) const = 0;
 	virtual QModelIndexList findSubgraphNode(const QString& subgName) = 0;
 	virtual int ModelSetData(
 			const QPersistentModelIndex& idx,
@@ -118,6 +124,21 @@ public:
     virtual bool setCustomName(const QModelIndex &subgIdx, const QModelIndex& Idx, const QString &value) const = 0;
     virtual void markNodeDataChanged(const QModelIndex& idx) = 0;
     virtual void clearNodeDataChanged() = 0;
+    virtual QStringList subgraphsName() const = 0;
+
+    /*net label*/
+    virtual void addNetLabel(const QModelIndex& subgIdx, const QModelIndex& sock, const QString& name) = 0;
+    virtual void removeNetLabel(const QModelIndex& subgIdx, const QModelIndex& trigger) = 0;
+    virtual void updateNetLabel(const QModelIndex& subgIdx, const QModelIndex& trigger, const QString& oldName, const QString& newName, bool enableTransaction = false) = 0;
+
+    virtual bool addCommandParam(const QString& path, const CommandParam& val) = 0;
+    virtual void removeCommandParam(const QString& path) = 0;
+    virtual bool updateCommandParam(const QString& path, const CommandParam& val) = 0;
+    virtual FuckQMap<QString, CommandParam> commandParams() const = 0;
+
+    virtual QModelIndex getNetOutput(const QModelIndex& subgIdx, const QString& name) const = 0;
+	virtual QList<QModelIndex> getNetInputs(const QModelIndex& subgIdx, const QString& name) const = 0;
+    virtual QStringList dumpLabels(const QModelIndex& subgIdx) const = 0;
 
 signals:
 	void clearLayout2();
@@ -138,6 +159,8 @@ signals:
 	void linkInserted(const QModelIndex& subGpIdx, const QModelIndex&, int first, int last);
 	void linkAboutToBeRemoved(const QModelIndex& subGpIdx, const QModelIndex&, int first, int last);
 	void linkRemoved(const QModelIndex& subGpIdx, const QModelIndex& parent, int first, int last);
+
+    void updateCommandParamSignal(const QString& path);
 };
 
 

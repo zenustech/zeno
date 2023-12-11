@@ -13,15 +13,14 @@
 
 ZenoApplication::ZenoApplication(int &argc, char **argv)
     : QApplication(argc, argv)
-    , m_errSteam(std::clog)
 #if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
     , m_server(nullptr)
 #endif
+    , m_bUIApp(true)
 {
     initMetaTypes();
     initFonts();
     initStyleSheets();
-    m_errSteam.registerMsgHandler();
     verifyVersion();
 
     QStringList locations;
@@ -31,10 +30,52 @@ ZenoApplication::ZenoApplication(int &argc, char **argv)
     ZASSERT_EXIT(!locations.isEmpty());
     m_appDataPath.setPath(locations[0]);
 #endif
+
+    m_bUIApp = argc == 1;
+
+    //only main editor needs this.
+    if (m_bUIApp) {
+        m_spUILogStream = std::make_shared<ZWidgetErrStream>(std::clog);
+        m_spUILogStream->registerMsgHandler();
+        //register optix log proxy
+        bool ret = connect(m_spUILogStream->optixLogProxy().get(), SIGNAL(optixlogReady(const QString&)), this, SLOT(onOptixlogReady(const QString&)), Qt::QueuedConnection);
+    }
+
+    m_spCacheMgr = std::make_shared<ZCacheMgr>();
+    m_spProcClipboard = std::make_shared<ProcessClipboard>();
 }
 
 ZenoApplication::~ZenoApplication()
 {
+}
+
+void ZenoApplication::onOptixlogReady(const QString& msg)
+{
+    if (msg.startsWith("["))
+    {
+        QMessageLogger logger("zeno", 0, 0);
+        QChar tip = msg.at(1);
+
+        auto& mgr = GraphsManagment::instance();
+        if (tip == 'T') {
+            mgr.appendLog(QtDebugMsg, "zeno", 0, msg);
+        }
+        else if (tip == 'D') {
+            mgr.appendLog(QtDebugMsg, "zeno", 0, msg);
+        }
+        else if (tip == 'I') {
+            mgr.appendLog(QtInfoMsg, "zeno", 0, msg);
+        }
+        else if (tip == 'C') {
+            mgr.appendLog(QtCriticalMsg, "zeno", 0, msg);
+        }
+        else if (tip == 'W') {
+            mgr.appendLog(QtWarningMsg, "zeno", 0, msg);
+        }
+        else if (tip == 'E') {
+            mgr.appendLog(QtFatalMsg, "zeno", 0, msg);
+        }
+    }
 }
 
 QString ZenoApplication::readQss(const QString& qssPath)
@@ -109,12 +150,24 @@ void ZenoApplication::initFonts()
     QFontDatabase::addApplicationFont(":/font/MiSans/MiSans-Demibold.ttf");
     QFontDatabase::addApplicationFont(":/font/MiSans/MiSans-Bold.ttf");
     QFont font("MiSans", 10);
+#ifndef ZENO_NODESVIEW_OPTIM
     setFont(font);
+#endif
 }
 
 GraphsManagment *ZenoApplication::graphsManagment() const
 {
     return &GraphsManagment::instance();
+}
+
+std::shared_ptr<ZCacheMgr> ZenoApplication::cacheMgr() const
+{
+    return m_spCacheMgr;
+}
+
+std::shared_ptr<ProcessClipboard> ZenoApplication::procClipboard() const
+{
+    return m_spProcClipboard;
 }
 
 QStandardItemModel* ZenoApplication::logModel() const

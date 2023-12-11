@@ -16,7 +16,7 @@ ZenoWelcomePage::ZenoWelcomePage(QWidget* parent)
 	m_ui = new Ui::WelcomePage;
 	m_ui->setupUi(this);
     QPalette palette = this->palette();
-    palette.setColor(QPalette::Background, QColor(44,50,58));
+    palette.setColor(QPalette::Background, QColor("#2d3239"));
     setPalette(palette);
 
     QSize iconSize(ZenoStyle::dpiScaled(24), ZenoStyle::dpiScaled(24));

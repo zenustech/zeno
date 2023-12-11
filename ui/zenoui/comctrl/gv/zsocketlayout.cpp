@@ -26,6 +26,14 @@ ZSocketLayout::ZSocketLayout(
     , m_bEditable(false)
     , m_viewSockIdx(viewSockIdx)
 {
+    QObject::connect(pModel, &IGraphsModel::updateCommandParamSignal, [=](const QString& path) {
+        if (!m_text)
+            return;
+        QString socketPath = m_viewSockIdx.data(ROLE_OBJPATH).toString();
+        if (socketPath != path)
+            return;
+        m_text->update();
+    });
 }
 
 ZSocketLayout::~ZSocketLayout()
@@ -37,6 +45,7 @@ void ZSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cbSock
     QString sockName;
     QString toolTip;
     int sockProp = 0;
+    bool bEnableNode = false;
     if (!m_viewSockIdx.isValid())
     {
         //test case.
@@ -48,16 +57,38 @@ void ZSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cbSock
         sockProp = m_viewSockIdx.data(ROLE_PARAM_SOCKPROP).toInt();
         m_bEditable = sockProp & SOCKPROP_EDITABLE;
         toolTip = m_viewSockIdx.data(ROLE_VPARAM_TOOLTIP).toString();
+
+        QModelIndex nodeIdx = m_viewSockIdx.data(ROLE_NODE_IDX).toModelIndex();
+        if (nodeIdx.data(ROLE_NODETYPE) != NO_VERSION_NODE &&
+            SOCKPROP_LEGACY != m_viewSockIdx.data(ROLE_PARAM_SOCKPROP))
+        {
+            bEnableNode = true;
+    }
     }
 
     QSizeF szSocket(10, 20);
     m_socket = new ZenoSocketItem(m_viewSockIdx, ZenoStyle::dpiScaledSize(szSocket));
     m_socket->setZValue(ZVALUE_ELEMENT);
-    QObject::connect(m_socket, &ZenoSocketItem::clicked, [=]() {
-        cbSock.cbOnSockClicked(m_socket);
+    m_socket->setEnabled(bEnableNode);
+    if (bEnableNode) {
+        QObject::connect(m_socket, &ZenoSocketItem::clicked, [=](bool bInput, Qt::MouseButton button) {
+            cbSock.cbOnSockClicked(m_socket, button);
+        });
+    }
+    QObject::connect(m_socket, &ZenoSocketItem::netLabelClicked, [=]() {
+        if (cbSock.cbOnSockNetlabelClicked)
+            cbSock.cbOnSockNetlabelClicked(m_socket->netLabel());
+    });
+    QObject::connect(m_socket, &ZenoSocketItem::netLabelEditFinished, [=]() {
+        if (cbSock.cbOnSockNetlabelEdited)
+            cbSock.cbOnSockNetlabelEdited(m_socket);
+    });
+    QObject::connect(m_socket, &ZenoSocketItem::netLabelMenuActionTriggered, [=](QAction* pAction) {
+        if (cbSock.cbActionTriggered)
+            cbSock.cbActionTriggered(pAction, m_viewSockIdx);
     });
 
-    if (m_bEditable)
+    if (m_bEditable && bEnableNode)
     {
         Callback_EditContentsChange cbFuncRenameSock = [=](QString oldText, QString newText) {
             pModel->ModelSetData(m_viewSockIdx, newText, ROLE_PARAM_NAME);
@@ -106,6 +137,11 @@ void ZSocketLayout::setControl(QGraphicsItem* pControl)
         addItem(m_control, Qt::AlignRight);
 }
 
+QGraphicsItem* ZSocketLayout::socketText() const
+{
+    return m_text;
+}
+
 QGraphicsItem* ZSocketLayout::control() const
 {
     return m_control;
@@ -143,7 +179,8 @@ QPersistentModelIndex ZSocketLayout::viewSocketIdx() const
 
 void ZSocketLayout::setVisible(bool bVisible) 
 {
-    if (m_socket->sockStatus() != ZenoSocketItem::STATUS_CONNECTED && m_control) {
+    const QString& netLabel = m_viewSockIdx.data(ROLE_PARAM_NETLABEL).toString();
+    if (netLabel.isEmpty() && m_socket->sockStatus() != ZenoSocketItem::STATUS_CONNECTED && m_control) {
         m_control->setVisible(bVisible);
     }
     if (m_text) {
@@ -200,7 +237,21 @@ void ZDictSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cb
     QSizeF szSocket(10, 20);
     m_socket = new ZenoSocketItem(m_viewSockIdx, ZenoStyle::dpiScaledSize(szSocket));
     m_socket->setZValue(ZVALUE_ELEMENT);
-    QObject::connect(m_socket, &ZenoSocketItem::clicked, [=]() { cbSock.cbOnSockClicked(m_socket); });
+    QObject::connect(m_socket, &ZenoSocketItem::clicked, [=](bool bInput, Qt::MouseButton button) {
+        cbSock.cbOnSockClicked(m_socket, button);
+    });
+    QObject::connect(m_socket, &ZenoSocketItem::netLabelClicked, [=]() {
+        if (cbSock.cbOnSockNetlabelClicked)
+        cbSock.cbOnSockNetlabelClicked(m_socket->netLabel());
+    });
+    QObject::connect(m_socket, &ZenoSocketItem::netLabelEditFinished, [=]() {
+        if (cbSock.cbOnSockNetlabelEdited)
+        cbSock.cbOnSockNetlabelEdited(m_socket);
+    });
+    QObject::connect(m_socket, &ZenoSocketItem::netLabelMenuActionTriggered, [=](QAction* pAction) {
+        if (cbSock.cbActionTriggered)
+        cbSock.cbActionTriggered(pAction, m_viewSockIdx);
+    });
 
     m_text = new ZSocketPlainTextItem(m_viewSockIdx, sockName, m_bInput, cbSock.cbOnSockClicked);
     m_text->setToolTip(m_viewSockIdx.data(ROLE_VPARAM_TOOLTIP).toString());

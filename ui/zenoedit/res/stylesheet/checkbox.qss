@@ -31,3 +31,39 @@ QCheckBox[cssClass = "curve-timeline"]::indicator:unchecked {
 QCheckBox[cssClass = "curve-timeline"]::indicator:checked {
     image: url(:/icons/checkbox_checked_normal.svg);
 }
+
+QCheckBox[cssClass = "AlwaysCheckBox"]
+{
+	background-color:#465363;
+	color:#FFFFFF;
+	border-radius: 2px;
+	padding:2px 8px;
+}
+
+QCheckBox[cssClass = "AlwaysCheckBox"]:hover
+{
+	background-color:#617389;
+	color:#FFFFFF;
+} 
+
+QCheckBox[cssClass = "AlwaysCheckBox"]::indicator
+{
+   width:16px;
+   height:16px;
+}
+
+QCheckBox[cssClass = "AlwaysCheckBox"]::indicator:checked
+{
+    image: url(:/icons/always_checkbox_on.svg);
+}
+
+QCheckBox[cssClass = "AlwaysCheckBox"]::indicator:unchecked
+{
+    image: url(:/icons/always_checkbox.svg);
+}
+
+QCheckBox[cssClass = "proppanel"] {
+	font-size: 9pt;
+	font-weight: bold;
+	color: rgba(255, 255, 255, 0.7);
+}

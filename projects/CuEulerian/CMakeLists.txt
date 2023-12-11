@@ -31,6 +31,7 @@ target_sources(zeno PRIVATE
 # level set function
 target_sources(zeno PRIVATE
   levelset/Grid_creator.cu
+  levelset/Grid_creator_adaptive.cu
   levelset/Reinitialization.cu
   levelset/Extrapolation.cu
 )

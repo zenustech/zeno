@@ -468,7 +468,11 @@ struct ZSInterpolateEmbedAttr : zeno::INode {
                 throw std::runtime_error("only support tetrahedra mesh as source");
             }
             if(dest_pars.hasProperty(dstAttr) && dest_pars.getPropertySize(dstAttr) != source_pars.getPropertySize(srcAttr)){
-                fmt::print("the dest attr_{} and source attr_{} not match in size\n",dstAttr,srcAttr);
+                fmt::print("the dest attr_{} {} and source attr_{} {} not match in size\n",
+                    dstAttr,
+                    dest_pars.getPropertySize(dstAttr),
+                    srcAttr,
+                    source_pars.getPropertySize(srcAttr));
                 throw std::runtime_error("the dest attr and source attr not match in size");
             }
 

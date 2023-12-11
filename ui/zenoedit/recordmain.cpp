@@ -7,10 +7,17 @@
 #include "zenomainwindow.h"
 #include "zeno/core/Session.h"
 #include "zeno/types/UserData.h"
+#include "util/apphelper.h"
+#include "launch/ztcpserver.h"
+#include <zeno/extra/GlobalState.h>
+#include <zeno/extra/GlobalComm.h>
 #include "launch/corelaunch.h"
 #include <zeno/utils/log.h>
+#include "common.h"
+#include <rapidjson/document.h>
 
-//#define DEBUG_DIRECTLY
+
+//--record true --zsg "C:\zeno\framenum.zsg" --cachePath "C:\tmp" --sframe 0 --frame 10 --sample 1 --optix 1 --path "C:\recordpath" --pixel 4500x3500 --aov 0 --needDenoise 0
 
 
 static int calcFrameCountByAudio(std::string path, int fps) {
@@ -55,8 +62,10 @@ static int calcFrameCountByAudio(std::string path, int fps) {
 int record_main(const QCoreApplication& app);
 int record_main(const QCoreApplication& app)
 {
+    //MessageBox(0, "recordcmd", "recordcmd", MB_OK);
+
     ZENO_RECORD_RUN_INITPARAM param;
-#ifndef DEBUG_DIRECTLY
+
     QCommandLineParser cmdParser;
     cmdParser.addHelpOption();
     cmdParser.addOptions({
@@ -82,6 +91,7 @@ int record_main(const QCoreApplication& app)
         {"videoname", "videoname", "export video's name"},
         {"subzsg", "subgraphzsg", "subgraph zsg file path"},
         {"cacheautorm", "cacheautoremove", "remove cache after render"},
+        {"paramsPath", "paramsPath", "paramsPath"},
     });
     cmdParser.process(app);
 
@@ -104,6 +114,8 @@ int record_main(const QCoreApplication& app)
         zeno::setConfigVariable("configFilePath", param.configFilePath.toStdString());
     }
     LAUNCH_PARAM launchparam;
+    QFileInfo fp(param.sZsgPath);
+    launchparam.zsgPath = fp.absolutePath();
     if (cmdParser.isSet("cachePath")) {
         QString text = cmdParser.value("cachePath");
         text.replace('\\', '/');
@@ -116,13 +128,13 @@ int record_main(const QCoreApplication& app)
         if (cmdParser.isSet("cacheautorm"))
         {
             launchparam.autoRmCurcache = cmdParser.value("cacheautorm").toInt();
-        }
+    }
         else {
             launchparam.autoRmCurcache = true;
         }
-        if (cmdParser.isSet("cacheNum")) {
+    if (cmdParser.isSet("cacheNum")) {
             launchparam.cacheNum = cmdParser.value("cacheNum").toInt();
-        }
+    }
         else {
             launchparam.cacheNum = 1;
         }
@@ -132,6 +144,10 @@ int record_main(const QCoreApplication& app)
         return -1;
         //launchparam.enableCache = true;
         //launchparam.tempDir = true;
+    }
+    if (cmdParser.isSet("paramsPath"))
+    {
+        launchparam.paramPath = cmdParser.value("paramsPath");
     }
     if (cmdParser.isSet("exitWhenRecordFinish"))
         param.exitWhenRecordFinish = cmdParser.value("exitWhenRecordFinish").toLower() == "true";
@@ -154,26 +170,128 @@ int record_main(const QCoreApplication& app)
     ud.set2("output_exr", param.export_exr);
 	param.videoName = cmdParser.isSet("videoname") ? cmdParser.value("videoname") : "output.mp4";
 	param.subZsg = cmdParser.isSet("subzsg") ? cmdParser.value("subzsg") : "";
-#else
-    param.sZsgPath = "C:\\zeno\\framenum.zsg";
-    param.sPath = "C:\\recordpath";
-    param.iFps = 24;
-    param.iBitrate = 200000;
-    param.iSFrame = 0;
-    param.iFrame = 10;
-    param.iSample = 1;
-    param.bOptix = true;
-    param.sPixel = "1200x800";
-#endif
 
-    ZenoMainWindow tempWindow(nullptr, 0, param.bOptix ? PANEL_OPTIX_VIEW : PANEL_GL_VIEW);
-    if (!param.bOptix)
-    {
+
+    if (!param.bOptix) {
+        //gl normal recording may not be work in cmd mode.
+        ZenoMainWindow tempWindow(nullptr, 0, !param.bOptix ? PANEL_GL_VIEW : PANEL_EMPTY);
         tempWindow.showMaximized();
-        tempWindow.solidRunRender(param);
+        tempWindow.solidRunRender(param,launchparam);
+
+        //idle
+        return app.exec();
     }
-    else {
-        tempWindow.optixRunRender(param, launchparam);
+    else
+    {
+        QDir dir(param.sPath);
+        if (!dir.exists())
+        {
+            zeno::log_info("output path does not exist, process exit with -1.");
+            return -1;
+        }
+        else {
+            dir.mkdir("P");
+        }
+
+        VideoRecInfo recInfo = AppHelper::getRecordInfo(param);
+
+        //start a calc proc
+        launchparam.beginFrame = recInfo.frameRange.first;
+        launchparam.endFrame = recInfo.frameRange.second;
+
+        //start optix proc to render
+        QProcess* optixProc = new QProcess;
+
+        QObject::connect(zenoApp->getServer(), &ZTcpServer::runnerError, [=]() {
+            std::cout << "\n[record] calculation process has error and exit.\n" << std::flush;
+            optixProc->kill();
+            QCoreApplication::exit(-2);
+        });
+
+        bool ret = AppHelper::openZsgAndRun(param, launchparam);
+        ZERROR_EXIT(ret, -1); //will launch tcp server to start a calc proc.
+
+        //get the final zencache path, like `2023-07-06 18-29-14`
+        std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
+        QString zenCacheDir = mgr->cachePath();
+        ZERROR_EXIT(!zenCacheDir.isEmpty(), -1);
+        QStringList args = QCoreApplication::arguments();
+
+        int idxCachePath = args.indexOf("--cachePath");
+        ZERROR_EXIT(idxCachePath != -1 && idxCachePath + 1 < args.length(), -1);
+        args[idxCachePath + 1] = zenCacheDir;
+
+        auto pGraphs = zenoApp->graphsManagment();
+        ZERROR_EXIT(pGraphs, -1);
+
+        ZERROR_EXIT(args[1] == "--record", -1);
+        args[1] = "--optixcmd";
+        args[2] = QString::number(0);      //no need tcp
+        args.append("--cacheautorm");
+        args.append(QString::number(launchparam.autoRmCurcache));
+        args.append("--optixShowBackground");
+        args.append(QString::number(pGraphs->userdataInfo().optix_show_background));
+        args.append("--aov");
+        args.append(QString::number(enableAOV));
+        args.append("--exr");
+        args.append(QString::number(param.export_exr));
+        args.removeAt(0);
+
+        optixProc->setInputChannelMode(QProcess::InputChannelMode::ManagedInputChannel);
+        optixProc->setReadChannel(QProcess::ProcessChannel::StandardOutput);
+        bool enableOptixLog = true;
+        if (enableOptixLog)
+            optixProc->setProcessChannelMode(QProcess::ProcessChannelMode::ForwardedErrorChannel);
+        else
+            optixProc->setProcessChannelMode(QProcess::ProcessChannelMode::SeparateChannels);
+        optixProc->start(QCoreApplication::applicationFilePath(), args);
+
+        if (!optixProc->waitForStarted(-1)) {
+            zeno::log_warn("optix process failed to get started, giving up");
+            return -1;
+        }
+
+        optixProc->closeWriteChannel();
+
+        QObject::connect(optixProc, &QProcess::readyRead, [=]() {
+
+            while (optixProc->canReadLine()) {
+                QByteArray content = optixProc->readLine();
+
+                if (content.startsWith("[optixcmd]:")) {
+                    static const QString sFlag = "[optixcmd]:";
+                    content = content.mid(sFlag.length());
+                    rapidjson::Document doc;
+                    doc.Parse(content);
+                    ZASSERT_EXIT(doc.IsObject());
+                    if (doc.HasMember("result")) {
+                        ZASSERT_EXIT(doc["result"].IsInt());
+                        int ret = doc["result"].GetInt();
+                        std::cout << "\n[record] result is " << ret << "\n" << std::flush;
+                        QCoreApplication::exit(ret);
+                    }
+                    else if (doc.HasMember("frame")) {
+                        ZASSERT_EXIT(doc["frame"].IsInt());
+                        int frame = doc["frame"].GetInt();
+                        std::cout << "\n[record] frame " << frame << " recording is finished.\n" << std::flush;
+                    }
+                }
+            }
+        });
+
+        QObject::connect(optixProc, &QProcess::errorOccurred, [=](QProcess::ProcessError error) {
+            if (QProcess::Crashed == error) {
+                std::cout << "\n[record] render process has crashed\n" << std::flush;
+                QCoreApplication::exit(-2);
+            }
+        });
+
+        //QObject::connect(optixProc, &QProcess::finished, [=](int exitCode, QProcess::ExitStatus exitStatus) {
+
+        //});
+
+        //idle
+        return app.exec();
     }
-    return app.exec();
+
 }

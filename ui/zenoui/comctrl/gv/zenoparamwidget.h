@@ -59,6 +59,7 @@ public:
 
 protected:
     void paintEvent(QPaintEvent *e) override;
+    void focusInEvent(QFocusEvent* e) override;
 };
 
 
@@ -88,13 +89,16 @@ private:
 };
 
 
-class ZPathEdit;
-
 class ZenoParamPathEdit : public ZEditableTextItem
 {
     Q_OBJECT
 public:
-    ZenoParamPathEdit(const QString& path, PARAM_CONTROL ctrl, LineEditParam param, QGraphicsItem *parent = nullptr);
+    ZenoParamPathEdit(
+        const QString& path,
+        PARAM_CONTROL ctrl,
+        LineEditParam param,
+        Callback_GetZsgDir cbGetZsg,
+        QGraphicsItem *parent = nullptr);
     QString path() const;
     void setPath(const QString& path);
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
@@ -108,6 +112,7 @@ private:
 
 private:
     PARAM_CONTROL m_control;
+    const Callback_GetZsgDir m_cbGetZsg;
 };
 
 
@@ -458,10 +463,12 @@ protected:
     ZenoImageItem* m_minMute;
     ZenoImageItem* m_minView;
     ZenoImageItem* m_minOnce;
+    ZenoImageItem* m_minCache;
 
     ZenoImageItem* m_mute;
     ZenoImageItem* m_view;
     ZenoImageItem* m_once;
+    ZenoImageItem* m_cache;
 };
 
 class ZenoMinStatusBtnWidget : public QGraphicsLayoutItem, public ZenoMinStatusBtnItem

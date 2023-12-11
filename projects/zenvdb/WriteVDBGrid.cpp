@@ -2,6 +2,9 @@
 #include <zeno/VDBGrid.h>
 #include <zeno/StringObject.h>
 #include <zeno/ZenoInc.h>
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 //#include "../../Library/MnBase/Meta/Polymorphism.h"
 //openvdb::io::File(filename).write({grid});
@@ -29,9 +32,14 @@ static int defWriteVDBGrid = zeno::defNodeClass<WriteVDBGrid>("WriteVDBGrid",
 
 struct ExportVDBGrid : zeno::INode {
   virtual void apply() override {
-    auto path = get_input("path")->as<zeno::StringObject>();
+    auto path = get_input("path")->as<zeno::StringObject>()->get();
+    auto folderPath = fs::path(path).parent_path();
+
+    if (!fs::exists(folderPath)) {
+        fs::create_directories(folderPath);
+    }
     auto data = get_input("data")->as<VDBGrid>();
-    data->output(path->get());
+    data->output(path);
   }
 };
 

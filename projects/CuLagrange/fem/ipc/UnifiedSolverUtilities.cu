@@ -49,7 +49,6 @@ struct UnifiedIPCSystemClothBinding : INode { // usually called once before step
         auto markIterEnd = vtemp.end("on_boundary", dim_c<1>, zs::wrapt<i64>{});
         // pol(range(vtemp, "on_boundary", dim_c<1>, zs::wrapt<i64>{}), [] ZS_LAMBDA(auto &mark) mutable { mark = 0; });
         pol(detail::iter_range(markIter, markIterEnd), [] ZS_LAMBDA(auto &mark) mutable { mark = 0; });
-#if 0
         for (auto &primHandle : ipcsys->prims) {
             if (primHandle.isAuxiliary())
                 continue;
@@ -65,7 +64,6 @@ struct UnifiedIPCSystemClothBinding : INode { // usually called once before step
                 mark_surface_boundary_verts(pol, surf, wrapv<3>{}, markIter, (size_t)vOffset);
             }
         }
-#endif
     }
     template <typename VTilesT, typename LsView, typename Bvh>
     std::shared_ptr<tiles_t> bindStrings(zs::CudaExecutionPolicy &cudaPol, VTilesT &vtemp, std::size_t numVerts,
@@ -129,7 +127,7 @@ struct UnifiedIPCSystemClothBinding : INode { // usually called once before step
 #endif
                 if (j != -1) {
                     auto no = atomic_add(exec_cuda, &cnt[0], 1);
-                    eles.tuple(dim_c<2>, "inds", no, int_c) = zs::vec<int, 2>{i, j};
+                    eles.mount(dim_c<2>, "inds", no, int_c) = zs::vec<int, 2>{i, j};
                     eles("vol", no) = 1;
                     eles("k", no) = k;
                     eles("rl", no) = zs::min(dist / 4, rl);
@@ -162,10 +160,8 @@ struct UnifiedIPCSystemClothBinding : INode { // usually called once before step
         auto zsls = get_input<ZenoLevelSet>("ZSLevelSet");
         bool ifHardCons = get_input2<bool>("hard_constraint");
         bool boundaryWise = get_input2<bool>("boundary_wise");
-#if 0
         if (boundaryWise)
             markBoundaryVerts(cudaPol, A.get());
-#endif
 
         bvh_t bouBvh;
         Vector<bv_t> bouVertBvs{vtemp.get_allocator(), numBouVerts};

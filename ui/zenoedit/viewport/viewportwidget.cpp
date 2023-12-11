@@ -57,6 +57,7 @@ ViewportWidget::ViewportWidget(QWidget* parent)
     // https://blog.csdn.net/zhujiangm/article/details/90760744
     // https://blog.csdn.net/jays_/article/details/83783871
     setFocusPolicy(Qt::ClickFocus);
+    setMouseTracking(true);
 
     m_camera = new CameraControl(m_zenovis, m_fakeTrans, m_picker, this);
     m_zenovis->m_camera_control = m_camera;
@@ -99,6 +100,22 @@ void ViewportWidget::setSimpleRenderOption() {
     m_pauseRenderDally->start(simpleRenderTime*1000);  // Second to millisecond
 }
 
+void ViewportWidget::setViewWidgetInfo(DockContentWidgetInfo& info)
+{
+    std::get<0>(viewInfo) = info.resolutionX;
+    std::get<1>(viewInfo) = info.resolutionY;
+    std::get<2>(viewInfo) = info.lock;
+    std::get<3>(viewInfo) = info.colorR;
+    std::get<4>(viewInfo) = info.colorG;
+    std::get<5>(viewInfo) = info.colorB;
+    loadSettingFromZsg = true;
+}
+
+void ViewportWidget::glDrawForCommandLine()
+{
+    QGLWidget::glDraw();
+}
+
 ViewportWidget::~ViewportWidget()
 {
     //testCleanUp();
@@ -134,6 +151,15 @@ void ViewportWidget::initializeGL()
     m_zenovis->initializeGL();
     ZASSERT_EXIT(m_picker);
     m_picker->initialize();
+    if (loadSettingFromZsg)
+    {
+        auto session = m_zenovis->getSession();
+        ZASSERT_EXIT(session);
+        auto scene = session->get_scene();
+        ZASSERT_EXIT(scene);
+        scene->camera->setResolutionInfo(std::get<2>(viewInfo), std::get<0>(viewInfo), std::get<1>(viewInfo));
+        session->set_background_color(std::get<3>(viewInfo), std::get<4>(viewInfo), std::get<5>(viewInfo));
+    }
 }
 
 void ViewportWidget::resizeGL(int nx, int ny)
@@ -210,7 +236,11 @@ void ViewportWidget::paintGL()
 
 void ViewportWidget::mousePressEvent(QMouseEvent* event)
 {
-    if(event->button() == Qt::MidButton){
+    int button = Qt::NoButton;
+    ZenoSettingsManager& settings = ZenoSettingsManager::GetInstance();
+    settings.getViewShortCut(ShortCut_MovingView, button);
+    settings.getViewShortCut(ShortCut_RotatingView, button);
+    if(event->button() & button){
         m_bMovingCamera = true;
         setSimpleRenderOption();
     }
@@ -221,7 +251,11 @@ void ViewportWidget::mousePressEvent(QMouseEvent* event)
 
 void ViewportWidget::mouseMoveEvent(QMouseEvent* event)
 {
-    if(event->button() == Qt::MidButton){
+    int button = Qt::NoButton;
+    ZenoSettingsManager& settings = ZenoSettingsManager::GetInstance();
+    settings.getViewShortCut(ShortCut_MovingView, button);
+    settings.getViewShortCut(ShortCut_RotatingView, button);
+    if(event->button() & button){
         m_bMovingCamera = true;
     }
     setSimpleRenderOption();
@@ -278,6 +312,12 @@ void ViewportWidget::changeTransformCoordSys() {
     m_camera->changeTransformCoordSys();
 }
 
+void ViewportWidget::cleanUpScene() {
+    if (!m_zenovis)
+        return;
+    m_zenovis->cleanUpScene();
+}
+
 void ViewportWidget::updateCameraProp(float aperture, float disPlane) {
     m_camera->setAperture(aperture);
     m_camera->setDisPlane(disPlane);
@@ -309,6 +349,12 @@ void ViewportWidget::keyPressEvent(QKeyEvent *event)
     if (modifiers & Qt::AltModifier) {
         uKey += Qt::ALT;
     }
+
+    if (m_camera->fakeKeyPressEvent(uKey)) {
+        zenoApp->getMainWindow()->updateViewport();
+        return;
+    }
+
     if (uKey == key)
         this->changeTransformOperation(0);
     key = settings.getShortCut(ShortCut_RevolvingHandler);
@@ -357,4 +403,9 @@ void ViewportWidget::keyPressEvent(QKeyEvent *event)
 
 void ViewportWidget::keyReleaseEvent(QKeyEvent *event) {
     _base::keyReleaseEvent(event);
+    int uKey = event->key();
+    if (m_camera->fakeKeyReleaseEvent(uKey)) {
+        zenoApp->getMainWindow()->updateViewport();
+        return;
+    }
 }

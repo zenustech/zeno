@@ -681,7 +681,7 @@ struct FleshDynamicStepping : INode {
                             dt = dt,offset = offset] ZS_LAMBDA(int ei) mutable {
                     auto m = eles("m",ei)/(T)4.0;
                     auto inds = eles.pack(dim_c<4>,"inds",ei).reinterpret_bits(int_c);
-                    auto pgrad = zs::vec<T,12>::zeros();
+                    // auto pgrad = zs::vec<T,12>::zeros();
                     // auto H  = zs::vec<T,12,12>::zeros();
                     // if(eles.hasProperty("dt")) {
                     //     dt2 = eles("dt",ei) * eles("dt",ei);
@@ -690,7 +690,7 @@ struct FleshDynamicStepping : INode {
                     auto A = mat3::identity();
                     if(etemp.hasProperty("dfiber") && use_anisotropic_jiggling) {
                         auto f = etemp.pack(dim_c<3>,"dfiber",ei);
-                        A = A - dyadic_prod(f,f);
+                        A = A - dyadic_prod(f,f) * 0.99;
                     }
 
                     auto inertia = (T)1.0;
@@ -701,8 +701,13 @@ struct FleshDynamicStepping : INode {
                         auto x0 = vtemp.pack(dim_c<3>,"xp",inds[i]);
                         auto v0 = vtemp.pack(dim_c<3>,"vp",inds[i]);
 
-                        auto alpha = inertia * m/dt2 * A;
+                        auto alpha = (inertia * m / dt2) * A;
                         auto nodal_pgrad = -alpha * (x1 - x0 - v0 * dt);
+
+                        if(isnan(nodal_pgrad.norm())) {
+                            printf("nan nodal pgrad detected : %f %f %f %f\n",(float)alpha.norm(),(float)x1.norm(),(float)x0.norm(),(float)v0.norm());
+                        }
+
                         for(int d = 0;d != 3;++d){
                             auto idx = i * 3 + d;
                             gh_buffer("grad",idx,ei + offset) = nodal_pgrad[d];
@@ -718,6 +723,9 @@ struct FleshDynamicStepping : INode {
                     // gh_buffer.template tuple<12*12>("H",ei + offset) = H;
                 });
             }
+
+            // auto gradn_after_inertia = TILEVEC_OPS::dot<12>(cudaPol,gh_buffer,"grad","grad");
+            // std::cout << "gradn_after_inertia : " << gradn_after_inertia << std::endl;
 
             cudaPol(zs::range(eles.size()), [dt = dt,dt2 = dt2,aniso_strength = aniso_strength,
                             verts = proxy<space>({},verts),
@@ -767,6 +775,7 @@ struct FleshDynamicStepping : INode {
                 auto dFdXT = dFdX.transpose();
                 auto vf = -vole * (dFdXT * vecP);     
 
+
                 auto mg = volf * vole / (T)4.0;
                 for(int i = 0;i != 4;++i)
                     for(int d = 0;d !=3 ;++d){
@@ -784,24 +793,35 @@ struct FleshDynamicStepping : INode {
                     auto fiber = eles.pack(dim_c<3>,"fiber",ei);
                     if(zs::abs(fiber.norm() - 1.0) < 1e-3) {
                         fiber /= fiber.norm();
-                        // if(eles.hasProperty("mu")) {
-                        //     amodel.mu = eles("mu",ei);
-                        //     // amodel.lam = eles("lam",ei);
+                        if(eles.hasProperty("mu") && eles.hasProperty("lam")) {
+                            amodel.mu = eles("mu",ei);
+                            // amodel.lam = eles("lam",ei);
                             
-                        // }
+                        }
+                        // COMMIT FIND A ANISOTROPIC BUG HERE
                         auto aP = amodel.do_first_piola(FAct,fiber);
-                        auto vecAP = flatten(P);
-                        vecAP = dFActdF.transpose() * vecP;
+                        auto vecAP = flatten(aP);
+                        vecAP = dFActdF.transpose() * vecAP;
                         vf -= vole  * dFdXT * vecAP *aniso_strength;
 
-                        // auto aHq = amodel.do_first_piola_derivative(FAct,fiber);
-                        auto aHq = zs::vec<T,9,9>::zeros();
+                        auto aHq = amodel.do_first_piola_derivative(FAct,fiber);
+                        make_pd(aHq);
+                        // auto aHq = zs::vec<T,9,9>::zeros();
                         H += dFdAct_dFdX.transpose() * aHq * dFdAct_dFdX * vole * aniso_strength;
+                        
                         // if((int)eles("Muscle_ID",ei) == 0){
                         //     printf("fiber : %f %f %f,Fa = %f,aP = %f,aHq = %f,H = %f\n",fiber[0],fiber[1],fiber[2],(float)FAct.norm(),(float)aP.norm(),(float)aHq.norm(),(float)H.norm());
                         // }
+
+                        if(isnan(vf.norm())) {
+                            printf("nan nodal aniso_vf detected : %f %f %f %f\n",(float)vecP.norm(),(float)volf.norm(),(float)vecAP.norm(),(float)aHq.norm());
+                        }
                     }
                 }
+
+                // if(isnan(vf.norm())) {
+                //     printf("nan nodal vf detected : %f %f %f %f\n",(float)vecP.norm(),(float)volf.norm(),(float)P.norm(),(float)FAct.norm());
+                // }
 
                 gh_buffer.tuple(dim_c<12>,"grad",ei + offset) = gh_buffer.pack(dim_c<12>,"grad",ei + offset) + vf/* - rdamping*/; 
                 // gh_buffer.tuple(dim_c<12>,"grad",ei + offset) = gh_buffer.pack(dim_c<12>,"grad",ei + offset) - rdamping; 
@@ -812,6 +832,10 @@ struct FleshDynamicStepping : INode {
         // Bone Driven Potential Energy
             // T lambda = model.lam;
             // T mu = model.mu;
+
+
+            // auto gradn_after_elastic = TILEVEC_OPS::dot<12>(cudaPol,gh_buffer,"grad","grad");
+            // std::cout << "gradn_after_elastic : " << gradn_after_elastic << std::endl;
 
             auto nmEmbedVerts = b_verts.size();
 
@@ -882,6 +906,8 @@ struct FleshDynamicStepping : INode {
 
             });
 
+            // auto gradn_after_driver = TILEVEC_OPS::dot<12>(cudaPol,gh_buffer,"grad","grad");
+            // std::cout << "gradn_after_driver : " << gradn_after_driver << std::endl;
 
         }
 
@@ -1997,6 +2023,17 @@ struct FleshDynamicStepping : INode {
             },[](...) {
                 throw std::runtime_error("unsupported anisotropic elasticity model");
             })(models.getElasticModel(),models.getAnisoElasticModel());
+
+            // {
+            //     auto gradn = TILEVEC_OPS::dot<12>(cudaPol,gh_buffer,"grad","grad");
+            //     std::cout << "gradn after elastic and inertia : " << gradn << std::endl;
+            //     if(std::isnan(gradn)) {
+            //         printf("nan gradn = %f detected after compute computeGradientAndHessian\n",gradn);
+            //         // printf("Hn = ")
+            //         throw std::runtime_error("nan gradn detected after compute computeGradientAndHessian");
+            //     }
+            // }
+
             // std::cout << "computePositionConstraintGradientAndHessian : " << kverts.size() << std::endl;
             // the binder constraint gradient and hessian
             if(use_binder_constraint) {
@@ -2270,7 +2307,7 @@ struct FleshDynamicStepping : INode {
             timer.tick();
             spmat._vals.reset(0);  
 
-            std::cout << "update gh_buffer spmat" << std::endl;
+            // std::cout << "update gh_buffer spmat" << std::endl;
 
             cudaPol(zs::range(eles.size()),
                 [gh_buffer = proxy<space>({},gh_buffer),
@@ -2280,12 +2317,12 @@ struct FleshDynamicStepping : INode {
                     auto inds = gh_buffer.pack(dim_c<4>,"inds",ei).reinterpret_bits(int_c);
                     for(int i = 0;i != 4;++i)
                         if(inds[i] < 0 || inds[i] >= vsize)
-                            printf("negative sttemp inds : %d %d %d\n",inds[0],inds[1],inds[2],inds[3]);
+                            printf("negative sttemp inds : %d %d %d, %d\n",inds[0],inds[1],inds[2],inds[3]);
                     auto H = gh_buffer.pack(dim_c<12,12>,"H",ei);
                     update_hessian(spmat,inds,H,true);
             });
 
-            std::cout << "update sttemp spmat" << std::endl;
+            // std::cout << "update sttemp spmat" << std::endl;
 
              cudaPol(zs::range(sttemp.size()),
                 [sttemp = proxy<space>({},sttemp),vsize = verts.size(),spmat = proxy<space>(spmat)] ZS_LAMBDA(int vi) mutable {
@@ -2297,7 +2334,7 @@ struct FleshDynamicStepping : INode {
                     update_hessian(spmat,inds,H,true);
             });
 
-            std::cout << "update vtemp spmat" << std::endl;
+            // std::cout << "update vtemp spmat" << std::endl;
 
             cudaPol(zs::range(vtemp.size()),
                 [vtemp = proxy<space>({},vtemp),vsize = verts.size(),spmat = proxy<space>(spmat)] ZS_LAMBDA(int vi) mutable {
@@ -2308,7 +2345,7 @@ struct FleshDynamicStepping : INode {
                     update_hessian(spmat,inds,H,true);
             });
 
-            std::cout << "update kinematics spmat" << std::endl;
+            // std::cout << "update kinematics spmat" << std::endl;
 
             if(use_kinematics_collision && kinematics.size() > 0)
                 cudaPol(zs::range(ktris_vert_collision_buffer.size()),[
@@ -2319,7 +2356,7 @@ struct FleshDynamicStepping : INode {
                         update_hessian(spmat,inds,H,true);
                 });
 
-            std::cout << "finish upate hessian" << std::endl;
+            // std::cout << "finish upate hessian" << std::endl;
 
             timer.tock("spmat evaluation");
             #endif
@@ -2341,6 +2378,13 @@ struct FleshDynamicStepping : INode {
             // std::cout << "Hn : " << Hn << std::endl;
             int nm_CG_iters = 0;
             #ifdef USE_SPARSE_MATRIX
+                // auto gradn = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"grad","grad");
+                // if(std::isnan(gradn)) {
+                //     printf("nan gradn = %f detected\n",gradn);
+                //     // printf("Hn = ")
+                //     throw std::runtime_error("nan gradn detected");
+                // }
+
                 if(turn_on_self_collision)
                     nm_CG_iters = PCG::pcg_with_fixed_sol_solve<3>(cudaPol,vtemp,spmat,self_collision_fp_buffer,"dir","bou_tag","grad","P","inds","H",(T)cg_res,max_cg_iters,100);
                 else

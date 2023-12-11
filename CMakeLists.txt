@@ -39,6 +39,9 @@ option(ZENO_INSTALL_TARGET "Enable installation targets" OFF)
 option(ZENO_WITH_CUDA "Build ZENO with CUDA support" OFF)
 option(ZENO_MARCH_NATIVE "Build ZENO with -march=native" OFF)
 option(ZENO_USE_FAST_MATH "Build ZENO with -ffast-math" OFF)
+option(ZENO_OPTIX_PROC "Optix with a new proc" OFF)
+option(ZENO_WIN32_RC "Build ZENO with win32 resource file" OFF)
+option(ZENO_NODESVIEW_OPTIM "Optimize Node Graphics View manually" ON)
 
 if (NOT DEFINED CMAKE_POSITION_INDEPENDENT_CODE)
     # Otherwise we can't link .so libs with .a libs

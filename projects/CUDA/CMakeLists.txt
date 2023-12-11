@@ -15,11 +15,13 @@ project(ZENO_CUDA CXX CUDA)
 set(ZS_ENABLE_CUDA ON)
 set(ZS_ENABLE_OPENVDB ON)
 set(ZENSIM_INSTALL OFF)
-set(ZS_BUILD_SHARED_LIBS OFF)
+set(ZS_BUILD_SHARED_LIBS ON)
+set(ZS_ENABLE_ZENO_CU_WRANGLE ON)
 set(CMAKE_CUDA_RESOLVE_DEVICE_SYMBOLS ON)
 find_package(CUDAToolkit REQUIRED COMPONENTS cufft REQUIRED)
 find_package(Eigen3 REQUIRED)
 
+set(WHEREAMI_BUILD_SHARED_LIBS ON)
 add_subdirectory(zpc)
 
 add_library(zshelper INTERFACE)
@@ -35,11 +37,19 @@ target_link_options(zeno
 target_link_libraries(zeno PRIVATE Eigen3::Eigen)
 target_link_libraries(zeno PRIVATE zshelper)
 
-#[=[
 target_sources(zeno PRIVATE
-  test1.cu
-  test.cpp
+  iw_query/Query.cpp
 )
+
+target_sources(zeno PRIVATE
+  #test1.cu
+  test.cu
+  test.cpp
+  # vktest.cpp
+)
+# target_link_libraries(zeno PRIVATE vulkan shaderc_shared SPIRV)
+# target_link_libraries(zeno PRIVATE Vulkan::Vulkan ${Vulkan_LIBRARY})
+#[=[
 #]=]
 set_target_properties(zeno
   PROPERTIES
@@ -48,11 +58,9 @@ set_target_properties(zeno
   CUDA_ARCHITECTURES ${ZS_CUDA_ARCH}
 )
 
-# closest point query (from ingo wald)
+#
 target_sources(zeno PRIVATE
-  iw_query/Query.cpp
-  iw_query/bvh.cpp
-  iw_query/distanceQueries.cpp
+  pyzfx/pyzfx.cpp
 )
 
 # wrangler

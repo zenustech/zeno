@@ -33,7 +33,8 @@ void Zenovis::loadGLAPI(void *procaddr)
 
 void Zenovis::initializeGL()
 {
-    session = std::make_unique<zenovis::Session>();
+    if (!session)
+        session = std::make_unique<zenovis::Session>();
 }
 
 void Zenovis::paintGL()
@@ -73,7 +74,10 @@ void Zenovis::updatePerspective(QVector2D const &resolution)
                 H = W / ratio;
                 offset[1] = std::max((h - H) / 2, 0);
             }
+            if (W != 0 && H != 0)
+            {
             session->set_window_size(W, H, offset);
+            }
         }
         else
         {
@@ -98,6 +102,16 @@ void Zenovis::setLoopPlaying(bool enable) {
 bool Zenovis::isLoopPlaying()
 {
     return m_loopPlaying;
+}
+
+void Zenovis::cleanUpScene()
+{
+    if (!session)
+        return;
+
+    auto pScene = session->get_scene();
+    ZASSERT_EXIT(pScene);
+    pScene->cleanUpScene();
 }
 
 void Zenovis::startPlay(bool bPlaying)
@@ -128,6 +142,8 @@ int Zenovis::setCurrentFrameId(int frameid)
         int endFrame = frameRg.first + numOfFrames - 1;
         if (frameid < frameRg.first) {
             frameid = frameRg.first;
+        } else if (frameid > frameRg.second) {
+            frameid = frameRg.second;
         } else if (frameid > endFrame) {
             frameid = endFrame;
         }

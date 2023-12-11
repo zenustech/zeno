@@ -23,7 +23,7 @@ ZenoSearchBar::ZenoSearchBar(const QModelIndex& idx, QWidget *parentWidget)
     m_pLineEdit->setFocusPolicy(Qt::StrongFocus);
     m_pLineEdit->setObjectName("searchEdit");
     m_pLineEdit->setFixedWidth(200);
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     m_pLineEdit->setFont(font);
     ZIconButton *pCloseBtn = new ZIconButton(
         QIcon(":/icons/closebtn.svg"),
@@ -86,7 +86,8 @@ void ZenoSearchBar::onSearchExec(const QString& content)
 
 void ZenoSearchBar::onSearchForward()
 {
-    m_idx = qMin(m_idx + 1, m_results.size() - 1);
+    if (++m_idx == m_results.size())
+        m_idx = 0;
     if (!m_results.isEmpty() && m_idx < m_results.size())
     {
         SEARCH_RECORD rec = _getRecord();
@@ -96,7 +97,9 @@ void ZenoSearchBar::onSearchForward()
 
 void ZenoSearchBar::onSearchBackward()
 {
-    m_idx = qMax(0, m_idx - 1);
+    if (--m_idx < 0)
+        m_idx = m_results.size() - 1;
+
     if (!m_results.isEmpty() && m_idx < m_results.size())
     {
         SEARCH_RECORD rec = _getRecord();

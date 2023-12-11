@@ -66,6 +66,22 @@ std::shared_ptr<PrimitiveObject> get_alembic_prim(std::shared_ptr<zeno::ABCTree>
     }
     return prim;
 }
+
+int get_alembic_prim_index(std::shared_ptr<zeno::ABCTree> abctree, std::string name) {
+    int index = 0;
+    abctree->visitPrims([&] (auto const &p) {
+        auto &ud = p->userData();
+        auto _abc_path = ud.template get2<std::string>("_abc_path", "");
+        if (_abc_path == name) {
+            return false;
+        }
+        else {
+            index++;
+            return true;
+        }
+    });
+    return index;
+}
 void dfs_abctree(
     std::shared_ptr<ABCTree> root,
     int parent_index,
@@ -145,6 +161,9 @@ struct GetAlembicPrim : INode {
         int index = get_input<NumericObject>("index")->get<int>();
         int use_xform = get_input<NumericObject>("use_xform")->get<int>();
         std::shared_ptr<PrimitiveObject> prim;
+        if (get_input2<bool>("use_name")) {
+            index = get_alembic_prim_index(abctree, get_input2<std::string>("name"));
+        }
         if (use_xform) {
             prim = get_xformed_prim(abctree, index);
         } else {
@@ -167,6 +186,8 @@ ZENDEFNODE(GetAlembicPrim, {
         {"int", "index", "0"},
         {"bool", "use_xform", "0"},
         {"bool", "triangulate", "0"},
+        {"bool", "use_name", "0"},
+        {"string", "name", ""},
     },
     {{"PrimitiveObject", "prim"}},
     {},
@@ -306,7 +327,8 @@ struct ImportAlembicPrim : INode {
             double start, _end;
             GetArchiveStartAndEndTime(archive, start, _end);
             auto obj = archive.getTop();
-            traverseABC(obj, *abctree, frameid, read_done);
+            bool read_face_set = get_input2<bool>("read_face_set");
+            traverseABC(obj, *abctree, frameid, read_done, read_face_set, "");
         }
         bool use_xform = get_input2<bool>("use_xform");
         auto index = get_input2<int>("index");
@@ -346,6 +368,7 @@ ZENDEFNODE(ImportAlembicPrim, {
         {"int", "index", "-1"},
         {"bool", "use_xform", "0"},
         {"bool", "triangulate", "0"},
+        {"bool", "read_face_set", "0"},
     },
     {
         "prim",

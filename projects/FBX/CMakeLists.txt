@@ -43,3 +43,5 @@ endif()
 zeno_add_asset_dir(${DEM_DIR})
 configure_file(zeno_FBX_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/confinc/zeno_FBX_config.h @ONLY)
 target_include_directories(zeno PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/confinc)
+
+execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/dem-bones-bin/models ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/models)

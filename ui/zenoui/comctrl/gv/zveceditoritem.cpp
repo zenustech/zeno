@@ -2,16 +2,17 @@
 #include <zenomodel/include/uihelper.h>
 #include <zenomodel/include/modeldata.h>
 #include "../../style/zenostyle.h"
+#include <zenomodel/include/curveutil.h>
 
 
-ZVecEditorItem::ZVecEditorItem(const UI_VECTYPE& vec, bool bFloat, LineEditParam param, QGraphicsScene* pScene, QGraphicsItem* parent, Qt::WindowFlags wFlags)
+ZVecEditorItem::ZVecEditorItem(const QVariant& vec, bool bFloat, LineEditParam param, QGraphicsScene* pScene, QGraphicsItem* parent, Qt::WindowFlags wFlags)
     : _base(parent)
     , m_bFloatVec(bFloat)
 {
     initUI(vec, bFloat, pScene);
 }
 
-void ZVecEditorItem::initUI(const UI_VECTYPE& vec, bool bFloat, QGraphicsScene* pScene)
+void ZVecEditorItem::initUI(const QVariant& vec, bool bFloat, QGraphicsScene* pScene)
 {
     for (int i = 0; i < m_editors.size(); i++)
     {
@@ -22,18 +23,25 @@ void ZVecEditorItem::initUI(const UI_VECTYPE& vec, bool bFloat, QGraphicsScene* 
     ZGraphicsLayout* pLayout = new ZGraphicsLayout(true);
     pLayout->setContentsMargin(0, 0, 0, 0);
     pLayout->setSpacing(6);
-    for (int i = 0; i < vec.size(); i++)
+    int n = 0;
+    if (vec.canConvert<UI_VECTYPE>())
+        n = vec.value<UI_VECTYPE>().size();
+    else if (vec.canConvert<UI_VECSTRING>())
+        n = vec.value<UI_VECSTRING>().size();
+    for (int i = 0; i < n; i++)
     {
-        const QString& numText = QString::number(vec[i]);
-        ZEditableTextItem* pLineEdit = new ZEditableTextItem(numText);
+        ZEditableTextItem *pLineEdit = new ZEditableTextItem;
+        if (vec.canConvert<UI_VECTYPE>() || vec.canConvert<UI_VECSTRING>()) {
+            QString text;
+            if (vec.canConvert<UI_VECTYPE>())
+                text = UiHelper::variantToString(vec.value<UI_VECTYPE>().at(i));
+            else
+                text = vec.value<UI_VECSTRING>().at(i);
+            pLineEdit->setText(text);
+        }
 
         pLineEdit->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(64, 24)));
         pLineEdit->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
-
-        if (bFloat)
-            pLineEdit->setValidator(new QDoubleValidator);
-        else
-            pLineEdit->setValidator(new QIntValidator);
 
         pLineEdit->setNumSlider(pScene, UiHelper::getSlideStep("", bFloat ? CONTROL_FLOAT : CONTROL_INT));
         m_editors.append(pLineEdit);
@@ -44,46 +52,148 @@ void ZVecEditorItem::initUI(const UI_VECTYPE& vec, bool bFloat, QGraphicsScene* 
     setLayout(pLayout);
 }
 
-UI_VECTYPE ZVecEditorItem::vec() const
+UI_VECSTRING ZVecEditorItem::vecStr() const
 {
+    UI_VECSTRING vecStr;
+    for (int i = 0; i < m_editors.size(); i++)
+    {
+        vecStr.append(m_editors[i]->text());
+    }
+    return vecStr;
+}
+
+QVariant ZVecEditorItem::vec() const
+{
+    QVariant value;
     UI_VECTYPE vec;
-    for (auto editor : m_editors)
+    UI_VECSTRING vecStr;
+    for (int i = 0; i < m_editors.size(); i++)
     {
         if (m_bFloatVec)
         {
-            vec.append(editor->text().toFloat());
+            bool bOK = false;
+            float val = m_editors[i]->text().toFloat(&bOK);
+            if (bOK && vecStr.isEmpty())
+                vec.append(val);
+            else {
+                for (auto data : vec) {
+                    vecStr.append(QString::number(data));
+                }
+                vec.clear();
+                QString str = m_editors[i]->text();
+                if (!bOK && !str.startsWith("="))
+                    zeno::log_error("The formula '{}' need start with '='", str.toStdString());
+                vecStr.append(str);
+            }
         }
         else
         {
-            vec.append(editor->text().toInt());
+            bool bOK = false;
+            int val = m_editors[i]->text().toInt(&bOK);
+            if (bOK && vecStr.isEmpty())
+                vec.append(val);
+            else {
+                for (auto data : vec) {
+                    vecStr.append(QString::number(data));
+                }
+                vec.clear();
+                QString str = m_editors[i]->text();
+                if (!bOK && !str.startsWith("="))
+                    zeno::log_error("The formula '{}' need start with '='", str.toStdString());
+                vecStr.append(str);
+            }
         }
     }
-    return vec;
+    if (vec.size() == m_editors.size()) {
+        value = QVariant::fromValue(vec);
+    } else if (vecStr.size() == m_editors.size()) {
+        value = QVariant::fromValue(vecStr);
+    }
+    return value;
 }
 
-void ZVecEditorItem::setVec(const UI_VECTYPE& vec, bool bFloat, QGraphicsScene* pScene)
+void ZVecEditorItem::setVec(const QVariant& vec, bool bFloat, QGraphicsScene* pScene)
 {
-    if (vec.size() != m_editors.size())
-        return;
+    /*if (vec.size() != m_editors.size())
+        return;*/
 
-    for (int i = 0; i < vec.size(); i++)
+    for (int i = 0; i < m_editors.size(); i++)
     {
-        m_editors[i]->setText(QString::number(vec[i]));
+        if (vec.canConvert<UI_VECTYPE>() || vec.canConvert<UI_VECSTRING>()) {
+            QString text;
+            if (vec.canConvert<UI_VECTYPE>())
+                text = UiHelper::variantToString(vec.value<UI_VECTYPE>().at(i));
+            else
+                text = vec.value<UI_VECSTRING>().at(i);
+            m_editors[i]->setText(text);
+        }
     }
 }
 
-void ZVecEditorItem::setVec(const UI_VECTYPE& vec)
+void ZVecEditorItem::setVec(const QVariant& vec)
 {
-    if (vec.size() != m_editors.size())
-        return;
+    //if (vec.size() != m_editors.size())
+    //    return;
 
-    for (int i = 0; i < vec.size(); i++)
+    for (int i = 0; i < m_editors.size(); i++)
     {
-        m_editors[i]->setText(QString::number(vec[i]));
+        if (vec.canConvert<UI_VECTYPE>() || vec.canConvert<UI_VECSTRING>()) {
+            QString text;
+            if (vec.canConvert<UI_VECTYPE>())
+                text = UiHelper::variantToString(vec.value<UI_VECTYPE>().at(i));
+            else
+                text = vec.value<UI_VECSTRING>().at(i);
+            m_editors[i]->setText(text);
+        }
     }
 }
 
 bool ZVecEditorItem::isFloatType() const
 {
     return m_bFloatVec;
+}
+
+QString ZVecEditorItem::findElemByControl(ZEditableTextItem* pElem) const
+{
+    int idx = m_editors.indexOf(pElem);
+    if (idx == 0) {
+        return "x";
+    }
+    else if (idx == 1) {
+        return "y";
+    }
+    else if (idx == 2) {
+        return "z";
+    }
+    else if (idx == 3) {
+        return "w";
+    }
+    else {
+        return "";
+    }
+}
+
+bool ZVecEditorItem::hasSliderShow()
+{
+    for (int i = 0; i < m_editors.size(); i++)
+        if (m_editors[i]->showSlider())
+            return true;
+    return false;
+}
+
+void ZVecEditorItem::updateProperties(const QVector<QString>& properties)
+{
+    for (int i = 0; i < m_editors.size(); i++)
+    {
+        QString property;
+        if (i >= properties.size())
+        {
+            property = properties.first();
+        }
+        else
+        {
+            property = properties.at(i);
+        }
+        m_editors[i]->setProperty(g_setKey, property);
+    }
 }

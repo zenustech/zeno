@@ -1,14 +1,20 @@
 #pragma once
 
 #include <optix.h>
-
+#include <optix_device.h>
 #include "zxxglslvec.h"
 #include "optixPathTracer.h"
 
-#define _FLT_EPL_ 1.19209290e-7F
+#include <Sampling.h>
+#include <cuda/random.h>
+#include <cuda/climits.h>
+#define _FLT_MAX_ __FLT_MAX__
+#define _FLT_MIN_ __FLT_MIN__
+#define _FLT_EPL_ __FLT_EPSILON__
 
-#define _FLT_MAX_ 3.40282347e+38F
-#define _FLT_MIN_ 1.17549435e-38F
+#ifndef __CUDACC_RTC__
+#include "Host.h"
+#endif
 
 #ifndef uint
 using uint = unsigned int;
@@ -25,38 +31,11 @@ static __forceinline__ __device__ void* unpackPointer( unsigned int i0, unsigned
     return ptr;
 }
 
-
 static __forceinline__ __device__ void  packPointer( void* ptr, unsigned int& i0, unsigned int& i1 )
 {
     const unsigned long long uptr = reinterpret_cast<unsigned long long>( ptr );
     i0 = uptr >> 32;
     i1 = uptr & 0x00000000ffffffff;
-}
-
-namespace rtgems {
-
-    constexpr float origin()      { return 1.0f / 32.0f; }
-    constexpr float int_scale()   { return 256.0f; }
-    constexpr float float_scale() { return 1.0f / 65536.0f; }
-    
-    // Normal points outward for rays exiting the surface, else is flipped.
-    static __inline__ __device__ float3 offset_ray(const float3 p, const float3 n)
-    {
-        int3 of_i {
-            (int)(int_scale() * n.x),
-            (int)(int_scale() * n.y), 
-            (int)(int_scale() * n.z) };
-
-        float3 p_i {
-            __int_as_float(__float_as_int(p.x) + ((p.x < 0) ? -of_i.x : of_i.x)),
-            __int_as_float(__float_as_int(p.y) + ((p.y < 0) ? -of_i.y : of_i.y)),
-            __int_as_float(__float_as_int(p.z) + ((p.z < 0) ? -of_i.z : of_i.z)) };
-
-        return float3{
-                fabsf(p.x) < origin() ? p.x+float_scale()*n.x : p_i.x,
-                fabsf(p.y) < origin() ? p.y+float_scale()*n.y : p_i.y,
-                fabsf(p.z) < origin() ? p.z+float_scale()*n.z : p_i.z };
-    }
 }
 
 enum medium{
@@ -76,19 +55,16 @@ struct RadiancePRD
     float3       attenuation2;
     float3       origin;
     float3       direction;
+    float3       camPos;
     float        minSpecRough;
     bool         passed;
-    bool         next_ray_is_going_inside;
-    float        opacity;
     float        prob;
     float        prob2;
     unsigned int seed;
     unsigned int eventseed;
     unsigned int flags;
-    bool         hitEnv;
     int          countEmitted;
     int          done;
-    int          pad;
     float3       shadowAttanuation;
     int          medium;
     float        scatterDistance;
@@ -99,21 +75,25 @@ struct RadiancePRD
     bool         isSS;
     float        scatterStep;
     int          nonThinTransHit;
-    float3       LP;
-    float3       Ldir;
+
     float        Lweight;
     vec3         sigma_t_queue[8];
     vec3         ss_alpha_queue[8];
     int          curMatIdx;
     float        samplePdf;
     bool         fromDiff;
+    unsigned char adepth;
 
-    unsigned char first_hit_type;
+    __forceinline__ float rndf() {
+        return rnd(this->seed);
+        //return pcg_rng(this->seed); 
+    }
+
+    unsigned char hit_type;
     vec3 extinction() {
         auto idx = clamp(curMatIdx, 0, 7);
         return sigma_t_queue[idx];
     }
-    float        CH;
 
     //cihou SS
     vec3 sigma_t;
@@ -136,7 +116,7 @@ struct RadiancePRD
     bool origin_inside_vdb = false;
     bool surface_inside_vdb = false; 
 
-    float trace_tmin = 0;
+    float _tmin_ = 0;
     float3 geometryNormal;
 
     void offsetRay() {
@@ -145,7 +125,10 @@ struct RadiancePRD
 
     void offsetRay(float3& P, const float3& new_dir) {
         bool forward = dot(geometryNormal, new_dir) > 0;
-        P = rtgems::offset_ray(P, forward? geometryNormal:-geometryNormal);
+        auto dir = forward? geometryNormal:-geometryNormal;
+        auto offset = rtgems::offset_ray(P, dir);
+        float l = length( offset - P );
+        P = l>1e-4? offset : (P + 1e-4 * dir);
     }
 
     void offsetUpdateRay(float3& P, float3 new_dir) {
@@ -154,7 +137,7 @@ struct RadiancePRD
         offsetRay(this->origin, new_dir);
     }
 
-    VisibilityMask _mask_ = EverythingMask;
+    uint8_t _mask_ = EverythingMask;
 
     void updateAttenuation(float3& multiplier) {
         attenuation2 = attenuation;
@@ -194,71 +177,14 @@ struct RadiancePRD
     
 };
 
-
-static __forceinline__ __device__ void  traceRadiance(
-        OptixTraversableHandle handle,
-        float3                 ray_origin,
-        float3                 ray_direction,
-        float                  tmin,
-        float                  tmax,
-        RadiancePRD*           prd
-        )
-{
-    // TODO: deduce stride from num ray-types passed in params
-
-    unsigned int u0, u1;
-    packPointer( prd, u0, u1 );
-    optixTrace(
-            handle,
-            ray_origin,
-            ray_direction,
-            tmin,
-            tmax,
-            0.0f,                // rayTime
-            OptixVisibilityMask( 1 | 2 ),
-            OPTIX_RAY_FLAG_NONE,
-            RAY_TYPE_RADIANCE,        // SBT offset
-            RAY_TYPE_COUNT,           // SBT stride
-            RAY_TYPE_RADIANCE,        // missSBTIndex
-            u0, u1 );
-}
-
-
-static __forceinline__ __device__ bool traceOcclusion(
-        OptixTraversableHandle handle,
-        float3                 ray_origin,
-        float3                 ray_direction,
-        float                  tmin,
-        float                  tmax,
-        RadiancePRD*           prd
-        )
-{
-    unsigned int u0, u1;
-    packPointer( prd, u0, u1 );
-    optixTrace(
-            handle,
-            ray_origin,
-            ray_direction,
-            tmin,
-            tmax,
-            0.0f,                    // rayTime
-            OptixVisibilityMask( 1 | 2 ),
-            OPTIX_RAY_FLAG_ENFORCE_ANYHIT,
-            RAY_TYPE_OCCLUSION,      // SBT offset
-            RAY_TYPE_COUNT,          // SBT stride
-            RAY_TYPE_OCCLUSION,       // missSBTIndex
-            u0, u1);
-        return false;//???
-}
-
-static __forceinline__ __device__ void traceRadianceMasked(
+static __forceinline__ __device__ void traceRadiance(
 	OptixTraversableHandle handle,
 	float3                 ray_origin,
 	float3                 ray_direction,
 	float                  tmin,
 	float                  tmax,
-	char                   mask,
-	RadiancePRD           *prd)
+	RadiancePRD           *prd,
+    OptixVisibilityMask    mask=255u)
 {
     unsigned int u0, u1;
     packPointer( prd, u0, u1 );
@@ -267,7 +193,7 @@ static __forceinline__ __device__ void traceRadianceMasked(
             ray_origin, ray_direction,
             tmin, tmax,
             0.0f,                     // rayTime
-            OptixVisibilityMask(mask),
+            (mask),
             OPTIX_RAY_FLAG_DISABLE_ANYHIT,
             RAY_TYPE_RADIANCE,        // SBT offset
             RAY_TYPE_COUNT,           // SBT stride
@@ -276,14 +202,14 @@ static __forceinline__ __device__ void traceRadianceMasked(
 }
 
 
-static __forceinline__ __device__ void traceOcclusionMasked(
+static __forceinline__ __device__ void traceOcclusion(
         OptixTraversableHandle handle,
         float3                 ray_origin,
         float3                 ray_direction,
         float                  tmin,
         float                  tmax,
-        char                   mask,
-        RadiancePRD           *prd)
+        RadiancePRD           *prd,
+        OptixVisibilityMask    mask=255u)
 {
     unsigned int u0, u1;
     packPointer( prd, u0, u1 );
@@ -292,8 +218,8 @@ static __forceinline__ __device__ void traceOcclusionMasked(
             ray_origin, ray_direction,
             tmin, tmax,
             0.0f,  // rayTime
-            OptixVisibilityMask(mask),
-            OPTIX_RAY_FLAG_ENFORCE_ANYHIT,  //OPTIX_RAY_FLAG_NONE,
+            (mask),
+            OPTIX_RAY_FLAG_ENFORCE_ANYHIT,
             RAY_TYPE_OCCLUSION,      // SBT offset
             RAY_TYPE_COUNT,          // SBT stride
             RAY_TYPE_OCCLUSION,      // missSBTIndex

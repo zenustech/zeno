@@ -403,7 +403,7 @@ namespace zeno {
         constexpr auto CODIM = VecTi::extent;
         constexpr auto NM_EDGES = (CODIM - 1) * (CODIM) / 2;
 
-        zs::vec<Ti,2> out_edges[NM_EDGES] = {};
+        zs::vec<zs::vec<Ti,2>, NM_EDGES> out_edges{};
         int nm_out_edges = 0;
         for(int i = 0;i != CODIM;++i)
             for(int j = i + 1;j != CODIM;++j)
@@ -843,12 +843,12 @@ namespace zeno {
                         tet[facet_indices[i * 3 + 2]]};
                     int min_idx = 0;
                     int min_id = facet[i];
-                    for(int i = 1;i != 3;++i)
-                        if(facet[i] < min_id){
-                            min_idx = i;
-                            min_id = facet[i];
+                    for(int j = 1;j != 3;++j)
+                        if(facet[j] < min_id){
+                            min_idx = j;
+                            min_id = facet[j];
                         }
-                    for(int i = 0;i != min_idx;++i) {
+                    for(int j = 0;j != min_idx;++j) {
                         auto tmp = facet[0];
                         facet[0] = facet[1];
                         facet[1] = facet[2];
@@ -1039,6 +1039,15 @@ namespace zeno {
         return tri[reinterpret_bits<int>(half_edges("local_vertex_id",hei))];
     }
 
+    template<typename HalfEdgeTileVec,typename TriTileVec>
+    constexpr zs::vec<int,2> half_edge_get_edge(int hei,const HalfEdgeTileVec& half_edges,const TriTileVec& tris) {
+        using namespace zs;
+        auto ti = zs::reinterpret_bits<int>(half_edges("to_face",hei));
+        auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
+        auto local_vertex_id = reinterpret_bits<int>(half_edges("local_vertex_id",hei));
+        return zs::vec<int,2>{tri[local_vertex_id],tri[(local_vertex_id + 1) % 3]};
+    }
+
     // some operation with half edge structure
     template<int MAX_NEIGHS,typename HalfEdgeTileVec,typename TriTileVec>
     constexpr zs::vec<int,MAX_NEIGHS> get_one_ring_neigh_points(int hei,const HalfEdgeTileVec& half_edges,const TriTileVec& tris) {
@@ -1116,7 +1125,7 @@ namespace zeno {
     void topological_incidence_matrix(Pol& pol,
             // size_t nm_points,
             const TopoRangT& topos,
-            zs::SparseMatrix<zs::u32,true>& spmat) {
+            zs::SparseMatrix<zs::u32,true>& spmat,bool output_debug_inform = false) {
         using namespace zs;
         using ICoord = zs::vec<int, 2>;
         // constexpr auto CDIM = VecTI::extent;
@@ -1162,7 +1171,7 @@ namespace zeno {
                     }
             });
 
-            // std::cout << "finish computing tab_buffer" << std::endl;
+            std::cout << "finish computing tab_buffer" << std::endl;
             // pol(zs::range(cnts.size()),[cnts = proxy<space>(cnts)] ZS_LAMBDA(int pi) mutable {printf("cnts[%d] = %d\n",pi,cnts[pi]);});
             pol(zs::range(exclusive_offsets),[] ZS_LAMBDA(auto& eoffset) {eoffset = 0;});
 
@@ -1223,13 +1232,17 @@ namespace zeno {
                 }
         });
 
-        // std::cout << "finish computing tij_tab" << std::endl;
+        std::cout << "finish computing tij_tab" << std::endl;
 
         zs::Vector<int> is{topos.get_allocator(),tij_tab.size()};
         zs::Vector<int> js{topos.get_allocator(),tij_tab.size()};
-        pol(zip(zs::range(tij_tab.size()),zs::range(tij_tab._activeKeys)),[is = proxy<space>(is),js = proxy<space>(js)] ZS_LAMBDA(auto idx,const auto& pair) {
+        pol(zip(zs::range(tij_tab.size()),zs::range(tij_tab._activeKeys)),[
+                is = proxy<space>(is),
+                js = proxy<space>(js),
+                output_debug_inform = output_debug_inform] ZS_LAMBDA(auto idx,const auto& pair) {
             is[idx] = pair[0];js[idx] = pair[1];
-            // printf("pair[%d] : %d %d\n",idx,pair[0],pair[1]);
+            if(output_debug_inform)
+                printf("pair[%d] : %d %d\n",idx,pair[0],pair[1]);
         });
 
         // pol(zs::range(is.size()),[is = proxy<space>(is),js = proxy<space>(js)] ZS_LAMBDA(int i) mutable {printf("ijs[%d] : %d %d\n",i,is[i],js[i]);});
@@ -1238,6 +1251,7 @@ namespace zeno {
         //     std::cout << topos.getVal(i)[0] << "\t" << topos.getVal(i)[1] << std::endl;
 
         // spmat = zs::SparseMatrix<u32,true>{topos.get_allocator(),(int)topos.size(),(int)topos.size()};
+        std::cout << "build sparse matrix" << std::endl;
         spmat.build(pol,(int)topos.size(),(int)topos.size(),zs::range(is),zs::range(js)/*,zs::range(rs)*/,zs::true_c);
         // spmat.localOrdering(pol,zs::false_c);
         spmat._vals.resize(spmat.nnz());
@@ -1251,23 +1265,29 @@ namespace zeno {
     void topological_coloring(Pol& pol,
             // int nm_points,
             const TopoRangeT& topo,
-            ColorRangeT& colors) {
+            ColorRangeT& colors,
+            bool output_debug_information = false) {
         using namespace zs;
         constexpr auto space = Pol::exec_tag::value;
         using Ti = RM_CVREF_T(colors[0]);
 
+        if(output_debug_information)
+            std::cout << "do coloring with topos : " << topo.size() << std::endl;
+
 
         colors.resize(topo.size());
         zs::SparseMatrix<u32,true> topo_incidence_matrix{topo.get_allocator(),(int)topo.size(),(int)topo.size()};
-        // std::cout << "compute incidence matrix " << std::endl;
-        topological_incidence_matrix(pol,topo,topo_incidence_matrix);
-        // std::cout << "finish compute incidence matrix " << std::endl;
+        std::cout << "compute incidence matrix " << std::endl;
+        
+
+        topological_incidence_matrix(pol,topo,topo_incidence_matrix,output_debug_information);
+        std::cout << "finish compute incidence matrix " << std::endl;
 
         auto ompPol = omp_exec();
         constexpr auto omp_space = execspace_e::openmp;
         zs::Vector<u32> weights(/*topo.get_allocator(),*/topo.size());
         {
-            bht<int, 1, int> tab{weights.get_allocator(),topo.size() * 2};
+            bht<int, 1, int> tab{weights.get_allocator(),topo.size() * 100};
             tab.reset(ompPol, true);
             ompPol(enumerate(weights), [tab1 = proxy<omp_space>(tab)] (int seed, u32 &w) mutable {
                 using tab_t = RM_CVREF_T(tab);
@@ -1285,7 +1305,7 @@ namespace zeno {
         weights = weights.clone(colors.memoryLocation());
         // for(int i = 0;i != weights.size();++i)
         //     printf("w[%d] : %u\n",i,weights.getVal(i));
-
+        std::cout << "do maximum set " << std::endl;
         auto iterRef = maximum_independent_sets(pol, topo_incidence_matrix, weights, colors);
         std::cout << "nm_colors : " << iterRef << std::endl;
         pol(zs::range(colors),[] ZS_LAMBDA(auto& clr) mutable {clr = clr - (Ti)1;});
@@ -1314,7 +1334,7 @@ namespace zeno {
                 atomic_max(exec_tag,&max_color[0],color);
         });
 
-        int nm_total_colors = max_color.getVal(0) + 1;
+        size_t nm_total_colors = max_color.getVal(0) + 1;
         // zs::bht<int,1,int> color_buffer{}
         zs::Vector<int> nm_colors{colors.get_allocator(),nm_total_colors};
         pol(zs::range(nm_colors),[] ZS_LAMBDA(auto& nclr) mutable {nclr = 0;});
@@ -1365,6 +1385,7 @@ namespace zeno {
         return out_topo;
     }
 
+    // the topos:  triA: [idx0,idx2,idx3] triB: [idx1,idx3,idx2]
     template<typename Pol,typename TriTileVec,typename HalfEdgeTileVec>
     void retrieve_tri_bending_topology(Pol& pol,
         const TriTileVec& tris,
@@ -1406,7 +1427,54 @@ namespace zeno {
                     auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
                     auto otri = tris.pack(dim_c<3>,"inds",oti,int_c);
 
-                    tb_topos[id] = zs::vec<int,4>(tri[(vid + 0) % 3],tri[(vid + 1) % 3],tri[(vid + 2) % 3],otri[(ovid + 2) % 3]);
+                    // tb_topos[id] = zs::vec<int,4>(tri[(vid + 0) % 3],tri[(vid + 1) % 3],tri[(vid + 2) % 3],otri[(ovid + 2) % 3]);
+                    tb_topos[id] = zs::vec<int,4>(tri[(vid + 2) % 3],otri[(ovid + 2) % 3],tri[(vid + 0) % 3],tri[(vid + 1) % 3]);
+            });
+    }
+
+    template<typename Pol,typename TriTileVec,typename HalfEdgeTileVec>
+    void retrieve_dihedral_spring_topology(Pol& pol,
+        const TriTileVec& tris,
+        const HalfEdgeTileVec& halfedges,
+        zs::Vector<zs::vec<int,2>>& ds_topos) {
+            using namespace zs;
+            constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+            constexpr auto exec_tag = wrapv<space>{};
+
+            // zs::Vector<int> nm_interior_edges{halfedges.get_allocator(),1};
+            // nm_interior_edges.setVal(0);
+
+            zs::bht<int,1,int> interior_edges{halfedges.get_allocator(),halfedges.size()};
+            interior_edges.reset(pol,true);
+
+            pol(zs::range(halfedges.size()),[
+                halfedges = proxy<space>({},halfedges),
+                exec_tag,
+                interior_edges = proxy<space>(interior_edges)] ZS_LAMBDA(int hi) mutable {
+                    auto ohi = zs::reinterpret_bits<int>(halfedges("opposite_he",hi));
+                    // the boundary halfedge will return -1 for opposite_he here, so it is automatically neglected
+                    if(ohi < hi)
+                        return;
+                    interior_edges.insert(hi);
+            });
+        
+            ds_topos.resize(interior_edges.size());
+            pol(zs::zip(zs::range(interior_edges.size()),interior_edges._activeKeys),[
+                ds_topos = proxy<space>(ds_topos),
+                halfedges = proxy<space>({},halfedges),
+                tris = proxy<space>({},tris)] ZS_LAMBDA(auto id,auto hi_vec) mutable {
+                    auto hi = hi_vec[0];
+                    auto ti = zs::reinterpret_bits<int>(halfedges("to_face",hi));
+                    auto vid = zs::reinterpret_bits<int>(halfedges("local_vertex_id",hi));
+                    auto ohi = zs::reinterpret_bits<int>(halfedges("opposite_he",hi));
+                    auto oti = zs::reinterpret_bits<int>(halfedges("to_face",ohi));
+                    auto ovid = zs::reinterpret_bits<int>(halfedges("local_vertex_id",ohi));
+
+                    auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
+                    auto otri = tris.pack(dim_c<3>,"inds",oti,int_c);
+
+                    // ds_topos[id] = zs::vec<int,4>(tri[(vid + 0) % 3],tri[(vid + 1) % 3],tri[(vid + 2) % 3],otri[(ovid + 2) % 3]);
+                    ds_topos[id] = zs::vec<int,2>(tri[(vid + 2) % 3],otri[(ovid + 2) % 3]);
             });
     }
 

@@ -42,6 +42,10 @@ public slots:
     void onDelete();
 private slots:
     void onRename(const QModelIndex &index);
+    void onSaveSubgraph(const QModelIndex& index);
+
+private:
+    QModelIndexList getSubgraphs(const QModelIndex& index);
 
 private:
     IGraphsModel* m_model;
@@ -54,6 +58,7 @@ public:
     explicit SubListSortProxyModel(QObject* parent = nullptr);
 protected:
     bool lessThan(const QModelIndex& source_left, const QModelIndex& source_right) const override;
+    bool filterAcceptsRow(int source_row, const QModelIndex& source_parent) const override;
 };
 
 #endif

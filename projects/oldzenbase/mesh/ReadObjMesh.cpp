@@ -192,9 +192,9 @@ static int defMeshMix = zeno::defNodeClass<MeshMix>("MeshMix",
     }});
 struct ImportObjMesh : zeno::INode {
   virtual void apply() override {
-    auto path = get_input("path")->as<StringObject>();
+    auto path = get_input("path")->as<StringObject>()->get();
     auto mesh = zeno::IObject::make<MeshObject>();
-    readobj(path->get().c_str(), mesh->vertices, mesh->uvs, mesh->normals);
+    readobj(path.c_str(), mesh->vertices, mesh->uvs, mesh->normals);
     set_output("mesh", mesh);
   }
 };

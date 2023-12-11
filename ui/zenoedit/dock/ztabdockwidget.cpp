@@ -6,6 +6,7 @@
 #include "panel/zenoproppanel.h"
 #include "../panel/zenospreadsheet.h"
 #include "../panel/zlogpanel.h"
+#include "../panel/zenocommandparamspanel.h"
 #include "viewport/viewportwidget.h"
 #include "viewport/displaywidget.h"
 #include "nodesview/zenographseditor.h"
@@ -13,7 +14,6 @@
 #include "zenomainwindow.h"
 #include "zenoapplication.h"
 #include <zenomodel/include/graphsmanagment.h>
-#include "docktabcontent.h"
 #include <zenoui/style/zenostyle.h>
 #include <zenoui/comctrl/zicontoolbutton.h>
 #include <zenomodel/include/modelrole.h>
@@ -21,8 +21,8 @@
 #include <zenomodel/include/uihelper.h>
 #include "util/apphelper.h"
 #include "viewport/optixviewport.h"
-#include "timeline/ztimeline.h"
 
+#include "launch/ztcpserver.h"
 
 ZTabDockWidget::ZTabDockWidget(ZenoMainWindow* mainWin, Qt::WindowFlags flags)
     : _base(mainWin, flags)
@@ -79,13 +79,6 @@ ZTabDockWidget::ZTabDockWidget(ZenoMainWindow* mainWin, Qt::WindowFlags flags)
                     view->setIsCurrent(false);
                 }
                 dpview->setIsCurrent(true);
-                if (Zenovis* vis = dpview->getZenoVis())    //sync loopPlaying setting to timeline
-                {
-                    if (ZTimeline* timeline = main->timeline())
-                    {
-                        timeline->setLoopPlayingStatus(vis->isLoopPlaying());
-                    }
-                }
             }
         }
         });
@@ -193,6 +186,12 @@ QWidget* ZTabDockWidget::createTabWidget(PANEL_TYPE type)
         {
             DockContent_View* wid = new DockContent_View(true);
             wid->initUI();
+
+            DisplayWidget* pDisplay = wid->getDisplayWid();
+            ZASSERT_EXIT(pDisplay, nullptr);
+            Zenovis* pZenoVis = pDisplay->getZenoVis();
+            ZASSERT_EXIT(pZenoVis, nullptr);
+            pZenoVis->initializeGL();
             return wid;
         }
         case PANEL_EDITOR:
@@ -225,6 +224,10 @@ QWidget* ZTabDockWidget::createTabWidget(PANEL_TYPE type)
             wid->initUI();
             return wid;
         }
+        case PANEL_COMMAND_PARAMS:
+        {
+            return new ZenoCommandParamsPanel;
+        }
     }
     return nullptr;
 }
@@ -241,6 +244,7 @@ QString ZTabDockWidget::type2Title(PANEL_TYPE type)
     case PANEL_LIGHT:       return tr("Light");
     case PANEL_OPTIX_VIEW:  return tr("Optix");
     case PANEL_IMAGE: return tr("Image");
+    case PANEL_COMMAND_PARAMS: return tr("Command Params");
     default:
         return "";
     }
@@ -273,19 +277,22 @@ PANEL_TYPE ZTabDockWidget::title2Type(const QString& title)
     else if (title == tr("Optix")|| title == "Optix") {
         type = PANEL_OPTIX_VIEW;
     }
+    else if (title == tr("Command Params") || title == "Command Params") {
+        type = PANEL_COMMAND_PARAMS;
+    }
     return type;
 }
 
 void ZTabDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select)
 {
-    if (nodes.count() <= 0)
-        return;
+    //if (nodes.count() <= 0)
+    //    return;
     for (int i = 0; i < m_tabWidget->count(); i++)
     {
         QWidget* wid = m_tabWidget->widget(i);
         if (DockContent_Parameter* prop = qobject_cast<DockContent_Parameter*>(wid))
         {
-            if (select && nodes.size() == 1) {
+            if (select && nodes.size() <= 1) {
                 prop->onNodesSelected(subgIdx, nodes, select);
             }
         }
@@ -313,11 +320,12 @@ void ZTabDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
                         }
                     }
                     onPrimitiveSelected(scene->selected);
+                    pDisplay->updateFrame();
                 }
             }
         } 
         else if (DockContent_Editor *editor = qobject_cast<DockContent_Editor *>(wid)) {
-            if (select && nodes.size() == 1)
+            if (select && nodes.size() <= 1)
             {
                 editor->getEditor()->showFloatPanel(subgIdx, nodes);
             }
@@ -418,6 +426,10 @@ void ZTabDockWidget::onRunFinished()
             ZASSERT_EXIT(pWid);
             pWid->onRunFinished();
         }
+        else if (DockContent_Editor* pView = qobject_cast<DockContent_Editor*>(m_tabWidget->widget(i)))
+        {
+            pView->runFinished();
+        }
     }
 }
 
@@ -436,7 +448,7 @@ bool ZTabDockWidget::event(QEvent* event)
 void ZTabDockWidget::onDockOptionsClicked()
 {
     QMenu* menu = new QMenu(this);
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setBold(false);
     menu->setFont(font);
 
@@ -516,16 +528,24 @@ void ZTabDockWidget::onFloatTriggered()
 void ZTabDockWidget::onAddTabClicked()
 {
     QMenu* menu = new QMenu(this);
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setBold(false);
     menu->setFont(font);
 
-    static QList<QString> panels = { tr("Parameter"), tr("Scene Viewport"), tr("Node Editor"), tr("Spreadsheet"), tr("Log"), tr("Light"), tr("Image"), tr("Optix") };
+    static QList<QString> panels = { tr("Parameter"), tr("Scene Viewport"), tr("Node Editor"), tr("Spreadsheet"), tr("Log"), tr("Image"), tr("Optix"), tr("Command Params") };
     for (QString name : panels)
     {
         QAction* pAction = new QAction(name);
         connect(pAction, &QAction::triggered, this, [=]() {
             PANEL_TYPE type = title2Type(name);
+#ifdef ZENO_OPTIX_PROC
+            if (type == PANEL_OPTIX_VIEW)
+            {
+                ZTcpServer* pServer = zenoApp->getServer();
+                pServer->startOptixProc();
+                return;
+            }
+#endif
             QWidget* wid = createTabWidget(type);
             if (wid)
             {
@@ -539,6 +559,7 @@ void ZTabDockWidget::onAddTabClicked()
                 case 5: m_debugPanel = PANEL_LIGHT; break;
                 case 6: m_debugPanel = PANEL_IMAGE; break;
                 case 7: m_debugPanel = PANEL_OPTIX_VIEW; break;
+                case 8: m_debugPanel = PANEL_COMMAND_PARAMS; break;
                 }
                 m_tabWidget->setCurrentIndex(idx);
             }
@@ -556,6 +577,17 @@ void ZTabDockWidget::onAddTab(PANEL_TYPE type)
         int idx = m_tabWidget->addTab(wid, name);
         m_debugPanel = type;
         m_tabWidget->setCurrentIndex(idx);
+    }
+}
+
+void ZTabDockWidget::onAddTab(PANEL_TYPE type, DockContentWidgetInfo info)
+{
+    onAddTab(type);
+    QWidget* wid = m_tabWidget->currentWidget();
+    if (DockContent_View* view = qobject_cast<DockContent_View*>(wid))
+    {
+        view->getDisplayWid()->setViewWidgetInfo(info);
+        view->setResComboBoxIndex(info.comboboxindex);
     }
 }
 

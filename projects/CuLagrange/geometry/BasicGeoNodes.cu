@@ -41,14 +41,18 @@ struct ZSComputeSurfaceArea : zeno::INode {
         }
         TILEVEC_OPS::fill(cudaPol,verts,attrName,(T)0.0);
 
-        zs::Vector<int> nmIncidentTris{verts.get_allocator(),verts.size()};
-        cudaPol(zs::range(nmIncidentTris),[] ZS_LAMBDA(int& count) mutable {count = 0;});
+        // zs::Vector<int> nmIncidentTris{verts.get_allocator(),verts.size()};
+        zs::Vector<T> nodal_area{verts.get_allocator(),verts.size()};
+
+        // cudaPol(zs::range(nmIncidentTris),[] ZS_LAMBDA(auto& count) mutable {count = 0;});
+        cudaPol(zs::range(nodal_area),[] ZS_LAMBDA(auto& A) mutable {A = 0;});
 
         cudaPol(zs::range(tris.size()),[
             exec_tag,
             attrName = zs::SmallString(attrName),
             tris = proxy<cuda_space>({},tris),
-            nmIncidentTris = proxy<cuda_space>(nmIncidentTris),
+            nodal_area = proxy<cuda_space>(nodal_area),
+            // nmIncidentTris = proxy<cuda_space>(nmIncidentTris),
             verts = proxy<cuda_space>({},verts)] ZS_LAMBDA(int ti) mutable {
                 auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
                 zs::vec<T,3> tV[3] = {};
@@ -57,17 +61,17 @@ struct ZSComputeSurfaceArea : zeno::INode {
                 auto A = LSL_GEO::area(tV[0],tV[1],tV[2]);
                 tris(attrName,ti) = A;
                 for(int i = 0;i != 3;++i) {
-                    atomic_add(exec_tag,&verts(attrName,tri[i]),A);
-                    atomic_add(exec_tag,&nmIncidentTris[0],(int)1);
+                    atomic_add(exec_tag,&nodal_area[tri[i]],A / (T)3.0);
+                    // atomic_add(exec_tag,&nmIncidentTris[0],(int)1);
                 }
-        });
+        }); 
 
         cudaPol(zs::range(verts.size()),[
             verts = proxy<cuda_space>({},verts),
             attrName = zs::SmallString(attrName),
-            nmIncidentTris = proxy<cuda_space>(nmIncidentTris)] ZS_LAMBDA(int vi) mutable {
-                if(nmIncidentTris[vi] > 0)
-                    verts(attrName,vi) = verts(attrName,vi) / (T)nmIncidentTris[vi];
+            nodal_area = proxy<cuda_space>(nodal_area)] ZS_LAMBDA(int vi) mutable {
+                // if(nmIncidentTris[vi] > 0)
+                verts(attrName,vi) = nodal_area[vi];
         });
 
         set_output("zsparticles",zsparticles);
@@ -81,5 +85,4 @@ ZENDEFNODE(ZSComputeSurfaceArea, {{{"zsparticles"}},
                                 {"string","attrName","area"}
                             },
                             {"ZSGeometry"}});
-
 };

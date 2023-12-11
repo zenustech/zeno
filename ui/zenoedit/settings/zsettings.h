@@ -8,7 +8,17 @@ const char *const zsShowGrid = "ShowGrid";
 const char *const zsSnapGrid = "SnapGrid";
 const char *const zsTraceErrorNode = "TraceErrorNode";
 const char *const zsShortCut = "ShortCut";
+const char *const zsShortCutStyle = "ShortCutStyle";
 const char *const zsLinkLineShape = "LinkLineShape";
+const char* const zsUseChinese = "use_chinese";
+const char* const zsNASLOC = "nas_loc";
+const char* const zsCacheEnable = "zencache-enable";
+const char* const zsCacheAutoRemove = "zencache-autoremove";
+const char* const zsCacheDir= "zencachedir";
+const char* const zsCacheNum = "zencachenum";
+const char* const zsCacheAutoClean = "zencache-autoclean";
+const char* const zsEnableShiftChangeFOV = "viewport-EnableShiftChangeFOV";
+const char* const zsSubgraphType = "SubgraphType";
 
 //short cut
 const char *const ShortCut_Save = "Save";
@@ -52,4 +62,7 @@ const char *const ShortCut_SelectAllNodes = "Select All Nodes";
 const char *const ShortCut_View = "View";
 const char *const ShortCut_Bypass = "Bypass";
 const char *const ShortCut_Once = "Once";
+const char *const ShortCut_MovingView = "Moving View";
+const char *const ShortCut_RotatingView = "Rotating View";
+const char *const ShortCut_ScalingView = "Scaling View";
 #endif

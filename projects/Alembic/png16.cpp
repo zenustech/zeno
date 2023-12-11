@@ -57,11 +57,14 @@ static std::shared_ptr<zeno::PrimitiveObject> read_png(const char* file_path) {
     png_bytep* row_pointers = png_get_rows(png_ptr, info_ptr);
     std::vector<zeno::vec3f> image_data;
     image_data.reserve(width * height);
+    std::vector<float> alpha_data;
+    alpha_data.reserve(width * height);
 
     for (int y = 0; y < height; y++) {
         png_bytep row = row_pointers[y];
         for (int x = 0; x < width; x++) {
             zeno::vec3f color;
+            float alpha = 1;
             if (bit_depth == 16) {
                 if (channels == 1) {
                     uint16_t value = (row[x * 2] << 8) | row[x * 2 + 1];
@@ -75,6 +78,16 @@ static std::shared_ptr<zeno::PrimitiveObject> read_png(const char* file_path) {
                     color[0] = float(r) / 65535.0f;
                     color[1] = float(g) / 65535.0f;
                     color[2] = float(b) / 65535.0f;
+                } else if (channels == 4) {
+                    uint16_t r = (row[x * 8] << 8) | row[x * 8 + 1];
+                    uint16_t g = (row[x * 8 + 2] << 8) | row[x * 8 + 3];
+                    uint16_t b = (row[x * 8 + 4] << 8) | row[x * 8 + 5];
+                    uint16_t a = (row[x * 8 + 6] << 8) | row[x * 8 + 7];
+
+                    color[0] = float(r) / 65535.0f;
+                    color[1] = float(g) / 65535.0f;
+                    color[2] = float(b) / 65535.0f;
+                    alpha = float(a) / 65535.0f;
                 }
             } else if (bit_depth == 8) {
                 if (channels == 1) {
@@ -89,10 +102,21 @@ static std::shared_ptr<zeno::PrimitiveObject> read_png(const char* file_path) {
                     color[0] = float(r) / 255.0f;
                     color[1] = float(g) / 255.0f;
                     color[2] = float(b) / 255.0f;
+                } else if (channels == 4) {
+                    uint8_t r = row[x * 4];
+                    uint8_t g = row[x * 4 + 1];
+                    uint8_t b = row[x * 4 + 2];
+                    uint8_t a = row[x * 4 + 3];
+
+                    color[0] = float(r) / 255.0f;
+                    color[1] = float(g) / 255.0f;
+                    color[2] = float(b) / 255.0f;
+                    alpha = float(a) / 255.0f;
                 }
             }
 
             image_data.push_back(color);
+            alpha_data.push_back(alpha);
         }
     }
 
@@ -100,6 +124,8 @@ static std::shared_ptr<zeno::PrimitiveObject> read_png(const char* file_path) {
     fclose(file);
     zeno::image_flip_vertical(image_data.data(), width, height);
     img->verts.values = image_data;
+    zeno::image_flip_vertical(alpha_data.data(), width, height);
+    img->add_attr<float>("alpha") = alpha_data;
     img->userData().set2("isImage", 1);
     img->userData().set2("w", width);
     img->userData().set2("h", height);

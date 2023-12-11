@@ -96,9 +96,18 @@ bool ZsgReader::openFile(const QString& fn, IAcceptor* pAcceptor)
     pAcceptor->EndGraphs();
     pAcceptor->switchSubGraph("main");
 
+    if (doc.HasMember("command"))
+    {
+        _parseCommands(doc["command"], pAcceptor);
+    }
+
     if (doc.HasMember("views"))
     {
         _parseViews(doc["views"], pAcceptor);
+    }
+    if (doc.HasMember("settings"))
+    {
+        _parseSettings(doc["settings"], pAcceptor);
     }
     if (doc.HasMember("version"))
     {
@@ -112,13 +121,74 @@ bool ZsgReader::openFile(const QString& fn, IAcceptor* pAcceptor)
     return true;
 }
 
+bool ZsgReader::importSubgraphs(const QString& fn, IAcceptor* pAcceptor, const QMap<QString, QString>& subGraphNames, IGraphsModel* pModel)
+{
+    QFile file(fn);
+    bool ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
+    if (!ret) {
+        zeno::log_error("cannot open zsg file: {} ({})", fn.toStdString(),
+            file.errorString().toStdString());
+        return false;
+    }
+
+    pAcceptor->setFilePath(fn);
+
+    rapidjson::Document doc;
+    QByteArray bytes = file.readAll();
+    doc.Parse(bytes);
+
+    if (!doc.IsObject() || !doc.HasMember("graph"))
+    {
+        zeno::log_error("zsg json file is corrupted");
+        return false;
+    }
+
+    const rapidjson::Value& graph = doc["graph"];
+    if (graph.IsNull()) {
+        zeno::log_error("json format incorrect in zsg file: {}", fn.toStdString());
+        return false;
+    }
+
+    ZASSERT_EXIT(doc.HasMember("descs"), false);
+    NODE_DESCS nodesDescs = _parseDescs(doc["descs"], pAcceptor);
+    NODE_DESCS subgDesc;
+    for (const auto& name : subGraphNames.keys())
+    {
+        QString newName = subGraphNames[name];
+        NODE_DESC desc = nodesDescs[name];
+        desc.name = newName;
+        subgDesc[desc.name] = desc;
+    }
+    ret = pAcceptor->setLegacyDescs(graph, subgDesc);
+    if (!ret) {
+        return false;
+    }
+
+    for (const auto& subgraph : graph.GetObject())
+    {
+        QString graphName = subgraph.name.GetString();
+        if (!subGraphNames.contains(graphName))
+            continue;
+        else
+            graphName = subGraphNames[graphName];
+
+        if (!_parseSubGraph(graphName, subgraph.value, nodesDescs, pAcceptor))
+            return false;
+    }
+    pAcceptor->EndGraphs();
+    return true;
+}
+
 bool ZsgReader::_parseSubGraph(const QString& name, const rapidjson::Value& subgraph, const NODE_DESCS& descriptors, IAcceptor* pAcceptor)
 {
     if (!subgraph.IsObject() || !subgraph.HasMember("nodes"))
         return false;
 
     //todo: should consider descript info. some info of outsock without connection show in descript info.
-    pAcceptor->BeginSubgraph(name);
+    int type = SUBGRAPH_TYPE::SUBGRAPH_NOR;
+    if (subgraph.HasMember("type"))
+        type = subgraph["type"].GetInt();
+    pAcceptor->BeginSubgraph(name, type);
 
     const auto& nodes = subgraph["nodes"];
     if (nodes.IsNull())
@@ -168,7 +238,7 @@ bool ZsgReader::_parseSubGraph(const QString& name, const rapidjson::Value& subg
     return true;
 }
 
-bool ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeObj, const NODE_DESCS& legacyDescs, IAcceptor* pAcceptor)
+bool ZsgReader::_parseNode(const QString& ident, const rapidjson::Value& nodeObj, const NODE_DESCS& legacyDescs, IAcceptor* pAcceptor)
 {
     const auto& objValue = nodeObj;
     const rapidjson::Value& nameValue = objValue["name"];
@@ -179,7 +249,7 @@ bool ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
         const QString &tmp = objValue["customName"].GetString();
         customName = tmp;
     }
-
+    QString nodeid = ident;
     bool bSucceed = pAcceptor->addNode(nodeid, name, customName, legacyDescs);
     if (!bSucceed) {
         return false;
@@ -194,7 +264,7 @@ bool ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
     if (objValue.HasMember("params"))
     {
         if (_parseParams2(nodeid, name, objValue["params"], pAcceptor) == false)
-			_parseParams(nodeid, name, objValue["params"], pAcceptor);
+			_parseParams(nodeid, name, legacyDescs, objValue["params"], pAcceptor);
     }
     if (objValue.HasMember("outputs"))
     {
@@ -286,7 +356,7 @@ bool ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
 
         pAcceptor->setBlackboard(nodeid, blackboard);
     }
-
+    pAcceptor->endNode(nodeid, name, objValue);
     return true;
 }
 
@@ -310,8 +380,60 @@ void ZsgReader::_parseTimeline(const rapidjson::Value& jsonTimeline, IAcceptor* 
     info.endFrame = jsonTimeline[timeline::end_frame].GetInt();
     info.currFrame = jsonTimeline[timeline::curr_frame].GetInt();
     info.bAlways = jsonTimeline[timeline::always].GetBool();
+    if (jsonTimeline.HasMember(timeline::timeline_fps))
+    {
+        info.timelinefps = jsonTimeline[timeline::timeline_fps].GetInt();
+    }
 
     pAcceptor->setTimeInfo(info);
+}
+
+void ZsgReader::_parseSettings(const rapidjson::Value& jsonSettings, IAcceptor* pAcceptor)
+{
+    if (jsonSettings.HasMember("recordinfo"))
+    {
+        const rapidjson::Value& jsonRecordInfo = jsonSettings["recordinfo"];
+        ZASSERT_EXIT(jsonRecordInfo.HasMember(recordinfo::record_path) && jsonRecordInfo[recordinfo::record_path].IsString());
+        ZASSERT_EXIT(jsonRecordInfo.HasMember(recordinfo::videoname) && jsonRecordInfo[recordinfo::videoname].IsString());
+        ZASSERT_EXIT(jsonRecordInfo.HasMember(recordinfo::fps) && jsonRecordInfo[recordinfo::fps].IsInt());
+        ZASSERT_EXIT(jsonRecordInfo.HasMember(recordinfo::bitrate) && jsonRecordInfo[recordinfo::bitrate].IsInt());
+        ZASSERT_EXIT(jsonRecordInfo.HasMember(recordinfo::numMSAA) && jsonRecordInfo[recordinfo::numMSAA].IsInt());
+        ZASSERT_EXIT(jsonRecordInfo.HasMember(recordinfo::numOptix) && jsonRecordInfo[recordinfo::numOptix].IsInt());
+        ZASSERT_EXIT(jsonRecordInfo.HasMember(recordinfo::width) && jsonRecordInfo[recordinfo::width].IsInt());
+        ZASSERT_EXIT(jsonRecordInfo.HasMember(recordinfo::height) && jsonRecordInfo[recordinfo::height].IsInt());
+        ZASSERT_EXIT(jsonRecordInfo.HasMember(recordinfo::bExportVideo) && jsonRecordInfo[recordinfo::bExportVideo].IsBool());
+        ZASSERT_EXIT(jsonRecordInfo.HasMember(recordinfo::needDenoise) && jsonRecordInfo[recordinfo::needDenoise].IsBool());
+        ZASSERT_EXIT(jsonRecordInfo.HasMember(recordinfo::bAutoRemoveCache) && jsonRecordInfo[recordinfo::bAutoRemoveCache].IsBool());
+        ZASSERT_EXIT(jsonRecordInfo.HasMember(recordinfo::bAov) && jsonRecordInfo[recordinfo::bAov].IsBool());
+        RECORD_SETTING info;
+        info.record_path = jsonRecordInfo[recordinfo::record_path].GetString();
+        info.videoname = jsonRecordInfo[recordinfo::videoname].GetString();
+        info.fps = jsonRecordInfo[recordinfo::fps].GetInt();
+        info.bitrate = jsonRecordInfo[recordinfo::bitrate].GetInt();
+        info.numMSAA = jsonRecordInfo[recordinfo::numMSAA].GetInt();
+        info.numOptix = jsonRecordInfo[recordinfo::numOptix].GetInt();
+        info.width = jsonRecordInfo[recordinfo::width].GetInt();
+        info.height = jsonRecordInfo[recordinfo::height].GetInt();
+        info.bExportVideo = jsonRecordInfo[recordinfo::bExportVideo].GetBool();
+        info.needDenoise = jsonRecordInfo[recordinfo::needDenoise].GetBool();
+        info.bAutoRemoveCache = jsonRecordInfo[recordinfo::bAutoRemoveCache].GetBool();
+        info.bAov = jsonRecordInfo[recordinfo::bAov].GetBool();
+        if (jsonRecordInfo.HasMember(recordinfo::bExr) && jsonRecordInfo[recordinfo::bExr].IsBool())
+            info.bExr = jsonRecordInfo[recordinfo::bExr].GetBool();
+        pAcceptor->setRecordInfo(info);
+    }
+    if (jsonSettings.HasMember("layoutinfo") && jsonSettings["layoutinfo"].IsObject())
+    {
+        LAYOUT_SETTING layout;
+        layout.layerOutNode = _readLayout(jsonSettings["layoutinfo"]);
+        pAcceptor->setLayoutInfo(layout);
+    }
+    if (jsonSettings.HasMember("userdatainfo") && jsonSettings["userdatainfo"].IsObject())
+    {
+        USERDATA_SETTING userdata;
+        userdata.optix_show_background = jsonSettings["userdatainfo"][userdatainfo::optixShowBackground].GetBool();
+        pAcceptor->setUserDataInfo(userdata);
+    }
 }
 
 void ZsgReader::_parseDictKeys(const QString& id, const rapidjson::Value& objValue, IAcceptor* pAcceptor)
@@ -365,15 +487,15 @@ void ZsgReader::_parseInputs(const QString& id, const QString& nodeName, const N
                 outId = arr[0].GetString();
             if (arr[1].IsString())
                 outSock = arr[1].GetString();
-            pAcceptor->setInputSocket(nodeName, id, inSock, outId, outSock, arr[2]);
+            pAcceptor->setInputSocket(nodeName, id, inSock, outId, outSock, arr[2], legacyDescs);
         }
         else if (inputObj.IsNull())
         {
-            pAcceptor->setInputSocket(nodeName, id, inSock, "", "", rapidjson::Value());
+            pAcceptor->setInputSocket(nodeName, id, inSock, "", "", rapidjson::Value(), legacyDescs);
         }
         else if (inputObj.IsObject())
         {
-            _parseSocket(id, nodeName, inSock, true, inputObj, pAcceptor);
+            _parseSocket(id, nodeName, legacyDescs, inSock, true, inputObj, pAcceptor);
         }
         else
         {
@@ -386,6 +508,7 @@ void ZsgReader::_parseInputs(const QString& id, const QString& nodeName, const N
 void ZsgReader::_parseSocket(
         const QString& id,
         const QString& nodeName,
+        const NODE_DESCS& legacyDescs,
         const QString& inSock,
         bool bInput,
         const rapidjson::Value& sockObj,
@@ -406,11 +529,11 @@ void ZsgReader::_parseSocket(
 
     if (sockObj.HasMember("default-value"))
     {
-        pAcceptor->setInputSocket2(nodeName, id, inSock, link, sockProp, sockObj["default-value"]);
+        pAcceptor->setInputSocket2(nodeName, id, inSock, link, sockProp, sockObj["default-value"], legacyDescs);
     }
     else
     {
-        pAcceptor->setInputSocket2(nodeName, id, inSock, link, sockProp, rapidjson::Value());
+        pAcceptor->setInputSocket2(nodeName, id, inSock, link, sockProp, rapidjson::Value(), legacyDescs);
     }
 
     if (sockObj.HasMember("dictlist-panel"))
@@ -426,11 +549,16 @@ void ZsgReader::_parseSocket(
             pAcceptor->setControlAndProperties(nodeName, id, inSock, ctrl, props);
         }
     }
-
     if (sockObj.HasMember("tooltip")) 
     {
         QString toolTip = QString::fromUtf8(sockObj["tooltip"].GetString());
-        pAcceptor->setToolTip(PARAM_INPUT, id, inSock, toolTip);
+        if (bInput)
+            pAcceptor->setToolTip(bInput ? PARAM_INPUT : PARAM_OUTPUT, id, inSock, toolTip);
+    }
+    if (sockObj.HasMember("netlabel"))
+    {
+        QString netlabel = QString::fromUtf8(sockObj["netlabel"].GetString());
+        pAcceptor->setNetLabel(bInput ? PARAM_INPUT : PARAM_OUTPUT, id, inSock, netlabel);
     }
 }
 
@@ -460,7 +588,13 @@ void ZsgReader::_parseDictPanel(
             {
                 link = QString::fromUtf8(inputObj["link"].GetString());
             }
-            pAcceptor->addInnerDictKey(bInput, id, inSock, keyName, link);
+
+            QString netlabel;
+            if (inputObj.HasMember("netlabel"))
+            {
+                netlabel = QString::fromUtf8(inputObj["netlabel"].GetString());
+            }
+            pAcceptor->addInnerDictKey(bInput, id, inSock, keyName, link, netlabel);
         }
     }
 }
@@ -475,10 +609,6 @@ void ZsgReader::_parseOutputs(const QString &id, const QString &nodeName, const 
         {
             if (sockObj.HasMember("dictlist-panel")) {
                 _parseDictPanel(false, sockObj["dictlist-panel"], id, outSock, nodeName, pAcceptor);
-            }
-            if (sockObj.HasMember("tooltip")) {
-                QString toolTip = QString::fromUtf8(sockObj["tooltip"].GetString());
-                pAcceptor->setToolTip(PARAM_OUTPUT, id, outSock, toolTip);
             }
         }
     }
@@ -763,7 +893,17 @@ NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs, IAcceptor* 
     return _descs;
 }
 
-void ZsgReader::_parseParams(const QString& id, const QString& nodeName, const rapidjson::Value& jsonParams, IAcceptor* pAcceptor)
+void ZsgReader::_parseCommands(const rapidjson::Value& value, IAcceptor* pAcceptor)
+{
+    for (const auto& obj : value.GetObject())
+    {
+        const QString& path = obj.name.GetString();
+        const rapidjson::Value& val = obj.value;
+        pAcceptor->addCommandParam(val, path);
+    }
+}
+
+void ZsgReader::_parseParams(const QString& id, const QString& nodeName, const NODE_DESCS& descriptors, const rapidjson::Value& jsonParams, IAcceptor* pAcceptor)
 {
     if (jsonParams.IsObject())
     {
@@ -771,7 +911,7 @@ void ZsgReader::_parseParams(const QString& id, const QString& nodeName, const r
         {
             const QString& name = paramObj.name.GetString();
             const rapidjson::Value& val = paramObj.value;
-            pAcceptor->setParamValue(id, nodeName, name, val);
+            pAcceptor->setParamValue(id, nodeName, name, val, descriptors);
         }
         pAcceptor->endParams(id, nodeName);
     } else {
@@ -833,4 +973,67 @@ bool ZsgReader::_parseParams2(const QString& id, const QString &nodeCls, const r
     return true;
 }
 
+PtrLayoutNode ZsgReader::_readLayout(const rapidjson::Value& objValue)
+{
+    if (objValue.HasMember("orientation") && objValue.HasMember("left") && objValue.HasMember("right"))
+    {
+        PtrLayoutNode ptrNode = std::make_shared<LayerOutNode>();
+        QString ori = objValue["orientation"].GetString();
+        ptrNode->type = (ori == "H" ? NT_HOR : NT_VERT);
+        ptrNode->pLeft = _readLayout(objValue["left"]);
+        ptrNode->pRight = _readLayout(objValue["right"]);
+        ptrNode->pWidget = nullptr;
+        return ptrNode;
+    }
+    else if (objValue.HasMember("widget"))
+    {
+        PtrLayoutNode ptrNode = std::make_shared<LayerOutNode>();
+        ptrNode->type = NT_ELEM;
+        ptrNode->pLeft = nullptr;
+        ptrNode->pRight = nullptr;
+
+        const rapidjson::Value& widObj = objValue["widget"];
+
+        auto tabsObj = widObj["tabs"].GetArray();
+        QStringList tabs;
+        for (int i = 0; i < tabsObj.Size(); i++)
+        {
+            if (tabsObj[i].IsString())
+            {
+                ptrNode->tabs.push_back(tabsObj[i].GetString());
+            }
+            else if (tabsObj[i].IsObject())
+            {
+                if (tabsObj[i].HasMember("type") && QString(tabsObj[i]["type"].GetString()) == "View")
+                {
+                    ptrNode->tabs.push_back("View");
+                    DockContentWidgetInfo info(tabsObj[i]["resolutionX"].GetInt(), tabsObj[i]["resolutionY"].GetInt(),
+                        tabsObj[i]["blockwindow"].GetBool(), tabsObj[i]["resolution-combobox-index"].GetInt(), tabsObj[i]["backgroundcolor"][0].GetDouble(),
+                        tabsObj[i]["backgroundcolor"][1].GetDouble(), tabsObj[i]["backgroundcolor"][2].GetDouble());
+                    ptrNode->widgetInfos.push_back(info);
+                }
+                else if (tabsObj[i].HasMember("type") && QString(tabsObj[i]["type"].GetString()) == "Optix")
+                {
+                    ptrNode->tabs.push_back("Optix");
+                    DockContentWidgetInfo info(tabsObj[i]["resolutionX"].GetInt(), tabsObj[i]["resolutionY"].GetInt(),
+                        tabsObj[i]["blockwindow"].GetBool(), tabsObj[i]["resolution-combobox-index"].GetInt());
+                    ptrNode->widgetInfos.push_back(info);
+                }
+            }
+        }
+
+        const rapidjson::Value& geomObj = widObj["geometry"];
+        float x = geomObj["x"].GetFloat();
+        float y = geomObj["y"].GetFloat();
+        float width = geomObj["width"].GetFloat();
+        float height = geomObj["height"].GetFloat();
+        ptrNode->geom = QRectF(x, y, width, height);
+
+        return ptrNode;
+    }
+    else
+    {
+        return nullptr;
+    }
+}
 

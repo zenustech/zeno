@@ -11,6 +11,7 @@
 #include "uihelper.h"
 #include "variantptr.h"
 #include "dictkeymodel.h"
+#include <zenomodel/include/vparamitem.h>
 
 
 ModelAcceptor::ModelAcceptor(GraphsModel* pModel, bool bImport)
@@ -23,24 +24,34 @@ ModelAcceptor::ModelAcceptor(GraphsModel* pModel, bool bImport)
 bool ModelAcceptor::setLegacyDescs(const rapidjson::Value& graphObj, const NODE_DESCS& legacyDescs)
 {
     //discard legacy desc except subnet desc.
-    QStringList subgraphs;
-    for (const auto& subgraph : graphObj.GetObject())
-    {
-        if (subgraph.name != "main") {
-            subgraphs.append(QString::fromUtf8(subgraph.name.GetString()));
-        }
-    }
     QList<NODE_DESC> subnetDescs;
-    for (QString name : subgraphs)
+    if (m_bImport)
     {
-        if (legacyDescs.find(name) == legacyDescs.end())
+        for (const NODE_DESC& desc : legacyDescs)
         {
-            zeno::log_warn("subgraph {} isn't described by the file descs.", name.toStdString());
-            continue;
+            subnetDescs.append(desc);
         }
-        subnetDescs.append(legacyDescs[name]);
     }
-    bool ret = m_pModel->appendSubnetDescsFromZsg(subnetDescs);
+    else
+    {
+        QStringList subgraphs;
+        for (const auto& subgraph : graphObj.GetObject())
+        {
+            if (subgraph.name != "main") {
+                subgraphs.append(QString::fromUtf8(subgraph.name.GetString()));
+            }
+        }
+        for (QString name : subgraphs)
+        {
+            if (legacyDescs.find(name) == legacyDescs.end())
+            {
+                zeno::log_warn("subgraph {} isn't described by the file descs.", name.toStdString());
+                continue;
+            }
+            subnetDescs.append(legacyDescs[name]);
+        }
+    }
+    bool ret = m_pModel->appendSubnetDescsFromZsg(subnetDescs, m_bImport);
     return ret;
 }
 
@@ -50,6 +61,29 @@ void ModelAcceptor::setTimeInfo(const TIMELINE_INFO& info)
     m_timeInfo.endFrame = qMax(info.beginFrame, info.endFrame);
     m_timeInfo.currFrame = qMax(qMin(m_timeInfo.currFrame, m_timeInfo.endFrame),
         m_timeInfo.beginFrame);
+    m_timeInfo.timelinefps = info.timelinefps;
+}
+
+void ModelAcceptor::setRecordInfo(const RECORD_SETTING& info)
+{
+    m_recordInfo.record_path = info.record_path;
+    m_recordInfo.videoname = info.videoname;
+    m_recordInfo.fps = info.fps;
+    m_recordInfo.bitrate = info.bitrate;
+    m_recordInfo.numMSAA = info.numMSAA;
+    m_recordInfo.numOptix = info.numOptix;
+    m_recordInfo.width = info.width;
+    m_recordInfo.height = info.height;
+    m_recordInfo.bExportVideo = info.bExportVideo;
+    m_recordInfo.needDenoise = info.needDenoise;
+    m_recordInfo.bAutoRemoveCache = info.bAutoRemoveCache;
+    m_recordInfo.bAov = info.bAov;
+    m_recordInfo.bExr = info.bExr;
+}
+
+void ModelAcceptor::setLayoutInfo(const LAYOUT_SETTING& info)
+{
+    m_layoutInfo = info;
 }
 
 TIMELINE_INFO ModelAcceptor::timeInfo() const
@@ -57,7 +91,27 @@ TIMELINE_INFO ModelAcceptor::timeInfo() const
     return m_timeInfo;
 }
 
-void ModelAcceptor::BeginSubgraph(const QString& name)
+RECORD_SETTING ModelAcceptor::recordInfo() const
+{
+    return m_recordInfo;
+}
+
+LAYOUT_SETTING ModelAcceptor::layoutInfo() const
+{
+    return m_layoutInfo;
+}
+
+USERDATA_SETTING ModelAcceptor::userdataInfo() const
+{
+    return m_userdatInfo;
+}
+
+void ModelAcceptor::setUserDataInfo(const USERDATA_SETTING& info)
+{
+    m_userdatInfo = info;
+}
+
+void ModelAcceptor::BeginSubgraph(const QString& name, int type)
 {
     if (m_bImport && name == "main")
     {
@@ -69,9 +123,22 @@ void ModelAcceptor::BeginSubgraph(const QString& name)
         zeno::log_info("Importing subgraph {}", name.toStdString());
 
     ZASSERT_EXIT(m_pModel && !m_currentGraph);
-    SubGraphModel* pSubModel = new SubGraphModel(m_pModel);
-    pSubModel->setName(name);
-    m_pModel->appendSubGraph(pSubModel);
+    SubGraphModel* pSubModel = m_pModel->subGraph(name);
+    if (pSubModel)
+    {
+        if (m_bImport)
+        {
+            pSubModel->clear();
+            zeno::log_warn("override subgraph {}", name.toStdString());
+        }
+    }
+    else
+    {
+        pSubModel = new SubGraphModel(m_pModel);
+        pSubModel->setName(name);
+        pSubModel->setType((SUBGRAPH_TYPE)type);
+        m_pModel->appendSubGraph(pSubModel);
+    }
     m_currentGraph = pSubModel;
 }
 
@@ -95,6 +162,18 @@ void ModelAcceptor::resolveAllLinks()
     //add links on this subgraph.
     for (EdgeInfo link : m_subgLinks)
     {
+        for (const auto &newId : m_oldToNewNodeIds.keys())
+        {
+            QString oldId = m_oldToNewNodeIds[newId];
+            if (link.outSockPath.contains(oldId))
+            {
+                QString subgName = UiHelper::getSockSubgraph(link.inSockPath);
+                QString paramPath = UiHelper::getParamPath(link.outSockPath);
+                QString outSockPath = UiHelper::constructObjPath(subgName, newId, paramPath);
+                link.outSockPath = outSockPath;
+                break;
+            }
+        }
         QModelIndex inSock, outSock, inNode, outNode;
         QString subgName, inNodeCls, outNodeCls, inSockName, outSockName, paramCls;
 
@@ -128,7 +207,41 @@ void ModelAcceptor::resolveAllLinks()
         }
         QModelIndex subgIdx = nodeIdx.data(ROLE_SUBGRAPH_IDX).toModelIndex();
         ZASSERT_EXIT(subgIdx.isValid());
-        m_pModel->addLink(subgIdx, outSock, inSock);
+
+        if (NO_VERSION_NODE == nodeIdx.data(ROLE_NODETYPE))
+            m_pModel->addLegacyLink(subgIdx, outSock, inSock);
+        else
+            m_pModel->addLink(subgIdx, outSock, inSock);
+    }
+
+    for (EdgeInfo link : m_subgLegacyLinks)
+    {
+        QModelIndex inSock, outSock, inNode, outNode;
+        QString inNodeCls, outNodeCls, inSockName, outSockName, paramCls;
+
+        if (!link.outSockPath.isEmpty())
+        {
+            outSock = m_pModel->indexFromPath(link.outSockPath);
+        }
+        if (!link.inSockPath.isEmpty())
+        {
+            inSock = m_pModel->indexFromPath(link.inSockPath);
+        }
+
+        if (!inSock.isValid() || !outSock.isValid())
+        {
+            continue;
+        }
+
+        QModelIndex nodeIdx = outSock.data(ROLE_NODE_IDX).toModelIndex();
+        if (!nodeIdx.isValid())
+        {
+            zeno::log_warn("cannot pull node index from outSock");
+            continue;
+        }
+        QModelIndex subgIdx = nodeIdx.data(ROLE_SUBGRAPH_IDX).toModelIndex();
+        ZASSERT_EXIT(subgIdx.isValid());
+        m_pModel->addLegacyLink(subgIdx, outSock, inSock);
     }
 }
 
@@ -137,6 +250,136 @@ void ModelAcceptor::EndSubgraph()
     if (!m_currentGraph)
         return;
     m_currentGraph->onModelInited();
+    if (m_bImport)
+    {
+        NODE_DESC desc;
+        QString name = m_currentGraph->name();
+        m_pModel->getDescriptor(name, desc);
+        QModelIndexList subgNodes = m_pModel->findSubgraphNode(name);
+        NodeParamModel* pNodeParamModel = nullptr;
+        for (const QModelIndex& subgNode : subgNodes)
+        {
+            NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(subgNode.data(ROLE_NODE_PARAMS));
+            if (!nodeParams)
+                continue;
+            int row = 0;
+            for (const auto& input : desc.inputs)
+            {
+                const QModelIndex &index = nodeParams->getParam(PARAM_INPUT, input.second.info.name);
+                QVariant val;
+                if (index.isValid())
+                    val = index.data(ROLE_PARAM_VALUE);
+                else
+                    val = input.second.info.defaultValue;
+                nodeParams->setAddParam(
+                    PARAM_INPUT,
+                    input.second.info.name,
+                    input.second.info.type,
+                    val,
+                    input.second.info.control,
+                    input.second.info.ctrlProps,
+                    SOCKPROP_NORMAL,
+                    DICTPANEL_INFO(),
+                    input.second.info.toolTip
+                );
+                int srcRow = 0;
+                VParamItem *pGroup = nodeParams->getInputs();
+                if (pGroup)
+                {
+                    pGroup->getItem(input.second.info.name, &srcRow);
+                    if (srcRow != row)
+                    {
+                        nodeParams->moveRow(pGroup->index(), srcRow, pGroup->index(), row);
+                    }
+                }
+                row++;
+            }
+            row = 0;
+            for (const auto& output : desc.outputs)
+            {
+                const QModelIndex& index = nodeParams->getParam(PARAM_OUTPUT, output.second.info.name);
+                QVariant val;
+                if (index.isValid())
+                    val = index.data(ROLE_PARAM_VALUE);
+                else
+                    val = output.second.info.defaultValue;
+                nodeParams->setAddParam(
+                    PARAM_OUTPUT,
+                    output.second.info.name,
+                    output.second.info.type,
+                    val,
+                    output.second.info.control,
+                    output.second.info.ctrlProps,
+                    SOCKPROP_NORMAL,
+                    DICTPANEL_INFO(),
+                    output.second.info.toolTip
+                );
+                int srcRow = 0;
+                VParamItem* pGroup = nodeParams->getOutputs();
+                if (pGroup)
+                {
+                    pGroup->getItem(output.second.info.name, &srcRow);
+                    if (srcRow != row)
+                    {
+                        nodeParams->moveRow(pGroup->index(), srcRow, pGroup->index(), row);
+                    }
+                }
+                row++;
+            }
+            row = 0;
+            for (const auto& param : desc.params)
+            {
+                const QModelIndex& index = nodeParams->getParam(PARAM_PARAM, param.name);
+                QVariant val;
+                if (index.isValid())
+                    val = index.data(ROLE_PARAM_VALUE);
+                else
+                    val = param.defaultValue;
+                nodeParams->setAddParam(
+                    PARAM_PARAM,
+                    param.name,
+                    param.typeDesc,
+                    val,
+                    param.control,
+                    param.controlProps,
+                    SOCKPROP_NORMAL,
+                    DICTPANEL_INFO(),
+                    param.toolTip
+                );
+                int srcRow = 0;
+                VParamItem* pGroup = nodeParams->getParams();
+                if (pGroup)
+                {
+                    pGroup->getItem(param.name, &srcRow);
+                    if (srcRow != row)
+                    {
+                        nodeParams->moveRow(pGroup->index(), srcRow, pGroup->index(), row);
+                    }
+                }
+                row++;
+            }
+            INPUT_SOCKETS inputs;
+            nodeParams->getInputSockets(inputs);
+            for (const auto& input : inputs)
+            {
+                QString name = input.key();
+                if (!desc.inputs.contains(name))
+                {
+                    nodeParams->removeParam(PARAM_INPUT, name);
+                }
+            }
+            OUTPUT_SOCKETS outputs;
+            nodeParams->getOutputSockets(outputs);
+            for (const auto& output : outputs)
+            {
+                if (!desc.outputs.contains(output.key()))
+                {
+                    nodeParams->removeParam(PARAM_OUTPUT, output.key());
+                }
+            }
+        }
+
+    }
     m_currentGraph = nullptr;
 }
 
@@ -151,22 +394,32 @@ void ModelAcceptor::switchSubGraph(const QString& graphName)
     m_pModel->switchSubGraph(graphName);
 }
 
-bool ModelAcceptor::addNode(const QString& nodeid, const QString& name, const QString& customName, const NODE_DESCS& legacyDescs)
+bool ModelAcceptor::addNode(QString& nodeid, const QString& name, const QString& customName, const NODE_DESCS& legacyDescs)
 {
     if (!m_currentGraph)
         return false;
 
+    bool bUnRevision = !m_pModel->hasDescriptor(name);
+    /*
     if (!m_pModel->hasDescriptor(name)) {
         zeno::log_warn("no node class named [{}]", name.toStdString());
         return false;
     }
+    */
+
 
     NODE_DATA data;
+    if (m_bImport)
+    {
+        QString newId = UiHelper::generateUuid(name);
+        m_oldToNewNodeIds[newId] = nodeid;
+        nodeid = newId;
+    }
     data[ROLE_OBJID] = nodeid;
     data[ROLE_OBJNAME] = name;
     data[ROLE_CUSTOM_OBJNAME] = customName;
     data[ROLE_COLLASPED] = false;
-    data[ROLE_NODETYPE] = UiHelper::nodeType(name);
+    data[ROLE_NODETYPE] = bUnRevision ? NO_VERSION_NODE : UiHelper::nodeType(name);
 
     //zeno::log_warn("zsg has Inputs {}", data.find(ROLE_PARAMETERS) != data.end());
     m_currentGraph->appendItem(data, false);
@@ -259,8 +512,11 @@ void ModelAcceptor::initSockets(const QString& id, const QString& name, const NO
         return;
 
     NODE_DESC desc;
-    bool ret = m_pModel->getDescriptor(name, desc);
-    ZASSERT_EXIT(ret);
+    bool coreDesc = m_pModel->getDescriptor(name, desc);
+    if (!coreDesc) {
+        ZASSERT_EXIT(legacyDescs.find(name) != legacyDescs.end());
+        desc = legacyDescs[name];
+    }
 
     //params
     INPUT_SOCKETS inputs;
@@ -276,6 +532,8 @@ void ModelAcceptor::initSockets(const QString& id, const QString& name, const NO
         param.typeDesc = descParam.typeDesc;
         param.defaultValue = descParam.defaultValue;
         param.value = descParam.value;
+        if (!coreDesc)
+            param.sockProp = SOCKPROP_LEGACY;
         params.insert(param.name, param);
     }
 
@@ -288,6 +546,8 @@ void ModelAcceptor::initSockets(const QString& id, const QString& name, const NO
         input.info.type = descInput.info.type;
         input.info.name = descInput.info.name;
         input.info.defaultValue = descInput.info.defaultValue;
+        if (!coreDesc)
+            input.info.sockProp = SOCKPROP_LEGACY;
         inputs.insert(input.info.name, input);
     }
 
@@ -299,6 +559,8 @@ void ModelAcceptor::initSockets(const QString& id, const QString& name, const NO
         output.info.ctrlProps = descOutput.info.ctrlProps;
         output.info.type = descOutput.info.type;
         output.info.name = descOutput.info.name;
+        if (!coreDesc)
+            output.info.sockProp = SOCKPROP_LEGACY;
         outputs[output.info.name] = output;
     }
 
@@ -315,7 +577,8 @@ void ModelAcceptor::setInputSocket(
         const QString& inSock,
         const QString& outNode,
         const QString& outSock,
-        const rapidjson::Value& defaultValue
+        const rapidjson::Value& defaultValue,
+        const NODE_DESCS& legacyDescs
 )
 {
     const QString &subgName = m_currentGraph->name();
@@ -323,7 +586,7 @@ void ModelAcceptor::setInputSocket(
     if (!outNode.isEmpty() && !outSock.isEmpty()) {
         outLinkPath = UiHelper::constructObjPath(subgName, outNode, "[node]/outputs/", outSock);
     }
-    setInputSocket2(nodeCls, inNode, inSock, outLinkPath, "", defaultValue);
+    setInputSocket2(nodeCls, inNode, inSock, outLinkPath, "", defaultValue, legacyDescs);
 }
 
 void ModelAcceptor::setInputSocket2(
@@ -332,14 +595,18 @@ void ModelAcceptor::setInputSocket2(
                 const QString& inSock,
                 const QString& outLinkPath,
                 const QString& sockProperty,
-                const rapidjson::Value& defaultVal)
+                const rapidjson::Value& defaultVal,
+                const NODE_DESCS& legacyDescs)
 {
     if (!m_currentGraph)
         return;
 
     NODE_DESC desc;
-    bool ret = m_pModel->getDescriptor(nodeCls, desc);
-    ZASSERT_EXIT(ret);
+    bool isCoreDesc = m_pModel->getDescriptor(nodeCls, desc);
+    if (!isCoreDesc) {
+        ZASSERT_EXIT(legacyDescs.find(nodeCls) != legacyDescs.end());
+        desc = legacyDescs[nodeCls];
+    }
 
     //parse default value.
     QVariant defaultValue;
@@ -349,7 +616,11 @@ void ModelAcceptor::setInputSocket2(
         if (desc.inputs.find(inSock) != desc.inputs.end()) {
             descInfo = desc.inputs[inSock].info;
         }
-        defaultValue = UiHelper::parseJsonByType(descInfo.type, defaultVal, m_currentGraph);
+        QString type = descInfo.type;
+        if (defaultVal.IsObject() && defaultVal.HasMember("objectType")) {
+            type = defaultVal["objectType"].GetString();
+        }
+        defaultValue = UiHelper::parseJsonByType(type, defaultVal, m_currentGraph);
     }
 
     QString subgName, paramCls;
@@ -369,11 +640,20 @@ void ModelAcceptor::setInputSocket2(
         {
             //collect edge, because output socket may be not initialized.
             EdgeInfo fullLink(outLinkPath, inSockPath);
-            m_subgLinks.append(fullLink);
+            if (isCoreDesc)
+                m_subgLinks.append(fullLink);
+            else
+                m_subgLegacyLinks.append(fullLink);
         }
     }
     else
     {
+        QModelIndex inNodeIdx = m_currentGraph->index(inNode);
+        ZASSERT_EXIT(inNodeIdx.isValid());
+        //the layout should be standard inputs desc by latest descriptors.
+        NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(inNodeIdx.data(ROLE_NODE_PARAMS));
+        ZASSERT_EXIT(nodeParams);
+
         //Dynamic socket
         if (nodeCls == "MakeList" || nodeCls == "MakeDict")
         {
@@ -390,12 +670,6 @@ void ModelAcceptor::setInputSocket2(
                 m_subgLinks.append(fullLink);
             }
 
-            QModelIndex inNodeIdx = m_currentGraph->index(inNode);
-            ZASSERT_EXIT(inNodeIdx.isValid());
-
-            //the layout should be standard inputs desc by latest descriptors.
-
-            NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(inNodeIdx.data(ROLE_NODE_PARAMS));
             if (prop == SOCKPROP_EDITABLE) {
                 nodeParams->setAddParam(PARAM_INPUT, sockName, "string", "", CONTROL_NONE, QVariant(), prop);
             } else {
@@ -404,8 +678,45 @@ void ModelAcceptor::setInputSocket2(
         }
         else
         {
-            zeno::log_warn("{}: no such input socket {}", nodeCls.toStdString(), inSock.toStdString());
+            NODE_DESC legacyDesc = legacyDescs[nodeCls];
+            if (legacyDesc.inputs.find(inSock) == legacyDesc.inputs.end())
+            {
+                return;
+            }
+            SOCKET_INFO& info = legacyDesc.inputs[inSock].info;
+            nodeParams->setAddParam(PARAM_LEGACY_INPUT, inSock, info.type, info.defaultValue, info.control, QVariant(), SOCKPROP_LEGACY);
+            sockIdx = nodeParams->getParam(PARAM_LEGACY_INPUT, inSock);
+            ZASSERT_EXIT(sockIdx.isValid());
+            inSockPath = sockIdx.data(ROLE_OBJPATH).toString();
+            if (!outLinkPath.isEmpty())
+            {
+                //collect edge, because output socket may be not initialized.
+                EdgeInfo fullLink(outLinkPath, inSockPath);
+                m_subgLegacyLinks.append(fullLink);
+            }
+            zeno::log_warn("{}: input socket {} is at legacy version", nodeCls.toStdString(), inSock.toStdString());
         }
+    }
+}
+
+void ModelAcceptor::setOutputSocket(const QString& inNode, const QString& inSock, const QString& netlabel, const QString& type)
+{
+    if (!m_currentGraph)
+        return;
+    QString subgName;
+    subgName = m_currentGraph->name();
+    QString inSockPath = UiHelper::constructObjPath(subgName, inNode, "[node]/outputs/", inSock);
+    QModelIndex sockIdx = m_pModel->indexFromPath(inSockPath);
+    ZASSERT_EXIT(sockIdx.isValid());
+    QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(sockIdx.model());
+    ZASSERT_EXIT(pModel);
+    if (!netlabel.isEmpty())
+    {
+        m_currentGraph->addNetLabel(sockIdx, netlabel, false);
+    }
+    if (!type.isEmpty())
+    {
+        pModel->setData(sockIdx, type, ROLE_PARAM_TYPE);
     }
 }
 
@@ -448,6 +759,21 @@ void ModelAcceptor::setControlAndProperties(const QString& nodeCls, const QStrin
     }
 }
 
+void ModelAcceptor::setNetLabel(PARAM_CLASS cls, const QString& inNode, const QString& inSock, const QString& netlabel)
+{
+    if (!m_currentGraph)
+        return;
+    QString nodeCls;
+    if (cls == PARAM_INPUT)
+        nodeCls = "inputs";
+    else if (cls == PARAM_OUTPUT)
+        nodeCls = "outputs";
+    QString inSockPath = UiHelper::constructObjPath(m_currentGraph->name(), inNode, QString("[node]/%1/").arg(nodeCls), inSock);
+    QModelIndex sockIdx = m_pModel->indexFromPath(inSockPath);
+    ZASSERT_EXIT(sockIdx.isValid());
+    m_currentGraph->addNetLabel(sockIdx, netlabel, cls == PARAM_INPUT);
+}
+
 void ModelAcceptor::setToolTip(PARAM_CLASS cls, const QString &inNode, const QString &inSock, const QString &toolTip) 
 {
     if (!m_currentGraph)
@@ -469,7 +795,8 @@ void ModelAcceptor::addInnerDictKey(
             const QString& ident,
             const QString& sockName,
             const QString& keyName,
-            const QString& link
+            const QString& link,
+            const QString& netLabel
             )
 {
     QModelIndex inNodeIdx = m_currentGraph->index(ident);
@@ -490,6 +817,10 @@ void ModelAcceptor::addInnerDictKey(
         QString keySockPath = newKeyIdx.data(ROLE_OBJPATH).toString();
         EdgeInfo fullLink(link, keySockPath);
         m_subgLinks.append(fullLink);
+    }
+    if (!netLabel.isEmpty())
+    {
+        m_currentGraph->addNetLabel(newKeyIdx, netLabel, bInput);
     }
 }
 
@@ -512,6 +843,53 @@ void ModelAcceptor::setIOVersion(zenoio::ZSG_VERSION versio)
     m_pModel->setIOVersion(versio);
 }
 
+void ModelAcceptor::endNode(const QString& id, const QString& nodeCls, const rapidjson::Value& objValue)
+{
+    if (objValue.HasMember("outputs"))
+    {
+        const rapidjson::Value& outputs = objValue["outputs"];
+        for (const auto& outObj : outputs.GetObject())
+        {
+            const QString& outSock = outObj.name.GetString();
+            const auto& sockObj = outObj.value;
+            if (sockObj.IsObject())
+            {
+                if (sockObj.HasMember("tooltip")) {
+                    QString toolTip = QString::fromUtf8(sockObj["tooltip"].GetString());
+                    setToolTip(PARAM_OUTPUT, id, outSock, toolTip);
+                }
+                QString netlabel;
+                if (sockObj.HasMember("netlabel"))
+                {
+                    netlabel = QString::fromUtf8(sockObj["netlabel"].GetString());
+                }
+                QString type;
+                if (sockObj.HasMember("type"))
+                {
+                    type = sockObj["type"].GetString();
+                }
+                if (!netlabel.isEmpty() || !type.isEmpty())
+                    setOutputSocket(id, outSock, netlabel, type);
+            }
+        }
+    }
+}
+
+void ModelAcceptor::addCommandParam(const rapidjson::Value& val, const QString& path)
+{
+    QModelIndex sockIdx = m_pModel->indexFromPath(path);
+    if (sockIdx.isValid())
+    {
+        CommandParam param;
+        if (val.HasMember("name"))
+            param.name = val["name"].GetString();
+        if (val.HasMember("description"))
+            param.description = val["description"].GetString();
+        param.value = sockIdx.data(ROLE_PARAM_VALUE);
+        m_pModel->addCommandParam(path, param);
+    }
+}
+
 void ModelAcceptor::endParams(const QString& id, const QString& nodeCls)
 {
     if (nodeCls == "SubInput" || nodeCls == "SubOutput")
@@ -532,14 +910,17 @@ void ModelAcceptor::endParams(const QString& id, const QString& nodeCls)
     }
 }
 
-void ModelAcceptor::setParamValue(const QString& id, const QString& nodeCls, const QString& name, const rapidjson::Value& value)
+void ModelAcceptor::setParamValue(const QString& id, const QString& nodeCls, const QString& name, const rapidjson::Value& value, const NODE_DESCS& legacyDescs)
 {
     if (!m_currentGraph)
         return;
 
     NODE_DESC desc;
-    bool ret = m_pModel->getDescriptor(nodeCls, desc);
-    ZASSERT_EXIT(ret);
+    bool isCoreDesc = m_pModel->getDescriptor(nodeCls, desc);
+    if (!isCoreDesc) {
+        ZASSERT_EXIT(legacyDescs.find(nodeCls) != legacyDescs.end());
+        desc = legacyDescs[nodeCls];
+    }
 
     QVariant var;
     if (!value.IsNull())

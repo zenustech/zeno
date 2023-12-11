@@ -6,6 +6,7 @@
 # https://pypi.org/project/bpy/#history
 # https://builder.blender.org/download/bpy/
 
+import gc
 import os
 import bpy
 import json
@@ -73,6 +74,7 @@ if not os.path.exists(abc_output_dir):
 }
 """
 info = {}
+obj2mat = {}
 
 # Replace 'your_file_path.blend' with the path to your .blend file
 blend_file_path = input
@@ -87,8 +89,11 @@ export_path = output
 if export_all:
     bpy.ops.wm.alembic_export(filepath=export_path)
 
+for obj in bpy.data.objects:
+        obj.select_set(False)
 # Iterate through all objects in the scene and find meshes
 for obj in bpy.context.scene.objects:
+    gc.collect()
     if obj.type == 'MESH':
         material_params = {}
         material_textures = {}
@@ -99,10 +104,17 @@ for obj in bpy.context.scene.objects:
 
         # Select the current object and deselect all others
         bpy.context.view_layer.objects.active = obj
-        for other_obj in bpy.data.objects:
-            other_obj.select_set(other_obj == obj)
+        #for other_obj in bpy.data.objects:
+        #    other_obj.select_set(other_obj == obj)
+        obj.select_set(True)
+        matName = "Default"
+        if obj.material_slots:
+            for material_slot in obj.material_slots:
+                matName = material_slot.material.name
 
-        abc_file_path = os.path.join(abc_output_dir, f"{obj_name}.abc")
+        if not os.path.exists(abc_output_dir + '/' + matName):
+            os.makedirs(abc_output_dir + '/' + matName)
+        abc_file_path = os.path.join(abc_output_dir, f"{matName}/{obj_name}.abc")
         bpy.ops.wm.alembic_export(filepath=abc_file_path, selected=True)
 
         # Check if the object has a material
@@ -243,8 +255,11 @@ for obj in bpy.context.scene.objects:
                             material_params["normal"] =                 {"value": normal[:],            "name": "Normal"}
                             material_params["clearcoat_normal"] =       {"value": clearcoat_normal[:],  "name": "Clearcoat Normal"}
                             material_params["tangent"] =                {"value": tangent[:],           "name": "Tangent"}
-        info[obj_name] = material_params
+                matkey = material.name + '/' + obj_name
+                if not (matkey in info) :
+                    info[matkey] = material_params
     print("-----")
+    obj.select_set(False)
 
 
 # Serializing json

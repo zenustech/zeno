@@ -8,7 +8,7 @@ QDialog
     background: rgb(45,50,57);
 }
 
-QDialog QPushButton
+QDialog .QPushButton
 {
     background: #596270;
 	color:#C3D2DF;
@@ -17,19 +17,19 @@ QDialog QPushButton
     font-weight: 600;
 }
 
-QDialog QPushButton:hover
+QDialog .QPushButton:hover
 {
     background: #6A93BC;
 	color:#CFDBE5;
 }
 
-QDialog QPushButton:default
+QDialog .QPushButton:default
 {
     background: #4578AC;
 	color:#C3D2DF;
 }
 
-QDialog QPushButton:disabled
+QDialog .QPushButton:disabled
 {
     background: #8A919A;
 	color:#9BAAB4;
@@ -68,6 +68,11 @@ QDialog QLineEdit:disabled {
     color: #8f9ba8;
 }
 
+QDialog QGroupBox {
+    font-size: 8pt;
+	font-weight: 500;
+    color: #A3B1C0;
+}
 
 QDialog QCheckBox{
     font-size: 9pt;
@@ -98,6 +103,10 @@ QDialog QSpinBox::down-button
 	border: none;
 }
 
+QDialog QSpinBox:disabled {
+    background-color: #2F2F2F;
+}
+
 QDialog QTableWidget
 {
 	background-color: #191D21;
@@ -114,6 +123,78 @@ QDialog QTableWidget::item
 QDialog QTableWidget::item:selected
 {
 	background-color: #344361;
+}
+
+QTableWidget[cssClass="select_subgraph"]
+{
+	background-color: transparent;
+	color: #FFFFFF;
+	font-size: 9pt;
+	gridline-color:rgb(115,123,133);
+}
+
+QTableWidget[cssClass="select_subgraph"] QHeaderView
+{
+	background-color: rgb(45,50,57);
+}
+
+QTableWidget[cssClass="select_subgraph"] QHeaderView:section
+{
+	background-color: rgb(45,50,57);
+	border:0;
+	border-bottom: 1px solid rgb(115,123,133);
+}
+
+QTableWidget[cssClass="select_subgraph"]::item
+{
+	background-color: transparent;
+	border-bottom: 1px solid rgb(115,123,133);
+}
+
+QTableWidget[cssClass="select_subgraph"]::item:selected
+{
+	background-color: transparent;
+}
+
+QTableWidget[cssClass="commandParams"]
+{
+	background-color: transparent;
+	color: #FFFFFF;
+	font-size: 9pt;
+	border-top:1px solid #191D21;
+	padding:10px;
+}
+
+QTableWidget[cssClass="commandParams"] QHeaderView
+{
+	background-color: #242424;
+	height: 22px;
+}
+
+QTableWidget[cssClass="commandParams"] QHeaderView:section
+{
+	background-color: #242424;
+	border:0;
+	border-bottom: 1px solid #000;
+	border-right: 1px solid #3C424E;
+	padding-left: 6px;
+}
+
+QTableWidget[cssClass="commandParams"] QHeaderView:section:horizontal:last
+{
+    border-right: 0;
+}
+
+QTableWidget[cssClass="commandParams"]::item
+{
+	background-color: #191D21;
+	border: 0;
+	padding:0px 6px;
+}
+
+QTableWidget[cssClass="commandParams"]::item:selected
+{
+	background-color: #3C424E;
 }
 
 QDialog QFrame#line

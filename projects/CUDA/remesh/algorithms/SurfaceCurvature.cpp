@@ -10,19 +10,43 @@
 namespace zeno {
 namespace pmp {
 
-SurfaceCurvature::SurfaceCurvature(SurfaceMesh *mesh) : mesh_(mesh) {
+SurfaceCurvature::SurfaceCurvature(SurfaceMesh *mesh) : mesh_(mesh),
+                                                        min_curv_tag_("curv_min"),
+                                                        max_curv_tag_("curv_max"),
+                                                        gaussian_curv_tag_("curv_gaussian") {
     vertice_num_ = mesh_->prim_->verts.size();
     edge_num_ = mesh_->prim_->lines.size();
-    min_curvature_ = mesh_->prim_->verts.add_attr<float>("curv_min");
-    max_curvature_ = mesh_->prim_->verts.add_attr<float>("curv_max");
+    mesh_->prim_->verts.add_attr<float>(min_curv_tag_);
+    mesh_->prim_->verts.add_attr<float>(max_curv_tag_);
+    mesh_->prim_->verts.add_attr<float>(gaussian_curv_tag_);
+}
+
+SurfaceCurvature::SurfaceCurvature(SurfaceMesh *mesh,
+                                   std::string min_curv_tag,
+                                   std::string max_curv_tag,
+                                   std::string gaussian_curv_tag)
+                                        : mesh_(mesh),
+                                          min_curv_tag_(min_curv_tag),
+                                          max_curv_tag_(max_curv_tag),
+                                          gaussian_curv_tag_(gaussian_curv_tag) {
+    vertice_num_ = mesh_->prim_->verts.size();
+    edge_num_ = mesh_->prim_->lines.size();
+    mesh_->prim_->verts.add_attr<float>(min_curv_tag_);
+    mesh_->prim_->verts.add_attr<float>(max_curv_tag_);
+    mesh_->prim_->verts.add_attr<float>(gaussian_curv_tag_);
 }
 
 SurfaceCurvature::~SurfaceCurvature() {
-    mesh_->prim_->verts.erase_attr("curv_min");
-    mesh_->prim_->verts.erase_attr("curv_max");
+    // delete outside
+    // mesh_->prim_->verts.erase_attr(min_curv_tag);
+    // mesh_->prim_->verts.erase_attr(max_curv_tag);
+    // mesh_->prim_->verts.erase_attr(gaussian_curv_tag);
 }
 
 void SurfaceCurvature::analyze_tensor(unsigned int post_smoothing_steps) {
+    auto &min_curvature = mesh_->prim_->verts.attr<float>(min_curv_tag_);
+    auto &max_curvature = mesh_->prim_->verts.attr<float>(max_curv_tag_);
+    auto &gaussian_curvature = mesh_->prim_->verts.attr<float>(gaussian_curv_tag_);
     auto area = mesh_->prim_->verts.add_attr<float>("curv_area", 0.0);
     auto normal = mesh_->prim_->tris.add_attr<vec3f>("curv_normal");
     auto evec = mesh_->prim_->lines.add_attr<vec3f>("curv_evec", vec3f(0, 0, 0));
@@ -216,8 +240,8 @@ void SurfaceCurvature::analyze_tensor(unsigned int post_smoothing_steps) {
 
         assert(kmin <= kmax);
 
-        min_curvature_[v] = kmin;
-        max_curvature_[v] = kmax;
+        min_curvature[v] = kmin;
+        max_curvature[v] = kmax;
     }
 
 #if PMP_ENABLE_PROFILE
@@ -239,6 +263,13 @@ void SurfaceCurvature::analyze_tensor(unsigned int post_smoothing_steps) {
 #if PMP_ENABLE_PROFILE
     timer.tock("    smooth curvature values");
 #endif
+
+    // calculate gaussian curvature
+    for (int v = 0; v < mesh_->vertices_size_; ++v) {
+        if (mesh_->has_garbage_ && vdeleted[v])
+            continue;
+        gaussian_curvature[v] = min_curvature[v] * max_curvature[v];
+    }
 }
 
 void SurfaceCurvature::smooth_curvatures(unsigned int iterations) {
@@ -250,6 +281,8 @@ void SurfaceCurvature::smooth_curvatures(unsigned int iterations) {
     auto cotan = mesh_->prim_->lines.add_attr<float>("curv_cotan");
     auto &vdeleted = mesh_->prim_->verts.attr<int>("v_deleted");
     auto &edeleted = mesh_->prim_->lines.attr<int>("e_deleted");
+    auto &min_curvature = mesh_->prim_->verts.attr<float>(min_curv_tag_);
+    auto &max_curvature = mesh_->prim_->verts.attr<float>(max_curv_tag_);
 
     // cotan weight per edge
     for (int e = 0; e < mesh_->lines_size_; ++e) {
@@ -277,13 +310,13 @@ void SurfaceCurvature::smooth_curvatures(unsigned int iterations) {
 
                 weight = std::max(0.0f, mesh_->cotan_weight(vh >> 1));
                 sum_weights += weight;
-                kmin += weight * min_curvature_[tv];
-                kmax += weight * max_curvature_[tv];
+                kmin += weight * min_curvature[tv];
+                kmax += weight * max_curvature[tv];
             }
 
             if (sum_weights) {
-                min_curvature_[v] = kmin / sum_weights;
-                max_curvature_[v] = kmax / sum_weights;
+                min_curvature[v] = kmin / sum_weights;
+                max_curvature[v] = kmax / sum_weights;
             }
         }
     }

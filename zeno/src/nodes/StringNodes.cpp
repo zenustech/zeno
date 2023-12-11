@@ -5,6 +5,8 @@
 #include <zeno/utils/fileio.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/extra/GlobalState.h>
+#include <zeno/types/ListObject.h>
+#include <regex>
 
 namespace zeno {
 namespace {
@@ -222,6 +224,119 @@ ZENDEFNODE(StringFormatNumStr, {
     {},
     {"string"},
 });
+
+struct StringRegexMatch : zeno::INode {
+    virtual void apply() override {
+        auto str = get_input2<std::string>("str");
+        auto regex_str = get_input2<std::string>("regex");
+        std::regex self_regex(regex_str);
+        int output = std::regex_match(str, self_regex);
+
+        set_output2("output", output);
+    }
+};
+
+ZENDEFNODE(StringRegexMatch, {
+    {
+        {"string", "str", ""},
+        {"string", "regex", ""},
+    },
+    {
+        {"int", "output"}
+    },
+    {},
+    {"string"},
+});
+
+
+struct StringSplitAndMerge: zeno::INode{
+    
+    std::vector<std::string> split(const std::string& s, std::string seperator)
+    {
+        std::vector<std::string> output;
+
+        std::string::size_type prev_pos = 0, pos = 0;
+
+        while((pos = s.find(seperator, pos)) != std::string::npos)
+        {
+            std::string substring( s.substr(prev_pos, pos-prev_pos) );
+
+            output.push_back(substring);
+
+            prev_pos = ++pos;
+        }
+
+        output.push_back(s.substr(prev_pos, pos-prev_pos)); // Last word
+
+        return output;
+    }
+    virtual void apply() override {
+        auto str = get_input2<std::string>("str");
+        auto schar = get_input2<std::string>("schar");
+        auto merge = get_input2<std::string>("merge");
+        
+        const auto &strings = split(str, schar);
+        const auto &merges = split(merge, ",");
+        std::string outputstr = "";
+        for(auto idx:merges)
+        {
+            outputstr += strings[std::atoi(idx.c_str())];
+        }
+
+        set_output2("output", outputstr);
+    }
+};
+
+ZENDEFNODE(StringSplitAndMerge, {
+    {
+        {"string", "str", ""},
+        {"string", "schar", "_"},
+        {"string", "merge", "0"},
+    },
+    {
+        {"string", "output"}
+    },
+    {},
+    {"string"},
+});
+
+
+
+struct FormatString : zeno::INode {
+    virtual void apply() override {
+        auto formatStr = get_input2<std::string>("str");
+
+        auto list = get_input<zeno::ListObject>("args");
+        std::string output = formatStr;
+        for (auto obj : list->arr)
+        {
+            std::shared_ptr<zeno::NumericObject> num = std::dynamic_pointer_cast<zeno::NumericObject>(obj);
+            if (num) {
+                std::visit([&](const auto& v) {
+                    output = zeno::format(output, v);
+                    }, num->value);
+            }
+            std::shared_ptr<zeno::StringObject> pStr = std::dynamic_pointer_cast<zeno::StringObject>(obj);
+            if (pStr) {
+                output = zeno::format(output, pStr->get());
+            }
+        }
+
+        set_output2("str", output);
+    }
+};
+
+ZENDEFNODE(FormatString, {
+    {
+        {"string", "str", "{}"},
+        {"list", "args"},
+    },
+    {{"string", "str"}},
+    {},
+    {"string"},
+});
+
+
 /*static int objid = 0;
 
 struct ExportPath : zeno::INode {  // deprecated
@@ -314,23 +429,37 @@ ZENDEFNODE(StringToNumber, {{
                                 "string",
                             }});
 
+std::string& trim(std::string &s) 
+{
+    if (s.empty()) 
+    {
+        return s;
+    }
+    s.erase(0,s.find_first_not_of(" \f\n\r\t\v"));
+    s.erase(s.find_last_not_of(" \f\n\r\t\v") + 1);
+    return s;
+}
+
 struct StringToList : zeno::INode {
     virtual void apply() override {
         auto stringlist = get_input2<std::string>("string");
         auto list = std::make_shared<ListObject>();
         auto separator = get_input2<std::string>("Separator");
+        auto trimoption = get_input2<bool>("Trim");
         std::vector<std::string> strings;
         size_t pos = 0;
         size_t posbegin = 0;
         std::string word;
         while ((pos = stringlist.find(separator, pos)) != std::string::npos) {
             word = stringlist.substr(posbegin, pos-posbegin);
+            if(trimoption) trim(word);
             strings.push_back(word);
             pos += separator.length();
             posbegin = pos;
         }
         if (posbegin < stringlist.length()) { //push last word
             word = stringlist.substr(posbegin);
+            if(trimoption) trim(word);
             strings.push_back(word);
         }
         for(const auto &string : strings) {
@@ -344,8 +473,9 @@ struct StringToList : zeno::INode {
 
 ZENDEFNODE(StringToList, {
     {
-        {"string", "string", ""},
+        {"multiline_string", "string", ""},
         {"string", "Separator", ""},
+        {"bool", "Trim", "false"},
     },
     {{"list"},
     },

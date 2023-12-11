@@ -6,7 +6,9 @@
 #include <zenoui/style/zenostyle.h>
 #include "zgraphicsnumslideritem.h"
 #include <zeno/utils/scope_exit.h>
-#include "zenoedit/zenoapplication.h"
+#include <zenomodel/include/curvemodel.h>
+#include <zenomodel/include/curveutil.h>
+#include <zenomodel/include/uihelper.h>
 
 
 qreal editor_factor = 1.0;
@@ -347,8 +349,8 @@ ZSocketPlainTextItem::ZSocketPlainTextItem(
     , m_viewSockIdx(viewSockIdx)
     , m_socket(nullptr)
 {
-    setBrush(QColor("#C3D2DF"));
-    QFont font = zenoApp->font();
+    setBrush(QColor("#dee6ed"));
+    QFont font = QApplication::font();
     font.setPointSize(12);
     font.setWeight(QFont::DemiBold);
     setFont(font);
@@ -363,6 +365,19 @@ QVariant ZSocketPlainTextItem::itemChange(GraphicsItemChange change, const QVari
     return _base::itemChange(change, value);
 }
 
+void ZSocketPlainTextItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* pItem, QWidget* pWidget)
+{
+    bool bMarked = m_viewSockIdx.data(ROLE_VPARAM_COMMAND).toBool();
+    if (bMarked)
+    {
+        setBrush(QColor("#599EED"));
+    }
+    else
+    {
+        setBrush(QColor("#dee6ed"));
+    }
+    _base::paint(painter, pItem, pWidget);
+}
 
 ZEditableTextItem::ZEditableTextItem(const QString &text, QGraphicsItem *parent)
     : _base(parent)
@@ -391,7 +406,14 @@ void ZEditableTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem 
     if (editor_factor < 0.2)
         return;
 #endif
-    painter->setBrush(QColor("#191D21"));
+    QColor col;
+    if (property(g_setKey) == "false")
+        col = QColor("#496DA0");
+    else if (property(g_setKey) == "true")
+        col = QColor("#3A6E64");
+    else
+        col = QColor("#191D21");
+    painter->setBrush(col);
     qreal width = ZenoStyle::dpiScaled(2);
     QPen pen(QColor(75, 158, 244), width);
     QRectF rc = boundingRect();
@@ -400,7 +422,7 @@ void ZEditableTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem 
         painter->setPen(pen);
         painter->drawRect(rc);
     } else {
-        painter->fillRect(rc, QColor("#191D21"));
+        painter->fillRect(rc, col);
     }
     _base::paint(painter, option, widget);
 }
@@ -410,7 +432,7 @@ void ZEditableTextItem::initUI(const QString& text)
     setDefaultTextColor(QColor("#C3D2DF"));
     setCursor(Qt::IBeamCursor);
 
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setPointSize(10);
     font.setWeight(QFont::Medium);
     setFont(font);
@@ -479,6 +501,11 @@ void ZEditableTextItem::setValidator(const QValidator* pValidator)
 QString ZEditableTextItem::text() const
 {
     return toPlainText();
+}
+
+bool ZEditableTextItem::showSlider() const
+{
+    return m_bShowSlider;
 }
 
 void ZEditableTextItem::setNumSlider(QGraphicsScene* pScene, const QVector<qreal>& steps)
@@ -593,6 +620,11 @@ void ZEditableTextItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
     _base::mouseReleaseEvent(event);
 }
 
+void ZEditableTextItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
+{
+    _base::contextMenuEvent(event);
+}
+
 
 ZSocketEditableItem::ZSocketEditableItem(
         const QPersistentModelIndex& viewSockIdx,
@@ -622,7 +654,7 @@ ZSocketEditableItem::ZSocketEditableItem(
     //});
 
     setDefaultTextColor(QColor(188, 188, 188));
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setPointSize(10);
     font.setWeight(QFont::Bold);
     setFont(font);

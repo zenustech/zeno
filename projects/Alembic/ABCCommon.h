@@ -11,7 +11,9 @@ extern void traverseABC(
     Alembic::AbcGeom::IObject &obj,
     ABCTree &tree,
     int frameid,
-    bool read_done
+    bool read_done,
+    bool read_face_set,
+    std::string path
 );
 
 extern Alembic::AbcGeom::IArchive readABC(std::string const &path);

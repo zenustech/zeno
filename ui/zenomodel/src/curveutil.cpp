@@ -98,4 +98,58 @@ namespace curve_util
         curves[curve.key] = curve;
         return curves;
     }
+
+    void updateRange(CURVES_DATA& curves)
+    {
+        qreal xFrom = 0;
+        qreal xTo = 0;
+        qreal yFrom = 0;
+        qreal yTo = 0;
+        for (auto curve : curves) {
+            xFrom = curve.rg.xFrom > xFrom ? xFrom : curve.rg.xFrom;
+            xTo = curve.rg.xTo > xTo ? curve.rg.xTo : xTo;
+            yFrom = curve.rg.yFrom > yFrom ? yFrom : curve.rg.yFrom;
+            yTo = curve.rg.yTo > yTo ? curve.rg.yTo : yTo;
+        }
+        if (fabs(xFrom - xTo) < 0.00000001)
+            xTo = xFrom + 1;
+        if (fabs(yFrom - yTo) < 0.00000001)
+            yTo = yFrom + 1;
+        for (auto& curve : curves) {
+            curve.rg.xFrom = xFrom;
+            curve.rg.xTo = xTo;
+            curve.rg.yFrom = yFrom;
+            curve.rg.yTo = yTo;
+        }
+    }
+
+    QString getCurveKey(int index)
+    {
+        switch (index) 
+        {
+        case 0: return "x";
+        case 1: return "y";
+        case 2: return "z";
+        case 3: return "w";
+        default: return "";
+        }
+    }
+
+    bool updateCurve(const QPointF &newPos, CURVE_DATA& curve)
+    {
+        bool ret = false;
+        for (auto& point : curve.points) 
+        {
+            if (point.point.y() != newPos.y())
+            {
+                if (point.point.x() == newPos.x() || curve.points.size() == 1) {
+                    point.point.setY(newPos.y());
+                    curve.rg.yTo = curve.rg.yTo > newPos.y() ? curve.rg.yTo : newPos.y();
+                    curve.rg.yFrom = curve.rg.yFrom > newPos.y() ? newPos.y() : curve.rg.yFrom;
+                    ret = true;
+                }
+            }
+        }
+        return ret;
+    }
 }

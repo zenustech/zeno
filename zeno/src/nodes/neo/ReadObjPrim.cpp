@@ -46,13 +46,15 @@ static int takeu(char const *&it) {
     return val;
 }
 
-std::shared_ptr<PrimitiveObject> parse_obj(std::vector<char> &&bin) {
+// std::shared_ptr<PrimitiveObject> parse_obj(std::vector<char> &&bin) 
+PrimitiveObject* parse_obj(const char *binData, std::size_t binSize) {
     /*bin.resize(bin.size() + 8, '\0');*/
 
-    char const *it = bin.data();
-    char const *eit = bin.data() + bin.size();// - 8;
+    char const *it = binData;
+    char const *eit = binData + binSize;// - 8;
 
-    auto prim = std::make_shared<PrimitiveObject>();
+    // auto prim = std::make_shared<PrimitiveObject>();
+    auto prim = new PrimitiveObject;
     std::vector<int> loop_uvs;
 
     while (it < eit) {
@@ -125,9 +127,13 @@ std::shared_ptr<PrimitiveObject> parse_obj(std::vector<char> &&bin) {
 
 struct ReadObjPrim : INode {
     virtual void apply() override {
-        auto path = get_input<StringObject>("path")->get();
-        auto binary = file_get_binary<std::vector<char>>(path);
-        auto prim = parse_obj(std::move(binary));
+        auto path = get_input2<std::string>("path");
+        std::string native_path = std::filesystem::u8path(path).string();
+        std::ifstream file(native_path, std::ios::binary);
+        auto binary = std::vector<char>((std::istreambuf_iterator<char>(file)),
+                              std::istreambuf_iterator<char>());
+        // auto prim = parse_obj(std::move(binary));
+        auto prim = std::shared_ptr<PrimitiveObject>(parse_obj(binary.data(), binary.size()));
         if (get_param<bool>("triangulate")) {
             primTriangulate(prim.get());
         }
@@ -154,7 +160,7 @@ struct MustReadObjPrim : INode {
             auto s = zeno::format("can not find {}", path);
             throw zeno::makeError(s);
         }
-        auto prim = parse_obj(std::move(binary));
+        auto prim = std::shared_ptr<PrimitiveObject>(parse_obj(binary.data(), binary.size()));
         if (get_param<bool>("triangulate")) {
             primTriangulate(prim.get());
         }
@@ -173,4 +179,9 @@ ZENDEFNODE(MustReadObjPrim,
         "primitive",
         }});
 }
+
+PrimitiveObject* primParsedFrom(const char *binData, std::size_t binSize) {
+    return parse_obj(binData, binSize);
+}
+
 }
