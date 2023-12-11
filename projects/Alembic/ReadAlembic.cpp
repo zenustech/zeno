@@ -89,7 +89,7 @@ static void read_attributes(std::shared_ptr<PrimitiveObject> prim, ICompoundProp
             }
             else if (prim->polys.size() * 3 == data.size()) {
                 auto &attr = prim->polys.add_attr<zeno::vec3f>(p.getName());
-                for (auto i = 0; i < prim->verts.size(); i++) {
+                for (auto i = 0; i < prim->polys.size(); i++) {
                     attr[i] = { data[ 3 * i], data[3 * i + 1], data[3 * i + 2]};
                 }
             }
@@ -824,6 +824,7 @@ struct ReadAlembic : INode {
             read_done = true;
             usedPath = path;
         }
+        zeno::log_info("...........");
         {
             auto namelist = std::make_shared<zeno::ListObject>();
             abctree->visitPrims([&] (auto const &p) {
