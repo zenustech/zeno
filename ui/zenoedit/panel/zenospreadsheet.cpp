@@ -110,7 +110,7 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
     // do not select all when clicked
     cornerBtn->disconnect();
     // reset sort order
-    connect(cornerBtn, &QAbstractButton::clicked, this, [&]() {
+    connect(cornerBtn, &QAbstractButton::clicked, this, [&, sortModel]() {
         sortModel->sort(-1);
         prim_attr_view->horizontalHeader()->setSortIndicator(-1, Qt::SortOrder::AscendingOrder);
     });
