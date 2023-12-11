@@ -273,6 +273,14 @@ bool ZenoSpreadsheet::eventFilter(QObject* watched, QEvent* event)
                     {
                         map[mtlid] = "TransmitTypeMat";
                     }
+                    else if (mtlid.contains("Paint", Qt::CaseInsensitive))
+                    {
+                        map[mtlid] = "CarPaintTypeMat";
+                    }
+                    else 
+                    {
+                        map[mtlid] = "RegularTypeMat";
+                    }
                 }
                 ZForkSubgraphDlg dlg(map, this);
                 dlg.exec();
