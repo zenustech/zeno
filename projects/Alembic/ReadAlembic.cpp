@@ -241,39 +241,6 @@ static void read_attributes(std::shared_ptr<PrimitiveObject> prim, ICompoundProp
                 }
             }
         }
-        else if (IC3fGeomParam::matches(p)) {
-            if (!read_done) {
-                log_info("[alembic] IC3fGeomParam attr {}.", p.getName());
-            }
-            IC3fGeomParam param(arbattrs, p.getName());
-            IC3fGeomParam::Sample samp = param.getIndexedValue(iSS);
-            if (prim->verts.size() == samp.getVals()->size()) {
-                auto &attr = prim->add_attr<zeno::vec3f>(p.getName());
-                for (auto i = 0; i < prim->verts.size(); i++) {
-                    auto v = samp.getVals()->get()[i];
-                    attr[i] = {v[0], v[1], v[2]};
-                }
-            }
-            else if (prim->loops.size() == samp.getVals()->size()) {
-                auto &attr = prim->loops.add_attr<zeno::vec3f>(p.getName());
-                for (auto i = 0; i < prim->loops.size(); i++) {
-                    auto v = samp.getVals()->get()[i];
-                    attr[i] = {v[0], v[1], v[2]};
-                }
-            }
-            else if (prim->polys.size() == samp.getVals()->size()) {
-                auto &attr = prim->polys.add_attr<zeno::vec3f>(p.getName());
-                for (auto i = 0; i < prim->polys.size(); i++) {
-                    auto v = samp.getVals()->get()[i];
-                    attr[i] = {v[0], v[1], v[2]};
-                }
-            }
-            else {
-                if (!read_done) {
-                    log_error("[alembic] can not load C3f attr {}. Check if link to Points channel when exported from Houdini.", p.getName());
-                }
-            }
-        }
         else {
             if (!read_done) {
                 log_error("[alembic] can not load attr {}..", p.getName());
