@@ -275,8 +275,8 @@ struct StringSplitAndMerge: zeno::INode{
         auto schar = get_input2<std::string>("schar");
         auto merge = get_input2<std::string>("merge");
         
-        auto &strings = split(str, schar);
-        auto &merges = split(merge, ",");
+        const auto &strings = split(str, schar);
+        const auto &merges = split(merge, ",");
         std::string outputstr = "";
         for(auto idx:merges)
         {
