@@ -1123,6 +1123,37 @@ ZENDEFNODE(PrimitiveUnfuse, {
                                 {"zs_geom"},
                             });
 
+struct MarkSelectedVerts : INode {
+    void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto tagStr = get_input2<std::string>("selection_tag");
+        auto markedLines = get_input<PrimitiveObject>("marked_lines");
+
+        auto &tags = prim->add_attr<float>(tagStr);
+        using namespace zs;
+        auto pol = omp_exec();
+
+        std::fill(std::begin(tags), std::end(tags), 0.f);
+        const auto &lines = markedLines->lines.values;
+        pol(range(lines), [&tags](auto line) {
+            tags[line[0]] = 1.f;
+            tags[line[1]] = 1.f;
+        });
+        set_output("prim", prim);
+    }
+};
+ZENDEFNODE(MarkSelectedVerts, {
+
+                                  {{"PrimitiveObject", "prim"},
+                                   {"string", "selection_tag", "selected"},
+                                   {"PrimitiveObject", "marked_lines"}},
+                                  {
+                                      {"PrimitiveObject", "prim"},
+                                  },
+                                  {},
+                                  {"zs_geom"},
+                              });
+
 struct ComputeAverageEdgeLength : INode {
     void apply() override {
         using namespace zs;
