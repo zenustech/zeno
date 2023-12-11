@@ -23,14 +23,11 @@ print("---- Output Path", args.output)
 
 assert os.path.exists(args.input)
 
-export_all = False
 
-input = args.input
-output = args.output
-output_json = os.path.join(output, "info.json")
-abc_output_dir = os.path.join(output, "abc")
-if not os.path.exists(abc_output_dir):
-    os.makedirs(abc_output_dir)
+blender_file = args.input
+output_directory = args.output
+json_output = os.path.join(output_directory, "info.json")
+abc_output = os.path.join(output_directory, "output.abc")
 
 """
 {
@@ -73,27 +70,21 @@ if not os.path.exists(abc_output_dir):
     }
 }
 """
-info = {}
-obj2mat = {}
+material_info = {}
 
-# Replace 'your_file_path.blend' with the path to your .blend file
-blend_file_path = input
+
+
 
 # Open the .blend file
-bpy.ops.wm.open_mainfile(filepath=blend_file_path)
+bpy.ops.wm.open_mainfile(filepath=blender_file)
 
-# Replace 'your_output_path.abc' with the desired output Alembic file path
-export_path = output
 
-# Export Alembic with animation and hierarchy
-if export_all:
-    bpy.ops.wm.alembic_export(filepath=export_path)
+bpy.ops.wm.alembic_export(filepath=abc_output,face_sets=True,use_instancing=False)
 
-for obj in bpy.data.objects:
-        obj.select_set(False)
+
 # Iterate through all objects in the scene and find meshes
 for obj in bpy.context.scene.objects:
-    gc.collect()
+
     if obj.type == 'MESH':
         material_params = {}
         material_textures = {}
@@ -102,20 +93,12 @@ for obj in bpy.context.scene.objects:
         obj_name = obj.name_full
         print(" Mesh Full:", obj_name)
 
-        # Select the current object and deselect all others
-        bpy.context.view_layer.objects.active = obj
-        #for other_obj in bpy.data.objects:
-        #    other_obj.select_set(other_obj == obj)
-        obj.select_set(True)
+
         matName = "Default"
         if obj.material_slots:
             for material_slot in obj.material_slots:
                 matName = material_slot.material.name
 
-        if not os.path.exists(abc_output_dir + '/' + matName):
-            os.makedirs(abc_output_dir + '/' + matName)
-        abc_file_path = os.path.join(abc_output_dir, f"{matName}/{obj_name}.abc")
-        bpy.ops.wm.alembic_export(filepath=abc_file_path, selected=True)
 
         # Check if the object has a material
         if obj.material_slots:
@@ -126,6 +109,9 @@ for obj in bpy.context.scene.objects:
 
                 # Material name
                 print("  Material Name:", material.name)
+                matkey = material.name
+                if (matkey in material_info):
+                    continue
 
                 # Iterate through material nodes
                 if material.use_nodes:
@@ -255,16 +241,16 @@ for obj in bpy.context.scene.objects:
                             material_params["normal"] =                 {"value": normal[:],            "name": "Normal"}
                             material_params["clearcoat_normal"] =       {"value": clearcoat_normal[:],  "name": "Clearcoat Normal"}
                             material_params["tangent"] =                {"value": tangent[:],           "name": "Tangent"}
-                matkey = material.name + '/' + obj_name
-                if not (matkey in info) :
-                    info[matkey] = material_params
-    print("-----")
-    obj.select_set(False)
 
+                    material_info[matkey] = material_params
+    print("-----")
+    gc.collect()
+
+print(json_output)
 
 # Serializing json
-json_object = json.dumps(info, indent=4)
+json_object = json.dumps(material_info, indent=4)
 
 # Writing to sample.json
-with open(output_json, "w") as outfile:
+with open(json_output, "w") as outfile:
     outfile.write(json_object)
