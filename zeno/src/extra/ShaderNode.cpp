@@ -27,7 +27,10 @@ ZENO_API std::string EmissionPass::finalizeCode() {
 
 ZENO_API int EmissionPass::determineType(IObject *object) {
     if (auto num = dynamic_cast<NumericObject *>(object)) {
-        return std::visit([&] (auto const &value) -> int {
+        if (auto it = constmap.find(num); it != constmap.end())
+            return constants.at(it->second).type;
+
+        int type = std::visit([&] (auto const &value) -> int {
             using T = std::decay_t<decltype(value)>;
             if constexpr (std::is_same_v<float, T>) {
                 return 1;
@@ -41,6 +44,9 @@ ZENO_API int EmissionPass::determineType(IObject *object) {
                 throw zeno::Exception("bad numeric object type: " + (std::string)typeid(T).name());
             }
         }, num->value);
+        constmap[num] = constants.size();
+        constants.push_back(ConstInfo{type, num->value});
+        return type;
 
     } else if (auto tree = dynamic_cast<ShaderObject *>(object)) {
         assert(tree->node);
@@ -144,6 +150,10 @@ static std::string ftos(float x) {
 
 ZENO_API std::string EmissionPass::determineExpr(IObject *object) const {
     if (auto num = dynamic_cast<NumericObject *>(object)) {
+        int id;
+#if 0
+        return "constmp" + std::to_string(constmap.at(num));
+#else
         return std::visit([&] (auto const &value) -> std::string {
             using T = std::decay_t<decltype(value)>;
             if constexpr (std::is_same_v<float, T>) {
@@ -160,6 +170,7 @@ ZENO_API std::string EmissionPass::determineExpr(IObject *object) const {
                 throw zeno::Exception("bad numeric object type: " + (std::string)typeid(T).name());
             }
         }, num->value);
+#endif
 
     } else if (auto tree = dynamic_cast<ShaderObject *>(object)) {
         return "tmp" + std::to_string(varmap.at(tree->node.get()));
