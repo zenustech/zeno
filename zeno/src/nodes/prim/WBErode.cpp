@@ -2630,7 +2630,7 @@ struct HF_remap : INode {
         auto terrain = get_input<PrimitiveObject>("prim");
         auto remapLayer = get_input2<std::string>("remap layer");
         if (!terrain->verts.has_attr(remapLayer)) {
-            zeno::log_error("Node [HF_maskByFeature], no such data layer named '{}'.",
+            zeno::log_error("Node [HF_remap], no such data layer named '{}'.",
                             remapLayer);
         }
         auto& var = terrain->verts.attr<float>(remapLayer);
@@ -2673,6 +2673,9 @@ struct HF_remap : INode {
                 var[i] = fit(var[i], inMin, inMax, 0, 1);
                 var[i] = curve->eval(var[i]);
                 var[i] = fit(var[i], 0, 1, outMin, outMax);
+            }
+            if (remapLayer == "height"){
+                terrain->verts.attr<vec3f>("pos")[i][1] = var[i];
             }
         }
 
