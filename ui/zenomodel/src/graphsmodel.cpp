@@ -880,15 +880,17 @@ QModelIndex GraphsModel::forkMaterial(const QModelIndex& subnetNodeIdx, const QS
             auto paramIdx = pSubgModel->nodeParamIndex(result.targetIdx, PARAM_INPUT, "mtlid");
             ModelSetData(paramIdx, mtlid, ROLE_PARAM_VALUE);
         }
-        vec.clear();
-        vec << currentGraph();
-        resLst = search(mtlid_old, SEARCH_ARGS, SEARCH_MATCH_EXACTLY, vec);
-        for (const auto& res : resLst)
+        //update mtlid of BindMeterial node 
+        if (mtlid != mtlid_old)
         {
-            QPointF pos = res.targetIdx.data(ROLE_OBJPOS).toPointF();
-            ModelSetData(index, pos + QPointF(800, 0), ROLE_OBJPOS);
-            auto paramIdx = currentGraph()->nodeParamIndex(res.targetIdx, PARAM_INPUT, "mtlid");
-            ModelSetData(paramIdx, mtlid, ROLE_PARAM_VALUE);
+            vec.clear();
+            vec << currentGraph();
+            resLst = search(mtlid_old, SEARCH_ARGS, SEARCH_MATCH_EXACTLY, vec);
+            for (const auto& res : resLst)
+            {
+                auto paramIdx = currentGraph()->nodeParamIndex(res.targetIdx, PARAM_INPUT, "mtlid");
+                ModelSetData(paramIdx, mtlid, ROLE_PARAM_VALUE);
+            }
         }
     }
     QModelIndex subgIdx = this->index(subgName);
