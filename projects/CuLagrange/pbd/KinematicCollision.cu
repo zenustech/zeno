@@ -989,6 +989,8 @@ struct DetangleCCDCollisionWithBoundary : INode {
 
         auto do_jacobi_iter = get_input2<bool>("do_jacobi_iter");
 
+        auto nm_accept_collisions = get_input2<int>("nm_accept_collisions");
+
         for(int iter = 0;iter != nm_ccd_iters;++iter) {
 
             cudaPol(zs::range(impulse_buffer),[]ZS_LAMBDA(auto& imp) mutable {imp = vec3::uniform(0);});
@@ -1092,7 +1094,7 @@ struct DetangleCCDCollisionWithBoundary : INode {
             });
 
             std::cout << "nm_kinematic_ccd_collision : " << nm_ccd_collision.getVal() << std::endl;
-            if(nm_ccd_collision.getVal() == 0)
+            if(nm_ccd_collision.getVal() <= nm_accept_collisions)
                 break;
         }   
 
@@ -1117,6 +1119,7 @@ ZENDEFNODE(DetangleCCDCollisionWithBoundary, {{{"zsparticles"},
                                 {"string","current_x_tag","x"},
                                 {"string","previous_x_tag","px"},
                                 {"int","nm_ccd_iters","1"},
+                                {"int","nm_accept_collisions","0"},
                                 {"float","thickness","0.1"},
                                 {"float","restitution","0.1"},
                                 {"float","relaxation","1"},
