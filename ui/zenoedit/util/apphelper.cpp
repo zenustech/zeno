@@ -432,6 +432,27 @@ bool AppHelper::openZsgAndRun(const ZENO_RECORD_RUN_INITPARAM& param, LAUNCH_PAR
     auto& ud = zeno::getSession().userData();
     ud.set2("optix_show_background", pGraphs->userdataInfo().optix_show_background);
 
+    if (!param.paramsJson.isEmpty())
+    {
+        //parse paramsJson
+        rapidjson::Document configDoc;
+        configDoc.Parse(param.paramsJson.toUtf8());
+        if (!configDoc.IsObject())
+        {
+            zeno::log_error("config file is corrupted");
+        }
+        FuckQMap<QString, CommandParam> commands = pGraphs->currentModel()->commandParams();
+        for (auto& [key, param] : commands)
+        {
+            if (configDoc.HasMember(param.name.toUtf8()))
+            {
+                param.value = UiHelper::parseJson(configDoc[param.name.toStdString().c_str()], nullptr);
+                param.bIsCommand = true;
+            }
+            pGraphs->currentModel()->updateCommandParam(key, param);
+        }
+    }
+
     launchProgram(pModel, launchParam);
     return true;
 }
