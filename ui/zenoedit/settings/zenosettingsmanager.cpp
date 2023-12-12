@@ -24,7 +24,7 @@ ZenoSettingsManager::ZenoSettingsManager(QObject *parent) :
 
 bool ZenoSettingsManager::setValue(const QString& name, const QVariant& value) 
 {
-    if (zsSubgraphType == name)
+    if (zsSubgraphType == name && value != m_settings[name])
     {
         m_settings[name] = value;
         emit valueChanged(name);

@@ -120,7 +120,7 @@ void GraphsModel::newSubgraph(const QString &graphName, SUBGRAPH_TYPE type)
     }
 }
 
-bool GraphsModel::newMaterialSubgraph(const QString& graphName, const QPointF& pos)
+bool GraphsModel::newMaterialSubgraph(const QModelIndex & currentSubIdx, const QString& graphName, const QPointF& pos)
 {
     if (subGraph(graphName))
     {
@@ -129,7 +129,6 @@ bool GraphsModel::newMaterialSubgraph(const QString& graphName, const QPointF& p
     }
     beginTransaction("extract a new graph");
 
-    int currentRow = m_selection->currentIndex().row();
     //first, new the target subgraph
     newSubgraph(graphName, SUBGRAPH_TYPE::SUBGRAPH_METERIAL);
     QModelIndex subgIdx = index(graphName);
@@ -155,7 +154,6 @@ bool GraphsModel::newMaterialSubgraph(const QString& graphName, const QPointF& p
     link.outSockPath = inParam.data(ROLE_OBJPATH).toString();
     addLink(subgIdx, link, false);
     //add material subgraph node
-    QModelIndex currentSubIdx = index(currentRow, 0);
     const QString& subIdent = NodesMgr::createNewNode(this, currentSubIdx, graphName, pos);
     auto subgNodeIdx = nodeIndex(subIdent);
     QVariant newValue = OPT_VIEW;
@@ -857,13 +855,13 @@ QModelIndex GraphsModel::fork(const QModelIndex& subgIdx, const QModelIndex &sub
     return newForkNodeIdx;
 }
 
-QModelIndex GraphsModel::forkMaterial(const QModelIndex& subnetNodeIdx, const QString& subgName, const QString& mtlid, const QString& mtlid_old)
+QModelIndex GraphsModel::forkMaterial(const QModelIndex& currSubgIdx, const QModelIndex& subnetNodeIdx, const QString& subgName, const QString& mtlid, const QString& mtlid_old)
 {
     if (subGraph(subgName))
         return QModelIndex();
     if (!subnetNodeIdx.isValid())
         return QModelIndex();
-    QModelIndex index = fork(m_selection->currentIndex(), subnetNodeIdx);
+    QModelIndex index = fork(currSubgIdx, subnetNodeIdx);
     ModelSetData(index, OPT_VIEW, ROLE_OPTIONS);
     
     QString name = index.data(ROLE_OBJNAME).toString();

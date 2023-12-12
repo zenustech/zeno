@@ -7,6 +7,9 @@
 #include <zenomodel/include/nodeparammodel.h>
 #include <zenomodel/include/uihelper.h>
 #include "variantptr.h"
+#include "nodesview/zenographseditor.h"
+#include "nodesys/zenosubgraphscene.h"
+#include "zenomainwindow.h"
 
 ZForkSubgraphDlg::ZForkSubgraphDlg(const QMap<QString, QString>& subgs, QWidget* parent)
     : ZFramelessDialog(parent)
@@ -83,6 +86,14 @@ void ZForkSubgraphDlg::onImportClicked()
 
 void ZForkSubgraphDlg::onOkClicked()
 {
+    ZenoMainWindow* pWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(pWin);
+    ZenoGraphsEditor* pEditor = pWin->getAnyEditor();
+    ZASSERT_EXIT(pEditor);
+    ZenoSubGraphView* pView = pEditor->getCurrentSubGraphView();
+    ZASSERT_EXIT(pView);
+    auto sugIdx = pView->scene()->subGraphIndex();
+    ZASSERT_EXIT(sugIdx.isValid());
     int count = m_pTableWidget->rowCount();
     int rowNum = qSqrt(count);
     int colunmNum = count / (rowNum > 0 ? rowNum : 1);
@@ -94,7 +105,7 @@ void ZForkSubgraphDlg::onOkClicked()
         QString mtlid = m_pTableWidget->item(row, 2)->data(Qt::DisplayRole).toString();
         QString old_mtlid = m_pTableWidget->item(row, 2)->data(Qt::UserRole).toString();
         IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-        const QModelIndex& index = pGraphsModel->forkMaterial(pGraphsModel->index(subgName), name, mtlid, old_mtlid);
+        const QModelIndex& index = pGraphsModel->forkMaterial(sugIdx, pGraphsModel->index(subgName), name, mtlid, old_mtlid);
         if (!index.isValid())
         {
             QMessageBox::warning(this, tr("warring"), tr("fork preset subgraph '%1' failed.").arg(name));
@@ -112,12 +123,14 @@ void ZForkSubgraphDlg::onOkClicked()
             pos = index.data(ROLE_OBJPOS).toPointF();
         }
 
+        if (m_importPath.isEmpty())
+            continue;
         QFile file(m_importPath);
         bool ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
         if (!ret) {
             zeno::log_error("cannot open file: {} ({})", m_importPath.toStdString(),
                 file.errorString().toStdString());
-            return;
+            continue;
         }
 
         rapidjson::Document doc;
@@ -127,7 +140,7 @@ void ZForkSubgraphDlg::onOkClicked()
         if (!doc.IsObject())
         {
             zeno::log_error("json file is corrupted");
-            return;
+            continue;
         }
         auto jsonObject = doc.GetObject();
         
