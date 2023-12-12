@@ -509,6 +509,237 @@ void detect_imminent_EKE_close_proximity(Pol& pol,
 }
 
 
+
+
+template<typename Pol,
+    typename PosTileVec,
+    typename EdgeTileVec,
+    typename ProximityBuffer,
+    typename EEHashMap,
+    typename EdgeBvh,
+    typename T = typename PosTileVec::value_type>
+void detect_self_imminent_EE_close_proximity(Pol& pol,
+    PosTileVec& verts,const zs::SmallString& xtag,
+    const EdgeTileVec& edges,
+    const T& thickness,
+    size_t buffer_offset,
+    const EdgeBvh& edgeBvh,
+    ProximityBuffer& proximity_buffer,EEHashMap& csEE) {
+        using namespace zs;
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+
+        using vec2 = zs::vec<T,2>;
+        using vec3 = zs::vec<T,3>;
+        using vec4 = zs::vec<T,4>;
+        using vec2i = zs::vec<int,2>;
+        using vec4i = zs::vec<int,4>;
+        constexpr auto eps = (T)1e-6;
+
+        csEE.reset(pol,true);
+
+        pol(zs::range(edges.size()),[
+            xtag = xtag,
+            verts = proxy<space>({},verts),
+            edges = proxy<space>({},edges),
+            thickness = thickness,
+            thickness2 = thickness * thickness,
+            buffer_offset = buffer_offset,
+            eps = eps,
+            proximity_buffer = proxy<space>({},proximity_buffer),
+            edgeBvh = proxy<space>(edgeBvh),
+            csEE = proxy<space>(csEE)] ZS_LAMBDA(int ei) mutable {
+                auto ea = edges.pack(dim_c<2>,"inds",ei,int_c);
+                for(int i = 0;i != 2;++i)
+                    if(verts.hasProperty("collision_cancel") && verts("collision_cancel",ea[i]) > 1e-3)
+                        return;
+
+                vec3 pas[2] = {};
+                for(int i = 0;i != 2;++i)
+                    pas[i] = verts.pack(dim_c<3>,xtag,ea[i]);
+                auto bv = bv_t{get_bounding_box(pas[0],pas[1])};
+                bv._max += thickness/2;
+                bv._min -= thickness/2;
+                auto la = (pas[0] - pas[1]).norm();
+
+                auto do_close_proximity_detection = [&](int nei) mutable {
+                    if(ei >= nei)
+                        return;
+                    auto eb = edges.pack(dim_c<2>,"inds",nei,int_c);
+                    for(int i = 0;i != 2;++i){
+                        if(eb[i] == ea[0] || eb[i] == ea[1])
+                            return;
+                    }
+
+                    for(int i = 0;i != 2;++i)
+                        if(verts.hasProperty("collision_cancel") && verts("collision_cancel",eb[i]) > 1e-3)
+                            return;
+
+                    if(verts.hasProperty("minv")) {
+                        bool has_dynamic_points = false;
+                        for(int i = 0;i != 2;++i) {
+                            if(verts("minv",ea[i]) > eps)
+                                has_dynamic_points = true;
+                            if(verts("minv",eb[i]) > eps)
+                                has_dynamic_points = true;
+                        }
+                        if(!has_dynamic_points)
+                            return;
+                    }
+
+                    vec3 pbs[2] = {};
+                    for(int i = 0;i != 2;++i)
+                        pbs[i] = verts.pack(dim_c<3>,xtag,eb[i]);
+
+                    vec2 edge_bary{};
+
+                    if((pas[0] - pas[1]).cross(pbs[0] - pbs[1]).norm() < eps)
+                        return;
+
+
+#ifdef USE_INTERSECTION
+
+                    int type{};
+                    if(LSL_GEO::get_edge_edge_intersection_barycentric_coordinates(pas[0],pas[1],pbs[0],pbs[1],edge_bary,type) > thickness2)
+                        return;
+#else
+                    LSL_GEO::get_edge_edge_barycentric_coordinates(pas[0],pas[1],pbs[0],pbs[1],edge_bary);
+                    for(int i = 0;i != 2;++i) {
+                        if(edge_bary[i] < -eps || edge_bary[i] > 1 + eps)
+                            return;
+                        if(edge_bary[1] < -eps || edge_bary[1] > 1 + eps)
+                            return;
+                    }
+#endif
+                    vec4 bary{edge_bary[0] - 1,-edge_bary[0],1 - edge_bary[1],edge_bary[1]};
+
+#ifndef USE_INTERSECTION
+                    auto rp = bary[0] * pas[0] + bary[1] * pas[1] + bary[2] * pbs[0] + bary[3] * pbs[1];
+                    if(rp.norm() > thickness) {
+                        return;
+                    }
+#endif
+                    vec4i inds{ea[0],ea[1],eb[0],eb[1]};
+                    for(int i = 0;i != 4;++i)
+                        verts("dcd_collision_tag",inds[i]) = 1;
+
+
+                    auto id = csEE.insert(vec2i{ei,nei});
+                    proximity_buffer.tuple(dim_c<4>,"bary",id + buffer_offset) = bary;
+                    proximity_buffer.tuple(dim_c<4>,"inds",id + buffer_offset) = inds.reinterpret_bits(float_c);
+                    proximity_buffer("type",id + buffer_offset) = zs::reinterpret_bits<float>((int)1);
+
+                };
+                edgeBvh.iter_neighbors(bv,do_close_proximity_detection);
+        });
+}
+
+
+template<typename Pol,
+    typename PosTileVec,
+    typename TriTileVec,
+    typename PTHashMap,
+    typename TriBvh,
+    typename ProximityBuffer,
+    typename T = typename PosTileVec::value_type>
+void detect_self_imminent_PT_close_proximity(Pol& pol,
+    PosTileVec& verts,const zs::SmallString& xtag,
+    const TriTileVec& tris,
+    const T& thickness,
+    size_t buffer_offset,
+    const TriBvh& triBvh,
+    ProximityBuffer& proximity_buffer,
+    PTHashMap& csPT) {
+        using namespace zs;
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+        constexpr auto eps = (T)1e-6;
+        // constexpr auto exec_tag = wrapv<space>{};
+        csPT.reset(pol,true);
+        pol(zs::range(verts.size()),[
+            eps = eps,
+            xtag = zs::SmallString(xtag),
+            verts = proxy<space>({},verts),
+            tris = proxy<space>({},tris),
+            buffer_offset = buffer_offset,
+            thickness = thickness,
+            thickness2 = thickness * thickness,
+            triBvh = proxy<space>(triBvh),
+            proximity_buffer = proxy<space>({},proximity_buffer),
+            csPT = proxy<space>(csPT)] ZS_LAMBDA(int vi) mutable {
+
+                if(verts.hasProperty("collision_cancel") && verts("collision_cancel",vi) > 1e-3)
+                        return;
+                auto p = verts.pack(dim_c<3>,xtag,vi);
+                auto bv = bv_t{get_bounding_box(p - thickness/(T)2,p + thickness/(T)2)};
+
+                
+                zs::vec<T,3> ts[3] = {};
+                auto do_close_proximity_detection = [&](int ti) {
+                    auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
+                    for(int i = 0;i != 3;++i)
+                        if(tri[i] == vi)
+                            return;
+
+                    for(int i = 0;i != 3;++i)
+                        if(verts.hasProperty("collision_cancel") && verts("collision_cancel",tri[i]) > eps)
+                            return;
+
+                    if(verts.hasProperty("minv")) {
+                        bool has_dynamic_points = false;
+                        if(verts("minv",vi) > eps)
+                            has_dynamic_points = true;
+                        for(int i = 0;i != 3;++i) {
+                            if(verts("minv",tri[i]) > eps)
+                                has_dynamic_points = true;
+                        }
+                        if(!has_dynamic_points)
+                            return;
+                    }
+
+                    for(int i = 0;i != 3;++i)
+                        ts[i] = verts.pack(dim_c<3>,xtag,tri[i]);
+                    
+                    vec3 tri_bary{};
+
+#ifdef USE_INTERSECTION
+
+                    if(LSL_GEO::get_vertex_triangle_intersection_barycentric_coordinates(p,ts[0],ts[1],ts[2],tri_bary) > thickness2)
+                        return;
+#else
+                    LSL_GEO::get_triangle_vertex_barycentric_coordinates(ts[0],ts[1],ts[2],p,tri_bary);
+                    for(int i = 0;i != 3;++i)
+                        if(tri_bary[i] > 1 + eps || tri_bary[i] < -eps)
+                            return;
+#endif
+
+                    vec4 bary{-tri_bary[0],-tri_bary[1],-tri_bary[2],1};
+
+#ifndef USE_INTERSECTION
+                    auto rp = ts[0] * bary[0] + ts[1] * bary[1] + ts[2] * bary[2] + p * bary[3];
+                    if(rp.norm() > thickness)
+                        return;
+#endif
+                    
+                    auto id = csPT.insert(zs::vec<int,2>{vi,ti});
+                    vec4i inds{tri[0],tri[1],tri[2],vi};
+                    for(int i = 0;i != 4;++i)
+                        verts("dcd_collision_tag",inds[i]) = 1;
+
+                    // printf("detect imminent PT proxy : PT[%d %d] V[%d %d %d %d] BARY : [%f %f %f]\n",
+                    //     vi,ti,
+                    //     inds[0],inds[1],inds[2],inds[3],
+                    //     (float)tri_bary[0],(float)tri_bary[1],(float)tri_bary[2]);
+
+                    // printf("find PT pairs : V_%d T_%d {%d %d %d} \n",vi,ti,tri[0],tri[1],tri[2]);
+                    proximity_buffer.tuple(dim_c<4>,"inds",id + buffer_offset) = inds.reinterpret_bits(float_c);
+                    proximity_buffer.tuple(dim_c<4>,"bary",id + buffer_offset) = bary;
+                    proximity_buffer("type",id + buffer_offset) = zs::reinterpret_bits<float>((int)0);
+                };
+
+                triBvh.iter_neighbors(bv,do_close_proximity_detection);
+        });
+}
+
+
 template<typename Pol,
     typename PosTileVec,
     typename TriTileVec,

@@ -24,6 +24,7 @@ enum category_c : int {
     vert_bending_spring,
     tri_bending_spring,
     pt_pin_constraint,
+    dcd_collision_constraint,
     kinematic_dcd_collision_constraint,
     self_dcd_collision_constraint,
     ccd_boundary_collision_constraint,
