@@ -482,18 +482,18 @@ extern "C" __global__ void __closesthit__radiance()
     float3 _vertices_[3];
     optixGetTriangleVertexData( gas, primIdx, sbtGASIndex, 0, _vertices_);
     
-    const float3& v0 = _vertices_[0];
-    const float3& v1 = _vertices_[1];
-    const float3& v2 = _vertices_[2];
+    const float3& v0 = optixTransformPointFromObjectToWorldSpace(_vertices_[0]);
+    const float3& v1 = optixTransformPointFromObjectToWorldSpace(_vertices_[1]);
+    const float3& v2 = optixTransformPointFromObjectToWorldSpace(_vertices_[2]);
 
     /* MODMA */
     float2       barys    = optixGetTriangleBarycentrics();
     auto P_Local = interp(barys, v0, v1, v2);
-    P = optixTransformPointFromObjectToWorldSpace(P_Local); // this value has precision issue for big float
+    P = P_Local; // this value has precision issue for big float
 
     attrs.pos = P;
 
-    float3 N_Local = normalize( cross( normalize(v1-v0), normalize(v2-v1) ) ); // this value has precision issue for big float
+    float3 N_Local = normalize( cross( normalize(_vertices_[1]-_vertices_[0]), normalize(_vertices_[2]-_vertices_[1]) ) ); // this value has precision issue for big float
     float3 N_World = normalize(optixTransformNormalFromObjectToWorldSpace(N_Local));
 
     if (isBadVector(N_World)) 
