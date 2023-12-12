@@ -918,6 +918,7 @@ namespace zeno {
 
         constexpr auto space = Pol::exec_tag::value;
 
+
         halfEdge.resize(tris.size() * 3);
 
         TILEVEC_OPS::fill(pol,halfEdge,"local_vertex_id",reinterpret_bits<T>((int)-1));
@@ -1033,6 +1034,7 @@ namespace zeno {
         using T = typename TriTileVec::value_type;
 
         constexpr auto space = Pol::exec_tag::value;
+        auto exec_tag = wrapv<space>{};
 
         halfEdge.resize(tris.size() * 3);
 
@@ -1113,14 +1115,21 @@ namespace zeno {
                 }
         });
 
+        zs::Vector<int> nm_non_manifold_edges{tris.get_allocator(),1};
+        nm_non_manifold_edges.setVal(0);
+
         pol(range(halfEdge.size()),
             [halfEdge = proxy<space>({},halfEdge),
+                    exec_tag = exec_tag,
+                    nm_non_manifold_edges = proxy<space>(nm_non_manifold_edges),
                     he_inds_buffer = proxy<space>(he_inds_buffer),
                     he_is_manifold = proxy<space>(he_is_manifold),
                     hetab = proxy<space>(hetab),
                     tris = proxy<space>({},tris)] ZS_LAMBDA(int hi) mutable {
-                if(!he_is_manifold[hi])
+                if(!he_is_manifold[hi]) {
+                    atomic_add(exec_tag,&nm_non_manifold_edges[0],1);
                     return;
+                }
 
                 auto ti = zs::reinterpret_bits<int>(halfEdge("to_face",hi));
                 auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
@@ -1133,6 +1142,8 @@ namespace zeno {
                     halfEdge("opposite_he",hi) = reinterpret_bits<T>(oppo_hi);
                 }
         });
+
+        // std::cout << "number non_manifold edges detected : " << nm_non_manifold_edges.getVal(0) << std::endl;
 
         return true;
     }
