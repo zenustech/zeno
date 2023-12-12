@@ -132,11 +132,17 @@ struct RadiancePRD
     }
 
     void offsetUpdateRay(float3& P, float3 new_dir) {
-        auto beforeOffset = P - this->camPos;
+      double x = (double)(P.x) - (double)(this->camPos.x);
+      double y = (double)(P.y) - (double)(this->camPos.y);
+      double z = (double)(P.z) - (double)(this->camPos.z);
+        auto beforeOffset = make_float3(x, y, z);
         //this->origin = P;
         this->direction = new_dir;
         offsetRay(beforeOffset, new_dir);
-        this->origin = beforeOffset + this->camPos;
+        double x2 = (double)(beforeOffset.x) + (double)(this->camPos.x);
+        double y2 = (double)(beforeOffset.y) + (double)(this->camPos.y);
+        double z2 = (double)(beforeOffset.z) + (double)(this->camPos.z);
+        this->origin = make_float3(x2, y2, z2);
     }
 
     uint8_t _mask_ = EverythingMask;

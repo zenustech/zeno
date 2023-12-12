@@ -194,9 +194,9 @@ inline Vector3f GramSchmidt(Vector3f v, Vector3f w) {
 
 namespace rtgems {
 
-    constexpr float origin()      { return 1.0f / 16.0f; }
-    constexpr float int_scale()   { return 3.0f * 256.0f; }
-    constexpr float float_scale() { return 3.0f / 65536.0f; }
+    constexpr float origin()      { return 1.0f / 32.0f; }
+    constexpr float int_scale()   { return 1.0f * 256.0f; }
+    constexpr float float_scale() { return 1.0f / 65536.0f; }
     
     // Normal points outward for rays exiting the surface, else is flipped.
     static __inline__ __device__ float3 offset_ray(const float3 p, const float3 n)
