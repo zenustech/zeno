@@ -76,6 +76,92 @@ void ZForkSubgraphDlg::initUi()
     connect(m_pImportBtn, &QPushButton::clicked, this, &ZForkSubgraphDlg::onImportClicked);
 } 
 
+QMap<QString, QMap<QString, QVariant>> ZForkSubgraphDlg::readFile()
+{
+    QMap<QString, QMap<QString, QVariant>> matValueMap;
+    QFile file(m_importPath);
+    bool ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
+    if (!ret) {
+        zeno::log_error("cannot open file: {} ({})", m_importPath.toStdString(),
+            file.errorString().toStdString());
+        return matValueMap;
+    }
+    rapidjson::Document doc;
+    QByteArray bytes = file.readAll();
+    doc.Parse(bytes);
+
+    if (!doc.IsObject())
+    {
+        zeno::log_error("json file is corrupted");
+        return matValueMap;
+    }
+    QMap<QString, QSet<QString>> presetParamMap; //<preset mat, param_names>
+    QMap<QString, QSet<QString>> matKeyMap; //<preset mat, keys>
+    auto jsonObject = doc.GetObject();
+    QMap<QString, QMap<QString, QString>> matchMap;//<matType, <matKey, paramName>>
+    if (jsonObject.HasMember("match"))
+    {
+        const auto& objVal = jsonObject["match"];
+        if (objVal.IsObject())
+        {
+            for (auto iter = objVal.MemberBegin(); iter != objVal.MemberEnd(); iter++) {
+                QString matType = iter->name.GetString();
+                if (iter->value.IsObject())
+                {
+                    for (auto iter1 = iter->value.MemberBegin(); iter1 != iter->value.MemberEnd(); iter1++) {
+                        QString paramName = iter1->name.GetString();
+                        QString matKey = iter1->value.GetString();
+                        matchMap[matType][matKey] = paramName;
+                    }
+                }
+            }
+        }
+    }
+    for (const auto& mtlid : m_subgsMap.keys())
+    {
+        QString mat = m_subgsMap[mtlid];
+        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+        auto subgIdx = pGraphsModel->index(mat);
+        if (subgIdx.isValid())
+        {
+            //preset 
+            QModelIndexList nodes = pGraphsModel->searchInSubgraph("SubInput", subgIdx);
+            for (QModelIndex subInput : nodes)
+            {
+                NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(subInput.data(ROLE_NODE_PARAMS));
+                QModelIndex nameIdx = nodeParams->getParam(PARAM_PARAM, "name");
+                QString paramName = nameIdx.data(ROLE_PARAM_VALUE).toString();                
+                presetParamMap[mat].insert(paramName);
+            }
+        }
+        if (jsonObject.HasMember(mtlid.toUtf8()))
+        {
+            const auto& objVal = jsonObject[mtlid.toStdString().c_str()];
+            if (objVal.IsObject())
+            {
+                for (auto iter = objVal.MemberBegin(); iter != objVal.MemberEnd(); iter++) {
+                    matKeyMap[mat].insert(iter->name.GetString());
+                    QVariant val = UiHelper::parseJson(iter->value);
+                    QString matKey = iter->name.GetString();
+                    if (matchMap.contains(mat))
+                    {
+                        if (matchMap.contains(mat))
+                        {
+                            const auto& match = matchMap[mat];
+                            if (match.contains(matKey))
+                            {
+                                matKey = match[matKey];
+                            }
+                        }
+                    }
+                    matValueMap[mtlid][matKey] = val;
+                }
+            }
+        }
+    }
+    return matValueMap;
+}
+
 void ZForkSubgraphDlg::onImportClicked()
 {
     m_importPath = QFileDialog::getOpenFileName(nullptr, "File to Open", "", "All Files(*);;");
@@ -86,6 +172,8 @@ void ZForkSubgraphDlg::onImportClicked()
 
 void ZForkSubgraphDlg::onOkClicked()
 {
+    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    ZASSERT_EXIT(pGraphsModel);
     ZenoMainWindow* pWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(pWin);
     ZenoGraphsEditor* pEditor = pWin->getAnyEditor();
@@ -98,13 +186,16 @@ void ZForkSubgraphDlg::onOkClicked()
     int rowNum = qSqrt(count);
     int colunmNum = count / (rowNum > 0 ? rowNum : 1);
     QPointF pos;
+    QMap<QString, QMap<QString, QVariant>> matValueMap;
+    if (!m_importPath.isEmpty())
+        matValueMap = readFile();
     for (int row = 0; row < count; row++)
     {
         QString subgName = m_pTableWidget->item(row, 0)->data(Qt::DisplayRole).toString();
         QString name = m_pTableWidget->item(row, 1)->data(Qt::DisplayRole).toString();
         QString mtlid = m_pTableWidget->item(row, 2)->data(Qt::DisplayRole).toString();
         QString old_mtlid = m_pTableWidget->item(row, 2)->data(Qt::UserRole).toString();
-        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+        
         const QModelIndex& index = pGraphsModel->forkMaterial(sugIdx, pGraphsModel->index(subgName), name, mtlid, old_mtlid);
         if (!index.isValid())
         {
@@ -123,41 +214,18 @@ void ZForkSubgraphDlg::onOkClicked()
             pos = index.data(ROLE_OBJPOS).toPointF();
         }
 
-        if (m_importPath.isEmpty())
+        if (!matValueMap.contains(old_mtlid))
             continue;
-        QFile file(m_importPath);
-        bool ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
-        if (!ret) {
-            zeno::log_error("cannot open file: {} ({})", m_importPath.toStdString(),
-                file.errorString().toStdString());
-            continue;
-        }
-
-        rapidjson::Document doc;
-        QByteArray bytes = file.readAll();
-        doc.Parse(bytes);
-
-        if (!doc.IsObject())
+        const auto& valueMap = matValueMap[old_mtlid];
+        NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(index.data(ROLE_NODE_PARAMS));
+        if (nodeParams)
         {
-            zeno::log_error("json file is corrupted");
-            continue;
-        }
-        auto jsonObject = doc.GetObject();
-        
-        if (jsonObject.HasMember(mtlid.toUtf8()))
-        {
-            const auto& objVal = jsonObject[mtlid.toStdString().c_str()];
-            NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(index.data(ROLE_NODE_PARAMS));
-            if (nodeParams)
+            for (const auto& inputIdx : nodeParams->getInputIndice())
             {
-                for (const auto& inputIdx : nodeParams->getInputIndice())
+                QString name = inputIdx.data(ROLE_PARAM_NAME).toString();
+                if (valueMap.contains(name))
                 {
-                    QString name = inputIdx.data(ROLE_PARAM_NAME).toString();
-                    if (objVal.HasMember(name.toUtf8()))
-                    {
-                        QVariant val = UiHelper::parseJson(objVal[name.toStdString().c_str()]);
-                        pGraphsModel->ModelSetData(inputIdx, val, ROLE_PARAM_VALUE);
-                    }
+                    pGraphsModel->ModelSetData(inputIdx, valueMap[name], ROLE_PARAM_VALUE);
                 }
             }
         }

@@ -263,7 +263,7 @@ bool ZenoSpreadsheet::eventFilter(QObject* watched, QEvent* event)
                 QMap<QString, QString> map;
                 for (const auto& mtlid : matLst)
                 {
-                    if (mtlid.contains("Cloth", Qt::CaseInsensitive))
+                    if (mtlid.contains("Cloth", Qt::CaseInsensitive) || mtlid.contains("Xiezi", Qt::CaseInsensitive))
                     {
                         map[mtlid] = "ClothTypeMat";
                     }
