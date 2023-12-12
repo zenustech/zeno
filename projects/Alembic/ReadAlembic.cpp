@@ -99,9 +99,15 @@ static void read_attributes(std::shared_ptr<PrimitiveObject> prim, ICompoundProp
                     attr[i] = data[i];
                 }
             }
+            else if (prim->loops.size() * 3 == data.size()) {
+                auto &attr = prim->loops.add_attr<zeno::vec3f>(p.getName());
+                for (auto i = 0; i < prim->loops.size(); i++) {
+                    attr[i] = { data[ 3 * i], data[3 * i + 1], data[3 * i + 2]};
+                }
+            }
             else {
                 if (!read_done) {
-                    log_error("[alembic] can not load float attr {}: {}. Check if link to Points channel when exported from Houdini.", p.getName(), data.size());
+                    log_warn("[alembic] can not load float attr {}: {}.", p.getName(), data.size());
                 }
             }
         }
@@ -138,7 +144,7 @@ static void read_attributes(std::shared_ptr<PrimitiveObject> prim, ICompoundProp
             }
             else {
                 if (!read_done) {
-                    log_error("[alembic] can not load int attr {}. Check if link to Points channel when exported from Houdini.", p.getName());
+                    log_warn("[alembic] can not load int attr {}:{}.", p.getName(), data.size());
                 }
             }
         }
@@ -171,7 +177,7 @@ static void read_attributes(std::shared_ptr<PrimitiveObject> prim, ICompoundProp
             }
             else {
                 if (!read_done) {
-                    log_error("[alembic] can not load vec3f attr {}. Check if link to Points channel when exported from Houdini.", p.getName());
+                    log_warn("[alembic] can not load vec3f attr {}:{}.", p.getName(), int(samp.getVals()->size()));
                 }
             }
         }
@@ -204,7 +210,7 @@ static void read_attributes(std::shared_ptr<PrimitiveObject> prim, ICompoundProp
             }
             else {
                 if (!read_done) {
-                    log_error("[alembic] can not load N3f attr {}. Check if link to Points channel when exported from Houdini.", p.getName());
+                    log_warn("[alembic] can not load N3f attr {}:{}.", p.getName(), int(samp.getVals()->size()));
                 }
             }
         }
@@ -237,13 +243,13 @@ static void read_attributes(std::shared_ptr<PrimitiveObject> prim, ICompoundProp
             }
             else {
                 if (!read_done) {
-                    log_error("[alembic] can not load C3f attr {}. Check if link to Points channel when exported from Houdini.", p.getName());
+                    log_warn("[alembic] can not load C3f attr {}:{}.", p.getName(), int(samp.getVals()->size()));
                 }
             }
         }
         else {
             if (!read_done) {
-                log_error("[alembic] can not load attr {}..", p.getName());
+                log_warn("[alembic] can not load attr {}..", p.getName());
             }
         }
     }
@@ -312,7 +318,7 @@ static void read_user_data(std::shared_ptr<PrimitiveObject> prim, ICompoundPrope
         }
         else {
             if (!read_done) {
-                log_error("[alembic] can not load user data {}..", p.getName());
+                log_warn("[alembic] can not load user data {}..", p.getName());
             }
         }
     }
