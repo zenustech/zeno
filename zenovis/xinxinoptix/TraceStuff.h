@@ -132,9 +132,11 @@ struct RadiancePRD
     }
 
     void offsetUpdateRay(float3& P, float3 new_dir) {
-        this->origin = P;
+        auto beforeOffset = P - this->camPos;
+        //this->origin = P;
         this->direction = new_dir;
-        offsetRay(this->origin, new_dir);
+        offsetRay(beforeOffset, new_dir);
+        this->origin = beforeOffset + this->camPos;
     }
 
     uint8_t _mask_ = EverythingMask;

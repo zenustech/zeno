@@ -298,6 +298,18 @@ static void read_user_data(std::shared_ptr<PrimitiveObject> prim, ICompoundPrope
             auto value = param.getValue(iSS);
             prim->userData().set2(p.getName(), value);
         }
+        else if (IBoolProperty::matches(p)) {
+            IBoolProperty param(arbattrs, p.getName());
+
+            auto value = param.getValue(iSS);
+            prim->userData().set2(p.getName(), int(value));
+        }
+        else if (IInt16Property::matches(p)) {
+            IInt16Property param(arbattrs, p.getName());
+
+            auto value = param.getValue(iSS);
+            prim->userData().set2(p.getName(), int(value));
+        }
         else {
             if (!read_done) {
                 log_error("[alembic] can not load user data {}..", p.getName());
@@ -824,7 +836,6 @@ struct ReadAlembic : INode {
             read_done = true;
             usedPath = path;
         }
-        zeno::log_info("...........");
         {
             auto namelist = std::make_shared<zeno::ListObject>();
             abctree->visitPrims([&] (auto const &p) {

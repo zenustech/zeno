@@ -263,7 +263,8 @@ namespace DisneyBSDF{
             float nDl,
             vec3 &dterm,
             vec3 &sterm,
-            vec3 &tterm)
+            vec3 &tterm,
+            bool reflectance = false)
 
     {
         bool sameside = (dot(wo, N)*dot(wo, N2))>0.0f;
@@ -278,6 +279,7 @@ namespace DisneyBSDF{
         // Onb tbn = Onb(N);
         world2local(wi, T, B, N);
         world2local(wo, T, B, N);
+        world2local(N2, T, B, N);
 
         bool reflect = wi.z * wo.z > 0.0f;
 
@@ -409,9 +411,9 @@ namespace DisneyBSDF{
             f =  f + s;
             fPdf += tmpPdf * clearCtPr;
         }
-        if(sssPr>0.0)
+        if((sssPr>0.0&&reflectance) || (sssPr>0.0 && dot(wo, N2)<0.0))
         {
-          bool trans = wo.z * wi.z < 0.0f;
+          bool trans = dot(wo, N2) * dot(wi, N2)<0;
           float FL = BRDFBasics::SchlickWeight(abs(wi.z));
           float FV = BRDFBasics::SchlickWeight(abs(wo.z));
           float term = wo.z>0?FV:FL;
@@ -627,17 +629,7 @@ namespace DisneyBSDF{
 
               //go inside
               wi = -BRDFBasics::UniformSampleHemisphere(r1, r2);
-              isSS = true;
-              flag = transmissionEvent;
-              vec3 color = mix(mat.basecolor, mat.sssColor, mat.subsurface);
-              color = clamp(color, vec3(0.05), vec3(0.99));
-              vec3 sssRadius = mat.sssParam * mat.subsurface;
-              RadiancePRD *prd = getPRD();
-              prd->ss_alpha = color;
-              if (isSS) {
-                medium = PhaseFunctions::isotropic;
-                CalculateExtinction2(color, sssRadius, prd->sigma_t, prd->ss_alpha, 1.4f);
-              }
+
             }
           }
 
@@ -647,6 +639,23 @@ namespace DisneyBSDF{
             bool sameside2 = (dot(wi, N) * dot(wi, N2)) > 0.0f;
             if (sameside == false) {
               wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
+            }
+            auto woo = wo;
+            tbn.inverse_transform(woo);
+            if(dot(wi, N2) * dot(woo, N2)<0 && dot(wi, N2)<0) {
+
+              isSS = true;
+              flag = transmissionEvent;
+              vec3 color = mix(mat.basecolor, mat.sssColor, mat.subsurface);
+              color = clamp(color, vec3(0.05), vec3(0.99));
+              vec3 sssRadius = mat.sssParam * mat.subsurface;
+              RadiancePRD *prd = getPRD();
+              prd->ss_alpha = color;
+              if (isSS) {
+                medium = PhaseFunctions::isotropic;
+                CalculateExtinction2(color, sssRadius, prd->sigma_t,
+                                     prd->ss_alpha, 1.4f);
+              }
             }
             //reflectance = vec3(1.0f) * M_PIf ;
             //return true;
@@ -734,7 +743,7 @@ namespace DisneyBSDF{
         float pdf, pdf2;
         vec3 rd, rs, rt;
         reflectance = EvaluateDisney2(vec3(1.0f), mat, wi, wo, T, B, N, N2, thin,
-                                      is_inside, pdf, pdf2, 0, rd, rs, rt);
+                                      is_inside, pdf, pdf2, 0, rd, rs, rt, true);
         fPdf = pdf>1e-5?pdf:0.0f;
         reflectance = pdf>1e-5?reflectance:vec3(0.0f);
         return true;

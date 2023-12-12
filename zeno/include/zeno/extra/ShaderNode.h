@@ -2,6 +2,7 @@
 
 #include <zeno/core/INode.h>
 #include <zeno/core/IObject.h>
+#include <zeno/types/NumericObject.h>
 #include <zeno/types/TextureObject.h>
 #include <vector>
 #include <string>
@@ -36,6 +37,11 @@ struct EmissionPass {
 
     Backend backend = GLSL;
 
+    struct ConstInfo {
+        int type;
+        NumericValue value;
+    };
+
     struct VarInfo {
         int type;
         ShaderNode *node;
@@ -48,6 +54,8 @@ struct EmissionPass {
         std::string code;
     };
 
+    std::map<NumericObject *, int> constmap;
+    std::vector<ConstInfo> constants;
     std::map<ShaderNode *, int> varmap;  /* varmap[node] = 40, then the variable of node is "tmp40" */
     std::vector<VarInfo> variables;  /* variables[40].type = 3, then the variable type will be "vec3 tmp40;" */
     std::vector<std::string> lines;  /* contains a list of operations, e.g. {"tmp40 = tmp41 + 1;", "tmp42 = tmp40 * 2;"} */

@@ -154,7 +154,7 @@ extern "C" __global__ void __raygen__rg()
         terminal_point = camera_transform * terminal_point;
         eye_shake = camera_transform * eye_shake;
 
-        float3 ray_origin    = eye_shake;
+        float3 ray_origin    = cam.eye + eye_shake;
         float3 ray_direction = terminal_point - eye_shake; 
         ray_direction = normalize(ray_direction);
 
