@@ -146,8 +146,14 @@ struct BuildSurfaceHalfEdgeStructure : zeno::INode {
 				}
 		});
 #else
-		if(!build_surf_half_edge(cudaPol,tris,points,halfEdge))
-			throw std::runtime_error("fail building surf half edge");
+		auto accept_non_manifold = get_input2<bool>("accept_non_manifold");
+		if(!accept_non_manifold) {
+			if(!build_surf_half_edge(cudaPol,tris,points,halfEdge))
+				throw std::runtime_error("fail building surf half edge");
+		}else {
+			if(!build_surf_half_edge_robust(cudaPol,tris,halfEdge))
+				throw std::runtime_error("fail building surf half edge");
+		}
 #endif
 
 		zs::bht<int,1,int> edgeSet{tris.get_allocator(),tris.size() * 3};	
@@ -160,6 +166,11 @@ struct BuildSurfaceHalfEdgeStructure : zeno::INode {
 			edgeSet = proxy<space>(edgeSet),
 			tris = proxy<space>({},tris)] ZS_LAMBDA(int hi) mutable {
 				auto ti = zs::reinterpret_bits<int>(halfedges("to_face",hi));
+				if(ti < 0) {
+					printf("oops!!! halfedge with no incident triangle!!!\n");
+					return;
+				}
+					
 				auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
 				auto local_idx = zs::reinterpret_bits<int>(halfedges("local_vertex_id",hi));
 				zs::vec<int,2> edge{tri[local_idx],tri[(local_idx + 1) % 3]};
@@ -181,6 +192,11 @@ struct BuildSurfaceHalfEdgeStructure : zeno::INode {
 			tris = proxy<space>({},tris)] ZS_LAMBDA(auto ei,const auto& hi_vec) mutable {
 				auto hi = hi_vec[0];
 				auto ti = zs::reinterpret_bits<int>(halfedges("to_face",hi));
+				if(ti < 0) {
+					printf("oops!!! halfedge with no incident triangle!!!\n");
+					return;
+				}
+
 				auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
 				auto local_idx = zs::reinterpret_bits<int>(halfedges("local_vertex_id",hi));
 				zs::vec<int,2> edge{tri[local_idx],tri[(local_idx + 1) % 3]};	
@@ -204,7 +220,10 @@ struct BuildSurfaceHalfEdgeStructure : zeno::INode {
 };
 
 
-ZENDEFNODE(BuildSurfaceHalfEdgeStructure, {{{"zsparticles"}},
+ZENDEFNODE(BuildSurfaceHalfEdgeStructure, {{
+								{"zsparticles"},
+								{"bool","accept_non_manifold","0"},
+							},
 							{{"zsparticles"}},
 							{},
 							{"ZSGeometry"}});
