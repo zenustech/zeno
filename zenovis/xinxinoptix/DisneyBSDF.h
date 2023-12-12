@@ -413,7 +413,7 @@ namespace DisneyBSDF{
         }
         if((sssPr>0.0&&reflectance) || (sssPr>0.0 && dot(wo, N2)<0.0))
         {
-          bool trans = dot(wo, N2) * dot(wi, N2)<0;
+          bool trans = (dot(wi, N2) * dot(wo, N2)<0) && (wi.z * wo.z<0);
           float FL = BRDFBasics::SchlickWeight(abs(wi.z));
           float FV = BRDFBasics::SchlickWeight(abs(wo.z));
           float term = wo.z>0?FV:FL;
@@ -629,21 +629,8 @@ namespace DisneyBSDF{
 
               //go inside
               wi = -BRDFBasics::UniformSampleHemisphere(r1, r2);
-
-            }
-          }
-
-            tbn.inverse_transform(wi);
-            wi = normalize(wi);
-
-            bool sameside2 = (dot(wi, N) * dot(wi, N2)) > 0.0f;
-            if (sameside == false) {
-              wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
-            }
-            auto woo = wo;
-            tbn.inverse_transform(woo);
-            if(dot(wi, N2) * dot(woo, N2)<0 && dot(wi, N2)<0) {
-
+              wi.z = min(-0.2f, wi.z);
+              wi = normalize(wi);
               isSS = true;
               flag = transmissionEvent;
               vec3 color = mix(mat.basecolor, mat.sssColor, mat.subsurface);
@@ -656,6 +643,20 @@ namespace DisneyBSDF{
                 CalculateExtinction2(color, sssRadius, prd->sigma_t,
                                      prd->ss_alpha, 1.4f);
               }
+
+            }
+          }
+
+            tbn.inverse_transform(wi);
+            wi = normalize(wi);
+
+            bool sameside2 = (dot(wi, N) * dot(wi, N2)) > 0.0f;
+            if (sameside == false) {
+              wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
+            }
+            if(dot(wi, N2)>0)
+            {
+              isSS = false;
             }
             //reflectance = vec3(1.0f) * M_PIf ;
             //return true;
