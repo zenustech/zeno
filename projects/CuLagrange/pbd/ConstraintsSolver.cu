@@ -766,7 +766,7 @@ struct XPBDSolveSmoothAll : INode {
                                     printf("nan dp[%d] detected at stretch\n",i);
                                 atomic_add(exec_tag,&weight_sum[edge[i]],w);
                                 for(int d = 0;d != 3;++d)
-                                    atomic_add(exec_tag,&verts(dptagOffset + d,edge[i]),dp[i][d]);
+                                    atomic_add(exec_tag,&verts(dptagOffset + d,edge[i]),dp[i][d] * w);
                             }
                         }
 
@@ -804,7 +804,7 @@ struct XPBDSolveSmoothAll : INode {
                                     printf("nan dp[%d] detected at stretch\n",i);
                                 atomic_add(exec_tag,&weight_sum[quad[i]],w);
                                 for(int d = 0;d != 3;++d)
-                                    atomic_add(exec_tag,&verts(dptagOffset + d,quad[i]),dp[i][d]);
+                                    atomic_add(exec_tag,&verts(dptagOffset + d,quad[i]),dp[i][d] * w);
                             }                        
                         }
                 });
@@ -855,8 +855,17 @@ struct XPBDSolveSmoothAll : INode {
                         }
 
                         vec3 dp[4] = {};
-                        if(!COLLISION_UTILS::compute_imminent_collision_impulse(ps,vs,bary,ms,minvs,dp,imminent_thickness,type,add_repulsion_force))
+                        if(!COLLISION_UTILS::compute_imminent_collision_impulse(ps,
+                                vs,
+                                bary,
+                                ms,
+                                minvs,
+                                dp,
+                                imminent_thickness,
+                                type,
+                                add_repulsion_force)) {
                             return;
+                        }
 
                         // auto imp_norm2 = (T)0.0;
                         for(int i = 0;i != 4;++i) {
@@ -936,7 +945,6 @@ struct XPBDSolveSmoothAll : INode {
                             if(minv < eps)
                                 return;
 
-                            
                             ps[3] = p;
                             vs[3] = v;
 
@@ -944,7 +952,7 @@ struct XPBDSolveSmoothAll : INode {
                                     ps,
                                     vs,
                                     bary,
-                                    {1e5,1e5,1e5,m},
+                                    {1e3,1e3,1e3,m},
                                     {0,0,0,minv},
                                     dp,
                                     imminent_thickness,type,add_repulsion_force)) {
@@ -957,7 +965,7 @@ struct XPBDSolveSmoothAll : INode {
                                     atomic_add(exec_tag,&verts(dptagOffset + d,inds[i]),dp[i][d] * w);
                                 }
                             }   
-                        }else if(type == 1) {// csKPT, inds{tri[0],tri[1],tri[2],kvi}
+                        } else if(type == 1) {// csKPT, inds{tri[0],tri[1],tri[2],kvi}
                             vec3 ms{};
                             vec3 minvs{};
                             for(int i = 0;i != 3;++i) {
@@ -972,7 +980,7 @@ struct XPBDSolveSmoothAll : INode {
                                     ps,
                                     vs,
                                     bary,
-                                    {ms[0],ms[1],ms[2],1e5},
+                                    {ms[0],ms[1],ms[2],1e3},
                                     {minvs[0],minvs[1],minvs[2],0},
                                     dp,
                                     imminent_thickness,type,add_repulsion_force)) {
@@ -1002,7 +1010,7 @@ struct XPBDSolveSmoothAll : INode {
                                     ps,
                                     vs,
                                     bary,
-                                    {ms[0],ms[1],1e5,1e5},
+                                    {ms[0],ms[1],1e3,1e3},
                                     {minvs[0],minvs[1],0,0},
                                     dp,
                                     imminent_thickness,type,add_repulsion_force)) {

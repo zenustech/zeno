@@ -1040,10 +1040,10 @@ namespace COLLISION_UTILS {
             cminv += bary[i] * bary[i] / ms[i];
         }
 
-        // if(cminv < eps)
-        //     return false;
+        if(cminv < eps)
+            return false;
 
-        cminv = cminv < eps * 10 ? eps * 10 : cminv; 
+        // cminv = cminv < eps * 10 ? eps * 10 : cminv; 
 
         for(int i = 0;i != 4;++i) {
             auto beta = minv[i] * bary[i] / cminv;
