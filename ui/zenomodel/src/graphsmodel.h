@@ -56,6 +56,7 @@ public:
     QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const override;
     QModelIndex nodeIndex(uint32_t sid, uint32_t nodeid) override;
     QModelIndex subgIndex(uint32_t sid) override;
+    QModelIndex paramIndex(const QModelIndex& subgIdx, const QModelIndex& nodeIdx, const QString& name, bool bInput) override;
     QModelIndex index(const QString& subGraphName) const override;
     QModelIndex indexBySubModel(SubGraphModel* pSubModel) const;
     QModelIndex indexFromPath(const QString& path) override;

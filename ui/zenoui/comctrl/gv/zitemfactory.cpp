@@ -201,6 +201,20 @@ namespace zenoui
                 pItemWidget = pEditBtn;
                 break;
             }
+            case CONTROL_BUTTON:
+            {
+                //todo: name customize
+                ZenoParamPushButton* pButton = new ZenoParamPushButton("Generate", -1, QSizePolicy::Expanding);
+                pButton->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(100, zenoui::g_ctrlHeight)));
+                pButton->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
+                pButton->setData(GVKEY_TYPE, type);
+                pItemWidget = pButton;
+                QObject::connect(pButton, &ZenoParamPushButton::clicked, [=]() {
+                    if (cbSet.cbBtnOnClicked)
+                        cbSet.cbBtnOnClicked();
+                });
+                break;
+            }
             case CONTROL_PURE_COLOR: 
             case CONTROL_COLOR_VEC3F:
             {

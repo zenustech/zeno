@@ -3,6 +3,8 @@
 #include "subnetnode.h"
 #include "heatmapnode.h"
 #include "cameranode.h"
+#include "pythonnode.h"
+#include "commandnode.h"
 #include "readfbxprim.h"
 #include "livenode.h"
 #include "zenolink.h"
@@ -249,6 +251,14 @@ ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilPa
     else if(descName == "EvalBlenderFile")
     {
         return new EvalBlenderFile(params);
+    }
+    else if (descName == "PythonNode")
+    {
+        return new PythonNode(params);
+    }
+    else if (descName == "GenerateCommands")
+    {
+        return new CommandNode(params);
     }
     else
     {

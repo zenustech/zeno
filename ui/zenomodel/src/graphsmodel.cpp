@@ -251,6 +251,12 @@ QModelIndex GraphsModel::subgIndex(uint32_t sid)
     return index(subgName);
 }
 
+QModelIndex GraphsModel::paramIndex(const QModelIndex& subgIdx, const QModelIndex& nodeIdx, const QString& name, bool bInput)
+{
+    SubGraphModel* pGraph = subGraph(subgIdx.row());
+    return pGraph->nodeParamIndex(nodeIdx, bInput ? PARAM_INPUT : PARAM_OUTPUT, name);
+}
+
 QModelIndex GraphsModel::_createIndex(SubGraphModel* pSubModel) const
 {
     if (!pSubModel)
