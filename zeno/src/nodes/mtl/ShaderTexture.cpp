@@ -189,21 +189,21 @@ struct SmartTexture2D : ShaderNodeClone<SmartTexture2D>
         if(!std::filesystem::exists(texture_path)){
             zeno::log_warn("texture file not found!");
             auto type = get_input2<std::string>("type");
-            auto number = get_input2<vec4f>("value");
+            auto number = em->determineType(get_input("value").get());
             if (type == "float" || type == "R")
-                em->emitCode(zeno::format("{}",number[0]));
+                em->emitCode(zeno::format("vec4({}).x",number));
             else if (type == "G")
-                em->emitCode(zeno::format("{}",number[1]));
+                em->emitCode(zeno::format("vec4({}).y",number));
             else if (type == "B")
-                em->emitCode(zeno::format("{}",number[2]));
+                em->emitCode(zeno::format("vec4({}).z",number));
             else if (type == "A")
-                em->emitCode(zeno::format("{}",number[3]));
+                em->emitCode(zeno::format("vec4({}).w",number));
             else if (type == "vec2")
-                em->emitCode(zeno::format("vec2({},{})",number[0],number[1]));
+                em->emitCode(zeno::format("vec2({})",number));
             else if (type == "vec3")
-                em->emitCode(zeno::format("vec3({},{},{})",number[0],number[1],number[2]));
+                em->emitCode(zeno::format("vec3({})",number));
             else if (type == "vec4")
-                em->emitCode(zeno::format("vec3({},{},{},{})",number[0],number[1],number[2],number[4]));
+                em->emitCode(zeno::format("vec4({})",number));
             else
                 throw zeno::Exception("ShaderTexture2D got bad type: " + type);
             
