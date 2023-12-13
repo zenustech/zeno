@@ -16,10 +16,11 @@ private slots:
     void onImportClicked();
 private:
     void initUi();
+    QMap<QString, QMap<QString, QVariant>> readFile();
 private:
     QString m_version;
     QTableWidget* m_pTableWidget;
-    QMap<QString, QString> m_subgsMap;
+    QMap<QString, QString> m_subgsMap; // <mtlid, preset mat>
     QString m_importPath;
     QPushButton* m_pImportBtn;
 };
