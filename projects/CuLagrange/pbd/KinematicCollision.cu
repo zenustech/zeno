@@ -903,18 +903,26 @@ struct DetangleCCDCollisionWithBoundary : INode {
         zs::bht<int,2,int> csPT{verts.get_allocator(),MAX_COLLISION_PAIRS};csPT.reset(cudaPol,true);
         zs::bht<int,2,int> csEE{edges.get_allocator(),MAX_COLLISION_PAIRS};csEE.reset(cudaPol,true);
 
+        auto collision_group_name = get_input2<std::string>("group_name");
+
         dtiles_t vtemp{verts.get_allocator(),{
             {"x",3},
+            {"X",3},
             {"v",3},
             {"minv",1},
             {"m",1},
-            {"collision_cancel",1}
+            {"collision_cancel",1},
+            {"collision_group",1}
         },verts.size() + kverts.size()};
+
+        // TILEVEC_OPS::copy<3>(cudaPol,verts,"X",vtemp,"X");
+        TILEVEC_OPS::copy(cudaPol,verts,collision_group_name,vtemp,"collision_group");
         cudaPol(zs::range(verts.size()),[
             verts = proxy<space>({},verts),
             vtemp = proxy<space>({},vtemp),
             pre_x_tag = zs::SmallString(pre_x_tag),
             current_x_tag = zs::SmallString(current_x_tag)] ZS_LAMBDA(int vi) mutable {
+                vtemp.tuple(dim_c<3>,"X",vi) = verts.pack(dim_c<3>,"X",vi);
                 vtemp.tuple(dim_c<3>,"x",vi) = verts.pack(dim_c<3>,pre_x_tag,vi);
                 vtemp.tuple(dim_c<3>,"v",vi) = verts.pack(dim_c<3>,current_x_tag,vi) - verts.pack(dim_c<3>,pre_x_tag,vi);
                 vtemp("minv",vi) = verts("minv",vi);
@@ -930,10 +938,13 @@ struct DetangleCCDCollisionWithBoundary : INode {
             vtemp = proxy<space>({},vtemp),
             kverts = proxy<space>({},kverts),
             pw = pw,
+            collision_group_name = zs::SmallString(collision_group_name),
             boundary_velocity_scale = boundary_velocity_scale,
             w = w] ZS_LAMBDA(int kvi) mutable {
                 auto cur_kvert = kverts.pack(dim_c<3>,"px",kvi) * (1 -  w) + kverts.pack(dim_c<3>,"x",kvi) *  w;
                 auto pre_kvert = kverts.pack(dim_c<3>,"px",kvi) * (1 - pw) + kverts.pack(dim_c<3>,"x",kvi) * pw;
+                vtemp("collision_group",kvi + voffset) = kverts(collision_group_name,kvi);
+                vtemp.tuple(dim_c<3>,"X",kvi + voffset) = kverts.pack(dim_c<3>,"X",kvi);
                 vtemp.tuple(dim_c<3>,"x",kvi + voffset) = pre_kvert;
                 vtemp.tuple(dim_c<3>,"v",kvi + voffset) = (cur_kvert - pre_kvert) * boundary_velocity_scale;
                 vtemp("minv",kvi + voffset) = (T)0;
@@ -1008,11 +1019,12 @@ struct DetangleCCDCollisionWithBoundary : INode {
                         vtemp,
                         vtemp,"x","v",
                         ttemp,
+                        thickness,
                         triBvh,
                         do_bvh_refit,
                         csPT,
                         impulse_buffer,
-                        impulse_count);
+                        impulse_count,true,true);
                 }else {
                     COLLISION_UTILS::calc_continous_self_PT_collision_impulse_with_toc(cudaPol,
                         vtemp,
@@ -1024,7 +1036,7 @@ struct DetangleCCDCollisionWithBoundary : INode {
                         do_bvh_refit,
                         csPT,
                         impulse_buffer,
-                        impulse_count,false);
+                        impulse_count,true,true);
                 }
             }
 
@@ -1037,13 +1049,14 @@ struct DetangleCCDCollisionWithBoundary : INode {
                         vtemp,
                         vtemp,"x","v",
                         etemp,
+                        thickness,
                         0,
                         edges.size(),
                         eBvh,
                         do_bvh_refit,
                         csEE,
                         impulse_buffer,
-                        impulse_count);
+                        impulse_count,true,true);
                 } else {
                     COLLISION_UTILS::calc_continous_self_EE_collision_impulse_with_toc(cudaPol,
                         vtemp,
@@ -1057,7 +1070,7 @@ struct DetangleCCDCollisionWithBoundary : INode {
                         do_bvh_refit,
                         csEE,
                         impulse_buffer,
-                        impulse_count,false);
+                        impulse_count,true,true);
                 }
             }
 
@@ -1123,6 +1136,7 @@ ZENDEFNODE(DetangleCCDCollisionWithBoundary, {{{"zsparticles"},
                                 {"float","thickness","0.1"},
                                 {"float","restitution","0.1"},
                                 {"float","relaxation","1"},
+                                {"string","group_name","groupName"},
                                 {"boundary"},
                                 {"bool","do_jacobi_iter","0"},
                                 {"bool","do_ee_detection","1"},

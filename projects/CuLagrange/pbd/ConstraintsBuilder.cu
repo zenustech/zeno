@@ -206,7 +206,7 @@ virtual void apply() override {
 
     if(type == "reference_dcd_collision_constraint") {
         constexpr auto eps = 1e-6;
-        constexpr auto MAX_IMMINENT_COLLISION_PAIRS = 2000000;
+        constexpr auto MAX_IMMINENT_COLLISION_PAIRS = 20000;
         auto dcd_source_xtag = get_input2<std::string>("dcd_source_xtag");
         constraint->setMeta(CONSTRAINT_KEY,category_c::dcd_collision_constraint);
         eles.append_channels(cudaPol,{{"inds",4},{"bary",4},{"type",1}});
@@ -233,17 +233,21 @@ virtual void apply() override {
             nm_edges += (*collider)[ZenoParticles::s_surfEdgeTag].size();
         }
 
+        auto collision_group_name = get_input2<std::string>("group_name");
+
         dtiles_t vtemp{verts.get_allocator(),{
             {"x",3},
             {"X",3},
             {"minv",1},
             {"dcd_collision_tag",1},
-            {"collision_cancel",1}
+            {"collision_cancel",1},
+            {"collision_group",1}
         },nm_verts};
         TILEVEC_OPS::fill(cudaPol,vtemp,"dcd_collision_tag",0);
         TILEVEC_OPS::copy<3>(cudaPol,verts,dcd_source_xtag,vtemp,"x");
         TILEVEC_OPS::copy<3>(cudaPol,verts,"X",vtemp,"X");
         TILEVEC_OPS::copy(cudaPol,verts,"minv",vtemp,"minv");
+        TILEVEC_OPS::copy(cudaPol,verts,collision_group_name,vtemp,"collision_group");
         if(verts.hasProperty("collision_cancel"))
             TILEVEC_OPS::copy(cudaPol,verts,"collision_cancel",vtemp,"collision_cancel");
         else
@@ -270,15 +274,24 @@ virtual void apply() override {
             auto eoffset = edges.size();
             auto toffset = quads.size();
 
+            auto has_collision_group = kverts.hasProperty(collision_group_name);
+
             cudaPol(zs::range(kverts.size()),[
                 kverts = proxy<space>({},kverts),
                 voffset = voffset,
                 pw = pw,
+                collision_group_name = zs::SmallString(collision_group_name),
+                has_collision_group = has_collision_group,
                 // kverts_pre = proxy<space>({},kverts_pre),
                 vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int kvi) mutable {
                     auto pre_kvert = kverts.pack(dim_c<3>,"px",kvi) * (1 - pw) + kverts.pack(dim_c<3>,"x",kvi) * pw;
                     vtemp.tuple(dim_c<3>,"x",voffset + kvi) = pre_kvert;
+                    vtemp.tuple(dim_c<3>,"X",voffset + kvi) = kverts.pack(dim_c<3>,"X",kvi);
                     vtemp("minv",voffset + kvi) = 0;
+                    if(has_collision_group)
+                        vtemp("collision_group",voffset + kvi) = kverts(collision_group_name,kvi);
+                    else
+                        vtemp("collision_group",voffset + kvi) = static_cast<T>(-1);
                     if(kverts.hasProperty("collision_cancel")) 
                         vtemp("collision_cancel",voffset + kvi) = kverts("collision_cancel",kvi);
                     else
@@ -313,14 +326,14 @@ virtual void apply() override {
         auto triBvh = bvh_t{};
         auto triBvs = retrieve_bounding_volumes(cudaPol,vtemp,ttemp,wrapv<3>{},imminent_collision_thickness/(float)2.0,"x");
         triBvh.build(cudaPol,triBvs);
-        COLLISION_UTILS::detect_self_imminent_PT_close_proximity(cudaPol,vtemp,"x",ttemp,imminent_collision_thickness,0,triBvh,eles,csPT);
+        COLLISION_UTILS::detect_self_imminent_PT_close_proximity(cudaPol,vtemp,"x",ttemp,imminent_collision_thickness,0,triBvh,eles,csPT,true,true);
 
         std::cout << "nm_imminent_csPT : " << csPT.size() << std::endl;
 
         auto edgeBvh = bvh_t{};
         auto edgeBvs = retrieve_bounding_volumes(cudaPol,vtemp,etemp,wrapv<2>{},imminent_collision_thickness/(float)2.0,"x");
         edgeBvh.build(cudaPol,edgeBvs);  
-        COLLISION_UTILS::detect_self_imminent_EE_close_proximity(cudaPol,vtemp,"x",etemp,imminent_collision_thickness,csPT.size(),edgeBvh,eles,csEE);
+        COLLISION_UTILS::detect_self_imminent_EE_close_proximity(cudaPol,vtemp,"x",etemp,imminent_collision_thickness,csPT.size(),edgeBvh,eles,csEE,true,true);
 
         std::cout << "nm_imminent_csEE : " << csEE.size() << std::endl;
         // std::cout << "csEE + csPT = " << csPT.size() + csEE.size() << std::endl;
@@ -351,7 +364,7 @@ virtual void apply() override {
 
     if(type == "kinematic_dcd_collision_constraint") {
         constexpr auto eps = 1e-6;
-        constexpr auto MAX_KINEMATIC_IMMINENT_COLLISION_PAIRS = 200000;
+        constexpr auto MAX_KINEMATIC_IMMINENT_COLLISION_PAIRS = 20000;
         auto dcd_source_xtag = get_input2<std::string>("dcd_source_xtag");
         const auto &edges = (*source)[ZenoParticles::s_surfEdgeTag];
 

@@ -945,6 +945,9 @@ struct XPBDSolveSmoothAll : INode {
                             if(minv < eps)
                                 return;
 
+                            m = minv < 1e-3 ? 1e3 : m;
+                            minv = minv < 1e-3 ? 0 : minv;
+
                             ps[3] = p;
                             vs[3] = v;
 
@@ -955,7 +958,8 @@ struct XPBDSolveSmoothAll : INode {
                                     {1e3,1e3,1e3,m},
                                     {0,0,0,minv},
                                     dp,
-                                    imminent_thickness,type,add_repulsion_force)) {
+                                    imminent_thickness,type,
+                                    add_repulsion_force)) {
                                 return;
                             }
 
@@ -973,6 +977,9 @@ struct XPBDSolveSmoothAll : INode {
                                 vs[i] = verts.pack(dim_c<3>,ptagOffset,inds[i]) - ps[i];
                                 ms[i] = verts(mOffset,inds[i]);
                                 minvs[i] = verts(minvOffset,inds[i]);
+
+                                ms[i] = minvs[i] < 1e-3 ? 1e3 : ms[i];
+                                minvs[i] = minvs[i] < 1e-3 ? 0 : minvs[i];
                             }
 
                             vec3 dp[4] = {};
@@ -995,7 +1002,7 @@ struct XPBDSolveSmoothAll : INode {
                                     atomic_add(exec_tag,&verts(dptagOffset + d,inds[i]),dp[i][d] * w);
                                 }
                             }
-                        }else if(type == 2){ // e[0],e[1],ke[0],ke[1],
+                        }else if(type == 2){ // csEKE e[0],e[1],ke[0],ke[1],
                             vec2 ms{};
                             vec2 minvs{};
                             for(int i = 0;i != 2;++i) {
@@ -1003,8 +1010,11 @@ struct XPBDSolveSmoothAll : INode {
                                 vs[i] = verts.pack(dim_c<3>,ptagOffset,inds[i]) - ps[i];
                                 ms[i] = verts(mOffset,inds[i]);
                                 minvs[i] = verts(minvOffset,inds[i]);
-                            }
 
+                                ms[i] = minvs[i] < 1e-3 ? 1e3 : ms[i];
+                                minvs[i] = minvs[i] < 1e-3 ? 0 : minvs[i];
+                            }
+                            // for the mass of kinematic boundary, 1e3 is suggested, too large mass (e.g 1e5) will bring in instablility、dcd bouncing etc,
                             vec3 dp[4] = {};
                             if(!COLLISION_UTILS::compute_imminent_collision_impulse(
                                     ps,
