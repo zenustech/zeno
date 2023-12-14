@@ -41,8 +41,7 @@ struct RenderEngineBate : RenderEngine {
 
     void update() override {
         const auto& cb = [&]() {
-            if (graphicsMan->load_objects(zeno::getSession().globalComm->pairsShared()))
-                zeno::getSession().globalComm->setRenderType(zeno::GlobalComm::UNDEFINED);
+            graphicsMan->load_objects(zeno::getSession().globalComm->pairsShared());
         };
         zeno::getSession().globalComm->mutexCallback(cb);
     }

@@ -42,6 +42,7 @@ struct GlobalComm {
     int maxCachedFrames = 1;
     std::string cacheFramePath;
     std::string objTmpCachePath;
+    int currentFrameNumber = 0;
 
     ZENO_API void frameCache(std::string const &path, int gcmax);
     ZENO_API void initFrameRange(int beg, int end);
@@ -69,12 +70,7 @@ struct GlobalComm {
     static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::string key = "", bool dumpCacheVersionInfo = false);
     static bool fromDiskByRunner(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::string filename);
     static bool fromDiskByObjsManager(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::vector<std::string>& nodesToLoad);
-private:
-    ViewObjects const *_getViewObjects(const int frameid);
-    std::vector<std::string> toViewNodesId;
 
-//-------------------integrate objectsManager----------------------
-public:
     //-----ObjectsManager-----
     ZENO_API void clear_objects();
     ZENO_API std::optional<zeno::IObject*> get(std::string nid);
@@ -86,17 +82,8 @@ public:
         UPDATE_MATERIAL
     };
 
-    template <class T = void>
-    auto pairs() const {
-        std::lock_guard lck(m_recur_mutex);
-        return objects.pairs<T>();
-    }
-    template <class T = void>
-    auto pairsShared() const {
-        std::lock_guard lck(m_recur_mutex);
-        return objects.pairsShared<T>();
-    }
-
+    ZENO_API std::vector<std::pair<std::string, IObject*>> pairs() const;
+    ZENO_API std::vector<std::pair<std::string, std::shared_ptr<IObject>>> pairsShared() const;
     //------new change------
     ZENO_API void clear_lightObjects();
     ZENO_API bool lightObjsCount(std::string& id);
@@ -120,20 +107,21 @@ public:
     ZENO_API void mutexCallback(const std::function<void()>& callback);
 
     ZENO_API const std::string getObjKey1(std::string& id, int frame);
+
 private:
+    ViewObjects const* _getViewObjects(const int frameid);
+    std::vector<std::string> toViewNodesId;
+
     //-----ObjectsManager-----
     std::map<std::string, std::shared_ptr<zeno::IObject>> lightObjects;
-    zeno::MapStablizer<zeno::PolymorphicMap<std::map<std::string, std::shared_ptr<zeno::IObject>>>> objects;
     bool needUpdateLight = true;
 
-    bool load_objectsToManager(std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs);  //determine update type accord to objs changes
+    void prepareForOptix(bool inserted, std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs);  //determine update type accord to objs changes
     void determineRenderType(std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs);
     RenderType renderType = UNDEFINED;
     std::map<std::string, int> lastToViewNodesType;
-
     //------new change------
     mutable std::recursive_mutex m_recur_mutex;
-
 };
 
 }
