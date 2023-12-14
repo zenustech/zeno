@@ -6,6 +6,8 @@
 #include <zeno/types/ListObject.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/types/ListObject.h>
+#include <zeno/utils/string.h>
+//#include <string_view>
 #include <regex>
 
 namespace zeno {
@@ -386,8 +388,7 @@ ZENDEFNODE(EndFrame, {
     {"fileio"},
 });*/
 
-struct StringToNumber : zeno::INode {
-
+struct StringToNumber : zeno::INode {//todo?::Returns 0.0 if the string does not contain a number.  
     virtual void apply() override {
         auto in_str = get_input2<std::string>("str");
         auto type = get_input2<std::string>("type");
@@ -410,7 +411,7 @@ struct StringToNumber : zeno::INode {
 
 ZENDEFNODE(StringToNumber, {{
                                 /* inputs: */
-                                {"enum float int", "type", "all"},
+                                {"enum float int", "type", "float"},
                                 {"string", "str", "0"},
                             },
 
@@ -446,6 +447,7 @@ struct StringToList : zeno::INode {
         auto list = std::make_shared<ListObject>();
         auto separator = get_input2<std::string>("Separator");
         auto trimoption = get_input2<bool>("Trim");
+        auto keepempty = get_input2<bool>("KeepEmpty");
         std::vector<std::string> strings;
         size_t pos = 0;
         size_t posbegin = 0;
@@ -453,14 +455,14 @@ struct StringToList : zeno::INode {
         while ((pos = stringlist.find(separator, pos)) != std::string::npos) {
             word = stringlist.substr(posbegin, pos-posbegin);
             if(trimoption) trim(word);
-            strings.push_back(word);
+            if(keepempty || !word.empty()) strings.push_back(word);
             pos += separator.length();
             posbegin = pos;
         }
         if (posbegin < stringlist.length()) { //push last word
             word = stringlist.substr(posbegin);
             if(trimoption) trim(word);
-            strings.push_back(word);
+            if(keepempty || !word.empty()) strings.push_back(word);
         }
         for(const auto &string : strings) {
             auto obj = std::make_unique<StringObject>();
@@ -476,8 +478,73 @@ ZENDEFNODE(StringToList, {
         {"multiline_string", "string", ""},
         {"string", "Separator", ""},
         {"bool", "Trim", "false"},
+        {"bool", "KeepEmpty", "false"},
     },
     {{"list"},
+    },
+    {},
+    {"string"},
+});
+
+struct StringJoin : zeno::INode {//zeno string only support list for now
+    virtual void apply() override {
+        auto list = get_input<zeno::ListObject>("list");
+        auto stringvec = list->get2<std::string>();
+        auto separator = get_input2<std::string>("Separator");
+        auto output = join_str(stringvec, separator);
+        set_output2("string", output);
+    }
+};
+
+ZENDEFNODE(StringJoin, {
+    {
+        {"list"},
+        {"string", "Separator", ""},
+    },
+    {{"string", "string"},
+    },
+    {},
+    {"string"},
+});
+
+struct NumbertoString : zeno::INode {
+    virtual void apply() override {
+        auto num = get_input<zeno::NumericObject>("number");
+        auto obj = std::make_unique<zeno::StringObject>();
+        std::visit([&](const auto &v) {
+            obj->set(zeno::to_string(v));
+        }, num->value);
+        set_output("string", std::move(obj));
+    }
+};
+
+ZENDEFNODE(NumbertoString, {
+    {
+        {"number"},
+    },
+    {{"string", "string"},
+    },
+    {},
+    {"string"},
+});
+
+struct SubString : zeno::INode {//slice...
+    virtual void apply() override {
+        auto string = get_input2<std::string>("string");
+        auto start = get_input2<int>("start");
+        auto length = get_input2<int>("length");
+        auto output = string.substr(start, length);
+        set_output2("string", output);
+    }
+};
+
+ZENDEFNODE(SubString, {
+    {
+        {"multiline_string", "string", ""},
+        {"int", "start", "0"},
+        {"int", "length", "1"},
+    },
+    {{"string", "string"},
     },
     {},
     {"string"},
