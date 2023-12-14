@@ -110,10 +110,6 @@ private:
     glm::vec4 m_rotate;
     glm::vec3 m_scale;
 
-    glm::vec3 m_last_trans;
-    glm::vec4 m_last_rotate;
-    glm::vec3 m_last_scale;
-
     glm::vec3 m_trans_start;
     glm::vec3 m_rotate_start;
     // glm::vec3 m_scale_start;

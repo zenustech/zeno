@@ -14,12 +14,10 @@ namespace zeno {
 
 FakeTransformer::FakeTransformer(ViewportWidget* viewport)
     : m_objects_center(0.0f)
+      , m_pivot(0.0f)
       , m_trans(0.0f)
       , m_scale(1.0f)
       , m_rotate({0, 0, 0, 1})
-      , m_last_trans(0.0f)
-      , m_last_scale(1.0f)
-      , m_last_rotate({0, 0, 0, 1})
       , m_status(false)
       , m_operation(NONE)
       , m_handler_scale(1.f)
@@ -305,6 +303,7 @@ bool FakeTransformer::isTransforming() const {
 }
 
 void FakeTransformer::startTransform() {
+    zeno::log_info("FakeTransformer::startTransform");
     markObjectsInteractive();
 }
 
@@ -396,6 +395,7 @@ void FakeTransformer::syncToTransformNode(NodeLocation& node_location,
 }
 
 void FakeTransformer::endTransform(bool moved) {
+    zeno::log_info("FakeTransformer::endTransform");
     if (moved) {
         // write transform info to objects' user data
         for (auto &[obj_name, obj] : m_objects) {
@@ -464,10 +464,6 @@ void FakeTransformer::endTransform(bool moved) {
     m_trans = {0, 0, 0};
     m_scale = {1, 1, 1};
     m_rotate = {0, 0, 0, 1};
-
-    m_last_trans = {0, 0, 0};
-    m_last_scale = {1, 1, 1};
-    m_last_rotate = {0, 0, 0, 1};
 
     m_operation_mode = zenovis::INTERACT_NONE;
     m_handler->setMode(zenovis::INTERACT_NONE);
@@ -631,9 +627,6 @@ void FakeTransformer::clear() {
     m_trans = {0, 0, 0};
     m_scale = {1, 1, 1};
     m_rotate = {0, 0, 0, 1};
-    m_last_trans = {0, 0, 0};
-    m_last_scale = {1, 1, 1};
-    m_last_rotate = {0, 0, 0, 1};
     m_operation = NONE;
     m_handler = nullptr;
 
@@ -673,6 +666,7 @@ void FakeTransformer::rotate(glm::vec3 start_vec, glm::vec3 end_vec, glm::vec3 a
 }
 
 void FakeTransformer::doTransform() {
+    zeno::log_info("FakeTransformer::doTransform");
     // qDebug() << "transformer's objects count " << m_objects.size();
     glm::vec3 new_objects_center = {0, 0, 0};
     for (auto &[obj_name, obj] : m_objects) {
@@ -683,50 +677,40 @@ void FakeTransformer::doTransform() {
         auto rotate = zeno::vec_to_other<glm::vec4>(user_data.getLiterial<zeno::vec4f>("_rotate"));
         auto scale = zeno::vec_to_other<glm::vec3>(user_data.getLiterial<zeno::vec3f>("_scale"));
 
-        // inv last transform
-        auto pre_translate_matrix = glm::translate(translate + m_last_trans - m_pivot);
-        auto pre_quaternion = glm::quat(rotate[3], rotate[0], rotate[1], rotate[2]);
-        auto last_quaternion = glm::quat(m_last_rotate[3], m_last_rotate[0], m_last_rotate[1], m_last_rotate[2]);
-        auto pre_rotate_matrix = glm::toMat4(pre_quaternion);
-        auto pre_scale_matrix = glm::scale(scale * m_last_scale);
-        auto pre_transform_matrix = pre_translate_matrix * glm::toMat4(last_quaternion) * pre_rotate_matrix * pre_scale_matrix;
-        auto inv_pre_transform = glm::inverse(pre_transform_matrix);
-
         // do this transform
         auto translate_matrix = glm::translate(translate + m_trans - m_pivot);
         auto cur_quaternion = glm::quat(m_rotate[3], m_rotate[0], m_rotate[1], m_rotate[2]);
-        auto rotate_matrix = glm::toMat4(cur_quaternion) * pre_rotate_matrix;
+        auto rotate_matrix = glm::toMat4(cur_quaternion);
         auto scale_matrix = glm::scale(scale * m_scale);
         auto transform_matrix = translate_matrix *
                                 rotate_matrix *
-                                scale_matrix *
-                                inv_pre_transform;
+                                scale_matrix;
 
-        if (obj->has_attr("pos")) {
+        if (obj->has_attr("_origin_pos")) {
             // transform pos
             auto &pos = obj->attr<zeno::vec3f>("pos");
+            auto &opos = obj->attr<zeno::vec3f>("_origin_pos");
 #pragma omp parallel for
             // for (auto &po : pos) {
             for (size_t i = 0; i < pos.size(); ++i) {
-                auto& po = pos[i];
-                auto p = zeno::vec_to_other<glm::vec3>(po);
+                auto p = zeno::vec_to_other<glm::vec3>(opos[i]);
                 auto t = transform_matrix * glm::vec4(p, 1.0f);
                 auto pt = glm::vec3(t) / t.w;
-                po = zeno::other_to_vec<3>(pt);
+                pos[i] = zeno::other_to_vec<3>(pt);
             }
         }
-        if (obj->has_attr("nrm")) {
+        if (obj->has_attr("_origin_nrm")) {
             // transform nrm
             auto &nrm = obj->attr<zeno::vec3f>("nrm");
+            auto &onrm = obj->attr<zeno::vec3f>("_origin_nrm");
 #pragma omp parallel for
             // for (auto &vec : nrm) {
             for (size_t i = 0; i < nrm.size(); ++i) {
-                auto& vec = nrm[i];
-                auto n = zeno::vec_to_other<glm::vec3>(vec);
+                auto n = zeno::vec_to_other<glm::vec3>(nrm[i]);
                 glm::mat3 norm_matrix(transform_matrix);
                 norm_matrix = glm::transpose(glm::inverse(norm_matrix));
                 auto t = glm::normalize(norm_matrix * n);
-                vec = zeno::other_to_vec<3>(t);
+                onrm[i] = zeno::other_to_vec<3>(t);
             }
         }
         vec3f bmin, bmax;
@@ -737,9 +721,6 @@ void FakeTransformer::doTransform() {
         }
         new_objects_center += (zeno::vec_to_other<glm::vec3>(bmin) + zeno::vec_to_other<glm::vec3>(bmax)) / 2.0f;
     }
-    m_last_trans = m_trans;
-    m_last_rotate = m_rotate;
-    m_last_scale = m_scale;
 
     new_objects_center /= m_objects.size();
     m_objects_center = new_objects_center;
