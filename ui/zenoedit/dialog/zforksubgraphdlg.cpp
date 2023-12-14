@@ -95,8 +95,6 @@ QMap<QString, QMap<QString, QVariant>> ZForkSubgraphDlg::readFile()
         zeno::log_error("json file is corrupted");
         return matValueMap;
     }
-    QMap<QString, QSet<QString>> presetParamMap; //<preset mat, param_names>
-    QMap<QString, QSet<QString>> matKeyMap; //<preset mat, keys>
     auto jsonObject = doc.GetObject();
     QMap<QString, QMap<QString, QString>> matchMap;//<matType, <matKey, paramName>>
     if (jsonObject.HasMember("match"))
@@ -122,16 +120,17 @@ QMap<QString, QMap<QString, QVariant>> ZForkSubgraphDlg::readFile()
         QString mat = m_subgsMap[mtlid];
         IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
         auto subgIdx = pGraphsModel->index(mat);
-        if (subgIdx.isValid())
+        if (subgIdx.isValid() && !m_matchInfo.contains(mat) && matchMap.isEmpty())
         {
+            m_matchInfo[mat].m_matType = mat;
             //preset 
             QModelIndexList nodes = pGraphsModel->searchInSubgraph("SubInput", subgIdx);
-            for (QModelIndex subInput : nodes)
+            for (const QModelIndex& subInput : nodes)
             {
                 NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(subInput.data(ROLE_NODE_PARAMS));
                 QModelIndex nameIdx = nodeParams->getParam(PARAM_PARAM, "name");
-                QString paramName = nameIdx.data(ROLE_PARAM_VALUE).toString();                
-                presetParamMap[mat].insert(paramName);
+                QString paramName = nameIdx.data(ROLE_PARAM_VALUE).toString();
+                m_matchInfo[mat].m_matchInfo[paramName] = paramName;
             }
         }
         if (jsonObject.HasMember(mtlid.toUtf8()))
@@ -140,23 +139,48 @@ QMap<QString, QMap<QString, QVariant>> ZForkSubgraphDlg::readFile()
             if (objVal.IsObject())
             {
                 for (auto iter = objVal.MemberBegin(); iter != objVal.MemberEnd(); iter++) {
-                    matKeyMap[mat].insert(iter->name.GetString());
-                    QVariant val = UiHelper::parseJson(iter->value);
                     QString matKey = iter->name.GetString();
+                    QVariant val = UiHelper::parseJson(iter->value);
                     if (matchMap.contains(mat))
                     {
-                        if (matchMap.contains(mat))
+                        const auto& match = matchMap[mat];
+                        if (match.contains(matKey))
                         {
-                            const auto& match = matchMap[mat];
-                            if (match.contains(matKey))
-                            {
-                                matKey = match[matKey];
-                            }
+                            matKey = match[matKey];
                         }
                     }
+                    else if (matchMap.isEmpty())
+                    {
+                        if (m_matchInfo[mat].m_matchInfo.contains(matKey))
+                        {
+                            m_matchInfo[mat].m_matchInfo.remove(matKey);
+                        }
+                        else
+                        {
+                            m_matchInfo[mat].m_matKeys.insert(matKey);
+                        }
+                    }
+                    
                     matValueMap[mtlid][matKey] = val;
                 }
             }
+        }
+    }
+
+    for (auto iter = m_matchInfo.begin(); iter != m_matchInfo.end();)
+    {
+        if (iter->m_matchInfo.isEmpty() || iter->m_matKeys.isEmpty())
+            m_matchInfo.erase(iter++);
+        else
+            iter++;
+    }
+
+    if (!m_matchInfo.isEmpty())
+    {
+        QMap<QString, STMatchMatInfo> infos = ZMatchPresetSubgraphDlg::getMatchInfo(m_matchInfo, this);
+        if (!infos.isEmpty())
+        {
+            m_matchInfo = infos;
         }
     }
     return matValueMap;
@@ -223,6 +247,10 @@ void ZForkSubgraphDlg::onOkClicked()
             for (const auto& inputIdx : nodeParams->getInputIndice())
             {
                 QString name = inputIdx.data(ROLE_PARAM_NAME).toString();
+                if (m_matchInfo.contains(subgName) && m_matchInfo[subgName].m_matchInfo.contains(name))
+                {
+                    name = m_matchInfo[subgName].m_matchInfo[name];
+                }
                 if (valueMap.contains(name))
                 {
                     pGraphsModel->ModelSetData(inputIdx, valueMap[name], ROLE_PARAM_VALUE);
