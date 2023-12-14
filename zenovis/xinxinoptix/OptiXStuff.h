@@ -348,29 +348,29 @@ inline sutil::Texture loadCubeMap(const std::string& ppm_filename)
 inline std::shared_ptr<cuTexture> makeCudaTexture(unsigned char* img, int nx, int ny, int nc)
 {
     auto texture = std::make_shared<cuTexture>();
-    std::vector<float4> data;
+    std::vector<uchar4> data;
     data.resize(nx*ny);
     for(int j=0;j<ny;j++)
     for(int i=0;i<nx;i++)
     {
         size_t idx = j*nx + i;
         data[idx] = {
-            nc>=1?(float)(img[idx*nc + 0])/255.0f:0,
-            nc>=2?(float)(img[idx*nc + 1])/255.0f:0,
-            nc>=3?(float)(img[idx*nc + 2])/255.0f:0,
-            nc>=4?(float)(img[idx*nc + 3])/255.0f:0,
+            nc>=1?(img[idx*nc + 0]):(unsigned char)0,
+            nc>=2?(img[idx*nc + 1]):(unsigned char)0,
+            nc>=3?(img[idx*nc + 2]):(unsigned char)0,
+            nc>=4?(img[idx*nc + 3]):(unsigned char)0,
         };
     }
     
-    cudaChannelFormatDesc channelDescriptor = cudaCreateChannelDesc(32, 32, 32, 32, cudaChannelFormatKindFloat);
+    cudaChannelFormatDesc channelDescriptor = cudaCreateChannelDesc(8, 8, 8, 8, cudaChannelFormatKindUnsigned);
     cudaError_t rc = cudaMallocArray(&texture->gpuImageArray, &channelDescriptor, nx, ny, 0);
     if (rc != cudaSuccess) {
         std::cout<<"texture space alloc failed\n";
         return 0;
     }
     rc = cudaMemcpy2DToArray(texture->gpuImageArray, 0, 0, data.data(), 
-                             nx * sizeof(float) * 4, 
-                             nx * sizeof(float) * 4, 
+                             nx * sizeof(unsigned char) * 4,
+                             nx * sizeof(unsigned char) * 4,
                              ny, 
                              cudaMemcpyHostToDevice);
     if (rc != cudaSuccess) {
@@ -390,7 +390,7 @@ inline std::shared_ptr<cuTexture> makeCudaTexture(unsigned char* img, int nx, in
     textureDescriptor.disableTrilinearOptimization = 1;
     textureDescriptor.filterMode = cudaFilterModeLinear;
     textureDescriptor.normalizedCoords = true;
-    textureDescriptor.readMode = cudaReadModeElementType;
+    textureDescriptor.readMode = cudaReadModeNormalizedFloat ;
     textureDescriptor.sRGB = 0;
     rc = cudaCreateTextureObject(&texture->texture, &resourceDescriptor, &textureDescriptor, nullptr);
     if (rc != cudaSuccess) {
@@ -740,19 +740,25 @@ inline void addTexture(std::string path)
             calc_sky_cdf_map(nx, ny, 3, (float *)img->verts.data());
         }
         if (channels == 3) {
-            g_tex[path] = makeCudaTexture((float *)img->verts.data(), nx, ny, 3);
+            std::vector<unsigned char> ucdata;
+            ucdata.resize(img->verts.size()*3);
+            for(int i=0;i<img->verts.size()*3;i++)
+            {
+              ucdata[i] = (unsigned char)(((float*)img->verts.data())[i]*255.0);
+            }
+            g_tex[path] = makeCudaTexture(ucdata.data(), nx, ny, 3);
         }
         else {
-            std::vector<zeno::vec4f> data(nx * ny);
+            std::vector<uchar4> data(nx * ny);
             auto &alpha = img->verts.attr<float>("alpha");
             for (auto i = 0; i < nx * ny; i++) {
-                data[i][0] = img->verts[i][0];
-                data[i][1] = img->verts[i][1];
-                data[i][2] = img->verts[i][2];
-                data[i][3] = alpha[i];
+                data[i].x = (unsigned char)(img->verts[i][0]*255.0);
+                data[i].y = (unsigned char)(img->verts[i][1]*255.0);
+                data[i].z = (unsigned char)(img->verts[i][2]*255.0);
+                data[i].w = (unsigned char)(alpha[i]        *255.0);
 
             }
-            g_tex[path] = makeCudaTexture((float *)data.data(), nx, ny, 4);
+            g_tex[path] = makeCudaTexture((unsigned char *)data.data(), nx, ny, 4);
         }
     }
     else if (stbi_is_hdr(native_path.c_str())) {
