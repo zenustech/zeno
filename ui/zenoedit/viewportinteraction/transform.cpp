@@ -396,31 +396,38 @@ void FakeTransformer::syncToTransformNode(NodeLocation& node_location,
 void FakeTransformer::endTransform(bool moved) {
     if (moved) {
         // write transform info to objects' user data
-        for (auto &[obj_name, obj] : m_objects) {
-            auto& user_data = obj->userData();
+        auto& cb = [&]() {
+            std::map<std::string, IObject*> objs;
+            for (auto& [obj_name, obj] : m_objects) {
+                auto& user_data = obj->userData();
 
-            if (m_operation == TRANSLATE) {
-                auto trans = user_data.getLiterial<zeno::vec3f>("_translate");
-                trans += other_to_vec<3>(m_trans);
-                user_data.setLiterial("_translate", trans);
-            }
+                if (m_operation == TRANSLATE) {
+                    auto trans = user_data.getLiterial<zeno::vec3f>("_translate");
+                    trans += other_to_vec<3>(m_trans);
+                    user_data.setLiterial("_translate", trans);
+                }
 
-            if (m_operation == ROTATE) {
-                auto rotate = user_data.getLiterial<zeno::vec4f>("_rotate");
-                auto pre_q = glm::quat(rotate[3], rotate[0], rotate[1], rotate[2]);
-                auto dif_q = glm::quat(m_rotate[3], m_rotate[0], m_rotate[1], m_rotate[2]);
-                auto res_q = glm::toQuat(glm::toMat4(dif_q) * glm::toMat4(pre_q));
-                rotate = vec4f(res_q.x, res_q.y, res_q.z, res_q.w);
-                user_data.setLiterial("_rotate", rotate);
-            }
+                if (m_operation == ROTATE) {
+                    auto rotate = user_data.getLiterial<zeno::vec4f>("_rotate");
+                    auto pre_q = glm::quat(rotate[3], rotate[0], rotate[1], rotate[2]);
+                    auto dif_q = glm::quat(m_rotate[3], m_rotate[0], m_rotate[1], m_rotate[2]);
+                    auto res_q = glm::toQuat(glm::toMat4(dif_q) * glm::toMat4(pre_q));
+                    rotate = vec4f(res_q.x, res_q.y, res_q.z, res_q.w);
+                    user_data.setLiterial("_rotate", rotate);
+                }
 
-            if (m_operation == SCALE) {
-                auto scale = user_data.getLiterial<zeno::vec3f>("_scale");
-                for (int i = 0; i < 3; i++)
-                    scale[i] *= m_scale[i];
-                user_data.setLiterial("_scale", scale);
+                if (m_operation == SCALE) {
+                    auto scale = user_data.getLiterial<zeno::vec3f>("_scale");
+                    for (int i = 0; i < 3; i++)
+                        scale[i] *= m_scale[i];
+                    user_data.setLiterial("_scale", scale);
+                }
+                objs.insert(std::make_pair(obj_name.substr(0, obj_name.find("TOVIEW") - 1), obj));
             }
-        }
+            zeno::getSession().globalComm->setRenderType(zeno::getSession().globalComm->getRenderTypeByObjects(objs));
+            zeno::getSession().globalComm->updateObjsIdByViewport(objs);
+        };
+        zeno::getSession().globalComm->mutexCallback(cb);
 
         // sync to node system
         zeno::scope_exit sp([] {

@@ -366,6 +366,7 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
 
     const char *e = "optx";
     m_zenovis->getSession()->set_render_engine(e);
+    zeno::getSession().globalComm->setRenderType(zeno::GlobalComm::NORMAL);
 
     auto scene = m_zenovis->getSession()->get_scene();
 

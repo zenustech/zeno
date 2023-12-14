@@ -21,6 +21,12 @@
 
 namespace zeno {
 
+std::set<std::string> lightCameraNodes({
+"CameraEval", "CameraNode", "CihouMayaCameraFov", "ExtractCameraData", "GetAlembicCamera","MakeCamera",
+"LightNode", "BindLight", "ProceduralSky", "HDRSky",
+    });
+std::string matlNode = "ShaderFinalize";
+
 void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &objs, std::string key, bool dumpCacheVersionInfo) {
     if (cachedir.empty()) return;
 
@@ -462,7 +468,7 @@ ZENO_API bool GlobalComm::load_objects(
 
     bool inserted = false;
     for (auto const& [key, obj] : viewObjs->m_curr)
-        if (lastToViewNodesType.find(key) == lastToViewNodesType.end()) {
+        if (lastToViewNodesType.find(key) == lastToViewNodesType.end() && key.find_last_of("#") == std::string::npos) {     //key modified && key contains "#"(modified by viewport)
             inserted = true;
             break;
         }
@@ -567,9 +573,36 @@ ZENO_API void GlobalComm::setToViewNodes(std::vector<std::string>&nodes)
 
 //-----ObjectsManager-----
 void GlobalComm::prepareForOptix(bool inserted, std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs) {
-    if (inserted || objs.size() < lastToViewNodesType.size())
-        determineRenderType(objs);
-    if (renderType != UNDEFINED) {
+    if (inserted || objs.size() < lastToViewNodesType.size()) {
+        std::vector<size_t> count(3, 0);
+        for (auto it = lastToViewNodesType.begin(); it != lastToViewNodesType.end();)
+            if (objs.find(it->first) == objs.end())
+            {
+                count[it->second]++;
+                lastToViewNodesType.erase(it++);
+            }
+            else {
+                it++;
+            }
+        for (auto& [key, obj] : objs)
+            if (lastToViewNodesType.find(key) == lastToViewNodesType.end())
+            {
+                std::string nodeName = key.substr(key.find("-") + 1, key.find(":") - key.find("-") - 1);
+                if (lightCameraNodes.count(nodeName) || obj->userData().get2<int>("isL", 0) || std::dynamic_pointer_cast<zeno::CameraObject>(obj)) {
+                    lastToViewNodesType.insert({ key, LIGHT_CAMERA });
+                    count[LIGHT_CAMERA]++;
+                }
+                else if (matlNode == nodeName || std::dynamic_pointer_cast<zeno::MaterialObject>(obj)) {
+                    lastToViewNodesType.insert({ key, MATERIAL });
+                    count[MATERIAL]++;
+                }
+                else {
+                    lastToViewNodesType.insert({ key, NORMAL });
+                    count[NORMAL]++;
+                }
+            }
+        renderType = count[NORMAL] == 0 && count[MATERIAL] == 0 ? LIGHT_CAMERA : count[NORMAL] == 0 && count[LIGHT_CAMERA] == 0 ? MATERIAL : NORMAL;
+
         lightObjects.clear();
         for (auto const& [key, obj] : objs) {
             if (auto prim_in = dynamic_cast<zeno::PrimitiveObject*>(obj.get())) {
@@ -623,48 +656,6 @@ ZENO_API std::vector<std::pair<std::string, std::shared_ptr<IObject>>> GlobalCom
         return m_frames[currentFrameNumber - beginFrameNumber].view_objects.pairsShared();
     else
         return std::vector<std::pair<std::string, std::shared_ptr<IObject>>>();
-}
-
-void GlobalComm::determineRenderType(std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs)
-{
-    static std::set<std::string> lightCameraNodes({
-    "CameraEval", "CameraNode", "CihouMayaCameraFov", "ExtractCameraData", "GetAlembicCamera","MakeCamera",
-    "LightNode", "BindLight", "ProceduralSky", "HDRSky",
-        });
-    static std::string matlNode = "ShaderFinalize";
-
-    std::vector<size_t> count(3, 0);
-    for (auto it = lastToViewNodesType.begin(); it != lastToViewNodesType.end();)
-    {
-        if (objs.find(it->first) == objs.end())
-        {
-            count[it->second]++;
-            lastToViewNodesType.erase(it++);
-        }
-        else {
-            it++;
-        }
-    }
-    for (auto& [key, obj] : objs)
-    {
-        if (lastToViewNodesType.find(key) == lastToViewNodesType.end())
-        {
-            std::string nodeName = key.substr(key.find("-") + 1, key.find(":") - key.find("-") - 1);
-            if (lightCameraNodes.count(nodeName) || obj->userData().get2<int>("isL", 0) || std::dynamic_pointer_cast<zeno::CameraObject>(obj)) {
-                lastToViewNodesType.insert({ key, 0 });
-                count[0]++;
-            }
-            else if (matlNode == nodeName || std::dynamic_pointer_cast<zeno::MaterialObject>(obj)) {
-                lastToViewNodesType.insert({ key, 1 });
-                count[1]++;
-            }
-            else {
-                lastToViewNodesType.insert({ key, 2 });
-                count[2]++;
-            }
-        }
-    }
-    renderType = count[1] == 0 && count[2] == 0 ? UPDATE_LIGHT_CAMERA : count[0] == 0 && count[2] == 0 ? UPDATE_MATERIAL : UPDATE_ALL;
 }
 
 //------new change------
@@ -729,6 +720,57 @@ ZENO_API const std::string GlobalComm::getObjKey1(std::string& id, int frame)
         }
     }
     return "";
+}
+
+ZENO_API GlobalComm::RenderType GlobalComm::getRenderTypeByObjects(std::map<std::string, zeno::IObject*> objs)
+{
+    std::vector<size_t> count(3, 0);
+    for (auto& [key, obj] : objs) {
+        std::string nodeName = key.substr(key.find("-") + 1);
+        if (lightCameraNodes.count(nodeName) || obj->userData().get2<int>("isL", 0) || dynamic_cast<zeno::CameraObject*>(obj))
+            count[LIGHT_CAMERA]++;
+        else if (matlNode == nodeName || dynamic_cast<zeno::MaterialObject*>(obj))
+            count[MATERIAL]++;
+        else
+            count[NORMAL]++;
+    }
+    return count[NORMAL] == 0 && count[MATERIAL] == 0 ? LIGHT_CAMERA : count[NORMAL] == 0 && count[LIGHT_CAMERA] == 0 ? MATERIAL : NORMAL;
+}
+
+ZENO_API void GlobalComm::updateObjsIdByViewport(std::map<std::string, zeno::IObject*>& objsToBeUpdate)
+{
+    std::lock_guard lck(m_recur_mutex);
+    static size_t changedNumber = 0;
+    for (auto& [key, obj] : objsToBeUpdate)
+    {
+        std::shared_ptr<IObject> oldObj;
+        std::string oldKey;
+        for (auto& [k, o] : m_frames[currentFrameNumber - beginFrameNumber].view_objects)
+            if (k.find(key) != std::string::npos) {
+                oldKey = k;
+                oldObj = m_frames[currentFrameNumber - beginFrameNumber].view_objects.m_curr[k];
+                break;
+            }
+        m_frames[currentFrameNumber - beginFrameNumber].view_objects.m_curr.erase(oldKey);
+        std::string& newKey = oldKey.replace(oldKey.find_last_of(":") + 1, std::to_string(changedNumber).size() + 1, std::to_string(changedNumber) + "#");
+        m_frames[currentFrameNumber - beginFrameNumber].view_objects.try_emplace(newKey,std::move(oldObj));
+        if (lightCameraNodes.count(key) || obj->userData().get2<int>("isL", 0))
+        {
+            std::shared_ptr<IObject> oldLightObj;
+            std::string oldLightKey;
+            for (auto& [k, o] : lightObjects)
+                if (k.find(key) != std::string::npos) {
+                    oldLightKey = k;
+                    oldLightObj = lightObjects[k];
+                    break;
+                }
+            lightObjects.erase(oldLightKey);
+            std::string& newKey = oldLightKey.replace(oldLightKey.find_last_of(":") + 1, std::to_string(changedNumber).size() + 1, std::to_string(changedNumber) + "#");
+            lightObjects.insert(std::make_pair(newKey, std::move(oldLightObj)));
+        }
+    }
+    changedNumber++;
+    updateOptixByViewport = true;
 }
 
 ZENO_API bool GlobalComm::getLightObjData(std::string& id, zeno::vec3f& pos, zeno::vec3f& scale, zeno::vec3f& rotate, zeno::vec3f& clr, float& intensity)
@@ -920,6 +962,8 @@ ZENO_API void GlobalComm::setRenderType(GlobalComm::RenderType type)
 {
     std::lock_guard lck(m_recur_mutex);
     renderType = type;
+    if (updateOptixByViewport && renderType == UNDEFINED)
+        updateOptixByViewport = false;
 }
 
 ZENO_API GlobalComm::RenderType GlobalComm::getRenderType()

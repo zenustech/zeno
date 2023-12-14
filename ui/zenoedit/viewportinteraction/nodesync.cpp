@@ -144,6 +144,7 @@ void NodeSyncMgr::updateNodeVisibility(NodeLocation& node_location) {
     int old_option = node_location.node.data(ROLE_OPTIONS).toInt();
     int new_option = old_option;
     new_option ^= OPT_VIEW;
+    new_option ^= OPT_CACHE;
     STATUS_UPDATE_INFO status_info = {old_option, new_option, ROLE_OPTIONS};
     graph_model->updateNodeStatus(node_id,
                                   status_info,

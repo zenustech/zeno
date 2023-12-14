@@ -846,13 +846,13 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             if (graphicsMan->load_objects(zeno::getSession().globalComm->pairs()))
             {
                 meshNeedUpdate = matNeedUpdate = true;
-                if (zeno::getSession().globalComm->getRenderType() == zeno::GlobalComm::UPDATE_MATERIAL)
+                if (zeno::getSession().globalComm->getRenderType() == zeno::GlobalComm::MATERIAL)
                 {
                     scene->drawOptions->updateMatlOnly = true;
                     lightNeedUpdate = meshNeedUpdate = false;
                     matNeedUpdate = true;
                 }
-                if (zeno::getSession().globalComm->getRenderType() == zeno::GlobalComm::UPDATE_LIGHT_CAMERA)
+                if (zeno::getSession().globalComm->getRenderType() == zeno::GlobalComm::LIGHT_CAMERA)
                 {
                     scene->drawOptions->updateLightCameraOnly = true;
                     lightNeedUpdate = true;

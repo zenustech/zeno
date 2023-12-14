@@ -76,10 +76,10 @@ struct GlobalComm {
     ZENO_API std::optional<zeno::IObject*> get(std::string nid);
     enum RenderType
     {
-        UNDEFINED = 0,
-        UPDATE_ALL,
-        UPDATE_LIGHT_CAMERA,
-        UPDATE_MATERIAL
+        NORMAL = 0,
+        LIGHT_CAMERA,
+        MATERIAL,
+        UNDEFINED,
     };
 
     ZENO_API std::vector<std::pair<std::string, IObject*>> pairs() const;
@@ -108,6 +108,9 @@ struct GlobalComm {
 
     ZENO_API const std::string getObjKey1(std::string& id, int frame);
 
+    ZENO_API RenderType getRenderTypeByObjects(std::map<std::string, zeno::IObject*> objs);
+    ZENO_API void updateObjsIdByViewport(std::map<std::string, zeno::IObject*>& objsToBeUpdate);
+
 private:
     ViewObjects const* _getViewObjects(const int frameid);
     std::vector<std::string> toViewNodesId;
@@ -116,11 +119,11 @@ private:
     std::map<std::string, std::shared_ptr<zeno::IObject>> lightObjects;
     bool needUpdateLight = true;
 
-    void prepareForOptix(bool inserted, std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs);  //determine update type accord to objs changes
-    void determineRenderType(std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs);
     RenderType renderType = UNDEFINED;
     std::map<std::string, int> lastToViewNodesType;
     //------new change------
+    void prepareForOptix(bool inserted, std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs);
+    bool updateOptixByViewport = false;
     mutable std::recursive_mutex m_recur_mutex;
 };
 
