@@ -678,11 +678,13 @@ void FakeTransformer::doTransform() {
         auto translate = zeno::vec_to_other<glm::vec3>(user_data.getLiterial<zeno::vec3f>("_translate"));
         auto rotate = zeno::vec_to_other<glm::vec4>(user_data.getLiterial<zeno::vec4f>("_rotate"));
         auto scale = zeno::vec_to_other<glm::vec3>(user_data.getLiterial<zeno::vec3f>("_scale"));
+        auto pre_quaternion = glm::quat(rotate[3], rotate[0], rotate[1], rotate[2]);
+        auto pre_rotate_matrix = glm::toMat4(pre_quaternion);
 
         // do this transform
         auto translate_matrix = glm::translate(translate + m_trans);
         auto cur_quaternion = glm::quat(m_rotate[3], m_rotate[0], m_rotate[1], m_rotate[2]);
-        auto rotate_matrix = glm::toMat4(cur_quaternion);
+        auto rotate_matrix = glm::toMat4(cur_quaternion) * pre_rotate_matrix;
         auto scale_matrix = glm::scale(scale * m_scale);
         auto transform_matrix = glm::translate(m_pivot) *  translate_matrix *  rotate_matrix * scale_matrix * glm::translate(-m_pivot);
 
