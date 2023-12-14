@@ -65,14 +65,15 @@ void FakeTransformer::addObject(const std::string& name) {
         user_data.setLiterial("_bboxMin", bmin);
         user_data.setLiterial("_bboxMax", bmax);
     }
-    if (!user_data.has("_translate")) {
+    if (!user_data.has("_pivot")) {
         zeno::vec3f translate = {0, 0, 0};
         user_data.setLiterial("_translate", translate);
         zeno::vec4f rotate = {0, 0, 0, 1};
         user_data.setLiterial("_rotate", rotate);
         zeno::vec3f scale = {1, 1, 1};
         user_data.setLiterial("_scale", scale);
-        user_data.set2("_pivot", "bboxCenter");
+        auto bboxCenter = (bmin + bmax) / 2;
+        user_data.set2("_pivot", bboxCenter);
         if (object->has_attr("pos") && !object->has_attr("_origin_pos")) {
             auto &pos = object->attr<zeno::vec3f>("pos");
             object->verts.add_attr<zeno::vec3f>("_origin_pos") = pos;
@@ -84,6 +85,7 @@ void FakeTransformer::addObject(const std::string& name) {
     }
     auto m = zeno::vec_to_other<glm::vec3>(bmax);
     auto n = zeno::vec_to_other<glm::vec3>(bmin);
+    m_pivot = zeno::vec_to_other<glm::vec3>(user_data.get2<vec3f>("_pivot"));
     m_objects_center += (m + n) / 2.0f;
     m_objects[name] = object;
     m_objects_center /= m_objects.size();
