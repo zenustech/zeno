@@ -305,7 +305,6 @@ bool FakeTransformer::isTransforming() const {
 }
 
 void FakeTransformer::startTransform() {
-    zeno::log_info("FakeTransformer::startTransform");
     markObjectsInteractive();
 }
 
@@ -397,7 +396,6 @@ void FakeTransformer::syncToTransformNode(NodeLocation& node_location,
 }
 
 void FakeTransformer::endTransform(bool moved) {
-    zeno::log_info("FakeTransformer::endTransform");
     if (moved) {
         // write transform info to objects' user data
         for (auto &[obj_name, obj] : m_objects) {
@@ -668,7 +666,6 @@ void FakeTransformer::rotate(glm::vec3 start_vec, glm::vec3 end_vec, glm::vec3 a
 }
 
 void FakeTransformer::doTransform() {
-    zeno::log_info("FakeTransformer::doTransform");
     // qDebug() << "transformer's objects count " << m_objects.size();
     glm::vec3 new_objects_center = {0, 0, 0};
     for (auto &[obj_name, obj] : m_objects) {
