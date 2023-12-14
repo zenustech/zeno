@@ -8,12 +8,12 @@
 #include "zeno/utils/log.h"
 #include "zeno/zeno.h"
 #include "zeno/extra/EventCallbacks.h"
+#include "startup/pythonenv.h"
 
 
 /* debug cutsom layout: ZGraphicsLayout */
 //#define DEBUG_ZENOGV_LAYOUT
 //#define DEBUG_NORMAL_WIDGET
-#define DEBUG_TESTPYBIND
 
 #ifdef DEBUG_TESTPYBIND
 PyMODINIT_FUNC PyInit_spam(void);
@@ -32,40 +32,6 @@ int main(int argc, char *argv[])
 {
     ZenoApplication a(argc, argv);
     a.setStyle(new ZenoStyle);
-
-#ifdef DEBUG_TESTPYBIND
-    wchar_t* program = Py_DecodeLocale(argv[0], NULL);
-    if (program == NULL) {
-        fprintf(stderr, "Fatal error: cannot decode argv[0]\n");
-        exit(1);
-    }
-
-    if (PyImport_AppendInittab("spam", PyInit_spam) == -1) {
-        fprintf(stderr, "Error: could not extend in-built modules table\n");
-        exit(1);
-    }
-
-    Py_SetProgramName(program);
-
-    Py_Initialize();
-
-    PyObject* pmodule = PyImport_ImportModule("spam");
-    if (!pmodule) {
-        PyErr_Print();
-        fprintf(stderr, "Error: could not import module 'spam'\n");
-    }
-
-    QString tempCode;
-    tempCode ="import spam; status = spam.system('dir')";
-
-    if (PyRun_SimpleString(tempCode.toUtf8()) < 0) {
-        zeno::log_warn("Failed to initialize Python module");
-        return 0;
-    }
-
-    PyMem_RawFree(program);
-    return 0;
-#endif
 
 #ifdef DEBUG_NORMAL_WIDGET
     TestNormalWidget wid;
@@ -114,6 +80,7 @@ int main(int argc, char *argv[])
     }
 
     startUp(true);
+    initPythonEnv(argv[0]);
 
     if (argc >= 3 && !strcmp(argv[1], "-optix")) {
         //MessageBox(0, "runner", "runner", MB_OK);

@@ -14,7 +14,7 @@ protected:
     ZGraphicsLayout* initCustomParamWidgets() override;
 
 private slots:
-    void onEditClicked();
+    void onExecuteClicked();
 };
 
 #endif
