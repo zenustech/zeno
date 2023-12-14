@@ -42,7 +42,6 @@ struct GlobalComm {
     int maxCachedFrames = 1;
     std::string cacheFramePath;
     std::string objTmpCachePath;
-    int currentFrameNumber = 0;
 
     ZENO_API void frameCache(std::string const &path, int gcmax);
     ZENO_API void initFrameRange(int beg, int end);
@@ -123,6 +122,7 @@ private:
     std::map<std::string, int> lastToViewNodesType;
     //------new change------
     void prepareForOptix(bool inserted, std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs);
+    int currentFrameIdx = 0;
     bool updateOptixByViewport = false;
     mutable std::recursive_mutex m_recur_mutex;
 };
