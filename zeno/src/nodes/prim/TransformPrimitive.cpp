@@ -272,6 +272,7 @@ struct PrimitiveTransform : zeno::INode {
         auto prim = get_input<PrimitiveObject>("prim");
 
         std::string pivotType = get_input2<std::string>("pivot");
+        zeno::vec3f _pivot = {};
         if (pivotType == "bboxCenter") {
             zeno::vec3f _min;
             zeno::vec3f _max;
@@ -280,6 +281,7 @@ struct PrimitiveTransform : zeno::INode {
             auto pivot_to_local = glm::translate(glm::vec3(-p[0], -p[1], -p[2]));
             auto pivot_to_world = glm::translate(glm::vec3(p[0], p[1], p[2]));
             matrix = pivot_to_world * matrix * pivot_to_local;
+            _pivot = p;
         }
 
         auto outprim = std::make_unique<PrimitiveObject>(*prim);
@@ -311,7 +313,7 @@ struct PrimitiveTransform : zeno::INode {
         vec4f rotate = {myQuat.x, myQuat.y, myQuat.z, myQuat.w};
         user_data.setLiterial("_rotate", rotate);
         user_data.setLiterial("_scale", scaling);
-        user_data.set2("_pivot", pivotType);
+        user_data.set2("_pivot", _pivot);
         //auto oMat = std::make_shared<MatrixObject>();
         //oMat->m = matrix;
         set_output("outPrim", std::move(outprim));
