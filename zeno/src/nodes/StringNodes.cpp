@@ -389,7 +389,7 @@ ZENDEFNODE(EndFrame, {
     {"fileio"},
 });*/
 
-struct StringToNumber : zeno::INode {//todo?::Returns 0.0 if the string does not contain a number.  
+struct StringToNumber : zeno::INode {
     virtual void apply() override {
         auto in_str = get_input2<std::string>("str");
         auto type = get_input2<std::string>("type");
@@ -685,7 +685,7 @@ struct StringSplitPath : zeno::INode {
 
 ZENDEFNODE(StringSplitPath, {
     {
-        {"multiline_string", "string", ""},
+        {"readpath", "string", ""},
         {"bool", "SplitExtension", "true"},
     },
     {{"string", "directory"},
@@ -696,7 +696,7 @@ ZENDEFNODE(StringSplitPath, {
     {"string"},
 });
 
-struct StringInsert : zeno::INode {
+struct StringInsert : zeno::INode {//if start is greater than string length, insert at the end; if start is less than 0, reverse counting from the end
     virtual void apply() override {
         auto string = get_input2<std::string>("string");
         auto substring = get_input2<std::string>("substring");
