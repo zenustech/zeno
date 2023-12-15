@@ -161,7 +161,7 @@ static int runner_start(std::string const &progJson, int sessionid, const LAUNCH
             QLockFile lckFile(QString::fromStdString(sLockFile));
             bool ret = lckFile.tryLock();
             //dump cache to disk.
-            session->globalComm->dumpFrameCache(frame, param.applyLightAndCameraOnly, param.applyMaterialOnly);
+            session->globalComm->dumpFrameCache(frame);
         } else {
             auto const& viewObjs = session->globalComm->getViewObjects();
             zeno::log_debug("runner got {} view objects", viewObjs.size());
@@ -202,8 +202,6 @@ int runner_main(const QCoreApplication& app) {
         {"enablecache", "enablecache", "enable zencache"},
         {"cachenum", "cachenum", "max cached frames"},
         {"cachedir", "cachedir", "cache dir for this run"},
-        {"cacheLightCameraOnly", "cacheLightCameraOnly", "only cache light and camera object"},
-        {"cacheMaterialOnly", "cacheMaterialOnly", "only cache material object"},
         {"cacheautorm", "cacheautoremove", "remove cache after render"},
         {"zsg", "zsg", "zsg"},
         {"projectFps", "current project fps", "fps"},
@@ -222,10 +220,6 @@ int runner_main(const QCoreApplication& app) {
         param.cacheDir = cmdParser.value("cachedir");
     if (cmdParser.isSet("objcachedir"))
         param.objCacheDir = cmdParser.value("objcachedir");
-    if (cmdParser.isSet("cacheLightCameraOnly"))
-        param.applyLightAndCameraOnly = cmdParser.value("cacheLightCameraOnly").toInt();
-    if (cmdParser.isSet("cacheMaterialOnly"))
-        param.applyMaterialOnly = cmdParser.value("cacheMaterialOnly").toInt();
     if (cmdParser.isSet("cacheautorm"))
         param.autoRmCurcache = cmdParser.value("cacheautorm").toInt();
     if (cmdParser.isSet("zsg"))

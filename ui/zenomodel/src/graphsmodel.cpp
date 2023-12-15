@@ -1515,7 +1515,7 @@ bool GraphsModel::hasNotDescNode() const
     return m_bHasNotDesc;
 }
 
-void GraphsModel::markNodeDataChanged(const QModelIndex& nodeIdx)
+void GraphsModel::markNodeDataChanged(const QModelIndex& nodeIdx, bool recursively)
 {
     if (IsIOProcessing())
         return;
@@ -1524,7 +1524,7 @@ void GraphsModel::markNodeDataChanged(const QModelIndex& nodeIdx)
     QModelIndex subgIdx = nodeIdx.data(ROLE_SUBGRAPH_IDX).toModelIndex();
     if ("main" == subgIdx.data(ROLE_OBJNAME))
     {
-        _markNodeChanged(nodeIdx);
+        _markNodeChanged(nodeIdx, recursively);
     }
     else
     {
@@ -1533,7 +1533,7 @@ void GraphsModel::markNodeDataChanged(const QModelIndex& nodeIdx)
         _findReference(subnetName, subnetnodes);
         for (const QModelIndex& node : subnetnodes)
         {
-            _markNodeChanged(node);
+            _markNodeChanged(node, recursively);
         }
     }
 }
@@ -1564,12 +1564,14 @@ void GraphsModel::_findReference(
     }
 }
 
-void GraphsModel::_markNodeChanged(const QModelIndex& nodeIdx)
+void GraphsModel::_markNodeChanged(const QModelIndex& nodeIdx, bool recursively)
 {
     QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(nodeIdx.model());
     ZASSERT_EXIT(pModel);
     pModel->setData(nodeIdx, true, ROLE_NODE_DATACHANGED);
     m_changedNodes.insert(nodeIdx);
+    if (!recursively)
+        return;
     if (NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(nodeIdx.data(ROLE_NODE_PARAMS)))
     {
         for (const auto& sock : nodeParams->getOutputIndice())
@@ -1603,7 +1605,7 @@ void GraphsModel::_markNodeChanged(const QModelIndex& nodeIdx)
                         const auto& inNodeIdx = insock.data(ROLE_NODE_IDX).toModelIndex();
                         if (inNodeIdx.isValid() && inNodeIdx.data(ROLE_NODE_DATACHANGED).toBool() == false)
                         {
-                            _markNodeChanged(inNodeIdx);
+                            _markNodeChanged(inNodeIdx, recursively);
                         }
                     }
                 }

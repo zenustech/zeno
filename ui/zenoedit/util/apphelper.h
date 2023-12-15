@@ -6,7 +6,7 @@
 #include <zenomodel/include/graphsmanagment.h>
 #include <zenomodel/include/igraphsmodel.h>
 #include "zenomainwindow.h"
-#include <zenovis/ObjectsManager.h>
+#include <zeno/extra/ObjectsManager.h>
 #include <zeno/types/UserData.h>
 #include <zenoui/comctrl/gv/zveceditoritem.h>
 #include <viewport/viewportwidget.h>
@@ -34,6 +34,7 @@ public:
     static bool getCurveValue(QVariant & val);
     static bool updateCurve(QVariant oldVal, QVariant& val);
     static void dumpTabsToZsg(QDockWidget* dockWidget, RAPIDJSON_WRITER& writer);
+    static void markAllNodesInMainGraphDirty(bool markNodeStyle = true);
 };
 
 

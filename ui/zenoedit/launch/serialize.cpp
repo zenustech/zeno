@@ -11,12 +11,6 @@
 
 using namespace JsonHelper;
 
-QSet<QString> lightCameraNodes({
-    "CameraEval", "CameraNode", "CihouMayaCameraFov", "ExtractCameraData", "GetAlembicCamera","MakeCamera",
-    "LightNode", "BindLight", "ProceduralSky", "HDRSky",
-    });
-QString matlNode = "ShaderFinalize";
-
 static QString nameMangling(const QString& prefix, const QString& ident) {
     if (prefix.isEmpty())
         return ident;
@@ -112,7 +106,7 @@ static void getOptStr(const QString& sockType, QVariant& defl, QString& opStr)
     }
 }
 
-static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgIdx, QString const &graphIdPrefix, bool bView, RAPIDJSON_WRITER& writer, bool bNestedSubg = true, bool applyLightAndCameraOnly = false, bool applyMaterialOnly = false, const QString &configPath = "")
+static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgIdx, QString const &graphIdPrefix, bool bView, RAPIDJSON_WRITER& writer, bool bNestedSubg = true, const QString &configPath = "")
 {
     ZASSERT_EXIT(pGraphsModel && subgIdx.isValid());
 
@@ -178,7 +172,7 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                 AddStringList({"pushSubnetScope", ident}, writer);
                 const QString& prefix = nameMangling(graphIdPrefix, idx.data(ROLE_OBJID).toString());
                 bool _bView = bView && (idx.data(ROLE_OPTIONS).toInt() & OPT_VIEW);
-                serializeGraph(pGraphsModel, pGraphsModel->index(name), prefix, _bView, writer, true, applyLightAndCameraOnly, applyMaterialOnly, configPath);
+                serializeGraph(pGraphsModel, pGraphsModel->index(name), prefix, _bView, writer, true, configPath);
                 AddStringList({"popSubnetScope", ident}, writer);
             }
         }
@@ -395,39 +389,28 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
             AddStringList({"markNodeChanged", ident}, writer);
         }
 
-        AddStringList({ "completeNode", ident }, writer);
-
 		if (bView && (opts & OPT_VIEW))
         {
             if (name == "SubOutput")
             {
-                auto viewerIdent = ident + ":TOVIEW";
-                AddStringList({"addNode", "ToView", viewerIdent}, writer);
-                AddStringList({"bindNodeInput", viewerIdent, "object", ident, "_OUT_port"}, writer);
                 bool isStatic = opts & OPT_ONCE;
-                AddVariantList({"setNodeInput", viewerIdent, "isStatic", isStatic}, "int", writer);
-                AddStringList({"completeNode", viewerIdent}, writer);
+                AddVariantList({ "setToView", ident, "_OUT_port", isStatic }, "int", writer);
             }
             else
             {
-                if ((applyLightAndCameraOnly && !lightCameraNodes.contains(name) || applyMaterialOnly && name != matlNode) && !pGraphsModel->IsSubGraphNode(idx))
-                {
-                    continue;
-                }
                 for (OUTPUT_SOCKET output : outputs)
                 {
-                    //if (output.info.name == "DST" && outputs.size() > 1)
-                        //continue;
-                    auto viewerIdent = ident + ":TOVIEW";
-                    AddStringList({"addNode", "ToView", viewerIdent}, writer);
-                    AddStringList({"bindNodeInput", viewerIdent, "object", ident, output.info.name}, writer);
+                    ////if (output.info.name == "DST" && outputs.size() > 1)
+                    //    //continue;
                     bool isStatic = opts & OPT_ONCE;
-                    AddVariantList({"setNodeInput", viewerIdent, "isStatic", isStatic}, "int", writer);
-                    AddStringList({"completeNode", viewerIdent}, writer);
+                    AddVariantList({ "setToView", ident, output.info.name, isStatic }, "int", writer);
                     break;  //current node is not a subgraph node, so only one output is needed to view this obj.
                 }
             }
         }
+
+        AddStringList({ "completeNode", ident }, writer);
+
         if (opts & OPT_CACHE)
         {
             AddStringList({ "cacheToDisk", ident}, writer);
@@ -435,9 +418,9 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
     }
 }
 
-void serializeScene(IGraphsModel* pModel, RAPIDJSON_WRITER& writer, bool applyLightAndCameraOnly, bool applyMaterialOnly, const QString& configPath)
+void serializeScene(IGraphsModel* pModel, RAPIDJSON_WRITER& writer, const QString& configPath)
 {
-    serializeGraph(pModel, pModel->index("main"), "", true, writer, true, applyLightAndCameraOnly, applyMaterialOnly, configPath);
+    serializeGraph(pModel, pModel->index("main"), "", true, writer, true, configPath);
 }
 
 static void serializeSceneOneGraph(IGraphsModel* pModel, RAPIDJSON_WRITER& writer, QString subgName)

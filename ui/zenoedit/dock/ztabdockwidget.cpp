@@ -17,10 +17,12 @@
 #include <zenoui/style/zenostyle.h>
 #include <zenoui/comctrl/zicontoolbutton.h>
 #include <zenomodel/include/modelrole.h>
-#include <zenovis/ObjectsManager.h>
+#include <zeno/extra/ObjectsManager.h>
 #include <zenomodel/include/uihelper.h>
 #include "util/apphelper.h"
 #include "viewport/optixviewport.h"
+#include <zeno/core/Session.h>
+#include <zeno/extra/GlobalComm.h>
 
 #include "launch/ztcpserver.h"
 
@@ -314,11 +316,10 @@ void ZTabDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
                     auto *scene = pZenoVis->getSession()->get_scene();
                     scene->selected.clear();
                     std::string nodeid = nodeId.toStdString();
-                    for (auto const &[key, ptr] : scene->objectsMan->pairs()) {
-                        if (nodeid == key.substr(0, key.find_first_of(':'))) {
-                            scene->selected.insert(key);
-                        }
-                    }
+
+                    auto& key = zeno::getSession().globalComm->getObjKeyByObjID(nodeid);
+                    if (key != "")
+                        scene->selected.insert(key);
                     onPrimitiveSelected(scene->selected);
                 }
             }

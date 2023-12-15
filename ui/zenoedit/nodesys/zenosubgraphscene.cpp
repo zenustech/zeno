@@ -30,11 +30,13 @@
 #include "viewport/viewportwidget.h"
 #include "viewport/displaywidget.h"
 #include "zenomainwindow.h"
-#include <zenovis/ObjectsManager.h>
+#include <zeno/extra/ObjectsManager.h>
 #include <viewportinteraction/picker.h>
 #include "settings/zenosettingsmanager.h"
 #include "timeline/ztimeline.h"
 #include <zenoui/comctrl/gv/zgraphicsnetlabel.h>
+#include <zeno/core/Session.h>
+#include <zeno/extra/GlobalComm.h>
 
 ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
     : QGraphicsScene(parent)
@@ -87,6 +89,10 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
         if (pNode->nodeName() == "Group") 
         {
             blackboardVect << pNode;
+        }
+        if (m_subgIdx.data(ROLE_OBJNAME).toString() == "main") {
+            pGraphsModel->markNodeDataChanged(idx, false);
+            pNode->onMarkDataChanged(true);
         }
     }
 
@@ -1064,6 +1070,10 @@ void ZenoSubGraphScene::onRowsInserted(const QModelIndex& subgIdx, const QModelI
             }
         }
     }
+    if (m_subgIdx.data(ROLE_OBJNAME).toString() == "main") {  //new nodes mark dirty
+        pGraphsModel->markNodeDataChanged(idx, false);
+        pNode->onMarkDataChanged(true);
+    }
 }
 
 void ZenoSubGraphScene::selectObjViaNodes() {
@@ -1086,10 +1096,9 @@ void ZenoSubGraphScene::selectObjViaNodes() {
         for (auto item : selItems) {
             if (auto *pNode = qgraphicsitem_cast<ZenoNode *>(item)) {
                 auto node_id = pNode->index().data(ROLE_OBJID).toString().toStdString();
-                for (const auto &[prim_name, _] : scene->objectsMan->pairsShared()) {
-                    if (prim_name.find(node_id) != std::string::npos)
-                        picker->add(prim_name);
-                }
+                auto key = zeno::getSession().globalComm->getObjKeyByObjID(node_id);
+                if (key != "")
+                    picker->add(key);
             }
         }
         picker->sync_to_scene();

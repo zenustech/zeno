@@ -6,13 +6,15 @@
 #include "viewport/zenovis.h"
 #include "zeno/utils/log.h"
 #include <zeno/types/UserData.h>
-#include <zenovis/ObjectsManager.h>
+#include <zeno/extra/ObjectsManager.h>
 #include <zeno/types/PrimitiveObject.h>
 #include "zassert.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
 #include "viewport/viewportwidget.h"
 #include "viewport/displaywidget.h"
+#include <zeno/core/Session.h>
+#include <zeno/extra/GlobalComm.h>
 
 
 int ZLightsModel::rowCount(const QModelIndex &parent) const {
@@ -52,11 +54,7 @@ void ZLightsModel::updateByObjectsMan() {
     auto scene = session->get_scene();
     ZERROR_EXIT(scene);
 
-    for (auto const &[key, ptr]: scene->objectsMan->lightObjects) {
-        if (ptr->userData().get2<int>("isL", 0)) {
-            light_names.push_back(key);
-        }
-    }
+    zeno::getSession().globalComm->getAllLightsKey(light_names);
 
     endResetModel();
 }

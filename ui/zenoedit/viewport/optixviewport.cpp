@@ -89,49 +89,48 @@ void OptixWorker::onModifyLightData(UI_VECTYPE posvec, UI_VECTYPE scalevec, UI_V
     auto scene = m_zenoVis->getSession()->get_scene();
     ZASSERT_EXIT(scene);
 
-    std::shared_ptr<zeno::IObject> obj;
-    for (auto const& [key, ptr] : scene->objectsMan->lightObjects) {
-        if (key.find(name) != std::string::npos) {
-            obj = ptr;
-            name = key;
+    const auto& cb = [&]() {
+        for (auto const& [key, ptr] : zeno::getSession().globalComm->getLightObjs()) {
+            if (key.find(name) != std::string::npos) {
+                name = key;
+                if (auto prim_in = dynamic_cast<zeno::PrimitiveObject*>(ptr.get()))
+                {
+                    auto& prim_verts = prim_in->verts;
+                    prim_verts[0] = verts[0];
+                    prim_verts[1] = verts[1];
+                    prim_verts[2] = verts[2];
+                    prim_verts[3] = verts[3];
+
+                    if (skipParam[0])
+                        pos = prim_in->userData().get2<zeno::vec3f>("pos");
+                    if (skipParam[1])
+                        scale = prim_in->userData().get2<zeno::vec3f>("scale");
+                    if (skipParam[2])
+                        rotate = prim_in->userData().get2<zeno::vec3f>("rotate");
+                    if (skipParam[3])
+                        color = prim_in->userData().get2<zeno::vec3f>("color");
+                    if (skipParam[4])
+                        intensity = prim_in->userData().get2<float>("intensity");
+
+                    prim_in->verts.attr<zeno::vec3f>("clr")[0] = color * intensity;
+
+                    prim_in->userData().setLiterial<zeno::vec3f>("pos", std::move(pos));
+                    prim_in->userData().setLiterial<zeno::vec3f>("scale", std::move(scale));
+                    prim_in->userData().setLiterial<zeno::vec3f>("rotate", std::move(rotate));
+                    if (prim_in->userData().has("intensity")) {
+                        prim_in->userData().setLiterial<zeno::vec3f>("color", std::move(color));
+                        prim_in->userData().setLiterial<float>("intensity", std::move(intensity));
+                    }
+                    zeno::getSession().globalComm->setNeedUpdateLight(true);
+                    //pDisplay->setSimpleRenderOption();
+                }
+                else {
+                    zeno::log_info("modifyLightData not found {}", name);
+                }
+            }
         }
-    }
-    auto prim_in = dynamic_cast<zeno::PrimitiveObject*>(obj.get());
-
-    if (prim_in) {
-        auto& prim_verts = prim_in->verts;
-        prim_verts[0] = verts[0];
-        prim_verts[1] = verts[1];
-        prim_verts[2] = verts[2];
-        prim_verts[3] = verts[3];
-
-        if (skipParam[0])
-            pos = prim_in->userData().get2<zeno::vec3f>("pos");
-        if (skipParam[1])
-            scale = prim_in->userData().get2<zeno::vec3f>("scale");
-        if (skipParam[2])
-            rotate = prim_in->userData().get2<zeno::vec3f>("rotate");
-        if (skipParam[3])
-            color = prim_in->userData().get2<zeno::vec3f>("color");
-        if (skipParam[4])
-            intensity = prim_in->userData().get2<float>("intensity");
-
-        prim_in->verts.attr<zeno::vec3f>("clr")[0] = color * intensity;
-
-        prim_in->userData().setLiterial<zeno::vec3f>("pos", std::move(pos));
-        prim_in->userData().setLiterial<zeno::vec3f>("scale", std::move(scale));
-        prim_in->userData().setLiterial<zeno::vec3f>("rotate", std::move(rotate));
-        if (prim_in->userData().has("intensity")) {
-            prim_in->userData().setLiterial<zeno::vec3f>("color", std::move(color));
-            prim_in->userData().setLiterial<float>("intensity", std::move(intensity));
-        }
-
-        scene->objectsMan->needUpdateLight = true;
-        //pDisplay->setSimpleRenderOption();
-    }
-    else {
-        zeno::log_info("modifyLightData not found {}", name);
-    }
+    };
+    zeno::getSession().globalComm->mutexCallback(cb);
 }
 
 void OptixWorker::onUpdateCameraProp(float aperture, float disPlane, UI_VECTYPE skipParam)
@@ -367,6 +366,7 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
 
     const char *e = "optx";
     m_zenovis->getSession()->set_render_engine(e);
+    zeno::getSession().globalComm->setRenderType(zeno::GlobalComm::NORMAL);
 
     auto scene = m_zenovis->getSession()->get_scene();
 

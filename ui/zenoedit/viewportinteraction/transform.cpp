@@ -2,13 +2,15 @@
 
 #include <zeno/funcs/PrimitiveTools.h>
 #include <zeno/types/UserData.h>
-#include <zenovis/ObjectsManager.h>
+#include <zeno/extra/ObjectsManager.h>
 #include <zenomodel/include/nodesmgr.h>
 #include <zenomodel/include/uihelper.h>
 #include "zenomainwindow.h"
 #include "viewport/viewportwidget.h"
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <zeno/core/Session.h>
+#include <zeno/extra/GlobalComm.h>
 
 namespace zeno {
 
@@ -52,34 +54,39 @@ void FakeTransformer::addObject(const std::string& name) {
     ZASSERT_EXIT(sess);
     auto scene = sess->get_scene();
     ZASSERT_EXIT(scene);
-    if (!scene->objectsMan->get(name).has_value())
-        return;
 
-    auto object = dynamic_cast<PrimitiveObject*>(scene->objectsMan->get(name).value());
-    m_objects_center *= m_objects.size();
-    auto& user_data = object->userData();
-    zeno::vec3f bmin, bmax;
-    if (user_data.has("_bboxMin") && user_data.has("_bboxMax")) {
-        bmin = user_data.getLiterial<zeno::vec3f>("_bboxMin");
-        bmax = user_data.getLiterial<zeno::vec3f>("_bboxMax");
-    } else {
-        std::tie(bmin, bmax) = zeno::primBoundingBox(object);
-        user_data.setLiterial("_bboxMin", bmin);
-        user_data.setLiterial("_bboxMax", bmax);
-    }
-    if (!user_data.has("_translate")) {
-        zeno::vec3f translate = {0, 0, 0};
-        user_data.setLiterial("_translate", translate);
-        zeno::vec4f rotate = {0, 0, 0, 1};
-        user_data.setLiterial("_rotate", rotate);
-        zeno::vec3f scale = {1, 1, 1};
-        user_data.setLiterial("_scale", scale);
-    }
-    auto m = zeno::vec_to_other<glm::vec3>(bmax);
-    auto n = zeno::vec_to_other<glm::vec3>(bmin);
-    m_objects_center += (m + n) / 2.0f;
-    m_objects[name] = object;
-    m_objects_center /= m_objects.size();
+    const auto& cb = [&]() {
+        for (auto const& [key, ptr] : zeno::getSession().globalComm->pairs()) {
+            if (key.find(name) != std::string::npos) {
+                auto object = dynamic_cast<PrimitiveObject*>(ptr);
+                m_objects_center *= m_objects.size();
+                auto& user_data = object->userData();
+                zeno::vec3f bmin, bmax;
+                if (user_data.has("_bboxMin") && user_data.has("_bboxMax")) {
+                    bmin = user_data.getLiterial<zeno::vec3f>("_bboxMin");
+                    bmax = user_data.getLiterial<zeno::vec3f>("_bboxMax");
+                } else {
+                    std::tie(bmin, bmax) = zeno::primBoundingBox(object);
+                    user_data.setLiterial("_bboxMin", bmin);
+                    user_data.setLiterial("_bboxMax", bmax);
+                }
+                if (!user_data.has("_translate")) {
+                    zeno::vec3f translate = {0, 0, 0};
+                    user_data.setLiterial("_translate", translate);
+                    zeno::vec4f rotate = {0, 0, 0, 1};
+                    user_data.setLiterial("_rotate", rotate);
+                    zeno::vec3f scale = {1, 1, 1};
+                    user_data.setLiterial("_scale", scale);
+                }
+                auto m = zeno::vec_to_other<glm::vec3>(bmax);
+                auto n = zeno::vec_to_other<glm::vec3>(bmin);
+                m_objects_center += (m + n) / 2.0f;
+                m_objects[name] = object;
+                m_objects_center /= m_objects.size();
+            }
+        }
+    };
+    zeno::getSession().globalComm->mutexCallback(cb);
 }
 
 void FakeTransformer::addObject(const std::unordered_set<std::string>& names) {
@@ -389,31 +396,38 @@ void FakeTransformer::syncToTransformNode(NodeLocation& node_location,
 void FakeTransformer::endTransform(bool moved) {
     if (moved) {
         // write transform info to objects' user data
-        for (auto &[obj_name, obj] : m_objects) {
-            auto& user_data = obj->userData();
+        auto& cb = [&]() {
+            std::map<std::string, IObject*> objs;
+            for (auto& [obj_name, obj] : m_objects) {
+                auto& user_data = obj->userData();
 
-            if (m_operation == TRANSLATE) {
-                auto trans = user_data.getLiterial<zeno::vec3f>("_translate");
-                trans += other_to_vec<3>(m_trans);
-                user_data.setLiterial("_translate", trans);
-            }
+                if (m_operation == TRANSLATE) {
+                    auto trans = user_data.getLiterial<zeno::vec3f>("_translate");
+                    trans += other_to_vec<3>(m_trans);
+                    user_data.setLiterial("_translate", trans);
+                }
 
-            if (m_operation == ROTATE) {
-                auto rotate = user_data.getLiterial<zeno::vec4f>("_rotate");
-                auto pre_q = glm::quat(rotate[3], rotate[0], rotate[1], rotate[2]);
-                auto dif_q = glm::quat(m_rotate[3], m_rotate[0], m_rotate[1], m_rotate[2]);
-                auto res_q = glm::toQuat(glm::toMat4(dif_q) * glm::toMat4(pre_q));
-                rotate = vec4f(res_q.x, res_q.y, res_q.z, res_q.w);
-                user_data.setLiterial("_rotate", rotate);
-            }
+                if (m_operation == ROTATE) {
+                    auto rotate = user_data.getLiterial<zeno::vec4f>("_rotate");
+                    auto pre_q = glm::quat(rotate[3], rotate[0], rotate[1], rotate[2]);
+                    auto dif_q = glm::quat(m_rotate[3], m_rotate[0], m_rotate[1], m_rotate[2]);
+                    auto res_q = glm::toQuat(glm::toMat4(dif_q) * glm::toMat4(pre_q));
+                    rotate = vec4f(res_q.x, res_q.y, res_q.z, res_q.w);
+                    user_data.setLiterial("_rotate", rotate);
+                }
 
-            if (m_operation == SCALE) {
-                auto scale = user_data.getLiterial<zeno::vec3f>("_scale");
-                for (int i = 0; i < 3; i++)
-                    scale[i] *= m_scale[i];
-                user_data.setLiterial("_scale", scale);
+                if (m_operation == SCALE) {
+                    auto scale = user_data.getLiterial<zeno::vec3f>("_scale");
+                    for (int i = 0; i < 3; i++)
+                        scale[i] *= m_scale[i];
+                    user_data.setLiterial("_scale", scale);
+                }
+                objs.insert(std::make_pair(obj_name.substr(0, obj_name.find("TOVIEW") - 1), obj));
             }
-        }
+            zeno::getSession().globalComm->setRenderType(zeno::getSession().globalComm->getRenderTypeByObjects(objs));
+            zeno::getSession().globalComm->updateObjsIdByViewport(objs);
+        };
+        zeno::getSession().globalComm->mutexCallback(cb);
 
         // sync to node system
         zeno::scope_exit sp([] {

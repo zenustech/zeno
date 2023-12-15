@@ -2,38 +2,35 @@
 #define __ZCACHEMGR_H__
 
 #include <QtWidgets>
+#include "launch/corelaunch.h"
 
 class ZCacheMgr
 {
 public:
     ZCacheMgr();
-    bool initCacheDir(bool bTempDir, QDir dir, bool bAutoCleanCache);
+    bool initCacheDir(QDir dir, LAUNCH_PARAM& param);
     QString cachePath() const;
     QString objCachePath() const;
     std::shared_ptr<QTemporaryDir> getTempDir() const;
     QDir getPersistenceDir() const;
 
-    enum cacheOption {
-        Opt_Undefined = 0,
-        Opt_RunAll,
-        Opt_RunLightCameraMaterial,
-        Opt_AlwaysOn
-    };
-    void setCacheOpt(cacheOption opt);
     void setNewCacheDir(bool setNew);
-    cacheOption getCacheOption();
     void cleanCacheDir();
     bool hasCacheOnly(QDir dir, bool& empty);
     void removeObjTmpCacheDir();
+    bool nextRunSkipCreateDir(LAUNCH_PARAM& param);
+
+    bool nodeCacheExist(QString& id);
 
 private:
+    void initToViewNodesId();
+
     QTemporaryDir m_objTmpCacheDir;
     std::shared_ptr<QTemporaryDir> m_spTmpCacheDir;
     QDir m_spCacheDir;
     bool m_bTempDir;
 
     bool m_isNew;
-    cacheOption m_cacheOpt;
 
     QDir lastRunCachePath;
 };

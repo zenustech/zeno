@@ -1431,9 +1431,11 @@ void ZenoNode::onMarkDataChanged(bool bDirty)
     {
         clrMarker = QColor(0, 0, 0, 0);
     }
-    ZASSERT_EXIT(m_dirtyMarker);
-    m_dirtyMarker->setColors(false, clrMarker);
-    updateWhole();
+    if (m_dirtyMarker)
+    {
+        m_dirtyMarker->setColors(false, clrMarker);
+        updateWhole();
+    }
 }
 
 void ZenoNode::setMoving(bool isMoving)
@@ -1875,6 +1877,7 @@ void ZenoNode::onOptionsBtnToggled(STATUS_BTN btn, bool toggled)
 		if (toggled)
 		{
 			options |= OPT_VIEW;
+            options |= OPT_CACHE;
 		}
 		else
 		{
@@ -1890,6 +1893,8 @@ void ZenoNode::onOptionsBtnToggled(STATUS_BTN btn, bool toggled)
         else
         {
             options ^= OPT_CACHE;
+            if (options & OPT_VIEW)
+                options ^= OPT_VIEW;
         }
     }
 
@@ -1897,6 +1902,14 @@ void ZenoNode::onOptionsBtnToggled(STATUS_BTN btn, bool toggled)
     info.role = ROLE_OPTIONS;
     info.newValue = options;
     info.oldValue = oldOpts;
+
+    std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
+    ZASSERT_EXIT(mgr);
+    bool toggleCachedNodeViewBtn = btn == STATUS_VIEW && mgr->nodeCacheExist(m_index.data(ROLE_OBJID).toString());  //toggle viewBtn and it has been cached
+    if (!toggleCachedNodeViewBtn && m_subGpIndex.data(ROLE_OBJNAME).toString() == "main") {
+        pGraphsModel->markNodeDataChanged(m_index);
+        onMarkDataChanged(true);
+    }
 
     pGraphsModel->updateNodeStatus(nodeId(), info, m_subGpIndex, true);
 }

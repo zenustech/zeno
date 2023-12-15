@@ -38,10 +38,7 @@ public:
     void setInDlgEventLoop(bool bOn);
     TIMELINE_INFO timelineInfo();
     void setAlways(bool bAlways);
-    void setAlwaysLightCameraMaterial(bool bAlwaysLightCamera, bool bAlwaysMaterial);
     bool isAlways() const;
-    bool isAlwaysLightCamera() const;
-    bool isAlwaysMaterial() const;
     void resetTimeline(TIMELINE_INFO info);
     void initUserdata(USERDATA_SETTING info);
     ZTimeline* timeline() const;
@@ -167,7 +164,7 @@ public slots:
     void optixClientRun(int port, const char* cachedir, int cachenum, int sFrame, int eFrame, int finishedFrames, const char* sessionId);
     void optixClientSend(QString& info);
     void optixClientStartRec();
-    void onRunTriggered(bool applyLightAndCameraOnly = false, bool applyMaterialOnly = false);
+    void onRunTriggered();
     void updateNativeWinTitle(const QString& title);
     void toggleTimelinePlay(bool bOn);
     void onZenovisFrameUpdate(bool bGLView, int frameid);
@@ -216,8 +213,6 @@ private:
     PtrLayoutNode m_layoutRoot;
     bool m_bInDlgEventloop;
     bool m_bAlways;
-    bool m_bAlwaysLightCamera;
-    bool m_bAlwaysMaterial;
     int m_nResizeTimes;
     bool m_bOnlyOptix;          //isolate optix window.
     Ui::MainWindow* m_ui;

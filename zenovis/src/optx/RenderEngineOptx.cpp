@@ -15,7 +15,7 @@
 #include <zeno/types/TextureObject.h>
 #include <zeno/types/CameraObject.h>
 #include <zeno/types/MatrixObject.h>
-#include <zenovis/ObjectsManager.h>
+#include <zeno/extra/ObjectsManager.h>
 #include <zeno/utils/UserData.h>
 #include <zeno/extra/TempNode.h>
 #include <zeno/utils/fileio.h>
@@ -32,6 +32,8 @@
 #include "../../xinxinoptix/OptiXStuff.h"
 #include <zeno/types/PrimitiveTools.h>
 #include <zeno/types/StringObject.h>
+#include <zeno/core/Session.h>
+#include <zeno/extra/GlobalComm.h>
 
 #include <map>
 #include <string>
@@ -828,34 +830,39 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     }
 
     void update() override {
-
-        if(graphicsMan->need_update_light(scene->objectsMan->pairs())
-            || scene->objectsMan->needUpdateLight)
-        {
-            graphicsMan->load_light_objects(scene->objectsMan->lightObjects);
-            lightNeedUpdate = true;
-            scene->objectsMan->needUpdateLight = false;
-            scene->drawOptions->needRefresh = true;
-        }
-
-        if (graphicsMan->load_static_objects(scene->objectsMan->pairs())) {
-            staticNeedUpdate = true;
-        }
-        if (graphicsMan->load_objects(scene->objectsMan->pairs()))
-        {
-            meshNeedUpdate = matNeedUpdate = true;
-            if (scene->drawOptions->updateMatlOnly)
+        const auto& cb = [&]() {
+            if (graphicsMan->need_update_light(zeno::getSession().globalComm->pairs())
+                || zeno::getSession().globalComm->getNeedUpdateLight())
             {
-                lightNeedUpdate = meshNeedUpdate = false;
-                matNeedUpdate = true;
-            }
-            if (scene->drawOptions->updateLightCameraOnly)
-            {
+                graphicsMan->load_light_objects(zeno::getSession().globalComm->getLightObjs());
                 lightNeedUpdate = true;
-                matNeedUpdate = meshNeedUpdate = false;
+                zeno::getSession().globalComm->setNeedUpdateLight(false);
+                scene->drawOptions->needRefresh = true;
             }
-        }
-        graphicsMan->load_shader_uniforms(scene->objectsMan->pairs());
+
+            if (graphicsMan->load_static_objects(zeno::getSession().globalComm->pairs())) {
+                staticNeedUpdate = true;
+            }
+            if (graphicsMan->load_objects(zeno::getSession().globalComm->pairs()))
+            {
+                meshNeedUpdate = matNeedUpdate = true;
+                if (zeno::getSession().globalComm->getRenderType() == zeno::GlobalComm::MATERIAL)
+                {
+                    scene->drawOptions->updateMatlOnly = true;
+                    lightNeedUpdate = meshNeedUpdate = false;
+                    matNeedUpdate = true;
+                }
+                if (zeno::getSession().globalComm->getRenderType() == zeno::GlobalComm::LIGHT_CAMERA)
+                {
+                    scene->drawOptions->updateLightCameraOnly = true;
+                    lightNeedUpdate = true;
+                    matNeedUpdate = meshNeedUpdate = false;
+                }
+                zeno::getSession().globalComm->setRenderType(zeno::GlobalComm::UNDEFINED);
+            }
+            graphicsMan->load_shader_uniforms(zeno::getSession().globalComm->pairs());
+        };
+        zeno::getSession().globalComm->mutexCallback(cb);
     }
 
 #define MY_CAM_ID(cam) cam.m_nx, cam.m_ny, cam.m_lodup, cam.m_lodfront, cam.m_lodcenter, cam.m_fov, cam.focalPlaneDistance, cam.m_aperture

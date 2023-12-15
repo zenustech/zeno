@@ -7,7 +7,7 @@
 
 class IGraphsModel;
 
-void serializeScene(IGraphsModel* pModel, RAPIDJSON_WRITER& writer, bool applyLightAndCameraOnly = false, bool applyMaterialOnly = false, const QString& configPath = "");
+void serializeScene(IGraphsModel* pModel, RAPIDJSON_WRITER& writer, const QString& configPath = "");
 QString serializeSceneCpp(IGraphsModel* pModel);
 
 #endif

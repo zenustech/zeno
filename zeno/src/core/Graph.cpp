@@ -71,7 +71,13 @@ ZENO_API Graph *Graph::getSubnetGraph(std::string const &id) const {
 }
 
 ZENO_API void Graph::completeNode(std::string const &id) {
-    safe_at(nodes, id, "node name")->doComplete();
+    if (!safe_at(nodes, id, "node name")->bIsToView)    //complete all nodes except toview node
+        safe_at(nodes, id, "node name")->doComplete();
+    else if (safe_at(nodes, id, "node name")->bIsToView && getDirtyChecker().amIDirty(id.substr(0, id.find(":"))))    //only complete dirty toview node
+    {
+        safe_at(nodes, id, "node name")->doComplete();
+        nodesToExec.insert(safe_at(nodes, id, "node name")->myname);
+    }
 }
 
 ZENO_API bool Graph::applyNode(std::string const &id) {
@@ -148,6 +154,12 @@ ZENO_API std::map<std::string, zany> Graph::callTempNode(std::string const &id,
 ZENO_API void Graph::setTempCache(std::string const& id)
 {
     safe_at(nodes, id, "node name")->bTmpCache = true;
+}
+
+ZENO_API void Graph::setToView(std::string const& id, bool isStatic)
+{
+    safe_at(nodes, id, "node name")->bIsToView = true;
+    safe_at(nodes, id, "node name")->isStatic = isStatic;
 }
 
 ZENO_API void Graph::addNodeOutput(std::string const& id, std::string const& par) {

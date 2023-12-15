@@ -120,7 +120,7 @@ public:
     virtual void setApiRunningEnable(bool bEnable) = 0;
     virtual bool isApiRunningEnable() const = 0;
     virtual bool setCustomName(const QModelIndex &subgIdx, const QModelIndex& Idx, const QString &value) const = 0;
-    virtual void markNodeDataChanged(const QModelIndex& idx) = 0;
+    virtual void markNodeDataChanged(const QModelIndex& idx, bool recursively = true) = 0;
     virtual void clearNodeDataChanged() = 0;
     virtual QStringList subgraphsName() const = 0;
 

@@ -5,7 +5,7 @@
 #include "zenoimagepanel.h"
 #include "PrimAttrTableModel.h"
 #include "viewport/zenovis.h"
-#include "zenovis/ObjectsManager.h"
+#include "zeno/extra/ObjectsManager.h"
 #include "zeno/utils/format.h"
 #include <zeno/types/UserData.h>
 #include <zeno/types/PrimitiveObject.h>
@@ -16,6 +16,8 @@
 #include "viewport/viewportwidget.h"
 #include "zenomainwindow.h"
 #include "viewport/displaywidget.h"
+#include <zeno/core/Session.h>
+#include <zeno/extra/GlobalComm.h>
 
 
 void ZenoImagePanel::clear() {
@@ -44,64 +46,67 @@ void ZenoImagePanel::setPrim(std::string primid) {
 
     bool enableGamma = pGamma->checkState() == Qt::Checked;
     bool found = false;
-    for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
-        if ((key.substr(0, key.find(":"))) != primid) {
-            continue;
-        }
-        auto &ud = ptr->userData();
-        if (ud.get2<int>("isImage", 0) == 0) {
-            continue;
-        }
-        found = true;
-        if (auto obj = dynamic_cast<zeno::PrimitiveObject *>(ptr)) {
-            int width = ud.get2<int>("w");
-            int height = ud.get2<int>("h");
-            if (image_view) {
-                if (pMode->currentText() != "Alpha") {
-                    QImage img(width, height, QImage::Format_RGB32);
-                    auto index = std::map<QString, zeno::vec3i>{
-                        {"RGB", {0, 1, 2}},
-                        {"Red", {0, 0, 0}},
-                        {"Green", {1, 1, 1}},
-                        {"Blue", {2, 2, 2}},
-                    }.at(pMode->currentText());
-                    for (auto i = 0; i < obj->verts.size(); i++) {
-                        int h = i / width;
-                        int w = i % width;
-                        auto c = obj->verts[i];
-                        if (enableGamma) {
-                            c = zeno::pow(c, 1.0f / 2.2f);
-                        }
-                        int r = glm::clamp(int(c[index[0]] * 255.99), 0, 255);
-                        int g = glm::clamp(int(c[index[1]] * 255.99), 0, 255);
-                        int b = glm::clamp(int(c[index[2]] * 255.99), 0, 255);
-
-                        img.setPixel(w, height - 1 - h, qRgb(r, g, b));
-                    }
-                    image_view->setImage(img);
-                }
-                else if (pMode->currentText() == "Alpha") {
-                    QImage img(width, height, QImage::Format_RGB32);
-                    if (obj->verts.has_attr("alpha")) {
-                        auto &alpha = obj->verts.attr<float>("alpha");
+    const auto& cb = [&]() {
+        for (auto const &[key, ptr]: zeno::getSession().globalComm->pairs()) {
+            if ((key.substr(0, key.find(":"))) != primid) {
+                continue;
+            }
+            auto &ud = ptr->userData();
+            if (ud.get2<int>("isImage", 0) == 0) {
+                continue;
+            }
+            found = true;
+            if (auto obj = dynamic_cast<zeno::PrimitiveObject *>(ptr)) {
+                int width = ud.get2<int>("w");
+                int height = ud.get2<int>("h");
+                if (image_view) {
+                    if (pMode->currentText() != "Alpha") {
+                        QImage img(width, height, QImage::Format_RGB32);
+                        auto index = std::map<QString, zeno::vec3i>{
+                            {"RGB", {0, 1, 2}},
+                            {"Red", {0, 0, 0}},
+                            {"Green", {1, 1, 1}},
+                            {"Blue", {2, 2, 2}},
+                        }.at(pMode->currentText());
                         for (auto i = 0; i < obj->verts.size(); i++) {
                             int h = i / width;
                             int w = i % width;
-                            auto c = alpha[i];
-                            int r = glm::clamp(int(c * 255.99), 0, 255);
-                            int g = glm::clamp(int(c * 255.99), 0, 255);
-                            int b = glm::clamp(int(c * 255.99), 0, 255);
+                            auto c = obj->verts[i];
+                            if (enableGamma) {
+                                c = zeno::pow(c, 1.0f / 2.2f);
+                            }
+                            int r = glm::clamp(int(c[index[0]] * 255.99), 0, 255);
+                            int g = glm::clamp(int(c[index[1]] * 255.99), 0, 255);
+                            int b = glm::clamp(int(c[index[2]] * 255.99), 0, 255);
 
                             img.setPixel(w, height - 1 - h, qRgb(r, g, b));
                         }
+                        image_view->setImage(img);
                     }
-                    image_view->setImage(img);
+                    else if (pMode->currentText() == "Alpha") {
+                        QImage img(width, height, QImage::Format_RGB32);
+                        if (obj->verts.has_attr("alpha")) {
+                            auto &alpha = obj->verts.attr<float>("alpha");
+                            for (auto i = 0; i < obj->verts.size(); i++) {
+                                int h = i / width;
+                                int w = i % width;
+                                auto c = alpha[i];
+                                int r = glm::clamp(int(c * 255.99), 0, 255);
+                                int g = glm::clamp(int(c * 255.99), 0, 255);
+                                int b = glm::clamp(int(c * 255.99), 0, 255);
+
+                                img.setPixel(w, height - 1 - h, qRgb(r, g, b));
+                            }
+                        }
+                        image_view->setImage(img);
+                    }
                 }
+                QString statusInfo = QString(zeno::format("width: {}, height: {}", width, height).c_str());
+                pStatusBar->setText(statusInfo);
             }
-            QString statusInfo = QString(zeno::format("width: {}, height: {}", width, height).c_str());
-            pStatusBar->setText(statusInfo);
         }
-    }
+    };
+    zeno::getSession().globalComm->mutexCallback(cb);
     if (found == false) {
         clear();
     }
@@ -176,11 +181,9 @@ ZenoImagePanel::ZenoImagePanel(QWidget *parent) : QWidget(parent) {
         ZASSERT_EXIT(session);
         auto scene = session->get_scene();
         ZASSERT_EXIT(scene);
-        for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
-            if (key.find(prim_name) == 0 && key.find(zeno::format(":{}:", frame)) != std::string::npos) {
+        std::string key = zeno::getSession().globalComm->getObjKey1(prim_name, frame);
+        if (key != "")
                 setPrim(key);
-            }
-        }
     });
     connect(pGamma, &QCheckBox::stateChanged, this, [=](int state) {
         std::string prim_name = pPrimName->text().toStdString();
@@ -190,11 +193,10 @@ ZenoImagePanel::ZenoImagePanel(QWidget *parent) : QWidget(parent) {
         ZASSERT_EXIT(session);
         auto scene = session->get_scene();
         ZASSERT_EXIT(scene);
-        for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
-            if (key.find(prim_name) == 0) {
-                setPrim(key);
-            }
-        }
+
+        auto key = zeno::getSession().globalComm->getObjKeyByObjID(prim_name);
+        if (key != "")
+            setPrim(key);
     });
     connect(pMode, &ZComboBox::_textActivated, [=](const QString& text) {
         std::string prim_name = pPrimName->text().toStdString();
@@ -204,11 +206,9 @@ ZenoImagePanel::ZenoImagePanel(QWidget *parent) : QWidget(parent) {
         ZASSERT_EXIT(session);
         auto scene = session->get_scene();
         ZASSERT_EXIT(scene);
-        for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
-            if (key.find(prim_name) == 0) {
-                setPrim(key);
-            }
-        }
+        auto key = zeno::getSession().globalComm->getObjKeyByObjID(prim_name);
+        if (key != "")
+            setPrim(key);
     });
 
     connect(pFit, &QPushButton::clicked, this, [=](bool _) {
@@ -230,47 +230,50 @@ ZenoImagePanel::ZenoImagePanel(QWidget *parent) : QWidget(parent) {
         if (!scene)
             return;
         bool found = false;
-        for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
-            if ((key.substr(0, key.find(":"))) != primid) {
-                continue;
-            }
-            auto &ud = ptr->userData();
-            if (ud.get2<int>("isImage", 0) == 0) {
-                continue;
-            }
-            found = true;
-            if (auto obj = dynamic_cast<zeno::PrimitiveObject *>(ptr)) {
-                int width = ud.get2<int>("w");
-                int height = ud.get2<int>("h");
-                int w = int(zeno::clamp(x, 0, width - 1));
-                int h = int(zeno::clamp(y, 0, height - 1));
-                int i = (height - 1 - h) * width + w;
-                auto c = obj->verts[i];
-                std::string info = zeno::format("width: {}, height: {}", width, height);
-                info += zeno::format(" | x: {:5}, y: {:5}", w, h);
-                if (obj->verts.has_attr("alpha")) {
-                    auto &alpha = obj->verts.attr<float>("alpha");
-                    info += zeno::format(
-                        " | value: {}, {}, {}, {}",
-                        QString::number(c[0], 'f', 6).toStdString(),
-                        QString::number(c[1], 'f', 6).toStdString(),
-                        QString::number(c[2], 'f', 6).toStdString(),
-                        QString::number(alpha[i], 'f', 6).toStdString()
-                    );
+        const auto& cb = [&]() {
+            for (auto const& [key, ptr] : zeno::getSession().globalComm->pairs()) {
+                if ((key.substr(0, key.find(":"))) != primid) {
+                    continue;
                 }
-                else {
-                    info += zeno::format(
-                        " | value: {}, {}, {}",
-                        QString::number(c[0], 'f', 6).toStdString(),
-                        QString::number(c[1], 'f', 6).toStdString(),
-                        QString::number(c[2], 'f', 6).toStdString()
-                    );
+                auto& ud = ptr->userData();
+                if (ud.get2<int>("isImage", 0) == 0) {
+                    continue;
                 }
+                found = true;
+                if (auto obj = dynamic_cast<zeno::PrimitiveObject*>(ptr)) {
+                    int width = ud.get2<int>("w");
+                    int height = ud.get2<int>("h");
+                    int w = int(zeno::clamp(x, 0, width - 1));
+                    int h = int(zeno::clamp(y, 0, height - 1));
+                    int i = (height - 1 - h) * width + w;
+                    auto c = obj->verts[i];
+                    std::string info = zeno::format("width: {}, height: {}", width, height);
+                    info += zeno::format(" | x: {:5}, y: {:5}", w, h);
+                    if (obj->verts.has_attr("alpha")) {
+                        auto& alpha = obj->verts.attr<float>("alpha");
+                        info += zeno::format(
+                            " | value: {}, {}, {}, {}",
+                            QString::number(c[0], 'f', 6).toStdString(),
+                            QString::number(c[1], 'f', 6).toStdString(),
+                            QString::number(c[2], 'f', 6).toStdString(),
+                            QString::number(alpha[i], 'f', 6).toStdString()
+                        );
+                    }
+                    else {
+                        info += zeno::format(
+                            " | value: {}, {}, {}",
+                            QString::number(c[0], 'f', 6).toStdString(),
+                            QString::number(c[1], 'f', 6).toStdString(),
+                            QString::number(c[2], 'f', 6).toStdString()
+                        );
+                    }
 
-                QString statusInfo = QString(info.c_str());
-                pStatusBar->setText(statusInfo);
+                    QString statusInfo = QString(info.c_str());
+                    pStatusBar->setText(statusInfo);
+                }
             }
-        }
+        };
+        zeno::getSession().globalComm->mutexCallback(cb);
         if (found == false) {
             clear();
         }

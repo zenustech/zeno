@@ -64,8 +64,6 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags, PANEL_TYP
     : QMainWindow(parent, flags)
     , m_bInDlgEventloop(false)
     , m_bAlways(false)
-    , m_bAlwaysLightCamera(false)
-    , m_bAlwaysMaterial(false)
     , m_pTimeline(nullptr)
     , m_layoutRoot(nullptr)
     , m_nResizeTimes(0)
@@ -653,9 +651,9 @@ void ZenoMainWindow::initTimelineDock()
 
     connect(m_pTimeline, &ZTimeline::playForward, this, [=](bool bPlaying) {
         QVector<DisplayWidget*> views = viewports();
-        for (DisplayWidget* view : views) {
-            view->onPlayClicked(bPlaying);
-        }
+    for (DisplayWidget* view : views) {
+        view->onPlayClicked(bPlaying);
+    }
     });
 
     connect(m_pTimeline, &ZTimeline::sliderValueChanged, this, [=](int frame) {
@@ -667,43 +665,18 @@ void ZenoMainWindow::initTimelineDock()
 
     auto graphs = zenoApp->graphsManagment();
     connect(graphs, &GraphsManagment::modelDataChanged, this, [=]() {
-        if (!m_bAlways && !m_bAlwaysLightCamera && !m_bAlwaysMaterial)
+        if (!m_bAlways)
             return;
-        std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
-        ZASSERT_EXIT(mgr);
-        mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOn);
         m_pTimeline->togglePlayButton(false);
         int nFrame = m_pTimeline->value();
         QVector<DisplayWidget *> views = viewports();
-        std::function<void(bool, bool)> setOptixUpdateSeparately = [=](bool updateLightCameraOnly, bool updateMatlOnly) {
-            QVector<DisplayWidget *> views = viewports();
-            for (auto displayWid : views) {
-                if (!displayWid->isGLViewport()) {
-                    displayWid->setRenderSeparately(updateLightCameraOnly, updateMatlOnly);
-                }
-            }
-        };
         for (DisplayWidget *view : views) {
-            if (m_bAlways) {
-                setOptixUpdateSeparately(false, false);
-                LAUNCH_PARAM launchParam;
-                launchParam.beginFrame = nFrame;
-                launchParam.endFrame = nFrame;
-                launchParam.projectFps = timeline()->fps();
-                AppHelper::initLaunchCacheParam(launchParam);
-                view->onRun(launchParam);
-            }
-            else if (m_bAlwaysLightCamera || m_bAlwaysMaterial) {
-                setOptixUpdateSeparately(m_bAlwaysLightCamera, m_bAlwaysMaterial);
-                LAUNCH_PARAM launchParam;
-                launchParam.beginFrame = nFrame;
-                launchParam.endFrame = nFrame;
-                launchParam.applyLightAndCameraOnly = m_bAlwaysLightCamera;
-                launchParam.applyMaterialOnly = m_bAlwaysMaterial;
-                launchParam.projectFps = timeline()->fps();
-                AppHelper::initLaunchCacheParam(launchParam);
-                view->onRun(launchParam);
-            }
+            LAUNCH_PARAM launchParam;
+            launchParam.beginFrame = nFrame;
+            launchParam.endFrame = nFrame;
+            launchParam.projectFps = timeline()->fps();
+            AppHelper::initLaunchCacheParam(launchParam);
+            view->onRun(launchParam);
         }
     });
 }
@@ -788,7 +761,7 @@ void ZenoMainWindow::toggleTimelinePlay(bool bOn)
     m_pTimeline->togglePlayButton(bOn);
 }
 
-void ZenoMainWindow::onRunTriggered(bool applyLightAndCameraOnly, bool applyMaterialOnly)
+void ZenoMainWindow::onRunTriggered()
 {
     QVector<DisplayWidget*> views = viewports();
 
@@ -812,8 +785,6 @@ void ZenoMainWindow::onRunTriggered(bool applyLightAndCameraOnly, bool applyMate
         LAUNCH_PARAM launchParam;
         launchParam.beginFrame = beginFrame;
         launchParam.endFrame = endFrame;
-        launchParam.applyLightAndCameraOnly = applyLightAndCameraOnly;
-        launchParam.applyMaterialOnly = applyMaterialOnly;
         QString path = pModel->filePath();
         path = path.left(path.lastIndexOf("/"));
         launchParam.zsgPath = path;
@@ -2030,25 +2001,12 @@ bool ZenoMainWindow::isAlways() const
     return m_bAlways;
 }
 
-bool ZenoMainWindow::isAlwaysLightCamera() const {
-    return m_bAlwaysLightCamera;
-}
-
-bool ZenoMainWindow::isAlwaysMaterial() const {
-    return m_bAlwaysMaterial;
-}
-
 void ZenoMainWindow::setAlways(bool bAlways)
 {
     m_bAlways = bAlways;
     emit alwaysModeChanged(bAlways);
     if (m_bAlways)
         m_pTimeline->togglePlayButton(false);
-}
-
-void ZenoMainWindow::setAlwaysLightCameraMaterial(bool bAlwaysLightCamera, bool bAlwaysMaterial) {
-    m_bAlwaysLightCamera = bAlwaysLightCamera;
-    m_bAlwaysMaterial = bAlwaysMaterial;
 }
 
 void ZenoMainWindow::resetTimeline(TIMELINE_INFO info)

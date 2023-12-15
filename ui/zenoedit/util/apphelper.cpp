@@ -129,19 +129,19 @@ void AppHelper::modifyOptixObjDirectly(QVariant newValue, QPersistentModelIndex 
     ZenoMainWindow* main = zenoApp->getMainWindow();
     if (nodeIdx.data(ROLE_OBJNAME).toString() == "LightNode" &&
         nodeIdx.data(ROLE_OPTIONS).toInt() == OPT_VIEW &&
-        (main->isAlways() || main->isAlwaysLightCamera() || editByPropPanel))
+        (main->isAlways() || editByPropPanel))
     {
         modifyLightData(newValue, nodeIdx, paramIdx);
     }
     else if ((nodeIdx.data(ROLE_OBJNAME).toString() == "CameraNode" ||
         nodeIdx.data(ROLE_OBJNAME).toString() == "MakeCamera" ||
         nodeIdx.data(ROLE_OBJNAME).toString() == "TargetCamera") &&
-        ((nodeIdx.data(ROLE_OPTIONS).toInt() == OPT_VIEW && (main->isAlways() || main->isAlwaysLightCamera())) || editByPropPanel)
+        (nodeIdx.data(ROLE_OPTIONS).toInt() == OPT_VIEW && (main->isAlways() || editByPropPanel))
         )
     {
         modifyOptixCameraPropDirectly(newValue, nodeIdx, paramIdx);
     }
-    else if (( (main->isAlways() || main->isAlwaysLightCamera() || main->isAlwaysMaterial()) || editByPropPanel))
+    else if (main->isAlways() || editByPropPanel)
     {
         socketEditFinished(newValue, nodeIdx, paramIdx);
     }
@@ -391,6 +391,11 @@ void AppHelper::initLaunchCacheParam(LAUNCH_PARAM& param)
     param.cacheDir = settings.value("zencachedir").isValid() ? settings.value("zencachedir").toString() : "";
     param.cacheNum = settings.value("zencachenum").isValid() ? settings.value("zencachenum").toInt() : 1;
     param.autoCleanCacheInCacheRoot = settings.value("zencache-autoclean").isValid() ? settings.value("zencache-autoclean").toBool() : true;
+
+    std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
+    ZASSERT_EXIT(mgr);
+    if (!mgr->nextRunSkipCreateDir(param))
+        markAllNodesInMainGraphDirty(false);
 }
 
 bool AppHelper::openZsgAndRun(const ZENO_RECORD_RUN_INITPARAM& param, LAUNCH_PARAM launchParam)
@@ -493,5 +498,20 @@ void AppHelper::dumpTabsToZsg(QDockWidget* dockWidget, RAPIDJSON_WRITER& writer)
                 writer.String("Light");
             }
         }
+    }
+}
+
+void AppHelper::markAllNodesInMainGraphDirty(bool markNodeStyle)
+{
+    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    if (!pModel)
+        return;
+    QModelIndex subgIdx = pModel->index("main");
+    for (int i = 0; i < pModel->itemCount(subgIdx); i++)
+    {
+        const QModelIndex& idx = pModel->index(i, subgIdx);
+        pModel->markNodeDataChanged(idx, false);
+        if (markNodeStyle)  //change node style in subgraphScene
+            emit pModel->_dataChanged(subgIdx, idx, ROLE_NODE_DATACHANGED);
     }
 }

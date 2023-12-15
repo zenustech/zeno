@@ -34,7 +34,7 @@ ZToolMenuButton::ZToolMenuButton(QWidget* parent)
     : ZToolButton(parent)
 {
     setButtonOptions(ZToolButton::Opt_TextRightToIcon);
-    setArrowOption(ZStyleOptionToolButton::DOWNARROW);
+    //setArrowOption(ZStyleOptionToolButton::DOWNARROW);
     m_pMenu = new QMenu(this);
     m_pMenu->setProperty("cssClass", "menuButton");
     CustomIconStyle* pStyle = new CustomIconStyle;
@@ -54,20 +54,20 @@ void ZToolMenuButton::addAction(const QString& action, const QString& icon)
 }
 
 void ZToolMenuButton::mouseReleaseEvent(QMouseEvent* e) {
-    QSize size = ZToolButton::sizeHint();
-    if (e->x() >= (size.width() - ZenoStyle::dpiScaled(10)))
-    {
-        QPoint pos;
-        pos.setY(pos.y() + this->geometry().height());
-        m_pMenu->exec(this->mapToGlobal(pos));
-        return;
-    }
+    //QSize size = ZToolButton::sizeHint();
+    //if (e->x() >= (size.width() - ZenoStyle::dpiScaled(10)))
+    //{
+    //    QPoint pos;
+    //    pos.setY(pos.y() + this->geometry().height());
+    //    m_pMenu->exec(this->mapToGlobal(pos));
+    //    return;
+    //}
     emit clicked();
 }
 
 
 QSize ZToolMenuButton::sizeHint() const {
     QSize size = ZToolButton::sizeHint();
-    size.setWidth(size.width() + ZenoStyle::dpiScaled(12));
+    //size.setWidth(size.width() + ZenoStyle::dpiScaled(12));
     return size;
 }

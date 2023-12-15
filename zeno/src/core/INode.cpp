@@ -75,9 +75,8 @@ ZENO_API void INode::complete() {}
 ZENO_API bool zeno::INode::getTmpCache()
 {
     GlobalComm::ViewObjects objs;
-    std::string fileName = myname + ".zenocache";
     int frameid = zeno::getSession().globalState->frameid;
-    bool ret = GlobalComm::fromDisk(zeno::getSession().globalComm->objTmpCachePath, frameid, objs, fileName);
+    bool ret = GlobalComm::fromDiskByRunner(zeno::getSession().globalComm->objTmpCachePath, frameid, objs, myname);
     if (ret && objs.size() > 0)
     {
         for (const auto& [key, obj] : objs)
@@ -106,8 +105,19 @@ ZENO_API void zeno::INode::writeTmpCaches()
 
     }
     int frameid = zeno::getSession().globalState->frameid;
-    std::string fileName = myname + ".zenocache";
-    GlobalComm::toDisk(zeno::getSession().globalComm->objTmpCachePath, frameid, objs, false, false, fileName);
+
+    {   //store cache version
+        auto key = myname;
+        key.push_back(':');
+        if (isStatic)
+            key.append("static");
+        else
+            key.append(std::to_string(getThisSession()->globalState->frameid));
+        key.push_back(':');
+        key.append(std::to_string(getThisSession()->globalState->sessionid));
+        getThisSession()->globalComm->addViewObject(key, std::make_shared<IObject>());
+    }
+    GlobalComm::toDisk(zeno::getSession().globalComm->objTmpCachePath, frameid, objs, myname, false);
 }
 
 ZENO_API void INode::preApply() {
@@ -119,7 +129,7 @@ ZENO_API void INode::preApply() {
     }
     else if (dc.amIDirty(myname) && !bTmpCache)//remove cache
     {
-        std::string fileName = myname + ".zenocache";
+        std::string fileName = myname + ".zencache";
         int frameid = zeno::getSession().globalState->frameid;
         const auto& path = std::filesystem::u8path(zeno::getSession().globalComm->objTmpCachePath + "/" + std::to_string(1000000 + frameid).substr(1) + "/" + fileName);
         if (std::filesystem::exists(path))
@@ -140,7 +150,7 @@ ZENO_API void INode::preApply() {
         apply();
         if (bTmpCache)
             writeTmpCaches();
-    }
+        }
     log_debug("==> leave {}", myname);
 }
 

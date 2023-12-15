@@ -27,8 +27,10 @@
 #include <zenoui/comctrl/zcombobox.h>
 #include <zeno/core/Session.h>
 #include <zeno/types/UserData.h>
-#include <zenovis/ObjectsManager.h>
+#include <zeno/extra/ObjectsManager.h>
 #include <zenoui/comctrl/ztoolmenubutton.h>
+#include <zeno/core/Session.h>
+#include <zeno/extra/GlobalComm.h>
 
 
 ZToolBarButton::ZToolBarButton(bool bCheckable, const QString& icon, const QString& iconOn)
@@ -319,9 +321,6 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pAlways->setToolTip(tr("Always mode"));
 
     m_btnRun = new ZToolMenuButton(this);
-    m_btnRun->addAction(tr("Run"), ":/icons/run_all.svg");
-    m_btnRun->addAction(tr("RunLightCamera"), ":/icons/run_lightcamera.svg");
-    m_btnRun->addAction(tr("RunMaterial"), ":/icons/run_material.svg");
     m_btnKill = new ZTextIconButton(tr("Running..."), this);
 
     QFont fnt = QApplication::font();
@@ -474,7 +473,6 @@ void DockContent_Editor::initConnections()
     std::function<void()> resetAlways = [=]() {
         pAlways->setChecked(false);
         pMainWin->setAlways(false);
-        pMainWin->setAlwaysLightCameraMaterial(false, false);
     };
     connect(zenoApp->graphsManagment(), &GraphsManagment::fileOpened, this, resetAlways);
     connect(zenoApp->graphsManagment(), &GraphsManagment::modelInited, this, resetAlways);
@@ -492,22 +490,10 @@ void DockContent_Editor::initConnections()
                     displayWid->setRenderSeparately(false, false);
                 }
             }
-            if (m_btnRun->text() == tr("Run"))
-            {
-                pMainWin->setAlways(true);
-                pMainWin->setAlwaysLightCameraMaterial(false, false);
-            }
-            else {
-                if (m_btnRun->text() == tr("RunLightCamera"))
-                    pMainWin->setAlwaysLightCameraMaterial(true, false);
-                else if (m_btnRun->text() == tr("RunMaterial"))
-                    pMainWin->setAlwaysLightCameraMaterial(false, true);
-                pMainWin->setAlways(false);
-            }
+            pMainWin->setAlways(true);
         }
         else {
             pMainWin->setAlways(false);
-            pMainWin->setAlwaysLightCameraMaterial(false, false);
         }
     });
     connect(m_pEditor, &ZenoGraphsEditor::zoomed, [=](qreal newFactor) {
@@ -536,8 +522,6 @@ void DockContent_Editor::initConnections()
             return;
         m_btnRun->setVisible(false);
         m_btnKill->setVisible(true);
-        std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
-        ZASSERT_EXIT(mgr);
         ZenoMainWindow *pMainWin = zenoApp->getMainWindow();
         ZASSERT_EXIT(pMainWin);
         std::function<void(bool, bool)> setOptixUpdateSeparately = [=](bool updateLightCameraOnly, bool updateMatlOnly) {
@@ -548,61 +532,10 @@ void DockContent_Editor::initConnections()
                 }
             }
         };
-        if (m_btnRun->text() == tr("Run"))
-        {
-            setOptixUpdateSeparately(false, false);
-            mgr->setCacheOpt(ZCacheMgr::Opt_RunAll);
-            pMainWin->onRunTriggered();
-        }
-        else {
-            QSettings settings(zsCompanyName, zsEditor);
-            if (!settings.value("zencache-enable").toBool()) {
-                QMessageBox::warning(nullptr, tr("RunLightCamera"), tr("This function can only be used in cache mode."));
-            } else {
-                mgr->setCacheOpt(ZCacheMgr::Opt_RunLightCameraMaterial);
-                if (m_btnRun->text() == tr("RunLightCamera"))
-                {
-                    setOptixUpdateSeparately(true, false);
-                    pMainWin->onRunTriggered(true, false);
-                }
-                if (m_btnRun->text() == tr("RunMaterial"))
-                {
-                    setOptixUpdateSeparately(false, true);
-                    pMainWin->onRunTriggered(false, true);
-                }
-            }
-        }
+        setOptixUpdateSeparately(false, false);
+        pMainWin->onRunTriggered();
     });
 
-    connect(m_btnRun, &ZToolMenuButton::textChanged, this, [=]() {
-        if (pAlways->isChecked())
-            pAlways->setChecked(false);
-        QString text = m_btnRun->text();
-        QColor clr;
-        QColor hoverClr;
-        if (text == tr("Run"))
-        {
-            clr = QColor("#1978E6");
-            hoverClr = QColor("#599EED");
-            m_btnRun->setIcon(ZenoStyle::dpiScaledSize(QSize(16, 16)), ":/icons/run_all_btn.svg",
-                ":/icons/run_all_btn.svg", "", "");
-        }
-        else if (text == tr("RunLightCamera"))
-        {
-            clr = QColor("#E67B19");
-            hoverClr = QColor("#EDA059");
-            m_btnRun->setIcon(ZenoStyle::dpiScaledSize(QSize(16, 16)), ":/icons/run_lightcamera_btn.svg",
-                ":/icons/run_lightcamera_btn.svg", "", "");
-        }
-        else if (text == tr("RunMaterial"))
-        {
-            clr = QColor("#BD19E6");
-            hoverClr = QColor("#CF59ED");
-            m_btnRun->setIcon(ZenoStyle::dpiScaledSize(QSize(16, 16)), ":/icons/run_material_btn.svg",
-                ":/icons/run_material_btn.svg", "", "");
-        }
-        m_btnRun->setBackgroundClr(clr, hoverClr, clr, clr);
-    });
     connect(m_btnKill, &ZTextIconButton::clicked, this, [=]() {
         killProgram();
         m_btnRun->setVisible(true);
@@ -953,7 +886,7 @@ void DockContent_View::initConnections()
             ZASSERT_EXIT(session);
             auto scene = session->get_scene();
             ZASSERT_EXIT(scene);
-            scene->objectsMan->needUpdateLight = true;
+            zeno::getSession().globalComm->setNeedUpdateLight(true);
             m_pDisplay->setSimpleRenderOption();
             zenoApp->getMainWindow()->updateViewport();
         }

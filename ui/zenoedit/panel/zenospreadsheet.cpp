@@ -5,7 +5,7 @@
 #include "zenospreadsheet.h"
 #include "PrimAttrTableModel.h"
 #include "viewport/zenovis.h"
-#include "zenovis/ObjectsManager.h"
+#include "zeno/extra/ObjectsManager.h"
 #include "zeno/utils/format.h"
 #include <zeno/types/UserData.h>
 #include <zeno/types/PrimitiveObject.h>
@@ -13,6 +13,8 @@
 #include "zenomainwindow.h"
 #include "viewport/viewportwidget.h"
 #include "viewport/displaywidget.h"
+#include <zeno/core/Session.h>
+#include <zeno/extra/GlobalComm.h>
 
 
 ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
@@ -81,11 +83,10 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
         ZERROR_EXIT(sess);
         auto scene = zenovis->getSession()->get_scene();
         ZERROR_EXIT(scene);
-        for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
-            if (key.find(prim_name) == 0 && key.find(zeno::format(":{}:", frame)) != std::string::npos) {
-                setPrim(key);
-            }
-        }
+
+        auto key = zeno::getSession().globalComm->getObjKey1(prim_name, frame);
+        if (key != "")
+            setPrim(key);
     });
 
     connect(pMode, &ZComboBox::_textActivated, [=](const QString& text) {
@@ -136,32 +137,35 @@ void ZenoSpreadsheet::setPrim(std::string primid) {
     ZASSERT_EXIT(scene);
 
     bool found = false;
-    for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
-        if (key != primid) {
-            continue;
-        }
-        if (auto obj = dynamic_cast<zeno::PrimitiveObject *>(ptr)) {
-            found = true;
-            size_t sizeUserData = obj->userData().size();
-            size_t num_attrs = obj->num_attrs();
-            size_t num_vert = obj->verts.size();
-            size_t num_tris = obj->tris.size();
-            size_t num_loops = obj->loops.size();
-            size_t num_polys = obj->polys.size();
-            size_t num_lines = obj->lines.size();
+    const auto& cb = [&]() {
+        for (auto const& [key, ptr] : zeno::getSession().globalComm->pairs()) {
+            if (key != primid) {
+                continue;
+            }
+            if (auto obj = dynamic_cast<zeno::PrimitiveObject*>(ptr)) {
+                found = true;
+                size_t sizeUserData = obj->userData().size();
+                size_t num_attrs = obj->num_attrs();
+                size_t num_vert = obj->verts.size();
+                size_t num_tris = obj->tris.size();
+                size_t num_loops = obj->loops.size();
+                size_t num_polys = obj->polys.size();
+                size_t num_lines = obj->lines.size();
 
-            QString statusInfo = QString("Vertex: %1, Triangle: %2, Loops: %3, Poly: %4, Lines: %5, UserData: %6, Attribute: %7")
-                .arg(num_vert)
-                .arg(num_tris)
-                .arg(num_loops)
-                .arg(num_polys)
-                .arg(num_lines)
-                .arg(sizeUserData)
-                .arg(num_attrs);
-            pStatusBar->setText(statusInfo);
-            this->dataModel->setModelData(obj);
+                QString statusInfo = QString("Vertex: %1, Triangle: %2, Loops: %3, Poly: %4, Lines: %5, UserData: %6, Attribute: %7")
+                    .arg(num_vert)
+                    .arg(num_tris)
+                    .arg(num_loops)
+                    .arg(num_polys)
+                    .arg(num_lines)
+                    .arg(sizeUserData)
+                    .arg(num_attrs);
+                pStatusBar->setText(statusInfo);
+                this->dataModel->setModelData(obj);
+            }
         }
-    }
+    };
+    zeno::getSession().globalComm->mutexCallback(cb);
     if (found == false) {
         this->dataModel->setModelData(nullptr);
     }

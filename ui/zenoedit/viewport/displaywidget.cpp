@@ -3,7 +3,7 @@
 #include "optixviewport.h"
 #include "zoptixviewport.h"
 #include <zenovis/RenderEngine.h>
-#include <zenovis/ObjectsManager.h>
+#include <zeno/extra/ObjectsManager.h>
 #include <zenovis/Camera.h>
 #include <zeno/extra/GlobalComm.h>
 #include <zeno/extra/GlobalState.h>
@@ -482,14 +482,18 @@ void DisplayWidget::onCommandDispatched(int actionType, bool bChecked)
         {
             int frameid = m_glView->getSession()->get_curr_frameid();
             auto *scene = m_glView->getSession()->get_scene();
-            for (auto const &[key, ptr] : scene->objectsMan->pairs()) {
-                if (key.find("MakeCamera") != std::string::npos &&
-                    key.find(zeno::format(":{}:", frameid)) != std::string::npos) {
-                    auto cam = dynamic_cast<zeno::CameraObject *>(ptr)->get();
-                    scene->camera->setCamera(cam);
-                    updateFrame();
+
+            const auto& cb = [&]() {
+                for (auto const& [key, ptr] : zeno::getSession().globalComm->pairs()) {
+                    if (key.find("MakeCamera") != std::string::npos &&
+                        key.find(zeno::format(":{}:", frameid)) != std::string::npos) {
+                        auto cam = dynamic_cast<zeno::CameraObject*>(ptr)->get();
+                        scene->camera->setCamera(cam);
+                        updateFrame();
+                    }
                 }
-            }
+            };
+            zeno::getSession().globalComm->mutexCallback(cb);
         }
     }
     else if (actionType == ZenoMainWindow::ACTION_RECORD_VIDEO)
@@ -533,27 +537,19 @@ void DisplayWidget::onSliderValueChanged(int frame)
     for (auto displayWid : mainWin->viewports())
         if (!displayWid->isGLViewport())
             displayWid->setRenderSeparately(false, false);
-    if (mainWin->isAlways() || mainWin->isAlwaysLightCamera() || mainWin->isAlwaysMaterial())
+    if (mainWin->isAlways())
     {
         auto pGraphsMgr = zenoApp->graphsManagment();
         IGraphsModel *pModel = pGraphsMgr->currentModel();
         if (!pModel)
             return;
-        std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
-        ZASSERT_EXIT(mgr);
-        ZCacheMgr::cacheOption oldCacheOpt = mgr->getCacheOption();
-        zeno::scope_exit sp([=] {mgr->setCacheOpt(oldCacheOpt); });     //restore old cache option
-        mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOn);
 
         LAUNCH_PARAM launchParam;
         launchParam.beginFrame = frame;
         launchParam.endFrame = frame;
         launchParam.projectFps = mainWin->timelineInfo().timelinefps;
-        if (mainWin->isAlwaysLightCamera() || mainWin->isAlwaysMaterial()) {
-            launchParam.applyLightAndCameraOnly = mainWin->isAlwaysLightCamera();
-            launchParam.applyMaterialOnly = mainWin->isAlwaysMaterial();
-        }
         AppHelper::initLaunchCacheParam(launchParam);
+        AppHelper::markAllNodesInMainGraphDirty(false);
         launchProgram(pModel, launchParam);
     }
     else
@@ -624,7 +620,7 @@ void DisplayWidget::afterRun()
         ZASSERT_EXIT(session);
         auto scene = session->get_scene();
         ZASSERT_EXIT(scene);
-        scene->objectsMan->lightObjects.clear();
+        zeno::getSession().globalComm->clear_lightObjects();
     }
 }
 
@@ -654,7 +650,7 @@ void DisplayWidget::onRun(LAUNCH_PARAM launchParam)
     Zenovis* pZenoVis = getZenoVis();
     ZASSERT_EXIT(pZenoVis);
     auto scene = pZenoVis->getSession()->get_scene();
-    scene->objectsMan->lightObjects.clear();
+    zeno::getSession().globalComm->clear_lightObjects();
     ZTimeline* timeline = mainWin->timeline();
     ZASSERT_EXIT(timeline);
 }
@@ -694,7 +690,7 @@ void DisplayWidget::onRun() {
     Zenovis* pZenoVis = getZenoVis();
     ZASSERT_EXIT(pZenoVis);
     auto scene = pZenoVis->getSession()->get_scene();
-    scene->objectsMan->lightObjects.clear();
+    zeno::getSession().globalComm->clear_lightObjects();
 }
 
 void DisplayWidget::runAndRecord(const VideoRecInfo &recInfo) {
@@ -860,7 +856,7 @@ void DisplayWidget::onRecord()
             }*/
 
             //clear cached objs.
-            zeno::getSession().globalComm->clearState();
+            //zeno::getSession().globalComm->clearState();
             launchParam.beginFrame = recInfo.frameRange.first;
             launchParam.endFrame = recInfo.frameRange.second;
             launchParam.autoRmCurcache = recInfo.bAutoRemoveCache && launchParam.enableCache;
@@ -871,9 +867,8 @@ void DisplayWidget::onRecord()
 
             std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
             ZASSERT_EXIT(mgr);
-            ZCacheMgr::cacheOption oldCacheOpt = mgr->getCacheOption();
-            zeno::scope_exit sp([=] {mgr->setCacheOpt(oldCacheOpt);});  //restore old cache option
-            mgr->setCacheOpt(ZCacheMgr::Opt_RunAll);
+            mgr->setNewCacheDir(true);
+            AppHelper::markAllNodesInMainGraphDirty(false);
 
 #ifdef ZENO_OPTIX_PROC
             if (!m_bGLView)
@@ -1189,10 +1184,9 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
             // find prim in object manager
             auto input_node_id = input_nodes[0].get_node_id();
             string prim_name;
-            for (const auto &[k, v] : scene->objectsMan->pairsShared()) {
-                if (k.find(input_node_id.toStdString()) != string::npos)
-                    prim_name = k;
-            }
+            auto key = zeno::getSession().globalComm->getObjKeyByObjID(input_node_id.toStdString());
+            if (key != "")
+                prim_name = key;
             if (prim_name.empty())
                 return;
 

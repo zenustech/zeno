@@ -1,7 +1,9 @@
 #include <zenovis/RenderEngine.h>
 #include <zenovis/DrawOptions.h>
 #include <zenovis/bate/GraphicsManager.h>
-#include <zenovis/ObjectsManager.h>
+#include <zeno/extra/ObjectsManager.h>
+#include <zeno/core/Session.h>
+#include <zeno/extra/GlobalComm.h>
 #include <zenovis/DrawOptions.h>
 #include <zenovis/bate/IGraphic.h>
 #include <zenovis/opengl/vao.h>
@@ -38,7 +40,10 @@ struct RenderEngineBate : RenderEngine {
     }
 
     void update() override {
-        graphicsMan->load_objects(scene->objectsMan->pairsShared());
+        const auto& cb = [&]() {
+            graphicsMan->load_objects(zeno::getSession().globalComm->pairsShared());
+        };
+        zeno::getSession().globalComm->mutexCallback(cb);
     }
 
     void draw() override {

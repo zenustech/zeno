@@ -2,11 +2,13 @@
 #include "cameracontrol.h"
 #include "zenovis.h"
 //#include <zenovis/Camera.h>
-#include <zenovis/ObjectsManager.h>
+#include <zeno/extra/ObjectsManager.h>
 #include "zenomainwindow.h"
 #include "nodesview/zenographseditor.h"
 #include <zeno/types/UserData.h>
 #include "settings/zenosettingsmanager.h"
+#include <zeno/core/Session.h>
+#include <zeno/extra/GlobalComm.h>
 
 
 using std::string;
@@ -233,11 +235,11 @@ void CameraControl::changeTransformOperation(const QString &node)
     ZASSERT_EXIT(m_zenovis);
 
     auto scene = m_zenovis->getSession()->get_scene();
-    for (auto const &[key, _] : scene->objectsMan->pairs()) {
-        if (key.find(node.toStdString()) != std::string::npos) {
+    auto key = zeno::getSession().globalComm->getObjKeyByObjID(node.toStdString());
+    if (key != "")
+    {
             scene->selected.insert(key);
             m_transformer->addObject(key);
-        }
     }
     m_transformer->setTransOpt(opt);
     m_transformer->changeTransOpt();
@@ -409,13 +411,9 @@ void CameraControl::fakeMouseDoubleClickEvent(QMouseEvent *event)
     auto scene = m_zenovis->getSession()->get_scene();
     auto picked_prim = m_picker->just_pick_prim(pos.x(), pos.y());
     if (!picked_prim.empty()) {
-        auto primList = scene->objectsMan->pairs();
-        for (auto const &[key, ptr]: primList) {
-            if (picked_prim == key) {
-                auto &ud = ptr->userData();
-                std::cout<<"selected MatId: "<<ud.get2<std::string>("mtlid", "Default")<<"\n";
-            }
-        }
+        auto key = zeno::getSession().globalComm->getObjMatId(picked_prim);
+        if (key != "")
+            std::cout << "selected MatId: " << key << "\n";
         auto obj_node_location = zeno::NodeSyncMgr::GetInstance().searchNodeOfPrim(picked_prim);
         auto subgraph_name = obj_node_location->subgraph.data(ROLE_OBJNAME).toString();
         auto obj_node_name = obj_node_location->node.data(ROLE_OBJID).toString();
@@ -580,13 +578,9 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                 for(auto prim:m_picker->get_picked_prims())
                 {
                     if (!prim.empty()) {
-                        auto primList = scene->objectsMan->pairs();
-                        for (auto const &[key, ptr]: primList) {
-                            if (prim == key) {
-                                auto &ud = ptr->userData();
-                                std::cout<<"selected MatId: "<<ud.get2<std::string>("mtlid", "Default")<<"\n";
-                            }
-                        }
+                        auto key = zeno::getSession().globalComm->getObjMatId(prim);
+                        if (key != "")
+                            std::cout << "selected MatId: " << key << "\n";
                     }
                 }
             } else {
@@ -617,13 +611,9 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                 for(auto prim:m_picker->get_picked_prims())
                 {
                     if (!prim.empty()) {
-                        auto primList = scene->objectsMan->pairs();
-                        for (auto const &[key, ptr]: primList) {
-                            if (prim == key) {
-                                auto &ud = ptr->userData();
-                                std::cout<<"selected MatId: "<<ud.get2<std::string>("mtlid", "Default")<<"\n";
-                            }
-                        }
+                        auto key = zeno::getSession().globalComm->getObjMatId(prim);
+                        if (key != "")
+                            std::cout << "selected MatId: " << key << "\n";
                         auto obj_node_location = zeno::NodeSyncMgr::GetInstance().searchNodeOfPrim(prim);
                         if (!obj_node_location)
                         {
