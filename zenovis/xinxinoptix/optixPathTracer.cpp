@@ -168,6 +168,86 @@ typedef Record<HitGroupData> HitGroupRecord;
 //{
     //float transform[12];
 //};
+#ifdef USE_SHORT_COMPACT
+uchar4 toRGBA8(float4 in)
+{
+  return make_uchar4((unsigned char)(in.x*256.0),
+                     (unsigned char)(in.y*256.0),
+                     (unsigned char)(in.z*256.0),
+                     (unsigned char)(in.w*256.0));
+}
+ushort2 rgba8ToUshort2(uchar4 in)
+{
+    uchar4 rgba = toRGBA8(in);
+    unsigned short x = rgba.x;
+    x = x<<16 + rgba.y;
+    unsigned short y = rgba.z<<16 + rgba.w;
+}
+ushort2 toHalfColor(float4 in)
+{
+  return make_ushort3((unsigned short)(in.x*65536.0f),
+                      (unsigned short)(in.y*65536.0f),
+                      (unsigned short)(in.z*65536.0f));
+}
+
+ushort2 toHalf(float4 in)
+{
+  return make_ushort3((unsigned short)(in.x*65536.0f),
+                      (unsigned short)(in.y*65536.0f),
+                      (unsigned short)(in.z*65536.0f));
+}
+
+ushort2 halfNormal(float4 in)
+{
+  float3 val = make_float3((in.x + 1.0f)/2.0f,
+                           (in.y + 1.0f)/2.0f,
+                           (in.z + 1.0f)/2.0f);
+  val = normalize(val);
+
+  return make_ushort3((unsigned short)(val.x*65536.0f),
+                      (unsigned short)(val.y*65536.0f),
+                      (unsigned short)(val.z*65536.0f));
+}
+#elifdef USE_SHORT
+ushort3 toHalfColor(float4 in)
+{
+  return make_ushort3((unsigned short)(in.x*65536.0f),
+                      (unsigned short)(in.y*65536.0f),
+                      (unsigned short)(in.z*65536.0f));
+}
+ushort3 toHalf(float4 in)
+{
+  return make_ushort3((unsigned short)(in.x*65536.0f),
+                      (unsigned short)(in.y*65536.0f),
+                      (unsigned short)(in.z*65536.0f));
+}
+
+ushort3 halfNormal(float4 in)
+{
+  float3 val = make_float3((in.x + 1.0f)/2.0f,
+                           (in.y + 1.0f)/2.0f,
+                           (in.z + 1.0f)/2.0f);
+  val = normalize(val);
+
+  return make_ushort3((unsigned short)(val.x*65536.0f),
+                      (unsigned short)(val.y*65536.0f),
+                      (unsigned short)(val.z*65536.0f));
+}
+#else
+float4 toHalfColor(float4 in)
+{
+  return in;
+}
+float4 toHalf(float4 in)
+{
+  return in;
+}
+
+float4 halfNormal(float4 in)
+{
+  return in;
+}
+#endif
 
 std::optional<sutil::CUDAOutputBuffer<uchar4>> output_buffer_o;
 std::optional<sutil::CUDAOutputBuffer<float3>> output_buffer_color;
@@ -267,45 +347,85 @@ struct smallMesh{
 
 //const int32_t TRIANGLE_COUNT = 32;
 //const int32_t MAT_COUNT      = 5;
-
-static std::vector<Vertex> g_vertices= // TRIANGLE_COUNT*3
-{
-    {0,0,0},
-    {0,0,0},
-    {0,0,0},
-};
-static std::vector<Vertex> g_clr= // TRIANGLE_COUNT*3
-{
-    {0,0,0},
-    {0,0,0},
-    {0,0,0},
-};
-static std::vector<Vertex> g_nrm= // TRIANGLE_COUNT*3
-{
-    {0,0,0},
-    {0,0,0},
-    {0,0,0},
-};
-static std::vector<Vertex> g_uv= // TRIANGLE_COUNT*3
-{
-    {0,0,0},
-    {0,0,0},
-    {0,0,0},
-};
-static std::vector<Vertex> g_tan= // TRIANGLE_COUNT*3
-{
-    {0,0,0},
-    {0,0,0},
-    {0,0,0},
-};
-static std::vector<uint32_t> g_mat_indices= // TRIANGLE_COUNT
-{
-    0,0,0,
-};
-static std::vector<uint16_t> g_lightMark = //TRIANGLE_COUNT
-{
-    0
-};
+#ifdef USE_SHORT
+    static std::vector<Vertex> g_vertices= // TRIANGLE_COUNT*3
+        {
+            {0,0,0},
+            {0,0,0},
+            {0,0,0},
+    };
+    static std::vector<ushort3> g_clr= // TRIANGLE_COUNT*3
+        {
+            {0,0,0},
+            {0,0,0},
+            {0,0,0},
+    };
+    static std::vector<ushort3> g_nrm= // TRIANGLE_COUNT*3
+        {
+            {0,0,0},
+            {0,0,0},
+            {0,0,0},
+    };
+    static std::vector<ushort3> g_uv= // TRIANGLE_COUNT*3
+        {
+            {0,0,0},
+            {0,0,0},
+            {0,0,0},
+    };
+    static std::vector<ushort3> g_tan= // TRIANGLE_COUNT*3
+        {
+            {0,0,0},
+            {0,0,0},
+            {0,0,0},
+    };
+    static std::vector<uint32_t> g_mat_indices= // TRIANGLE_COUNT
+        {
+            0,0,0,
+    };
+    static std::vector<uint16_t> g_lightMark = //TRIANGLE_COUNT
+        {
+            0
+    };
+#else
+    static std::vector<Vertex> g_vertices= // TRIANGLE_COUNT*3
+    {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+    };
+    static std::vector<Vertex> g_clr= // TRIANGLE_COUNT*3
+    {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+    };
+    static std::vector<Vertex> g_nrm= // TRIANGLE_COUNT*3
+    {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+    };
+    static std::vector<Vertex> g_uv= // TRIANGLE_COUNT*3
+    {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+    };
+    static std::vector<Vertex> g_tan= // TRIANGLE_COUNT*3
+    {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+    };
+    static std::vector<uint32_t> g_mat_indices= // TRIANGLE_COUNT
+    {
+        0,0,0,
+    };
+    static std::vector<uint16_t> g_lightMark = //TRIANGLE_COUNT
+    {
+        0
+    };
+#endif
 
 static void compact_triangle_vertex_attribute(const std::vector<Vertex>& attrib, std::vector<Vertex>& compactAttrib, std::vector<unsigned int>& vertIdsPerTri) {
     using id_t = unsigned int;
@@ -1361,10 +1481,17 @@ static void createSBT( PathTracerState& state )
             hitgroup_records[sbt_idx] = {};
 
             hitgroup_records[sbt_idx].data.uniforms        = reinterpret_cast<float4*>( (CUdeviceptr)state.d_uniforms );
+#ifdef USE_SHORT
+            hitgroup_records[sbt_idx].data.uv              = reinterpret_cast<ushort3*>( (CUdeviceptr)state.d_uv );
+            hitgroup_records[sbt_idx].data.nrm             = reinterpret_cast<ushort3*>( (CUdeviceptr)state.d_nrm );
+            hitgroup_records[sbt_idx].data.clr             = reinterpret_cast<ushort3*>( (CUdeviceptr)state.d_clr );
+            hitgroup_records[sbt_idx].data.tan             = reinterpret_cast<ushort3*>( (CUdeviceptr)state.d_tan );
+#else
             hitgroup_records[sbt_idx].data.uv              = reinterpret_cast<float4*>( (CUdeviceptr)state.d_uv );
             hitgroup_records[sbt_idx].data.nrm             = reinterpret_cast<float4*>( (CUdeviceptr)state.d_nrm );
             hitgroup_records[sbt_idx].data.clr             = reinterpret_cast<float4*>( (CUdeviceptr)state.d_clr );
             hitgroup_records[sbt_idx].data.tan             = reinterpret_cast<float4*>( (CUdeviceptr)state.d_tan );
+#endif
             hitgroup_records[sbt_idx].data.lightMark       = reinterpret_cast<unsigned short*>( (CUdeviceptr)state.d_lightMark );
             hitgroup_records[sbt_idx].data.auxOffset       = reinterpret_cast<uint32_t*>( (CUdeviceptr)state.vertexAuxOffsetGlobal );
             
@@ -1873,10 +2000,17 @@ void CopyInstMeshToGlobalMesh()
             for (size_t i = 0; i < vertices.size(); ++i)
             {
                 g_vertices[vertsOffset + i] = vertices[i];
+#ifdef USE_SHORT
+                g_clr[vertsOffset + i] = toHalf(clr[i]);
+                g_nrm[vertsOffset + i] = halfNormal(nrm[i]);
+                g_uv[vertsOffset + i]  = toHalf(uv[i]);
+                g_tan[vertsOffset + i] = halfNormal(tan[i]);
+#else
                 g_clr[vertsOffset + i] = clr[i];
                 g_nrm[vertsOffset + i] = nrm[i];
                 g_uv[vertsOffset + i] = uv[i];
                 g_tan[vertsOffset + i] = tan[i];
+#endif
             }
             for (size_t i = 0; i < vertices.size() / 3; ++i)
             {
@@ -1900,7 +2034,11 @@ void UpdateMeshGasAndIas(bool staticNeedUpdate)
     // no archieve inst func in using20xx
     if (using20xx) 
     {
+#ifdef USE_SHORT
+    const size_t vertices_size_in_bytes = g_vertices.size() * sizeof( ushort3 );
+#else
     const size_t vertices_size_in_bytes = g_vertices.size() * sizeof( Vertex );
+#endif
     // CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_vertices.reset() ), vertices_size_in_bytes ) );
     // CUDA_CHECK( cudaMemcpy(
     //             reinterpret_cast<void*>( (CUdeviceptr&)state.d_vertices ),
@@ -1959,8 +2097,13 @@ void UpdateMeshGasAndIas(bool staticNeedUpdate)
 #define WXL 1
         std::cout << "begin copy\n";
         timer.tick();
+#ifdef USE_SHORT
+        size_t vertices_size_in_bytes = g_vertices.size() * sizeof(ushort3);
+        size_t static_vertices_size_in_bytes = g_staticVertNum * sizeof(ushort3);
+#else
         size_t vertices_size_in_bytes = g_vertices.size() * sizeof(Vertex);
         size_t static_vertices_size_in_bytes = g_staticVertNum * sizeof(Vertex);
+#endif
         size_t dynamic_vertices_size_in_bytes = vertices_size_in_bytes - static_vertices_size_in_bytes;
         bool realloced;
         size_t offset = 0;
@@ -1968,7 +2111,11 @@ void UpdateMeshGasAndIas(bool staticNeedUpdate)
         auto updateRange = [&vertices_size_in_bytes, &dynamic_vertices_size_in_bytes, &realloced, &offset,
                             &numBytes]() {
             if (!realloced && WXL) {
+#ifdef USE_SHORT
+              offset = g_staticVertNum * sizeof(ushort3);
+#else
                 offset = g_staticVertNum * sizeof(Vertex);
+#endif
                 numBytes = dynamic_vertices_size_in_bytes;
             } else {
                 offset = 0;
@@ -2823,81 +2970,81 @@ static void updateStaticDrawObjects() {
                     0,
                 };
 
-                g_clr[(n + i) * 3 + 0] = {
+                g_clr[(n + i) * 3 + 0] = toHalf({
                     dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 0],
                     dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 1],
                     dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 2],
                     0,
-                };
-                g_clr[(n + i) * 3 + 1] = {
+                });
+                g_clr[(n + i) * 3 + 1] = toHalf({
                     dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 0],
                     dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 1],
                     dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 2],
                     0,
-                };
-                g_clr[(n + i) * 3 + 2] = {
+                });
+                g_clr[(n + i) * 3 + 2] = toHalf({
                     dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 0],
                     dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 1],
                     dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 2],
                     0,
-                };
+                });
 
-                g_nrm[(n + i) * 3 + 0] = {
+                g_nrm[(n + i) * 3 + 0] = halfNormal({
                     dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 0],
                     dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 1],
                     dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 2],
                     0,
-                };
-                g_nrm[(n + i) * 3 + 1] = {
+                });
+                g_nrm[(n + i) * 3 + 1] = halfNormal({
                     dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 0],
                     dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 1],
                     dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 2],
                     0,
-                };
-                g_nrm[(n + i) * 3 + 2] = {
+                });
+                g_nrm[(n + i) * 3 + 2] = halfNormal({
                     dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 0],
                     dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 1],
                     dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 2],
                     0,
-                };
+                });
 
-                g_uv[(n + i) * 3 + 0] = {
+                g_uv[(n + i) * 3 + 0] = toHalf({
                     dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 0],
                     dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 1],
                     dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 2],
                     0,
-                };
-                g_uv[(n + i) * 3 + 1] = {
+                });
+                g_uv[(n + i) * 3 + 1] = toHalf({
                     dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 0],
                     dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 1],
                     dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 2],
                     0,
-                };
-                g_uv[(n + i) * 3 + 2] = {
+                });
+                g_uv[(n + i) * 3 + 2] = toHalf({
                     dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 0],
                     dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 1],
                     dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 2],
                     0,
-                };
+                });
 
-                g_tan[(n + i) * 3 + 0] = {
+                g_tan[(n + i) * 3 + 0] = halfNormal({
                     dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 0],
                     dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 1],
                     dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 2],
                     0,
-                };
-                g_tan[(n + i) * 3 + 1] = {
+                });
+                g_tan[(n + i) * 3 + 1] = halfNormal({
                     dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 0],
                     dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 1],
                     dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 2],
                     0,
-                };
-                g_tan[(n + i) * 3 + 2] = {
+                });
+                g_tan[(n + i) * 3 + 2] = halfNormal({
                     dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 0],
                     dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 1],
                     dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 2],
                     0,
-                };
+                });
             }
             n += dat.tris.size() / 3;
         }
@@ -2953,81 +3100,81 @@ static void updateDynamicDrawObjects() {
                     0,
                 };
 
-                g_clr[g_staticVertNum + (n + i) * 3 + 0] = {
+                g_clr[g_staticVertNum + (n + i) * 3 + 0] = toHalf({
                     dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 0],
                     dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 1],
                     dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 2],
                     0,
-                };
-                g_clr[g_staticVertNum + (n + i) * 3 + 1] = {
+                });
+                g_clr[g_staticVertNum + (n + i) * 3 + 1] = toHalf({
                     dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 0],
                     dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 1],
                     dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 2],
                     0,
-                };
-                g_clr[g_staticVertNum + (n + i) * 3 + 2] = {
+                });
+                g_clr[g_staticVertNum + (n + i) * 3 + 2] = toHalf({
                     dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 0],
                     dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 1],
                     dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 2],
                     0,
-                };
+                });
 
-                g_nrm[g_staticVertNum + (n + i) * 3 + 0] = {
+                g_nrm[g_staticVertNum + (n + i) * 3 + 0] = halfNormal({
                     dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 0],
                     dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 1],
                     dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 2],
                     0,
-                };
-                g_nrm[g_staticVertNum + (n + i) * 3 + 1] = {
+                });
+                g_nrm[g_staticVertNum + (n + i) * 3 + 1] = halfNormal({
                     dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 0],
                     dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 1],
                     dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 2],
                     0,
-                };
-                g_nrm[g_staticVertNum + (n + i) * 3 + 2] = {
+                });
+                g_nrm[g_staticVertNum + (n + i) * 3 + 2] = halfNormal({
                     dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 0],
                     dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 1],
                     dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 2],
                     0,
-                };
+                });
 
-                g_uv[g_staticVertNum + (n + i) * 3 + 0] = {
+                g_uv[g_staticVertNum + (n + i) * 3 + 0] = toHalf({
                     dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 0],
                     dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 1],
                     dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 2],
                     0,
-                };
-                g_uv[g_staticVertNum + (n + i) * 3 + 1] = {
+                });
+                g_uv[g_staticVertNum + (n + i) * 3 + 1] = toHalf({
                     dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 0],
                     dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 1],
                     dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 2],
                     0,
-                };
-                g_uv[g_staticVertNum + (n + i) * 3 + 2] = {
+                });
+                g_uv[g_staticVertNum + (n + i) * 3 + 2] = toHalf({
                     dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 0],
                     dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 1],
                     dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 2],
                     0,
-                };
+                });
 
-                g_tan[g_staticVertNum + (n + i) * 3 + 0] = {
+                g_tan[g_staticVertNum + (n + i) * 3 + 0] = halfNormal({
                     dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 0],
                     dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 1],
                     dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 2],
                     0,
-                };
-                g_tan[g_staticVertNum + (n + i) * 3 + 1] = {
+                });
+                g_tan[g_staticVertNum + (n + i) * 3 + 1] = halfNormal({
                     dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 0],
                     dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 1],
                     dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 2],
                     0,
-                };
-                g_tan[g_staticVertNum + (n + i) * 3 + 2] = {
+                });
+                g_tan[g_staticVertNum + (n + i) * 3 + 2] = halfNormal({
                     dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 0],
                     dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 1],
                     dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 2],
                     0,
-                };
+                });
             }
             n += dat.tris.size() / 3;
         }
