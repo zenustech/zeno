@@ -32,6 +32,8 @@
 #include "magic_enum.hpp"
 #include "optixPathTracer.h"
 
+#include <zeno/para/parallel_sort.h>
+#include <zeno/para/parallel_scan.h>
 #include <zeno/utils/log.h>
 #include <zeno/utils/zeno_p.h>
 #include <zeno/types/MaterialObject.h>
@@ -304,6 +306,52 @@ static std::vector<uint16_t> g_lightMark = //TRIANGLE_COUNT
 {
     0
 };
+
+static void compact_triangle_vertex_attribute(const std::vector<Vertex>& attrib, std::vector<Vertex>& compactAttrib, std::vector<unsigned int>& vertIdsPerTri) {
+    using id_t = unsigned int;
+    using kv_t = std::pair<Vertex, id_t>;
+    
+    std::vector<kv_t> kvs(attrib.size());
+#pragma omp parallel for
+    for (id_t i = 0; i < attrib.size(); ++i)
+        kvs[i] = std::make_pair(attrib[i], (id_t)i);
+
+    // sort
+    auto compOp = [](const kv_t &a, const kv_t &b) {
+        if (a.first.x < b.first.x) return true;
+        else if (a.first.x > b.first.x) return false;
+        if (a.first.y < b.first.y) return true;
+        else if (a.first.y > b.first.y) return false;
+        if (a.first.z < b.first.z) return true;
+
+        return false;
+    };
+    zeno::parallel_sort(std::begin(kvs), std::end(kvs), compOp);
+
+    // excl scan
+    std::vector<id_t> mark(kvs.size()), offset(kvs.size());
+#pragma omp parallel for
+    for (id_t i = /*not 0*/1; i < kvs.size(); ++i)
+        if (kvs[i].first.x == kvs[i - 1].first.x && 
+            kvs[i].first.y == kvs[i - 1].first.y && 
+            kvs[i].first.z == kvs[i - 1].first.z)
+            mark[i] = 1;
+    zeno::parallel_inclusive_scan_sum(std::begin(mark), std::end(mark), 
+        std::begin(offset), [](const auto &v) { return v; });
+    auto numNewAttribs = offset.back() + 1;
+    mark[0] = 1;
+
+    compactAttrib.resize(numNewAttribs);
+    vertIdsPerTri.resize(attrib.size());
+#pragma omp parallel for
+    for (id_t i = 0; i < kvs.size(); ++i) {
+        auto originalIndex = kvs[i].second;
+        auto newIndex = offset[i];
+        vertIdsPerTri[originalIndex] = newIndex;
+        if (mark[i]) 
+            compactAttrib[offset[i]] = kvs[i].first;
+    }
+}
 
 struct LightsWrapper {
     std::vector<Vertex> _planeLightGeo;
