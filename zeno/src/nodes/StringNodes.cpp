@@ -669,13 +669,21 @@ ZENDEFNODE(StringLength, {
 
 struct StringSplitPath : zeno::INode {
     virtual void apply() override {
-        auto string = get_input2<std::string>("string");
+        auto stringpath = get_input2<std::string>("string");
         bool SplitExtension = get_input2<bool>("SplitExtension");
         std::string directory, filename, extension;
-        std::filesystem::path p(string);
-        directory = p.parent_path().string();
-        filename = p.stem().string();
-        extension = p.extension().string();
+        std::string::size_type last_slash_pos = stringpath.find_last_of("/\\");
+        std::string::size_type last_dot_pos = stringpath.find_last_of('.');
+        if (last_slash_pos == std::string::npos) {
+            directory = "";
+            filename = (last_dot_pos == std::string::npos) ? stringpath : stringpath.substr(0, last_dot_pos);
+            extension = (last_dot_pos == std::string::npos) ? "" : stringpath.substr(last_dot_pos + 1);
+        }
+        else {
+            directory = stringpath.substr(0, last_slash_pos);
+            filename = stringpath.substr(last_slash_pos + 1, (last_dot_pos == std::string::npos ? stringpath.length() - last_slash_pos - 1 : last_dot_pos - last_slash_pos - 1));
+            extension = (last_dot_pos == std::string::npos) ? "" : stringpath.substr(last_dot_pos + 1);
+        }
         if(!SplitExtension) filename += extension;//extension output is empty if SplitExtension is false
         set_output2("directory", directory);
         set_output2("filename", filename);
