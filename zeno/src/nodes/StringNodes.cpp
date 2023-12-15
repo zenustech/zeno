@@ -608,5 +608,64 @@ ZENDEFNODE(SubString, {
     {"string"},
 });
 
+struct StringtoLower : zeno::INode {
+    virtual void apply() override {
+        auto string = get_input2<std::string>("string");
+        std::string output = string;
+        std::transform(output.begin(), output.end(), output.begin(), [] (auto c) { 
+            return static_cast<char> (std::tolower (static_cast<unsigned char> (c))); });
+        set_output2("string", output);
+    }
+};
+
+ZENDEFNODE(StringtoLower, {
+    {
+        {"string", "string", ""},
+    },
+    {{"string", "string"},
+    },
+    {},
+    {"string"},
+});
+
+struct StringtoUpper : zeno::INode {
+    virtual void apply() override {
+        auto string = get_input2<std::string>("string");
+        std::string output = string;
+        std::transform(output.begin(), output.end(), output.begin(), [] (auto c) { 
+            return static_cast<char> (std::toupper (static_cast<unsigned char> (c))); });
+        set_output2("string", output);
+    }
+};
+
+ZENDEFNODE(StringtoUpper, {
+    {
+        {"string", "string", ""},
+    },
+    {{"string", "string"},
+    },
+    {},
+    {"string"},
+});
+
+struct StringLength : zeno::INode {
+    virtual void apply() override {
+        auto string = get_input2<std::string>("string");
+        int output = string.length();
+        set_output2("length", output);
+    }
+};
+
+ZENDEFNODE(StringLength, {
+    {
+        {"string", "string", ""},
+    },
+    {{"int", "length"},
+    },
+    {},
+    {"string"},
+});
+
+
 }
 }
