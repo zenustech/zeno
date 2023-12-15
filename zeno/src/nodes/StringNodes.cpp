@@ -9,7 +9,6 @@
 #include <zeno/utils/string.h>
 #include <string_view>
 #include <regex>
-#include <filesystem>
 
 namespace zeno {
 namespace {
