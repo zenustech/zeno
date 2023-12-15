@@ -9,6 +9,7 @@
 #include <zeno/utils/string.h>
 #include <string_view>
 #include <regex>
+#include <filesystem>
 
 namespace zeno {
 namespace {
@@ -666,6 +667,100 @@ ZENDEFNODE(StringLength, {
     {"string"},
 });
 
+struct StringSplitPath : zeno::INode {
+    virtual void apply() override {
+        auto string = get_input2<std::string>("string");
+        bool SplitExtension = get_input2<bool>("SplitExtension");
+        std::string directory, filename, extension;
+        std::filesystem::path p(string);
+        directory = p.parent_path().string();
+        filename = p.stem().string();
+        extension = p.extension().string();
+        if(!SplitExtension) filename += extension;//extension output is empty if SplitExtension is false
+        set_output2("directory", directory);
+        set_output2("filename", filename);
+        set_output2("extension", extension);
+    }
+};
+
+ZENDEFNODE(StringSplitPath, {
+    {
+        {"multiline_string", "string", ""},
+        {"bool", "SplitExtension", "true"},
+    },
+    {{"string", "directory"},
+    {"string", "filename"},
+    {"string", "extension"},
+    },
+    {},
+    {"string"},
+});
+
+struct StringInsert : zeno::INode {
+    virtual void apply() override {
+        auto string = get_input2<std::string>("string");
+        auto substring = get_input2<std::string>("substring");
+        auto start = get_input2<int>("start");
+        auto output = string;
+        if (start < 0) {
+            start = output.size() + start;
+            if (start < 0) {
+                start = 0;
+            }
+        } else if (start > output.size()) {
+            start = output.size();
+        }
+        output.insert(start, substring);
+        set_output2("string", output);
+    }
+};
+
+ZENDEFNODE(StringInsert, {
+    {
+        {"multiline_string", "string", ""},
+        {"string", "substring", ""},
+        {"int", "start", "0"},
+    },
+    {{"string", "string"},
+    },
+    {},
+    {"string"},
+});
+
+struct StringTrim : zeno::INode {
+    virtual void apply() override {
+        auto string = get_input2<std::string>("string");
+        auto trimleft = get_input2<bool>("trimleft");
+        auto trimright = get_input2<bool>("trimright");
+        std::string output = string;
+        if (!output.empty()) {
+            if (trimleft) {
+                output.erase(output.begin(), std::find_if(output.begin(), output.end(), [](int ch) {
+                    return !std::isspace(ch);
+                }));
+            }
+            if (trimright) {
+                output.erase(std::find_if(output.rbegin(), output.rend(), [](int ch) {
+                    return !std::isspace(ch);
+                }).base(), output.end());
+            }
+        }
+        set_output2("string", output);
+        
+    }
+};
+
+ZENDEFNODE(StringTrim, {
+    {
+        {"string", "string", ""},
+        {"bool", "trimleft", "true"},
+        {"bool", "trimright", "true"},
+    },
+    {{"string", "string"},
+    },
+    {},
+    {"string"},
+});
 
 }
 }
