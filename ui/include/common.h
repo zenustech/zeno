@@ -1,5 +1,5 @@
-#ifndef __ZENO_COMMON_H__
-#define __ZENO_COMMON_H__
+#ifndef __ZENO_UI_COMMON_H__
+#define __ZENO_UI_COMMON_H__
 
 #include <QModelIndex>
 #include <QSize>

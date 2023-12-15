@@ -2,8 +2,15 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/funcs/PrimitiveTools.h>
 #include <zeno/types/UserData.h>
+#include <zeno/para/parallel_reduce.h>
 
 namespace zeno {
+
+ZENO_API std::pair<vec3f, vec3f> primBoundingBox(PrimitiveObject* prim) {
+    if (!prim->verts.size())
+        return { {0, 0, 0}, {0, 0, 0} };
+    return parallel_reduce_minmax(prim->verts.begin(), prim->verts.end());
+}
 
 ZENO_API bool objectGetBoundingBox(IObject *ptr, vec3f &bmin, vec3f &bmax) {
     auto &ud = ptr->userData();

@@ -11,6 +11,7 @@
 #include <map>
 #include <zeno/types/CurveObject.h>
 #include <zeno/extra/GlobalState.h>
+#include <common/common.h>
 
 namespace zeno {
 
@@ -21,18 +22,33 @@ struct Session;
 struct GlobalState;
 struct TempNodeCaller;
 
+struct IParam;
+
 struct INode {
 public:
     Graph *graph = nullptr;
     INodeClass *nodeClass = nullptr;
 
     std::string myname;
+
+    /*
     std::map<std::string, std::pair<std::string, std::string>> inputBounds;
     std::map<std::string, zany> inputs;
-    std::map<std::string, zany> outputs;
-    std::set<std::string> kframes;
-    std::set<std::string> formulas;
+    std::map<std::string, zany> outputs;    //考虑到参数名字会被更改，放在这里需要调整key，麻烦
+    */
+
+    std::vector<std::shared_ptr<IParam>> inputs_;
+    std::vector<std::shared_ptr<IParam>> outputs_;
+
+    //todo: custom param for each node.
+    std::vector<std::shared_ptr<IParam>> custom_inputs;
+
+    //std::set<std::string> kframes;
+    //std::set<std::string> formulas;
     zany muted_output;
+
+    NodeStatus m_status = NodeStatus::Null;
+    bool m_dirty = false;
 
     ZENO_API INode();
     ZENO_API virtual ~INode();
@@ -51,18 +67,32 @@ protected:
     ZENO_API virtual void complete();
     ZENO_API virtual void apply() = 0;
 
-public:
-    ZENO_API bool requireInput(std::string const &ds);
+private:
+    ZENO_API std::shared_ptr<IParam> get_input_param(std::string const& name) const;
 
+public:
+    //为名为ds的输入参数，求得这个参数在依赖边的求值下的值，或者没有依赖边下的默认值。
+    ZENO_API bool requireInput(std::string const &ds);
+    ZENO_API bool requireInput(std::shared_ptr<IParam> param);
+
+    //preApply是先解决所有输入参数的求值问题，再调用apply执行具体算法。
     ZENO_API virtual void preApply();
 
     ZENO_API Graph *getThisGraph() const;
     ZENO_API Session *getThisSession() const;
     ZENO_API GlobalState *getGlobalState() const;
 
+    //BEGIN new api
+    ZENO_API void set_input_defl(std::string const &name, zany defl);
+    ZENO_API void set_status(NodeStatus status);
+    ZENO_API NodeStatus get_status() const;
+
+    //END new api
+
     ZENO_API bool has_input(std::string const &id) const;
     ZENO_API zany get_input(std::string const &id) const;
     ZENO_API void set_output(std::string const &id, zany obj);
+    ZENO_API zany get_output(std::string const& sock_name);
 
     ZENO_API bool has_keyframe(std::string const &id) const;
     ZENO_API zany get_keyframe(std::string const &id) const;

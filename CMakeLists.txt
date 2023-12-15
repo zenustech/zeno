@@ -167,6 +167,7 @@ function (zeno_add_asset_dir dir)
 endfunction()
 ## --- end cihou asset dir
 
+add_subdirectory(zenocore)
 add_subdirectory(zeno)
 
 ## --- begin cihou perf-geeks

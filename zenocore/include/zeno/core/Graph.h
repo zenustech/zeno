@@ -2,6 +2,7 @@
 
 #include <zeno/utils/api.h>
 #include <zeno/core/IObject.h>
+#include <zeno/core/INode.h>
 #include <zeno/utils/safe_dynamic_cast.h>
 #include <zeno/types/UserData.h>
 #include <functional>
@@ -11,6 +12,7 @@
 #include <set>
 #include <any>
 #include <map>
+#include <common/data.h>
 
 namespace zeno {
 
@@ -33,7 +35,7 @@ struct Context {
 
 struct Graph : std::enable_shared_from_this<Graph> {
     Session *session = nullptr;
-    SubgraphNode *subgraphNode = nullptr;
+    //SubgraphNode *subgraphNode = nullptr;
 
     std::map<std::string, std::unique_ptr<INode>> nodes;
     std::set<std::string> nodesToExec;
@@ -55,6 +57,17 @@ struct Graph : std::enable_shared_from_this<Graph> {
     Graph(Graph &&) = delete;
     Graph &operator=(Graph &&) = delete;
 
+    //BEGIN NEW STANDARD API
+    ZENO_API void init(const GraphData& graph);
+    ZENO_API std::shared_ptr<INode> createNode(std::string const& cls);
+    ZENO_API bool removeNode(std::string const& cls);
+    ZENO_API
+    ZENO_API bool addLink(const std::string& outnode, const std::string& outparam,
+        const std::string& innode, const std::string& inparam, const std::string& optionkey = "");
+    ZENO_API bool removeLink(const std::string& outnode, const std::string& outparam,
+        const std::string& innode, const std::string& inparam, const std::string& optionkey = "");
+    //END
+
     ZENO_API DirtyChecker &getDirtyChecker();
     ZENO_API void clearNodes();
     ZENO_API void applyNodesToExec();
@@ -66,8 +79,11 @@ struct Graph : std::enable_shared_from_this<Graph> {
     ZENO_API void completeNode(std::string const &id);
     ZENO_API void bindNodeInput(std::string const &dn, std::string const &ds,
         std::string const &sn, std::string const &ss);
+
+    //容易有歧义：这个input是defl value，还是实质的对象？按原来zeno的语义，是指defl value
     ZENO_API void setNodeInput(std::string const &id, std::string const &par,
         zany const &val);
+
     ZENO_API void setKeyFrame(std::string const &id, std::string const &par, zany const &val);
     ZENO_API void setFormula(std::string const &id, std::string const &par, zany const &val);
     ZENO_API void addNodeOutput(std::string const &id, std::string const &par);

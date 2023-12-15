@@ -15,6 +15,9 @@
 #include <zeno/utils/safe_at.h>
 #include <zeno/utils/logger.h>
 #include <zeno/extra/GlobalState.h>
+#include <zeno/core/IParam.h>
+#include <zeno/DictObject.h>
+#include <zeno/ListObject.h>
 
 namespace zeno {
 
@@ -69,9 +72,12 @@ ZENO_API void INode::complete() {}
 }*/
 
 ZENO_API void INode::preApply() {
-    for (auto const &[ds, bound]: inputBounds) {
-        requireInput(ds);
-    }
+
+    if (!m_dirty)
+        return;
+
+    for (const auto& param : inputs_)
+        requireInput(param);
 
     log_debug("==> enter {}", myname);
     {
@@ -83,7 +89,72 @@ ZENO_API void INode::preApply() {
     log_debug("==> leave {}", myname);
 }
 
-ZENO_API bool INode::requireInput(std::string const &ds) {
+ZENO_API bool INode::requireInput(std::string const& ds) {
+    return requireInput(get_input_param(ds));
+}
+
+ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
+    if (!in_param)
+        return false;
+
+    if (in_param->links.empty()) {
+        in_param->result = in_param->defl;
+        return true;
+    }
+
+    switch (in_param->type)
+    {
+        case Param_Dict:
+        {
+            std::shared_ptr<DictObject> spDict;
+            //如果只有一条边，并且对面的object刚好是一个dict，那么应该是直接连接（暂不考虑嵌套dict吧...)
+            bool bDirecyLink = false;
+            if (in_param->links.size() == 1)
+            {
+                std::shared_ptr<IParam> out_param = in_param->links[0]->fromparam.lock();
+                std::shared_ptr<INode> outNode = out_param->m_spNode.lock();
+                outNode->preApply();
+                zany outResult = outNode->get_output(out_param->name);
+                if (dynamic_cast<DictObject*>(outResult.get())) {
+                    bDirecyLink = true;
+                    spDict = std::dynamic_pointer_cast<DictObject>(outResult);
+                }
+            }
+            if (!bDirecyLink)
+            {
+                spDict = std::make_shared<DictObject>();
+                for (const auto& spLink : in_param->links)
+                {
+                    std::shared_ptr<IParam> outParam = in_param->links[0]->fromparam.lock();
+                    std::shared_ptr<INode> outNode = outParam->m_spNode.lock();
+                    outNode->preApply();
+                    zany outResult = outNode->get_output(outParam->name);
+                    spDict->lut[spLink->keyName] = outResult;
+                }
+            }
+            in_param->result = spDict;   //新的写法
+            break;
+        }
+        case Param_List:
+        {
+            std::shared_ptr<ListObject> spList = std::make_shared<ListObject>();
+            //同上
+            break;
+        }
+        default:
+        {
+            if (in_param->links.size() == 1)
+            {
+                std::shared_ptr<IParam> outParam = in_param->links[0]->fromparam.lock();
+                std::shared_ptr<INode> outNode = outParam->m_spNode.lock();
+                outNode->preApply();
+                zany outResult = outNode->get_output(outParam->name);
+                in_param->result = outResult;   //新的写法
+            }
+        }
+    }
+    return true;
+    /*
     auto it = inputBounds.find(ds);
     if (it == inputBounds.end())
         return false;
@@ -95,6 +166,7 @@ ZENO_API bool INode::requireInput(std::string const &ds) {
     auto ref = graph->getNodeOutput(sn, ss);
     inputs[ds] = ref;
     return true;
+    */
 }
 
 ZENO_API void INode::doOnlyApply() {
@@ -127,20 +199,43 @@ ZENO_API void INode::doApply() {
     return options.find(id) != options.end();
 }*/
 
+ZENO_API void INode::set_input_defl(std::string const& name, zany defl) {
+    std::shared_ptr<IParam> param = get_input_param(name);
+    param->defl = defl;
+}
+
+std::shared_ptr<IParam> INode::get_input_param(std::string const& name) const {
+    for (auto& param : outputs_) {
+        if (param->name == name)
+            return param;
+    }
+    return nullptr;
+}
+
 ZENO_API bool INode::has_input(std::string const &id) const {
-    return inputs.find(id) != inputs.end();
+    return get_input_param(id) != nullptr;
+    //return inputs.find(id) != inputs.end();
 }
 
 ZENO_API zany INode::get_input(std::string const &id) const {
+    std::shared_ptr<IParam> param = get_input_param(id);
+    return param ? param->defl : nullptr;
+    /*
     if (has_keyframe(id)) {
         return get_keyframe(id);
     } else if (has_formula(id)) {
         return get_formula(id);
     }
     return safe_at(inputs, id, "input socket of node `" + myname + "`");
+    */
 }
 
 ZENO_API zany INode::resolveInput(std::string const& id) {
+    if (requireInput(id))
+        return get_input_param(id)->result;
+    else
+        return nullptr;
+    /*
     if (inputBounds.find(id) != inputBounds.end()) {
         if (requireInput(id))
             return get_input(id);
@@ -152,18 +247,45 @@ ZENO_API zany INode::resolveInput(std::string const& id) {
             id_.push_back(':');
         return get_input(id_);
     }
+    */
 }
 
-ZENO_API void INode::set_output(std::string const &id, zany obj) {
-    outputs[id] = std::move(obj);
+ZENO_API void INode::set_output(std::string const &sock_name, zany obj) {
+    for (auto& param : outputs_) {
+        if (param->name == sock_name)
+            param->result = obj;
+    }
+}
+
+ZENO_API zany INode::get_output(std::string const& sock_name) {
+    for (const auto& param : outputs_) {
+        if (param->name == sock_name)
+            return param->result;
+    }
+    return nullptr;
+}
+
+ZENO_API void INode::set_status(NodeStatus status)
+{
+    m_status = status;
+    //TODO: notify mechanism
+}
+
+ZENO_API NodeStatus INode::get_status() const
+{
+    return m_status;
 }
 
 ZENO_API bool INode::has_keyframe(std::string const &id) const {
-    return kframes.find(id) != kframes.end();
+    return false;
+    //return kframes.find(id) != kframes.end();
 }
 
 ZENO_API zany INode::get_keyframe(std::string const &id) const 
 {
+    std::shared_ptr<IParam> param = get_input_param(id);
+    return param ? param->defl : nullptr;
+    /*
     auto value = safe_at(inputs, id, "input socket of node `" + myname + "`");
     auto curves = dynamic_cast<zeno::CurveObject *>(value.get());
     if (!curves) {
@@ -202,14 +324,19 @@ ZENO_API zany INode::get_keyframe(std::string const &id) const
         }
     }
     return value;
+    */
 }
 
 ZENO_API bool INode::has_formula(std::string const &id) const {
-    return formulas.find(id) != formulas.end();
+    return false;
+    //return formulas.find(id) != formulas.end();
 }
 
 ZENO_API zany INode::get_formula(std::string const &id) const 
 {
+    std::shared_ptr<IParam> param = get_input_param(id);
+    return param ? param->defl : nullptr;
+    /*
     auto value = safe_at(inputs, id, "input socket of node `" + myname + "`");
     if (auto formulas = dynamic_cast<zeno::StringObject *>(value.get())) 
     {
@@ -259,6 +386,7 @@ ZENO_API zany INode::get_formula(std::string const &id) const
         }
     }     
     return value;
+    */
 }
 
 ZENO_API TempNodeCaller INode::temp_node(std::string const &id) {

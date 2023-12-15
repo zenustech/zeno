@@ -14,6 +14,7 @@
 #include <zeno/extra/DirtyChecker.h>
 #include <zeno/utils/Error.h>
 #include <zeno/utils/log.h>
+#include <zeno/core/IParam.h>
 #include <iostream>
 
 namespace zeno {
@@ -108,22 +109,29 @@ ZENO_API void Graph::applyNodesToExec() {
 
 ZENO_API void Graph::bindNodeInput(std::string const &dn, std::string const &ds,
         std::string const &sn, std::string const &ss) {
-    safe_at(nodes, dn, "node name")->inputBounds[ds] = std::pair(sn, ss);
+    //safe_at(nodes, dn, "node name")->inputBounds[ds] = std::pair(sn, ss);
 }
 
 ZENO_API void Graph::setNodeInput(std::string const &id, std::string const &par,
         zany const &val) {
-    safe_at(nodes, id, "node name")->inputs[par] = val;
+    safe_at(nodes, id, "node name")->set_input_defl(par, val);
+    //safe_at(nodes, id, "node name")->inputs[par] = val;
 }
 
 ZENO_API void Graph::setKeyFrame(std::string const &id, std::string const &par, zany const &val) {
+    safe_at(nodes, id, "node name")->set_input_defl(par, val);
+    /*
     safe_at(nodes, id, "node name")->inputs[par] = val;
     safe_at(nodes, id, "node name")->kframes.insert(par);
+    */
 }
 
 ZENO_API void Graph::setFormula(std::string const &id, std::string const &par, zany const &val) {
+    safe_at(nodes, id, "node name")->set_input_defl(par, val);
+    /*
     safe_at(nodes, id, "node name")->inputs[par] = val;
     safe_at(nodes, id, "node name")->formulas.insert(par);
+    */
 }
 
 
@@ -167,6 +175,37 @@ ZENO_API DirtyChecker &Graph::getDirtyChecker() {
     if (!dirtyChecker)
         dirtyChecker = std::make_unique<DirtyChecker>();
     return *dirtyChecker;
+}
+
+ZENO_API void Graph::init(const GraphData& graph) {
+    //import nodes first.
+    for (const auto& [ident, node] : graph.nodes) {
+
+    }
+    //import edges
+    for (const auto& link : graph.links) {
+        std::shared_ptr<zeno::ILink> spLink = std::make_shared<zeno::ILink>();
+        //get param ptr from node.
+        //and then assign spLink to them.
+    }
+}
+
+ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls) {
+    return nullptr;
+}
+
+ZENO_API bool Graph::removeNode(std::string const& cls) {
+    return false;
+}
+
+ZENO_API bool Graph::addLink(const std::string& outnode, const std::string& outparam,
+    const std::string& innode, const std::string& inparam, const std::string& optionkey) {
+    return false;
+}
+
+ZENO_API bool Graph::removeLink(const std::string& outnode, const std::string& outparam,
+    const std::string& innode, const std::string& inparam, const std::string& optionkey) {
+    return false;
 }
 
 }
