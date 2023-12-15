@@ -7,7 +7,7 @@
 #include <zeno/extra/GlobalState.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/utils/string.h>
-//#include <string_view>
+#include <string_view>
 #include <regex>
 
 namespace zeno {
@@ -523,6 +523,64 @@ ZENDEFNODE(NumbertoString, {
         {"number"},
     },
     {{"string", "string"},
+    },
+    {},
+    {"string"},
+});
+
+std::string strreplace(std::string textToSearch, std::string_view toReplace, std::string_view replacement)
+{
+    size_t pos = 0;
+    for (;;)
+    {
+        pos = textToSearch.find(toReplace, pos);
+        if (pos == std::string::npos)
+            return textToSearch;
+        textToSearch.replace(pos, toReplace.length(), replacement);
+        pos += replacement.length();
+    }
+}
+
+struct StringReplace : zeno::INode {
+    virtual void apply() override {
+        std::string string = get_input2<std::string>("string");
+        std::string oldstr = get_input2<std::string>("old");
+        std::string newstr = get_input2<std::string>("new");
+        auto output = strreplace(string, oldstr, newstr);
+        set_output2("string", output);
+    }
+};
+
+ZENDEFNODE(StringReplace, {
+    {
+        {"multiline_string", "string", ""},
+        {"string", "old", ""},
+        {"string", "new", ""},
+    },
+    {{"string", "string"},
+    },
+    {},
+    {"string"},
+});
+
+struct StringFind : zeno::INode {//return -1 if not found
+    virtual void apply() override {
+        auto string = get_input2<std::string>("string");
+        auto substring = get_input2<std::string>("substring");
+        auto start = get_input2<int>("start");
+        std::string::size_type n = string.find(substring, start);
+        int output = (n == std::string::npos) ? -1 : static_cast<int>(n);
+        set_output2("Position", output);
+    }
+};
+
+ZENDEFNODE(StringFind, {
+    {
+        {"multiline_string", "string", ""},
+        {"string", "substring", ""},
+        {"int", "start", "0"},
+    },
+    {{"int", "Position"},
     },
     {},
     {"string"},
