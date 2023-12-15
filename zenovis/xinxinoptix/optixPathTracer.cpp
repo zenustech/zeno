@@ -208,45 +208,47 @@ ushort2 halfNormal(float4 in)
                       (unsigned short)(val.y*65536.0f),
                       (unsigned short)(val.z*65536.0f));
 }
-#elifdef USE_SHORT
-ushort3 toHalfColor(float4 in)
-{
-  return make_ushort3((unsigned short)(in.x*65536.0f),
-                      (unsigned short)(in.y*65536.0f),
-                      (unsigned short)(in.z*65536.0f));
-}
-ushort3 toHalf(float4 in)
-{
-  return make_ushort3((unsigned short)(in.x*65536.0f),
-                      (unsigned short)(in.y*65536.0f),
-                      (unsigned short)(in.z*65536.0f));
-}
-
-ushort3 halfNormal(float4 in)
-{
-  float3 val = make_float3((in.x + 1.0f)/2.0f,
-                           (in.y + 1.0f)/2.0f,
-                           (in.z + 1.0f)/2.0f);
-  val = normalize(val);
-
-  return make_ushort3((unsigned short)(val.x*65536.0f),
-                      (unsigned short)(val.y*65536.0f),
-                      (unsigned short)(val.z*65536.0f));
-}
 #else
-float4 toHalfColor(float4 in)
-{
-  return in;
-}
-float4 toHalf(float4 in)
-{
-  return in;
-}
+  #ifdef USE_SHORT
+    ushort3 toHalfColor(float4 in)
+    {
+      return make_ushort3((unsigned short)(in.x*65536.0f),
+                          (unsigned short)(in.y*65536.0f),
+                          (unsigned short)(in.z*65536.0f));
+    }
+    ushort3 toHalf(float4 in)
+    {
+      return make_ushort3((unsigned short)(in.x*65536.0f),
+                          (unsigned short)(in.y*65536.0f),
+                          (unsigned short)(in.z*65536.0f));
+    }
 
-float4 halfNormal(float4 in)
-{
-  return in;
-}
+    ushort3 halfNormal(float4 in)
+    {
+      float3 val = make_float3((in.x + 1.0f)/2.0f,
+                               (in.y + 1.0f)/2.0f,
+                               (in.z + 1.0f)/2.0f);
+      val = normalize(val);
+
+      return make_ushort3((unsigned short)(val.x*65536.0f),
+                          (unsigned short)(val.y*65536.0f),
+                          (unsigned short)(val.z*65536.0f));
+    }
+  #else
+    float4 toHalfColor(float4 in)
+    {
+      return in;
+    }
+    float4 toHalf(float4 in)
+    {
+      return in;
+    }
+
+    float4 halfNormal(float4 in)
+    {
+      return in;
+    }
+  #endif
 #endif
 
 std::optional<sutil::CUDAOutputBuffer<uchar4>> output_buffer_o;
