@@ -262,16 +262,20 @@ struct HitGroupData
     ushort2* nrm;
     ushort2* clr;
     ushort2* tan;
-#elifdef USE_SHORT
-    ushort3* uv;
-    ushort3* nrm;
-    ushort3* clr;
-    ushort3* tan;
 #else
-    float4* uv;
-    float4* nrm;
-    float4* clr;
-    float4* tan;
+
+  #ifdef USE_SHORT
+      ushort3* uv;
+      ushort3* nrm;
+      ushort3* clr;
+      ushort3* tan;
+  #else
+      float4* uv;
+      float4* nrm;
+      float4* clr;
+      float4* tan;
+  #endif
+
 #endif
     unsigned short* lightMark;
     uint32_t* auxOffset;
