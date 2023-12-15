@@ -176,10 +176,6 @@ virtual void apply() override {
         eles.resize(verts.size());
         // we need an extra 'inds' tag, in case the source and animation has different topo
         eles.append_channels(cudaPol,{{"inds",1},{"follow_weight",1}});
-        // cudaPol(zs::range(eles.size()),[
-        //     eles = proxy<space>({},eles)] ZS_LAMBDA(int ei) mutable {eles("inds",1) = zs::reinterpret_bits<float>(ei);});
-        
-        // TILEVEC_OPS::copy(cudaPol,kverts,"ani_mask",eles,"follow_weight");
         cudaPol(zs::range(eles.size()),[
             kverts = proxy<space>({},kverts),
             do_constraint_topological_coloring = do_constraint_topological_coloring,
@@ -206,7 +202,7 @@ virtual void apply() override {
 
     if(type == "reference_dcd_collision_constraint") {
         constexpr auto eps = 1e-6;
-        constexpr auto MAX_IMMINENT_COLLISION_PAIRS = 20000;
+        constexpr auto MAX_IMMINENT_COLLISION_PAIRS = 200000;
         auto dcd_source_xtag = get_input2<std::string>("dcd_source_xtag");
         constraint->setMeta(CONSTRAINT_KEY,category_c::dcd_collision_constraint);
         eles.append_channels(cudaPol,{{"inds",4},{"bary",4},{"type",1}});
@@ -326,16 +322,33 @@ virtual void apply() override {
         auto triBvh = bvh_t{};
         auto triBvs = retrieve_bounding_volumes(cudaPol,vtemp,ttemp,wrapv<3>{},imminent_collision_thickness/(float)2.0,"x");
         triBvh.build(cudaPol,triBvs);
-        COLLISION_UTILS::detect_self_imminent_PT_close_proximity(cudaPol,vtemp,"x",ttemp,imminent_collision_thickness,0,triBvh,eles,csPT,true,true);
+        COLLISION_UTILS::detect_self_imminent_PT_close_proximity(cudaPol,
+            vtemp,"x","X","collision_group",
+            ttemp,
+            imminent_collision_thickness,
+            0,
+            triBvh,
+            eles,
+            csPT,
+            true,
+            true);
 
-        std::cout << "nm_imminent_csPT : " << csPT.size() << std::endl;
+        // std::cout << "nm_imminent_csPT : " << csPT.size() << std::endl;
 
         auto edgeBvh = bvh_t{};
         auto edgeBvs = retrieve_bounding_volumes(cudaPol,vtemp,etemp,wrapv<2>{},imminent_collision_thickness/(float)2.0,"x");
         edgeBvh.build(cudaPol,edgeBvs);  
-        COLLISION_UTILS::detect_self_imminent_EE_close_proximity(cudaPol,vtemp,"x",etemp,imminent_collision_thickness,csPT.size(),edgeBvh,eles,csEE,true,true);
-
-        std::cout << "nm_imminent_csEE : " << csEE.size() << std::endl;
+        COLLISION_UTILS::detect_self_imminent_EE_close_proximity(cudaPol,
+            vtemp,
+            "x","X","collision_group",
+            etemp,
+            imminent_collision_thickness,
+            csPT.size(),
+            edgeBvh,
+            eles,csEE,
+            true,
+            true);
+        // std::cout << "nm_imminent_csEE : " << csEE.size() << std::endl;
         // std::cout << "csEE + csPT = " << csPT.size() + csEE.size() << std::endl;
         if(!verts.hasProperty("dcd_collision_tag"))
             verts.append_channels(cudaPol,{{"dcd_collision_tag",1}});
@@ -364,7 +377,7 @@ virtual void apply() override {
 
     if(type == "kinematic_dcd_collision_constraint") {
         constexpr auto eps = 1e-6;
-        constexpr auto MAX_KINEMATIC_IMMINENT_COLLISION_PAIRS = 20000;
+        constexpr auto MAX_KINEMATIC_IMMINENT_COLLISION_PAIRS = 200000;
         auto dcd_source_xtag = get_input2<std::string>("dcd_source_xtag");
         const auto &edges = (*source)[ZenoParticles::s_surfEdgeTag];
 
@@ -604,28 +617,51 @@ virtual void apply() override {
     if(type == "self_dcd_collision_constraint") {
         constexpr auto eps = 1e-6;
         constexpr auto MAX_SELF_IMMINENT_COLLISION_PAIRS = 200000;
+
+        auto collision_group_name = get_input2<std::string>("group_name");
         auto dcd_source_xtag = get_input2<std::string>("dcd_source_xtag");
+        auto imminent_collision_thickness = get_input2<float>("thickness");
+
         constraint->setMeta(CONSTRAINT_KEY,category_c::self_dcd_collision_constraint);
+        constraint->setMeta(GLOBAL_DCD_THICKNESS,imminent_collision_thickness);
+        constraint->setMeta<bool>(ENABLE_DCD_REPULSION_FORCE,get_input2<bool>("add_dcd_repulsion_force"));
+        
         eles.append_channels(cudaPol,{{"inds",4},{"bary",4},{"type",1}});
+        // eles.resize(MAX_SELF_IMMINENT_COLLISION_PAIRS);
 
         const auto &edges = (*source)[ZenoParticles::s_surfEdgeTag];
 
-        auto imminent_collision_thickness = get_input2<float>("thickness");
-
-        zs::bht<int,2,int> csPT{verts.get_allocator(),(size_t)MAX_SELF_IMMINENT_COLLISION_PAIRS};csPT.reset(cudaPol,true);
-        zs::bht<int,2,int> csEE{edges.get_allocator(),(size_t)MAX_SELF_IMMINENT_COLLISION_PAIRS};csEE.reset(cudaPol,true);
-
+        zs::bht<int,2,int> csPT{verts.get_allocator(),(size_t)MAX_SELF_IMMINENT_COLLISION_PAIRS};
+        csPT.reset(cudaPol,true);
+        zs::bht<int,2,int> csEE{edges.get_allocator(),(size_t)MAX_SELF_IMMINENT_COLLISION_PAIRS};
+        csEE.reset(cudaPol,true);
 
         auto triBvh = bvh_t{};
         auto triBvs = retrieve_bounding_volumes(cudaPol,verts,quads,wrapv<3>{},imminent_collision_thickness/static_cast<float>(2.0),dcd_source_xtag);
         triBvh.build(cudaPol,triBvs);
-        COLLISION_UTILS::detect_self_imminent_PT_close_proximity(cudaPol,verts,dcd_source_xtag,quads,imminent_collision_thickness,triBvh,csPT);
+        COLLISION_UTILS::detect_self_imminent_PT_close_proximity(cudaPol,
+                verts,
+                dcd_source_xtag,"X",collision_group_name,
+                quads,
+                imminent_collision_thickness,
+                triBvh,
+                csPT,
+                true,
+                true);
 
         std::cout << "nm_imminent_csPT : " << csPT.size() << std::endl;
         auto edgeBvh = bvh_t{};
         auto edgeBvs = retrieve_bounding_volumes(cudaPol,verts,edges,wrapv<2>{},imminent_collision_thickness/static_cast<float>(2.0),dcd_source_xtag);
         edgeBvh.build(cudaPol,edgeBvs);  
-        COLLISION_UTILS::detect_self_imminent_EE_close_proximity(cudaPol,verts,dcd_source_xtag,edges,imminent_collision_thickness,edgeBvh,csEE);
+        COLLISION_UTILS::detect_self_imminent_EE_close_proximity(cudaPol,
+                verts,
+                dcd_source_xtag,"X",collision_group_name,
+                edges,
+                imminent_collision_thickness,
+                edgeBvh,
+                csEE,
+                true,
+                true);
 
         std::cout << "nm_imminent_csEE : " << csEE.size() << std::endl;
 
@@ -690,8 +726,6 @@ virtual void apply() override {
         });
 
         constraint->setMeta<size_t>(NM_DCD_COLLISIONS,csEE.size() + csPT.size());
-        constraint->setMeta(GLOBAL_DCD_THICKNESS,imminent_collision_thickness);
-        constraint->setMeta<bool>(ENABLE_DCD_REPULSION_FORCE,get_input2<bool>("add_dcd_repulsion_force"));
     }
 
     if(type == "volume_pin") {
@@ -1018,7 +1052,7 @@ virtual void apply() override {
         }); 
     }
 
-    if(type != "self_dcd_collision_constraint" && type != "kinematic_dcd_collison_constraint") {
+    // if(type != "self_dcd_collision_constraint" && type != "kinematic_dcd_collison_constraint") {
         cudaPol(zs::range(eles.size()),[
             eles = proxy<space>({},eles),
             relative_stiffness = relative_stiffness,
@@ -1037,12 +1071,11 @@ virtual void apply() override {
         });
 
         constraint->setMeta(CONSTRAINT_COLOR_OFFSET,color_offset);
-    }
+    // }
 
     }else {
         constraint->setMeta(CONSTRAINT_KEY,category_c::empty_constraint);
     }
-
     // set_output("source",source);
     set_output("constraint",constraint);
 }

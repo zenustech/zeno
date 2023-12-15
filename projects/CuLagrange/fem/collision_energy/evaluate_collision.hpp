@@ -199,13 +199,14 @@ template<typename Pol,
     typename EdgeBvh,
     typename T = typename PosTileVec::value_type>
 void detect_self_imminent_EE_close_proximity(Pol& pol,
-    PosTileVec& verts,const zs::SmallString& xtag,
+    PosTileVec& verts,
+    const zs::SmallString& xtag,const zs::SmallString& Xtag,const zs::SmallString& collision_group_name,
     const EdgeTileVec& edges,
     const T& thickness,
-    // size_t buffer_offset,
     const EdgeBvh& edgeBvh,
-    // ProximityBuffer& proximity_buffer,
-    EEHashMap& csEE) {
+    EEHashMap& csEE,
+    bool skip_too_close_pair_at_rest_configuration = false,
+    bool use_collision_group = false) {
         using namespace zs;
         constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
 
@@ -218,21 +219,31 @@ void detect_self_imminent_EE_close_proximity(Pol& pol,
 
         csEE.reset(pol,true);
 
+        auto has_rest_shape = verts.hasProperty(Xtag);
+        auto has_collision_group = verts.hasProperty(collision_group_name);
+        auto has_collision_cancel = verts.hasProperty("collision_cancel");
+
         pol(zs::range(edges.size()),[
+            has_collision_cancel = has_collision_cancel,
+            has_rest_shape = has_rest_shape,
+            has_collision_group = has_collision_group,
+            skip_rest = skip_too_close_pair_at_rest_configuration,
+            use_collision_group = use_collision_group,
+            collision_group_name = collision_group_name,
+            Xtag = Xtag,
             xtag = xtag,
             verts = proxy<space>({},verts),
             edges = proxy<space>({},edges),
             thickness = thickness,
             thickness2 = thickness * thickness,
-            // buffer_offset = buffer_offset,
             eps = eps,
-            // proximity_buffer = proxy<space>({},proximity_buffer),
             edgeBvh = proxy<space>(edgeBvh),
             csEE = proxy<space>(csEE)] ZS_LAMBDA(int ei) mutable {
                 auto ea = edges.pack(dim_c<2>,"inds",ei,int_c);
-                for(int i = 0;i != 2;++i)
-                    if(verts.hasProperty("collision_cancel") && verts("collision_cancel",ea[i]) > 1e-3)
-                        return;
+                if(has_collision_cancel)
+                    for(int i = 0;i != 2;++i)
+                        if(verts("collision_cancel",ea[i]) > 1e-3)
+                            return;
 
                 vec3 pas[2] = {};
                 for(int i = 0;i != 2;++i)
@@ -251,9 +262,10 @@ void detect_self_imminent_EE_close_proximity(Pol& pol,
                             return;
                     }
 
-                    for(int i = 0;i != 2;++i)
-                        if(verts.hasProperty("collision_cancel") && verts("collision_cancel",eb[i]) > 1e-3)
-                            return;
+                    if(has_collision_cancel)
+                        for(int i = 0;i != 2;++i)
+                            if(verts.hasProperty("collision_cancel") && verts("collision_cancel",eb[i]) > 1e-3)
+                                return;
 
                     if(verts.hasProperty("minv")) {
                         bool has_dynamic_points = false;
@@ -302,6 +314,23 @@ void detect_self_imminent_EE_close_proximity(Pol& pol,
                     vec4i inds{ea[0],ea[1],eb[0],eb[1]};
                     // for(int i = 0;i != 4;++i)
                     //     verts("dcd_collision_tag",inds[i]) = 1;
+
+                    if(has_rest_shape && skip_rest) {
+                        vec3 rpas[2] = {};
+                        vec3 rpbs[2] = {};
+                        for(int i = 0;i != 2;++i) {
+                            rpas[i] = verts.pack(dim_c<3>,Xtag,ea[i]);
+                            rpbs[i] = verts.pack(dim_c<3>,Xtag,eb[i]);
+                        }
+
+                        auto is_same_collision_group = false;
+                        if(use_collision_group) 
+                            is_same_collision_group = zs::abs(verts(collision_group_name,ea[0]) - verts(collision_group_name,eb[0])) < 0.1;
+
+
+                        if(LSL_GEO::get_edge_edge_distance(rpas[0],rpas[1],rpbs[0],rpbs[1]) < thickness && is_same_collision_group)
+                            return;
+                    }
 
                     auto id = csEE.insert(vec2i{ei,nei});
                     // proximity_buffer.tuple(dim_c<4>,"bary",id + buffer_offset) = bary;
@@ -519,12 +548,14 @@ template<typename Pol,
     typename EdgeBvh,
     typename T = typename PosTileVec::value_type>
 void detect_self_imminent_EE_close_proximity(Pol& pol,
-    PosTileVec& verts,const zs::SmallString& xtag,
+    PosTileVec& verts,
+    const zs::SmallString& xtag,const zs::SmallString& Xtag,const zs::SmallString& collision_group_name,
     const EdgeTileVec& edges,
     const T& thickness,
     size_t buffer_offset,
     const EdgeBvh& edgeBvh,
-    ProximityBuffer& proximity_buffer,EEHashMap& csEE,
+    ProximityBuffer& proximity_buffer,
+    EEHashMap& csEE,
     bool skip_too_close_pair_at_rest_configuration = false,
     bool use_collision_group = false) {
         using namespace zs;
@@ -539,12 +570,18 @@ void detect_self_imminent_EE_close_proximity(Pol& pol,
 
         csEE.reset(pol,true);
 
-        auto has_rest_shape = verts.hasProperty("X");
+        auto has_rest_shape = verts.hasProperty(Xtag);
+        auto has_collision_group = verts.hasProperty(collision_group_name);
+        auto has_collision_cancel = verts.hasProperty("collision_cancel");
 
         pol(zs::range(edges.size()),[
+            has_collision_cancel = has_collision_cancel,
             has_rest_shape = has_rest_shape,
+            has_collision_group = has_collision_group,
             skip_rest = skip_too_close_pair_at_rest_configuration,
             use_collision_group = use_collision_group,
+            collision_group_name = collision_group_name,
+            Xtag = Xtag,
             xtag = xtag,
             verts = proxy<space>({},verts),
             edges = proxy<space>({},edges),
@@ -556,9 +593,10 @@ void detect_self_imminent_EE_close_proximity(Pol& pol,
             edgeBvh = proxy<space>(edgeBvh),
             csEE = proxy<space>(csEE)] ZS_LAMBDA(int ei) mutable {
                 auto ea = edges.pack(dim_c<2>,"inds",ei,int_c);
-                for(int i = 0;i != 2;++i)
-                    if(verts.hasProperty("collision_cancel") && verts("collision_cancel",ea[i]) > 1e-3)
-                        return;
+                if(has_collision_cancel)
+                    for(int i = 0;i != 2;++i)
+                        if(verts("collision_cancel",ea[i]) > 1e-3)
+                            return;
 
                 vec3 pas[2] = {};
                 for(int i = 0;i != 2;++i)
@@ -576,10 +614,10 @@ void detect_self_imminent_EE_close_proximity(Pol& pol,
                         if(eb[i] == ea[0] || eb[i] == ea[1])
                             return;
                     }
-
-                    for(int i = 0;i != 2;++i)
-                        if(verts.hasProperty("collision_cancel") && verts("collision_cancel",eb[i]) > 1e-3)
-                            return;
+                    if(has_collision_cancel)
+                        for(int i = 0;i != 2;++i)
+                            if(verts("collision_cancel",eb[i]) > 1e-3)
+                                return;
 
                     if(verts.hasProperty("minv")) {
                         bool has_dynamic_points = false;
@@ -633,13 +671,13 @@ void detect_self_imminent_EE_close_proximity(Pol& pol,
                         vec3 rpas[2] = {};
                         vec3 rpbs[2] = {};
                         for(int i = 0;i != 2;++i) {
-                            rpas[i] = verts.pack(dim_c<3>,"X",ea[i]);
-                            rpbs[i] = verts.pack(dim_c<3>,"X",eb[i]);
+                            rpas[i] = verts.pack(dim_c<3>,Xtag,ea[i]);
+                            rpbs[i] = verts.pack(dim_c<3>,Xtag,eb[i]);
                         }
 
                         auto is_same_collision_group = false;
                         if(use_collision_group) 
-                            is_same_collision_group = zs::abs(verts("collision_group",ea[0]) - verts("collision_group",eb[0])) < 0.1;
+                            is_same_collision_group = zs::abs(verts(collision_group_name,ea[0]) - verts(collision_group_name,eb[0])) < 0.1;
 
 
                         if(LSL_GEO::get_edge_edge_distance(rpas[0],rpas[1],rpbs[0],rpbs[1]) < thickness && is_same_collision_group)
@@ -665,7 +703,7 @@ template<typename Pol,
     typename ProximityBuffer,
     typename T = typename PosTileVec::value_type>
 void detect_self_imminent_PT_close_proximity(Pol& pol,
-    PosTileVec& verts,const zs::SmallString& xtag,
+    PosTileVec& verts,const zs::SmallString& xtag,const zs::SmallString& Xtag,const zs::SmallString& collisionGroupTag,
     const TriTileVec& tris,
     const T& thickness,
     size_t buffer_offset,
@@ -680,13 +718,17 @@ void detect_self_imminent_PT_close_proximity(Pol& pol,
         // constexpr auto exec_tag = wrapv<space>{};
         csPT.reset(pol,true);
 
-        auto has_rest_shape = verts.hasProperty("X");
+        auto has_rest_shape = verts.hasProperty(Xtag);
+        auto has_collision_group = verts.hasProperty(collisionGroupTag);
         pol(zs::range(verts.size()),[
+            collisionGroupTag = collisionGroupTag,
             has_rest_shape = has_rest_shape,
+            has_collision_group = has_collision_group,
             skip_rest = skip_too_close_pair_at_rest_configuration,
             use_collision_group = use_collision_group,
             eps = eps,
-            xtag = zs::SmallString(xtag),
+            Xtag = Xtag,
+            xtag = xtag,
             verts = proxy<space>({},verts),
             tris = proxy<space>({},tris),
             buffer_offset = buffer_offset,
@@ -701,7 +743,6 @@ void detect_self_imminent_PT_close_proximity(Pol& pol,
                 auto p = verts.pack(dim_c<3>,xtag,vi);
                 auto bv = bv_t{get_bounding_box(p - thickness/(T)2,p + thickness/(T)2)};
 
-                
                 zs::vec<T,3> ts[3] = {};
                 auto do_close_proximity_detection = [&](int ti) {
                     auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
@@ -750,14 +791,14 @@ void detect_self_imminent_PT_close_proximity(Pol& pol,
 #endif
                 
                     if(has_rest_shape && skip_rest) {
-                        auto rp = verts.pack(dim_c<3>,"X",vi);
+                        auto rp = verts.pack(dim_c<3>,Xtag,vi);
                         vec3 rts[3] = {};
                         for(int i = 0;i != 3;++i)
-                            rts[i] = verts.pack(dim_c<3>,"X",tri[i]);
+                            rts[i] = verts.pack(dim_c<3>,Xtag,tri[i]);
 
                         auto is_same_collision_group = false;
-                        if(use_collision_group) 
-                            is_same_collision_group = zs::abs(verts("collision_group",vi) - verts("collision_group",tri[0])) < 0.1;
+                        if(use_collision_group && has_collision_group) 
+                            is_same_collision_group = zs::abs(verts(collisionGroupTag,vi) - verts(collisionGroupTag,tri[0])) < 0.1;
 
                         // if the collision pair are initialliy closed, and belong to the same collision group, skip it
                         if(LSL_GEO::get_vertex_triangle_distance(rts[0],rts[1],rts[2],rp) < thickness && is_same_collision_group)
@@ -793,31 +834,42 @@ template<typename Pol,
     // typename ProximityBuffer,
     typename T = typename PosTileVec::value_type>
 void detect_self_imminent_PT_close_proximity(Pol& pol,
-    PosTileVec& verts,const zs::SmallString& xtag,
+    PosTileVec& verts,const zs::SmallString& xtag,const zs::SmallString& Xtag,const zs::SmallString& collisionGroupTag,
     const TriTileVec& tris,
     const T& thickness,
-    // size_t buffer_offset,
     const TriBvh& triBvh,
-    // ProximityBuffer& proximity_buffer,
-    PTHashMap& csPT) {
+    PTHashMap& csPT,
+    bool skip_too_close_pair_at_rest_configuration = false,
+    bool use_collision_group = false) {
         using namespace zs;
         constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
         constexpr auto eps = (T)1e-6;
         // constexpr auto exec_tag = wrapv<space>{};
         csPT.reset(pol,true);
+
+        auto has_rest_shape = verts.hasProperty(Xtag);
+        auto has_collision_group = verts.hasProperty(collisionGroupTag);
+        auto has_collision_cancel = verts.hasProperty("collision_cancel");
+
         pol(zs::range(verts.size()),[
+            collisionGroupTag = collisionGroupTag,
+            has_collision_cancel = has_collision_cancel,
+            has_rest_shape = has_rest_shape,
+            has_collision_group = has_collision_group,
+            skip_rest = skip_too_close_pair_at_rest_configuration,
+            use_collision_group = use_collision_group,
             eps = eps,
+            Xtag = Xtag,
             xtag = zs::SmallString(xtag),
             verts = proxy<space>({},verts),
             tris = proxy<space>({},tris),
-            // buffer_offset = buffer_offset,
             thickness = thickness,
             thickness2 = thickness * thickness,
             triBvh = proxy<space>(triBvh),
-            // proximity_buffer = proxy<space>({},proximity_buffer),
             csPT = proxy<space>(csPT)] ZS_LAMBDA(int vi) mutable {
 
-                if(verts.hasProperty("collision_cancel") && verts("collision_cancel",vi) > 1e-3)
+                if(has_collision_cancel)
+                    if(verts("collision_cancel",vi) > 1e-3)
                         return;
                 auto p = verts.pack(dim_c<3>,xtag,vi);
                 auto bv = bv_t{get_bounding_box(p - thickness/(T)2,p + thickness/(T)2)};
@@ -830,9 +882,10 @@ void detect_self_imminent_PT_close_proximity(Pol& pol,
                         if(tri[i] == vi)
                             return;
 
-                    for(int i = 0;i != 3;++i)
-                        if(verts.hasProperty("collision_cancel") && verts("collision_cancel",tri[i]) > eps)
-                            return;
+                    if(has_collision_cancel)
+                        for(int i = 0;i != 3;++i)
+                            if(verts("collision_cancel",tri[i]) > eps)
+                                return;
 
                     if(verts.hasProperty("minv")) {
                         bool has_dynamic_points = false;
@@ -869,9 +922,23 @@ void detect_self_imminent_PT_close_proximity(Pol& pol,
                     if(rp.norm() > thickness)
                         return;
 #endif
-                    
-                    auto id = csPT.insert(zs::vec<int,2>{vi,ti});
+             
+                    if(has_rest_shape && skip_rest) {
+                        auto rp = verts.pack(dim_c<3>,Xtag,vi);
+                        vec3 rts[3] = {};
+                        for(int i = 0;i != 3;++i)
+                            rts[i] = verts.pack(dim_c<3>,Xtag,tri[i]);
 
+                        auto is_same_collision_group = false;
+                        if(use_collision_group && has_collision_group) 
+                            is_same_collision_group = zs::abs(verts(collisionGroupTag,vi) - verts(collisionGroupTag,tri[0])) < 0.1;
+
+                        // if the collision pair are initialliy closed, and belong to the same collision group, skip it
+                        if(LSL_GEO::get_vertex_triangle_distance(rts[0],rts[1],rts[2],rp) < thickness && is_same_collision_group)
+                            return; 
+                    }             
+
+                    auto id = csPT.insert(zs::vec<int,2>{vi,ti});
                 };
 
                 triBvh.iter_neighbors(bv,do_close_proximity_detection);
@@ -2226,6 +2293,13 @@ void calc_continous_self_EE_collision_impulse(Pol& pol,
                 //     return;    
 
                 auto alpha = (T)1.0;
+
+                auto edge_a = ps[0] - ps[1];
+                auto edge_b = ps[2] - ps[3];
+                auto ee_norm = edge_a.norm() + edge_b.norm();
+                if((edge_a.cross(edge_b).norm() / ee_norm) < 1e-3)
+                    return;
+
                 if(!accd::eeccd(ps[0],ps[1],ps[2],ps[3],vs[0],vs[1],vs[2],vs[3],(T)0.2,(T)0,alpha))
                     return;                
 

@@ -283,7 +283,7 @@ namespace zeno { namespace LSL_GEO {
     // get the barycentric coordinate of the projection of v[0] onto the triangle
     // formed by v[1], v[2], v[3]
     ///////////////////////////////////////////////////////////////////////
-    constexpr VECTOR3 get_triangle_vertex_barycentric_coordinates(const VECTOR3 vertices[4])
+    constexpr VECTOR3 get_vertex_triangle_barycentric_coordinates(const VECTOR3 vertices[4])
     {
         const VECTOR3 v0 = vertices[1];
         const VECTOR3 v1 = vertices[2];
@@ -318,7 +318,7 @@ namespace zeno { namespace LSL_GEO {
     ///////////////////////////////////////////////////////////////////////
     constexpr VECTOR3 get_vertex_triangle_inside_barycentric_coordinates(const VECTOR3 vertices[4])
     {
-        VECTOR3 barycentric = get_triangle_vertex_barycentric_coordinates(vertices);
+        VECTOR3 barycentric = get_vertex_triangle_barycentric_coordinates(vertices);
 
         // if it's already inside, we're all done
         if (barycentric[0] >= 0.0 &&
