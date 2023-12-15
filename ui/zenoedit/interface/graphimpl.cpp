@@ -4,6 +4,7 @@
 #include <zenomodel/include/graphsmanagment.h>
 #include <zenomodel/include/enum.h>
 #include <zenomodel/include/nodesmgr.h>
+#include <zenomodel/include/uihelper.h>
 
 
 //init function
@@ -68,9 +69,55 @@ Graph_createNode(ZSubGraphObject* self, PyObject* arg)
     return result;
 }
 
+static PyObject*
+Graph_getNode(ZSubGraphObject* self, PyObject* arg)
+{
+    ZENO_HANDLE hGraph;
+    //if (!PyArg_ParseTupleAndKeywords(arg, kwds, "i", kwList, &hGraph))
+    //    return -1;
+    PyObject* _arg = PyTuple_GET_ITEM(arg, 0);
+    if (!PyUnicode_Check(_arg)) {
+        return Py_None;
+    }
+
+    char* _ident = nullptr;
+    if (!PyArg_Parse(_arg, "s", &_ident))
+        return Py_None;
+
+    const QString& subgName = self->subgIdx.data(ROLE_OBJNAME).toString();
+    std::string _subgName = subgName.toStdString();
+    PyObject* argList = Py_BuildValue("ss", _subgName.c_str(), _ident);
+    PyObject* result = PyObject_CallObject((PyObject*)&ZNodeType, argList);
+    Py_DECREF(argList);
+    return result;
+}
+
+static PyObject*
+Graph_addLink(ZSubGraphObject* self, PyObject* arg)
+{
+    char *_outNode, *_outSock, *_inNode, *_inSock;
+    if (!PyArg_ParseTuple(arg, "ssss", &_outNode, &_outSock, &_inNode, &_inSock))
+        return Py_None;
+
+    const QString& graphName = self->subgIdx.data(ROLE_OBJNAME).toString();
+    const QString& outNode = QString::fromUtf8(_outNode);
+    const QString& outSock = QString::fromUtf8(_outSock);
+    const QString& inNode = QString::fromUtf8(_inNode);
+    const QString& inSock = QString::fromUtf8(_inSock);
+
+    IGraphsModel* pModel = GraphsManagment::instance().currentModel();
+    EdgeInfo edge;
+    edge.inSockPath = UiHelper::constructObjPath(graphName, inNode, "[node]/inputs/", inSock);
+    edge.outSockPath = UiHelper::constructObjPath(graphName, outNode, "[node]/outputs/", outSock);
+    pModel->addLink(self->subgIdx, edge);
+    return Py_None;
+}
+
 static PyMethodDef GraphMethods[] = {
     {"name", (PyCFunction)Graph_name, METH_NOARGS, "Return the name of graph"},
     {"createNode", (PyCFunction)Graph_createNode, METH_VARARGS, "Add the node to this graph"},
+    {"node", (PyCFunction)Graph_getNode, METH_VARARGS, "Get the node from the graph"},
+    {"addLink", (PyCFunction)Graph_addLink, METH_VARARGS, "Add link"},
     {NULL, NULL, 0, NULL}
 };
 

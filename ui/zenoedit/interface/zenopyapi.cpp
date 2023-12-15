@@ -62,7 +62,49 @@ zeno_createGraph(PyObject* self, PyObject* args)
 static PyObject*
 zeno_removeGraph(PyObject* self, PyObject* args)
 {
-    return nullptr;
+    const char* name;
+    if (!PyArg_ParseTuple(args, "s", &name))
+        return Py_None;
+
+    QString graphName = QString::fromUtf8(name);
+    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    if (!pModel)
+        return Py_None;
+
+    QModelIndex idxGraph = pModel->index(graphName);
+    if (idxGraph.isValid())
+    {
+        pModel->removeGraph(idxGraph.row());
+    }
+    return Py_None;
+}
+
+static PyObject*
+zeno_forkGraph(PyObject* self, PyObject* args)
+{
+    IGraphsModel* pModel = GraphsManagment::instance().currentModel();
+    if (!pModel)
+        return Py_None;
+
+    char *_subgName, *_ident;
+    if (!PyArg_ParseTuple(args, "ss", &_subgName, &_ident))
+        return Py_None;
+
+    const QString& subgName = QString::fromUtf8(_subgName);
+    const QString& ident = QString::fromUtf8(_ident);
+
+    const QModelIndex& subgIdx = pModel->index(subgName);
+    const QModelIndex& subnetnodeIdx = pModel->index(ident, subgIdx);
+    const QModelIndex& forknode = pModel->fork(subgIdx, subnetnodeIdx);
+
+    const std::string& forkident = forknode.data(ROLE_OBJID).toString().toStdString();
+
+    PyObject* argList = Py_BuildValue("ss", _subgName, forkident.c_str());
+
+    PyObject* result = PyObject_CallObject((PyObject*)&ZNodeType, argList);
+    Py_DECREF(argList);
+
+    return Py_None;
 }
 
 
@@ -71,6 +113,7 @@ static PyMethodDef ZenoMethods[] = {
     {"graph", zeno_getGraph, METH_VARARGS, "Get the existing graph on current scene"},
     {"createGraph", zeno_createGraph, METH_VARARGS, "Create a subgraph"},
     {"removeGraph", zeno_removeGraph, METH_VARARGS, "Remove a subgraph"},
+    {"forkGraph", zeno_forkGraph, METH_VARARGS, "Fork a subgraph"},
     {NULL, NULL, 0, NULL}
 };
 

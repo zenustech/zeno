@@ -9,7 +9,6 @@
 static int
 Node_init(ZNodeObject* self, PyObject* args, PyObject* kwds)
 {
-    static char* kwList[] = { NULL };
     char* _subgName, * _ident;
     if (!PyArg_ParseTuple(args, "ss", &_subgName, &_ident))
         return -1;
@@ -47,6 +46,48 @@ Node_ident(ZNodeObject* self, PyObject* Py_UNUSED(ignored))
     return PyUnicode_FromFormat(name.toUtf8());
 }
 
+static PyObject*
+Node_getattr(ZNodeObject* self, char* name)
+{
+    if (strcmp(name, "pos") == 0) {
+        QPointF pos = self->nodeIdx.data(ROLE_OBJPOS).toPointF();
+        PyObject* postuple = Py_BuildValue("dd", pos.x(), pos.y());
+        return postuple;
+    }
+    if (strcmp(name, "ident") == 0) {
+        std::string ident = self->nodeIdx.data(ROLE_OBJID).toString().toStdString();
+        PyObject* value = Py_BuildValue("s", ident.c_str());
+        return value;
+    }
+    if (strcmp(name, "class") == 0) {
+        std::string cls = self->nodeIdx.data(ROLE_OBJNAME).toString().toStdString();
+        PyObject* value = Py_BuildValue("s", cls.c_str());
+        return value;
+    }
+    if (strcmp(name, "name") == 0) {
+        std::string name = self->nodeIdx.data(ROLE_CUSTOM_OBJNAME).toString().toStdString();
+        PyObject* value = Py_BuildValue("s", name.c_str());
+        return value;
+    }
+    return Py_None;
+}
+
+static int
+Node_setattr(ZNodeObject* self, char* name, PyObject* v)
+{
+    if (strcmp(name, "pos") == 0)
+    {
+        float x, y;
+        if (!PyArg_ParseTuple(v, "ff", &x, &y))
+            return -1;
+
+        QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(self->nodeIdx.model());
+        pModel->setData(self->nodeIdx, QPointF(x, y), ROLE_OBJPOS);
+    }
+    return 0;
+}
+
+
 //node methods.
 static PyMethodDef NodeMethods[] = {
     {"name",  (PyCFunction)Node_name, METH_NOARGS, "Return the name of node"},
@@ -68,8 +109,8 @@ PyTypeObject ZNodeType = {
     #else
         0, /* tp_vectorcall_offset */
     #endif
-        nullptr,                            /* tp_getattr */
-        nullptr,                            /* tp_setattr */
+        (getattrfunc)Node_getattr,          /* tp_getattr */
+        (setattrfunc)Node_setattr,          /* tp_setattr */
         nullptr,                            /* tp_compare */
         nullptr,                            /* tp_repr */
         nullptr,                            /* tp_as_number */
