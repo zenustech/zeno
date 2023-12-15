@@ -319,6 +319,9 @@ struct GetAlembicCamera : INode {
         float u_aspect = m_nx/m_ny;
         float fov_y = glm::degrees(2.0f * std::atan(m_va/(u_aspect/c_aspect) / (2.0f * focal_length)));
         set_output("fov_y", std::make_shared<NumericObject>(fov_y));
+//        float fov_y2 = glm::degrees(2.0f * std::atan(m_ny / m_nx * m_ha / (2.0f * focal_length)));
+        float fov_x = glm::degrees(2.0f * std::atan(m_nx / m_ny * m_va / (2.0f * focal_length)));
+        set_output("fov_x", std::make_shared<NumericObject>(fov_x));
     }
 };
 
@@ -334,6 +337,7 @@ ZENDEFNODE(GetAlembicCamera, {
         "view",
         "right",
         "fov_y",
+        "fov_x",
         "focal_length",
         "horizontalAperture",
         "verticalAperture",
