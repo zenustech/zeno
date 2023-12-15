@@ -334,7 +334,7 @@ namespace GIA {
                         if(en < eps)
                             return;
 
-                        auto is_parallel = zs::abs(tnrm.dot(ve - vs) / en) < eps;
+                        auto is_parallel = zs::abs(tnrm.dot(ve - vs) / en) < 1e-3;
                         if(is_parallel)
                             return;
 
@@ -537,7 +537,11 @@ namespace GIA {
                         auto ktnrm = ktris.pack(dim_c<3>,ktriNrmOffset,kti);
                         auto d = ktris(ktriDOffset,kti);
 
-                        auto is_parallel = zs::abs(ktnrm.dot(ve - vs)) < eps;
+                        auto en = (ve - vs).norm();
+                        if(en < eps)
+                            return;                        
+
+                        auto is_parallel = zs::abs(ktnrm.dot(ve - vs) / en) < 1e-3;
                         if(is_parallel)
                             return;
 
