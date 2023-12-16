@@ -305,9 +305,8 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                         const QString& command = commandParams[objPath].name;
                         if (configDoc.HasMember(command.toUtf8()))
                         {
-                            const auto& obj = configDoc[command.toStdString().c_str()];
-                            if (obj.IsObject() && obj.HasMember("value"))
-                                defl = UiHelper::parseJsonByType(sockType, obj["value"], nullptr);
+                            const auto& value = configDoc[command.toStdString().c_str()];
+                            defl = UiHelper::parseJsonByType(sockType, value, nullptr);
                         }
                     }
                     else if (commandParams[objPath].bIsCommand)
@@ -360,9 +359,8 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                 QString command = commandParams[objPath].name;
                 if (!configPath.isEmpty() && commandParams.contains(objPath) && configDoc.HasMember(command.toUtf8()))
                 {
-                    const auto& obj = configDoc[command.toStdString().c_str()];
-                    if (obj.IsObject() && obj.HasMember("value"))
-                        paramValue = UiHelper::parseJsonByType(param_info.typeDesc, obj["value"], nullptr);
+                    const auto& value = configDoc[command.toStdString().c_str()];
+                    paramValue = UiHelper::parseJsonByType(param_info.typeDesc, value, nullptr);
                 }
                 else
                 {

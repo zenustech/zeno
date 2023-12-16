@@ -140,17 +140,8 @@ void ZenoCommandParamsPanel::onExport()
         if (index.isValid())
         {
             writer.Key(val.name.toUtf8());
-
-            writer.StartObject();
-
-            writer.Key("value");
             const QString& sockType = index.data(ROLE_PARAM_TYPE).toString();
             JsonHelper::AddVariant(val.value, sockType, writer);
-
-            writer.Key("description");
-            writer.String(val.description.toUtf8());
-
-            writer.EndObject();
         }
 
     }
