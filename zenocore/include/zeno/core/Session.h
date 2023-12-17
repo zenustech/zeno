@@ -18,7 +18,7 @@ struct INodeClass {
     ZENO_API INodeClass(Descriptor const &desc);
     ZENO_API virtual ~INodeClass();
 
-    virtual std::unique_ptr<INode> new_instance() const = 0;
+    virtual std::shared_ptr<INode> new_instance() const = 0;
 };
 
 struct IObject;
@@ -49,7 +49,7 @@ struct Session {
     ZENO_API std::shared_ptr<Graph> createGraph();
     ZENO_API std::string dumpDescriptors() const;
     ZENO_API std::string dumpDescriptorsJSON() const;
-    ZENO_API void defNodeClass(std::unique_ptr<INode>(*ctor)(), std::string const &id, Descriptor const &desc = {});
+    ZENO_API void defNodeClass(std::shared_ptr<INode>(*ctor)(), std::string const &id, Descriptor const &desc = {});
     //ZENO_API void defNodeClass(std::string const &id, std::unique_ptr<INodeClass> cls);
     //ZENO_API void defOverloadNodeClass(std::string const &id, std::vector<std::string> const &types,
             //std::unique_ptr<INodeClass> &&cls);

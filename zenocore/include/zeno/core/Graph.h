@@ -13,6 +13,7 @@
 #include <any>
 #include <map>
 #include <common/data.h>
+#include <common/common.h>
 
 namespace zeno {
 
@@ -37,7 +38,7 @@ struct Graph : std::enable_shared_from_this<Graph> {
     Session *session = nullptr;
     //SubgraphNode *subgraphNode = nullptr;
 
-    std::map<std::string, std::unique_ptr<INode>> nodes;
+    std::map<std::string, std::shared_ptr<INode>> nodes;
     std::set<std::string> nodesToExec;
     int beginFrameNumber = 0, endFrameNumber = 0;  // only use by runnermain.cpp
 
@@ -60,12 +61,10 @@ struct Graph : std::enable_shared_from_this<Graph> {
     //BEGIN NEW STANDARD API
     ZENO_API void init(const GraphData& graph);
     ZENO_API std::shared_ptr<INode> createNode(std::string const& cls);
-    ZENO_API bool removeNode(std::string const& cls);
-    ZENO_API
-    ZENO_API bool addLink(const std::string& outnode, const std::string& outparam,
-        const std::string& innode, const std::string& inparam, const std::string& optionkey = "");
-    ZENO_API bool removeLink(const std::string& outnode, const std::string& outparam,
-        const std::string& innode, const std::string& inparam, const std::string& optionkey = "");
+    ZENO_API std::shared_ptr<INode> getNode(std::string const& ident);
+    ZENO_API bool removeNode(std::string const& ident);
+    ZENO_API bool addLink(const EdgeInfo& edge);
+    ZENO_API bool removeLink(const EdgeInfo& edge);
     //END
 
     ZENO_API DirtyChecker &getDirtyChecker();

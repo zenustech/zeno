@@ -15,6 +15,7 @@
 #include <zeno/utils/Error.h>
 #include <zeno/utils/log.h>
 #include <zeno/core/IParam.h>
+#include <zeno/utils/uuid.h>
 #include <iostream>
 
 namespace zeno {
@@ -191,20 +192,49 @@ ZENO_API void Graph::init(const GraphData& graph) {
 }
 
 ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls) {
-    return nullptr;
+
+    auto cl = safe_at(session->nodeClasses, cls, "node class name").get();
+    auto node = cl->new_instance();
+    node->graph = this;
+    node->ident = generateUUID();
+    node->nodeClass = cl;
+    nodes[node->ident] = node;
+    return node;
 }
 
-ZENO_API bool Graph::removeNode(std::string const& cls) {
-    return false;
+ZENO_API std::shared_ptr<INode> Graph::getNode(std::string const& ident) {
+    if (nodes.find(ident) == nodes.end())
+        return nullptr;
+    return nodes[ident];
 }
 
-ZENO_API bool Graph::addLink(const std::string& outnode, const std::string& outparam,
-    const std::string& innode, const std::string& inparam, const std::string& optionkey) {
-    return false;
+ZENO_API bool Graph::removeNode(std::string const& ident) {
+    if (nodes.find(ident) == nodes.end())
+        return false;
+
+    nodes.erase(ident);
+    return true;
 }
 
-ZENO_API bool Graph::removeLink(const std::string& outnode, const std::string& outparam,
-    const std::string& innode, const std::string& inparam, const std::string& optionkey) {
+ZENO_API bool Graph::addLink(const EdgeInfo& edge) {
+    std::shared_ptr<INode> outNode = getNode(edge.outNode);
+    if (!outNode)
+        return false;
+    std::shared_ptr<INode> inNode = getNode(edge.inNode);
+    if (!inNode)
+        return false;
+
+    std::shared_ptr<IParam> outParam = outNode->get_output_param(edge.outParam);
+    std::shared_ptr<IParam> inParam = inNode->get_input_param(edge.inParam);
+
+    std::shared_ptr<ILink> spLink = std::make_shared<ILink>();
+    outParam->links.push_back(spLink);
+    inParam->links.push_back(spLink);
+    return true;
+}
+
+ZENO_API bool Graph::removeLink(const EdgeInfo& edge) {
+    //TODO: DaMi implement this.
     return false;
 }
 

@@ -29,7 +29,7 @@ namespace zeno {
 
         std::pair<float, float> uipos;
         NodeStatus status = NodeStatus::Null;
-        NodeType type = NodeStatus::Normal;
+        NodeType type = NodeType::Normal;
     };
 
     struct EdgeInfo {

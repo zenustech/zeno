@@ -29,7 +29,9 @@ public:
     Graph *graph = nullptr;
     INodeClass *nodeClass = nullptr;
 
-    std::string myname;
+    std::string ident;
+    std::string name;
+    std::string nodecls;
 
     /*
     std::map<std::string, std::pair<std::string, std::string>> inputBounds;
@@ -63,12 +65,27 @@ public:
     ZENO_API void doOnlyApply();
     ZENO_API zany resolveInput(std::string const& id);
 
+    //BEGIN new api
+    ZENO_API void set_input_defl(std::string const& name, zany defl);
+    ZENO_API zany get_input_defl(std::string const& name);
+    ZENO_API std::string get_nodecls() const;
+    ZENO_API std::string get_ident() const;
+    ZENO_API std::string get_name() const;
+    ZENO_API std::string set_name(std::string const& name);
+    ZENO_API void set_status(NodeStatus status);
+    ZENO_API NodeStatus get_status() const;
+    ZENO_API void set_view(bool bOn);
+    ZENO_API bool is_view() const;
+    ZENO_API void mark_dirty(bool bOn);
+    ZENO_API bool is_dirty() const;
+
+    ZENO_API std::shared_ptr<IParam> get_input_param(std::string const& name) const;
+    ZENO_API std::shared_ptr<IParam> get_output_param(std::string const& name) const;
+    //END new api
+
 protected:
     ZENO_API virtual void complete();
     ZENO_API virtual void apply() = 0;
-
-private:
-    ZENO_API std::shared_ptr<IParam> get_input_param(std::string const& name) const;
 
 public:
     //为名为ds的输入参数，求得这个参数在依赖边的求值下的值，或者没有依赖边下的默认值。
@@ -81,13 +98,6 @@ public:
     ZENO_API Graph *getThisGraph() const;
     ZENO_API Session *getThisSession() const;
     ZENO_API GlobalState *getGlobalState() const;
-
-    //BEGIN new api
-    ZENO_API void set_input_defl(std::string const &name, zany defl);
-    ZENO_API void set_status(NodeStatus status);
-    ZENO_API NodeStatus get_status() const;
-
-    //END new api
 
     ZENO_API bool has_input(std::string const &id) const;
     ZENO_API zany get_input(std::string const &id) const;
@@ -103,7 +113,7 @@ public:
     template <class T>
     std::shared_ptr<T> get_input(std::string const &id) const {
         auto obj = get_input(id);
-        return safe_dynamic_cast<T>(std::move(obj), "input socket `" + id + "` of node `" + myname + "`");
+        return safe_dynamic_cast<T>(std::move(obj), "input socket `" + id + "` of node `" + ident + "`");
     }
 
     template <class T>
@@ -121,7 +131,7 @@ public:
 
     template <class T>
     auto get_input2(std::string const &id) const {
-        return objectToLiterial<T>(get_input(id), "input socket `" + id + "` of node `" + myname + "`");
+        return objectToLiterial<T>(get_input(id), "input socket `" + id + "` of node `" + ident + "`");
     }
 
     template <class T>

@@ -16,8 +16,8 @@ namespace zeno {
 #define ZENO_DEFNODE(Class) \
     static struct _Def##Class { \
         _Def##Class(::zeno::Descriptor const &desc) { \
-            ::zeno::getSession().defNodeClass([] () -> std::unique_ptr<::zeno::INode> { \
-                return std::make_unique<Class>(); }, #Class, desc); \
+            ::zeno::getSession().defNodeClass([] () -> std::shared_ptr<::zeno::INode> { \
+                return std::make_shared<Class>(); }, #Class, desc); \
         } \
     } _def##Class
 
@@ -25,7 +25,7 @@ namespace zeno {
 template <class T>
 [[deprecated("use ZENO_DEFNODE(T)(...)")]]
 inline int defNodeClass(std::string const &id, Descriptor const &desc = {}) {
-    getSession().defNodeClass([] () -> std::unique_ptr<INode> { return std::make_unique<T>(); }, id, desc);
+    getSession().defNodeClass([] () -> std::shared_ptr<INode> { return std::make_shared<T>(); }, id, desc);
     return 1;
 }
 

@@ -10,7 +10,25 @@ constexpr enum_class operator|(enum_class X, enum_class Y) {\
 \
 enum_class& operator|=(enum_class& X, enum_class Y) {\
     X = X | Y; return X;\
-}
+}\
+\
+constexpr enum_class operator&(enum_class X, enum_class Y) {\
+    return static_cast<enum_class>(\
+        static_cast<unsigned int>(X) & static_cast<unsigned int>(Y));\
+}\
+\
+enum_class& operator&=(enum_class& X, enum_class Y) {\
+    X = X & Y; return X;\
+}\
+\
+constexpr enum_class operator^(enum_class X, enum_class Y) {\
+    return static_cast<enum_class>(\
+        static_cast<unsigned int>(X) ^ static_cast<unsigned int>(Y));\
+}\
+\
+enum_class& operator^=(enum_class& X, enum_class Y) {\
+    X = X ^ Y; return X;\
+}\
 
 namespace zeno {
 

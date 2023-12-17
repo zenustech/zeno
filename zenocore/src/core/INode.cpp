@@ -41,6 +41,55 @@ ZENO_API void INode::doComplete() {
     complete();
 }
 
+ZENO_API zany INode::get_input_defl(std::string const& name)
+{
+    std::shared_ptr<IParam> param = get_input_param(name);
+    return param->defl;
+}
+
+ZENO_API std::string INode::get_nodecls() const
+{
+    return nodecls;
+}
+
+ZENO_API std::string INode::get_ident() const
+{
+    return ident;
+}
+
+ZENO_API std::string INode::get_name() const
+{
+    return name;
+}
+
+ZENO_API std::string INode::set_name(std::string const& customname)
+{
+    name = customname;
+}
+
+ZENO_API void INode::set_view(bool bOn)
+{
+    if (bOn)
+        m_status |= NodeStatus::View;
+    else
+        m_status ^= NodeStatus::View;
+}
+
+ZENO_API bool INode::is_view() const
+{
+    return m_status & NodeStatus::View;
+}
+
+ZENO_API void INode::mark_dirty(bool bOn)
+{
+    m_dirty = bOn;
+}
+
+ZENO_API bool INode::is_dirty() const
+{
+    return m_dirty;
+}
+
 ZENO_API void INode::complete() {}
 
 /*ZENO_API bool INode::checkApplyCondition() {
@@ -79,14 +128,14 @@ ZENO_API void INode::preApply() {
     for (const auto& param : inputs_)
         requireInput(param);
 
-    log_debug("==> enter {}", myname);
+    log_debug("==> enter {}", ident);
     {
 #ifdef ZENO_BENCHMARKING
-        Timer _(myname);
+        Timer _(ident);
 #endif
         apply();
     }
-    log_debug("==> leave {}", myname);
+    log_debug("==> leave {}", ident);
 }
 
 ZENO_API bool INode::requireInput(std::string const& ds) {
@@ -175,9 +224,9 @@ ZENO_API void INode::doOnlyApply() {
 
 ZENO_API void INode::doApply() {
     //if (checkApplyCondition()) {
-    log_trace("--> enter {}", myname);
+    log_trace("--> enter {}", ident);
     preApply();
-    log_trace("--> leave {}", myname);
+    log_trace("--> leave {}", ident);
     //}
 
     /*if (has_option("VIEW")) {
@@ -205,6 +254,14 @@ ZENO_API void INode::set_input_defl(std::string const& name, zany defl) {
 }
 
 std::shared_ptr<IParam> INode::get_input_param(std::string const& name) const {
+    for (auto& param : inputs_) {
+        if (param->name == name)
+            return param;
+    }
+    return nullptr;
+}
+
+ZENO_API std::shared_ptr<IParam> INode::get_output_param(std::string const& name) const {
     for (auto& param : outputs_) {
         if (param->name == name)
             return param;
