@@ -271,21 +271,19 @@ struct PrimitiveTransform : zeno::INode {
 
         auto prim = get_input<PrimitiveObject>("prim");
 
-        std::string pivotType = get_input2<std::string>("pivot");
         zeno::vec3f _pivot = {};
-        if (pivotType == "bboxCenter") {
+        if (get_input2<bool>("use_pivot")) {
+            _pivot = get_input2<vec3f>("pivotPos");
+        }
+        else {
             zeno::vec3f _min;
             zeno::vec3f _max;
             objectGetBoundingBox(prim.get(), _min, _max);
-            auto p = (_min + _max) / 2;
-            auto pivot_to_local = glm::translate(glm::vec3(-p[0], -p[1], -p[2]));
-            auto pivot_to_world = glm::translate(glm::vec3(p[0], p[1], p[2]));
-            matrix = pivot_to_world * matrix * pivot_to_local;
-            _pivot = p;
+            _pivot = (_min + _max) / 2;
         }
-        else {
-            _pivot = get_input2<vec3f>("pivotPos");
-        }
+        auto pivot_to_local = glm::translate(glm::vec3(-_pivot[0], -_pivot[1], -_pivot[2]));
+        auto pivot_to_world = glm::translate(glm::vec3(_pivot[0], _pivot[1], _pivot[2]));
+        matrix = pivot_to_world * matrix * pivot_to_local;
 
         auto outprim = std::make_unique<PrimitiveObject>(*prim);
 
@@ -326,15 +324,15 @@ struct PrimitiveTransform : zeno::INode {
 ZENDEFNODE(PrimitiveTransform, {
     {
         {"PrimitiveObject", "prim"},
-        {"enum custom bboxCenter", "pivot", "bboxCenter"},
         {"vec3f", "translation", "0,0,0"},
         {"vec3f", "eulerXYZ", "0,0,0"},
         {"vec4f", "quatRotation", "0,0,0,1"},
         {"vec3f", "scaling", "1,1,1"},
         {"vec3f", "shear", "0,0,0"},
-        {"vec3f", "pivotPos", "0,0,0"},
         {"vec3f", "localX", "1,0,0"},
         {"vec3f", "localY", "0,1,0"},
+        {"bool", "use_pivot", "0"},
+        {"vec3f", "pivotPos", "0,0,0"},
         {"Matrix"},
         {"preTransform"},
         {"local"},
