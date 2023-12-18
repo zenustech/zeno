@@ -281,7 +281,7 @@ namespace DisneyBSDF{
         world2local(wo, T, B, N);
         world2local(N2, T, B, N);
 
-        bool reflect = wi.z * wo.z > 0.0f;
+        bool reflect = (dot(wi, N2) * dot(wo, N2) > 0.0f) ;
 
         vec3 Csheen, Cspec0;
         float F0;
@@ -345,7 +345,7 @@ namespace DisneyBSDF{
             float ax, ay;
             BRDFBasics::CalculateAnisotropicParams(mat.roughness,mat.anisotropic,ax,ay);
             vec3 s = BRDFBasics::EvalMicrofacetReflection(ax, ay, wo, wi, wm,
-                                          mix(Cspec0, vec3(1.0f), F) * mat.specular * 0.5f, tmpPdf) * dielectricWt  * illum;
+                                          mix(Cspec0, vec3(1.0f), F) * mat.specular, tmpPdf) * dielectricWt  * illum;
             sterm = sterm + s;
             f = f + s;
             fPdf += tmpPdf * dielectricPr;
@@ -615,6 +615,13 @@ namespace DisneyBSDF{
             wi = BRDFBasics::UniformSampleHemisphere(r1, r2);
             flag = transmissionEvent;
             isSS = false;
+            tbn.inverse_transform(wi);
+            wi = normalize(wi);
+
+            if(dot(wi, N2)<0)
+            {
+              wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
+            }
           }
           else{
             //switch between scattering or diffuse reflection
@@ -624,6 +631,14 @@ namespace DisneyBSDF{
               prd->fromDiff = true;
               wi = BRDFBasics::CosineSampleHemisphere(r1, r2);
               isSS = false;
+              wi = normalize(reflect(-wo, wm));
+              tbn.inverse_transform(wi);
+              wi = normalize(wi);
+
+              if(dot(wi, N2)<0)
+              {
+                wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
+              }
             }else
             {
 
@@ -643,17 +658,18 @@ namespace DisneyBSDF{
                 CalculateExtinction2(color, sssRadius, prd->sigma_t,
                                      prd->ss_alpha, 1.4f);
               }
+              tbn.inverse_transform(wi);
+              wi = normalize(wi);
+
+              bool sameside2 = (dot(wi, N) * dot(wi, N2)) > 0.0f;
+              if (sameside == false) {
+                wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
+              }
 
             }
           }
 
-            tbn.inverse_transform(wi);
-            wi = normalize(wi);
 
-            bool sameside2 = (dot(wi, N) * dot(wi, N2)) > 0.0f;
-            if (sameside == false) {
-              wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
-            }
             if(dot(wi, N2)>0)
             {
               isSS = false;
