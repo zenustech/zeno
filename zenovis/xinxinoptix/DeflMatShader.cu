@@ -566,7 +566,7 @@ extern "C" __global__ void __closesthit__radiance()
 #endif
 
     attrs.nrm = N;
-    float term = log2(optixGetRayTmax()*prd->pixel_area*sqrt(estimation))/2.5f;
+    float term = log2(optixGetRayTmax()*prd->pixel_area*sqrt(estimation))/4.0f;
 //    printf("rayDist:%f, tex_per_area:%f, term:%f, pixel_area:%f\n", optixGetRayTmax(),
 //           sqrt(estimation), term, prd->pixel_area);
     mats.nrm = normalize(mix(mats.nrm, vec3(0,0,1), clamp(term,0.0f,1.0f)));
