@@ -190,7 +190,7 @@ ZENDEFNODE(TransformPrimitive, {
         {"enum " + EulerAngle::RotationOrderListString(), "EulerRotationOrder", "ZYX"},
         {"enum " + EulerAngle::MeasureListString(), "EulerAngleMeasure", EulerAngle::MeasureDefaultString()}
     },
-    {"deprecated"},
+    {"primitive"},
 });
 
 // euler rot order: roll-pitch-yaw
@@ -272,7 +272,6 @@ struct PrimitiveTransform : zeno::INode {
         auto prim = get_input<PrimitiveObject>("prim");
 
         std::string pivotType = get_input2<std::string>("pivot");
-        zeno::vec3f _pivot = {};
         if (pivotType == "bboxCenter") {
             zeno::vec3f _min;
             zeno::vec3f _max;
@@ -281,14 +280,12 @@ struct PrimitiveTransform : zeno::INode {
             auto pivot_to_local = glm::translate(glm::vec3(-p[0], -p[1], -p[2]));
             auto pivot_to_world = glm::translate(glm::vec3(p[0], p[1], p[2]));
             matrix = pivot_to_world * matrix * pivot_to_local;
-            _pivot = p;
         }
 
         auto outprim = std::make_unique<PrimitiveObject>(*prim);
 
         if (prim->has_attr("pos")) {
             auto &pos = outprim->attr<zeno::vec3f>("pos");
-            outprim->verts.add_attr<zeno::vec3f>("_origin_pos") = pos;
 #pragma omp parallel for
             for (int i = 0; i < pos.size(); i++) {
                 auto p = zeno::vec_to_other<glm::vec3>(pos[i]);
@@ -299,7 +296,6 @@ struct PrimitiveTransform : zeno::INode {
 
         if (prim->has_attr("nrm")) {
             auto &nrm = outprim->attr<zeno::vec3f>("nrm");
-            outprim->verts.add_attr<zeno::vec3f>("_origin_nrm") = nrm;
 #pragma omp parallel for
             for (int i = 0; i < nrm.size(); i++) {
                 auto n = zeno::vec_to_other<glm::vec3>(nrm[i]);
@@ -313,7 +309,6 @@ struct PrimitiveTransform : zeno::INode {
         vec4f rotate = {myQuat.x, myQuat.y, myQuat.z, myQuat.w};
         user_data.setLiterial("_rotate", rotate);
         user_data.setLiterial("_scale", scaling);
-        user_data.set2("_pivot", _pivot);
         //auto oMat = std::make_shared<MatrixObject>();
         //oMat->m = matrix;
         set_output("outPrim", std::move(outprim));
@@ -323,7 +318,7 @@ struct PrimitiveTransform : zeno::INode {
 ZENDEFNODE(PrimitiveTransform, {
     {
         {"PrimitiveObject", "prim"},
-        {"enum world bboxCenter", "pivot", "bboxCenter"},
+        {"enum world bboxCenter", "pivot", "world"},
         {"vec3f", "translation", "0,0,0"},
         {"vec3f", "eulerXYZ", "0,0,0"},
         {"vec4f", "quatRotation", "0,0,0,1"},
