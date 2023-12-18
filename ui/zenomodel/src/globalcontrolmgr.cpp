@@ -51,7 +51,6 @@ CONTROL_INFO GlobalControlMgr::controlInfo(const QString& nodeCls, PARAM_CLASS c
         return CONTROL_INFO(CONTROL_ENUM, map);
     }
     if (coreParam == "zfxCode" && coreType == "string" ||
-        coreParam == "script" && coreType == "string" ||
         coreParam == "commands" && coreType == "string")
     {
         return CONTROL_INFO(CONTROL_MULTILINE_STRING, QVariant());
@@ -59,6 +58,10 @@ CONTROL_INFO GlobalControlMgr::controlInfo(const QString& nodeCls, PARAM_CLASS c
     if (nodeCls == "GenerateCommands" && coreParam == "source")
     {
         return CONTROL_INFO(CONTROL_BUTTON, QVariant());
+    }
+    if (nodeCls == "PythonNode" && coreParam == "script")
+    {
+        return CONTROL_INFO(CONTROL_PYTHON_EDITOR, QVariant());
     }
     return CONTROL_INFO(UiHelper::getControlByType(coreType), QVariant());
 }

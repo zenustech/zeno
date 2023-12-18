@@ -12,6 +12,10 @@
 #include "zassert.h"
 #include "zgraphicstextitem.h"
 #include <zenomodel/include/uihelper.h>
+#include <zenoui/comctrl/gv/zpythoneditoritem.h>
+#include <Qsci/qsciscintilla.h>
+#include <Qsci/qscilexerpython.h>
+#include <Qsci/qsciapis.h>
 
 /*tmp macro*/
 //#define ENABLE_WIDGET_LINEEDIT
@@ -181,6 +185,20 @@ namespace zenoui
                     cbSet.cbEditFinished(newValue);
                 });
                 pItemWidget = pMultiStrEdit;
+                break;
+            }
+            case CONTROL_PYTHON_EDITOR:
+            {
+                ZPythonEditorItem* pythonEditor = new ZPythonEditorItem(UiHelper::variantToString(value), m_nodeParams.lineEditParam);
+                pythonEditor->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 227))); //the height is the actual init size, hardcode it...
+                pythonEditor->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed));
+                pythonEditor->setData(GVKEY_TYPE, type);
+
+                QObject::connect(pythonEditor, &ZPythonEditorItem::editingFinished, [=]() {
+                    const QString& newValue = pythonEditor->text();
+                    cbSet.cbEditFinished(newValue);
+                });
+                pItemWidget = pythonEditor;
                 break;
             }
             case CONTROL_COLOR:
