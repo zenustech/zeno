@@ -305,6 +305,11 @@ struct JsonGetData : zeno::INode {
             auto strings = zeno::split_str(path, ':');
             auto type = strings[1];
             path = strings[0];
+            std::string new_name = path;
+            if (strings.size() == 3) {
+                new_name = zeno::trim_string(strings[2]);
+            }
+
             auto names = split_str(path, '/');
 
             for (auto & name : names) {
@@ -314,34 +319,34 @@ struct JsonGetData : zeno::INode {
             if (type == "json") {
                 auto out_json = std::make_shared<JsonObject>();
                 out_json->json = json->json;
-                dict->lut[path] = out_json;
+                dict->lut[new_name] = out_json;
             }
             else if (type == "int") {
-                dict->lut[path] = std::make_shared<NumericObject>(int(json->json));
+                dict->lut[new_name] = std::make_shared<NumericObject>(int(json->json));
             }
             else if (type == "float") {
-                dict->lut[path] = std::make_shared<NumericObject>(float(json->json));
+                dict->lut[new_name] = std::make_shared<NumericObject>(float(json->json));
             }
             else if (type == "string") {
-                dict->lut[path] = std::make_shared<StringObject>(std::string(json->json));
+                dict->lut[new_name] = std::make_shared<StringObject>(std::string(json->json));
             }
             else if (type == "vec2f") {
                 float x = float(json->json["x"]);
                 float y = float(json->json["y"]);
-                dict->lut[path] = std::make_shared<NumericObject>(vec2f(x, y));
+                dict->lut[new_name] = std::make_shared<NumericObject>(vec2f(x, y));
             }
             else if (type == "vec3f") {
                 float x = float(json->json["x"]);
                 float y = float(json->json["y"]);
                 float z = float(json->json["z"]);
-                dict->lut[path] = std::make_shared<NumericObject>(vec3f(x, y, z));
+                dict->lut[new_name] = std::make_shared<NumericObject>(vec3f(x, y, z));
             }
             else if (type == "vec4f") {
                 float x = float(json->json["x"]);
                 float y = float(json->json["y"]);
                 float z = float(json->json["z"]);
                 float w = float(json->json["w"]);
-                dict->lut[path] = std::make_shared<NumericObject>(vec4f(x, y, z, w));
+                dict->lut[new_name] = std::make_shared<NumericObject>(vec4f(x, y, z, w));
             }
         }
         set_output("outs", dict);

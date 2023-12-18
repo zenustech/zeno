@@ -16,6 +16,7 @@
 #include "dialog/zforksubgrapdlg.h"
 #include "nodesview/zenographseditor.h"
 #include "settings/zenosettingsmanager.h"
+#include "nodesys/zenosubgraphscene.h"
 
 ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
     dataModel = new PrimAttrTableModel();
@@ -254,9 +255,17 @@ bool ZenoSpreadsheet::eventFilter(QObject* watched, QEvent* event)
             }
 
             connect(newSubGraph, &QAction::triggered, this, [=]() {
+                ZenoMainWindow* pWin = zenoApp->getMainWindow();
+                ZASSERT_EXIT(pWin);
+                ZenoGraphsEditor* pEditor = pWin->getAnyEditor();
+                ZASSERT_EXIT(pEditor);
+                ZenoSubGraphView* pView = pEditor->getCurrentSubGraphView();
+                ZASSERT_EXIT(pView);
+                auto sugIdx = pView->scene()->subGraphIndex();
+                ZASSERT_EXIT(sugIdx.isValid());
                 for (const auto& mtlid : matLst)
                 {
-                    if (!pGraphsModel->newMaterialSubgraph(mtlid, QPointF(800, 0)))
+                    if (!pGraphsModel->newMaterialSubgraph(sugIdx, mtlid, QPointF(800, 0)))
                         QMessageBox::warning(nullptr, tr("Info"), tr("Create material subgraph '%1' failed.").arg(mtlid));
                 }
             });
@@ -264,7 +273,7 @@ bool ZenoSpreadsheet::eventFilter(QObject* watched, QEvent* event)
                 QMap<QString, QString> map;
                 for (const auto& mtlid : matLst)
                 {
-                    if (mtlid.contains("Cloth", Qt::CaseInsensitive))
+                    if (mtlid.contains("Cloth", Qt::CaseInsensitive) || mtlid.contains("Xiezi", Qt::CaseInsensitive))
                     {
                         map[mtlid] = "ClothTypeMat";
                     }

@@ -327,10 +327,12 @@ void SubGraphModel::_uniqueView(const QModelIndex& index, bool bInSocket, bool b
                     {
                         const QModelIndex& keyIdx = pKeyObjModel->index(_r, 0);
                         ZASSERT_EXIT(keyIdx.isValid());
-                        lst << keyIdx;
+                        PARAM_LINKS links = keyIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+                        if (!links.isEmpty())
+                            lst << keyIdx;
                     }
                 }
-                else
+                if (lst.isEmpty())
                 {
                     lst << sock;
                 }

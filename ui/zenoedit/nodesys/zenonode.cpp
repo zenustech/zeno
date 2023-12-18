@@ -1617,7 +1617,7 @@ void ZenoNode::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
             const auto& paramIdx = pNodeParams->getParam(PARAM_INPUT, "mtlid");
             ZASSERT_EXIT(paramIdx.isValid());
             QString mtlid = paramIdx.data(ROLE_PARAM_VALUE).toString();
-            if (!pGraphsModel->newMaterialSubgraph(mtlid, this->pos() + QPointF(800, 0)))
+            if (!pGraphsModel->newMaterialSubgraph(m_subGpIndex, mtlid, this->pos() + QPointF(800, 0)))
                 QMessageBox::warning(nullptr, tr("Info"), tr("Create material subgraph '%1' failed.").arg(mtlid));
         });
         QMenu *nodeMenu = new QMenu;

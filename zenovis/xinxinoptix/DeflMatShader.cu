@@ -253,11 +253,11 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     /* MODMA */
     float2       barys    = optixGetTriangleBarycentrics();
 
-    float3 n0 = normalize( *(float3*)&(rt_data->nrm[ vert_idx_offset+0 ]) );
+    float3 n0 = normalize( decodeNormal(rt_data->nrm[ vert_idx_offset+0 ]) );
     n0 = dot(n0, N_Local)>0.8f?n0:N_Local;
-    float3 n1 = normalize( *(float3*)&(rt_data->nrm[ vert_idx_offset+1 ]) );
+    float3 n1 = normalize( decodeNormal(rt_data->nrm[ vert_idx_offset+1 ]) );
     n1 = dot(n1, N_Local)>0.8f?n1:N_Local;
-    float3 n2 = normalize( *(float3*)&(rt_data->nrm[ vert_idx_offset+2 ]) );
+    float3 n2 = normalize( decodeNormal(rt_data->nrm[ vert_idx_offset+2 ]) );
     n2 = dot(n2, N_Local)>0.8f?n2:N_Local;
 
     N_Local = normalize(interp(barys, n0, n1, n2));
@@ -273,15 +273,15 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     attrs.pos = P;
     attrs.nrm = N;
 
-    const float3& uv0  = *(float3*)&( rt_data->uv[ vert_idx_offset+0 ] );
-    const float3& uv1  = *(float3*)&( rt_data->uv[ vert_idx_offset+1 ] );
-    const float3& uv2  = *(float3*)&( rt_data->uv[ vert_idx_offset+2 ] );
-    const float3& clr0 = *(float3*)&( rt_data->clr[ vert_idx_offset+0 ] );
-    const float3& clr1 = *(float3*)&( rt_data->clr[ vert_idx_offset+1 ] );
-    const float3& clr2 = *(float3*)&( rt_data->clr[ vert_idx_offset+2 ] );
-    const float3& tan0 = *(float3*)&( rt_data->tan[ vert_idx_offset+0 ] );
-    const float3& tan1 = *(float3*)&( rt_data->tan[ vert_idx_offset+1 ] );
-    const float3& tan2 = *(float3*)&( rt_data->tan[ vert_idx_offset+2 ] );
+    const float3& uv0  = decodeColor( rt_data->uv[ vert_idx_offset+0 ]   );
+    const float3& uv1  = decodeColor( rt_data->uv[ vert_idx_offset+1 ]   );
+    const float3& uv2  = decodeColor( rt_data->uv[ vert_idx_offset+2 ]   );
+    const float3& clr0 = decodeColor( rt_data->clr[ vert_idx_offset+0 ]  );
+    const float3& clr1 = decodeColor( rt_data->clr[ vert_idx_offset+1 ]  );
+    const float3& clr2 = decodeColor( rt_data->clr[ vert_idx_offset+2 ]  );
+    const float3& tan0 = decodeNormal( rt_data->tan[ vert_idx_offset+0 ] );
+    const float3& tan1 = decodeNormal( rt_data->tan[ vert_idx_offset+1 ] );
+    const float3& tan2 = decodeNormal( rt_data->tan[ vert_idx_offset+2 ] );
 
     attrs.uv = interp(barys, uv0, uv1, uv2);//todo later
     attrs.clr = interp(barys, clr0, clr1, clr2);
@@ -506,15 +506,15 @@ extern "C" __global__ void __closesthit__radiance()
     float3 N = N_World;
     attrs.nrm = N;
 
-    const float3& uv0  = *(float3*)&( rt_data->uv[ vert_idx_offset+0 ] );
-    const float3& uv1  = *(float3*)&( rt_data->uv[ vert_idx_offset+1 ] );
-    const float3& uv2  = *(float3*)&( rt_data->uv[ vert_idx_offset+2 ] );
-    const float3& clr0 = *(float3*)&( rt_data->clr[ vert_idx_offset+0 ] );
-    const float3& clr1 = *(float3*)&( rt_data->clr[ vert_idx_offset+1 ] );
-    const float3& clr2 = *(float3*)&( rt_data->clr[ vert_idx_offset+2 ] );
-    const float3& tan0 = *(float3*)&( rt_data->tan[ vert_idx_offset+0 ] );
-    const float3& tan1 = *(float3*)&( rt_data->tan[ vert_idx_offset+1 ] );
-    const float3& tan2 = *(float3*)&( rt_data->tan[ vert_idx_offset+2 ] );
+    const float3& uv0  = decodeColor( rt_data->uv[ vert_idx_offset+0 ] );
+    const float3& uv1  = decodeColor( rt_data->uv[ vert_idx_offset+1 ] );
+    const float3& uv2  = decodeColor( rt_data->uv[ vert_idx_offset+2 ] );
+    const float3& clr0 = decodeColor( rt_data->clr[ vert_idx_offset+0 ] );
+    const float3& clr1 = decodeColor( rt_data->clr[ vert_idx_offset+1 ] );
+    const float3& clr2 = decodeColor( rt_data->clr[ vert_idx_offset+2 ] );
+    const float3& tan0 = decodeNormal( rt_data->tan[ vert_idx_offset+0 ] );
+    const float3& tan1 = decodeNormal( rt_data->tan[ vert_idx_offset+1 ] );
+    const float3& tan2 = decodeNormal( rt_data->tan[ vert_idx_offset+2 ] );
 
     attrs.uv = interp(barys, uv0, uv1, uv2);//todo later
     attrs.clr = interp(barys, clr0, clr1, clr2);
@@ -540,13 +540,13 @@ extern "C" __global__ void __closesthit__radiance()
 
 #else
 
-    float3 n0 = normalize( *(float3*)&(rt_data->nrm[ vert_idx_offset+0 ]) );
+    float3 n0 = normalize( decodeNormal(rt_data->nrm[ vert_idx_offset+0 ]) );
     n0 = dot(n0, N_Local)>(1-mats.smoothness)?n0:N_Local;
 
-    float3 n1 = normalize( *(float3*)&(rt_data->nrm[ vert_idx_offset+1 ]) );
+    float3 n1 = normalize( decodeNormal(rt_data->nrm[ vert_idx_offset+1 ]) );
     n1 = dot(n1, N_Local)>(1-mats.smoothness)?n1:N_Local;
 
-    float3 n2 = normalize( *(float3*)&(rt_data->nrm[ vert_idx_offset+2 ]) );
+    float3 n2 = normalize( decodeNormal(rt_data->nrm[ vert_idx_offset+2 ]) );
     n2 = dot(n2, N_Local)>(1-mats.smoothness)?n2:N_Local;
 
     N_Local = normalize(interp(barys, n0, n1, n2));

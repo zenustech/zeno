@@ -273,6 +273,12 @@ void ZSubnetListItemDelegate::setSelectedIndexs(const QModelIndexList &list)
 
 SubListSortProxyModel::SubListSortProxyModel(QObject* parent) : QSortFilterProxyModel(parent)
 {
+    connect(&ZenoSettingsManager::GetInstance(), &ZenoSettingsManager::valueChanged, this, [=](QString zsName) {
+        if (zsName == zsSubgraphType)
+        {
+            invalidate();
+        }
+    });
 }
 
 bool SubListSortProxyModel::lessThan(const QModelIndex& source_left, const QModelIndex& source_right) const
