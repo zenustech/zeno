@@ -68,6 +68,8 @@ struct RotateHandler final : IGraphicHandler {
     size_t vertex_count;
 
     vec3f center;
+    vec3f localX;
+    vec3f localY;
     float bound;
     float scale;
     int mode;
@@ -77,8 +79,8 @@ struct RotateHandler final : IGraphicHandler {
     std::unique_ptr<Buffer> lines_ebo;
     size_t lines_count;
 
-    explicit RotateHandler(Scene *scene_, vec3f &center_, float scale_)
-        : scene(scene_), center(center_), scale(scale_), mode(INTERACT_NONE) {
+    explicit RotateHandler(Scene *scene_, vec3f &center_, vec3f localX_, vec3f localY_, float scale_)
+        : scene(scene_), center(center_), localX(localX_), localY(localY_), scale(scale_), mode(INTERACT_NONE) {
         vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
         ibo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
     }
@@ -97,9 +99,9 @@ struct RotateHandler final : IGraphicHandler {
         lines_prog->use();
         scene->camera->set_program_uniforms(lines_prog);
 
-        auto x_axis = vec3f(1, 0, 0);
-        auto y_axis = vec3f(0, 1, 0);
-        auto z_axis = vec3f(0, 0, 1);
+        auto x_axis = localX;
+        auto y_axis = localY;
+        auto z_axis = zeno::cross(x_axis, y_axis);
 
         lines_prog->set_uniform("alpha", 1.0f);
 
@@ -119,9 +121,9 @@ struct RotateHandler final : IGraphicHandler {
     }
 
     virtual int collisionTest(glm::vec3 ray_origin, glm::vec3 ray_direction) override {
-        auto x_axis = glm::vec3(1, 0, 0);
-        auto y_axis = glm::vec3(0, 1, 0);
-        auto z_axis = glm::vec3(0, 0, 1);
+        auto x_axis = zeno::vec_to_other<glm::vec3>(localX);
+        auto y_axis = zeno::vec_to_other<glm::vec3>(localY);
+        auto z_axis = glm::cross(x_axis, y_axis);
 
         auto model_matrix =glm::translate(zeno::vec_to_other<glm::vec3>(center));
 
@@ -158,8 +160,10 @@ struct RotateHandler final : IGraphicHandler {
         return INTERACT_NONE;
     }
 
-    virtual void setCenter(zeno::vec3f c) override {
+    virtual void setCenter(zeno::vec3f c, zeno::vec3f x, zeno::vec3f y) override {
         center = c;
+        localX = x;
+        localY = y;
     }
 
     virtual void setMode(int m) override {
@@ -184,8 +188,8 @@ struct RotateHandler final : IGraphicHandler {
 
 } // namespace
 
-std::shared_ptr<IGraphicHandler> makeRotateHandler(Scene *scene, vec3f center, float scale) {
-    return std::make_shared<RotateHandler>(scene, center, scale);
+std::shared_ptr<IGraphicHandler> makeRotateHandler(Scene *scene, vec3f center, vec3f localX_, vec3f localY_, float scale) {
+    return std::make_shared<RotateHandler>(scene, center, localX_, localY_, scale);
 }
 
 } // namespace zenovis

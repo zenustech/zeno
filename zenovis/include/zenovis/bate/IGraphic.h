@@ -50,7 +50,7 @@ struct IGraphicDraw : IGraphic {
 
 struct IGraphicHandler : IGraphicDraw {
     virtual int collisionTest(glm::vec3 ori, glm::vec3 dir) = 0;
-    virtual void setCenter(zeno::vec3f center) = 0;
+    virtual void setCenter(zeno::vec3f center, zeno::vec3f localX, zeno::vec3f localY) = 0;
     virtual void setMode(int mode) = 0;
     virtual void setCoordSys(int coord_sys) = 0;
     virtual void resize(float scale) = 0;
@@ -79,9 +79,9 @@ std::unique_ptr<IGraphicDraw> makeGraphicAxis(Scene *scene);
 std::unique_ptr<IGraphicDraw> makeGraphicGrid(Scene *scene);
 std::unique_ptr<IGraphicDraw> makeGraphicSelectBox(Scene *scene);
 
-std::shared_ptr<IGraphicHandler> makeTransHandler(Scene *scene, zeno::vec3f center, float scale);
-std::shared_ptr<IGraphicHandler> makeScaleHandler(Scene *scene, zeno::vec3f center, float scale);
-std::shared_ptr<IGraphicHandler> makeRotateHandler(Scene *scene, zeno::vec3f center, float scale);
+std::shared_ptr<IGraphicHandler> makeTransHandler(Scene *scene, zeno::vec3f center, zeno::vec3f localX_, zeno::vec3f localY_, float scale);
+std::shared_ptr<IGraphicHandler> makeScaleHandler(Scene *scene, zeno::vec3f center, zeno::vec3f localX_, zeno::vec3f localY_, float scale);
+std::shared_ptr<IGraphicHandler> makeRotateHandler(Scene *scene, zeno::vec3f center, zeno::vec3f localX_, zeno::vec3f localY_, float scale);
 
 std::unique_ptr<IPicker> makeFrameBufferPicker(Scene *scene);
 std::unique_ptr<IGraphicDraw> makePrimitiveHighlight(Scene* scene);
