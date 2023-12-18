@@ -491,7 +491,7 @@ void FakeTransformer::toTranslate() {
         m_operation = TRANSLATE;
         auto scene = session->get_scene();
         ZASSERT_EXIT(scene);
-        m_handler = zenovis::makeTransHandler(scene, zeno::other_to_vec<3>(m_objects_center), m_handler_scale);
+        m_handler = zenovis::makeTransHandler(scene, zeno::other_to_vec<3>(m_objects_center), zeno::other_to_vec<3>(m_localX), zeno::other_to_vec<3>(m_localY), m_handler_scale);
     }
     session->set_handler(m_handler);
 }
@@ -510,7 +510,7 @@ void FakeTransformer::toRotate() {
         m_operation = ROTATE;
         auto scene = session->get_scene();
         ZASSERT_EXIT(scene);
-        m_handler = zenovis::makeRotateHandler(scene, zeno::other_to_vec<3>(m_objects_center), m_handler_scale);
+        m_handler = zenovis::makeRotateHandler(scene, zeno::other_to_vec<3>(m_objects_center), zeno::other_to_vec<3>(m_localX), zeno::other_to_vec<3>(m_localY), m_handler_scale);
     }
     session->set_handler(m_handler);
 }
@@ -529,7 +529,7 @@ void FakeTransformer::toScale() {
         m_operation = SCALE;
         auto scene = session->get_scene();
         ZASSERT_EXIT(scene);
-        m_handler = zenovis::makeScaleHandler(scene, zeno::other_to_vec<3>(m_objects_center), m_handler_scale);
+        m_handler = zenovis::makeScaleHandler(scene, zeno::other_to_vec<3>(m_objects_center), zeno::other_to_vec<3>(m_localX), zeno::other_to_vec<3>(m_localY), m_handler_scale);
     }
     session->set_handler(m_handler);
 }
@@ -589,13 +589,13 @@ void FakeTransformer::changeTransOpt() {
 
     switch (m_operation) {
     case TRANSLATE:
-        m_handler = zenovis::makeTransHandler(scene, zeno::other_to_vec<3>(m_objects_center), m_handler_scale);
+        m_handler = zenovis::makeTransHandler(scene, zeno::other_to_vec<3>(m_objects_center), zeno::other_to_vec<3>(m_localX), zeno::other_to_vec<3>(m_localY), m_handler_scale);
         break;
     case ROTATE:
-        m_handler = zenovis::makeRotateHandler(scene, zeno::other_to_vec<3>(m_objects_center), m_handler_scale);
+        m_handler = zenovis::makeRotateHandler(scene, zeno::other_to_vec<3>(m_objects_center), zeno::other_to_vec<3>(m_localX), zeno::other_to_vec<3>(m_localY), m_handler_scale);
         break;
     case SCALE:
-        m_handler = zenovis::makeScaleHandler(scene, zeno::other_to_vec<3>(m_objects_center), m_handler_scale);
+        m_handler = zenovis::makeScaleHandler(scene, zeno::other_to_vec<3>(m_objects_center), zeno::other_to_vec<3>(m_localX), zeno::other_to_vec<3>(m_localY), m_handler_scale);
         break;
     case NONE:
         m_handler = nullptr;
@@ -732,7 +732,7 @@ void FakeTransformer::doTransform() {
     }
 
     m_objects_center = _objects_center_start + m_trans;
-    m_handler->setCenter({m_objects_center[0], m_objects_center[1], m_objects_center[2]});
+    m_handler->setCenter(other_to_vec<3>(m_objects_center), other_to_vec<3>(m_localX), other_to_vec<3>(m_localY));
 }
 
 }
