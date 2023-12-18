@@ -15,6 +15,8 @@ namespace zeno {
 FakeTransformer::FakeTransformer(ViewportWidget* viewport)
     : m_objects_center(0.0f)
       , m_pivot(0.0f)
+      , m_localX(1, 0, 0)
+      , m_localY(0, 1, 0)
       , m_trans(0.0f)
       , m_scale(1.0f)
       , m_rotate({0, 0, 0, 1})
@@ -73,6 +75,8 @@ void FakeTransformer::addObject(const std::string& name) {
         user_data.setLiterial("_scale", scale);
         auto bboxCenter = (bmin + bmax) / 2;
         user_data.set2("_pivot", bboxCenter);
+        user_data.set2("_localX", vec3f(1, 0, 0));
+        user_data.set2("_localY", vec3f(0, 1, 0));
         if (object->has_attr("pos") && !object->has_attr("_origin_pos")) {
             auto &pos = object->attr<zeno::vec3f>("pos");
             object->verts.add_attr<zeno::vec3f>("_origin_pos") = pos;
@@ -85,6 +89,8 @@ void FakeTransformer::addObject(const std::string& name) {
     auto m = zeno::vec_to_other<glm::vec3>(bmax);
     auto n = zeno::vec_to_other<glm::vec3>(bmin);
     m_pivot = zeno::vec_to_other<glm::vec3>(user_data.get2<vec3f>("_pivot"));
+    m_localX = zeno::vec_to_other<glm::vec3>(user_data.get2<vec3f>("_localX"));
+    m_localY = zeno::vec_to_other<glm::vec3>(user_data.get2<vec3f>("_localY"));
 
     m_objects_center *= m_objects.size();
     m_objects_center += m_pivot + zeno::vec_to_other<glm::vec3>(user_data.get2<vec3f>("_translate"));
@@ -679,12 +685,22 @@ void FakeTransformer::doTransform() {
         auto pre_quaternion = glm::quat(rotate[3], rotate[0], rotate[1], rotate[2]);
         auto pre_rotate_matrix = glm::toMat4(pre_quaternion);
 
+        auto lX = m_localX;
+        auto lY = m_localY;
+        auto lZ = glm::cross(lX, lY);
+        auto pivot_to_world = glm::mat4(1);
+        pivot_to_world[0] = {lX[0], lX[1], lX[2], 0};
+        pivot_to_world[1] = {lY[0], lY[1], lY[2], 0};
+        pivot_to_world[2] = {lZ[0], lZ[1], lZ[2], 0};
+        pivot_to_world[3] = {m_pivot[0], m_pivot[1], m_pivot[2], 1};
+        auto pivot_to_local = glm::inverse(pivot_to_world);
+
         // do this transform
         auto translate_matrix = glm::translate(translate + m_trans);
         auto cur_quaternion = glm::quat(m_rotate[3], m_rotate[0], m_rotate[1], m_rotate[2]);
         auto rotate_matrix = glm::toMat4(cur_quaternion) * pre_rotate_matrix;
         auto scale_matrix = glm::scale(scale * m_scale);
-        auto transform_matrix = glm::translate(m_pivot) *  translate_matrix *  rotate_matrix * scale_matrix * glm::translate(-m_pivot);
+        auto transform_matrix = pivot_to_world *  translate_matrix *  rotate_matrix * scale_matrix * pivot_to_local;
 
         if (obj->has_attr("_origin_pos")) {
             // transform pos

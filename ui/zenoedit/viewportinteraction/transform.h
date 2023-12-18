@@ -106,6 +106,8 @@ private:
     glm::vec3 m_objects_center;
 
     glm::vec3 m_pivot;
+    glm::vec3 m_localX;
+    glm::vec3 m_localY;
     glm::vec3 m_trans;
     glm::vec4 m_rotate;
     glm::vec3 m_scale;
