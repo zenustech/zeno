@@ -281,8 +281,17 @@ struct PrimitiveTransform : zeno::INode {
             objectGetBoundingBox(prim.get(), _min, _max);
             _pivot = (_min + _max) / 2;
         }
-        auto pivot_to_local = glm::translate(glm::vec3(-_pivot[0], -_pivot[1], -_pivot[2]));
-        auto pivot_to_world = glm::translate(glm::vec3(_pivot[0], _pivot[1], _pivot[2]));
+        auto lX = zeno::normalize(get_input2<vec3f>("localX"));
+        auto lY = zeno::normalize(get_input2<vec3f>("localY"));
+        auto lZ = zeno::cross(lX, lY);
+        lY = zeno::cross(lZ, lX);
+
+        auto pivot_to_world = glm::mat4(1);
+        pivot_to_world[0] = {lX[0], lX[1], lX[2], 0};
+        pivot_to_world[1] = {lY[0], lY[1], lY[2], 0};
+        pivot_to_world[2] = {lZ[0], lZ[1], lZ[2], 0};
+        pivot_to_world[3] = {_pivot[0], _pivot[1], _pivot[2], 1};
+        auto pivot_to_local = glm::inverse(pivot_to_world);
         matrix = pivot_to_world * matrix * pivot_to_local;
 
         auto outprim = std::make_unique<PrimitiveObject>(*prim);
@@ -315,6 +324,8 @@ struct PrimitiveTransform : zeno::INode {
         user_data.setLiterial("_rotate", rotate);
         user_data.setLiterial("_scale", scaling);
         user_data.set2("_pivot", _pivot);
+        user_data.set2("_localX", lX);
+        user_data.set2("_localY", lY);
         //auto oMat = std::make_shared<MatrixObject>();
         //oMat->m = matrix;
         set_output("outPrim", std::move(outprim));
