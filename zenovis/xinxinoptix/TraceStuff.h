@@ -75,7 +75,7 @@ struct RadiancePRD
     bool         isSS;
     float        scatterStep;
     int          nonThinTransHit;
-
+    float        pixel_area;
     float        Lweight;
     vec3         sigma_t_queue[8];
     vec3         ss_alpha_queue[8];

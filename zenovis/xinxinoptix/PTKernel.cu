@@ -159,6 +159,7 @@ extern "C" __global__ void __raygen__rg()
         ray_direction = normalize(ray_direction);
 
         RadiancePRD prd;
+        prd.pixel_area   = cam.height/(float)(h)/(cam.focal_length);
         prd.adepth       = 0;
         prd.camPos       = cam.eye;
         prd.emission     = make_float3(0.f);

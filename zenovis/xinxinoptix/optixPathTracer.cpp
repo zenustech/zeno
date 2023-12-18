@@ -228,7 +228,7 @@ ushort2 halfNormal(float4 in)
       float3 val = make_float3((in.x + 1.0f)/2.0f,
                                (in.y + 1.0f)/2.0f,
                                (in.z + 1.0f)/2.0f);
-      val = normalize(val);
+      //val = normalize(val);
 
       return make_ushort3((unsigned short)(val.x*65536.0f),
                           (unsigned short)(val.y*65536.0f),
