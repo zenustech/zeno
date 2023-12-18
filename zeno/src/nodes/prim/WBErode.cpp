@@ -2639,7 +2639,7 @@ ZENDEFNODE(HF_remap,
            { /* inputs: */ {
                "prim",
                {"string", "remap layer", "height"},
-               {"bool", "Auto Compute input range", "1"},
+               {"bool", "Auto Compute input range", "0"},
                {"float", "input min", "0"},
                {"float", "input max", "1"},
                {"float", "output min", "0"},
