@@ -122,7 +122,7 @@ private:
     std::map<std::string, int> lastToViewNodesType;
     //------new change------
     void prepareForOptix(bool inserted, std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs);
-    int currentFrameIdx = 0;
+    int m_currentFrame = 0;    //ºı»•startFrame
     bool updateOptixByViewport = false;
     mutable std::recursive_mutex m_recur_mutex;
 };

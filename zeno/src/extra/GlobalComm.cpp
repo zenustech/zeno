@@ -27,6 +27,18 @@ std::set<std::string> lightCameraNodes({
     });
 std::string matlNode = "ShaderFinalize";
 
+static void markListIndex(const std::string& root, std::shared_ptr<ListObject> lstObj)
+{
+    for (int i = 0; i < lstObj->arr.size(); i++) {
+        auto& obj = lstObj->arr[i];
+        const std::string& objpath = root + "/" + std::to_string(i);
+        obj->userData().set2("list-index", objpath);
+        if (std::shared_ptr<ListObject> spList = std::dynamic_pointer_cast<ListObject>(obj)) {
+            markListIndex(objpath, spList);
+        }
+    }
+}
+
 void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &objs, std::string key, bool dumpCacheVersionInfo) {
     if (cachedir.empty()) return;
 
@@ -260,7 +272,14 @@ bool GlobalComm::fromDiskByObjsManager(std::string cachedir, int frameid, Global
             }
             const char* p = dat.data() + pos + poses[lastObjIdx];
 
-            convertToView(decodeObject(p, poses[lastObjIdx + 1] - poses[lastObjIdx]), {}, toViewObjInfo.insert(toViewObjInfo.find(":"), ":TOVIEW"));
+            zeno::zany decodedObj = decodeObject(p, poses[lastObjIdx + 1] - poses[lastObjIdx]);
+            if (std::shared_ptr<ListObject> spListObj = std::dynamic_pointer_cast<ListObject>(decodedObj))
+            {
+                std::string objid = toViewObjInfo.substr(0, toViewObjInfo.find(":"));
+                markListIndex(objid, spListObj);
+            }
+
+            convertToView(decodedObj, {}, toViewObjInfo.insert(toViewObjInfo.find(":"), ":TOVIEW"));
         }
     }
     return true;
@@ -472,7 +491,7 @@ ZENO_API bool GlobalComm::load_objects(
             inserted = true;
             break;
         }
-    currentFrameIdx = frameid - beginFrameNumber;
+    m_currentFrame = frameid - beginFrameNumber;
 
     if (viewObjs) {
         zeno::log_trace("load_objects: {} objects at frame {}", viewObjs->size(), frameid);
@@ -619,7 +638,12 @@ void GlobalComm::prepareForOptix(bool inserted, std::map<std::string, std::share
 ZENO_API void GlobalComm::clear_objects() {
     std::lock_guard lck(m_recur_mutex);
     if (m_frames.size() != 0)
-        m_frames[currentFrameIdx].view_objects.clear();
+    {
+        if (m_currentFrame < 0 && m_currentFrame >= m_frames.size()) {
+            return;
+        }
+        m_frames[m_currentFrame].view_objects.clear();
+    }
 }
 
 ZENO_API void GlobalComm::clear_lightObjects()
@@ -630,7 +654,11 @@ ZENO_API void GlobalComm::clear_lightObjects()
 
 ZENO_API std::optional<zeno::IObject* > GlobalComm::get(std::string nid) {
     std::lock_guard lck(m_recur_mutex);
-    for (auto& [key, ptr] : m_frames[currentFrameIdx].view_objects) {
+    if (m_currentFrame < 0 && m_currentFrame >= m_frames.size()) {
+        return std::nullopt;
+    }
+
+    for (auto& [key, ptr] : m_frames[m_currentFrame].view_objects) {
         if (key != nid) {
             continue;
         }
@@ -643,8 +671,12 @@ ZENO_API std::optional<zeno::IObject* > GlobalComm::get(std::string nid) {
 ZENO_API std::vector<std::pair<std::string, IObject*>> GlobalComm::pairs() const
 {
     std::lock_guard lck(m_recur_mutex);
-    if (m_frames.size() != 0)
-        return m_frames[currentFrameIdx].view_objects.pairs();
+    if (m_frames.size() != 0) {
+        if (m_currentFrame < 0 && m_currentFrame >= m_frames.size()) {
+            return std::vector<std::pair<std::string, IObject*>>();
+        }
+        return m_frames[m_currentFrame].view_objects.pairs();
+    }
     else
         return std::vector<std::pair<std::string, IObject*>>();
 }
@@ -652,8 +684,12 @@ ZENO_API std::vector<std::pair<std::string, IObject*>> GlobalComm::pairs() const
 ZENO_API std::vector<std::pair<std::string, std::shared_ptr<IObject>>> GlobalComm::pairsShared() const
 {
     std::lock_guard lck(m_recur_mutex);
-    if (m_frames.size() != 0)
-        return m_frames[currentFrameIdx].view_objects.pairsShared();
+    if (m_frames.size() != 0) {
+        if (m_currentFrame < 0 && m_currentFrame >= m_frames.size()) {
+            return std::vector<std::pair<std::string, std::shared_ptr<IObject>>>();
+        }
+        return m_frames[m_currentFrame].view_objects.pairsShared();
+    }
     else
         return std::vector<std::pair<std::string, std::shared_ptr<IObject>>>();
 }
@@ -681,7 +717,11 @@ ZENO_API bool GlobalComm::lightObjsCount(std::string& id)
 ZENO_API bool GlobalComm::objsCount(std::string& id)
 {
     std::lock_guard lck(m_recur_mutex);
-    for (auto const& [key, ptr] : m_frames[currentFrameIdx].view_objects) {
+    if (m_currentFrame < 0 && m_currentFrame >= m_frames.size()) {
+        return 0;
+    }
+
+    for (auto const& [key, ptr] : m_frames[m_currentFrame].view_objects) {
         if (key.find(id) == 0) {
             return true;
         }
@@ -703,9 +743,11 @@ ZENO_API const std::string GlobalComm::getLightObjKeyByLightObjID(std::string id
 ZENO_API const std::string GlobalComm::getObjKeyByObjID(std::string& id)
 {
     std::lock_guard lck(m_recur_mutex);
-    for (auto const& [key, ptr] : m_frames[currentFrameIdx].view_objects) {
-        if (id == key.substr(0, key.find_first_of(':'))) {
-            return key;
+    if (m_currentFrame >= 0 && m_currentFrame < m_frames.size()) {
+        for (auto const& [key, ptr] : m_frames[m_currentFrame].view_objects) {
+            if (id == key.substr(0, key.find_first_of(':'))) {
+                return key;
+            }
         }
     }
     return "";
@@ -714,9 +756,11 @@ ZENO_API const std::string GlobalComm::getObjKeyByObjID(std::string& id)
 ZENO_API const std::string GlobalComm::getObjKey1(std::string& id, int frame)
 {
     std::lock_guard lck(m_recur_mutex);
-    for (auto const& [key, ptr] : m_frames[currentFrameIdx].view_objects) {
-        if (key.find(id) == 0 && key.find(zeno::format(":{}:", frame)) != std::string::npos) {
-            return key;
+    if (m_currentFrame >= 0 && m_currentFrame < m_frames.size()) {
+        for (auto const& [key, ptr] : m_frames[m_currentFrame].view_objects) {
+            if (key.find(id) == 0 && key.find(zeno::format(":{}:", frame)) != std::string::npos) {
+                return key;
+            }
         }
     }
     return "";
@@ -745,15 +789,20 @@ ZENO_API void GlobalComm::updateObjsIdByViewport(std::map<std::string, zeno::IOb
     {
         std::shared_ptr<IObject> oldObj;
         std::string oldKey;
-        for (auto& [k, o] : m_frames[currentFrameIdx].view_objects)
+
+        if (m_currentFrame < 0 && m_currentFrame >= m_frames.size()) {
+            continue;
+        }
+
+        for (auto& [k, o] : m_frames[m_currentFrame].view_objects)
             if (k.find(key) != std::string::npos) {
                 oldKey = k;
-                oldObj = m_frames[currentFrameIdx].view_objects.m_curr[k];
+                oldObj = m_frames[m_currentFrame].view_objects.m_curr[k];
                 break;
             }
-        m_frames[currentFrameIdx].view_objects.m_curr.erase(oldKey);
+        m_frames[m_currentFrame].view_objects.m_curr.erase(oldKey);
         std::string& newKey = oldKey.replace(oldKey.find_last_of(":") + 1, std::to_string(changedNumber).size() + 1, std::to_string(changedNumber) + "#");
-        m_frames[currentFrameIdx].view_objects.try_emplace(newKey,std::move(oldObj));
+        m_frames[m_currentFrame].view_objects.try_emplace(newKey,std::move(oldObj));
         if (lightCameraNodes.count(key) || obj->userData().get2<int>("isL", 0))
         {
             std::shared_ptr<IObject> oldLightObj;
@@ -949,7 +998,12 @@ ZENO_API void GlobalComm::getAllLightsKey(std::vector<std::string>& keys)
 ZENO_API std::string GlobalComm::getObjMatId(std::string& id)
 {
     std::lock_guard lck(m_recur_mutex);
-    for (auto const& [key, ptr] : m_frames[currentFrameIdx].view_objects) {
+
+    if (m_currentFrame < 0 && m_currentFrame >= m_frames.size()) {
+        return "";
+    }
+
+    for (auto const& [key, ptr] : m_frames[m_currentFrame].view_objects) {
         if (id == key) {
             auto& ud = ptr->userData();
             return ud.get2<std::string>("mtlid", "Default");

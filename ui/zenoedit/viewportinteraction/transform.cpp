@@ -440,11 +440,19 @@ void FakeTransformer::endTransform(bool moved) {
         ZASSERT_EXIT(pGraphs);
         pGraphs->setApiRunningEnable(false);
 
+        std::vector<std::string> listitems;
+
         for (auto &[obj_name, obj] : m_objects) {
             auto& node_sync = NodeSyncMgr::GetInstance();
             auto prim_node_location = node_sync.searchNodeOfPrim(obj_name);
             auto& prim_node = prim_node_location->node;
-            if (node_sync.checkNodeType(prim_node, "TransformPrimitive") &&
+
+            auto& user_data = obj->userData();
+            if (user_data.has("list-index")) {
+                const std::string& path = user_data.get2<std::string>("list-index");
+                listitems.push_back(path);
+            }
+            else if (node_sync.checkNodeType(prim_node, "TransformPrimitive") &&
                 // prim comes from a exist TransformPrimitive node
                 node_sync.checkNodeInputHasValue(prim_node, "translation") &&
                 node_sync.checkNodeInputHasValue(prim_node, "quatRotation") &&
@@ -462,6 +470,11 @@ void FakeTransformer::endTransform(bool moved) {
                     // prim doesn't link to a exist TransformPrimitive node
                     createNewTransformNode(prim_node_location.value(), obj_name);
             }
+        }
+
+        if (!listitems.empty())
+        {
+            //todo: sync To TransformList
         }
     }
     unmarkObjectsInteractive();
