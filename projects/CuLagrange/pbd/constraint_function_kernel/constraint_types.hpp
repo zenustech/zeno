@@ -8,6 +8,7 @@ constexpr auto CONSTRAINT_COLOR_OFFSET = "XPBD_CONSTRAINT_OFFSET";
 
 constexpr auto NM_DCD_COLLISIONS = "NM_DCD_COLLISIONS";
 constexpr auto GLOBAL_DCD_THICKNESS = "GLOBAL_DCD_THICKNESS";
+constexpr auto ENABLE_SLIDING = "ENABLE_SLIDING";
 
 constexpr auto ENABLE_DCD_REPULSION_FORCE = "ENABLE_DCD_REPULSION_FORCE";
 
@@ -24,6 +25,7 @@ enum category_c : int {
     vert_bending_spring,
     tri_bending_spring,
     pt_pin_constraint,
+    vertex_pin_to_cell_constraint,
     dcd_collision_constraint,
     kinematic_dcd_collision_constraint,
     self_dcd_collision_constraint,

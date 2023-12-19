@@ -662,23 +662,16 @@ struct XPBDSolveSmoothAll : INode {
             }
 
             if(category == category_c::self_dcd_collision_constraint) {
-
-
                 const auto& tris = zsparticles->getQuadraturePoints();
                 const auto &edges = (*zsparticles)[ZenoParticles::s_surfEdgeTag]; 
                 auto imminent_thickness = constraint_ptr->readMeta<float>(GLOBAL_DCD_THICKNESS);
                 auto enable_repulsion_force = constraint_ptr->readMeta<bool>(ENABLE_DCD_REPULSION_FORCE);
-
                 auto nm_dcd_collisions = constraint_ptr->readMeta<size_t>(NM_DCD_COLLISIONS);
-
-                // std::cout << "sovle " << nm_dcd_collisions << " self dcd collisions" << std::endl;
 
                 cudaPol(zs::range(nm_dcd_collisions),[
                     imminent_thickness = imminent_thickness,
                     add_repulsion_force = enable_repulsion_force,
                     cquads = proxy<space>({},cquads),
-                    // tris = tris.begin("inds",dim_c<3>,int_c),
-                    // edges = edges.begin("inds",dim_c<2>,int_c),
                     dt = dt,
                     stiffnessOffset = cquads.getPropertyOffset("relative_stiffness"),
                     affiliationOffset = cquads.getPropertyOffset("xpbd_affiliation"),
@@ -740,11 +733,148 @@ struct XPBDSolveSmoothAll : INode {
                             for(int d = 0;d != 3;++d){
                                 atomic_add(exec_tag,&verts(dptagOffset + d,inds[i]),dp[i][d] * w);
                             }
+                        }
+                });
+            }
 
-                            // imp_norm2 += dp[i].l2NormSqr();
+            if(category == category_c::vertex_pin_to_cell_constraint) {
+                auto target = constraint_ptr->readMeta<ZenoParticles*>(CONSTRAINT_TARGET);
+                const auto& kverts = target->getParticles();
+                const auto& ktris = target->getQuadraturePoints();
+
+                auto enable_sliding = constraint_ptr->readMeta<bool>(ENABLE_SLIDING);
+
+                auto substep_id = get_input2<int>("substep_id");
+                auto nm_substeps = get_input2<int>("nm_substeps");
+                auto anim_w = (float)(substep_id + 1) / (float)nm_substeps;
+
+                dtiles_t cell_buffer{kverts.get_allocator(),{
+                    {"cx",3},
+                    {"x",3},
+                    {"v",3},
+                    {"nrm",3}
+                },kverts.size()};
+        
+                cudaPol(zs::range(cell_buffer.size()),[
+                    cell_buffer = proxy<space>({},cell_buffer),
+                    kverts = proxy<space>({},kverts),
+                    w = anim_w] ZS_LAMBDA(int vi) mutable {
+                        cell_buffer.tuple(dim_c<3>,"cx",vi) = w * kverts.pack(dim_c<3>,"x",vi) + (1 - w) * kverts.pack(dim_c<3>,"px",vi);
+                });
+
+                auto thickness = constraint_ptr->readMeta<float>(GLOBAL_DCD_THICKNESS);
+
+                compute_cells_and_vertex_normal(cudaPol,
+                    cell_buffer,"cx",
+                    cell_buffer,
+                    ktris,
+                    cell_buffer,
+                    thickness);    
+                    
+                cudaPol(zs::range(cquads.size()),[
+                    cquads = proxy<space>({},cquads),
+                    cell_buffer = proxy<space>({},cell_buffer),
+                    dptagOffset = verts.getPropertyOffset(dptag),
+                    ptagOffet = verts.getPropertyOffset(ptag),
+                    ktris = ktris.begin("inds",dim_c<3>,int_c),
+                    enable_sliding = enable_sliding,
+                    weight_sum = proxy<space>(weight_sum),
+                    stiffnessOffset = cquads.getPropertyOffset("relative_stiffness"),
+                    verts = proxy<space>({},verts)] ZS_LAMBDA(int ci) mutable {
+                        auto w = cquads(stiffnessOffset,ci);
+                        auto pair = cquads.pack(dim_c<2>,"inds",ci,int_c);
+                        auto vi = pair[0];
+                        auto kti = pair[1];
+                        auto ktri = ktris[kti];
+
+                        auto bary = cquads.pack(dim_c<6>,"bary",ci);
+                        vec3 as[3] = {};
+                        vec3 bs[3] = {};
+
+                        for(int i = 0;i != 3;++i) {
+                            as[i] = cell_buffer.pack(dim_c<3>,"x",ktri[i]);
+                            bs[i] = cell_buffer.pack(dim_c<3>,"v",ktri[i]) + as[i];
                         }
 
-                        // printf("imp_norm2 : %f\n",(float)imp_norm2);
+
+
+                        auto tp = vec3::zeros();
+                        for(int i = 0;i != 3;++i) {
+                            tp += as[i] * bary[i];
+                            tp += bs[i] * bary[i + 3];
+                        }
+
+                        auto dp = tp - verts.pack(dim_c<3>,ptagOffet,vi);
+                        
+                        if(enable_sliding) {
+                            auto avg_nrm = vec3::zeros();
+                            for(int i = 0;i != 3;++i) {
+                                avg_nrm += cell_buffer.pack(dim_c<3>,"nrm",ktri[i]);
+                            }
+                            avg_nrm = avg_nrm.normalized();
+
+                            auto dp_normal = dp.dot(avg_nrm) * avg_nrm;
+                            auto dp_tangent = dp - dp_normal;
+                            if(dp_tangent.norm() < static_cast<T>(0.1))
+                                dp_tangent = vec3::zeros();
+                            else
+                                dp_tangent *= static_cast<T>(0.5);
+                            // dp -= dp_tangent * 0.5;
+                            dp = dp_tangent + dp_normal;
+                        }
+
+                        atomic_add(exec_tag,&weight_sum[vi],w);
+                        for(int d = 0;d != 3;++d){
+                            atomic_add(exec_tag,&verts(dptagOffset + d,vi),dp[d] * w);
+                        }
+                });
+            }
+
+            if(category == category_c::volume_pin_constraint) {
+                auto embed_volume = constraint_ptr->readMeta<ZenoParticles*>(CONSTRAINT_TARGET);
+                const auto& vverts = embed_volume->getParticles();
+                const auto vtets = embed_volume->getQuadraturePoints();
+
+                auto substep_id = get_input2<int>("substep_id");
+                auto nm_substeps = get_input2<int>("nm_substeps");
+                auto volume_anim_w = (float)(substep_id + 1) / (float)nm_substeps;
+                // auto pw = (float)(substep_id) / (float)nm_substeps;
+
+                cudaPol(zs::range(cquads.size()),[
+                    cquads = proxy<space>({},cquads),
+                    verts = proxy<space>({},verts),
+                    alpha = volume_anim_w,
+                    stiffnessOffset = cquads.getPropertyOffset("relative_stiffness"),
+                    weight_sum = proxy<space>(weight_sum),
+                    ptagOffset = verts.getPropertyOffset(ptag),
+                    // dptagOffset = verts.getPropertyOffset(dptag),
+                    vverts = proxy<space>({},vverts),
+                    vtets = proxy<space>({},vtets)] ZS_LAMBDA(int ci) mutable {
+                        auto w = cquads(stiffnessOffset,ci);
+                        auto pair = cquads.pack(dim_c<2>,"inds",ci,int_c);
+                        auto bary = cquads.pack(dim_c<4>,"bary",ci);
+                        auto vi = pair[0];
+                        auto vti = pair[1];
+                        if(vti < 0)
+                            return;
+
+                        auto vtet = vtets.pack(dim_c<4>,"inds",vti,int_c);
+                        vec3 vps[4] = {};
+                        for(int i = 0;i != 4;++i)
+                            vps[i] = (1 - alpha) * vverts.pack(dim_c<3>,"px",vtet[i]) + alpha * vverts.pack(dim_c<3>,"x",vtet[i]);
+
+                        auto vtp = vec3::zeros();
+                        for(int i = 0;i != 4;++i)
+                            vtp += vps[i] * bary[i];
+                        
+                        // auto dp = vtp - verts.pack(dim_c<3>,ptagOffset,vi);
+                        verts.tuple(dim_c<3>,ptagOffset,vi) = vtp;
+                        // atomic_add(exec_tag,&weight_sum[inds[i]],w);
+                        // for(int d = 0;d != 3;++d){
+                        //     atomic_add(exec_tag,&verts(dptagOffset + d,inds[i]),dp[i][d] * w);
+                        // }
+
+                        // weight_sum[vi] = (T)1.0;
                 });
             }
 
@@ -940,6 +1070,8 @@ ZENDEFNODE(XPBDSolveSmoothAll, {{{"zsparticles"},
                                 {"string","pptag","px"},
                                 {"string","dptag","dx"},
                                 {"float","dt","1.0"},
+                                {"int","nm_substeps","1"},
+                                {"int","substep_id","0"},
                             },
 							{{"zsparticles"},{"constraints"}},
 							{},

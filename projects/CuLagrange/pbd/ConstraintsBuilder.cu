@@ -116,6 +116,12 @@ virtual void apply() override {
         retrieve_edges_topology(cudaPol,quads_vec,edge_topos);
         eles.resize(edge_topos.size());
 
+        auto rest_scale_group_name = get_input2<std::string>("group_name");
+        auto has_group = verts.hasProperty(rest_scale_group_name);
+        if(has_group) {
+            std::cout << "using scale_rest_shape group to control the local stretching behavior" << std::endl;
+        }
+
         if(do_constraint_topological_coloring) {
             topological_coloring(cudaPol,edge_topos,colors);
             sort_topology_by_coloring_tag(cudaPol,colors,reordered_map,color_offset);
@@ -126,6 +132,8 @@ virtual void apply() override {
         auto rest_scale = get_input2<float>("rest_scale");
 
         cudaPol(zs::range(eles.size()),[
+            has_group = has_group,
+            rest_scale_group_name = zs::SmallString(rest_scale_group_name),
             verts = proxy<space>({},verts),
             eles = proxy<space>({},eles),
             do_constraint_topological_coloring = do_constraint_topological_coloring,
@@ -138,9 +146,17 @@ virtual void apply() override {
                 auto ei = do_constraint_topological_coloring ? reordered_map[oei] : oei;
                 eles.tuple(dim_c<2>,"inds",oei) = edge_topos[ei].reinterpret_bits(float_c);
                 vec3 x[2] = {};
+                auto edge = edge_topos[ei];
                 for(int i = 0;i != 2;++i)
-                    x[i] = verts.pack(dim_c<3>,"x",edge_topos[ei][i]);
-                eles("r",oei) = (x[0] - x[1]).norm() * rest_scale;
+                    x[i] = verts.pack(dim_c<3>,"x",edge[i]);
+
+                auto scale = rest_scale;
+                if(has_group && (verts(rest_scale_group_name,edge[0]) < 0.5 && verts(rest_scale_group_name,edge[1]) < 0.5)) {
+                    scale = (T)1.0;
+                }
+
+                eles("r",oei) = (x[0] - x[1]).norm() * scale;
+                
                 // printf("r[%d] : %f\n",oei,(float)eles("r",oei));
         });            
 
@@ -741,9 +757,9 @@ virtual void apply() override {
         auto pin_group_name = get_input2<std::string>("group_name");
         auto binder_max_length = get_input2<float>("thickness");
 
-        zs::Vector<zs::vec<int,1>> point_topos{quads.get_allocator(),0};
+        zs::Vector<zs::vec<int,1>> point_topos{verts.get_allocator(),0};
         if(verts.hasProperty(pin_group_name)) {
-            std::cout << "binder name : " << pin_group_name << std::endl;
+            // std::cout << "binder name : " << pin_group_name << std::endl;
             zs::bht<int,1,int> pin_point_set{verts.get_allocator(),verts.size()};
             pin_point_set.reset(cudaPol,true);
 
@@ -765,7 +781,7 @@ virtual void apply() override {
             point_topos.resize(verts.size());
             cudaPol(zip(zs::range(point_topos.size()),point_topos),[] ZS_LAMBDA(const auto& id,auto& pi) mutable {pi = id;});
         }
-        std::cout << "nm binder point : " << point_topos.size() << std::endl;
+        // std::cout << "nm binder point : " << point_topos.size() << std::endl;
         if(do_constraint_topological_coloring) {
             topological_coloring(cudaPol,point_topos,colors,false);
             sort_topology_by_coloring_tag(cudaPol,colors,reordered_map,color_offset);
@@ -792,6 +808,7 @@ virtual void apply() override {
             ktets = proxy<space>({},ktets)] ZS_LAMBDA(int oei) mutable {
                 auto ei = do_constraint_topological_coloring ? reordered_map[oei] : oei;
                 auto pi = point_topos[ei][0];
+
                 auto p = verts.pack(dim_c<3>,"x",pi);
                 auto bv = bv_t{get_bounding_box(p - thickness,p + thickness)};
 
@@ -801,6 +818,8 @@ virtual void apply() override {
                 auto find_embeded_tet = [&](int kti) {
                     if(found)
                         return;
+
+                    // printf("try finding binder between V[%d] -> T[%d]\n",pi,kti);
                     auto inds = ktets.pack(dim_c<4>,"inds",kti,int_c);
                     vec3 ktps[4] = {};
                     for(int i = 0;i != 4;++i)
@@ -816,10 +835,122 @@ virtual void apply() override {
                     }                        
                 };  
                 ktetBvh.iter_neighbors(bv,find_embeded_tet);
-                if(embed_kti >= 0)
+                if(embed_kti >= 0) {
+                    // printf("find volume binder V[%d] -> T[%d] with bary[%f %f %f %f]\n",
+                    //     pi,embed_kti,(float)bary[0],(float)bary[1],(float)bary[2],(float)bary[3]);
                     verts("minv",pi) = 0;
+                }
                 eles.tuple(dim_c<2>,"inds",oei) = vec2i{pi,embed_kti}.reinterpret_bits(float_c);
                 eles.tuple(dim_c<4>,"bary",oei) = bary;
+        });
+    }
+
+    if(type == "point_cell_pin") {
+        constexpr auto eps = 1e-6;
+        constraint->setMeta(CONSTRAINT_KEY,category_c::vertex_pin_to_cell_constraint);
+
+        auto target = get_input<ZenoParticles>("target");
+        const auto& kverts = target->getParticles();
+        const auto& ktris = target->getQuadraturePoints();
+        constraint->setMeta(CONSTRAINT_TARGET,target.get());   
+        auto thickness = get_input2<float>("thickness");
+
+        auto enable_sliding = get_input2<bool>("enable_sliding");
+
+        constraint->setMeta(GLOBAL_DCD_THICKNESS,thickness);
+        constraint->setMeta(ENABLE_SLIDING,enable_sliding);
+
+        dtiles_t cell_buffer{kverts.get_allocator(),{
+            {"x",3},
+            {"v",3},
+            {"nrm",3}
+        },kverts.size()};
+
+        compute_cells_and_vertex_normal(cudaPol,
+            kverts,"x",
+            cell_buffer,
+            ktris,
+            cell_buffer,
+            thickness);
+
+        auto cellBvh = bvh_t{};
+        auto cellBvs = retrieve_bounding_volumes(cudaPol,cell_buffer,ktris,cell_buffer,wrapv<3>{},(T)1.0,(T)0.0,"x","v");
+        cellBvh.build(cudaPol,cellBvs);
+
+        dtiles_t binder_buffer{verts.get_allocator(),{
+            {"bary",6}
+        },verts.size()};
+
+        auto pin_group_name = get_input2<std::string>("group_name");
+        auto has_pin_group = verts.hasProperty(pin_group_name);
+
+
+        zs::bht<int,2,int> binder_set{verts.get_allocator(),verts.size()};
+        binder_set.reset(cudaPol,true);
+
+        cudaPol(zs::range(verts.size()),[
+            verts = proxy<space>({},verts),
+            has_pin_group = has_pin_group,
+            eps = eps,
+            pin_group_name = zs::SmallString(pin_group_name),
+            ktris = proxy<space>({},ktris),
+            kverts = proxy<space>({},kverts),
+            binder_set = proxy<space>(binder_set),
+            binder_buffer = proxy<space>({},binder_buffer),
+            cell_buffer = proxy<space>({},cell_buffer),
+            cellBvh = proxy<space>(cellBvh)] ZS_LAMBDA(int vi) mutable {
+               auto p = verts.pack(dim_c<3>,"x",vi);
+               if(verts("minv",vi) < eps)
+                    return;
+
+               if(has_pin_group && verts(pin_group_name,vi) < eps) {
+                    // printf("ignore V[%d] excluded by pingroup\n",vi);
+                    return;
+               }
+               auto bv = bv_t{p,p};
+               int closest_kti = -1;
+               T closest_toc = std::numeric_limits<T>::max();
+               zs::vec<T,6> closest_bary = {};
+               T min_toc_dist = std::numeric_limits<T>::max();
+
+               auto do_close_proximity_detection = [&](int kti) mutable {
+                    auto ktri = ktris.pack(dim_c<3>,"inds",kti,int_c);
+                    vec3 as[3] = {};
+                    vec3 bs[3] = {};
+
+                    for(int i = 0;i != 3;++i) {
+                        as[i] = cell_buffer.pack(dim_c<3>,"x",ktri[i]);
+                        bs[i] = cell_buffer.pack(dim_c<3>,"v",ktri[i]) + as[i];
+                    }
+
+                    zs::vec<T,6> prism_bary{};
+                    T toc{};
+                    if(!compute_vertex_prism_barycentric_weights(p,as[0],as[1],as[2],bs[0],bs[1],bs[2],toc,prism_bary,(T)0.1))
+                        return;           
+
+                    auto toc_dist = zs::abs(toc - (T)0.5);
+                    if(toc_dist < min_toc_dist) {
+                        min_toc_dist = toc_dist;
+                        // closest_toc = toc;
+                        closest_bary = prism_bary;
+                        closest_kti = kti;
+                    }                    
+               };
+               cellBvh.iter_neighbors(bv,do_close_proximity_detection);
+               if(closest_kti >= 0) {
+                auto id = binder_set.insert(vec2i{vi,closest_kti});
+                binder_buffer.tuple(dim_c<6>,"bary",id) = closest_bary;
+            }
+        });
+
+        eles.append_channels(cudaPol,{{"inds",2},{"bary",6}});
+        eles.resize(binder_set.size());
+        
+        cudaPol(zip(zs::range(binder_set.size()),binder_set._activeKeys),[
+            binder_buffer = proxy<space>({},binder_buffer),
+            eles = proxy<space>({},eles)] ZS_LAMBDA(auto id,const auto& pair) mutable {
+                eles.tuple(dim_c<2>,"inds",id) = pair.reinterpret_bits(float_c);
+                eles.tuple(dim_c<6>,"bary",id) = binder_buffer.pack(dim_c<6>,"bary",id);
         });
     }
 
@@ -934,7 +1065,6 @@ virtual void apply() override {
                 eles("rd",oei) = min_dist;
         });
     }
-
     // angle on (p2, p3) between triangles (p0, p2, p3) and (p1, p3, p2)
     if(type == "bending") {
         constraint->setMeta(CONSTRAINT_KEY,category_c::isometric_bending_constraint);
@@ -1099,7 +1229,8 @@ ZENDEFNODE(MakeSurfaceConstraintTopology, {{
                             {"int","nm_substeps","1"},
                             {"bool","make_empty_constraint","0"},
                             {"bool","do_constraint_topological_coloring","1"},
-                            {"float","damping_coeff","0.0"}
+                            {"float","damping_coeff","0.0"},
+                            {"bool","enable_sliding","0"}
                         },
                         {{"constraint"}},
                         { 
