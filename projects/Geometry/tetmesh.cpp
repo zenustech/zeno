@@ -14,7 +14,9 @@ namespace zeno {
 
 struct FTetWild : INode {
     virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
         auto input_dir = get_input2<std::string>("input_dir");
+        input_dir.erase(input_dir.find_last_not_of(" ")+1);
         auto output_dir = get_input2<std::string>("output_dir");
         auto tag = get_input2<std::string>("tag");
         tag.erase(tag.find_last_not_of(" ")+1);
@@ -197,13 +199,35 @@ struct FTetWild : INode {
         strcpy(argv[argc+1], "3\0");
         argc += 2;
 
-        runFTetWild(argc, argv);
+        std::vector<std::vector<int>> faces(prim->tris->size(), std::vector<int>{});
+        std::vector<std::vector<float>> verts(prim->verts->size(), std::vector<float>{});
+        for (int i = 0; i < prim->tris->size(); ++i)
+            for (int j = 0; j < 3; ++j)
+                faces[i].push_back(prim->tris[i][j]);
+        for (int i = 0; i < prim->verts->size(); ++i)
+            for (int j = 0; j < 3; ++j)
+                verts[i].push_back(prim->verts[i][j]);
+
+        runFTetWild(faces, verts, argc, argv);
+
+        prim->quads.clear();
+        prim->quads.resize(faces.size());
+        prim->verts.clear();
+        prim->verts.resize(verts.size());
+        for (int i = 0; i < faces.size(); ++i)
+            for (int j = 0; j < 4; ++j)
+                prim->quads[i][j] = faces[i][j];
+        for (int i = 0; i < verts.size(); ++i)
+            for (int j = 0; j < 3; ++j)
+                prim->verts[i][j] = verts[i][j];
+        set_output("prim", std::move(prim));
     }
 };
 
 ZENO_DEFNODE(FTetWild)
 ({
-    {{"readpath", "input_dir"},
+    {{"prim"},
+    {"readpath", "input_dir", " "},
     {"string", "output_dir"},
     {"readpath", "tag", " "},
     {"enum none union intersection difference", "operation", "none"},
@@ -223,7 +247,7 @@ ZENO_DEFNODE(FTetWild)
     {"bool", "use_general_wn", "0"},
     {"bool", "use_input_for_wn", "0"},
     {"readpath", "bg_mesh", " "}},
-    {},
+    {("prim")},
     {},
     {"primitive"},
 });

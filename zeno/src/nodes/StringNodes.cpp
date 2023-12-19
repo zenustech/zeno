@@ -7,6 +7,7 @@
 #include <zeno/extra/GlobalState.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/utils/string.h>
+#include <zeno/utils/logger.h>
 #include <string_view>
 #include <regex>
 
@@ -546,6 +547,10 @@ struct StringReplace : zeno::INode {
         std::string string = get_input2<std::string>("string");
         std::string oldstr = get_input2<std::string>("old");
         std::string newstr = get_input2<std::string>("new");
+        if (oldstr.empty()) {
+            zeno::log_error("[StringReplace] old string is empty.");
+            return;
+        }
         auto output = strreplace(string, oldstr, newstr);
         set_output2("string", output);
     }

@@ -53,8 +53,11 @@ private:
     zenovis::Scene* scene() const;
     zenovis::Session* session() const;
 
+    // 计算translate并调用doTransform
     void translate(glm::vec3 start, glm::vec3 end, glm::vec3 axis);
+    // 计算scale并调用doTransform
     void scale(float scale_size, vec3i axis);
+    // 计算rotate并调用doTransform
     void rotate(glm::vec3 start_vec, glm::vec3 end_vec, glm::vec3 axis);
 
     void createNewTransformNode(NodeLocation& node_location,
@@ -62,6 +65,7 @@ private:
     void syncToTransformNode(NodeLocation& node_location,
                              const std::string& obj_name);
 
+    // 把FakeTransform上的SRT应用到primitive上
     void doTransform();
 
     static glm::vec3 QVec3ToGLMVec3(QVector3D QVec3) {
@@ -102,13 +106,10 @@ private:
 
     glm::vec3 m_objects_center;
 
+    glm::vec3 m_pivot;
     glm::vec3 m_trans;
     glm::vec4 m_rotate;
     glm::vec3 m_scale;
-
-    glm::vec3 m_last_trans;
-    glm::vec4 m_last_rotate;
-    glm::vec3 m_last_scale;
 
     glm::vec3 m_trans_start;
     glm::vec3 m_rotate_start;

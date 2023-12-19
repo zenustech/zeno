@@ -31,6 +31,7 @@ static __inline__ __device__ MatOutput evalMat(cudaTextureObject_t zenotex[], fl
     auto att_instUv = attrs.instUv;
     auto att_instClr = attrs.instClr;
     auto att_instTang = attrs.instTang;
+    auto att_rayLength = attrs.rayLength;
     auto att_NoL      = attrs.NoL;
     auto att_LoV      = attrs.LoV;
     auto att_N        = attrs.N;
@@ -287,6 +288,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     attrs.clr = interp(barys, clr0, clr1, clr2);
     attrs.tang = interp(barys, tan0, tan1, tan2);
     attrs.tang = optixTransformVectorFromObjectToWorldSpace(attrs.tang);
+    attrs.rayLength = optixGetRayTmax();
 
     attrs.instPos = rt_data->instPos[inst_idx];
     attrs.instNrm = rt_data->instNrm[inst_idx];
@@ -440,7 +442,7 @@ extern "C" __global__ void __closesthit__radiance()
 
     HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
     MatInput attrs{};
-
+    float estimation = 0;
 #if (_SPHERE_)
 
     unsigned short isLight = 0;
@@ -496,6 +498,7 @@ extern "C" __global__ void __closesthit__radiance()
     float3 N_Local = normalize( cross( normalize(_vertices_[1]-_vertices_[0]), normalize(_vertices_[2]-_vertices_[1]) ) ); // this value has precision issue for big float
     float3 N_World = normalize(optixTransformNormalFromObjectToWorldSpace(N_Local));
 
+
     if (isBadVector(N_World)) 
     {  
         N_World = normalize(DisneyBSDF::SampleScatterDirection(prd->seed));
@@ -515,8 +518,10 @@ extern "C" __global__ void __closesthit__radiance()
     const float3& tan0 = decodeNormal( rt_data->tan[ vert_idx_offset+0 ] );
     const float3& tan1 = decodeNormal( rt_data->tan[ vert_idx_offset+1 ] );
     const float3& tan2 = decodeNormal( rt_data->tan[ vert_idx_offset+2 ] );
-
-    attrs.uv = interp(barys, uv0, uv1, uv2);//todo later
+    float tri_area = length(cross(_vertices_[1]-_vertices_[0], _vertices_[2]-_vertices_[1]));
+    float uv_area = length(cross(uv1 - uv0, uv2-uv0));
+    estimation = uv_area * 4096.0f*4096.0f / (tri_area + 1e-6);
+        attrs.uv = interp(barys, uv0, uv1, uv2);//todo later
     attrs.clr = interp(barys, clr0, clr1, clr2);
     attrs.tang = normalize(interp(barys, tan0, tan1, tan2));
     attrs.tang = optixTransformVectorFromObjectToWorldSpace(attrs.tang);
@@ -526,7 +531,7 @@ extern "C" __global__ void __closesthit__radiance()
     attrs.instUv = rt_data->instUv[inst_idx];
     attrs.instClr = rt_data->instClr[inst_idx];
     attrs.instTang = rt_data->instTang[inst_idx];
-
+    attrs.rayLength = optixGetRayTmax();
 #endif
 
     MatOutput mats = evalMaterial(rt_data->textures, rt_data->uniforms, attrs);
@@ -561,6 +566,10 @@ extern "C" __global__ void __closesthit__radiance()
 #endif
 
     attrs.nrm = N;
+    float term = log2(optixGetRayTmax()*prd->pixel_area*sqrt(estimation))/2.5f;
+//    printf("rayDist:%f, tex_per_area:%f, term:%f, pixel_area:%f\n", optixGetRayTmax(),
+//           sqrt(estimation), term, prd->pixel_area);
+    mats.nrm = normalize(mix(mats.nrm, vec3(0,0,1), clamp(term,0.0f,1.0f)));
     //end of material computation
     //mats.metallic = clamp(mats.metallic,0.01, 0.99);
     mats.roughness = clamp(mats.roughness, 0.01f,0.99f);
