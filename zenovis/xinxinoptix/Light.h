@@ -404,9 +404,10 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
             light_attenuation = shadow_prd.shadowAttanuation;
 
             if (nullptr==RadianceWithoutShadow && lengthSquared(light_attenuation) == 0.0f) return;
-                
-                auto bxdf_value = evalBxDF(lsr.dir, wo, scatterPDF);
-                auto misWeight = 1.0f;
+
+            emission *= lsr.intensity;
+            auto bxdf_value = evalBxDF(lsr.dir, wo, scatterPDF, vec3(emission));
+            auto misWeight = 1.0f;
 
             if constexpr(_MIS_) {
                 if (!light.isDeltaLight() && !lsr.isDelta) {
@@ -414,21 +415,24 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
                 }
             }
 
-                emission *= lsr.intensity;
 
-                float3 radianceNoShadow = emission * bxdf_value;
+
+                float3 radianceNoShadow = bxdf_value;
                 radianceNoShadow *= misWeight / lsr.PDF;
 
                 if (nullptr != RadianceWithoutShadow) {
                     *RadianceWithoutShadow = radianceNoShadow;
                 }
 
-                if constexpr (!detail::is_void<TypeAux>::value) {
-                    auto tmp = light_attenuation * misWeight / lsr.PDF;
-                    (*taskAux)(tmp);
-                }// TypeAux
+                //if constexpr (!detail::is_void<TypeAux>::value) {
+                    //auto tmp = light_attenuation * misWeight / lsr.PDF;
+                    //(*taskAux)(vec3(tmp));
+                //}// TypeAux
 
                 prd->radiance = radianceNoShadow * light_attenuation; // with shadow
+                prd->radiance_d *= light_attenuation * misWeight / lsr.PDF;
+                prd->radiance_s *= light_attenuation * misWeight / lsr.PDF;
+                prd->radiance_t *= light_attenuation * misWeight / lsr.PDF;
         }
 
     } else {
