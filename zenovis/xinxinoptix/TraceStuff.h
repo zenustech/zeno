@@ -129,7 +129,7 @@ struct RadiancePRD
         auto dir = forward? geometryNormal:-geometryNormal;
         auto offset = rtgems::offset_ray(P, dir);
         float l = length( offset - P );
-        float l2 = this->alphaHit? clamp(l, 1e-4, 1e-3) : clamp(l, 1e-5, 1e-4);
+        float l2 = this->alphaHit? clamp(l, 1e-4, 1e-3) : clamp(l, 1e-6, 1e-5);
         P = P + l2 * dir;
     }
 
