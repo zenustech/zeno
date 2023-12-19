@@ -83,6 +83,7 @@ struct RadiancePRD
     float        samplePdf;
     bool         fromDiff;
     unsigned char adepth;
+    bool         alphaHit;
 
     __forceinline__ float rndf() {
         return rnd(this->seed);
@@ -128,7 +129,8 @@ struct RadiancePRD
         auto dir = forward? geometryNormal:-geometryNormal;
         auto offset = rtgems::offset_ray(P, dir);
         float l = length( offset - P );
-        P = l>1e-4? offset : (P + 1e-4 * dir);
+        float l2 = this->alphaHit? clamp(l, 1e-4, 1e-3) : clamp(l, 1e-6, 1e-5);
+        P = P + l2 * dir;
     }
 
     void offsetUpdateRay(float3& P, float3 new_dir) {

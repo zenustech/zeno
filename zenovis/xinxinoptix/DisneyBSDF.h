@@ -379,7 +379,7 @@ namespace DisneyBSDF{
             } else {
               if(thin)
               {
-                vec3 t = sqrt(mat.sssColor) * glassWt;
+                vec3 t = sqrt(mat.transColor) * glassWt;
                 tterm = tterm + t;
                 f = f + t;
                 fPdf += 1.0f * glassPr;
