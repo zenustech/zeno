@@ -569,7 +569,7 @@ extern "C" __global__ void __closesthit__radiance()
     float term = log2(optixGetRayTmax()*prd->pixel_area*sqrt(estimation))/4.0f;
 //    printf("rayDist:%f, tex_per_area:%f, term:%f, pixel_area:%f\n", optixGetRayTmax(),
 //           sqrt(estimation), term, prd->pixel_area);
-    mats.nrm = normalize(mix(mats.nrm, vec3(0,0,1), clamp(term,0.0f,1.0f)));
+    //mats.nrm = normalize(mix(mats.nrm, vec3(0,0,1), clamp(term,0.0f,1.0f)));
     //end of material computation
     //mats.metallic = clamp(mats.metallic,0.01, 0.99);
     mats.roughness = clamp(mats.roughness, 0.01f,0.99f);
@@ -636,6 +636,7 @@ extern "C" __global__ void __closesthit__radiance()
         //prd->origin = P + 1e-5 * ray_dir; 
         if(prd->maxDistance>optixGetRayTmax())
             prd->maxDistance-=optixGetRayTmax();
+        prd->alphaHit = true;
         prd->offsetUpdateRay(P, ray_dir); 
         return;
     }
@@ -678,7 +679,8 @@ extern "C" __global__ void __closesthit__radiance()
         prd->adepth++;
         //prd->samplePdf = 0.0f;
         prd->radiance = make_float3(0.0f);
-        //prd->origin = P + 1e-5 * ray_dir; 
+        //prd->origin = P + 1e-5 * ray_dir;
+        prd->alphaHit = true;
         prd->offsetUpdateRay(P, ray_dir);
         return;
     }
@@ -707,6 +709,7 @@ extern "C" __global__ void __closesthit__radiance()
 
         prd->origin = P;
         prd->direction = ray_dir;
+        prd->alphaHit = true;
         prd->offsetUpdateRay(P, ray_dir);
 
         prd->prob *= 1;
