@@ -106,14 +106,16 @@ struct RotateHandler final : IGraphicHandler {
 
         lines_prog->set_uniform("alpha", 1.0f);
 
+        float size = 0.02f;
+
         if (mode == INTERACT_NONE || mode == INTERACT_YZ)
-            drawCircle(center, y_axis, z_axis, color_yz, bound, bound * 0.01f, vbo);
+            drawCircle(center, y_axis, z_axis, color_yz, bound, bound * size, vbo);
 
         if (mode == INTERACT_NONE || mode == INTERACT_XZ)
-            drawCircle(center, z_axis, x_axis, color_xz, bound, bound * 0.01f, vbo);
+            drawCircle(center, z_axis, x_axis, color_xz, bound, bound * size, vbo);
 
         if (mode == INTERACT_NONE || mode == INTERACT_XY)
-            drawCircle(center, x_axis, y_axis, color_xy, bound, bound * 0.01f, vbo);
+            drawCircle(center, x_axis, y_axis, color_xy, bound, bound * size, vbo);
 
         lines_prog->set_uniform("alpha", 0.3f);
 
