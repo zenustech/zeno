@@ -685,6 +685,19 @@ void FakeTransformer::rotate(glm::vec3 start_vec, glm::vec3 end_vec, glm::vec3 a
 
 void FakeTransformer::doTransform() {
     // qDebug() << "transformer's objects count " << m_objects.size();
+    auto lX = m_localX;
+    auto lY = m_localY;
+    auto lZ = glm::cross(lX, lY);
+    zeno::log_info("lX: {}", glm::length(lX));
+    zeno::log_info("lY: {}", glm::length(lY));
+    zeno::log_info("lZ: {}", glm::length(lZ));
+    auto pivot_to_world = glm::mat4(1);
+    pivot_to_world[0] = {lX[0], lX[1], lX[2], 0};
+    pivot_to_world[1] = {lY[0], lY[1], lY[2], 0};
+    pivot_to_world[2] = {lZ[0], lZ[1], lZ[2], 0};
+    pivot_to_world[3] = {m_pivot[0], m_pivot[1], m_pivot[2], 1};
+    auto pivot_to_local = glm::inverse(pivot_to_world);
+
     for (auto &[obj_name, obj] : m_objects) {
         auto& user_data = obj->userData();
 
@@ -694,16 +707,6 @@ void FakeTransformer::doTransform() {
         auto scale = zeno::vec_to_other<glm::vec3>(user_data.getLiterial<zeno::vec3f>("_scale"));
         auto pre_quaternion = glm::quat(rotate[3], rotate[0], rotate[1], rotate[2]);
         auto pre_rotate_matrix = glm::toMat4(pre_quaternion);
-
-        auto lX = m_localX;
-        auto lY = m_localY;
-        auto lZ = glm::cross(lX, lY);
-        auto pivot_to_world = glm::mat4(1);
-        pivot_to_world[0] = {lX[0], lX[1], lX[2], 0};
-        pivot_to_world[1] = {lY[0], lY[1], lY[2], 0};
-        pivot_to_world[2] = {lZ[0], lZ[1], lZ[2], 0};
-        pivot_to_world[3] = {m_pivot[0], m_pivot[1], m_pivot[2], 1};
-        auto pivot_to_local = glm::inverse(pivot_to_world);
 
         // do this transform
         auto translate_matrix = glm::translate(translate + m_trans);
@@ -741,7 +744,7 @@ void FakeTransformer::doTransform() {
         }
     }
 
-    m_objects_center = _objects_center_start + m_trans;
+    m_objects_center = _objects_center_start + m_trans[0] * lX + m_trans[1] * lY + m_trans[2] * lZ;
     m_handler->setCenter(other_to_vec<3>(m_objects_center), other_to_vec<3>(m_localX), other_to_vec<3>(m_localY));
 }
 
