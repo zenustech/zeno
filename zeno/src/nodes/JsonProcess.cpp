@@ -5,6 +5,13 @@
 #include <zeno/zeno.h>
 #include <tinygltf/json.hpp>
 #include "zeno/utils/fileio.h"
+#include "zeno/utils/string.h"
+#include "zeno/types/ListObject.h"
+#include "zeno/types/DictObject.h"
+#include <iostream>
+#include <sstream>
+#include <string>
+
 using Json = nlohmann::json;
 
 namespace zeno {
@@ -24,6 +31,26 @@ struct ReadJson : zeno::INode {
 ZENDEFNODE(ReadJson, {
     {
         {"readpath", "path"},
+    },
+    {
+        "json",
+    },
+    {},
+    {
+        "json"
+    },
+});
+struct ReadJsonFromString : zeno::INode {
+    virtual void apply() override {
+        auto json = std::make_shared<JsonObject>();
+        auto content = get_input2<std::string>("content");
+        json->json = Json::parse(content);
+        set_output("json", json);
+    }
+};
+ZENDEFNODE(ReadJsonFromString, {
+    {
+        {"string", "content"},
     },
     {
         "json",
@@ -76,24 +103,48 @@ ZENDEFNODE(JsonGetArrayItem, {
 
 struct JsonGetChild : zeno::INode {
     virtual void apply() override {
-        auto out_json = std::make_shared<JsonObject>();
         auto json = get_input<JsonObject>("json");
         auto name = get_input2<std::string>("name");
-        out_json->json = json->json[name];
-        set_output("json", out_json);
+        auto type = get_input2<std::string>("type");
+        if (type == "json") {
+            auto out_json = std::make_shared<JsonObject>();
+            out_json->json = json->json[name];
+            set_output("out", out_json);
+        }
+        else if (type == "int") {
+            set_output2("out", int(json->json[name]));
+        }
+        else if (type == "float") {
+            set_output2("out", float(json->json[name]));
+        }
+        else if (type == "string") {
+            set_output2("out", std::string(json->json[name]));
+        }
+        else if (type == "vec2f") {
+            float x = float(json->json[name][0]);
+            float y = float(json->json[name][1]);
+            set_output2("out", vec2f(x, y));
+        }
+        else if (type == "vec3f") {
+            float x = float(json->json[name][0]);
+            float y = float(json->json[name][1]);
+            float z = float(json->json[name][2]);
+            set_output2("out", vec3f(x, y, z));
+        }
     }
 };
 ZENDEFNODE(JsonGetChild, {
     {
         {"json"},
-        {"string", "name"}
+        {"string", "name"},
+        {"enum json int float string vec2f vec3f", "type"},
     },
     {
-        "json",
+        "out",
     },
     {},
     {
-        "json"
+        "deprecated"
     },
 });
 struct JsonGetInt : zeno::INode {
@@ -111,7 +162,7 @@ ZENDEFNODE(JsonGetInt, {
     },
     {},
     {
-        "json"
+        "deprecated"
     },
 });
 
@@ -130,7 +181,7 @@ ZENDEFNODE(JsonGetFloat, {
     },
     {},
     {
-        "json"
+        "deprecated"
     },
 });
 
@@ -149,7 +200,7 @@ ZENDEFNODE(JsonGetString, {
     },
     {},
     {
-        "json"
+        "deprecated"
     },
 });
 struct JsonGetTypeName : zeno::INode {
@@ -164,6 +215,150 @@ ZENDEFNODE(JsonGetTypeName, {
     },
     {
         "string",
+    },
+    {},
+    {
+        "deprecated"
+    },
+});
+
+struct JsonData : zeno::INode {
+    virtual void apply() override {
+        auto json = get_input<JsonObject>("json");
+        auto path = get_input2<std::string>("path");
+        auto strings = zeno::split_str(path, ':');
+        auto type = strings[1];
+        path = strings[0];
+        auto names = split_str(path, '/');
+
+        for (auto & name : names) {
+            json->json = json->json[name];
+        }
+
+
+        if (type == "json") {
+            auto out_json = std::make_shared<JsonObject>();
+            out_json->json = json->json;
+            set_output("out", out_json);
+        }
+        else if (type == "int") {
+            set_output2("out", int(json->json));
+        }
+        else if (type == "float") {
+            set_output2("out", float(json->json));
+        }
+        else if (type == "string") {
+            set_output2("out", std::string(json->json));
+        }
+        else if (type == "vec2f") {
+            float x = float(json->json["x"]);
+            float y = float(json->json["y"]);
+            set_output2("out", vec2f(x, y));
+        }
+        else if (type == "vec3f") {
+            float x = float(json->json["x"]);
+            float y = float(json->json["y"]);
+            float z = float(json->json["z"]);
+            set_output2("out", vec3f(x, y, z));
+        }
+        else if (type == "vec4f") {
+            float x = float(json->json["x"]);
+            float y = float(json->json["y"]);
+            float z = float(json->json["z"]);
+            float w = float(json->json["w"]);
+            set_output2("out", vec4f(x, y, z, w));
+        }
+    }
+};
+ZENDEFNODE(JsonData, {
+    {
+        {"json"},
+        {"string", "path"},
+    },
+    {
+        "out",
+    },
+    {},
+    {
+        "deprecated"
+    },
+});
+
+struct JsonGetData : zeno::INode {
+    virtual void apply() override {
+        auto in_json = get_input<JsonObject>("json");
+        auto multi_path = get_input2<std::string>("paths");
+        std::istringstream iss(multi_path);
+        std::vector<std::string> paths;
+        std::string line;
+        while (std::getline(iss, line)) {
+            line = zeno::trim_string(line);
+            if (line.size()) {
+                paths.push_back(line);
+            }
+        }
+
+        auto dict = std::make_shared<zeno::DictObject>();
+        for (auto &path: paths) {
+            auto json = std::make_shared<JsonObject>();
+            json->json = in_json->json;
+            auto strings = zeno::split_str(path, ':');
+            auto type = strings[1];
+            path = strings[0];
+            std::string new_name = path;
+            if (strings.size() == 3) {
+                new_name = zeno::trim_string(strings[2]);
+            }
+
+            auto names = split_str(path, '/');
+
+            for (auto & name : names) {
+                json->json = json->json[name];
+            }
+
+            if (type == "json") {
+                auto out_json = std::make_shared<JsonObject>();
+                out_json->json = json->json;
+                dict->lut[new_name] = out_json;
+            }
+            else if (type == "int") {
+                dict->lut[new_name] = std::make_shared<NumericObject>(int(json->json));
+            }
+            else if (type == "float") {
+                dict->lut[new_name] = std::make_shared<NumericObject>(float(json->json));
+            }
+            else if (type == "string") {
+                dict->lut[new_name] = std::make_shared<StringObject>(std::string(json->json));
+            }
+            else if (type == "vec2f") {
+                float x = float(json->json["x"]);
+                float y = float(json->json["y"]);
+                dict->lut[new_name] = std::make_shared<NumericObject>(vec2f(x, y));
+            }
+            else if (type == "vec3f") {
+                float x = float(json->json["x"]);
+                float y = float(json->json["y"]);
+                float z = float(json->json["z"]);
+                dict->lut[new_name] = std::make_shared<NumericObject>(vec3f(x, y, z));
+            }
+            else if (type == "vec4f") {
+                float x = float(json->json["x"]);
+                float y = float(json->json["y"]);
+                float z = float(json->json["z"]);
+                float w = float(json->json["w"]);
+                dict->lut[new_name] = std::make_shared<NumericObject>(vec4f(x, y, z, w));
+            }
+        }
+        set_output("outs", dict);
+    }
+};
+ZENDEFNODE(JsonGetData, {
+    {
+        {"json"},
+        {"multiline_string", "paths"},
+    },
+    {
+        {"DictObject", "outs"}
     },
     {},
     {

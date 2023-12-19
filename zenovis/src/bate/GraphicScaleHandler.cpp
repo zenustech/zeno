@@ -69,7 +69,6 @@ struct ScaleHandler final : IGraphicHandler {
     vec3f localY;
     float bound;
     float scale;
-    int mode;
     int coord_sys;
 
     Program *lines_prog;
@@ -81,9 +80,10 @@ struct ScaleHandler final : IGraphicHandler {
     static constexpr float square_factor = 0.1f;
     static constexpr float icircle_factor = 0.2f; // inner circle
     static constexpr float ocircle_factor = 1.0f; // outer circle
+    static constexpr float color_factor = 0.8f;
 
     explicit ScaleHandler(Scene *scene_, vec3f &center_, vec3f localX_, vec3f localY_, float scale_)
-        : scene(scene_), center(center_), localX(localX_), localY(localY_), scale(scale_), mode(INTERACT_NONE) {
+        : scene(scene_), center(center_), localX(localX_), localY(localY_), scale(scale_) {
         vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
     }
 
@@ -92,9 +92,13 @@ struct ScaleHandler final : IGraphicHandler {
 
         bound = dist / 5.0f * scale;
 
-        vec3f r = vec3f(0.8, 0.2, 0.2);
-        vec3f g = vec3f(0.2, 0.6, 0.2);
-        vec3f b = vec3f(0.2, 0.2, 0.8);
+        vec3f color_x = vec3f(0.8, 0.2, 0.2) * (hover_mode == INTERACT_X ? 1.0 : color_factor);
+        vec3f color_y = vec3f(0.2, 0.6, 0.2) * (hover_mode == INTERACT_Y ? 1.0 : color_factor);
+        vec3f color_z = vec3f(0.2, 0.2, 0.8) * (hover_mode == INTERACT_Z ? 1.0 : color_factor);
+        vec3f color_yz = vec3f(0.6, 0.2, 0.2) * (hover_mode == INTERACT_YZ ? 1.0 : color_factor);
+        vec3f color_xz = vec3f(0.2, 0.6, 0.2) * (hover_mode == INTERACT_XZ ? 1.0 : color_factor);
+        vec3f color_xy = vec3f(0.2, 0.2, 0.6) * (hover_mode == INTERACT_XY ? 1.0 : color_factor);
+        vec3f color_circle = vec3f(1.0, 1.0, 1.0) * (hover_mode == INTERACT_XYZ ? 1.0 : color_factor);
 
         lines_prog = scene->shaderMan->compile_program(vert_code, frag_code);
 
@@ -113,31 +117,34 @@ struct ScaleHandler final : IGraphicHandler {
 
         // x axis
         if (mode == INTERACT_NONE || mode == INTERACT_X) {
-            drawAxis(center, x_axis, r, axis_size, vbo);
-            drawCube(center + axis_size * x_axis, y_axis, z_axis, r, cube_size, vbo);
+            drawAxis(center, x_axis, color_x, axis_size, vbo);
+            drawCube(center + axis_size * x_axis, y_axis, z_axis, color_x, cube_size, vbo);
         }
-
+        // y axis
         if (mode == INTERACT_NONE || mode == INTERACT_Y) {
-            drawAxis(center, y_axis, g, axis_size, vbo);
-            drawCube(center + axis_size * y_axis, z_axis, x_axis, g, cube_size, vbo);
+            drawAxis(center, y_axis, color_y, axis_size, vbo);
+            drawCube(center + axis_size * y_axis, z_axis, x_axis, color_y, cube_size, vbo);
         }
-
+        // z axis
         if (mode == INTERACT_NONE || mode == INTERACT_Z) {
-            drawAxis(center, z_axis, b, axis_size, vbo);
-            drawCube(center + axis_size * z_axis, x_axis, y_axis, b, cube_size, vbo);
+            drawAxis(center, z_axis, color_z, axis_size, vbo);
+            drawCube(center + axis_size * z_axis, x_axis, y_axis, color_z, cube_size, vbo);
         }
-
-        if (mode == INTERACT_NONE || mode == INTERACT_YZ)
-            drawSquare(center, y_axis, z_axis, {0.6, 0.2, 0.2}, square_size, vbo);
-
-        if (mode == INTERACT_NONE || mode == INTERACT_XZ)
-            drawSquare(center, z_axis, x_axis, {0.2, 0.6, 0.2}, square_size, vbo);
-
-        if (mode == INTERACT_NONE || mode == INTERACT_XY)
-            drawSquare(center, x_axis, y_axis, {0.2, 0.2, 0.6}, square_size, vbo);
-
-        const auto& view = scene->camera->m_view;
+        // yz
+        if (mode == INTERACT_NONE || mode == INTERACT_YZ) {
+            drawSquare(center, y_axis, z_axis, color_yz, square_size, vbo);
+        }
+        // xz
+        if (mode == INTERACT_NONE || mode == INTERACT_XZ) {
+            drawSquare(center, z_axis, x_axis, color_xz, square_size, vbo);
+        }
+        // xy
+        if (mode == INTERACT_NONE || mode == INTERACT_XY) {
+            drawSquare(center, x_axis, y_axis, color_xy, square_size, vbo);
+        }
+        // xyz
         if (mode == INTERACT_NONE || mode == INTERACT_XYZ) {
+            const auto& view = scene->camera->m_view;
             // http://www.opengl-tutorial.org/cn/intermediate-tutorials/billboards-particles/billboards/
             // always face camera
             // This is equivalent to mlutiplying (1,0,0) and (0,1,0) by inverse(ViewMatrix).
@@ -146,9 +153,9 @@ struct ScaleHandler final : IGraphicHandler {
             // and transposing a matrix is "free" (inversing is slooow)
             auto right_world = vec3f(view[0][0], view[1][0], view[2][0]);
             auto up_world = vec3f(view[0][1], view[1][1], view[2][1]);
-            drawCircle(center, right_world, up_world, { 1.0, 1.0, 1.0 }, icircle_size, bound * 0.01f, vbo);
-            drawCircle(center, right_world, up_world, { 1.0, 1.0, 1.0 }, ocircle_size, bound * 0.01f, vbo);
-        }       
+            drawCircle(center, right_world, up_world, color_circle, icircle_size, bound * 0.01f, vbo);
+            drawCircle(center, right_world, up_world, color_circle, ocircle_size, bound * 0.01f, vbo);
+        }
     }
 
     virtual int collisionTest(glm::vec3 ori, glm::vec3 dir) override {
@@ -169,7 +176,6 @@ struct ScaleHandler final : IGraphicHandler {
         auto x_handler_max = axis_handler_l * x_axis + axis_handler_w * y_axis + axis_handler_w * z_axis;
         auto x_handler_min = glm::vec3(0, -axis_handler_w, -axis_handler_w);
         if (rayIntersectOBB(ori, dir, x_handler_min, x_handler_max, model_matrix, t)) {
-            mode = INTERACT_X;
             return INTERACT_X;
         }
 
@@ -177,7 +183,6 @@ struct ScaleHandler final : IGraphicHandler {
         auto y_handler_max = axis_handler_w * x_axis + axis_handler_l * y_axis + axis_handler_w * z_axis;
         auto y_handler_min = glm::vec3(-axis_handler_w, 0, -axis_handler_w);
         if (rayIntersectOBB(ori, dir, y_handler_min, y_handler_max, model_matrix, t)) {
-            mode = INTERACT_Y;
             return INTERACT_Y;
         }
 
@@ -185,7 +190,6 @@ struct ScaleHandler final : IGraphicHandler {
         auto z_handler_max = axis_handler_w * x_axis + axis_handler_w * y_axis + axis_handler_l * z_axis;
         auto z_handler_min = glm::vec3(-axis_handler_w, -axis_handler_w, 0);
         if (rayIntersectOBB(ori, dir, z_handler_min, z_handler_max, model_matrix, t)) {
-            mode = INTERACT_Z;
             return INTERACT_Z;
         }
 
@@ -198,7 +202,6 @@ struct ScaleHandler final : IGraphicHandler {
         auto xy_handler_max = xy_base * (square_ctr_offset + square_size);
         auto xy_handler_min = xy_base * (square_ctr_offset - square_size);
         if (rayIntersectSquare(ori, dir, xy_handler_min, xy_handler_max, z_axis, model_matrix)) {
-            mode = INTERACT_XY;
             return INTERACT_XY;
         }
 
@@ -207,7 +210,6 @@ struct ScaleHandler final : IGraphicHandler {
         auto yz_handler_max = yz_base * (square_ctr_offset + square_size);
         auto yz_handler_min = yz_base * (square_ctr_offset - square_size);
         if (rayIntersectSquare(ori, dir, yz_handler_min, yz_handler_max, x_axis, model_matrix)) {
-            mode = INTERACT_YZ;
             return INTERACT_YZ;
         }
 
@@ -216,7 +218,6 @@ struct ScaleHandler final : IGraphicHandler {
         auto xz_handler_max = xz_base * (square_ctr_offset + square_size);
         auto xz_handler_min = xz_base * (square_ctr_offset - square_size);
         if (rayIntersectSquare(ori, dir, xz_handler_min, xz_handler_max, y_axis, model_matrix)) {
-            mode = INTERACT_XZ;
             return INTERACT_XZ;
         }
 
@@ -229,11 +230,9 @@ struct ScaleHandler final : IGraphicHandler {
         auto up_world = vec3f(view[0][1], view[1][1], view[2][1]);
         if (rayIntersectRing(ori, dir, glm::vec3(0), o_radius, i_radius, zeno::vec_to_other<glm::vec3>(right_world),
             zeno::vec_to_other<glm::vec3>(up_world), thickness, model_matrix)) {
-            mode = INTERACT_XYZ;
             return INTERACT_XYZ;
         }
 
-        mode = INTERACT_NONE;
         return INTERACT_NONE;
     }
 
@@ -241,10 +240,6 @@ struct ScaleHandler final : IGraphicHandler {
         center = c;
         localX = x;
         localY = y;
-    }
-
-    virtual void setMode(int m) override {
-        mode = m;
     }
 
     virtual void setCoordSys(int c) override {

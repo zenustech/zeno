@@ -92,7 +92,8 @@ int record_main(const QCoreApplication& app)
         {"subzsg", "subgraphzsg", "subgraph zsg file path"},
         {"cacheautorm", "cacheautoremove", "remove cache after render"},
         {"paramsPath", "paramsPath", "paramsPath"},
-    });
+        {"paramsJson", "paramsJson", "paramsJson"},
+        });
     cmdParser.process(app);
 
     if (cmdParser.isSet("zsg"))
@@ -160,17 +161,21 @@ int record_main(const QCoreApplication& app)
     }
     param.iBitrate = cmdParser.isSet("bitrate") ? cmdParser.value("bitrate").toInt() : 20000;
     param.iFps = cmdParser.isSet("fps") ? cmdParser.value("fps").toInt() : 24;
-	param.bOptix = cmdParser.isSet("optix") ? cmdParser.value("optix").toInt() : 0;
-	param.isExportVideo = cmdParser.isSet("video") ? cmdParser.value("video").toInt() : 0;
-	param.needDenoise = cmdParser.isSet("needDenoise") ? cmdParser.value("needDenoise").toInt() : 0;
-	int enableAOV = cmdParser.isSet("aov") ? cmdParser.value("aov").toInt() : 0;
-	param.export_exr = cmdParser.isSet("exr") && cmdParser.value("exr").toInt() != 0;
-    auto &ud = zeno::getSession().userData();
+    param.bOptix = cmdParser.isSet("optix") ? cmdParser.value("optix").toInt() : 0;
+    param.isExportVideo = cmdParser.isSet("video") ? cmdParser.value("video").toInt() : 0;
+    param.needDenoise = cmdParser.isSet("needDenoise") ? cmdParser.value("needDenoise").toInt() : 0;
+    int enableAOV = cmdParser.isSet("aov") ? cmdParser.value("aov").toInt() : 0;
+    param.export_exr = cmdParser.isSet("exr") && cmdParser.value("exr").toInt() != 0;
+    auto& ud = zeno::getSession().userData();
     ud.set2("output_aov", enableAOV != 0);
     ud.set2("output_exr", param.export_exr);
-	param.videoName = cmdParser.isSet("videoname") ? cmdParser.value("videoname") : "output.mp4";
-	param.subZsg = cmdParser.isSet("subzsg") ? cmdParser.value("subzsg") : "";
+    param.videoName = cmdParser.isSet("videoname") ? cmdParser.value("videoname") : "output.mp4";
+    param.subZsg = cmdParser.isSet("subzsg") ? cmdParser.value("subzsg") : "";
 
+    if (cmdParser.isSet("paramsJson"))
+    {
+        param.paramsJson = cmdParser.value("paramsJson");        
+    }
 
     if (!param.bOptix) {
         //gl normal recording may not be work in cmd mode.

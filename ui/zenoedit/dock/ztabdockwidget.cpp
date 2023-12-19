@@ -320,6 +320,7 @@ void ZTabDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
                         }
                     }
                     onPrimitiveSelected(scene->selected);
+                    pDisplay->updateFrame();
                 }
             }
         } 

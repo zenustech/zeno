@@ -1,11 +1,13 @@
 #pragma once
-
+#define USE_SHORT 1
 #include <optix.h>
 #include <Shape.h>
 
 #include "LightBounds.h"
 // #include <nanovdb/NanoVDB.h>
 #include <zeno/types/LightObject.h>
+
+#define TRI_PER_MESH (1<<29) //2^29
 
 enum RayType
 {
@@ -182,6 +184,8 @@ struct Params
     uint32_t firstSphereLightIdx;
     uint32_t firstTriangleLightIdx;
 
+    uint32_t maxInstanceID;
+
     unsigned long long lightTreeSampler;
     unsigned long long triangleLightCoordsBuffer;
     unsigned long long triangleLightNormalBuffer;
@@ -249,15 +253,32 @@ struct MissData
 {
     float4 bg_color;
 };
+
 struct HitGroupData
 {
     //float4* vertices;
-    float4* uv;
-    float4* nrm;
-    float4* clr;
-    float4* tan;
+#ifdef USE_SHORT_COMPACT
+    ushort2* uv;
+    ushort2* nrm;
+    ushort2* clr;
+    ushort2* tan;
+#else
+
+  #ifdef USE_SHORT
+      ushort3* uv;
+      ushort3* nrm;
+      ushort3* clr;
+      ushort3* tan;
+  #else
+      float4* uv;
+      float4* nrm;
+      float4* clr;
+      float4* tan;
+  #endif
+
+#endif
     unsigned short* lightMark;
-    int* meshIdxs;
+    uint32_t* auxOffset;
     
     float3* instPos;
     float3* instNrm;

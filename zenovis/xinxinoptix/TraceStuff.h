@@ -55,6 +55,7 @@ struct RadiancePRD
     float3       attenuation2;
     float3       origin;
     float3       direction;
+    float3       camPos;
     float        minSpecRough;
     bool         passed;
     float        prob;
@@ -62,7 +63,6 @@ struct RadiancePRD
     unsigned int seed;
     unsigned int eventseed;
     unsigned int flags;
-    bool         hitEnv;
     int          countEmitted;
     int          done;
     float3       shadowAttanuation;
@@ -75,20 +75,21 @@ struct RadiancePRD
     bool         isSS;
     float        scatterStep;
     int          nonThinTransHit;
-
+    float        pixel_area;
     float        Lweight;
     vec3         sigma_t_queue[8];
     vec3         ss_alpha_queue[8];
     int          curMatIdx;
     float        samplePdf;
     bool         fromDiff;
+    unsigned char adepth;
 
     __forceinline__ float rndf() {
         return rnd(this->seed);
         //return pcg_rng(this->seed); 
     }
 
-    unsigned char first_hit_type;
+    unsigned char hit_type;
     vec3 extinction() {
         auto idx = clamp(curMatIdx, 0, 7);
         return sigma_t_queue[idx];
@@ -124,13 +125,24 @@ struct RadiancePRD
 
     void offsetRay(float3& P, const float3& new_dir) {
         bool forward = dot(geometryNormal, new_dir) > 0;
-        P = rtgems::offset_ray(P, forward? geometryNormal:-geometryNormal);
+        auto dir = forward? geometryNormal:-geometryNormal;
+        auto offset = rtgems::offset_ray(P, dir);
+        float l = length( offset - P );
+        P = l>1e-4? offset : (P + 1e-4 * dir);
     }
 
     void offsetUpdateRay(float3& P, float3 new_dir) {
-        this->origin = P;
+      double x = (double)(P.x) - (double)(this->camPos.x);
+      double y = (double)(P.y) - (double)(this->camPos.y);
+      double z = (double)(P.z) - (double)(this->camPos.z);
+        auto beforeOffset = make_float3(x, y, z);
+        //this->origin = P;
         this->direction = new_dir;
-        offsetRay(this->origin, new_dir);
+        offsetRay(beforeOffset, new_dir);
+        double x2 = (double)(beforeOffset.x) + (double)(this->camPos.x);
+        double y2 = (double)(beforeOffset.y) + (double)(this->camPos.y);
+        double z2 = (double)(beforeOffset.z) + (double)(this->camPos.z);
+        this->origin = make_float3(x2, y2, z2);
     }
 
     uint8_t _mask_ = EverythingMask;

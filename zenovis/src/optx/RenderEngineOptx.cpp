@@ -622,7 +622,9 @@ struct GraphicsManager {
                     e2 = -e2;     // invert e2
                 
                     // facing down in local space
-                    nor = zeno::normalize(zeno::cross(e2, e1));
+                    auto ne2 = zeno::normalize(e2);
+                    auto ne1 = zeno::normalize(e1);
+                    nor = zeno::normalize(zeno::cross(ne2, ne1));
                     if (ivD) { nor *= -1; }
 
                     if (prim_in->verts.has_attr("clr")) {
@@ -1016,6 +1018,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             ensure_shadtmpl(_default_shader_template);
             ensure_shadtmpl(_volume_shader_template);
             ensure_shadtmpl(_light_shader_template);
+            ensure_fallback();
 
             auto _default_shader_fallback = std::make_shared<std::string>(_fallback_shader_template.shadtmpl);
             auto _volume_shader_fallback = std::make_shared<std::string>(_volume_shader_template.shadtmpl);

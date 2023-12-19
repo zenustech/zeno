@@ -434,6 +434,12 @@ void DisplayWidget::onCommandDispatched(int actionType, bool bChecked)
             m_glView->getSession()->set_render_wireframe(bChecked);
         updateFrame();
     }
+    else if (actionType == ZenoMainWindow::ACTION_UV_MODE)
+    {
+        if (m_glView)
+            m_glView->getSession()->set_uv_mode(bChecked);
+        updateFrame();
+    }
     else if (actionType == ZenoMainWindow::ACTION_SHOW_GRID)
     {
         if (m_glView)

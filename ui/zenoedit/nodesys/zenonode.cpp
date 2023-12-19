@@ -340,11 +340,21 @@ QGraphicsItem* ZenoNode::initParamWidget(ZenoSubGraphScene* scene, const QModelI
         return paramIdx.data(ROLE_PARAM_VALUE);
     };
 
+    auto cbGetZsgDir = []() {
+        QString path = zenoApp->graphsManagment()->zsgPath();
+        if (path.isEmpty())
+            return QString("");
+        QFileInfo fi(path);
+        QString dirPath = fi.dir().path();
+        return dirPath;
+    };
+
     CallbackCollection cbSet;
     cbSet.cbEditFinished = cbUpdateParam;
     cbSet.cbEditFinishedWithSlider = cbUpdateSocketDefldWithSlider;
     cbSet.cbSwitch = cbSwith;
     cbSet.cbGetIndexData = cbGetIndexData;
+    cbSet.cbGetZsgDir = cbGetZsgDir;
 
     const QString& paramName = paramIdx.data(ROLE_PARAM_NAME).toString();
     QVariant deflValue = paramIdx.data(ROLE_PARAM_VALUE);
@@ -1181,11 +1191,21 @@ QGraphicsItem* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const QModel
         return perIdx.data(ROLE_PARAM_VALUE);
     };
 
+    auto cbGetZsgDir = []() {
+        QString path = zenoApp->graphsManagment()->zsgPath();
+        if (path.isEmpty())
+            return QString("");
+        QFileInfo fi(path);
+        QString dirPath = fi.dir().path();
+        return dirPath;
+    };
+
     CallbackCollection cbSet;
     cbSet.cbEditFinished = cbUpdateSocketDefl;
     cbSet.cbEditFinishedWithSlider = cbUpdateSocketDefldWithSlider;
     cbSet.cbSwitch = cbSwith;
     cbSet.cbGetIndexData = cbGetIndexData;
+    cbSet.cbGetZsgDir = cbGetZsgDir;
 
     QVariant newVal = deflVal;
     if (bFloat)
@@ -1585,6 +1605,23 @@ void ZenoNode::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
             dlg.exec();
         });
 
+        nodeMenu->exec(QCursor::pos());
+        nodeMenu->deleteLater();
+    }
+    else if (m_index.data(ROLE_OBJNAME).toString() == "BindMaterial")
+    {
+        QAction* newSubGraph = new QAction(tr("Create Material Subgraph"));
+        connect(newSubGraph, &QAction::triggered, this, [=]() {
+            NodeParamModel* pNodeParams = QVariantPtr<NodeParamModel>::asPtr(m_index.data(ROLE_NODE_PARAMS));
+            ZASSERT_EXIT(pNodeParams);
+            const auto& paramIdx = pNodeParams->getParam(PARAM_INPUT, "mtlid");
+            ZASSERT_EXIT(paramIdx.isValid());
+            QString mtlid = paramIdx.data(ROLE_PARAM_VALUE).toString();
+            if (!pGraphsModel->newMaterialSubgraph(m_subGpIndex, mtlid, this->pos() + QPointF(800, 0)))
+                QMessageBox::warning(nullptr, tr("Info"), tr("Create material subgraph '%1' failed.").arg(mtlid));
+        });
+        QMenu *nodeMenu = new QMenu;
+        nodeMenu->addAction(newSubGraph);
         nodeMenu->exec(QCursor::pos());
         nodeMenu->deleteLater();
     }

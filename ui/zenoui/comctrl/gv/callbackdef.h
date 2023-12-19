@@ -24,6 +24,7 @@ typedef std::function<QPointF()> Callback_UpdateSockItemPos;
 typedef std::function<void()> Callback_OnSockLayoutChanged;
 
 typedef std::function<void(int nframe)> Callback_UpdateFrame;
+typedef std::function<QString()> Callback_GetZsgDir;
 
 struct CallbackForSocket
 {
@@ -41,6 +42,7 @@ struct CallbackCollection
     CALLBACK_SWITCH cbSwitch;
     Callback_NodeSelected cbNodeSelected;
     Callback_GetIndexData cbGetIndexData;
+    Callback_GetZsgDir cbGetZsgDir;
 };
 
 #endif

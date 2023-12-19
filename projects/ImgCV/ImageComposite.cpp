@@ -166,8 +166,8 @@ struct Blend: INode {//optimize
         image2->verts.resize(imagesize);
         bool alphaoutput =  blend->has_attr("alpha")||base->has_attr("alpha");
         auto &image2alpha = image2->add_attr<float>("alpha");
-        auto &blendalpha = blend->has_attr("alpha")?blend->attr<float>("alpha"):std::vector<float>(imagesize, 1.0f);
-        auto &basealpha = base->has_attr("alpha")?base->attr<float>("alpha"):std::vector<float>(imagesize, 1.0f);
+        const auto &blendalpha = blend->has_attr("alpha")?blend->attr<float>("alpha"):std::vector<float>(imagesize, 1.0f);
+        const auto &basealpha = base->has_attr("alpha")?base->attr<float>("alpha"):std::vector<float>(imagesize, 1.0f);
 
 #pragma omp parallel for
             for (int i = 0; i < imagesize; i++) {

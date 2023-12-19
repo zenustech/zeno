@@ -14,6 +14,7 @@ SubGraphModel::SubGraphModel(GraphsModel* pGraphsModel, QObject *parent)
     : QAbstractItemModel(pGraphsModel)
     , m_pGraphsModel(pGraphsModel)
     , m_stack(new QUndoStack(this))
+    , m_type(SUBGRAPH_TYPE::SUBGRAPH_NOR)
 {
 	connect(this, &QAbstractItemModel::dataChanged, m_pGraphsModel, &GraphsModel::on_subg_dataChanged);
 	connect(this, &QAbstractItemModel::rowsAboutToBeInserted, m_pGraphsModel, &GraphsModel::on_subg_rowsAboutToBeInserted);
@@ -34,6 +35,7 @@ SubGraphModel::SubGraphModel(const SubGraphModel &rhs)
     , m_rect(rhs.m_rect)
     , m_name(rhs.m_name)
     , m_nodes(rhs.m_nodes)
+    , m_type(SUBGRAPH_TYPE::SUBGRAPH_NOR)
 {
 }
 
@@ -325,10 +327,12 @@ void SubGraphModel::_uniqueView(const QModelIndex& index, bool bInSocket, bool b
                     {
                         const QModelIndex& keyIdx = pKeyObjModel->index(_r, 0);
                         ZASSERT_EXIT(keyIdx.isValid());
-                        lst << keyIdx;
+                        PARAM_LINKS links = keyIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+                        if (!links.isEmpty())
+                            lst << keyIdx;
                     }
                 }
-                else
+                if (lst.isEmpty())
                 {
                     lst << sock;
                 }
@@ -888,6 +892,37 @@ QString SubGraphModel::name() const
     return m_name;
 }
 
+SUBGRAPH_TYPE SubGraphModel::type() const
+{
+    return m_type;
+}
+void SubGraphModel::setType(SUBGRAPH_TYPE type)
+{
+    m_type = type;
+}
+
+void SubGraphModel::setMtlid(const QString& mtlid)
+{
+    m_mtlid = mtlid;
+}
+
+QString SubGraphModel::mtlid()
+{
+    if (m_type == SUBGRAPH_METERIAL && m_mtlid.isEmpty())
+    {
+        QVector<SubGraphModel*> vec;
+        vec << this;
+        QList<SEARCH_RESULT> resLst = m_pGraphsModel->search("ShaderFinalize", SEARCH_NODECLS, SEARCH_MATCH_EXACTLY, vec);
+        if (resLst.size() == 1)
+        {
+            SEARCH_RESULT result = resLst.first();
+            auto paramIdx = nodeParamIndex(result.targetIdx, PARAM_INPUT, "mtlid");
+            if (paramIdx.isValid())
+                m_mtlid = paramIdx.data(ROLE_PARAM_VALUE).toString();
+        }
+    }
+    return m_mtlid;
+}
 void SubGraphModel::replaceSubGraphNode(const QString& oldName, const QString& newName)
 {
     auto iter = m_name2identLst.find(oldName);

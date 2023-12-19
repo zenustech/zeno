@@ -57,6 +57,7 @@ int optixcmd(const QCoreApplication& app, int port)
         {"cacheautorm", "cacheautoremove", "remove cache after render"},
         {"optixShowBackground", "optixShowBackground", "optix record with background"},
         {"paramsPath", "paramsPath", "paramsPath"},
+        {"paramsJson", "paramsJson", "paramsJson"},
         });
     cmdParser.process(app);
 

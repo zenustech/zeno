@@ -7,6 +7,12 @@
 
 namespace zeno {
 
+static std::string ftos(float x) {
+    std::ostringstream ss;
+    ss << x;
+    return ss.str();
+}
+
 ZENO_API ShaderNode::ShaderNode() = default;
 ZENO_API ShaderNode::~ShaderNode() = default;
 
@@ -27,7 +33,10 @@ ZENO_API std::string EmissionPass::finalizeCode() {
 
 ZENO_API int EmissionPass::determineType(IObject *object) {
     if (auto num = dynamic_cast<NumericObject *>(object)) {
-        return std::visit([&] (auto const &value) -> int {
+        if (auto it = constmap.find(num); it != constmap.end())
+            return constants.at(it->second).type;
+
+        int type = std::visit([&] (auto const &value) -> int {
             using T = std::decay_t<decltype(value)>;
             if constexpr (std::is_same_v<float, T>) {
                 return 1;
@@ -41,6 +50,9 @@ ZENO_API int EmissionPass::determineType(IObject *object) {
                 throw zeno::Exception("bad numeric object type: " + (std::string)typeid(T).name());
             }
         }, num->value);
+        constmap[num] = constants.size();
+        constants.push_back(ConstInfo{type, num->value});
+        return type;
 
     } else if (auto tree = dynamic_cast<ShaderObject *>(object)) {
         assert(tree->node);
@@ -121,6 +133,27 @@ ZENO_API std::string EmissionPass::typeNameOf(int type) const {
 ZENO_API std::string EmissionPass::collectDefs() const {
     std::string res;
     int cnt = 0;
+    for (auto const &var: constants) {
+        auto expr = std::visit([&] (auto const &value) -> std::string {
+            using T = std::decay_t<decltype(value)>;
+            if constexpr (std::is_same_v<float, T>) {
+                return typeNameOf(1) + "(" + ftos(value) + ")";
+            } else if constexpr (std::is_same_v<vec2f, T>) {
+                return typeNameOf(2) + "(" + ftos(value[0]) + ", " + ftos(value[1]) + ")";
+            } else if constexpr (std::is_same_v<vec3f, T>) {
+                return typeNameOf(3) + "(" + ftos(value[0]) + ", " + ftos(value[1]) + ", "
+                + ftos(value[2]) + ")";
+            } else if constexpr (std::is_same_v<vec4f, T>) {
+                return typeNameOf(4) + "(" + ftos(value[0]) + ", " + ftos(value[1]) + ", "
+                + ftos(value[2]) + ", " + ftos(value[3]) + ")";
+            } else {
+                throw zeno::Exception("bad numeric object type: " + (std::string)typeid(T).name());
+            }
+        }, var.value);
+        res += typeNameOf(var.type) + " constmp" + std::to_string(cnt) + " = " + expr + ";\n";
+        cnt++;
+    }
+    cnt = 0;
     for (auto const &var: variables) {
         res += typeNameOf(var.type) + " tmp" + std::to_string(cnt) + ";\n";
         cnt++;
@@ -136,31 +169,9 @@ ZENO_API std::string EmissionPass::collectCode() const {
     return res;
 }
 
-static std::string ftos(float x) {
-    std::ostringstream ss;
-    ss << x;
-    return ss.str();
-}
-
 ZENO_API std::string EmissionPass::determineExpr(IObject *object) const {
     if (auto num = dynamic_cast<NumericObject *>(object)) {
-        return std::visit([&] (auto const &value) -> std::string {
-            using T = std::decay_t<decltype(value)>;
-            if constexpr (std::is_same_v<float, T>) {
-                return typeNameOf(1) + "(" + ftos(value) + ")";
-            } else if constexpr (std::is_same_v<vec2f, T>) {
-                return typeNameOf(2) + "(" + ftos(value[0]) + ", " + ftos(value[1]) + ")";
-            } else if constexpr (std::is_same_v<vec3f, T>) {
-                return typeNameOf(3) + "(" + ftos(value[0]) + ", " + ftos(value[1]) + ", "
-                    + ftos(value[2]) + ")";
-            } else if constexpr (std::is_same_v<vec4f, T>) {
-                return typeNameOf(4) + "(" + ftos(value[0]) + ", " + ftos(value[1]) + ", "
-                    + ftos(value[2]) + ", " + ftos(value[3]) + ")";
-            } else {
-                throw zeno::Exception("bad numeric object type: " + (std::string)typeid(T).name());
-            }
-        }, num->value);
-
+        return "constmp" + std::to_string(constmap.at(num));
     } else if (auto tree = dynamic_cast<ShaderObject *>(object)) {
         return "tmp" + std::to_string(varmap.at(tree->node.get()));
     }

@@ -2,6 +2,8 @@
 
 #include <zeno/core/INode.h>
 #include <zeno/core/IObject.h>
+#include <zeno/types/NumericObject.h>
+#include <zeno/types/TextureObject.h>
 #include <vector>
 #include <string>
 #include <map>
@@ -35,6 +37,11 @@ struct EmissionPass {
 
     Backend backend = GLSL;
 
+    struct ConstInfo {
+        int type;
+        NumericValue value;
+    };
+
     struct VarInfo {
         int type;
         ShaderNode *node;
@@ -47,12 +54,15 @@ struct EmissionPass {
         std::string code;
     };
 
+    std::map<NumericObject *, int> constmap;
+    std::vector<ConstInfo> constants;
     std::map<ShaderNode *, int> varmap;  /* varmap[node] = 40, then the variable of node is "tmp40" */
     std::vector<VarInfo> variables;  /* variables[40].type = 3, then the variable type will be "vec3 tmp40;" */
     std::vector<std::string> lines;  /* contains a list of operations, e.g. {"tmp40 = tmp41 + 1;", "tmp42 = tmp40 * 2;"} */
     std::vector<CommonFunc> commons;  /* definition of common functions, including custom functions and pre-defined functions */
     std::string commonCode;           /* other common codes written directly in GLSL, e.g. "void myutilfunc() {...}" */
     std::string extensionsCode;       /* OpenGL extensions, e.g. "#extension GL_EXT_gpu_shader4 : enable" */
+    std::vector<std::shared_ptr<Texture2DObject>> tex2Ds;
 
     ZENO_API std::string typeNameOf(int type) const;
     ZENO_API std::string funcName(std::string const &fun) const;

@@ -170,9 +170,19 @@ bool FakeTransformer::clickedAnyHandler(QVector3D ori, QVector3D dir, glm::vec3 
     if (!m_handler) return false;
     auto ray_ori = QVec3ToGLMVec3(ori);
     auto ray_dir = QVec3ToGLMVec3(dir);
-    m_operation_mode = m_handler->collisionTest(ray_ori, ray_dir);
+    m_operation_mode = m_handler->handleClick(ray_ori, ray_dir);
     if (!calcTransformStart(ray_ori, ray_dir, front)) return false;
     return m_operation_mode != zenovis::INTERACT_NONE;
+}
+
+bool FakeTransformer::hoveredAnyHandler(QVector3D ori, QVector3D dir, glm::vec3 front)
+{
+    if (!m_handler) return false;
+    auto ray_ori = QVec3ToGLMVec3(ori);
+    auto ray_dir = QVec3ToGLMVec3(dir);
+    int mode = m_handler->handleHover(ray_ori, ray_dir);
+    if (!calcTransformStart(ray_ori, ray_dir, front)) return false;
+    return mode != zenovis::INTERACT_NONE;
 }
 
 void FakeTransformer::transform(QVector3D camera_pos, QVector3D ray_dir, glm::vec2 mouse_start, glm::vec2 mouse_pos, glm::vec3 front, glm::mat4 vp) {
