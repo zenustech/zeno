@@ -419,10 +419,6 @@ namespace DisneyBSDF{
           float term = wo.z>0?FV:FL;
           float tmpPdf = trans? 1.0f : 0.0f;//0.5/M_PIf:0.0f;
 
-//          auto wo2 = wo;
-//          wo2.z *= -1.0f;
-//          vec3 d2 = BRDFBasics::EvalDisneyDiffuse(mix(mat.basecolor,mat.sssColor,mat.subsurface), mat.subsurface, mat.roughness, mat.sheen,
-//                                                   Csheen, wo2, wi, wm, tmpPdf)  * illum;
 
 
           // vec3 d = 1.0f/M_PIf * (1.0f - 0.5f * term) * (trans?vec3(1.0f):vec3(0.0f))  * dielectricWt * subsurface;
