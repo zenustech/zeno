@@ -29,7 +29,6 @@ namespace zeno {
 
         std::pair<float, float> uipos;
         NodeStatus status = NodeStatus::Null;
-        NodeType type = NodeType::Normal;
     };
 
     struct EdgeInfo {
@@ -50,6 +49,33 @@ namespace zeno {
     struct GraphData {
         NodesData nodes;
         LinksData links;
+    };
+
+    struct NodeDesc {
+        std::string name;
+        std::vector<ParamInfo> inputs;
+        std::vector<ParamInfo> outputs;
+        std::vector<std::string> categories;
+        bool is_subgraph = false;
+    };
+    using NodeDescs = std::map<std::string, NodeDesc>;
+
+    struct TimelineInfo {
+        int beginFrame = 0;
+        int endFrame = 0;
+        int currFrame = 0;
+        bool bAlways = true;
+        int timelinefps = 24;
+    };
+
+    using AssetsData = std::map<std::string, GraphData>;
+
+    struct ZSG_PARSE_RESULT {
+        GraphData mainGraph;
+        ZSG_VERSION iover;
+        NodeDescs descs;
+        AssetsData assetGraphs;
+        TimelineInfo timeline;
     };
 }
 

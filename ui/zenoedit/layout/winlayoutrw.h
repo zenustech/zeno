@@ -6,7 +6,7 @@
 #include <zenomodel/include/jsonhelper.h>
 #include "../dock/docktabcontent.h"
 #include <zenoio/writer/zsgwriter.h>
-#include <zenoio/reader/zsgreader.h>
+#include <zenoio/reader/zsg2reader.h>
 #include "util/apphelper.h"
 
 PtrLayoutNode findNode(PtrLayoutNode root, QDockWidget*pWidget);

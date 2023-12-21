@@ -7,7 +7,7 @@
 #include "livenode.h"
 #include "zenolink.h"
 #include <zenomodel/include/modelrole.h>
-#include <zenoio/reader/zsgreader.h>
+#include <zenoio/reader/zsg2reader.h>
 #include <zenoio/writer/zsgwriter.h>
 #include <zenomodel/include/uihelper.h>
 #include <zenoui/nodesys/nodesys_common.h>
@@ -545,7 +545,7 @@ void ZenoSubGraphScene::paste(QPointF pos)
     {
         const QString& strJson = pMimeData->text();
         TransferAcceptor acceptor(pGraphsModel);
-        ZsgReader::getInstance().importNodes(pGraphsModel, m_subgIdx, strJson, pos, &acceptor);
+        Zsg2Reader::getInstance().importNodes(pGraphsModel, m_subgIdx, strJson, pos, &acceptor);
 
         QMap<QString, NODE_DATA> nodes;
         QList<EdgeInfo> links;

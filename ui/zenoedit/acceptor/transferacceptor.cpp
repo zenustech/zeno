@@ -4,7 +4,7 @@
 #include "transferacceptor.h"
 #include <zeno/utils/logger.h>
 #include "util/log.h"
-#include <zenoio/reader/zsgreader.h>
+#include <zenoio/reader/zsg2reader.h>
 #include <zenomodel/include/nodesmgr.h>
 #include <zenomodel/include/uihelper.h>
 

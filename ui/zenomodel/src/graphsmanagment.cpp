@@ -1,7 +1,7 @@
 #include "graphsmanagment.h"
 #include <zenomodel/include/zenomodel.h>
 #include <zenomodel/include/modelrole.h>
-#include <zenoio/reader/zsgreader.h>
+#include <zenoio/reader/zsg2reader.h>
 #include <zenomodel/include/uihelper.h>
 #include <zeno/utils/log.h>
 #include <zeno/utils/scope_exit.h>
@@ -84,7 +84,7 @@ IGraphsModel* GraphsManagment::openZsgFile(const QString& fn)
     {
         IOBreakingScope batch(pModel);
         std::shared_ptr<IAcceptor> acceptor(zeno_model::createIOAcceptor(pModel, false));
-        bool ret = ZsgReader::getInstance().openFile(fn, acceptor.get());
+        bool ret = Zsg2Reader::getInstance().openFile(fn, acceptor.get());
         m_timerInfo = acceptor->timeInfo();
         m_recordInfo = acceptor->recordInfo();
         m_layoutInfo = acceptor->layoutInfo();
@@ -143,7 +143,7 @@ void GraphsManagment::importGraph(const QString& fn)
 
     IOBreakingScope batch(m_model);
     std::shared_ptr<IAcceptor> acceptor(zeno_model::createIOAcceptor(m_model, true));
-	if (!ZsgReader::getInstance().openFile(fn, acceptor.get()))
+	if (!Zsg2Reader::getInstance().openFile(fn, acceptor.get()))
 	{
 		zeno::log_error("failed to open zsg file: {}", fn.toStdString());
 		return;
@@ -157,7 +157,7 @@ void GraphsManagment::importSubGraphs(const QString& fn, const QMap<QString, QSt
 
     IOBreakingScope batch(m_model);
     std::shared_ptr<IAcceptor> acceptor(zeno_model::createIOAcceptor(m_model, true));    
-    if (!ZsgReader::getInstance().importSubgraphs(fn, acceptor.get(), map, m_model))
+    if (!Zsg2Reader::getInstance().importSubgraphs(fn, acceptor.get(), map, m_model))
     {
         zeno::log_error("failed to open zsg file: {}", fn.toStdString());
         return;

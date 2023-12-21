@@ -109,6 +109,13 @@ namespace zeno {
         Link_Ref
     };
 
+    enum ZSG_VERSION
+    {
+        VER_2,          //old version io
+        VER_2_5,        //new version io
+        VER_3,          //the lastest io format, supporting tree layout.
+    };
+
     using zvariant = std::variant<
         std::string,
         int,

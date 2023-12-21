@@ -86,7 +86,7 @@ PtrLayoutNode readLayoutFile(const QString& filePath)
     QByteArray bytes = file.readAll();
     doc.Parse(bytes);
 
-    return ZsgReader::getInstance()._readLayout(doc.GetObject());
+    return Zsg2Reader::getInstance()._readLayout(doc.GetObject());
 }
 
 
@@ -95,12 +95,12 @@ PtrLayoutNode readLayout(const QString& content)
     rapidjson::Document doc;
     QByteArray bytes = content.toUtf8();
     doc.Parse(bytes);
-    return ZsgReader::getInstance()._readLayout(doc.GetObject());
+    return Zsg2Reader::getInstance()._readLayout(doc.GetObject());
 }
 
 PtrLayoutNode readLayout(const rapidjson::Value& objValue)
 {
-    return ZsgReader::getInstance()._readLayout(objValue);
+    return Zsg2Reader::getInstance()._readLayout(objValue);
 }
 
 int getDockSize(PtrLayoutNode root, bool bHori)
