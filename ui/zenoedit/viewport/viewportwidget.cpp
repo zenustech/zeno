@@ -409,3 +409,8 @@ void ViewportWidget::keyReleaseEvent(QKeyEvent *event) {
         return;
     }
 }
+
+void ViewportWidget::enterEvent(QEvent *event) {
+    setFocus();
+    QWidget::enterEvent(event);
+}
