@@ -12,14 +12,28 @@ zeno_getGraph(PyObject* self, PyObject* args)
 {
     const char* name;
     if (!PyArg_ParseTuple(args, "s", &name))
+    {
+        PyErr_SetString(PyExc_Exception, "args error");
+        PyErr_WriteUnraisable(Py_None);
         return Py_None;
+    }
 
     QString graphName = QString::fromUtf8(name);
     IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
     if (!pModel)
+    {
+        PyErr_SetString(PyExc_Exception, "Current Model is NULL");
+        PyErr_WriteUnraisable(Py_None);
         return Py_None;
+    }
 
     QModelIndex idxGraph = pModel->index(graphName);
+    if (!idxGraph.isValid())
+    {
+        PyErr_SetString(PyExc_Exception, QString("Subgraph '%1' is invalid").arg(graphName).toUtf8());
+        PyErr_WriteUnraisable(Py_None);
+        return Py_None;
+    }
     std::string _graphName = graphName.toStdString();
 
     PyObject* argList = Py_BuildValue("s", _graphName.c_str());
@@ -32,23 +46,34 @@ static PyObject*
 zeno_createGraph(PyObject* self, PyObject* args)
 {
     const char* name;
-    if (!PyArg_ParseTuple(args, "s", &name))
+    int type = SUBGRAPH_NOR;
+ 
+    if (!PyArg_ParseTuple(args, "s|i", &name, &type))
+    {
+        PyErr_SetString(PyExc_Exception, "args error");
+        PyErr_WriteUnraisable(Py_None);
         return Py_None;
+    }
 
     QString graphName = QString::fromUtf8(name);
     IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
     if (!pModel)
+    {
+        PyErr_SetString(PyExc_Exception, "Current Model is NULL");
+        PyErr_WriteUnraisable(Py_None);
         return Py_None;
+    }
 
     QModelIndex idxGraph = pModel->index(graphName);
     if (idxGraph.isValid())
     {
-        //already exists.
-        //return Py_None;
+        PyErr_SetString(PyExc_Exception, QString("Subgraph '%1' already exist").arg(graphName).toUtf8());
+        PyErr_WriteUnraisable(Py_None);
+        return Py_None;
     }
     else
     {
-        pModel->newSubgraph(graphName);
+        pModel->newSubgraph(graphName, (SUBGRAPH_TYPE)type);
         idxGraph = pModel->index(graphName);
     }
 
@@ -64,17 +89,30 @@ zeno_removeGraph(PyObject* self, PyObject* args)
 {
     const char* name;
     if (!PyArg_ParseTuple(args, "s", &name))
+    {
+        PyErr_SetString(PyExc_Exception, "args error");
+        PyErr_WriteUnraisable(Py_None);
         return Py_None;
+    }
 
     QString graphName = QString::fromUtf8(name);
     IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
     if (!pModel)
+    {
+        PyErr_SetString(PyExc_Exception, "Current Model is NULL");
+        PyErr_WriteUnraisable(Py_None);
         return Py_None;
+    }
 
     QModelIndex idxGraph = pModel->index(graphName);
     if (idxGraph.isValid())
     {
         pModel->removeGraph(idxGraph.row());
+    }
+    else
+    {
+        PyErr_SetString(PyExc_Exception, QString("Subgraph '%1' is invalid").arg(graphName).toUtf8());
+        PyErr_WriteUnraisable(Py_None);
     }
     return Py_None;
 }
@@ -84,18 +122,44 @@ zeno_forkGraph(PyObject* self, PyObject* args)
 {
     IGraphsModel* pModel = GraphsManagment::instance().currentModel();
     if (!pModel)
+    {
+        PyErr_SetString(PyExc_Exception, "Current Model is NULL");
+        PyErr_WriteUnraisable(Py_None);
         return Py_None;
+    }
 
     char *_subgName, *_ident;
     if (!PyArg_ParseTuple(args, "ss", &_subgName, &_ident))
+    {
+        PyErr_SetString(PyExc_Exception, "args error");
+        PyErr_WriteUnraisable(Py_None);
         return Py_None;
+    }
 
     const QString& subgName = QString::fromUtf8(_subgName);
     const QString& ident = QString::fromUtf8(_ident);
 
     const QModelIndex& subgIdx = pModel->index(subgName);
+    if (!subgIdx.isValid())
+    {
+        PyErr_SetString(PyExc_Exception, QString("Subgraph '%!' is inValid").arg(subgName).toUtf8());
+        PyErr_WriteUnraisable(Py_None);
+        return Py_None;
+    }
     const QModelIndex& subnetnodeIdx = pModel->index(ident, subgIdx);
+    if (!subnetnodeIdx.isValid())
+    {
+        PyErr_SetString(PyExc_Exception, QString("Node '%!' is inValid").arg(ident).toUtf8());
+        PyErr_WriteUnraisable(Py_None);
+        return Py_None;
+    }
     const QModelIndex& forknode = pModel->fork(subgIdx, subnetnodeIdx);
+    if (!forknode.isValid())
+    {
+        PyErr_SetString(PyExc_Exception, "Fork failed");
+        PyErr_WriteUnraisable(Py_None);
+        return Py_None;
+    }
 
     const std::string& forkident = forknode.data(ROLE_OBJID).toString().toStdString();
 
@@ -104,9 +168,82 @@ zeno_forkGraph(PyObject* self, PyObject* args)
     PyObject* result = PyObject_CallObject((PyObject*)&ZNodeType, argList);
     Py_DECREF(argList);
 
-    return Py_None;
+    return result;
 }
 
+static PyObject*
+zeno_forkMaterial(PyObject* self, PyObject* args)
+{
+    IGraphsModel* pModel = GraphsManagment::instance().currentModel();
+    if (!pModel)
+    {
+        PyErr_SetString(PyExc_Exception, "Current Model is NULL");
+        PyErr_WriteUnraisable(Py_None);
+        return Py_None;
+    }
+
+    char* _forkName, *_subgName, * _mtlid;
+    if (!PyArg_ParseTuple(args, "sss", &_forkName, &_subgName, &_mtlid))
+    {
+        PyErr_SetString(PyExc_Exception, "args error");
+        PyErr_WriteUnraisable(Py_None);
+        return Py_None;
+    }
+
+    const QString& forkName = QString::fromUtf8(_forkName);
+    const QString& subgName = QString::fromUtf8(_subgName);
+    const QString& mtlid = QString::fromUtf8(_mtlid);
+
+    const QModelIndex& forkIdx = pModel->index(forkName);
+    if (!forkIdx.isValid())
+    {
+        PyErr_SetString(PyExc_Exception, QString("Subgraph '%!' is inValid").arg(subgName).toUtf8());
+        PyErr_WriteUnraisable(Py_None);
+        return Py_None;
+    }
+
+    const QModelIndex& forknode = pModel->forkMaterial(forkIdx, subgName, mtlid, mtlid);
+    if (!forknode.isValid())
+    {
+        PyErr_SetString(PyExc_Exception, "Fork failed");
+        PyErr_WriteUnraisable(Py_None);
+        return Py_None;
+    }
+
+    const std::string& forkident = forknode.data(ROLE_OBJID).toString().toStdString();
+    const QModelIndex& sugIdx = forknode.data(ROLE_SUBGRAPH_IDX).toModelIndex();
+    const std::string& name = sugIdx.data(ROLE_OBJNAME).toString().toStdString();
+
+    PyObject* argList = Py_BuildValue("ss", name.c_str(), forkident.c_str());
+
+    PyObject* result = PyObject_CallObject((PyObject*)&ZNodeType, argList);
+    Py_DECREF(argList);
+
+    return result;
+}
+
+static PyObject*
+zeno_renameGraph(PyObject* self, PyObject* args)
+{
+    IGraphsModel* pModel = GraphsManagment::instance().currentModel();
+    if (!pModel)
+    {
+        PyErr_SetString(PyExc_Exception, "Current Model is NULL");
+        PyErr_WriteUnraisable(Py_None);
+        return Py_None;
+    }
+    char* _subgName, * _newName;
+    if (!PyArg_ParseTuple(args, "ss", &_subgName, &_newName))
+    {
+        PyErr_SetString(PyExc_Exception, "args error");
+        PyErr_WriteUnraisable(Py_None);
+        return Py_None;
+    }
+    const QString& subgName = QString::fromUtf8(_subgName);
+    const QString& newName = QString::fromUtf8(_newName);
+    pModel->renameSubGraph(subgName, newName);
+    return Py_None;
+}
 
 //module functions.
 static PyMethodDef ZenoMethods[] = {
@@ -114,6 +251,8 @@ static PyMethodDef ZenoMethods[] = {
     {"createGraph", zeno_createGraph, METH_VARARGS, "Create a subgraph"},
     {"removeGraph", zeno_removeGraph, METH_VARARGS, "Remove a subgraph"},
     {"forkGraph", zeno_forkGraph, METH_VARARGS, "Fork a subgraph"},
+    {"forkMaterial", zeno_forkMaterial, METH_VARARGS, "Fork a Material subgraph"},
+    {"renameGraph", zeno_renameGraph, METH_VARARGS, "Rename a subgraph"},
     {NULL, NULL, 0, NULL}
 };
 

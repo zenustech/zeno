@@ -2,6 +2,7 @@
 #include <Qsci/qsciscintilla.h>
 #include <Qsci/qscilexerpython.h>
 #include <Qsci/qsciapis.h>
+#include <zenoui/style/zenostyle.h>
 
 
 ZPythonEditorItem::ZPythonEditorItem(QGraphicsItem* parent)
@@ -16,6 +17,7 @@ ZPythonEditorItem::ZPythonEditorItem(QGraphicsItem* parent)
     m_pTextEdit->setTabWidth(4);
     m_pTextEdit->setMarginType(0, QsciScintilla::NumberMargin);
     m_pTextEdit->setMarginWidth(0, 20);
+    m_pTextEdit->setMinimumWidth(ZenoStyle::dpiScaled(300));
 
     setWidget(m_pTextEdit);
 }
@@ -31,6 +33,7 @@ ZPythonEditorItem::ZPythonEditorItem(const QString& value, LineEditParam param, 
     m_pTextEdit->setTabWidth(4);
     m_pTextEdit->setMarginType(0, QsciScintilla::NumberMargin);
     m_pTextEdit->setMarginWidth(0, 20);
+    m_pTextEdit->setMinimumWidth(ZenoStyle::dpiScaled(300));
 
     //QsciAPIs* apis = new QsciAPIs(textLexer);
     //apis->add(QString("import"));
