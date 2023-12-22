@@ -225,7 +225,7 @@ struct PrimitiveTransform : zeno::INode {
             auto i = std::stoi(idx);
             if (auto list = std::dynamic_pointer_cast<ListObject>(cur_root)) {
                 if (i >= list->arr.size()) {
-                    zeno::log_info("out of range");
+                    zeno::log_warn("out of range");
                     return std::nullopt;
                 }
                 cur_root = list->arr[i];
@@ -234,7 +234,6 @@ struct PrimitiveTransform : zeno::INode {
                 return cur_root;
             }
         }
-        zeno::log_info("missing");
         return cur_root;
     }
 
