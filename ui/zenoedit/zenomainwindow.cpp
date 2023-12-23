@@ -1119,6 +1119,28 @@ void ZenoMainWindow::solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param, LAUN
             pGraphsModel->updateNodeStatus(subgNodeId, info, mainGraphIdx, true);
         }
     }
+    if (!param.paramsJson.isEmpty())
+    {
+        //parse paramsJson
+        rapidjson::Document configDoc;
+        configDoc.Parse(param.paramsJson.toUtf8());
+        if (!configDoc.IsObject())
+        {
+            zeno::log_error("config file is corrupted");
+        }
+        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+        ZASSERT_EXIT(pGraphsModel);
+        FuckQMap<QString, CommandParam> commands = pGraphsModel->commandParams();
+        for (auto& [key, param] : commands)
+        {
+            if (configDoc.HasMember(param.name.toUtf8()))
+            {
+                param.value = UiHelper::parseJson(configDoc[param.name.toStdString().c_str()], nullptr);
+                param.bIsCommand = true;
+            }
+            pGraphsModel->updateCommandParam(key, param);
+        }
+    }
 
     zeno::getSession().globalComm->clearState();
     launchParam.beginFrame = recInfo.frameRange.first;

@@ -189,7 +189,33 @@ struct SmartTexture2D : ShaderNodeClone<SmartTexture2D>
         if(!std::filesystem::exists(texture_path)){
             zeno::log_warn("texture file not found!");
             auto type = get_input2<std::string>("type");
-            auto number = get_input2<vec4f>("value");
+            vec4f number= vec4f(0,0,0,0);
+            if(has_input2<float>("value"))
+            {
+              number[0] = get_input2<float>("value");
+            }
+            if(has_input2<vec2f>("value"))
+            {
+              auto in = get_input2<vec2f>("value");
+              number[0] = in[0];
+              number[1] = in[1];
+            }
+            if(has_input2<vec3f>("value"))
+            {
+              auto in = get_input2<vec3f>("value");
+              number[0] = in[0];
+              number[1] = in[1];
+              number[2] = in[2];
+            }
+            if(has_input2<vec4f>("value"))
+            {
+              auto in = get_input2<vec4f>("value");
+              number[0] = in[0];
+              number[1] = in[1];
+              number[2] = in[2];
+              number[3] = in[3];
+            }
+
             if (type == "float" || type == "R")
                 em->emitCode(zeno::format("{}",number[0]));
             else if (type == "G")

@@ -114,6 +114,7 @@ struct ZENO_RECORD_RUN_INITPARAM {
     QString configFilePath = "";
     QString videoName = "";
     QString subZsg = "";
+    QString paramsJson = "";
     bool exitWhenRecordFinish = false;
 };
 

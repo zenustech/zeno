@@ -99,9 +99,15 @@ static void read_attributes(std::shared_ptr<PrimitiveObject> prim, ICompoundProp
                     attr[i] = data[i];
                 }
             }
+            else if (prim->loops.size() * 3 == data.size()) {
+                auto &attr = prim->loops.add_attr<zeno::vec3f>(p.getName());
+                for (auto i = 0; i < prim->loops.size(); i++) {
+                    attr[i] = { data[ 3 * i], data[3 * i + 1], data[3 * i + 2]};
+                }
+            }
             else {
                 if (!read_done) {
-                    log_error("[alembic] can not load float attr {}: {}. Check if link to Points channel when exported from Houdini.", p.getName(), data.size());
+                    log_warn("[alembic] can not load float attr {}: {}.", p.getName(), data.size());
                 }
             }
         }
@@ -138,7 +144,7 @@ static void read_attributes(std::shared_ptr<PrimitiveObject> prim, ICompoundProp
             }
             else {
                 if (!read_done) {
-                    log_error("[alembic] can not load int attr {}. Check if link to Points channel when exported from Houdini.", p.getName());
+                    log_warn("[alembic] can not load int attr {}:{}.", p.getName(), data.size());
                 }
             }
         }
@@ -171,7 +177,7 @@ static void read_attributes(std::shared_ptr<PrimitiveObject> prim, ICompoundProp
             }
             else {
                 if (!read_done) {
-                    log_error("[alembic] can not load vec3f attr {}. Check if link to Points channel when exported from Houdini.", p.getName());
+                    log_warn("[alembic] can not load vec3f attr {}:{}.", p.getName(), int(samp.getVals()->size()));
                 }
             }
         }
@@ -204,7 +210,7 @@ static void read_attributes(std::shared_ptr<PrimitiveObject> prim, ICompoundProp
             }
             else {
                 if (!read_done) {
-                    log_error("[alembic] can not load N3f attr {}. Check if link to Points channel when exported from Houdini.", p.getName());
+                    log_warn("[alembic] can not load N3f attr {}:{}.", p.getName(), int(samp.getVals()->size()));
                 }
             }
         }
@@ -237,13 +243,13 @@ static void read_attributes(std::shared_ptr<PrimitiveObject> prim, ICompoundProp
             }
             else {
                 if (!read_done) {
-                    log_error("[alembic] can not load C3f attr {}. Check if link to Points channel when exported from Houdini.", p.getName());
+                    log_warn("[alembic] can not load C3f attr {}:{}.", p.getName(), int(samp.getVals()->size()));
                 }
             }
         }
         else {
             if (!read_done) {
-                log_error("[alembic] can not load attr {}..", p.getName());
+                log_warn("[alembic] can not load attr {}..", p.getName());
             }
         }
     }
@@ -298,9 +304,21 @@ static void read_user_data(std::shared_ptr<PrimitiveObject> prim, ICompoundPrope
             auto value = param.getValue(iSS);
             prim->userData().set2(p.getName(), value);
         }
+        else if (IBoolProperty::matches(p)) {
+            IBoolProperty param(arbattrs, p.getName());
+
+            auto value = param.getValue(iSS);
+            prim->userData().set2(p.getName(), int(value));
+        }
+        else if (IInt16Property::matches(p)) {
+            IInt16Property param(arbattrs, p.getName());
+
+            auto value = param.getValue(iSS);
+            prim->userData().set2(p.getName(), int(value));
+        }
         else {
             if (!read_done) {
-                log_error("[alembic] can not load user data {}..", p.getName());
+                log_warn("[alembic] can not load user data {}..", p.getName());
             }
         }
     }
@@ -730,6 +748,7 @@ void traverseABC(
             tree.prim = foundABCPoints(points_sch, frameid, read_done);
             tree.prim->userData().set2("_abc_name", obj.getName());
             tree.prim->userData().set2("_abc_path", path);
+            tree.prim->userData().set2("faceset_count", 0);
         } else if(Alembic::AbcGeom::ICurvesSchema::matches(md)) {
             if (!read_done) {
                 log_debug("[alembic] found curves [{}]", obj.getName());
@@ -739,6 +758,7 @@ void traverseABC(
             tree.prim = foundABCCurves(curves_sch, frameid, read_done);
             tree.prim->userData().set2("_abc_name", obj.getName());
             tree.prim->userData().set2("_abc_path", path);
+            tree.prim->userData().set2("faceset_count", 0);
         } else if (Alembic::AbcGeom::ISubDSchema::matches(md)) {
             if (!read_done) {
                 log_debug("[alembic] found SubD [{}]", obj.getName());
@@ -824,7 +844,6 @@ struct ReadAlembic : INode {
             read_done = true;
             usedPath = path;
         }
-        zeno::log_info("...........");
         {
             auto namelist = std::make_shared<zeno::ListObject>();
             abctree->visitPrims([&] (auto const &p) {

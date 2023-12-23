@@ -125,7 +125,7 @@ void ZenoGraphsEditor::initSignals()
     connect(m_ui->graphsViewTab, &QTabWidget::currentChanged, this, [=](int index) {
         if (m_ui->graphsViewTab->tabText(index).compare("main", Qt::CaseInsensitive) == 0)
         {
-            ZenoSettingsManager::GetInstance().setValue(zsSubgraphType, SUBGRAPH_NOR);
+            closeMaterialTab();
         }
     });
     connect(m_ui->searchEdit, SIGNAL(textChanged(const QString&)), this, SLOT(onSearchEdited(const QString&)));
@@ -136,6 +136,16 @@ void ZenoGraphsEditor::initSignals()
     {
         ZenoSettingsManager::GetInstance().setValue("zencache-enable", true);
     }
+
+    connect(&ZenoSettingsManager::GetInstance(), &ZenoSettingsManager::valueChanged, this, [=](QString zsName) {
+        if (zsName == zsSubgraphType)
+        {
+            int type = ZenoSettingsManager::GetInstance().getValue(zsName).toInt();
+            m_ui->label->setText(type == SUBGRAPH_TYPE::SUBGRAPH_NOR ? tr("Subnet") : type == SUBGRAPH_TYPE::SUBGRAPH_METERIAL ? tr("Material Subnet") : tr("Preset Subnet"));
+            if (type != SUBGRAPH_METERIAL)
+                closeMaterialTab();
+        }
+    });
 
     //m_selection->setCurrentIndex(m_sideBarModel->index(0, 0), QItemSelectionModel::SelectCurrent);
 }
@@ -189,18 +199,8 @@ void ZenoGraphsEditor::resetModel(IGraphsModel* pModel)
     connect(pModel, &IGraphsModel::modelClear, this, &ZenoGraphsEditor::onModelCleared);
 	connect(pModel, SIGNAL(rowsAboutToBeRemoved(const QModelIndex&, int, int)), this, SLOT(onSubGraphsToRemove(const QModelIndex&, int, int)));
 	connect(pModel, SIGNAL(modelReset()), this, SLOT(onModelReset()));
-	connect(pModel, SIGNAL(graphRenamed(const QString&, const QString&)), this, SLOT(onSubGraphRename(const QString&, const QString&)));
-    connect(&ZenoSettingsManager::GetInstance(), &ZenoSettingsManager::valueChanged, this, [=](QString zsName) {
-        if (zsName == zsSubgraphType)
-        {
-            proxyModel->invalidate();
-            int type = ZenoSettingsManager::GetInstance().getValue(zsName).toInt();
-            m_ui->label->setText(type == SUBGRAPH_TYPE::SUBGRAPH_NOR ? tr("Subnet") : type == SUBGRAPH_TYPE::SUBGRAPH_METERIAL ? tr("Material Subnet") : tr("Preset Subnet"));
-            if (type != SUBGRAPH_METERIAL)
-                closeMaterialTab();
-        }
-    });
-    activateTab("main");                
+	connect(pModel, SIGNAL(graphRenamed(const QString&, const QString&)), this, SLOT(onSubGraphRename(const QString&, const QString&)));    
+    activateTab("main");
 }
 
 void ZenoGraphsEditor::onModelCleared()

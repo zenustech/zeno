@@ -1138,8 +1138,8 @@ void NodeParamModel::onSubIOEdited(const QVariant& oldValue, const VParamItem* p
 
             const QModelIndex& idx_defl = deflItem->index();
             setData(idx_defl, newType, ROLE_PARAM_TYPE);
-            setData(idx_defl, newCtrl, ROLE_PARAM_CTRL);
             setData(idx_defl, newValue, ROLE_PARAM_VALUE);
+            setData(idx_defl, newCtrl, ROLE_PARAM_CTRL);
 
             //update desc.
             NODE_DESC desc;
