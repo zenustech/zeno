@@ -399,7 +399,7 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
         }
 
         if (lsr.NoL > _FLT_EPL_ && lsr.PDF > _FLT_EPL_) {
-
+            shadow_prd.depth = 0;
             traceOcclusion(params.handle, shadingP, lsr.dir, 0, lsr.dist, &shadow_prd);
             light_attenuation = shadow_prd.shadowAttanuation;
 
@@ -460,7 +460,7 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
             if (envpdf < __FLT_DENORM_MIN__) {
                 return;
             }
-
+            shadow_prd.depth = 0;
             //LP = rtgems::offset_ray(LP, sun_dir);
             traceOcclusion(params.handle, LP, sun_dir,
                         1e-5f, // tmin

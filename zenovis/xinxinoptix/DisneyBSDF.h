@@ -671,10 +671,10 @@ namespace DisneyBSDF{
             tbn.inverse_transform(wi);
             wi = normalize(wi);
 
-//            if(dot(wi, N2)<0)
-//            {
-//              wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
-//            }
+            if(dot(wi, N2)<0)
+            {
+              wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
+            }
         }else if(r3<p4)//glass
         {
 
@@ -725,10 +725,10 @@ namespace DisneyBSDF{
             wi = normalize(reflect(-wo, wm));
             tbn.inverse_transform(wi);
             wi = normalize(wi);
-//            if(dot(wi, N2)<0)
-//            {
-//              wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
-//            }
+            if(dot(wi, N2)<0)
+            {
+              wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
+            }
         }
         tbn.inverse_transform(wo);
         float pdf, pdf2;

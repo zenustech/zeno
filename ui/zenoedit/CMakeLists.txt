@@ -91,6 +91,10 @@ if (ZENO_WIN32_RC)
     target_compile_definitions(zenoedit PRIVATE -DZENO_WIN32_RC)
 endif()
 
+if (ZENO_NODESVIEW_OPTIM)
+    target_compile_definitions(zenoedit PRIVATE -DZENO_NODESVIEW_OPTIM)
+endif()
+
 if (ZENO_INSTALL_TARGET)
     install(TARGETS zenoedit EXPORT ZenoTargets)
 endif()

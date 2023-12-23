@@ -55,6 +55,7 @@ struct RadiancePRD
     float3       attenuation2;
     float3       origin;
     float3       direction;
+    float3       camPos;
     float        minSpecRough;
     bool         passed;
     float        prob;
@@ -81,6 +82,7 @@ struct RadiancePRD
     int          curMatIdx;
     float        samplePdf;
     bool         fromDiff;
+    unsigned char adepth;
 
     __forceinline__ float rndf() {
         return rnd(this->seed);
@@ -123,7 +125,10 @@ struct RadiancePRD
 
     void offsetRay(float3& P, const float3& new_dir) {
         bool forward = dot(geometryNormal, new_dir) > 0;
-        P = rtgems::offset_ray(P, forward? geometryNormal:-geometryNormal);
+        auto dir = forward? geometryNormal:-geometryNormal;
+        auto offset = rtgems::offset_ray(P, dir);
+        float l = length( offset - P );
+        P = l>1e-4? offset : (P + 1e-4 * dir);
     }
 
     void offsetUpdateRay(float3& P, float3 new_dir) {

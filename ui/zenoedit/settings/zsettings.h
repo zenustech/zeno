@@ -18,6 +18,7 @@ const char* const zsCacheDir= "zencachedir";
 const char* const zsCacheNum = "zencachenum";
 const char* const zsCacheAutoClean = "zencache-autoclean";
 const char* const zsEnableShiftChangeFOV = "viewport-EnableShiftChangeFOV";
+const char* const zsSubgraphType = "SubgraphType";
 
 //short cut
 const char *const ShortCut_Save = "Save";

@@ -186,6 +186,7 @@ static __inline__ __device__ bool isBadVector(const float3& vector) {
 
 extern "C" __global__ void __anyhit__shadow_cutout()
 {
+
     const OptixTraversableHandle gas = optixGetGASTraversableHandle();
     const uint           sbtGASIndex = optixGetSbtGASIndex();
     const uint               primIdx = optixGetPrimitiveIndex();
@@ -198,6 +199,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 
     RadiancePRD* prd = getPRD();
     MatInput attrs{};
+
 
     bool sphere_external_ray = false;
 
@@ -329,6 +331,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     auto sssParam = mats.sssParam;
     auto scatterStep = mats.scatterStep;
 
+
     if(params.simpleRender==true)
         opacity = 0;
     //opacity = clamp(opacity, 0.0f, 0.99f);
@@ -432,7 +435,7 @@ extern "C" __global__ void __closesthit__radiance()
     const uint               primIdx = optixGetPrimitiveIndex();
 
     const float3 ray_orig = optixGetWorldRayOrigin();
-    const float3 ray_dir  = optixGetWorldRayDirection();
+    const float3 ray_dir  = normalize(optixGetWorldRayDirection());
     float3 P = ray_orig + optixGetRayTmax() * ray_dir;
 
     HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
@@ -488,14 +491,14 @@ extern "C" __global__ void __closesthit__radiance()
     auto P_Local = interp(barys, v0, v1, v2);
     P = optixTransformPointFromObjectToWorldSpace(P_Local); // this value has precision issue for big float
 
-    attrs.pos = P;
+    attrs.pos = P + prd->camPos;
 
     float3 N_Local = normalize( cross( normalize(v1-v0), normalize(v2-v1) ) ); // this value has precision issue for big float
-    float3 N_World = optixTransformNormalFromObjectToWorldSpace(N_Local);
+    float3 N_World = normalize(optixTransformNormalFromObjectToWorldSpace(N_Local));
 
     if (isBadVector(N_World)) 
     {  
-        N_World = DisneyBSDF::SampleScatterDirection(prd->seed);
+        N_World = normalize(DisneyBSDF::SampleScatterDirection(prd->seed));
         N_World = faceforward( N_World, -ray_dir, N_World );
     }
     prd->geometryNormal = N_World;
@@ -650,6 +653,7 @@ extern "C" __global__ void __closesthit__radiance()
     prd->passed = false;
     if(mats.opacity>0.99f)
     {
+
         if (prd->curMatIdx > 0) {
           vec3 sigma_t, ss_alpha;
           //vec3 sigma_t, ss_alpha;
@@ -662,6 +666,7 @@ extern "C" __global__ void __closesthit__radiance()
         }
         prd->attenuation2 = prd->attenuation;
         prd->passed = true;
+        prd->adepth++;
         //prd->samplePdf = 0.0f;
         prd->radiance = make_float3(0.0f);
         //prd->origin = P + 1e-5 * ray_dir; 
@@ -686,6 +691,7 @@ extern "C" __global__ void __closesthit__radiance()
         }
         prd->attenuation2 = prd->attenuation;
         prd->passed = true;
+        prd->adepth++;
         //prd->samplePdf = 0.0f;
         //you shall pass!
         prd->radiance = make_float3(0.0f);

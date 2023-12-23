@@ -555,37 +555,13 @@ struct ZSComputeSurfaceBaryCentricWeights3 : INode {
             {"nrm",3},
             {"enrm",3}
         },sverts.size()};
-        TILEVEC_OPS::fill(cudaPol,svtemp,"nrm",(T)0.0);
 
-        cudaPol(zs::range(stris.size()),[
-            exec_tag = exec_tag,
-            stris = stris.begin("inds",dim_c<3>,int_c),
-            svtemp = view<space>(svtemp),
-            svnrmOffset = svtemp.getPropertyOffset("nrm"),
-            sverts = sverts.begin(sp_tag,dim_c<3>)] ZS_LAMBDA(int sti) mutable {
-                auto stri = stris[sti];
-                auto nrm = LSL_GEO::facet_normal(sverts[stri[0]],sverts[stri[1]],sverts[stri[2]]);
-                auto w = LSL_GEO::area(sverts[stri[0]],sverts[stri[1]],sverts[stri[2]]);
-                for(int i = 0;i != 3;++i)
-                    for(int d = 0;d != 3;++d)
-                        atomic_add(exec_tag,&svtemp(svnrmOffset + d,stri[i]),w * nrm[d]);
-        });
-        TILEVEC_OPS::normalized_channel<3>(cudaPol,svtemp,"nrm");
-
-        cudaPol(zs::range(sverts.size()),[
-            svtemp = proxy<space>({},svtemp),
-            sverts = proxy<space>({},sverts),
-            thickness = thickness,
-            sp_tag = zs::SmallString(sp_tag)] ZS_LAMBDA(int svi) mutable {
-                auto sv = sverts.pack(dim_c<3>,sp_tag,svi);
-                auto nrm = svtemp.pack(dim_c<3>,"nrm",svi);
-
-                auto sv_start = sv - thickness * nrm;
-                auto sv_end = sv + thickness * nrm;
-
-                svtemp.tuple(dim_c<3>,"x",svi) = sv_start;
-                svtemp.tuple(dim_c<3>,"v",svi) = sv_end - sv_start;
-        });
+        compute_cells_and_vertex_normal(cudaPol,
+            sverts,sp_tag,
+            svtemp,
+            stris,
+            svtemp,
+            thickness);
 
         auto stBvh = bvh_t{};
         auto stbvs = retrieve_bounding_volumes(cudaPol,svtemp,stris,svtemp,wrapv<3>{},(T)1.0,(T)0.0,"x","v");

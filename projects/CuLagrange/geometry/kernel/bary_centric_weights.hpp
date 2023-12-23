@@ -406,6 +406,55 @@ namespace zeno {
 
     }
 
+    template <typename Pol,
+        typename VTileVec,
+        typename VNrmTileVec,
+        typename TriTileVec,
+        typename CellTileVec,
+        typename T = VTileVec::value_type>
+    constexpr void compute_cells_and_vertex_normal(Pol& pol,
+        const VTileVec& verts,const zs::SmallString& xtag,
+        VNrmTileVec& vertex_nrm_buffer,
+        const TriTileVec& tris,
+        CellTileVec& cell_buffer,
+        const T& thickness) {
+            using namespace zs;
+            constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+            constexpr auto exec_tag = wrapv<space>{};
+
+            TILEVEC_OPS::fill(pol,vertex_nrm_buffer,"nrm",(T)0.0);  
+
+            pol(zs::range(tris.size()),[
+                exec_tag = exec_tag,
+                tris = tris.begin("inds",dim_c<3>,int_c),
+                vertex_nrm_buffer = view<space>(vertex_nrm_buffer),
+                nrmOffset = vertex_nrm_buffer.getPropertyOffset("nrm"),
+                verts = verts.begin(xtag,dim_c<3>)] ZS_LAMBDA(int ti) mutable {
+                    auto tri = tris[ti];
+                    auto nrm = LSL_GEO::facet_normal(verts[tri[0]],verts[tri[1]],verts[tri[2]]);
+                    auto w = LSL_GEO::area(verts[tri[0]],verts[tri[1]],verts[tri[2]]);
+                    for(int i = 0;i != 3;++i)
+                        for(int d = 0;d != 3;++d)
+                            atomic_add(exec_tag,&vertex_nrm_buffer(nrmOffset + d,tri[i]),w * nrm[d]);
+            });   
+            TILEVEC_OPS::normalized_channel<3>(pol,vertex_nrm_buffer,"nrm");        
+            
+            pol(zs::range(verts.size()),[
+                vnrms = vertex_nrm_buffer.begin("nrm",dim_c<3>),
+                verts = verts.begin(xtag,dim_c<3>),
+                cell_buffer = proxy<space>({},cell_buffer),
+                thickness = thickness] ZS_LAMBDA(int vi) mutable {
+                    auto vpos = verts[vi];
+                    auto nrm = vnrms[vi];
+
+                    auto vstart = vpos - thickness * nrm;
+                    auto vend = vpos + thickness * nrm;
+
+                    cell_buffer.tuple(dim_c<3>,"x",vi) = vstart;
+                    cell_buffer.tuple(dim_c<3>,"v",vi) = vend - vstart;
+            });            
+    }
+
 
 };
 

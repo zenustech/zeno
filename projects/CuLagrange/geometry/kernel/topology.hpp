@@ -918,6 +918,7 @@ namespace zeno {
 
         constexpr auto space = Pol::exec_tag::value;
 
+
         halfEdge.resize(tris.size() * 3);
 
         TILEVEC_OPS::fill(pol,halfEdge,"local_vertex_id",reinterpret_bits<T>((int)-1));
@@ -1018,6 +1019,135 @@ namespace zeno {
 
         return true;
     }
+
+
+    // the input mesh should be a manifold
+    template<typename Pol,typename TriTileVec,typename HalfEdgeTileVec>
+    bool build_surf_half_edge_robust(Pol& pol,
+            TriTileVec& tris,
+            // EdgeTileVec& lines,
+            // PointTileVec& points,
+            HalfEdgeTileVec& halfEdge) {
+        using namespace zs;
+        using vec2i = zs::vec<int, 2>;
+		using vec3i = zs::vec<int, 3>;
+        using T = typename TriTileVec::value_type;
+
+        constexpr auto space = Pol::exec_tag::value;
+        auto exec_tag = wrapv<space>{};
+
+        halfEdge.resize(tris.size() * 3);
+
+        TILEVEC_OPS::fill(pol,halfEdge,"local_vertex_id",reinterpret_bits<T>((int)-1));
+        TILEVEC_OPS::fill(pol,halfEdge,"to_face",reinterpret_bits<T>((int)-1));
+        // TILEVEC_OPS::fill(pol,halfEdge,"to_edge",reinterpret_bits<T>((int)-1));
+        TILEVEC_OPS::fill(pol,halfEdge,"opposite_he",reinterpret_bits<T>((int)-1));
+        TILEVEC_OPS::fill(pol,halfEdge,"next_he",reinterpret_bits<T>((int)-1));      
+        // we might also need a space hash structure here, map from [i1,i2]->[ej]
+
+        // surface tri edges' indexing the halfedge list
+        bcht<vec3i,int,true,universal_hash<vec3i>,32> heTritab{tris.get_allocator(),tris.size() * 3};
+        bcht<vec2i,int,true,universal_hash<vec2i>,32> hetab{tris.get_allocator(),tris.size() * 3};
+
+        // zs::Vector<int> he_inds_buffer{tris.get_allocator(),tris.size() * 3};
+        zs::Vector<bool> he_is_manifold{tris.get_allocator(),tris.size() * 3};
+        pol(zs::range(he_is_manifold.size()),[
+            he_is_manifold = proxy<space>(he_is_manifold)] ZS_LAMBDA(int id) mutable {
+                he_is_manifold[id] = true;
+        });
+
+        pol(range(tris.size()),
+            [heTritab = proxy<space>(heTritab),
+                halfEdge = proxy<space>({},halfEdge),
+                tris = proxy<space>({},tris)] ZS_LAMBDA(int ti) mutable {
+                    auto tri = tris.pack(dim_c<3>,"inds",ti).reinterpret_bits(int_c);
+                    vec3i hinds{};
+                    for(int i = 0;i != 3;++i){
+                        if(hinds[i] = heTritab.insert(vec3i{tri[i],tri[(i+1)%3],ti});hinds[i] >= 0){
+                            int no = hinds[i];
+                            halfEdge("local_vertex_id",no) = reinterpret_bits<T>((int)i);
+                            halfEdge("to_face",no) = reinterpret_bits<T>(ti);
+                            if(i == 0)
+                                tris("he_inds",ti) = reinterpret_bits<T>(no);
+                        }else {
+                            auto no = hinds[i];
+                            int hid = heTritab.query(vec3i{tri[i],tri[(i+1)%3],ti});
+                            int ori_ti = reinterpret_bits<int>(halfEdge("to_face",hid));
+                            auto ori_tri = tris.pack(dim_c<3>,"inds",ori_ti,int_c);
+                            printf("the same directed edge <%d %d %d> has been inserted twice! original heTritab[%d], cur: %d <%d %d %d> ori: %d <%d %d %d>\n",
+                                tri[i],tri[(i+1)%3],ti,hid,ti,tri[0],tri[1],tri[2],ori_ti,ori_tri[0],ori_tri[1],ori_tri[2]);
+                        }
+                    }
+                    for(int i = 0;i != 3;++i)
+                        halfEdge("next_he",hinds[i]) = reinterpret_bits<T>((int)hinds[(i+1) % 3]);
+        });
+
+        zs::Vector<int> he_inds_buffer{tris.get_allocator(),tris.size() * 3};
+        pol(zip(range(heTritab.size()),heTritab._activeKeys),
+            [hetab = proxy<space>(hetab),
+                he_inds_buffer = proxy<space>(he_inds_buffer),
+                tris = proxy<space>({},tris)] ZS_LAMBDA(auto id,const auto& pair) mutable {
+                auto ti = pair[2];
+                auto edge = vec2i{pair[0],pair[1]};
+                if(auto no = hetab.insert(edge);no >= 0) {
+                    he_inds_buffer[no] = id;
+                }
+        });
+
+        pol(zip(range(heTritab.size()),heTritab._activeKeys),
+            [hetab = proxy<space>(hetab),
+                he_is_manifold = proxy<space>(he_is_manifold),
+                he_inds_buffer = proxy<space>(he_inds_buffer),
+                tris = proxy<space>({},tris)] ZS_LAMBDA(auto id,const auto& pair) mutable {
+                auto ti = pair[2];
+                auto edge = vec2i{pair[0],pair[1]};
+                
+                auto no = hetab.query(edge);
+                auto id_should_be = he_inds_buffer[no];
+                if(id != id_should_be) {
+                    he_is_manifold[id] = false;
+                    he_is_manifold[id_should_be] = false;
+                    auto oppo_no = hetab.query(vec2i{edge[1],edge[0]});
+                    if(oppo_no >= 0) {
+                        auto oppo_id = he_inds_buffer[oppo_no];
+                        he_is_manifold[oppo_id] = false;
+                    }
+                }
+        });
+
+        zs::Vector<int> nm_non_manifold_edges{tris.get_allocator(),1};
+        nm_non_manifold_edges.setVal(0);
+
+        pol(range(halfEdge.size()),
+            [halfEdge = proxy<space>({},halfEdge),
+                    exec_tag = exec_tag,
+                    nm_non_manifold_edges = proxy<space>(nm_non_manifold_edges),
+                    he_inds_buffer = proxy<space>(he_inds_buffer),
+                    he_is_manifold = proxy<space>(he_is_manifold),
+                    hetab = proxy<space>(hetab),
+                    tris = proxy<space>({},tris)] ZS_LAMBDA(int hi) mutable {
+                if(!he_is_manifold[hi]) {
+                    atomic_add(exec_tag,&nm_non_manifold_edges[0],1);
+                    return;
+                }
+
+                auto ti = zs::reinterpret_bits<int>(halfEdge("to_face",hi));
+                auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
+                auto local_vidx = reinterpret_bits<int>(halfEdge("local_vertex_id",hi));
+                
+                auto key = vec2i{tri[(local_vidx + 1) % 3],tri[local_vidx]};
+
+                if(int hno = hetab.query(key);hno >= 0) {
+                    auto oppo_hi = he_inds_buffer[hno];
+                    halfEdge("opposite_he",hi) = reinterpret_bits<T>(oppo_hi);
+                }
+        });
+
+        // std::cout << "number non_manifold edges detected : " << nm_non_manifold_edges.getVal(0) << std::endl;
+
+        return true;
+    }
+
 
     template<typename HalfEdgeTileVec>
     constexpr int get_next_half_edge(int hei,const HalfEdgeTileVec& half_edges,int step = 1,bool reverse = false) {

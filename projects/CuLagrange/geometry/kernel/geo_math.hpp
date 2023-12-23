@@ -283,7 +283,7 @@ namespace zeno { namespace LSL_GEO {
     // get the barycentric coordinate of the projection of v[0] onto the triangle
     // formed by v[1], v[2], v[3]
     ///////////////////////////////////////////////////////////////////////
-    constexpr VECTOR3 get_triangle_vertex_barycentric_coordinates(const VECTOR3 vertices[4])
+    constexpr VECTOR3 get_vertex_triangle_barycentric_coordinates(const VECTOR3 vertices[4])
     {
         const VECTOR3 v0 = vertices[1];
         const VECTOR3 v1 = vertices[2];
@@ -318,7 +318,7 @@ namespace zeno { namespace LSL_GEO {
     ///////////////////////////////////////////////////////////////////////
     constexpr VECTOR3 get_vertex_triangle_inside_barycentric_coordinates(const VECTOR3 vertices[4])
     {
-        VECTOR3 barycentric = get_triangle_vertex_barycentric_coordinates(vertices);
+        VECTOR3 barycentric = get_vertex_triangle_barycentric_coordinates(vertices);
 
         // if it's already inside, we're all done
         if (barycentric[0] >= 0.0 &&
@@ -680,6 +680,53 @@ constexpr REAL get_vertex_triangle_distance(const VECTOR3& v0, const VECTOR3& v1
                 break;
         }
         return dist2;
+    }
+
+
+    constexpr REAL get_edge_edge_distance(const VECTOR3& v1, const VECTOR3& v2,const VECTOR3& v3, const VECTOR3& v4) {
+        REAL dist2{zs::limits<REAL>::max()};
+        auto type = ee_distance_type(v1,v2,v3,v4);
+        switch (type) {
+            case 0:
+                dist2 = dist2_pp(v1,v3);
+                // bary = VECTOR2{0,0};
+                break;
+            case 1:
+                dist2 = dist2_pp(v1,v4);
+                // bary = VECTOR2{0,1};
+                break;
+            case 2:
+                dist2 = dist2_pe(v1,v3,v4);
+                // bary = VECTOR2{0,get_vertex_edge_barycentric_coordinates(v1,v3,v4)};
+                break;
+            case 3:
+                dist2 = dist2_pp(v2,v3);
+                // bary = VECTOR2{1,0};
+                break;
+            case 4:
+                dist2 = dist2_pp(v2,v4);
+                // bary = VECTOR2{1,1};
+                break;
+            case 5:
+                dist2 = dist2_pe(v2,v3,v4);
+                // bary = VECTOR2{1,get_vertex_edge_barycentric_coordinates(v2,v3,v4)};
+                break;
+            case 6:
+                dist2 = dist2_pe(v3,v1,v2);
+                // bary = VECTOR2{get_vertex_edge_barycentric_coordinates(v3,v1,v2),0};
+                break;
+            case 7:
+                dist2 = dist2_pe(v4,v1,v2);
+                // bary = VECTOR2{get_vertex_edge_barycentric_coordinates(v4,v1,v2),1};
+                break;
+            case 8:
+                dist2 = dist2_ee(v1,v2,v3,v4);
+                // get_edge_edge_barycentric_coordinates(v1,v2,v3,v4,bary);
+                break;
+            default:
+                break;
+        }
+        return zs::sqrt(dist2);
     }
 
     constexpr REAL get_vertex_triangle_intersection_barycentric_coordinates(const VECTOR3& p, const VECTOR3& t0,const VECTOR3& t1, const VECTOR3& t2,VECTOR3& bary) {

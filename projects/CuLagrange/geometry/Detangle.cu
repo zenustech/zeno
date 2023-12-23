@@ -202,6 +202,8 @@ struct Detangle2 : zeno::INode {
         auto progressive_slope = get_input2<float>("progressive_slope");
         auto use_global_scheme = get_input2<bool>("use_global_scheme");
 
+        // auto nm_detangle_pass = get_input2<int>("nm_detangle_pass");
+
 
         // zs::bht<int,2,int> csET{verts.get_allocator(),GIA::DEFAULT_MAX_GIA_INTERSECTION_PAIR};
         if(!zsparticles->hasMeta(GIA::GIA_CS_ET_BUFFER_KEY)) {
@@ -402,6 +404,8 @@ struct Detangle2 : zeno::INode {
                     timer.tock("eval_intersection_contour_minimization_gradient_with_EKT");  
                     timer.tick();
                     cudaExec(zip(zs::range(csET.size()),csET._activeKeys),[
+                        vertsHasM = verts.hasProperty("m"),
+                        vertsHasMinv = verts.hasProperty("minv"),
                         impulse_count = proxy<space>(impulse_count),
                         exec_tag = exec_tag,
                         eps = eps,
@@ -429,21 +433,39 @@ struct Detangle2 : zeno::INode {
 
                             T edge_cminv = 1;
                             zs::vec<T,2> edge_bary{};
+
+                            zs::vec<T,2> ms{};
+                            zs::vec<T,2> minvs{};
+                            if(vertsHasM) {         
+                                for(int i = 0;i != 2;++i)
+                                    ms[i] = verts("m",edge[i]);
+                            }else {
+                                ms = zs::vec<T,2>::uniform(static_cast<T>(1.0));
+                            }
+
+                            if(vertsHasMinv) {
+                                for(int i = 0;i != 2;++i)
+                                    minvs[i] = verts("minv",edge[i]);
+                            }else {
+                                minvs = zs::vec<T,2>::uniform(static_cast<T>(1.0));
+                            }
+
                             if(use_barycentric_interpolator) {
                                 auto bary = icm_grad.pack(dim_c<4>,"bary",ci);
                                 edge_bary[0] = bary[0];
                                 edge_bary[1] = 1 - bary[0];
 
                                 edge_cminv = 0;
+                                
                                 for(int i = 0;i != 2;++i)
-                                    edge_cminv += edge_bary[i] * edge_bary[i] / verts("m",edge[i]);
+                                    edge_cminv += edge_bary[i] * edge_bary[i] / ms[i];
                             }
 
 
                             for(int i = 0;i != 2;++i) {
                                 T beta = 1;
                                 if(use_barycentric_interpolator) {
-                                    beta = verts("minv",edge[i]) * edge_bary[i] / edge_cminv;
+                                    beta = minvs[i] * edge_bary[i] / edge_cminv;
                                     // printf("edge[%d][%d]_beta : %f\n",ei,edge[i],(float)beta);
                                 }
                                 atomic_add(exec_tag,&impulse_count[edge[i]],1);
@@ -493,6 +515,8 @@ struct Detangle2 : zeno::INode {
 
                     timer.tick();
                     cudaExec(zip(zs::range(csET.size()),csET._activeKeys),[
+                        vertsHasM = verts.hasProperty("m"),
+                        vertsHasMinv = verts.hasProperty("minv"),
                         exec_tag = exec_tag,
                         impulse_count = proxy<space>(impulse_count),
                         eps = eps,
@@ -522,6 +546,23 @@ struct Detangle2 : zeno::INode {
                             T tri_cminv = 1;
                             zs::vec<T,3> tri_bary{};
 
+                            zs::vec<T,3> ms{};
+                            zs::vec<T,3> minvs{};
+                            if(vertsHasM) {         
+                                for(int i = 0;i != 3;++i)
+                                    ms[i] = verts("m",tri[i]);
+                            }else {
+                                ms = zs::vec<T,3>::uniform(static_cast<T>(1.0));
+                            }
+
+                            if(vertsHasMinv) {
+                                for(int i = 0;i != 3;++i)
+                                    minvs[i] = verts("minv",tri[i]);
+                            }else {
+                                minvs = zs::vec<T,3>::uniform(static_cast<T>(1.0));
+                            }
+
+
                             if(use_barycentric_interpolator) {
                                 auto bary = icm_grad.pack(dim_c<4>,"bary",ci);
                                 tri_bary[0] = bary[1];
@@ -530,7 +571,7 @@ struct Detangle2 : zeno::INode {
 
                                 tri_cminv = 0;
                                 for(int i = 0;i != 3;++i)
-                                    tri_cminv += tri_bary[i] * tri_bary[i] / verts("m",tri[i]);
+                                    tri_cminv += tri_bary[i] * tri_bary[i] / ms[i];
                                 // cminv = t * t / verts("m",edge[0]) + (1 - t) * (1 - t) / verts("m",edge[1]);
                             }
 
@@ -538,7 +579,7 @@ struct Detangle2 : zeno::INode {
                             for(int i = 0;i != 3;++i) {
                                 T beta = 1;
                                 if(use_barycentric_interpolator) {
-                                    beta = verts("minv",tri[i]) * tri_bary[i] / tri_cminv;
+                                    beta = minvs[i] * tri_bary[i] / tri_cminv;
                                     // printf("tri[%d][%d]_beta : %f\n",ti,tri[i],(float)beta);
                                 }
                                 atomic_add(exec_tag,&impulse_count[tri[i]],1);
@@ -593,6 +634,8 @@ struct Detangle2 : zeno::INode {
 
                     timer.tick();
                     cudaExec(zip(zs::range(csET.size()),csET._activeKeys),[
+                        vertsHasM = verts.hasProperty("m"),
+                        vertsHasMinv = verts.hasProperty("minv"),
                         impulse_count = proxy<space>(impulse_count),
                         exec_tag = exec_tag,
                         mark_intersection = mark_intersection,
@@ -610,13 +653,41 @@ struct Detangle2 : zeno::INode {
                             auto edge = edges[pair[0]];
                             auto tri = tris[pair[1]];
 
-                            // auto G = icm_grad.pack(dim_c<3>,"grad",ci) * relaxation_rate;
-                            // if(G.norm() < eps)
-                            //     return;
 
-                            // auto Gn = G.norm();
-                            // auto Gn2 = Gn * Gn;
-                            // auto impulse = h0 * G / zs::sqrt(Gn2 + g02);
+                            zs::vec<T,2> edge_ms{};
+                            zs::vec<T,2> edge_minvs{};
+                            if(vertsHasM) {         
+                                for(int i = 0;i != 2;++i)
+                                    edge_ms[i] = verts("m",edge[i]);
+                            }else {
+                                edge_ms = zs::vec<T,2>::uniform(static_cast<T>(1.0));
+                            }
+
+                            if(vertsHasMinv) {
+                                for(int i = 0;i != 2;++i)
+                                    edge_minvs[i] = verts("minv",edge[i]);
+                            }else {
+                                edge_minvs = zs::vec<T,2>::uniform(static_cast<T>(1.0));
+                            }
+
+
+                            zs::vec<T,3> tri_ms{};
+                            zs::vec<T,3> tri_minvs{};
+                            if(vertsHasM) {         
+                                for(int i = 0;i != 3;++i)
+                                    tri_ms[i] = verts("m",tri[i]);
+                            }else {
+                                tri_ms = zs::vec<T,3>::uniform(static_cast<T>(1.0));
+                            }
+
+                            if(vertsHasMinv) {
+                                for(int i = 0;i != 3;++i)
+                                    tri_minvs[i] = verts("minv",tri[i]);
+                            }else {
+                                tri_minvs = zs::vec<T,3>::uniform(static_cast<T>(1.0));
+                            }
+
+
                             auto impulse = icm_grad.pack(dim_c<3>,"grad",ci) * relaxation_rate;
                             
 
@@ -637,10 +708,10 @@ struct Detangle2 : zeno::INode {
                                 tri_cminv = 0;
                                 edge_cminv = 0;
                                 for(int i = 0;i != 3;++i)
-                                    tri_cminv += tri_bary[i] * tri_bary[i] / verts("m",tri[i]);
+                                    tri_cminv += tri_bary[i] * tri_bary[i] / tri_ms[i];
                                 
                                 for(int i = 0;i != 2;++i)
-                                    edge_cminv += edge_bary[i] * edge_bary[i] / verts("m",edge[i]);
+                                    edge_cminv += edge_bary[i] * edge_bary[i] / edge_ms[i];
                                 // cminv = t * t / verts("m",edge[0]) + (1 - t) * (1 - t) / verts("m",edge[1]);
                             }
 
@@ -649,7 +720,7 @@ struct Detangle2 : zeno::INode {
                                 T beta = 1;
                                 if(use_barycentric_interpolator) {
                                     // printf("verts[%d].minv = %f -> %f\n",edge[i],(float)verts("minv",edge[i]),(float)verts("m",edge[i]));
-                                    beta = verts("minv",edge[i]) * edge_bary[i] / edge_cminv;
+                                    beta = edge_minvs[i] * edge_bary[i] / edge_cminv;
                                 }
                                 // atomic_add(exec_tag,&impulse_count[edge[i]],1);
                                 for(int d = 0;d != 3;++d)
@@ -660,7 +731,7 @@ struct Detangle2 : zeno::INode {
                                 T beta = 1;
                                 if(use_barycentric_interpolator) {
                                     // printf("verts[%d].minv = %f -> %f\n",tri[i],(float)verts("minv",tri[i]),(float)verts("m",tri[i]));
-                                    beta = verts("minv",tri[i]) * tri_bary[i] / tri_cminv;
+                                    beta = tri_minvs[i] * tri_bary[i] / tri_cminv;
                                 }
                                 // atomic_add(exec_tag,&impulse_count[tri[i]],1);
                                 for(int d = 0;d != 3;++d)
