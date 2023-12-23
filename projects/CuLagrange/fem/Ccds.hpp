@@ -141,6 +141,9 @@ eeccd(VecT ea0, VecT ea1, VecT eb0, VecT eb1, VecT dea0, VecT dea1, VecT deb0,
 
   T dist2_cur = dist2_ee_unclassified(ea0, ea1, eb0, eb1);
   T dFunc = dist2_cur - thickness * thickness;
+// suspecious code, check twice
+  if(dFunc <= 0)
+    return true;
   if (dFunc <= 0) {
     // since we ensured other place that all dist smaller than dHat are
     // positive, this must be some far away nearly parallel edges
