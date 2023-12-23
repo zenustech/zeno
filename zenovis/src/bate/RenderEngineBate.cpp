@@ -40,10 +40,8 @@ struct RenderEngineBate : RenderEngine {
     }
 
     void update() override {
-        const auto& cb = [&]() {
-            graphicsMan->load_objects(zeno::getSession().globalComm->pairsShared());
-        };
-        zeno::getSession().globalComm->mutexCallback(cb);
+        std::lock_guard lck(zeno::g_objsMutex);
+        graphicsMan->load_objects(zeno::getSession().globalComm->pairsShared());
     }
 
     void draw() override {

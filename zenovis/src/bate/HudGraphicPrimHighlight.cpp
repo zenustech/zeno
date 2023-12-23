@@ -75,7 +75,8 @@ struct PrimitiveHighlight : IGraphicDraw {
 
     virtual void draw() override {
         if (scene->select_mode == PICK_MODE::PICK_OBJECT) {
-            const auto& cb = [&]() {
+            {
+                std::lock_guard lck(zeno::g_objsMutex);
                 for (const auto& prim_id : scene->selected) {
                     // ----- get primitive -----
                     PrimitiveObject* prim = nullptr;
@@ -115,12 +116,12 @@ struct PrimitiveHighlight : IGraphicDraw {
                     else
                         continue;
                 }
-            };
-            zeno::getSession().globalComm->mutexCallback(cb);
+            }
         }
 
         bool isnull = false;
-        const auto& cb = [&]() {
+        {
+            std::lock_guard lck(zeno::g_objsMutex);
             for (const auto& [prim_id, elements] : scene->selected_elements) {
                 // ----- get primitive -----
                 PrimitiveObject* prim = nullptr;
@@ -195,8 +196,7 @@ struct PrimitiveHighlight : IGraphicDraw {
                     ebo->unbind();
                 }
             }
-        };
-        zeno::getSession().globalComm->mutexCallback(cb);
+        }
         if (isnull)
             return;
         vbo->disable_attribute(0);

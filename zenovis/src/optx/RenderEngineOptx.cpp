@@ -830,39 +830,37 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     }
 
     void update() override {
-        const auto& cb = [&]() {
-            if (graphicsMan->need_update_light(zeno::getSession().globalComm->pairs())
-                || zeno::getSession().globalComm->getNeedUpdateLight())
-            {
-                graphicsMan->load_light_objects(zeno::getSession().globalComm->getLightObjs());
-                lightNeedUpdate = true;
-                zeno::getSession().globalComm->setNeedUpdateLight(false);
-                scene->drawOptions->needRefresh = true;
-            }
+        std::lock_guard lck(zeno::g_objsMutex);
+        if (graphicsMan->need_update_light(zeno::getSession().globalComm->pairs())
+            || zeno::getSession().globalComm->getNeedUpdateLight())
+        {
+            graphicsMan->load_light_objects(zeno::getSession().globalComm->getLightObjs());
+            lightNeedUpdate = true;
+            zeno::getSession().globalComm->setNeedUpdateLight(false);
+            scene->drawOptions->needRefresh = true;
+        }
 
-            if (graphicsMan->load_static_objects(zeno::getSession().globalComm->pairs())) {
-                staticNeedUpdate = true;
-            }
-            if (graphicsMan->load_objects(zeno::getSession().globalComm->pairs()))
+        if (graphicsMan->load_static_objects(zeno::getSession().globalComm->pairs())) {
+            staticNeedUpdate = true;
+        }
+        if (graphicsMan->load_objects(zeno::getSession().globalComm->pairs()))
+        {
+            meshNeedUpdate = matNeedUpdate = true;
+            if (zeno::getSession().globalComm->getRenderType() == zeno::GlobalComm::MATERIAL)
             {
-                meshNeedUpdate = matNeedUpdate = true;
-                if (zeno::getSession().globalComm->getRenderType() == zeno::GlobalComm::MATERIAL)
-                {
-                    scene->drawOptions->updateMatlOnly = true;
-                    lightNeedUpdate = meshNeedUpdate = false;
-                    matNeedUpdate = true;
-                }
-                if (zeno::getSession().globalComm->getRenderType() == zeno::GlobalComm::LIGHT_CAMERA)
-                {
-                    scene->drawOptions->updateLightCameraOnly = true;
-                    lightNeedUpdate = true;
-                    matNeedUpdate = meshNeedUpdate = false;
-                }
-                zeno::getSession().globalComm->setRenderType(zeno::GlobalComm::UNDEFINED);
+                scene->drawOptions->updateMatlOnly = true;
+                lightNeedUpdate = meshNeedUpdate = false;
+                matNeedUpdate = true;
             }
-            graphicsMan->load_shader_uniforms(zeno::getSession().globalComm->pairs());
-        };
-        zeno::getSession().globalComm->mutexCallback(cb);
+            if (zeno::getSession().globalComm->getRenderType() == zeno::GlobalComm::LIGHT_CAMERA)
+            {
+                scene->drawOptions->updateLightCameraOnly = true;
+                lightNeedUpdate = true;
+                matNeedUpdate = meshNeedUpdate = false;
+            }
+            zeno::getSession().globalComm->setRenderType(zeno::GlobalComm::UNDEFINED);
+        }
+        graphicsMan->load_shader_uniforms(zeno::getSession().globalComm->pairs());
     }
 
 #define MY_CAM_ID(cam) cam.m_nx, cam.m_ny, cam.m_lodup, cam.m_lodfront, cam.m_lodcenter, cam.m_fov, cam.focalPlaneDistance, cam.m_aperture

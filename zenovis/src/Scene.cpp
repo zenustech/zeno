@@ -69,14 +69,14 @@ void* Scene::getOptixImg(int& w, int& h)
 }
 
 bool Scene::cameraFocusOnNode(std::string const &nodeid, zeno::vec3f &center, float &radius) {
-    const auto& cb = [&]() {
+    {
+        std::lock_guard lck(zeno::g_objsMutex);
         for (auto const& [key, ptr] : zeno::getSession().globalComm->pairs()) {
             if (nodeid == key.substr(0, key.find_first_of(':'))) {
                 return zeno::objectGetFocusCenterRadius(ptr, center, radius);
             }
         }
-    };
-    zeno::getSession().globalComm->mutexCallback(cb);
+    }
     zeno::log_warn("cannot focus: node with id {} not found, did you tagged VIEW on it?", nodeid);
     return false;
 }

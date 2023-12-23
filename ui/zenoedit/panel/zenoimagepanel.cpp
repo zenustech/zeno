@@ -46,7 +46,8 @@ void ZenoImagePanel::setPrim(std::string primid) {
 
     bool enableGamma = pGamma->checkState() == Qt::Checked;
     bool found = false;
-    const auto& cb = [&]() {
+    {
+        std::lock_guard lck(zeno::g_objsMutex);
         for (auto const &[key, ptr]: zeno::getSession().globalComm->pairs()) {
             if ((key.substr(0, key.find(":"))) != primid) {
                 continue;
@@ -105,8 +106,7 @@ void ZenoImagePanel::setPrim(std::string primid) {
                 pStatusBar->setText(statusInfo);
             }
         }
-    };
-    zeno::getSession().globalComm->mutexCallback(cb);
+    }
     if (found == false) {
         clear();
     }
@@ -230,7 +230,8 @@ ZenoImagePanel::ZenoImagePanel(QWidget *parent) : QWidget(parent) {
         if (!scene)
             return;
         bool found = false;
-        const auto& cb = [&]() {
+        {
+            std::lock_guard lck(zeno::g_objsMutex);
             for (auto const& [key, ptr] : zeno::getSession().globalComm->pairs()) {
                 if ((key.substr(0, key.find(":"))) != primid) {
                     continue;
@@ -272,8 +273,7 @@ ZenoImagePanel::ZenoImagePanel(QWidget *parent) : QWidget(parent) {
                     pStatusBar->setText(statusInfo);
                 }
             }
-        };
-        zeno::getSession().globalComm->mutexCallback(cb);
+        }
         if (found == false) {
             clear();
         }

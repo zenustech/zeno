@@ -284,7 +284,8 @@ struct FrameBufferPicker : IPicker {
         CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo->fbo));
         CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
-        const auto& cb = [&]() {
+        {
+            std::lock_guard lck(zeno::g_objsMutex);
             // construct prim set
             // use focus_prim if focus_prim_name is not empty else all prims
             vector<std::pair<string, std::shared_ptr<zeno::IObject>>> prims;
@@ -441,8 +442,7 @@ struct FrameBufferPicker : IPicker {
                     id_table[id + 1] = it->first;
                 }
             }
-        };
-        zeno::getSession().globalComm->mutexCallback(cb);
+        }
         fbo->unbind();
     }
 

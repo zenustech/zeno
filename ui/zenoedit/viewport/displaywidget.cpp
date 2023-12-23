@@ -483,17 +483,16 @@ void DisplayWidget::onCommandDispatched(int actionType, bool bChecked)
             int frameid = m_glView->getSession()->get_curr_frameid();
             auto *scene = m_glView->getSession()->get_scene();
 
-            const auto& cb = [&]() {
-                for (auto const& [key, ptr] : zeno::getSession().globalComm->pairs()) {
-                    if (key.find("MakeCamera") != std::string::npos &&
-                        key.find(zeno::format(":{}:", frameid)) != std::string::npos) {
-                        auto cam = dynamic_cast<zeno::CameraObject*>(ptr)->get();
-                        scene->camera->setCamera(cam);
-                        updateFrame();
-                    }
+            std::lock_guard lck(zeno::g_objsMutex);
+
+            for (auto const& [key, ptr] : zeno::getSession().globalComm->pairs()) {
+                if (key.find("MakeCamera") != std::string::npos &&
+                    key.find(zeno::format(":{}:", frameid)) != std::string::npos) {
+                    auto cam = dynamic_cast<zeno::CameraObject*>(ptr)->get();
+                    scene->camera->setCamera(cam);
+                    updateFrame();
                 }
-            };
-            zeno::getSession().globalComm->mutexCallback(cb);
+            }
         }
     }
     else if (actionType == ZenoMainWindow::ACTION_RECORD_VIDEO)

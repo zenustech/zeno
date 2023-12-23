@@ -137,7 +137,8 @@ void ZenoSpreadsheet::setPrim(std::string primid) {
     ZASSERT_EXIT(scene);
 
     bool found = false;
-    const auto& cb = [&]() {
+    {
+        std::lock_guard lck(zeno::g_objsMutex);
         for (auto const& [key, ptr] : zeno::getSession().globalComm->pairs()) {
             if (key != primid) {
                 continue;
@@ -164,8 +165,7 @@ void ZenoSpreadsheet::setPrim(std::string primid) {
                 this->dataModel->setModelData(obj);
             }
         }
-    };
-    zeno::getSession().globalComm->mutexCallback(cb);
+    }
     if (found == false) {
         this->dataModel->setModelData(nullptr);
     }

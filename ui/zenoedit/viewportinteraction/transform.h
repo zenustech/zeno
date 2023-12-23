@@ -66,8 +66,7 @@ private:
     static glm::vec3 QVec3ToGLMVec3(QVector3D QVec3) {
         return {QVec3.x(), QVec3.y(), QVec3.z()};
     }
-    void markObjectInteractive(const std::string& obj_name);
-    void unmarkObjectInteractive(const std::string& obj_name);
+
     void markObjectsInteractive();
     void unmarkObjectsInteractive();
 
@@ -97,7 +96,7 @@ private:
     }
 
 private:
-    std::unordered_map<std::string, PrimitiveObject*> m_objects;
+    std::unordered_map<std::string, std::string> m_objects;
 
     glm::vec3 m_objects_center;
 

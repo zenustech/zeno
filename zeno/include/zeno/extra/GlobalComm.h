@@ -19,6 +19,8 @@
 
 namespace zeno {
 
+    extern ZENO_API std::recursive_mutex g_objsMutex;
+
 struct GlobalComm {
     using ViewObjects = PolymorphicMap<std::map<std::string, std::shared_ptr<IObject>>>;
 
@@ -35,7 +37,6 @@ struct GlobalComm {
     std::vector<FrameData> m_frames;
     int m_maxPlayFrame = 0;
     std::set<int> m_inCacheFrames;
-    mutable std::mutex m_mtx;
 
     int beginFrameNumber = 0;
     int endFrameNumber = 0;
@@ -57,6 +58,7 @@ struct GlobalComm {
     ZENO_API void clearFrameState();
     ZENO_API ViewObjects const *getViewObjects(const int frameid);
     ZENO_API ViewObjects const &getViewObjects();
+    ZENO_API std::shared_ptr<IObject> getViewObject(std::string const& key);
     ZENO_API bool load_objects(const int frameid, bool& isFrameValid);
     ZENO_API bool isFrameCompleted(int frameid) const;
     ZENO_API FRAME_STATE getFrameState(int frameid) const;
@@ -107,8 +109,8 @@ struct GlobalComm {
 
     ZENO_API const std::string getObjKey1(std::string& id, int frame);
 
-    ZENO_API RenderType getRenderTypeByObjects(std::map<std::string, zeno::IObject*> objs);
-    ZENO_API void updateObjsIdByViewport(std::map<std::string, zeno::IObject*>& objsToBeUpdate);
+    ZENO_API RenderType getRenderTypeByObjects(std::map<std::string, std::shared_ptr<zeno::IObject>> objs);
+    ZENO_API void updateObjsIdByViewport(std::map<std::string, std::shared_ptr<zeno::IObject>> &objsToBeUpdate);
 
 private:
     ViewObjects const* _getViewObjects(const int frameid);
@@ -124,7 +126,6 @@ private:
     void prepareForOptix(bool inserted, std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs);
     int m_currentFrame = 0;    //ºı»•startFrame
     bool updateOptixByViewport = false;
-    mutable std::recursive_mutex m_recur_mutex;
 };
 
 }
