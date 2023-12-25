@@ -423,9 +423,11 @@ void FakeTransformer::endTransform(bool moved) {
         // write transform info to objects' user data
         std::lock_guard lck(g_objsMutex);
 
+        auto& objsManger = zeno::getSession().globalComm;
+
         std::map<std::string, std::shared_ptr<IObject>> objs, newobjs;
         for (auto& [obj_name, obj_key] : m_objects) {
-            std::shared_ptr<IObject> spObject = zeno::getSession().globalComm->getViewObject(obj_key);
+            std::shared_ptr<IObject> spObject = objsManger->getViewObject(obj_key);
             if (spObject) {
                 objs.insert(std::make_pair(obj_name, spObject));
             }
@@ -457,13 +459,10 @@ void FakeTransformer::endTransform(bool moved) {
                 user_data.setLiterial("_scale", scale);
             }
 
-            const std::string& newName = obj_name.substr(0, obj_name.find("TOVIEW") - 1);
-            newobjs.insert(std::make_pair(newName, obj));
-            m_objects[obj_name] = newName;  //update key.
+            objsManger->addTransferObj(obj_name, obj);
         }
 
-        zeno::getSession().globalComm->setRenderType(zeno::getSession().globalComm->getRenderTypeByObjects(objs));
-        zeno::getSession().globalComm->updateObjsIdByViewport(newobjs);
+        objsManger->setRenderType(objsManger->getRenderTypeByObjects(objs));
 
         // sync to node system
         zeno::scope_exit sp([] {

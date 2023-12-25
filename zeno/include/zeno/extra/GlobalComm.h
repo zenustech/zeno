@@ -20,6 +20,7 @@
 namespace zeno {
 
     extern ZENO_API std::recursive_mutex g_objsMutex;
+    using MapObjects = std::map<std::string, std::shared_ptr<zeno::IObject>>;
 
 struct GlobalComm {
     using ViewObjects = PolymorphicMap<std::map<std::string, std::shared_ptr<IObject>>>;
@@ -100,7 +101,12 @@ struct GlobalComm {
     ZENO_API void setRenderType(RenderType type);
     ZENO_API RenderType getRenderType();
 
-    ZENO_API std::map<std::string, std::shared_ptr<zeno::IObject>>& getLightObjs();
+    ZENO_API MapObjects getLightObjs();
+
+    ZENO_API void addTransferObj(std::string const& key, std::shared_ptr<IObject>);
+    ZENO_API MapObjects getTransferObjs();
+    ZENO_API void clearTransferObjs();
+
     ZENO_API int getLightObjsSize();
     ZENO_API bool getNeedUpdateLight();
     ZENO_API void setNeedUpdateLight(bool update);
@@ -117,7 +123,8 @@ private:
     std::vector<std::string> toViewNodesId;
 
     //-----ObjectsManager-----
-    std::map<std::string, std::shared_ptr<zeno::IObject>> lightObjects;
+    MapObjects m_transferObjs;
+    MapObjects m_lightObjects;
     bool needUpdateLight = true;
 
     RenderType renderType = UNDEFINED;

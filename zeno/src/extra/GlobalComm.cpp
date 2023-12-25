@@ -635,13 +635,13 @@ void GlobalComm::prepareForOptix(bool inserted, std::map<std::string, std::share
             }
         renderType = count[NORMAL] == 0 && count[MATERIAL] == 0 ? LIGHT_CAMERA : count[NORMAL] == 0 && count[LIGHT_CAMERA] == 0 ? MATERIAL : NORMAL;
 
-        lightObjects.clear();
+        m_lightObjects.clear();
         for (auto const& [key, obj] : objs) {
             if (auto prim_in = dynamic_cast<zeno::PrimitiveObject*>(obj.get())) {
                 auto isRealTimeObject = prim_in->userData().get2<int>("isRealTimeObject", 0);
                 if (isRealTimeObject) {
                     //printf("loading light object %s\n", key.c_str());
-                    lightObjects[key] = obj;
+                    m_lightObjects[key] = obj;
                 }
             }
         }
@@ -659,7 +659,7 @@ ZENO_API void GlobalComm::clear_objects() {
 ZENO_API void GlobalComm::clear_lightObjects()
 {
     std::lock_guard lck(g_objsMutex);
-    lightObjects.clear();
+    m_lightObjects.clear();
 }
 
 ZENO_API std::optional<zeno::IObject* > GlobalComm::get(std::string nid) {
@@ -708,7 +708,7 @@ void GlobalComm::mutexCallback(const std::function<void()>& callback)
 ZENO_API bool GlobalComm::lightObjsCount(std::string& id)
 {
     std::lock_guard lck(g_objsMutex);
-    for (auto const& [key, ptr] : lightObjects) {
+    for (auto const& [key, ptr] : m_lightObjects) {
         if (key.find(id) == 0) {
             return true;
         }
@@ -734,7 +734,7 @@ ZENO_API bool GlobalComm::objsCount(std::string& id)
 ZENO_API const std::string GlobalComm::getLightObjKeyByLightObjID(std::string id)
 {
     std::lock_guard lck(g_objsMutex);
-    for (auto const& [key, ptr] : lightObjects) {
+    for (auto const& [key, ptr] : m_lightObjects) {
         if (key.find(id) != std::string::npos) {
             return key;
         }
@@ -810,15 +810,15 @@ ZENO_API void GlobalComm::updateObjsIdByViewport(std::map<std::string, std::shar
         {
             std::shared_ptr<IObject> oldLightObj;
             std::string oldLightKey;
-            for (auto& [k, o] : lightObjects)
+            for (auto& [k, o] : m_lightObjects)
                 if (k.find(key) != std::string::npos) {
                     oldLightKey = k;
-                    oldLightObj = lightObjects[k];
+                    oldLightObj = m_lightObjects[k];
                     break;
                 }
-            lightObjects.erase(oldLightKey);
+            m_lightObjects.erase(oldLightKey);
             std::string& newKey = oldLightKey.replace(oldLightKey.find_last_of(":") + 1, std::to_string(changedNumber).size() + 1, std::to_string(changedNumber) + "#");
-            lightObjects.insert(std::make_pair(newKey, std::move(oldLightObj)));
+            m_lightObjects.insert(std::make_pair(newKey, std::move(oldLightObj)));
         }
     }
     changedNumber++;
@@ -828,9 +828,9 @@ ZENO_API void GlobalComm::updateObjsIdByViewport(std::map<std::string, std::shar
 ZENO_API bool GlobalComm::getLightObjData(std::string& id, zeno::vec3f& pos, zeno::vec3f& scale, zeno::vec3f& rotate, zeno::vec3f& clr, float& intensity)
 {
     std::lock_guard lck(g_objsMutex);
-    if (lightObjects.find(id) != lightObjects.end())
+    if (m_lightObjects.find(id) != m_lightObjects.end())
     {
-        std::shared_ptr<zeno::IObject> ptr = lightObjects[id];
+        std::shared_ptr<zeno::IObject> ptr = m_lightObjects[id];
         if (ptr->userData().get2<int>("isL", 0)) {
             if (auto prim_in = dynamic_cast<zeno::PrimitiveObject*>(ptr.get())) {
                 pos = ptr->userData().getLiterial<zeno::vec3f>("pos", zeno::vec3f(0.0f));
@@ -861,9 +861,9 @@ ZENO_API bool GlobalComm::getLightObjData(std::string& id, zeno::vec3f& pos, zen
 ZENO_API bool GlobalComm::setLightObjData(std::string& id, zeno::vec3f& pos, zeno::vec3f& scale, zeno::vec3f& rotate, zeno::vec3f& rgb, float& intensity, std::vector<zeno::vec3f>& verts)
 {
     std::lock_guard lck(g_objsMutex);
-    if (lightObjects.find(id) != lightObjects.end())
+    if (m_lightObjects.find(id) != m_lightObjects.end())
     {
-        std::shared_ptr<zeno::IObject> obj = lightObjects[id];
+        std::shared_ptr<zeno::IObject> obj = m_lightObjects[id];
         auto prim_in = dynamic_cast<zeno::PrimitiveObject*>(obj.get());
 
         if (prim_in) {
@@ -907,7 +907,7 @@ ZENO_API bool GlobalComm::setProceduralSkyData(std::string id, zeno::vec2f& sunL
     bool found = false;
     if (id == "")
     {
-        for (auto const& [key, obj] : lightObjects) {
+        for (auto const& [key, obj] : m_lightObjects) {
             if (key.find("ProceduralSky") != std::string::npos) {
                 found = true;
                 if (auto prim_in = dynamic_cast<zeno::PrimitiveObject*>(obj.get())) {
@@ -917,10 +917,10 @@ ZENO_API bool GlobalComm::setProceduralSkyData(std::string id, zeno::vec2f& sunL
         }
     }
     else {
-        if (lightObjects.find(id) != lightObjects.end())
+        if (m_lightObjects.find(id) != m_lightObjects.end())
         {
             found = true;
-            std::shared_ptr<zeno::IObject> obj = lightObjects[id];
+            std::shared_ptr<zeno::IObject> obj = m_lightObjects[id];
             if (auto prim_in = dynamic_cast<zeno::PrimitiveObject*>(obj.get())) {
                 setFunc(prim_in);
             }
@@ -966,7 +966,7 @@ ZENO_API bool GlobalComm::getProceduralSkyData(std::string& id, zeno::vec2f& sun
     };
     if (id == "")
     {
-        for (auto const& [key, obj] : lightObjects) {
+        for (auto const& [key, obj] : m_lightObjects) {
             if (key.find("ProceduralSky") != std::string::npos) {
                 if (auto prim_in = dynamic_cast<zeno::PrimitiveObject*>(obj.get())) {
                     getFunc(prim_in);
@@ -976,9 +976,9 @@ ZENO_API bool GlobalComm::getProceduralSkyData(std::string& id, zeno::vec2f& sun
         }
     }
     else {
-        if (lightObjects.find(id) != lightObjects.end())
+        if (m_lightObjects.find(id) != m_lightObjects.end())
         {
-            std::shared_ptr<zeno::IObject> obj = lightObjects[id];
+            std::shared_ptr<zeno::IObject> obj = m_lightObjects[id];
             if (auto prim_in = dynamic_cast<zeno::PrimitiveObject*>(obj.get())) {
                 getFunc(prim_in);
                 return true;
@@ -991,7 +991,7 @@ ZENO_API bool GlobalComm::getProceduralSkyData(std::string& id, zeno::vec2f& sun
 ZENO_API void GlobalComm::getAllLightsKey(std::vector<std::string>& keys)
 {
     std::lock_guard lck(g_objsMutex);
-    for (auto const& [key, ptr] : lightObjects) {
+    for (auto const& [key, ptr] : m_lightObjects) {
         if (ptr->userData().get2<int>("isL", 0)) {
             keys.push_back(key);
         }
@@ -1029,16 +1029,34 @@ ZENO_API GlobalComm::RenderType GlobalComm::getRenderType()
     return renderType;
 }
 
-ZENO_API std::map<std::string, std::shared_ptr<zeno::IObject>>& GlobalComm::getLightObjs()
+ZENO_API MapObjects GlobalComm::getLightObjs()
 {
     std::lock_guard lck(g_objsMutex);
-    return lightObjects;
+    return m_lightObjects;
+}
+
+ZENO_API void GlobalComm::addTransferObj(std::string const& key, std::shared_ptr<IObject> obj)
+{
+    std::lock_guard lck(g_objsMutex);
+    m_transferObjs.insert(std::make_pair(key, obj));
+}
+
+ZENO_API void GlobalComm::clearTransferObjs()
+{
+    std::lock_guard lck(g_objsMutex);
+    m_transferObjs.clear();
+}
+
+ZENO_API MapObjects GlobalComm::getTransferObjs()
+{
+    std::lock_guard lck(g_objsMutex);
+    return m_transferObjs;
 }
 
 ZENO_API int GlobalComm::getLightObjsSize()
 {
     std::lock_guard lck(g_objsMutex);
-    return lightObjects.size();
+    return m_lightObjects.size();
 }
 
 ZENO_API bool GlobalComm::getNeedUpdateLight()
