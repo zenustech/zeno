@@ -442,6 +442,7 @@ bool GraphsModel::setData(const QModelIndex& index, const QVariant& value, int r
         if (SubGraphModel* pModel = subGraph(name))
         {
             pModel->setType((SUBGRAPH_TYPE)value.toInt());
+            emit dataChanged(index, index);
         }
     }
     else if (role == ROLE_MTLID)
