@@ -103,6 +103,8 @@ void FakeTransformer::removeObject(const std::string& name) {
 
     auto& comm =  zeno::getSession().globalComm;
     auto object = comm->getViewObject(p->second);
+    if (!object)
+        return;
 
     m_objects_center *= m_objects.size();
     auto& user_data = object->userData();
