@@ -472,16 +472,13 @@ ZENO_API GlobalComm::ViewObjects const &GlobalComm::getViewObjects() {
 
 std::shared_ptr<IObject> GlobalComm::getViewObject(std::string const& key) {
     std::lock_guard lck(g_objsMutex);
-    if (m_frames.size() != 0) {
-        if (m_currentFrame < 0 && m_currentFrame >= m_frames.size()) {
-            return nullptr;
-        }
-        auto& objs = m_frames[m_currentFrame].view_objects;
-        auto it = objs.find(key);
-        if (it != objs.end())
-            return it->second;
+    if (m_currentFrame < 0 || m_currentFrame >= m_frames.size()) {
+        return nullptr;
     }
-    return nullptr;
+    auto& objs = m_frames[m_currentFrame].view_objects;
+    auto it = objs.find(key);
+    if (it != objs.end())
+        return it->second;
 }
 
 ZENO_API bool GlobalComm::load_objects(
@@ -653,13 +650,10 @@ void GlobalComm::prepareForOptix(bool inserted, std::map<std::string, std::share
 
 ZENO_API void GlobalComm::clear_objects() {
     std::lock_guard lck(g_objsMutex);
-    if (m_frames.size() != 0)
-    {
-        if (m_currentFrame < 0 && m_currentFrame >= m_frames.size()) {
-            return;
-        }
-        m_frames[m_currentFrame].view_objects.clear();
+    if (m_currentFrame < 0 || m_currentFrame >= m_frames.size()) {
+        return;
     }
+    m_frames[m_currentFrame].view_objects.clear();
 }
 
 ZENO_API void GlobalComm::clear_lightObjects()
@@ -670,7 +664,7 @@ ZENO_API void GlobalComm::clear_lightObjects()
 
 ZENO_API std::optional<zeno::IObject* > GlobalComm::get(std::string nid) {
     std::lock_guard lck(g_objsMutex);
-    if (m_currentFrame < 0 && m_currentFrame >= m_frames.size()) {
+    if (m_currentFrame < 0 || m_currentFrame >= m_frames.size()) {
         return std::nullopt;
     }
 
@@ -687,27 +681,19 @@ ZENO_API std::optional<zeno::IObject* > GlobalComm::get(std::string nid) {
 ZENO_API std::vector<std::pair<std::string, IObject*>> GlobalComm::pairs() const
 {
     std::lock_guard lck(g_objsMutex);
-    if (m_frames.size() != 0) {
-        if (m_currentFrame < 0 && m_currentFrame >= m_frames.size()) {
-            return std::vector<std::pair<std::string, IObject*>>();
-        }
-        return m_frames[m_currentFrame].view_objects.pairs();
-    }
-    else
+    if (m_currentFrame < 0 || m_currentFrame >= m_frames.size()) {
         return std::vector<std::pair<std::string, IObject*>>();
+    }
+    return m_frames[m_currentFrame].view_objects.pairs();
 }
 
 ZENO_API std::vector<std::pair<std::string, std::shared_ptr<IObject>>> GlobalComm::pairsShared() const
 {
     std::lock_guard lck(g_objsMutex);
-    if (m_frames.size() != 0) {
-        if (m_currentFrame < 0 && m_currentFrame >= m_frames.size()) {
-            return std::vector<std::pair<std::string, std::shared_ptr<IObject>>>();
-        }
-        return m_frames[m_currentFrame].view_objects.pairsShared();
-    }
-    else
+    if (m_currentFrame < 0 || m_currentFrame >= m_frames.size())
         return std::vector<std::pair<std::string, std::shared_ptr<IObject>>>();
+    else
+        return m_frames[m_currentFrame].view_objects.pairsShared();
 }
 
 //------new change------
@@ -733,7 +719,7 @@ ZENO_API bool GlobalComm::lightObjsCount(std::string& id)
 ZENO_API bool GlobalComm::objsCount(std::string& id)
 {
     std::lock_guard lck(g_objsMutex);
-    if (m_currentFrame < 0 && m_currentFrame >= m_frames.size()) {
+    if (m_currentFrame < 0 || m_currentFrame >= m_frames.size()) {
         return 0;
     }
 
@@ -807,7 +793,7 @@ ZENO_API void GlobalComm::updateObjsIdByViewport(std::map<std::string, std::shar
         std::shared_ptr<IObject> oldObj;
         std::string oldKey;
 
-        if (m_currentFrame < 0 && m_currentFrame >= m_frames.size()) {
+        if (m_currentFrame < 0 || m_currentFrame >= m_frames.size()) {
             continue;
         }
 
@@ -1016,7 +1002,7 @@ ZENO_API std::string GlobalComm::getObjMatId(std::string& id)
 {
     std::lock_guard lck(g_objsMutex);
 
-    if (m_currentFrame < 0 && m_currentFrame >= m_frames.size()) {
+    if (m_currentFrame < 0 || m_currentFrame >= m_frames.size()) {
         return "";
     }
 
