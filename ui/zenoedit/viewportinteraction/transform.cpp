@@ -99,9 +99,9 @@ void FakeTransformer::addObject(const std::string& name) {
     m_localY = glm::toMat3(quat) * m_localYOrg;
 
     auto pivot_to_world = glm::mat3(1);
-    pivot_to_world[0] = m_localX;
-    pivot_to_world[1] = m_localY;
-    pivot_to_world[2] = glm::cross(m_localX, m_localY);
+    pivot_to_world[0] = m_localXOrg;
+    pivot_to_world[1] = m_localYOrg;
+    pivot_to_world[2] = glm::cross(m_localXOrg, m_localYOrg);
 
     m_objects_center *= m_objects.size();
     m_objects_center += m_pivot + pivot_to_world * zeno::vec_to_other<glm::vec3>(user_data.get2<vec3f>("_translate"));
