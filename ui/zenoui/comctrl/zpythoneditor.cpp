@@ -42,7 +42,7 @@ void ZPythonEditor::initUI()
     QsciAPIs* apis = new QsciAPIs(textLexer);
     QStringList lst = { "import", "graph", "createGraph", "removeGraph", "forkGraph", "forkMaterial", "renameGraph"
     , "createNode", "deleteNode", "node", "addLink",  "removeLink", "name"
-    ,"objCls", "ident"};
+    ,"objCls", "ident", "view", "mute", "once", "fold"};
     for(const auto& key : lst)
         apis->add(key);
     apis->prepare();

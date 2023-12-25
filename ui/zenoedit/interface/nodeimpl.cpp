@@ -54,6 +54,57 @@ Node_ident(ZNodeObject* self, PyObject* Py_UNUSED(ignored))
     return PyUnicode_FromFormat(name.toUtf8());
 }
 
+static PyObject* buildValue(const QVariant& value, const QString& type)
+{
+    if (type == "string")
+    {
+        return Py_BuildValue("s", value.toString().toStdString().c_str());
+    }
+    else if (type == "int")
+    {
+        return Py_BuildValue("i", value.toInt());
+    }
+    else if (type == "float")
+    {
+        return Py_BuildValue("f", value.toFloat());
+    }
+    else if (type.startsWith("vec"))
+    {
+        const auto& vec = value.value<UI_VECTYPE>();
+        QString format;
+        
+        if (type.contains("i"))
+        {
+            for (int i = 0; i < vec.size(); i++)
+            {
+                format += "i";
+            }
+        }
+        else if (type.contains("f"))
+        {
+            for (int i = 0; i < vec.size(); i++)
+            {
+                format += "f";
+            }
+        }
+        if (vec.size() == 2)
+        {
+            return Py_BuildValue(format.toUtf8(), vec[0], vec[1]);
+        }
+        else if (vec.size() == 3)
+        {
+            return Py_BuildValue(format.toUtf8(), vec[0], vec[1], vec[2]);
+        }
+        else if (vec.size() == 4)
+        {
+            return Py_BuildValue(format.toUtf8(), vec[0], vec[1], vec[2], vec[3]);
+        }
+    }
+    PyErr_SetString(PyExc_Exception, "build value failed");
+    PyErr_WriteUnraisable(Py_None);
+    return Py_None;
+}
+
 static PyObject*
 Node_getattr(ZNodeObject* self, char* name)
 {
@@ -62,26 +113,45 @@ Node_getattr(ZNodeObject* self, char* name)
         PyObject* postuple = Py_BuildValue("dd", pos.x(), pos.y());
         return postuple;
     }
-    if (strcmp(name, "ident") == 0) {
+    else if (strcmp(name, "ident") == 0) {
         std::string ident = self->nodeIdx.data(ROLE_OBJID).toString().toStdString();
         PyObject* value = Py_BuildValue("s", ident.c_str());
         return value;
     }
-    if (strcmp(name, "objCls") == 0) {
+    else if (strcmp(name, "objCls") == 0) {
         std::string cls = self->nodeIdx.data(ROLE_OBJNAME).toString().toStdString();
         PyObject* value = Py_BuildValue("s", cls.c_str());
         return value;
     }
-    if (strcmp(name, "name") == 0) {
+    else if (strcmp(name, "name") == 0) {
         std::string name = self->nodeIdx.data(ROLE_CUSTOM_OBJNAME).toString().toStdString();
         PyObject* value = Py_BuildValue("s", name.c_str());
         return value;
     }
-    if (strcmp(name, "view") == 0 || strcmp(name, "mute") == 0 || strcmp(name, "once") == 0) {
+    else if (strcmp(name, "view") == 0 || strcmp(name, "mute") == 0 || strcmp(name, "once") == 0) {
         int opt = strcmp(name, "view") == 0 ? OPT_VIEW : strcmp(name, "mute") == 0 ? OPT_MUTE : OPT_ONCE;
         bool bOn = self->nodeIdx.data(ROLE_OPTIONS).toInt() & opt;
         PyObject* value = Py_BuildValue("b", bOn);
         return value;
+    }
+    else {
+        INPUT_SOCKETS inputs = self->nodeIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+        if (inputs.contains(name))
+        {
+            INPUT_SOCKET socket = inputs[name];
+            return buildValue(socket.info.defaultValue, socket.info.type);
+        }
+        PARAMS_INFO params = self->nodeIdx.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
+        if (params.contains(name))
+        {
+            PARAM_INFO param = params[name];
+            return buildValue(param.defaultValue, param.typeDesc);
+        }
+        else
+        {
+            PyErr_SetString(PyExc_Exception, "build value failed");
+            PyErr_WriteUnraisable(Py_None);
+        }
     }
     return Py_None;
 }
