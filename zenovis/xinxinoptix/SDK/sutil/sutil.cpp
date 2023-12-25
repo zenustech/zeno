@@ -877,15 +877,14 @@ const char *lookupIncFile(const char *name) {
     return getIncFileTab().at(it - pathtab.begin());
 }
 
-static bool getPtxFromCuString( std::string&                    ptx,
-                                const char*                     sample_directory,
+inline bool getPtxFromCuString( std::string&                    ptx,
                                 const char*                     cu_source,
                                 const char*                     name,
                                 const char**                    log_string,
                                 const std::vector<const char*>& compiler_options)
 {
     // Create program
-    nvrtcProgram prog = 0;
+    nvrtcProgram prog;
     NVRTC_CHECK_ERROR( nvrtcCreateProgram( &prog, cu_source, name, getIncFileTab().size(), getIncFileTab().data(), getIncPathTab().data() ) );
 
     // Gather NVRTC options
@@ -1093,10 +1092,9 @@ static const char* getOptixHeader() {
 }
 #endif
 
-const char* getInputData( const char*                     sample,
-                          const char*                     sampleDir,
-                          const char*                     filename,
-                          const char*                     location,
+const char* getInputData( const char*                     source,
+                          const char*                     macro,
+                          const char*                     name,
                           size_t&                         dataSize,
                           bool &                          is_success,
                           const char**                    log,
@@ -1106,7 +1104,7 @@ const char* getInputData( const char*                     sample,
         *log = NULL;
 
     std::string *                                 ptx, cu;
-    std::string                                   key  = std::string( filename ) + ";" + ( sample ? sample : "" );
+    std::string                                   key  = std::string( source ) + (macro!=nullptr? std::string(macro):"");
     std::map<std::string, std::string*>::iterator elem = g_ptxSourceCache.map.find( key );
 
     if( elem == g_ptxSourceCache.map.end() )
@@ -1115,7 +1113,7 @@ const char* getInputData( const char*                     sample,
 #if CUDA_NVRTC_ENABLED
         //getCuStringFromFile( cu, location, sampleDir, filename );
         //cu.replace(cu.find("#include <optix.h>\n"), strlen("#include <optix.h>\n"), getOptixHeader());
-        is_success = getPtxFromCuString( *ptx, sampleDir, filename, location, log, compilerOptions );
+        is_success = getPtxFromCuString( *ptx, source, name, log, compilerOptions );
 #else
         getInputDataFromFile( *ptx, sample, filename );
 #endif

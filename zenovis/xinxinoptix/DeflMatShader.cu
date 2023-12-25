@@ -11,157 +11,9 @@
 #include "IOMat.h"
 #include "Light.h"
 
-#define _SPHERE_ 0
-//COMMON_CODE
-
 #include "DisneyBRDF.h"
 #include "DisneyBSDF.h"
 
-template<bool isDisplacement>
-static __inline__ __device__ MatOutput evalMat(cudaTextureObject_t zenotex[], float4* uniforms, MatInput const &attrs) {
-
-    /* MODMA */
-    auto att_pos = attrs.pos;
-    auto att_clr = attrs.clr;
-    auto att_uv = attrs.uv;
-    auto att_nrm = attrs.nrm;
-    auto att_tang = attrs.tang;
-    auto att_instPos = attrs.instPos;
-    auto att_instNrm = attrs.instNrm;
-    auto att_instUv = attrs.instUv;
-    auto att_instClr = attrs.instClr;
-    auto att_instTang = attrs.instTang;
-    auto att_NoL      = attrs.NoL;
-    auto att_LoV      = attrs.LoV;
-    auto att_N        = attrs.N;
-    auto att_T        = attrs.T;
-    auto att_L        = attrs.L;
-    auto att_V        = attrs.V;
-    auto att_H        = attrs.H;
-    auto att_reflectance = attrs.reflectance;
-    auto att_fresnel  = attrs.fresnel;
-    /** generated code here beg **/
-    //GENERATED_BEGIN_MARK
-    /* MODME */
-    float mat_base = 1.0f;
-    vec3 mat_basecolor = vec3(1.0f, 1.0f, 1.0f);
-    float mat_roughness = 0.5f;
-    float mat_metallic = 0.0f;
-    vec3 mat_metalColor = vec3(1.0f,1.0f,1.0f);
-    float mat_specular = 0.0f;
-    float mat_specularTint = 0.0f;
-    float mat_anisotropic = 0.0f;
-    float mat_anisoRotation = 0.0f;
-
-    float mat_subsurface = 0.0f;
-    vec3  mat_sssParam = vec3(0.0f,0.0f,0.0f);
-    vec3  mat_sssColor = vec3(0.0f,0.0f,0.0f);
-    float mat_scatterDistance = 0.0f;
-    float mat_scatterStep = 0.0f;
-    
-    float mat_sheen = 0.0f;
-    float mat_sheenTint = 0.0f;
-
-
-    float mat_clearcoat = 0.0f;
-    vec3 mat_clearcoatColor = vec3(1.0f,1.0f,1.0f);
-    float mat_clearcoatRoughness = 0.0f;
-    float mat_clearcoatIOR = 1.5f;
-    float mat_opacity = 0.0f;
-
-    float mat_specTrans = 0.0f;
-    vec3 mat_transColor = vec3(1.0f,1.0f,1.0f);
-    vec3 mat_transTint = vec3(1.0f,1.0f,1.0f);
-    float mat_transTintDepth = 0.0f;
-    float mat_transDistance = 0.0f;
-    vec3 mat_transScatterColor = vec3(1.0f,1.0f,1.0f);
-    float mat_ior = 1.0f;
-
-    float mat_flatness = 0.0f;
-    float mat_thin = 0.0f;
-    float mat_doubleSide= 0.0f;
-    float mat_smoothness = 0.0f;
-    vec3  mat_normal = vec3(0.0f, 0.0f, 1.0f);
-    float mat_emissionIntensity = float(0);
-    vec3 mat_emission = vec3(1.0f, 1.0f, 1.0f);
-    float mat_displacement = 0.0f;
-    float mat_shadowReceiver = 0.0f;
-    float mat_NoL = 1.0f;
-    float mat_LoV = 1.0f;
-    vec3 mat_reflectance = att_reflectance;
-
-    //GENERATED_END_MARK
-    /** generated code here end **/
-    MatOutput mats;
-    if constexpr(isDisplacement)
-    {
-        mats.reflectance = mat_reflectance;
-        return mats;
-    }else {
-        /* MODME */
-        mats.basecolor = mat_base * mat_basecolor;
-        mats.roughness = clamp(mat_roughness, 0.01, 0.99);
-        mats.metallic = clamp(mat_metallic, 0.0f, 1.0f);
-        mats.metalColor = mat_metalColor;
-        mats.specular = mat_specular;
-        mats.specularTint = mat_specularTint;
-        mats.anisotropic = clamp(mat_anisotropic, 0.0f, 1.0f);
-        mats.anisoRotation = clamp(mat_anisoRotation, 0.0f, 1.0f);
-
-        mats.subsurface = mat_subsurface;
-        mats.sssColor = mat_sssColor;
-        mats.sssParam = mat_sssParam;
-        mats.scatterDistance = max(0.0f,mat_scatterDistance);
-        mats.scatterStep = clamp(mat_scatterStep,0.0f,1.0f);
-
-        mats.sheen = mat_sheen;
-        mats.sheenTint = mat_sheenTint;
-
-        mats.clearcoat = clamp(mat_clearcoat, 0.0f, 1.0f);
-        mats.clearcoatColor = mat_clearcoatColor;
-        mats.clearcoatRoughness = clamp(mat_clearcoatRoughness, 0.01, 0.99);
-        mats.clearcoatIOR = mat_clearcoatIOR;
-        
-        mats.specTrans = clamp(mat_specTrans, 0.0f, 1.0f);
-        mats.transColor = mat_transColor;
-        mats.transTint = mat_transTint;
-        mats.transTintDepth = max(0.0f,mat_transTintDepth);
-        mats.transDistance = max(mat_transDistance,0.1f);
-        mats.transScatterColor = mat_transScatterColor;
-        mats.ior = max(0.0f,mat_ior);
-
-
-        mats.opacity = mat_opacity;
-        mats.nrm = mat_normal;
-        mats.emission = mat_emissionIntensity * mat_emission;
-
-
-
-        mats.flatness = mat_flatness;
-        mats.thin = mat_thin;
-        mats.doubleSide = mat_doubleSide;
-        mats.shadowReceiver = mat_shadowReceiver;
-
-
-        mats.smoothness = mat_smoothness;
-        return mats;
-    }
-}
-
-static __inline__ __device__ MatOutput evalMaterial(cudaTextureObject_t zenotex[], float4* uniforms, MatInput const &attrs)
-{
-    return evalMat<false>(zenotex, uniforms, attrs);
-}
-
-static __inline__ __device__ MatOutput evalGeometry(cudaTextureObject_t zenotex[], float4* uniforms, MatInput const &attrs)
-{
-    return evalMat<true>(zenotex, uniforms, attrs);
-}
-
-static __inline__ __device__ MatOutput evalReflectance(cudaTextureObject_t zenotex[], float4* uniforms, MatInput const &attrs)
-{
-    return evalMat<true>(zenotex, uniforms, attrs);
-}
 __forceinline__ __device__ float3 interp(float2 barys, float3 a, float3 b, float3 c)
 {
     float w0 = 1 - barys.x - barys.y;
@@ -295,7 +147,8 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     unsigned short isLight = 0;//rt_data->lightMark[vert_aux_offset + primIdx];
 #endif
 
-    MatOutput mats = evalMaterial(rt_data->textures, rt_data->uniforms, attrs);
+    //MatOutput mats = evalMaterial(rt_data->textures, rt_data->uniforms, attrs);
+    MatOutput mats = optixDirectCall<MatOutput, cudaTextureObject_t[], float4*, const MatInput&>( rt_data->dc_index, rt_data->textures, rt_data->uniforms, attrs );
 
     if(length(attrs.tang)>0)
     {
@@ -526,7 +379,9 @@ extern "C" __global__ void __closesthit__radiance()
 
 #endif
 
-    MatOutput mats = evalMaterial(rt_data->textures, rt_data->uniforms, attrs);
+    //MatOutput mats = evalMaterial(rt_data->textures, rt_data->uniforms, attrs);
+    MatOutput mats = optixDirectCall<MatOutput, cudaTextureObject_t[], float4*, const MatInput&>( rt_data->dc_index, rt_data->textures, rt_data->uniforms, attrs );
+
 
 #if _SPHERE_
 

@@ -10,6 +10,25 @@ namespace nanovdb {
     using Fp32 = float;
 };
 
+struct VolumeIn {
+    float3 pos;
+    float sigma_t;
+    uint32_t* seed;
+
+    unsigned long long sbt_ptr;
+};
+
+struct VolumeOut {
+    float step_scale=__FLT_MAX__;
+
+    float max_density;
+    float density;
+
+    float anisotropy;
+    float3 emission;
+    float3 albedo;
+};
+
 namespace pbrt {
 
 struct HenyeyGreenstein {
