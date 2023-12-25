@@ -107,6 +107,8 @@ private:
     glm::vec3 m_objects_center;
 
     glm::vec3 m_pivot;
+    glm::vec3 m_localXOrg;
+    glm::vec3 m_localYOrg;
     glm::vec3 m_localX;
     glm::vec3 m_localY;
     glm::vec3 m_trans;
@@ -117,6 +119,8 @@ private:
     glm::vec3 m_rotate_start;
     // glm::vec3 m_scale_start;
     glm::vec3 _objects_center_start;
+    glm::vec3 _objects_localX_start;
+    glm::vec3 _objects_localY_start;
 
     bool m_status;
     int m_operation;

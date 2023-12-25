@@ -15,6 +15,8 @@ namespace zeno {
 FakeTransformer::FakeTransformer(ViewportWidget* viewport)
     : m_objects_center(0.0f)
       , m_pivot(0.0f)
+      , m_localXOrg(1, 0, 0)
+      , m_localYOrg(0, 1, 0)
       , m_localX(1, 0, 0)
       , m_localY(0, 1, 0)
       , m_trans(0.0f)
@@ -89,8 +91,12 @@ void FakeTransformer::addObject(const std::string& name) {
     auto m = zeno::vec_to_other<glm::vec3>(bmax);
     auto n = zeno::vec_to_other<glm::vec3>(bmin);
     m_pivot = zeno::vec_to_other<glm::vec3>(user_data.get2<vec3f>("_pivot"));
-    m_localX = zeno::vec_to_other<glm::vec3>(user_data.get2<vec3f>("_localX"));
-    m_localY = zeno::vec_to_other<glm::vec3>(user_data.get2<vec3f>("_localY"));
+    m_localXOrg = zeno::vec_to_other<glm::vec3>(user_data.get2<vec3f>("_localX"));
+    m_localYOrg = zeno::vec_to_other<glm::vec3>(user_data.get2<vec3f>("_localY"));
+    auto rot = user_data.get2<vec4f>("_rotate");
+    auto quat = glm::quat(rot[3], rot[0], rot[1], rot[2]);
+    m_localX = glm::toMat3(quat) * m_localXOrg;
+    m_localY = glm::toMat3(quat) * m_localYOrg;
 
     auto pivot_to_world = glm::mat3(1);
     pivot_to_world[0] = m_localX;
@@ -341,6 +347,8 @@ bool FakeTransformer::isTransforming() const {
 
 void FakeTransformer::startTransform() {
     _objects_center_start = m_objects_center;
+    _objects_localX_start = m_localX;
+    _objects_localY_start = m_localY;
     markObjectsInteractive();
 }
 
@@ -704,8 +712,8 @@ void FakeTransformer::rotate(glm::vec3 start_vec, glm::vec3 end_vec, glm::vec3 a
 
 void FakeTransformer::doTransform() {
     // qDebug() << "transformer's objects count " << m_objects.size();
-    auto lX = m_localX;
-    auto lY = m_localY;
+    auto lX = m_localXOrg;
+    auto lY = m_localYOrg;
     auto lZ = glm::cross(lX, lY);
     zeno::log_info("lX: {}", glm::length(lX));
     zeno::log_info("lY: {}", glm::length(lY));
@@ -764,10 +772,15 @@ void FakeTransformer::doTransform() {
     }
     {
         auto pivot_to_world = glm::mat3(1);
-        pivot_to_world[0] = m_localX;
-        pivot_to_world[1] = m_localY;
-        pivot_to_world[2] = glm::cross(m_localX, m_localY);
+        pivot_to_world[0] = m_localXOrg;
+        pivot_to_world[1] = m_localYOrg;
+        pivot_to_world[2] = glm::cross(m_localXOrg, m_localYOrg);
         m_objects_center = _objects_center_start + pivot_to_world * m_trans;
+
+        auto cur_quaternion = glm::quat(m_rotate[3], m_rotate[0], m_rotate[1], m_rotate[2]);
+        auto cur_rot = glm::toMat3(cur_quaternion);
+        m_localX = cur_rot * _objects_localX_start;
+        m_localY = cur_rot * _objects_localY_start;
     }
     m_handler->setCenter(other_to_vec<3>(m_objects_center), other_to_vec<3>(m_localX), other_to_vec<3>(m_localY));
 }
