@@ -91,6 +91,7 @@ extern "C" __global__ void __raygen__rg()
     float3 result_s = make_float3( 0.0f );
     float3 result_t = make_float3( 0.0f );
     float3 result_b = make_float3( 0.0f );
+    float3 aov[4];
     int i = params.samples_per_launch;
 
     float3 tmp_albedo{};
@@ -200,8 +201,11 @@ extern "C" __global__ void __raygen__rg()
         }
 
         // Primary Ray
+        unsigned char background_trace = 0;
+        prd.alphaHit = false;
         traceRadiance(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_);
-        const auto primary_hit_type = prd.hit_type;
+        auto primary_hit_type = prd.hit_type;
+        background_trace = primary_hit_type;
 
         if(primary_hit_type > 0) {
             result_d = prd.radiance_d * prd.attenuation2;
@@ -215,7 +219,10 @@ extern "C" __global__ void __raygen__rg()
         prd.trace_denoise_albedo = false;
         prd.trace_denoise_normal = false;
 
-        float3* aov[4] = {&result_b, &result_d, &result_s, &result_t};
+        aov[0] = result_b;
+        aov[1] = result_d;
+        aov[2] = result_s;
+        aov[3] = result_t;
 
         for(;;)
         {
@@ -223,7 +230,7 @@ extern "C" __global__ void __raygen__rg()
             _mask_ = prd._mask_;
 
             prd._tmin_ = 0;
-            prd._mask_ = EverythingMask; 
+            prd._mask_ = EverythingMask;
 
             ray_origin = prd.origin;
             ray_direction = prd.direction;
@@ -237,7 +244,7 @@ extern "C" __global__ void __raygen__rg()
                 result += prd.depth>1?clampped:temp_radiance;
 
                 if(primary_hit_type > 0 && ( prd.depth>1 || (prd.depth==1 && prd.hit_type == 0) )) {
-                    *aov[primary_hit_type] += clampped;
+                    aov[primary_hit_type] += prd.depth>1?clampped:temp_radiance;
                 }
             }
 
@@ -267,13 +274,23 @@ extern "C" __global__ void __raygen__rg()
             prd.radiance_d = make_float3(0);
             prd.radiance_s = make_float3(0);
             prd.radiance_t = make_float3(0);
+            prd.alphaHit = false;
 
             traceRadiance(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_);
+
+
+            if(prd.hit_type>0 && primary_hit_type==0)
+            {
+              primary_hit_type = prd.hit_type;
+              aov[primary_hit_type] += (prd.hit_type==1?prd.radiance_d:(prd.hit_type==2?prd.radiance_s:prd.radiance_t))*prd.attenuation2;
+            }
+            background_trace += prd.hit_type>0?1:0;
+
         }
         
         seed = prd.seed;
 
-        if (primary_hit_type > 0) {
+        if (!(background_trace == 0)) {
             result_b += make_float3(1);
         }
     }
@@ -282,9 +299,9 @@ extern "C" __global__ void __raygen__rg()
     auto samples_per_launch = static_cast<float>( params.samples_per_launch );
 
     float3         accum_color    = result   / samples_per_launch;
-    float3         accum_color_d  = result_d / samples_per_launch;
-    float3         accum_color_s  = result_s / samples_per_launch;
-    float3         accum_color_t  = result_t / samples_per_launch;
+    float3         accum_color_d  = aov[1] / samples_per_launch;
+    float3         accum_color_s  = aov[2] / samples_per_launch;
+    float3         accum_color_t  = aov[3] / samples_per_launch;
     float3         accum_color_b  = result_b / samples_per_launch;
     
     if( subframe_index > 0 )

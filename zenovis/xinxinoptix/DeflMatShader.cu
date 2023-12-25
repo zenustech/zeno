@@ -566,10 +566,10 @@ extern "C" __global__ void __closesthit__radiance()
 #endif
 
     attrs.nrm = N;
-    float term = log2(optixGetRayTmax()*prd->pixel_area*sqrt(estimation))/2.5f;
+    float term = log2(optixGetRayTmax()*prd->pixel_area*sqrt(estimation))/4.0f;
 //    printf("rayDist:%f, tex_per_area:%f, term:%f, pixel_area:%f\n", optixGetRayTmax(),
 //           sqrt(estimation), term, prd->pixel_area);
-    mats.nrm = normalize(mix(mats.nrm, vec3(0,0,1), clamp(term,0.0f,1.0f)));
+    //mats.nrm = normalize(mix(mats.nrm, vec3(0,0,1), clamp(term,0.0f,1.0f)));
     //end of material computation
     //mats.metallic = clamp(mats.metallic,0.01, 0.99);
     mats.roughness = clamp(mats.roughness, 0.01f,0.99f);
@@ -636,6 +636,7 @@ extern "C" __global__ void __closesthit__radiance()
         //prd->origin = P + 1e-5 * ray_dir; 
         if(prd->maxDistance>optixGetRayTmax())
             prd->maxDistance-=optixGetRayTmax();
+        prd->alphaHit = true;
         prd->offsetUpdateRay(P, ray_dir); 
         return;
     }
@@ -678,7 +679,8 @@ extern "C" __global__ void __closesthit__radiance()
         prd->adepth++;
         //prd->samplePdf = 0.0f;
         prd->radiance = make_float3(0.0f);
-        //prd->origin = P + 1e-5 * ray_dir; 
+        //prd->origin = P + 1e-5 * ray_dir;
+        prd->alphaHit = true;
         prd->offsetUpdateRay(P, ray_dir);
         return;
     }
@@ -707,6 +709,7 @@ extern "C" __global__ void __closesthit__radiance()
 
         prd->origin = P;
         prd->direction = ray_dir;
+        prd->alphaHit = true;
         prd->offsetUpdateRay(P, ray_dir);
 
         prd->prob *= 1;
@@ -963,18 +966,20 @@ extern "C" __global__ void __closesthit__radiance()
     if(prd->depth>=3)
         mats.roughness = clamp(mats.roughness, 0.5f,0.99f);
 
-    vec3 rd, rs, rt; // captured by lambda
 
     auto evalBxDF = [&](const float3& _wi_, const float3& _wo_, float& thisPDF, vec3 illum = vec3(1.0f)) -> float3 {
 
         const auto& L = _wi_; // pre-normalized
         const vec3& V = _wo_; // pre-normalized
+        vec3 rd, rs, rt; // captured by lambda
 
         float3 lbrdf = DisneyBSDF::EvaluateDisney2(illum,mats, L, V, T, B, N,prd->geometryNormal,
             mats.thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : next_ray_is_going_inside, thisPDF, rrPdf,
             dot(N, L), rd, rs, rt);
 
-
+        prd->radiance_d = rd;
+        prd->radiance_s = rs;
+        prd->radiance_t = rt;
 //        MatOutput mat2;
 //        if(mats.thin>0.5f){
 //            vec3 H = normalize(vec3(normalize(L)) + V);
@@ -993,9 +998,9 @@ extern "C" __global__ void __closesthit__radiance()
     };
 
     auto taskAux = [&](const vec3& weight) {
-        prd->radiance_d = rd * weight;
-        prd->radiance_s = rs * weight;
-        prd->radiance_t = rt * weight;
+        prd->radiance_d *= weight;
+        prd->radiance_s *= weight;
+        prd->radiance_t *= weight;
     };
 
     RadiancePRD shadow_prd {};
