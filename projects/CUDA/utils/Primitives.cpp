@@ -765,6 +765,21 @@ ZENDEFNODE(PrimitiveReorder,
            });
 
 struct PrimitiveFuse : INode {
+    std::set<std::string> separate_string_by(const std::string &tags, const std::string &sep) {
+        std::set<std::string> res;
+        using Ti = RM_CVREF_T(std::string::npos);
+        Ti st = tags.find_first_not_of(sep, 0);
+        for (auto ed = tags.find_first_of(sep, st + 1); ed != std::string::npos; ed = tags.find_first_of(sep, st + 1)) {
+            res.insert(tags.substr(st, ed - st));
+            st = tags.find_first_not_of(sep, ed);
+            if (st == std::string::npos)
+                break;
+        }
+        if (st != std::string::npos && st < tags.size()) {
+            res.insert(tags.substr(st));
+        }
+        return res;
+    }
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
 
@@ -776,6 +791,8 @@ struct PrimitiveFuse : INode {
 
         auto &verts = prim->verts;
         const auto &pos = verts.values;
+        auto preservedAttribs_ = get_input2<std::string>("preserved_vert_attribs");
+        std::set<std::string> preservedAttribs = separate_string_by(preservedAttribs_, " :;,.");
 
         /// @brief establish vert proximity topo
         RM_CVREF_T(prim->verts) newVerts;
@@ -875,32 +892,56 @@ struct PrimitiveFuse : INode {
 
         if (hasTris) {
             auto &eles = prim->tris;
-            // add custom tris attributes
-            verts.foreach_attr<AttrAcceptAll>([&](auto const &key, auto const &arr) {
+            auto promoteVertAttribToTri = [&](auto const &key, auto const &arr) {
                 using T = std::decay_t<decltype(arr[0])>;
                 eles.add_attr<T>(key + "0");
                 eles.add_attr<T>(key + "1");
                 eles.add_attr<T>(key + "2");
-            });
-            pol(enumerate(eles.values), [&fas, &verts, &eles](int ei, auto &tri) mutable {
-                for (auto &[key, vertArr] : verts.attrs) {
-                    auto const &k = key;
-                    match(
-                        [&k, &eles, &tri, ei](auto &vertArr)
-                            -> std::enable_if_t<variant_contains<RM_CVREF_T(vertArr[0]), AttrAcceptAll>::value> {
-                            using T = RM_CVREF_T(vertArr[0]);
-                            eles.attr<T>(k + "0")[ei] = vertArr[tri[0]];
-                            eles.attr<T>(k + "1")[ei] = vertArr[tri[1]];
-                            eles.attr<T>(k + "2")[ei] = vertArr[tri[2]];
-                        },
-                        [](...) {})(vertArr);
+            };
+            // add custom tris attributes
+            if (preservedAttribs.size() > 0) {
+                for (const auto &attribTag : preservedAttribs) {
+                    if (verts.has_attr(attribTag))
+                        match([&](const auto &arr) { promoteVertAttribToTri(attribTag, arr); })(verts.attr(attribTag));
+                }
+            } else {
+                verts.foreach_attr<AttrAcceptAll>(promoteVertAttribToTri);
+            }
+            pol(enumerate(eles.values), [&fas, &verts, &eles, &preservedAttribs](int ei, auto &tri) mutable {
+                if (preservedAttribs.size() > 0) {
+                    for (const auto &attribTag : preservedAttribs) {
+                        if (verts.has_attr(attribTag))
+                            match(
+                                [&k = attribTag, &eles, &tri, ei](auto &vertArr)
+                                    -> std::enable_if_t<
+                                        variant_contains<RM_CVREF_T(vertArr[0]), AttrAcceptAll>::value> {
+                                    using T = RM_CVREF_T(vertArr[0]);
+                                    eles.attr<T>(k + "0")[ei] = vertArr[tri[0]];
+                                    eles.attr<T>(k + "1")[ei] = vertArr[tri[1]];
+                                    eles.attr<T>(k + "2")[ei] = vertArr[tri[2]];
+                                },
+                                [](...) {})(verts.attr(attribTag));
+                    }
+                } else {
+                    for (auto &[key, vertArr] : verts.attrs) {
+                        auto const &k = key;
+                        match(
+                            [&k, &eles, &tri, ei](auto &vertArr)
+                                -> std::enable_if_t<variant_contains<RM_CVREF_T(vertArr[0]), AttrAcceptAll>::value> {
+                                using T = RM_CVREF_T(vertArr[0]);
+                                eles.attr<T>(k + "0")[ei] = vertArr[tri[0]];
+                                eles.attr<T>(k + "1")[ei] = vertArr[tri[1]];
+                                eles.attr<T>(k + "2")[ei] = vertArr[tri[2]];
+                            },
+                            [](...) {})(vertArr);
+                    }
                 }
                 for (auto &e : tri)
                     e = fas[e];
             });
         } else {
             bool uv_exist = prim->uvs.size() > 0 && loops.has_attr("uvs");
-            verts.foreach_attr<AttrAcceptAll>([&](auto const &key, auto const &arr) {
+            auto promoteVertAttribToLoop = [&](auto const &key, auto const &arr) {
                 using T = std::decay_t<decltype(arr[0])>;
                 if (key != "uv")
                     loops.add_attr<T>(key);
@@ -908,35 +949,73 @@ struct PrimitiveFuse : INode {
                     loops.add_attr<int>("uvs");
                     prim->uvs.resize(loops.size());
                 }
-            });
-            pol(range(polys), [&fas, &verts, &loops, &prim, uv_exist](const auto &poly) mutable {
+            };
+            if (preservedAttribs.size() > 0) {
+                for (const auto &attribTag : preservedAttribs) {
+                    if (verts.has_attr(attribTag))
+                        match([&](const auto &arr) { promoteVertAttribToLoop(attribTag, arr); })(verts.attr(attribTag));
+                }
+            } else {
+                verts.foreach_attr<AttrAcceptAll>(promoteVertAttribToLoop);
+            }
+
+            pol(range(polys), [&fas, &verts, &loops, &prim, &preservedAttribs, uv_exist](const auto &poly) mutable {
                 auto offset = poly[0];
                 auto size = poly[1];
                 for (int i = 0; i < size; ++i) {
                     auto loopI = offset + i;
                     auto ptNo = loops[loopI];
 
-                    for (auto &[key, vertArr] : verts.attrs) {
-                        auto const &k = key;
-                        auto &lps = loops;
-                        if (k == "uv") {
-                            if (!uv_exist) {
-                                auto &loopUV = loops.attr<int>("uvs");
-                                loopUV[loopI] = loopI;
-                                auto &uvs = prim->uvs.values;
-                                const auto &srcVertUV = std::get<std::vector<vec3f>>(vertArr);
-                                auto vertUV = srcVertUV[ptNo];
-                                uvs[loopI] = vec2f(vertUV[0], vertUV[1]);
+                    if (preservedAttribs.size() > 0) {
+                        for (const auto &attribTag : preservedAttribs) {
+                            if (verts.has_attr(attribTag)) {
+                                const auto &k = attribTag;
+                                const auto &vertArr = verts.attr(attribTag);
+                                auto &lps = loops;
+                                if (k == "uv") {
+                                    if (!uv_exist) {
+                                        auto &loopUV = loops.attr<int>("uvs");
+                                        loopUV[loopI] = loopI;
+                                        auto &uvs = prim->uvs.values;
+                                        const auto &srcVertUV = std::get<std::vector<vec3f>>(vertArr);
+                                        auto vertUV = srcVertUV[ptNo];
+                                        uvs[loopI] = vec2f(vertUV[0], vertUV[1]);
+                                    }
+                                } else {
+                                    match(
+                                        [&k, &lps, loopI, ptNo](auto &vertArr)
+                                            -> std::enable_if_t<
+                                                variant_contains<RM_CVREF_T(vertArr[0]), AttrAcceptAll>::value> {
+                                            using T = RM_CVREF_T(vertArr[0]);
+                                            lps.attr<T>(k)[loopI] = vertArr[ptNo];
+                                        },
+                                        [](...) {})(vertArr);
+                                }
                             }
-                        } else {
-                            match(
-                                [&k, &lps, loopI, ptNo](auto &vertArr)
-                                    -> std::enable_if_t<
-                                        variant_contains<RM_CVREF_T(vertArr[0]), AttrAcceptAll>::value> {
-                                    using T = RM_CVREF_T(vertArr[0]);
-                                    lps.attr<T>(k)[loopI] = vertArr[ptNo];
-                                },
-                                [](...) {})(vertArr);
+                        }
+                    } else {
+                        for (auto &[key, vertArr] : verts.attrs) {
+                            auto const &k = key;
+                            auto &lps = loops;
+                            if (k == "uv") {
+                                if (!uv_exist) {
+                                    auto &loopUV = loops.attr<int>("uvs");
+                                    loopUV[loopI] = loopI;
+                                    auto &uvs = prim->uvs.values;
+                                    const auto &srcVertUV = std::get<std::vector<vec3f>>(vertArr);
+                                    auto vertUV = srcVertUV[ptNo];
+                                    uvs[loopI] = vec2f(vertUV[0], vertUV[1]);
+                                }
+                            } else {
+                                match(
+                                    [&k, &lps, loopI, ptNo](auto &vertArr)
+                                        -> std::enable_if_t<
+                                            variant_contains<RM_CVREF_T(vertArr[0]), AttrAcceptAll>::value> {
+                                        using T = RM_CVREF_T(vertArr[0]);
+                                        lps.attr<T>(k)[loopI] = vertArr[ptNo];
+                                    },
+                                    [](...) {})(vertArr);
+                            }
                         }
                     }
 
@@ -952,7 +1031,9 @@ struct PrimitiveFuse : INode {
 };
 
 ZENDEFNODE(PrimitiveFuse, {
-                              {{"PrimitiveObject", "prim"}, {"float", "proximity_theshold", "0.00001"}},
+                              {{"PrimitiveObject", "prim"},
+                               {"float", "proximity_theshold", "0.00001"},
+                               {"string", "preserved_vert_attribs", ""}},
                               {
                                   {"PrimitiveObject", "prim"},
                               },
@@ -960,168 +1041,330 @@ ZENDEFNODE(PrimitiveFuse, {
                               {"zs_geom"},
                           });
 
+static std::shared_ptr<PrimitiveObject> unfuse_primitive(std::shared_ptr<PrimitiveObject> prim, std::string tag) {
+    using namespace zs;
+    constexpr auto space = execspace_e::openmp;
+    auto pol = omp_exec();
+
+    auto &verts = prim->verts;
+    const auto &pos = verts.values;
+
+    auto &tris = prim->tris;
+    const auto &triIds = tris.values;
+    const bool hasTris = tris.size() > 0;
+
+    auto &polys = prim->polys;
+    const auto &loops = prim->loops;
+    const bool hasLoops = polys.size() > 1;
+
+    if ((hasTris ^ hasLoops) == 0)
+        throw std::runtime_error("The input mesh must either own active triangle topology or loop topology.");
+
+    std::vector<std::set<int>> groupsPerVertex(pos.size());
+    if (hasTris) {
+        const auto &triGroups = tris.attr<int>(tag);
+        std::vector<Mutex> mtxs(pos.size());
+        pol(zip(triIds, triGroups), [&mtxs, &groupsPerVertex](auto tri, int groupNo) {
+            for (int d = 0; d != 3; ++d) {
+                int vi = tri[d];
+                auto &mtx = mtxs[vi];
+                auto &group = groupsPerVertex[vi];
+                {
+                    mtxs[vi].lock();
+                    group.insert(groupNo);
+                    mtxs[vi].unlock();
+                }
+            };
+        });
+    } else {
+        const auto &polyGroups = polys.attr<int>(tag);
+        std::vector<Mutex> mtxs(pos.size());
+        pol(zip(polys.values, polyGroups), [&mtxs, &groupsPerVertex, &loops](zeno::vec2i poly, int groupNo) {
+            auto st = poly[0];
+            auto ed = st + poly[1];
+            for (; st != ed; ++st) {
+                int vi = loops.values[st];
+
+                auto &mtx = mtxs[vi];
+                auto &group = groupsPerVertex[vi];
+                {
+                    mtxs[vi].lock();
+                    group.insert(groupNo);
+                    mtxs[vi].unlock();
+                }
+            }
+        });
+    }
+
+    std::vector<int> numGroupsPerVertex(pos.size() + 1), ptrs(pos.size() + 1);
+    pol(zip(numGroupsPerVertex, groupsPerVertex), [](int &num, const std::set<int> &g) { num = g.size(); });
+    exclusive_scan(pol, std::begin(numGroupsPerVertex), std::end(numGroupsPerVertex), std::begin(ptrs));
+
+    auto numEntries = ptrs.back();
+    std::vector<int> inds(numEntries);
+    pol(enumerate(groupsPerVertex), [&inds, &ptrs](int vi, const std::set<int> &groups) {
+        auto st = ptrs[vi], ed = ptrs[vi + 1];
+        for (auto groupNo : groups) {
+            inds[st++] = groupNo; // the first group does not need to change
+        }
+    });
+
+    auto resPrim = std::make_shared<PrimitiveObject>();
+
+    resPrim->verts.resize(numEntries);
+    auto &resVerts = resPrim->verts;
+    auto &resPos = resVerts.values;
+    verts.foreach_attr<AttrAcceptAll>([&](const auto &key, const auto &arr) {
+        using T = std::decay_t<decltype(arr[0])>;
+        resVerts.add_attr<T>(key);
+    });
+    pol(range(pos.size()), [&ptrs, &verts, &resVerts, &resPos](int vi) {
+        auto st = ptrs[vi], ed = ptrs[vi + 1];
+        for (int j = st; j != ed; ++j)
+            resPos[j] = verts.values[vi];
+        resVerts.foreach_attr<AttrAcceptAll>([&](const auto &key, auto &dst) {
+            using T = std::decay_t<decltype(dst[0])>;
+            const auto &src = verts.attr<T>(key);
+            for (int j = st; j != ed; ++j)
+                dst[j] = src[vi];
+        });
+    });
+
+    if (hasTris) {
+        const auto &triGroups = tris.attr<int>(tag);
+
+        resPrim->tris.resize(tris.size());
+        auto &resTris = resPrim->tris;
+        auto &resTriIds = resTris.values;
+        tris.foreach_attr<AttrAcceptAll>([&](const auto &key, const auto &arr) {
+            using T = std::decay_t<decltype(arr[0])>;
+            resTris.add_attr<T>(key) = arr;
+        });
+        pol(range(tris.size()), [&](int f) {
+            auto groupNo = triGroups[f];
+            for (int d = 0; d != 3; ++d) {
+                int vi = tris[f][d];
+                int st = ptrs[vi], ed = ptrs[vi + 1];
+                for (; st != ed; ++st) {
+                    if (groupNo == inds[st])
+                        break;
+                }
+                resTriIds[f][d] = st;
+            }
+        });
+    } else {
+        const auto &polyGroups = polys.attr<int>(tag);
+        bool uvExist = prim->uvs.size() > 0 && loops.has_attr("uvs");
+
+        resPrim->polys.resize(polys.size());
+        resPrim->loops.resize(loops.size());
+        auto &resPolys = resPrim->polys;
+        auto &resLoops = resPrim->loops;
+
+        resPolys.values = polys.values;
+        polys.foreach_attr<AttrAcceptAll>([&](const auto &key, const auto &arr) {
+            using T = std::decay_t<decltype(arr[0])>;
+            resPolys.add_attr<T>(key) = arr;
+        });
+
+        loops.foreach_attr<AttrAcceptAll>([&](const auto &key, const auto &arr) {
+            using T = std::decay_t<decltype(arr[0])>;
+            resLoops.add_attr<T>(key) = arr;
+        });
+        // resLoops.values = loops.values;
+        pol(zip(polys.values, polyGroups), [&](zeno::vec2i poly, int groupNo) {
+            auto st = poly[0];
+            auto ed = st + poly[1];
+            for (; st != ed; ++st) {
+                int vi = loops.values[st];
+
+                int l = ptrs[vi], r = ptrs[vi + 1];
+                for (; l != r; ++l) {
+                    if (groupNo == inds[l])
+                        break;
+                }
+                resLoops.values[st] = l;
+            }
+        });
+    }
+    return resPrim;
+}
+
+static void assign_group_tag_to_verts(std::shared_ptr<PrimitiveObject> prim, std::string tag) {
+    using namespace zs;
+    constexpr auto space = execspace_e::openmp;
+    auto pol = omp_exec();
+
+    auto &verts = prim->verts;
+    const auto &pos = verts.values;
+
+    auto &tris = prim->tris;
+    const bool hasTris = tris.size() > 0;
+
+    auto &polys = prim->polys;
+    const bool hasLoops = polys.size() > 1;
+
+    auto &vertGroups = prim->verts.add_attr<int>(tag);
+
+    if (hasTris) {
+        const auto &triIds = tris.values;
+        const auto &triGroups = tris.attr<int>(tag);
+
+        pol(zs::zip(triIds, triGroups), [&vertGroups](auto tri, int groupNo) {
+            for (int d = 0; d != 3; ++d) {
+                int vi = tri[d];
+                vertGroups[vi] = groupNo;
+            }
+        });
+    } else {
+        const auto &loops = prim->loops.values;
+        const auto &polyGroups = polys.attr<int>(tag);
+
+        pol(zs::zip(polys.values, polyGroups), [&vertGroups, &loops](zeno::vec2i poly, int groupNo) {
+            auto st = poly[0];
+            auto ed = st + poly[1];
+            for (; st != ed; ++st) {
+                int vi = loops[st];
+                vertGroups[vi] = groupNo;
+            }
+        });
+    }
+}
+
 /// @note duplicate vertices shared by multiple groups
 struct PrimitiveUnfuse : INode {
     void apply() override {
-        using namespace zs;
         auto prim = get_input<PrimitiveObject>("prim");
         auto tag = get_input2<std::string>("partition_tag");
 
-        constexpr auto space = execspace_e::openmp;
-        auto pol = omp_exec();
+        auto resPrim = unfuse_primitive(prim, tag);
 
-        auto &verts = prim->verts;
-        const auto &pos = verts.values;
+        bool toList = get_input2<bool>("to_list");
 
-        auto &tris = prim->tris;
-        const auto &triIds = tris.values;
-        const bool hasTris = tris.size() > 0;
+        if (toList) {
+            assign_group_tag_to_verts(resPrim, tag);
 
-        auto &polys = prim->polys;
-        const auto &loops = prim->loops;
-        const bool hasLoops = polys.size() > 1;
-
-        if ((hasTris ^ hasLoops) == 0)
-            throw std::runtime_error("The input mesh must either own active triangle topology or loop topology.");
-
-        std::vector<std::set<int>> groupsPerVertex(pos.size());
-        if (hasTris) {
-            const auto &triGroups = tris.attr<int>(tag);
-            std::vector<Mutex> mtxs(pos.size());
-            pol(zip(triIds, triGroups), [&mtxs, &groupsPerVertex](auto tri, int groupNo) {
-                for (int d = 0; d != 3; ++d) {
-                    int vi = tri[d];
-                    auto &mtx = mtxs[vi];
-                    auto &group = groupsPerVertex[vi];
-                    {
-                        mtxs[vi].lock();
-                        group.insert(groupNo);
-                        mtxs[vi].unlock();
-                    }
-                };
-            });
-        } else {
-            const auto &polyGroups = polys.attr<int>(tag);
-            std::vector<Mutex> mtxs(pos.size());
-            pol(zip(polys.values, polyGroups), [&mtxs, &groupsPerVertex, &loops](zeno::vec2i poly, int groupNo) {
-                auto st = poly[0];
-                auto ed = st + poly[1];
-                for (; st != ed; ++st) {
-                    int vi = loops.values[st];
-
-                    auto &mtx = mtxs[vi];
-                    auto &group = groupsPerVertex[vi];
-                    {
-                        mtxs[vi].lock();
-                        group.insert(groupNo);
-                        mtxs[vi].unlock();
-                    }
-                }
-            });
-        }
-
-        std::vector<int> numGroupsPerVertex(pos.size() + 1), ptrs(pos.size() + 1);
-        pol(zip(numGroupsPerVertex, groupsPerVertex), [](int &num, const std::set<int> &g) { num = g.size(); });
-        exclusive_scan(pol, std::begin(numGroupsPerVertex), std::end(numGroupsPerVertex), std::begin(ptrs));
-
-        auto numEntries = ptrs.back();
-        std::vector<int> inds(numEntries);
-        pol(enumerate(groupsPerVertex), [&inds, &ptrs](int vi, const std::set<int> &groups) {
-            auto st = ptrs[vi], ed = ptrs[vi + 1];
-            for (auto groupNo : groups) {
-                inds[st++] = groupNo; // the first group does not need to change
+            auto primList = primUnmergeVerts(resPrim.get(), tag);
+            auto listPrim = std::make_shared<ListObject>();
+            for (auto &primPtr : primList) {
+                listPrim->arr.push_back(std::move(primPtr));
             }
-        });
-
-        auto resPrim = std::make_shared<PrimitiveObject>();
-
-        resPrim->verts.resize(numEntries);
-        auto &resVerts = resPrim->verts;
-        auto &resPos = resVerts.values;
-        verts.foreach_attr<AttrAcceptAll>([&](const auto &key, const auto &arr) {
-            using T = std::decay_t<decltype(arr[0])>;
-            resVerts.add_attr<T>(key);
-        });
-        pol(range(pos.size()), [&ptrs, &verts, &resVerts, &resPos](int vi) {
-            auto st = ptrs[vi], ed = ptrs[vi + 1];
-            for (int j = st; j != ed; ++j)
-                resPos[j] = verts.values[vi];
-            resVerts.foreach_attr<AttrAcceptAll>([&](const auto &key, auto &dst) {
-                using T = std::decay_t<decltype(dst[0])>;
-                const auto &src = verts.attr<T>(key);
-                for (int j = st; j != ed; ++j)
-                    dst[j] = src[vi];
-            });
-        });
-
-        if (hasTris) {
-            const auto &triGroups = tris.attr<int>(tag);
-
-            resPrim->tris.resize(tris.size());
-            auto &resTris = resPrim->tris;
-            auto &resTriIds = resTris.values;
-            tris.foreach_attr<AttrAcceptAll>([&](const auto &key, const auto &arr) {
-                using T = std::decay_t<decltype(arr[0])>;
-                resTris.add_attr<T>(key) = arr;
-            });
-            pol(range(tris.size()), [&](int f) {
-                auto groupNo = triGroups[f];
-                for (int d = 0; d != 3; ++d) {
-                    int vi = tris[f][d];
-                    int st = ptrs[vi], ed = ptrs[vi + 1];
-                    for (; st != ed; ++st) {
-                        if (groupNo == inds[st])
-                            break;
-                    }
-                    resTriIds[f][d] = st;
-                }
-            });
+            set_output("partitioned_prim", std::move(listPrim));
         } else {
-            const auto &polyGroups = polys.attr<int>(tag);
-            bool uvExist = prim->uvs.size() > 0 && loops.has_attr("uvs");
-
-            resPrim->polys.resize(polys.size());
-            resPrim->loops.resize(loops.size());
-            auto &resPolys = resPrim->polys;
-            auto &resLoops = resPrim->loops;
-
-            resPolys.values = polys.values;
-            polys.foreach_attr<AttrAcceptAll>([&](const auto &key, const auto &arr) {
-                using T = std::decay_t<decltype(arr[0])>;
-                resPolys.add_attr<T>(key) = arr;
-            });
-
-            loops.foreach_attr<AttrAcceptAll>([&](const auto &key, const auto &arr) {
-                using T = std::decay_t<decltype(arr[0])>;
-                resLoops.add_attr<T>(key) = arr;
-            });
-            // resLoops.values = loops.values;
-            pol(zip(polys.values, polyGroups), [&](zeno::vec2i poly, int groupNo) {
-                auto st = poly[0];
-                auto ed = st + poly[1];
-                for (; st != ed; ++st) {
-                    int vi = loops.values[st];
-
-                    int l = ptrs[vi], r = ptrs[vi + 1];
-                    for (; l != r; ++l) {
-                        if (groupNo == inds[l])
-                            break;
-                    }
-                    resLoops.values[st] = l;
-                }
-            });
+            set_output("partitioned_prim", std::move(resPrim));
         }
-        set_output("partitioned_prim", std::move(resPrim));
     }
 };
 ZENDEFNODE(PrimitiveUnfuse, {
-                                {{"PrimitiveObject", "prim"}, {"string", "partition_tag", "triangle_index"}},
+                                {{"PrimitiveObject", "prim"},
+                                 {"string", "partition_tag", "triangle_index"},
+                                 {"bool", "to_list", "false"}},
                                 {
                                     {"PrimitiveObject", "partitioned_prim"},
                                 },
                                 {},
                                 {"zs_geom"},
                             });
+
+struct PrimitiveUnmerge : INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto tag = get_input2<std::string>("tagAttr");
+        auto method = get_input2<std::string>("method");
+
+        if (get_input2<bool>("preSimplify")) {
+            primSimplifyTag(prim.get(), tag);
+        }
+        if (method == "faces") {
+            assign_group_tag_to_verts(prim, tag);
+        }
+        auto primList = primUnmergeVerts(prim.get(), tag);
+
+        auto listPrim = std::make_shared<ListObject>();
+        for (auto &primPtr : primList) {
+            listPrim->arr.push_back(std::move(primPtr));
+        }
+        set_output("listPrim", std::move(listPrim));
+    }
+};
+
+ZENDEFNODE(PrimitiveUnmerge, {
+                                 {
+                                     {"primitive", "prim"},
+                                     {"string", "tagAttr", "tag"},
+                                     {"bool", "preSimplify", "0"},
+                                     {"enum verts faces", "method", "verts"},
+                                 },
+                                 {
+                                     {"list", "listPrim"},
+                                 },
+                                 {},
+                                 {"primitive"},
+                             });
+
+struct GatherPrimIds : INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto refPrim = get_input<PrimitiveObject>("refPrim");
+        auto tag = get_input2<std::string>("tagAttr");
+        auto indexTag = get_input2<std::string>("refIndexTagAttr");
+
+        const auto &targetIndices = prim->attr<int>("target_index");
+        const auto &refAttr = refPrim->attr<int>(tag);
+        auto &attr = prim->attr<int>(tag);
+
+        using namespace zs;
+        auto pol = omp_exec();
+        pol(range(prim->size()), [&](int vi) { attr[vi] = refAttr[targetIndices[vi]]; });
+
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENDEFNODE(GatherPrimIds, {
+                              {
+                                  {"primitive", "prim"},
+                                  {"primitive", "refPrim"},
+                                  {"string", "tagAttr", "id"},
+                                  {"string", "refIndexTagAttr", "target_index"},
+                              },
+                              {
+                                  {"primitive", "prim"},
+                              },
+                              {},
+                              {"primitive"},
+                          });
+
+struct MarkSelectedVerts : INode {
+    void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto tagStr = get_input2<std::string>("selection_tag");
+        auto markedLines = get_input<PrimitiveObject>("marked_lines");
+
+        auto &tags = prim->add_attr<float>(tagStr);
+        using namespace zs;
+        auto pol = omp_exec();
+
+        std::fill(std::begin(tags), std::end(tags), 0.f);
+        const auto &lines = markedLines->lines.values;
+        pol(range(lines), [&tags](auto line) {
+            tags[line[0]] = 1.f;
+            tags[line[1]] = 1.f;
+        });
+        set_output("prim", prim);
+    }
+};
+ZENDEFNODE(MarkSelectedVerts, {
+
+                                  {{"PrimitiveObject", "prim"},
+                                   {"string", "selection_tag", "selected"},
+                                   {"PrimitiveObject", "marked_lines"}},
+                                  {
+                                      {"PrimitiveObject", "prim"},
+                                  },
+                                  {},
+                                  {"zs_geom"},
+                              });
 
 struct ComputeAverageEdgeLength : INode {
     void apply() override {

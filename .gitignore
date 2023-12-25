@@ -11,6 +11,7 @@ Release/
 /.idea
 /.vscode
 /.cache
+CMakeKits.json
 CMakeSettings.json
 CMakeUserPresets.json
 .vim_localrc

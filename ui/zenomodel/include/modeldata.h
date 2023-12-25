@@ -335,6 +335,7 @@ struct CommandParam
     QString name;
     QString description;
     QVariant value;
+    bool bIsCommand = false;
     bool operator==(const CommandParam& rhs) const {
         return name == rhs.name && description == rhs.description && value == rhs.value;
     }

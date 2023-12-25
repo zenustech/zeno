@@ -23,7 +23,7 @@ struct QuadMesh : INode {
         float scale = get_input2<float>("scale");
         int vert_num = get_input2<int>("vert_num");
         int face_num = get_input2<int>("face_num");
-        int knn = get_input2<int>("knn");
+        // int knn = get_input2<int>("knn");
         auto line_pick_tag = get_input<zeno::StringObject>("line_pick_tag")->get();
 
         if (prim->verts.size() < 4) {
@@ -46,6 +46,8 @@ struct QuadMesh : INode {
                     marked_lines.insert(std::make_pair(lines[i][0], lines[i][1]));
             }
         }
+        if (marked_lines.size() > 0)
+            boundary = true;
 
         int scale_constraints = 0;
         scale_constraints += scale > 0 ? 1 : 0;
@@ -58,7 +60,7 @@ struct QuadMesh : INode {
         }
 
         int argc = 1;
-        char* argv[10];
+        char* argv[20];
         argv[0] = (char*)malloc(sizeof("./InstantMeshes\0"));
         strcpy(argv[0], "./InstantMeshes\0");
         if (crease > 0) {
@@ -140,16 +142,16 @@ struct QuadMesh : INode {
             argv[argc+1][face_num_str.size()] = '\0';
             argc += 2;
         }
-        if (knn > 0) {
-            argv[argc] = (char*)malloc(sizeof("--knn\0"));
-            strcpy(argv[argc], "--knn\0");
-            std::string knn_str = to_string(knn);
-            argv[argc+1] = (char*)malloc((knn_str.size()+1)*sizeof(char));
-            for (int i = 0; i < knn_str.size(); ++i)
-                argv[argc+1][i] = knn_str[i];
-            argv[argc+1][knn_str.size()] = '\0';
-            argc += 2;
-        }
+        // if (knn > 0) {
+        //     argv[argc] = (char*)malloc(sizeof("--knn\0"));
+        //     strcpy(argv[argc], "--knn\0");
+        //     std::string knn_str = to_string(knn);
+        //     argv[argc+1] = (char*)malloc((knn_str.size()+1)*sizeof(char));
+        //     for (int i = 0; i < knn_str.size(); ++i)
+        //         argv[argc+1][i] = knn_str[i];
+        //     argv[argc+1][knn_str.size()] = '\0';
+        //     argc += 2;
+        // }
         
         std::vector<std::vector<int>> faces(prim->tris->size(), std::vector<int>{});
         std::vector<std::vector<float>> verts(prim->verts->size(), std::vector<float>{});
@@ -206,7 +208,7 @@ ZENO_DEFNODE(QuadMesh)
     {"float", "scale", "0"},
     {"int", "vert_num", "0"},
     {"int", "face_num", "0"},
-    {"int", "knn", "0"},
+    // {"int", "knn", "0"},
     {"string", "line_pick_tag", "line_selected"},
     {"marked_lines"}},
     {{"prim"}},

@@ -185,8 +185,59 @@ struct SmartTexture2D : ShaderNodeClone<SmartTexture2D>
     virtual void emitCode(EmissionPass *em) override {
         auto texId = em->tex2Ds.size();
         auto tex = std::make_shared<zeno::Texture2DObject>();
+        auto texture_path = get_input2<std::string>("path");
+        if(!std::filesystem::exists(texture_path)){
+            zeno::log_warn("texture file not found!");
+            auto type = get_input2<std::string>("type");
+            vec4f number= vec4f(0,0,0,0);
+            if(has_input2<float>("value"))
+            {
+              number[0] = get_input2<float>("value");
+            }
+            if(has_input2<vec2f>("value"))
+            {
+              auto in = get_input2<vec2f>("value");
+              number[0] = in[0];
+              number[1] = in[1];
+            }
+            if(has_input2<vec3f>("value"))
+            {
+              auto in = get_input2<vec3f>("value");
+              number[0] = in[0];
+              number[1] = in[1];
+              number[2] = in[2];
+            }
+            if(has_input2<vec4f>("value"))
+            {
+              auto in = get_input2<vec4f>("value");
+              number[0] = in[0];
+              number[1] = in[1];
+              number[2] = in[2];
+              number[3] = in[3];
+            }
 
-        tex->path = get_input2<std::string>("path");
+            if (type == "float" || type == "R")
+                em->emitCode(zeno::format("{}",number[0]));
+            else if (type == "G")
+                em->emitCode(zeno::format("{}",number[1]));
+            else if (type == "B")
+                em->emitCode(zeno::format("{}",number[2]));
+            else if (type == "A")
+                em->emitCode(zeno::format("{}",number[3]));
+            else if (type == "vec2")
+                em->emitCode(zeno::format("vec2({},{})",number[0],number[1]));
+            else if (type == "vec3")
+                em->emitCode(zeno::format("vec3({},{},{})",number[0],number[1],number[2]));
+            else if (type == "vec4")
+                em->emitCode(zeno::format("vec3({},{},{},{})",number[0],number[1],number[2],number[4]));
+            else
+                throw zeno::Exception("ShaderTexture2D got bad type: " + type);
+            
+            return;
+            
+        }
+
+        tex->path = texture_path;
         if (has_input("heatmap")) {
             if (tex->path.empty()) {
                 std::srand(std::time(0));
@@ -294,6 +345,7 @@ ZENDEFNODE(SmartTexture2D, {
         {(std::string) "enum " + SmartTexture2D::texFiltering, "magFilter", "LINEAR"},
         {"coord"},
         {"vec2f", "uvtiling", "1,1"},
+        {"vec4f", "value", "0,0,0,0"},
         {"enum float vec2 vec3 vec4 R G B A", "type", "vec3"},
         {"enum raw srgb normal_map", "post_process", "raw"}
     },

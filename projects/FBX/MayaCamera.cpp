@@ -514,6 +514,63 @@ ZENO_DEFNODE(LightNode)({
     {"shader"},
 });
 
+struct DirtyTBN : INode {
+    virtual void apply() override {
+
+        auto AxisT = get_input2<zeno::vec3f>("T");
+        auto AxisB = get_input2<zeno::vec3f>("B");
+        //auto AxisN = get_input2<zeno::vec3f>("N");
+
+        if (lengthSquared(AxisT) == 0 ) {
+            AxisT = {1,0,0};
+        }
+        AxisT = zeno::normalize(AxisT);
+        
+        if (lengthSquared(AxisB) == 0 ) {
+            AxisB = {0,0,1};
+        }
+        AxisB = zeno::normalize(AxisB);
+
+        auto tmp = zeno::dot(AxisT, AxisB);
+        if (abs(tmp) > 0.0) { // not vertical
+            AxisB -= AxisT * tmp;
+            AxisB = zeno::normalize(AxisB);
+        }
+        
+        if (has_input("prim")) {
+            auto prim = get_input<PrimitiveObject>("prim");
+
+            auto pos = prim->userData().get2<zeno::vec3f>("pos", {0,0,0});
+            auto scale = prim->userData().get2<zeno::vec3f>("scale", {1,1,1});
+
+            auto v0 = pos - AxisT * scale[0] * 0.5f - AxisB * scale[2] * 0.5f;
+            auto e1 = AxisT * scale[0];
+            auto e2 = AxisB * scale[2];
+
+            prim->verts[0] = v0 + e1 + e2;
+            prim->verts[1] = v0 + e1;
+            prim->verts[2] = v0 + e2;
+            prim->verts[3] = v0;
+
+            set_output("prim", std::move(prim));
+        }
+    }
+};
+
+
+ZENO_DEFNODE(DirtyTBN)({
+    {
+        {"PrimitiveObject", "prim"},
+        {"vec3f", "T", "1, 0, 0"},
+        {"vec3f", "B", "0, 0, 1"},
+    },
+    {
+        "prim"
+    },
+    {},
+    {"shader"},
+});
+
 struct LiveMeshNode : INode {
     typedef std::vector<std::vector<float>> UVS;
     typedef std::vector<std::vector<float>> VERTICES;

@@ -382,6 +382,10 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     cbZoom->setFixedSize(ZenoStyle::dpiScaled(60), ZenoStyle::dpiScaled(20));
     cbZoom->view()->setFixedWidth(ZenoStyle::dpiScaled(85));
 
+    cbSubgType = new ZComboBox(this);
+    cbSubgType->addItems({ tr("Normal"), tr("Material"), tr("Preset")});
+    cbSubgType->setFixedSize(ZenoStyle::dpiScaled(80), ZenoStyle::dpiScaled(20));
+
     pToolLayout->addWidget(pListView);
     pToolLayout->addWidget(pTreeView);
 
@@ -404,6 +408,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
 
     pToolLayout->addStretch(4);
 
+    pToolLayout->addWidget(cbSubgType);
     pToolLayout->addWidget(cbZoom);
     pToolLayout->addWidget(pSearchBtn);
     pToolLayout->addWidget(pSettings);
@@ -625,6 +630,10 @@ void DockContent_Editor::initConnections()
             pLinkLineShape->setChecked(ZenoSettingsManager::GetInstance().getValue(name).toBool());
             pLinkLineShape->setToolTip(pLinkLineShape->isChecked() ? tr("Straight Link") : tr("Curve Link"));
         }
+        else if (name == zsSubgraphType)
+        {
+            cbSubgType->setCurrentIndex(ZenoSettingsManager::GetInstance().getValue(name).toInt());
+        }
     });
 
     connect(&ZenoSettingsManager::GetInstance(), &ZenoSettingsManager::valueChanged, this, [=](QString key) {
@@ -641,6 +650,11 @@ void DockContent_Editor::initConnections()
             m_btnRun->setVisible(false);
             m_btnKill->setVisible(true);
         }
+    });
+    
+    connect(cbSubgType, &ZComboBox::currentTextChanged, this, [=]() {
+        int type = cbSubgType->currentIndex();
+        ZenoSettingsManager::GetInstance().setValue(zsSubgraphType, type);
     });
 }
 

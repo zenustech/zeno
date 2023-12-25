@@ -22,6 +22,7 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     auto att_instUv = attrs.instUv;
     auto att_instClr = attrs.instClr;
     auto att_instTang = attrs.instTang;
+    auto att_rayLength = attrs.rayLength;
     auto att_NoL      = attrs.NoL;
     auto att_LoV      = attrs.LoV;
     auto att_N        = attrs.N;
@@ -182,8 +183,8 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     mats.doubleSide = mat_doubleSide;
     mats.shadowReceiver = mat_shadowReceiver;
 
-    mats.sssFxiedRadius = sssFxiedRadius;
     mats.smoothness = mat_smoothness;
+    mats.sssFxiedRadius = sssFxiedRadius;
 
     return mats;
 }

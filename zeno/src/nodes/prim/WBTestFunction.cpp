@@ -295,7 +295,7 @@ ZENDEFNODE(str2num, {
     },
     /* category: */
     {
-        "WBTest",
+        "deprecated",
     }});
 
 

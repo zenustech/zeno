@@ -1,5 +1,5 @@
 #pragma once
-
+#define USE_SHORT 1
 #include <optix.h>
 #include <Shape.h>
 
@@ -253,16 +253,33 @@ struct MissData
 {
     float4 bg_color;
 };
+
 struct HitGroupData
 {
     uint16_t dc_index;
     uint16_t vol_depth=99;
     float vol_extinction=1.0f;
     //float4* vertices;
-    float4* uv;
-    float4* nrm;
-    float4* clr;
-    float4* tan;
+#ifdef USE_SHORT_COMPACT
+    ushort2* uv;
+    ushort2* nrm;
+    ushort2* clr;
+    ushort2* tan;
+#else
+
+  #ifdef USE_SHORT
+      ushort3* uv;
+      ushort3* nrm;
+      ushort3* clr;
+      ushort3* tan;
+  #else
+      float4* uv;
+      float4* nrm;
+      float4* clr;
+      float4* tan;
+  #endif
+
+#endif
     unsigned short* lightMark;
     uint32_t* auxOffset;
     

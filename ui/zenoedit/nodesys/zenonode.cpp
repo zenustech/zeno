@@ -1608,6 +1608,23 @@ void ZenoNode::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
         nodeMenu->exec(QCursor::pos());
         nodeMenu->deleteLater();
     }
+    else if (m_index.data(ROLE_OBJNAME).toString() == "BindMaterial")
+    {
+        QAction* newSubGraph = new QAction(tr("Create Material Subgraph"));
+        connect(newSubGraph, &QAction::triggered, this, [=]() {
+            NodeParamModel* pNodeParams = QVariantPtr<NodeParamModel>::asPtr(m_index.data(ROLE_NODE_PARAMS));
+            ZASSERT_EXIT(pNodeParams);
+            const auto& paramIdx = pNodeParams->getParam(PARAM_INPUT, "mtlid");
+            ZASSERT_EXIT(paramIdx.isValid());
+            QString mtlid = paramIdx.data(ROLE_PARAM_VALUE).toString();
+            if (!pGraphsModel->newMaterialSubgraph(m_subGpIndex, mtlid, this->pos() + QPointF(800, 0)))
+                QMessageBox::warning(nullptr, tr("Info"), tr("Create material subgraph '%1' failed.").arg(mtlid));
+        });
+        QMenu *nodeMenu = new QMenu;
+        nodeMenu->addAction(newSubGraph);
+        nodeMenu->exec(QCursor::pos());
+        nodeMenu->deleteLater();
+    }
     else
     {
         NODE_CATES cates = pGraphsModel->getCates();

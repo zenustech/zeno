@@ -3718,4 +3718,106 @@ namespace zeno {
                        "erode",
                    } });
 
+
+    struct zs_HF_Clip : INode {
+        void apply() override {
+
+            auto terrain = get_input<PrimitiveObject>("HeightField");
+            auto Minclip = get_input2<bool>("MinClip");
+            auto Maxclip = get_input2<bool>("MaxClip");
+            auto MinclipValue = get_input2<float>("Minclipheight");
+            auto MaxclipValue = get_input2<float>("Maxclipheight");
+            auto SoftClip = get_input2<bool>("SoftClip");
+            auto SoftClipStrength = get_input2<float>("SoftClip Strength");
+            auto SoftClipScale = get_input2<float>("SoftClip Scale");
+
+            size_t nx, nz;
+            auto &ud = terrain->userData();
+            if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")))
+                zeno::log_error("no such UserData named '{}' and '{}'.", "nx", "nz");
+            nx = ud.get2<int>("nx");
+            nz = ud.get2<int>("nz");
+
+
+            auto &height = terrain->verts.attr<float>("height");
+            if (!terrain->verts.has_attr("mask")) {
+                auto &mask = terrain->verts.add_attr<float>("mask");
+                std::fill(mask.begin(), mask.end(), 0.0);
+            }
+            auto &mask = terrain->verts.attr<float>("mask");
+            ////////////////////////////////////////////////////////////////////////////////////////
+            ////////////////////////////////////////////////////////////////////////////////////////
+            using namespace zs;
+            constexpr auto space = execspace_e::cuda;
+            auto pol = cuda_exec();
+            auto zs_height = to_device_vector(height);
+            auto zs_mask = to_device_vector(mask, false);
+            pol(range(nz * nx), [=, _height = view<space>(zs_height), _mask = view<space>(zs_mask)] __device__(std::size_t idx) mutable {
+                    float i_height = _height[idx];
+                    if(Minclip && i_height < MinclipValue){
+                        if(SoftClip){
+                            float f = (MinclipValue - i_height) / SoftClipScale;
+                            float compression = SoftClipScale * SoftClipStrength;
+                            float out = f;
+                            if(f>0 && compression>0)
+                            {
+                                float ki = 1.0 / compression;
+                                float w = 1.0 / (compression * zs::log(10.0));
+                                float k = log10(zs::pow(w,ki));
+                                out = log10(zs::pow((f+w), ki)) - k;
+                            }
+                            _height[idx] = MinclipValue - out;
+                        }else{
+                            _height[idx] = MinclipValue;
+                        }
+                        _mask[idx] = 1.0f;
+                    }
+                    if(Maxclip && i_height > MaxclipValue){
+                        if(SoftClip){
+                            float f = (i_height - MaxclipValue) / SoftClipScale;
+                            float compression = SoftClipScale * SoftClipStrength;
+                            float out = f;
+                            if(f>0 && compression>0)
+                            {
+                                float ki = 1.0 / compression;
+                                float w = 1.0 / (compression * zs::log(10.0));
+                                float k = log10(zs::pow(w,ki));
+                                out = log10(zs::pow((f+w), ki)) - k;
+                            }
+                            _height[idx] = MaxclipValue + out;
+                        }else{
+                            _height[idx] = MaxclipValue;
+                        }
+                        _mask[idx] = 1.0f;
+                    }
+                        
+            });
+            retrieve_device_vector(height, zs_height);
+            retrieve_device_vector(mask, zs_mask);
+
+            set_output("HeightField", get_input("HeightField"));
+        }
+    };
+    ZENDEFNODE(zs_HF_Clip, {
+        /* inputs: */
+        {
+            "HeightField",
+            {"bool", "MinClip", "0"},
+            {"float", "Minclipheight", "0"},
+            {"bool", "MaxClip", "1"},
+            {"float", "Maxclipheight", "100"},
+            {"bool", "SoftClip", "1"},
+            {"float", "SoftClip Strength", "0.1"},
+            {"float", "SoftClip Scale", "1"},
+        },
+        /* outputs: */
+        {
+            "HeightField",
+        },
+        /* params: */
+        {},
+        /* category: */
+        {
+            "erode",
+        }});
 }   // namespace zeno
