@@ -135,7 +135,7 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
     auto dir = screenToWorldRay(event->x() / res().x(), event->y() / res().y());
     if (m_transformer)
     {
-        if (!scene->selected.empty() && m_transformer->isTransformMode() &&
+        if (event->buttons() & Qt::LeftButton && !scene->selected.empty() && m_transformer->isTransformMode() &&
             m_transformer->clickedAnyHandler(realPos(), dir, front))
         {
             bTransform = true;

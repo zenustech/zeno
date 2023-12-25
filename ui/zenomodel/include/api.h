@@ -8,6 +8,7 @@ ZENO_ERROR  Zeno_NewFile();
 ZENO_ERROR  Zeno_OpenFile(const std::string& fn);
 ZENO_ERROR  Zeno_SaveAs(const std::string& fn);
 
+ZENO_HANDLE Zeno_CreateGraph(const std::string& name, int type);
 ZENO_HANDLE Zeno_CreateGraph(const std::string& name);
 ZENO_ERROR  Zeno_DeleteGraph(ZENO_HANDLE hSubgraph);
 ZENO_HANDLE Zeno_GetGraph(const std::string& name);

@@ -31,6 +31,7 @@ static __inline__ __device__ MatOutput evalMat(cudaTextureObject_t zenotex[], fl
     auto att_instUv = attrs.instUv;
     auto att_instClr = attrs.instClr;
     auto att_instTang = attrs.instTang;
+    auto att_rayLength = attrs.rayLength;
     auto att_NoL      = attrs.NoL;
     auto att_LoV      = attrs.LoV;
     auto att_N        = attrs.N;
@@ -253,11 +254,11 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     /* MODMA */
     float2       barys    = optixGetTriangleBarycentrics();
 
-    float3 n0 = normalize( *(float3*)&(rt_data->nrm[ vert_idx_offset+0 ]) );
+    float3 n0 = normalize( decodeNormal(rt_data->nrm[ vert_idx_offset+0 ]) );
     n0 = dot(n0, N_Local)>0.8f?n0:N_Local;
-    float3 n1 = normalize( *(float3*)&(rt_data->nrm[ vert_idx_offset+1 ]) );
+    float3 n1 = normalize( decodeNormal(rt_data->nrm[ vert_idx_offset+1 ]) );
     n1 = dot(n1, N_Local)>0.8f?n1:N_Local;
-    float3 n2 = normalize( *(float3*)&(rt_data->nrm[ vert_idx_offset+2 ]) );
+    float3 n2 = normalize( decodeNormal(rt_data->nrm[ vert_idx_offset+2 ]) );
     n2 = dot(n2, N_Local)>0.8f?n2:N_Local;
 
     N_Local = normalize(interp(barys, n0, n1, n2));
@@ -273,20 +274,21 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     attrs.pos = P;
     attrs.nrm = N;
 
-    const float3& uv0  = *(float3*)&( rt_data->uv[ vert_idx_offset+0 ] );
-    const float3& uv1  = *(float3*)&( rt_data->uv[ vert_idx_offset+1 ] );
-    const float3& uv2  = *(float3*)&( rt_data->uv[ vert_idx_offset+2 ] );
-    const float3& clr0 = *(float3*)&( rt_data->clr[ vert_idx_offset+0 ] );
-    const float3& clr1 = *(float3*)&( rt_data->clr[ vert_idx_offset+1 ] );
-    const float3& clr2 = *(float3*)&( rt_data->clr[ vert_idx_offset+2 ] );
-    const float3& tan0 = *(float3*)&( rt_data->tan[ vert_idx_offset+0 ] );
-    const float3& tan1 = *(float3*)&( rt_data->tan[ vert_idx_offset+1 ] );
-    const float3& tan2 = *(float3*)&( rt_data->tan[ vert_idx_offset+2 ] );
+    const float3& uv0  = decodeColor( rt_data->uv[ vert_idx_offset+0 ]   );
+    const float3& uv1  = decodeColor( rt_data->uv[ vert_idx_offset+1 ]   );
+    const float3& uv2  = decodeColor( rt_data->uv[ vert_idx_offset+2 ]   );
+    const float3& clr0 = decodeColor( rt_data->clr[ vert_idx_offset+0 ]  );
+    const float3& clr1 = decodeColor( rt_data->clr[ vert_idx_offset+1 ]  );
+    const float3& clr2 = decodeColor( rt_data->clr[ vert_idx_offset+2 ]  );
+    const float3& tan0 = decodeNormal( rt_data->tan[ vert_idx_offset+0 ] );
+    const float3& tan1 = decodeNormal( rt_data->tan[ vert_idx_offset+1 ] );
+    const float3& tan2 = decodeNormal( rt_data->tan[ vert_idx_offset+2 ] );
 
     attrs.uv = interp(barys, uv0, uv1, uv2);//todo later
     attrs.clr = interp(barys, clr0, clr1, clr2);
     attrs.tang = interp(barys, tan0, tan1, tan2);
     attrs.tang = optixTransformVectorFromObjectToWorldSpace(attrs.tang);
+    attrs.rayLength = optixGetRayTmax();
 
     attrs.instPos = rt_data->instPos[inst_idx];
     attrs.instNrm = rt_data->instNrm[inst_idx];
@@ -440,7 +442,7 @@ extern "C" __global__ void __closesthit__radiance()
 
     HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
     MatInput attrs{};
-
+    float estimation = 0;
 #if (_SPHERE_)
 
     unsigned short isLight = 0;
@@ -482,19 +484,20 @@ extern "C" __global__ void __closesthit__radiance()
     float3 _vertices_[3];
     optixGetTriangleVertexData( gas, primIdx, sbtGASIndex, 0, _vertices_);
     
-    const float3& v0 = _vertices_[0];
-    const float3& v1 = _vertices_[1];
-    const float3& v2 = _vertices_[2];
+    const float3& v0 = optixTransformPointFromObjectToWorldSpace(_vertices_[0]);
+    const float3& v1 = optixTransformPointFromObjectToWorldSpace(_vertices_[1]);
+    const float3& v2 = optixTransformPointFromObjectToWorldSpace(_vertices_[2]);
 
     /* MODMA */
     float2       barys    = optixGetTriangleBarycentrics();
     auto P_Local = interp(barys, v0, v1, v2);
-    P = optixTransformPointFromObjectToWorldSpace(P_Local); // this value has precision issue for big float
+    P = P_Local; // this value has precision issue for big float
 
-    attrs.pos = P + prd->camPos;
+    attrs.pos = P;
 
-    float3 N_Local = normalize( cross( normalize(v1-v0), normalize(v2-v1) ) ); // this value has precision issue for big float
+    float3 N_Local = normalize( cross( normalize(_vertices_[1]-_vertices_[0]), normalize(_vertices_[2]-_vertices_[1]) ) ); // this value has precision issue for big float
     float3 N_World = normalize(optixTransformNormalFromObjectToWorldSpace(N_Local));
+
 
     if (isBadVector(N_World)) 
     {  
@@ -506,17 +509,19 @@ extern "C" __global__ void __closesthit__radiance()
     float3 N = N_World;
     attrs.nrm = N;
 
-    const float3& uv0  = *(float3*)&( rt_data->uv[ vert_idx_offset+0 ] );
-    const float3& uv1  = *(float3*)&( rt_data->uv[ vert_idx_offset+1 ] );
-    const float3& uv2  = *(float3*)&( rt_data->uv[ vert_idx_offset+2 ] );
-    const float3& clr0 = *(float3*)&( rt_data->clr[ vert_idx_offset+0 ] );
-    const float3& clr1 = *(float3*)&( rt_data->clr[ vert_idx_offset+1 ] );
-    const float3& clr2 = *(float3*)&( rt_data->clr[ vert_idx_offset+2 ] );
-    const float3& tan0 = *(float3*)&( rt_data->tan[ vert_idx_offset+0 ] );
-    const float3& tan1 = *(float3*)&( rt_data->tan[ vert_idx_offset+1 ] );
-    const float3& tan2 = *(float3*)&( rt_data->tan[ vert_idx_offset+2 ] );
-
-    attrs.uv = interp(barys, uv0, uv1, uv2);//todo later
+    const float3& uv0  = decodeColor( rt_data->uv[ vert_idx_offset+0 ] );
+    const float3& uv1  = decodeColor( rt_data->uv[ vert_idx_offset+1 ] );
+    const float3& uv2  = decodeColor( rt_data->uv[ vert_idx_offset+2 ] );
+    const float3& clr0 = decodeColor( rt_data->clr[ vert_idx_offset+0 ] );
+    const float3& clr1 = decodeColor( rt_data->clr[ vert_idx_offset+1 ] );
+    const float3& clr2 = decodeColor( rt_data->clr[ vert_idx_offset+2 ] );
+    const float3& tan0 = decodeNormal( rt_data->tan[ vert_idx_offset+0 ] );
+    const float3& tan1 = decodeNormal( rt_data->tan[ vert_idx_offset+1 ] );
+    const float3& tan2 = decodeNormal( rt_data->tan[ vert_idx_offset+2 ] );
+    float tri_area = length(cross(_vertices_[1]-_vertices_[0], _vertices_[2]-_vertices_[1]));
+    float uv_area = length(cross(uv1 - uv0, uv2-uv0));
+    estimation = uv_area * 4096.0f*4096.0f / (tri_area + 1e-6);
+        attrs.uv = interp(barys, uv0, uv1, uv2);//todo later
     attrs.clr = interp(barys, clr0, clr1, clr2);
     attrs.tang = normalize(interp(barys, tan0, tan1, tan2));
     attrs.tang = optixTransformVectorFromObjectToWorldSpace(attrs.tang);
@@ -526,7 +531,7 @@ extern "C" __global__ void __closesthit__radiance()
     attrs.instUv = rt_data->instUv[inst_idx];
     attrs.instClr = rt_data->instClr[inst_idx];
     attrs.instTang = rt_data->instTang[inst_idx];
-
+    attrs.rayLength = optixGetRayTmax();
 #endif
 
     MatOutput mats = evalMaterial(rt_data->textures, rt_data->uniforms, attrs);
@@ -540,13 +545,13 @@ extern "C" __global__ void __closesthit__radiance()
 
 #else
 
-    float3 n0 = normalize( *(float3*)&(rt_data->nrm[ vert_idx_offset+0 ]) );
+    float3 n0 = normalize( decodeNormal(rt_data->nrm[ vert_idx_offset+0 ]) );
     n0 = dot(n0, N_Local)>(1-mats.smoothness)?n0:N_Local;
 
-    float3 n1 = normalize( *(float3*)&(rt_data->nrm[ vert_idx_offset+1 ]) );
+    float3 n1 = normalize( decodeNormal(rt_data->nrm[ vert_idx_offset+1 ]) );
     n1 = dot(n1, N_Local)>(1-mats.smoothness)?n1:N_Local;
 
-    float3 n2 = normalize( *(float3*)&(rt_data->nrm[ vert_idx_offset+2 ]) );
+    float3 n2 = normalize( decodeNormal(rt_data->nrm[ vert_idx_offset+2 ]) );
     n2 = dot(n2, N_Local)>(1-mats.smoothness)?n2:N_Local;
 
     N_Local = normalize(interp(barys, n0, n1, n2));
@@ -561,6 +566,10 @@ extern "C" __global__ void __closesthit__radiance()
 #endif
 
     attrs.nrm = N;
+    float term = log2(optixGetRayTmax()*prd->pixel_area*sqrt(estimation))/4.0f;
+//    printf("rayDist:%f, tex_per_area:%f, term:%f, pixel_area:%f\n", optixGetRayTmax(),
+//           sqrt(estimation), term, prd->pixel_area);
+    //mats.nrm = normalize(mix(mats.nrm, vec3(0,0,1), clamp(term,0.0f,1.0f)));
     //end of material computation
     //mats.metallic = clamp(mats.metallic,0.01, 0.99);
     mats.roughness = clamp(mats.roughness, 0.01f,0.99f);
@@ -627,6 +636,7 @@ extern "C" __global__ void __closesthit__radiance()
         //prd->origin = P + 1e-5 * ray_dir; 
         if(prd->maxDistance>optixGetRayTmax())
             prd->maxDistance-=optixGetRayTmax();
+        prd->alphaHit = true;
         prd->offsetUpdateRay(P, ray_dir); 
         return;
     }
@@ -669,7 +679,8 @@ extern "C" __global__ void __closesthit__radiance()
         prd->adepth++;
         //prd->samplePdf = 0.0f;
         prd->radiance = make_float3(0.0f);
-        //prd->origin = P + 1e-5 * ray_dir; 
+        //prd->origin = P + 1e-5 * ray_dir;
+        prd->alphaHit = true;
         prd->offsetUpdateRay(P, ray_dir);
         return;
     }
@@ -698,6 +709,7 @@ extern "C" __global__ void __closesthit__radiance()
 
         prd->origin = P;
         prd->direction = ray_dir;
+        prd->alphaHit = true;
         prd->offsetUpdateRay(P, ray_dir);
 
         prd->prob *= 1;
@@ -954,18 +966,20 @@ extern "C" __global__ void __closesthit__radiance()
     if(prd->depth>=3)
         mats.roughness = clamp(mats.roughness, 0.5f,0.99f);
 
-    vec3 rd, rs, rt; // captured by lambda
 
     auto evalBxDF = [&](const float3& _wi_, const float3& _wo_, float& thisPDF, vec3 illum = vec3(1.0f)) -> float3 {
 
         const auto& L = _wi_; // pre-normalized
         const vec3& V = _wo_; // pre-normalized
+        vec3 rd, rs, rt; // captured by lambda
 
         float3 lbrdf = DisneyBSDF::EvaluateDisney2(illum,mats, L, V, T, B, N,prd->geometryNormal,
             mats.thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : next_ray_is_going_inside, thisPDF, rrPdf,
             dot(N, L), rd, rs, rt);
 
-
+        prd->radiance_d = rd;
+        prd->radiance_s = rs;
+        prd->radiance_t = rt;
 //        MatOutput mat2;
 //        if(mats.thin>0.5f){
 //            vec3 H = normalize(vec3(normalize(L)) + V);
@@ -984,9 +998,9 @@ extern "C" __global__ void __closesthit__radiance()
     };
 
     auto taskAux = [&](const vec3& weight) {
-        prd->radiance_d = rd * weight;
-        prd->radiance_s = rs * weight;
-        prd->radiance_t = rt * weight;
+        prd->radiance_d *= weight;
+        prd->radiance_s *= weight;
+        prd->radiance_t *= weight;
     };
 
     RadiancePRD shadow_prd {};

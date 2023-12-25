@@ -263,7 +263,8 @@ namespace DisneyBSDF{
             float nDl,
             vec3 &dterm,
             vec3 &sterm,
-            vec3 &tterm)
+            vec3 &tterm,
+            bool reflectance = false)
 
     {
         bool sameside = (dot(wo, N)*dot(wo, N2))>0.0f;
@@ -278,8 +279,9 @@ namespace DisneyBSDF{
         // Onb tbn = Onb(N);
         world2local(wi, T, B, N);
         world2local(wo, T, B, N);
+        world2local(N2, T, B, N);
 
-        bool reflect = wi.z * wo.z > 0.0f;
+        bool reflect = (dot(wi, N2) * dot(wo, N2) > 0.0f) ;
 
         vec3 Csheen, Cspec0;
         float F0;
@@ -343,7 +345,7 @@ namespace DisneyBSDF{
             float ax, ay;
             BRDFBasics::CalculateAnisotropicParams(mat.roughness,mat.anisotropic,ax,ay);
             vec3 s = BRDFBasics::EvalMicrofacetReflection(ax, ay, wo, wi, wm,
-                                          mix(Cspec0, vec3(1.0f), F) * mat.specular * 0.5f, tmpPdf) * dielectricWt  * illum;
+                                          mix(Cspec0, vec3(1.0f), F) * mat.specular, tmpPdf) * dielectricWt  * illum;
             sterm = sterm + s;
             f = f + s;
             fPdf += tmpPdf * dielectricPr;
@@ -377,7 +379,7 @@ namespace DisneyBSDF{
             } else {
               if(thin)
               {
-                vec3 t = sqrt(mat.sssColor) * glassWt;
+                vec3 t = sqrt(mat.transColor) * glassWt;
                 tterm = tterm + t;
                 f = f + t;
                 fPdf += 1.0f * glassPr;
@@ -409,18 +411,14 @@ namespace DisneyBSDF{
             f =  f + s;
             fPdf += tmpPdf * clearCtPr;
         }
-        if(sssPr>0.0)
+        if((sssPr>0.0&&reflectance) || (sssPr>0.0 && dot(wo, N2)<0.0))
         {
-          bool trans = wo.z * wi.z < 0.0f;
+          bool trans = (dot(wi, N2) * dot(wo, N2)<0) && (wi.z * wo.z<0);
           float FL = BRDFBasics::SchlickWeight(abs(wi.z));
           float FV = BRDFBasics::SchlickWeight(abs(wo.z));
           float term = wo.z>0?FV:FL;
           float tmpPdf = trans? 1.0f : 0.0f;//0.5/M_PIf:0.0f;
 
-//          auto wo2 = wo;
-//          wo2.z *= -1.0f;
-//          vec3 d2 = BRDFBasics::EvalDisneyDiffuse(mix(mat.basecolor,mat.sssColor,mat.subsurface), mat.subsurface, mat.roughness, mat.sheen,
-//                                                   Csheen, wo2, wi, wm, tmpPdf)  * illum;
 
 
           // vec3 d = 1.0f/M_PIf * (1.0f - 0.5f * term) * (trans?vec3(1.0f):vec3(0.0f))  * dielectricWt * subsurface;
@@ -613,6 +611,13 @@ namespace DisneyBSDF{
             wi = BRDFBasics::UniformSampleHemisphere(r1, r2);
             flag = transmissionEvent;
             isSS = false;
+            tbn.inverse_transform(wi);
+            wi = normalize(wi);
+
+            if(dot(wi, N2)<0)
+            {
+              wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
+            }
           }
           else{
             //switch between scattering or diffuse reflection
@@ -622,11 +627,21 @@ namespace DisneyBSDF{
               prd->fromDiff = true;
               wi = BRDFBasics::CosineSampleHemisphere(r1, r2);
               isSS = false;
+              wi = normalize(reflect(-wo, wm));
+              tbn.inverse_transform(wi);
+              wi = normalize(wi);
+
+              if(dot(wi, N2)<0)
+              {
+                wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
+              }
             }else
             {
 
               //go inside
               wi = -BRDFBasics::UniformSampleHemisphere(r1, r2);
+              wi.z = min(-0.2f, wi.z);
+              wi = normalize(wi);
               isSS = true;
               flag = transmissionEvent;
               vec3 color = mix(mat.basecolor, mat.sssColor, mat.subsurface);
@@ -636,17 +651,24 @@ namespace DisneyBSDF{
               prd->ss_alpha = color;
               if (isSS) {
                 medium = PhaseFunctions::isotropic;
-                CalculateExtinction2(color, sssRadius, prd->sigma_t, prd->ss_alpha, 1.4f);
+                CalculateExtinction2(color, sssRadius, prd->sigma_t,
+                                     prd->ss_alpha, 1.4f);
               }
+              tbn.inverse_transform(wi);
+              wi = normalize(wi);
+
+              bool sameside2 = (dot(wi, N) * dot(wi, N2)) > 0.0f;
+              if (sameside == false) {
+                wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
+              }
+
             }
           }
 
-            tbn.inverse_transform(wi);
-            wi = normalize(wi);
 
-            bool sameside2 = (dot(wi, N) * dot(wi, N2)) > 0.0f;
-            if (sameside == false) {
-              wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
+            if(dot(wi, N2)>0)
+            {
+              isSS = false;
             }
             //reflectance = vec3(1.0f) * M_PIf ;
             //return true;
@@ -734,7 +756,7 @@ namespace DisneyBSDF{
         float pdf, pdf2;
         vec3 rd, rs, rt;
         reflectance = EvaluateDisney2(vec3(1.0f), mat, wi, wo, T, B, N, N2, thin,
-                                      is_inside, pdf, pdf2, 0, rd, rs, rt);
+                                      is_inside, pdf, pdf2, 0, rd, rs, rt, true);
         fPdf = pdf>1e-5?pdf:0.0f;
         reflectance = pdf>1e-5?reflectance:vec3(0.0f);
         return true;

@@ -443,7 +443,7 @@ vec3 EvalMicrofacetReflection(float ax, float ay, vec3 V, vec3 L, vec3 H, vec3 F
   if (L.z * V.z <= 0.0)
     return vec3(0.0);
 
-  float D = GTR2Aniso(abs(H.z), H.x, H.y, ax, ay);
+  float D = clamp(GTR2Aniso(abs(H.z), H.x, H.y, ax, ay),0.0f, 10.0f);
   float G1 = SmithGAniso(abs(V.z), V.x, V.y, ax, ay);
   float G2 = G1 * SmithGAniso(abs(L.z), L.x, L.y, ax, ay);
 
@@ -463,7 +463,7 @@ vec3 EvalMicrofacetRefraction(vec3 baseColor, float ax, float ay, float eta, vec
   float LDotH = dot(L, H); //always negative
   float VDotH = dot(V, H); //always positive
 
-  float D = GTR2Aniso(abs(H.z), H.x, H.y, ax, ay);
+  float D = clamp(GTR2Aniso(abs(H.z), H.x, H.y, ax, ay),0.0f, 10.0f);
   float G1 = SmithGAniso(abs(V.z), V.x, V.y, ax, ay);
   float G2 = G1 * SmithGAniso(abs(L.z), L.x, L.y, ax, ay);
   float denom = LDotH * eta + VDotH;
@@ -493,7 +493,7 @@ vec3 EvalClearcoat(float ccR, vec3 V, vec3 L, vec3 H, float &pdf)
   float VDotH = abs(dot(V, H));
 
   float F = mix(0.04, 1.0, SchlickWeight(VDotH));
-  float D = GTR1(H.z, ccR);
+  float D = clamp(GTR1(H.z, ccR),0.0f, 10.0f);
   float G = SmithG(L.z, 0.25f) * SmithG(V.z, 0.25f);
   float jacobian = 1.0f / (4.0f * VDotH);
 
