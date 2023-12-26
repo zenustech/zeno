@@ -76,6 +76,8 @@
 #include "LightBounds.h"
 #include "LightTree.h"
 
+#include "TypeCaster.h"
+
 #include "LightBounds.h"
 #include "LightTree.h"
 
@@ -169,9 +171,6 @@ typedef Record<EmptyData>   CallablesRecord;
     //uint32_t v1, v2, v3, pad;
 //};
 
-#include <cuda_fp16.h>
-// #include <cuda_fp16.hpp>
-
 //struct Instance
 //{
     //float transform[12];
@@ -223,16 +222,6 @@ ushort2 halfNormal(float4 in)
       return make_ushort3((unsigned short)(in.x*65536.0f),
                           (unsigned short)(in.y*65536.0f),
                           (unsigned short)(in.z*65536.0f));
-    }
-    ushort3 toHalf(float4 in)
-    {
-      half hx = __float2half(in.x);
-      half hy = __float2half(in.y);
-      half hz = __float2half(in.z);
-
-      return make_ushort3(*(unsigned short*)&(hx),
-                          *(unsigned short*)&(hy),
-                          *(unsigned short*)&(hz));
     }
 
     ushort3 halfNormal(float4 in)
