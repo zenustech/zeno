@@ -99,9 +99,7 @@ struct GlobalComm {
     ZENO_API bool getProceduralSkyData(std::string& id, zeno::vec2f& sunLightDir, float& sunSoftnessValue, zeno::vec2f& windDir, float& timeStartValue, float& timeSpeedValue, float& sunLightIntensityValue, float& colorTemperatureMixValue, float& colorTemperatureValue);
     ZENO_API void getAllLightsKey(std::vector<std::string>& keys);
     ZENO_API std::string getObjMatId(std::string& id);
-    ZENO_API void setRenderType(RenderType type);
-    ZENO_API RenderType getRenderType();
-
+    ZENO_API const std::string getObjKey1(std::string& id, int frame);
     ZENO_API MapObjects getLightObjs();
 
     ZENO_API void addTransferObj(std::string const& key, std::shared_ptr<IObject>);
@@ -112,10 +110,9 @@ struct GlobalComm {
     ZENO_API bool getNeedUpdateLight();
     ZENO_API void setNeedUpdateLight(bool update);
 
-    ZENO_API const std::string getObjKey1(std::string& id, int frame);
-
-    ZENO_API RenderType getRenderTypeByObjects(std::map<std::string, std::shared_ptr<zeno::IObject>> objs);
-    ZENO_API void updateObjsIdByViewport(std::map<std::string, std::shared_ptr<zeno::IObject>> &objsToBeUpdate);
+    ZENO_API RenderType getRenderTypeByObjects(std::map<std::string, std::shared_ptr<zeno::IObject>>& objs);
+    ZENO_API void setRenderType(RenderType type);
+    ZENO_API RenderType getRenderType();
 
 private:
     ViewObjects const* _getViewObjects(const int frameid);
@@ -132,7 +129,6 @@ private:
     //------new change------
     void prepareForOptix(bool inserted, std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs);
     int m_currentFrame = 0;    //ºı»•startFrame
-    bool updateOptixByViewport = false;
 };
 
 }

@@ -860,37 +860,56 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
         if (graphicsMan->update_transobjs(transObjs))
         {
+            auto renderType = objsMan->getRenderTypeByObjects(transObjs);
             meshNeedUpdate = matNeedUpdate = true;
-            objsMan->clearTransferObjs();
-        }
-        if (graphicsMan->need_update_light(objs) || objsMan->getNeedUpdateLight())
-        {
-            graphicsMan->load_light_objects(objsMan->getLightObjs());
-            lightNeedUpdate = true;
-            objsMan->setNeedUpdateLight(false);
-            scene->drawOptions->needRefresh = true;
-        }
-
-        if (graphicsMan->load_static_objects(objs)) {
-            staticNeedUpdate = true;
-        }
-
-        if (graphicsMan->load_objects(objs))
-        {
-            meshNeedUpdate = matNeedUpdate = true;
-            if (objsMan->getRenderType() == zeno::GlobalComm::MATERIAL)
+            if (renderType == zeno::GlobalComm::MATERIAL)
             {
                 scene->drawOptions->updateMatlOnly = true;
                 lightNeedUpdate = meshNeedUpdate = false;
                 matNeedUpdate = true;
             }
-            if (objsMan->getRenderType() == zeno::GlobalComm::LIGHT_CAMERA)
+            if (renderType == zeno::GlobalComm::LIGHT_CAMERA)
             {
                 scene->drawOptions->updateLightCameraOnly = true;
                 lightNeedUpdate = true;
                 matNeedUpdate = meshNeedUpdate = false;
+
+                graphicsMan->load_light_objects(objsMan->getLightObjs());
+                objsMan->setNeedUpdateLight(false);
+                scene->drawOptions->needRefresh = true;
             }
-            objsMan->setRenderType(zeno::GlobalComm::UNDEFINED);
+            objsMan->clearTransferObjs();
+        }
+        else {
+            if (graphicsMan->need_update_light(objs) || objsMan->getNeedUpdateLight())
+            {
+                graphicsMan->load_light_objects(objsMan->getLightObjs());
+                lightNeedUpdate = true;
+                objsMan->setNeedUpdateLight(false);
+                scene->drawOptions->needRefresh = true;
+            }
+
+            if (graphicsMan->load_static_objects(objs)) {
+                staticNeedUpdate = true;
+            }
+
+            if (graphicsMan->load_objects(objs))
+            {
+                meshNeedUpdate = matNeedUpdate = true;
+                if (objsMan->getRenderType() == zeno::GlobalComm::MATERIAL)
+                {
+                    scene->drawOptions->updateMatlOnly = true;
+                    lightNeedUpdate = meshNeedUpdate = false;
+                    matNeedUpdate = true;
+                }
+                if (objsMan->getRenderType() == zeno::GlobalComm::LIGHT_CAMERA)
+                {
+                    scene->drawOptions->updateLightCameraOnly = true;
+                    lightNeedUpdate = true;
+                    matNeedUpdate = meshNeedUpdate = false;
+                }
+                objsMan->setRenderType(zeno::GlobalComm::UNDEFINED);
+            }
         }
         graphicsMan->load_shader_uniforms(objs);
     }

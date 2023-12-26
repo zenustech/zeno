@@ -323,12 +323,6 @@ void OptixWorker::needUpdateCamera()
     m_pTimer->start(m_sampleFeq);
 }
 
-void OptixWorker::onCleanUpScene()
-{
-    m_zenoVis->cleanUpScene();
-}
-
-
 ZOptixViewport::ZOptixViewport(QWidget* parent)
     : QWidget(parent)
     , m_zenovis(nullptr)
@@ -393,7 +387,6 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(this, &ZOptixViewport::sig_setSlidFeq, m_worker, &OptixWorker::onSetSlidFeq);
     connect(this, &ZOptixViewport::sig_modifyLightData, m_worker, &OptixWorker::onModifyLightData);
     connect(this, &ZOptixViewport::sig_updateCameraProp, m_worker, &OptixWorker::onUpdateCameraProp);
-    connect(this, &ZOptixViewport::sig_cleanUpScene, m_worker, &OptixWorker::onCleanUpScene);
 
     setRenderSeparately(false, false);
     m_thdOptix.start();
@@ -445,11 +438,6 @@ void ZOptixViewport::killThread()
 void ZOptixViewport::setSlidFeq(int feq)
 {
     emit sig_setSlidFeq(feq);
-}
-
-void ZOptixViewport::cleanUpScene()
-{
-    emit sig_cleanUpScene();
 }
 
 void ZOptixViewport::modifyLightData(UI_VECTYPE pos, UI_VECTYPE scale, UI_VECTYPE rotate, UI_VECTYPE color, float intensity, QString name, UI_VECTYPE skipParam)

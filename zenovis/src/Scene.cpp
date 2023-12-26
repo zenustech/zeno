@@ -47,14 +47,6 @@ Scene::Scene()
         switchRenderEngine("bate");
 }
 
-void Scene::cleanUpScene()
-{
-    if (zeno::getSession().globalComm)
-        zeno::getSession().globalComm->clear_objects();
-    if (renderMan && renderMan->getEngine())
-        renderMan->getEngine()->update();
-}
-
 void Scene::switchRenderEngine(std::string const &name) {
     renderMan->switchDefaultEngine(name);
 }

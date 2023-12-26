@@ -481,8 +481,6 @@ void FakeTransformer::endTransform(bool moved) {
             objsManger->addTransferObj(obj_name, obj);
         }
 
-        objsManger->setRenderType(objsManger->getRenderTypeByObjects(objs));
-
         // sync to node system
         zeno::scope_exit sp([] {
             IGraphsModel *pGraphs = zenoApp->graphsManagment()->currentModel();

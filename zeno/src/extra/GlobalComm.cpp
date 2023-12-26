@@ -807,7 +807,7 @@ ZENO_API const std::string GlobalComm::getObjKey1(std::string& id, int frame)
     return "";
 }
 
-ZENO_API GlobalComm::RenderType GlobalComm::getRenderTypeByObjects(std::map<std::string, std::shared_ptr<zeno::IObject>> objs)
+ZENO_API GlobalComm::RenderType GlobalComm::getRenderTypeByObjects(std::map<std::string, std::shared_ptr<zeno::IObject>>& objs)
 {
     std::lock_guard lck(g_objsMutex);
     std::vector<size_t> count(3, 0);
@@ -821,47 +821,6 @@ ZENO_API GlobalComm::RenderType GlobalComm::getRenderTypeByObjects(std::map<std:
             count[NORMAL]++;
     }
     return count[NORMAL] == 0 && count[MATERIAL] == 0 ? LIGHT_CAMERA : count[NORMAL] == 0 && count[LIGHT_CAMERA] == 0 ? MATERIAL : NORMAL;
-}
-
-ZENO_API void GlobalComm::updateObjsIdByViewport(std::map<std::string, std::shared_ptr<zeno::IObject>>& objsToBeUpdate)
-{
-    std::lock_guard lck(g_objsMutex);
-    static size_t changedNumber = 0;
-    for (auto& [key, obj] : objsToBeUpdate)
-    {
-        std::shared_ptr<IObject> oldObj;
-        std::string oldKey;
-
-        if (m_currentFrame < 0 || m_currentFrame >= m_frames.size()) {
-            continue;
-        }
-
-        for (auto& [k, o] : m_frames[m_currentFrame].view_objects)
-            if (k.find(key) != std::string::npos) {
-                oldKey = k;
-                oldObj = m_frames[m_currentFrame].view_objects.m_curr[k];
-                break;
-            }
-        m_frames[m_currentFrame].view_objects.m_curr.erase(oldKey);
-        std::string& newKey = oldKey.replace(oldKey.find_last_of(":") + 1, std::to_string(changedNumber).size() + 1, std::to_string(changedNumber) + "#");
-        m_frames[m_currentFrame].view_objects.try_emplace(newKey,std::move(oldObj));
-        if (lightCameraNodes.count(key) || obj->userData().get2<int>("isL", 0))
-        {
-            std::shared_ptr<IObject> oldLightObj;
-            std::string oldLightKey;
-            for (auto& [k, o] : m_lightObjects)
-                if (k.find(key) != std::string::npos) {
-                    oldLightKey = k;
-                    oldLightObj = m_lightObjects[k];
-                    break;
-                }
-            m_lightObjects.erase(oldLightKey);
-            std::string& newKey = oldLightKey.replace(oldLightKey.find_last_of(":") + 1, std::to_string(changedNumber).size() + 1, std::to_string(changedNumber) + "#");
-            m_lightObjects.insert(std::make_pair(newKey, std::move(oldLightObj)));
-        }
-    }
-    changedNumber++;
-    updateOptixByViewport = true;
 }
 
 ZENO_API bool GlobalComm::getLightObjData(std::string& id, zeno::vec3f& pos, zeno::vec3f& scale, zeno::vec3f& rotate, zeno::vec3f& clr, float& intensity)
@@ -1058,8 +1017,6 @@ ZENO_API void GlobalComm::setRenderType(GlobalComm::RenderType type)
 {
     std::lock_guard lck(g_objsMutex);
     renderType = type;
-    if (updateOptixByViewport && renderType == UNDEFINED)
-        updateOptixByViewport = false;
 }
 
 ZENO_API GlobalComm::RenderType GlobalComm::getRenderType()

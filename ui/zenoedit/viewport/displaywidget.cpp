@@ -92,13 +92,12 @@ void DisplayWidget::testCleanUp()
 
 void DisplayWidget::cleanUpScene()
 {
-    if (m_glView)
-    {
-        m_glView->cleanUpScene();
-    }
-    else
-    {
-        m_optixView->cleanUpScene();
+    if (zeno::getSession().globalComm) {
+        zeno::getSession().globalComm->clear_objects();
+        if (m_glView)
+            m_glView->update();
+        else
+            m_optixView->update();
     }
 }
 
