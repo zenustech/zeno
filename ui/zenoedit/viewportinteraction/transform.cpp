@@ -232,11 +232,6 @@ void FakeTransformer::transform(QVector3D camera_pos, QVector3D ray_dir, glm::ve
             auto cur_pos = hitOnPlane(ori, dir, localZ, m_objects_center);
             if (cur_pos.has_value()) {
                 translate(m_trans_start, cur_pos.value(), x_axis, cur_to_local, cur_to_world, pivot_to_local);
-                zeno::log_info("m_trans_start {}", m_trans_start);
-                zeno::log_info("cur_pos {}", cur_pos.value());
-                zeno::log_info("ori {}", ori);
-                zeno::log_info("dir {}", dir);
-                zeno::log_info("m_objects_center {}", m_objects_center);
             }
         }
         else if (m_operation_mode == zenovis::INTERACT_Y) {
@@ -724,9 +719,6 @@ void FakeTransformer::doTransform() {
     auto lX = m_localXOrg;
     auto lY = m_localYOrg;
     auto lZ = glm::cross(lX, lY);
-    zeno::log_info("lX: {}", glm::length(lX));
-    zeno::log_info("lY: {}", glm::length(lY));
-    zeno::log_info("lZ: {}", glm::length(lZ));
     auto pivot_to_world = glm::mat4(1);
     pivot_to_world[0] = {lX[0], lX[1], lX[2], 0};
     pivot_to_world[1] = {lY[0], lY[1], lY[2], 0};
