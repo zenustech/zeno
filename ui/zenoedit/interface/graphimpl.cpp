@@ -6,6 +6,95 @@
 #include <zenomodel/include/nodesmgr.h>
 #include <zenomodel/include/uihelper.h>
 
+static QVariant parseValue(PyObject* v, const QString& type)
+{
+    QVariant val;
+    if (type == "string")
+    {
+        char* _val = nullptr;
+        if (PyArg_Parse(v, "s", &_val))
+        {
+            val = _val;
+        }
+    }
+    else if (type == "int")
+    {
+        int _val;
+        if (PyArg_Parse(v, "i", &_val))
+        {
+            val = _val;
+        }
+    }
+    else if (type == "float")
+    {
+        float _val;
+        if (PyArg_Parse(v, "f", &_val))
+        {
+            val = _val;
+        }
+    }
+    else if (type.startsWith("vec"))
+    {
+        PyObject* obj;
+        if (PyArg_Parse(v, "O", &obj))
+        {
+            int count = Py_SIZE(obj);
+            UI_VECTYPE vec;
+            vec.resize(count);
+            bool bError = false;
+            if (type.contains("i"))
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    PyObject* item = PyTuple_GET_ITEM(obj, i);
+                    int iVal;
+                    if (PyArg_Parse(item, "i", &iVal))
+                    {
+                        vec[i] = iVal;
+                    }
+                    else {
+                        bError = true;
+                        break;
+                    }
+                }
+            }
+            else if (type.contains("f"))
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    PyObject* item = PyTuple_GET_ITEM(obj, i);
+                    float dbVval;
+                    if (PyArg_Parse(item, "f", &dbVval))
+                    {
+                        vec[i] = dbVval;
+                    }
+                    else {
+                        bError = true;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                bError = true;
+            }
+            if (bError)
+            {
+                PyErr_SetString(PyExc_Exception, "args error");
+                PyErr_WriteUnraisable(Py_None);
+                return val;
+            }
+            val = QVariant::fromValue(vec);
+        }
+    }
+    if (!val.isValid())
+    {
+        PyErr_SetString(PyExc_Exception, "args error");
+        PyErr_WriteUnraisable(Py_None);
+        return val;
+    }
+    return val;
+}
 
 //init function
 static int
@@ -46,46 +135,26 @@ Graph_name(ZSubGraphObject* self, PyObject* Py_UNUSED(ignored))
 static PyObject*
 Graph_createNode(ZSubGraphObject* self, PyObject* arg, PyObject* kw)
 {
-    //support keys
-    static char* kwList[] = {"nodeCls", "pos", "view", "mute", "once", "fold", NULL};
+    PyObject* _arg = PyTuple_GET_ITEM(arg, 0);
+    if (!PyUnicode_Check(_arg)) {
+        PyErr_SetString(PyExc_Exception, "args error");
+        PyErr_WriteUnraisable(Py_None);
+        return Py_None;
+    }
+
     char* nodeCls = nullptr;
-    PyObject  *posObj = Py_None;
-    float x = 0, y = 0;
-    bool view = false, mute = false, once = false, fold = false;
-    if (!PyArg_ParseTupleAndKeywords(arg, kw, "s|Obbbb", kwList, &nodeCls, &posObj, &view, &mute, &once, &fold))
+    if (!PyArg_Parse(_arg, "s", &nodeCls))
     {
         PyErr_SetString(PyExc_Exception, "args error");
         PyErr_WriteUnraisable(Py_None);
         return Py_None;
     }
-    if (posObj != Py_None)
-    {
-        if (!PyArg_ParseTuple(posObj, "ff", &x, &y))
-        {
-            PyErr_SetString(PyExc_Exception, "args error");
-            PyErr_WriteUnraisable(Py_None);
-            return Py_None;
-        }
-    }
-    //PyObject* _arg = PyTuple_GET_ITEM(arg, 0);
-    //if (!PyUnicode_Check(_arg)) {
-    //    PyErr_SetString(PyExc_Exception, "args error");
-    //    PyErr_WriteUnraisable(Py_None);
-    //    return Py_None;
-    //}
-
-    //char* nodeCls = nullptr;
-    //if (!PyArg_Parse(_arg, "s", &nodeCls))
-    //{
-    //    PyErr_SetString(PyExc_Exception, "args error");
-    //    PyErr_WriteUnraisable(Py_None);
-    //    return Py_None;
-    //}
 
     const QString& subgName = self->subgIdx.data(ROLE_OBJNAME).toString();
     const QString& descName = QString::fromUtf8(nodeCls);
     IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
     const QString& ident = NodesMgr::createNewNode(pModel, self->subgIdx, descName, QPointF(0, 0));
+    //set value
     QModelIndex nodeIdx = pModel->nodeIndex(ident);
     QAbstractItemModel* pSubModel = const_cast<QAbstractItemModel*>(nodeIdx.model());
     if (!pSubModel)
@@ -94,22 +163,68 @@ Graph_createNode(ZSubGraphObject* self, PyObject* arg, PyObject* kw)
         PyErr_WriteUnraisable(Py_None);
         return Py_None;
     }
-    if (posObj != Py_None)
+    if (PyDict_Check(kw))
     {
-        pSubModel->setData(nodeIdx, QPointF(x, y), ROLE_OBJPOS);
+        PyObject* key, * value;
+        Py_ssize_t pos = 0;
+        INPUT_SOCKETS inputs = nodeIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+        while (PyDict_Next(kw, &pos, &key, &value))
+        {
+            char* cKey = nullptr;
+            if (!PyArg_Parse(key, "s", &cKey))
+                continue;
+            QString strKey= QString::fromUtf8(cKey);
+            if (strKey == "view" || strKey == "mute" || strKey == "once")
+            {
+                int options = nodeIdx.data(ROLE_OPTIONS).toInt();
+                if (strKey == "view")
+                {
+                    bool view = false;
+                    if (PyArg_Parse(value, "b", &view) && view)
+                        options |= OPT_VIEW;
+                }
+                else if (strKey == "mute")
+                {
+                    bool mute = false;
+                    if (PyArg_Parse(value, "b", &mute) && mute)
+                        options |= OPT_MUTE;
+                }
+                else if (strKey == "once")
+                {
+                    bool once = false;
+                    if (PyArg_Parse(value, "b", &once) && once)
+                        options |= OPT_ONCE;
+                }
+                pSubModel->setData(nodeIdx, options, ROLE_OPTIONS);
+            }
+            else if (strKey == "fold")
+            {
+                bool fold = false;
+                if (PyArg_Parse(value, "b", &fold) && fold)
+                    pSubModel->setData(nodeIdx, fold, ROLE_COLLASPED);
+            }
+            else if (strKey == "pos")
+            {
+                float x;
+                float y;
+                if (PyArg_ParseTuple(value, "ff", &x, &y))
+                    pSubModel->setData(nodeIdx, QPointF(x, y), ROLE_OBJPOS);
+            }
+            else if (inputs.contains(strKey))
+            {
+                INPUT_SOCKET socket = inputs[strKey];
+                QVariant val = parseValue(value, socket.info.type);
+                if (!val.isValid())
+                    continue;
+                PARAM_UPDATE_INFO info;
+                info.name = strKey;
+                info.newValue = val;
+                info.oldValue = socket.info.defaultValue;
+                pModel->updateSocketDefl(socket.info.nodeid, info, self->subgIdx);
+            }
+        }
     }
-    if (view || mute || once)
-    {
-        int options = view ? OPT_VIEW :  0;
-        options |= mute ? OPT_MUTE : 0;
-        options |= once ? OPT_ONCE : 0;
-        pSubModel->setData(pModel->nodeIndex(ident), options, ROLE_OPTIONS);
-    }
-    if (fold)
-    {
-        pSubModel->setData(pModel->nodeIndex(ident), fold, ROLE_COLLASPED);
-    }
-
+    
     //const QModelIndex& nodeIdx = pModel->index(ident, self->subgIdx);
     std::string _subgName = subgName.toStdString();
     std::string _ident = ident.toStdString();
