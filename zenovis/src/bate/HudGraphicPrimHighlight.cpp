@@ -90,7 +90,7 @@ struct PrimitiveHighlight : IGraphicDraw {
                 }
                 if (!prim) continue;
                 // ----- draw selected particles -----
-                if (prim->tris->empty()) {
+                if (prim->tris->empty() && prim->polys->empty()) {
                     // prepare data
                     auto const &verts = prim->verts;
 
