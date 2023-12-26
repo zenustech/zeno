@@ -256,6 +256,9 @@ struct MissData
 
 struct HitGroupData
 {
+    uint16_t dc_index;
+    uint16_t vol_depth=99;
+    float vol_extinction=1.0f;
     //float4* vertices;
 #ifdef USE_SHORT_COMPACT
     ushort2* uv;

@@ -14,15 +14,6 @@
 #include "Sampling.h"
 #include "LightTree.h"
 
-//COMMON_CODE
-
-static __inline__ __device__ void evalSurface(float4* uniforms) {
-
-    //GENERATED_BEGIN_MARK
-
-    //GENERATED_END_MARK
-} 
-
 static __inline__ __device__ bool checkLightGAS(uint instanceId) {
     return ( instanceId >= params.maxInstanceID-2 );
 }

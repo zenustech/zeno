@@ -26,15 +26,15 @@
 /// Includes the host api if compiling host code, includes the cuda api if compiling device code.
 /// For the math library routines include optix_math.h
 
-#ifndef __optix_optix_h__
-#define __optix_optix_h__
+#ifndef OPTIX_OPTIX_H
+#define OPTIX_OPTIX_H
 
 /// The OptiX version.
 ///
 /// - major =  OPTIX_VERSION/10000
 /// - minor = (OPTIX_VERSION%10000)/100
 /// - micro =  OPTIX_VERSION%100
-#define OPTIX_VERSION 70600
+#define OPTIX_VERSION 70700
 
 
 #ifdef __CUDACC__
@@ -44,4 +44,4 @@
 #endif
 
 
-#endif  // __optix_optix_h__
+#endif  // OPTIX_OPTIX_H

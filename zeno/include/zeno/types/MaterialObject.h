@@ -20,6 +20,8 @@ namespace zeno
         std::vector<std::shared_ptr<Texture2DObject>> tex2Ds;
         std::vector<std::shared_ptr<TextureObjectVDB>> tex3Ds;
         std::string transform;
+
+        std::string parameters; // json
         std::string mtlidkey;  // unused for now
 
         size_t serializeSize() const
@@ -29,6 +31,10 @@ namespace zeno
             auto mtlidkeyLen{mtlidkey.size()};
             size += sizeof(mtlidkeyLen);
             size += mtlidkeyLen;
+
+            auto paramLen {parameters.size()};
+            size += sizeof(paramLen);
+            size += paramLen;
 
             auto vertLen{vert.size()};
             size += sizeof(vertLen);
@@ -82,6 +88,12 @@ namespace zeno
 
             mtlidkey.copy(str + i, mtlidkeyLen);
             i += mtlidkeyLen;
+
+            auto paramLen{parameters.size()};
+            memcpy(str+i, &paramLen, sizeof(paramLen));
+            i += sizeof(paramLen);
+            parameters.copy(str+i, paramLen);
+            i += paramLen;
 
             auto vertLen{vert.size()};
             memcpy(str + i, &vertLen, sizeof(vertLen));
@@ -166,6 +178,12 @@ namespace zeno
 
             this->mtlidkey = std::string{str + i, mtlidkeyLen};
             i += mtlidkeyLen;
+
+            size_t paramLen;
+            memcpy(&paramLen, str+i, sizeof(paramLen));
+            i += sizeof(paramLen);
+            this->parameters = std::string(str+i, paramLen);
+            i += paramLen;
 
             size_t vertLen;
             memcpy(&vertLen, str + i, sizeof(vertLen));
