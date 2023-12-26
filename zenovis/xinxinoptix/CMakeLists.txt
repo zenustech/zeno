@@ -20,7 +20,9 @@ target_sources(zenovis PRIVATE
   LightBounds.h
   ies/ies.cpp
   ies/ies.h
-
+  TypeCaster.cpp
+  TypeCaster.h
+  
   SDK/sutil/Aabb.h              SDK/sutil/Quaternion.h
   SDK/sutil/Camera.cpp          SDK/sutil/Record.h
   SDK/sutil/Camera.h            SDK/cuda/climits.h
