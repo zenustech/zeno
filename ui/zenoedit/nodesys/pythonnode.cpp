@@ -38,6 +38,24 @@ ZGraphicsLayout* PythonNode::initCustomParamWidgets()
 
 void PythonNode::onExecuteClicked()
 {
+    std::string stdOutErr =
+        "import sys\n\
+class CatchOutErr:\n\
+    def __init__(self):\n\
+        self.value = ''\n\
+    def write(self, txt):\n\
+        self.value += txt\n\
+    def flush(self):\n\
+        pass\n\
+catchOutErr = CatchOutErr()\n\
+sys.stdout = catchOutErr\n\
+sys.stderr = catchOutErr\n\
+"; //this is python code to redirect stdouts/stderr
+
+    Py_Initialize();
+    PyObject* pModule = PyImport_AddModule("__main__"); //create main module
+    PyRun_SimpleString(stdOutErr.c_str()); //invoke code to redirect
+
     IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
     QModelIndex subgIdx = pModel->index("main");
     QModelIndex scriptIdx = pModel->paramIndex(subgIdx, index(), "script", true);
@@ -47,6 +65,21 @@ void PythonNode::onExecuteClicked()
     //Py_Initialize();
     if (PyRun_SimpleString(script.toUtf8()) < 0) {
         zeno::log_warn("Python Script run failed");
-        return;
     }
+    PyObject* catcher = PyObject_GetAttrString(pModule, "catchOutErr"); //get our catchOutErr created above
+    PyObject* output = PyObject_GetAttrString(catcher, "value"); //get the stdout and stderr from our catchOutErr object
+    if (output != Py_None)
+    {
+        QString str = QString::fromStdString(_PyUnicode_AsString(output));
+        QStringList lst = str.split('\n');
+        for (const auto& line : lst)
+        {
+            if (!line.isEmpty())
+            {
+                if (zenoApp->isUIApplication())
+                    ZWidgetErrStream::appendFormatMsg(line.toStdString());
+            }
+        }
+    }
+    Py_Finalize();
 }
