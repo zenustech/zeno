@@ -716,11 +716,19 @@ namespace DisneyBSDF{
               wi = normalize(reflect(-normalize(wo),wm));
             }else //refraction
             {
-              wi = normalize(refract(wo, wm, entering?1.0f/mat.ior:mat.ior));
-              flag = transmissionEvent;
-              isTrans = true;
-              extinction = CalculateExtinction(mat.transTint, mat.transTintDepth);
-              extinction = entering? extinction : vec3(0.0f);
+              if(thin)
+              {
+                wi = -wo;
+                extinction = vec3(0.0f);
+              }else {
+                wi = normalize(
+                    refract(wo, wm, entering ? 1.0f / mat.ior : mat.ior));
+                flag = transmissionEvent;
+                isTrans = true;
+                extinction =
+                    CalculateExtinction(mat.transTint, mat.transTintDepth);
+                extinction = entering ? extinction : vec3(0.0f);
+              }
             }
 
             tbn.inverse_transform(wi);
