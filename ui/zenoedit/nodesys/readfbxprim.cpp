@@ -315,7 +315,6 @@ void EvalBlenderFile::onEvalClicked() {
     Path dir (output_path);
     Path info_file_path ("info.json");
     Path map_file_path ("map.json");
-    Path zsg_file ("parsed.zsg");
     info_file_path = dir / info_file_path;
     map_file_path = dir / map_file_path;
 
@@ -391,6 +390,12 @@ void EvalBlenderFile::onEvalClicked() {
                 }else{
                     value.push_back(mat_item_info.at("value").get<float>());
                 }
+                if(item_name == "normal" && std::inner_product(value.begin(),value.end(),value.begin(),0) == 0 ){
+                    value[0] = 0.0f;
+                    value[1] = 0.0f;
+                    value[2] = 1.0f;
+                }
+
                 int input_size = value.size();
                 int need_size = 3;
                 if(type == "vec3f" || type == "colorvec3f"){
