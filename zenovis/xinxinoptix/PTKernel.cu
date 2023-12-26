@@ -247,7 +247,6 @@ extern "C" __global__ void __raygen__rg()
                     aov[primary_hit_type] += prd.depth>1?clampped:temp_radiance;
                 }
             }
-
             prd.radiance = make_float3(0);
             prd.emission = make_float3(0);
 
