@@ -107,7 +107,7 @@ void ClothSystem::findBoundaryCellCollisionConstraints(zs::CudaExecutionPolicy &
                         biNrm *= -1;
                     return biNrm;
                 };
-                if (!COLLISION_UTILS::pointProjectsInsideTriangle(t0, t1, t2, p))
+                if (!COLLISION_UTILS::vertex_projects_inside_triangle(t0, t1, t2, p))
                     for (int i = 0; i != 3; ++i) {
                         auto bisector_normal = get_bisector_orient(i);
                         if (bisector_normal.dot(seg) < 0)
