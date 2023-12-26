@@ -169,6 +169,8 @@ typedef Record<EmptyData>   CallablesRecord;
     //uint32_t v1, v2, v3, pad;
 //};
 
+#include <cuda_fp16.h>
+// #include <cuda_fp16.hpp>
 
 //struct Instance
 //{
@@ -217,15 +219,20 @@ ushort2 halfNormal(float4 in)
   #ifdef USE_SHORT
     ushort3 toHalfColor(float4 in)
     {
+        
       return make_ushort3((unsigned short)(in.x*65536.0f),
                           (unsigned short)(in.y*65536.0f),
                           (unsigned short)(in.z*65536.0f));
     }
     ushort3 toHalf(float4 in)
     {
-      return make_ushort3((unsigned short)(in.x*65536.0f),
-                          (unsigned short)(in.y*65536.0f),
-                          (unsigned short)(in.z*65536.0f));
+      half hx = __float2half(in.x);
+      half hy = __float2half(in.y);
+      half hz = __float2half(in.z);
+
+      return make_ushort3(*(unsigned short*)&(hx),
+                          *(unsigned short*)&(hy),
+                          *(unsigned short*)&(hz));
     }
 
     ushort3 halfNormal(float4 in)
