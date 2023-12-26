@@ -1040,7 +1040,7 @@ struct ZSDeformEmbedPrimWithSurfaceMesh3 : zeno::INode {
         set_output("dest",get_input("dest"));
         set_output("source",get_input("source"));
     }
-}; 
+};
 
 ZENDEFNODE(ZSDeformEmbedPrimWithSurfaceMesh3, {{
     {"dest"},{"string","dest_pos_attr","x"},
@@ -1802,19 +1802,6 @@ struct ZSDeformEmbedPrim : zeno::INode {
                 if(ei < 0)
                     return;
                 everts.template tuple<3>(outAttr,vi) = eles.template pack<3,3>(deformField,ei) * everts.template pack<3>(inAttr,vi);
-                // if(vi == 114754){
-                //     auto dx = everts.template pack<3>(outAttr,vi);
-                //     auto dX = everts.template pack<3>(inAttr,vi);
-                //     auto F = eles.template pack<3,3>(deformField,ei);
-                //     printf("F : %f %f %f\n%f %f %f\n%f %f %f\n",
-                //         (float)F(0,0),(float)F(0,1),(float)F(0,2),
-                //         (float)F(1,0),(float)F(1,1),(float)F(1,2),
-                //         (float)F(2,0),(float)F(2,1),(float)F(2,2)
-                //     );
-                //     printf("Fdet : %f\n",(float)zs::determinant(F));
-                //     printf("dX : %f %f %f with length %f\n",(float)dX[0],(float)dX[1],(float)dX[2],(float)dX.norm());
-                //     printf("dx : %f %f %f with length %f\n",(float)dx[0],(float)dx[1],(float)dx[2],(float)dx.norm());
-                // }
 
         });
         set_output("zssurf",zssurf);
