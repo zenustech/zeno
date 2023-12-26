@@ -1,6 +1,7 @@
 #include "TypeCaster.h"
 
 #include <cuda_fp16.h>
+#include <vector_functions.hpp>
 // #include <cuda_fp16.hpp>
 
 ushort3 toHalf(float4 in)
