@@ -214,17 +214,24 @@ void FakeTransformer::transform(QVector3D camera_pos, QVector3D ray_dir, glm::ve
     auto z_axis = glm::vec3(0, 0, 1);
 
     auto localZ = glm::cross(m_localX, m_localY);
+    auto cur_to_world = glm::mat3(1);
+    cur_to_world[0] = m_localX;
+    cur_to_world[1] = m_localY;
+    cur_to_world[2] = localZ;
+    auto cur_to_local = glm::inverse(cur_to_world);
+
+    auto localZOrg = glm::cross(m_localXOrg, m_localYOrg);
     auto pivot_to_world = glm::mat3(1);
-    pivot_to_world[0] = m_localX;
-    pivot_to_world[1] = m_localY;
-    pivot_to_world[2] = localZ;
+    pivot_to_world[0] = m_localXOrg;
+    pivot_to_world[1] = m_localYOrg;
+    pivot_to_world[2] = localZOrg;
     auto pivot_to_local = glm::inverse(pivot_to_world);
 
     if (m_operation == TRANSLATE) {
         if (m_operation_mode == zenovis::INTERACT_X) {
             auto cur_pos = hitOnPlane(ori, dir, localZ, m_objects_center);
             if (cur_pos.has_value()) {
-                translate(m_trans_start, cur_pos.value(), x_axis, pivot_to_local);
+                translate(m_trans_start, cur_pos.value(), x_axis, cur_to_local, cur_to_world, pivot_to_local);
                 zeno::log_info("m_trans_start {}", m_trans_start);
                 zeno::log_info("cur_pos {}", cur_pos.value());
                 zeno::log_info("ori {}", ori);
@@ -235,32 +242,32 @@ void FakeTransformer::transform(QVector3D camera_pos, QVector3D ray_dir, glm::ve
         else if (m_operation_mode == zenovis::INTERACT_Y) {
             auto cur_pos = hitOnPlane(ori, dir, z_axis, m_objects_center);
             if (cur_pos.has_value())
-                translate(m_trans_start, cur_pos.value(), y_axis, pivot_to_local);
+                translate(m_trans_start, cur_pos.value(), y_axis, cur_to_local, cur_to_world, pivot_to_local);
         }
         else if (m_operation_mode == zenovis::INTERACT_Z) {
             auto cur_pos = hitOnPlane(ori, dir, y_axis, m_objects_center);
             if (cur_pos.has_value())
-                translate(m_trans_start, cur_pos.value(), z_axis, pivot_to_local);
+                translate(m_trans_start, cur_pos.value(), z_axis, cur_to_local, cur_to_world, pivot_to_local);
         }
         else if (m_operation_mode == zenovis::INTERACT_XY) {
             auto cur_pos = hitOnPlane(ori, dir, z_axis, m_objects_center);
             if (cur_pos.has_value())
-                translate(m_trans_start, cur_pos.value(), {1, 1, 0}, pivot_to_local);
+                translate(m_trans_start, cur_pos.value(), {1, 1, 0}, cur_to_local, cur_to_world, pivot_to_local);
         }
         else if (m_operation_mode == zenovis::INTERACT_YZ) {
             auto cur_pos = hitOnPlane(ori, dir, x_axis, m_objects_center);
             if (cur_pos.has_value())
-                translate(m_trans_start, cur_pos.value(), {0, 1, 1}, pivot_to_local);
+                translate(m_trans_start, cur_pos.value(), {0, 1, 1}, cur_to_local, cur_to_world, pivot_to_local);
         }
         else if (m_operation_mode == zenovis::INTERACT_XZ) {
             auto cur_pos = hitOnPlane(ori, dir, y_axis, m_objects_center);
             if (cur_pos.has_value())
-                translate(m_trans_start, cur_pos.value(), {1, 0, 1}, pivot_to_local);
+                translate(m_trans_start, cur_pos.value(), {1, 0, 1}, cur_to_local, cur_to_world, pivot_to_local);
         }
         else {
             auto cur_pos = hitOnPlane(ori, dir, front, m_objects_center);
             if (cur_pos.has_value())
-                translate(m_trans_start, cur_pos.value(), {1, 1, 1}, pivot_to_local);
+                translate(m_trans_start, cur_pos.value(), {1, 1, 1}, cur_to_local, cur_to_world, pivot_to_local);
         }
     }
     else if (m_operation == ROTATE) {
@@ -680,10 +687,12 @@ void FakeTransformer::clear() {
     m_objects_center = {0, 0, 0};
 }
 
-void FakeTransformer::translate(glm::vec3 start, glm::vec3 end, glm::vec3 axis, glm::mat3 to_local) {
-    auto diff = end - start;
-    diff = to_local * diff;
+void FakeTransformer::translate(glm::vec3 start, glm::vec3 end, glm::vec3 axis, glm::mat3 to_local, glm::mat3 to_world, glm::mat3 org_to_local) {
+    auto diff = end - start; // diff in world space
+    diff = to_local * diff; // diff in cur local coord
     diff *= axis;
+    diff = to_world * diff; // diff in world space
+    diff = org_to_local * diff; // diff in pivot local space
     m_trans = diff;
     doTransform();
 }
