@@ -33,7 +33,7 @@ static void markListIndex(const std::string& root, std::shared_ptr<ListObject> l
 {
     for (int i = 0; i < lstObj->arr.size(); i++) {
         auto& obj = lstObj->arr[i];
-        const std::string& objpath = root + "/" + std::to_string(i);
+        const std::string& objpath = root + "/" + obj->userData().get2<std::string>("object-id", "");
         obj->userData().set2("list-index", objpath);
         if (std::shared_ptr<ListObject> spList = std::dynamic_pointer_cast<ListObject>(obj)) {
             markListIndex(objpath, spList);
@@ -216,8 +216,9 @@ bool GlobalComm::fromDiskByObjsManager(std::string cachedir, int frameid, Global
             for (size_t i = 0; i < lst->arr.size(); i++) {
                 zany const& lp = lst->arr[i];
                 std::string id = "";
-                if (std::shared_ptr<IObject> obj = std::dynamic_pointer_cast<IObject>(lp))
+                if (std::shared_ptr<IObject> obj = std::dynamic_pointer_cast<IObject>(lp)) {
                     id = obj->userData().get2<std::string>("object-id", "");
+                }
                 convertToView(lp, id + name.substr(name.find(":")));
             }
             return;

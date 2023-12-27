@@ -216,6 +216,9 @@ struct PrimitiveTransform : zeno::INode {
             return iObject;
         }
         auto cur_root = iObject;
+        if (auto rootlst = std::dynamic_pointer_cast<ListObject>(cur_root))
+            path = rootlst->itemidxs[path];
+
         auto idxs = split_str(path, '/');
         std::vector<int> idxs_int;
         for (const auto &idx: idxs) {

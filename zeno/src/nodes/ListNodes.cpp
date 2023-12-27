@@ -180,6 +180,16 @@ struct MakeList : zeno::INode {
             if (std::isdigit(pair.first.back())) {
                 max_input_index = std::max<int>(max_input_index, std::stoi(pair.first.substr(3)));
                 pair.second->userData().set2("object-id", inputBounds[pair.first].first);
+                if (auto l = std::dynamic_pointer_cast<ListObject>(pair.second))
+                {
+                    for (auto& [key, index] : l->itemidxs)
+                    {
+                        list->itemidxs.insert(std::make_pair(myname + "/" + key,  std::to_string(max_input_index) + "/" + index));
+                    }
+                }
+                else {
+                    list->itemidxs.insert(std::make_pair(myname + "/" + inputBounds[pair.first].first,  std::to_string(max_input_index) + "/"));
+                }
             }
         }
         for (int i = 0; i <= max_input_index; ++i) {
