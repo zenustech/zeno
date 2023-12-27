@@ -71,12 +71,16 @@ ZENO_API Graph *Graph::getSubnetGraph(std::string const &id) const {
 }
 
 ZENO_API void Graph::completeNode(std::string const &id) {
-    if (!safe_at(nodes, id, "node name")->bIsToView)    //complete all nodes except toview node
-        safe_at(nodes, id, "node name")->doComplete();
-    else if (safe_at(nodes, id, "node name")->bIsToView && getDirtyChecker().amIDirty(id.substr(0, id.find(":"))))    //only complete dirty toview node
+    auto& spNode = safe_at(nodes, id, "node name");
+    if (!spNode->isView())    //complete all nodes except toview node
     {
-        safe_at(nodes, id, "node name")->doComplete();
-        nodesToExec.insert(safe_at(nodes, id, "node name")->myname);
+        spNode->doComplete();
+    }
+    else if (spNode->isView() && getDirtyChecker().amIDirty(id.substr(0, id.find(":"))))
+    {
+        //only complete dirty toview node
+        spNode->doComplete();
+        nodesToExec.insert(spNode->myname);
     }
 }
 
@@ -151,15 +155,15 @@ ZENO_API std::map<std::string, zany> Graph::callTempNode(std::string const &id,
     return std::move(se->outputs);
 }
 
-ZENO_API void Graph::setTempCache(std::string const& id)
+ZENO_API void Graph::setNodeStatus(std::string const& id, 
+    bool bView, bool bOnce, bool bCache, bool bMute)
 {
-    safe_at(nodes, id, "node name")->bTmpCache = true;
-}
-
-ZENO_API void Graph::setToView(std::string const& id, bool isStatic)
-{
-    safe_at(nodes, id, "node name")->bIsToView = true;
-    safe_at(nodes, id, "node name")->isStatic = isStatic;
+    NodeStatus status = NodeStatus::Null;
+    if (bView) status = status | View;
+    if (bOnce) status = status | Once;
+    if (bCache) status = status | Cached;
+    if (bMute) status = status | Mute;
+    safe_at(nodes, id, "node name")->m_status = status;
 }
 
 ZENO_API void Graph::addNodeOutput(std::string const& id, std::string const& par) {

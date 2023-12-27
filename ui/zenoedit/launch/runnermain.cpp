@@ -131,6 +131,8 @@ static int runner_start(std::string const &progJson, int sessionid, const LAUNCH
                 + ":" + std::to_string(graph->endFrameNumber)
                 + "\"}", "", 0);
 
+    bool bHasDumpStatic = false;
+
     for (int frame = graph->beginFrameNumber; frame <= graph->endFrameNumber; frame++)
     {
         zeno::scope_exit sp([=]() { std::cout.flush(); });
@@ -155,6 +157,16 @@ static int runner_start(std::string const &progJson, int sessionid, const LAUNCH
 
         send_packet("{\"action\":\"newFrame\",\"key\":\"" + std::to_string(frame) +"\"}", "", 0);
 
+        if (!bHasDumpStatic && param.enableCache) {
+            //construct cache lock.
+            std::string sLockFile = param.cacheDir.toStdString() + "/" + zeno::iotags::sZencache_lockfile_prefix + "_static" + ".lock";
+            QLockFile lckFile(QString::fromStdString(sLockFile));
+            bool ret = lckFile.tryLock();
+            //dump cache to disk.
+            session->globalComm->dumpFrameCache(-1);
+            bHasDumpStatic = true;
+        }
+
         if (param.enableCache) {
             //construct cache lock.
             std::string sLockFile = param.cacheDir.toStdString() + "/" + zeno::iotags::sZencache_lockfile_prefix + std::to_string(frame) + ".lock";
@@ -163,11 +175,11 @@ static int runner_start(std::string const &progJson, int sessionid, const LAUNCH
             //dump cache to disk.
             session->globalComm->dumpFrameCache(frame);
         } else {
-            auto const& viewObjs = session->globalComm->getViewObjects();
-            zeno::log_debug("runner got {} view objects", viewObjs.size());
-            for (auto const& [key, obj] : viewObjs) {
-                if (zeno::encodeObject(obj.get(), buffer))
-                    send_packet("{\"action\":\"viewObject\",\"key\":\"" + key + "\"}",
+            const auto& objs = session->globalComm->pairsShared();
+            zeno::log_debug("runner got {} view objects", objs.size());
+            for (auto const& p : objs) {
+                if (zeno::encodeObject(p.second.get(), buffer))
+                    send_packet("{\"action\":\"viewObject\",\"key\":\"" + p.first + "\"}",
                         buffer.data(), buffer.size());
                 buffer.clear();
             }
@@ -178,6 +190,7 @@ static int runner_start(std::string const &progJson, int sessionid, const LAUNCH
         if (session->globalStatus->failed())
             return onfail();
     }
+
     return 0;
 }
 

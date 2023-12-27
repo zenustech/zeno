@@ -36,6 +36,8 @@ struct GlobalComm {
         FRAME_STATE frame_state = FRAME_UNFINISH;
     };
     std::vector<FrameData> m_frames;
+    ViewObjects m_static_objects;
+
     int m_maxPlayFrame = 0;
     std::set<int> m_inCacheFrames;
 
@@ -51,14 +53,13 @@ struct GlobalComm {
     ZENO_API void finishFrame();
     ZENO_API void dumpFrameCache(int frameid);
     ZENO_API void addViewObject(std::string const &key, std::shared_ptr<IObject> object);
+    ZENO_API void addStaticObject(std::string const& key, std::shared_ptr<IObject> object);
     ZENO_API int maxPlayFrames();
     ZENO_API int numOfFinishedFrame();
     ZENO_API int numOfInitializedFrame();
     ZENO_API std::pair<int, int> frameRange();
     ZENO_API void clearState();
     ZENO_API void clearFrameState();
-    ZENO_API ViewObjects const *getViewObjects(const int frameid);
-    ZENO_API ViewObjects const &getViewObjects();
     ZENO_API std::shared_ptr<IObject> getViewObject(std::string const& key);
     ZENO_API bool load_objects(const int frameid, bool& isFrameValid);
     ZENO_API bool isFrameCompleted(int frameid) const;
@@ -111,8 +112,6 @@ struct GlobalComm {
     ZENO_API bool getNeedUpdateLight();
     ZENO_API void setNeedUpdateLight(bool update);
 
-    ZENO_API void mutexCallback(const std::function<void()>& callback);
-
     ZENO_API const std::string getObjKey1(std::string& id, int frame);
 
     ZENO_API RenderType getRenderTypeByObjects(std::map<std::string, std::shared_ptr<zeno::IObject>> objs);
@@ -120,6 +119,7 @@ struct GlobalComm {
 
 private:
     ViewObjects const* _getViewObjects(const int frameid);
+    void _initStaticObjects();
     std::vector<std::string> toViewNodesId;
 
     //-----ObjectsManager-----

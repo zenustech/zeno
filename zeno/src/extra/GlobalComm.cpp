@@ -44,7 +44,12 @@ static void markListIndex(const std::string& root, std::shared_ptr<ListObject> l
 void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &objs, std::string key, bool dumpCacheVersionInfo) {
     if (cachedir.empty()) return;
 
-    std::filesystem::path dir = std::filesystem::u8path(cachedir + "/" + std::to_string(1000000 + frameid).substr(1));
+    std::filesystem::path dir;
+    if (frameid == -1)
+        dir = std::filesystem::u8path(cachedir + "/_static");
+    else
+        dir = std::filesystem::u8path(cachedir + "/" + std::to_string(1000000 + frameid).substr(1));
+
     if (!std::filesystem::exists(dir) && !std::filesystem::create_directories(dir))
     {
         log_critical("can not create path: {}", dir);
@@ -162,7 +167,11 @@ bool GlobalComm::fromDiskByObjsManager(std::string cachedir, int frameid, Global
     if (cachedir.empty())
         return false;
     objs.clear();
-    auto dir = std::filesystem::u8path(cachedir) / std::to_string(1000000 + frameid).substr(1);
+    std::filesystem::path dir;
+    if (frameid == -1)
+        dir = std::filesystem::u8path(cachedir + "/_static");
+    else
+        dir = std::filesystem::u8path(cachedir + "/" + std::to_string(1000000 + frameid).substr(1));
     if (!std::filesystem::exists(dir))
         return false;
 
@@ -366,6 +375,12 @@ ZENO_API void GlobalComm::finishFrame() {
 
 ZENO_API void GlobalComm::dumpFrameCache(int frameid) {
     std::lock_guard lck(g_objsMutex);
+
+    if (frameid == -1) {
+        toDisk(cacheFramePath, frameid, m_static_objects, "", true);
+        return;
+    }
+
     int frameIdx = frameid - beginFrameNumber;
     if (frameIdx >= 0 && frameIdx < m_frames.size()) {
         log_debug("dumping frame {}", frameid);
@@ -380,10 +395,16 @@ ZENO_API void GlobalComm::addViewObject(std::string const &key, std::shared_ptr<
     m_frames.back().view_objects.try_emplace(key, std::move(object));
 }
 
+ZENO_API void GlobalComm::addStaticObject(std::string const& key, std::shared_ptr<IObject> object) {
+    std::lock_guard lck(g_objsMutex);
+    m_static_objects.try_emplace(key, std::move(object));
+}
+
 ZENO_API void GlobalComm::clearState() {
     std::lock_guard lck(g_objsMutex);
     m_frames.clear();
     m_inCacheFrames.clear();
+    m_static_objects.clear();
     m_maxPlayFrame = 0;
     maxCachedFrames = 1;
     cacheFramePath = {};
@@ -393,6 +414,7 @@ ZENO_API void GlobalComm::clearFrameState()
 {
     std::lock_guard lck(g_objsMutex);
     m_frames.clear();
+    m_static_objects.clear();
     m_inCacheFrames.clear();
     m_maxPlayFrame = 0;
 }
@@ -430,9 +452,10 @@ ZENO_API std::pair<int, int> GlobalComm::frameRange() {
     return std::pair<int, int>(beginFrameNumber, endFrameNumber);
 }
 
-ZENO_API GlobalComm::ViewObjects const *GlobalComm::getViewObjects(const int frameid) {
-    std::lock_guard lck(g_objsMutex);
-    return _getViewObjects(frameid);
+void GlobalComm::_initStaticObjects() {
+    if (m_static_objects.m_curr.empty()) {
+        fromDiskByObjsManager(cacheFramePath, -1, m_static_objects, toViewNodesId);
+    }
 }
 
 GlobalComm::ViewObjects const* GlobalComm::_getViewObjects(const int frameid) {
@@ -465,11 +488,6 @@ GlobalComm::ViewObjects const* GlobalComm::_getViewObjects(const int frameid) {
     return &m_frames[frameIdx].view_objects;
 }
 
-ZENO_API GlobalComm::ViewObjects const &GlobalComm::getViewObjects() {
-    std::lock_guard lck(g_objsMutex);
-    return m_frames.back().view_objects;
-}
-
 std::shared_ptr<IObject> GlobalComm::getViewObject(std::string const& key) {
     std::lock_guard lck(g_objsMutex);
     if (m_currentFrame < 0 || m_currentFrame >= m_frames.size()) {
@@ -479,6 +497,13 @@ std::shared_ptr<IObject> GlobalComm::getViewObject(std::string const& key) {
     auto it = objs.find(key);
     if (it != objs.end())
         return it->second;
+
+    //try to find it in once_objs.
+    it = m_static_objects.find(key);
+    if (it != m_static_objects.end())
+        return it->second;
+
+    return nullptr;
 }
 
 ZENO_API bool GlobalComm::load_objects(
@@ -496,19 +521,24 @@ ZENO_API bool GlobalComm::load_objects(
     }
 
     isFrameValid = true;
-    auto const* viewObjs = _getViewObjects(frameid);
+
+    ViewObjects allObjs;
+    const auto* viewObjs = _getViewObjects(frameid);
+    _initStaticObjects();
+    allObjs.m_curr.insert(viewObjs->m_curr.begin(), viewObjs->m_curr.end());
+    allObjs.m_curr.insert(m_static_objects.m_curr.begin(), m_static_objects.m_curr.end());
 
     bool inserted = false;
-    for (auto const& [key, obj] : viewObjs->m_curr)
+    for (auto const& [key, obj] : allObjs.m_curr)
         if (lastToViewNodesType.find(key) == lastToViewNodesType.end() && key.find_last_of("#") == std::string::npos) {     //key modified && key contains "#"(modified by viewport)
             inserted = true;
             break;
         }
     m_currentFrame = frameid - beginFrameNumber;
 
-    if (viewObjs) {
-        zeno::log_trace("load_objects: {} objects at frame {}", viewObjs->size(), frameid);
-        prepareForOptix(inserted, viewObjs->m_curr);
+    if (!allObjs.m_curr.empty()) {
+        zeno::log_trace("load_objects: {} objects at frame {}", allObjs.m_curr.size(), frameid);
+        prepareForOptix(inserted, allObjs.m_curr);
     }
     else {
         zeno::log_trace("load_objects: no objects at frame {}", frameid);
@@ -654,6 +684,7 @@ ZENO_API void GlobalComm::clear_objects() {
         return;
     }
     m_frames[m_currentFrame].view_objects.clear();
+    m_static_objects.clear();
 }
 
 ZENO_API void GlobalComm::clear_lightObjects()
@@ -681,29 +712,37 @@ ZENO_API std::optional<zeno::IObject* > GlobalComm::get(std::string nid) {
 ZENO_API std::vector<std::pair<std::string, IObject*>> GlobalComm::pairs() const
 {
     std::lock_guard lck(g_objsMutex);
-    if (m_currentFrame < 0 || m_currentFrame >= m_frames.size()) {
-        return std::vector<std::pair<std::string, IObject*>>();
+
+    std::vector<std::pair<std::string, IObject*>> objs;
+    if (m_currentFrame >= 0 && m_currentFrame < m_frames.size())
+    {
+        objs = m_frames[m_currentFrame].view_objects.pairs();
+        if (m_static_objects.size() > 0)
+        {
+            const auto& staticObjs = m_static_objects.pairs();
+            objs.insert(objs.end(), staticObjs.begin(), staticObjs.end());
+        }
     }
-    return m_frames[m_currentFrame].view_objects.pairs();
+    return objs;
 }
 
 ZENO_API std::vector<std::pair<std::string, std::shared_ptr<IObject>>> GlobalComm::pairsShared() const
 {
     std::lock_guard lck(g_objsMutex);
-    if (m_currentFrame < 0 || m_currentFrame >= m_frames.size())
-        return std::vector<std::pair<std::string, std::shared_ptr<IObject>>>();
-    else
-        return m_frames[m_currentFrame].view_objects.pairsShared();
+
+    std::vector<std::pair<std::string, std::shared_ptr<IObject>>> objs;
+    if (m_currentFrame >= 0 && m_currentFrame < m_frames.size())
+    {
+        objs = m_frames[m_currentFrame].view_objects.pairsShared();
+        if (m_static_objects.size() > 0) {
+            const auto& staticObjs = m_static_objects.pairsShared();
+            objs.insert(objs.end(), staticObjs.begin(), staticObjs.end());
+        }
+    }
+    return objs;
 }
 
 //------new change------
-
-void GlobalComm::mutexCallback(const std::function<void()>& callback)
-{
-    std::lock_guard lck(g_objsMutex);
-    if (callback)
-        callback();
-}
 
 ZENO_API bool GlobalComm::lightObjsCount(std::string& id)
 {

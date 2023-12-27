@@ -122,10 +122,8 @@ ZENO_API void Graph::loadGraph(const char *json) {
                 auto &dc = g->getDirtyChecker();
                 dc.taintThisNode(ident);
                 //todo: mark node data change.
-            } else if (cmd == "cacheToDisk") {
-                g->setTempCache(di[1].GetString());
-            } else if (cmd == "setToView") {
-                g->setToView(di[1].GetString(), di[3].GetBool());
+            } else if (cmd == "setNodeStatus"){
+                g->setNodeStatus(di[1].GetString(), di[2].GetBool(), di[3].GetBool(), di[4].GetBool(), di[5].GetBool());
             } else {
                 log_warn("got unexpected command: {}", cmd);
             }

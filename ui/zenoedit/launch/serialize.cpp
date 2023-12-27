@@ -144,37 +144,23 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
         if (NO_VERSION_NODE == idx.data(ROLE_NODETYPE))
             continue;
 
-        int opts = idx.data(ROLE_OPTIONS).toInt();
-        QString noOnceIdent;
-        if (opts & OPT_ONCE) {
-            noOnceIdent = ident;
-            ident = ident + ":RUNONCE";
-        }
-
         bool bSubgNode = pGraphsModel->IsSubGraphNode(idx);
 
         INPUT_SOCKETS inputs = idx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
         OUTPUT_SOCKETS outputs = idx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
 
-        if (opts & OPT_MUTE)
+        if (!bSubgNode || !bNestedSubg)
         {
-            AddStringList({ "addNode", "HelperMute", ident }, writer);
+            AddStringList({"addNode", name, ident}, writer);
         }
         else
         {
-            if (!bSubgNode || !bNestedSubg)
-            {
-                AddStringList({"addNode", name, ident}, writer);
-            }
-            else
-            {
-                AddStringList({"addSubnetNode", name, ident}, writer);
-                AddStringList({"pushSubnetScope", ident}, writer);
-                const QString& prefix = nameMangling(graphIdPrefix, idx.data(ROLE_OBJID).toString());
-                bool _bView = bView && (idx.data(ROLE_OPTIONS).toInt() & OPT_VIEW);
-                serializeGraph(pGraphsModel, pGraphsModel->index(name), prefix, _bView, writer, true, configPath);
-                AddStringList({"popSubnetScope", ident}, writer);
-            }
+            AddStringList({"addSubnetNode", name, ident}, writer);
+            AddStringList({"pushSubnetScope", ident}, writer);
+            const QString& prefix = nameMangling(graphIdPrefix, idx.data(ROLE_OBJID).toString());
+            bool _bView = bView && (idx.data(ROLE_OPTIONS).toInt() & OPT_VIEW);
+            serializeGraph(pGraphsModel, pGraphsModel->index(name), prefix, _bView, writer, true, configPath);
+            AddStringList({"popSubnetScope", ident}, writer);
         }
 
         auto outputIt = outputs.begin();
@@ -190,15 +176,6 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
             bool bCoreParam = inSockIdx.data(ROLE_VPARAM_IS_COREPARAM).toBool();
             QString inputName = inSockIdx.data(ROLE_PARAM_NAME).toString();
             const QString& inSockType = inSockIdx.data(ROLE_PARAM_TYPE).toString();
-
-            if (opts & OPT_MUTE) {
-                if (outputIt != outputs.end()) {
-                    OUTPUT_SOCKET output = *outputIt++;
-                    inputName = output.info.name; // HelperMute forward all inputs to outputs by socket name
-                } else {
-                    inputName += ":DUMMYDEP";
-                }
-            }
 
             //check net label.
             const QString& netlabel = inSockIdx.data(ROLE_PARAM_NETLABEL).toString();
@@ -366,16 +343,6 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
             AddParams(opStr, ident, paramName, paramValue, param_info.typeDesc, writer);
         }
 
-        if (opts & OPT_ONCE) {
-            AddStringList({ "addNode", "HelperOnce", noOnceIdent }, writer);
-            for (OUTPUT_SOCKET output : outputs) {
-                AddStringList({ "bindNodeInput", noOnceIdent, output.info.name, ident, output.info.name }, writer);
-            }
-
-            AddStringList({ "completeNode", ident }, writer);
-            ident = noOnceIdent;//must before OPT_VIEW branch
-        }
-
         for (OUTPUT_SOCKET output : outputs) {
             //the output key of the dict has not descripted by the core, need to add it manually.
             if (output.info.sockProp & SOCKPROP_EDITABLE) {
@@ -389,32 +356,14 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
             AddStringList({"markNodeChanged", ident}, writer);
         }
 
-		if (bView && (opts & OPT_VIEW))
-        {
-            if (name == "SubOutput")
-            {
-                bool isStatic = opts & OPT_ONCE;
-                AddVariantList({ "setToView", ident, "_OUT_port", isStatic }, "int", writer);
-            }
-            else
-            {
-                for (OUTPUT_SOCKET output : outputs)
-                {
-                    ////if (output.info.name == "DST" && outputs.size() > 1)
-                    //    //continue;
-                    bool isStatic = opts & OPT_ONCE;
-                    AddVariantList({ "setToView", ident, output.info.name, isStatic }, "int", writer);
-                    break;  //current node is not a subgraph node, so only one output is needed to view this obj.
-                }
-            }
-        }
+        int opts = idx.data(ROLE_OPTIONS).toInt();
+        bool _bView = bView && (opts & OPT_VIEW);   //TODO: ¿¼ÂÇSubOutputµÄÇé¿ö
+        bool _bCache = (opts & OPT_CACHE);
+        bool _bOnce = (opts & OPT_ONCE);
+        bool _bMute = (opts & OPT_MUTE);    // HelperMute forward all inputs to outputs by socket name
 
+        AddVariantList({ "setNodeStatus", ident, _bView, _bOnce, _bCache, _bMute }, "bool", writer);
         AddStringList({ "completeNode", ident }, writer);
-
-        if (opts & OPT_CACHE)
-        {
-            AddStringList({ "cacheToDisk", ident}, writer);
-        }
     }
 }
 

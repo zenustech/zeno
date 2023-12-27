@@ -11,6 +11,7 @@
 #include <map>
 #include <zeno/types/CurveObject.h>
 #include <zeno/extra/GlobalState.h>
+#include <zeno/extra/nodeStatus.h>
 
 namespace zeno {
 
@@ -34,9 +35,8 @@ public:
     std::set<std::string> formulas;
     zany muted_output;
 
-    bool bTmpCache = false;
-    bool bIsToView = false;
-    bool isStatic = false;
+    NodeStatus m_status = NodeStatus::Null;
+    bool m_bFinishOnce = false;
 
     ZENO_API INode();
     ZENO_API virtual ~INode();
@@ -51,6 +51,7 @@ public:
     ZENO_API void doOnlyApply();
     ZENO_API zany resolveInput(std::string const& id);
     ZENO_API bool getTmpCache();
+    ZENO_API bool isView() const;
     ZENO_API void writeTmpCaches();
 
 protected:

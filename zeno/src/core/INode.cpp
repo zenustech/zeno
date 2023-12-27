@@ -88,6 +88,11 @@ ZENO_API bool zeno::INode::getTmpCache()
     return false;
 }
 
+ZENO_API bool INode::isView() const
+{
+    return m_status & NodeStatus::View;
+}
+
 ZENO_API void zeno::INode::writeTmpCaches()
 {
     GlobalComm::ViewObjects objs;
@@ -104,24 +109,46 @@ ZENO_API void zeno::INode::writeTmpCaches()
         }
 
     }
-    int frameid = zeno::getSession().globalState->frameid;
+
+    bool bStatic = (Once & m_status);
+    int frameid = bStatic ? -1 : zeno::getSession().globalState->frameid;
 
     {   //store cache version
         auto key = myname;
         key.push_back(':');
-        if (isStatic)
+        if (bStatic)
             key.append("static");
         else
             key.append(std::to_string(getThisSession()->globalState->frameid));
-        key.push_back(':');
-        key.append(std::to_string(getThisSession()->globalState->sessionid));
-        getThisSession()->globalComm->addViewObject(key, std::make_shared<IObject>());
+        //key.push_back(':');
+        //key.append(std::to_string(getThisSession()->globalState->sessionid));
+        //just register obj keys.
+        if (bStatic) {
+            getThisSession()->globalComm->addStaticObject(key, std::make_shared<IObject>());
+        }
+        else {
+            getThisSession()->globalComm->addViewObject(key, std::make_shared<IObject>());
+        }
     }
     GlobalComm::toDisk(zeno::getSession().globalComm->objTmpCachePath, frameid, objs, myname, false);
 }
 
 ZENO_API void INode::preApply() {
+
+    if (m_status & NodeStatus::Mute)
+    {
+        //just pass input data to output.
+        for (auto const& [name, _] : this->inputs) {
+            if (name == "SRC") continue;//sk
+            set_output(name, get_input(name));
+        }
+        return;
+    }
+    if ((m_status & NodeStatus::Once) && m_bFinishOnce)
+        return;
+
     auto& dc = graph->getDirtyChecker();
+    bool bTmpCache = (m_status & NodeStatus::Cached);
     if (!dc.amIDirty(myname) && bTmpCache)
     {
         if (getTmpCache())
@@ -150,8 +177,9 @@ ZENO_API void INode::preApply() {
         apply();
         if (bTmpCache)
             writeTmpCaches();
-        }
+    }
     log_debug("==> leave {}", myname);
+    m_bFinishOnce = true;
 }
 
 ZENO_API bool INode::requireInput(std::string const &ds) {

@@ -3,6 +3,7 @@
 #include <zeno/utils/api.h>
 #include <zeno/core/IObject.h>
 #include <zeno/utils/safe_dynamic_cast.h>
+#include <zeno/extra/nodeStatus.h>
 #include <zeno/types/UserData.h>
 #include <functional>
 #include <variant>
@@ -79,8 +80,7 @@ struct Graph : std::enable_shared_from_this<Graph> {
             std::map<std::string, zany> inputs) const;
     ZENO_API std::map<std::string, zany> callTempNode(std::string const &id,
             std::map<std::string, zany> inputs) const;
-    ZENO_API void setTempCache(std::string const& id);
-    ZENO_API void setToView(std::string const& id, bool isStatic);
+    ZENO_API void setNodeStatus(std::string const& id, bool bView, bool bOnce, bool bCache, bool bMute);
 };
 
 }
