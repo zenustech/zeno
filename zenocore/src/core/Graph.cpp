@@ -173,7 +173,7 @@ ZENO_API void Graph::setNodeParam(std::string const &id, std::string const &par,
 }
 
 ZENO_API DirtyChecker &Graph::getDirtyChecker() {
-    if (!dirtyChecker)
+    if (!dirtyChecker) 
         dirtyChecker = std::make_unique<DirtyChecker>();
     return *dirtyChecker;
 }
@@ -194,9 +194,9 @@ ZENO_API void Graph::init(const GraphData& graph) {
 ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls) {
 
     auto cl = safe_at(session->nodeClasses, cls, "node class name").get();
-    auto node = cl->new_instance();
+    std::string const& ident = generateUUID();
+    auto node = cl->new_instance(ident);
     node->graph = this;
-    node->ident = generateUUID();
     node->nodeClass = cl;
     nodes[node->ident] = node;
     return node;

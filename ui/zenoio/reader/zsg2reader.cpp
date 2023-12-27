@@ -13,6 +13,8 @@
 #include <common_def.h>
 #include <fstream>
 #include <filesystem>
+#include <zenoio/include/iohelper.h>
+#include <zeno/utils/helper.h>
 
 
 using namespace zeno::iotags;
@@ -177,28 +179,28 @@ bool Zsg2Reader::_parseSubGraph(
     for (const auto& node : nodes.GetObject())
     {
         const std::string& nodeid = node.name.GetString();
-        zeno::NodeData& nodeData = subgData.nodes[nodeid];
-        _parseNode(graphPath, nodeid, node.value, descriptors, subgraphDatas, nodeData, subgData.links);
+        const zeno::NodeData& nodeData = _parseNode(graphPath, nodeid, node.value, descriptors, subgraphDatas, subgData.links);
+        subgData.nodes.insert(std::make_pair(nodeid, nodeData));
     }
     return true;
 }
 
-bool Zsg2Reader::_parseNode(
+zeno::NodeData Zsg2Reader::_parseNode(
                     const std::string& subgPath,
                     const std::string& nodeid,
                     const rapidjson::Value& nodeObj,
                     const zeno::NodeDescs& legacyDescs,
                     const zeno::AssetsData& subgraphDatas,
-                    zeno::NodeData& retNode,
                     zeno::LinksData& links)
 {
+    zeno::NodeData retNode;
+
     const auto& objValue = nodeObj;
     const rapidjson::Value& nameValue = objValue["name"];
     const std::string& name = nameValue.GetString();
 
     retNode.ident = nodeid;
     retNode.cls = name;
-    auto &mgr = GraphsManagment::instance();
 
     std::string customName;
     if (objValue.HasMember("customName")) {
@@ -207,21 +209,22 @@ bool Zsg2Reader::_parseNode(
     }
     retNode.name = customName;
 
+    bool isParsingAssets = subgPath.rfind("/main", 0) != 0;
+
     //legacy case, should expand the subgraph node recursively.
     if (zeno::VER_3 != m_ioVer)
     {
         if (subgraphDatas.find(name) != subgraphDatas.end())
         {
-            if (subgPath.startsWith("/main"))
+            if (!isParsingAssets)
             {
-                zeno::GraphData graph;
-                retNode.children = UiHelper::fork(subgPath + "/" + nodeid, subgraphDatas, name, links);
+                retNode.subgraph = zenoio::fork(subgPath + "/" + nodeid, subgraphDatas, name);
             }
         }
     }
 
-    if (!mgr.getSubgDesc(name, NODE_DESC()))
-        initSockets(name, legacyDescs, retNode);
+    //if (!mgr.getSubgDesc(name, NODE_DESC()))
+    //    initSockets(name, legacyDescs, retNode);
 
     if (objValue.HasMember("inputs"))
     {
@@ -346,7 +349,7 @@ bool Zsg2Reader::_parseNode(
         retNode.parmsNotDesc["blackboard"].value = QVariant::fromValue(blackboard);
     }
 
-    return true;
+    return retNode;
 }
 
 void Zsg2Reader::_parseChildNodes(
@@ -474,51 +477,25 @@ void Zsg2Reader::_parseInputs(
     {
         const std::string& inSock = inObj.name.GetString();
         const auto& inputObj = inObj.value;
-        if (inputObj.IsArray())
-        {
-            //legacy io format, like [xxx-node, xxx-socket, defl]
-            const auto& arr = inputObj.GetArray();
-            ZASSERT_EXIT(arr.Size() >= 2 && arr.Size() <= 3);
-
-            std::string outId, outSock;
-            int n = arr.Size();
-            ZASSERT_EXIT(n == 3);
-
-            INPUT_SOCKET socket;
-            if (ret.inputs.contains(inSock))
-                socket = ret.inputs[inSock];
-            else
-                socket.info.name = inSock;
-            socket.info.defaultValue = _parseDeflValue(nodeName, legacyDescs, inSock, PARAM_INPUT, arr[2]);
-
-            if (arr[0].IsString() && arr[1].IsString())
-            {
-                outId = arr[0].GetString();
-                outSock = arr[1].GetString();
-                std::string outLinkPath = std::string("%1/%2:[node]/outputs/%3").arg(subgPath).arg(outId).arg(outSock);
-                std::string inLinkPath = std::string("%1/%2:[node]/inputs/%3").arg(subgPath).arg(id).arg(inSock);
-                links.append(EdgeInfo(outLinkPath, inLinkPath));
-            }
-
-            ret.inputs[inSock] = socket;
-        }
-        else if (inputObj.IsNull())
+        if (inputObj.IsNull())
         {
             INPUT_SOCKET socket;
-            ret.inputs.insert(inSock, socket);
+            zeno::ParamInfo param;
+            ret.inputs.insert(std::make_pair(inSock, param));
         }
         else if (inputObj.IsObject())
         {
-            _parseSocket(subgPath, id, nodeName, inSock, true, inputObj, legacyDescs, ret, links);
+            zeno::ParamInfo param = _parseSocket(subgPath, id, nodeName, inSock, true, inputObj, legacyDescs, links);
+            ret.inputs.insert(std::make_pair(inSock, param));
         }
         else
         {
-            Q_ASSERT(false);
+            zeno::log_error("unknown format");
         }
     }
 }
 
-void Zsg2Reader::_parseSocket(
+zeno::ParamInfo Zsg2Reader::_parseSocket(
         const std::string& subgPath,
         const std::string& id,
         const std::string& nodeCls,
@@ -526,65 +503,69 @@ void Zsg2Reader::_parseSocket(
         bool bInput,
         const rapidjson::Value& sockObj,
         const zeno::NodeDescs& descriptors,
-        zeno::NodeData& ret,
         zeno::LinksData& links)
 {
+    zeno::ParamInfo param;
+
     int sockprop = SOCKPROP_NORMAL;
     std::string sockProp;
     if (sockObj.HasMember("property"))
     {
-        ZASSERT_EXIT(sockObj["property"].IsString());
-        sockProp = std::string::fromUtf8(sockObj["property"].GetString());
+        //ZASSERT_EXIT(sockObj["property"].IsString());
+        sockProp = sockObj["property"].GetString();
     }
 
-    PARAM_CONTROL ctrl = CONTROL_NONE;
-    SOCKET_PROPERTY prop = SOCKPROP_NORMAL;
-    if (sockProp == "dict-panel")
-        prop = SOCKPROP_DICTLIST_PANEL;
-    else if (sockProp == "editable")
-        prop = SOCKPROP_EDITABLE;
-    else if (sockProp == "group-line")
-        prop = SOCKPROP_GROUP_LINE;
+    zeno::ParamControl ctrl = zeno::ParamControl::Null;
 
-    SOCKET_INFO& socket = bInput ? ret.inputs[sockName].info : ret.outputs[sockName].info;
-    socket.sockProp = prop;
-    socket.name = sockName;
+    zeno::SocketProperty prop = zeno::SocketProperty::Normal;
+    if (sockProp == "dict-panel")
+        prop = zeno::SocketProperty::Normal;    //deprecated
+    else if (sockProp == "editable")
+        prop = zeno::SocketProperty::Editable;
+    else if (sockProp == "group-line")
+        prop = zeno::SocketProperty::Normal;    //deprecated
+
+    param.prop = prop;
+    param.name = sockName;
 
     if (m_bDiskReading &&
-        (prop == SOCKPROP_EDITABLE || nodeCls == "MakeList" || nodeCls == "MakeDict" || nodeCls == "ExtractDict"))
+        (prop == zeno::SocketProperty::Editable ||
+         nodeCls == "MakeList" || nodeCls == "MakeDict" || nodeCls == "ExtractDict"))
     {
-        if (prop == SOCKPROP_EDITABLE) {
+        if (prop == zeno::SocketProperty::Editable) {
             //like extract dict.
-            socket.type = "string";
+            param.type = zeno::Param_String;
         } else {
-            socket.type = "";
+            param.type = zeno::Param_Null;
         }
     }
 
-    PARAM_CLASS cls = bInput ? PARAM_INPUT : PARAM_OUTPUT;
-
-    if (sockObj.HasMember("type")) {
-        socket.type = sockObj["type"].GetString();
-    }
-    if (sockObj.HasMember("default-value"))
-    {
-        if (descriptors.find(sockName) != descriptors.end())
-            socket.defaultValue = _parseDeflValue(nodeCls, descriptors, sockName, cls, sockObj["default-value"]);
-        else if (!socket.type.isEmpty() && !sockObj["default-value"].IsNull()) {
-            socket.defaultValue = UiHelper::parseJsonByType(socket.type, sockObj["default-value"]);
-        }
+    if (sockObj.HasMember("type") && sockObj.HasMember("default-value")) {
+        param.type = zeno::convertToType(sockObj["type"].GetString());
+        param.defl = zeno::jsonValueToZVar(sockObj["default-value"], param.type);
     }
 
     //link:
     if (bInput && sockObj.HasMember("link") && sockObj["link"].IsString())
     {
-        std::string outLinkPath = std::string::fromUtf8(sockObj["link"].GetString());
-        QStringList lst = outLinkPath.split(cPathSeperator, QtSkipEmptyParts);
+        std::string outLinkPath = sockObj["link"].GetString();
+
+        auto lst = zeno::split_str(outLinkPath, ':');
         if (lst.size() > 2)
-            outLinkPath = UiHelper::constructObjPath(lst[0], lst[1], lst[2]);
-        std::string inLinkPath = std::string("%1/%2:[node]/inputs/%3").arg(subgPath).arg(id).arg(sockName);
-        EdgeInfo fullLink(outLinkPath, inLinkPath);
-        links.append(fullLink);
+        {
+            const std::string& outId = lst[1];
+            const std::string& fuckingpath = lst[2];
+            lst = zeno::split_str(fuckingpath, '/');
+            if (lst.size() > 2) {
+                std::string group = lst[1];
+                std::string param = lst[2];
+                std::string key;
+                if (lst.size() > 3)
+                    key = lst[3];
+                zeno::EdgeInfo edge = { outId, param, key, id, sockName, "" };
+                links.push_back(edge);
+            }
+        }
     }
 
     if (sockObj.HasMember("dictlist-panel"))
@@ -607,7 +588,7 @@ void Zsg2Reader::_parseSocket(
 
     if (sockObj.HasMember("tooltip")) 
     {
-        socket.toolTip = std::string::fromUtf8(sockObj["tooltip"].GetString());
+        param.tooltip = sockObj["tooltip"].GetString();
     }
 }
 
@@ -625,7 +606,6 @@ void Zsg2Reader::_parseDictPanel(
             const std::string& id,
             const std::string& sockName,
             const std::string& nodeName,
-            zeno::NodeData& ret,
             zeno::LinksData& links)
 {
     if (dictPanelObj.HasMember("collasped") && dictPanelObj["collasped"].IsBool())

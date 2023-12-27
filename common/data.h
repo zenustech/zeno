@@ -2,6 +2,10 @@
 #define __UTILS_DATA_H__
 
 #include "common.h"
+#include <string>
+#include <map>
+#include <vector>
+#include <unordered_map>
 
 namespace zeno {
 
@@ -25,10 +29,11 @@ namespace zeno {
         std::map<std::string, ParamInfo> outputs;
 
         //if current node is a subgraph node, which means type =NodeStatus::SubgraphNode.
-        GraphData subgraph;     
+        GraphData subgraph;
 
         std::pair<float, float> uipos;
         NodeStatus status = NodeStatus::Null;
+        bool bAssetsNode = false;
     };
 
     struct EdgeInfo {

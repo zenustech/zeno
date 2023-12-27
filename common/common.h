@@ -1,6 +1,11 @@
 #ifndef __ZENO_COMMON_H__
 #define __ZENO_COMMON_H__
 
+#include <variant>
+#include <string>
+#include <vector>
+#include <zeno/utils/vec.h>
+
 
 #define ENUM_FLAGS(enum_class) \
 constexpr enum_class operator|(enum_class X, enum_class Y) {\
@@ -38,6 +43,10 @@ namespace zeno {
         Param_Int,
         Param_String,
         Param_Float,
+        Param_Vec2i,
+        Param_Vec3i,
+        Param_Vec4i,
+        Param_Vec2f,
         Param_Vec3f,
         Param_Vec4f,
         Param_Prim,
@@ -113,21 +122,12 @@ namespace zeno {
     {
         VER_2,          //old version io
         VER_2_5,        //new version io
-        VER_3,          //the lastest io format, supporting tree layout.
+        VER_3,          //the final io format, supporting tree layout.
     };
 
     using zvariant = std::variant<
-        std::string,
-        int,
-        float,
-        double,
-        bool,
-        zeno::vec2i,
-        zeno::vec2f,
-        zeno::vec3i,
-        zeno::vec3f,
-        zeno::vec4i,
-        zeno::vec4f>;
+        int, zeno::vec2i, zeno::vec3i, zeno::vec4i,
+        float, zeno::vec2f, zeno::vec3f, zeno::vec4f, std::string>;
 
     using ctrlpropvalue = std::variant<
         std::vector<std::string>,

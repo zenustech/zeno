@@ -23,16 +23,15 @@ namespace zenoio
                 const zeno::AssetsData& subgraphDatas,
                 zeno::GraphData& subgData);
 
-        bool _parseNode(
+        zeno::NodeData _parseNode(
                 const std::string& subgPath,    //也许无用了，因为边信息不再以path的方式储存（解析麻烦），先保留着
                 const std::string& nodeid,
                 const rapidjson::Value& nodeObj,
                 const zeno::NodeDescs& descriptors,
                 const zeno::AssetsData& subgraphDatas,
-                zeno::NodeData& retNode,
                 zeno::LinksData& links);    //在parse节点的时候顺带把节点上的边信息也逐个记录到这里
 
-        void _parseSocket(
+        zeno::ParamInfo _parseSocket(
                 const std::string& subgPath,
                 const std::string& id,
                 const std::string& nodeCls,
@@ -40,7 +39,6 @@ namespace zenoio
                 bool bInput,
                 const rapidjson::Value& sockObj,
                 const zeno::NodeDescs& descriptors,
-                zeno::NodeData& ret,
                 zeno::LinksData& links);
 
         void _parseInputs(
@@ -84,7 +82,6 @@ namespace zenoio
                 const std::string& id,
                 const std::string& inSock,
                 const std::string& nodeName,
-                zeno::NodeData& ret,
                 zeno::LinksData& links);
 
         void _parseColorRamps(

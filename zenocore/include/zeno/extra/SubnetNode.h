@@ -30,10 +30,10 @@ struct SubnetNode : INode {
 };
 
 struct ImplSubnetNodeClass : INodeClass {
-    ImplSubnetNodeClass() : INodeClass({}) {
+    ImplSubnetNodeClass() : INodeClass({}, "") {
     }
 
-    virtual std::unique_ptr<INode> new_instance() const override {
+    virtual std::shared_ptr<INode> new_instance(std::string const& ident) const override {
         return std::make_unique<SubnetNode>();
     }
 };

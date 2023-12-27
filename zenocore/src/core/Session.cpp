@@ -7,9 +7,11 @@
 #include <zeno/types/UserData.h>
 #include <zeno/core/Graph.h>
 #include <zeno/core/INode.h>
+#include <zeno/core/IParam.h>
 #include <zeno/utils/safe_at.h>
 #include <zeno/utils/logger.h>
 #include <zeno/utils/string.h>
+#include <zeno/utils/helper.h>
 #include "rapidjson/document.h"
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
@@ -21,11 +23,43 @@ namespace {
 struct ImplNodeClass : INodeClass {
     std::shared_ptr<INode>(*ctor)();
 
-    ImplNodeClass(std::shared_ptr<INode>(*ctor)(), Descriptor const &desc)
-        : INodeClass(desc), ctor(ctor) {}
+    ImplNodeClass(std::shared_ptr<INode>(*ctor)(), Descriptor const &desc, std::string const &name)
+        : INodeClass(desc, name), ctor(ctor) {}
 
-    virtual std::shared_ptr<INode> new_instance() const override {
-        return ctor();
+    virtual std::shared_ptr<INode> new_instance(std::string const &ident) const override {
+        std::shared_ptr<INode> spNode = ctor();
+        spNode->ident = ident;
+        spNode->nodecls = name;
+
+        //init all params, and set defl value
+        for (SocketDescriptor& param_desc : desc->inputs)
+        {
+            std::shared_ptr<IParam> sparam = std::make_shared<IParam>();
+            sparam->name = param_desc.name;
+            sparam->m_spNode = spNode;
+            sparam->type = zeno::convertToType(param_desc.type);
+            sparam->defl = zeno::strToZAny(param_desc.defl, sparam->type);
+        }
+
+        for (ParamDescriptor& param_desc : desc->params)
+        {
+            std::shared_ptr<IParam> sparam = std::make_shared<IParam>();
+            sparam->name = param_desc.name;
+            sparam->m_spNode = spNode;
+            sparam->type = zeno::convertToType(param_desc.type);
+            sparam->defl = zeno::strToZAny(param_desc.defl, sparam->type);
+        }
+
+        for (SocketDescriptor& param_desc : desc->outputs)
+        {
+            std::shared_ptr<IParam> sparam = std::make_shared<IParam>();
+            sparam->name = param_desc.name;
+            sparam->m_spNode = spNode;
+            sparam->type = zeno::convertToType(param_desc.type);
+            sparam->defl = zeno::strToZAny(param_desc.defl, sparam->type);
+        }
+
+        return spNode;
     }
 };
 
@@ -42,12 +76,12 @@ ZENO_API Session::Session()
 
 ZENO_API Session::~Session() = default;
 
-ZENO_API void Session::defNodeClass(std::shared_ptr<INode>(*ctor)(), std::string const &id, Descriptor const &desc) {
-    if (nodeClasses.find(id) != nodeClasses.end()) {
-        log_error("node class redefined: `{}`\n", id);
+ZENO_API void Session::defNodeClass(std::shared_ptr<INode>(*ctor)(), std::string const &clsname, Descriptor const &desc) {
+    if (nodeClasses.find(clsname) != nodeClasses.end()) {
+        log_error("node class redefined: `{}`\n", clsname);
     }
     auto cls = std::make_shared<ImplNodeClass>(ctor, desc);
-    nodeClasses.emplace(id, std::move(cls));
+    nodeClasses.emplace(clsname, std::move(cls));
 }
 
 //ZENO_API void Session::defOverloadNodeClass(
@@ -93,8 +127,9 @@ ZENO_API void Session::defNodeClass(std::shared_ptr<INode>(*ctor)(), std::string
     //return node;
 //}
 
-ZENO_API INodeClass::INodeClass(Descriptor const &desc)
-        : desc(std::make_unique<Descriptor>(desc)) {
+ZENO_API INodeClass::INodeClass(Descriptor const &desc, std::string const& name)
+        : desc(std::make_unique<Descriptor>(desc))
+        , name(name){
 }
 
 ZENO_API INodeClass::~INodeClass() = default;
