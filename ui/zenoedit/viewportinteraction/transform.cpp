@@ -506,7 +506,7 @@ void FakeTransformer::endTransform(bool moved) {
                 const std::string& path = user_data.get2<std::string>("list-index");
                 listitems.push_back(path);
             }
-            else if (node_sync.checkNodeType(prim_node, "PrimitiveTransform")) &&
+            else if (node_sync.checkNodeType(prim_node, "PrimitiveTransform") &&
                 // prim comes from a exist TransformPrimitive node
                 node_sync.checkNodeInputHasValue(prim_node, "translation") &&
                 node_sync.checkNodeInputHasValue(prim_node, "quatRotation") &&

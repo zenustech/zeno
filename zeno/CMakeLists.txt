@@ -12,6 +12,10 @@ else()
     add_library(zeno OBJECT ${source})
 endif()
 
+if (ZENO_DEBUG_MSVC AND NOT ZENO_WITH_CUDA)
+    zeno_dbg_msvc(zeno)
+endif()
+
 if (ZENO_ENABLE_OPENMP)
     find_package(OpenMP)
     if (TARGET OpenMP::OpenMP_CXX)
