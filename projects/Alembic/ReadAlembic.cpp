@@ -324,7 +324,7 @@ static void read_user_data(std::shared_ptr<PrimitiveObject> prim, ICompoundPrope
     }
 }
 
-static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMeshSchema &mesh, int frameid, bool read_done, bool read_face_set, bool faceset_as_mtlid) {
+static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMeshSchema &mesh, int frameid, bool read_done, bool read_face_set) {
     auto prim = std::make_shared<PrimitiveObject>();
 
     std::shared_ptr<Alembic::AbcCoreAbstract::v12::TimeSampling> time = mesh.getTimeSampling();
@@ -457,21 +457,12 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
                 faceset[f] = i;
             }
         }
-        if (faceset_as_mtlid) {
-            ud.set2("matNum", int(faceSetNames.size()));
-            for (auto i = 0; i < faceSetNames.size(); i++) {
-                auto n = faceSetNames[i];
-                ud.set2(zeno::format("Material_{}", i), n);
-            }
-            auto &mtlid = prim->polys.add_attr<int>("matid");
-            std::copy(faceset.begin(), faceset.end(), mtlid.begin());
-        }
     }
 
     return prim;
 }
 
-static std::shared_ptr<PrimitiveObject> foundABCSubd(Alembic::AbcGeom::ISubDSchema &subd, int frameid, bool read_done, bool read_face_set, bool faceset_as_mtlid) {
+static std::shared_ptr<PrimitiveObject> foundABCSubd(Alembic::AbcGeom::ISubDSchema &subd, int frameid, bool read_done, bool read_face_set) {
     auto prim = std::make_shared<PrimitiveObject>();
 
     std::shared_ptr<Alembic::AbcCoreAbstract::v12::TimeSampling> time = subd.getTimeSampling();
@@ -590,15 +581,6 @@ static std::shared_ptr<PrimitiveObject> foundABCSubd(Alembic::AbcGeom::ISubDSche
                 int f = faceSetSample.getFaces()->get()[j];
                 faceset[f] = i;
             }
-        }
-        if (faceset_as_mtlid) {
-            ud.set2("matNum", int(faceSetNames.size()));
-            for (auto i = 0; i < faceSetNames.size(); i++) {
-                auto n = faceSetNames[i];
-                ud.set2(zeno::format("Material_{}", i), n);
-            }
-            auto &mtlid = prim->polys.add_attr<int>("matid");
-            std::copy(faceset.begin(), faceset.end(), mtlid.begin());
         }
     }
 
@@ -723,7 +705,6 @@ void traverseABC(
     int frameid,
     bool read_done,
     bool read_face_set,
-    bool faceset_as_mtlid,
     std::string path
 ) {
     {
@@ -741,7 +722,7 @@ void traverseABC(
 
             Alembic::AbcGeom::IPolyMesh meshy(obj);
             auto &mesh = meshy.getSchema();
-            tree.prim = foundABCMesh(mesh, frameid, read_done, read_face_set, faceset_as_mtlid);
+            tree.prim = foundABCMesh(mesh, frameid, read_done, read_face_set);
             tree.prim->userData().set2("_abc_name", obj.getName());
             tree.prim->userData().set2("_abc_path", path);
         } else if (Alembic::AbcGeom::IXformSchema::matches(md)) {
@@ -784,7 +765,7 @@ void traverseABC(
             }
             Alembic::AbcGeom::ISubD subd(obj);
             auto &subd_sch = subd.getSchema();
-            tree.prim = foundABCSubd(subd_sch, frameid, read_done, read_face_set, faceset_as_mtlid);
+            tree.prim = foundABCSubd(subd_sch, frameid, read_done, read_face_set);
             tree.prim->userData().set2("_abc_name", obj.getName());
             tree.prim->userData().set2("_abc_path", path);
         }
@@ -804,7 +785,7 @@ void traverseABC(
         Alembic::AbcGeom::IObject child(obj, name);
 
         auto childTree = std::make_shared<ABCTree>();
-        traverseABC(child, *childTree, frameid, read_done, read_face_set, faceset_as_mtlid, path);
+        traverseABC(child, *childTree, frameid, read_done, read_face_set, path);
         tree.children.push_back(std::move(childTree));
     }
 }
@@ -859,8 +840,7 @@ struct ReadAlembic : INode {
             // fmt::print("archive.getNumTimeSamplings: {}\n", archive.getNumTimeSamplings());
             auto obj = archive.getTop();
             bool read_face_set = get_input2<bool>("read_face_set");
-            bool faceset_as_mtlid = get_input2<bool>("faceset_as_mtlid");
-            traverseABC(obj, *abctree, frameid, read_done, read_face_set, faceset_as_mtlid, "");
+            traverseABC(obj, *abctree, frameid, read_done, read_face_set, "");
             read_done = true;
             usedPath = path;
         }
@@ -887,7 +867,6 @@ ZENDEFNODE(ReadAlembic, {
     {
         {"readpath", "path"},
         {"bool", "read_face_set", "0"},
-        {"bool", "faceset_as_mtlid", "0"},
         {"frameid"},
     },
     {
