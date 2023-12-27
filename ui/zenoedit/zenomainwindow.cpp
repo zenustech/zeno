@@ -1090,6 +1090,28 @@ void ZenoMainWindow::solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param, LAUN
             pGraphsModel->updateNodeStatus(subgNodeId, info, mainGraphIdx, true);
         }
     }
+    if (!param.paramsJson.isEmpty())
+    {
+        //parse paramsJson
+        rapidjson::Document configDoc;
+        configDoc.Parse(param.paramsJson.toUtf8());
+        if (!configDoc.IsObject())
+        {
+            zeno::log_error("config file is corrupted");
+        }
+        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+        ZASSERT_EXIT(pGraphsModel);
+        FuckQMap<QString, CommandParam> commands = pGraphsModel->commandParams();
+        for (auto& [key, param] : commands)
+        {
+            if (configDoc.HasMember(param.name.toUtf8()))
+            {
+                param.value = UiHelper::parseJson(configDoc[param.name.toStdString().c_str()], nullptr);
+                param.bIsCommand = true;
+            }
+            pGraphsModel->updateCommandParam(key, param);
+        }
+    }
 
     zeno::getSession().globalComm->clearState();
     launchParam.beginFrame = recInfo.frameRange.first;
@@ -1486,7 +1508,7 @@ void ZenoMainWindow::onCheckUpdate()
 #endif
 }
 
-void ZenoMainWindow::importGraph() {
+void ZenoMainWindow::importGraph(bool bPreset) {
     QString filePath = getOpenFileByDialog();
     if (filePath.isEmpty())
         return;
@@ -1556,6 +1578,22 @@ void ZenoMainWindow::importGraph() {
     }
     if (!subgraphNames.isEmpty())
         pGraphs->importSubGraphs(filePath, subgraphNames);
+    if (bPreset)
+    {
+        for (const auto& name : subgraphNames)
+        {
+            QModelIndex index = pGraphs->currentModel()->index(name);
+            if (index.isValid())
+            {
+                pGraphs->currentModel()->setData(index, SUBGRAPH_PRESET, ROLE_SUBGRAPH_TYPE);
+            }
+        }
+        ZenoSettingsManager::GetInstance().setValue(zsSubgraphType, SUBGRAPH_PRESET);
+    }
+    else
+    {
+        ZenoSettingsManager::GetInstance().setValue(zsSubgraphType, SUBGRAPH_NOR);
+    }
 }
 
 static bool saveContent(const QString &strContent, QString filePath) {
@@ -1920,6 +1958,7 @@ void ZenoMainWindow::save()
     if (!pModel)
         return;
 
+    /*
     if (pModel->hasNotDescNode())
     {
         int flag = QMessageBox::question(this, "",
@@ -1933,6 +1972,7 @@ void ZenoMainWindow::save()
         saveAs();
         return;
     }
+    */
 
     zenoio::ZSG_VERSION ver = pModel->ioVersion();
     if (zenoio::VER_2 == ver)

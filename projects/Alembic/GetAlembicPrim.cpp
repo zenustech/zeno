@@ -230,6 +230,44 @@ ZENDEFNODE(AllAlembicPrim, {
     {"alembic"},
 });
 
+struct AlembicPrimList : INode {
+    virtual void apply() override {
+        auto abctree = get_input<ABCTree>("abctree");
+        auto prims = std::make_shared<zeno::ListObject>();
+        int use_xform = get_input2<int>("use_xform");
+        if (use_xform) {
+            prims = get_xformed_prims(abctree);
+        } else {
+            abctree->visitPrims([&] (auto const &p) {
+                auto np = std::static_pointer_cast<PrimitiveObject>(p->clone());
+                prims->arr.push_back(np);
+            });
+        }
+        for (auto &prim: prims->arr) {
+            auto _prim = std::dynamic_pointer_cast<PrimitiveObject>(prim);
+            if (get_input2<bool>("flipFrontBack")) {
+                flipFrontBack(_prim);
+            }
+            if (get_input2<int>("triangulate") == 1) {
+                zeno::primTriangulate(_prim.get());
+            }
+        }
+        set_output("prims", std::move(prims));
+    }
+};
+
+ZENDEFNODE(AlembicPrimList, {
+    {
+        {"bool", "flipFrontBack", "1"},
+        {"ABCTree", "abctree"},
+        {"bool", "use_xform", "0"},
+        {"bool", "triangulate", "0"},
+    },
+    {"prims"},
+    {},
+    {"alembic"},
+});
+
 struct GetAlembicCamera : INode {
     virtual void apply() override {
         auto abctree = get_input<ABCTree>("abctree");
@@ -328,7 +366,8 @@ struct ImportAlembicPrim : INode {
             GetArchiveStartAndEndTime(archive, start, _end);
             auto obj = archive.getTop();
             bool read_face_set = get_input2<bool>("read_face_set");
-            traverseABC(obj, *abctree, frameid, read_done, read_face_set, "");
+            bool faceset_as_mtlid = get_input2<bool>("faceset_as_mtlid");
+            traverseABC(obj, *abctree, frameid, read_done, read_face_set, faceset_as_mtlid, "");
         }
         bool use_xform = get_input2<bool>("use_xform");
         auto index = get_input2<int>("index");
@@ -369,6 +408,7 @@ ZENDEFNODE(ImportAlembicPrim, {
         {"bool", "use_xform", "0"},
         {"bool", "triangulate", "0"},
         {"bool", "read_face_set", "0"},
+        {"bool", "faceset_as_mtlid", "0"},
     },
     {
         "prim",

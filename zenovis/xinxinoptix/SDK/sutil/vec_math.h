@@ -46,6 +46,9 @@
 #ifndef M_PI_2f
 #define M_PI_2f     1.57079632679489661923f
 #endif
+#ifndef M_PI_4f
+#define M_PI_4f     0.78539816339744830962f
+#endif
 #ifndef M_1_PIf
 #define M_1_PIf     0.318309886183790671538f
 #endif

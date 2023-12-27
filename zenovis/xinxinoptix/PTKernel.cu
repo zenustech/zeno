@@ -91,6 +91,7 @@ extern "C" __global__ void __raygen__rg()
     float3 result_s = make_float3( 0.0f );
     float3 result_t = make_float3( 0.0f );
     float3 result_b = make_float3( 0.0f );
+    float3 aov[4];
     int i = params.samples_per_launch;
 
     float3 tmp_albedo{};
@@ -159,6 +160,9 @@ extern "C" __global__ void __raygen__rg()
         ray_direction = normalize(ray_direction);
 
         RadiancePRD prd;
+        prd.pixel_area   = cam.height/(float)(h)/(cam.focal_length);
+        prd.adepth       = 0;
+        prd.camPos       = cam.eye;
         prd.emission     = make_float3(0.f);
         prd.radiance     = make_float3(0.f);
         prd.attenuation  = make_float3(1.f);
@@ -173,7 +177,6 @@ extern "C" __global__ void __raygen__rg()
         prd.maxDistance  = 1e16f;
         prd.medium       = DisneyBSDF::PhaseFunctions::vacuum;
 
-
         prd.origin = ray_origin;
         prd.direction = ray_direction;
         prd.samplePdf = 1.0f;
@@ -186,8 +189,7 @@ extern "C" __global__ void __raygen__rg()
         prd.ss_alpha_queue[0] = vec3(-1.0f);
         prd.minSpecRough = 0.01;
         prd.samplePdf = 1.0f;
-        prd.first_hit_type = 0;
-        prd.hitEnv = false;
+        prd.hit_type = 0;
         auto _tmin_ = prd._tmin_;
         auto _mask_ = prd._mask_;
         
@@ -199,7 +201,17 @@ extern "C" __global__ void __raygen__rg()
         }
 
         // Primary Ray
+        unsigned char background_trace = 0;
+        prd.alphaHit = false;
         traceRadiance(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_);
+        auto primary_hit_type = prd.hit_type;
+        background_trace = primary_hit_type;
+
+        if(primary_hit_type > 0) {
+            result_d = prd.radiance_d * prd.attenuation2;
+            result_s = prd.radiance_s * prd.attenuation2;
+            result_t = prd.radiance_t * prd.attenuation2;
+        }
 
         tmp_albedo = prd.tmp_albedo;
         tmp_normal = prd.tmp_normal;
@@ -207,17 +219,18 @@ extern "C" __global__ void __raygen__rg()
         prd.trace_denoise_albedo = false;
         prd.trace_denoise_normal = false;
 
+        aov[0] = result_b;
+        aov[1] = result_d;
+        aov[2] = result_s;
+        aov[3] = result_t;
+
         for(;;)
         {
-            prd.radiance_d = make_float3(0);
-            prd.radiance_s = make_float3(0);
-            prd.radiance_t = make_float3(0);
-
             _tmin_ = prd._tmin_;
             _mask_ = prd._mask_;
 
             prd._tmin_ = 0;
-            prd._mask_ = EverythingMask; 
+            prd._mask_ = EverythingMask;
 
             ray_origin = prd.origin;
             ray_direction = prd.direction;
@@ -229,23 +242,11 @@ extern "C" __global__ void __raygen__rg()
                 float3 clampped = clamp(vec3(temp_radiance), vec3(0), vec3(10));
 
                 result += prd.depth>1?clampped:temp_radiance;
-                if(prd.depth==1 && prd.hitEnv == false)
-                {
-                    result_d += prd.radiance_d * prd.attenuation2;
-                    result_s += prd.radiance_s * prd.attenuation2;
-                    result_t += prd.radiance_t * prd.attenuation2;
-                }
-                if(prd.depth>1 || (prd.depth==1 && prd.hitEnv == true)) {
-                    result_d +=
-                        prd.first_hit_type == 1 ? clampped : make_float3(0, 0, 0);
-                    result_s +=
-                        prd.first_hit_type == 2 ? clampped : make_float3(0, 0, 0);
-                    result_t +=
-                        prd.first_hit_type == 3 ? clampped : make_float3(0, 0, 0);
-                }
 
+                if(primary_hit_type > 0 && ( prd.depth>1 || (prd.depth==1 && prd.hit_type == 0) )) {
+                    aov[primary_hit_type] += prd.depth>1?clampped:temp_radiance;
+                }
             }
-
             prd.radiance = make_float3(0);
             prd.emission = make_float3(0);
 
@@ -253,7 +254,7 @@ extern "C" __global__ void __raygen__rg()
                 prd.done = true;
             }
 
-            if( prd.done || params.simpleRender==true){
+            if( prd.done || params.simpleRender==true || prd.adepth>64){
                 break;
             }
 
@@ -268,20 +269,38 @@ extern "C" __global__ void __raygen__rg()
             if(prd.countEmitted == true)
                 prd.passed = true;
 
+
+            prd.radiance_d = make_float3(0);
+            prd.radiance_s = make_float3(0);
+            prd.radiance_t = make_float3(0);
+            prd.alphaHit = false;
+
             traceRadiance(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_);
+
+
+            if(prd.hit_type>0 && primary_hit_type==0)
+            {
+              primary_hit_type = prd.hit_type;
+              aov[primary_hit_type] += (prd.hit_type==1?prd.radiance_d:(prd.hit_type==2?prd.radiance_s:prd.radiance_t))*prd.attenuation2;
+            }
+            background_trace += prd.hit_type>0?1:0;
+
         }
-        result_b += prd.first_hit_type == 0 ? make_float3(0, 0, 0)
-                                            : make_float3(1, 1, 1);
+        
         seed = prd.seed;
+
+        if (!(background_trace == 0)) {
+            result_b += make_float3(1);
+        }
     }
     while( --i );
 
     auto samples_per_launch = static_cast<float>( params.samples_per_launch );
 
     float3         accum_color    = result   / samples_per_launch;
-    float3         accum_color_d  = result_d / samples_per_launch;
-    float3         accum_color_s  = result_s / samples_per_launch;
-    float3         accum_color_t  = result_t / samples_per_launch;
+    float3         accum_color_d  = aov[1] / samples_per_launch;
+    float3         accum_color_s  = aov[2] / samples_per_launch;
+    float3         accum_color_t  = aov[3] / samples_per_launch;
     float3         accum_color_b  = result_b / samples_per_launch;
     
     if( subframe_index > 0 )
@@ -378,7 +397,7 @@ extern "C" __global__ void __miss__radiance()
         }
 
         prd->done      = true;
-        prd->hitEnv    = true;
+        prd->hit_type  = 0;
         return;
     }
 

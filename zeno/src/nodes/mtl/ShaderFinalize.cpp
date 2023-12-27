@@ -12,6 +12,12 @@
 #include <string>
 #include <iostream>
 #include "magic_enum.hpp"
+#include "zeno/utils/vec.h"
+
+#include <rapidjson/document.h>
+#include <rapidjson/rapidjson.h>
+#include <rapidjson/writer.h>
+#include <rapidjson/stringbuffer.h>
 
 namespace zeno {
 
@@ -62,6 +68,7 @@ struct ShaderFinalize : INode {
             {1, "mat_ior"},
 
             {1, "mat_flatness"},
+            {1, "mat_shadowReceiver"},
             {1, "mat_thin"},
             {1, "mat_doubleSide"},
             {3, "mat_normal"},
@@ -115,6 +122,7 @@ struct ShaderFinalize : INode {
             get_input<IObject>("ior", std::make_shared<NumericObject>(float(1.5f))),
 
             get_input<IObject>("flatness", std::make_shared<NumericObject>(float(0.0f))),
+            get_input<IObject>("shadowReceiver", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("thin", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("doubleSide", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("normal", std::make_shared<NumericObject>(vec3f(0, 0, 1))),
@@ -139,9 +147,9 @@ struct ShaderFinalize : INode {
 
         auto sssRadiusMethod = get_input2<std::string>("sssRadius");
         if (sssRadiusMethod == "Fixed") {
-            commonCode += "#define _SSS_FIXED_RADIUS_ 1 \n";
+            code += "bool sssFxiedRadius = true;\n";
         } else {
-            commonCode += "#define _SSS_FIXED_RADIUS_ 0 \n";
+            code += "bool sssFxiedRadius = false;\n";
         }
 
         auto mtl = std::make_shared<MaterialObject>();
@@ -150,17 +158,23 @@ struct ShaderFinalize : INode {
         if (has_input("extensionsCode"))
             mtl->extensions = get_input<zeno::StringObject>("extensionsCode")->get();
 
-        if (has_input("tex2dList"))
         {
-            auto tex2dList = get_input<ListObject>("tex2dList")->get<zeno::Texture2DObject>();
-            for (const auto tex: tex2dList)
-            {
-                auto texId = mtl->tex2Ds.size();
-			    mtl->tex2Ds.push_back(tex);
+            if (has_input("tex2dList")) {
+                auto tex2dList = get_input<ListObject>("tex2dList")->get<zeno::Texture2DObject>();
+                if (!tex2dList.empty() && !em.tex2Ds.empty()) {
+                    throw zeno::makeError("Can not use both way!");
+                }
+                for (const auto& tex: tex2dList) {
+                    em.tex2Ds.push_back(tex);
+                }
             }
-
-            auto texCode = "uniform sampler2D zenotex[32]; \n";
-            mtl->common.insert(0, texCode);
+            if (!em.tex2Ds.empty()) {
+                for (const auto& tex: em.tex2Ds) {
+                    mtl->tex2Ds.push_back(tex);
+                }
+                auto texCode = "uniform sampler2D zenotex[32]; \n";
+                mtl->common.insert(0, texCode);
+            }
         }
 
         if (has_input("tex3dList"))
@@ -172,9 +186,28 @@ struct ShaderFinalize : INode {
             commonCode += "#define VolumeEmissionScaler VolumeEmissionScalerType::" + VolumeEmissionScaler + "\n";
 
             vol_depth = clamp(vol_depth, 9, 99);
+            vol_extinction = clamp(vol_extinction, 1e-5, 1e+5);
 
-            commonCode += "static const int   _vol_depth = " + std::to_string(vol_depth) + ";\n";
-            commonCode += "static const float _vol_extinction = " + std::to_string(vol_extinction) + ";\n";
+            std::string parameters = "";
+            {
+                using namespace rapidjson;
+                Document d; d.SetObject();
+                auto& allocator = d.GetAllocator();
+
+                Value s = Value();
+                s.SetInt(vol_depth);
+                d.AddMember("vol_depth", s, allocator);
+
+                s = Value();
+                s.SetFloat(vol_extinction); 
+                d.AddMember("vol_extinction", s, allocator);
+
+                StringBuffer buffer;
+                Writer<StringBuffer> writer(buffer);
+                d.Accept(writer);
+                parameters = buffer.GetString();
+            }
+            mtl->parameters = parameters;
 
             auto tex3dList = get_input<ListObject>("tex3dList")->getRaw(); //get<zeno::StringObject>();
 
@@ -252,10 +285,10 @@ struct ShaderFinalize : INode {
 ZENDEFNODE(ShaderFinalize, {
     {
         {"float", "base", "1"},
-        {"vec3f", "basecolor", "1,1,1"},
+        {"colorvec3f", "basecolor", "1,1,1"},
         {"float", "roughness", "0.4"},
         {"float", "metallic", "0.0"},
-        {"vec3f", "metalColor","1.0,1.0,1.0"},
+        {"colorvec3f", "metalColor","1.0,1.0,1.0"},
         {"float", "specular", "1.0"},
         {"float", "specularTint", "0.0"},
         {"float", "anisotropic", "0.0"},
@@ -264,7 +297,7 @@ ZENDEFNODE(ShaderFinalize, {
         {"float", "subsurface", "0.0"},
         {"enum Fixed Adaptive", "sssRadius", "Fixed"},
         {"vec3f", "sssParam", "1.0,1.0,1.0"},
-        {"vec3f", "sssColor", "1.0,1.0,1.0"},
+        {"colorvec3f", "sssColor", "1.0,1.0,1.0"},
         {"float", "scatterDistance", "10000"},
         {"float", "scatterStep", "0"},
 
@@ -285,6 +318,7 @@ ZENDEFNODE(ShaderFinalize, {
         {"float", "ior", "1.5"},
 
         {"float", "flatness", "0.0"},
+        {"float", "shadowReceiver", "0.0"},
         {"float", "thin", "0.0"},
         {"float", "doubleSide", "0.0"},
         {"vec3f", "normal", "0,0,1"},

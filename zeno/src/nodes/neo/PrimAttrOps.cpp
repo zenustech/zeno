@@ -73,20 +73,56 @@ struct PrimFloatAttrToInt : INode {
         auto prim = get_input<PrimitiveObject>("prim");
         auto attr = get_input2<std::string>("attr");
         auto attrOut = get_input2<std::string>("attrOut");
-        auto &inArr = prim->verts.attr<float>(attr);
-        auto factor = get_input2<float>("divisor");
-        if (attrOut == attr) {
-            std::vector<int> outArr(inArr.size());
-            parallel_for(inArr.size(), [&] (size_t i) {
-                outArr[i] = std::rint(inArr[i] * factor);
-            });
-            prim->verts.attrs.erase(attrOut);
-            prim->verts.add_attr<int>(attrOut) = std::move(outArr);
-        } else {
-            auto &outArr = prim->verts.add_attr<int>(attrOut);
-            parallel_for(inArr.size(), [&] (size_t i) {
-                outArr[i] = std::rint(inArr[i] * factor);
-            });
+        if(prim->verts.has_attr(attr)){
+            auto &inArr = prim->verts.attr<float>(attr);
+            auto factor = get_input2<float>("divisor");
+            if (attrOut == attr) {
+                std::vector<int> outArr(inArr.size());
+                parallel_for(inArr.size(), [&] (size_t i) {
+                    outArr[i] = std::rint(inArr[i] * factor);
+                });
+                prim->verts.attrs.erase(attrOut);
+                prim->verts.add_attr<int>(attrOut) = std::move(outArr);
+            } else {
+                auto &outArr = prim->verts.add_attr<int>(attrOut);
+                parallel_for(inArr.size(), [&] (size_t i) {
+                    outArr[i] = std::rint(inArr[i] * factor);
+                });
+            }
+        }
+        if(prim->tris.has_attr(attr)){
+            auto &inArr = prim->tris.attr<float>(attr);
+            auto factor = get_input2<float>("divisor");
+            if (attrOut == attr) {
+                std::vector<int> outArr(inArr.size());
+                parallel_for(inArr.size(), [&] (size_t i) {
+                    outArr[i] = std::rint(inArr[i] * factor);
+                });
+                prim->tris.attrs.erase(attrOut);
+                prim->tris.add_attr<int>(attrOut) = std::move(outArr);
+            } else {
+                auto &outArr = prim->tris.add_attr<int>(attrOut);
+                parallel_for(inArr.size(), [&] (size_t i) {
+                    outArr[i] = std::rint(inArr[i] * factor);
+                });
+            }
+        }
+        if(prim->polys.has_attr(attr)){
+            auto &inArr = prim->polys.attr<float>(attr);
+            auto factor = get_input2<float>("divisor");
+            if (attrOut == attr) {
+                std::vector<int> outArr(inArr.size());
+                parallel_for(inArr.size(), [&] (size_t i) {
+                    outArr[i] = std::rint(inArr[i] * factor);
+                });
+                prim->polys.attrs.erase(attrOut);
+                prim->polys.add_attr<int>(attrOut) = std::move(outArr);
+            } else {
+                auto &outArr = prim->polys.add_attr<int>(attrOut);
+                parallel_for(inArr.size(), [&] (size_t i) {
+                    outArr[i] = std::rint(inArr[i] * factor);
+                });
+            }
         }
         set_output("prim", std::move(prim));
     }
@@ -112,21 +148,61 @@ struct PrimIntAttrToFloat : INode {
         auto prim = get_input<PrimitiveObject>("prim");
         auto attr = get_input2<std::string>("attr");
         auto attrOut = get_input2<std::string>("attrOut");
-        auto &inArr = prim->verts.attr<int>(attr);
-        auto factor = get_input2<float>("divisor");
-        if (factor) factor = 1.0f / factor;
-        if (attrOut == attr) {
-            std::vector<float> outArr(inArr.size());
-            parallel_for(inArr.size(), [&] (size_t i) {
-                outArr[i] = float(inArr[i]) * factor;
-            });
-            prim->verts.attrs.erase(attrOut);
-            prim->verts.add_attr<float>(attrOut) = std::move(outArr);
-        } else {
-            auto &outArr = prim->verts.add_attr<float>(attrOut);
-            parallel_for(inArr.size(), [&] (size_t i) {
-                outArr[i] = float(inArr[i]) * factor;
-            });
+
+
+        if(prim->verts.has_attr(attr)){
+            auto &inArr = prim->verts.attr<int>(attr);
+            auto factor = get_input2<float>("divisor");
+            if (factor) factor = 1.0f / factor;
+            if (attrOut == attr) {
+                std::vector<float> outArr(inArr.size());
+                parallel_for(inArr.size(), [&] (size_t i) {
+                    outArr[i] = float(inArr[i]) * factor;
+                });
+                prim->verts.attrs.erase(attrOut);
+                prim->verts.add_attr<float>(attrOut) = std::move(outArr);
+            } else {
+                auto &outArr = prim->verts.add_attr<float>(attrOut);
+                parallel_for(inArr.size(), [&] (size_t i) {
+                    outArr[i] = float(inArr[i]) * factor;
+                });
+            }
+        }
+        if(prim->tris.has_attr(attr)){
+            auto &inArr = prim->tris.attr<int>(attr);
+            auto factor = get_input2<float>("divisor");
+            if (factor) factor = 1.0f / factor;
+            if (attrOut == attr) {
+                std::vector<float> outArr(inArr.size());
+                parallel_for(inArr.size(), [&] (size_t i) {
+                    outArr[i] = float(inArr[i]) * factor;
+                });
+                prim->tris.attrs.erase(attrOut);
+                prim->tris.add_attr<float>(attrOut) = std::move(outArr);
+            } else {
+                auto &outArr = prim->tris.add_attr<float>(attrOut);
+                parallel_for(inArr.size(), [&] (size_t i) {
+                    outArr[i] = float(inArr[i]) * factor;
+                });
+            }
+        }
+        if(prim->polys.has_attr(attr)){
+            auto &inArr = prim->polys.attr<int>(attr);
+            auto factor = get_input2<float>("divisor");
+            if (factor) factor = 1.0f / factor;
+            if (attrOut == attr) {
+                std::vector<float> outArr(inArr.size());
+                parallel_for(inArr.size(), [&] (size_t i) {
+                    outArr[i] = float(inArr[i]) * factor;
+                });
+                prim->polys.attrs.erase(attrOut);
+                prim->polys.add_attr<float>(attrOut) = std::move(outArr);
+            } else {
+                auto &outArr = prim->polys.add_attr<float>(attrOut);
+                parallel_for(inArr.size(), [&] (size_t i) {
+                    outArr[i] = float(inArr[i]) * factor;
+                });
+            }
         }
         set_output("prim", std::move(prim));
     }

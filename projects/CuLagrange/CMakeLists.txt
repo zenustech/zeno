@@ -35,10 +35,9 @@ target_sources(zeno PRIVATE
 
 # pbd
 target_sources(zeno PRIVATE
-  pbd/Constraints.cu
-  pbd/SelfCollision.cu
+  pbd/ConstraintsBuilder.cu
+  pbd/ConstraintsSolver.cu
   pbd/KinematicCollision.cu
-  # pbd/Pipeline.cu
 )
 
 # fem-cloth
@@ -114,7 +113,7 @@ target_sources(zeno PRIVATE
   geometry/kernel/compute_characteristic_length.hpp
   geometry/kernel/topology.hpp
   geometry/kernel/calculate_facet_normal.hpp
-  geometry/kernel/calculate_bisector_normal.hpp
+  # geometry/kernel/calculate_bisector_normal.hpp
   geometry/kernel/tiled_vector_ops.hpp
   geometry/kernel/intersection.hpp
   geometry/SolveLaplacian.cu
@@ -126,13 +125,13 @@ target_sources(zeno PRIVATE
   geometry/MeshIO.cu
   geometry/Jiggle.cu
   geometry/DeformationField.cu
-  # geometry/VectorField.cu
   geometry/CollisionVis.cu # CHECK THIS
-  # geometry/CalcSurfaceArea.cu
   geometry/BasicGeoNodes.cu
   geometry/MarkSurfaceTag.cu
   geometry/SurfaceBinder.cu
   geometry/MarkInversion.cu
   geometry/Topology.cu
   geometry/MarkCollisionRegion.cu # CHECK THIS
+  geometry/GIA_vis.cu
+  geometry/Detangle.cu
 )

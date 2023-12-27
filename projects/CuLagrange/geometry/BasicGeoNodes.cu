@@ -85,5 +85,4 @@ ZENDEFNODE(ZSComputeSurfaceArea, {{{"zsparticles"}},
                                 {"string","attrName","area"}
                             },
                             {"ZSGeometry"}});
-
 };

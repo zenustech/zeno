@@ -370,7 +370,7 @@ void EvalBlenderFile::onEvalClicked() {
             Zeno_SetInputDefl(hGraph, read_alembic_Node, "path", out_abc.string());
             Zeno_SetInputDefl(hGraph, alembic_prim_Node, "use_xform", true);
             Zeno_SetInputDefl(hGraph, alembic_prim_Node, "triangulate", true);
-            Zeno_SetInputDefl(hGraph, bind_material_Node, "mtlid", key);
+            Zeno_SetInputDefl(hGraph, bind_material_Node, "mtlid", key.substr(0,key.find('/')));
 
             // Link nodes
             Zeno_AddLink(hGraph, read_alembic_Node, "abctree", alembic_prim_Node, "abctree");
@@ -389,8 +389,16 @@ void EvalBlenderFile::onEvalClicked() {
     }
 
     int mat_count = 0;
+    std::map<std::string, int> mat_existence;
     // Eval Material
     for (auto& [key, val] : parseData.items()){
+
+        auto matName = key.substr(0,key.find('/'));
+        
+        if(mat_existence.find(matName)!=mat_existence.end()){
+            continue;
+        }
+        mat_existence[matName] = 1;
 
         std::vector<std::string> mat_texs{};
         std::map<std::string, MatChannelInfo> mat_infos{};
@@ -428,10 +436,10 @@ void EvalBlenderFile::onEvalClicked() {
             }
         }
 
-        std::pair<float, float> NodePos2 = { evalBlenderNodePos.first + 3000.0f * mat_count + 800.0f, evalBlenderNodePos.second - 2000.0f};
+        std::pair<float, float> NodePos2 = { evalBlenderNodePos.first + 3000.0f * (mat_count%50) + 800.0f, evalBlenderNodePos.second + 2000.0f * ( mat_count/50 )};
         ZENO_HANDLE shader_finalize_Node = Zeno_AddNode(hGraph, "ShaderFinalize");
         Zeno_SetPos(hGraph, shader_finalize_Node, NodePos2);
-        Zeno_SetInputDefl(hGraph, shader_finalize_Node, "mtlid", key);
+        Zeno_SetInputDefl(hGraph, shader_finalize_Node, "mtlid", matName);
         //Zeno_SetView(hGraph, shader_finalize_Node, true);
 
         Zeno_AddLink(hGraph, shader_finalize_Node, "mtl", makelist_Node, "obj"+std::to_string(out_view_count));
@@ -486,8 +494,8 @@ void EvalBlenderFile::onEvalClicked() {
 
         if(mat_infos.size())
         {
-            std::pair<float, float> NodePos0 = { evalBlenderNodePos.first + 3000.0f * mat_count, evalBlenderNodePos.second};
-            std::pair<float, float> NodePos1 = { evalBlenderNodePos.first + 3000.0f * mat_count, evalBlenderNodePos.second + 1000.0f};
+            std::pair<float, float> NodePos0 = { evalBlenderNodePos.first + 3000.0f * (mat_count%50), evalBlenderNodePos.second + 2000.0f * ( mat_count/50 )};
+            std::pair<float, float> NodePos1 = { evalBlenderNodePos.first + 3000.0f * (mat_count%50), evalBlenderNodePos.second  + 2000.0f * ( mat_count/50 ) + 1000.0f};
 
             ZENO_HANDLE shader_attr_Node = Zeno_AddNode(hGraph, "ShaderInputAttr");
             Zeno_SetPos(hGraph, shader_attr_Node, NodePos0);
@@ -648,13 +656,13 @@ if(value.separate != ""){ \
     Zeno_SetView(mGraph, parsed_blender_Node, true);
 
     // Save zsg file
-    IGraphsModel *pModel = GraphsManagment::instance().currentModel();
-    GraphsManagment& gman = GraphsManagment::instance();
-    APP_SETTINGS settings;
-    TIMELINE_INFO info;
-    settings.timeline = info;
-    std::cout << "save zsg file: " << out_zsg.string() << "\n";
-    gman.saveFile(QString::fromStdString(out_zsg.string()), settings);
+    // IGraphsModel *pModel = GraphsManagment::instance().currentModel();
+    // GraphsManagment& gman = GraphsManagment::instance();
+    // APP_SETTINGS settings;
+    // TIMELINE_INFO info;
+    // settings.timeline = info;
+    // std::cout << "save zsg file: " << out_zsg.string() << "\n";
+    // gman.saveFile(QString::fromStdString(out_zsg.string()), settings);
 }
 
 void EvalBlenderFile::onExecClicked() {

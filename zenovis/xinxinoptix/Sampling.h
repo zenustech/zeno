@@ -96,6 +96,23 @@ inline void CoordinateSystem(const float3& a, float3& b, float3& c) {
     c = cross(a, b);
 }
 
+inline float2 SampleUniformDiskConcentric(float2 uu) {
+    
+    float2 uOffset = 2 * uu - float2{1.f, 1.f};
+    if (uOffset.x == 0 && uOffset.y == 0)
+        return {0, 0};
+    // Apply concentric mapping to point
+    float theta, r;
+    if (fabsf(uOffset.x) > fabsf(uOffset.y)) {
+        r = uOffset.x;
+        theta = M_PI_4f * (uOffset.y / uOffset.x);
+    } else {
+        r = uOffset.y;
+        theta = M_PI_2f - M_PI_4f * (uOffset.x / uOffset.y);
+    }
+    return r * float2{cosf(theta), sinf(theta)};
+}
+
 inline float3 SphericalDirection(float sinTheta, float cosTheta, float phi) {
     return make_float3(sinTheta * cosf(phi), sinTheta * sinf(phi), cosTheta);
 }
@@ -177,9 +194,9 @@ inline Vector3f GramSchmidt(Vector3f v, Vector3f w) {
 
 namespace rtgems {
 
-    constexpr float origin()      { return 1.0f / 16.0f; }
-    constexpr float int_scale()   { return 3.0f * 256.0f; }
-    constexpr float float_scale() { return 3.0f / 65536.0f; }
+    constexpr float origin()      { return 1.0f / 32.0f; }
+    constexpr float int_scale()   { return 1.0f * 256.0f; }
+    constexpr float float_scale() { return 1.0f / 65536.0f; }
     
     // Normal points outward for rays exiting the surface, else is flipped.
     static __inline__ __device__ float3 offset_ray(const float3 p, const float3 n)

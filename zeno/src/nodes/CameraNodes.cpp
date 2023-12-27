@@ -47,6 +47,7 @@ struct TargetCamera : INode {
         auto refUp = zeno::normalize(get_input2<vec3f>("refUp"));
         auto pos = get_input2<vec3f>("pos");
         auto target = get_input2<vec3f>("target");
+        auto AF = get_input2<bool>("AutoFocus");
         vec3f view = zeno::normalize(target - pos);
         vec3f right = zeno::cross(view, refUp);
         vec3f up = zeno::cross(right, view);
@@ -58,7 +59,11 @@ struct TargetCamera : INode {
         camera->fnear = get_input2<float>("near");
         camera->fov = get_input2<float>("fov");
         camera->aperture = get_input2<float>("aperture");
-        camera->focalPlaneDistance = get_input2<float>("focalPlaneDistance");
+        if(AF){
+            camera->focalPlaneDistance = zeno::length(target-pos);
+        }else{
+            camera->focalPlaneDistance = get_input2<float>("focalPlaneDistance");
+        }
 
         set_output("camera", std::move(camera));
     }
@@ -73,6 +78,7 @@ ZENO_DEFNODE(TargetCamera)({
         {"float", "far", "20000"},
         {"float", "fov", "45"},
         {"float", "aperture", "11"},
+        {"bool","AutoFocus","false"},
         {"float", "focalPlaneDistance", "2.0"},
     },
     {

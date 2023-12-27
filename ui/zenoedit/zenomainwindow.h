@@ -94,6 +94,7 @@ public:
         ACTION_SOLID,
         ACTION_SHADING,
         ACTION_OPTIX,
+        ACTION_UV_MODE,
         //View EnvTex
         ACTION_BLACK_WHITE,
         ACTION_GREEK,
@@ -147,7 +148,7 @@ public slots:
     void onMenuActionTriggered(bool bTriggered);
     void onSplitDock(bool);
     void onCloseDock();
-    void importGraph();
+    void importGraph(bool bPreset = false);
     void exportGraph();
     void onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
     void onPrimitiveSelected(const std::unordered_set<std::string>& primids);

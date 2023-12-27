@@ -57,6 +57,7 @@ ViewportWidget::ViewportWidget(QWidget* parent)
     // https://blog.csdn.net/zhujiangm/article/details/90760744
     // https://blog.csdn.net/jays_/article/details/83783871
     setFocusPolicy(Qt::ClickFocus);
+    setMouseTracking(true);
 
     m_camera = new CameraControl(m_zenovis, m_fakeTrans, m_picker, this);
     m_zenovis->m_camera_control = m_camera;
@@ -407,4 +408,9 @@ void ViewportWidget::keyReleaseEvent(QKeyEvent *event) {
         zenoApp->getMainWindow()->updateViewport();
         return;
     }
+}
+
+void ViewportWidget::enterEvent(QEvent *event) {
+    setFocus();
+    QWidget::enterEvent(event);
 }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cuda_fp16.h>
 #include <cuda/helpers.h>
 
 __forceinline__ __device__ float to_radians(float degrees) {
@@ -1091,7 +1092,7 @@ __forceinline__ __device__ vec4 operator*(mat4 a, vec4 b)
 //}
 
 __forceinline__ __device__ vec3 normalmap(vec3 norm, float scale) {
-    norm = norm * 2 - 1;
+    //norm = norm * 2 - 1;
     float x = norm.x * scale;
     float y = norm.y * scale;
     float z = 1 - sqrt(x * x + y * y);
@@ -1329,4 +1330,37 @@ __forceinline__ __device__ vec2 shuffled_scrambled_sobol_2d(unsigned int index, 
     p.x = nested_uniform_scramble(p.x, hash_combine(seed, 0u));
     p.y = nested_uniform_scramble(p.y, hash_combine(seed, 1u));
     return vec2(p.x, p.y)*exp2(-32.);
+}
+
+__forceinline__ __device__ float3 decodeColor(uchar3 c)
+{
+  vec3 cout = vec3((float)(c.x), (float)(c.y), (float)(c.z)) / 255.0f;
+  return make_float3(cout.x, cout.y, cout.z);
+}
+__forceinline__ __device__ float3 decodeNormal(uchar3 c)
+{
+  vec3 cout = vec3((float)(c.x), (float)(c.y), (float)(c.z)) / 255.0 * 2.0f - 1.0f;
+  return make_float3(cout.x, cout.y, cout.z);
+}
+
+__forceinline__ __device__ float3 decodeColor(ushort3 c)
+{
+  half& hx = reinterpret_cast<half&>(c.x);
+  half& hy = reinterpret_cast<half&>(c.y);
+  half& hz = reinterpret_cast<half&>(c.z);
+
+  return { __half2float(hx), __half2float(hy), __half2float(hz) };
+}
+__forceinline__ __device__ float3 decodeNormal(ushort3 c)
+{
+  vec3 cout = vec3((float)(c.x), (float)(c.y), (float)(c.z)) / 65536.0f * 2.0f - 1.0f;
+  return make_float3(cout.x, cout.y, cout.z);
+}
+__forceinline__ __device__ float3 decodeColor(float4 c)
+{
+  return make_float3(c.x, c.y, c.z);
+}
+__forceinline__ __device__ float3 decodeNormal(float4 c)
+{
+  return make_float3(c.x, c.y, c.z);
 }

@@ -23,11 +23,11 @@ struct Buffer {
     size_t count = 0;
     size_t stride = 0;
 };
-
+template <typename T>
 static void vectors_wrangle
     ( zfx::x64::Executable *exec
     , std::vector<Buffer> const &chs
-    , int *maskarr
+    , T *maskarr
     ) {
     if (chs.size() == 0)
         return;
@@ -215,8 +215,18 @@ struct ParticlesMaskedWrangle : zeno::INode {
             });
             chs[i] = iob;
         }
-        auto &maskarr = prim->attr<int>(get_input2<std::string>("maskAttr"));
-        vectors_wrangle(exec, chs, maskarr.data());
+        std::string maskAttr = get_input2<std::string>("maskAttr");
+        if(prim->attr_is<float>(maskAttr)){
+            auto &maskarr = prim->attr<float>(maskAttr);
+            vectors_wrangle(exec, chs, maskarr.data());
+        }
+        else if(prim->attr_is<int>(maskAttr)){
+            auto &maskarr = prim->attr<int>(maskAttr);
+            vectors_wrangle(exec, chs, maskarr.data());
+        }
+        else{
+            throw std::runtime_error("mask type not supported");
+        }
 
         set_output("prim", std::move(prim));
     }

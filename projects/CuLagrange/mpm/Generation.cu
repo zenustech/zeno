@@ -1340,7 +1340,7 @@ ZENDEFNODE(UpdatePrimitiveAttrFromZSParticles,
            {
                {"ZSParticles"},
                {"ZSParticles"},
-               {{"string", "attr", "x"}, {"enum float vec3f", "type", "float"}, {"enum vert quad", "location", "vert"}},
+               {{"string", "attr", "x"}, {"enum float vec3f", "type", "vec3f"}, {"enum vert quad", "location", "vert"}},
                {"MPM"},
            });
 

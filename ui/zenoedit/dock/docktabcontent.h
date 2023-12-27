@@ -122,6 +122,7 @@ private:
     ZTextIconButton* m_btnKill;
 
     QComboBox* cbZoom;
+    ZComboBox* cbSubgType;
 };
 
 class DockContent_View : public DockToolbarWidget
@@ -159,6 +160,7 @@ private:
     ZToolBarButton* m_rotateBtn;
     ZToolBarButton* m_resizeViewport;
     QCheckBox *m_background;
+    QCheckBox *m_uv_mode = nullptr;
 
     QComboBox* m_cbRes;
     QAction* m_pFocus;

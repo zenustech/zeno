@@ -16,12 +16,10 @@ namespace zeno {
 
 FakeTransformer::FakeTransformer(ViewportWidget* viewport)
     : m_objects_center(0.0f)
+      , m_pivot(0.0f)
       , m_trans(0.0f)
       , m_scale(1.0f)
       , m_rotate({0, 0, 0, 1})
-      , m_last_trans(0.0f)
-      , m_last_scale(1.0f)
-      , m_last_rotate({0, 0, 0, 1})
       , m_status(false)
       , m_operation(NONE)
       , m_handler_scale(1.f)
@@ -70,16 +68,27 @@ void FakeTransformer::addObject(const std::string& name) {
                 user_data.setLiterial("_bboxMin", bmin);
                 user_data.setLiterial("_bboxMax", bmax);
             }
-            if (!user_data.has("_translate")) {
+    if (!user_data.has("_pivot")) {
                 zeno::vec3f translate = {0, 0, 0};
                 user_data.setLiterial("_translate", translate);
                 zeno::vec4f rotate = {0, 0, 0, 1};
                 user_data.setLiterial("_rotate", rotate);
                 zeno::vec3f scale = {1, 1, 1};
                 user_data.setLiterial("_scale", scale);
-            }
+        auto bboxCenter = (bmin + bmax) / 2;
+        user_data.set2("_pivot", bboxCenter);
+        if (object->has_attr("pos") && !object->has_attr("_origin_pos")) {
+            auto &pos = object->attr<zeno::vec3f>("pos");
+            object->verts.add_attr<zeno::vec3f>("_origin_pos") = pos;
+        }
+        if (object->has_attr("nrm") && !object->has_attr("_origin_nrm")) {
+            auto &nrm = object->attr<zeno::vec3f>("nrm");
+            object->verts.add_attr<zeno::vec3f>("_origin_nrm") = nrm;
+        }
+    }
             auto m = zeno::vec_to_other<glm::vec3>(bmax);
             auto n = zeno::vec_to_other<glm::vec3>(bmin);
+    m_pivot = zeno::vec_to_other<glm::vec3>(user_data.get2<vec3f>("_pivot"));
             m_objects_center += (m + n) / 2.0f;
             m_objects[name] = key;
             m_objects_center /= m_objects.size();
@@ -170,9 +179,19 @@ bool FakeTransformer::clickedAnyHandler(QVector3D ori, QVector3D dir, glm::vec3 
     if (!m_handler) return false;
     auto ray_ori = QVec3ToGLMVec3(ori);
     auto ray_dir = QVec3ToGLMVec3(dir);
-    m_operation_mode = m_handler->collisionTest(ray_ori, ray_dir);
+    m_operation_mode = m_handler->handleClick(ray_ori, ray_dir);
     if (!calcTransformStart(ray_ori, ray_dir, front)) return false;
     return m_operation_mode != zenovis::INTERACT_NONE;
+}
+
+bool FakeTransformer::hoveredAnyHandler(QVector3D ori, QVector3D dir, glm::vec3 front)
+{
+    if (!m_handler) return false;
+    auto ray_ori = QVec3ToGLMVec3(ori);
+    auto ray_dir = QVec3ToGLMVec3(dir);
+    int mode = m_handler->handleHover(ray_ori, ray_dir);
+    if (!calcTransformStart(ray_ori, ray_dir, front)) return false;
+    return mode != zenovis::INTERACT_NONE;
 }
 
 void FakeTransformer::transform(QVector3D camera_pos, QVector3D ray_dir, glm::vec2 mouse_start, glm::vec2 mouse_pos, glm::vec3 front, glm::mat4 vp) {
@@ -321,7 +340,7 @@ void FakeTransformer::createNewTransformNode(NodeLocation& node_location,
 
     auto out_sock = node_sync.getPrimSockName(node_location);
     auto new_node_location = node_sync.generateNewNode(node_location,
-                                                       "TransformPrimitive",
+                                                       "PrimitiveTransform",
                                                        out_sock,
                                                        "prim");
 
@@ -487,7 +506,7 @@ void FakeTransformer::endTransform(bool moved) {
                 const std::string& path = user_data.get2<std::string>("list-index");
                 listitems.push_back(path);
             }
-            else if (node_sync.checkNodeType(prim_node, "TransformPrimitive") &&
+            else if (node_sync.checkNodeType(prim_node, "PrimitiveTransform")) &&
                 // prim comes from a exist TransformPrimitive node
                 node_sync.checkNodeInputHasValue(prim_node, "translation") &&
                 node_sync.checkNodeInputHasValue(prim_node, "quatRotation") &&
@@ -497,7 +516,7 @@ void FakeTransformer::endTransform(bool moved) {
             else {
                 // prim comes from another type node
                 auto linked_transform_node =
-                    node_sync.checkNodeLinkedSpecificNode(prim_node, "TransformPrimitive");
+                    node_sync.checkNodeLinkedSpecificNode(prim_node, "PrimitiveTransform");
                 if (linked_transform_node.has_value())
                     // prim links to a exist TransformPrimitive node
                     syncToTransformNode(linked_transform_node.value(), obj_name);
@@ -517,10 +536,6 @@ void FakeTransformer::endTransform(bool moved) {
     m_trans = {0, 0, 0};
     m_scale = {1, 1, 1};
     m_rotate = {0, 0, 0, 1};
-
-    m_last_trans = {0, 0, 0};
-    m_last_scale = {1, 1, 1};
-    m_last_rotate = {0, 0, 0, 1};
 
     m_operation_mode = zenovis::INTERACT_NONE;
     m_handler->setMode(zenovis::INTERACT_NONE);
@@ -698,9 +713,6 @@ void FakeTransformer::clear() {
     m_trans = {0, 0, 0};
     m_scale = {1, 1, 1};
     m_rotate = {0, 0, 0, 1};
-    m_last_trans = {0, 0, 0};
-    m_last_scale = {1, 1, 1};
-    m_last_rotate = {0, 0, 0, 1};
     m_operation = NONE;
     m_handler = nullptr;
 
@@ -764,51 +776,41 @@ void FakeTransformer::doTransform() {
         auto translate = zeno::vec_to_other<glm::vec3>(user_data.getLiterial<zeno::vec3f>("_translate"));
         auto rotate = zeno::vec_to_other<glm::vec4>(user_data.getLiterial<zeno::vec4f>("_rotate"));
         auto scale = zeno::vec_to_other<glm::vec3>(user_data.getLiterial<zeno::vec3f>("_scale"));
-
-        // inv last transform
-        auto pre_translate_matrix = glm::translate(translate + m_last_trans);
         auto pre_quaternion = glm::quat(rotate[3], rotate[0], rotate[1], rotate[2]);
-        auto last_quaternion = glm::quat(m_last_rotate[3], m_last_rotate[0], m_last_rotate[1], m_last_rotate[2]);
         auto pre_rotate_matrix = glm::toMat4(pre_quaternion);
-        auto pre_scale_matrix = glm::scale(scale * m_last_scale);
-        auto pre_transform_matrix = pre_translate_matrix * glm::toMat4(last_quaternion) * pre_rotate_matrix * pre_scale_matrix;
-        auto inv_pre_transform = glm::inverse(pre_transform_matrix);
 
         // do this transform
         auto translate_matrix = glm::translate(translate + m_trans);
         auto cur_quaternion = glm::quat(m_rotate[3], m_rotate[0], m_rotate[1], m_rotate[2]);
         auto rotate_matrix = glm::toMat4(cur_quaternion) * pre_rotate_matrix;
         auto scale_matrix = glm::scale(scale * m_scale);
-        auto transform_matrix = translate_matrix *
-                                rotate_matrix *
-                                scale_matrix *
-                                inv_pre_transform;
+        auto transform_matrix = glm::translate(m_pivot) *  translate_matrix *  rotate_matrix * scale_matrix * glm::translate(-m_pivot);
 
-        if (obj->has_attr("pos")) {
+        if (obj->has_attr("_origin_pos")) {
             // transform pos
             auto &pos = obj->attr<zeno::vec3f>("pos");
+            auto &opos = obj->attr<zeno::vec3f>("_origin_pos");
 #pragma omp parallel for
             // for (auto &po : pos) {
             for (size_t i = 0; i < pos.size(); ++i) {
-                auto& po = pos[i];
-                auto p = zeno::vec_to_other<glm::vec3>(po);
+                auto p = zeno::vec_to_other<glm::vec3>(opos[i]);
                 auto t = transform_matrix * glm::vec4(p, 1.0f);
                 auto pt = glm::vec3(t) / t.w;
-                po = zeno::other_to_vec<3>(pt);
+                pos[i] = zeno::other_to_vec<3>(pt);
             }
         }
-        if (obj->has_attr("nrm")) {
+        if (obj->has_attr("_origin_nrm")) {
             // transform nrm
             auto &nrm = obj->attr<zeno::vec3f>("nrm");
+            auto &onrm = obj->attr<zeno::vec3f>("_origin_nrm");
 #pragma omp parallel for
             // for (auto &vec : nrm) {
             for (size_t i = 0; i < nrm.size(); ++i) {
-                auto& vec = nrm[i];
-                auto n = zeno::vec_to_other<glm::vec3>(vec);
+                auto n = zeno::vec_to_other<glm::vec3>(nrm[i]);
                 glm::mat3 norm_matrix(transform_matrix);
                 norm_matrix = glm::transpose(glm::inverse(norm_matrix));
                 auto t = glm::normalize(norm_matrix * n);
-                vec = zeno::other_to_vec<3>(t);
+                onrm[i] = zeno::other_to_vec<3>(t);
             }
         }
         vec3f bmin, bmax;
@@ -819,9 +821,6 @@ void FakeTransformer::doTransform() {
         }
         new_objects_center += (zeno::vec_to_other<glm::vec3>(bmin) + zeno::vec_to_other<glm::vec3>(bmax)) / 2.0f;
     }
-    m_last_trans = m_trans;
-    m_last_rotate = m_rotate;
-    m_last_scale = m_scale;
 
     new_objects_center /= m_objects.size();
     m_objects_center = new_objects_center;

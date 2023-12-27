@@ -137,7 +137,7 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
     auto dir = screenToWorldRay(event->x() / res().x(), event->y() / res().y());
     if (m_transformer)
     {
-        if (!scene->selected.empty() && m_transformer->isTransformMode() &&
+        if (event->buttons() & Qt::LeftButton && !scene->selected.empty() && m_transformer->isTransformMode() &&
             m_transformer->clickedAnyHandler(realPos(), dir, front))
         {
             bTransform = true;
@@ -287,9 +287,18 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
     ZenoSettingsManager& settings = ZenoSettingsManager::GetInstance();
     int moveKey = settings.getViewShortCut(ShortCut_MovingView, moveButton);
     int rotateKey = settings.getViewShortCut(ShortCut_RotatingView, rotateButton);
+
     bool bTransform = false;
-    if (m_transformer)
+    if (m_transformer) {
         bTransform = m_transformer->isTransforming();
+        // check if hover a handler
+        auto front = scene->camera->m_lodfront;
+        auto dir = screenToWorldRay(event->x() / res().x(), event->y() / res().y());
+        if (!scene->selected.empty() && !(event->buttons() & Qt::LeftButton)) {
+            m_transformer->hoveredAnyHandler(realPos(), dir, front);
+        }
+    }
+
     if (!bTransform && (event->buttons() & (rotateButton | moveButton))) {
         float ratio = QApplication::desktop()->devicePixelRatio();
         float dx = xpos - m_lastMidButtonPos.x(), dy = ypos - m_lastMidButtonPos.y();
@@ -411,12 +420,41 @@ void CameraControl::fakeMouseDoubleClickEvent(QMouseEvent *event)
     auto scene = m_zenovis->getSession()->get_scene();
     auto picked_prim = m_picker->just_pick_prim(pos.x(), pos.y());
     if (!picked_prim.empty()) {
-        auto key = zeno::getSession().globalComm->getObjMatId(picked_prim);
-        if (key != "")
-            std::cout << "selected MatId: " << key << "\n";
+        QString mtlid;
+        {
+            std::lock_guard lck(zeno::g_objsMutex);
+            auto primList = zeno::getSession().globalComm->pairs();
+            for (auto const &[key, ptr]: primList) {
+                if (picked_prim == key) {
+                    auto &ud = ptr->userData();
+                    mtlid = QString::fromStdString(ud.get2<std::string>("mtlid", ""));
+                    std::cout<<"selected MatId: "<<ud.get2<std::string>("mtlid", "Default")<<"\n";
+                }
+            }
+        }
+
+        QString subgraph_name;
+        QString obj_node_name;
+        int type = ZenoSettingsManager::GetInstance().getValue(zsSubgraphType).toInt();
+        if (type == SUBGRAPH_TYPE::SUBGRAPH_METERIAL && !mtlid.isEmpty())
+        {
+            auto graphsMgm = zenoApp->graphsManagment();
+            IGraphsModel* pModel = graphsMgm->currentModel();
+
+            const auto& lst = pModel->subgraphsIndice(SUBGRAPH_METERIAL);
+            for (const auto& index : lst)
+            {
+                if (index.data(ROLE_MTLID).toString() == mtlid)
+                    subgraph_name = index.data(ROLE_OBJNAME).toString();
+            }
+        }
+        if (subgraph_name.isEmpty())
+        {
         auto obj_node_location = zeno::NodeSyncMgr::GetInstance().searchNodeOfPrim(picked_prim);
-        auto subgraph_name = obj_node_location->subgraph.data(ROLE_OBJNAME).toString();
-        auto obj_node_name = obj_node_location->node.data(ROLE_OBJID).toString();
+            subgraph_name = obj_node_location->subgraph.data(ROLE_OBJNAME).toString();
+            obj_node_name = obj_node_location->node.data(ROLE_OBJID).toString();
+        }
+
         ZenoMainWindow *pWin = zenoApp->getMainWindow();
         if (pWin) {
             ZenoGraphsEditor *pEditor = pWin->getAnyEditor();

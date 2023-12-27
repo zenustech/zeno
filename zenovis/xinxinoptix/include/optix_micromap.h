@@ -34,8 +34,8 @@
 * OptiX micromap helper functions. Useable on either host or device.
 */
 
-#ifndef __optix_optix_micromap_h__
-#define __optix_optix_micromap_h__
+#ifndef OPTIX_OPTIX_MICROMAP_H
+#define OPTIX_OPTIX_MICROMAP_H
 
 #if !defined( OPTIX_DONT_INCLUDE_CUDA )
 // If OPTIX_DONT_INCLUDE_CUDA is defined, cuda driver type float2 must be defined through other
@@ -44,23 +44,31 @@
 #endif
 #include "internal/optix_micromap_impl.h"
 
-/// Convert a micromap triangle index to three base-triangle barycentric coordinates of the micro triangle vertices.
+/// Converts a micromap triangle index to the three base-triangle barycentric coordinates of the micro-triangle vertices in the base triangle.
 /// The base triangle is the triangle that the micromap is applied to.
+/// Note that for displaced micro-meshes this function can be used to compute a UV mapping from sub triangle to base triangle.
 ///
-/// \param[in]  microTriangleIndex  Index of a micro triangle withing a micromap.
-/// \param[in]  subdivisionLevel    Subdivision level of the micromap.
-/// \param[out] baseBarycentrics0   Barycentric coordinates in the space of the base triangle of vertex 0 of the micro triangle.
-/// \param[out] baseBarycentrics1   Barycentric coordinates in the space of the base triangle of vertex 1 of the micro triangle.
-/// \param[out] baseBarycentrics2   Barycentric coordinates in the space of the base triangle of vertex 2 of the micro triangle.
-OPTIX_MICROMAP_INLINE_FUNC void optixMicromapIndexToBaseBarycentrics( uint32_t microTriangleIndex,
+/// \param[in]  micromapTriangleIndex  Index of a micro- or sub triangle within a micromap.
+/// \param[in]  subdivisionLevel       Number of subdivision levels of the micromap or number of subdivision levels being considered (for sub triangles).
+/// \param[out] baseBarycentrics0      Barycentric coordinates in the space of the base triangle of vertex 0 of the micromap triangle.
+/// \param[out] baseBarycentrics1      Barycentric coordinates in the space of the base triangle of vertex 1 of the micromap triangle.
+/// \param[out] baseBarycentrics2      Barycentric coordinates in the space of the base triangle of vertex 2 of the micromap triangle.
+OPTIX_MICROMAP_INLINE_FUNC void optixMicromapIndexToBaseBarycentrics( uint32_t micromapTriangleIndex,
                                                                       uint32_t subdivisionLevel,
                                                                       float2&  baseBarycentrics0,
                                                                       float2&  baseBarycentrics1,
                                                                       float2&  baseBarycentrics2 )
 {
-    optix_impl::
-        micro2bary( microTriangleIndex, subdivisionLevel, baseBarycentrics0, baseBarycentrics1, baseBarycentrics2 );
+    optix_impl::micro2bary( micromapTriangleIndex, subdivisionLevel, baseBarycentrics0, baseBarycentrics1, baseBarycentrics2 );
 }
 
+/// Maps barycentrics in the space of the base triangle to barycentrics of a micro triangle.
+/// The vertices of the micro triangle are defined by its barycentrics in the space of the base triangle.
+/// These can be queried for a DMM hit by using optixGetMicroTriangleBarycentricsData().
+OPTIX_MICROMAP_INLINE_FUNC float2 optixBaseBarycentricsToMicroBarycentrics( float2 baseBarycentrics,
+                                                                            float2 microVertexBaseBarycentrics[3] )
+{
+    return optix_impl::base2micro( baseBarycentrics, microVertexBaseBarycentrics );
+}
 
-#endif  // __optix_optix_micromap_h__
+#endif  // OPTIX_OPTIX_MICROMAP_H

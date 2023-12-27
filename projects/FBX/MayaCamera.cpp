@@ -245,6 +245,49 @@ ZENO_DEFNODE(CameraEval)({
     {"FBX"},
 });
 
+struct ExtractCamera: zeno::INode {
+
+    virtual void apply() override {
+        auto cam = get_input2<zeno::CameraObject>("camobject");
+
+        auto pos = std::make_shared<zeno::NumericObject>();
+        auto up = std::make_shared<zeno::NumericObject>();
+        auto view = std::make_shared<zeno::NumericObject>();
+        auto fov = std::make_shared<zeno::NumericObject>();
+        auto aperture = std::make_shared<zeno::NumericObject>();
+        auto focalPlaneDistance = std::make_shared<zeno::NumericObject>();
+
+        pos->set<zeno::vec3f>(cam->pos);
+        up->set<zeno::vec3f>(cam->up);
+        view->set<zeno::vec3f>(cam->view);
+        fov->set<float>(cam->fov);
+        aperture->set<float>(cam->aperture);
+        focalPlaneDistance->set<float>(cam->focalPlaneDistance);
+
+
+        set_output("pos", std::move(pos));
+        set_output("up", std::move(up));
+        set_output("view", std::move(view));
+        set_output("fov", std::move(fov));
+        set_output("aperture", std::move(aperture));
+        set_output("focalPlaneDistance", std::move(focalPlaneDistance));
+    }
+};
+ZENDEFNODE(ExtractCamera,
+           {       /* inputs: */
+               {
+                    "camobject"
+               },  /* outputs: */
+               {
+                   "pos", "up", "view", "fov", "aperture", "focalPlaneDistance"
+               },  /* params: */
+               {
+
+               },  /* category: */
+               {
+                   "FBX",
+               }
+           });
 
 struct LightNode : INode {
     virtual void apply() override {
@@ -366,7 +409,7 @@ struct LightNode : INode {
         auto falloffExponent = get_input2<float>("falloffExponent");
         prim->userData().set2("falloffExponent", std::move(falloffExponent));
 
-        auto spread = get_input2<float>("spread");
+        auto spread = get_input2<zeno::vec2f>("spread");
         auto visible = get_input2<int>("visible");
         auto doubleside = get_input2<int>("doubleside");
 
@@ -444,7 +487,7 @@ ZENO_DEFNODE(LightNode)({
         {"float", "intensity", "1"},
         {"float", "fluxFixed", "-1.0"},
 
-        {"float", "spread", "1.0"},
+        {"vec2f", "spread", "1.0, 0.0"},
         {"float", "maxDistance", "-1.0" },
         {"float", "falloffExponent", "2.0"},
         
@@ -468,6 +511,63 @@ ZENO_DEFNODE(LightNode)({
         {"enum " + EulerAngle::RotationOrderListString(), "EulerRotationOrder", EulerAngle::RotationOrderDefaultString()},
         {"enum " + EulerAngle::MeasureListString(), "EulerAngleMeasure", EulerAngle::MeasureDefaultString()}
     },
+    {"shader"},
+});
+
+struct DirtyTBN : INode {
+    virtual void apply() override {
+
+        auto AxisT = get_input2<zeno::vec3f>("T");
+        auto AxisB = get_input2<zeno::vec3f>("B");
+        //auto AxisN = get_input2<zeno::vec3f>("N");
+
+        if (lengthSquared(AxisT) == 0 ) {
+            AxisT = {1,0,0};
+        }
+        AxisT = zeno::normalize(AxisT);
+        
+        if (lengthSquared(AxisB) == 0 ) {
+            AxisB = {0,0,1};
+        }
+        AxisB = zeno::normalize(AxisB);
+
+        auto tmp = zeno::dot(AxisT, AxisB);
+        if (abs(tmp) > 0.0) { // not vertical
+            AxisB -= AxisT * tmp;
+            AxisB = zeno::normalize(AxisB);
+        }
+        
+        if (has_input("prim")) {
+            auto prim = get_input<PrimitiveObject>("prim");
+
+            auto pos = prim->userData().get2<zeno::vec3f>("pos", {0,0,0});
+            auto scale = prim->userData().get2<zeno::vec3f>("scale", {1,1,1});
+
+            auto v0 = pos - AxisT * scale[0] * 0.5f - AxisB * scale[2] * 0.5f;
+            auto e1 = AxisT * scale[0];
+            auto e2 = AxisB * scale[2];
+
+            prim->verts[0] = v0 + e1 + e2;
+            prim->verts[1] = v0 + e1;
+            prim->verts[2] = v0 + e2;
+            prim->verts[3] = v0;
+
+            set_output("prim", std::move(prim));
+        }
+    }
+};
+
+
+ZENO_DEFNODE(DirtyTBN)({
+    {
+        {"PrimitiveObject", "prim"},
+        {"vec3f", "T", "1, 0, 0"},
+        {"vec3f", "B", "0, 0, 1"},
+    },
+    {
+        "prim"
+    },
+    {},
     {"shader"},
 });
 

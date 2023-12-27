@@ -72,10 +72,12 @@ struct GraphicsManager {
             std::vector<std::shared_ptr<zeno::TextureObjectVDB>> tex3Ds;
             std::string common;
             std::string shader;
-            std::string mtlidkey;
             std::string extensions;
+            std::string mtlidkey;
             std::string transform;
+            std::string parameters;
         };
+
         struct DetPrimitive {
             std::shared_ptr<zeno::PrimitiveObject> primSp;
         };
@@ -471,7 +473,7 @@ struct GraphicsManager {
             }
             else if (auto mtl = dynamic_cast<zeno::MaterialObject *>(obj))
             {
-                det = DetMaterial{mtl->tex2Ds, mtl->tex3Ds, mtl->common, mtl->frag, mtl->mtlidkey, mtl->extensions, mtl->transform};
+                det = DetMaterial{mtl->tex2Ds, mtl->tex3Ds, mtl->common, mtl->frag, mtl->extensions, mtl->mtlidkey, mtl->transform, mtl->parameters};
             }
         }
 
@@ -524,7 +526,7 @@ struct GraphicsManager {
                 auto falloffExponent = prim_in->userData().get2<float>("falloffExponent", 2.0f);
 
                 auto color = prim_in->userData().get2<zeno::vec3f>("color");
-                auto spread = prim_in->userData().get2<float>("spread", 1.0f);
+                auto spread = prim_in->userData().get2<zeno::vec2f>("spread", {1.0f, 0.0f});
                 auto intensity = prim_in->userData().get2<float>("intensity", 1.0f);
                 auto fluxFixed = prim_in->userData().get2<float>("fluxFixed", -1.0f);
                 auto vIntensity = prim_in->userData().get2<float>("visibleIntensity", -1.0f);
@@ -552,7 +554,8 @@ struct GraphicsManager {
                 ld.fluxFixed = fluxFixed;
                 ld.intensity = intensity;
                 ld.vIntensity = vIntensity;
-                ld.spread = spread;
+                ld.spreadMajor = spread[0];
+                ld.spreadMinor = spread[1];
                 ld.maxDistance = maxDistance;
                 ld.falloffExponent = falloffExponent;
 
@@ -566,7 +569,8 @@ struct GraphicsManager {
                     ld.color.assign(clr.begin(), clr.end());
                 };
 
-                if (shape == 3u) { // Triangle mesh Light
+                const auto shapeEnum = magic_enum::enum_cast<zeno::LightShape>(shape);
+                if (shapeEnum == zeno::LightShape::TriangleMesh) { // Triangle mesh Light
 
                     for (size_t i=0; i<prim_in->tris->size(); ++i) {
                         auto _p0_ = prim_in->verts[prim_in->tris[i][0]];
@@ -622,7 +626,9 @@ struct GraphicsManager {
                     e2 = -e2;     // invert e2
                 
                     // facing down in local space
-                    nor = zeno::normalize(zeno::cross(e2, e1));
+                    auto ne2 = zeno::normalize(e2);
+                    auto ne1 = zeno::normalize(e1);
+                    nor = zeno::normalize(zeno::cross(ne2, ne1));
                     if (ivD) { nor *= -1; }
 
                     if (prim_in->verts.has_attr("clr")) {
@@ -903,17 +909,15 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         std::pair<std::string_view, std::string_view> shadtpl2;
     };
 
-    ShaderTemplateInfo _fallback_shader_template {
-        "DefaultFallback.cu", false, {}, {}, {}
+    ShaderTemplateInfo _default_callable_template {
+        "CallableDefault.cu", false, {}, {}, {}
     };
-    void ensure_fallback() {
-        _fallback_shader_template.shadtmpl = sutil::lookupIncFile(_fallback_shader_template.name.c_str());
-    }
-
+    ShaderTemplateInfo _volume_callable_template {
+        "CallableVolume.cu", false, {}, {}, {}
+    };
     ShaderTemplateInfo _default_shader_template {
         "DeflMatShader.cu", false, {}, {}, {}
     };
-
     ShaderTemplateInfo _volume_shader_template {
         "volume.cu", false, {}, {}, {}
     };
@@ -957,6 +961,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             _template.commontpl = tplsv.substr(0, pcommon);
         }
         else{
+            return;
             throw std::runtime_error("cannot find stub COMMON_CODE in shader template");
         }
         std::string_view tmplstub0 = "//GENERATED_BEGIN_MARK";
@@ -1035,29 +1040,29 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         if (meshNeedUpdate || matNeedUpdate || staticNeedUpdate) {
             //zeno::log_debug("[zeno-optix] updating scene");
             //zeno::log_debug("[zeno-optix] updating material");
-            std::vector<std::shared_ptr<ShaderPrepared>> _mesh_shader_list{};
+            std::vector<std::shared_ptr<ShaderPrepared>> _meshes_shader_list{};
             std::vector<std::shared_ptr<ShaderPrepared>> _sphere_shader_list{};
             std::vector<std::shared_ptr<ShaderPrepared>> _volume_shader_list{};
 
             std::map<std::string, int> meshMatLUT{};
             std::map<std::string, uint> matIDtoShaderIndex{};
 
+            ensure_shadtmpl(_default_callable_template);
+            ensure_shadtmpl(_volume_callable_template);
+
             ensure_shadtmpl(_default_shader_template);
             ensure_shadtmpl(_volume_shader_template);
             ensure_shadtmpl(_light_shader_template);
-
-            auto _default_shader_fallback = std::make_shared<std::string>(_fallback_shader_template.shadtmpl);
-            auto _volume_shader_fallback = std::make_shared<std::string>(_volume_shader_template.shadtmpl);
 
             {
                 auto tmp = std::make_shared<ShaderPrepared>();
 
                 tmp->mark = ShaderMaker::Mesh;
                 tmp->matid = "Default";
-                tmp->source = _default_shader_template.shadtmpl;
-                tmp->fallback = _default_shader_fallback;
+                tmp->filename = _default_shader_template.name;
+                tmp->callable = _default_callable_template.shadtmpl;
 
-                _mesh_shader_list.push_back(tmp);
+                _meshes_shader_list.push_back(tmp);
             }
 
             {
@@ -1065,8 +1070,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
                 tmp->mark = ShaderMaker::Sphere;
                 tmp->matid = "Default";
-                tmp->source = _default_shader_template.shadtmpl;
-                tmp->fallback = _default_shader_fallback;
+                tmp->filename = _default_shader_template.name;
+                tmp->callable = _default_callable_template.shadtmpl;
 
                 _sphere_shader_list.push_back(tmp);
             }
@@ -1139,39 +1144,26 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                         }
                     }
                     
-                    const auto& selected_template = has_vdb? _volume_shader_template : _default_shader_template; 
-                    const auto& selected_fallback = has_vdb? _volume_shader_fallback : _default_shader_fallback;
+                    const auto& selected_source = has_vdb? _volume_shader_template : _default_shader_template;
+                    const auto& selected_callable = has_vdb? _volume_callable_template : _default_callable_template; 
 
-                    std::string shader;
+                    std::string callable;
                     auto common_code = mtldet->common;
-                    std::string tar = "uniform sampler2D";
-                    size_t index = 0;
-                    while (true) {
-                        /* Locate the substring to replace. */
-                        index = common_code.find(tar, index);
-                        if (index == std::string::npos) break;
 
-                        /* Make the replacement. */
-                        common_code.replace(index, tar.length(), "//////////");
+                    auto& commontpl = selected_callable.commontpl;
+                    auto& shadtpl2 = selected_callable.shadtpl2;
 
-                        /* Advance index forward so the next iteration doesn't pick it up as well. */
-                        index += tar.length();
-                    }
-
-                    auto& commontpl = selected_template.commontpl;
-                    auto& shadtpl2 = selected_template.shadtpl2;
-
-                    shader.reserve(commontpl.size()
+                    callable.reserve(commontpl.size()
                                     + common_code.size()
                                     + shadtpl2.first.size()
                                     + mtldet->shader.size()
                                     + shadtpl2.second.size());
-                    shader.append(commontpl);
-                    shader.append(common_code);
-                    shader.append(shadtpl2.first);
-                    shader.append(mtldet->shader);
-                    shader.append(shadtpl2.second);
-                    //std::cout<<shader<<std::endl;
+                    callable.append(commontpl);
+                    callable.append(common_code);
+                    callable.append(shadtpl2.first);
+                    callable.append(mtldet->shader);
+                    callable.append(shadtpl2.second);
+                    //std::cout<<callable<<std::endl;
 
                     std::vector<std::string> shaderTex;
                     int texid=0;
@@ -1183,10 +1175,13 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     }
 
                     ShaderPrepared shaderP; 
+
+                        shaderP.callable = callable;
+                        shaderP.filename = selected_source.name;
+                        shaderP.parameters = mtldet->parameters;
+
                         shaderP.matid = mtldet->mtlidkey;
-                        shaderP.source = shader;
                         shaderP.tex_names = shaderTex;
-                        shaderP.fallback = selected_fallback;
 
                     if (has_vdb) {
                         
@@ -1195,10 +1190,10 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     } else {
 
                         if (cachedMeshesMaterials.count(mtldet->mtlidkey) > 0) {
-                            meshMatLUT.insert({mtldet->mtlidkey, (int)_mesh_shader_list.size()});
+                            meshMatLUT.insert({mtldet->mtlidkey, (int)_meshes_shader_list.size()});
 
                             shaderP.mark = ShaderMaker::Mesh;
-                            _mesh_shader_list.push_back(std::make_shared<ShaderPrepared>(shaderP));
+                            _meshes_shader_list.push_back(std::make_shared<ShaderPrepared>(shaderP));
                         }
 
                         if (cachedSphereMaterials.count(mtldet->mtlidkey) > 0) {
@@ -1212,34 +1207,34 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             {
                 auto tmp = std::make_shared<ShaderPrepared>();
 
+                tmp->filename = _light_shader_template.name;
+                tmp->callable = _default_callable_template.shadtmpl;
                 tmp->mark = ShaderMaker::Mesh;
                 tmp->matid = "Light";
-                tmp->source = _light_shader_template.shadtmpl;
-                tmp->fallback = _default_shader_fallback;
 
-                _mesh_shader_list.push_back(tmp);
+                _meshes_shader_list.push_back(tmp);
             }
 
             {
                 auto tmp = std::make_shared<ShaderPrepared>();
 
+                tmp->filename = _light_shader_template.name;
+                tmp->callable = _default_callable_template.shadtmpl;
                 tmp->mark = ShaderMaker::Sphere;
                 tmp->matid = "Light";
-                tmp->source = _light_shader_template.shadtmpl;
-                tmp->fallback = _default_shader_fallback;
-
+                
                 _sphere_shader_list.push_back(tmp);
             }
 
             std::vector<std::shared_ptr<ShaderPrepared>> allShaders{};
-            allShaders.reserve(_mesh_shader_list.size()+_sphere_shader_list.size()+_volume_shader_list.size());            
+            allShaders.reserve(_meshes_shader_list.size()+_sphere_shader_list.size()+_volume_shader_list.size());            
 
-            allShaders.insert(allShaders.end(), _mesh_shader_list.begin(), _mesh_shader_list.end());
+            allShaders.insert(allShaders.end(), _meshes_shader_list.begin(), _meshes_shader_list.end());
             allShaders.insert(allShaders.end(), _sphere_shader_list.begin(), _sphere_shader_list.end());
             allShaders.insert(allShaders.end(), _volume_shader_list.begin(), _volume_shader_list.end());
 
-            const size_t sphere_shader_offset = _mesh_shader_list.size();
-            const size_t volume_shader_offset = _mesh_shader_list.size() + _sphere_shader_list.size();
+            const size_t sphere_shader_offset = _meshes_shader_list.size();
+            const size_t volume_shader_offset = _meshes_shader_list.size() + _sphere_shader_list.size();
 
                 for (uint i=0; i<allShaders.size(); ++i) {
                     auto& ref = allShaders[i];

@@ -34,15 +34,15 @@ struct MatOutput {
     float transDistance;
     vec3 transScatterColor;
 
-
-
     float subsurface;
     vec3  sssColor;
     vec3  sssParam;
+    bool sssFxiedRadius;
     float scatterDistance;
     float scatterStep;
     float smoothness;
     float displacement;
+    float shadowReceiver;
 
     vec3 nrm;
     vec3 emission;
@@ -61,6 +61,7 @@ struct MatInput {
     vec3 instTang;
     float NoL;
     float LoV;
+    float rayLength;
     vec3 reflectance;
     vec3 N;
     vec3 T;

@@ -321,6 +321,7 @@ void ZTabDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
                     if (key != "")
                         scene->selected.insert(key);
                     onPrimitiveSelected(scene->selected);
+                    pDisplay->updateFrame();
                 }
             }
         } 
