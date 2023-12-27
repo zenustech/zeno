@@ -13,7 +13,6 @@ extern void traverseABC(
     int frameid,
     bool read_done,
     bool read_face_set,
-    bool faceset_as_mtlid,
     std::string path
 );
 
