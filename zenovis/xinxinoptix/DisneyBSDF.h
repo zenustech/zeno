@@ -246,7 +246,64 @@ namespace DisneyBSDF{
 
         return mix(vec3(dielectricFresnel), metallicFresnel, metallic);
     }
+    static __inline__ __device__
+        bool Transmit(vec3 wm, vec3 wo, float n, vec3& wi)
+    {
+      float c = dot(wo, wm);
+      if(c < 0.0f) {
+        c = -c;
+        wm = -wm;
+      }
+      float root = 1.0f - n * n * (1.0f - c * c);
+      if(root <= 0){
+        return false;
+      }
 
+      wi = normalize((n * c -sqrt(root)) * wm - n * wo);
+      return true;
+    }
+
+    static __inline__ __device__
+        vec3 SampleScatterDirection(unsigned int &seed)
+    {
+      //float2 r01 = sobolRnd(seed);
+      float r0 = rnd(seed);
+      float r1 = rnd(seed);
+
+      float theta = 2.0f * M_PIf * r0;
+      float phi = acos(clamp(1 - 2 * r1, -0.9999f, 0.9999f));
+      float x = sin(phi) * cos(theta);
+      float y = sin(phi) * sin(theta);
+      float z = cos(phi);
+
+      return normalize(vec3(x, y, z));
+    }
+
+    static __inline__ __device__
+        vec3 Transmission(const vec3& extinction, float distance)
+    {
+      return exp(-extinction * distance);
+    }
+
+    static __inline__ __device__
+        vec3 sss_rw_pdf(const vec3& sigma_t, float t, bool hit, vec3& transmittance)
+    {
+      vec3 T = Transmission(sigma_t, t);
+      transmittance = T;
+      return hit? T : (sigma_t * T);
+    }
+
+    static __inline__ __device__
+        vec3 Transmission2(const vec3& sigma_s, const vec3& sigma_t, const vec3& channelPDF, float t, bool hit)
+    {
+      vec3 transmittance;
+      vec3 pdf = sss_rw_pdf(sigma_t, t, hit, transmittance);
+
+      //printf("trans PDf= %f %f %f sigma_t= %f %f %f \n", pdf.x, pdf.y, pdf.z, sigma_t.x, sigma_t.y, sigma_t.z);
+      auto result = hit? transmittance : ((sigma_s * transmittance) / (dot(pdf, channelPDF) + 1e-6f));
+      result = clamp(result,vec3(0.0f),vec3(1.0f));
+      return result;
+    }
     static __inline__ __device__
         float3 EvaluateDisney2(
             vec3 illum,
@@ -419,11 +476,17 @@ namespace DisneyBSDF{
           float FV = BRDFBasics::SchlickWeight(abs(wo.z));
           float term = wo.z>0?FV:FL;
           float tmpPdf = trans? 1.0f : 0.0f;//0.5/M_PIf:0.0f;
-
-
-
+          vec3 transmit = vec3(1.0f);
+          if(thin) {
+            vec3 color = mix(mat.basecolor, mat.sssColor, mat.subsurface);
+            vec3 sigma_t, alpha;
+            CalculateExtinction2(color, mat.sssParam, sigma_t, alpha, 1.4f, mat.sssFxiedRadius);
+            vec3 channelPDF = vec3(1.0f/3.0f);
+            transmit = Transmission2(sigma_t * alpha, sigma_t,
+                                  channelPDF, 0.001 / (abs(wi.z) + 0.005f), true);
+          }
           // vec3 d = 1.0f/M_PIf * (1.0f - 0.5f * term) * (trans?vec3(1.0f):vec3(0.0f))  * dielectricWt * subsurface;
-          vec3 d = (trans? (thin? mat.sssColor : vec3(1.0f)): vec3(0.0f))  * dielectricWt * mat.subsurface;
+          vec3 d = (trans? vec3(1.0f): vec3(0.0f)) * transmit  * dielectricWt * mat.subsurface;
           dterm = dterm + d;
           f = f + d;
           fPdf += tmpPdf * sssPr;
@@ -455,64 +518,7 @@ namespace DisneyBSDF{
         }
         return 1.0f / ( n * n) - (1.0f - c * c);
     }
-    static __inline__ __device__ 
-    bool Transmit(vec3 wm, vec3 wo, float n, vec3& wi)
-    {
-        float c = dot(wo, wm);
-        if(c < 0.0f) {
-            c = -c;
-            wm = -wm;
-        }
-        float root = 1.0f - n * n * (1.0f - c * c);
-        if(root <= 0){
-            return false;
-        }
 
-        wi = normalize((n * c -sqrt(root)) * wm - n * wo);
-        return true;
-    }
-
-    static __inline__ __device__
-    vec3 SampleScatterDirection(unsigned int &seed)
-    {
-        //float2 r01 = sobolRnd(seed);
-        float r0 = rnd(seed);
-        float r1 = rnd(seed);
-
-        float theta = 2.0f * M_PIf * r0;
-        float phi = acos(clamp(1 - 2 * r1, -0.9999f, 0.9999f));
-        float x = sin(phi) * cos(theta);
-        float y = sin(phi) * sin(theta);
-        float z = cos(phi);
-
-        return normalize(vec3(x, y, z));
-    }
-    
-    static __inline__ __device__
-    vec3 Transmission(const vec3& extinction, float distance)
-    {
-        return exp(-extinction * distance);
-    }
-
-    static __inline__ __device__
-    vec3 sss_rw_pdf(const vec3& sigma_t, float t, bool hit, vec3& transmittance)
-    {
-        vec3 T = Transmission(sigma_t, t);
-        transmittance = T;
-        return hit? T : (sigma_t * T);
-    }
-
-    static __inline__ __device__
-    vec3 Transmission2(const vec3& sigma_s, const vec3& sigma_t, const vec3& channelPDF, float t, bool hit)
-    {
-        vec3 transmittance;
-        vec3 pdf = sss_rw_pdf(sigma_t, t, hit, transmittance);
-
-        //printf("trans PDf= %f %f %f sigma_t= %f %f %f \n", pdf.x, pdf.y, pdf.z, sigma_t.x, sigma_t.y, sigma_t.z);
-        auto result = hit? transmittance : ((sigma_s * transmittance) / (dot(pdf, channelPDF) + 1e-6f));
-        result = clamp(result,vec3(0.0f),vec3(1.0f));
-        return result;
-    }
 
 
     static __inline__ __device__
