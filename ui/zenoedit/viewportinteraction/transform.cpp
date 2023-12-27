@@ -497,6 +497,8 @@ void FakeTransformer::endTransform(bool moved) {
         for (auto &[obj_name, obj] : objs) {
             auto& node_sync = NodeSyncMgr::GetInstance();
             auto prim_node_location = node_sync.searchNodeOfPrim(obj_name);
+            if (!prim_node_location.has_value())
+                continue;
             auto& prim_node = prim_node_location->node;
 
             auto& user_data = obj->userData();
@@ -508,7 +510,8 @@ void FakeTransformer::endTransform(bool moved) {
                 // prim comes from a exist TransformPrimitive node
                 node_sync.checkNodeInputHasValue(prim_node, "translation") &&
                 node_sync.checkNodeInputHasValue(prim_node, "quatRotation") &&
-                node_sync.checkNodeInputHasValue(prim_node, "scaling")) {
+                node_sync.checkNodeInputHasValue(prim_node, "scaling"))
+            {
                 syncToTransformNode(prim_node_location.value(), obj_name);
             }
             else {

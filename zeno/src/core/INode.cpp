@@ -120,8 +120,8 @@ ZENO_API void zeno::INode::writeTmpCaches()
             key.append("static");
         else
             key.append(std::to_string(getThisSession()->globalState->frameid));
-        //key.push_back(':');
-        //key.append(std::to_string(getThisSession()->globalState->sessionid));
+        key.push_back(':');
+        key.append(std::to_string(getThisSession()->globalState->sessionid));
         //just register obj keys.
         if (bStatic) {
             getThisSession()->globalComm->addStaticObject(key, std::make_shared<IObject>());

@@ -4,6 +4,7 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/utils/string.h>
 #include <sstream>
+#include <zeno/types/UserData.h>
 
 namespace zeno {
 
@@ -178,6 +179,7 @@ struct MakeList : zeno::INode {
         for (auto& pair : inputs) {
             if (std::isdigit(pair.first.back())) {
                 max_input_index = std::max<int>(max_input_index, std::stoi(pair.first.substr(3)));
+                pair.second->userData().set2("object-id", inputBounds[pair.first].first);
             }
         }
         for (int i = 0; i <= max_input_index; ++i) {

@@ -210,13 +210,15 @@ bool GlobalComm::fromDiskByObjsManager(std::string cachedir, int frameid, Global
         }
     }
 
-    std::function<void(zany const&, std::string, std::string)> convertToView = [&](zany const& p, std::string postfix, std::string name) -> void {
+    std::function<void(zany const&, std::string)> convertToView = [&](zany const& p, std::string name) -> void {
         if (ListObject* lst = dynamic_cast<ListObject*>(p.get())) {
             log_info("ToView got ListObject (size={}), expanding", lst->arr.size());
             for (size_t i = 0; i < lst->arr.size(); i++) {
                 zany const& lp = lst->arr[i];
-                std::string id(name);
-                convertToView(lp, postfix + ":LIST" + std::to_string(i), id.insert(id.find(":"), postfix + ":LIST:" + std::to_string(i)));
+                std::string id = "";
+                if (std::shared_ptr<IObject> obj = std::dynamic_pointer_cast<IObject>(lp))
+                    id = obj->userData().get2<std::string>("object-id", "");
+                convertToView(lp, id + name.substr(name.find(":")));
             }
             return;
         }
@@ -290,7 +292,7 @@ bool GlobalComm::fromDiskByObjsManager(std::string cachedir, int frameid, Global
                 markListIndex(objid, spListObj);
             }
 
-            convertToView(decodedObj, {}, toViewObjInfo.insert(toViewObjInfo.find(":"), ":TOVIEW"));
+            convertToView(decodedObj, toViewObjInfo);
         }
     }
     return true;
