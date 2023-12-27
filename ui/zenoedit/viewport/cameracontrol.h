@@ -69,6 +69,7 @@ private:
     bool middle_button_pressed = false;
     bool shift_pressed = false;
     bool ctrl_pressed = false;
+    bool alt_pressed = false;
 };
 
 
