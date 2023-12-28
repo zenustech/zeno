@@ -75,7 +75,6 @@ extern "C" __global__ void __closesthit__radiance_volume()
     testPRD.test_distance = true;
     testPRD.isSS = false;
 
-
     uint16_t _mask_ = EverythingMask ^ VolumeMatMask;
 
     traceRadiance(params.handle, ray_orig,ray_dir, 0, _FLT_MAX_, &testPRD, _mask_);
@@ -144,8 +143,10 @@ extern "C" __global__ void __closesthit__radiance_volume()
 
         pbrt::HenyeyGreenstein hg { vol_out.anisotropy };
         float2 uu = { prd->rndf(), prd->rndf() };
-        auto _ = hg.sample(-ray_dir, new_dir, uu);              
+        auto pdf = hg.sample(-ray_dir, new_dir, uu);              
         //auto relative_prob = prob * (CUDART_PI_F * 4);
+        prd->samplePdf = pdf;
+
         new_dir = normalize(new_dir);
         scattering = vol_out.albedo;
 
@@ -180,7 +181,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
     shadow_prd.nonThinTransHit = 0;
     shadow_prd.shadowAttanuation = vec3(1.0f);
 
-    auto evalBxDF = [&](const float3& _wi_, const float3& _wo_, float& thisPDF, vec3 illum = vec3(1.0f)) -> float3 {
+    auto evalBxDF = [&](const float3& _wi_, const float3& _wo_, float& thisPDF) -> float3 {
 
         pbrt::HenyeyGreenstein hg { vol_out.anisotropy };
         thisPDF = hg.p(_wo_, _wi_);

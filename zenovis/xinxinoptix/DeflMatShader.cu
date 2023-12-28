@@ -821,13 +821,13 @@ extern "C" __global__ void __closesthit__radiance()
         mats.roughness = clamp(mats.roughness, 0.5f,0.99f);
 
 
-    auto evalBxDF = [&](const float3& _wi_, const float3& _wo_, float& thisPDF, vec3 illum = vec3(1.0f)) -> float3 {
+    auto evalBxDF = [&](const float3& _wi_, const float3& _wo_, float& thisPDF) -> float3 {
 
         const auto& L = _wi_; // pre-normalized
         const vec3& V = _wo_; // pre-normalized
         vec3 rd, rs, rt; // captured by lambda
 
-        float3 lbrdf = DisneyBSDF::EvaluateDisney2(illum,mats, L, V, T, B, N,prd->geometryNormal,
+        float3 lbrdf = DisneyBSDF::EvaluateDisney2(vec3(1.0f), mats, L, V, T, B, N,prd->geometryNormal,
             mats.thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : next_ray_is_going_inside, thisPDF, rrPdf,
             dot(N, L), rd, rs, rt);
 
@@ -851,10 +851,10 @@ extern "C" __global__ void __closesthit__radiance()
 
     };
 
-    auto taskAux = [&](const vec3& weight) {
-        prd->radiance_d *= weight;
-        prd->radiance_s *= weight;
-        prd->radiance_t *= weight;
+    auto taskAux = [&](const vec3& radiance) {
+        prd->radiance_d *= radiance;
+        prd->radiance_s *= radiance;
+        prd->radiance_t *= radiance;
     };
 
     RadiancePRD shadow_prd {};
