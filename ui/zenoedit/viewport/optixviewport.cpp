@@ -388,6 +388,7 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(this, &ZOptixViewport::sig_modifyLightData, m_worker, &OptixWorker::onModifyLightData);
     connect(this, &ZOptixViewport::sig_updateCameraProp, m_worker, &OptixWorker::onUpdateCameraProp);
 
+    zeno::getSession().globalComm->setRenderType(zeno::GlobalComm::NORMAL);
     setRenderSeparately(false, false);
     m_thdOptix.start();
 }

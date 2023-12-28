@@ -41,7 +41,8 @@ struct RenderEngineBate : RenderEngine {
 
     void update() override {
         std::lock_guard lck(zeno::g_objsMutex);
-        graphicsMan->load_objects(zeno::getSession().globalComm->pairsShared());
+        graphicsMan->update_objs(zeno::getSession().globalComm->getCurrentFrameObjs(), zeno::getSession().globalComm->getNeedUpdateToviewObjs());
+        zeno::getSession().globalComm->setRenderTypeBeta(zeno::GlobalComm::UNDEFINED);
     }
 
     void draw() override {

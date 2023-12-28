@@ -87,6 +87,7 @@ struct GlobalComm {
 
     ZENO_API std::vector<std::pair<std::string, IObject*>> pairs() const;
     ZENO_API std::vector<std::pair<std::string, std::shared_ptr<IObject>>> pairsShared() const;
+    ZENO_API MapObjects getCurrentFrameObjs();
     //------new change------
     ZENO_API void clear_lightObjects();
     ZENO_API bool lightObjsCount(std::string& id);
@@ -106,6 +107,8 @@ struct GlobalComm {
     ZENO_API MapObjects getTransferObjs();
     ZENO_API void clearTransferObjs();
 
+    ZENO_API MapObjects getNeedUpdateToviewObjs();
+
     ZENO_API int getLightObjsSize();
     ZENO_API bool getNeedUpdateLight();
     ZENO_API void setNeedUpdateLight(bool update);
@@ -113,9 +116,11 @@ struct GlobalComm {
     ZENO_API RenderType getRenderTypeByObjects(std::map<std::string, std::shared_ptr<zeno::IObject>>& objs);
     ZENO_API void setRenderType(RenderType type);
     ZENO_API RenderType getRenderType();
+    ZENO_API void setRenderTypeBeta(RenderType type);
+    ZENO_API RenderType getRenderTypeBeta();
 
 private:
-    ViewObjects const* _getViewObjects(const int frameid);
+    ViewObjects const* _getViewObjects(const int frameid, bool& inserted);
     void _initStaticObjects();
     std::vector<std::string> toViewNodesId;
 
@@ -125,10 +130,13 @@ private:
     bool needUpdateLight = true;
 
     RenderType renderType = UNDEFINED;
+    RenderType renderTypeBeta = UNDEFINED;
     std::map<std::string, int> lastToViewNodesType;
     //------new change------
-    void prepareForOptix(bool inserted, std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs);
+    void prepareForOptix(std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs);
+    void prepareForBeta();
     int m_currentFrame = 0;    //ºı»•startFrame
+    static MapObjects m_newToviewObjs;
 };
 
 }
