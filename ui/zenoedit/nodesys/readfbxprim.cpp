@@ -315,8 +315,11 @@ void EvalBlenderFile::onEvalClicked() {
     Path dir (output_path);
     Path info_file_path ("info.json");
     Path map_file_path ("map.json");
+    Path abc_file_path ("output.abc");
     info_file_path = dir / info_file_path;
     map_file_path = dir / map_file_path;
+    abc_file_path = dir / abc_file_path;
+
 
     bool use_map_file = false;
 
@@ -344,17 +347,113 @@ void EvalBlenderFile::onEvalClicked() {
         return;
     }
     Json mat_info = Json::parse(info_str);
+    // Eval Geo
+    std::pair<float,float> pos;
+    ZENO_HANDLE GeoSubG = Zeno_GetGraph("AlembicImport");
+    if(GeoSubG==0){
+        GeoSubG = Zeno_CreateGraph("AlembicImport");
+        ZENO_HANDLE BindMat = Zeno_GetGraph("FacesetBindMat");
+        if(BindMat==0){
+            BindMat = Zeno_CreateGraph("FacesetBindMat");
+
+            ZENO_HANDLE input = Zeno_AddNode(BindMat,"SubInput");
+            Zeno_SetParam(BindMat,input,"name","abcPrim");
+
+            ZENO_HANDLE AlembicSplitByName = Zeno_AddNode(BindMat,"AlembicSplitByName");
+
+            ZENO_HANDLE BeginForEach = Zeno_AddNode(BindMat,"BeginForEach");
+
+            ZENO_HANDLE DictGetItem = Zeno_AddNode(BindMat,"DictGetItem");
+
+            ZENO_HANDLE PrimitiveTriangulate = Zeno_AddNode(BindMat,"PrimitiveTriangulate");
+            Zeno_SetParam(BindMat,PrimitiveTriangulate,"from_poly",true);
+            Zeno_SetParam(BindMat,PrimitiveTriangulate,"with_uv",true);
+
+            ZENO_HANDLE PrimitiveCalcNormal = Zeno_AddNode(BindMat,"PrimitiveCalcNormal");
+
+            ZENO_HANDLE BindMaterial = Zeno_AddNode(BindMat,"BindMaterial");
+
+            ZENO_HANDLE EndForEach = Zeno_AddNode(BindMat,"EndForEach");
+
+            ZENO_HANDLE ouput = Zeno_AddNode(BindMat,"SubOutput");
+            Zeno_SetParam(BindMat,ouput,"name","list");
+
+            Zeno_AddLink(BindMat,input,"port",AlembicSplitByName,"prim");
+            Zeno_AddLink(BindMat,AlembicSplitByName,"dict",DictGetItem,"dict");
+            Zeno_AddLink(BindMat,AlembicSplitByName,"namelist",BeginForEach,"list");
+            Zeno_AddLink(BindMat,BeginForEach,"object",DictGetItem,"key");
+            Zeno_AddLink(BindMat,BeginForEach,"object",BindMaterial,"mtlid");
+            Zeno_AddLink(BindMat,BeginForEach,"FOR",EndForEach,"FOR");
+            Zeno_AddLink(BindMat,DictGetItem,"object",PrimitiveTriangulate,"prim");
+            Zeno_AddLink(BindMat,PrimitiveTriangulate,"prim",PrimitiveCalcNormal,"prim");
+            Zeno_AddLink(BindMat,PrimitiveCalcNormal,"prim",BindMaterial,"object");
+            Zeno_AddLink(BindMat,BindMaterial,"object",EndForEach,"object");
+            Zeno_AddLink(BindMat,EndForEach,"list",ouput,"port");
+
+        }else{
+            zeno::log_error("FacesetBindMat subGraph already exist! Remove it then try again!");
+            return;
+        }
+        ZENO_HANDLE input = Zeno_AddNode(GeoSubG,"SubInput");
+        Zeno_SetParam(GeoSubG,input,"name","abc_file_path");
+        Zeno_SetParam(GeoSubG,input,"type","string");
+        ZENO_HANDLE ReadAlembic = Zeno_AddNode(GeoSubG,"ReadAlembic");
+        Zeno_SetInputDefl(GeoSubG,ReadAlembic,"path",abc_file_path.string());
+        Zeno_SetInputDefl(GeoSubG,ReadAlembic,"read_face_set",true);
+
+        ZENO_HANDLE AlembicPrimList = Zeno_AddNode(GeoSubG,"AlembicPrimList");
+        Zeno_SetInputDefl(GeoSubG,AlembicPrimList,"use_xform",true);
+        Zeno_SetOnce(GeoSubG,AlembicPrimList,true);
+
+        ZENO_HANDLE CountAlembicPrims = Zeno_AddNode(GeoSubG,"CountAlembicPrims");
+        ZENO_HANDLE BeginFor = Zeno_AddNode(GeoSubG,"BeginFor");
+        ZENO_HANDLE ListGetItem = Zeno_AddNode(GeoSubG,"ListGetItem");
+        ZENO_HANDLE FacesetBindMat = Zeno_AddNode(GeoSubG,"FacesetBindMat");
+        ZENO_HANDLE EndForEach = Zeno_AddNode(GeoSubG,"EndForEach");
+        ZENO_HANDLE output = Zeno_AddNode(GeoSubG,"SubOutput");
+
+        Zeno_AddLink(GeoSubG,input,"port",ReadAlembic,"path");
+        Zeno_AddLink(GeoSubG,ReadAlembic,"abctree",AlembicPrimList,"abctree");
+        Zeno_AddLink(GeoSubG,ReadAlembic,"abctree",CountAlembicPrims,"abctree");
+        Zeno_AddLink(GeoSubG,AlembicPrimList,"prims",ListGetItem,"list");
+        Zeno_AddLink(GeoSubG,ListGetItem,"object",FacesetBindMat,"abcPrim");
+        Zeno_AddLink(GeoSubG,FacesetBindMat,"list",EndForEach,"list");
+        Zeno_AddLink(GeoSubG,CountAlembicPrims,"count",BeginFor,"count");
+        Zeno_AddLink(GeoSubG,BeginFor,"index",ListGetItem,"index");
+        Zeno_AddLink(GeoSubG,BeginFor,"FOR",EndForEach,"FOR");
+        Zeno_AddLink(GeoSubG,EndForEach,"list",output,"port");
+        
+
+    }else{
+        zeno::log_error("AlembicImport subGraph already exist! Remove it then try again!");
+        return;
+    }
+
+    ZENO_HANDLE import_node = Zeno_AddNode(mGraph,"AlembicImport");
+    Zeno_SetInputDefl(mGraph,import_node,"abc_file_path",abc_file_path.string());
+
+    Zeno_SetView(mGraph,import_node,true);
+    Zeno_GetPos(mGraph,import_node,pos);
+    pos.second += 500;
+    
+
+    
 
     // Eval Material
     for (auto& [key, val] : mat_info.items()){
 
         auto matName = key;
 
-        ZENO_HANDLE subG = Zeno_CreateGraph(matName,1);
+        ZENO_HANDLE subG = Zeno_GetGraph(matName);
+        if(subG != 0){
+            zeno::log_warn("Material SubGraph {} already exist! Please remove it then run again");
+            continue;
+        }
+        subG = Zeno_CreateGraph(matName,1);
         ZENO_HANDLE shader = Zeno_AddNode(subG,"ShaderFinalize");
 
-        ZENO_HANDLE sub_ouput= Zeno_AddNode(subG, "SubOutput");
-        Zeno_AddLink(subG, shader, "mtl", sub_ouput, "port");
+        ZENO_HANDLE sub_output= Zeno_AddNode(subG, "SubOutput");
+        Zeno_AddLink(subG, shader, "mtl", sub_output, "port");
         Zeno_SetInputDefl(subG,shader,"mtlid",matName);
         for (auto& [mat_item,mat_item_info]: val.items()){
 
@@ -369,7 +468,6 @@ void EvalBlenderFile::onEvalClicked() {
                 zeno::log_warn("No such a material item: {} in zeno, import from material: {}",item_name,matName);
                 continue;
             }
-            zeno::log_info("item {} has type {}",item_name,type);
 
             if(mat_item_info.find("path")!=mat_item_info.end()){ //has texture input for this item
                 ZENO_HANDLE texture_node = Zeno_AddNode(subG,"SmartTexture2D");
@@ -414,6 +512,8 @@ void EvalBlenderFile::onEvalClicked() {
         
         ZENO_HANDLE mat_subgraph = Zeno_AddNode(mGraph,matName);
         Zeno_SetView(mGraph,mat_subgraph,true);
+        Zeno_SetPos(mGraph,mat_subgraph,pos);
+        pos.second += 200;
 
     }
 }
