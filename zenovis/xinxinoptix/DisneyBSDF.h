@@ -328,7 +328,7 @@ namespace DisneyBSDF{
         bool sameside = (dot(wo, N)*dot(wo, N2))>0.0f;
         if(sameside == false)
         {
-          wo = normalize(wo - 1.01f * dot(wo, N) * N);
+          wo = normalize(wo - 1.02f * dot(wo, N) * N);
         }
         float eta = dot(wo, N)>0?mat.ior:1.0f/mat.ior;
         vec3 f = vec3(0.0f);
@@ -339,7 +339,7 @@ namespace DisneyBSDF{
         world2local(wo, T, B, N);
         world2local(N2, T, B, N);
 
-        bool reflect = (dot(wi, N2) * dot(wo, N2) > 0.0f) ;
+        bool reflect = (dot(wi, N2) * dot(wo, N2) > 0.0f) || (dot(wi, N) * dot(wo, N) > 0.0f);
 
         vec3 Csheen, Cspec0;
         float F0;
@@ -480,7 +480,7 @@ namespace DisneyBSDF{
           if(thin) {
             vec3 color = mix(mat.basecolor, mat.sssColor, mat.subsurface);
             vec3 sigma_t, alpha;
-            CalculateExtinction2(color, mat.sssParam, sigma_t, alpha, 1.4f, mat.sssFxiedRadius);
+            CalculateExtinction2(color, mat.subsurface * mat.sssParam, sigma_t, alpha, 1.4f, mat.sssFxiedRadius);
             vec3 channelPDF = vec3(1.0f/3.0f);
             transmit = Transmission2(sigma_t * alpha, sigma_t,
                                   channelPDF, 0.001 / (abs(wi.z) + 0.005f), true);

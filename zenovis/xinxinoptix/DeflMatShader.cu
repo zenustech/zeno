@@ -433,6 +433,10 @@ extern "C" __global__ void __closesthit__radiance()
         attrs.tang = cross(attrs.nrm, b);
         N = mats.nrm.x * attrs.tang + mats.nrm.y * b + mats.nrm.z * attrs.nrm;
     }
+    if(dot(vec3(ray_dir), vec3(N)) * dot(vec3(ray_dir), vec3(prd->geometryNormal))<0)
+    {
+      N = prd->geometryNormal;
+    }
 
     if (prd->trace_denoise_albedo) {
 
