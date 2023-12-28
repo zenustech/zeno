@@ -176,19 +176,39 @@ struct MakeList : zeno::INode {
         auto doConcat = get_param<bool>("doConcat");
 
         int max_input_index = 0;
+        int constructMappingIndex = 0;
         for (auto& pair : inputs) {
             if (std::isdigit(pair.first.back())) {
                 max_input_index = std::max<int>(max_input_index, std::stoi(pair.first.substr(3)));
-                pair.second->userData().set2("object-id", inputBounds[pair.first].first);
-                if (auto l = std::dynamic_pointer_cast<ListObject>(pair.second))
-                {
-                    for (auto& [key, index] : l->itemidxs)
-                    {
-                        list->itemidxs.insert(std::make_pair(myname + "/" + key,  std::to_string(max_input_index) + "/" + index));
+                {   //construct idindex mapping
+                    pair.second->userData().set2("object-id", inputBounds[pair.first].first);
+                    if (auto l = std::dynamic_pointer_cast<ListObject>(pair.second)) {
+                        if (doConcat) {
+                            std::string tmp = "";
+                            int diffIdCount = 0;
+                            for (auto [key, index] : l->itemidxs)
+                            {
+                                auto& k = key.substr(key.find_first_of("/") + 1);
+                                auto& second = k.substr(0, k.find_first_of("/"));
+                                list->itemidxs.insert(std::make_pair(myname + "/" + k, index.replace(0, index.find_first_of("/"), std::to_string(constructMappingIndex + std::stoi(index.substr(0,index.find_first_of("/")))))));
+                                if (tmp != second)
+                                {
+                                    diffIdCount++;
+                                    tmp = second;
+                                }
+                            }
+                            constructMappingIndex += diffIdCount;
+                        }
+                        else {
+                            for (auto& [key, index] : l->itemidxs)
+                                list->itemidxs.insert(std::make_pair(myname + "/" + key, std::to_string(constructMappingIndex) + "/" + index));
+                            constructMappingIndex++;
+                        }
                     }
-                }
-                else {
-                    list->itemidxs.insert(std::make_pair(myname + "/" + inputBounds[pair.first].first,  std::to_string(max_input_index) + "/"));
+                    else {
+                        list->itemidxs.insert(std::make_pair(myname + "/" + inputBounds[pair.first].first, std::to_string(constructMappingIndex) + "/"));
+                        constructMappingIndex++;
+                    }
                 }
             }
         }
