@@ -1,16 +1,22 @@
 #ifndef __HELPER_H__
 #define __HELPER_H__
 
+#include <rapidjson/document.h>
 #include <common/data.h>
 #include <zeno/utils/string.h>
+#include <zeno/core/IObject.h>
+#include <zeno/types/StringObject.h>
+#include <zeno/types/NumericObject.h>
+#include <zeno/utils/log.h>
 
 namespace zeno {
 
     ParamType convertToType(std::string const& type) {
         if (type == "string") { return Param_String; }
-        else if (type == "bool") { return Param_Int; }
+        else if (type == "bool") { return Param_Bool; }
         else if (type == "int") { return Param_Int; }
         else if (type == "float") { return Param_Float; }
+        else if (type == "NumericObject") { return Param_Float; }
         else if (type == "vec2i") { return Param_Vec2i; }
         else if (type == "vec3i") { return Param_Vec3i; }
         else if (type == "vec4i") { return Param_Vec4i; }
@@ -21,10 +27,6 @@ namespace zeno {
         else if (type == "list") { return Param_List; }
         else if (type == "dict") { return Param_Dict; }
         else return Param_Null;
-    }
-
-    zvariant jsonValueToZVar(const rapidjson::Value& val, ParamType const& type) {
-
     }
 
     zany strToZAny(std::string const& defl, ParamType const& type) {

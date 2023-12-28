@@ -223,21 +223,17 @@ zeno::NodeData Zsg2Reader::_parseNode(
         }
     }
 
-    //if (!mgr.getSubgDesc(name, NODE_DESC()))
-    //    initSockets(name, legacyDescs, retNode);
-
     if (objValue.HasMember("inputs"))
     {
-        _parseInputs(subgPath, nodeid, name, legacyDescs, objValue["inputs"], retNode, links);
+        _parseInputs(subgPath, nodeid, name, objValue["inputs"], retNode, links);
     }
     if (objValue.HasMember("params"))
     {
-        if (_parseParams2(nodeid, name, objValue["params"], retNode) == false)
-            _parseParams(nodeid, name, objValue["params"], legacyDescs, retNode);
+        _parseParams(nodeid, name, objValue["params"], retNode);
     }
     if (objValue.HasMember("outputs"))
     {
-        _parseOutputs(nodeid, name, objValue["outputs"], retNode);
+        _parseOutputs(nodeid, name, objValue["outputs"], retNode, links);
     }
     if (objValue.HasMember("customui-panel"))
     {
@@ -247,46 +243,25 @@ zeno::NodeData Zsg2Reader::_parseNode(
     if (objValue.HasMember("uipos"))
     {
         auto uipos = objValue["uipos"].GetArray();
-        QPointF pos = QPointF(uipos[0].GetFloat(), uipos[1].GetFloat());
-        retNode.pos = pos;
+        retNode.uipos = { uipos[0].GetFloat(), uipos[1].GetFloat() };
     }
     if (objValue.HasMember("options"))
     {
         auto optionsArr = objValue["options"].GetArray();
-        int opts = 0;
+        zeno::NodeStatus opts = zeno::NodeStatus::Null;
         for (int i = 0; i < optionsArr.Size(); i++)
         {
-            ZASSERT_EXIT(optionsArr[i].IsString(), false);
+            assert(optionsArr[i].IsString());
+
             const std::string& optName = optionsArr[i].GetString();
-            if (optName == "ONCE") {
-                opts |= OPT_ONCE;
-            } else if (optName == "PREP") {
-                opts |= OPT_PREP;
-            } else if (optName == "VIEW") {
-                opts |= OPT_VIEW;
-            } else if (optName == "MUTE") {
-                opts |= OPT_MUTE;
-            } else if (optName == "collapsed") {
-                retNode.bCollasped = true;
-            }
+            if (optName == "ONCE") {} //deprecated 
+            else if (optName == "PREP") {} //deprecated 
+            else if (optName == "VIEW") { opts |= zeno::View; }
+            else if (optName == "MUTE") { opts |= zeno::Mute; }
+            else if (optName == "CACHE") {} //deprecated 
+            else if (optName == "collapsed") {}
         }
-        retNode.options = opts;
-    }
-    if (objValue.HasMember("dict_keys"))
-    {
-        _parseDictKeys(nodeid, objValue["dict_keys"], retNode);
-    }
-    if (objValue.HasMember("socket_keys"))
-    {
-        _parseBySocketKeys(nodeid, objValue, retNode);
-    }
-    if (objValue.HasMember("color_ramps"))
-    {
-        _parseColorRamps(nodeid, objValue["color_ramps"], retNode);
-    }
-    if (objValue.HasMember("points") && objValue.HasMember("handlers"))
-    {
-        _parseLegacyCurves(nodeid, objValue["points"], objValue["handlers"], retNode);
+        retNode.status = opts;
     }
     if (objValue.HasMember("children"))
     {
@@ -301,7 +276,7 @@ zeno::NodeData Zsg2Reader::_parseNode(
 
     if (name == "Blackboard")
     {
-        BLACKBOARD_INFO blackboard;
+        zeno::GroupInfo blackboard;
         //use subkey "blackboard" for zeno2 io, but still compatible with zeno1
         const rapidjson::Value &blackBoardValue = objValue.HasMember("blackboard") ? objValue["blackboard"] : objValue;
 
@@ -313,40 +288,36 @@ zeno::NodeData Zsg2Reader::_parseNode(
         blackboard.content = blackBoardValue.HasMember("content") ? blackBoardValue["content"].GetString() : "";
 
         if (blackBoardValue.HasMember("width") && blackBoardValue.HasMember("height")) {
-            qreal w = blackBoardValue["width"].GetFloat();
-            qreal h = blackBoardValue["height"].GetFloat();
-            blackboard.sz = QSizeF(w, h);
+            float w = blackBoardValue["width"].GetFloat();
+            float h = blackBoardValue["height"].GetFloat();
+            blackboard.sz = { w,h };
         }
         if (blackBoardValue.HasMember("params")) {
             //todo
         }
-
-        retNode.parmsNotDesc["blackboard"].name = "blackboard";
-        retNode.parmsNotDesc["blackboard"].value = QVariant::fromValue(blackboard);
+        //TODO: import blackboard.
     }
     else if (name == "Group") 
     {
-        BLACKBOARD_INFO blackboard;
+        zeno::GroupInfo group;
         const rapidjson::Value &blackBoardValue = objValue.HasMember("blackboard") ? objValue["blackboard"] : objValue;
 
-        blackboard.title = blackBoardValue.HasMember("title") ? blackBoardValue["title"].GetString() : "";
-        blackboard.background = QColor(blackBoardValue.HasMember("background") ? blackBoardValue["background"].GetString() : "#3C4645");
+        group.title = blackBoardValue.HasMember("title") ? blackBoardValue["title"].GetString() : "";
+        group.background = blackBoardValue.HasMember("background") ? blackBoardValue["background"].GetString() : "#3C4645";
 
         if (blackBoardValue.HasMember("width") && blackBoardValue.HasMember("height")) {
-            qreal w = blackBoardValue["width"].GetFloat();
-            qreal h = blackBoardValue["height"].GetFloat();
-            blackboard.sz = QSizeF(w, h);
+            float w = blackBoardValue["width"].GetFloat();
+            float h = blackBoardValue["height"].GetFloat();
+            group.sz = { w,h };
         }
         if (blackBoardValue.HasMember("items")) {
             auto item_keys = blackBoardValue["items"].GetArray();
             for (int i = 0; i < item_keys.Size(); i++) {
                 std::string key = item_keys[i].GetString();
-                blackboard.items.append(key);
+                group.items.push_back(key);
             }
         }
-
-        retNode.parmsNotDesc["blackboard"].name = "blackboard";
-        retNode.parmsNotDesc["blackboard"].value = QVariant::fromValue(blackboard);
+        //TODO: import group.
     }
 
     return retNode;
@@ -362,17 +333,7 @@ void Zsg2Reader::_parseChildNodes(
         return;
 }
 
-void Zsg2Reader::initSockets(const std::string& name, const zeno::NodeDescs& legacyDescs, zeno::NodeData& ret)
-{
-    ZASSERT_EXIT(legacyDescs.find(name) != legacyDescs.end());
-    const NODE_DESC& desc = legacyDescs[name];
-    ret.inputs = desc.inputs;
-    ret.params = desc.params;
-    ret.outputs = desc.outputs;
-    ret.parmsNotDesc = NodesMgr::initParamsNotDesc(name);
-}
-
-void Zsg2Reader::_parseViews(const rapidjson::Value& jsonViews, ZSG_PARSE_RESULT& res)
+void Zsg2Reader::_parseViews(const rapidjson::Value& jsonViews, zeno::ZSG_PARSE_RESULT& res)
 {
     if (jsonViews.HasMember("timeline"))
     {
@@ -380,12 +341,12 @@ void Zsg2Reader::_parseViews(const rapidjson::Value& jsonViews, ZSG_PARSE_RESULT
     }
 }
 
-void Zsg2Reader::_parseTimeline(const rapidjson::Value& jsonTimeline, ZSG_PARSE_RESULT& res)
+void Zsg2Reader::_parseTimeline(const rapidjson::Value& jsonTimeline, zeno::ZSG_PARSE_RESULT& res)
 {
-    ZASSERT_EXIT(jsonTimeline.HasMember(timeline::start_frame) && jsonTimeline[timeline::start_frame].IsInt());
-    ZASSERT_EXIT(jsonTimeline.HasMember(timeline::end_frame) && jsonTimeline[timeline::end_frame].IsInt());
-    ZASSERT_EXIT(jsonTimeline.HasMember(timeline::curr_frame) && jsonTimeline[timeline::curr_frame].IsInt());
-    ZASSERT_EXIT(jsonTimeline.HasMember(timeline::always) && jsonTimeline[timeline::always].IsBool());
+    assert(jsonTimeline.HasMember(timeline::start_frame) && jsonTimeline[timeline::start_frame].IsInt());
+    assert(jsonTimeline.HasMember(timeline::end_frame) && jsonTimeline[timeline::end_frame].IsInt());
+    assert(jsonTimeline.HasMember(timeline::curr_frame) && jsonTimeline[timeline::curr_frame].IsInt());
+    assert(jsonTimeline.HasMember(timeline::always) && jsonTimeline[timeline::always].IsBool());
 
     res.timeline.beginFrame = jsonTimeline[timeline::start_frame].GetInt();
     res.timeline.endFrame = jsonTimeline[timeline::end_frame].GetInt();
@@ -393,82 +354,10 @@ void Zsg2Reader::_parseTimeline(const rapidjson::Value& jsonTimeline, ZSG_PARSE_
     res.timeline.bAlways = jsonTimeline[timeline::always].GetBool();
 }
 
-void Zsg2Reader::_parseDictKeys(const std::string& id, const rapidjson::Value& objValue, zeno::NodeData& ret)
-{
-    ZASSERT_EXIT(objValue.HasMember("inputs") && objValue["inputs"].IsArray());
-    auto input_keys = objValue["inputs"].GetArray();
-    for (int i = 0; i < input_keys.Size(); i++)
-    {
-        std::string key = input_keys[i].GetString();
-        ret.inputs[key].info.name = key;
-        ret.inputs[key].info.nodeid = id;
-        ret.inputs[key].info.control = CONTROL_NONE;
-        ret.inputs[key].info.sockProp = SOCKPROP_EDITABLE;
-        ret.inputs[key].info.type = "";
-    }
-
-    ZASSERT_EXIT(objValue.HasMember("outputs") && objValue["outputs"].IsArray());
-    auto output_keys = objValue["outputs"].GetArray();
-    for (int i = 0; i < output_keys.Size(); i++)
-    {
-        std::string key = output_keys[i].GetString();
-        ret.outputs[key].info.name = key;
-        ret.outputs[key].info.control = CONTROL_NONE;
-        ret.outputs[key].info.sockProp = SOCKPROP_EDITABLE;
-        ret.outputs[key].info.type = "";
-    }
-}
-
-void Zsg2Reader::_parseBySocketKeys(const std::string& id, const rapidjson::Value& objValue, zeno::NodeData& ret)
-{
-    //deprecated.
-    auto socket_keys = objValue["socket_keys"].GetArray();
-    QStringList socketKeys;
-    for (int i = 0; i < socket_keys.Size(); i++)
-    {
-        std::string key = socket_keys[i].GetString();
-        socketKeys.append(key);
-    }
-}
-
-zeno::zvariant Zsg2Reader::_parseDeflValue(
-                const std::string &nodeCls,
-                const zeno::NodeDescs &legacyDescs,
-                const std::string& sockName,
-                bool bInput,
-                const rapidjson::Value &defaultValue)
-{
-    ZASSERT_EXIT(legacyDescs.find(nodeCls) != legacyDescs.end(), QVariant());
-    NODE_DESC desc = legacyDescs[nodeCls];
-
-    zeno::zvariant defl;
-    if (cls == PARAM_INPUT)
-    {
-        if (!defaultValue.IsNull()) {
-            SOCKET_INFO descInfo;
-            if (desc.inputs.find(sockName) != desc.inputs.end()) {
-                descInfo = desc.inputs[sockName].info;
-            }
-            defl = UiHelper::parseJsonByType(descInfo.type, defaultValue);
-        }
-    } else if (cls == PARAM_PARAM) {
-        if (!defaultValue.IsNull()) {
-            PARAM_INFO paramInfo;
-            if (desc.params.find(sockName) != desc.params.end()) {
-                paramInfo = desc.params[sockName];
-            }
-            //todo: need to consider SubInput/SubOutput?
-            defl = UiHelper::parseJsonByType(paramInfo.typeDesc, defaultValue);
-        }
-    }
-    return defl;
-}
-
 void Zsg2Reader::_parseInputs(
                 const std::string& subgPath,
                 const std::string& id,
                 const std::string& nodeName,
-                const zeno::NodeDescs& legacyDescs,
                 const rapidjson::Value& inputs,
                 zeno::NodeData& ret,
                 zeno::LinksData& links)
@@ -485,7 +374,7 @@ void Zsg2Reader::_parseInputs(
         }
         else if (inputObj.IsObject())
         {
-            zeno::ParamInfo param = _parseSocket(subgPath, id, nodeName, inSock, true, inputObj, legacyDescs, links);
+            zeno::ParamInfo param = _parseSocket(subgPath, id, nodeName, inSock, true, inputObj, links);
             ret.inputs.insert(std::make_pair(inSock, param));
         }
         else
@@ -502,7 +391,6 @@ zeno::ParamInfo Zsg2Reader::_parseSocket(
         const std::string& sockName,
         bool bInput,
         const rapidjson::Value& sockObj,
-        const zeno::NodeDescs& descriptors,
         zeno::LinksData& links)
 {
     zeno::ParamInfo param;
@@ -542,7 +430,7 @@ zeno::ParamInfo Zsg2Reader::_parseSocket(
 
     if (sockObj.HasMember("type") && sockObj.HasMember("default-value")) {
         param.type = zeno::convertToType(sockObj["type"].GetString());
-        param.defl = zeno::jsonValueToZVar(sockObj["default-value"], param.type);
+        param.defl = zenoio::jsonValueToZVar(sockObj["default-value"], param.type);
     }
 
     //link:
@@ -570,19 +458,18 @@ zeno::ParamInfo Zsg2Reader::_parseSocket(
 
     if (sockObj.HasMember("dictlist-panel"))
     {
-        _parseDictPanel(subgPath, bInput, sockObj["dictlist-panel"], id, sockName, nodeCls, ret, links);
+        _parseDictPanel(subgPath, bInput, sockObj["dictlist-panel"], id, sockName, nodeCls, links);
     }
-    if (sockObj.HasMember("control") && 
-        (descriptors.find(nodeCls) == descriptors.end() || 
-            !descriptors[nodeCls].inputs.contains(socket.name) ||
-            GraphsManagment::instance().getSubgDesc(nodeCls, NODE_DESC())))
+
+    if (sockObj.HasMember("control"))
 	{
-        PARAM_CONTROL ctrl;
-        QVariant props;
-        bool bret = JsonHelper::importControl(sockObj["control"], ctrl, props);
-        if (bret){
-            socket.control = ctrl;
-            socket.ctrlProps = props.toMap();
+        zeno::ParamControl ctrl;
+        zeno::ControlProperty props;
+        bool bret = zenoio::importControl(sockObj["control"], ctrl, props);
+        if (bret) {
+            param.control = ctrl;
+            if (props.items || props.ranges)
+                param.ctrlProps = props;
         }
     }
 
@@ -594,6 +481,7 @@ zeno::ParamInfo Zsg2Reader::_parseSocket(
 
 zeno::NodesData Zsg2Reader::_parseChildren(const rapidjson::Value& jsonNodes)
 {
+    //there is no children concept in zsg2.5
     zeno::NodesData children;
     //_parseSubGraph(, , , children);
     return children;
@@ -610,16 +498,7 @@ void Zsg2Reader::_parseDictPanel(
 {
     if (dictPanelObj.HasMember("collasped") && dictPanelObj["collasped"].IsBool())
     {
-        bool bCollasped = dictPanelObj["collasped"].GetBool();
-        if (bInput) {
-            if (ret.inputs.find(sockName) != ret.inputs.end()) {
-                ret.inputs[sockName].info.dictpanel.bCollasped = bCollasped;
-            }
-        } else {
-            if (ret.outputs.find(sockName) != ret.outputs.end()) {
-                ret.outputs[sockName].info.dictpanel.bCollasped = bCollasped;
-            }
-        }
+        //deprecated.
     }
     if (dictPanelObj.HasMember("keys"))
     {
@@ -632,132 +511,112 @@ void Zsg2Reader::_parseDictPanel(
             std::string link;
             if (inputObj.HasMember("link") && inputObj["link"].IsString())
             {
-                link = std::string::fromUtf8(inputObj["link"].GetString());
-            }
+                std::string link = inputObj["link"].GetString();
+                //EdgeInfo edge;
 
-            //standard inputs desc by latest descriptors.
-            if (ret.inputs.find(sockName) != ret.inputs.end())
-            {
-                INPUT_SOCKET &inSocket = ret.inputs[sockName];
-                DICTKEY_INFO item;
-                item.key = keyName;
-
-                std::string outSockPath = link;
-                QStringList lst = outSockPath.split(cPathSeperator, QtSkipEmptyParts);
+                auto lst = zeno::split_str(link, ':');
                 if (lst.size() > 2)
-                    outSockPath = UiHelper::constructObjPath(lst[0], lst[1], lst[2]);
-                if (!outSockPath.isEmpty())
                 {
-                    std::string inSockPath = std::string("%1/%2:[node]/inputs/%3/%4").arg(subgPath).arg(id).arg(sockName).arg(keyName);
-                    EdgeInfo edge(outSockPath, inSockPath);
-                    links.append(edge);
+                    const std::string& outId = lst[1];
+                    const std::string& fuckingpath = lst[2];
+                    lst = zeno::split_str(fuckingpath, '/');
+                    if (lst.size() > 2) {
+                        std::string group = lst[1];
+                        std::string param = lst[2];
+                        std::string key;
+                        if (lst.size() > 3)
+                            key = lst[3];
+                        zeno::EdgeInfo edge = { outId, param, key, id, sockName, keyName };
+                        links.push_back(edge);
+                    }
                 }
-                inSocket.info.dictpanel.keys.append(item);
             }
-            if (ret.outputs.find(sockName) != ret.outputs.end())
-            {
-                OUTPUT_SOCKET &outSocket = ret.outputs[sockName];
-                DICTKEY_INFO item;
-                item.key = keyName;
 
-                std::string newKeyPath = "[node]/outputs/" + sockName + "/" + keyName;
-                outSocket.info.dictpanel.keys.append(item);
-                //no need to import link here.
-            }
+            //ignore output case because there is no link on output socket.
         }
     }
 }
 
-void Zsg2Reader::_parseOutputs(const std::string &id, const std::string &nodeName, const rapidjson::Value& outputs, zeno::NodeData& ret)
+void Zsg2Reader::_parseOutputs(
+        const std::string &id,
+        const std::string &nodeName,
+        const rapidjson::Value& outputs,
+        zeno::NodeData& ret,
+        zeno::LinksData& links)
 {
-    for (const auto& outObj : outputs.GetObject())
+    for (const auto& outParamObj : outputs.GetObject())
     {
-        const std::string& outSock = outObj.name.GetString();
-        if (ret.outputs.find(outSock) == ret.outputs.end()) {
-            ret.outputs[outSock] = OUTPUT_SOCKET();
-            ret.outputs[outSock].info.name = outSock;
-        }
-        const auto& sockObj = outObj.value;
-        if (sockObj.IsObject())
+        const std::string& outParam = outParamObj.name.GetString();
+        const auto& outObj = outParamObj.value;
+        if (outObj.IsNull())
         {
-            if (sockObj.HasMember("dictlist-panel")) {
-                _parseDictPanel("", false, sockObj["dictlist-panel"], id, outSock, nodeName, ret, zeno::LinksData());
-            }
-            if (sockObj.HasMember("tooltip")) {
-                ret.outputs[outSock].info.toolTip = std::string::fromUtf8(sockObj["tooltip"].GetString());
-            }
+            zeno::ParamInfo param;
+            param.name = outParam;
+            ret.outputs.insert(std::make_pair(outParam, param));
+        }
+        else if (outObj.IsObject())
+        {
+            zeno::ParamInfo param = _parseSocket("", id, nodeName, outParam, true, outObj, links);
+            ret.outputs.insert(std::make_pair(outParam, param));
+        }
+        else
+        {
+            zeno::log_error("unknown format");
         }
     }
 }
+
+bool Zsg2Reader::_parseParams(const std::string& id, const std::string& nodeCls, const rapidjson::Value& jsonParams, zeno::NodeData& ret)
+{
+    if (jsonParams.IsObject()) {
+        //PARAMS_INFO params;
+        for (const auto& paramObj : jsonParams.GetObject()) {
+            const std::string& name = paramObj.name.GetString();
+            const rapidjson::Value& valueObj = paramObj.value;
+            if (!valueObj.IsObject() || !valueObj.HasMember(iotags::params::params_valueKey)) //compatible old version
+                return false;
+
+            zeno::ParamInfo param;
+
+            param.name = name;
+
+            if (valueObj.HasMember("type"))
+            {
+                param.type = zeno::convertToType(valueObj["type"].GetString());
+            }
+
+            //它不知道会不会和SubInput的type参数冲突，这个很讨厌，这里直接解析算了，放弃历史包袱
+            param.defl = zenoio::jsonValueToZVar(valueObj[iotags::params::params_valueKey], param.type);
+
+            if (valueObj.HasMember("control"))
+            {
+                zeno::ParamControl ctrl;
+                zeno::ControlProperty props;
+                bool bret = zenoio::importControl(valueObj["control"], ctrl, props);
+                if (bret) {
+                    param.control = ctrl;
+                    if (props.items || props.ranges)
+                        param.ctrlProps = props;
+                }
+            }
+
+            if (valueObj.HasMember("tooltip"))
+            {
+                std::string toolTip(valueObj["tooltip"].GetString());
+                param.tooltip = toolTip;
+            }
+            ret.inputs[name] = param;
+        }
+    }
+    return true;
+}
+
 
 void Zsg2Reader::_parseCustomPanel(const std::string& id, const std::string& nodeName, const rapidjson::Value& jsonCutomUI, zeno::NodeData& ret)
 {
-    VPARAM_INFO invisibleRoot = zenomodel::importCustomUI(jsonCutomUI);
-    ret.customPanel = invisibleRoot;
-}
-
-void Zsg2Reader::_parseColorRamps(const std::string& id, const rapidjson::Value& jsonColorRamps, zeno::NodeData& ret)
-{
-    //deprecated
-    if (jsonColorRamps.IsNull())
-        return;
-
-    COLOR_RAMPS colorRamps;
-    RAPIDJSON_ASSERT(jsonColorRamps.IsArray());
-    const auto& arr = jsonColorRamps.GetArray();
-    for (int i = 0; i < arr.Size(); i++)
-    {
-        const auto& colorRampObj = arr[i];
-        RAPIDJSON_ASSERT(colorRampObj.IsArray());
-        const auto &rampArr = colorRampObj.GetArray();
-        const auto &rgb = rampArr[1].GetArray();
-
-        COLOR_RAMP clrRamp;
-        clrRamp.pos = rampArr[0].GetFloat();
-        clrRamp.r = rgb[0].GetFloat();
-        clrRamp.g = rgb[1].GetFloat();
-        clrRamp.b = rgb[2].GetFloat();
-        colorRamps.push_back(clrRamp);
-    }
-}
-
-void Zsg2Reader::_parseLegacyCurves(const std::string& id,
-                                   const rapidjson::Value& jsonPoints,
-                                   const rapidjson::Value& jsonHandlers,
-                                   zeno::NodeData& ret)
-{
-    //deprecated
-    if (jsonPoints.IsNull() || jsonHandlers.IsNull())
-        return;
-
-    QVector<QPointF> pts;
-    RAPIDJSON_ASSERT(jsonPoints.IsArray());
-    const auto &arr = jsonPoints.GetArray();
-    for (int i = 0; i < arr.Size(); i++)
-    {
-        const auto &pointObj = arr[i];
-        bool bSucceed = false;
-        QPointF pt = UiHelper::parsePoint(pointObj, bSucceed);
-        ZASSERT_EXIT(bSucceed);
-        pts.append(pt);
-    }
-
-    RAPIDJSON_ASSERT(jsonHandlers.IsArray());
-    const auto &arr2 = jsonHandlers.GetArray();
-    QVector<QPair<QPointF, QPointF>> hdls;
-    for (int i = 0; i < arr2.Size(); i++)
-    {
-        RAPIDJSON_ASSERT(arr2[i].IsArray() && arr2[i].Size() == 2);
-        const auto &arr_ = arr2[i].GetArray();
-
-        bool bSucceed = false;
-        QPointF leftHdl = UiHelper::parsePoint(arr_[0], bSucceed);
-        ZASSERT_EXIT(bSucceed);
-        QPointF rightHdl = UiHelper::parsePoint(arr_[1], bSucceed);
-        ZASSERT_EXIT(bSucceed);
-
-        hdls.append(QPair(leftHdl, rightHdl));
-    }
+    //VPARAM_INFO invisibleRoot = zenomodel::importCustomUI(jsonCutomUI);
+    //ret.customPanel = invisibleRoot;
+    //TODO
 }
 
 zeno::NodeDescs Zsg2Reader::_parseDescs(const rapidjson::Value& jsonDescs)
@@ -932,141 +791,6 @@ zeno::NodeDescs Zsg2Reader::_parseDescs(const rapidjson::Value& jsonDescs)
     return _descs;
 }
 
-void Zsg2Reader::_parseParams(
-            const std::string& id,
-            const std::string& nodeCls,
-            const rapidjson::Value& jsonParams,
-            const zeno::NodeDescs& legacyDescs,
-            zeno::NodeData& ret)
-{
-    if (jsonParams.IsObject())
-    {
-        for (const auto& paramObj : jsonParams.GetObject())
-        {
-            const std::string& name = paramObj.name.GetString();
-            const rapidjson::Value& val = paramObj.value;
 
-            ZASSERT_EXIT(legacyDescs.find(nodeCls) != legacyDescs.end());
-            NODE_DESC desc = legacyDescs[nodeCls];
-            QVariant var;
-            if (!val.IsNull()) {
-                PARAM_INFO paramInfo;
-                if (desc.params.find(name) != desc.params.end()) {
-                    paramInfo = desc.params[name];
-                }
-                if (nodeCls == "SubInput" || nodeCls == "SubOutput")
-                    var = UiHelper::parseJsonByValue(paramInfo.typeDesc, val); //dynamic type on SubInput defl.
-                else
-                    var = UiHelper::parseJsonByType(paramInfo.typeDesc, val);
-            }
-            if (ret.params.find(name) != ret.params.end())
-            {
-                zeno::log_trace("found param name {}", name.toStdString());
-                ret.params[name].value = var;
-            } else {
-                ret.parmsNotDesc[name].value = var;
-
-                if (name == "_KEYS" && (nodeCls == "MakeDict" || nodeCls == "ExtractDict" || nodeCls == "MakeList")) {
-                    //parse by socket_keys in zeno2.
-                    return;
-                }
-                if (nodeCls == "MakeCurvemap" && (name == "_POINTS" || name == "_HANDLERS")) {
-                    PARAM_INFO paramData;
-                    paramData.control = CONTROL_NONVISIBLE;
-                    paramData.name = name;
-                    paramData.bEnableConnect = false;
-                    paramData.value = var;
-                    ret.params[name] = paramData;
-                    return;
-                }
-                if (nodeCls == "MakeHeatmap" && name == "_RAMPS") {
-                    PARAM_INFO paramData;
-                    paramData.control = CONTROL_COLOR;
-                    paramData.name = name;
-                    paramData.bEnableConnect = false;
-                    paramData.value = var;
-                    ret.params[name] = paramData;
-                    return;
-                }
-                if (nodeCls == "DynamicNumber" && (name == "_CONTROL_POINTS" || name == "_TMP")) {
-                    PARAM_INFO paramData;
-                    paramData.control = CONTROL_NONVISIBLE;
-                    paramData.name = name;
-                    paramData.bEnableConnect = false;
-                    paramData.value = var;
-                    ret.params[name] = paramData;
-                    return;
-                }
-                zeno::log_warn("not found param name {}", name.toStdString());
-            }
-        }
-
-        if (nodeCls == "SubInput" || nodeCls == "SubOutput") {
-            ZASSERT_EXIT(ret.params.find("name") != ret.params.end() &&
-                         ret.params.find("type") != ret.params.end() &&
-                         ret.params.find("defl") != ret.params.end());
-
-            const std::string &descType = ret.params["type"].value.toString();
-            PARAM_INFO &defl = ret.params["defl"];
-            defl.control = UiHelper::getControlByType(descType);
-            defl.value = UiHelper::parseVarByType(descType, defl.value);
-            defl.typeDesc = descType;
-        }
-    } else {
-        if (nodeCls == "Blackboard" && jsonParams.IsArray())
-        {
-            //deprecate by zeno-old.
-            return;
-        }
-        zeno::log_warn("not object json param");
-    }
-}
-
-bool Zsg2Reader::_parseParams2(const std::string& id, const std::string &nodeCls, const rapidjson::Value &jsonParams, zeno::NodeData& ret) 
-{
-    if (jsonParams.IsObject()) {
-        //PARAMS_INFO params;
-        for (const auto &paramObj : jsonParams.GetObject()) {
-            const std::string &name = paramObj.name.GetString();
-            const rapidjson::Value &value = paramObj.value;
-            if (!value.IsObject() || !value.HasMember(iotags::params::params_valueKey)) //compatible old version
-                return false;
-
-            PARAM_INFO paramData;
-            if (value.HasMember("type"))
-                paramData.typeDesc = value["type"].GetString();
-            QVariant var;
-            if (nodeCls == "SubInput" || nodeCls == "SubOutput")
-                var = UiHelper::parseJsonByValue(paramData.typeDesc, value[iotags::params::params_valueKey]); //dynamic type on SubInput defl.
-            else
-                var = UiHelper::parseJsonByType(paramData.typeDesc, value[iotags::params::params_valueKey]);
-
-            CONTROL_INFO ctrlInfo = UiHelper::getControlByType(nodeCls, PARAM_PARAM, name, paramData.typeDesc);
-            if (ctrlInfo.control != CONTROL_NONE && ctrlInfo.controlProps.isValid()) {
-                paramData.control = ctrlInfo.control;
-                paramData.controlProps = ctrlInfo.controlProps;
-            }
-            else if (value.HasMember("control")) {
-                PARAM_CONTROL ctrl;
-                QVariant props;
-                bool bret = JsonHelper::importControl(value["control"], ctrl, props);
-                if (bret) {
-                    paramData.control = ctrl;
-                    paramData.controlProps = props;
-                }
-            }
-            if (value.HasMember("tooltip")) 
-            {
-                std::string toolTip = std::string::fromUtf8(value["tooltip"].GetString());
-                paramData.toolTip = toolTip;
-            }
-            paramData.name = name;
-            paramData.bEnableConnect = false;
-            paramData.value = var;
-            ret.params[name] = paramData;
-        }
-    }
-    return true;
-}
 
 }

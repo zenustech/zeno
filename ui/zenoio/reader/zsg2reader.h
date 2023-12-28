@@ -38,26 +38,17 @@ namespace zenoio
                 const std::string& inSock,
                 bool bInput,
                 const rapidjson::Value& sockObj,
-                const zeno::NodeDescs& descriptors,
                 zeno::LinksData& links);
 
         void _parseInputs(
                 const std::string& subgPath,
                 const std::string& id,
                 const std::string& nodeName,
-                const zeno::NodeDescs& descriptors,
                 const rapidjson::Value& inputs,
                 zeno::NodeData& ret,
                 zeno::LinksData& links);
 
-        void _parseParams(
-                const std::string& id,
-                const std::string& nodeName,
-                const rapidjson::Value &jsonParams,
-                const zeno::NodeDescs& legacyDescs,
-                zeno::NodeData& ret);
-
-        bool _parseParams2(
+        bool _parseParams(
                 const std::string& id,
                 const std::string& nodeCls,
                 const rapidjson::Value& jsonParams,
@@ -67,7 +58,8 @@ namespace zenoio
                 const std::string& id,
                 const std::string& nodeName,
                 const rapidjson::Value& jsonParams,
-                zeno::NodeData& ret);
+                zeno::NodeData& ret,
+                zeno::LinksData& links);
 
         void _parseCustomPanel(
                 const std::string& id,
@@ -84,17 +76,6 @@ namespace zenoio
                 const std::string& nodeName,
                 zeno::LinksData& links);
 
-        void _parseColorRamps(
-                const std::string& id,
-                const rapidjson::Value& jsonColorRamps,
-                zeno::NodeData& ret);
-
-        void _parseLegacyCurves(
-                const std::string &id,
-                const rapidjson::Value &jsonPoints,
-                const rapidjson::Value &jsonHandlers,
-                zeno::NodeData& ret);
-
         void _parseViews(
                 const rapidjson::Value& jsonViews,
                 zeno::ZSG_PARSE_RESULT& res);
@@ -102,16 +83,6 @@ namespace zenoio
         void _parseTimeline(
                 const rapidjson::Value& jsonTimeline,
                 zeno::ZSG_PARSE_RESULT& res);
-
-        void _parseBySocketKeys(
-                const std::string& id,
-                const rapidjson::Value& objValue,
-                zeno::NodeData& ret);
-
-        void _parseDictKeys(
-                const std::string& id,
-                const rapidjson::Value& objValue,
-                zeno::NodeData& ret);
 
         void _parseChildNodes(
                 const std::string& id,
@@ -122,18 +93,6 @@ namespace zenoio
         zeno::NodeDescs _parseDescs(const rapidjson::Value& descs);
 
         zeno::NodesData _parseChildren(const rapidjson::Value& jsonNodes);
-
-        void initSockets(
-                const std::string& name,
-                const zeno::NodeDescs& legacyDescs,
-                zeno::NodeData& ret);
-
-        zeno::zvariant _parseDeflValue(
-                        const std::string &nodeCls,
-                        const zeno::NodeDescs& legacyDescs,
-                        const std::string& sockName,
-                        bool bInput,
-                        const rapidjson::Value &defaultValue);
 
         zeno::ZSG_VERSION m_ioVer;
         bool m_bDiskReading;        //disk io read.

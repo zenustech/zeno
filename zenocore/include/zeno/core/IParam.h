@@ -11,6 +11,7 @@
 #include <string>
 #include <set>
 #include <map>
+#include <optional>
 #include <zeno/types/CurveObject.h>
 #include <zeno/extra/GlobalState.h>
 
@@ -28,7 +29,7 @@ struct IParam {
     std::weak_ptr<INode> m_spNode;
     std::vector<std::shared_ptr<ILink>> links;
 
-    zany defl;
+    zvariant defl;
     zany result;
 };
 

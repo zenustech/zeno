@@ -40,6 +40,7 @@ namespace zeno {
     enum ParamType
     {
         Param_Null,
+        Param_Bool,
         Param_Int,
         Param_String,
         Param_Float,
@@ -52,15 +53,15 @@ namespace zeno {
         Param_Prim,
         Param_Dict,
         Param_List,
+        Param_Curve,
         Param_SrcDst,
     };
 
     enum NodeStatus : unsigned int
     {
         Null = 0,
-        Cached = 1,
-        Mute = 1<<1,
-        View = 1<<2,
+        Mute = 1,
+        View = 1<<1,
     };
     ENUM_FLAGS(NodeStatus)
 
@@ -109,7 +110,12 @@ namespace zeno {
         Vec3edit,
         Vec4edit,
         Color,
-        Heatmap
+        Heatmap,
+        CurveEditor,
+        SpinBox,
+        Slider,
+        DoubleSpinBox,
+        SpinBoxSlider,
     };
 
     enum LinkFunction
@@ -127,7 +133,8 @@ namespace zeno {
 
     using zvariant = std::variant<
         int, zeno::vec2i, zeno::vec3i, zeno::vec4i,
-        float, zeno::vec2f, zeno::vec3f, zeno::vec4f, std::string>;
+        float, zeno::vec2f, zeno::vec3f, zeno::vec4f,
+        zeno::vec2s, zeno::vec3s, zeno::vec4s, std::string>;
 
     using ctrlpropvalue = std::variant<
         std::vector<std::string>,

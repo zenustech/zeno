@@ -1,9 +1,115 @@
+#include <rapidjson/document.h>
 #include "../include/iohelper.h"
 #include <zeno/zeno.h>
+#include <zeno/utils/log.h>
+#include <zeno/utils/string.h>
+#include <common/common.h>
 
 
 namespace zenoio
 {
+    static zeno::ParamControl getControlByName(const std::string& descName)
+    {
+        if (descName == "Integer")
+        {
+            return zeno::ParamControl::Lineedit;
+        }
+        else if (descName == "Float")
+        {
+            return zeno::ParamControl::Lineedit;
+        }
+        else if (descName == "String")
+        {
+            return zeno::ParamControl::Lineedit;
+        }
+        else if (descName == "Boolean")
+        {
+            return zeno::ParamControl::Checkbox;
+        }
+        else if (descName == "Multiline String")
+        {
+            return zeno::ParamControl::Multiline;
+        }
+        else if (descName == "read path")
+        {
+            return zeno::ParamControl::Pathedit;
+        }
+        else if (descName == "write path")
+        {
+            return zeno::ParamControl::Pathedit;
+        }
+        else if (descName == "Enum")
+        {
+            return zeno::ParamControl::Combobox;
+        }
+        else if (descName == "Float Vector 4")
+        {
+            return zeno::ParamControl::Vec4edit;
+        }
+        else if (descName == "Float Vector 3")
+        {
+            return zeno::ParamControl::Vec3edit;
+        }
+        else if (descName == "Float Vector 2")
+        {
+            return zeno::ParamControl::Vec2edit;
+        }
+        else if (descName == "Integer Vector 4")
+        {
+            return zeno::ParamControl::Vec4edit;
+        }
+        else if (descName == "Integer Vector 3")
+        {
+            return zeno::ParamControl::Vec3edit;
+        }
+        else if (descName == "Integer Vector 2")
+        {
+            return zeno::ParamControl::Vec2edit;
+        }
+        else if (descName == "Color")
+        {
+            return zeno::ParamControl::Heatmap;
+        }
+        else if (descName == "Pure Color")
+        {
+            return zeno::ParamControl::Color;
+        }
+        else if (descName == "Curve")
+        {
+            return zeno::ParamControl::CurveEditor;
+        }
+        else if (descName == "SpinBox")
+        {
+            return zeno::ParamControl::SpinBox;
+        }
+        else if (descName == "DoubleSpinBox")
+        {
+            return zeno::ParamControl::DoubleSpinBox;
+        }
+        else if (descName == "Slider")
+        {
+            return zeno::ParamControl::Slider;
+        }
+        else if (descName == "SpinBoxSlider")
+        {
+            return zeno::ParamControl::SpinBoxSlider;
+        }
+        else if (descName == "Dict Panel")
+        {
+            return zeno::ParamControl::Null;    //deprecated.
+        }
+        else if (descName == "group-line")
+        {
+            return zeno::ParamControl::Null;    //deprecated.
+        }
+        else
+        {
+            return zeno::ParamControl::Null;
+        }
+    }
+
+
+
     zeno::GraphData fork(
         const std::string& currentPath,
         const zeno::AssetsData& subgraphDatas,
@@ -68,88 +174,222 @@ namespace zenoio
         return newGraph;
     }
 
-
-    zeno::NodeDescs getCoreDescs()
+    zeno::zvariant jsonValueToZVar(const rapidjson::Value& val, zeno::ParamType const& type)
     {
-        zeno::NodeDescs descs;
-        std::string strDescs = zeno::getSession().dumpDescriptors();
-        //zeno::log_critical("EEEE {}", strDescs.toStdString());
-        //ZENO_P(strDescs.toStdString());
-
-
-        QStringList L = strDescs.split("\n");
-        for (int i = 0; i < L.size(); i++)
+        zeno::zvariant defl;
+        switch (type) {
+        case zeno::Param_Int:
         {
-            QString line = L[i];
-            if (line.startsWith("DESC@"))
+            if (val.IsInt()) {
+                defl = val.GetInt();
+            }
+            else if (val.IsFloat()) {
+                defl = (int)val.GetFloat();
+            }
+            else if (val.IsDouble()) {
+                defl = (int)val.GetFloat();
+            }
+            else if (val.IsString()) {
+                defl = (int)std::stof(val.GetString());
+            }
+            else {
+                zeno::log_error("error type");
+            }
+            break;
+        }
+        case zeno::Param_Float:
+        {
+            if (val.IsFloat())
+                defl = val.GetFloat();
+            else if (val.IsInt())
+                defl = (float)val.GetInt();
+            else if (val.IsDouble())
+                defl = val.GetFloat();
+            else if (val.IsString())
+                defl = std::stof(val.GetString());
+            else
+                zeno::log_error("error type");
+            break;
+        }
+        case zeno::Param_Bool:
+        {
+            if (val.IsBool())
+                defl = (int)val.GetBool();
+            else if (val.IsInt())
+                defl = val.GetInt() != 0;
+            else if (val.IsFloat())
+                defl = val.GetFloat() != 0;
+            else
+                zeno::log_error("error type");
+            break;
+        }
+        case zeno::Param_String:
+        {
+            if (val.IsString())
+                defl = val.GetString();
+            break;
+        }
+        case zeno::Param_Vec2i:
+        case zeno::Param_Vec2f:
+        case zeno::Param_Vec3i:
+        case zeno::Param_Vec3f:
+        case zeno::Param_Vec4i:
+        case zeno::Param_Vec4f:
+        {
+            int dim = 0;
+            bool bFloat = false;
+            if (zeno::Param_Vec2i == type) dim = 2; bFloat = false;
+            if (zeno::Param_Vec2f == type) dim = 2; bFloat = true;
+            if (zeno::Param_Vec3i == type) dim = 3; bFloat = false;
+            if (zeno::Param_Vec3f == type) dim = 3; bFloat = true;
+            if (zeno::Param_Vec4i == type) dim = 4; bFloat = false;
+            if (zeno::Param_Vec4f == type) dim = 4; bFloat = true;
+
+            std::vector<float> vecnum;
+            std::vector<std::string> vecstr;
+
+            if (val.IsArray()) {
+                auto arr = val.GetArray();
+                assert(dim == arr.Size());
+                for (int i = 0; i < arr.Size(); i++)
+                {
+                    if (arr[i].IsFloat())
+                    {
+                        vecnum.push_back(arr[i].GetFloat());
+                    }
+                    else if (arr[i].IsDouble())
+                    {
+                        vecnum.push_back(arr[i].GetDouble());
+                    }
+                    else if (arr[i].IsInt())
+                    {
+                        vecnum.push_back(arr[i].GetInt());
+                    }
+                    else if (arr[i].IsString())
+                    {
+                        //may be a curve json str, or a formula str
+                        //but the format of curve in zsg2.0 represents as :
+                        /*
+                          "position": {
+                              "default-value": {
+                                   "objectType": "curve",
+                                   "x": {...}
+                                   "y": {...}
+                                   "z": {...}
+                              }
+                          }
+
+                           it seems that the k-frame is set on the whole vec,
+                           may be we just want to k-frame for only one component.
+                         */
+                        vecstr.push_back(arr[i].GetString());
+                    }
+                    else {
+                        zeno::log_error("unknown type value on vec parsing");
+                        break;
+                    }
+                }
+            }
+            else if (val.IsString()) {
+                std::string strinfo = val.GetString();
+                std::vector<std::string> lst = zeno::split_str(strinfo);
+                for (auto& num : lst)
+                {
+                    if (num.empty()) {
+                        vecnum.push_back(0);
+                    }
+                    else {
+                        //don't support formula.
+                        vecnum.push_back(std::stof(num));
+                    }
+                }
+            }
+
+            if (vecnum.size() == dim) {
+                if (zeno::Param_Vec2i == type) {
+                    defl = zeno::vec2i(vecnum[0], vecnum[1]);
+                }
+                if (zeno::Param_Vec2f == type) {
+                    defl = zeno::vec2f(vecnum[0], vecnum[1]);
+                }
+                if (zeno::Param_Vec3i == type) {
+                    defl = zeno::vec3i(vecnum[0], vecnum[1], vecnum[2]);
+                }
+                if (zeno::Param_Vec3f == type) {
+                    defl = zeno::vec3f(vecnum[0], vecnum[1], vecnum[2]);
+                }
+                if (zeno::Param_Vec4i == type) {
+                    defl = zeno::vec4i(vecnum[0], vecnum[1], vecnum[2], vecnum[3]);
+                }
+                if (zeno::Param_Vec4f == type) {
+                    defl = zeno::vec4f(vecnum[0], vecnum[1], vecnum[2], vecnum[3]);
+                }
+            }
+            else if (vecstr.size() == dim) {
+                if (zeno::Param_Vec2i == type || zeno::Param_Vec2f == type) {
+                    defl = zeno::vec2s(vecstr[0], vecstr[1]);
+                }
+                if (zeno::Param_Vec3i == type || zeno::Param_Vec3f == type) {
+                    defl = zeno::vec3s(vecstr[0], vecstr[1], vecstr[2]);
+                }
+                if (zeno::Param_Vec4i == type || zeno::Param_Vec4f == type) {
+                    defl = zeno::vec4s(vecstr[0], vecstr[1], vecstr[2], vecstr[3]);
+                }
+            }
+            else {
+                zeno::log_error("unknown type value on vec parsing");
+            }
+            break;
+        }
+        case zeno::Param_Curve:
+        {
+            //todo: wrap the json object as string, and parse it when calculate,
+            //by the method of parseCurve on ParseObjectFromUi.cpp
+            break;
+        }
+        }
+        return defl;
+    }
+
+    bool importControl(const rapidjson::Value& controlObj, zeno::ParamControl& ctrl, zeno::ControlProperty& props)
+    {
+        if (!controlObj.IsObject())
+            return false;
+
+        if (!controlObj.HasMember("name"))
+            return false;
+
+        const rapidjson::Value& nameObj = controlObj["name"];
+        if (!nameObj.IsString())
+            return false;
+
+        const std::string& ctrlName = nameObj.GetString();
+        ctrl = getControlByName(ctrlName);
+
+        if (controlObj.HasMember("min") && controlObj.HasMember("max") &&
+            controlObj.HasMember("step"))
+        {
+            if (controlObj["min"].IsNumber() && controlObj["max"].IsNumber() && controlObj["step"].IsNumber())
             {
-                line = line.trimmed();
-                int idx1 = line.indexOf("@");
-                int idx2 = line.indexOf("@", idx1 + 1);
-                ZASSERT_EXIT(idx1 != -1 && idx2 != -1, descs);
-                QString wtf = line.mid(0, idx1);
-                QString z_name = line.mid(idx1 + 1, idx2 - idx1 - 1);
-                QString rest = line.mid(idx2 + 1);
-                ZASSERT_EXIT(rest.startsWith("{") && rest.endsWith("}"), descs);
-                auto _L = rest.mid(1, rest.length() - 2).split("}{");
-                QString inputs = _L[0], outputs = _L[1], params = _L[2], categories = _L[3];
-                QStringList z_categories = categories.split('%', QtSkipEmptyParts);
-
-                NODE_DESC desc;
-                for (QString input : inputs.split("%", QtSkipEmptyParts)) {
-                    QString type, name;
-                    QVariant defl;
-
-                    parseDescStr(input, name, type, defl);
-
-                    INPUT_SOCKET socket;
-                    socket.info.type = type;
-                    socket.info.name = name;
-                    CONTROL_INFO ctrlInfo = UiHelper::getControlByType(z_name, PARAM_INPUT, name, type);
-                    socket.info.control = ctrlInfo.control;
-                    socket.info.ctrlProps = ctrlInfo.controlProps.toMap();
-                    socket.info.defaultValue = defl;
-                    desc.inputs[name] = socket;
-                }
-                for (QString output : outputs.split("%", QtSkipEmptyParts)) {
-                    QString type, name;
-                    QVariant defl;
-
-                    parseDescStr(output, name, type, defl);
-
-                    OUTPUT_SOCKET socket;
-                    socket.info.type = type;
-                    socket.info.name = name;
-                    CONTROL_INFO ctrlInfo = UiHelper::getControlByType(z_name, PARAM_OUTPUT, name, type);
-                    socket.info.control = ctrlInfo.control;
-                    socket.info.ctrlProps = ctrlInfo.controlProps.toMap();
-                    socket.info.defaultValue = defl;
-                    desc.outputs[name] = socket;
-                }
-                for (QString param : params.split("%", QtSkipEmptyParts)) {
-                    QString type, name;
-                    QVariant defl;
-
-                    parseDescStr(param, name, type, defl);
-
-                    PARAM_INFO paramInfo;
-                    paramInfo.bEnableConnect = false;
-                    paramInfo.name = name;
-                    paramInfo.typeDesc = type;
-                    CONTROL_INFO ctrlInfo = UiHelper::getControlByType(z_name, PARAM_PARAM, name, type);
-                    paramInfo.control = ctrlInfo.control;
-                    paramInfo.controlProps = ctrlInfo.controlProps;
-                    paramInfo.defaultValue = defl;
-                    //thers is no "value" in descriptor, but it's convient to initialize param value.
-                    paramInfo.value = paramInfo.defaultValue;
-                    desc.params[name] = paramInfo;
-                }
-                desc.categories = z_categories;
-                desc.name = z_name;
-
-                descs.insert(z_name, desc);
+                props.ranges = {
+                    controlObj["min"].GetFloat(),
+                    controlObj["max"].GetFloat(),
+                    controlObj["step"].GetFloat()
+                };
             }
         }
-        return descs;
+        if (controlObj.HasMember("items"))
+        {
+            if (controlObj["items"].IsArray())
+            {
+                auto& arr = controlObj["items"].GetArray();
+                for (int i = 0; i < arr.Size(); i++)
+                {
+                    props.items->push_back(arr[i].GetString());
+                }
+            }
+        }
+        return true;
     }
+
 }

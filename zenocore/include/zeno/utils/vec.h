@@ -498,6 +498,7 @@ using vec2L = vec<2, uintptr_t>;
 using vec2Q = vec<2, uint64_t>;
 using vec2H = vec<2, uint16_t>;
 using vec2C = vec<2, uint8_t>;
+using vec2s = vec<2, std::string>;
 using vec3f = vec<3, float>;
 using vec3d = vec<3, double>;
 using vec3i = vec<3, int32_t>;
@@ -510,6 +511,7 @@ using vec3L = vec<3, uintptr_t>;
 using vec3Q = vec<3, uint64_t>;
 using vec3H = vec<3, uint16_t>;
 using vec3C = vec<3, uint8_t>;
+using vec3s = vec<3, std::string>;
 using vec4f = vec<4, float>;
 using vec4d = vec<4, double>;
 using vec4i = vec<4, int32_t>;
@@ -522,6 +524,7 @@ using vec4L = vec<4, uintptr_t>;
 using vec4Q = vec<4, uint64_t>;
 using vec4H = vec<4, uint16_t>;
 using vec4C = vec<4, uint8_t>;
+using vec4s = vec<4, std::string>;
 
 }
 using namespace _impl_vec;

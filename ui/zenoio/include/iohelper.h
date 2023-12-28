@@ -11,7 +11,9 @@ namespace zenoio {
         const zeno::AssetsData& subgraphDatas,
         const std::string& subnetName);
 
-    zeno::NodeDescs getCoreDescs();
+    zeno::zvariant jsonValueToZVar(const rapidjson::Value& val, zeno::ParamType const& type);
+
+    bool importControl(const rapidjson::Value& controlObj, zeno::ParamControl& ctrl, zeno::ControlProperty& props);
 }
 
 #endif

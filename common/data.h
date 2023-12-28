@@ -6,18 +6,25 @@
 #include <map>
 #include <vector>
 #include <unordered_map>
+#include <optional>
 
 namespace zeno {
+
+    struct ControlProperty
+    {
+        std::optional<std::vector<std::string>> items;  //for combobox
+        std::optional<std::array<float, 3>> ranges;       //min, max, step
+    };
 
     struct ParamInfo {
         std::string name;
         std::string tooltip;
         std::vector<EdgeInfo> links;
-        std::map<std::string, ctrlpropvalue> ctrlprops;
         zvariant defl;
         ParamControl control = ParamControl::Null;
         ParamType type = ParamType::Param_Null;
         SocketProperty prop = SocketProperty::Normal;
+        std::optional<ControlProperty> ctrlProps;
     };
 
     struct NodeData {
@@ -64,6 +71,29 @@ namespace zeno {
         bool is_subgraph = false;
     };
     using NodeDescs = std::map<std::string, NodeDesc>;
+
+    struct GroupInfo
+    {
+        std::pair<float, float> sz;
+        std::string title;
+        std::string content;
+        //params
+        bool special = false;
+        std::vector<std::string> items;
+        std::string background;     //hex format
+    };
+
+    struct BlackBoardInfo
+    {
+        std::pair<float, float> sz;
+        std::string title;
+        std::string content;
+        //params
+        bool special;
+        QStringList items;
+        QColor background;
+        BLACKBOARD_INFO() : special(false) {}
+    };
 
     struct TimelineInfo {
         int beginFrame = 0;
