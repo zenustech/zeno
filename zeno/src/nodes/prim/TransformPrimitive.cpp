@@ -369,8 +369,8 @@ struct PrimitiveTransform : zeno::INode {
 
 ZENDEFNODE(PrimitiveTransform, {
     {
-        {"string", "path"},
         {"PrimitiveObject", "prim"},
+        {"string", "path"},
         {"enum world bboxCenter", "pivot", "bboxCenter"},
         {"vec3f", "translation", "0,0,0"},
         {"vec3f", "eulerXYZ", "0,0,0"},
