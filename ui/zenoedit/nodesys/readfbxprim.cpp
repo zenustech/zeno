@@ -390,9 +390,6 @@ void EvalBlenderFile::onEvalClicked() {
             Zeno_AddLink(BindMat,BindMaterial,"object",EndForEach,"object");
             Zeno_AddLink(BindMat,EndForEach,"list",ouput,"port");
 
-        }else{
-            zeno::log_error("FacesetBindMat subGraph already exist! Remove it then try again!");
-            return;
         }
         ZENO_HANDLE input = Zeno_AddNode(GeoSubG,"SubInput");
         Zeno_SetParam(GeoSubG,input,"name","abc_file_path");
@@ -424,9 +421,6 @@ void EvalBlenderFile::onEvalClicked() {
         Zeno_AddLink(GeoSubG,EndForEach,"list",output,"port");
         
 
-    }else{
-        zeno::log_error("AlembicImport subGraph already exist! Remove it then try again!");
-        return;
     }
 
     ZENO_HANDLE import_node = Zeno_AddNode(mGraph,"AlembicImport");
@@ -440,13 +434,33 @@ void EvalBlenderFile::onEvalClicked() {
     
 
     // Eval Material
+
+    int mat_num = 0;
+    for(auto& [key,val]:mat_info.items()){
+        mat_num++;
+    }
+    
+    int col = std::sqrt(mat_num);
+    int index = 0;
+    float h_start = pos.first;
     for (auto& [key, val] : mat_info.items()){
+        if(index >= col){
+            index = 0;
+            pos.first = h_start;
+            pos.second += 200;
+        }else{
+            index ++;
+            pos.first += 500;
+        }
 
         auto matName = key;
 
         ZENO_HANDLE subG = Zeno_GetGraph(matName);
         if(subG != 0){
             zeno::log_warn("Material SubGraph {} already exist! Please remove it then run again");
+            ZENO_HANDLE mat_subgraph = Zeno_AddNode(mGraph,matName);
+            Zeno_SetView(mGraph,mat_subgraph,true);
+            Zeno_SetPos(mGraph,mat_subgraph,pos);
             continue;
         }
         subG = Zeno_CreateGraph(matName,1);
@@ -513,7 +527,6 @@ void EvalBlenderFile::onEvalClicked() {
         ZENO_HANDLE mat_subgraph = Zeno_AddNode(mGraph,matName);
         Zeno_SetView(mGraph,mat_subgraph,true);
         Zeno_SetPos(mGraph,mat_subgraph,pos);
-        pos.second += 200;
 
     }
 }
