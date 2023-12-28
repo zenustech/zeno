@@ -122,10 +122,12 @@ extern "C" __global__ void __closesthit__radiance()
 
     const auto lightShape = light.shape;
 
+    auto prdorigin = ray_orig + params.cam.eye;
+
     switch (lightShape) {
     case zeno::LightShape::Plane:
     case zeno::LightShape::Ellipse: {
-        auto valid = light.rect.EvalAfterHit(&lsr, lightDirection, lightDistance, prd->origin);
+        auto valid = light.rect.EvalAfterHit(&lsr, lightDirection, lightDistance, prdorigin);
         if (!valid) {
             prd->done = false;
             auto pos = P;
@@ -136,7 +138,7 @@ extern "C" __global__ void __closesthit__radiance()
         break;
     }
     case zeno::LightShape::Sphere: {
-        light.sphere.EvalAfterHit(&lsr, lightDirection, lightDistance, prd->origin);
+        light.sphere.EvalAfterHit(&lsr, lightDirection, lightDistance, prdorigin);
         cihouSphereLightUV(lsr, light); break;
     }
     case zeno::LightShape::TriangleMesh: {
@@ -145,7 +147,7 @@ extern "C" __global__ void __closesthit__radiance()
         
         float3* normalBuffer = reinterpret_cast<float3*>(params.triangleLightNormalBuffer);
         float2* coordsBuffer = reinterpret_cast<float2*>(params.triangleLightCoordsBuffer);
-        light.triangle.EvalAfterHit(&lsr, lightDirection, lightDistance, prd->origin, prd->geometryNormal, bary3, normalBuffer, coordsBuffer);
+        light.triangle.EvalAfterHit(&lsr, lightDirection, lightDistance, prdorigin, prd->geometryNormal, bary3, normalBuffer, coordsBuffer);
         break;
     }
     default: return;
@@ -181,7 +183,7 @@ extern "C" __global__ void __closesthit__radiance()
         auto lightTree = reinterpret_cast<pbrt::LightTreeSampler*>(params.lightTreeSampler);
         if (lightTree == nullptr) { return; }
 
-        auto PMF = lightTree->PMF(reinterpret_cast<const Vector3f&>(ray_orig), 
+        auto PMF = lightTree->PMF(reinterpret_cast<const Vector3f&>(prdorigin),
                                          reinterpret_cast<const Vector3f&>(prd->geometryNormal), light_index);
 
         auto lightPickPDF = (1.0f - _SKY_PROB_) * PMF;
@@ -265,7 +267,8 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 
     if (zeno::LightShape::Ellipse == light.shape && light.rect.isEllipse) {
         LightSampleRecord lsr;
-        visible &= light.rect.hitAsLight(&lsr, ray_orig, ray_dir);
+        auto rayorig = ray_orig + params.cam.eye;
+        visible &= light.rect.hitAsLight(&lsr, rayorig, ray_dir);
     }
 
     if (visible) {

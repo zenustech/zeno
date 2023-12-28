@@ -150,6 +150,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     unsigned short isLight = 0;//rt_data->lightMark[vert_aux_offset + primIdx];
 #endif
 
+    attrs.pos = attrs.pos + vec3(params.cam.eye);
     //MatOutput mats = evalMaterial(rt_data->textures, rt_data->uniforms, attrs);
     MatOutput mats = optixDirectCall<MatOutput, cudaTextureObject_t[], float4*, const MatInput&>( rt_data->dc_index, rt_data->textures, rt_data->uniforms, attrs );
 
@@ -386,6 +387,7 @@ extern "C" __global__ void __closesthit__radiance()
     attrs.rayLength = optixGetRayTmax();
 #endif
 
+    attrs.pos = attrs.pos + vec3(params.cam.eye);
     //MatOutput mats = evalMaterial(rt_data->textures, rt_data->uniforms, attrs);
     MatOutput mats = optixDirectCall<MatOutput, cudaTextureObject_t[], float4*, const MatInput&>( rt_data->dc_index, rt_data->textures, rt_data->uniforms, attrs );
 
@@ -873,8 +875,8 @@ extern "C" __global__ void __closesthit__radiance()
     if (mats.shadowReceiver > 0.5f) {
         dummy_prt = &radianceNoShadow;
     }
-
-    DirectLighting<true>(prd, shadow_prd, shadingP, ray_dir, evalBxDF, &taskAux, dummy_prt);
+    auto SP = shadingP + params.cam.eye;
+    DirectLighting<true>(prd, shadow_prd, SP, ray_dir, evalBxDF, &taskAux, dummy_prt);
     if(mats.shadowReceiver > 0.5f)
     {
       auto radiance = length(prd->radiance);

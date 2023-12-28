@@ -602,7 +602,7 @@ static void updateRootIAS()
 {
   timer.tick();
   auto campos = state.params.cam.eye;
-  const float mat3r4c[12] = {1,0,0,0,   0,1,0,0,   0,0,1,0};
+  const float mat3r4c[12] = {1,0,0,-campos.x,   0,1,0,-campos.y,   0,0,1,-campos.z};
   std::vector<OptixInstance> optix_instances{};
   uint sbt_offset = 0u;
   {
@@ -728,7 +728,7 @@ static void handleCameraUpdate( Params& params )
     if( !camera_changed )
         return;
     camera_changed = false;
-
+    updateRootIAS();
     //params.vp1 = cam_vp1;
     //params.vp2 = cam_vp2;
     //params.vp3 = cam_vp3;
