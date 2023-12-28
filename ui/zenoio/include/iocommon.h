@@ -22,24 +22,11 @@ struct DockContentWidgetInfo {
     DockContentWidgetInfo() : resolutionX(0), resolutionY(0), lock(false), comboboxindex(0), colorR(0.18f), colorG(0.20f), colorB(0.22f) {}
 };
 
-struct LayerOutNode;
-typedef std::shared_ptr<LayerOutNode> PtrLayoutNode;
-
 enum NodeType
 {
     NT_HOR,
     NT_VERT,
     NT_ELEM,
-};
-
-struct LayerOutNode {
-    PtrLayoutNode pLeft;
-    PtrLayoutNode pRight;
-    NodeType type;
-    QDockWidget* pWidget;
-    QStringList tabs;
-    QRectF geom;
-    QVector<DockContentWidgetInfo> widgetInfos;
 };
 
 #endif

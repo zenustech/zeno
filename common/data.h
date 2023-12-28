@@ -32,8 +32,8 @@ namespace zeno {
         std::string name;
         std::string cls;
 
-        std::map<std::string, ParamInfo> inputs;
-        std::map<std::string, ParamInfo> outputs;
+        std::vector<ParamInfo> inputs;
+        std::vector<ParamInfo> outputs;
 
         //if current node is a subgraph node, which means type =NodeStatus::SubgraphNode.
         GraphData subgraph;
@@ -83,18 +83,6 @@ namespace zeno {
         std::string background;     //hex format
     };
 
-    struct BlackBoardInfo
-    {
-        std::pair<float, float> sz;
-        std::string title;
-        std::string content;
-        //params
-        bool special;
-        QStringList items;
-        QColor background;
-        BLACKBOARD_INFO() : special(false) {}
-    };
-
     struct TimelineInfo {
         int beginFrame = 0;
         int endFrame = 0;
@@ -103,7 +91,12 @@ namespace zeno {
         int timelinefps = 24;
     };
 
-    using AssetsData = std::map<std::string, GraphData>;
+    struct ZenoAsset {
+        NodeDesc desc;
+        GraphData graph;
+    };
+
+    using AssetsData = std::map<std::string, ZenoAsset>;
 
     struct ZSG_PARSE_RESULT {
         GraphData mainGraph;

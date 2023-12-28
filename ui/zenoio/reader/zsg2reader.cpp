@@ -1,16 +1,7 @@
 #include "zsg2reader.h"
-#include <zenomodel/include/uihelper.h>
-#include <zenomodel/customui/customuirw.h>
 #include <zeno/utils/logger.h>
 #include <zeno/funcs/ParseObjectFromUi.h>
-#include "zenoedit/util/log.h"
-#include "variantptr.h"
-#include "common.h"
-#include <zenomodel/customui/customuirw.h>
-#include <zenomodel/include/nodesmgr.h>
 #include "iotags.h"
-#include <zenomodel/include/graphsmanagment.h>
-#include <common_def.h>
 #include <fstream>
 #include <filesystem>
 #include <zenoio/include/iohelper.h>
@@ -111,7 +102,13 @@ bool Zsg2Reader::openFile(const std::string& fn, zeno::ZSG_PARSE_RESULT& result)
         const std::string &graphName = subgraph.name.GetString();
         if ("main" == graphName)
             continue;
-        subgraphDatas[graphName] = zeno::GraphData();
+
+        zeno::ZenoAsset asset;
+        if (nodesDescs.find(graphName) != nodesDescs.end())
+            asset.desc = nodesDescs[graphName];
+
+        asset.graph = zeno::GraphData();
+        subgraphDatas[graphName] = asset;
     }
 
     //zsg3.0以下的格式，子图将加入并成为项目的资产
@@ -122,9 +119,8 @@ bool Zsg2Reader::openFile(const std::string& fn, zeno::ZSG_PARSE_RESULT& result)
             continue;
         if (!_parseSubGraph(graphName,
                     subgraph.value,
-                    nodesDescs,
                     subgraphDatas,
-                    subgraphDatas[graphName]))
+                    subgraphDatas[graphName].graph))
         {
             return false;
         }
@@ -134,7 +130,7 @@ bool Zsg2Reader::openFile(const std::string& fn, zeno::ZSG_PARSE_RESULT& result)
     if (doc.HasMember("main") || graph.HasMember("main"))
     {
         const rapidjson::Value& mainGraph = doc.HasMember("main") ? doc["main"] : graph["main"];
-        if (!_parseSubGraph("/main", mainGraph, nodesDescs, subgraphDatas, mainData))
+        if (!_parseSubGraph("/main", mainGraph, subgraphDatas, mainData))
             return false;
     }
 
@@ -153,33 +149,20 @@ bool Zsg2Reader::openFile(const std::string& fn, zeno::ZSG_PARSE_RESULT& result)
 bool Zsg2Reader::_parseSubGraph(
             const std::string& graphPath,
             const rapidjson::Value& subgraph,
-            const zeno::NodeDescs& descriptors,
             const zeno::AssetsData& subgraphDatas,
             zeno::GraphData& subgData)
 {
     if (!subgraph.IsObject() || !subgraph.HasMember("nodes"))
         return false;
 
-    //todo: should consider descript info. some info of outsock without connection show in descript info?
-
     const auto& nodes = subgraph["nodes"];
     if (nodes.IsNull())
         return false;
 
-    /*目前还没有作用
-    QMap<std::string, std::string> objIdToName;
-    for (const auto &node : nodes.GetObject())
-    {
-        const std::string &nodeid = node.name.GetString();
-        const auto &objValue = node.value;
-        const std::string &name = objValue["name"].GetString();
-        objIdToName[nodeid] = name;
-    }
-    */
     for (const auto& node : nodes.GetObject())
     {
         const std::string& nodeid = node.name.GetString();
-        const zeno::NodeData& nodeData = _parseNode(graphPath, nodeid, node.value, descriptors, subgraphDatas, subgData.links);
+        const zeno::NodeData& nodeData = _parseNode(graphPath, nodeid, node.value, subgraphDatas, subgData.links);
         subgData.nodes.insert(std::make_pair(nodeid, nodeData));
     }
     return true;
@@ -189,7 +172,6 @@ zeno::NodeData Zsg2Reader::_parseNode(
                     const std::string& subgPath,
                     const std::string& nodeid,
                     const rapidjson::Value& nodeObj,
-                    const zeno::NodeDescs& legacyDescs,
                     const zeno::AssetsData& subgraphDatas,
                     zeno::LinksData& links)
 {
@@ -368,14 +350,14 @@ void Zsg2Reader::_parseInputs(
         const auto& inputObj = inObj.value;
         if (inputObj.IsNull())
         {
-            INPUT_SOCKET socket;
             zeno::ParamInfo param;
-            ret.inputs.insert(std::make_pair(inSock, param));
+            param.name = inSock;
+            ret.inputs.push_back(param);
         }
         else if (inputObj.IsObject())
         {
             zeno::ParamInfo param = _parseSocket(subgPath, id, nodeName, inSock, true, inputObj, links);
-            ret.inputs.insert(std::make_pair(inSock, param));
+            ret.inputs.push_back(param);
         }
         else
         {
@@ -395,7 +377,6 @@ zeno::ParamInfo Zsg2Reader::_parseSocket(
 {
     zeno::ParamInfo param;
 
-    int sockprop = SOCKPROP_NORMAL;
     std::string sockProp;
     if (sockObj.HasMember("property"))
     {
@@ -552,12 +533,12 @@ void Zsg2Reader::_parseOutputs(
         {
             zeno::ParamInfo param;
             param.name = outParam;
-            ret.outputs.insert(std::make_pair(outParam, param));
+            ret.outputs.push_back(param);
         }
         else if (outObj.IsObject())
         {
             zeno::ParamInfo param = _parseSocket("", id, nodeName, outParam, true, outObj, links);
-            ret.outputs.insert(std::make_pair(outParam, param));
+            ret.outputs.push_back(param);
         }
         else
         {
@@ -605,7 +586,7 @@ bool Zsg2Reader::_parseParams(const std::string& id, const std::string& nodeCls,
                 std::string toolTip(valueObj["tooltip"].GetString());
                 param.tooltip = toolTip;
             }
-            ret.inputs[name] = param;
+            ret.inputs.push_back(param);
         }
     }
     return true;
@@ -621,28 +602,38 @@ void Zsg2Reader::_parseCustomPanel(const std::string& id, const std::string& nod
 
 zeno::NodeDescs Zsg2Reader::_parseDescs(const rapidjson::Value& jsonDescs)
 {
-    auto& mgr = GraphsManagment::instance();
-    zeno::NodeDescs _descs = mgr.descriptors();
+    zeno::NodeDescs _descs;     //不需要系统内置节点的desc，只要读文件的就可以
+    zeno::LinksData lnks;       //没用的
     for (const auto& node : jsonDescs.GetObject())
     {
         const std::string& nodeCls = node.name.GetString();
         const auto& objValue = node.value;
 
-        if (_descs.find(nodeCls) != _descs.end() && !mgr.getSubgDesc(nodeCls, NODE_DESC()))
-        {
-            continue;
-        }
-
-        NODE_DESC desc;
+        zeno::NodeDesc desc;
         desc.name = nodeCls;
         if (objValue.HasMember("inputs"))
         {
             if (objValue["inputs"].IsArray()) 
             {
+                //系统节点导出的描述，形如：
+                /*
+                "inputs": [
+                    [
+                        "ListObject",
+                        "keys",
+                        ""
+                    ],
+                    [
+                        "",
+                        "SRC",
+                        ""
+                    ]
+                ],
+                */
                 auto inputs = objValue["inputs"].GetArray();
                 for (int i = 0; i < inputs.Size(); i++) 
                 {
-                    if (inputs[i].IsArray()) 
+                    if (inputs[i].IsArray())
                     {
                         auto input_triple = inputs[i].GetArray();
                         std::string socketType, socketName, socketDefl;
@@ -653,19 +644,14 @@ zeno::NodeDescs Zsg2Reader::_parseDescs(const rapidjson::Value& jsonDescs)
                         if (input_triple.Size() > 2 && input_triple[2].IsString())
                             socketDefl = input_triple[2].GetString();
 
-                        //zeno::log_info("input_triple[2] = {}", input_triple[2].GetType());
-                        //Q_ASSERT(!socketName.isEmpty());
-                        if (!socketName.isEmpty())
+                        if (!socketName.empty())
                         {
-                            CONTROL_INFO infos = UiHelper::getControlByType(nodeCls, PARAM_INPUT, socketName, socketType);
+                            zeno::ParamInfo param;
+                            param.name = socketName;
+                            param.type = zeno::convertToType(socketDefl);
+                            param.defl = socketDefl;    //不转了，太麻烦了。..反正普通节点的desc也只是参考
 
-                            INPUT_SOCKET inputSocket;
-                            inputSocket.info = SOCKET_INFO("", socketName);
-                            inputSocket.info.type = socketType;
-                            inputSocket.info.control = infos.control;
-                            inputSocket.info.ctrlProps = infos.controlProps.toMap();
-                            inputSocket.info.defaultValue = UiHelper::parseStringByType(socketDefl, socketType);
-                            desc.inputs.insert(socketName, inputSocket);
+                            desc.inputs.push_back(param);
                         }
                     }
                 }
@@ -676,11 +662,7 @@ zeno::NodeDescs Zsg2Reader::_parseDescs(const rapidjson::Value& jsonDescs)
                 for (const auto &input : inputs)
                 {
                     std::string socketName = input.name.GetString();
-                    QVariant var = JsonHelper::importDescriptor(input.value, socketName,PARAM_INPUT);
-                    if (var.canConvert<INPUT_SOCKET>()) 
-                    {
-                        desc.inputs.insert(socketName, var.value<INPUT_SOCKET>());
-                    }
+                    _parseSocket("", "", nodeCls, socketName, true, input.value, lnks);
                 }
             }
         }
@@ -702,19 +684,13 @@ zeno::NodeDescs Zsg2Reader::_parseDescs(const rapidjson::Value& jsonDescs)
                         if (param_triple.Size() > 2 && param_triple[2].IsString())
                             socketDefl = param_triple[2].GetString();
 
-                        //zeno::log_info("param_triple[2] = {}", param_triple[2].GetType());
-                        //Q_ASSERT(!socketName.isEmpty());
-                        if (!socketName.isEmpty())
+                        if (!socketName.empty())
                         {
-                            CONTROL_INFO infos = UiHelper::getControlByType(nodeCls, PARAM_PARAM, socketName, socketType);
-                            PARAM_INFO paramInfo;
-                            paramInfo.bEnableConnect = false;
-                            paramInfo.control = infos.control;
-                            paramInfo.controlProps = infos.controlProps.toMap();
-                            paramInfo.name = socketName;
-                            paramInfo.typeDesc = socketType;
-                            paramInfo.defaultValue = UiHelper::parseStringByType(socketDefl, socketType);
-                            desc.params.insert(socketName, paramInfo);
+                            zeno::ParamInfo param;
+                            param.name = socketName;
+                            param.type = zeno::convertToType(socketDefl);
+                            param.defl = socketDefl;    //不转了，太麻烦了。..反正普通节点的desc也只是参考
+                            desc.inputs.push_back(param);
                         }
                     }
                 }
@@ -725,11 +701,7 @@ zeno::NodeDescs Zsg2Reader::_parseDescs(const rapidjson::Value& jsonDescs)
                 for (const auto &param : params) 
                 {
                     std::string socketName = param.name.GetString();
-                    QVariant var = JsonHelper::importDescriptor(param.value, socketName, PARAM_PARAM);
-                    if (var.canConvert<PARAM_INFO>()) 
-                    {
-                        desc.params.insert(socketName, var.value<PARAM_INFO>());
-                    }
+                    _parseSocket("", "", nodeCls, socketName, true, param.value, lnks);
                 }
             }
         }
@@ -751,14 +723,13 @@ zeno::NodeDescs Zsg2Reader::_parseDescs(const rapidjson::Value& jsonDescs)
                         if (output_triple.Size() > 2 && output_triple[2].IsString())
                             socketDefl = output_triple[2].GetString();
 
-                        //Q_ASSERT(!socketName.isEmpty());
-                        if (!socketName.isEmpty())
+                        if (!socketName.empty())
                         {
-                            OUTPUT_SOCKET outputSocket;
-                            outputSocket.info = SOCKET_INFO("", socketName);
-                            outputSocket.info.type = socketType;
-                            outputSocket.info.defaultValue = UiHelper::parseStringByType(socketDefl, socketType);
-                            desc.outputs.insert(socketName, outputSocket);
+                            zeno::ParamInfo param;
+                            param.name = socketName;
+                            param.type = zeno::convertToType(socketDefl);
+                            param.defl = socketDefl;
+                            desc.outputs.push_back(param);
                         }
                     }
                 }
@@ -769,11 +740,7 @@ zeno::NodeDescs Zsg2Reader::_parseDescs(const rapidjson::Value& jsonDescs)
                 for (const auto &output : outputs) 
                 {
                     std::string socketName = output.name.GetString();
-                    QVariant var = JsonHelper::importDescriptor(output.value, socketName, PARAM_OUTPUT);
-                    if (var.canConvert<OUTPUT_SOCKET>()) 
-                    {
-                        desc.outputs.insert(socketName, var.value<OUTPUT_SOCKET>());
-                    }
+                    _parseSocket("", "", nodeCls, socketName, false, output.value, lnks);
                 }
             }
         }
@@ -786,7 +753,7 @@ zeno::NodeDescs Zsg2Reader::_parseDescs(const rapidjson::Value& jsonDescs)
             }
         }
 
-        _descs.insert(nodeCls, desc);
+        _descs.insert(std::make_pair(nodeCls, desc));
     }
     return _descs;
 }
