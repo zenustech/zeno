@@ -1302,6 +1302,39 @@ ZENDEFNODE(PrimitiveUnmerge, {
                                  {"primitive"},
                              });
 
+struct GatherPrimIds : INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto refPrim = get_input<PrimitiveObject>("refPrim");
+        auto tag = get_input2<std::string>("tagAttr");
+        auto indexTag = get_input2<std::string>("refIndexTagAttr");
+
+        const auto &targetIndices = prim->attr<int>("target_index");
+        const auto &refAttr = refPrim->attr<int>(tag);
+        auto &attr = prim->attr<int>(tag);
+
+        using namespace zs;
+        auto pol = omp_exec();
+        pol(range(prim->size()), [&](int vi) { attr[vi] = refAttr[targetIndices[vi]]; });
+
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENDEFNODE(GatherPrimIds, {
+                              {
+                                  {"primitive", "prim"},
+                                  {"primitive", "refPrim"},
+                                  {"string", "tagAttr", "id"},
+                                  {"string", "refIndexTagAttr", "target_index"},
+                              },
+                              {
+                                  {"primitive", "prim"},
+                              },
+                              {},
+                              {"primitive"},
+                          });
+
 struct MarkSelectedVerts : INode {
     void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");

@@ -11,157 +11,9 @@
 #include "IOMat.h"
 #include "Light.h"
 
-#define _SPHERE_ 0
-//COMMON_CODE
-
 #include "DisneyBRDF.h"
 #include "DisneyBSDF.h"
 
-template<bool isDisplacement>
-static __inline__ __device__ MatOutput evalMat(cudaTextureObject_t zenotex[], float4* uniforms, MatInput const &attrs) {
-
-    /* MODMA */
-    auto att_pos = attrs.pos;
-    auto att_clr = attrs.clr;
-    auto att_uv = attrs.uv;
-    auto att_nrm = attrs.nrm;
-    auto att_tang = attrs.tang;
-    auto att_instPos = attrs.instPos;
-    auto att_instNrm = attrs.instNrm;
-    auto att_instUv = attrs.instUv;
-    auto att_instClr = attrs.instClr;
-    auto att_instTang = attrs.instTang;
-    auto att_NoL      = attrs.NoL;
-    auto att_LoV      = attrs.LoV;
-    auto att_N        = attrs.N;
-    auto att_T        = attrs.T;
-    auto att_L        = attrs.L;
-    auto att_V        = attrs.V;
-    auto att_H        = attrs.H;
-    auto att_reflectance = attrs.reflectance;
-    auto att_fresnel  = attrs.fresnel;
-    /** generated code here beg **/
-    //GENERATED_BEGIN_MARK
-    /* MODME */
-    float mat_base = 1.0f;
-    vec3 mat_basecolor = vec3(1.0f, 1.0f, 1.0f);
-    float mat_roughness = 0.5f;
-    float mat_metallic = 0.0f;
-    vec3 mat_metalColor = vec3(1.0f,1.0f,1.0f);
-    float mat_specular = 0.0f;
-    float mat_specularTint = 0.0f;
-    float mat_anisotropic = 0.0f;
-    float mat_anisoRotation = 0.0f;
-
-    float mat_subsurface = 0.0f;
-    vec3  mat_sssParam = vec3(0.0f,0.0f,0.0f);
-    vec3  mat_sssColor = vec3(0.0f,0.0f,0.0f);
-    float mat_scatterDistance = 0.0f;
-    float mat_scatterStep = 0.0f;
-    
-    float mat_sheen = 0.0f;
-    float mat_sheenTint = 0.0f;
-
-
-    float mat_clearcoat = 0.0f;
-    vec3 mat_clearcoatColor = vec3(1.0f,1.0f,1.0f);
-    float mat_clearcoatRoughness = 0.0f;
-    float mat_clearcoatIOR = 1.5f;
-    float mat_opacity = 0.0f;
-
-    float mat_specTrans = 0.0f;
-    vec3 mat_transColor = vec3(1.0f,1.0f,1.0f);
-    vec3 mat_transTint = vec3(1.0f,1.0f,1.0f);
-    float mat_transTintDepth = 0.0f;
-    float mat_transDistance = 0.0f;
-    vec3 mat_transScatterColor = vec3(1.0f,1.0f,1.0f);
-    float mat_ior = 1.0f;
-
-    float mat_flatness = 0.0f;
-    float mat_thin = 0.0f;
-    float mat_doubleSide= 0.0f;
-    float mat_smoothness = 0.0f;
-    vec3  mat_normal = vec3(0.0f, 0.0f, 1.0f);
-    float mat_emissionIntensity = float(0);
-    vec3 mat_emission = vec3(1.0f, 1.0f, 1.0f);
-    float mat_displacement = 0.0f;
-    float mat_shadowReceiver = 0.0f;
-    float mat_NoL = 1.0f;
-    float mat_LoV = 1.0f;
-    vec3 mat_reflectance = att_reflectance;
-
-    //GENERATED_END_MARK
-    /** generated code here end **/
-    MatOutput mats;
-    if constexpr(isDisplacement)
-    {
-        mats.reflectance = mat_reflectance;
-        return mats;
-    }else {
-        /* MODME */
-        mats.basecolor = mat_base * mat_basecolor;
-        mats.roughness = clamp(mat_roughness, 0.01, 0.99);
-        mats.metallic = clamp(mat_metallic, 0.0f, 1.0f);
-        mats.metalColor = mat_metalColor;
-        mats.specular = mat_specular;
-        mats.specularTint = mat_specularTint;
-        mats.anisotropic = clamp(mat_anisotropic, 0.0f, 1.0f);
-        mats.anisoRotation = clamp(mat_anisoRotation, 0.0f, 1.0f);
-
-        mats.subsurface = mat_subsurface;
-        mats.sssColor = mat_sssColor;
-        mats.sssParam = mat_sssParam;
-        mats.scatterDistance = max(0.0f,mat_scatterDistance);
-        mats.scatterStep = clamp(mat_scatterStep,0.0f,1.0f);
-
-        mats.sheen = mat_sheen;
-        mats.sheenTint = mat_sheenTint;
-
-        mats.clearcoat = clamp(mat_clearcoat, 0.0f, 1.0f);
-        mats.clearcoatColor = mat_clearcoatColor;
-        mats.clearcoatRoughness = clamp(mat_clearcoatRoughness, 0.01, 0.99);
-        mats.clearcoatIOR = mat_clearcoatIOR;
-        
-        mats.specTrans = clamp(mat_specTrans, 0.0f, 1.0f);
-        mats.transColor = mat_transColor;
-        mats.transTint = mat_transTint;
-        mats.transTintDepth = max(0.0f,mat_transTintDepth);
-        mats.transDistance = max(mat_transDistance,0.1f);
-        mats.transScatterColor = mat_transScatterColor;
-        mats.ior = max(0.0f,mat_ior);
-
-
-        mats.opacity = mat_opacity;
-        mats.nrm = mat_normal;
-        mats.emission = mat_emissionIntensity * mat_emission;
-
-
-
-        mats.flatness = mat_flatness;
-        mats.thin = mat_thin;
-        mats.doubleSide = mat_doubleSide;
-        mats.shadowReceiver = mat_shadowReceiver;
-
-
-        mats.smoothness = mat_smoothness;
-        return mats;
-    }
-}
-
-static __inline__ __device__ MatOutput evalMaterial(cudaTextureObject_t zenotex[], float4* uniforms, MatInput const &attrs)
-{
-    return evalMat<false>(zenotex, uniforms, attrs);
-}
-
-static __inline__ __device__ MatOutput evalGeometry(cudaTextureObject_t zenotex[], float4* uniforms, MatInput const &attrs)
-{
-    return evalMat<true>(zenotex, uniforms, attrs);
-}
-
-static __inline__ __device__ MatOutput evalReflectance(cudaTextureObject_t zenotex[], float4* uniforms, MatInput const &attrs)
-{
-    return evalMat<true>(zenotex, uniforms, attrs);
-}
 __forceinline__ __device__ float3 interp(float2 barys, float3 a, float3 b, float3 c)
 {
     float w0 = 1 - barys.x - barys.y;
@@ -287,6 +139,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     attrs.clr = interp(barys, clr0, clr1, clr2);
     attrs.tang = interp(barys, tan0, tan1, tan2);
     attrs.tang = optixTransformVectorFromObjectToWorldSpace(attrs.tang);
+    attrs.rayLength = optixGetRayTmax();
 
     attrs.instPos = rt_data->instPos[inst_idx];
     attrs.instNrm = rt_data->instNrm[inst_idx];
@@ -297,7 +150,8 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     unsigned short isLight = 0;//rt_data->lightMark[vert_aux_offset + primIdx];
 #endif
 
-    MatOutput mats = evalMaterial(rt_data->textures, rt_data->uniforms, attrs);
+    //MatOutput mats = evalMaterial(rt_data->textures, rt_data->uniforms, attrs);
+    MatOutput mats = optixDirectCall<MatOutput, cudaTextureObject_t[], float4*, const MatInput&>( rt_data->dc_index, rt_data->textures, rt_data->uniforms, attrs );
 
     if(length(attrs.tang)>0)
     {
@@ -440,7 +294,7 @@ extern "C" __global__ void __closesthit__radiance()
 
     HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
     MatInput attrs{};
-
+    float estimation = 0;
 #if (_SPHERE_)
 
     unsigned short isLight = 0;
@@ -496,6 +350,7 @@ extern "C" __global__ void __closesthit__radiance()
     float3 N_Local = normalize( cross( normalize(_vertices_[1]-_vertices_[0]), normalize(_vertices_[2]-_vertices_[1]) ) ); // this value has precision issue for big float
     float3 N_World = normalize(optixTransformNormalFromObjectToWorldSpace(N_Local));
 
+
     if (isBadVector(N_World)) 
     {  
         N_World = normalize(DisneyBSDF::SampleScatterDirection(prd->seed));
@@ -515,8 +370,10 @@ extern "C" __global__ void __closesthit__radiance()
     const float3& tan0 = decodeNormal( rt_data->tan[ vert_idx_offset+0 ] );
     const float3& tan1 = decodeNormal( rt_data->tan[ vert_idx_offset+1 ] );
     const float3& tan2 = decodeNormal( rt_data->tan[ vert_idx_offset+2 ] );
-
-    attrs.uv = interp(barys, uv0, uv1, uv2);//todo later
+    float tri_area = length(cross(_vertices_[1]-_vertices_[0], _vertices_[2]-_vertices_[1]));
+    float uv_area = length(cross(uv1 - uv0, uv2-uv0));
+    estimation = uv_area * 4096.0f*4096.0f / (tri_area + 1e-6);
+        attrs.uv = interp(barys, uv0, uv1, uv2);//todo later
     attrs.clr = interp(barys, clr0, clr1, clr2);
     attrs.tang = normalize(interp(barys, tan0, tan1, tan2));
     attrs.tang = optixTransformVectorFromObjectToWorldSpace(attrs.tang);
@@ -526,10 +383,12 @@ extern "C" __global__ void __closesthit__radiance()
     attrs.instUv = rt_data->instUv[inst_idx];
     attrs.instClr = rt_data->instClr[inst_idx];
     attrs.instTang = rt_data->instTang[inst_idx];
-
+    attrs.rayLength = optixGetRayTmax();
 #endif
 
-    MatOutput mats = evalMaterial(rt_data->textures, rt_data->uniforms, attrs);
+    //MatOutput mats = evalMaterial(rt_data->textures, rt_data->uniforms, attrs);
+    MatOutput mats = optixDirectCall<MatOutput, cudaTextureObject_t[], float4*, const MatInput&>( rt_data->dc_index, rt_data->textures, rt_data->uniforms, attrs );
+
 
 #if _SPHERE_
 
@@ -561,6 +420,10 @@ extern "C" __global__ void __closesthit__radiance()
 #endif
 
     attrs.nrm = N;
+    float term = log2(optixGetRayTmax()*prd->pixel_area*sqrt(estimation))/4.0f;
+//    printf("rayDist:%f, tex_per_area:%f, term:%f, pixel_area:%f\n", optixGetRayTmax(),
+//           sqrt(estimation), term, prd->pixel_area);
+    //mats.nrm = normalize(mix(mats.nrm, vec3(0,0,1), clamp(term,0.0f,1.0f)));
     //end of material computation
     //mats.metallic = clamp(mats.metallic,0.01, 0.99);
     mats.roughness = clamp(mats.roughness, 0.01f,0.99f);
@@ -569,6 +432,10 @@ extern "C" __global__ void __closesthit__radiance()
         vec3 b = cross(attrs.tang, attrs.nrm);
         attrs.tang = cross(attrs.nrm, b);
         N = mats.nrm.x * attrs.tang + mats.nrm.y * b + mats.nrm.z * attrs.nrm;
+    }
+    if(dot(vec3(ray_dir), vec3(N)) * dot(vec3(ray_dir), vec3(prd->geometryNormal))<0)
+    {
+      N = prd->geometryNormal;
     }
 
     if (prd->trace_denoise_albedo) {
@@ -627,6 +494,7 @@ extern "C" __global__ void __closesthit__radiance()
         //prd->origin = P + 1e-5 * ray_dir; 
         if(prd->maxDistance>optixGetRayTmax())
             prd->maxDistance-=optixGetRayTmax();
+        prd->alphaHit = true;
         prd->offsetUpdateRay(P, ray_dir); 
         return;
     }
@@ -669,7 +537,8 @@ extern "C" __global__ void __closesthit__radiance()
         prd->adepth++;
         //prd->samplePdf = 0.0f;
         prd->radiance = make_float3(0.0f);
-        //prd->origin = P + 1e-5 * ray_dir; 
+        //prd->origin = P + 1e-5 * ray_dir;
+        prd->alphaHit = true;
         prd->offsetUpdateRay(P, ray_dir);
         return;
     }
@@ -698,6 +567,7 @@ extern "C" __global__ void __closesthit__radiance()
 
         prd->origin = P;
         prd->direction = ray_dir;
+        prd->alphaHit = true;
         prd->offsetUpdateRay(P, ray_dir);
 
         prd->prob *= 1;
@@ -954,18 +824,20 @@ extern "C" __global__ void __closesthit__radiance()
     if(prd->depth>=3)
         mats.roughness = clamp(mats.roughness, 0.5f,0.99f);
 
-    vec3 rd, rs, rt; // captured by lambda
 
-    auto evalBxDF = [&](const float3& _wi_, const float3& _wo_, float& thisPDF, vec3 illum = vec3(1.0f)) -> float3 {
+    auto evalBxDF = [&](const float3& _wi_, const float3& _wo_, float& thisPDF) -> float3 {
 
         const auto& L = _wi_; // pre-normalized
         const vec3& V = _wo_; // pre-normalized
+        vec3 rd, rs, rt; // captured by lambda
 
-        float3 lbrdf = DisneyBSDF::EvaluateDisney2(illum,mats, L, V, T, B, N,prd->geometryNormal,
+        float3 lbrdf = DisneyBSDF::EvaluateDisney2(vec3(1.0f), mats, L, V, T, B, N,prd->geometryNormal,
             mats.thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : next_ray_is_going_inside, thisPDF, rrPdf,
             dot(N, L), rd, rs, rt);
 
-
+        prd->radiance_d = rd;
+        prd->radiance_s = rs;
+        prd->radiance_t = rt;
 //        MatOutput mat2;
 //        if(mats.thin>0.5f){
 //            vec3 H = normalize(vec3(normalize(L)) + V);
@@ -983,10 +855,10 @@ extern "C" __global__ void __closesthit__radiance()
 
     };
 
-    auto taskAux = [&](const vec3& weight) {
-        prd->radiance_d = rd * weight;
-        prd->radiance_s = rs * weight;
-        prd->radiance_t = rt * weight;
+    auto taskAux = [&](const vec3& radiance) {
+        prd->radiance_d *= radiance;
+        prd->radiance_s *= radiance;
+        prd->radiance_t *= radiance;
     };
 
     RadiancePRD shadow_prd {};

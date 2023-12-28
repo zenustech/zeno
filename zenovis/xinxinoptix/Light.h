@@ -404,17 +404,16 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
             light_attenuation = shadow_prd.shadowAttanuation;
 
             if (nullptr==RadianceWithoutShadow && lengthSquared(light_attenuation) == 0.0f) return;
-                
-                auto bxdf_value = evalBxDF(lsr.dir, wo, scatterPDF);
-                auto misWeight = 1.0f;
+
+            emission *= lsr.intensity;
+            auto bxdf_value = evalBxDF(lsr.dir, wo, scatterPDF);
+            auto misWeight = 1.0f;
 
             if constexpr(_MIS_) {
                 if (!light.isDeltaLight() && !lsr.isDelta) {
                     misWeight = BRDFBasics::PowerHeuristic(lsr.PDF, scatterPDF);
                 }
             }
-
-                emission *= lsr.intensity;
 
                 float3 radianceNoShadow = emission * bxdf_value;
                 radianceNoShadow *= misWeight / lsr.PDF;
@@ -425,12 +424,12 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
 
                 if constexpr (!detail::is_void<TypeAux>::value) {
                     auto tmp = light_attenuation * misWeight / lsr.PDF;
-                    (*taskAux)(tmp);
+                    (*taskAux)(emission * tmp);
                 }// TypeAux
 
                 prd->radiance = radianceNoShadow * light_attenuation; // with shadow
-        }
-
+        } 
+    
     } else {
 
         float env_weight_sum = 1e-8f;
@@ -471,7 +470,7 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
             if (nullptr==RadianceWithoutShadow && lengthSquared(light_attenuation) == 0.0f) return;
 
             auto inverseProb = 1.0f/_SKY_PROB_;
-            auto bxdf_value = evalBxDF(sun_dir, wo, scatterPDF, illum);
+            auto bxdf_value = evalBxDF(sun_dir, wo, scatterPDF);
 
             float tmp = 1.0f;
 
@@ -486,14 +485,14 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
                 tmp = (1.0f / NSamples) * inverseProb / tmpPdf;
             }
 
-            float3 radianceNoShadow = tmp * bxdf_value; 
+            float3 radianceNoShadow = illum * tmp * bxdf_value; 
 
             if (nullptr != RadianceWithoutShadow) {
                 *RadianceWithoutShadow = radianceNoShadow;
             }
 
             if constexpr (!detail::is_void<TypeAux>::value) {
-                (*taskAux)(tmp * light_attenuation);
+                (*taskAux)(illum * tmp * light_attenuation);
             }// TypeAux
 
             prd->radiance += radianceNoShadow * light_attenuation; // with shadow

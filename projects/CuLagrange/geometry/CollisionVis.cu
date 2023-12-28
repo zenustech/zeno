@@ -12,7 +12,7 @@
 #include "kernel/calculate_facet_normal.hpp"
 #include "kernel/topology.hpp"
 #include "kernel/compute_characteristic_length.hpp"
-#include "kernel/calculate_bisector_normal.hpp"
+// #include "kernel/calculate_bisector_normal.hpp"
 #include "kernel/tiled_vector_ops.hpp"
 #include "kernel/calculate_edge_normal.hpp"
 
@@ -220,9 +220,7 @@ namespace zeno {
                 });
             }
 
-            if(!calculate_facet_normal(cudaPol,verts_buffer,"x",tri_buffer,tri_buffer,"nrm")){
-                throw std::runtime_error("fail updating facet normal");
-            }  
+            calculate_facet_normal(cudaPol,verts_buffer,"x",tri_buffer,tri_buffer,"nrm");
 
             dtiles_t inst_buffer_info{tris.get_allocator(),{
                 {"pair",2},
@@ -301,8 +299,7 @@ namespace zeno {
             if(!tris.hasProperty("nrm"))
                 tris.append_channels(cudaExec,{{"nrm",3}});
 
-            if(!calculate_facet_normal(cudaExec,verts,"x",tris,tris,"nrm"))
-                throw std::runtime_error("ZSCalNormal::calculate_facet_normal fail"); 
+            calculate_facet_normal(cudaExec,verts,"x",tris,tris,"nrm");
 
             auto buffer = typename ZenoParticles::particles_t({{"dir",3},{"x",3}},tris.size(),zs::memsrc_e::device,0);
 
@@ -381,8 +378,7 @@ namespace zeno {
 
             // std::cout << "CALCULATE SURFACE NORMAL" << std::endl;
 
-            if(!calculate_facet_normal(cudaExec,verts,"x",tris,tris,"nrm"))
-                throw std::runtime_error("VisualizeSurfaceEdgeNormal::calculate_facet_normal fail"); 
+            calculate_facet_normal(cudaExec,verts,"x",tris,tris,"nrm");
 
 
             auto buffer = typename ZenoParticles::particles_t({{"nrm",3},{"x",3}},lines.size(),zs::memsrc_e::device,0);  
@@ -442,609 +438,368 @@ namespace zeno {
                                 {{"float","offset","1"}},
                                 {"ZSGeometry"}});
 
-    struct ZSCalSurfaceCollisionCell : INode {
-        virtual void apply() override {
-            using namespace zs;
+    // struct ZSCalSurfaceCollisionCell : INode {
+    //     virtual void apply() override {
+    //         using namespace zs;
 
-            auto zsparticles = get_input<ZenoParticles>("ZSParticles");
-            if(!zsparticles->hasAuxData(ZenoParticles::s_surfTriTag)){
-                throw std::runtime_error("the input zsparticles has no surface tris");
-                // auto& tris = (*particles)[ZenoParticles::s_surfTriTag];
-                // tris = typename ZenoParticles::particles_t({{"inds",3}});
-            }
-            if(!zsparticles->hasAuxData(ZenoParticles::s_surfEdgeTag)) {
-                throw std::runtime_error("the input zsparticles has no surface lines");
-            }
+    //         auto zsparticles = get_input<ZenoParticles>("ZSParticles");
+    //         if(!zsparticles->hasAuxData(ZenoParticles::s_surfTriTag)){
+    //             throw std::runtime_error("the input zsparticles has no surface tris");
+    //             // auto& tris = (*particles)[ZenoParticles::s_surfTriTag];
+    //             // tris = typename ZenoParticles::particles_t({{"inds",3}});
+    //         }
+    //         if(!zsparticles->hasAuxData(ZenoParticles::s_surfEdgeTag)) {
+    //             throw std::runtime_error("the input zsparticles has no surface lines");
+    //         }
 
-            auto& tris      = (*zsparticles)[ZenoParticles::s_surfTriTag];
-            if(!tris.hasProperty("ff_inds") || !tris.hasProperty("fe_inds"))
-                throw std::runtime_error("please call ZSInitTopoConnect first before this node");           
-            auto& lines     = (*zsparticles)[ZenoParticles::s_surfEdgeTag];
-            if(!lines.hasProperty("fe_inds"))
-                throw std::runtime_error("please call ZSInitTopoConnect first before this node"); 
+    //         auto& tris      = (*zsparticles)[ZenoParticles::s_surfTriTag];
+    //         if(!tris.hasProperty("ff_inds") || !tris.hasProperty("fe_inds"))
+    //             throw std::runtime_error("please call ZSInitTopoConnect first before this node");           
+    //         auto& lines     = (*zsparticles)[ZenoParticles::s_surfEdgeTag];
+    //         if(!lines.hasProperty("fe_inds"))
+    //             throw std::runtime_error("please call ZSInitTopoConnect first before this node"); 
 
-            const auto& verts = zsparticles->getParticles();
-            auto cudaExec = cuda_exec();
-            // constexpr auto space = zs::execspace_e::cuda;
+    //         const auto& verts = zsparticles->getParticles();
+    //         auto cudaExec = cuda_exec();
+    //         // constexpr auto space = zs::execspace_e::cuda;
 
-            if(!tris.hasProperty("nrm"))
-                tris.append_channels(cudaExec,{{"nrm",3}});
+    //         if(!tris.hasProperty("nrm"))
+    //             tris.append_channels(cudaExec,{{"nrm",3}});
 
-            // std::cout << "CALCULATE SURFACE NORMAL" << std::endl;
+    //         // std::cout << "CALCULATE SURFACE NORMAL" << std::endl;
 
-            if(!calculate_facet_normal(cudaExec,verts,"x",tris,tris,"nrm"))
-                throw std::runtime_error("ZSCalNormal::calculate_facet_normal fail"); 
-            // std::cout << "FINISH CALCULATE SURFACE NORMAL" << std::endl;
+    //         calculate_facet_normal(cudaExec,verts,"x",tris,tris,"nrm");
+    //         // std::cout << "FINISH CALCULATE SURFACE NORMAL" << std::endl;
 
-            auto ceNrmTag = get_param<std::string>("ceNrmTag");
-            if(!lines.hasProperty(ceNrmTag))
-                lines.append_channels(cudaExec,{{ceNrmTag,3}});
+    //         auto ceNrmTag = get_param<std::string>("ceNrmTag");
+    //         if(!lines.hasProperty(ceNrmTag))
+    //             lines.append_channels(cudaExec,{{ceNrmTag,3}});
             
-            // evalute the normal of edge plane
-            // cudaExec(range(lines.size()),
-            //     [verts = proxy<space>({},verts),
-            //         tris = proxy<space>({},tris),
-            //         lines = proxy<space>({},lines),
-            //         ceNrmTag = zs::SmallString(ceNrmTag)] ZS_LAMBDA(int ei) mutable {
-            //             auto e_inds = lines.template pack<2>("inds",ei).template reinterpret_bits<int>();
-            //             auto fe_inds = lines.template pack<2>("fe_inds",ei).template reinterpret_bits<int>();
-            //             auto n0 = tris.template pack<3>("nrm",fe_inds[0]);
-            //             auto n1 = tris.template pack<3>("nrm",fe_inds[1]);
+    //         // evalute the normal of edge plane
+    //         // cudaExec(range(lines.size()),
+    //         //     [verts = proxy<space>({},verts),
+    //         //         tris = proxy<space>({},tris),
+    //         //         lines = proxy<space>({},lines),
+    //         //         ceNrmTag = zs::SmallString(ceNrmTag)] ZS_LAMBDA(int ei) mutable {
+    //         //             auto e_inds = lines.template pack<2>("inds",ei).template reinterpret_bits<int>();
+    //         //             auto fe_inds = lines.template pack<2>("fe_inds",ei).template reinterpret_bits<int>();
+    //         //             auto n0 = tris.template pack<3>("nrm",fe_inds[0]);
+    //         //             auto n1 = tris.template pack<3>("nrm",fe_inds[1]);
 
-            //             auto ne = (n0 + n1).normalized();
-            //             auto e0 = verts.template pack<3>("x",e_inds[0]);
-            //             auto e1 = verts.template pack<3>("x",e_inds[1]);
-            //             auto e10 = e1 - e0;
+    //         //             auto ne = (n0 + n1).normalized();
+    //         //             auto e0 = verts.template pack<3>("x",e_inds[0]);
+    //         //             auto e1 = verts.template pack<3>("x",e_inds[1]);
+    //         //             auto e10 = e1 - e0;
 
-            //             lines.template tuple<3>(ceNrmTag,ei) = e10.cross(ne).normalized();
-            // });
+    //         //             lines.template tuple<3>(ceNrmTag,ei) = e10.cross(ne).normalized();
+    //         // });
 
-            COLLISION_UTILS::calculate_cell_bisector_normal(cudaExec,
-                verts,"x",
-                lines,
-                tris,
-                tris,"nrm",
-                lines,ceNrmTag);
-
-
-            set_output("ZSParticles",zsparticles);
-        }
-
-    };
-
-    ZENDEFNODE(ZSCalSurfaceCollisionCell, {{{"ZSParticles"}},
-                                {{"ZSParticles"}},
-                                {{"string","ceNrmTag","nrm"}},
-                                {"ZSGeometry"}});
+    //         COLLISION_UTILS::calculate_cell_bisector_normal(cudaExec,
+    //             verts,"x",
+    //             lines,
+    //             tris,
+    //             tris,"nrm",
+    //             lines,ceNrmTag);
 
 
+    //         set_output("ZSParticles",zsparticles);
+    //     }
+
+    // };
+
+    // ZENDEFNODE(ZSCalSurfaceCollisionCell, {{{"ZSParticles"}},
+    //                             {{"ZSParticles"}},
+    //                             {{"string","ceNrmTag","nrm"}},
+    //                             {"ZSGeometry"}});
 
 
-    struct VisualizeCollisionCell : INode {
-        virtual void apply() override {
-            using namespace zs;
+//     struct VisualizeCollisionCell : INode {
+//         virtual void apply() override {
+//             using namespace zs;
 
-            auto zsparticles = get_input<ZenoParticles>("ZSParticles");
-            auto ceNrmTag = get_param<std::string>("ceNrmTag");
-            // auto out_offset = get_input2<float>("out_offset");
-            // auto in_offset = get_input2<float>("in_offset");
-            auto collisionEps = get_input2<float>("collisionEps");
-            auto nrm_offset = get_input2<float>("nrm_offset");
+//             auto zsparticles = get_input<ZenoParticles>("ZSParticles");
+//             auto ceNrmTag = get_param<std::string>("ceNrmTag");
+//             // auto out_offset = get_input2<float>("out_offset");
+//             // auto in_offset = get_input2<float>("in_offset");
+//             auto collisionEps = get_input2<float>("collisionEps");
+//             auto nrm_offset = get_input2<float>("nrm_offset");
 
-            if(!zsparticles->hasAuxData(ZenoParticles::s_surfTriTag))
-                throw std::runtime_error("the input zsparticles has no surface tris");
-            if(!zsparticles->hasAuxData(ZenoParticles::s_surfEdgeTag))
-                throw std::runtime_error("the input zsparticles has no surface lines");
+//             if(!zsparticles->hasAuxData(ZenoParticles::s_surfTriTag))
+//                 throw std::runtime_error("the input zsparticles has no surface tris");
+//             if(!zsparticles->hasAuxData(ZenoParticles::s_surfEdgeTag))
+//                 throw std::runtime_error("the input zsparticles has no surface lines");
 
-            auto& tris      = (*zsparticles)[ZenoParticles::s_surfTriTag];
-            if(!tris.hasProperty("ff_inds") || !tris.hasProperty("fe_inds"))
-                throw std::runtime_error("please call ZSCalSurfaceCollisionCell first before this node");           
-            auto& lines     = (*zsparticles)[ZenoParticles::s_surfEdgeTag];
-            if(!lines.hasProperty("fe_inds") || !lines.hasProperty(ceNrmTag))
-                throw std::runtime_error("please call ZSCalSurfaceCollisionCell first before this node"); 
-            auto& verts = zsparticles->getParticles();
-            // cell data per facet
-            std::vector<zs::PropertyTag> tags{{"x",9},{"dir",9},{"nrm",9},{"center",3}};
-            auto cell_buffer = typename ZenoParticles::particles_t(tags,tris.size(),zs::memsrc_e::device,0);
-            // auto cell_buffer = typename ZenoParticles::particles_t(tags,1,zs::memsrc_e::device,0);
-            // transfer the data from gpu to cpu
-            constexpr auto cuda_space = execspace_e::cuda;
-            auto cudaPol = cuda_exec();      
+//             auto& tris      = (*zsparticles)[ZenoParticles::s_surfTriTag];
+//             if(!tris.hasProperty("ff_inds") || !tris.hasProperty("fe_inds"))
+//                 throw std::runtime_error("please call ZSCalSurfaceCollisionCell first before this node");           
+//             auto& lines     = (*zsparticles)[ZenoParticles::s_surfEdgeTag];
+//             if(!lines.hasProperty("fe_inds") || !lines.hasProperty(ceNrmTag))
+//                 throw std::runtime_error("please call ZSCalSurfaceCollisionCell first before this node"); 
+//             auto& verts = zsparticles->getParticles();
+//             // cell data per facet
+//             std::vector<zs::PropertyTag> tags{{"x",9},{"dir",9},{"nrm",9},{"center",3}};
+//             auto cell_buffer = typename ZenoParticles::particles_t(tags,tris.size(),zs::memsrc_e::device,0);
+//             // auto cell_buffer = typename ZenoParticles::particles_t(tags,1,zs::memsrc_e::device,0);
+//             // transfer the data from gpu to cpu
+//             constexpr auto cuda_space = execspace_e::cuda;
+//             auto cudaPol = cuda_exec();      
 
-            cudaPol(zs::range(cell_buffer.size()),
-                [cell_buffer = proxy<cuda_space>({},cell_buffer),
-                    verts = proxy<cuda_space>({},verts),
-                    lines = proxy<cuda_space>({},lines),
-                    tris = proxy<cuda_space>({},tris),
-                    ceNrmTag = zs::SmallString(ceNrmTag)] ZS_LAMBDA(int ci) mutable {
-                auto inds       = tris.template pack<3>("inds",ci).template reinterpret_bits<int>();
-                auto fe_inds    = tris.template pack<3>("fe_inds",ci).template reinterpret_bits<int>();
+//             cudaPol(zs::range(cell_buffer.size()),
+//                 [cell_buffer = proxy<cuda_space>({},cell_buffer),
+//                     verts = proxy<cuda_space>({},verts),
+//                     lines = proxy<cuda_space>({},lines),
+//                     tris = proxy<cuda_space>({},tris),
+//                     ceNrmTag = zs::SmallString(ceNrmTag)] ZS_LAMBDA(int ci) mutable {
+//                 auto inds       = tris.template pack<3>("inds",ci).template reinterpret_bits<int>();
+//                 auto fe_inds    = tris.template pack<3>("fe_inds",ci).template reinterpret_bits<int>();
 
-                auto nrm = tris.template pack<3>("nrm",ci);
+//                 auto nrm = tris.template pack<3>("nrm",ci);
 
-                #ifdef COLLISION_VIS_DEBUG
+//                 #ifdef COLLISION_VIS_DEBUG
                 
-                    zs::vec<T,3> vs[3];
-                    for(int i = 0;i != 3;++i)
-                        vs[i] = verts.template pack<3>("x",inds[i]);
-                    auto vc = (vs[0] + vs[1] + vs[2]) / (T)3.0;
+//                     zs::vec<T,3> vs[3];
+//                     for(int i = 0;i != 3;++i)
+//                         vs[i] = verts.template pack<3>("x",inds[i]);
+//                     auto vc = (vs[0] + vs[1] + vs[2]) / (T)3.0;
 
-                    zs::vec<T,3> ec[3];
-                    for(int i = 0;i != 3;++i)
-                        ec[i] = (vs[i] + vs[(i+1)%3])/2.0;
+//                     zs::vec<T,3> ec[3];
+//                     for(int i = 0;i != 3;++i)
+//                         ec[i] = (vs[i] + vs[(i+1)%3])/2.0;
 
-                    // make sure all the bisector facet orient in-ward
-                    // for(int i = 0;i != 3;++i){
-                    //     auto ec_vc = vc - ec[i];
-                    //     auto e1 = fe_inds[i];
-                    //     auto n1 = lines.template pack<3>(ceNrmTag,e1);
-                    //     if(is_edge_edge_match(lines.template pack<2>("inds",e1).template reinterpret_bits<int>(),zs::vec<int,2>{inds[i],inds[((i + 1) % 3)]}) == 1)
-                    //         n1 = (T)-1 * n1;
-                    //     auto check_dir = n1.dot(ec_vc);
-                    //     if(check_dir < 0) {
-                    //         printf("invalid check dir %f %d %d\n",(float)check_dir,ci,i);
-                    //     }
-                    // }
+//                     // make sure all the bisector facet orient in-ward
+//                     // for(int i = 0;i != 3;++i){
+//                     //     auto ec_vc = vc - ec[i];
+//                     //     auto e1 = fe_inds[i];
+//                     //     auto n1 = lines.template pack<3>(ceNrmTag,e1);
+//                     //     if(is_edge_edge_match(lines.template pack<2>("inds",e1).template reinterpret_bits<int>(),zs::vec<int,2>{inds[i],inds[((i + 1) % 3)]}) == 1)
+//                     //         n1 = (T)-1 * n1;
+//                     //     auto check_dir = n1.dot(ec_vc);
+//                     //     if(check_dir < 0) {
+//                     //         printf("invalid check dir %f %d %d\n",(float)check_dir,ci,i);
+//                     //     }
+//                     // }
 
-                    // auto cell_center = vec3::zeros();
-                    // cell_center = (vs[0] + vs[1] + vs[2])/(T)3.0;
-                    // T check_dist{};
-                    // auto check_intersect = COLLISION_UTILS::is_inside_the_cell(verts,"x",
-                    //     lines,tris,
-                    //     tris,"nrm",
-                    //     lines,ceNrmTag,
-                    //     ci,cell_center,in_offset,out_offset);
-                    // if(check_intersect == 1)
-                    //     printf("invalid cell intersection check offset and inset : %d %f %f %f\n",ci,(float)check_dist,(float)out_offset,(float)in_offset);
-                    // if(check_intersect == 2)
-                    //     printf("invalid cell intersection check bisector : %d\n",ci);
+//                     // auto cell_center = vec3::zeros();
+//                     // cell_center = (vs[0] + vs[1] + vs[2])/(T)3.0;
+//                     // T check_dist{};
+//                     // auto check_intersect = COLLISION_UTILS::is_inside_the_cell(verts,"x",
+//                     //     lines,tris,
+//                     //     tris,"nrm",
+//                     //     lines,ceNrmTag,
+//                     //     ci,cell_center,in_offset,out_offset);
+//                     // if(check_intersect == 1)
+//                     //     printf("invalid cell intersection check offset and inset : %d %f %f %f\n",ci,(float)check_dist,(float)out_offset,(float)in_offset);
+//                     // if(check_intersect == 2)
+//                     //     printf("invalid cell intersection check bisector : %d\n",ci);
 
 
-                #endif
+//                 #endif
 
-                cell_buffer.template tuple<3>("center",ci) = vec3::zeros();
-                for(int i = 0;i < 3;++i){
-                    auto vert = verts.template pack<3>("x",inds[i]);
-                    cell_buffer.template tuple<3>("center",ci) = cell_buffer.template pack<3>("center",ci) + vert/(T)3.0;
-                    for(int j = 0;j < 3;++j) {
-                        cell_buffer("x",i * 3 + j,ci) = vert[j];
-                    }
+//                 cell_buffer.template tuple<3>("center",ci) = vec3::zeros();
+//                 for(int i = 0;i < 3;++i){
+//                     auto vert = verts.template pack<3>("x",inds[i]);
+//                     cell_buffer.template tuple<3>("center",ci) = cell_buffer.template pack<3>("center",ci) + vert/(T)3.0;
+//                     for(int j = 0;j < 3;++j) {
+//                         cell_buffer("x",i * 3 + j,ci) = vert[j];
+//                     }
                     
-#if 0
-                    auto e0 = fe_inds[(i + 3 -1) % 3];
-                    auto e1 = fe_inds[i];
+// #if 0
+//                     auto e0 = fe_inds[(i + 3 -1) % 3];
+//                     auto e1 = fe_inds[i];
 
-                    auto n0 = lines.template pack<3>(ceNrmTag,e0);
-                    auto n1 = lines.template pack<3>(ceNrmTag,e1);
+//                     auto n0 = lines.template pack<3>(ceNrmTag,e0);
+//                     auto n1 = lines.template pack<3>(ceNrmTag,e1);
 
-                    for(int j = 0;j != 3;++j)
-                        cell_buffer("nrm",i*3 + j,ci) = n1[j];
+//                     for(int j = 0;j != 3;++j)
+//                         cell_buffer("nrm",i*3 + j,ci) = n1[j];
 
-                    if(is_edge_edge_match(lines.template pack<2>("inds",e0).template reinterpret_bits<int>(),zs::vec<int,2>{inds[((i + 3 - 1) % 3)],inds[i]}) == 1)
-                        n0 =  (T)-1 * n0;
-                    if(is_edge_edge_match(lines.template pack<2>("inds",e1).template reinterpret_bits<int>(),zs::vec<int,2>{inds[i],inds[((i + 1) % 3)]}) == 1)
-                        n1 = (T)-1 * n1;
-#else
+//                     if(is_edge_edge_match(lines.template pack<2>("inds",e0).template reinterpret_bits<int>(),zs::vec<int,2>{inds[((i + 3 - 1) % 3)],inds[i]}) == 1)
+//                         n0 =  (T)-1 * n0;
+//                     if(is_edge_edge_match(lines.template pack<2>("inds",e1).template reinterpret_bits<int>(),zs::vec<int,2>{inds[i],inds[((i + 1) % 3)]}) == 1)
+//                         n1 = (T)-1 * n1;
+// #else
 
-                    auto n0 = COLLISION_UTILS::get_bisector_orient(lines,tris,
-                        lines,ceNrmTag,
-                        ci,(i + 3 - 1) % 3);
-                    auto n1 = COLLISION_UTILS::get_bisector_orient(lines,tris,
-                        lines,ceNrmTag,ci,i);
+//                     auto n0 = COLLISION_UTILS::get_bisector_orient(lines,tris,
+//                         lines,ceNrmTag,
+//                         ci,(i + 3 - 1) % 3);
+//                     auto n1 = COLLISION_UTILS::get_bisector_orient(lines,tris,
+//                         lines,ceNrmTag,ci,i);
 
-                    for(int j = 0;j != 3;++j)
-                        cell_buffer("nrm",i*3 + j,ci) = n1[j];
+//                     for(int j = 0;j != 3;++j)
+//                         cell_buffer("nrm",i*3 + j,ci) = n1[j];
 
-#endif
-                    auto dir = n1.cross(n0).normalized();
+// #endif
+//                     auto dir = n1.cross(n0).normalized();
 
-                    // do some checking
-                    // #ifdef COLLISION_VIS_DEBUG
+//                     // do some checking
+//                     // #ifdef COLLISION_VIS_DEBUG
 
-                    // #endif
+//                     // #endif
 
 
-                    // auto orient = dir.dot(nrm);
-                    // if(orient > 0) {
-                    //     printf("invalid normal dir %f on %d\n",(float)orient,ci);
-                    // }
-                    // printf("dir = %f %f %f\n",(float)dir[0],(float)dir[1],(float)dir[2]);
-                    // printf("n0 = %f %f %f\n",(float)n0[0],(float)n0[1],(float)n0[2]);
-                    // printf("n1 = %f %f %f\n",(float)n1[0],(float)n1[1],(float)n1[2]);
-                    for(int j = 0;j < 3;++j){
-                        cell_buffer("dir",i * 3 + j,ci) = dir[j];
-                        // cell_buffer("dir",i * 3 + j,ci) = nrm[j];
-                    }
+//                     // auto orient = dir.dot(nrm);
+//                     // if(orient > 0) {
+//                     //     printf("invalid normal dir %f on %d\n",(float)orient,ci);
+//                     // }
+//                     // printf("dir = %f %f %f\n",(float)dir[0],(float)dir[1],(float)dir[2]);
+//                     // printf("n0 = %f %f %f\n",(float)n0[0],(float)n0[1],(float)n0[2]);
+//                     // printf("n1 = %f %f %f\n",(float)n1[0],(float)n1[1],(float)n1[2]);
+//                     for(int j = 0;j < 3;++j){
+//                         cell_buffer("dir",i * 3 + j,ci) = dir[j];
+//                         // cell_buffer("dir",i * 3 + j,ci) = nrm[j];
+//                     }
                     
-                }
-            });  
+//                 }
+//             });  
 
-            cell_buffer = cell_buffer.clone({zs::memsrc_e::host});   
-            constexpr auto omp_space = execspace_e::openmp;
-            auto ompPol = omp_exec();            
+//             cell_buffer = cell_buffer.clone({zs::memsrc_e::host});   
+//             constexpr auto omp_space = execspace_e::openmp;
+//             auto ompPol = omp_exec();            
 
-            auto cell = std::make_shared<zeno::PrimitiveObject>();
+//             auto cell = std::make_shared<zeno::PrimitiveObject>();
 
-            auto& cell_verts = cell->verts;
-            auto& cell_lines = cell->lines;
-            auto& cell_tris = cell->tris;
-            cell_verts.resize(cell_buffer.size() * 6);
-            cell_lines.resize(cell_buffer.size() * 9);
-            cell_tris.resize(cell_buffer.size() * 6);
+//             auto& cell_verts = cell->verts;
+//             auto& cell_lines = cell->lines;
+//             auto& cell_tris = cell->tris;
+//             cell_verts.resize(cell_buffer.size() * 6);
+//             cell_lines.resize(cell_buffer.size() * 9);
+//             cell_tris.resize(cell_buffer.size() * 6);
 
 
-            auto offset_ratio = get_input2<float>("offset_ratio");
+//             auto offset_ratio = get_input2<float>("offset_ratio");
 
-            ompPol(zs::range(cell_buffer.size()),
-                [cell_buffer = proxy<omp_space>({},cell_buffer),
-                    &cell_verts,&cell_lines,&cell_tris,collisionEps = collisionEps,offset_ratio = offset_ratio] (int ci) mutable {
+//             ompPol(zs::range(cell_buffer.size()),
+//                 [cell_buffer = proxy<omp_space>({},cell_buffer),
+//                     &cell_verts,&cell_lines,&cell_tris,collisionEps = collisionEps,offset_ratio = offset_ratio] (int ci) mutable {
 
-                auto vs_ = cell_buffer.template pack<9>("x",ci);
-                auto ds_ = cell_buffer.template pack<9>("dir",ci);
+//                 auto vs_ = cell_buffer.template pack<9>("x",ci);
+//                 auto ds_ = cell_buffer.template pack<9>("dir",ci);
 
-                auto center = cell_buffer.template pack<3>("center",ci);
+//                 auto center = cell_buffer.template pack<3>("center",ci);
 
-                for(int i = 0;i < 3;++i) {
-                    auto p = vec3{vs_[i*3 + 0],vs_[i*3 + 1],vs_[i*3 + 2]};
-                    auto dp = vec3{ds_[i*3 + 0],ds_[i*3 + 1],ds_[i*3 + 2]};
+//                 for(int i = 0;i < 3;++i) {
+//                     auto p = vec3{vs_[i*3 + 0],vs_[i*3 + 1],vs_[i*3 + 2]};
+//                     auto dp = vec3{ds_[i*3 + 0],ds_[i*3 + 1],ds_[i*3 + 2]};
 
-                    auto p0 = p - dp * collisionEps;
-                    auto p1 = p + dp * collisionEps;
+//                     auto p0 = p - dp * collisionEps;
+//                     auto p1 = p + dp * collisionEps;
 
-                    auto dp0 = p0 - center;
-                    auto dp1 = p1 - center;
+//                     auto dp0 = p0 - center;
+//                     auto dp1 = p1 - center;
 
-                    dp0 *= offset_ratio;
-                    dp1 *= offset_ratio;
+//                     dp0 *= offset_ratio;
+//                     dp1 *= offset_ratio;
 
-                    p0 = dp0 + center;
-                    p1 = dp1 + center;
+//                     p0 = dp0 + center;
+//                     p1 = dp1 + center;
 
-                    // printf("ci = %d \t dp = %f %f %f\n",ci,(float)dp[0],(float)dp[1],(float)dp[2]);
+//                     // printf("ci = %d \t dp = %f %f %f\n",ci,(float)dp[0],(float)dp[1],(float)dp[2]);
 
-                    cell_verts[ci * 6 + i * 2 + 0] = zeno::vec3f{p0[0],p0[1],p0[2]};
-                    cell_verts[ci * 6 + i * 2 + 1] = zeno::vec3f{p1[0],p1[1],p1[2]};
+//                     cell_verts[ci * 6 + i * 2 + 0] = zeno::vec3f{p0[0],p0[1],p0[2]};
+//                     cell_verts[ci * 6 + i * 2 + 1] = zeno::vec3f{p1[0],p1[1],p1[2]};
 
-                    cell_lines[ci * 9 + 0 + i] = zeno::vec2i{ci * 6 + i * 2 + 0,ci * 6 + i * 2 + 1};
-                }
+//                     cell_lines[ci * 9 + 0 + i] = zeno::vec2i{ci * 6 + i * 2 + 0,ci * 6 + i * 2 + 1};
+//                 }
 
-                for(int i = 0;i < 3;++i) {
-                    cell_lines[ci * 9 + 3 + i] = zeno::vec2i{ci * 6 + i * 2 + 0,ci * 6 + ((i+1)%3) * 2 + 0};
-                    cell_lines[ci * 9 + 6 + i] = zeno::vec2i{ci * 6 + i * 2 + 1,ci * 6 + ((i+1)%3) * 2 + 1}; 
+//                 for(int i = 0;i < 3;++i) {
+//                     cell_lines[ci * 9 + 3 + i] = zeno::vec2i{ci * 6 + i * 2 + 0,ci * 6 + ((i+1)%3) * 2 + 0};
+//                     cell_lines[ci * 9 + 6 + i] = zeno::vec2i{ci * 6 + i * 2 + 1,ci * 6 + ((i+1)%3) * 2 + 1}; 
 
-                    cell_tris[ci * 6 + i * 2 + 0] = zeno::vec3i{ci * 6 + i * 2 + 0,ci * 6 + i* 2 + 1,ci * 6 + ((i+1)%3) * 2 + 0};
-                    cell_tris[ci * 6 + i * 2 + 1] = zeno::vec3i{ci * 6 + i * 2 + 1,ci * 6 + ((i+1)%3) * 2 + 1,ci * 6 + ((i+1)%3) * 2 + 0};
-                }
+//                     cell_tris[ci * 6 + i * 2 + 0] = zeno::vec3i{ci * 6 + i * 2 + 0,ci * 6 + i* 2 + 1,ci * 6 + ((i+1)%3) * 2 + 0};
+//                     cell_tris[ci * 6 + i * 2 + 1] = zeno::vec3i{ci * 6 + i * 2 + 1,ci * 6 + ((i+1)%3) * 2 + 1,ci * 6 + ((i+1)%3) * 2 + 0};
+//                 }
 
-            });
-            cell_lines.resize(0);
+//             });
+//             cell_lines.resize(0);
 
-            auto tcell = std::make_shared<zeno::PrimitiveObject>();
-            // tcell->resize(cell_buffer.size() * 6);
-            auto& tcell_verts = tcell->verts;
-            tcell_verts.resize(cell_buffer.size() * 6);
-            auto& tcell_lines = tcell->lines;
-            tcell_lines.resize(cell_buffer.size() * 3);
-            ompPol(zs::range(cell_buffer.size()),
-                [cell_buffer = proxy<omp_space>({},cell_buffer),
-                    &tcell_verts,&tcell_lines,&collisionEps,&offset_ratio,&nrm_offset] (int ci) mutable {
+//             auto tcell = std::make_shared<zeno::PrimitiveObject>();
+//             // tcell->resize(cell_buffer.size() * 6);
+//             auto& tcell_verts = tcell->verts;
+//             tcell_verts.resize(cell_buffer.size() * 6);
+//             auto& tcell_lines = tcell->lines;
+//             tcell_lines.resize(cell_buffer.size() * 3);
+//             ompPol(zs::range(cell_buffer.size()),
+//                 [cell_buffer = proxy<omp_space>({},cell_buffer),
+//                     &tcell_verts,&tcell_lines,&collisionEps,&offset_ratio,&nrm_offset] (int ci) mutable {
 
-                auto vs_ = cell_buffer.template pack<9>("x",ci);
-                auto ds_ = cell_buffer.template pack<9>("dir",ci);
+//                 auto vs_ = cell_buffer.template pack<9>("x",ci);
+//                 auto ds_ = cell_buffer.template pack<9>("dir",ci);
 
 
-                auto center = cell_buffer.template pack<3>("center",ci);
+//                 auto center = cell_buffer.template pack<3>("center",ci);
 
-                for(int i = 0;i < 3;++i) {
-                    auto p = vec3{vs_[i*3 + 0],vs_[i*3 + 1],vs_[i*3 + 2]};
-                    auto dp = vec3{ds_[i*3 + 0],ds_[i*3 + 1],ds_[i*3 + 2]};
+//                 for(int i = 0;i < 3;++i) {
+//                     auto p = vec3{vs_[i*3 + 0],vs_[i*3 + 1],vs_[i*3 + 2]};
+//                     auto dp = vec3{ds_[i*3 + 0],ds_[i*3 + 1],ds_[i*3 + 2]};
 
-                    auto p0 = p - dp * collisionEps;
-                    auto p1 = p + dp * collisionEps;
+//                     auto p0 = p - dp * collisionEps;
+//                     auto p1 = p + dp * collisionEps;
 
-                    auto dp0 = p0 - center;
-                    auto dp1 = p1 - center;
+//                     auto dp0 = p0 - center;
+//                     auto dp1 = p1 - center;
 
-                    dp0 *= offset_ratio;
-                    dp1 *= offset_ratio;
-
-                    p0 = dp0 + center;
-                    p1 = dp1 + center;
-
-                    tcell_verts[ci * 6 + i * 2 + 0] = zeno::vec3f{p0[0],p0[1],p0[2]};
-                    tcell_verts[ci * 6 + i * 2 + 1] = zeno::vec3f{p1[0],p1[1],p1[2]};
-
-                    tcell_lines[ci * 3 + i] = zeno::vec2i{ci * 6 + i * 2 + 0,ci * 6 + i * 2 + 1};
-                }
-            });
-
-
-            auto ncell = std::make_shared<zeno::PrimitiveObject>();
-            auto& ncell_verts = ncell->verts;
-            auto& ncell_lines = ncell->lines;
-            ncell_verts.resize(cell_buffer.size() * 6);
-            ncell_lines.resize(cell_buffer.size() * 3);
-            ompPol(zs::range(cell_buffer.size()),
-                [cell_buffer = proxy<omp_space>({},cell_buffer),
-                    &ncell_verts,&ncell_lines,&offset_ratio,&nrm_offset] (int ci) mutable {    
-                auto vs_ = cell_buffer.template pack<9>("x",ci);
-                auto nrm_ = cell_buffer.template pack<9>("nrm",ci);
-
-                auto center = cell_buffer.template pack<3>("center",ci);
-                for(int i = 0;i != 3;++i)   {
-                    auto edge_center = vec3::zeros();
-                    for(int j = 0;j != 3;++j)
-                        edge_center[j] = (vs_[i * 3 + j] + vs_[((i + 1) % 3) * 3 + j])/(T)2.0;
-                    auto nrm = vec3{nrm_[i*3 + 0],nrm_[i*3 + 1],nrm_[i*3 + 2]};
-                    auto dp = edge_center - center;
-                    dp *= offset_ratio;
-                    edge_center = dp + center;
-
-                    auto p0 = edge_center;
-                    auto p1 = edge_center + nrm * nrm_offset;
-
-                    ncell_verts[ci * 6 + i * 2 + 0] = zeno::vec3f{p0[0],p0[1],p0[2]};
-                    ncell_verts[ci * 6 + i * 2 + 1] = zeno::vec3f{p1[0],p1[1],p1[2]};
-
-                    ncell_lines[ci * 3 + i] = zeno::vec2i{ci * 6 + i * 2 + 0,ci * 6 + i * 2 + 1};
-
-                }
-            });
-
-
-
-            set_output("collision_cell",std::move(cell));
-            set_output("ccell_tangent",std::move(tcell));
-            set_output("ccell_normal",std::move(ncell));
-
-        }
-    };
-
-    ZENDEFNODE(VisualizeCollisionCell, {{{"ZSParticles"},{"float","collisionEps","0.01"},{"float","nrm_offset","0.1"},{"float","offset_ratio","0.8"}},
-                                {{"collision_cell"},{"ccell_tangent"},{"ccell_normal"}},
-                                {{"string","ceNrmTag","nrm"}},
-                                {"ZSGeometry"}});
-
-
-
-struct VisualizeKineCollision : zeno::INode {
-    using T = float;
-    using Ti = int;
-    using dtiles_t = zs::TileVector<T,32>;
-    using tiles_t = typename ZenoParticles::particles_t;
-    using bvh_t = zs::LBvh<3,int,T>;
-    using bv_t = zs::AABBBox<3, T>;
-    using vec3 = zs::vec<T, 3>;
-
-    virtual void apply() override {
-        using namespace zs;
-        auto zsparticles = get_input<ZenoParticles>("ZSParticles");
-        if(!zsparticles->hasAuxData(ZenoParticles::s_surfTriTag))
-            throw std::runtime_error("the input zsparticles has no surface tris");
-        if(!zsparticles->hasAuxData(ZenoParticles::s_surfEdgeTag))
-            throw std::runtime_error("the input zsparticles has no surface lines");
-        if(!zsparticles->hasAuxData(ZenoParticles::s_surfVertTag)) 
-            throw std::runtime_error("the input zsparticles has no surface points");
-        
-        const auto& eles = zsparticles->getQuadraturePoints();
-        const auto& verts = zsparticles->getParticles();
-        auto& tris = (*zsparticles)[ZenoParticles::s_surfTriTag];
-        auto& lines = (*zsparticles)[ZenoParticles::s_surfEdgeTag];
-        auto& points = (*zsparticles)[ZenoParticles::s_surfVertTag];
-
-        // ksurf should be a surface tris
-        auto ksurf = get_input<ZenoParticles>("KinematicSurf");
-        auto kverts = ksurf->getParticles();
-        // if(!kverts.hasProperty("nrm")) {
-        //     fmt::print(fg(fmt::color::red),"KinematicSurf has no surface normal\n");
-        //     throw std::runtime_error("the Kinematic surf has no surface normal");
-        // }
-        
-        dtiles_t sttemp(tris.get_allocator(),
-            {
-                {"nrm",3}
-            },tris.size()
-        );
-        dtiles_t setemp(lines.get_allocator(),
-            {
-                // {"inds",4},
-                // {"area",1},
-                // {"inverted",1},
-                // {"abary",2},
-                // {"bbary",2},
-                {"nrm",3}
-                // {"grad",12},
-                // {"H",12*12}
-            },lines.size()
-        );
-        dtiles_t sptemp(points.get_allocator(),
-            {
-                {"nrm",3}
-            },points.size()
-        );
-
-    
-        dtiles_t fp_buffer(kverts.get_allocator(),
-            {
-                {"inds",2},
-                {"area",1},
-                {"inverted",1}
-            },kverts.size() * MAX_FP_COLLISION_PAIRS);
-        
-        dtiles_t gh_buffer(points.get_allocator(),
-            {
-                {"inds",4},
-                {"H",12*12},
-                {"grad",12}
-            },eles.size());
-
-
-        auto in_collisionEps = get_input2<float>("in_collisionEps");
-        auto out_collisionEps = get_input2<float>("out_collisionEps");
-
-        constexpr auto space = execspace_e::cuda;
-        auto cudaPol = cuda_exec();
-
-
-        auto kverts_ = typename ZenoParticles::particles_t({
-            {"x",3},
-            {"area",1}},kverts.size(),zs::memsrc_e::device,0);  
-        TILEVEC_OPS::copy<3>(cudaPol,kverts,"x",kverts_,"x");
-        TILEVEC_OPS::fill(cudaPol,kverts_,"area",(T)1.0);
-        TILEVEC_OPS::copy<4>(cudaPol,eles,"inds",gh_buffer,"inds");              
-
-        COLLISION_UTILS::do_kinematic_point_collision_detection<MAX_FP_COLLISION_PAIRS>(cudaPol,
-            verts,"x",
-            points,
-            lines,
-            tris,
-            setemp,
-            sttemp,
-            kverts_,
-            fp_buffer,
-            in_collisionEps,out_collisionEps);
-        
-        std::vector<zs::PropertyTag> cv_tags{{"xp",3},{"xt",3},{"t0",3},{"t1",3},{"t2",3}};
-        auto cv_buffer = typename ZenoParticles::particles_t(cv_tags,fp_buffer.size(),zs::memsrc_e::device,0);
-
-        cudaPol(zs::range(fp_buffer.size()),
-            [fp_buffer = proxy<space>({},fp_buffer),
-                verts = proxy<space>({},verts),
-                tris = proxy<space>({},tris),
-                kverts = proxy<space>({},kverts),
-                cv_buffer = proxy<space>({},cv_buffer)] ZS_LAMBDA(int ci) mutable {
-                    auto cp = fp_buffer.pack(dim_c<2>,"inds",ci).reinterpret_bits(int_c);
-
-                    auto contact = true;
-                    for(int i = 0;i != 2;++i)
-                        if(cp[i] < 0){
-                            contact = false;
-                            break;
-                        }
-                    auto pvert = zs::vec<T,3>::zeros();
-                    if(contact) {
-                        // auto pidx = cp[0];
-                        auto tri = tris.pack(dim_c<3>,"inds",cp[1]).reinterpret_bits(int_c);
-                        pvert = kverts.pack(dim_c<3>,"x",cp[0]);
-                        auto t0 = verts.pack(dim_c<3>,"x",tri[0]);
-                        auto t1 = verts.pack(dim_c<3>,"x",tri[1]);
-                        auto t2 = verts.pack(dim_c<3>,"x",tri[2]);
-
-                        auto tc = (t0 + t1 + t2)/(T)3.0;
-
-                        cv_buffer.template tuple<3>("xp",ci) = pvert;
-                        cv_buffer.template tuple<3>("xt",ci) = tc;
-                        cv_buffer.template tuple<3>("t0",ci) = t0;
-                        cv_buffer.template tuple<3>("t1",ci) = t1;
-                        cv_buffer.template tuple<3>("t2",ci) = t2;
-                    } else {
-                        cv_buffer.template tuple<3>("xp",ci) = pvert;
-                        cv_buffer.template tuple<3>("xt",ci) = pvert;
-                        cv_buffer.template tuple<3>("t0",ci) = pvert;
-                        cv_buffer.template tuple<3>("t1",ci) = pvert;
-                        cv_buffer.template tuple<3>("t2",ci) = pvert;
-                    }
-                    
-        });
-
-        auto ompPol = omp_exec();  
-        constexpr auto omp_space = execspace_e::openmp;
-
-        cv_buffer = cv_buffer.clone({zs::memsrc_e::host});
-        auto colPointTriPairVis = std::make_shared<zeno::PrimitiveObject>();
-        auto& cv_pt_verts = colPointTriPairVis->verts;
-        auto& cv_pt_tris = colPointTriPairVis->tris;
-
-        cv_pt_verts.resize(cv_buffer.size() * 4);
-        cv_pt_tris.resize(cv_buffer.size());
-
-        ompPol(zs::range(cv_buffer.size()),
-            [&cv_pt_verts,&cv_pt_tris,cv_buffer = proxy<omp_space>({},cv_buffer)] (int ci) mutable {
-                cv_pt_verts[ci * 4 + 0] = cv_buffer.pack(dim_c<3>,"xp",ci).to_array();
-                cv_pt_verts[ci * 4 + 1] = cv_buffer.pack(dim_c<3>,"t0",ci).to_array();
-                cv_pt_verts[ci * 4 + 2] = cv_buffer.pack(dim_c<3>,"t1",ci).to_array();
-                cv_pt_verts[ci * 4 + 3] = cv_buffer.pack(dim_c<3>,"t2",ci).to_array();
-                
-                cv_pt_tris[ci] = zeno::vec3i(ci * 4 + 1,ci * 4 + 2,ci * 4 + 3);
-        });
-
-        set_output("colPointFacePairVis",std::move(colPointTriPairVis));
-
-        auto colCenterLineVis = std::make_shared<zeno::PrimitiveObject>();
-        auto& cv_cl_verts = colCenterLineVis->verts;
-        auto& cv_cl_lines = colCenterLineVis->lines;
-        
-        cv_cl_verts.resize(cv_buffer.size() * 2);
-        cv_cl_lines.resize(cv_buffer.size());
-
-        ompPol(zs::range(cv_buffer.size()),
-            [cv_buffer = proxy<omp_space>({},cv_buffer),&cv_cl_verts,&cv_cl_lines] (int ci) mutable {
-                cv_cl_verts[ci * 2 + 0] = cv_buffer.pack(dim_c<3>,"xp",ci).to_array();
-                cv_cl_verts[ci * 2 + 1] = cv_buffer.pack(dim_c<3>,"xt",ci).to_array();
-                cv_cl_lines[ci] = zeno::vec2i(ci * 2 + 0,ci * 2 + 1);
-        });
-
-        set_output("colConnVis",std::move(colCenterLineVis));
-
-
-        COLLISION_UTILS::evaluate_kinematic_fp_collision_grad_and_hessian(
-            cudaPol,
-            eles,
-            verts,"x","v",(T)1.0,
-            tris,
-            kverts_,
-            fp_buffer,
-            gh_buffer,0,
-            in_collisionEps,out_collisionEps,
-            (T)1.0,
-            (T)1.0,(T)1.0,(T)0.01);
-
-        dtiles_t vtemp(verts.get_allocator(),
-            {
-                {"x",3},
-                {"dir",3},
-            },verts.size());
-        TILEVEC_OPS::copy<3>(cudaPol,verts,"x",vtemp,"x");
-        TILEVEC_OPS::fill<3>(cudaPol,vtemp,"dir",zs::vec<T,3>::zeros());
-
-        TILEVEC_OPS::assemble_range(cudaPol,gh_buffer,"grad","inds",vtemp,"dir",0,gh_buffer.size());        
-        vtemp = vtemp.clone({zs::memsrc_e::host}); 
-
-        auto nodalForceVis = std::make_shared<zeno::PrimitiveObject>();       
-        auto& spverts = nodalForceVis->verts;
-        spverts.resize(vtemp.size() * 2);
-        auto& splines = nodalForceVis->lines;
-        splines.resize(vtemp.size());
-
-        auto scale = get_input2<float>("scale");
-        ompPol(zs::range(vtemp.size()),
-            [vtemp = proxy<space>({},vtemp),&spverts,&splines,scale] (int vi) mutable {
-                auto xs = vtemp.template pack<3>("x",vi);
-                auto dir = vtemp.template pack<3>("dir",vi);
-
-                auto xe = xs + scale * dir;
-
-                spverts[vi * 2 + 0] = xs.to_array();
-                spverts[vi * 2 + 1] = xe.to_array();
-                splines[vi] = zeno::vec2i(vi * 2 + 0,vi * 2 + 1);               
-        });
-
-        set_output("FPNodalForceVis",std::move(nodalForceVis));
-
-
-    }
-};
-
-
-ZENDEFNODE(VisualizeKineCollision, {{"ZSParticles","KinematicSurf",{"float","in_collisionEps"},{"float","out_collisionEps"},{"float","scale"}},
-                                  {
-                                        "colPointFacePairVis",
-                                        "colConnVis",
-                                        "FPNodalForceVis"
-                                    },
-                                  {
-                                  },
-                                  {"ZSGeometry"}});
+//                     dp0 *= offset_ratio;
+//                     dp1 *= offset_ratio;
+
+//                     p0 = dp0 + center;
+//                     p1 = dp1 + center;
+
+//                     tcell_verts[ci * 6 + i * 2 + 0] = zeno::vec3f{p0[0],p0[1],p0[2]};
+//                     tcell_verts[ci * 6 + i * 2 + 1] = zeno::vec3f{p1[0],p1[1],p1[2]};
+
+//                     tcell_lines[ci * 3 + i] = zeno::vec2i{ci * 6 + i * 2 + 0,ci * 6 + i * 2 + 1};
+//                 }
+//             });
+
+
+//             auto ncell = std::make_shared<zeno::PrimitiveObject>();
+//             auto& ncell_verts = ncell->verts;
+//             auto& ncell_lines = ncell->lines;
+//             ncell_verts.resize(cell_buffer.size() * 6);
+//             ncell_lines.resize(cell_buffer.size() * 3);
+//             ompPol(zs::range(cell_buffer.size()),
+//                 [cell_buffer = proxy<omp_space>({},cell_buffer),
+//                     &ncell_verts,&ncell_lines,&offset_ratio,&nrm_offset] (int ci) mutable {    
+//                 auto vs_ = cell_buffer.template pack<9>("x",ci);
+//                 auto nrm_ = cell_buffer.template pack<9>("nrm",ci);
+
+//                 auto center = cell_buffer.template pack<3>("center",ci);
+//                 for(int i = 0;i != 3;++i)   {
+//                     auto edge_center = vec3::zeros();
+//                     for(int j = 0;j != 3;++j)
+//                         edge_center[j] = (vs_[i * 3 + j] + vs_[((i + 1) % 3) * 3 + j])/(T)2.0;
+//                     auto nrm = vec3{nrm_[i*3 + 0],nrm_[i*3 + 1],nrm_[i*3 + 2]};
+//                     auto dp = edge_center - center;
+//                     dp *= offset_ratio;
+//                     edge_center = dp + center;
+
+//                     auto p0 = edge_center;
+//                     auto p1 = edge_center + nrm * nrm_offset;
+
+//                     ncell_verts[ci * 6 + i * 2 + 0] = zeno::vec3f{p0[0],p0[1],p0[2]};
+//                     ncell_verts[ci * 6 + i * 2 + 1] = zeno::vec3f{p1[0],p1[1],p1[2]};
+
+//                     ncell_lines[ci * 3 + i] = zeno::vec2i{ci * 6 + i * 2 + 0,ci * 6 + i * 2 + 1};
+
+//                 }
+//             });
+
+
+
+//             set_output("collision_cell",std::move(cell));
+//             set_output("ccell_tangent",std::move(tcell));
+//             set_output("ccell_normal",std::move(ncell));
+
+//         }
+//     };
+
+//     ZENDEFNODE(VisualizeCollisionCell, {{{"ZSParticles"},{"float","collisionEps","0.01"},{"float","nrm_offset","0.1"},{"float","offset_ratio","0.8"}},
+//                                 {{"collision_cell"},{"ccell_tangent"},{"ccell_normal"}},
+//                                 {{"string","ceNrmTag","nrm"}},
+//                                 {"ZSGeometry"}});
+
+
+
 
 
 struct VisualizeSelfIntersections : zeno::INode {
@@ -1409,17 +1164,17 @@ struct VisualizeIntersections2 : zeno::INode {
         zs::bht<int,2,int> csPT{verts.get_allocator(),100000};
         csPT.reset(cudaPol,true);
         zs::Vector<int> csPTOffsets{verts.get_allocator(),kinematics.size()};
-        auto nm_csPT = COLLISION_UTILS::do_tetrahedra_surface_mesh_and_kinematic_boundary_collision_detection(cudaPol,
-            kinematics,
-            verts,"x",
-            tets,
-            points,tris,
-            halfedges,
-            out_collisionEps,
-            in_collisionEps,
-            csPT,
-            csPTOffsets,
-            true);
+        // auto nm_csPT = COLLISION_UTILS::do_tetrahedra_surface_mesh_and_kinematic_boundary_collision_detection(cudaPol,
+        //     kinematics,
+        //     verts,"x",
+        //     tets,
+        //     points,tris,
+        //     halfedges,
+        //     out_collisionEps,
+        //     in_collisionEps,
+        //     csPT,
+        //     csPTOffsets,
+        //     true);
 
         int nm_kverts = 0;
         for(auto kinematic : kinematics) {
@@ -1756,19 +1511,19 @@ struct VisualizeIntersections3 : zeno::INode {
         // std::cout << "number of kinematics : " << kinematics.size() << std::endl;
         auto collide_from_exterior = get_input2<bool>("collide_from_exterior");
 
-        auto nm_csPT = COLLISION_UTILS::do_tetrahedra_surface_points_and_kinematic_boundary_collision_detection(cudaPol,
-            kinematic,
-            verts,"x",
-            tets,
-            points,tris,
-            halfedges,
-            out_collisionEps,
-            in_collisionEps,
-            csPT,
-            collide_from_exterior,
-            true);
+        // auto nm_csPT = COLLISION_UTILS::do_tetrahedra_surface_points_and_kinematic_boundary_collision_detection(cudaPol,
+        //     kinematic,
+        //     verts,"x",
+        //     tets,
+        //     points,tris,
+        //     halfedges,
+        //     out_collisionEps,
+        //     in_collisionEps,
+        //     csPT,
+        //     collide_from_exterior,
+        //     true);
 
-        std::cout << "do_tetrahedra_surface_points_and_kinematic_boundary_collision_detection with csPT : " << nm_csPT << std::endl;
+        // std::cout << "do_tetrahedra_surface_points_and_kinematic_boundary_collision_detection with csPT : " << nm_csPT << std::endl;
 
         int nm_kverts = kinematic->getParticles().size();
         int nm_ktris = kinematic->getQuadraturePoints().size();

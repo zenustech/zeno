@@ -993,10 +993,6 @@ namespace COLLISION_UTILS {
             vr += bary[i] * vs[i];
         }
 
-        // really need this piece, or there will be floating point explosion
-        // if(pr.norm() < eps)
-        //     return false;
-
         auto npr = pr.norm();
         if(npr > thickness)
             return false;
@@ -1004,17 +1000,8 @@ namespace COLLISION_UTILS {
         if(npr < eps)
             return false;
 
-
-        // if(npr < 10 * eps) {
-        //     if(type == 0) {
-        //         auto nrm = LSL_GEO::facet_normal()
-        //     }
-        // }
-
-
-        pr = pr.normalized();
+        pr = pr / (eps + npr);
         auto vr_nrm = vr.dot(pr);
-
 
 
         REAL target_repulsive_dist = (REAL)0;
@@ -1027,22 +1014,25 @@ namespace COLLISION_UTILS {
         if(vr_nrm > target_repulsive_dist)
             return false;
 
-        auto vr_tan = vr - vr_nrm * pr;
         auto impulse = (target_repulsive_dist - vr_nrm) * pr;
-        auto imp_norm = impulse.norm();
 
-        auto vr_tan_dir = vr_tan.normalized();
+        auto vr_tan = vr - vr_nrm * pr;
 
+        if(vr_tan.norm() > thickness * 0.01) {
+            auto imp_norm = impulse.norm();
 
-        REAL friction_coeff = 0.1;
-        REAL friction_scale = 0.0;
-        auto friction = VECTOR3::zeros();
-        if(imp_norm * friction_coeff > vr_tan.norm())
-            friction = -vr_tan;
-        else
-            friction = -vr_tan_dir * imp_norm * friction_coeff;
+            auto vr_tan_dir = vr_tan.normalized();
 
-        impulse += friction * friction_scale;
+            REAL friction_coeff = 0.1;
+            REAL friction_scale = 0.0;
+            auto friction = VECTOR3::zeros();
+            if(imp_norm * friction_coeff > vr_tan.norm())
+                friction = -vr_tan;
+            else
+                friction = -vr_tan_dir * imp_norm * friction_coeff;
+
+            impulse += friction * friction_scale;
+        }
         // vr_nrm = vr_rnm < 0 ? vr_nrm : 0;
         // auto impulse = -pr * vr_nrm;
 
@@ -1056,6 +1046,8 @@ namespace COLLISION_UTILS {
         if(cminv < eps)
             return false;
 
+        // cminv = cminv < eps * 10 ? eps * 10 : cminv; 
+
         for(int i = 0;i != 4;++i) {
             auto beta = minv[i] * bary[i] / cminv;
             imps[i] = impulse * beta;
@@ -1063,6 +1055,7 @@ namespace COLLISION_UTILS {
 
         return true;
     }
+
 
     constexpr void compute_imminent_repulsive_impulse(const VECTOR3 ps[4],const VECTOR3 vs[4],const VECTOR4& bary,const REAL ms[4],const REAL minv[4],VECTOR3 imps[4],
             const REAL& repulsive_strength,const REAL& thickness,const REAL& max_repel_dist) {
@@ -1115,26 +1108,14 @@ namespace COLLISION_UTILS {
             constexpr auto eps = 1e-7;
 
             VECTOR2 edge_bary{};
-            LSL_GEO::edgeEdgeBaryCentric(ps[0],ps[1],ps[2],ps[3],edge_bary);
+            LSL_GEO::get_edge_edge_barycentric_coordinates(ps[0],ps[1],ps[2],ps[3],edge_bary);
             VECTOR4 bary{edge_bary[0] - 1,-edge_bary[0],1 - edge_bary[1],edge_bary[1]};
 
-            // VECTOR3 int_a{},int_b{};
-            // COLLISION_UTILS::IntersectLineSegments(ps[0],ps[1],ps[2],ps[3],int_a,int_b);
-            // auto ra = (ps[0] - int_a).norm() / (ps[0] - ps[1]).norm();
-            // auto rb = (ps[2] - int_b).norm() / (ps[2] - ps[3]).norm(); 
-
-            // VECTOR4 bary{};
-            // bary[0] = ra - 1;
-            // bary[1] = -ra;
-            // bary[2] = 1 - rb;
-            // bary[3] = rb;
 
             auto cm = (REAL).0;
             for(int i = 0;i != 4;++i)
                 cm += bary[i] * bary[i] * minv[i];
             if(cm < eps){
-                // for(int i = 0;i != 4;++i)
-                //     imps[i] = VECTOR3::zeros();
                 return false;;  
             }
 
@@ -1149,10 +1130,6 @@ namespace COLLISION_UTILS {
                 return false;
             }
 
-            // VECTOR3 collision_nrm{};
-            // if(pr.norm() < 100 * eps)
-            //       collision_nrm = (ps[0] - ps[1]).cross(ps[2] - ps[3]).normalized();
-            // else
             auto collision_nrm = pr.normalized();    
 
             if(collision_nrm.dot(vr) > 0)
@@ -1167,7 +1144,6 @@ namespace COLLISION_UTILS {
             return true;
     }
 
-// ps = [p_ea_0,p_ea_1,p_eb_0,p_eb_1]
     constexpr bool compute_continous_EE_collision_impulse(
         const VECTOR3 ps[4],
         const VECTOR3 vs[4],
@@ -1214,7 +1190,7 @@ namespace COLLISION_UTILS {
             }
 
             VECTOR3 bary_centric{};
-            LSL_GEO::pointTriangleBaryCentric(ps[0],ps[1],ps[2],ps[3],bary_centric);
+            LSL_GEO::get_triangle_vertex_barycentric_coordinates(ps[0],ps[1],ps[2],ps[3],bary_centric);
 
             // if(distance > imminent_thickness)
             //     return false;

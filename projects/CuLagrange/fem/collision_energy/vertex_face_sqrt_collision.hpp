@@ -35,7 +35,7 @@ namespace VERTEX_FACE_SQRT_COLLISION {
     ///////////////////////////////////////////////////////////////////////
     constexpr REAL psi(const VECTOR3 v[4],const REAL& _mu,const REAL& _nu,const REAL& _eps)
     {
-        const VECTOR3 bary = LSL_GEO::getInsideBarycentricCoordinates(v);
+        const VECTOR3 bary = LSL_GEO::get_vertex_triangle_inside_barycentric_coordinates(v);
         return psi(v,bary,_mu,_nu,_eps);
     }
 
@@ -103,7 +103,7 @@ namespace VERTEX_FACE_SQRT_COLLISION {
     ///////////////////////////////////////////////////////////////////////
     constexpr VECTOR12 gradient(const VECTOR3 v[4],const REAL& _mu,const REAL& _nu,const REAL& _eps,bool collide_from_inside = false)
     {
-        const VECTOR3 bary = LSL_GEO::getInsideBarycentricCoordinates(v);
+        const VECTOR3 bary = LSL_GEO::get_vertex_triangle_inside_barycentric_coordinates(v);
         return gradient(v, bary, _mu, _nu, _eps,collide_from_inside);
     }
 
@@ -205,7 +205,7 @@ namespace VERTEX_FACE_SQRT_COLLISION {
     ///////////////////////////////////////////////////////////////////////
     constexpr MATRIX12 hessian(const VECTOR3 v[4],const REAL& _mu,const REAL& _nu,const REAL& _eps,bool collide_from_inside = false)
     {
-        const VECTOR3 bary = LSL_GEO::getInsideBarycentricCoordinates(v);
+        const VECTOR3 bary = LSL_GEO::get_vertex_triangle_inside_barycentric_coordinates(v);
         return hessian(v, bary,_mu,_nu,_eps,collide_from_inside);
     }
 
@@ -227,7 +227,7 @@ namespace VERTEX_FACE_SQRT_COLLISION {
 
     // constexpr VECTOR12 damp_gradient(const VECTOR v[4],const VECTOR vp[4],const REAL& _dt,const REAL& _kd,const REAL& _mu,const REAL& _nu,const REAL& eps)
     // {
-    //     const VECTOR3 bary = LSL_GEO::getInsideBarycentricCoordinates(v);
+    //     const VECTOR3 bary = LSL_GEO::get_vertex_triangle_inside_barycentric_coordinates(v);
     //     return damp_gradient(v, vp,_dt,bary,_kd, _mu,_nu,eps);
     // }
 
