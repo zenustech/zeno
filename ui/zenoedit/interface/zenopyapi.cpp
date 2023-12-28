@@ -142,14 +142,14 @@ zeno_forkGraph(PyObject* self, PyObject* args)
     const QModelIndex& subgIdx = pModel->index(subgName);
     if (!subgIdx.isValid())
     {
-        PyErr_SetString(PyExc_Exception, QString("Subgraph '%!' is inValid").arg(subgName).toUtf8());
+        PyErr_SetString(PyExc_Exception, QString("Subgraph '%1' is inValid").arg(subgName).toUtf8());
         PyErr_WriteUnraisable(Py_None);
         return Py_None;
     }
     const QModelIndex& subnetnodeIdx = pModel->index(ident, subgIdx);
     if (!subnetnodeIdx.isValid())
     {
-        PyErr_SetString(PyExc_Exception, QString("Node '%!' is inValid").arg(ident).toUtf8());
+        PyErr_SetString(PyExc_Exception, QString("Node '%1' is inValid").arg(ident).toUtf8());
         PyErr_WriteUnraisable(Py_None);
         return Py_None;
     }
@@ -197,7 +197,7 @@ zeno_forkMaterial(PyObject* self, PyObject* args)
     const QModelIndex& forkIdx = pModel->index(forkName);
     if (!forkIdx.isValid())
     {
-        PyErr_SetString(PyExc_Exception, QString("Subgraph '%!' is inValid").arg(subgName).toUtf8());
+        PyErr_SetString(PyExc_Exception, QString("Subgraph '%1' is inValid").arg(subgName).toUtf8());
         PyErr_WriteUnraisable(Py_None);
         return Py_None;
     }

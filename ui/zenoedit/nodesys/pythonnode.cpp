@@ -81,5 +81,4 @@ sys.stderr = catchOutErr\n\
             }
         }
     }
-    Py_Finalize();
 }
