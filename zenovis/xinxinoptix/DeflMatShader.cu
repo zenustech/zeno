@@ -820,12 +820,8 @@ extern "C" __global__ void __closesthit__radiance()
     prd->attenuation *= reflectance;
     prd->depth++;
 
-    auto shadingP = rtgems::offset_ray(P,  prd->geometryNormal);
-    prd->radiance = make_float3(0.0f,0.0f,0.0f);
-
     if(prd->depth>=3)
         mats.roughness = clamp(mats.roughness, 0.5f,0.99f);
-
 
     auto evalBxDF = [&](const float3& _wi_, const float3& _wo_, float& thisPDF) -> float3 {
 
@@ -868,6 +864,10 @@ extern "C" __global__ void __closesthit__radiance()
     shadow_prd.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
     shadow_prd.nonThinTransHit = (mats.thin == false && mats.specTrans > 0) ? 1 : 0;
 
+    shadow_prd.origin = rtgems::offset_ray(P,  prd->geometryNormal); // camera space
+    auto shadingP = rtgems::offset_ray(P + params.cam.eye,  prd->geometryNormal); // world space
+
+    prd->radiance = {};
     prd->direction = normalize(wi);
 
     float3 radianceNoShadow = {};
@@ -875,8 +875,8 @@ extern "C" __global__ void __closesthit__radiance()
     if (mats.shadowReceiver > 0.5f) {
         dummy_prt = &radianceNoShadow;
     }
-    auto SP = shadingP + params.cam.eye;
-    DirectLighting<true>(prd, shadow_prd, SP, ray_dir, evalBxDF, &taskAux, dummy_prt);
+
+    DirectLighting<true>(prd, shadow_prd, shadingP, ray_dir, evalBxDF, &taskAux, dummy_prt);
     if(mats.shadowReceiver > 0.5f)
     {
       auto radiance = length(prd->radiance);
