@@ -122,6 +122,7 @@ static PyObject*
 Graph_name(ZSubGraphObject* self, PyObject* Py_UNUSED(ignored))
 {
     IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    if (!pModel)
     {
         PyErr_SetString(PyExc_Exception, "Current Model is NULL");
         PyErr_WriteUnraisable(Py_None);
