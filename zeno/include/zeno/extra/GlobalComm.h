@@ -36,7 +36,7 @@ struct GlobalComm {
         FRAME_STATE frame_state = FRAME_UNFINISH;
     };
     std::vector<FrameData> m_frames;
-    ViewObjects m_static_objects;
+    static ViewObjects m_static_objects;
 
     int m_maxPlayFrame = 0;
     std::set<int> m_inCacheFrames;
@@ -73,6 +73,7 @@ struct GlobalComm {
     static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::string key = "", bool dumpCacheVersionInfo = false);
     static bool fromDiskByRunner(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::string filename);
     static bool fromDiskByObjsManager(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::vector<std::string>& nodesToLoad);
+    static bool fromDiskByObjsManagerStatic(std::string cachedir, GlobalComm::ViewObjects& objs, std::vector<std::string>& nodesToLoad);
 
     //-----ObjectsManager-----
     ZENO_API void clear_objects();
@@ -137,6 +138,7 @@ private:
     void prepareForBeta();
     int m_currentFrame = 0;    //ºı»•startFrame
     static MapObjects m_newToviewObjs;
+    static MapObjects m_newToviewObjsStatic;
 };
 
 }

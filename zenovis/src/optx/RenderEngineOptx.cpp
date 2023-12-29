@@ -698,6 +698,9 @@ struct GraphicsManager {
     }
 
     void update_objs(std::map<std::string, std::shared_ptr<zeno::IObject>> objs, std::map<std::string, std::shared_ptr<zeno::IObject>> newobjs) {
+        objOrder.clear();
+        size_t idx = 0;
+
         std::map<std::string, std::unique_ptr<ZxxGraphic>> tmp;
         for (auto const& [key, obj] : objs) {
             auto it = graphics.m_curr.find(key);
@@ -716,6 +719,9 @@ struct GraphicsManager {
                 auto ig = std::make_unique<ZxxGraphic>(key, obj.get());
                 tmp.insert(std::make_pair(key, std::move(ig)));
             }
+
+            objOrder[key] = idx;
+            idx++;
             //set camera
             if (!scene->drawOptions->updateMatlOnly) {
                 if (auto cam = std::dynamic_pointer_cast<zeno::CameraObject>(obj)) {

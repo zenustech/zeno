@@ -30,6 +30,8 @@ std::set<std::string> lightCameraNodes({
 std::string matlNode = "ShaderFinalize";
 
 MapObjects GlobalComm::m_newToviewObjs;
+MapObjects GlobalComm::m_newToviewObjsStatic;
+PolymorphicMap<std::map<std::string, std::shared_ptr<IObject>>> GlobalComm::m_static_objects;
 
 static void markListIndex(const std::string& root, std::shared_ptr<ListObject> lstObj)
 {
@@ -129,13 +131,11 @@ bool GlobalComm::fromDiskByObjsManager(std::string cachedir, int frameid, Global
     if (cachedir.empty())
         return false;
     objs.clear();
-    std::filesystem::path dir;
+
     static int currentLoadedFrameID = 0;;
 
-    if (frameid == -1)
-        dir = std::filesystem::u8path(cachedir + "/_static");
-    else
-        dir = std::filesystem::u8path(cachedir + "/" + std::to_string(1000000 + frameid).substr(1));
+    std::filesystem::path dir;
+    dir = std::filesystem::u8path(cachedir + "/" + std::to_string(1000000 + frameid).substr(1));
     if (!std::filesystem::exists(dir) || std::filesystem::is_empty(dir))
         return false;
 
@@ -267,9 +267,151 @@ bool GlobalComm::fromDiskByObjsManager(std::string cachedir, int frameid, Global
             }
 
             convertToView(decodedObj, nodeid);
+        } else if (m_static_objects.find(nodeid) != m_static_objects.end())
+        {
+            if (m_newToviewObjsStatic.find(nodeid) != m_newToviewObjsStatic.end())
+            {
+                m_newToviewObjs.insert(std::make_pair(nodeid, m_static_objects.m_curr[nodeid]));
+            }
+            objs.try_emplace(nodeid, m_static_objects.m_curr[nodeid]);
         }
     }
     currentLoadedFrameID = frameid;
+
+    return true;
+}
+
+bool GlobalComm::fromDiskByObjsManagerStatic(std::string cachedir, GlobalComm::ViewObjects& objs, std::vector<std::string>& nodesToLoad)
+{
+    if (cachedir.empty())
+        return false;
+    objs.clear();
+    std::filesystem::path dir;
+
+    dir = std::filesystem::u8path(cachedir + "/_static");
+    if (!std::filesystem::exists(dir) || std::filesystem::is_empty(dir))
+        return false;
+
+    std::set<std::string> cacheUpdatedNodesInfo;
+    m_newToviewObjsStatic.clear();
+
+    std::filesystem::path filePath = dir / "toViewInofs.zencache";
+    if (!std::filesystem::is_directory(filePath) && std::filesystem::exists(filePath)) {
+        auto szBuffer = std::filesystem::file_size(filePath);
+        if (szBuffer != 0) {
+            std::vector<char> dat(szBuffer);
+            FILE* fp = fopen(filePath.string().c_str(), "rb");
+            if (!fp) {
+                log_error("zeno cache file does not exist");
+                return false;
+            }
+            size_t ret = fread(&dat[0], 1, szBuffer, fp);
+            assert(ret == szBuffer);
+            fclose(fp);
+            fp = nullptr;
+
+            size_t beginpos = 0;
+            size_t keyLen = 0;
+            std::vector<char>::iterator beginIterator = dat.begin();
+            for (auto i = dat.begin(); i != dat.end(); i++)
+            {
+                if (*i == '\a')
+                {
+                    keyLen = i - beginIterator;
+                    std::string key(dat.data() + beginpos, keyLen);
+                    cacheUpdatedNodesInfo.insert(std::move(key.substr(0, key.find(":"))));
+                    beginpos += i - beginIterator + 1;
+                    beginIterator = i + 1;
+                }
+            }
+        }
+    }
+    std::function<void(zany const&, std::string)> convertToView = [&](zany const& p, std::string name) -> void {
+        if (ListObject* lst = dynamic_cast<ListObject*>(p.get())) {
+            log_info("ToView got ListObject (size={}), expanding", lst->arr.size());
+            for (size_t i = 0; i < lst->arr.size(); i++) {
+                zany const& lp = lst->arr[i];
+                std::string id = "";
+                if (std::shared_ptr<IObject> obj = std::dynamic_pointer_cast<IObject>(lp)) {
+                    id = obj->userData().get2<std::string>("object-id", "");
+                }
+                convertToView(lp, id);
+            }
+            return;
+        }
+        if (!p) {
+            log_error("ToView: given object is nullptr");
+        }
+        else {
+            objs.try_emplace(name, std::move(p));
+            if (cacheUpdatedNodesInfo.find(name) != cacheUpdatedNodesInfo.end())
+            {
+                m_newToviewObjsStatic.insert(std::make_pair(name, std::move(p)));
+            }
+        }
+    };
+
+    for (auto& nodeid : nodesToLoad)
+    {
+        std::filesystem::path cachePath = dir / (nodeid + ".zencache");
+        if (!std::filesystem::is_directory(cachePath) && std::filesystem::exists(cachePath)) {
+            auto szBuffer = std::filesystem::file_size(cachePath);
+            if (szBuffer == 0)
+                return true;
+
+            log_debug("load cache from disk {}", cachePath);
+
+            std::vector<char> dat(szBuffer);
+            FILE* fp = fopen(cachePath.string().c_str(), "rb");
+            if (!fp) {
+                log_error("zeno cache file does not exist");
+                return false;
+            }
+            size_t ret = fread(&dat[0], 1, szBuffer, fp);
+            assert(ret == szBuffer);
+            fclose(fp);
+            fp = nullptr;
+
+            if (dat.size() <= 8 || std::string(dat.data(), 8) != "ZENCACHE") {
+                log_error("zeno cache file broken (1)");
+                return false;
+            }
+            size_t pos = std::find(dat.begin() + 8, dat.end(), '\a') - dat.begin();
+            if (pos == dat.size()) {
+                log_error("zeno cache file broken (2)");
+                return false;
+            }
+            size_t keyscount = std::stoi(std::string(dat.data() + 8, pos - 8));
+            pos = pos + 1;
+            std::vector<std::string> keys;
+            for (int k = 0; k < keyscount; k++) {
+                size_t newpos = std::find(dat.begin() + pos, dat.end(), '\a') - dat.begin();
+                if (newpos == dat.size()) {
+                    log_error("zeno cache file broken (3.{})", k);
+                    return false;
+                }
+                keys.emplace_back(dat.data() + pos, newpos - pos);
+                pos = newpos + 1;
+            }
+            std::vector<size_t> poses(keyscount + 1);
+            std::copy_n(dat.data() + pos, (keyscount + 1) * sizeof(size_t), (char*)poses.data());
+            pos += (keyscount + 1) * sizeof(size_t);
+
+            int lastObjIdx = keyscount - 1; //now only first output is needed to view this obj.
+            if (poses[lastObjIdx] > dat.size() - pos || poses[lastObjIdx + 1] < poses[lastObjIdx]) {
+                log_error("zeno cache file broken (4.{})", lastObjIdx);
+            }
+            const char* p = dat.data() + pos + poses[lastObjIdx];
+
+            zeno::zany decodedObj = decodeObject(p, poses[lastObjIdx + 1] - poses[lastObjIdx]);
+            if (std::shared_ptr<ListObject> spListObj = std::dynamic_pointer_cast<ListObject>(decodedObj))
+            {
+                markListIndex(nodeid, spListObj);
+            }
+
+            convertToView(decodedObj, nodeid);
+        }
+    }
 
     return true;
 }
@@ -432,7 +574,7 @@ ZENO_API std::pair<int, int> GlobalComm::frameRange() {
 
 void GlobalComm::_initStaticObjects() {
     if (m_static_objects.m_curr.empty()) {
-        fromDiskByObjsManager(cacheFramePath, -1, m_static_objects, toViewNodesId);
+        fromDiskByObjsManagerStatic(cacheFramePath, m_static_objects, toViewNodesId);
     }
 }
 
@@ -443,11 +585,11 @@ GlobalComm::ViewObjects const* GlobalComm::_getViewObjects(const int frameid, bo
     if (maxCachedFrames != 0) {
         // load back one gc:
         if (!m_inCacheFrames.count(frameid)) {  // notinmem then cacheit
+            _initStaticObjects();
+
             bool ret = fromDiskByObjsManager(cacheFramePath, frameid, m_frames[frameIdx].view_objects, toViewNodesId);
             if (!ret)
                 return nullptr;
-
-            //_initStaticObjects();
 
             inserted = true;
             prepareForOptix(m_frames[frameIdx].view_objects.m_curr);
