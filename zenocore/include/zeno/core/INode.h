@@ -66,8 +66,8 @@ public:
     ZENO_API zany resolveInput(std::string const& id);
 
     //BEGIN new api
-    ZENO_API void set_input_defl(std::string const& name, zany defl);
-    ZENO_API zany get_input_defl(std::string const& name);
+    ZENO_API void set_input_defl(std::string const& name, zvariant defl);
+    ZENO_API zvariant get_input_defl(std::string const& name);
     ZENO_API std::string get_nodecls() const;
     ZENO_API std::string get_ident() const;
     ZENO_API std::string get_name() const;
@@ -86,6 +86,11 @@ public:
 protected:
     ZENO_API virtual void complete();
     ZENO_API virtual void apply() = 0;
+
+private:
+    zany process(std::shared_ptr<IParam> in_param);
+    float resolve(const std::string& formulaOrKFrame, const ParamType type);
+    template<class T, class E> zany resolveVec(const zvariant& defl, const ParamType type);
 
 public:
     //为名为ds的输入参数，求得这个参数在依赖边的求值下的值，或者没有依赖边下的默认值。

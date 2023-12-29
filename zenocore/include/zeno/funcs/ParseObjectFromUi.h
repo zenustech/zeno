@@ -6,6 +6,7 @@
 namespace zeno {
 
 zany parseObjectFromUi(rapidjson::Value const &x);
+zany parseCurveObj(const std::string& curveJson);
 
 namespace iotags {
     constexpr const char *key_objectType = "objectType";

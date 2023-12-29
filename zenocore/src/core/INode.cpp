@@ -9,6 +9,8 @@
 #include <zeno/extra/DirtyChecker.h>
 #include <zeno/extra/TempNode.h>
 #include <zeno/utils/Error.h>
+#include <zeno/utils/string.h>
+#include <zeno/funcs/ParseObjectFromUi.h>
 #ifdef ZENO_BENCHMARKING
 #include <zeno/utils/Timer.h>
 #endif
@@ -41,7 +43,7 @@ ZENO_API void INode::doComplete() {
     complete();
 }
 
-ZENO_API zany INode::get_input_defl(std::string const& name)
+ZENO_API zvariant INode::get_input_defl(std::string const& name)
 {
     std::shared_ptr<IParam> param = get_input_param(name);
     return param->defl;
@@ -92,34 +94,6 @@ ZENO_API bool INode::is_dirty() const
 
 ZENO_API void INode::complete() {}
 
-/*ZENO_API bool INode::checkApplyCondition() {
-    if (has_option("ONCE")) {  // TODO: frame control should be editor work
-        if (!getGlobalState()->isFirstSubstep())
-            return false;
-    }
-
-    if (has_option("PREP")) {
-        if (!getGlobalState()->isOneSubstep())
-            return false;
-    }
-
-    if (has_option("MUTE")) {
-        auto desc = nodeClass->desc.get();
-        if (desc->inputs[0].name != "SRC") {
-            // TODO: MUTE should be an editor work
-            muted_output = get_input(desc->inputs[0].name);
-        } else {
-            for (auto const &[ds, bound]: inputBounds) {
-                muted_output = get_input(ds);
-                break;
-            }
-        }
-        return false;
-    }
-
-    return true;
-}*/
-
 ZENO_API void INode::preApply() {
 
     if (!m_dirty)
@@ -147,7 +121,7 @@ ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
         return false;
 
     if (in_param->links.empty()) {
-        in_param->result = in_param->defl;
+        in_param->result = process(in_param);
         return true;
     }
 
@@ -203,19 +177,6 @@ ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
         }
     }
     return true;
-    /*
-    auto it = inputBounds.find(ds);
-    if (it == inputBounds.end())
-        return false;
-    auto [sn, ss] = it->second;
-    if (graph->applyNode(sn)) {
-        auto &dc = graph->getDirtyChecker();
-        dc.taintThisNode(myname);
-    }
-    auto ref = graph->getNodeOutput(sn, ss);
-    inputs[ds] = ref;
-    return true;
-    */
 }
 
 ZENO_API void INode::doOnlyApply() {
@@ -227,28 +188,9 @@ ZENO_API void INode::doApply() {
     log_trace("--> enter {}", ident);
     preApply();
     log_trace("--> leave {}", ident);
-    //}
-
-    /*if (has_option("VIEW")) {
-        graph->hasAnyView = true;
-        if (!getGlobalState()->isOneSubstep())  // no duplicate view when multi-substep used
-            return;
-        if (!graph->isViewed)  // VIEW subnodes only if subgraph is VIEW'ed
-            return;
-        auto desc = nodeClass->desc.get();
-        auto obj = muted_output ? muted_output
-            : safe_at(outputs, desc->outputs[0].name, "output");
-        if (auto p = std::dynamic_pointer_cast<IObject>(obj); p) {
-            getGlobalState()->addViewObject(p);
-        }
-    }*/
 }
 
-/*ZENO_API bool INode::has_option(std::string const &id) const {
-    return options.find(id) != options.end();
-}*/
-
-ZENO_API void INode::set_input_defl(std::string const& name, zany defl) {
+ZENO_API void INode::set_input_defl(std::string const& name, zvariant defl) {
     std::shared_ptr<IParam> param = get_input_param(name);
     param->defl = defl;
 }
@@ -276,15 +218,7 @@ ZENO_API bool INode::has_input(std::string const &id) const {
 
 ZENO_API zany INode::get_input(std::string const &id) const {
     std::shared_ptr<IParam> param = get_input_param(id);
-    return param ? param->defl : nullptr;
-    /*
-    if (has_keyframe(id)) {
-        return get_keyframe(id);
-    } else if (has_formula(id)) {
-        return get_formula(id);
-    }
-    return safe_at(inputs, id, "input socket of node `" + myname + "`");
-    */
+    return param ? param->result : nullptr;
 }
 
 ZENO_API zany INode::resolveInput(std::string const& id) {
@@ -292,19 +226,6 @@ ZENO_API zany INode::resolveInput(std::string const& id) {
         return get_input_param(id)->result;
     else
         return nullptr;
-    /*
-    if (inputBounds.find(id) != inputBounds.end()) {
-        if (requireInput(id))
-            return get_input(id);
-        else
-            return nullptr;
-    } else {
-        auto id_ = id;
-        if (inputs.find(id_) == inputs.end())
-            id_.push_back(':');
-        return get_input(id_);
-    }
-    */
 }
 
 ZENO_API void INode::set_output(std::string const &sock_name, zany obj) {
@@ -340,8 +261,8 @@ ZENO_API bool INode::has_keyframe(std::string const &id) const {
 
 ZENO_API zany INode::get_keyframe(std::string const &id) const 
 {
-    std::shared_ptr<IParam> param = get_input_param(id);
-    return param ? param->defl : nullptr;
+    //deprecated: will parse it when processing defl value
+    return nullptr;
     /*
     auto value = safe_at(inputs, id, "input socket of node `" + myname + "`");
     auto curves = dynamic_cast<zeno::CurveObject *>(value.get());
@@ -391,8 +312,8 @@ ZENO_API bool INode::has_formula(std::string const &id) const {
 
 ZENO_API zany INode::get_formula(std::string const &id) const 
 {
-    std::shared_ptr<IParam> param = get_input_param(id);
-    return param ? param->defl : nullptr;
+    //deprecated: will parse it when processing defl value
+    return nullptr;
     /*
     auto value = safe_at(inputs, id, "input socket of node `" + myname + "`");
     if (auto formulas = dynamic_cast<zeno::StringObject *>(value.get())) 
@@ -450,18 +371,119 @@ ZENO_API TempNodeCaller INode::temp_node(std::string const &id) {
     return TempNodeCaller(graph, id);
 }
 
-//ZENO_API std::variant<int, float, std::string> INode::get_param(std::string const &id) const {
-    //auto nid = id + ':';
-    //if (has_input2<float>(nid)) {
-        //return get_input2<float>(nid);
-    //}
-    //if (has_input2<int>(nid)) {
-        //return get_input2<int>(nid);
-    //}
-    //if (has_input2<std::string>(nid)) {
-        //return get_input2<std::string>(nid);
-    //}
-    //throw makeError("bad get_param (legacy variant mode)");
-//}
+float INode::resolve(const std::string& formulaOrKFrame, const ParamType type)
+{
+    int frame = getGlobalState()->frameid;
+    if (zeno::starts_with(formulaOrKFrame, "=")) {
+        std::string code = formulaOrKFrame.substr(1);
+        auto res = getThisGraph()->callTempNode(
+            "NumericEval", { {"zfxCode", objectFromLiterial(code)}, {"resType", objectFromLiterial("float")} }).at("result");
+        assert(res);
+        std::shared_ptr<zeno::NumericObject> num = std::dynamic_pointer_cast<zeno::NumericObject>(res);
+        float fVal = num->get<float>();
+        return fVal;
+    }
+    else if (zany curve = zeno::parseCurveObj(formulaOrKFrame)) {
+        std::shared_ptr<zeno::CurveObject> curves = std::dynamic_pointer_cast<zeno::CurveObject>(curve);
+        assert(curves && curves->keys.size() == 1);
+        float fVal = curves->keys.begin()->second.eval(frame);
+        return fVal;
+    }
+    else {
+        if (Param_Float == type)
+        {
+            float fVal = std::stof(formulaOrKFrame);
+            return fVal;
+        }
+        else {
+            float fVal = std::stoi(formulaOrKFrame);
+            return fVal;
+        }
+    }
+}
+
+template<class T, class E> zany INode::resolveVec(const zvariant& defl, const ParamType type)
+{
+    if (std::holds_alternative<T>(defl)) {
+        return std::make_shared<zeno::NumericObject>(std::get<T>(defl));
+    }
+    else if (std::holds_alternative<E>(defl)) {
+        E vec = std::get<E>(defl);
+        T vecnum;
+        for (int i = 0; i < vec.size(); i++) {
+            float fVal = resolve(vec[i], type);
+            vecnum[i] = fVal;
+        }
+        return std::make_shared<zeno::NumericObject>(vecnum);
+    }
+    else {
+        //error, throw expection.
+        return nullptr;
+    }
+}
+
+zany INode::process(std::shared_ptr<IParam> in_param)
+{
+    if (!in_param) {
+        return nullptr;
+    }
+
+    int frame = getGlobalState()->frameid;
+    zany result;
+
+    const ParamType type = in_param->type;
+    const zvariant defl = in_param->defl;
+
+    switch (type) {
+        case Param_Int:
+        case Param_Float:
+        case Param_Bool:
+        {
+            //先不考虑int float的划分,直接按variant的值来。
+            zvariant resolve_value;
+            if (std::holds_alternative<std::string>(defl))
+            {
+                std::string str = std::get<std::string>(defl);
+                float fVal = resolve(str, type);
+                result = std::make_shared<zeno::NumericObject>(fVal);
+            }
+            else if (std::holds_alternative<int>(defl))
+            {
+                result = std::make_shared<zeno::NumericObject>(std::get<int>(defl));
+            }
+            else if (std::holds_alternative<float>(defl))
+            {
+                result = std::make_shared<zeno::NumericObject>(std::get<float>(defl));
+            }
+            else
+            {
+                //error, throw expection.
+            }
+            break;
+        }
+        case Param_String:
+        {
+            if (std::holds_alternative<std::string>(defl))
+            {
+                std::string str = std::get<std::string>(defl);
+                result = std::make_shared<zeno::StringObject>(str);
+            }
+            else {
+                //error, throw expection.
+            }
+            break;
+        }
+        case Param_Vec2f:   result = resolveVec<vec2f, vec2s>(defl, type);  break;
+        case Param_Vec2i:   result = resolveVec<vec2i, vec2s>(defl, type);  break;
+        case Param_Vec3f:   result = resolveVec<vec3f, vec3s>(defl, type);  break;
+        case Param_Vec3i:   result = resolveVec<vec3i, vec3s>(defl, type);  break;
+        case Param_Vec4f:   result = resolveVec<vec4f, vec4s>(defl, type);  break;
+        case Param_Vec4i:   result = resolveVec<vec4i, vec4s>(defl, type);  break;
+        case Param_Curve:
+            break;  //TODO
+    }
+
+    return result;
+}
 
 }

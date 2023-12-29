@@ -124,4 +124,11 @@ zany parseObjectFromUi(Value const& x)
     return curve;
 }
 
+zany parseCurveObj(const std::string& curveJson)
+{
+    //todo
+    auto curve = std::make_shared<zeno::CurveObject>();
+    return curve;
+}
+
 }
