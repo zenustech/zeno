@@ -1701,11 +1701,13 @@ void GraphsModel::_markNodeChanged(const QModelIndex& nodeIdx)
             if (sockProp & SOCKPROP_DICTLIST_PANEL)
             {
                 QAbstractItemModel* pKeyObjModel = QVariantPtr<QAbstractItemModel>::asPtr(sock.data(ROLE_VPARAM_LINK_MODEL));
-                for (int _r = 0; _r < pKeyObjModel->rowCount(); _r++)
-                {
-                    const QModelIndex& keyIdx = pKeyObjModel->index(_r, 0);
-                    ZASSERT_EXIT(keyIdx.isValid());
-                    socketLst << keyIdx;
+                if (pKeyObjModel) {
+                    for (int _r = 0; _r < pKeyObjModel->rowCount(); _r++)
+                    {
+                        const QModelIndex& keyIdx = pKeyObjModel->index(_r, 0);
+                        ZASSERT_EXIT(keyIdx.isValid());
+                        socketLst << keyIdx;
+                    }
                 }
             }
             else
