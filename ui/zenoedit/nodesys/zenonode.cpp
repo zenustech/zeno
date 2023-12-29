@@ -1017,7 +1017,8 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewSockIdx, bool bInput, 
         procClipbrd->setCopiedAddress("");
     };
     cbSocket.cbActionTriggered = [=](QAction* pAction, const QModelIndex& socketIdx) {
-        if (pAction->text() == "Delete Net Label") {
+        QString text = pAction->text();
+        if (pAction->text() == tr("Delete Net Label")) {
             IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
             ZASSERT_EXIT(pModel);
             pModel->removeNetLabel(m_subGpIndex, socketIdx);
