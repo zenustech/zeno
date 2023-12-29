@@ -146,22 +146,38 @@ struct BuildSurfaceHalfEdgeStructure : zeno::INode {
 				}
 		});
 #else
-		if(!build_surf_half_edge(cudaPol,tris,points,halfEdge))
-			throw std::runtime_error("fail building surf half edge");
+		auto accept_non_manifold = get_input2<bool>("accept_non_manifold");
+		if(!accept_non_manifold) {
+			if(!build_surf_half_edge(cudaPol,tris,points,halfEdge))
+				throw std::runtime_error("fail building surf half edge");
+		}else {
+			if(!build_surf_half_edge_robust(cudaPol,tris,halfEdge))
+				throw std::runtime_error("fail building surf half edge");
+		}
 #endif
 
 		zs::bht<int,1,int> edgeSet{tris.get_allocator(),tris.size() * 3};	
+		zs::bht<int,1,int> boundaryHalfEdgeSet{tris.get_allocator(),tris.size() * 3};
 		edgeSet.reset(cudaPol,true);
+		boundaryHalfEdgeSet.reset(cudaPol,true);
 		cudaPol(zs::range(halfEdge.size()),[
 			halfedges = proxy<space>({},halfEdge),
+			boundaryHalfEdgeSet = proxy<space>(boundaryHalfEdgeSet),
 			edgeSet = proxy<space>(edgeSet),
 			tris = proxy<space>({},tris)] ZS_LAMBDA(int hi) mutable {
 				auto ti = zs::reinterpret_bits<int>(halfedges("to_face",hi));
+				if(ti < 0) {
+					printf("oops!!! halfedge with no incident triangle!!!\n");
+					return;
+				}
+					
 				auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
 				auto local_idx = zs::reinterpret_bits<int>(halfedges("local_vertex_id",hi));
 				zs::vec<int,2> edge{tri[local_idx],tri[(local_idx + 1) % 3]};
 
 				auto ohi = zs::reinterpret_bits<int>(halfedges("opposite_he",hi));
+				if(ohi < 0)
+					boundaryHalfEdgeSet.insert(hi);
 				if(ohi >= 0 && edge[0] > edge[1])
 					return;
 
@@ -176,6 +192,11 @@ struct BuildSurfaceHalfEdgeStructure : zeno::INode {
 			tris = proxy<space>({},tris)] ZS_LAMBDA(auto ei,const auto& hi_vec) mutable {
 				auto hi = hi_vec[0];
 				auto ti = zs::reinterpret_bits<int>(halfedges("to_face",hi));
+				if(ti < 0) {
+					printf("oops!!! halfedge with no incident triangle!!!\n");
+					return;
+				}
+
 				auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
 				auto local_idx = zs::reinterpret_bits<int>(halfedges("local_vertex_id",hi));
 				zs::vec<int,2> edge{tri[local_idx],tri[(local_idx + 1) % 3]};	
@@ -184,14 +205,25 @@ struct BuildSurfaceHalfEdgeStructure : zeno::INode {
 				surfEdges("he_inds",ei) = reinterpret_bits<float>((int)hi);
 		});
 
+		auto& boundaryHalfEdges = (*zsparticles)[ZenoParticles::s_surfBoundaryEdgeTag];
+		boundaryHalfEdges = typename ZenoParticles::particles_t({{"he_inds",1}},
+			boundaryHalfEdgeSet.size(),zs::memsrc_e::device,0);
+
+		cudaPol(zip(zs::range(boundaryHalfEdgeSet.size()),boundaryHalfEdgeSet._activeKeys),[
+			boundaryHalfEdges = boundaryHalfEdges.begin("he_inds",dim_c<1>,int_c)] ZS_LAMBDA(int id,const auto& key) mutable {
+				boundaryHalfEdges[id] = key[0];
+		});
+
 		set_output("zsparticles",zsparticles);
-		// zsparticles->setMeta("de2fi",std::move())
 	}
 
 };
 
 
-ZENDEFNODE(BuildSurfaceHalfEdgeStructure, {{{"zsparticles"}},
+ZENDEFNODE(BuildSurfaceHalfEdgeStructure, {{
+								{"zsparticles"},
+								{"bool","accept_non_manifold","0"},
+							},
 							{{"zsparticles"}},
 							{},
 							{"ZSGeometry"}});

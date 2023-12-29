@@ -18,10 +18,12 @@ enum ShaderMaker {
 struct ShaderPrepared {
     ShaderMaker mark;
     std::string matid;
-    std::string source;
-    std::vector<std::string> tex_names;
+    std::string filename;
 
-    std::shared_ptr<std::string> fallback;
+    std::string callable;
+    std::string parameters;
+    
+    std::vector<std::string> tex_names;
 };
 
 namespace xinxinoptix {

@@ -12,6 +12,12 @@
 #include <string>
 #include <iostream>
 #include "magic_enum.hpp"
+#include "zeno/utils/vec.h"
+
+#include <rapidjson/document.h>
+#include <rapidjson/rapidjson.h>
+#include <rapidjson/writer.h>
+#include <rapidjson/stringbuffer.h>
 
 namespace zeno {
 
@@ -141,9 +147,9 @@ struct ShaderFinalize : INode {
 
         auto sssRadiusMethod = get_input2<std::string>("sssRadius");
         if (sssRadiusMethod == "Fixed") {
-            commonCode += "#define _SSS_FIXED_RADIUS_ 1 \n";
+            code += "bool sssFxiedRadius = true;\n";
         } else {
-            commonCode += "#define _SSS_FIXED_RADIUS_ 0 \n";
+            code += "bool sssFxiedRadius = false;\n";
         }
 
         auto mtl = std::make_shared<MaterialObject>();
@@ -180,9 +186,28 @@ struct ShaderFinalize : INode {
             commonCode += "#define VolumeEmissionScaler VolumeEmissionScalerType::" + VolumeEmissionScaler + "\n";
 
             vol_depth = clamp(vol_depth, 9, 99);
+            vol_extinction = clamp(vol_extinction, 1e-5, 1e+5);
 
-            commonCode += "static const int   _vol_depth = " + std::to_string(vol_depth) + ";\n";
-            commonCode += "static const float _vol_extinction = " + std::to_string(vol_extinction) + ";\n";
+            std::string parameters = "";
+            {
+                using namespace rapidjson;
+                Document d; d.SetObject();
+                auto& allocator = d.GetAllocator();
+
+                Value s = Value();
+                s.SetInt(vol_depth);
+                d.AddMember("vol_depth", s, allocator);
+
+                s = Value();
+                s.SetFloat(vol_extinction); 
+                d.AddMember("vol_extinction", s, allocator);
+
+                StringBuffer buffer;
+                Writer<StringBuffer> writer(buffer);
+                d.Accept(writer);
+                parameters = buffer.GetString();
+            }
+            mtl->parameters = parameters;
 
             auto tex3dList = get_input<ListObject>("tex3dList")->getRaw(); //get<zeno::StringObject>();
 

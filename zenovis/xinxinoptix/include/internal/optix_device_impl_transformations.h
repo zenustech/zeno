@@ -19,7 +19,7 @@
 */
 
 /**
-* @file   optix_7_device_impl_transformations.h
+* @file   optix_device_impl_transformations.h
 * @author NVIDIA Corporation
 * @brief  OptiX public API
 *
@@ -27,11 +27,11 @@
 */
 
 #if !defined( __OPTIX_INCLUDE_INTERNAL_HEADERS__ )
-#error("optix_7_device_impl_transformations.h is an internal header file and must not be used directly.  Please use optix_device.h or optix.h instead.")
+#error("optix_device_impl_transformations.h is an internal header file and must not be used directly.  Please use optix_device.h or optix.h instead.")
 #endif
 
-#ifndef __optix_optix_7_device_impl_transformations_h__
-#define __optix_optix_7_device_impl_transformations_h__
+#ifndef OPTIX_OPTIX_DEVICE_IMPL_TRANSFORMATIONS_H
+#define OPTIX_OPTIX_DEVICE_IMPL_TRANSFORMATIONS_H
 
 namespace optix_impl {
 
@@ -421,4 +421,4 @@ static __forceinline__ __device__ float3 optixTransformNormal( const float4& m0,
 
 }  // namespace optix_impl
 
-#endif
+#endif // OPTIX_OPTIX_DEVICE_IMPL_TRANSFORMATIONS_H

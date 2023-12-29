@@ -20,7 +20,7 @@
 #include "../geometry/kernel/calculate_facet_normal.hpp"
 #include "../geometry/kernel/topology.hpp"
 #include "../geometry/kernel/compute_characteristic_length.hpp"
-#include "../geometry/kernel/calculate_bisector_normal.hpp"
+// #include "../geometry/kernel/calculate_bisector_normal.hpp"
 
 #include "../geometry/kernel/tiled_vector_ops.hpp"
 #include "../geometry/kernel/geo_math.hpp"
@@ -469,84 +469,6 @@ struct FleshDynamicStepping : INode {
             });
 
 
-            // cudaPol(zs::range(tris.size()),[
-            //         vtemp = proxy<space>({},vtemp),
-            //         sttemp = proxy<space>({},sttemp),
-            //         verts = proxy<space>({},verts),
-            //         tris = proxy<space>({},tris),
-            //         kverts = proxy<space>({},kverts),
-            //         ktris = proxy<space>({},ktris),
-            //         cnorm = cnorm,
-            //         planeConsIDTag = zs::SmallString(planeConsIDTag),
-            //         kine_out_collisionEps = kine_out_collisionEps,
-            //         kine_in_collisionEps = kine_in_collisionEps,
-            //         plane_constraint_stiffness = plane_constraint_stiffness,
-            //         use_sticky_condition = use_sticky_condition,
-            //         tris_gh_buffer = proxy<space>({},tris_gh_buffer)] ZS_LAMBDA(int ti) mutable {
-            //     auto kp_idx = reinterpret_bits<int>(tris(planeConsIDTag,ti));
-            //     if(kp_idx < 0)
-            //         return;
-            //     auto kp = kverts.pack(dim_c<3>,"x",kp_idx);
-            //     auto tri = tris.pack(dim_c<3>,"inds",ti).reinterpret_bits(int_c);
-            //     for(int i = 0;i != 3;++i){
-            //         auto is_inverted_vert = vtemp("is_inverted",tri[i]) > (T)0.5;
-            //         if(is_inverted_vert)
-            //             return;
-            //     }
-            
-            //     // auto tnrm = sttemp.pack(dim_c<3>,"nrm",ti);
-
-            //     auto mu = verts("mu",tri[0]);
-            //     auto lam = verts("lam",tri[0]);
-
-            //     auto eps = kine_out_collisionEps;
-            //     vec3 vs[4] = {};
-            //     vs[0] = kp;
-            //     for(int i = 0;i != 3;++i)
-            //         vs[i + 1] = vtemp.pack(dim_c<3>,"xn",tri[i]);
-                
-            //     vec3 e[3] = {};
-            //     e[0] = vs[3] - vs[2];
-            //     e[1] = vs[0] - vs[2];
-            //     e[2] = vs[1] - vs[2];
-
-            //     // auto seg = vs[0] - vs[2];
-            //     // auto n = e[2].cross(e[0]);
-            //     auto n = LSL_GEO::facet_normal(vs[1],vs[2],vs[3]);
-            //     // if(n.norm() < 1e-4)
-            //     //     return;
-            //     // n = n/(n.norm() + 1e-6);
-
-            //     T springLength = e[1].dot(n) + eps;
-            //     auto gvf = zs::vec<T,9>::zeros();
-            //     if(springLength > (T)0 || use_sticky_condition){
-            //         auto gvf_v12 = COLLISION_UTILS::springLengthGradient(vs,e,n);
-            //         if(isnan(gvf_v12.norm()))
-            //             printf("nan gvf detected at %d %f %f\n",ti,gvf_v12.norm(),n.norm());
-            //         for(int i = 0;i != 9;++i)
-            //             gvf[i] = gvf_v12[i + 3];
-            //     }
-            //     cnorm = (T)1.0;
-            //     auto stiffness = plane_constraint_stiffness * cnorm;
-            //     // stiffness = (T)0;            
-            //     auto g = stiffness * (T)2.0 * mu * springLength * gvf;
-            //     auto H = stiffness * (T)2.0 * mu * zs::dyadic_prod(gvf, gvf);
-                
-            //     // if(springLength < (T)0) {
-            //     //     auto springLengthH_M12 = COLLISION_UTILS::springLengthHessian(vs,e,n);
-            //     //     auto springLengthH_M9 = mat9::zeros();
-            //     //     for(int r = 0;r != 9;++r)
-            //     //         for(int c = 0;c != 9;++c)
-            //     //             springLengthH_M9(r,c) = springLengthH_M12(r + 3,c+ 3);
-            //     //     H += springLength * springLengthH_M9 * (T)2.0 * stiffness * mu;
-            //     //     make_pd(H);
-            //     // }
-
-            //     tris_gh_buffer.tuple(dim_c<9>,"grad",ti) = g;
-            //     tris_gh_buffer.tuple(dim_c<9,9>,"H",ti) = H;           
-            // });
-
-
             cudaPol(zs::range(kverts.size()),[
                 vtemp = proxy<space>({},vtemp),
                 tris = proxy<space>({},tris),
@@ -805,8 +727,7 @@ struct FleshDynamicStepping : INode {
                         vf -= vole  * dFdXT * vecAP *aniso_strength;
 
                         auto aHq = amodel.do_first_piola_derivative(FAct,fiber);
-                        make_pd(aHq);
-                        // auto aHq = zs::vec<T,9,9>::zeros();
+                        // make_pd(aHq);
                         H += dFdAct_dFdX.transpose() * aHq * dFdAct_dFdX * vole * aniso_strength;
                         
                         // if((int)eles("Muscle_ID",ei) == 0){
@@ -826,6 +747,10 @@ struct FleshDynamicStepping : INode {
                 gh_buffer.tuple(dim_c<12>,"grad",ei + offset) = gh_buffer.pack(dim_c<12>,"grad",ei + offset) + vf/* - rdamping*/; 
                 // gh_buffer.tuple(dim_c<12>,"grad",ei + offset) = gh_buffer.pack(dim_c<12>,"grad",ei + offset) - rdamping; 
                 // H += kd_beta*H/dt;
+
+                if(isnan(H.norm())) {
+                    printf("nan elastic hessian detected[%d] with Hq = %f\n",ei,(float)Hq.norm());
+                }
 
                 gh_buffer.template tuple<12*12>("H",ei + offset) = gh_buffer.template pack<12,12>("H",ei + offset) + H/* + C/dt*/;
             });
@@ -1109,7 +1034,7 @@ struct FleshDynamicStepping : INode {
 
                                 auto collisionEps = dist > 0 ?  out_collisionEps : in_collisionEps;
                                 auto barySum = (T)1.0;
-                                T distance = LSL_GEO::pointTriangleDistance(tvs[0],tvs[1],tvs[2],p,barySum);
+                                T distance = LSL_GEO::get_vertex_triangle_distance(tvs[0],tvs[1],tvs[2],p,barySum);
 
                                 if(distance > collisionEps)
                                     return;
@@ -1180,7 +1105,7 @@ struct FleshDynamicStepping : INode {
                                 
                                 auto collisionEps = dist > 0 ? out_collisionEps : in_collisionEps;
                                 auto barySum = (T)1.0;
-                                T distance = LSL_GEO::pointTriangleDistance(tvs[0],tvs[1],tvs[2],kp,barySum);
+                                T distance = LSL_GEO::get_vertex_triangle_distance(tvs[0],tvs[1],tvs[2],kp,barySum);
 
                                 if(distance > collisionEps)
                                     return;       
@@ -1277,13 +1202,6 @@ struct FleshDynamicStepping : INode {
 
 
         T binderStiffness;
-        // int default_muscle_id;
-        // zs::vec<T,3> default_muscle_dir;
-        // T default_act;
-
-        // T inset;
-        // T outset;
-
         T plane_constraint_stiffness;
     };
 
@@ -1378,9 +1296,6 @@ struct FleshDynamicStepping : INode {
 
         auto driven_tag = get_input2<std::string>("driven_tag");
         auto bone_driven_weight = get_input2<float>("driven_weight");
-
-
-
 
         auto bbw = typename ZenoParticles::particles_t({
             {"X",3},
@@ -1813,8 +1728,6 @@ struct FleshDynamicStepping : INode {
         auto binderThicknessTag = get_param<std::string>("binderThicknessTag");
         auto binderInversionTag = get_param<std::string>("binderInversionTag");
 
-
-
         auto planeConsStiffness = get_input2<float>("planeConsStiffness");
 
         FEMDynamicSteppingSystem A{
@@ -2008,10 +1921,6 @@ struct FleshDynamicStepping : INode {
             TILEVEC_OPS::fill(cudaPol,sttemp,"grad",(T)0.0);
             TILEVEC_OPS::fill(cudaPol,sttemp,"H",(T)0.0);
 
-            // if(!calculate_facet_normal(cudaPol,vtemp,"xn",tris,sttemp,"nrm")){
-            //     throw std::runtime_error("fail updating facet normal");
-            // }  
-
             A.findInversion(cudaPol,vtemp,etemp);  
 
             // match([&](auto &elasticModel,auto &anisoModel) -> std::enable_if_t<zs::is_same_v<RM_CVREF_T(anisoModel),zs::AnisotropicArap<float>>> {...},[](...) {
@@ -2079,15 +1988,15 @@ struct FleshDynamicStepping : INode {
                 zs::bht<int,2,int> csPT{vtemp.get_allocator(),10000};
                 csPT.reset(cudaPol,true);
             #if 0
-                auto nm_csPT = COLLISION_UTILS::do_tetrahedra_surface_mesh_and_kinematic_boundary_collision_detection(cudaPol,
-                    kinematics[0],
-                    vtemp,"xn",
-                    eles,
-                    points,tris,
-                    halfedges,
-                    out_collisionEps,
-                    in_collisionEps,
-                    csPT,false);
+                // auto nm_csPT = COLLISION_UTILS::do_tetrahedra_surface_mesh_and_kinematic_boundary_collision_detection(cudaPol,
+                //     kinematics[0],
+                //     vtemp,"xn",
+                //     eles,
+                //     points,tris,
+                //     halfedges,
+                //     out_collisionEps,
+                //     in_collisionEps,
+                //     csPT,false);
                 
                 COLLISION_UTILS::evaluate_tri_kvert_collision_gradient_and_hessian(cudaPol,
                     kinematics,
@@ -2099,15 +2008,15 @@ struct FleshDynamicStepping : INode {
                 std::cout << "nm_csPT = " << nm_csPT << "\tkin_cforce : " << cforce << std::endl;
             #else
                 std::cout << "apply kinematic collision" << std::endl;
-                auto nm_csPT = COLLISION_UTILS::do_tetrahedra_surface_points_and_kinematic_boundary_collision_detection(cudaPol,
-                    kinematics[0],
-                    vtemp,"xn",
-                    eles,
-                    points,tris,
-                    halfedges,
-                    out_collisionEps,
-                    in_collisionEps,
-                    csPT,false,false);
+                // auto nm_csPT = COLLISION_UTILS::do_tetrahedra_surface_points_and_kinematic_boundary_collision_detection(cudaPol,
+                //     kinematics[0],
+                //     vtemp,"xn",
+                //     eles,
+                //     points,tris,
+                //     halfedges,
+                //     out_collisionEps,
+                //     in_collisionEps,
+                //     csPT,false,false);
 
                 COLLISION_UTILS::evaluate_ktri_vert_collision_gradient_and_hessian(cudaPol,
                     kinematics[0],
@@ -2122,126 +2031,7 @@ struct FleshDynamicStepping : INode {
             }
 
 
-            // if(!calculate_facet_normal(cudaPol,vtemp,"xn",tris,sttemp,"nrm")){
-            //     throw std::runtime_error("fail updating facet normal");
-            // }  
-
-
             if(turn_on_self_collision) {
-            // {
-            //     auto tetBvh = bvh_t{};
-            //     auto tetBvs = retrieve_bounding_volumes(cudaPol,vtemp,eles,wrapv<4>{},(T)0,"xn");
-            //     tetBvh.build(cudaPol,tetBvs);
-            //     TILEVEC_OPS::fill(cudaPol,vtemp,"embed_tet_id",zs::reinterpret_bits<T>((int)-1));
-            //     // auto nm_insts = do_
-            //     topological_sample(cudaPol,points,vtemp,"xn",surf_verts_buffer);
-            //     // std::cout << "do_global_self_intersection_analysis" << std::endl;
-
-            //     // zs::bht<int,2,int> conn_of_first_ring{halfedges.get_allocator(),halfedges.size()};
-            //     auto tri_thickness = 3 * compute_average_edge_length(cudaPol,vtemp,"xn",tris);
-
-            //     cudaPol(zs::range(surf_verts_buffer.size()),[
-            //         surf_verts_buffer = proxy<space>({},surf_verts_buffer),
-            //         tetBvh = proxy<space>(tetBvh),
-            //         eles = proxy<space>({},eles),
-            //         thickness = tri_thickness,
-            //         vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int pi) mutable {
-            //             auto pv = surf_verts_buffer.pack(dim_c<3>,"xn",pi);
-            //             auto vi = zs::reinterpret_bits<int>(surf_verts_buffer("inds",pi));
-            //             auto bv = bv_t{get_bounding_box(pv - thickness,pv + thickness)};
-            //             auto mark_interior_verts = [&](int ei) {
-            //                 auto tet = eles.pack(dim_c<4>,"inds",ei,int_c);
-            //                 for(int i = 0;i != 4;++i)
-            //                     if(tet[i] == vi)
-            //                         return;
-            //                 zs::vec<T,3> tV[4] = {};
-            //                 for(int i = 0;i != 4;++i)
-            //                     tV[i] = vtemp.pack(dim_c<3>,"xn",tet[i]);
-            //                 if(LSL_GEO::is_inside_tet(tV[0],tV[1],tV[2],tV[3],pv))
-            //                     vtemp("embed_tet_id",vi) = zs::reinterpret_bits<T>((int)ei);
-            //             };
-            //     });
-
-
-            //     cudaPol(zs::range(surf_verts_buffer.size()),[
-            //         surf_verts_buffer = proxy<space>({},surf_verts_buffer),
-            //         vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int pi) mutable {
-            //             auto vi = zs::reinterpret_bits<int>(surf_verts_buffer("inds",pi));
-            //             auto mustExclude = zs::reinterpret_bits<int>(vtemp("embed_tet_id",vi)) >= 0;
-            //             if(mustExclude)
-            //                 surf_verts_buffer("mustExclude",pi) = (T)1.0;
-            //             else
-            //                 surf_verts_buffer("mustExclude",pi) = (T)0.0;
-            //     });
-
-            //     auto nm_rings = do_global_self_intersection_analysis(cudaPol,
-            //         surf_verts_buffer,"xn",surf_tris_buffer,halfedges,
-            //         gia_res,tri_gia_res);
-
-            //     // auto nm_insts = do_global_self_intersection_analysis_on_surface_mesh_info(cudaPol,
-            //     //     surf_verts_buffer,"xn",surf_tris_buffer,halfedges,inst_buffer_info,gia_res);
-            //     // std::cout << "finish do_global_self_intersection_analysis" << std::endl;
-                
-            //     TILEVEC_OPS::fill(cudaPol,vtemp,"ring_mask",zs::reinterpret_bits<T>((int)0));
-            //     TILEVEC_OPS::fill(cudaPol,vtemp,"color_mask",zs::reinterpret_bits<T>((int)0));
-            //     TILEVEC_OPS::fill(cudaPol,vtemp,"type_mask",zs::reinterpret_bits<T>((int)0));
-
-
-
-            //     cudaPol(zs::range(gia_res.size()),[
-            //         gia_res = proxy<space>({},gia_res),
-            //         vtemp = proxy<space>({},vtemp),
-            //         points = proxy<space>({},points)] ZS_LAMBDA(int pi) mutable {
-            //             auto vi = zs::reinterpret_bits<int>(points("inds",pi));
-            //             vtemp("ring_mask",vi) = gia_res("ring_mask",pi);
-            //             vtemp("color_mask",vi) = gia_res("color_mask",pi);
-            //             vtemp("type_mask",vi) = gia_res("type_mask",pi);
-            //     });
-
-
-            //     #ifdef USE_SPARSE_MATRIX
-
-            //     // if(false) {
-            //         COLLISION_UTILS::do_facet_point_collision_detection(
-            //             cudaPol,
-            //             vtemp,"xn",
-            //             points,tris,halfedges,csPT,nm_csPT,(T)in_collisionEps,(T )out_collisionEps);
-            //         std::cout << "nm_csPT detected : " << nm_csPT << std::endl;
-
-            //         match([&](auto &elasticModel) {
-            //         COLLISION_UTILS::evaluate_fp_collision_grad_and_hessian(
-            //             cudaPol,
-            //             vtemp,"xn",
-            //             csPT,nm_csPT,
-            //             fp_buffer,
-            //             (T)in_collisionEps,(T)out_collisionEps,
-            //             (T)collisionStiffness,
-            //             elasticModel.mu,elasticModel.lam);
-            //         })(models.getElasticModel());
-            //     // }else {
-
-            //     // }
-
-            //         // auto cHn = TILEVEC_OPS::dot<12 * 12>(cudaPol,fp_buffer,"H","H");
-            //         // if(std::isnan(cHn)) {
-            //         //     std::cout << "nan cHn detected : " << std::endl;
-            //         //     throw std::runtime_error("nan cHn detected");
-            //         // }
-            //         #else
-            //         match([&](auto &elasticModel) {
-            //             A.computeCollisionGradientAndHessian(cudaPol,elasticModel,
-            //                 vtemp,
-            //                 etemp,
-            //                 sttemp,
-            //                 setemp,
-            //                 // ee_buffer,
-            //                 fp_buffer,
-            //                 kverts,
-            //                 kc_buffer,
-            //                 gh_buffer,kd_theta);
-            //             })(models.getElasticModel());
-            //         #endif
-            // }
                 zs::bht<int,2,int> csPT{gh_buffer.get_allocator(),10000};
                 csPT.reset(cudaPol,true);
                 COLLISION_UTILS::do_tetrahedra_surface_tris_and_points_self_collision_detection(
@@ -2252,24 +2042,6 @@ struct FleshDynamicStepping : INode {
                     out_collisionEps,
                     in_collisionEps,
                     csPT);
-
-                
-                
-                // auto varea = TILEVEC_OPS::dot<1>(cudaPol,vtemp,"area","area");
-                // auto tarea = TILEVEC_OPS::dot<1>(cudaPol,tris,"area","area");
-                // if(std::isnan(varea) || std::isnan(tarea)) {
-                //     std::cout << "nan area detected " << varea << "\t" << tarea << std::endl;
-                //     throw std::runtime_error("nan area detected");
-                // }
-
-                // auto vmu = TILEVEC_OPS::dot<1>(cudaPol,vtemp,"mu","mu");
-                // auto vlam = TILEVEC_OPS::dot<1>(cudaPol,vtemp,"lam","lam");
-
-
-                // if(std::isnan(vmu) || std::isnan(vlam)) {
-                //     std::cout << "nan material detected " << vmu << "\t" << vlam << std::endl;
-                //     throw std::runtime_error("nan material detected");
-                // }
 
                 COLLISION_UTILS::evaluate_fp_self_collision_gradient_and_hessian(cudaPol,
                     vtemp,"xn","area",
@@ -2307,7 +2079,6 @@ struct FleshDynamicStepping : INode {
             timer.tick();
             spmat._vals.reset(0);  
 
-            // std::cout << "update gh_buffer spmat" << std::endl;
 
             cudaPol(zs::range(eles.size()),
                 [gh_buffer = proxy<space>({},gh_buffer),
@@ -2319,6 +2090,10 @@ struct FleshDynamicStepping : INode {
                         if(inds[i] < 0 || inds[i] >= vsize)
                             printf("negative sttemp inds : %d %d %d, %d\n",inds[0],inds[1],inds[2],inds[3]);
                     auto H = gh_buffer.pack(dim_c<12,12>,"H",ei);
+
+                    // if(isnan(H.norm())) {
+                    //     printf("nan ele[%d %d %d %d] detected\n",inds[0],inds[1],inds[2],inds[3]);
+                    // }
                     update_hessian(spmat,inds,H,true);
             });
 
@@ -2331,6 +2106,9 @@ struct FleshDynamicStepping : INode {
                         if(inds[i] < 0 || inds[i] >= vsize)
                             printf("negative sttemp inds : %d %d %d\n",inds[0],inds[1],inds[2]);
                     auto H = sttemp.pack(dim_c<9,9>,"H",vi);
+                    if(isnan(H.norm())) {
+                        printf("nan ele[%d %d %d] detected\n",inds[0],inds[1],inds[2]);
+                    }
                     update_hessian(spmat,inds,H,true);
             });
 
@@ -2342,6 +2120,9 @@ struct FleshDynamicStepping : INode {
                     if(inds[0] < 0 || inds[0] >= vsize)
                         printf("negative vtemp_inds : %d\n",inds[0]);
                     auto H = vtemp.pack(dim_c<3,3>,"H",vi);
+                    if(isnan(H.norm())) {
+                        printf("nan ele[%d] detected\n",vi);
+                    }
                     update_hessian(spmat,inds,H,true);
             });
 

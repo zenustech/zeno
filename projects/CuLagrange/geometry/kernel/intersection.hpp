@@ -1082,8 +1082,8 @@ int retrieve_triangulate_mesh_self_intersection_list_info(Pol& pol,
                                     T d1 = (T)0;
                                     T b0 = (T)0;
                                     T b1 = (T)0;
-                                    d0 = LSL_GEO::pointTriangleDistance(vB[0],vB[1],vB[2],v0,b0);
-                                    d1 = LSL_GEO::pointTriangleDistance(vB[0],vB[1],vB[2],v1,b1);
+                                    d0 = LSL_GEO::get_vertex_triangle_distance(vB[0],vB[1],vB[2],v0,b0);
+                                    d1 = LSL_GEO::get_vertex_triangle_distance(vB[0],vB[1],vB[2],v1,b1);
                                     if(b0 < (T)(1 + 1e-6) && b1 < (T)(1 + 1e-6))
                                         return;
                                     d0 = b0 < (T)(1 + 1e-6) ? d0 : std::numeric_limits<T>::infinity();
@@ -1122,8 +1122,8 @@ int retrieve_triangulate_mesh_self_intersection_list_info(Pol& pol,
                                     T d1 = (T)0;
                                     T b0 = (T)0;
                                     T b1 = (T)0;
-                                    d0 = LSL_GEO::pointTriangleDistance(vA[0],vA[1],vA[2],v0,b0);
-                                    d1 = LSL_GEO::pointTriangleDistance(vA[0],vA[1],vA[2],v1,b1);
+                                    d0 = LSL_GEO::get_vertex_triangle_distance(vA[0],vA[1],vA[2],v0,b0);
+                                    d1 = LSL_GEO::get_vertex_triangle_distance(vA[0],vA[1],vA[2],v1,b1);
                                     if(b0 < (T)(1 + 1e-6) && b1 < (T)(1 + 1e-6))
                                         return;
                                     d0 = b0 < (T)(1 + 1e-6) ? d0 : std::numeric_limits<T>::infinity();
@@ -1166,7 +1166,7 @@ int retrieve_triangulate_mesh_self_intersection_list_info(Pol& pol,
                                 auto avg_tb_edge_length = (ebs[0].norm() + ebs[1].norm() + ebs[2].norm()) / (T)3.0;
                                 for(int i = 0;i != 3;++i) {
                                     T barySum = (T)0;
-                                    auto distance = LSL_GEO::pointTriangleDistance(vB[0],vB[1],vB[2],vA[i],barySum);
+                                    auto distance = LSL_GEO::get_vertex_triangle_distance(vB[0],vB[1],vB[2],vA[i],barySum);
                                     if(barySum < (T)(1 + 1e-6) && distance < avg_ta_edge_length * 1e-5) {
                                         nm_ea_its = 2;
                                         ea_indices[0] = i;
@@ -1175,7 +1175,7 @@ int retrieve_triangulate_mesh_self_intersection_list_info(Pol& pol,
                                         break;
                                     }
 
-                                    distance = LSL_GEO::pointTriangleDistance(vA[0],vA[1],vA[2],vB[i],barySum);
+                                    distance = LSL_GEO::get_vertex_triangle_distance(vA[0],vA[1],vA[2],vB[i],barySum);
                                     if(barySum < (T)(1 + 1e-6) && distance < avg_tb_edge_length * 1e-5) {
                                         nm_eb_its = 2;
                                         eb_indices[0] = i;
