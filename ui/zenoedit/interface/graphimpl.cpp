@@ -6,6 +6,95 @@
 #include <zenomodel/include/nodesmgr.h>
 #include <zenomodel/include/uihelper.h>
 
+static QVariant parseValue(PyObject* v, const QString& type)
+{
+    QVariant val;
+    if (type == "string")
+    {
+        char* _val = nullptr;
+        if (PyArg_Parse(v, "s", &_val))
+        {
+            val = _val;
+        }
+    }
+    else if (type == "int")
+    {
+        int _val;
+        if (PyArg_Parse(v, "i", &_val))
+        {
+            val = _val;
+        }
+    }
+    else if (type == "float")
+    {
+        float _val;
+        if (PyArg_Parse(v, "f", &_val))
+        {
+            val = _val;
+        }
+    }
+    else if (type.startsWith("vec"))
+    {
+        PyObject* obj;
+        if (PyArg_Parse(v, "O", &obj))
+        {
+            int count = Py_SIZE(obj);
+            UI_VECTYPE vec;
+            vec.resize(count);
+            bool bError = false;
+            if (type.contains("i"))
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    PyObject* item = PyTuple_GET_ITEM(obj, i);
+                    int iVal;
+                    if (PyArg_Parse(item, "i", &iVal))
+                    {
+                        vec[i] = iVal;
+                    }
+                    else {
+                        bError = true;
+                        break;
+                    }
+                }
+            }
+            else if (type.contains("f"))
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    PyObject* item = PyTuple_GET_ITEM(obj, i);
+                    float dbVval;
+                    if (PyArg_Parse(item, "f", &dbVval))
+                    {
+                        vec[i] = dbVval;
+                    }
+                    else {
+                        bError = true;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                bError = true;
+            }
+            if (bError)
+            {
+                PyErr_SetString(PyExc_Exception, "args error");
+                PyErr_WriteUnraisable(Py_None);
+                return val;
+            }
+            val = QVariant::fromValue(vec);
+        }
+    }
+    if (!val.isValid())
+    {
+        PyErr_SetString(PyExc_Exception, "args error");
+        PyErr_WriteUnraisable(Py_None);
+        return val;
+    }
+    return val;
+}
 
 //init function
 static int
@@ -19,7 +108,11 @@ Graph_init(ZSubGraphObject* self, PyObject* args, PyObject* kwds)
 
     IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
     if (!pModel)
+    {
+        PyErr_SetString(PyExc_Exception, "Current Model is NULL");
+        PyErr_WriteUnraisable(Py_None);
         return 0;
+    }
 
     self->subgIdx = pModel->index(QString::fromUtf8(_subgName));
     return 0;
@@ -30,35 +123,109 @@ Graph_name(ZSubGraphObject* self, PyObject* Py_UNUSED(ignored))
 {
     IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
     if (!pModel)
+    {
+        PyErr_SetString(PyExc_Exception, "Current Model is NULL");
+        PyErr_WriteUnraisable(Py_None);
         return Py_None;
+    }
 
     const QString& name = self->subgIdx.data(ROLE_OBJNAME).toString();
     return PyUnicode_FromFormat(name.toUtf8());
 }
 
 static PyObject*
-Graph_createNode(ZSubGraphObject* self, PyObject* arg)
+Graph_createNode(ZSubGraphObject* self, PyObject* arg, PyObject* kw)
 {
-    //todo: support keys
-    static char* kwList[] = { "pos", NULL };
-
-    ZENO_HANDLE hGraph;
-    //if (!PyArg_ParseTupleAndKeywords(arg, kwds, "i", kwList, &hGraph))
-    //    return -1;
     PyObject* _arg = PyTuple_GET_ITEM(arg, 0);
     if (!PyUnicode_Check(_arg)) {
+        PyErr_SetString(PyExc_Exception, "args error");
+        PyErr_WriteUnraisable(Py_None);
         return Py_None;
     }
 
     char* nodeCls = nullptr;
     if (!PyArg_Parse(_arg, "s", &nodeCls))
+    {
+        PyErr_SetString(PyExc_Exception, "args error");
+        PyErr_WriteUnraisable(Py_None);
         return Py_None;
+    }
 
     const QString& subgName = self->subgIdx.data(ROLE_OBJNAME).toString();
     const QString& descName = QString::fromUtf8(nodeCls);
     IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
     const QString& ident = NodesMgr::createNewNode(pModel, self->subgIdx, descName, QPointF(0, 0));
-
+    //set value
+    QModelIndex nodeIdx = pModel->nodeIndex(ident);
+    QAbstractItemModel* pSubModel = const_cast<QAbstractItemModel*>(nodeIdx.model());
+    if (!pSubModel)
+    {
+        PyErr_SetString(PyExc_Exception, "Subgraph is null");
+        PyErr_WriteUnraisable(Py_None);
+        return Py_None;
+    }
+    if (PyDict_Check(kw))
+    {
+        PyObject* key, * value;
+        Py_ssize_t pos = 0;
+        INPUT_SOCKETS inputs = nodeIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+        while (PyDict_Next(kw, &pos, &key, &value))
+        {
+            char* cKey = nullptr;
+            if (!PyArg_Parse(key, "s", &cKey))
+                continue;
+            QString strKey= QString::fromUtf8(cKey);
+            if (strKey == "view" || strKey == "mute" || strKey == "once")
+            {
+                int options = nodeIdx.data(ROLE_OPTIONS).toInt();
+                if (strKey == "view")
+                {
+                    bool view = false;
+                    if (PyArg_Parse(value, "b", &view) && view)
+                        options |= OPT_VIEW;
+                }
+                else if (strKey == "mute")
+                {
+                    bool mute = false;
+                    if (PyArg_Parse(value, "b", &mute) && mute)
+                        options |= OPT_MUTE;
+                }
+                else if (strKey == "once")
+                {
+                    bool once = false;
+                    if (PyArg_Parse(value, "b", &once) && once)
+                        options |= OPT_ONCE;
+                }
+                pSubModel->setData(nodeIdx, options, ROLE_OPTIONS);
+            }
+            else if (strKey == "fold")
+            {
+                bool fold = false;
+                if (PyArg_Parse(value, "b", &fold) && fold)
+                    pSubModel->setData(nodeIdx, fold, ROLE_COLLASPED);
+            }
+            else if (strKey == "pos")
+            {
+                float x;
+                float y;
+                if (PyArg_ParseTuple(value, "ff", &x, &y))
+                    pSubModel->setData(nodeIdx, QPointF(x, y), ROLE_OBJPOS);
+            }
+            else if (inputs.contains(strKey))
+            {
+                INPUT_SOCKET socket = inputs[strKey];
+                QVariant val = parseValue(value, socket.info.type);
+                if (!val.isValid())
+                    continue;
+                PARAM_UPDATE_INFO info;
+                info.name = strKey;
+                info.newValue = val;
+                info.oldValue = socket.info.defaultValue;
+                pModel->updateSocketDefl(socket.info.nodeid, info, self->subgIdx);
+            }
+        }
+    }
+    
     //const QModelIndex& nodeIdx = pModel->index(ident, self->subgIdx);
     std::string _subgName = subgName.toStdString();
     std::string _ident = ident.toStdString();
@@ -70,6 +237,33 @@ Graph_createNode(ZSubGraphObject* self, PyObject* arg)
 }
 
 static PyObject*
+Graph_deleteNode(ZSubGraphObject* self, PyObject* arg)
+{
+    PyObject* _arg = PyTuple_GET_ITEM(arg, 0);
+    if (!PyUnicode_Check(_arg)) {
+        PyErr_SetString(PyExc_Exception, "args error");
+        PyErr_WriteUnraisable(Py_None);
+        return Py_None;
+    }
+    char* ident = nullptr;
+    if (!PyArg_Parse(_arg, "s", &ident))
+    {
+        PyErr_SetString(PyExc_Exception, "args error");
+        PyErr_WriteUnraisable(Py_None);
+        return Py_None;
+    }
+    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    if (!pModel)
+    {
+        PyErr_SetString(PyExc_Exception, "Current Model is NULL");
+        PyErr_WriteUnraisable(Py_None);
+        return Py_None;
+    }
+    pModel->removeNode(ident, self->subgIdx);
+    return Py_None;
+}
+
+static PyObject*
 Graph_getNode(ZSubGraphObject* self, PyObject* arg)
 {
     ZENO_HANDLE hGraph;
@@ -77,12 +271,18 @@ Graph_getNode(ZSubGraphObject* self, PyObject* arg)
     //    return -1;
     PyObject* _arg = PyTuple_GET_ITEM(arg, 0);
     if (!PyUnicode_Check(_arg)) {
+        PyErr_SetString(PyExc_Exception, "args error");
+        PyErr_WriteUnraisable(Py_None);
         return Py_None;
     }
 
     char* _ident = nullptr;
     if (!PyArg_Parse(_arg, "s", &_ident))
+    {
+        PyErr_SetString(PyExc_Exception, "args error");
+        PyErr_WriteUnraisable(Py_None);
         return Py_None;
+    }
 
     const QString& subgName = self->subgIdx.data(ROLE_OBJNAME).toString();
     std::string _subgName = subgName.toStdString();
@@ -97,7 +297,11 @@ Graph_addLink(ZSubGraphObject* self, PyObject* arg)
 {
     char *_outNode, *_outSock, *_inNode, *_inSock;
     if (!PyArg_ParseTuple(arg, "ssss", &_outNode, &_outSock, &_inNode, &_inSock))
+    {
+        PyErr_SetString(PyExc_Exception, "args error");
+        PyErr_WriteUnraisable(Py_None);
         return Py_None;
+    }
 
     const QString& graphName = self->subgIdx.data(ROLE_OBJNAME).toString();
     const QString& outNode = QString::fromUtf8(_outNode);
@@ -106,6 +310,12 @@ Graph_addLink(ZSubGraphObject* self, PyObject* arg)
     const QString& inSock = QString::fromUtf8(_inSock);
 
     IGraphsModel* pModel = GraphsManagment::instance().currentModel();
+    if (!pModel)
+    {
+        PyErr_SetString(PyExc_Exception, "Current Model is NULL");
+        PyErr_WriteUnraisable(Py_None);
+        return Py_None;
+    }
     EdgeInfo edge;
     edge.inSockPath = UiHelper::constructObjPath(graphName, inNode, "[node]/inputs/", inSock);
     edge.outSockPath = UiHelper::constructObjPath(graphName, outNode, "[node]/outputs/", outSock);
@@ -113,11 +323,69 @@ Graph_addLink(ZSubGraphObject* self, PyObject* arg)
     return Py_None;
 }
 
+static PyObject*
+Graph_removeLink(ZSubGraphObject* self, PyObject* arg)
+{
+    char* _outNode, * _outSock, * _inNode, * _inSock;
+    if (!PyArg_ParseTuple(arg, "ssss", &_outNode, &_outSock, &_inNode, &_inSock))
+    {
+        PyErr_SetString(PyExc_Exception, "args error");
+        PyErr_WriteUnraisable(Py_None);
+        return Py_None;
+    }
+
+    const QString& graphName = self->subgIdx.data(ROLE_OBJNAME).toString();
+    const QString& outNode = QString::fromUtf8(_outNode);
+    const QString& outSock = QString::fromUtf8(_outSock);
+    const QString& inNode = QString::fromUtf8(_inNode);
+    const QString& inSock = QString::fromUtf8(_inSock);
+
+    IGraphsModel* pModel = GraphsManagment::instance().currentModel();
+    if (!pModel)
+    {
+        PyErr_SetString(PyExc_Exception, "Current Model is NULL");
+        PyErr_WriteUnraisable(Py_None);
+        return Py_None;
+    }
+    QModelIndex outIdx = pModel->nodeIndex(outNode);
+    if (!outIdx.isValid())
+    {
+        PyErr_SetString(PyExc_Exception, QString("Node '' is invalid").arg(outNode).toUtf8());
+        PyErr_WriteUnraisable(Py_None);
+        return Py_None;
+    }
+
+    QModelIndex inIdx = pModel->nodeIndex(inNode);
+    if (!inIdx.isValid())
+    {
+        PyErr_SetString(PyExc_Exception, QString("Node '' is invalid").arg(inNode).toUtf8());
+        PyErr_WriteUnraisable(Py_None);
+        return Py_None;
+    }
+
+    QModelIndex subgIdx = pModel->index(graphName);
+    if (!subgIdx.isValid())
+    {
+        PyErr_SetString(PyExc_Exception, QString("Subgraph '' is invalid").arg(graphName).toUtf8());
+        PyErr_WriteUnraisable(Py_None);
+        return Py_None;
+    }
+    QModelIndex linkIdx = pModel->linkIndex(subgIdx,
+                                            outIdx.data(ROLE_OBJID).toString(),
+                                            outSock,
+                                            inIdx.data(ROLE_OBJID).toString(),
+                                            inSock);
+    pModel->removeLink(linkIdx);
+    return Py_None;
+}
+
 static PyMethodDef GraphMethods[] = {
     {"name", (PyCFunction)Graph_name, METH_NOARGS, "Return the name of graph"},
-    {"createNode", (PyCFunction)Graph_createNode, METH_VARARGS, "Add the node to this graph"},
+    {"createNode", (PyCFunction)Graph_createNode, METH_VARARGS|METH_KEYWORDS, "Add the node to this graph"},
+    {"deleteNode", (PyCFunction)Graph_deleteNode, METH_VARARGS, "delete the node to this graph"},
     {"node", (PyCFunction)Graph_getNode, METH_VARARGS, "Get the node from the graph"},
     {"addLink", (PyCFunction)Graph_addLink, METH_VARARGS, "Add link"},
+    {"removeLink", (PyCFunction)Graph_removeLink, METH_VARARGS, "remove link"},
     {NULL, NULL, 0, NULL}
 };
 

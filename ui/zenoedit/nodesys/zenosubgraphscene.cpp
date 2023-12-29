@@ -37,6 +37,7 @@
 #include "settings/zenosettingsmanager.h"
 #include "timeline/ztimeline.h"
 #include <zenoui/comctrl/gv/zgraphicsnetlabel.h>
+#include "nodesys/pythonmaterialnode.h"
 
 ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
     : QGraphicsScene(parent)
@@ -259,6 +260,10 @@ ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilPa
     else if (descName == "GenerateCommands")
     {
         return new CommandNode(params);
+    }
+    else if (descName == "PythonMaterialNode")
+    {
+        return new PythonMaterialNode(params);
     }
     else
     {

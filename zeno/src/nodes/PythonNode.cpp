@@ -30,5 +30,18 @@ namespace zeno {
             {},
             {"command"},
         });
+
+        struct PythonMaterialNode : zeno::INode {
+            virtual void apply() override {
+
+            }
+        };
+
+        ZENDEFNODE(PythonMaterialNode, {
+            {{"string", "nameList"},{"string", "keyWords"},{"readpath", "materialPath"},{"string", "matchInputs"}},
+            {},
+            {},
+            {"command"},
+            });
     }
 }

@@ -23,6 +23,7 @@
 #include <zenoui/comctrl/zpathedit.h>
 #include <zenomodel/include/modeldata.h>
 #include <zenomodel/include/uihelper.h>
+#include <zenoui/comctrl/zpythoneditor.h>
 
 namespace zenoui
 {
@@ -104,6 +105,17 @@ namespace zenoui
                     cbSet.cbEditFinished(pTextEdit->toPlainText());
                 });
                 return pTextEdit;
+            }
+            case CONTROL_PYTHON_EDITOR:
+            {
+                ZPythonEditor* pythonEditor = new ZPythonEditor(UiHelper::variantToString(value));
+                pythonEditor->setFixedHeight(ZenoStyle::dpiScaled(250));
+
+                QObject::connect(pythonEditor, &ZPythonEditor::editingFinished, [=]() {
+                    const QString& newValue = pythonEditor->text();
+                    cbSet.cbEditFinished(newValue);
+                });
+                return pythonEditor;
             }
             case CONTROL_COLOR:
             {
