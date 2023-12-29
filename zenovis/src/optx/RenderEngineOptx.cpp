@@ -716,6 +716,12 @@ struct GraphicsManager {
                 auto ig = std::make_unique<ZxxGraphic>(key, obj.get());
                 tmp.insert(std::make_pair(key, std::move(ig)));
             }
+            //set camera
+            if (!scene->drawOptions->updateMatlOnly) {
+                if (auto cam = std::dynamic_pointer_cast<zeno::CameraObject>(obj)) {
+                    scene->camera->setCamera(cam->get()); // pyb fix
+                }
+            }
         }
         graphics.m_curr.swap(tmp);
     }
@@ -898,7 +904,12 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 lightNeedUpdate = true;
                 matNeedUpdate = meshNeedUpdate = false;
 
+            }
+            if (renderType == zeno::GlobalComm::NORMAL || renderType == zeno::GlobalComm::LIGHT_CAMERA)
+            {
+                auto trans = transObjs.begin()->second->userData().getLiterial<zeno::vec3f>("_translate");
                 graphicsMan->load_light_objects(objsMan->getLightObjs());
+                lightNeedUpdate = true;
                 objsMan->setNeedUpdateLight(false);
                 scene->drawOptions->needRefresh = true;
             }

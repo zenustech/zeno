@@ -130,6 +130,8 @@ bool GlobalComm::fromDiskByObjsManager(std::string cachedir, int frameid, Global
         return false;
     objs.clear();
     std::filesystem::path dir;
+    static int currentLoadedFrameID = 0;;
+
     if (frameid == -1)
         dir = std::filesystem::u8path(cachedir + "/_static");
     else
@@ -193,12 +195,12 @@ bool GlobalComm::fromDiskByObjsManager(std::string cachedir, int frameid, Global
             std::string listitemIdx = p->userData().get2<std::string>("list-index", "");
             if (listitemIdx != "") {
                 std::string& cachedListId = listitemIdx.substr(0, listitemIdx.find_first_of("/"));
-                if (cacheUpdatedNodesInfo.find(cachedListId) != cacheUpdatedNodesInfo.end()) {
+                if (cacheUpdatedNodesInfo.find(cachedListId) != cacheUpdatedNodesInfo.end() || currentLoadedFrameID != frameid) {
                     m_newToviewObjs.insert(std::make_pair(name, std::move(p)));
                 }
             }
             else {
-                if (cacheUpdatedNodesInfo.find(name) != cacheUpdatedNodesInfo.end()) {
+                if (cacheUpdatedNodesInfo.find(name) != cacheUpdatedNodesInfo.end() || currentLoadedFrameID != frameid) {
                     m_newToviewObjs.insert(std::make_pair(name, std::move(p)));
                 }
             }
@@ -267,6 +269,8 @@ bool GlobalComm::fromDiskByObjsManager(std::string cachedir, int frameid, Global
             convertToView(decodedObj, nodeid);
         }
     }
+    currentLoadedFrameID = frameid;
+
     return true;
 }
 
@@ -443,17 +447,11 @@ GlobalComm::ViewObjects const* GlobalComm::_getViewObjects(const int frameid, bo
             if (!ret)
                 return nullptr;
 
-            for (auto& [k, v] : lastToViewNodesType)
-                if (m_frames[frameIdx].view_objects.m_curr.find(k) == m_frames[frameIdx].view_objects.m_curr.end()) {
-                    inserted = true;
-                    break;
-                }
-            if (m_newToviewObjs.size() != 0)
-                inserted = true;
-            if (inserted) {
-                prepareForOptix(m_frames[frameIdx].view_objects.m_curr);
-                prepareForBeta();
-            }
+            //_initStaticObjects();
+
+            inserted = true;
+            prepareForOptix(m_frames[frameIdx].view_objects.m_curr);
+            prepareForBeta();
 
             m_inCacheFrames.insert(frameid);
             // and dump one as balance:
@@ -511,7 +509,6 @@ ZENO_API bool GlobalComm::load_objects(
     bool inserted = false;
 
     const auto* viewObjs = _getViewObjects(frameid, inserted);
-    //_initStaticObjects();
 
     m_currentFrame = frameid - beginFrameNumber;
 
