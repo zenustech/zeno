@@ -12,99 +12,99 @@ namespace zenoio
     {
         if (descName == "Integer")
         {
-            return zeno::ParamControl::Lineedit;
+            return zeno::Lineedit;
         }
         else if (descName == "Float")
         {
-            return zeno::ParamControl::Lineedit;
+            return zeno::Lineedit;
         }
         else if (descName == "String")
         {
-            return zeno::ParamControl::Lineedit;
+            return zeno::Lineedit;
         }
         else if (descName == "Boolean")
         {
-            return zeno::ParamControl::Checkbox;
+            return zeno::Checkbox;
         }
         else if (descName == "Multiline String")
         {
-            return zeno::ParamControl::Multiline;
+            return zeno::Multiline;
         }
         else if (descName == "read path")
         {
-            return zeno::ParamControl::Pathedit;
+            return zeno::Pathedit;
         }
         else if (descName == "write path")
         {
-            return zeno::ParamControl::Pathedit;
+            return zeno::Pathedit;
         }
         else if (descName == "Enum")
         {
-            return zeno::ParamControl::Combobox;
+            return zeno::Combobox;
         }
         else if (descName == "Float Vector 4")
         {
-            return zeno::ParamControl::Vec4edit;
+            return zeno::Vec4edit;
         }
         else if (descName == "Float Vector 3")
         {
-            return zeno::ParamControl::Vec3edit;
+            return zeno::Vec3edit;
         }
         else if (descName == "Float Vector 2")
         {
-            return zeno::ParamControl::Vec2edit;
+            return zeno::Vec2edit;
         }
         else if (descName == "Integer Vector 4")
         {
-            return zeno::ParamControl::Vec4edit;
+            return zeno::Vec4edit;
         }
         else if (descName == "Integer Vector 3")
         {
-            return zeno::ParamControl::Vec3edit;
+            return zeno::Vec3edit;
         }
         else if (descName == "Integer Vector 2")
         {
-            return zeno::ParamControl::Vec2edit;
+            return zeno::Vec2edit;
         }
         else if (descName == "Color")
         {
-            return zeno::ParamControl::Heatmap;
+            return zeno::Heatmap;
         }
         else if (descName == "Pure Color")
         {
-            return zeno::ParamControl::Color;
+            return zeno::Color;
         }
         else if (descName == "Curve")
         {
-            return zeno::ParamControl::CurveEditor;
+            return zeno::CurveEditor;
         }
         else if (descName == "SpinBox")
         {
-            return zeno::ParamControl::SpinBox;
+            return zeno::SpinBox;
         }
         else if (descName == "DoubleSpinBox")
         {
-            return zeno::ParamControl::DoubleSpinBox;
+            return zeno::DoubleSpinBox;
         }
         else if (descName == "Slider")
         {
-            return zeno::ParamControl::Slider;
+            return zeno::Slider;
         }
         else if (descName == "SpinBoxSlider")
         {
-            return zeno::ParamControl::SpinBoxSlider;
+            return zeno::SpinBoxSlider;
         }
         else if (descName == "Dict Panel")
         {
-            return zeno::ParamControl::Null;    //deprecated.
+            return zeno::NullControl;    //deprecated.
         }
         else if (descName == "group-line")
         {
-            return zeno::ParamControl::Null;    //deprecated.
+            return zeno::NullControl;    //deprecated.
         }
         else
         {
-            return zeno::ParamControl::Null;
+            return zeno::NullControl;
         }
     }
 

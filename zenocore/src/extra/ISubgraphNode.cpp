@@ -19,23 +19,23 @@ ZENO_API void ISubgraphNode::apply() {
         }
     }
     Graph &gra = *grap;
-    //ZENO_P(json);
-        //ZENO_P(gra.subOutputNodes.size());
-        //ZENO_P(gra.subInputNodes.size());
+
     for (auto const &[key, nodename]: gra.subInputNodes) {
         auto *node = gra.nodes.at(nodename).get();
         bool hasValue = has_input(key);
-        //printf("$$$ %s %s\n", key.c_str(), typeid(*get_input(key)).name());
+
+        /*
         node->inputs["_IN_hasValue"] = std::make_shared<NumericObject>(hasValue);
         if (hasValue)
             node->inputs["_IN_port"] = get_input(key);
         else
             node->inputs["_IN_port"] = std::make_shared<DummyObject>();
+        */
     }
     gra.applyNodesToExec();
     for (auto const &[key, nodename]: gra.subOutputNodes) {
         auto *node = gra.nodes.at(nodename).get();
-        set_output(key, node->outputs.at("_OUT_port"));
+        //set_output(key, node->outputs.at("_OUT_port"));
     }
 }
 

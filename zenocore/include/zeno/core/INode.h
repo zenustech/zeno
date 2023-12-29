@@ -49,7 +49,7 @@ public:
     //std::set<std::string> formulas;
     zany muted_output;
 
-    NodeStatus m_status = NodeStatus::Null;
+    NodeStatus m_status = NodeStatus::None;
     bool m_dirty = false;
 
     ZENO_API INode();
@@ -71,7 +71,7 @@ public:
     ZENO_API std::string get_nodecls() const;
     ZENO_API std::string get_ident() const;
     ZENO_API std::string get_name() const;
-    ZENO_API std::string set_name(std::string const& name);
+    ZENO_API void set_name(std::string const& name);
     ZENO_API void set_status(NodeStatus status);
     ZENO_API NodeStatus get_status() const;
     ZENO_API void set_view(bool bOn);
@@ -82,6 +82,9 @@ public:
     ZENO_API std::shared_ptr<IParam> get_input_param(std::string const& name) const;
     ZENO_API std::shared_ptr<IParam> get_output_param(std::string const& name) const;
     //END new api
+
+    void directly_setinputs(std::map<std::string, zany> inputs);
+    std::map<std::string, zany> getoutputs();
 
 protected:
     ZENO_API virtual void complete();

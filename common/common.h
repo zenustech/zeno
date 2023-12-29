@@ -13,26 +13,14 @@ constexpr enum_class operator|(enum_class X, enum_class Y) {\
         static_cast<unsigned int>(X) | static_cast<unsigned int>(Y));\
 }\
 \
-enum_class& operator|=(enum_class& X, enum_class Y) {\
-    X = X | Y; return X;\
-}\
-\
 constexpr enum_class operator&(enum_class X, enum_class Y) {\
     return static_cast<enum_class>(\
         static_cast<unsigned int>(X) & static_cast<unsigned int>(Y));\
 }\
 \
-enum_class& operator&=(enum_class& X, enum_class Y) {\
-    X = X & Y; return X;\
-}\
-\
 constexpr enum_class operator^(enum_class X, enum_class Y) {\
     return static_cast<enum_class>(\
         static_cast<unsigned int>(X) ^ static_cast<unsigned int>(Y));\
-}\
-\
-enum_class& operator^=(enum_class& X, enum_class Y) {\
-    X = X ^ Y; return X;\
 }\
 
 namespace zeno {
@@ -59,7 +47,7 @@ namespace zeno {
 
     enum NodeStatus : unsigned int
     {
-        Null = 0,
+        None = 0,
         Mute = 1,
         View = 1<<1,
     };
@@ -67,11 +55,11 @@ namespace zeno {
 
     enum NodeType
     {
-        Normal,
+        Node_Normal,
         SubInput,
         SubOutput,
-        Group,
-        Legacy,
+        Node_Group,
+        Node_Legacy,
         SubgraphNode
     };
 
@@ -82,25 +70,25 @@ namespace zeno {
 
     enum SocketProperty : unsigned int
     {
-        Normal,
-        Editable,
-        MultiInput,
-        Legacy,
+        Socket_Normal,
+        Socket_Editable,
+        Socket_MultiInput,
+        Socket_Legacy,
     };
     ENUM_FLAGS(SocketProperty)
 
     //ui issues:
     enum VParamType
     {
-        Root,
-        Tab,
-        Group,
-        Param
+        Param_Root,
+        Param_Tab,
+        Param_Group,
+        Param_Param
     };
 
     enum ParamControl
     {
-        Null,
+        NullControl,
         Lineedit,
         Multiline,
         Pathedit,

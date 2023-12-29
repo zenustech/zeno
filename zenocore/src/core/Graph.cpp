@@ -30,34 +30,27 @@ ZENO_API Context::Context(Context const &other)
 ZENO_API Graph::Graph() = default;
 ZENO_API Graph::~Graph() = default;
 
-ZENO_API zany const &Graph::getNodeOutput(
-    std::string const &sn, std::string const &ss) const {
-    auto node = safe_at(nodes, sn, "node name").get();
-    if (node->muted_output)
-        return node->muted_output;
-    return safe_at(node->outputs, ss, "output socket name of node " + node->myname);
-}
-
 ZENO_API void Graph::clearNodes() {
     nodes.clear();
 }
 
 ZENO_API void Graph::addNode(std::string const &cls, std::string const &id) {
+    //todo: deprecated.
     if (nodes.find(id) != nodes.end())
         return;  // no add twice, to prevent output object invalid
     auto cl = safe_at(session->nodeClasses, cls, "node class name").get();
-    auto node = cl->new_instance();
+    auto node = cl->new_instance(id);
     node->graph = this;
-    node->myname = id;
+    node->ident = id;
     node->nodeClass = cl;
     nodes[id] = std::move(node);
 }
 
 ZENO_API Graph *Graph::addSubnetNode(std::string const &id) {
     auto subcl = std::make_unique<ImplSubnetNodeClass>();
-    auto node = subcl->new_instance();
+    auto node = subcl->new_instance(id);
     node->graph = this;
-    node->myname = id;
+    node->ident = id;
     node->nodeClass = subcl.get();
     auto subnode = static_cast<SubnetNode *>(node.get());
     subnode->subgraph->session = this->session;
@@ -84,7 +77,7 @@ ZENO_API bool Graph::applyNode(std::string const &id) {
     auto node = safe_at(nodes, id, "node name").get();
     GraphException::translated([&] {
         node->doApply();
-    }, node->myname);
+    }, node->ident);
     if (dirtyChecker && dirtyChecker->amIDirty(id)) {
         return true;
     }
@@ -115,12 +108,12 @@ ZENO_API void Graph::bindNodeInput(std::string const &dn, std::string const &ds,
 
 ZENO_API void Graph::setNodeInput(std::string const &id, std::string const &par,
         zany const &val) {
-    safe_at(nodes, id, "node name")->set_input_defl(par, val);
+    //todo: deprecated.
     //safe_at(nodes, id, "node name")->inputs[par] = val;
 }
 
 ZENO_API void Graph::setKeyFrame(std::string const &id, std::string const &par, zany const &val) {
-    safe_at(nodes, id, "node name")->set_input_defl(par, val);
+    //todo: deprecated.
     /*
     safe_at(nodes, id, "node name")->inputs[par] = val;
     safe_at(nodes, id, "node name")->kframes.insert(par);
@@ -128,7 +121,7 @@ ZENO_API void Graph::setKeyFrame(std::string const &id, std::string const &par, 
 }
 
 ZENO_API void Graph::setFormula(std::string const &id, std::string const &par, zany const &val) {
-    safe_at(nodes, id, "node name")->set_input_defl(par, val);
+    //todo: deprecated.
     /*
     safe_at(nodes, id, "node name")->inputs[par] = val;
     safe_at(nodes, id, "node name")->formulas.insert(par);
@@ -138,25 +131,26 @@ ZENO_API void Graph::setFormula(std::string const &id, std::string const &par, z
 
 ZENO_API std::map<std::string, zany> Graph::callSubnetNode(std::string const &id,
         std::map<std::string, zany> inputs) const {
-    auto se = safe_at(nodes, id, "node name").get();
-    se->inputs = std::move(inputs);
-    se->doOnlyApply();
-    return std::move(se->outputs);
+    //todo: deprecated.
+    return std::map<std::string, zany>();
 }
 
 ZENO_API std::map<std::string, zany> Graph::callTempNode(std::string const &id,
         std::map<std::string, zany> inputs) const {
+
     auto cl = safe_at(session->nodeClasses, id, "node class name").get();
-    auto se = cl->new_instance();
-    se->graph = const_cast<Graph *>(this);
-    se->inputs = std::move(inputs);
+    const std::string& ident = generateUUID();
+    auto se = cl->new_instance(ident);
+    se->graph = const_cast<Graph*>(this);
+    se->directly_setinputs(inputs);
     se->doOnlyApply();
-    return std::move(se->outputs);
+    return se->getoutputs();
 }
 
 ZENO_API void Graph::addNodeOutput(std::string const& id, std::string const& par) {
     // add "dynamic" output which is not descriped by core.
-    safe_at(nodes, id, "node name")->outputs[par] = nullptr;
+    //todo: deprecated.
+    //safe_at(nodes, id, "node name")->outputs[par] = nullptr;
 }
 
 ZENO_API void Graph::setNodeParam(std::string const &id, std::string const &par,

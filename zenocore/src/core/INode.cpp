@@ -64,7 +64,7 @@ ZENO_API std::string INode::get_name() const
     return name;
 }
 
-ZENO_API std::string INode::set_name(std::string const& customname)
+ZENO_API void INode::set_name(std::string const& customname)
 {
     name = customname;
 }
@@ -72,9 +72,9 @@ ZENO_API std::string INode::set_name(std::string const& customname)
 ZENO_API void INode::set_view(bool bOn)
 {
     if (bOn)
-        m_status |= NodeStatus::View;
+        m_status = m_status | NodeStatus::View;
     else
-        m_status ^= NodeStatus::View;
+        m_status = m_status ^ NodeStatus::View;
 }
 
 ZENO_API bool INode::is_view() const
@@ -136,11 +136,10 @@ ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
             {
                 std::shared_ptr<IParam> out_param = in_param->links[0]->fromparam.lock();
                 std::shared_ptr<INode> outNode = out_param->m_spNode.lock();
-                outNode->preApply();
+                outNode->doApply();
                 zany outResult = outNode->get_output(out_param->name);
-                if (dynamic_cast<DictObject*>(outResult.get())) {
+                if (spDict = std::dynamic_pointer_cast<DictObject>(outResult)) {
                     bDirecyLink = true;
-                    spDict = std::dynamic_pointer_cast<DictObject>(outResult);
                 }
             }
             if (!bDirecyLink)
@@ -148,19 +147,44 @@ ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
                 spDict = std::make_shared<DictObject>();
                 for (const auto& spLink : in_param->links)
                 {
+                    const std::string& keyName = spLink->keyName;
                     std::shared_ptr<IParam> outParam = in_param->links[0]->fromparam.lock();
                     std::shared_ptr<INode> outNode = outParam->m_spNode.lock();
-                    outNode->preApply();
+                    outNode->doApply();
                     zany outResult = outNode->get_output(outParam->name);
-                    spDict->lut[spLink->keyName] = outResult;
+                    spDict->lut[keyName] = outResult;
                 }
             }
-            in_param->result = spDict;   //新的写法
+            in_param->result = spDict;
             break;
         }
         case Param_List:
         {
-            std::shared_ptr<ListObject> spList = std::make_shared<ListObject>();
+            std::shared_ptr<ListObject> spList;
+            bool bDirectLink = false;
+            if (in_param->links.size() == 1)
+            {
+                std::shared_ptr<IParam> out_param = in_param->links[0]->fromparam.lock();
+                std::shared_ptr<INode> outNode = out_param->m_spNode.lock();
+                outNode->doApply();
+                zany outResult = outNode->get_output(out_param->name);
+                if (spList = std::dynamic_pointer_cast<ListObject>(outResult))
+                    bDirectLink = true;
+            }
+            if (!bDirectLink)
+            {
+                spList = std::make_shared<ListObject>();
+                for (const auto& spLink : in_param->links)
+                {
+                    //list的情况下，keyName是不是没意义，顺序怎么维持？
+                    std::shared_ptr<IParam> outParam = in_param->links[0]->fromparam.lock();
+                    std::shared_ptr<INode> outNode = outParam->m_spNode.lock();
+                    outNode->doApply();
+                    zany outResult = outNode->get_output(outParam->name);
+                    spList->arr.push_back(outResult);
+                }
+            }
+            in_param->result = spList;
             //同上
             break;
         }
@@ -170,9 +194,9 @@ ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
             {
                 std::shared_ptr<IParam> outParam = in_param->links[0]->fromparam.lock();
                 std::shared_ptr<INode> outNode = outParam->m_spNode.lock();
-                outNode->preApply();
+                outNode->doApply();
                 zany outResult = outNode->get_output(outParam->name);
-                in_param->result = outResult;   //新的写法
+                in_param->result = outResult;
             }
         }
     }
@@ -209,6 +233,31 @@ ZENO_API std::shared_ptr<IParam> INode::get_output_param(std::string const& name
             return param;
     }
     return nullptr;
+}
+
+void INode::directly_setinputs(std::map<std::string, zany> inputs)
+{
+    for (auto& [name, val] : inputs) {
+        auto param = get_input_param(name);
+        std::shared_ptr<IParam> sparam;
+        if (!param) {
+            sparam = std::make_shared<IParam>();
+            sparam->name = name;
+            sparam->m_spNode;       //此方法针对的是临时节点，不需要设置此项
+            sparam->type = Param_Null;
+            sparam->defl = zvariant();
+        }
+        sparam->result = val;
+    }
+}
+
+std::map<std::string, zany> INode::getoutputs()
+{
+    std::map<std::string, zany> outputs;
+    for (auto param : outputs_) {
+        outputs.insert(std::make_pair(param->name, param->result));
+    }
+    return outputs;
 }
 
 ZENO_API bool INode::has_input(std::string const &id) const {
@@ -481,8 +530,16 @@ zany INode::process(std::shared_ptr<IParam> in_param)
         case Param_Vec4i:   result = resolveVec<vec4i, vec4s>(defl, type);  break;
         case Param_Curve:
             break;  //TODO
+        case Param_List:
+        {
+            //TODO: List现在还没有ui支持，而且List是泛型容器，对于非Literal值不好设定默认值。
+            break;
+        }
+        case Param_Dict:
+        {
+            break;
+        }
     }
-
     return result;
 }
 

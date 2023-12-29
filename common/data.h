@@ -16,33 +16,6 @@ namespace zeno {
         std::optional<std::array<float, 3>> ranges;       //min, max, step
     };
 
-    struct ParamInfo {
-        std::string name;
-        std::string tooltip;
-        std::vector<EdgeInfo> links;
-        zvariant defl;
-        ParamControl control = ParamControl::Null;
-        ParamType type = ParamType::Param_Null;
-        SocketProperty prop = SocketProperty::Normal;
-        std::optional<ControlProperty> ctrlProps;
-    };
-
-    struct NodeData {
-        std::string ident;
-        std::string name;
-        std::string cls;
-
-        std::vector<ParamInfo> inputs;
-        std::vector<ParamInfo> outputs;
-
-        //if current node is a subgraph node, which means type =NodeStatus::SubgraphNode.
-        GraphData subgraph;
-
-        std::pair<float, float> uipos;
-        NodeStatus status = NodeStatus::Null;
-        bool bAssetsNode = false;
-    };
-
     struct EdgeInfo {
         std::string outNode;
         std::string outParam;
@@ -55,6 +28,19 @@ namespace zeno {
         LinkFunction lnkfunc = Link_Copy;
     };
 
+    struct ParamInfo {
+        std::string name;
+        std::string tooltip;
+        std::vector<EdgeInfo> links;
+        zvariant defl;
+        ParamControl control = NullControl;
+        ParamType type = Param_Null;
+        SocketProperty prop = Socket_Normal;
+        std::optional<ControlProperty> ctrlProps;
+    };
+
+    struct NodeData;
+
     using NodesData = std::map<std::string, NodeData>;
     using LinksData = std::vector<EdgeInfo>;
 
@@ -62,6 +48,24 @@ namespace zeno {
         NodesData nodes;
         LinksData links;
     };
+
+    struct NodeData {
+        std::string ident;
+        std::string name;
+        std::string cls;
+
+        std::vector<ParamInfo> inputs;
+        std::vector<ParamInfo> outputs;
+
+        //if current node is a subgraph node, which means type =NodeStatus::SubgraphNode.
+        std::optional<GraphData> subgraph;
+
+        std::pair<float, float> uipos;
+        NodeStatus status = NodeStatus::None;
+        bool bAssetsNode = false;
+    };
+
+
 
     struct NodeDesc {
         std::string name;

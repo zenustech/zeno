@@ -7,7 +7,7 @@
 
 namespace zeno
 {
-    static std::string generateUUID();
+    std::string generateUUID();
 }
 
 #endif

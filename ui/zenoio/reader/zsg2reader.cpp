@@ -230,7 +230,7 @@ zeno::NodeData Zsg2Reader::_parseNode(
     if (objValue.HasMember("options"))
     {
         auto optionsArr = objValue["options"].GetArray();
-        zeno::NodeStatus opts = zeno::NodeStatus::Null;
+        zeno::NodeStatus opts = zeno::None;
         for (int i = 0; i < optionsArr.Size(); i++)
         {
             assert(optionsArr[i].IsString());
@@ -384,24 +384,24 @@ zeno::ParamInfo Zsg2Reader::_parseSocket(
         sockProp = sockObj["property"].GetString();
     }
 
-    zeno::ParamControl ctrl = zeno::ParamControl::Null;
+    zeno::ParamControl ctrl = zeno::NullControl;
 
-    zeno::SocketProperty prop = zeno::SocketProperty::Normal;
+    zeno::SocketProperty prop = zeno::SocketProperty::Socket_Normal;
     if (sockProp == "dict-panel")
-        prop = zeno::SocketProperty::Normal;    //deprecated
+        prop = zeno::SocketProperty::Socket_Normal;    //deprecated
     else if (sockProp == "editable")
-        prop = zeno::SocketProperty::Editable;
+        prop = zeno::SocketProperty::Socket_Editable;
     else if (sockProp == "group-line")
-        prop = zeno::SocketProperty::Normal;    //deprecated
+        prop = zeno::SocketProperty::Socket_Normal;    //deprecated
 
     param.prop = prop;
     param.name = sockName;
 
     if (m_bDiskReading &&
-        (prop == zeno::SocketProperty::Editable ||
+        (prop == zeno::SocketProperty::Socket_Editable ||
          nodeCls == "MakeList" || nodeCls == "MakeDict" || nodeCls == "ExtractDict"))
     {
-        if (prop == zeno::SocketProperty::Editable) {
+        if (prop == zeno::SocketProperty::Socket_Editable) {
             //like extract dict.
             param.type = zeno::Param_String;
         } else {

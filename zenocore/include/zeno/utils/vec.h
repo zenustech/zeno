@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <type_traits>
 #include <limits>
+#include <string>
 
 namespace zeno {
 namespace _impl_vec {

@@ -38,7 +38,7 @@ struct ImplNodeClass : INodeClass {
             sparam->name = param_desc.name;
             sparam->m_spNode = spNode;
             sparam->type = zeno::convertToType(param_desc.type);
-            sparam->defl = zeno::strToZAny(param_desc.defl, sparam->type);
+            sparam->defl = zeno::str2var(param_desc.defl, sparam->type);
         }
 
         for (ParamDescriptor& param_desc : desc->params)
@@ -47,7 +47,7 @@ struct ImplNodeClass : INodeClass {
             sparam->name = param_desc.name;
             sparam->m_spNode = spNode;
             sparam->type = zeno::convertToType(param_desc.type);
-            sparam->defl = zeno::strToZAny(param_desc.defl, sparam->type);
+            sparam->defl = zeno::str2var(param_desc.defl, sparam->type);
         }
 
         for (SocketDescriptor& param_desc : desc->outputs)
@@ -56,7 +56,7 @@ struct ImplNodeClass : INodeClass {
             sparam->name = param_desc.name;
             sparam->m_spNode = spNode;
             sparam->type = zeno::convertToType(param_desc.type);
-            sparam->defl = zeno::strToZAny(param_desc.defl, sparam->type);
+            sparam->defl = zeno::str2var(param_desc.defl, sparam->type);
         }
 
         return spNode;
@@ -80,7 +80,7 @@ ZENO_API void Session::defNodeClass(std::shared_ptr<INode>(*ctor)(), std::string
     if (nodeClasses.find(clsname) != nodeClasses.end()) {
         log_error("node class redefined: `{}`\n", clsname);
     }
-    auto cls = std::make_shared<ImplNodeClass>(ctor, desc);
+    auto cls = std::make_unique<ImplNodeClass>(ctor, desc, clsname);
     nodeClasses.emplace(clsname, std::move(cls));
 }
 
