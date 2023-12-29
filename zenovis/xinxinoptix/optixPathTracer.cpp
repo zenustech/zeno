@@ -651,6 +651,10 @@ static void updateRootIAS()
     optix_instance.traversableHandle = list_volume_accel[i]->handle;
     getOptixTransform( *(list_volume[i]), optix_instance.transform ); // transform as stored in Grid
 
+    optix_instance.transform[3] -= campos.x;
+    optix_instance.transform[7] -= campos.y;
+    optix_instance.transform[11] -= campos.z;
+
     optix_instances.push_back( optix_instance );
   }
 

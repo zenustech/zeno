@@ -21,8 +21,8 @@ extern "C" __global__ void __intersection__volume()
     const auto* grid = reinterpret_cast<const GridTypeNVDB0*>( sbt_data->vdb_grids[0] );
     if ( grid == nullptr) { return; }
 
-    const float3 ray_orig = optixGetWorldRayOrigin(); //optixGetObjectRayOrigin();
-    const float3 ray_dir  = optixGetWorldRayDirection(); //optixGetObjectRayDirection();
+    const float3 ray_orig = optixGetWorldRayOrigin() + params.cam.eye;
+    const float3 ray_dir  = optixGetWorldRayDirection();
 
     auto dbox = grid->worldBBox(); //grid->indexBBox();
     float t0 = optixGetRayTmin();
@@ -129,7 +129,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
 
         new_orig = ray_orig + (t0+t_ele) * ray_dir;
 
-        VolumeIn vol_in { new_orig, sigma_t, &prd->seed, reinterpret_cast<unsigned long long>(sbt_data) };
+        VolumeIn vol_in { new_orig+params.cam.eye, sigma_t, &prd->seed, reinterpret_cast<unsigned long long>(sbt_data) };
 
         vol_out = optixDirectCall<VolumeOut, const float4*, const VolumeIn&>( sbt_data->dc_index, sbt_data->uniforms, vol_in);
         v_density = vol_out.density;
@@ -188,7 +188,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
         return scattering * thisPDF;
     };
 
-    DirectLighting<true>(prd, shadow_prd, new_orig, ray_dir, evalBxDF);
+    DirectLighting<true>(prd, shadow_prd, new_orig+params.cam.eye, ray_dir, evalBxDF);
     
     prd->depth += 1;
     prd->radiance += prd->emission;
@@ -227,7 +227,7 @@ extern "C" __global__ void __anyhit__occlusion_volume()
             break;
         } // over shoot, outside of volume
 
-        VolumeIn vol_in { test_point, sigma_t, &prd->seed, reinterpret_cast<unsigned long long>(sbt_data) };
+        VolumeIn vol_in { test_point+params.cam.eye, sigma_t, &prd->seed, reinterpret_cast<unsigned long long>(sbt_data) };
         VolumeOut vol_out = optixDirectCall<VolumeOut, const float4*, const VolumeIn&>( sbt_data->dc_index, sbt_data->uniforms, vol_in );
 
         const auto v_density = vol_out.density;
