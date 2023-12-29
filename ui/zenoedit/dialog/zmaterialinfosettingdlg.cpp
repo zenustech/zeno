@@ -9,9 +9,9 @@
 #include <zenoui/comctrl/gv/callbackdef.h>
 #include "zenomainwindow.h"
 
-ZMaterialInfoSettingDlg::ZMaterialInfoSettingDlg(const QString& json, QWidget* parent)
+ZMaterialInfoSettingDlg::ZMaterialInfoSettingDlg(const MaterialMatchInfo& info, QWidget* parent)
     : ZFramelessDialog(parent)
-    , m_jsonStr(json)
+    , m_matchInfo(info)
 {
     ui.setupUi(this);
     QString path = ":/icons/zeno-logo.png";
@@ -19,7 +19,6 @@ ZMaterialInfoSettingDlg::ZMaterialInfoSettingDlg(const QString& json, QWidget* p
     this->setTitleText(tr("Match Settings"));
     this->setMainWidget(ui.m_mainWidget);
     resize(ZenoStyle::dpiScaledSize(QSize(500, 400)));
-    m_doc.Parse(json.toUtf8());
     initNames();
     initKeys();
     initMatch();
@@ -30,7 +29,8 @@ ZMaterialInfoSettingDlg::ZMaterialInfoSettingDlg(const QString& json, QWidget* p
 }
 
 ZMaterialInfoSettingDlg::~ZMaterialInfoSettingDlg()
-{}
+{
+}
 
 bool ZMaterialInfoSettingDlg::eventFilter(QObject* watch, QEvent* event)
 {
@@ -49,6 +49,14 @@ bool ZMaterialInfoSettingDlg::eventFilter(QObject* watch, QEvent* event)
 void ZMaterialInfoSettingDlg::onPathEditFinished()
 {
     QString path = m_materialPath->text();
+    if (path.isEmpty())
+    {
+        if (m_pModel->rowCount() > 0)
+        {
+            m_pModel->removeRows(0, m_pModel->rowCount());
+        }
+        return;
+    }
     QFile file(path);
     bool ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
     if (!ret) {
@@ -105,19 +113,11 @@ void ZMaterialInfoSettingDlg::onPathEditFinished()
 void ZMaterialInfoSettingDlg::initNames()
 {
     ui.m_namesEdit->setPlaceholderText(tr("Separated by ',', such as: N1, N2, N3..."));
-    if (m_doc.IsObject() && m_doc.HasMember("materials"))
+    if (!m_matchInfo.m_names.isEmpty())
     {
-        auto arry = m_doc["materials"].GetArray();
-        QString str;
-        for (int i = 0; i < arry.Size(); i++)
-        {
-            const QString& name = QString::fromStdString(arry[i].GetString());
-            str += name;
-            if (i != arry.Size() - 1)
-                str += ",";
-        }
-        ui.m_namesEdit->setText(str);
+        ui.m_namesEdit->setText(m_matchInfo.m_names);
     }
+    connect(ui.m_namesEdit, &ZLineEdit::textEditFinished, this, &ZMaterialInfoSettingDlg::onPathEditFinished);
 }
 void ZMaterialInfoSettingDlg::initKeys()
 {
@@ -140,12 +140,13 @@ void ZMaterialInfoSettingDlg::initKeys()
 
         QTableWidgetItem* pKeyItem = new QTableWidgetItem();
         ui.m_keyTableWidget->setItem(row, 1, pKeyItem);
-        if (m_doc.IsObject() && m_doc.HasMember("keys"))
+        if (!m_matchInfo.m_keyWords.isEmpty())
         {
-            const auto& value = m_doc["keys"];
-            if (value.HasMember(name.toUtf8()))
+            rapidjson::Document doc;
+            doc.Parse(m_matchInfo.m_keyWords.toUtf8());
+            if (doc.IsObject() && doc.HasMember(name.toUtf8()))
             {
-                pKeyItem->setText(QString::fromStdString(value[name.toStdString().c_str()].GetString()));
+                pKeyItem->setText(QString::fromStdString(doc[name.toStdString().c_str()].GetString()));
             }
         }
     }
@@ -156,7 +157,7 @@ void ZMaterialInfoSettingDlg::initKeys()
         ui.m_keyTableWidget->setMinimumHeight(height + hearderH);
     }
     ui.m_keyTableWidget->viewport()->installEventFilter(this);
-    // ui.m_keyTableWidget->setMouseTracking(true);
+    connect(ui.m_keyTableWidget, &QTableWidget::itemChanged, this, &ZMaterialInfoSettingDlg::onPathEditFinished);
 }
 
 void ZMaterialInfoSettingDlg::initMaterialPath()
@@ -167,14 +168,10 @@ void ZMaterialInfoSettingDlg::initMaterialPath()
     m_materialPath = new ZPathEdit(cbSwitch, this);
     m_materialPath->setProperty("control", CONTROL_READPATH);
     ui.m_pathLayout->addWidget(m_materialPath);
-    if (m_doc.IsObject() && m_doc.HasMember("materialPath"))
+    if (!m_matchInfo.m_materialPath.isEmpty())
     {
-        QString path = m_doc["materialPath"].GetString();
-        if (!path.isEmpty())
-        {
-            m_materialPath->setText(path);
-            onPathEditFinished();
-        }
+        m_materialPath->setText(m_matchInfo.m_materialPath);
+        onPathEditFinished();
     }
     connect(m_materialPath, &ZLineEdit::textEditFinished, this, &ZMaterialInfoSettingDlg::onPathEditFinished);
 }
@@ -234,12 +231,13 @@ void ZMaterialInfoSettingDlg::updateMatch(const QMap<QString, QSet<QString>>& ma
             connect(pComboBox, &ZComboBox::currentTextChanged, this, [=](const QString& currentText) {
                 pChildItem->setData(currentText, Qt::UserRole);
             });
-            if (m_doc.IsObject() && m_doc.HasMember("matchInfo"))
+            if (!m_matchInfo.m_matchInputs.isEmpty())
             {
-                const auto& value = m_doc["matchInfo"];
-                if (value.HasMember(name.toUtf8()))
+                rapidjson::Document doc;
+                doc.Parse(m_matchInfo.m_matchInputs.toUtf8());
+                if (doc.IsObject() && doc.HasMember(name.toUtf8()))
                 {
-                    const auto& match = value[name.toStdString().c_str()];
+                    const auto& match = doc[name.toStdString().c_str()];
                     if (match.HasMember(paramName.toUtf8()))
                     {
                         QString currText = QString::fromStdString(match[paramName.toStdString().c_str()].GetString());
@@ -257,74 +255,68 @@ void ZMaterialInfoSettingDlg::updateMatch(const QMap<QString, QSet<QString>>& ma
 
 void ZMaterialInfoSettingDlg::onOKClicked()
 {
-    rapidjson::StringBuffer s;
-    RAPIDJSON_WRITER writer(s);
+    if (ui.m_namesEdit->text().isEmpty())
+        return;
+    //names
+    m_matchInfo.m_names = ui.m_namesEdit->text();
+
+    QJsonObject keysJson;
+    for (int row = 0; row < ui.m_keyTableWidget->rowCount(); row++)
     {
-        JsonObjBatch batch(writer);
-
-        NODE_DESCS descs;
-        writer.Key("materials");
+        QString keys = ui.m_keyTableWidget->item(row, 1)->text();
+        if (!keys.isEmpty())
         {
-            JsonArrayBatch _batch(writer);
-            QStringList lst = ui.m_namesEdit->text().split(",");
-            for (const auto& name : lst)
-            {
-                writer.String(name.toUtf8());
-            }
-        }
-
-        writer.Key("keys");
-        {
-            JsonObjBatch batchKey(writer);
-            for (int row = 0; row < ui.m_keyTableWidget->rowCount(); row++)
-            {
-                QString keys = ui.m_keyTableWidget->item(row, 1)->text();
-                if (!keys.isEmpty())
-                {
-                    QString jsonKey = ui.m_keyTableWidget->item(row, 0)->text();;
-                    writer.Key(jsonKey.toUtf8());
-                    writer.String(keys.toUtf8());
-                }
-            }
-        }
-        if (!m_materialPath->text().isEmpty())
-        {
-            writer.Key("materialPath");
-            writer.String(m_materialPath->text().toUtf8());
-        }
-        if (m_pModel->rowCount() > 0)
-        {
-            writer.Key("matchInfo");
-            {
-                JsonObjBatch batchInfo(writer);
-                for (int row = 0; row < m_pModel->rowCount(); row++)
-                {
-                    const QModelIndex& parent = m_pModel->index(row, 0);
-                    int row1 = 0;
-                    QString parentKey = parent.data().toString();
-                    writer.Key(parentKey.toUtf8());
-                    JsonObjBatch batchItem(writer);
-                    {
-                        while (parent.child(row1, 0).isValid())
-                        {
-                            QString text = parent.child(row1, 0).data(Qt::UserRole).toString();
-                            QString jsonKey = parent.child(row1, 0).data().toString();
-                            writer.Key(jsonKey.toUtf8());
-                            writer.String(text.toUtf8());
-                            row1++;
-                        }
-                    }
-                }
-            }
+            QString jsonKey = ui.m_keyTableWidget->item(row, 0)->text();;
+            keysJson[jsonKey] = keys;
         }
     }
-    m_jsonStr = QString::fromUtf8(s.GetString());
+    QJsonDocument doc;
+    if (keysJson.isEmpty())
+    {
+        m_matchInfo.m_keyWords = "";
+    }
+    else
+    {
+        doc.setObject(keysJson);
+        m_matchInfo.m_keyWords = doc.toJson(QJsonDocument::Compact);
+    }
+
+    //material path
+    m_matchInfo.m_materialPath = m_materialPath->text();
+
+    //match inputs
+    QJsonObject matchJson;
+    for (int row = 0; row < m_pModel->rowCount(); row++)
+    {
+        const QModelIndex& parent = m_pModel->index(row, 0);
+        int row1 = 0;
+
+        QJsonObject obj;
+        while (parent.child(row1, 0).isValid())
+        {
+            QString text = parent.child(row1, 0).data(Qt::UserRole).toString();
+            QString jsonKey = parent.child(row1, 0).data().toString();
+            obj[jsonKey] = text;
+            row1++;
+        }
+        QString parentKey = parent.data().toString();
+        matchJson[parentKey] = obj;
+    }
+    if (matchJson.isEmpty())
+    {
+        m_matchInfo.m_matchInputs = "";
+    }
+    else
+    {
+        doc.setObject(matchJson);
+        m_matchInfo.m_matchInputs = doc.toJson(QJsonDocument::Compact);
+    }
     accept();
 }
 
-void ZMaterialInfoSettingDlg::getMatchInfo(QString& json, QWidget* parent)
+void ZMaterialInfoSettingDlg::getMatchInfo(MaterialMatchInfo& info, QWidget* parent)
 {
-    ZMaterialInfoSettingDlg dlg(json, parent);
+    ZMaterialInfoSettingDlg dlg(info, parent);
     dlg.exec();
-    json = dlg.m_jsonStr;
+    info = dlg.m_matchInfo;
 }

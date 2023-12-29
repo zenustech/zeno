@@ -2,6 +2,7 @@
 #define __PYTHON_MATERIAL_NODE_H__
 
 #include "zenonode.h"
+struct MaterialMatchInfo;
 
 class PythonMaterialNode : public ZenoNode
 {
@@ -17,7 +18,8 @@ private slots:
     void onExecuteClicked();
     void onEditClicked();
 private:
-    QString m_jsonStr;
+    MaterialMatchInfo getMatchInfo();
+    void setMatchInfo(const MaterialMatchInfo& info);
 };
 
 #endif

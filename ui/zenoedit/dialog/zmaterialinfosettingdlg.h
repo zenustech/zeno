@@ -6,14 +6,22 @@
 #include <rapidjson/document.h>
 #include <zenoui/comctrl/zpathedit.h>
 
+struct  MaterialMatchInfo
+{
+    QString m_names;
+    QString m_keyWords;
+    QString m_materialPath;
+    QString m_matchInputs;
+};
+
 class ZMaterialInfoSettingDlg : public ZFramelessDialog
 {
     Q_OBJECT
 
 public:
-    ZMaterialInfoSettingDlg(const QString &json, QWidget *parent = nullptr);
+    ZMaterialInfoSettingDlg(const MaterialMatchInfo&info, QWidget *parent = nullptr);
     ~ZMaterialInfoSettingDlg();
-    static void getMatchInfo(QString& json, QWidget* parent = nullptr);
+    static void getMatchInfo(MaterialMatchInfo& info, QWidget* parent = nullptr);
 protected:
     bool eventFilter(QObject* watch, QEvent* event) override;
 private slots:
@@ -33,5 +41,6 @@ private:
     QStandardItemModel* m_pModel;
     ZPathEdit* m_materialPath;
     QString m_jsonStr;
+    MaterialMatchInfo m_matchInfo;
 };
 #endif
