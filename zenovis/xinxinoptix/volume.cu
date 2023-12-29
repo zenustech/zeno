@@ -178,9 +178,9 @@ extern "C" __global__ void __closesthit__radiance_volume()
 
     RadiancePRD shadow_prd {};
     shadow_prd.seed = prd->seed;
-    shadow_prd.nonThinTransHit = 0;
+    shadow_prd.origin = new_orig; //camera sapce
     shadow_prd.shadowAttanuation = vec3(1.0f);
-
+    
     auto evalBxDF = [&](const float3& _wi_, const float3& _wo_, float& thisPDF) -> float3 {
 
         pbrt::HenyeyGreenstein hg { vol_out.anisotropy };
