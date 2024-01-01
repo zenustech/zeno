@@ -104,16 +104,6 @@ bool Zenovis::isLoopPlaying()
     return m_loopPlaying;
 }
 
-void Zenovis::cleanUpScene()
-{
-    if (!session)
-        return;
-
-    auto pScene = session->get_scene();
-    ZASSERT_EXIT(pScene);
-    pScene->cleanUpScene();
-}
-
 void Zenovis::startPlay(bool bPlaying)
 {
     m_playing = bPlaying;

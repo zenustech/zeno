@@ -203,7 +203,20 @@ std::string NodeSyncMgr::getPrimSockName(const std::string& node_type) {
 
 std::string NodeSyncMgr::getPrimSockName(NodeLocation& node_location) {
     auto node_type = node_location.node.data(ROLE_OBJID).toString().section("-", 1);
-    return getPrimSockName(node_type.toStdString());
+
+    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    ZASSERT_EXIT(pGraphsModel, "prim");
+    if (pGraphsModel->IsSubGraphNode(node_location.node))
+    {
+        NODE_DESC desc;
+        pGraphsModel->getDescriptor(node_location.node.data(ROLE_OBJNAME).toString(), desc);
+        OUTPUT_SOCKETS descOutput = desc.outputs;
+        descOutput.remove("DST");
+        return descOutput.firstKey().toStdString();
+    }
+    else {
+        return getPrimSockName(node_type.toStdString());
+    }
 }
 
 }

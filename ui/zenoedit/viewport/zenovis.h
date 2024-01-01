@@ -53,7 +53,6 @@ public:
     void updateCameraFront(QVector3D center, QVector3D front, QVector3D up);
     void setLoopPlaying(bool enable);
     bool isLoopPlaying();
-    void cleanUpScene();
 
 //private:
     void doFrameUpdate();

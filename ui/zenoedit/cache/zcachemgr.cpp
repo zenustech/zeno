@@ -160,8 +160,9 @@ bool ZCacheMgr::nextRunSkipCreateDir(LAUNCH_PARAM& param)
     else if(param.beginFrame != param.endFrame){
         QDir last = QDir(lastRunCachePath);
         last.setFilter(QDir::AllDirs | QDir::NoSymLinks | QDir::NoDotAndDotDot);
-        if (last.entryInfoList().size() != (param.endFrame - param.beginFrame + 1))     //incomplete cache
-            return false;
+        for (int frame = param.beginFrame; frame <= param.endFrame; frame++)
+            if (! QDir(last.path() + "/" + QString::number(1000000 + frame).right(6)).exists()) //incomplete cache
+                return false;
         auto& globalComm = zeno::getSession().globalComm;
         if (globalComm->numOfFinishedFrame() < (param.endFrame - param.beginFrame + 1))
             return false;

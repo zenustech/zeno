@@ -489,12 +489,12 @@ struct GraphicsManager {
     explicit GraphicsManager(Scene *scene) : scene(scene) {
     }
 
-    bool load_shader_uniforms(std::vector<std::pair<std::string, zeno::IObject *>> const &objs)
+    bool load_shader_uniforms(std::map<std::string, std::shared_ptr<zeno::IObject>> const &objs)
     {
         std::vector<float4> shaderUniforms;
         shaderUniforms.resize(0);
         for (auto const &[key, obj] : objs) {
-            if (auto prim_in = dynamic_cast<zeno::PrimitiveObject *>(obj)){
+            if (auto prim_in = std::dynamic_pointer_cast<zeno::PrimitiveObject>(obj)){
                 if ( prim_in->userData().get2<int>("ShaderUniforms", 0)==1 )
                 {
 
@@ -697,7 +697,42 @@ struct GraphicsManager {
         return changed;
     }
 
-    bool need_update_light(std::vector<std::pair<std::string, zeno::IObject *>> const &objs) {
+    void update_objs(std::map<std::string, std::shared_ptr<zeno::IObject>> objs, std::map<std::string, std::shared_ptr<zeno::IObject>> newobjs) {
+        objOrder.clear();
+        size_t idx = 0;
+
+        std::map<std::string, std::unique_ptr<ZxxGraphic>> tmp;
+        for (auto const& [key, obj] : objs) {
+            auto it = graphics.m_curr.find(key);
+            if (it != graphics.m_curr.end()) {
+                if (newobjs.find(key) != newobjs.end())
+                {
+                    graphics.m_curr.erase(key);
+                    auto ig = std::make_unique<ZxxGraphic>(key, obj.get());
+                    tmp.insert(std::make_pair(key, std::move(ig)));
+                }
+                else {
+                    tmp.insert(std::make_pair(key, std::move(it->second)));
+                }
+            }
+            else {
+                auto ig = std::make_unique<ZxxGraphic>(key, obj.get());
+                tmp.insert(std::make_pair(key, std::move(ig)));
+            }
+
+            objOrder[key] = idx;
+            idx++;
+            //set camera
+            if (!scene->drawOptions->updateMatlOnly) {
+                if (auto cam = std::dynamic_pointer_cast<zeno::CameraObject>(obj)) {
+                    scene->camera->setCamera(cam->get()); // pyb fix
+                }
+            }
+        }
+        graphics.m_curr.swap(tmp);
+    }
+
+    bool need_update_light(std::map<std::string, std::shared_ptr<zeno::IObject>> const &objs) {
         auto ins = graphics.insertPass();
 
         bool changelight = false;
@@ -751,7 +786,7 @@ struct GraphicsManager {
         return true;
     }
 
-    bool load_static_objects(std::vector<std::pair<std::string, zeno::IObject *>> const &objs) {
+    bool load_static_objects(std::map<std::string, std::shared_ptr<zeno::IObject>> const &objs) {
         auto ins = graphics.insertPass();
 
         bool changed = false;
@@ -761,12 +796,12 @@ struct GraphicsManager {
                 zeno::log_info("load_static_object: loading graphics [{}]", key);
                 changed = true;
 
-                if (auto cam = dynamic_cast<zeno::CameraObject *>(obj))
+                if (auto cam = std::dynamic_pointer_cast<zeno::CameraObject>(obj))
                 {
                     scene->camera->setCamera(cam->get());     // pyb fix
                 }
 
-                auto ig = std::make_unique<ZxxGraphic>(key, obj);
+                auto ig = std::make_unique<ZxxGraphic>(key, obj.get());
 
                 zeno::log_info("load_static_object: loaded graphics to {}", ig.get());
                 ins.try_emplace(key, std::move(ig));
@@ -775,7 +810,7 @@ struct GraphicsManager {
         // return ins.has_changed();
         return changed;
     }
-    bool load_objects(std::vector<std::pair<std::string, zeno::IObject *>> const &objs) {
+    bool load_objects(std::map<std::string, std::shared_ptr<zeno::IObject>> const &objs) {
         auto ins = graphics.insertPass();
         objOrder.clear();
         bool changed = false;
@@ -792,12 +827,12 @@ struct GraphicsManager {
                 changed = true;
 
                 if (!scene->drawOptions->updateMatlOnly) {
-                    if (auto cam = dynamic_cast<zeno::CameraObject *>(obj)) {
+                    if (auto cam = std::dynamic_pointer_cast<zeno::CameraObject>(obj)) {
                         scene->camera->setCamera(cam->get()); // pyb fix
                     }
                 }
 
-                auto ig = std::make_unique<ZxxGraphic>(key, obj);
+                auto ig = std::make_unique<ZxxGraphic>(key, obj.get());
 
                 zeno::log_info("load_object: loaded graphics to {}", ig.get());
                 ins.try_emplace(key, std::move(ig));
@@ -855,40 +890,68 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         std::lock_guard lck(zeno::g_objsMutex);
 
         auto& objsMan = zeno::getSession().globalComm;
-        auto objs = objsMan->pairs();
+        auto newobjs = objsMan->getNeedUpdateToviewObjs();
+        auto objs = objsMan->getCurrentFrameObjs();
         auto transObjs = objsMan->getTransferObjs();
 
         if (graphicsMan->update_transobjs(transObjs))
         {
+            auto renderType = objsMan->getRenderTypeByObjects(transObjs);
             meshNeedUpdate = matNeedUpdate = true;
-            objsMan->clearTransferObjs();
-        }
-        if (graphicsMan->need_update_light(objs) || objsMan->getNeedUpdateLight())
-        {
-            graphicsMan->load_light_objects(objsMan->getLightObjs());
-            lightNeedUpdate = true;
-            objsMan->setNeedUpdateLight(false);
-            scene->drawOptions->needRefresh = true;
-        }
-
-        if (graphicsMan->load_static_objects(objs)) {
-            staticNeedUpdate = true;
-        }
-
-        if (graphicsMan->load_objects(objs))
-        {
-            meshNeedUpdate = matNeedUpdate = true;
-            if (objsMan->getRenderType() == zeno::GlobalComm::MATERIAL)
+            if (renderType == zeno::GlobalComm::MATERIAL)
             {
                 scene->drawOptions->updateMatlOnly = true;
                 lightNeedUpdate = meshNeedUpdate = false;
                 matNeedUpdate = true;
             }
-            if (objsMan->getRenderType() == zeno::GlobalComm::LIGHT_CAMERA)
+            if (renderType == zeno::GlobalComm::LIGHT_CAMERA)
             {
                 scene->drawOptions->updateLightCameraOnly = true;
                 lightNeedUpdate = true;
                 matNeedUpdate = meshNeedUpdate = false;
+
+            }
+            if (renderType == zeno::GlobalComm::NORMAL || renderType == zeno::GlobalComm::LIGHT_CAMERA)
+            {
+                auto trans = transObjs.begin()->second->userData().getLiterial<zeno::vec3f>("_translate");
+                graphicsMan->load_light_objects(objsMan->getLightObjs());
+                lightNeedUpdate = true;
+                objsMan->setNeedUpdateLight(false);
+                scene->drawOptions->needRefresh = true;
+            }
+            objsMan->clearTransferObjs();
+        }
+
+        auto rendertype = objsMan->getRenderType();
+        if(rendertype != zeno::GlobalComm::UNDEFINED || objsMan->getNeedUpdateLight()) {
+            graphicsMan->update_objs(objs, newobjs);
+
+            auto& ud = zeno::getSession().userData();
+            bool show_background = ud.get2<bool>("optix_show_background", false);
+            xinxinoptix::show_background(show_background);
+
+            if (rendertype == zeno::GlobalComm::NORMAL || rendertype == zeno::GlobalComm::LIGHT_CAMERA || objsMan->getNeedUpdateLight())
+            {
+                graphicsMan->load_light_objects(objsMan->getLightObjs());
+                lightNeedUpdate = true;
+                objsMan->setNeedUpdateLight(false);
+                scene->drawOptions->needRefresh = true;
+            }
+            if (rendertype == zeno::GlobalComm::MATERIAL)
+            {
+                scene->drawOptions->updateMatlOnly = true;
+                lightNeedUpdate = meshNeedUpdate = false;
+                matNeedUpdate = true;
+            }
+            if (rendertype == zeno::GlobalComm::LIGHT_CAMERA)
+            {
+                scene->drawOptions->updateLightCameraOnly = true;
+                lightNeedUpdate = true;
+                matNeedUpdate = meshNeedUpdate = false;
+            }
+            if (rendertype == zeno::GlobalComm::NORMAL)
+            {
+                matNeedUpdate = meshNeedUpdate = lightNeedUpdate = true;
             }
             objsMan->setRenderType(zeno::GlobalComm::UNDEFINED);
         }

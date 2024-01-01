@@ -312,12 +312,6 @@ void ViewportWidget::changeTransformCoordSys() {
     m_camera->changeTransformCoordSys();
 }
 
-void ViewportWidget::cleanUpScene() {
-    if (!m_zenovis)
-        return;
-    m_zenovis->cleanUpScene();
-}
-
 void ViewportWidget::updateCameraProp(float aperture, float disPlane) {
     m_camera->setAperture(aperture);
     m_camera->setDisPlane(disPlane);

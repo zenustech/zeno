@@ -141,6 +141,7 @@ class NodeSyncMgr {
     void registerDefaultSocketName() {
         m_prim_sock_map["BindMaterial"] = "object";
         m_prim_sock_map["TransformPrimitive"] = "outPrim";
+        m_prim_sock_map["MakeList"] = "list";
     }
 };
 

@@ -92,13 +92,12 @@ void DisplayWidget::testCleanUp()
 
 void DisplayWidget::cleanUpScene()
 {
-    if (m_glView)
-    {
-        m_glView->cleanUpScene();
-    }
-    else
-    {
-        m_optixView->cleanUpScene();
+    if (zeno::getSession().globalComm) {
+        zeno::getSession().globalComm->clear_objects();
+        if (m_glView)
+            m_glView->update();
+        else
+            m_optixView->update();
     }
 }
 
@@ -625,7 +624,6 @@ void DisplayWidget::afterRun()
         ZASSERT_EXIT(session);
         auto scene = session->get_scene();
         ZASSERT_EXIT(scene);
-        zeno::getSession().globalComm->clear_lightObjects();
     }
 }
 
@@ -655,7 +653,6 @@ void DisplayWidget::onRun(LAUNCH_PARAM launchParam)
     Zenovis* pZenoVis = getZenoVis();
     ZASSERT_EXIT(pZenoVis);
     auto scene = pZenoVis->getSession()->get_scene();
-    zeno::getSession().globalComm->clear_lightObjects();
     ZTimeline* timeline = mainWin->timeline();
     ZASSERT_EXIT(timeline);
 }
@@ -695,7 +692,6 @@ void DisplayWidget::onRun() {
     Zenovis* pZenoVis = getZenoVis();
     ZASSERT_EXIT(pZenoVis);
     auto scene = pZenoVis->getSession()->get_scene();
-    zeno::getSession().globalComm->clear_lightObjects();
 }
 
 void DisplayWidget::runAndRecord(const VideoRecInfo &recInfo) {
