@@ -16,12 +16,29 @@ struct PrimFillAttr : INode {
         auto value = get_input<NumericObject>("value");
         auto attr = get_input2<std::string>("attr");
         auto type = get_input2<std::string>("type");
+        auto scope = get_input2<std::string>("scope");
         std::visit([&] (auto ty) {
             using T = decltype(ty);
-            auto &arr = prim->verts.add_attr<T>(attr);
             auto val = value->get<T>();
-            for (size_t i = 0; i < arr.size(); i++) {
-                arr[i] = val;
+            if (scope == "vert") {
+                auto &arr = prim->verts.add_attr<T>(attr);
+                std::fill(arr.begin(), arr.end(), val);
+            }
+            else if (scope == "tri") {
+                auto &arr = prim->tris.add_attr<T>(attr);
+                std::fill(arr.begin(), arr.end(), val);
+            }
+            else if (scope == "loop") {
+                auto &arr = prim->loops.add_attr<T>(attr);
+                std::fill(arr.begin(), arr.end(), val);
+            }
+            else if (scope == "poly") {
+                auto &arr = prim->polys.add_attr<T>(attr);
+                std::fill(arr.begin(), arr.end(), val);
+            }
+            else if (scope == "line") {
+                auto &arr = prim->lines.add_attr<T>(attr);
+                std::fill(arr.begin(), arr.end(), val);
             }
         }, enum_variant<std::variant<
             float, vec3f, int
@@ -34,13 +51,14 @@ struct PrimFillAttr : INode {
 
 ZENDEFNODE(PrimFillAttr, {
     {
-    {"PrimitiveObject", "prim"},
-    {"string", "attr", "rad"},
-    {"enum float vec3f int", "type", "float"},
-    {"float", "value", "0"},
+        {"PrimitiveObject", "prim"},
+        {"enum vert tri loop poly line", "scope", "vert"},
+        {"string", "attr", "rad"},
+        {"enum float vec3f int", "type", "float"},
+        {"float", "value", "0"},
     },
     {
-    {"PrimitiveObject", "prim"},
+        {"PrimitiveObject", "prim"},
     },
     {
     },

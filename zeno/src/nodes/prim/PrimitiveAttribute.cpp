@@ -57,7 +57,8 @@ struct PrimitiveDelAttr : zeno::INode {
 
         prim->verts.attrs.erase(name);
         prim->tris.attrs.erase(name);
-        prim->quads.attrs.erase(name);
+        prim->lines.attrs.erase(name);
+        prim->polys.attrs.erase(name);
         prim->loops.attrs.erase(name);
 
         set_output("prim", get_input("prim"));
@@ -114,7 +115,7 @@ ZENDEFNODE(PrimitiveGetAttrValue,
     {"string", "name", "pos"},
     {"enum float float3", "type", "float3"},
     }, /* category: */ {
-    "primitive",
+    "deprecated",
     } });
 
 struct PrimitiveSetAttrValue : zeno::INode {
@@ -154,6 +155,6 @@ ZENDEFNODE(PrimitiveSetAttrValue,
     {"string", "name", "pos"},
     {"enum float float3", "type", "float3"},
     }, /* category: */ {
-    "primitive",
+    "deprecated",
     } });
 }
