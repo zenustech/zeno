@@ -45,8 +45,6 @@ endif()
 
 #BEGIN PYTHON IMPORT
 if (1)
-#set(Python3_LIBRARIES C:/Users/14456/AppData/Local/Programs/Python/Python310/libs/python310_d.lib)
-#set(Python3_INCLUDE_DIRS C:/Users/14456/AppData/Local/Programs/Python/Python310/include)
 
 message(STATUS "python3 libraries for zenoedit: ${Python3_LIBRARIES}")
 message(STATUS "python3 include directories for zenoedit: ${Python3_INCLUDE_DIRS}")
