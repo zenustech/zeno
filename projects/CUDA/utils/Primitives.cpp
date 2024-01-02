@@ -764,6 +764,263 @@ ZENDEFNODE(PrimitiveReorder,
                {"zs_geom"},
            });
 
+#if 1
+/// vert attrib either promoted or averaged during fusion
+struct PrimitiveFuse : INode {
+    std::set<std::string> separate_string_by(const std::string &tags, const std::string &sep) {
+        std::set<std::string> res;
+        using Ti = RM_CVREF_T(std::string::npos);
+        Ti st = tags.find_first_not_of(sep, 0);
+        for (auto ed = tags.find_first_of(sep, st + 1); ed != std::string::npos; ed = tags.find_first_of(sep, st + 1)) {
+            res.insert(tags.substr(st, ed - st));
+            st = tags.find_first_not_of(sep, ed);
+            if (st == std::string::npos)
+                break;
+        }
+        if (st != std::string::npos && st < tags.size()) {
+            res.insert(tags.substr(st));
+        }
+        return res;
+    }
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+
+        using namespace zs;
+        using zsbvh_t = ZenoLinearBvh;
+        using bvh_t = zsbvh_t::lbvh_t;
+        constexpr auto space = execspace_e::openmp;
+        auto pol = omp_exec();
+
+        auto &verts = prim->verts;
+        const auto &pos = verts.values;
+        auto preservedAttribs_ = get_input2<std::string>("preserved_vert_attribs");
+        std::set<std::string> preservedAttribs = separate_string_by(preservedAttribs_, " :;,.");
+        std::set<std::string> promotedAttribs;
+        RM_CVREF_T(prim->verts) newVerts;
+        verts.foreach_attr<AttrAcceptAll>([&](auto const &key, auto const &arr) {
+            using T = std::decay_t<decltype(arr[0])>;
+            if (preservedAttribs.find(key) == preservedAttribs.end())
+                promotedAttribs.emplace(key);
+            else
+                newVerts.add_attr<T>(key);
+        });
+
+        /// @brief establish vert proximity topo
+        auto dist = get_input2<float>("proximity_theshold");
+        std::shared_ptr<zsbvh_t> zsbvh;
+        ZenoLinearBvh::element_e et = ZenoLinearBvh::point;
+        auto bvs = retrieve_bounding_volumes(pol, pos, dist);
+        et = ZenoLinearBvh::point;
+        zsbvh = std::make_shared<zsbvh_t>();
+        zsbvh->et = et;
+        bvh_t &bvh = zsbvh->get();
+        bvh.build(pol, bvs);
+
+        // exclusion topo
+        std::vector<std::vector<int>> neighbors(pos.size());
+        pol(range(pos.size()), [bvh = proxy<space>(bvh), &pos, &neighbors, dist2 = dist * dist](int vi) mutable {
+            const auto &p = vec_to_other<zs::vec<float, 3>>(pos[vi]);
+            bvh.iter_neighbors(p, [&](int vj) {
+                if (vi == vj)
+                    return;
+                if (auto d2 = lengthSquared(pos[vi] - pos[vj]); d2 < dist2)
+                    neighbors[vi].push_back(vj);
+            });
+        });
+
+        std::vector<int> numNeighbors(pos.size() + 1);
+        pol(zip(numNeighbors, neighbors), [](auto &n, const std::vector<int> &neis) { n = neis.size(); });
+
+        SparseMatrix<int, true> spmat(pos.size(), pos.size());
+        spmat._ptrs.resize(pos.size() + 1);
+        exclusive_scan(pol, std::begin(numNeighbors), std::end(numNeighbors), std::begin(spmat._ptrs));
+
+        auto numEntries = spmat._ptrs[pos.size()];
+        spmat._inds.resize(numEntries);
+
+        pol(range(pos.size()),
+            [&neighbors, inds = view<space>(spmat._inds), offsets = view<space>(spmat._ptrs)](int vi) {
+                auto offset = offsets[vi];
+                for (int vj : neighbors[vi])
+                    inds[offset++] = vj;
+            });
+        std::vector<int> fas(pos.size());
+        union_find(pol, spmat, range(fas));
+
+        bht<int, 1, int> vtab{pos.size() * 3 / 2};
+        pol(range(pos.size()), [&fas, vtab = proxy<space>(vtab)](int vi) mutable {
+            auto fa = fas[vi];
+            while (fa != fas[fa])
+                fa = fas[fa];
+            fas[vi] = fa;
+            vtab.insert(fa);
+            // if (fa > vi)
+            //    printf("should not happen!!! fa: %d, self: %d\n", fa, vi);
+        });
+        if (vtab._buildSuccess.getVal() == 0)
+            throw std::runtime_error("PrimitiveFuse hash failed!!");
+
+        /// @brief preserving vertex islands order
+        auto numNewVerts = vtab.size();
+        std::vector<int> fwdMap(numNewVerts);
+        std::vector<std::pair<int, int>> kvs(numNewVerts);
+        auto keys = vtab._activeKeys;
+        pol(enumerate(keys, kvs), [](int id, auto key, std::pair<int, int> &kv) { kv = std::make_pair(key[0], id); });
+        struct {
+            constexpr bool operator()(const std::pair<int, int> &a, const std::pair<int, int> &b) const {
+                return a.first < b.first;
+            }
+        } lessOp;
+        std::sort(kvs.begin(), kvs.end(), lessOp);
+        pol(enumerate(kvs), [&fwdMap](int no, auto kv) { fwdMap[kv.second] = no; });
+        //
+
+        newVerts.resize(numNewVerts);
+        auto &newPos = newVerts.attr<vec3f>("pos");
+        pol(newPos, [](zeno::vec3f &p) { p = vec3f(0, 0, 0); });
+        std::vector<int> cnts(numNewVerts);
+        pol(range(pos.size()), [&cnts, &fas, &newPos, &pos, &fwdMap, &newVerts, &verts, vtab = proxy<space>(vtab),
+                                tag = wrapv<space>{}](int vi) mutable {
+            auto fa = fas[vi];
+            auto dst = fwdMap[vtab.query(fa)];
+            fas[vi] = dst;
+            atomic_add(tag, &cnts[dst], 1);
+            /// pos
+            for (int d = 0; d != 3; ++d)
+                atomic_add(tag, &newPos[dst][d], pos[vi][d]);
+            /// preserved attribs
+            newVerts.foreach_attr<AttrAcceptAll>([&](auto const &key, auto &arr) {
+                using T = std::decay_t<decltype(arr[0])>;
+                const auto &srcAttrib = verts.attr<T>(key);
+                if constexpr (std::is_same_v<T, float> || std::is_same_v<T, int>) {
+                    atomic_add(tag, &arr[dst], srcAttrib[vi]);
+                } else {
+                    using TT = typename T::value_type;
+                    constexpr int dim = std::tuple_size_v<T>;
+                    for (int d = 0; d != dim; ++d)
+                        atomic_add(tag, &arr[dst][d], srcAttrib[vi][d]);
+                }
+            });
+        });
+        pol(enumerate(newPos, cnts), [&newVerts](int i, zeno::vec3f &p, int sz) {
+            newVerts.foreach_attr<AttrAcceptAll>([&](auto const &key, auto &arr) { arr[i] = arr[i] / sz; });
+            p /= (float)sz;
+        });
+
+        /// @brief map element indices
+        auto &tris = prim->tris.values;
+        const bool hasTris = tris.size() > 0;
+
+        auto &loops = prim->loops;
+        const auto &polys = prim->polys;
+        const bool hasLoops = polys.size() > 1;
+        if ((hasTris ^ hasLoops) == 0)
+            throw std::runtime_error("The input mesh must either own active triangle topology or loop topology.");
+
+        if (hasTris) {
+            auto &eles = prim->tris;
+            auto promoteVertAttribToTri = [&](auto const &key, auto const &arr) {
+                using T = std::decay_t<decltype(arr[0])>;
+                eles.add_attr<T>(key + "0");
+                eles.add_attr<T>(key + "1");
+                eles.add_attr<T>(key + "2");
+            };
+            // add custom tris (promoted) attributes
+            for (const auto &attribTag : promotedAttribs) {
+                if (verts.has_attr(attribTag))
+                    match([&](const auto &arr) { promoteVertAttribToTri(attribTag, arr); })(verts.attr(attribTag));
+            }
+
+            pol(enumerate(eles.values), [&fas, &verts, &eles, &promotedAttribs](int ei, auto &tri) mutable {
+                for (const auto &attribTag : promotedAttribs) {
+                    if (verts.has_attr(attribTag))
+                        match(
+                            [&k = attribTag, &eles, &tri, ei](auto &vertArr)
+                                -> std::enable_if_t<variant_contains<RM_CVREF_T(vertArr[0]), AttrAcceptAll>::value> {
+                                using T = RM_CVREF_T(vertArr[0]);
+                                eles.attr<T>(k + "0")[ei] = vertArr[tri[0]];
+                                eles.attr<T>(k + "1")[ei] = vertArr[tri[1]];
+                                eles.attr<T>(k + "2")[ei] = vertArr[tri[2]];
+                            },
+                            [](...) {})(verts.attr(attribTag));
+                }
+                for (auto &e : tri)
+                    e = fas[e];
+            });
+        } else {
+            bool uv_exist = prim->uvs.size() > 0 && loops.has_attr("uvs");
+            auto promoteVertAttribToLoop = [&](auto const &key, auto const &arr) {
+                using T = std::decay_t<decltype(arr[0])>;
+                if (key != "uv")
+                    loops.add_attr<T>(key);
+                else if (!uv_exist) {
+                    loops.add_attr<int>("uvs");
+                    prim->uvs.resize(loops.size());
+                }
+            };
+            for (const auto &attribTag : promotedAttribs) {
+                if (verts.has_attr(attribTag))
+                    match([&](const auto &arr) { promoteVertAttribToLoop(attribTag, arr); })(verts.attr(attribTag));
+            }
+
+            pol(range(polys), [&fas, &verts, &loops, &prim, &promotedAttribs, uv_exist](const auto &poly) mutable {
+                auto offset = poly[0];
+                auto size = poly[1];
+                for (int i = 0; i < size; ++i) {
+                    auto loopI = offset + i;
+                    auto ptNo = loops[loopI];
+
+                    for (const auto &attribTag : promotedAttribs) {
+                        if (verts.has_attr(attribTag)) {
+                            const auto &k = attribTag;
+                            const auto &vertArr = verts.attr(attribTag);
+                            auto &lps = loops;
+                            if (k == "uv") {
+                                if (!uv_exist) {
+                                    auto &loopUV = loops.attr<int>("uvs");
+                                    loopUV[loopI] = loopI;
+                                    auto &uvs = prim->uvs.values;
+                                    const auto &srcVertUV = std::get<std::vector<vec3f>>(vertArr);
+                                    auto vertUV = srcVertUV[ptNo];
+                                    uvs[loopI] = vec2f(vertUV[0], vertUV[1]);
+                                }
+                            } else {
+                                match(
+                                    [&k, &lps, loopI, ptNo](auto &vertArr)
+                                        -> std::enable_if_t<
+                                            variant_contains<RM_CVREF_T(vertArr[0]), AttrAcceptAll>::value> {
+                                        using T = RM_CVREF_T(vertArr[0]);
+                                        lps.attr<T>(k)[loopI] = vertArr[ptNo];
+                                    },
+                                    [](...) {})(vertArr);
+                            }
+                        }
+                    }
+
+                    loops[loopI] = fas[ptNo];
+                }
+            });
+        }
+
+        /// @brief update verts
+        verts = newVerts;
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENDEFNODE(PrimitiveFuse, {
+                              {{"PrimitiveObject", "prim"},
+                               {"float", "proximity_theshold", "0.00001"},
+                               {"string", "preserved_vert_attribs", ""}},
+                              {
+                                  {"PrimitiveObject", "prim"},
+                              },
+                              {},
+                              {"zs_geom"},
+                          });
+
+#else
+
 struct PrimitiveFuse : INode {
     std::set<std::string> separate_string_by(const std::string &tags, const std::string &sep) {
         std::set<std::string> res;
@@ -1040,6 +1297,7 @@ ZENDEFNODE(PrimitiveFuse, {
                               {},
                               {"zs_geom"},
                           });
+#endif
 
 static std::shared_ptr<PrimitiveObject> unfuse_primitive(std::shared_ptr<PrimitiveObject> prim, std::string tag) {
     using namespace zs;
