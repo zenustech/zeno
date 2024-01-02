@@ -33,6 +33,27 @@ static int clamp(int i, int _min, int _max) {
     }
 }
 
+static void set_time_info(UserData &ud, TimeSamplingType tst, float start, int sample_count) {
+    float time_per_cycle = tst.getTimePerCycle();
+    if (tst.isUniform()) {
+        ud.set2("_abc_time_sampling_type", "Uniform");
+    }
+    else if (tst.isCyclic()) {
+        ud.set2("_abc_time_sampling_type", "Cyclic");
+    }
+    else if (tst.isAcyclic()) {
+        ud.set2("_abc_time_sampling_type", "Acyclic");
+    }
+    ud.set2("_abc_start_time", float(start));
+    ud.set2("_abc_sample_count", sample_count);
+    ud.set2("_abc_time_per_cycle", time_per_cycle);
+    if (time_per_cycle > 0) {
+        ud.set2("_abc_time_fps", 1.0f / time_per_cycle);
+    }
+    else {
+        ud.set2("_abc_time_fps", 0.0f);
+    }
+}
 static void read_velocity(std::shared_ptr<PrimitiveObject> prim, V3fArraySamplePtr marr, bool read_done) {
     if (marr == nullptr) {
         return;
@@ -331,6 +352,7 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
     float time_per_cycle =  time->getTimeSamplingType().getTimePerCycle();
     double start = time->getStoredTimes().front();
     int start_frame = (int)std::round(start / time_per_cycle );
+    set_time_info(prim->userData(), time->getTimeSamplingType(), start, int(mesh.getNumSamples()));
 
     int sample_index = clamp(frameid - start_frame, 0, (int)mesh.getNumSamples() - 1);
     ISampleSelector iSS = Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index);
@@ -469,6 +491,7 @@ static std::shared_ptr<PrimitiveObject> foundABCSubd(Alembic::AbcGeom::ISubDSche
     float time_per_cycle =  time->getTimeSamplingType().getTimePerCycle();
     double start = time->getStoredTimes().front();
     int start_frame = (int)std::round(start / time_per_cycle );
+    set_time_info(prim->userData(), time->getTimeSamplingType(), start, int(subd.getNumSamples()));
 
     int sample_index = clamp(frameid - start_frame, 0, (int)subd.getNumSamples() - 1);
     ISampleSelector iSS = Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index);
@@ -628,6 +651,7 @@ static std::shared_ptr<PrimitiveObject> foundABCPoints(Alembic::AbcGeom::IPoints
     float time_per_cycle =  time->getTimeSamplingType().getTimePerCycle();
     double start = time->getStoredTimes().front();
     int start_frame = (int)std::round(start / time_per_cycle );
+    set_time_info(prim->userData(), time->getTimeSamplingType(), start, int(mesh.getNumSamples()));
 
     int sample_index = clamp(frameid - start_frame, 0, (int)mesh.getNumSamples() - 1);
     auto iSS = Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index);
@@ -665,6 +689,7 @@ static std::shared_ptr<PrimitiveObject> foundABCCurves(Alembic::AbcGeom::ICurves
     float time_per_cycle =  time->getTimeSamplingType().getTimePerCycle();
     double start = time->getStoredTimes().front();
     int start_frame = (int)std::round(start / time_per_cycle );
+    set_time_info(prim->userData(), time->getTimeSamplingType(), start, int(mesh.getNumSamples()));
 
     int sample_index = clamp(frameid - start_frame, 0, (int)mesh.getNumSamples() - 1);
     auto iSS = Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index);
