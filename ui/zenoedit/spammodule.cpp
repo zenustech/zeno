@@ -1,3 +1,4 @@
+#ifdef ZENO_WITH_PYTHON3
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
@@ -33,3 +34,4 @@ PyInit_spam(void)
 {
     return PyModule_Create(&spammodule);
 }
+#endif

@@ -1,4 +1,4 @@
-#include "CommandNode.h"
+#include "commandnode.h"
 #include <zeno/extra/TempNode.h>
 #include "launch/corelaunch.h"
 #include "zenoapplication.h"
@@ -72,7 +72,7 @@ void CommandNode::onExecuteClicked()
     QModelIndex commandsIdx = pModel->paramIndex(subgIdx, this->index(), "commands", true);
     ZASSERT_EXIT(commandsIdx.isValid());
     QString commands = commandsIdx.data(ROLE_PARAM_VALUE).toString();
-    QStringList cmds = commands.split("\n", Qt::SkipEmptyParts);
+    QStringList cmds = commands.split("\n", QString::SkipEmptyParts);
     for (QString cmd : cmds) {
         //api examples:
         // NewGraph("graphName")

@@ -224,7 +224,7 @@
   <customwidget>
    <class>ZLineEdit</class>
    <extends>QLineEdit</extends>
-   <header>C:/zeno2/ui/zenoui/comctrl/zlineedit.h</header>
+   <header location="global">zenoui/comctrl/zlineedit.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

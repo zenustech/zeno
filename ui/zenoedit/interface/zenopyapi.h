@@ -1,6 +1,8 @@
 #ifndef __ZENO_PYTHON_API_H__
 #define __ZENO_PYTHON_API_H__
 
+#ifdef ZENO_WITH_PYTHON3
+
 #include <Python.h>
 #include <QtWidgets>
 
@@ -24,5 +26,5 @@ typedef struct {
 
 extern PyTypeObject ZNodeType;
 extern PyTypeObject SubgraphType;
-
+#endif
 #endif

@@ -2,10 +2,10 @@
 #define __ZMATERIALINFO_SETTING_DLG_H__
 
 #include <zenoui/comctrl/dialog/zframelessdialog.h>
-#include "ui_zmaterialinfosettingdlg.h"
-#include <rapidjson/document.h>
-#include <zenoui/comctrl/zpathedit.h>
-
+namespace Ui {
+    class ZMaterialInfoSettingDlgClass;
+}
+class ZPathEdit;
 struct  MaterialMatchInfo
 {
     QString m_names;
@@ -36,8 +36,7 @@ private:
     void updateMatch(const QMap<QString, QSet<QString>>& map);
 
 private:
-    Ui::ZMaterialInfoSettingDlgClass ui;
-    rapidjson::Document m_doc;
+    Ui::ZMaterialInfoSettingDlgClass* ui;
     QStandardItemModel* m_pModel;
     ZPathEdit* m_materialPath;
     QString m_jsonStr;

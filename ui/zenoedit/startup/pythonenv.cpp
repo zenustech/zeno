@@ -1,3 +1,4 @@
+#ifdef ZENO_WITH_PYTHON3
 #include <Python.h>
 #include <QtWidgets>
 #include "zeno/utils/log.h"
@@ -39,3 +40,4 @@ void initPythonEnv(const char* progName)
 
     PyMem_RawFree(program);
 }
+#endif
