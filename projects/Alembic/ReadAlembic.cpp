@@ -915,26 +915,31 @@ struct AlembicSplitByName: INode {
             set_output("namelist", namelist);
         }
 
-        {
-            std::map<int, AttrVector<vec2i>> faceset_map;
+        auto dict = std::make_shared<zeno::DictObject>();
+        if (prim->polys.size()) {
+            std::map<int, std::vector<int>> faceset_map;
             for (auto f = 0; f < faceset_count; f++) {
                 faceset_map[f] = {};
             }
             auto &faceset = prim->polys.add_attr<int>("faceset");
             for (auto j = 0; j < faceset.size(); j++) {
                 auto f = faceset[j];
-                faceset_map[f].push_back(prim->polys[j]);
+                faceset_map[f].push_back(j);
             }
-            auto dict = std::make_shared<zeno::DictObject>();
             for (auto f = 0; f < faceset_count; f++) {
                 auto name = prim->userData().get2<std::string>(zeno::format("faceset_{:04}", f));
                 auto new_prim = std::dynamic_pointer_cast<PrimitiveObject>(prim->clone());
-                if (faceset_map.count(f)) {
-                    new_prim->polys = faceset_map[f];
+                new_prim->polys.resize(faceset_map[f].size());
+                for (auto i = 0; i < faceset_map[f].size(); i++) {
+                    new_prim->polys[i] = prim->polys[faceset_map[f][i]];
                 }
-                else {
-                    new_prim->polys.resize(0);
-                }
+                new_prim->polys.foreach_attr<AttrAcceptAll>([&](auto const &key, auto &arr) {
+                    using T = std::decay_t<decltype(arr[0])>;
+                    auto &attr = prim->polys.attr<T>(key);
+                    for (auto i = 0; i < arr.size(); i++) {
+                        arr[i] = attr[faceset_map[f][i]];
+                    }
+                });
                 new_prim->userData().del("faceset_count");
                 for (auto j = 0; j < faceset_count; j++) {
                     new_prim->userData().del(zeno::format("faceset_{:04}", j));
@@ -942,9 +947,40 @@ struct AlembicSplitByName: INode {
                 new_prim->userData().set2("_abc_faceset", name);
                 dict->lut[name] = std::move(new_prim);
             }
-            set_output("dict", dict);
-
         }
+        else if (prim->tris.size()) {
+            std::map<int, std::vector<int>> faceset_map;
+            for (auto f = 0; f < faceset_count; f++) {
+                faceset_map[f] = {};
+            }
+            auto &faceset = prim->tris.add_attr<int>("faceset");
+            for (auto j = 0; j < faceset.size(); j++) {
+                auto f = faceset[j];
+                faceset_map[f].push_back(j);
+            }
+            for (auto f = 0; f < faceset_count; f++) {
+                auto name = prim->userData().get2<std::string>(zeno::format("faceset_{:04}", f));
+                auto new_prim = std::dynamic_pointer_cast<PrimitiveObject>(prim->clone());
+                new_prim->tris.resize(faceset_map[f].size());
+                for (auto i = 0; i < faceset_map[f].size(); i++) {
+                    new_prim->tris[i] = prim->tris[faceset_map[f][i]];
+                }
+                new_prim->tris.foreach_attr<AttrAcceptAll>([&](auto const &key, auto &arr) {
+                    using T = std::decay_t<decltype(arr[0])>;
+                    auto &attr = prim->tris.attr<T>(key);
+                    for (auto i = 0; i < arr.size(); i++) {
+                        arr[i] = attr[faceset_map[f][i]];
+                    }
+                });
+                new_prim->userData().del("faceset_count");
+                for (auto j = 0; j < faceset_count; j++) {
+                    new_prim->userData().del(zeno::format("faceset_{:04}", j));
+                }
+                new_prim->userData().set2("_abc_faceset", name);
+                dict->lut[name] = std::move(new_prim);
+            }
+        }
+        set_output("dict", dict);
     }
 };
 
