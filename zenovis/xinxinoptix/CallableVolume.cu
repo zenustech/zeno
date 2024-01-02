@@ -235,12 +235,11 @@ static __inline__ __device__ vec2 samplingVDB(const unsigned long long grid_ptr,
     return vec2 { nanoSampling<decltype(_acc), DataTypeNVDB, Order>(_acc, pos_indexed, volin), _grid->tree().root().maximum() };
 }
 
-extern "C" __device__ VolumeOut __direct_callable__evalmat(const float4* uniforms, VolumeIn& _attrs) {
+extern "C" __device__ VolumeOut __direct_callable__evalmat(const float4* uniforms, VolumeIn2& attrs) {
 
-    VolumeIn2 attrs{_attrs.pos, _attrs.sigma_t, _attrs.seed, _attrs.sbt_ptr };
     auto& prd = attrs;
 
-    auto att_pos = attrs.pos;
+    vec3& att_pos = reinterpret_cast<vec3&>(attrs.pos);
     auto att_clr = vec3(0);
     auto att_uv = vec3(0);
     auto att_nrm = vec3(0);
