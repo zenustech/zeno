@@ -75,13 +75,13 @@ static __inline__ __device__ vec3 cihouLightEmission(LightSampleRecord &lsr, Gen
     auto intensity = (depth == 0 && light.vIntensity >= 0.0f) ? light.vIntensity : light.intensity;
 
     if (light.tex != 0u) {
-        auto color = texture2D(light.tex, lsr.uv);
+        float3 color = (vec3)texture2D(light.tex, lsr.uv);
         if (light.texGamma != 1.0f) {
             color = pow(color, light.texGamma);
         }
-
+        color = color * light.color;
         color = color * intensity;
-        return *(vec3*)&color;
+        return color;
     }
     
     return light.color * intensity;
