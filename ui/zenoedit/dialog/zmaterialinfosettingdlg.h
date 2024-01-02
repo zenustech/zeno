@@ -36,7 +36,6 @@ private:
 
 private:
     Ui::ZMaterialInfoSettingDlgClass* ui;
-    rapidjson::Document m_doc;
     QStandardItemModel* m_pModel;
     ZPathEdit* m_materialPath;
     QString m_jsonStr;
