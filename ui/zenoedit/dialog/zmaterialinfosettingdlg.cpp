@@ -8,24 +8,27 @@
 #include <zenoui/comctrl/zcombobox.h>
 #include <zenoui/comctrl/gv/callbackdef.h>
 #include "zenomainwindow.h"
+#include "ui_zmaterialinfosettingdlg.h"
+#include <zenoui/comctrl/zpathedit.h>
 
 ZMaterialInfoSettingDlg::ZMaterialInfoSettingDlg(const MaterialMatchInfo& info, QWidget* parent)
     : ZFramelessDialog(parent)
     , m_matchInfo(info)
 {
-    ui.setupUi(this);
+    ui = new Ui::ZMaterialInfoSettingDlgClass;
+    ui->setupUi(this);
     QString path = ":/icons/zeno-logo.png";
     this->setTitleIcon(QIcon(path));
     this->setTitleText(tr("Match Settings"));
-    this->setMainWidget(ui.m_mainWidget);
+    this->setMainWidget(ui->m_mainWidget);
     resize(ZenoStyle::dpiScaledSize(QSize(500, 400)));
     initNames();
     initKeys();
     initMatch();
     initMaterialPath();
     initButtons();
-    ui.m_mainWidget->layout()->setAlignment(Qt::AlignTop);
-    ui.m_mainWidget->layout()->setSpacing(ZenoStyle::dpiScaled(10));
+    ui->m_mainWidget->layout()->setAlignment(Qt::AlignTop);
+    ui->m_mainWidget->layout()->setSpacing(ZenoStyle::dpiScaled(10));
 }
 
 ZMaterialInfoSettingDlg::~ZMaterialInfoSettingDlg()
@@ -34,9 +37,9 @@ ZMaterialInfoSettingDlg::~ZMaterialInfoSettingDlg()
 
 bool ZMaterialInfoSettingDlg::eventFilter(QObject* watch, QEvent* event)
 {
-    if (watch == ui.m_keyTableWidget->viewport() && event->type() == QEvent::MouseButtonRelease)
+    if (watch == ui->m_keyTableWidget->viewport() && event->type() == QEvent::MouseButtonRelease)
     {
-        QWidget* pWidget = ui.m_keyTableWidget->indexWidget(ui.m_keyTableWidget->currentIndex());
+        QWidget* pWidget = ui->m_keyTableWidget->indexWidget(ui->m_keyTableWidget->currentIndex());
         if (QLineEdit* pEdit = qobject_cast<QLineEdit*>(pWidget))
         {
             if (pEdit->placeholderText().isEmpty())
@@ -75,10 +78,10 @@ void ZMaterialInfoSettingDlg::onPathEditFinished()
     }
     auto jsonObject = doc.GetObject();
     QMap<QString, QSet<QString>> map;
-    QStringList nameLst = ui.m_namesEdit->text().split(",");
-    for (int row = 0; row < ui.m_keyTableWidget->rowCount(); row++)
+    QStringList nameLst = ui->m_namesEdit->text().split(",");
+    for (int row = 0; row < ui->m_keyTableWidget->rowCount(); row++)
     {
-        QString keys = ui.m_keyTableWidget->item(row, 1)->text();
+        QString keys = ui->m_keyTableWidget->item(row, 1)->text();
         if (!keys.isEmpty())
         {
             QRegularExpression rx(keys);
@@ -87,7 +90,7 @@ void ZMaterialInfoSettingDlg::onPathEditFinished()
             {
                 if (rx.match(name).hasMatch())
                 {
-                    QString preSetName = ui.m_keyTableWidget->item(row, 0)->text();
+                    QString preSetName = ui->m_keyTableWidget->item(row, 0)->text();
                     if (doc.HasMember(name.toUtf8()))
                     {
                         const auto& objVal = doc[name.toStdString().c_str()];
@@ -112,34 +115,34 @@ void ZMaterialInfoSettingDlg::onPathEditFinished()
 
 void ZMaterialInfoSettingDlg::initNames()
 {
-    ui.m_namesEdit->setPlaceholderText(tr("Separated by ',', such as: N1, N2, N3..."));
+    ui->m_namesEdit->setPlaceholderText(tr("Separated by ',', such as: N1, N2, N3..."));
     if (!m_matchInfo.m_names.isEmpty())
     {
-        ui.m_namesEdit->setText(m_matchInfo.m_names);
+        ui->m_namesEdit->setText(m_matchInfo.m_names);
     }
-    connect(ui.m_namesEdit, &ZLineEdit::textEditFinished, this, &ZMaterialInfoSettingDlg::onPathEditFinished);
+    connect(ui->m_namesEdit, &ZLineEdit::textEditFinished, this, &ZMaterialInfoSettingDlg::onPathEditFinished);
 }
 void ZMaterialInfoSettingDlg::initKeys()
 {
-    ui.m_keyTableWidget->verticalHeader()->setVisible(false);
-    //ui.m_keyTableWidget->setProperty("cssClass", "select_subgraph");
-    ui.m_keyTableWidget->setColumnCount(2);
+    ui->m_keyTableWidget->verticalHeader()->setVisible(false);
+    //ui->m_keyTableWidget->setProperty("cssClass", "select_subgraph");
+    ui->m_keyTableWidget->setColumnCount(2);
     QStringList labels = { tr("Preset Subgraph"), tr("key words") };
-    ui.m_keyTableWidget->setHorizontalHeaderLabels(labels);
-    ui.m_keyTableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
-    ui.m_keyTableWidget->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
+    ui->m_keyTableWidget->setHorizontalHeaderLabels(labels);
+    ui->m_keyTableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+    ui->m_keyTableWidget->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
     IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
     for (const auto& subgIdx : pGraphsModel->subgraphsIndice(SUBGRAPH_PRESET))
     {
-        int row = ui.m_keyTableWidget->rowCount();
-        ui.m_keyTableWidget->insertRow(row);
+        int row = ui->m_keyTableWidget->rowCount();
+        ui->m_keyTableWidget->insertRow(row);
         QString name = subgIdx.data(ROLE_OBJNAME).toString();
         QTableWidgetItem* pItem = new QTableWidgetItem(name);
         pItem->setFlags(pItem->flags() & ~Qt::ItemIsEditable);
-        ui.m_keyTableWidget->setItem(row, 0, pItem);
+        ui->m_keyTableWidget->setItem(row, 0, pItem);
 
         QTableWidgetItem* pKeyItem = new QTableWidgetItem();
-        ui.m_keyTableWidget->setItem(row, 1, pKeyItem);
+        ui->m_keyTableWidget->setItem(row, 1, pKeyItem);
         if (!m_matchInfo.m_keyWords.isEmpty())
         {
             rapidjson::Document doc;
@@ -150,14 +153,14 @@ void ZMaterialInfoSettingDlg::initKeys()
             }
         }
     }
-    if (ui.m_keyTableWidget->rowCount() > 0)
+    if (ui->m_keyTableWidget->rowCount() > 0)
     {
-        int height = ui.m_keyTableWidget->rowHeight(0) * ui.m_keyTableWidget->rowCount();
-        int hearderH = ui.m_keyTableWidget->horizontalHeader()->height();
-        ui.m_keyTableWidget->setMinimumHeight(height + hearderH);
+        int height = ui->m_keyTableWidget->rowHeight(0) * ui->m_keyTableWidget->rowCount();
+        int hearderH = ui->m_keyTableWidget->horizontalHeader()->height();
+        ui->m_keyTableWidget->setMinimumHeight(height + hearderH);
     }
-    ui.m_keyTableWidget->viewport()->installEventFilter(this);
-    connect(ui.m_keyTableWidget, &QTableWidget::itemChanged, this, &ZMaterialInfoSettingDlg::onPathEditFinished);
+    ui->m_keyTableWidget->viewport()->installEventFilter(this);
+    connect(ui->m_keyTableWidget, &QTableWidget::itemChanged, this, &ZMaterialInfoSettingDlg::onPathEditFinished);
 }
 
 void ZMaterialInfoSettingDlg::initMaterialPath()
@@ -167,7 +170,7 @@ void ZMaterialInfoSettingDlg::initMaterialPath()
     };
     m_materialPath = new ZPathEdit(cbSwitch, this);
     m_materialPath->setProperty("control", CONTROL_READPATH);
-    ui.m_pathLayout->addWidget(m_materialPath);
+    ui->m_pathLayout->addWidget(m_materialPath);
     if (!m_matchInfo.m_materialPath.isEmpty())
     {
         m_materialPath->setText(m_matchInfo.m_materialPath);
@@ -179,21 +182,21 @@ void ZMaterialInfoSettingDlg::initMaterialPath()
 void ZMaterialInfoSettingDlg::initMatch()
 {
     m_pModel = new QStandardItemModel(this);
-    ui.m_matchTreeView->setModel(m_pModel);
-    ui.m_matchTreeView->setHeaderHidden(true);
-    ui.m_matchTreeView->setMinimumHeight(ZenoStyle::dpiScaled(200));
-    ui.m_matchTreeView->hide();
-    ui.m_matchLabel->hide();
+    ui->m_matchTreeView->setModel(m_pModel);
+    ui->m_matchTreeView->setHeaderHidden(true);
+    ui->m_matchTreeView->setMinimumHeight(ZenoStyle::dpiScaled(200));
+    ui->m_matchTreeView->hide();
+    ui->m_matchLabel->hide();
 }
 
 void ZMaterialInfoSettingDlg::initButtons()
 {
     int width = ZenoStyle::dpiScaled(80);
     int height = ZenoStyle::dpiScaled(30);
-    ui.m_okBtn->setFixedSize(width, height);
-    ui.m_cancelBtn->setFixedSize(width, height);
-    connect(ui.m_okBtn, &QPushButton::clicked, this, &ZMaterialInfoSettingDlg::onOKClicked);
-    connect(ui.m_cancelBtn, &QPushButton::clicked, this, &ZMaterialInfoSettingDlg::reject);
+    ui->m_okBtn->setFixedSize(width, height);
+    ui->m_cancelBtn->setFixedSize(width, height);
+    connect(ui->m_okBtn, &QPushButton::clicked, this, &ZMaterialInfoSettingDlg::onOKClicked);
+    connect(ui->m_cancelBtn, &QPushButton::clicked, this, &ZMaterialInfoSettingDlg::reject);
 }
 
 void ZMaterialInfoSettingDlg::updateMatch(const QMap<QString, QSet<QString>>& map)
@@ -227,7 +230,7 @@ void ZMaterialInfoSettingDlg::updateMatch(const QMap<QString, QSet<QString>>& ma
             pLayout->setMargin(0);
             pLayout->addStretch();
             pLayout->addWidget(pComboBox);
-            ui.m_matchTreeView->setIndexWidget(pChildItem->index(), pWidget);
+            ui->m_matchTreeView->setIndexWidget(pChildItem->index(), pWidget);
             connect(pComboBox, &ZComboBox::currentTextChanged, this, [=](const QString& currentText) {
                 pChildItem->setData(currentText, Qt::UserRole);
             });
@@ -247,26 +250,26 @@ void ZMaterialInfoSettingDlg::updateMatch(const QMap<QString, QSet<QString>>& ma
                 }
             }
         }
-        ui.m_matchTreeView->setExpanded(pItem->index(), true);
-        ui.m_matchTreeView->show();
-        ui.m_matchLabel->show();
+        ui->m_matchTreeView->setExpanded(pItem->index(), true);
+        ui->m_matchTreeView->show();
+        ui->m_matchLabel->show();
     }
 }
 
 void ZMaterialInfoSettingDlg::onOKClicked()
 {
-    if (ui.m_namesEdit->text().isEmpty())
+    if (ui->m_namesEdit->text().isEmpty())
         return;
     //names
-    m_matchInfo.m_names = ui.m_namesEdit->text();
+    m_matchInfo.m_names = ui->m_namesEdit->text();
 
     QJsonObject keysJson;
-    for (int row = 0; row < ui.m_keyTableWidget->rowCount(); row++)
+    for (int row = 0; row < ui->m_keyTableWidget->rowCount(); row++)
     {
-        QString keys = ui.m_keyTableWidget->item(row, 1)->text();
+        QString keys = ui->m_keyTableWidget->item(row, 1)->text();
         if (!keys.isEmpty())
         {
-            QString jsonKey = ui.m_keyTableWidget->item(row, 0)->text();;
+            QString jsonKey = ui->m_keyTableWidget->item(row, 0)->text();;
             keysJson[jsonKey] = keys;
         }
     }
