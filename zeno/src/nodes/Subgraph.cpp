@@ -185,13 +185,14 @@ ZENDEFNODE(SubCategory, {
 struct SubInput : zeno::INode {
     virtual void complete() override {
         auto name = get_param<std::string>("name");
-        graph->subInputNodes[name] = myname;
+        //graph->subInputNodes[name] = myname;
     }
 
     virtual void apply() override {
+        //直接由SubnetNode来设置output，这里其实不用再apply了。
         //printf("!!! %s\n", typeid(*get_input("_IN_port")).name());
-        set_output("port", get_input("_IN_port")); 
-        set_output("hasValue", get_input("_IN_hasValue"));
+        //set_output("port", get_input("_IN_port")); 
+        //set_output("hasValue", get_input("_IN_hasValue"));
     }
 };
 
@@ -206,12 +207,12 @@ ZENDEFNODE(SubInput, {
 
 struct SubOutput : zeno::INode {
     virtual void complete() override {
-        auto name = get_param<std::string>("name");
-        graph->subOutputNodes[name] = myname;
+        //auto name = get_param<std::string>("name");
+        //graph->subOutputNodes[name] = myname;
     }
 
     virtual void apply() override {
-        set_output("_OUT_port", get_input("port"));
+        //set_output("_OUT_port", get_input("port"));
     }
 };
 

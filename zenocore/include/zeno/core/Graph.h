@@ -44,8 +44,6 @@ struct Graph : std::enable_shared_from_this<Graph> {
 
     std::map<std::string, std::string> portalIns;
     std::map<std::string, zany> portals;
-    std::map<std::string, std::string> subInputNodes;
-    std::map<std::string, std::string> subOutputNodes;
 
     std::unique_ptr<Context> ctx;
     std::unique_ptr<DirtyChecker> dirtyChecker;
@@ -62,6 +60,7 @@ struct Graph : std::enable_shared_from_this<Graph> {
     ZENO_API void init(const GraphData& graph);
     ZENO_API std::shared_ptr<INode> createNode(std::string const& cls);
     ZENO_API std::shared_ptr<INode> getNode(std::string const& ident);
+    ZENO_API std::shared_ptr<INode> createSubnetNode(std::string const& cls);
     ZENO_API bool removeNode(std::string const& ident);
     ZENO_API bool addLink(const EdgeInfo& edge);
     ZENO_API bool removeLink(const EdgeInfo& edge);
@@ -93,6 +92,13 @@ struct Graph : std::enable_shared_from_this<Graph> {
             std::map<std::string, zany> inputs) const;
     ZENO_API std::map<std::string, zany> callTempNode(std::string const &id,
             std::map<std::string, zany> inputs) const;
+
+    std::map<std::string, std::string> getSubInputs();
+    std::map<std::string, std::string> getSubOutputs();
+
+private:
+    std::map<std::string, std::string> subInputNodes;
+    std::map<std::string, std::string> subOutputNodes;
 };
 
 }

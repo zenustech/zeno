@@ -16,6 +16,8 @@ struct SubnetNode : INode {
     ZENO_API SubnetNode();
     ZENO_API ~SubnetNode();
 
+    void init(const NodeData& dat);
+
     //void addSubnetInput(std::string const &key) {
         //subnetClass->desc->inputs.push_back({{}, key, {}});
         //inputKeys.push_back(key);
@@ -34,7 +36,10 @@ struct ImplSubnetNodeClass : INodeClass {
     }
 
     virtual std::shared_ptr<INode> new_instance(std::string const& ident) const override {
-        return std::make_unique<SubnetNode>();
+        std::shared_ptr<SubnetNode> spNode = std::make_shared<SubnetNode>();
+        spNode->ident = ident;
+        spNode->nodecls = name;
+        return spNode;
     }
 };
 

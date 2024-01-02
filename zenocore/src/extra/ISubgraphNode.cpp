@@ -14,13 +14,13 @@ ZENO_API void ISubgraphNode::apply() {
         grap = getThisSession()->createGraph();
         auto json = get_subgraph_json();
         grap->loadGraph(json);
-        for (auto const &[key, nodename]: grap->subOutputNodes) {
+        for (auto const &[key, nodename]: grap->getSubOutputs()) {
             grap->nodesToExec.insert(nodename);
         }
     }
     Graph &gra = *grap;
 
-    for (auto const &[key, nodename]: gra.subInputNodes) {
+    for (auto const &[key, nodename]: gra.getSubInputs()) {
         auto *node = gra.nodes.at(nodename).get();
         bool hasValue = has_input(key);
 
@@ -33,7 +33,7 @@ ZENO_API void ISubgraphNode::apply() {
         */
     }
     gra.applyNodesToExec();
-    for (auto const &[key, nodename]: gra.subOutputNodes) {
+    for (auto const &[key, nodename]: gra.getSubOutputs()) {
         auto *node = gra.nodes.at(nodename).get();
         //set_output(key, node->outputs.at("_OUT_port"));
     }

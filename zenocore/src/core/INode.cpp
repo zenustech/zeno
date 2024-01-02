@@ -259,8 +259,10 @@ std::map<std::string, zany> INode::getoutputs()
     return outputs;
 }
 
-ZENO_API void INode::init(const NodeData& dat)
+void INode::init(const NodeData& dat)
 {
+    if (dat.ident.empty())
+        ident = dat.ident;
     for (const ParamInfo& param : dat.inputs)
     {
         std::shared_ptr<IParam> sparam = get_input_param(param.name);
@@ -304,11 +306,14 @@ ZENO_API zany INode::resolveInput(std::string const& id) {
         return nullptr;
 }
 
-ZENO_API void INode::set_output(std::string const &sock_name, zany obj) {
+ZENO_API bool INode::set_output(std::string const &sock_name, zany obj) {
     for (auto& param : outputs_) {
-        if (param->name == sock_name)
+        if (param->name == sock_name) {
             param->result = obj;
+            return true;
+        }
     }
+    return false;
 }
 
 ZENO_API zany INode::get_output(std::string const& sock_name) {

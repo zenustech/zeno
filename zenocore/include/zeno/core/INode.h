@@ -11,7 +11,7 @@
 #include <map>
 #include <zeno/types/CurveObject.h>
 #include <zeno/extra/GlobalState.h>
-#include <common/common.h>
+#include <common/data.h>
 
 namespace zeno {
 
@@ -66,7 +66,7 @@ public:
     ZENO_API zany resolveInput(std::string const& id);
 
     //BEGIN new api
-    ZENO_API void init(const NodeData& dat);
+    void init(const NodeData& dat);
     ZENO_API void set_input_defl(std::string const& name, zvariant defl);
     ZENO_API zvariant get_input_defl(std::string const& name);
     ZENO_API std::string get_nodecls() const;
@@ -110,7 +110,7 @@ public:
 
     ZENO_API bool has_input(std::string const &id) const;
     ZENO_API zany get_input(std::string const &id) const;
-    ZENO_API void set_output(std::string const &id, zany obj);
+    ZENO_API bool set_output(std::string const &id, zany obj);
     ZENO_API zany get_output(std::string const& sock_name);
 
     ZENO_API bool has_keyframe(std::string const &id) const;
