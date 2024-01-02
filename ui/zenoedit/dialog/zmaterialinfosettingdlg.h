@@ -5,6 +5,7 @@
 namespace Ui {
     class ZMaterialInfoSettingDlgClass;
 }
+class ZPathEdit;
 struct  MaterialMatchInfo
 {
     QString m_names;
