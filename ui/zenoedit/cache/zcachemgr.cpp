@@ -189,13 +189,13 @@ void ZCacheMgr::initToViewNodesId()
     IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
     if (!pModel)
         return;
-    std::vector<std::string> toViewNodes;
+    std::map<std::string, bool> toViewNodes;
     QModelIndex subgIdx = pModel->index("main");
     for (int i = 0; i < pModel->itemCount(subgIdx); i++)
     {
         const QModelIndex& idx = pModel->index(i, subgIdx);
         if (idx.data(ROLE_OPTIONS).toInt() & OPT_VIEW)
-            toViewNodes.push_back(idx.data(ROLE_OBJID).toString().toStdString());
+            toViewNodes.insert(std::make_pair(idx.data(ROLE_OBJID).toString().toStdString(), idx.data(ROLE_OPTIONS).toInt() & OPT_ONCE));
     }
     zeno::getSession().globalComm->setToViewNodes(toViewNodes);
 }
