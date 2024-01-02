@@ -1,3 +1,4 @@
+#ifdef ZENO_WITH_PYTHON3
 #define PY_SSIZE_T_CLEAN
 #include "zenopyapi.h"
 #include <QtWidgets>
@@ -295,3 +296,4 @@ PyInit_zeno(void)
 
     return m;
 }
+#endif

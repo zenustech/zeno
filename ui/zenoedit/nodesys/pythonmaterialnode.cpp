@@ -1,4 +1,6 @@
-#include <Python.h>
+#ifdef ZENO_WITH_PYTHON3
+    #include <Python.h>
+#endif
 #include "pythonmaterialnode.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
@@ -50,6 +52,7 @@ ZGraphicsLayout* PythonMaterialNode::initCustomParamWidgets()
 
 void PythonMaterialNode::onExecuteClicked()
 {
+#ifdef ZENO_WITH_PYTHON3
     std::string stdOutErr =
         "import sys\n\
 class CatchOutErr:\n\
@@ -158,6 +161,9 @@ for mat in names_data:
             }
         }
     }
+#else
+    zeno::log_warn("The option 'ZENO_WITH_PYTHON3' should be ON");
+#endif
 }
 
 

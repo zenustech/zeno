@@ -1,3 +1,4 @@
+#ifdef ZENO_WITH_PYTHON3
 #include "zenopyapi.h"
 #include <QtWidgets>
 #include "zenoapplication.h"
@@ -393,3 +394,4 @@ PyTypeObject ZNodeType = {
         nullptr,                            /* tp_alloc */
         PyType_GenericNew,                  /* tp_new */
 };
+#endif

@@ -1,4 +1,6 @@
-#include <Python.h>
+#ifdef ZENO_WITH_PYTHON3
+    #include <Python.h>
+#endif
 #include "pythonnode.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
@@ -38,6 +40,7 @@ ZGraphicsLayout* PythonNode::initCustomParamWidgets()
 
 void PythonNode::onExecuteClicked()
 {
+#ifdef ZENO_WITH_PYTHON3
     std::string stdOutErr =
         "import sys\n\
 class CatchOutErr:\n\
@@ -81,4 +84,7 @@ sys.stderr = catchOutErr\n\
             }
         }
     }
+#else
+    zeno::log_warn("The option 'ZENO_WITH_PYTHON3' should be ON");
+#endif
 }
