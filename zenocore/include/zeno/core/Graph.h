@@ -12,8 +12,7 @@
 #include <set>
 #include <any>
 #include <map>
-#include <common/data.h>
-#include <common/common.h>
+#include <zeno/core/data.h>
 
 namespace zeno {
 
@@ -42,7 +41,7 @@ struct Graph : std::enable_shared_from_this<Graph> {
     std::set<std::string> nodesToExec;
     int beginFrameNumber = 0, endFrameNumber = 0;  // only use by runnermain.cpp
 
-    std::map<std::string, std::string> portalIns;
+    std::map<std::string, std::string> portalIns;   //todo: deprecated, but need to keep compatible with old zsg.
     std::map<std::string, zany> portals;
 
     std::unique_ptr<Context> ctx;

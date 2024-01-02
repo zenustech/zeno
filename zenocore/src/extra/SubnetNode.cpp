@@ -15,7 +15,39 @@ ZENO_API SubnetNode::~SubnetNode() = default;
 
 void SubnetNode::init(const NodeData& dat)
 {
-    INode::init(dat);
+    //需要先初始化param
+    //INode::init(dat);
+    if (dat.ident.empty())
+        ident = dat.ident;
+
+    for (const ParamInfo& param : dat.inputs)
+    {
+        std::shared_ptr<IParam> sparam = std::make_shared<IParam>();
+        if (!sparam) {
+            zeno::log_warn("input param `{}` is not registerd in current zeno version");
+            continue;
+        }
+        sparam->defl = param.defl;
+        sparam->name = param.name;
+        sparam->type = param.type;
+        sparam->m_spNode = std::shared_ptr<INode>(this);
+        add_input_param(sparam);
+    }
+
+    for (const ParamInfo& param : dat.outputs)
+    {
+        std::shared_ptr<IParam> sparam = std::make_shared<IParam>();
+        if (!sparam) {
+            zeno::log_warn("output param `{}` is not registerd in current zeno version");
+            continue;
+        }
+        sparam->defl = param.defl;
+        sparam->name = name;
+        sparam->type = param.type;
+        sparam->m_spNode = std::shared_ptr<INode>(this);
+        add_output_param(sparam);
+    }
+
     //需要检查SubInput/SubOutput是否对的上？
     if (dat.subgraph)
         subgraph->init(*dat.subgraph);

@@ -18,7 +18,6 @@
 #include <zeno/utils/log.h>
 #include "util/log.h"
 #include "blackboardnode.h"
-#include "acceptor/transferacceptor.h"
 #include "variantptr.h"
 #include <zenomodel/include/linkmodel.h>
 #include <zenoui/comctrl/gv/zenoparamwidget.h>
@@ -534,7 +533,7 @@ void ZenoSubGraphScene::copy()
     QModelIndexList selNodes = selectNodesIndice();
     QModelIndexList selLinks = selectLinkIndice();
     QPair<NODES_DATA, LINKS_DATA> datas = UiHelper::dumpNodes(selNodes, selLinks);
-    ZsgWriter::getInstance().dumpToClipboard(datas.first);
+    //ZsgWriter::getInstance().dumpToClipboard(datas.first);
 }
 
 void ZenoSubGraphScene::paste(QPointF pos)
@@ -544,6 +543,7 @@ void ZenoSubGraphScene::paste(QPointF pos)
     if (pMimeData->hasText() && pGraphsModel)
     {
         const QString& strJson = pMimeData->text();
+#if 0
         TransferAcceptor acceptor(pGraphsModel);
         Zsg2Reader::getInstance().importNodes(pGraphsModel, m_subgIdx, strJson, pos, &acceptor);
 
@@ -565,6 +565,7 @@ void ZenoSubGraphScene::paste(QPointF pos)
             collectNodeSelChanged(ident, true);
         }
         afterSelectionChanged();
+#endif
     }
 }
 

@@ -1,6 +1,7 @@
 #ifndef __ZSG_WRITER_H__
 #define __ZSG_WRITER_H__
 
+/*
 #include <zenomodel/include/modeldata.h>
 #include <zenomodel/include/igraphsmodel.h>
 #include <zenomodel/include/jsonhelper.h>
@@ -30,5 +31,6 @@ private:
     void dumpSubGraphDesc(const NODE_DESC &desc, RAPIDJSON_WRITER &writer);
     void dumpSettings(const APP_SETTINGS settings, RAPIDJSON_WRITER& writer);
 };
+*/
 
 #endif

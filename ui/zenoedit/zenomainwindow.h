@@ -36,13 +36,13 @@ public:
     ~ZenoMainWindow();
     bool inDlgEventLoop() const;
     void setInDlgEventLoop(bool bOn);
-    TIMELINE_INFO timelineInfo();
+    zeno::TimelineInfo timelineInfo();
     void setAlways(bool bAlways);
     void setAlwaysLightCameraMaterial(bool bAlwaysLightCamera, bool bAlwaysMaterial);
     bool isAlways() const;
     bool isAlwaysLightCamera() const;
     bool isAlwaysMaterial() const;
-    void resetTimeline(TIMELINE_INFO info);
+    void resetTimeline(zeno::TimelineInfo info);
     void initUserdata(USERDATA_SETTING info);
     ZTimeline* timeline() const;
     QVector<DisplayWidget*> viewports() const;

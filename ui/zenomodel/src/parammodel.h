@@ -95,8 +95,8 @@ private:
     bool _removeRow(const QModelIndex& index);
     void onSubIOEdited(const QVariant& value, const _ItemInfo& item);
     void exportDictkeys(DictKeyModel* pModel, DICTPANEL_INFO& panel);
-    QList<EdgeInfo> exportLinks(const PARAM_LINKS& links);
-    EdgeInfo exportLink(const QModelIndex& linkIdx);
+    QList<EDGE_INFO> exportLinks(const PARAM_LINKS& links);
+    EDGE_INFO exportLink(const QModelIndex& linkIdx);
 
     const QPersistentModelIndex m_nodeIdx;
     const QPersistentModelIndex m_subgIdx;

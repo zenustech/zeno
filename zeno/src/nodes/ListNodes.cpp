@@ -175,7 +175,7 @@ struct MakeList : zeno::INode {
         auto doConcat = get_param<bool>("doConcat");
 
         int max_input_index = 0;
-        for (auto& pair : inputs) {
+        for (auto& pair : getinputs()) {
             if (std::isdigit(pair.first.back())) {
                 max_input_index = std::max<int>(max_input_index, std::stoi(pair.first.substr(3)));
             }

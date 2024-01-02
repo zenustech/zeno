@@ -174,14 +174,14 @@ struct VoronoiFracture : AABBVoronoi {
         }
         bmin -= 1e-6f;
         bmax += 1e-6f;
-        inputs["bboxMin"] = objectFromLiterial(bmin);
-        inputs["bboxMax"] = objectFromLiterial(bmax);
-        inputs["triangulate:"] = objectFromLiterial(true);
+        set_input("bboxMin", objectFromLiterial(bmin));
+        set_input("bboxMax", objectFromLiterial(bmax));
+        set_input("triangulate:", objectFromLiterial(true));
 
         AABBVoronoi::apply();
 
-        auto primListB = std::dynamic_pointer_cast<ListObject>(outputs.at("primList"));
-        auto neighListB = std::dynamic_pointer_cast<ListObject>(outputs.at("neighList"));
+        auto primListB = std::dynamic_pointer_cast<ListObject>(get_output("primList"));
+        auto neighListB = std::dynamic_pointer_cast<ListObject>(get_output("neighList"));
         auto listB = primListB->get<PrimitiveObject>();
         std::map<int, std::shared_ptr<PrimitiveObject>> dictC;
         std::mutex mtx;

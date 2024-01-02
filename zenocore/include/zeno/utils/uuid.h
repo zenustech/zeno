@@ -4,10 +4,11 @@
 
 #include <stdio.h>
 #include <string>
+#include <zeno/utils/api.h>
 
 namespace zeno
 {
-    std::string generateUUID();
+    ZENO_API std::string generateUUID();
 }
 
 #endif

@@ -5,7 +5,7 @@
 #include "common.h"
 #include "modeldata.h"
 #include "modelrole.h"
-#include <zenoio/include/common.h>
+#include <zenoio/include/iocommon.h>
 
 class LinkModel;
 class ViewParamModel;
@@ -37,16 +37,16 @@ public:
     virtual void setNodeData(const QModelIndex& nodeIndex, const QModelIndex& subGpIdx, const QVariant& value, int role) = 0;
 	virtual void importNodes(
 			const QMap<QString, NODE_DATA>& nodes,
-			const QList<EdgeInfo>& links,
+			const QList<EDGE_INFO>& links,
 			const QPointF& pos,
 			const QModelIndex& subGpIdx,
 			bool enableTransaction = false) = 0;
 	virtual void removeNode(const QString& nodeid, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 
 	virtual QModelIndex addLink(const QModelIndex& subgIdx, const QModelIndex& fromSock, const QModelIndex& toSock, bool enableTransaction = false) = 0;
-	virtual QModelIndex addLink(const QModelIndex& subgIdx, const EdgeInfo& info, bool enableTransaction = false) = 0;
+	virtual QModelIndex addLink(const QModelIndex& subgIdx, const EDGE_INFO& info, bool enableTransaction = false) = 0;
 	virtual void removeLink(const QModelIndex& linkIdx, bool enableTransaction = false) = 0;
-	virtual void removeLink(const QModelIndex& subgIdx, const EdgeInfo& linkIdx, bool enableTransaction = false) = 0;
+	virtual void removeLink(const QModelIndex& subgIdx, const EDGE_INFO& linkIdx, bool enableTransaction = false) = 0;
 	virtual void removeLegacyLink(const QModelIndex& linkIdx) = 0;
 	virtual void removeSubGraph(const QString& name) = 0;
 	virtual QModelIndex extractSubGraph(const QModelIndexList& nodes, const QModelIndexList& links, const QModelIndex& fromSubg, const QString& toSubg, bool enableTrans = false) = 0;

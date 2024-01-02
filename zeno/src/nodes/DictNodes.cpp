@@ -84,7 +84,7 @@ ZENDEFNODE(DictSetItem, {
 struct MakeDict : zeno::INode {
     virtual void apply() override {
         auto dict = std::make_shared<zeno::DictObject>();
-        for (auto pair : inputs)
+        for (auto pair : getinputs())
         {
             const std::string &key = pair.first;
             if (key != "SRC")
@@ -207,7 +207,7 @@ ZENDEFNODE(DictUnion, {
 struct ExtractDict : zeno::INode {
     virtual void apply() override {
         auto dict = get_input<zeno::DictObject>("dict");
-        for (auto pair : outputs)
+        for (auto pair : getoutputs2())
         {
             const std::string& key = pair.first;
             auto it = dict->lut.find(key);
@@ -231,7 +231,7 @@ struct ExtractLegacyDict : ExtractDict {
     virtual void apply() override {
         auto dict = get_input<zeno::DictObject>("dict");
         for (auto const &[key, val]: dict->lut) {
-            outputs[key];
+            //outputs[key];
         }
         ExtractDict::apply();
     }

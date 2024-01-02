@@ -3,7 +3,7 @@
 
 namespace zeno {
 
-    ParamType convertToType(std::string const& type) {
+    ZENO_API ParamType convertToType(std::string const& type) {
         if (type == "string") { return Param_String; }
         else if (type == "bool") { return Param_Bool; }
         else if (type == "int") { return Param_Int; }
@@ -21,7 +21,7 @@ namespace zeno {
         else return Param_Null;
     }
 
-    zvariant str2var(std::string const& defl, ParamType const& type) {
+    ZENO_API zvariant str2var(std::string const& defl, ParamType const& type) {
         switch (type) {
         case Param_String: {
         }

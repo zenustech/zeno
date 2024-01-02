@@ -39,6 +39,7 @@ struct ImplNodeClass : INodeClass {
             sparam->m_spNode = spNode;
             sparam->type = zeno::convertToType(param_desc.type);
             sparam->defl = zeno::str2var(param_desc.defl, sparam->type);
+            spNode->add_input_param(sparam);
         }
 
         for (ParamDescriptor& param_desc : desc->params)
@@ -48,6 +49,7 @@ struct ImplNodeClass : INodeClass {
             sparam->m_spNode = spNode;
             sparam->type = zeno::convertToType(param_desc.type);
             sparam->defl = zeno::str2var(param_desc.defl, sparam->type);
+            spNode->add_input_param(sparam);
         }
 
         for (SocketDescriptor& param_desc : desc->outputs)
@@ -57,6 +59,7 @@ struct ImplNodeClass : INodeClass {
             sparam->m_spNode = spNode;
             sparam->type = zeno::convertToType(param_desc.type);
             sparam->defl = zeno::str2var(param_desc.defl, sparam->type);
+            spNode->add_output_param(sparam);
         }
 
         return spNode;

@@ -47,13 +47,13 @@ private:
 class LinkCommand : public QUndoCommand
 {
 public:
-    LinkCommand(const QModelIndex& subgIdx, bool bAddLink, const EdgeInfo& link, GraphsModel *pModel);
+    LinkCommand(const QModelIndex& subgIdx, bool bAddLink, const EDGE_INFO& link, GraphsModel *pModel);
     void redo() override;
     void undo() override;
 
 private:
     const bool m_bAdd;
-    const EdgeInfo m_link;
+    const EDGE_INFO m_link;
     GraphsModel* m_model;
     QPersistentModelIndex m_subgIdx;
 };
@@ -77,13 +77,13 @@ private:
 class ImportNodesCommand : public QUndoCommand
 {
 public:
-    ImportNodesCommand(const QMap<QString, NODE_DATA>& nodes, const QList<EdgeInfo>& links, QPointF pos, GraphsModel *pModel, QPersistentModelIndex subgIdx);
+    ImportNodesCommand(const QMap<QString, NODE_DATA>& nodes, const QList<EDGE_INFO>& links, QPointF pos, GraphsModel *pModel, QPersistentModelIndex subgIdx);
     void redo() override;
     void undo() override;
 
 private:
     const QMap<QString, NODE_DATA> m_nodes;
-    const QList<EdgeInfo> m_links;
+    const QList<EDGE_INFO> m_links;
     QPersistentModelIndex m_subgIdx;
     GraphsModel* m_model;
     QPointF m_pos;

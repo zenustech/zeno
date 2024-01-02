@@ -99,8 +99,12 @@ ZENO_API void INode::preApply() {
     if (!m_dirty)
         return;
 
-    for (const auto& param : inputs_)
-        requireInput(param);
+    for (const auto& param : inputs_) {
+        bool ret = requireInput(param);
+        if (ret)
+            zeno::log_warn("the param {} may not be initialized", param);
+    }
+
 
     log_debug("==> enter {}", ident);
     {
@@ -219,12 +223,20 @@ ZENO_API void INode::set_input_defl(std::string const& name, zvariant defl) {
     param->defl = defl;
 }
 
-std::shared_ptr<IParam> INode::get_input_param(std::string const& name) const {
+ZENO_API std::shared_ptr<IParam> INode::get_input_param(std::string const& name) const {
     for (auto& param : inputs_) {
         if (param->name == name)
             return param;
     }
     return nullptr;
+}
+
+void INode::add_input_param(std::shared_ptr<IParam> param) {
+    inputs_.push_back(param);
+}
+
+void INode::add_output_param(std::shared_ptr<IParam> param) {
+    outputs_.push_back(param);
 }
 
 ZENO_API std::shared_ptr<IParam> INode::get_output_param(std::string const& name) const {
@@ -255,6 +267,43 @@ std::map<std::string, zany> INode::getoutputs()
     std::map<std::string, zany> outputs;
     for (auto param : outputs_) {
         outputs.insert(std::make_pair(param->name, param->result));
+    }
+    return outputs;
+}
+
+std::vector<std::pair<std::string, zany>> INode::getinputs()
+{
+    std::vector<std::pair<std::string, zany>> inputs;
+    for (auto param : inputs_) {
+        inputs.push_back(std::make_pair(param->name, param->result));
+    }
+    return inputs;
+}
+
+std::pair<std::string, std::string> INode::getinputbound(std::string const& name, std::string const& msg) const
+{
+    for (auto param : inputs_) {
+        if (param->name == name && !param->links.empty()) {
+            auto lnk = param->links[0];
+            auto outparam = lnk->fromparam.lock();
+            if (outparam) {
+                outparam->name;
+                auto pnode = outparam->m_spNode.lock();
+                if (pnode) {
+                    auto id = pnode->get_ident();
+                    return { id, outparam->name };
+                }
+            }
+        }
+    }
+    throw makeError<KeyError>(name, msg);
+}
+
+std::vector<std::pair<std::string, zany>> INode::getoutputs2()
+{
+    std::vector<std::pair<std::string, zany>> outputs;
+    for (auto param : outputs_) {
+        outputs.push_back(std::make_pair(param->name, param->result));
     }
     return outputs;
 }
@@ -304,6 +353,20 @@ ZENO_API zany INode::resolveInput(std::string const& id) {
         return get_input_param(id)->result;
     else
         return nullptr;
+}
+
+ZENO_API bool INode::set_input(std::string const& name, zany obj) {
+    for (auto& param : inputs_) {
+        if (param->name == name) {
+            param->result = obj;
+            return true;
+        }
+    }
+    return false;
+}
+
+ZENO_API bool INode::has_output(std::string const& name) const {
+    return get_output_param(name) != nullptr;
 }
 
 ZENO_API bool INode::set_output(std::string const &sock_name, zany obj) {

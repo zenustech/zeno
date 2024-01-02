@@ -3,7 +3,6 @@
 #include <zeno/zeno.h>
 #include <zeno/utils/log.h>
 #include <zeno/utils/string.h>
-#include <common/common.h>
 
 
 namespace zenoio
@@ -108,8 +107,6 @@ namespace zenoio
         }
     }
 
-
-
     zeno::GraphData fork(
         const std::string& currentPath,
         const zeno::AssetsData& subgraphDatas,
@@ -123,20 +120,20 @@ namespace zenoio
         std::unordered_map<std::string, std::string> old2new;
         zeno::LinksData oldLinks;
 
-        if (subgraphDatas.find(subnetName) == subgraphDatas.end())
+        auto it = subgraphDatas.find(subnetName);
+        if (it == subgraphDatas.end())
         {
             return newGraph;
         }
 
-        const zeno::GraphData& subgraph = subgraphDatas[subnetName];
-
+        const zeno::GraphData& subgraph = it->second.graph;
         for (const auto& [ident, nodeData] : subgraph.nodes)
         {
             zeno::NodeData nodeDat = nodeData;
             const std::string& snodeId = nodeDat.ident;
             const std::string& name = nodeDat.cls;
             const std::string& newId = zeno::generateUUID();
-            old2new.insert(snodeId, newId);
+            old2new.insert(std::make_pair(snodeId, newId));
 
             if (subgraphDatas.find(name) != subgraphDatas.end())
             {

@@ -235,8 +235,8 @@ zeno::NodeData Zsg2Reader::_parseNode(
             const std::string& optName = optionsArr[i].GetString();
             if (optName == "ONCE") {} //deprecated 
             else if (optName == "PREP") {} //deprecated 
-            else if (optName == "VIEW") { opts |= zeno::View; }
-            else if (optName == "MUTE") { opts |= zeno::Mute; }
+            else if (optName == "VIEW") { opts = opts | zeno::View; }
+            else if (optName == "MUTE") { opts = opts | zeno::Mute; }
             else if (optName == "CACHE") {} //deprecated 
             else if (optName == "collapsed") {}
         }
@@ -455,6 +455,7 @@ zeno::ParamInfo Zsg2Reader::_parseSocket(
     {
         param.tooltip = sockObj["tooltip"].GetString();
     }
+    return param;
 }
 
 zeno::NodesData Zsg2Reader::_parseChildren(const rapidjson::Value& jsonNodes)

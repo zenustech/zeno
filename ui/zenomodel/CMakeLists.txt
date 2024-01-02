@@ -13,5 +13,5 @@ if (ZENO_DEBUG_MSVC)
 endif()
 
 target_link_libraries(zenomodel PUBLIC Qt5::Widgets)
-target_link_libraries(zenomodel PUBLIC zeno)
+target_link_libraries(zenomodel PUBLIC zenocore)
 target_include_directories(zenomodel PRIVATE . .. ../include include)

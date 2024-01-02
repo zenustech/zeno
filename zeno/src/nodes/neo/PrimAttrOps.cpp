@@ -49,8 +49,8 @@ ZENDEFNODE(PrimFillAttr, {
 
 struct PrimFillColor : PrimFillAttr {
     virtual void apply() override {
-        this->inputs["attr"] = std::make_shared<StringObject>("clr");
-        this->inputs["type"] = std::make_shared<StringObject>("vec3f");
+        set_input("attr", std::make_shared<StringObject>("clr"));
+        set_input("type", std::make_shared<StringObject>("vec3f"));
         PrimFillAttr::apply();
     }
 };

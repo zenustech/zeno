@@ -61,8 +61,8 @@ private:
     void initUI();
     bool isTempModel();
 
-    QList<EdgeInfo> exportLinks(const PARAM_LINKS& links);
-    EdgeInfo exportLink(const QModelIndex& linkIdx);
+    QList<EDGE_INFO> exportLinks(const PARAM_LINKS& links);
+    EDGE_INFO exportLink(const QModelIndex& linkIdx);
     QStringList sockNames(PARAM_CLASS cls) const;
     void onSubIOEdited(const QVariant& value, const VParamItem* pItem);
     void onLinkAdded(VParamItem* pItem);

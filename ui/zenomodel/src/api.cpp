@@ -299,7 +299,7 @@ ZENO_ERROR Zeno_GetInput(
 
     if (1 == input.info.links.size())
     {
-        EdgeInfo link = input.info.links[0];
+        EDGE_INFO link = input.info.links[0];
 
         QString outNode = UiHelper::getSockNode(link.outSockPath);
         QString outSock = UiHelper::getSockName(link.outSockPath);

@@ -962,7 +962,7 @@ void ZenoMainWindow::optixClientRun(int port, const char* cachedir, int cachenum
                     int endFrame = doc["endFrame"].GetInt();
                     zeno::getSession().globalComm->initFrameRange(startFrame, endFrame);
                     zeno::getSession().globalState->frameid = startFrame;
-                    TIMELINE_INFO timer;
+                    zeno::TimelineInfo timer;
                     timer.beginFrame = startFrame;
                     timer.endFrame = endFrame;
                     timer.currFrame = startFrame;
@@ -1916,7 +1916,7 @@ bool ZenoMainWindow::saveQuit() {
     }
     pGraphsMgm->clear();
     //clear timeline info.
-    resetTimeline(TIMELINE_INFO());
+    resetTimeline(zeno::TimelineInfo());
     return true;
 }
 
@@ -1989,9 +1989,9 @@ void ZenoMainWindow::setInDlgEventLoop(bool bOn) {
     m_bInDlgEventloop = bOn;
 }
 
-TIMELINE_INFO ZenoMainWindow::timelineInfo()
+zeno::TimelineInfo ZenoMainWindow::timelineInfo()
 {
-    TIMELINE_INFO info;
+    zeno::TimelineInfo info;
     ZASSERT_EXIT(m_pTimeline, info);
     info.bAlways = m_bAlways;
     info.beginFrame = m_pTimeline->fromTo().first;
@@ -2027,7 +2027,7 @@ void ZenoMainWindow::setAlwaysLightCameraMaterial(bool bAlwaysLightCamera, bool 
     m_bAlwaysMaterial = bAlwaysMaterial;
 }
 
-void ZenoMainWindow::resetTimeline(TIMELINE_INFO info)
+void ZenoMainWindow::resetTimeline(zeno::TimelineInfo info)
 {
     info.timelinefps = info.timelinefps < 1 ? 1 : info.timelinefps;
     setAlways(info.bAlways);
@@ -2072,8 +2072,8 @@ void ZenoMainWindow::onFeedBack()
                 return;
             }
             APP_SETTINGS settings;
-            QString strContent = ZsgWriter::getInstance().dumpProgramStr(pModel, settings);
-            dlg.sendEmail("bug feedback", content, strContent);
+            //QString strContent = ZsgWriter::getInstance().dumpProgramStr(pModel, settings);
+            //dlg.sendEmail("bug feedback", content, strContent);
         }
     }
 }

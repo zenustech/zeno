@@ -55,11 +55,80 @@ PtrLayoutNode findParent(PtrLayoutNode root, QDockWidget* pWidget)
     return nullptr;
 }
 
+void _writeLayout(PtrLayoutNode root, const QSize& szMainwin, PRETTY_WRITER& writer, void(*cbDumpTabsToZsg)(QDockWidget*, RAPIDJSON_WRITER&))
+{
+    JsonObjBatch scope(writer);
+    if (root->type == NT_HOR || root->type == NT_VERT)
+    {
+        writer.Key("orientation");
+        writer.String(root->type == NT_HOR ? "H" : "V");
+        writer.Key("left");
+        if (root->pLeft)
+            _writeLayout(root->pLeft, szMainwin, writer, cbDumpTabsToZsg);
+        else
+            writer.Null();
+
+        writer.Key("right");
+        if (root->pRight)
+            _writeLayout(root->pRight, szMainwin, writer, cbDumpTabsToZsg);
+        else
+            writer.Null();
+    }
+    else
+    {
+        writer.Key("widget");
+        if (root->pWidget == nullptr || root->pWidget->isHidden())
+        {
+            writer.Null();
+        }
+        else
+        {
+            writer.StartObject();
+            int w = szMainwin.width();
+            int h = szMainwin.height();
+            if (w == 0)
+                w = 1;
+            if (h == 0)
+                h = 1;
+
+            writer.Key("geometry");
+            writer.StartObject();
+            QRect rc = root->pWidget->geometry();
+
+            writer.Key("x");
+            float _left = (float)rc.left() / w;
+            writer.Double(_left);
+
+            writer.Key("y");
+            float _top = (float)rc.top() / h;
+            writer.Double(_top);
+
+            writer.Key("width");
+            float _width = (float)rc.width() / w;
+            writer.Double(_width);
+
+            writer.Key("height");
+            float _height = (float)rc.height() / h;
+            writer.Double(_height);
+
+            writer.EndObject();
+
+            writer.Key("tabs");
+            writer.StartArray();
+            if (cbDumpTabsToZsg)
+                cbDumpTabsToZsg(root->pWidget, writer);
+            writer.EndArray();
+
+            writer.EndObject();
+        }
+    }
+}
+
 QString exportLayout(PtrLayoutNode root, const QSize& szMainwin)
 {
     rapidjson::StringBuffer s;
     PRETTY_WRITER writer(s);
-    ZsgWriter::getInstance()._writeLayout(root, szMainwin, writer, &AppHelper::dumpTabsToZsg);
+    //_writeLayout(root, szMainwin, writer, &AppHelper::dumpTabsToZsg);
     QString strJson = QString::fromUtf8(s.GetString());
     return strJson;
 }
@@ -86,7 +155,7 @@ PtrLayoutNode readLayoutFile(const QString& filePath)
     QByteArray bytes = file.readAll();
     doc.Parse(bytes);
 
-    return Zsg2Reader::getInstance()._readLayout(doc.GetObject());
+    return _readLayout(doc.GetObject());
 }
 
 
@@ -95,12 +164,76 @@ PtrLayoutNode readLayout(const QString& content)
     rapidjson::Document doc;
     QByteArray bytes = content.toUtf8();
     doc.Parse(bytes);
-    return Zsg2Reader::getInstance()._readLayout(doc.GetObject());
+    return _readLayout(doc.GetObject());
 }
 
 PtrLayoutNode readLayout(const rapidjson::Value& objValue)
 {
-    return Zsg2Reader::getInstance()._readLayout(objValue);
+    return _readLayout(objValue);
+}
+
+PtrLayoutNode _readLayout(const rapidjson::Value& objValue)
+{
+    if (objValue.HasMember("orientation") && objValue.HasMember("left") && objValue.HasMember("right"))
+    {
+        PtrLayoutNode ptrNode = std::make_shared<LayerOutNode>();
+        QString ori = objValue["orientation"].GetString();
+        ptrNode->type = (ori == "H" ? NT_HOR : NT_VERT);
+        ptrNode->pLeft = _readLayout(objValue["left"]);
+        ptrNode->pRight = _readLayout(objValue["right"]);
+        ptrNode->pWidget = nullptr;
+        return ptrNode;
+    }
+    else if (objValue.HasMember("widget"))
+    {
+        PtrLayoutNode ptrNode = std::make_shared<LayerOutNode>();
+        ptrNode->type = NT_ELEM;
+        ptrNode->pLeft = nullptr;
+        ptrNode->pRight = nullptr;
+
+        const rapidjson::Value& widObj = objValue["widget"];
+
+        auto tabsObj = widObj["tabs"].GetArray();
+        QStringList tabs;
+        for (int i = 0; i < tabsObj.Size(); i++)
+        {
+            if (tabsObj[i].IsString())
+            {
+                ptrNode->tabs.push_back(tabsObj[i].GetString());
+            }
+            else if (tabsObj[i].IsObject())
+            {
+                if (tabsObj[i].HasMember("type") && QString(tabsObj[i]["type"].GetString()) == "View")
+                {
+                    ptrNode->tabs.push_back("View");
+                    DockContentWidgetInfo info(tabsObj[i]["resolutionX"].GetInt(), tabsObj[i]["resolutionY"].GetInt(),
+                        tabsObj[i]["blockwindow"].GetBool(), tabsObj[i]["resolution-combobox-index"].GetInt(), tabsObj[i]["backgroundcolor"][0].GetDouble(),
+                        tabsObj[i]["backgroundcolor"][1].GetDouble(), tabsObj[i]["backgroundcolor"][2].GetDouble());
+                    ptrNode->widgetInfos.push_back(info);
+                }
+                else if (tabsObj[i].HasMember("type") && QString(tabsObj[i]["type"].GetString()) == "Optix")
+                {
+                    ptrNode->tabs.push_back("Optix");
+                    DockContentWidgetInfo info(tabsObj[i]["resolutionX"].GetInt(), tabsObj[i]["resolutionY"].GetInt(),
+                        tabsObj[i]["blockwindow"].GetBool(), tabsObj[i]["resolution-combobox-index"].GetInt());
+                    ptrNode->widgetInfos.push_back(info);
+                }
+            }
+        }
+
+        const rapidjson::Value& geomObj = widObj["geometry"];
+        float x = geomObj["x"].GetFloat();
+        float y = geomObj["y"].GetFloat();
+        float width = geomObj["width"].GetFloat();
+        float height = geomObj["height"].GetFloat();
+        ptrNode->geom = QRectF(x, y, width, height);
+
+        return ptrNode;
+    }
+    else
+    {
+        return nullptr;
+    }
 }
 
 int getDockSize(PtrLayoutNode root, bool bHori)

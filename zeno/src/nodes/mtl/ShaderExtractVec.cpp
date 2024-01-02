@@ -27,7 +27,7 @@ struct ShaderExtractVec : INode {
     virtual void apply() override {
         for (int i = 0; i < 4; i++) {
             auto node = std::make_shared<ImplShaderExtractVec>();
-            node->inputs["vec"] = get_input("vec");
+            node->set_input("vec", get_input("vec"));
             node->comp = i;
             auto shader = std::make_shared<ShaderObject>(node.get());
             set_output(std::string{} + "xyzw"[i], std::move(shader));

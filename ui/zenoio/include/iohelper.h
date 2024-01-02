@@ -1,8 +1,8 @@
 #ifndef __IO_HELPER_H__
 #define __IO_HELPER_H__
 
-#include <common/data.h>
 #include <zeno/utils/uuid.h>
+#include <zeno/core/data.h>
 
 namespace zenoio {
 

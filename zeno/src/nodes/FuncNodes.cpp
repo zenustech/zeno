@@ -38,8 +38,8 @@ ZENDEFNODE(FuncBegin, {
 struct FuncEnd : zeno::ContextManagedNode {
     virtual void preApply() override {
         FuncBegin *fore = nullptr;
-        if (auto it = inputBounds.find("FUNC"); it != inputBounds.end()) {
-            auto [sn, ss] = it->second;
+        {
+            auto [sn, ss] = getinputbound("FUNC");
             fore = dynamic_cast<FuncBegin *>(graph->nodes.at(sn).get());
             if (!fore) {
                 throw makeError("FuncEnd::FUNC must be conn to FuncBegin::FUNC!");
@@ -104,8 +104,8 @@ ZENDEFNODE(FuncSimpleBegin, {
 struct FuncSimpleEnd : zeno::ContextManagedNode {
     virtual void preApply() override {
         FuncSimpleBegin *fore = nullptr;
-        if (auto it = inputBounds.find("FUNC"); it != inputBounds.end()) {
-            auto [sn, ss] = it->second;
+        {
+            auto [sn, ss] = getinputbound("FUNC");
             fore = dynamic_cast<FuncSimpleBegin *>(graph->nodes.at(sn).get());
             if (!fore) {
                 throw makeError("FuncSimpleEnd::FUNC must be conn to FuncSimpleBegin::FUNC!");

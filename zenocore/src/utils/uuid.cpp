@@ -11,7 +11,7 @@
 
 namespace zeno
 {
-    std::string generateUUID()
+    ZENO_API std::string generateUUID()
     {
 #if defined(_WIN32)
         char buf[GUID_LEN] = { 0 };

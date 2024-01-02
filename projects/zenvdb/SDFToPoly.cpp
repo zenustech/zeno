@@ -77,7 +77,7 @@ static int defSDFToPoly = zeno::defNodeClass<SDFToPoly>("SDFToPoly",
 struct SDFToPrimitive : SDFToPoly {
     virtual void apply() override {
         SDFToPoly::apply();
-        set_output("prim", std::move(outputs.at("Mesh")));
+        set_output("prim", std::move(get_output("Mesh")));
     }
 };
 

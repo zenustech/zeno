@@ -7,7 +7,7 @@
 #include "viewportinteraction/picker.h"
 #include "launch/corelaunch.h"
 #include "dock/docktabcontent.h"
-#include <zenoio/include/common.h>
+#include "layout/winlayoutrw.h"
 
 class ViewportWidget;
 #ifdef ZENO_OPTIX_PROC

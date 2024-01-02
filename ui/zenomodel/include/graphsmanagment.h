@@ -3,6 +3,7 @@
 
 #include <QtWidgets>
 #include "igraphsmodel.h"
+#include <zeno/core/data.h>
 
 class GraphsManagment : public QObject
 {
@@ -26,7 +27,7 @@ public:
     void appendErr(const QString& nodeName, const QString& msg);
     QGraphicsScene* gvScene(const QModelIndex& subgIdx) const;
     void addScene(const QModelIndex& subgIdx, QGraphicsScene* scene);
-    TIMELINE_INFO timeInfo() const;
+    zeno::TimelineInfo timeInfo() const;
     QString zsgPath() const;
     QString zsgDir() const;
     RECORD_SETTING recordSettings() const;
@@ -54,7 +55,7 @@ private:
     QAbstractItemModel* m_pTreeModel;
     QStandardItemModel* m_logModel;     //connection with scene.
     mutable std::mutex m_mtx;
-    TIMELINE_INFO m_timerInfo;
+    zeno::TimelineInfo m_timerInfo;
     RECORD_SETTING m_recordInfo;
     LAYOUT_SETTING m_layoutInfo;
     USERDATA_SETTING m_userdataInfo;

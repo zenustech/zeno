@@ -121,8 +121,8 @@ struct CacheLastFrameEnd : zeno::INode {
     CacheLastFrameBegin* m_CacheLastFrameBegin;
 
     virtual void apply() override {
-        if (auto it = inputBounds.find("linkTo"); it != inputBounds.end()) {
-            auto [sn, ss] = it->second;
+        {
+            auto [sn, ss] = getinputbound("linkTo");
             m_CacheLastFrameBegin = dynamic_cast<CacheLastFrameBegin*>(graph->nodes.at(sn).get());
             if (!m_CacheLastFrameBegin) {
                 printf("CacheLastFrameEnd Node: 'linkTo' socket must be connected to CacheLastFrameBegin Node 'linkFrom' socket!\n");

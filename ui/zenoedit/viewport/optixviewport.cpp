@@ -4,12 +4,14 @@
 #include "zenomainwindow.h"
 #include "cameracontrol.h"
 #include <zenovis/DrawOptions.h>
+#include <zeno/types/UserData.h>
 #include <zeno/extra/GlobalComm.h>
 #include "settings/zenosettingsmanager.h"
 #include "launch/corelaunch.h"
 #include <zeno/core/Session.h>
 #include <zenovis/Camera.h>
 #include <zeno/funcs/ParseObjectFromUi.h>
+#include <zenovis/ObjectsManager.h>
 
 
 OptixWorker::OptixWorker(Zenovis *pzenoVis)

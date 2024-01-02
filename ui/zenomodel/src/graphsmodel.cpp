@@ -784,7 +784,7 @@ NODE_DATA GraphsModel::_fork(const QString& forkSubgName)
 
     QMap<QString, NODE_DATA> nodes;
     QMap<QString, NODE_DATA> oldGraphsToNew;
-    QList<EdgeInfo> links;
+    QList<EDGE_INFO> links;
     for (int r = 0; r < pModel->rowCount(); r++)
     {
         QModelIndex newIdx;
@@ -835,7 +835,7 @@ NODE_DATA GraphsModel::_fork(const QString& forkSubgName)
                 QString oldId = UiHelper::getSockNode(outSockPath);
                 outSockPath.replace(oldId, newId);
             }
-            links.append(EdgeInfo(outSockPath, inSockPath));
+            links.append(EDGE_INFO(outSockPath, inSockPath));
         }
     }
     for (QMap<QString, NODE_DATA>::const_iterator it = oldGraphsToNew.cbegin(); it != oldGraphsToNew.cend(); it++) {
@@ -1122,7 +1122,7 @@ void GraphsModel::appendNodes(const QList<NODE_DATA>& nodes, const QModelIndex& 
 
 void GraphsModel::importNodes(
                 const QMap<QString, NODE_DATA>& nodes,
-                const QList<EdgeInfo>& links,
+                const QList<EDGE_INFO>& links,
                 const QPointF& pos,
                 const QModelIndex& subGpIdx,
                 bool enableTransaction)
@@ -1158,7 +1158,7 @@ void GraphsModel::importNodes(
 		    _pos += offset;
 		    pGraph->setData(idx, _pos, ROLE_OBJPOS);
 	    }
-        for (EdgeInfo link : links)
+        for (EDGE_INFO link : links)
         {
             addLink(subGpIdx, link, false);
         }
@@ -1188,7 +1188,7 @@ QModelIndex GraphsModel::extractSubGraph(
     //copy nodes to new subg.
     QPair<NODES_DATA, LINKS_DATA> datas = UiHelper::dumpNodes(nodesIndice, links);
     QMap<QString, NODE_DATA> newNodes;
-    QList<EdgeInfo> newLinks;
+    QList<EDGE_INFO> newLinks;
     UiHelper::reAllocIdents(toSubg, datas.first, datas.second, newNodes, newLinks);
     UiHelper::renameNetLabels(this, toSubgIdx, newNodes);
 
@@ -1253,11 +1253,11 @@ void GraphsModel::removeLink(const QModelIndex& linkIdx, bool enableTransaction)
     QModelIndex subgIdx = nodeIdx.data(ROLE_SUBGRAPH_IDX).toModelIndex();
 
     ZASSERT_EXIT(inSockIdx.isValid() && outSockIdx.isValid());
-    EdgeInfo link(outSockIdx.data(ROLE_OBJPATH).toString(), inSockIdx.data(ROLE_OBJPATH).toString());
+    EDGE_INFO link(outSockIdx.data(ROLE_OBJPATH).toString(), inSockIdx.data(ROLE_OBJPATH).toString());
     removeLink(subgIdx, link, enableTransaction);
 }
 
-void GraphsModel::removeLink(const QModelIndex& subgIdx, const EdgeInfo& link, bool enableTransaction)
+void GraphsModel::removeLink(const QModelIndex& subgIdx, const EDGE_INFO& link, bool enableTransaction)
 {
     if (enableTransaction)
     {
@@ -1299,11 +1299,11 @@ void GraphsModel::removeLink(const QModelIndex& subgIdx, const EdgeInfo& link, b
 QModelIndex GraphsModel::addLink(const QModelIndex& subgIdx, const QModelIndex& fromSock, const QModelIndex& toSock, bool enableTransaction)
 {
     ZASSERT_EXIT(fromSock.isValid() && toSock.isValid(), QModelIndex());
-    EdgeInfo link(fromSock.data(ROLE_OBJPATH).toString(), toSock.data(ROLE_OBJPATH).toString());
+    EDGE_INFO link(fromSock.data(ROLE_OBJPATH).toString(), toSock.data(ROLE_OBJPATH).toString());
     return addLink(subgIdx, link, enableTransaction);
 }
 
-QModelIndex GraphsModel::addLink(const QModelIndex& subgIdx, const EdgeInfo& info, bool enableTransaction)
+QModelIndex GraphsModel::addLink(const QModelIndex& subgIdx, const EDGE_INFO& info, bool enableTransaction)
 {
     if (enableTransaction)
     {

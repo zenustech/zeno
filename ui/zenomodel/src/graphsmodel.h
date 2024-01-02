@@ -79,18 +79,18 @@ public:
     void setNodeData(const QModelIndex& nodeIndex, const QModelIndex& subGpIdx, const QVariant& value, int role) override;
     void importNodes(
             const QMap<QString, NODE_DATA>& nodes,
-            const QList<EdgeInfo>& links,
+            const QList<EDGE_INFO>& links,
             const QPointF& pos,
             const QModelIndex& subGpIdx,
             bool enableTransaction = false) override;
     void removeNode(const QString& nodeid, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
     void removeNode(int row, const QModelIndex& subGpIdx);
     void removeLink(const QModelIndex& linkIdx, bool enableTransaction = false) override;
-    void removeLink(const QModelIndex& subgIdx, const EdgeInfo& linkIdx, bool enableTransaction = false) override;
+    void removeLink(const QModelIndex& subgIdx, const EDGE_INFO& linkIdx, bool enableTransaction = false) override;
     void removeLegacyLink(const QModelIndex& linkIdx) override;
     void removeSubGraph(const QString& name) override;
     QModelIndex addLink(const QModelIndex& subgIdx, const QModelIndex& fromSock, const QModelIndex& toSock, bool enableTransaction = false) override;
-    QModelIndex addLink(const QModelIndex& subgIdx, const EdgeInfo& info, bool enableTransaction = false) override;
+    QModelIndex addLink(const QModelIndex& subgIdx, const EDGE_INFO& info, bool enableTransaction = false) override;
     void addLegacyLink(const QModelIndex& subgIdx, const QModelIndex& fromSock, const QModelIndex& toSock);
 
     void updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) override;

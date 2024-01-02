@@ -3,7 +3,7 @@
 #include <zeno/utils/api.h>
 #include <zeno/core/IObject.h>
 #include <zeno/core/INode.h>
-#include <common/common.h>
+#include <zeno/core/common.h>
 #include <zeno/utils/safe_dynamic_cast.h>
 #include <zeno/funcs/LiterialConverter.h>
 #include <variant>

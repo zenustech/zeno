@@ -32,7 +32,7 @@ std::optional<NodeLocation> NodeSyncMgr::generateNewNode(NodeLocation& node_loca
     QString outSockObj = UiHelper::constructObjPath(subgName, outNode, "[node]/outputs/", outSock);
     QString inSockObj = UiHelper::constructObjPath(subgName, inNode, "[node]/inputs/", inSock);
 
-    EdgeInfo edge(outSockObj, inSockObj);
+    EDGE_INFO edge(outSockObj, inSockObj);
     graph_model->addLink(subgraph, edge, false);
     return searchNode(new_node_id.toStdString());
 }

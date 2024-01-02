@@ -73,7 +73,7 @@ void RemoveNodeCommand::undo()
 }
 
 
-LinkCommand::LinkCommand(const QModelIndex& subgIdx, bool bAddLink, const EdgeInfo& link, GraphsModel* pModel)
+LinkCommand::LinkCommand(const QModelIndex& subgIdx, bool bAddLink, const EDGE_INFO& link, GraphsModel* pModel)
     : QUndoCommand()
     , m_bAdd(bAddLink)
     , m_link(link)
@@ -134,7 +134,7 @@ void UpdateBlackboardCommand::undo()
 
 ImportNodesCommand::ImportNodesCommand(
                 const QMap<QString, NODE_DATA>& nodes,
-                const QList<EdgeInfo>& links,
+                const QList<EDGE_INFO>& links,
                 QPointF pos,
                 GraphsModel* pModel,
                 QPersistentModelIndex subgIdx)

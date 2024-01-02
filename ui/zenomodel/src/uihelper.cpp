@@ -1705,7 +1705,7 @@ QPair<NODES_DATA, LINKS_DATA> UiHelper::dumpNodes(const QModelIndexList &nodeInd
                                                   const QModelIndexList &linkIndice)
 {
     NODES_DATA nodes;
-    QList<EdgeInfo> links;
+    QList<EDGE_INFO> links;
 
     QSet<QString> existedNodes;
     for (auto idx : nodeIndice)
@@ -1725,7 +1725,7 @@ QPair<NODES_DATA, LINKS_DATA> UiHelper::dumpNodes(const QModelIndexList &nodeInd
         if (existedNodes.find(outId) != existedNodes.end() &&
             existedNodes.find(inId) != existedNodes.end())
         {
-            links.append(EdgeInfo(outPath, inPath));
+            links.append(EDGE_INFO(outPath, inPath));
         }
     }
 
@@ -1735,7 +1735,7 @@ QPair<NODES_DATA, LINKS_DATA> UiHelper::dumpNodes(const QModelIndexList &nodeInd
         INPUT_SOCKETS inputs = node[ROLE_INPUTS].value<INPUT_SOCKETS>();
         for (INPUT_SOCKET& inSocket : inputs)
         {
-            for (QList<EdgeInfo>::iterator it = inSocket.info.links.begin(); it != inSocket.info.links.end(); )
+            for (QList<EDGE_INFO>::iterator it = inSocket.info.links.begin(); it != inSocket.info.links.end(); )
             {
                 if (links.indexOf(*it) == -1)
                 {
@@ -1749,7 +1749,7 @@ QPair<NODES_DATA, LINKS_DATA> UiHelper::dumpNodes(const QModelIndexList &nodeInd
 
             for (DICTKEY_INFO& keyItem : inSocket.info.dictpanel.keys)
             {
-                for (QList<EdgeInfo>::iterator it = keyItem.links.begin(); it != keyItem.links.end(); )
+                for (QList<EDGE_INFO>::iterator it = keyItem.links.begin(); it != keyItem.links.end(); )
                 {
                     if (links.indexOf(*it) == -1)
                     {
@@ -1766,7 +1766,7 @@ QPair<NODES_DATA, LINKS_DATA> UiHelper::dumpNodes(const QModelIndexList &nodeInd
         OUTPUT_SOCKETS outputs = node[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
         for (OUTPUT_SOCKET& outSocket : outputs)
         {
-            for (QList<EdgeInfo>::iterator it = outSocket.info.links.begin();
+            for (QList<EDGE_INFO>::iterator it = outSocket.info.links.begin();
                  it != outSocket.info.links.end();)
             {
                 if (links.indexOf(*it) == -1)
@@ -1781,7 +1781,7 @@ QPair<NODES_DATA, LINKS_DATA> UiHelper::dumpNodes(const QModelIndexList &nodeInd
 
             for (DICTKEY_INFO& keyItem : outSocket.info.dictpanel.keys)
             {
-                for (QList<EdgeInfo>::iterator it = keyItem.links.begin(); it != keyItem.links.end(); )
+                for (QList<EDGE_INFO>::iterator it = keyItem.links.begin(); it != keyItem.links.end(); )
                 {
                     if (links.indexOf(*it) == -1)
                     {
@@ -1853,7 +1853,7 @@ void UiHelper::reAllocIdents(const QString& targetSubgraph,
         data[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
     }
 
-    for (const EdgeInfo& link : inLinks)
+    for (const EDGE_INFO& link : inLinks)
     {
         QString outputNode = UiHelper::getSockNode(link.outSockPath);
         QString outParamPath = UiHelper::getParamPath(link.outSockPath);
@@ -1868,7 +1868,7 @@ void UiHelper::reAllocIdents(const QString& targetSubgraph,
         const QString& newInSock = UiHelper::constructObjPath(targetSubgraph, newInputNode, inParamPath);
         const QString& newOutSock = UiHelper::constructObjPath(targetSubgraph, newOutputNode, outParamPath);
 
-        outLinks.append(EdgeInfo(newOutSock, newInSock));
+        outLinks.append(EDGE_INFO(newOutSock, newInSock));
     }
 }
 

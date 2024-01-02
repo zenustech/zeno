@@ -207,7 +207,8 @@ void ZSubnetListItemDelegate::onSaveSubgraph(const QModelIndex& index)
     QString subgName = index.data(ROLE_OBJNAME).toString();
     QString path = QFileDialog::getSaveFileName(nullptr, "Path to Save", subgName, "Zeno Graph File(*.zsg);; All Files(*);;");
     if (!path.isEmpty()) {
-        QString strJson = ZsgWriter::getInstance().dumpSubgraphStr(m_model, getSubgraphs(index));
+        //todo: writer.
+        QString strJson;// = ZsgWriter::getInstance().dumpSubgraphStr(m_model, getSubgraphs(index));
         QFile file(path);
         zeno::log_debug("saving {} chars to file [{}]", strJson.size(), path.toStdString());
         if (!file.open(QIODevice::WriteOnly)) {

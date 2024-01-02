@@ -651,7 +651,7 @@ if(value.separate != ""){ \
     IGraphsModel *pModel = GraphsManagment::instance().currentModel();
     GraphsManagment& gman = GraphsManagment::instance();
     APP_SETTINGS settings;
-    TIMELINE_INFO info;
+    zeno::TimelineInfo info;
     settings.timeline = info;
     std::cout << "save zsg file: " << out_zsg.string() << "\n";
     gman.saveFile(QString::fromStdString(out_zsg.string()), settings);

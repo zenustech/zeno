@@ -7,6 +7,7 @@
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/prettywriter.h>
 #include <memory>
+#include <zeno/core/data.h>
 
 typedef rapidjson::PrettyWriter<rapidjson::StringBuffer> RAPIDJSON_WRITER;
 
@@ -56,7 +57,7 @@ struct USERDATA_SETTING
 
 struct APP_SETTINGS
 {
-    TIMELINE_INFO timeline;
+    zeno::TimelineInfo timeline;
     RECORD_SETTING recordInfo;
     LAYOUT_SETTING layoutInfo;
     USERDATA_SETTING userdataInfo;

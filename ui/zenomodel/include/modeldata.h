@@ -114,19 +114,19 @@ inline const char* cPathSeperator = ":";
 typedef QMap<QString, PARAM_INFO> PARAMS_INFO;
 Q_DECLARE_METATYPE(PARAMS_INFO)
 
-struct EdgeInfo
+struct EDGE_INFO
 {
     QString outSockPath;    //option: path for socket.
     QString inSockPath;
 
-    EdgeInfo() = default;
-    EdgeInfo(const QString &outpath, const QString &inpath)
+    EDGE_INFO() = default;
+    EDGE_INFO(const QString &outpath, const QString &inpath)
         : outSockPath(outpath), inSockPath(inpath) {}
     
-    bool operator==(const EdgeInfo &rhs) const {
+    bool operator==(const EDGE_INFO &rhs) const {
         return outSockPath == rhs.outSockPath && inSockPath == rhs.inSockPath;
     }
-    bool operator<(const EdgeInfo &rhs) const {
+    bool operator<(const EDGE_INFO &rhs) const {
         if (outSockPath != rhs.outSockPath) {
             return outSockPath < rhs.outSockPath;
         } else if (inSockPath != rhs.inSockPath) {
@@ -141,13 +141,13 @@ struct EdgeInfo
     }
 
 };
-Q_DECLARE_METATYPE(EdgeInfo)
+Q_DECLARE_METATYPE(EDGE_INFO)
 
 struct DICTKEY_INFO
 {
     QString key;
     QString netLabel;
-    QList<EdgeInfo> links;
+    QList<EDGE_INFO> links;
 };
 
 struct DICTPANEL_INFO
@@ -164,7 +164,7 @@ struct SOCKET_INFO {
     QString type;
 
     QVariant defaultValue;  // a native value or a curvemodel.
-    QList<EdgeInfo> links;  //structure for storing temp link info, cann't use to normal precedure, except copy/paste and io.
+    QList<EDGE_INFO> links;  //structure for storing temp link info, cann't use to normal precedure, except copy/paste and io.
     QString netlabel;
 
     //QList<DICTKEY_INFO> keys;
@@ -320,12 +320,12 @@ struct STATUS_UPDATE_INFO {
 Q_DECLARE_METATYPE(STATUS_UPDATE_INFO)
 
 struct LINK_UPDATE_INFO {
-    EdgeInfo oldEdge;
-    EdgeInfo newEdge;
+    EDGE_INFO oldEdge;
+    EDGE_INFO newEdge;
 };
 
 typedef QMap<QString, NODE_DATA> NODES_DATA;
-typedef QList<EdgeInfo> LINKS_DATA;
+typedef QList<EDGE_INFO> LINKS_DATA;
 
 struct CURVE_RANGE {
     qreal xFrom;

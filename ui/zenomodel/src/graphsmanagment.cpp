@@ -83,12 +83,13 @@ IGraphsModel* GraphsManagment::openZsgFile(const QString& fn)
 
     {
         IOBreakingScope batch(pModel);
-        std::shared_ptr<IAcceptor> acceptor(zeno_model::createIOAcceptor(pModel, false));
-        bool ret = Zsg2Reader::getInstance().openFile(fn, acceptor.get());
-        m_timerInfo = acceptor->timeInfo();
-        m_recordInfo = acceptor->recordInfo();
-        m_layoutInfo = acceptor->layoutInfo();
-        m_userdataInfo = acceptor->userdataInfo();
+
+        zeno::ZSG_PARSE_RESULT result;
+        bool ret = zenoio::Zsg2Reader::getInstance().openFile(fn.toStdString(), result);
+        m_timerInfo = result.timeline;
+        //m_recordInfo = acceptor->recordInfo();
+        //m_layoutInfo = acceptor->layoutInfo();
+        //m_userdataInfo = acceptor->userdataInfo();
         if (!ret)
             return nullptr;
     }
@@ -106,7 +107,8 @@ bool GraphsManagment::saveFile(const QString& filePath, APP_SETTINGS settings)
         return false;
     }
 
-    QString strContent = ZsgWriter::getInstance().dumpProgramStr(m_model, settings);
+    //todo: writer.
+    QString strContent;// = ZsgWriter::getInstance().dumpProgramStr(m_model, settings);
     QFile f(filePath);
     zeno::log_debug("saving {} chars to file [{}]", strContent.size(), filePath.toStdString());
     if (!f.open(QIODevice::WriteOnly)) {
@@ -138,30 +140,12 @@ IGraphsModel* GraphsManagment::newFile()
 
 void GraphsManagment::importGraph(const QString& fn)
 {
-    if (!m_model)
-        return;
-
-    IOBreakingScope batch(m_model);
-    std::shared_ptr<IAcceptor> acceptor(zeno_model::createIOAcceptor(m_model, true));
-	if (!Zsg2Reader::getInstance().openFile(fn, acceptor.get()))
-	{
-		zeno::log_error("failed to open zsg file: {}", fn.toStdString());
-		return;
-	}
+    //todo: the function needs to be refactor.
 }
 
 void GraphsManagment::importSubGraphs(const QString& fn, const QMap<QString, QString>& map)
 {
-    if (!m_model)
-        return;
-
-    IOBreakingScope batch(m_model);
-    std::shared_ptr<IAcceptor> acceptor(zeno_model::createIOAcceptor(m_model, true));    
-    if (!Zsg2Reader::getInstance().importSubgraphs(fn, acceptor.get(), map, m_model))
-    {
-        zeno::log_error("failed to open zsg file: {}", fn.toStdString());
-        return;
-    }
+    //todo: the function needs to be refactor.
 }
 
 void GraphsManagment::clear()
@@ -239,7 +223,7 @@ void GraphsManagment::addScene(const QModelIndex& subgIdx, QGraphicsScene* scene
     m_scenes.insert(subgName, scene);
 }
 
-TIMELINE_INFO GraphsManagment::timeInfo() const
+zeno::TimelineInfo GraphsManagment::timeInfo() const
 {
     return m_timerInfo;
 }

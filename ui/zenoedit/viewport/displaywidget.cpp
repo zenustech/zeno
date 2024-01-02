@@ -1000,7 +1000,8 @@ bool DisplayWidget::onRecord_cmd(const VideoRecInfo& recInfo)
     ZASSERT_EXIT(mainWin, false);
     timeSettings.timeline = mainWin->timelineInfo();
 
-    QString strContent = ZsgWriter::getInstance().dumpProgramStr(pGraphs, timeSettings);
+    //todo: writer.
+    QString strContent;// = ZsgWriter::getInstance().dumpProgramStr(pGraphs, timeSettings);
 
     QTemporaryFile tempZsg("zeno-tempfile");
     if (!tempZsg.open()) {

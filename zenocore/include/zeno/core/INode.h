@@ -11,7 +11,7 @@
 #include <map>
 #include <zeno/types/CurveObject.h>
 #include <zeno/extra/GlobalState.h>
-#include <common/data.h>
+#include <zeno/core/data.h>
 
 namespace zeno {
 
@@ -84,12 +84,17 @@ public:
     ZENO_API std::shared_ptr<IParam> get_output_param(std::string const& name) const;
     //END new api
 
+    void add_input_param(std::shared_ptr<IParam> param);
+    void add_output_param(std::shared_ptr<IParam> param);
     void directly_setinputs(std::map<std::string, zany> inputs);
     std::map<std::string, zany> getoutputs();
 
 protected:
     ZENO_API virtual void complete();
     ZENO_API virtual void apply() = 0;
+    ZENO_API std::vector<std::pair<std::string, zany>> getinputs();
+    ZENO_API std::vector<std::pair<std::string, zany>> getoutputs2();
+    ZENO_API std::pair<std::string, std::string> getinputbound(std::string const& name, std::string const& msg = "") const;
 
 private:
     zany process(std::shared_ptr<IParam> in_param);
@@ -109,7 +114,9 @@ public:
     ZENO_API GlobalState *getGlobalState() const;
 
     ZENO_API bool has_input(std::string const &id) const;
+    ZENO_API bool set_input(std::string const& name, zany obj);
     ZENO_API zany get_input(std::string const &id) const;
+    ZENO_API bool has_output(std::string const& name) const;
     ZENO_API bool set_output(std::string const &id, zany obj);
     ZENO_API zany get_output(std::string const& sock_name);
 

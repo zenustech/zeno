@@ -326,20 +326,20 @@ void NodeParamModel::setOutputSockets(const OUTPUT_SOCKETS& outputs)
     }
 }
 
-QList<EdgeInfo> NodeParamModel::exportLinks(const PARAM_LINKS& links)
+QList<EDGE_INFO> NodeParamModel::exportLinks(const PARAM_LINKS& links)
 {
-    QList<EdgeInfo> linkInfos;
+    QList<EDGE_INFO> linkInfos;
     for (auto linkIdx : links)
     {
-        EdgeInfo link = exportLink(linkIdx);
+        EDGE_INFO link = exportLink(linkIdx);
         linkInfos.append(link);
     }
     return linkInfos;
 }
 
-EdgeInfo NodeParamModel::exportLink(const QModelIndex& linkIdx)
+EDGE_INFO NodeParamModel::exportLink(const QModelIndex& linkIdx)
 {
-    EdgeInfo link;
+    EDGE_INFO link;
 
     QModelIndex outSock = linkIdx.data(ROLE_OUTSOCK_IDX).toModelIndex();
     QModelIndex inSock = linkIdx.data(ROLE_INSOCK_IDX).toModelIndex();
@@ -1028,7 +1028,7 @@ void NodeParamModel::exportDictkeys(DictKeyModel* pModel, DICTPANEL_INFO& panel)
                 QModelIndex insock = linkIdx.data(ROLE_INSOCK_IDX).toModelIndex();
                 ZASSERT_EXIT(insock.isValid() && outsock.isValid());
 
-                EdgeInfo link = exportLink(linkIdx);
+                EDGE_INFO link = exportLink(linkIdx);
                 if (link.isValid())
                     keyInfo.links.append(link);
             }

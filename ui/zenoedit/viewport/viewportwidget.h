@@ -6,7 +6,7 @@
 #include "common.h"
 #include "recordvideomgr.h"
 #include "dock/docktabcontent.h"
-
+#include "layout/winlayoutrw.h"
 #include <viewportinteraction/transform.h>
 #include <viewportinteraction/picker.h>
 
