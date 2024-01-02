@@ -624,7 +624,7 @@ extern "C" __global__ void __closesthit__radiance()
                 N,
                 prd->geometryNormal,
                 -normalize(ray_dir),
-                mats.thin>0.5f,
+                (mats.thin>0.5f || mats.doubleSide >0.5f),
                 next_ray_is_going_inside,
                 wi,
                 reflectance,
@@ -830,7 +830,7 @@ extern "C" __global__ void __closesthit__radiance()
         vec3 rd, rs, rt; // captured by lambda
 
         float3 lbrdf = DisneyBSDF::EvaluateDisney2(vec3(1.0f), mats, L, V, T, B, N,prd->geometryNormal,
-            mats.thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : next_ray_is_going_inside, thisPDF, rrPdf,
+            (mats.thin > 0.5f || mats.doubleSide >0.5f), flag == DisneyBSDF::transmissionEvent ? inToOut : next_ray_is_going_inside, thisPDF, rrPdf,
             dot(N, L), rd, rs, rt);
 
         prd->radiance_d = rd;
@@ -862,7 +862,7 @@ extern "C" __global__ void __closesthit__radiance()
     RadiancePRD shadow_prd {};
     shadow_prd.seed = prd->seed;
     shadow_prd.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
-    shadow_prd.nonThinTransHit = (mats.thin == false && mats.specTrans > 0) ? 1 : 0;
+    shadow_prd.nonThinTransHit = ((mats.thin > 0.5f || mats.doubleSide > 0.5f) && mats.specTrans > 0) ? 1 : 0;
 
     shadow_prd.origin = rtgems::offset_ray(P,  prd->geometryNormal); // camera space
     auto shadingP = rtgems::offset_ray(P + params.cam.eye,  prd->geometryNormal); // world space
@@ -886,7 +886,7 @@ extern "C" __global__ void __closesthit__radiance()
       prd->done = true;
     }
 
-    if(mats.thin<0.5f || mats.doubleSide<0.5f){
+    if(mats.thin<0.5f && mats.doubleSide<0.5f){
         prd->origin = rtgems::offset_ray(P, (next_ray_is_going_inside)? -prd->geometryNormal : prd->geometryNormal);
     }
     else {
