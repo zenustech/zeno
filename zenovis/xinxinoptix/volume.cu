@@ -195,7 +195,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
     
     auto evalBxDF = [&](const float3& _wi_, const float3& _wo_, float& thisPDF) -> float3 {
 
-        pbrt::HenyeyGreenstein hg { vol_out.anisotropy };
+        pbrt::HenyeyGreenstein hg(vol_out.anisotropy);
         thisPDF = hg.p(_wo_, _wi_);
         return scattering * thisPDF;
     };
@@ -225,6 +225,9 @@ extern "C" __global__ void __anyhit__occlusion_volume()
     float3 test_point = ray_orig; 
     float3 transmittance = make_float3(1.0f);
 
+    float hgp = 1.0f;
+    pbrt::HenyeyGreenstein hg(9.0f);
+    
     const float sigma_t = sbt_data->vol_extinction;
 
     auto level = sbt_data->vol_depth;
@@ -247,10 +250,13 @@ extern "C" __global__ void __anyhit__occlusion_volume()
         auto prob_scatter = clamp(v_density, 0.0f, 1.0f);
         auto prob_nulling = 1.0f - prob_scatter;
 
-        pbrt::HenyeyGreenstein hg { vol_out.anisotropy };
-        auto prob_continue = hg.p(-ray_dir, ray_dir) * prob_scatter;
-        prob_continue = clamp(prob_continue, 0.0, 1.0f);
-        //printf("prob_continue %f \n", prob_continue);
+        if (vol_out.anisotropy != hg.g ) {
+            hg = pbrt::HenyeyGreenstein(vol_out.anisotropy);
+            hgp = hg.p(-ray_dir, ray_dir);
+        }
+
+        float prob_continue = hgp * prob_scatter;
+        prob_continue = clamp(prob_continue, 0.0, prob_scatter);
 
         auto tr = transmittance * prob_nulling;
         tr += transmittance * prob_continue * vol_out.albedo;
