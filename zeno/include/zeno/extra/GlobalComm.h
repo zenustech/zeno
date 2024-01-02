@@ -69,11 +69,11 @@ struct GlobalComm {
     ZENO_API std::string cachePath();
     ZENO_API bool removeCache(int frame);
     ZENO_API void removeCachePath();
-    ZENO_API void setToViewNodes(std::vector<std::string>& nodes);
+    ZENO_API void setToViewNodes(std::map<std::string, bool>& nodes);
     static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::string key = "", bool dumpCacheVersionInfo = false);
     static bool fromDiskByRunner(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::string filename);
-    static bool fromDiskByObjsManager(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::vector<std::string>& nodesToLoad);
-    static bool fromDiskByObjsManagerStatic(std::string cachedir, GlobalComm::ViewObjects& objs, std::vector<std::string>& nodesToLoad);
+    static bool fromDiskByObjsManager(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::map<std::string, bool>& nodesToLoad);
+    static bool fromDiskByObjsManagerStatic(std::string cachedir, GlobalComm::ViewObjects& objs, std::map<std::string, bool>& nodesToLoad);
 
     //-----ObjectsManager-----
     ZENO_API void clear_objects();
@@ -123,7 +123,7 @@ struct GlobalComm {
 private:
     ViewObjects const* _getViewObjects(const int frameid, bool& inserted);
     void _initStaticObjects();
-    std::vector<std::string> toViewNodesId;
+    std::map<std::string, bool> toViewNodesId;
 
     //-----ObjectsManager-----
     MapObjects m_transferObjs;
