@@ -886,7 +886,7 @@ extern "C" __global__ void __closesthit__radiance()
       prd->done = true;
     }
 
-    if(mats.thin<0.5f && mats.doubleSide<0.5f){
+    if(mats.thin<0.5f || mats.doubleSide<0.5f){
         prd->origin = rtgems::offset_ray(P, (next_ray_is_going_inside)? -prd->geometryNormal : prd->geometryNormal);
     }
     else {
