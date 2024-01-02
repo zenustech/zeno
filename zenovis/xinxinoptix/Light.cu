@@ -31,7 +31,7 @@ extern "C" __global__ void __closesthit__radiance()
     RadiancePRD* prd = getPRD();
     if(prd->test_distance)
     {
-        prd->vol_t1 = optixGetRayTmax();
+        prd->maxDistance = optixGetRayTmax();
         prd->test_distance = false; return;
     }
     
@@ -231,7 +231,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     auto instanceId = optixGetInstanceId();
     auto isLightGAS = checkLightGAS(instanceId);
 
-    RadiancePRD* prd = getPRD();
+    ShadowPRD* prd = getPRD<ShadowPRD>();
 
     if (params.num_lights == 0 || !isLightGAS) {
         optixIgnoreIntersection();
@@ -272,9 +272,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     }
 
     if (visible) {
-        prd->shadowAttanuation = {};
-        prd->attenuation2 = {};
-        prd->attenuation = {};
+        prd->attanuation = {};
         optixTerminateRay();
     }
 
