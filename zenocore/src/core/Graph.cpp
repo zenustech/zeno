@@ -175,13 +175,38 @@ ZENO_API DirtyChecker &Graph::getDirtyChecker() {
 ZENO_API void Graph::init(const GraphData& graph) {
     //import nodes first.
     for (const auto& [ident, node] : graph.nodes) {
+        if (node.subgraph) {
 
+        }
+        else {
+            std::shared_ptr<INode> spNode = createNode(node.cls);
+            spNode->init(node);
+        }
     }
     //import edges
     for (const auto& link : graph.links) {
-        std::shared_ptr<zeno::ILink> spLink = std::make_shared<zeno::ILink>();
-        //get param ptr from node.
-        //and then assign spLink to them.
+        std::shared_ptr<INode> outNode = getNode(link.outNode);
+        std::shared_ptr<INode> inNode = getNode(link.inNode);
+        assert(outNode && inNode);
+
+        std::shared_ptr<IParam> outParam = outNode->get_output_param(link.outParam);
+        if (!outParam) {
+            zeno::log_warn("no output param `{}` on node `{}`", link.outParam, link.outNode);
+            continue;
+        }
+
+        std::shared_ptr<IParam> inParam = inNode->get_input_param(link.inParam);
+        if (!inParam) {
+            zeno::log_warn("no input param `{}` on node `{}`", link.inParam, link.inNode);
+            continue;
+        }
+
+        std::shared_ptr<ILink> spLink = std::make_shared<zeno::ILink>();
+        spLink->fromparam = outParam;
+        spLink->toparam = inParam;
+        spLink->keyName = link.inKey;
+        outParam->links.emplace_back(spLink);
+        inParam->links.emplace_back(spLink);
     }
 }
 

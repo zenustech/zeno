@@ -193,15 +193,12 @@ zeno::NodeData Zsg2Reader::_parseNode(
 
     bool isParsingAssets = subgPath.rfind("/main", 0) != 0;
 
-    //legacy case, should expand the subgraph node recursively.
-    if (zeno::VER_3 != m_ioVer)
+    //should expand the subgraph node recursively.
+    if (subgraphDatas.find(name) != subgraphDatas.end())
     {
-        if (subgraphDatas.find(name) != subgraphDatas.end())
+        if (!isParsingAssets)
         {
-            if (!isParsingAssets)
-            {
-                retNode.subgraph = zenoio::fork(subgPath + "/" + nodeid, subgraphDatas, name);
-            }
+            retNode.subgraph = zenoio::fork(subgPath + "/" + nodeid, subgraphDatas, name);
         }
     }
 

@@ -238,9 +238,8 @@ ZENO_API std::shared_ptr<IParam> INode::get_output_param(std::string const& name
 void INode::directly_setinputs(std::map<std::string, zany> inputs)
 {
     for (auto& [name, val] : inputs) {
-        auto param = get_input_param(name);
-        std::shared_ptr<IParam> sparam;
-        if (!param) {
+        std::shared_ptr<IParam> sparam = get_input_param(name);
+        if (!sparam) {
             sparam = std::make_shared<IParam>();
             sparam->name = name;
             sparam->m_spNode;       //此方法针对的是临时节点，不需要设置此项
@@ -258,6 +257,34 @@ std::map<std::string, zany> INode::getoutputs()
         outputs.insert(std::make_pair(param->name, param->result));
     }
     return outputs;
+}
+
+ZENO_API void INode::init(const NodeData& dat)
+{
+    for (const ParamInfo& param : dat.inputs)
+    {
+        std::shared_ptr<IParam> sparam = get_input_param(param.name);
+        if (!sparam) {
+            zeno::log_warn("input param `{}` is not registerd in current zeno version");
+            continue;
+        }
+        sparam->defl = param.defl;
+        sparam->name = param.name;
+        sparam->type = param.type;
+        sparam->m_spNode = std::shared_ptr<INode>(this);
+    }
+    for (const ParamInfo& param : dat.outputs)
+    {
+        std::shared_ptr<IParam> sparam = get_output_param(param.name);
+        if (!sparam) {
+            zeno::log_warn("output param `{}` is not registerd in current zeno version");
+            continue;
+        }
+        sparam->defl = param.defl;
+        sparam->name = name;
+        sparam->type = param.type;
+        sparam->m_spNode = std::shared_ptr<INode>(this);
+    }
 }
 
 ZENO_API bool INode::has_input(std::string const &id) const {
