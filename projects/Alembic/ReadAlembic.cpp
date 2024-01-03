@@ -49,9 +49,7 @@ static void set_time_info(UserData &ud, TimeSamplingType tst, float start, int s
     ud.set2("_abc_time_per_cycle", time_per_cycle);
     if (time_per_cycle > 0) {
         ud.set2("_abc_time_fps", 1.0f / time_per_cycle);
-    }
-    else {
-        ud.set2("_abc_time_fps", 0.0f);
+        ud.set2("_abc_start_frame", int(std::lround(start / time_per_cycle)));
     }
 }
 static void read_velocity(std::shared_ptr<PrimitiveObject> prim, V3fArraySamplePtr marr, bool read_done) {
@@ -351,17 +349,18 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
     std::shared_ptr<Alembic::AbcCoreAbstract::v12::TimeSampling> time = mesh.getTimeSampling();
     float time_per_cycle =  time->getTimeSamplingType().getTimePerCycle();
     double start = time->getStoredTimes().front();
-    int start_frame = (int)std::round(start / time_per_cycle );
     set_time_info(prim->userData(), time->getTimeSamplingType(), start, int(mesh.getNumSamples()));
 
-    int sample_index = clamp(std::get<int>(frameid_or_t) - start_frame, 0, (int)mesh.getNumSamples() - 1);
+    int sample_index;
     if (std::holds_alternative<int>(frameid_or_t)) {
-        sample_index = clamp(std::get<int>(frameid_or_t) - start_frame, 0, (int)mesh.getNumSamples() - 1);
+        int start_frame = (int)std::round(start / time_per_cycle );
+        sample_index = std::get<int>(frameid_or_t) - start_frame;
     }
     else {
         auto t = std::get<float>(frameid_or_t);
-
+        sample_index = (int)std::lround((t - start) / time_per_cycle);
     }
+    sample_index = clamp(sample_index, 0, int(mesh.getNumSamples()) - 1);
     ISampleSelector iSS = Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index);
     Alembic::AbcGeom::IPolyMeshSchema::Sample mesamp = mesh.getValue(iSS);
 
@@ -491,16 +490,24 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
     return prim;
 }
 
-static std::shared_ptr<PrimitiveObject> foundABCSubd(Alembic::AbcGeom::ISubDSchema &subd, int frameid, bool read_done, bool read_face_set) {
+static std::shared_ptr<PrimitiveObject> foundABCSubd(Alembic::AbcGeom::ISubDSchema &subd, std::variant<int, float> frameid_or_t, bool read_done, bool read_face_set) {
     auto prim = std::make_shared<PrimitiveObject>();
 
     std::shared_ptr<Alembic::AbcCoreAbstract::v12::TimeSampling> time = subd.getTimeSampling();
     float time_per_cycle =  time->getTimeSamplingType().getTimePerCycle();
     double start = time->getStoredTimes().front();
-    int start_frame = (int)std::round(start / time_per_cycle );
     set_time_info(prim->userData(), time->getTimeSamplingType(), start, int(subd.getNumSamples()));
 
-    int sample_index = clamp(frameid - start_frame, 0, (int)subd.getNumSamples() - 1);
+    int sample_index;
+    if (std::holds_alternative<int>(frameid_or_t)) {
+        int start_frame = (int)std::round(start / time_per_cycle );
+        sample_index = std::get<int>(frameid_or_t) - start_frame;
+    }
+    else {
+        auto t = std::get<float>(frameid_or_t);
+        sample_index = (int)std::lround((t - start) / time_per_cycle);
+    }
+    sample_index = clamp(sample_index, 0, int(subd.getNumSamples()) - 1);
     ISampleSelector iSS = Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index);
     Alembic::AbcGeom::ISubDSchema::Sample mesamp = subd.getValue(iSS);
 
@@ -617,13 +624,21 @@ static std::shared_ptr<PrimitiveObject> foundABCSubd(Alembic::AbcGeom::ISubDSche
     return prim;
 }
 
-static std::shared_ptr<CameraInfo> foundABCCamera(Alembic::AbcGeom::ICameraSchema &cam, int frameid) {
+static std::shared_ptr<CameraInfo> foundABCCamera(Alembic::AbcGeom::ICameraSchema &cam, std::variant<int, float> frameid_or_t) {
     CameraInfo cam_info;
     std::shared_ptr<Alembic::AbcCoreAbstract::v12::TimeSampling> time = cam.getTimeSampling();
     float time_per_cycle =  time->getTimeSamplingType().getTimePerCycle();
     double start = time->getStoredTimes().front();
-    int start_frame = (int)std::round(start / time_per_cycle );
-    int sample_index = clamp(frameid - start_frame, 0, (int)cam.getNumSamples() - 1);
+    int sample_index;
+    if (std::holds_alternative<int>(frameid_or_t)) {
+        int start_frame = (int)std::round(start / time_per_cycle );
+        sample_index = std::get<int>(frameid_or_t) - start_frame;
+    }
+    else {
+        auto t = std::get<float>(frameid_or_t);
+        sample_index = (int)std::lround((t - start) / time_per_cycle);
+    }
+    sample_index = clamp(sample_index, 0, int(cam.getNumSamples()) - 1);
 
     auto samp = cam.getValue(Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index));
     cam_info.focal_length = samp.getFocalLength();
@@ -640,27 +655,42 @@ static std::shared_ptr<CameraInfo> foundABCCamera(Alembic::AbcGeom::ICameraSchem
     return std::make_shared<CameraInfo>(cam_info);
 }
 
-static Alembic::Abc::v12::M44d foundABCXform(Alembic::AbcGeom::IXformSchema &xfm, int frameid) {
+static Alembic::Abc::v12::M44d foundABCXform(Alembic::AbcGeom::IXformSchema &xfm, std::variant<int, float> frameid_or_t) {
     std::shared_ptr<Alembic::AbcCoreAbstract::v12::TimeSampling> time = xfm.getTimeSampling();
     float time_per_cycle =  time->getTimeSamplingType().getTimePerCycle();
     double start = time->getStoredTimes().front();
-    int start_frame = (int)std::round(start / time_per_cycle );
-    int sample_index = clamp(frameid - start_frame, 0, (int)xfm.getNumSamples() - 1);
+    int sample_index;
+    if (std::holds_alternative<int>(frameid_or_t)) {
+        int start_frame = (int)std::round(start / time_per_cycle );
+        sample_index = std::get<int>(frameid_or_t) - start_frame;
+    }
+    else {
+        auto t = std::get<float>(frameid_or_t);
+        sample_index = (int)std::lround((t - start) / time_per_cycle);
+    }
+    sample_index = clamp(sample_index, 0, int(xfm.getNumSamples()) - 1);
 
     auto samp = xfm.getValue(Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index));
     return samp.getMatrix();
 }
 
-static std::shared_ptr<PrimitiveObject> foundABCPoints(Alembic::AbcGeom::IPointsSchema &mesh, int frameid, bool read_done) {
+static std::shared_ptr<PrimitiveObject> foundABCPoints(Alembic::AbcGeom::IPointsSchema &mesh, std::variant<int, float> frameid_or_t, bool read_done) {
     auto prim = std::make_shared<PrimitiveObject>();
 
     std::shared_ptr<Alembic::AbcCoreAbstract::v12::TimeSampling> time = mesh.getTimeSampling();
     float time_per_cycle =  time->getTimeSamplingType().getTimePerCycle();
     double start = time->getStoredTimes().front();
-    int start_frame = (int)std::round(start / time_per_cycle );
     set_time_info(prim->userData(), time->getTimeSamplingType(), start, int(mesh.getNumSamples()));
-
-    int sample_index = clamp(frameid - start_frame, 0, (int)mesh.getNumSamples() - 1);
+    int sample_index;
+    if (std::holds_alternative<int>(frameid_or_t)) {
+        int start_frame = (int)std::round(start / time_per_cycle );
+        sample_index = std::get<int>(frameid_or_t) - start_frame;
+    }
+    else {
+        auto t = std::get<float>(frameid_or_t);
+        sample_index = (int)std::lround((t - start) / time_per_cycle);
+    }
+    sample_index = clamp(sample_index, 0, int(mesh.getNumSamples()) - 1);
     auto iSS = Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index);
     Alembic::AbcGeom::IPointsSchema::Sample mesamp = mesh.getValue(iSS);
     if (auto marr = mesamp.getPositions()) {
@@ -689,16 +719,24 @@ static std::shared_ptr<PrimitiveObject> foundABCPoints(Alembic::AbcGeom::IPoints
     return prim;
 }
 
-static std::shared_ptr<PrimitiveObject> foundABCCurves(Alembic::AbcGeom::ICurvesSchema &mesh, int frameid, bool read_done) {
+static std::shared_ptr<PrimitiveObject> foundABCCurves(Alembic::AbcGeom::ICurvesSchema &mesh, std::variant<int, float> frameid_or_t, bool read_done) {
     auto prim = std::make_shared<PrimitiveObject>();
 
     std::shared_ptr<Alembic::AbcCoreAbstract::v12::TimeSampling> time = mesh.getTimeSampling();
     float time_per_cycle =  time->getTimeSamplingType().getTimePerCycle();
     double start = time->getStoredTimes().front();
-    int start_frame = (int)std::round(start / time_per_cycle );
     set_time_info(prim->userData(), time->getTimeSamplingType(), start, int(mesh.getNumSamples()));
 
-    int sample_index = clamp(frameid - start_frame, 0, (int)mesh.getNumSamples() - 1);
+    int sample_index;
+    if (std::holds_alternative<int>(frameid_or_t)) {
+        int start_frame = (int)std::round(start / time_per_cycle );
+        sample_index = std::get<int>(frameid_or_t) - start_frame;
+    }
+    else {
+        auto t = std::get<float>(frameid_or_t);
+        sample_index = (int)std::lround((t - start) / time_per_cycle);
+    }
+    sample_index = clamp(sample_index, 0, int(mesh.getNumSamples()) - 1);
     auto iSS = Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index);
     Alembic::AbcGeom::ICurvesSchema::Sample mesamp = mesh.getValue(iSS);
     if (auto marr = mesamp.getPositions()) {
@@ -754,7 +792,7 @@ void traverseABC(
 
             Alembic::AbcGeom::IPolyMesh meshy(obj);
             auto &mesh = meshy.getSchema();
-            tree.prim = foundABCMesh(mesh, std::get<int>(frameid_or_t), read_done, read_face_set);
+            tree.prim = foundABCMesh(mesh, frameid_or_t, read_done, read_face_set);
             tree.prim->userData().set2("_abc_name", obj.getName());
             tree.prim->userData().set2("_abc_path", path);
         } else if (Alembic::AbcGeom::IXformSchema::matches(md)) {
@@ -763,21 +801,21 @@ void traverseABC(
             }
             Alembic::AbcGeom::IXform xfm(obj);
             auto &cam_sch = xfm.getSchema();
-            tree.xform = foundABCXform(cam_sch, std::get<int>(frameid_or_t));
+            tree.xform = foundABCXform(cam_sch, frameid_or_t);
         } else if (Alembic::AbcGeom::ICameraSchema::matches(md)) {
             if (!read_done) {
                 log_debug("[alembic] found a Camera [{}]", obj.getName());
             }
             Alembic::AbcGeom::ICamera cam(obj);
             auto &cam_sch = cam.getSchema();
-            tree.camera_info = foundABCCamera(cam_sch, std::get<int>(frameid_or_t));
+            tree.camera_info = foundABCCamera(cam_sch, frameid_or_t);
         } else if(Alembic::AbcGeom::IPointsSchema::matches(md)) {
             if (!read_done) {
                 log_debug("[alembic] found points [{}]", obj.getName());
             }
             Alembic::AbcGeom::IPoints points(obj);
             auto &points_sch = points.getSchema();
-            tree.prim = foundABCPoints(points_sch, std::get<int>(frameid_or_t), read_done);
+            tree.prim = foundABCPoints(points_sch, frameid_or_t, read_done);
             tree.prim->userData().set2("_abc_name", obj.getName());
             tree.prim->userData().set2("_abc_path", path);
             tree.prim->userData().set2("faceset_count", 0);
@@ -787,7 +825,7 @@ void traverseABC(
             }
             Alembic::AbcGeom::ICurves curves(obj);
             auto &curves_sch = curves.getSchema();
-            tree.prim = foundABCCurves(curves_sch, std::get<int>(frameid_or_t), read_done);
+            tree.prim = foundABCCurves(curves_sch, frameid_or_t, read_done);
             tree.prim->userData().set2("_abc_name", obj.getName());
             tree.prim->userData().set2("_abc_path", path);
             tree.prim->userData().set2("faceset_count", 0);
@@ -797,7 +835,7 @@ void traverseABC(
             }
             Alembic::AbcGeom::ISubD subd(obj);
             auto &subd_sch = subd.getSchema();
-            tree.prim = foundABCSubd(subd_sch, std::get<int>(frameid_or_t), read_done, read_face_set);
+            tree.prim = foundABCSubd(subd_sch, frameid_or_t, read_done, read_face_set);
             tree.prim->userData().set2("_abc_name", obj.getName());
             tree.prim->userData().set2("_abc_path", path);
         }
