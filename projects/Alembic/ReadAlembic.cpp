@@ -345,7 +345,7 @@ static void read_user_data(std::shared_ptr<PrimitiveObject> prim, ICompoundPrope
     }
 }
 
-static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMeshSchema &mesh, int frameid, bool read_done, bool read_face_set) {
+static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMeshSchema &mesh, std::variant<int, float> frameid_or_t, bool read_done, bool read_face_set) {
     auto prim = std::make_shared<PrimitiveObject>();
 
     std::shared_ptr<Alembic::AbcCoreAbstract::v12::TimeSampling> time = mesh.getTimeSampling();
@@ -354,7 +354,14 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
     int start_frame = (int)std::round(start / time_per_cycle );
     set_time_info(prim->userData(), time->getTimeSamplingType(), start, int(mesh.getNumSamples()));
 
-    int sample_index = clamp(frameid - start_frame, 0, (int)mesh.getNumSamples() - 1);
+    int sample_index = clamp(std::get<int>(frameid_or_t) - start_frame, 0, (int)mesh.getNumSamples() - 1);
+    if (std::holds_alternative<int>(frameid_or_t)) {
+        sample_index = clamp(std::get<int>(frameid_or_t) - start_frame, 0, (int)mesh.getNumSamples() - 1);
+    }
+    else {
+        auto t = std::get<float>(frameid_or_t);
+
+    }
     ISampleSelector iSS = Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index);
     Alembic::AbcGeom::IPolyMeshSchema::Sample mesamp = mesh.getValue(iSS);
 
@@ -727,7 +734,7 @@ static std::shared_ptr<PrimitiveObject> foundABCCurves(Alembic::AbcGeom::ICurves
 void traverseABC(
     Alembic::AbcGeom::IObject &obj,
     ABCTree &tree,
-    int frameid,
+    std::variant<int, float> frameid_or_t,
     bool read_done,
     bool read_face_set,
     std::string path
@@ -747,7 +754,7 @@ void traverseABC(
 
             Alembic::AbcGeom::IPolyMesh meshy(obj);
             auto &mesh = meshy.getSchema();
-            tree.prim = foundABCMesh(mesh, frameid, read_done, read_face_set);
+            tree.prim = foundABCMesh(mesh, std::get<int>(frameid_or_t), read_done, read_face_set);
             tree.prim->userData().set2("_abc_name", obj.getName());
             tree.prim->userData().set2("_abc_path", path);
         } else if (Alembic::AbcGeom::IXformSchema::matches(md)) {
@@ -756,21 +763,21 @@ void traverseABC(
             }
             Alembic::AbcGeom::IXform xfm(obj);
             auto &cam_sch = xfm.getSchema();
-            tree.xform = foundABCXform(cam_sch, frameid);
+            tree.xform = foundABCXform(cam_sch, std::get<int>(frameid_or_t));
         } else if (Alembic::AbcGeom::ICameraSchema::matches(md)) {
             if (!read_done) {
                 log_debug("[alembic] found a Camera [{}]", obj.getName());
             }
             Alembic::AbcGeom::ICamera cam(obj);
             auto &cam_sch = cam.getSchema();
-            tree.camera_info = foundABCCamera(cam_sch, frameid);
+            tree.camera_info = foundABCCamera(cam_sch, std::get<int>(frameid_or_t));
         } else if(Alembic::AbcGeom::IPointsSchema::matches(md)) {
             if (!read_done) {
                 log_debug("[alembic] found points [{}]", obj.getName());
             }
             Alembic::AbcGeom::IPoints points(obj);
             auto &points_sch = points.getSchema();
-            tree.prim = foundABCPoints(points_sch, frameid, read_done);
+            tree.prim = foundABCPoints(points_sch, std::get<int>(frameid_or_t), read_done);
             tree.prim->userData().set2("_abc_name", obj.getName());
             tree.prim->userData().set2("_abc_path", path);
             tree.prim->userData().set2("faceset_count", 0);
@@ -780,7 +787,7 @@ void traverseABC(
             }
             Alembic::AbcGeom::ICurves curves(obj);
             auto &curves_sch = curves.getSchema();
-            tree.prim = foundABCCurves(curves_sch, frameid, read_done);
+            tree.prim = foundABCCurves(curves_sch, std::get<int>(frameid_or_t), read_done);
             tree.prim->userData().set2("_abc_name", obj.getName());
             tree.prim->userData().set2("_abc_path", path);
             tree.prim->userData().set2("faceset_count", 0);
@@ -790,7 +797,7 @@ void traverseABC(
             }
             Alembic::AbcGeom::ISubD subd(obj);
             auto &subd_sch = subd.getSchema();
-            tree.prim = foundABCSubd(subd_sch, frameid, read_done, read_face_set);
+            tree.prim = foundABCSubd(subd_sch, std::get<int>(frameid_or_t), read_done, read_face_set);
             tree.prim->userData().set2("_abc_name", obj.getName());
             tree.prim->userData().set2("_abc_path", path);
         }
@@ -810,7 +817,7 @@ void traverseABC(
         Alembic::AbcGeom::IObject child(obj, name);
 
         auto childTree = std::make_shared<ABCTree>();
-        traverseABC(child, *childTree, frameid, read_done, read_face_set, path);
+        traverseABC(child, *childTree, frameid_or_t, read_done, read_face_set, path);
         tree.children.push_back(std::move(childTree));
     }
 }
@@ -893,6 +900,70 @@ ZENDEFNODE(ReadAlembic, {
         {"readpath", "path"},
         {"bool", "read_face_set", "0"},
         {"frameid"},
+    },
+    {
+        {"ABCTree", "abctree"},
+        "namelist",
+    },
+    {},
+    {"alembic"},
+});
+
+struct ReadAlembic_v2 : INode {
+    Alembic::Abc::v12::IArchive archive;
+    std::string usedPath;
+    bool read_done = false;
+    virtual void apply() override {
+        int frameid;
+        if (has_input("frameid")) {
+            frameid = get_input2<int>("frameid");
+        } else {
+            frameid = getGlobalState()->frameid;
+        }
+        float fps = get_input2<float>("fps");
+        float t = frameid / fps;
+        auto abctree = std::make_shared<ABCTree>();
+        {
+            auto path = get_input2<std::string>("path");
+            if (usedPath != path) {
+                read_done = false;
+            }
+            if (read_done == false) {
+                archive = readABC(path);
+            }
+            double start, _end;
+            GetArchiveStartAndEndTime(archive, start, _end);
+            auto obj = archive.getTop();
+            bool read_face_set = get_input2<bool>("read_face_set");
+            traverseABC(obj, *abctree, t, read_done, read_face_set, "");
+            read_done = true;
+            usedPath = path;
+        }
+        {
+            auto namelist = std::make_shared<zeno::ListObject>();
+            abctree->visitPrims([&] (auto const &p) {
+                auto &ud = p->userData();
+                auto _abc_path = ud.template get2<std::string>("_abc_path", "");
+                namelist->arr.push_back(std::make_shared<StringObject>(_abc_path));
+            });
+            auto &ud = abctree->userData();
+            ud.set2("prim_count", int(namelist->arr.size()));
+            for (auto i = 0; i < namelist->arr.size(); i++) {
+                auto n = namelist->arr[i];
+                ud.set2(zeno::format("path_{:04}", i), n);
+            }
+            set_output("namelist", namelist);
+        }
+        set_output("abctree", std::move(abctree));
+    }
+};
+
+ZENDEFNODE(ReadAlembic_v2, {
+    {
+        {"readpath", "path"},
+        {"bool", "read_face_set", "0"},
+        {"frameid"},
+        {"float", "fps", "24"},
     },
     {
         {"ABCTree", "abctree"},
