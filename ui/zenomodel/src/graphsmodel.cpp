@@ -120,7 +120,7 @@ void GraphsModel::newSubgraph(const QString &graphName, SUBGRAPH_TYPE type)
     }
 }
 
-bool GraphsModel::newMaterialSubgraph(const QString& graphName, const QPointF& pos)
+bool GraphsModel::newMaterialSubgraph(const QModelIndex & currentSubIdx, const QString& graphName, const QPointF& pos)
 {
     if (subGraph(graphName))
     {
@@ -129,7 +129,6 @@ bool GraphsModel::newMaterialSubgraph(const QString& graphName, const QPointF& p
     }
     beginTransaction("extract a new graph");
 
-    int currentRow = m_selection->currentIndex().row();
     //first, new the target subgraph
     newSubgraph(graphName, SUBGRAPH_TYPE::SUBGRAPH_METERIAL);
     QModelIndex subgIdx = index(graphName);
@@ -155,7 +154,6 @@ bool GraphsModel::newMaterialSubgraph(const QString& graphName, const QPointF& p
     link.outSockPath = inParam.data(ROLE_OBJPATH).toString();
     addLink(subgIdx, link, false);
     //add material subgraph node
-    QModelIndex currentSubIdx = index(currentRow, 0);
     const QString& subIdent = NodesMgr::createNewNode(this, currentSubIdx, graphName, pos);
     auto subgNodeIdx = nodeIndex(subIdent);
     QVariant newValue = OPT_VIEW;
@@ -450,6 +448,7 @@ bool GraphsModel::setData(const QModelIndex& index, const QVariant& value, int r
         if (SubGraphModel* pModel = subGraph(name))
         {
             pModel->setType((SUBGRAPH_TYPE)value.toInt());
+            emit dataChanged(index, index);
         }
     }
     else if (role == ROLE_MTLID)
@@ -863,13 +862,13 @@ QModelIndex GraphsModel::fork(const QModelIndex& subgIdx, const QModelIndex &sub
     return newForkNodeIdx;
 }
 
-QModelIndex GraphsModel::forkMaterial(const QModelIndex& subnetNodeIdx, const QString& subgName, const QString& mtlid, const QString& mtlid_old)
+QModelIndex GraphsModel::forkMaterial(const QModelIndex& currSubgIdx, const QModelIndex& subnetNodeIdx, const QString& subgName, const QString& mtlid, const QString& mtlid_old)
 {
     if (subGraph(subgName))
         return QModelIndex();
     if (!subnetNodeIdx.isValid())
         return QModelIndex();
-    QModelIndex index = fork(m_selection->currentIndex(), subnetNodeIdx);
+    QModelIndex index = fork(currSubgIdx, subnetNodeIdx);
     ModelSetData(index, OPT_VIEW, ROLE_OPTIONS);
     
     QString name = index.data(ROLE_OBJNAME).toString();
@@ -886,15 +885,17 @@ QModelIndex GraphsModel::forkMaterial(const QModelIndex& subnetNodeIdx, const QS
             auto paramIdx = pSubgModel->nodeParamIndex(result.targetIdx, PARAM_INPUT, "mtlid");
             ModelSetData(paramIdx, mtlid, ROLE_PARAM_VALUE);
         }
-        vec.clear();
-        vec << currentGraph();
-        resLst = search(mtlid_old, SEARCH_ARGS, SEARCH_MATCH_EXACTLY, vec);
-        for (const auto& res : resLst)
+        //update mtlid of BindMeterial node 
+        if (mtlid != mtlid_old)
         {
-            QPointF pos = res.targetIdx.data(ROLE_OBJPOS).toPointF();
-            ModelSetData(index, pos + QPointF(800, 0), ROLE_OBJPOS);
-            auto paramIdx = currentGraph()->nodeParamIndex(res.targetIdx, PARAM_INPUT, "mtlid");
-            ModelSetData(paramIdx, mtlid, ROLE_PARAM_VALUE);
+            vec.clear();
+            vec << currentGraph();
+            resLst = search(mtlid_old, SEARCH_ARGS, SEARCH_MATCH_EXACTLY, vec);
+            for (const auto& res : resLst)
+            {
+                auto paramIdx = currentGraph()->nodeParamIndex(res.targetIdx, PARAM_INPUT, "mtlid");
+                ModelSetData(paramIdx, mtlid, ROLE_PARAM_VALUE);
+            }
         }
     }
     QModelIndex subgIdx = this->index(subgName);
@@ -1706,11 +1707,13 @@ void GraphsModel::_markNodeChanged(const QModelIndex& nodeIdx)
             if (sockProp & SOCKPROP_DICTLIST_PANEL)
             {
                 QAbstractItemModel* pKeyObjModel = QVariantPtr<QAbstractItemModel>::asPtr(sock.data(ROLE_VPARAM_LINK_MODEL));
-                for (int _r = 0; _r < pKeyObjModel->rowCount(); _r++)
-                {
-                    const QModelIndex& keyIdx = pKeyObjModel->index(_r, 0);
-                    ZASSERT_EXIT(keyIdx.isValid());
-                    socketLst << keyIdx;
+                if (pKeyObjModel) {
+                    for (int _r = 0; _r < pKeyObjModel->rowCount(); _r++)
+                    {
+                        const QModelIndex& keyIdx = pKeyObjModel->index(_r, 0);
+                        ZASSERT_EXIT(keyIdx.isValid());
+                        socketLst << keyIdx;
+                    }
                 }
             }
             else

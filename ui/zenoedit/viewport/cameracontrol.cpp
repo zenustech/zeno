@@ -135,7 +135,7 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
     auto dir = screenToWorldRay(event->x() / res().x(), event->y() / res().y());
     if (m_transformer)
     {
-        if (!scene->selected.empty() && m_transformer->isTransformMode() &&
+        if (event->buttons() & Qt::LeftButton && !scene->selected.empty() && m_transformer->isTransformMode() &&
             m_transformer->clickedAnyHandler(realPos(), dir, front))
         {
             bTransform = true;
@@ -693,6 +693,24 @@ bool CameraControl::fakeKeyPressEvent(int uKey) {
     if (uKey & Qt::CTRL) {
         ctrl_pressed = true;
     }
+    if (uKey & Qt::ALT) {
+        alt_pressed = true;
+    }
+    // viewport focus prim
+    if ((uKey & 0xff) == Qt::Key_F && alt_pressed) {
+        auto *scene = m_zenovis->getSession()->get_scene();
+        if (scene->selected.size() == 1) {
+            std::string nodeId = *scene->selected.begin();
+            nodeId = nodeId.substr(0, nodeId.find_first_of(':'));
+            zeno::vec3f center;
+            float radius;
+            if (m_zenovis->getSession()->focus_on_node(nodeId, center, radius)) {
+                focus(QVector3D(center[0], center[1], center[2]), radius * 3.0f);
+            }
+        }
+        updatePerspective();
+        return true;
+    }
     if (!middle_button_pressed) {
         return false;
     }
@@ -746,6 +764,9 @@ bool CameraControl::fakeKeyReleaseEvent(int uKey) {
     }
     if (uKey == Qt::Key_Control) {
         ctrl_pressed = false;
+    }
+    if (uKey == Qt::Key_Alt) {
+        alt_pressed = false;
     }
     return false;
 }

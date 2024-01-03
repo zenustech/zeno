@@ -55,6 +55,7 @@ struct RadiancePRD
     float3       attenuation2;
     float3       origin;
     float3       direction;
+    float3       camPos;
     float        minSpecRough;
     bool         passed;
     float        prob;
@@ -74,13 +75,15 @@ struct RadiancePRD
     bool         isSS;
     float        scatterStep;
     int          nonThinTransHit;
-
+    float        pixel_area;
     float        Lweight;
     vec3         sigma_t_queue[8];
     vec3         ss_alpha_queue[8];
     int          curMatIdx;
     float        samplePdf;
     bool         fromDiff;
+    unsigned char adepth;
+    bool         alphaHit;
 
     __forceinline__ float rndf() {
         return rnd(this->seed);
@@ -123,13 +126,25 @@ struct RadiancePRD
 
     void offsetRay(float3& P, const float3& new_dir) {
         bool forward = dot(geometryNormal, new_dir) > 0;
-        P = rtgems::offset_ray(P, forward? geometryNormal:-geometryNormal);
+        auto dir = forward? geometryNormal:-geometryNormal;
+        auto offset = rtgems::offset_ray(P, dir);
+        float l = length( offset - P );
+        float l2 = this->alphaHit? clamp(l, 1e-4, 1e-2) : max(l, 1e-5);
+        P = P + l2 * dir;
     }
 
     void offsetUpdateRay(float3& P, float3 new_dir) {
-        this->origin = P;
+      double x = (double)(P.x) - (double)(this->camPos.x);
+      double y = (double)(P.y) - (double)(this->camPos.y);
+      double z = (double)(P.z) - (double)(this->camPos.z);
+        auto beforeOffset = make_float3(x, y, z);
+        //this->origin = P;
         this->direction = new_dir;
-        offsetRay(this->origin, new_dir);
+        offsetRay(beforeOffset, new_dir);
+        double x2 = (double)(beforeOffset.x) + (double)(this->camPos.x);
+        double y2 = (double)(beforeOffset.y) + (double)(this->camPos.y);
+        double z2 = (double)(beforeOffset.z) + (double)(this->camPos.z);
+        this->origin = make_float3(x2, y2, z2);
     }
 
     uint8_t _mask_ = EverythingMask;

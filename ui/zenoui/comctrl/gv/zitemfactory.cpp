@@ -301,7 +301,7 @@ namespace zenoui
                     vec.resize(dim);
                 }
 
-                ZVecEditorItem* pVecEditor = new ZVecEditorItem(value, bFloat, m_nodeParams.lineEditParam, scene);
+                ZVecEditorItem* pVecEditor = new ZVecEditorItem(QVariant::fromValue(vec), bFloat, m_nodeParams.lineEditParam, scene);
                 pVecEditor->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, zenoui::g_ctrlHeight)));
                 pVecEditor->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed));
                 pVecEditor->setData(GVKEY_TYPE, type);

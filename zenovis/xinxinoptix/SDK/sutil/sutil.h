@@ -144,17 +144,14 @@ SUTILAPI void calculateCameraVariables(
 double SUTILAPI currentTime();
 
 // Get input data, either pre-compiled with NVCC or JIT compiled by NVRTC.
-SUTILAPI const char* getInputData( const char* sampleName,  // Name of the sample, used to locate the input file. NULL = only search the common /cuda dir
-                                   const char* sampleDir,  // Directory name for the sample (typically the same as the sample name).
-                                   const char* filename,      // Cuda C input file name
-                                   const char* location,
+SUTILAPI const char* getInputData( const char* source,
+                                   const char* macro,
+                                   const char* name,
                                    size_t&     dataSize,
                                    bool &is_success, 
                                    const char** log = NULL,    // (Optional) pointer to compiler log string. If *log == NULL there is no output. Only valid until the next getInputData call
                                    const std::vector<const char*>& compilerOptions = {CUDA_NVRTC_OPTIONS}
                                    );  // Optional vector of compiler options.
-
-
 
 // Ensures that width and height have the minimum size to prevent launch errors.
 SUTILAPI void ensureMinimumSize(

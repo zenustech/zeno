@@ -33,7 +33,7 @@ public:
     SubGraphModel *currentGraph();
     void switchSubGraph(const QString& graphName) override;
     void newSubgraph(const QString& graphName, SUBGRAPH_TYPE type = SUBGRAPH_TYPE::SUBGRAPH_NOR) override;
-    bool newMaterialSubgraph(const QString& graphName, const QPointF& pos) override;
+    bool newMaterialSubgraph(const QModelIndex& subgIdx, const QString& graphName, const QPointF& pos) override;
     void initMainGraph() override;
     void renameSubGraph(const QString& oldName, const QString& newName) override;
     QItemSelectionModel* selectionModel() const;
@@ -44,7 +44,7 @@ public:
     //NODE_DESC
     void appendSubGraph(SubGraphModel* pGraph);
     QModelIndex fork(const QModelIndex& subgIdx, const QModelIndex& subnetNodeIdx) override;
-    QModelIndex forkMaterial(const QModelIndex& subnetNodeIdx, const QString&subgName, const QString& mtlid, const QString& mtlid_old) override;
+    QModelIndex forkMaterial(const QModelIndex& subgIdx, const QModelIndex& subnetNodeIdx, const QString&subgName, const QString& mtlid, const QString& mtlid_old) override;
     void removeGraph(int idx) override;
     bool isDirty() const override;
     void markDirty() override;

@@ -57,7 +57,7 @@ public:
 	 fork subnet node indexed by subnetNodeIdx under subgIdx. 
 	 */
 	virtual QModelIndex fork(const QModelIndex& subgIdx, const QModelIndex& subnetNodeIdx) = 0;
-    virtual QModelIndex forkMaterial(const QModelIndex& subnetNodeIdx, const QString& subgName, const QString& mtlid, const QString& mtlid_old) = 0;
+    virtual QModelIndex forkMaterial(const QModelIndex& subgIdx, const QModelIndex& subnetNodeIdx, const QString& subgName, const QString& mtlid, const QString& mtlid_old) = 0;
 
 	virtual void updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual void updateSocketDefl(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
@@ -77,7 +77,7 @@ public:
 	virtual void redo() = 0;
 	virtual void switchSubGraph(const QString& graphName) {}
 	virtual void newSubgraph(const QString& graphName, SUBGRAPH_TYPE type = SUBGRAPH_TYPE::SUBGRAPH_NOR) = 0;
-    virtual bool newMaterialSubgraph(const QString& graphName, const QPointF& pos) = 0;
+    virtual bool newMaterialSubgraph(const QModelIndex& subgIdx, const QString& graphName, const QPointF& pos) = 0;
 	virtual void initMainGraph() = 0;
 	virtual void renameSubGraph(const QString& oldName, const QString& newName) = 0;
 	virtual bool isDirty() const = 0;

@@ -532,6 +532,95 @@ ZENDEFNODE(QueryNearestPrimitiveWithUV, {
                                       {"zenofx"},
                                   });
 
+struct RematchBestPrimitiveUV : zeno::INode {
+  virtual void apply() override {
+    using namespace zeno;
+
+    auto lbvh = get_input<LBvh>("lbvh");
+    if (lbvh->eleCategory != LBvh::element_e::tri)
+      throw std::runtime_error("lbvh used for RematchBestPrimitiveUV can only be built from triangle mesh");
+
+    using Ti = typename LBvh::Ti;
+
+    auto prim = get_input<PrimitiveObject>("prim");
+    auto tagStr = get_input2<std::string>("selection_tag");
+    auto &tags = prim->add_attr<float>(tagStr);
+    {
+      if (!(prim->verts.has_attr("uv") && prim->polys.size() > 1))
+        throw std::runtime_error("the input primitive is not a loop-based surface mesh with vertex uv!");
+
+      const auto &pos = prim->verts.values;
+      auto &uvs = prim->attr<vec3f>("uv");
+      const auto &polys = prim->polys.values;
+      const auto &loops = prim->loops.values;
+
+      /// @note in spatial distance
+      // auto threshold = get_input2<float>("threshold");
+
+      auto bvhPrim = lbvh->primPtr.lock();
+      if (!bvhPrim->verts.has_attr("uv"))
+        throw std::runtime_error("missing vertex property [uv] in the bvh-associated prim!");
+      const auto &refUvs = bvhPrim->verts.attr<zeno::vec3f>("uv");
+      const auto &refTris = bvhPrim->tris.values;
+
+#if 1
+      std::vector<vec3f> targetVertUvs(pos.size());
+#if defined(_OPENMP)
+#pragma omp parallel for schedule(guided, 4)
+#endif
+      for (Ti ei = 0; ei < polys.size(); ++ei) {
+        auto poly = polys[ei];
+        Ti st = poly[0];
+        Ti ed = st + poly[1];
+        vec3f uv{0, 0, 0};
+        int cnt = 0;
+        for (; st != ed; ++st) {
+          auto i = loops[st];
+          if (tags[i] < 0.5f) {
+            uv += uvs[i];
+            cnt++;
+          }
+        }
+        uv /= cnt;
+        for (st = poly[0]; st != ed; ++st) {
+          auto i = loops[st];
+          targetVertUvs[i] = uv;
+        }
+      }
+
+#if defined(_OPENMP)
+#pragma omp parallel for schedule(guided, 4)
+#endif
+      for (Ti i = 0; i < pos.size(); ++i) {
+        if (tags[i] > 0.5f) {
+          auto dist = std::numeric_limits<float>::max();
+          auto uvDist2 = std::numeric_limits<float>::max();
+          Ti id = -1;
+          zeno::vec3f uv = targetVertUvs[i];
+          auto w = lbvh->find_nearest_with_uv(pos[i], uv, id, dist, uvDist2);
+          if (id != -1) {
+            auto refTri = refTris[id];
+            uvs[i] = (refUvs[refTri[0]] * w[0] + refUvs[refTri[1]] * w[1] + refUvs[refTri[2]] * w[2]);  // update new uv closer to target uv
+          }
+        }
+      }
+      #endif
+    }
+
+    set_output("prim", prim);
+  }
+};
+
+ZENDEFNODE(RematchBestPrimitiveUV, {
+                                      {{"PrimitiveObject", "prim"}, {"LBvh", "lbvh"},
+                                      {"float", "threshold", "0.001"},
+                                      {"string", "selection_tag", "selected"}
+                                      },
+                                      {{"PrimitiveObject", "prim"}},
+                                      {},
+                                      {"zenofx"},
+                                  });
+
 
 
 struct QueryNearestPrimitiveWithinGroup : zeno::INode {

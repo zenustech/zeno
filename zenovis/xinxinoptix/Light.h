@@ -399,22 +399,21 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
         }
 
         if (lsr.NoL > _FLT_EPL_ && lsr.PDF > _FLT_EPL_) {
-
-            traceOcclusion(params.handle, shadingP, lsr.dir, 0, lsr.dist, &shadow_prd);
+            shadow_prd.depth = 0;
+            traceOcclusion(params.handle, shadow_prd.origin, lsr.dir, 0, lsr.dist, &shadow_prd);
             light_attenuation = shadow_prd.shadowAttanuation;
 
             if (nullptr==RadianceWithoutShadow && lengthSquared(light_attenuation) == 0.0f) return;
-                
-                auto bxdf_value = evalBxDF(lsr.dir, wo, scatterPDF);
-                auto misWeight = 1.0f;
+
+            emission *= lsr.intensity;
+            auto bxdf_value = evalBxDF(lsr.dir, wo, scatterPDF);
+            auto misWeight = 1.0f;
 
             if constexpr(_MIS_) {
                 if (!light.isDeltaLight() && !lsr.isDelta) {
                     misWeight = BRDFBasics::PowerHeuristic(lsr.PDF, scatterPDF);
                 }
             }
-
-                emission *= lsr.intensity;
 
                 float3 radianceNoShadow = emission * bxdf_value;
                 radianceNoShadow *= misWeight / lsr.PDF;
@@ -425,12 +424,12 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
 
                 if constexpr (!detail::is_void<TypeAux>::value) {
                     auto tmp = light_attenuation * misWeight / lsr.PDF;
-                    (*taskAux)(tmp);
+                    (*taskAux)(emission * tmp);
                 }// TypeAux
 
                 prd->radiance = radianceNoShadow * light_attenuation; // with shadow
-        }
-
+        } 
+    
     } else {
 
         float env_weight_sum = 1e-8f;
@@ -454,15 +453,14 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
                                         .45, 15., 1.030725f * 0.3f, params.elapsedTime, tmpPdf));
             if(tmpPdf <= 0.0f) { return; }
 
-            auto LP = shadingP;
             auto Ldir = sun_dir;
 
             if (envpdf < __FLT_DENORM_MIN__) {
                 return;
             }
-
+            shadow_prd.depth = 0;
             //LP = rtgems::offset_ray(LP, sun_dir);
-            traceOcclusion(params.handle, LP, sun_dir,
+            traceOcclusion(params.handle, shadow_prd.origin, sun_dir,
                         1e-5f, // tmin
                         1e16f, // tmax,
                         &shadow_prd);
@@ -471,7 +469,7 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
             if (nullptr==RadianceWithoutShadow && lengthSquared(light_attenuation) == 0.0f) return;
 
             auto inverseProb = 1.0f/_SKY_PROB_;
-            auto bxdf_value = evalBxDF(sun_dir, wo, scatterPDF, illum);
+            auto bxdf_value = evalBxDF(sun_dir, wo, scatterPDF);
 
             float tmp = 1.0f;
 
@@ -486,14 +484,14 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
                 tmp = (1.0f / NSamples) * inverseProb / tmpPdf;
             }
 
-            float3 radianceNoShadow = tmp * bxdf_value; 
+            float3 radianceNoShadow = illum * tmp * bxdf_value; 
 
             if (nullptr != RadianceWithoutShadow) {
                 *RadianceWithoutShadow = radianceNoShadow;
             }
 
             if constexpr (!detail::is_void<TypeAux>::value) {
-                (*taskAux)(tmp * light_attenuation);
+                (*taskAux)(illum * tmp * light_attenuation);
             }// TypeAux
 
             prd->radiance += radianceNoShadow * light_attenuation; // with shadow

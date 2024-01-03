@@ -1017,7 +1017,8 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewSockIdx, bool bInput, 
         procClipbrd->setCopiedAddress("");
     };
     cbSocket.cbActionTriggered = [=](QAction* pAction, const QModelIndex& socketIdx) {
-        if (pAction->text() == "Delete Net Label") {
+        QString text = pAction->text();
+        if (pAction->text() == tr("Delete Net Label")) {
             IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
             ZASSERT_EXIT(pModel);
             pModel->removeNetLabel(m_subGpIndex, socketIdx);
@@ -1630,7 +1631,7 @@ void ZenoNode::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
             const auto& paramIdx = pNodeParams->getParam(PARAM_INPUT, "mtlid");
             ZASSERT_EXIT(paramIdx.isValid());
             QString mtlid = paramIdx.data(ROLE_PARAM_VALUE).toString();
-            if (!pGraphsModel->newMaterialSubgraph(mtlid, this->pos() + QPointF(800, 0)))
+            if (!pGraphsModel->newMaterialSubgraph(m_subGpIndex, mtlid, this->pos() + QPointF(800, 0)))
                 QMessageBox::warning(nullptr, tr("Info"), tr("Create material subgraph '%1' failed.").arg(mtlid));
         });
         QMenu *nodeMenu = new QMenu;

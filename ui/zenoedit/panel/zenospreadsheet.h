@@ -23,6 +23,7 @@ protected:
     bool eventFilter(QObject* watched, QEvent* event) override;
 private:
     QTableView* prim_attr_view;
+    QCheckBox* m_checkSortingEnabled;
 };
 
 

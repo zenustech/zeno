@@ -298,14 +298,20 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
 
                 //command params
                 const QString& objPath = inSockIdx.data(ROLE_OBJPATH).toString();
-                if (!launchParam.paramPath.isEmpty() && commandParams.contains(objPath))
+                if (commandParams.contains(objPath))
                 {
+                    if (!configPath.isEmpty())
+                    {
                     const QString& command = commandParams[objPath].name;
                     if (configDoc.HasMember(command.toUtf8()))
                     {
-                        const auto& obj = configDoc[command.toStdString().c_str()];
-                        if (obj.IsObject() && obj.HasMember("value"))
-                            defl = UiHelper::parseJsonByType(sockType, obj["value"], nullptr);
+                            const auto& value = configDoc[command.toStdString().c_str()];
+                            defl = UiHelper::parseJsonByType(sockType, value, nullptr);
+                    }
+                }
+                    else if (commandParams[objPath].bIsCommand)
+                    {
+                        defl = commandParams[objPath].value;
                     }
                 }
 
@@ -353,9 +359,8 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                 QString command = commandParams[objPath].name;
                 if (!launchParam.paramPath.isEmpty() && commandParams.contains(objPath) && configDoc.HasMember(command.toUtf8()))
                 {
-                    const auto& obj = configDoc[command.toStdString().c_str()];
-                    if (obj.IsObject() && obj.HasMember("value"))
-                        paramValue = UiHelper::parseJsonByType(param_info.typeDesc, obj["value"], nullptr);
+                    const auto& value = configDoc[command.toStdString().c_str()];
+                    paramValue = UiHelper::parseJsonByType(param_info.typeDesc, value, nullptr);
                 }
                 else
                 {

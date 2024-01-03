@@ -28,3 +28,6 @@
 [submodule "projects/Geometry/instant_meshes"]
 	path = projects/Geometry/instant_meshes
 	url = https://github.com/seeeagull/instant-meshes.git
+[submodule "projects/Geometry/fTetWild"]
+	path = projects/Geometry/fTetWild
+	url = https://github.com/seeeagull/fTetWild.git

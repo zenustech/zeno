@@ -169,6 +169,14 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
             menu->addAction(pRename);
             menu->addAction(pDelete);
             menu->addAction(pSave);
+            if (index.data(ROLE_SUBGRAPH_TYPE) != SUBGRAPH_PRESET)
+            {
+                QAction* pPreset = new QAction(tr("Trans to Preset Subgrah"));
+                menu->addAction(pPreset);
+                connect(pPreset, &QAction::triggered, this, [=]() {
+                        m_model->setData(index, SUBGRAPH_PRESET, ROLE_SUBGRAPH_TYPE);
+                });
+            }
             menu->exec(QCursor::pos());
         }
     }
@@ -273,6 +281,12 @@ void ZSubnetListItemDelegate::setSelectedIndexs(const QModelIndexList &list)
 
 SubListSortProxyModel::SubListSortProxyModel(QObject* parent) : QSortFilterProxyModel(parent)
 {
+    connect(&ZenoSettingsManager::GetInstance(), &ZenoSettingsManager::valueChanged, this, [=](QString zsName) {
+        if (zsName == zsSubgraphType)
+        {
+            invalidate();
+        }
+    });
 }
 
 bool SubListSortProxyModel::lessThan(const QModelIndex& source_left, const QModelIndex& source_right) const
