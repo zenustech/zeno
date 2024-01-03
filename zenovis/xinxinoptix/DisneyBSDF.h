@@ -392,7 +392,7 @@ namespace DisneyBSDF{
         {
 
             vec3 d = BRDFBasics::EvalDisneyDiffuse(thin? mat.basecolor:mix(mat.basecolor,mat.sssColor,mat.subsurface), mat.subsurface, mat.roughness, mat.sheen,
-                                             Csheen, wo, wi, wm, tmpPdf) * dielectricWt   * illum;
+                                             Csheen, wo, wi, wm, tmpPdf) * dielectricWt;
             dterm = dterm + d;
             f = f + d;
             fPdf += tmpPdf * diffPr ;
@@ -403,7 +403,7 @@ namespace DisneyBSDF{
             float ax, ay;
             BRDFBasics::CalculateAnisotropicParams(mat.roughness,mat.anisotropic,ax,ay);
             vec3 s = BRDFBasics::EvalMicrofacetReflection(ax, ay, wo, wi, wm,
-                                          mix(Cspec0, vec3(1.0f), F) * mat.specular, tmpPdf) * dielectricWt  * illum;
+                                          mix(Cspec0, vec3(1.0f), F) * mat.specular, tmpPdf) * dielectricWt;
             sterm = sterm + s;
             f = f + s;
             fPdf += tmpPdf * dielectricPr;
@@ -413,7 +413,7 @@ namespace DisneyBSDF{
             vec3 F = mix(mat.basecolor, vec3(1.0), BRDFBasics::SchlickWeight(HoV));
             float ax, ay;
             BRDFBasics::CalculateAnisotropicParams(mat.roughness,mat.anisotropic,ax,ay);
-            vec3 s = BRDFBasics::EvalMicrofacetReflection(ax, ay, wo, wi, wm, F, tmpPdf) * metalWt  * illum;
+            vec3 s = BRDFBasics::EvalMicrofacetReflection(ax, ay, wo, wi, wm, F, tmpPdf) * metalWt;
             sterm = sterm + s;
             f = f + s;
             fPdf += tmpPdf * metalPr;
@@ -451,7 +451,7 @@ namespace DisneyBSDF{
                                                                  wo, wi, wm,
                                                                  vec3(F), tmpPdf);
 
-                vec3 t = brdf * glassWt  * illum;
+                vec3 t = brdf * glassWt;
                 tterm = tterm + t;
                 f = f + t;
                 fPdf += tmpPdf * glassPr * (1.0 - F);
@@ -464,7 +464,7 @@ namespace DisneyBSDF{
         {
             vec3 wm = normalize(wi + wo);
             vec3 s = BRDFBasics::EvalClearcoat(mat.clearcoatRoughness, wo, wi,
-                                         wm, tmpPdf) * 0.25 * mat.clearcoat  * illum;
+                                         wm, tmpPdf) * 0.25 * mat.clearcoat;
             sterm = sterm + s;
             f =  f + s;
             fPdf += tmpPdf * clearCtPr;

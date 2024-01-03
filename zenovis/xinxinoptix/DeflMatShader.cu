@@ -860,7 +860,7 @@ extern "C" __global__ void __closesthit__radiance()
     ShadowPRD shadowPRD {};
     shadowPRD.seed = prd->seed;
     shadowPRD.attanuation = make_float3(1.0f, 1.0f, 1.0f);
-    shadowPRD.nonThinTransHit = (mats.thin == false && mats.specTrans > 0) ? 1 : 0;
+    shadowPRD.nonThinTransHit = (mats.thin < 0.5f && mats.specTrans > 0) ? 1 : 0;
 
     shadowPRD.origin = rtgems::offset_ray(P,  prd->geometryNormal); // camera space
     auto shadingP = rtgems::offset_ray(P + params.cam.eye,  prd->geometryNormal); // world space
@@ -884,7 +884,7 @@ extern "C" __global__ void __closesthit__radiance()
       prd->done = true;
     }
 
-    if(mats.thin<0.5f || mats.doubleSide<0.5f){
+    if(mats.thin<0.5f && mats.doubleSide<0.5f){
         prd->origin = rtgems::offset_ray(P, (next_ray_is_going_inside)? -prd->geometryNormal : prd->geometryNormal);
     }
     else {
