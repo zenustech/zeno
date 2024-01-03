@@ -43,6 +43,27 @@ enum medium{
     isotropicScatter
 };
 
+struct VolumePRD {
+    float vol_t0;
+    float vol_t1;
+
+    bool origin_inside  :1;
+    bool surface_inside :1;
+};
+
+struct ShadowPRD {
+    float3 origin;
+    uint32_t seed;
+    float3 attanuation;
+    uint8_t nonThinTransHit;
+
+    VolumePRD vol;
+
+    float rndf() {
+        return rnd(seed);
+    }
+};
+
 struct RadiancePRD
 {
     // TODO: move some state directly into payload registers?
@@ -65,7 +86,7 @@ struct RadiancePRD
     unsigned int flags;
     int          countEmitted;
     int          done;
-    float3       shadowAttanuation;
+
     int          medium;
     float        scatterDistance;
     float        scatterPDF;
@@ -74,7 +95,6 @@ struct RadiancePRD
     int          diffDepth;
     bool         isSS;
     float        scatterStep;
-    int          nonThinTransHit;
     float        pixel_area;
     float        Lweight;
     vec3         sigma_t_queue[8];
@@ -111,11 +131,8 @@ struct RadiancePRD
     float3 tmp_normal {};
 
     // cihou nanovdb
-    float vol_t0=0, vol_t1=0;
-
-    bool test_distance = false;
-    bool origin_inside_vdb = false;
-    bool surface_inside_vdb = false; 
+    VolumePRD vol;
+    bool test_distance = false ;
 
     float _tmin_ = 0;
     float3 geometryNormal;
@@ -193,7 +210,7 @@ static __forceinline__ __device__ void traceRadiance(
 	float3                 ray_direction,
 	float                  tmin,
 	float                  tmax,
-	RadiancePRD           *prd,
+	void                   *prd,
     OptixVisibilityMask    mask=255u)
 {
     unsigned int u0, u1;
@@ -218,7 +235,7 @@ static __forceinline__ __device__ void traceOcclusion(
         float3                 ray_direction,
         float                  tmin,
         float                  tmax,
-        RadiancePRD           *prd,
+        void                   *prd,
         OptixVisibilityMask    mask=255u)
 {
     unsigned int u0, u1;
@@ -236,11 +253,12 @@ static __forceinline__ __device__ void traceOcclusion(
             u0, u1);
 }
 
-static __forceinline__ __device__ RadiancePRD* getPRD()
+template <typename TypePRD = RadiancePRD>
+static __forceinline__ __device__ TypePRD* getPRD()
 {
     const unsigned int u0 = optixGetPayload_0();
     const unsigned int u1 = optixGetPayload_1();
-    return reinterpret_cast<RadiancePRD*>( unpackPointer( u0, u1 ) );
+    return reinterpret_cast<TypePRD*>( unpackPointer( u0, u1 ) );
 }
 
 

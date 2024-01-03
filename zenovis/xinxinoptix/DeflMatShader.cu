@@ -49,9 +49,8 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 
     HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
 
-    RadiancePRD* prd = getPRD();
+    ShadowPRD* prd = getPRD<ShadowPRD>();
     MatInput attrs{};
-
 
     bool sphere_external_ray = false;
 
@@ -211,14 +210,14 @@ extern "C" __global__ void __anyhit__shadow_cutout()
             optixIgnoreIntersection();
         }else{
 
-            if(length(prd->shadowAttanuation) < 0.01f){
-                prd->shadowAttanuation = vec3(0.0f);
+            if(length(prd->attanuation) < 0.01f){
+                prd->attanuation = vec3(0.0f);
                 optixTerminateRay();
                 return;
             }
 
             if(specTrans==0.0f){
-                prd->shadowAttanuation = vec3(0.0f);
+                prd->attanuation = vec3(0.0f);
                 optixTerminateRay();
                 return;
             }
@@ -231,23 +230,23 @@ extern "C" __global__ void __anyhit__shadow_cutout()
                 }
                 if(rnd(prd->seed)<(1-specTrans)||prd->nonThinTransHit>1)
                 {
-                    prd->shadowAttanuation = vec3(0,0,0);
+                    prd->attanuation = vec3(0,0,0);
                     optixTerminateRay();
                     return;
                 }
 
                 float nDi = fabs(dot(N,ray_dir));
                 vec3 fakeTrans = vec3(1)-BRDFBasics::fresnelSchlick(vec3(1)-basecolor,nDi);
-                prd->shadowAttanuation = prd->shadowAttanuation * fakeTrans;
+                prd->attanuation = prd->attanuation * fakeTrans;
 
                 #if (_SPHERE_)
                     if (sphere_external_ray) {
-                        prd->shadowAttanuation *= vec3(1, 0, 0);
+                        prd->attanuation *= vec3(1, 0, 0);
                         if (nDi < (1.0f-_FLT_EPL_)) {
-                            prd->shadowAttanuation = {};
+                            prd->attanuation = {};
                             optixTerminateRay(); return;
                         } else {
-                            prd->shadowAttanuation *= fakeTrans;
+                            prd->attanuation *= fakeTrans;
                         }
                     }
                 #endif
@@ -256,7 +255,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
             }
         }
 
-        prd->shadowAttanuation = vec3(0);
+        prd->attanuation = vec3(0);
         optixTerminateRay();
         return;
     }
@@ -280,10 +279,9 @@ extern "C" __global__ void __closesthit__radiance()
     RadiancePRD* prd = getPRD();
     if(prd->test_distance)
     {
-        prd->vol_t1 = optixGetRayTmax();
+        prd->maxDistance = optixGetRayTmax();
         return;
     }
-    prd->test_distance = false;
 
     const OptixTraversableHandle gas = optixGetGASTraversableHandle();
     const uint           sbtGASIndex = optixGetSbtGASIndex();
@@ -859,12 +857,12 @@ extern "C" __global__ void __closesthit__radiance()
         prd->radiance_t *= radiance;
     };
 
-    RadiancePRD shadow_prd {};
-    shadow_prd.seed = prd->seed;
-    shadow_prd.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
-    shadow_prd.nonThinTransHit = (mats.thin == false && mats.specTrans > 0) ? 1 : 0;
+    ShadowPRD shadowPRD {};
+    shadowPRD.seed = prd->seed;
+    shadowPRD.attanuation = make_float3(1.0f, 1.0f, 1.0f);
+    shadowPRD.nonThinTransHit = (mats.thin == false && mats.specTrans > 0) ? 1 : 0;
 
-    shadow_prd.origin = rtgems::offset_ray(P,  prd->geometryNormal); // camera space
+    shadowPRD.origin = rtgems::offset_ray(P,  prd->geometryNormal); // camera space
     auto shadingP = rtgems::offset_ray(P + params.cam.eye,  prd->geometryNormal); // world space
 
     prd->radiance = {};
@@ -876,7 +874,7 @@ extern "C" __global__ void __closesthit__radiance()
         dummy_prt = &radianceNoShadow;
     }
 
-    DirectLighting<true>(prd, shadow_prd, shadingP, ray_dir, evalBxDF, &taskAux, dummy_prt);
+    DirectLighting<true>(prd, shadowPRD, shadingP, ray_dir, evalBxDF, &taskAux, dummy_prt);
     if(mats.shadowReceiver > 0.5f)
     {
       auto radiance = length(prd->radiance);
