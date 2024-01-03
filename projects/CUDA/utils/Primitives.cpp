@@ -765,26 +765,25 @@ ZENDEFNODE(PrimitiveReorder,
            });
 
 #if 1
+static std::set<std::string> separate_string_by(const std::string &tags, const std::string &sep) {
+    std::set<std::string> res;
+    using Ti = RM_CVREF_T(std::string::npos);
+    Ti st = tags.find_first_not_of(sep, 0);
+    for (auto ed = tags.find_first_of(sep, st + 1); ed != std::string::npos; ed = tags.find_first_of(sep, st + 1)) {
+        res.insert(tags.substr(st, ed - st));
+        st = tags.find_first_not_of(sep, ed);
+        if (st == std::string::npos)
+            break;
+    }
+    if (st != std::string::npos && st < tags.size()) {
+        res.insert(tags.substr(st));
+    }
+    return res;
+}
 /// vert attrib either promoted or averaged during fusion
 struct PrimitiveFuse : INode {
-    std::set<std::string> separate_string_by(const std::string &tags, const std::string &sep) {
-        std::set<std::string> res;
-        using Ti = RM_CVREF_T(std::string::npos);
-        Ti st = tags.find_first_not_of(sep, 0);
-        for (auto ed = tags.find_first_of(sep, st + 1); ed != std::string::npos; ed = tags.find_first_of(sep, st + 1)) {
-            res.insert(tags.substr(st, ed - st));
-            st = tags.find_first_not_of(sep, ed);
-            if (st == std::string::npos)
-                break;
-        }
-        if (st != std::string::npos && st < tags.size()) {
-            res.insert(tags.substr(st));
-        }
-        return res;
-    }
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
-
         using namespace zs;
         using zsbvh_t = ZenoLinearBvh;
         using bvh_t = zsbvh_t::lbvh_t;
@@ -1569,6 +1568,61 @@ ZENDEFNODE(PrimitiveFuse, {
                               {"zs_geom"},
                           });
 #endif
+
+struct PrimPromotePointAttribs : INode {
+    void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+
+        using namespace zs;
+        constexpr auto space = execspace_e::openmp;
+        auto pol = omp_exec();
+
+        auto promoteAttribs_ = get_input2<std::string>("promote_vert_attribs");
+        std::set<std::string> promoteAttribs = separate_string_by(promoteAttribs_, " :;,.");
+
+        auto &verts = prim->verts;
+        auto &loops = prim->loops;
+        auto &polys = prim->polys;
+        auto &uvs = prim->uvs;
+        if (!(polys.size() > 1 && loops.size() > 0 && loops.size() == uvs.size())) {
+            throw std::runtime_error("The input mesh must be a loop-based representation with flattened uvs.");
+        }
+
+        /// prep attr
+        verts.foreach_attr<AttrAcceptAll>([&](auto const &key, auto const &arr) {
+            using T = std::decay_t<decltype(arr[0])>;
+            if (promoteAttribs.find(key) != promoteAttribs.end()) {
+                if (key != "uv")
+                    uvs.add_attr<T>(key);
+            }
+        });
+        /// promote
+        pol(range(loops.size()), [&](int i) {
+            auto loopI = loops.values[i];
+            for (const auto &attribTag : promoteAttribs) {
+                match([&, &attribTag = attribTag](auto &uvAttrib) {
+                    using T = std::decay_t<decltype(uvAttrib[0])>;
+                    const auto &srcAttrib = verts.attr<T>(attribTag);
+                    uvAttrib[i] = srcAttrib[loopI];
+                })(uvs.attr(attribTag));
+            }
+        });
+        /// rm attr
+        for (const auto &attr : promoteAttribs)
+            verts.erase_attr(attr);
+
+        set_output("prim", prim);
+    }
+};
+
+ZENDEFNODE(PrimPromotePointAttribs, {
+                                        {{"PrimitiveObject", "prim"}, {"string", "promote_vert_attribs", ""}},
+                                        {
+                                            {"PrimitiveObject", "prim"},
+                                        },
+                                        {},
+                                        {"zs_geom"},
+                                    });
 
 static std::shared_ptr<PrimitiveObject> unfuse_primitive(std::shared_ptr<PrimitiveObject> prim, std::string tag) {
     using namespace zs;
