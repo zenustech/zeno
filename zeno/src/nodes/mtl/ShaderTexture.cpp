@@ -119,7 +119,7 @@ struct ShaderTexture3D : ShaderNodeClone<ShaderTexture3D>
         std::string DataTypeNVDB = "DataTypeNVDB" + sid;
         std::string GridTypeNVDB = "GridTypeNVDB" + sid;
 
-        em->emitCode(type + "(samplingVDB<"+ ORDER +","+ world_space + "," + DataTypeNVDB +">(vdb_grids[" + sid + "], vec3(" + coord + ")))");
+        em->emitCode(type + "(samplingVDB<"+ ORDER +","+ world_space + "," + DataTypeNVDB +">(vdb_grids[" + sid + "], vec3(" + coord + "), attrs))");
     }
 };
 

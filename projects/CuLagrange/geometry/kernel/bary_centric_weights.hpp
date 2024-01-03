@@ -300,7 +300,7 @@ namespace zeno {
         typename HalfEdgeTileVec,
         typename TriTileVec,
         typename CellTileVec,
-        typename T = VTileVec::value_type>
+        typename T = typename VTileVec::value_type>
     constexpr void compute_boundary_edge_cells_and_vertex_normal(Pol& pol,const VTileVec& verts,const zs::SmallString& xtag,
         VNrmTileVec& vertex_nrm_buffer,
         const BoundaryTileVec& boundary_halfedges,
@@ -411,7 +411,7 @@ namespace zeno {
         typename VNrmTileVec,
         typename TriTileVec,
         typename CellTileVec,
-        typename T = VTileVec::value_type>
+        typename T = typename VTileVec::value_type>
     constexpr void compute_cells_and_vertex_normal(Pol& pol,
         const VTileVec& verts,const zs::SmallString& xtag,
         VNrmTileVec& vertex_nrm_buffer,

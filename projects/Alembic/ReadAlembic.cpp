@@ -33,6 +33,27 @@ static int clamp(int i, int _min, int _max) {
     }
 }
 
+static void set_time_info(UserData &ud, TimeSamplingType tst, float start, int sample_count) {
+    float time_per_cycle = tst.getTimePerCycle();
+    if (tst.isUniform()) {
+        ud.set2("_abc_time_sampling_type", "Uniform");
+    }
+    else if (tst.isCyclic()) {
+        ud.set2("_abc_time_sampling_type", "Cyclic");
+    }
+    else if (tst.isAcyclic()) {
+        ud.set2("_abc_time_sampling_type", "Acyclic");
+    }
+    ud.set2("_abc_start_time", float(start));
+    ud.set2("_abc_sample_count", sample_count);
+    ud.set2("_abc_time_per_cycle", time_per_cycle);
+    if (time_per_cycle > 0) {
+        ud.set2("_abc_time_fps", 1.0f / time_per_cycle);
+    }
+    else {
+        ud.set2("_abc_time_fps", 0.0f);
+    }
+}
 static void read_velocity(std::shared_ptr<PrimitiveObject> prim, V3fArraySamplePtr marr, bool read_done) {
     if (marr == nullptr) {
         return;
@@ -331,6 +352,7 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
     float time_per_cycle =  time->getTimeSamplingType().getTimePerCycle();
     double start = time->getStoredTimes().front();
     int start_frame = (int)std::round(start / time_per_cycle );
+    set_time_info(prim->userData(), time->getTimeSamplingType(), start, int(mesh.getNumSamples()));
 
     int sample_index = clamp(frameid - start_frame, 0, (int)mesh.getNumSamples() - 1);
     ISampleSelector iSS = Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index);
@@ -469,6 +491,7 @@ static std::shared_ptr<PrimitiveObject> foundABCSubd(Alembic::AbcGeom::ISubDSche
     float time_per_cycle =  time->getTimeSamplingType().getTimePerCycle();
     double start = time->getStoredTimes().front();
     int start_frame = (int)std::round(start / time_per_cycle );
+    set_time_info(prim->userData(), time->getTimeSamplingType(), start, int(subd.getNumSamples()));
 
     int sample_index = clamp(frameid - start_frame, 0, (int)subd.getNumSamples() - 1);
     ISampleSelector iSS = Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index);
@@ -628,6 +651,7 @@ static std::shared_ptr<PrimitiveObject> foundABCPoints(Alembic::AbcGeom::IPoints
     float time_per_cycle =  time->getTimeSamplingType().getTimePerCycle();
     double start = time->getStoredTimes().front();
     int start_frame = (int)std::round(start / time_per_cycle );
+    set_time_info(prim->userData(), time->getTimeSamplingType(), start, int(mesh.getNumSamples()));
 
     int sample_index = clamp(frameid - start_frame, 0, (int)mesh.getNumSamples() - 1);
     auto iSS = Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index);
@@ -665,6 +689,7 @@ static std::shared_ptr<PrimitiveObject> foundABCCurves(Alembic::AbcGeom::ICurves
     float time_per_cycle =  time->getTimeSamplingType().getTimePerCycle();
     double start = time->getStoredTimes().front();
     int start_frame = (int)std::round(start / time_per_cycle );
+    set_time_info(prim->userData(), time->getTimeSamplingType(), start, int(mesh.getNumSamples()));
 
     int sample_index = clamp(frameid - start_frame, 0, (int)mesh.getNumSamples() - 1);
     auto iSS = Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index);
@@ -890,26 +915,31 @@ struct AlembicSplitByName: INode {
             set_output("namelist", namelist);
         }
 
-        {
-            std::map<int, AttrVector<vec2i>> faceset_map;
+        auto dict = std::make_shared<zeno::DictObject>();
+        if (prim->polys.size()) {
+            std::map<int, std::vector<int>> faceset_map;
             for (auto f = 0; f < faceset_count; f++) {
                 faceset_map[f] = {};
             }
             auto &faceset = prim->polys.add_attr<int>("faceset");
             for (auto j = 0; j < faceset.size(); j++) {
                 auto f = faceset[j];
-                faceset_map[f].push_back(prim->polys[j]);
+                faceset_map[f].push_back(j);
             }
-            auto dict = std::make_shared<zeno::DictObject>();
             for (auto f = 0; f < faceset_count; f++) {
                 auto name = prim->userData().get2<std::string>(zeno::format("faceset_{:04}", f));
                 auto new_prim = std::dynamic_pointer_cast<PrimitiveObject>(prim->clone());
-                if (faceset_map.count(f)) {
-                    new_prim->polys = faceset_map[f];
+                new_prim->polys.resize(faceset_map[f].size());
+                for (auto i = 0; i < faceset_map[f].size(); i++) {
+                    new_prim->polys[i] = prim->polys[faceset_map[f][i]];
                 }
-                else {
-                    new_prim->polys.resize(0);
-                }
+                new_prim->polys.foreach_attr<AttrAcceptAll>([&](auto const &key, auto &arr) {
+                    using T = std::decay_t<decltype(arr[0])>;
+                    auto &attr = prim->polys.attr<T>(key);
+                    for (auto i = 0; i < arr.size(); i++) {
+                        arr[i] = attr[faceset_map[f][i]];
+                    }
+                });
                 new_prim->userData().del("faceset_count");
                 for (auto j = 0; j < faceset_count; j++) {
                     new_prim->userData().del(zeno::format("faceset_{:04}", j));
@@ -917,9 +947,40 @@ struct AlembicSplitByName: INode {
                 new_prim->userData().set2("_abc_faceset", name);
                 dict->lut[name] = std::move(new_prim);
             }
-            set_output("dict", dict);
-
         }
+        else if (prim->tris.size()) {
+            std::map<int, std::vector<int>> faceset_map;
+            for (auto f = 0; f < faceset_count; f++) {
+                faceset_map[f] = {};
+            }
+            auto &faceset = prim->tris.add_attr<int>("faceset");
+            for (auto j = 0; j < faceset.size(); j++) {
+                auto f = faceset[j];
+                faceset_map[f].push_back(j);
+            }
+            for (auto f = 0; f < faceset_count; f++) {
+                auto name = prim->userData().get2<std::string>(zeno::format("faceset_{:04}", f));
+                auto new_prim = std::dynamic_pointer_cast<PrimitiveObject>(prim->clone());
+                new_prim->tris.resize(faceset_map[f].size());
+                for (auto i = 0; i < faceset_map[f].size(); i++) {
+                    new_prim->tris[i] = prim->tris[faceset_map[f][i]];
+                }
+                new_prim->tris.foreach_attr<AttrAcceptAll>([&](auto const &key, auto &arr) {
+                    using T = std::decay_t<decltype(arr[0])>;
+                    auto &attr = prim->tris.attr<T>(key);
+                    for (auto i = 0; i < arr.size(); i++) {
+                        arr[i] = attr[faceset_map[f][i]];
+                    }
+                });
+                new_prim->userData().del("faceset_count");
+                for (auto j = 0; j < faceset_count; j++) {
+                    new_prim->userData().del(zeno::format("faceset_{:04}", j));
+                }
+                new_prim->userData().set2("_abc_faceset", name);
+                dict->lut[name] = std::move(new_prim);
+            }
+        }
+        set_output("dict", dict);
     }
 };
 

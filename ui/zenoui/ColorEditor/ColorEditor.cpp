@@ -1379,24 +1379,42 @@ void ColorPicker::focusOutEvent(QFocusEvent* e)
 //------------------------------------------------------- color data --------------------------------------------
 struct ColorEditorData
 {
-    static constexpr int rowCount = 4;
+    static constexpr int rowCount = 5;
     static constexpr int colCount = 12;
     QColor standardColor[rowCount * colCount];
+
+    float cs[12] = {
+            0.f,
+            0.00625f,
+            0.0125f,
+            0.025f,
+            0.05f,
+            0.1f,
+            0.2f,
+            0.3333f,
+            0.5f,
+            0.6667f,
+            0.75f,
+            1.f,
+    };
 
     ColorEditorData()
     {
         // standard
         int i = 0;
-        for (int s = 0; s < rowCount; ++s) {
+        for (int s = 0; s < rowCount - 1; ++s) {
             for (int h = 0; h < colCount; ++h) {
-                standardColor[i++] = QColor::fromHsvF(1.0 * h / colCount, 1.0 - 1.0 * s / rowCount, 1.0);
+                standardColor[i++] = QColor::fromHsvF(1.0 * h / colCount, 1.0 - 1.0 * s / (rowCount-1), 1.0);
             }
+        }
+        for (float c: cs) {
+            standardColor[i++] = QColor::fromRgbF(c, c, c);
         }
     }
 
     QVector<QColor> readSettings()
     {
-        const QSettings settings(QSettings::UserScope, QStringLiteral("__ColorEditor_4x12"));
+        const QSettings settings(QSettings::UserScope, QStringLiteral("__ColorEditor_5x12"));
         int count = settings.value(QLatin1String("customCount")).toInt();
         QVector<QColor> customColor(count);
         // if zero, init with standard
