@@ -38,7 +38,7 @@ struct Detangle2 : zeno::INode {
         constexpr auto DETANGLE_CS_ET_BUFFER_KEY = "DETANGLE_CS_ET_BUFFER_KEY";
         constexpr auto DETANGLE_TRI_BVH_BUFFER_KEY = "DETANGLE_TRI_BVH_BUFFER_KEY";
         constexpr auto DETANGLE_ICM_GRADIENT_BUFFER_KEY = "DETANGLE_ICM_GRADIENT_BUFFER_KEY";
-        constexpr auto DEFAULT_MAX_DETANGLE_INTERSECTION_PAIR = 10000;
+        constexpr auto DEFAULT_MAX_DETANGLE_INTERSECTION_PAIR = 100000;
 
         auto zsparticles = get_input<ZenoParticles>("zsparticles");
         auto& verts = zsparticles->getParticles();
@@ -204,7 +204,8 @@ struct Detangle2 : zeno::INode {
                 {
                     timer.tick();
 
-
+                    
+                    std::cout << "retrive_intersections_between_edges_and_ktris" << std::endl;
                     retrieve_intersection_with_edge_tri_pairs(cudaExec,
                         verts,xtag,
                         edges,
@@ -215,6 +216,7 @@ struct Detangle2 : zeno::INode {
                         icm_grad,
                         use_barycentric_interpolator);
                     timer.tock("retrieve_intersection_with_EKT_pairs");
+                    std::cout << "finish retrive_intersections_between_edges_and_ktris" << std::endl;
 
                     if(csET.size() > 0)
                         has_kine_intersection = true;
@@ -310,6 +312,7 @@ struct Detangle2 : zeno::INode {
                 }
 
                 {
+                    std::cout << "retrive_intersections_between_kedges_and_tris" << std::endl;
                     timer.tick();
                     retrieve_intersection_with_edge_tri_pairs(cudaExec,
                         kvtemp,"x",
@@ -321,6 +324,8 @@ struct Detangle2 : zeno::INode {
                         icm_grad,
                         use_barycentric_interpolator);
                     timer.tock("retrieve_intersection_with_KET_pairs");
+
+                    std::cout << "finish retrive_intersections_between_kedges_and_tris" << std::endl;
 
                     if(csET.size() > 0)
                         has_kine_intersection = true;
