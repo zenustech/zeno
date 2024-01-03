@@ -1710,6 +1710,119 @@ ZENDEFNODE(PrimDemoteVertAttribs, {
                                       {"zs_geom"},
                                   });
 
+struct PrimAttributePromote : INode {
+    void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+
+        using namespace zs;
+        constexpr auto space = execspace_e::openmp;
+        auto pol = omp_exec();
+
+        auto promoteAttribs_ = get_input2<std::string>("promote_attribs");
+        std::set<std::string> promoteAttribs = separate_string_by(promoteAttribs_, " :;,.");
+
+        auto &verts = prim->verts;
+        auto &loops = prim->loops;
+        const auto &loopUvIds = loops.attr<int>("uvs");
+        auto &polys = prim->polys;
+        auto &uvs = prim->uvs;
+        if (!(polys.size() > 1 && loops.size() > 0 && loops.size() == uvs.size())) {
+            throw std::runtime_error("The input mesh must be a loop-based representation with flattened uvs.");
+        }
+
+        auto directionStr = get_input2<std::string>("direction");
+        if (directionStr == "point_to_vert") {
+            /// prep attr
+            verts.foreach_attr<AttrAcceptAll>([&](auto const &key, auto const &arr) {
+                using T = std::decay_t<decltype(arr[0])>;
+                if (promoteAttribs.find(key) != promoteAttribs.end()) {
+                    if (key != "uv")
+                        uvs.add_attr<T>(key);
+                }
+            });
+            /// promote
+            pol(range(loops.size()), [&](int i) {
+                auto loopI = loops.values[i];
+                for (const auto &attribTag : promoteAttribs) {
+                    if (uvs.has_attr(attribTag))
+                        match([&, &attribTag = attribTag](auto &uvAttrib) {
+                            using T = std::decay_t<decltype(uvAttrib[0])>;
+                            const auto &srcAttrib = verts.attr<T>(attribTag);
+                            uvAttrib[i] = srcAttrib[loopI];
+                        })(uvs.attr(attribTag));
+                }
+            });
+            /// rm attr
+            for (const auto &attr : promoteAttribs)
+                verts.erase_attr(attr);
+        } else {
+            /// prep attr
+            auto &vertUvs = verts.add_attr<zeno::vec3f>("uv");
+            uvs.foreach_attr<AttrAcceptAll>([&](auto const &key, auto const &arr) {
+                using T = std::decay_t<decltype(arr[0])>;
+                if (promoteAttribs.find(key) != promoteAttribs.end()) {
+                    if (key != "uv") {
+                        auto &attr = verts.add_attr<T>(key);
+                        std::memset(attr.data(), 0, sizeof(T) * attr.size());
+                    }
+                }
+            });
+            /// demote
+            std::vector<int> vCnts(verts.size());
+            pol(range(loops.size()), [&](int i) {
+                auto loopI = loops.values[i];
+                auto uvI = loopUvIds[i];
+                atomic_add(wrapv<space>{}, &vertUvs[loopI][0], uvs.values[uvI][0]);
+                atomic_add(wrapv<space>{}, &vertUvs[loopI][1], uvs.values[uvI][1]);
+                vertUvs[loopI][2] = 0;
+
+                atomic_add(wrapv<space>{}, &vCnts[loopI], 1);
+                for (const auto &attribTag : promoteAttribs) {
+                    if (attribTag == "uv")
+                        continue;
+                    if (verts.has_attr(attribTag))
+                        match([&, &attribTag = attribTag](auto &vertAttrib) {
+                            using T = std::decay_t<decltype(vertAttrib[0])>;
+                            const auto &uvAttrib = uvs.attr<T>(attribTag);
+                            if constexpr (std::is_same_v<T, float> || std::is_same_v<T, int>) {
+                                atomic_add(wrapv<space>{}, &vertAttrib[loopI], uvAttrib[uvI]);
+                            } else {
+                                using TT = typename T::value_type;
+                                constexpr int dim = std::tuple_size_v<T>;
+                                for (int d = 0; d != dim; ++d)
+                                    atomic_add(wrapv<space>{}, &vertAttrib[loopI][d], uvAttrib[uvI][d]);
+                            }
+                        })(verts.attr(attribTag));
+                }
+            });
+            pol(enumerate(vCnts), [&verts, &promoteAttribs](int i, int sz) {
+                if (sz == 0)
+                    return;
+                for (const auto &attribTag : promoteAttribs) {
+                    if (verts.has_attr(attribTag))
+                        match([&](auto &vertAttrib) { vertAttrib[i] = vertAttrib[i] / sz; })(verts.attr(attribTag));
+                }
+            });
+            /// rm attr
+            for (const auto &attr : promoteAttribs)
+                uvs.erase_attr(attr);
+        }
+
+        set_output("prim", prim);
+    }
+};
+
+ZENDEFNODE(PrimAttributePromote, {
+                                     {{"PrimitiveObject", "prim"},
+                                      {"string", "promote_attribs", ""},
+                                      {"enum point_to_vert vert_to_point", "direction", "point_to_vert"}},
+                                     {
+                                         {"PrimitiveObject", "prim"},
+                                     },
+                                     {},
+                                     {"zs_geom"},
+                                 });
+
 static std::shared_ptr<PrimitiveObject> unfuse_primitive(std::shared_ptr<PrimitiveObject> prim, std::string tag) {
     using namespace zs;
     constexpr auto space = execspace_e::openmp;
