@@ -426,7 +426,11 @@ bool GlobalComm::fromDiskByRunner(std::string cachedir, int frameid, GlobalComm:
     if (cachedir.empty())
         return false;
     objs.clear();
-    auto dir = std::filesystem::u8path(cachedir) / std::to_string(1000000 + frameid).substr(1);
+    std::filesystem::path dir;
+    if (frameid == -1)
+        dir = std::filesystem::u8path(cachedir + "/_static");
+    else
+        dir = std::filesystem::u8path(cachedir) / std::to_string(1000000 + frameid).substr(1);
     if (!std::filesystem::exists(dir))
         return false;
 
