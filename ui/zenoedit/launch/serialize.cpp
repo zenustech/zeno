@@ -300,15 +300,15 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                 const QString& objPath = inSockIdx.data(ROLE_OBJPATH).toString();
                 if (commandParams.contains(objPath))
                 {
-                    if (!configPath.isEmpty())
+                    if (!launchParam.paramPath.isEmpty())
                     {
-                    const QString& command = commandParams[objPath].name;
-                    if (configDoc.HasMember(command.toUtf8()))
-                    {
+                        const QString& command = commandParams[objPath].name;
+                        if (configDoc.HasMember(command.toUtf8()))
+                        {
                             const auto& value = configDoc[command.toStdString().c_str()];
                             defl = UiHelper::parseJsonByType(sockType, value, nullptr);
+                        }
                     }
-                }
                     else if (commandParams[objPath].bIsCommand)
                     {
                         defl = commandParams[objPath].value;
