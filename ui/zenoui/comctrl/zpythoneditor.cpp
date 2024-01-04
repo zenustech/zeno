@@ -40,8 +40,8 @@ void ZPythonEditor::initUI()
     setAutoCompletionThreshold(1);
 
     QsciAPIs* apis = new QsciAPIs(textLexer);
-    QStringList lst = { "import", "graph", "createGraph", "removeGraph", "forkGraph", "forkMaterial", "renameGraph"
-    , "createNode", "deleteNode", "node", "addLink",  "removeLink", "name"
+    QStringList lst  = { "import", "zeno.graph(str subg_name)", "zeno.createGraph(str subg_name, int type = 0)", "zeno.removeGraph(str subg_name)", "zeno.forkGraph(str subg_name, str node_ident)", "zeno.forkMaterial(str preset_subg_name, str subg_name, str mtlid)", "zeno.renameGraph(str subg_name, str new_name)"
+    , "createNode(str node_class, *kwargs)", "deleteNode(str node_ident)", "node(str node_ident)", "addLink(str out_node_ident, str out_node_socket, str in_node_ident, str in_node_socket)",  "removeLink(str out_node_ident, str out_node_socket, str in_node_ident, str in_node_socket)", "name()"
     ,"objCls", "ident", "view", "mute", "once", "fold"};
     for(const auto& key : lst)
         apis->add(key);
