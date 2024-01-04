@@ -212,13 +212,14 @@ struct PrimitiveTransform : zeno::INode {
         return glm::normalize(vector3);
     }
 
-    static std::optional<std::shared_ptr<IObject>> get_from_list(std::string path, std::shared_ptr<IObject> iObject) {
+    static std::optional<std::shared_ptr<IObject>> get_from_list(std::string path, std::shared_ptr<IObject> iObject, std::map<std::string, std::string>& listitemidxs) {
         if (path.empty() || path == "/") {
             return iObject;
         }
         auto cur_root = iObject;
-        if (auto rootlst = std::dynamic_pointer_cast<ListObject>(cur_root))
-            path = rootlst->itemidxs[path];
+        if (auto rootlst = std::dynamic_pointer_cast<ListObject>(cur_root)) {
+            path = listitemidxs[path];
+        }
 
         auto idxs = split_str(path, '/');
         std::vector<int> idxs_int;
@@ -367,6 +368,7 @@ struct PrimitiveTransform : zeno::INode {
         auto path = get_input2<std::string>("path");
 
         std::string pivotType = get_input2<std::string>("pivot");
+
         auto pivotPos = get_input2<vec3f>("pivotPos");
 
         if (std::dynamic_pointer_cast<PrimitiveObject>(iObject)) {
@@ -374,9 +376,22 @@ struct PrimitiveTransform : zeno::INode {
             transformObj(iObject, matrix, pivotType, pivotPos, translate, rotation, scaling);
         }
         else {
-            auto select = get_from_list(path, iObject);
-            if (select.has_value()) {
-                transformObj(select.value(), matrix, pivotType, pivotPos, translate, rotation, scaling);
+            if (path != "")
+            {
+                std::map<std::string, std::string> listitemidxsMap;
+                std::string listitemidxs = iObject->userData().get2<std::string>("list-item-idxs", "");
+                listitemidxs.erase(listitemidxs.length() - 1);
+                for (const auto& idx : split_str(listitemidxs, ';'))
+                    listitemidxsMap.insert(std::make_pair(idx.substr(0, idx.find_first_of(":")), idx.substr(idx.find_first_of(":") + 1)));
+
+                path.erase(path.length() - 1);
+                auto idxs = split_str(path, ';');
+                for (const auto& idx : idxs) {
+                    auto select = get_from_list(idx, iObject, listitemidxsMap);
+                    if (select.has_value()) {
+                        transformObj(select.value(), matrix, pivotType, pivotPos, translate, rotation, scaling);
+                    }
+                }
             }
         }
 

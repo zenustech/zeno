@@ -11,6 +11,7 @@
 #include <glm/gtx/quaternion.hpp>
 #include <zeno/core/Session.h>
 #include <zeno/extra/GlobalComm.h>
+#include <regex>
 
 namespace zeno {
 
@@ -327,7 +328,7 @@ void FakeTransformer::startTransform() {
 }
 
 void FakeTransformer::createNewTransformNode(NodeLocation& node_location,
-                                             const std::string& obj_name) {
+                                             const std::string& obj_name, const std::string listitemGroupPath) {
     auto& node_sync = NodeSyncMgr::GetInstance();
 
     auto out_sock = node_sync.getPrimSockName(node_location);
@@ -379,8 +380,14 @@ void FakeTransformer::createNewTransformNode(NodeLocation& node_location,
 
     if (user_data.has("object-id"))
     {
-        auto& objectPath = user_data.get2<std::string>("list-index", "");
-        node_sync.updateNodeInputString(new_node_location.value(), "path", objectPath);
+        if (listitemGroupPath == "")
+        {
+            auto& objectPath = user_data.get2<std::string>("list-index", "");
+            node_sync.updateNodeInputString(new_node_location.value(), "path", objectPath);
+        }
+        else {
+            node_sync.updateNodeInputString(new_node_location.value(), "path", listitemGroupPath);
+        }
     }
 
     // make node not visible
@@ -490,8 +497,9 @@ void FakeTransformer::endTransform(bool moved) {
         ZASSERT_EXIT(pGraphs);
         pGraphs->setApiRunningEnable(false);
 
+        auto& node_sync = NodeSyncMgr::GetInstance();
+        std::map<std::string, std::string> listitemGroup;
         for (auto &[obj_name, obj] : objs) {
-            auto& node_sync = NodeSyncMgr::GetInstance();
 
             std::string rightMostNodeId = obj_name;
             auto& user_data = obj->userData();
@@ -499,6 +507,8 @@ void FakeTransformer::endTransform(bool moved) {
             {
                 auto& objectPath = user_data.get2<std::string>("list-index", "");
                 rightMostNodeId = objectPath.substr(0, objectPath.find_first_of("/"));
+                listitemGroup[rightMostNodeId].append(objectPath + ";");
+                continue;
             }
 
             auto prim_node_location = node_sync.searchNodeOfPrim(rightMostNodeId);
@@ -516,13 +526,54 @@ void FakeTransformer::endTransform(bool moved) {
             else {
                 // prim comes from another type node
                 auto linked_transform_node =
-                    node_sync.checkNodeLinkedSpecificNode(prim_node, "PrimitiveTransform");
+                    node_sync.checkNodeLinkedSpecificNode(prim_node, "PrimitiveTransform", true);
                 if (linked_transform_node.has_value())
                     // prim links to a exist TransformPrimitive node
                     syncToTransformNode(linked_transform_node.value(), obj_name);
                 else
                     // prim doesn't link to a exist TransformPrimitive node
                     createNewTransformNode(prim_node_location.value(), obj_name);
+            }
+        }
+        for (auto& [key, groupPath]: listitemGroup)
+        {
+            std::string first = groupPath.substr(0, groupPath.find_first_of(";"));
+            auto& obj1 = first.substr(first.find_last_of("/") + 1);
+            std::string rightMostNodeId = first.substr(0, first.find_first_of("/"));
+
+            std::optional<NodeLocation> last{};
+            auto prim_node_location = node_sync.searchNodeOfPrim(rightMostNodeId);
+            if (!prim_node_location.has_value())
+                continue;;
+            while (prim_node_location.has_value())
+            {
+                last = prim_node_location;
+                prim_node_location = node_sync.checkNodeLinkedSpecificNode(prim_node_location->node, "PrimitiveTransform", false);
+                if (prim_node_location.has_value())
+                    if (prim_node_location->node.data(ROLE_INPUTS).value<INPUT_SOCKETS>()["path"].info.defaultValue.toString().toStdString() == groupPath) {
+                        last = prim_node_location;
+                        break;
+                    }
+            }
+            auto& prim_node = last->node;
+            if (node_sync.checkNodeType(prim_node, "PrimitiveTransform") &&
+                // prim comes from a exist TransformPrimitive node
+                node_sync.checkNodeInputHasValue(prim_node, "translation") &&
+                node_sync.checkNodeInputHasValue(prim_node, "quatRotation") &&
+                node_sync.checkNodeInputHasValue(prim_node, "scaling"))
+            {
+                auto inputs = last->node.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+                if (inputs["path"].info.defaultValue.toString().toStdString() == groupPath)
+                {
+                    syncToTransformNode(last.value(), obj1);
+                }
+                else {
+                    createNewTransformNode(last.value(), obj1, groupPath);
+                }
+            }
+            else {
+                // prim doesn't link to a exist TransformPrimitive node
+                createNewTransformNode(last.value(), obj1, groupPath);
             }
         }
     }

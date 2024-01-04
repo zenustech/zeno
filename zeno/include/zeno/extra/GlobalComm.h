@@ -124,6 +124,7 @@ private:
     ViewObjects const* _getViewObjects(const int frameid, bool& inserted);
     void _initStaticObjects();
     std::map<std::string, bool> toViewNodesId;
+    static std::map<std::string, std::string> lastListitemToViewNodesId;
 
     //-----ObjectsManager-----
     MapObjects m_transferObjs;

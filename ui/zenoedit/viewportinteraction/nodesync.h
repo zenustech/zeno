@@ -45,7 +45,8 @@ class NodeSyncMgr {
     bool checkNodeInputHasValue(const QModelIndex& node,
                                 const std::string& input_name);
     std::optional<NodeLocation> checkNodeLinkedSpecificNode(const QModelIndex& node,       // check which node's output?
-                                                            const std::string& node_type); // check node output linked which node type
+                                                            const std::string& node_type,   // check node output linked which node type
+                                                            bool SpecificNodeShouldView);   // the linked node must be view
     // get input or output
     std::vector<NodeLocation> getInputNodes(const QModelIndex& node,
                                             const std::string& input_name);
@@ -141,6 +142,7 @@ class NodeSyncMgr {
     void registerDefaultSocketName() {
         m_prim_sock_map["BindMaterial"] = "object";
         m_prim_sock_map["TransformPrimitive"] = "outPrim";
+        m_prim_sock_map["PrimitiveTransform"] = "outPrim";
         m_prim_sock_map["MakeList"] = "list";
     }
 };

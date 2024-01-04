@@ -71,8 +71,7 @@ bool NodeSyncMgr::checkNodeInputHasValue(const QModelIndex& node,
     return inSocket.info.links.isEmpty();
 }
 
-std::optional<NodeLocation> NodeSyncMgr::checkNodeLinkedSpecificNode(const QModelIndex& node,
-                                                                     const std::string& node_type) {
+std::optional<NodeLocation> NodeSyncMgr::checkNodeLinkedSpecificNode(const QModelIndex& node, const std::string& node_type, bool SpecificNodeShouldBeView) {
     auto graph_model = zenoApp->graphsManagment()->currentModel();
     if (!graph_model) {
         return {};
@@ -96,9 +95,13 @@ std::optional<NodeLocation> NodeSyncMgr::checkNodeLinkedSpecificNode(const QMode
             auto linked_node = search_result[0].targetIdx;
             auto linked_subgraph = search_result[0].subgIdx;
             auto option = linked_node.data(ROLE_OPTIONS).toInt();
-            if (option & OPT_VIEW)
-                return NodeLocation(linked_node,
-                                    linked_subgraph);
+            if (SpecificNodeShouldBeView) {
+                if (option & OPT_VIEW)
+                    return NodeLocation(linked_node, linked_subgraph);
+            }
+            else {
+                return NodeLocation(linked_node, linked_subgraph);
+            }
         }
     }
     return {};
