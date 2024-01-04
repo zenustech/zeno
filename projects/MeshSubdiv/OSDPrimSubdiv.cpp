@@ -139,11 +139,6 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCre
     if (!(prim->loops.size() && prim->loops.has_attr("uvs")))
         hasLoopUVs = false;
 
-    //nCoarseVerts=0,
-    //nRefinedVerts=0;
-    //std::vector<int> ncfaces(maxlevel);
-    //std::vector<int> ncedges(maxlevel);
-
     std::vector<int> polysInd, polysLen;
     int primpolyreduced = 0;
     for (int i = 0; i < prim->polys.size(); i++) {
@@ -194,14 +189,7 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCre
 
     std::vector<Far::TopologyDescriptor::FVarChannel> channels;
     std::vector<int> uvsInd;
-    /*std::vector<std::string> chanveckeys;*/
     if (hasLoopUVs) {
-
-        /*channels.reserve(prim->loops.num_attrs());*/
-        /*loopsIndTab.reserve(prim->loops.num_attrs());*/
-        /*chanveckeys.reserve(prim->loops.num_attrs());*/
-        /*for (auto const &key: prim->loops.attr_keys()) {*/
-        /*auto &loopsInd = loopsIndTab.emplace_back();*/
         uvsInd.resize(polysInd.size());
         int offsetred = prim->tris.size() * 3 + prim->quads.size() * 4;
         auto &loop_uvs = prim->loops.attr<int>("uvs");
@@ -215,21 +203,10 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCre
             }
             offsetred += len;
         }
-        //if (key.size() >= 4 && key[0] == 'I' && key[1] == 'N' && key[2] == 'D' && key[3] == '_'
-        //   prim->loops.attr_is<int>(key)) {
-        //}
 
         auto &ch = channels.emplace_back();
         ch.numValues = uvsInd.size();
         ch.valueIndices = uvsInd.data();
-
-        //void *chvp{};
-        //prim->loops.attr_visit(key, [&] (auto const &arr) {
-        //chvp = reinterpret_cast<void *>(arr.data());
-        //});
-        //assert(chvp);
-        /*chanveckeys.push_back(key);*/
-        /*}*/
 
         desc.numFVarChannels = channels.size();
         desc.fvarChannels = channels.data();
@@ -332,11 +309,6 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCre
 
     //// Allocate a buffer for vertex primvar data. The buffer length is set to
     //// be the sum of all children vertices up to the highest level of refinement.
-    //std::vector<Vertex> vbuffer(refiner->GetNumVerticesTotal());
-    ////int nCoarseVerts = prim->verts.size();
-    ////prim->verts.resize(refiner->GetNumVerticesTotal());
-    ////Vertex * verts = reinterpret_cast<Vertex *>(prim->verts.data());
-    //Vertex * verts = vbuffer.data();
 
     int nCoarseVerts = prim->verts.size();
     int nFineVerts = refiner->GetLevel(maxlevel).GetNumVertices();
@@ -347,61 +319,17 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCre
     AttrVector<vec2f> fine_uvs;
     int nCoarseFVars{}, nFineFVars{}, nTotalFVars{}, nTempFVars{};
     if (hasLoopUVs) {
-        //for (int chi = 0; chi < channels.size(); chi++) {
         nCoarseFVars = prim->uvs.size(); //channels[0].numValues;
         nFineFVars = refiner->GetLevel(maxlevel).GetNumFVarValues();
         nTotalFVars = refiner->GetNumFVarValuesTotal();
         nTempFVars = nTotalFVars - nCoarseFVars - nFineFVars;
         prim->uvs.resize(nCoarseFVars + nTempFVars);
         fine_uvs.resize(nFineFVars);
-        //}
-        //prim->loops.resize
     }
-
-    //std::vector<Vertex> coarsePosBuffer(nCoarseVerts);
-    //std::vector<Vertex> coarseClrBuffer(nCoarseVerts);
-
-    // Initialize coarse mesh positions
-    //{
-    //auto &posarr = prim->verts.values;
-    //auto &clrarr = prim->verts.add_attr<vec3f>("clr");
-    //for (int i=0; i<nCoarseVerts; ++i) {
-    //coarsePosBuffer[i].SetPoint(posarr[i][0], posarr[i][1], posarr[i][2]);
-    //coarseClrBuffer[i].SetPoint(clrarr[i][0], clrarr[i][1], clrarr[i][2]);
-    //}
-    //}
-    //AttrVector<vec3f> temp_verts(nTempVerts);
     AttrVector<vec3f> fine_verts(nFineVerts);
-
-    //auto srcPos = reinterpret_cast<Vertex *>(prim->verts.data());
-    //auto dstPos = srcPos + 1;
-    //auto coarseClrBuffer = reinterpret_cast<Vertex const *>(prim->verts.attr<vec3f>("clr").data());
-
-    //std::map<std::string, std::pair<void *, void *>> srcDstAttrs;
-    //prim->verts.foreach_attr([&] (auto const &key, auto &arr) {
-    //using T = std::decay_t<decltype(arr[0])>;
-    //[>auto &temp_arr = <]temp_verts.add_attr<T>(key);
-    ////srcDstAttrs[key] = {
-    ////reinterpret_cast<void *>(arr.data()),
-    ////reinterpret_cast<void *>(temp_arr.data()),
-    ////};
-    //});
-
-    //std::vector<Vertex> tempPosBuffer(nTempVerts);
-    //std::vector<Vertex> finePosBuffer(nFineVerts);
-
-    //std::vector<Vertex> tempClrBuffer(nTempVerts);
-    //std::vector<Vertex> fineClrBuffer(nFineVerts);
 
     // Interpolate vertex primvar data
     Far::PrimvarRefiner primvarRefiner(*refiner);
-
-    //Vertex * src = verts;
-    //Vertex * srcPos = &coarsePosBuffer[0];
-    //Vertex * dstPos = &tempPosBuffer[0];
-
-    //Vertex * srcClr = &coarseClrBuffer[0];
-    //Vertex * dstClr = &tempClrBuffer[0];
 
     size_t srcposoffs = 0;
     size_t dstposoffs = nCoarseVerts;
@@ -410,17 +338,9 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCre
     size_t dstfvaroffs{};
     if (hasLoopUVs) {
         dstfvaroffs = nCoarseFVars;
-        //srcfvaroffs.resize(channels.size());
-        //dstfvaroffs.resize(channels.size());
-        //for (int i = 0; i < channels.size(); i++) {
-        //dstfvaroffs[i] += channels[i].numValues;
-        //}
     }
 
     for (int level = 1; level < maxlevel; ++level) {
-        //Vertex * dst = src + refiner->GetLevel(level-1).GetNumVertices();
-        //primvarRefiner.Interpolate(level, src, dst);
-        //src = dst;
         auto *srcPos = convvertexptr(prim->verts.data() + srcposoffs);
         auto *dstPos = convvertexptr(prim->verts.data() + dstposoffs);
         primvarRefiner.Interpolate(level, srcPos, dstPos);
@@ -430,30 +350,19 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCre
             primvarRefiner.InterpolateVarying(level, srcClr, dstClr);
         });
         if (hasLoopUVs) {
-            //for (int chi = 0; chi < channels.size(); chi++) {
-            //prim->loops.attr_visit(chanveckeys[chi], [&] (auto &chva) {
             auto *srcFVarColor = convvertexptr(prim->uvs.data() + srcfvaroffs);
             auto *dstFVarColor = convvertexptr(prim->uvs.data() + dstfvaroffs);
             primvarRefiner.InterpolateFaceVarying(level, srcFVarColor, dstFVarColor);
             auto numfvars = refiner->GetLevel(level).GetNumFVarValues();
             srcfvaroffs = dstfvaroffs;
             dstfvaroffs += numfvars;
-            //});
-            //}
         }
-        //for (auto const &[key, arr]: srcDstAttrs) {
-        //}
         auto numverts = refiner->GetLevel(level).GetNumVertices();
         srcposoffs = dstposoffs;
         dstposoffs += numverts;
-
-        //srcPos = dstPos, dstPos += numverts;
-        //srcClr = dstClr, dstClr += numverts;
     }
 
     // Interpolate the last level into the separate buffers for our final data:
-    //primvarRefiner.Interpolate(       maxlevel, srcPos, finePosBuffer);
-    //primvarRefiner.InterpolateVarying(maxlevel, srcClr, fineClrBuffer);
     {
         auto *srcPos = convvertexptr(prim->verts.data() + srcposoffs);
         auto *dstPos = convvertexptr(fine_verts.data());
@@ -466,14 +375,9 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCre
             primvarRefiner.InterpolateVarying(maxlevel, srcClr, dstClr);
         });
         if (hasLoopUVs) {
-            //primvarRefiner.InterpolateFaceVarying(maxlevel, srcFVarColor, dstFVarColor, channelColor);
-            //for (int chi = 0; chi < channels.size(); chi++) {
-            //prim->loops.attr_visit(chanveckeys[chi], [&] (auto &chva) {
             auto *srcFVarColor = convvertexptr(prim->uvs.data() + srcfvaroffs);
             auto *dstFVarColor = convvertexptr(fine_uvs.data());
             primvarRefiner.InterpolateFaceVarying(maxlevel, srcFVarColor, dstFVarColor);
-            //});
-            //}
         }
     }
 
@@ -484,49 +388,21 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCre
         int nverts = refLastLevel.GetNumVertices();
         int nfaces = refLastLevel.GetNumFaces();
 
-        //std::vector<int> nfvverts;
         int nfvars{};
         if (hasLoopUVs) {
-            //nfvverts.resize(channels.size());
-            //for (int i = 0; i < channels.size(); i++) {
-            //nfvverts[i] = refLastLevel.GetNumFVarValues(i);
-            //}
             nfvars = refLastLevel.GetNumFVarValues();
         }
-
-        // Print vertex positions
-        //int firstOfLastVerts = refiner->GetNumVerticesTotal() - nverts;
-        //assert(firstOfLastVerts == nCoarseVerts);
-        //prim->verts->erase(prim->verts.begin(), prim->verts.begin() + firstOfLastVerts);
 
         std::swap(prim->verts, fine_verts);
         fine_verts.clear();
         fine_verts.shrink_to_fit();
         assert(prim->verts.size() == nverts);
-        //prim->verts.resize(nverts);
-        //for (int vert = 0; vert < nverts; ++vert) {
-        //float const * pos = finePosBuffer[vert].GetPoint();
-        ////printf("v %f %f %f\n", pos[0], pos[1], pos[2]);
-        //prim->verts[vert] = {pos[0], pos[1], pos[2]};
-        //}
 
         std::swap(prim->uvs, fine_uvs);
         fine_uvs.clear();
         fine_uvs.shrink_to_fit();
         assert(prim->uvs.size() == nfvars);
 
-        //{
-        //auto &clrarr = prim->verts.add_attr<vec3f>("clr");
-        //for (int i=0; i<nverts; ++i) {
-        //float const * clr = fineClrBuffer[i].GetPoint();
-        //clrarr[i] = {clr[0], clr[1], clr[2]};
-        //}
-        //}
-
-        //prim->tris.clear();
-        //prim->quads.clear();
-        //prim->polys.clear();
-        //prim->loops.clear();
         // Print faces
         if (triangulate) {
             prim->tris.resize(nfaces * 2);
@@ -689,25 +565,6 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCre
             }
         }
     }
-
-    //refinedVerts += nCoarseVerts + ncfaces[0] + ncedges[0] + ncfaces[1];
-    //nRefinedVerts = ncedges[1];
-
-    //prim->verts.values.assign(refinedVerts, refinedVerts + nRefinedVerts);
-
-    //prim->tris.clear();
-    //prim->quads.clear();
-    //prim->polys.clear();
-
-    //printf("particle ");
-    //for (int i=0; i<nRefinedVerts; ++i) {
-    //float const * vert = refinedVerts + 3*i;
-    //printf("-p %f %f %f\n", vert[0], vert[1], vert[2]);
-    //}
-    //printf("-c 1;\n");
-
-    //delete stencilTable;
-    //delete vbuffer;
 }
 
 struct OSDPrimSubdiv : INode {
