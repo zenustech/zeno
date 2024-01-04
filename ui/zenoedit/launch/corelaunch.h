@@ -10,7 +10,7 @@ struct LAUNCH_PARAM {
     int endFrame = 0;
     bool applyLightAndCameraOnly = false;
     bool applyMaterialOnly = false;
-
+    QString generator;   //triggered by GenerateCommands Node to start a calc, to get the commands.
     bool enableCache = false;
     bool tempDir = false;
     QString cacheDir = "";

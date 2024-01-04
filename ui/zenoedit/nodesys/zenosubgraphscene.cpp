@@ -3,6 +3,8 @@
 #include "subnetnode.h"
 #include "heatmapnode.h"
 #include "cameranode.h"
+#include "pythonnode.h"
+#include "commandnode.h"
 #include "readfbxprim.h"
 #include "livenode.h"
 #include "zenolink.h"
@@ -35,6 +37,7 @@
 #include "settings/zenosettingsmanager.h"
 #include "timeline/ztimeline.h"
 #include <zenoui/comctrl/gv/zgraphicsnetlabel.h>
+#include "nodesys/pythonmaterialnode.h"
 
 ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
     : QGraphicsScene(parent)
@@ -249,6 +252,18 @@ ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilPa
     else if(descName == "EvalBlenderFile")
     {
         return new EvalBlenderFile(params);
+    }
+    else if (descName == "PythonNode")
+    {
+        return new PythonNode(params);
+    }
+    else if (descName == "GenerateCommands")
+    {
+        return new CommandNode(params);
+    }
+    else if (descName == "PythonMaterialNode")
+    {
+        return new PythonMaterialNode(params);
     }
     else
     {
