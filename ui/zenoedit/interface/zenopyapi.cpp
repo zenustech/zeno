@@ -6,7 +6,9 @@
 #include <zenomodel/include/graphsmanagment.h>
 #include <zenomodel/include/enum.h>
 #include <zenomodel/include/nodesmgr.h>
-
+#include "nodesview/zenographseditor.h"
+#include "nodesys/zenosubgraphscene.h"
+#include "zenomainwindow.h"
 
 static PyObject*
 zeno_getGraph(PyObject* self, PyObject* args)
@@ -203,7 +205,18 @@ zeno_forkMaterial(PyObject* self, PyObject* args)
         return Py_None;
     }
 
-    const QModelIndex& forknode = pModel->forkMaterial(forkIdx, subgName, mtlid, mtlid);
+    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    ZASSERT_EXIT(pGraphsModel, Py_None);
+    ZenoMainWindow* pWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(pWin, Py_None);
+    ZenoGraphsEditor* pEditor = pWin->getAnyEditor();
+    ZASSERT_EXIT(pEditor, Py_None);
+    ZenoSubGraphView* pView = pEditor->getCurrentSubGraphView();
+    ZASSERT_EXIT(pView, Py_None);
+    auto sugIdx = pView->scene()->subGraphIndex();
+    ZASSERT_EXIT(sugIdx.isValid(), Py_None);
+
+    const QModelIndex& forknode = pModel->forkMaterial(sugIdx, forkIdx, subgName, mtlid, mtlid);
     if (!forknode.isValid())
     {
         PyErr_SetString(PyExc_Exception, "Fork failed");
@@ -212,7 +225,6 @@ zeno_forkMaterial(PyObject* self, PyObject* args)
     }
 
     const std::string& forkident = forknode.data(ROLE_OBJID).toString().toStdString();
-    const QModelIndex& sugIdx = forknode.data(ROLE_SUBGRAPH_IDX).toModelIndex();
     const std::string& name = sugIdx.data(ROLE_OBJNAME).toString().toStdString();
 
     PyObject* argList = Py_BuildValue("ss", name.c_str(), forkident.c_str());

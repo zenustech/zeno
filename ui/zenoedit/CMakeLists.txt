@@ -44,8 +44,7 @@ if (ZENO_DEBUG_MSVC)
 endif()
 
 #BEGIN PYTHON IMPORT
-if (1)
-
+if (ZENO_WITH_PYTHON3)
 message(STATUS "python3 libraries for zenoedit: ${Python3_LIBRARIES}")
 message(STATUS "python3 include directories for zenoedit: ${Python3_INCLUDE_DIRS}")
 target_link_libraries(zenoedit PRIVATE ${Python3_LIBRARIES})
