@@ -214,7 +214,54 @@ void ZenoSpreadsheet::setPrim(std::string primid) {
 
 bool ZenoSpreadsheet::eventFilter(QObject* watched, QEvent* event)
 {
-    if (watched == prim_attr_view && event->type() == QEvent::ContextMenu)
+    if (watched == prim_attr_view && event->type() == QEvent::KeyPress)
+    {
+        QKeyEvent* keyEvt = dynamic_cast<QKeyEvent*>(event);
+        int uKey = keyEvt->key();
+        Qt::KeyboardModifiers modifiers = keyEvt->modifiers();
+        if (uKey == Qt::Key_C && (modifiers & Qt::ControlModifier)) {
+            if (QItemSelectionModel* pSelectionModel = prim_attr_view->selectionModel())
+            {
+                int cols = dataModel->columnCount(QModelIndex());
+                const QModelIndexList& lst = pSelectionModel->selectedIndexes();
+                QString copyStr;
+                QList<int> rowsExist;
+                for (const auto& idx : lst)
+                {
+                    int row = idx.row();
+                    if (rowsExist.contains(row))
+                        continue;
+                    rowsExist << row;
+                    QString str;
+                    for (int col = 0; col < cols; col++)
+                    {
+                        const QModelIndex index = prim_attr_view->model()->index(row, col);
+                        if (lst.contains(index))
+                        {
+                            if (!str.isEmpty())
+                                str += ":";
+                            str += index.data(Qt::DisplayRole).toString();
+                        }
+
+                    }
+                    if (!str.isEmpty())
+                    {
+                        if (!copyStr.isEmpty())
+                            copyStr += ",";
+                        copyStr += str;
+                    }
+                }
+                if (!copyStr.isEmpty())
+                {
+                    QMimeData* pMimeData = new QMimeData;
+                    pMimeData->setText(copyStr);
+                    QApplication::clipboard()->setMimeData(pMimeData);
+                    return true;
+                }
+            }
+        }
+    }
+    else if (watched == prim_attr_view && event->type() == QEvent::ContextMenu)
     {
         QStringList matLst;
         if (QItemSelectionModel* pSelectionModel = prim_attr_view->selectionModel())

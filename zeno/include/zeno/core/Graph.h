@@ -73,6 +73,7 @@ struct Graph : std::enable_shared_from_this<Graph> {
     ZENO_API void setFormula(std::string const &id, std::string const &par, zany const &val);
     ZENO_API void addNodeOutput(std::string const &id, std::string const &par);
     ZENO_API zany const &getNodeOutput(std::string const &sn, std::string const &ss) const;
+    ZENO_API zany getNodeInput(std::string const &sn, std::string const &ss) const;
     ZENO_API void loadGraph(const char *json);
     ZENO_API void setNodeParam(std::string const &id, std::string const &par,
         std::variant<int, float, std::string, zany> const &val);  /* to be deprecated */

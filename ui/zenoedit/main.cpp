@@ -1,3 +1,4 @@
+//#include <Python.h>
 #include <QApplication>
 #include "style/zenostyle.h"
 #include "zenoapplication.h"
@@ -7,10 +8,16 @@
 #include "zeno/utils/log.h"
 #include "zeno/zeno.h"
 #include "zeno/extra/EventCallbacks.h"
+#include "startup/pythonenv.h"
+
 
 /* debug cutsom layout: ZGraphicsLayout */
 //#define DEBUG_ZENOGV_LAYOUT
 //#define DEBUG_NORMAL_WIDGET
+
+#ifdef DEBUG_TESTPYBIND
+PyMODINIT_FUNC PyInit_spam(void);
+#endif
 
 #ifdef DEBUG_ZENOGV_LAYOUT
 #include <zenoui/comctrl/gv/gvtestwidget.h>
@@ -73,6 +80,9 @@ int main(int argc, char *argv[])
     }
 
     startUp(true);
+#ifdef ZENO_WITH_PYTHON3
+    initPythonEnv(argv[0]);
+#endif
 
     if (argc >= 3 && !strcmp(argv[1], "-optix")) {
         //MessageBox(0, "runner", "runner", MB_OK);

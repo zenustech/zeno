@@ -361,9 +361,16 @@ struct PrimitiveTransform : zeno::INode {
         auto path = get_input2<std::string>("path");
 
         std::string pivotType = get_input2<std::string>("pivot");
-        auto select = get_from_list(path, iObject);
-        if (select.has_value()) {
-            transformObj(select.value(), matrix, pivotType, translate, rotation, scaling);
+
+        if (std::dynamic_pointer_cast<PrimitiveObject>(iObject)) {
+            iObject = iObject->clone();
+            transformObj(iObject, matrix, pivotType, translate, rotation, scaling);
+        }
+        else {
+            auto select = get_from_list(path, iObject);
+            if (select.has_value()) {
+                transformObj(select.value(), matrix, pivotType, translate, rotation, scaling);
+            }
         }
 
         set_output("outPrim", std::move(iObject));
@@ -372,8 +379,8 @@ struct PrimitiveTransform : zeno::INode {
 
 ZENDEFNODE(PrimitiveTransform, {
     {
-        {"string", "path"},
         {"PrimitiveObject", "prim"},
+        {"string", "path"},
         {"enum world bboxCenter", "pivot", "bboxCenter"},
         {"vec3f", "translation", "0,0,0"},
         {"vec3f", "eulerXYZ", "0,0,0"},

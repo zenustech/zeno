@@ -49,9 +49,8 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 
     HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
 
-    RadiancePRD* prd = getPRD();
+    ShadowPRD* prd = getPRD<ShadowPRD>();
     MatInput attrs{};
-
 
     bool sphere_external_ray = false;
 
@@ -150,6 +149,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     unsigned short isLight = 0;//rt_data->lightMark[vert_aux_offset + primIdx];
 #endif
 
+    attrs.pos = attrs.pos + vec3(params.cam.eye);
     //MatOutput mats = evalMaterial(rt_data->textures, rt_data->uniforms, attrs);
     MatOutput mats = optixDirectCall<MatOutput, cudaTextureObject_t[], float4*, const MatInput&>( rt_data->dc_index, rt_data->textures, rt_data->uniforms, attrs );
 
@@ -210,14 +210,14 @@ extern "C" __global__ void __anyhit__shadow_cutout()
             optixIgnoreIntersection();
         }else{
 
-            if(length(prd->shadowAttanuation) < 0.01f){
-                prd->shadowAttanuation = vec3(0.0f);
+            if(length(prd->attanuation) < 0.01f){
+                prd->attanuation = vec3(0.0f);
                 optixTerminateRay();
                 return;
             }
 
             if(specTrans==0.0f){
-                prd->shadowAttanuation = vec3(0.0f);
+                prd->attanuation = vec3(0.0f);
                 optixTerminateRay();
                 return;
             }
@@ -230,23 +230,23 @@ extern "C" __global__ void __anyhit__shadow_cutout()
                 }
                 if(rnd(prd->seed)<(1-specTrans)||prd->nonThinTransHit>1)
                 {
-                    prd->shadowAttanuation = vec3(0,0,0);
+                    prd->attanuation = vec3(0,0,0);
                     optixTerminateRay();
                     return;
                 }
 
                 float nDi = fabs(dot(N,ray_dir));
                 vec3 fakeTrans = vec3(1)-BRDFBasics::fresnelSchlick(vec3(1)-basecolor,nDi);
-                prd->shadowAttanuation = prd->shadowAttanuation * fakeTrans;
+                prd->attanuation = prd->attanuation * fakeTrans;
 
                 #if (_SPHERE_)
                     if (sphere_external_ray) {
-                        prd->shadowAttanuation *= vec3(1, 0, 0);
+                        prd->attanuation *= vec3(1, 0, 0);
                         if (nDi < (1.0f-_FLT_EPL_)) {
-                            prd->shadowAttanuation = {};
+                            prd->attanuation = {};
                             optixTerminateRay(); return;
                         } else {
-                            prd->shadowAttanuation *= fakeTrans;
+                            prd->attanuation *= fakeTrans;
                         }
                     }
                 #endif
@@ -255,7 +255,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
             }
         }
 
-        prd->shadowAttanuation = vec3(0);
+        prd->attanuation = vec3(0);
         optixTerminateRay();
         return;
     }
@@ -279,10 +279,9 @@ extern "C" __global__ void __closesthit__radiance()
     RadiancePRD* prd = getPRD();
     if(prd->test_distance)
     {
-        prd->vol_t1 = optixGetRayTmax();
+        prd->maxDistance = optixGetRayTmax();
         return;
     }
-    prd->test_distance = false;
 
     const OptixTraversableHandle gas = optixGetGASTraversableHandle();
     const uint           sbtGASIndex = optixGetSbtGASIndex();
@@ -386,6 +385,7 @@ extern "C" __global__ void __closesthit__radiance()
     attrs.rayLength = optixGetRayTmax();
 #endif
 
+    attrs.pos = attrs.pos + vec3(params.cam.eye);
     //MatOutput mats = evalMaterial(rt_data->textures, rt_data->uniforms, attrs);
     MatOutput mats = optixDirectCall<MatOutput, cudaTextureObject_t[], float4*, const MatInput&>( rt_data->dc_index, rt_data->textures, rt_data->uniforms, attrs );
 
@@ -432,6 +432,10 @@ extern "C" __global__ void __closesthit__radiance()
         vec3 b = cross(attrs.tang, attrs.nrm);
         attrs.tang = cross(attrs.nrm, b);
         N = mats.nrm.x * attrs.tang + mats.nrm.y * b + mats.nrm.z * attrs.nrm;
+    }
+    if(dot(vec3(ray_dir), vec3(N)) * dot(vec3(ray_dir), vec3(prd->geometryNormal))<0)
+    {
+      N = prd->geometryNormal;
     }
 
     if (prd->trace_denoise_albedo) {
@@ -814,20 +818,16 @@ extern "C" __global__ void __closesthit__radiance()
     prd->attenuation *= reflectance;
     prd->depth++;
 
-    auto shadingP = rtgems::offset_ray(P,  prd->geometryNormal);
-    prd->radiance = make_float3(0.0f,0.0f,0.0f);
-
     if(prd->depth>=3)
         mats.roughness = clamp(mats.roughness, 0.5f,0.99f);
 
-
-    auto evalBxDF = [&](const float3& _wi_, const float3& _wo_, float& thisPDF, vec3 illum = vec3(1.0f)) -> float3 {
+    auto evalBxDF = [&](const float3& _wi_, const float3& _wo_, float& thisPDF) -> float3 {
 
         const auto& L = _wi_; // pre-normalized
         const vec3& V = _wo_; // pre-normalized
         vec3 rd, rs, rt; // captured by lambda
 
-        float3 lbrdf = DisneyBSDF::EvaluateDisney2(illum,mats, L, V, T, B, N,prd->geometryNormal,
+        float3 lbrdf = DisneyBSDF::EvaluateDisney2(vec3(1.0f), mats, L, V, T, B, N,prd->geometryNormal,
             mats.thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : next_ray_is_going_inside, thisPDF, rrPdf,
             dot(N, L), rd, rs, rt);
 
@@ -851,17 +851,21 @@ extern "C" __global__ void __closesthit__radiance()
 
     };
 
-    auto taskAux = [&](const vec3& weight) {
-        prd->radiance_d *= weight;
-        prd->radiance_s *= weight;
-        prd->radiance_t *= weight;
+    auto taskAux = [&](const vec3& radiance) {
+        prd->radiance_d *= radiance;
+        prd->radiance_s *= radiance;
+        prd->radiance_t *= radiance;
     };
 
-    RadiancePRD shadow_prd {};
-    shadow_prd.seed = prd->seed;
-    shadow_prd.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
-    shadow_prd.nonThinTransHit = (mats.thin == false && mats.specTrans > 0) ? 1 : 0;
+    ShadowPRD shadowPRD {};
+    shadowPRD.seed = prd->seed;
+    shadowPRD.attanuation = make_float3(1.0f, 1.0f, 1.0f);
+    shadowPRD.nonThinTransHit = (mats.thin < 0.5f && mats.specTrans > 0) ? 1 : 0;
 
+    shadowPRD.origin = rtgems::offset_ray(P,  prd->geometryNormal); // camera space
+    auto shadingP = rtgems::offset_ray(P + params.cam.eye,  prd->geometryNormal); // world space
+
+    prd->radiance = {};
     prd->direction = normalize(wi);
 
     float3 radianceNoShadow = {};
@@ -870,7 +874,7 @@ extern "C" __global__ void __closesthit__radiance()
         dummy_prt = &radianceNoShadow;
     }
 
-    DirectLighting<true>(prd, shadow_prd, shadingP, ray_dir, evalBxDF, &taskAux, dummy_prt);
+    DirectLighting<true>(prd, shadowPRD, shadingP, ray_dir, evalBxDF, &taskAux, dummy_prt);
     if(mats.shadowReceiver > 0.5f)
     {
       auto radiance = length(prd->radiance);

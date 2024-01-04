@@ -129,6 +129,7 @@ void ZTcpServer::startProc(const std::string& progJson, LAUNCH_PARAM param)
         "--projectFps", QString::number(param.projectFps),
         //"--objcachedir", zenoApp->cacheMgr()->objCachePath(),
         "--objcachedir", cachedir,
+        "--generator", param.generator
     };
 
     m_proc->start(QCoreApplication::applicationFilePath(), args);

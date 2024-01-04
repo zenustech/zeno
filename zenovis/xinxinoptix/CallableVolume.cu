@@ -101,80 +101,13 @@ inline __device__ float _LERP_(float t, float s1, float s2)
     return fma(t, s2, fma(-t, s1, s1));
 }
 
-template <typename Acc, typename DataTypeNVDB, uint8_t Order>
-inline __device__ float nanoSampling(Acc& acc, nanovdb::Vec3f& point_indexd) {
-    
-    using GridTypeNVDB = nanovdb::NanoGrid<DataTypeNVDB>;
-
-    if constexpr(3 > Order) {
-        using Sampler = nanovdb::SampleFromVoxels<typename GridTypeNVDB::AccessorType, Order, true>;
-        return Sampler(acc)(point_indexd);
-    }
-
-    if constexpr(3 == Order) {
-        nanovdb::SampleFromVoxels<typename GridTypeNVDB::AccessorType, 1, true> s(acc);
-        return interp_tricubic_nanovdb(s, point_indexd[0], point_indexd[1], point_indexd[2]);
-    } 
-    
-    if constexpr(4 == Order) {
-        RadiancePRD* prd = getPRD();
-        auto uuu = nanovdb::Vec3f(prd->rndf(), prd->rndf(), prd->rndf());
-             uuu -= nanovdb::Vec3f(0.5f);
-        auto pick = nanovdb::RoundDown<nanovdb::Vec3f>(point_indexd + uuu);
-        auto coord = nanovdb::Coord(pick[0], pick[1], pick[2]);
-        return acc.getValue(coord);
-    }
-
-    return 0.0f;
-
-    // auto point_floor = nanovdb::RoundDown<nanovdb::Vec3f>(point_indexd); 
-    // auto point_a = nanovdb::Coord(point_floor[0], point_floor[1], point_floor[2]);
-    // auto delta = point_indexd - point_floor; 
-
-    //     auto value_000 = acc.getValue(point_a);
-    //     auto value_100 = acc.getValue(point_a + nanovdb::Coord(1, 0, 0));
-    //     auto value_010 = acc.getValue(point_a + nanovdb::Coord(0, 1, 0));
-    //     auto value_110 = acc.getValue(point_a + nanovdb::Coord(1, 1, 0));
-    //     auto value_001 = acc.getValue(point_a + nanovdb::Coord(0, 0, 1));
-    //     auto value_101 = acc.getValue(point_a + nanovdb::Coord(1, 0, 1));
-    //     auto value_011 = acc.getValue(point_a + nanovdb::Coord(0, 1, 1));
-    //     auto value_111 = acc.getValue(point_a + nanovdb::Coord(1, 1, 1));
-
-    //     auto value_00 = _LERP_(delta[0], value_000, value_100);
-    //     auto value_10 = _LERP_(delta[0], value_010, value_110);
-    //     auto value_01 = _LERP_(delta[0], value_001, value_101);
-    //     auto value_11 = _LERP_(delta[0], value_011, value_111);
-        
-    //     auto value_0 = _LERP_(delta[1], value_00, value_10);
-    //     auto value_1 = _LERP_(delta[1], value_01, value_11);
-
-    // return _LERP_(delta[2], value_0, value_1);
-}
-
-template <uint8_t Order, bool WorldSpace, typename DataTypeNVDB>
-static __inline__ __device__ vec2 samplingVDB(const unsigned long long grid_ptr, vec3 att_pos) {
-    using GridTypeNVDB = nanovdb::NanoGrid<DataTypeNVDB>;
-
-    const auto* _grid = reinterpret_cast<const GridTypeNVDB*>(grid_ptr);
-    const auto& _acc = _grid->tree().getAccessor();
-
-    auto pos_indexed = reinterpret_cast<const nanovdb::Vec3f&>(att_pos);
-
-    if constexpr(WorldSpace)
-    {
-        pos_indexed = _grid->worldToIndexF(pos_indexed);
-    } //_grid->tree().root().maximum();
-
-    return vec2 { nanoSampling<decltype(_acc), DataTypeNVDB, Order>(_acc, pos_indexed), _grid->tree().root().maximum() };
-}
-
 struct VolumeIn2 {
     float3 pos;
 	float sigma_t;
 	uint32_t* seed;
     unsigned long long sbt_ptr;
 
-	inline float rndf() {
+	inline float rndf() const {
 		return rnd(*seed);
 	}
 
@@ -235,13 +168,78 @@ struct VolumeIn2 {
     };
 };
 
+template <typename Acc, typename DataTypeNVDB, uint8_t Order>
+inline __device__ float nanoSampling(Acc& acc, nanovdb::Vec3f& point_indexd, const VolumeIn2& volin) {
+    
+    using GridTypeNVDB = nanovdb::NanoGrid<DataTypeNVDB>;
 
-extern "C" __device__ VolumeOut __direct_callable__evalmat(const float4* uniforms, VolumeIn& _attrs) {
+    if constexpr(3 > Order) {
+        using Sampler = nanovdb::SampleFromVoxels<typename GridTypeNVDB::AccessorType, Order, true>;
+        return Sampler(acc)(point_indexd);
+    }
 
-    VolumeIn2 attrs{_attrs.pos, _attrs.sigma_t, _attrs.seed, _attrs.sbt_ptr };
+    if constexpr(3 == Order) {
+        nanovdb::SampleFromVoxels<typename GridTypeNVDB::AccessorType, 1, true> s(acc);
+        return interp_tricubic_nanovdb(s, point_indexd[0], point_indexd[1], point_indexd[2]);
+    } 
+    
+    if constexpr(4 == Order) {
+
+        auto uuu = nanovdb::Vec3f(volin.rndf(), volin.rndf(), volin.rndf());
+             uuu -= nanovdb::Vec3f(0.5f);
+        auto pick = nanovdb::RoundDown<nanovdb::Vec3f>(point_indexd + uuu);
+        auto coord = nanovdb::Coord(pick[0], pick[1], pick[2]);
+        return acc.getValue(coord);
+    }
+
+    return 0.0f;
+
+    // auto point_floor = nanovdb::RoundDown<nanovdb::Vec3f>(point_indexd); 
+    // auto point_a = nanovdb::Coord(point_floor[0], point_floor[1], point_floor[2]);
+    // auto delta = point_indexd - point_floor; 
+
+    //     auto value_000 = acc.getValue(point_a);
+    //     auto value_100 = acc.getValue(point_a + nanovdb::Coord(1, 0, 0));
+    //     auto value_010 = acc.getValue(point_a + nanovdb::Coord(0, 1, 0));
+    //     auto value_110 = acc.getValue(point_a + nanovdb::Coord(1, 1, 0));
+    //     auto value_001 = acc.getValue(point_a + nanovdb::Coord(0, 0, 1));
+    //     auto value_101 = acc.getValue(point_a + nanovdb::Coord(1, 0, 1));
+    //     auto value_011 = acc.getValue(point_a + nanovdb::Coord(0, 1, 1));
+    //     auto value_111 = acc.getValue(point_a + nanovdb::Coord(1, 1, 1));
+
+    //     auto value_00 = _LERP_(delta[0], value_000, value_100);
+    //     auto value_10 = _LERP_(delta[0], value_010, value_110);
+    //     auto value_01 = _LERP_(delta[0], value_001, value_101);
+    //     auto value_11 = _LERP_(delta[0], value_011, value_111);
+        
+    //     auto value_0 = _LERP_(delta[1], value_00, value_10);
+    //     auto value_1 = _LERP_(delta[1], value_01, value_11);
+
+    // return _LERP_(delta[2], value_0, value_1);
+}
+
+template <uint8_t Order, bool WorldSpace, typename DataTypeNVDB>
+static __inline__ __device__ vec2 samplingVDB(const unsigned long long grid_ptr, vec3 att_pos, const VolumeIn2& volin) {
+    using GridTypeNVDB = nanovdb::NanoGrid<DataTypeNVDB>;
+
+    const auto* _grid = reinterpret_cast<const GridTypeNVDB*>(grid_ptr);
+    const auto& _acc = _grid->tree().getAccessor();
+
+    auto pos_indexed = reinterpret_cast<const nanovdb::Vec3f&>(att_pos);
+
+    if constexpr(WorldSpace)
+    {
+        pos_indexed = _grid->worldToIndexF(pos_indexed);
+    } //_grid->tree().root().maximum();
+
+    return vec2 { nanoSampling<decltype(_acc), DataTypeNVDB, Order>(_acc, pos_indexed, volin), _grid->tree().root().maximum() };
+}
+
+extern "C" __device__ VolumeOut __direct_callable__evalmat(const float4* uniforms, VolumeIn2& attrs) {
+
     auto& prd = attrs;
 
-    auto att_pos = attrs.pos;
+    vec3& att_pos = reinterpret_cast<vec3&>(attrs.pos);
     auto att_clr = vec3(0);
     auto att_uv = vec3(0);
     auto att_nrm = vec3(0);

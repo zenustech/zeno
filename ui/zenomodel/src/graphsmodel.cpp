@@ -249,6 +249,12 @@ QModelIndex GraphsModel::subgIndex(uint32_t sid)
     return index(subgName);
 }
 
+QModelIndex GraphsModel::paramIndex(const QModelIndex& subgIdx, const QModelIndex& nodeIdx, const QString& name, bool bInput)
+{
+    SubGraphModel* pGraph = subGraph(subgIdx.row());
+    return pGraph->nodeParamIndex(nodeIdx, bInput ? PARAM_INPUT : PARAM_OUTPUT, name);
+}
+
 QModelIndex GraphsModel::_createIndex(SubGraphModel* pSubModel) const
 {
     if (!pSubModel)
@@ -442,6 +448,7 @@ bool GraphsModel::setData(const QModelIndex& index, const QVariant& value, int r
         if (SubGraphModel* pModel = subGraph(name))
         {
             pModel->setType((SUBGRAPH_TYPE)value.toInt());
+            emit dataChanged(index, index);
         }
     }
     else if (role == ROLE_MTLID)
@@ -1702,11 +1709,13 @@ void GraphsModel::_markNodeChanged(const QModelIndex& nodeIdx, bool recursively)
             if (sockProp & SOCKPROP_DICTLIST_PANEL)
             {
                 QAbstractItemModel* pKeyObjModel = QVariantPtr<QAbstractItemModel>::asPtr(sock.data(ROLE_VPARAM_LINK_MODEL));
-                for (int _r = 0; _r < pKeyObjModel->rowCount(); _r++)
-                {
-                    const QModelIndex& keyIdx = pKeyObjModel->index(_r, 0);
-                    ZASSERT_EXIT(keyIdx.isValid());
-                    socketLst << keyIdx;
+                if (pKeyObjModel) {
+                    for (int _r = 0; _r < pKeyObjModel->rowCount(); _r++)
+                    {
+                        const QModelIndex& keyIdx = pKeyObjModel->index(_r, 0);
+                        ZASSERT_EXIT(keyIdx.isValid());
+                        socketLst << keyIdx;
+                    }
                 }
             }
             else

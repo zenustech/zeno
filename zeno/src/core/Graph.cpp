@@ -36,6 +36,11 @@ ZENO_API zany const &Graph::getNodeOutput(
     return safe_at(node->outputs, ss, "output socket name of node " + node->myname);
 }
 
+zany Graph::getNodeInput(std::string const& sn, std::string const& ss) const {
+    auto node = safe_at(nodes, sn, "node name").get();
+    return node->get_input(ss);
+}
+
 ZENO_API void Graph::clearNodes() {
     nodes.clear();
 }

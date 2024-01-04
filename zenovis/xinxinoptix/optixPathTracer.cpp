@@ -602,7 +602,7 @@ static void updateRootIAS()
 {
   timer.tick();
   auto campos = state.params.cam.eye;
-  const float mat3r4c[12] = {1,0,0,0,   0,1,0,0,   0,0,1,0};
+  const float mat3r4c[12] = {1,0,0,-campos.x,   0,1,0,-campos.y,   0,0,1,-campos.z};
   std::vector<OptixInstance> optix_instances{};
   uint sbt_offset = 0u;
   {
@@ -650,6 +650,10 @@ static void updateRootIAS()
     optix_instance.visibilityMask = VolumeMatMask; //VOLUME_OBJECT;
     optix_instance.traversableHandle = list_volume_accel[i]->handle;
     getOptixTransform( *(list_volume[i]), optix_instance.transform ); // transform as stored in Grid
+
+    optix_instance.transform[3] -= campos.x;
+    optix_instance.transform[7] -= campos.y;
+    optix_instance.transform[11] -= campos.z;
 
     optix_instances.push_back( optix_instance );
   }
@@ -728,7 +732,7 @@ static void handleCameraUpdate( Params& params )
     if( !camera_changed )
         return;
     camera_changed = false;
-
+    updateRootIAS();
     //params.vp1 = cam_vp1;
     //params.vp2 = cam_vp2;
     //params.vp3 = cam_vp3;

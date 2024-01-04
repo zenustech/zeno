@@ -33,6 +33,25 @@ static int clamp(int i, int _min, int _max) {
     }
 }
 
+static void set_time_info(UserData &ud, TimeSamplingType tst, float start, int sample_count) {
+    float time_per_cycle = tst.getTimePerCycle();
+    if (tst.isUniform()) {
+        ud.set2("_abc_time_sampling_type", "Uniform");
+    }
+    else if (tst.isCyclic()) {
+        ud.set2("_abc_time_sampling_type", "Cyclic");
+    }
+    else if (tst.isAcyclic()) {
+        ud.set2("_abc_time_sampling_type", "Acyclic");
+    }
+    ud.set2("_abc_start_time", float(start));
+    ud.set2("_abc_sample_count", sample_count);
+    ud.set2("_abc_time_per_cycle", time_per_cycle);
+    if (time_per_cycle > 0) {
+        ud.set2("_abc_time_fps", 1.0f / time_per_cycle);
+        ud.set2("_abc_start_frame", int(std::lround(start / time_per_cycle)));
+    }
+}
 static void read_velocity(std::shared_ptr<PrimitiveObject> prim, V3fArraySamplePtr marr, bool read_done) {
     if (marr == nullptr) {
         return;
@@ -324,15 +343,24 @@ static void read_user_data(std::shared_ptr<PrimitiveObject> prim, ICompoundPrope
     }
 }
 
-static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMeshSchema &mesh, int frameid, bool read_done, bool read_face_set, bool faceset_as_mtlid) {
+static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMeshSchema &mesh, std::variant<int, float> frameid_or_t, bool read_done, bool read_face_set) {
     auto prim = std::make_shared<PrimitiveObject>();
 
     std::shared_ptr<Alembic::AbcCoreAbstract::v12::TimeSampling> time = mesh.getTimeSampling();
     float time_per_cycle =  time->getTimeSamplingType().getTimePerCycle();
     double start = time->getStoredTimes().front();
-    int start_frame = (int)std::round(start / time_per_cycle );
+    set_time_info(prim->userData(), time->getTimeSamplingType(), start, int(mesh.getNumSamples()));
 
-    int sample_index = clamp(frameid - start_frame, 0, (int)mesh.getNumSamples() - 1);
+    int sample_index;
+    if (std::holds_alternative<int>(frameid_or_t)) {
+        int start_frame = (int)std::round(start / time_per_cycle );
+        sample_index = std::get<int>(frameid_or_t) - start_frame;
+    }
+    else {
+        auto t = std::get<float>(frameid_or_t);
+        sample_index = (int)std::lround((t - start) / time_per_cycle);
+    }
+    sample_index = clamp(sample_index, 0, int(mesh.getNumSamples()) - 1);
     ISampleSelector iSS = Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index);
     Alembic::AbcGeom::IPolyMeshSchema::Sample mesamp = mesh.getValue(iSS);
 
@@ -457,29 +485,29 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
                 faceset[f] = i;
             }
         }
-        if (faceset_as_mtlid) {
-            ud.set2("matNum", int(faceSetNames.size()));
-            for (auto i = 0; i < faceSetNames.size(); i++) {
-                auto n = faceSetNames[i];
-                ud.set2(zeno::format("Material_{}", i), n);
-            }
-            auto &mtlid = prim->polys.add_attr<int>("matid");
-            std::copy(faceset.begin(), faceset.end(), mtlid.begin());
-        }
     }
 
     return prim;
 }
 
-static std::shared_ptr<PrimitiveObject> foundABCSubd(Alembic::AbcGeom::ISubDSchema &subd, int frameid, bool read_done, bool read_face_set, bool faceset_as_mtlid) {
+static std::shared_ptr<PrimitiveObject> foundABCSubd(Alembic::AbcGeom::ISubDSchema &subd, std::variant<int, float> frameid_or_t, bool read_done, bool read_face_set) {
     auto prim = std::make_shared<PrimitiveObject>();
 
     std::shared_ptr<Alembic::AbcCoreAbstract::v12::TimeSampling> time = subd.getTimeSampling();
     float time_per_cycle =  time->getTimeSamplingType().getTimePerCycle();
     double start = time->getStoredTimes().front();
-    int start_frame = (int)std::round(start / time_per_cycle );
+    set_time_info(prim->userData(), time->getTimeSamplingType(), start, int(subd.getNumSamples()));
 
-    int sample_index = clamp(frameid - start_frame, 0, (int)subd.getNumSamples() - 1);
+    int sample_index;
+    if (std::holds_alternative<int>(frameid_or_t)) {
+        int start_frame = (int)std::round(start / time_per_cycle );
+        sample_index = std::get<int>(frameid_or_t) - start_frame;
+    }
+    else {
+        auto t = std::get<float>(frameid_or_t);
+        sample_index = (int)std::lround((t - start) / time_per_cycle);
+    }
+    sample_index = clamp(sample_index, 0, int(subd.getNumSamples()) - 1);
     ISampleSelector iSS = Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index);
     Alembic::AbcGeom::ISubDSchema::Sample mesamp = subd.getValue(iSS);
 
@@ -591,27 +619,26 @@ static std::shared_ptr<PrimitiveObject> foundABCSubd(Alembic::AbcGeom::ISubDSche
                 faceset[f] = i;
             }
         }
-        if (faceset_as_mtlid) {
-            ud.set2("matNum", int(faceSetNames.size()));
-            for (auto i = 0; i < faceSetNames.size(); i++) {
-                auto n = faceSetNames[i];
-                ud.set2(zeno::format("Material_{}", i), n);
-            }
-            auto &mtlid = prim->polys.add_attr<int>("matid");
-            std::copy(faceset.begin(), faceset.end(), mtlid.begin());
-        }
     }
 
     return prim;
 }
 
-static std::shared_ptr<CameraInfo> foundABCCamera(Alembic::AbcGeom::ICameraSchema &cam, int frameid) {
+static std::shared_ptr<CameraInfo> foundABCCamera(Alembic::AbcGeom::ICameraSchema &cam, std::variant<int, float> frameid_or_t) {
     CameraInfo cam_info;
     std::shared_ptr<Alembic::AbcCoreAbstract::v12::TimeSampling> time = cam.getTimeSampling();
     float time_per_cycle =  time->getTimeSamplingType().getTimePerCycle();
     double start = time->getStoredTimes().front();
-    int start_frame = (int)std::round(start / time_per_cycle );
-    int sample_index = clamp(frameid - start_frame, 0, (int)cam.getNumSamples() - 1);
+    int sample_index;
+    if (std::holds_alternative<int>(frameid_or_t)) {
+        int start_frame = (int)std::round(start / time_per_cycle );
+        sample_index = std::get<int>(frameid_or_t) - start_frame;
+    }
+    else {
+        auto t = std::get<float>(frameid_or_t);
+        sample_index = (int)std::lround((t - start) / time_per_cycle);
+    }
+    sample_index = clamp(sample_index, 0, int(cam.getNumSamples()) - 1);
 
     auto samp = cam.getValue(Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index));
     cam_info.focal_length = samp.getFocalLength();
@@ -628,26 +655,42 @@ static std::shared_ptr<CameraInfo> foundABCCamera(Alembic::AbcGeom::ICameraSchem
     return std::make_shared<CameraInfo>(cam_info);
 }
 
-static Alembic::Abc::v12::M44d foundABCXform(Alembic::AbcGeom::IXformSchema &xfm, int frameid) {
+static Alembic::Abc::v12::M44d foundABCXform(Alembic::AbcGeom::IXformSchema &xfm, std::variant<int, float> frameid_or_t) {
     std::shared_ptr<Alembic::AbcCoreAbstract::v12::TimeSampling> time = xfm.getTimeSampling();
     float time_per_cycle =  time->getTimeSamplingType().getTimePerCycle();
     double start = time->getStoredTimes().front();
-    int start_frame = (int)std::round(start / time_per_cycle );
-    int sample_index = clamp(frameid - start_frame, 0, (int)xfm.getNumSamples() - 1);
+    int sample_index;
+    if (std::holds_alternative<int>(frameid_or_t)) {
+        int start_frame = (int)std::round(start / time_per_cycle );
+        sample_index = std::get<int>(frameid_or_t) - start_frame;
+    }
+    else {
+        auto t = std::get<float>(frameid_or_t);
+        sample_index = (int)std::lround((t - start) / time_per_cycle);
+    }
+    sample_index = clamp(sample_index, 0, int(xfm.getNumSamples()) - 1);
 
     auto samp = xfm.getValue(Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index));
     return samp.getMatrix();
 }
 
-static std::shared_ptr<PrimitiveObject> foundABCPoints(Alembic::AbcGeom::IPointsSchema &mesh, int frameid, bool read_done) {
+static std::shared_ptr<PrimitiveObject> foundABCPoints(Alembic::AbcGeom::IPointsSchema &mesh, std::variant<int, float> frameid_or_t, bool read_done) {
     auto prim = std::make_shared<PrimitiveObject>();
 
     std::shared_ptr<Alembic::AbcCoreAbstract::v12::TimeSampling> time = mesh.getTimeSampling();
     float time_per_cycle =  time->getTimeSamplingType().getTimePerCycle();
     double start = time->getStoredTimes().front();
-    int start_frame = (int)std::round(start / time_per_cycle );
-
-    int sample_index = clamp(frameid - start_frame, 0, (int)mesh.getNumSamples() - 1);
+    set_time_info(prim->userData(), time->getTimeSamplingType(), start, int(mesh.getNumSamples()));
+    int sample_index;
+    if (std::holds_alternative<int>(frameid_or_t)) {
+        int start_frame = (int)std::round(start / time_per_cycle );
+        sample_index = std::get<int>(frameid_or_t) - start_frame;
+    }
+    else {
+        auto t = std::get<float>(frameid_or_t);
+        sample_index = (int)std::lround((t - start) / time_per_cycle);
+    }
+    sample_index = clamp(sample_index, 0, int(mesh.getNumSamples()) - 1);
     auto iSS = Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index);
     Alembic::AbcGeom::IPointsSchema::Sample mesamp = mesh.getValue(iSS);
     if (auto marr = mesamp.getPositions()) {
@@ -676,15 +719,24 @@ static std::shared_ptr<PrimitiveObject> foundABCPoints(Alembic::AbcGeom::IPoints
     return prim;
 }
 
-static std::shared_ptr<PrimitiveObject> foundABCCurves(Alembic::AbcGeom::ICurvesSchema &mesh, int frameid, bool read_done) {
+static std::shared_ptr<PrimitiveObject> foundABCCurves(Alembic::AbcGeom::ICurvesSchema &mesh, std::variant<int, float> frameid_or_t, bool read_done) {
     auto prim = std::make_shared<PrimitiveObject>();
 
     std::shared_ptr<Alembic::AbcCoreAbstract::v12::TimeSampling> time = mesh.getTimeSampling();
     float time_per_cycle =  time->getTimeSamplingType().getTimePerCycle();
     double start = time->getStoredTimes().front();
-    int start_frame = (int)std::round(start / time_per_cycle );
+    set_time_info(prim->userData(), time->getTimeSamplingType(), start, int(mesh.getNumSamples()));
 
-    int sample_index = clamp(frameid - start_frame, 0, (int)mesh.getNumSamples() - 1);
+    int sample_index;
+    if (std::holds_alternative<int>(frameid_or_t)) {
+        int start_frame = (int)std::round(start / time_per_cycle );
+        sample_index = std::get<int>(frameid_or_t) - start_frame;
+    }
+    else {
+        auto t = std::get<float>(frameid_or_t);
+        sample_index = (int)std::lround((t - start) / time_per_cycle);
+    }
+    sample_index = clamp(sample_index, 0, int(mesh.getNumSamples()) - 1);
     auto iSS = Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index);
     Alembic::AbcGeom::ICurvesSchema::Sample mesamp = mesh.getValue(iSS);
     if (auto marr = mesamp.getPositions()) {
@@ -720,10 +772,9 @@ static std::shared_ptr<PrimitiveObject> foundABCCurves(Alembic::AbcGeom::ICurves
 void traverseABC(
     Alembic::AbcGeom::IObject &obj,
     ABCTree &tree,
-    int frameid,
+    std::variant<int, float> frameid_or_t,
     bool read_done,
     bool read_face_set,
-    bool faceset_as_mtlid,
     std::string path
 ) {
     {
@@ -741,7 +792,7 @@ void traverseABC(
 
             Alembic::AbcGeom::IPolyMesh meshy(obj);
             auto &mesh = meshy.getSchema();
-            tree.prim = foundABCMesh(mesh, frameid, read_done, read_face_set, faceset_as_mtlid);
+            tree.prim = foundABCMesh(mesh, frameid_or_t, read_done, read_face_set);
             tree.prim->userData().set2("_abc_name", obj.getName());
             tree.prim->userData().set2("_abc_path", path);
         } else if (Alembic::AbcGeom::IXformSchema::matches(md)) {
@@ -750,21 +801,21 @@ void traverseABC(
             }
             Alembic::AbcGeom::IXform xfm(obj);
             auto &cam_sch = xfm.getSchema();
-            tree.xform = foundABCXform(cam_sch, frameid);
+            tree.xform = foundABCXform(cam_sch, frameid_or_t);
         } else if (Alembic::AbcGeom::ICameraSchema::matches(md)) {
             if (!read_done) {
                 log_debug("[alembic] found a Camera [{}]", obj.getName());
             }
             Alembic::AbcGeom::ICamera cam(obj);
             auto &cam_sch = cam.getSchema();
-            tree.camera_info = foundABCCamera(cam_sch, frameid);
+            tree.camera_info = foundABCCamera(cam_sch, frameid_or_t);
         } else if(Alembic::AbcGeom::IPointsSchema::matches(md)) {
             if (!read_done) {
                 log_debug("[alembic] found points [{}]", obj.getName());
             }
             Alembic::AbcGeom::IPoints points(obj);
             auto &points_sch = points.getSchema();
-            tree.prim = foundABCPoints(points_sch, frameid, read_done);
+            tree.prim = foundABCPoints(points_sch, frameid_or_t, read_done);
             tree.prim->userData().set2("_abc_name", obj.getName());
             tree.prim->userData().set2("_abc_path", path);
             tree.prim->userData().set2("faceset_count", 0);
@@ -774,7 +825,7 @@ void traverseABC(
             }
             Alembic::AbcGeom::ICurves curves(obj);
             auto &curves_sch = curves.getSchema();
-            tree.prim = foundABCCurves(curves_sch, frameid, read_done);
+            tree.prim = foundABCCurves(curves_sch, frameid_or_t, read_done);
             tree.prim->userData().set2("_abc_name", obj.getName());
             tree.prim->userData().set2("_abc_path", path);
             tree.prim->userData().set2("faceset_count", 0);
@@ -784,7 +835,7 @@ void traverseABC(
             }
             Alembic::AbcGeom::ISubD subd(obj);
             auto &subd_sch = subd.getSchema();
-            tree.prim = foundABCSubd(subd_sch, frameid, read_done, read_face_set, faceset_as_mtlid);
+            tree.prim = foundABCSubd(subd_sch, frameid_or_t, read_done, read_face_set);
             tree.prim->userData().set2("_abc_name", obj.getName());
             tree.prim->userData().set2("_abc_path", path);
         }
@@ -804,7 +855,7 @@ void traverseABC(
         Alembic::AbcGeom::IObject child(obj, name);
 
         auto childTree = std::make_shared<ABCTree>();
-        traverseABC(child, *childTree, frameid, read_done, read_face_set, faceset_as_mtlid, path);
+        traverseABC(child, *childTree, frameid_or_t, read_done, read_face_set, path);
         tree.children.push_back(std::move(childTree));
     }
 }
@@ -859,8 +910,7 @@ struct ReadAlembic : INode {
             // fmt::print("archive.getNumTimeSamplings: {}\n", archive.getNumTimeSamplings());
             auto obj = archive.getTop();
             bool read_face_set = get_input2<bool>("read_face_set");
-            bool faceset_as_mtlid = get_input2<bool>("faceset_as_mtlid");
-            traverseABC(obj, *abctree, frameid, read_done, read_face_set, faceset_as_mtlid, "");
+            traverseABC(obj, *abctree, frameid, read_done, read_face_set, "");
             read_done = true;
             usedPath = path;
         }
@@ -887,8 +937,71 @@ ZENDEFNODE(ReadAlembic, {
     {
         {"readpath", "path"},
         {"bool", "read_face_set", "0"},
-        {"bool", "faceset_as_mtlid", "0"},
         {"frameid"},
+    },
+    {
+        {"ABCTree", "abctree"},
+        "namelist",
+    },
+    {},
+    {"alembic"},
+});
+
+struct ReadAlembic_v2 : INode {
+    Alembic::Abc::v12::IArchive archive;
+    std::string usedPath;
+    bool read_done = false;
+    virtual void apply() override {
+        int frameid;
+        if (has_input("frameid")) {
+            frameid = get_input2<int>("frameid");
+        } else {
+            frameid = getGlobalState()->frameid;
+        }
+        float fps = get_input2<float>("fps");
+        float t = frameid / fps;
+        auto abctree = std::make_shared<ABCTree>();
+        {
+            auto path = get_input2<std::string>("path");
+            if (usedPath != path) {
+                read_done = false;
+            }
+            if (read_done == false) {
+                archive = readABC(path);
+            }
+            double start, _end;
+            GetArchiveStartAndEndTime(archive, start, _end);
+            auto obj = archive.getTop();
+            bool read_face_set = get_input2<bool>("read_face_set");
+            traverseABC(obj, *abctree, t, read_done, read_face_set, "");
+            read_done = true;
+            usedPath = path;
+        }
+        {
+            auto namelist = std::make_shared<zeno::ListObject>();
+            abctree->visitPrims([&] (auto const &p) {
+                auto &ud = p->userData();
+                auto _abc_path = ud.template get2<std::string>("_abc_path", "");
+                namelist->arr.push_back(std::make_shared<StringObject>(_abc_path));
+            });
+            auto &ud = abctree->userData();
+            ud.set2("prim_count", int(namelist->arr.size()));
+            for (auto i = 0; i < namelist->arr.size(); i++) {
+                auto n = namelist->arr[i];
+                ud.set2(zeno::format("path_{:04}", i), n);
+            }
+            set_output("namelist", namelist);
+        }
+        set_output("abctree", std::move(abctree));
+    }
+};
+
+ZENDEFNODE(ReadAlembic_v2, {
+    {
+        {"readpath", "path"},
+        {"bool", "read_face_set", "0"},
+        {"frameid"},
+        {"float", "fps", "24"},
     },
     {
         {"ABCTree", "abctree"},
@@ -911,26 +1024,31 @@ struct AlembicSplitByName: INode {
             set_output("namelist", namelist);
         }
 
-        {
-            std::map<int, AttrVector<vec2i>> faceset_map;
+        auto dict = std::make_shared<zeno::DictObject>();
+        if (prim->polys.size()) {
+            std::map<int, std::vector<int>> faceset_map;
             for (auto f = 0; f < faceset_count; f++) {
                 faceset_map[f] = {};
             }
             auto &faceset = prim->polys.add_attr<int>("faceset");
             for (auto j = 0; j < faceset.size(); j++) {
                 auto f = faceset[j];
-                faceset_map[f].push_back(prim->polys[j]);
+                faceset_map[f].push_back(j);
             }
-            auto dict = std::make_shared<zeno::DictObject>();
             for (auto f = 0; f < faceset_count; f++) {
                 auto name = prim->userData().get2<std::string>(zeno::format("faceset_{:04}", f));
                 auto new_prim = std::dynamic_pointer_cast<PrimitiveObject>(prim->clone());
-                if (faceset_map.count(f)) {
-                    new_prim->polys = faceset_map[f];
+                new_prim->polys.resize(faceset_map[f].size());
+                for (auto i = 0; i < faceset_map[f].size(); i++) {
+                    new_prim->polys[i] = prim->polys[faceset_map[f][i]];
                 }
-                else {
-                    new_prim->polys.resize(0);
-                }
+                new_prim->polys.foreach_attr<AttrAcceptAll>([&](auto const &key, auto &arr) {
+                    using T = std::decay_t<decltype(arr[0])>;
+                    auto &attr = prim->polys.attr<T>(key);
+                    for (auto i = 0; i < arr.size(); i++) {
+                        arr[i] = attr[faceset_map[f][i]];
+                    }
+                });
                 new_prim->userData().del("faceset_count");
                 for (auto j = 0; j < faceset_count; j++) {
                     new_prim->userData().del(zeno::format("faceset_{:04}", j));
@@ -938,9 +1056,40 @@ struct AlembicSplitByName: INode {
                 new_prim->userData().set2("_abc_faceset", name);
                 dict->lut[name] = std::move(new_prim);
             }
-            set_output("dict", dict);
-
         }
+        else if (prim->tris.size()) {
+            std::map<int, std::vector<int>> faceset_map;
+            for (auto f = 0; f < faceset_count; f++) {
+                faceset_map[f] = {};
+            }
+            auto &faceset = prim->tris.add_attr<int>("faceset");
+            for (auto j = 0; j < faceset.size(); j++) {
+                auto f = faceset[j];
+                faceset_map[f].push_back(j);
+            }
+            for (auto f = 0; f < faceset_count; f++) {
+                auto name = prim->userData().get2<std::string>(zeno::format("faceset_{:04}", f));
+                auto new_prim = std::dynamic_pointer_cast<PrimitiveObject>(prim->clone());
+                new_prim->tris.resize(faceset_map[f].size());
+                for (auto i = 0; i < faceset_map[f].size(); i++) {
+                    new_prim->tris[i] = prim->tris[faceset_map[f][i]];
+                }
+                new_prim->tris.foreach_attr<AttrAcceptAll>([&](auto const &key, auto &arr) {
+                    using T = std::decay_t<decltype(arr[0])>;
+                    auto &attr = prim->tris.attr<T>(key);
+                    for (auto i = 0; i < arr.size(); i++) {
+                        arr[i] = attr[faceset_map[f][i]];
+                    }
+                });
+                new_prim->userData().del("faceset_count");
+                for (auto j = 0; j < faceset_count; j++) {
+                    new_prim->userData().del(zeno::format("faceset_{:04}", j));
+                }
+                new_prim->userData().set2("_abc_faceset", name);
+                dict->lut[name] = std::move(new_prim);
+            }
+        }
+        set_output("dict", dict);
     }
 };
 

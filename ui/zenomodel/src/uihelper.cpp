@@ -403,6 +403,7 @@ QString UiHelper::getControlDesc(PARAM_CONTROL ctrl)
     case CONTROL_SPINBOX_SLIDER:    return "SpinBoxSlider";
     case CONTROL_DICTPANEL:         return "Dict Panel";
     case CONTROL_GROUP_LINE:             return "group-line";
+    case CONTROL_PYTHON_EDITOR: return "PythonEditor";
     default:
         return "";
     }
@@ -505,6 +506,10 @@ PARAM_CONTROL UiHelper::getControlByDesc(const QString& descName)
     else if (descName == "group-line")
     {
         return CONTROL_GROUP_LINE;
+    }
+    else if (descName == "PythonEditor")
+    {
+        return CONTROL_PYTHON_EDITOR;
     }
     else
     {
