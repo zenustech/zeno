@@ -125,6 +125,7 @@ private:
     void _initStaticObjects();
     std::map<std::string, bool> toViewNodesId;
     static std::map<std::string, std::string> lastListitemToViewNodesId;
+    static int lastLoadedFrameID;
 
     //-----ObjectsManager-----
     MapObjects m_transferObjs;

@@ -11,7 +11,6 @@
 #include <glm/gtx/quaternion.hpp>
 #include <zeno/core/Session.h>
 #include <zeno/extra/GlobalComm.h>
-#include <regex>
 
 namespace zeno {
 
@@ -378,7 +377,7 @@ void FakeTransformer::createNewTransformNode(NodeLocation& node_location,
                                  "quatRotation",
                                  rotate);
 
-    if (user_data.has("object-id"))
+    if (user_data.has("list-index"))
     {
         if (listitemGroupPath == "")
         {

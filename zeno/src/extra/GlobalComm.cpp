@@ -33,6 +33,7 @@ MapObjects GlobalComm::m_newToviewObjs;
 MapObjects GlobalComm::m_newToviewObjsStatic;
 PolymorphicMap<std::map<std::string, std::shared_ptr<IObject>>> GlobalComm::m_static_objects;
 std::map<std::string, std::string> GlobalComm::lastListitemToViewNodesId;
+int GlobalComm::lastLoadedFrameID = 0;
 
 static void markListIndex(const std::string& root, std::shared_ptr<ListObject> lstObj)
 {
@@ -133,8 +134,6 @@ bool GlobalComm::fromDiskByObjsManager(std::string cachedir, int frameid, Global
         return false;
     objs.clear();
 
-    static int currentLoadedFrameID = 0;;
-
     std::filesystem::path dir;
     dir = std::filesystem::u8path(cachedir + "/" + std::to_string(1000000 + frameid).substr(1));
     if (!std::filesystem::exists(dir) || std::filesystem::is_empty(dir))
@@ -195,13 +194,13 @@ bool GlobalComm::fromDiskByObjsManager(std::string cachedir, int frameid, Global
         else {
             std::string listitemIdx = p->userData().get2<std::string>("list-index", "");
             if (listitemIdx != "") {
-                if (cacheUpdatedNodesInfo.find(toviewNodeId) != cacheUpdatedNodesInfo.end() || currentLoadedFrameID != frameid || lastListitemToViewNodesId.find(name) == lastListitemToViewNodesId.end() || lastListitemToViewNodesId[name] != toviewNodeId) {
+                if (cacheUpdatedNodesInfo.find(toviewNodeId) != cacheUpdatedNodesInfo.end() || lastLoadedFrameID != frameid || lastListitemToViewNodesId.find(name) == lastListitemToViewNodesId.end() || lastListitemToViewNodesId[name] != toviewNodeId) {
                     m_newToviewObjs.insert(std::make_pair(name, std::move(p)));
                 }
                 lastListitemToViewNodesId[name] = toviewNodeId;
             }
             else {
-                if (cacheUpdatedNodesInfo.find(name) != cacheUpdatedNodesInfo.end() || currentLoadedFrameID != frameid) {
+                if (cacheUpdatedNodesInfo.find(name) != cacheUpdatedNodesInfo.end() || lastLoadedFrameID != frameid) {
                     m_newToviewObjs.insert(std::make_pair(name, std::move(p)));
                 }
             }
@@ -283,7 +282,6 @@ bool GlobalComm::fromDiskByObjsManager(std::string cachedir, int frameid, Global
             }
         }
     }
-    currentLoadedFrameID = frameid;
 
     return true;
 }
@@ -620,6 +618,12 @@ GlobalComm::ViewObjects const* GlobalComm::_getViewObjects(const int frameid, bo
                     }
                 }
             }
+            lastLoadedFrameID = frameid;
+        }else if (lastLoadedFrameID != frameid)
+        {
+            prepareForOptix(m_frames[frameIdx].view_objects.m_curr);
+            prepareForBeta();
+            lastLoadedFrameID = frameid;
         }
     }
     return &m_frames[frameIdx].view_objects;
