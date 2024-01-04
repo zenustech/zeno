@@ -1061,7 +1061,8 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewSockIdx, bool bInput, 
         pMiniLayout->setControl(pSocketControl);
         if (pSocketControl) {
             const QString& netLabel = viewSockIdx.data(ROLE_PARAM_NETLABEL).toString();
-            pSocketControl->setVisible(links.isEmpty() && netLabel.isEmpty());
+            pSocketControl->setVisible((links.isEmpty() && netLabel.isEmpty()) ||
+                (nodeName() == "GenerateCommands" && sockName == "source"));
             pSocketControl->setEnabled(bSocketEnable);
         }
     }
@@ -1159,6 +1160,13 @@ ZGraphicsLayout* ZenoNode::addParam(const QModelIndex& viewparamIdx, ZenoSubGrap
     return paramCtrl.ctrl_layout;
 }
 
+Callback_OnButtonClicked ZenoNode::registerButtonCallback(const QModelIndex& paramIdx)
+{
+    return []() {
+
+    };
+}
+
 QGraphicsItem* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const QModelIndex& paramIdx)
 {
     const QPersistentModelIndex perIdx(paramIdx);
@@ -1207,6 +1215,7 @@ QGraphicsItem* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const QModel
     cbSet.cbSwitch = cbSwith;
     cbSet.cbGetIndexData = cbGetIndexData;
     cbSet.cbGetZsgDir = cbGetZsgDir;
+    cbSet.cbBtnOnClicked = registerButtonCallback(paramIdx);
 
     QVariant newVal = deflVal;
     if (bFloat)
@@ -1250,6 +1259,10 @@ void ZenoNode::onSocketLinkChanged(const QModelIndex& paramIdx, bool bInput, boo
     if (bInput)
     {
         QString sockName = paramIdx.data(ROLE_PARAM_NAME).toString();
+        // special case, we need to show the button param.
+        if (this->nodeName() == "GenerateCommands" && sockName == "source")
+            return;
+
         ZSocketLayout* pSocketLayout = getSocketLayout(bInput, sockName);
         if (pSocketLayout && pSocketLayout->control())
         {

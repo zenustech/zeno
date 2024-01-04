@@ -116,6 +116,7 @@ protected:
     virtual ZGraphicsLayout* initSockets(QStandardItem* socketItems, QStandardItem* legacyItems, const bool bInput, ZenoSubGraphScene* pScene);
     virtual ZGraphicsLayout* initParams(QStandardItem* paramItems, ZenoSubGraphScene* pScene);
     virtual ZGraphicsLayout* initCustomParamWidgets();
+    virtual Callback_OnButtonClicked registerButtonCallback(const QModelIndex& paramIdx);
 
 protected:
     NodeUtilParam m_renderParams;

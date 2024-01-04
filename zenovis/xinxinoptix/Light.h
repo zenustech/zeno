@@ -75,13 +75,13 @@ static __inline__ __device__ vec3 cihouLightEmission(LightSampleRecord &lsr, Gen
     auto intensity = (depth == 0 && light.vIntensity >= 0.0f) ? light.vIntensity : light.intensity;
 
     if (light.tex != 0u) {
-        auto color = texture2D(light.tex, lsr.uv);
+        float3 color = (vec3)texture2D(light.tex, lsr.uv);
         if (light.texGamma != 1.0f) {
             color = pow(color, light.texGamma);
         }
-
+        color = color * light.color;
         color = color * intensity;
-        return *(vec3*)&color;
+        return color;
     }
     
     return light.color * intensity;
@@ -204,7 +204,7 @@ namespace detail {
 
 template<bool _MIS_, typename TypeEvalBxDF, typename TypeAux = void>
 static __forceinline__ __device__
-void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& shadingP, const float3& ray_dir, 
+void DirectLighting(RadiancePRD *prd, ShadowPRD& shadowPRD, const float3& shadingP, const float3& ray_dir, 
                     TypeEvalBxDF& evalBxDF, TypeAux* taskAux=nullptr, float3* RadianceWithoutShadow=nullptr) {
 
     const float3 wo = normalize(-ray_dir); 
@@ -399,9 +399,9 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
         }
 
         if (lsr.NoL > _FLT_EPL_ && lsr.PDF > _FLT_EPL_) {
-            shadow_prd.depth = 0;
-            traceOcclusion(params.handle, shadow_prd.origin, lsr.dir, 0, lsr.dist, &shadow_prd);
-            light_attenuation = shadow_prd.shadowAttanuation;
+
+            traceOcclusion(params.handle, shadowPRD.origin, lsr.dir, 0, lsr.dist, &shadowPRD);
+            light_attenuation = shadowPRD.attanuation;
 
             if (nullptr==RadianceWithoutShadow && lengthSquared(light_attenuation) == 0.0f) return;
 
@@ -458,13 +458,12 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
             if (envpdf < __FLT_DENORM_MIN__) {
                 return;
             }
-            shadow_prd.depth = 0;
             //LP = rtgems::offset_ray(LP, sun_dir);
-            traceOcclusion(params.handle, shadow_prd.origin, sun_dir,
+            traceOcclusion(params.handle, shadowPRD.origin, sun_dir,
                         1e-5f, // tmin
                         1e16f, // tmax,
-                        &shadow_prd);
-            light_attenuation = shadow_prd.shadowAttanuation;
+                        &shadowPRD);
+            light_attenuation = shadowPRD.attanuation;
 
             if (nullptr==RadianceWithoutShadow && lengthSquared(light_attenuation) == 0.0f) return;
 

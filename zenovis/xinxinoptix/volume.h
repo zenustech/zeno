@@ -16,6 +16,9 @@ struct VolumeIn {
     uint32_t* seed;
 
     unsigned long long sbt_ptr;
+
+    float3 _local_pos_ = make_float3(CUDART_NAN_F);
+    float3 _uniform_pos_ = make_float3(CUDART_NAN_F);
 };
 
 struct VolumeOut {
@@ -32,36 +35,29 @@ struct VolumeOut {
 namespace pbrt {
 
 struct HenyeyGreenstein {
-    float g;
-    __device__ HenyeyGreenstein(float g) : g(g) {}
+    float g, gg;
+    __device__ HenyeyGreenstein(float g) : g(g), gg(g*g) {}
     
     float p(const float3 &wo, const float3 &wi) const;
     float sample(const float3 &wo, float3 &wi, const float2 &uu) const;
 };
 
-inline float Schlick(float cosTheta, float k)
-{
-    return (1.0f - k * k) / (4.0f * M_PIf * pow(1.0f - k * cosTheta, 2.0f));
-}
-
 // Media Inline Functions
-inline float PhaseHG(float cosTheta, float g) {
-    float gg = g * g;
+inline float PhaseHG(float cosTheta, float g, float gg) {
+
     float denom = 1 + gg + 2 * g * cosTheta;
 
     if (denom < __FLT_EPSILON__) {
         return 1.0f;
     }
 
-    return (0.25f / M_PIf) * (1 - gg) / (denom * sqrtf(denom));
+    auto P = (0.25f / M_PIf) * (1 - gg) / (denom * sqrtf(denom));
+    return clamp(P, 0.0f, 1.0f);
 }
 
 // HenyeyGreenstein Method Definitions
 inline float HenyeyGreenstein::p(const float3 &wo, const float3 &wi) const {
-    return PhaseHG(dot(wo, wi), g);
-    
-    // float k = 1.55f*g - 0.55f*g*g*g;
-    // return Schlick(dot(wo, wi), k);
+    return PhaseHG(dot(wo, wi), g, gg);
 }
 
 inline float HenyeyGreenstein::sample(const float3 &wo, float3 &wi, const float2 &uu) const {
@@ -76,7 +72,6 @@ inline float HenyeyGreenstein::sample(const float3 &wo, float3 &wi, const float2
     if (fabs(g) < 1e-3f)
         cosTheta = 1 - 2 * uu.x;
     else {
-        float gg = g * g;
         float sqrTerm = (1 - gg) / (1 + g - 2 * g * uu.x);
         cosTheta = -(1 + gg - sqrTerm * sqrTerm) / (2 * g);
     }
@@ -90,7 +85,7 @@ inline float HenyeyGreenstein::sample(const float3 &wo, float3 &wi, const float2
     //CoordinateSystem(wo, &v1, &v2);
     wi = SphericalDirection(sinTheta, cosTheta, phi, v1, v2, wo);
 
-    return PhaseHG(cosTheta, g);
+    return PhaseHG(cosTheta, g, gg);
 }
 
 // Spectrum Function Declarations

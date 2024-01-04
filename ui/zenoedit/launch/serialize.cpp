@@ -112,17 +112,17 @@ static void getOptStr(const QString& sockType, QVariant& defl, QString& opStr)
     }
 }
 
-static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgIdx, QString const &graphIdPrefix, bool bView, RAPIDJSON_WRITER& writer, bool bNestedSubg = true, bool applyLightAndCameraOnly = false, bool applyMaterialOnly = false, const QString &configPath = "")
+static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgIdx, QString const &graphIdPrefix, bool bView, RAPIDJSON_WRITER& writer, LAUNCH_PARAM launchParam, bool bNestedSubg = true)
 {
     ZASSERT_EXIT(pGraphsModel && subgIdx.isValid());
 
     rapidjson::Document configDoc;
-    if (!configPath.isEmpty())
+    if (!launchParam.paramPath.isEmpty())
     {
-        QFile file(configPath);
+        QFile file(launchParam.paramPath);
         bool ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
         if (!ret) {
-            zeno::log_error("cannot open config file: {} ({})", configPath.toStdString(),
+            zeno::log_error("cannot open config file: {} ({})", launchParam.paramPath.toStdString(),
                 file.errorString().toStdString());
         }
 
@@ -178,7 +178,7 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                 AddStringList({"pushSubnetScope", ident}, writer);
                 const QString& prefix = nameMangling(graphIdPrefix, idx.data(ROLE_OBJID).toString());
                 bool _bView = bView && (idx.data(ROLE_OPTIONS).toInt() & OPT_VIEW);
-                serializeGraph(pGraphsModel, pGraphsModel->index(name), prefix, _bView, writer, true, applyLightAndCameraOnly, applyMaterialOnly, configPath);
+                serializeGraph(pGraphsModel, pGraphsModel->index(name), prefix, _bView, writer, launchParam, true);
                 AddStringList({"popSubnetScope", ident}, writer);
             }
         }
@@ -300,7 +300,7 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                 const QString& objPath = inSockIdx.data(ROLE_OBJPATH).toString();
                 if (commandParams.contains(objPath))
                 {
-                    if (!configPath.isEmpty())
+                    if (!launchParam.paramPath.isEmpty())
                     {
                         const QString& command = commandParams[objPath].name;
                         if (configDoc.HasMember(command.toUtf8()))
@@ -357,7 +357,7 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                 //command params
                 const QString& objPath = param_info.paramPath;
                 QString command = commandParams[objPath].name;
-                if (!configPath.isEmpty() && commandParams.contains(objPath) && configDoc.HasMember(command.toUtf8()))
+                if (!launchParam.paramPath.isEmpty() && commandParams.contains(objPath) && configDoc.HasMember(command.toUtf8()))
                 {
                     const auto& value = configDoc[command.toStdString().c_str()];
                     paramValue = UiHelper::parseJsonByType(param_info.typeDesc, value, nullptr);
@@ -415,7 +415,7 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
             }
             else
             {
-                if ((applyLightAndCameraOnly && !lightCameraNodes.contains(name) || applyMaterialOnly && name != matlNode) && !pGraphsModel->IsSubGraphNode(idx))
+                if ((launchParam.applyLightAndCameraOnly && !lightCameraNodes.contains(name) || launchParam.applyMaterialOnly && name != matlNode) && !pGraphsModel->IsSubGraphNode(idx))
                 {
                     continue;
                 }
@@ -440,16 +440,16 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
     }
 }
 
-void serializeScene(IGraphsModel* pModel, RAPIDJSON_WRITER& writer, bool applyLightAndCameraOnly, bool applyMaterialOnly, const QString& configPath)
+void serializeScene(IGraphsModel* pModel, RAPIDJSON_WRITER& writer, LAUNCH_PARAM param)
 {
-    serializeGraph(pModel, pModel->index("main"), "", true, writer, true, applyLightAndCameraOnly, applyMaterialOnly, configPath);
+    serializeGraph(pModel, pModel->index("main"), "", true, writer, param, true);
 }
 
 static void serializeSceneOneGraph(IGraphsModel* pModel, RAPIDJSON_WRITER& writer, QString subgName)
 {
-    serializeGraph(pModel, pModel->index(subgName), "", true, writer, false);
+    LAUNCH_PARAM param;
+    serializeGraph(pModel, pModel->index(subgName), "", true, writer, param, false);
 }
-
 
 static void appendSerializedCharArray(QString &res, const char *buf, size_t len) {
     for (auto p = buf; p < buf + len; p++) {
