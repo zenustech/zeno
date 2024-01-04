@@ -113,6 +113,7 @@ private:
     glm::vec3 m_trans_start;
     glm::vec3 m_rotate_start;
     // glm::vec3 m_scale_start;
+    glm::vec3 _objects_center_start;
 
     bool m_status;
     int m_operation;

@@ -2,6 +2,7 @@
 #include "zeno/funcs/ObjectGeometryInfo.h"
 #include "zeno/types/ListObject.h"
 #include "zeno/utils/log.h"
+#include "zeno/funcs/PrimitiveUtils.h"
 #include <cstring>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -244,6 +245,7 @@ struct PrimitiveTransform : zeno::INode {
             std::shared_ptr<IObject> iObject
             , glm::mat4 matrix
             , std::string pivotType
+            , vec3f pivotPos
             , vec3f translate
             , vec4f rotation
             , vec3f scaling
@@ -254,13 +256,15 @@ struct PrimitiveTransform : zeno::INode {
             if (pivotType == "bboxCenter") {
                 zeno::vec3f _min;
                 zeno::vec3f _max;
-                objectGetBoundingBox(prim.get(), _min, _max);
-                auto p = (_min + _max) / 2;
-                auto pivot_to_local = glm::translate(glm::vec3(-p[0], -p[1], -p[2]));
-                auto pivot_to_world = glm::translate(glm::vec3(p[0], p[1], p[2]));
-                matrix = pivot_to_world * matrix * pivot_to_local;
-                _pivot = p;
+                std::tie(_min, _max) = primBoundingBox(prim.get());
+                _pivot = (_min + _max) / 2;
             }
+            else if (pivotType == "custom") {
+                _pivot = pivotPos;
+            }
+            auto pivot_to_local = glm::translate(glm::vec3(-_pivot[0], -_pivot[1], -_pivot[2]));
+            auto pivot_to_world = glm::translate(glm::vec3(_pivot[0], _pivot[1], _pivot[2]));
+            matrix = pivot_to_world * matrix * pivot_to_local;
 
             if (prim->has_attr("pos")) {
                 auto &pos = prim->attr<zeno::vec3f>("pos");
@@ -289,10 +293,12 @@ struct PrimitiveTransform : zeno::INode {
             user_data.setLiterial("_rotate", rotation);
             user_data.setLiterial("_scale", scaling);
             user_data.set2("_pivot", _pivot);
+            user_data.del("_bboxMin");
+            user_data.del("_bboxMax");
         }
         else if (auto list = std::dynamic_pointer_cast<ListObject>(iObject)) {
             for (auto &item : list->arr) {
-                transformObj(item, matrix, pivotType, translate, rotation, scaling);
+                transformObj(item, matrix, pivotType, translate, pivotPos, rotation, scaling);
             }
         }
     }
@@ -361,15 +367,16 @@ struct PrimitiveTransform : zeno::INode {
         auto path = get_input2<std::string>("path");
 
         std::string pivotType = get_input2<std::string>("pivot");
+        auto pivotPos = get_input2<vec3f>("pivotPos");
 
         if (std::dynamic_pointer_cast<PrimitiveObject>(iObject)) {
             iObject = iObject->clone();
-            transformObj(iObject, matrix, pivotType, translate, rotation, scaling);
+            transformObj(iObject, matrix, pivotType, pivotPos, translate, rotation, scaling);
         }
         else {
             auto select = get_from_list(path, iObject);
             if (select.has_value()) {
-                transformObj(select.value(), matrix, pivotType, translate, rotation, scaling);
+                transformObj(select.value(), matrix, pivotType, pivotPos, translate, rotation, scaling);
             }
         }
 
@@ -381,12 +388,13 @@ ZENDEFNODE(PrimitiveTransform, {
     {
         {"PrimitiveObject", "prim"},
         {"string", "path"},
-        {"enum world bboxCenter", "pivot", "bboxCenter"},
         {"vec3f", "translation", "0,0,0"},
         {"vec3f", "eulerXYZ", "0,0,0"},
         {"vec4f", "quatRotation", "0,0,0,1"},
         {"vec3f", "scaling", "1,1,1"},
         {"vec3f", "shear", "0,0,0"},
+        {"enum world bboxCenter custom", "pivot", "bboxCenter"},
+        {"vec3f", "pivotPos", "0,0,0"},
         {"Matrix"},
         {"preTransform"},
         {"local"},

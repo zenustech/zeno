@@ -1659,14 +1659,14 @@ struct PrimDemoteVertAttribs : INode {
         });
         /// demote
         std::vector<int> vCnts(verts.size());
-        pol(range(loops.size()), [&](int i) {
+        pol(range(loops.size()), [&, tag = wrapv<space>{}](int i) {
             auto loopI = loops.values[i];
             auto uvI = loopUvIds[i];
-            atomic_add(wrapv<space>{}, &vertUvs[loopI][0], uvs.values[uvI][0]);
-            atomic_add(wrapv<space>{}, &vertUvs[loopI][1], uvs.values[uvI][1]);
+            atomic_add(tag, &vertUvs[loopI][0], uvs.values[uvI][0]);
+            atomic_add(tag, &vertUvs[loopI][1], uvs.values[uvI][1]);
             vertUvs[loopI][2] = 0;
 
-            atomic_add(wrapv<space>{}, &vCnts[loopI], 1);
+            atomic_add(tag, &vCnts[loopI], 1);
             for (const auto &attribTag : demoteAttribs) {
                 if (attribTag == "uv")
                     continue;
@@ -1675,12 +1675,12 @@ struct PrimDemoteVertAttribs : INode {
                         using T = std::decay_t<decltype(vertAttrib[0])>;
                         const auto &uvAttrib = uvs.attr<T>(attribTag);
                         if constexpr (std::is_same_v<T, float> || std::is_same_v<T, int>) {
-                            atomic_add(wrapv<space>{}, &vertAttrib[loopI], uvAttrib[uvI]);
+                            atomic_add(tag, &vertAttrib[loopI], uvAttrib[uvI]);
                         } else {
                             using TT = typename T::value_type;
                             constexpr int dim = std::tuple_size_v<T>;
                             for (int d = 0; d != dim; ++d)
-                                atomic_add(wrapv<space>{}, &vertAttrib[loopI][d], uvAttrib[uvI][d]);
+                                atomic_add(tag, &vertAttrib[loopI][d], uvAttrib[uvI][d]);
                         }
                     })(verts.attr(attribTag));
             }
@@ -1769,14 +1769,14 @@ struct PrimAttributePromote : INode {
             });
             /// demote
             std::vector<int> vCnts(verts.size());
-            pol(range(loops.size()), [&](int i) {
+            pol(range(loops.size()), [&, tag = wrapv<space>{}](int i) {
                 auto loopI = loops.values[i];
                 auto uvI = loopUvIds[i];
-                atomic_add(wrapv<space>{}, &vertUvs[loopI][0], uvs.values[uvI][0]);
-                atomic_add(wrapv<space>{}, &vertUvs[loopI][1], uvs.values[uvI][1]);
+                atomic_add(tag, &vertUvs[loopI][0], uvs.values[uvI][0]);
+                atomic_add(tag, &vertUvs[loopI][1], uvs.values[uvI][1]);
                 vertUvs[loopI][2] = 0;
 
-                atomic_add(wrapv<space>{}, &vCnts[loopI], 1);
+                atomic_add(tag, &vCnts[loopI], 1);
                 for (const auto &attribTag : promoteAttribs) {
                     if (attribTag == "uv")
                         continue;
@@ -1785,12 +1785,12 @@ struct PrimAttributePromote : INode {
                             using T = std::decay_t<decltype(vertAttrib[0])>;
                             const auto &uvAttrib = uvs.attr<T>(attribTag);
                             if constexpr (std::is_same_v<T, float> || std::is_same_v<T, int>) {
-                                atomic_add(wrapv<space>{}, &vertAttrib[loopI], uvAttrib[uvI]);
+                                atomic_add(tag, &vertAttrib[loopI], uvAttrib[uvI]);
                             } else {
                                 using TT = typename T::value_type;
                                 constexpr int dim = std::tuple_size_v<T>;
                                 for (int d = 0; d != dim; ++d)
-                                    atomic_add(wrapv<space>{}, &vertAttrib[loopI][d], uvAttrib[uvI][d]);
+                                    atomic_add(tag, &vertAttrib[loopI][d], uvAttrib[uvI][d]);
                             }
                         })(verts.attr(attribTag));
                 }
