@@ -5,7 +5,6 @@
 #include "zassert.h"
 #include <zenomodel/include/uihelper.h>
 #include "zveceditoritem.h"
-#include <zenoui/comctrl/gv/zpythoneditoritem.h>
 
 
 void ZenoGvHelper::setSizeInfo(QGraphicsItem* item, const SizeInfo& sz)
@@ -136,10 +135,6 @@ void ZenoGvHelper::setValue(QGraphicsItem* item, PARAM_CONTROL ctrl, const QVari
             else if (ZenoParamDoubleSpinBox*pSpinBox = qobject_cast<ZenoParamDoubleSpinBox *>(pItem)) 
             {
                 pSpinBox->setValue(value.toDouble());
-            }
-            else if (ZPythonEditorItem* pEditor = qobject_cast<ZPythonEditorItem*>(pItem))
-            {
-                pEditor->setText(value.toString());
             }
             break;
         }

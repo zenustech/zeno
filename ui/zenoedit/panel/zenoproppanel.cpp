@@ -28,7 +28,6 @@
 #include "zenoblackboardpropwidget.h"
 #include "timeline/ztimeline.h"
 #include "util/apphelper.h"
-#include <zenoui/comctrl/zpythoneditor.h>
 
 
 class RetryScope
@@ -701,10 +700,6 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
                         pBtn->setStyleSheet(QString("background-color:%1; border:0;").arg(color.name()));
                     }
                 }
-            }
-            else if (ZPythonEditor* pEditor = qobject_cast<ZPythonEditor*>(ctrl.pControl))
-            {
-                pEditor->setText(value.toString());
             }
             //...
         }

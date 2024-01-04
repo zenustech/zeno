@@ -18,6 +18,4 @@ target_link_libraries(zenoui PUBLIC Qt5::Widgets Qt5::Svg Qt5::Network)
 target_link_libraries(zenoui PUBLIC zeno)
 
 target_include_directories(zenoui PRIVATE ${Qt5Widgets_PRIVATE_INCLUDE_DIRS})
-target_include_directories(zenoui PRIVATE . .. ../include QScintilla QScintilla/src QScintilla/scintilla/include QScintilla/scintilla/lexlib QScintilla/scintilla/src)
-
-target_compile_definitions(zenoui PRIVATE -DSCINTILLA_QT -DSCI_LEXER -DINCLUDE_DEPRECATED_FEATURES)
+target_include_directories(zenoui PRIVATE . .. ../include)
