@@ -54,6 +54,8 @@ struct VolumePRD {
 struct ShadowPRD {
     bool test_distance;
     float maxDistance;
+    uint32_t lightIdx = UINT_MAX;
+
     float3 origin;
     uint32_t seed;
     float3 attanuation;

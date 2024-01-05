@@ -262,6 +262,11 @@ extern "C" __global__ void __anyhit__shadow_cutout()
         light_index = rect_idx + params.firstRectLightIdx;
     }
 
+    if (light_index == prd->lightIdx) {
+        //printf("maxDistance = %f tmax = %f \n", prd->maxDistance, optixGetRayTmax());
+        ignore = true;
+    }
+
     if (ignore) {
         optixIgnoreIntersection();
         return;
