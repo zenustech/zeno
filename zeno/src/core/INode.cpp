@@ -76,6 +76,8 @@ ZENO_API bool zeno::INode::getTmpCache()
 {
     GlobalComm::ViewObjects objs;
     int frameid = zeno::getSession().globalState->frameid;
+    if (m_status & NodeStatus::Once)
+        frameid = -1;
     bool ret = GlobalComm::fromDiskByRunner(zeno::getSession().globalComm->objTmpCachePath, frameid, objs, myname);
     if (ret && objs.size() > 0)
     {
@@ -113,22 +115,11 @@ ZENO_API void zeno::INode::writeTmpCaches()
     bool bStatic = (Once & m_status);
     int frameid = bStatic ? -1 : zeno::getSession().globalState->frameid;
 
-    {   //store cache version
-        auto key = myname;
-        key.push_back(':');
-        if (bStatic)
-            key.append("static");
-        else
-            key.append(std::to_string(getThisSession()->globalState->frameid));
-        //key.push_back(':');
-        //key.append(std::to_string(getThisSession()->globalState->sessionid));
-        //just register obj keys.
-        if (bStatic) {
-            getThisSession()->globalComm->addStaticObject(key, std::make_shared<IObject>());
-        }
-        else {
-            getThisSession()->globalComm->addViewObject(key, std::make_shared<IObject>());
-        }
+    if (bStatic) {
+        getThisSession()->globalComm->addStaticObject(myname, std::make_shared<IObject>());
+    }
+    else {
+        getThisSession()->globalComm->addViewObject(myname, std::make_shared<IObject>());
     }
     GlobalComm::toDisk(zeno::getSession().globalComm->objTmpCachePath, frameid, objs, myname, false);
 }

@@ -32,6 +32,8 @@ std::string matlNode = "ShaderFinalize";
 MapObjects GlobalComm::m_newToviewObjs;
 MapObjects GlobalComm::m_newToviewObjsStatic;
 PolymorphicMap<std::map<std::string, std::shared_ptr<IObject>>> GlobalComm::m_static_objects;
+std::map<std::string, std::string> GlobalComm::lastListitemToViewNodesId;
+int GlobalComm::lastLoadedFrameID = 0;
 
 static void markListIndex(const std::string& root, std::shared_ptr<ListObject> lstObj)
 {
@@ -132,8 +134,6 @@ bool GlobalComm::fromDiskByObjsManager(std::string cachedir, int frameid, Global
         return false;
     objs.clear();
 
-    static int currentLoadedFrameID = 0;;
-
     std::filesystem::path dir;
     dir = std::filesystem::u8path(cachedir + "/" + std::to_string(1000000 + frameid).substr(1));
     if (!std::filesystem::exists(dir) || std::filesystem::is_empty(dir))
@@ -175,7 +175,7 @@ bool GlobalComm::fromDiskByObjsManager(std::string cachedir, int frameid, Global
 
     m_newToviewObjs.clear();
 
-    std::function<void(zany const&, std::string)> convertToView = [&](zany const& p, std::string name) -> void {
+    std::function<void(zany const&, std::string, std::string)> convertToView = [&](zany const& p, std::string name, std::string toviewNodeId) -> void {
         if (ListObject* lst = dynamic_cast<ListObject*>(p.get())) {
             log_info("ToView got ListObject (size={}), expanding", lst->arr.size());
             for (size_t i = 0; i < lst->arr.size(); i++) {
@@ -184,7 +184,7 @@ bool GlobalComm::fromDiskByObjsManager(std::string cachedir, int frameid, Global
                 if (std::shared_ptr<IObject> obj = std::dynamic_pointer_cast<IObject>(lp)) {
                     id = obj->userData().get2<std::string>("object-id", "");
                 }
-                convertToView(lp, id);
+                convertToView(lp, id, toviewNodeId);
             }
             return;
         }
@@ -194,13 +194,13 @@ bool GlobalComm::fromDiskByObjsManager(std::string cachedir, int frameid, Global
         else {
             std::string listitemIdx = p->userData().get2<std::string>("list-index", "");
             if (listitemIdx != "") {
-                std::string& cachedListId = listitemIdx.substr(0, listitemIdx.find_first_of("/"));
-                if (cacheUpdatedNodesInfo.find(cachedListId) != cacheUpdatedNodesInfo.end() || currentLoadedFrameID != frameid) {
+                if (cacheUpdatedNodesInfo.find(toviewNodeId) != cacheUpdatedNodesInfo.end() || lastLoadedFrameID != frameid || lastListitemToViewNodesId.find(name) == lastListitemToViewNodesId.end() || lastListitemToViewNodesId[name] != toviewNodeId) {
                     m_newToviewObjs.insert(std::make_pair(name, std::move(p)));
                 }
+                lastListitemToViewNodesId[name] = toviewNodeId;
             }
             else {
-                if (cacheUpdatedNodesInfo.find(name) != cacheUpdatedNodesInfo.end() || currentLoadedFrameID != frameid) {
+                if (cacheUpdatedNodesInfo.find(name) != cacheUpdatedNodesInfo.end() || lastLoadedFrameID != frameid) {
                     m_newToviewObjs.insert(std::make_pair(name, std::move(p)));
                 }
             }
@@ -220,6 +220,19 @@ bool GlobalComm::fromDiskByObjsManager(std::string cachedir, int frameid, Global
                     m_newToviewObjs.insert(std::make_pair(nodeid, m_static_objects.m_curr[nodeid]));
                 }
                 objs.try_emplace(nodeid, m_static_objects.m_curr[nodeid]);
+            }else  //maybe a listitem
+            {
+                for (auto& [listitemId, toviewNodeId] : lastListitemToViewNodesId)
+                {
+                    if (toviewNodeId == nodeid)
+                    {
+                        if (m_newToviewObjsStatic.find(listitemId) != m_newToviewObjsStatic.end())
+                        {
+                            m_newToviewObjs.insert(std::make_pair(listitemId, m_static_objects.m_curr[listitemId]));
+                        }
+                        objs.try_emplace(listitemId, m_static_objects.m_curr[listitemId]);
+                    }
+                }
             }
         }
         else {
@@ -273,16 +286,15 @@ bool GlobalComm::fromDiskByObjsManager(std::string cachedir, int frameid, Global
                 const char* p = dat.data() + pos + poses[lastObjIdx];
 
                 zeno::zany decodedObj = decodeObject(p, poses[lastObjIdx + 1] - poses[lastObjIdx]);
-                if (std::shared_ptr<ListObject> spListObj = std::dynamic_pointer_cast<ListObject>(decodedObj))
-                {
-                    markListIndex(nodeid, spListObj);
-                }
+                //if (std::shared_ptr<ListObject> spListObj = std::dynamic_pointer_cast<ListObject>(decodedObj))
+                //{
+                //    markListIndex(nodeid, spListObj);
+                //}
 
-                convertToView(decodedObj, nodeid);
+                convertToView(decodedObj, nodeid, nodeid);
             }
         }
     }
-    currentLoadedFrameID = frameid;
 
     return true;
 }
@@ -332,7 +344,7 @@ bool GlobalComm::fromDiskByObjsManagerStatic(std::string cachedir, GlobalComm::V
             }
         }
     }
-    std::function<void(zany const&, std::string)> convertToView = [&](zany const& p, std::string name) -> void {
+    std::function<void(zany const&, std::string, std::string)> convertToView = [&](zany const& p, std::string name, std::string toviewNodeId) -> void {
         if (ListObject* lst = dynamic_cast<ListObject*>(p.get())) {
             log_info("ToView got ListObject (size={}), expanding", lst->arr.size());
             for (size_t i = 0; i < lst->arr.size(); i++) {
@@ -341,7 +353,7 @@ bool GlobalComm::fromDiskByObjsManagerStatic(std::string cachedir, GlobalComm::V
                 if (std::shared_ptr<IObject> obj = std::dynamic_pointer_cast<IObject>(lp)) {
                     id = obj->userData().get2<std::string>("object-id", "");
                 }
-                convertToView(lp, id);
+                convertToView(lp, id, toviewNodeId);
             }
             return;
         }
@@ -349,11 +361,19 @@ bool GlobalComm::fromDiskByObjsManagerStatic(std::string cachedir, GlobalComm::V
             log_error("ToView: given object is nullptr");
         }
         else {
-            objs.try_emplace(name, std::move(p));
-            if (cacheUpdatedNodesInfo.find(name) != cacheUpdatedNodesInfo.end())
-            {
-                m_newToviewObjsStatic.insert(std::make_pair(name, std::move(p)));
+            std::string listitemIdx = p->userData().get2<std::string>("list-index", "");
+            if (listitemIdx != "") {
+                if (cacheUpdatedNodesInfo.find(toviewNodeId) != cacheUpdatedNodesInfo.end() || lastListitemToViewNodesId.find(name) == lastListitemToViewNodesId.end() || lastListitemToViewNodesId[name] != toviewNodeId) {
+                    m_newToviewObjsStatic.insert(std::make_pair(name, std::move(p)));
+                }
+                lastListitemToViewNodesId[name] = toviewNodeId;
             }
+            else {
+                if (cacheUpdatedNodesInfo.find(name) != cacheUpdatedNodesInfo.end()) {
+                    m_newToviewObjsStatic.insert(std::make_pair(name, std::move(p)));
+                }
+            }
+            objs.try_emplace(name, std::move(p));
         }
     };
 
@@ -410,12 +430,12 @@ bool GlobalComm::fromDiskByObjsManagerStatic(std::string cachedir, GlobalComm::V
             const char* p = dat.data() + pos + poses[lastObjIdx];
 
             zeno::zany decodedObj = decodeObject(p, poses[lastObjIdx + 1] - poses[lastObjIdx]);
-            if (std::shared_ptr<ListObject> spListObj = std::dynamic_pointer_cast<ListObject>(decodedObj))
-            {
-                markListIndex(nodeid, spListObj);
-            }
+            //if (std::shared_ptr<ListObject> spListObj = std::dynamic_pointer_cast<ListObject>(decodedObj))
+            //{
+            //    markListIndex(nodeid, spListObj);
+            //}
 
-            convertToView(decodedObj, nodeid);
+            convertToView(decodedObj, nodeid, nodeid);
         }
     }
 
@@ -426,7 +446,11 @@ bool GlobalComm::fromDiskByRunner(std::string cachedir, int frameid, GlobalComm:
     if (cachedir.empty())
         return false;
     objs.clear();
-    auto dir = std::filesystem::u8path(cachedir) / std::to_string(1000000 + frameid).substr(1);
+    std::filesystem::path dir;
+    if (frameid == -1)
+        dir = std::filesystem::u8path(cachedir + "/_static");
+    else
+        dir = std::filesystem::u8path(cachedir) / std::to_string(1000000 + frameid).substr(1);
     if (!std::filesystem::exists(dir))
         return false;
 
@@ -615,6 +639,12 @@ GlobalComm::ViewObjects const* GlobalComm::_getViewObjects(const int frameid, bo
                     }
                 }
             }
+            lastLoadedFrameID = frameid;
+        }else if (lastLoadedFrameID != frameid)
+        {
+            prepareForOptix(m_frames[frameIdx].view_objects.m_curr);
+            prepareForBeta();
+            lastLoadedFrameID = frameid;
         }
     }
     return &m_frames[frameIdx].view_objects;

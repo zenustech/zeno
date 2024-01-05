@@ -5,6 +5,7 @@
 #include <zeno/utils/string.h>
 #include <sstream>
 #include <zeno/types/UserData.h>
+#include <functional>
 
 namespace zeno {
 
@@ -212,6 +213,7 @@ struct MakeList : zeno::INode {
                 }
             }
         }
+
         for (int i = 0; i <= max_input_index; ++i) {
             std::stringstream namess;
             namess << "obj" << i;
@@ -227,6 +229,29 @@ struct MakeList : zeno::INode {
                 list->arr.push_back(std::move(obj));
             }
         }
+
+        std::function<void(std::shared_ptr<zeno::ListObject> const&)> updateIndex = [&](std::shared_ptr<zeno::ListObject> const& p) -> void {
+            for (size_t i = 0; i < p->arr.size(); i++) {
+                zany const& lp = p->arr[i];
+                if (auto l = std::dynamic_pointer_cast<ListObject>(lp)) {
+                    updateIndex(l);
+                }
+                else {
+                    for (auto& [nodepath, nodeidx] : list->itemidxs)
+                        if (nodepath.find(lp->userData().get2<std::string>("object-id", "")) != std::string::npos)
+                        {
+                            lp->userData().set2("list-index", nodepath);
+                            break;
+                        }
+                }
+            }
+        };
+        updateIndex(list);  //construct all obj's list-index 
+        std::string listitemidxs = "";
+        for (auto& [nodepath, nodeidx] : list->itemidxs)  //set itemidxs to userData(otherwise can't write to cache)
+            listitemidxs.append(nodepath + ":" + nodeidx + ";");
+        list->userData().set2("list-item-idxs", listitemidxs);
+
         set_output("list", std::move(list));
     }
 };
