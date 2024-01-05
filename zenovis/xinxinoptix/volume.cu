@@ -46,7 +46,7 @@ extern "C" __global__ void __intersection__volume()
 
             prd->vol.vol_t0 = t0;
             prd->vol.origin_inside = (t0 == 0);
-            prd->vol.vol_t1 = t1; //min(optixGetRayTmax(), t1);
+            prd->vol.vol_t1 = min(prd->maxDistance, t1);
             prd->vol.surface_inside = (optixGetRayTmax() < t1);
         } else {
 
@@ -82,13 +82,11 @@ extern "C" __global__ void __closesthit__radiance_volume()
         float t0 = prd->vol.vol_t0; // world space
         float t1 = prd->vol.vol_t1; // world space
 
-    RadiancePRD testPRD {};
-    testPRD.isSS = false;
+    ShadowPRD testPRD {};
     testPRD.maxDistance = _FLT_MAX_;
     testPRD.test_distance = true;
     
     uint16_t _mask_ = EverythingMask ^ VolumeMatMask;
-
     traceRadiance(params.handle, ray_orig,ray_dir, 0, _FLT_MAX_, &testPRD, _mask_);
 
     if(testPRD.maxDistance < t1)
@@ -275,6 +273,8 @@ extern "C" __global__ void __anyhit__occlusion_volume()
             }
         }
     }
+
+    if (0 == level) { transmittance = {}; }
 
     prd->attanuation *= transmittance;
     optixIgnoreIntersection();
