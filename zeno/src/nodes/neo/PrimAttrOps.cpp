@@ -69,6 +69,7 @@ struct PrimFillColor : PrimFillAttr {
     virtual void apply() override {
         this->inputs["attr"] = std::make_shared<StringObject>("clr");
         this->inputs["type"] = std::make_shared<StringObject>("vec3f");
+        this->inputs["scope"] = std::make_shared<StringObject>("vert");
         PrimFillAttr::apply();
     }
 };
