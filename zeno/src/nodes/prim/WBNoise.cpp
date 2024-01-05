@@ -957,7 +957,7 @@ ZENDEFNODE(NoiseImageGen2, {
         {"PrimitiveObject", "image"},
     },
     {},
-    {"comp"},
+    {"image"},
 });
 
 //-----------------------------------  just for compatibility with old graph -----------------------------------

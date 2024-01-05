@@ -361,7 +361,7 @@ ZENDEFNODE(ImageExtractChannel, {
         {"image"}
     },
     {},
-    { "comp" },
+    { "image" },
 });
 
 /* 导入地形网格的属性，可能会有多个属性。它将地形的属性转换为图
