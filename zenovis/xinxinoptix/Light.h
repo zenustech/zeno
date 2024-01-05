@@ -386,6 +386,10 @@ void DirectLighting(RadiancePRD *prd, ShadowPRD& shadowPRD, const float3& shadin
             }
         }
 
+        lsr.p -= params.cam.eye;
+        //lsr.p = rtgems::offset_ray(lsr.p, lsr.n);
+        lsr.dist = length(lsr.p - shadowPRD.origin);
+
         if (!cihouMaxDistanceContinue(lsr, light)) { return; }
         
         float3 emission = cihouLightEmission(lsr, light, prd->depth);
@@ -402,7 +406,9 @@ void DirectLighting(RadiancePRD *prd, ShadowPRD& shadowPRD, const float3& shadin
 
         if (lsr.NoL > _FLT_EPL_ && lsr.PDF > _FLT_EPL_) {
 
+            shadowPRD.lightIdx = lighIdx;
             shadowPRD.maxDistance = lsr.dist;
+            
             traceOcclusion(params.handle, shadowPRD.origin, lsr.dir, 0, lsr.dist, &shadowPRD);
             light_attenuation = shadowPRD.attanuation;
 
