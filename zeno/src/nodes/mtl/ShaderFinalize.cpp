@@ -134,7 +134,7 @@ struct ShaderFinalize : INode {
             get_input<IObject>("opacity", std::make_shared<NumericObject>(float(0.0))),
             get_input<IObject>("thickness", std::make_shared<NumericObject>(float(0.0f))),
 
-            get_input<IObject>("vol_depth", std::make_shared<NumericObject>((float)(99))),
+            get_input<IObject>("vol_depth", std::make_shared<NumericObject>((float)(999))),
             get_input<IObject>("vol_extinction", std::make_shared<NumericObject>(float(1))),
             get_input<IObject>("vol_sample_albedo", std::make_shared<NumericObject>(vec3f(0.5))),
             get_input<IObject>("vol_sample_anisotropy", std::make_shared<NumericObject>(float(0))),
@@ -185,7 +185,7 @@ struct ShaderFinalize : INode {
             auto VolumeEmissionScaler = get_input2<std::string>("VolumeEmissionScaler");
             commonCode += "#define VolumeEmissionScaler VolumeEmissionScalerType::" + VolumeEmissionScaler + "\n";
 
-            vol_depth = clamp(vol_depth, 9, 99);
+            vol_depth = clamp(vol_depth, 9, 9999);
             vol_extinction = clamp(vol_extinction, 1e-5, 1e+5);
 
             std::string parameters = "";
@@ -338,7 +338,7 @@ ZENDEFNODE(ShaderFinalize, {
 
         {"enum Raw Density Absorption", "VolumeEmissionScaler", "Raw"},
 
-        {"float", "vol_depth",     "99"},
+        {"float", "vol_depth",    "999"},
         {"float", "vol_extinction", "1"},
         {"vec3f", "vol_sample_albedo", "0.5,0.5,0.5"},
 

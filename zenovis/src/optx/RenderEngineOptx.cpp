@@ -530,6 +530,8 @@ struct GraphicsManager {
                 auto vIntensity = prim_in->userData().get2<float>("visibleIntensity", -1.0f);
 
                 auto ivD = prim_in->userData().getLiterial<int>("ivD", 0);
+
+                auto mask = prim_in->userData().get2<int>("mask", 255);
                 auto visible = prim_in->userData().get2<int>("visible", 0);
                 auto doubleside = prim_in->userData().get2<int>("doubleside", 0);
                 auto lightProfilePath = prim_in->userData().get2<std::string>("lightProfile", ""); 
@@ -547,6 +549,7 @@ struct GraphicsManager {
                 xinxinoptix::LightDat ld;
                 zeno::vec3f nor{}, clr{};
 
+                ld.mask = mask;
                 ld.visible = visible;
                 ld.doubleside = doubleside;
                 ld.fluxFixed = fluxFixed;

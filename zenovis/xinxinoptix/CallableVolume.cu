@@ -276,8 +276,8 @@ VolumeOut output;
     output.albedo = clamp(vol_sample_albedo, 0.0f, 1.0f);
     output.anisotropy = clamp(vol_sample_anisotropy, -1.0f, 1.0f);
 
-    output.density = clamp(vol_sample_density, 0.0f, 1.0f);
-    output.emission = max(vol_sample_emission, vec3(0.0f));
+    output.density = fmaxf(vol_sample_density, 0.0f);
+    output.emission = fmaxf(vol_sample_emission, vec3(0.0f));
 
 	if constexpr(VolumeEmissionScaler == VolumeEmissionScalerType::Raw) {
 		//output.emission = output.emission; 
