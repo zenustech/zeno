@@ -5,6 +5,9 @@
 #include <zeno/utils/variantswitch.h>
 #include <zeno/utils/arrayindex.h>
 #include <zeno/para/parallel_for.h>
+#include <zeno/utils/parallel_reduce.h>
+#include <zeno/types/CurveObject.h>
+#include <stdexcept>
 #include <cmath>
 
 namespace zeno {
@@ -295,6 +298,152 @@ ZENDEFNODE(PrimAttrInterp, {
     },
     {
     {"PrimitiveObject", "prim"},
+    },
+    {
+    },
+    {"primitive"},
+});
+
+template <class T>
+static void prim_remap(std::vector<T> &arr, bool autocompute, float inMax, float inMin, float outputMax, float outputMin, bool clampMax, bool clampMin, bool ramp, CurveObject *curve)
+{
+        if (autocompute) {
+            inMin = zeno::parallel_reduce_array<T>(arr.size(), arr[0], [&] (size_t i) -> T { return arr[i]; },
+            [&] (T i, T j) -> T { return zeno::min(i, j); });
+            inMax = zeno::parallel_reduce_array<T>(arr.size(), arr[0], [&] (size_t i) -> T { return arr[i]; },
+            [&] (T i, T j) -> T { return zeno::max(i, j); });
+        }
+        float val = 0.0;
+        float denom = inMax - inMin;
+        if(denom == 0.0) {
+            parallel_for(arr.size(), [&] (size_t i) {
+                val = (arr[i] < inMin ? 0. : 1.);
+                if (ramp) val = curve->eval(val);
+                arr[i] = val * (outputMax - outputMin) + outputMin;
+            });
+        }
+        else if constexpr (std::is_same_v<T, float>) {
+            parallel_for(arr.size(), [&] (size_t i) {
+                if(clampMax) arr[i] = zeno::min(arr[i], inMax);
+                if(clampMin) arr[i] = zeno::max(arr[i], inMin);
+                arr[i] = (arr[i] - inMin) / (denom);
+                if (ramp) arr[i] = curve->eval(arr[i]);
+                arr[i] = arr[i] * (outputMax - outputMin) + outputMin;
+            });
+        } else if constexpr (std::is_same_v<T, int>) {
+            parallel_for(arr.size(), [&] (size_t i) {
+                if(clampMax) arr[i] = zeno::min(arr[i], inMax);
+                if(clampMin) arr[i] = zeno::max(arr[i], inMin);
+                val = (arr[i] - inMin) / (denom);
+                if (ramp) val = curve->eval(val);
+                arr[i] = (int) std::round(val * (outputMax - outputMin) + outputMin);
+            });
+        }
+}
+
+
+struct PrimAttrRemap : INode {
+    virtual void apply() override {// change attr name to create new attr?
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto attr = get_input2<std::string>("attr");
+        auto scope = get_input2<std::string>("scope");
+        auto autoCompute = get_input2<bool>("Auto Compute input range");
+        auto inMin = get_input2<float>("Input min");
+        auto inMax = get_input2<float>("Input max");
+        auto outputMin = get_input2<float>("Output min");
+        auto outputMax = get_input2<float>("Output max");
+        auto clampMin = get_input2<bool>("Clamp min");
+        auto clampMax = get_input2<bool>("Clamp max");
+        auto curve = get_input<CurveObject>("Remap Ramp");
+        auto ramp = get_input2<bool>("Use Ramp");
+        if (scope == "vert"){
+            if (prim->verts.attr_is<float>(attr)){
+                auto &arr = prim->verts.attr<float>(attr);
+                prim_remap<float>(arr, autoCompute, inMax, inMin, outputMax, outputMin, clampMax, clampMin, ramp, curve.get());
+                }
+            else if (prim->verts.attr_is<int>(attr)){
+                auto &arr = prim->verts.attr<int>(attr);
+                prim_remap<int>(arr, autoCompute, inMax, inMin, outputMax, outputMin, clampMax, clampMin, ramp, curve.get());
+                }
+            else{
+                throw std::runtime_error("PrimAttrRemap: loops attr type not supported");
+            }
+        }
+        else if (scope == "tri"){
+            if (prim->tris.attr_is<float>(attr)){
+                auto &arr = prim->tris.attr<float>(attr);
+                prim_remap<float>(arr, autoCompute, inMax, inMin, outputMax, outputMin, clampMax, clampMin, ramp, curve.get());
+                }
+            else if (prim->tris.attr_is<int>(attr)){
+                auto &arr = prim->tris.attr<int>(attr);
+                prim_remap<int>(arr, autoCompute, inMax, inMin, outputMax, outputMin, clampMax, clampMin, ramp, curve.get());
+                }
+            else{
+                throw std::runtime_error("PrimAttrRemap: loops attr type not supported");
+            }
+        }
+        else if (scope == "loop"){
+            if (prim->loops.attr_is<float>(attr)){
+                auto &arr = prim->loops.attr<float>(attr);
+                prim_remap<float>(arr, autoCompute, inMax, inMin, outputMax, outputMin, clampMax, clampMin, ramp, curve.get());
+                }
+            else if (prim->loops.attr_is<int>(attr)){
+                auto &arr = prim->loops.attr<int>(attr);
+                prim_remap<int>(arr, autoCompute, inMax, inMin, outputMax, outputMin, clampMax, clampMin, ramp, curve.get());
+                }
+            else{
+                throw std::runtime_error("PrimAttrRemap: loops attr type not supported");
+            }
+        }
+        else if (scope == "poly"){
+            if (prim->polys.attr_is<float>(attr)){
+                auto &arr = prim->polys.attr<float>(attr);
+                prim_remap<float>(arr, autoCompute, inMax, inMin, outputMax, outputMin, clampMax, clampMin, ramp, curve.get());
+                }
+            else if (prim->polys.attr_is<int>(attr)){
+                auto &arr = prim->polys.attr<int>(attr);
+                prim_remap<int>(arr, autoCompute, inMax, inMin, outputMax, outputMin, clampMax, clampMin, ramp, curve.get());
+                }
+            else{
+                throw std::runtime_error("PrimAttrRemap: loops attr type not supported");
+            }
+        }
+        else if (scope == "line"){
+            if (prim->lines.attr_is<float>(attr)){
+                auto &arr = prim->lines.attr<float>(attr);
+                prim_remap<float>(arr, autoCompute, inMax, inMin, outputMax, outputMin, clampMax, clampMin, ramp, curve.get());
+                }
+            else if (prim->lines.attr_is<int>(attr)){
+                auto &arr = prim->lines.attr<int>(attr);
+                prim_remap<int>(arr, autoCompute, inMax, inMin, outputMax, outputMin, clampMax, clampMin, ramp, curve.get());
+                }
+            else{
+                throw std::runtime_error("PrimAttrRemap: loops attr type not supported");
+            }
+        }
+
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENDEFNODE(PrimAttrRemap, {
+    {
+        {"PrimitiveObject", "prim"},
+        {"enum vert tri loop poly line", "scope", "vert"},
+        {"string", "attr", ""},
+        {"bool", "Auto Compute input range", "0"},
+        {"bool", "Clamp min", "0"},
+        {"bool", "Clamp max", "0"},
+        {"float", "Input min", "0"},
+        {"float", "Input max", "1"},
+        {"float", "Output min", "0"},
+        {"float", "Output max", "1"},
+        {"bool", "Use Ramp", "0"},
+        {"curve", "Remap Ramp"},
+        
+    },
+    {
+        {"PrimitiveObject", "prim"},
     },
     {
     },
