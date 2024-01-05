@@ -568,6 +568,281 @@ ZENO_DEFNODE(OSDTest3)
 });
 
 //------------------------------------------------------------------------------
+struct FVarVertexUV {
+
+    // Minimal required interface ----------------------
+    void Clear() {
+        u=v=0.0f;
+    }
+
+    void AddWithWeight(FVarVertexUV const & src, float weight) {
+        u += weight * src.u;
+        v += weight * src.v;
+    }
+
+    // Basic 'uv' layout channel
+    float u,v;
+};
+
+struct FVarVertexColor {
+
+    // Minimal required interface ----------------------
+    void Clear() {
+        r=g=b=a=0.0f;
+    }
+
+    void AddWithWeight(FVarVertexColor const & src, float weight) {
+        r += weight * src.r;
+        g += weight * src.g;
+        b += weight * src.b;
+        a += weight * src.a;
+    }
+
+    // Basic 'color' layout channel
+    float r,g,b,a;
+};
+// 'face-varying' primitive variable data & topology for UVs
+static float g_uvs[14][2] = {{ 0.375, 0.00 },
+                             { 0.625, 0.00 },
+                             { 0.375, 0.25 },
+                             { 0.625, 0.25 },
+                             { 0.375, 0.50 },
+                             { 0.625, 0.50 },
+                             { 0.375, 0.75 },
+                             { 0.625, 0.75 },
+                             { 0.375, 1.00 },
+                             { 0.625, 1.00 },
+                             { 0.875, 0.00 },
+                             { 0.875, 0.25 },
+                             { 0.125, 0.00 },
+                             { 0.125, 0.25 }};
+
+static int g_nuvs = 14;
+
+static int g_uvIndices[24] = {  0,  1,  3,  2,
+                                2,  3,  5,  4,
+                                4,  5,  7,  6,
+                                6,  7,  9,  8,
+                                1, 10, 11,  3,
+                               12,  0,  2, 13  };
+// 'face-varying' primitive variable data & topology for color
+static float g_colors_[24][4] = {{1.0, 1.0, 1.0, 1.0},
+                                {1.0, 1.0, 1.0, 1.0},
+                                {1.0, 1.0, 1.0, 1.0},
+                                {1.0, 1.0, 1.0, 1.0},
+                                {1.0, 1.0, 1.0, 1.0},
+                                {1.0, 1.0, 1.0, 1.0},
+                                {1.0, 1.0, 1.0, 1.0},
+                                {1.0, 1.0, 1.0, 1.0},
+                                {1.0, 1.0, 1.0, 1.0},
+                                {1.0, 0.0, 0.0, 1.0},
+                                {1.0, 0.0, 0.0, 1.0},
+                                {1.0, 0.0, 0.0, 1.0},
+                                {1.0, 1.0, 1.0, 1.0},
+                                {1.0, 1.0, 1.0, 1.0},
+                                {1.0, 1.0, 1.0, 1.0},
+                                {1.0, 1.0, 1.0, 1.0},
+                                {1.0, 1.0, 1.0, 1.0},
+                                {1.0, 1.0, 1.0, 1.0},
+                                {1.0, 1.0, 1.0, 1.0},
+                                {1.0, 1.0, 1.0, 1.0},
+                                {1.0, 1.0, 1.0, 1.0},
+                                {1.0, 1.0, 1.0, 1.0},
+                                {1.0, 1.0, 1.0, 1.0},
+                                {1.0, 1.0, 1.0, 1.0}};
+
+static int g_ncolors = 24;
+
+static int g_colorIndices[24] = { 0,  3,  9,  6,
+                                  7, 10, 15, 12,
+                                 13, 16, 21, 18,
+                                 19, 22,  4,  1,
+                                  5, 23, 17, 11,
+                                 20,  2,  8, 14 };
+
+struct OSDTest4 : INode {
+    virtual void apply() override {
+        int maxlevel = get_input2<int>("maxLevel");
+        typedef Far::TopologyDescriptor Descriptor;
+
+        Sdc::SchemeType type = OpenSubdiv::Sdc::SCHEME_CATMARK;
+
+        Sdc::Options options;
+        options.SetVtxBoundaryInterpolation(Sdc::Options::VTX_BOUNDARY_EDGE_ONLY);
+        options.SetFVarLinearInterpolation(Sdc::Options::FVAR_LINEAR_NONE);
+
+        // Populate a topology descriptor with our raw data
+        Descriptor desc;
+        desc.numVertices  = g_nverts;
+        desc.numFaces     = g_nfaces;
+        desc.numVertsPerFace = g_vertsperface;
+        desc.vertIndicesPerFace  = g_vertIndices;
+
+        int channelUV = 0;
+        int channelColor = 1;
+
+        // Create a face-varying channel descriptor
+        Descriptor::FVarChannel channels[2];
+        channels[channelUV].numValues = g_nuvs;
+        channels[channelUV].valueIndices = g_uvIndices;
+        channels[channelColor].numValues = g_ncolors;
+        channels[channelColor].valueIndices = g_colorIndices;
+
+        // Add the channel topology to the main descriptor
+        desc.numFVarChannels = 2;
+        desc.fvarChannels = channels;
+
+        // Instantiate a Far::TopologyRefiner from the descriptor
+        Far::TopologyRefiner * refiner =
+            Far::TopologyRefinerFactory<Descriptor>::Create(desc,
+                Far::TopologyRefinerFactory<Descriptor>::Options(type, options));
+
+        // Uniformly refine the topology up to 'maxlevel'
+        // note: fullTopologyInLastLevel must be true to work with face-varying data
+        {
+            Far::TopologyRefiner::UniformOptions refineOptions(maxlevel);
+            refineOptions.fullTopologyInLastLevel = true;
+            refiner->RefineUniform(refineOptions);
+        }
+
+        // Allocate and initialize the 'vertex' primvar data (see tutorial 2 for
+        // more details).
+        std::vector<Vertex> vbuffer(refiner->GetNumVerticesTotal());
+        Vertex * verts = &vbuffer[0];
+
+        for (int i=0; i<g_nverts; ++i) {
+            verts[i].SetPosition(g_verts[i][0], g_verts[i][1], g_verts[i][2]);
+        }
+
+        // Allocate and initialize the first channel of 'face-varying' primvar data (UVs)
+        std::vector<FVarVertexUV> fvBufferUV(refiner->GetNumFVarValuesTotal(channelUV));
+        FVarVertexUV * fvVertsUV = &fvBufferUV[0];
+        for (int i=0; i<g_nuvs; ++i) {
+            fvVertsUV[i].u = g_uvs[i][0];
+            fvVertsUV[i].v = g_uvs[i][1];
+        }
+
+        // Allocate & interpolate the 'face-varying' primvar data (colors)
+        std::vector<FVarVertexColor> fvBufferColor(refiner->GetNumFVarValuesTotal(channelColor));
+        FVarVertexColor * fvVertsColor = &fvBufferColor[0];
+        for (int i=0; i<g_ncolors; ++i) {
+            fvVertsColor[i].r = g_colors_[i][0];
+            fvVertsColor[i].g = g_colors_[i][1];
+            fvVertsColor[i].b = g_colors_[i][2];
+            fvVertsColor[i].a = g_colors_[i][3];
+        }
+
+        // Interpolate both vertex and face-varying primvar data
+        Far::PrimvarRefiner primvarRefiner(*refiner);
+
+        Vertex *     srcVert = verts;
+        FVarVertexUV * srcFVarUV = fvVertsUV;
+        FVarVertexColor * srcFVarColor = fvVertsColor;
+
+        for (int level = 1; level <= maxlevel; ++level) {
+            Vertex *     dstVert = srcVert + refiner->GetLevel(level-1).GetNumVertices();
+            FVarVertexUV * dstFVarUV = srcFVarUV + refiner->GetLevel(level-1).GetNumFVarValues(channelUV);
+            FVarVertexColor * dstFVarColor = srcFVarColor + refiner->GetLevel(level-1).GetNumFVarValues(channelColor);
+
+            primvarRefiner.Interpolate(level, srcVert, dstVert);
+            primvarRefiner.InterpolateFaceVarying(level, srcFVarUV, dstFVarUV, channelUV);
+            primvarRefiner.InterpolateFaceVarying(level, srcFVarColor, dstFVarColor, channelColor);
+
+            srcVert = dstVert;
+            srcFVarUV = dstFVarUV;
+            srcFVarColor = dstFVarColor;
+        }
+
+        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        std::vector<vec3f> verts_;
+        std::vector<vec2f> uvs;
+        std::vector<int> loops;
+        std::vector<int> loops_uv;
+        std::vector<int> polys;
+        { // Output OBJ of the highest level refined -----------
+
+            Far::TopologyLevel const & refLastLevel = refiner->GetLevel(maxlevel);
+
+            int nverts = refLastLevel.GetNumVertices();
+            zeno::log_info("nverts: {}", nverts);
+            int nuvs   = refLastLevel.GetNumFVarValues(channelUV);
+            zeno::log_info("nuvs: {}", nuvs);
+            int ncolors= refLastLevel.GetNumFVarValues(channelColor);
+            zeno::log_info("ncolors: {}", ncolors);
+            int nfaces = refLastLevel.GetNumFaces();
+            zeno::log_info("nfaces: {}", nfaces);
+
+            // Print vertex positions
+            int firstOfLastVerts = refiner->GetNumVerticesTotal() - nverts;
+
+            for (int vert = 0; vert < nverts; ++vert) {
+                float const * pos = verts[firstOfLastVerts + vert].GetPosition();
+                verts_.emplace_back(pos[0], pos[1], pos[2]);
+            }
+
+            // Print uvs
+            int firstOfLastUvs = refiner->GetNumFVarValuesTotal(channelUV) - nuvs;
+
+            for (int fvvert = 0; fvvert < nuvs; ++fvvert) {
+                FVarVertexUV const & uv = fvVertsUV[firstOfLastUvs + fvvert];
+                uvs.emplace_back(uv.u, uv.v);
+            }
+
+            // Print colors
+            int firstOfLastColors = refiner->GetNumFVarValuesTotal(channelColor) - ncolors;
+
+            for (int fvvert = 0; fvvert < ncolors; ++fvvert) {
+                FVarVertexColor const & c = fvVertsColor[firstOfLastColors + fvvert];
+//                printf("c %f %f %f %f\n", c.r, c.g, c.b, c.a);
+            }
+
+            // Print faces
+            for (int face = 0; face < nfaces; ++face) {
+
+                Far::ConstIndexArray fverts = refLastLevel.GetFaceVertices(face);
+                Far::ConstIndexArray fuvs   = refLastLevel.GetFaceFVarValues(face, channelUV);
+
+                // all refined Catmark faces should be quads
+                assert(fverts.size()==4 && fuvs.size()==4);
+
+                polys.push_back(fverts.size());
+                for (int vert=0; vert<fverts.size(); ++vert) {
+                    loops.push_back(fverts[vert]);
+                    loops_uv.push_back(fuvs[vert]);
+                }
+            }
+        }
+
+        delete refiner;
+
+        prim->verts.resize(verts_.size());
+        std::copy(verts_.begin(), verts_.end(), prim->verts.begin());
+        prim->uvs.resize(uvs.size());
+        std::copy(uvs.begin(), uvs.end(), prim->uvs.begin());
+        prim->loops.resize(loops.size());
+        std::copy(loops.begin(), loops.end(), prim->loops.begin());
+        std::copy(loops_uv.begin(), loops_uv.end(), prim->loops.add_attr<int>("uvs").begin());
+
+        prim->polys.resize(polys.size());
+        int start = 0;
+        for (auto i = 0; i < prim->polys.size(); i++) {
+            prim->polys[i] = {start, polys[i]};
+            start += polys[i];
+        }
+        set_output("prim", std::move(prim));
+    }
+};
+ZENO_DEFNODE(OSDTest4)
+({
+    {
+        {"int", "maxLevel", "1"},
+    },
+    {
+        "prim",
+    },
+    {},
+    {"primitive"},
+});
 
 } // namespace
 } // namespace zeno
