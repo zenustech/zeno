@@ -142,10 +142,10 @@ extern "C" __global__ void __closesthit__radiance_volume()
         VolumeIn vol_in { new_orig+params.cam.eye, sigma_t, &prd->seed, reinterpret_cast<unsigned long long>(sbt_data) };
 
         vol_out = optixDirectCall<VolumeOut, const float4*, const VolumeIn&>( sbt_data->dc_index, sbt_data->uniforms, vol_in);
-        v_density = vol_out.density;
+        v_density = clamp(vol_out.density / sigma_t, 0.0f, 1.0f);
         emitting += vol_out.emission;
 
-        step_scale = fminf(step_scale, vol_out.step_scale) ;
+        step_scale = fminf(step_scale, vol_out.step_scale);
 
         if (prd->rndf() > v_density) { // null scattering
             v_density = 0.0f; continue;
@@ -212,11 +212,12 @@ extern "C" __global__ void __anyhit__occlusion_volume()
     const float3 ray_orig = optixGetWorldRayOrigin();
     const float3 ray_dir  = optixGetWorldRayDirection();
 
-    ShadowPRD* prd = getPRD<ShadowPRD>();
     const HitGroupData* sbt_data = reinterpret_cast<HitGroupData*>( optixGetSbtDataPointer() );
 
+    ShadowPRD* prd = getPRD<ShadowPRD>();
     const float t0 = prd->vol.vol_t0;
     const float t1 = prd->vol.vol_t1;
+    //t1 = prd->maxDistance;
 
     const float t_max = t1 - t0; // world space
           float t_ele = 0;
@@ -244,7 +245,7 @@ extern "C" __global__ void __anyhit__occlusion_volume()
         VolumeIn vol_in { test_point+params.cam.eye, sigma_t, &prd->seed, reinterpret_cast<unsigned long long>(sbt_data) };
         VolumeOut vol_out = optixDirectCall<VolumeOut, const float4*, const VolumeIn&>( sbt_data->dc_index, sbt_data->uniforms, vol_in );
 
-        const auto v_density = vol_out.density;
+        const auto v_density = vol_out.density / sigma_t;
 
         auto prob_scatter = clamp(v_density, 0.0f, 1.0f);
         auto prob_nulling = 1.0f - prob_scatter;
