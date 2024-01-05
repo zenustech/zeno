@@ -874,6 +874,7 @@ extern "C" __global__ void __closesthit__radiance()
         dummy_prt = &radianceNoShadow;
     }
 
+    prd->lightmask = DefaultMatMask;
     DirectLighting<true>(prd, shadowPRD, shadingP, ray_dir, evalBxDF, &taskAux, dummy_prt);
     if(mats.shadowReceiver > 0.5f)
     {

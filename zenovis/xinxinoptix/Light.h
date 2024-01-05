@@ -234,8 +234,10 @@ void DirectLighting(RadiancePRD *prd, ShadowPRD& shadowPRD, const float3& shadin
         uint lighIdx = min(pick.lightIdx, params.num_lights-1);
         auto& light = params.lights[lighIdx];
 
-        lightPickProb *= pick.prob;
+        bool enabled = light.mask & prd->lightmask;
+        if (!enabled) { return; }
 
+        lightPickProb *= pick.prob;
         LightSampleRecord lsr;
 
         const float* iesProfile = reinterpret_cast<const float*>(light.ies);

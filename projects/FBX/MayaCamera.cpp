@@ -409,6 +409,7 @@ struct LightNode : INode {
         auto falloffExponent = get_input2<float>("falloffExponent");
         prim->userData().set2("falloffExponent", std::move(falloffExponent));
 
+        auto mask = get_input2<int>("mask");
         auto spread = get_input2<zeno::vec2f>("spread");
         auto visible = get_input2<int>("visible");
         auto doubleside = get_input2<int>("doubleside");
@@ -428,6 +429,7 @@ struct LightNode : INode {
         prim->userData().set2("type", std::move(typeOrder));
         prim->userData().set2("shape", std::move(shapeOrder));
         
+        prim->userData().set2("mask", std::move(mask));
         prim->userData().set2("spread", std::move(spread));
         prim->userData().set2("visible", std::move(visible));
         prim->userData().set2("doubleside", std::move(doubleside));
@@ -490,7 +492,7 @@ ZENO_DEFNODE(LightNode)({
         {"vec2f", "spread", "1.0, 0.0"},
         {"float", "maxDistance", "-1.0" },
         {"float", "falloffExponent", "2.0"},
-        
+        {"int", "mask", "255"},
         {"bool", "visible", "0"},
         {"bool", "invertdir", "0"},
         {"bool", "doubleside", "0"},
@@ -498,8 +500,8 @@ ZENO_DEFNODE(LightNode)({
         {"readpath", "profile"},
         {"readpath", "texturePath"},
         {"float",  "textureGamma", "1.0"},
-        
         {"float", "visibleIntensity", "-1.0"},
+
         {"enum " + LightNode::lightShapeListString(), LightNode::lightShapeKey, LightNode::lightShapeDefaultString()},   
         {"enum " + LightNode::lightTypeListString(), LightNode::lightTypeKey, LightNode::lightTypeDefaultString()}, 
         {"PrimitiveObject", "prim"},

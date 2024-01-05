@@ -105,6 +105,8 @@ struct RadiancePRD
     unsigned char adepth;
     bool         alphaHit;
 
+    uint16_t lightmask = EverythingMask;
+
     __forceinline__ float rndf() {
         return rnd(this->seed);
         //return pcg_rng(this->seed); 
