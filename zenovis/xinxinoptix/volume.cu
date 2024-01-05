@@ -200,6 +200,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
         return scattering * thisPDF;
     };
 
+    prd->lightmask = VolumeMatMask;
     DirectLighting<true>(prd, shadowPRD, new_orig+params.cam.eye, ray_dir, evalBxDF);
     
     prd->depth += 1;

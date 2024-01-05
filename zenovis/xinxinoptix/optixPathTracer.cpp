@@ -2238,9 +2238,12 @@ static std::vector<float2>  triangleLightCoords;
 static std::vector<float3>  triangleLightNormals;
 
 void unload_light(){
+
     lightdats.clear();
     triangleLightCoords.clear();
     triangleLightNormals.clear();
+
+    std::cout << "Lights unload done. \n"<< std::endl;
 }
 
 void load_triangle_light(std::string const &key, LightDat& ld,
@@ -2565,6 +2568,7 @@ void buildLightTree() {
         auto void_angle = 0.5f * (1.0f - light.spreadMajor) * M_PIf;
         light.spreadNormalize = 2.f / (2.f + (2.f * void_angle - M_PIf) * tanf(void_angle));
 
+        light.mask = dat.mask;
         light.intensity  = dat.intensity;
         light.vIntensity = dat.vIntensity;
         light.maxDistance = dat.maxDistance <= 0.0? FLT_MAX:dat.maxDistance;

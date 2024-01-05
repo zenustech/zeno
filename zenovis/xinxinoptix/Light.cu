@@ -90,6 +90,13 @@ extern "C" __global__ void __closesthit__radiance()
     light_index = min(light_index, params.num_lights - 1);
     auto& light = params.lights[light_index];
 
+    bool enabled = light.mask & prd->lightmask;
+    if (!enabled) { 
+        prd->depth += 1;
+        prd->done = true;
+        return; 
+    }
+    
     vec3 light_normal {};
 
     if (pType == OptixPrimitiveType::OPTIX_PRIMITIVE_TYPE_SPHERE) {

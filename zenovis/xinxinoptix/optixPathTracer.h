@@ -37,6 +37,8 @@ struct GenericLight
     float maxDistance;
     float falloffExponent;
 
+    uint16_t mask = EverythingMask;
+
     zeno::LightType type {};
     zeno::LightShape shape{};
     uint8_t config = zeno::LightConfigNull;

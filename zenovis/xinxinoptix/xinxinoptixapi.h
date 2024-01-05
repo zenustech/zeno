@@ -77,6 +77,7 @@ struct LightDat {
 
     bool visible, doubleside;
     uint8_t shape, type;
+    uint16_t mask;
 
     uint32_t coordsBufferOffset = UINT_MAX;
     uint32_t normalBufferOffset = UINT_MAX;
