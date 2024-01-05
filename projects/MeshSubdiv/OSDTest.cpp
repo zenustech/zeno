@@ -55,6 +55,15 @@ static float g_verts[8][3] = {{ -0.5f, -0.5f,  0.5f },
                               { -0.5f, -0.5f, -0.5f },
                               {  0.5f, -0.5f, -0.5f }};
 
+// Per-vertex RGB color data
+static float g_colors[8][3] = {{ 1.0f, 0.0f, 0.5f },
+                               { 0.0f, 1.0f, 0.0f },
+                               { 0.0f, 0.0f, 1.0f },
+                               { 1.0f, 1.0f, 1.0f },
+                               { 1.0f, 1.0f, 0.0f },
+                               { 0.0f, 1.0f, 1.0f },
+                               { 1.0f, 0.0f, 1.0f },
+                               { 0.0f, 0.0f, 0.0f }};
 static int g_nverts = 8,
            g_nfaces = 6;
 
@@ -392,6 +401,161 @@ struct OSDTest2 : INode {
     }
 };
 ZENO_DEFNODE(OSDTest2)
+({
+    {
+        {"int", "maxLevel", "1"},
+    },
+    {
+        "prim",
+    },
+    {},
+    {"primitive"},
+});
+
+struct Point3 {
+
+    // Minimal required interface ----------------------
+    Point3() { }
+
+    void Clear( void * =0 ) {
+        _point[0]=_point[1]=_point[2]=0.0f;
+    }
+
+    void AddWithWeight(Point3 const & src, float weight) {
+        _point[0]+=weight*src._point[0];
+        _point[1]+=weight*src._point[1];
+        _point[2]+=weight*src._point[2];
+    }
+
+    // Public interface ------------------------------------
+    void SetPoint(float x, float y, float z) {
+        _point[0]=x;
+        _point[1]=y;
+        _point[2]=z;
+    }
+
+    const float * GetPoint() const {
+        return _point;
+    }
+
+private:
+    float _point[3];
+};
+
+typedef Point3 VertexPosition;
+typedef Point3 VertexColor;
+
+struct OSDTest3 : INode {
+    virtual void apply() override {
+        int maxlevel = get_input2<int>("maxLevel");
+
+        Far::TopologyRefiner * refiner = createFarTopologyRefiner();
+
+        // Uniformly refine the topology up to 'maxlevel'
+        refiner->RefineUniform(Far::TopologyRefiner::UniformOptions(maxlevel));
+
+        // Allocate buffers for vertex primvar data.
+        //
+        // We assume we received the coarse data for the mesh in separate buffers
+        // from some other source, e.g. an Alembic file.  Meanwhile, we want buffers
+        // for the last/finest subdivision level to persist.  We have no interest
+        // in the intermediate levels.
+        //
+        // Determine the sizes for our needs:
+        int nCoarseVerts = g_nverts;
+        int nFineVerts   = refiner->GetLevel(maxlevel).GetNumVertices();
+        int nTotalVerts  = refiner->GetNumVerticesTotal();
+        int nTempVerts   = nTotalVerts - nCoarseVerts - nFineVerts;
+
+        // Allocate and initialize the primvar data for the original coarse vertices:
+        std::vector<VertexPosition> coarsePosBuffer(nCoarseVerts);
+        std::vector<VertexColor>    coarseClrBuffer(nCoarseVerts);
+
+        for (int i = 0; i < nCoarseVerts; ++i) {
+            coarsePosBuffer[i].SetPoint(g_verts[i][0], g_verts[i][1], g_verts[i][2]);
+            coarseClrBuffer[i].SetPoint(g_colors[i][0], g_colors[i][1], g_colors[i][2]);
+        }
+
+        // Allocate intermediate and final storage to be populated:
+        std::vector<VertexPosition> tempPosBuffer(nTempVerts);
+        std::vector<VertexPosition> finePosBuffer(nFineVerts);
+
+        std::vector<VertexColor> tempClrBuffer(nTempVerts);
+        std::vector<VertexColor> fineClrBuffer(nFineVerts);
+
+        // Interpolate all primvar data -- separate buffers can be populated on
+        // separate threads if desired:
+        VertexPosition * srcPos = &coarsePosBuffer[0];
+        VertexPosition * dstPos = &tempPosBuffer[0];
+
+        VertexColor * srcClr = &coarseClrBuffer[0];
+        VertexColor * dstClr = &tempClrBuffer[0];
+
+        Far::PrimvarRefiner primvarRefiner(*refiner);
+
+        for (int level = 1; level < maxlevel; ++level) {
+            primvarRefiner.Interpolate(       level, srcPos, dstPos);
+            primvarRefiner.InterpolateVarying(level, srcClr, dstClr);
+
+            srcPos = dstPos, dstPos += refiner->GetLevel(level).GetNumVertices();
+            srcClr = dstClr, dstClr += refiner->GetLevel(level).GetNumVertices();
+        }
+
+        // Interpolate the last level into the separate buffers for our final data:
+        primvarRefiner.Interpolate(       maxlevel, srcPos, finePosBuffer);
+        primvarRefiner.InterpolateVarying(maxlevel, srcClr, fineClrBuffer);
+
+        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        std::vector<vec3f> verts;
+        std::vector<vec3f> clrs;
+        std::vector<vec2f> uvs;
+        std::vector<int> loops;
+        std::vector<int> polys;
+        { // Visualization with Maya : print a MEL script that generates colored
+          // particles at the location of the refined vertices (don't forget to
+          // turn shading on in the viewport to see the colors)
+
+            int nverts = nFineVerts;
+
+            // Output particle positions
+            verts.resize(nverts);
+            for (int vert = 0; vert < nverts; ++vert) {
+                float const * pos = finePosBuffer[vert].GetPoint();
+                verts[vert] = {pos[0], pos[1], pos[2]};
+            }
+
+            clrs.resize(nverts);
+            // Set per-particle color values from our primvar data
+            for (int vert = 0; vert < nverts; ++vert) {
+                float const * color = fineClrBuffer[vert].GetPoint();
+                clrs[vert] = {color[0], color[1], color[2]};
+            }
+            printf(";\n");
+        }
+
+        delete refiner;
+
+
+        prim->verts.resize(verts.size());
+        std::copy(verts.begin(), verts.end(), prim->verts.begin());
+        auto &clr = prim->verts.add_attr<vec3f>("clr");
+        std::copy(clrs.begin(), clrs.end(), clr.begin());
+        prim->uvs.resize(verts.size());
+        std::copy(uvs.begin(), uvs.end(), prim->uvs.begin());
+        prim->loops.resize(loops.size());
+        std::copy(loops.begin(), loops.end(), prim->loops.begin());
+        std::copy(loops.begin(), loops.end(), prim->loops.add_attr<int>("uvs").begin());
+
+        prim->polys.resize(polys.size());
+        int start = 0;
+        for (auto i = 0; i < prim->polys.size(); i++) {
+            prim->polys[i] = {start, polys[i]};
+            start += polys[i];
+        }
+        set_output("prim", std::move(prim));
+    }
+};
+ZENO_DEFNODE(OSDTest3)
 ({
     {
         {"int", "maxLevel", "1"},
