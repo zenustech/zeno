@@ -288,13 +288,19 @@ virtual void apply() override {
 
             auto has_collision_group = kverts.hasProperty(collision_group_name);
 
+            if(!has_collision_group)
+                std::cout << "the input boundary has no collision group" << std::endl;
+            if(!kverts.hasProperty("px"))
+                std::cout << "the input boundary has no px attr" << std::endl;
+            if(!kverts.hasProperty("X"))
+                std::cout << "the input boundary has no X attr" << std::endl;
+
             cudaPol(zs::range(kverts.size()),[
                 kverts = proxy<space>({},kverts),
                 voffset = voffset,
                 pw = pw,
                 collision_group_name = zs::SmallString(collision_group_name),
                 has_collision_group = has_collision_group,
-                // kverts_pre = proxy<space>({},kverts_pre),
                 vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int kvi) mutable {
                     auto pre_kvert = kverts.pack(dim_c<3>,"px",kvi) * (1 - pw) + kverts.pack(dim_c<3>,"x",kvi) * pw;
                     vtemp.tuple(dim_c<3>,"x",voffset + kvi) = pre_kvert;

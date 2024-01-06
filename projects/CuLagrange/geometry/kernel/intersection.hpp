@@ -357,6 +357,8 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
                 xOffset = verts.getPropertyOffset(xtag),
                 aniMaskOffset = verts.getPropertyOffset("ani_mask"),
                 hasAniMask = verts.hasProperty("ani_mask"),
+                colllisionCancelOffset = verts.getPropertyOffset("collision_cancel"),
+                hasCollisionCancel = verts.hasProperty("collision_cancel"),
                 eps = eps,
 #ifdef USE_TMP_BUFFER_BEFORE_HASH    
                 MAX_NM_INTERSECTION_PER_EDGE = MAX_NM_INTERSECTION_PER_EDGE,
@@ -376,6 +378,11 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
                     auto bv = bv_t{get_bounding_box(vs,ve)};
 
                     bool edge_has_dynamic_points = true;
+                    if(hasCollisionCancel) {
+                        for(int i = 0;i != 2;++i)
+                            if(verts(colllisionCancelOffset,edge[i]) > 0.5)
+                                edge_has_dynamic_points = false;
+                    }
                         
                     int nm_intersect_tri = 0;
                     auto process_potential_ET_intersection_pairs = [&](int ti) mutable {
@@ -385,6 +392,11 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
                                 return;
 
                         auto tri_has_dynamic_points = true;
+                        if(hasCollisionCancel) {
+                            for(int i = 0;i != 3;++i)
+                                if(verts(colllisionCancelOffset,tri[i]) > 0.5)
+                                    tri_has_dynamic_points = false;
+                        }
 
                         if(!edge_has_dynamic_points && !tri_has_dynamic_points)
                             return;
@@ -552,6 +564,8 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
                             ktvs[i] = kverts.pack(dim_c<3>,kxOffset,ktri[i]);
 
                         auto ktnrm = ktris.pack(dim_c<3>,ktriNrmOffset,kti);
+                        if(ktnrm.norm() < 1e-6)
+                            return;
                         auto d = ktris(ktriDOffset,kti);
 
                         auto en = (ve - vs).norm();

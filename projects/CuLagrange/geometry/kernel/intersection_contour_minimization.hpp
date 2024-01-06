@@ -163,7 +163,7 @@ namespace zeno {
             const TriTileVec& tris,
             const T& maximum_correction,
             const T& progressive_slope,
-            HTHashMap& csET,
+            const HTHashMap& csET,
             ICMGradTileVec& icm_grad) {
         using namespace zs;
         auto exec_tag = wrapv<space>{};
@@ -302,6 +302,8 @@ namespace zeno {
                 his[1] = zs::reinterpret_bits<int>(halfedges("opposite_he",his[0]));
 
                 auto knrm = ktris.pack(dim_c<3>,"nrm",kti);
+                if(knrm.norm() < 1e-6)
+                    return;
 
                 T normal_coeff = 0;
 
@@ -317,6 +319,8 @@ namespace zeno {
                     auto halfedge_opposite_vertex = verts.pack(dim_c<3>,xtag,halfedge_opposite_vertex_id);
 
                     auto hnrm = tris.pack(dim_c<3>,"nrm",hti);
+                    if(hnrm.norm() < 1e-6)
+                        continue;
 
                     T dnc{};
 
@@ -332,11 +336,16 @@ namespace zeno {
                     normal_coeff += dnc;
                 }
 
+                // auto R = G;
                 G -= normal_coeff * knrm;
 
-                auto Gn = G.norm();
-                auto Gn2 = Gn * Gn;
+                // auto Gn = G.norm();
+                auto Gn2 = G.l2NormSqr();
                 G = h0 * G / zs::sqrt(Gn2 + g02);
+
+                // if(isnan(G.norm())) {
+                //     printf("nan G detected at %d %d %f\n",ei,kti,(float)knrm.norm());
+                // }
 
                 icm_grad.tuple(dim_c<3>,"grad",ci) = G;
                 // icm_grad.tuple(dim_c<2>,"inds",ci) = pair.reinterpret_bits(float_c);
