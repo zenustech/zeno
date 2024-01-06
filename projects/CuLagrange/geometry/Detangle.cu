@@ -23,6 +23,8 @@
 
 namespace zeno {
 
+// we should handle zeno-area facets here
+
 struct Detangle2 : zeno::INode {
     virtual void apply () override {
         using namespace zs;
@@ -38,7 +40,7 @@ struct Detangle2 : zeno::INode {
         constexpr auto DETANGLE_CS_ET_BUFFER_KEY = "DETANGLE_CS_ET_BUFFER_KEY";
         constexpr auto DETANGLE_TRI_BVH_BUFFER_KEY = "DETANGLE_TRI_BVH_BUFFER_KEY";
         constexpr auto DETANGLE_ICM_GRADIENT_BUFFER_KEY = "DETANGLE_ICM_GRADIENT_BUFFER_KEY";
-        constexpr auto DEFAULT_MAX_DETANGLE_INTERSECTION_PAIR = 10000;
+        constexpr auto DEFAULT_MAX_DETANGLE_INTERSECTION_PAIR = 100000;
 
         auto zsparticles = get_input<ZenoParticles>("zsparticles");
         auto& verts = zsparticles->getParticles();
@@ -144,8 +146,16 @@ struct Detangle2 : zeno::INode {
                     zs::vec<T,3> ktvs[3] = {};
                     for(int i = 0;i != 3;++i)
                         ktvs[i] = kvtemp.pack(dim_c<3>,"x",ktri[i]);
-                    kttemp.tuple(dim_c<3>,"nrm",kti) = LSL_GEO::facet_normal(ktvs[0],ktvs[1],ktvs[2]);
-                    kttemp("d",kti) = -kttemp.pack(dim_c<3>,"nrm",kti).dot(ktvs[0]);
+
+                    auto knrm = LSL_GEO::facet_normal(ktvs[0],ktvs[1],ktvs[2]);
+                    if(isnan(knrm.norm())) {
+                        // printf("nan knrm detected at ktri[%d]\n",kti);
+                        kttemp.tuple(dim_c<3>,"nrm",kti) = vec3::zeros();
+                        kttemp("d",kti) = 0.;
+                    } else {
+                        kttemp.tuple(dim_c<3>,"nrm",kti) = knrm;
+                        kttemp("d",kti) = -kttemp.pack(dim_c<3>,"nrm",kti).dot(ktvs[0]);
+                    }
             });         
 
             auto kbvs = retrieve_bounding_volumes(cudaExec,kvtemp,ktris,wrapv<3>{},(T)0,"x");
@@ -204,7 +214,7 @@ struct Detangle2 : zeno::INode {
                 {
                     timer.tick();
 
-
+                    std::cout << "retrive_intersections_between_edges_and_ktris" << std::endl;
                     retrieve_intersection_with_edge_tri_pairs(cudaExec,
                         verts,xtag,
                         edges,
@@ -215,6 +225,7 @@ struct Detangle2 : zeno::INode {
                         icm_grad,
                         use_barycentric_interpolator);
                     timer.tock("retrieve_intersection_with_EKT_pairs");
+                    std::cout << "finish retrive_intersections_between_edges_and_ktris : " << csET.size() << std::endl;
 
                     if(csET.size() > 0)
                         has_kine_intersection = true;
@@ -306,10 +317,14 @@ struct Detangle2 : zeno::INode {
                             }
                     });
 
+                    auto ekt_impulse_norm2 = TILEVEC_OPS::dot<3>(cudaExec,verts,"grad","grad");
+                    std::cout << "EKT IMPULSE : " << ekt_impulse_norm2 << std::endl;
+
                     timer.tock("assemble EKT icm gradient");   
                 }
 
                 {
+                    std::cout << "retrive_intersections_between_kedges_and_tris" << std::endl;
                     timer.tick();
                     retrieve_intersection_with_edge_tri_pairs(cudaExec,
                         kvtemp,"x",
@@ -321,6 +336,8 @@ struct Detangle2 : zeno::INode {
                         icm_grad,
                         use_barycentric_interpolator);
                     timer.tock("retrieve_intersection_with_KET_pairs");
+
+                    std::cout << "finish retrive_intersections_between_kedges_and_tris" << std::endl;
 
                     if(csET.size() > 0)
                         has_kine_intersection = true;
@@ -409,7 +426,8 @@ struct Detangle2 : zeno::INode {
                             }
                     });
 
-                    std::cout << "KET IMPULSE : " << TILEVEC_OPS::dot<3>(cudaExec,verts,"grad","grad") << std::endl;
+                    auto ket_impulse_norm2 = TILEVEC_OPS::dot<3>(cudaExec,verts,"grad","grad");
+                    std::cout << "KET IMPULSE : " << ket_impulse_norm2 << std::endl;
                     timer.tock("assemble KET icm gradient");      
                 }            
             }
@@ -444,7 +462,7 @@ struct Detangle2 : zeno::INode {
                     timer.tock("eval_self_intersection_contour_minimization_gradient");  
                     
                     auto icm_gradn = TILEVEC_OPS::dot<3>(cudaExec,icm_grad,"grad","grad");
-                    std::cout << "icm_ET_gradn : " << icm_gradn << std::endl;
+                    std::cout << "icm_self_ET_gradn : " << icm_gradn << std::endl;
 
                     timer.tick();
                     cudaExec(zip(zs::range(csET.size()),csET._activeKeys),[
@@ -465,6 +483,15 @@ struct Detangle2 : zeno::INode {
                         tris = tris.begin("inds", dim_c<3>, int_c)] ZS_LAMBDA(auto ci,const auto& pair) mutable {
                             auto edge = edges[pair[0]];
                             auto tri = tris[pair[1]];
+
+                            if(mark_intersection) {
+                                verts("icm_intersected",tri[0]) = (T)1.0;
+                                verts("icm_intersected",tri[1]) = (T)1.0;
+                                verts("icm_intersected",tri[2]) = (T)1.0;
+
+                                verts("icm_intersected",edge[0]) = (T)1.0;
+                                verts("icm_intersected",edge[1]) = (T)1.0;                                
+                            }
 
                             zs::vec<T,2> edge_ms{};
                             zs::vec<T,2> edge_minvs{};
