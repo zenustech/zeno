@@ -234,8 +234,10 @@ void DirectLighting(RadiancePRD *prd, ShadowPRD& shadowPRD, const float3& shadin
         uint lighIdx = min(pick.lightIdx, params.num_lights-1);
         auto& light = params.lights[lighIdx];
 
-        lightPickProb *= pick.prob;
+        bool enabled = light.mask & prd->lightmask;
+        if (!enabled) { return; }
 
+        lightPickProb *= pick.prob;
         LightSampleRecord lsr;
 
         const float* iesProfile = reinterpret_cast<const float*>(light.ies);
@@ -384,6 +386,10 @@ void DirectLighting(RadiancePRD *prd, ShadowPRD& shadowPRD, const float3& shadin
             }
         }
 
+        lsr.p -= params.cam.eye;
+        //lsr.p = rtgems::offset_ray(lsr.p, lsr.n);
+        lsr.dist = length(lsr.p - shadowPRD.origin);
+
         if (!cihouMaxDistanceContinue(lsr, light)) { return; }
         
         float3 emission = cihouLightEmission(lsr, light, prd->depth);
@@ -400,6 +406,9 @@ void DirectLighting(RadiancePRD *prd, ShadowPRD& shadowPRD, const float3& shadin
 
         if (lsr.NoL > _FLT_EPL_ && lsr.PDF > _FLT_EPL_) {
 
+            shadowPRD.lightIdx = lighIdx;
+            shadowPRD.maxDistance = lsr.dist;
+            
             traceOcclusion(params.handle, shadowPRD.origin, lsr.dir, 0, lsr.dist, &shadowPRD);
             light_attenuation = shadowPRD.attanuation;
 
@@ -458,7 +467,8 @@ void DirectLighting(RadiancePRD *prd, ShadowPRD& shadowPRD, const float3& shadin
             if (envpdf < __FLT_DENORM_MIN__) {
                 return;
             }
-            //LP = rtgems::offset_ray(LP, sun_dir);
+
+            shadowPRD.maxDistance = 1e16f;
             traceOcclusion(params.handle, shadowPRD.origin, sun_dir,
                         1e-5f, // tmin
                         1e16f, // tmax,

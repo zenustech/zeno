@@ -131,6 +131,27 @@ static int runner_start(std::string const &progJson, int sessionid, const LAUNCH
                 + ":" + std::to_string(graph->endFrameNumber)
                 + "\"}", "", 0);
 
+    if (!param.generator.isEmpty())
+    {
+        //only execute the node which id is `param.generator`.
+        std::set<std::string> nodes;
+        std::string ident = param.generator.toStdString();
+        nodes.insert(ident);
+        graph->applyNodes(nodes);
+
+        //yield result from the GenerateCommands node.
+        const auto& sourceInput = graph->getNodeInput(ident, "source");
+        const auto& strObj = std::dynamic_pointer_cast<zeno::StringObject>(sourceInput);
+        if (strObj && !strObj->get().empty())
+        {
+            std::string commands = strObj->get();
+            send_packet("{\"action\":\"generate\",\"key\":\"" + ident + "\"" + "}", commands.c_str(), commands.length() + 1);
+            return 0;
+        }
+        //and then send packet back to ui process.
+        return onfail();
+    }
+
     for (int frame = graph->beginFrameNumber; frame <= graph->endFrameNumber; frame++)
     {
         zeno::scope_exit sp([=]() { std::cout.flush(); });
@@ -208,6 +229,7 @@ int runner_main(const QCoreApplication& app) {
         {"zsg", "zsg", "zsg"},
         {"projectFps", "current project fps", "fps"},
         {"objcachedir", "objcachedir", "obj temp cache dir"},
+        {"generator", "generator", "the node ident which trigger generate command"},
         });
     cmdParser.process(app);
     if (cmdParser.isSet("sessionid"))
@@ -232,6 +254,8 @@ int runner_main(const QCoreApplication& app) {
         param.zsgPath = cmdParser.value("zsg");
     if (cmdParser.isSet("projectFps"))
         param.projectFps = cmdParser.value("projectFps").toInt();
+    if (cmdParser.isSet("generator"))
+        param.generator = cmdParser.value("generator");
 
     std::cerr.rdbuf(std::cout.rdbuf());
     std::clog.rdbuf(std::cout.rdbuf());

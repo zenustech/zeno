@@ -90,6 +90,13 @@ extern "C" __global__ void __closesthit__radiance()
     light_index = min(light_index, params.num_lights - 1);
     auto& light = params.lights[light_index];
 
+    bool enabled = light.mask & prd->lightmask;
+    if (!enabled) { 
+        prd->depth += 1;
+        prd->done = true;
+        return; 
+    }
+    
     vec3 light_normal {};
 
     if (pType == OptixPrimitiveType::OPTIX_PRIMITIVE_TYPE_SPHERE) {
@@ -253,6 +260,11 @@ extern "C" __global__ void __anyhit__shadow_cutout()
         ignore = params.firstRectLightIdx == UINT_MAX;
         auto rect_idx = primitiveIdx / 2;
         light_index = rect_idx + params.firstRectLightIdx;
+    }
+
+    if (light_index == prd->lightIdx) {
+        //printf("maxDistance = %f tmax = %f \n", prd->maxDistance, optixGetRayTmax());
+        ignore = true;
     }
 
     if (ignore) {

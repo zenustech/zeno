@@ -213,9 +213,7 @@ bool ZenoSpreadsheet::eventFilter(QObject* watched, QEvent* event)
     if (watched == prim_attr_view && event->type() == QEvent::KeyPress)
     {
         QKeyEvent* keyEvt = dynamic_cast<QKeyEvent*>(event);
-        int uKey = keyEvt->key();
-        Qt::KeyboardModifiers modifiers = keyEvt->modifiers();
-        if (uKey == Qt::Key_C && (modifiers & Qt::ControlModifier)) {
+        if (keyEvt == QKeySequence::Copy) {
             if (QItemSelectionModel* pSelectionModel = prim_attr_view->selectionModel())
             {
                 int cols = dataModel->columnCount(QModelIndex());
