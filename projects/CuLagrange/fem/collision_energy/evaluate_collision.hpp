@@ -30,7 +30,8 @@
 #include "vertex_face_sqrt_collision.hpp"
 #include "vertex_face_collision.hpp"
 #include "../../geometry/kernel/topology.hpp"
-#include "../../geometry/kernel/intersection.hpp"
+// #include "../../geometry/kernel/intersection.hpp"
+#include "../../geometry/kernel/global_intersection_analysis.hpp"
 
 #include "collision_utils.hpp"
 
@@ -3153,7 +3154,7 @@ inline void do_tetrahedra_surface_tris_and_points_self_collision_detection(Pol& 
         //         else
         //             surf_verts_buffer("mustExclude",pi) = (T)0.0;
         // });
-        auto ring_mask_width = do_global_self_intersection_analysis(pol,
+        auto ring_mask_width = GIA::do_global_self_intersection_analysis(pol,
             surf_verts_buffer,pos_attr_tag,surf_tris_buffer,surf_halfedge,
             gia_res,tris_gia_res);
         std::cout << "ring_mask_width of GIA : " << ring_mask_width << std::endl;
