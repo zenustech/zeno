@@ -32,18 +32,18 @@
 * @brief  OptiX micromap helper functions
 */
 
-#ifndef __optix_optix_micromap_impl_h__
-#define __optix_optix_micromap_impl_h__
+#ifndef OPTIX_OPTIX_MICROMAP_IMPL_H
+#define OPTIX_OPTIX_MICROMAP_IMPL_H
 
 #include <cstdint>
 
-#if __CUDACC__
+#ifdef __CUDACC__
 #include <cuda_runtime.h>
 #endif
 
 #ifndef OPTIX_MICROMAP_FUNC
-#if __CUDACC__
-#define OPTIX_MICROMAP_FUNC __host__ __device__
+#ifdef __CUDACC__
+#define OPTIX_MICROMAP_FUNC __device__
 #else
 #define OPTIX_MICROMAP_FUNC
 #endif
@@ -57,9 +57,10 @@ namespace optix_impl {
 
 #define OPTIX_MICROMAP_INLINE_FUNC OPTIX_MICROMAP_FUNC inline
 
-#if __CUDACC__
+#ifdef __CUDACC__
 // the device implementation of __uint_as_float is declared in cuda_runtime.h
 #else
+// the host implementation of __uint_as_float
 OPTIX_MICROMAP_INLINE_FUNC float __uint_as_float( uint32_t x )
 {
     union { float f; uint32_t i; } var;
@@ -67,17 +68,6 @@ OPTIX_MICROMAP_INLINE_FUNC float __uint_as_float( uint32_t x )
     return var.f;
 }
 #endif
-
-
-// Deinterleave bits from x into even and odd halves
-OPTIX_MICROMAP_INLINE_FUNC uint32_t deinterleaveBits( uint32_t x )
-{
-    x = ( ( ( ( x >> 1 ) & 0x22222222u ) | ( ( x << 1 ) & ~0x22222222u ) ) & 0x66666666u ) | ( x & ~0x66666666u );
-    x = ( ( ( ( x >> 2 ) & 0x0c0c0c0cu ) | ( ( x << 2 ) & ~0x0c0c0c0cu ) ) & 0x3c3c3c3cu ) | ( x & ~0x3c3c3c3cu );
-    x = ( ( ( ( x >> 4 ) & 0x00f000f0u ) | ( ( x << 4 ) & ~0x00f000f0u ) ) & 0x0ff00ff0u ) | ( x & ~0x0ff00ff0u );
-    x = ( ( ( ( x >> 8 ) & 0x0000ff00u ) | ( ( x << 8 ) & ~0x0000ff00u ) ) & 0x00ffff00u ) | ( x & ~0x00ffff00u );
-    return x;
-}
 
 // Extract even bits
 OPTIX_MICROMAP_INLINE_FUNC uint32_t extractEvenBits( uint32_t x )
@@ -101,7 +91,6 @@ OPTIX_MICROMAP_INLINE_FUNC uint32_t prefixEor( uint32_t x )
     return x;
 }
 
-
 // Convert distance along the curve to discrete barycentrics
 OPTIX_MICROMAP_INLINE_FUNC void index2dbary( uint32_t index, uint32_t& u, uint32_t& v, uint32_t& w )
 {
@@ -118,15 +107,15 @@ OPTIX_MICROMAP_INLINE_FUNC void index2dbary( uint32_t index, uint32_t& u, uint32
     w = ( ~fx & ~t ) | ( b0 & ~t ) | ( ~b0 & fx & t );
 }
 
-
-// Compute barycentrics for micro triangle
-OPTIX_MICROMAP_INLINE_FUNC void micro2bary( uint32_t index, uint32_t subdivisionLevel, float2& uv0, float2& uv1, float2& uv2 )
+// Compute barycentrics of a sub or micro triangle wrt a base triangle
+// The order of the returned bary0, bary1, bary2 matters and allows for using this function for sub triangles and the conversion from sub triangle to base triangle barycentric space
+OPTIX_MICROMAP_INLINE_FUNC void micro2bary( uint32_t index, uint32_t subdivisionLevel, float2& bary0, float2& bary1, float2& bary2 )
 {
     if( subdivisionLevel == 0 )
     {
-        uv0 = { 0, 0 };
-        uv1 = { 1, 0 };
-        uv2 = { 0, 1 };
+        bary0 = { 0, 0 };
+        bary1 = { 1, 0 };
+        bary2 = { 0, 1 };
         return;
     }
 
@@ -138,12 +127,10 @@ OPTIX_MICROMAP_INLINE_FUNC void micro2bary( uint32_t index, uint32_t subdivision
     iv = iv & ( ( 1 << subdivisionLevel ) - 1 );
     iw = iw & ( ( 1 << subdivisionLevel ) - 1 );
 
-    bool upright = ( iu & 1 ) ^ ( iv & 1 ) ^ ( iw & 1 );
-    if( !upright )
-    {
-        iu = iu + 1;
-        iv = iv + 1;
-    }
+    int yFlipped = ( iu & 1 ) ^ ( iv & 1 ) ^ ( iw & 1 ) ^ 1;
+
+    int xFlipped = ( ( 0x8888888888888888ull ^ 0xf000f000f000f000ull ^ 0xffff000000000000ull ) >> index ) & 1;
+    xFlipped    ^= ( ( 0x8888888888888888ull ^ 0xf000f000f000f000ull ^ 0xffff000000000000ull ) >> ( index >> 6 ) ) & 1;
 
     const float levelScale = __uint_as_float( ( 127u - subdivisionLevel ) << 23 );
 
@@ -155,20 +142,46 @@ OPTIX_MICROMAP_INLINE_FUNC void micro2bary( uint32_t index, uint32_t subdivision
     float u = (float)iu * levelScale;
     float v = (float)iv * levelScale;
 
-    if( !upright )
-    {
-        du = -du;
-        dv = -dv;
-    }
+    //     c        d
+    //      x-----x
+    //     / \   /
+    //    /   \ /
+    //   x-----x
+    //  a        b
+    //
+    // !xFlipped && !yFlipped: abc
+    // !xFlipped &&  yFlipped: cdb
+    //  xFlipped && !yFlipped: bac
+    //  xFlipped &&  yFlipped: dcb
 
-    uv0 = { u, v };
-    uv1 = { u + du, v };
-    uv2 = { u, v + dv };
+    bary0 = { u + xFlipped * du    , v + yFlipped * dv };
+    bary1 = { u + (1-xFlipped) * du, v + yFlipped * dv };
+    bary2 = { u + yFlipped * du    , v + (1-yFlipped) * dv };
 }
 
+// avoid any conflicts due to multiple definitions
+#define OPTIX_MICROMAP_FLOAT2_SUB(a,b) { a.x - b.x, a.y - b.y }
+
+// Compute barycentrics for micro triangle from base barycentrics
+OPTIX_MICROMAP_INLINE_FUNC float2 base2micro( const float2& baseBarycentrics, const float2 microVertexBaseBarycentrics[3] )
+{
+    float2 baryV0P  = OPTIX_MICROMAP_FLOAT2_SUB( baseBarycentrics, microVertexBaseBarycentrics[0] );
+    float2 baryV0V1 = OPTIX_MICROMAP_FLOAT2_SUB( microVertexBaseBarycentrics[1], microVertexBaseBarycentrics[0] );
+    float2 baryV0V2 = OPTIX_MICROMAP_FLOAT2_SUB( microVertexBaseBarycentrics[2], microVertexBaseBarycentrics[0] );
+
+    float  rdetA = 1.f / ( baryV0V1.x * baryV0V2.y - baryV0V1.y * baryV0V2.x );
+    float4 A     = { baryV0V2.y, -baryV0V2.x, -baryV0V1.y, baryV0V1.x };
+
+    float2 localUV;
+    localUV.x = rdetA * ( baryV0P.x * A.x + baryV0P.y * A.y );
+    localUV.y = rdetA * ( baryV0P.x * A.z + baryV0P.y * A.w );
+
+    return localUV;
+}
+#undef OPTIX_MICROMAP_FLOAT2_SUB
 
 /*@}*/  // end group optix_utilities
 
 }  // namespace optix_impl
 
-#endif  // __optix_optix_micromap_impl_h__
+#endif  // OPTIX_OPTIX_MICROMAP_IMPL_H

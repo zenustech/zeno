@@ -23,6 +23,7 @@ public:
 	virtual QModelIndex index(const QString& id, const QModelIndex& subGpIdx) = 0;
 	virtual QModelIndex index(int r, const QModelIndex& subGpIdx) = 0;
 	virtual QModelIndex nodeIndex(const QString& ident) = 0;
+	virtual QModelIndex paramIndex(const QModelIndex& subgIdx, const QModelIndex& nodeIdx, const QString& name, bool bInput) = 0;
 	/* end: node index: */
 
 	virtual QModelIndex nodeIndex(uint32_t sid, uint32_t nodeid) = 0;

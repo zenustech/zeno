@@ -7,6 +7,7 @@
 #include "../panel/zenospreadsheet.h"
 #include "../panel/zlogpanel.h"
 #include "../panel/zenocommandparamspanel.h"
+#include "../panel/zenoopenpathpanel.h"
 #include "viewport/viewportwidget.h"
 #include "viewport/displaywidget.h"
 #include "nodesview/zenographseditor.h"
@@ -228,6 +229,10 @@ QWidget* ZTabDockWidget::createTabWidget(PANEL_TYPE type)
         {
             return new ZenoCommandParamsPanel;
         }
+        case PANEL_OPEN_PATH:
+        {
+            return new ZenoOpenPathPanel;
+        }
     }
     return nullptr;
 }
@@ -245,6 +250,7 @@ QString ZTabDockWidget::type2Title(PANEL_TYPE type)
     case PANEL_OPTIX_VIEW:  return tr("Optix");
     case PANEL_IMAGE: return tr("Image");
     case PANEL_COMMAND_PARAMS: return tr("Command Params");
+    case PANEL_OPEN_PATH: return tr("Open Path");
     default:
         return "";
     }
@@ -279,6 +285,9 @@ PANEL_TYPE ZTabDockWidget::title2Type(const QString& title)
     }
     else if (title == tr("Command Params") || title == "Command Params") {
         type = PANEL_COMMAND_PARAMS;
+    }
+    else if (title == tr("Open Path") || title == "Open Path") {
+        type = PANEL_OPEN_PATH;
     }
     return type;
 }
@@ -532,7 +541,7 @@ void ZTabDockWidget::onAddTabClicked()
     font.setBold(false);
     menu->setFont(font);
 
-    static QList<QString> panels = { tr("Parameter"), tr("Scene Viewport"), tr("Node Editor"), tr("Spreadsheet"), tr("Log"), tr("Image"), tr("Optix"), tr("Command Params") };
+    static QList<QString> panels = { tr("Parameter"), tr("Scene Viewport"), tr("Node Editor"), tr("Spreadsheet"), tr("Log"), tr("Image"), tr("Optix"), tr("Command Params"), tr("Open Path") };
     for (QString name : panels)
     {
         QAction* pAction = new QAction(name);
@@ -560,6 +569,7 @@ void ZTabDockWidget::onAddTabClicked()
                 case 6: m_debugPanel = PANEL_IMAGE; break;
                 case 7: m_debugPanel = PANEL_OPTIX_VIEW; break;
                 case 8: m_debugPanel = PANEL_COMMAND_PARAMS; break;
+                case 9: m_debugPanel = PANEL_OPEN_PATH; break;
                 }
                 m_tabWidget->setCurrentIndex(idx);
             }

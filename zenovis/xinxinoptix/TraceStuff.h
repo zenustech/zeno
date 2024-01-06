@@ -43,8 +43,35 @@ enum medium{
     isotropicScatter
 };
 
+struct VolumePRD {
+    float vol_t0;
+    float vol_t1;
+
+    bool origin_inside  :1;
+    bool surface_inside :1;
+};
+
+struct ShadowPRD {
+    bool test_distance;
+    float maxDistance;
+    uint32_t lightIdx = UINT_MAX;
+
+    float3 origin;
+    uint32_t seed;
+    float3 attanuation;
+    uint8_t nonThinTransHit;
+
+    VolumePRD vol;
+
+    float rndf() {
+        return rnd(seed);
+    }
+};
+
 struct RadiancePRD
 {
+    bool test_distance;
+    float maxDistance;
     // TODO: move some state directly into payload registers?
     float3       radiance;
     float3       radiance_d;
@@ -65,16 +92,14 @@ struct RadiancePRD
     unsigned int flags;
     int          countEmitted;
     int          done;
-    float3       shadowAttanuation;
+
     int          medium;
     float        scatterDistance;
     float        scatterPDF;
-    float        maxDistance;
     int          depth;
     int          diffDepth;
     bool         isSS;
     float        scatterStep;
-    int          nonThinTransHit;
     float        pixel_area;
     float        Lweight;
     vec3         sigma_t_queue[8];
@@ -84,6 +109,8 @@ struct RadiancePRD
     bool         fromDiff;
     unsigned char adepth;
     bool         alphaHit;
+
+    uint16_t lightmask = EverythingMask;
 
     __forceinline__ float rndf() {
         return rnd(this->seed);
@@ -111,11 +138,7 @@ struct RadiancePRD
     float3 tmp_normal {};
 
     // cihou nanovdb
-    float vol_t0=0, vol_t1=0;
-
-    bool test_distance = false;
-    bool origin_inside_vdb = false;
-    bool surface_inside_vdb = false; 
+    VolumePRD vol;
 
     float _tmin_ = 0;
     float3 geometryNormal;
@@ -129,21 +152,21 @@ struct RadiancePRD
         auto dir = forward? geometryNormal:-geometryNormal;
         auto offset = rtgems::offset_ray(P, dir);
         float l = length( offset - P );
-        float l2 = this->alphaHit? clamp(l, 1e-4, 1e-3) : clamp(l, 1e-6, 1e-5);
+        float l2 = this->alphaHit? clamp(l, 1e-4, 1e-2) : max(l, 1e-5);
         P = P + l2 * dir;
     }
 
     void offsetUpdateRay(float3& P, float3 new_dir) {
-      double x = (double)(P.x) - (double)(this->camPos.x);
-      double y = (double)(P.y) - (double)(this->camPos.y);
-      double z = (double)(P.z) - (double)(this->camPos.z);
+      double x = (double)(P.x);
+      double y = (double)(P.y);
+      double z = (double)(P.z);
         auto beforeOffset = make_float3(x, y, z);
         //this->origin = P;
         this->direction = new_dir;
         offsetRay(beforeOffset, new_dir);
-        double x2 = (double)(beforeOffset.x) + (double)(this->camPos.x);
-        double y2 = (double)(beforeOffset.y) + (double)(this->camPos.y);
-        double z2 = (double)(beforeOffset.z) + (double)(this->camPos.z);
+        double x2 = (double)(beforeOffset.x);
+        double y2 = (double)(beforeOffset.y);
+        double z2 = (double)(beforeOffset.z);
         this->origin = make_float3(x2, y2, z2);
     }
 
@@ -193,7 +216,7 @@ static __forceinline__ __device__ void traceRadiance(
 	float3                 ray_direction,
 	float                  tmin,
 	float                  tmax,
-	RadiancePRD           *prd,
+	void                   *prd,
     OptixVisibilityMask    mask=255u)
 {
     unsigned int u0, u1;
@@ -218,7 +241,7 @@ static __forceinline__ __device__ void traceOcclusion(
         float3                 ray_direction,
         float                  tmin,
         float                  tmax,
-        RadiancePRD           *prd,
+        void                   *prd,
         OptixVisibilityMask    mask=255u)
 {
     unsigned int u0, u1;
@@ -236,11 +259,12 @@ static __forceinline__ __device__ void traceOcclusion(
             u0, u1);
 }
 
-static __forceinline__ __device__ RadiancePRD* getPRD()
+template <typename TypePRD = RadiancePRD>
+static __forceinline__ __device__ TypePRD* getPRD()
 {
     const unsigned int u0 = optixGetPayload_0();
     const unsigned int u1 = optixGetPayload_1();
-    return reinterpret_cast<RadiancePRD*>( unpackPointer( u0, u1 ) );
+    return reinterpret_cast<TypePRD*>( unpackPointer( u0, u1 ) );
 }
 
 

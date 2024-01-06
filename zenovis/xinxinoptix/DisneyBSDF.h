@@ -53,11 +53,13 @@ namespace DisneyBSDF{
     }
 
     static __inline__ __device__ void
-    setup_subsurface_radius(float eta, vec3 albedo, vec3 &radius)
+    setup_subsurface_radius(float eta, vec3 albedo, vec3 &radius, bool fixedRadius)
     {
-      #if _SSS_FIXED_RADIUS_
-        radius = radius * 0.25f / M_PIf;
-      #else
+    	if (fixedRadius) {
+			radius = radius * 0.25f / M_PIf;
+			return;
+		}
+
         float inv_eta = 1.0f/eta;
         float F_dr = inv_eta * (-1.440f * inv_eta + 0.710f) + 0.668f + 0.0636f * eta;
         float fourthirdA = (4.0f / 3.0f) * (1.0f + F_dr) /
@@ -67,7 +69,6 @@ namespace DisneyBSDF{
         alpha_prime.y = bssrdf_dipole_compute_alpha_prime(albedo.y, fourthirdA);
         alpha_prime.z = bssrdf_dipole_compute_alpha_prime(albedo.z, fourthirdA);
         radius = radius * sqrt(3.0f * abs(vec3(1.0) - alpha_prime));
-      #endif
     }
     static __inline__ __device__ void 
     subsurface_random_walk_remap(const float albedo,
@@ -118,10 +119,10 @@ namespace DisneyBSDF{
     }
 
     static __inline__ __device__
-    void CalculateExtinction2(vec3 albedo, vec3 radius, vec3 &sigma_t, vec3 &alpha, float eta)
+    void CalculateExtinction2(vec3 albedo, vec3 radius, vec3 &sigma_t, vec3 &alpha, float eta, bool fixedRadius)
     {
         vec3 r = radius;
-        setup_subsurface_radius(eta, albedo, r);
+        setup_subsurface_radius(eta, albedo, r, fixedRadius);
         subsurface_random_walk_remap(albedo.x, r.x, 0, sigma_t.x, alpha.x);
         subsurface_random_walk_remap(albedo.y, r.y, 0, sigma_t.y, alpha.y);
         subsurface_random_walk_remap(albedo.z, r.z, 0, sigma_t.z, alpha.z);
@@ -245,7 +246,64 @@ namespace DisneyBSDF{
 
         return mix(vec3(dielectricFresnel), metallicFresnel, metallic);
     }
+    static __inline__ __device__
+        bool Transmit(vec3 wm, vec3 wo, float n, vec3& wi)
+    {
+      float c = dot(wo, wm);
+      if(c < 0.0f) {
+        c = -c;
+        wm = -wm;
+      }
+      float root = 1.0f - n * n * (1.0f - c * c);
+      if(root <= 0){
+        return false;
+      }
 
+      wi = normalize((n * c -sqrt(root)) * wm - n * wo);
+      return true;
+    }
+
+    static __inline__ __device__
+        vec3 SampleScatterDirection(unsigned int &seed)
+    {
+      //float2 r01 = sobolRnd(seed);
+      float r0 = rnd(seed);
+      float r1 = rnd(seed);
+
+      float theta = 2.0f * M_PIf * r0;
+      float phi = acos(clamp(1 - 2 * r1, -0.9999f, 0.9999f));
+      float x = sin(phi) * cos(theta);
+      float y = sin(phi) * sin(theta);
+      float z = cos(phi);
+
+      return normalize(vec3(x, y, z));
+    }
+
+    static __inline__ __device__
+        vec3 Transmission(const vec3& extinction, float distance)
+    {
+      return exp(-extinction * distance);
+    }
+
+    static __inline__ __device__
+        vec3 sss_rw_pdf(const vec3& sigma_t, float t, bool hit, vec3& transmittance)
+    {
+      vec3 T = Transmission(sigma_t, t);
+      transmittance = T;
+      return hit? T : (sigma_t * T);
+    }
+
+    static __inline__ __device__
+        vec3 Transmission2(const vec3& sigma_s, const vec3& sigma_t, const vec3& channelPDF, float t, bool hit)
+    {
+      vec3 transmittance;
+      vec3 pdf = sss_rw_pdf(sigma_t, t, hit, transmittance);
+
+      //printf("trans PDf= %f %f %f sigma_t= %f %f %f \n", pdf.x, pdf.y, pdf.z, sigma_t.x, sigma_t.y, sigma_t.z);
+      auto result = hit? transmittance : ((sigma_s * transmittance) / (dot(pdf, channelPDF) + 1e-6f));
+      result = clamp(result,vec3(0.0f),vec3(1.0f));
+      return result;
+    }
     static __inline__ __device__
         float3 EvaluateDisney2(
             vec3 illum,
@@ -270,7 +328,7 @@ namespace DisneyBSDF{
         bool sameside = (dot(wo, N)*dot(wo, N2))>0.0f;
         if(sameside == false)
         {
-          wo = normalize(wo - 1.01f * dot(wo, N) * N);
+          wo = normalize(wo - 1.02f * dot(wo, N) * N);
         }
         float eta = dot(wo, N)>0?mat.ior:1.0f/mat.ior;
         vec3 f = vec3(0.0f);
@@ -281,7 +339,7 @@ namespace DisneyBSDF{
         world2local(wo, T, B, N);
         world2local(N2, T, B, N);
 
-        bool reflect = (dot(wi, N2) * dot(wo, N2) > 0.0f) ;
+        bool reflect = (dot(wi, N2) * dot(wo, N2) > 0.0f) || (dot(wi, N) * dot(wo, N) > 0.0f);
 
         vec3 Csheen, Cspec0;
         float F0;
@@ -334,7 +392,7 @@ namespace DisneyBSDF{
         {
 
             vec3 d = BRDFBasics::EvalDisneyDiffuse(thin? mat.basecolor:mix(mat.basecolor,mat.sssColor,mat.subsurface), mat.subsurface, mat.roughness, mat.sheen,
-                                             Csheen, wo, wi, wm, tmpPdf) * dielectricWt   * illum;
+                                             Csheen, wo, wi, wm, tmpPdf) * dielectricWt;
             dterm = dterm + d;
             f = f + d;
             fPdf += tmpPdf * diffPr ;
@@ -345,7 +403,7 @@ namespace DisneyBSDF{
             float ax, ay;
             BRDFBasics::CalculateAnisotropicParams(mat.roughness,mat.anisotropic,ax,ay);
             vec3 s = BRDFBasics::EvalMicrofacetReflection(ax, ay, wo, wi, wm,
-                                          mix(Cspec0, vec3(1.0f), F) * mat.specular, tmpPdf) * dielectricWt  * illum;
+                                          mix(Cspec0, vec3(1.0f), F) * mat.specular, tmpPdf) * dielectricWt;
             sterm = sterm + s;
             f = f + s;
             fPdf += tmpPdf * dielectricPr;
@@ -355,7 +413,7 @@ namespace DisneyBSDF{
             vec3 F = mix(mat.basecolor, vec3(1.0), BRDFBasics::SchlickWeight(HoV));
             float ax, ay;
             BRDFBasics::CalculateAnisotropicParams(mat.roughness,mat.anisotropic,ax,ay);
-            vec3 s = BRDFBasics::EvalMicrofacetReflection(ax, ay, wo, wi, wm, F, tmpPdf) * metalWt  * illum;
+            vec3 s = BRDFBasics::EvalMicrofacetReflection(ax, ay, wo, wi, wm, F, tmpPdf) * metalWt;
             sterm = sterm + s;
             f = f + s;
             fPdf += tmpPdf * metalPr;
@@ -393,7 +451,7 @@ namespace DisneyBSDF{
                                                                  wo, wi, wm,
                                                                  vec3(F), tmpPdf);
 
-                vec3 t = brdf * glassWt  * illum;
+                vec3 t = brdf * glassWt;
                 tterm = tterm + t;
                 f = f + t;
                 fPdf += tmpPdf * glassPr * (1.0 - F);
@@ -406,7 +464,7 @@ namespace DisneyBSDF{
         {
             vec3 wm = normalize(wi + wo);
             vec3 s = BRDFBasics::EvalClearcoat(mat.clearcoatRoughness, wo, wi,
-                                         wm, tmpPdf) * 0.25 * mat.clearcoat  * illum;
+                                         wm, tmpPdf) * 0.25 * mat.clearcoat;
             sterm = sterm + s;
             f =  f + s;
             fPdf += tmpPdf * clearCtPr;
@@ -418,11 +476,17 @@ namespace DisneyBSDF{
           float FV = BRDFBasics::SchlickWeight(abs(wo.z));
           float term = wo.z>0?FV:FL;
           float tmpPdf = trans? 1.0f : 0.0f;//0.5/M_PIf:0.0f;
-
-
-
+          vec3 transmit = vec3(1.0f);
+          if(thin) {
+            vec3 color = mix(mat.basecolor, mat.sssColor, mat.subsurface);
+            vec3 sigma_t, alpha;
+            CalculateExtinction2(color, mat.subsurface * mat.sssParam, sigma_t, alpha, 1.4f, mat.sssFxiedRadius);
+            vec3 channelPDF = vec3(1.0f/3.0f);
+            transmit = Transmission2(sigma_t * alpha, sigma_t,
+                                  channelPDF, 0.001 / (abs(wi.z) + 0.005f), true);
+          }
           // vec3 d = 1.0f/M_PIf * (1.0f - 0.5f * term) * (trans?vec3(1.0f):vec3(0.0f))  * dielectricWt * subsurface;
-          vec3 d = (trans? (thin? mat.sssColor : vec3(1.0f)): vec3(0.0f))  * dielectricWt * mat.subsurface;
+          vec3 d = (trans? vec3(1.0f): vec3(0.0f)) * transmit  * dielectricWt * mat.subsurface;
           dterm = dterm + d;
           f = f + d;
           fPdf += tmpPdf * sssPr;
@@ -454,64 +518,7 @@ namespace DisneyBSDF{
         }
         return 1.0f / ( n * n) - (1.0f - c * c);
     }
-    static __inline__ __device__ 
-    bool Transmit(vec3 wm, vec3 wo, float n, vec3& wi)
-    {
-        float c = dot(wo, wm);
-        if(c < 0.0f) {
-            c = -c;
-            wm = -wm;
-        }
-        float root = 1.0f - n * n * (1.0f - c * c);
-        if(root <= 0){
-            return false;
-        }
 
-        wi = normalize((n * c -sqrt(root)) * wm - n * wo);
-        return true;
-    }
-
-    static __inline__ __device__
-    vec3 SampleScatterDirection(unsigned int &seed)
-    {
-        //float2 r01 = sobolRnd(seed);
-        float r0 = rnd(seed);
-        float r1 = rnd(seed);
-
-        float theta = 2.0f * M_PIf * r0;
-        float phi = acos(clamp(1 - 2 * r1, -0.9999f, 0.9999f));
-        float x = sin(phi) * cos(theta);
-        float y = sin(phi) * sin(theta);
-        float z = cos(phi);
-
-        return normalize(vec3(x, y, z));
-    }
-    
-    static __inline__ __device__
-    vec3 Transmission(const vec3& extinction, float distance)
-    {
-        return exp(-extinction * distance);
-    }
-
-    static __inline__ __device__
-    vec3 sss_rw_pdf(const vec3& sigma_t, float t, bool hit, vec3& transmittance)
-    {
-        vec3 T = Transmission(sigma_t, t);
-        transmittance = T;
-        return hit? T : (sigma_t * T);
-    }
-
-    static __inline__ __device__
-    vec3 Transmission2(const vec3& sigma_s, const vec3& sigma_t, const vec3& channelPDF, float t, bool hit)
-    {
-        vec3 transmittance;
-        vec3 pdf = sss_rw_pdf(sigma_t, t, hit, transmittance);
-
-        //printf("trans PDf= %f %f %f sigma_t= %f %f %f \n", pdf.x, pdf.y, pdf.z, sigma_t.x, sigma_t.y, sigma_t.z);
-        auto result = hit? transmittance : ((sigma_s * transmittance) / (dot(pdf, channelPDF) + 1e-6f));
-        result = clamp(result,vec3(0.0f),vec3(1.0f));
-        return result;
-    }
 
 
     static __inline__ __device__
@@ -651,8 +658,7 @@ namespace DisneyBSDF{
               prd->ss_alpha = color;
               if (isSS) {
                 medium = PhaseFunctions::isotropic;
-                CalculateExtinction2(color, sssRadius, prd->sigma_t,
-                                     prd->ss_alpha, 1.4f);
+                CalculateExtinction2(color, sssRadius, prd->sigma_t, prd->ss_alpha, 1.4f, mat.sssFxiedRadius);
               }
               tbn.inverse_transform(wi);
               wi = normalize(wi);
@@ -716,11 +722,19 @@ namespace DisneyBSDF{
               wi = normalize(reflect(-normalize(wo),wm));
             }else //refraction
             {
-              wi = normalize(refract(wo, wm, entering?1.0f/mat.ior:mat.ior));
-              flag = transmissionEvent;
-              isTrans = true;
-              extinction = CalculateExtinction(mat.transTint, mat.transTintDepth);
-              extinction = entering? extinction : vec3(0.0f);
+              if(thin)
+              {
+                wi = -wo;
+                extinction = vec3(0.0f);
+              }else {
+                wi = normalize(
+                    refract(wo, wm, entering ? 1.0f / mat.ior : mat.ior));
+                flag = transmissionEvent;
+                isTrans = true;
+                extinction =
+                    CalculateExtinction(mat.transTint, mat.transTintDepth);
+                extinction = entering ? extinction : vec3(0.0f);
+              }
             }
 
             tbn.inverse_transform(wi);

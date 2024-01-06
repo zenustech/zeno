@@ -302,7 +302,19 @@
     </message>
     <message>
         <source>Running...</source>
-        <translation type="unfinished"></translation>
+        <translation>运行中...</translation>
+    </message>
+    <message>
+        <source>Normal</source>
+        <translation>普通子图</translation>
+    </message>
+    <message>
+        <source>Material</source>
+        <translation>材质子图</translation>
+    </message>
+    <message>
+        <source>Preset</source>
+        <translation>预设子图</translation>
     </message>
 </context>
 <context>
@@ -457,6 +469,10 @@
     <message>
         <source>height</source>
         <translation type="unfinished">高度</translation>
+    </message>
+    <message>
+        <source>UV</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -1030,6 +1046,10 @@
         <source>About Zeno</source>
         <translation>关于 Zeno</translation>
     </message>
+    <message>
+        <source>Preferences</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>MapCoreparamDlg</name>
@@ -1356,7 +1376,7 @@
     </message>
     <message>
         <source>Param Name</source>
-        <translation type="unfinished">参数名称</translation>
+        <translation type="obsolete">参数名称</translation>
     </message>
     <message>
         <source>Create Command Param Failed!</source>
@@ -1364,15 +1384,15 @@
     </message>
     <message>
         <source>Edit Command Param</source>
-        <translation type="unfinished">编辑命令行参数</translation>
+        <translation type="obsolete">编辑命令行参数</translation>
     </message>
     <message>
         <source>Update Command Param</source>
-        <translation type="unfinished">更新命令行参数</translation>
+        <translation type="obsolete">更新命令行参数</translation>
     </message>
     <message>
         <source>Update Command Param Failed!</source>
-        <translation type="unfinished">更新命令行参数失败！</translation>
+        <translation type="obsolete">更新命令行参数失败！</translation>
     </message>
     <message>
         <source>Delete Command Param</source>
@@ -1607,6 +1627,29 @@
     </message>
 </context>
 <context>
+    <name>ShortcutsPane</name>
+    <message>
+        <source>Default</source>
+        <translation type="unfinished">默认</translation>
+    </message>
+    <message>
+        <source>Houdini</source>
+        <translation type="unfinished">胡迪尼</translation>
+    </message>
+    <message>
+        <source>Maya</source>
+        <translation type="unfinished">玛雅</translation>
+    </message>
+    <message>
+        <source>Description</source>
+        <translation type="unfinished">描述</translation>
+    </message>
+    <message>
+        <source>ShortCut</source>
+        <translation type="unfinished">快捷键</translation>
+    </message>
+</context>
+<context>
     <name>Timeline</name>
     <message>
         <source>Form</source>
@@ -1813,6 +1856,49 @@
     </message>
 </context>
 <context>
+    <name>ZForkSubgraphDlg</name>
+    <message>
+        <source>Fork Subgraphs</source>
+        <translation type="unfinished">Fork子图</translation>
+    </message>
+    <message>
+        <source>Subgraph</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Name</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Mtlid</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Ok</source>
+        <translation type="unfinished">确定</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation type="unfinished">取消</translation>
+    </message>
+    <message>
+        <source>Import Material File</source>
+        <translation type="unfinished">导入材质数据</translation>
+    </message>
+    <message>
+        <source>Material File: </source>
+        <translation type="unfinished">材质文件：</translation>
+    </message>
+    <message>
+        <source>warring</source>
+        <translation type="unfinished">警告</translation>
+    </message>
+    <message>
+        <source>fork preset subgraph &apos;%1&apos; failed.</source>
+        <translation type="unfinished">Fork预设子图‘%1’失败。</translation>
+    </message>
+</context>
+<context>
     <name>ZGraphicsNetLabel</name>
     <message>
         <source>Delete Net Label</source>
@@ -1844,6 +1930,25 @@
     <message>
         <source>include %1 subgraphs with the same name</source>
         <translation>有%1个同名子图</translation>
+    </message>
+</context>
+<context>
+    <name>ZLanguagePane</name>
+    <message>
+        <source>English</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Chinese</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Language</source>
+        <translation type="unfinished">语言</translation>
+    </message>
+    <message>
+        <source>Please restart Zeno to apply changes.</source>
+        <translation type="unfinished">请重启Zeno以应用更改。</translation>
     </message>
 </context>
 <context>
@@ -1882,6 +1987,74 @@
     <message>
         <source>ZLayoutMangeDlg</source>
         <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>ZLayoutPane</name>
+    <message>
+        <source>Delete</source>
+        <translation type="unfinished">删除</translation>
+    </message>
+    <message>
+        <source>Rename</source>
+        <translation type="unfinished">重命名</translation>
+    </message>
+    <message>
+        <source>Name</source>
+        <translation type="unfinished">名称</translation>
+    </message>
+</context>
+<context>
+    <name>ZMatchPresetSubgraphDlg</name>
+    <message>
+        <source>Math Info</source>
+        <translation type="unfinished">匹配信息</translation>
+    </message>
+    <message>
+        <source>Ok</source>
+        <translation type="unfinished">确定</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation type="unfinished">取消</translation>
+    </message>
+</context>
+<context>
+    <name>ZPreferencesDlg</name>
+    <message>
+        <source>OK</source>
+        <translation type="unfinished">确定</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation type="unfinished">取消</translation>
+    </message>
+    <message>
+        <source>Preferences</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>ZPreferencesTabWidget</name>
+    <message>
+        <source>Language</source>
+        <translation type="unfinished">语言</translation>
+    </message>
+    <message>
+        <source>NASLOC</source>
+        <translation type="unfinished">NASLOC</translation>
+    </message>
+    <message>
+        <source>Zeno Cache</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Shortcuts</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Layout Manage</source>
+        <translation type="unfinished">布局管理</translation>
     </message>
 </context>
 <context>
@@ -2043,11 +2216,11 @@
     <name>ZShortCutSettingDlg</name>
     <message>
         <source>Description</source>
-        <translation>描述</translation>
+        <translation type="vanished">描述</translation>
     </message>
     <message>
         <source>ShortCut</source>
-        <translation>快捷键</translation>
+        <translation type="vanished">快捷键</translation>
     </message>
     <message>
         <source>OK</source>
@@ -2063,15 +2236,15 @@
     </message>
     <message>
         <source>Default</source>
-        <translation>默认</translation>
+        <translation type="vanished">默认</translation>
     </message>
     <message>
         <source>Houdini</source>
-        <translation>胡迪尼</translation>
+        <translation type="vanished">胡迪尼</translation>
     </message>
     <message>
         <source>Maya</source>
-        <translation>玛雅</translation>
+        <translation type="vanished">玛雅</translation>
     </message>
 </context>
 <context>
@@ -2327,10 +2500,49 @@
     </message>
 </context>
 <context>
+    <name>ZenoCachePane</name>
+    <message>
+        <source>Enable cache</source>
+        <translation type="unfinished">启用cache</translation>
+    </message>
+    <message>
+        <source>Cache num</source>
+        <translation type="unfinished">cache加载上限</translation>
+    </message>
+    <message>
+        <source>Temp cache directory</source>
+        <translation type="unfinished">临时目录</translation>
+    </message>
+    <message>
+        <source>Cache root</source>
+        <translation type="unfinished">自定义目录</translation>
+    </message>
+    <message>
+        <source>Cache auto clean up</source>
+        <translation type="unfinished">自动清理cache</translation>
+    </message>
+    <message>
+        <source>Enable Shift change FOV</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>ZenoCommandParamsPanel</name>
     <message>
         <source>Save Params</source>
         <translation type="unfinished">保存参数</translation>
+    </message>
+    <message>
+        <source>Name</source>
+        <translation type="unfinished">名称</translation>
+    </message>
+    <message>
+        <source>Description</source>
+        <translation type="unfinished">描述</translation>
+    </message>
+    <message>
+        <source>Link</source>
+        <translation type="unfinished">链接</translation>
     </message>
 </context>
 <context>
@@ -2568,6 +2780,18 @@
         <source>Tab List</source>
         <translation type="unfinished">选项卡列表</translation>
     </message>
+    <message>
+        <source>Material Subnet</source>
+        <translation type="unfinished">材质子图</translation>
+    </message>
+    <message>
+        <source>Preset Subnet</source>
+        <translation type="unfinished">预设子图</translation>
+    </message>
+    <message>
+        <source>import preset subnet</source>
+        <translation type="unfinished">导入预设子图</translation>
+    </message>
 </context>
 <context>
     <name>ZenoImagePanel</name>
@@ -2794,11 +3018,6 @@
         <translation>当前zsg为旧格式文件，为了确保不被新格式覆盖，只能通过“另存为”操作保存为新格式</translation>
     </message>
     <message>
-        <source>there is some nodes which are not descriped by the current version
-the save action will lose them, we recommand you choose &quot;Save As&quot; to save it</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Kill Process</source>
         <translation type="unfinished">结束进程</translation>
     </message>
@@ -2860,6 +3079,22 @@ the save action will lose them, we recommand you choose &quot;Save As&quot; to s
     <message>
         <source>CustomName invalid!</source>
         <translation type="unfinished">自定义名称不合法！</translation>
+    </message>
+    <message>
+        <source>Delete Net Label</source>
+        <translation type="unfinished">删除标签</translation>
+    </message>
+    <message>
+        <source>Create Material Subgraph</source>
+        <translation type="unfinished">创建材质子图</translation>
+    </message>
+    <message>
+        <source>Info</source>
+        <translation type="unfinished">信息</translation>
+    </message>
+    <message>
+        <source>Create material subgraph &apos;%1&apos; failed.</source>
+        <translation type="unfinished">创建材质子图‘%1’失败。</translation>
     </message>
 </context>
 <context>
@@ -3068,6 +3303,30 @@ All Files (*)</source>
     <message>
         <source>Prim: </source>
         <translation>图元对象： </translation>
+    </message>
+    <message>
+        <source>enable sort</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Create Material Subgraph</source>
+        <translation type="unfinished">创建材质子图</translation>
+    </message>
+    <message>
+        <source>Fork Preset Material Subgraphs</source>
+        <translation type="unfinished">Fork预设材质子图</translation>
+    </message>
+    <message>
+        <source>Preset Material Subgraph</source>
+        <translation type="unfinished">预设材质子图</translation>
+    </message>
+    <message>
+        <source>Info</source>
+        <translation type="unfinished">信息</translation>
+    </message>
+    <message>
+        <source>Create material subgraph &apos;%1&apos; failed.</source>
+        <translation type="unfinished">创建材质子图‘%1’失败。</translation>
     </message>
 </context>
 <context>

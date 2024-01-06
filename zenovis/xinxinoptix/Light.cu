@@ -14,15 +14,6 @@
 #include "Sampling.h"
 #include "LightTree.h"
 
-//COMMON_CODE
-
-static __inline__ __device__ void evalSurface(float4* uniforms) {
-
-    //GENERATED_BEGIN_MARK
-
-    //GENERATED_END_MARK
-} 
-
 static __inline__ __device__ bool checkLightGAS(uint instanceId) {
     return ( instanceId >= params.maxInstanceID-2 );
 }
@@ -40,7 +31,7 @@ extern "C" __global__ void __closesthit__radiance()
     RadiancePRD* prd = getPRD();
     if(prd->test_distance)
     {
-        prd->vol_t1 = optixGetRayTmax();
+        prd->maxDistance = optixGetRayTmax();
         prd->test_distance = false; return;
     }
     
@@ -99,6 +90,13 @@ extern "C" __global__ void __closesthit__radiance()
     light_index = min(light_index, params.num_lights - 1);
     auto& light = params.lights[light_index];
 
+    bool enabled = light.mask & prd->lightmask;
+    if (!enabled) { 
+        prd->depth += 1;
+        prd->done = true;
+        return; 
+    }
+    
     vec3 light_normal {};
 
     if (pType == OptixPrimitiveType::OPTIX_PRIMITIVE_TYPE_SPHERE) {
@@ -131,10 +129,12 @@ extern "C" __global__ void __closesthit__radiance()
 
     const auto lightShape = light.shape;
 
+    auto prdorigin = ray_orig + params.cam.eye;
+
     switch (lightShape) {
     case zeno::LightShape::Plane:
     case zeno::LightShape::Ellipse: {
-        auto valid = light.rect.EvalAfterHit(&lsr, lightDirection, lightDistance, prd->origin);
+        auto valid = light.rect.EvalAfterHit(&lsr, lightDirection, lightDistance, prdorigin);
         if (!valid) {
             prd->done = false;
             auto pos = P;
@@ -145,7 +145,7 @@ extern "C" __global__ void __closesthit__radiance()
         break;
     }
     case zeno::LightShape::Sphere: {
-        light.sphere.EvalAfterHit(&lsr, lightDirection, lightDistance, prd->origin);
+        light.sphere.EvalAfterHit(&lsr, lightDirection, lightDistance, prdorigin);
         cihouSphereLightUV(lsr, light); break;
     }
     case zeno::LightShape::TriangleMesh: {
@@ -154,7 +154,7 @@ extern "C" __global__ void __closesthit__radiance()
         
         float3* normalBuffer = reinterpret_cast<float3*>(params.triangleLightNormalBuffer);
         float2* coordsBuffer = reinterpret_cast<float2*>(params.triangleLightCoordsBuffer);
-        light.triangle.EvalAfterHit(&lsr, lightDirection, lightDistance, prd->origin, prd->geometryNormal, bary3, normalBuffer, coordsBuffer);
+        light.triangle.EvalAfterHit(&lsr, lightDirection, lightDistance, prdorigin, prd->geometryNormal, bary3, normalBuffer, coordsBuffer);
         break;
     }
     default: return;
@@ -190,7 +190,7 @@ extern "C" __global__ void __closesthit__radiance()
         auto lightTree = reinterpret_cast<pbrt::LightTreeSampler*>(params.lightTreeSampler);
         if (lightTree == nullptr) { return; }
 
-        auto PMF = lightTree->PMF(reinterpret_cast<const Vector3f&>(ray_orig), 
+        auto PMF = lightTree->PMF(reinterpret_cast<const Vector3f&>(prdorigin),
                                          reinterpret_cast<const Vector3f&>(prd->geometryNormal), light_index);
 
         auto lightPickPDF = (1.0f - _SKY_PROB_) * PMF;
@@ -238,7 +238,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     auto instanceId = optixGetInstanceId();
     auto isLightGAS = checkLightGAS(instanceId);
 
-    RadiancePRD* prd = getPRD();
+    ShadowPRD* prd = getPRD<ShadowPRD>();
 
     if (params.num_lights == 0 || !isLightGAS) {
         optixIgnoreIntersection();
@@ -262,6 +262,11 @@ extern "C" __global__ void __anyhit__shadow_cutout()
         light_index = rect_idx + params.firstRectLightIdx;
     }
 
+    if (light_index == prd->lightIdx) {
+        //printf("maxDistance = %f tmax = %f \n", prd->maxDistance, optixGetRayTmax());
+        ignore = true;
+    }
+
     if (ignore) {
         optixIgnoreIntersection();
         return;
@@ -274,13 +279,12 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 
     if (zeno::LightShape::Ellipse == light.shape && light.rect.isEllipse) {
         LightSampleRecord lsr;
-        visible &= light.rect.hitAsLight(&lsr, ray_orig, ray_dir);
+        auto rayorig = ray_orig + params.cam.eye;
+        visible &= light.rect.hitAsLight(&lsr, rayorig, ray_dir);
     }
 
     if (visible) {
-        prd->shadowAttanuation = {};
-        prd->attenuation2 = {};
-        prd->attenuation = {};
+        prd->attanuation = {};
         optixTerminateRay();
     }
 

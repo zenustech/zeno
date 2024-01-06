@@ -2651,7 +2651,7 @@ ZENDEFNODE(HF_remap,
                "prim",
            }, /* params: */ {
            }, /* category: */ {
-               "erode",
+               "deprecated",
            } });
 
 struct HF_maskbyOcclusion : INode {

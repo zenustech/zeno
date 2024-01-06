@@ -22,6 +22,7 @@ typedef std::function<QVariant()> Callback_GetIndexData;
 
 typedef std::function<QPointF()> Callback_UpdateSockItemPos;
 typedef std::function<void()> Callback_OnSockLayoutChanged;
+typedef std::function<void()> Callback_OnButtonClicked;
 
 typedef std::function<void(int nframe)> Callback_UpdateFrame;
 typedef std::function<QString()> Callback_GetZsgDir;
@@ -43,6 +44,7 @@ struct CallbackCollection
     Callback_NodeSelected cbNodeSelected;
     Callback_GetIndexData cbGetIndexData;
     Callback_GetZsgDir cbGetZsgDir;
+    Callback_OnButtonClicked cbBtnOnClicked;
 };
 
 #endif

@@ -1660,7 +1660,8 @@ void ZenoMainWindow::exportGraph() {
             rapidjson::StringBuffer s;
             RAPIDJSON_WRITER writer(s);
             writer.StartArray();
-            serializeScene(pModel, writer);
+            LAUNCH_PARAM launchParam;
+            serializeScene(pModel, writer, launchParam);
             writer.EndArray();
             content = QString(s.GetString());
         }
@@ -2253,7 +2254,8 @@ static bool openFileAndExportAsZsl(const char *inPath, const char *outPath) {
         rapidjson::StringBuffer s;
         RAPIDJSON_WRITER writer(s);
         writer.StartArray();
-        serializeScene(pModel, writer);
+        LAUNCH_PARAM launchParam;
+        serializeScene(pModel, writer, launchParam);
         writer.EndArray();
         QFile fout(outPath);
         /* printf("sadfkhjl jghkasdf [%s]\n", s.GetString()); */

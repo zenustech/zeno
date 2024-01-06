@@ -18,6 +18,7 @@ protected:
     void mousePressEvent(QMouseEvent* event);
     void mouseReleaseEvent(QMouseEvent* event);
     void mouseMoveEvent(QMouseEvent* event);
+    void keyPressEvent(QKeyEvent* e) override;
 
 private:
     void initTitleWidget();

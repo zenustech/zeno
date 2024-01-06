@@ -183,6 +183,20 @@ namespace zenoui
                 pItemWidget = pMultiStrEdit;
                 break;
             }
+            //case CONTROL_PYTHON_EDITOR:
+            //{
+            //    ZPythonEditorItem* pythonEditor = new ZPythonEditorItem(UiHelper::variantToString(value), m_nodeParams.lineEditParam);
+            //    pythonEditor->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 227))); //the height is the actual init size, hardcode it...
+            //    pythonEditor->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed));
+            //    pythonEditor->setData(GVKEY_TYPE, type);
+
+            //    QObject::connect(pythonEditor, &ZPythonEditorItem::editingFinished, [=]() {
+            //        const QString& newValue = pythonEditor->text();
+            //        cbSet.cbEditFinished(newValue);
+            //    });
+            //    pItemWidget = pythonEditor;
+            //    break;
+            //}
             case CONTROL_COLOR:
             {
                 QLinearGradient grad = value.value<QLinearGradient>();
@@ -199,6 +213,20 @@ namespace zenoui
                     cbSet.cbEditFinished(QVariant::fromValue(newGrad));
                     });
                 pItemWidget = pEditBtn;
+                break;
+            }
+            case CONTROL_BUTTON:
+            {
+                //todo: name customize
+                ZenoParamPushButton* pButton = new ZenoParamPushButton("Generate", -1, QSizePolicy::Expanding);
+                pButton->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(100, zenoui::g_ctrlHeight)));
+                pButton->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
+                pButton->setData(GVKEY_TYPE, type);
+                pItemWidget = pButton;
+                QObject::connect(pButton, &ZenoParamPushButton::clicked, [=]() {
+                    if (cbSet.cbBtnOnClicked)
+                        cbSet.cbBtnOnClicked();
+                });
                 break;
             }
             case CONTROL_PURE_COLOR: 

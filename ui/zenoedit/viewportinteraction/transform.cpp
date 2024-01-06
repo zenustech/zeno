@@ -54,18 +54,10 @@ void FakeTransformer::addObject(const std::string& name) {
         return;
 
     auto object = dynamic_cast<PrimitiveObject*>(scene->objectsMan->get(name).value());
-    m_objects_center *= m_objects.size();
     auto& user_data = object->userData();
-    zeno::vec3f bmin, bmax;
-    if (user_data.has("_bboxMin") && user_data.has("_bboxMax")) {
-        bmin = user_data.getLiterial<zeno::vec3f>("_bboxMin");
-        bmax = user_data.getLiterial<zeno::vec3f>("_bboxMax");
-    } else {
-        std::tie(bmin, bmax) = zeno::primBoundingBox(object);
-        user_data.setLiterial("_bboxMin", bmin);
-        user_data.setLiterial("_bboxMax", bmax);
-    }
     if (!user_data.has("_pivot")) {
+        zeno::vec3f bmin, bmax;
+        std::tie(bmin, bmax) = zeno::primBoundingBox(object);
         zeno::vec3f translate = {0, 0, 0};
         user_data.setLiterial("_translate", translate);
         zeno::vec4f rotate = {0, 0, 0, 1};
@@ -83,10 +75,9 @@ void FakeTransformer::addObject(const std::string& name) {
             object->verts.add_attr<zeno::vec3f>("_origin_nrm") = nrm;
         }
     }
-    auto m = zeno::vec_to_other<glm::vec3>(bmax);
-    auto n = zeno::vec_to_other<glm::vec3>(bmin);
     m_pivot = zeno::vec_to_other<glm::vec3>(user_data.get2<vec3f>("_pivot"));
-    m_objects_center += (m + n) / 2.0f;
+    m_objects_center *= m_objects.size();
+    m_objects_center += m_pivot + zeno::vec_to_other<glm::vec3>(user_data.get2<vec3f>("_translate"));
     m_objects[name] = object;
     m_objects_center /= m_objects.size();
 }
@@ -315,6 +306,7 @@ bool FakeTransformer::isTransforming() const {
 }
 
 void FakeTransformer::startTransform() {
+     _objects_center_start = m_objects_center;
     markObjectsInteractive();
 }
 
@@ -677,9 +669,10 @@ void FakeTransformer::rotate(glm::vec3 start_vec, glm::vec3 end_vec, glm::vec3 a
 
 void FakeTransformer::doTransform() {
     // qDebug() << "transformer's objects count " << m_objects.size();
-    glm::vec3 new_objects_center = {0, 0, 0};
     for (auto &[obj_name, obj] : m_objects) {
         auto& user_data = obj->userData();
+        user_data.del("_bboxMin");
+        user_data.del("_bboxMax");
 
         // get transform info
         auto translate = zeno::vec_to_other<glm::vec3>(user_data.getLiterial<zeno::vec3f>("_translate"));
@@ -722,17 +715,8 @@ void FakeTransformer::doTransform() {
                 onrm[i] = zeno::other_to_vec<3>(t);
             }
         }
-        vec3f bmin, bmax;
-        if (user_data.has("_bboxMin") && user_data.has("_bboxMax")) {
-            std::tie(bmin, bmax) = primBoundingBox(obj);
-            user_data.setLiterial("_bboxMin", bmin);
-            user_data.setLiterial("_bboxMax", bmax);
-        }
-        new_objects_center += (zeno::vec_to_other<glm::vec3>(bmin) + zeno::vec_to_other<glm::vec3>(bmax)) / 2.0f;
     }
-
-    new_objects_center /= m_objects.size();
-    m_objects_center = new_objects_center;
+    m_objects_center = _objects_center_start + m_trans;
     m_handler->setCenter({m_objects_center[0], m_objects_center[1], m_objects_center[2]});
 }
 

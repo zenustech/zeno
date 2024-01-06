@@ -22,8 +22,8 @@
 /// @author NVIDIA Corporation
 /// @brief  OptiX public API header
 
-#ifndef __optix_optix_function_table_definition_h__
-#define __optix_optix_function_table_definition_h__
+#ifndef OPTIX_OPTIX_FUNCTION_TABLE_DEFINITION_H
+#define OPTIX_OPTIX_FUNCTION_TABLE_DEFINITION_H
 
 #include "optix_function_table.h"
 
@@ -38,12 +38,12 @@ extern "C" {
 /// If the stubs in optix_stubs.h are used, then the function table needs to be defined in exactly
 /// one translation unit. This can be achieved by including this header file in that translation
 /// unit.
-inline OptixFunctionTable g_optixFunctionTable;
+OptixFunctionTable g_optixFunctionTable;
 
-/*@}*/  // end group optix_function_table
+/**@}*/  // end group optix_function_table
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif  // __optix_optix_function_table_definition_h__
+#endif  // OPTIX_OPTIX_FUNCTION_TABLE_DEFINITION_H

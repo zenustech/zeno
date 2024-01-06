@@ -2,6 +2,10 @@ find_package(Qt5 COMPONENTS Widgets OpenGL Network REQUIRED)
 
 message(STATUS "Found Qt5 version ${Qt5_VERSION}: ${Qt5_DIR}")
 
+if (ZENO_WITH_PYTHON3)
+    find_package(Python3 COMPONENTS Development REQUIRED)
+endif()
+
 #add_custom_target(
 #    clean_resource_file
 #    COMMAND ${CMAKE_COMMAND} -E remove -f ${PROJECT_BINARY_DIR}/ui/zenoedit/qrc_font.o
@@ -38,6 +42,15 @@ set_property(TARGET zenoedit PROPERTY WIN32_EXECUTABLE OFF)
 if (ZENO_DEBUG_MSVC)
     zeno_dbg_msvc(zenoedit)
 endif()
+
+#BEGIN PYTHON IMPORT
+if (ZENO_WITH_PYTHON3)
+message(STATUS "python3 libraries for zenoedit: ${Python3_LIBRARIES}")
+message(STATUS "python3 include directories for zenoedit: ${Python3_INCLUDE_DIRS}")
+target_link_libraries(zenoedit PRIVATE ${Python3_LIBRARIES})
+target_include_directories(zenoedit PRIVATE ${Python3_INCLUDE_DIRS})
+endif()
+#ENDIF
 
 if (NOT ZENO_MULTIPROCESS OR NOT ZENO_IPC_USE_TCP)
     find_package(Threads REQUIRED)
@@ -98,5 +111,10 @@ endif()
 if (ZENO_INSTALL_TARGET)
     install(TARGETS zenoedit EXPORT ZenoTargets)
 endif()
+
+if (ZENO_WITH_PYTHON3)
+    target_compile_definitions(zenoedit PRIVATE -DZENO_WITH_PYTHON3)
+endif()
+
 
 add_custom_command(TARGET zenoedit PRE_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJECT_SOURCE_DIR}/hdr ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/hdr)

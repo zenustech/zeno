@@ -34,11 +34,10 @@ struct MatOutput {
     float transDistance;
     vec3 transScatterColor;
 
-
-
     float subsurface;
     vec3  sssColor;
     vec3  sssParam;
+    bool sssFxiedRadius;
     float scatterDistance;
     float scatterStep;
     float smoothness;

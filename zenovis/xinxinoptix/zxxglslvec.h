@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cuda_fp16.h>
 #include <cuda/helpers.h>
 
 __forceinline__ __device__ float to_radians(float degrees) {
@@ -1344,8 +1345,11 @@ __forceinline__ __device__ float3 decodeNormal(uchar3 c)
 
 __forceinline__ __device__ float3 decodeColor(ushort3 c)
 {
-  vec3 cout = vec3((float)(c.x), (float)(c.y), (float)(c.z)) / 65536.0f;
-  return make_float3(cout.x, cout.y, cout.z);
+  half& hx = reinterpret_cast<half&>(c.x);
+  half& hy = reinterpret_cast<half&>(c.y);
+  half& hz = reinterpret_cast<half&>(c.z);
+
+  return { __half2float(hx), __half2float(hy), __half2float(hz) };
 }
 __forceinline__ __device__ float3 decodeNormal(ushort3 c)
 {

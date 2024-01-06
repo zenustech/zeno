@@ -18,10 +18,12 @@ enum ShaderMaker {
 struct ShaderPrepared {
     ShaderMaker mark;
     std::string matid;
-    std::string source;
-    std::vector<std::string> tex_names;
+    std::string filename;
 
-    std::shared_ptr<std::string> fallback;
+    std::string callable;
+    std::string parameters;
+    
+    std::vector<std::string> tex_names;
 };
 
 namespace xinxinoptix {
@@ -75,6 +77,7 @@ struct LightDat {
 
     bool visible, doubleside;
     uint8_t shape, type;
+    uint16_t mask;
 
     uint32_t coordsBufferOffset = UINT_MAX;
     uint32_t normalBufferOffset = UINT_MAX;

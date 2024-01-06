@@ -129,6 +129,14 @@ struct PacketProc {
                 //todo: error and exit because there is no cache obj.
                 return false;
             }
+        } else if (action == "generate") {
+            QString ident = QString::fromStdString(objKey);
+            QString commands = QString::fromUtf8(buf, len);
+            IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+            QModelIndex mainGraph = pModel->index("main");
+            QModelIndex nodeIdx = pModel->index(ident, mainGraph);
+            pModel->updateSocketDefl(ident, {"commands", "", commands}, mainGraph, false);
+
         } else if (action == "frameRange") {
             auto pos = objKey.find(':');
             if (pos != std::string::npos) {

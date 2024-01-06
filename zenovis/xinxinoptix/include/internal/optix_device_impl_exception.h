@@ -19,7 +19,7 @@
 */
 
 /**
-* @file   optix_7_device_impl_exception.h
+* @file   optix_device_impl_exception.h
 * @author NVIDIA Corporation
 * @brief  OptiX public API
 *
@@ -27,11 +27,11 @@
 */
 
 #if !defined( __OPTIX_INCLUDE_INTERNAL_HEADERS__ )
-#error("optix_7_device_impl_exception.h is an internal header file and must not be used directly.  Please use optix_device.h or optix.h instead.")
+#error("optix_device_impl_exception.h is an internal header file and must not be used directly.  Please use optix_device.h or optix.h instead.")
 #endif
 
-#ifndef __optix_optix_7_device_impl_exception_h__
-#define __optix_optix_7_device_impl_exception_h__
+#ifndef OPTIX_OPTIX_DEVICE_IMPL_EXCEPTION_H
+#define OPTIX_OPTIX_DEVICE_IMPL_EXCEPTION_H
 
 #if !defined(__CUDACC_RTC__)
 #include <cstdio> /* for printf */
@@ -292,4 +292,4 @@ namespace optix_impl {
 
 }  // namespace optix_impl
 
-#endif
+#endif  // OPTIX_OPTIX_DEVICE_IMPL_EXCEPTION_H

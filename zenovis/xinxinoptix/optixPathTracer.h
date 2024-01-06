@@ -37,6 +37,8 @@ struct GenericLight
     float maxDistance;
     float falloffExponent;
 
+    uint16_t mask = EverythingMask;
+
     zeno::LightType type {};
     zeno::LightShape shape{};
     uint8_t config = zeno::LightConfigNull;
@@ -256,6 +258,9 @@ struct MissData
 
 struct HitGroupData
 {
+    uint16_t dc_index;
+    uint16_t vol_depth=999;
+    float vol_extinction=1.0f;
     //float4* vertices;
 #ifdef USE_SHORT_COMPACT
     ushort2* uv;

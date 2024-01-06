@@ -6,9 +6,6 @@
 #include <nanovdb/util/GridStats.h>
 #include <nanovdb/util/OpenToNanoVDB.h>
 
-#include <optix_stubs.h>
-#include <optix_function_table_definition.h>
-
 // ----------------------------------------------------------------------------
 // Functions for manipulating Volume instances
 // ----------------------------------------------------------------------------
