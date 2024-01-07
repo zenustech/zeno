@@ -1,41 +1,19 @@
 #include "apphelper.h"
-#include <zenomodel/include/modeldata.h>
-#include <zenomodel/include/modelrole.h>
 #include "util/log.h"
-#include <zenomodel/include/uihelper.h>
 #include "common_def.h"
+#include "common.h"
 #include "../startup/zstartup.h"
 #include "variantptr.h"
 #include "viewport/displaywidget.h"
-#include "common.h"
 #include <zeno/core/Session.h>
 #include <zeno/extra/GlobalComm.h>
 #include "viewport/zoptixviewport.h"
+#include "viewport/zenovis.h"
+#include "widgets/ztimeline.h"
+#include "util/curveutil.h"
+#include "layout/docktabcontent.h"
+#include "layout/zdockwidget.h"
 
-
-QModelIndexList AppHelper::getSubInOutNode(IGraphsModel* pModel, const QModelIndex& subgIdx, const QString& sockName, bool bInput)
-{
-    //get SubInput/SubOutput Node by socket of a subnet node.
-    const QModelIndexList& indices = pModel->searchInSubgraph(bInput ? "SubInput" : "SubOutput", subgIdx);
-    QModelIndexList result;
-    for (const QModelIndex &idx_ : indices)
-    {
-        const QString& subInputId = idx_.data(ROLE_OBJID).toString();
-        if ((sockName == "DST" && !bInput) || (sockName == "SRC" && bInput))
-        {
-            result.append(idx_);
-            continue;
-        }
-        const PARAMS_INFO &params = idx_.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
-        if (params["name"].value == sockName)
-        {
-            result.append(idx_);
-            // there muse be a unique SubOutput for specific name.
-            return result;
-        }
-    }
-    return result;
-}
 
 QLinearGradient AppHelper::colorString2Grad(const QString& colorStr)
 {
@@ -67,39 +45,6 @@ QLinearGradient AppHelper::colorString2Grad(const QString& colorStr)
     return grad;
 }
 
-INPUT_SOCKET AppHelper::getInputSocket(const QPersistentModelIndex& index, const QString& inSock, bool& exist)
-{
-    INPUT_SOCKETS inputs = index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-    //assuming inSock is valid...
-    INPUT_SOCKET _inSocket;
-    if (inputs.find(inSock) == inputs.end())
-    {
-        exist = false;
-        return _inSocket;
-    }
-    _inSocket = inputs[inSock];
-    exist = true;
-    return _inSocket;
-}
-
-void AppHelper::ensureSRCDSTlastKey(INPUT_SOCKETS& inputs, OUTPUT_SOCKETS& outputs)
-{
-    if (inputs.lastKey() != "SRC")
-    {
-        //ensure that the "SRC" is the last key in sockets.
-        INPUT_SOCKET srcSocket = inputs["SRC"];
-        inputs.remove("SRC");
-        inputs.insert("SRC", srcSocket);
-    }
-    if (outputs.lastKey() != "DST")
-    {
-        //ensure that the "DST" is the last key in sockets.
-        OUTPUT_SOCKET dstSocket = outputs["DST"];
-        outputs.remove("DST");
-        outputs.insert("DST", dstSocket);
-    }
-}
-
 QString AppHelper::nativeWindowTitle(const QString& currentFilePath)
 {
     QString ver = QString::fromStdString(getZenoVersion());
@@ -112,77 +57,6 @@ QString AppHelper::nativeWindowTitle(const QString& currentFilePath)
     {
         QString title = QString::fromUtf8("%1 - Zeno Editor (%2)").arg(currentFilePath).arg(ver);
         return title;
-    }
-}
-
-void AppHelper::socketEditFinished(QVariant newValue, QPersistentModelIndex nodeIdx, QPersistentModelIndex paramIdx) {
-    IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();
-    ZenoMainWindow *main = zenoApp->getMainWindow();
-    if (!pModel || !main)
-        return;
-    int ret = pModel->ModelSetData(paramIdx, newValue, ROLE_PARAM_VALUE);
-}
-
-void AppHelper::modifyOptixObjDirectly(QVariant newValue, QPersistentModelIndex nodeIdx, QPersistentModelIndex paramIdx, bool editByPropPanel)
-{
-    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-    ZenoMainWindow* main = zenoApp->getMainWindow();
-    if (nodeIdx.data(ROLE_OBJNAME).toString() == "LightNode" &&
-        nodeIdx.data(ROLE_OPTIONS).toInt() == OPT_VIEW &&
-        (main->isAlways() || main->isAlwaysLightCamera() || editByPropPanel))
-    {
-        modifyLightData(newValue, nodeIdx, paramIdx);
-    }
-    else if ((nodeIdx.data(ROLE_OBJNAME).toString() == "CameraNode" ||
-        nodeIdx.data(ROLE_OBJNAME).toString() == "MakeCamera" ||
-        nodeIdx.data(ROLE_OBJNAME).toString() == "TargetCamera") &&
-        ((nodeIdx.data(ROLE_OPTIONS).toInt() == OPT_VIEW && (main->isAlways() || main->isAlwaysLightCamera())) || editByPropPanel)
-        )
-    {
-        modifyOptixCameraPropDirectly(newValue, nodeIdx, paramIdx);
-    }
-    else if (( (main->isAlways() || main->isAlwaysLightCamera() || main->isAlwaysMaterial()) || editByPropPanel))
-    {
-        socketEditFinished(newValue, nodeIdx, paramIdx);
-    }
-}
-
-void AppHelper::modifyOptixCameraPropDirectly(QVariant newValue, QPersistentModelIndex nodeIdx, QPersistentModelIndex paramIdx)
-{
-    int apertureSocketIdx = 0, distancePlaneSocketIdx = 0;
-    if (nodeIdx.data(ROLE_OBJNAME).toString() == "CameraNode")
-    {
-        apertureSocketIdx = 4; distancePlaneSocketIdx = 5;
-    }else if (nodeIdx.data(ROLE_OBJNAME).toString() == "MakeCamera" || nodeIdx.data(ROLE_OBJNAME).toString() == "TargetCamera")
-    {
-        apertureSocketIdx = 6; distancePlaneSocketIdx = 7;
-    }
-    QStandardItemModel* viewParams = QVariantPtr<QStandardItemModel>::asPtr(nodeIdx.data(ROLE_NODE_PARAMS));
-    ZASSERT_EXIT(viewParams);
-    QStandardItem* inv_root = viewParams->invisibleRootItem();
-    ZASSERT_EXIT(inv_root);
-    QStandardItem* inputsItem = inv_root->child(0);
-    float cameraAperture = inputsItem->child(apertureSocketIdx)->index().data(ROLE_PARAM_VALUE).value<float>();
-    float cameraDistancePlane = inputsItem->child(distancePlaneSocketIdx)->index().data(ROLE_PARAM_VALUE).value<float>();
-    QString paramName = paramIdx.data(ROLE_PARAM_NAME).toString();
-    if (paramName == "aperture")
-        cameraAperture = newValue.value<float>();
-    else if (paramName == "focalPlaneDistance")
-        cameraDistancePlane = newValue.value<float>();
-
-    UI_VECTYPE skipParam(2, 0);
-    if (!inputsItem->child(apertureSocketIdx)->index().data(ROLE_PARAM_LINKS).value<PARAM_LINKS>().isEmpty())
-        skipParam[0] = 1;
-    if (!inputsItem->child(distancePlaneSocketIdx)->index().data(ROLE_PARAM_LINKS).value<PARAM_LINKS>().isEmpty())
-        skipParam[1] = 1;
-
-    QVector<DisplayWidget*> views = zenoApp->getMainWindow()->viewports();
-    for (auto pDisplay : views) {
-        if (pDisplay->isGLViewport())
-            continue;
-        ZASSERT_EXIT(pDisplay);
-        if (ZOptixViewport* optixViewport = pDisplay->optixViewport())
-            optixViewport->updateCameraProp(cameraAperture, cameraDistancePlane, skipParam);
     }
 }
 
@@ -218,57 +92,6 @@ VideoRecInfo AppHelper::getRecordInfo(const ZENO_RECORD_RUN_INITPARAM& param)
     }
 
     return recInfo;
-}
-
-void AppHelper::modifyLightData(QVariant newValue, QPersistentModelIndex nodeIdx, QPersistentModelIndex paramIdx) {
-    QStandardItemModel *viewParams = QVariantPtr<QStandardItemModel>::asPtr(nodeIdx.data(ROLE_NODE_PARAMS));
-    ZASSERT_EXIT(viewParams);
-    QStandardItem *inv_root = viewParams->invisibleRootItem();
-    ZASSERT_EXIT(inv_root);
-    QStandardItem *inputsItem = inv_root->child(0);
-    QString name = nodeIdx.data(ROLE_OBJID).toString();
-    UI_VECTYPE posVec = inputsItem->child(0)->index().data(ROLE_PARAM_VALUE).value<UI_VECTYPE>();
-    UI_VECTYPE scaleVec = inputsItem->child(1)->index().data(ROLE_PARAM_VALUE).value<UI_VECTYPE>();
-    UI_VECTYPE rotateVec = inputsItem->child(2)->index().data(ROLE_PARAM_VALUE).value<UI_VECTYPE>();
-    UI_VECTYPE colorVec = inputsItem->child(4)->index().data(ROLE_PARAM_VALUE).value<UI_VECTYPE>();
-    float intensity = inputsItem->child(6)->index().data(ROLE_PARAM_VALUE).value<float>();
-    QString paramName = paramIdx.data(ROLE_PARAM_NAME).toString();
-    if (paramName == "position")
-        posVec = newValue.value<UI_VECTYPE>();
-    else if (paramName == "scale")
-        scaleVec = newValue.value<UI_VECTYPE>();
-    else if (paramName == "rotate")
-        rotateVec = newValue.value<UI_VECTYPE>();
-    else if (paramName == "color")
-        colorVec = newValue.value<UI_VECTYPE>();
-    else if (paramName == "intensity")
-        intensity = newValue.value<float>();
-    if (posVec.size() == 0 || scaleVec.size() == 0 || rotateVec.size() == 0 || colorVec.size() == 0)
-        return;
-
-    UI_VECTYPE skipParam(5, 0);
-    if (!inputsItem->child(0)->index().data(ROLE_PARAM_LINKS).value<PARAM_LINKS>().isEmpty())
-        skipParam[0] = 1;
-    if (!inputsItem->child(1)->index().data(ROLE_PARAM_LINKS).value<PARAM_LINKS>().isEmpty())
-        skipParam[1] = 1;
-    if (!inputsItem->child(2)->index().data(ROLE_PARAM_LINKS).value<PARAM_LINKS>().isEmpty())
-        skipParam[2] = 1;
-    if (!inputsItem->child(4)->index().data(ROLE_PARAM_LINKS).value<PARAM_LINKS>().isEmpty())
-        skipParam[3] = 1;
-    if (!inputsItem->child(6)->index().data(ROLE_PARAM_LINKS).value<PARAM_LINKS>().isEmpty())
-        skipParam[4] = 1;
-
-    ZenoMainWindow *pWin = zenoApp->getMainWindow();
-    ZASSERT_EXIT(pWin);
-
-    QVector<DisplayWidget *> views = pWin->viewports();
-    for (auto pDisplay : views)
-    {
-        if (pDisplay->isGLViewport())
-            continue;
-        if (ZOptixViewport* optixViewport = pDisplay->optixViewport())
-            optixViewport->modifyLightData(posVec, scaleVec, rotateVec, colorVec, intensity, name, skipParam);
-    }
 }
 
 QVector<QString> AppHelper::getKeyFrameProperty(const QVariant& val)
@@ -383,82 +206,9 @@ bool AppHelper::updateCurve(QVariant oldVal, QVariant& newValue)
     return true;
 }
 
-void AppHelper::initLaunchCacheParam(LAUNCH_PARAM& param)
+void AppHelper::dumpTabsToZsg(QDockWidget* dockWidget, RAPIDJSON_WRITER& writer)
 {
-    QSettings settings(zsCompanyName, zsEditor);
-    param.enableCache = settings.value("zencache-enable").isValid() ? settings.value("zencache-enable").toBool() : true;
-    param.tempDir = settings.value("zencache-autoremove").isValid() ? settings.value("zencache-autoremove").toBool() : false;
-    param.cacheDir = settings.value("zencachedir").isValid() ? settings.value("zencachedir").toString() : "";
-    param.cacheNum = settings.value("zencachenum").isValid() ? settings.value("zencachenum").toInt() : 1;
-    param.autoCleanCacheInCacheRoot = settings.value("zencache-autoclean").isValid() ? settings.value("zencache-autoclean").toBool() : true;
-}
-
-bool AppHelper::openZsgAndRun(const ZENO_RECORD_RUN_INITPARAM& param, LAUNCH_PARAM launchParam)
-{
-    auto pGraphs = zenoApp->graphsManagment();
-    IGraphsModel* pModel = pGraphs->openZsgFile(param.sZsgPath);
-    if (!pModel)
-        return false;
-
-    if (!param.subZsg.isEmpty())
-    {
-        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-        for (auto subgFilepath : param.subZsg.split(","))
-        {
-            zenoApp->graphsManagment()->importGraph(subgFilepath);
-        }
-        QModelIndex mainGraphIdx = pGraphsModel->index("main");
-
-        for (QModelIndex subgIdx : pGraphsModel->subgraphsIndice())
-        {
-            QString subgName = subgIdx.data(ROLE_OBJNAME).toString();
-            if (subgName == "main" || subgName.isEmpty())
-            {
-                continue;
-            }
-            QString subgNodeId = NodesMgr::createNewNode(pGraphsModel, mainGraphIdx, subgName, QPointF(500, 500));
-            QModelIndex subgNodeIdx = pGraphsModel->index(subgNodeId, mainGraphIdx);
-            STATUS_UPDATE_INFO info;
-            info.role = ROLE_OPTIONS;
-            info.oldValue = subgNodeIdx.data(ROLE_OPTIONS).toInt();
-            info.newValue = subgNodeIdx.data(ROLE_OPTIONS).toInt() | OPT_VIEW;
-            pGraphsModel->updateNodeStatus(subgNodeId, info, mainGraphIdx, true);
-        }
-    }
-    zeno::getSession().globalComm->clearState();
-    launchParam.projectFps = pGraphs->timeInfo().timelinefps;
-
-    //set userdata from zsg
-    auto& ud = zeno::getSession().userData();
-    ud.set2("optix_show_background", pGraphs->userdataInfo().optix_show_background);
-
-    if (!param.paramsJson.isEmpty())
-    {
-        //parse paramsJson
-        rapidjson::Document configDoc;
-        configDoc.Parse(param.paramsJson.toUtf8());
-        if (!configDoc.IsObject())
-        {
-            zeno::log_error("config file is corrupted");
-        }
-        FuckQMap<QString, CommandParam> commands = pGraphs->currentModel()->commandParams();
-        for (auto& [key, param] : commands)
-        {
-            if (configDoc.HasMember(param.name.toUtf8()))
-            {
-                param.value = UiHelper::parseJson(configDoc[param.name.toStdString().c_str()], nullptr);
-                param.bIsCommand = true;
-            }
-            pGraphs->currentModel()->updateCommandParam(key, param);
-        }
-    }
-
-    launchProgram(pModel, launchParam);
-    return true;
-}
-
-void AppHelper::dumpTabsToZsg(QDockWidget* dockWidget, RAPIDJSON_WRITER& writer) {
-    if (ZTabDockWidget* tabDockwidget = qobject_cast<ZTabDockWidget*>(dockWidget))
+    if (ZDockWidget* tabDockwidget = qobject_cast<ZDockWidget*>(dockWidget))
     {
         for (int i = 0; i < tabDockwidget->count(); i++)
         {

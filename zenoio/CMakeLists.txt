@@ -7,4 +7,4 @@ if (ZENO_DEBUG_MSVC)
 endif()
 
 target_link_libraries(zenoio PUBLIC zenocore)
-target_include_directories(zenoio PRIVATE .. ../.. ../include)
+target_include_directories(zenoio PRIVATE .)

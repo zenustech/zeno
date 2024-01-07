@@ -1,5 +1,5 @@
 #include "ZImportSubgraphsDlg.h"
-#include <zenoui/style/zenostyle.h>
+#include "style/zenostyle.h"
 
 CheckBoxHeaderView::CheckBoxHeaderView(Qt::Orientation orientation, QWidget* parent) : QHeaderView(orientation, parent)
 {

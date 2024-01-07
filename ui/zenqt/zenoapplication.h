@@ -2,16 +2,12 @@
 #define __ZENO_APPLICATION_H__
 
 #include <QtWidgets>
-#include "zwidgetostream.h"
-#include "cache/zcachemgr.h"
-#include "uilogic/procclipboard.h"
+#include "log/zwidgetostream.h"
+#include "util/procclipboard.h"
 #include <zeno/utils/scope_exit.h>
 
 class GraphsManagment;
 class ZenoMainWindow;
-#if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
-class ZTcpServer;
-#endif
 
 class ZenoApplication : public QApplication
 {
@@ -24,11 +20,7 @@ public:
     void initStyleSheets();
     ZenoMainWindow* getMainWindow();
 	QWidget* getWindow(const QString& objName);
-    std::shared_ptr<ZCacheMgr> cacheMgr() const;
     std::shared_ptr<ProcessClipboard> procClipboard() const;
-#if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
-    ZTcpServer* getServer();
-#endif
     QStandardItemModel* logModel() const;
     bool isUIApplication() const { return m_bUIApp; }
 
@@ -39,11 +31,7 @@ private:
     QString readQss(const QString& qssPath);
     void initMetaTypes();
 
-#if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
-    ZTcpServer* m_server;
-#endif
     std::shared_ptr<ZWidgetErrStream> m_spUILogStream;
-    std::shared_ptr<ZCacheMgr> m_spCacheMgr;
     std::shared_ptr<ProcessClipboard> m_spProcClipboard;
     QDir m_appDataPath;
     bool m_bUIApp;

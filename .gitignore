@@ -17,3 +17,5 @@ CMakeUserPresets.json
 .vim_localrc
 CMakeLists.txt.user
 compile_commands.json
+/ui/zenqt/res/font/MiSans
+/debug.bat

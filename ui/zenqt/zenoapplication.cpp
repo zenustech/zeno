@@ -4,8 +4,6 @@
 #include "zenomainwindow.h"
 #include <zeno/utils/log.h>
 #include "util/log.h"
-#include "launch/ztcpserver.h"
-#include "launch/corelaunch.h"
 #include "startup/zstartup.h"
 #include <style/zenostyle.h>
 #include "settings/zenosettingsmanager.h"
@@ -13,9 +11,6 @@
 
 ZenoApplication::ZenoApplication(int &argc, char **argv)
     : QApplication(argc, argv)
-#if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
-    , m_server(nullptr)
-#endif
     , m_bUIApp(true)
 {
     initMetaTypes();
@@ -41,7 +36,6 @@ ZenoApplication::ZenoApplication(int &argc, char **argv)
         bool ret = connect(m_spUILogStream->optixLogProxy().get(), SIGNAL(optixlogReady(const QString&)), this, SLOT(onOptixlogReady(const QString&)), Qt::QueuedConnection);
     }
 
-    m_spCacheMgr = std::make_shared<ZCacheMgr>();
     m_spProcClipboard = std::make_shared<ProcessClipboard>();
 }
 
@@ -160,11 +154,6 @@ GraphsManagment *ZenoApplication::graphsManagment() const
     return &GraphsManagment::instance();
 }
 
-std::shared_ptr<ZCacheMgr> ZenoApplication::cacheMgr() const
-{
-    return m_spCacheMgr;
-}
-
 std::shared_ptr<ProcessClipboard> ZenoApplication::procClipboard() const
 {
     return m_spProcClipboard;
@@ -174,17 +163,6 @@ QStandardItemModel* ZenoApplication::logModel() const
 {
     return graphsManagment()->logModel();
 }
-
-#if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
-ZTcpServer* ZenoApplication::getServer()
-{
-    if (!m_server) {
-        m_server = new ZTcpServer(this);
-        m_server->init(QHostAddress::LocalHost);
-    }
-    return m_server;
-}
-#endif
 
 ZenoMainWindow* ZenoApplication::getMainWindow()
 {
