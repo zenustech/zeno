@@ -67,6 +67,9 @@ struct ShaderFinalize : INode {
             {3, "mat_transScatterColor"},
             {1, "mat_ior"},
 
+            {1, "mat_diffraction"},
+            {3, "mat_diffractColor"},
+
             {1, "mat_flatness"},
             {1, "mat_shadowReceiver"},
             {1, "mat_thin"},
@@ -116,10 +119,13 @@ struct ShaderFinalize : INode {
             get_input<IObject>("specTrans", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("transColor", std::make_shared<NumericObject>(vec3f(1.0f))),
             get_input<IObject>("transTint", std::make_shared<NumericObject>(vec3f(1.0f))),
-            get_input<IObject>("transTintDepth", std::make_shared<NumericObject>(float(1.0f))),
+            get_input<IObject>("transTintDepth", std::make_shared<NumericObject>(float(10000.0f))),
             get_input<IObject>("transDistance", std::make_shared<NumericObject>(float(1.0f))),
             get_input<IObject>("transScatterColor", std::make_shared<NumericObject>(vec3f(1.0f))),
             get_input<IObject>("ior", std::make_shared<NumericObject>(float(1.5f))),
+
+            get_input<IObject>("diffraction", std::make_shared<NumericObject>(float(0.0f))),
+            get_input<IObject>("diffractColor", std::make_shared<NumericObject>(vec3f(0.0f))),
 
             get_input<IObject>("flatness", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("shadowReceiver", std::make_shared<NumericObject>(float(0.0f))),
@@ -312,10 +318,13 @@ ZENDEFNODE(ShaderFinalize, {
         {"float", "specTrans", "0.0"},
         {"vec3f", "transColor", "1.0,1.0,1.0"},
         {"vec3f", "transTint", "1.0,1.0,1.0"},
-        {"float", "transTintDepth", "0.0"},
+        {"float", "transTintDepth", "10000.0"},
         {"float", "transDistance", "10.0"},
         {"vec3f", "transScatterColor", "1.0,1.0,1.0"},
-        {"float", "ior", "1.5"},
+        {"float", "ior", "1.3"},
+
+        {"float", "diffraction", "0.0"},
+        {"vec3f", "diffractColor", "0.0,0.0,0.0"},
 
         {"float", "flatness", "0.0"},
         {"float", "shadowReceiver", "0.0"},
