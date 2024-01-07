@@ -1,0 +1,465 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>809</width>
+    <height>611</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true"/>
+  </property>
+  <widget class="QWidget" name="centralwidget"/>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>809</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <widget class="QMenu" name="menu_Export">
+     <property name="title">
+      <string>Export</string>
+     </property>
+     <addaction name="actionExportGraph"/>
+     <addaction name="actionScreen_Shoot"/>
+     <addaction name="actionRecord_Video"/>
+    </widget>
+    <widget class="QMenu" name="menuRecent_Files">
+     <property name="title">
+      <string>Recent Files</string>
+     </property>
+    </widget>
+    <widget class="QMenu" name="menu_New">
+     <property name="title">
+      <string>New</string>
+     </property>
+     <addaction name="actionNew_File"/>
+     <addaction name="actionNew_Subgraph"/>
+    </widget>
+    <addaction name="menu_New"/>
+    <addaction name="action_Open"/>
+    <addaction name="action_Save"/>
+    <addaction name="action_Save_As"/>
+    <addaction name="action_Import"/>
+    <addaction name="menu_Export"/>
+    <addaction name="menuRecent_Files"/>
+    <addaction name="action_Close"/>
+   </widget>
+   <widget class="QMenu" name="menuEdit">
+    <property name="title">
+     <string>Edit</string>
+    </property>
+    <addaction name="actionUndo"/>
+    <addaction name="actionRedo"/>
+    <addaction name="actionCollaspe"/>
+    <addaction name="actionExpand"/>
+    <addaction name="actionEasy_Graph"/>
+    <addaction name="actionOpen_View"/>
+    <addaction name="actionClear_View"/>
+   </widget>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>View</string>
+    </property>
+    <widget class="QMenu" name="menuCamera">
+     <property name="title">
+      <string>Camera</string>
+     </property>
+     <addaction name="actionNode_Camera"/>
+    </widget>
+    <addaction name="menuCamera"/>
+   </widget>
+   <widget class="QMenu" name="menuWindow">
+    <property name="title">
+     <string>Window</string>
+    </property>
+    <widget class="QMenu" name="menuCustom_Layout">
+     <property name="title">
+      <string>Custom Layout</string>
+     </property>
+    </widget>
+    <addaction name="actionSave_Layout"/>
+    <addaction name="menuCustom_Layout"/>
+    <addaction name="actionLayout_Manager"/>
+   </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>Help</string>
+    </property>
+    <addaction name="actionAbout"/>
+    <addaction name="actionCheck_Update"/>
+   </widget>
+   <widget class="QMenu" name="menuOption">
+    <property name="title">
+     <string>Option</string>
+    </property>
+    <addaction name="actionSet_NASLOC"/>
+    <addaction name="actionSet_ZENCACHE"/>
+    <addaction name="actionSet_ShortCut"/>
+    <addaction name="actionEnglish_Chinese"/>
+    <addaction name="actionPreferences"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuEdit"/>
+   <addaction name="menuView"/>
+   <addaction name="menuWindow"/>
+   <addaction name="menuOption"/>
+   <addaction name="menuHelp"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar">
+   <property name="styleSheet">
+    <string notr="true">background: #2d3239;
+color: #8A939E;
+border-top: 1px solid black;</string>
+   </property>
+  </widget>
+  <action name="actionUndo">
+   <property name="text">
+    <string>Undo</string>
+   </property>
+   <property name="shortcut">
+    <string notr="true">Ctrl+Z</string>
+   </property>
+  </action>
+  <action name="actionRedo">
+   <property name="text">
+    <string>Redo</string>
+   </property>
+   <property name="shortcut">
+    <string notr="true">Ctrl+Y</string>
+   </property>
+  </action>
+  <action name="actionDefault_layout">
+   <property name="text">
+    <string>Default layout</string>
+   </property>
+  </action>
+  <action name="action_Open">
+   <property name="text">
+    <string>Open</string>
+   </property>
+   <property name="shortcut">
+    <string notr="true">Ctrl+O</string>
+   </property>
+  </action>
+  <action name="action_Save">
+   <property name="text">
+    <string>Save</string>
+   </property>
+   <property name="shortcut">
+    <string notr="true">Ctrl+S</string>
+   </property>
+  </action>
+  <action name="action_Save_As">
+   <property name="text">
+    <string>Save As</string>
+   </property>
+   <property name="shortcut">
+    <string notr="true">Ctrl+Shift+S</string>
+   </property>
+  </action>
+  <action name="action_Import">
+   <property name="text">
+    <string>Import</string>
+   </property>
+   <property name="shortcut">
+    <string notr="true">Ctrl+Shift+O</string>
+   </property>
+  </action>
+  <action name="action_Close">
+   <property name="text">
+    <string>Close</string>
+   </property>
+  </action>
+  <action name="action_Copy">
+   <property name="text">
+    <string>Copy</string>
+   </property>
+  </action>
+  <action name="action_Paste">
+   <property name="text">
+    <string>Paste</string>
+   </property>
+  </action>
+  <action name="action_Cut">
+   <property name="text">
+    <string>Cut</string>
+   </property>
+  </action>
+  <action name="actionSmooth_Shading">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Smooth Shading</string>
+   </property>
+   <property name="shortcut">
+    <string notr="true">F5</string>
+   </property>
+  </action>
+  <action name="actionNormal_Check">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Normal Check</string>
+   </property>
+   <property name="shortcut">
+    <string notr="true">Shift+F5</string>
+   </property>
+  </action>
+  <action name="actionWireFrame">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Wireframe</string>
+   </property>
+   <property name="shortcut">
+    <string notr="true">F6</string>
+   </property>
+  </action>
+  <action name="actionShow_Grid">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Grid</string>
+   </property>
+   <property name="shortcut">
+    <string notr="true">Shift+F6</string>
+   </property>
+  </action>
+  <action name="actionBackground_Color">
+   <property name="text">
+    <string>Background Color</string>
+   </property>
+  </action>
+  <action name="actionSolid">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Solid</string>
+   </property>
+   <property name="shortcut">
+    <string notr="true">F7</string>
+   </property>
+  </action>
+  <action name="actionShading">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Shading</string>
+   </property>
+   <property name="shortcut">
+    <string notr="true">Shift+F7</string>
+   </property>
+  </action>
+  <action name="actionOptix">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Optix</string>
+   </property>
+   <property name="shortcut">
+    <string notr="true">F8</string>
+   </property>
+  </action>
+  <action name="actionBlackWhite">
+   <property name="text">
+    <string>BlackWhite</string>
+   </property>
+  </action>
+  <action name="actionCreek">
+   <property name="text">
+    <string>Creek</string>
+   </property>
+  </action>
+  <action name="actionDay_Light">
+   <property name="text">
+    <string>Day Light</string>
+   </property>
+  </action>
+  <action name="actionDefault">
+   <property name="text">
+    <string>Default</string>
+   </property>
+  </action>
+  <action name="actionFootballField">
+   <property name="text">
+    <string>FootballField</string>
+   </property>
+  </action>
+  <action name="actionForest">
+   <property name="text">
+    <string>Forest</string>
+   </property>
+  </action>
+  <action name="actionLake">
+   <property name="text">
+    <string>Lake</string>
+   </property>
+  </action>
+  <action name="actionSee">
+   <property name="text">
+    <string>Sea</string>
+   </property>
+  </action>
+  <action name="actionNode_Camera">
+   <property name="text">
+    <string>Node Camera</string>
+   </property>
+  </action>
+  <action name="actionSave_Layout">
+   <property name="text">
+    <string>Save Layout</string>
+   </property>
+  </action>
+  <action name="actionScreen_Shoot">
+   <property name="text">
+    <string>Screenshoot</string>
+   </property>
+   <property name="shortcut">
+    <string notr="true">F12</string>
+   </property>
+  </action>
+  <action name="actionRecord_Video">
+   <property name="text">
+    <string>Record Video</string>
+   </property>
+   <property name="shortcut">
+    <string notr="true">Shift+F12</string>
+   </property>
+  </action>
+  <action name="actionEnglish_Chinese">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>English Chinese</string>
+   </property>
+  </action>
+  <action name="actionExportGraph">
+   <property name="text">
+    <string>Graph</string>
+   </property>
+   <property name="shortcut">
+    <string notr="true">Ctrl+Shift+E</string>
+   </property>
+  </action>
+  <action name="actionCollaspe">
+   <property name="text">
+    <string>Collaspe</string>
+   </property>
+  </action>
+  <action name="actionExpand">
+   <property name="text">
+    <string>Expand</string>
+   </property>
+  </action>
+  <action name="actionEasy_Graph">
+   <property name="text">
+    <string>Easy Subgraph</string>
+   </property>
+  </action>
+  <action name="actionOpen_View">
+   <property name="text">
+    <string>Open View</string>
+   </property>
+  </action>
+  <action name="actionClear_View">
+   <property name="text">
+    <string>Clear View</string>
+   </property>
+  </action>
+  <action name="actionSet_NASLOC">
+   <property name="text">
+    <string>Set NASLOC</string>
+   </property>
+  </action>
+  <action name="actionSet_ZENCACHE">
+   <property name="text">
+    <string>Set ZENCACHE</string>
+   </property>
+  </action>
+  <action name="actionLayout_Manager">
+   <property name="text">
+    <string>Layout Manage</string>
+   </property>
+  </action>
+  <action name="actionShortcutList">
+   <property name="text">
+    <string>Shortcut List</string>
+   </property>
+  </action>
+  <action name="actionNew_File">
+   <property name="text">
+    <string>New File</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+N</string>
+   </property>
+  </action>
+  <action name="actionNew_Subgraph">
+   <property name="text">
+    <string>New Subgraph</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+E</string>
+   </property>
+  </action>
+  <action name="actionSet_ShortCut">
+   <property name="text">
+    <string>Set ShortCut</string>
+   </property>
+  </action>
+  <action name="actionFeedback">
+   <property name="text">
+    <string>Feedback</string>
+   </property>
+  </action>
+  <action name="actionCheck_Update">
+   <property name="text">
+    <string>Update</string>
+   </property>
+  </action>
+  <action name="actionAbout">
+   <property name="text">
+    <string>About Zeno</string>
+   </property>
+  </action>
+  <action name="actionPreferences">
+   <property name="text">
+    <string>Preferences</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

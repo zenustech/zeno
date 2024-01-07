@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="25px" height="24px" viewBox="0 0 25 24" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>openfile</title>
+    <g id="ZENO@2Prototype-NodeEditor" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Artboard" transform="translate(-700.000000, -334.000000)">
+            <rect fill="#272727" x="0" y="0" width="2150" height="889"></rect>
+            <g id="Group-2" transform="translate(432.500000, 194.000000)">
+                <rect id="矩形" stroke="#494747" stroke-width="4" fill="#1E1E1E" x="2" y="2" width="300" height="403"></rect>
+                <g id="para" transform="translate(12.000000, 140.000000)">
+                    <rect id="矩形" fill="#252525" x="42" y="0" width="238" height="24"></rect>
+                    <g id="openfile" transform="translate(256.000000, 0.000000)">
+                        <rect id="矩形" fill="#474747" x="0" y="0" width="24" height="24"></rect>
+                        <polygon id="Path" fill="#FFFFFF" fill-rule="nonzero" opacity="1" points="4 5.5 10 5.5 13 8.5 20 8.5 20 18.5 4 18.5"></polygon>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

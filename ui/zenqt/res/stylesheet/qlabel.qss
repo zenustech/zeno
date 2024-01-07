@@ -1,0 +1,175 @@
+QLabel[cssClass="proppanel"]
+{
+	font-size: 9pt;
+	font-weight: bold;
+	color: rgba(255, 255, 255, 0.7);
+}
+
+QLabel[cssClass="proppanel-nodename"]
+{
+	font-size: 12pt;
+	font-weight: bold;
+	color: rgba(255, 255, 255, 0.5);
+}
+
+QLabel[cssClass="proppanel-sectionname"]
+{
+	font-weight: 500;
+	color: rgba(187, 206, 220, 1.0);
+}
+
+QLabel[cssClass="proppanel-itemname"]
+{
+	font-size: 9pt;
+	font-weight: bold;
+	color: rgba(255, 255, 255, 0.7);
+}
+
+QLabel[cssClass="numslider"]
+{
+	font-size: 12pt;
+	font-weight: 500;
+	padding: 15px;
+	text-align: center;
+}
+
+QLabel[cssClass = "welcomepage_name"]
+{ 
+	font: 24pt 'FontFamily';
+	font-weight: 500;
+	color: rgb(160, 178, 194);
+}
+
+QLabel[cssClass = "welcomepage_label"]
+{ 
+	font-size: 10pt;
+	font-weight: 500;
+	color: #A3B1C0;
+}
+
+QLabel[cssClass = "welcomepage_label"]:hover
+{ 
+	color: #FFFFFF;
+}
+
+QLabel[cssClass = "welcomepage"]
+{
+	font: 12pt 'FontFamily';
+	font-weight: 500;
+	color:  #737B85;
+}
+
+QLabel[cssClass = "welcomepage_version"]
+{
+	font-size: 12pt;
+	font-weight: 600;
+	color:  #737B85;
+}
+
+QLabel[cssClass = "welcomepage_logo"]
+{
+	border-image:url(":/icons/welcome_Zeno_logo.svg");
+}
+
+QLabel[cssClass="search_result"]
+{
+	font: 9pt 'FontFamily';
+    font-weight: 450;
+    color: #FCFCFC;
+}
+
+QLabel#iconManual
+{
+	border-image:url(":/icons/welcome_document.svg");
+}
+
+QLabel#iconForum
+{
+	border-image:url(":/icons/welcome_forum.svg");
+}
+
+QLabel#iconGithub
+{
+	border-image:url(":/icons/welcome_github.svg");
+}
+
+QLabel#iconVideos
+{
+	border-image:url(":/icons/welcome_document.svg");
+}
+
+QLabel#iconOfficialWeb
+{
+	border-image:url(":/icons/welcome_website.svg");
+}
+
+ZCurveMapEditor QLabel
+{
+	font-size: 9pt;
+	font-weight: 500;
+	color: rgb(133, 130, 128);
+}
+
+QLabel[cssClass="rgb"]
+{
+	padding: 0px;
+	color: #9D9DA3;
+}
+
+QLabel[cssClass="color_label"]
+{
+	font-weight: 500;
+	color: #8A8A8C;
+}
+
+QTableView[cssClass="proppanel"]
+{
+    border:0px solid white;
+    color: rgb(166, 166, 166);
+    gridline-color: rgb(23, 23, 23);
+    background-color: rgb(28, 28, 28);
+    alternate-background-color: rgb(20, 20, 20);
+}
+
+QHeaderView
+{
+    background-color: transparent;
+}
+
+QHeaderView::section
+{
+    color: rgb(166, 166, 166);
+    background-color: rgb(39, 39, 39);
+    border:1px solid rgb(23, 23, 23);
+}
+
+QTableView QTableCornerButton::section
+{
+    background-color: rgb(39, 39, 39);
+    border:1px solid rgb(23, 23, 23);
+}
+
+QListView[cssClass="proppanel"]
+{
+    border:0px solid white;
+    color: rgb(166, 166, 166);
+    gridline-color: rgb(23, 23, 23);
+    background-color: rgb(28, 28, 28);
+    alternate-background-color: rgb(20, 20, 20);
+}
+
+QListWidget[cssClass="search_view"]
+{
+    background-color: #191D21;
+    color: #222222;
+    margin: 0px;
+	border: 1px solid rgba(18,20,22,1);
+}
+
+QListWidget[cssClass="search_view"]::item
+{
+    font: 9pt 'FontFamily';
+    font-weight: 400;
+    padding: 4px 20px;
+    color: #8A939E;
+}

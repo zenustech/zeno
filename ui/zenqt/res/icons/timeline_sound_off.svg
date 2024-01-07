@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="24px" height="20px" viewBox="0 0 24 20" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>ic/timeLine/sound/off</title>
+    <g id="Symbol" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="ic/timeLine/sound/off">
+            <rect id="bg" x="0" y="0" width="24" height="20"></rect>
+            <polygon id="矩形" fill="#A3B1C0" points="5.97293299 7.76838737 8.61164389 7.76838737 12.1541342 5.03406226 12.1541342 14.9659377 8.61164389 12.2361147 5.97293299 12.2361147"></polygon>
+            <polygon id="路径" fill="#A3B1C0" fill-rule="nonzero" points="18.0348518 8.4675236 16.5023754 9.99964799 18.0348518 11.5324764 17.0449023 12.5224259 15.5124259 10.9895975 13.9799495 12.5224259 12.99 11.5324764 14.5224764 9.99964799 12.99 8.4675236 13.9799495 7.47757411 15.5124259 9.0096985 17.0449023 7.47757411"></polygon>
+        </g>
+    </g>
+</svg>

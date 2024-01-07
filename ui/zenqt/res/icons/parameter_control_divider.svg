@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="16px" height="16px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>parameter_control_divider</title>
+    <g id="Symbol" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="ic/parameter_control/divider">
+            <rect id="矩形" x="1" y="1" width="14" height="14"></rect>
+            <path d="M13.281,9.499125 L13.28125,11.953125 C13.28125,12.0734375 13.1828125,12.171875 13.0625,12.171875 L2.9375,12.171875 C2.8171875,12.171875 2.71875,12.0734375 2.71875,11.953125 L2.718,9.499125 L4.201,9.499125 L4.201613,10.8177125 L11.798387,10.8177125 L11.798,9.499125 L13.281,9.499125 Z M13.0625,3.828125 C13.1828125,3.828125 13.28125,3.9265625 13.28125,4.046875 L13.281,6.499125 L11.798,6.499125 L11.798387,5.18228746 L4.201613,5.18228746 L4.201,6.499125 L2.718,6.499125 L2.71875,4.046875 C2.71875,3.9265625 2.8171875,3.828125 2.9375,3.828125 L13.0625,3.828125 Z" id="Combined-Shape" fill="#707D9C" fill-rule="nonzero"></path>
+            <rect id="Rectangle-Copy-2" fill="#707D9C" x="10.8387875" y="7.32291877" width="1.35416246" height="1.35416246"></rect>
+            <rect id="Rectangle-Copy-2" fill="#707D9C" x="13.1829499" y="7.32291877" width="1.35416246" height="1.35416246"></rect>
+            <rect id="Rectangle-Copy" fill="#707D9C" x="8.494625" y="7.32291877" width="1.35416246" height="1.35416246"></rect>
+            <rect id="Rectangle" fill="#707D9C" x="6.15046254" y="7.32291877" width="1.35416246" height="1.35416246"></rect>
+            <rect id="Rectangle" fill="#707D9C" x="3.80630007" y="7.32291877" width="1.35416246" height="1.35416246"></rect>
+            <rect id="Rectangle" fill="#707D9C" x="1.46213761" y="7.32291877" width="1.35416246" height="1.35416246"></rect>
+        </g>
+    </g>
+</svg>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="16px" height="16px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>ic/parameter/checkbox/check</title>
+    <g id="Symbol" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="ic/parameter/checkbox/check" fill-rule="nonzero">
+            <polygon id="check-box" points="0 0 16 0 16 16 0 16"></polygon>
+            <polygon id="check" fill="#FFFFFF" points="3.29643735 7.09682266 6.45561991 9.66903978 12.71772 2.89127467 13.8726775 3.75933041 6.45561991 13.1087253 2.1273225 8.18230345"></polygon>
+        </g>
+    </g>
+</svg>

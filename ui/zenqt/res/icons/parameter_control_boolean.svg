@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="16px" height="16px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>parameter_control_boolean</title>
+    <g id="Symbol" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="ic/parameter_control/boolean">
+            <rect id="矩形" x="1" y="1" width="14" height="14"></rect>
+            <rect id="矩形" fill="#22252C" x="2.35" y="3.35" width="11.3" height="9.3" rx="2"></rect>
+            <path d="M11.65,3.35 C12.7545695,3.35 13.65,4.2454305 13.65,5.35 L13.65,10.65 C13.65,11.7545695 12.7545695,12.65 11.65,12.65 L4.35,12.65 C3.2454305,12.65 2.35,11.7545695 2.35,10.65 L2.35,5.35 C2.35,4.2454305 3.2454305,3.35 4.35,3.35 L11.65,3.35 Z M11.65,4.35 L4.35,4.35 C3.79771525,4.35 3.35,4.79771525 3.35,5.35 L3.35,10.65 C3.35,11.2022847 3.79771525,11.65 4.35,11.65 L11.65,11.65 C12.2022847,11.65 12.65,11.2022847 12.65,10.65 L12.65,5.35 C12.65,4.79771525 12.2022847,4.35 11.65,4.35 Z" id="矩形" fill="#707D9C" fill-rule="nonzero"></path>
+            <polygon id="check" fill="#707D9C" fill-rule="nonzero" points="5.29874492 7.48130543 7.11306283 8.95852921 10.7093856 5.06606008 11.3726775 5.56458431 7.11306283 10.9339399 4.6273225 8.10469684"></polygon>
+        </g>
+    </g>
+</svg>

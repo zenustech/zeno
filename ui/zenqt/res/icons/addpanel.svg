@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="24px" height="16px" viewBox="0 0 24 16" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>ic/panel/addpanel</title>
+    <g id="Symbol" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="ic/panel/addpanel">
+            <rect id="矩形" x="0" y="0" width="24" height="16"></rect>
+            <g id="addpanel" transform="translate(4.000000, 0.000000)" fill-rule="nonzero">
+                <rect id="bg" opacity="0" x="0" y="0" width="16" height="16"></rect>
+                <polygon id="路径" fill="#69727B" points="8.8 3 8.8 7.2 13 7.2 13 8.8 8.8 8.8 8.8 13 7.2 13 7.2 8.8 3 8.8 3 7.2 7.2 7.2 7.2 3"></polygon>
+            </g>
+        </g>
+    </g>
+</svg>

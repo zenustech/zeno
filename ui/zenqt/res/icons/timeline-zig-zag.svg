@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="24px" height="20px" viewBox="0 0 24 20" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>ic/timeLine/loop-method/zig-zag</title>
+    <g id="Symbol" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="ic/timeLine/loop-method/zig-zag">
+            <rect id="bg" x="0" y="0" width="24" height="20"></rect>
+            <path d="M15.25,3.5 L18.5,6.75 L15.25,10 L15.25,7.5625 L7.125,7.5625 L7.12416377,9.175 L5.49916377,10.801 L5.5,5.9375 L15.25,5.9375 L15.25,3.5 Z" id="形状结合" fill="#A3B1C0" fill-rule="nonzero"></path>
+            <path d="M18.5,9.1875 L18.5,14.0625 L8.75,14.0625 L8.75,16.5 L5.5,13.25 L8.75,10 L8.75,12.4375 L16.875,12.4375 L16.875,10.8115 L18.5,9.1875 Z" id="形状结合" fill="#A3B1C0" fill-rule="nonzero"></path>
+        </g>
+    </g>
+</svg>

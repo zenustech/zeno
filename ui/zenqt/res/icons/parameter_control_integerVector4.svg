@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="16px" height="16px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>parameter_control_integerVector4</title>
+    <g id="Symbol" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="ic/parameter_control/integer_vector4">
+            <rect id="矩形" x="1" y="1" width="14" height="14"></rect>
+            <rect id="矩形" fill="#3E5740" x="2.35" y="3.35" width="11.3" height="9.3" rx="2"></rect>
+            <g id="14" transform="translate(4.152000, 5.460000)" fill="#91CC96" fill-rule="nonzero">
+                <path d="M0,5.08 L0,4.128 L1.104,4.128 L1.104,1.192 L0.152,1.192 L0.152,0.464 C0.429333333,0.410666667 0.664,0.346666667 0.856,0.272 C1.048,0.197333333 1.23466667,0.106666667 1.416,0 L2.28,0 L2.28,4.128 L3.232,4.128 L3.232,5.08 L0,5.08 Z" id="路径"></path>
+                <path d="M6.016,5.08 L6.016,3.864 L3.816,3.864 L3.816,3.056 L5.672,0 L7.112,0 L7.112,2.968 L7.696,2.968 L7.696,3.864 L7.112,3.864 L7.112,5.08 L6.016,5.08 Z M4.944,2.968 L6.016,2.968 L6.016,2.144 C6.016,1.97866667 6.02133333,1.788 6.032,1.572 C6.04266667,1.356 6.05333333,1.168 6.064,1.008 L6.032,1.008 C5.968,1.14666667 5.90133333,1.288 5.832,1.432 C5.76266667,1.576 5.69066667,1.72 5.616,1.864 L4.944,2.968 Z" id="形状"></path>
+            </g>
+        </g>
+    </g>
+</svg>

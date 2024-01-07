@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="26px" height="26px" viewBox="0 0 26 26" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>timeline_play_hover</title>
+    <g id="Symbol" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="ic/timeline/play/hover">
+            <circle id="Oval" fill="#59ABFF" cx="13" cy="13" r="13"></circle>
+            <path d="M11.65,8 L11.65,18 L9.15,18 L9.15,8 L11.65,8 Z M16.85,8 L16.85,18 L14.35,18 L14.35,8 L16.85,8 Z" id="形状结合" fill="#FFFFFF" fill-rule="nonzero"></path>
+        </g>
+    </g>
+</svg>

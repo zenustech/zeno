@@ -996,8 +996,8 @@ void DockContent_View::initConnections()
     connect(m_pFocus, &QAction::triggered, this, [=]() {
         auto main = zenoApp->getMainWindow();
         ZASSERT_EXIT(main);
-        auto docks = main->findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
-        for (ZTabDockWidget* pDock : docks)
+        auto docks = main->findChildren<ZDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
+        for (ZDockWidget* pDock : docks)
             if (pDock->isVisible())
                 if (ZenoGraphsEditor* editor = pDock->getAnyEditor())
                     if (ZenoSubGraphView* subgrahView = editor->getCurrentSubGraphView())

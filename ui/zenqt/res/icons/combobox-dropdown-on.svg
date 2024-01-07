@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="16px" height="16px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>ic/general/pull-down</title>
+    <g id="ic/general/pull-down" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <rect id="rec" fill="#000000" fill-rule="nonzero" opacity="0" x="0" y="0" width="16" height="16"></rect>
+        <polygon id="path" fill="#FFFFFF" fill-rule="nonzero" points="8.03749999 9.20000001 4.9625 6.2 3.8375 7.24999999 7.96250001 11.375 12.1625 7.24999999 11.1125 6.2"></polygon>
+    </g>
+</svg>

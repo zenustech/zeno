@@ -193,6 +193,9 @@ endif()
 target_compile_options(zeno
             PUBLIC $<$<COMPILE_LANGUAGE:CXX>: $<IF:$<CXX_COMPILER_ID:MSVC>, /utf-8, >>
             )
+
+add_subdirectory(ui/zenqt)
+
 if (ZENO_BUILD_EDITOR OR ZENO_BUILD_DESIGNER)
     message(STATUS "Building Zeno UI Library")
     add_subdirectory(ui/zenoui)

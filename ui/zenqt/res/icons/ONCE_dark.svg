@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="52px" height="42px" viewBox="0 0 52 42" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>ONCE_dark</title>
+    <g id="ZENO@2Prototype-NodeEditor" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="SimpleNode" transform="translate(-1387.000000, -72.000000)">
+            <g id="Group" transform="translate(854.000000, 72.000000)">
+                <g id="ONCE_dark" transform="translate(533.959860, 0.000000)">
+                    <polygon id="Rectangle" fill="#000000" opacity="0.104422433" points="12.0802803 -1.51545443e-14 50.0802803 -3.20646287e-14 38 42 -1.7334319e-14 42"></polygon>
+                    <path d="M39.15,38 L38,42 L0,42 L1.15,38 L39.15,38 Z" id="Combined-Shape" fill="#CFCFCF" opacity="0.17"></path>
+                    <path d="M33.0401402,21 C33.0401402,25.4183 29.4584402,29 25.0401402,29 C20.6218602,29 17.0401402,25.4183 17.0401402,21 C17.0401402,16.58172 20.6218602,13 25.0401402,13 C29.4584402,13 33.0401402,16.58172 33.0401402,21 Z M24.0401402,18.7793504 L23.0401402,18.7793504 L23.0401402,16.7793504 L26.0401402,16.7793504 L26.0401402,26 L24.0401402,26 L24.0401402,18.7793504 Z" id="Shape" fill="#CFCFCF"></path>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

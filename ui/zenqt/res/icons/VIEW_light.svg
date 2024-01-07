@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="51px" height="42px" viewBox="0 0 51 42" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>VIEW_light</title>
+    <g id="ZENO@2Prototype-NodeEditor" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="SimpleNode" transform="translate(-1187.000000, -72.000000)" fill="#30BDD4">
+            <g id="Group" transform="translate(854.000000, 72.000000)">
+                <g id="VIEW_light" transform="translate(333.799299, 0.000000)">
+                    <polygon id="Rectangle" opacity="0.104422433" points="12.0802803 -1.51545443e-14 50.0802803 -3.20646287e-14 38 42 -1.7334319e-14 42"></polygon>
+                    <path d="M39.15,38 L38,42 L0,42 L1.15,38 L39.15,38 Z" id="Combined-Shape"></path>
+                    <path d="M25.0401402,13.5 C29.4226242,13.5 31.2891859,16.3714889 33.4567828,19.1380397 L33.7930142,19.5624335 C34.1889415,20.0556572 34.5992206,20.5405829 35.0401402,21 C31.8777379,24.257961 30.4339667,28.5 25.0401402,28.5 C19.8097397,28.5 17.5401402,23.2805352 15.0401402,21 C17.5401402,18.8441313 19.8097397,13.5 25.0401402,13.5 Z M25.0401402,17.25 C22.9690724,17.25 21.2901402,18.9289322 21.2901402,21 C21.2901402,23.0710678 22.9690724,24.75 25.0401402,24.75 C27.111208,24.75 28.7901402,23.0710678 28.7901402,21 C28.7901402,18.9289322 27.111208,17.25 25.0401402,17.25 Z" id="Combined-Shape"></path>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>
