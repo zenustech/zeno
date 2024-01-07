@@ -34,6 +34,9 @@ struct MatOutput {
     float transDistance;
     vec3 transScatterColor;
 
+    float diffraction;
+    vec3  diffractColor;
+
     float subsurface;
     vec3  sssColor;
     vec3  sssParam;
