@@ -469,7 +469,7 @@ vec3 EvalMicrofacetRefraction(vec3 baseColor, float ax, float ay, float eta, vec
   float denom = LDotH * eta + VDotH;
   denom *= denom;
   float eta2 = eta * eta;
-  float jacobian = abs(LDotH) / denom;
+  float jacobian = abs(LDotH) / (denom + 1e-5f);
 
   pdf = G1 * max(0.0, VDotH) * D * jacobian / abs(V.z);
   return pow(baseColor, vec3(0.5f)) * (vec3(1.0f) - F)
@@ -498,7 +498,7 @@ vec3 EvalClearcoat(float ccR, vec3 V, vec3 L, vec3 H, float &pdf)
   float jacobian = 1.0f / (4.0f * VDotH);
 
   pdf = D * H.z * jacobian;
-  return vec3(F) * D * G;
+  return vec3(1.0) * D * G;
 }
 }
 
