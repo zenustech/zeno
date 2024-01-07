@@ -123,7 +123,7 @@ ZENO_API void Graph::loadGraph(const char *json) {
                 dc.taintThisNode(ident);
                 //todo: mark node data change.
             } else if (cmd == "cacheToDisk") {
-                g->setTempCache(di[1].GetString());
+                //g->setTempCache(di[1].GetString());
             } else {
                 log_warn("got unexpected command: {}", cmd);
             }

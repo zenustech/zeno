@@ -5,6 +5,7 @@
 #include "zenomainwindow.h"
 #include <zenomodel/include/graphsmanagment.h>
 #include <zenomodel/include/igraphsmodel.h>
+#include "zenoedit/util/apphelper.h"
 
 
 CommandNode::CommandNode(const NodeUtilParam& params, QGraphicsItem* parent)
@@ -49,7 +50,7 @@ void CommandNode::onGenerateClicked()
 
     IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
 
-    TIMELINE_INFO tinfo = main->timelineInfo();
+    zeno::TimelineInfo tinfo = main->timelineInfo();
 
     LAUNCH_PARAM launchParam;
     launchParam.beginFrame = tinfo.beginFrame;

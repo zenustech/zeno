@@ -147,7 +147,7 @@ bool GraphsModel::newMaterialSubgraph(const QModelIndex & currentSubIdx, const Q
     NodeParamModel* outputNodeParams = QVariantPtr<NodeParamModel>::asPtr(outputIdx.data(ROLE_NODE_PARAMS));
     ZASSERT_EXIT(outputNodeParams, false);
     //add link
-    EdgeInfo link;
+    EDGE_INFO link;
     const auto &inParam = nodeParams->getParam(PARAM_OUTPUT, "mtl");
     const auto& outParam = outputNodeParams->getParam(PARAM_INPUT, "port");
     link.inSockPath = outParam.data(ROLE_OBJPATH).toString();

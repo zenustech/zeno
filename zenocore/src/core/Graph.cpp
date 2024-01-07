@@ -30,6 +30,11 @@ ZENO_API Context::Context(Context const &other)
 ZENO_API Graph::Graph() = default;
 ZENO_API Graph::~Graph() = default;
 
+ZENO_API zany Graph::getNodeInput(std::string const& sn, std::string const& ss) const {
+    auto node = safe_at(nodes, sn, "node name").get();
+    return node->get_input(ss);
+}
+
 ZENO_API void Graph::clearNodes() {
     nodes.clear();
 }
