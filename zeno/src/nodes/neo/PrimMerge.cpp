@@ -407,7 +407,7 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
                     auto &outarr = outprim->uvs.values;
                     size_t n = std::min(arr.size(), prim->uvs.size());
                     for (size_t i = 0; i < n; i++) {
-                        outarr[base + i] = base + arr[i];
+                        outarr[base + i] = arr[i];
                     }
                 } else {
                     auto &outarr = outprim->uvs.attr<T>(key);

@@ -5,6 +5,7 @@
 #include <zeno/utils/log.h>
 
 #include <zeno/zeno.h>
+#include <zeno/utils/eulerangle.h>
 #include <zeno/utils/logger.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/types/NumericObject.h>
@@ -17,9 +18,10 @@
 
 #include "assimp/scene.h"
 
-#include "magic_enum.hpp"
 #include "Definition.h"
 #include "json.hpp"
+
+#include <memory>
 
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
@@ -125,7 +127,7 @@ ZENO_DEFNODE(CameraNode)({
         {"vec3f", "up", "0,1,0"},
         {"vec3f", "view", "0,0,-1"},
         {"float", "fov", "45"},
-        {"float", "aperture", "0.1"},
+        {"float", "aperture", "11"},
         {"float", "focalPlaneDistance", "2.0"},
         {"string", "other", ""},
         {"int", "frame", "0"},
@@ -243,10 +245,54 @@ ZENO_DEFNODE(CameraEval)({
     {"FBX"},
 });
 
+struct ExtractCamera: zeno::INode {
+
+    virtual void apply() override {
+        auto cam = get_input2<zeno::CameraObject>("camobject");
+
+        auto pos = std::make_shared<zeno::NumericObject>();
+        auto up = std::make_shared<zeno::NumericObject>();
+        auto view = std::make_shared<zeno::NumericObject>();
+        auto fov = std::make_shared<zeno::NumericObject>();
+        auto aperture = std::make_shared<zeno::NumericObject>();
+        auto focalPlaneDistance = std::make_shared<zeno::NumericObject>();
+
+        pos->set<zeno::vec3f>(cam->pos);
+        up->set<zeno::vec3f>(cam->up);
+        view->set<zeno::vec3f>(cam->view);
+        fov->set<float>(cam->fov);
+        aperture->set<float>(cam->aperture);
+        focalPlaneDistance->set<float>(cam->focalPlaneDistance);
+
+
+        set_output("pos", std::move(pos));
+        set_output("up", std::move(up));
+        set_output("view", std::move(view));
+        set_output("fov", std::move(fov));
+        set_output("aperture", std::move(aperture));
+        set_output("focalPlaneDistance", std::move(focalPlaneDistance));
+    }
+};
+ZENDEFNODE(ExtractCamera,
+           {       /* inputs: */
+               {
+                    "camobject"
+               },  /* outputs: */
+               {
+                   "pos", "up", "view", "fov", "aperture", "focalPlaneDistance"
+               },  /* params: */
+               {
+
+               },  /* category: */
+               {
+                   "FBX",
+               }
+           });
+
 struct LightNode : INode {
     virtual void apply() override {
-        auto isL = get_input2<int>("islight");
-        auto inverdir = get_input2<int>("invertdir");
+        auto isL = true; //get_input2<int>("islight");
+        auto invertdir = get_input2<int>("invertdir");
         auto position = get_input2<zeno::vec3f>("position");
         auto scale = get_input2<zeno::vec3f>("scale");
         auto rotate = get_input2<zeno::vec3f>("rotate");
@@ -256,22 +302,51 @@ struct LightNode : INode {
 
         auto exposure = get_input2<float>("exposure");
         auto intensity = get_input2<float>("intensity");
-        intensity *= pow(2.0, exposure);
+
+        auto scaler = powf(2.0f, exposure);
+        
+        if (std::isnan(scaler) || std::isinf(scaler) || scaler < 0.0f) {
+            scaler = 1.0f;
+            printf("Light exposure = %f is invalid, fallback to 0.0 \n", exposure);
+        }
+
+        intensity *= scaler;
+
+        std::string type = get_input2<std::string>(lightTypeKey);
+        auto typeEnum = magic_enum::enum_cast<LightType>(type).value_or(LightType::Diffuse);
+        auto typeOrder = magic_enum::enum_integer(typeEnum);
+
+        std::string shapeString = get_input2<std::string>(lightShapeKey);
+        auto shapeEnum = magic_enum::enum_cast<LightShape>(shapeString).value_or(LightShape::Plane);
+        auto shapeOrder = magic_enum::enum_integer(shapeEnum);
 
         auto prim = std::make_shared<zeno::PrimitiveObject>();
+
+        if (has_input("prim")) {
+            auto mesh = get_input<PrimitiveObject>("prim");
+
+            if (mesh->size() > 0) {
+                prim = mesh;
+                shapeEnum = LightShape::TriangleMesh;
+                shapeOrder = magic_enum::enum_integer(shapeEnum);
+            }
+        } else {
+
         auto &verts = prim->verts;
         auto &tris = prim->tris;
 
-        //if(shape == "Plane"){
             auto start_point = zeno::vec3f(0.5, 0, 0.5);
             float rm = 1.0f;
             float cm = 1.0f;
 
-            glm::mat4 rotation = glm::mat4(1.0f);
-            glm::vec3 euler = glm::vec3(rotate[0], rotate[1], rotate[2]);
-            rotation = glm::rotate(rotation, euler.z, glm::vec3(0.0f, 0.0f, 1.0f));
-            rotation = glm::rotate(rotation, euler.y, glm::vec3(0.0f, 1.0f, 0.0f));
-            rotation = glm::rotate(rotation, euler.x, glm::vec3(1.0f, 0.0f, 0.0f));
+            auto order = get_input2<std::string>("EulerRotationOrder:");
+            auto orderTyped = magic_enum::enum_cast<EulerAngle::RotationOrder>(order).value_or(EulerAngle::RotationOrder::YXZ);
+
+            auto measure = get_input2<std::string>("EulerAngleMeasure:");
+            auto measureTyped = magic_enum::enum_cast<EulerAngle::Measure>(measure).value_or(EulerAngle::Measure::Radians);
+
+            glm::vec3 eularAngleXYZ = glm::vec3(rotate[0], rotate[1], rotate[2]);
+            glm::mat4 rotation = EulerAngle::rotate(orderTyped, measureTyped, eularAngleXYZ);
 
             // Plane Verts
             for(int i=0; i<=1; i++){
@@ -297,26 +372,29 @@ struct LightNode : INode {
             // Plane Indices
             tris.emplace_back(zeno::vec3i(0, 3, 1));
             tris.emplace_back(zeno::vec3i(3, 0, 2));
-        //}
+        }
+
+        auto &verts = prim->verts;
+        auto &tris = prim->tris; 
 
         auto &clr = prim->verts.add_attr<zeno::vec3f>("clr");
         auto c = color * intensity;
-        for(int i=0; i<verts.size(); i++){
-            clr[i] = c;
+
+        for (size_t i=0; i<c.size(); ++i) {
+            if (std::isnan(c[i]) || std::isinf(c[i]) || c[i] < 0.0f) {
+                c[i] = 1.0f;
+                printf("Light color component %llu is invalid, fallback to 1.0 \n", i);
+            }
         }
 
-        if(inverdir){
-            for(int i=0;i<prim->tris.size(); i++){
-                int tmp = prim->tris[i][1];
-                prim->tris[i][1] = prim->tris[i][0];
-                prim->tris[i][0] = tmp;
-            }
+        for(int i=0; i<verts.size(); i++){
+            clr[i] = c;
         }
 
         prim->userData().set2("isRealTimeObject", std::move(isL));
 
         prim->userData().set2("isL", std::move(isL));
-        prim->userData().set2("ivD", std::move(inverdir));
+        prim->userData().set2("ivD", std::move(invertdir));
         prim->userData().set2("pos", std::move(position));
         prim->userData().set2("scale", std::move(scale));
         prim->userData().set2("rotate", std::move(rotate));
@@ -324,26 +402,41 @@ struct LightNode : INode {
         prim->userData().set2("color", std::move(color));
         prim->userData().set2("intensity", std::move(intensity));
 
+        auto fluxFixed = get_input2<float>("fluxFixed");
+        prim->userData().set2("fluxFixed", std::move(fluxFixed));
+        auto maxDistance = get_input2<float>("maxDistance");
+        prim->userData().set2("maxDistance", std::move(maxDistance));
+        auto falloffExponent = get_input2<float>("falloffExponent");
+        prim->userData().set2("falloffExponent", std::move(falloffExponent));
+
+        auto mask = get_input2<int>("mask");
+        auto spread = get_input2<zeno::vec2f>("spread");
         auto visible = get_input2<int>("visible");
         auto doubleside = get_input2<int>("doubleside");
 
-        std::string type = get_input2<std::string>(lightTypeKey);
-        auto typeEnum = magic_enum::enum_cast<LightType>(type).value_or(LightType::Diffuse);
-        auto typeOrder = magic_enum::enum_integer(typeEnum);
+        if (has_input2<std::string>("profile")) {
+            auto profile = get_input2<std::string>("profile");
+            prim->userData().set2("lightProfile", std::move(profile));
+        }
+        if (has_input2<std::string>("texturePath")) {
+            auto texture = get_input2<std::string>("texturePath");
+            prim->userData().set2("lightTexture", std::move(texture));
 
-        std::string shape = get_input2<std::string>(lightShapeKey);
-        auto shapeEnum = magic_enum::enum_cast<LightShape>(shape).value_or(LightShape::Plane);
-        auto shapeOrder = magic_enum::enum_integer(shapeEnum);
-
-        auto profile = get_input2<std::string>("profile");
+            auto gamma = get_input2<float>("textureGamma");
+            prim->userData().set2("lightGamma", std::move(gamma));
+        }        
 
         prim->userData().set2("type", std::move(typeOrder));
         prim->userData().set2("shape", std::move(shapeOrder));
         
+        prim->userData().set2("mask", std::move(mask));
+        prim->userData().set2("spread", std::move(spread));
         prim->userData().set2("visible", std::move(visible));
         prim->userData().set2("doubleside", std::move(doubleside));
-        prim->userData().set2("lightProfile", std::move(profile));
-        
+
+        auto visibleIntensity = get_input2<float>("visibleIntensity");
+        prim->userData().set2("visibleIntensity", std::move(visibleIntensity));
+      
         set_output("prim", std::move(prim));
     }
 
@@ -390,23 +483,93 @@ ZENO_DEFNODE(LightNode)({
         {"vec3f", "scale", "1, 1, 1"},
         {"vec3f", "rotate", "0, 0, 0"},
         {"vec4f", "quaternion", "1, 0, 0, 0"},
+
         {"vec3f", "color", "1, 1, 1"},
         {"float", "exposure", "0"},
         {"float", "intensity", "1"},
-        {"bool", "islight", "1"},
-        {"bool", "invertdir", "1"},
+        {"float", "fluxFixed", "-1.0"},
+
+        {"vec2f", "spread", "1.0, 0.0"},
+        {"float", "maxDistance", "-1.0" },
+        {"float", "falloffExponent", "2.0"},
+        {"int", "mask", "255"},
         {"bool", "visible", "0"},
+        {"bool", "invertdir", "0"},
         {"bool", "doubleside", "0"},
-        {"string", "profile", ""},
+
+        {"readpath", "profile"},
+        {"readpath", "texturePath"},
+        {"float",  "textureGamma", "1.0"},
+        {"float", "visibleIntensity", "-1.0"},
+
         {"enum " + LightNode::lightShapeListString(), LightNode::lightShapeKey, LightNode::lightShapeDefaultString()},   
-        {"enum " + LightNode::lightTypeListString(), LightNode::lightTypeKey, LightNode::lightTypeDefaultString()} 
+        {"enum " + LightNode::lightTypeListString(), LightNode::lightTypeKey, LightNode::lightTypeDefaultString()}, 
+        {"PrimitiveObject", "prim"},
     },
     {
         "prim"
     },
     {
-
+        {"enum " + EulerAngle::RotationOrderListString(), "EulerRotationOrder", EulerAngle::RotationOrderDefaultString()},
+        {"enum " + EulerAngle::MeasureListString(), "EulerAngleMeasure", EulerAngle::MeasureDefaultString()}
     },
+    {"shader"},
+});
+
+struct DirtyTBN : INode {
+    virtual void apply() override {
+
+        auto AxisT = get_input2<zeno::vec3f>("T");
+        auto AxisB = get_input2<zeno::vec3f>("B");
+        //auto AxisN = get_input2<zeno::vec3f>("N");
+
+        if (lengthSquared(AxisT) == 0 ) {
+            AxisT = {1,0,0};
+        }
+        AxisT = zeno::normalize(AxisT);
+        
+        if (lengthSquared(AxisB) == 0 ) {
+            AxisB = {0,0,1};
+        }
+        AxisB = zeno::normalize(AxisB);
+
+        auto tmp = zeno::dot(AxisT, AxisB);
+        if (abs(tmp) > 0.0) { // not vertical
+            AxisB -= AxisT * tmp;
+            AxisB = zeno::normalize(AxisB);
+        }
+        
+        if (has_input("prim")) {
+            auto prim = get_input<PrimitiveObject>("prim");
+
+            auto pos = prim->userData().get2<zeno::vec3f>("pos", {0,0,0});
+            auto scale = prim->userData().get2<zeno::vec3f>("scale", {1,1,1});
+
+            auto v0 = pos - AxisT * scale[0] * 0.5f - AxisB * scale[2] * 0.5f;
+            auto e1 = AxisT * scale[0];
+            auto e2 = AxisB * scale[2];
+
+            prim->verts[0] = v0 + e1 + e2;
+            prim->verts[1] = v0 + e1;
+            prim->verts[2] = v0 + e2;
+            prim->verts[3] = v0;
+
+            set_output("prim", std::move(prim));
+        }
+    }
+};
+
+
+ZENO_DEFNODE(DirtyTBN)({
+    {
+        {"PrimitiveObject", "prim"},
+        {"vec3f", "T", "1, 0, 0"},
+        {"vec3f", "B", "0, 0, 1"},
+    },
+    {
+        "prim"
+    },
+    {},
     {"shader"},
 });
 

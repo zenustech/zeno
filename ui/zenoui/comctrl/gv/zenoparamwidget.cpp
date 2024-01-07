@@ -8,6 +8,8 @@
 #include <zenomodel/include/uihelper.h>
 #include "../view/zcomboboxitemdelegate.h"
 #include <QSvgRenderer>
+#include <zeno/extra/TempNode.h>
+#include <zeno/extra/assetDir.h>
 
 
 ZenoParamWidget::ZenoParamWidget(QGraphicsItem* parent, Qt::WindowFlags wFlags)
@@ -227,9 +229,15 @@ void ZenoParamLineEdit::keyReleaseEvent(QKeyEvent* event)
 
 
 ///////////////////////////////////////////////////////////////////////////
-ZenoParamPathEdit::ZenoParamPathEdit(const QString& path, PARAM_CONTROL ctrl, LineEditParam param, QGraphicsItem* parent)
+ZenoParamPathEdit::ZenoParamPathEdit(
+        const QString& path,
+        PARAM_CONTROL ctrl,
+        LineEditParam param,
+        Callback_GetZsgDir cbGetZsg,
+        QGraphicsItem* parent)
     : ZEditableTextItem(path, parent)
     , m_control(ctrl)
+    , m_cbGetZsg(cbGetZsg)
 {
     setAcceptHoverEvents(true);
 }
@@ -274,17 +282,53 @@ void ZenoParamPathEdit::mousePressEvent(QGraphicsSceneMouseEvent *event)
     QPointF pos = event->pos();
     if (buttonArea().contains(pos)) 
     {
-        QString path;
+        QString path = this->text();
+
+        QString zsgDir = m_cbGetZsg();
+        QString filePath = path;
+
+        // need to resolve the formula path
+        if (path.startsWith('=')) {
+            zeno::setConfigVariable("ZSG", zsgDir.toStdString());
+            auto code = std::make_shared<zeno::StringObject>();
+            code->set(path.mid(1).toStdString());
+            auto outs = zeno::TempNodeSimpleCaller("StringEval")
+                .set("zfxCode", code)
+                .call();
+            std::shared_ptr<zeno::StringObject> spStrObj = outs.get<zeno::StringObject>("result");
+            if (spStrObj)
+            {
+                filePath = QString::fromStdString(spStrObj->get());
+            }
+        }
+
+        QString dirPath;
+        bool bMarkZsg = false;
+
+        if (filePath.isEmpty()) {
+            dirPath = zsgDir;
+            bMarkZsg = true;
+        }
+        else {
+            QFileInfo fileInfo(filePath);
+            QDir dir = fileInfo.dir();
+            dirPath = dir.path();
+        }
+
         if (m_control == CONTROL_READPATH) {
-            path = QFileDialog::getOpenFileName(nullptr, "File to Open", "", "All Files(*);;");
+            path = QFileDialog::getOpenFileName(nullptr, "File to Open", dirPath, "All Files(*);;");
         } else if (m_control == CONTROL_WRITEPATH) {
-            path = QFileDialog::getSaveFileName(nullptr, "Path to Save", "", "All Files(*);;");
+            path = QFileDialog::getSaveFileName(nullptr, "Path to Save", dirPath, "All Files(*);;");
         } else {
             path = QFileDialog::getExistingDirectory(nullptr, "Path to Save", "");
         }
         if (path.isEmpty()) {
             return;
         }
+
+        if (!zsgDir.isEmpty() && path.indexOf(zsgDir) != -1)
+            path.replace(zsgDir, "=$ZSG");
+
         setText(path);
     }
     ZEditableTextItem::mousePressEvent(event);
@@ -1331,10 +1375,12 @@ ZenoMinStatusBtnItem::ZenoMinStatusBtnItem(const StatusComponent& statusComp, QG
     , m_minMute(nullptr)
     , m_minView(nullptr)
     , m_minOnce(nullptr)
+    , m_minCache(nullptr)
 {
-    m_minMute = new ZenoImageItem(statusComp.mute, ZenoStyle::dpiScaledSize(QSize(56, 75)), this);
-    m_minOnce = new ZenoImageItem(statusComp.once, ZenoStyle::dpiScaledSize(QSize(56, 75)), this);
-    m_minView = new ZenoImageItem(statusComp.view, ZenoStyle::dpiScaledSize(QSize(42, 75)), this);
+    m_minCache = new ZenoImageItem(statusComp.cache, ZenoStyle::dpiScaledSize(QSize(28, 75)), this);
+    m_minMute = new ZenoImageItem(statusComp.mute, ZenoStyle::dpiScaledSize(QSize(28, 75)), this);
+    m_minOnce = new ZenoImageItem(statusComp.once, ZenoStyle::dpiScaledSize(QSize(28, 75)), this);
+    m_minView = new ZenoImageItem(statusComp.view, ZenoStyle::dpiScaledSize(QSize(28, 75)), this);
 	m_once = new ZenoImageItem(
         ":/icons/ONCE_dark.svg",
         ":/icons/ONCE_light.svg",
@@ -1353,7 +1399,12 @@ ZenoMinStatusBtnItem::ZenoMinStatusBtnItem(const StatusComponent& statusComp, QG
         ":/icons/VIEW_light.svg",
         ZenoStyle::dpiScaledSize(QSize(50, 42)),
         this);
-
+    m_cache = new ZenoImageItem(
+        ":/icons/CACHE_dark.svg",
+        ":/icons/CACHE_light.svg",
+        ":/icons/CACHE_light.svg",
+        ZenoStyle::dpiScaledSize(QSize(50, 42)),
+        this);
     //m_once->setFlag(QGraphicsItem::ItemIgnoresTransformations);
     //m_mute->setFlag(QGraphicsItem::ItemIgnoresTransformations);
     //m_view->setFlag(QGraphicsItem::ItemIgnoresTransformations);
@@ -1361,21 +1412,27 @@ ZenoMinStatusBtnItem::ZenoMinStatusBtnItem(const StatusComponent& statusComp, QG
     m_minMute->setCheckable(true);
     m_minView->setCheckable(true);
     m_minOnce->setCheckable(true);
+    m_minCache->setCheckable(true);
     m_once->setCheckable(true);
     m_mute->setCheckable(true);
     m_view->setCheckable(true);
+    m_cache->setCheckable(true);
     m_once->hide();
     m_mute->hide();
     m_view->hide();
+    m_cache->hide();
 
-    m_minOnce->setPos(QPointF(0, 0));
-    m_minMute->setPos(QPointF(ZenoStyle::dpiScaled(34), 0));
-    m_minView->setPos(QPointF(ZenoStyle::dpiScaled(66), 0));
+    m_minCache->setPos(QPointF(0, 0));
+    m_minOnce->setPos(QPointF(ZenoStyle::dpiScaled(28), 0));
+    m_minMute->setPos(QPointF(ZenoStyle::dpiScaled(56), 0));
+    m_minView->setPos(QPointF(ZenoStyle::dpiScaled(84), 0));
 
     QSizeF sz2 = m_once->size();
     qreal sMarginTwoBar = ZenoStyle::dpiScaled(4);
     //todo: kill these magin number.
-    QPointF base = QPointF(ZenoStyle::dpiScaled(18), -sz2.height() - sMarginTwoBar);
+    QPointF base = QPointF(0, -sz2.height() - sMarginTwoBar);
+    m_cache->setPos(base);
+    base += QPointF(ZenoStyle::dpiScaled(38), 0);
 	m_once->setPos(base);
 	base += QPointF(ZenoStyle::dpiScaled(38), 0);
 	m_mute->setPos(base);
@@ -1387,20 +1444,25 @@ ZenoMinStatusBtnItem::ZenoMinStatusBtnItem(const StatusComponent& statusComp, QG
     m_minOnce->setZValue(ZVALUE_ELEMENT);
     m_minView->setZValue(ZVALUE_ELEMENT);
     m_minMute->setZValue(ZVALUE_ELEMENT);
+    m_minCache->setZValue(ZVALUE_ELEMENT);
 
     connect(m_minOnce, SIGNAL(hoverChanged(bool)), m_once, SLOT(setHovered(bool)));
     connect(m_minView, SIGNAL(hoverChanged(bool)), m_view, SLOT(setHovered(bool)));
     connect(m_minMute, SIGNAL(hoverChanged(bool)), m_mute, SLOT(setHovered(bool)));
+    connect(m_minCache, SIGNAL(hoverChanged(bool)), m_cache, SLOT(setHovered(bool)));
 	connect(m_once, SIGNAL(hoverChanged(bool)), m_minOnce, SLOT(setHovered(bool)));
 	connect(m_view, SIGNAL(hoverChanged(bool)), m_minView, SLOT(setHovered(bool)));
 	connect(m_mute, SIGNAL(hoverChanged(bool)), m_minMute, SLOT(setHovered(bool)));
+    connect(m_cache, SIGNAL(hoverChanged(bool)), m_minCache, SLOT(setHovered(bool)));
 
 	connect(m_minOnce, SIGNAL(toggled(bool)), m_once, SLOT(toggle(bool)));
 	connect(m_minView, SIGNAL(toggled(bool)), m_view, SLOT(toggle(bool)));
 	connect(m_minMute, SIGNAL(toggled(bool)), m_mute, SLOT(toggle(bool)));
+    connect(m_minCache, SIGNAL(toggled(bool)), m_cache, SLOT(toggle(bool)));
 	connect(m_once, SIGNAL(toggled(bool)), m_minOnce, SLOT(toggle(bool)));
 	connect(m_view, SIGNAL(toggled(bool)), m_minView, SLOT(toggle(bool)));
 	connect(m_mute, SIGNAL(toggled(bool)), m_minMute, SLOT(toggle(bool)));
+    connect(m_cache, SIGNAL(toggled(bool)), m_minCache, SLOT(toggle(bool)));
 
     connect(m_minMute, &ZenoImageItem::toggled, [=](bool hovered) {
         emit toggleChanged(STATUS_MUTE, hovered);
@@ -1411,6 +1473,9 @@ ZenoMinStatusBtnItem::ZenoMinStatusBtnItem(const StatusComponent& statusComp, QG
 	connect(m_minOnce, &ZenoImageItem::toggled, [=](bool hovered) {
         emit toggleChanged(STATUS_ONCE, hovered);
 	});
+    connect(m_minCache, &ZenoImageItem::toggled, [=](bool hovered) {
+        emit toggleChanged(STATUS_CACHE, hovered);
+    });
 
     setAcceptHoverEvents(true);
 }
@@ -1420,6 +1485,7 @@ void ZenoMinStatusBtnItem::setOptions(int options)
     setChecked(STATUS_ONCE, options & OPT_ONCE);
     setChecked(STATUS_MUTE, options & OPT_MUTE);
     setChecked(STATUS_VIEW, options & OPT_VIEW);
+    setChecked(STATUS_CACHE, options & OPT_CACHE);
 }
 
 void ZenoMinStatusBtnItem::setChecked(STATUS_BTN btn, bool bChecked)
@@ -1439,6 +1505,11 @@ void ZenoMinStatusBtnItem::setChecked(STATUS_BTN btn, bool bChecked)
 		m_view->toggle(bChecked);
 		m_minView->toggle(bChecked);
 	}
+    if (btn == STATUS_CACHE)
+    {
+        m_cache->toggle(bChecked);
+        m_minCache->toggle(bChecked);
+    }
 }
 
 void ZenoMinStatusBtnItem::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
@@ -1446,6 +1517,7 @@ void ZenoMinStatusBtnItem::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
     m_mute->show();
     m_view->show();
     m_once->show();
+    m_cache->show();
     _base::hoverEnterEvent(event);
 }
 
@@ -1459,6 +1531,7 @@ void ZenoMinStatusBtnItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
 	m_mute->hide();
 	m_view->hide();
 	m_once->hide();
+    m_cache->hide();
     _base::hoverLeaveEvent(event);
 }
 
@@ -1470,6 +1543,7 @@ QRectF ZenoMinStatusBtnItem::boundingRect() const
 		rc = m_minMute->sceneBoundingRect();
 		rc |= m_minView->sceneBoundingRect();
 		rc |= m_minOnce->sceneBoundingRect();
+        rc |= m_minCache->sceneBoundingRect();
         rc = mapRectFromScene(rc);
         return rc;
     }
@@ -1492,11 +1566,14 @@ void ZenoMinStatusBtnItem::onZoomed()
         m_once->resize(size);
         m_mute->resize(size);
         m_view->resize(size);
+        m_cache->resize(size);
         QSizeF sz2 = m_once->size();
         qreal sMarginTwoBar = ZenoStyle::dpiScaled(4);
-        QPointF base = QPointF(ZenoStyle::dpiScaled(18), -sz2.height() - sMarginTwoBar);
-        m_once->setPos(base);
+        QPointF base = QPointF(ZenoStyle::dpiScaled(0), -sz2.height() - sMarginTwoBar);
+        m_cache->setPos(base);
         qreal offset = ZenoStyle::scaleWidth(38);
+        base += QPointF(offset, 0);
+        m_once->setPos(base);
         base += QPointF(offset, 0);
         m_mute->setPos(base);
         base += QPointF(offset, 0);

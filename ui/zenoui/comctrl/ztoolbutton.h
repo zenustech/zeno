@@ -74,7 +74,7 @@ public:
 
 public slots:
     void setText(const QString& text);
-    void setIcon(const QSize& size, QString icon, QString iconHover, QString iconOn, QString iconOnHover);
+    void setIcon(const QSize& size, QString icon, QString iconHover, QString iconOn, QString iconOnHover, QString iconDisabled = "");
     void setIconSize(const QSize& size);
     void setChecked(bool bChecked);
     void setDown(bool bDown);

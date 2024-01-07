@@ -10,11 +10,11 @@
 namespace zeno {
 
     enum struct LightType {
-        Diffuse=0u, Direction=1u, IES=2u    
+        Diffuse=0u, Direction=1u, IES=2u, Spot=3u, Projector=4u
     };
 
     enum struct LightShape {
-        Plane=0u, Sphere=1u, Point=2u
+        Plane=0u, Ellipse=1u, Sphere=2u, Point=3u, TriangleMesh=4u
     };
 
     enum LightConfigMask {

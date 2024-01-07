@@ -12,7 +12,7 @@ static const char /* see https://docs.gl/sl4/trunc */
               " radians sinh cosh tanh asinh acosh atanh round roundEven floor"
               " ceil trunc sign step length normalize hsvToRgb rgbToHsv luminance",
     binops[] = "add sub mul div mod pow atan2 min max dot cross distance safepower",
-    ternops[] = "mix clamp smoothstep add3";
+    ternops[] = "mix clamp smoothstep add3 ?";
 
 
 static auto &toHlsl() {
@@ -58,7 +58,11 @@ struct ShaderTernaryMath : ShaderNodeClone<ShaderTernaryMath> {
 
         if (op == "add3") {
             return em->emitCode(in1 + " + " + in2 + " + " + in3);
-        } else {
+        } 
+        else if (op == "?") {
+            return em->emitCode(in1 + " ? " + in2 + " : " + in3);
+        } 
+        else {
             return em->emitCode(em->funcName(op) + "(" + in1 + ", " + in2 + ", " + in3 + ")");
         }
     }

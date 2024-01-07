@@ -41,7 +41,9 @@ void RecordVideoMgr::cancelRecord()
     disconnectSignal();
 
     DisplayWidget* pWid = qobject_cast<DisplayWidget*>(parent());
-    ZASSERT_EXIT(pWid);
+    if (!pWid)
+        return;
+
     if (!pWid->isGLViewport())
     {
         auto pView = pWid->optixViewport();
@@ -227,7 +229,9 @@ void RecordVideoMgr::endRecToExportVideo()
 void RecordVideoMgr::disconnectSignal()
 {
     DisplayWidget *pWid = qobject_cast<DisplayWidget *>(parent());
-    ZASSERT_EXIT(pWid);
+    if (!pWid)
+        return;
+
     if (pWid->isGLViewport()) {
         Zenovis *pVis = getZenovis();
         bool ret = disconnect(pVis, SIGNAL(frameDrawn(int)), this, SLOT(onFrameDrawn(int)));

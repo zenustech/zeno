@@ -13,6 +13,7 @@ struct DrawOptions {
     bool render_wireframe = false;
 
     bool enable_gi = false;
+    bool uv_mode = false;
     bool smooth_shading = false;
     bool normal_check = false;
     bool simpleRender = false;

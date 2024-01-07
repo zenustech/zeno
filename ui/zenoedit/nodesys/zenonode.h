@@ -116,6 +116,7 @@ protected:
     virtual ZGraphicsLayout* initSockets(QStandardItem* socketItems, QStandardItem* legacyItems, const bool bInput, ZenoSubGraphScene* pScene);
     virtual ZGraphicsLayout* initParams(QStandardItem* paramItems, ZenoSubGraphScene* pScene);
     virtual ZGraphicsLayout* initCustomParamWidgets();
+    virtual Callback_OnButtonClicked registerButtonCallback(const QModelIndex& paramIdx);
 
 protected:
     NodeUtilParam m_renderParams;
@@ -175,7 +176,7 @@ private:
     // when zoom out the view, the view of node will be displayed as text with large size font.
     // it's convenient to view all nodes in big scale picture, but it also brings some problem.
     static const bool bEnableZoomPreview = false;
-    static const bool bShowDataChanged = false;
+    static const bool bShowDataChanged = true;
     GroupNode *m_groupNode;
     bool m_bVisible;
 };

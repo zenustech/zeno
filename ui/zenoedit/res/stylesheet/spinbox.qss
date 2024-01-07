@@ -72,7 +72,7 @@ QSpinBox[cssClass = "control"]::up-button:hover
 {
      image: url(:/icons/rightArrow-on.svg);
 }
-                
+ 
 QDoubleSpinBox
 {
     background: #191D21;
@@ -117,4 +117,37 @@ QDoubleSpinBox::up-button
 QDoubleSpinBox::up-button:hover 
 {
      image: url(:/icons/rightArrow-on.svg);
+}
+
+/* ^^^ the upper style is too large... */
+QDoubleSpinBox#MixedSpinBox
+{
+    height: 20px;
+    font-size: 9pt;
+	font-weight: 400;
+	border: 0;
+	color: #FFFFFF;
+	background-color: #191D21;
+}
+
+QDoubleSpinBox#MixedSpinBox:focus
+{
+    border: 2px solid #4B9EF4;
+}
+
+QDoubleSpinBox#MixedSpinBox:disabled 
+{
+    background-color: #2F2F2F;
+}
+
+QDoubleSpinBox#MixedSpinBox::up-button
+{
+    height: 0px;
+    width: 0px;
+}
+
+QDoubleSpinBox#MixedSpinBox::down-button
+{
+    height: 0px;
+    width: 0px;
 }

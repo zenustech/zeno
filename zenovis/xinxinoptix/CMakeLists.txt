@@ -20,7 +20,9 @@ target_sources(zenovis PRIVATE
   LightBounds.h
   ies/ies.cpp
   ies/ies.h
-
+  TypeCaster.cpp
+  TypeCaster.h
+  
   SDK/sutil/Aabb.h              SDK/sutil/Quaternion.h
   SDK/sutil/Camera.cpp          SDK/sutil/Record.h
   SDK/sutil/Camera.h            SDK/cuda/climits.h
@@ -81,12 +83,12 @@ set(CUDA_PATH ${CUDAToolkit_BIN_DIR}/..)
 
 set(FILE_LIST
     ${OPTIX_PATH}/include/@optix.h
+    ${OPTIX_PATH}/include/@optix_types.h
+    ${OPTIX_PATH}/include/@optix_host.h
     ${OPTIX_PATH}/include/@optix_device.h
-    ${OPTIX_PATH}/include/@optix_7_device.h
-    ${OPTIX_PATH}/include/@optix_7_types.h
-    ${OPTIX_PATH}/include/@internal/optix_7_device_impl.h
-    ${OPTIX_PATH}/include/@internal/optix_7_device_impl_exception.h
-    ${OPTIX_PATH}/include/@internal/optix_7_device_impl_transformations.h
+    ${OPTIX_PATH}/include/@internal/optix_device_impl.h
+    ${OPTIX_PATH}/include/@internal/optix_device_impl_exception.h
+    ${OPTIX_PATH}/include/@internal/optix_device_impl_transformations.h
 
     ${CUDA_PATH}/include/@cuda_fp16.h
     ${CUDA_PATH}/include/@cuda_fp16.hpp  
@@ -108,7 +110,8 @@ set(FILE_LIST
     ${CMAKE_CURRENT_SOURCE_DIR}/@optixPathTracer.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@TraceStuff.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@PTKernel.cu
-    ${CMAKE_CURRENT_SOURCE_DIR}/@DefaultFallback.cu
+    ${CMAKE_CURRENT_SOURCE_DIR}/@CallableDefault.cu
+    ${CMAKE_CURRENT_SOURCE_DIR}/@CallableVolume.cu
     ${CMAKE_CURRENT_SOURCE_DIR}/@DeflMatShader.cu
     ${CMAKE_CURRENT_SOURCE_DIR}/@DisneyBRDF.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@DisneyBSDF.h

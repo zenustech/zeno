@@ -74,6 +74,11 @@ int ZenoLink::type() const
 
 void ZenoLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styleOptions, QWidget* widget)
 {
+#ifdef ZENO_NODESVIEW_OPTIM
+    if (editor_factor < 0.1) {
+        return;
+    }
+#endif
     painter->save();
     QPen pen;
     pen.setColor(isSelected() ? QColor(0xFA6400) : QColor("#4B9EF4"));

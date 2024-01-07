@@ -37,13 +37,6 @@ enum {
     VIEW_COORD_SYS
 };
 
-enum {
-    PICK_OBJECT,
-    PICK_VERTEX,
-    PICK_LINE,
-    PICK_MESH
-};
-
 struct IGraphic {
     std::string nameid;
     std::shared_ptr<zeno::IObject> objholder;
@@ -56,12 +49,17 @@ struct IGraphicDraw : IGraphic {
 };
 
 struct IGraphicHandler : IGraphicDraw {
+    int mode = INTERACT_NONE;
+    int hover_mode = INTERACT_NONE;
+
     virtual int collisionTest(glm::vec3 ori, glm::vec3 dir) = 0;
     virtual void setCenter(zeno::vec3f center) = 0;
-    virtual void setMode(int mode) = 0;
     virtual void setCoordSys(int coord_sys) = 0;
     virtual void resize(float scale) = 0;
     virtual std::optional<glm::vec3> getIntersect(glm::vec3 ori, glm::vec3 dir) = 0;
+    virtual void setMode(int interact_mode);
+    virtual int handleClick(glm::vec3 ori, glm::vec3 dir);
+    virtual int handleHover(glm::vec3 ori, glm::vec3 dir);
 };
 
 struct IPicker : IGraphicDraw {

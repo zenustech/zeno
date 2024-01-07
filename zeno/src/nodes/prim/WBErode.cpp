@@ -6,6 +6,7 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/UserData.h>
 #include <zeno/types/CurveObject.h>
+#include <zeno/utils/parallel_reduce.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/utils/log.h>
 #include <random>
@@ -2332,62 +2333,6 @@ float chramp(const float inputData) {
     return outputData;
 }
 
-// 计算图像的梯度
-void computeGradient(std::shared_ptr<PrimitiveObject> & hf, std::vector<std::vector<float>>& gradientX, std::vector<std::vector<float>>& gradientY) {
-    auto &ud = hf->userData();
-    int height  = ud.get2<int>("nx");
-    int width = ud.get2<int>("nx");
-
-    gradientX.resize(height, std::vector<float>(width));
-    gradientY.resize(height, std::vector<float>(width));
-
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
-            if (x > 0 && x < width - 1) {
-                gradientX[y][x] = (hf->verts.attr<float>("heightLayer")[y * width + x + 1] - hf->verts.attr<float>("heightLayer")[y * width + x  - 1]) / 2.0f;
-            } else {
-                gradientX[y][x] = 0.0f;
-            }
-            if (y > 0 && y < height - 1) {
-                gradientY[y][x] = (hf->verts.attr<float>("heightLayer")[(y+1) * width + x] - hf->verts.attr<float>("heightLayer")[(y - 1) * width + x]) / 2.0f;
-            } else {
-                gradientY[y][x] = 0.0f;
-            }
-        }
-    }
-}
-
-// 计算图像的曲率
-void computeCurvature(const std::vector<std::vector<float>>& gradientX, const std::vector<std::vector<float>>& gradientY, std::vector<std::vector<float>>& curvature) {
-    int height = gradientX.size();
-    int width = gradientX[0].size();
-
-    curvature.resize(height, std::vector<float>(width));
-
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
-            float dx = gradientX[y][x];
-            float dy = gradientY[y][x];
-            float dxx = 0.0f;
-            float dyy = 0.0f;
-            float dxy = 0.0f;
-
-            if (x > 0 && x < width - 1) {
-                dxx = gradientX[y][x + 1] - 2.0f * dx + gradientX[y][x - 1];
-            }
-
-            if (y > 0 && y < height - 1) {
-                dyy = gradientY[y + 1][x] - 2.0f * dy + gradientY[y - 1][x];
-            }
-
-            if (x > 0 && x < width - 1 && y > 0 && y < height - 1) {
-                dxy = (gradientX[y + 1][x + 1] - gradientX[y + 1][x - 1] - gradientX[y - 1][x + 1] + gradientX[y - 1][x - 1]) / 4.0f;
-            }
-
-            curvature[y][x] = (dxx * dyy - dxy * dxy) / ((dxx + dyy) * (dxx + dyy) + 1e-6f);
-        }
-    }
-}
 
 struct HF_maskByFeature : INode {
     void apply() override {
@@ -2630,10 +2575,11 @@ struct HF_remap : INode {
         auto terrain = get_input<PrimitiveObject>("prim");
         auto remapLayer = get_input2<std::string>("remap layer");
         if (!terrain->verts.has_attr(remapLayer)) {
-            zeno::log_error("Node [HF_maskByFeature], no such data layer named '{}'.",
+            zeno::log_error("Node [HF_remap], no such data layer named '{}'.",
                             remapLayer);
         }
         auto& var = terrain->verts.attr<float>(remapLayer);
+        auto autoCompute = get_input2<bool>("Auto Compute input range");
         auto inMin = get_input2<float>("input min");
         auto inMax = get_input2<float>("input max");
         auto outMin = get_input2<float>("output min");
@@ -2641,6 +2587,13 @@ struct HF_remap : INode {
         auto curve = get_input<CurveObject>("remap ramp");
         auto clampMin = get_input2<bool>("clamp min");
         auto clampMax = get_input2<bool>("clamp max");
+
+        if (autoCompute) {
+            inMin = zeno::parallel_reduce_array<float>(var.size(), var[0], [&] (size_t i) -> float { return var[i]; },
+            [&] (float i, float j) -> float { return zeno::min(i, j); });
+            inMax = zeno::parallel_reduce_array<float>(var.size(), var[0], [&] (size_t i) -> float { return var[i]; },
+            [&] (float i, float j) -> float { return zeno::max(i, j); });
+        }
 #pragma omp parallel for
         for (int i = 0; i < terrain->verts.size(); i++)
         {
@@ -2674,6 +2627,9 @@ struct HF_remap : INode {
                 var[i] = curve->eval(var[i]);
                 var[i] = fit(var[i], 0, 1, outMin, outMax);
             }
+            if (remapLayer == "height"){
+                terrain->verts.attr<vec3f>("pos")[i][1] = var[i];
+            }
         }
 
         set_output("prim", get_input("prim"));
@@ -2683,6 +2639,7 @@ ZENDEFNODE(HF_remap,
            { /* inputs: */ {
                "prim",
                {"string", "remap layer", "height"},
+               {"bool", "Auto Compute input range", "0"},
                {"float", "input min", "0"},
                {"float", "input max", "1"},
                {"float", "output min", "0"},
@@ -2694,7 +2651,7 @@ ZENDEFNODE(HF_remap,
                "prim",
            }, /* params: */ {
            }, /* category: */ {
-               "erode",
+               "deprecated",
            } });
 
 struct HF_maskbyOcclusion : INode {

@@ -10,15 +10,17 @@ struct LAUNCH_PARAM {
     int endFrame = 0;
     bool applyLightAndCameraOnly = false;
     bool applyMaterialOnly = false;
-
+    QString generator;   //triggered by GenerateCommands Node to start a calc, to get the commands.
     bool enableCache = false;
     bool tempDir = false;
     QString cacheDir = "";
+    QString objCacheDir = "";
     int cacheNum = 1;
     bool autoRmCurcache = false;    //auto remove cache when recording
     bool autoCleanCacheInCacheRoot = true;    //auto remove cachedir in cache root
     QString zsgPath;
     int projectFps = 24;
+    QString paramPath;
 };
 
 void launchProgram(IGraphsModel *pModel, LAUNCH_PARAM param);

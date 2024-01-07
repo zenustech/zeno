@@ -37,6 +37,15 @@ QMenu::separator {
     margin-bottom: 4px;
 }
 
+QMenu[cssClass="menuButton"]::item:selected {
+    background: #282D34;
+    color: #FFFFFF;
+}
+
+QMenu[cssClass="menuButton"]::item {
+    padding: 2px 28px 2px 5px;
+}
+
 QMenuBar {
     background-color: #191D21;
     spacing: 3px;

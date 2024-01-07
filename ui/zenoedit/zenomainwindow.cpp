@@ -56,6 +56,7 @@
 #include "dialog/ZImportSubgraphsDlg.h"
 #include "dialog/zcheckupdatedlg.h"
 #include "dialog/zrestartdlg.h"
+#include "dialog/zpreferencesdlg.h"
 
 const QString g_latest_layout = "LatestLayout";
 
@@ -264,6 +265,11 @@ void ZenoMainWindow::onMenuActionTriggered(bool bTriggered)
     }
     case ACTION_SET_SHORTCUT: {
         shortCutDlg();
+        break;
+    }
+    case ACTION_PREFERENCES: {
+        ZPreferencesDlg dlg;
+        dlg.exec();
         break;
     }
     case ACTION_ABOUT: {
@@ -1113,6 +1119,28 @@ void ZenoMainWindow::solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param, LAUN
             pGraphsModel->updateNodeStatus(subgNodeId, info, mainGraphIdx, true);
         }
     }
+    if (!param.paramsJson.isEmpty())
+    {
+        //parse paramsJson
+        rapidjson::Document configDoc;
+        configDoc.Parse(param.paramsJson.toUtf8());
+        if (!configDoc.IsObject())
+        {
+            zeno::log_error("config file is corrupted");
+        }
+        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+        ZASSERT_EXIT(pGraphsModel);
+        FuckQMap<QString, CommandParam> commands = pGraphsModel->commandParams();
+        for (auto& [key, param] : commands)
+        {
+            if (configDoc.HasMember(param.name.toUtf8()))
+            {
+                param.value = UiHelper::parseJson(configDoc[param.name.toStdString().c_str()], nullptr);
+                param.bIsCommand = true;
+            }
+            pGraphsModel->updateCommandParam(key, param);
+        }
+    }
 
     zeno::getSession().globalComm->clearState();
     launchParam.beginFrame = recInfo.frameRange.first;
@@ -1284,9 +1312,6 @@ void ZenoMainWindow::onSplitDock(bool bHorzontal)
 
 void ZenoMainWindow::openFileDialog()
 {
-    std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
-    ZASSERT_EXIT(mgr);
-    mgr->setNewCacheDir(true);
     QString filePath = getOpenFileByDialog();
     if (filePath.isEmpty())
         return;
@@ -1339,9 +1364,12 @@ void ZenoMainWindow::closeEvent(QCloseEvent *event)
     killOptix();
 
     QSettings settings(zsCompanyName, zsEditor);
-    if (settings.value("zencache-autoclean").isValid() ? settings.value("zencache-autoclean").toBool() : true)
+    bool autoClean = settings.value("zencache-autoclean").isValid() ? settings.value("zencache-autoclean").toBool() : true;
+    bool autoRemove = settings.value("zencache-autoremove").isValid() ? settings.value("zencache-autoremove").toBool() : false;
+    std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
+    mgr->removeObjTmpCacheDir();
+    if (autoClean || autoRemove)
     {
-        std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
         mgr->cleanCacheDir();
     }
 
@@ -1509,7 +1537,7 @@ void ZenoMainWindow::onCheckUpdate()
 #endif
 }
 
-void ZenoMainWindow::importGraph() {
+void ZenoMainWindow::importGraph(bool bPreset) {
     QString filePath = getOpenFileByDialog();
     if (filePath.isEmpty())
         return;
@@ -1579,6 +1607,22 @@ void ZenoMainWindow::importGraph() {
     }
     if (!subgraphNames.isEmpty())
         pGraphs->importSubGraphs(filePath, subgraphNames);
+    if (bPreset)
+    {
+        for (const auto& name : subgraphNames)
+        {
+            QModelIndex index = pGraphs->currentModel()->index(name);
+            if (index.isValid())
+            {
+                pGraphs->currentModel()->setData(index, SUBGRAPH_PRESET, ROLE_SUBGRAPH_TYPE);
+            }
+        }
+        ZenoSettingsManager::GetInstance().setValue(zsSubgraphType, SUBGRAPH_PRESET);
+    }
+    else
+    {
+        ZenoSettingsManager::GetInstance().setValue(zsSubgraphType, SUBGRAPH_NOR);
+    }
 }
 
 static bool saveContent(const QString &strContent, QString filePath) {
@@ -1616,7 +1660,8 @@ void ZenoMainWindow::exportGraph() {
             rapidjson::StringBuffer s;
             RAPIDJSON_WRITER writer(s);
             writer.StartArray();
-            serializeScene(pModel, writer);
+            LAUNCH_PARAM launchParam;
+            serializeScene(pModel, writer, launchParam);
             writer.EndArray();
             content = QString(s.GetString());
         }
@@ -1631,10 +1676,24 @@ bool ZenoMainWindow::openFile(QString filePath)
     if (!pModel)
         return false;
 
+    //cleanup
+    zeno::getSession().globalComm->clearFrameState();
+    auto views = viewports();
+    for (auto view : views)
+    {
+        view->cleanUpScene();
+    }
+
     resetTimeline(pGraphs->timeInfo());
     recordRecentFile(filePath);
     initUserdata(pGraphs->userdataInfo());
     //resetDocks(pGraphs->layoutInfo().layerOutNode);
+    std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
+    ZASSERT_EXIT(mgr, false);
+    mgr->setNewCacheDir(true);
+
+    m_ui->statusbar->showMessage(tr("File Opened"));
+    zeno::scope_exit sp([&]() {QTimer::singleShot(2000, this, [=]() {m_ui->statusbar->showMessage(tr("Status Bar")); }); });
     return true;
 }
 
@@ -1833,6 +1892,7 @@ void ZenoMainWindow::setActionProperty()
     m_ui->actionSet_NASLOC->setProperty("ActionType", ACTION_SET_NASLOC);
     m_ui->actionSet_ZENCACHE->setProperty("ActionType", ACTION_ZENCACHE);
     m_ui->actionSet_ShortCut->setProperty("ActionType", ACTION_SET_SHORTCUT);
+    m_ui->actionPreferences->setProperty("ActionType", ACTION_PREFERENCES);
     m_ui->actionFeedback->setProperty("ActionType", ACTION_FEEDBACK);
     m_ui->actionAbout->setProperty("ActionType", ACTION_ABOUT);
     m_ui->actionCheck_Update->setProperty("ActionType", ACTION_CHECKUPDATE);
@@ -1928,6 +1988,7 @@ void ZenoMainWindow::save()
     if (!pModel)
         return;
 
+    /*
     if (pModel->hasNotDescNode())
     {
         int flag = QMessageBox::question(this, "",
@@ -1941,6 +2002,7 @@ void ZenoMainWindow::save()
         saveAs();
         return;
     }
+    */
 
     zenoio::ZSG_VERSION ver = pModel->ioVersion();
     if (zenoio::VER_2 == ver)
@@ -1978,6 +2040,9 @@ bool ZenoMainWindow::saveFile(QString filePath)
     settings.userdataInfo.optix_show_background = ud.get2<bool>("optix_show_background", false);
     zenoApp->graphsManagment()->saveFile(filePath, settings);
     recordRecentFile(filePath);
+
+    m_ui->statusbar->showMessage(tr("File Saved"));
+    zeno::scope_exit sp([&]() {QTimer::singleShot(2000, this, [=]() {m_ui->statusbar->showMessage(tr("Status Bar")); }); });
     return true;
 }
 
@@ -2189,7 +2254,8 @@ static bool openFileAndExportAsZsl(const char *inPath, const char *outPath) {
         rapidjson::StringBuffer s;
         RAPIDJSON_WRITER writer(s);
         writer.StartArray();
-        serializeScene(pModel, writer);
+        LAUNCH_PARAM launchParam;
+        serializeScene(pModel, writer, launchParam);
         writer.EndArray();
         QFile fout(outPath);
         /* printf("sadfkhjl jghkasdf [%s]\n", s.GetString()); */

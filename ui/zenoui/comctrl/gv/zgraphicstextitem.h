@@ -149,6 +149,8 @@ public:
         Callback_OnSockClicked cbSockOnClick,
         QGraphicsItem* parent = nullptr);
 
+    void paint(QPainter* painter, const QStyleOptionGraphicsItem* pItem, QWidget* pWidget) override;
+
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
 

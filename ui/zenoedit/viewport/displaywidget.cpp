@@ -90,6 +90,18 @@ void DisplayWidget::testCleanUp()
         m_glView->testCleanUp();
 }
 
+void DisplayWidget::cleanUpScene()
+{
+    if (m_glView)
+    {
+        m_glView->cleanUpScene();
+    }
+    else
+    {
+        m_optixView->cleanUpScene();
+    }
+}
+
 void DisplayWidget::init()
 {
     //m_camera->installEventFilter(this);
@@ -422,6 +434,12 @@ void DisplayWidget::onCommandDispatched(int actionType, bool bChecked)
             m_glView->getSession()->set_render_wireframe(bChecked);
         updateFrame();
     }
+    else if (actionType == ZenoMainWindow::ACTION_UV_MODE)
+    {
+        if (m_glView)
+            m_glView->getSession()->set_uv_mode(bChecked);
+        updateFrame();
+    }
     else if (actionType == ZenoMainWindow::ACTION_SHOW_GRID)
     {
         if (m_glView)
@@ -517,6 +535,10 @@ void DisplayWidget::onSliderValueChanged(int frame)
 
     ZTimeline *timeline = mainWin->timeline();
     ZASSERT_EXIT(timeline);
+
+    for (auto displayWid : mainWin->viewports())
+        if (!displayWid->isGLViewport())
+            displayWid->setRenderSeparately(false, false);
     if (mainWin->isAlways() || mainWin->isAlwaysLightCamera() || mainWin->isAlwaysMaterial())
     {
         auto pGraphsMgr = zenoApp->graphsManagment();
@@ -534,9 +556,6 @@ void DisplayWidget::onSliderValueChanged(int frame)
         launchParam.endFrame = frame;
         launchParam.projectFps = mainWin->timelineInfo().timelinefps;
         if (mainWin->isAlwaysLightCamera() || mainWin->isAlwaysMaterial()) {
-            for (auto displayWid : mainWin->viewports())
-                if (!displayWid->isGLViewport())
-                    displayWid->setRenderSeparately(mainWin->isAlwaysLightCamera(), mainWin->isAlwaysMaterial());
             launchParam.applyLightAndCameraOnly = mainWin->isAlwaysLightCamera();
             launchParam.applyMaterialOnly = mainWin->isAlwaysMaterial();
         }
@@ -1202,11 +1221,11 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
             // read selected mode
             auto select_mode_str = zeno::NodeSyncMgr::GetInstance().getInputValString(nodes[0], "mode");
             if (select_mode_str == "triangle")
-                scene->select_mode = zenovis::PICK_MESH;
+                scene->select_mode = zenovis::PICK_MODE::PICK_MESH;
             else if (select_mode_str == "line")
-                scene->select_mode = zenovis::PICK_LINE;
+                scene->select_mode = zenovis::PICK_MODE::PICK_LINE;
             else
-                scene->select_mode = zenovis::PICK_VERTEX;
+                scene->select_mode = zenovis::PICK_MODE::PICK_VERTEX;
             // read selected elements
             string node_context;
             auto node_selected_str = zeno::NodeSyncMgr::GetInstance().getParamValString(nodes[0], "selected");
@@ -1218,7 +1237,7 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
                         node_context += prim_name + ":" + e.toStdString() + " ";
 
                 if (picker)
-                    picker->load_from_str(node_context, scene->select_mode);
+                    picker->load_from_str(node_context, scene->select_mode, zeno::SELECTION_MODE::NORMAL);
             }
             if (picker) {
                 picker->sync_to_scene();
@@ -1248,13 +1267,13 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
                 auto _far = scene->camera->m_far;
                 auto fov = scene->camera->m_fov;
                 auto cz = glm::length(scene->camera->m_lodcenter);
-                if (depth != 0) {
-//                    depth = depth * 2 - 1;
-//                    cz = 2 * _near * _far / ((_far + _near) - depth * (_far - _near));
-                    glm::vec4 ndc = {0, 0, depth, 1};
-                    glm::vec4 clip_c = glm::inverse(scene->camera->m_proj) * ndc;
-                    clip_c /= clip_c.w;
-                    cz = -clip_c.z;
+                if (depth != 1) {
+                    depth = depth * 2 - 1;
+                    cz = 2 * _near * _far / ((_far + _near) - depth * (_far - _near));
+//                    glm::vec4 ndc = {0, 0, depth, 1};
+//                    glm::vec4 clip_c = glm::inverse(scene->camera->m_proj) * ndc;
+//                    clip_c /= clip_c.w;
+//                    cz = -clip_c.z;
                 }
                 auto w = scene->camera->m_nx;
                 auto h = scene->camera->m_ny;

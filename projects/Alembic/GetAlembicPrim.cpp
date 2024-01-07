@@ -66,6 +66,22 @@ std::shared_ptr<PrimitiveObject> get_alembic_prim(std::shared_ptr<zeno::ABCTree>
     }
     return prim;
 }
+
+int get_alembic_prim_index(std::shared_ptr<zeno::ABCTree> abctree, std::string name) {
+    int index = 0;
+    abctree->visitPrims([&] (auto const &p) {
+        auto &ud = p->userData();
+        auto _abc_path = ud.template get2<std::string>("_abc_path", "");
+        if (_abc_path == name) {
+            return false;
+        }
+        else {
+            index++;
+            return true;
+        }
+    });
+    return index;
+}
 void dfs_abctree(
     std::shared_ptr<ABCTree> root,
     int parent_index,
@@ -145,6 +161,9 @@ struct GetAlembicPrim : INode {
         int index = get_input<NumericObject>("index")->get<int>();
         int use_xform = get_input<NumericObject>("use_xform")->get<int>();
         std::shared_ptr<PrimitiveObject> prim;
+        if (get_input2<bool>("use_name")) {
+            index = get_alembic_prim_index(abctree, get_input2<std::string>("name"));
+        }
         if (use_xform) {
             prim = get_xformed_prim(abctree, index);
         } else {
@@ -167,6 +186,8 @@ ZENDEFNODE(GetAlembicPrim, {
         {"int", "index", "0"},
         {"bool", "use_xform", "0"},
         {"bool", "triangulate", "0"},
+        {"bool", "use_name", "0"},
+        {"string", "name", ""},
     },
     {{"PrimitiveObject", "prim"}},
     {},
@@ -205,6 +226,44 @@ ZENDEFNODE(AllAlembicPrim, {
         {"bool", "triangulate", "0"},
     },
     {{"PrimitiveObject", "prim"}},
+    {},
+    {"alembic"},
+});
+
+struct AlembicPrimList : INode {
+    virtual void apply() override {
+        auto abctree = get_input<ABCTree>("abctree");
+        auto prims = std::make_shared<zeno::ListObject>();
+        int use_xform = get_input2<int>("use_xform");
+        if (use_xform) {
+            prims = get_xformed_prims(abctree);
+        } else {
+            abctree->visitPrims([&] (auto const &p) {
+                auto np = std::static_pointer_cast<PrimitiveObject>(p->clone());
+                prims->arr.push_back(np);
+            });
+        }
+        for (auto &prim: prims->arr) {
+            auto _prim = std::dynamic_pointer_cast<PrimitiveObject>(prim);
+            if (get_input2<bool>("flipFrontBack")) {
+                flipFrontBack(_prim);
+            }
+            if (get_input2<int>("triangulate") == 1) {
+                zeno::primTriangulate(_prim.get());
+            }
+        }
+        set_output("prims", std::move(prims));
+    }
+};
+
+ZENDEFNODE(AlembicPrimList, {
+    {
+        {"bool", "flipFrontBack", "1"},
+        {"ABCTree", "abctree"},
+        {"bool", "use_xform", "0"},
+        {"bool", "triangulate", "0"},
+    },
+    {"prims"},
     {},
     {"alembic"},
 });
@@ -306,7 +365,8 @@ struct ImportAlembicPrim : INode {
             double start, _end;
             GetArchiveStartAndEndTime(archive, start, _end);
             auto obj = archive.getTop();
-            traverseABC(obj, *abctree, frameid, read_done);
+            bool read_face_set = get_input2<bool>("read_face_set");
+            traverseABC(obj, *abctree, frameid, read_done, read_face_set, "");
         }
         bool use_xform = get_input2<bool>("use_xform");
         auto index = get_input2<int>("index");
@@ -346,6 +406,7 @@ ZENDEFNODE(ImportAlembicPrim, {
         {"int", "index", "-1"},
         {"bool", "use_xform", "0"},
         {"bool", "triangulate", "0"},
+        {"bool", "read_face_set", "0"},
     },
     {
         "prim",

@@ -14,6 +14,7 @@ SubGraphModel::SubGraphModel(GraphsModel* pGraphsModel, QObject *parent)
     : QAbstractItemModel(pGraphsModel)
     , m_pGraphsModel(pGraphsModel)
     , m_stack(new QUndoStack(this))
+    , m_type(SUBGRAPH_TYPE::SUBGRAPH_NOR)
 {
 	connect(this, &QAbstractItemModel::dataChanged, m_pGraphsModel, &GraphsModel::on_subg_dataChanged);
 	connect(this, &QAbstractItemModel::rowsAboutToBeInserted, m_pGraphsModel, &GraphsModel::on_subg_rowsAboutToBeInserted);
@@ -34,6 +35,7 @@ SubGraphModel::SubGraphModel(const SubGraphModel &rhs)
     , m_rect(rhs.m_rect)
     , m_name(rhs.m_name)
     , m_nodes(rhs.m_nodes)
+    , m_type(SUBGRAPH_TYPE::SUBGRAPH_NOR)
 {
 }
 
@@ -292,6 +294,85 @@ void SubGraphModel::_removeNetLabels(const NodeParamModel* nodeParams)
             }
         }
     }
+}
+
+void SubGraphModel::_uniqueView(const QModelIndex& index, bool bInSocket, bool bOutSocket, QModelIndexList& viewLst)
+{
+    QString id = m_row2Key[index.row()];
+    if (m_nodes.find(id) == m_nodes.end())
+        return;
+    const _NodeItem& item = m_nodes[id];
+    if (item.nodeParams)
+    {
+        QMap<bool, QModelIndexList> sockets;
+        if (bInSocket)
+        {
+            sockets[true] = item.nodeParams->getInputIndice();
+        }
+        if (bOutSocket)
+        {
+            sockets[false] = item.nodeParams->getOutputIndice();
+        }
+        for (const auto&bInput  : sockets.keys())
+        {
+            for (const auto& sock : sockets[bInput])
+            {
+                QModelIndexList lst;
+                const int sockProp = sock.data(ROLE_PARAM_SOCKPROP).toInt();
+                //dict sock
+                if (sockProp & SOCKPROP_DICTLIST_PANEL)
+                {
+                    QAbstractItemModel* pKeyObjModel = QVariantPtr<QAbstractItemModel>::asPtr(sock.data(ROLE_VPARAM_LINK_MODEL));
+                    for (int _r = 0; _r < pKeyObjModel->rowCount(); _r++)
+                    {
+                        const QModelIndex& keyIdx = pKeyObjModel->index(_r, 0);
+                        ZASSERT_EXIT(keyIdx.isValid());
+                        PARAM_LINKS links = keyIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+                        if (!links.isEmpty())
+                            lst << keyIdx;
+                    }
+                }
+                if (lst.isEmpty())
+                {
+                    lst << sock;
+                }
+                for (const auto& idx : lst)
+                {
+                    PARAM_LINKS links = idx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+                    for (const auto& link : links)
+                    {
+                        if (link.isValid())
+                        {
+                            QModelIndex sock;
+                            if (bInput)
+                                sock = link.data(ROLE_OUTSOCK_IDX).toModelIndex();
+                            else
+                                sock = link.data(ROLE_INSOCK_IDX).toModelIndex();
+                            ZASSERT_EXIT(sock.isValid());
+                            const auto& nodeIndex = sock.data(ROLE_NODE_IDX).toModelIndex();
+                            if (viewLst.contains(nodeIndex))
+                                continue;
+                            if (nodeIndex.isValid())
+                            {
+                                int opt = nodeIndex.data(ROLE_OPTIONS).toInt();
+                                if (opt & OPT_VIEW)
+                                {
+                                    opt ^= OPT_VIEW;
+                                    setData(nodeIndex, opt, ROLE_OPTIONS);
+                                    viewLst << nodeIndex;
+                                }
+                                else
+                                {
+                                    _uniqueView(nodeIndex, bInput, !bInput, viewLst);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    viewLst << index;
 }
 
 void SubGraphModel::removeNodeByDescName(const QString& descName)
@@ -581,6 +662,11 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
             }
             case ROLE_OPTIONS:
             {
+                if (((item.options & OPT_VIEW) == false) && (value.toInt() & OPT_VIEW))
+                {
+                    QModelIndexList lst;
+                    _uniqueView(index, true, true, lst);
+                }
                 item.options = value.toInt();
                 break;
             }
@@ -806,6 +892,37 @@ QString SubGraphModel::name() const
     return m_name;
 }
 
+SUBGRAPH_TYPE SubGraphModel::type() const
+{
+    return m_type;
+}
+void SubGraphModel::setType(SUBGRAPH_TYPE type)
+{
+    m_type = type;
+}
+
+void SubGraphModel::setMtlid(const QString& mtlid)
+{
+    m_mtlid = mtlid;
+}
+
+QString SubGraphModel::mtlid()
+{
+    if (m_type == SUBGRAPH_METERIAL && m_mtlid.isEmpty())
+    {
+        QVector<SubGraphModel*> vec;
+        vec << this;
+        QList<SEARCH_RESULT> resLst = m_pGraphsModel->search("ShaderFinalize", SEARCH_NODECLS, SEARCH_MATCH_EXACTLY, vec);
+        if (resLst.size() == 1)
+        {
+            SEARCH_RESULT result = resLst.first();
+            auto paramIdx = nodeParamIndex(result.targetIdx, PARAM_INPUT, "mtlid");
+            if (paramIdx.isValid())
+                m_mtlid = paramIdx.data(ROLE_PARAM_VALUE).toString();
+        }
+    }
+    return m_mtlid;
+}
 void SubGraphModel::replaceSubGraphNode(const QString& oldName, const QString& newName)
 {
     auto iter = m_name2identLst.find(oldName);
@@ -908,6 +1025,13 @@ QModelIndexList SubGraphModel::getNetInputSocks(const QString& name) const
     for (auto inSock : iter.value().inSocks)
         inSocks.append(inSock);
     return inSocks;
+}
+
+void SubGraphModel::setCommandParam(const QModelIndex& sock, bool bMarked)
+{
+    auto paramModel = const_cast<QAbstractItemModel*>(sock.model());
+    ZASSERT_EXIT(paramModel);
+    paramModel->setData(sock, bMarked, ROLE_VPARAM_COMMAND);
 }
 
 QStringList SubGraphModel::dumpLabels() const

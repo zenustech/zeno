@@ -44,6 +44,7 @@ public:
     void changeTransformOperation(const QString& node);
     void changeTransformOperation(int mode);
     void changeTransformCoordSys();
+    void cleanUpScene();
     void setNumSamples(int samples);
     void setPickTarget(const std::string& prim_name);
     void bindNodeToPicker(const QModelIndex& node, const QModelIndex& subgraph, const std::string& sock_name);
@@ -60,6 +61,7 @@ protected:
     void mouseReleaseEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void mouseDoubleClickEvent(QMouseEvent* event) override;
+    void enterEvent(QEvent * event) override;
     void wheelEvent(QWheelEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
     void keyReleaseEvent(QKeyEvent* event) override;

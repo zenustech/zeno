@@ -34,6 +34,7 @@ private:
     QVariant loopsData(const QModelIndex &index) const;
     QVariant loopUVsData(const QModelIndex &index) const;
     QVariant uvsData(const QModelIndex &index) const;
+    QVariant userData(const zeno::zany& object) const;
 };
 
 

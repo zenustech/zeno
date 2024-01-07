@@ -72,7 +72,9 @@
 	<file>icons/min_MUTE_dark.svg</file>
 	<file>icons/min_ONCE_dark.svg</file>
 	<file>icons/min_VIEW_dark.svg</file>
+	<file>icons/min_dark.svg</file>
 	<file>icons/min_MUTE_light.svg</file>
+	<file>icons/min_CACHE_light.svg</file>
 	<file>icons/min_ONCE_light.svg</file>
 	<file>icons/min_VIEW_light.svg</file>
 	<file>icons/MUTE_dark.svg</file>
@@ -81,6 +83,8 @@
 	<file>icons/ONCE_light.svg</file>
 	<file>icons/VIEW_dark.svg</file>
 	<file>icons/VIEW_light.svg</file>
+	<file>icons/CACHE_dark.svg</file>
+	<file>icons/CACHE_light.svg</file>
 	<file>icons/ic_openfile.svg</file>
 	<file>icons/ic_openfile-on.svg</file>
 	<file>icons/ic_MUTE.svg</file>
@@ -182,6 +186,8 @@
     <file>icons/subnet-general.svg</file>
     <file>icons/always-on.svg</file>
     <file>icons/always-off.svg</file>
+	<file>icons/Always.svg</file>
+	<file>icons/AlwaysOn.svg</file>
     <file>icons/run-off.svg</file>
     <file>icons/run-on.svg</file>
     <file>icons/kill-on.svg</file>
@@ -349,5 +355,16 @@
     <file>icons/ZENO-logo64.png</file>
 	<file>icons/update_main.png</file>
 	<file>icons/update-reboot.png</file>
+	<file>icons/run_all_btn.svg</file>
+    <file>icons/run_lightcamera_btn.svg</file>
+    <file>icons/run_material_btn.svg</file>
+	<file>icons/run_all.svg</file>
+    <file>icons/run_lightcamera.svg</file>
+    <file>icons/run_material.svg</file>
+    <file>icons/down_arrow.svg</file>
+    <file>icons/RunKill.svg</file>
+    <file>icons/RunKill_on.svg</file>
+	<file>icons/always_checkbox.svg</file>
+	<file>icons/always_checkbox_on.svg</file>
 </qresource>
 </RCC>

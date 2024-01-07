@@ -72,6 +72,11 @@ ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv, bool has_line
     } else {
         prim->tris.add_attr<int>("matid");
     }
+    bool has_faceset = prim->polys.has_attr("faceset");
+    if (has_faceset) {
+        auto &tris_faceset = prim->tris.add_attr<int>("faceset");
+        std::fill(tris_faceset.begin(), tris_faceset.end(), -1);
+    }
 
 
     if (!(prim->loops.has_attr("uvs") && prim->uvs.size() > 0) || !with_uv) {
@@ -90,6 +95,11 @@ ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv, bool has_line
                         prim->loops[start + 1],
                         prim->loops[start + 2]);
                 prim->tris.attr<int>("matid")[scanbase] = matidx;
+                int faceset_idx = -1;
+                if (has_faceset) {
+                    faceset_idx = prim->polys.attr<int>("faceset")[i];
+                    prim->tris.attr<int>("faceset")[scanbase] = faceset_idx;
+                }
                 scanbase++;
                 for (int j = 3; j < len; j++) {
                     prim->tris[scanbase] = vec3i(
@@ -97,6 +107,9 @@ ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv, bool has_line
                             prim->loops[start + j - 1],
                             prim->loops[start + j]);
                     prim->tris.attr<int>("matid")[scanbase] = matidx;
+                    if (has_faceset) {
+                        prim->tris.attr<int>("faceset")[scanbase] = faceset_idx;
+                    }
                     scanbase++;
                 }
             }
@@ -135,6 +148,11 @@ ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv, bool has_line
                         prim->loops[start + 1],
                         prim->loops[start + 2]);
                 prim->tris.attr<int>("matid")[scanbase] = matidx;
+                int faceset_idx = -1;
+                if (has_faceset) {
+                    faceset_idx = prim->polys.attr<int>("faceset")[i];
+                    prim->tris.attr<int>("faceset")[scanbase] = faceset_idx;
+                }
                 scanbase++;
                 for (int j = 3; j < len; j++) {
                     uv0[scanbase] = {uvs[loop_uv[start]][0], uvs[loop_uv[start]][1], 0};
@@ -145,6 +163,9 @@ ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv, bool has_line
                             prim->loops[start + j - 1],
                             prim->loops[start + j]);
                     prim->tris.attr<int>("matid")[scanbase] = matidx;
+                    if (has_faceset) {
+                        prim->tris.attr<int>("faceset")[scanbase] = faceset_idx;
+                    }
                     scanbase++;
                 }
             }

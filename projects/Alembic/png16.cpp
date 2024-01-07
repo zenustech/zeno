@@ -106,7 +106,7 @@ static std::shared_ptr<zeno::PrimitiveObject> read_png(const char* file_path) {
                     uint8_t r = row[x * 4];
                     uint8_t g = row[x * 4 + 1];
                     uint8_t b = row[x * 4 + 2];
-                    uint8_t a = row[x * 4 + 4];
+                    uint8_t a = row[x * 4 + 3];
 
                     color[0] = float(r) / 255.0f;
                     color[1] = float(g) / 255.0f;

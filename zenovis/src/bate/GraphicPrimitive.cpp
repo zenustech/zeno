@@ -354,11 +354,82 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
     std::shared_ptr<zeno::PrimitiveObject> primUnique;
     zeno::PrimitiveObject *prim;
 
+    ZhxxDrawObject polyEdgeObj = {};
+    ZhxxDrawObject polyUvObj = {};
+
     explicit ZhxxGraphicPrimitive(Scene *scene_, zeno::PrimitiveObject *primArg)
         : scene(scene_), primUnique(std::make_shared<zeno::PrimitiveObject>(*primArg)) {
         prim = primUnique.get();
         invisible = prim->userData().get2<bool>("invisible", 0);
         zeno::log_trace("rendering primitive size {}", prim->size());
+
+        {
+            bool any_not_triangle = false;
+            for (const auto &[b, c]: prim->polys) {
+                if (c > 3) {
+                    any_not_triangle = true;
+                }
+            }
+            if (any_not_triangle) {
+                std::vector<int> edge_list;
+                auto add_edge = [&](int a, int b) {
+                    int p0 = prim->loops[a];
+                    int p1 = prim->loops[b];
+                    edge_list.push_back(p0);
+                    edge_list.push_back(p1);
+                };
+                for (const auto &[b, c]: prim->polys) {
+                    for (auto i = 2; i < c; i++) {
+                        if (i == 2) {
+                            add_edge(b, b + 1);
+                        }
+                        add_edge(b + i - 1, b + i);
+                        if (i == c - 1) {
+                            add_edge(b, b + i);
+                        }
+                    }
+                }
+                polyEdgeObj.count = edge_list.size();
+                polyEdgeObj.ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
+                polyEdgeObj.ebo->bind_data(edge_list.data(), edge_list.size() * sizeof(edge_list[0]));
+                auto vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
+                vbo->bind_data(prim->verts.data(), prim->verts.size() * sizeof(prim->verts[0]));
+                polyEdgeObj.vbos.push_back(std::move(vbo));
+                polyEdgeObj.prog = get_edge_program();
+            }
+            if (any_not_triangle && prim->loops.attr_is<int>("uvs")) {
+                std::vector<zeno::vec3f> uv_data;
+                std::vector<int> uv_list;
+                auto &uvs = prim->loops.attr<int>("uvs");
+                auto add_uv = [&](int a, int b) {
+                    int p0 = uvs[a];
+                    int p1 = uvs[b];
+                    uv_list.push_back(p0);
+                    uv_list.push_back(p1);
+                };
+                for (const auto &[b, c]: prim->polys) {
+                    for (auto i = 2; i < c; i++) {
+                        if (i == 2) {
+                            add_uv(b, b + 1);
+                        }
+                        add_uv(b + i - 1, b + i);
+                        if (i == c - 1) {
+                            add_uv(b, b + i);
+                        }
+                    }
+                }
+                polyUvObj.count = uv_list.size();
+                polyUvObj.ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
+                polyUvObj.ebo->bind_data(uv_list.data(), uv_list.size() * sizeof(uv_list[0]));
+                auto vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
+                for (const auto &uv: prim->uvs) {
+                    uv_data.emplace_back(uv[0], uv[1], 0);
+                }
+                vbo->bind_data(uv_data.data(), uv_data.size() * sizeof(uv_data[0]));
+                polyUvObj.vbos.push_back(std::move(vbo));
+                polyUvObj.prog = get_edge_program();
+            }
+        }
 
         if (!prim->attr_is<zeno::vec3f>("pos")) {
             auto &pos = prim->add_attr<zeno::vec3f>("pos");
@@ -548,6 +619,10 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
     }
 
     virtual void draw() override {
+        bool selected = scene->selected.count(nameid) > 0;
+        if (scene->drawOptions->uv_mode && !selected) {
+            return;
+        }
         if (scene->drawOptions->show_grid == false && invisible) {
             return;
         }
@@ -630,6 +705,7 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
 
             triObj.prog->set_uniform("mSmoothShading", scene->drawOptions->smooth_shading);
             triObj.prog->set_uniform("mNormalCheck", scene->drawOptions->normal_check);
+            triObj.prog->set_uniform("mUvMode", scene->drawOptions->uv_mode);
 
             triObj.prog->set_uniformi("mRenderWireframe", false);
             triObj.prog->set_uniformi("mCustomColor", custom_color);
@@ -640,18 +716,53 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
                         /*count=*/triObj.count * 3,
                                         GL_UNSIGNED_INT, /*first=*/0));
             }
-            bool selected = scene->selected.count(nameid) > 0;
 
-            if (scene->drawOptions->render_wireframe || selected) {
-                CHECK_GL(glEnable(GL_POLYGON_OFFSET_LINE));
-                CHECK_GL(glPolygonOffset(0, 0));
-                CHECK_GL(glPolygonMode(GL_FRONT_AND_BACK, GL_LINE));
-                triObj.prog->set_uniformi("mRenderWireframe", true);
-                CHECK_GL(glDrawElements(GL_TRIANGLES,
-                                        /*count=*/triObj.count * 3,
-                                        GL_UNSIGNED_INT, /*first=*/0));
-                CHECK_GL(glPolygonMode(GL_FRONT_AND_BACK, GL_FILL));
-                CHECK_GL(glDisable(GL_POLYGON_OFFSET_LINE));
+            if (scene->drawOptions->render_wireframe || selected || scene->drawOptions->uv_mode) {
+                CHECK_GL(glDepthFunc(GL_LEQUAL));
+                if (polyEdgeObj.count) {
+                    if (scene->drawOptions->uv_mode) {
+                        if (polyUvObj.count) {
+                            polyUvObj.prog->use();
+                            scene->camera->set_program_uniforms(polyUvObj.prog);
+
+                            polyUvObj.vbos[0]->bind();
+                            polyUvObj.vbos[0]->attribute(0, 0, 0, GL_FLOAT, 3);
+                            polyUvObj.ebo->bind();
+
+                            CHECK_GL(glDrawElements(GL_LINES, polyUvObj.count, GL_UNSIGNED_INT, 0));
+
+                            polyUvObj.ebo->unbind();
+                            polyUvObj.vbos[0]->disable_attribute(0);
+                            polyUvObj.vbos[0]->unbind();
+                        }
+                    }
+                    else {
+                        polyEdgeObj.prog->use();
+                        scene->camera->set_program_uniforms(polyEdgeObj.prog);
+
+                        polyEdgeObj.vbos[0]->bind();
+                        polyEdgeObj.vbos[0]->attribute(0, 0, 0, GL_FLOAT, 3);
+                        polyEdgeObj.ebo->bind();
+
+                        CHECK_GL(glDrawElements(GL_LINES, polyEdgeObj.count, GL_UNSIGNED_INT, 0));
+
+                        polyEdgeObj.ebo->unbind();
+                        polyEdgeObj.vbos[0]->disable_attribute(0);
+                        polyEdgeObj.vbos[0]->unbind();
+                    }
+                }
+                else {
+                    CHECK_GL(glEnable(GL_POLYGON_OFFSET_LINE));
+                    CHECK_GL(glPolygonOffset(0, 0));
+                    CHECK_GL(glPolygonMode(GL_FRONT_AND_BACK, GL_LINE));
+                    triObj.prog->set_uniformi("mRenderWireframe", true);
+                    CHECK_GL(glDrawElements(GL_TRIANGLES,
+                                            /*count=*/triObj.count * 3,
+                                            GL_UNSIGNED_INT, /*first=*/0));
+                    CHECK_GL(glPolygonMode(GL_FRONT_AND_BACK, GL_FILL));
+                    CHECK_GL(glDisable(GL_POLYGON_OFFSET_LINE));
+                }
+                CHECK_GL(glDepthFunc(GL_LESS));
             }
             triObj.ebo->unbind();
             if (triObj.vbos.size()) {
@@ -693,6 +804,17 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
 #include "shader/tris.frag"
         ;
 
+        return scene->shaderMan->compile_program(vert, frag);
+    }
+
+    Program *get_edge_program() {
+        auto vert =
+#include "shader/edge.vert"
+        ;
+
+        auto frag =
+#include "shader/edge.frag"
+        ;
         return scene->shaderMan->compile_program(vert, frag);
     }
 };

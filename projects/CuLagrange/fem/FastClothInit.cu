@@ -314,7 +314,7 @@ void FastClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
                         int vj = adjVerts[j] - (vi << intHalfLen);
                         int vk = adjVerts[k] - (vi << intHalfLen);
                         auto edge = ivec2{vj, vk};
-                        if (auto no = eTab.single_query(edge); no < 0)
+                        if (auto no = eTab.query(edge); no < 0)
                             eTab.insert(edge);
                     }
                 }

@@ -17,7 +17,6 @@
 #include "tinyexr.h"
 #include "zeno/utils/string.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#define STB_IMAGE_WRITE_STATIC
 #include <tinygltf/stb_image_write.h>
 #include <vector>
 #include <glm/glm.hpp>
@@ -480,7 +479,7 @@ ZENDEFNODE(ImageFlipVertical, {
         {"image"},
     },
     {},
-    {"comp"},
+    {"deprecated"},
 });
 
 void write_pfm(std::string& path, int w, int h, vec3f *rgb) {
@@ -585,7 +584,7 @@ struct WriteImageFile : INode {
             const char* err;
             path += ".exr";
             std::string native_path = std::filesystem::u8path(path).string();
-            int ret = SaveEXR(data2.data(),w,h,n,1,native_path.c_str(),&err);
+            int ret = SaveEXR(data2.data(),w,h,n,0,native_path.c_str(),&err);
 
             if (ret != TINYEXR_SUCCESS) {
                 zeno::log_error("Error saving EXR file: {}\n", err);
@@ -690,6 +689,85 @@ ZENDEFNODE(ImageFloatGaussianBlur, {
     },
     {
         {"image"},
+    },
+    {},
+    {"deprecated"},
+});
+
+struct EnvMapRot : INode {
+    virtual void apply() override {
+        auto path = get_input2<std::string>("path");
+        auto img = readImageFile(path);
+        int h = img->userData().get2<int>("h");
+        int w = img->userData().get2<int>("w");
+        int maxi = 0;
+
+        float maxv = zeno::dot(img->verts[0], zeno::vec3f(0.33, 0.33, 0.33));
+        for (auto i = 1; i < img->size(); i++) {
+            float value = zeno::dot(img->verts[i], zeno::vec3f(0.33, 0.33, 0.33));
+            if (value > maxv) {
+                maxi = i;
+                maxv = value;
+            }
+        }
+        int x = maxi % w;
+        int y = h - 1 - maxi / w;
+
+        float rot_phi = x / float(w) * 360 + 180;
+        set_output2("rotation", rot_phi);
+
+        float rot_theta = y / float(h - 1) * 180;
+
+        auto dir = get_input2<vec3f>("dir");
+        dir = zeno::normalize(dir);
+        auto to_rot_theta = glm::degrees(acos(dir[1]));
+        auto diff_rot_theta = to_rot_theta - rot_theta;
+
+        float rot_phi2 = glm::degrees(atan2(dir[2], dir[0]));
+        set_output2("rotation3d", vec3f(0, -rot_phi2, diff_rot_theta));
+    }
+};
+ZENDEFNODE(EnvMapRot, {
+    {
+        {"readpath", "path", ""},
+        {"vec3f", "dir", "1, 1, 1"},
+    },
+    {
+        {"float", "rotation"},
+        {"vec3f", "rotation3d"},
+    },
+    {},
+    {"comp"},
+});
+
+struct PrimLoadExrToChannel : INode {
+    void apply() override {
+        auto path = get_input2<std::string>("path");
+        auto image = readExrFile(path);
+        int h = image->userData().get2<int>("h");
+        int w = image->userData().get2<int>("w");
+
+        auto prim = get_input<PrimitiveObject>("prim");
+        if (w * h != prim->size()) {
+            throw zeno::makeError("PrimLoadExrToChannel image prim w and h not match!");
+        }
+        auto &channel = prim->add_attr<vec3f>(get_input2<std::string>("channel"));
+        for (auto i = 0; i < w * h; i++) {
+            channel[i] = image->verts[i];
+        }
+
+        set_output2("output", prim);
+    }
+};
+
+ZENDEFNODE(PrimLoadExrToChannel, {
+    {
+        {"readpath", "path", ""},
+        {"prim"},
+        {"string", "channel", "clr"},
+    },
+    {
+        {"output"},
     },
     {},
     {"comp"},

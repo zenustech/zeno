@@ -81,7 +81,7 @@ namespace zeno {
 //}
 
 Picker::Picker(ViewportWidget *pViewport) 
-    : select_mode_context(-1)
+    : select_mode_context(zenovis::PICK_MODE::PICK_NONE)
     , m_pViewport(pViewport)
     , draw_mode(false)
 {
@@ -105,10 +105,10 @@ void Picker::pick(int x, int y) {
     auto scene = this->scene();
     ZASSERT_EXIT(scene);
     // qDebug() << scene->select_mode;
-    // scene->select_mode = zenovis::PICK_MESH;
+    // scene->select_mode = zenovis::PICK_MODE::PICK_MESH;
     auto selected = picker->getPicked(x, y);
 
-    if (scene->select_mode == zenovis::PICK_OBJECT) {
+    if (scene->select_mode == zenovis::PICK_MODE::PICK_OBJECT) {
         if (selected.empty()) {
             selected_prims.clear();
             return;
@@ -145,24 +145,20 @@ void Picker::pick(int x, int y) {
     // onPrimitiveSelected();
 }
 
-void Picker::pick(int x0, int y0, int x1, int y1) {
+void Picker::pick(int x0, int y0, int x1, int y1, SELECTION_MODE mode) {
     auto scene = this->scene();
     ZASSERT_EXIT(scene);
     auto selected = picker->getPicked(x0, y0, x1, y1);
     // qDebug() << "pick: " << selected.c_str();
-    if (scene->select_mode == zenovis::PICK_OBJECT) {
+    if (scene->select_mode == zenovis::PICK_MODE::PICK_OBJECT) {
         if (selected.empty()) {
             selected_prims.clear();
             return;
         }
-        load_from_str(selected, zenovis::PICK_OBJECT);
+        load_from_str(selected, zenovis::PICK_MODE::PICK_OBJECT, SELECTION_MODE::NORMAL);
     }
     else {
-        if (selected.empty()) {
-            selected_elements.clear();
-            return;
-        }
-        load_from_str(selected, scene->select_mode);
+        load_from_str(selected, scene->select_mode, mode);
         if (picked_elems_callback) picked_elems_callback(selected_elements);
     }
 }
@@ -182,7 +178,7 @@ string Picker::just_pick_prim(int x, int y) {
     ZASSERT_EXIT(scene, "");
 
     auto store_mode = scene->select_mode;
-    scene->select_mode = zenovis::PICK_OBJECT;
+    scene->select_mode = zenovis::PICK_MODE::PICK_OBJECT;
     auto res = picker->getPicked(x, y);
     scene->select_mode = store_mode;
     return res;
@@ -201,20 +197,23 @@ void Picker::sync_to_scene() {
 
 }
 
-void Picker::load_from_str(const string& str, int mode) {
+void Picker::load_from_str(const string& str, zenovis::PICK_MODE mode, SELECTION_MODE sel_mode) {
     if (str.empty()) return;
     // parse selected string
     std::regex reg(" ");
     std::sregex_token_iterator p(str.begin(), str.end(), reg, -1);
     std::sregex_token_iterator end;
 
-    if (mode == zenovis::PICK_OBJECT) {
+    if (mode == zenovis::PICK_MODE::PICK_OBJECT) {
         while (p != end) {
             selected_prims.insert(*p);
             p++;
         }
     }
     else {
+        if (sel_mode == SELECTION_MODE::NORMAL) {
+            selected_elements.clear();
+        }
         while (p != end) {
             string result = *p++;
             // qDebug() << result.c_str();
@@ -225,7 +224,7 @@ void Picker::load_from_str(const string& str, int mode) {
             int elem_id; ss >> elem_id;
             if (selected_elements.find(obj_id) != selected_elements.end()) {
                 auto &elements = selected_elements[obj_id];
-                if (elements.count(elem_id) > 0)
+                if (sel_mode == SELECTION_MODE::REMOVE)
                     elements.erase(elem_id);
                 else
                     elements.insert(elem_id);
@@ -234,9 +233,9 @@ void Picker::load_from_str(const string& str, int mode) {
     }
 }
 
-string Picker::save_to_str(int mode) {
+string Picker::save_to_str(zenovis::PICK_MODE mode) {
     string res;
-    if (mode == zenovis::PICK_OBJECT) {
+    if (mode == zenovis::PICK_MODE::PICK_OBJECT) {
         for (const auto& p : selected_prims)
             res += p + " ";
     }
@@ -259,7 +258,7 @@ void Picker::save_context() {
 }
 
 void Picker::load_context() {
-    if (select_mode_context < 0) return;
+    if (select_mode_context == zenovis::PICK_MODE::PICK_NONE) return;
 
     auto scene = this->scene();
     ZASSERT_EXIT(scene);
@@ -267,7 +266,7 @@ void Picker::load_context() {
     scene->select_mode = select_mode_context;
     selected_prims = std::move(selected_prims_context);
     selected_elements = std::move(selected_elements_context);
-    select_mode_context = -1;
+    select_mode_context = zenovis::PICK_MODE::PICK_NONE;
 }
 
 void Picker::focus(const string& prim_name) {

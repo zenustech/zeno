@@ -56,6 +56,8 @@ int optixcmd(const QCoreApplication& app, int port)
         {"subzsg", "subgraphzsg", "subgraph zsg file path"},
         {"cacheautorm", "cacheautoremove", "remove cache after render"},
         {"optixShowBackground", "optixShowBackground", "optix record with background"},
+        {"paramsPath", "paramsPath", "paramsPath"},
+        {"paramsJson", "paramsJson", "paramsJson"},
         });
     cmdParser.process(app);
 
@@ -127,6 +129,10 @@ int optixcmd(const QCoreApplication& app, int port)
     param.bOptix = true;
     param.sPixel = "1200x800";
 #endif
+
+    std::cerr.rdbuf(std::cout.rdbuf());
+    std::clog.rdbuf(std::cout.rdbuf());
+    zeno::set_log_stream(std::clog);
 
     VideoRecInfo recInfo = AppHelper::getRecordInfo(param);
 

@@ -160,6 +160,7 @@ bool NodeParamModel::getParams(PARAMS_INFO &params)
         paramInfo.control = param->m_ctrl;
         paramInfo.controlProps = param->m_customData[ROLE_VPARAM_CTRL_PROPERTIES];
         paramInfo.toolTip = param->m_customData[ROLE_VPARAM_TOOLTIP].toString();
+        paramInfo.paramPath = param->data(ROLE_OBJPATH).toString();
         params.insert(name, paramInfo);
     }
     return true;
@@ -892,7 +893,10 @@ bool NodeParamModel::setData(const QModelIndex& index, const QVariant& value, in
             {
                 onLinkAdded(pItem);
             }
-            markNodeChanged();
+            if (pItem->getParamClass() == PARAM_INPUT)
+            {
+                markNodeChanged();
+            }
             break;
         }
         case ROLE_PARAM_CTRL: {
@@ -1137,8 +1141,8 @@ void NodeParamModel::onSubIOEdited(const QVariant& oldValue, const VParamItem* p
 
             const QModelIndex& idx_defl = deflItem->index();
             setData(idx_defl, newType, ROLE_PARAM_TYPE);
-            setData(idx_defl, newCtrl, ROLE_PARAM_CTRL);
             setData(idx_defl, newValue, ROLE_PARAM_VALUE);
+            setData(idx_defl, newCtrl, ROLE_PARAM_CTRL);
 
             //update desc.
             NODE_DESC desc;
@@ -1265,6 +1269,11 @@ void NodeParamModel::onSubIOEdited(const QVariant& oldValue, const VParamItem* p
 			}
         }
     }
+    else if (nodeName == "ShaderFinalize" && pItem->m_name == "mtlid")
+    {
+        QModelIndex subgIdx = m_nodeIdx.data(ROLE_SUBGRAPH_IDX).toModelIndex();
+        m_pGraphsModel->setData(subgIdx, pItem->data(ROLE_PARAM_VALUE), ROLE_MTLID);
+     }
 }
 
 void NodeParamModel::onLinkAdded(VParamItem* pItem)

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cuda_fp16.h>
 #include <cuda/helpers.h>
 
 __forceinline__ __device__ float to_radians(float degrees) {
@@ -7,6 +8,13 @@ __forceinline__ __device__ float to_radians(float degrees) {
 }
 __forceinline__ __device__ float to_degrees(float radians) {
     return radians * M_1_PIf * 180.0f;
+}
+
+template<typename T>
+__forceinline__ __device__ void swap(T& a, T& b) {
+    T t = a;
+    a = b;
+    b = t;
 }
 
 struct vec4{
@@ -36,7 +44,13 @@ struct vec4{
 struct vec3{
     float x, y, z;
 
-    __forceinline__ __device__ float operator[](unsigned int index) const {
+    __forceinline__ __device__ float& operator[](unsigned int index) {
+        auto ptr= &this->x;
+        ptr += index;
+        return *ptr;
+    }
+
+    __forceinline__ __device__ const float& operator[](unsigned int index) const {
         auto ptr= &this->x;
         ptr += index;
         return *ptr;
@@ -990,11 +1004,6 @@ __forceinline__ __device__ vec4 texture2D(cudaTextureObject_t texObj, vec2 uv)
     return vec4(res.x, res.y, res.z, res.w);
 }
 
-// __forceinline__ __device__ float textureSparse3D(nanovdb *aaa, vec3 pos)
-// {
-
-// }
-
 /////////////end of geometry math/////////////////////////////////////////////////
 
 ////////////matrix operator...////////////////////////////////////////////////////
@@ -1015,6 +1024,9 @@ struct mat4{
 
 struct mat3{
     vec3 m0, m1, m2;
+
+    __forceinline__ __device__ mat3(const vec3& v0, const vec3& v1, const vec3 v2): m0(v0), m1(v1), m2(v2) {}
+
     __forceinline__ __device__ mat3(float m00, float m01, float m02, float m10, float m11, float m12, float m20, float m21, float m22)
     {
         m0 = vec3(m00, m01, m02);
@@ -1027,6 +1039,13 @@ struct mat3{
         m0 = vec3(_v.m0);
         m1 = vec3(_v.m1);
         m2 = vec3(_v.m2);
+    }
+
+    __forceinline__ __device__ void transpose() {
+
+        swap(m0.y, m1.x);
+        swap(m0.z, m2.x);
+        swap(m1.z, m2.y);     
     }
 };
 
@@ -1073,7 +1092,7 @@ __forceinline__ __device__ vec4 operator*(mat4 a, vec4 b)
 //}
 
 __forceinline__ __device__ vec3 normalmap(vec3 norm, float scale) {
-    norm = norm * 2 - 1;
+    //norm = norm * 2 - 1;
     float x = norm.x * scale;
     float y = norm.y * scale;
     float z = 1 - sqrt(x * x + y * y);
@@ -1311,4 +1330,37 @@ __forceinline__ __device__ vec2 shuffled_scrambled_sobol_2d(unsigned int index, 
     p.x = nested_uniform_scramble(p.x, hash_combine(seed, 0u));
     p.y = nested_uniform_scramble(p.y, hash_combine(seed, 1u));
     return vec2(p.x, p.y)*exp2(-32.);
+}
+
+__forceinline__ __device__ float3 decodeColor(uchar3 c)
+{
+  vec3 cout = vec3((float)(c.x), (float)(c.y), (float)(c.z)) / 255.0f;
+  return make_float3(cout.x, cout.y, cout.z);
+}
+__forceinline__ __device__ float3 decodeNormal(uchar3 c)
+{
+  vec3 cout = vec3((float)(c.x), (float)(c.y), (float)(c.z)) / 255.0 * 2.0f - 1.0f;
+  return make_float3(cout.x, cout.y, cout.z);
+}
+
+__forceinline__ __device__ float3 decodeColor(ushort3 c)
+{
+  half& hx = reinterpret_cast<half&>(c.x);
+  half& hy = reinterpret_cast<half&>(c.y);
+  half& hz = reinterpret_cast<half&>(c.z);
+
+  return { __half2float(hx), __half2float(hy), __half2float(hz) };
+}
+__forceinline__ __device__ float3 decodeNormal(ushort3 c)
+{
+  vec3 cout = vec3((float)(c.x), (float)(c.y), (float)(c.z)) / 65536.0f * 2.0f - 1.0f;
+  return make_float3(cout.x, cout.y, cout.z);
+}
+__forceinline__ __device__ float3 decodeColor(float4 c)
+{
+  return make_float3(c.x, c.y, c.z);
+}
+__forceinline__ __device__ float3 decodeNormal(float4 c)
+{
+  return make_float3(c.x, c.y, c.z);
 }

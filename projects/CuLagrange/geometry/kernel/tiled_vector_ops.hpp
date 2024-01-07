@@ -38,7 +38,7 @@ namespace zeno { namespace TILEVEC_OPS {
         }
         auto space_dim = src.getPropertySize(src_tag);
         if(dst.getPropertySize(dst_tag) != space_dim){
-            // std::cout << "invalid channel size : " << space_dim << "\t" << dst.getPropertySize(dst_tag) << std::endl;
+            std::cout << "invalid channel[" << src_tag << "] and [" << dst_tag << "] size : " << space_dim << "\t" << dst.getPropertySize(dst_tag) << std::endl;
             throw std::runtime_error("copy_ops_error::the channel size of src and dst not match");
         }
         pol(zs::range(src.size()),

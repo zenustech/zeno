@@ -6,8 +6,8 @@
 
 #include <memory>
 #include <optix.h>
-#include <optix_function_table_definition.h>
 #include <optix_stubs.h>
+#include <optix_function_table_definition.h>
 
 #include <sampleConfig.h>
 
@@ -22,6 +22,7 @@
 #include <sutil/vec_math.h>
 #include <optix_stack_size.h>
 #include <stb_image_write.h>
+#include <tuple>
 #ifdef __linux__
 #include <unistd.h>
 #include <stdio.h>
@@ -32,6 +33,8 @@
 #include "magic_enum.hpp"
 #include "optixPathTracer.h"
 
+#include <zeno/para/parallel_sort.h>
+#include <zeno/para/parallel_scan.h>
 #include <zeno/utils/log.h>
 #include <zeno/utils/zeno_p.h>
 #include <zeno/types/MaterialObject.h>
@@ -68,9 +71,12 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <rapidjson/document.h>
 
 #include "LightBounds.h"
 #include "LightTree.h"
+
+#include "TypeCaster.h"
 
 #include "LightBounds.h"
 #include "LightTree.h"
@@ -83,7 +89,6 @@ using namespace zeno::ChiefDesignerEXR;
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
-#define TRI_PER_MESH 4096
 #include <string_view>
 struct CppTimer {
     void tick() {
@@ -146,9 +151,13 @@ struct Record
     T data;
 };
 
+struct EmptyData {};
+
 typedef Record<RayGenData>   RayGenRecord;
 typedef Record<MissData>     MissRecord;
+
 typedef Record<HitGroupData> HitGroupRecord;
+typedef Record<EmptyData>   CallablesRecord;
 
 
 //struct Vertex
@@ -162,11 +171,86 @@ typedef Record<HitGroupData> HitGroupRecord;
     //uint32_t v1, v2, v3, pad;
 //};
 
-
 //struct Instance
 //{
     //float transform[12];
 //};
+#ifdef USE_SHORT_COMPACT
+uchar4 toRGBA8(float4 in)
+{
+  return make_uchar4((unsigned char)(in.x*256.0),
+                     (unsigned char)(in.y*256.0),
+                     (unsigned char)(in.z*256.0),
+                     (unsigned char)(in.w*256.0));
+}
+ushort2 rgba8ToUshort2(uchar4 in)
+{
+    uchar4 rgba = toRGBA8(in);
+    unsigned short x = rgba.x;
+    x = x<<16 + rgba.y;
+    unsigned short y = rgba.z<<16 + rgba.w;
+}
+ushort2 toHalfColor(float4 in)
+{
+  return make_ushort3((unsigned short)(in.x*65536.0f),
+                      (unsigned short)(in.y*65536.0f),
+                      (unsigned short)(in.z*65536.0f));
+}
+
+ushort2 toHalf(float4 in)
+{
+  return make_ushort3((unsigned short)(in.x*65536.0f),
+                      (unsigned short)(in.y*65536.0f),
+                      (unsigned short)(in.z*65536.0f));
+}
+
+ushort2 halfNormal(float4 in)
+{
+  float3 val = make_float3((in.x + 1.0f)/2.0f,
+                           (in.y + 1.0f)/2.0f,
+                           (in.z + 1.0f)/2.0f);
+
+  return make_ushort3((unsigned short)(val.x*65536.0f),
+                      (unsigned short)(val.y*65536.0f),
+                      (unsigned short)(val.z*65536.0f));
+}
+#else
+  #ifdef USE_SHORT
+    ushort3 toHalfColor(float4 in)
+    {
+        
+      return make_ushort3((unsigned short)(in.x*65536.0f),
+                          (unsigned short)(in.y*65536.0f),
+                          (unsigned short)(in.z*65536.0f));
+    }
+
+    ushort3 halfNormal(float4 in)
+    {
+      float3 val = make_float3((in.x + 1.0f)/2.0f,
+                               (in.y + 1.0f)/2.0f,
+                               (in.z + 1.0f)/2.0f);
+      //val = normalize(val);
+
+      return make_ushort3((unsigned short)(val.x*65536.0f),
+                          (unsigned short)(val.y*65536.0f),
+                          (unsigned short)(val.z*65536.0f));
+    }
+  #else
+    float4 toHalfColor(float4 in)
+    {
+      return in;
+    }
+    float4 toHalf(float4 in)
+    {
+      return in;
+    }
+
+    float4 halfNormal(float4 in)
+    {
+      return in;
+    }
+  #endif
+#endif
 
 std::optional<sutil::CUDAOutputBuffer<uchar4>> output_buffer_o;
 std::optional<sutil::CUDAOutputBuffer<float3>> output_buffer_color;
@@ -196,7 +280,8 @@ struct PathTracerState
     raii<CUdeviceptr>              d_tan;
     raii<CUdeviceptr>              d_lightMark;
     raii<CUdeviceptr>              d_mat_indices;
-    raii<CUdeviceptr>              d_meshIdxs;
+
+    raii<CUdeviceptr>              vertexAuxOffsetGlobal;
     
     raii<CUdeviceptr>              d_instPos;
     raii<CUdeviceptr>              d_instNrm;
@@ -237,6 +322,7 @@ struct PathTracerState
     raii<CUdeviceptr>  d_raygen_record;
     raii<CUdeviceptr>  d_miss_records;
     raii<CUdeviceptr>  d_hitgroup_records;
+    raii<CUdeviceptr>  d_callable_records;    
 
     OptixShaderBindingTable        sbt                      = {};
 };
@@ -265,49 +351,136 @@ struct smallMesh{
 
 //const int32_t TRIANGLE_COUNT = 32;
 //const int32_t MAT_COUNT      = 5;
+#ifdef USE_SHORT
+    static std::vector<Vertex> g_vertices= // TRIANGLE_COUNT*3
+        {
+            {0,0,0},
+            {0,0,0},
+            {0,0,0},
+    };
+    static std::vector<ushort3> g_clr= // TRIANGLE_COUNT*3
+        {
+            {0,0,0},
+            {0,0,0},
+            {0,0,0},
+    };
+    static std::vector<ushort3> g_nrm= // TRIANGLE_COUNT*3
+        {
+            {0,0,0},
+            {0,0,0},
+            {0,0,0},
+    };
+    static std::vector<ushort3> g_uv= // TRIANGLE_COUNT*3
+        {
+            {0,0,0},
+            {0,0,0},
+            {0,0,0},
+    };
+    static std::vector<ushort3> g_tan= // TRIANGLE_COUNT*3
+        {
+            {0,0,0},
+            {0,0,0},
+            {0,0,0},
+    };
+    static std::vector<uint32_t> g_mat_indices= // TRIANGLE_COUNT
+        {
+            0,0,0,
+    };
+    static std::vector<uint16_t> g_lightMark = //TRIANGLE_COUNT
+        {
+            0
+    };
+#else
+    static std::vector<Vertex> g_vertices= // TRIANGLE_COUNT*3
+    {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+    };
+    static std::vector<Vertex> g_clr= // TRIANGLE_COUNT*3
+    {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+    };
+    static std::vector<Vertex> g_nrm= // TRIANGLE_COUNT*3
+    {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+    };
+    static std::vector<Vertex> g_uv= // TRIANGLE_COUNT*3
+    {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+    };
+    static std::vector<Vertex> g_tan= // TRIANGLE_COUNT*3
+    {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+    };
+    static std::vector<uint32_t> g_mat_indices= // TRIANGLE_COUNT
+    {
+        0,0,0,
+    };
+    static std::vector<uint16_t> g_lightMark = //TRIANGLE_COUNT
+    {
+        0
+    };
+#endif
 
-static std::vector<Vertex> g_vertices= // TRIANGLE_COUNT*3
-{
-    {0,0,0},
-    {0,0,0},
-    {0,0,0},
-};
-static std::vector<Vertex> g_clr= // TRIANGLE_COUNT*3
-{
-    {0,0,0},
-    {0,0,0},
-    {0,0,0},
-};
-static std::vector<Vertex> g_nrm= // TRIANGLE_COUNT*3
-{
-    {0,0,0},
-    {0,0,0},
-    {0,0,0},
-};
-static std::vector<Vertex> g_uv= // TRIANGLE_COUNT*3
-{
-    {0,0,0},
-    {0,0,0},
-    {0,0,0},
-};
-static std::vector<Vertex> g_tan= // TRIANGLE_COUNT*3
-{
-    {0,0,0},
-    {0,0,0},
-    {0,0,0},
-};
-static std::vector<uint32_t> g_mat_indices= // TRIANGLE_COUNT
-{
-    0,0,0,
-};
-static std::vector<uint16_t> g_lightMark = //TRIANGLE_COUNT
-{
-    0
-};
+static void compact_triangle_vertex_attribute(const std::vector<Vertex>& attrib, std::vector<Vertex>& compactAttrib, std::vector<unsigned int>& vertIdsPerTri) {
+    using id_t = unsigned int;
+    using kv_t = std::pair<Vertex, id_t>;
+    
+    std::vector<kv_t> kvs(attrib.size());
+#pragma omp parallel for
+    for (id_t i = 0; i < attrib.size(); ++i)
+        kvs[i] = std::make_pair(attrib[i], (id_t)i);
+
+    // sort
+    auto compOp = [](const kv_t &a, const kv_t &b) {
+        if (a.first.x < b.first.x) return true;
+        else if (a.first.x > b.first.x) return false;
+        if (a.first.y < b.first.y) return true;
+        else if (a.first.y > b.first.y) return false;
+        if (a.first.z < b.first.z) return true;
+
+        return false;
+    };
+    zeno::parallel_sort(std::begin(kvs), std::end(kvs), compOp);
+
+    // excl scan
+    std::vector<id_t> mark(kvs.size()), offset(kvs.size());
+#pragma omp parallel for
+    for (id_t i = /*not 0*/1; i < kvs.size(); ++i)
+        if (kvs[i].first.x == kvs[i - 1].first.x && 
+            kvs[i].first.y == kvs[i - 1].first.y && 
+            kvs[i].first.z == kvs[i - 1].first.z)
+            mark[i] = 1;
+    zeno::parallel_inclusive_scan_sum(std::begin(mark), std::end(mark), 
+        std::begin(offset), [](const auto &v) { return v; });
+    auto numNewAttribs = offset.back() + 1;
+    mark[0] = 1;
+
+    compactAttrib.resize(numNewAttribs);
+    vertIdsPerTri.resize(attrib.size());
+#pragma omp parallel for
+    for (id_t i = 0; i < kvs.size(); ++i) {
+        auto originalIndex = kvs[i].second;
+        auto newIndex = offset[i];
+        vertIdsPerTri[originalIndex] = newIndex;
+        if (mark[i]) 
+            compactAttrib[offset[i]] = kvs[i].first;
+    }
+}
 
 struct LightsWrapper {
-    std::vector<Vertex> g_lightPlanes;
-    std::vector<Vertex> g_lightSpheres;
+    std::vector<Vertex> _planeLightGeo;
+    std::vector<Vertex> _sphereLightGeo;
+    std::vector<float3> _triangleLightGeo;
     std::vector<GenericLight> g_lights;
 
     OptixTraversableHandle   lightPlanesGas{};
@@ -316,9 +489,15 @@ struct LightsWrapper {
     OptixTraversableHandle  lightSpheresGas{};
     raii<CUdeviceptr> lightSpheresGasBuffer{};
 
+    OptixTraversableHandle  lightTrianglesGas{};
+    raii<CUdeviceptr> lightTrianglesGasBuffer{};
+
     raii<CUdeviceptr> lightBitTrailsPtr;
     raii<CUdeviceptr> lightTreeNodesPtr;
     raii<CUdeviceptr> lightTreeDummyPtr;
+
+    raii<CUdeviceptr> triangleLightCoords;
+    raii<CUdeviceptr> triangleLightNormals;
 
     void reset() { *this = {}; }
 
@@ -419,18 +598,148 @@ static void initLaunchParams( PathTracerState& state )
     state.params.subframe_index     = 0u;
 }
 
+static void updateRootIAS()
+{
+  timer.tick();
+  auto campos = state.params.cam.eye;
+  const float mat3r4c[12] = {1,0,0,-campos.x,   0,1,0,-campos.y,   0,0,1,-campos.z};
+  std::vector<OptixInstance> optix_instances{};
+  uint sbt_offset = 0u;
+  {
+    if (state.meshHandleIAS != 0u) {
+      OptixInstance inst{};
 
+      inst.flags = OPTIX_INSTANCE_FLAG_NONE;
+      inst.sbtOffset = 0;
+      inst.instanceId = 0;
+      inst.visibilityMask = DefaultMatMask;
+      inst.traversableHandle = state.meshHandleIAS;
+
+      memcpy(inst.transform, mat3r4c, sizeof(float) * 12);
+      optix_instances.push_back( inst );
+    }
+  }
+
+  auto optix_instance_idx = optix_instances.size()-1;
+
+  if (sphereHandleXAS != 0u) {
+    OptixInstance opinstance {};
+    ++optix_instance_idx;
+    sbt_offset = 0u;
+
+    opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
+    opinstance.instanceId = optix_instance_idx;
+    opinstance.sbtOffset = sbt_offset;
+    opinstance.visibilityMask = DefaultMatMask;
+    opinstance.traversableHandle = sphereHandleXAS;
+    memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
+    optix_instances.push_back( opinstance );
+  }
+
+  // process volume
+  for ( uint i=0; i<list_volume.size(); ++i ) {
+
+    OptixInstance optix_instance {};
+    ++optix_instance_idx;
+
+    sbt_offset = list_volume_index_in_shader_list[i] * RAY_TYPE_COUNT;
+
+    optix_instance.flags = OPTIX_INSTANCE_FLAG_NONE;
+    optix_instance.instanceId = optix_instance_idx;
+    optix_instance.sbtOffset = sbt_offset;
+    optix_instance.visibilityMask = VolumeMatMask; //VOLUME_OBJECT;
+    optix_instance.traversableHandle = list_volume_accel[i]->handle;
+    getOptixTransform( *(list_volume[i]), optix_instance.transform ); // transform as stored in Grid
+
+    optix_instance.transform[3] -= campos.x;
+    optix_instance.transform[7] -= campos.y;
+    optix_instance.transform[11] -= campos.z;
+
+    optix_instances.push_back( optix_instance );
+  }
+
+  uint32_t MAX_INSTANCE_ID;
+  optixDeviceContextGetProperty( state.context,
+                                OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID, &MAX_INSTANCE_ID, sizeof(MAX_INSTANCE_ID));
+  state.params.maxInstanceID = MAX_INSTANCE_ID;
+
+  //process light
+  if (lightsWrapper.lightTrianglesGas != 0)
+  {
+    ++optix_instance_idx;
+    OptixInstance opinstance {};
+
+    auto combinedID = std::string("Light") + ":" + std::to_string(ShaderMaker::Mesh);
+    auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
+
+    opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
+    opinstance.instanceId = MAX_INSTANCE_ID-2;
+    opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
+    opinstance.visibilityMask = LightMatMask;
+    opinstance.traversableHandle = lightsWrapper.lightTrianglesGas;
+    memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
+
+    optix_instances.push_back( opinstance );
+  }
+
+  if (lightsWrapper.lightPlanesGas != 0)
+  {
+    ++optix_instance_idx;
+    OptixInstance opinstance {};
+
+    auto combinedID = std::string("Light") + ":" + std::to_string(ShaderMaker::Mesh);
+    auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
+
+    opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
+    opinstance.instanceId = MAX_INSTANCE_ID-1;
+    opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
+    opinstance.visibilityMask = LightMatMask;
+    opinstance.traversableHandle = lightsWrapper.lightPlanesGas;
+    memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
+
+    optix_instances.push_back( opinstance );
+  }
+
+  if (lightsWrapper.lightSpheresGas != 0)
+  {
+    ++optix_instance_idx;
+    OptixInstance opinstance {};
+
+    auto combinedID = std::string("Light") + ":" + std::to_string(ShaderMaker::Sphere);
+    auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
+
+    opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
+    opinstance.instanceId = MAX_INSTANCE_ID;
+    opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
+    opinstance.visibilityMask = LightMatMask;
+    opinstance.traversableHandle = lightsWrapper.lightSpheresGas;
+    memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
+
+    optix_instances.push_back( opinstance );
+  }
+
+  OptixAccelBuildOptions accel_options{};
+  accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
+  accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
+
+  buildIAS(state.context, accel_options, optix_instances, state.rootBufferIAS, state.rootHandleIAS);
+
+  timer.tock("update Root IAS");
+  state.params.handle = state.rootHandleIAS;
+}
 static void handleCameraUpdate( Params& params )
 {
     if( !camera_changed )
         return;
     camera_changed = false;
-
+    updateRootIAS();
     //params.vp1 = cam_vp1;
     //params.vp2 = cam_vp2;
     //params.vp3 = cam_vp3;
     //params.vp4 = cam_vp4;
+
     camera.setAspectRatio( static_cast<float>( params.windowSpace.x ) / static_cast<float>( params.windowSpace.y ) );
+
     //params.eye = camera.eye();
     //camera.UVWFrame( params.U, params.V, params.W );
 }
@@ -498,6 +807,8 @@ static void updateState( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params&
     // Update params on device
     if( camera_changed || resize_dirty )
         params.subframe_index = 0;
+
+
 
     handleCameraUpdate( params );
     handleResize( output_buffer, params );
@@ -743,6 +1054,7 @@ static size_t g_staticAndDynamicVertNum = 0;
 static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<std::shared_ptr<smallMesh>> m_meshes) {
     std::cout<<"IAS begin"<<std::endl;
     timer.tick();
+
     const float mat3r4c[12] = {1,0,0,0,0,1,0,0,0,0,1,0};
 
     float3 defaultInstPos = {0, 0, 0};
@@ -771,17 +1083,17 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
         ins.sbtOffset = 0;
         ins.visibilityMask = DefaultMatMask;
     }
+
+    std::vector<uint32_t> vertexAuxOffsetGlobal(num_instances);
+    uint32_t vertexAuxOffset = 0u;
     
-
-    std::vector<int> meshIdxs(num_instances);
-
-
     std::vector<float3> instPos(num_instances);
     std::vector<float3> instNrm(num_instances);
     std::vector<float3> instUv(num_instances);
     std::vector<float3> instClr(num_instances);
     std::vector<float3> instTang(num_instances);
     size_t sbt_offset = 0;
+
     for( size_t i = 0; i < g_staticAndDynamicMeshNum; ++i )
     {
         auto  mesh = m_meshes[i];
@@ -795,8 +1107,9 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
         optix_instance.traversableHandle = mesh->gas_handle;
         memcpy( optix_instance.transform, mat3r4c, sizeof( float ) * 12 );
 
-        meshIdxs[i] = i; 
-        
+        vertexAuxOffsetGlobal[i] = vertexAuxOffset;
+        vertexAuxOffset += mesh->verts.size(); 
+
         instPos[i] = defaultInstPos;
         instNrm[i] = defaultInstNrm;
         instUv[i] = defaultInstUv;
@@ -821,7 +1134,7 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
                 {
                     const auto &instMat = instMats[k];
                     float scale = instScales[k];
-                    float instMat4x4[12] = {
+                    float instMat3r4c[12] = {
                         instMat[0][0] * scale, instMat[1][0] * scale, instMat[2][0] * scale, instMat[3][0],
                         instMat[0][1] * scale, instMat[1][1] * scale, instMat[2][1] * scale, instMat[3][1],
                         instMat[0][2] * scale, instMat[1][2] * scale, instMat[2][2] * scale, instMat[3][2]};
@@ -830,9 +1143,9 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
                     optix_instance.instanceId = static_cast<unsigned int>(instanceId);
                     optix_instance.visibilityMask = DefaultMatMask;
                     optix_instance.traversableHandle = mesh->gas_handle;
-                    memcpy(optix_instance.transform, instMat4x4, sizeof(float) * 12);
+                    memcpy(optix_instance.transform, instMat3r4c, sizeof(float) * 12);
 
-                    meshIdxs[instanceId] = meshesOffset; 
+                    vertexAuxOffsetGlobal[instanceId] = vertexAuxOffset; 
                     
                     instPos[instanceId] = instAttrs.pos[k];
                     instNrm[instanceId] = instAttrs.nrm[k];
@@ -842,6 +1155,7 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
 
                     ++instanceId;
                 }
+                vertexAuxOffset += mesh->verts.size();
                 ++meshesOffset;
             }
         }
@@ -857,26 +1171,27 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
                 optix_instance.traversableHandle = mesh->gas_handle;
                 memcpy(optix_instance.transform, mat3r4c, sizeof(float) * 12);
 
-                meshIdxs[instanceId] = meshesOffset; 
-                
+                vertexAuxOffsetGlobal[instanceId] = vertexAuxOffset; 
+
                 instPos[instanceId] = defaultInstPos;
                 instNrm[instanceId] = defaultInstNrm;
                 instUv[instanceId] = defaultInstUv;
                 instClr[instanceId] = defaultInstClr;
                 instTang[instanceId] = defaultInstTang;
-
+                
                 ++instanceId;
                 ++meshesOffset;
+
+                vertexAuxOffset += mesh->verts.size();
             }
         }
     }
 
-    state.d_meshIdxs.resize(sizeof(meshIdxs[0]) * meshIdxs.size(), 0);
-    // CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_meshIdxs.reset() ), sizeof(meshIdxs[0]) * meshIdxs.size()) );
+    state.vertexAuxOffsetGlobal.resize(sizeof(vertexAuxOffsetGlobal[0]) * vertexAuxOffsetGlobal.size(), 0);
     CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( (CUdeviceptr)state.d_meshIdxs ),
-                meshIdxs.data(),
-                sizeof(meshIdxs[0]) * meshIdxs.size(),
+                reinterpret_cast<void*>( (CUdeviceptr)state.vertexAuxOffsetGlobal ),
+                vertexAuxOffsetGlobal.data(),
+                sizeof(vertexAuxOffsetGlobal[0]) * vertexAuxOffsetGlobal.size(),
                 cudaMemcpyHostToDevice
                 ) );
     
@@ -933,8 +1248,8 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
 void buildRootIAS()
 {
     timer.tick();
-
-    const float mat3r4c[12] = {1,0,0,0,0,1,0,0,0,0,1,0};
+    auto campos = state.params.cam.eye;
+    const float mat3r4c[12] = {1,0,0,0,   0,1,0,0,   0,0,1,0};
     std::vector<OptixInstance> optix_instances{};
     uint sbt_offset = 0u;
     {
@@ -986,15 +1301,41 @@ void buildRootIAS()
             optix_instances.push_back( optix_instance );
         }
 
+        uint32_t MAX_INSTANCE_ID;
+        optixDeviceContextGetProperty( state.context,
+            OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID, &MAX_INSTANCE_ID, sizeof(MAX_INSTANCE_ID));
+        state.params.maxInstanceID = MAX_INSTANCE_ID;
+
         //process light
+        if (lightsWrapper.lightTrianglesGas != 0)
+        {
+            ++optix_instance_idx;
+            OptixInstance opinstance {};
+
+            auto combinedID = std::string("Light") + ":" + std::to_string(ShaderMaker::Mesh);
+            auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
+
+            opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
+            opinstance.instanceId = MAX_INSTANCE_ID-2;
+            opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
+            opinstance.visibilityMask = LightMatMask;
+            opinstance.traversableHandle = lightsWrapper.lightTrianglesGas;
+            memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
+
+            optix_instances.push_back( opinstance );
+        }
+
         if (lightsWrapper.lightPlanesGas != 0)
         {
             ++optix_instance_idx;
             OptixInstance opinstance {};
 
+            auto combinedID = std::string("Light") + ":" + std::to_string(ShaderMaker::Mesh);
+            auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
+
             opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
-            opinstance.instanceId = OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID-1;
-            opinstance.sbtOffset = 0;
+            opinstance.instanceId = MAX_INSTANCE_ID-1;
+            opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
             opinstance.visibilityMask = LightMatMask;
             opinstance.traversableHandle = lightsWrapper.lightPlanesGas;
             memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
@@ -1007,12 +1348,12 @@ void buildRootIAS()
             ++optix_instance_idx;
             OptixInstance opinstance {};
 
-            auto combinedID = std::string("Default") + ":" + std::to_string(ShaderMaker::Sphere);
+            auto combinedID = std::string("Light") + ":" + std::to_string(ShaderMaker::Sphere);
             auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
 
             opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
-            opinstance.instanceId = OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID;
-            opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;;
+            opinstance.instanceId = MAX_INSTANCE_ID;
+            opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
             opinstance.visibilityMask = LightMatMask;
             opinstance.traversableHandle = lightsWrapper.lightSpheresGas;
             memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
@@ -1029,6 +1370,8 @@ void buildRootIAS()
     timer.tock("Build Root IAS");
     state.params.handle = state.rootHandleIAS;
 }
+
+
 
 static void buildMeshAccel( PathTracerState& state )
 {
@@ -1084,6 +1427,8 @@ static void createSBT( PathTracerState& state )
         state.d_raygen_record.reset();
         state.d_miss_records.reset();
         state.d_hitgroup_records.reset();
+        state.d_callable_records.reset();
+
         state.d_gas_output_buffer.reset();
         state.accum_buffer_p.reset();
         state.albedo_buffer_p.reset();
@@ -1133,6 +1478,7 @@ static void createSBT( PathTracerState& state )
                 ));
 
     std::vector<HitGroupRecord> hitgroup_records(hitgroup_record_count);
+    std::vector<CallablesRecord> callable_records(shader_count);
 
     for( int j = 0; j < shader_count; ++j ) {
 
@@ -1141,17 +1487,26 @@ static void createSBT( PathTracerState& state )
 
         const uint sbt_idx = RAY_TYPE_COUNT * j;
 
+        OPTIX_CHECK( optixSbtRecordPackHeader( shader_ref.callable_prog_group, &callable_records[j] ) );
+
         if (!has_vdb) {
 
             hitgroup_records[sbt_idx] = {};
 
             hitgroup_records[sbt_idx].data.uniforms        = reinterpret_cast<float4*>( (CUdeviceptr)state.d_uniforms );
+#ifdef USE_SHORT
+            hitgroup_records[sbt_idx].data.uv              = reinterpret_cast<ushort3*>( (CUdeviceptr)state.d_uv );
+            hitgroup_records[sbt_idx].data.nrm             = reinterpret_cast<ushort3*>( (CUdeviceptr)state.d_nrm );
+            hitgroup_records[sbt_idx].data.clr             = reinterpret_cast<ushort3*>( (CUdeviceptr)state.d_clr );
+            hitgroup_records[sbt_idx].data.tan             = reinterpret_cast<ushort3*>( (CUdeviceptr)state.d_tan );
+#else
             hitgroup_records[sbt_idx].data.uv              = reinterpret_cast<float4*>( (CUdeviceptr)state.d_uv );
             hitgroup_records[sbt_idx].data.nrm             = reinterpret_cast<float4*>( (CUdeviceptr)state.d_nrm );
             hitgroup_records[sbt_idx].data.clr             = reinterpret_cast<float4*>( (CUdeviceptr)state.d_clr );
             hitgroup_records[sbt_idx].data.tan             = reinterpret_cast<float4*>( (CUdeviceptr)state.d_tan );
+#endif
             hitgroup_records[sbt_idx].data.lightMark       = reinterpret_cast<unsigned short*>( (CUdeviceptr)state.d_lightMark );
-            hitgroup_records[sbt_idx].data.meshIdxs        = reinterpret_cast<int*>( (CUdeviceptr)state.d_meshIdxs );
+            hitgroup_records[sbt_idx].data.auxOffset       = reinterpret_cast<uint32_t*>( (CUdeviceptr)state.vertexAuxOffsetGlobal );
             
             hitgroup_records[sbt_idx].data.instPos         = reinterpret_cast<float3*>( (CUdeviceptr)state.d_instPos );
             hitgroup_records[sbt_idx].data.instNrm         = reinterpret_cast<float3*>( (CUdeviceptr)state.d_instNrm );
@@ -1165,8 +1520,8 @@ static void createSBT( PathTracerState& state )
 
             hitgroup_records[sbt_idx+1] = hitgroup_records[sbt_idx]; // SBT for occlusion ray-type for ith material
 
-            OPTIX_CHECK( optixSbtRecordPackHeader( shader_ref.m_radiance_hit_group, &hitgroup_records[sbt_idx] ) );
-            OPTIX_CHECK( optixSbtRecordPackHeader( shader_ref.m_occlusion_hit_group, &hitgroup_records[sbt_idx+1] ) );
+            OPTIX_CHECK( optixSbtRecordPackHeader( shader_ref.core->m_radiance_hit_group, &hitgroup_records[sbt_idx] ) );
+            OPTIX_CHECK( optixSbtRecordPackHeader( shader_ref.core->m_occlusion_hit_group, &hitgroup_records[sbt_idx+1] ) );
 
         } else {
 
@@ -1197,13 +1552,29 @@ static void createSBT( PathTracerState& state )
                 rec.data.textures[t] = shader_ref.getTexture(t);
             }
 
+            {
+                using namespace rapidjson;
+                Document document;
+                document.Parse(shader_ref.parameters.c_str());
+
+                auto vol_depth = document["vol_depth"].GetInt();
+                auto vol_extin = document["vol_extinction"].GetFloat();
+                
+                rec.data.vol_depth = vol_depth;
+                rec.data.vol_extinction = vol_extin;
+            }
+
             hitgroup_records[sbt_idx] = rec;
             hitgroup_records[sbt_idx+1] = rec;
 
-            OPTIX_CHECK(optixSbtRecordPackHeader( shader_ref.m_radiance_hit_group, &hitgroup_records[sbt_idx] ) );
-            OPTIX_CHECK(optixSbtRecordPackHeader( shader_ref.m_occlusion_hit_group, &hitgroup_records[sbt_idx+1] ) );
+            OPTIX_CHECK(optixSbtRecordPackHeader( shader_ref.core->m_radiance_hit_group, &hitgroup_records[sbt_idx] ) );
+            OPTIX_CHECK(optixSbtRecordPackHeader( shader_ref.core->m_occlusion_hit_group, &hitgroup_records[sbt_idx+1] ) );
             
         }
+        
+
+        hitgroup_records[sbt_idx].data.dc_index = j;
+        hitgroup_records[sbt_idx+1].data.dc_index = j;
     }
 
     CUDA_CHECK( cudaMemcpy(
@@ -1221,6 +1592,18 @@ static void createSBT( PathTracerState& state )
     state.sbt.hitgroupRecordStrideInBytes = static_cast<uint32_t>( hitgroup_record_size );
     state.sbt.hitgroupRecordCount         = hitgroup_records.size();
     //state.sbt.exceptionRecord;
+
+    {
+        raii<CUdeviceptr>& d_callable_records = state.d_callable_records;
+        size_t      sizeof_callable_record = sizeof( CallablesRecord );
+        CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_callable_records ), sizeof_callable_record * shader_count ) );
+        CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr)d_callable_records ), callable_records.data(),
+                                sizeof_callable_record * shader_count, cudaMemcpyHostToDevice ) );
+
+        state.sbt.callablesRecordBase          = d_callable_records;
+        state.sbt.callablesRecordCount         = shader_count;
+        state.sbt.callablesRecordStrideInBytes = static_cast<unsigned int>( sizeof_callable_record );
+    }
 }
 
 static void cleanupState( PathTracerState& state )
@@ -1509,7 +1892,10 @@ void UpdateStaticMesh(std::map<std::string, int> const &mtlidlut) {
     if(!using20xx) {
         splitMesh(g_vertices, g_mat_indices, g_meshPieces, 0, 0);
         g_staticMeshNum = g_meshPieces.size();
+
         size_t vertSize = TRI_PER_MESH * 3 * g_meshPieces.size();
+        vertSize = std::min(g_vertices.size(), vertSize);
+
         g_staticVertNum = vertSize;
         g_vertices.resize(vertSize);
         g_clr.resize(vertSize);
@@ -1527,7 +1913,10 @@ void UpdateDynamicMesh(std::map<std::string, int> const &mtlidlut) {
     if(!using20xx) {
         splitMesh(g_vertices, g_mat_indices, g_meshPieces, g_staticMeshNum, g_staticVertNum);
         g_staticAndDynamicMeshNum = g_meshPieces.size();
+
         size_t vertSize = TRI_PER_MESH * 3 * g_meshPieces.size();
+        vertSize = std::min(g_vertices.size(), vertSize);
+
         g_staticAndDynamicVertNum = vertSize;
         g_vertices.resize(vertSize);
         g_clr.resize(vertSize);
@@ -1565,7 +1954,10 @@ void UpdateStaticInstMesh(const std::map<std::string, int> &mtlidlut)
 
             splitMesh(vertices, mat_indices, meshPieces, 0, 0);
             staticMeshNum = meshPieces.size();
+
             std::size_t vertSize = TRI_PER_MESH * 3 * meshPieces.size();
+            vertSize = std::min(vertices.size(), vertSize);
+            
             staticVertNum = vertSize;
             vertices.resize(vertSize);
             clr.resize(vertSize);
@@ -1598,7 +1990,10 @@ void UpdateDynamicInstMesh(std::map<std::string, int> const &mtlidlut)
             auto &meshPieces = instData.meshPieces;
 
             splitMesh(vertices, mat_indices, meshPieces, staticMeshNum, staticVertNum);
+            
             std::size_t vertSize = TRI_PER_MESH * 3 * meshPieces.size();
+            vertSize = std::min(vertices.size(), vertSize);
+
             vertices.resize(vertSize);
             clr.resize(vertSize);
             nrm.resize(vertSize);
@@ -1646,10 +2041,17 @@ void CopyInstMeshToGlobalMesh()
             for (size_t i = 0; i < vertices.size(); ++i)
             {
                 g_vertices[vertsOffset + i] = vertices[i];
+#ifdef USE_SHORT
+                g_clr[vertsOffset + i] = toHalf(clr[i]);
+                g_nrm[vertsOffset + i] = halfNormal(nrm[i]);
+                g_uv[vertsOffset + i]  = toHalf(uv[i]);
+                g_tan[vertsOffset + i] = halfNormal(tan[i]);
+#else
                 g_clr[vertsOffset + i] = clr[i];
                 g_nrm[vertsOffset + i] = nrm[i];
                 g_uv[vertsOffset + i] = uv[i];
                 g_tan[vertsOffset + i] = tan[i];
+#endif
             }
             for (size_t i = 0; i < vertices.size() / 3; ++i)
             {
@@ -1673,7 +2075,11 @@ void UpdateMeshGasAndIas(bool staticNeedUpdate)
     // no archieve inst func in using20xx
     if (using20xx) 
     {
+#ifdef USE_SHORT
+    const size_t vertices_size_in_bytes = g_vertices.size() * sizeof( ushort3 );
+#else
     const size_t vertices_size_in_bytes = g_vertices.size() * sizeof( Vertex );
+#endif
     // CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_vertices.reset() ), vertices_size_in_bytes ) );
     // CUDA_CHECK( cudaMemcpy(
     //             reinterpret_cast<void*>( (CUdeviceptr&)state.d_vertices ),
@@ -1732,8 +2138,13 @@ void UpdateMeshGasAndIas(bool staticNeedUpdate)
 #define WXL 1
         std::cout << "begin copy\n";
         timer.tick();
+#ifdef USE_SHORT
+        size_t vertices_size_in_bytes = g_vertices.size() * sizeof(ushort3);
+        size_t static_vertices_size_in_bytes = g_staticVertNum * sizeof(ushort3);
+#else
         size_t vertices_size_in_bytes = g_vertices.size() * sizeof(Vertex);
         size_t static_vertices_size_in_bytes = g_staticVertNum * sizeof(Vertex);
+#endif
         size_t dynamic_vertices_size_in_bytes = vertices_size_in_bytes - static_vertices_size_in_bytes;
         bool realloced;
         size_t offset = 0;
@@ -1741,7 +2152,11 @@ void UpdateMeshGasAndIas(bool staticNeedUpdate)
         auto updateRange = [&vertices_size_in_bytes, &dynamic_vertices_size_in_bytes, &realloced, &offset,
                             &numBytes]() {
             if (!realloced && WXL) {
+#ifdef USE_SHORT
+              offset = g_staticVertNum * sizeof(ushort3);
+#else
                 offset = g_staticVertNum * sizeof(Vertex);
+#endif
                 numBytes = dynamic_vertices_size_in_bytes;
             } else {
                 offset = 0;
@@ -1818,34 +2233,51 @@ void UpdateMeshGasAndIas(bool staticNeedUpdate)
 //#endif
 }
 
-struct LightDat{
-    std::vector<float> v0;
-    std::vector<float> v1;
-    std::vector<float> v2;
-    std::vector<float> normal;
-    std::vector<float> emission;
-    bool visible, doubleside;
-    uint8_t shape, type;
-
-    std::string profileKey;
-};
 static std::map<std::string, LightDat> lightdats;
+static std::vector<float2>  triangleLightCoords;
+static std::vector<float3>  triangleLightNormals;
 
 void unload_light(){
+
     lightdats.clear();
+    triangleLightCoords.clear();
+    triangleLightNormals.clear();
+
+    std::cout << "Lights unload done. \n"<< std::endl;
 }
 
-void load_light(std::string const &key, float const*v0,float const*v1,float const*v2, float const*nor,float const*emi, bool visible, bool doubleside, int shape, int type, std::string& profileKey){
-    LightDat ld;
+void load_triangle_light(std::string const &key, LightDat& ld,
+                        const zeno::vec3f &v0,  const zeno::vec3f &v1,  const zeno::vec3f &v2, 
+                        const zeno::vec3f *pn0, const zeno::vec3f *pn1, const zeno::vec3f *pn2,
+                        const zeno::vec3f *uv0, const zeno::vec3f *uv1, const zeno::vec3f *uv2) {
+
+    ld.v0.assign(v0.begin(), v0.end());
+    ld.v1.assign(v1.begin(), v1.end());
+    ld.v2.assign(v2.begin(), v2.end());
+
+    if (pn0 != nullptr && pn1 != nullptr, pn2 != nullptr) {
+        ld.normalBufferOffset = triangleLightNormals.size();
+        triangleLightNormals.push_back(*(float3*)pn0);
+        triangleLightNormals.push_back(*(float3*)pn1);
+        triangleLightNormals.push_back(*(float3*)pn2);
+    }
+
+    if (uv0 != nullptr && uv1 != nullptr && uv2 != nullptr) {
+        ld.coordsBufferOffset = triangleLightCoords.size();
+        triangleLightCoords.push_back(*(float2*)uv0);
+        triangleLightCoords.push_back(*(float2*)uv1);
+        triangleLightCoords.push_back(*(float2*)uv2);
+    }
+
+    lightdats[key] = ld;
+}
+
+void load_light(std::string const &key, LightDat& ld, float const*v0, float const*v1, float const*v2) {
+
     ld.v0.assign(v0, v0 + 3);
     ld.v1.assign(v1, v1 + 3);
     ld.v2.assign(v2, v2 + 3);
-    ld.normal.assign(nor, nor + 3);
-    ld.emission.assign(emi, emi + 3);
-    ld.visible = visible; ld.doubleside = doubleside;
-    ld.shape = shape; ld.type = type;
-    ld.profileKey = profileKey;
-    //zeno::log_info("light clr after read: {} {} {}", ld.emission[0],ld.emission[1],ld.emission[2]);
+    
     lightdats[key] = ld;
 }
 void update_hdr_sky(float sky_rot, zeno::vec3f sky_rot3d, float sky_strength) {
@@ -1895,26 +2327,30 @@ void update_procedural_sky(
     state.params.elapsedTime = timeStart + timeSpeed * frameid;
 }
 
-static void addLightMesh(float3 corner, float3 v2, float3 v1, float3 normal, float3 emission)
+static void addTriangleLightGeo(float3 p0, float3 p1, float3 p2) {
+    auto& geo = lightsWrapper._triangleLightGeo;
+    geo.push_back(p0); geo.push_back(p1); geo.push_back(p2);
+}
+
+static void addLightPlane(float3 p0, float3 v1, float3 v2, float3 normal)
 {
-    float3 lc = corner;
-    float3 vert0 = lc, vert1 = lc + v1, vert2 = lc + v2, vert3 = lc + v1 + v2;
+    float3 vert0 = p0, vert1 = p0 + v1, vert2 = p0 + v2, vert3 = p0 + v1 + v2;
 
-    auto& g_lightMesh = lightsWrapper.g_lightPlanes;
+    auto& geo = lightsWrapper._planeLightGeo;
 
-    g_lightMesh.push_back(make_float4(vert0.x, vert0.y, vert0.z, 0.f));
-    g_lightMesh.push_back(make_float4(vert1.x, vert1.y, vert1.z, 0.f));
-    g_lightMesh.push_back(make_float4(vert2.x, vert2.y, vert2.z, 0.f));
-
-    g_lightMesh.push_back(make_float4(vert3.x, vert3.y, vert3.z, 0.f));
-    g_lightMesh.push_back(make_float4(vert2.x, vert2.y, vert2.z, 0.f));
-    g_lightMesh.push_back(make_float4(vert1.x, vert1.y, vert1.z, 0.f));
+    geo.push_back(make_float4(vert0.x, vert0.y, vert0.z, 0.f));
+    geo.push_back(make_float4(vert1.x, vert1.y, vert1.z, 0.f));
+    geo.push_back(make_float4(vert3.x, vert3.y, vert3.z, 0.f));
+   
+    geo.push_back(make_float4(vert0.x, vert0.y, vert0.z, 0.f));
+    geo.push_back(make_float4(vert3.x, vert3.y, vert3.z, 0.f));
+    geo.push_back(make_float4(vert2.x, vert2.y, vert2.z, 0.f));
 }
 
 static void addLightSphere(float3 center, float radius) 
 {
     Vertex vt {center.x, center.y, center.z, radius};
-    lightsWrapper.g_lightSpheres.push_back(vt);
+    lightsWrapper._sphereLightGeo.push_back(vt);
 }
 
 static int uniformBufferInitialized = false;
@@ -2018,49 +2454,125 @@ static void buildLightSpheresGAS( PathTracerState& state, std::vector<Vertex>& l
     buildXAS(state.context, accel_options, sphere_input, bufferGas, handleGas);
 }
 
+static void buildLightTrianglesGAS( PathTracerState& state, std::vector<float3>& lightMesh, raii<CUdeviceptr>& bufferGas, OptixTraversableHandle& handleGas)
+{
+    if (lightMesh.empty()) {
+        handleGas = 0;
+        bufferGas.reset();
+        return;
+    }
+
+    const size_t vertices_size_in_bytes = lightMesh.size() * sizeof( float3 );
+
+    raii<CUdeviceptr> d_lightMesh;
+    
+    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_lightMesh ), vertices_size_in_bytes ) );
+    CUDA_CHECK( cudaMemcpy(
+                reinterpret_cast<void*>( (CUdeviceptr&)d_lightMesh ),
+                lightMesh.data(), vertices_size_in_bytes,
+                cudaMemcpyHostToDevice 
+                ) );
+
+    std::vector<uint32_t> triangle_input_flags(1, OPTIX_GEOMETRY_FLAG_REQUIRE_SINGLE_ANYHIT_CALL);
+
+    OptixBuildInput triangle_input                           = {};
+    triangle_input.type                                      = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
+    triangle_input.triangleArray.vertexFormat                = OPTIX_VERTEX_FORMAT_FLOAT3;
+    triangle_input.triangleArray.vertexStrideInBytes         = sizeof( float3 );
+    triangle_input.triangleArray.numVertices                 = static_cast<uint32_t>( lightMesh.size() );
+    triangle_input.triangleArray.vertexBuffers               = lightMesh.empty() ? nullptr : &d_lightMesh;
+    triangle_input.triangleArray.flags                       = triangle_input_flags.data();
+    triangle_input.triangleArray.numSbtRecords               = 1;
+    triangle_input.triangleArray.sbtIndexOffsetBuffer        = 0;
+    // triangle_input.triangleArray.sbtIndexOffsetSizeInBytes   = sizeof( uint32_t );
+    // triangle_input.triangleArray.sbtIndexOffsetStrideInBytes = sizeof( uint32_t );
+
+    OptixAccelBuildOptions accel_options {};
+    accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
+    accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
+    
+    buildXAS(state.context, accel_options, triangle_input, bufferGas, handleGas);
+}
+
 void buildLightTree() {
     camera_changed = true;
     state.lightsbuf_p.reset();
 
     state.params.lightTreeSampler = 0llu;
+    state.params.triangleLightCoordsBuffer = 0llu;
+    state.params.triangleLightNormalBuffer = 0llu;
+    
     state.params.firstRectLightIdx = UINT_MAX;
     state.params.firstSphereLightIdx = UINT_MAX;
-    
+    state.params.firstTriangleLightIdx = UINT_MAX;
+
     state.params.lights = 0llu;
     state.params.num_lights = 0u;
 
     lightsWrapper.reset();
 
-    std::vector<LightDat> sortedLights; 
+    std::vector<LightDat*> sortedLights; 
     sortedLights.reserve(lightdats.size());
 
-    for(const auto& [_, dat] : lightdats) { 
-        sortedLights.push_back(dat);
+    for(const auto& [_, dat] : lightdats) {
+        auto ldp = (LightDat*)&dat;
+        sortedLights.push_back(std::move(ldp));
     }
 
     std::sort(sortedLights.begin(), sortedLights.end(), 
         [](const auto& a, const auto& b) {
-            return a.shape < b.shape;
+            return a->shape < b->shape;
         });
+
+    {
+        auto byte_size = triangleLightNormals.size() * sizeof(float3);
+
+        CUDA_CHECK( cudaMalloc(reinterpret_cast<void**>( &lightsWrapper.triangleLightNormals.reset() ), byte_size) );
+        CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr)lightsWrapper.triangleLightNormals ),
+                                triangleLightNormals.data(), byte_size, cudaMemcpyHostToDevice) );
+        state.params.triangleLightNormalBuffer = lightsWrapper.triangleLightNormals.handle;
+    }
+
+    {
+        auto byte_size = triangleLightCoords.size() * sizeof(float2);
+
+        CUDA_CHECK( cudaMalloc(reinterpret_cast<void**>( &lightsWrapper.triangleLightCoords.reset() ), byte_size) );
+        CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr)lightsWrapper.triangleLightCoords ),
+                                triangleLightCoords.data(), byte_size, cudaMemcpyHostToDevice) );
+        state.params.triangleLightCoordsBuffer = lightsWrapper.triangleLightCoords.handle;
+    }
 
     uint32_t idx = 0u;
 
     uint32_t firstRectLightIdx = UINT_MAX;
     uint32_t firstSphereLightIdx = UINT_MAX;
+    uint32_t firstTriangleLightIdx = UINT_MAX;
 
     for(uint32_t idx=0u; idx<sortedLights.size(); ++idx) {
 
-        auto& dat = sortedLights.at(idx);
-        auto &light = lightsWrapper.g_lights.emplace_back();
+        auto& dat = *sortedLights.at(idx);
+        auto& light = lightsWrapper.g_lights.emplace_back();
 
         uint8_t config = zeno::LightConfigNull; 
         config |= dat.visible? zeno::LightConfigVisible: zeno::LightConfigNull; 
         config |= dat.doubleside? zeno::LightConfigDoubleside: zeno::LightConfigNull;
         light.config = config;
 
-        light.emission.x = fmaxf(dat.emission.at(0), FLT_EPSILON);
-        light.emission.y = fmaxf(dat.emission.at(1), FLT_EPSILON);
-        light.emission.z = fmaxf(dat.emission.at(2), FLT_EPSILON);
+        light.color.x = fmaxf(dat.color.at(0), FLT_EPSILON);
+        light.color.y = fmaxf(dat.color.at(1), FLT_EPSILON);
+        light.color.z = fmaxf(dat.color.at(2), FLT_EPSILON);
+
+        light.spreadMajor = clamp(dat.spreadMajor, 0.0f, 1.0f);
+        light.spreadMinor = clamp(dat.spreadMinor, 0.0f, 1.0f);
+
+        auto void_angle = 0.5f * (1.0f - light.spreadMajor) * M_PIf;
+        light.spreadNormalize = 2.f / (2.f + (2.f * void_angle - M_PIf) * tanf(void_angle));
+
+        light.mask = dat.mask;
+        light.intensity  = dat.intensity;
+        light.vIntensity = dat.vIntensity;
+        light.maxDistance = dat.maxDistance <= 0.0? FLT_MAX:dat.maxDistance;
+        light.falloffExponent = dat.falloffExponent;
         
         float3& v0 = *(float3*)dat.v0.data();
         float3& v1 = *(float3*)dat.v1.data();
@@ -2072,26 +2584,68 @@ void buildLightTree() {
         light.B = normalize(v2);
 
         const auto center = v0 + v1 * 0.5f + v2 * 0.5f;
+        const auto radius = fminf(length(v1), length(v2)) * 0.5f;
 
         light.type  = magic_enum::enum_cast<zeno::LightType>(dat.type).value_or(zeno::LightType::Diffuse);
         light.shape = magic_enum::enum_cast<zeno::LightShape>(dat.shape).value_or(zeno::LightShape::Plane);
 
-        if (light.shape == zeno::LightShape::Plane) {
+        if (light.spreadMajor < 0.005f) {
+            light.type = zeno::LightType::Direction;
+        }
+
+        if (light.shape == zeno::LightShape::Plane || light.shape == zeno::LightShape::Ellipse) {
 
             firstRectLightIdx = min(idx, firstRectLightIdx);
 
             light.setRectData(v0, v1, v2, light.N);
-            addLightMesh(v0, v2, v1, light.N, light.emission);
+            addLightPlane(v0, v1, v2, light.N);
+
+            light.rect.isEllipse = (light.shape == zeno::LightShape::Ellipse);
+
+            if (dat.fluxFixed > 0) {
+                light.intensity = dat.fluxFixed / light.rect.Area(); 
+            }
 
         } else if (light.shape == zeno::LightShape::Sphere) {
 
             firstSphereLightIdx = min(idx, firstSphereLightIdx);
 
-            auto radius = fminf(length(v1), length(v2)) * 0.5f;
             light.setSphereData(center, radius);       
             addLightSphere(center, radius);
 
+            if (dat.fluxFixed > 0) {
+                auto intensity = dat.fluxFixed / light.sphere.area;
+                light.intensity = intensity;
+            }
+
         } else if (light.shape == zeno::LightShape::Point) {
+            light.point = {center};
+            if (dat.fluxFixed > 0) {
+                auto intensity = dat.fluxFixed / (4 * M_PIf);
+                light.intensity = intensity;
+            }
+
+        } else if (light.shape == zeno::LightShape::TriangleMesh) {
+
+            firstTriangleLightIdx = min(idx, firstTriangleLightIdx);
+            light.setTriangleData(v0, v1, v2, light.N, dat.coordsBufferOffset, dat.normalBufferOffset);
+            addTriangleLightGeo(v0, v1, v2);
+        }
+
+        if (light.type == zeno::LightType::Spot) {
+
+            auto spread_major = clamp(light.spreadMajor, 0.01, 1.00);
+            auto spread_inner = clamp(light.spreadMinor, 0.01, 0.99);
+
+            auto major_angle = spread_major * 0.5f * M_PIf;
+            major_angle = fmaxf(major_angle, 2 * FLT_EPSILON);
+
+            auto inner_angle = spread_inner * major_angle;
+            auto falloff_angle = major_angle - inner_angle;
+
+            light.setConeData(center, light.N, 0.0f, major_angle, falloff_angle);
+        }
+        if (light.type == zeno::LightType::Projector) {
             light.point = {center};
         }
 
@@ -2101,13 +2655,19 @@ void buildLightTree() {
             light.ies = val.ptr.handle;
             light.type = zeno::LightType::IES;
             //light.shape = zeno::LightShape::Point;
-            auto radius = length(v1 + v2) * 0.5f;
-            light.setConeData(center, light.N, radius, val.coneAngle);
+            light.setConeData(center, light.N, radius, val.coneAngle, FLT_EPSILON);
 
-        } else if ( OptixUtil::g_tex.count(dat.profileKey) > 0 ) {
+            if (dat.fluxFixed > 0) {
+                auto scale = val.coneAngle / M_PIf;
+                light.intensity = dat.fluxFixed * scale * scale;
+            }
+        } 
+        
+        if ( OptixUtil::g_tex.count(dat.textureKey) > 0 ) {
 
-            auto& val = OptixUtil::g_tex.at(dat.profileKey);
+            auto& val = OptixUtil::g_tex.at(dat.textureKey);
             light.tex = val->texture;
+            light.texGamma = dat.textureGamma;
         }
     }
 
@@ -2115,9 +2675,11 @@ void buildLightTree() {
 
     state.params.firstRectLightIdx = firstRectLightIdx;
     state.params.firstSphereLightIdx = firstSphereLightIdx;
+    state.params.firstTriangleLightIdx = firstTriangleLightIdx;
 
-    buildLightPlanesGAS(state, lightsWrapper.g_lightPlanes, lightsWrapper.lightPlanesGasBuffer, lightsWrapper.lightPlanesGas);
-    buildLightSpheresGAS(state, lightsWrapper.g_lightSpheres, lightsWrapper.lightSpheresGasBuffer, lightsWrapper.lightSpheresGas);
+    buildLightPlanesGAS(state, lightsWrapper._planeLightGeo, lightsWrapper.lightPlanesGasBuffer, lightsWrapper.lightPlanesGas);
+    buildLightSpheresGAS(state, lightsWrapper._sphereLightGeo, lightsWrapper.lightSpheresGasBuffer, lightsWrapper.lightSpheresGas);
+    buildLightTrianglesGAS(state, lightsWrapper._triangleLightGeo, lightsWrapper.lightTrianglesGasBuffer, lightsWrapper.lightTrianglesGas);
 
     CUDA_CHECK( cudaMalloc(
         reinterpret_cast<void**>( &state.lightsbuf_p.reset() ),
@@ -2157,75 +2719,114 @@ void buildLightTree() {
     }
 }
 
+inline std::map<std::tuple<std::string, ShaderMaker>, std::shared_ptr<OptixUtil::OptixShaderCore>> shaderCoreLUT {};
+
 void optixupdatematerial(std::vector<std::shared_ptr<ShaderPrepared>> &shaders) 
 {
     camera_changed = true;
 
-        //static bool hadOnce = false;
-        if (OptixUtil::ray_module.handle==0) {
-            //OPTIX_CHECK( optixModuleDestroy( OptixUtil::ray_module ) );
+    CppTimer theTimer;
+    theTimer.tick();
+    //static bool hadOnce = false;
+    if (OptixUtil::ray_module.handle==0) {
+
+        OptixUtil::_compile_group.run([&] () {
+
             if (!OptixUtil::createModule(
                 OptixUtil::ray_module,
                 state.context,
                 sutil::lookupIncFile("PTKernel.cu"),
                 "PTKernel.cu")) throw std::runtime_error("base ray module failed to compile");
-            
-        } //hadOnce = true;
+
+            OptixUtil::createRenderGroups(state.context, OptixUtil::ray_module);
+        });
+
+        OptixUtil::_compile_group.run([&] () {
+            auto shader_string = sutil::lookupIncFile("DeflMatShader.cu"); 
+                
+            auto shaderCore = std::make_shared<OptixUtil::OptixShaderCore>(shader_string, "__closesthit__radiance", "__anyhit__shadow_cutout");
+            shaderCore->loadProgram(0);
+            shaderCoreLUT.emplace(std::tuple{"DeflMatShader.cu", ShaderMaker::Mesh}, shaderCore);
+        });
+
+        OptixUtil::_compile_group.run([&] () {
+            auto shader_string = sutil::lookupIncFile("DeflMatShader.cu"); 
+
+            auto shaderCore = std::make_shared<OptixUtil::OptixShaderCore>(shader_string, "__closesthit__radiance", "__anyhit__shadow_cutout");
+            shaderCore->moduleIS = &OptixUtil::sphere_module;
+            shaderCore->loadProgram(0, "--define-macro=_SPHERE_");
+            shaderCoreLUT.emplace(std::tuple{"DeflMatShader.cu", ShaderMaker::Sphere}, shaderCore);
+        });
+
+        OptixUtil::_compile_group.run([&] () {
+            auto shader_string = sutil::lookupIncFile("Light.cu");
+
+            auto shaderCore = std::make_shared<OptixUtil::OptixShaderCore>(shader_string, "__closesthit__radiance", "__anyhit__shadow_cutout");
+            shaderCore->loadProgram(0);
+            shaderCoreLUT.emplace(std::tuple{"Light.cu", ShaderMaker::Mesh}, shaderCore);
+        });
+
+        OptixUtil::_compile_group.run([&] () {
+            auto shader_string = sutil::lookupIncFile("Light.cu");
+
+            auto shaderCore = std::make_shared<OptixUtil::OptixShaderCore>(shader_string, "__closesthit__radiance", "__anyhit__shadow_cutout");
+            shaderCore->moduleIS = &OptixUtil::sphere_module;
+            shaderCore->loadProgram(0);
+            shaderCoreLUT.emplace(std::tuple{"Light.cu", ShaderMaker::Sphere}, shaderCore);
+        });
+
+        OptixUtil::_compile_group.run([&] () {
+            auto shader_string = sutil::lookupIncFile("volume.cu");
+
+            auto shaderCore = std::make_shared<OptixUtil::OptixShaderCore>(shader_string, 
+                                                    "__closesthit__radiance_volume", "__anyhit__occlusion_volume", "__intersection__volume");
+            shaderCore->loadProgram(0);
+            shaderCoreLUT.emplace(std::tuple{"volume.cu", ShaderMaker::Volume}, shaderCore);
+        });
+
+        OptixUtil::_compile_group.wait();
+    } //hadOnce = true;
 
     OptixUtil::rtMaterialShaders.resize(0);
-    OptixUtil::rtMaterialShaders.reserve(shaders.size());
+    OptixUtil::rtMaterialShaders.resize(shaders.size());
 
     for (int i = 0; i < shaders.size(); i++) {
-        auto& shader_string = shaders[i]->source;
-        if (shader_string.empty()) zeno::log_error("shader {} is empty", i);
+
+OptixUtil::_compile_group.run([&shaders, i] () {
 
         auto marker = std::string("//PLACEHOLDER");
         auto marker_length = marker.length();
 
-        auto start_marker = shader_string.find(marker);
+        auto& callable_string = shaders[i]->callable;
+        auto start_marker = callable_string.find(marker);
 
         if (start_marker != std::string::npos) {
-            auto end_marker = shader_string.find(marker, start_marker + marker_length);
+            auto end_marker = callable_string.find(marker, start_marker + marker_length);
 
-            shader_string.replace(start_marker, marker_length, "/*PLACEHOLDER");
-            shader_string.replace(end_marker, marker_length, "PLACEHOLDER*/");
+            callable_string.replace(start_marker, marker_length, "/*PLACEHOLDER");
+            callable_string.replace(end_marker, marker_length, "PLACEHOLDER*/");
         }
 
-        const static std::string sphere_macro0 = "#define _SPHERE_ 0";
-        const static std::string sphere_macro1 = "#define _SPHERE_ 1";
+        std::shared_ptr<OptixUtil::OptixShaderCore> shaderCore = nullptr;
+        auto key = std::tuple{shaders[i]->filename, shaders[i]->mark};
+
+        if (shaderCoreLUT.count(key) > 0) {
+            shaderCore = shaderCoreLUT.at(key);
+        }
+
+        OptixUtil::rtMaterialShaders[i].core = shaderCore;
+        OptixUtil::rtMaterialShaders[i].parameters = shaders[i]->parameters;  
+        OptixUtil::rtMaterialShaders[i].callable = shaders[i]->callable;
 
         switch(shaders[i]->mark) {
-            case(ShaderMaker::Mesh): {
-
-                auto macro_pos = shader_string.find(sphere_macro1);
-                if (macro_pos != std::string::npos) {
-                    shader_string.replace(macro_pos, sphere_macro1.size(), sphere_macro0);
-                } 
-
-                OptixUtil::rtMaterialShaders.emplace_back(shader_string.c_str(), 
-                                                    "__closesthit__radiance", 
-                                                    "__anyhit__shadow_cutout");                                    
+            case(ShaderMaker::Mesh): {          
                 break;
             }
-            case(ShaderMaker::Sphere): {
-
-                auto macro_pos = shader_string.find(sphere_macro0);
-                if (macro_pos != std::string::npos) {
-                    shader_string.replace(macro_pos, sphere_macro0.size(), sphere_macro1);
-                } 
-
-                OptixUtil::rtMaterialShaders.emplace_back(shader_string.c_str(), 
-                                                    "__closesthit__radiance", 
-                                                    "__anyhit__shadow_cutout");
-                OptixUtil::rtMaterialShaders.back().moduleIS = &OptixUtil::sphere_module.handle;                                    
+            case(ShaderMaker::Sphere): { 
                 break;
             }
-            case(ShaderMaker::Volume): {
-                OptixUtil::rtMaterialShaders.emplace_back(shader_string.c_str(), 
-                                                    "__closesthit__radiance_volume", 
-                                                    "__anyhit__occlusion_volume",
-                                                    "__intersection__volume");
-                OptixUtil::rtMaterialShaders.back().has_vdb = true; 
+            case(ShaderMaker::Volume): {      
+                OptixUtil::rtMaterialShaders[i].has_vdb = true; 
                 break;
             }
             default: {}
@@ -2241,10 +2842,10 @@ void optixupdatematerial(std::vector<std::shared_ptr<ShaderPrepared>> &shaders)
                 OptixUtil::rtMaterialShaders[i].addTexture(j, texs[j]);
             }
         }
-    }
+}); //_compile_group
+    } //for
 
-    CppTimer theTimer;
-    theTimer.tick();
+OptixUtil::_compile_group.wait();
     
     uint task_count = OptixUtil::rtMaterialShaders.size();
     //std::vector<tbb::task_group> task_groups(task_count);
@@ -2253,15 +2854,11 @@ void optixupdatematerial(std::vector<std::shared_ptr<ShaderPrepared>> &shaders)
         OptixUtil::_compile_group.run([&shaders, i] () {
             
             printf("now compiling %d'th shader \n", i);
-            if(OptixUtil::rtMaterialShaders[i].loadProgram(i, nullptr)==false)
+            if(OptixUtil::rtMaterialShaders[i].loadProgram(i)==false)
             {
                 std::cout<<"shader compiling failed, using fallback shader instead"<<std::endl;
-                OptixUtil::rtMaterialShaders[i].m_shaderFile     = shaders[i]->fallback->c_str();
-                //OptixUtil::rtMaterialShaders[i].m_hittingEntry   = "";
-                //OptixUtil::rtMaterialShaders[i].m_shadingEntry   = "__closesthit__radiance";
-                //OptixUtil::rtMaterialShaders[i].m_occlusionEntry = "__anyhit__shadow_cutout";
-                std::cout<<OptixUtil::rtMaterialShaders[i].loadProgram(i, nullptr)<<std::endl;
-                std::cout<<"shader restored to default\n";
+                OptixUtil::rtMaterialShaders[i].loadProgram(i, true);
+                std::cout<<"shader restored to fallback\n";
             }
         });
     }
@@ -2269,7 +2866,6 @@ void optixupdatematerial(std::vector<std::shared_ptr<ShaderPrepared>> &shaders)
     OptixUtil::_compile_group.wait();
     theTimer.tock("Done Optix Shader Compile:");
 
-    OptixUtil::createRenderGroups(state.context, OptixUtil::ray_module);
     if (OptixUtil::sky_tex.has_value()) {
         state.params.sky_texture = OptixUtil::g_tex[OptixUtil::sky_tex.value()]->texture;
         state.params.skynx = OptixUtil::sky_nx_map[OptixUtil::sky_tex.value()];
@@ -2326,14 +2922,6 @@ void optixupdateend() {
         state.radiance_miss_group = OptixUtil::radiance_miss_group;
         state.occlusion_miss_group = OptixUtil::occlusion_miss_group;
 
-        //state.radiance_hit_group = OptixUtil::radiance_hit_group;
-        //state.occlusion_hit_group = OptixUtil::occlusion_hit_group;
-        //state.radiance_hit_group2 = OptixUtil::radiance_hit_group2;
-        //state.occlusion_hit_group2 = OptixUtil::occlusion_hit_group2;
-        //state.ptx_module2 = createModule(state.context, "optixPathTracer.cu");
-        //createModule( state );
-        //createProgramGroups( state );
-        //createPipeline( state );
     createSBT( state );
     printf("SBT created \n");
 
@@ -2453,81 +3041,81 @@ static void updateStaticDrawObjects() {
                     0,
                 };
 
-                g_clr[(n + i) * 3 + 0] = {
+                g_clr[(n + i) * 3 + 0] = toHalf({
                     dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 0],
                     dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 1],
                     dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 2],
                     0,
-                };
-                g_clr[(n + i) * 3 + 1] = {
+                });
+                g_clr[(n + i) * 3 + 1] = toHalf({
                     dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 0],
                     dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 1],
                     dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 2],
                     0,
-                };
-                g_clr[(n + i) * 3 + 2] = {
+                });
+                g_clr[(n + i) * 3 + 2] = toHalf({
                     dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 0],
                     dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 1],
                     dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 2],
                     0,
-                };
+                });
 
-                g_nrm[(n + i) * 3 + 0] = {
+                g_nrm[(n + i) * 3 + 0] = halfNormal({
                     dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 0],
                     dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 1],
                     dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 2],
                     0,
-                };
-                g_nrm[(n + i) * 3 + 1] = {
+                });
+                g_nrm[(n + i) * 3 + 1] = halfNormal({
                     dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 0],
                     dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 1],
                     dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 2],
                     0,
-                };
-                g_nrm[(n + i) * 3 + 2] = {
+                });
+                g_nrm[(n + i) * 3 + 2] = halfNormal({
                     dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 0],
                     dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 1],
                     dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 2],
                     0,
-                };
+                });
 
-                g_uv[(n + i) * 3 + 0] = {
+                g_uv[(n + i) * 3 + 0] = toHalf({
                     dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 0],
                     dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 1],
                     dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 2],
                     0,
-                };
-                g_uv[(n + i) * 3 + 1] = {
+                });
+                g_uv[(n + i) * 3 + 1] = toHalf({
                     dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 0],
                     dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 1],
                     dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 2],
                     0,
-                };
-                g_uv[(n + i) * 3 + 2] = {
+                });
+                g_uv[(n + i) * 3 + 2] = toHalf({
                     dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 0],
                     dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 1],
                     dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 2],
                     0,
-                };
+                });
 
-                g_tan[(n + i) * 3 + 0] = {
+                g_tan[(n + i) * 3 + 0] = halfNormal({
                     dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 0],
                     dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 1],
                     dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 2],
                     0,
-                };
-                g_tan[(n + i) * 3 + 1] = {
+                });
+                g_tan[(n + i) * 3 + 1] = halfNormal({
                     dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 0],
                     dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 1],
                     dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 2],
                     0,
-                };
-                g_tan[(n + i) * 3 + 2] = {
+                });
+                g_tan[(n + i) * 3 + 2] = halfNormal({
                     dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 0],
                     dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 1],
                     dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 2],
                     0,
-                };
+                });
             }
             n += dat.tris.size() / 3;
         }
@@ -2583,81 +3171,81 @@ static void updateDynamicDrawObjects() {
                     0,
                 };
 
-                g_clr[g_staticVertNum + (n + i) * 3 + 0] = {
+                g_clr[g_staticVertNum + (n + i) * 3 + 0] = toHalf({
                     dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 0],
                     dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 1],
                     dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 2],
                     0,
-                };
-                g_clr[g_staticVertNum + (n + i) * 3 + 1] = {
+                });
+                g_clr[g_staticVertNum + (n + i) * 3 + 1] = toHalf({
                     dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 0],
                     dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 1],
                     dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 2],
                     0,
-                };
-                g_clr[g_staticVertNum + (n + i) * 3 + 2] = {
+                });
+                g_clr[g_staticVertNum + (n + i) * 3 + 2] = toHalf({
                     dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 0],
                     dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 1],
                     dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 2],
                     0,
-                };
+                });
 
-                g_nrm[g_staticVertNum + (n + i) * 3 + 0] = {
+                g_nrm[g_staticVertNum + (n + i) * 3 + 0] = halfNormal({
                     dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 0],
                     dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 1],
                     dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 2],
                     0,
-                };
-                g_nrm[g_staticVertNum + (n + i) * 3 + 1] = {
+                });
+                g_nrm[g_staticVertNum + (n + i) * 3 + 1] = halfNormal({
                     dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 0],
                     dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 1],
                     dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 2],
                     0,
-                };
-                g_nrm[g_staticVertNum + (n + i) * 3 + 2] = {
+                });
+                g_nrm[g_staticVertNum + (n + i) * 3 + 2] = halfNormal({
                     dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 0],
                     dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 1],
                     dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 2],
                     0,
-                };
+                });
 
-                g_uv[g_staticVertNum + (n + i) * 3 + 0] = {
+                g_uv[g_staticVertNum + (n + i) * 3 + 0] = toHalf({
                     dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 0],
                     dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 1],
                     dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 2],
                     0,
-                };
-                g_uv[g_staticVertNum + (n + i) * 3 + 1] = {
+                });
+                g_uv[g_staticVertNum + (n + i) * 3 + 1] = toHalf({
                     dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 0],
                     dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 1],
                     dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 2],
                     0,
-                };
-                g_uv[g_staticVertNum + (n + i) * 3 + 2] = {
+                });
+                g_uv[g_staticVertNum + (n + i) * 3 + 2] = toHalf({
                     dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 0],
                     dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 1],
                     dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 2],
                     0,
-                };
+                });
 
-                g_tan[g_staticVertNum + (n + i) * 3 + 0] = {
+                g_tan[g_staticVertNum + (n + i) * 3 + 0] = halfNormal({
                     dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 0],
                     dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 1],
                     dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 2],
                     0,
-                };
-                g_tan[g_staticVertNum + (n + i) * 3 + 1] = {
+                });
+                g_tan[g_staticVertNum + (n + i) * 3 + 1] = halfNormal({
                     dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 0],
                     dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 1],
                     dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 2],
                     0,
-                };
-                g_tan[g_staticVertNum + (n + i) * 3 + 2] = {
+                });
+                g_tan[g_staticVertNum + (n + i) * 3 + 2] = halfNormal({
                     dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 0],
                     dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 1],
                     dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 2],
                     0,
-                };
+                });
             }
             n += dat.tris.size() / 3;
         }
@@ -3241,32 +3829,73 @@ void set_window_size(int nx, int ny) {
 }
 
 void set_perspective(float const *U, float const *V, float const *W, float const *E, float aspect, float fov, float fpd, float aperture) {
+    set_perspective_by_fov(U,V,W,E,aspect,fov,0,0.024f,fpd,aperture,0.0f,0.0f,0.0f,0.0f);
+}
+void set_perspective_by_fov(float const *U, float const *V, float const *W, float const *E, float aspect, float fov, int fov_type, float L, float focal_distance, float aperture, float pitch, float yaw, float h_shift, float v_shift) {
     auto &cam = state.params.cam;
-    //float c_aspect = fw/fh;
-    //float u_aspect = aspect;
-    //float r_fh = fh * 0.001;
-    //float r_fw = fw * 0.001;
-    //zeno::log_info("Camera film w {} film h {} aspect {} {}", fw, fh, u_aspect, c_aspect);
-
     cam.eye = make_float3(E[0], E[1], E[2]);
     cam.right = normalize(make_float3(U[0], U[1], U[2]));
     cam.up = normalize(make_float3(V[0], V[1], V[2]));
     cam.front = normalize(make_float3(W[0], W[1], W[2]));
 
-    float radfov = fov * float(M_PI) / 180;
-    float tanfov = std::tan(radfov / 2.0f);
-    cam.front /= tanfov;
-    cam.right *= aspect;
+    float half_radfov = fov * float(M_PI) / 360.0f;
+    float half_tanfov = std::tan(half_radfov);
+    cam.focal_length = L / 2.0f / half_tanfov;
+    cam.focal_length = std::max(0.01f,cam.focal_length);
+    if(aperture > 24.0f || aperture <  0.5f){
+        cam.aperture = 0.0f;
+    }else{
+        cam.aperture = cam.focal_length / aperture;
+    }
+    
 
+    // L = L/cam.focal_length;
+    // cam.focal_length = 1.0f;
+
+    switch (fov_type){
+        case 0:
+            cam.height = L;
+            break;
+        case 1:
+            cam.height = L / aspect;
+            break;
+        case 2:
+            cam.height = sqrtf(L * L / (1.0f + aspect *aspect));
+            break;
+    }            
+    cam.width = cam.height * aspect;
+
+    cam.pitch = pitch;
+    cam.yaw = yaw;
+    cam.horizontal_shift = h_shift;
+    cam.vertical_shift = v_shift;
+    cam.focal_distance = std::max(cam.focal_length, focal_distance);
     camera_changed = true;
-    //cam.aspect = aspect;
-    //cam.fov = fov;
-    //camera.setZxxViewMatrix(U, V, W);
-    //camera.setAspectRatio(aspect);
-    //camera.setFovY(fov * aspect * (float)M_PI / 180.0f);
+}
+void set_perspective_by_focal_length(float const *U, float const *V, float const *W, float const *E, float aspect, float focal_length, float w, float h, float focal_distance, float aperture, float pitch, float yaw, float h_shift, float v_shift) {
+    auto &cam = state.params.cam;
+    cam.eye = make_float3(E[0], E[1], E[2]);
+    cam.right = normalize(make_float3(U[0], U[1], U[2]));
+    cam.up = normalize(make_float3(V[0], V[1], V[2]));
+    cam.front = normalize(make_float3(W[0], W[1], W[2]));
 
-    cam.focalPlaneDistance = fpd;
-    cam.aperture = aperture;
+    cam.focal_length = focal_length;
+    cam.focal_length = std::max(0.01f,cam.focal_length);
+
+    if(aperture > 24.0f || aperture < 0.5f){
+        cam.aperture = 0.0f;
+    }else{
+        cam.aperture = cam.focal_length / aperture;
+    }
+
+    cam.width = w;
+    cam.height = h;
+    cam.pitch = pitch;
+    cam.yaw = yaw;
+    cam.horizontal_shift = h_shift;
+    cam.vertical_shift = v_shift;
+    cam.focal_distance = std::max(cam.focal_length, focal_distance);
+    camera_changed = true;
 }
 
 static void write_pfm(std::string& path, int w, int h, const float *rgb) {
@@ -3309,6 +3938,7 @@ static void save_exr(float3* ptr, int w, int h, std::string path) {
     }
 }
 void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
+
     bool imageRendered = false;
     samples = zeno::envconfig::getInt("SAMPLES", samples);
     // 张心欣老爷请添加环境变量：export ZENO_SAMPLES=256
@@ -3342,47 +3972,48 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         auto w = (*output_buffer_o).width();
         auto h = (*output_buffer_o).height();
         stbi_flip_vertically_on_write(true);
-        if (zeno::getSession().userData().get2<bool>("output_exr", true)) {
-            auto exr_path = path.substr(0, path.size() - 4) + ".exr";
-
-            // AOV
-            if (zeno::getSession().userData().get2<bool>("output_aov", true)) {
-                SaveMultiLayerEXR(
-                        {
+        bool enable_output_aov = zeno::getSession().userData().get2<bool>("output_aov", true);
+        bool enable_output_exr = zeno::getSession().userData().get2<bool>("output_exr", true);
+        auto exr_path = path.substr(0, path.size() - 4) + ".exr";
+        // AOV
+        if (enable_output_aov) {
+            SaveMultiLayerEXR(
+                    {
                             (float*)optixgetimg_extra("color"),
                             (float*)optixgetimg_extra("diffuse"),
                             (float*)optixgetimg_extra("specular"),
                             (float*)optixgetimg_extra("transmit"),
                             (float*)optixgetimg_extra("background"),
-                        },
-                        w,
-                        h,
-                        {
+                    },
+                    w,
+                    h,
+                    {
                             "",
                             "diffuse.",
                             "specular.",
                             "transmit.",
                             "background.",
-                        },
-                        exr_path.c_str()
-                );
-            }
-            else {
-                save_exr((float3 *)optixgetimg_extra("color"), w, h, exr_path);
-            }
+                    },
+                    exr_path.c_str()
+            );
         }
         else {
-            stbi_write_jpg(path.c_str(), w, h, 4, p, 100);
-            if (denoise) {
-                const float* _albedo_buffer = reinterpret_cast<float*>(state.albedo_buffer_p.handle);
-                //SaveEXR(_albedo_buffer, w, h, 4, 0, (path+".albedo.exr").c_str(), nullptr);
-                auto a_path = path + ".albedo.pfm";
-                write_pfm(a_path, w, h, _albedo_buffer);
+            if (enable_output_exr) {
+                save_exr((float3 *)optixgetimg_extra("color"), w, h, exr_path);
+            }
+            else {
+                stbi_write_jpg(path.c_str(), w, h, 4, p, 100);
+                if (denoise) {
+                    const float* _albedo_buffer = reinterpret_cast<float*>(state.albedo_buffer_p.handle);
+                    //SaveEXR(_albedo_buffer, w, h, 4, 0, (path+".albedo.exr").c_str(), nullptr);
+                    auto a_path = path + ".albedo.pfm";
+                    write_pfm(a_path, w, h, _albedo_buffer);
 
-                const float* _normal_buffer = reinterpret_cast<float*>(state.normal_buffer_p.handle);
-                //SaveEXR(_normal_buffer, w, h, 4, 0, (path+".normal.exr").c_str(), nullptr);
-                auto n_path = path + ".normal.pfm";
-                write_pfm(n_path, w, h, _normal_buffer);
+                    const float* _normal_buffer = reinterpret_cast<float*>(state.normal_buffer_p.handle);
+                    //SaveEXR(_normal_buffer, w, h, 4, 0, (path+".normal.exr").c_str(), nullptr);
+                    auto n_path = path + ".normal.pfm";
+                    write_pfm(n_path, w, h, _normal_buffer);
+                }
             }
         }
         zeno::log_info("optix: saving screenshot {}x{} to {}", w, h, path);
@@ -3438,6 +4069,9 @@ void optixcleanup() {
     raygen_prog_group        .handle=0;
     radiance_miss_group      .handle=0;
     occlusion_miss_group     .handle=0;
+
+    OptixUtil::shaderCoreLUT.clear();
+
     output_buffer_o           .reset();
     output_buffer_diffuse     .reset();
     output_buffer_specular    .reset();

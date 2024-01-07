@@ -3,7 +3,6 @@
 #include "resource.h"
 /////////////////////////////////////////////////////////////////////////////
 // 中文(简体，中国) resources
-
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)
 LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
 #pragma code_page(936)
@@ -81,7 +80,7 @@ BEGIN
     END
 END
 
-#endif    // 中文(简体，中国) resources
+#endif
 /////////////////////////////////////////////////////////////////////////////
 
 

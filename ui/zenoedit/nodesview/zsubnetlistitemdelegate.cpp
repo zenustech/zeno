@@ -8,6 +8,7 @@
 #include <zenoio/writer/zsgwriter.h>
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
+#include "settings/zenosettingsmanager.h"
 
 SubgEditValidator::SubgEditValidator(QObject* parent)
 {
@@ -168,6 +169,14 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
             menu->addAction(pRename);
             menu->addAction(pDelete);
             menu->addAction(pSave);
+            if (index.data(ROLE_SUBGRAPH_TYPE) != SUBGRAPH_PRESET)
+            {
+                QAction* pPreset = new QAction(tr("Trans to Preset Subgrah"));
+                menu->addAction(pPreset);
+                connect(pPreset, &QAction::triggered, this, [=]() {
+                        m_model->setData(index, SUBGRAPH_PRESET, ROLE_SUBGRAPH_TYPE);
+                });
+            }
             menu->exec(QCursor::pos());
         }
     }
@@ -273,6 +282,12 @@ void ZSubnetListItemDelegate::setSelectedIndexs(const QModelIndexList &list)
 
 SubListSortProxyModel::SubListSortProxyModel(QObject* parent) : QSortFilterProxyModel(parent)
 {
+    connect(&ZenoSettingsManager::GetInstance(), &ZenoSettingsManager::valueChanged, this, [=](QString zsName) {
+        if (zsName == zsSubgraphType)
+        {
+            invalidate();
+        }
+    });
 }
 
 bool SubListSortProxyModel::lessThan(const QModelIndex& source_left, const QModelIndex& source_right) const
@@ -282,4 +297,14 @@ bool SubListSortProxyModel::lessThan(const QModelIndex& source_left, const QMode
     if (source_left.data().toString().compare(source_right.data().toString(), Qt::CaseInsensitive) < 0)
         return true;
     return false;
+}
+
+bool SubListSortProxyModel::filterAcceptsRow(int source_row, const QModelIndex& source_parent) const
+{
+    const QModelIndex& index = sourceModel()->index(source_row, 0, source_parent);
+    if (!index.isValid())
+        return false;
+    int value = index.data(ROLE_SUBGRAPH_TYPE).toInt();
+    int type = ZenoSettingsManager::GetInstance().getValue(zsSubgraphType).toInt();
+    return type == value ? true : false;
 }

@@ -9,6 +9,7 @@ ZCacheMgr::ZCacheMgr()
     , m_isNew(true)
     , m_cacheOpt(Opt_Undefined)
 {
+    m_objTmpCacheDir.setAutoRemove(true);
 }
 
 bool ZCacheMgr::initCacheDir(bool bTempDir, QDir dirCacheRoot, bool bAutoCleanCache)
@@ -61,6 +62,13 @@ QString ZCacheMgr::cachePath() const
     }
 }
 
+QString ZCacheMgr::objCachePath() const
+{
+    QString path = m_objTmpCacheDir.path();
+    zeno::log_debug("node cache dir {}", path.toStdString());
+    return path;
+}
+
 std::shared_ptr<QTemporaryDir> ZCacheMgr::getTempDir() const
 {
     return m_spTmpCacheDir;
@@ -78,6 +86,10 @@ void ZCacheMgr::setCacheOpt(cacheOption opt) {
 
 void ZCacheMgr::setNewCacheDir(bool setNew) {
     m_isNew = setNew;
+    if (m_isNew)
+    {
+        removeObjTmpCacheDir();
+    }
 }
 
 ZCacheMgr::cacheOption ZCacheMgr::getCacheOption() {
@@ -133,4 +145,9 @@ bool ZCacheMgr::hasCacheOnly(QDir dir, bool& empty)
         }
     }
     return bHasCacheOnly;
+}
+
+void ZCacheMgr::removeObjTmpCacheDir()
+{
+    m_objTmpCacheDir.remove();
 }

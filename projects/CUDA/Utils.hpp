@@ -65,6 +65,165 @@ retrieve_bounding_volumes(Pol &pol, const TileVecT &vtemp,
   return ret;
 }
 
+
+template <int codim, typename Pol, typename TileVecT>
+zs::Vector<typename ZenoParticles::lbvh_t::Box>
+retrieve_bounding_volumes(Pol &pol, const TileVecT &vtemp,
+                          float thickness = 0.f,
+                          const zs::SmallString &xTag = "xn") {
+  using namespace zs;
+  using bv_t = typename ZenoParticles::lbvh_t::Box;
+  // static_assert(codim >= 1 && codim <= 4, "invalid co-dimension!\n");
+  constexpr auto space = Pol::exec_tag::value;
+#if ZS_ENABLE_CUDA && defined(__CUDACC__)
+  // ZS_LAMBDA -> __device__
+  static_assert(space == execspace_e::cuda,
+                "specialized policy and compiler not match");
+#else
+  static_assert(space != execspace_e::cuda,
+                "specialized policy and compiler not match");
+#endif
+  size_t nm_elms = vtemp.size() / codim;
+
+  Vector<bv_t> ret{vtemp.get_allocator(), nm_elms};
+  pol(zs::range(nm_elms), [bvs = proxy<space>(ret),
+                               vtemp = proxy<space>({}, vtemp), xTag,
+                               thickness] ZS_LAMBDA(int ei) mutable {
+    auto x0 = vtemp.template pack<3>(xTag, ei * codim);
+    bv_t bv{x0, x0};
+    for (int d = 1; d != codim; ++d)
+      merge(bv, vtemp.template pack<3>(xTag, ei * codim + d));
+    bv._min -= thickness / 2;
+    bv._max += thickness / 2;
+    bvs[ei] = bv;
+  });
+  return ret;
+}
+
+template <typename Pol, typename TileVecT>
+zs::Vector<typename ZenoParticles::lbvh_t::Box>
+retrieve_bounding_volumes(Pol &pol, const TileVecT &vtemp,
+                          float radius = 0.f,
+                          const zs::SmallString &xTag = "xn") {
+  using namespace zs;
+  using bv_t = typename ZenoParticles::lbvh_t::Box;
+  constexpr auto space = Pol::exec_tag::value;
+#if ZS_ENABLE_CUDA && defined(__CUDACC__)
+  // ZS_LAMBDA -> __device__
+  static_assert(space == execspace_e::cuda,
+                "specialized policy and compiler not match");
+#else
+  static_assert(space != execspace_e::cuda,
+                "specialized policy and compiler not match");
+#endif
+  Vector<bv_t> ret{vtemp.get_allocator(), vtemp.size()};
+  pol(zs::range(vtemp.size()), [bvs = proxy<space>(ret),
+                               vtemp = proxy<space>({}, vtemp),
+                               xTag = xTag,
+                               radius = radius] ZS_LAMBDA(int vi) mutable {
+    auto x0 = vtemp.template pack<3>(xTag, vi);
+    bv_t bv{x0, x0};
+    bv._min -= radius;
+    bv._max += radius;
+    bvs[vi] = bv;
+  });
+  return ret;
+}
+
+template <typename Pol, typename TileVecT>
+void retrieve_bounding_volumes(Pol &pol, const TileVecT &vtemp,
+                          zs::Vector<ZenoParticles::lbvh_t::Box>& ret,
+                          float radius = 0.f,
+                          const zs::SmallString &xTag = "xn") {
+  using namespace zs;
+  using bv_t = typename ZenoParticles::lbvh_t::Box;
+  constexpr auto space = Pol::exec_tag::value;
+#if ZS_ENABLE_CUDA && defined(__CUDACC__)
+  // ZS_LAMBDA -> __device__
+  static_assert(space == execspace_e::cuda,
+                "specialized policy and compiler not match");
+#else
+  static_assert(space != execspace_e::cuda,
+                "specialized policy and compiler not match");
+#endif
+  // Vector<bv_t> ret{vtemp.get_allocator(), vtemp.size()};
+  ret.resize(vtemp.size());
+  pol(zs::range(vtemp.size()), [bvs = proxy<space>(ret),
+                               vtemp = proxy<space>({}, vtemp),
+                               xTag = xTag,
+                               radius = radius] ZS_LAMBDA(int vi) mutable {
+    auto x0 = vtemp.template pack<3>(xTag, vi);
+    bv_t bv{x0, x0};
+    bv._min -= radius;
+    bv._max += radius;
+    bvs[vi] = bv;
+  });
+  // return ret;
+}
+
+template <typename Pol, typename TileVecT>
+zs::Vector<typename ZenoParticles::lbvh_t::Box>
+retrieve_bounding_volumes(Pol &pol, const TileVecT &vtemp,
+                          const zs::SmallString &rTag = "r",
+                          const zs::SmallString &xTag = "xn") {
+  using namespace zs;
+  using bv_t = typename ZenoParticles::lbvh_t::Box;
+  constexpr auto space = Pol::exec_tag::value;
+#if ZS_ENABLE_CUDA && defined(__CUDACC__)
+  // ZS_LAMBDA -> __device__
+  static_assert(space == execspace_e::cuda,
+                "specialized policy and compiler not match");
+#else
+  static_assert(space != execspace_e::cuda,
+                "specialized policy and compiler not match");
+#endif
+  Vector<bv_t> ret{vtemp.get_allocator(), vtemp.size()};
+  pol(zs::range(vtemp.size()), [bvs = proxy<space>(ret),
+                               vtemp = proxy<space>({}, vtemp),
+                               rTag,
+                               xTag] ZS_LAMBDA(int vi) mutable {
+    auto x0 = vtemp.template pack<3>(xTag, vi);
+    bv_t bv{x0, x0};
+    auto radius = vtemp(rTag,vi);
+    bv._min -= radius;
+    bv._max += radius;
+    bvs[vi] = bv;
+  });
+  return ret;
+}
+
+template <typename Pol, typename TileVecT>
+void retrieve_bounding_volumes(Pol &pol, const TileVecT &vtemp,
+                          zs::Vector<typename ZenoParticles::lbvh_t::Box>& ret,
+                          const zs::SmallString &rTag = "r",
+                          const zs::SmallString &xTag = "xn") {
+  using namespace zs;
+  using bv_t = typename ZenoParticles::lbvh_t::Box;
+  constexpr auto space = Pol::exec_tag::value;
+#if ZS_ENABLE_CUDA && defined(__CUDACC__)
+  // ZS_LAMBDA -> __device__
+  static_assert(space == execspace_e::cuda,
+                "specialized policy and compiler not match");
+#else
+  static_assert(space != execspace_e::cuda,
+                "specialized policy and compiler not match");
+#endif
+  // Vector<bv_t> ret{vtemp.get_allocator(), vtemp.size()};
+  ret.resize(vtemp.size());
+  pol(zs::range(vtemp.size()), [bvs = proxy<space>(ret),
+                               vtemp = proxy<space>({}, vtemp),
+                               rTag,
+                               xTag] ZS_LAMBDA(int vi) mutable {
+    auto x0 = vtemp.template pack<3>(xTag, vi);
+    bv_t bv{x0, x0};
+    auto radius = vtemp(rTag,vi);
+    bv._min -= radius;
+    bv._max += radius;
+    bvs[vi] = bv;
+  });
+  // return ret;
+}
+
 // for ccd
 template <typename Pol, typename TileVecT0, typename TileVecT1, int codim = 3>
 zs::Vector<typename ZenoParticles::lbvh_t::Box> retrieve_bounding_volumes(
@@ -194,8 +353,14 @@ ee_accd(VecT ea0, VecT ea1, VecT eb0, VecT eb1, VecT dea0, VecT dea1, VecT deb0,
   }
   T dist_cur = zs::sqrt(dist2_cur);
   T gap = eta * dFunc / (dist_cur + thickness);
+  if(gap < 1e-6) {
+    // printf("toc : %f \t %f %f %f %f\n",(float)toc,(float)dFunc,(float)dist_cur,(float)thickness,(float)gap);
+    return false;
+  }
   T toc_prev = toc;
   toc = 0;
+  int MAX_ITER = 100;
+  int iter = 0;
   while (true) {
     T tocLowerBound = (1 - eta) * dFunc / ((dist_cur + thickness) * maxDispMag);
     if (tocLowerBound < 0)
@@ -227,6 +392,12 @@ ee_accd(VecT ea0, VecT ea1, VecT eb0, VecT eb1, VecT dea0, VecT dea1, VecT deb0,
     toc += tocLowerBound;
     if (toc > toc_prev) {
       toc = toc_prev;
+      return false;
+    }
+
+    ++iter;
+    if(iter >= MAX_ITER){
+      printf("max iter reach toc : %f \t %f %f %f %f\n",(float)toc,(float)dFunc,(float)dist_cur,(float)thickness,(float)gap);
       return false;
     }
   }

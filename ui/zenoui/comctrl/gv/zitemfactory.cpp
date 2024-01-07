@@ -2,6 +2,7 @@
 #include <zenomodel/include/uihelper.h>
 #include <zenoui/render/ztfutil.h>
 #include <zenoui/comctrl/gv/zlineedititem.h>
+#include <zenoui/ColorEditor/ColorEditor.h>
 #include <zenomodel/include/curvemodel.h>
 #include "zveceditoritem.h"
 #include "style/zenostyle.h"
@@ -154,7 +155,7 @@ namespace zenoui
             case CONTROL_WRITEPATH:
             {
                 const QString& path = UiHelper::variantToString(value);
-                ZenoParamPathEdit* pPathEditor = new ZenoParamPathEdit(path, ctrl, m_nodeParams.lineEditParam);
+                ZenoParamPathEdit* pPathEditor = new ZenoParamPathEdit(path, ctrl, m_nodeParams.lineEditParam, cbSet.cbGetZsgDir);
                 pPathEditor->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(200, zenoui::g_ctrlHeight)));
                 pPathEditor->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 pPathEditor->setData(GVKEY_TYPE, type);
@@ -182,6 +183,20 @@ namespace zenoui
                 pItemWidget = pMultiStrEdit;
                 break;
             }
+            //case CONTROL_PYTHON_EDITOR:
+            //{
+            //    ZPythonEditorItem* pythonEditor = new ZPythonEditorItem(UiHelper::variantToString(value), m_nodeParams.lineEditParam);
+            //    pythonEditor->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 227))); //the height is the actual init size, hardcode it...
+            //    pythonEditor->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed));
+            //    pythonEditor->setData(GVKEY_TYPE, type);
+
+            //    QObject::connect(pythonEditor, &ZPythonEditorItem::editingFinished, [=]() {
+            //        const QString& newValue = pythonEditor->text();
+            //        cbSet.cbEditFinished(newValue);
+            //    });
+            //    pItemWidget = pythonEditor;
+            //    break;
+            //}
             case CONTROL_COLOR:
             {
                 QLinearGradient grad = value.value<QLinearGradient>();
@@ -200,19 +215,51 @@ namespace zenoui
                 pItemWidget = pEditBtn;
                 break;
             }
-            case CONTROL_PURE_COLOR: {
+            case CONTROL_BUTTON:
+            {
+                //todo: name customize
+                ZenoParamPushButton* pButton = new ZenoParamPushButton("Generate", -1, QSizePolicy::Expanding);
+                pButton->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(100, zenoui::g_ctrlHeight)));
+                pButton->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
+                pButton->setData(GVKEY_TYPE, type);
+                pItemWidget = pButton;
+                QObject::connect(pButton, &ZenoParamPushButton::clicked, [=]() {
+                    if (cbSet.cbBtnOnClicked)
+                        cbSet.cbBtnOnClicked();
+                });
+                break;
+            }
+            case CONTROL_PURE_COLOR: 
+            case CONTROL_COLOR_VEC3F:
+            {
+                QColor currentColor;
+                if (ctrl == CONTROL_PURE_COLOR) {
+                    currentColor = value.value<QColor>();
+                }
+                else if (ctrl == CONTROL_COLOR_VEC3F) {
+                    auto colorVec = value.value<UI_VECTYPE>();
+                    currentColor = QColor::fromRgbF(colorVec[0], colorVec[1], colorVec[2]);
+                }
+                
                 ZenoParamPushButton *pEditBtn = new ZenoParamPushButton("", -1, QSizePolicy::Expanding);
                 pEditBtn->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(100, zenoui::g_ctrlHeight)));
                 pEditBtn->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 pEditBtn->setData(GVKEY_TYPE, type);
-                pEditBtn->setProperty("color", value.value<QColor>().name());
+                pEditBtn->setProperty("color", currentColor.name());
 
                 QObject::connect(pEditBtn, &ZenoParamPushButton::clicked, [=]() {
-                    QColor color = QColorDialog::getColor(QColor(pEditBtn->property("color").toString()));
+                    QColor color = ColorEditor::getColor(QColor(pEditBtn->property("color").toString()));
                     if (color.isValid()) 
                     {
                         pEditBtn->setProperty("color", color.name());
-                        cbSet.cbEditFinished(QVariant::fromValue(color));
+                        if (ctrl == CONTROL_PURE_COLOR) {
+                            cbSet.cbEditFinished(QVariant::fromValue(color));
+                        }
+                        else if (ctrl == CONTROL_COLOR_VEC3F) {
+                            UI_VECTYPE colorVec(3);
+                            color.getRgbF(&colorVec[0], &colorVec[1], &colorVec[2]);
+                            cbSet.cbEditFinished(QVariant::fromValue<UI_VECTYPE>(colorVec));
+                        }
                     }
                 });
                 pItemWidget = pEditBtn;
@@ -250,7 +297,7 @@ namespace zenoui
                     vec.resize(dim);
                 }
 
-                ZVecEditorItem* pVecEditor = new ZVecEditorItem(value, bFloat, m_nodeParams.lineEditParam, scene);
+                ZVecEditorItem* pVecEditor = new ZVecEditorItem(QVariant::fromValue(vec), bFloat, m_nodeParams.lineEditParam, scene);
                 pVecEditor->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, zenoui::g_ctrlHeight)));
                 pVecEditor->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed));
                 pVecEditor->setData(GVKEY_TYPE, type);
@@ -320,7 +367,7 @@ namespace zenoui
                 break;
             }
             case CONTROL_HSLIDER: 
-			{
+            {
                 SLIDER_INFO sliderInfo;
                 if (controlProps.type() == QMetaType::QVariantMap) {
                     QVariantMap props = controlProps.toMap();
@@ -334,13 +381,13 @@ namespace zenoui
                 pSlider->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, zenoui::g_ctrlHeight)));
                 pSlider->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 QObject::connect(pSlider, &ZenoParamSlider::valueChanged, [=](int value) { 
-					cbSet.cbEditFinished(value);
-				});
+                    cbSet.cbEditFinished(value);
+                });
                 pItemWidget = pSlider;
                 break;
-			}
+            }
             case CONTROL_HSPINBOX: 
-			{
+            {
                 SLIDER_INFO sliderInfo;
                 if (controlProps.type() == QMetaType::QVariantMap) {
                     QVariantMap props = controlProps.toMap();
@@ -355,8 +402,8 @@ namespace zenoui
                 pSpinBox->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 pSpinBox->setValue(value.toInt());
                 QObject::connect(pSpinBox, &ZenoParamSpinBox::valueChanged, [=](int value) { 
-					cbSet.cbEditFinished(value); 
-				});
+                    cbSet.cbEditFinished(value); 
+                });
                 pItemWidget = pSpinBox;
                 break;
             }

@@ -12,6 +12,7 @@ class ZTextLabel;
 class DisplayWidget;
 class ZComboBox;
 class ZLineEdit;
+class ZToolMenuButton;
 
 class ZToolBarButton : public ZToolButton
 {
@@ -33,19 +34,21 @@ private:
 };
 #endif
 
-class ZToolMenuButton : public ZToolButton {
+
+class ZTextIconButton : public QWidget
+{
     Q_OBJECT
 public:
-    ZToolMenuButton();
+    ZTextIconButton(const QString &text, QWidget *parent = nullptr);
+    ~ZTextIconButton();
+    void setShortcut(QKeySequence text);
+signals:
+    void clicked();
 
-protected:
-    virtual void mouseReleaseEvent(QMouseEvent* e) override;
-    virtual QSize sizeHint() const override;
 private:
-    QMenu *menu;
-    QAction *run;
-    QAction *runLightCamera;
-    QAction *runMaterial;
+    QPushButton* m_pButton;
+    QLabel* m_pLablel;
+    QShortcut* m_shortcut;
 };
 
 class DockToolbarWidget : public QWidget
@@ -111,14 +114,15 @@ private:
     ZToolBarButton *pCustomParam;
     ZToolBarButton *pGroup;
     ZToolBarButton *pLinkLineShape;
+    QCheckBox*pAlways;
     ZToolBarButton *pSearchBtn;
     ZToolBarButton *pSettings;
 
     ZToolMenuButton *m_btnRun;
-    ZToolButton* m_btnKill;
-    ZComboBox *m_btnAlways;
+    ZTextIconButton* m_btnKill;
 
     QComboBox* cbZoom;
+    ZComboBox* cbSubgType;
 };
 
 class DockContent_View : public DockToolbarWidget
@@ -156,6 +160,7 @@ private:
     ZToolBarButton* m_rotateBtn;
     ZToolBarButton* m_resizeViewport;
     QCheckBox *m_background;
+    QCheckBox *m_uv_mode = nullptr;
 
     QComboBox* m_cbRes;
     QAction* m_pFocus;

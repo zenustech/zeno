@@ -1,5 +1,8 @@
 #include "optixPathTracer.h"
 #include "vec_math.h"
+#include "xinxinoptixapi.h"
+#include "zeno/utils/vec.h"
+#include <limits>
 #include <memory>
 #ifdef ZENO_ENABLE_OPTIX
 #include "../../xinxinoptix/xinxinoptixapi.h"
@@ -67,10 +70,12 @@ struct GraphicsManager {
             std::vector<std::shared_ptr<zeno::TextureObjectVDB>> tex3Ds;
             std::string common;
             std::string shader;
-            std::string mtlidkey;
             std::string extensions;
+            std::string mtlidkey;
             std::string transform;
+            std::string parameters;
         };
+
         struct DetPrimitive {
             std::shared_ptr<zeno::PrimitiveObject> primSp;
         };
@@ -466,7 +471,7 @@ struct GraphicsManager {
             }
             else if (auto mtl = dynamic_cast<zeno::MaterialObject *>(obj))
             {
-                det = DetMaterial{mtl->tex2Ds, mtl->tex3Ds, mtl->common, mtl->frag, mtl->mtlidkey, mtl->extensions, mtl->transform};
+                det = DetMaterial{mtl->tex2Ds, mtl->tex3Ds, mtl->common, mtl->frag, mtl->extensions, mtl->mtlidkey, mtl->transform, mtl->parameters};
             }
         }
 
@@ -513,40 +518,139 @@ struct GraphicsManager {
             }
             if (prim_in->userData().get2<int>("isL", 0) == 1) {
                 //zeno::log_info("processing light key {}", key.c_str());
-                auto ivD = prim_in->userData().getLiterial<int>("ivD", 0);
-
-                auto p0 = prim_in->verts[prim_in->tris[0][0]];
-                auto p1 = prim_in->verts[prim_in->tris[0][1]];
-                auto p2 = prim_in->verts[prim_in->tris[0][2]];
-                auto e1 = p0 - p2;
-                auto e2 = p1 - p2;
-
-                auto nor = zeno::normalize(zeno::cross(e1, e2));
-                zeno::vec3f clr;
-                if (prim_in->verts.has_attr("clr")) {
-                    clr = prim_in->verts.attr<zeno::vec3f>("clr")[0];
-                } else {
-                    clr = zeno::vec3f(30000.0f, 30000.0f, 30000.0f);
-                }
-
                 auto type = prim_in->userData().get2<int>("type", 0);
                 auto shape = prim_in->userData().get2<int>("shape", 0);
+                auto maxDistance = prim_in->userData().get2<float>("maxDistance", std::numeric_limits<float>().max());
+                auto falloffExponent = prim_in->userData().get2<float>("falloffExponent", 2.0f);
 
+                auto color = prim_in->userData().get2<zeno::vec3f>("color");
+                auto spread = prim_in->userData().get2<zeno::vec2f>("spread", {1.0f, 0.0f});
+                auto intensity = prim_in->userData().get2<float>("intensity", 1.0f);
+                auto fluxFixed = prim_in->userData().get2<float>("fluxFixed", -1.0f);
+                auto vIntensity = prim_in->userData().get2<float>("visibleIntensity", -1.0f);
+
+                auto ivD = prim_in->userData().getLiterial<int>("ivD", 0);
+
+                auto mask = prim_in->userData().get2<int>("mask", 255);
                 auto visible = prim_in->userData().get2<int>("visible", 0);
                 auto doubleside = prim_in->userData().get2<int>("doubleside", 0);
                 auto lightProfilePath = prim_in->userData().get2<std::string>("lightProfile", ""); 
-                OptixUtil::addTexture(lightProfilePath);
+                auto lightTexturePath = prim_in->userData().get2<std::string>("lightTexture", ""); 
+                auto lightGamma = prim_in->userData().get2<float>("lightGamma", 1.0f); 
 
-                std::cout << "light: p"<<p0[0]<<" "<<p0[1]<<" "<<p0[2]<<"\n";
-                std::cout << "light: p"<<p1[0]<<" "<<p1[1]<<" "<<p1[2]<<"\n";
-                std::cout << "light: p"<<p2[0]<<" "<<p2[1]<<" "<<p2[2]<<"\n";
-                std::cout << "light: e"<<e1[0]<<" "<<e1[1]<<" "<<e1[2]<<"\n";
-                std::cout << "light: e"<<e2[0]<<" "<<e2[1]<<" "<<e2[2]<<"\n";
-                std::cout << "light: n"<<nor[0]<<" "<<nor[1]<<" "<<nor[2]<<"\n";
-                std::cout << "light: c"<<clr[0]<<" "<<clr[1]<<" "<<clr[2]<<"\n";
+                if (lightProfilePath != "") {
+                    OptixUtil::addTexture(lightProfilePath);
+                }
 
-                xinxinoptix::load_light(key, p2.data(), e1.data(), e2.data(),
-                                        nor.data(), clr.data(), visible, doubleside, shape, type, lightProfilePath);
+                if (lightTexturePath != "") {
+                    OptixUtil::addTexture(lightTexturePath);
+                }
+
+                xinxinoptix::LightDat ld;
+                zeno::vec3f nor{}, clr{};
+
+                ld.mask = mask;
+                ld.visible = visible;
+                ld.doubleside = doubleside;
+                ld.fluxFixed = fluxFixed;
+                ld.intensity = intensity;
+                ld.vIntensity = vIntensity;
+                ld.spreadMajor = spread[0];
+                ld.spreadMinor = spread[1];
+                ld.maxDistance = maxDistance;
+                ld.falloffExponent = falloffExponent;
+
+                ld.shape = shape; ld.type = type;
+                ld.profileKey = lightProfilePath;
+                ld.textureKey = lightTexturePath;
+                ld.textureGamma = lightGamma;
+
+                std::function extraStep = [&]() {
+                    ld.normal.assign(nor.begin(), nor.end());
+                    ld.color.assign(clr.begin(), clr.end());
+                };
+
+                const auto shapeEnum = magic_enum::enum_cast<zeno::LightShape>(shape);
+                if (shapeEnum == zeno::LightShape::TriangleMesh) { // Triangle mesh Light
+
+                    for (size_t i=0; i<prim_in->tris->size(); ++i) {
+                        auto _p0_ = prim_in->verts[prim_in->tris[i][0]];
+                        auto _p1_ = prim_in->verts[prim_in->tris[i][1]];
+                        auto _p2_ = prim_in->verts[prim_in->tris[i][2]];
+                        auto _e1_ = _p0_ - _p2_;
+                        auto _e2_ = _p1_ - _p2_;
+
+                        zeno::vec3f *pn0{}, *pn1{}, *pn2{};
+                        zeno::vec3f *uv0{}, *uv1{}, *uv2{};
+
+                        if (prim_in->verts.has_attr("nrm")) {
+                            pn0 = &prim_in->verts.attr<zeno::vec3f>("nrm")[ prim_in->tris[i][0] ];
+                            pn1 = &prim_in->verts.attr<zeno::vec3f>("nrm")[ prim_in->tris[i][1] ];
+                            pn2 = &prim_in->verts.attr<zeno::vec3f>("nrm")[ prim_in->tris[i][2] ];
+                        }
+
+                        if (prim_in->verts.has_attr("uv")) {
+                            #if 1
+                            uv0 = &prim_in->verts.attr<zeno::vec3f>("uv")[ prim_in->tris[i][0] ];
+                            uv1 = &prim_in->verts.attr<zeno::vec3f>("uv")[ prim_in->tris[i][1] ];
+                            uv2 = &prim_in->verts.attr<zeno::vec3f>("uv")[ prim_in->tris[i][2] ];
+                            #else
+                            auto uv0 = prim_in->tris.attr<zeno::vec3f>("uv0")[i];
+                            auto uv1 = prim_in->tris.attr<zeno::vec3f>("uv1")[i];
+                            auto uv2 = prim_in->tris.attr<zeno::vec3f>("uv2")[i];
+                            #endif
+                        }
+
+                        nor = zeno::normalize(zeno::cross(_e1_, _e2_));
+                        clr = color ;//prim_in->verts.attr<zeno::vec3f>("clr")[ prim_in->tris[i][0] ];
+                        extraStep();
+
+                        auto compound = key + std::to_string(i);
+                        xinxinoptix::load_triangle_light(compound, ld, _p0_, _p1_, _p2_, pn0, pn1, pn2, uv0, uv1, uv2); 
+                    }
+                } 
+                else 
+                {
+                    auto p2 = prim_in->verts[prim_in->tris[0][0]];
+                    auto p0 = prim_in->verts[prim_in->tris[0][1]];
+                    auto p1 = prim_in->verts[prim_in->tris[0][2]];
+                    auto e1 = p1 - p0;
+                    auto e2 = p2 - p1;
+                    
+                    // p0 ---(+x)--> p1
+                    // |||||||||||||(-)
+                    // |||||||||||||(z)
+                    // |||||||||||||(+)
+                    // p* <--(-x)--- p2
+
+                    p0 = p0 + e2; // p* as p0
+                    e2 = -e2;     // invert e2
+                
+                    // facing down in local space
+                    auto ne2 = zeno::normalize(e2);
+                    auto ne1 = zeno::normalize(e1);
+                    nor = zeno::normalize(zeno::cross(ne2, ne1));
+                    if (ivD) { nor *= -1; }
+
+                    if (prim_in->verts.has_attr("clr")) {
+                        clr = prim_in->verts.attr<zeno::vec3f>("clr")[0];
+                    } else {
+                        clr = zeno::vec3f(30000.0f, 30000.0f, 30000.0f);
+                    }
+
+                    clr = color;
+                    extraStep();
+
+                    std::cout << "light: p"<<p0[0]<<" "<<p0[1]<<" "<<p0[2]<<"\n";
+                    std::cout << "light: p"<<p1[0]<<" "<<p1[1]<<" "<<p1[2]<<"\n";
+                    std::cout << "light: p"<<p2[0]<<" "<<p2[1]<<" "<<p2[2]<<"\n";
+                    std::cout << "light: e"<<e1[0]<<" "<<e1[1]<<" "<<e1[2]<<"\n";
+                    std::cout << "light: e"<<e2[0]<<" "<<e2[1]<<" "<<e2[2]<<"\n";
+                    std::cout << "light: n"<<nor[0]<<" "<<nor[1]<<" "<<nor[2]<<"\n";
+                    std::cout << "light: c"<<clr[0]<<" "<<clr[1]<<" "<<clr[2]<<"\n";
+
+                    xinxinoptix::load_light(key, ld, p0.data(), e1.data(), e2.data());
+                }
             }
             else if (prim_in->userData().get2<int>("ProceduralSky", 0) == 1) {
                 sky_found = true;
@@ -777,17 +881,15 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         std::pair<std::string_view, std::string_view> shadtpl2;
     };
 
-    ShaderTemplateInfo _fallback_shader_template {
-        "DefaultFallback.cu", false, {}, {}, {}
+    ShaderTemplateInfo _default_callable_template {
+        "CallableDefault.cu", false, {}, {}, {}
     };
-    void ensure_fallback() {
-        _fallback_shader_template.shadtmpl = sutil::lookupIncFile(_fallback_shader_template.name.c_str());
-    }
-
+    ShaderTemplateInfo _volume_callable_template {
+        "CallableVolume.cu", false, {}, {}, {}
+    };
     ShaderTemplateInfo _default_shader_template {
         "DeflMatShader.cu", false, {}, {}, {}
     };
-
     ShaderTemplateInfo _volume_shader_template {
         "volume.cu", false, {}, {}, {}
     };
@@ -831,6 +933,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             _template.commontpl = tplsv.substr(0, pcommon);
         }
         else{
+            return;
             throw std::runtime_error("cannot find stub COMMON_CODE in shader template");
         }
         std::string_view tmplstub0 = "//GENERATED_BEGIN_MARK";
@@ -909,29 +1012,29 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         if (meshNeedUpdate || matNeedUpdate || staticNeedUpdate) {
             //zeno::log_debug("[zeno-optix] updating scene");
             //zeno::log_debug("[zeno-optix] updating material");
-            std::vector<std::shared_ptr<ShaderPrepared>> _mesh_shader_list{};
+            std::vector<std::shared_ptr<ShaderPrepared>> _meshes_shader_list{};
             std::vector<std::shared_ptr<ShaderPrepared>> _sphere_shader_list{};
             std::vector<std::shared_ptr<ShaderPrepared>> _volume_shader_list{};
 
             std::map<std::string, int> meshMatLUT{};
             std::map<std::string, uint> matIDtoShaderIndex{};
 
+            ensure_shadtmpl(_default_callable_template);
+            ensure_shadtmpl(_volume_callable_template);
+
             ensure_shadtmpl(_default_shader_template);
             ensure_shadtmpl(_volume_shader_template);
             ensure_shadtmpl(_light_shader_template);
-
-            auto _default_shader_fallback = std::make_shared<std::string>(_fallback_shader_template.shadtmpl);
-            auto _volume_shader_fallback = std::make_shared<std::string>(_volume_shader_template.shadtmpl);
 
             {
                 auto tmp = std::make_shared<ShaderPrepared>();
 
                 tmp->mark = ShaderMaker::Mesh;
                 tmp->matid = "Default";
-                tmp->source = _light_shader_template.shadtmpl;
-                tmp->fallback = std::make_shared<std::string>("");
+                tmp->filename = _default_shader_template.name;
+                tmp->callable = _default_callable_template.shadtmpl;
 
-                _mesh_shader_list.push_back(tmp);
+                _meshes_shader_list.push_back(tmp);
             }
 
             {
@@ -939,8 +1042,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
                 tmp->mark = ShaderMaker::Sphere;
                 tmp->matid = "Default";
-                tmp->source = _light_shader_template.shadtmpl;
-                tmp->fallback = std::make_shared<std::string>("");
+                tmp->filename = _default_shader_template.name;
+                tmp->callable = _default_callable_template.shadtmpl;
 
                 _sphere_shader_list.push_back(tmp);
             }
@@ -1013,39 +1116,26 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                         }
                     }
                     
-                    const auto& selected_template = has_vdb? _volume_shader_template : _default_shader_template; 
-                    const auto& selected_fallback = has_vdb? _volume_shader_fallback : _default_shader_fallback;
+                    const auto& selected_source = has_vdb? _volume_shader_template : _default_shader_template;
+                    const auto& selected_callable = has_vdb? _volume_callable_template : _default_callable_template; 
 
-                    std::string shader;
+                    std::string callable;
                     auto common_code = mtldet->common;
-                    std::string tar = "uniform sampler2D";
-                    size_t index = 0;
-                    while (true) {
-                        /* Locate the substring to replace. */
-                        index = common_code.find(tar, index);
-                        if (index == std::string::npos) break;
 
-                        /* Make the replacement. */
-                        common_code.replace(index, tar.length(), "//////////");
+                    auto& commontpl = selected_callable.commontpl;
+                    auto& shadtpl2 = selected_callable.shadtpl2;
 
-                        /* Advance index forward so the next iteration doesn't pick it up as well. */
-                        index += tar.length();
-                    }
-
-                    auto& commontpl = selected_template.commontpl;
-                    auto& shadtpl2 = selected_template.shadtpl2;
-
-                    shader.reserve(commontpl.size()
+                    callable.reserve(commontpl.size()
                                     + common_code.size()
                                     + shadtpl2.first.size()
                                     + mtldet->shader.size()
                                     + shadtpl2.second.size());
-                    shader.append(commontpl);
-                    shader.append(common_code);
-                    shader.append(shadtpl2.first);
-                    shader.append(mtldet->shader);
-                    shader.append(shadtpl2.second);
-                    //std::cout<<shader<<std::endl;
+                    callable.append(commontpl);
+                    callable.append(common_code);
+                    callable.append(shadtpl2.first);
+                    callable.append(mtldet->shader);
+                    callable.append(shadtpl2.second);
+                    //std::cout<<callable<<std::endl;
 
                     std::vector<std::string> shaderTex;
                     int texid=0;
@@ -1057,10 +1147,13 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     }
 
                     ShaderPrepared shaderP; 
+
+                        shaderP.callable = callable;
+                        shaderP.filename = selected_source.name;
+                        shaderP.parameters = mtldet->parameters;
+
                         shaderP.matid = mtldet->mtlidkey;
-                        shaderP.source = shader;
                         shaderP.tex_names = shaderTex;
-                        shaderP.fallback = selected_fallback;
 
                     if (has_vdb) {
                         
@@ -1069,10 +1162,10 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     } else {
 
                         if (cachedMeshesMaterials.count(mtldet->mtlidkey) > 0) {
-                            meshMatLUT.insert({mtldet->mtlidkey, (int)_mesh_shader_list.size()});
+                            meshMatLUT.insert({mtldet->mtlidkey, (int)_meshes_shader_list.size()});
 
                             shaderP.mark = ShaderMaker::Mesh;
-                            _mesh_shader_list.push_back(std::make_shared<ShaderPrepared>(shaderP));
+                            _meshes_shader_list.push_back(std::make_shared<ShaderPrepared>(shaderP));
                         }
 
                         if (cachedSphereMaterials.count(mtldet->mtlidkey) > 0) {
@@ -1083,15 +1176,37 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     }
             }
 
-            std::vector<std::shared_ptr<ShaderPrepared>> allShaders{};
-            allShaders.reserve(_mesh_shader_list.size()+_sphere_shader_list.size()+_volume_shader_list.size());            
+            {
+                auto tmp = std::make_shared<ShaderPrepared>();
 
-            allShaders.insert(allShaders.end(), _mesh_shader_list.begin(), _mesh_shader_list.end());
+                tmp->filename = _light_shader_template.name;
+                tmp->callable = _default_callable_template.shadtmpl;
+                tmp->mark = ShaderMaker::Mesh;
+                tmp->matid = "Light";
+
+                _meshes_shader_list.push_back(tmp);
+            }
+
+            {
+                auto tmp = std::make_shared<ShaderPrepared>();
+
+                tmp->filename = _light_shader_template.name;
+                tmp->callable = _default_callable_template.shadtmpl;
+                tmp->mark = ShaderMaker::Sphere;
+                tmp->matid = "Light";
+                
+                _sphere_shader_list.push_back(tmp);
+            }
+
+            std::vector<std::shared_ptr<ShaderPrepared>> allShaders{};
+            allShaders.reserve(_meshes_shader_list.size()+_sphere_shader_list.size()+_volume_shader_list.size());            
+
+            allShaders.insert(allShaders.end(), _meshes_shader_list.begin(), _meshes_shader_list.end());
             allShaders.insert(allShaders.end(), _sphere_shader_list.begin(), _sphere_shader_list.end());
             allShaders.insert(allShaders.end(), _volume_shader_list.begin(), _volume_shader_list.end());
 
-            const size_t sphere_shader_offset = _mesh_shader_list.size();
-            const size_t volume_shader_offset = _mesh_shader_list.size() + _sphere_shader_list.size();
+            const size_t sphere_shader_offset = _meshes_shader_list.size();
+            const size_t volume_shader_offset = _meshes_shader_list.size() + _sphere_shader_list.size();
 
                 for (uint i=0; i<allShaders.size(); ++i) {
                     auto& ref = allShaders[i];
@@ -1143,9 +1258,15 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 xinxinoptix::cleanupSpheresCPU();
 
                 xinxinoptix::optixupdateend();
-                std::cout<<"Finish optix update" << std::endl;
+                std::cout<< "Finish optix update" << std::endl;
             }
-            
+
+            if (scene->drawOptions->updateMatlOnly && !bMeshMatLUTChanged)
+            {
+                xinxinoptix::optixupdateend();
+                std::cout << "Finish optix update" << std::endl;
+            }
+
         }
 
         if(lightNeedUpdate){

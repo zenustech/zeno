@@ -38,6 +38,8 @@ public:
     void updatePerspective();
     void setKeyFrame();
 
+    bool fakeKeyPressEvent(int uKey);
+    bool fakeKeyReleaseEvent(int uKey);
     void fakeMousePressEvent(QMouseEvent* event);
     void fakeMouseReleaseEvent(QMouseEvent* event);
     void fakeMouseMoveEvent(QMouseEvent* event);
@@ -63,6 +65,11 @@ private:
     std::shared_ptr<zeno::Picker> m_picker;
     std::shared_ptr<zeno::FakeTransformer> m_transformer;
     Zenovis* m_zenovis;
+
+    bool middle_button_pressed = false;
+    bool shift_pressed = false;
+    bool ctrl_pressed = false;
+    bool alt_pressed = false;
 };
 
 

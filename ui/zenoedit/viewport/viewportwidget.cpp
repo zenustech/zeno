@@ -57,6 +57,7 @@ ViewportWidget::ViewportWidget(QWidget* parent)
     // https://blog.csdn.net/zhujiangm/article/details/90760744
     // https://blog.csdn.net/jays_/article/details/83783871
     setFocusPolicy(Qt::ClickFocus);
+    setMouseTracking(true);
 
     m_camera = new CameraControl(m_zenovis, m_fakeTrans, m_picker, this);
     m_zenovis->m_camera_control = m_camera;
@@ -311,6 +312,12 @@ void ViewportWidget::changeTransformCoordSys() {
     m_camera->changeTransformCoordSys();
 }
 
+void ViewportWidget::cleanUpScene() {
+    if (!m_zenovis)
+        return;
+    m_zenovis->cleanUpScene();
+}
+
 void ViewportWidget::updateCameraProp(float aperture, float disPlane) {
     m_camera->setAperture(aperture);
     m_camera->setDisPlane(disPlane);
@@ -342,6 +349,12 @@ void ViewportWidget::keyPressEvent(QKeyEvent *event)
     if (modifiers & Qt::AltModifier) {
         uKey += Qt::ALT;
     }
+
+    if (m_camera->fakeKeyPressEvent(uKey)) {
+        zenoApp->getMainWindow()->updateViewport();
+        return;
+    }
+
     if (uKey == key)
         this->changeTransformOperation(0);
     key = settings.getShortCut(ShortCut_RevolvingHandler);
@@ -390,4 +403,14 @@ void ViewportWidget::keyPressEvent(QKeyEvent *event)
 
 void ViewportWidget::keyReleaseEvent(QKeyEvent *event) {
     _base::keyReleaseEvent(event);
+    int uKey = event->key();
+    if (m_camera->fakeKeyReleaseEvent(uKey)) {
+        zenoApp->getMainWindow()->updateViewport();
+        return;
+    }
+}
+
+void ViewportWidget::enterEvent(QEvent *event) {
+    setFocus();
+    QWidget::enterEvent(event);
 }

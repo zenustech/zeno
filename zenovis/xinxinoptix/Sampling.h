@@ -43,8 +43,12 @@ inline float SafeSqrt(float x) {
     return sqrtf(fmaxf(0.f, x));
 }
 
-inline float AbsDot(Vector3f v, Vector3f n) {
-    return abs(dot(v, n));
+inline float AbsDot(const Vector3f& v, const Vector3f& n) {
+    return fabsf(dot(v, n));
+}
+
+inline float AbsDot(const float3& v, const float3& n) {
+    return fabsf(dot(v, n));
 }
 
 inline float AngleBetween(Vector3f v1, Vector3f v2) {
@@ -92,6 +96,23 @@ inline void CoordinateSystem(const float3& a, float3& b, float3& c) {
     c = cross(a, b);
 }
 
+inline float2 SampleUniformDiskConcentric(float2 uu) {
+    
+    float2 uOffset = 2 * uu - float2{1.f, 1.f};
+    if (uOffset.x == 0 && uOffset.y == 0)
+        return {0, 0};
+    // Apply concentric mapping to point
+    float theta, r;
+    if (fabsf(uOffset.x) > fabsf(uOffset.y)) {
+        r = uOffset.x;
+        theta = M_PI_4f * (uOffset.y / uOffset.x);
+    } else {
+        r = uOffset.y;
+        theta = M_PI_2f - M_PI_4f * (uOffset.x / uOffset.y);
+    }
+    return r * float2{cosf(theta), sinf(theta)};
+}
+
 inline float3 SphericalDirection(float sinTheta, float cosTheta, float phi) {
     return make_float3(sinTheta * cosf(phi), sinTheta * sinf(phi), cosTheta);
 }
@@ -108,14 +129,74 @@ inline float3 SphericalDirection(float sinTheta, float cosTheta, float phi,
     return make_float3(r * cosf(phi), r * sinf(phi), z);
 }
 
+inline float Lerp(float x, float a, float b) {
+    return (1 - x) * a + x * b;
+}
+
+inline float SampleLinear(float u, float a, float b) {
+    DCHECK(a >= 0 && b >= 0);
+    if (u == 0 && a == 0)
+        return 0;
+    float x = u * (a + b) / (a + sqrtf(Lerp(u, Sqr(a), Sqr(b))));
+    return fminf(x, 1.0f - __FLT_EPSILON__);
+}
+
+inline float2 SampleBilinear(const float2& uu, const float4& v) {
+
+    float2 p;
+    // Sample $y$ for bilinear marginal distribution
+    p.y = SampleLinear(uu.y, v.x + v.y, v.z + v.w);
+    // Sample $x$ for bilinear conditional distribution
+    p.x = SampleLinear(uu.x, Lerp(p.y, v.x, v.z), Lerp(p.y, v.y, v.w));
+
+    return p;
+}
+
+inline float BilinearPDF(const float2& p, const float4& v) {
+    
+    if (p.x < 0 || p.x > 1 || p.y < 0 || p.y > 1)
+        return 0;
+    if (v.x + v.y + v.z + v.w == 0)
+        return 1;
+    return 4 *
+           ((1 - p.x) * (1 - p.y) * v.x + p.x * (1 - p.y) * v.y +
+            (1 - p.x) * p.y * v.z + p.x * p.y * v.w) /
+           (v.x + v.y + v.z + v.w);
+}
+
+inline float FMA(float a, float b, float c) {
+    //return fma(a, b, c); 
+    return a * b + c;
+}
+
+template <typename Ta, typename Tb, typename Tc, typename Td>
+inline auto DifferenceOfProducts(Ta a, Tb b, Tc c, Td d) {
+    auto cd = c * d;
+    auto differenceOfProducts = FMA(a, b, -cd);
+    auto error = FMA(-c, d, cd);
+    return differenceOfProducts + error;
+}
+
+template <typename Ta, typename Tb, typename Tc, typename Td>
+inline auto SumOfProducts(Ta a, Tb b, Tc c, Td d) {
+    auto cd = c * d;
+    auto sumOfProducts = FMA(a, b, cd);
+    auto error = FMA(c, d, -cd);
+    return sumOfProducts + error;
+}
+
+inline Vector3f GramSchmidt(Vector3f v, Vector3f w) {
+    return v - dot(v, w) * w;
+}
+
 } // namespace pbrt
 
 
 namespace rtgems {
 
-    constexpr float origin()      { return 1.0f / 16.0f; }
-    constexpr float int_scale()   { return 3.0f * 256.0f; }
-    constexpr float float_scale() { return 3.0f / 65536.0f; }
+    constexpr float origin()      { return 1.0f / 32.0f; }
+    constexpr float int_scale()   { return 1.0f * 256.0f; }
+    constexpr float float_scale() { return 1.0f / 65536.0f; }
     
     // Normal points outward for rays exiting the surface, else is flipped.
     static __inline__ __device__ float3 offset_ray(const float3 p, const float3 n)
@@ -136,6 +217,17 @@ namespace rtgems {
                 fabsf(p.z) < origin() ? p.z+float_scale()*n.z : p_i.z };
     }
 }
+
+static __host__ __device__ __inline__ float3 sphereUV(const float3 &dir, bool internal) {
+//https://en.wikipedia.org/wiki/UV_mapping
+
+    auto x = internal? dir.x:-dir.x;
+
+    auto u = 0.5f + atan2f(dir.z, x) * 0.5f / M_PIf;
+    auto v = 0.5f + asinf(dir.y) / M_PIf;
+
+    return float3 {u, v, 0.0f};
+} 
 
 // *Really* minimal PCG32 code / (c) 2014 M.E. O'Neill / pcg-random.org
 // Licensed under Apache License 2.0 (NO WARRANTY, etc. see website)
@@ -161,12 +253,14 @@ static __host__ __device__ __inline__ uint32_t pcg_hash(uint32_t &seed )
     return (word >> 22u) ^ word;
 }
 
-static __host__ __device__ __inline__ uint32_t pcg_rng(uint32_t &seed) 
+static __host__ __device__ __inline__ float pcg_rng(uint32_t &seed) 
 {
 	auto state = seed;
 	seed = seed * 747796405u + 2891336453u;
 	auto word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
-	return (word >> 22u) ^ word;
+	auto tmp = (word >> 22u) ^ word;
+
+    return (float)tmp / (float)UINT_MAX;
 }
 
 static inline uint32_t hash_iqnt2d(const uint32_t x, const uint32_t y)

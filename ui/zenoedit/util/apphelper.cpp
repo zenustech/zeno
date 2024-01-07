@@ -141,6 +141,10 @@ void AppHelper::modifyOptixObjDirectly(QVariant newValue, QPersistentModelIndex 
     {
         modifyOptixCameraPropDirectly(newValue, nodeIdx, paramIdx);
     }
+    else if (( (main->isAlways() || main->isAlwaysLightCamera() || main->isAlwaysMaterial()) || editByPropPanel))
+    {
+        socketEditFinished(newValue, nodeIdx, paramIdx);
+    }
 }
 
 void AppHelper::modifyOptixCameraPropDirectly(QVariant newValue, QPersistentModelIndex nodeIdx, QPersistentModelIndex paramIdx)
@@ -227,7 +231,7 @@ void AppHelper::modifyLightData(QVariant newValue, QPersistentModelIndex nodeIdx
     UI_VECTYPE scaleVec = inputsItem->child(1)->index().data(ROLE_PARAM_VALUE).value<UI_VECTYPE>();
     UI_VECTYPE rotateVec = inputsItem->child(2)->index().data(ROLE_PARAM_VALUE).value<UI_VECTYPE>();
     UI_VECTYPE colorVec = inputsItem->child(4)->index().data(ROLE_PARAM_VALUE).value<UI_VECTYPE>();
-    float intensity = inputsItem->child(5)->index().data(ROLE_PARAM_VALUE).value<float>();
+    float intensity = inputsItem->child(6)->index().data(ROLE_PARAM_VALUE).value<float>();
     QString paramName = paramIdx.data(ROLE_PARAM_NAME).toString();
     if (paramName == "position")
         posVec = newValue.value<UI_VECTYPE>();
@@ -251,7 +255,7 @@ void AppHelper::modifyLightData(QVariant newValue, QPersistentModelIndex nodeIdx
         skipParam[2] = 1;
     if (!inputsItem->child(4)->index().data(ROLE_PARAM_LINKS).value<PARAM_LINKS>().isEmpty())
         skipParam[3] = 1;
-    if (!inputsItem->child(5)->index().data(ROLE_PARAM_LINKS).value<PARAM_LINKS>().isEmpty())
+    if (!inputsItem->child(6)->index().data(ROLE_PARAM_LINKS).value<PARAM_LINKS>().isEmpty())
         skipParam[4] = 1;
 
     ZenoMainWindow *pWin = zenoApp->getMainWindow();
@@ -427,6 +431,27 @@ bool AppHelper::openZsgAndRun(const ZENO_RECORD_RUN_INITPARAM& param, LAUNCH_PAR
     //set userdata from zsg
     auto& ud = zeno::getSession().userData();
     ud.set2("optix_show_background", pGraphs->userdataInfo().optix_show_background);
+
+    if (!param.paramsJson.isEmpty())
+    {
+        //parse paramsJson
+        rapidjson::Document configDoc;
+        configDoc.Parse(param.paramsJson.toUtf8());
+        if (!configDoc.IsObject())
+        {
+            zeno::log_error("config file is corrupted");
+        }
+        FuckQMap<QString, CommandParam> commands = pGraphs->currentModel()->commandParams();
+        for (auto& [key, param] : commands)
+        {
+            if (configDoc.HasMember(param.name.toUtf8()))
+            {
+                param.value = UiHelper::parseJson(configDoc[param.name.toStdString().c_str()], nullptr);
+                param.bIsCommand = true;
+            }
+            pGraphs->currentModel()->updateCommandParam(key, param);
+        }
+    }
 
     launchProgram(pModel, launchParam);
     return true;
