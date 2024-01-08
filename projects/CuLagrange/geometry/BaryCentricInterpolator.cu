@@ -1164,7 +1164,7 @@ struct ZSComputeBaryCentricWeights : INode {
         auto& verts = zsvolume->getParticles();
         auto& eles = zsvolume->getQuadraturePoints();
 
-        const auto& everts = zssurf->getParticles();
+        auto& everts = zssurf->getParticles();
         // const auto& e_eles = zssurf->getQuadraturePoints();
 
         auto &bcw = (*zsvolume)[tag];
@@ -1193,7 +1193,12 @@ struct ZSComputeBaryCentricWeights : INode {
 
         TILEVEC_OPS::copy<3>(cudaExec,everts,"x",bcw,"X");
 
-        compute_barycentric_weights(cudaExec,verts,eles,everts,"x",bcw,"inds","w",thickness,fitting_in);
+        auto binding_success_tag = tag + std::string("_binding_success");
+        if(!everts.hasProperty(binding_success_tag))
+            everts.append_channels(cudaExec,{{binding_success_tag,1}});
+        TILEVEC_OPS::fill(cudaExec,everts,binding_success_tag,0);
+
+        compute_barycentric_weights(cudaExec,verts,eles,everts,"x",bcw,"inds","w",thickness,fitting_in,binding_success_tag,true);
 
         cudaExec(zs::range(numEmbedVerts),
             [bcw = proxy<space>({},bcw),fitting_in] ZS_LAMBDA(int vi) mutable {
@@ -1320,12 +1325,13 @@ struct ZSComputeBaryCentricWeights : INode {
         
         // we might also do some smoothing on cnorm
 
+        set_output("zssurf",zssurf);
         set_output("zsvolume", zsvolume);
     }
 };
 
 ZENDEFNODE(ZSComputeBaryCentricWeights, {{{"interpolator","zsvolume"}, {"embed surf", "zssurf"},{"int","mark_elm","0"},{"int","nmCpns","1"},{"string","tag","skin"}},
-                            {{"interpolator on gpu", "zsvolume"}},
+                            {{"interpolator on gpu", "zsvolume"},{"embed surf on gpu","zssurf"}},
                             {{"float","bvh_thickness","0"},{"int","fitting_in","1"},{"string","bvh_channel","x"}},
                             {"ZSGeometry"}});
 
