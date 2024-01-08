@@ -1169,7 +1169,7 @@ struct UpdatePrimitiveAttrFromZSParticles : INode {
         using namespace zs;
         // auto prim_idx = get_input<zeno::NumericObject>("index")->get<int>();
         int prim_idx = 0;
-        auto deviceAttrName = get_param<std::string>("attr");
+        auto deviceAttrName = get_input2<std::string>("attr");
         auto attrType = get_param<std::string>("type");
         auto location = get_param<std::string>("location");
         if (parobjPtrs.size() <= prim_idx)
@@ -1338,9 +1338,9 @@ struct UpdatePrimitiveAttrFromZSParticles : INode {
 
 ZENDEFNODE(UpdatePrimitiveAttrFromZSParticles,
            {
+               {"ZSParticles",{"string", "attr", "x"}},
                {"ZSParticles"},
-               {"ZSParticles"},
-               {{"string", "attr", "x"}, {"enum float vec3f", "type", "vec3f"}, {"enum vert quad", "location", "vert"}},
+               {{"enum float vec3f", "type", "vec3f"}, {"enum vert quad", "location", "vert"}},
                {"MPM"},
            });
 
