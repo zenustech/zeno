@@ -165,7 +165,7 @@ Graph_createNode(ZSubGraphObject* self, PyObject* arg, PyObject* kw)
         PyErr_WriteUnraisable(Py_None);
         return Py_None;
     }
-    if (PyDict_Check(kw))
+    if (kw && PyDict_Check(kw))
     {
         PyObject* key, * value;
         Py_ssize_t pos = 0;
