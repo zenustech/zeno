@@ -23,7 +23,7 @@ static __inline__ __device__ vec3 fresnelSchlick(vec3 r0, float radians)
 static __inline__ __device__ float fresnelSchlick(float r0, float radians)
 {
     //previous : mix(1.0, fresnel(radians), r0); //wrong
-    return mix(fresnel(radians), 1.0f, r0); //giving: (1 - r0) * pow(radians, 5) + r0, consistant with line 15
+    return mix(fresnel(radians), 1.0f, r0); //giving: (1 - r0) * pow(1 - radians, 5) + r0, consistant with line 15
 }
 static __inline__ __device__ float SchlickWeight(float u)
 {

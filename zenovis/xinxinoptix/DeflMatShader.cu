@@ -224,7 +224,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
             
             if(specTrans > 0.0f){
 
-                if(thin == 0.0f && ior>1.0f)
+                if(thin == 0.0f && ior>=1.0f)
                 {
                     prd->nonThinTransHit++;
                 }
@@ -235,8 +235,8 @@ extern "C" __global__ void __anyhit__shadow_cutout()
                     return;
                 }
 
-                float nDi = fabs(dot(N,ray_dir));
-                vec3 fakeTrans = vec3(1)-BRDFBasics::fresnelSchlick(vec3(1),nDi);
+                float nDi = fabs(dot(N,normalize(ray_dir)));
+                vec3 fakeTrans = vec3(1)-BRDFBasics::fresnelSchlick(vec3(1) - mats.transColor,nDi);
                 prd->attanuation = prd->attanuation * fakeTrans;
 
                 #if (_SPHERE_)
