@@ -1,24 +1,24 @@
-#include "volume.h"
+#include <nanovdb/NanoVDB.h>
+#include <nanovdb/util/Ray.h>
+#include <nanovdb/util/HDDA.h>
+#include <nanovdb/util/SampleFromVoxels.h>
 
+#include "volume.h"
 #include "TraceStuff.h"
 #include "zxxglslvec.h"
 #include "math_constants.h"
 
 // #include <cuda_fp16.h>
 // #include "nvfunctional"
-#include <nanovdb/NanoVDB.h>
-#include <nanovdb/util/Ray.h>
-#include <nanovdb/util/HDDA.h>
-#include <nanovdb/util/SampleFromVoxels.h>
 
-enum struct VolumeEmissionScalerType {
+enum struct VolumeEmissionScaleType {
     Raw, Density, Absorption
 };
 
 //PLACEHOLDER
 using DataTypeNVDB0 = nanovdb::Fp32;
 using GridTypeNVDB0 = nanovdb::NanoGrid<DataTypeNVDB0>;
-#define VolumeEmissionScaler VolumeEmissionScalerType::Raw
+#define VolumeEmissionScale VolumeEmissionScaleType::Raw
 //PLACEHOLDER
 
 #define _USING_NANOVDB_ true
@@ -253,37 +253,37 @@ extern "C" __device__ VolumeOut __direct_callable__evalmat(const float4* uniform
 #ifndef _FALLBACK_
 
     //GENERATED_BEGIN_MARK 
-    auto vol_sample_anisotropy = 0.0f;
-    auto vol_sample_density = 0.0f;
+    auto anisotropy = 0.0f;
+    auto density = 0.0f;
 
-    vec3 vol_sample_emission = vec3(0.0f);
-    vec3 vol_sample_albedo = vec3(0.5f);
+    vec3 emission = vec3(0.0f);
+    vec3 albedo = vec3(0.5f);
     //GENERATED_END_MARK
 #else
-	auto vol_sample_anisotropy = 0.0f;
-    auto vol_sample_density = 0.1f;
+	auto anisotropy = 0.0f;
+    auto density = 0.1f;
 
 	vec3 tmp = { 1, 0, 1 };
 
-    vec3 vol_sample_emission = tmp / 50.f;
-    vec3 vol_sample_albedo = tmp;
+    vec3 emission = tmp / 50.f;
+    vec3 albedo = tmp;
 #endif // _FALLBACK_
 
 VolumeOut output;
 
 #if _USING_NANOVDB_
 
-    output.albedo = clamp(vol_sample_albedo, 0.0f, 1.0f);
-    output.anisotropy = clamp(vol_sample_anisotropy, -1.0f, 1.0f);
+    output.albedo = clamp(albedo, 0.0f, 1.0f);
+    output.anisotropy = clamp(anisotropy, -1.0f, 1.0f);
 
-    output.density = fmaxf(vol_sample_density, 0.0f);
-    output.emission = fmaxf(vol_sample_emission, vec3(0.0f));
+    output.density = fmaxf(density, 0.0f);
+    output.emission = fmaxf(emission, vec3(0.0f));
 
-	if constexpr(VolumeEmissionScaler == VolumeEmissionScalerType::Raw) {
+	if constexpr(VolumeEmissionScale == VolumeEmissionScaleType::Raw) {
 		//output.emission = output.emission; 
-	} else if constexpr(VolumeEmissionScaler == VolumeEmissionScalerType::Density) {
+	} else if constexpr(VolumeEmissionScale == VolumeEmissionScaleType::Density) {
 		output.emission = output.density * output.emission;
-	} else if constexpr(VolumeEmissionScaler == VolumeEmissionScalerType::Absorption) {
+	} else if constexpr(VolumeEmissionScale == VolumeEmissionScaleType::Absorption) {
 
 		auto sigma_t = attrs.sigma_t;
 
