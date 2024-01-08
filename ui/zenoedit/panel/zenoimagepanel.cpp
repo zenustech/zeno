@@ -135,7 +135,7 @@ ZenoImagePanel::ZenoImagePanel(QWidget *parent) : QWidget(parent) {
     pTitleLayout->addWidget(pPrimName);
 
     pGamma->setStyleSheet("color: white;");
-    pGamma->setCheckState(Qt::Checked);
+    pGamma->setCheckState(Qt::Unchecked);
     pTitleLayout->addWidget(pGamma);
 
     pMode->addItem("RGB");

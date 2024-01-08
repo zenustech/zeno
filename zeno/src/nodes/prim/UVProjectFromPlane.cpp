@@ -454,6 +454,70 @@ ZENDEFNODE(ReadImageFile, {
         {"PrimitiveObject", "image"},
     },
     {},
+    {"deprecated"},
+});
+
+std::shared_ptr<PrimitiveObject> readImageFileRawData(std::string const &path) {
+    int w, h, n;
+    stbi_set_flip_vertically_on_load(true);
+    std::string native_path = std::filesystem::u8path(path).string();
+    uint8_t * data = stbi_load(native_path.c_str(), &w, &h, &n, 0);
+    if (!data) {
+        throw zeno::Exception("cannot open image file at path: " + native_path);
+    }
+    scope_exit delData = [=] { stbi_image_free(data); };
+    auto img = std::make_shared<PrimitiveObject>();
+    img->verts.resize(w * h);
+    if (n == 3) {
+        for (int i = 0; i < w * h; i++) {
+            img->verts[i] = {data[i*3+0] / 255.0f, data[i*3+1] / 255.0f, data[i*3+2] / 255.0f};
+        }
+    } else if (n == 4) {
+        auto &alpha = img->verts.add_attr<float>("alpha");
+        for (int i = 0; i < w * h; i++) {
+            img->verts[i] = {data[i*4+0] / 255.0f, data[i*4+1] / 255.0f, data[i*4+2] / 255.0f};
+            alpha[i] = data[i*4+3] / 255.0f;
+        }
+    } else if (n == 2) {
+        for (int i = 0; i < w * h; i++) {
+            img->verts[i] = {data[i*2+0] / 255.0f, data[i*2+1] / 255.0f, 0};
+        }
+    } else if (n == 1) {
+        for (int i = 0; i < w * h; i++) {
+            img->verts[i] = vec3f(data[i] / 255.0f);
+        }
+    } else {
+        throw zeno::Exception("too much number of channels");
+    }
+    img->userData().set2("isImage", 1);
+    img->userData().set2("w", w);
+    img->userData().set2("h", h);
+    return img;
+}
+
+struct ReadImageFile_v2 : INode {
+    virtual void apply() override {
+        auto path = get_input2<std::string>("path");
+        if (zeno::ends_with(path, ".exr", false)) {
+            set_output("image", readExrFile(path));
+        }
+        else if (zeno::ends_with(path, ".pfm", false)) {
+            set_output("image", readPFMFile(path));
+        }
+        else {
+            auto image = readImageFileRawData(path);
+            set_output("image", image);
+        }
+    }
+};
+ZENDEFNODE(ReadImageFile_v2, {
+    {
+        {"readpath", "path"},
+    },
+    {
+        {"PrimitiveObject", "image"},
+    },
+    {},
     {"comp"},
 });
 
@@ -609,6 +673,95 @@ ZENDEFNODE(WriteImageFile, {
         {"enum png jpg exr pfm", "type", "png"},
         {"mask"},
         {"bool", "gamma", "1"},
+    },
+    {
+        {"image"},
+    },
+    {},
+    {"deprecated"},
+});
+
+struct WriteImageFile_v2 : INode {
+    virtual void apply() override {
+        auto image = get_input<PrimitiveObject>("image");
+        auto path = get_input2<std::string>("path");
+        auto type = get_input2<std::string>("type");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+        int n = 4;
+        auto A = std::make_shared<PrimitiveObject>();
+        A->verts.resize(image->size());
+        A->verts.add_attr<float>("alpha", 1.0);
+        std::vector<float> &alpha = A->verts.attr<float>("alpha");
+        if(image->verts.has_attr("alpha")){
+            alpha = image->verts.attr<float>("alpha");
+        }
+        if(has_input("mask")) {
+            auto mask = get_input2<PrimitiveObject>("mask");
+            image->verts.add_attr<float>("alpha");
+            image->verts.attr<float>("alpha") = mask->verts.attr<float>("alpha");
+            alpha = mask->verts.attr<float>("alpha");
+        }
+        std::vector<char> data(w * h * n);
+        float gamma = 1;
+        for (int i = 0; i < w * h; i++) {
+            data[n * i + 0] = (char)(255 * image->verts[i][0]);
+            data[n * i + 1] = (char)(255 * image->verts[i][1]);
+            data[n * i + 2] = (char)(255 * image->verts[i][2]);
+            data[n * i + 3] = (char)(255 * alpha[i]);
+        }
+        if(type == "jpg"){
+            std::string native_path = std::filesystem::u8path(path).string();
+            stbi_flip_vertically_on_write(1);
+            stbi_write_jpg(native_path.c_str(), w, h, n, data.data(), 100);
+        }
+        else if(type == "png"){
+            std::string native_path = std::filesystem::u8path(path).string();
+            stbi_flip_vertically_on_write(1);
+            stbi_write_png(native_path.c_str(), w, h, n, data.data(),0);
+        }
+        else if(type == "exr"){
+            std::vector<float> data2(w * h * n);
+            for (int i = 0; i < w * h; i++) {
+                data2[n * i + 0] = image->verts[i][0];
+                data2[n * i + 1] = image->verts[i][1];
+                data2[n * i + 2] = image->verts[i][2];
+                data2[n * i + 3] = alpha[i];
+            }
+            for (auto i = 0; i < h / 2; i++) {
+                for (auto x = 0; x < w * 4; x++) {
+                    auto index1 = i * (w * 4) + x;
+                    auto index2 = (h - 1 - i) * (w * 4) + x;
+                    std::swap(data2[index1], data2[index2]);
+                }
+            }
+
+            const char* err;
+            std::string native_path = std::filesystem::u8path(path).string();
+            int ret = SaveEXR(data2.data(),w,h,n,0,native_path.c_str(),&err);
+
+            if (ret != TINYEXR_SUCCESS) {
+                zeno::log_error("Error saving EXR file: {}\n", err);
+                FreeEXRErrorMessage(err); // free memory allocated by the library
+                return;
+            }
+            else{
+                zeno::log_info("EXR file saved successfully.");
+            }
+        }
+        else if (type == "pfm") {
+            write_pfm(path, image);
+        }
+        set_output("image", image);
+    }
+};
+ZENDEFNODE(WriteImageFile_v2, {
+    {
+        {"image"},
+        {"writepath", "path"},
+        {"enum png jpg exr pfm", "type", "png"},
+        {"mask"},
     },
     {
         {"image"},
