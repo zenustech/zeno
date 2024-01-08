@@ -1,4 +1,4 @@
-#include "ParamsModel.h"
+#include "parammodel.h"
 
 
 ParamsModel::ParamsModel(NODE_DESCRIPTOR desc, QObject* parent)

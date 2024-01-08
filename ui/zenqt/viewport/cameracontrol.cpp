@@ -4,9 +4,12 @@
 //#include <zenovis/Camera.h>
 #include <zenovis/ObjectsManager.h>
 #include "zenomainwindow.h"
-#include "nodesview/zenographseditor.h"
+#include "nodeeditor/zenographseditor.h"
 #include <zeno/types/UserData.h>
 #include "settings/zenosettingsmanager.h"
+#include "viewport/transform.h"
+#include "viewport/picker.h"
+#include "util/log.h"
 
 
 using std::string;

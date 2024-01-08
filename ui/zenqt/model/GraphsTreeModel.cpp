@@ -1,6 +1,7 @@
-#include "GraphsTreeModel.h"
-#include "../common.h"
-#include "Descriptors.h"
+#include "graphstreemodel.h"
+#include "common.h"
+#include "descriptors.h"
+#include <zeno/core/common.h>
 
 
 GraphsTreeModel::GraphsTreeModel(GraphModel* mainModel, QObject* parent)

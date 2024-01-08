@@ -5,7 +5,7 @@
 #include <QAbstractItemModel>
 #include <QString>
 #include <QQuickItem>
-#include "GraphModel.h"
+#include "graphmodel.h"
 
 
 //为什么不base StandardModel，是因为StandardItem本身还得挂载一个模型，有点冗余，干脆自己实现一个图treemodel.
@@ -50,6 +50,13 @@ public:
     *  This method is not meant to be used in client code.
     */
     Q_INVOKABLE QModelIndex rootIndex();
+
+    //util methods
+    bool isDirty() const;
+    void clearDirty();
+
+signals:
+    void dirtyChanged();
 
 private:
     QModelIndex innerIndex(const QModelIndex& treeIdx) const;

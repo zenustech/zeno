@@ -1,4 +1,4 @@
-#include "Descriptors.h"
+#include "descriptors.h"
 #include <QQmlEngine>
 
 

@@ -4,7 +4,7 @@
 #include <QObject>
 #include <QStandardItemModel>
 #include <QQuickItem>
-#include "../common.h"
+#include "common.h"
 
 struct ParamItem
 {

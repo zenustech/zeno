@@ -6,7 +6,7 @@
 #include <QAbstractListModel>
 #include <QString>
 #include <QQuickItem>
-#include "ParamsModel.h"
+#include "parammodel.h"
 #include "LinkModel.h"
 
 class GraphModel;
@@ -31,7 +31,7 @@ public:
 class GraphModel : public QAbstractListModel
 {
     Q_OBJECT
-    typedef QAbstractItemModel _base;
+    typedef QAbstractListModel _base;
 
     //Q_PROPERTY(CONTROL_TYPE control READ getControl WRITE setControl NOTIFY control_changed)
 
@@ -45,6 +45,7 @@ public:
     Q_INVOKABLE void addLink(const QString& fromNodeStr, const QString& fromParamStr,
         const QString& toNodeStr, const QString& toParamStr);
     Q_INVOKABLE QVariant removeLink(const QString& nodeIdent, const QString& paramName, bool bInput);
+    Q_INVOKABLE QString name() const;
 
     //TEST API
     Q_INVOKABLE QString owner() const;

@@ -25,6 +25,11 @@ void GraphModel::addLink(const QString& fromNodeStr, const QString& fromParamStr
     addLink(qMakePair(fromNodeStr, fromParamStr), qMakePair(toNodeStr, toParamStr));
 }
 
+QString GraphModel::name() const
+{
+    return m_graphName;
+}
+
 QVariant GraphModel::removeLink(const QString& nodeIdent, const QString& paramName, bool bInput)
 {
     if (bInput)
