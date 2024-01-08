@@ -1047,6 +1047,10 @@ void ModelAcceptor::setOptions(const QString& id, const QStringList& options)
         {
             opts |= OPT_MUTE;
         }
+        else if (optName == "CACHE")
+        {
+            opts |= OPT_CACHE;
+        }
         else if (optName == "collapsed")
         {
             m_currentGraph->setData(idx, true, ROLE_COLLASPED);
