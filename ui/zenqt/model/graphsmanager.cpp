@@ -1,12 +1,11 @@
 #include "graphsmanager.h"
 #include "model/graphstreemodel.h"
 #include "model/assetsmodel.h"
-#include "common.h"
+#include "uicommon.h"
 #include <zenoio/reader/zsg2reader.h>
 #include <zeno/utils/log.h>
 #include <zeno/utils/scope_exit.h>
 #include "util/uihelper.h"
-#include "common_def.h"
 #include <zenoio/writer/zsgwriter.h>
 #include <zeno/core/Session.h>
 #include <zeno/types/UserData.h>

@@ -149,7 +149,7 @@ void ZenoApplication::initFonts()
 #endif
 }
 
-GraphsManager* ZenoApplication::graphsManagment() const
+GraphsManager* ZenoApplication::graphsManager() const
 {
     return &GraphsManager::instance();
 }
@@ -161,7 +161,7 @@ std::shared_ptr<ProcessClipboard> ZenoApplication::procClipboard() const
 
 QStandardItemModel* ZenoApplication::logModel() const
 {
-    return graphsManagment()->logModel();
+    return graphsManager()->logModel();
 }
 
 ZenoMainWindow* ZenoApplication::getMainWindow()

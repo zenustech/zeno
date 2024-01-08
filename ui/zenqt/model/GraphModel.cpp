@@ -76,28 +76,29 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
     NodeItem* item = m_nodes[m_row2id[index.row()]];
 
     switch (role) {
-    case Qt::DisplayRole:   return item->ident;
-    case ROLE_OBJID:    return item->ident;
-    case ROLE_OBJNAME:  return item->name;
-    case ROLE_OBJPOS:   return QVariantList({ item->pos.x(), item->pos.y() });
-    case ROLE_PARAMS:
-    {
-        return QVariant::fromValue(item->params);
-    }
-    case ROLE_SUBGRAPH:
-    {
-        if (item->pSubgraph)
-            return QVariant::fromValue(item->pSubgraph);
-        else
+        case Qt::DisplayRole:   return item->ident;
+        case ROLE_OBJID:    return item->ident;
+        case ROLE_OBJNAME:  return item->name;
+        case ROLE_OBJPOS:   return QVariantList({ item->pos.x(), item->pos.y() });
+        case ROLE_PARAMS:
+        {
+            return QVariant::fromValue(item->params);
+        }
+        case ROLE_SUBGRAPH:
+        {
+            if (item->pSubgraph)
+                return QVariant::fromValue(item->pSubgraph);
+            else
+                return QVariant();
+        }
+        case ROLE_INPUTS:
+        {
+            PARAMS_INFO inputs;
+            //todo
+            return QVariant::fromValue(inputs);
+        }
+        default:
             return QVariant();
-    case ROLE_INPUTS:
-    {
-        PARAMS_INFO inputs;
-        //todo
-        return QVariant::fromValue(inputs);
-    }
-    default:
-        return QVariant();
     }
 }
 

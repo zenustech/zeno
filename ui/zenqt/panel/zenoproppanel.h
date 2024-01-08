@@ -2,7 +2,7 @@
 #define __NODE_PROPERTIES_PANEL_H__
 
 #include <QtWidgets>
-#include <zenomodel/include/modeldata.h>
+#include "uicommon.h"
 #include <zenoui/comctrl/gv/callbackdef.h>
 
 class IGraphsModel;
@@ -21,14 +21,14 @@ class ZenoPropPanel : public QWidget
         QPersistentModelIndex m_viewIdx;    //compare when rename.
         _PANEL_CONTROL() : pControl(nullptr), pLabel(nullptr), pIcon(nullptr), controlLayout(nullptr) {}
     };
-    typedef FuckQMap<QString, _PANEL_CONTROL> PANEL_GROUP;
-    typedef FuckQMap<QString, PANEL_GROUP> PANEL_TAB;
-    typedef FuckQMap<QString, PANEL_TAB> PANEL_TABS;
+    typedef QKeyList<QString, _PANEL_CONTROL> PANEL_GROUP;
+    typedef QKeyList<QString, PANEL_GROUP> PANEL_TAB;
+    typedef QKeyList<QString, PANEL_TAB> PANEL_TABS;
 
 public:
     ZenoPropPanel(QWidget* parent = nullptr);
     ~ZenoPropPanel();
-    void reset(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
+    void reset(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
     virtual QSize sizeHint() const override;
     virtual QSize minimumSizeHint() const override;
     bool updateCustomName(const QString &value, QString &oldValue);

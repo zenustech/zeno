@@ -130,7 +130,7 @@ void ZenoPropPanel::clearLayout()
     update();
 }
 
-void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select)
+void ZenoPropPanel::reset(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select)
 {
     if (m_bReentry)
         return;
@@ -140,7 +140,7 @@ void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, cons
     clearLayout();
     QVBoxLayout *pMainLayout = qobject_cast<QVBoxLayout *>(this->layout());
 
-    if (!pModel || !select || nodes.size() != 1)
+    if (!select || nodes.size() != 1)
     {
         update();
         return;
@@ -171,12 +171,14 @@ void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, cons
             }
         }
     });
-    connect(pModel, &IGraphsModel::_rowsRemoved, this, [=]() {
-        clearLayout();
-    });
-    connect(pModel, &IGraphsModel::modelClear, this, [=]() {
-        clearLayout();
-    });
+
+    //TODO: get the notify when this node has been removed.
+    //connect(pModel, &IGraphsModel::_rowsRemoved, this, [=]() {
+    //    clearLayout();
+    //});
+    //connect(pModel, &IGraphsModel::modelClear, this, [=]() {
+    //    clearLayout();
+    //});
 
     QStandardItem* root = paramsModel->invisibleRootItem();
     if (!root) return;

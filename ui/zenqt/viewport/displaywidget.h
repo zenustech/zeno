@@ -65,7 +65,6 @@ protected:
 public slots:
     void updateFrame(const QString& action = "");
     void onRun();
-    void onRun(LAUNCH_PARAM launchParam);
     void onRecord();
     void onRecord_slient(const VideoRecInfo& recInfo);
     bool onRecord_cmd(const VideoRecInfo& recInfo);

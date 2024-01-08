@@ -1,6 +1,12 @@
 #ifndef __CALLBACK_DEF_H__
 #define __CALLBACK_DEF_H__
 
+#include <functional>
+#include <QString>
+#include <QVariant>
+#include <QModelIndex>
+#include <QAction>
+
 typedef std::function<void(QString, QString)> Callback_EditContentsChange;
 typedef std::function<void(QString)> Callback_OnClicked;
 

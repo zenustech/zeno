@@ -1,5 +1,6 @@
 #include "nodesync.h"
-#include <zenomodel/include/uihelper.h>
+#include "util/uihelper.h"
+#include "uicommon.h"
 
 
 namespace zeno {
@@ -107,13 +108,13 @@ std::optional<NodeLocation> NodeSyncMgr::checkNodeLinkedSpecificNode(const QMode
 std::vector<NodeLocation> NodeSyncMgr::getInputNodes(const QModelIndex& node,
                                                      const std::string& input_name) {
     std::vector<NodeLocation> res;
-    auto inputs = node.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+    auto inputs = node.data(ROLE_INPUTS).value<PARAMS_INFO>();
 
     QString sockName = QString::fromLocal8Bit(input_name.c_str());
     if (inputs.find(sockName) == inputs.end())
         return res;
 
-    for (const auto& input_edge : inputs[sockName].info.links) {
+    for (const auto& input_edge : inputs[sockName].links) {
         auto input_node_id = UiHelper::getSockNode(input_edge.outSockPath);
         auto searched_node = searchNode(input_node_id.toStdString());
         if (searched_node.has_value())

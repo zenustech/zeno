@@ -1,34 +1,36 @@
 #include "docktabcontent.h"
-#include <zenoui/style/zenostyle.h>
-#include <zenoui/comctrl/zicontoolbutton.h>
-#include <zenoui/comctrl/zlabel.h>
-#include <zenoui/style/zstyleoption.h>
-#include "../panel/zenodatapanel.h"
-#include "../panel/zenoproppanel.h"
-#include "../panel/zenospreadsheet.h"
-#include "../panel/zlogpanel.h"
-#include <zenoedit/panel/zenoimagepanel.h>
-#include "nodesview/zenographseditor.h"
-#include "nodesys/zenosubgraphview.h"
+#include "style/zenostyle.h"
+#include "widgets/ziconbutton.h"
+#include "widgets/zlabel.h"
+#include "style/zstyleoption.h"
+#include "panel/zenodatapanel.h"
+#include "panel/zenoproppanel.h"
+#include "panel/zenospreadsheet.h"
+#include "panel/zlogpanel.h"
+#include "panel/zenoimagepanel.h"
+#include "nodeeditor/gv/zenographseditor.h"
+#include "nodeeditor/gv/zenosubgraphview.h"
 #include "viewport/viewportwidget.h"
 #include "viewport/displaywidget.h"
 #include "zenoapplication.h"
-#include <zenomodel/include/graphsmanagment.h>
-#include <zenomodel/include/modelrole.h>
-#include <zenomodel/include/uihelper.h>
-#include <zenoui/comctrl/zlinewidget.h>
-#include <zenoui/comctrl/view/zcomboboxitemdelegate.h>
-#include <zenoui/comctrl/zwidgetfactory.h>
+#include "model/graphsmanager.h"
+#include "util/uihelper.h"
+#include "widgets/zlinewidget.h"
 #include <zeno/utils/envconfig.h>
 #include "zenomainwindow.h"
-#include "launch/corelaunch.h"
 #include "settings/zenosettingsmanager.h"
 #include "settings/zsettings.h"
-#include <zenoui/comctrl/zcombobox.h>
+#include "widgets/zcombobox.h"
+#include "widgets/ztoolmenubutton.h"
+#include "widgets/zlineedit.h"
+#include "widgets/zwidgetfactory.h"
 #include <zeno/core/Session.h>
 #include <zeno/types/UserData.h>
 #include <zenovis/ObjectsManager.h>
-#include <zenoui/comctrl/ztoolmenubutton.h>
+#include "nodeeditor/gv/callbackdef.h"
+#include "zassert.h"
+#include "viewport/zenovis.h"
+#include "layout/zdockwidget.h"
 
 
 ZToolBarButton::ZToolBarButton(bool bCheckable, const QString& icon, const QString& iconOn)
@@ -245,8 +247,8 @@ void DockContent_Parameter::onNodesSelected(const QModelIndex& subgIdx, const QM
 {
     if (ZenoPropPanel* prop = findChild<ZenoPropPanel*>())
     {
-        IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-        prop->reset(pModel, subgIdx, nodes, select);
+        auto pModel = zenoApp->graphsManager()->currentModel();
+        prop->reset(subgIdx, nodes, select);
 
         if (!nodes.isEmpty())
         {
@@ -262,6 +264,7 @@ void DockContent_Parameter::onNodesSelected(const QModelIndex& subgIdx, const QM
                         return;
                     m_pNameLineEdit->setText(idx.data(ROLE_CUSTOM_OBJNAME).toString());
                 });
+                //TODO: When Switch node, the connection should be cleared.
             }
 
             if (select) {
@@ -376,7 +379,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     };
     CallbackCollection cbSet;
     cbSet.cbEditFinished = funcZoomEdited;
-    cbZoom = qobject_cast<QComboBox*>(zenoui::createWidget("100%", CONTROL_ENUM, "string", cbSet, props));
+    cbZoom = qobject_cast<QComboBox*>(zenoui::createWidget("100%", zeno::Combobox, "string", cbSet, props));
     cbZoom->setProperty("focusBorder", "none");
     cbZoom->setEditable(false);
     cbZoom->setFixedSize(ZenoStyle::dpiScaled(60), ZenoStyle::dpiScaled(20));
@@ -425,7 +428,7 @@ QWidget* DockContent_Editor::initWidget()
 
 void DockContent_Editor::initConnections()
 {
-    auto pGraphsMgm = zenoApp->graphsManagment();
+    auto pGraphsMgm = zenoApp->graphsManager();
     connect(pListView, &ZToolBarButton::toggled, this, [=](bool isShow) 
     { 
         m_pEditor->onSubnetListPanel(isShow, ZenoGraphsEditor::Side_Subnet); 
@@ -481,8 +484,8 @@ void DockContent_Editor::initConnections()
         pMainWin->setAlways(false);
         pMainWin->setAlwaysLightCameraMaterial(false, false);
     };
-    connect(zenoApp->graphsManagment(), &GraphsManagment::fileOpened, this, resetAlways);
-    connect(zenoApp->graphsManagment(), &GraphsManagment::modelInited, this, resetAlways);
+    connect(zenoApp->graphsManager(), &GraphsManager::fileOpened, this, resetAlways);
+    connect(zenoApp->graphsManager(), &GraphsManager::modelInited, this, resetAlways);
     connect(pAlways, &QCheckBox::toggled, this, [=](bool checked) {
         if (checked)
         {
@@ -536,80 +539,19 @@ void DockContent_Editor::initConnections()
     });
 
     connect(m_btnRun, &ZToolMenuButton::clicked, this, [=]() {
-        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+        auto pGraphsModel = zenoApp->graphsManager()->currentModel();
         if (!pGraphsModel)
             return;
         m_btnRun->setVisible(false);
         m_btnKill->setVisible(true);
-        std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
-        ZASSERT_EXIT(mgr);
+
         ZenoMainWindow *pMainWin = zenoApp->getMainWindow();
         ZASSERT_EXIT(pMainWin);
-        std::function<void(bool, bool)> setOptixUpdateSeparately = [=](bool updateLightCameraOnly, bool updateMatlOnly) {
-            QVector<DisplayWidget *> views = pMainWin->viewports();
-            for (auto displayWid : views) {
-                if (!displayWid->isGLViewport()) {
-                    displayWid->setRenderSeparately(updateLightCameraOnly, updateMatlOnly);
-                }
-            }
-        };
-        if (m_btnRun->text() == tr("Run"))
-        {
-            setOptixUpdateSeparately(false, false);
-            mgr->setCacheOpt(ZCacheMgr::Opt_RunAll);
-            pMainWin->onRunTriggered();
-        }
-        else {
-            QSettings settings(zsCompanyName, zsEditor);
-            if (!settings.value("zencache-enable").toBool()) {
-                QMessageBox::warning(nullptr, tr("RunLightCamera"), tr("This function can only be used in cache mode."));
-            } else {
-                mgr->setCacheOpt(ZCacheMgr::Opt_RunLightCameraMaterial);
-                if (m_btnRun->text() == tr("RunLightCamera"))
-                {
-                    setOptixUpdateSeparately(true, false);
-                    pMainWin->onRunTriggered(true, false);
-                }
-                if (m_btnRun->text() == tr("RunMaterial"))
-                {
-                    setOptixUpdateSeparately(false, true);
-                    pMainWin->onRunTriggered(false, true);
-                }
-            }
-        }
+        //TODO: Run entrance
     });
 
-    connect(m_btnRun, &ZToolMenuButton::textChanged, this, [=]() {
-        if (pAlways->isChecked())
-            pAlways->setChecked(false);
-        QString text = m_btnRun->text();
-        QColor clr;
-        QColor hoverClr;
-        if (text == tr("Run"))
-        {
-            clr = QColor("#1978E6");
-            hoverClr = QColor("#599EED");
-            m_btnRun->setIcon(ZenoStyle::dpiScaledSize(QSize(16, 16)), ":/icons/run_all_btn.svg",
-                ":/icons/run_all_btn.svg", "", "");
-        }
-        else if (text == tr("RunLightCamera"))
-        {
-            clr = QColor("#E67B19");
-            hoverClr = QColor("#EDA059");
-            m_btnRun->setIcon(ZenoStyle::dpiScaledSize(QSize(16, 16)), ":/icons/run_lightcamera_btn.svg",
-                ":/icons/run_lightcamera_btn.svg", "", "");
-        }
-        else if (text == tr("RunMaterial"))
-        {
-            clr = QColor("#BD19E6");
-            hoverClr = QColor("#CF59ED");
-            m_btnRun->setIcon(ZenoStyle::dpiScaledSize(QSize(16, 16)), ":/icons/run_material_btn.svg",
-                ":/icons/run_material_btn.svg", "", "");
-        }
-        m_btnRun->setBackgroundClr(clr, hoverClr, clr, clr);
-    });
     connect(m_btnKill, &ZTextIconButton::clicked, this, [=]() {
-        killProgram();
+        //TODO: Kill
         m_btnRun->setVisible(true);
         m_btnKill->setVisible(false);
     });
@@ -644,7 +586,7 @@ void DockContent_Editor::initConnections()
         }
     });
 
-    connect(pGraphsMgm, &GraphsManagment::modelDataChanged, this, [=]() {
+    connect(pGraphsMgm, &GraphsManager::modelDataChanged, this, [=]() {
         if (pAlways->isChecked())
         {
             m_btnRun->setVisible(false);
@@ -869,7 +811,7 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
 
     CallbackCollection cbSet;
     cbSet.cbEditFinished = funcRender;
-    m_cbRes = qobject_cast<QComboBox*>(zenoui::createWidget("Free", CONTROL_ENUM, "string", cbSet, props));
+    m_cbRes = qobject_cast<QComboBox*>(zenoui::createWidget("Free", zeno::Combobox, "string", cbSet, props));
     m_cbRes->setProperty("focusBorder", "none");
     m_cbRes->setEditable(false);
     m_cbRes->view()->setFixedWidth(ZenoStyle::dpiScaled(110));

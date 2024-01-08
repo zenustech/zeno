@@ -15,7 +15,7 @@ class ZenoApplication : public QApplication
 public:
     ZenoApplication(int &argc, char **argv);
     ~ZenoApplication();
-    GraphsManager* graphsManagment() const;
+    GraphsManager* graphsManager() const;
     void initFonts();
     void initStyleSheets();
     ZenoMainWindow* getMainWindow();

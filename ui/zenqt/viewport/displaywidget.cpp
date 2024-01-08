@@ -22,7 +22,9 @@
 #include "zassert.h"
 #include <zenoio/writer/zsgwriter.h>
 #include "viewport/picker.h"
+#include "viewport/nodesync.h"
 #include "layout/winlayoutrw.h"
+#include "model/graphsmanager.h"
 
 
 using std::string;
@@ -544,28 +546,14 @@ void DisplayWidget::onSliderValueChanged(int frame)
     for (auto displayWid : mainWin->viewports())
         if (!displayWid->isGLViewport())
             displayWid->setRenderSeparately(false, false);
-    if (mainWin->isAlways() || mainWin->isAlwaysLightCamera() || mainWin->isAlwaysMaterial())
+    if (mainWin->isAlways())
     {
         auto pGraphsMgr = zenoApp->graphsManagment();
-        IGraphsModel *pModel = pGraphsMgr->currentModel();
+        auto pModel = pGraphsMgr->currentModel();
         if (!pModel)
             return;
-        std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
-        ZASSERT_EXIT(mgr);
-        ZCacheMgr::cacheOption oldCacheOpt = mgr->getCacheOption();
-        zeno::scope_exit sp([=] {mgr->setCacheOpt(oldCacheOpt); });     //restore old cache option
-        mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOn);
 
-        LAUNCH_PARAM launchParam;
-        launchParam.beginFrame = frame;
-        launchParam.endFrame = frame;
-        launchParam.projectFps = mainWin->timelineInfo().timelinefps;
-        if (mainWin->isAlwaysLightCamera() || mainWin->isAlwaysMaterial()) {
-            launchParam.applyLightAndCameraOnly = mainWin->isAlwaysLightCamera();
-            launchParam.applyMaterialOnly = mainWin->isAlwaysMaterial();
-        }
-        AppHelper::initLaunchCacheParam(launchParam);
-        launchProgram(pModel, launchParam);
+        //todo: launch by specific node.
     }
     else
     {
@@ -639,7 +627,7 @@ void DisplayWidget::afterRun()
     }
 }
 
-void DisplayWidget::onRun(LAUNCH_PARAM launchParam)
+void DisplayWidget::onRun()
 {
     ZenoMainWindow *mainWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(mainWin);
@@ -647,7 +635,7 @@ void DisplayWidget::onRun(LAUNCH_PARAM launchParam)
     auto pGraphsMgr = zenoApp->graphsManagment();
     ZASSERT_EXIT(pGraphsMgr);
 
-    IGraphsModel *pModel = pGraphsMgr->currentModel();
+    auto pModel = pGraphsMgr->currentModel();
     ZASSERT_EXIT(pModel);
 
     mainWin->clearErrorMark();
@@ -657,55 +645,7 @@ void DisplayWidget::onRun(LAUNCH_PARAM launchParam)
         m_glView->clearTransformer();
         m_glView->getSession()->get_scene()->selected.clear();
     }
-    launchProgram(pModel, launchParam);
-
-    if (m_glView)
-        m_glView->updateLightOnce = true;
-
-    Zenovis* pZenoVis = getZenoVis();
-    ZASSERT_EXIT(pZenoVis);
-    auto scene = pZenoVis->getSession()->get_scene();
-    scene->objectsMan->lightObjects.clear();
-    ZTimeline* timeline = mainWin->timeline();
-    ZASSERT_EXIT(timeline);
-}
-
-void DisplayWidget::onRun() {
-    ZenoMainWindow *mainWin = zenoApp->getMainWindow();
-    mainWin->clearErrorMark();
-
-    if (m_glView)
-    {
-        m_glView->clearTransformer();
-        m_glView->getSession()->get_scene()->selected.clear();
-    }
-
-    ZTimeline *timeline = mainWin->timeline();
-    ZASSERT_EXIT(timeline);
-    QPair<int, int> fromTo = timeline->fromTo();
-    int beginFrame = fromTo.first;
-    int endFrame = fromTo.second;
-    if (endFrame >= beginFrame && beginFrame >= 0) {
-        auto pGraphsMgr = zenoApp->graphsManagment();
-        IGraphsModel *pModel = pGraphsMgr->currentModel();
-        if (!pModel)
-            return;
-        LAUNCH_PARAM launchParam;
-        launchParam.beginFrame = beginFrame;
-        launchParam.endFrame = endFrame;
-        launchParam.projectFps = mainWin->timelineInfo().timelinefps;
-        AppHelper::initLaunchCacheParam(launchParam);
-        launchProgram(pModel, launchParam);
-    } else {
-    }
-
-    if (m_glView)
-        m_glView->updateLightOnce = true;
-
-    Zenovis* pZenoVis = getZenoVis();
-    ZASSERT_EXIT(pZenoVis);
-    auto scene = pZenoVis->getSession()->get_scene();
-    scene->objectsMan->lightObjects.clear();
+    //todo: launch by model.
 }
 
 void DisplayWidget::runAndRecord(const VideoRecInfo &recInfo) {
@@ -825,9 +765,6 @@ void DisplayWidget::onRecord()
         }
         //validation.
 
-        LAUNCH_PARAM launchParam;
-        AppHelper::initLaunchCacheParam(launchParam);
-
         ZRecFrameSelectDlg frameDlg(this);
         int ret = frameDlg.exec();
         if (QDialog::Rejected == ret) {
@@ -842,25 +779,12 @@ void DisplayWidget::onRecord()
             const bool bWorking = zeno::getSession().globalState->working;
             if (bWorking && bRunBeforeRecord)
             {
-                ZTcpServer* server = zenoApp->getServer();
-                ZASSERT_EXIT(server);
-                server->killProc();
+                //kill
             }
         };
 
-        const QString& cacheRootdir = launchParam.cacheDir;
-        QDir dirCacheRoot(cacheRootdir);
-        if (launchParam.enableCache && !QFileInfo(cacheRootdir).isDir() && !launchParam.tempDir)
-        {
-            QMessageBox::warning(nullptr, tr("ZenCache"), tr("The path of cache is invalid, please choose another path."));
-            return;
-        }
-
         if (bRunBeforeRecord)
         {
-            ZTcpServer* server = zenoApp->getServer();
-            ZASSERT_EXIT(server);
-            server->killProc();
             // recording by cmd process, to prevent cuda 700 error.
             // but it seems that the error vanish.
             /*
@@ -869,22 +793,6 @@ void DisplayWidget::onRecord()
                 bool ret = onRecord_cmd(recInfo);
                 return;
             }*/
-
-            //clear cached objs.
-            zeno::getSession().globalComm->clearState();
-            launchParam.beginFrame = recInfo.frameRange.first;
-            launchParam.endFrame = recInfo.frameRange.second;
-            launchParam.autoRmCurcache = recInfo.bAutoRemoveCache && launchParam.enableCache;
-            auto main = zenoApp->getMainWindow();
-            ZASSERT_EXIT(main);
-            launchParam.projectFps = main->timelineInfo().timelinefps;
-            launchParam.zsgPath = zenoApp->graphsManagment()->zsgDir();
-
-            std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
-            ZASSERT_EXIT(mgr);
-            ZCacheMgr::cacheOption oldCacheOpt = mgr->getCacheOption();
-            zeno::scope_exit sp([=] {mgr->setCacheOpt(oldCacheOpt);});  //restore old cache option
-            mgr->setCacheOpt(ZCacheMgr::Opt_RunAll);
 
 #ifdef ZENO_OPTIX_PROC
             if (!m_bGLView)
@@ -895,10 +803,10 @@ void DisplayWidget::onRecord()
                 mainWin->optixClientSend(info);
             }
             else {
-                onRun(launchParam);
+                onRun();
             }
 #else
-            onRun(launchParam);
+            onRun();
 #endif
         }
 
@@ -1011,7 +919,7 @@ bool DisplayWidget::onRecord_cmd(const VideoRecInfo& recInfo)
     auto pGraphsMgr = zenoApp->graphsManagment();
     ZASSERT_EXIT(pGraphsMgr, false);
 
-    IGraphsModel* pGraphs = pGraphsMgr->currentModel();
+    auto pGraphs = pGraphsMgr->currentModel();
     if (!pGraphs) {
         QMessageBox::warning(nullptr,
             tr("Recording Failed"),
@@ -1178,7 +1086,7 @@ void DisplayWidget::moveToFrame(int frame) {
 }
 
 void DisplayWidget::onKill() {
-    killProgram();
+    //todo: kill
 }
 
 void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndexList &nodes, bool select) {
