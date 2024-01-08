@@ -12,8 +12,8 @@ namespace zeno {
     struct HeatmapObject : zeno::IObject {
         std::vector<zeno::vec3f> colors;
         zeno::vec3f interp(float x) const {
-            if(colors.empty()) return zeno::vec3f(0, 0, 0);
-            if(x == 1) return colors[colors.size() - 1];
+            if(x <= 0) return colors[0];
+            if(x >= 1) return colors[colors.size() - 1];
             x = zeno::clamp(x, 0, 1) * (colors.size()-1);
             int i = (int) zeno::floor(x);
             float f = x - i;
