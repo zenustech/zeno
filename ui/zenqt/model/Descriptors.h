@@ -1,7 +1,7 @@
 #ifndef __DESCRIPTORS_H__
 #define __DESCRIPTORS_H__
 
-#include "../common.h"
+#include "uicommon.h"
 
 class Descriptors : public QObject
 {

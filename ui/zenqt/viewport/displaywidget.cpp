@@ -7,19 +7,22 @@
 #include <zenovis/Camera.h>
 #include <zeno/extra/GlobalComm.h>
 #include <zeno/extra/GlobalState.h>
+#include <zeno/utils/log.h>
 #include <zeno/types/CameraObject.h>
-#include <zenomodel/include/uihelper.h>
+#include "util/uihelper.h"
 #include "zenomainwindow.h"
 #include "camerakeyframe.h"
-#include <zenoui/style/zenostyle.h>
+#include "style/zenostyle.h"
 #include <zeno/core/Session.h>
-#include "timeline/ztimeline.h"
+#include "widgets/ztimeline.h"
 #include "dialog/zrecorddlg.h"
 #include "dialog/zrecprogressdlg.h"
 #include "dialog/zrecframeselectdlg.h"
 #include "util/apphelper.h"
-#include "launch/ztcpserver.h"
+#include "zassert.h"
 #include <zenoio/writer/zsgwriter.h>
+#include "viewport/picker.h"
+#include "layout/winlayoutrw.h"
 
 
 using std::string;
@@ -81,7 +84,9 @@ void DisplayWidget::initRecordMgr()
 {
     m_recordMgr.setParent(this);
     connect(&m_recordMgr, &RecordVideoMgr::frameFinished, this,
-            [=](int frameid) { zeno::log_info("frame {} has been recorded", frameid); });
+            [=](int frameid) { 
+        zeno::log_info("frame {} has been recorded", frameid);
+    });
 }
 
 void DisplayWidget::testCleanUp()

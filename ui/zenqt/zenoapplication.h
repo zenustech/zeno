@@ -6,7 +6,7 @@
 #include "util/procclipboard.h"
 #include <zeno/utils/scope_exit.h>
 
-class GraphsManagment;
+class GraphsManager;
 class ZenoMainWindow;
 
 class ZenoApplication : public QApplication
@@ -15,7 +15,7 @@ class ZenoApplication : public QApplication
 public:
     ZenoApplication(int &argc, char **argv);
     ~ZenoApplication();
-    GraphsManagment *graphsManagment() const;
+    GraphsManager* graphsManagment() const;
     void initFonts();
     void initStyleSheets();
     ZenoMainWindow* getMainWindow();

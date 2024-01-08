@@ -1,8 +1,10 @@
 #ifndef __CURVE_UTIL_H__
 #define __CURVE_UTIL_H__
 
-#include "common.h"
-#include "model/curvemodel.h"
+#include "uicommon.h"
+#include <QGraphicsItem>
+
+class CurveModel;
 
 namespace curve_util
 {

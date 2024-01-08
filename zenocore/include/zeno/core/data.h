@@ -65,8 +65,6 @@ namespace zeno {
         bool bAssetsNode = false;
     };
 
-
-
     struct NodeDesc {
         std::string name;
         std::vector<ParamInfo> inputs;

@@ -1,4 +1,5 @@
 #include "curvemodel.h"
+#include <QVector2D>
 #include <zeno/utils/pybjson.h>
 #include <zeno/utils/log.h>
 

@@ -4,14 +4,14 @@
 #include <QObject>
 #include <QStandardItemModel>
 #include <QQuickItem>
-#include "common.h"
+#include "uicommon.h"
 
 struct ParamItem
 {
     bool bInput = true;
     QString name;
     QString type;
-    ParamControl::Value control = ParamControl::None;
+    zeno::ParamControl control = zeno::NullControl;
     QList<QPersistentModelIndex> links;
 };
 

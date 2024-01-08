@@ -1,6 +1,6 @@
 #include <zenoio/reader/zsg2reader.h>
 #include "zenoapplication.h"
-#include <zenomodel/include/graphsmanagment.h>
+#include "model/graphsmanager.h"
 #include "zenomainwindow.h"
 #include <zeno/utils/log.h>
 #include "util/log.h"
@@ -50,7 +50,7 @@ void ZenoApplication::onOptixlogReady(const QString& msg)
         QMessageLogger logger("zeno", 0, 0);
         QChar tip = msg.at(1);
 
-        auto& mgr = GraphsManagment::instance();
+        auto& mgr = GraphsManager::instance();
         if (tip == 'T') {
             mgr.appendLog(QtDebugMsg, "zeno", 0, msg);
         }
@@ -149,9 +149,9 @@ void ZenoApplication::initFonts()
 #endif
 }
 
-GraphsManagment *ZenoApplication::graphsManagment() const
+GraphsManager* ZenoApplication::graphsManagment() const
 {
-    return &GraphsManagment::instance();
+    return &GraphsManager::instance();
 }
 
 std::shared_ptr<ProcessClipboard> ZenoApplication::procClipboard() const

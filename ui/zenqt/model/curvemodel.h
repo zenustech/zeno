@@ -2,7 +2,7 @@
 #define __CURVE_MODEL_H__
 
 #include <QStandardItemModel>
-#include "common.h"
+#include "uicommon.h"
 
 enum CURVE_ROLE
 {

@@ -1,4 +1,5 @@
 #include "curveutil.h"
+#include "model/curvemodel.h"
 
 namespace curve_util
 {

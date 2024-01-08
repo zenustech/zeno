@@ -4,7 +4,7 @@
 //#include <zenovis/Camera.h>
 #include <zenovis/ObjectsManager.h>
 #include "zenomainwindow.h"
-#include "nodeeditor/zenographseditor.h"
+#include "nodeeditor/gv/zenographseditor.h"
 #include <zeno/types/UserData.h>
 #include "settings/zenosettingsmanager.h"
 #include "viewport/transform.h"
@@ -431,6 +431,10 @@ void CameraControl::fakeMouseDoubleClickEvent(QMouseEvent *event)
             }
         }
 
+        //TODO: the base tree model is GraphsTreeModel, not plain models any more
+        //NEED TO UPDATE THIS.
+
+        /*
         QString subgraph_name;
         QString obj_node_name;
         int type = ZenoSettingsManager::GetInstance().getValue(zsSubgraphType).toInt();
@@ -459,6 +463,7 @@ void CameraControl::fakeMouseDoubleClickEvent(QMouseEvent *event)
             if (pEditor)
                 pEditor->activateTab(subgraph_name, "", obj_node_name);
         }
+        */
     }
 }
 //void CameraControl::fakeMouseDoubleClickEvent(QMouseEvent* event) {

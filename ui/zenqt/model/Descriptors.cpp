@@ -34,17 +34,17 @@ void Descriptors::initDescs()
     m_descs.insert("CreateCube", 
         { "CreateCube", 
         {
-            {"position", "vec3f", ParamControl::Vec3edit},
-            {"scaleSize", "vec3f", ParamControl::Vec3edit},
-            {"rotate", "vec3f", ParamControl::Vec3edit},
-            {"hasNormal", "bool", ParamControl::Checkbox},
-            {"hasVertUV", "bool", ParamControl::Checkbox},
-            {"isFlipFace", "bool", ParamControl::Checkbox},
-            {"div_w", "int", ParamControl::Lineddit},
-            {"div_h", "int", ParamControl::Lineddit},
-            {"div_d", "int", ParamControl::Lineddit},
-            {"size", "int", ParamControl::Lineddit},
-            {"quads", "bool", ParamControl::Checkbox},
+            {"position", "vec3f", zeno::Vec3edit},
+            {"scaleSize", "vec3f", zeno::Vec3edit},
+            {"rotate", "vec3f", zeno::Vec3edit},
+            {"hasNormal", "bool", zeno::Checkbox},
+            {"hasVertUV", "bool", zeno::Checkbox},
+            {"isFlipFace", "bool", zeno::Checkbox},
+            {"div_w", "int", zeno::Lineedit},
+            {"div_h", "int", zeno::Lineedit},
+            {"div_d", "int", zeno::Lineedit},
+            {"size", "int", zeno::Lineedit},
+            {"quads", "bool", zeno::Checkbox},
             {"SRC", ""},
         },
         {{"prim", "prim"},
@@ -55,7 +55,7 @@ void Descriptors::initDescs()
         { "ParticlesWrangle",
         {
             {"prim", "prim"},
-            {"zfxCode", "string", ParamControl::Multiline},
+            {"zfxCode", "string", zeno::Multiline},
             {"params", "dict"},
             {"SRC", ""}
         },
@@ -70,8 +70,8 @@ void Descriptors::initDescs()
         { "SubInput",
             {
                 {"defl", ""},
-                {"name", "string", ParamControl::Lineddit},
-                {"type", "string", ParamControl::Lineddit},
+                {"name", "string", zeno::Lineedit},
+                {"type", "string", zeno::Lineedit},
                 {"SRC", ""}
             },
             {
@@ -87,8 +87,8 @@ void Descriptors::initDescs()
             "SubOutput",
             {
                 {"defl", ""},
-                {"name", "string", ParamControl::Lineddit},
-                {"type", "string", ParamControl::Lineddit},
+                {"name", "string", zeno::Lineedit},
+                {"type", "string", zeno::Lineedit},
                 {"port", ""},
                 {"SRC", ""}
             },
@@ -102,7 +102,7 @@ void Descriptors::initDescs()
         {
             "NumericInt",
             {
-                {"value", "int", ParamControl::Lineddit},
+                {"value", "int", zeno::Lineedit},
                 {"SRC", ""}
             },
             {
@@ -116,9 +116,9 @@ void Descriptors::initDescs()
         {
             "NumericOperator",
             {
-                {"op_type", "string", ParamControl::Lineddit},
-                {"lhs", "int", ParamControl::Lineddit},
-                {"rhs", "int", ParamControl::Lineddit},
+                {"op_type", "string", zeno::Lineedit},
+                {"lhs", "int", zeno::Lineedit},
+                {"rhs", "int", zeno::Lineedit},
                 {"SRC", ""}
             },
             {

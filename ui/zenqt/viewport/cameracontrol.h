@@ -3,8 +3,8 @@
 
 //#include <QtOpenGL>
 #include <QtWidgets>
-#include <viewportinteraction/picker.h>
-#include <viewportinteraction/transform.h>
+#include "viewport/picker.h"
+#include "viewport/transform.h"
 
 class Zenovis;
 

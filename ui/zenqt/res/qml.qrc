@@ -1,27 +1,21 @@
 <RCC>
     <qresource prefix="/">
-        <file>../qml/main.qml</file>
-        <file>../qml/rect.qml</file>
-        <file>../qml/layoutexample.qml</file>
-        <file>../qml/layout.qml</file>
-        <file>../qml/MessageLabel.qml</file>
-        <file>../qml/sidepanel.qml</file>
-        <file>../qml/ZParam.qml</file>
-        <file>../qml/ZParam2.qml</file>
-        <file>../qml/ZNode.qml</file>
-        <file>../qml/Edge.qml</file>
-        <file>../qml/testParam.qml</file>
-        <file>../qml/CustomBorder.qml</file>
-        <file>../qml/StatusBtn.qml</file>
-        <file>../qml/StatusImgBtn.qml</file>
-        <file>../qml/StatusBtnGroup.qml</file>
-        <file>../qml/StatusBtnSeperator.qml</file>
-        <file>../qml/Graph.qml</file>
-        <file>../qml/Socket.qml</file>
-        <file>../qml/SocketName.qml</file>
-        <file>../qml/testGraphEditor.qml</file>
-        <file>../qml/FillSpacer.qml</file>
-        <file>../qml/FixSpacer.qml</file>
+        <file>../qml/temp/sidepanel.qml</file>
+        <file>../qml/nodeeditor/qml/ZParam.qml</file>
+        <file>../qml/nodeeditor/qml/ZNode.qml</file>
+        <file>../qml/nodeeditor/qml/Edge.qml</file>
+        <file>../qml/nodeeditor/qml/testParam.qml</file>
+        <file>../qml/nodeeditor/qml/CustomBorder.qml</file>
+        <file>../qml/nodeeditor/qml/StatusBtn.qml</file>
+        <file>../qml/nodeeditor/qml/StatusImgBtn.qml</file>
+        <file>../qml/nodeeditor/qml/StatusBtnGroup.qml</file>
+        <file>../qml/nodeeditor/qml/StatusBtnSeperator.qml</file>
+        <file>../qml/nodeeditor/qml/Graph.qml</file>
+        <file>../qml/nodeeditor/qml/Socket.qml</file>
+        <file>../qml/nodeeditor/qml/SocketName.qml</file>
+        <file>../qml/nodeeditor/qml/testGraphEditor.qml</file>
+        <file>../qml/nodeeditor/qml/FillSpacer.qml</file>
+        <file>../qml/nodeeditor/qml/FixSpacer.qml</file>
         <file>../qml/controls/ZButton.qml</file>
         <file>../qml/controls/ZCheckBox.qml</file>
         <file>../qml/controls/ZColorBtn.qml</file>
@@ -38,12 +32,11 @@
         <file>images/qt-logo@2x.png</file>
         <file>images/qt-logo@3x.png</file>
         <file>images/qt-logo@4x.png</file>
-        <file>../qml/navigable.qml</file>
-        <file>../qml/grid.qml</file>
-        <file>../qml/image.qml</file>
-        <file>../qml/LineGrid.qml</file>
-        <file>../qml/colleapse.qml</file>
-        <file>../qml/main2.qml</file>
+        <file>../qml/QuickQanava_backup/navigable.qml</file>
+        <file>../qml/QuickQanava_backup/grid.qml</file>
+        <file>../qml/QuickQanava_backup/image.qml</file>
+        <file>../qml/QuickQanava_backup/LineGrid.qml</file>
+        <file>../qml/temp/colleapse.qml</file>
         <file>../qml/container/TabView/Main.qml</file>
         <file>../qml/container/TabView/TabView_.qml</file>
         <file>../qml/container/TabView/TabViewController.qml</file>

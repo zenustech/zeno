@@ -1,5 +1,5 @@
 #include "GraphModel.h"
-#include "../common.h"
+#include "uicommon.h"
 #include "Descriptors.h"
 
 
@@ -90,6 +90,11 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
             return QVariant::fromValue(item->pSubgraph);
         else
             return QVariant();
+    case ROLE_INPUTS:
+    {
+        PARAMS_INFO inputs;
+        //todo
+        return QVariant::fromValue(inputs);
     }
     default:
         return QVariant();
@@ -113,8 +118,11 @@ bool GraphModel::setData(const QModelIndex& index, const QVariant& value, int ro
             emit dataChanged(index, index, QVector<int>{role});
             return true;
         }
-    }
+        case ROLE_INPUTS:
+        {
 
+        }
+    }
     return false;
 }
 
