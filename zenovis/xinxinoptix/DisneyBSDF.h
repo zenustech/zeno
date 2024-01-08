@@ -435,11 +435,13 @@ namespace DisneyBSDF{
                                             tmpPdf) * glassWt;
               sterm = sterm + s;
               f = f + s;
-              fPdf += tmpPdf * glassPr * F;
+              fPdf += tmpPdf * glassPr;
             } else {
               if(thin)
               {
-                vec3 t = sqrt(mix(mat.transColor, mat.diffractColor, mat.diffraction)) * glassWt;
+                float nDi = fabs(wo.z);
+                vec3 fakeTrans = vec3(1)-BRDFBasics::fresnelSchlick(vec3(1) - mat.transColor,nDi);
+                vec3 t = sqrt(mix(mat.transColor, mat.diffractColor, mat.diffraction)) * fakeTrans * glassWt;
                 tterm = tterm + t;
                 f = f + t;
                 fPdf += 1.0f * glassPr;
@@ -456,7 +458,7 @@ namespace DisneyBSDF{
                 vec3 t = brdf * glassWt;
                 tterm = tterm + t;
                 f = f + t;
-                fPdf += tmpPdf * glassPr * (1.0 - F);
+                fPdf += tmpPdf * glassPr;
 
               }
             }

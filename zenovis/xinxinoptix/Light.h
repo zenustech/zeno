@@ -404,7 +404,7 @@ void DirectLighting(RadiancePRD *prd, ShadowPRD& shadowPRD, const float3& shadin
             lsr.intensity *= powf(lsr.dist, 2.0f-light.falloffExponent);
         }
 
-        if (lsr.NoL > _FLT_EPL_ && lsr.PDF > _FLT_EPL_) {
+        if (lsr.NoL > _FLT_EPL_ && lsr.PDF > 1e-2) {
 
             shadowPRD.lightIdx = lighIdx;
             shadowPRD.maxDistance = lsr.dist;
@@ -425,14 +425,14 @@ void DirectLighting(RadiancePRD *prd, ShadowPRD& shadowPRD, const float3& shadin
             }
 
                 float3 radianceNoShadow = emission * bxdf_value;
-                radianceNoShadow *= misWeight / lsr.PDF;
+                radianceNoShadow *= misWeight / (lsr.PDF + 1e-4);
 
                 if (nullptr != RadianceWithoutShadow) {
                     *RadianceWithoutShadow = radianceNoShadow;
                 }
 
                 if constexpr (!detail::is_void<TypeAux>::value) {
-                    auto tmp = light_attenuation * misWeight / lsr.PDF;
+                    auto tmp = light_attenuation * misWeight / (lsr.PDF + 1e-4);
                     (*taskAux)(emission * tmp);
                 }// TypeAux
 
