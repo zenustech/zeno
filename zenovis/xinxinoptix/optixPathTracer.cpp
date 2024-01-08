@@ -1803,7 +1803,7 @@ void optixinit( int argc, char* argv[] )
     auto cur_path = std::string(_pgmptr);
     cur_path = cur_path.substr(0, cur_path.find_last_of("\\"));
 #endif
-    OptixUtil::sky_tex = cur_path + "/hdr/studio_small_08_1k.hdr";
+    OptixUtil::sky_tex = cur_path + "/hdr/Panorama.hdr";
     OptixUtil::addTexture(OptixUtil::sky_tex.value());
     xinxinoptix::update_hdr_sky(0, {0, 0, 0}, 0.8);
 }
