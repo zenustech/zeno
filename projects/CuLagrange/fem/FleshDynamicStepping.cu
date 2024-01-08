@@ -599,6 +599,7 @@ struct FleshDynamicStepping : INode {
                             eles = proxy<space>({},eles),
                             etemp = proxy<space>({},etemp),
                             vtemp = proxy<space>({},vtemp),
+                            kd_alpha = kd_alpha,
                             gh_buffer = proxy<space>({},gh_buffer),
                             dt = dt,offset = offset] ZS_LAMBDA(int ei) mutable {
                     auto m = eles("m",ei)/(T)4.0;
@@ -621,10 +622,11 @@ struct FleshDynamicStepping : INode {
                     for(int i = 0;i != 4;++i){
                         auto x1 = vtemp.pack(dim_c<3>,"xn",inds[i]);
                         auto x0 = vtemp.pack(dim_c<3>,"xp",inds[i]);
+                        auto v1 = (x1 - x0) / dt;
                         auto v0 = vtemp.pack(dim_c<3>,"vp",inds[i]);
 
                         auto alpha = (inertia * m / dt2) * A;
-                        auto nodal_pgrad = -alpha * (x1 - x0 - v0 * dt);
+                        auto nodal_pgrad = -alpha * (x1 - x0 - v0 * dt + v1 * dt * kd_alpha);
 
                         if(isnan(nodal_pgrad.norm())) {
                             printf("nan nodal pgrad detected : %f %f %f %f\n",(float)alpha.norm(),(float)x1.norm(),(float)x0.norm(),(float)v0.norm());
@@ -637,7 +639,7 @@ struct FleshDynamicStepping : INode {
                         }
                         for(int d = 0;d != 9;++d){
                             auto idx = (i * 3 + (d / 3)) * 12 + (i * 3 + d % 3);
-                            gh_buffer("H",idx,ei + offset) = alpha(d / 3,d % 3);
+                            gh_buffer("H",idx,ei + offset) = alpha(d / 3,d % 3) * ((float)1.0 + kd_alpha);
                         }
                         
                     }
@@ -656,6 +658,7 @@ struct FleshDynamicStepping : INode {
                             gh_buffer = proxy<space>({},gh_buffer),
                             eles = proxy<space>({}, eles),
                             kd_alpha = kd_alpha,kd_beta = kd_beta,
+                            // dt = dt,
                             model = model,amodel = amodel, volf = volf,offset = offset] ZS_LAMBDA (int ei) mutable {
                 auto DmInv = eles.pack(dim_c<3,3>,"IB",ei);
                 auto dFdX = dFdXMatrix(DmInv);
@@ -665,6 +668,14 @@ struct FleshDynamicStepping : INode {
                                 vtemp.pack(dim_c<3>,"xn", inds[2]),
                                 vtemp.pack(dim_c<3>,"xn", inds[3])};
 
+                vec3 x0[4] = {vtemp.pack(dim_c<3>,"xp", inds[0]),
+                                vtemp.pack(dim_c<3>,"xp", inds[1]),
+                                vtemp.pack(dim_c<3>,"xp", inds[2]),
+                                vtemp.pack(dim_c<3>,"xp", inds[3])};
+
+                vec3 v[4] = {};
+                for(int i = 0;i != 4;++i)
+                    v[i] = (x1[i] - x0[i]) / dt;
 
                 mat3 FAct{};
                 mat3 F{};
@@ -724,7 +735,7 @@ struct FleshDynamicStepping : INode {
                         auto aP = amodel.do_first_piola(FAct,fiber);
                         auto vecAP = flatten(aP);
                         vecAP = dFActdF.transpose() * vecAP;
-                        vf -= vole  * dFdXT * vecAP *aniso_strength;
+                        vf -= vole  * dFdXT * vecAP * aniso_strength;
 
                         auto aHq = amodel.do_first_piola_derivative(FAct,fiber);
                         // make_pd(aHq);
@@ -744,9 +755,16 @@ struct FleshDynamicStepping : INode {
                 //     printf("nan nodal vf detected : %f %f %f %f\n",(float)vecP.norm(),(float)volf.norm(),(float)P.norm(),(float)FAct.norm());
                 // }
 
-                gh_buffer.tuple(dim_c<12>,"grad",ei + offset) = gh_buffer.pack(dim_c<12>,"grad",ei + offset) + vf/* - rdamping*/; 
+                zs::vec<T,12> rdamping{};
+                for(int i = 0;i != 4;++i) {
+                    for(int d = 0;d != 3;++d)
+                        rdamping[i * 3 + d] = v[i][d];
+                }
+                rdamping = -kd_beta * H * rdamping;
+
+                gh_buffer.tuple(dim_c<12>,"grad",ei + offset) = gh_buffer.pack(dim_c<12>,"grad",ei + offset) + vf + rdamping; 
                 // gh_buffer.tuple(dim_c<12>,"grad",ei + offset) = gh_buffer.pack(dim_c<12>,"grad",ei + offset) - rdamping; 
-                // H += kd_beta*H/dt;
+                H += kd_beta * H / dt;
 
                 if(isnan(H.norm())) {
                     printf("nan elastic hessian detected[%d] with Hq = %f\n",ei,(float)Hq.norm());
