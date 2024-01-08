@@ -24,9 +24,9 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     auto att_instTang = attrs.instTang;
     auto att_rayLength = attrs.rayLength;
 
-    vec3 b = normalize(cross(attrs.tang, attrs.nrm));
-    vec3 t = normalize(cross(attrs.nrm, b));
-    vec3 n = normalize(attrs.nrm);
+    vec3 b = normalize(cross(attrs.T, attrs.N));
+    vec3 t = normalize(cross(attrs.N, b));
+    vec3 n = normalize(attrs.N);
 
     auto att_N        = vec3(0.0f,0.0f,1.0f);
     auto att_T        = vec3(1.0f,0.0f,0.0f);

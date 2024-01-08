@@ -393,19 +393,18 @@ extern "C" __global__ void __closesthit__radiance()
     float3 n2 = normalize( decodeNormal(rt_data->nrm[ vert_idx_offset+2 ]) );
     n2 = n2;
 
-    N_Local = normalize(interp(barys, n0, n1, n2));
-    N_World = optixTransformNormalFromObjectToWorldSpace(N_Local);
+    auto N_smooth = normalize(interp(barys, n0, n1, n2));
+    attrs.N = optixTransformNormalFromObjectToWorldSpace(N_smooth);
 
-    N = N_World;
+
 #endif
 
     attrs.pos = attrs.pos + vec3(params.cam.eye);
     if(! (length(attrs.tang)>0.0f) )
     {
-      Onb a(N);
-      attrs.tang = a.m_tangent;
+      Onb a(attrs.N);
+      attrs.T = a.m_tangent;
     }
-    attrs.nrm = N;
     attrs.V = -normalize(ray_dir);
     //MatOutput mats = evalMaterial(rt_data->textures, rt_data->uniforms, attrs);
     MatOutput mats = optixDirectCall<MatOutput, cudaTextureObject_t[], float4*, const MatInput&>( rt_data->dc_index, rt_data->textures, rt_data->uniforms, attrs );
@@ -419,7 +418,19 @@ extern "C" __global__ void __closesthit__radiance()
     }
 
 #else
+    n0 = normalize( decodeNormal(rt_data->nrm[ vert_idx_offset+0 ]) );
+    n0 = dot(n0, N_Local)>(1-mats.smoothness)?n0:N_Local;
 
+    n1 = normalize( decodeNormal(rt_data->nrm[ vert_idx_offset+1 ]) );
+    n1 = dot(n1, N_Local)>(1-mats.smoothness)?n1:N_Local;
+
+    n2 = normalize( decodeNormal(rt_data->nrm[ vert_idx_offset+2 ]) );
+    n2 = dot(n2, N_Local)>(1-mats.smoothness)?n2:N_Local;
+
+    N_Local = normalize(interp(barys, n0, n1, n2));
+    N_World = optixTransformNormalFromObjectToWorldSpace(N_Local);
+
+    N = N_World;
 
 
 
