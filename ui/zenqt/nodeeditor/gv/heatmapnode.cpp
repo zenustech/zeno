@@ -1,10 +1,10 @@
 #include "heatmapnode.h"
-#include <zenoui/comctrl/dialog/zenoheatmapeditor.h>
+#include "dialog/zenoheatmapeditor.h"
 #include "zenoapplication.h"
-#include <zenomodel/include/graphsmanagment.h>
+#include "model/graphsmanager.h"
 #include "util/log.h"
 #include "util/apphelper.h"
-#include <zenomodel/include/uihelper.h>
+#include "util/uihelper.h"
 
 
 MakeHeatMapNode::MakeHeatMapNode(const NodeUtilParam& params, QGraphicsItem* parent)
@@ -42,28 +42,30 @@ ZGraphicsLayout* MakeHeatMapNode::initCustomParamWidgets()
 
 void MakeHeatMapNode::onEditClicked()
 {
-    PARAMS_INFO params = index().data(ROLE_PARAMETERS).value<PARAMS_INFO>();
+    QPersistentModelIndex nodeIdx = index();
+    PARAMS_INFO params = nodeIdx.data(ROLE_INPUTS).value<PARAMS_INFO>();
     if (params.find("color") != params.end())
     {
-        PARAM_UPDATE_INFO info;
-        PARAM_INFO& param = params["color"];
-        info.name = "color";
-        info.oldValue = param.value;
-        QLinearGradient grad = param.value.value<QLinearGradient>();
+        zeno::ParamInfo& param = params["color"];
+        param.defl;
+        //TODO: convert defl to QLinearGradient
+        QLinearGradient grad;
 
         ZenoHeatMapEditor editor(grad);
         editor.exec();
         QLinearGradient newGrad = editor.colorRamps();
         if (newGrad != grad)
         {
-            info.newValue = QVariant::fromValue(newGrad);
-            IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();
-            pModel->updateParamInfo(nodeId(), info, subGraphIndex(), true);
+            //TODO: convert QLinearGradient to defl.
+            //param.defl = ...
+            QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(nodeIdx.model());
+            pModel->setData(nodeIdx, QVariant::fromValue(params), ROLE_INPUTS);
         }
     }
     else if (params.find("_RAMPS") != params.end())
     {
-        //legacy format
+        //deprecated
+        /*
         PARAM_INFO& param = params["_RAMPS"];
         const QString& oldColor = param.value.toString();
         QLinearGradient grad = AppHelper::colorString2Grad(oldColor);
@@ -82,5 +84,6 @@ void MakeHeatMapNode::onEditClicked()
             IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();
             pModel->updateParamInfo(nodeId(), info, subGraphIndex(), true);
         }
+        */
     }
 }

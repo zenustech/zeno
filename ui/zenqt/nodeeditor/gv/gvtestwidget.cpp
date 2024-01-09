@@ -1,11 +1,14 @@
 #include "gvtestwidget.h"
-#include <zenoui/comctrl/gv/zgraphicslayoutitem.h>
-#include <zenoui/comctrl/gv/zlayoutbackground.h>
-#include <zenoui/comctrl/gv/zgraphicslayout.h>
-#include <zenoui/comctrl/gv/zsocketlayout.h>
-#include <zenoui/comctrl/gv/zenoparamwidget.h>
-#include <zenoui/nodesys/nodesys_common.h>
-#include <zenoui/render/ztfutil.h>
+#include "nodeeditor/gv/zgraphicslayoutitem.h"
+#include "nodeeditor/gv/zgraphicslayoutitem.h"
+#include "nodeeditor/gv/zlayoutbackground.h"
+#include "nodeeditor/gv/zgraphicslayout.h"
+#include "nodeeditor/gv/zsocketlayout.h"
+#include "nodeeditor/gv/zenoparamwidget.h"
+#include "nodeeditor/gv/nodesys_common.h"
+#include "util/ztfutil.h"
+#include "control/renderparam.h"
+
 
 ZSocketLayout* socket4 = nullptr;
 ZSocketLayout* socket1 = nullptr;

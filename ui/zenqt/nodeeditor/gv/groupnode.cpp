@@ -1,13 +1,14 @@
 #include "groupnode.h"
+#include "uicommon.h"
 #include "util/log.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
-#include "zenoui/style/zenostyle.h"
+#include "style/zenostyle.h"
 #include <QPainter>
-#include <zenomodel/include/graphsmanagment.h>
-#include <zenomodel/include/uihelper.h>
-#include <zenoui/comctrl/gv/zitemfactory.h>
-#include <zenoui/render/common_id.h>
+#include "model/graphsmanager.h"
+#include "util/uihelper.h"
+#include "nodeeditor/gv/zitemfactory.h"
+//#include <zenoui/render/common_id.h>
 #include "zenosubgraphscene.h"
 #include <QtSvg/QSvgRenderer>
 
@@ -135,6 +136,8 @@ GroupNode::~GroupNode() {
 
 void GroupNode::updateClidItem(bool isAdd, const QString nodeId)
 {
+    //TODO: refactor
+    /*
     PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
     BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
     if (isAdd && !info.items.contains(nodeId)) {
@@ -148,6 +151,7 @@ void GroupNode::updateClidItem(bool isAdd, const QString nodeId)
     IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();
     ZASSERT_EXIT(pModel);
     pModel->updateBlackboard(index().data(ROLE_OBJID).toString(), QVariant::fromValue(info), subGraphIndex(), false);
+    */
 }
 
 bool GroupNode::nodePosChanged(ZenoNode *item) 
@@ -209,6 +213,7 @@ QRectF GroupNode::boundingRect() const {
 
 void GroupNode::onUpdateParamsNotDesc() 
 {
+    /*
     PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
     BLACKBOARD_INFO blackboard = params["blackboard"].value.value<BLACKBOARD_INFO>();
     m_pTextItem->setText(blackboard.title);
@@ -222,6 +227,7 @@ void GroupNode::onUpdateParamsNotDesc()
     }
     if (blackboard.sz.width() != m_pTextItem->boundingRect().width())
         m_pTextItem->resize(QSizeF(blackboard.sz.width(), m_pTextItem->boundingRect().height()));
+    */
 }
 
 void GroupNode::appendChildItem(ZenoNode *item)
@@ -247,7 +253,7 @@ void GroupNode::updateChildItemsPos()
             continue;
         }
         int type = item->index().data(ROLE_NODETYPE).toInt();
-        if (type == GROUP_NODE) 
+        if (type == zeno::Node_Group) 
         {
             GroupNode *pNode = dynamic_cast<GroupNode *>(item);
             if (pNode) {
@@ -280,6 +286,8 @@ void GroupNode::updateChildRelativePos(const ZenoNode *item)
 }
 
 ZLayoutBackground *GroupNode::initBodyWidget(ZenoSubGraphScene *pScene) {
+    //TODO
+    /*
     PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
     BLACKBOARD_INFO blackboard = params["blackboard"].value.value<BLACKBOARD_INFO>();
     if (blackboard.sz.isValid()) {
@@ -291,6 +299,7 @@ ZLayoutBackground *GroupNode::initBodyWidget(ZenoSubGraphScene *pScene) {
     m_pTextItem->setPalette(palette);
     m_pTextItem->setText(blackboard.title);
     setSvgData(blackboard.background.name());
+    */
     return new ZLayoutBackground(this);
 }
 
@@ -443,17 +452,21 @@ bool GroupNode::isDragArea(QPointF pos) {
 }
 
 void GroupNode::updateBlackboard() {
-    PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
+    PARAMS_INFO params = index().data(ROLE_INPUTS).value<PARAMS_INFO>();
+    /*
     BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
     info.sz = this->size();
     info.title = m_pTextItem->text();
     IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();
     ZASSERT_EXIT(pModel);
     pModel->updateBlackboard(index().data(ROLE_OBJID).toString(), QVariant::fromValue(info), subGraphIndex(), true);
+    */
 }
 
 void GroupNode::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
     ZenoNode::paint(painter, option, widget);
+    //TODO
+    /*
     PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
     BLACKBOARD_INFO blackboard = params["blackboard"].value.value<BLACKBOARD_INFO>();
     
@@ -472,6 +485,7 @@ void GroupNode::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
     qreal width = ZenoStyle::scaleWidth(16);
     QSvgRenderer svgRender(m_svgByte);
     svgRender.render(painter, QRectF(boundingRect().bottomRight() - QPointF(width, width), boundingRect().bottomRight()));
+    */
 }
 
 QVariant GroupNode::itemChange(GraphicsItemChange change, const QVariant &value) {

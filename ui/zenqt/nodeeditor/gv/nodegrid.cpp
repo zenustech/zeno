@@ -1,5 +1,6 @@
 #include "nodegrid.h"
-#include "nodesys_common.h"
+#include "control/common_id.h"
+#include "nodeeditor/gv/nodesys_common.h"
 
 
 NodeGridLineItem::NodeGridLineItem(NodeGridItem* grid, qreal x1, qreal y1, qreal x2, qreal y2, QGraphicsItem* parent)

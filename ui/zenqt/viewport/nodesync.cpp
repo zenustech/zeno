@@ -1,6 +1,7 @@
 #include "nodesync.h"
 #include "util/uihelper.h"
 #include "uicommon.h"
+#include "model/graphsmanager.h"
 
 
 namespace zeno {
@@ -8,7 +9,7 @@ std::optional<NodeLocation> NodeSyncMgr::generateNewNode(NodeLocation& node_loca
                                                          const std::string& new_node_type,
                                                          const std::string& output_sock,
                                                          const std::string& input_sock) {
-    auto graph_model = zenoApp->graphsManagment()->currentModel();
+    auto graph_model = zenoApp->graphsManager()->currentModel();
     if (!graph_model) {
         return {};
     }
@@ -44,7 +45,7 @@ std::optional<NodeLocation> NodeSyncMgr::searchNodeOfPrim(const std::string& pri
 }
 
 std::optional<NodeLocation> NodeSyncMgr::searchNode(const std::string& node_id) {
-    auto graph_model = zenoApp->graphsManagment()->currentModel();
+    auto graph_model = zenoApp->graphsManager()->currentModel();
     if (!graph_model) {
         return {};
     }
@@ -74,7 +75,7 @@ bool NodeSyncMgr::checkNodeInputHasValue(const QModelIndex& node,
 
 std::optional<NodeLocation> NodeSyncMgr::checkNodeLinkedSpecificNode(const QModelIndex& node,
                                                                      const std::string& node_type) {
-    auto graph_model = zenoApp->graphsManagment()->currentModel();
+    auto graph_model = zenoApp->graphsManager()->currentModel();
     if (!graph_model) {
         return {};
     }
@@ -136,7 +137,7 @@ std::string NodeSyncMgr::getParamValString(const QModelIndex& node,
 }
 
 void NodeSyncMgr::updateNodeVisibility(NodeLocation& node_location) {
-    auto graph_model = zenoApp->graphsManagment()->currentModel();
+    auto graph_model = zenoApp->graphsManager()->currentModel();
     if (!graph_model) {
         return;
     }
@@ -155,7 +156,7 @@ void NodeSyncMgr::updateNodeVisibility(NodeLocation& node_location) {
 void NodeSyncMgr::updateNodeInputString(NodeLocation node_location,
                                         const std::string& input_name,
                                         const std::string& new_value) {
-    auto graph_model = zenoApp->graphsManagment()->currentModel();
+    auto graph_model = zenoApp->graphsManager()->currentModel();
     if (!graph_model) {
         return;
     }
@@ -177,7 +178,7 @@ void NodeSyncMgr::updateNodeInputString(NodeLocation node_location,
 void NodeSyncMgr::updateNodeParamString(NodeLocation node_location,
                                         const std::string& param_name,
                                         const std::string& new_value) {
-    auto graph_model = zenoApp->graphsManagment()->currentModel();
+    auto graph_model = zenoApp->graphsManager()->currentModel();
     if (!graph_model) {
         return;
     }

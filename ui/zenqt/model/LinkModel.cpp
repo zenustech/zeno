@@ -1,5 +1,5 @@
 #include "linkmodel.h"
-#include "common.h"
+#include "uicommon.h"
 
 
 LinkModel::LinkModel(QObject* parent)
