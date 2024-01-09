@@ -472,9 +472,17 @@ struct WriteAlembic2 : INode {
                     faceSetNames.emplace_back(ud.get2<std::string>(zeno::format("faceset_{:04}", i)));
                 }
                 faceset_idxs.resize(faceset_count);
-                auto &faceset = prim->polys.attr<int>("faceset");
+                std::vector<int> faceset;
+                if (prim->polys.size() && prim->polys.attr_is<int>("faceset")) {
+                    faceset = prim->polys.attr<int>("faceset");
+                }
+                else if (prim->tris.size() && prim->tris.attr_is<int>("faceset")) {
+                    faceset = prim->tris.attr<int>("faceset");
+                }
                 for (auto i = 0; i < faceset.size(); i++) {
-                    faceset_idxs[faceset[i]].push_back(i);
+                    if (faceset[i] >= 0) {
+                        faceset_idxs[faceset[i]].push_back(i);
+                    }
                 }
                 for (auto i = 0; i < faceset_count; i++) {
                     OFaceSet faceset = mesh.createFaceSet(faceSetNames[i]);
