@@ -61,10 +61,12 @@ public:
     QHash<int, QByteArray> roleNames() const override;
 
     //NodesModel:
-    void appendNode(QString ident, QString name, const QPointF& pos);
+    zeno::NodeData createNode(const QString& nodeCls, const QPointF& pos);
+    void appendNode(QString ident, QString name, const QPointF& pos);   //TO DEPRECATED
     void appendSubgraphNode(QString ident, QString name, NODE_DESCRIPTOR desc, GraphModel* subgraph, const QPointF& pos);
     void removeNode(QString ident);
     void addLink(QPair<QString, QString> fromParam, QPair<QString, QString> toParam);
+    void addLink(const zeno::EdgeInfo& link);
 
     //test functions:
     void updateParamName(QModelIndex nodeIdx, int row, QString newName);

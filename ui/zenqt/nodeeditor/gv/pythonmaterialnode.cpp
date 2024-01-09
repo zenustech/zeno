@@ -4,9 +4,9 @@
 #include "pythonmaterialnode.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
-#include <zenomodel/include/graphsmanagment.h>
-#include <zenomodel/include/igraphsmodel.h>
+#include "model/graphsmanager.h"
 #include "dialog/zmaterialinfosettingdlg.h"
+#include <zeno/utils/log.h>
 
 
 PythonMaterialNode::PythonMaterialNode(const NodeUtilParam& params, QGraphicsItem* parent)
@@ -177,6 +177,8 @@ void PythonMaterialNode::onEditClicked()
 MaterialMatchInfo PythonMaterialNode::getMatchInfo()
 {
     MaterialMatchInfo info;
+    //TODO: 
+#if 0
     IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
     QModelIndex subgIdx = subgIndex();
     QModelIndex nameIdx = pModel->paramIndex(subgIdx, index(), "nameList", true);
@@ -194,11 +196,13 @@ MaterialMatchInfo PythonMaterialNode::getMatchInfo()
     QModelIndex matchIdx = pModel->paramIndex(subgIdx, index(), "matchInputs", true);
     ZASSERT_EXIT(matchIdx.isValid(), info);
     info.m_matchInputs = matchIdx.data(ROLE_PARAM_VALUE).toString();
+#endif
     return info;
 }
 
 void PythonMaterialNode::setMatchInfo(const MaterialMatchInfo& matInfo)
 {
+#if 0
     PARAM_UPDATE_INFO info;
     IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
     QModelIndex subgIdx = subgIndex();
@@ -226,4 +230,5 @@ void PythonMaterialNode::setMatchInfo(const MaterialMatchInfo& matInfo)
     info.oldValue = inputs[info.name].info.defaultValue;
     info.newValue = matInfo.m_matchInputs;
     pModel->updateSocketDefl(nodeid, info, subgIdx, true);
+#endif
 }

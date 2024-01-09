@@ -65,7 +65,7 @@ bool ParamsModel::setData(const QModelIndex& index, const QVariant& value, int r
         break;
 
     case ROLE_PARAM_CONTROL:
-        param.control = (ParamControl::Value)value.toInt();
+        param.control = (zeno::ParamControl)value.toInt();
         break;
 
     default:

@@ -41,6 +41,7 @@ namespace zeno {
         Param_Prim,
         Param_Dict,
         Param_List,
+        //Param_Color,  //need this?
         Param_Curve,
         Param_SrcDst,
     };
@@ -98,12 +99,14 @@ namespace zeno {
         Vec3edit,
         Vec4edit,
         Color,
+        ColorVec,
         Heatmap,
         CurveEditor,
         SpinBox,
         Slider,
         DoubleSpinBox,
         SpinBoxSlider,
+        PythonEditor,
     };
 
     enum LinkFunction

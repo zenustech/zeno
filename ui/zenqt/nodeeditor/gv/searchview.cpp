@@ -1,7 +1,7 @@
 #include "searchview.h"
 
 #include <QVBoxLayout>
-#include "zenoui/style/zenostyle.h"
+#include "style/zenostyle.h"
 
 
 SearchResultItem::SearchResultItem(QWidget* parent)

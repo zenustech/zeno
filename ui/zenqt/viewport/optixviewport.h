@@ -3,7 +3,7 @@
 
 #include <QtWidgets>
 #include "recordvideomgr.h"
-#include <zenomodel/include/modeldata.h>
+#include "uicommon.h"
 
 class Zenovis;
 class CameraControl;

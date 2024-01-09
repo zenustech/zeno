@@ -8,7 +8,6 @@
 #include "model/graphsmanager.h"
 #include "util/uihelper.h"
 #include "nodeeditor/gv/zitemfactory.h"
-//#include <zenoui/render/common_id.h>
 #include "zenosubgraphscene.h"
 #include <QtSvg/QSvgRenderer>
 

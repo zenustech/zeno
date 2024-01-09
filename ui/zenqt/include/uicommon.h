@@ -122,6 +122,9 @@ enum MODEL_ROLE {
     ROLE_OBJPOS,
     ROLE_COLLASPED,
     ROLE_INPUTS,
+    ROLE_OUTPUTS,
+    ROLE_OPTIONS,
+    ROLE_NODEDATA,
 
     ROLE_NODEIDX,
     ROLE_LINK_FROM_IDX,
@@ -151,6 +154,12 @@ struct NODE_DESCRIPTOR
 
 typedef QKeyList<QString, zeno::ParamInfo> PARAMS_INFO;
 Q_DECLARE_METATYPE(PARAMS_INFO)
+
+//struct NODE_DATA
+//{
+//    zeno::NodeData dat;
+//};
+Q_DECLARE_METATYPE(zeno::NodeData)
 
 struct SEARCH_RESULT
 {

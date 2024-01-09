@@ -37,6 +37,9 @@ struct ImplSubnetNodeClass : INodeClass {
 
     virtual std::shared_ptr<INode> new_instance(std::string const& ident) const override {
         std::shared_ptr<SubnetNode> spNode = std::make_shared<SubnetNode>();
+
+        //TODO: need to find descriptors here, to create Subnet.
+
         spNode->ident = ident;
         spNode->nodecls = name;
         return spNode;

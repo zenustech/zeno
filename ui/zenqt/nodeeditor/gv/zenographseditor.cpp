@@ -926,7 +926,7 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
         if (pView) 
         {
             ZenoSubGraphScene *pScene = pView->scene();
-            NodesMgr::createNewNode(m_model, pScene->subGraphIndex(), "Group", QPointF());
+            UiHelper::createNewNode(pScene->subGraphIndex(), "Group", QPointF());
         }
     }
     else if (actionType == ZenoMainWindow::ACTION_EASY_GRAPH) 

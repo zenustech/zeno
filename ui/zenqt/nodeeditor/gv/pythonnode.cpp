@@ -4,8 +4,8 @@
 #include "pythonnode.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
-#include <zenomodel/include/graphsmanagment.h>
-#include <zenomodel/include/igraphsmodel.h>
+#include "model/graphsmanager.h"
+#include <zeno/utils/log.h>
 
 
 PythonNode::PythonNode(const NodeUtilParam& params, QGraphicsItem* parent)

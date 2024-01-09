@@ -25,6 +25,11 @@ void GraphModel::addLink(const QString& fromNodeStr, const QString& fromParamStr
     addLink(qMakePair(fromNodeStr, fromParamStr), qMakePair(toNodeStr, toParamStr));
 }
 
+void GraphModel::addLink(const zeno::EdgeInfo& link)
+{
+    //TODO
+}
+
 QString GraphModel::name() const
 {
     return m_graphName;
@@ -94,8 +99,14 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
         case ROLE_INPUTS:
         {
             PARAMS_INFO inputs;
-            //todo
+            //TODO
             return QVariant::fromValue(inputs);
+        }
+        case ROLE_NODEDATA:
+        {
+            zeno::NodeData data;
+            //TODO
+            return QVariant::fromValue(data);
         }
         default:
             return QVariant();
@@ -152,6 +163,13 @@ void GraphModel::addLink(QPair<QString, QString> fromParam, QPair<QString, QStri
         fromParams->addLink(from, linkIdx);
         toParams->addLink(to, linkIdx);
     }
+}
+
+zeno::NodeData GraphModel::createNode(const QString& nodeCls, const QPointF& pos)
+{
+    zeno::NodeData node;
+    //call IGraph::createNode
+    return node;
 }
 
 void GraphModel::appendNode(QString ident, QString name, const QPointF& pos)

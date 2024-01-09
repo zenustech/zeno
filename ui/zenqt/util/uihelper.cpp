@@ -1,16 +1,17 @@
 #include "uihelper.h"
 #include <zeno/utils/logger.h>
-#include "modelrole.h"
+#include "uicommon.h"
+#include <zeno/core/data.h>
 #include "zassert.h"
-#include "curvemodel.h"
+#include "model/curvemodel.h"
 #include "variantptr.h"
 #include "jsonhelper.h"
-#include <zenomodel/include/curveutil.h>
-#include <zenomodel/include/viewparammodel.h>
-#include <zenomodel/include/nodeparammodel.h>
+#include "model/graphmodel.h"
+#include "util/curveutil.h"
+#include "model/parammodel.h"
 #include <QUuid>
-#include "common_def.h"
 #include <zeno/funcs/ParseObjectFromUi.h>
+#include "util/globalcontrolmgr.h"
 
 const char* g_setKey = "setKey";
 
@@ -43,165 +44,45 @@ BlockSignalScope::~BlockSignalScope()
 		m_pObject->blockSignals(false);
 }
 
-
-NODE_DESCS UiHelper::parseDescs(const rapidjson::Value &jsonDescs)
+QString UiHelper::createNewNode(QModelIndex subgIdx, const QString& descName, const QPointF& pt)
 {
-    NODE_DESCS _descs;
-    for (const auto &node : jsonDescs.GetObject())
+    if (!subgIdx.isValid())
+        return "";
+
+    zeno::NodeData node;
+    //NODE_DATA node = newNodeData(pModel, descName, pt);
+    QAbstractItemModel* graphM = const_cast<QAbstractItemModel*>(subgIdx.model());
+    if (GraphModel* pModel = qobject_cast<GraphModel*>(graphM))
     {
-        const QString &name = node.name.GetString();
-        const auto &objValue = node.value;
-        auto inputs = objValue["inputs"].GetArray();
-        auto outputs = objValue["outputs"].GetArray();
-        auto params = objValue["params"].GetArray();
-        auto categories = objValue["categories"].GetArray();
-
-        NODE_DESC desc;
-
-        for (int i = 0; i < inputs.Size(); i++) {
-            if (inputs[i].IsArray()) {
-                auto input_triple = inputs[i].GetArray();
-                const QString &socketType = input_triple[0].GetString();
-                const QString &socketName = input_triple[1].GetString();
-                const QString &socketDefl = input_triple[2].GetString();
-
-                CONTROL_INFO ctrlInfo = getControlByType(name, PARAM_INPUT, socketName, socketType);
-                INPUT_SOCKET inputSocket;
-                inputSocket.info = SOCKET_INFO("", socketName);
-                inputSocket.info.type = socketType;
-                inputSocket.info.control = ctrlInfo.control;
-                inputSocket.info.ctrlProps = ctrlInfo.controlProps.toMap();
-                inputSocket.info.defaultValue = parseStringByType(socketDefl, socketType);
-                desc.inputs.insert(socketName, inputSocket);
-            } else {
-                Q_ASSERT(inputs[i].IsNull());
-            }
-        }
-
-        for (int i = 0; i < params.Size(); i++) {
-            if (params[i].IsArray()) {
-                auto param_triple = params[i].GetArray();
-                const QString &socketType = param_triple[0].GetString();
-                const QString &socketName = param_triple[1].GetString();
-                const QString &socketDefl = param_triple[2].GetString();
-                CONTROL_INFO ctrlInfo = getControlByType(name, PARAM_PARAM, socketName, socketType);
-                PARAM_INFO paramInfo;
-                paramInfo.bEnableConnect = false;
-                paramInfo.control = ctrlInfo.control;
-                paramInfo.controlProps = ctrlInfo.controlProps.toMap();
-                paramInfo.name = socketName;
-                paramInfo.typeDesc = socketType;
-                paramInfo.defaultValue = parseStringByType(socketDefl, socketType);
-
-                desc.params.insert(socketName, paramInfo);
-            } else {
-                Q_ASSERT(params[i].IsNull());
-            }
-        }
-
-        for (int i = 0; i < outputs.Size(); i++) {
-            if (outputs[i].IsArray()) {
-                auto output_triple = outputs[i].GetArray();
-                const QString &socketType = output_triple[0].GetString();
-                const QString &socketName = output_triple[1].GetString();
-                const QString &socketDefl = output_triple[2].GetString();
-                PARAM_CONTROL ctrlType = getControlByType(socketType);
-                OUTPUT_SOCKET outputSocket;
-                outputSocket.info = SOCKET_INFO("", socketName);
-                outputSocket.info.type = socketType;
-                outputSocket.info.control = ctrlType;
-                outputSocket.info.defaultValue = parseStringByType(socketDefl, socketType);
-
-                desc.outputs.insert(socketName, outputSocket);
-            } else {
-                Q_ASSERT(outputs[i].IsNull());
-            }
-        }
-        
-        for (int i = 0; i < categories.Size(); i++)
-        {
-            desc.categories.push_back(categories[i].GetString());
-        }
-
-        _descs.insert(name, desc);
+        node = pModel->createNode(descName, pt);
     }
-    return _descs;
+    return QString::fromStdString(node.ident);
 }
 
-bool UiHelper::validateVariant(const QVariant& var, const QString& type)
+QVariant UiHelper::parseTextValue(const zeno::ParamType& type, const QString& textValue)
 {
-    PARAM_CONTROL control = getControlByType(type);
-    QVariant::Type varType = var.type();
-
-    switch (control) {
-    case CONTROL_INT:   return (QVariant::Int == varType || QVariant::String == varType);
-    case CONTROL_BOOL:  return (QVariant::Bool == varType || QVariant::Int == varType);
-    case CONTROL_FLOAT: return (QMetaType::Float == varType || QVariant::Double == varType || QVariant::String == varType);
-    case CONTROL_STRING:
-    case CONTROL_WRITEPATH:
-    case CONTROL_READPATH:
-    case CONTROL_ENUM:
-        return (QVariant::String == varType);
-    case CONTROL_MULTILINE_STRING:
-        return var.type() == QVariant::String;
-    case CONTROL_COLOR:
-    {
-        if ((var.type() == QVariant::String) ||
-            (varType == QVariant::UserType &&
-             var.userType() == QMetaTypeId<QLinearGradient>::qt_metatype_id()))
-        {
-            return true;
-        }
-    }
-    case CONTROL_PURE_COLOR: {
-        return QVariant::Color == varType;
-    }
-    case CONTROL_CURVE:
-    {
-        return (varType == QMetaType::User);
-    }
-    case CONTROL_COLOR_VEC3F:
-    case CONTROL_VEC2_FLOAT:
-    case CONTROL_VEC2_INT:
-    case CONTROL_VEC3_FLOAT:
-    case CONTROL_VEC3_INT:
-    case CONTROL_VEC4_FLOAT:
-    case CONTROL_VEC4_INT:
-    {
-        if (varType == QVariant::UserType &&
-            (var.userType() == QMetaTypeId<UI_VECTYPE>::qt_metatype_id() || 
-              var.userType() == QMetaTypeId<UI_VECSTRING>::qt_metatype_id()))
-        {
-            return true;
-        }
-    }
-    case CONTROL_NONE:
-        return var.isNull();
-    case CONTROL_NONVISIBLE:
-        return true;
-    default:
-        break;
-    };
-    return true;
+    //TODO
+    return QVariant();
 }
 
-QVariant UiHelper::initDefaultValue(const QString& type)
+QVariant UiHelper::initDefaultValue(const zeno::ParamType& type)
 {
-    if (type == "string") {
+    if (type == zeno::Param_String) {
         return "";
     }
-    else if (type == "float")
+    else if (type == zeno::Param_Float)
     {
         return QVariant((float)0.);
     }
-    else if (type == "int")
+    else if (type == zeno::Param_Int)
     {
         return QVariant((int)0);
     }
-    else if (type == "bool")
+    else if (type == zeno::Param_Bool)
     {
         return QVariant(false);
     }
+    /*
     else if (type.startsWith("vec"))
     {
         int dim = 0;
@@ -211,108 +92,8 @@ QVariant UiHelper::initDefaultValue(const QString& type)
             return QVariant::fromValue(UI_VECTYPE(dim, 0));
         }
     }
+    */
     return QVariant();
-}
-
-QVariant UiHelper::parseStringByType(const QString &defaultValue, const QString &type)
-{
-    auto control = getControlByType(type);
-    switch (control) {
-    case CONTROL_INT:
-    {
-        bool bOk = false;
-        int val = defaultValue.toInt(&bOk);
-        if (bOk) {
-            return val;
-        }
-        else {
-            //type dismatch, try to convert to float.
-            //disable it now because the sync problem is complicated and trivival.
-            //float fVal = defaultValue.toFloat(&bOk);
-            //if (bOk)
-            //{
-            //    val = fVal;
-            //    return val;
-            //}
-            return defaultValue;
-        }
-    }
-    case CONTROL_BOOL:
-    {
-        return (bool)defaultValue.toInt();
-    }
-    case CONTROL_FLOAT:
-    {
-        bool bOk = false;
-        float fVal = defaultValue.toFloat(&bOk);
-        //TODO: need to check OK?
-        if (bOk)
-            return fVal;
-        else
-            return defaultValue;
-    }
-    case CONTROL_STRING:
-    case CONTROL_WRITEPATH:
-    case CONTROL_READPATH:
-    case CONTROL_MULTILINE_STRING:
-    case CONTROL_COLOR:
-    case CONTROL_ENUM:
-        return defaultValue;
-    case CONTROL_COLOR_VEC3F:
-    case CONTROL_VEC2_FLOAT:
-    case CONTROL_VEC2_INT:
-    case CONTROL_VEC3_FLOAT:
-    case CONTROL_VEC3_INT:
-    case CONTROL_VEC4_FLOAT:
-    case CONTROL_VEC4_INT:
-    {
-        UI_VECTYPE vec;
-        if (!defaultValue.isEmpty())
-        {
-            QStringList L = defaultValue.split(",");
-            vec.resize(L.size());
-            bool bOK = false;
-            for (int i = 0; i < L.size(); i++)
-            {
-                vec[i] = L[i].toFloat(&bOK);
-                Q_ASSERT(bOK);
-            }
-        }
-        else
-        {
-            vec.resize(3);
-        }
-        return QVariant::fromValue(vec);
-    }
-    case CONTROL_CURVE:
-    {
-        if (defaultValue.isEmpty())
-        {
-            return QVariant::fromValue(curve_util::deflCurves());
-        }
-    }
-    default:
-        return defaultValue;
-    };
-}
-
-QVariant UiHelper::parseTextValue(PARAM_CONTROL editCtrl, const QString& textValue)
-{
-	QVariant varValue;
-	switch (editCtrl) {
-	case CONTROL_INT: varValue = textValue.isEmpty() ? 0 : std::stoi(textValue.toStdString()); break;
-	case CONTROL_FLOAT: varValue = textValue.isEmpty() ? 0.0 : std::stod(textValue.toStdString()); break;
-	case CONTROL_BOOL: varValue = textValue.isEmpty() ? false : textValue == "true" ? true :
-		(textValue == "false" ? false : (bool)std::stoi(textValue.toStdString())); break;
-	case CONTROL_READPATH:
-	case CONTROL_WRITEPATH:
-	case CONTROL_MULTILINE_STRING:
-    case CONTROL_COLOR:
-    case CONTROL_CURVE:
-    case CONTROL_ENUM:
-	case CONTROL_STRING: varValue = textValue; break;
-	}
-    return varValue;
 }
 
 QSizeF UiHelper::viewItemTextLayout(QTextLayout& textLayout, int lineWidth, int maxHeight, int* lastVisibleLine)
@@ -375,7 +156,8 @@ bool UiHelper::parseVecType(const QString& type, int& dim, bool& bFloat)
     }
 }
 
-QString UiHelper::getControlDesc(PARAM_CONTROL ctrl)
+#if 0
+QString UiHelper::getControlDesc(zeno::ParamControl ctrl)
 {
     switch (ctrl)
     {
@@ -408,112 +190,114 @@ QString UiHelper::getControlDesc(PARAM_CONTROL ctrl)
         return "";
     }
 }
+#endif
 
-PARAM_CONTROL UiHelper::getControlByDesc(const QString& descName)
+zeno::ParamControl UiHelper::getControlByDesc(const QString& descName)
 {
+    //compatible with zsg2
     if (descName == "Integer")
     {
-        return CONTROL_INT;
+        return zeno::Lineedit;
     }
     else if (descName == "Float")
     {
-        return CONTROL_FLOAT;
+        return zeno::Lineedit;
     }
     else if (descName == "String")
     {
-        return CONTROL_STRING;
+        return zeno::Lineedit;
     }
     else if (descName == "Boolean")
     {
-        return CONTROL_BOOL;
+        return zeno::Checkbox;
     }
     else if (descName == "Multiline String")
     {
-        return CONTROL_MULTILINE_STRING;
+        return zeno::Multiline;
     }
     else if (descName == "read path")
     {
-        return CONTROL_READPATH;
+        return zeno::Pathedit;
     }
     else if (descName == "write path")
     {
-        return CONTROL_WRITEPATH;
+        return zeno::Pathedit;
     }
     else if (descName == "Enum")
     {
-        return CONTROL_ENUM;
+        return zeno::Combobox;
     }
     else if (descName == "Float Vector 4")
     {
-        return CONTROL_VEC4_FLOAT;
+        return zeno::Vec4edit;
     }
     else if (descName == "Float Vector 3")
     {
-        return CONTROL_VEC3_FLOAT;
+        return zeno::Vec3edit;
     }
     else if (descName == "Float Vector 2")
     {
-        return CONTROL_VEC2_FLOAT;
+        return zeno::Vec2edit;
     }
     else if (descName == "Integer Vector 4")
     {
-        return CONTROL_VEC4_INT;
+        return zeno::Vec4edit;
     }
     else if (descName == "Integer Vector 3")
     {
-        return CONTROL_VEC3_INT;
+        return zeno::Vec3edit;
     }
     else if (descName == "Integer Vector 2")
     {
-        return CONTROL_VEC2_INT;
+        return zeno::Vec2edit;
     }
     else if (descName == "Color")
     {
-        return CONTROL_COLOR;
+        return zeno::Heatmap;
     } 
     else if (descName == "Pure Color") 
     {
-        return CONTROL_PURE_COLOR;
+        return zeno::Color;
     }
     else if (descName == "Color Vec3f")
     {
-        return CONTROL_COLOR_VEC3F;
+        return zeno::ColorVec;
     }
     else if (descName == "Curve")
     {
-        return CONTROL_CURVE;
+        return zeno::CurveEditor;
     }
     else if (descName == "SpinBox")
     {
-        return CONTROL_HSPINBOX;
+        return zeno::SpinBox;
     } 
     else if (descName == "DoubleSpinBox") 
     {
-        return CONTROL_HDOUBLESPINBOX;
+        return zeno::DoubleSpinBox;
     }
     else if (descName == "Slider")
     {
-        return CONTROL_HSLIDER;
+        return zeno::Slider;
     }
     else if (descName == "SpinBoxSlider")
     {
-        return CONTROL_SPINBOX_SLIDER;
+        return zeno::SpinBoxSlider;
     }
     else if (descName == "Dict Panel")
     {
-        return CONTROL_DICTPANEL;
+        return zeno::NullControl;
     }
     else if (descName == "group-line")
     {
-        return CONTROL_GROUP_LINE;
+        return zeno::NullControl;
     }
     else if (descName == "PythonEditor")
     {
-        return CONTROL_PYTHON_EDITOR;
+        return zeno::PythonEditor;
     }
     else
     {
-        return CONTROL_NONE;
+        return zeno::NullControl;
     }
 }
 
@@ -548,59 +332,48 @@ QStringList UiHelper::getAllControls()
         "Integer Vector 2", "Color", "Curve", "SpinBox", "DoubleSpinBox", "Slider", "SpinBoxSlider" };
 }
 
-QStringList UiHelper::getControlLists(const QString& type, bool isNodeUI)
+QList<zeno::ParamControl> UiHelper::getControlLists(const zeno::ParamType& type)
 {
-    QList<PARAM_CONTROL> ctrls;
-    if (type == "int") 
-    { 
-        if (isNodeUI)
-            ctrls = {CONTROL_INT, CONTROL_HSPINBOX}; 
-        else
-            ctrls = {CONTROL_INT, CONTROL_HSPINBOX, CONTROL_HSLIDER, CONTROL_SPINBOX_SLIDER}; 
-    }
-    else if (type == "bool") { ctrls = { CONTROL_BOOL }; }
-    else if (type == "float") { ctrls = { CONTROL_FLOAT, CONTROL_HDOUBLESPINBOX}; }    //todo: slider/spinbox for float.
-    else if (type == "string") { ctrls = { CONTROL_STRING, CONTROL_MULTILINE_STRING, CONTROL_ENUM}; }
-    else if (type == "vec2f") { ctrls = { CONTROL_VEC2_FLOAT }; }
-    else if (type == "vec2i") { ctrls = { CONTROL_VEC2_INT }; }
-    else if (type == "vec3f") { ctrls = { CONTROL_VEC3_FLOAT }; }
-    else if (type == "vec3i") { ctrls = { CONTROL_VEC3_INT }; }
-    else if (type == "vec4f") { ctrls = { CONTROL_VEC4_FLOAT }; }
-    else if (type == "vec4i") { ctrls = { CONTROL_VEC4_INT }; }
-    else if (type == "writepath") { ctrls = { CONTROL_WRITEPATH }; }
-    else if (type == "readpath") { ctrls = { CONTROL_READPATH }; }
-    else if (type == "multiline_string") { ctrls = { CONTROL_STRING, CONTROL_MULTILINE_STRING }; }
-    else if (type == "color") {   //color is more general than heatmap.
-        ctrls = {CONTROL_COLOR, CONTROL_PURE_COLOR, CONTROL_COLOR_VEC3F};
-    }
-    else if (type == "curve") { ctrls = { CONTROL_CURVE }; }
-    else if (type.startsWith("enum ")) {
-        ctrls = { CONTROL_ENUM }; //todo
-    }
-    else if (type == "NumericObject") { ctrls = { CONTROL_FLOAT }; }
-    else { ctrls = { CONTROL_NONE }; }
-
-    QStringList ctrlNames;
-    for (PARAM_CONTROL ctrl : ctrls)
+    QList<zeno::ParamControl> ctrls;
+    switch (type)
     {
-        ctrlNames.append(getControlDesc(ctrl));
+    case zeno::Param_Int:
+        return { zeno::Lineedit, zeno::SpinBox, zeno::SpinBoxSlider, zeno::DoubleSpinBox };
+    case zeno::Param_Bool:
+        return { zeno::Checkbox };
+    case zeno::Param_Float:
+        return { zeno::Lineedit, zeno::DoubleSpinBox };
+    case zeno::Param_String:
+        return { zeno::Lineedit, zeno::Multiline, zeno::Combobox };
+    case zeno::Param_Vec2i:
+    case zeno::Param_Vec2f:
+        return { zeno::Vec2edit };
+    case zeno::Param_Vec3i:
+    case zeno::Param_Vec3f:
+        return { zeno::Vec3edit };
+    case zeno::Param_Vec4f:
+    case zeno::Param_Vec4i:
+        return { zeno::Vec4edit };
+    case zeno::Param_Curve:
+        return { zeno::CurveEditor };
+    default:
+        return {};
     }
-    return ctrlNames;
 }
 
 
-PARAM_CONTROL UiHelper::getControlByType(const QString &type)
+zeno::ParamControl UiHelper::getControlByType(const QString &type)
 {
     if (type.isEmpty()) {
-        return CONTROL_NONE;
+        return zeno::NullControl;
     } else if (type == "int") {
-        return CONTROL_INT;
+        return zeno::Lineedit;
     } else if (type == "bool") {
-        return CONTROL_BOOL;
+        return zeno::Checkbox;
     } else if (type == "float") {
-        return CONTROL_FLOAT;
+        return zeno::Lineedit;
     } else if (type == "string") {
-        return CONTROL_STRING;
+        return zeno::Lineedit;
     } else if (type.startsWith("vec")) {
         // support legacy type "vec3"
         int dim = 0;
@@ -608,85 +381,53 @@ PARAM_CONTROL UiHelper::getControlByType(const QString &type)
         if (parseVecType(type, dim, bFloat)) {
             switch (dim)
             {
-            case 2: return bFloat ? CONTROL_VEC2_FLOAT : CONTROL_VEC2_INT;
-            case 3: return bFloat ? CONTROL_VEC3_FLOAT : CONTROL_VEC3_INT;
-            case 4: return bFloat ? CONTROL_VEC4_FLOAT : CONTROL_VEC4_INT;
+            case 2: return zeno::Vec2edit;
+            case 3: return zeno::Vec3edit;
+            case 4: return zeno::Vec4edit;
             default:
-                return CONTROL_NONE;
+                return zeno::NullControl;
             }
         }
         else {
-            return CONTROL_NONE;
+            return zeno::NullControl;
         }
     } else if (type == "writepath") {
-        return CONTROL_WRITEPATH;
+        return zeno::Pathedit;
     } else if (type == "readpath") {
-        return CONTROL_READPATH;
+        return zeno::Pathedit;
     } else if (type == "multiline_string") {
-        return CONTROL_MULTILINE_STRING;
+        return zeno::Multiline;
     } else if (type == "color") {   //color is more general than heatmap.
-        return CONTROL_COLOR;
+        return zeno::Heatmap;
     } else if (type == "purecolor") {   
-        return CONTROL_PURE_COLOR;
+        return zeno::Color;
     } else if (type == "colorvec3f") {   //colorvec3f is for coloreditor, color is heatmap? ^^^^
-        return CONTROL_COLOR_VEC3F;
+        return zeno::Color;
     } else if (type == "curve") {
-        return CONTROL_CURVE;
+        return zeno::CurveEditor;
     } else if (type.startsWith("enum ")) {
-        return CONTROL_ENUM;
+        return zeno::Combobox;
     } else if (type == "NumericObject") {
-        return CONTROL_FLOAT;
+        return zeno::Lineedit;
     } else if (type.isEmpty()) {
-        return CONTROL_NONE;
+        return zeno::NullControl;
     }
     else if (type == "dict")
     {
         //control by multilink socket property. see SOCKET_PROPERTY
-        return CONTROL_NONE;
+        return zeno::NullControl;
     } else if (type == "group-line") {
-        return CONTROL_GROUP_LINE;
+        return zeno::NullControl;
     }
     else {
         zeno::log_trace("parse got undefined control type {}", type.toStdString());
-        return CONTROL_NONE;
+        return zeno::NullControl;
     }
 }
 
-CONTROL_INFO UiHelper::getControlByType(const QString &nodeCls, PARAM_CLASS cls, const QString &socketName, const QString &socketType) 
+CONTROL_INFO UiHelper::getControlByType(const QString &nodeCls, bool bInput, const QString &socketName, const QString &socketType)
 {
-    return GlobalControlMgr::instance().controlInfo(nodeCls, cls, socketName, socketType);
-}
-
-QString UiHelper::getTypeByControl(PARAM_CONTROL ctrl)
-{
-    switch (ctrl) {
-    case CONTROL_INT: return "int";
-    case CONTROL_FLOAT: 
-    case CONTROL_HDOUBLESPINBOX:
-        return "float";
-    case CONTROL_BOOL:  return "bool";
-    case CONTROL_MULTILINE_STRING:
-    case CONTROL_STRING: return "string";
-    case CONTROL_VEC2_FLOAT: return "vec2f";
-    case CONTROL_VEC2_INT: return "vec2i";
-    case CONTROL_VEC3_FLOAT: return "vec3f";
-    case CONTROL_VEC3_INT: return "vec3i";
-    case CONTROL_VEC4_FLOAT:    return "vec4f";
-    case CONTROL_VEC4_INT: return "vec4i";
-    case CONTROL_WRITEPATH: return "string";
-    case CONTROL_READPATH: return "string";
-    case CONTROL_COLOR: return "color";     //todo: is vec3?
-    case CONTROL_PURE_COLOR: return "purecolor";
-    case CONTROL_COLOR_VEC3F: return "colorvec3f"; // ^^^ color vec is here
-    case CONTROL_CURVE: return "curve";
-    case CONTROL_ENUM: return "string";
-    case CONTROL_HSLIDER:
-    case CONTROL_HSPINBOX:
-    case CONTROL_SPINBOX_SLIDER:
-         return "int";
-    default:
-        return "";
-    }
+    return GlobalControlMgr::instance().controlInfo(nodeCls, bInput, socketName, socketType);
 }
 
 void UiHelper::getSocketInfo(const QString& objPath,
@@ -754,32 +495,6 @@ QString UiHelper::getSockName(const QString& sockPath)
         }
     }
     return "";
-}
-
-QString UiHelper::getNaiveParamPath(const QModelIndex& param, int dim)
-{
-    QString str = param.data(ROLE_OBJPATH).toString();
-    QString subgName, ident, paramPath;
-    getSocketInfo(str, subgName, ident, paramPath);
-    if (paramPath.startsWith("[node]/inputs/")) {
-        paramPath = paramPath.mid(QString("[node]/inputs/").length());
-    }
-    else if (paramPath.startsWith("[node]/params/")) {
-        paramPath = paramPath.mid(QString("[node]/params/").length());
-    }
-    else if (paramPath.startsWith("[node]/outputs/")) {
-        paramPath = "[o]" + paramPath.mid(QString("[node]/outputs/").length());
-    }
-    if (dim == 0) {
-        paramPath += "/x";
-    }
-    else if (dim == 1) {
-        paramPath += "/y";
-    }
-    else if (dim == 2) {
-        paramPath += "/z";
-    }
-    return QString("%1/%2").arg(ident).arg(paramPath);
 }
 
 QString UiHelper::getSockSubgraph(const QString& sockPath)
@@ -860,58 +575,6 @@ float UiHelper::parseNumeric(const QVariant& val, bool castStr, bool& bSucceed)
     return num;
 }
 
-QVariant UiHelper::initVariantByControl(PARAM_CONTROL ctrl)
-{
-    switch (ctrl)
-    {
-        case CONTROL_INT:
-        case CONTROL_FLOAT:
-        case CONTROL_HSLIDER:
-        case CONTROL_HSPINBOX:
-        case CONTROL_HDOUBLESPINBOX:
-        case CONTROL_SPINBOX_SLIDER:
-            return 0;
-        case CONTROL_BOOL:
-            return false;
-        case CONTROL_ENUM:
-        case CONTROL_WRITEPATH:
-        case CONTROL_READPATH:
-        case CONTROL_MULTILINE_STRING:
-        case CONTROL_STRING:
-            return "";
-        case CONTROL_COLOR:
-        {
-            return QVariant::fromValue(QLinearGradient());
-        }
-        case CONTROL_CURVE:
-        {
-            return QVariant::fromValue(curve_util::deflCurves());
-        }
-        case CONTROL_VEC4_FLOAT:
-        case CONTROL_VEC4_INT:
-        {
-            UI_VECTYPE vec(4);
-            return QVariant::fromValue(vec);
-        }
-        case CONTROL_VEC3_FLOAT:
-        case CONTROL_VEC3_INT:
-        {
-            UI_VECTYPE vec(3);
-            return QVariant::fromValue(vec);
-        }
-        case CONTROL_VEC2_FLOAT:
-        case CONTROL_VEC2_INT:
-        {
-            UI_VECTYPE vec(2);
-            return QVariant::fromValue(vec);
-        }
-        default:
-        {
-            return QVariant();
-        }
-    }
-}
-
 float UiHelper::parseJsonNumeric(const rapidjson::Value& val, bool castStr, bool& bSucceed)
 {
     float num = 0;
@@ -964,34 +627,6 @@ QPointF UiHelper::parsePoint(const rapidjson::Value& ptObj, bool& bSucceed)
         return pt;
 
     return pt;
-}
-
-NODE_TYPE UiHelper::nodeType(const QString& name)
-{
-    if (name == "Blackboard")
-    {
-        return BLACKBOARD_NODE;
-    }
-    else if (name == "Group")
-    {
-        return GROUP_NODE;
-    }
-    else if (name == "SubInput")
-    {
-        return SUBINPUT_NODE;
-    }
-    else if (name == "SubOutput")
-    {
-        return SUBOUTPUT_NODE;
-    }
-    else if (name == "MakeHeatmap")
-    {
-        return HEATMAP_NODE;
-    }
-    else
-    {
-        return NORMAL_NODE;
-    }
 }
 
 int UiHelper::getMaxObjId(const QList<QString> &lst)
@@ -1109,14 +744,14 @@ QPainterPath UiHelper::getRoundPath(QRectF r, int lt_radius, int rt_radius, int 
     return path;
 }
 
-QVector<qreal> UiHelper::getSlideStep(const QString& name, PARAM_CONTROL ctrl)
+QVector<qreal> UiHelper::getSlideStep(const QString& name, zeno::ParamType type)
 {
     QVector<qreal> steps;
-    if (ctrl == CONTROL_INT)
+    if (type == zeno::Param_Int)
     {
         steps = { 1, 10, 100 };
     }
-    else if (ctrl == CONTROL_FLOAT)
+    else if (type == zeno::Param_Float)
     {
         steps = { .0001, .001, .01, .1, 1, 10, 100 };
     }
@@ -1139,36 +774,6 @@ QString UiHelper::nthSerialNumName(QString name)
         ZASSERT_EXIT(bConvert, "");
         return name + "(" + QString::number(ith + 1) + ")";
     }
-}
-
-QString UiHelper::correctSubIOName(IGraphsModel* pModel, const QString& subgName, const QString& newName, bool bInput)
-{
-    ZASSERT_EXIT(pModel, "");
-
-    NODE_DESC desc;
-    bool ret = pModel->getDescriptor(subgName, desc);
-    if (!ret)
-        return "";
-
-    QString finalName = newName;
-    int i = 1;
-    if (bInput)
-    {
-        while (desc.inputs.find(finalName) != desc.inputs.end())
-        {
-            finalName = finalName + QString("_%1").arg(i);
-            i++;
-        }
-    }
-    else
-    {
-        while (desc.outputs.find(finalName) != desc.outputs.end())
-        {
-            finalName = finalName + QString("_%1").arg(i);
-            i++;
-        }
-    }
-    return finalName;
 }
 
 QVariant UiHelper::parseVarByType(const QString& descType, const QVariant& var, QObject* parentRef)
@@ -1636,14 +1241,6 @@ QString UiHelper::gradient2colorString(const QLinearGradient& grad)
     return colorStr;
 }
 
-QVariant UiHelper::getParamValue(const QModelIndex& idx, const QString& name)
-{
-    PARAMS_INFO params = idx.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
-    if (params.find(name) == params.end())
-        return QVariant();
-    return params[name].value;
-}
-
 int UiHelper::tabIndexOfName(const QTabWidget* pTabWidget, const QString& name)
 {
     if (!pTabWidget)
@@ -1658,72 +1255,17 @@ int UiHelper::tabIndexOfName(const QTabWidget* pTabWidget, const QString& name)
     return -1;
 }
 
-QModelIndex UiHelper::findSubInOutputIdx(IGraphsModel *pModel, bool bSubInput, const QString &paramName,
-                                         const QModelIndex &subgIdx)
-{
-    QModelIndexList nodes = pModel->searchInSubgraph(bSubInput ? "SubInput" : "SubOutput", subgIdx);
-    for (QModelIndex subInOutput : nodes)
-    {
-        NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(subInOutput.data(ROLE_NODE_PARAMS));
-        QModelIndex nameIdx = nodeParams->getParam(PARAM_PARAM, "name");
-        if (nameIdx.data(ROLE_PARAM_VALUE) == paramName)
-        {
-            return subInOutput;
-        }
-    }
-    return QModelIndex();
-}
-
-void UiHelper::getAllParamsIndex(
-        const QModelIndex& nodeIdx,
-        QModelIndexList& inputs,
-        QModelIndexList& params,
-        QModelIndexList& outputs,
-        bool bEnsureSRCDST_lastKey)
-{
-    NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(nodeIdx.data(ROLE_NODE_PARAMS));
-    ZASSERT_EXIT(nodeParams);
-
-    inputs = nodeParams->getInputIndice();
-    params = nodeParams->getParamIndice();
-    outputs = nodeParams->getOutputIndice();
-
-    if (bEnsureSRCDST_lastKey)
-    {
-        for (int i = 0; i < inputs.size(); i++)
-        {
-            if (inputs[i].data(ROLE_PARAM_NAME).toString() == "SRC")
-            {
-                QModelIndex tmp = inputs[i];
-                inputs.removeAt(i);
-                inputs.append(tmp);
-                break;
-            }
-        }
-        for (int i = 0; i < outputs.size(); i++)
-        {
-            if (outputs[i].data(ROLE_PARAM_NAME).toString() == "DST")
-            {
-                QModelIndex tmp = outputs[i];
-                outputs.removeAt(i);
-                outputs.append(tmp);
-                break;
-            }
-        }
-    }
-}
-
 QVector<qreal> UiHelper::scaleFactors()
 {
     static QVector<qreal> lst({0.01, 0.025, 0.05, .1, .15, .2, .25, .5, .75, 1.0, 1.25, 1.5, 2.0, 3.0, 4.0, 5.0});
     return lst;
 }
 
-QPair<NODES_DATA, LINKS_DATA> UiHelper::dumpNodes(const QModelIndexList &nodeIndice,
-                                                  const QModelIndexList &linkIndice)
+QPair<zeno::NodesData, zeno::LinksData>
+    UiHelper::dumpNodes(const QModelIndexList &nodeIndice, const QModelIndexList &linkIndice)
 {
-    NODES_DATA nodes;
-    QList<EDGE_INFO> links;
+    zeno::NodesData nodes;
+    zeno::LinksData links;
 
     QSet<QString> existedNodes;
     for (auto idx : nodeIndice)
@@ -1733,213 +1275,122 @@ QPair<NODES_DATA, LINKS_DATA> UiHelper::dumpNodes(const QModelIndexList &nodeInd
 
     for (auto idx : linkIndice)
     {
-        QModelIndex outSockIdx = idx.data(ROLE_OUTSOCK_IDX).toModelIndex();
-        QModelIndex inSockIdx = idx.data(ROLE_INSOCK_IDX).toModelIndex();
-        QString outPath = outSockIdx.data(ROLE_OBJPATH).toString();
-        QString inPath = inSockIdx.data(ROLE_OBJPATH).toString();
-        QString outId = idx.data(ROLE_OUTNODE).toString();
-        QString inId = idx.data(ROLE_INNODE).toString();
+        QVariantList outInfo = idx.data(ROLE_LINK_FROMPARAM_INFO).toList();
+        ZASSERT_EXIT(outInfo.size() == 3, {});
+
+        QVariantList inInfo = idx.data(ROLE_LINK_TOPARAM_INFO).toList();
+        ZASSERT_EXIT(inInfo.size() == 3, {});
+
+        QString outId = outInfo[0].toString();
+        QString inId = inInfo[0].toString();
 
         if (existedNodes.find(outId) != existedNodes.end() &&
             existedNodes.find(inId) != existedNodes.end())
         {
-            links.append(EDGE_INFO(outPath, inPath));
+            const QString& outParam = outInfo[1].toString();
+            const QString& inParam = inInfo[1].toString();
+            zeno::EdgeInfo edge = {
+                outId.toStdString(),
+                outParam.toStdString(),
+                "",
+                inId.toStdString(),
+                inParam.toStdString(),
+                ""
+            };
+            links.push_back(edge);
         }
     }
 
     for (auto idx : nodeIndice)
     {
-        NODE_DATA node = idx.data(ROLE_OBJDATA).value<NODE_DATA>();
-        INPUT_SOCKETS inputs = node[ROLE_INPUTS].value<INPUT_SOCKETS>();
-        for (INPUT_SOCKET& inSocket : inputs)
+        zeno::NodeData node = idx.data(ROLE_NODEDATA).value<zeno::NodeData>();
+        for (zeno::ParamInfo& param : node.inputs)
         {
-            for (QList<EDGE_INFO>::iterator it = inSocket.info.links.begin(); it != inSocket.info.links.end(); )
+            for (auto it = param.links.begin(); it != param.links.end(); )
             {
-                if (links.indexOf(*it) == -1)
+                if (std::find(links.begin(), links.end(), *it) == links.end())
                 {
-                    it = inSocket.info.links.erase(it);
+                    it = param.links.erase(it);
                 }
                 else
                 {
                     it++;
                 }
             }
-
-            for (DICTKEY_INFO& keyItem : inSocket.info.dictpanel.keys)
-            {
-                for (QList<EDGE_INFO>::iterator it = keyItem.links.begin(); it != keyItem.links.end(); )
-                {
-                    if (links.indexOf(*it) == -1)
-                    {
-                        it = keyItem.links.erase(it);
-                    }
-                    else
-                    {
-                        it++;
-                    }
-                }
-            }
         }
 
-        OUTPUT_SOCKETS outputs = node[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
-        for (OUTPUT_SOCKET& outSocket : outputs)
+        for (zeno::ParamInfo& param : node.outputs)
         {
-            for (QList<EDGE_INFO>::iterator it = outSocket.info.links.begin();
-                 it != outSocket.info.links.end();)
+            for (auto it = param.links.begin(); it != param.links.end(); )
             {
-                if (links.indexOf(*it) == -1)
+                if (std::find(links.begin(), links.end(), *it) == links.end())
                 {
-                    it = outSocket.info.links.erase(it);
+                    it = param.links.erase(it);
                 }
                 else
                 {
                     it++;
                 }
             }
-
-            for (DICTKEY_INFO& keyItem : outSocket.info.dictpanel.keys)
-            {
-                for (QList<EDGE_INFO>::iterator it = keyItem.links.begin(); it != keyItem.links.end(); )
-                {
-                    if (links.indexOf(*it) == -1)
-                    {
-                        it = keyItem.links.erase(it);
-                    }
-                    else
-                    {
-                        it++;
-                    }
-                }
-            }
         }
 
-        node[ROLE_INPUTS] = QVariant::fromValue(inputs);
-        node[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
-
-        const QString& oldId = node[ROLE_OBJID].toString();
-        nodes.insert(oldId, node);
+        const std::string& oldId = node.ident;
+        nodes.insert(std::make_pair(oldId, node));
     }
 
-    return QPair<NODES_DATA, LINKS_DATA>(nodes, links);
+    return { nodes, links };
 }
 
 void UiHelper::reAllocIdents(const QString& targetSubgraph,
-                              const NODES_DATA& inNodes,
-                              const LINKS_DATA& inLinks,
-                              NODES_DATA& outNodes,
-                              LINKS_DATA& outLinks)
+                              const zeno::NodesData& inNodes,
+                              const zeno::LinksData& inLinks,
+                              zeno::NodesData& outNodes,
+                              zeno::LinksData& outLinks)
 {
     QMap<QString, QString> old2new;
-    for (QString key : inNodes.keys())
+    for (const auto& [key, data] : inNodes)
     {
-        const NODE_DATA data = inNodes[key];
-        const QString& oldId = data[ROLE_OBJID].toString();
-        const QString& name = data[ROLE_OBJNAME].toString();
-        const QString& newId = UiHelper::generateUuid(name);
-        NODE_DATA newData = data;
-        newData[ROLE_OBJID] = newId;
-        outNodes.insert(newId, newData);
-        old2new.insert(oldId, newId);
+        const auto& oldId = data.ident;
+        const auto& name = data.cls;
+        const QString& newId = UiHelper::generateUuid(QString::fromStdString(name));
+        zeno::NodeData newData = data;
+        newData.ident = newId.toStdString();
+        outNodes.insert(std::make_pair(newData.ident, newData));
+        old2new.insert(QString::fromStdString(oldId), newId);
     }
     //replace all the old-id in newNodes, and clear cached links.
-    for (QString newId : outNodes.keys())
+    for (auto& [key, data] : outNodes)
     {
-        NODE_DATA& data = outNodes[newId];
-        INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
-        for (INPUT_SOCKET inputSocket : inputs)
+        for (auto& param : data.inputs)
         {
-            inputSocket.info.nodeid = newId;
-            inputSocket.info.links.clear();
-            for (DICTKEY_INFO& key : inputSocket.info.dictpanel.keys)
-            {
-                key.links.clear();
-            }
+            param.links.clear();
         }
-
-        OUTPUT_SOCKETS outputs = data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
-        for (OUTPUT_SOCKET outputSocket : outputs)
+        for (auto& param : data.outputs)
         {
-            outputSocket.info.nodeid = newId;
-            outputSocket.info.links.clear();
-            for (DICTKEY_INFO& key : outputSocket.info.dictpanel.keys)
-            {
-                key.links.clear();
-            }
+            param.links.clear();
         }
-
-        data[ROLE_INPUTS] = QVariant::fromValue(inputs);
-        data[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
     }
 
-    for (const EDGE_INFO& link : inLinks)
+    for (const zeno::EdgeInfo& link : inLinks)
     {
-        QString outputNode = UiHelper::getSockNode(link.outSockPath);
-        QString outParamPath = UiHelper::getParamPath(link.outSockPath);
-        QString inputNode = UiHelper::getSockNode(link.inSockPath);
-        QString inParamPath = UiHelper::getParamPath(link.inSockPath);
+        QString outputNode = QString::fromStdString(link.outNode);
+        QString outParam = QString::fromStdString(link.outParam);
+        QString outKey = QString::fromStdString(link.outKey);
+
+        QString inputNode = QString::fromStdString(link.inNode);
+        QString inParam = QString::fromStdString(link.inParam);
+        QString inKey = QString::fromStdString(link.inKey);
 
         ZASSERT_EXIT(old2new.find(inputNode) != old2new.end() &&
                      old2new.find(outputNode) != old2new.end());
         QString newInputNode = old2new[inputNode];
         QString newOutputNode = old2new[outputNode];
 
-        const QString& newInSock = UiHelper::constructObjPath(targetSubgraph, newInputNode, inParamPath);
-        const QString& newOutSock = UiHelper::constructObjPath(targetSubgraph, newOutputNode, outParamPath);
+        zeno::EdgeInfo newLink = link;
+        newLink.outNode = newOutputNode.toStdString();
+        newLink.inNode = newInputNode.toStdString();
 
-        outLinks.append(EDGE_INFO(newOutSock, newInSock));
-    }
-}
-
-void UiHelper::renameNetLabels(const IGraphsModel* pModel, const QModelIndex& subgIdx, NODES_DATA& nodes)
-{
-    QMap<QString, QString> labelMap;
-    for (QString id : nodes.keys())
-    {
-        NODE_DATA& data = nodes[id];
-        OUTPUT_SOCKETS outputs = data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
-        QStringList labels = pModel->dumpLabels(subgIdx);
-        for (OUTPUT_SOCKET& outputSocket : outputs)
-        {
-            if (!outputSocket.info.netlabel.isEmpty() && labels.contains(outputSocket.info.netlabel))
-            {
-                QString newLabel = id + "/[o]" + outputSocket.info.name;
-                labelMap[outputSocket.info.netlabel] = newLabel;
-                outputSocket.info.netlabel = newLabel;
-            }
-            for (DICTKEY_INFO& info : outputSocket.info.dictpanel.keys)
-            {
-                if (!info.netLabel.isEmpty() && labels.contains(info.netLabel))
-                {
-                    QString newLabel = id + "/[o]" + outputSocket.info.name + "/" + info.key;
-                    labelMap[info.netLabel] = newLabel;
-                    info.netLabel = newLabel;
-                }
-            }
-        }
-        data[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
-    }
-
-    for (QString id : nodes.keys())
-    {
-        NODE_DATA& data = nodes[id];
-        INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
-        for (INPUT_SOCKET& inputSocket : inputs)
-        {
-            if (!inputSocket.info.netlabel.isEmpty() && labelMap.contains(inputSocket.info.netlabel))
-            {
-                QString newLabel = labelMap[inputSocket.info.netlabel];
-                inputSocket.info.netlabel = newLabel;
-            }
-            for (DICTKEY_INFO& info : inputSocket.info.dictpanel.keys)
-            {
-                if (!info.netLabel.isEmpty() && labelMap.contains(info.netLabel))
-                {
-                    QString newLabel = labelMap[info.netLabel];
-                    info.netLabel = newLabel;
-                }
-            }
-        }
-        data[ROLE_INPUTS] = QVariant::fromValue(inputs);
+        outLinks.push_back(newLink);
     }
 }
 

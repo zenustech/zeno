@@ -7,11 +7,11 @@
 #include <zeno/types/UserData.h>
 #include <zeno/extra/GlobalComm.h>
 #include "settings/zenosettingsmanager.h"
-#include "launch/corelaunch.h"
 #include <zeno/core/Session.h>
 #include <zenovis/Camera.h>
 #include <zeno/funcs/ParseObjectFromUi.h>
 #include <zenovis/ObjectsManager.h>
+#include "zassert.h"
 
 
 OptixWorker::OptixWorker(Zenovis *pzenoVis)

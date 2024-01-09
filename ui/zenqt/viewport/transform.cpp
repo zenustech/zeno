@@ -3,12 +3,13 @@
 #include <zeno/funcs/PrimitiveTools.h>
 #include <zeno/types/UserData.h>
 #include <zenovis/ObjectsManager.h>
-#include <zenomodel/include/nodesmgr.h>
-#include <zenomodel/include/uihelper.h>
+#include "util/uihelper.h"
 #include "zenomainwindow.h"
 #include "viewport/viewportwidget.h"
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include "zassert.h"
+
 
 namespace zeno {
 
@@ -427,6 +428,8 @@ void FakeTransformer::endTransform(bool moved) {
         }
 
         // sync to node system
+        //TODO:
+#if 0
         zeno::scope_exit sp([] {
             IGraphsModel *pGraphs = zenoApp->graphsManagment()->currentModel();
             if (pGraphs)
@@ -436,6 +439,7 @@ void FakeTransformer::endTransform(bool moved) {
         IGraphsModel *pGraphs = zenoApp->graphsManagment()->currentModel();
         ZASSERT_EXIT(pGraphs);
         pGraphs->setApiRunningEnable(false);
+#endif
 
         for (auto &[obj_name, obj] : m_objects) {
             auto& node_sync = NodeSyncMgr::GetInstance();

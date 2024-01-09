@@ -1,5 +1,5 @@
 #include "searchitemdelegate.h"
-#include <zenoui/style/zenostyle.h>
+#include "style/zenostyle.h"
 #include "zenoapplication.h"
 
 

@@ -2,28 +2,32 @@
 #include "util/uihelper.h"
 #include "uicommon.h"
 #include "model/graphsmanager.h"
+#include "model/graphstreemodel.h"
+#include "zassert.h"
 
 
 namespace zeno {
 std::optional<NodeLocation> NodeSyncMgr::generateNewNode(NodeLocation& node_location,
                                                          const std::string& new_node_type,
                                                          const std::string& output_sock,
-                                                         const std::string& input_sock) {
-    auto graph_model = zenoApp->graphsManager()->currentModel();
-    if (!graph_model) {
+                                                         const std::string& input_sock)
+{
+    QModelIndex nodeIdx = node_location.node;
+    if (!nodeIdx.isValid()) {
         return {};
     }
-    
-    auto& node = node_location.node;
+
     auto& subgraph = node_location.subgraph;
-    auto pos = node.data(ROLE_OBJPOS).toPointF();
-    pos.setX(pos.x() + 10);
-    
-    auto new_node_id = NodesMgr::createNewNode(graph_model,
-                                               subgraph,
-                                               new_node_type.c_str(),
-                                               pos);
-    auto this_node_id = node.data(ROLE_OBJID).toString();
+    auto pos = nodeIdx.data(ROLE_OBJPOS).toPointF();
+    pos.setX(pos.x() + 100);
+
+    QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(nodeIdx.model());
+    GraphModel* pGraphM = qobject_cast<GraphModel*>(pModel);
+    ZASSERT_EXIT(pGraphM, {});
+
+    auto new_node_id = UiHelper::createNewNode(subgraph, QString::fromStdString(new_node_type), pos);
+
+    auto this_node_id = nodeIdx.data(ROLE_OBJID).toString();
 
     const QString& subgName = subgraph.data(ROLE_OBJNAME).toString();
     const QString& outNode = this_node_id;
@@ -34,8 +38,19 @@ std::optional<NodeLocation> NodeSyncMgr::generateNewNode(NodeLocation& node_loca
     QString outSockObj = UiHelper::constructObjPath(subgName, outNode, "[node]/outputs/", outSock);
     QString inSockObj = UiHelper::constructObjPath(subgName, inNode, "[node]/inputs/", inSock);
 
-    EDGE_INFO edge(outSockObj, inSockObj);
-    graph_model->addLink(subgraph, edge, false);
+    zeno::EdgeInfo edge = {
+        outNode.toStdString(),
+        outSock.toStdString(),
+        "",
+        inNode.toStdString(),
+        inSock.toStdString(),
+        ""};
+
+    QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(nodeIdx.model());
+    if (GraphModel* pGraphM = qobject_cast<GraphModel*>(pModel)) {
+        pGraphM->addLink(edge);
+    }
+
     return searchNode(new_node_id.toStdString());
 }
 
@@ -62,15 +77,15 @@ bool NodeSyncMgr::checkNodeType(const QModelIndex& node,
     return node_id.contains(node_type.c_str());
 }
 
-bool NodeSyncMgr::checkNodeInputHasValue(const QModelIndex& node,
-                                         const std::string& input_name) {
-    auto inputs = node.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+bool NodeSyncMgr::checkNodeInputHasValue(const QModelIndex& node, const std::string& input_name)
+{
+    auto inputs = node.data(ROLE_INPUTS).value<PARAMS_INFO>();
     QString inSock = QString::fromLocal8Bit(input_name.c_str());
     if (inputs.find(inSock) == inputs.end())
         return false;
 
-    const INPUT_SOCKET& inSocket = inputs[inSock];
-    return inSocket.info.links.isEmpty();
+    const auto& inSocket = inputs[inSock];
+    return inSocket.links.empty();
 }
 
 std::optional<NodeLocation> NodeSyncMgr::checkNodeLinkedSpecificNode(const QModelIndex& node,
@@ -80,7 +95,7 @@ std::optional<NodeLocation> NodeSyncMgr::checkNodeLinkedSpecificNode(const QMode
         return {};
     }
 
-    auto this_outputs = node.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
+    auto this_outputs = node.data(ROLE_OUTPUTS).value<PARAMS_INFO>();
     auto this_node_id = node.data(ROLE_OBJID).toString(); // TransformPrimitive-1f4erf21
     auto this_node_type = this_node_id.section("-", 1); // TransformPrimitive
     auto prim_sock_name = getPrimSockName(this_node_type.toStdString());
@@ -89,16 +104,16 @@ std::optional<NodeLocation> NodeSyncMgr::checkNodeLinkedSpecificNode(const QMode
     if (this_outputs.find(sockName) == this_outputs.end())
         return {};
 
-    auto linked_edges = this_outputs[sockName].info.links;
+    auto linked_edges = this_outputs[sockName].links;
     for (const auto& linked_edge : linked_edges) {
-        auto next_node_id = UiHelper::getSockNode(linked_edge.inSockPath);
+        auto next_node_id = QString::fromStdString(linked_edge.inNode);
         if (next_node_id.contains(node_type.c_str())) {
             auto search_result = graph_model->search(next_node_id, SEARCH_NODEID, SEARCH_MATCH_EXACTLY);
             if (search_result.empty()) return {};
             auto linked_node = search_result[0].targetIdx;
             auto linked_subgraph = search_result[0].subgIdx;
             auto option = linked_node.data(ROLE_OPTIONS).toInt();
-            if (option & OPT_VIEW)
+            if (option & zeno::View)
                 return NodeLocation(linked_node,
                                     linked_subgraph);
         }
@@ -116,8 +131,8 @@ std::vector<NodeLocation> NodeSyncMgr::getInputNodes(const QModelIndex& node,
         return res;
 
     for (const auto& input_edge : inputs[sockName].links) {
-        auto input_node_id = UiHelper::getSockNode(input_edge.outSockPath);
-        auto searched_node = searchNode(input_node_id.toStdString());
+        auto output_node_id = input_edge.outNode;
+        auto searched_node = searchNode(output_node_id);
         if (searched_node.has_value())
             res.emplace_back(searched_node.value());
     }
@@ -125,15 +140,22 @@ std::vector<NodeLocation> NodeSyncMgr::getInputNodes(const QModelIndex& node,
 }
 
 std::string NodeSyncMgr::getInputValString(const QModelIndex& node,
-                                           const std::string& input_name) {
-    auto inputs = node.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-    return inputs[input_name.c_str()].info.defaultValue.value<QString>().toStdString();
+                                           const std::string& input_name)
+{
+    auto inputs = node.data(ROLE_INPUTS).value<PARAMS_INFO>();
+    const QString& paramName = QString::fromStdString(input_name);
+    if (inputs.find(paramName) != inputs.end()) {
+        auto& param = inputs[paramName];
+        if (std::holds_alternative<std::string>(param.defl)) {
+            return std::get<std::string>(param.defl);
+        }
+    }
+    return "";
 }
 
 std::string NodeSyncMgr::getParamValString(const QModelIndex& node,
                                            const std::string& param_name) {
-    auto params = node.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
-    return params.value(param_name.c_str()).value.value<QString>().toStdString();
+    return getInputValString(node, param_name);
 }
 
 void NodeSyncMgr::updateNodeVisibility(NodeLocation& node_location) {
@@ -142,15 +164,17 @@ void NodeSyncMgr::updateNodeVisibility(NodeLocation& node_location) {
         return;
     }
 
-    auto node_id = node_location.node.data(ROLE_OBJID).toString();
-    int old_option = node_location.node.data(ROLE_OPTIONS).toInt();
+    const QModelIndex& nodeIdx = node_location.node;
+    if (!nodeIdx.isValid())
+        return;
+
+    auto node_id = nodeIdx.data(ROLE_OBJID).toString();
+    int old_option = nodeIdx.data(ROLE_OPTIONS).toInt();
     int new_option = old_option;
-    new_option ^= OPT_VIEW;
-    STATUS_UPDATE_INFO status_info = {old_option, new_option, ROLE_OPTIONS};
-    graph_model->updateNodeStatus(node_id,
-                                  status_info,
-                                  node_location.subgraph,
-                                  true);
+    new_option ^= zeno::View;
+
+    QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(nodeIdx.model());
+    pModel->setData(nodeIdx, new_option, ROLE_OPTIONS);
 }
 
 void NodeSyncMgr::updateNodeInputString(NodeLocation node_location,
@@ -161,39 +185,25 @@ void NodeSyncMgr::updateNodeInputString(NodeLocation node_location,
         return;
     }
 
-    auto node_id = node_location.node.data(ROLE_OBJID).toString();
-    auto inputs = node_location.node.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-    auto old_value = inputs[input_name.c_str()].info.defaultValue.value<QString>();
-    PARAM_UPDATE_INFO update_info{
-        input_name.c_str(),
-        QVariant::fromValue(old_value),
-        QVariant::fromValue(QString(new_value.c_str()))
-    };
-    graph_model->updateSocketDefl(node_id,
-                                  update_info,
-                                  node_location.subgraph,
-                                  true);
+    const QModelIndex& nodeIdx = node_location.node;
+    if (!nodeIdx.isValid())
+        return;
+
+    auto node_id = nodeIdx.data(ROLE_OBJID).toString();
+    auto inputs = nodeIdx.data(ROLE_INPUTS).value<PARAMS_INFO>();
+    const QString& paramName = QString::fromStdString(input_name);
+    if (inputs.find(paramName) != inputs.end()) {
+        auto& param = inputs[paramName];
+        param.defl = new_value;
+    }
+    QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(nodeIdx.model());
+    pModel->setData(nodeIdx, QVariant::fromValue(inputs), ROLE_INPUTS);
 }
 
 void NodeSyncMgr::updateNodeParamString(NodeLocation node_location,
                                         const std::string& param_name,
                                         const std::string& new_value) {
-    auto graph_model = zenoApp->graphsManager()->currentModel();
-    if (!graph_model) {
-        return;
-    }
-
-    auto params = node_location.node.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
-    PARAM_INFO info = params.value(param_name.c_str());
-    PARAM_UPDATE_INFO new_info = {
-        param_name.c_str(),
-        info.value,
-        QVariant(new_value.c_str())
-    };
-    graph_model->updateParamInfo(node_location.get_node_id(),
-                                 new_info,
-                                 node_location.subgraph,
-                                 true);
+    updateNodeInputString(node_location, param_name, new_value);
 }
 
 std::string NodeSyncMgr::getPrimSockName(const std::string& node_type) {

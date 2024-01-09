@@ -11,9 +11,9 @@
 #include <zeno/core/Session.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
-#include <zenoedit/zenomainwindow.h>
+#include "zenoapplication.h"
+#include "zenomainwindow.h"
 #include <zeno/types/HeatmapObject.h>
-#include "launch/corelaunch.h"
 #include <zeno/extra/GlobalStatus.h>
 #include <zeno/core/Session.h>
 

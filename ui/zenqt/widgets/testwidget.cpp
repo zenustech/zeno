@@ -1,5 +1,6 @@
 #include "testwidget.h"
-#include <zenoui/comctrl/zwidgetfactory.h>
+#include "widgets/zwidgetfactory.h"
+#include "uicommon.h"
 
 
 TestNormalWidget::TestNormalWidget()
@@ -16,10 +17,10 @@ TestNormalWidget::TestNormalWidget()
 
     CallbackCollection cbSet;
 
-    QWidget* pWidget = zenoui::createWidget("turnLeft", CONTROL_ENUM, type, cbSet, properties);
+    QWidget* pWidget = zenoui::createWidget("turnLeft", zeno::Combobox, type, cbSet, properties);
     pLayout->addWidget(pWidget);
 
-    QWidget* pSlider = zenoui::createWidget(10, CONTROL_HSLIDER, "int", cbSet, properties);
+    QWidget* pSlider = zenoui::createWidget(10, zeno::Slider, "int", cbSet, properties);
     pLayout->addWidget(pSlider);
 
     SLIDER_INFO sliderInfo;
@@ -28,7 +29,7 @@ TestNormalWidget::TestNormalWidget()
     sliderInfo.max = 100;
     properties = QVariant::fromValue(sliderInfo);
 
-    QWidget* pSpinBox = zenoui::createWidget(10, CONTROL_SPINBOX_SLIDER, "int", cbSet, properties);
+    QWidget* pSpinBox = zenoui::createWidget(10, zeno::SpinBoxSlider, "int", cbSet, properties);
     pLayout->addWidget(pSpinBox);
 
     setLayout(pLayout);

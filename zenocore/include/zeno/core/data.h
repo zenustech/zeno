@@ -26,6 +26,35 @@ namespace zeno {
         std::string inKey;
 
         LinkFunction lnkfunc = Link_Copy;
+
+        bool operator==(const EdgeInfo& rhs) const {
+            return outNode == rhs.outNode && outParam == rhs.outParam && outKey == rhs.outKey &&
+                inNode == rhs.inNode && inParam == rhs.inParam && inKey == rhs.inKey;
+        }
+        bool operator<(const EdgeInfo& rhs) const {
+
+            if (outNode != rhs.outNode) {
+                return outNode < rhs.outNode;
+            }
+            else if (outParam != rhs.outParam) {
+                return outParam < rhs.outParam;
+            }
+            else if (outKey != rhs.outKey) {
+                return outKey < rhs.outKey;
+            }
+            else if (inNode != rhs.inNode) {
+                return inNode < rhs.inNode;
+            }
+            else if (inParam != rhs.inParam) {
+                return inParam < rhs.inParam;
+            }
+            else if (inKey != rhs.inKey) {
+                return inKey < rhs.inKey;
+            }
+            else {
+                return false;
+            }
+        }
     };
 
     struct ParamInfo {

@@ -54,6 +54,7 @@ public:
     //util methods
     bool isDirty() const;
     void clearDirty();
+    QList<SEARCH_RESULT> search(const QString& content, int searchType, int searchOpts) const;
 
 signals:
     void dirtyChanged();

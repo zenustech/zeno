@@ -59,7 +59,7 @@ ZenoNewnodeMenu::ZenoNewnodeMenu(const QModelIndex& subgIdx, const NODE_CATES& c
         if (!pModel) return;
 
         QString name = item->result();
-        NodesMgr::createNewNode(pModel, m_subgIdx, name, m_scenePos);
+        UiHelper::createNewNode(m_subgIdx, name, m_scenePos);
         this->close();
         });
 }
@@ -170,7 +170,7 @@ QList<QAction*> ZenoNewnodeMenu::getCategoryActions(IGraphsModel* pModel, QModel
             QAction* pChildAction = pChildMenu->addAction(name);
             //todo: tooltip
             connect(pChildAction, &QAction::triggered, [=]() {
-                NodesMgr::createNewNode(pModel, subgIdx, name, scenePos);
+                UiHelper::createNewNode(pModel, subgIdx, name, scenePos);
                 });
         }
         pAction->setMenu(pChildMenu);

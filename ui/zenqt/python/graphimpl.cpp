@@ -155,7 +155,7 @@ Graph_createNode(ZSubGraphObject* self, PyObject* arg, PyObject* kw)
     const QString& subgName = self->subgIdx.data(ROLE_OBJNAME).toString();
     const QString& descName = QString::fromUtf8(nodeCls);
     IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-    const QString& ident = NodesMgr::createNewNode(pModel, self->subgIdx, descName, QPointF(0, 0));
+    const QString& ident = UiHelper::createNewNode(self->subgIdx, descName, QPointF(0, 0));
     //set value
     QModelIndex nodeIdx = pModel->nodeIndex(ident);
     QAbstractItemModel* pSubModel = const_cast<QAbstractItemModel*>(nodeIdx.model());

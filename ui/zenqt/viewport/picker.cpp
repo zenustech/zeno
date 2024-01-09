@@ -2,10 +2,9 @@
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
 #include "viewport/viewportwidget.h"
-
-#include <zenomodel/include/modeldata.h>
-#include <zenomodel/include/modelrole.h>
-#include <zenomodel/include/graphsmanagment.h>
+#include "zassert.h"
+#include "uicommon.h"
+#include "model/graphsmanager.h"
 
 #include <zenovis/Scene.h>
 #include <zenovis/ObjectsManager.h>
