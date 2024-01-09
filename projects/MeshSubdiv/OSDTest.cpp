@@ -844,5 +844,183 @@ ZENO_DEFNODE(OSDTest4)
     {"primitive"},
 });
 
+struct PrimSubdivision : INode {
+    virtual void apply() override {
+        auto in_prim = get_input<PrimitiveObject>("prim");
+        int maxlevel = get_input2<int>("maxLevel");
+        typedef Far::TopologyDescriptor Descriptor;
+
+        Sdc::SchemeType type = OpenSubdiv::Sdc::SCHEME_CATMARK;
+
+        Sdc::Options options;
+        options.SetVtxBoundaryInterpolation(Sdc::Options::VTX_BOUNDARY_EDGE_ONLY);
+
+        std::vector<int> polys_in;
+        for (auto [_base, len]: in_prim->polys) {
+            polys_in.push_back(len);
+        }
+        // Populate a topology descriptor with our raw data
+        Descriptor desc;
+        desc.numVertices  = in_prim->verts.size();
+        desc.numFaces     = in_prim->polys.size();
+        desc.numVertsPerFace = polys_in.data();
+        desc.vertIndicesPerFace  = in_prim->loops.data();
+
+        int channelUV = 0;
+
+        if (in_prim->uvs.size()) {
+            // Create a face-varying channel descriptor
+            Descriptor::FVarChannel channels[1];
+            channels[channelUV].numValues = in_prim->uvs.size();
+            channels[channelUV].valueIndices = in_prim->loops.attr<int>("uvs").data();
+
+            // Add the channel topology to the main descriptor
+            desc.numFVarChannels = 1;
+            desc.fvarChannels = channels;
+        }
+
+        // Instantiate a Far::TopologyRefiner from the descriptor
+        Far::TopologyRefiner * refiner =
+            Far::TopologyRefinerFactory<Descriptor>::Create(desc,
+                Far::TopologyRefinerFactory<Descriptor>::Options(type, options));
+
+        // Uniformly refine the topology up to 'maxlevel'
+        // note: fullTopologyInLastLevel must be true to work with face-varying data
+        {
+            Far::TopologyRefiner::UniformOptions refineOptions(maxlevel);
+            refineOptions.fullTopologyInLastLevel = true;
+            refiner->RefineUniform(refineOptions);
+        }
+
+        // Allocate and initialize the 'vertex' primvar data (see tutorial 2 for
+        // more details).
+        std::vector<Vertex> vbuffer(refiner->GetNumVerticesTotal());
+        for (int i=0; i<in_prim->verts.size(); ++i) {
+            vbuffer[i].SetPosition(in_prim->verts[i][0], in_prim->verts[i][1], in_prim->verts[i][2]);
+        }
+
+        // Interpolate both vertex and face-varying primvar data
+        Far::PrimvarRefiner primvarRefiner(*refiner);
+
+        Vertex *     srcVert = vbuffer.data();
+
+        for (int level = 1; level <= maxlevel; ++level) {
+            Vertex *     dstVert = srcVert + refiner->GetLevel(level-1).GetNumVertices();
+
+            primvarRefiner.Interpolate(level, srcVert, dstVert);
+
+            srcVert = dstVert;
+        }
+
+        std::vector<FVarVertexUV> fvBufferUV;
+        if (in_prim->uvs.size()) {
+            // Allocate and initialize the first channel of 'face-varying' primvar data (UVs)
+            fvBufferUV.resize(refiner->GetNumFVarValuesTotal(channelUV));
+            for (int i=0; i<in_prim->uvs.size(); ++i) {
+                fvBufferUV[i].u = in_prim->uvs[i][0];
+                fvBufferUV[i].v = in_prim->uvs[i][1];
+            }
+            FVarVertexUV * srcFVarUV = fvBufferUV.data();
+            for (int level = 1; level <= maxlevel; ++level) {
+                FVarVertexUV * dstFVarUV = srcFVarUV + refiner->GetLevel(level-1).GetNumFVarValues(channelUV);
+
+                primvarRefiner.InterpolateFaceVarying(level, srcFVarUV, dstFVarUV, channelUV);
+
+                srcFVarUV = dstFVarUV;
+            }
+        }
+
+        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        std::vector<vec3f> verts_;
+        std::vector<vec2f> uvs;
+        std::vector<int> loops;
+        std::vector<int> loops_uv;
+        std::vector<int> polys;
+        { // Output OBJ of the highest level refined -----------
+
+            Far::TopologyLevel const & refLastLevel = refiner->GetLevel(maxlevel);
+
+            int nverts = refLastLevel.GetNumVertices();
+            zeno::log_info("nverts: {}", nverts);
+
+            int nfaces = refLastLevel.GetNumFaces();
+            zeno::log_info("nfaces: {}", nfaces);
+
+            // Print vertex positions
+            int firstOfLastVerts = refiner->GetNumVerticesTotal() - nverts;
+
+            for (int vert = 0; vert < nverts; ++vert) {
+                float const * pos = vbuffer[firstOfLastVerts + vert].GetPosition();
+                verts_.emplace_back(pos[0], pos[1], pos[2]);
+            }
+
+            int nuvs = 0;
+            if (in_prim->uvs.size()) {
+                int nuvs   = refLastLevel.GetNumFVarValues(channelUV);
+                zeno::log_info("nuvs: {}", nuvs);
+                // Print uvs
+                int firstOfLastUvs = refiner->GetNumFVarValuesTotal(channelUV) - nuvs;
+
+                for (int fvvert = 0; fvvert < nuvs; ++fvvert) {
+                    FVarVertexUV const & uv = fvBufferUV[firstOfLastUvs + fvvert];
+                    uvs.emplace_back(uv.u, uv.v);
+                }
+            }
+
+            // Print faces
+            for (int face = 0; face < nfaces; ++face) {
+
+                Far::ConstIndexArray fverts = refLastLevel.GetFaceVertices(face);
+
+                // all refined Catmark faces should be quads
+                assert(fverts.size()==4 && fuvs.size()==4);
+
+                polys.push_back(fverts.size());
+                for (int vert=0; vert<fverts.size(); ++vert) {
+                    loops.push_back(fverts[vert]);
+                }
+                if (in_prim->uvs.size()) {
+                    Far::ConstIndexArray fuvs   = refLastLevel.GetFaceFVarValues(face, channelUV);
+                    for (int vert=0; vert<fverts.size(); ++vert) {
+                        loops_uv.push_back(fuvs[vert]);
+                    }
+                }
+            }
+        }
+
+        delete refiner;
+
+        prim->verts.resize(verts_.size());
+        std::copy(verts_.begin(), verts_.end(), prim->verts.begin());
+        prim->loops.resize(loops.size());
+        std::copy(loops.begin(), loops.end(), prim->loops.begin());
+        if (uvs.size()) {
+            prim->uvs.resize(uvs.size());
+            std::copy(uvs.begin(), uvs.end(), prim->uvs.begin());
+            std::copy(loops_uv.begin(), loops_uv.end(), prim->loops.add_attr<int>("uvs").begin());
+        }
+
+        prim->polys.resize(polys.size());
+        int start = 0;
+        for (auto i = 0; i < prim->polys.size(); i++) {
+            prim->polys[i] = {start, polys[i]};
+            start += polys[i];
+        }
+        set_output("prim", std::move(prim));
+    }
+};
+ZENO_DEFNODE(PrimSubdivision)
+({
+    {
+        "prim",
+        {"int", "maxLevel", "1"},
+    },
+    {
+        "prim",
+    },
+    {},
+    {"primitive"},
+});
+
 } // namespace
 } // namespace zeno
