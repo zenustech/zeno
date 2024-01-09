@@ -7,6 +7,7 @@
 #include <cstring>
 #include <opensubdiv/far/primvarRefiner.h>
 #include <opensubdiv/far/topologyDescriptor.h>
+#include "zeno/funcs/PrimitiveUtils.h"
 
 namespace zeno {
 namespace {
@@ -1006,6 +1007,9 @@ struct PrimSubdivision : INode {
             prim->polys[i] = {start, polys[i]};
             start += polys[i];
         }
+        if (get_input2<bool>("triangulate")) {
+            primTriangulate(prim.get(), true, true);
+        }
         set_output("prim", std::move(prim));
     }
 };
@@ -1014,6 +1018,7 @@ ZENO_DEFNODE(PrimSubdivision)
     {
         "prim",
         {"int", "maxLevel", "1"},
+        {"bool", "triangulate", "1"},
     },
     {
         "prim",
