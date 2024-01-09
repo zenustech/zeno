@@ -107,10 +107,9 @@ zeno_removeGraph(PyObject* self, PyObject* args)
         return Py_None;
     }
 
-    QModelIndex idxGraph = pModel->index(graphName);
-    if (idxGraph.isValid())
+    if (!graphName.isEmpty())
     {
-        pModel->removeGraph(idxGraph.row());
+        pModel->removeSubGraph(graphName);
     }
     else
     {

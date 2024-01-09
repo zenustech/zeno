@@ -61,7 +61,7 @@ CONTROL_INFO GlobalControlMgr::controlInfo(const QString& nodeCls, PARAM_CLASS c
     }
     if (nodeCls == "PythonNode" && coreParam == "script")
     {
-        return CONTROL_INFO(CONTROL_PYTHON_EDITOR, QVariant());
+        return CONTROL_INFO(CONTROL_MULTILINE_STRING, QVariant());
     }
     return CONTROL_INFO(UiHelper::getControlByType(coreType), QVariant());
 }

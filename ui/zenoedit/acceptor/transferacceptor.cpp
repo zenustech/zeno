@@ -525,6 +525,10 @@ void TransferAcceptor::setOptions(const QString& id, const QStringList& options)
         {
             opts |= OPT_MUTE;
         }
+        else if (optName == "CACHE")
+        {
+            opts |= OPT_CACHE;
+        }
         else if (optName == "collapsed")
         {
             data[ROLE_COLLASPED] = true;

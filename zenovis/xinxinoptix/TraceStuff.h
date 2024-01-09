@@ -52,6 +52,10 @@ struct VolumePRD {
 };
 
 struct ShadowPRD {
+    bool test_distance;
+    float maxDistance;
+    uint32_t lightIdx = UINT_MAX;
+
     float3 origin;
     uint32_t seed;
     float3 attanuation;
@@ -66,6 +70,8 @@ struct ShadowPRD {
 
 struct RadiancePRD
 {
+    bool test_distance;
+    float maxDistance;
     // TODO: move some state directly into payload registers?
     float3       radiance;
     float3       radiance_d;
@@ -90,7 +96,6 @@ struct RadiancePRD
     int          medium;
     float        scatterDistance;
     float        scatterPDF;
-    float        maxDistance;
     int          depth;
     int          diffDepth;
     bool         isSS;
@@ -104,6 +109,8 @@ struct RadiancePRD
     bool         fromDiff;
     unsigned char adepth;
     bool         alphaHit;
+
+    uint16_t lightmask = EverythingMask;
 
     __forceinline__ float rndf() {
         return rnd(this->seed);
@@ -132,7 +139,6 @@ struct RadiancePRD
 
     // cihou nanovdb
     VolumePRD vol;
-    bool test_distance = false ;
 
     float _tmin_ = 0;
     float3 geometryNormal;
@@ -146,7 +152,7 @@ struct RadiancePRD
         auto dir = forward? geometryNormal:-geometryNormal;
         auto offset = rtgems::offset_ray(P, dir);
         float l = length( offset - P );
-        float l2 = this->alphaHit? clamp(l, 1e-4, 1e-2) : max(l, 1e-5);
+        float l2 = this->alphaHit? max(l, 1e-4) : max(l, 1e-5);
         P = P + l2 * dir;
     }
 

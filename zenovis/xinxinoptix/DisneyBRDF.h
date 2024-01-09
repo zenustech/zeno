@@ -23,7 +23,7 @@ static __inline__ __device__ vec3 fresnelSchlick(vec3 r0, float radians)
 static __inline__ __device__ float fresnelSchlick(float r0, float radians)
 {
     //previous : mix(1.0, fresnel(radians), r0); //wrong
-    return mix(fresnel(radians), 1.0f, r0); //giving: (1 - r0) * pow(radians, 5) + r0, consistant with line 15
+    return mix(fresnel(radians), 1.0f, r0); //giving: (1 - r0) * pow(1 - radians, 5) + r0, consistant with line 15
 }
 static __inline__ __device__ float SchlickWeight(float u)
 {
@@ -469,7 +469,7 @@ vec3 EvalMicrofacetRefraction(vec3 baseColor, float ax, float ay, float eta, vec
   float denom = LDotH * eta + VDotH;
   denom *= denom;
   float eta2 = eta * eta;
-  float jacobian = abs(LDotH) / denom;
+  float jacobian = abs(LDotH) / (denom + 1e-5f);
 
   pdf = G1 * max(0.0, VDotH) * D * jacobian / abs(V.z);
   return pow(baseColor, vec3(0.5f)) * (vec3(1.0f) - F)
@@ -498,7 +498,7 @@ vec3 EvalClearcoat(float ccR, vec3 V, vec3 L, vec3 H, float &pdf)
   float jacobian = 1.0f / (4.0f * VDotH);
 
   pdf = D * H.z * jacobian;
-  return vec3(F) * D * G;
+  return vec3(1.0) * D * G;
 }
 }
 
