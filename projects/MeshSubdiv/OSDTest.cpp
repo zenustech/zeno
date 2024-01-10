@@ -147,6 +147,111 @@ private:
     int     _size;
 };
 
+namespace {
+struct Vertex3 {
+
+    // Minimal required interface ----------------------
+    Vertex3() {
+    }
+
+    void Clear(void * = 0) {
+        _point[0] = _point[1] = _point[2] = 0.0f;
+    }
+
+    void AddWithWeight(Vertex3 const &src, float weight) {
+        _point[0] += weight * src._point[0];
+        _point[1] += weight * src._point[1];
+        _point[2] += weight * src._point[2];
+    }
+
+    // Public interface ------------------------------------
+    void SetPoint(float x, float y, float z) {
+        _point[0] = x;
+        _point[1] = y;
+        _point[2] = z;
+    }
+
+    const float *GetPoint() const {
+        return _point;
+    }
+
+  private:
+    float _point[3];
+};
+
+struct Vertex2 {
+
+    // Minimal required interface ----------------------
+    Vertex2() {
+    }
+
+    void Clear(void * = 0) {
+        _point[0] = _point[1] = 0.0f;
+    }
+
+    void AddWithWeight(Vertex2 const &src, float weight) {
+        _point[0] += weight * src._point[0];
+        _point[1] += weight * src._point[1];
+    }
+
+    // Public interface ------------------------------------
+    void SetPoint(float x, float y) {
+        _point[0] = x;
+        _point[1] = y;
+    }
+
+    const float *GetPoint() const {
+        return _point;
+    }
+
+  private:
+    float _point[2];
+};
+
+struct Vertex1 {
+
+    // Minimal required interface ----------------------
+    Vertex1() {
+    }
+
+    void Clear(void * = 0) {
+        _point[0] = 0.0f;
+    }
+
+    void AddWithWeight(Vertex1 const &src, float weight) {
+        _point[0] += weight * src._point[0];
+    }
+
+    // Public interface ------------------------------------
+    void SetPoint(float x, float y, float z) {
+        _point[0] = x;
+    }
+
+    const float *GetPoint() const {
+        return _point;
+    }
+
+  private:
+    float _point[1];
+};
+
+static Vertex3 *convvertexptr(vec3f *p) {
+    return reinterpret_cast<Vertex3 *>(p);
+}
+
+static Vertex2 *convvertexptr(vec2f *p) {
+    return reinterpret_cast<Vertex2 *>(p);
+}
+
+static Vertex1 *convvertexptr(float *p) {
+    return reinterpret_cast<Vertex1 *>(p);
+}
+
+static vec3f v2to3(vec2f const &v) {
+    return {v[0], v[1], 0};
+}
+} // namespace
+
 using namespace OpenSubdiv;
 
 struct OSDTest : INode {
@@ -898,22 +1003,25 @@ struct PrimSubdivision : INode {
 
         // Allocate and initialize the 'vertex' primvar data (see tutorial 2 for
         // more details).
-        std::vector<Vertex> vbuffer(refiner->GetNumVerticesTotal());
-        for (int i=0; i<in_prim->verts.size(); ++i) {
-            vbuffer[i].SetPosition(in_prim->verts[i][0], in_prim->verts[i][1], in_prim->verts[i][2]);
-        }
+        in_prim->verts.resize(refiner->GetNumVerticesTotal());
 
         // Interpolate both vertex and face-varying primvar data
         Far::PrimvarRefiner primvarRefiner(*refiner);
 
-        Vertex *     srcVert = vbuffer.data();
+        int start_offset = 0;
 
         for (int level = 1; level <= maxlevel; ++level) {
-            Vertex *     dstVert = srcVert + refiner->GetLevel(level-1).GetNumVertices();
+            auto *     srcVert = convvertexptr(in_prim->verts.data() + start_offset);
+            int end_offset = start_offset + refiner->GetLevel(level-1).GetNumVertices();
+            auto *     dstVert = convvertexptr(in_prim->verts.data() + end_offset);
 
             primvarRefiner.Interpolate(level, srcVert, dstVert);
-
-            srcVert = dstVert;
+            in_prim->verts.foreach_attr([&](auto const &key, auto &arr) {
+                auto *srcClr = convvertexptr(arr.data() + start_offset);
+                auto *dstClr = convvertexptr(arr.data() + end_offset);
+                primvarRefiner.InterpolateVarying(level, srcClr, dstClr);
+            });
+            start_offset = end_offset;
         }
 
         std::vector<FVarVertexUV> fvBufferUV;
@@ -935,7 +1043,6 @@ struct PrimSubdivision : INode {
         }
 
         auto prim = std::make_shared<zeno::PrimitiveObject>();
-        std::vector<vec3f> verts_;
         std::vector<vec2f> uvs;
         std::vector<int> loops;
         std::vector<int> loops_uv;
@@ -953,10 +1060,13 @@ struct PrimSubdivision : INode {
             // Print vertex positions
             int firstOfLastVerts = refiner->GetNumVerticesTotal() - nverts;
 
-            for (int vert = 0; vert < nverts; ++vert) {
-                float const * pos = vbuffer[firstOfLastVerts + vert].GetPosition();
-                verts_.emplace_back(pos[0], pos[1], pos[2]);
-            }
+            prim->verts.resize(nverts);
+            std::copy(in_prim->verts.begin() + firstOfLastVerts, in_prim->verts.end(), prim->verts.begin());
+            in_prim->verts.foreach_attr([&](auto const &key, auto &arr) {
+                using T = std::decay_t<decltype(arr[0])>;
+                auto &new_arr = prim->verts.template add_attr<T>(key);
+                std::copy(arr.begin() + firstOfLastVerts, arr.end(), new_arr.begin());
+            });
 
             int nuvs = 0;
             if (in_prim->uvs.size()) {
@@ -994,8 +1104,6 @@ struct PrimSubdivision : INode {
 
         delete refiner;
 
-        prim->verts.resize(verts_.size());
-        std::copy(verts_.begin(), verts_.end(), prim->verts.begin());
         prim->loops.resize(loops.size());
         std::copy(loops.begin(), loops.end(), prim->loops.begin());
         if (uvs.size()) {
