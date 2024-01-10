@@ -832,7 +832,8 @@ void GlobalComm::prepareForOptix(std::map<std::string, std::shared_ptr<zeno::IOb
 
 void GlobalComm::prepareForBeta()
 {
-    renderTypeBeta = NORMAL;
+    for (auto& [idx, type] : renderTypeBeta)
+        type = NORMAL;
 }
 
 ZENO_API void GlobalComm::clear_objects() {
@@ -1193,16 +1194,23 @@ ZENO_API GlobalComm::RenderType GlobalComm::getRenderType()
     return renderType;
 }
 
-ZENO_API void GlobalComm::setRenderTypeBeta(RenderType type)
+ZENO_API void GlobalComm::setRenderTypeBeta(int bateEnginIdx, RenderType type)
 {
     std::lock_guard lck(g_objsMutex);
-    renderTypeBeta = type;
+    renderTypeBeta[bateEnginIdx] = type;
 }
 
-ZENO_API GlobalComm::RenderType GlobalComm::getRenderTypeBeta()
+ZENO_API GlobalComm::RenderType GlobalComm::getRenderTypeBeta(int bateEnginIdx)
 {
     std::lock_guard lck(g_objsMutex);
-    return renderTypeBeta;
+    auto& it = renderTypeBeta.find(bateEnginIdx);
+    if (it == renderTypeBeta.end())
+    {
+        return UNDEFINED;
+    }
+    else {
+        return (*it).second;
+    }
 }
 
 ZENO_API MapObjects GlobalComm::getLightObjs()

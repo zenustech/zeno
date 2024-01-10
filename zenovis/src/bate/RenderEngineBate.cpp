@@ -18,6 +18,12 @@ struct RenderEngineBate : RenderEngine {
     std::unique_ptr<IGraphicDraw> primHighlight;
     Scene *scene;
 
+    int bateEnginIdx = 0;
+    int getEnginIdx() {
+        static int bateEnginIdxCounter = 0;
+        return ++bateEnginIdxCounter;
+    }
+
     auto setupState() {
         return std::tuple{
             opengl::scopeGLEnable(GL_BLEND), opengl::scopeGLEnable(GL_DEPTH_TEST),
@@ -37,12 +43,13 @@ struct RenderEngineBate : RenderEngine {
         hudGraphics.push_back(makeGraphicSelectBox(scene));
 
         primHighlight = makePrimitiveHighlight(scene);
+
+        bateEnginIdx = getEnginIdx();
     }
 
     void update() override {
         std::lock_guard lck(zeno::g_objsMutex);
-        graphicsMan->update_objs(zeno::getSession().globalComm->getCurrentFrameObjs(), zeno::getSession().globalComm->getNeedUpdateToviewObjs());
-        zeno::getSession().globalComm->setRenderTypeBeta(zeno::GlobalComm::UNDEFINED);
+        graphicsMan->update_objs(zeno::getSession().globalComm->getCurrentFrameObjs(), zeno::getSession().globalComm->getNeedUpdateToviewObjs(), bateEnginIdx);
     }
 
     void draw() override {
