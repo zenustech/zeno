@@ -1797,6 +1797,7 @@ struct PrimAttributePromote : INode {
                                      "the poly-based representation.");
 
         auto directionStr = get_input2<std::string>("direction");
+
         if (hasLoops) {
             ///
             /// poly representation
@@ -1836,22 +1837,39 @@ struct PrimAttributePromote : INode {
                 std::string strategy = get_input2<std::string>("merge_strategy");
                 int mergeOp = strategy == "average" ? 0 : (strategy == "min" ? 1 : 2);
 
-                /// prep attr
+                auto initAttrib = [mergeOp](auto &arr) {
+                    using T = typename RM_REF_T(arr)::value_type;
+                    if constexpr (zs::is_fundamental_v<T>) {
+                        auto m = mergeOp == 0 ? (T)0
+                                              : (mergeOp == 1 ? zs::detail::deduce_numeric_max<T>()
+                                                              : zs::detail::deduce_numeric_lowest<T>());
+                        std::fill(std::begin(arr), std::end(arr), m);
+                    } else {
+                        using TT = typename T::value_type;
+                        auto m = mergeOp == 0 ? (TT)0
+                                              : (mergeOp == 1 ? zs::detail::deduce_numeric_max<TT>()
+                                                              : zs::detail::deduce_numeric_lowest<TT>());
+                        T ele;
+                        for (auto &e : ele)
+                            e = m;
+                        std::fill(std::begin(arr), std::end(arr), ele);
+                    }
+                };
+
+                // prepare attrib + init
                 bool handleUv = promoteAttribs.find("uv") != promoteAttribs.end() && loops.has_attr("uvs");
-                if (handleUv)
-                    verts.add_attr<zeno::vec3f>("uv");
+                if (handleUv) {
+                    auto &vertUvs = verts.add_attr<zeno::vec3f>("uv");
+                    initAttrib(vertUvs);
+                }
 
                 uvs.foreach_attr<AttrAcceptAll>([&](auto const &key, auto const &arr) {
                     using T = std::decay_t<decltype(arr[0])>;
                     if (promoteAttribs.find(key) != promoteAttribs.end()) {
-                        if (key != "uv") {
-                            auto &attr = verts.add_attr<T>(key);
-                            std::memset(attr.data(), 0, sizeof(T) * attr.size());
-                        }
+                        auto &attr = verts.add_attr<T>(key);
+                        initAttrib(attr);
                     }
                 });
-
-                /// demote
                 if (mergeOp == 0) {
                     /// average
                     std::vector<int> vCnts(verts.size());
@@ -1901,28 +1919,6 @@ struct PrimAttributePromote : INode {
                     });
                 } else if (mergeOp == 1 || mergeOp == 2) {
                     /// min / max
-                    // init
-                    for (const auto &attribTag : promoteAttribs) {
-                        if (verts.has_attr(attribTag))
-                            match([&](auto &vertAttrib) {
-                                using T = typename RM_CVREF_T(vertAttrib)::value_type;
-                                if constexpr (zs::is_fundamental_v<T>) {
-                                    auto m = mergeOp == 1 ? zs::detail::deduce_numeric_max<T>()
-                                                          : zs::detail::deduce_numeric_lowest<T>();
-                                    std::fill(std::begin(vertAttrib), std::end(vertAttrib), m);
-                                } else {
-                                    using TT = typename T::value_type;
-
-                                    auto m = mergeOp == 1 ? zs::detail::deduce_numeric_max<TT>()
-                                                          : zs::detail::deduce_numeric_lowest<TT>();
-                                    T ele;
-                                    for (auto &e : ele)
-                                        e = m;
-                                    std::fill(std::begin(vertAttrib), std::end(vertAttrib), ele);
-                                }
-                            })(verts.attr(attribTag));
-                    }
-                    // merge
                     pol(range(loops.size()), [&, tag = wrapv<space>{}](int i) {
                         auto pi = loops.values[i];
                         auto uvI = loopUvIds[i];
@@ -2004,6 +2000,52 @@ struct PrimAttributePromote : INode {
                 /// rm attr
                 for (const auto &attr : promoteAttribs)
                     verts.erase_attr(attr);
+            } else {
+                std::string strategy = get_input2<std::string>("merge_strategy");
+                int mergeOp = strategy == "average" ? 0 : (strategy == "min" ? 1 : 2);
+
+                auto initAttrib = [mergeOp](auto &arr) {
+                    using T = typename RM_REF_T(arr)::value_type;
+                    if constexpr (zs::is_fundamental_v<T>) {
+                        auto m = mergeOp == 0 ? (T)0
+                                              : (mergeOp == 1 ? zs::detail::deduce_numeric_max<T>()
+                                                              : zs::detail::deduce_numeric_lowest<T>());
+                        std::fill(std::begin(arr), std::end(arr), m);
+                    } else {
+                        using TT = typename T::value_type;
+                        auto m = mergeOp == 0 ? (TT)0
+                                              : (mergeOp == 1 ? zs::detail::deduce_numeric_max<TT>()
+                                                              : zs::detail::deduce_numeric_lowest<TT>());
+                        T ele;
+                        for (auto &e : ele)
+                            e = m;
+                        std::fill(std::begin(arr), std::end(arr), ele);
+                    }
+                };
+                // prep attr + init
+                for (auto promoteAttrib : promoteAttribs) {
+                    if (tris.has_attr(promoteAttrib))
+                        match([&verts, &promoteAttrib, &initAttrib](const auto &triAttrib) {
+                            using T = typename RM_REF_T(triAttrib)::value_type;
+                            auto &arr = verts.add_attr<T>(promoteAttrib);
+                            initAttrib(arr);
+                        })(tris.attr(promoteAttrib));
+                    else if (tris.has_attr(promoteAttrib + "0") && tris.has_attr(promoteAttrib + "1") &&
+                             tris.has_attr(promoteAttrib + "2"))
+                        match([&verts, &promoteAttrib, &initAttrib](const auto &triAttrib) {
+                            using T = typename RM_REF_T(triAttrib)::value_type;
+                            auto &arr = verts.add_attr<typename RM_REF_T(triAttrib)::value_type>(promoteAttrib);
+                            initAttrib(arr);
+                        })(tris.attr(promoteAttrib + "0"));
+                }
+
+                if (mergeOp == 0) {
+                    ;
+                    ;
+                } else if (mergeOp == 1 || mergeOp == 2) {
+                    ;
+                    ;
+                }
             }
         }
 
