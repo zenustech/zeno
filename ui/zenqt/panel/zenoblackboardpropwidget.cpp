@@ -1,13 +1,18 @@
 #include "zenoblackboardpropwidget.h"
-#include <zenoui/comctrl/zlabel.h>
-#include <zenoui/style/zenostyle.h>
+#include "uicommon.h"
+#include "widgets/zlabel.h"
+#include "style/zenostyle.h"
 #include <QGridLayout>
 #include "zenoapplication.h"
-#include <zenoui/comctrl/zwidgetfactory.h>
-#include <zenomodel/include/graphsmanagment.h>
+#include "widgets/zwidgetfactory.h"
+#include "model/graphsmanager.h"
 #include "zenomainwindow.h"
-#include <zenomodel/include/uihelper.h>
+#include "util/uihelper.h"
 
+
+//need to refactor data structure.
+
+#if 0
 ZenoBlackboardPropWidget::ZenoBlackboardPropWidget(const QPersistentModelIndex &index, const QPersistentModelIndex &subIndex, QWidget *parent)
     : QWidget(parent), 
     m_idx(index), 
@@ -90,3 +95,4 @@ void ZenoBlackboardPropWidget::insertRow(const QString &desc, const PARAM_CONTRO
     if (pControl)
         pGroupLayout->addWidget(pControl, row, 2, Qt::AlignVCenter);
 }
+#endif

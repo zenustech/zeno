@@ -7,6 +7,7 @@
 #include "startup/zstartup.h"
 #include <style/zenostyle.h>
 #include "settings/zenosettingsmanager.h"
+#include "uicommon.h"
 
 
 ZenoApplication::ZenoApplication(int &argc, char **argv)

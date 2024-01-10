@@ -1,4 +1,4 @@
-find_package(Qt5 COMPONENTS Widgets OpenGL Network Quick REQUIRED)
+find_package(Qt5 COMPONENTS Widgets OpenGL Network Quick Svg REQUIRED)
 find_package(Threads REQUIRED)
 
 message(STATUS "Found Qt5 version ${Qt5_VERSION}: ${Qt5_DIR}")
@@ -42,7 +42,7 @@ endif()
 
 
 target_link_libraries(zenqt PRIVATE Threads::Threads)
-target_link_libraries(zenqt PRIVATE Qt5::Widgets Qt5::OpenGL Qt5::Network Qt5::Quick)
+target_link_libraries(zenqt PRIVATE Qt5::Widgets Qt5::OpenGL Qt5::Svg Qt5::Network Qt5::Quick)
 
 if (WIN32)
     target_link_libraries(zenqt PRIVATE Dbghelp Version)

@@ -1,7 +1,7 @@
 #include "zaddtabbar.h"
-#include <zenoui/comctrl/zicontoolbutton.h>
-#include <zenoui/comctrl/zlabel.h>
-#include <zenoui/style/zenostyle.h>
+#include "widgets/zicontoolbutton.h"
+#include "widgets/zlabel.h"
+#include "style/zenostyle.h"
 
 
 ZAddTabBar::ZAddTabBar(QWidget* parent)

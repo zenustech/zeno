@@ -1,16 +1,17 @@
 #include "zcurvemapeditor.h"
 #include "curvemapview.h"
 #include "ui_zcurvemapeditor.h"
-#include <zenoui/style/zenostyle.h>
+#include "style/zenostyle.h"
 #include "curvenodeitem.h"
-#include <zenomodel/include/curvemodel.h>
+#include "model/curvemodel.h"
 #include "curvesitem.h"
-#include <zenomodel/include/uihelper.h>
-#include <zenoui/comctrl/effect/innershadoweffect.h>
+#include "util/uihelper.h"
+#include "widgets/effect/innershadoweffect.h"
 #include "zassert.h"
-#include <zenomodel/include/igraphsmodel.h>.
-#include <zenomodel/include/graphsmanagment.h>
+#include "model/graphsmanager.h"
 #include "variantptr.h"
+#include "util/curveutil.h"
+
 
 ZCurveMapEditor::ZCurveMapEditor(bool bTimeline, QWidget* parent)
 	: QDialog(parent)

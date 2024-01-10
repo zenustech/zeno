@@ -7,6 +7,8 @@
 #include "nodesview/zenographseditor.h"
 #include "zenomainwindow.h"
 
+
+#if 0
 ZenoCommandParamsPanel::ZenoCommandParamsPanel(QWidget* parent)
     : QWidget(parent)
 {
@@ -254,3 +256,5 @@ void ZenoCommandParamsPanel::onModelInited()
     connect(pModel, &IGraphsModel::modelClear, this, &ZenoCommandParamsPanel::onModelClear);
     initTableWidget();
 }
+
+#endif

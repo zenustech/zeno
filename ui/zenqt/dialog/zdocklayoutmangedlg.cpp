@@ -5,6 +5,7 @@
 #include <QMessageBox>
 #include <QInputDialog>
 
+
 ZDockLayoutMangeDlg::ZDockLayoutMangeDlg(QWidget *parent)
     : QDialog(parent)
     , ui(new Ui::ZLayoutMangeDlgClass())

@@ -1,5 +1,7 @@
 #include "zenobackgrounditem.h"
-#include <zenomodel/include/uihelper.h>
+#include "util/uihelper.h"
+#include "nodeeditor/gv/zenosvgitem.h"
+#include "control/renderparam.h"
 
 
 ZenoBackgroundItem::ZenoBackgroundItem(const BackgroundComponent &comp, QGraphicsItem *parent)

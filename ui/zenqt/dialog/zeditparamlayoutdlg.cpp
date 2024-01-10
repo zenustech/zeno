@@ -1,4 +1,6 @@
 #include "zeditparamlayoutdlg.h"
+
+#if 0
 #include "ui_zeditparamlayoutdlg.h"
 #include "zassert.h"
 #include <zenomodel/include/uihelper.h>
@@ -1374,3 +1376,4 @@ void ZEditParamLayoutDlg::updateSliderInfo()
         }
     }
 }
+#endif

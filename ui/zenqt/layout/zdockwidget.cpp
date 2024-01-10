@@ -1,8 +1,8 @@
 #include "zdockwidget.h"
-#include <zenoui/comctrl/zdocktabwidget.h>
+#include "layout/zdockwidget.h"
 #include "zenoapplication.h"
 #include "../panel/zenodatapanel.h"
-#include <zenoedit/panel/zenoimagepanel.h>
+#include "panel/zenoimagepanel.h"
 #include "panel/zenoproppanel.h"
 #include "../panel/zenospreadsheet.h"
 #include "../panel/zlogpanel.h"
@@ -10,20 +10,22 @@
 #include "../panel/zenoopenpathpanel.h"
 #include "viewport/viewportwidget.h"
 #include "viewport/displaywidget.h"
-#include "nodesview/zenographseditor.h"
-#include <zenoui/comctrl/zlabel.h>
+#include "nodeeditor/gv/zenographseditor.h"
+#include "widgets/zlabel.h"
 #include "zenomainwindow.h"
 #include "zenoapplication.h"
-#include <zenomodel/include/graphsmanagment.h>
-#include <zenoui/style/zenostyle.h>
-#include <zenoui/comctrl/zicontoolbutton.h>
-#include <zenomodel/include/modelrole.h>
+#include "model/graphsmanager.h"
+#include "style/zenostyle.h"
+#include "widgets/zicontoolbutton.h"
+#include "uicommon.h"
 #include <zenovis/ObjectsManager.h>
-#include <zenomodel/include/uihelper.h>
+#include "util/uihelper.h"
 #include "util/apphelper.h"
 #include "viewport/optixviewport.h"
+#include "layout/zdocktabwidget.h"
+#include "zassert.h"
+#include "viewport/zenovis.h"
 
-#include "launch/ztcpserver.h"
 
 ZDockWidget::ZDockWidget(ZenoMainWindow* mainWin, Qt::WindowFlags flags)
     : _base(mainWin, flags)
@@ -307,7 +309,6 @@ void ZDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelIndexL
         }
         else if (ZenoSpreadsheet* panel = qobject_cast<ZenoSpreadsheet*>(wid))
         {
-            IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
             if (select && nodes.size() == 1)
             {
                 const QModelIndex &idx = nodes[0];
@@ -517,12 +518,7 @@ void ZDockWidget::onFloatTriggered()
         m_newFlags = Qt::CustomizeWindowHint | Qt::Window | Qt::WindowMinimizeButtonHint |
                         Qt::WindowMaximizeButtonHint | Qt::WindowCloseButtonHint;
 
-        QString filePath;
-        auto pCurrentGraph = zenoApp->graphsManagment()->currentModel();
-        if (pCurrentGraph)
-        {
-            filePath = pCurrentGraph->filePath();
-        }
+        QString filePath = zenoApp->graphsManager()->zsgPath();
         QString winTitle = AppHelper::nativeWindowTitle(filePath);
         auto mainWin = zenoApp->getMainWindow();
         if (mainWin)

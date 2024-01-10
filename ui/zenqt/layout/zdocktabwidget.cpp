@@ -1,10 +1,10 @@
 #include "zdocktabwidget.h"
-#include <zenoui/comctrl/zlabel.h>
-#include <zenoui/style/zenostyle.h>
+#include "widgets/zlabel.h"
+#include "style/zenostyle.h"
 #include <QtSvg/QSvgRenderer>
 #include <zeno/utils/log.h>
-#include <zenoui/comctrl/zaddtabbar.h>
-#include <zenoui/comctrl/zicontoolbutton.h>
+#include "widgets/zaddtabbar.h"
+#include "widgets/zicontoolbutton.h"
 
 
 ZDockTabWidget::ZDockTabWidget(QWidget* parent)

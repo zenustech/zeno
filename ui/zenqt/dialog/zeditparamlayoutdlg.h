@@ -1,6 +1,12 @@
 #ifndef __ZEDIT_PARAM_LAYOUT_DLG_H__
 #define __ZEDIT_PARAM_LAYOUT_DLG_H__
 
+/*
+ the arch of assets/subgraphs is so complicated and not unit, we have to delay it.
+ */
+
+#if 0
+
 #include <QtWidgets>
 #include <zenomodel/include/viewparammodel.h>
 #include <zenomodel/include/vparamitem.h>
@@ -94,6 +100,6 @@ private:
     bool m_bNodeUI;
 };
 
-
+#endif
 
 #endif

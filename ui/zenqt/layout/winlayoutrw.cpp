@@ -1,12 +1,13 @@
 #include "winlayoutrw.h"
-#include "../dock/ztabdockwidget.h"
-#include "../dock/docktabcontent.h"
+#include "layout/zdockwidget.h"
+#include "layout/docktabcontent.h"
 #include "../viewport/viewportwidget.h"
 #include "../panel/zenospreadsheet.h"
 #include "../panel/zlogpanel.h"
 #include <rapidjson/document.h>
 #include "../panel/zenolights.h"
 #include "viewport/displaywidget.h"
+#include "util/jsonhelper.h"
 
 
 PtrLayoutNode findNode(PtrLayoutNode root, QDockWidget* pWidget)
