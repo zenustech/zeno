@@ -990,7 +990,7 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
         QVariant varCacheNum = inst.getValue("zencachenum");
         QVariant varAutoCleanCache = inst.getValue("zencache-autoclean");
 
-        bool bEnableCache = varEnableCache.isValid() ? varEnableCache.toBool() : false;
+        bool bEnableCache = true;
         bool bTempCacheDir = varTempCacheDir.isValid() ? varTempCacheDir.toBool() : false;
         QString cacheRootDir = varCacheRoot.isValid() ? varCacheRoot.toString() : "";
         int cacheNum = varCacheNum.isValid() ? varCacheNum.toInt() : 1;
@@ -1020,37 +1020,19 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
         pSpinBox->setValue(cacheNum);
         pSpinBox->setEnabled(bEnableCache);
 
-        QCheckBox *pCheckbox = new QCheckBox;
-        pCheckbox->setCheckState(bEnableCache ? Qt::Checked : Qt::Unchecked);
-        connect(pCheckbox, &QCheckBox::stateChanged, [=](bool state) {
-            if (!state)
-            {
-                pSpinBox->clear();
-                pathLineEdit->clear();
-                pTempCacheDir->setCheckState(Qt::Unchecked);
-                pAutoCleanCache->setCheckState(Qt::Unchecked);
-            }
-            pSpinBox->setEnabled(state);
-            pathLineEdit->setEnabled(state);
-            pTempCacheDir->setEnabled(state);
-            pAutoCleanCache->setEnabled(state && !pTempCacheDir->isChecked());
-        });
-
         QDialogButtonBox* pButtonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
 
         QDialog dlg(this);
         QGridLayout* pLayout = new QGridLayout;
-        pLayout->addWidget(new QLabel(tr("Enable cache")), 0, 0);
-        pLayout->addWidget(pCheckbox, 0, 1);
+        pLayout->addWidget(new QLabel(tr("Temp cache directory")), 0, 0);
+        pLayout->addWidget(pTempCacheDir, 0, 1);
         pLayout->addWidget(new QLabel(tr("Cache num")), 1, 0);
         pLayout->addWidget(pSpinBox, 1, 1);
-        pLayout->addWidget(new QLabel(tr("Temp cache directory")), 2, 0);
-        pLayout->addWidget(pTempCacheDir, 2, 1);
-        pLayout->addWidget(new QLabel(tr("Cache root")), 3, 0);
-        pLayout->addWidget(pathLineEdit, 3, 1);
-        pLayout->addWidget(new QLabel(tr("Cache auto clean up")), 4, 0);
-        pLayout->addWidget(pAutoCleanCache, 4, 1);
-        pLayout->addWidget(pButtonBox, 5, 1);
+        pLayout->addWidget(new QLabel(tr("Cache root")), 2, 0);
+        pLayout->addWidget(pathLineEdit, 2, 1);
+        pLayout->addWidget(new QLabel(tr("Cache auto clean up")), 3, 0);
+        pLayout->addWidget(pAutoCleanCache, 3, 1);
+        pLayout->addWidget(pButtonBox, 4, 1);
 
         connect(pButtonBox, SIGNAL(accepted()), &dlg, SLOT(accept()));
         connect(pButtonBox, SIGNAL(rejected()), &dlg, SLOT(reject()));
@@ -1058,7 +1040,7 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
         dlg.setLayout(pLayout);
         if (QDialog::Accepted == dlg.exec())
         {
-            inst.setValue("zencache-enable", pCheckbox->checkState() == Qt::Checked);
+            inst.setValue("zencache-enable", true);
             inst.setValue("zencache-autoremove", pTempCacheDir->checkState() == Qt::Checked);
             inst.setValue("zencachedir", pathLineEdit->text());
             inst.setValue("zencachenum", pSpinBox->value());
