@@ -1576,6 +1576,55 @@ ZENDEFNODE(PrimitiveFuse, {
                           });
 #endif
 
+static void flatten_loop_uvs(AttrVector<int> &loops, AttrVector<zeno::vec2f> &uvs) {
+    using namespace zs;
+    constexpr auto space = execspace_e::openmp;
+    const auto tag = wrapv<space>{};
+    auto pol = omp_exec();
+
+    if (!loops.has_attr("uvs")) {
+        auto &loopUvIds = loops.add_attr<int>("uvs");
+        pol(enumerate(loopUvIds), [](int i, int &id) { id = i; });
+    } else {
+        AttrVector<zeno::vec2f> newUvs(loops.size()); // [uvs] replaced with this
+        uvs.foreach_attr<AttrAcceptAll>([&](auto const &key, auto const &arr) {
+            using T = std::decay_t<decltype(arr[0])>;
+            newUvs.add_attr<T>(key);
+        });
+        auto &loopUvIds = loops.attr<int>("uvs");
+
+        std::vector<zs::Mutex> mtxs(uvs.size());
+        std::vector<std::set<int>> refsPerVert(uvs.size());
+        pol(enumerate(loopUvIds), [&mtxs, &refsPerVert, &tag](int loopi, int vi) {
+            mtxs[vi].lock();
+            refsPerVert[vi].insert(loopi);
+            mtxs[vi].unlock();
+        });
+
+        std::vector<int> numRefsPerVert(uvs.size()), offsets(uvs.size());
+        pol(zip(numRefsPerVert, refsPerVert), [](int &val, const std::set<int> &refs) { val = refs.size(); });
+        exclusive_scan(pol, zs::begin(numRefsPerVert), zs::end(numRefsPerVert), zs::begin(offsets));
+
+        std::vector<int> newLoopUvIds(loops.size()); // [loopUvIds] replaced with this
+        pol(zip(refsPerVert, offsets), [&](const std::set<int> &loopIds, int offset) {
+            for (auto loopid : loopIds)
+                newLoopUvIds[loopid] = offset++;
+        });
+
+        pol(zip(loopUvIds, newLoopUvIds), [&](int srcUvId, int dstUvId) {
+            newUvs.values[dstUvId] = uvs.values[srcUvId];
+            uvs.foreach_attr<AttrAcceptAll>([&](auto const &key, auto const &srcArr) {
+                using T = std::decay_t<decltype(srcArr[0])>;
+                auto &dstArr = newUvs.attr<T>(key);
+                dstArr[dstUvId] = srcArr[srcUvId];
+            });
+        });
+
+        loopUvIds = newLoopUvIds;
+        uvs = newUvs;
+    }
+}
+
 struct PrimPromotePointAttribs : INode {
     void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
@@ -1719,6 +1768,7 @@ ZENDEFNODE(PrimDemoteVertAttribs, {
 struct PrimAttributePromote : INode {
     void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
+        auto &verts = prim->verts;
 
         using namespace zs;
         constexpr auto space = execspace_e::openmp;
@@ -1727,91 +1777,110 @@ struct PrimAttributePromote : INode {
         auto promoteAttribs_ = get_input2<std::string>("promote_attribs");
         std::set<std::string> promoteAttribs = separate_string_by(promoteAttribs_, " :;,.");
 
-        auto &verts = prim->verts;
+        auto &tris = prim->tris.values;
+        const bool hasTris = tris.size() > 0;
+
         auto &loops = prim->loops;
-        const auto &loopUvIds = loops.attr<int>("uvs");
         auto &polys = prim->polys;
         auto &uvs = prim->uvs;
-        if (!(polys.size() > 1 && loops.size() > 0 && loops.size() == uvs.size())) {
-            throw std::runtime_error("The input mesh must be a loop-based representation with flattened uvs.");
+
+        const bool hasLoops = polys.size() > 1 && loops.size() > 0;
+        if (hasLoops && loops.size() != uvs.size()) {
+            // flatten uvs
+            flatten_loop_uvs(loops, uvs);
         }
 
-        auto directionStr = get_input2<std::string>("direction");
-        if (directionStr == "point_to_vert") {
-            /// prep attr
-            verts.foreach_attr<AttrAcceptAll>([&](auto const &key, auto const &arr) {
-                using T = std::decay_t<decltype(arr[0])>;
-                if (promoteAttribs.find(key) != promoteAttribs.end()) {
-                    if (key != "uv")
-                        uvs.add_attr<T>(key);
-                }
-            });
-            /// promote
-            pol(range(loops.size()), [&](int i) {
-                auto loopI = loops.values[i];
-                for (const auto &attribTag : promoteAttribs) {
-                    if (uvs.has_attr(attribTag))
-                        match([&, &attribTag = attribTag](auto &uvAttrib) {
-                            using T = std::decay_t<decltype(uvAttrib[0])>;
-                            const auto &srcAttrib = verts.attr<T>(attribTag);
-                            uvAttrib[i] = srcAttrib[loopI];
-                        })(uvs.attr(attribTag));
-                }
-            });
-            /// rm attr
-            for (const auto &attr : promoteAttribs)
-                verts.erase_attr(attr);
-        } else {
-            /// prep attr
-            auto &vertUvs = verts.add_attr<zeno::vec3f>("uv");
-            uvs.foreach_attr<AttrAcceptAll>([&](auto const &key, auto const &arr) {
-                using T = std::decay_t<decltype(arr[0])>;
-                if (promoteAttribs.find(key) != promoteAttribs.end()) {
-                    if (key != "uv") {
-                        auto &attr = verts.add_attr<T>(key);
-                        std::memset(attr.data(), 0, sizeof(T) * attr.size());
-                    }
-                }
-            });
-            /// demote
-            std::vector<int> vCnts(verts.size());
-            pol(range(loops.size()), [&, tag = wrapv<space>{}](int i) {
-                auto loopI = loops.values[i];
-                auto uvI = loopUvIds[i];
-                atomic_add(tag, &vertUvs[loopI][0], uvs.values[uvI][0]);
-                atomic_add(tag, &vertUvs[loopI][1], uvs.values[uvI][1]);
-                vertUvs[loopI][2] = 0;
+        if ((hasTris ^ hasLoops) == 0)
+            throw std::runtime_error("[PrimAttributePromote] input primitive should either be a triangle mesh or in "
+                                     "the poly-based representation.");
 
-                atomic_add(tag, &vCnts[loopI], 1);
-                for (const auto &attribTag : promoteAttribs) {
-                    if (attribTag == "uv")
-                        continue;
-                    if (verts.has_attr(attribTag))
-                        match([&, &attribTag = attribTag](auto &vertAttrib) {
-                            using T = std::decay_t<decltype(vertAttrib[0])>;
-                            const auto &uvAttrib = uvs.attr<T>(attribTag);
-                            if constexpr (std::is_same_v<T, float> || std::is_same_v<T, int>) {
-                                atomic_add(tag, &vertAttrib[loopI], uvAttrib[uvI]);
-                            } else {
-                                using TT = typename T::value_type;
-                                constexpr int dim = std::tuple_size_v<T>;
-                                for (int d = 0; d != dim; ++d)
-                                    atomic_add(tag, &vertAttrib[loopI][d], uvAttrib[uvI][d]);
-                            }
-                        })(verts.attr(attribTag));
-                }
-            });
-            pol(enumerate(vCnts), [&verts, &promoteAttribs](int i, int sz) {
-                if (sz == 0)
-                    return;
-                for (const auto &attribTag : promoteAttribs) {
-                    if (verts.has_attr(attribTag))
-                        match([&](auto &vertAttrib) { vertAttrib[i] = vertAttrib[i] / sz; })(verts.attr(attribTag));
-                }
-            });
-            /// rm attr
-            for (const auto &attr : promoteAttribs)
-                uvs.erase_attr(attr);
+        if (hasLoops) {
+            ///
+            /// poly representation
+            ///
+            const auto &loopUvIds = loops.attr<int>("uvs");
+
+            auto directionStr = get_input2<std::string>("direction");
+            if (directionStr == "point_to_vert") {
+                /// prep attr
+                verts.foreach_attr<AttrAcceptAll>([&](auto const &key, auto const &arr) {
+                    using T = std::decay_t<decltype(arr[0])>;
+                    if (promoteAttribs.find(key) != promoteAttribs.end()) {
+                        if (key != "uv")
+                            uvs.add_attr<T>(key);
+                    }
+                });
+                /// promote
+                pol(range(loops.size()), [&](int i) {
+                    auto loopI = loops.values[i];
+                    for (const auto &attribTag : promoteAttribs) {
+                        if (uvs.has_attr(attribTag))
+                            match([&, &attribTag = attribTag](auto &uvAttrib) {
+                                using T = std::decay_t<decltype(uvAttrib[0])>;
+                                const auto &srcAttrib = verts.attr<T>(attribTag);
+                                uvAttrib[i] = srcAttrib[loopI];
+                            })(uvs.attr(attribTag));
+                    }
+                });
+                /// rm attr
+                for (const auto &attr : promoteAttribs)
+                    verts.erase_attr(attr);
+            } else {
+                /// prep attr
+                auto &vertUvs = verts.add_attr<zeno::vec3f>("uv");
+                uvs.foreach_attr<AttrAcceptAll>([&](auto const &key, auto const &arr) {
+                    using T = std::decay_t<decltype(arr[0])>;
+                    if (promoteAttribs.find(key) != promoteAttribs.end()) {
+                        if (key != "uv") {
+                            auto &attr = verts.add_attr<T>(key);
+                            std::memset(attr.data(), 0, sizeof(T) * attr.size());
+                        }
+                    }
+                });
+                /// demote
+                std::vector<int> vCnts(verts.size());
+                pol(range(loops.size()), [&, tag = wrapv<space>{}](int i) {
+                    auto loopI = loops.values[i];
+                    auto uvI = loopUvIds[i];
+                    atomic_add(tag, &vertUvs[loopI][0], uvs.values[uvI][0]);
+                    atomic_add(tag, &vertUvs[loopI][1], uvs.values[uvI][1]);
+                    vertUvs[loopI][2] = 0;
+
+                    atomic_add(tag, &vCnts[loopI], 1);
+                    for (const auto &attribTag : promoteAttribs) {
+                        if (attribTag == "uv")
+                            continue;
+                        if (verts.has_attr(attribTag))
+                            match([&, &attribTag = attribTag](auto &vertAttrib) {
+                                using T = std::decay_t<decltype(vertAttrib[0])>;
+                                const auto &uvAttrib = uvs.attr<T>(attribTag);
+                                if constexpr (std::is_same_v<T, float> || std::is_same_v<T, int>) {
+                                    atomic_add(tag, &vertAttrib[loopI], uvAttrib[uvI]);
+                                } else {
+                                    using TT = typename T::value_type;
+                                    constexpr int dim = std::tuple_size_v<T>;
+                                    for (int d = 0; d != dim; ++d)
+                                        atomic_add(tag, &vertAttrib[loopI][d], uvAttrib[uvI][d]);
+                                }
+                            })(verts.attr(attribTag));
+                    }
+                });
+                pol(enumerate(vCnts), [&verts, &promoteAttribs](int i, int sz) {
+                    if (sz == 0)
+                        return;
+                    for (const auto &attribTag : promoteAttribs) {
+                        if (verts.has_attr(attribTag))
+                            match([&](auto &vertAttrib) { vertAttrib[i] = vertAttrib[i] / sz; })(verts.attr(attribTag));
+                    }
+                });
+                /// rm attr
+                for (const auto &attr : promoteAttribs)
+                    uvs.erase_attr(attr);
+            }
+        } else {
+            ///
+            /// triangle mesh
+            ///
         }
 
         set_output("prim", prim);
