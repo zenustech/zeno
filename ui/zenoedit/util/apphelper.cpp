@@ -396,6 +396,7 @@ void AppHelper::initLaunchCacheParam(LAUNCH_PARAM& param)
     ZASSERT_EXIT(mgr);
     if (!mgr->nextRunSkipCreateDir(param))
         markAllNodesInMainGraphDirty(false);
+    storeLastDirtyNodes();
 }
 
 bool AppHelper::openZsgAndRun(const ZENO_RECORD_RUN_INITPARAM& param, LAUNCH_PARAM launchParam)
@@ -536,3 +537,37 @@ void AppHelper::markAllNodesInMainGraphDirty(bool markNodeStyle)
             emit pModel->_dataChanged(subgIdx, idx, ROLE_NODE_DATACHANGED);
     }
 }
+
+void AppHelper::markLastDirtyNodesDirty(bool markNodeStyle /*= true*/)
+{
+    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    if (!pModel)
+        return;
+    QModelIndex subgIdx = pModel->index("main");
+    for (auto& idx : lastDirtyNodes)
+    {
+        pModel->markNodeDataChanged(idx, false);
+        if (markNodeStyle)  //change node style in subgraphScene
+            emit pModel->_dataChanged(subgIdx, idx, ROLE_NODE_DATACHANGED);
+    }
+}
+
+void AppHelper::storeLastDirtyNodes()
+{
+    lastDirtyNodes.clear();
+    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    if (!pModel)
+        return;
+    QModelIndex subgIdx = pModel->index("main");
+    for (int i = 0; i < pModel->itemCount(subgIdx); i++)
+    {
+        const QModelIndex& idx = pModel->index(i, subgIdx);
+        QVariant varDataChanged = idx.data(ROLE_NODE_DATACHANGED);
+        if (varDataChanged.isValid() && varDataChanged.toBool() && idx.data(ROLE_NODETYPE).toInt() == NORMAL_NODE)
+        {
+            lastDirtyNodes.push_back(idx);
+        }
+    }
+}
+
+QVector<QModelIndex> AppHelper::lastDirtyNodes;

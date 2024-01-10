@@ -35,6 +35,11 @@ public:
     static bool updateCurve(QVariant oldVal, QVariant& val);
     static void dumpTabsToZsg(QDockWidget* dockWidget, RAPIDJSON_WRITER& writer);
     static void markAllNodesInMainGraphDirty(bool markNodeStyle = true);
+    static void markLastDirtyNodesDirty(bool markNodeStyle = true);
+    static void storeLastDirtyNodes();
+
+private:
+    static QVector<QModelIndex> lastDirtyNodes;
 };
 
 
