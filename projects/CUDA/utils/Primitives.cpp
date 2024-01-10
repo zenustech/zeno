@@ -1907,10 +1907,6 @@ struct PrimAttributePromote : INode {
                     pol(enumerate(vCnts), [&verts, &promoteAttribs, handleUv](int i, int sz) {
                         if (sz == 0)
                             return;
-                        if (handleUv) {
-                            auto &vertUvs = verts.attr<zeno::vec3f>("uv");
-                            vertUvs[i] /= sz;
-                        }
                         for (const auto &attribTag : promoteAttribs) {
                             if (verts.has_attr(attribTag))
                                 match([&](auto &vertAttrib) { vertAttrib[i] = vertAttrib[i] / sz; })(
