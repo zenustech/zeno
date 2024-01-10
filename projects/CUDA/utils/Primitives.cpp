@@ -1779,7 +1779,7 @@ struct PrimAttributePromote : INode {
         auto promoteAttribs_ = get_input2<std::string>("promote_attribs");
         std::set<std::string> promoteAttribs = separate_string_by(promoteAttribs_, " :;,.");
 
-        auto &tris = prim->tris.values;
+        auto &tris = prim->tris;
         const bool hasTris = tris.size() > 0;
 
         auto &loops = prim->loops;
@@ -1796,13 +1796,13 @@ struct PrimAttributePromote : INode {
             throw std::runtime_error("[PrimAttributePromote] input primitive should either be a triangle mesh or in "
                                      "the poly-based representation.");
 
+        auto directionStr = get_input2<std::string>("direction");
         if (hasLoops) {
             ///
             /// poly representation
             ///
             const auto &loopUvIds = loops.attr<int>("uvs");
 
-            auto directionStr = get_input2<std::string>("direction");
             if (directionStr == "point_to_vert") {
                 /// prep attr
                 verts.foreach_attr<AttrAcceptAll>([&](auto const &key, auto const &arr) {
@@ -1975,6 +1975,36 @@ struct PrimAttributePromote : INode {
             ///
             /// triangle mesh
             ///
+            if (directionStr == "point_to_vert") {
+                /// prep attr
+                verts.foreach_attr<AttrAcceptAll>([&](auto const &key, auto const &arr) {
+                    using T = std::decay_t<decltype(arr[0])>;
+                    if (promoteAttribs.find(key) != promoteAttribs.end()) {
+                        tris.add_attr<T>(key + "0");
+                        tris.add_attr<T>(key + "1");
+                        tris.add_attr<T>(key + "2");
+                    }
+                });
+                /// promote
+                pol(enumerate(tris.values), [&verts, &tris, &promoteAttribs](int ei, const auto &tri) mutable {
+                    for (const auto &attribTag : promoteAttribs) {
+                        if (verts.has_attr(attribTag))
+                            match(
+                                [&k = attribTag, &tris, &tri, ei](auto &vertArr)
+                                    -> std::enable_if_t<
+                                        variant_contains<RM_CVREF_T(vertArr[0]), AttrAcceptAll>::value> {
+                                    using T = RM_CVREF_T(vertArr[0]);
+                                    tris.attr<T>(k + "0")[ei] = vertArr[tri[0]];
+                                    tris.attr<T>(k + "1")[ei] = vertArr[tri[1]];
+                                    tris.attr<T>(k + "2")[ei] = vertArr[tri[2]];
+                                },
+                                [](...) {})(verts.attr(attribTag));
+                    }
+                });
+                /// rm attr
+                for (const auto &attr : promoteAttribs)
+                    verts.erase_attr(attr);
+            }
         }
 
         set_output("prim", prim);
