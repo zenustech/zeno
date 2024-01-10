@@ -2,10 +2,10 @@
 #include "curvescalaritem.h"
 #include "curvegrid.h"
 #include "curvenodeitem.h"
-#include <zenomodel/include/curveutil.h>
-#include <zenomodel/include/curvemodel.h>
+#include "util/curveutil.h"
+#include "model/curvemodel.h"
 #include "zassert.h"
-#include <zenoui/style/zenostyle.h>
+#include "style/zenostyle.h"
 
 
 CurveMapView::CurveMapView(QWidget* parent)

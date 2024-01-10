@@ -58,6 +58,7 @@ public:
 
 signals:
     void dirtyChanged();
+    void modelClear();
 
 private:
     QModelIndex innerIndex(const QModelIndex& treeIdx) const;

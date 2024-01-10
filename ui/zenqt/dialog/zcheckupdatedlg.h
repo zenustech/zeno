@@ -6,7 +6,7 @@ namespace Ui
     class ZCheckUpdateDlg;
 }
 
-#include "zenoui/comctrl/dialog/zframelessdialog.h"
+#include "dialog/zframelessdialog.h"
 
 class ZCheckUpdateDlg : public ZFramelessDialog
 {

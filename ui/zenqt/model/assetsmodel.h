@@ -31,6 +31,7 @@ public:
     bool removeRows(int row, int count, const QModelIndex& parent = QModelIndex()) override;
     QHash<int, QByteArray> roleNames() const override;
 
+    void newAsset(const QString& assetName);
     void addAsset(const zeno::GraphData& graph);
 
 private:

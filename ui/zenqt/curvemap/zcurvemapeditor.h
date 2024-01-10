@@ -2,8 +2,9 @@
 #define __ZCURVEMAP_EDITOR_H__
 
 #include <QtWidgets>
-#include <zenomodel/include/modeldata.h>
-#include <zenomodel/include/curveutil.h>
+#include "util/curveutil.h"
+#include "uicommon.h"
+#include "model/curvemodel.h"
 
 using namespace curve_util;
 
@@ -61,7 +62,7 @@ private:
 	QItemSelectionModel* m_selection;
 	bool m_bTimeline;
 
-    std::vector<CurveModel *> m_bate_rows;
+    std::vector<CurveModel*> m_bate_rows;
 };
 
 

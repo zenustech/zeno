@@ -16,6 +16,7 @@ public:
 
     void createGraphs(const zeno::ZSG_PARSE_RESULT ioresult);
     GraphsTreeModel* currentModel() const;
+    AssetsModel* assetsModel() const;
     QStandardItemModel* logModel() const;
     GraphsTreeModel* openZsgFile(const QString &fn);
     bool saveFile(const QString& filePath, APP_SETTINGS settings);
@@ -33,7 +34,7 @@ public:
     QString zsgDir() const;
 
 signals:
-    void modelInited(GraphsTreeModel*);     //ASSETS?
+    void modelInited();
     void modelDataChanged();
     void fileOpened(QString);
     void fileClosed();

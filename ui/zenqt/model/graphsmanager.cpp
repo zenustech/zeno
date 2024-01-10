@@ -34,6 +34,11 @@ GraphsTreeModel* GraphsManager::currentModel() const
     return m_model;
 }
 
+AssetsModel* GraphsManager::assetsModel() const
+{
+    return m_assets;
+}
+
 QStandardItemModel* GraphsManager::logModel() const
 {
     return m_logModel;
@@ -99,8 +104,10 @@ GraphsTreeModel* GraphsManager::newFile()
     clear();
 
     m_model = new GraphsTreeModel(new GraphModel("main"), this);
+    //TODO: assets may be kept.
 
-    emit modelInited(m_model);
+    emit modelInited();
+
     connect(m_model, SIGNAL(apiBatchFinished()), this, SIGNAL(modelDataChanged()));
     connect(m_model, SIGNAL(rowsAboutToBeRemoved(const QModelIndex&, int, int)),
         this, SLOT(onRowsAboutToBeRemoved(const QModelIndex&, int, int)));

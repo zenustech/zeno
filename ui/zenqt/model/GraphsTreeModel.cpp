@@ -1,5 +1,5 @@
 #include "graphstreemodel.h"
-#include "common.h"
+#include "uicommon.h"
 #include "descriptors.h"
 #include <zeno/core/common.h>
 
@@ -148,10 +148,11 @@ void GraphsTreeModel::clear()
 {
     emit layoutAboutToBeChanged();
     beginResetModel();
-    delete m_main;
-    m_main = new GraphModel("main", this);
+    //delete m_main;
+    //m_main = new GraphModel("main", this);
     endResetModel();
     emit layoutChanged();
+    emit modelClear();
 }
 
 /*!

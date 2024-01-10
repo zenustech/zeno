@@ -4,8 +4,7 @@
 #include <QtWidgets>
 #include <QtSvg/QGraphicsSvgItem>
 #include "curvegrid.h"
-#include <zenomodel/include/curveutil.h>
-#include <zenomodel/include/curvemodel.h>
+#include "util/curveutil.h"
 
 class CurveNodeItem;
 class CurveMapView;

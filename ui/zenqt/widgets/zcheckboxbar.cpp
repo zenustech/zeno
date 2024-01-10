@@ -1,6 +1,6 @@
 #include "zcheckboxbar.h"
-#include <zenoui/style/zenostyle.h>
-#include <zenoui/style/zstyleoption.h>
+#include "style/zenostyle.h"
+#include "style/zstyleoption.h"
 
 
 ZCheckBoxBar::ZCheckBoxBar(QWidget* parent)

@@ -3,8 +3,7 @@
 
 #include <QtWidgets>
 
-class GraphsPlainModel;
-class IGraphsModel;
+class AssetsModel;
 
 class SubgEditValidator : public QValidator
 {
@@ -20,7 +19,7 @@ class ZSubnetListItemDelegate : public QStyledItemDelegate
 {
     Q_OBJECT
 public:
-    ZSubnetListItemDelegate(IGraphsModel* model, QObject* parent = nullptr);
+    ZSubnetListItemDelegate(AssetsModel* model, QObject* parent = nullptr);
     ~ZSubnetListItemDelegate();
 
     QWidget* createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
@@ -48,7 +47,7 @@ private:
     QModelIndexList getSubgraphs(const QModelIndex& index);
 
 private:
-    IGraphsModel* m_model;
+    AssetsModel* m_model;
     QModelIndexList m_selectedIndexs;
 };
 

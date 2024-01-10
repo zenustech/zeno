@@ -34,7 +34,7 @@ public:
     ZenoSubGraphView* getCurrentSubGraphView();
 
 public slots:
-	void resetModel(IGraphsModel* pModel);
+	void resetModel();
     void sideButtonToggled(bool bToggled);
     void onSideBtnToggleChanged(const QItemSelection& selected, const QItemSelection& deselected);
     void onCurrentChanged(const QModelIndex& current, const QModelIndex& previous);
@@ -55,12 +55,13 @@ signals:
 
 private slots:
 	void onSubGraphsToRemove(const QModelIndex&, int, int);
+    void onAssetsToRemove(const QModelIndex& parent, int first, int last);
 	void onModelReset();
     void onModelCleared();
 	void onSubGraphRename(const QString& oldName, const QString& newName);
     void onSearchEdited(const QString& content);
     void onMenuActionTriggered(QAction* pAction);
-    void onNewSubgraph();
+    void onNewAsset();
     void onPageListClicked();
 
 private:

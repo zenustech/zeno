@@ -50,6 +50,11 @@ bool AssetsModel::setData(const QModelIndex& index, const QVariant& value, int r
     return false;
 }
 
+void AssetsModel::newAsset(const QString& assetName)
+{
+    //todo
+}
+
 void AssetsModel::addAsset(const zeno::GraphData& graph)
 {
     //todo

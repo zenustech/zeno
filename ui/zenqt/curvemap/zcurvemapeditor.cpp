@@ -1,6 +1,6 @@
 #include "zcurvemapeditor.h"
-#include "curvemapview.h"
 #include "ui_zcurvemapeditor.h"
+#include "curvemapview.h"
 #include "style/zenostyle.h"
 #include "curvenodeitem.h"
 #include "model/curvemodel.h"

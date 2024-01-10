@@ -2,7 +2,7 @@
 #define __CURVE_GRID_H__
 
 #include <QtWidgets>
-#include <zenomodel/include/modeldata.h>
+#include "uicommon.h"
 
 class CurveMapView;
 class CurveNodeItem;

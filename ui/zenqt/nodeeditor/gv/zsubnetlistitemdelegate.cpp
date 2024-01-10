@@ -10,6 +10,7 @@
 #include "zenomainwindow.h"
 #include "settings/zenosettingsmanager.h"
 
+
 SubgEditValidator::SubgEditValidator(QObject* parent)
 {
 }
@@ -37,7 +38,7 @@ void SubgEditValidator::fixup(QString& wtf) const
 }
 
 
-ZSubnetListItemDelegate::ZSubnetListItemDelegate(IGraphsModel* model, QObject* parent)
+ZSubnetListItemDelegate::ZSubnetListItemDelegate(AssetsModel* model, QObject* parent)
     : QStyledItemDelegate(parent)
     , m_model(model)
 {

@@ -1,6 +1,6 @@
-#include "../style/zenostyle.h"
+#include "style/zenostyle.h"
 #include "zcombobox.h"
-#include "./view/zcomboboxitemdelegate.h"
+#include "zcomboboxitemdelegate.h"
 #include <QSvgRenderer>
 
 
