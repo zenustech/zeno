@@ -1833,6 +1833,9 @@ struct PrimAttributePromote : INode {
                 for (const auto &attr : promoteAttribs)
                     verts.erase_attr(attr);
             } else {
+                std::string strategy = get_input2<std::string>("merge_strategy");
+                int mergeOp = strategy == "average" ? 0 : (strategy == "min" ? 1 : 2);
+
                 /// prep attr
                 bool handleUv = promoteAttribs.find("uv") != promoteAttribs.end() && loops.has_attr("uvs");
                 if (handleUv)
@@ -1847,51 +1850,122 @@ struct PrimAttributePromote : INode {
                         }
                     }
                 });
+
                 /// demote
-                std::vector<int> vCnts(verts.size());
-                pol(range(loops.size()), [&, tag = wrapv<space>{}](int i) {
-                    auto pi = loops.values[i];
-                    auto uvI = loopUvIds[i];
+                if (mergeOp == 0) {
+                    /// average
+                    std::vector<int> vCnts(verts.size());
+                    pol(range(loops.size()), [&, tag = wrapv<space>{}](int i) {
+                        auto pi = loops.values[i];
+                        auto uvI = loopUvIds[i];
 
-                    atomic_add(tag, &vCnts[pi], 1);
+                        atomic_add(tag, &vCnts[pi], 1);
 
-                    if (handleUv) {
-                        auto &vertUvs = verts.attr<zeno::vec3f>("uv");
-                        atomic_add(tag, &vertUvs[pi][0], uvs.values[uvI][0]);
-                        atomic_add(tag, &vertUvs[pi][1], uvs.values[uvI][1]);
-                        vertUvs[pi][2] = 0;
-                    }
+                        if (handleUv) {
+                            auto &vertUvs = verts.attr<zeno::vec3f>("uv");
+                            atomic_add(tag, &vertUvs[pi][0], uvs.values[uvI][0]);
+                            atomic_add(tag, &vertUvs[pi][1], uvs.values[uvI][1]);
+                            vertUvs[pi][2] = 0;
+                        }
 
+                        for (const auto &attribTag : promoteAttribs) {
+                            if (attribTag == "uv")
+                                continue;
+                            if (verts.has_attr(attribTag))
+                                match([&, &attribTag = attribTag](auto &vertAttrib) {
+                                    using T = std::decay_t<decltype(vertAttrib[0])>;
+                                    const auto &uvAttrib = uvs.attr<T>(attribTag);
+                                    if constexpr (std::is_same_v<T, float> || std::is_same_v<T, int>) {
+                                        atomic_add(tag, &vertAttrib[pi], uvAttrib[uvI]);
+                                    } else {
+                                        using TT = typename T::value_type;
+                                        constexpr int dim = std::tuple_size_v<T>;
+                                        for (int d = 0; d != dim; ++d)
+                                            atomic_add(tag, &vertAttrib[pi][d], uvAttrib[uvI][d]);
+                                    }
+                                })(verts.attr(attribTag));
+                        }
+                    });
+                    pol(enumerate(vCnts), [&verts, &promoteAttribs, handleUv](int i, int sz) {
+                        if (sz == 0)
+                            return;
+                        if (handleUv) {
+                            auto &vertUvs = verts.attr<zeno::vec3f>("uv");
+                            vertUvs[i] /= sz;
+                        }
+                        for (const auto &attribTag : promoteAttribs) {
+                            if (verts.has_attr(attribTag))
+                                match([&](auto &vertAttrib) { vertAttrib[i] = vertAttrib[i] / sz; })(
+                                    verts.attr(attribTag));
+                        }
+                    });
+                } else if (mergeOp == 1 || mergeOp == 2) {
+                    /// min / max
+                    // init
                     for (const auto &attribTag : promoteAttribs) {
-                        if (attribTag == "uv")
-                            continue;
                         if (verts.has_attr(attribTag))
-                            match([&, &attribTag = attribTag](auto &vertAttrib) {
-                                using T = std::decay_t<decltype(vertAttrib[0])>;
-                                const auto &uvAttrib = uvs.attr<T>(attribTag);
-                                if constexpr (std::is_same_v<T, float> || std::is_same_v<T, int>) {
-                                    atomic_add(tag, &vertAttrib[pi], uvAttrib[uvI]);
+                            match([&](auto &vertAttrib) {
+                                using T = typename RM_CVREF_T(vertAttrib)::value_type;
+                                if constexpr (zs::is_fundamental_v<T>) {
+                                    auto m = mergeOp == 1 ? zs::detail::deduce_numeric_max<T>()
+                                                          : zs::detail::deduce_numeric_lowest<T>();
+                                    std::fill(std::begin(vertAttrib), std::end(vertAttrib), m);
                                 } else {
                                     using TT = typename T::value_type;
-                                    constexpr int dim = std::tuple_size_v<T>;
-                                    for (int d = 0; d != dim; ++d)
-                                        atomic_add(tag, &vertAttrib[pi][d], uvAttrib[uvI][d]);
+
+                                    auto m = mergeOp == 1 ? zs::detail::deduce_numeric_max<TT>()
+                                                          : zs::detail::deduce_numeric_lowest<TT>();
+                                    T ele;
+                                    for (auto &e : ele)
+                                        e = m;
+                                    std::fill(std::begin(vertAttrib), std::end(vertAttrib), ele);
                                 }
                             })(verts.attr(attribTag));
                     }
-                });
-                pol(enumerate(vCnts), [&verts, &promoteAttribs](int i, int sz) {
-                    if (sz == 0)
-                        return;
-                    if (handleUv) {
-                        auto &vertUvs = verts.attr<zeno::vec3f>("uv");
-                        vertUvs[i] /= sz;
-                    }
-                    for (const auto &attribTag : promoteAttribs) {
-                        if (verts.has_attr(attribTag))
-                            match([&](auto &vertAttrib) { vertAttrib[i] = vertAttrib[i] / sz; })(verts.attr(attribTag));
-                    }
-                });
+                    // merge
+                    pol(range(loops.size()), [&, tag = wrapv<space>{}](int i) {
+                        auto pi = loops.values[i];
+                        auto uvI = loopUvIds[i];
+
+                        if (handleUv) {
+                            auto &vertUvs = verts.attr<zeno::vec3f>("uv");
+                            if (mergeOp == 1) {
+                                atomic_min(tag, &vertUvs[pi][0], uvs.values[uvI][0]);
+                                atomic_min(tag, &vertUvs[pi][1], uvs.values[uvI][1]);
+                            } else {
+                                atomic_max(tag, &vertUvs[pi][0], uvs.values[uvI][0]);
+                                atomic_max(tag, &vertUvs[pi][1], uvs.values[uvI][1]);
+                            }
+                            vertUvs[pi][2] = 0;
+                        }
+
+                        for (const auto &attribTag : promoteAttribs) {
+                            if (attribTag == "uv")
+                                continue;
+                            if (verts.has_attr(attribTag))
+                                match([&, &attribTag = attribTag](auto &vertAttrib) {
+                                    using T = std::decay_t<decltype(vertAttrib[0])>;
+                                    const auto &uvAttrib = uvs.attr<T>(attribTag);
+                                    if constexpr (std::is_same_v<T, float> || std::is_same_v<T, int>) {
+                                        if (mergeOp == 1) {
+                                            atomic_min(tag, &vertAttrib[pi], uvAttrib[uvI]);
+                                        } else {
+                                            atomic_max(tag, &vertAttrib[pi], uvAttrib[uvI]);
+                                        }
+                                    } else {
+                                        using TT = typename T::value_type;
+                                        constexpr int dim = std::tuple_size_v<T>;
+                                        for (int d = 0; d != dim; ++d)
+                                            if (mergeOp == 1) {
+                                                atomic_min(tag, &vertAttrib[pi][d], uvAttrib[uvI][d]);
+                                            } else {
+                                                atomic_max(tag, &vertAttrib[pi][d], uvAttrib[uvI][d]);
+                                            }
+                                    }
+                                })(verts.attr(attribTag));
+                        }
+                    });
+                }
 
                 /// rm attr
                 for (const auto &attr : promoteAttribs)
@@ -1908,9 +1982,12 @@ struct PrimAttributePromote : INode {
 };
 
 ZENDEFNODE(PrimAttributePromote, {
-                                     {{"PrimitiveObject", "prim"},
-                                      {"string", "promote_attribs", ""},
-                                      {"enum point_to_vert vert_to_point", "direction", "point_to_vert"}},
+                                     {
+                                         {"PrimitiveObject", "prim"},
+                                         {"string", "promote_attribs", ""},
+                                         {"enum point_to_vert vert_to_point", "direction", "point_to_vert"},
+                                         {"enum average min max", "merge_strategy", "average"},
+                                     },
                                      {
                                          {"PrimitiveObject", "prim"},
                                      },
