@@ -254,6 +254,8 @@ struct PrimitiveConnectedComponents : INode {
                 }
             });
         }
+        if (tab._buildSuccess.getVal() == 0)
+            throw std::runtime_error("PrimitiveConnectedComponent hash failed!!");
 
         auto numEntries = tab.size();
         is.resize(numEntries);
@@ -282,6 +284,8 @@ struct PrimitiveConnectedComponents : INode {
             fas[vi] = fa;
             vtab.insert(fa);
         });
+        if (vtab._buildSuccess.getVal() == 0)
+            throw std::runtime_error("PrimitiveConnectedComponent union find hash failed!!");
 
         auto numSets = vtab.size();
         fmt::print("{} disjoint sets in total.\n", numSets);
@@ -518,6 +522,8 @@ struct PrimitiveMarkIslands : INode {
                 tab.insert(IV{a, b});
             }
         });
+        if (tab._buildSuccess.getVal() == 0)
+            throw std::runtime_error("PrimitiveMarkIslands hash failed!!");
 
         auto numEntries = tab.size();
         is.resize(numEntries);
@@ -2531,6 +2537,8 @@ struct ParticleSegmentation : zeno::INode {
                     v = rng() % (u32)4294967291u;
                 w = v;
             });
+            // if (tab._buildSuccess.getVal() == 0)
+            //     throw std::runtime_error("ParticleSegmentation hash failed!!");
         }
         auto &colors = pars->add_attr<float>("colors"); // 0 by default
         auto ncolors = maximum_independent_sets(pol, spmat, weights, colors);
@@ -2745,6 +2753,8 @@ struct PrimitiveBFS : INode {
         buildTopo(lines);
         buildTopo(tris);
         buildTopo(quads);
+        if (tab._buildSuccess.getVal() == 0)
+            throw std::runtime_error("PrimitiveBFS hash failed!!");
 
         auto numEntries = tab.size();
         is.resize(numEntries);
@@ -2854,6 +2864,8 @@ struct PrimitiveColoring : INode {
         buildTopo(lines);
         buildTopo(tris);
         buildTopo(quads);
+        if (tab._buildSuccess.getVal() == 0)
+            throw std::runtime_error("PrimitiveColoring hash failed!!");
 
         auto numEntries = tab.size();
         is.resize(numEntries);
