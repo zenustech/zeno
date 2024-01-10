@@ -10,7 +10,7 @@ namespace zeno {
 extern void traverseABC(
     Alembic::AbcGeom::IObject &obj,
     ABCTree &tree,
-    std::variant<int, float> frameid_or_t,
+    int frameid,
     bool read_done,
     bool read_face_set,
     std::string path
