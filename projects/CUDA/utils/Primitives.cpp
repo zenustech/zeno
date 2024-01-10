@@ -2040,11 +2040,141 @@ struct PrimAttributePromote : INode {
                 }
 
                 if (mergeOp == 0) {
-                    ;
-                    ;
+                    std::vector<int> vCnts(verts.size());
+                    pol(enumerate(tris.values), [&, tag = wrapv<space>{}](int triNo, zeno::vec3i tri) {
+                        atomic_add(tag, &vCnts[tri[0]], 1);
+                        atomic_add(tag, &vCnts[tri[1]], 1);
+                        atomic_add(tag, &vCnts[tri[2]], 1);
+
+                        for (const auto &attribTag : promoteAttribs) {
+                            if (verts.has_attr(attribTag))
+                                match([&, &attribTag = attribTag](auto &vertAttrib) {
+                                    using T = std::decay_t<decltype(vertAttrib[0])>;
+                                    if (tris.has_attr(attribTag)) {
+                                        const auto &triAttrib = tris.attr<T>(attribTag);
+                                        if constexpr (std::is_same_v<T, float> || std::is_same_v<T, int>) {
+                                            atomic_add(tag, &vertAttrib[tri[0]], triAttrib[triNo]);
+                                            atomic_add(tag, &vertAttrib[tri[1]], triAttrib[triNo]);
+                                            atomic_add(tag, &vertAttrib[tri[2]], triAttrib[triNo]);
+                                        } else {
+                                            using TT = typename T::value_type;
+                                            constexpr int dim = std::tuple_size_v<T>;
+                                            for (int d = 0; d != dim; ++d) {
+                                                atomic_add(tag, &vertAttrib[tri[0]][d], triAttrib[triNo][d]);
+                                                atomic_add(tag, &vertAttrib[tri[1]][d], triAttrib[triNo][d]);
+                                                atomic_add(tag, &vertAttrib[tri[2]][d], triAttrib[triNo][d]);
+                                            }
+                                        }
+                                    } else {
+                                        const auto &triAttrib0 = tris.attr<T>(attribTag + "0");
+                                        const auto &triAttrib1 = tris.attr<T>(attribTag + "1");
+                                        const auto &triAttrib2 = tris.attr<T>(attribTag + "2");
+                                        if constexpr (std::is_same_v<T, float> || std::is_same_v<T, int>) {
+                                            atomic_add(tag, &vertAttrib[tri[0]], triAttrib0[triNo]);
+                                            atomic_add(tag, &vertAttrib[tri[1]], triAttrib1[triNo]);
+                                            atomic_add(tag, &vertAttrib[tri[2]], triAttrib2[triNo]);
+                                        } else {
+                                            using TT = typename T::value_type;
+                                            constexpr int dim = std::tuple_size_v<T>;
+                                            for (int d = 0; d != dim; ++d) {
+                                                atomic_add(tag, &vertAttrib[tri[0]][d], triAttrib0[triNo][d]);
+                                                atomic_add(tag, &vertAttrib[tri[1]][d], triAttrib1[triNo][d]);
+                                                atomic_add(tag, &vertAttrib[tri[2]][d], triAttrib2[triNo][d]);
+                                            }
+                                        }
+                                    }
+                                })(verts.attr(attribTag));
+                        }
+                    });
+                    pol(enumerate(vCnts), [&verts, &promoteAttribs](int i, int sz) {
+                        if (sz == 0)
+                            return;
+                        for (const auto &attribTag : promoteAttribs)
+                            if (verts.has_attr(attribTag))
+                                match([&](auto &vertAttrib) { vertAttrib[i] = vertAttrib[i] / sz; })(
+                                    verts.attr(attribTag));
+                    });
                 } else if (mergeOp == 1 || mergeOp == 2) {
-                    ;
-                    ;
+                    pol(enumerate(tris.values), [&, tag = wrapv<space>{}](int triNo, zeno::vec3i tri) {
+                        for (const auto &attribTag : promoteAttribs) {
+                            if (verts.has_attr(attribTag))
+                                match([&, &attribTag = attribTag](auto &vertAttrib) {
+                                    using T = std::decay_t<decltype(vertAttrib[0])>;
+                                    if (tris.has_attr(attribTag)) {
+                                        const auto &triAttrib = tris.attr<T>(attribTag);
+                                        if constexpr (std::is_same_v<T, float> || std::is_same_v<T, int>) {
+                                            if (mergeOp == 1) {
+                                                atomic_min(tag, &vertAttrib[tri[0]], triAttrib[triNo]);
+                                                atomic_min(tag, &vertAttrib[tri[1]], triAttrib[triNo]);
+                                                atomic_min(tag, &vertAttrib[tri[2]], triAttrib[triNo]);
+                                            } else {
+                                                atomic_max(tag, &vertAttrib[tri[0]], triAttrib[triNo]);
+                                                atomic_max(tag, &vertAttrib[tri[1]], triAttrib[triNo]);
+                                                atomic_max(tag, &vertAttrib[tri[2]], triAttrib[triNo]);
+                                            }
+                                        } else {
+                                            using TT = typename T::value_type;
+                                            constexpr int dim = std::tuple_size_v<T>;
+                                            if (mergeOp == 1) {
+                                                for (int d = 0; d != dim; ++d) {
+                                                    atomic_min(tag, &vertAttrib[tri[0]][d], triAttrib[triNo][d]);
+                                                    atomic_min(tag, &vertAttrib[tri[1]][d], triAttrib[triNo][d]);
+                                                    atomic_min(tag, &vertAttrib[tri[2]][d], triAttrib[triNo][d]);
+                                                }
+                                            } else {
+                                                for (int d = 0; d != dim; ++d) {
+                                                    atomic_max(tag, &vertAttrib[tri[0]][d], triAttrib[triNo][d]);
+                                                    atomic_max(tag, &vertAttrib[tri[1]][d], triAttrib[triNo][d]);
+                                                    atomic_max(tag, &vertAttrib[tri[2]][d], triAttrib[triNo][d]);
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        const auto &triAttrib0 = tris.attr<T>(attribTag + "0");
+                                        const auto &triAttrib1 = tris.attr<T>(attribTag + "1");
+                                        const auto &triAttrib2 = tris.attr<T>(attribTag + "2");
+                                        if constexpr (std::is_same_v<T, float> || std::is_same_v<T, int>) {
+                                            if (mergeOp == 1) {
+                                                atomic_min(tag, &vertAttrib[tri[0]], triAttrib0[triNo]);
+                                                atomic_min(tag, &vertAttrib[tri[1]], triAttrib1[triNo]);
+                                                atomic_min(tag, &vertAttrib[tri[2]], triAttrib2[triNo]);
+                                            } else {
+                                                atomic_max(tag, &vertAttrib[tri[0]], triAttrib0[triNo]);
+                                                atomic_max(tag, &vertAttrib[tri[1]], triAttrib1[triNo]);
+                                                atomic_max(tag, &vertAttrib[tri[2]], triAttrib2[triNo]);
+                                            }
+                                        } else {
+                                            using TT = typename T::value_type;
+                                            constexpr int dim = std::tuple_size_v<T>;
+                                            if (mergeOp == 1) {
+                                                for (int d = 0; d != dim; ++d) {
+                                                    atomic_min(tag, &vertAttrib[tri[0]][d], triAttrib0[triNo][d]);
+                                                    atomic_min(tag, &vertAttrib[tri[1]][d], triAttrib1[triNo][d]);
+                                                    atomic_min(tag, &vertAttrib[tri[2]][d], triAttrib2[triNo][d]);
+                                                }
+                                            } else {
+                                                for (int d = 0; d != dim; ++d) {
+                                                    atomic_max(tag, &vertAttrib[tri[0]][d], triAttrib0[triNo][d]);
+                                                    atomic_max(tag, &vertAttrib[tri[1]][d], triAttrib1[triNo][d]);
+                                                    atomic_max(tag, &vertAttrib[tri[2]][d], triAttrib2[triNo][d]);
+                                                }
+                                            }
+                                        }
+                                    }
+                                })(verts.attr(attribTag));
+                        }
+                    });
+                }
+
+                /// rm attr
+                for (const auto &attr : promoteAttribs) {
+                    if (tris.has_attr(attr))
+                        tris.erase_attr(attr);
+                    else if (tris.has_attr(attr + "0") && tris.has_attr(attr + "1") && tris.has_attr(attr + "2")) {
+                        tris.erase_attr(attr + "0");
+                        tris.erase_attr(attr + "1");
+                        tris.erase_attr(attr + "2");
+                    }
                 }
             }
         }
