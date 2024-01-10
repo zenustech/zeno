@@ -849,6 +849,9 @@ struct PrimSubdivision : INode {
     virtual void apply() override {
         auto in_prim = get_input<PrimitiveObject>("prim");
         int maxlevel = get_input2<int>("maxLevel");
+        if (in_prim->tris.size() || in_prim->lines.size()) {
+            primPolygonate(in_prim.get(), true);
+        }
         typedef Far::TopologyDescriptor Descriptor;
 
         Sdc::SchemeType type = OpenSubdiv::Sdc::SCHEME_CATMARK;
