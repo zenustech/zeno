@@ -23,6 +23,7 @@
 #include <zenoui/comctrl/zpathedit.h>
 #include <zenomodel/include/modeldata.h>
 #include <zenomodel/include/uihelper.h>
+#include <zenoui/zfxsys/zfxhighlighter.h>
 
 namespace zenoui
 {
@@ -83,6 +84,7 @@ namespace zenoui
             case CONTROL_MULTILINE_STRING:
             {
                 ZTextEdit* pTextEdit = new ZTextEdit;
+                auto highlighter = new ZfxHighlighter(pTextEdit->document());
                 pTextEdit->setFrameShape(QFrame::NoFrame);
                 pTextEdit->setProperty("cssClass", "proppanel");
                 pTextEdit->setProperty("control", ctrl);
