@@ -1625,6 +1625,7 @@ static void flatten_loop_uvs(AttrVector<int> &loops, AttrVector<zeno::vec2f> &uv
     }
 }
 
+#if 0
 struct PrimPromotePointAttribs : INode {
     void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
@@ -1764,6 +1765,7 @@ ZENDEFNODE(PrimDemoteVertAttribs, {
                                       {},
                                       {"zs_geom"},
                                   });
+#endif
 
 struct PrimAttributePromote : INode {
     void apply() override {
@@ -1812,13 +1814,18 @@ struct PrimAttributePromote : INode {
                 });
                 /// promote
                 pol(range(loops.size()), [&](int i) {
-                    auto loopI = loops.values[i];
+                    auto pi = loops.values[i];
+                    auto uvId = loopUvIds[i];
+                    if (promoteAttribs.find("uv") != promoteAttribs.end() && verts.has_attr("uv")) {
+                        auto vertUv = verts.attr<vec3f>("uv")[pi];
+                        uvs.values[uvId] = vec2f{vertUv[0], vertUv[1]};
+                    }
                     for (const auto &attribTag : promoteAttribs) {
                         if (uvs.has_attr(attribTag))
                             match([&, &attribTag = attribTag](auto &uvAttrib) {
                                 using T = std::decay_t<decltype(uvAttrib[0])>;
                                 const auto &srcAttrib = verts.attr<T>(attribTag);
-                                uvAttrib[i] = srcAttrib[loopI];
+                                uvAttrib[uvId] = srcAttrib[pi];
                             })(uvs.attr(attribTag));
                     }
                 });
@@ -1827,7 +1834,10 @@ struct PrimAttributePromote : INode {
                     verts.erase_attr(attr);
             } else {
                 /// prep attr
-                auto &vertUvs = verts.add_attr<zeno::vec3f>("uv");
+                bool handleUv = promoteAttribs.find("uv") != promoteAttribs.end() && loops.has_attr("uvs");
+                if (handleUv)
+                    verts.add_attr<zeno::vec3f>("uv");
+
                 uvs.foreach_attr<AttrAcceptAll>([&](auto const &key, auto const &arr) {
                     using T = std::decay_t<decltype(arr[0])>;
                     if (promoteAttribs.find(key) != promoteAttribs.end()) {
@@ -1840,13 +1850,18 @@ struct PrimAttributePromote : INode {
                 /// demote
                 std::vector<int> vCnts(verts.size());
                 pol(range(loops.size()), [&, tag = wrapv<space>{}](int i) {
-                    auto loopI = loops.values[i];
+                    auto pi = loops.values[i];
                     auto uvI = loopUvIds[i];
-                    atomic_add(tag, &vertUvs[loopI][0], uvs.values[uvI][0]);
-                    atomic_add(tag, &vertUvs[loopI][1], uvs.values[uvI][1]);
-                    vertUvs[loopI][2] = 0;
 
-                    atomic_add(tag, &vCnts[loopI], 1);
+                    atomic_add(tag, &vCnts[pi], 1);
+
+                    if (handleUv) {
+                        auto &vertUvs = verts.attr<zeno::vec3f>("uv");
+                        atomic_add(tag, &vertUvs[pi][0], uvs.values[uvI][0]);
+                        atomic_add(tag, &vertUvs[pi][1], uvs.values[uvI][1]);
+                        vertUvs[pi][2] = 0;
+                    }
+
                     for (const auto &attribTag : promoteAttribs) {
                         if (attribTag == "uv")
                             continue;
@@ -1855,12 +1870,12 @@ struct PrimAttributePromote : INode {
                                 using T = std::decay_t<decltype(vertAttrib[0])>;
                                 const auto &uvAttrib = uvs.attr<T>(attribTag);
                                 if constexpr (std::is_same_v<T, float> || std::is_same_v<T, int>) {
-                                    atomic_add(tag, &vertAttrib[loopI], uvAttrib[uvI]);
+                                    atomic_add(tag, &vertAttrib[pi], uvAttrib[uvI]);
                                 } else {
                                     using TT = typename T::value_type;
                                     constexpr int dim = std::tuple_size_v<T>;
                                     for (int d = 0; d != dim; ++d)
-                                        atomic_add(tag, &vertAttrib[loopI][d], uvAttrib[uvI][d]);
+                                        atomic_add(tag, &vertAttrib[pi][d], uvAttrib[uvI][d]);
                                 }
                             })(verts.attr(attribTag));
                     }
@@ -1868,11 +1883,16 @@ struct PrimAttributePromote : INode {
                 pol(enumerate(vCnts), [&verts, &promoteAttribs](int i, int sz) {
                     if (sz == 0)
                         return;
+                    if (handleUv) {
+                        auto &vertUvs = verts.attr<zeno::vec3f>("uv");
+                        vertUvs[i] /= sz;
+                    }
                     for (const auto &attribTag : promoteAttribs) {
                         if (verts.has_attr(attribTag))
                             match([&](auto &vertAttrib) { vertAttrib[i] = vertAttrib[i] / sz; })(verts.attr(attribTag));
                     }
                 });
+
                 /// rm attr
                 for (const auto &attr : promoteAttribs)
                     uvs.erase_attr(attr);
