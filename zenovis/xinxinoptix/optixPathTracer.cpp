@@ -4002,17 +4002,18 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
                 save_exr((float3 *)optixgetimg_extra("color"), w, h, exr_path);
             }
             else {
-                stbi_write_jpg(path.c_str(), w, h, 4, p, 100);
+                std::string jpg_native_path = std::filesystem::u8path(path).string();
+                stbi_write_jpg(jpg_native_path.c_str(), w, h, 4, p, 100);
                 if (denoise) {
                     const float* _albedo_buffer = reinterpret_cast<float*>(state.albedo_buffer_p.handle);
                     //SaveEXR(_albedo_buffer, w, h, 4, 0, (path+".albedo.exr").c_str(), nullptr);
                     auto a_path = path + ".albedo.pfm";
-                    write_pfm(a_path, w, h, _albedo_buffer);
+                    write_pfm(std::filesystem::u8path(a_path).string(), w, h, _albedo_buffer);
 
                     const float* _normal_buffer = reinterpret_cast<float*>(state.normal_buffer_p.handle);
                     //SaveEXR(_normal_buffer, w, h, 4, 0, (path+".normal.exr").c_str(), nullptr);
                     auto n_path = path + ".normal.pfm";
-                    write_pfm(n_path, w, h, _normal_buffer);
+                    write_pfm(std::filesystem::u8path(n_path).string(), w, h, _normal_buffer);
                 }
             }
         }

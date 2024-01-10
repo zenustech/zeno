@@ -16,6 +16,7 @@
 #include "launch/corelaunch.h"
 #include <zeno/extra/GlobalStatus.h>
 #include <zeno/core/Session.h>
+#include <filesystem>
 
 
 RecordVideoMgr::RecordVideoMgr(QObject* parent)
@@ -127,7 +128,7 @@ void RecordVideoMgr::endRecToExportVideo()
             // jpg to pfm
             {
                 auto image = zeno::readImageFile(jpg_path);
-                write_pfm(pfm_path, image);
+                write_pfm(std::filesystem::u8path(pfm_path).string(), image);
             }
 
             const auto albedo_pfm_path = jpg_path + ".albedo.pfm";
@@ -161,8 +162,8 @@ void RecordVideoMgr::endRecToExportVideo()
                 qDebug() << ret;
                 // pfm to jpg
                 if (ret == 0) {
-                    auto image = zeno::readPFMFile(pfm_dn_path);
-                    write_jpg(jpg_path, image);
+                    auto image = zeno::readPFMFile(std::filesystem::u8path(pfm_dn_path).string());
+                    write_jpg(std::filesystem::u8path(jpg_path).string(), image);
                     QFile fileOrigin(QString::fromStdString(pfm_path));
                     if (fileOrigin.exists()) {
                         fileOrigin.remove();
