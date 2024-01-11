@@ -147,25 +147,15 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCre
             continue;
         primpolyreduced += len;
     }
-    polysLen.reserve(prim->tris.size() + prim->quads.size() + prim->polys.size());
-    polysInd.reserve(prim->tris.size() * 3 + prim->quads.size() * 4 + primpolyreduced);
 
-    polysLen.resize(prim->tris.size(), 3);
-    polysInd.insert(polysInd.end(), reinterpret_cast<int const *>(prim->tris.data()),
-                    reinterpret_cast<int const *>(prim->tris.data() + prim->tris.size()));
-
-    polysLen.resize(prim->tris.size() + prim->quads.size(), 4);
-    polysInd.insert(polysInd.end(), reinterpret_cast<int const *>(prim->quads.data()),
-                    reinterpret_cast<int const *>(prim->quads.data() + prim->quads.size()));
-
-    int offsetred = prim->tris.size() * 3 + prim->quads.size() * 4;
-    polysLen.resize(prim->tris.size() + prim->quads.size() + prim->polys.size());
+    int offsetred = 0;
+    polysLen.resize(prim->polys.size());
     polysInd.resize(offsetred + primpolyreduced);
     for (int i = 0; i < prim->polys.size(); i++) {
         auto [base, len] = prim->polys[i];
         if (len <= 2)
             continue;
-        polysLen[prim->tris.size() + prim->quads.size() + i] = len;
+        polysLen[i] = len;
         for (int j = 0; j < len; j++) {
             polysInd[offsetred + j] = prim->loops[base + j];
         }
@@ -191,7 +181,7 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCre
     std::vector<int> uvsInd;
     if (hasLoopUVs) {
         uvsInd.resize(polysInd.size());
-        int offsetred = prim->tris.size() * 3 + prim->quads.size() * 4;
+        int offsetred = 0;
         auto &loop_uvs = prim->loops.attr<int>("uvs");
         for (int i = 0; i < prim->polys.size(); i++) {
             auto [base, len] = prim->polys[i];
@@ -199,7 +189,6 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCre
                 continue;
             for (int j = 0; j < len; j++) {
                 uvsInd[offsetred + j] = loop_uvs[base + j];
-                //prim->loops.attr<int>(key)[base + j];
             }
             offsetred += len;
         }
@@ -216,54 +205,15 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCre
     if (copyFaceAttrs) { // make zhxx very happy
         size_t offsetred = 0, curOffsetred;
         size_t shift = 2 * (levels - 1);
-        size_t finred = prim->tris.size() * (3 << shift) + prim->quads.size() * (4 << shift);
-            for (size_t i = 0; i < prim->polys.size(); i++) {
-                size_t stride = prim->polys[i][1] << shift;
-                finred += stride;
-            }
+        size_t finred = 0;
+        for (size_t i = 0; i < prim->polys.size(); i++) {
+            size_t stride = prim->polys[i][1] << shift;
+            finred += stride;
+        }
         auto fits = [&] (auto &pat) {
             if (pat.size() < finred) pat.resize(finred);
         };
 
-        curOffsetred = offsetred;
-        prim->tris.foreach_attr<AttrAcceptAll>([&](std::string const &key, auto &arr) {
-            if (key == "uv0" || key == "uv1" || key == "uv2")
-                return;
-            using T = std::decay_t<decltype(arr[0])>;
-            auto &pat = oldpolyattrs[key].emplace<std::vector<T>>();
-            fits(pat);
-
-            offsetred = curOffsetred;
-            size_t stride = 3 << shift;
-            for (size_t i = 0; i < prim->tris.size(); i++) {
-                for (size_t j = 0; j < stride; j++) {
-                    pat[offsetred + j] = arr[i];
-                }
-                offsetred += stride;
-            }
-        });
-
-        offsetred += prim->tris.size();
-        curOffsetred = offsetred;
-        prim->quads.foreach_attr<AttrAcceptAll>([&](std::string const &key, auto &arr) {
-            if (key == "uv0" || key == "uv1" || key == "uv2" || key == "uv3")
-                return;
-            using T = std::decay_t<decltype(arr[0])>;
-            auto &pat = oldpolyattrs[key].emplace<std::vector<T>>();
-            fits(pat);
-
-            auto offsetred = curOffsetred;
-            size_t stride = 4 << shift;
-            /* ZENO_P(prim->quads->size()); */
-            for (size_t i = 0; i < prim->quads.size(); i++) {
-                for (size_t j = 0; j < stride; j++) {
-                    pat[offsetred + j] = arr[i];
-                }
-                offsetred += stride;
-            }
-        });
-
-        offsetred += prim->quads.size();
         curOffsetred = offsetred;
         prim->polys.foreach_attr<AttrAcceptAll>([&](std::string const &key, auto &arr) {
             using T = std::decay_t<decltype(arr[0])>;
@@ -404,121 +354,7 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCre
         assert(prim->uvs.size() == nfvars);
 
         // Print faces
-        if (triangulate) {
-            prim->tris.resize(nfaces * 2);
-            for (int face = 0; face < nfaces; ++face) {
-
-                Far::ConstIndexArray fverts = refLastLevel.GetFaceVertices(face);
-
-                // all refined Catmark faces should be quads
-                assert(fverts.size() == 4);
-
-                auto &reftri1 = prim->tris[face * 2];
-                auto &reftri2 = prim->tris[face * 2 + 1];
-                reftri1[0] = fverts[0];
-                reftri1[1] = fverts[1];
-                reftri1[2] = fverts[2];
-                reftri2[0] = fverts[0];
-                reftri2[1] = fverts[2];
-                reftri2[2] = fverts[3];
-
-                //printf("f ");
-                //for (int vert=0; vert<fverts.size(); ++vert) {
-                //printf("%d ", fverts[vert]+1); // OBJ uses 1-based arrays...
-                //}
-                //printf("\n");
-            }
-
-            if (hasLoopUVs) { // very qianqiang uv0~2 for quads/tris, avoid use
-                auto &uv0 = prim->tris.add_attr<vec3f>("uv0");
-                auto &uv1 = prim->tris.add_attr<vec3f>("uv1");
-                auto &uv2 = prim->tris.add_attr<vec3f>("uv2");
-                for (int face = 0; face < nfaces; ++face) {
-                    Far::ConstIndexArray fvars = refLastLevel.GetFaceFVarValues(face);
-                    assert(fvars.size() == 4);
-                    uv0[face * 2] = v2to3(prim->uvs[fvars[0]]);
-                    uv1[face * 2] = v2to3(prim->uvs[fvars[1]]);
-                    uv2[face * 2] = v2to3(prim->uvs[fvars[2]]);
-                    uv0[face * 2 + 1] = v2to3(prim->uvs[fvars[0]]);
-                    uv1[face * 2 + 1] = v2to3(prim->uvs[fvars[2]]);
-                    uv2[face * 2 + 1] = v2to3(prim->uvs[fvars[3]]);
-                }
-                prim->uvs.clear();
-            }
-
-            if (copyFaceAttrs) {
-                for (auto const &[key_, atta] : oldpolyattrs) {
-                    std::visit(
-                        [&, key = key_](auto &arr) {
-                            using T = std::decay_t<decltype(arr[0])>;
-                            if (arr.size() != nfaces) {
-                                zeno::log_warn("copyFaceAttrs estimated face count mismatch");
-                            }
-                            auto &out = prim->tris.add_attr<T>(key);
-                            out.resize(arr.size() * 2);
-                            for (size_t i = 0; i < arr.size(); i++) {
-                                out[i * 2 + 0] = out[i * 2 + 1] = arr[i];
-                            }
-                        },
-                        atta);
-                }
-            }
-
-        } else if (asQuadFaces) {
-
-            prim->quads.resize(nfaces);
-            for (int face = 0; face < nfaces; ++face) {
-
-                Far::ConstIndexArray fverts = refLastLevel.GetFaceVertices(face);
-
-                // all refined Catmark faces should be quads
-                assert(fverts.size() == 4);
-
-                auto &refquad = prim->quads[face];
-                refquad[0] = fverts[0];
-                refquad[1] = fverts[1];
-                refquad[2] = fverts[2];
-                refquad[3] = fverts[3];
-
-                //printf("f ");
-                //for (int vert=0; vert<fverts.size(); ++vert) {
-                //printf("%d ", fverts[vert]+1); // OBJ uses 1-based arrays...
-                //}
-                //printf("\n");
-            }
-
-            if (hasLoopUVs) { // very qianqiang uv0~3 for quads/tris, avoid use
-                auto &uv0 = prim->quads.add_attr<vec3f>("uv0");
-                auto &uv1 = prim->quads.add_attr<vec3f>("uv1");
-                auto &uv2 = prim->quads.add_attr<vec3f>("uv2");
-                auto &uv3 = prim->quads.add_attr<vec3f>("uv3");
-                for (int face = 0; face < nfaces; ++face) {
-                    Far::ConstIndexArray fvars = refLastLevel.GetFaceFVarValues(face);
-                    assert(fvars.size() == 4);
-                    uv0[face] = v2to3(prim->uvs[fvars[0]]);
-                    uv1[face] = v2to3(prim->uvs[fvars[1]]);
-                    uv2[face] = v2to3(prim->uvs[fvars[2]]);
-                    uv3[face] = v2to3(prim->uvs[fvars[3]]);
-                }
-                prim->uvs.clear();
-            }
-
-            if (copyFaceAttrs) {
-                for (auto const &[key_, atta] : oldpolyattrs) {
-                    std::visit(
-                        [&, key = key_](auto &arr) {
-                            using T = std::decay_t<decltype(arr[0])>;
-                            if (arr.size() != nfaces) {
-                                zeno::log_warn("copyFaceAttrs estimated face count mismatch {} {}", arr.size(), nfaces);
-                            }
-                                /* zeno::log_warn("{}", key); */
-                            prim->quads.add_attr<T>(key) = std::move(arr);
-                        },
-                        atta);
-                }
-            }
-
-        } else {
+        {
             prim->polys.resize(nfaces);
             prim->loops.resize(nfaces * 4);
 

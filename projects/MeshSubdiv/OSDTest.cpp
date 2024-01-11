@@ -1118,6 +1118,15 @@ struct PrimSubdivision : INode {
             prim->polys[i] = {start, polys[i]};
             start += polys[i];
         }
+        in_prim->polys.foreach_attr<AttrAcceptAll>([&](std::string const &key, auto &arr) {
+            using T = std::decay_t<decltype(arr[0])>;
+            int face_count_to_origin_one_face = 1 << (maxlevel * 2);
+            auto &attr = prim->polys.template add_attr<T>(key);
+            for (auto i = 0; i < attr.size(); i++) {
+                attr[i] = arr.at(i / face_count_to_origin_one_face);
+            }
+        });
+        prim->userData().m_data = in_prim->userData().m_data;
         if (get_input2<bool>("triangulate")) {
             primTriangulate(prim.get(), true, true);
         }
