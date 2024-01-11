@@ -102,8 +102,10 @@ struct CopyZsVectorTo : INode {
                 using vector_t = RM_CVREF_T(vector);
                 using val_t = typename vector_t::value_type;
                 if constexpr (zs::is_same_v<val_t, float> || zs::is_same_v<val_t, int>) {
-                    if (prim->size() != vector.size())
-                        fmt::print("BEWARE! copy sizes mismatch!\n");
+                    if (prim->size() != vector.size()) {
+                        fmt::print("BEWARE! copy sizes mismatch! resize to match.\n");
+                        prim->resize(vector.size());
+                    }
 
                     auto &dst = prim->attr<val_t>(attr);
 
