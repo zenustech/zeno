@@ -12,6 +12,7 @@ class ZenoFullLink;
 class ZenoTempLink;
 class ZenoSocketItem;
 class NodeGridItem;
+class GraphModel;
 
 class ZenoSubGraphScene : public QGraphicsScene
 {
@@ -19,7 +20,7 @@ class ZenoSubGraphScene : public QGraphicsScene
 public:
     ZenoSubGraphScene(QObject* parent = nullptr);
     ~ZenoSubGraphScene();
-    void initModel(const QModelIndex& index);
+    void initModel(GraphModel* pGraphM);
     void undo();
     void redo();
     void copy();
@@ -83,6 +84,7 @@ private:
     QStringList m_errNodes;        //the nodes which have been marked "error" at run time.
     QMap<QString, ZenoFullLink*> m_links;
     ZenoTempLink* m_tempLink;
+    GraphModel* m_model;
 
     QVector<QPair<QString, bool>> m_selChanges;
 

@@ -44,6 +44,16 @@ QStandardItemModel* GraphsManager::logModel() const
     return m_logModel;
 }
 
+GraphModel* GraphsManager::getGraph(const QString& objPath) const
+{
+    if (objPath.startsWith("/")) {
+        return m_model ? m_model->getGraphByPath(objPath) : nullptr;
+    }
+    else {
+        return m_assets ? m_assets->getAsset(objPath) : nullptr;
+    }
+}
+
 GraphsTreeModel* GraphsManager::openZsgFile(const QString& fn)
 {
     zeno::ZSG_PARSE_RESULT result;
@@ -180,6 +190,13 @@ void GraphsManager::removeCurrent()
     }
 }
 
+QGraphicsScene* GraphsManager::gvScene(const QString& tabName) const
+{
+    if (m_scenes.find(tabName) != m_scenes.end())
+        return nullptr;
+    return m_scenes[tabName];
+}
+
 QGraphicsScene* GraphsManager::gvScene(const QModelIndex& subgIdx) const
 {
     if (!subgIdx.isValid())
@@ -198,6 +215,13 @@ void GraphsManager::addScene(const QModelIndex& subgIdx, QGraphicsScene* scene)
     if (m_scenes.find(subgName) != m_scenes.end() || !scene)
         return;
     m_scenes.insert(subgName, scene);
+}
+
+void GraphsManager::addScene(const QString& tabName, QGraphicsScene* scene)
+{
+    if (m_scenes.find(tabName) != m_scenes.end())
+        return;
+    m_scenes.insert(tabName, scene);
 }
 
 zeno::TimelineInfo GraphsManager::timeInfo() const

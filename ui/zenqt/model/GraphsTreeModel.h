@@ -51,6 +51,8 @@ public:
     */
     Q_INVOKABLE QModelIndex rootIndex();
 
+    Q_INVOKABLE GraphModel* getGraphByPath(const QString& objPath);
+
     //util methods
     bool isDirty() const;
     void clearDirty();

@@ -1012,7 +1012,7 @@ void ZenoSubGraphScene::onRowsAboutToBeRemoved(const QModelIndex& subgIdx, const
 {
     if (subgIdx != m_subgIdx)
         return;
-    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    IGraphsModel* pGraphsModel = zenoApp->graphsManager()->currentModel();
     for (int r = first; r <= last; r++)
     {
         QModelIndex idx = pGraphsModel->index(r, m_subgIdx);

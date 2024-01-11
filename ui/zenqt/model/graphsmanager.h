@@ -18,6 +18,7 @@ public:
     GraphsTreeModel* currentModel() const;
     AssetsModel* assetsModel() const;
     QStandardItemModel* logModel() const;
+    GraphModel* getGraph(const QString& objPath) const;
     GraphsTreeModel* openZsgFile(const QString &fn);
     bool saveFile(const QString& filePath, APP_SETTINGS settings);
     GraphsTreeModel* newFile();
@@ -27,8 +28,10 @@ public:
     void removeCurrent();
     void appendLog(QtMsgType type, QString fileName, int ln, const QString &msg);
     void appendErr(const QString& nodeName, const QString& msg);
+    QGraphicsScene* gvScene(const QString& graphName) const;
     QGraphicsScene* gvScene(const QModelIndex& subgIdx) const;
     void addScene(const QModelIndex& subgIdx, QGraphicsScene* scene);
+    void addScene(const QString& tabName, QGraphicsScene* scene);
     zeno::TimelineInfo timeInfo() const;
     QString zsgPath() const;
     QString zsgDir() const;
@@ -56,7 +59,7 @@ private:
 
     mutable std::mutex m_mtx;
     zeno::TimelineInfo m_timerInfo;
-    QMap<QString, QGraphicsScene*> m_scenes;
+    QMap<QString, QGraphicsScene*> m_scenes;    //for gv based editor.
 };
 
 #endif

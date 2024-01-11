@@ -649,7 +649,7 @@ ZenoSubGraphScene* ZenoSubGraphView::scene()
     return qobject_cast<ZenoSubGraphScene*>(m_view->scene());
 }
 
-void ZenoSubGraphView::resetPath(const QString& path, const QString& subGraphName, const QString& objId, bool isError)
+void ZenoSubGraphView::resetPath(const QString& path, const QString& objId, bool isError)
 {
     if (path.isEmpty())
     {

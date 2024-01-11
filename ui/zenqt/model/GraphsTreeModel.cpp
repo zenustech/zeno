@@ -163,3 +163,8 @@ QModelIndex GraphsTreeModel::rootIndex()
 {
     return {};
 }
+
+GraphModel* GraphsTreeModel::getGraphByPath(const QString& objPath) {
+    //TODO
+    return nullptr;
+}
