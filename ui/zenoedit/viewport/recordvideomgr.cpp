@@ -128,7 +128,8 @@ void RecordVideoMgr::endRecToExportVideo()
             // jpg to pfm
             {
                 auto image = zeno::readImageFile(jpg_path);
-                write_pfm(std::filesystem::u8path(pfm_path).string(), image);
+                std::string native_pfm_path = std::filesystem::u8path(pfm_path).string();
+                write_pfm(native_pfm_path, image);
             }
 
             const auto albedo_pfm_path = jpg_path + ".albedo.pfm";
@@ -162,8 +163,10 @@ void RecordVideoMgr::endRecToExportVideo()
                 qDebug() << ret;
                 // pfm to jpg
                 if (ret == 0) {
-                    auto image = zeno::readPFMFile(std::filesystem::u8path(pfm_dn_path).string());
-                    write_jpg(std::filesystem::u8path(jpg_path).string(), image);
+                    std::string native_pfm_dn_path = std::filesystem::u8path(pfm_dn_path).string();
+                    auto image = zeno::readPFMFile(native_pfm_dn_path);
+                    std::string native_jpg_path = std::filesystem::u8path(jpg_path).string();
+                    write_jpg(native_jpg_path, image);
                     QFile fileOrigin(QString::fromStdString(pfm_path));
                     if (fileOrigin.exists()) {
                         fileOrigin.remove();
