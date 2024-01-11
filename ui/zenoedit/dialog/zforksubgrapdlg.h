@@ -11,6 +11,7 @@ class ZForkSubgraphDlg : public ZFramelessDialog
     Q_OBJECT
 public:
     ZForkSubgraphDlg(const QMap<QString, QString>   & subgs, QWidget* parent = nullptr);
+    void setPos(const QPointF& pos);
 signals:
 private slots:
     void onOkClicked();
@@ -24,6 +25,7 @@ private:
     QString m_importPath;
     QPushButton* m_pImportBtn;
     QMap<QString, STMatchMatInfo> m_matchInfo;
+    QPointF m_pos;
 };
 
 #endif

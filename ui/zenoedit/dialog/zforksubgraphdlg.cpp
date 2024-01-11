@@ -209,7 +209,6 @@ void ZForkSubgraphDlg::onOkClicked()
     int count = m_pTableWidget->rowCount();
     int rowNum = qSqrt(count);
     int colunmNum = count / (rowNum > 0 ? rowNum : 1);
-    QPointF pos;
     QMap<QString, QMap<QString, QVariant>> matValueMap;
     if (!m_importPath.isEmpty())
         matValueMap = readFile();
@@ -226,17 +225,11 @@ void ZForkSubgraphDlg::onOkClicked()
             QMessageBox::warning(this, tr("warring"), tr("fork preset subgraph '%1' failed.").arg(name));
             continue;
         }
-        if (row > 0)
-        {
-            int currC = row / rowNum;
-            int currR = row % rowNum;
-            QPointF newPos(pos.x() + currC * 600, pos.y() + currR * 600);
-            pGraphsModel->ModelSetData(index, newPos, ROLE_OBJPOS);
-        }
-        else
-        {
-            pos = index.data(ROLE_OBJPOS).toPointF();
-        }
+        
+        int currC = row / rowNum + 1;
+        int currR = row % rowNum;
+        QPointF newPos(m_pos.x() + currC * 600, m_pos.y() + currR * 600);
+        pGraphsModel->ModelSetData(index, newPos, ROLE_OBJPOS);
 
         if (!matValueMap.contains(old_mtlid))
             continue;
@@ -259,4 +252,9 @@ void ZForkSubgraphDlg::onOkClicked()
         }
     }
     accept();
+}
+
+void ZForkSubgraphDlg::setPos(const QPointF& pos)
+{
+    m_pos = pos;
 }
