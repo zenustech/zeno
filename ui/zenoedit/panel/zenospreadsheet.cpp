@@ -315,36 +315,40 @@ bool ZenoSpreadsheet::eventFilter(QObject* watched, QEvent* event)
                 }
             });
             connect(newMatSubGraph, &QAction::triggered, this, [=]() {
+                getKeyWords();
                 QMap<QString, QString> map;
+                QString defaultMat;
+                for (const auto& keywords : m_keyWords)
+                {
+                    if (keywords == "default")
+                    {
+                        defaultMat = m_keyWords.key(keywords);
+                    }
+                }
                 for (const auto& mtlid : matLst)
                 {
-                    if (mtlid.contains("Cloth", Qt::CaseInsensitive) || mtlid.contains("Xiezi", Qt::CaseInsensitive))
+                    bool bFind = false;
+                    for (const auto& keywords : m_keyWords)
                     {
-                        map[mtlid] = "ClothTypeMat";
+                        if (keywords.isEmpty())
+                            continue;
+                        QRegularExpression re(keywords, QRegularExpression::CaseInsensitiveOption);
+                        QRegularExpressionMatch match =  re.match(mtlid);
+                        if (match.hasMatch())
+                        {
+                            map[mtlid] = m_keyWords.key(keywords);
+                            bFind = true;
+                            break;
+                        }
                     }
-                    else if (mtlid.contains("Hair", Qt::CaseInsensitive) || mtlid.contains("Eyelash", Qt::CaseInsensitive))
+                    if (!bFind)
                     {
-                        map[mtlid] = "OpacityTypeMat";
+                        if (!defaultMat.isEmpty())
+                            map[mtlid] = defaultMat;
+                        else
+                            zeno::log_warn("can not match {}", mtlid.toStdString());
                     }
-                    else if (mtlid.contains("Arm", Qt::CaseInsensitive) || mtlid.contains("Torso", Qt::CaseInsensitive)
-                        || mtlid.contains("Eyeball", Qt::CaseInsensitive)|| mtlid.contains("Head", Qt::CaseInsensitive)
-                        || mtlid.contains("Leg", Qt::CaseInsensitive) || mtlid.contains("Teeth", Qt::CaseInsensitive)
-                        || mtlid.contains("Tongue", Qt::CaseInsensitive))
-                    {
-                        map[mtlid] = "SkinTypeMat";
-                    }
-                    else if (mtlid.contains("EyeAO", Qt::CaseInsensitive) || mtlid.contains("Tearline", Qt::CaseInsensitive))
-                    {
-                        map[mtlid] = "TransmitTypeMat";
-                    }
-                    else if (mtlid.contains("Paint", Qt::CaseInsensitive))
-                    {
-                        map[mtlid] = "CarPaintTypeMat";
-                    }
-                    else 
-                    {
-                        map[mtlid] = "RegularTypeMat";
-                    }
+                    
                 }
                 ZForkSubgraphDlg dlg(map, this);
                 dlg.exec();
@@ -357,3 +361,59 @@ bool ZenoSpreadsheet::eventFilter(QObject* watched, QEvent* event)
     return QWidget::eventFilter(watched, event);
 }
 
+void ZenoSpreadsheet::getKeyWords()
+{
+    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    const auto indexList = pGraphsModel->subgraphsIndice(SUBGRAPH_PRESET);
+    if (indexList.isEmpty())
+        return;
+    QDialog dlg;
+    dlg.setWindowTitle(tr("Set Key Words"));
+    QVBoxLayout* pLayout = new QVBoxLayout(&dlg);
+
+    QTableWidget* keyTableWidget = new QTableWidget(&dlg); 
+    keyTableWidget->verticalHeader()->setVisible(false);
+    //keyTableWidget->setProperty("cssClass", "select_subgraph");
+    keyTableWidget->setColumnCount(2);
+    QStringList labels = { tr("Preset Subgraph"), tr("key words") };
+    keyTableWidget->setHorizontalHeaderLabels(labels);
+    keyTableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+    keyTableWidget->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
+    for (const auto& subgIdx : indexList)
+    {
+        int row = keyTableWidget->rowCount();
+        keyTableWidget->insertRow(row);
+        QString name = subgIdx.data(ROLE_OBJNAME).toString();
+        QTableWidgetItem* pItem = new QTableWidgetItem(name);
+        pItem->setFlags(pItem->flags() & ~Qt::ItemIsEditable);
+        keyTableWidget->setItem(row, 0, pItem);
+
+        QTableWidgetItem* pKeyItem = new QTableWidgetItem();
+        keyTableWidget->setItem(row, 1, pKeyItem);
+    }
+    if (keyTableWidget->rowCount() > 0)
+    {
+        int height = keyTableWidget->rowHeight(0) * keyTableWidget->rowCount();
+        int hearderH = keyTableWidget->horizontalHeader()->height();
+        keyTableWidget->setMinimumHeight(height + hearderH);
+    }
+    keyTableWidget->viewport()->installEventFilter(this);
+    QDialogButtonBox* pButtonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+    QLabel* pLabel = new QLabel(tr("Separated by '|', such as : W1|W2|W3..."), &dlg);
+    pLayout->addWidget(pLabel);
+    pLayout->addWidget(keyTableWidget);
+    pLayout->addWidget(pButtonBox);
+    connect(pButtonBox, SIGNAL(accepted()), &dlg, SLOT(accept()));
+    connect(pButtonBox, SIGNAL(rejected()), &dlg, SLOT(reject()));
+    if (QDialog::Accepted == dlg.exec()) {
+        for (int row = 0; row < keyTableWidget->rowCount(); row++)
+        {
+            QString keys = keyTableWidget->item(row, 1)->text();
+            if (!keys.isEmpty())
+            {
+                QString jsonKey = keyTableWidget->item(row, 0)->text();
+                 m_keyWords[jsonKey] = keys;
+            }
+        }
+    }
+}

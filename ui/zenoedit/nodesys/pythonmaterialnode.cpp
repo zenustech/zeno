@@ -71,24 +71,13 @@ sys.stderr = catchOutErr\n\
     PyObject* pModule = PyImport_AddModule("__main__"); //create main module
     PyRun_SimpleString(stdOutErr.c_str()); //invoke code to redirect
 
-    /*IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-    QModelIndex subgIdx = subgIndex();*/
     MaterialMatchInfo info = getMatchInfo();
-    //QModelIndex infoIdx = pModel->paramIndex(subgIdx, index(), "materialInfo", true);
-    //ZASSERT_EXIT(infoIdx.isValid());
-    //QString infoPath = infoIdx.data(ROLE_PARAM_VALUE).toString();
-    //QModelIndex fileIdx = pModel->paramIndex(subgIdx, index(), "materialFile", true);
-    //ZASSERT_EXIT(fileIdx.isValid());
-    //QString filePath = fileIdx.data(ROLE_PARAM_VALUE).toString();
-    //infoPath.replace('\\', '/');
-    //filePath.replace('\\', '/');
 
     QString script = R"(
 import json
 import re
 import zeno
 
-json_data = {}
 mat_data = {}
 names_data = []
 keys_data = {}
@@ -112,38 +101,38 @@ if matchInfo != '':
     match_data = json.loads(matchInfo)
 rows = int(len(names_data)**0.5)
 cols = int(len(names_data) / rows if rows > 0 else 1)
-pos = (0,0)
+pos = (%5,%6)
 count = 0
+defaultMat = '';
+for key, value in keys_data.items():
+    if value == 'default':
+        defaultMat = key
 for mat in names_data:
-    subgName = ''
+    subgName = defaultMat
     for preSet, pattern in keys_data.items():
         if re.search(pattern, mat, re.I):
             subgName = preSet
             break
     if subgName == '':
-        if "default" in keys_data:
-            subgName = keys_data["default"]
-    if subgName == '':
         print('Can not match ', mat)
     else:
-        node = zeno.forkMaterial(preSet, mat, mat)
-        if count > 0:
-            row = int(count % rows)
-            col = int(count / rows)
-            newPos = (pos[0] + row * 600, pos[1]+col * 600)
-            node.pos = newPos
-        else:
-            pos = node.pos
+        node = zeno.forkMaterial(subgName, mat, mat)
+        row = int(count % rows) + 1
+        col = int(count / rows) + 1
+        newPos = (pos[0] + row * 600, pos[1]+col * 600)
+        node.pos = newPos
         count = count + 1
-        if preSet in match_data and mat in mat_data:
-            match = match_data[preSet]
+        if subgName in match_data and mat in mat_data:
+            match = match_data[subgName]
             material = mat_data[mat]
             for k, v in match.items():
                 if v in material:
                     setattr(node, k,material[v])
 )";
+
+    QPointF pos = nodePos();
     //Py_Initialize();
-    if (PyRun_SimpleString(script.arg(info.m_names, info.m_materialPath, info.m_keyWords, info.m_matchInputs).toUtf8()) < 0) {
+    if (PyRun_SimpleString(script.arg(info.m_names, info.m_materialPath, info.m_keyWords, info.m_matchInputs, QString::number(pos.x()), QString::number(pos.y())).toUtf8()) < 0) {
         zeno::log_warn("Python Script run failed");
     }
     PyObject* catcher = PyObject_GetAttrString(pModule, "catchOutErr"); //get our catchOutErr created above
