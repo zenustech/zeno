@@ -73,7 +73,7 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
         std::copy(keys.begin(), keys.end(), oit);
     }
     else {
-        std::filesystem::path cachepath = dir / (key + ".zencache");
+        std::filesystem::path cachepath = dir / (std::filesystem::u8path(key).string() + ".zencache");
         std::vector<char> bufCaches;
         std::vector<size_t> poses;
         std::string keys;
@@ -210,7 +210,7 @@ bool GlobalComm::fromDiskByObjsManager(std::string cachedir, int frameid, Global
 
     for (auto& [nodeid, isOnce] : nodesToLoad)
     {
-        std::filesystem::path cachePath = dir / (nodeid + ".zencache");
+        std::filesystem::path cachePath = dir / (std::filesystem::u8path(nodeid).string() + ".zencache");
         if (isOnce)
         {
             if (m_static_objects.find(nodeid) != m_static_objects.end())
@@ -379,7 +379,7 @@ bool GlobalComm::fromDiskByObjsManagerStatic(std::string cachedir, GlobalComm::V
 
     for (auto& [nodeid, isOnce] : nodesToLoad)
     {
-        std::filesystem::path cachePath = dir / (nodeid + ".zencache");
+        std::filesystem::path cachePath = dir / (std::filesystem::u8path(nodeid).string() + ".zencache");
         if (!std::filesystem::is_directory(cachePath) && std::filesystem::exists(cachePath)) {
             auto szBuffer = std::filesystem::file_size(cachePath);
             if (szBuffer == 0)
@@ -454,7 +454,7 @@ bool GlobalComm::fromDiskByRunner(std::string cachedir, int frameid, GlobalComm:
     if (!std::filesystem::exists(dir))
         return false;
 
-    std::filesystem::path filePath = dir / (filename + ".zencache");
+    std::filesystem::path filePath = dir / (std::filesystem::u8path(filename).string() + ".zencache");
     if (!std::filesystem::is_directory(filePath) && std::filesystem::exists(filePath)) {
 
         auto szBuffer = std::filesystem::file_size(filePath);
@@ -832,7 +832,8 @@ void GlobalComm::prepareForOptix(std::map<std::string, std::shared_ptr<zeno::IOb
 
 void GlobalComm::prepareForBeta()
 {
-    renderTypeBeta = NORMAL;
+    for (auto& [idx, type] : renderTypeBeta)
+        type = NORMAL;
 }
 
 ZENO_API void GlobalComm::clear_objects() {
@@ -1193,16 +1194,23 @@ ZENO_API GlobalComm::RenderType GlobalComm::getRenderType()
     return renderType;
 }
 
-ZENO_API void GlobalComm::setRenderTypeBeta(RenderType type)
+ZENO_API void GlobalComm::setRenderTypeBeta(int bateEnginIdx, RenderType type)
 {
     std::lock_guard lck(g_objsMutex);
-    renderTypeBeta = type;
+    renderTypeBeta[bateEnginIdx] = type;
 }
 
-ZENO_API GlobalComm::RenderType GlobalComm::getRenderTypeBeta()
+ZENO_API GlobalComm::RenderType GlobalComm::getRenderTypeBeta(int bateEnginIdx)
 {
     std::lock_guard lck(g_objsMutex);
-    return renderTypeBeta;
+    auto& it = renderTypeBeta.find(bateEnginIdx);
+    if (it == renderTypeBeta.end())
+    {
+        return UNDEFINED;
+    }
+    else {
+        return (*it).second;
+    }
 }
 
 ZENO_API MapObjects GlobalComm::getLightObjs()

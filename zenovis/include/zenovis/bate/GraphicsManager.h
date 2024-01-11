@@ -58,7 +58,7 @@ struct GraphicsManager {
         return ins.has_changed();
     }
 
-    void update_objs(std::map<std::string, std::shared_ptr<zeno::IObject>> objs, std::map<std::string, std::shared_ptr<zeno::IObject>> newobjs) {
+    void update_objs(std::map<std::string, std::shared_ptr<zeno::IObject>> objs, std::map<std::string, std::shared_ptr<zeno::IObject>> newobjs, int bateEnginIdx) {
         realtime_graphics.clear();
         std::map<std::string, std::unique_ptr<IGraphic>> tmp;
         for (auto const& [key, obj] : objs) {
@@ -68,7 +68,7 @@ struct GraphicsManager {
             };
             auto it = graphics.m_curr.m_curr.find(key);
             if (it != graphics.m_curr.m_curr.end()) {
-                if (newobjs.find(key) != newobjs.end() && zeno::getSession().globalComm->getRenderTypeBeta() != zeno::GlobalComm::UNDEFINED)
+                if (newobjs.find(key) != newobjs.end() && zeno::getSession().globalComm->getRenderTypeBeta(bateEnginIdx) != zeno::GlobalComm::UNDEFINED)
                 {
                     auto ig = makeGraphic(scene, obj.get());
                     zeno::log_debug("load_object: loaded graphics to {}", ig.get());
@@ -89,6 +89,7 @@ struct GraphicsManager {
             }
         }
         graphics.m_curr.m_curr.swap(tmp);
+        zeno::getSession().globalComm->setRenderTypeBeta(bateEnginIdx, zeno::GlobalComm::UNDEFINED);
     }
 
     void draw() {

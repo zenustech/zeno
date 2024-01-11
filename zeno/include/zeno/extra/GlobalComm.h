@@ -117,8 +117,8 @@ struct GlobalComm {
     ZENO_API RenderType getRenderTypeByObjects(std::map<std::string, std::shared_ptr<zeno::IObject>>& objs);
     ZENO_API void setRenderType(RenderType type);
     ZENO_API RenderType getRenderType();
-    ZENO_API void setRenderTypeBeta(RenderType type);
-    ZENO_API RenderType getRenderTypeBeta();
+    ZENO_API void setRenderTypeBeta(int bateEnginIdx, RenderType type);
+    ZENO_API RenderType getRenderTypeBeta(int bateEnginIdx);
 
 private:
     ViewObjects const* _getViewObjects(const int frameid, bool& inserted);
@@ -133,7 +133,7 @@ private:
     bool needUpdateLight = true;
 
     RenderType renderType = UNDEFINED;
-    RenderType renderTypeBeta = UNDEFINED;
+    std::map<int, GlobalComm::RenderType> renderTypeBeta;
     std::map<std::string, int> lastToViewNodesType;
     //------new change------
     void prepareForOptix(std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs);

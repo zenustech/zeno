@@ -5,6 +5,7 @@
 #include <zenomodel/include/graphsmanagment.h>
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
+#include <zeno/extra/GlobalStatus.h>
 
 
 ZCacheMgr::ZCacheMgr()
@@ -164,7 +165,7 @@ bool ZCacheMgr::nextRunSkipCreateDir(LAUNCH_PARAM& param)
             if (! QDir(last.path() + "/" + QString::number(1000000 + frame).right(6)).exists()) //incomplete cache
                 return false;
         auto& globalComm = zeno::getSession().globalComm;
-        if (globalComm->numOfFinishedFrame() < (param.endFrame - param.beginFrame + 1))
+        if (globalComm->numOfFinishedFrame() < (param.endFrame - param.beginFrame + 1) && !zeno::getSession().globalStatus->error)
             return false;
     }
     return true;

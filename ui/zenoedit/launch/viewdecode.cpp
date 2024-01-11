@@ -162,6 +162,7 @@ struct PacketProc {
                 zenoApp->graphsManagment()->appendErr(QString::fromStdString(nodeName),
                                                       QString::fromStdString(stat->error->message));
             }
+            AppHelper::markLastDirtyNodesDirty(true);
 
         } else {
             zeno::log_warn("unknown packet action type {}", action);
