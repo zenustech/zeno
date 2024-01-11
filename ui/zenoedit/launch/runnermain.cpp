@@ -93,6 +93,7 @@ static int runner_start(std::string const &progJson, int sessionid, const LAUNCH
     session->globalComm->clearState();
     session->globalStatus->clearState();
     auto graph = session->createGraph();
+    session->globalComm->setSendPacketFunction(send_packet);
 
     //$ZSG value
     zeno::setConfigVariable("ZSG", param.zsgPath.toStdString());

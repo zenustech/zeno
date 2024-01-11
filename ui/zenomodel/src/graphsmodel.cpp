@@ -1665,6 +1665,14 @@ void GraphsModel::markNodeDataChanged(const QModelIndex& nodeIdx, bool recursive
     }
 }
 
+void GraphsModel::markNodeDataUnchanged(const QModelIndex& idx)
+{
+    QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(idx.model());
+    ZASSERT_EXIT(pModel);
+    pModel->setData(idx, false, ROLE_NODE_DATACHANGED);
+    m_changedNodes.remove(idx);
+}
+
 void GraphsModel::_findReference(
             const QString& targetSubgraph,
             QModelIndexList& refNodesInMain)

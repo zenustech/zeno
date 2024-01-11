@@ -168,6 +168,12 @@ ZENO_API void INode::preApply() {
         apply();
         if (bTmpCache)
             writeTmpCaches();
+
+        if (dc.amIDirty(myname) && zeno::getSession().globalState->frameid == zeno::getSession().globalComm->frameRange().first)
+        {
+            auto& func = zeno::getSession().globalComm->getSendPacketFunction();
+            func("{\"action\":\"nodeFinished\",\"key\":\"" + myname + "\"}", "", 0);
+        }
     }
     log_debug("==> leave {}", myname);
     m_bFinishOnce = true;

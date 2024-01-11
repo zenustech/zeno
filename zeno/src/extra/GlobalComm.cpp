@@ -1213,6 +1213,16 @@ ZENO_API GlobalComm::RenderType GlobalComm::getRenderTypeBeta(int bateEnginIdx)
     }
 }
 
+ZENO_API void GlobalComm::setSendPacketFunction(std::function<void(std::string_view, const char*, size_t)> func)
+{
+    sendPacketFunction = func;
+}
+
+ZENO_API std::function<void(std::string_view, const char*, size_t)> GlobalComm::getSendPacketFunction()
+{
+    return sendPacketFunction;
+}
+
 ZENO_API MapObjects GlobalComm::getLightObjs()
 {
     std::lock_guard lck(g_objsMutex);

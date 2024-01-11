@@ -147,6 +147,7 @@ public:
     bool isApiRunningEnable() const override;
     bool setCustomName(const QModelIndex &subgIdx, const QModelIndex &Idx, const QString &value) const override;
     void markNodeDataChanged(const QModelIndex& idx, bool recursively = true) override;
+    void markNodeDataUnchanged(const QModelIndex& idx) override;
     void markNotDescNode() override;
     bool hasNotDescNode() const override;
     void clearNodeDataChanged() override;
