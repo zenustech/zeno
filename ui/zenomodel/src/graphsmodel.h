@@ -208,7 +208,6 @@ private:
     QString uniqueSubgraph(QString orginName);
 
     void onApiBatchFinished();
-    void _resetDirtyNode(const QModelIndex& index, QModelIndexList& lst);
 
     QHash<QString, SubGraphModel*> m_subGraphs;
     QHash<QString, int> m_key2Row;

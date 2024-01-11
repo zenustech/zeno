@@ -1741,72 +1741,15 @@ void GraphsModel::_markNodeChanged(const QModelIndex& nodeIdx)
     }
 }
 
-void GraphsModel::_resetDirtyNode(const QModelIndex& index, QModelIndexList& lst)
-{
-
-    QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(index.model());
-    if (pModel)
-    {
-        lst << index;
-        pModel->setData(index, false, ROLE_NODE_DATACHANGED);
-        if (NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(index.data(ROLE_NODE_PARAMS)))
-        {
-            for (const auto& sock : nodeParams->getInputIndice())
-            {
-                const int sockProp = sock.data(ROLE_PARAM_SOCKPROP).toInt();
-                QModelIndexList socketLst;
-                //dict sock
-                if (sockProp & SOCKPROP_DICTLIST_PANEL)
-                {
-                    QAbstractItemModel* pKeyObjModel = QVariantPtr<QAbstractItemModel>::asPtr(sock.data(ROLE_VPARAM_LINK_MODEL));
-                    if (pKeyObjModel) {
-                        for (int _r = 0; _r < pKeyObjModel->rowCount(); _r++)
-                        {
-                            const QModelIndex& keyIdx = pKeyObjModel->index(_r, 0);
-                            ZASSERT_EXIT(keyIdx.isValid());
-                            socketLst << keyIdx;
-                        }
-                    }
-                }
-                else
-                {
-                    socketLst << sock;
-                }
-                for (const auto& index : socketLst)
-                {
-                    PARAM_LINKS links = index.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
-                    for (const auto& link : links)
-                    {
-                        if (link.isValid())
-                        {
-                            QModelIndex outsock = link.data(ROLE_OUTSOCK_IDX).toModelIndex();
-                            ZASSERT_EXIT(outsock.isValid());
-                            const auto& outNodeIdx = outsock.data(ROLE_NODE_IDX).toModelIndex();
-                            if (outNodeIdx.isValid() && m_changedNodes.contains(outNodeIdx))
-                            {
-                                _resetDirtyNode(outNodeIdx, lst);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-}
-
 void GraphsModel::clearNodeDataChanged()
 {
-    QModelIndexList delList;
-    for (const auto& nodeIdx : m_changedNodes)
+    for (auto nodeIdx : m_changedNodes)
     {
-        if (nodeIdx.data(ROLE_OPTIONS).toInt() & OPT_VIEW)
-        {
-            _resetDirtyNode(nodeIdx, delList);
-        }
+        QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(nodeIdx.model());
+        if (pModel)
+            pModel->setData(nodeIdx, false, ROLE_NODE_DATACHANGED);
     }
-    for (const auto& idx : delList)
-        m_changedNodes.remove(idx);
+    m_changedNodes.clear();
 }
 
 QStringList GraphsModel::subgraphsName() const
