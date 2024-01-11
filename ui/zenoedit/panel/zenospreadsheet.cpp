@@ -16,7 +16,6 @@
 #include "dialog/zforksubgrapdlg.h"
 #include "nodesview/zenographseditor.h"
 #include "settings/zenosettingsmanager.h"
-#include "nodesys/zenosubgraphscene.h"
 
 ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
     dataModel = new PrimAttrTableModel();
@@ -284,7 +283,6 @@ bool ZenoSpreadsheet::eventFilter(QObject* watched, QEvent* event)
             IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
             const auto& nodeIdx = pGraphsModel->nodeIndex(pPrimName->text());
             ZASSERT_EXIT(nodeIdx.isValid(), false);
-            QPointF pos = nodeIdx.data(ROLE_OBJPOS).toPointF();
             for (const auto& subgIdx : pGraphsModel->subgraphsIndice(SUBGRAPH_PRESET))
             {
                 QString name = subgIdx.data(ROLE_OBJNAME).toString();
@@ -298,22 +296,16 @@ bool ZenoSpreadsheet::eventFilter(QObject* watched, QEvent* event)
                 }
 
                 ZForkSubgraphDlg dlg(map, this);
-                dlg.setPos(pos);
+                dlg.setNodeIdex(nodeIdx);
                 dlg.exec();
                 });
             }
 
             connect(newSubGraph, &QAction::triggered, this, [=]() {
-                ZenoMainWindow* pWin = zenoApp->getMainWindow();
-                ZASSERT_EXIT(pWin);
-                ZenoGraphsEditor* pEditor = pWin->getAnyEditor();
-                ZASSERT_EXIT(pEditor);
-                ZenoSubGraphView* pView = pEditor->getCurrentSubGraphView();
-                ZASSERT_EXIT(pView);
-                auto sugIdx = pView->scene()->subGraphIndex();
-                ZASSERT_EXIT(sugIdx.isValid());
+                QPointF pos = nodeIdx.data(ROLE_OBJPOS).toPointF();
                 for (const auto& mtlid : matLst)
                 {
+                    const auto& sugIdx = nodeIdx.data(ROLE_SUBGRAPH_IDX).toModelIndex();
                     if (!pGraphsModel->newMaterialSubgraph(sugIdx, mtlid, pos + QPointF(600, 0)))
                         QMessageBox::warning(nullptr, tr("Info"), tr("Create material subgraph '%1' failed.").arg(mtlid));
                 }
@@ -355,7 +347,7 @@ bool ZenoSpreadsheet::eventFilter(QObject* watched, QEvent* event)
                     
                 }
                 ZForkSubgraphDlg dlg(map, this);
-                dlg.setPos(pos);
+                dlg.setNodeIdex(nodeIdx);
                 dlg.exec();
             });
             
@@ -395,6 +387,10 @@ void ZenoSpreadsheet::getKeyWords()
 
         QTableWidgetItem* pKeyItem = new QTableWidgetItem();
         keyTableWidget->setItem(row, 1, pKeyItem);
+        if (m_keyWords.contains(name))
+        {
+            pKeyItem->setText(m_keyWords[name]);
+        }
     }
     if (keyTableWidget->rowCount() > 0)
     {
