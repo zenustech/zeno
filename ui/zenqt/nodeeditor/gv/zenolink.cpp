@@ -1,17 +1,17 @@
 #include "zenolink.h"
 #include "zenonode.h"
 #include "zenosubgraphscene.h"
-#include <zenoui/nodesys/nodesys_common.h>
-#include <zenoui/render/common_id.h>
-#include <zenoui/comctrl/gv/zenosocketitem.h>
-#include <zenoui/style/zenostyle.h>
+#include "nodeeditor/gv/nodesys_common.h"
+#include "control/common_id.h"
+#include "nodeeditor/gv/zenosocketitem.h"
+#include "style/zenostyle.h"
 #include "../util/log.h"
 #include "settings/zenosettingsmanager.h"
-#include "nodesys/zenosubgraphview.h"
+#include "nodeeditor/gv/zenosubgraphview.h"
 #include "zenoapplication.h"
-#include <zenomodel/include/graphsmanagment.h>
+#include "model/graphsmanager.h"
 #include "zenomainwindow.h"
-#include <zenomodel/include/uihelper.h>
+#include "util/uihelper.h"
 
 
 ZenoLink::ZenoLink(QGraphicsItem *parent)
@@ -173,7 +173,7 @@ void ZenoTempLink::setAdsortedSocket(ZenoSocketItem* pSocket)
     if (m_adsortedSocket)
     {
         QModelIndex idx = m_adsortedSocket->paramIndex();
-        PARAM_LINKS links = idx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+        PARAM_LINKS links = idx.data(ROLE_LINKS).value<PARAM_LINKS>();
         if (links.isEmpty() || (links.size() == 1 && links[0] == m_oldLink))
             m_adsortedSocket->setSockStatus(ZenoSocketItem::STATUS_TRY_DISCONN);
     }
@@ -208,15 +208,7 @@ ZenoFullLink::ZenoFullLink(const QPersistentModelIndex& idx, ZenoNode* outNode, 
 
     const QModelIndex& inSockIdx = m_index.data(ROLE_INSOCK_IDX).toModelIndex();
     const QModelIndex& outSockIdx = m_index.data(ROLE_OUTSOCK_IDX).toModelIndex();
-    if (inSockIdx.data(ROLE_PARAM_CLASS) == PARAM_INNER_INPUT ||
-        outSockIdx.data(ROLE_PARAM_CLASS) == PARAM_INNER_OUTPUT)
-    {
-        setZValue(ZVALUE_LINK_ABOVE);
-    }
-    else
-    {
-        setZValue(ZVALUE_LINK);
-    }
+    setZValue(ZVALUE_LINK);
     setFlag(QGraphicsItem::ItemIsSelectable);
 
     if (SOCKPROP_LEGACY == inSockIdx.data(ROLE_PARAM_SOCKPROP) ||
@@ -225,8 +217,7 @@ ZenoFullLink::ZenoFullLink(const QPersistentModelIndex& idx, ZenoNode* outNode, 
         m_bLegacyLink = true;
     }
 
-    m_inNode = idx.data(ROLE_INNODE).toString();
-    m_outNode = idx.data(ROLE_OUTNODE).toString();
+    zeno::EdgeInfo edge = m_index.data(ROLE_LINK_INFO).value<zeno::EdgeInfo>();
 
     m_dstPos = inNode->getSocketPos(inSockIdx);
     m_srcPos = outNode->getSocketPos(outSockIdx);
@@ -262,14 +253,6 @@ void ZenoFullLink::onOutSocketPosChanged()
     ZASSERT_EXIT(pNode);
     const QModelIndex& outSockIdx = m_index.data(ROLE_OUTSOCK_IDX).toModelIndex();
     m_srcPos = pNode->getSocketPos(outSockIdx);
-}
-
-QString ZenoFullLink::getSocketText(const QModelIndex& index) const
-{
-    QString text = index.data(ROLE_OBJID).toString();
-    QString socketName = index.data(ROLE_PARAM_NAME).toString();
-    text = text + ": " + socketName;
-    return text;
 }
 
 void ZenoFullLink::focusOnNode(const QModelIndex& nodeIdx)
@@ -362,31 +345,6 @@ void ZenoFullLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styl
     }
 }
 
-void ZenoFullLink::transferToNetLabel()
-{
-    ZASSERT_EXIT(m_index.isValid());
-    QModelIndex outSockIdx = m_index.data(ROLE_OUTSOCK_IDX).toModelIndex();
-    QModelIndex inSockIdx = m_index.data(ROLE_INSOCK_IDX).toModelIndex();
-    ZASSERT_EXIT(inSockIdx.isValid() && outSockIdx.isValid());
-    QString netlabel = outSockIdx.data(ROLE_PARAM_NETLABEL).toString();
-    
-    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-    ZASSERT_EXIT(pModel);
-
-    pModel->beginTransaction("add labels");
-    zeno::scope_exit scope([=]() { pModel->endTransaction(); });
-
-    ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(scene());
-    ZASSERT_EXIT(pScene);
-    auto subgIdx = pScene->subGraphIndex();
-
-    if (netlabel.isEmpty()) {
-        netlabel = UiHelper::getNaiveParamPath(outSockIdx);
-        pModel->addNetLabel(subgIdx, outSockIdx, netlabel);
-    }
-    pModel->addNetLabel(subgIdx, inSockIdx, netlabel);
-}
-
 void ZenoFullLink::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
 {
     setSelected(true);
@@ -394,7 +352,6 @@ void ZenoFullLink::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
     QMenu* menu = new QMenu;
     QAction* pTraceToOutput = new QAction(tr("trace to output socket"));
     QAction* pTraceToInput = new QAction(tr("trace to input socket"));
-    QAction* pTransferToNetLabel = new QAction(tr("transfer to net label"));
 
     connect(pTraceToOutput, &QAction::triggered, this, [=]() {
         QModelIndex outSockIdx = m_index.data(ROLE_OUTSOCK_IDX).toModelIndex();
@@ -406,13 +363,9 @@ void ZenoFullLink::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
         QModelIndex nodeIdx = inSockIdx.data(ROLE_NODE_IDX).toModelIndex();
         focusOnNode(nodeIdx);
     });
-    connect(pTransferToNetLabel, &QAction::triggered, this, [=]() {
-        transferToNetLabel();
-    });
 
     menu->addAction(pTraceToOutput);
     menu->addAction(pTraceToInput);
-    menu->addAction(pTransferToNetLabel);
 
     menu->exec(QCursor::pos());
     menu->deleteLater();

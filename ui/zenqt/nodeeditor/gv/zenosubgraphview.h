@@ -2,8 +2,8 @@
 #define __ZENO_GRAPHVIEW_H__
 
 #include <QtWidgets>
-#include <zenoui/nodesys/nodesys_common.h>
-#include "dock/docktabcontent.h"
+#include "nodeeditor/gv/nodesys_common.h"
+#include "layout/docktabcontent.h"
 
 class ZenoSubGraphScene;
 class ZenoNewnodeMenu;

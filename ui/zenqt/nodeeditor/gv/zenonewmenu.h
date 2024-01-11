@@ -24,7 +24,7 @@ public slots:
     void onTextChanged(const QString& text);
 
 private:
-    QList<QAction*> getCategoryActions(IGraphsModel* pModel, QModelIndex subgIdx, QPointF scenePos);
+    QList<QAction*> getCategoryActions(QModelIndex subgIdx, QPointF scenePos);
     void updateSearchView(const QString& filter);
 
     bool m_preSearchMode;

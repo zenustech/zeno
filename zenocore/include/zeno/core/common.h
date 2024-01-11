@@ -61,7 +61,8 @@ namespace zeno {
         SubOutput,
         Node_Group,
         Node_Legacy,
-        SubgraphNode
+        SubgraphNode,
+        NoVersionNode
     };
 
     enum SubnetType

@@ -2,9 +2,9 @@
 #define __ZENO_SUBGRAPH_SCENE_H__
 
 #include <QtWidgets>
-#include <zenoui/render/ztfutil.h>
-#include <zenoui/nodesys/nodesys_common.h>
-#include <zenomodel/include/modeldata.h>
+#include "util/ztfutil.h"
+#include "nodeeditor/gv/nodesys_common.h"
+
 
 class ZenoParamWidget;
 class ZenoNode;

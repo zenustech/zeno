@@ -92,7 +92,6 @@ public:
     void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
     void hoverEnterEvent(QGraphicsSceneHoverEvent* event) override;
     void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
-    void transferToNetLabel();
 
     enum { Type = ZTYPE_FULLLINK };
     int type() const override;
@@ -108,7 +107,6 @@ private slots:
     void onOutSocketPosChanged();
 
 private:
-    QString getSocketText(const QModelIndex& index) const;
     void focusOnNode(const QModelIndex &nodeIdx);
 
 private:

@@ -9,6 +9,7 @@
 #include <zenoio/writer/zsgwriter.h>
 #include <zeno/core/Session.h>
 #include <zeno/types/UserData.h>
+#include "nodeeditor/gv/zenosubgraphscene.h"
 
 
 GraphsManager::GraphsManager(QObject* parent)
@@ -209,7 +210,7 @@ QGraphicsScene* GraphsManager::gvScene(const QModelIndex& subgIdx) const
     return m_scenes[subgName];
 }
 
-void GraphsManager::addScene(const QModelIndex& subgIdx, QGraphicsScene* scene)
+void GraphsManager::addScene(const QModelIndex& subgIdx, ZenoSubGraphScene* scene)
 {
     const QString& subgName = subgIdx.data(ROLE_OBJNAME).toString();
     if (m_scenes.find(subgName) != m_scenes.end() || !scene)
@@ -217,7 +218,7 @@ void GraphsManager::addScene(const QModelIndex& subgIdx, QGraphicsScene* scene)
     m_scenes.insert(subgName, scene);
 }
 
-void GraphsManager::addScene(const QString& tabName, QGraphicsScene* scene)
+void GraphsManager::addScene(const QString& tabName, ZenoSubGraphScene* scene)
 {
     if (m_scenes.find(tabName) != m_scenes.end())
         return;
@@ -239,6 +240,35 @@ QString GraphsManager::zsgDir() const
     const QString& zsgpath = zsgPath();
     QFileInfo fp(zsgpath);
     return fp.absolutePath();
+}
+
+USERDATA_SETTING GraphsManager::userdataInfo() const
+{
+    //TODO
+    return USERDATA_SETTING();
+}
+
+RECORD_SETTING GraphsManager::recordSettings() const
+{
+    return RECORD_SETTING();
+}
+
+zeno::ZSG_VERSION GraphsManager::ioVersion() const
+{
+    return zeno::VER_3;
+}
+
+void GraphsManager::setIOVersion(zeno::ZSG_VERSION ver)
+{
+    //??
+}
+
+void GraphsManager::clearMarkOnGv() {
+    for (QString name : m_scenes.keys()) {
+        if (name.startsWith("/")) {
+            m_scenes[name]->clearMark();
+        }
+    }
 }
 
 void GraphsManager::appendErr(const QString& nodeName, const QString& msg)

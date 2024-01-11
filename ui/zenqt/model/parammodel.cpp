@@ -27,6 +27,16 @@ QVariant ParamsModel::data(const QModelIndex& index, int role) const
     case ROLE_PARAM_CONTROL:    return param.control;
     case ROLE_ISINPUT:          return param.bInput;
     case ROLE_NODEIDX:          return m_nodeIdx;
+    case ROLE_LINKS:            return QVariant::fromValue(param.links);
+    case ROLE_PARAM_SOCKPROP: {
+        //TODO: based on core data `ParamInfo.prop`
+        break;
+    }
+    case ROLE_NODE_IDX:
+    {
+        //TODO: get the node info, tip: parent()
+        break;
+    }
     }
     return QVariant();
 }

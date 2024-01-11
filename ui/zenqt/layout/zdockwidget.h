@@ -3,8 +3,8 @@
 
 #include <unordered_set>
 #include <QtWidgets>
-#include "zenodockwidget.h"
 #include "docktabcontent.h"
+#include "uicommon.h"
 #include <zenoio/include/iocommon.h>
 #include "layout/winlayoutrw.h"
 

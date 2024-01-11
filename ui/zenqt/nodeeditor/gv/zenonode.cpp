@@ -1,40 +1,37 @@
 #include "zenonode.h"
 #include "zenosubgraphscene.h"
-#include <zenomodel/include/modelrole.h>
-#include <zenoui/render/common_id.h>
-#include <zenoui/comctrl/gv/zenoparamnameitem.h>
-#include <zenoui/comctrl/gv/zenoparamwidget.h>
-#include <zenomodel/include/uihelper.h>
-#include <zenomodel/include/igraphsmodel.h>
+#include "uicommon.h"
+#include "control/common_id.h"
+#include "nodeeditor/gv/zenoparamnameitem.h"
+#include "nodeeditor/gv/zenoparamwidget.h"
+#include "util/uihelper.h"
+#include "model/GraphsTreeModel.h"
+#include "model/graphsmanager.h"
+#include "model/parammodel.h"
 #include <zeno/utils/logger.h>
 #include <zeno/utils/scope_exit.h>
-#include <zenoui/style/zenostyle.h>
-#include <zenoui/comctrl/zveceditor.h>
+#include "style/zenostyle.h"
+#include "widgets/zveceditor.h"
 #include "variantptr.h"
-#include <zenoui/comctrl/dialog/curvemap/zcurvemapeditor.h>
+#include "curvemap/zcurvemapeditor.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
-#include <zenomodel/include/graphsmanagment.h>
-#include "../nodesview/zenographseditor.h"
+#include "nodeeditor/gv/zenographseditor.h"
 #include "util/log.h"
 #include "zenosubgraphview.h"
-#include <zenoui/comctrl/dialog/zenoheatmapeditor.h>
-#include <zenoui/comctrl/gv/zitemfactory.h>
+#include "dialog/zenoheatmapeditor.h"
+#include "nodeeditor/gv/zitemfactory.h"
 #include "zvalidator.h"
 #include "zenonewmenu.h"
 #include "util/apphelper.h"
 #include "viewport/viewportwidget.h"
 #include "viewport/displaywidget.h"
-#include <zenoui/comctrl/gv/zgraphicstextitem.h>
-#include <zenoui/comctrl/gv/zenogvhelper.h>
-#include <zenomodel/include/iparammodel.h>
-#include <zenomodel/include/viewparammodel.h>
+#include "nodeeditor/gv/zgraphicstextitem.h"
+#include "nodeeditor/gv/zenogvhelper.h"
 #include "iotags.h"
 #include "groupnode.h"
 #include "dialog/zeditparamlayoutdlg.h"
 #include "settings/zenosettingsmanager.h"
-#include <zenomodel/include/command.h>
-#include <zenomodel/include/nodeparammodel.h>
 
 
 ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
@@ -73,8 +70,8 @@ void ZenoNode::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, 
     {
         _drawBorderWangStyle(painter);
     }
-    NODE_TYPE type = static_cast<NODE_TYPE>(m_index.data(ROLE_NODETYPE).toInt());
-    if (type == NORMAL_NODE || type == HEATMAP_NODE || type == SUBINPUT_NODE || type == SUBOUTPUT_NODE) {
+    zeno::NodeType type = static_cast<zeno::NodeType>(m_index.data(ROLE_NODETYPE).toInt());
+    if (type == zeno::Node_Normal || type == zeno::SubInput || type == zeno::SubOutput) {
         painter->setRenderHint(QPainter::Antialiasing, true);
         QRectF r = m_headerWidget->boundingRect();
         qreal brWidth = ZenoStyle::scaleWidth(2);
@@ -132,9 +129,9 @@ void ZenoNode::initUI(ZenoSubGraphScene* pScene, const QModelIndex& subGIdx, con
     ZASSERT_EXIT(index.isValid());
     m_index = QPersistentModelIndex(index);
     m_subGpIndex = QPersistentModelIndex(subGIdx);
-    NODE_TYPE type = static_cast<NODE_TYPE>(m_index.data(ROLE_NODETYPE).toInt());
+    zeno::NodeType type = static_cast<zeno::NodeType>(m_index.data(ROLE_NODETYPE).toInt());
 
-    IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    GraphsTreeModel* pGraphsModel = zenoApp->graphsManager()->currentModel();
     ZASSERT_EXIT(pGraphsModel);
 
     m_headerWidget = initHeaderWidget(pGraphsModel);
@@ -176,7 +173,7 @@ void ZenoNode::initUI(ZenoSubGraphScene* pScene, const QModelIndex& subGIdx, con
     onZoomed();
 }
 
-ZLayoutBackground* ZenoNode::initHeaderWidget(IGraphsModel* pGraphsModel)
+ZLayoutBackground* ZenoNode::initHeaderWidget()
 {
     ZLayoutBackground* headerWidget = new ZLayoutBackground;
     auto headerBg = m_renderParams.headerBg;
@@ -186,10 +183,10 @@ ZLayoutBackground* ZenoNode::initHeaderWidget(IGraphsModel* pGraphsModel)
 
     ZASSERT_EXIT(m_index.isValid(), nullptr);
 
-    NODE_TYPE type = static_cast<NODE_TYPE>(m_index.data(ROLE_NODETYPE).toInt());
+    zeno::NodeType type = static_cast<zeno::NodeType>(m_index.data(ROLE_NODETYPE).toInt());
 
     QColor clrHeaderBg;
-    if (type == NO_VERSION_NODE)
+    if (type == zeno::NoVersionNode)
         clrHeaderBg = QColor(83, 83, 85);
     else if (pGraphsModel->IsSubGraphNode(m_index))
         clrHeaderBg = QColor("#1D5F51");
@@ -319,7 +316,7 @@ QGraphicsItem* ZenoNode::initParamWidget(ZenoSubGraphScene* scene, const QModelI
     const QPersistentModelIndex perIdx(paramIdx);
     bool bFloat = ctrl == CONTROL_VEC2_FLOAT || ctrl == CONTROL_VEC3_FLOAT || ctrl == CONTROL_VEC4_FLOAT || ctrl == CONTROL_FLOAT;
     Callback_EditFinished cbUpdateParam = [=](QVariant newValue) {
-        IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+        GraphsTreeModel* pModel = zenoApp->graphsManager()->currentModel();
         if (!pModel)
             return;
         if (bFloat)
@@ -341,7 +338,7 @@ QGraphicsItem* ZenoNode::initParamWidget(ZenoSubGraphScene* scene, const QModelI
     };
 
     auto cbGetZsgDir = []() {
-        QString path = zenoApp->graphsManagment()->zsgPath();
+        QString path = zenoApp->graphsManager()->zsgPath();
         if (path.isEmpty())
             return QString("");
         QFileInfo fi(path);
@@ -938,7 +935,7 @@ ZGraphicsLayout* ZenoNode::initSockets(QStandardItem* socketItems, QStandardItem
 
 ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewSockIdx, bool bInput, ZenoSubGraphScene* pScene)
 {
-    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    GraphsTreeModel* pModel = zenoApp->graphsManager()->currentModel();
 
     QPersistentModelIndex perSockIdx = viewSockIdx;
 
@@ -953,7 +950,7 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewSockIdx, bool bInput, 
     cbSocket.cbOnSockNetlabelClicked = [=](QString netlabel) {
         if (perSockIdx.isValid()) {
             bool bInput = PARAM_INPUT == perSockIdx.data(ROLE_PARAM_CLASS);
-            IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+            GraphsTreeModel* pModel = zenoApp->graphsManager()->currentModel();
             QMenu* menu = nullptr;
             if (bInput)
             {
@@ -998,7 +995,7 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewSockIdx, bool bInput, 
     cbSocket.cbOnSockNetlabelEdited = [=](ZenoSocketItem* pSocketItem) {
         const QString& label = pSocketItem->netLabel();
         QModelIndex sockIdx = pSocketItem->paramIndex();
-        IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+        GraphsTreeModel* pModel = zenoApp->graphsManager()->currentModel();
         const QString& oldName = sockIdx.data(ROLE_PARAM_NETLABEL).toString();
         //check label
         if (oldName == label)
@@ -1019,7 +1016,7 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewSockIdx, bool bInput, 
     cbSocket.cbActionTriggered = [=](QAction* pAction, const QModelIndex& socketIdx) {
         QString text = pAction->text();
         if (pAction->text() == tr("Delete Net Label")) {
-            IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+            GraphsTreeModel* pModel = zenoApp->graphsManager()->currentModel();
             ZASSERT_EXIT(pModel);
             pModel->removeNetLabel(m_subGpIndex, socketIdx);
         }
@@ -1201,7 +1198,7 @@ QGraphicsItem* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const QModel
     };
 
     auto cbGetZsgDir = []() {
-        QString path = zenoApp->graphsManagment()->zsgPath();
+        QString path = zenoApp->graphsManager()->zsgPath();
         if (path.isEmpty())
             return QString("");
         QFileInfo fi(path);
@@ -1276,7 +1273,7 @@ void ZenoNode::markError(bool isError)
 {
     m_bError = isError;
     ZASSERT_EXIT(m_headerWidget);
-    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    GraphsTreeModel* pGraphsModel = zenoApp->graphsManager()->currentModel();
     ZASSERT_EXIT(pGraphsModel);
     QColor clrHeaderBg;
     if (m_bError)
@@ -1444,7 +1441,7 @@ void ZenoNode::updateNodePos(const QPointF &pos, bool enableTransaction)
     info.role = ROLE_OBJPOS;
     info.newValue = pos;
     info.oldValue = oldPos;
-    IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    GraphsTreeModel *pGraphsModel = zenoApp->graphsManager()->currentModel();
     ZASSERT_EXIT(pGraphsModel);
     pGraphsModel->updateBlackboard(nodeId(), QVariant::fromValue(info), m_subGpIndex, enableTransaction);
     m_bMoving = false;
@@ -1580,7 +1577,7 @@ ZenoGraphsEditor* ZenoNode::getEditorViewByViewport(QWidget* pWidget)
 
 void ZenoNode::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
 {
-    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    GraphsTreeModel* pGraphsModel = zenoApp->graphsManager()->currentModel();
     QPointF pos = event->pos();
     if (pGraphsModel && pGraphsModel->IsSubGraphNode(m_index))
     {
@@ -1736,7 +1733,7 @@ void ZenoNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
     else if (wtf.contains(m_bodyWidget))
     {
         const QString& name = nodeName();
-        IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+        GraphsTreeModel* pModel = zenoApp->graphsManager()->currentModel();
         QModelIndex subgIdx = pModel->index(name);
         if (subgIdx.isValid())
         {
@@ -1770,7 +1767,7 @@ void ZenoNode::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
     if (m_bMoving)
     {
         m_bMoving = false;
-        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+        GraphsTreeModel* pGraphsModel = zenoApp->graphsManager()->currentModel();
         QPointF newPos = this->scenePos();
         QPointF oldPos = m_index.data(ROLE_OBJPOS).toPointF();
         if (newPos != oldPos)
@@ -1878,7 +1875,7 @@ void ZenoNode::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
 
 void ZenoNode::onCollaspeBtnClicked()
 {
-	IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+	GraphsTreeModel* pGraphsModel = zenoApp->graphsManager()->currentModel();
     ZASSERT_EXIT(pGraphsModel);
     bool bCollasped = m_index.data(ROLE_COLLASPED).toBool();
 
@@ -1893,7 +1890,7 @@ void ZenoNode::onOptionsBtnToggled(STATUS_BTN btn, bool toggled)
 {
 	QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
 
-	IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+	GraphsTreeModel* pGraphsModel = zenoApp->graphsManager()->currentModel();
 	ZASSERT_EXIT(pGraphsModel);
 
     int options = m_index.data(ROLE_OPTIONS).toInt();
@@ -2009,7 +2006,7 @@ void ZenoNode::onUpdateFrame(QGraphicsItem* pContrl, int nFrame, QVariant val)
 void ZenoNode::onPasteSocketRefSlot(QModelIndex toIndex) 
 {
     const QMimeData* pMimeData = QApplication::clipboard()->mimeData();
-    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    GraphsTreeModel* pGraphsModel = zenoApp->graphsManager()->currentModel();
     ZASSERT_EXIT(pGraphsModel);
     const QString& str = scene()->property("link_label_info").toString();
     if (!str.isEmpty())
@@ -2099,7 +2096,7 @@ void ZenoNode::onCustomNameChanged()
         return;
     QString name = m_index.data(ROLE_OBJNAME).toString();
     NODE_DESC desc;
-    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    GraphsTreeModel* pModel = zenoApp->graphsManager()->currentModel();
     pModel->getDescriptor(name, desc);
     QString category;
     if (!desc.categories.isEmpty())

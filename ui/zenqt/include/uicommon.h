@@ -109,6 +109,16 @@ enum PARAM_TYPE {
     ZPARAM_VEC3F,
 };
 
+enum SOCKET_PROPERTY {
+    SOCKPROP_UNKNOWN = 0,
+    SOCKPROP_NORMAL = 1,
+    SOCKPROP_EDITABLE = 1 << 1,
+    SOCKPROP_MULTILINK = 1 << 2,
+    SOCKPROP_DICTLIST_PANEL = 1 << 3,
+    SOCKPROP_GROUP_LINE = 1 << 4,
+    SOCKPROP_LEGACY = 1 << 5,
+};
+
 enum MODEL_ROLE {
     ROLE_OBJID = Qt::UserRole + 1,
     ROLE_OBJNAME,
@@ -117,6 +127,7 @@ enum MODEL_ROLE {
     ROLE_SUBGRAPH,
     ROLE_PARAM_TYPE,
     ROLE_PARAM_CONTROL,
+    ROLE_PARAM_SOCKPROP,
     ROLE_ISINPUT,
     ROLE_LINKS,
     ROLE_OBJPOS,
@@ -131,10 +142,24 @@ enum MODEL_ROLE {
     ROLE_LINK_TO_IDX,
     ROLE_LINK_FROMPARAM_INFO,
     ROLE_LINK_TOPARAM_INFO,
+    ROLE_LINK_INFO,
+    ROLE_INSOCK_IDX,
+    ROLE_OUTSOCK_IDX,
+    ROLE_NODE_IDX,
     ROLE_MTLID,
     ROLE_KEYFRAMES,
-    ROLE_LOGTYPE,
     ROLE_NODETYPE
+};
+
+enum LOG_ROLE
+{
+    ROLE_LOGTYPE = Qt::UserRole + 1,
+    ROLE_TIME,
+    ROLE_FILENAME,
+    ROLE_LINENO,
+    ROLE_NODE_IDENT,
+    ROLE_RANGE_START,
+    ROLE_RANGE_LEN
 };
 
 struct SOCKET_DESCRIPTOR
@@ -152,14 +177,21 @@ struct NODE_DESCRIPTOR
     QList<SOCKET_DESCRIPTOR> outputs;
 };
 
+struct NODE_CATE {
+    QString name;
+    QStringList nodes;
+};
+typedef QMap<QString, NODE_CATE> NODE_CATES;
+
 typedef QKeyList<QString, zeno::ParamInfo> PARAMS_INFO;
 Q_DECLARE_METATYPE(PARAMS_INFO)
 
-//struct NODE_DATA
-//{
-//    zeno::NodeData dat;
-//};
 Q_DECLARE_METATYPE(zeno::NodeData)
+
+Q_DECLARE_METATYPE(zeno::EdgeInfo)
+
+typedef QList<QPersistentModelIndex> PARAM_LINKS;
+Q_DECLARE_METATYPE(PARAM_LINKS)
 
 struct SEARCH_RESULT
 {

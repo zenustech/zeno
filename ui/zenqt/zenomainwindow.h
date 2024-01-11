@@ -3,13 +3,9 @@
 
 #include <unordered_set>
 #include <QtWidgets>
-#include "dock/zenodockwidget.h"
-#include "dock/ztabdockwidget.h"
+#include "layout/zdockwidget.h"
 #include "panel/zenolights.h"
-#include "common.h"
 #include "layout/winlayoutrw.h"
-#include "cache/zcachemgr.h"
-#include "launch/corelaunch.h"
 #include <QTcpSocket>
 #include <QLocalSocket>
 
@@ -58,9 +54,6 @@ public:
 
     QLineEdit* selected = nullptr;
     ZenoLights* lightPanel = nullptr;
-    LiveTcpServer* liveTcpServer = nullptr;
-    std::shared_ptr<LiveHttpServer> liveHttpServer;
-    LiveSignalsBridge* liveSignalsBridge;
 
     enum ActionType {
         //File
@@ -163,9 +156,6 @@ public slots:
     void saveDockLayout();
     void loadSavedLayout();
     void onLangChanged(bool bChecked);
-    void solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param, LAUNCH_PARAM& launchparam);
-    void optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param, LAUNCH_PARAM launchparam);
-    void optixClientRun(int port, const char* cachedir, int cachenum, int sFrame, int eFrame, int finishedFrames, const char* sessionId);
     void optixClientSend(QString& info);
     void optixClientStartRec();
     void onRunTriggered(bool applyLightAndCameraOnly = false, bool applyMaterialOnly = false);
@@ -173,6 +163,7 @@ public slots:
     void toggleTimelinePlay(bool bOn);
     void onZenovisFrameUpdate(bool bGLView, int frameid);
     void onCheckUpdate();
+
 protected:
     void resizeEvent(QResizeEvent* event) override;
     bool event(QEvent* event) override;

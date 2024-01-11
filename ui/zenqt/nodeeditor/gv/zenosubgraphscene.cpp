@@ -60,7 +60,7 @@ void ZenoSubGraphScene::onViewTransformChanged(qreal factor)
 {
 }
 
-void ZenoSubGraphScene::initModel(const QModelIndex& index)
+void ZenoSubGraphScene::initModel(GraphModel* pGraphM)
 {
     m_subgIdx = index;
     IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();

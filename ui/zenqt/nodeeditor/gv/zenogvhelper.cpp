@@ -1,9 +1,9 @@
 #include "zenogvhelper.h"
-#include "../../nodesys/nodesys_common.h"
+#include "nodeeditor/gv/nodesys_common.h"
 #include "zlayoutbackground.h"
 #include "zenoparamwidget.h"
 #include "zassert.h"
-#include <zenomodel/include/uihelper.h>
+#include "util/uihelper.h"
 #include "zveceditoritem.h"
 
 
@@ -57,7 +57,7 @@ void ZenoGvHelper::setSizeInfo(QGraphicsItem* item, const SizeInfo& sz)
     }
 }
 
-void ZenoGvHelper::setValue(QGraphicsItem* item, PARAM_CONTROL ctrl, const QVariant& value, QGraphicsScene* pScene)
+void ZenoGvHelper::setValue(QGraphicsItem* item, zeno::ParamControl ctrl, const QVariant& value, QGraphicsScene* pScene)
 {
     if (!item)
         return;

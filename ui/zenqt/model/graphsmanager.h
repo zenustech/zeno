@@ -6,6 +6,7 @@
 
 class AssetsModel;
 class GraphsTreeModel;
+class ZenoSubGraphScene;
 
 class GraphsManager : public QObject
 {
@@ -30,11 +31,16 @@ public:
     void appendErr(const QString& nodeName, const QString& msg);
     QGraphicsScene* gvScene(const QString& graphName) const;
     QGraphicsScene* gvScene(const QModelIndex& subgIdx) const;
-    void addScene(const QModelIndex& subgIdx, QGraphicsScene* scene);
-    void addScene(const QString& tabName, QGraphicsScene* scene);
+    void addScene(const QModelIndex& subgIdx, ZenoSubGraphScene* scene);
+    void addScene(const QString& tabName, ZenoSubGraphScene* scene);
     zeno::TimelineInfo timeInfo() const;
     QString zsgPath() const;
     QString zsgDir() const;
+    USERDATA_SETTING userdataInfo() const;
+    RECORD_SETTING recordSettings() const;
+    zeno::ZSG_VERSION ioVersion() const;
+    void setIOVersion(zeno::ZSG_VERSION ver);
+    void clearMarkOnGv();
 
 signals:
     void modelInited();
@@ -59,7 +65,7 @@ private:
 
     mutable std::mutex m_mtx;
     zeno::TimelineInfo m_timerInfo;
-    QMap<QString, QGraphicsScene*> m_scenes;    //for gv based editor.
+    QMap<QString, ZenoSubGraphScene*> m_scenes;    //for gv based editor.
 };
 
 #endif

@@ -1,21 +1,21 @@
 <RCC>
     <qresource prefix="/">
         <file>../qml/temp/sidepanel.qml</file>
-        <file>../qml/nodeeditor/qml/ZParam.qml</file>
-        <file>../qml/nodeeditor/qml/ZNode.qml</file>
-        <file>../qml/nodeeditor/qml/Edge.qml</file>
-        <file>../qml/nodeeditor/qml/testParam.qml</file>
-        <file>../qml/nodeeditor/qml/CustomBorder.qml</file>
-        <file>../qml/nodeeditor/qml/StatusBtn.qml</file>
-        <file>../qml/nodeeditor/qml/StatusImgBtn.qml</file>
-        <file>../qml/nodeeditor/qml/StatusBtnGroup.qml</file>
-        <file>../qml/nodeeditor/qml/StatusBtnSeperator.qml</file>
-        <file>../qml/nodeeditor/qml/Graph.qml</file>
-        <file>../qml/nodeeditor/qml/Socket.qml</file>
-        <file>../qml/nodeeditor/qml/SocketName.qml</file>
-        <file>../qml/nodeeditor/qml/testGraphEditor.qml</file>
-        <file>../qml/nodeeditor/qml/FillSpacer.qml</file>
-        <file>../qml/nodeeditor/qml/FixSpacer.qml</file>
+        <file>../nodeeditor/qml/ZParam.qml</file>
+        <file>../nodeeditor/qml/ZNode.qml</file>
+        <file>../nodeeditor/qml/Edge.qml</file>
+        <file>../nodeeditor/qml/testParam.qml</file>
+        <file>../nodeeditor/qml/CustomBorder.qml</file>
+        <file>../nodeeditor/qml/StatusBtn.qml</file>
+        <file>../nodeeditor/qml/StatusImgBtn.qml</file>
+        <file>../nodeeditor/qml/StatusBtnGroup.qml</file>
+        <file>../nodeeditor/qml/StatusBtnSeperator.qml</file>
+        <file>../nodeeditor/qml/Graph.qml</file>
+        <file>../nodeeditor/qml/Socket.qml</file>
+        <file>../nodeeditor/qml/SocketName.qml</file>
+        <file>../nodeeditor/qml/testGraphEditor.qml</file>
+        <file>../nodeeditor/qml/FillSpacer.qml</file>
+        <file>../nodeeditor/qml/FixSpacer.qml</file>
         <file>../qml/controls/ZButton.qml</file>
         <file>../qml/controls/ZCheckBox.qml</file>
         <file>../qml/controls/ZColorBtn.qml</file>

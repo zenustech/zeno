@@ -1,7 +1,7 @@
 #ifndef __ZTF_UTIL_H__
 #define __ZTF_UTIL_H__
 
-#include "renderparam.h"
+#include "control/renderparam.h"
 #include <rapidxml/rapidxml_print.hpp>
 
 using namespace rapidxml;

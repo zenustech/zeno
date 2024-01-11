@@ -1,6 +1,6 @@
 #include "zenolights.h"
-#include <zenomodel/include/graphsmanagment.h>
-#include <zenomodel/include/modelrole.h>
+#include "model/graphsmanager.h"
+#include "uicommon.h"
 #include "viewport/zenovis.h"
 #include "viewport/viewportwidget.h"
 #include "viewport/displaywidget.h"
@@ -9,10 +9,12 @@
 #include "zeno/utils/log.h"
 #include "zeno/core/Session.h"
 #include <zeno/types/PrimitiveObject.h>
-#include <zenoui/comctrl/zcombobox.h>
+#include "widgets/zcombobox.h"
+#include "widgets/zlineedit.h"
 #include <zenovis/ObjectsManager.h>
 #include <zeno/types/UserData.h>
 #include <glm/glm.hpp>
+#include "zassert.h"
 
 
 ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {

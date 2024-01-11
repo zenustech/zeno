@@ -186,7 +186,7 @@ void GraphModel::appendNode(QString ident, QString name, const QPointF& pos)
     pItem->ident = ident;
     pItem->name = name;
     pItem->pos = pos;
-    pItem->params = new ParamsModel(desc);
+    pItem->params = new ParamsModel(desc, pItem);
 
     m_row2id[nRows] = ident;
     m_id2Row[ident] = nRows;
@@ -207,7 +207,7 @@ void GraphModel::appendSubgraphNode(QString ident, QString name, NODE_DESCRIPTOR
     pItem->ident = ident;
     pItem->name = name;
     pItem->pos = pos;
-    pItem->params = new ParamsModel(desc);
+    pItem->params = new ParamsModel(desc, pItem);
     pItem->pSubgraph = subgraph;
     subgraph->setParent(pItem);
 

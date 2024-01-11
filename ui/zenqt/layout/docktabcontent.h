@@ -3,7 +3,7 @@
 
 #include <QtWidgets>
 #include <unordered_set>
-#include <zenoui/comctrl/ztoolbutton.h>
+#include "widgets/ztoolbutton.h"
 
 class ZIconToolButton;
 class ZenoGraphsEditor;

@@ -37,6 +37,21 @@ QVariant LinkModel::data(const QModelIndex& index, int role) const
             const QString& paramName = info.toParam.data(ROLE_OBJNAME).toString();
             return QVariantList{ nodeName, paramName, true };
         }
+        case ROLE_INSOCK_IDX:
+        {
+            const auto& info = m_items[index.row()];
+            return info.toParam;
+        }
+        case ROLE_OUTSOCK_IDX:
+        {
+            const auto& info = m_items[index.row()];
+            return info.fromParam;
+        }
+        case ROLE_LINK_INFO:
+        {
+            //TODO
+            return QVariant::fromValue(zeno::EdgeInfo());
+        }
     }
     return QVariant();
 }

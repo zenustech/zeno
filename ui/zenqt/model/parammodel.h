@@ -5,6 +5,7 @@
 #include <QStandardItemModel>
 #include <QQuickItem>
 #include "uicommon.h"
+#include <zeno/core/data.h>
 
 struct ParamItem
 {

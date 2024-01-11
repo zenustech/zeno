@@ -3,8 +3,8 @@
 
 #include <memory>
 #include <QtWidgets>
-#include <zenomodel/include/jsonhelper.h>
-#include "../dock/docktabcontent.h"
+#include <util/jsonhelper.h>
+#include "layout/docktabcontent.h"
 #include <zenoio/writer/zsgwriter.h>
 #include <zenoio/reader/zsg2reader.h>
 //#include "util/apphelper.h"
