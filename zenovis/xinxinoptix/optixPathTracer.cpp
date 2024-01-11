@@ -4008,12 +4008,14 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
                     const float* _albedo_buffer = reinterpret_cast<float*>(state.albedo_buffer_p.handle);
                     //SaveEXR(_albedo_buffer, w, h, 4, 0, (path+".albedo.exr").c_str(), nullptr);
                     auto a_path = path + ".albedo.pfm";
-                    write_pfm(std::filesystem::u8path(a_path).string(), w, h, _albedo_buffer);
+                    std::string native_a_path = std::filesystem::u8path(a_path).string();
+                    write_pfm(native_a_path, w, h, _albedo_buffer);
 
                     const float* _normal_buffer = reinterpret_cast<float*>(state.normal_buffer_p.handle);
                     //SaveEXR(_normal_buffer, w, h, 4, 0, (path+".normal.exr").c_str(), nullptr);
                     auto n_path = path + ".normal.pfm";
-                    write_pfm(std::filesystem::u8path(n_path).string(), w, h, _normal_buffer);
+                    std::string native_n_path = std::filesystem::u8path(n_path).string();
+                    write_pfm(native_n_path, w, h, _normal_buffer);
                 }
             }
         }
