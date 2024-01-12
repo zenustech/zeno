@@ -1348,6 +1348,15 @@ bool GraphsModel::IsSubGraphNode(const QModelIndex& nodeIdx) const
     return subGraph(nodeName) != nullptr;
 }
 
+bool GraphsModel::IsDeprecatedhNode(const QModelIndex& nodeIdx)
+{
+    NODE_CATES cates = getCates();
+    NODE_CATE& deprecatedCate = cates["deprecated"];
+    if (deprecatedCate.nodes.contains(nodeIdx.data(ROLE_OBJNAME).toString()))
+        return true;
+    return false;
+}
+
 void GraphsModel::removeNode(int row, const QModelIndex& subGpIdx)
 {
     SubGraphModel* pGraph = subGraph(subGpIdx.row());
