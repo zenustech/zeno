@@ -1120,10 +1120,18 @@ struct PrimSubdivision : INode {
         }
         in_prim->polys.foreach_attr<AttrAcceptAll>([&](std::string const &key, auto &arr) {
             using T = std::decay_t<decltype(arr[0])>;
-            int face_count_to_origin_one_face = 1 << (maxlevel * 2);
-            auto &attr = prim->polys.template add_attr<T>(key);
+            prim->polys.template add_attr<T>(key);
+        });
+        prim->polys.foreach_attr<AttrAcceptAll>([&](std::string const &key, auto &arr) {
+            using T = std::decay_t<decltype(arr[0])>;
+            auto &attr = in_prim->polys.template attr<T>(key);
+            int poly_offset = 0;
             for (auto i = 0; i < attr.size(); i++) {
-                attr[i] = arr.at(i / face_count_to_origin_one_face);
+                int face_count_to_origin_face = in_prim->polys[i][1] << (maxlevel * 2);
+                for (auto j = 0; j < face_count_to_origin_face; j++) {
+                    attr[j] = arr[i];
+                }
+                poly_offset += face_count_to_origin_face;
             }
         });
         prim->userData().m_data = in_prim->userData().m_data;
