@@ -124,4 +124,40 @@ ZENDEFNODE(CopyZsVectorTo, {
                                {},
                                {"PyZFX"},
                            });
+
+struct CopyZsVectorFrom : INode {
+    void apply() override {
+        auto vectorObj = get_input<ZsVectorObject>("ZsVector");
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto attr = get_input2<std::string>("attr");
+        auto &vector = vectorObj->value;
+
+        float result;
+        std::visit(
+            [&prim, &attr](auto &vector) {
+                using vector_t = RM_CVREF_T(vector);
+                using val_t = typename vector_t::value_type;
+                if constexpr (zs::is_same_v<val_t, float> || zs::is_same_v<val_t, int>) {
+                    if (prim->size() != vector.size()) {
+                        fmt::print("BEWARE! copy sizes mismatch! resize to match.\n");
+                        vector.resize(prim->size());
+                    }
+
+                    const auto &src = prim->attr<val_t>(attr);
+
+                    std::memcpy(vector.data(), src.data(), sizeof(val_t) * vector.size());
+                }
+            },
+            vector);
+
+        set_output2("ZsVector", vectorObj);
+    }
+};
+
+ZENDEFNODE(CopyZsVectorFrom, {
+                                 {"ZsVector", "prim", {"string", "attr", "clr"}},
+                                 {"ZsVector"},
+                                 {},
+                                 {"PyZFX"},
+                             });
 } // namespace zeno
