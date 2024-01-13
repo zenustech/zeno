@@ -4388,21 +4388,34 @@ ZENDEFNODE(AdvanceFrame, {
 struct RemovePrimitiveTopo : INode {
     void apply() override {
         auto prim = get_input2<PrimitiveObject>("prim");
+        auto topoStrs_ = get_input2<std::string>("topo_strings");
+        std::set<std::string> topoStrs = separate_string_by(topoStrs_, " :;,.");
         auto removeAttr = [](auto &attrVector) { attrVector.clear(); };
-        removeAttr(prim->points);
-        removeAttr(prim->lines);
-        removeAttr(prim->tris);
-        removeAttr(prim->quads);
-        removeAttr(prim->loops);
-        removeAttr(prim->polys);
-        removeAttr(prim->edges);
-        removeAttr(prim->uvs);
+
+        bool empty = topoStrs.empty();
+        if (empty || topoStrs.find("points") != topoStrs.end())
+            removeAttr(prim->points);
+        if (empty || topoStrs.find("lines") != topoStrs.end())
+            removeAttr(prim->lines);
+        if (empty || topoStrs.find("tris") != topoStrs.end())
+            removeAttr(prim->tris);
+        if (empty || topoStrs.find("quads") != topoStrs.end())
+            removeAttr(prim->quads);
+        if (empty || topoStrs.find("loops") != topoStrs.end())
+            removeAttr(prim->loops);
+        if (empty || topoStrs.find("polys") != topoStrs.end())
+            removeAttr(prim->polys);
+        if (empty || topoStrs.find("edges") != topoStrs.end())
+            removeAttr(prim->edges);
+        if (empty || topoStrs.find("uvs") != topoStrs.end())
+            removeAttr(prim->uvs);
         set_output("prim", std::move(prim));
     }
 };
 ZENDEFNODE(RemovePrimitiveTopo, {
                                     {
                                         {"PrimitiveObject", "prim"},
+                                        {"string", "topo_strings", ""},
                                     },
                                     {{"PrimitiveObject", "prim"}},
                                     {},
