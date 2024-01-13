@@ -191,8 +191,9 @@ struct CopyZsTileVectorTo : INode {
                             }
                         }
                     };
-                    if constexpr (zs::is_same_v<std::vector<zeno::vec3f>, RM_CVREF_T(prim->attr(attr))>)
-                        process(prim->attr(attr));
+                    if (attr == "pos")
+                        // if constexpr (zs::is_same_v<std::vector<zeno::vec3f>, RM_CVREF_T(prim->attr(attr))>)
+                        process(prim->attr<zeno::vec3f>("pos"));
                     else
                         match(process)(prim->attr(attr));
 
@@ -289,8 +290,9 @@ struct CopyZsTileVectorFrom : INode {
                             }
                         }
                     };
-                    if constexpr (zs::is_same_v<std::vector<zeno::vec3f>, RM_CVREF_T(prim->attr(attr))>)
-                        process(prim->attr(attr));
+                    if (attr == "pos")
+                        // if constexpr (zs::is_same_v<std::vector<zeno::vec3f>, RM_CVREF_T(prim->attr(attr))>)
+                        process(prim->attr<zeno::vec3f>("pos"));
                     else
                         match(process)(prim->attr(attr));
 
