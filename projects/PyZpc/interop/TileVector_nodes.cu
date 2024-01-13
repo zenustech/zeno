@@ -151,7 +151,7 @@ struct CopyZsTileVectorTo : INode {
                         prim->resize(tv.size());
                     }
 
-                    match([&tv, &attr](auto &primAttrib) {
+                    auto process = [&tv, &attr](auto &primAttrib) {
                         using T = typename RM_CVREF_T(primAttrib)::value_type;
                         if constexpr (zs::is_arithmetic_v<T>) {
                             using AllocatorT = RM_CVREF_T(tv.get_allocator());
@@ -190,7 +190,11 @@ struct CopyZsTileVectorTo : INode {
                                          sizeof(ZsT) * tv.size());
                             }
                         }
-                    })(prim->attr(attr));
+                    };
+                    if constexpr (zs::is_same_v<std::vector<zeno::vec3f>, RM_CVREF_T(prim->attr(attr))>)
+                        process(prim->attr(attr));
+                    else
+                        match(process)(prim->attr(attr));
 
                 } else
                     throw std::runtime_error("unable to copy tilevector of non-arithmetic value_type yet");
@@ -246,7 +250,7 @@ struct CopyZsTileVectorFrom : INode {
                         tv.resize(prim->size());
                     }
 
-                    match([&tv, &attr](auto &primAttrib) {
+                    auto process = [&tv, &attr](auto &primAttrib) {
                         using T = typename RM_CVREF_T(primAttrib)::value_type;
                         if constexpr (zs::is_arithmetic_v<T>) {
                             using AllocatorT = RM_CVREF_T(tv.get_allocator());
@@ -262,6 +266,7 @@ struct CopyZsTileVectorFrom : INode {
                                                       false_c);
                             }
                         } else {
+                            puts("0");
                             using TT = typename T::value_type;
                             constexpr int dim = std::tuple_size_v<T>;
                             using ZsT = zs::vec<TT, dim>;
@@ -283,7 +288,11 @@ struct CopyZsTileVectorFrom : INode {
                                                       false_c);
                             }
                         }
-                    })(prim->attr(attr));
+                    };
+                    if constexpr (zs::is_same_v<std::vector<zeno::vec3f>, RM_CVREF_T(prim->attr(attr))>)
+                        process(prim->attr(attr));
+                    else
+                        match(process)(prim->attr(attr));
 
                 } else
                     throw std::runtime_error("unable to copy tilevector of non-arithmetic value_type yet");
