@@ -2,7 +2,8 @@
 #define __ZENO_SUBNET_LISTVIEW_H__
 
 #include <QtWidgets>
-#include <zenomodel/include/igraphsmodel.h>
+
+class AssetsModel;
 
 class ZenoSubnetListView : public QListView
 {
@@ -10,7 +11,7 @@ class ZenoSubnetListView : public QListView
 public:
     ZenoSubnetListView(QWidget* parent = nullptr);
     ~ZenoSubnetListView();
-    void initModel(IGraphsModel* pModel);
+    void initModel(AssetsModel* pModel);
     QSize sizeHint() const override;
     void edittingNew();
 

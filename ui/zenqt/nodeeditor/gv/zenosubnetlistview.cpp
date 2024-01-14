@@ -1,11 +1,10 @@
 #include "zenosubnetlistview.h"
 #include "zenoapplication.h"
-#include <zenomodel/include/graphsmanagment.h>
 #include "style/zenostyle.h"
 #include "zsubnetlistitemdelegate.h"
-#include <comctrl/zlabel.h>
-#include <zenomodel/include/modelrole.h>
-#include <zenomodel/include/igraphsmodel.h>
+#include "widgets/zlabel.h"
+#include "uicommon.h"
+#include "model/assetsmodel.h"
 #include <zeno/utils/logger.h>
 #include "util/log.h"
 
@@ -23,7 +22,7 @@ ZenoSubnetListView::~ZenoSubnetListView()
 {
 }
 
-void ZenoSubnetListView::initModel(IGraphsModel* pModel)
+void ZenoSubnetListView::initModel(AssetsModel* pModel)
 {
     setModel(pModel);
     setItemDelegate(new ZSubnetListItemDelegate(pModel, this));
@@ -33,7 +32,7 @@ void ZenoSubnetListView::initModel(IGraphsModel* pModel)
 
 void ZenoSubnetListView::edittingNew()
 {
-    IGraphsModel* pModel = qobject_cast<IGraphsModel*>(model());
+    AssetsModel* pModel = qobject_cast<AssetsModel*>(model());
     ZASSERT_EXIT(pModel);
 
     //SubGraphModel* pSubModel = new SubGraphModel(pModel);

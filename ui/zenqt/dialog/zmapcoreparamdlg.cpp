@@ -1,7 +1,7 @@
 #include "zmapcoreparamdlg.h"
 #include "zenoapplication.h"
-#include <zenomodel/include/graphsmanagment.h>
-#include <zenomodel/include/nodeparammodel.h>
+#include "model/graphsmanager.h"
+
 #include "ui_zmapcoreparamdlg.h"
 #include "variantptr.h"
 
@@ -18,13 +18,16 @@ ZMapCoreparamDlg::ZMapCoreparamDlg(const QPersistentModelIndex& idx, QWidget* pa
     connect(m_ui->buttonBox, SIGNAL(accepted()), this, SLOT(accept()));
     connect(m_ui->buttonBox, SIGNAL(rejected()), this, SLOT(reject()));
 
-    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+#if 0
+    IGraphsModel* pGraphsModel = zenoApp->graphsManager()->currentModel();
     if (pGraphsModel)
     {
         NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(idx.data(ROLE_NODE_PARAMS));
         m_model = nodeParams;
         m_ui->treeView->setModel(nodeParams);
     }
+#endif
+
     m_ui->treeView->expandAll();
 }
 

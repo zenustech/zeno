@@ -5,7 +5,7 @@
 #include <zeno/core/Session.h>
 #include "zassert.h"
 #include "zenomainwindow.h"
-#include "timeline/ztimeline.h"
+#include "widgets/ztimeline.h"
 #include "zenoapplication.h"
 
 #define MAX_FRAME 100000

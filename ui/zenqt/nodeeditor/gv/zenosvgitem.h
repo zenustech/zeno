@@ -2,7 +2,8 @@
 #define __ZENO_SVG_ITEM_H__
 
 #include <QtSvg/QGraphicsSvgItem>
-#include "../render/renderparam.h"
+#include "control/renderparam.h"
+
 
 class ZenoSvgItem : public QGraphicsSvgItem
 {

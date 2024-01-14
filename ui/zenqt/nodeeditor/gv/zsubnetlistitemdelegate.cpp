@@ -1,9 +1,9 @@
 #include "zsubnetlistitemdelegate.h"
 #include "style/zenostyle.h"
 #include "zenosubnetlistview.h"
-#include <zenomodel/include/graphsmanagment.h>
+#include "model/graphsmanager.h"
+#include "model/assetsmodel.h"
 #include "zenoapplication.h"
-#include <zenomodel/include/modelrole.h>
 #include "util/log.h"
 #include <zenoio/writer/zsgwriter.h>
 #include "zenoapplication.h"
@@ -22,11 +22,6 @@ SubgEditValidator::~SubgEditValidator()
 QValidator::State SubgEditValidator::validate(QString& input, int& pos) const
 {
     if (input.isEmpty())
-        return Intermediate;
-
-    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-    const QModelIndex& idx = pModel->index(input);
-    if (idx.isValid())
         return Intermediate;
 
     return Acceptable;
@@ -170,6 +165,7 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
             menu->addAction(pRename);
             menu->addAction(pDelete);
             menu->addAction(pSave);
+#if 0
             if (index.data(ROLE_SUBGRAPH_TYPE) != SUBGRAPH_PRESET)
             {
                 QAction* pPreset = new QAction(tr("Trans to Preset Subgrah"));
@@ -178,6 +174,7 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
                         m_model->setData(index, SUBGRAPH_PRESET, ROLE_SUBGRAPH_TYPE);
                 });
             }
+#endif
             menu->exec(QCursor::pos());
         }
     }
@@ -198,8 +195,9 @@ void ZSubnetListItemDelegate::onDelete()
             }
             nameList << subgName;
         }
-        for (const QString &name : nameList)
-            m_model->removeSubGraph(name);
+        for (const QString& name : nameList) {
+            m_model->removeAsset(name);
+        }
     }
 }
 
@@ -236,14 +234,15 @@ void ZSubnetListItemDelegate::onSaveSubgraph(const QModelIndex& index)
 QModelIndexList ZSubnetListItemDelegate::getSubgraphs(const QModelIndex& subgIdx)
 {
     QModelIndexList subgraphs;
+#if 0
     subgraphs << subgIdx;
-    int count = m_model->itemCount(subgIdx);
-    for (int i = 0; i < count; i++)
+
+    for (int r = 0; r < m_model->rowCount(); r++)
     {
-        const QModelIndex& childIdx = m_model->index(i, subgIdx);
+        const QModelIndex& childIdx = m_model->index(r, 0);
         if (!childIdx.isValid())
             continue;
-        const QString& subgName = childIdx.data(ROLE_OBJNAME).toString();
+        const QString& assetName = childIdx.data(ROLE_OBJNAME).toString();
         const QModelIndex& modelIdx = m_model->index(subgName);
         if (modelIdx.isValid() && !subgraphs.contains(modelIdx))
         {
@@ -252,6 +251,7 @@ QModelIndexList ZSubnetListItemDelegate::getSubgraphs(const QModelIndex& subgIdx
                 subgraphs << lst;
         }
     }
+#endif
     return subgraphs;
 }
 
@@ -305,7 +305,11 @@ bool SubListSortProxyModel::filterAcceptsRow(int source_row, const QModelIndex& 
     const QModelIndex& index = sourceModel()->index(source_row, 0, source_parent);
     if (!index.isValid())
         return false;
+
+    //TODO: refactor.
+#if 0
     int value = index.data(ROLE_SUBGRAPH_TYPE).toInt();
     int type = ZenoSettingsManager::GetInstance().getValue(zsSubgraphType).toInt();
     return type == value ? true : false;
+#endif
 }

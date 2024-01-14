@@ -229,7 +229,9 @@ QWidget* ZDockWidget::createTabWidget(PANEL_TYPE type)
         }
         case PANEL_COMMAND_PARAMS:
         {
-            return new ZenoCommandParamsPanel;
+            //TODO
+            //return new ZenoCommandParamsPanel;
+            break;
         }
         case PANEL_OPEN_PATH:
         {

@@ -2,10 +2,11 @@
 #define __ZENO_BLACKBOARD_PROP_WIDGET_H__
 
 #include <QWidget>
-#include <zenomodel/include/modeldata.h>
-#include "comctrl/ztextedit.h"
-#include "comctrl/zlineedit.h"
+#include "widgets/ztextedit.h"
+#include "widgets/zlineedit.h"
+#include "uicommon.h"
 
+#if 0
 class ZenoBlackboardPropWidget : public QWidget 
 {
     Q_OBJECT
@@ -24,4 +25,6 @@ class ZenoBlackboardPropWidget : public QWidget
     //ZTextEdit *m_pTextEdit;
     QPushButton* m_pColor;
 };
+#endif
+
 #endif

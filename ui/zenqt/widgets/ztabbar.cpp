@@ -1,6 +1,6 @@
 #include "ztabbar.h"
 #include "ziconbutton.h"
-#include "../style/zenostyle.h"
+#include "style/zenostyle.h"
 
 
 ZTabBar::ZTabBar(QWidget* parent)

@@ -1,7 +1,7 @@
 #include "zenosettingsmanager.h"
 #include "settings/zsettings.h"
 #include <rapidjson/document.h>
-#include <zenomodel/include/jsonhelper.h>
+#include "util/jsonhelper.h"
 
 
 ZenoSettingsManager& ZenoSettingsManager::GetInstance()

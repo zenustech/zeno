@@ -3,10 +3,13 @@
 
 #include <QtWidgets>
 #include <zeno/core/data.h>
+#include "uicommon.h"
+#include <QStandardItemModel>
 
 class AssetsModel;
 class GraphsTreeModel;
 class ZenoSubGraphScene;
+class GraphModel;
 
 class GraphsManager : public QObject
 {
@@ -39,6 +42,7 @@ public:
     USERDATA_SETTING userdataInfo() const;
     RECORD_SETTING recordSettings() const;
     zeno::ZSG_VERSION ioVersion() const;
+    NODE_CATES getCates() const;
     void setIOVersion(zeno::ZSG_VERSION ver);
     void clearMarkOnGv();
 

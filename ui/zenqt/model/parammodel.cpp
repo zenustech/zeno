@@ -32,6 +32,10 @@ QVariant ParamsModel::data(const QModelIndex& index, int role) const
         //TODO: based on core data `ParamInfo.prop`
         break;
     }
+    case ROLE_PARAM_CTRL_PROPERTIES: {
+        //TODO: control property
+        break;
+    }
     case ROLE_NODE_IDX:
     {
         //TODO: get the node info, tip: parent()

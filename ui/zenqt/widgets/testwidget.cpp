@@ -17,10 +17,10 @@ TestNormalWidget::TestNormalWidget()
 
     CallbackCollection cbSet;
 
-    QWidget* pWidget = zenoui::createWidget("turnLeft", zeno::Combobox, type, cbSet, properties);
+    QWidget* pWidget = zenoui::createWidget("turnLeft", zeno::Combobox, zeno::Param_Null, cbSet, properties);
     pLayout->addWidget(pWidget);
 
-    QWidget* pSlider = zenoui::createWidget(10, zeno::Slider, "int", cbSet, properties);
+    QWidget* pSlider = zenoui::createWidget(10, zeno::Slider, zeno::Param_Int, cbSet, properties);
     pLayout->addWidget(pSlider);
 
     SLIDER_INFO sliderInfo;
@@ -29,7 +29,7 @@ TestNormalWidget::TestNormalWidget()
     sliderInfo.max = 100;
     properties = QVariant::fromValue(sliderInfo);
 
-    QWidget* pSpinBox = zenoui::createWidget(10, zeno::SpinBoxSlider, "int", cbSet, properties);
+    QWidget* pSpinBox = zenoui::createWidget(10, zeno::SpinBoxSlider, zeno::Param_Int, cbSet, properties);
     pLayout->addWidget(pSpinBox);
 
     setLayout(pLayout);

@@ -9,14 +9,17 @@
 #include "zeno/utils/format.h"
 #include <zeno/types/UserData.h>
 #include <zeno/types/PrimitiveObject.h>
-#include <zenoui/comctrl/zcombobox.h>
+#include "widgets/zcombobox.h"
 #include "zenomainwindow.h"
 #include "viewport/viewportwidget.h"
 #include "viewport/displaywidget.h"
-#include "dialog/zforksubgrapdlg.h"
-#include "nodesview/zenographseditor.h"
+#include "nodeeditor/gv/zenographseditor.h"
 #include "settings/zenosettingsmanager.h"
-#include "nodesys/zenosubgraphscene.h"
+#include "nodeeditor/gv/zenosubgraphscene.h"
+#include "zenoapplication.h"
+#include "zassert.h"
+#include "model/graphsmanager.h"
+
 
 ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
     dataModel = new PrimAttrTableModel();
@@ -131,7 +134,9 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
     if (label.contains("Material", Qt::CaseInsensitive))
     {
         QString mtlid = index.data(Qt::DisplayRole).toString();
-        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+        //TODO: material subgraph
+#if 0
+        IGraphsModel* pGraphsModel = zenoApp->graphsManager()->currentModel();
         if (pGraphsModel)
         {
             for (const auto& subgIdx : pGraphsModel->subgraphsIndice(SUBGRAPH_METERIAL))
@@ -149,6 +154,7 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
                 }
             }
         }
+#endif
     }
     });
 }
@@ -281,7 +287,10 @@ bool ZenoSpreadsheet::eventFilter(QObject* watched, QEvent* event)
             pMenu->addAction(newMatSubGraph);
             QMenu* pPresetMenu = new QMenu(tr("Preset Material Subgraph"), pMenu);
             pMenu->addMenu(pPresetMenu);
-            IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+
+            //TODO: material preset
+#if 0
+            IGraphsModel* pGraphsModel = zenoApp->graphsManager()->currentModel();
             for (const auto& subgIdx : pGraphsModel->subgraphsIndice(SUBGRAPH_PRESET))
             {
                 QString name = subgIdx.data(ROLE_OBJNAME).toString();
@@ -349,7 +358,7 @@ bool ZenoSpreadsheet::eventFilter(QObject* watched, QEvent* event)
                 ZForkSubgraphDlg dlg(map, this);
                 dlg.exec();
             });
-            
+#endif
             pMenu->exec(QCursor::pos());
             pMenu->deleteLater();
         }

@@ -1,5 +1,5 @@
 #include "zshadowbutton.h"
-#include <zenoui/comctrl/effect/innershadoweffect.h>
+#include "effect/innershadoweffect.h"
 #include "style/zenostyle.h"
 
 

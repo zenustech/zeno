@@ -2,6 +2,7 @@
 #define __NODESYS_COMMON_H__
 
 #include "uicommon.h"
+#include <QGraphicsItem>
 
 enum ZenoGVItemType {
     ZTYPE_NODE = QGraphicsItem::UserType + 1,

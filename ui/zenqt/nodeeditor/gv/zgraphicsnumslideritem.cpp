@@ -1,5 +1,5 @@
 #include "zgraphicsnumslideritem.h"
-#include <zenoui/style/zenostyle.h>
+#include "style/zenostyle.h"
 #include <zeno/utils/log.h>
 #include "zgraphicstextitem.h"
 

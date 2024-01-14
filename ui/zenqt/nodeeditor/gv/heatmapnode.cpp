@@ -81,7 +81,7 @@ void MakeHeatMapNode::onEditClicked()
             info.name = "_RAMPS";
             info.oldValue = oldColor;
             info.newValue = colorText;
-            IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();
+            IGraphsModel *pModel = zenoApp->graphsManager()->currentModel();
             pModel->updateParamInfo(nodeId(), info, subGraphIndex(), true);
         }
         */

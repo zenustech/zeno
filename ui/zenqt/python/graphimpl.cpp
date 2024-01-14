@@ -2,10 +2,10 @@
 #include "zenopyapi.h"
 #include <QtWidgets>
 #include "zenoapplication.h"
-#include <zenomodel/include/graphsmanagment.h>
+#include "model/graphsmanager.h"
 #include <zenomodel/include/enum.h>
 #include <zenomodel/include/nodesmgr.h>
-#include <zenomodel/include/uihelper.h>
+#include "util/uihelper.h"
 
 static QVariant parseValue(PyObject* v, const QString& type)
 {
@@ -107,7 +107,7 @@ Graph_init(ZSubGraphObject* self, PyObject* args, PyObject* kwds)
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "s", kwList, &_subgName))
         return -1;
 
-    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    IGraphsModel* pModel = zenoApp->graphsManager()->currentModel();
     if (!pModel)
     {
         PyErr_SetString(PyExc_Exception, "Current Model is NULL");
@@ -122,7 +122,7 @@ Graph_init(ZSubGraphObject* self, PyObject* args, PyObject* kwds)
 static PyObject*
 Graph_name(ZSubGraphObject* self, PyObject* Py_UNUSED(ignored))
 {
-    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    IGraphsModel* pModel = zenoApp->graphsManager()->currentModel();
     if (!pModel)
     {
         PyErr_SetString(PyExc_Exception, "Current Model is NULL");
@@ -154,7 +154,7 @@ Graph_createNode(ZSubGraphObject* self, PyObject* arg, PyObject* kw)
 
     const QString& subgName = self->subgIdx.data(ROLE_OBJNAME).toString();
     const QString& descName = QString::fromUtf8(nodeCls);
-    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    IGraphsModel* pModel = zenoApp->graphsManager()->currentModel();
     const QString& ident = UiHelper::createNewNode(self->subgIdx, descName, QPointF(0, 0));
     //set value
     QModelIndex nodeIdx = pModel->nodeIndex(ident);
@@ -253,7 +253,7 @@ Graph_deleteNode(ZSubGraphObject* self, PyObject* arg)
         PyErr_WriteUnraisable(Py_None);
         return Py_None;
     }
-    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    IGraphsModel* pModel = zenoApp->graphsManager()->currentModel();
     if (!pModel)
     {
         PyErr_SetString(PyExc_Exception, "Current Model is NULL");

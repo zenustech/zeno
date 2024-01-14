@@ -1,6 +1,6 @@
 #include "zexpandablesection.h"
 #include "zlabel.h"
-#include "../style/zenostyle.h"
+#include "style/zenostyle.h"
 #include "zlinewidget.h"
 
 

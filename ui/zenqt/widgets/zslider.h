@@ -2,7 +2,7 @@
 #define __ZTIMESILDER_H__
 
 #include <QtWidgets>
-#include <zenoui/style/zenostyle.h>
+#include "style/zenostyle.h"
 
 class ZSlider : public QWidget
 {

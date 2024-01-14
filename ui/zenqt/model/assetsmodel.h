@@ -2,7 +2,7 @@
 #define __ASSETSMODEL_H__
 
 #include <QtWidgets>
-#include <zeno/core/common.h>
+#include <zeno/core/data.h>
 #include <QQuickItem>
 
 class GraphModel;
@@ -33,6 +33,7 @@ public:
 
     void newAsset(const QString& assetName);
     void addAsset(const zeno::GraphData& graph);
+    void removeAsset(const QString& assetName);
 
 private:
     QVector<GraphModel*> m_assets;

@@ -691,7 +691,10 @@ void ZenoLights::write_param_into_node(const QString& primid) {
         }
         auto realtime_obj = scene->objectsMan->lightObjects[primid.toStdString()];
         auto ud = realtime_obj->userData();
-        IGraphsModel* pIGraphsModel = zenoApp->graphsManagment()->currentModel();
+
+    //TODO: 
+#if 0
+        IGraphsModel* pIGraphsModel = zenoApp->graphsManager()->currentModel();
         if (pIGraphsModel == nullptr) {
             return;
         }
@@ -731,5 +734,6 @@ void ZenoLights::write_param_into_node(const QString& primid) {
                 }
             }
         }
+#endif
     }
 }

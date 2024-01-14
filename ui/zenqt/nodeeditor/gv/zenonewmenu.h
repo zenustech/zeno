@@ -2,7 +2,7 @@
 #define __ZENO_NEWMENU_H__
 
 #include <QtWidgets>
-#include <zenomodel/include/modeldata.h>
+#include "uicommon.h"
 #include <QSet>
 
 class ZenoGvLineEdit;

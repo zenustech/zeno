@@ -3,12 +3,12 @@
 
 #include <QtWidgets>
 #include <QtOpenGL>
-#include "common.h"
+#include "uicommon.h"
 #include "recordvideomgr.h"
-#include "dock/docktabcontent.h"
+#include "layout/docktabcontent.h"
 #include "layout/winlayoutrw.h"
-#include <viewportinteraction/transform.h>
-#include <viewportinteraction/picker.h>
+#include <viewport/transform.h>
+#include <viewport/picker.h>
 
 class ZTimeline;
 class ZenoMainWindow;

@@ -192,6 +192,53 @@ QString UiHelper::getControlDesc(zeno::ParamControl ctrl)
 }
 #endif
 
+QString UiHelper::getControlDesc(zeno::ParamControl ctrl, zeno::ParamType type)
+{
+    switch (ctrl)
+    {
+    case zeno::Lineedit:
+    {
+        switch (type) {
+        case zeno::Param_Float:   return "Float";
+        case zeno::Param_Int:     return "Integer";
+        case zeno::Param_String:  return "String";
+        }
+        return "";
+    }
+    case zeno::Checkbox:
+    {
+        return "Boolean";
+    }
+    case zeno::Multiline:           return "Multiline String";
+    case zeno::Pathedit:            return "read path";
+    case zeno::Combobox:            return "Enum";
+    case zeno::Vec4edit:
+    {
+        return type == zeno::Param_Int ? "Integer Vector 4" : "Float Vector 4";
+    }
+    case zeno::Vec3edit:
+    {
+        return type == zeno::Param_Int ? "Integer Vector 3" : "Float Vector 3";
+    }
+    case zeno::Vec2edit:
+    {
+        return type == zeno::Param_Int ? "Integer Vector 2" : "Float Vector 2";
+    }
+    case zeno::Heatmap:             return "Color";
+    case zeno::Color:               return "Pure Color";
+    case zeno::ColorVec:            return "Color Vec3f";
+    case zeno::CurveEditor:         return "Curve";
+    case zeno::SpinBox:             return "SpinBox";
+    case zeno::DoubleSpinBox:       return "DoubleSpinBox";
+    case zeno::Slider:              return "Slider";
+    case zeno::SpinBoxSlider:       return "SpinBoxSlider";
+    case zeno::Seperator:           return "group-line";
+    case zeno::PythonEditor:        return "PythonEditor";
+    default:
+        return "";
+    }
+}
+
 zeno::ParamControl UiHelper::getControlByDesc(const QString& descName)
 {
     //compatible with zsg2
@@ -299,6 +346,19 @@ zeno::ParamControl UiHelper::getControlByDesc(const QString& descName)
     {
         return zeno::NullControl;
     }
+}
+
+bool UiHelper::isFloatType(zeno::ParamType type)
+{
+    return type == zeno::Param_Float || type == zeno::Param_Vec2f || type == zeno::Param_Vec3f || type == zeno::Param_Vec4f;
+}
+
+bool UiHelper::qIndexSetData(const QModelIndex& index, const QVariant& value, int role)
+{
+    QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(index.model());
+    if (!pModel)
+        return false;
+    return pModel->setData(index, value, role);
 }
 
 QStringList UiHelper::getCoreTypeList()
@@ -758,6 +818,8 @@ QVector<qreal> UiHelper::getSlideStep(const QString& name, zeno::ParamType type)
     return steps;
 }
 
+
+
 QString UiHelper::nthSerialNumName(QString name)
 {
     QRegExp rx("\\((\\d+)\\)");
@@ -774,6 +836,81 @@ QString UiHelper::nthSerialNumName(QString name)
         ZASSERT_EXIT(bConvert, "");
         return name + "(" + QString::number(ith + 1) + ")";
     }
+}
+
+QVariant UiHelper::parseStringByType(const QString& defaultValue, zeno::ParamType type)
+{
+    switch (type) {
+    case zeno::Param_Null:  return QVariant();
+    case zeno::Param_Bool:  return (bool)defaultValue.toInt();
+    case zeno::Param_Int:
+    {
+        bool bOk = false;
+        int val = defaultValue.toInt(&bOk);
+        if (bOk) {
+            return val;
+        }
+        else {
+            //type dismatch, try to convert to float.
+            //disable it now because the sync problem is complicated and trivival.
+            //float fVal = defaultValue.toFloat(&bOk);
+            //if (bOk)
+            //{
+            //    val = fVal;
+            //    return val;
+            //}
+            return defaultValue;
+        }
+    }
+    case zeno::Param_String:    return defaultValue;
+    case zeno::Param_Float:
+    {
+        bool bOk = false;
+        float fVal = defaultValue.toFloat(&bOk);
+        if (bOk)
+            return fVal;
+        else
+            return defaultValue;
+    }
+    case zeno::Param_Vec2i:
+    case zeno::Param_Vec3i:
+    case zeno::Param_Vec4i:
+    case zeno::Param_Vec2f:
+    case zeno::Param_Vec3f:
+    case zeno::Param_Vec4f:
+    {
+        UI_VECTYPE vec;
+        if (!defaultValue.isEmpty())
+        {
+            QStringList L = defaultValue.split(",");
+            vec.resize(L.size());
+            bool bOK = false;
+            for (int i = 0; i < L.size(); i++)
+            {
+                vec[i] = L[i].toFloat(&bOK);
+                Q_ASSERT(bOK);
+            }
+        }
+        else
+        {
+            vec.resize(3);
+        }
+        return QVariant::fromValue(vec);
+    }
+    case zeno::Param_Curve:
+    {
+        //TODO
+        break;
+    }
+    case zeno::Param_Prim:
+    case zeno::Param_Dict:
+    case zeno::Param_List:
+            //Param_Color,  //need this?
+    
+    case zeno::Param_SrcDst:
+        break;
+    }
+    return QVariant();
 }
 
 QVariant UiHelper::parseVarByType(const QString& descType, const QVariant& var, QObject* parentRef)

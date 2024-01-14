@@ -214,7 +214,7 @@ QVariant UiHelper::initDefaultValue(const QString& type)
     return QVariant();
 }
 
-QVariant UiHelper::parseStringByType(const QString &defaultValue, const QString &type)
+QVariant UiHelper::parseStringByType(const QString &defaultValue, zeno::ParamType type)
 {
     auto control = getControlByType(type);
     switch (control) {

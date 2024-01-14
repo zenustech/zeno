@@ -1,7 +1,7 @@
 #ifndef __ZOBJECTBUTTON_H__
 #define __ZOBJECTBUTTON_H__
 
-#include "../comctrl/ztoolbutton.h"
+#include "widgets/ztoolbutton.h"
 
 class ZObjectButton : public ZToolButton
 {

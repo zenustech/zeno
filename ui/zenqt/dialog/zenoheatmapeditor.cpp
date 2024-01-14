@@ -1,8 +1,8 @@
 #include "ui_zenoheatmapeditor.h"
 #include "zenoheatmapeditor.h"
-#include <zenoui/style/zenostyle.h>
-#include <zenoui/nodesys/zenosvgitem.h>
-#include <zenomodel/include/uihelper.h>
+#include "style/zenostyle.h"
+#include "nodeeditor/gv/zenosvgitem.h"
+#include "util/uihelper.h"
 #include "zassert.h"
 #include "zeno/utils/vec.h"
 

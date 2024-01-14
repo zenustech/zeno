@@ -1,9 +1,10 @@
 #include "zenostyle.h"
 #include "zstyleoption.h"
-#include "../comctrl/ztoolbutton.h"
-#include "../comctrl/zobjectbutton.h"
-#include "../comctrl/gv/zenoparamwidget.h"
-#include "../comctrl/zdocktabwidget.h"
+#include "widgets/ztoolbutton.h"
+#include "widgets/zobjectbutton.h"
+#include "nodeeditor/gv/zenoparamwidget.h"
+#include "layout/zdocktabwidget.h"
+#include "widgets/zcheckbox.h"
 #include <QScreen>
 #include <QtSvg/QSvgRenderer>
 

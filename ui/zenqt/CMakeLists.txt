@@ -51,7 +51,21 @@ endif()
 
 target_link_libraries(zenqt PRIVATE zenoio zenovis)
 target_link_libraries(zenqt PRIVATE zenocore)
-target_include_directories(zenqt PRIVATE . ./include)
+target_include_directories(zenqt PRIVATE . ./include ../3rdparty/include)
+
+if (WIN32)
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+        target_link_libraries(zenqt PRIVATE
+                ${CMAKE_CURRENT_SOURCE_DIR}/../3rdparty/libs/x64/static/debug/libcrypto.lib
+                ${CMAKE_CURRENT_SOURCE_DIR}/../3rdparty/libs/x64/static/debug/libcurl.lib
+                ${CMAKE_CURRENT_SOURCE_DIR}/../3rdparty/libs/x64/static/debug/libssl.lib)
+    else()
+        target_link_libraries(zenqt PRIVATE
+                ${CMAKE_CURRENT_SOURCE_DIR}/../3rdparty/libs/x64/static/release/libcrypto.lib
+                ${CMAKE_CURRENT_SOURCE_DIR}/../3rdparty/libs/x64/static/release/libcurl.lib
+                ${CMAKE_CURRENT_SOURCE_DIR}/../3rdparty/libs/x64/static/release/libssl.lib)
+    endif()
+endif()
 
 if (ZENO_WITH_PYTHON3)
     target_compile_definitions(zenqt PRIVATE -DZENO_WITH_PYTHON3)

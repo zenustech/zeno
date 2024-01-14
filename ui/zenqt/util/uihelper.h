@@ -5,6 +5,7 @@
 #include "util/globalcontrolmgr.h"
 #include "uicommon.h"
 #include <zeno/core/data.h>
+#include <QTabWidget>
 
 
 class BlockSignalScope
@@ -43,8 +44,10 @@ public:
     static QList<zeno::ParamControl> getControlLists(const zeno::ParamType& type);
     static QStringList getAllControls();
     //there is no description on control, for example,  lineedit may be a integer, string or float.
-    //static QString getControlDesc(zeno::ParamControl ctrl);
     static zeno::ParamControl getControlByDesc(const QString& descName);
+    static QString getControlDesc(zeno::ParamControl ctrl, zeno::ParamType type);
+    static bool isFloatType(zeno::ParamType type);
+    static bool qIndexSetData(const QModelIndex& index, const QVariant& value, int role);
     static QStringList getCoreTypeList();
     static bool parseVecType(const QString& type, int& dim, bool& bFloat);
     static QString variantToString(const QVariant& var);
@@ -60,12 +63,12 @@ public:
 
     static int getMaxObjId(const QList<QString>& lst);
     static QString getUniqueName(const QList<QString>& existNames, const QString& prefix, bool bWithBrackets = true);
-    static QVector<qreal> getSlideStep(const QString& name, zeno::ParamType ctrl);
+    static QVector<qreal> getSlideStep(const QString& name, zeno::ParamType type);
     static QString nthSerialNumName(QString name);
 
     static QVariant parseJsonByType(const QString& type, const rapidjson::Value& val, QObject* parentRef);
     static QVariant parseVarByType(const QString& type, const QVariant& var, QObject* parentRef);
-    static QVariant parseStringByType(const QString &defaultValue, const QString &type);
+    static QVariant parseStringByType(const QString& defaultValue, zeno::ParamType type);
     static QVariant parseJsonByValue(const QString &type, const rapidjson::Value &val, QObject *parentRef);
     static QVariant parseJson(const rapidjson::Value& val, QObject* parentRef = nullptr);
 

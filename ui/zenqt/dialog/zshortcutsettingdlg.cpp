@@ -1,15 +1,15 @@
-
 #include "zshortcutsettingdlg.h"
 #include <QSettings>
 #include "settings/zsettings.h"
 #include <QVBoxLayout>
 #include <rapidjson/document.h>
 #include <QPushButton>
-#include <zenoui/style/zenostyle.h>
-#include <zenomodel/include/jsonhelper.h>
+#include "style/zenostyle.h"
+#include "util/jsonhelper.h"
 #include "settings/zenosettingsmanager.h"
-#include <zenoui/comctrl/zcombobox.h>
-#include <zenoui/comctrl/zlineedit.h>
+#include "widgets/zcombobox.h"
+#include "widgets/zlineedit.h"
+
 
 ZShortCutItemDelegate::ZShortCutItemDelegate(QObject* parent) : _base(parent)
 {

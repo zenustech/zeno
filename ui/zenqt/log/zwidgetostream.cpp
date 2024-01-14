@@ -1,7 +1,6 @@
 #include "zwidgetostream.h"
 #include "zenoapplication.h"
-#include <zenomodel/include/modelrole.h>
-#include <zenomodel/include/graphsmanagment.h>
+#include "model/graphsmanager.h"
 #include <cstring>
 
 
@@ -122,6 +121,6 @@ void ZWidgetErrStream::customMsgHandler(QtMsgType type, const QMessageLogContext
     {
         type = QtFatalMsg;
     }
-    auto gm = zenoApp->graphsManagment();
+    auto gm = zenoApp->graphsManager();
     gm->appendLog(type, fileName, context.line, msg);
 }

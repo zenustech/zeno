@@ -57,12 +57,12 @@ void ZenoGvHelper::setSizeInfo(QGraphicsItem* item, const SizeInfo& sz)
     }
 }
 
-void ZenoGvHelper::setValue(QGraphicsItem* item, zeno::ParamControl ctrl, const QVariant& value, QGraphicsScene* pScene)
+void ZenoGvHelper::setValue(QGraphicsItem* item, zeno::ParamType type, const QVariant& value, QGraphicsScene* pScene)
 {
     if (!item)
         return;
-    int type = item->type();
-    switch (type)
+
+    switch (item->type())
     {
         case QGraphicsProxyWidget::Type:
         {
@@ -70,7 +70,7 @@ void ZenoGvHelper::setValue(QGraphicsItem* item, zeno::ParamControl ctrl, const 
             BlockSignalScope scope(pItem);
             if (ZenoParamLineEdit* pLineEdit = qobject_cast<ZenoParamLineEdit*>(pItem))
             {
-                if (ctrl == CONTROL_FLOAT)
+                if (type == zeno::Param_Float)
                     pLineEdit->setText(QString::number(value.toFloat()));
                 else
                     pLineEdit->setText(value.toString());
@@ -113,7 +113,7 @@ void ZenoGvHelper::setValue(QGraphicsItem* item, zeno::ParamControl ctrl, const 
                 if (value.canConvert<CURVES_DATA>()) {
                     return;
                 }
-                bool bFloat = (CONTROL_VEC4_FLOAT == ctrl || CONTROL_VEC3_FLOAT == ctrl || CONTROL_VEC2_FLOAT == ctrl);
+                bool bFloat = (zeno::Param_Vec2f == type || zeno::Param_Vec3f == type || zeno::Param_Vec4f == type);
                 pEditor->setVec(value, bFloat, pScene);
             }
             else if (ZenoParamComboBox* pBtn = qobject_cast<ZenoParamComboBox*>(pItem))
@@ -141,7 +141,7 @@ void ZenoGvHelper::setValue(QGraphicsItem* item, zeno::ParamControl ctrl, const 
         case QGraphicsTextItem::Type:
         {
             QGraphicsTextItem* pItem = qgraphicsitem_cast<QGraphicsTextItem*>(item);
-            if (ctrl == CONTROL_FLOAT) 
+            if (type == zeno::Param_Float)
             {
                 if (value.canConvert<CURVES_DATA>()) {
                     return;

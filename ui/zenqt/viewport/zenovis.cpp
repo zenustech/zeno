@@ -2,13 +2,13 @@
 #include "viewportwidget.h"
 #include "cameracontrol.h"
 #include "../zenomainwindow.h"
-#include "../launch/corelaunch.h"
-#include "../timeline/ztimeline.h"
+#include "widgets/ztimeline.h"
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
 #include <zeno/utils/logger.h>
 #include <zeno/zeno.h>
 #include "settings/zenosettingsmanager.h"
+#include "zassert.h"
 
 
 Zenovis::Zenovis(QObject *parent)

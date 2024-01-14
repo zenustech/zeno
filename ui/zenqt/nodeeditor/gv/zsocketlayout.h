@@ -10,19 +10,17 @@ class ZSimpleTextItem;
 class ZSocketPlainTextItem;
 class ZDictPanel;
 class ZenoImageItem;
-class IGraphsModel;
 class ZenoParamGroupLine;
 
 class ZSocketLayout : public ZGraphicsLayout
 {
 public:
     ZSocketLayout(
-            IGraphsModel* pModel,
             const QPersistentModelIndex& viewSockIdx,
             bool bInput
             );
     ~ZSocketLayout();
-    virtual void initUI(IGraphsModel* pModel, const CallbackForSocket& cbSock);
+    virtual void initUI(const CallbackForSocket& cbSock);
     void setControl(QGraphicsItem* pControl);
     virtual void updateSockName(const QString &name);
     void updateSockNameToolTip(const QString &tip);
@@ -47,12 +45,11 @@ class ZDictSocketLayout : public ZSocketLayout
 {
 public:
     ZDictSocketLayout(
-        IGraphsModel* pModel,
         const QPersistentModelIndex& viewSockIdx,
         bool bInput
     );
     ~ZDictSocketLayout();
-    void initUI(IGraphsModel* pModel, const CallbackForSocket& cbSock) override;
+    void initUI(const CallbackForSocket& cbSock) override;
     ZenoSocketItem* socketItemByIdx(const QModelIndex& sockIdx) const override;
     QPointF getSocketPos(const QModelIndex& sockIdx, bool& exist) override;
     void setCollasped(bool bCollasped);
@@ -65,9 +62,9 @@ private:
 
 class ZGroupSocketLayout : public ZSocketLayout {
   public:
-    ZGroupSocketLayout(IGraphsModel *pModel, const QPersistentModelIndex &viewSockIdx, bool bInput);
+    ZGroupSocketLayout(const QPersistentModelIndex &viewSockIdx, bool bInput);
     ~ZGroupSocketLayout();
-    void initUI(IGraphsModel *pModel, const CallbackForSocket &cbSock) override;
+    void initUI(const CallbackForSocket &cbSock) override;
     ZenoSocketItem *socketItemByIdx(const QModelIndex &sockIdx) const override;
     QPointF getSocketPos(const QModelIndex &sockIdx, bool &exist) override;
     void updateSockName(const QString &name) override;

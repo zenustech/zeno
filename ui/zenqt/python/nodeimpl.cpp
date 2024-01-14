@@ -2,7 +2,7 @@
 #include "zenopyapi.h"
 #include <QtWidgets>
 #include "zenoapplication.h"
-#include <zenomodel/include/graphsmanagment.h>
+#include "model/graphsmanager.h"
 #include <zenomodel/include/enum.h>
 #include <zenomodel/include/nodesmgr.h>
 
@@ -21,7 +21,7 @@ Node_init(ZNodeObject* self, PyObject* args, PyObject* kwds)
     QString graphName = QString::fromUtf8(_subgName);
     QString ident = QString::fromUtf8(_ident);
 
-    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    IGraphsModel* pModel = zenoApp->graphsManager()->currentModel();
     if (!pModel)
     {
         PyErr_SetString(PyExc_Exception, "Current Model is NULL");

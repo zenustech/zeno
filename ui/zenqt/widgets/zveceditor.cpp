@@ -1,8 +1,10 @@
 #include "zveceditor.h"
-#include <zenoui/style/zenostyle.h>
-#include <zenomodel/include/uihelper.h>
+#include "style/zenostyle.h"
+#include "util/uihelper.h"
 #include "zlineedit.h"
-#include <zenomodel/include/curveutil.h>
+#include "util/curveutil.h"
+#include <zeno/utils/log.h>
+
 
 ZVecEditor::ZVecEditor(const QVariant &vec, bool bFloat, int deflSize, QString styleCls, QWidget *parent)
 	: QWidget(parent)
@@ -43,7 +45,7 @@ void ZVecEditor::initUI(const QVariant &vec) {
             m_editors[i]->installEventFilter(this);
         }
 
-        m_editors[i]->setNumSlider(UiHelper::getSlideStep("", m_bFloat ? CONTROL_FLOAT : CONTROL_INT));
+        m_editors[i]->setNumSlider(UiHelper::getSlideStep("", m_bFloat ? zeno::Param_Float : zeno::Param_Int));
         //m_editors[i]->setFixedWidth(ZenoStyle::dpiScaled(64));
         m_editors[i]->setProperty("cssClass", m_styleCls);
         if (vec.canConvert<UI_VECTYPE>())

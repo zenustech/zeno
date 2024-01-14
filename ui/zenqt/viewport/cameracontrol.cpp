@@ -3,6 +3,7 @@
 #include "zenovis.h"
 //#include <zenovis/Camera.h>
 #include <zenovis/ObjectsManager.h>
+#include "widgets/zlineedit.h"
 #include "zenomainwindow.h"
 #include "nodeeditor/gv/zenographseditor.h"
 #include <zeno/types/UserData.h>
@@ -440,7 +441,7 @@ void CameraControl::fakeMouseDoubleClickEvent(QMouseEvent *event)
         int type = ZenoSettingsManager::GetInstance().getValue(zsSubgraphType).toInt();
         if (type == SUBGRAPH_TYPE::SUBGRAPH_METERIAL && !mtlid.isEmpty())
         {
-            auto graphsMgm = zenoApp->graphsManagment();
+            auto graphsMgm = zenoApp->graphsManager();
             IGraphsModel* pModel = graphsMgm->currentModel();
 
             const auto& lst = pModel->subgraphsIndice(SUBGRAPH_METERIAL);
@@ -779,7 +780,7 @@ bool CameraControl::fakeKeyReleaseEvent(int uKey) {
     return false;
 }
 //void CameraControl::createPointNode(QPointF pnt) {
-//auto pModel = zenoApp->graphsManagment()->currentModel();
+//auto pModel = zenoApp->graphsManager()->currentModel();
 //ZASSERT_EXIT(pModel);
 ////todo luzh: select specific subgraph to add node.
 //const QModelIndex &subgIdx = pModel->index("main");

@@ -2,7 +2,6 @@
 #define __ZLINEEDIT_H__
 
 #include <QtWidgets>
-#include <zenomodel/include/modeldata.h>
 
 class ZNumSlider;
 class ZTimeline;

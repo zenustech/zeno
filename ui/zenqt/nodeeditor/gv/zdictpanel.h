@@ -6,16 +6,14 @@
 
 class ZDictSocketLayout;
 class ZenoParamPushButton;
-class IGraphsModel;
 
 class ZDictPanel : public ZLayoutBackground
 {
     Q_OBJECT
 public:
-    ZDictPanel(ZDictSocketLayout* pLayout, const QPersistentModelIndex& viewSockIdx, const CallbackForSocket& cbSock, IGraphsModel* pModel);
+    ZDictPanel(ZDictSocketLayout* pLayout, const QPersistentModelIndex& viewSockIdx, const CallbackForSocket& cbSock);
     ~ZDictPanel();
     ZenoSocketItem* socketItemByIdx(const QModelIndex& sockIdx) const;
-    IGraphsModel* graphsModel() const;
     QModelIndex dictlistSocket() const;
 
 private slots:
@@ -31,7 +29,6 @@ private:
 
     const QPersistentModelIndex m_viewSockIdx;
     CallbackForSocket m_cbSock;
-    IGraphsModel* m_model;
     ZDictSocketLayout* m_pDictLayout;
     ZenoParamPushButton* m_pEditBtn;
     bool m_bDict;

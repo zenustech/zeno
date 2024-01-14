@@ -1,6 +1,6 @@
 #include "znumslider.h"
 #include "style/zenostyle.h"
-#include <zenoui/comctrl/zlabel.h>
+#include "widgets/zlabel.h"
 #include <zeno/utils/log.h>
 
 

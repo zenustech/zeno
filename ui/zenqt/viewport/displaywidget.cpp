@@ -548,7 +548,7 @@ void DisplayWidget::onSliderValueChanged(int frame)
             displayWid->setRenderSeparately(false, false);
     if (mainWin->isAlways())
     {
-        auto pGraphsMgr = zenoApp->graphsManagment();
+        auto pGraphsMgr = zenoApp->graphsManager();
         auto pModel = pGraphsMgr->currentModel();
         if (!pModel)
             return;
@@ -632,7 +632,7 @@ void DisplayWidget::onRun()
     ZenoMainWindow *mainWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(mainWin);
 
-    auto pGraphsMgr = zenoApp->graphsManagment();
+    auto pGraphsMgr = zenoApp->graphsManager();
     ZASSERT_EXIT(pGraphsMgr);
 
     auto pModel = pGraphsMgr->currentModel();
@@ -916,7 +916,7 @@ bool DisplayWidget::onRecord_cmd(const VideoRecInfo& recInfo)
     //launch optix cmd directly.
     auto& inst = zeno::getSession().globalComm;
 
-    auto pGraphsMgr = zenoApp->graphsManagment();
+    auto pGraphsMgr = zenoApp->graphsManager();
     ZASSERT_EXIT(pGraphsMgr, false);
 
     auto pGraphs = pGraphsMgr->currentModel();

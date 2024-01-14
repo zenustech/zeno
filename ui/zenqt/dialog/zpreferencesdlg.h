@@ -2,7 +2,7 @@
 #define __ZPREFERENCESDLG_H__
 
 #include <QtWidgets>
-#include <zenoui/comctrl/dialog/zframelessdialog.h>
+#include "dialog/zframelessdialog.h"
 
 class ZPathEdit;
 class ShortcutsPane;

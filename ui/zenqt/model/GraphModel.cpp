@@ -19,6 +19,10 @@ int GraphModel::indexFromId(const QString& ident) const
     return m_id2Row[ident];
 }
 
+QModelIndex GraphModel::indexFromIdent(const QString& ident) const {
+    return createIndex(indexFromId(ident), 0);
+}
+
 void GraphModel::addLink(const QString& fromNodeStr, const QString& fromParamStr,
     const QString& toNodeStr, const QString& toParamStr)
 {
@@ -108,6 +112,14 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
             //TODO
             return QVariant::fromValue(data);
         }
+        case ROLE_NODETYPE:
+        {
+            //TODO
+        }
+        case ROLE_OBJPATH:
+        {
+            //TODO
+        }
         default:
             return QVariant();
     }
@@ -143,6 +155,32 @@ QModelIndexList GraphModel::match(const QModelIndex& start, int role,
     Qt::MatchFlags flags) const
 {
     return QModelIndexList();
+}
+
+QList<SEARCH_RESULT> GraphModel::search(const QString& content, SearchType searchType, SearchOpt searchOpts) const
+{
+    //TODO:
+    return {};
+}
+
+void GraphModel::undo()
+{
+
+}
+
+void GraphModel::redo()
+{
+
+}
+
+void GraphModel::beginTransaction(const QString& name)
+{
+
+}
+
+void GraphModel::endTransaction()
+{
+
 }
 
 void GraphModel::addLink(QPair<QString, QString> fromParam, QPair<QString, QString> toParam)

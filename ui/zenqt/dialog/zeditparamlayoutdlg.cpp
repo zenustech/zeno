@@ -3,11 +3,11 @@
 #if 0
 #include "ui_zeditparamlayoutdlg.h"
 #include "zassert.h"
-#include <zenomodel/include/uihelper.h>
+#include "util/uihelper.h"
 #include "zmapcoreparamdlg.h"
-#include <zenomodel/include/uihelper.h>
+#include "util/uihelper.h"
 #include "zenoapplication.h"
-#include <zenomodel/include/graphsmanagment.h>
+#include "model/graphsmanager.h"
 #include <zenomodel/include/nodeparammodel.h>
 #include <zenomodel/include/panelparammodel.h>
 #include <zenomodel/include/nodesmgr.h>
@@ -16,7 +16,7 @@
 #include "variantptr.h"
 #include <zenomodel/include/command.h>
 #include "iotags.h"
-#include <zenoui/style/zenostyle.h>
+#include "style/zenostyle.h"
 #include <zenoui/comctrl/zspinboxslider.h>
 
 static CONTROL_ITEM_INFO controlList[] = {

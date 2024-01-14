@@ -1,56 +1,52 @@
 #include "zwidgetfactory.h"
-#include <zenomodel/include/uihelper.h>
-#include <zenoui/comctrl/zlinewidget.h>
-#include <zenoui/comctrl/zlineedit.h>
-#include <zenoui/comctrl/ztextedit.h>
-#include <zenoui/comctrl/dialog/curvemap/zcurvemapeditor.h>
-#include <zenoui/comctrl/dialog/zenoheatmapeditor.h>
-#include <zenoui/comctrl/zcombobox.h>
-#include <zenoui/comctrl/zlabel.h>
-#include <zenoui/style/zenostyle.h>
-#include <zenoui/ColorEditor/ColorEditor.h>
-#include <zenomodel/include/graphsmanagment.h>
-#include <zenomodel/include/modelrole.h>
-#include <zenomodel/include/igraphsmodel.h>
-#include <zenomodel/include/curvemodel.h>
-#include <zenoui/comctrl/zveceditor.h>
-#include "view/zcomboboxitemdelegate.h"
+#include "util/uihelper.h"
+#include "widgets/zlinewidget.h"
+#include "widgets/zlineedit.h"
+#include "widgets/ztextedit.h"
+#include "curvemap/zcurvemapeditor.h"
+#include "dialog/zenoheatmapeditor.h"
+#include "widgets/zcombobox.h"
+#include "widgets/zlabel.h"
+#include "style/zenostyle.h"
+#include "widgets/ColorEditor.h"
+#include "model/graphsmanager.h"
+#include "model/curvemodel.h"
+#include "widgets/zveceditor.h"
+#include "widgets/zcomboboxitemdelegate.h"
 #include "variantptr.h"
 #include "zassert.h"
 #include "zspinboxslider.h"
 #include "zdicttableview.h"
-#include "gv/zitemfactory.h"
-#include <zenoui/comctrl/zpathedit.h>
-#include <zenomodel/include/modeldata.h>
-#include <zenomodel/include/uihelper.h>
+#include "nodeeditor/gv/zitemfactory.h"
+#include "widgets/zpathedit.h"
+#include "util/uihelper.h"
+
 
 namespace zenoui
 {
     QWidget* createWidget(
         const QVariant& value,
-        PARAM_CONTROL ctrl,
-        const QString& type,
+        zeno::ParamControl ctrl,
+        const zeno::ParamType type,
         CallbackCollection cbSet,
         const QVariant& properties
     )
     {
         switch (ctrl)
         {
-            case CONTROL_INT:
-            case CONTROL_FLOAT:
-            case CONTROL_STRING:
+            case zeno::Lineedit:
             {
                 QString text = UiHelper::variantToString(value);
                 ZLineEdit *pLineEdit = new ZLineEdit(text);
 
                 pLineEdit->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
                 pLineEdit->setProperty("cssClass", "zeno2_2_lineedit");
-                pLineEdit->setNumSlider(UiHelper::getSlideStep("", ctrl));
+                pLineEdit->setNumSlider(UiHelper::getSlideStep("", type));
                 QObject::connect(pLineEdit, &ZLineEdit::editingFinished, [=]() {
                     // be careful about the dynamic type.
                     QString text = pLineEdit->text();
                     const QVariant& newValue = UiHelper::parseStringByType(text, type);
-                    if (newValue.type() == QVariant::String && ctrl != CONTROL_STRING)
+                    if (newValue.type() == QVariant::String && type != zeno::Param_String)
                     {
                         if (!text.startsWith("="))
                             zeno::log_error("The formula '{}' need start with '='", text.toStdString());
@@ -59,7 +55,7 @@ namespace zenoui
                     });
                 return pLineEdit;
             }
-            case CONTROL_BOOL:
+            case zeno::Checkbox:
             {
                 QCheckBox* pCheckbox = new QCheckBox;
                 pCheckbox->setCheckState(value.toBool() ? Qt::Checked : Qt::Unchecked);
@@ -68,8 +64,7 @@ namespace zenoui
                 });
                 return pCheckbox;
             }
-            case CONTROL_READPATH:
-            case CONTROL_WRITEPATH:
+            case zeno::Pathedit:
             {
                 ZPathEdit *pathLineEdit = new ZPathEdit(cbSet.cbSwitch,value.toString());
                 pathLineEdit->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
@@ -80,7 +75,7 @@ namespace zenoui
                 });
                 return pathLineEdit;
             }
-            case CONTROL_MULTILINE_STRING:
+            case zeno::Multiline:
             {
                 ZTextEdit* pTextEdit = new ZTextEdit;
                 pTextEdit->setFrameShape(QFrame::NoFrame);
@@ -116,7 +111,7 @@ namespace zenoui
             //    });
             //    return pythonEditor;
             //}
-            case CONTROL_COLOR:
+            case zeno::Heatmap:
             {
                 QPushButton* pBtn = new QPushButton("Edit Heatmap");
                 pBtn->setProperty("cssClass", "proppanel");
@@ -129,14 +124,14 @@ namespace zenoui
                 });
                 return pBtn;
             }
-            case CONTROL_PURE_COLOR:
-            case CONTROL_COLOR_VEC3F:
+            case zeno::Color:
+            case zeno::ColorVec:
             {
                 QColor currentColor;
-                if (ctrl == CONTROL_PURE_COLOR) {
+                if (ctrl == zeno::Color) {
                     currentColor = value.value<QColor>();
                 }
-                else if (ctrl == CONTROL_COLOR_VEC3F) {
+                else if (ctrl == zeno::ColorVec) {
                     auto colorVec = value.value<UI_VECTYPE>();
                     currentColor = QColor::fromRgbF(colorVec[0], colorVec[1], colorVec[2]);
                 }
@@ -148,10 +143,10 @@ namespace zenoui
                     if (color.isValid()) 
                     {
                         pBtn->setStyleSheet(QString("background-color:%1; border:0;").arg(color.name()));
-                        if (ctrl == CONTROL_PURE_COLOR) {
+                        if (ctrl == zeno::Color) {
                             cbSet.cbEditFinished(QVariant::fromValue(color));
                         }
-                        else if (ctrl == CONTROL_COLOR_VEC3F) {
+                        else if (ctrl == zeno::ColorVec) {
                             UI_VECTYPE colorVec(3);
                             color.getRgbF(&colorVec[0], &colorVec[1], &colorVec[2]);
                             cbSet.cbEditFinished(QVariant::fromValue<UI_VECTYPE>(colorVec));
@@ -160,29 +155,26 @@ namespace zenoui
                 });
                 return pBtn;
             }
-            case CONTROL_VEC2_FLOAT:
-            case CONTROL_VEC2_INT:
-            case CONTROL_VEC3_FLOAT:
-            case CONTROL_VEC3_INT:
-            case CONTROL_VEC4_FLOAT:
-            case CONTROL_VEC4_INT:
+            case zeno::Vec2edit:
+            case zeno::Vec3edit:
+            case zeno::Vec4edit:
             {
                 int dim = -1;
                 bool bFloat = false;
-                if (ctrl == CONTROL_VEC2_INT || ctrl == CONTROL_VEC2_FLOAT)
+                if (type == zeno::Param_Vec2i || type == zeno::Param_Vec2f)
                 {
                     dim = 2;
-                    bFloat = ctrl == CONTROL_VEC2_FLOAT;
+                    bFloat = type == zeno::Param_Vec2f;
                 }
-                else if (ctrl == CONTROL_VEC3_INT || ctrl == CONTROL_VEC3_FLOAT)
+                else if (type == zeno::Param_Vec3i || type == zeno::Param_Vec3f)
                 {
                     dim = 3;
-                    bFloat = ctrl == CONTROL_VEC3_FLOAT;
+                    bFloat = type == zeno::Param_Vec3f;
                 }
-                else if (ctrl == CONTROL_VEC4_INT || ctrl == CONTROL_VEC4_FLOAT)
+                else if (ctrl == zeno::Param_Vec4i || ctrl == zeno::Param_Vec4f)
                 {
                     dim = 4;
-                    bFloat = ctrl == CONTROL_VEC4_FLOAT;
+                    bFloat = type == zeno::Param_Vec4f;
                 }
 
                 ZVecEditor* pVecEdit = new ZVecEditor(value, bFloat, dim, "zeno2_2_lineedit");
@@ -193,7 +185,7 @@ namespace zenoui
                 });
                 return pVecEdit;
             }
-            case CONTROL_ENUM:
+            case zeno::Combobox:
             {
                 QStringList items;
                 if (properties.type() == QMetaType::QVariantMap)
@@ -219,7 +211,7 @@ namespace zenoui
                 });
                 return pComboBox;
             }
-            case CONTROL_CURVE:
+            case zeno::CurveEditor:
             {
                 QPushButton* pBtn = new QPushButton("Edit Curve");
                 pBtn->setProperty("cssClass", "proppanel");
@@ -240,7 +232,7 @@ namespace zenoui
                 });
                 return pBtn;
             }
-            case CONTROL_HSLIDER:
+            case zeno::Slider:
             {
                 QSlider* pSlider = new QSlider(Qt::Horizontal);
                 pSlider->setStyleSheet(ZenoStyle::dpiScaleSheet("\
@@ -297,7 +289,7 @@ namespace zenoui
                 });
                 return pSlider;
             }
-            case CONTROL_HSPINBOX:
+            case zeno::SpinBox:
             {
                 QSpinBox* pSpinBox = new QSpinBox;
                 pSpinBox->setProperty("cssClass", "control");
@@ -320,7 +312,7 @@ namespace zenoui
 				});
                 return pSpinBox;
             }
-            case CONTROL_HDOUBLESPINBOX: {
+            case zeno::DoubleSpinBox: {
                 QDoubleSpinBox *pSpinBox = new QDoubleSpinBox;
                 pSpinBox->setProperty("cssClass", "control");
                 pSpinBox->setAlignment(Qt::AlignCenter);
@@ -342,7 +334,7 @@ namespace zenoui
                 });
                 return pSpinBox;
             }
-            case CONTROL_SPINBOX_SLIDER:
+            case zeno::SpinBoxSlider:
             {
                 ZSpinBoxSlider* pSlider = new ZSpinBoxSlider;
                 SLIDER_INFO sliderInfo;
@@ -362,65 +354,29 @@ namespace zenoui
                 });
                 return pSlider;
             }
-            case CONTROL_DICTPANEL:
-            {
-                QAbstractItemModel* pModel = QVariantPtr<QAbstractItemModel>::asPtr(value);
-                if (pModel)
-                {
-                    ZDictTableView* tableView = new ZDictTableView;
-                    tableView->setModel(pModel);
-                    QItemSelectionModel* pSelModel = tableView->selectionModel();
-                    QObject::connect(pSelModel, &QItemSelectionModel::selectionChanged, [=](const QItemSelection& selected, const QItemSelection& deselected) {
-                        auto lst = selected.indexes();
-                        if (lst.size() == 1)
-                        {
-                            QModelIndex selIdx = lst[0];
-                            if (selIdx.column() == 1)
-                            {
-                                PARAM_LINKS links = selIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
-                                if (!links.isEmpty())
-                                {
-                                    QModelIndex linkIdx = links[0];
-                                    QModelIndex outNodeIdx = linkIdx.data(ROLE_OUTNODE_IDX).toModelIndex();
-                                    if (cbSet.cbNodeSelected)
-                                        cbSet.cbNodeSelected(outNodeIdx);
-                                }
-                            }
-                        }
-                    });
-                    return tableView;
-                }
-                break;
-            }
             default:
                 return nullptr;
         }
         return nullptr;
     }
 
-    bool isMatchControl(PARAM_CONTROL ctrl, QWidget* pControl)
+    bool isMatchControl(zeno::ParamControl ctrl, QWidget* pControl)
     {
         if (!pControl)
             return false;
 
         switch (ctrl)
         {
-        case CONTROL_STRING:
-        case CONTROL_INT:
-        case CONTROL_FLOAT:    return qobject_cast<ZLineEdit*>(pControl) != nullptr;    //be careful type changed.
-        case CONTROL_READPATH:
-        case CONTROL_WRITEPATH: return qobject_cast<ZLineEdit*>(pControl) != nullptr;
-        case CONTROL_BOOL:    return qobject_cast<QCheckBox*>(pControl) != nullptr;
-        case CONTROL_VEC2_FLOAT:
-        case CONTROL_VEC2_INT:
-        case CONTROL_VEC3_FLOAT:
-        case CONTROL_VEC3_INT:
-        case CONTROL_VEC4_FLOAT:
-        case CONTROL_VEC4_INT:return qobject_cast<ZVecEditor*>(pControl) != nullptr;
-        case CONTROL_ENUM:    return qobject_cast<QComboBox*>(pControl) != nullptr;
-        case CONTROL_MULTILINE_STRING:    return qobject_cast<ZTextEdit*>(pControl) != nullptr;
-        case CONTROL_CURVE:
-        case CONTROL_COLOR:    return qobject_cast<QPushButton*>(pControl) != nullptr;
+        case zeno::Lineedit:    return qobject_cast<ZLineEdit*>(pControl) != nullptr;    //be careful type changed.
+        case zeno::Pathedit:    return qobject_cast<ZLineEdit*>(pControl) != nullptr;
+        case zeno::Checkbox:    return qobject_cast<QCheckBox*>(pControl) != nullptr;
+        case zeno::Vec2edit:
+        case zeno::Vec3edit:
+        case zeno::Vec4edit:    return qobject_cast<ZVecEditor*>(pControl) != nullptr;
+        case zeno::Combobox:    return qobject_cast<QComboBox*>(pControl) != nullptr;
+        case zeno::Multiline:   return qobject_cast<ZTextEdit*>(pControl) != nullptr;
+        case zeno::CurveEditor: //only support a button to emit dialog of curve
+        case zeno::Color:       return qobject_cast<QPushButton*>(pControl) != nullptr;
         }
     }
 

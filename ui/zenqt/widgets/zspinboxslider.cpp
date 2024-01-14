@@ -1,6 +1,6 @@
 #include "zspinboxslider.h"
 #include "style/zenostyle.h"
-#include <zenomodel/include/uihelper.h>
+#include "util/uihelper.h"
 #include "zassert.h"
 
 

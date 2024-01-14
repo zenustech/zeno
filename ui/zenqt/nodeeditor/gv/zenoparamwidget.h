@@ -2,18 +2,19 @@
 #define __ZENO_PARAM_WIDGET_H__
 
 #include <QtWidgets>
-#include <zenomodel/include/modelrole.h>
-#include <zenomodel/include/modeldata.h>
-#include "../../nodesys/nodesys_common.h"
+#include "uicommon.h"
+#include "nodeeditor/gv/nodesys_common.h"
 #include "zenosocketitem.h"
 #include "zgraphicstextitem.h"
-#include <zenoui/comctrl/zcombobox.h>
-#include <zenoui/comctrl/zveceditor.h>
-#include <zenoui/comctrl/zcheckboxbar.h>
-#include <zenoui/comctrl/zcheckbox.h>
-#include <zenoui/comctrl/zlineedit.h>
-#include <zenoui/comctrl/znumslider.h>
-#include <zenoui/comctrl/zspinboxslider.h>
+#include "control/renderparam.h"
+#include <zeno/core/data.h>
+#include "widgets/zcombobox.h"
+#include "widgets/zveceditor.h"
+#include "widgets/zcheckboxbar.h"
+#include "widgets/zlineedit.h"
+#include "widgets/znumslider.h"
+#include "widgets/zspinboxslider.h"
+#include "nodeeditor/gv/zenosvgitem.h"
 
 
 class ZenoTextLayoutItem;
@@ -67,7 +68,7 @@ class ZenoParamLineEdit : public ZenoParamWidget
 {
     Q_OBJECT
 public:
-    ZenoParamLineEdit(const QString &text, PARAM_CONTROL ctrl, LineEditParam param, QGraphicsItem *parent = nullptr);
+    ZenoParamLineEdit(const QString &text, zeno::ParamControl ctrl, LineEditParam param, QGraphicsItem *parent = nullptr);
     QString text() const;
     void setText(const QString& text);
     void setValidator(const QValidator* pValidator);
@@ -95,7 +96,7 @@ class ZenoParamPathEdit : public ZEditableTextItem
 public:
     ZenoParamPathEdit(
         const QString& path,
-        PARAM_CONTROL ctrl,
+        zeno::ParamControl ctrl,
         LineEditParam param,
         Callback_GetZsgDir cbGetZsg,
         QGraphicsItem *parent = nullptr);
@@ -111,7 +112,7 @@ private:
     QRectF buttonArea();
 
 private:
-    PARAM_CONTROL m_control;
+    zeno::ParamControl m_control;
     const Callback_GetZsgDir m_cbGetZsg;
 };
 
@@ -462,13 +463,9 @@ signals:
 protected:
     ZenoImageItem* m_minMute;
     ZenoImageItem* m_minView;
-    ZenoImageItem* m_minOnce;
-    ZenoImageItem* m_minCache;
 
     ZenoImageItem* m_mute;
     ZenoImageItem* m_view;
-    ZenoImageItem* m_once;
-    ZenoImageItem* m_cache;
 };
 
 class ZenoMinStatusBtnWidget : public QGraphicsLayoutItem, public ZenoMinStatusBtnItem

@@ -1,7 +1,8 @@
 #include "ztfutil.h"
-#include "common_id.h"
+#include "control/common_id.h"
 #include <stdexcept>
-#include <zenoui/style/zenostyle.h>
+#include "style/zenostyle.h"
+
 
 ZtfUtil& ZtfUtil::GetInstance()
 {

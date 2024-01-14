@@ -2,7 +2,7 @@
 #define __ZMENUBUTTON_H__
 
 #include "ztoolbutton.h"
-#include "../style/zstyleoption.h"
+#include "style/zstyleoption.h"
 #include "zpopupwidget.h"
 
 class ZMenuButton : public ZToolButton

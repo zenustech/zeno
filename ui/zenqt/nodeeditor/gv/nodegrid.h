@@ -3,7 +3,7 @@
 
 #include <QtWidgets>
 #include <QtSvg/QGraphicsSvgItem>
-#include <render/common_id.h>
+#include "control/common_id.h"
 
 class NodeGridItem;
 

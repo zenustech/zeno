@@ -1,7 +1,7 @@
 #include <QtWidgets>
 #include "curvescalaritem.h"
 #include "curvemapview.h"
-#include <zenomodel/include/curveutil.h>
+#include "util/curveutil.h"
 
 
 CurveSliderItem::CurveSliderItem(CurveScalarItem *parent)

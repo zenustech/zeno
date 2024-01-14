@@ -37,6 +37,7 @@ public:
     void clearMark();
     QGraphicsItem* getNode(const QString& id);
     void collectNodeSelChanged(const QString& ident, bool bSelected);
+    GraphModel* getGraphModel() const;
 
     // FIXME temp function for merge
     void selectObjViaNodes();
@@ -54,9 +55,9 @@ protected:
 public slots:
     void onZoomed(qreal factor);
 
-    void onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, int role);
-    void onRowsAboutToBeRemoved(const QModelIndex& subgIdx, const QModelIndex &parent, int first, int last);
-    void onRowsInserted(const QModelIndex& subgIdx, const QModelIndex& parent, int first, int last);
+    void onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles = QVector<int>());
+    void onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last);
+    void onRowsInserted(const QModelIndex& parent, int first, int last);
     void onViewTransformChanged(qreal factor);
 
     void onLinkInserted(const QModelIndex&, int first, int last);

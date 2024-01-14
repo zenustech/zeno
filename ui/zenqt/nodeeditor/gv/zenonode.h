@@ -18,6 +18,7 @@
 class ZenoGraphsEditor;
 class ZenoSubGraphScene;
 class GroupNode;
+class ParamsModel;
 
 class ZenoNode : public ZLayoutBackground
 {
@@ -87,8 +88,8 @@ public slots:
     void onOptionsUpdated(int options);
     void onSocketLinkChanged(const QModelIndex& paramIdx, bool bInput, bool bAdded);
     void onNameUpdated(const QString& newName);
-    void onViewParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
-    void onViewParamInserted(const QModelIndex& parent, int first, int last);
+    void onParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
+    void onParamInserted(const QModelIndex& parent, int first, int last);
     void onViewParamAboutToBeRemoved(const QModelIndex& parent, int first, int last);
 
     void onViewParamAboutToBeMoved(const QModelIndex& parent, int start, int end, const QModelIndex& destination, int row);
@@ -113,8 +114,7 @@ protected:
     QPersistentModelIndex subGraphIndex() const;
     virtual ZLayoutBackground* initBodyWidget(ZenoSubGraphScene* pScene);
     virtual ZLayoutBackground* initHeaderWidget();
-    virtual ZGraphicsLayout* initSockets(QStandardItem* socketItems, QStandardItem* legacyItems, const bool bInput, ZenoSubGraphScene* pScene);
-    virtual ZGraphicsLayout* initParams(QStandardItem* paramItems, ZenoSubGraphScene* pScene);
+    virtual ZGraphicsLayout* initSockets(ParamsModel* pModel, const bool bInput, ZenoSubGraphScene* pScene);
     virtual ZGraphicsLayout* initCustomParamWidgets();
     virtual Callback_OnButtonClicked registerButtonCallback(const QModelIndex& paramIdx);
 
@@ -135,10 +135,8 @@ private:
 
     ZenoGraphsEditor* getEditorViewByViewport(QWidget* pWidget);
     QGraphicsItem* initSocketWidget(ZenoSubGraphScene* scene, const QModelIndex& paramIdx);
-    QGraphicsItem* initParamWidget(ZenoSubGraphScene* scene, const QModelIndex& paramIdx);
     void updateWhole();
     ZSocketLayout* addSocket(const QModelIndex& idx, bool bInput, ZenoSubGraphScene* pScene);
-    ZGraphicsLayout* addParam(const QModelIndex& idx, ZenoSubGraphScene* pScene);
     void onUpdateFrame(QGraphicsItem* pContrl, int nFrame, QVariant val);
     void onPasteSocketRefSlot(QModelIndex toIndex);
 
@@ -150,7 +148,7 @@ private:
 #endif
     QVector<ZSocketLayout*> m_inSockets;
 
-    FuckQMap<QString, _param_ctrl> m_params;
+    QKeyList<QString, _param_ctrl> m_params;
     QVector<ZSocketLayout*> m_outSockets;
 
     ZGraphicsTextItem* m_NameItem;

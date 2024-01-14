@@ -1,7 +1,7 @@
 #include "zmenubutton.h"
 
-#include "../style/zenostyle.h"
-#include "../style/zstyleoption.h"
+#include "style/zenostyle.h"
+#include "style/zstyleoption.h"
 
 
 ZMenuButton::ZMenuButton(ButtonOption option, const QIcon& icon, const QSize& iconSize, const QString& text, QWidget* parent)

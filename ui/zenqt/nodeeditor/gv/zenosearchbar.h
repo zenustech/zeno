@@ -1,15 +1,17 @@
 #ifndef __ZENO_SEARCHBAR_H__
 #define __ZENO_SEARCHBAR_H__
 
-#include <zenoui/nodesys/nodesys_common.h>
-#include <zenomodel/include/igraphsmodel.h>
+#include "nodeeditor/gv/nodesys_common.h"
+#include <QtWidgets>
+
+class GraphModel;
 
 class ZenoSearchBar : public QWidget
 {
 	Q_OBJECT
 
 public:
-    ZenoSearchBar(const QModelIndex& idx, QWidget *parentWidget = nullptr);
+    ZenoSearchBar(GraphModel* pModel, QWidget *parentWidget = nullptr);
 
 protected:
     void resizeEvent(QResizeEvent* event) override;
@@ -38,7 +40,7 @@ private:
     QVector<SEARCH_RECORD> m_records;
     QModelIndexList m_results;
     QLineEdit* m_pLineEdit;
-    QPersistentModelIndex m_index;
+    GraphModel* m_pGraphM;
     int m_idx;
 };
 

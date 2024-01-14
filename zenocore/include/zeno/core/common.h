@@ -61,7 +61,7 @@ namespace zeno {
         SubOutput,
         Node_Group,
         Node_Legacy,
-        SubgraphNode,
+        Node_SubgraphNode,
         NoVersionNode
     };
 
@@ -108,6 +108,8 @@ namespace zeno {
         DoubleSpinBox,
         SpinBoxSlider,
         PythonEditor,
+        PushButton,
+        Seperator,
     };
 
     enum LinkFunction

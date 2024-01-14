@@ -147,7 +147,7 @@ void GroupNode::updateClidItem(bool isAdd, const QString nodeId)
     else {
         return;
     }
-    IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();
+    IGraphsModel *pModel = zenoApp->graphsManager()->currentModel();
     ZASSERT_EXIT(pModel);
     pModel->updateBlackboard(index().data(ROLE_OBJID).toString(), QVariant::fromValue(info), subGraphIndex(), false);
     */
@@ -302,7 +302,7 @@ ZLayoutBackground *GroupNode::initBodyWidget(ZenoSubGraphScene *pScene) {
     return new ZLayoutBackground(this);
 }
 
-ZLayoutBackground *GroupNode::initHeaderWidget(IGraphsModel*)
+ZLayoutBackground *GroupNode::initHeaderWidget()
 {
     return new ZLayoutBackground(this);    
 }
@@ -456,7 +456,7 @@ void GroupNode::updateBlackboard() {
     BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
     info.sz = this->size();
     info.title = m_pTextItem->text();
-    IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();
+    IGraphsModel *pModel = zenoApp->graphsManager()->currentModel();
     ZASSERT_EXIT(pModel);
     pModel->updateBlackboard(index().data(ROLE_OBJID).toString(), QVariant::fromValue(info), subGraphIndex(), true);
     */

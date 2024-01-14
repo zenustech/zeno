@@ -46,11 +46,7 @@ std::optional<NodeLocation> NodeSyncMgr::generateNewNode(NodeLocation& node_loca
         inSock.toStdString(),
         ""};
 
-    QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(nodeIdx.model());
-    if (GraphModel* pGraphM = qobject_cast<GraphModel*>(pModel)) {
-        pGraphM->addLink(edge);
-    }
-
+    pGraphM->addLink(edge);
     return searchNode(new_node_id.toStdString());
 }
 

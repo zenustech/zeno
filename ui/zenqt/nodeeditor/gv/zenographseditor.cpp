@@ -681,6 +681,12 @@ void ZenoGraphsEditor::onPageActivated(const QPersistentModelIndex& subgIdx, con
     activateTab(subgName);
 }
 
+void ZenoGraphsEditor::onPageActivated(const QModelIndex& subgNodeIdx)
+{
+    const QString& objPath = subgNodeIdx.data(ROLE_OBJPATH).toString();
+    activateTab2(objPath);
+}
+
 void ZenoGraphsEditor::onLogInserted(const QModelIndex& parent, int first, int last)
 {
     //TODO: no need to update by log inserted.

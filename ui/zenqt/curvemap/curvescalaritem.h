@@ -1,10 +1,9 @@
 #ifndef __CURVE_SCALER_ITEM_H__
 #define __CURVE_SCALER_ITEM_H__
 
-#include <zenomodel/include/modeldata.h>
+#include "uicommon.h"
 
 class CurveMapView;
-
 class CurveScalarItem;
 
 class CurveSliderItem : public QGraphicsObject

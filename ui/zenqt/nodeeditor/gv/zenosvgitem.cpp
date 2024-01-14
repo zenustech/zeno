@@ -1,5 +1,7 @@
 #include "zenosvgitem.h"
 #include <QSvgRenderer>
+#include <QGraphicsSceneMouseEvent>
+#include "control/renderparam.h"
 
 
 ZenoSvgItem::ZenoSvgItem(QGraphicsItem *parent)

@@ -11,7 +11,7 @@ struct ParamItem
 {
     bool bInput = true;
     QString name;
-    QString type;
+    QString type;   //zeno::ParamType
     zeno::ParamControl control = zeno::NullControl;
     QList<QPersistentModelIndex> links;
 };

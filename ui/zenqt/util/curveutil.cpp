@@ -1,6 +1,7 @@
 #include "curveutil.h"
 #include "model/curvemodel.h"
 
+
 namespace curve_util
 {
     QRectF fitInRange(CURVE_RANGE rg, const QMargins& margins)

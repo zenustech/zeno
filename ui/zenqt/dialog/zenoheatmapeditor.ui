@@ -876,19 +876,19 @@ QSlider::handle:horizontal {
   <customwidget>
    <class>ZenoColorsSlider</class>
    <extends>QSlider</extends>
-   <header>zenoui/comctrl/zenocolorslider.h</header>
+   <header>widgets/zenocolorslider.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>ZenoRampBar</class>
-   <extends>QGraphicsView</extends>
-   <header>zenoui/comctrl/dialog/zenoheatmapeditor.h</header>
+   <extends>QGzraphicsView</extends>
+   <header>dialog/zenoheatmapeditor.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>SVColorView</class>
    <extends>QWidget</extends>
-   <header>zenoui/comctrl/dialog/zenoheatmapeditor.h</header>
+   <header>dialog/zenoheatmapeditor.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

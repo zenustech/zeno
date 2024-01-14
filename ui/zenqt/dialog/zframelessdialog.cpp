@@ -1,5 +1,6 @@
 #include "zframelessdialog.h"
-#include <zenoui/style/zenostyle.h>
+#include "style/zenostyle.h"
+
 
 ZFramelessDialog::ZFramelessDialog(QWidget* parent) : QDialog(parent)
 {

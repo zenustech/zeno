@@ -10,7 +10,7 @@ class ZenoGvHelper
 public:
     static void setSizeInfo(QGraphicsItem* item, const SizeInfo& sz);
     static QSizeF sizehintByPolicy(QGraphicsItem* item);
-    static void setValue(QGraphicsItem* item, zeno::ParamControl ctrl, const QVariant& value, QGraphicsScene* pScene);
+    static void setValue(QGraphicsItem* item, zeno::ParamType type, const QVariant& value, QGraphicsScene* pScene);
     static void setCtrlProperties(QGraphicsItem *item,  const QVariant &value);
 };
 

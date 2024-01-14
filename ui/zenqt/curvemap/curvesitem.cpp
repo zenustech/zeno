@@ -2,8 +2,8 @@
 #include "curvenodeitem.h"
 #include "curvemapview.h"
 #include "curvesitem.h"
-#include <zenomodel/include/curvemodel.h>
-#include <zenomodel/include/uihelper.h>
+#include "model/curvemodel.h"
+#include "util/uihelper.h"
 #include "zassert.h"
 
 
@@ -39,24 +39,24 @@ void CurvesItem::initCurves(CurveModel* model)
         QPointF scenePos = m_grid->logicToScene(logicPos);
         QPointF leftScenePos = m_grid->logicToScene(logicPos + left);
         QPointF rightScenePos = m_grid->logicToScene(logicPos + right);
-		QPointF leftOffset = leftScenePos - scenePos;
-		QPointF rightOffset = rightScenePos - scenePos;
+        QPointF leftOffset = leftScenePos - scenePos;
+        QPointF rightOffset = rightScenePos - scenePos;
 
-		CurveNodeItem* pNodeItem = new CurveNodeItem(idx, m_view, scenePos, m_grid, this);
-		pNodeItem->initHandles(leftOffset, rightOffset);
-		connect(pNodeItem, SIGNAL(geometryChanged()), this, SLOT(onNodeGeometryChanged()));
+        CurveNodeItem* pNodeItem = new CurveNodeItem(idx, m_view, scenePos, m_grid, this);
+        pNodeItem->initHandles(leftOffset, rightOffset);
+        connect(pNodeItem, SIGNAL(geometryChanged()), this, SLOT(onNodeGeometryChanged()));
         connect(pNodeItem, SIGNAL(deleteTriggered()), this, SLOT(onNodeDeleted()));
 
-		if (r == 0)
-		{
+        if (r == 0)
+        {
             m_vecNodes.append(pNodeItem);
-			continue;
-		}
+            continue;
+        }
 
-		CurvePathItem* pathItem = new CurvePathItem(m_color, this);
+        CurvePathItem* pathItem = new CurvePathItem(m_color, this);
         connect(pathItem, SIGNAL(clicked(const QPointF&)), this, SLOT(onPathClicked(const QPointF&)));
 
-		QPainterPath path;
+        QPainterPath path;
 
         idx = m_model->index(r - 1, 0);
         logicPos = m_model->data(idx, ROLE_NODEPOS).toPointF();

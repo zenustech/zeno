@@ -3,7 +3,7 @@
 #include "zenopyapi.h"
 #include <QtWidgets>
 #include "zenoapplication.h"
-#include <zenomodel/include/graphsmanagment.h>
+#include "model/graphsmanager.h"
 #include <zenomodel/include/enum.h>
 #include <zenomodel/include/nodesmgr.h>
 #include "nodesview/zenographseditor.h"
@@ -22,7 +22,7 @@ zeno_getGraph(PyObject* self, PyObject* args)
     }
 
     QString graphName = QString::fromUtf8(name);
-    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    IGraphsModel* pModel = zenoApp->graphsManager()->currentModel();
     if (!pModel)
     {
         PyErr_SetString(PyExc_Exception, "Current Model is NULL");
@@ -59,7 +59,7 @@ zeno_createGraph(PyObject* self, PyObject* args)
     }
 
     QString graphName = QString::fromUtf8(name);
-    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    IGraphsModel* pModel = zenoApp->graphsManager()->currentModel();
     if (!pModel)
     {
         PyErr_SetString(PyExc_Exception, "Current Model is NULL");
@@ -99,7 +99,7 @@ zeno_removeGraph(PyObject* self, PyObject* args)
     }
 
     QString graphName = QString::fromUtf8(name);
-    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    IGraphsModel* pModel = zenoApp->graphsManager()->currentModel();
     if (!pModel)
     {
         PyErr_SetString(PyExc_Exception, "Current Model is NULL");
@@ -205,7 +205,7 @@ zeno_forkMaterial(PyObject* self, PyObject* args)
         return Py_None;
     }
 
-    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    IGraphsModel* pGraphsModel = zenoApp->graphsManager()->currentModel();
     ZASSERT_EXIT(pGraphsModel, Py_None);
     ZenoMainWindow* pWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(pWin, Py_None);

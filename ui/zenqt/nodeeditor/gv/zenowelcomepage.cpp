@@ -1,11 +1,11 @@
 #include "ui_welcomepage.h"
 #include "zenowelcomepage.h"
 #include <QtWidgets>
-#include <zenoui/comctrl/zlabel.h>
+#include "widgets/zlabel.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
 #include "settings/zsettings.h"
-#include <zenoui/style/zenostyle.h>
+#include "style/zenostyle.h"
 #include <QtSvg/QSvgWidget>
 #include "startup/zstartup.h"
 

@@ -10,7 +10,7 @@ namespace zenoui
     QWidget* createWidget(
         const QVariant& value,
         zeno::ParamControl ctrl,
-        const QString& type,
+        const zeno::ParamType type,
         CallbackCollection cbSet,
         const QVariant& properties = QVariant()
     );

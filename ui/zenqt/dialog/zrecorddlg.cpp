@@ -6,6 +6,8 @@
 #include "zeno/utils/UserData.h"
 #include "zassert.h"
 #include "settings/zsettings.h"
+#include "zenoapplication.h"
+#include "model/graphsmanager.h"
 
 
 ZRecordVideoDlg::ZRecordVideoDlg(QWidget* parent)
@@ -14,7 +16,7 @@ ZRecordVideoDlg::ZRecordVideoDlg(QWidget* parent)
     m_ui = new Ui::RecordVideoDlg;
     m_ui->setupUi(this);
 
-    const RECORD_SETTING& info = zenoApp->graphsManagment()->recordSettings();
+    const RECORD_SETTING& info = zenoApp->graphsManager()->recordSettings();
     m_ui->fps->setValidator(new QIntValidator);
     m_ui->fps->setText(QString::number(info.fps));
     m_ui->bitrate->setValidator(new QIntValidator);
@@ -125,7 +127,7 @@ bool ZRecordVideoDlg::getInfo(VideoRecInfo &info)
     record_settings.bAov = m_ui->cbAOV->checkState() == Qt::Checked;
     record_settings.bExr = info.bExportEXR;
 
-    zenoApp->graphsManagment()->setRecordSettings(record_settings);
+    //zenoApp->graphsManager()->setRecordSettings(record_settings);
 
     return true;
 }

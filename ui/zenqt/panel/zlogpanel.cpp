@@ -1,14 +1,14 @@
 #include "ui_zlogpanel.h"
 #include "zlogpanel.h"
 #include "zenoapplication.h"
-#include <zenomodel/include/igraphsmodel.h>
-#include <zenomodel/include/modelrole.h>
-#include <zenomodel/include/uihelper.h>
-#include <zenomodel/include/graphsmanagment.h>
-#include <zenoui/style/zenostyle.h>
-#include <zenoui/comctrl/ztoolbutton.h>
+#include "uicommon.h"
+#include "util/uihelper.h"
+#include "zassert.h"
+#include "model/graphsmanager.h"
+#include "style/zenostyle.h"
+#include "widgets/ztoolbutton.h"
 #include "zenomainwindow.h"
-#include "nodesview/zenographseditor.h"
+#include "nodeeditor/gv/zenographseditor.h"
 #include "settings/zenosettingsmanager.h"
 
 
@@ -236,23 +236,34 @@ bool LogItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* model, cons
         }
         else {
             if (rg.length > 0) {
+                // TODO: how to design location on node editor.
+#if 0
                 QString ident = text.mid(rg.start, rg.length);
-                auto graphsMgm = zenoApp->graphsManagment();
+                auto graphsMgm = zenoApp->graphsManager();
                 ZASSERT_EXIT(graphsMgm, false);
-                IGraphsModel* pModel = graphsMgm->currentModel();
+                auto pModel = graphsMgm->currentModel();
                 ZASSERT_EXIT(pModel, false);
                 QModelIndex idx = pModel->nodeIndex(ident);
                 if (idx.isValid())
                 {
-                    QModelIndex subgIdx = idx.data(ROLE_SUBGRAPH_IDX).toModelIndex();
-                    const QString& subgName = subgIdx.data(ROLE_OBJNAME).toString();
+                    const QString& objPath = idx.data(ROLE_OBJPATH).toString();
                     ZenoMainWindow* pWin = zenoApp->getMainWindow();
-                    ZASSERT_EXIT(pWin, false);
                     ZenoGraphsEditor* pEditor = pWin->getAnyEditor();
                     if (pEditor) {
+                        pEditor->activateTab2(objPath);
+                    }
+
+                    QModelIndex subgIdx = idx.data(ROLE_SUBGRAPH_IDX).toModelIndex();
+                    const QString& subgName = subgIdx.data(ROLE_OBJNAME).toString();
+                    
+                    ZASSERT_EXIT(pWin, false);
+                    
+                    if (pEditor) {
+                        pEditor->activateTab2();
                         pEditor->activateTab(subgName, "", ident, false);
                     }
                 }
+#endif
             }
         }
         m_view->update(index);

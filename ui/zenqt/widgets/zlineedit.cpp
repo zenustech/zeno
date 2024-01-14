@@ -2,8 +2,8 @@
 #include "znumslider.h"
 #include "style/zenostyle.h"
 #include <QSvgRenderer>
-#include "./dialog/curvemap/zcurvemapeditor.h"
-#include <zenomodel/include/uihelper.h>
+#include "curvemap/zcurvemapeditor.h"
+#include "util/uihelper.h"
 
 ZLineEdit::ZLineEdit(QWidget* parent)
     : QLineEdit(parent)

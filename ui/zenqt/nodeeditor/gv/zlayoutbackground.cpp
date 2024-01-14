@@ -1,8 +1,7 @@
 #include "zlayoutbackground.h"
-#include "../../style/zenostyle.h"
+#include "style/zenostyle.h"
 #include <QtWidgets>
-#include <zenomodel/include/uihelper.h>
-
+#include "util/uihelper.h"
 
 
 ///////////////////////////////////////////////////////////////////////////

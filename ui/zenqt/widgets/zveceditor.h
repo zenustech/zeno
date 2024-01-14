@@ -2,7 +2,7 @@
 #define __ZVEC_EDITOR_H__
 
 #include <QtWidgets>
-#include <zenomodel/include/modeldata.h>
+#include "uicommon.h"
 
 class ZLineEdit;
 

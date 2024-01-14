@@ -1,8 +1,8 @@
 #include "zveceditoritem.h"
-#include <zenomodel/include/uihelper.h>
-#include <zenomodel/include/modeldata.h>
-#include "../../style/zenostyle.h"
-#include <zenomodel/include/curveutil.h>
+#include "util/uihelper.h"
+#include "util/curveutil.h"
+#include "style/zenostyle.h"
+#include <zeno/utils/log.h>
 
 
 ZVecEditorItem::ZVecEditorItem(const QVariant& vec, bool bFloat, LineEditParam param, QGraphicsScene* pScene, QGraphicsItem* parent, Qt::WindowFlags wFlags)
@@ -43,7 +43,7 @@ void ZVecEditorItem::initUI(const QVariant& vec, bool bFloat, QGraphicsScene* pS
         pLineEdit->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(64, 24)));
         pLineEdit->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
 
-        pLineEdit->setNumSlider(pScene, UiHelper::getSlideStep("", bFloat ? CONTROL_FLOAT : CONTROL_INT));
+        pLineEdit->setNumSlider(pScene, UiHelper::getSlideStep("", bFloat ? zeno::Param_Float : zeno::Param_Int));
         m_editors.append(pLineEdit);
         connect(pLineEdit, SIGNAL(editingFinished()), this, SIGNAL(editingFinished()));
 

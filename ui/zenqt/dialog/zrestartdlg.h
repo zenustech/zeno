@@ -6,7 +6,7 @@ namespace Ui
     class ZRestartDlg;
 }
 
-#include "zenoui/comctrl/dialog/zframelessdialog.h"
+#include "dialog/zframelessdialog.h"
 
 class ZRestartDlg : public ZFramelessDialog
 {

@@ -3,7 +3,7 @@
 
 #include <QtWidgets>
 #include "uicommon.h"
-#include <zenoui/comctrl/gv/callbackdef.h>
+#include "nodeeditor/gv/callbackdef.h"
 
 class IGraphsModel;
 

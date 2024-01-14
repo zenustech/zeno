@@ -1,10 +1,10 @@
 #include "zenocommandparamspanel.h"
 #include "zenoapplication.h"
-#include <zenomodel/include/graphsmanagment.h>
-#include <zenoui/comctrl/zwidgetfactory.h>
-#include <zenomodel/include/jsonhelper.h>
-#include <zenomodel/include/uihelper.h>
-#include "nodesview/zenographseditor.h"
+#include "model/graphsmanager.h"
+#include "widgets/zwidgetfactory.h"
+#include "util/jsonhelper.h"
+#include "util/uihelper.h"
+#include "nodeeditor/gv/zenographseditor.h"
 #include "zenomainwindow.h"
 
 
@@ -25,7 +25,7 @@ void ZenoCommandParamsPanel::keyPressEvent(QKeyEvent* event)
             const QModelIndexList lst = pSelectionModel->selectedRows();
             for (const auto& index : lst)
             {
-                auto graphsMgm = zenoApp->graphsManagment();
+                auto graphsMgm = zenoApp->graphsManager();
                 ZASSERT_EXIT(graphsMgm);
                 IGraphsModel* pModel = graphsMgm->currentModel();
                 ZASSERT_EXIT(pModel);
@@ -70,12 +70,12 @@ void ZenoCommandParamsPanel::initConnection()
     connect(m_pTableWidget, &QTableWidget::itemDoubleClicked, this, &ZenoCommandParamsPanel::onItemClicked);
     connect(m_pTableWidget, &QTableWidget::itemChanged, this, &ZenoCommandParamsPanel::onItemChanged);
     connect(m_pExportButton, &QPushButton::clicked, this, &ZenoCommandParamsPanel::onExport);
-    connect(zenoApp->graphsManagment(), &GraphsManagment::modelInited, this, &ZenoCommandParamsPanel::onModelInited);
+    connect(zenoApp->graphsManager(), &GraphsManagment::modelInited, this, &ZenoCommandParamsPanel::onModelInited);
 }
 
 void ZenoCommandParamsPanel::appendRow(const QString& path, const CommandParam& val)
 {
-    auto graphsMgm = zenoApp->graphsManagment();
+    auto graphsMgm = zenoApp->graphsManager();
     ZASSERT_EXIT(graphsMgm);
     IGraphsModel* pModel = graphsMgm->currentModel();
     ZASSERT_EXIT(pModel);
@@ -109,7 +109,7 @@ void ZenoCommandParamsPanel::appendRow(const QString& path, const CommandParam& 
 
 void ZenoCommandParamsPanel::initTableWidget()
 {
-    auto graphsMgm = zenoApp->graphsManagment();
+    auto graphsMgm = zenoApp->graphsManager();
     ZASSERT_EXIT(graphsMgm);
     IGraphsModel* pModel = graphsMgm->currentModel();
     ZASSERT_EXIT(pModel);
@@ -130,7 +130,7 @@ void ZenoCommandParamsPanel::onExport()
     rapidjson::StringBuffer s;
     RAPIDJSON_WRITER writer(s);
     writer.StartObject();
-    auto graphsMgm = zenoApp->graphsManagment();
+    auto graphsMgm = zenoApp->graphsManager();
     ZASSERT_EXIT(graphsMgm);
     IGraphsModel* pModel = graphsMgm->currentModel();
     ZASSERT_EXIT(pModel);
@@ -166,7 +166,7 @@ void ZenoCommandParamsPanel::onItemClicked(QTableWidgetItem* item)
     if (item->column() != 2)
         return;
     const QString& path = item->data(Qt::DisplayRole).toString();
-    auto graphsMgm = zenoApp->graphsManagment();
+    auto graphsMgm = zenoApp->graphsManager();
     ZASSERT_EXIT(graphsMgm);
     IGraphsModel* pModel = graphsMgm->currentModel();
     ZASSERT_EXIT(pModel);
@@ -197,7 +197,7 @@ void ZenoCommandParamsPanel::onItemChanged(QTableWidgetItem* item)
     if (!pLinkItem)
         return;
     const QString& path = pLinkItem->data(Qt::DisplayRole).toString();
-    auto graphsMgm = zenoApp->graphsManagment();
+    auto graphsMgm = zenoApp->graphsManager();
     ZASSERT_EXIT(graphsMgm);
     IGraphsModel* pModel = graphsMgm->currentModel();
     ZASSERT_EXIT(pModel);
@@ -214,7 +214,7 @@ void ZenoCommandParamsPanel::onItemChanged(QTableWidgetItem* item)
 
 void ZenoCommandParamsPanel::onUpdateCommandParams(const QString& path)
 {
-    auto graphsMgm = zenoApp->graphsManagment();
+    auto graphsMgm = zenoApp->graphsManager();
     ZASSERT_EXIT(graphsMgm);
     IGraphsModel* pModel = graphsMgm->currentModel();
     ZASSERT_EXIT(pModel);
@@ -246,7 +246,7 @@ void ZenoCommandParamsPanel::onModelClear()
 void ZenoCommandParamsPanel::onModelInited()
 {
     onModelClear();
-    auto graphsMgm = zenoApp->graphsManagment();
+    auto graphsMgm = zenoApp->graphsManager();
     if (!graphsMgm)
         return;
     IGraphsModel* pModel = graphsMgm->currentModel();

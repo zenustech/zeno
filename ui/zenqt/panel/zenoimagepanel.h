@@ -6,7 +6,7 @@
 #define ZENO_ZENOIMAGEPANEL_H
 
 #include <QtWidgets>
-#include <zenoui/comctrl/zcombobox.h>
+#include "widgets/zcombobox.h"
 
 class ZenoImageView: public QGraphicsView {
     Q_OBJECT

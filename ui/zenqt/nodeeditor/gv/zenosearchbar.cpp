@@ -1,15 +1,17 @@
 #include "zenosearchbar.h"
-#include <zenoui/comctrl/ziconbutton.h>
-#include <zenomodel/include/modelrole.h>
-#include <zenoui/style/zenostyle.h>
+#include <widgets/ziconbutton.h>
+#include "uicommon.h"
+#include "style/zenostyle.h"
 #include "zenoapplication.h"
-#include <zenomodel/include/graphsmanagment.h>
+#include "model/graphsmanager.h"
+#include "model/GraphModel.h"
+#include "zassert.h"
 
 
-ZenoSearchBar::ZenoSearchBar(const QModelIndex& idx, QWidget *parentWidget)
+ZenoSearchBar::ZenoSearchBar(GraphModel* pModel, QWidget *parentWidget)
     : QWidget(parentWidget)
     , m_idx(0)
-    , m_index(idx)
+    , m_pGraphM(pModel)
 {
     setWindowFlag(Qt::SubWindow);
     setWindowFlag(Qt::FramelessWindowHint);
@@ -73,9 +75,14 @@ void ZenoSearchBar::onSearchExec(const QString& content)
     if (content.isEmpty()) {
         return;
     }
-    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
 
-    m_results = pGraphsModel->searchInSubgraph(content, m_index);
+    ZASSERT_EXIT(m_pGraphM);
+    QList<SEARCH_RESULT> results = m_pGraphM->search(content, SEARCH_ARGS | SEARCH_NODECLS | SEARCH_NODEID | SEARCH_CUSTOM_NAME, SEARCH_FUZZ);
+
+    for (auto res : results)
+    {
+        m_results.append(res.targetIdx);
+    }
     if (!m_results.isEmpty())
     {
         m_idx = 0;

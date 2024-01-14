@@ -1,7 +1,6 @@
 #include "apphelper.h"
 #include "util/log.h"
-#include "common_def.h"
-#include "common.h"
+#include "uicommon.h"
 #include "../startup/zstartup.h"
 #include "variantptr.h"
 #include "viewport/displaywidget.h"

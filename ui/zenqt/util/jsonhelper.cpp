@@ -1,6 +1,6 @@
 #include "jsonhelper.h"
 #include "variantptr.h"
-#include "curvemodel.h"
+#include "model/curvemodel.h"
 #include "zeno/utils/logger.h"
 #include <zeno/funcs/ParseObjectFromUi.h>
 #include "uihelper.h"
@@ -50,7 +50,7 @@ namespace JsonHelper
         writer.EndArray();
     }
 
-    bool importControl(const rapidjson::Value& controlObj, PARAM_CONTROL& ctrl, QVariant& props)
+    bool importControl(const rapidjson::Value& controlObj, zeno::ParamControl& ctrl, QVariant& props)
     {
         if (!controlObj.IsObject())
             return false;
@@ -79,12 +79,12 @@ namespace JsonHelper
         return true;
     }
 
-    void dumpControl(PARAM_CONTROL ctrl, const QVariant& props, RAPIDJSON_WRITER& writer)
+    void dumpControl(zeno::ParamType type, zeno::ParamControl ctrl, const QVariant& props, RAPIDJSON_WRITER& writer)
     {
         writer.StartObject();
 
         writer.Key("name");
-        QString controlDesc = UiHelper::getControlDesc(ctrl);
+        QString controlDesc = UiHelper::getControlDesc(ctrl, type);
         writer.String(controlDesc.toUtf8());
 
         QVariantMap ctrlProps = props.toMap();
@@ -596,64 +596,5 @@ namespace JsonHelper
                 writer.Bool(bLockY);
             }
         }
-    }
-
-    QVariant importDescriptor(const rapidjson::Value &value, const QString &socketName, int type, QObject *parentRef) 
-    {
-        QVariant var;
-        QString socketType;
-        if (value.HasMember("type")) 
-        {
-            socketType = value["type"].GetString();
-        }
-        QVariant defaultValue;
-        if (value.HasMember("default-value")) 
-        {
-            if (!value["default-value"].IsNull()) 
-            {
-                defaultValue = UiHelper::parseJsonByType(socketType, value["default-value"], parentRef);
-            }
-        }
-        PARAM_CONTROL ctrl = CONTROL_NONE;
-        QVariant props;
-        if (value.HasMember("control")) 
-        {
-            JsonHelper::importControl(value["control"], ctrl, props);
-        }
-        if (!socketName.isEmpty()) 
-        {
-            if (type == PARAM_INPUT) 
-            {
-                INPUT_SOCKET inputSocket;
-                inputSocket.info = SOCKET_INFO("", socketName);
-                inputSocket.info.type = socketType;
-                inputSocket.info.control = ctrl;
-                inputSocket.info.ctrlProps = props.toMap();
-                inputSocket.info.defaultValue = defaultValue;
-                var = QVariant::fromValue(inputSocket);
-            } 
-            else if (type == PARAM_PARAM) 
-            {
-                PARAM_INFO paramInfo;
-                paramInfo.bEnableConnect = false;
-                paramInfo.control = ctrl;
-                paramInfo.controlProps = props.toMap();
-                paramInfo.name = socketName;
-                paramInfo.typeDesc = socketType;
-                paramInfo.defaultValue = defaultValue;
-                var = QVariant::fromValue(paramInfo);
-            }
-            else if (type == PARAM_OUTPUT) 
-            {
-                OUTPUT_SOCKET outputSocket;
-                outputSocket.info = SOCKET_INFO("", socketName);
-                outputSocket.info.type = socketType;
-                outputSocket.info.control = ctrl;
-                outputSocket.info.ctrlProps = props.toMap();
-                outputSocket.info.defaultValue = defaultValue;
-                var = QVariant::fromValue(outputSocket);
-            } 
-        }
-        return var;
     }
 }

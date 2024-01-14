@@ -2,7 +2,7 @@
 #define __ZCOMBOBOX_H__
 
 #include <QComboBox>
-#include "../style/zstyleoption.h"
+#include "style/zstyleoption.h"
 
 class ZComboBox : public QComboBox
 {

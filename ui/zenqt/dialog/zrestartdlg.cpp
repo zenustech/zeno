@@ -1,9 +1,10 @@
 ﻿#include "zrestartdlg.h"
 #include "ui_zrestartdlg.h"
-#include "updaterequest/zsinstance.h"
+#include "setup/zsinstance.h"
 #include "startup/zstartup.h"
 #include <zeno/utils/logger.h>
-#include <zenoui/style/zenostyle.h>
+#include "style/zenostyle.h"
+
 
 ZRestartDlg::ZRestartDlg(QWidget* parent)
     : ZFramelessDialog(parent)

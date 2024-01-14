@@ -77,6 +77,19 @@ struct APP_SETTINGS
     //todo: other settings.
 };
 
+enum SearchType : unsigned int
+{
+    SEARCH_SUBNET,
+    SEARCH_NODECLS,
+    SEARCH_NODEID,
+    SEARCH_ANNO,
+    SEARCH_ARGS,
+    SEARCH_CUSTOM_NAME,
+    SEARCHALL = SEARCH_NODECLS | SEARCH_NODEID | SEARCH_SUBNET | SEARCH_ANNO | SEARCH_ARGS | SEARCH_CUSTOM_NAME
+};
+ENUM_FLAGS(SearchType)
+
+/*
 enum SearchType
 {
     SEARCH_SUBNET = 1 << 0,
@@ -87,13 +100,15 @@ enum SearchType
     SEARCH_CUSTOM_NAME = 1 << 5, 
     SEARCHALL = SEARCH_NODECLS | SEARCH_NODEID | SEARCH_SUBNET | SEARCH_ANNO | SEARCH_ARGS | SEARCH_CUSTOM_NAME
 };
+*/
 
-enum SearchOpt
+enum SearchOpt : unsigned int
 {
-    SEARCH_FUZZ = 1 << 0,
-    SEARCH_MATCH_EXACTLY = 1 << 1,
-    SEARCH_CASE_SENSITIVE= 1 << 2,
+    SEARCH_FUZZ,
+    SEARCH_MATCH_EXACTLY,
+    SEARCH_CASE_SENSITIVE,
 };
+ENUM_FLAGS(SearchOpt)
 
 enum SUBGRAPH_TYPE
 {
@@ -125,12 +140,18 @@ enum MODEL_ROLE {
     ROLE_CUSTOM_OBJNAME,
     ROLE_PARAMS,        //paramsmodel
     ROLE_SUBGRAPH,
+    ROLE_PARAM_VALUE,
     ROLE_PARAM_TYPE,
     ROLE_PARAM_CONTROL,
     ROLE_PARAM_SOCKPROP,
+    ROLE_PARAM_CTRL_PROPERTIES,
+    ROLE_PARAM_TOOLTIP,
+    ROLE_VPARAM_TYPE,
+    ROLE_PANEL_PARAMS,  //custom param ui with layout.
     ROLE_ISINPUT,
     ROLE_LINKS,
     ROLE_OBJPOS,
+    ROLE_OBJPATH,
     ROLE_COLLASPED,
     ROLE_INPUTS,
     ROLE_OUTPUTS,
@@ -160,6 +181,17 @@ enum LOG_ROLE
     ROLE_NODE_IDENT,
     ROLE_RANGE_START,
     ROLE_RANGE_LEN
+};
+
+enum VPARAM_TYPE
+{
+    VPARAM_ROOT,
+    VPARAM_TAB,
+    VPARAM_GROUP,
+    VPARAM_INPUTS,
+    VPARAM_PARAMETERS,
+    VPARAM_OUTPUTS,
+    VPARAM_PARAM,
 };
 
 struct SOCKET_DESCRIPTOR
@@ -192,6 +224,8 @@ Q_DECLARE_METATYPE(zeno::EdgeInfo)
 
 typedef QList<QPersistentModelIndex> PARAM_LINKS;
 Q_DECLARE_METATYPE(PARAM_LINKS)
+
+Q_DECLARE_METATYPE(QLinearGradient)
 
 struct SEARCH_RESULT
 {
@@ -389,6 +423,18 @@ struct SLIDER_INFO {
     SLIDER_INFO() : step(1.), min(0.), max(100.) {}
 };
 Q_DECLARE_METATYPE(SLIDER_INFO)
+
+struct CommandParam
+{
+    QString name;
+    QString description;
+    QVariant value;
+    bool bIsCommand = false;
+    bool operator==(const CommandParam& rhs) const {
+        return name == rhs.name && description == rhs.description && value == rhs.value;
+    }
+};
+Q_DECLARE_METATYPE(CommandParam)
 
 typedef QVariantMap CONTROL_PROPERTIES;
 

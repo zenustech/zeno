@@ -2,11 +2,10 @@
 #define __DISPLAY_WIDGET_H__
 
 #include <QtWidgets>
-#include "common.h"
+#include "uicommon.h"
 #include "recordvideomgr.h"
-#include "viewportinteraction/picker.h"
-#include "launch/corelaunch.h"
-#include "dock/docktabcontent.h"
+#include "viewport/picker.h"
+#include "layout/docktabcontent.h"
 #include "layout/winlayoutrw.h"
 
 class ViewportWidget;

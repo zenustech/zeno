@@ -2,7 +2,9 @@
 #define __ZENO_BACKGROUND_ITEM_H__
 
 #include <QtWidgets>
-#include <zenoui/nodesys/zenosvgitem.h>
+#include "control/renderparam.h"
+
+class ZenoImageItem;
 
 class ZenoBackgroundItem : public QGraphicsObject
 {

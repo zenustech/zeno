@@ -2,7 +2,7 @@
 #define __ZGRAPHICS_NETLABEL_H__
 
 #include "zgraphicstextitem.h"
-#include "../../nodesys/nodesys_common.h"
+#include "nodeeditor/gv/nodesys_common.h"
 
 class ZGraphicsNetLabel : public ZGraphicsTextItem
 {

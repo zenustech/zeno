@@ -1,12 +1,12 @@
 #include "zpreferencesdlg.h"
-#include <zenoui/style/zenostyle.h>
-#include <zenoui/comctrl/zpathedit.h>
+#include "style/zenostyle.h"
+#include "widgets/zpathedit.h"
 #include "settings/zenosettingsmanager.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
 #include "startup/zstartup.h"
 #include "zshortcutsettingdlg.h"
-#include <zenoui/comctrl/zlabel.h>
+#include "widgets/zlabel.h"
 
 //Language Pane
 ZLanguagePane::ZLanguagePane(QWidget* parent)

@@ -59,7 +59,7 @@ sys.stderr = catchOutErr\n\
     PyObject* pModule = PyImport_AddModule("__main__"); //create main module
     PyRun_SimpleString(stdOutErr.c_str()); //invoke code to redirect
 
-    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    IGraphsModel* pModel = zenoApp->graphsManager()->currentModel();
     QModelIndex subgIdx = pModel->index("main");
     QModelIndex scriptIdx = pModel->paramIndex(subgIdx, index(), "script", true);
     ZASSERT_EXIT(scriptIdx.isValid());

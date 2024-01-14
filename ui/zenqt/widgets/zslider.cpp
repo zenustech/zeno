@@ -1,6 +1,6 @@
 #include "zslider.h"
-#include <zenoui/style/zenostyle.h>
-#include <zenoedit/zenoapplication.h>
+#include "style/zenostyle.h"
+#include "zenoapplication.h"
 #include <zeno/core/Session.h>
 #include <zeno/extra/GlobalComm.h>
 #include "zassert.h"

@@ -5,26 +5,26 @@
 
 class GroupTextItem : public QGraphicsWidget {
     Q_OBJECT
-  public:
+public:
     GroupTextItem(QGraphicsItem *parent = nullptr);
     ~GroupTextItem();
     void setText(const QString &text);
     QString text() const;
 
-  signals:
+signals:
     void mousePressSignal(QGraphicsSceneMouseEvent *event);
     void mouseMoveSignal(QGraphicsSceneMouseEvent *event);
     void mouseReleaseSignal(QGraphicsSceneMouseEvent *event);
     void textChangedSignal(const QString &text);
 
-  protected: 
+protected: 
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event) override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
 
-  private:
+private:
     QString m_text;
     ZEditableTextItem* m_pLineEdit;
 };
@@ -32,7 +32,7 @@ class GroupTextItem : public QGraphicsWidget {
 
 class GroupNode : public ZenoNode {
     Q_OBJECT
-  public:
+public:
     GroupNode(const NodeUtilParam &params, QGraphicsItem *parent = nullptr);
     ~GroupNode();
     bool nodePosChanged(ZenoNode *);
@@ -47,9 +47,9 @@ class GroupNode : public ZenoNode {
     void updateBlackboard();
     void setSelected(bool selected) override;
 
-  protected:
+protected:
     ZLayoutBackground *initBodyWidget(ZenoSubGraphScene *pScene) override;
-    ZLayoutBackground *initHeaderWidget(IGraphsModel*) override;
+    ZLayoutBackground *initHeaderWidget() override;
 
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
@@ -57,7 +57,8 @@ class GroupNode : public ZenoNode {
     void hoverMoveEvent(QGraphicsSceneHoverEvent *event) override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
     QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
-  private:
+
+private:
     bool isDragArea(QPointF pos);
     void updateClidItem(bool isAdd, const QString nodeId);
     void setSvgData(QString color);
@@ -72,7 +73,7 @@ class GroupNode : public ZenoNode {
     	bottomLeft = 0x02 | 0x04,
     	bottomRight = 0x02 | 0x08
     } resizeDir;
-  private:
+
     bool m_bDragging;
     bool m_bSelected;
     QVector<ZenoNode *> m_childItems;

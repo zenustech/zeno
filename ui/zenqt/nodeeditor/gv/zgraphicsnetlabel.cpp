@@ -1,6 +1,5 @@
 #include "zgraphicsnetlabel.h"
 #include "zenosocketitem.h"
-#include <zenomodel/include/modelrole.h>
 
 
 ZGraphicsNetLabel::ZGraphicsNetLabel(bool bInput, const QString& text, QGraphicsItem* parent)
@@ -224,7 +223,8 @@ void ZGraphicsNetLabel::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
     menu->addAction(pDelete);
 
     auto idx = paramIdx();
-    if (idx.isValid() && PARAM_OUTPUT == idx.data(ROLE_PARAM_CLASS)) {
+    bool bInput = idx.data(ROLE_ISINPUT).toBool();
+    if (idx.isValid() && !bInput) {
         QAction* pEdit = new QAction(tr("Edit Net Label"));
         connect(pEdit, &QAction::triggered, this, [=]() {
             SetTextInteraction(true);

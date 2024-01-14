@@ -46,6 +46,7 @@ public slots:
     void onSubnetOptionClicked();
     void onSearchOptionClicked();
     void onPageActivated(const QPersistentModelIndex& subgIdx, const QPersistentModelIndex& nodeIdx);
+    void onPageActivated(const QModelIndex& subgNodeIdx);
     void onLogInserted(const QModelIndex& parent, int first, int last);
     void onSubnetListPanel(bool bShow, SideBarItem item);
     void onAction(QAction* pAction, const QVariantList& args = QVariantList(), bool bChecked = false);

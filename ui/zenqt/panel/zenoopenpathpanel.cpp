@@ -1,5 +1,5 @@
 #include "zenoopenpathpanel.h"
-#include <zenoui/style/zenostyle.h>
+
 
 ZenoOpenPathPanel::ZenoOpenPathPanel(QWidget* parent)
     : QWidget(parent)

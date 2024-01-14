@@ -27,7 +27,6 @@ public:
     NodeItem(QObject* parent) : QObject(parent) {}
 };
 
-//为什么不base StandardModel，是因为StandardItem本身还得挂载一个模型，有点冗余，干脆自己实现一个图treemodel.
 class GraphModel : public QAbstractListModel
 {
     Q_OBJECT
@@ -60,13 +59,20 @@ public:
     bool removeRows(int row, int count, const QModelIndex& parent = QModelIndex()) override;
     QHash<int, QByteArray> roleNames() const override;
 
-    //NodesModel:
+    //GraphModel:
     zeno::NodeData createNode(const QString& nodeCls, const QPointF& pos);
     void appendNode(QString ident, QString name, const QPointF& pos);   //TO DEPRECATED
     void appendSubgraphNode(QString ident, QString name, NODE_DESCRIPTOR desc, GraphModel* subgraph, const QPointF& pos);
     void removeNode(QString ident);
     void addLink(QPair<QString, QString> fromParam, QPair<QString, QString> toParam);
     void addLink(const zeno::EdgeInfo& link);
+    QList<SEARCH_RESULT> search(const QString& content, SearchType searchType, SearchOpt searchOpts) const;
+    //QModelIndex index(const QString& ident) const;
+    QModelIndex indexFromIdent(const QString& ident) const;
+    void undo();
+    void redo();
+    void beginTransaction(const QString& name);
+    void endTransaction();
 
     //test functions:
     void updateParamName(QModelIndex nodeIdx, int row, QString newName);
@@ -74,6 +80,10 @@ public:
     void removeLink(int row);
     ParamsModel* params(QModelIndex nodeIdx);
     GraphModel* subgraph(QModelIndex nodeIdx);
+
+signals:
+    void reloaded();
+    void clearLayout();
 
 private:
     QModelIndex nodeIdx(const QString& ident) const;

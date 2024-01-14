@@ -60,6 +60,11 @@ void AssetsModel::addAsset(const zeno::GraphData& graph)
     //todo
 }
 
+void AssetsModel::removeAsset(const QString& assetName)
+{
+    //todo
+}
+
 QModelIndexList AssetsModel::match(const QModelIndex& start, int role,
     const QVariant& value, int hits,
     Qt::MatchFlags flags) const

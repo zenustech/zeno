@@ -1,21 +1,21 @@
 #include "zenosubgraphscene.h"
-#include <zenomodel/include/graphsmanagment.h>
+#include "uicommon.h"
+#include "model/graphsmanager.h"
 #include "zenosubgraphview.h"
 #include "zenosearchbar.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
 #include "zenonode.h"
 #include "zenonewmenu.h"
-#include <zenoui/comctrl/zlabel.h>
-#include <zenoui/comctrl/ziconbutton.h>
-#include <zenoui/comctrl/gv/zgraphicstextitem.h>
-#include "common_def.h"
+#include "widgets/zlabel.h"
+#include "widgets/ziconbutton.h"
+#include "nodeeditor/gv/zgraphicstextitem.h"
 #include <zeno/utils/cppdemangle.h>
 #include "viewport/zenovis.h"
 #include "viewport/viewportwidget.h"
 #include "viewport/displaywidget.h"
 #include "util/log.h"
-#include <zenomodel/include/uihelper.h>
+#include "util/uihelper.h"
 #include "settings/zenosettingsmanager.h"
 #include "groupnode.h"
 #include "viewport/cameracontrol.h"
@@ -147,7 +147,7 @@ void _ZenoSubGraphView::find()
 {
     if (m_pSearcher == nullptr)
     {
-        m_pSearcher = new ZenoSearchBar(m_scene->subGraphIndex(), this);
+        m_pSearcher = new ZenoSearchBar(m_scene->getGraphModel(), this);
         connect(m_pSearcher, SIGNAL(searchReached(SEARCH_RECORD)), this, SLOT(onSearchResult(SEARCH_RECORD)));
 
         QAction* findNext = new QAction("Find Next", this);
@@ -660,15 +660,17 @@ void ZenoSubGraphView::resetPath(const QString& path, const QString& objId, bool
         m_pathWidget->show();
         m_pathWidget->setPath(path);
     }
+    /*
     if (!subGraphName.isEmpty() && !objId.isEmpty())
     {
-        IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+        IGraphsModel* pModel = zenoApp->graphsManager()->currentModel();
         QModelIndex subgIdx = pModel->index(subGraphName);
         QModelIndex objIdx = pModel->index(objId, subgIdx);
         ZASSERT_EXIT(objIdx.isValid());
         QPointF pos = objIdx.data(ROLE_OBJPOS).toPointF();
         m_view->focusOn(objId, pos, isError);
     }
+    */
 }
 
 void ZenoSubGraphView::setZoom(const qreal& scale)

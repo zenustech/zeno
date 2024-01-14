@@ -1,14 +1,14 @@
 #include "zgraphicstextitem.h"
 #include "zenosocketitem.h"
-#include "render/common_id.h"
-#include <zenomodel/include/modelrole.h>
+#include "uicommon.h"
 #include "zassert.h"
-#include <zenoui/style/zenostyle.h>
+#include "style/zenostyle.h"
 #include "zgraphicsnumslideritem.h"
 #include <zeno/utils/scope_exit.h>
-#include <zenomodel/include/curvemodel.h>
-#include <zenomodel/include/curveutil.h>
-#include <zenomodel/include/uihelper.h>
+#include "model/curvemodel.h"
+#include "util/curveutil.h"
+#include "util/uihelper.h"
+#include "control/renderparam.h"
 
 
 qreal editor_factor = 1.0;
@@ -367,7 +367,7 @@ QVariant ZSocketPlainTextItem::itemChange(GraphicsItemChange change, const QVari
 
 void ZSocketPlainTextItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* pItem, QWidget* pWidget)
 {
-    bool bMarked = m_viewSockIdx.data(ROLE_VPARAM_COMMAND).toBool();
+    bool bMarked = false;//? m_viewSockIdx.data(ROLE_VPARAM_COMMAND).toBool();
     if (bMarked)
     {
         setBrush(QColor("#599EED"));

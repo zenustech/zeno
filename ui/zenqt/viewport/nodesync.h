@@ -1,13 +1,15 @@
 #ifndef VIEWPORT_NODESYNC_H
 #define VIEWPORT_NODESYNC_H
-#include "zenoapplication.h"
 
-#include <zenomodel/include/nodesmgr.h>
-#include <zenomodel/include/graphsmanagment.h>
-#include <zenomodel/include/curveutil.h>
+#include "zenoapplication.h"
+#include "model/graphsmanager.h"
+#include "util/curveutil.h"
 #include <optional>
 #include <unordered_map>
-#include "timeline/ztimeline.h"
+#include "widgets/ztimeline.h"
+#include "zassert.h"
+
+
 namespace zeno {
 struct NodeLocation{
     QModelIndex node;
@@ -98,26 +100,27 @@ class NodeSyncMgr {
     void updateNodeInputVec(NodeLocation& node_location,
                             const std::string& input_name,
                             const QVector<T>& new_value) {
-        auto graph_model = zenoApp->graphsManagment()->currentModel();
+        auto graph_model = zenoApp->graphsManager()->currentModel();
         if (!graph_model) {
             return;
         }
 
         auto node_id = node_location.node.data(ROLE_OBJID).toString();
-        auto inputs = node_location.node.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-        QVariant old_value = inputs[input_name.c_str()].info.defaultValue;
+        auto inputs = node_location.node.data(ROLE_INPUTS).value<PARAMS_INFO>();
+        //TODO: zvariant to qvariant.
+        QVariant old_value;// = inputs[input_name.c_str()].defl;
         QVariant value;
         if (!getNewValue<T>(old_value, new_value, value))
             return;
-        PARAM_UPDATE_INFO update_info{
-            input_name.c_str(),
-            old_value,
-            value
-        };
-        graph_model->updateSocketDefl(node_id,
-                                      update_info,
-                                      node_location.subgraph,
-                                      true);
+        //PARAM_UPDATE_INFO update_info{
+        //    input_name.c_str(),
+        //    old_value,
+        //    value
+        //};
+        //graph_model->updateSocketDefl(node_id,
+        //                              update_info,
+        //                              node_location.subgraph,
+        //                              true);
     }
     void updateNodeInputString(NodeLocation node_location,
                                const std::string& input_name,

@@ -6,9 +6,9 @@
 #include <zenovis/DrawOptions.h>
 #include <zeno/extra/GlobalComm.h>
 #include "settings/zenosettingsmanager.h"
-#include "launch/corelaunch.h"
 #include <zeno/core/Session.h>
 #include <zenovis/Camera.h>
+#include <zeno/utils/log.h>
 
 
 ZOptixProcViewport::ZOptixProcViewport(QWidget* parent)

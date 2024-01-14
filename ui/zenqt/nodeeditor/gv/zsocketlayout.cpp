@@ -4,17 +4,15 @@
 #include "zgraphicstextitem.h"
 #include "zassert.h"
 #include "style/zenostyle.h"
-#include <zenomodel/include/modelrole.h>
-#include <zenomodel/include/igraphsmodel.h>
 #include "zdictpanel.h"
 #include "variantptr.h"
-#include "render/common_id.h"
-#include <zenoui/comctrl/gv/zenoparamwidget.h>
+#include "control/common_id.h"
+#include "nodeeditor/gv/zenoparamwidget.h"
 #include "zitemfactory.h"
+#include "util/uihelper.h"
 
 
 ZSocketLayout::ZSocketLayout(
-        IGraphsModel* pModel,
         const QPersistentModelIndex& viewSockIdx,
         bool bInput
     )
@@ -26,6 +24,8 @@ ZSocketLayout::ZSocketLayout(
     , m_bEditable(false)
     , m_viewSockIdx(viewSockIdx)
 {
+    //TODO: deprecated or refactor.
+#if 0
     QObject::connect(pModel, &IGraphsModel::updateCommandParamSignal, [=](const QString& path) {
         if (!m_text)
             return;
@@ -34,13 +34,14 @@ ZSocketLayout::ZSocketLayout(
             return;
         m_text->update();
     });
+#endif
 }
 
 ZSocketLayout::~ZSocketLayout()
 {
 }
 
-void ZSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cbSock)
+void ZSocketLayout::initUI(const CallbackForSocket& cbSock)
 {
     QString sockName;
     QString toolTip;
@@ -53,13 +54,13 @@ void ZSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cbSock
     }
     else
     {
-        sockName = m_viewSockIdx.data(ROLE_VPARAM_NAME).toString();
+        sockName = m_viewSockIdx.data(ROLE_OBJNAME).toString();
         sockProp = m_viewSockIdx.data(ROLE_PARAM_SOCKPROP).toInt();
         m_bEditable = sockProp & SOCKPROP_EDITABLE;
-        toolTip = m_viewSockIdx.data(ROLE_VPARAM_TOOLTIP).toString();
+        toolTip = m_viewSockIdx.data(ROLE_PARAM_TOOLTIP).toString();
 
         QModelIndex nodeIdx = m_viewSockIdx.data(ROLE_NODE_IDX).toModelIndex();
-        if (nodeIdx.data(ROLE_NODETYPE) != NO_VERSION_NODE &&
+        if (nodeIdx.data(ROLE_NODETYPE) != zeno::NoVersionNode &&
             SOCKPROP_LEGACY != m_viewSockIdx.data(ROLE_PARAM_SOCKPROP))
         {
             bEnableNode = true;
@@ -91,7 +92,7 @@ void ZSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cbSock
     if (m_bEditable && bEnableNode)
     {
         Callback_EditContentsChange cbFuncRenameSock = [=](QString oldText, QString newText) {
-            pModel->ModelSetData(m_viewSockIdx, newText, ROLE_PARAM_NAME);
+            UiHelper::qIndexSetData(m_viewSockIdx, newText, ROLE_OBJNAME);
         };
         ZSocketEditableItem *pItem = new ZSocketEditableItem(m_viewSockIdx, sockName, m_bInput, cbSock.cbOnSockClicked, cbFuncRenameSock);
         setSpacing(ZenoStyle::dpiScaled(32));
@@ -165,7 +166,7 @@ QPointF ZSocketLayout::getSocketPos(const QModelIndex& sockIdx, bool& exist)
 
 ZenoSocketItem* ZSocketLayout::socketItemByIdx(const QModelIndex& sockIdx) const
 {
-    if (m_viewSockIdx == sockIdx || m_viewSockIdx.data(ROLE_PARAM_COREIDX).toModelIndex() == sockIdx)
+    if (m_viewSockIdx == sockIdx/*|| m_viewSockIdx.data(ROLE_PARAM_COREIDX).toModelIndex() == sockIdx*/)
     {
         return m_socket;
     }
@@ -179,8 +180,7 @@ QPersistentModelIndex ZSocketLayout::viewSocketIdx() const
 
 void ZSocketLayout::setVisible(bool bVisible) 
 {
-    const QString& netLabel = m_viewSockIdx.data(ROLE_PARAM_NETLABEL).toString();
-    if (netLabel.isEmpty() && m_socket->sockStatus() != ZenoSocketItem::STATUS_CONNECTED && m_control) {
+    if (m_socket->sockStatus() != ZenoSocketItem::STATUS_CONNECTED && m_control) {
         m_control->setVisible(bVisible);
     }
     if (m_text) {
@@ -213,11 +213,10 @@ void ZSocketLayout::updateSockNameToolTip(const QString &tip)
 
 ////////////////////////////////////////////////////////////////////////////////////
 ZDictSocketLayout::ZDictSocketLayout(
-        IGraphsModel* pModel,
         const QPersistentModelIndex& viewSockIdx,
         bool bInput
     )
-    : ZSocketLayout(pModel, viewSockIdx, bInput)
+    : ZSocketLayout(viewSockIdx, bInput)
     , m_panel(nullptr)
 {
 }
@@ -226,13 +225,13 @@ ZDictSocketLayout::~ZDictSocketLayout()
 {
 }
 
-void ZDictSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cbSock)
+void ZDictSocketLayout::initUI(const CallbackForSocket& cbSock)
 {
     setHorizontal(false);
 
-    PARAM_CLASS sockCls = (PARAM_CLASS)m_viewSockIdx.data(ROLE_PARAM_CLASS).toInt();
-    bool bInput = sockCls == PARAM_INPUT || sockCls == PARAM_INNER_INPUT;
-    const QString& sockName = m_viewSockIdx.data(ROLE_VPARAM_NAME).toString();
+    bool bInput = m_viewSockIdx.data(ROLE_ISINPUT).toBool();
+    //TODO: refactor about zdict panel layout.
+    const QString& sockName = m_viewSockIdx.data(ROLE_OBJNAME).toString();
 
     QSizeF szSocket(10, 20);
     m_socket = new ZenoSocketItem(m_viewSockIdx, ZenoStyle::dpiScaledSize(szSocket));
@@ -254,7 +253,7 @@ void ZDictSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cb
     });
 
     m_text = new ZSocketPlainTextItem(m_viewSockIdx, sockName, m_bInput, cbSock.cbOnSockClicked);
-    m_text->setToolTip(m_viewSockIdx.data(ROLE_VPARAM_TOOLTIP).toString());
+    m_text->setToolTip(m_viewSockIdx.data(ROLE_PARAM_TOOLTIP).toString());
     m_text->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, zenoui::g_ctrlHeight)));
     m_text->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed));
 
@@ -262,7 +261,7 @@ void ZDictSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cb
     m_collaspeBtn = new ZenoImageItem(":/icons/ic_parameter_fold.svg", ":/icons/ic_parameter_fold.svg", ":/icons/ic_parameter_unfold.svg", iconSz);
     m_collaspeBtn->setCheckable(true);
 
-    m_panel = new ZDictPanel(this, m_viewSockIdx, cbSock, pModel);
+    m_panel = new ZDictPanel(this, m_viewSockIdx, cbSock);
 
     ZGraphicsLayout *pHLayout = new ZGraphicsLayout(true);
     pHLayout->setDebugName("dict socket");
@@ -287,6 +286,7 @@ void ZDictSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cb
 
     setSpacing(ZenoStyle::dpiScaled(5));
 
+#if 0
     QAbstractItemModel *dictkeyModel = QVariantPtr<QAbstractItemModel>::asPtr(m_viewSockIdx.data(ROLE_VPARAM_LINK_MODEL));
     ZASSERT_EXIT(dictkeyModel);
     bool bCollasped = dictkeyModel->data(QModelIndex(), ROLE_COLLASPED).toBool();
@@ -303,7 +303,8 @@ void ZDictSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cb
         ZGraphicsLayout::updateHierarchy(pHLayout);
         if (cbSock.cbOnSockLayoutChanged)
             cbSock.cbOnSockLayoutChanged();
-    });
+        })
+#endif
 }
 
 void ZDictSocketLayout::setCollasped(bool bCollasped)
@@ -315,12 +316,14 @@ void ZDictSocketLayout::setVisible(bool bVisible)
 {
     m_text->setVisible(bVisible);
     m_collaspeBtn->setVisible(bVisible);
+#if 0
     QAbstractItemModel *dictkeyModel = QVariantPtr<QAbstractItemModel>::asPtr(m_viewSockIdx.data(ROLE_VPARAM_LINK_MODEL));
     ZASSERT_EXIT(dictkeyModel);
     bool bCollasped = dictkeyModel->data(QModelIndex(), ROLE_COLLASPED).toBool();
     if (!bCollasped) {
         m_panel->setVisible(bVisible);
     }
+#endif
 }
 
 ZenoSocketItem* ZDictSocketLayout::socketItemByIdx(const QModelIndex& sockIdx) const
@@ -360,20 +363,20 @@ QPointF ZDictSocketLayout::getSocketPos(const QModelIndex& sockIdx, bool& exist)
     return QPointF();
 }
 
-ZGroupSocketLayout::ZGroupSocketLayout(IGraphsModel *pModel, const QPersistentModelIndex &viewSockIdx, bool bInput) :
-    ZSocketLayout(pModel, viewSockIdx, bInput)
+
+ZGroupSocketLayout::ZGroupSocketLayout(const QPersistentModelIndex &viewSockIdx, bool bInput) :
+    ZSocketLayout(viewSockIdx, bInput)
 {
 }
 
 ZGroupSocketLayout::~ZGroupSocketLayout() {
 }
 
-void ZGroupSocketLayout::initUI(IGraphsModel *pModel, const CallbackForSocket &cbSock) 
+void ZGroupSocketLayout::initUI(const CallbackForSocket &cbSock) 
 {
     setContentsMargin(0, ZenoStyle::dpiScaled(6), 0, 0);
-    PARAM_CLASS sockCls = (PARAM_CLASS)m_viewSockIdx.data(ROLE_PARAM_CLASS).toInt();
-    bool bInput = sockCls == PARAM_INPUT || sockCls == PARAM_INNER_INPUT;
-    const QString &name = m_viewSockIdx.data(ROLE_VPARAM_NAME).toString();
+    bool bInput = m_viewSockIdx.data(ROLE_ISINPUT).toBool();
+    const QString &name = m_viewSockIdx.data(ROLE_OBJNAME).toString();
 
     m_pGroupLine = new ZenoParamGroupLine(name);
     m_pGroupLine->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 32)));

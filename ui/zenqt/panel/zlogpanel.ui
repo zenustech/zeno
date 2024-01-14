@@ -172,13 +172,13 @@
   <customwidget>
    <class>ZPlainLine</class>
    <extends>QWidget</extends>
-   <header>zenoui/comctrl/zlinewidget.h</header>
+   <header>widgets/zlinewidget.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>ZToolButton</class>
    <extends>QWidget</extends>
-   <header>zenoui/comctrl/ztoolbutton.h</header>
+   <header>widgets/ztoolbutton.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

@@ -2,8 +2,8 @@
 #define __ZENO_LINK_H__
 
 #include <QtWidgets>
-#include <zenoui/nodesys/nodesys_common.h>
-#include <zenomodel/include/modeldata.h>
+//#include "uicommon.h"
+#include "nodeeditor/gv/nodesys_common.h"
 
 class ZenoSubGraphScene;
 class ZenoSocketItem;
@@ -67,7 +67,6 @@ private:
 
     QString m_nodeId;
     QPointF m_floatingPos;
-    SOCKET_INFO m_info;
     QPointF m_fixedPos;
     ZenoSocketItem* m_adsortedSocket;
     ZenoSocketItem* m_fixedSocket;

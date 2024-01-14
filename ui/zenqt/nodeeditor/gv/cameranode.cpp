@@ -66,7 +66,7 @@ void CameraNode::onEditClicked()
 
     const QString& nodeid = this->nodeId();
 
-    //IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    //IGraphsModel* pModel = zenoApp->graphsManager()->currentModel();
     //ZASSERT_EXIT(pModel);
 
     ZenoMainWindow *pWin = zenoApp->getMainWindow();

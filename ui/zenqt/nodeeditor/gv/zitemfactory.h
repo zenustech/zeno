@@ -3,13 +3,14 @@
 
 #include "zenoparamwidget.h"
 #include "callbackdef.h"
+#include <zeno/core/data.h>
 
 namespace zenoui
 {
     QGraphicsItem* createItemWidget(
         const QVariant& value,
-        PARAM_CONTROL ctrl,
-        const QString& type,
+        zeno::ParamControl ctrl,
+        zeno::ParamType type,
         CallbackCollection cbSet,
         QGraphicsScene* scene,
         const QVariant& controlProps

@@ -7,7 +7,7 @@ namespace Ui
 }
 
 #include <QDialog>
-#include "../viewport/recordvideomgr.h"
+#include "viewport/recordvideomgr.h"
 
 class ZRecordProgressDlg : public QDialog
 {

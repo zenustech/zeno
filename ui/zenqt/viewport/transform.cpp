@@ -431,12 +431,12 @@ void FakeTransformer::endTransform(bool moved) {
         //TODO:
 #if 0
         zeno::scope_exit sp([] {
-            IGraphsModel *pGraphs = zenoApp->graphsManagment()->currentModel();
+            IGraphsModel *pGraphs = zenoApp->graphsManager()->currentModel();
             if (pGraphs)
                 pGraphs->setApiRunningEnable(true);
         });
         //only update nodes.
-        IGraphsModel *pGraphs = zenoApp->graphsManagment()->currentModel();
+        IGraphsModel *pGraphs = zenoApp->graphsManager()->currentModel();
         ZASSERT_EXIT(pGraphs);
         pGraphs->setApiRunningEnable(false);
 #endif
