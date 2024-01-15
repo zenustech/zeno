@@ -395,6 +395,7 @@ struct UniformRemeshing : INode {
         prim->verts.erase_attr("curv_max");
         prim->verts.erase_attr("curv_gaussian");
         prim->verts.update();
+        prim->lines.clear();
         zeno::log_info("after remeshing: verts num = {}, face num = {}", prim->verts.size(), prim->tris.size());
 
         set_output("prim", std::move(prim));
@@ -507,6 +508,7 @@ struct AdaptiveRemeshing : INode {
         prim->verts.erase_attr("curv_max");
         prim->verts.erase_attr("curv_gaussian");
         prim->verts.update();
+        prim->lines.clear();
         zeno::log_info("after remeshing: verts num = {}, face num = {}", prim->verts.size(), prim->tris.size());
 
         set_output("prim", std::move(prim));
