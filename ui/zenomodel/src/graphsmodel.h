@@ -104,6 +104,7 @@ public:
 
     QModelIndex extractSubGraph(const QModelIndexList& nodes, const QModelIndexList& links, const QModelIndex& fromSubg, const QString& toSubg, bool enableTrans = false) override;
     bool IsSubGraphNode(const QModelIndex& nodeIdx) const override;
+    bool IsDeprecatedhNode(const QModelIndex& nodeIdx) override;
 
 	NODE_DATA itemData(const QModelIndex& index, const QModelIndex& subGpIdx) const override;
 	void setName(const QString& name, const QModelIndex& subGpIdx) override;
@@ -147,6 +148,7 @@ public:
     bool isApiRunningEnable() const override;
     bool setCustomName(const QModelIndex &subgIdx, const QModelIndex &Idx, const QString &value) const override;
     void markNodeDataChanged(const QModelIndex& idx, bool recursively = true) override;
+    void markNodeDataUnchanged(const QModelIndex& idx) override;
     void markNotDescNode() override;
     bool hasNotDescNode() const override;
     void clearNodeDataChanged() override;

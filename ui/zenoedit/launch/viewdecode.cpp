@@ -164,6 +164,11 @@ struct PacketProc {
             }
             AppHelper::markLastDirtyNodesDirty(true);
 
+        } else if (action == "nodeFinished") {
+            QString ident = QString::fromStdString(objKey);
+            IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+            QModelIndex& idx = pModel->nodeIndex(ident);
+            pModel->markNodeDataUnchanged(idx);
         } else {
             zeno::log_warn("unknown packet action type {}", action);
             return false;

@@ -259,7 +259,6 @@ void launchProgram(IGraphsModel* pModel, LAUNCH_PARAM param)
     f.close();
 #endif
     launchProgramJSON(std::move(progJson), param);
-    pModel->clearNodeDataChanged();
 }
 
 void killProgram() {

@@ -1348,6 +1348,15 @@ bool GraphsModel::IsSubGraphNode(const QModelIndex& nodeIdx) const
     return subGraph(nodeName) != nullptr;
 }
 
+bool GraphsModel::IsDeprecatedhNode(const QModelIndex& nodeIdx)
+{
+    NODE_CATES cates = getCates();
+    NODE_CATE& deprecatedCate = cates["deprecated"];
+    if (deprecatedCate.nodes.contains(nodeIdx.data(ROLE_OBJNAME).toString()))
+        return true;
+    return false;
+}
+
 void GraphsModel::removeNode(int row, const QModelIndex& subGpIdx)
 {
     SubGraphModel* pGraph = subGraph(subGpIdx.row());
@@ -1663,6 +1672,14 @@ void GraphsModel::markNodeDataChanged(const QModelIndex& nodeIdx, bool recursive
             _markNodeChanged(node, recursively);
         }
     }
+}
+
+void GraphsModel::markNodeDataUnchanged(const QModelIndex& idx)
+{
+    QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(idx.model());
+    ZASSERT_EXIT(pModel);
+    pModel->setData(idx, false, ROLE_NODE_DATACHANGED);
+    m_changedNodes.remove(idx);
 }
 
 void GraphsModel::_findReference(

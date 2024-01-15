@@ -52,6 +52,7 @@ public:
 	virtual void removeSubGraph(const QString& name) = 0;
 	virtual QModelIndex extractSubGraph(const QModelIndexList& nodes, const QModelIndexList& links, const QModelIndex& fromSubg, const QString& toSubg, bool enableTrans = false) = 0;
     virtual bool IsSubGraphNode(const QModelIndex& nodeIdx) const = 0;
+    virtual bool IsDeprecatedhNode(const QModelIndex& nodeIdx) = 0;
 
 	/*
 	 fork subnet node indexed by subnetNodeIdx under subgIdx. 
@@ -124,6 +125,7 @@ public:
     virtual bool isApiRunningEnable() const = 0;
     virtual bool setCustomName(const QModelIndex &subgIdx, const QModelIndex& Idx, const QString &value) const = 0;
     virtual void markNodeDataChanged(const QModelIndex& idx, bool recursively = true) = 0;
+    virtual void markNodeDataUnchanged(const QModelIndex& idx) = 0;
     virtual void clearNodeDataChanged() = 0;
     virtual QStringList subgraphsName() const = 0;
 

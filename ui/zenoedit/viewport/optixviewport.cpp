@@ -216,10 +216,13 @@ void OptixWorker::recordVideo(VideoRecInfo recInfo)
 void OptixWorker::screenShoot(QString path, QString type, int resx, int resy)
 {
     bool exr = zeno::getSession().userData().has("output_exr") ? zeno::getSession().userData().get2<bool>("output_exr") : false;
+    bool aov = zeno::getSession().userData().has("output_aov") ? zeno::getSession().userData().get2<bool>("output_aov") : false;
     zeno::scope_exit sp([=]() {
         zeno::getSession().userData().set2("output_exr", exr);
+        zeno::getSession().userData().set2("output_aov", aov);
         });
     zeno::getSession().userData().set2("output_exr", path.right(4) == ".exr" ? true : false);
+    zeno::getSession().userData().set2("output_aov", false);
     auto [x, y] = m_zenoVis->getSession()->get_window_size();
     if (!m_zenoVis->getSession()->is_lock_window())
         resx = x, resy = y;
@@ -464,12 +467,12 @@ void ZOptixViewport::recordVideo(VideoRecInfo recInfo)
 void ZOptixViewport::screenshoot(QString path, QString type, int resx, int resy)
 {
     std::string sType = type.toStdString();
-    bool ret = m_renderImage.save(path, sType.c_str());
-    if (!ret)
-    {
+    //bool ret = m_renderImage.save(path, sType.c_str());
+    //if (!ret)
+    //{
         //meet some unsupported type by QImage.
         emit sigscreenshoot(path, type, resx, resy);
-    }
+    //}
 }
 
 void ZOptixViewport::cancelRecording(VideoRecInfo recInfo)

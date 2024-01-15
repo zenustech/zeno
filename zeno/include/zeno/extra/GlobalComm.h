@@ -120,6 +120,9 @@ struct GlobalComm {
     ZENO_API void setRenderTypeBeta(int bateEnginIdx, RenderType type);
     ZENO_API RenderType getRenderTypeBeta(int bateEnginIdx);
 
+    ZENO_API void setSendPacketFunction(std::function<void(std::string_view, const char*, size_t)> func);
+    ZENO_API std::function<void(std::string_view, const char*, size_t)> getSendPacketFunction();
+
 private:
     ViewObjects const* _getViewObjects(const int frameid, bool& inserted);
     void _initStaticObjects();
@@ -141,6 +144,8 @@ private:
     int m_currentFrame = 0;    //ºı»•startFrame
     static MapObjects m_newToviewObjs;
     static MapObjects m_newToviewObjsStatic;
+
+    std::function<void(std::string_view, const char*, size_t)> sendPacketFunction;
 };
 
 }
