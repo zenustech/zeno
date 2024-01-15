@@ -345,6 +345,8 @@ struct XPBDSolveSmooth : INode {
         zs::Vector<int> dp_count{verts.get_allocator(),verts.size()};
         cudaPol(zs::range(dp_count),[]ZS_LAMBDA(auto& c) {c = 0;});
 
+
+
         auto category = constraints->readMeta(CONSTRAINT_KEY,wrapt<category_c>{});
 
         if(category == category_c::dcd_collision_constraint) {
@@ -430,6 +432,7 @@ struct XPBDSolveSmooth : INode {
                     dp_count = proxy<space>(dp_count)] ZS_LAMBDA(int vi) mutable {
                         for(int d = 0;d != 3;++d)
                             dp_buffer[vi * 3 + d] = 0;
+                        dp_count[vi] = 0;
                 });
 
                 cudaPol(zs::range(nm_dcd_collisions),[
@@ -521,7 +524,183 @@ ZENDEFNODE(XPBDSolveSmooth, {{{"zsparticles"},
                             {{"zsparticles"}},
                             {},
                             {"PBD"}});
+
+struct XPBDSolveSmoothDCD : INode {
+
+    using bvh_t = ZenoLinearBvh::lbvh_t;
+    using bv_t = bvh_t::Box;
+    using dtiles_t = zs::TileVector<T,32>;
+
+    virtual void apply() override {
+        using namespace zs;
+        using namespace PBD_CONSTRAINT;
+
+        using vec3 = zs::vec<float,3>;
+        using vec4 = zs::vec<float,4>;
+        using vec2i = zs::vec<int,2>;
+        using vec3i = zs::vec<int,3>;
+        using vec4i = zs::vec<int,4>;
+        using mat4 = zs::vec<int,4,4>;
+
+        constexpr auto space = execspace_e::cuda;
+        auto cudaPol = cuda_exec();
+        constexpr auto exec_tag = wrapv<space>{};
+
+        auto zsparticles = get_input<ZenoParticles>("zsparticles");
+
+        auto constraints = get_input<ZenoParticles>("constraints");
+        auto relaxs = get_input2<float>("relaxation_strength");
+
+        auto& verts = zsparticles->getParticles();
+        auto nm_smooth_iters = get_input2<int>("nm_smooth_iters");
+
+        if(!verts.hasProperty("dx"))
+            verts.append_channels(cudaPol,{{"dx",3}});
+        if(!verts.hasProperty("w"))
+            verts.append_channels(cudaPol,{{"w",1}});
+
+        auto category = constraints->readMeta(CONSTRAINT_KEY,wrapt<category_c>{});
+
+        if(category == category_c::dcd_collision_constraint) {
+            constexpr auto eps = 1e-6;
+
+            const auto& cquads = constraints->getQuadraturePoints();
+            if(!constraints->hasMeta(NM_DCD_COLLISIONS))
+                return;
+
+            auto nm_dcd_collisions = constraints->readMeta<size_t>(NM_DCD_COLLISIONS);
+            auto imminent_thickness = constraints->readMeta<float>(GLOBAL_DCD_THICKNESS);
+
+            auto has_input_collider = constraints->hasMeta(CONSTRAINT_TARGET);
+
+            auto substep_id = get_input2<int>("substep_id");
+            auto nm_substeps = get_input2<int>("nm_substeps");
+            auto w = (float)(substep_id + 1) / (float)nm_substeps;
+            auto pw = (float)(substep_id) / (float)nm_substeps;
+
+            const auto& kverts = has_input_collider ? constraints->readMeta(CONSTRAINT_TARGET,zs::wrapt<ZenoParticles*>{})->getParticles() : 
+                    ZenoParticles::particles_t{verts.get_allocator(),{
+                        {"x",3},
+                        {"v",3},
+                        {"minv",1},
+                        {"m",1}
+                    },(size_t)0};
+
+            auto pptag = get_input2<std::string>("pptag");
+
+            auto add_repulsion_force = get_input2<bool>("add_repulsion_force");
+
+            for(auto iter = 0;iter != nm_smooth_iters;++iter) {
+                TILEVEC_OPS::fill(cudaPol,verts,"dx",0);
+                TILEVEC_OPS::fill(cudaPol,verts,"w",0);
+
+                cudaPol(zs::range(nm_dcd_collisions),[
+                    kvertsOffset = verts.size(),
+                    cquadsIndsOffset = cquads.getPropertyOffset("inds"),
+                    cquadsBaryOffset = cquads.getPropertyOffset("bary"),
+                    cquadsTypeOffset = cquads.getPropertyOffset("type"),
+                    cquads = proxy<space>({},cquads),
+                    wTagOffset = verts.getPropertyOffset("w"),
+                    dxTagOffset = verts.getPropertyOffset("dx"),
+                    xTagOffset = verts.getPropertyOffset("x"),
+                    pxTagOffset = verts.getPropertyOffset(pptag),
+                    minvOffset = verts.getPropertyOffset("minv"),
+                    mOffset = verts.getPropertyOffset("m"),
+                    verts = proxy<space>({},verts),
+                    kxTagOffset = kverts.getPropertyOffset("x"),
+                    kpxTagOffset = kverts.getPropertyOffset("px"),
+                    kverts = proxy<space>({},kverts),
+                    w = w,
+                    pw = pw,
+                    exec_tag = exec_tag,
+                    eps = eps,
+                    add_repulsion_force = add_repulsion_force,
+                    imminent_thickness = imminent_thickness] ZS_LAMBDA(int ci) mutable {
+                        auto inds = cquads.pack(dim_c<4>,cquadsIndsOffset,ci,int_c);
+                        auto bary = cquads.pack(dim_c<4>,cquadsBaryOffset,ci);
+                        auto type = zs::reinterpret_bits<int>(cquads(cquadsTypeOffset,ci));
                         
+                        vec3 ps[4] = {};
+                        vec3 vs[4] = {};
+                        vec4 minvs{};
+                        vec4 ms{};
+
+                        for(int i = 0;i != 4;++i) {
+                            if(inds[i] < kvertsOffset)  {
+                                auto vi = inds[i];
+                                ps[i] = verts.pack(dim_c<3>,pxTagOffset,vi);
+                                vs[i] = verts.pack(dim_c<3>,xTagOffset,vi) - verts.pack(dim_c<3>,pxTagOffset,vi);
+                                minvs[i] = verts(minvOffset,vi);
+                                ms[i] = verts(mOffset,vi);
+                            } else {
+                                auto kvi = inds[i] - kvertsOffset;
+                                auto pre_kvert = kverts.pack(dim_c<3>,kpxTagOffset,kvi) * (1 - pw) + kverts.pack(dim_c<3>,kxTagOffset,kvi) * pw;
+                                auto cur_kvert = kverts.pack(dim_c<3>,kpxTagOffset,kvi) * (1 - w) + kverts.pack(dim_c<3>,kxTagOffset,kvi) * w;
+                                ps[i] = pre_kvert;
+                                vs[i] = cur_kvert - pre_kvert;
+                                minvs[i] = 0;
+                                ms[i] = 1000;
+                            }
+                        }
+
+                        vec3 imps[4] = {};
+                        if(!COLLISION_UTILS::compute_imminent_collision_impulse(ps,
+                                vs,
+                                bary,
+                                ms,
+                                minvs,
+                                imps,
+                                imminent_thickness,
+                                type,
+                                add_repulsion_force))
+                            return;
+                        for(int i = 0;i != 4;++i) {
+                            if(minvs[i] < eps)
+                                continue;
+
+                            if(imps[i].norm() < 1e-6)
+                                continue;
+
+                            atomic_add(exec_tag,&verts(wTagOffset,inds[i]),(float)1);
+                            for(int d = 0;d != 3;++d)
+                                atomic_add(exec_tag,&verts(dxTagOffset + d,inds[i]),imps[i][d]);
+                        }
+                });
+
+                cudaPol(zs::range(verts.size()),[
+                    verts = proxy<space>({},verts),relaxs = relaxs,
+                    xTagOffset = verts.getPropertyOffset("x"),
+                    dxTagOffset = verts.getPropertyOffset("dx"),
+                    wTagOffset = verts.getPropertyOffset("w")] ZS_LAMBDA(int vi) mutable {
+                        if(verts(wTagOffset,vi) > 0) {
+                            auto dp = relaxs * verts.pack(dim_c<3>,dxTagOffset,vi) / verts(wTagOffset,vi);
+                            // auto dp = relaxs * verts.pack(dim_c<3>,dxTagOffset,vi) * (float)0.25;
+                            verts.tuple(dim_c<3>,xTagOffset,vi) = verts.pack(dim_c<3>,xTagOffset,vi) + dp;
+                        }
+                });
+
+            }
+        
+        }
+
+        set_output("zsparticles",zsparticles);
+    };
+};
+
+ZENDEFNODE(XPBDSolveSmoothDCD, {{{"zsparticles"},
+                                {"constraints"},
+                                {"float","relaxation_strength","1"},
+                                {"int","nm_smooth_iters","1"},
+                                {"int","nm_substeps","1"},
+                                {"int","substep_id","0"},
+                                {"bool","add_repulsion_force","0"},
+                                {"float","boundary_velocity_scale","1"},
+                                {"string","pptag","px"}
+                            }, 
+                            {{"zsparticles"}},
+                            {},
+                            {"PBD"}});
+                                                    
 
 
 struct XPBDSolveSmoothAll : INode {
@@ -549,10 +728,7 @@ struct XPBDSolveSmoothAll : INode {
 
         auto zsparticles = get_input<ZenoParticles>("zsparticles");
 
-        // auto all_constraints = RETRIEVE_OBJECT_PTRS(ZenoParticles, "all_constraints");
         auto constraint_ptr_list = RETRIEVE_OBJECT_PTRS(ZenoParticles, "constraints");
-        // auto ptag = get_param<std::string>("ptag");
-        // auto relaxs = get_input2<float>("relaxation_strength");
 
         auto& verts = zsparticles->getParticles();
         auto ptag = get_input2<std::string>("ptag");
@@ -560,10 +736,15 @@ struct XPBDSolveSmoothAll : INode {
         auto dptag = get_input2<std::string>("dptag");
         auto dt = get_input2<float>("dt");
 
-        // auto dt = get_input2<bool>("dt");
+        // zs::Vector<float> weight_sum{verts.get_allocator(),verts.size()};
+        // cudaPol(zs::range(weight_sum),[]ZS_LAMBDA(auto& w) {w = 0;});
 
-        zs::Vector<float> weight_sum{verts.get_allocator(),verts.size()};
-        cudaPol(zs::range(weight_sum),[]ZS_LAMBDA(auto& w) {w = 0;});
+        if(!verts.hasProperty("w")) {
+            verts.append_channels(cudaPol,{{"w",1}});
+        }
+
+        TILEVEC_OPS::fill(cudaPol,verts,"w",0);
+        
 
         for(auto& constraint_ptr : constraint_ptr_list) {
             auto category = constraint_ptr->readMeta(CONSTRAINT_KEY,wrapt<category_c>{});
@@ -577,11 +758,12 @@ struct XPBDSolveSmoothAll : INode {
                     affiliationOffset = cquads.getPropertyOffset("xpbd_affiliation"),
                     dampingOffset = cquads.getPropertyOffset("damping_coeff"),
                     indsOffset = cquads.getPropertyOffset("inds"),
-                    weight_sum = proxy<space>(weight_sum),
+                    // weight_sum = proxy<space>(weight_sum),
                     ptagOffset = verts.getPropertyOffset(ptag),
                     pptagOffset = verts.getPropertyOffset(pptag),
                     dptagOffset = verts.getPropertyOffset(dptag),
                     minvOffset = verts.getPropertyOffset("minv"),
+                    wOffset = verts.getPropertyOffset("w"),
                     verts = view<space>(verts),
                     category = category,
                     exec_tag = exec_tag] ZS_LAMBDA(int ci) mutable {
@@ -615,7 +797,8 @@ struct XPBDSolveSmoothAll : INode {
                             for(int i = 0;i != 2;++i) {
                                 if(isnan(dp[i].norm()))
                                     printf("nan dp[%d] detected at stretch\n",i);
-                                atomic_add(exec_tag,&weight_sum[edge[i]],w);
+                                // atomic_add(exec_tag,&weight_sum[edge[i]],w);
+                                atomic_add(exec_tag,&verts(wOffset,edge[i]),w);
                                 for(int d = 0;d != 3;++d)
                                     atomic_add(exec_tag,&verts(dptagOffset + d,edge[i]),dp[i][d] * w);
                             }
@@ -653,7 +836,8 @@ struct XPBDSolveSmoothAll : INode {
                             for(int i = 0;i != 4;++i) {
                                 if(isnan(dp[i].norm()))
                                     printf("nan dp[%d] detected at stretch\n",i);
-                                atomic_add(exec_tag,&weight_sum[quad[i]],w);
+                                // atomic_add(exec_tag,&weight_sum[quad[i]],w);
+                                atomic_add(exec_tag,&verts(wOffset,quad[i]),w);
                                 for(int d = 0;d != 3;++d)
                                     atomic_add(exec_tag,&verts(dptagOffset + d,quad[i]),dp[i][d] * w);
                             }                        
@@ -679,7 +863,8 @@ struct XPBDSolveSmoothAll : INode {
                     indsOffset = cquads.getPropertyOffset("inds"),
                     baryOffset = cquads.getPropertyOffset("bary"),
                     typeOffset = cquads.getPropertyOffset("type"),
-                    weight_sum = proxy<space>(weight_sum),
+                    // weight_sum = proxy<space>(weight_sum),
+                    wOffset = verts.getPropertyOffset("w"),
                     ptagOffset = verts.getPropertyOffset(ptag),
                     pptagOffset = verts.getPropertyOffset(pptag),
                     dptagOffset = verts.getPropertyOffset(dptag),
@@ -729,7 +914,8 @@ struct XPBDSolveSmoothAll : INode {
                                     (float)bary[0],(float)bary[1],(float)bary[2],(float)bary[3]);
                                 return;
                             }
-                            atomic_add(exec_tag,&weight_sum[inds[i]],w);
+                            // atomic_add(exec_tag,&weight_sum[inds[i]],w);
+                            atomic_add(exec_tag,&verts(wOffset,inds[i]),w);
                             for(int d = 0;d != 3;++d){
                                 atomic_add(exec_tag,&verts(dptagOffset + d,inds[i]),dp[i][d] * w);
                             }
@@ -748,12 +934,14 @@ struct XPBDSolveSmoothAll : INode {
                 auto nm_substeps = get_input2<int>("nm_substeps");
                 auto anim_w = (float)(substep_id + 1) / (float)nm_substeps;
 
-                dtiles_t cell_buffer{kverts.get_allocator(),{
-                    {"cx",3},
-                    {"x",3},
-                    {"v",3},
-                    {"nrm",3}
-                },kverts.size()};
+                auto& cell_buffer = (*target)[TARGET_CELL_BUFFER];
+
+                // dtiles_t cell_buffer{kverts.get_allocator(),{
+                //     {"cx",3},
+                //     {"x",3},
+                //     {"v",3},
+                //     {"nrm",3}
+                // },kverts.size()};
         
                 cudaPol(zs::range(cell_buffer.size()),[
                     cell_buffer = proxy<space>({},cell_buffer),
@@ -778,7 +966,8 @@ struct XPBDSolveSmoothAll : INode {
                     ptagOffet = verts.getPropertyOffset(ptag),
                     ktris = ktris.begin("inds",dim_c<3>,int_c),
                     enable_sliding = enable_sliding,
-                    weight_sum = proxy<space>(weight_sum),
+                    // weight_sum = proxy<space>(weight_sum),
+                    wOffset = verts.getPropertyOffset("w"),
                     stiffnessOffset = cquads.getPropertyOffset("relative_stiffness"),
                     verts = proxy<space>({},verts)] ZS_LAMBDA(int ci) mutable {
                         auto w = cquads(stiffnessOffset,ci);
@@ -823,7 +1012,8 @@ struct XPBDSolveSmoothAll : INode {
                             dp = dp_tangent + dp_normal;
                         }
 
-                        atomic_add(exec_tag,&weight_sum[vi],w);
+                        // atomic_add(exec_tag,&weight_sum[vi],w);
+                        atomic_add(exec_tag,&verts(wOffset,vi),w);
                         for(int d = 0;d != 3;++d){
                             atomic_add(exec_tag,&verts(dptagOffset + d,vi),dp[d] * w);
                         }
@@ -845,9 +1035,10 @@ struct XPBDSolveSmoothAll : INode {
                     verts = proxy<space>({},verts),
                     alpha = volume_anim_w,
                     stiffnessOffset = cquads.getPropertyOffset("relative_stiffness"),
-                    weight_sum = proxy<space>(weight_sum),
+                    // weight_sum = proxy<space>(weight_sum),
+                    wOffset = verts.getPropertyOffset("w"),
                     ptagOffset = verts.getPropertyOffset(ptag),
-                    // dptagOffset = verts.getPropertyOffset(dptag),
+                    dptagOffset = verts.getPropertyOffset(dptag),
                     vverts = proxy<space>({},vverts),
                     vtets = proxy<space>({},vtets)] ZS_LAMBDA(int ci) mutable {
                         auto w = cquads(stiffnessOffset,ci);
@@ -867,12 +1058,13 @@ struct XPBDSolveSmoothAll : INode {
                         for(int i = 0;i != 4;++i)
                             vtp += vps[i] * bary[i];
                         
-                        // auto dp = vtp - verts.pack(dim_c<3>,ptagOffset,vi);
-                        verts.tuple(dim_c<3>,ptagOffset,vi) = vtp;
-                        // atomic_add(exec_tag,&weight_sum[inds[i]],w);
-                        // for(int d = 0;d != 3;++d){
-                        //     atomic_add(exec_tag,&verts(dptagOffset + d,inds[i]),dp[i][d] * w);
-                        // }
+                        auto dp = vtp - verts.pack(dim_c<3>,ptagOffset,vi);
+                        // verts.tuple(dim_c<3>,ptagOffset,vi) = vtp;
+                        // atomic_add(exec_tag,&weight_sum[vi],w);
+                        atomic_add(exec_tag,&verts(wOffset,vi),w);
+                        for(int d = 0;d != 3;++d){
+                            atomic_add(exec_tag,&verts(dptagOffset + d,vi),dp[d] * w);
+                        }
 
                         // weight_sum[vi] = (T)1.0;
                 });
@@ -899,7 +1091,8 @@ struct XPBDSolveSmoothAll : INode {
                     typeOffset = cquads.getPropertyOffset("type"),
                     hitPointOffset = cquads.getPropertyOffset("hit_point"),
                     hitVelocityOffset = cquads.getPropertyOffset("hit_velocity"),
-                    weight_sum = proxy<space>(weight_sum),
+                    // weight_sum = proxy<space>(weight_sum),
+                    wOffset = verts.getPropertyOffset("w"),
                     ptagOffset = verts.getPropertyOffset(ptag),
                     pptagOffset = verts.getPropertyOffset(pptag),
                     dptagOffset = verts.getPropertyOffset(dptag),
@@ -959,7 +1152,8 @@ struct XPBDSolveSmoothAll : INode {
                                     printf("too large impulse detected at kinematic dcd[%d] type[%d] : %f %f %f\n",
                                         i,type,(float)dp[i][0],(float)dp[i][1],(float)dp[i][2]);
                                 }
-                                atomic_add(exec_tag,&weight_sum[inds[i]],w);
+                                // atomic_add(exec_tag,&weight_sum[inds[i]],w);
+                                atomic_add(exec_tag,&verts(wOffset,inds[i]),w);
                                 for(int d = 0;d != 3;++d){
                                     atomic_add(exec_tag,&verts(dptagOffset + d,inds[i]),dp[i][d] * w);
                                 }
@@ -996,7 +1190,8 @@ struct XPBDSolveSmoothAll : INode {
                                     printf("too large impulse detected at kinematic dcd[%d] type[%d] : %f %f %f\n",
                                         i,type,(float)dp[i][0],(float)dp[i][1],(float)dp[i][2]);
                                 }
-                                atomic_add(exec_tag,&weight_sum[inds[i]],w);
+                                // atomic_add(exec_tag,&weight_sum[inds[i]],w);
+                                atomic_add(exec_tag,&verts(wOffset,inds[i]),w);
                                 for(int d = 0;d != 3;++d){
                                     atomic_add(exec_tag,&verts(dptagOffset + d,inds[i]),dp[i][d] * w);
                                 }
@@ -1034,7 +1229,8 @@ struct XPBDSolveSmoothAll : INode {
                                     printf("too large impulse detected at kinematic dcd[%d] type[%d] : %f %f %f\n",
                                         i,type,(float)dp[i][0],(float)dp[i][1],(float)dp[i][2]);
                                 }
-                                atomic_add(exec_tag,&weight_sum[inds[i]],w);
+                                // atomic_add(exec_tag,&weight_sum[inds[i]],w);
+                                atomic_add(exec_tag,&verts(wOffset,inds[i]),w);
                                 for(int d = 0;d != 3;++d){
                                     atomic_add(exec_tag,&verts(dptagOffset + d,inds[i]),dp[i][d] * w);
                                 }
@@ -1051,9 +1247,9 @@ struct XPBDSolveSmoothAll : INode {
             verts = proxy<space>({},verts),
             eps = eps,
             dptagOffset = verts.getPropertyOffset(dptag),
-            weight_sum = proxy<space>(weight_sum)] ZS_LAMBDA(int vi) mutable {
-                if(weight_sum[vi] > eps)
-                    verts.tuple(dim_c<3>,dptagOffset,vi) = verts.pack(dim_c<3>,dptagOffset,vi) / (T)weight_sum[vi];
+            wOffset = verts.getPropertyOffset("w")] ZS_LAMBDA(int vi) mutable {
+                if(verts(wOffset,vi) > eps)
+                    verts.tuple(dim_c<3>,dptagOffset,vi) = verts.pack(dim_c<3>,dptagOffset,vi) / verts(wOffset,vi);
                 else
                     verts.tuple(dim_c<3>,dptagOffset,vi) = vec3::zeros();
         });
