@@ -2,6 +2,7 @@
 
 #include <zeno/utils/api.h>
 #include <zeno/core/Descriptor.h>
+#include <zeno/core/data.h>
 #include <memory>
 #include <string>
 #include <map>
@@ -51,7 +52,15 @@ struct Session {
     ZENO_API std::shared_ptr<Graph> createGraph();
     ZENO_API std::string dumpDescriptors() const;
     ZENO_API std::string dumpDescriptorsJSON() const;
+    ZENO_API zeno::NodeCates dumpCoreCates();
     ZENO_API void defNodeClass(std::shared_ptr<INode>(*ctor)(), std::string const &id, Descriptor const &desc = {});
+
+private:
+    void initNodeCates();
+
+    zeno::NodeCates m_cates;
+
+
 };
 
 ZENO_API Session &getSession();

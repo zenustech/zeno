@@ -81,6 +81,7 @@ public:
                                   QModelIndexList& outputs,
                                   bool bEnsureSRCDST_lastKey = true);
     static QVector<qreal> scaleFactors();
+    static QString UiHelper::getNaiveParamPath(const QModelIndex& param, int dim = -1);
 
     static QPair<zeno::NodesData, zeno::LinksData> dumpNodes(const QModelIndexList& nodeIndice, const QModelIndexList& linkIndice);
     static void reAllocIdents(const QString& targetSubgraph,

@@ -1398,6 +1398,24 @@ QVector<qreal> UiHelper::scaleFactors()
     return lst;
 }
 
+QString UiHelper::getNaiveParamPath(const QModelIndex& param, int dim)
+{
+    //TODO: adjust
+    QString str = param.data(ROLE_OBJPATH).toString();
+    QString subgName, ident, paramPath;
+    getSocketInfo(str, subgName, ident, paramPath);
+    if (dim == 0) {
+        paramPath += "/x";
+    }
+    else if (dim == 1) {
+        paramPath += "/y";
+    }
+    else if (dim == 2) {
+        paramPath += "/z";
+    }
+    return QString("%1/%2").arg(ident).arg(paramPath);
+}
+
 QPair<zeno::NodesData, zeno::LinksData>
     UiHelper::dumpNodes(const QModelIndexList &nodeIndice, const QModelIndexList &linkIndice)
 {

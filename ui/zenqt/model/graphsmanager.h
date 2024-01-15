@@ -42,7 +42,7 @@ public:
     USERDATA_SETTING userdataInfo() const;
     RECORD_SETTING recordSettings() const;
     zeno::ZSG_VERSION ioVersion() const;
-    NODE_CATES getCates() const;
+    zeno::NodeCates getCates() const;
     void setIOVersion(zeno::ZSG_VERSION ver);
     void clearMarkOnGv();
 

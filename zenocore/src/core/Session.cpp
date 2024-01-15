@@ -76,6 +76,7 @@ ZENO_API Session::Session()
     , m_userData(std::make_unique<UserData>())
     , mainGraph(std::make_unique<Graph>())
 {
+    initNodeCates();
 }
 
 ZENO_API Session::~Session() = default;
@@ -99,6 +100,26 @@ ZENO_API std::shared_ptr<Graph> Session::createGraph() {
     auto graph = std::make_shared<Graph>();
     graph->session = const_cast<Session *>(this);
     return graph;
+}
+
+void Session::initNodeCates() {
+    for (auto const& [key, cls] : nodeClasses) {
+        if (!key.empty() && key.front() == '^')
+            continue;
+        Descriptor& desc = *cls->desc;
+        for (std::string cate : desc.categories) {
+            if (m_cates.find(cate) == m_cates.end())
+                m_cates.insert(std::make_pair(cate, std::vector<std::string>()));
+            m_cates[cate].push_back(key);
+        }
+    }
+}
+
+ZENO_API zeno::NodeCates Session::dumpCoreCates() {
+    if (m_cates.empty()) {
+        initNodeCates();
+    }
+    return m_cates;
 }
 
 ZENO_API std::string Session::dumpDescriptors() const {

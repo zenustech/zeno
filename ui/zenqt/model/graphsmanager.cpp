@@ -268,10 +268,11 @@ RECORD_SETTING GraphsManager::recordSettings() const
     return RECORD_SETTING();
 }
 
-NODE_CATES GraphsManager::getCates() const
+zeno::NodeCates GraphsManager::getCates() const
 {
-    //TODO: get cates from core.
-    return NODE_CATES();
+    zeno::NodeCates cates = zeno::getSession().dumpCoreCates();
+    //TODO: collect assets.
+    return cates;
 }
 
 zeno::ZSG_VERSION GraphsManager::ioVersion() const

@@ -103,6 +103,8 @@ namespace zeno {
     };
     using NodeDescs = std::map<std::string, NodeDesc>;
 
+    using NodeCates = std::map<std::string, std::vector<std::string>>;
+
     struct GroupInfo
     {
         std::pair<float, float> sz;

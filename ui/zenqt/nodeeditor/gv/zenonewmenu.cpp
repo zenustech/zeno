@@ -7,7 +7,7 @@
 #include "util/uihelper.h"
 
 
-ZenoNewnodeMenu::ZenoNewnodeMenu(const QModelIndex& subgIdx, const NODE_CATES& cates, const QPointF& scenePos, QWidget* parent)
+ZenoNewnodeMenu::ZenoNewnodeMenu(const QModelIndex& subgIdx, const zeno::NodeCates& cates, const QPointF& scenePos, QWidget* parent)
     : QMenu(parent)
     , m_preSearchMode(false)
     , m_cates(cates)
@@ -47,12 +47,15 @@ ZenoNewnodeMenu::ZenoNewnodeMenu(const QModelIndex& subgIdx, const NODE_CATES& c
     addActions(m_cateActions);
 
     // init [node, cate] map, [node...] list
-    for (const NODE_CATE& cate : cates) {
-        for (const QString& name : cate.nodes) {
-            m_nodeToCate[name] = cate.name;
-            m_condidates.push_back(name);
+    for (auto& [cate, nodes] : m_cates) {
+        QString catName = QString::fromStdString(cate);
+        for (auto& node : nodes) {
+            QString nodeName = QString::fromStdString(node);
+            m_nodeToCate[nodeName] = catName;
+            m_condidates.push_back(nodeName);
         }
     }
+
     connect(m_searchEdit, SIGNAL(textChanged(const QString&)), this, SLOT(onTextChanged(const QString&)));
     connect(m_searchView, &SearchResultWidget::clicked, this, [this](SearchResultItem* item) {
         GraphsTreeModel* pModel = zenoApp->graphsManager()->currentModel();
@@ -146,12 +149,12 @@ void ZenoNewnodeMenu::onTextChanged(const QString& text)
 
 QList<QAction*> ZenoNewnodeMenu::getCategoryActions(QModelIndex subgIdx, QPointF scenePos)
 {
-    if (!subgIdx.isValid())
-        return QList<QAction*>();
+    //if (!subgIdx.isValid())
+    //    return QList<QAction*>();
 
     QList<QAction*> acts;
     int nodesNum = 0;
-    if (m_cates.isEmpty())
+    if (m_cates.empty())
     {
         QAction* pAction = new QAction("ERROR: no descriptors loaded!");
         pAction->setEnabled(false);
@@ -159,17 +162,18 @@ QList<QAction*> ZenoNewnodeMenu::getCategoryActions(QModelIndex subgIdx, QPointF
         return acts;
     }
 
-    for (const NODE_CATE& cate : m_cates)
+    for (auto& [cate, nodes] : m_cates)
     {
-        QAction* pAction = new QAction(cate.name, this);
+        QAction* pAction = new QAction(QString::fromStdString(cate), this);
         QMenu* pChildMenu = new QMenu(this);
         pChildMenu->setToolTipsVisible(true);
-        for (const QString& name : cate.nodes)
+        for (const auto& node : nodes)
         {
-            QAction* pChildAction = pChildMenu->addAction(name);
+            QString nodeName = QString::fromStdString(node);
+            QAction* pChildAction = pChildMenu->addAction(nodeName);
             //todo: tooltip
             connect(pChildAction, &QAction::triggered, [=]() {
-                UiHelper::createNewNode(subgIdx, name, scenePos);
+                UiHelper::createNewNode(subgIdx, nodeName, scenePos);
             });
         }
         pAction->setMenu(pChildMenu);

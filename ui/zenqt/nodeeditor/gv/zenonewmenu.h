@@ -3,6 +3,7 @@
 
 #include <QtWidgets>
 #include "uicommon.h"
+#include <zeno/core/data.h>
 #include <QSet>
 
 class ZenoGvLineEdit;
@@ -13,7 +14,7 @@ class ZenoNewnodeMenu : public QMenu
 {
     Q_OBJECT
 public:
-    ZenoNewnodeMenu(const QModelIndex& subgIdx, const NODE_CATES& cates, const QPointF& scenePos, QWidget* parent = nullptr);
+    ZenoNewnodeMenu(const QModelIndex& subgIdx, const zeno::NodeCates& cates, const QPointF& scenePos, QWidget* parent = nullptr);
     ~ZenoNewnodeMenu();
     void setEditorFocus();
 
@@ -28,7 +29,7 @@ private:
     void updateSearchView(const QString& filter);
 
     bool m_preSearchMode;
-    const NODE_CATES m_cates;
+    const zeno::NodeCates m_cates;
     const QModelIndex m_subgIdx;
     const QPointF m_scenePos;
     ZenoGvLineEdit* m_searchEdit;
