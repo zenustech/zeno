@@ -359,7 +359,7 @@ void ZenoGraphsEditor::onPageListClicked()
             pMenu->close();
         });
         connect(ptextButton, &ZToolButton::clicked, this, [=]() {
-            activateTab2(text, false);
+            activateTab(text, false);
             pMenu->close();
         });
 
@@ -523,7 +523,7 @@ void ZenoGraphsEditor::onListItemActivated(const QModelIndex& index)
 void ZenoGraphsEditor::selectTab(const QString& objpath, const QString& path, std::vector<QString> & objIds)
 {
     auto graphsMgm = zenoApp->graphsManager();
-    activateTab2(objpath);
+    activateTab(objpath);
     ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(graphsMgm->gvScene(objpath)); 
     pScene->select(objIds);
 }
@@ -537,20 +537,20 @@ ZenoSubGraphView* ZenoGraphsEditor::getCurrentSubGraphView()
     return nullptr;
 }
 
-void ZenoGraphsEditor::activateTab2(const QString& objpath, const QString& focusNode, bool isError)
+void ZenoGraphsEditor::activateTab(const QString& subgpath, const QString& focusNode, bool isError)
 {
     //objpath is a path like /main, /main/aaa or asset name like `PresetMatrial`.
-    int idx = tabIndexOfName(objpath);
+    int idx = tabIndexOfName(subgpath);
     auto graphsMgm = zenoApp->graphsManager();
-    GraphModel* pGraphM = graphsMgm->getGraph(objpath);
+    GraphModel* pGraphM = graphsMgm->getGraph(subgpath);
     ZASSERT_EXIT(pGraphM);
     if (idx == -1)
     {
-        ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(graphsMgm->gvScene(objpath));
+        ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(graphsMgm->gvScene(subgpath));
         if (!pScene)
         {
             pScene = new ZenoSubGraphScene(graphsMgm);
-            graphsMgm->addScene(objpath, pScene);
+            graphsMgm->addScene(subgpath, pScene);
             pScene->initModel(pGraphM);
         }
         ZenoSubGraphView* pView = new ZenoSubGraphView;
@@ -558,26 +558,24 @@ void ZenoGraphsEditor::activateTab2(const QString& objpath, const QString& focus
         connect(pView, &ZenoSubGraphView::zoomed, this, &ZenoGraphsEditor::zoomed);
         pView->initScene(pScene);
 
-        idx = m_ui->graphsViewTab->addTab(pView, objpath);
+        idx = m_ui->graphsViewTab->addTab(pView, subgpath);
 
         QString tabIcon;
-        if (objpath.startsWith("/main"))
+        if (subgpath.startsWith("/main"))
             tabIcon = ":/icons/subnet-main.svg";
         else
             tabIcon = ":/icons/subnet-general.svg";
         m_ui->graphsViewTab->setTabIcon(idx, QIcon(tabIcon));
 
         connect(pView, &ZenoSubGraphView::pathUpdated, this, [=](QString newPath) {
-            QStringList L = newPath.split("/", QtSkipEmptyParts);
-            QString subgName = L.last();
-            activateTab(subgName, newPath);
+            activateTab(newPath);
         });
     }
     m_ui->graphsViewTab->setCurrentIndex(idx);
 
     ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
     ZASSERT_EXIT(pView);
-    pView->resetPath(objpath, focusNode, isError);
+    pView->resetPath(subgpath, focusNode, isError);
     //m_mainWin->onNodesSelected(pModel->index(subGraphName), pView->scene()->selectNodesIndice(), true);
 }
 
@@ -672,7 +670,7 @@ void ZenoGraphsEditor::onTreeItemActivated(const QModelIndex& index)
 		}
 	}
 
-    activateTab(subgName, path, objId);
+    activateTab(path, objId);
 }
 
 void ZenoGraphsEditor::onPageActivated(const QPersistentModelIndex& subgIdx, const QPersistentModelIndex& nodeIdx)
@@ -684,7 +682,7 @@ void ZenoGraphsEditor::onPageActivated(const QPersistentModelIndex& subgIdx, con
 void ZenoGraphsEditor::onPageActivated(const QModelIndex& subgNodeIdx)
 {
     const QString& objPath = subgNodeIdx.data(ROLE_OBJPATH).toString();
-    activateTab2(objPath);
+    activateTab(objPath);
 }
 
 void ZenoGraphsEditor::onLogInserted(const QModelIndex& parent, int first, int last)
@@ -841,7 +839,7 @@ void ZenoGraphsEditor::onSearchItemClicked(const QModelIndex& index)
     {
         QString parentId = index.parent().data(ROLE_OBJID).toString();
         QString subgName = index.parent().data(ROLE_OBJNAME).toString();
-        activateTab(subgName, "", objId);
+        activateTab(subgName, objId);
     }
     else
     {

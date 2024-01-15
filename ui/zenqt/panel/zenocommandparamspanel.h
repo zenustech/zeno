@@ -4,6 +4,7 @@
 #include <QtWidgets>
 #include "uicommon.h"
 
+#if 0
 class ZenoCommandParamsPanel : public QWidget
 {
     Q_OBJECT
@@ -27,6 +28,7 @@ private:
     QTableWidget* m_pTableWidget;
     QPushButton* m_pExportButton;
 };
+#endif
 
 #endif
 

@@ -168,3 +168,19 @@ GraphModel* GraphsTreeModel::getGraphByPath(const QString& objPath) {
     //TODO
     return nullptr;
 }
+
+bool GraphsTreeModel::isDirty() const {
+    //TODO
+    return false;
+}
+
+void GraphsTreeModel::clearDirty() {
+    //TODO
+}
+
+QList<SEARCH_RESULT> GraphsTreeModel::search(const QString& content, int searchType, int searchOpts) const
+{
+    //TODO
+    QList<SEARCH_RESULT> result;
+    return result;
+}

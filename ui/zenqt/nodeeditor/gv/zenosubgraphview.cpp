@@ -476,7 +476,8 @@ void _ZenoSubGraphView::contextMenuEvent(QContextMenuEvent* event)
     QList<QGraphicsItem*> seledItems = m_scene->selectedItems();
     QList<QGraphicsItem*> tempList = this->items(pos);
 
-    bool ret = sceneMenuEvent(m_scene, pos, scenePos, seledItems, tempList, m_scene->subGraphIndex());
+    //TODO: custom menu.
+    bool ret = false;// sceneMenuEvent(m_scene, pos, scenePos, seledItems, tempList, m_scene->subGraphIndex());
     if (!ret) {
         QGraphicsView::contextMenuEvent(event);
     }

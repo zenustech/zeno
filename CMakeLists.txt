@@ -199,13 +199,13 @@ add_subdirectory(ui/zenqt)
 
 if (ZENO_BUILD_EDITOR OR ZENO_BUILD_DESIGNER)
     message(STATUS "Building Zeno UI Library")
-    add_subdirectory(ui/zenoui)
-    add_subdirectory(ui/zenomodel)
+    #add_subdirectory(ui/zenoui)
+    #add_subdirectory(ui/zenomodel)
 endif()
 
 if (ZENO_BUILD_EDITOR)
     message(STATUS "Building Zeno Editor")
-    add_subdirectory(ui/zenoedit)
+    #add_subdirectory(ui/zenoedit)
     add_subdirectory(zenovis)
 endif()
 

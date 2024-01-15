@@ -484,7 +484,7 @@
   <customwidget>
    <class>ZSlider</class>
    <extends>QWidget</extends>
-   <header>timeline/zslider.h</header>
+   <header>widgets/zslider.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
