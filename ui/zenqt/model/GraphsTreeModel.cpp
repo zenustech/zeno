@@ -164,8 +164,23 @@ QModelIndex GraphsTreeModel::rootIndex()
     return {};
 }
 
-GraphModel* GraphsTreeModel::getGraphByPath(const QString& objPath) {
-    //TODO
+GraphModel* GraphsTreeModel::getGraphByPath(const QString& objPath)
+{
+    if (!m_main)
+        return nullptr;
+
+    QStringList items = objPath.split('/', Qt::SkipEmptyParts);
+    if (items.empty()) {
+        //TODO: ASSETS
+        return nullptr;
+    }
+    else {
+        if (items[0] == "main") {
+            items.removeAt(0);
+            QString leftPath = items.join('/');
+            return m_main->getGraphByPath(leftPath);
+        }
+    }
     return nullptr;
 }
 

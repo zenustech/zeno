@@ -8,6 +8,7 @@
 #include <QQuickItem>
 #include "parammodel.h"
 #include "LinkModel.h"
+#include <zeno/core/Graph.h>
 
 class GraphModel;
 
@@ -60,6 +61,7 @@ public:
     QHash<int, QByteArray> roleNames() const override;
 
     //GraphModel:
+    void registerCoreNotify(std::shared_ptr<zeno::Graph> coreGraph);
     zeno::NodeData createNode(const QString& nodeCls, const QPointF& pos);
     void appendNode(QString ident, QString name, const QPointF& pos);   //TO DEPRECATED
     void appendSubgraphNode(QString ident, QString name, NODE_DESCRIPTOR desc, GraphModel* subgraph, const QPointF& pos);
@@ -67,6 +69,7 @@ public:
     void addLink(QPair<QString, QString> fromParam, QPair<QString, QString> toParam);
     void addLink(const zeno::EdgeInfo& link);
     QList<SEARCH_RESULT> search(const QString& content, SearchType searchType, SearchOpt searchOpts) const;
+    GraphModel* getGraphByPath(const QString& objPath);
     //QModelIndex index(const QString& ident) const;
     QModelIndex indexFromIdent(const QString& ident) const;
     void undo();
@@ -92,6 +95,10 @@ private:
     QHash<QString, int> m_id2Row;
     QHash<int, QString> m_row2id;
     QHash<QString, NodeItem*> m_nodes;
+
+    std::weak_ptr<zeno::Graph> m_spCoreGraph;
+
+    std::string cbCreateNode;
 
     LinkModel* m_linkModel;
 };

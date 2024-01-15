@@ -5,11 +5,13 @@
 #include <zenoio/reader/zsg2reader.h>
 #include <zeno/utils/log.h>
 #include <zeno/utils/scope_exit.h>
+#include <zeno/core/Graph.h>
 #include "util/uihelper.h"
 #include <zenoio/writer/zsgwriter.h>
 #include <zeno/core/Session.h>
 #include <zeno/types/UserData.h>
 #include "nodeeditor/gv/zenosubgraphscene.h"
+#include "zassert.h"
 
 
 GraphsManager::GraphsManager(QObject* parent)
@@ -19,6 +21,10 @@ GraphsManager::GraphsManager(QObject* parent)
     , m_assets(nullptr)
 {
     m_logModel = new QStandardItemModel(this);
+    GraphModel* main = new GraphModel("main");
+    m_model = new GraphsTreeModel(main, this);
+    m_assets = new AssetsModel(this);
+    main->registerCoreNotify(zeno::getSession().mainGraph);
 }
 
 GraphsManager::~GraphsManager()
@@ -28,6 +34,10 @@ GraphsManager::~GraphsManager()
 GraphsManager& GraphsManager::instance() {
     static GraphsManager inst;
     return inst;
+}
+
+void GraphsManager::registerCoreNotify() {
+
 }
 
 GraphsTreeModel* GraphsManager::currentModel() const
@@ -71,11 +81,14 @@ GraphsTreeModel* GraphsManager::openZsgFile(const QString& fn)
 void GraphsManager::createGraphs(const zeno::ZSG_PARSE_RESULT ioresult)
 {
     //todo
+    /*
     if (m_assets)
         m_assets->clear();
 
     delete m_assets;
     m_assets = new AssetsModel(this);
+    */
+    ZASSERT_EXIT(m_assets);
     m_assets->init(ioresult.assetGraphs);
 }
 
@@ -114,7 +127,8 @@ GraphsTreeModel* GraphsManager::newFile()
 {
     clear();
 
-    m_model = new GraphsTreeModel(new GraphModel("main"), this);
+    if (!m_model)
+        m_model = new GraphsTreeModel(new GraphModel("main"), this);
     //TODO: assets may be kept.
 
     emit modelInited();
@@ -145,8 +159,9 @@ void GraphsManager::clear()
     {
         m_model->clear();
 
-        delete m_model;
-        m_model = nullptr;
+        //no need this delete.
+        //delete m_model;
+        //m_model = nullptr;
 
         for (auto scene : m_scenes)
         {

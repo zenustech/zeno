@@ -1,6 +1,7 @@
 #include "GraphModel.h"
 #include "uicommon.h"
 #include "Descriptors.h"
+#include "zassert.h"
 
 
 GraphModel::GraphModel(const QString& graphName, QObject* parent)
@@ -12,10 +13,26 @@ GraphModel::GraphModel(const QString& graphName, QObject* parent)
 
 GraphModel::~GraphModel()
 {
+    if (std::shared_ptr<zeno::Graph> coreGraph = m_spCoreGraph.lock())
+    {
+        bool ret = coreGraph->unregister_createNode(cbCreateNode);
+        ZASSERT_EXIT(ret);
+    }
+}
+
+void GraphModel::registerCoreNotify(std::shared_ptr<zeno::Graph> coreGraph)
+{
+    m_spCoreGraph = coreGraph;
+    cbCreateNode = coreGraph->register_createNode([this](const std::string& ident, std::weak_ptr<zeno::INode> spNode) {
+        int j;
+        j = 0;
+    });
 }
 
 int GraphModel::indexFromId(const QString& ident) const
 {
+    if (m_id2Row.find(ident) == m_id2Row.end())
+        return -1;
     return m_id2Row[ident];
 }
 
@@ -161,6 +178,26 @@ QList<SEARCH_RESULT> GraphModel::search(const QString& content, SearchType searc
 {
     //TODO:
     return {};
+}
+
+GraphModel* GraphModel::getGraphByPath(const QString& objPath)
+{
+     QStringList items = objPath.split('/', Qt::SkipEmptyParts);
+     if (items.empty())
+         return this;
+
+     QString item = items[0];
+     if (m_nodes.find(item) == m_nodes.end()) {
+         return nullptr;
+     }
+
+     NodeItem* pItem = m_nodes[item];
+     items.removeAt(0);
+     QString leftPath = items.join('/');
+     if (leftPath.isEmpty()) {
+         return this;
+     }
+     return pItem->pSubgraph->getGraphByPath(leftPath);
 }
 
 void GraphModel::undo()

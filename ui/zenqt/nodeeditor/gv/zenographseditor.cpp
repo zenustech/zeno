@@ -201,7 +201,7 @@ void ZenoGraphsEditor::resetModel()
 
     connect(pModel, SIGNAL(modelReset()), this, SLOT(onModelReset()));
     connect(assets, SIGNAL(graphRenamed(const QString&, const QString&)), this, SLOT(onSubGraphRename(const QString&, const QString&)));
-    activateTab("main");
+    activateTab("/main");
 }
 
 void ZenoGraphsEditor::onModelCleared()

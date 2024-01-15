@@ -8,11 +8,13 @@
 #include <functional>
 #include <variant>
 #include <memory>
+#include <unordered_map>
 #include <string>
 #include <set>
 #include <any>
 #include <map>
 #include <zeno/core/data.h>
+#include <zeno/utils/uuid.h>
 
 namespace zeno {
 
@@ -57,12 +59,21 @@ struct Graph : std::enable_shared_from_this<Graph> {
 
     //BEGIN NEW STANDARD API
     ZENO_API void init(const GraphData& graph);
+
     ZENO_API std::shared_ptr<INode> createNode(std::string const& cls);
-    ZENO_API std::shared_ptr<INode> getNode(std::string const& ident);
-    ZENO_API std::shared_ptr<INode> createSubnetNode(std::string const& cls);
+    CALLBACK_REGIST(createNode, void, const std::string&, std::weak_ptr<zeno::INode>)
+
     ZENO_API bool removeNode(std::string const& ident);
+    CALLBACK_REGIST(removeNode, void, const std::string&)
+
+    ZENO_API std::shared_ptr<INode> createSubnetNode(std::string const& name);
+    CALLBACK_REGIST(createSubnetNode, void, std::weak_ptr<zeno::INode>)
+
     ZENO_API bool addLink(const EdgeInfo& edge);
+
     ZENO_API bool removeLink(const EdgeInfo& edge);
+
+    ZENO_API std::shared_ptr<INode> getNode(std::string const& ident);
     //END
 
     ZENO_API DirtyChecker &getDirtyChecker();

@@ -27,8 +27,14 @@ ZENO_API Context::Context(Context const &other)
     : visited(other.visited)
 {}
 
-ZENO_API Graph::Graph() = default;
-ZENO_API Graph::~Graph() = default;
+ZENO_API Graph::Graph() {
+    int j;
+    j = 0;
+}
+
+ZENO_API Graph::~Graph() {
+
+}
 
 ZENO_API zany Graph::getNodeInput(std::string const& sn, std::string const& ss) const {
     auto node = safe_at(nodes, sn, "node name").get();
@@ -234,6 +240,7 @@ ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls) {
     node->graph = this;
     node->nodeClass = cl;
     nodes[node->ident] = node;
+    CALLBACK_NOTIFY(createNode, ident, node)
     return node;
 }
 
@@ -249,6 +256,7 @@ ZENO_API std::shared_ptr<INode> Graph::createSubnetNode(std::string const& cls)
     subnetnode->subnetClass = std::move(subcl);
 
     nodes[node->ident] = node;
+    CALLBACK_NOTIFY(createSubnetNode, subnetnode)
     return node;
 }
 
@@ -287,6 +295,7 @@ ZENO_API bool Graph::removeNode(std::string const& ident) {
         return false;
 
     nodes.erase(ident);
+    CALLBACK_NOTIFY(removeNode, ident)
     return true;
 }
 

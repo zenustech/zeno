@@ -60,6 +60,7 @@ private slots:
 
 private:
     GraphsManager(QObject *parent = nullptr);
+    void registerCoreNotify();
 
     GraphsTreeModel* m_model;
     QStandardItemModel* m_logModel;     //connection with scene.
