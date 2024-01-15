@@ -15,6 +15,7 @@
 #include <functional>
 #include <map>
 #include <utility>
+#include <filesystem>
 #include "zeno/core/Session.h"
 
 namespace zenovis {
@@ -145,19 +146,20 @@ void Session::do_screenshot(std::string path, std::string type, bool bOptix) {
         return;
     }
     zeno::log_info("saving screenshot {}x{} to {}", nx, ny, path);
+    std::string native_path = std::filesystem::u8path(path).string();
 
     std::map<std::string, std::function<void()>>{
     {"png", [&] {
         stbi_flip_vertically_on_write(true);
-        stbi_write_png(path.c_str(), nx, ny, 3, pixels.data(), 0);
+        stbi_write_png(native_path.c_str(), nx, ny, 3, pixels.data(), 0);
     }},
     {"jpg", [&] {
         stbi_flip_vertically_on_write(true);
-        stbi_write_jpg(path.c_str(), nx, ny, 3, pixels.data(), 100);
+        stbi_write_jpg(native_path.c_str(), nx, ny, 3, pixels.data(), 100);
     }},
     {"bmp", [&] {
         stbi_flip_vertically_on_write(true);
-        stbi_write_bmp(path.c_str(), nx, ny, 3, pixels.data());
+        stbi_write_bmp(native_path.c_str(), nx, ny, 3, pixels.data());
     }},
     {"exr", [&] {
         for (int line = 0; line < ny / 2; ++line) {
@@ -179,7 +181,7 @@ void Session::do_screenshot(std::string path, std::string type, bool bOptix) {
     }},
     {"hdr", [&] {
         stbi_flip_vertically_on_write(true);
-        stbi_write_hdr(path.c_str(), impl->scene->camera->m_nx,
+        stbi_write_hdr(native_path.c_str(), impl->scene->camera->m_nx,
                        impl->scene->camera->m_ny, 3, (float *)pixels.data());
     }},
     }.at(type)();

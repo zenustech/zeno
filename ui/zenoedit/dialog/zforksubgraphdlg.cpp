@@ -7,9 +7,6 @@
 #include <zenomodel/include/nodeparammodel.h>
 #include <zenomodel/include/uihelper.h>
 #include "variantptr.h"
-#include "nodesview/zenographseditor.h"
-#include "nodesys/zenosubgraphscene.h"
-#include "zenomainwindow.h"
 
 ZForkSubgraphDlg::ZForkSubgraphDlg(const QMap<QString, QString>& subgs, QWidget* parent)
     : ZFramelessDialog(parent)
@@ -198,21 +195,14 @@ void ZForkSubgraphDlg::onOkClicked()
 {
     IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
     ZASSERT_EXIT(pGraphsModel);
-    ZenoMainWindow* pWin = zenoApp->getMainWindow();
-    ZASSERT_EXIT(pWin);
-    ZenoGraphsEditor* pEditor = pWin->getAnyEditor();
-    ZASSERT_EXIT(pEditor);
-    ZenoSubGraphView* pView = pEditor->getCurrentSubGraphView();
-    ZASSERT_EXIT(pView);
-    auto sugIdx = pView->scene()->subGraphIndex();
-    ZASSERT_EXIT(sugIdx.isValid());
     int count = m_pTableWidget->rowCount();
     int rowNum = qSqrt(count);
     int colunmNum = count / (rowNum > 0 ? rowNum : 1);
-    QPointF pos;
     QMap<QString, QMap<QString, QVariant>> matValueMap;
     if (!m_importPath.isEmpty())
         matValueMap = readFile();
+    QPointF pos = m_nodeIndex.data(ROLE_OBJPOS).toPointF();
+    const auto& sugIdx = m_nodeIndex.data(ROLE_SUBGRAPH_IDX).toModelIndex();
     for (int row = 0; row < count; row++)
     {
         QString subgName = m_pTableWidget->item(row, 0)->data(Qt::DisplayRole).toString();
@@ -226,17 +216,11 @@ void ZForkSubgraphDlg::onOkClicked()
             QMessageBox::warning(this, tr("warring"), tr("fork preset subgraph '%1' failed.").arg(name));
             continue;
         }
-        if (row > 0)
-        {
-            int currC = row / rowNum;
-            int currR = row % rowNum;
-            QPointF newPos(pos.x() + currC * 600, pos.y() + currR * 600);
-            pGraphsModel->ModelSetData(index, newPos, ROLE_OBJPOS);
-        }
-        else
-        {
-            pos = index.data(ROLE_OBJPOS).toPointF();
-        }
+        
+        int currC = row / rowNum + 1;
+        int currR = row % rowNum;
+        QPointF newPos(pos.x() + currC * 600, pos.y() + currR * 600);
+        pGraphsModel->ModelSetData(index, newPos, ROLE_OBJPOS);
 
         if (!matValueMap.contains(old_mtlid))
             continue;
@@ -259,4 +243,9 @@ void ZForkSubgraphDlg::onOkClicked()
         }
     }
     accept();
+}
+
+void ZForkSubgraphDlg::setNodeIdex(const QModelIndex& index)
+{
+    m_nodeIndex = index;
 }

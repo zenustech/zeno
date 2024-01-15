@@ -498,21 +498,28 @@ std::shared_ptr<PrimitiveObject> readImageFileRawData(std::string const &path) {
 struct ReadImageFile_v2 : INode {
     virtual void apply() override {
         auto path = get_input2<std::string>("path");
+        std::shared_ptr<PrimitiveObject> image;
         if (zeno::ends_with(path, ".exr", false)) {
-            set_output("image", readExrFile(path));
+            image = readExrFile(path);
         }
         else if (zeno::ends_with(path, ".pfm", false)) {
-            set_output("image", readPFMFile(path));
+            image = readPFMFile(path);
         }
         else {
-            auto image = readImageFileRawData(path);
-            set_output("image", image);
+            image = readImageFileRawData(path);
         }
+        if (get_input2<bool>("srgb_to_linear")) {
+            for (auto i = 0; i < image->size(); i++) {
+                image->verts[i] = pow(image->verts[i], 2.2f);
+            }
+        }
+        set_output("image", image);
     }
 };
 ZENDEFNODE(ReadImageFile_v2, {
     {
         {"readpath", "path"},
+        {"bool", "srgb_to_linear", "0"},
     },
     {
         {"PrimitiveObject", "image"},
@@ -704,11 +711,11 @@ struct WriteImageFile_v2 : INode {
             alpha = mask->verts.attr<float>("alpha");
         }
         std::vector<char> data(w * h * n);
-        float gamma = 1;
+        float gamma = get_input2<bool>("linear_to_srgb_when_save")? 1.0f/2.2f: 1.0f;
         for (int i = 0; i < w * h; i++) {
-            data[n * i + 0] = (char)(255 * image->verts[i][0]);
-            data[n * i + 1] = (char)(255 * image->verts[i][1]);
-            data[n * i + 2] = (char)(255 * image->verts[i][2]);
+            data[n * i + 0] = (char)(255 * pow(image->verts[i][0], gamma));
+            data[n * i + 1] = (char)(255 * pow(image->verts[i][1], gamma));
+            data[n * i + 2] = (char)(255 * pow(image->verts[i][2], gamma));
             data[n * i + 3] = (char)(255 * alpha[i]);
         }
         if(type == "jpg"){
@@ -762,6 +769,7 @@ ZENDEFNODE(WriteImageFile_v2, {
         {"writepath", "path"},
         {"enum png jpg exr pfm", "type", "png"},
         {"mask"},
+        {"bool", "linear_to_srgb_when_save", "0"},
     },
     {
         {"image"},
