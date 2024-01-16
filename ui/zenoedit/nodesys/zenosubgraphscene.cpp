@@ -47,6 +47,7 @@ ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
     , m_bOnceOn(false)
     , m_bBypassOn(false)
     , m_bViewOn(false)
+    , m_bCacheOn(false)
 {
     ZtfUtil &inst = ZtfUtil::GetInstance();
     m_nodeParams = inst.toUtilParam(inst.loadZtf(":/templates/node-example.xml"));
@@ -1235,7 +1236,17 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
     } 
     else if (!event->isAccepted() && uKey == ZenoSettingsManager::GetInstance().getShortCut(ShortCut_View)) 
     {
-        updateNodeStatus(m_bViewOn, OPT_VIEW);
+        int options = OPT_VIEW;
+        if (!m_bViewOn)
+            options |= OPT_CACHE;
+        updateNodeStatus(m_bViewOn, options);
+    }
+    else if (!event->isAccepted() && uKey == ZenoSettingsManager::GetInstance().getShortCut(ShortCut_Cache))
+    {
+        int options = OPT_CACHE;
+        if (m_bCacheOn)
+            options |= OPT_VIEW;
+        updateNodeStatus(m_bCacheOn, options);
     }
 }
 

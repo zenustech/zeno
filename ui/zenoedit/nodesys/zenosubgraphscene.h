@@ -89,6 +89,7 @@ private:
     bool m_bOnceOn;
     bool m_bBypassOn;
     bool m_bViewOn;
+    bool m_bCacheOn;
 };
 
 #endif

@@ -1294,6 +1294,10 @@
         <source>Bypass</source>
         <translation type="unfinished">跳过</translation>
     </message>
+	<message>
+        <source>Cache</source>
+        <translation type="unfinished">缓存节点</translation>
+    </message>
     <message>
         <source>Select All</source>
         <translation type="unfinished">全选</translation>

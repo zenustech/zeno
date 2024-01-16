@@ -488,6 +488,7 @@ ZENO_ERROR Zeno_SetView(ZENO_HANDLE hSubg, ZENO_HANDLE hNode, bool bOn)
     info.oldValue = options;
     if (bOn) {
         options |= OPT_VIEW;
+        options |= OPT_CACHE;
     } else {
         options ^= OPT_VIEW;
     }
