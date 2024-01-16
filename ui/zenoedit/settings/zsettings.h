@@ -62,6 +62,7 @@ const char *const ShortCut_SelectAllNodes = "Select All Nodes";
 const char *const ShortCut_View = "View";
 const char *const ShortCut_Bypass = "Bypass";
 const char *const ShortCut_Once = "Once";
+const char *const ShortCut_Cache = "Cache";
 const char *const ShortCut_MovingView = "Moving View";
 const char *const ShortCut_RotatingView = "Rotating View";
 const char *const ShortCut_ScalingView = "Scaling View";
