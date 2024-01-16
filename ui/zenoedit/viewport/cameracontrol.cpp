@@ -106,6 +106,9 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
     if (event->button() == Qt::MiddleButton) {
         middle_button_pressed = true;
     }
+    else if (event->button() == Qt::RightButton) {
+        right_button_pressed = true;
+    }
     if (scene->camera->m_need_sync) {
         scene->camera->m_need_sync = false;
         if (bool(m_picker) && scene->camera->m_auto_radius) {
@@ -316,6 +319,9 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
             right.normalize();
             up.normalize();
             QVector3D delta = right * dx + up * dy;
+            if (right_button_pressed) {
+                delta *= 0.1;
+            }
             auto c = getCenter();
             QVector3D center = {c[0], c[1], c[2]};
             if (getOrthoMode()) {
@@ -375,6 +381,9 @@ void CameraControl::fakeWheelEvent(QWheelEvent *event) {
     else
         dy = event->angleDelta().y();
     float scale = (dy >= 0) ? 0.89 : 1 / 0.89;
+    if (right_button_pressed) {
+        scale = (dy >= 0) ? 0.99 : 1 / 0.99;
+    }
     bool shift_pressed = (event->modifiers() & Qt::ShiftModifier) && !(event->modifiers() & Qt::ControlModifier);
     bool aperture_pressed = (event->modifiers() & Qt::ControlModifier) && !(event->modifiers() & Qt::ShiftModifier);
     bool focalPlaneDistance_pressed =
@@ -524,6 +533,9 @@ QVariant CameraControl::hitOnFloor(float x, float y) const {
 void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
     if (event->button() == Qt::MiddleButton) {
         middle_button_pressed = false;
+    }
+    else if (event->button() == Qt::RightButton) {
+        right_button_pressed = false;
     }
     if (event->button() == Qt::LeftButton) {
 
@@ -722,7 +734,7 @@ bool CameraControl::fakeKeyPressEvent(int uKey) {
     zeno::vec3f up(-sin_t * sin_p, cos_t, sin_t * cos_p);
     zeno::vec3f left = zeno::cross(up, back);
     auto center = getCenter();
-    float step = 1.0f;
+    float step = right_button_pressed ? 0.1f : 1.0f;
 
     bool processed = false;
     if (uKey == Qt::Key_Q) {
