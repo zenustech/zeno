@@ -25,8 +25,7 @@ bool sceneMenuEvent(
     const QPointF& pos,
     const QPointF& scenePos,
     const QList<QGraphicsItem*>& seledItems,
-    const QList<QGraphicsItem*>& items,
-    const QModelIndex& subgIdx
+    const QList<QGraphicsItem*>& items
     )
 {
     QSet<ZenoNode*> nodeSets, nodeSelections;
@@ -295,8 +294,11 @@ bool sceneMenuEvent(
             return false;
         }
 
+        GraphModel* pGraphM = pScene->getGraphModel();
+        ZASSERT_EXIT(pGraphM, false);
+
         zeno::NodeCates cates = zenoApp->graphsManager()->getCates();
-        auto m_menu = new ZenoNewnodeMenu(subgIdx, cates, scenePos);
+        auto m_menu = new ZenoNewnodeMenu(pGraphM, cates, scenePos);
         m_menu->setEditorFocus();
         m_menu->exec(QCursor::pos());
         m_menu->deleteLater();

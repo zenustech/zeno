@@ -76,6 +76,7 @@ ZENO_API Session::Session()
     , m_userData(std::make_unique<UserData>())
     , mainGraph(std::make_unique<Graph>())
 {
+    mainGraph->session = const_cast<Session*>(this);
     initNodeCates();
 }
 

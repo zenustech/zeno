@@ -139,7 +139,8 @@ enum MODEL_ROLE {
     ROLE_OBJNAME,
     ROLE_CUSTOM_OBJNAME,
     ROLE_PARAMS,        //paramsmodel
-    ROLE_SUBGRAPH,
+    ROLE_SUBGRAPH,      //get the subgraph by the subgraph node.
+    ROLE_GRAPH,         //get the graph which owns the current node index.
     ROLE_PARAM_VALUE,
     ROLE_PARAM_TYPE,
     ROLE_PARAM_CONTROL,

@@ -24,6 +24,12 @@ namespace zeno {
     ZENO_API zvariant str2var(std::string const& defl, ParamType const& type) {
         switch (type) {
         case Param_String: {
+            return defl;
+        }
+        case Param_Bool: {
+            if (defl == "0" || defl == "false")    return 0;
+            if (defl == "1" || defl == "true")     return 1;
+            return zvariant();
         }
         case Param_Int: {
             return std::stoi(defl);
@@ -39,7 +45,6 @@ namespace zeno {
             for (auto v : split_str(defl, ',')) {
                 vec.push_back(std::stoi(v));
             }
-
             if (Param_Vec2i == type) {
                 return vec2i(vec[0], vec[1]);
             }
@@ -49,6 +54,7 @@ namespace zeno {
             else {
                 return vec4i(vec[0], vec[1], vec[2], vec[3]);
             }
+            return zvariant();
         }
         case Param_Vec2f:
         case Param_Vec3f:
@@ -68,9 +74,10 @@ namespace zeno {
             else {
                 return vec4f(vec[0], vec[1], vec[2], vec[3]);
             }
+            return zvariant();
         }
         default:
-            return nullptr;
+            return zvariant();
         }
     }
 

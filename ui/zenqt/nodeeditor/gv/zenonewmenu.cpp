@@ -1,17 +1,19 @@
 #include "zenonewmenu.h"
 #include "model/graphsmanager.h"
+#include "model/GraphModel.h"
 #include "zenoapplication.h"
 #include "fuzzy_search.h"
 #include "nodeeditor/gv/zenoparamwidget.h"
 #include "searchview.h"
 #include "util/uihelper.h"
+#include "zassert.h"
 
 
-ZenoNewnodeMenu::ZenoNewnodeMenu(const QModelIndex& subgIdx, const zeno::NodeCates& cates, const QPointF& scenePos, QWidget* parent)
+ZenoNewnodeMenu::ZenoNewnodeMenu(GraphModel* pGraphM, const zeno::NodeCates& cates, const QPointF& scenePos, QWidget* parent)
     : QMenu(parent)
     , m_preSearchMode(false)
     , m_cates(cates)
-    , m_subgIdx(subgIdx)
+    , m_pGraphM(pGraphM)
     , m_scenePos(scenePos)
     , m_searchEdit(nullptr)
     , m_wactSearchEdit(nullptr)
@@ -43,7 +45,7 @@ ZenoNewnodeMenu::ZenoNewnodeMenu(const QModelIndex& subgIdx, const zeno::NodeCat
     addAction(m_wactSearchEdit);
 
     GraphsTreeModel* pModel = zenoApp->graphsManager()->currentModel();
-    m_cateActions = getCategoryActions(m_subgIdx, m_scenePos);
+    m_cateActions = getCategoryActions(m_scenePos);
     addActions(m_cateActions);
 
     // init [node, cate] map, [node...] list
@@ -58,11 +60,11 @@ ZenoNewnodeMenu::ZenoNewnodeMenu(const QModelIndex& subgIdx, const zeno::NodeCat
 
     connect(m_searchEdit, SIGNAL(textChanged(const QString&)), this, SLOT(onTextChanged(const QString&)));
     connect(m_searchView, &SearchResultWidget::clicked, this, [this](SearchResultItem* item) {
-        GraphsTreeModel* pModel = zenoApp->graphsManager()->currentModel();
-        if (!pModel) return;
+        if (!m_pGraphM)
+            return;
 
         QString name = item->result();
-        UiHelper::createNewNode(m_subgIdx, name, m_scenePos);
+        m_pGraphM->createNode(name, m_scenePos);
         this->close();
     });
 }
@@ -147,7 +149,7 @@ void ZenoNewnodeMenu::onTextChanged(const QString& text)
     setEditorFocus();
 }
 
-QList<QAction*> ZenoNewnodeMenu::getCategoryActions(QModelIndex subgIdx, QPointF scenePos)
+QList<QAction*> ZenoNewnodeMenu::getCategoryActions(QPointF scenePos)
 {
     //if (!subgIdx.isValid())
     //    return QList<QAction*>();
@@ -173,7 +175,7 @@ QList<QAction*> ZenoNewnodeMenu::getCategoryActions(QModelIndex subgIdx, QPointF
             QAction* pChildAction = pChildMenu->addAction(nodeName);
             //todo: tooltip
             connect(pChildAction, &QAction::triggered, [=]() {
-                UiHelper::createNewNode(subgIdx, nodeName, scenePos);
+                m_pGraphM->createNode(nodeName, m_scenePos);
             });
         }
         pAction->setMenu(pChildMenu);

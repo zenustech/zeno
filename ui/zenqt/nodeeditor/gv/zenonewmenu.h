@@ -7,14 +7,14 @@
 #include <QSet>
 
 class ZenoGvLineEdit;
-class IGraphsModel;
+class GraphModel;
 class SearchResultWidget;
 
 class ZenoNewnodeMenu : public QMenu
 {
     Q_OBJECT
 public:
-    ZenoNewnodeMenu(const QModelIndex& subgIdx, const zeno::NodeCates& cates, const QPointF& scenePos, QWidget* parent = nullptr);
+    ZenoNewnodeMenu(GraphModel* pGraphM, const zeno::NodeCates& cates, const QPointF& scenePos, QWidget* parent = nullptr);
     ~ZenoNewnodeMenu();
     void setEditorFocus();
 
@@ -25,12 +25,13 @@ public slots:
     void onTextChanged(const QString& text);
 
 private:
-    QList<QAction*> getCategoryActions(QModelIndex subgIdx, QPointF scenePos);
+    QList<QAction*> getCategoryActions(QPointF scenePos);
     void updateSearchView(const QString& filter);
 
     bool m_preSearchMode;
     const zeno::NodeCates m_cates;
-    const QModelIndex m_subgIdx;
+    //const QModelIndex m_subgIdx;
+    GraphModel* m_pGraphM;
     const QPointF m_scenePos;
     ZenoGvLineEdit* m_searchEdit;
     SearchResultWidget* m_searchView;

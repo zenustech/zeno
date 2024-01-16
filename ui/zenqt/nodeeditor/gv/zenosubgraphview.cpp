@@ -26,8 +26,7 @@ bool sceneMenuEvent(
     const QPointF& pos,
     const QPointF& scenePos,
     const QList<QGraphicsItem*>& seledItems,
-    const QList<QGraphicsItem*>& items,
-    const QModelIndex& subgIdx);
+    const QList<QGraphicsItem*>& items);
 
 
 _ZenoSubGraphView::_ZenoSubGraphView(QWidget *parent)
@@ -476,11 +475,10 @@ void _ZenoSubGraphView::contextMenuEvent(QContextMenuEvent* event)
     QList<QGraphicsItem*> seledItems = m_scene->selectedItems();
     QList<QGraphicsItem*> tempList = this->items(pos);
 
-    bool ret = sceneMenuEvent(m_scene, pos, scenePos, seledItems, tempList, m_scene->subGraphIndex());
+    bool ret = sceneMenuEvent(m_scene, pos, scenePos, seledItems, tempList);
     if (!ret) {
         QGraphicsView::contextMenuEvent(event);
     }
-
 }
 
 void _ZenoSubGraphView::drawGrid(QPainter* painter, const QRectF& rect)

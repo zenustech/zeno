@@ -2,6 +2,7 @@
 #include "uicommon.h"
 #include "Descriptors.h"
 #include "zassert.h"
+#include "variantptr.h"
 
 
 GraphModel::GraphModel(const QString& graphName, QObject* parent)
@@ -24,8 +25,12 @@ void GraphModel::registerCoreNotify(std::shared_ptr<zeno::Graph> coreGraph)
 {
     m_spCoreGraph = coreGraph;
     cbCreateNode = coreGraph->register_createNode([this](const std::string& ident, std::weak_ptr<zeno::INode> spNode) {
-        int j;
-        j = 0;
+        auto coreNode = spNode.lock();
+        if (coreNode) {
+            spNode = coreNode;
+            int j = coreNode->inputs_.size();
+            j = 0;
+        }
     });
 }
 
@@ -116,6 +121,10 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
                 return QVariant::fromValue(item->pSubgraph);
             else
                 return QVariant();
+        }
+        case ROLE_GRAPH:
+        {
+            return QVariant::fromValue(const_cast<GraphModel*>(this));
         }
         case ROLE_INPUTS:
         {
@@ -244,13 +253,17 @@ zeno::NodeData GraphModel::createNode(const QString& nodeCls, const QPointF& pos
 {
     zeno::NodeData node;
     //call IGraph::createNode
+    std::shared_ptr<zeno::Graph> spGraph = m_spCoreGraph.lock();
+    if (!spGraph)
+        return node;
+    spGraph->createNode(nodeCls.toStdString());
     return node;
 }
 
-void GraphModel::appendNode(QString ident, QString name, const QPointF& pos)
+void GraphModel::appendNode(QString ident, QString cls, const QPointF& pos)
 {
     auto* pDescs = Descriptors::instance();
-    NODE_DESCRIPTOR desc = pDescs->getDescriptor(name);
+    NODE_DESCRIPTOR desc = pDescs->getDescriptor(cls);
 
     int nRows = m_nodes.size();
 
@@ -259,7 +272,7 @@ void GraphModel::appendNode(QString ident, QString name, const QPointF& pos)
     NodeItem* pItem = new NodeItem(this);
     pItem->setParent(this);
     pItem->ident = ident;
-    pItem->name = name;
+    pItem->name = cls;
     pItem->pos = pos;
     pItem->params = new ParamsModel(desc, pItem);
 

@@ -22,6 +22,8 @@ public:
     ParamsModel* params = nullptr;
     QPointF pos;
 
+    std::weak_ptr<zeno::INode> spNode;
+
     //for subgraph:
     GraphModel* pSubgraph = nullptr;
 
