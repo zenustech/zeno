@@ -29,7 +29,6 @@ public:
     Graph *graph = nullptr;
     INodeClass *nodeClass = nullptr;
 
-    std::string ident;
     std::string name;
     std::string nodecls;
 
@@ -129,7 +128,7 @@ public:
     template <class T>
     std::shared_ptr<T> get_input(std::string const &id) const {
         auto obj = get_input(id);
-        return safe_dynamic_cast<T>(std::move(obj), "input socket `" + id + "` of node `" + ident + "`");
+        return safe_dynamic_cast<T>(std::move(obj), "input socket `" + id + "` of node `" + name + "`");
     }
 
     template <class T>
@@ -147,7 +146,7 @@ public:
 
     template <class T>
     auto get_input2(std::string const &id) const {
-        return objectToLiterial<T>(get_input(id), "input socket `" + id + "` of node `" + ident + "`");
+        return objectToLiterial<T>(get_input(id), "input socket `" + id + "` of node `" + name + "`");
     }
 
     template <class T>

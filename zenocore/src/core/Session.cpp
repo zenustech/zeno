@@ -26,10 +26,10 @@ struct ImplNodeClass : INodeClass {
     ImplNodeClass(std::shared_ptr<INode>(*ctor)(), Descriptor const &desc, std::string const &name)
         : INodeClass(desc, name), ctor(ctor) {}
 
-    virtual std::shared_ptr<INode> new_instance(std::string const &ident) const override {
+    virtual std::shared_ptr<INode> new_instance(std::string const &name) const override {
         std::shared_ptr<INode> spNode = ctor();
-        spNode->ident = ident;
-        spNode->nodecls = name;
+        spNode->name = name;
+        spNode->nodecls = classname;
 
         //init all params, and set defl value
         for (SocketDescriptor& param_desc : desc->inputs)
@@ -90,9 +90,9 @@ ZENO_API void Session::defNodeClass(std::shared_ptr<INode>(*ctor)(), std::string
     nodeClasses.emplace(clsname, std::move(cls));
 }
 
-ZENO_API INodeClass::INodeClass(Descriptor const &desc, std::string const& name)
+ZENO_API INodeClass::INodeClass(Descriptor const &desc, std::string const& classname)
         : desc(std::make_unique<Descriptor>(desc))
-        , name(name){
+        , classname(classname){
 }
 
 ZENO_API INodeClass::~INodeClass() = default;

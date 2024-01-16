@@ -65,7 +65,7 @@ ZenoSearchBar::ZenoSearchBar(GraphModel* pModel, QWidget *parentWidget)
 SEARCH_RECORD ZenoSearchBar::_getRecord()
 {
     QModelIndex idx = m_results[m_idx];
-    const QString &nodeid = idx.data(ROLE_OBJID).toString();
+    const QString &nodeid = idx.data(ROLE_NODE_NAME).toString();
     const QPointF &pos = idx.data(ROLE_OBJPOS).toPointF();
     return {nodeid, pos};
 }

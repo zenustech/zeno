@@ -27,9 +27,9 @@ std::optional<NodeLocation> NodeSyncMgr::generateNewNode(NodeLocation& node_loca
 
     auto new_node_id = UiHelper::createNewNode(subgraph, QString::fromStdString(new_node_type), pos);
 
-    auto this_node_id = nodeIdx.data(ROLE_OBJID).toString();
+    auto this_node_id = nodeIdx.data(ROLE_NODE_NAME).toString();
 
-    const QString& subgName = subgraph.data(ROLE_OBJNAME).toString();
+    const QString& subgName = subgraph.data(ROLE_CLASS_NAME).toString();
     const QString& outNode = this_node_id;
     const QString& inNode = new_node_id;
     const QString& outSock = QString::fromLocal8Bit(output_sock.c_str());
@@ -69,7 +69,7 @@ std::optional<NodeLocation> NodeSyncMgr::searchNode(const std::string& node_id) 
 
 bool NodeSyncMgr::checkNodeType(const QModelIndex& node,
                                 const std::string& node_type) {
-    auto node_id = node.data(ROLE_OBJID).toString();
+    auto node_id = node.data(ROLE_NODE_NAME).toString();
     return node_id.contains(node_type.c_str());
 }
 
@@ -92,7 +92,7 @@ std::optional<NodeLocation> NodeSyncMgr::checkNodeLinkedSpecificNode(const QMode
     }
 
     auto this_outputs = node.data(ROLE_OUTPUTS).value<PARAMS_INFO>();
-    auto this_node_id = node.data(ROLE_OBJID).toString(); // TransformPrimitive-1f4erf21
+    auto this_node_id = node.data(ROLE_NODE_NAME).toString(); // TransformPrimitive-1f4erf21
     auto this_node_type = this_node_id.section("-", 1); // TransformPrimitive
     auto prim_sock_name = getPrimSockName(this_node_type.toStdString());
 
@@ -164,7 +164,7 @@ void NodeSyncMgr::updateNodeVisibility(NodeLocation& node_location) {
     if (!nodeIdx.isValid())
         return;
 
-    auto node_id = nodeIdx.data(ROLE_OBJID).toString();
+    auto node_id = nodeIdx.data(ROLE_NODE_NAME).toString();
     int old_option = nodeIdx.data(ROLE_OPTIONS).toInt();
     int new_option = old_option;
     new_option ^= zeno::View;
@@ -185,7 +185,7 @@ void NodeSyncMgr::updateNodeInputString(NodeLocation node_location,
     if (!nodeIdx.isValid())
         return;
 
-    auto node_id = nodeIdx.data(ROLE_OBJID).toString();
+    auto node_id = nodeIdx.data(ROLE_NODE_NAME).toString();
     auto inputs = nodeIdx.data(ROLE_INPUTS).value<PARAMS_INFO>();
     const QString& paramName = QString::fromStdString(input_name);
     if (inputs.find(paramName) != inputs.end()) {
@@ -209,7 +209,7 @@ std::string NodeSyncMgr::getPrimSockName(const std::string& node_type) {
 }
 
 std::string NodeSyncMgr::getPrimSockName(NodeLocation& node_location) {
-    auto node_type = node_location.node.data(ROLE_OBJID).toString().section("-", 1);
+    auto node_type = node_location.node.data(ROLE_NODE_NAME).toString().section("-", 1);
     return getPrimSockName(node_type.toStdString());
 }
 

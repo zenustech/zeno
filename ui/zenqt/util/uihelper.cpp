@@ -56,7 +56,7 @@ QString UiHelper::createNewNode(QModelIndex subgIdx, const QString& descName, co
     {
         node = pModel->createNode(descName, pt);
     }
-    return QString::fromStdString(node.ident);
+    return QString::fromStdString(node.name);
 }
 
 QVariant UiHelper::parseTextValue(const zeno::ParamType& type, const QString& textValue)
@@ -1402,8 +1402,8 @@ QString UiHelper::getNaiveParamPath(const QModelIndex& param, int dim)
 {
     //TODO: adjust
     QString str = param.data(ROLE_OBJPATH).toString();
-    QString subgName, ident, paramPath;
-    getSocketInfo(str, subgName, ident, paramPath);
+    QString subgName, name, paramPath;
+    getSocketInfo(str, subgName, name, paramPath);
     if (dim == 0) {
         paramPath += "/x";
     }
@@ -1413,7 +1413,7 @@ QString UiHelper::getNaiveParamPath(const QModelIndex& param, int dim)
     else if (dim == 2) {
         paramPath += "/z";
     }
-    return QString("%1/%2").arg(ident).arg(paramPath);
+    return QString("%1/%2").arg(name).arg(paramPath);
 }
 
 QPair<zeno::NodesData, zeno::LinksData>
@@ -1425,7 +1425,7 @@ QPair<zeno::NodesData, zeno::LinksData>
     QSet<QString> existedNodes;
     for (auto idx : nodeIndice)
     {
-        existedNodes.insert(idx.data(ROLE_OBJID).toString());
+        existedNodes.insert(idx.data(ROLE_NODE_NAME).toString());
     }
 
     for (auto idx : linkIndice)
@@ -1489,7 +1489,7 @@ QPair<zeno::NodesData, zeno::LinksData>
             }
         }
 
-        const std::string& oldId = node.ident;
+        const std::string& oldId = node.name;
         nodes.insert(std::make_pair(oldId, node));
     }
 
@@ -1505,12 +1505,12 @@ void UiHelper::reAllocIdents(const QString& targetSubgraph,
     QMap<QString, QString> old2new;
     for (const auto& [key, data] : inNodes)
     {
-        const auto& oldId = data.ident;
+        const auto& oldId = data.name;
         const auto& name = data.cls;
         const QString& newId = UiHelper::generateUuid(QString::fromStdString(name));
         zeno::NodeData newData = data;
-        newData.ident = newId.toStdString();
-        outNodes.insert(std::make_pair(newData.ident, newData));
+        newData.name = newId.toStdString();
+        outNodes.insert(std::make_pair(newData.name, newData));
         old2new.insert(QString::fromStdString(oldId), newId);
     }
     //replace all the old-id in newNodes, and clear cached links.

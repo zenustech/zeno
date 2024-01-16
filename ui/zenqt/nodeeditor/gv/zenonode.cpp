@@ -146,7 +146,7 @@ void ZenoNode::initUI(ZenoSubGraphScene* pScene, const QModelIndex& subGIdx, con
     setLayout(mainLayout);
 
     QPointF pos = m_index.data(ROLE_OBJPOS).toPointF();
-    const QString &id = m_index.data(ROLE_OBJID).toString();
+    const QString &id = m_index.data(ROLE_NODE_NAME).toString();
     setPos(pos);
 
     bool bCollasped = m_index.data(ROLE_COLLASPED).toBool();
@@ -196,7 +196,7 @@ ZLayoutBackground* ZenoNode::initHeaderWidget()
     headerWidget->setColors(headerBg.bAcceptHovers, clrHeaderBg, clrHeaderBg, clrHeaderBg);
     headerWidget->setBorder(ZenoStyle::dpiScaled(headerBg.border_witdh), headerBg.clr_border);
 
-    const QString& name = m_index.data(ROLE_OBJNAME).toString();
+    const QString& name = m_index.data(ROLE_CLASS_NAME).toString();
 
     QString category;
 
@@ -207,7 +207,7 @@ ZLayoutBackground* ZenoNode::initHeaderWidget()
     QFont font2 = QApplication::font();
     font2.setPointSize(16);
     font2.setWeight(QFont::DemiBold);
-    QString custName = m_index.data(ROLE_CUSTOM_OBJNAME).toString();
+    QString custName = m_index.data(ROLE_NODE_NAME).toString();
     m_NameItem = new ZGraphicsTextItem(custName.isEmpty() ? name : custName, font2, QColor("#FFFFFF"), this);
     m_NameItem->installEventFilter(this);
     connect(m_NameItem, &ZGraphicsTextItem::editingFinished, this, &ZenoNode::onCustomNameChanged);
@@ -299,7 +299,7 @@ void ZenoNode::onNameUpdated(const QString& newName)
     ZASSERT_EXIT(m_NameItem);
     if (m_NameItem)
     {
-        QString custName = m_index.data(ROLE_CUSTOM_OBJNAME).toString();
+        QString custName = m_index.data(ROLE_NODE_NAME).toString();
         if (custName.isEmpty())
         {
             m_NameItem->setText(newName);
@@ -321,7 +321,7 @@ ZSocketLayout* ZenoNode::getSocketLayout(bool bInput, const QString& name)
         for (int i = 0; i < m_inSockets.size(); i++)
         {
             QModelIndex idx = m_inSockets[i]->viewSocketIdx();
-            QString sockName = idx.data(ROLE_OBJNAME).toString();
+            QString sockName = idx.data(ROLE_PARAM_NAME).toString();
             if (sockName == name)
                 return m_inSockets[i];
         }
@@ -331,7 +331,7 @@ ZSocketLayout* ZenoNode::getSocketLayout(bool bInput, const QString& name)
         for (int i = 0; i < m_outSockets.size(); i++)
         {
             QModelIndex idx = m_outSockets[i]->viewSocketIdx();
-            QString sockName = idx.data(ROLE_OBJNAME).toString();
+            QString sockName = idx.data(ROLE_PARAM_NAME).toString();
             if (sockName == name)
                 return m_outSockets[i];
         }
@@ -346,7 +346,7 @@ bool ZenoNode::removeSocketLayout(bool bInput, const QString& name)
         for (int i = 0; i < m_inSockets.size(); i++)
         {
             QModelIndex idx = m_inSockets[i]->viewSocketIdx();
-            QString sockName = idx.data(ROLE_OBJNAME).toString();
+            QString sockName = idx.data(ROLE_PARAM_NAME).toString();
             if (sockName == name)
             {
                 m_inSockets.remove(i);
@@ -359,7 +359,7 @@ bool ZenoNode::removeSocketLayout(bool bInput, const QString& name)
         for (int i = 0; i < m_outSockets.size(); i++)
         {
             QModelIndex idx = m_outSockets[i]->viewSocketIdx();
-            QString sockName = idx.data(ROLE_OBJNAME).toString();
+            QString sockName = idx.data(ROLE_PARAM_NAME).toString();
             if (sockName == name)
             {
                 m_outSockets.remove(i);
@@ -384,7 +384,7 @@ void ZenoNode::onParamDataChanged(const QModelIndex& topLeft, const QModelIndex&
 
     QModelIndex paramIdx = topLeft;
     int role = roles[0];
-    if (role != ROLE_OBJNAME 
+    if (role != ROLE_PARAM_NAME 
         && role != ROLE_PARAM_VALUE
         && role != ROLE_PARAM_CONTROL
         && role != ROLE_PARAM_CTRL_PROPERTIES
@@ -395,11 +395,11 @@ void ZenoNode::onParamDataChanged(const QModelIndex& topLeft, const QModelIndex&
     ZASSERT_EXIT(pScene);
 
     const bool bInput = paramIdx.data(ROLE_ISINPUT).toBool();
-    const QString& paramName = paramIdx.data(ROLE_OBJNAME).toString();
+    const QString& paramName = paramIdx.data(ROLE_PARAM_NAME).toString();
     const auto paramCtrl = paramIdx.data(ROLE_PARAM_CONTROL).toInt();
     const zeno::ParamType paramType = (zeno::ParamType)paramIdx.data(ROLE_PARAM_TYPE).toInt();
 
-    if (role == ROLE_OBJNAME || role == ROLE_PARAM_TOOLTIP)
+    if (role == ROLE_PARAM_NAME || role == ROLE_PARAM_TOOLTIP)
     {
         if (bInput)
         {
@@ -409,7 +409,7 @@ void ZenoNode::onParamDataChanged(const QModelIndex& topLeft, const QModelIndex&
                 QModelIndex socketIdx = pSocketLayout->viewSocketIdx();
                 if (socketIdx == paramIdx)
                 {
-                    if (role == ROLE_OBJNAME)
+                    if (role == ROLE_PARAM_NAME)
                         pSocketLayout->updateSockName(paramName);   //only update name on control.
                     else if (role == ROLE_PARAM_TOOLTIP)
                         pSocketLayout->updateSockNameToolTip(paramIdx.data(ROLE_PARAM_TOOLTIP).toString());
@@ -425,7 +425,7 @@ void ZenoNode::onParamDataChanged(const QModelIndex& topLeft, const QModelIndex&
                 QModelIndex socketIdx = pSocketLayout->viewSocketIdx();
                 if (socketIdx == paramIdx)
                 {
-                    if (role == ROLE_OBJNAME)
+                    if (role == ROLE_PARAM_NAME)
                         pSocketLayout->updateSockName(paramName);
                     else if (role == ROLE_PARAM_TOOLTIP)
                         pSocketLayout->updateSockNameToolTip(paramIdx.data(ROLE_PARAM_TOOLTIP).toString());
@@ -595,7 +595,7 @@ void ZenoNode::onViewParamAboutToBeRemoved(const QModelIndex& parent, int first,
         const int paramCtrl = viewParamIdx.data(ROLE_PARAM_CONTROL).toInt();
         bool bInput = viewParamIdx.data(ROLE_ISINPUT).toBool();
 
-        const QString& paramName = viewParamIdx.data(ROLE_OBJNAME).toString();
+        const QString& paramName = viewParamIdx.data(ROLE_PARAM_NAME).toString();
         ZSocketLayout* pSocketLayout = getSocketLayout(bInput, paramName);
         removeSocketLayout(bInput, paramName);
 
@@ -613,7 +613,7 @@ void ZenoNode::focusOnNode(const QModelIndex& nodeIdx)
     if (_ZenoSubGraphView* pView = qobject_cast<_ZenoSubGraphView*>(pScene->views().first()))
     {
         ZASSERT_EXIT(nodeIdx.isValid());
-        pView->focusOn(nodeIdx.data(ROLE_OBJID).toString(), QPointF(), false);
+        pView->focusOn(nodeIdx.data(ROLE_NODE_NAME).toString(), QPointF(), false);
     }
 }
 
@@ -654,7 +654,7 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewSockIdx, bool bInput, 
         }
     };
 
-    const QString& sockName = viewSockIdx.data(ROLE_OBJNAME).toString();
+    const QString& sockName = viewSockIdx.data(ROLE_PARAM_NAME).toString();
     const zeno::ParamControl ctrl = (zeno::ParamControl)viewSockIdx.data(ROLE_PARAM_CONTROL).toInt();
     const zeno::ParamType sockType = (zeno::ParamType)viewSockIdx.data(ROLE_PARAM_TYPE).toInt();
     const QVariant& deflVal = viewSockIdx.data(ROLE_PARAM_VALUE);
@@ -792,7 +792,7 @@ void ZenoNode::onSocketLinkChanged(const QModelIndex& paramIdx, bool bInput, boo
 
     if (bInput)
     {
-        QString sockName = paramIdx.data(ROLE_OBJNAME).toString();
+        QString sockName = paramIdx.data(ROLE_PARAM_NAME).toString();
         // special case, we need to show the button param.
         if (this->nodeName() == "GenerateCommands" && sockName == "source")
             return;
@@ -949,13 +949,13 @@ QPointF ZenoNode::getSocketPos(const QModelIndex& sockIdx)
 QString ZenoNode::nodeId() const
 {
     ZASSERT_EXIT(m_index.isValid(), "");
-    return m_index.data(ROLE_OBJID).toString();
+    return m_index.data(ROLE_NODE_NAME).toString();
 }
 
 QString ZenoNode::nodeName() const
 {
     ZASSERT_EXIT(m_index.isValid(), "");
-    return m_index.data(ROLE_OBJNAME).toString();
+    return m_index.data(ROLE_CLASS_NAME).toString();
 }
 
 QPointF ZenoNode::nodePos() const
@@ -1126,7 +1126,7 @@ void ZenoNode::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
         QAction *pDelete = new QAction("Delete");
 
         connect(pDelete, &QAction::triggered, this, [=]() {
-            //pGraphsModel->removeNode(m_index.data(ROLE_OBJID).toString(), m_subGpIndex, true);
+            //pGraphsModel->removeNode(m_index.data(ROLE_NODE_NAME).toString(), m_subGpIndex, true);
         });
 
         nodeMenu->addAction(pCopy);
@@ -1142,7 +1142,7 @@ void ZenoNode::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
         nodeMenu->exec(QCursor::pos());
         nodeMenu->deleteLater();
     }
-    else if (m_index.data(ROLE_OBJNAME).toString() == "BindMaterial")
+    else if (m_index.data(ROLE_CLASS_NAME).toString() == "BindMaterial")
     {
 #if 0
         QAction* newSubGraph = new QAction(tr("Create Material Subgraph"));
@@ -1193,7 +1193,7 @@ bool ZenoNode::eventFilter(QObject* obj, QEvent* event)
             }
             if (!bDelete)
             {
-                QString name = m_index.data(ROLE_OBJNAME).toString();
+                QString name = m_index.data(ROLE_CLASS_NAME).toString();
                 QColor color = QColor(255, 255, 255);
                 QColor textColor = m_NameItem->defaultTextColor();
                 if (textColor != color)
@@ -1217,7 +1217,7 @@ bool ZenoNode::eventFilter(QObject* obj, QEvent* event)
             QString text = m_NameItem->toPlainText();
             if (text.isEmpty())
             {
-                QString name = m_index.data(ROLE_OBJNAME).toString();
+                QString name = m_index.data(ROLE_CLASS_NAME).toString();
                 m_NameItem->setText(name);
                 m_NameItem->setTextInteractionFlags(Qt::TextEditable);
                 m_NameItem->setDefaultTextColor(QColor(255, 255, 255, 40));
@@ -1238,7 +1238,7 @@ void ZenoNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
     QList<QGraphicsItem*> items = scene()->items(event->scenePos());
     if (items.contains(m_NameItem))
     {
-        QString name = m_index.data(ROLE_OBJNAME).toString();
+        QString name = m_index.data(ROLE_CLASS_NAME).toString();
         if (name == m_NameItem->toPlainText())
         {
             m_NameItem->setTextInteractionFlags(Qt::TextEditable);
@@ -1327,8 +1327,8 @@ QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant &value)
 
         ZenoSubGraphScene *pScene = qobject_cast<ZenoSubGraphScene *>(scene());
         ZASSERT_EXIT(pScene, value);
-        const QString& ident = m_index.data(ROLE_OBJID).toString();
-        pScene->collectNodeSelChanged(ident, bSelected);
+        const QString& name = m_index.data(ROLE_NODE_NAME).toString();
+        pScene->collectNodeSelChanged(name, bSelected);
     }
     else if (change == QGraphicsItem::ItemPositionChange)
     {

@@ -118,9 +118,9 @@ ZENO_API void Graph::loadGraph(const char *json) {
             } else if (cmd == "setNodeOption") {
                 // skip this for compatibility
             } else if (cmd == "markNodeChanged") {
-                auto ident = di[1].GetString();
+                auto name = di[1].GetString();
                 auto &dc = g->getDirtyChecker();
-                dc.taintThisNode(ident);
+                dc.taintThisNode(name);
                 //todo: mark node data change.
             } else if (cmd == "cacheToDisk") {
                 //g->setTempCache(di[1].GetString());

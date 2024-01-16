@@ -60,7 +60,7 @@ bool ZenoSocketItem::isInputSocket() const
 
 QString ZenoSocketItem::nodeIdent() const
 {
-    return m_paramIdx.isValid() ? m_paramIdx.data(ROLE_OBJID).toString() : "";
+    return m_paramIdx.isValid() ? m_paramIdx.data(ROLE_NODE_NAME).toString() : "";
 }
 
 void ZenoSocketItem::setHovered(bool bHovered)

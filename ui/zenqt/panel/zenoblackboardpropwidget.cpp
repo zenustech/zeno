@@ -79,7 +79,7 @@ void ZenoBlackboardPropWidget::insertRow(const QString &desc, const PARAM_CONTRO
         } */else if (desc == "background") {
             info.background = newValue.value<QColor>();
         }
-        pModel->updateBlackboard(m_idx.data(ROLE_OBJID).toString(), QVariant::fromValue(info), m_subgIdx, true);
+        pModel->updateBlackboard(m_idx.data(ROLE_NODE_NAME).toString(), QVariant::fromValue(info), m_subgIdx, true);
     };
 
     cbSet.cbSwitch = [=](bool bOn) {

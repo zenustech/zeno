@@ -260,16 +260,16 @@ void DockContent_Parameter::onNodesSelected(const QModelIndex& subgIdx, const QM
                     if (roles.isEmpty())
                         return;
                     int role = roles[0];
-                    if (role != ROLE_CUSTOM_OBJNAME)
+                    if (role != ROLE_NODE_NAME)
                         return;
-                    m_pNameLineEdit->setText(idx.data(ROLE_CUSTOM_OBJNAME).toString());
+                    m_pNameLineEdit->setText(idx.data(ROLE_NODE_NAME).toString());
                 });
                 //TODO: When Switch node, the connection should be cleared.
             }
 
             if (select) {
-                m_plblName->setText(idx.data(ROLE_OBJID).toString());
-                m_pNameLineEdit->setText(idx.data(ROLE_CUSTOM_OBJNAME).toString());
+                m_plblName->setText(idx.data(ROLE_NODE_NAME).toString());
+                m_pNameLineEdit->setText(idx.data(ROLE_NODE_NAME).toString());
                 return;
             }
         }

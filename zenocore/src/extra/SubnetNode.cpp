@@ -17,8 +17,8 @@ void SubnetNode::init(const NodeData& dat)
 {
     //需要先初始化param
     //INode::init(dat);
-    if (dat.ident.empty())
-        ident = dat.ident;
+    if (dat.name.empty())
+        name = dat.name;
 
     for (const ParamInfo& param : dat.inputs)
     {

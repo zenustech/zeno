@@ -305,7 +305,7 @@ namespace zeno {
                 if (ValueRef) {
                     Node->set_output(KeyName, ValueRef);
                 } else if (!IsOptional) {
-                    zeno::log_error("Node '{}' has invalid output '{}'.", Node->ident, KeyName);
+                    zeno::log_error("Node '{}' has invalid output '{}'.", Node->name, KeyName);
                 }
             }
 
@@ -350,17 +350,17 @@ namespace zeno {
 
                 AutoParameter = std::make_unique<NodeParameterType>(this);
 
-                log_debug("==> enter {}", ident);
+                log_debug("==> enter {}", name);
                 {
 #ifdef ZENO_BENCHMARKING
-                    Timer _(ident);
+                    Timer _(name);
 #endif
                     apply();
                 }
 
                 AutoParameter->RunOutputHooks();
                 AutoParameter.reset();
-                log_debug("==> leave {}", ident);
+                log_debug("==> leave {}", name);
             }
         };
 

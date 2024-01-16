@@ -175,7 +175,7 @@ void ZenoCommandParamsPanel::onItemClicked(QTableWidgetItem* item)
     if (idx.isValid())
     {
         QModelIndex subgIdx = idx.data(ROLE_SUBGRAPH_IDX).toModelIndex();
-        const QString& subgName = subgIdx.data(ROLE_OBJNAME).toString();
+        const QString& subgName = subgIdx.data(ROLE_CLASS_NAME).toString();
         ZenoMainWindow* pWin = zenoApp->getMainWindow();
         ZASSERT_EXIT(pWin);
         ZenoGraphsEditor* pEditor = pWin->getAnyEditor();

@@ -314,7 +314,7 @@ void ZDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelIndexL
             if (select && nodes.size() == 1)
             {
                 const QModelIndex &idx = nodes[0];
-                QString nodeId = idx.data(ROLE_OBJID).toString();
+                QString nodeId = idx.data(ROLE_NODE_NAME).toString();
 
                 ZenoMainWindow *pWin = zenoApp->getMainWindow();
                 ZASSERT_EXIT(pWin);
@@ -350,7 +350,7 @@ void ZDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelIndexL
             if (select && nodes.size() == 1)
             {
                 const QModelIndex &idx = nodes[0];
-                image->setPrim(idx.data(ROLE_OBJID).toString().toStdString());
+                image->setPrim(idx.data(ROLE_NODE_NAME).toString().toStdString());
             }
             if (!select)
             {

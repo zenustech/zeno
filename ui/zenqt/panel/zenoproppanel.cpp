@@ -84,11 +84,11 @@ bool ZenoPropPanel::updateCustomName(const QString &value, QString &oldValue)
     if (!m_idx.isValid())
         return false;
 
-    oldValue = m_idx.data(ROLE_CUSTOM_OBJNAME).toString();
+    oldValue = m_idx.data(ROLE_NODE_NAME).toString();
     if (value == oldValue)
         return true;
 
-    return UiHelper::qIndexSetData(m_idx, value, ROLE_CUSTOM_OBJNAME);
+    return UiHelper::qIndexSetData(m_idx, value, ROLE_NODE_NAME);
 }
 
 void ZenoPropPanel::clearLayout()
@@ -232,7 +232,7 @@ void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, in
     ZASSERT_EXIT(parentItem);
     QStandardItem* newItem = parentItem->child(first);
     int vType = newItem->data(ROLE_VPARAM_TYPE).toInt();
-    const QString& name = newItem->data(ROLE_OBJNAME).toString();
+    const QString& name = newItem->data(ROLE_PARAM_NAME).toString();
     if (vType == VPARAM_TAB)
     {
         syncAddTab(m_tabWidget, newItem, first);
@@ -240,7 +240,7 @@ void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, in
     else if (vType == VPARAM_GROUP)
     {
         ZASSERT_EXIT(parentItem->data(ROLE_VPARAM_TYPE) == VPARAM_TAB);
-        const QString& tabName = parentItem->data(ROLE_OBJNAME).toString();
+        const QString& tabName = parentItem->data(ROLE_PARAM_NAME).toString();
         int idx = UiHelper::tabIndexOfName(m_tabWidget, tabName);
         QWidget* tabWid = m_tabWidget->widget(idx);
         QVBoxLayout* pTabLayout = qobject_cast<QVBoxLayout*>(tabWid->layout());
@@ -263,8 +263,8 @@ void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, in
         QStandardItem* pTabItem = parentItem->parent();
         ZASSERT_EXIT(pTabItem && pTabItem->data(ROLE_VPARAM_TYPE) == VPARAM_TAB);
 
-        const QString& tabName = pTabItem->data(ROLE_OBJNAME).toString();
-        const QString& groupName = parentItem->data(ROLE_OBJNAME).toString();
+        const QString& tabName = pTabItem->data(ROLE_PARAM_NAME).toString();
+        const QString& groupName = parentItem->data(ROLE_PARAM_NAME).toString();
         const QString& paramName = name;
 
         ZExpandableSection* pGroupWidget = findGroup(tabName, groupName);
@@ -299,9 +299,9 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
     QStandardItem* pTabItem = pGroupItem->parent();
     ZASSERT_EXIT(pTabItem, false);
 
-    const QString& tabName = pTabItem->data(ROLE_OBJNAME).toString();
-    const QString& groupName = pGroupItem->data(ROLE_OBJNAME).toString();
-    const QString& paramName = paramItem->data(ROLE_OBJNAME).toString();
+    const QString& tabName = pTabItem->data(ROLE_PARAM_NAME).toString();
+    const QString& groupName = pGroupItem->data(ROLE_PARAM_NAME).toString();
+    const QString& paramName = paramItem->data(ROLE_PARAM_NAME).toString();
     QVariant val = paramItem->data(ROLE_PARAM_VALUE);
     zeno::ParamControl ctrl = (zeno::ParamControl)paramItem->data(ROLE_PARAM_CONTROL).toInt();
 
@@ -476,7 +476,7 @@ void ZenoPropPanel::onViewParamAboutToBeRemoved(const QModelIndex& parent, int f
 
     QStandardItem* removeItem = parentItem->child(first);
     int vType = removeItem->data(ROLE_VPARAM_TYPE).toInt();
-    const QString& name = removeItem->data(ROLE_OBJNAME).toString();
+    const QString& name = removeItem->data(ROLE_PARAM_NAME).toString();
 
     if (VPARAM_TAB == vType)
     {
@@ -486,7 +486,7 @@ void ZenoPropPanel::onViewParamAboutToBeRemoved(const QModelIndex& parent, int f
     else if (VPARAM_GROUP == vType)
     {
         ZASSERT_EXIT(parentItem->data(ROLE_VPARAM_TYPE) == VPARAM_TAB);
-        const QString& tabName = parentItem->data(ROLE_OBJNAME).toString();
+        const QString& tabName = parentItem->data(ROLE_PARAM_NAME).toString();
         int idx = UiHelper::tabIndexOfName(m_tabWidget, tabName);
         QWidget* tabWid = m_tabWidget->widget(idx);
         QVBoxLayout* pTabLayout = qobject_cast<QVBoxLayout*>(tabWid->layout());
@@ -511,8 +511,8 @@ void ZenoPropPanel::onViewParamAboutToBeRemoved(const QModelIndex& parent, int f
         QStandardItem* pTabItem = parentItem->parent();
         ZASSERT_EXIT(pTabItem && pTabItem->data(ROLE_VPARAM_TYPE) == VPARAM_TAB);
 
-        const QString& tabName = pTabItem->data(ROLE_OBJNAME).toString();
-        const QString& groupName = parentItem->data(ROLE_OBJNAME).toString();
+        const QString& tabName = pTabItem->data(ROLE_PARAM_NAME).toString();
+        const QString& groupName = parentItem->data(ROLE_PARAM_NAME).toString();
         const QString& paramName = name;
 
         ZExpandableSection* pGroupWidget = findGroup(tabName, groupName);
@@ -562,8 +562,8 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
     ZASSERT_EXIT(tabItem);
 
     int role = roles[0];
-    const QString& tabName = tabItem->data(ROLE_OBJNAME).toString();
-    const QString& groupName = groupItem->data(ROLE_OBJNAME).toString();
+    const QString& tabName = tabItem->data(ROLE_PARAM_NAME).toString();
+    const QString& groupName = groupItem->data(ROLE_PARAM_NAME).toString();
 
     PANEL_GROUP& group = m_controls[tabName][groupName];
 
@@ -571,13 +571,13 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
     {
         QStandardItem* param = groupItem->child(r);
 
-        if (role == ROLE_OBJNAME)
+        if (role == ROLE_PARAM_NAME)
         {
             for (auto it = group.begin(); it != group.end(); it++)
             {
                 if (it->second.m_viewIdx == param->index())
                 {
-                    const QString& newName = it->second.m_viewIdx.data(ROLE_OBJNAME).toString();
+                    const QString& newName = it->second.m_viewIdx.data(ROLE_PARAM_NAME).toString();
                     it->second.pLabel->setText(newName);
                     it->first = newName;
                     break;
@@ -586,7 +586,7 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
         }
         else if (role == ROLE_PARAM_CONTROL)
         {
-            const QString& paramName = param->data(ROLE_OBJNAME).toString();
+            const QString& paramName = param->data(ROLE_PARAM_NAME).toString();
             _PANEL_CONTROL& ctrl = group[paramName];
             QGridLayout* pGridLayout = qobject_cast<QGridLayout*>(ctrl.controlLayout);
             ZASSERT_EXIT(pGridLayout);
@@ -608,7 +608,7 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
         }
         else if (role == ROLE_PARAM_VALUE)
         {
-            const QString& paramName = param->data(ROLE_OBJNAME).toString();
+            const QString& paramName = param->data(ROLE_PARAM_NAME).toString();
             const QVariant& value = param->data(ROLE_PARAM_VALUE);
             _PANEL_CONTROL& ctrl = m_controls[tabName][groupName][paramName];
             BlockSignalScope scope(ctrl.pControl);
@@ -692,7 +692,7 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
         }
 		else if (role == ROLE_PARAM_CTRL_PROPERTIES)
 		{
-            const QString &paramName = param->data(ROLE_OBJNAME).toString();
+            const QString &paramName = param->data(ROLE_PARAM_NAME).toString();
             const QVariant &value = param->data(ROLE_PARAM_CTRL_PROPERTIES);
             _PANEL_CONTROL &ctrl = m_controls[tabName][groupName][paramName];
             BlockSignalScope scope(ctrl.pControl);

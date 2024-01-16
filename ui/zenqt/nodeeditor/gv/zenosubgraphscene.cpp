@@ -90,7 +90,7 @@ void ZenoSubGraphScene::initModel(GraphModel* pGraphM)
     {
         ZenoNode *inNode = it.second;
         const QString& id = inNode->nodeId();
-        const QModelIndex& idx = m_model->indexFromIdent(id);
+        const QModelIndex& idx = m_model->indexFromName(id);
 
         ParamsModel* viewParams = QVariantPtr<ParamsModel>::asPtr(idx.data(ROLE_PARAMS));
         for (int r = 0; r < viewParams->rowCount(); r++)
@@ -99,7 +99,7 @@ void ZenoSubGraphScene::initModel(GraphModel* pGraphM)
             if (!paramIdx.data(ROLE_ISINPUT).toBool())
                 continue;
 
-            const QString& inSock = paramIdx.data(ROLE_OBJNAME).toString();
+            const QString& inSock = paramIdx.data(ROLE_PARAM_NAME).toString();
             const int inSockProp = paramIdx.data(ROLE_PARAM_SOCKPROP).toInt();
 
             PARAM_LINKS links = paramIdx.data(ROLE_LINKS).value<PARAM_LINKS>();
@@ -179,7 +179,7 @@ void ZenoSubGraphScene::initLink(const QModelIndex& linkIdx)
     if (!linkIdx.isValid())
         return;
 
-    const QString& linkId = linkIdx.data(ROLE_OBJID).toString();
+    const QString& linkId = linkIdx.data(ROLE_NODE_NAME).toString();
     if (m_links.find(linkId) != m_links.end())
         return;
 
@@ -211,7 +211,7 @@ void ZenoSubGraphScene::initLink(const QModelIndex& linkIdx)
 
 ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilParam& params)
 {
-    const QString& descName = idx.data(ROLE_OBJNAME).toString();
+    const QString& descName = idx.data(ROLE_CLASS_NAME).toString();
     if (descName == "SubInput")
     {
         return new SubnetNode(true, params);
@@ -267,7 +267,7 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& topLeft, const QModelIn
     QModelIndex idx = topLeft;
     int role = roles[0];
 
-    QString id = idx.data(ROLE_OBJID).toString();
+    QString id = idx.data(ROLE_NODE_NAME).toString();
 
     if (role == ROLE_OBJPOS)
     {
@@ -288,10 +288,10 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& topLeft, const QModelIn
         bool bCollasped = idx.data(ROLE_COLLASPED).toBool();
         m_nodes[id]->onCollaspeUpdated(bCollasped);
     }
-    if (role == ROLE_OBJNAME)
+    if (role == ROLE_CLASS_NAME)
     {
         ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
-        m_nodes[id]->onNameUpdated(idx.data(ROLE_OBJNAME).toString());
+        m_nodes[id]->onNameUpdated(idx.data(ROLE_CLASS_NAME).toString());
     }
 #if 0
     if (role == ROLE_PARAMS_NO_DESC)
@@ -323,7 +323,7 @@ void ZenoSubGraphScene::onLinkInserted(const QModelIndex& parent, int first, int
 
 void ZenoSubGraphScene::viewAddLink(const QModelIndex& linkIdx)
 {
-    const QString& linkId = linkIdx.data(ROLE_OBJID).toString();
+    const QString& linkId = linkIdx.data(ROLE_NODE_NAME).toString();
 
     zeno::EdgeInfo edge = linkIdx.data(ROLE_LINK_INFO).value<zeno::EdgeInfo>();
 
@@ -367,7 +367,7 @@ void ZenoSubGraphScene::onLinkAboutToBeRemoved(const QModelIndex& parent, int fi
 
 void ZenoSubGraphScene::viewRemoveLink(const QModelIndex& linkIdx)
 {
-    const QString& linkId = linkIdx.data(ROLE_OBJID).toString();
+    const QString& linkId = linkIdx.data(ROLE_NODE_NAME).toString();
     if (m_links.find(linkId) == m_links.end())
         return;
 
@@ -412,17 +412,17 @@ QGraphicsItem* ZenoSubGraphScene::getNode(const QString& id)
     return m_nodes[id];
 }
 
-void ZenoSubGraphScene::collectNodeSelChanged(const QString& ident, bool bSelected)
+void ZenoSubGraphScene::collectNodeSelChanged(const QString& name, bool bSelected)
 {
     for (auto &pair : m_selChanges)
     {
-        if (pair.first == ident)
+        if (pair.first == name)
         {
             pair.second = bSelected;
             return;
         }
     }
-    m_selChanges.append({ident, bSelected});
+    m_selChanges.append({name, bSelected});
 }
 
 void ZenoSubGraphScene::select(const QString& id)
@@ -436,20 +436,20 @@ void ZenoSubGraphScene::select(const QString& id)
 void ZenoSubGraphScene::select(const QStringList& nodes)
 {
     clearSelection();
-    for (auto ident : nodes)
+    for (auto name : nodes)
     {
-        ZASSERT_EXIT(m_nodes.find(ident) != m_nodes.end());
-        m_nodes[ident]->setSelected(true);
+        ZASSERT_EXIT(m_nodes.find(name) != m_nodes.end());
+        m_nodes[name]->setSelected(true);
     }
     afterSelectionChanged();
 }
 void ZenoSubGraphScene::select(const std::vector<QString>& nodes)
 {
     clearSelection();
-    for (auto ident : nodes)
+    for (auto name : nodes)
     {
-        //ZASSERT_EXIT(m_nodes.find(ident) != m_nodes.end());
-        m_nodes[ident]->setSelected(true);
+        //ZASSERT_EXIT(m_nodes.find(name) != m_nodes.end());
+        m_nodes[name]->setSelected(true);
     }
 }
 void ZenoSubGraphScene::select(const QModelIndexList &indexs) 
@@ -457,7 +457,7 @@ void ZenoSubGraphScene::select(const QModelIndexList &indexs)
     clearSelection();
     for (auto index : indexs)
     {
-        const QString &id = index.data(ROLE_OBJID).toString();
+        const QString &id = index.data(ROLE_NODE_NAME).toString();
         if (m_nodes.find(id) != m_nodes.end());
             m_nodes[id]->setSelected(true);
     }
@@ -475,11 +475,11 @@ void ZenoSubGraphScene::markError(const QString& nodeid)
 
 void ZenoSubGraphScene::clearMark()
 {
-    for (QString ident : m_errNodes)
+    for (QString name : m_errNodes)
     {
-        if (m_nodes.find(ident) != m_nodes.end())
+        if (m_nodes.find(name) != m_nodes.end())
         {
-            m_nodes[ident]->markError(false);
+            m_nodes[name]->markError(false);
         }
     }
     m_errNodes.clear();
@@ -558,7 +558,7 @@ void ZenoSubGraphScene::paste(QPointF pos)
 
         QMap<QString, NODE_DATA> nodes;
         QList<EdgeInfo> links;
-        QString subgName = m_subgIdx.data(ROLE_OBJNAME).toString();
+        QString subgName = m_subgIdx.data(ROLE_CLASS_NAME).toString();
         UiHelper::reAllocIdents(subgName, acceptor.nodes(), acceptor.links(), nodes, links);
         UiHelper::renameNetLabels(pGraphsModel, m_subgIdx, nodes);
 
@@ -690,7 +690,7 @@ void ZenoSubGraphScene::onSocketAbsorted(const QPointF& mousePos)
     {
         if (ZenoNode *pNode = qgraphicsitem_cast<ZenoNode *>(item))
         {
-            if (pNode->index().data(ROLE_OBJID).toString() != nodeId)
+            if (pNode->index().data(ROLE_NODE_NAME).toString() != nodeId)
             {
                 catchNodes.append(pNode);
             }
@@ -819,7 +819,7 @@ void ZenoSubGraphScene::onTempLinkClosed()
                 else if (inSockType == "dict")
                 {
                     const QModelIndex& fromNodeIdx = fromSockIdx.data(ROLE_NODE_IDX).toModelIndex();
-                    const QString& outNodeCls = fromNodeIdx.data(ROLE_OBJNAME).toString();
+                    const QString& outNodeCls = fromNodeIdx.data(ROLE_CLASS_NAME).toString();
                     const QString& outSockName = fromSockIdx.data(ROLE_PARAM_NAME).toString();
                     outSockIsContainer = outSockType == "dict" || (outNodeCls == "FuncBegin" && outSockName == "args");
                 }
@@ -851,7 +851,7 @@ void ZenoSubGraphScene::onTempLinkClosed()
                     QModelIndexList nodes = m_tempLink->selNodes();
                     for (QModelIndex nodeIdx : nodes)
                     {
-                        QString ident_ = nodeIdx.data(ROLE_OBJID).toString();
+                        QString ident_ = nodeIdx.data(ROLE_NODE_NAME).toString();
                         //model: SubGraphModel
                         OUTPUT_SOCKETS outputs = nodeIdx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
                         if (outputs.find(paramName) != outputs.end() &&
@@ -866,7 +866,7 @@ void ZenoSubGraphScene::onTempLinkClosed()
                         QString toSockName = toSockIdx.data(ROLE_OBJPATH).toString();
                         for (QModelIndex fromSockIdx : fromSockets)
                         {
-                            QString ident_ = fromSockIdx.data(ROLE_OBJID).toString();
+                            QString ident_ = fromSockIdx.data(ROLE_NODE_NAME).toString();
                             int n = pKeyObjModel->rowCount();
                             pGraphsModel->addExecuteCommand(new DictKeyAddRemCommand(true, pGraphsModel, toSockName, n));
                             toSockIdx = pKeyObjModel->index(n, 0);
@@ -901,10 +901,10 @@ void ZenoSubGraphScene::onTempLinkClosed()
             QModelIndex inNodeIdx = toSockIdx.data(ROLE_NODE_IDX).toModelIndex();
 
             zeno::EdgeInfo newEdge;
-            newEdge.outNode = outNodeIdx.data(ROLE_OBJID).toString().toStdString();
-            newEdge.outParam = fromSockIdx.data(ROLE_OBJNAME).toString().toStdString();
-            newEdge.inNode = inNodeIdx.data(ROLE_OBJID).toString().toStdString();
-            newEdge.inParam = toSockIdx.data(ROLE_OBJNAME).toString().toStdString();
+            newEdge.outNode = outNodeIdx.data(ROLE_NODE_NAME).toString().toStdString();
+            newEdge.outParam = fromSockIdx.data(ROLE_PARAM_NAME).toString().toStdString();
+            newEdge.inNode = inNodeIdx.data(ROLE_NODE_NAME).toString().toStdString();
+            newEdge.inParam = toSockIdx.data(ROLE_PARAM_NAME).toString().toStdString();
 
             m_model->addLink(newEdge);
             return;
@@ -969,11 +969,11 @@ void ZenoSubGraphScene::afterSelectionChanged()
         ZASSERT_EXIT(mainWin);
         QModelIndexList selNodes, unSelNodes;
         for (auto pair : m_selChanges) {
-            const QString& ident = pair.first;
+            const QString& name = pair.first;
             bool bSelected = pair.second;
-            if (m_nodes.find(ident) == m_nodes.end())
+            if (m_nodes.find(name) == m_nodes.end())
                 continue;
-            ZenoNode* pNode = m_nodes[ident];
+            ZenoNode* pNode = m_nodes[name];
             ZASSERT_EXIT(pNode);
             if (bSelected)
                 selNodes.push_back(pNode->index());
@@ -1013,7 +1013,7 @@ void ZenoSubGraphScene::onRowsAboutToBeRemoved(const QModelIndex& parent, int fi
     for (int r = first; r <= last; r++)
     {
         QModelIndex idx = m_model->index(r, 0, parent);
-        QString id = idx.data(ROLE_OBJID).toString();
+        QString id = idx.data(ROLE_NODE_NAME).toString();
         ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
         ZenoNode* pNode = m_nodes[id];
         if (qobject_cast<GroupNode *>(pNode)) 
@@ -1096,7 +1096,7 @@ void ZenoSubGraphScene::selectObjViaNodes() {
         picker->clear();
         for (auto item : selItems) {
             if (auto *pNode = qgraphicsitem_cast<ZenoNode *>(item)) {
-                auto node_id = pNode->index().data(ROLE_OBJID).toString().toStdString();
+                auto node_id = pNode->index().data(ROLE_NODE_NAME).toString().toStdString();
                 for (const auto &[prim_name, _] : scene->objectsMan->pairsShared()) {
                     if (prim_name.find(node_id) != std::string::npos)
                         picker->add(prim_name);
@@ -1169,7 +1169,7 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
                 }
                 for (QPersistentModelIndex nodeIdx : nodes)
                 {
-                    QString id = nodeIdx.data(ROLE_OBJID).toString();
+                    QString id = nodeIdx.data(ROLE_NODE_NAME).toString();
                     m_model->removeNode(id);
                 }
                 if (nodes.isEmpty() && !netLabels.isEmpty())

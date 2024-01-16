@@ -135,12 +135,12 @@ enum SOCKET_PROPERTY {
 };
 
 enum MODEL_ROLE {
-    ROLE_OBJID = Qt::UserRole + 1,
-    ROLE_OBJNAME,
-    ROLE_CUSTOM_OBJNAME,
+    ROLE_NODE_NAME = Qt::UserRole + 1,  //node name, like `box1`, `cube1`...
+    ROLE_CLASS_NAME,    //asset name, or node class name, like `CreateCube`.
     ROLE_PARAMS,        //paramsmodel
     ROLE_SUBGRAPH,      //get the subgraph by the subgraph node.
     ROLE_GRAPH,         //get the graph which owns the current node index.
+    ROLE_PARAM_NAME,
     ROLE_PARAM_VALUE,
     ROLE_PARAM_TYPE,
     ROLE_PARAM_CONTROL,

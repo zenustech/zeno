@@ -164,7 +164,7 @@ zeno_forkGraph(PyObject* self, PyObject* args)
         return Py_None;
     }
 
-    const std::string& forkident = forknode.data(ROLE_OBJID).toString().toStdString();
+    const std::string& forkident = forknode.data(ROLE_NODE_NAME).toString().toStdString();
 
     PyObject* argList = Py_BuildValue("ss", _subgName, forkident.c_str());
 
@@ -224,8 +224,8 @@ zeno_forkMaterial(PyObject* self, PyObject* args)
         return Py_None;
     }
 
-    const std::string& forkident = forknode.data(ROLE_OBJID).toString().toStdString();
-    const std::string& name = sugIdx.data(ROLE_OBJNAME).toString().toStdString();
+    const std::string& forkident = forknode.data(ROLE_NODE_NAME).toString().toStdString();
+    const std::string& name = sugIdx.data(ROLE_CLASS_NAME).toString().toStdString();
 
     PyObject* argList = Py_BuildValue("ss", name.c_str(), forkident.c_str());
 

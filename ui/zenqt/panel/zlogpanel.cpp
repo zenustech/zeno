@@ -254,7 +254,7 @@ bool LogItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* model, cons
                     }
 
                     QModelIndex subgIdx = idx.data(ROLE_SUBGRAPH_IDX).toModelIndex();
-                    const QString& subgName = subgIdx.data(ROLE_OBJNAME).toString();
+                    const QString& subgName = subgIdx.data(ROLE_CLASS_NAME).toString();
                     
                     ZASSERT_EXIT(pWin, false);
                     

@@ -1095,7 +1095,7 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
         return;
 
     ZASSERT_EXIT(m_glView);
-    auto node_id = nodes[0].data(ROLE_OBJNAME).toString();
+    auto node_id = nodes[0].data(ROLE_CLASS_NAME).toString();
     if (node_id == "PrimitiveAttrPicker") {
         auto scene = m_glView->getSession()->get_scene();
         ZASSERT_EXIT(scene);

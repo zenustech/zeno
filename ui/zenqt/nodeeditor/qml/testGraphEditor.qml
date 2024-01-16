@@ -86,11 +86,11 @@ ApplicationWindow {
 
                 onCurrentIndexChanged: {
                     var graphM = model.graph(currentIndex)
-                    var ident = model.ident(currentIndex)
+                    var name = model.name(currentIndex)
                     var owner = graphM.owner()
-                    //console.log("ident: " + ident)
+                    //console.log("name: " + name)
                     //console.log("owner: " + owner)
-                    //tabView打开标签为owner的图，并且把焦点focus在ident上。
+                    //tabView打开标签为owner的图，并且把焦点focus在name上。
                     app.tab.activatePage(owner, graphM)
                 }
                 onCurrentDataChanged: {

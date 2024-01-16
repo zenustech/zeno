@@ -187,7 +187,7 @@ void ZSubnetListItemDelegate::onDelete()
     if (button == QMessageBox::Yes) {
         QStringList nameList;
         for (const QModelIndex &idx : m_selectedIndexs) {
-            QString subgName = idx.data(ROLE_OBJNAME).toString();
+            QString subgName = idx.data(ROLE_CLASS_NAME).toString();
             if (subgName.compare("main", Qt::CaseInsensitive) == 0) {
                 QMessageBox msg(QMessageBox::Warning, tr("Zeno"), tr("main graph is not allowed to be deleted"));
                 msg.exec();
@@ -203,7 +203,7 @@ void ZSubnetListItemDelegate::onDelete()
 
 void ZSubnetListItemDelegate::onRename(const QModelIndex &index) 
 {
-    QString name = QInputDialog::getText(nullptr, tr("Rename"), tr("subgraph name:"), QLineEdit::Normal, index.data(ROLE_OBJNAME).toString());
+    QString name = QInputDialog::getText(nullptr, tr("Rename"), tr("subgraph name:"), QLineEdit::Normal, index.data(ROLE_CLASS_NAME).toString());
     if (!name.isEmpty()) {
         m_model->setData(index, name, Qt::EditRole);
     }
@@ -212,7 +212,7 @@ void ZSubnetListItemDelegate::onRename(const QModelIndex &index)
 void ZSubnetListItemDelegate::onSaveSubgraph(const QModelIndex& index)
 {
     DlgInEventLoopScope;
-    QString subgName = index.data(ROLE_OBJNAME).toString();
+    QString subgName = index.data(ROLE_CLASS_NAME).toString();
     QString path = QFileDialog::getSaveFileName(nullptr, "Path to Save", subgName, "Zeno Graph File(*.zsg);; All Files(*);;");
     if (!path.isEmpty()) {
         //todo: writer.
@@ -242,7 +242,7 @@ QModelIndexList ZSubnetListItemDelegate::getSubgraphs(const QModelIndex& subgIdx
         const QModelIndex& childIdx = m_model->index(r, 0);
         if (!childIdx.isValid())
             continue;
-        const QString& assetName = childIdx.data(ROLE_OBJNAME).toString();
+        const QString& assetName = childIdx.data(ROLE_CLASS_NAME).toString();
         const QModelIndex& modelIdx = m_model->index(subgName);
         if (modelIdx.isValid() && !subgraphs.contains(modelIdx))
         {

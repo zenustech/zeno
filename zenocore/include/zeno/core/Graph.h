@@ -63,7 +63,7 @@ struct Graph : std::enable_shared_from_this<Graph> {
     ZENO_API std::shared_ptr<INode> createNode(std::string const& cls);
     CALLBACK_REGIST(createNode, void, const std::string&, std::weak_ptr<zeno::INode>)
 
-    ZENO_API bool removeNode(std::string const& ident);
+    ZENO_API bool removeNode(std::string const& name);
     CALLBACK_REGIST(removeNode, void, const std::string&)
 
     ZENO_API std::shared_ptr<INode> createSubnetNode(std::string const& name);
@@ -73,7 +73,7 @@ struct Graph : std::enable_shared_from_this<Graph> {
 
     ZENO_API bool removeLink(const EdgeInfo& edge);
 
-    ZENO_API std::shared_ptr<INode> getNode(std::string const& ident);
+    ZENO_API std::shared_ptr<INode> getNode(std::string const& name);
     //END
 
     ZENO_API DirtyChecker &getDirtyChecker();
@@ -108,8 +108,12 @@ struct Graph : std::enable_shared_from_this<Graph> {
     std::map<std::string, std::string> getSubOutputs();
 
 private:
+    std::string generateNewName(const std::string& node_cls);
+
     std::map<std::string, std::string> subInputNodes;
     std::map<std::string, std::string> subOutputNodes;
+
+    std::map<std::string, std::set<std::string>> node_set;
 };
 
 }

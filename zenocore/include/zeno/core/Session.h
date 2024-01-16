@@ -15,12 +15,11 @@ struct INode;
 
 struct INodeClass {
     std::unique_ptr<Descriptor> desc;
-    std::string name;
+    std::string classname;
 
-    ZENO_API INodeClass(Descriptor const &desc, std::string const &name);
+    ZENO_API INodeClass(Descriptor const &desc, std::string const &classname);
     ZENO_API virtual ~INodeClass();
-
-    virtual std::shared_ptr<INode> new_instance(std::string const& ident) const = 0;
+    virtual std::shared_ptr<INode> new_instance(std::string const &classname) const = 0;
 };
 
 struct IObject;

@@ -20,7 +20,7 @@ struct NodeLocation{
           subgraph(s){
     }
     QString get_node_id() const {
-        return node.data(ROLE_OBJID).toString();
+        return node.data(ROLE_NODE_NAME).toString();
     }
 };
 
@@ -105,7 +105,7 @@ class NodeSyncMgr {
             return;
         }
 
-        auto node_id = node_location.node.data(ROLE_OBJID).toString();
+        auto node_id = node_location.node.data(ROLE_NODE_NAME).toString();
         auto inputs = node_location.node.data(ROLE_INPUTS).value<PARAMS_INFO>();
         //TODO: zvariant to qvariant.
         QVariant old_value;// = inputs[input_name.c_str()].defl;

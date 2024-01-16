@@ -25,16 +25,16 @@ QVariant LinkModel::data(const QModelIndex& index, int role) const
         {
             const auto& info = m_items[index.row()];
             QModelIndex nodeIdx = info.fromParam.data(ROLE_NODEIDX).toModelIndex();
-            const QString& nodeName = nodeIdx.data(ROLE_OBJID).toString();
-            const QString& paramName = info.fromParam.data(ROLE_OBJNAME).toString();
+            const QString& nodeName = nodeIdx.data(ROLE_NODE_NAME).toString();
+            const QString& paramName = info.fromParam.data(ROLE_PARAM_NAME).toString();
             return QVariantList{ nodeName, paramName, false};
         }
         case ROLE_LINK_TOPARAM_INFO:
         {
             const auto& info = m_items[index.row()];
             QModelIndex nodeIdx = info.toParam.data(ROLE_NODEIDX).toModelIndex();
-            const QString& nodeName = nodeIdx.data(ROLE_OBJID).toString();
-            const QString& paramName = info.toParam.data(ROLE_OBJNAME).toString();
+            const QString& nodeName = nodeIdx.data(ROLE_NODE_NAME).toString();
+            const QString& paramName = info.toParam.data(ROLE_PARAM_NAME).toString();
             return QVariantList{ nodeName, paramName, true };
         }
         case ROLE_INSOCK_IDX:

@@ -56,7 +56,7 @@ ZENO_API std::string INode::get_nodecls() const
 
 ZENO_API std::string INode::get_ident() const
 {
-    return ident;
+    return name;
 }
 
 ZENO_API std::string INode::get_name() const
@@ -106,14 +106,14 @@ ZENO_API void INode::preApply() {
     }
 
 
-    log_debug("==> enter {}", ident);
+    log_debug("==> enter {}", name);
     {
 #ifdef ZENO_BENCHMARKING
-        Timer _(ident);
+        Timer _(name);
 #endif
         apply();
     }
-    log_debug("==> leave {}", ident);
+    log_debug("==> leave {}", name);
 }
 
 ZENO_API bool INode::requireInput(std::string const& ds) {
@@ -213,9 +213,9 @@ ZENO_API void INode::doOnlyApply() {
 
 ZENO_API void INode::doApply() {
     //if (checkApplyCondition()) {
-    log_trace("--> enter {}", ident);
+    log_trace("--> enter {}", name);
     preApply();
-    log_trace("--> leave {}", ident);
+    log_trace("--> leave {}", name);
 }
 
 ZENO_API void INode::set_input_defl(std::string const& name, zvariant defl) {
@@ -310,8 +310,8 @@ std::vector<std::pair<std::string, zany>> INode::getoutputs2()
 
 void INode::init(const NodeData& dat)
 {
-    if (dat.ident.empty())
-        ident = dat.ident;
+    if (dat.name.empty())
+        name = dat.name;
     for (const ParamInfo& param : dat.inputs)
     {
         std::shared_ptr<IParam> sparam = get_input_param(param.name);

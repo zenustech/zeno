@@ -130,7 +130,7 @@ Graph_name(ZSubGraphObject* self, PyObject* Py_UNUSED(ignored))
         return Py_None;
     }
 
-    const QString& name = self->subgIdx.data(ROLE_OBJNAME).toString();
+    const QString& name = self->subgIdx.data(ROLE_CLASS_NAME).toString();
     return PyUnicode_FromFormat(name.toUtf8());
 }
 
@@ -152,7 +152,7 @@ Graph_createNode(ZSubGraphObject* self, PyObject* arg, PyObject* kw)
         return Py_None;
     }
 
-    const QString& subgName = self->subgIdx.data(ROLE_OBJNAME).toString();
+    const QString& subgName = self->subgIdx.data(ROLE_CLASS_NAME).toString();
     const QString& descName = QString::fromUtf8(nodeCls);
     IGraphsModel* pModel = zenoApp->graphsManager()->currentModel();
     const QString& ident = UiHelper::createNewNode(self->subgIdx, descName, QPointF(0, 0));
@@ -285,7 +285,7 @@ Graph_getNode(ZSubGraphObject* self, PyObject* arg)
         return Py_None;
     }
 
-    const QString& subgName = self->subgIdx.data(ROLE_OBJNAME).toString();
+    const QString& subgName = self->subgIdx.data(ROLE_CLASS_NAME).toString();
     std::string _subgName = subgName.toStdString();
     PyObject* argList = Py_BuildValue("ss", _subgName.c_str(), _ident);
     PyObject* result = PyObject_CallObject((PyObject*)&ZNodeType, argList);
@@ -304,7 +304,7 @@ Graph_addLink(ZSubGraphObject* self, PyObject* arg)
         return Py_None;
     }
 
-    const QString& graphName = self->subgIdx.data(ROLE_OBJNAME).toString();
+    const QString& graphName = self->subgIdx.data(ROLE_CLASS_NAME).toString();
     const QString& outNode = QString::fromUtf8(_outNode);
     const QString& outSock = QString::fromUtf8(_outSock);
     const QString& inNode = QString::fromUtf8(_inNode);
@@ -335,7 +335,7 @@ Graph_removeLink(ZSubGraphObject* self, PyObject* arg)
         return Py_None;
     }
 
-    const QString& graphName = self->subgIdx.data(ROLE_OBJNAME).toString();
+    const QString& graphName = self->subgIdx.data(ROLE_CLASS_NAME).toString();
     const QString& outNode = QString::fromUtf8(_outNode);
     const QString& outSock = QString::fromUtf8(_outSock);
     const QString& inNode = QString::fromUtf8(_inNode);
@@ -372,9 +372,9 @@ Graph_removeLink(ZSubGraphObject* self, PyObject* arg)
         return Py_None;
     }
     QModelIndex linkIdx = pModel->linkIndex(subgIdx,
-                                            outIdx.data(ROLE_OBJID).toString(),
+                                            outIdx.data(ROLE_NODE_NAME).toString(),
                                             outSock,
-                                            inIdx.data(ROLE_OBJID).toString(),
+                                            inIdx.data(ROLE_NODE_NAME).toString(),
                                             inSock);
     pModel->removeLink(linkIdx);
     return Py_None;

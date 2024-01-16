@@ -54,7 +54,7 @@ void ZSocketLayout::initUI(const CallbackForSocket& cbSock)
     }
     else
     {
-        sockName = m_viewSockIdx.data(ROLE_OBJNAME).toString();
+        sockName = m_viewSockIdx.data(ROLE_PARAM_NAME).toString();
         sockProp = m_viewSockIdx.data(ROLE_PARAM_SOCKPROP).toInt();
         m_bEditable = sockProp & SOCKPROP_EDITABLE;
         toolTip = m_viewSockIdx.data(ROLE_PARAM_TOOLTIP).toString();
@@ -92,7 +92,7 @@ void ZSocketLayout::initUI(const CallbackForSocket& cbSock)
     if (m_bEditable && bEnableNode)
     {
         Callback_EditContentsChange cbFuncRenameSock = [=](QString oldText, QString newText) {
-            UiHelper::qIndexSetData(m_viewSockIdx, newText, ROLE_OBJNAME);
+            UiHelper::qIndexSetData(m_viewSockIdx, newText, ROLE_PARAM_NAME);
         };
         ZSocketEditableItem *pItem = new ZSocketEditableItem(m_viewSockIdx, sockName, m_bInput, cbSock.cbOnSockClicked, cbFuncRenameSock);
         setSpacing(ZenoStyle::dpiScaled(32));
@@ -231,7 +231,7 @@ void ZDictSocketLayout::initUI(const CallbackForSocket& cbSock)
 
     bool bInput = m_viewSockIdx.data(ROLE_ISINPUT).toBool();
     //TODO: refactor about zdict panel layout.
-    const QString& sockName = m_viewSockIdx.data(ROLE_OBJNAME).toString();
+    const QString& sockName = m_viewSockIdx.data(ROLE_PARAM_NAME).toString();
 
     QSizeF szSocket(10, 20);
     m_socket = new ZenoSocketItem(m_viewSockIdx, ZenoStyle::dpiScaledSize(szSocket));
@@ -376,7 +376,7 @@ void ZGroupSocketLayout::initUI(const CallbackForSocket &cbSock)
 {
     setContentsMargin(0, ZenoStyle::dpiScaled(6), 0, 0);
     bool bInput = m_viewSockIdx.data(ROLE_ISINPUT).toBool();
-    const QString &name = m_viewSockIdx.data(ROLE_OBJNAME).toString();
+    const QString &name = m_viewSockIdx.data(ROLE_PARAM_NAME).toString();
 
     m_pGroupLine = new ZenoParamGroupLine(name);
     m_pGroupLine->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 32)));

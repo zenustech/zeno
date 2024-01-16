@@ -40,7 +40,7 @@ QModelIndex GraphsTreeModel::parent(const QModelIndex& child) const
     {
         if (auto parentModel = qobject_cast<GraphModel*>(pItem->parent()))
         {
-            int row = parentModel->indexFromId(pItem->ident);
+            int row = parentModel->indexFromId(pItem->name);
             return createIndex(row, 0, parentModel);
         }
     }
@@ -108,8 +108,8 @@ QModelIndexList GraphsTreeModel::match(const QModelIndex& start, int role,
 QHash<int, QByteArray> GraphsTreeModel::roleNames() const
 {
     QHash<int, QByteArray> roles;
-    roles[ROLE_OBJNAME] = "name";
-    roles[ROLE_OBJID] = "ident";
+    roles[ROLE_CLASS_NAME] = "class";
+    roles[ROLE_NODE_NAME] = "name";
     roles[ROLE_PARAMS] = "params";
     roles[ROLE_LINKS] = "linkModel";
     roles[ROLE_OBJPOS] = "pos";
@@ -138,9 +138,9 @@ GraphModel* GraphsTreeModel::graph(const QModelIndex& index) const
     return ownerModel;
 }
 
-QString GraphsTreeModel::ident(const QModelIndex& index) const
+QString GraphsTreeModel::name(const QModelIndex& index) const
 {
-    return index.data(ROLE_OBJID).toString();
+    return index.data(ROLE_NODE_NAME).toString();
 }
 
 //! Clear the model.

@@ -17,8 +17,8 @@ struct NodeItem : public QObject
     Q_OBJECT
 
 public:
-    QString ident;
     QString name;
+    QString cls;
     ParamsModel* params = nullptr;
     QPointF pos;
 
@@ -43,10 +43,10 @@ public:
     GraphModel(const QString& graphName, QObject* parent = nullptr);
     ~GraphModel();
     Q_INVOKABLE LinkModel* getLinkModel() const { return m_linkModel; }
-    Q_INVOKABLE int indexFromId(const QString& ident) const;
+    Q_INVOKABLE int indexFromId(const QString& name) const;
     Q_INVOKABLE void addLink(const QString& fromNodeStr, const QString& fromParamStr,
         const QString& toNodeStr, const QString& toParamStr);
-    Q_INVOKABLE QVariant removeLink(const QString& nodeIdent, const QString& paramName, bool bInput);
+    Q_INVOKABLE QVariant removeLink(const QString& nodeName, const QString& paramName, bool bInput);
     Q_INVOKABLE QString name() const;
 
     //TEST API
@@ -65,15 +65,15 @@ public:
     //GraphModel:
     void registerCoreNotify(std::shared_ptr<zeno::Graph> coreGraph);
     zeno::NodeData createNode(const QString& nodeCls, const QPointF& pos);
-    void appendNode(QString ident, QString name, const QPointF& pos);   //TO DEPRECATED
-    void appendSubgraphNode(QString ident, QString name, NODE_DESCRIPTOR desc, GraphModel* subgraph, const QPointF& pos);
-    void removeNode(QString ident);
+    void appendNode(QString name, QString cls, const QPointF& pos);   //TO DEPRECATED
+    void appendSubgraphNode(QString name, QString cls, NODE_DESCRIPTOR desc, GraphModel* subgraph, const QPointF& pos);
+    void removeNode(QString name);
     void addLink(QPair<QString, QString> fromParam, QPair<QString, QString> toParam);
     void addLink(const zeno::EdgeInfo& link);
     QList<SEARCH_RESULT> search(const QString& content, SearchType searchType, SearchOpt searchOpts) const;
     GraphModel* getGraphByPath(const QString& objPath);
-    //QModelIndex index(const QString& ident) const;
-    QModelIndex indexFromIdent(const QString& ident) const;
+    //QModelIndex index(const QString& name) const;
+    QModelIndex indexFromName(const QString& name) const;
     void undo();
     void redo();
     void beginTransaction(const QString& name);
@@ -91,11 +91,11 @@ signals:
     void clearLayout();
 
 private:
-    QModelIndex nodeIdx(const QString& ident) const;
+    QModelIndex nodeIdx(const QString& name) const;
 
     QString m_graphName;
-    QHash<QString, int> m_id2Row;
-    QHash<int, QString> m_row2id;
+    QHash<QString, int> m_name2Row;
+    QHash<int, QString> m_row2name;
     QHash<QString, NodeItem*> m_nodes;
 
     std::weak_ptr<zeno::Graph> m_spCoreGraph;

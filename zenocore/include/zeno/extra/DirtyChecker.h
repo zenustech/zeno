@@ -13,12 +13,12 @@ namespace zeno {
 struct DirtyChecker {
     std::set<std::string> dirts;
 
-    void taintThisNode(std::string ident) {
-        dirts.insert(std::move(ident));
+    void taintThisNode(std::string name) {
+        dirts.insert(std::move(name));
     }
 
-    bool amIDirty(std::string const &ident) const {
-        return dirts.find(ident) != dirts.end();
+    bool amIDirty(std::string const &name) const {
+        return dirts.find(name) != dirts.end();
     }
 };
 

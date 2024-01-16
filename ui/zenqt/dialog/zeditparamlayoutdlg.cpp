@@ -300,7 +300,7 @@ void ZEditParamLayoutDlg::initDescValueForProxy() {
     if (m_bNodeUI && m_bSubgraphNode)
     {
         NODE_DESC desc;
-        const QString& subnetNodeName = m_nodeIdx.data(ROLE_OBJNAME).toString();
+        const QString& subnetNodeName = m_nodeIdx.data(ROLE_CLASS_NAME).toString();
         m_pGraphsModel->getDescriptor(subnetNodeName, desc);
         NodeParamModel* nodeParams = qobject_cast<NodeParamModel*>(m_proxyModel);
         ZASSERT_EXIT(nodeParams);
@@ -654,7 +654,7 @@ void ZEditParamLayoutDlg::switchStackProperties(int ctrl, VParamItem* pItem)
 void ZEditParamLayoutDlg::addControlGroup(bool bInput, const QString &name, PARAM_CONTROL ctrl) 
 {
     NODE_DESC desc;
-    QString subnetNodeName = m_nodeIdx.data(ROLE_OBJNAME).toString();
+    QString subnetNodeName = m_nodeIdx.data(ROLE_CLASS_NAME).toString();
     m_pGraphsModel->getDescriptor(subnetNodeName, desc);
     SOCKET_INFO info;
     info.control = ctrl;
@@ -682,7 +682,7 @@ void ZEditParamLayoutDlg::addControlGroup(bool bInput, const QString &name, PARA
 void ZEditParamLayoutDlg::delControlGroup(bool bInput, const QString &name) 
 {
     NODE_DESC desc;
-    QString subnetNodeName = m_nodeIdx.data(ROLE_OBJNAME).toString();
+    QString subnetNodeName = m_nodeIdx.data(ROLE_CLASS_NAME).toString();
     m_pGraphsModel->getDescriptor(subnetNodeName, desc);
     if (bInput) {
         ZASSERT_EXIT(desc.inputs.find(name) != desc.inputs.end());
@@ -706,7 +706,7 @@ void ZEditParamLayoutDlg::delControlGroup(bool bInput, const QString &name)
 void ZEditParamLayoutDlg::updateControlGroup(bool bInput, const QString &newName, const QString &oldName, PARAM_CONTROL ctrl, int row) 
 {
     NODE_DESC desc;
-    QString subnetNodeName = m_nodeIdx.data(ROLE_OBJNAME).toString();
+    QString subnetNodeName = m_nodeIdx.data(ROLE_CLASS_NAME).toString();
     m_pGraphsModel->getDescriptor(subnetNodeName, desc);
     SOCKET_INFO info;
     info.control = ctrl;
@@ -974,7 +974,7 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
     {
         VParamItem *pGroup = static_cast<VParamItem *>(proxyItem);
         bSubInput = pGroup->m_name == iotags::params::node_inputs;
-        subgName = m_nodeIdx.data(ROLE_OBJNAME).toString();
+        subgName = m_nodeIdx.data(ROLE_CLASS_NAME).toString();
         subgIdx = m_pGraphsModel->index(subgName);
     }
 
@@ -1309,7 +1309,7 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
                     else 
                     {
                         const QModelIndex &subInOutput = UiHelper::findSubInOutputIdx(m_pGraphsModel, bSubInput, deleteParam, subgIdx);
-                        const QString ident = subInOutput.data(ROLE_OBJID).toString();
+                        const QString ident = subInOutput.data(ROLE_NODE_NAME).toString();
 
                         //currently, the param about subgraph is construct or deconstruct by SubInput/SubOutput node.
                         //so, we have to remove or add the SubInput/SubOutput node to affect the params.

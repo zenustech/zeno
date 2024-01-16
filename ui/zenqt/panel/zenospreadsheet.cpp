@@ -143,7 +143,7 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
             {
                 if (subgIdx.data(ROLE_MTLID).toString() == mtlid)
                 {
-                    QString subgraph_name = subgIdx.data(ROLE_OBJNAME).toString();
+                    QString subgraph_name = subgIdx.data(ROLE_CLASS_NAME).toString();
                     ZenoMainWindow* pWin = zenoApp->getMainWindow();
                     if (pWin) {
                         ZenoSettingsManager::GetInstance().setValue(zsSubgraphType, SUBGRAPH_METERIAL);
@@ -293,7 +293,7 @@ bool ZenoSpreadsheet::eventFilter(QObject* watched, QEvent* event)
             IGraphsModel* pGraphsModel = zenoApp->graphsManager()->currentModel();
             for (const auto& subgIdx : pGraphsModel->subgraphsIndice(SUBGRAPH_PRESET))
             {
-                QString name = subgIdx.data(ROLE_OBJNAME).toString();
+                QString name = subgIdx.data(ROLE_CLASS_NAME).toString();
                 QAction* pAction = new QAction(name);
                 pPresetMenu->addAction(pAction);
                 connect(pAction, &QAction::triggered, this, [=]() {

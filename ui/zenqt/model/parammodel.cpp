@@ -22,7 +22,7 @@ QVariant ParamsModel::data(const QModelIndex& index, int role) const
 
     switch (role)
     {
-    case ROLE_OBJNAME:          return param.name;
+    case ROLE_PARAM_NAME:          return param.name;
     case ROLE_PARAM_TYPE:       return param.type;
     case ROLE_PARAM_CONTROL:    return param.control;
     case ROLE_ISINPUT:          return param.bInput;
@@ -70,7 +70,7 @@ bool ParamsModel::setData(const QModelIndex& index, const QVariant& value, int r
 {
     ParamItem& param = m_items[index.row()];
     switch (role) {
-    case ROLE_OBJNAME:
+    case ROLE_PARAM_NAME:
         param.name = value.toString();
         break;
 
@@ -93,7 +93,7 @@ bool ParamsModel::setData(const QModelIndex& index, const QVariant& value, int r
 QHash<int, QByteArray> ParamsModel::roleNames() const
 {
     QHash<int, QByteArray> roles;
-    roles[ROLE_OBJNAME] = "name";
+    roles[ROLE_PARAM_NAME] = "name";
     roles[ROLE_PARAM_TYPE] = "type";
     roles[ROLE_PARAM_CONTROL] = "control";
     roles[ROLE_ISINPUT] = "input";
@@ -115,7 +115,7 @@ QModelIndex ParamsModel::paramIdx(const QString& name, bool bInput) const
     for (int r = 0; r < rowCount(); r++)
     {
         QModelIndex idx = index(r, 0);
-        if (name == data(idx, ROLE_OBJNAME).toString() && bInput == data(idx, ROLE_ISINPUT).toBool())
+        if (name == data(idx, ROLE_PARAM_NAME).toString() && bInput == data(idx, ROLE_ISINPUT).toBool())
             return idx;
     }
     return QModelIndex();

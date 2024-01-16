@@ -91,7 +91,7 @@ bool sceneMenuEvent(
         if (selParam.isValid())
         {
             bool bInput = selParam.data(ROLE_ISINPUT).toBool();
-            QString paramName = selParam.data(ROLE_OBJNAME).toString();
+            QString paramName = selParam.data(ROLE_PARAM_NAME).toString();
             QString type = selParam.data(ROLE_PARAM_TYPE).toString();
 
             QMenu* socketMenu = new QMenu;
@@ -223,19 +223,19 @@ bool sceneMenuEvent(
                 QAction* pCopyRef = new QAction(QObject::tr("Copy Param Reference"));
                 QObject::connect(pCopyRef, &QAction::triggered, [=]() {
                     QModelIndex nodeIdx = selParam.data(ROLE_NODE_IDX).toModelIndex();
-                    if (nodeIdx.isValid() && nodeIdx.data(ROLE_OBJNAME) == "SubInput")
+                    if (nodeIdx.isValid() && nodeIdx.data(ROLE_CLASS_NAME) == "SubInput")
                     {
-                        const QString& paramName = selParam.data(ROLE_OBJNAME).toString();
-                        QString subgName, ident, paramPath;
+                        const QString& paramName = selParam.data(ROLE_PARAM_NAME).toString();
+                        QString subgName, nodename, paramPath;
                         QString str = selParam.data(ROLE_OBJPATH).toString();
-                        UiHelper::getSocketInfo(str, subgName, ident, paramPath);
+                        UiHelper::getSocketInfo(str, subgName, nodename, paramPath);
                         if (paramName == "port") {
-                            QString refExpression = QString("ref(%1/_IN_port)").arg(ident);
+                            QString refExpression = QString("ref(%1/_IN_port)").arg(nodename);
                             dumpToClipboard(refExpression);
                             return;
                         }
                         else if (paramName == "hasValue") {
-                            QString refExpression = QString("ref(%1/_IN_hasValue)").arg(ident);
+                            QString refExpression = QString("ref(%1/_IN_hasValue)").arg(nodename);
                             dumpToClipboard(refExpression);
                             return;
                         }

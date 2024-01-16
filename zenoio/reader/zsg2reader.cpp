@@ -181,7 +181,7 @@ zeno::NodeData Zsg2Reader::_parseNode(
     const rapidjson::Value& nameValue = objValue["name"];
     const std::string& name = nameValue.GetString();
 
-    retNode.ident = nodeid;
+    retNode.name = nodeid;
     retNode.cls = name;
 
     std::string customName;

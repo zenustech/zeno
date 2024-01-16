@@ -79,7 +79,6 @@ namespace zeno {
     };
 
     struct NodeData {
-        std::string ident;
         std::string name;
         std::string cls;
 

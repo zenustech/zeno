@@ -47,14 +47,16 @@ ZENO_API void Graph::clearNodes() {
 
 ZENO_API void Graph::addNode(std::string const &cls, std::string const &id) {
     //todo: deprecated.
+#if 0
     if (nodes.find(id) != nodes.end())
         return;  // no add twice, to prevent output object invalid
     auto cl = safe_at(session->nodeClasses, cls, "node class name").get();
     auto node = cl->new_instance(id);
     node->graph = this;
-    node->ident = id;
+    node->name = id;
     node->nodeClass = cl;
     nodes[id] = std::move(node);
+#endif
 }
 
 ZENO_API Graph *Graph::getSubnetGraph(std::string const &id) const {
@@ -74,7 +76,7 @@ ZENO_API bool Graph::applyNode(std::string const &id) {
     auto node = safe_at(nodes, id, "node name").get();
     GraphException::translated([&] {
         node->doApply();
-    }, node->ident);
+    }, node->name);
     if (dirtyChecker && dirtyChecker->amIDirty(id)) {
         return true;
     }
@@ -136,8 +138,8 @@ ZENO_API std::map<std::string, zany> Graph::callTempNode(std::string const &id,
         std::map<std::string, zany> inputs) const {
 
     auto cl = safe_at(session->nodeClasses, id, "node class name").get();
-    const std::string& ident = generateUUID();
-    auto se = cl->new_instance(ident);
+    const std::string& name = generateUUID();
+    auto se = cl->new_instance(name);
     se->graph = const_cast<Graph*>(this);
     se->directly_setinputs(inputs);
     se->doOnlyApply();
@@ -171,7 +173,7 @@ ZENO_API DirtyChecker &Graph::getDirtyChecker() {
 
 ZENO_API void Graph::init(const GraphData& graph) {
     //import nodes first.
-    for (const auto& [ident, node] : graph.nodes) {
+    for (const auto& [name, node] : graph.nodes) {
         if (node.subgraph) {
             std::shared_ptr<INode> spNode = createSubnetNode(node.cls);
             std::shared_ptr<SubnetNode> subnetNode = std::dynamic_pointer_cast<SubnetNode>(spNode);
@@ -190,7 +192,7 @@ ZENO_API void Graph::init(const GraphData& graph) {
                         break;
                     }
                 }
-                subInputNodes[name] = node.ident;
+                subInputNodes[name] = node.name;
             }
             else if (node.cls == "SubOutput") {
                 std::string name;
@@ -201,7 +203,7 @@ ZENO_API void Graph::init(const GraphData& graph) {
                         break;
                     }
                 }
-                subOutputNodes[name] = node.ident;
+                subOutputNodes[name] = node.name;
             }
         }
     }
@@ -232,39 +234,60 @@ ZENO_API void Graph::init(const GraphData& graph) {
     }
 }
 
-ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls) {
+std::string Graph::generateNewName(const std::string& node_cls)
+{
+    if (node_set.find(node_cls) == node_set.end())
+        node_set.insert(std::make_pair(node_cls, std::set<std::string>()));
 
+    auto& nodes = node_set[node_cls];
+    int i = 1;
+    while (true) {
+        std::string new_name = node_cls + std::to_string(1);
+        if (nodes.find(new_name) == nodes.end()) {
+            nodes.insert(new_name);
+            return new_name;
+        }
+    }
+    return "";
+}
+
+ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls)
+{
     auto cl = safe_at(session->nodeClasses, cls, "node class name").get();
-    std::string const& ident = generateUUID();
-    auto node = cl->new_instance(ident);
+    std::string const& name = generateNewName(cls);
+    auto node = cl->new_instance(name);
     node->graph = this;
     node->nodeClass = cl;
-    nodes[node->ident] = node;
-    CALLBACK_NOTIFY(createNode, ident, node)
+    nodes[name] = node;
+
+    CALLBACK_NOTIFY(createNode, name, node)
     return node;
 }
 
 ZENO_API std::shared_ptr<INode> Graph::createSubnetNode(std::string const& cls)
 {
     auto subcl = std::make_unique<ImplSubnetNodeClass>();
-    std::string const& ident = generateUUID();
-    auto node = subcl->new_instance(ident);
+    std::string const& name = generateNewName(cls);
+    auto node = subcl->new_instance(name);
     node->graph = this;
     node->nodeClass = subcl.get();
 
     auto subnetnode = std::dynamic_pointer_cast<SubnetNode>(node);
     subnetnode->subnetClass = std::move(subcl);
 
-    nodes[node->ident] = node;
+    nodes[node->name] = node;
     CALLBACK_NOTIFY(createSubnetNode, subnetnode)
     return node;
 }
 
 ZENO_API Graph* Graph::addSubnetNode(std::string const& id) {
+    //deprecated:
+    return nullptr;
+#if 0
     auto subcl = std::make_unique<ImplSubnetNodeClass>();
     auto node = subcl->new_instance(id);
     node->graph = this;
-    node->ident = id;
+    node->name = id;
     node->nodeClass = subcl.get();
     auto subnode = static_cast<SubnetNode*>(node.get());
     subnode->subgraph->session = this->session;
@@ -272,6 +295,7 @@ ZENO_API Graph* Graph::addSubnetNode(std::string const& id) {
     auto subg = subnode->subgraph.get();
     nodes[id] = std::move(node);
     return subg;
+#endif
 }
 
 std::map<std::string, std::string> Graph::getSubInputs()
@@ -284,18 +308,20 @@ std::map<std::string, std::string> Graph::getSubOutputs()
     return subOutputNodes;
 }
 
-ZENO_API std::shared_ptr<INode> Graph::getNode(std::string const& ident) {
-    if (nodes.find(ident) == nodes.end())
+ZENO_API std::shared_ptr<INode> Graph::getNode(std::string const& name) {
+    if (nodes.find(name) == nodes.end())
         return nullptr;
-    return nodes[ident];
+    return nodes[name];
 }
 
-ZENO_API bool Graph::removeNode(std::string const& ident) {
-    if (nodes.find(ident) == nodes.end())
+ZENO_API bool Graph::removeNode(std::string const& name) {
+    auto it = nodes.find(name);
+    if (it == nodes.end())
         return false;
 
-    nodes.erase(ident);
-    CALLBACK_NOTIFY(removeNode, ident)
+    node_set[it->second->nodecls].erase(name);
+    nodes.erase(name);
+    CALLBACK_NOTIFY(removeNode, name)
     return true;
 }
 

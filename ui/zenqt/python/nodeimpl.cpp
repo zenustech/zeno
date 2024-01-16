@@ -37,21 +37,21 @@ Node_init(ZNodeObject* self, PyObject* args, PyObject* kwds)
 static PyObject*
 Node_name(ZNodeObject* self, PyObject* Py_UNUSED(ignored))
 {
-    const QString& name = self->nodeIdx.data(ROLE_CUSTOM_OBJNAME).toString();
+    const QString& name = self->nodeIdx.data(ROLE_NODE_NAME).toString();
     return PyUnicode_FromFormat(name.toUtf8());
 }
 
 static PyObject*
 Node_class(ZNodeObject* self, PyObject* Py_UNUSED(ignored))
 {
-    const QString& name = self->nodeIdx.data(ROLE_OBJNAME).toString();
+    const QString& name = self->nodeIdx.data(ROLE_CLASS_NAME).toString();
     return PyUnicode_FromFormat(name.toUtf8());
 }
 
 static PyObject*
 Node_ident(ZNodeObject* self, PyObject* Py_UNUSED(ignored))
 {
-    const QString& name = self->nodeIdx.data(ROLE_OBJID).toString();
+    const QString& name = self->nodeIdx.data(ROLE_NODE_NAME).toString();
     return PyUnicode_FromFormat(name.toUtf8());
 }
 
@@ -115,17 +115,17 @@ Node_getattr(ZNodeObject* self, char* name)
         return postuple;
     }
     else if (strcmp(name, "ident") == 0) {
-        std::string ident = self->nodeIdx.data(ROLE_OBJID).toString().toStdString();
+        std::string ident = self->nodeIdx.data(ROLE_NODE_NAME).toString().toStdString();
         PyObject* value = Py_BuildValue("s", ident.c_str());
         return value;
     }
     else if (strcmp(name, "objCls") == 0) {
-        std::string cls = self->nodeIdx.data(ROLE_OBJNAME).toString().toStdString();
+        std::string cls = self->nodeIdx.data(ROLE_CLASS_NAME).toString().toStdString();
         PyObject* value = Py_BuildValue("s", cls.c_str());
         return value;
     }
     else if (strcmp(name, "name") == 0) {
-        std::string name = self->nodeIdx.data(ROLE_CUSTOM_OBJNAME).toString().toStdString();
+        std::string name = self->nodeIdx.data(ROLE_NODE_NAME).toString().toStdString();
         PyObject* value = Py_BuildValue("s", name.c_str());
         return value;
     }
@@ -332,7 +332,7 @@ Node_setattr(ZNodeObject* self, char* name, PyObject* v)
                 return -1;
             info.newValue = val;
             info.oldValue = param.defaultValue;
-            pCurrModel->updateParamInfo(self->nodeIdx.data(ROLE_OBJID).toString(), info, self->subgIdx);
+            pCurrModel->updateParamInfo(self->nodeIdx.data(ROLE_NODE_NAME).toString(), info, self->subgIdx);
         }
 
     }

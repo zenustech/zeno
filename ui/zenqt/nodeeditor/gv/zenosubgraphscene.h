@@ -36,7 +36,7 @@ public:
     void markError(const QString& nodeid);
     void clearMark();
     QGraphicsItem* getNode(const QString& id);
-    void collectNodeSelChanged(const QString& ident, bool bSelected);
+    void collectNodeSelChanged(const QString& name, bool bSelected);
     GraphModel* getGraphModel() const;
 
     // FIXME temp function for merge

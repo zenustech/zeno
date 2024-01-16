@@ -51,13 +51,13 @@ Item {
                 id: nodes
                 model: graphEditor.graphModel
 
-                function idxFromId(ident) {
-                    var idx = graphEditor.graphModel.indexFromId(ident)
+                function idxFromId(nodename) {
+                    var idx = graphEditor.graphModel.indexFromId(nodename)
                     //console.log(idx)
                 }
 
-                function getZNode(ident) {
-                    var idx = graphEditor.graphModel.indexFromId(ident)
+                function getZNode(nodename) {
+                    var idx = graphEditor.graphModel.indexFromId(nodename)
                     if (idx == -1) {
                         return null
                     } else {
@@ -66,31 +66,31 @@ Item {
                 }
 
                 delegate: ZNode {
+                    required property string classname
                     required property string name
-                    required property string ident
                     required property variant params
                     required property var pos
                     required property variant subgraph
 
-                    //id: ident     //warning: Unable to assign ZNode_QMLTYPE_31_QML_35 to QString
+                    //id: name     //warning: Unable to assign ZNode_QMLTYPE_31_QML_35 to QString
                     id: qmlnode
 
-                    arg_name: name
-                    arg_ident: ident
+                    arg_name: classname
+                    arg_ident: name
                     paramModel: params
                     subgModel: subgraph
                     x: pos[0]
                     y: pos[1]
 
                     addLink: (sockObj) => {
-                        if (tempEdge.visible && tempEdge.isFromInput != sockObj.input && tempEdge.nodeId != ident){
+                        if (tempEdge.visible && tempEdge.isFromInput != sockObj.input && tempEdge.nodeId != name){
                             tempEdge.visible = false
                             tempEdge.isMatch = false
                             if (!tempEdge.isFromInput){
-                                graphEditor.graphModel.addLink(tempEdge.nodeId, tempEdge.paramName, ident, sockObj.paramName)
+                                graphEditor.graphModel.addLink(tempEdge.nodeId, tempEdge.paramName, name, sockObj.paramName)
                             }
                             else {
-                                graphEditor.graphModel.addLink(ident, sockObj.paramName, tempEdge.nodeId, tempEdge.paramName)
+                                graphEditor.graphModel.addLink(name, sockObj.paramName, tempEdge.nodeId, tempEdge.paramName)
                             }
                         }
                     }
@@ -100,7 +100,7 @@ Item {
                     }
 
                     matchSocket: (sockObj) => {//吸附
-                        if (tempEdge.visible && tempEdge.isFromInput != sockObj.input && tempEdge.nodeId != ident) {
+                        if (tempEdge.visible && tempEdge.isFromInput != sockObj.input && tempEdge.nodeId != name) {
                             var sockGlobalPos = draggable.mapFromItem(sockObj, 0, 0)
                             if (sockObj.input){
                                 tempEdge.point2x = sockGlobalPos.x
@@ -147,11 +147,11 @@ Item {
                         console.log('sockGlobalPos: ' + sockGlobalPos.x + ',' + sockGlobalPos.y)
 
                         //点击将临时边连接变成固定边
-                        if (tempEdge.isMatch && tempEdge.isFromInput != sockObj.input && tempEdge.nodeId != ident){
+                        if (tempEdge.isMatch && tempEdge.isFromInput != sockObj.input && tempEdge.nodeId != name){
                            qmlnode.addLink(sockObj)
                         }
                         else if (sockObj.input) {
-                            var fromParam = graphEditor.graphModel.removeLink(ident, sockObj.paramName, true)
+                            var fromParam = graphEditor.graphModel.removeLink(name, sockObj.paramName, true)
                             if (fromParam != undefined && fromParam.length > 0){//删除边并变成临时边
                                 tempEdge.visible = true
                                 tempEdge.nodeId = fromParam[0]
@@ -186,7 +186,7 @@ Item {
                             }
                             else{//从 input 到 output 的临时边
                                 tempEdge.visible = true
-                                tempEdge.nodeId = ident
+                                tempEdge.nodeId = name
                                 tempEdge.isFromInput = true
                                 tempEdge.paramName = sockObj.paramName
                                 tempEdge.point1x = Qt.binding(function() {
@@ -206,7 +206,7 @@ Item {
                         }
                         else {//从output 到input的临时边
                             tempEdge.visible = true
-                            tempEdge.nodeId = ident
+                            tempEdge.nodeId = name
                             tempEdge.isFromInput = false
                             tempEdge.paramName = sockObj.paramName
                             tempEdge.point1x = sockGlobalPos.x

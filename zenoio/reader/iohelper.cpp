@@ -127,10 +127,10 @@ namespace zenoio
         }
 
         const zeno::GraphData& subgraph = it->second.graph;
-        for (const auto& [ident, nodeData] : subgraph.nodes)
+        for (const auto& [name, nodeData] : subgraph.nodes)
         {
             zeno::NodeData nodeDat = nodeData;
-            const std::string& snodeId = nodeDat.ident;
+            const std::string& snodeId = nodeDat.name;
             const std::string& name = nodeDat.cls;
             const std::string& newId = zeno::generateUUID();
             old2new.insert(std::make_pair(snodeId, newId));
@@ -138,7 +138,7 @@ namespace zenoio
             if (subgraphDatas.find(name) != subgraphDatas.end())
             {
                 const std::string& ssubnetName = name;
-                nodeDat.ident = newId;
+                nodeDat.name = newId;
 
                 zeno::LinksData childLinks;
                 zeno::GraphData fork_subgraph;
@@ -153,7 +153,7 @@ namespace zenoio
             }
             else
             {
-                nodeDat.ident = newId;
+                nodeDat.name = newId;
                 newDatas[newId] = nodeDat;
             }
         }
