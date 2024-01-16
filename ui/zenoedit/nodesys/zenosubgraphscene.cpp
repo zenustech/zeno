@@ -1237,15 +1237,15 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
     else if (!event->isAccepted() && uKey == ZenoSettingsManager::GetInstance().getShortCut(ShortCut_View)) 
     {
         int options = OPT_VIEW;
-        if (!m_bViewOn)
-            options |= OPT_CACHE;
         updateNodeStatus(m_bViewOn, options);
     }
     else if (!event->isAccepted() && uKey == ZenoSettingsManager::GetInstance().getShortCut(ShortCut_Cache))
     {
         int options = OPT_CACHE;
-        if (m_bCacheOn)
+        if (m_bCacheOn) {
             options |= OPT_VIEW;
+            m_bViewOn = false;
+        }
         updateNodeStatus(m_bCacheOn, options);
     }
 }
@@ -1253,10 +1253,10 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
 void ZenoSubGraphScene::updateNodeStatus(bool &bOn, int option) 
 {
     bOn = !bOn;
+    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    ZASSERT_EXIT(pGraphsModel);
     for (const QModelIndex &idx : selectNodesIndice()) 
     {
-        IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
-        ZASSERT_EXIT(pGraphsModel);
         STATUS_UPDATE_INFO info;
         int options = idx.data(ROLE_OPTIONS).toInt();
         info.oldValue = options;
@@ -1264,6 +1264,19 @@ void ZenoSubGraphScene::updateNodeStatus(bool &bOn, int option)
             options |= option;
         else
             options &= (~option);
+        info.role = ROLE_OPTIONS;
+        info.newValue = options;
+        pGraphsModel->updateNodeStatus(idx.data(ROLE_OBJID).toString(), info, m_subgIdx);
+    }
+    for (const QModelIndex& idx : selectNodesIndice())
+    {
+        STATUS_UPDATE_INFO info;
+        int options = idx.data(ROLE_OPTIONS).toInt();
+        info.oldValue = options;
+        if (options & OPT_VIEW)
+            options |= OPT_CACHE;
+        else
+            continue;
         info.role = ROLE_OPTIONS;
         info.newValue = options;
         pGraphsModel->updateNodeStatus(idx.data(ROLE_OBJID).toString(), info, m_subgIdx);
