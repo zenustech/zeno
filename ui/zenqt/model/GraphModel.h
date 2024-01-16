@@ -9,6 +9,7 @@
 #include "parammodel.h"
 #include "LinkModel.h"
 #include <zeno/core/Graph.h>
+#include <optional>
 
 class GraphModel;
 
@@ -17,15 +18,16 @@ struct NodeItem : public QObject
     Q_OBJECT
 
 public:
-    QString name;
-    QString cls;
+    //QString name;
+    //QString cls;
     ParamsModel* params = nullptr;
     QPointF pos;
 
     std::weak_ptr<zeno::INode> spNode;
 
     //for subgraph:
-    GraphModel* pSubgraph = nullptr;
+    std::optional<GraphModel*> optSubgraph;
+    //GraphModel* pSubgraph = nullptr;
 
     NodeItem(QObject* parent) : QObject(parent) {}
 };
@@ -65,7 +67,6 @@ public:
     //GraphModel:
     void registerCoreNotify(std::shared_ptr<zeno::Graph> coreGraph);
     zeno::NodeData createNode(const QString& nodeCls, const QPointF& pos);
-    void appendNode(QString name, QString cls, const QPointF& pos);   //TO DEPRECATED
     void appendSubgraphNode(QString name, QString cls, NODE_DESCRIPTOR desc, GraphModel* subgraph, const QPointF& pos);
     void removeNode(QString name);
     void addLink(QPair<QString, QString> fromParam, QPair<QString, QString> toParam);
@@ -92,6 +93,7 @@ signals:
 
 private:
     QModelIndex nodeIdx(const QString& name) const;
+    void _appendNode(std::shared_ptr<zeno::INode> spNode);
 
     QString m_graphName;
     QHash<QString, int> m_name2Row;

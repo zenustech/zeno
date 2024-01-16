@@ -21,19 +21,6 @@ GraphModel::~GraphModel()
     }
 }
 
-void GraphModel::registerCoreNotify(std::shared_ptr<zeno::Graph> coreGraph)
-{
-    m_spCoreGraph = coreGraph;
-    cbCreateNode = coreGraph->register_createNode([this](const std::string& name, std::weak_ptr<zeno::INode> spNode) {
-        auto coreNode = spNode.lock();
-        if (coreNode) {
-            spNode = coreNode;
-            int j = coreNode->inputs_.size();
-            j = 0;
-        }
-    });
-}
-
 int GraphModel::indexFromId(const QString& name) const
 {
     if (m_name2Row.find(name) == m_name2Row.end())
@@ -90,7 +77,8 @@ QString GraphModel::owner() const
 {
     if (auto pItem = qobject_cast<NodeItem*>(parent()))
     {
-        return pItem->name;
+        auto spNode = pItem->spNode.lock();
+        return spNode ? QString::fromStdString(spNode->name) : "";
     }
     else {
         return "main";
@@ -107,18 +95,27 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
     NodeItem* item = m_nodes[m_row2name[index.row()]];
 
     switch (role) {
-        case Qt::DisplayRole:   return item->name;
-        case ROLE_NODE_NAME:    return item->name;
-        case ROLE_CLASS_NAME:  return item->cls;
-        case ROLE_OBJPOS:   return QVariantList({ item->pos.x(), item->pos.y() });
+        case Qt::DisplayRole:
+        case ROLE_NODE_NAME: {
+            auto spNode = item->spNode.lock();
+            ZASSERT_EXIT(spNode, QVariant());
+            return QString::fromStdString(spNode->name);
+        }
+        case ROLE_CLASS_NAME: {
+            auto spNode = item->spNode.lock();
+            ZASSERT_EXIT(spNode, QVariant());
+            return QString::fromStdString(spNode->nodecls);
+        }
+        case ROLE_OBJPOS:
+            return QVariantList({ item->pos.x(), item->pos.y() });
         case ROLE_PARAMS:
         {
             return QVariant::fromValue(item->params);
         }
         case ROLE_SUBGRAPH:
         {
-            if (item->pSubgraph)
-                return QVariant::fromValue(item->pSubgraph);
+            if (item->optSubgraph.has_value())
+                return QVariant::fromValue(item->optSubgraph);
             else
                 return QVariant();
         }
@@ -157,7 +154,7 @@ bool GraphModel::setData(const QModelIndex& index, const QVariant& value, int ro
 
     switch (role) {
         case ROLE_CLASS_NAME: {
-            item->name = value.toString();
+            //TODO: rename by core graph
             emit dataChanged(index, index, QVector<int>{role});
             return true;
         }
@@ -206,7 +203,8 @@ GraphModel* GraphModel::getGraphByPath(const QString& objPath)
      if (leftPath.isEmpty()) {
          return this;
      }
-     return pItem->pSubgraph->getGraphByPath(leftPath);
+     ZASSERT_EXIT(pItem->optSubgraph.has_value());
+     return pItem->optSubgraph.value()->getGraphByPath(leftPath);
 }
 
 void GraphModel::undo()
@@ -249,21 +247,29 @@ void GraphModel::addLink(QPair<QString, QString> fromParam, QPair<QString, QStri
     }
 }
 
+void GraphModel::registerCoreNotify(std::shared_ptr<zeno::Graph> coreGraph)
+{
+    m_spCoreGraph = coreGraph;
+    cbCreateNode = coreGraph->register_createNode([this](const std::string& name, std::weak_ptr<zeno::INode> spNode) {
+        auto coreNode = spNode.lock();
+        _appendNode(coreNode);
+    });
+}
+
 zeno::NodeData GraphModel::createNode(const QString& nodeCls, const QPointF& pos)
 {
     zeno::NodeData node;
-    //call IGraph::createNode
     std::shared_ptr<zeno::Graph> spGraph = m_spCoreGraph.lock();
     if (!spGraph)
         return node;
+
     spGraph->createNode(nodeCls.toStdString());
     return node;
 }
 
-void GraphModel::appendNode(QString name, QString cls, const QPointF& pos)
+void GraphModel::_appendNode(std::shared_ptr<zeno::INode> spNode)
 {
-    auto* pDescs = Descriptors::instance();
-    NODE_DESCRIPTOR desc = pDescs->getDescriptor(cls);
+    ZASSERT_EXIT(spNode);
 
     int nRows = m_nodes.size();
 
@@ -271,11 +277,11 @@ void GraphModel::appendNode(QString name, QString cls, const QPointF& pos)
 
     NodeItem* pItem = new NodeItem(this);
     pItem->setParent(this);
-    pItem->name = name;
-    pItem->cls = cls;
-    pItem->pos = pos;
+    pItem->spNode = spNode;
+
     pItem->params = new ParamsModel(desc, pItem);
 
+    const QString& name = QString::fromStdString(spNode->name);
     m_row2name[nRows] = name;
     m_name2Row[name] = nRows;
     m_nodes.insert(name, pItem);
@@ -287,6 +293,8 @@ void GraphModel::appendNode(QString name, QString cls, const QPointF& pos)
 
 void GraphModel::appendSubgraphNode(QString name, QString cls, NODE_DESCRIPTOR desc, GraphModel* subgraph, const QPointF& pos)
 {
+    //TODO:
+#if 0
     int nRows = m_nodes.size();
     beginInsertRows(QModelIndex(), nRows, nRows);
 
@@ -305,11 +313,13 @@ void GraphModel::appendSubgraphNode(QString name, QString cls, NODE_DESCRIPTOR d
 
     endInsertRows();
     pItem->params->setNodeIdx(createIndex(nRows, 0));
+#endif
 }
 
 void GraphModel::removeNode(QString ident)
 {
     int row = m_name2Row[ident];
+    //core remove
     removeRow(row);
 }
 
@@ -377,7 +387,10 @@ ParamsModel* GraphModel::params(QModelIndex nodeIdx)
 
 GraphModel* GraphModel::subgraph(QModelIndex nodeIdx) {
     NodeItem* item = m_nodes[m_row2name[nodeIdx.row()]];
-    return item->pSubgraph;
+    if (item->optSubgraph.has_value()) {
+        return item->optSubgraph.value();
+    }
+    return nullptr;
 }
 
 QModelIndex GraphModel::nodeIdx(const QString& ident) const

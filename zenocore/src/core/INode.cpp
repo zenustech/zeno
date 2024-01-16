@@ -218,6 +218,16 @@ ZENO_API void INode::doApply() {
     log_trace("--> leave {}", name);
 }
 
+ZENO_API std::vector<std::shared_ptr<IParam>> INode::get_input_params() const
+{
+    return inputs_;
+}
+
+ZENO_API std::vector<std::shared_ptr<IParam>> INode::get_output_params() const
+{
+    return outputs_;
+}
+
 ZENO_API void INode::set_input_defl(std::string const& name, zvariant defl) {
     std::shared_ptr<IParam> param = get_input_param(name);
     param->defl = defl;

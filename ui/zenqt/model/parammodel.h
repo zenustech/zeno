@@ -6,6 +6,8 @@
 #include <QQuickItem>
 #include "uicommon.h"
 #include <zeno/core/data.h>
+#include <zeno/core/INode.h>
+
 
 struct ParamItem
 {
@@ -22,7 +24,7 @@ class ParamsModel : public QAbstractListModel
     QML_ELEMENT
 
 public:
-    ParamsModel(NODE_DESCRIPTOR desc, QObject* parent = nullptr);
+    ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent = nullptr);
 
     Q_INVOKABLE int indexFromName(const QString& name, bool bInput) const;
     Q_INVOKABLE QVariant getIndexList(bool bInput) const;

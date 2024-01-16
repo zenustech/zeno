@@ -1,10 +1,20 @@
 #include "parammodel.h"
 
 
-ParamsModel::ParamsModel(NODE_DESCRIPTOR desc, QObject* parent)
+ParamsModel::ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent)
     : QAbstractListModel(parent)
 {
+    std::vector<std::shared_ptr<zeno::IParam>> inputs = spNode->get_input_params();
+    for (std::shared_ptr<zeno::IParam> spParam : inputs) {
 
+    }
+
+    std::vector<std::shared_ptr<zeno::IParam>> outputs = spNode->get_output_params();
+    for (std::shared_ptr<zeno::IParam> spParam : outputs) {
+
+    }
+
+    /*
     for (SOCKET_DESCRIPTOR socket_desc : desc.inputs)
     {
         m_items.append({ true, socket_desc.name, socket_desc.type, socket_desc.control });
@@ -14,6 +24,7 @@ ParamsModel::ParamsModel(NODE_DESCRIPTOR desc, QObject* parent)
     {
         m_items.append({ false, socket_desc.name, socket_desc.type });
     }
+    */
 }
 
 QVariant ParamsModel::data(const QModelIndex& index, int role) const

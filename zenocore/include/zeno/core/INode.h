@@ -79,6 +79,8 @@ public:
     ZENO_API void mark_dirty(bool bOn);
     ZENO_API bool is_dirty() const;
 
+    ZENO_API std::vector<std::shared_ptr<IParam>> get_input_params() const;
+    ZENO_API std::vector<std::shared_ptr<IParam>> get_output_params() const;
     ZENO_API std::shared_ptr<IParam> get_input_param(std::string const& name) const;
     ZENO_API std::shared_ptr<IParam> get_output_param(std::string const& name) const;
     //END new api
