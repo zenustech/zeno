@@ -1642,10 +1642,9 @@ void ZenoNode::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
     else
     {
         NODE_CATES cates = pGraphsModel->getCates();
-        pos = event->screenPos();
-        ZenoNewnodeMenu *menu = new ZenoNewnodeMenu(m_subGpIndex, cates, pos);
+        ZenoNewnodeMenu *menu = new ZenoNewnodeMenu(m_subGpIndex, cates, event->scenePos());
         menu->setEditorFocus();
-        menu->exec(pos.toPoint());
+        menu->exec(event->screenPos());
         menu->deleteLater();
     }
 }
