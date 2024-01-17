@@ -19,9 +19,10 @@
 #include <cstdio>
 #include <filesystem>
 #include <zeno/utils/string.h>
+#include <zeno/utils/scope_exit.h>
 
-    #include <Python.h>
 #ifdef ZENO_WITH_PYTHON3
+    #include <Python.h>
 #endif
 
 using namespace Alembic::AbcGeom;
@@ -1085,66 +1086,63 @@ ZENDEFNODE(PrimsFilterInUserdata, {
     {},
     {"alembic"},
 });
-//#ifdef ZENO_WITH_PYTHON3
-struct PythonFilterPrimsByUserdata: INode {
+
+static PyObject * pycheck(PyObject *pResult) {
+    if (pResult == nullptr) {
+        PyErr_Print();
+        throw zeno::makeError("python err");
+    }
+    return pResult;
+}
+#ifdef ZENO_WITH_PYTHON3
+struct PrimsFilterInUserdataPython: INode {
     void apply() override {
+        auto prims = get_input<ListObject>("list")->get<PrimitiveObject>();
+
+        auto py_code = get_input2<std::string>("py_code");
         Py_Initialize();
+        zeno::scope_exit init_defer([=]{ Py_Finalize(); });
 
-        PyObject* pModule = PyImport_ImportModule("string_length");
+        PyObject *globals = PyDict_New();
+        zeno::scope_exit globals_defer([=]{ Py_DECREF(globals); });
+        auto name = get_input2<std::string>("name");
+        auto out_list = std::make_shared<ListObject>();
+        for (auto p: prims) {
+            auto &ud = p->userData();
+            auto value = ud.get2<std::string>(name);
 
-        if (pModule != NULL) {
-            PyObject* pFunc = PyObject_GetAttrString(pModule, "get_string_length");
+            PyObject *locals = PyDict_New();
+            zeno::scope_exit locals_defer([=]{ Py_DECREF(locals); });
+            PyObject* pyValue = PyUnicode_DecodeUTF8(value.c_str(), value.size(), "strict");
+            PyDict_SetItemString(locals, "v", pyValue);
 
-            if (pFunc && PyCallable_Check(pFunc)) {
-                std::string inputString = "fuck";
+            PyObject *pResult = pycheck(PyRun_String(py_code.c_str(), Py_file_input, globals, locals));
+            zeno::scope_exit pResult_defer([=]{ Py_DECREF(pResult); });
+            PyObject *pValue = pycheck(PyRun_String("result", Py_eval_input, globals, locals));
+            zeno::scope_exit pValue_defer([=]{ Py_DECREF(pValue); });
+            long need_insert = PyLong_AsLong(pValue);
 
-                PyObject* pArgs = PyTuple_Pack(1, Py_BuildValue("s", inputString.c_str()));
-
-                PyObject* pValue = PyObject_CallObject(pFunc, pArgs);
-                Py_DECREF(pArgs);
-
-                if (pValue != NULL) {
-                    int length = PyLong_AsLong(pValue);
-                    Py_DECREF(pValue);
-
-                    std::cout << "String length returned from Python: " << length << std::endl;
-                } else {
-                    // 处理 Python 函数调用失败的情况
-                    PyErr_Print();
-                }
-
-                // 释放 Python 函数对象
-                Py_DECREF(pFunc);
-            } else {
-                // 处理获取 Python 函数失败的情况
-                PyErr_Print();
+            if (need_insert > 0) {
+                out_list->arr.push_back(p);
             }
-
-            // 释放 Python 模块对象
-            Py_DECREF(pModule);
-        } else {
-            // 处理导入 Python 模块失败的情况
-            PyErr_Print();
         }
-
-        // 结束 Python 解释器
-        Py_Finalize();
+        set_output("out", out_list);
     }
 };
 
-ZENDEFNODE(PythonFilterPrimsByUserdata, {
+ZENDEFNODE(PrimsFilterInUserdataPython, {
     {
         {"list", "list"},
         {"string", "name", ""},
-        {"string", "filters"},
-        {"bool", "contain", "1"},
+        {"multiline_string", "py_code", "result = v.startswith('hello')"},
     },
     {
+        {"out"},
     },
     {},
     {"alembic"},
 });
-//#endif
+#endif
 
 
 } // namespace zeno
