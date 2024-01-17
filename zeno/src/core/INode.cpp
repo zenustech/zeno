@@ -125,19 +125,6 @@ ZENO_API void zeno::INode::writeTmpCaches()
 }
 
 ZENO_API void INode::preApply() {
-
-    if (m_status & NodeStatus::Mute)
-    {
-        //just pass input data to output.
-        for (auto const& [name, _] : this->inputs) {
-            if (name == "SRC") continue;//sk
-            set_output(name, get_input(name));
-        }
-        return;
-    }
-    if ((m_status & NodeStatus::Once) && m_bFinishOnce)
-        return;
-
     auto& dc = graph->getDirtyChecker();
     bool bTmpCache = (m_status & NodeStatus::Cached);
     if (!dc.amIDirty(myname) && bTmpCache)
@@ -176,7 +163,6 @@ ZENO_API void INode::preApply() {
         }
     }
     log_debug("==> leave {}", myname);
-    m_bFinishOnce = true;
 }
 
 ZENO_API bool INode::requireInput(std::string const &ds) {
@@ -200,7 +186,23 @@ ZENO_API void INode::doOnlyApply() {
 ZENO_API void INode::doApply() {
     //if (checkApplyCondition()) {
     log_trace("--> enter {}", myname);
+
+    if (m_status & NodeStatus::Mute)
+    {
+        //just pass input data to output.
+        for (auto const& [name, _] : this->inputs) {
+            if (name == "SRC") continue;//sk
+            set_output(name, get_input(name));
+        }
+        return;
+    }
+    if ((m_status & NodeStatus::Once) && m_bFinishOnce)
+        return;
+
     preApply();
+
+    m_bFinishOnce = true;
+
     log_trace("--> leave {}", myname);
     //}
 
