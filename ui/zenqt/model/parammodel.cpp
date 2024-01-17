@@ -69,8 +69,11 @@ QVariant ParamsModel::data(const QModelIndex& index, int role) const
     }
     case ROLE_NODE_IDX:
     {
-        //TODO: get the node info, tip: parent()
-        break;
+        return m_nodeIdx;
+    }
+    case ROLE_NODE_NAME:
+    {
+        return m_nodeIdx.data(ROLE_NODE_NAME);
     }
     }
     return QVariant();

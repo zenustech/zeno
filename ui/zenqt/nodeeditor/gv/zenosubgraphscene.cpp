@@ -179,11 +179,10 @@ void ZenoSubGraphScene::initLink(const QModelIndex& linkIdx)
     if (!linkIdx.isValid())
         return;
 
-    const QString& linkId = linkIdx.data(ROLE_NODE_NAME).toString();
-    if (m_links.find(linkId) != m_links.end())
-        return;
-
     zeno::EdgeInfo edge = linkIdx.data(ROLE_LINK_INFO).value<zeno::EdgeInfo>();
+    QUuid linkid = linkIdx.data(ROLE_LINKID).toUuid();
+    if (m_links.find(linkid) != m_links.end())
+        return;
 
     const QString& inId = QString::fromStdString(edge.inNode);
     const QString& outId = QString::fromStdString(edge.outNode);
@@ -196,7 +195,7 @@ void ZenoSubGraphScene::initLink(const QModelIndex& linkIdx)
 
     ZenoFullLink *pEdge = new ZenoFullLink(linkIdx, outNode, inNode);
     addItem(pEdge);
-    m_links[linkId] = pEdge;
+    m_links[linkid] = pEdge;
 
     ZenoSocketItem *socketItem = outNode->getSocketItem(outSockIdx);
     ZASSERT_EXIT(socketItem);
@@ -333,9 +332,8 @@ void ZenoSubGraphScene::onLinkInserted(const QModelIndex& parent, int first, int
 
 void ZenoSubGraphScene::viewAddLink(const QModelIndex& linkIdx)
 {
-    const QString& linkId = linkIdx.data(ROLE_NODE_NAME).toString();
-
     zeno::EdgeInfo edge = linkIdx.data(ROLE_LINK_INFO).value<zeno::EdgeInfo>();
+    QUuid linkid = linkIdx.data(ROLE_LINKID).toUuid();
 
     const QString& inId = QString::fromStdString(edge.inNode);
     const QString& inSock = QString::fromStdString(edge.inParam);
@@ -348,7 +346,7 @@ void ZenoSubGraphScene::viewAddLink(const QModelIndex& linkIdx)
         return;
     }
 
-    if (m_links.find(linkId) != m_links.end())
+    if (m_links.find(linkid) != m_links.end())
         return;
 
     ZenoNode* pInNode = m_nodes[inId];
@@ -357,7 +355,7 @@ void ZenoSubGraphScene::viewAddLink(const QModelIndex& linkIdx)
 
     ZenoFullLink* pEdge = new ZenoFullLink(QPersistentModelIndex(linkIdx), pOutNode, pInNode);
     addItem(pEdge);
-    m_links[linkId] = pEdge;
+    m_links[linkid] = pEdge;
 
     QModelIndex inSockIdx = linkIdx.data(ROLE_INSOCK_IDX).toModelIndex();
     QModelIndex outSockIdx = linkIdx.data(ROLE_OUTSOCK_IDX).toModelIndex();
@@ -377,15 +375,14 @@ void ZenoSubGraphScene::onLinkAboutToBeRemoved(const QModelIndex& parent, int fi
 
 void ZenoSubGraphScene::viewRemoveLink(const QModelIndex& linkIdx)
 {
-    const QString& linkId = linkIdx.data(ROLE_NODE_NAME).toString();
-    if (m_links.find(linkId) == m_links.end())
+    zeno::EdgeInfo edge = linkIdx.data(ROLE_LINK_INFO).value<zeno::EdgeInfo>();
+    QUuid linkid = linkIdx.data(ROLE_LINKID).toUuid();
+    if (m_links.find(linkid) == m_links.end())
         return;
 
-    ZenoFullLink* pLink = m_links[linkId];
-    m_links.remove(linkId);
+    ZenoFullLink* pLink = m_links[linkid];
+    m_links.remove(linkid);
     delete pLink;
-
-    zeno::EdgeInfo edge = linkIdx.data(ROLE_LINK_INFO).value<zeno::EdgeInfo>();
 
     const QString& inId = QString::fromStdString(edge.inNode);
     const QString& inSock = QString::fromStdString(edge.inParam);

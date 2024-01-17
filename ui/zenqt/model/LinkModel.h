@@ -2,6 +2,7 @@
 #define __LINKMODEL_H__
 
 #include <QtWidgets>
+#include <QUuid>
 
 class LinkModel : public QAbstractListModel
 {
@@ -11,6 +12,7 @@ class LinkModel : public QAbstractListModel
     struct _linkItem {
         QPersistentModelIndex fromParam;
         QPersistentModelIndex toParam;
+        QUuid uuid;
     };
 
     typedef QVector<_linkItem> LINKS_ITEM;

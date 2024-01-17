@@ -2,6 +2,7 @@
 #include "uicommon.h"
 
 
+
 LinkModel::LinkModel(QObject* parent)
     : _base(parent)
 {
@@ -49,8 +50,18 @@ QVariant LinkModel::data(const QModelIndex& index, int role) const
         }
         case ROLE_LINK_INFO:
         {
-            //TODO
-            return QVariant::fromValue(zeno::EdgeInfo());
+            const auto& info = m_items[index.row()];
+            const QString& outNode = info.fromParam.data(ROLE_NODE_NAME).toString();
+            const QString& outParam = info.fromParam.data(ROLE_PARAM_NAME).toString();
+            const QString& inNode = info.toParam.data(ROLE_NODE_NAME).toString();
+            const QString& inParam = info.toParam.data(ROLE_PARAM_NAME).toString();
+            zeno::EdgeInfo edge = { outNode.toStdString(), outParam.toStdString(), "", inNode.toStdString(), inParam.toStdString(), ""};
+            return QVariant::fromValue(edge);
+        }
+        case ROLE_LINKID:
+        {
+            const auto& info = m_items[index.row()];
+            return info.uuid;
         }
     }
     return QVariant();
@@ -80,6 +91,8 @@ QModelIndex LinkModel::addLink(const QModelIndex& fromParam, const QModelIndex& 
     _linkItem item;
     item.fromParam = fromParam;
     item.toParam = toParam;
+    item.uuid = QUuid::createUuid();
+
     m_items.append(item);
 
     endInsertRows();
