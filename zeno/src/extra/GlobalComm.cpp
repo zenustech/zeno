@@ -818,6 +818,14 @@ void GlobalComm::prepareForOptix(std::map<std::string, std::shared_ptr<zeno::IOb
     else
         renderType = NORMAL;
 
+    //fix: hdrsky obj need updateAll
+    for (auto& [key, obj] : m_newToviewObjs)
+        if (key.find("HDRSky") != std::string::npos)
+        {
+            renderType = NORMAL;
+            break;
+        }
+
     m_lightObjects.clear();
     for (auto const& [key, obj] : objs) {
         if (auto prim_in = dynamic_cast<zeno::PrimitiveObject*>(obj.get())) {
