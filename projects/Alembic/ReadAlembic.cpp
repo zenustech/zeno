@@ -20,6 +20,10 @@
 #include <filesystem>
 #include <zeno/utils/string.h>
 
+    #include <Python.h>
+#ifdef ZENO_WITH_PYTHON3
+#endif
+
 using namespace Alembic::AbcGeom;
 
 namespace zeno {
@@ -1081,7 +1085,66 @@ ZENDEFNODE(PrimsFilterInUserdata, {
     {},
     {"alembic"},
 });
+//#ifdef ZENO_WITH_PYTHON3
+struct PythonFilterPrimsByUserdata: INode {
+    void apply() override {
+        Py_Initialize();
 
+        PyObject* pModule = PyImport_ImportModule("string_length");
+
+        if (pModule != NULL) {
+            PyObject* pFunc = PyObject_GetAttrString(pModule, "get_string_length");
+
+            if (pFunc && PyCallable_Check(pFunc)) {
+                std::string inputString = "fuck";
+
+                PyObject* pArgs = PyTuple_Pack(1, Py_BuildValue("s", inputString.c_str()));
+
+                PyObject* pValue = PyObject_CallObject(pFunc, pArgs);
+                Py_DECREF(pArgs);
+
+                if (pValue != NULL) {
+                    int length = PyLong_AsLong(pValue);
+                    Py_DECREF(pValue);
+
+                    std::cout << "String length returned from Python: " << length << std::endl;
+                } else {
+                    // 处理 Python 函数调用失败的情况
+                    PyErr_Print();
+                }
+
+                // 释放 Python 函数对象
+                Py_DECREF(pFunc);
+            } else {
+                // 处理获取 Python 函数失败的情况
+                PyErr_Print();
+            }
+
+            // 释放 Python 模块对象
+            Py_DECREF(pModule);
+        } else {
+            // 处理导入 Python 模块失败的情况
+            PyErr_Print();
+        }
+
+        // 结束 Python 解释器
+        Py_Finalize();
+    }
+};
+
+ZENDEFNODE(PythonFilterPrimsByUserdata, {
+    {
+        {"list", "list"},
+        {"string", "name", ""},
+        {"string", "filters"},
+        {"bool", "contain", "1"},
+    },
+    {
+    },
+    {},
+    {"alembic"},
+});
+//#endif
 
 
 } // namespace zeno
