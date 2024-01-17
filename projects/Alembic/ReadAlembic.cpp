@@ -1095,32 +1095,55 @@ static PyObject * pycheck(PyObject *pResult) {
     }
     return pResult;
 }
+
+static void pycheck(int result) {
+    if (result != 0) {
+        PyErr_Print();
+        throw zeno::makeError("python err");
+    }
+}
 struct PrimsFilterInUserdataPython: INode {
     void apply() override {
         auto prims = get_input<ListObject>("list")->get<PrimitiveObject>();
-
         auto py_code = get_input2<std::string>("py_code");
         Py_Initialize();
         zeno::scope_exit init_defer([=]{ Py_Finalize(); });
 
-        PyObject *globals = PyDict_New();
-        zeno::scope_exit globals_defer([=]{ Py_DECREF(globals); });
-        auto name = get_input2<std::string>("name");
         auto out_list = std::make_shared<ListObject>();
         for (auto p: prims) {
+            PyObject* userGlobals = PyDict_New();
+            zeno::scope_exit userGlobals_defer([=]{ Py_DECREF(userGlobals); });
+
+            PyObject* innerDict = PyDict_New();
+            zeno::scope_exit innerDict_defer([=]{ Py_DECREF(innerDict); });
+
             auto &ud = p->userData();
-            auto value = ud.get2<std::string>(name);
+            for (auto i = ud.begin(); i != ud.end(); i++) {
+                auto key = i->first;
+                if (ud.has<std::string>(key)) {
+                    auto value = ud.get2<std::string>(key);
+                    PyObject* pyInnerValue = PyUnicode_DecodeUTF8(key.c_str(), key.size(), "strict");
+                    pycheck(PyDict_SetItemString(innerDict, key.c_str(), pyInnerValue));
+                }
+                else if (ud.has<float>(key)) {
+                    auto value = ud.get2<float>(key);
+                    PyObject* pyInnerValue = PyFloat_FromDouble(value);
+                    pycheck(PyDict_SetItemString(innerDict, key.c_str(), pyInnerValue));
+                }
+                else if (ud.has<int>(key)) {
+                    auto value = ud.get2<int>(key);
+                    PyObject* pyInnerValue = PyLong_FromLong(value);
+                    pycheck(PyDict_SetItemString(innerDict, key.c_str(), pyInnerValue));
+                }
+            }
 
-            PyObject *locals = PyDict_New();
-            zeno::scope_exit locals_defer([=]{ Py_DECREF(locals); });
-            PyObject* pyValue = PyUnicode_DecodeUTF8(value.c_str(), value.size(), "strict");
-            PyDict_SetItemString(locals, "v", pyValue);
+            PyDict_SetItemString(userGlobals, "ud", innerDict);
 
-            PyObject *pResult = pycheck(PyRun_String(py_code.c_str(), Py_file_input, globals, locals));
+            PyObject* pResult = pycheck(PyRun_String(py_code.c_str(), Py_file_input, userGlobals, nullptr));
             zeno::scope_exit pResult_defer([=]{ Py_DECREF(pResult); });
-            PyObject *pValue = pycheck(PyRun_String("result", Py_eval_input, globals, locals));
+            PyObject* pValue = pycheck(PyRun_String("result", Py_eval_input, userGlobals, nullptr));
             zeno::scope_exit pValue_defer([=]{ Py_DECREF(pValue); });
-            long need_insert = PyLong_AsLong(pValue);
+            int need_insert = PyLong_AsLong(pValue);
 
             if (need_insert > 0) {
                 out_list->arr.push_back(p);
@@ -1133,8 +1156,7 @@ struct PrimsFilterInUserdataPython: INode {
 ZENDEFNODE(PrimsFilterInUserdataPython, {
     {
         {"list", "list"},
-        {"string", "name", ""},
-        {"multiline_string", "py_code", "result = v.startswith('hello')"},
+        {"multiline_string", "py_code", "result = len(ud['label']) > 2"},
     },
     {
         {"out"},
