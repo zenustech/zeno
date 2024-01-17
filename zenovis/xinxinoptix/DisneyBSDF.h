@@ -357,6 +357,7 @@ namespace DisneyBSDF{
         float schlickWt = BRDFBasics::SchlickWeight(abs(dot(wo, wm)));
         float F = BRDFBasics::DielectricFresnel(abs(dot(wo, wm)), mat.ior);
         float psss = mat.subsurface;
+        float sssPortion = psss / (1.0 + psss);
         //event probability
         float diffPr = dielectricWt;
         float sssPr = dielectricWt  * psss;
@@ -391,7 +392,7 @@ namespace DisneyBSDF{
         if(diffPr > 0.0 && reflect)
         {
 
-            vec3 d = BRDFBasics::EvalDisneyDiffuse(thin? mat.basecolor:mix(mat.basecolor,mat.sssColor,mat.subsurface), mat.subsurface, mat.roughness, mat.sheen,
+            vec3 d = BRDFBasics::EvalDisneyDiffuse(thin? mat.basecolor * ( 1.0f - sssPortion ):mix(mat.basecolor,mat.sssColor,mat.subsurface) * ( 1.0f - sssPortion ), mat.subsurface, mat.roughness, mat.sheen,
                                              Csheen, wo, wi, wm, tmpPdf) * dielectricWt;
             dterm = dterm + d;
             f = f + d;
@@ -492,7 +493,7 @@ namespace DisneyBSDF{
                                   channelPDF, 0.001 / (abs(wi.z) + 0.005f), true);
           }
           // vec3 d = 1.0f/M_PIf * (1.0f - 0.5f * term) * (trans?vec3(1.0f):vec3(0.0f))  * dielectricWt * subsurface;
-          vec3 d = (trans? vec3(1.0f): vec3(0.0f)) * transmit  * dielectricWt * mat.subsurface;
+          vec3 d = (trans? vec3(1.0f): vec3(0.0f)) * transmit  * dielectricWt;
           dterm = dterm + d;
           f = f + d;
           fPdf += tmpPdf * sssPr;
@@ -588,6 +589,7 @@ namespace DisneyBSDF{
         float schlickWt = BRDFBasics::SchlickWeight(hov);
         float F = BRDFBasics::DielectricFresnel(hov, mat.ior);
         float psss = mat.subsurface;
+        float sssPortion = psss / (1.0f + psss);
         //dielectricWt *= 1.0f - psub;
 
         //event probability
@@ -664,7 +666,7 @@ namespace DisneyBSDF{
               prd->ss_alpha = color;
               if (isSS) {
                 medium = PhaseFunctions::isotropic;
-                CalculateExtinction2(color, sssRadius, prd->sigma_t, prd->ss_alpha, 1.4f, mat.sssFxiedRadius);
+                CalculateExtinction2(color * sssPortion, sssRadius, prd->sigma_t, prd->ss_alpha, 1.4f, mat.sssFxiedRadius);
               }
               tbn.inverse_transform(wi);
               wi = normalize(wi);

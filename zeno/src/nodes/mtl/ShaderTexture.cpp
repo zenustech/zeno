@@ -229,7 +229,7 @@ struct SmartTexture2D : ShaderNodeClone<SmartTexture2D>
             else if (type == "vec3")
                 em->emitCode(zeno::format("vec3({},{},{})",number[0],number[1],number[2]));
             else if (type == "vec4")
-                em->emitCode(zeno::format("vec3({},{},{},{})",number[0],number[1],number[2],number[4]));
+                em->emitCode(zeno::format("vec4({},{},{},{})",number[0],number[1],number[2],number[3]));
             else
                 throw zeno::Exception("ShaderTexture2D got bad type: " + type);
             
