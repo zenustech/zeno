@@ -1087,6 +1087,7 @@ ZENDEFNODE(PrimsFilterInUserdata, {
     {"alembic"},
 });
 
+#ifdef ZENO_WITH_PYTHON3
 static PyObject * pycheck(PyObject *pResult) {
     if (pResult == nullptr) {
         PyErr_Print();
@@ -1094,7 +1095,6 @@ static PyObject * pycheck(PyObject *pResult) {
     }
     return pResult;
 }
-#ifdef ZENO_WITH_PYTHON3
 struct PrimsFilterInUserdataPython: INode {
     void apply() override {
         auto prims = get_input<ListObject>("list")->get<PrimitiveObject>();
