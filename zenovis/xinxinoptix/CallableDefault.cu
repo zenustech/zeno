@@ -172,7 +172,7 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     mats.sheen = mat_sheen;
     mats.sheenTint = mat_sheenTint;
 
-    mats.clearcoat = clamp(mat_clearcoat, 0.0f, 1.0f);
+    mats.clearcoat = max(mat_clearcoat, 0.0f);
     mats.clearcoatColor = mat_clearcoatColor;
     mats.clearcoatRoughness = clamp(mat_clearcoatRoughness, 0.01, 0.99);
     mats.clearcoatIOR = mat_clearcoatIOR;
