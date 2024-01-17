@@ -20,7 +20,7 @@ public:
     void removeObjTmpCacheDir();
     bool nextRunSkipCreateDir(LAUNCH_PARAM& param);
 
-    bool nodeCacheExist(QString& id);
+    bool nodeCacheExist(QString& id, bool isStatic);
 
 private:
     void initToViewNodesId();

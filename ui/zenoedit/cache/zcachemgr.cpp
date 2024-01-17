@@ -124,7 +124,8 @@ bool ZCacheMgr::hasCacheOnly(QDir dir, bool& empty)
             empty = false;
             size_t sLen = strlen(zeno::iotags::sZencache_lockfile_prefix);
             if (info.fileName().right(9) != ".zencache" &&
-                info.fileName().left(sLen) != zeno::iotags::sZencache_lockfile_prefix)    //not zencache file or cachelock file
+                info.fileName().right(4) != ".vdb" &&
+                info.fileName().left(sLen) != zeno::iotags::sZencache_lockfile_prefix)    //not zencache file or vdb file or cachelock file
             {
                 return false;
             }
@@ -171,16 +172,24 @@ bool ZCacheMgr::nextRunSkipCreateDir(LAUNCH_PARAM& param)
     return true;
 }
 
-bool ZCacheMgr::nodeCacheExist(QString& id)
+bool ZCacheMgr::nodeCacheExist(QString& id, bool isStatic)
 {
     ZenoMainWindow* mainWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(mainWin, false);
     if (lastRunCachePath.path() != ".")
     {
         QDir framPath = lastRunCachePath;
-        if (framPath.cd(QString::number(1000000 + mainWin->timelineInfo().currFrame).right(6)))
-            if (QFile(framPath.path() + "/" + id + ".zencache").exists())
-                return true;
+        if (isStatic)
+        {
+            if (framPath.cd("_static"))
+                if (QFile(framPath.path() + "/" + id + ".zencache").exists())
+                    return true;
+        }
+        else {
+            if (framPath.cd(QString::number(1000000 + mainWin->timelineInfo().currFrame).right(6)))
+                if (QFile(framPath.path() + "/" + id + ".zencache").exists())
+                    return true;
+        }
     }
     return false;
 }
