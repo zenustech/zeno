@@ -65,6 +65,115 @@ QVariant UiHelper::parseTextValue(const zeno::ParamType& type, const QString& te
     return QVariant();
 }
 
+zeno::zvariant UiHelper::qvarToZVar(const QVariant& var, const zeno::ParamType type)
+{
+    if (var.type() == QVariant::String)
+    {
+        return var.toString().toStdString();
+    }
+    else if (var.type() == QVariant::Double || var.type() == QMetaType::Float)
+    {
+        return var.toFloat();
+    }
+    else if (var.type() == QVariant::Int)
+    {
+        return var.toInt();
+    }
+    else if (var.type() == QVariant::Bool)
+    {
+        return var.toBool();
+    }
+    else if (var.type() == QVariant::Invalid)
+    {
+        return zeno::zvariant();
+    }
+    else if (var.type() == QVariant::UserType)
+    {
+        UI_VECTYPE vec = var.value<UI_VECTYPE>();
+        if (vec.isEmpty()) {
+            zeno::log_warn("unexpected qt variant {}", var.typeName());
+            return zeno::zvariant();
+        }
+        else {
+            if (vec.size() == 2) {
+                if (type == zeno::Param_Vec2f) {
+                    return zeno::vec2f(vec[0], vec[1]);
+                }
+                else if (type == zeno::Param_Vec2i) {
+                    return zeno::vec2i((int)vec[0], (int)vec[1]);
+                }
+            }
+            if (vec.size() == 3) {
+                if (type == zeno::Param_Vec3f) {
+                    return zeno::vec3f(vec[0], vec[1], vec[2]);
+                }
+                else if (type == zeno::Param_Vec3i) {
+                    return zeno::vec3i((int)vec[0], (int)vec[1], (int)vec[2]);
+                }
+            }
+            if (vec.size() == 4) {
+                if (type == zeno::Param_Vec4f) {
+                    return zeno::vec2f(vec[0], vec[1], vec[2], vec[3]);
+                }
+                else if (type == zeno::Param_Vec4i) {
+                    return zeno::vec2i((int)vec[0], (int)vec[1], (int)vec[2], (int)vec[3]);
+                }
+            }
+        }
+    }
+    else
+    {
+        zeno::log_warn("bad qt variant {}", var.typeName());
+    }
+    return zeno::zvariant();
+}
+
+QVariant UiHelper::zvarToQVar(const zeno::zvariant& var)
+{
+    QVariant qVar;
+    std::visit([&](auto&& arg) {
+        using T = std::decay_t<decltype(arg)>;
+        if constexpr (std::is_same_v<T, int>) {
+            qVar = arg;
+        }
+        else if constexpr (std::is_same_v<T, float>) {
+            qVar = arg;
+        }
+        else if constexpr (std::is_same_v<T, std::string>) {
+            qVar = QString::fromStdString(arg);
+        }
+        else if constexpr (std::is_same_v<T, zeno::vec2i> || std::is_same_v<T, zeno::vec2f>)
+        {
+            UI_VECTYPE vec;
+            vec.push_back(arg[0]);
+            vec.push_back(arg[1]);
+            qVar = QVariant::fromValue(vec);
+        }
+        else if constexpr (std::is_same_v<T, zeno::vec3i> || std::is_same_v<T, zeno::vec3f>)
+        {
+            UI_VECTYPE vec;
+            vec.push_back(arg[0]);
+            vec.push_back(arg[1]);
+            vec.push_back(arg[2]);
+            qVar = QVariant::fromValue(vec);
+        }
+        else if constexpr (std::is_same_v<T, zeno::vec4i> || std::is_same_v<T, zeno::vec4f>)
+        {
+            UI_VECTYPE vec;
+            vec.push_back(arg[0]);
+            vec.push_back(arg[1]);
+            vec.push_back(arg[2]);
+            vec.push_back(arg[3]);
+            qVar = QVariant::fromValue(vec);
+        }
+        else 
+        {
+            //TODO
+        }
+    }, var);
+    return qVar;
+}
+
 QVariant UiHelper::initDefaultValue(const zeno::ParamType& type)
 {
     if (type == zeno::Param_String) {
@@ -481,6 +590,32 @@ zeno::ParamControl UiHelper::getControlByType(const QString &type)
     }
     else {
         zeno::log_trace("parse got undefined control type {}", type.toStdString());
+        return zeno::NullControl;
+    }
+}
+
+zeno::ParamControl UiHelper::getDefaultControl(const zeno::ParamType type)
+{
+    switch (type)
+    {
+    case zeno::Param_Null:      return zeno::NullControl;
+    case zeno::Param_Bool:      return zeno::Checkbox;
+    case zeno::Param_Int:       return zeno::Lineedit;
+    case zeno::Param_String:    return zeno::Lineedit;
+    case zeno::Param_Float:     return zeno::Lineedit;
+    case zeno::Param_Vec2i:     return zeno::Vec2edit;
+    case zeno::Param_Vec3i:     return zeno::Vec3edit;
+    case zeno::Param_Vec4i:     return zeno::Vec4edit;
+    case zeno::Param_Vec2f:     return zeno::Vec2edit;
+    case zeno::Param_Vec3f:     return zeno::Vec3edit;
+    case zeno::Param_Vec4f:     return zeno::Vec4edit;
+    case zeno::Param_Prim:
+    case zeno::Param_Dict:
+    case zeno::Param_List:      return zeno::NullControl;
+            //Param_Color:  //need this?
+    case zeno::Param_Curve:     return zeno::CurveEditor;
+    case zeno::Param_SrcDst:
+    default:
         return zeno::NullControl;
     }
 }

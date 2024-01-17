@@ -32,9 +32,11 @@ namespace zeno {
             return zvariant();
         }
         case Param_Int: {
+            if (defl == "") return 0;
             return std::stoi(defl);
         }
         case Param_Float: {
+            if (defl == "") return 0;
             return std::stof(defl);
         }
         case Param_Vec2i:
@@ -134,5 +136,52 @@ namespace zeno {
         default:
             return nullptr;
         }
+    }
+
+    bool isEqual(const zvariant& lhs, const zvariant& rhs, ParamType const type) {
+        if (lhs.index() != rhs.index())
+            return false;
+
+        std::visit([&](auto&& arg1, auto&& arg2) -> bool {
+            using T = std::decay_t<decltype(arg1)>;
+            using E = std::decay_t<decltype(arg2)>;
+            if constexpr (std::is_same_v<T, int> && std::is_same_v<E, int>) {
+                return arg1 == arg2;
+            }
+            else if constexpr (std::is_same_v<T, float> && std::is_same_v<E, float>) {
+                return arg1 == arg2;
+            }
+            else if constexpr (std::is_same_v<T, std::string> && std::is_same_v<E, std::string>) {
+                return arg1 == arg2;
+            }
+            else if constexpr (std::is_same_v<T, zeno::vec2i> && std::is_same_v<E, zeno::vec2i>)
+            {
+                return (arg1[0] == arg2[0] && arg1[1] == arg2[1]);
+            }
+            else if constexpr (std::is_same_v<T, zeno::vec2f> && std::is_same_v<E, zeno::vec2f>)
+            {
+                return (arg1[0] == arg2[0] && arg1[1] == arg2[1]);
+            }
+            else if constexpr (std::is_same_v<T, zeno::vec3i> && std::is_same_v<E, zeno::vec3i>)
+            {
+                return (arg1[0] == arg2[0] && arg1[1] == arg2[1] && arg1[2] == arg1[2]);
+            }
+            else if constexpr (std::is_same_v<T, zeno::vec3f> && std::is_same_v<E, zeno::vec3f>)
+            {
+                return (arg1[0] == arg2[0] && arg1[1] == arg2[1] && arg1[2] == arg1[2]);
+            }
+            else if constexpr (std::is_same_v<T, zeno::vec4i> && std::is_same_v<E, zeno::vec4i>)
+            {
+                return (arg1[0] == arg2[0] && arg1[1] == arg2[1] && arg1[2] == arg1[2] && arg1[3] == arg2[3]);
+            }
+            else if constexpr (std::is_same_v<T, zeno::vec4f> && std::is_same_v<E, zeno::vec4f>)
+            {
+                return (arg1[0] == arg2[0] && arg1[1] == arg2[1] && arg1[2] == arg1[2] && arg1[3] == arg2[3]);
+            }
+            else
+            {
+                return false;
+            }
+        }, lhs, rhs);
     }
 }

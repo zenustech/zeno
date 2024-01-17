@@ -13,6 +13,7 @@ namespace zeno {
 
     ZENO_API ParamType convertToType(std::string const& type);
     ZENO_API zvariant str2var(std::string const& defl, ParamType const& type);
+    bool isEqual(const zvariant& lhs, const zvariant& rhs, ParamType const type);
     zany strToZAny(std::string const& defl, ParamType const& type);
 }
 

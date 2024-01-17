@@ -48,7 +48,7 @@ struct Session {
     Session &operator=(Session &&) = delete;
 
     ZENO_API UserData &userData() const;
-    ZENO_API std::shared_ptr<Graph> createGraph();
+    ZENO_API std::shared_ptr<Graph> createGraph(const std::string& name);
     ZENO_API std::string dumpDescriptors() const;
     ZENO_API std::string dumpDescriptorsJSON() const;
     ZENO_API zeno::NodeCates dumpCoreCates();

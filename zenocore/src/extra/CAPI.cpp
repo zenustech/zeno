@@ -20,7 +20,7 @@ ZENO_CAPI Zeno_Error Zeno_GetLastError(const char **msgRet_) ZENO_CAPI_NOEXCEPT 
 
 ZENO_CAPI Zeno_Error Zeno_CreateGraph(Zeno_Graph *graphRet_) ZENO_CAPI_NOEXCEPT {
     return PyZeno::lastError.catched([=] {
-        auto graph = getSession().createGraph();
+        auto graph = getSession().createGraph("");
         *graphRet_ = PyZeno::lutGraph.create(std::move(graph));
     });
 }

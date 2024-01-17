@@ -1,15 +1,23 @@
 #include "parammodel.h"
+#include "zassert.h"
+#include "util/uihelper.h"
+#include <zeno/core/data.h>
+#include <zeno/core/IParam.h>
 
 
 ParamsModel::ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent)
     : QAbstractListModel(parent)
+    , m_wpNode(spNode)
 {
     std::vector<std::shared_ptr<zeno::IParam>> inputs = spNode->get_input_params();
     for (std::shared_ptr<zeno::IParam> spParam : inputs) {
         ParamItem item;
         item.bInput = true;
-        item.control;//TODO
+        item.control = UiHelper::getDefaultControl(spParam->type);
         item.m_wpParam = spParam;
+        item.name = QString::fromStdString(spParam->name);
+        item.type = spParam->type;
+        item.value = UiHelper::zvarToQVar(spParam->defl);
         m_items.append(item);
     }
 
@@ -18,22 +26,24 @@ ParamsModel::ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent)
         ParamItem item;
         item.bInput = false;
         item.m_wpParam = spParam;
+        item.name = QString::fromStdString(spParam->name);
+        item.type = spParam->type;
         m_items.append(item);
     }
 
     //TODO: register callback for core param adding/removing, for the functionally of custom param panel.
-
-    /*
-    for (SOCKET_DESCRIPTOR socket_desc : desc.inputs)
-    {
-        m_items.append({ true, socket_desc.name, socket_desc.type, socket_desc.control });
-    }
-
-    for (SOCKET_DESCRIPTOR socket_desc : desc.outputs)
-    {
-        m_items.append({ false, socket_desc.name, socket_desc.type });
-    }
-    */
+    cbUpdateParam = spNode->register_update_param(
+        [this](const std::string& name, zeno::zvariant old_value, zeno::zvariant new_value) {
+            for (int i = 0; i < m_items.size(); i++) {
+                if (m_items[i].name.toStdString() == name) {
+                    QVariant newValue = UiHelper::zvarToQVar(new_value);
+                    m_items[i].value = newValue; //update cache
+                    QModelIndex idx = createIndex(i, 0);
+                    emit dataChanged(idx, idx, { ROLE_PARAM_VALUE });
+                    return;
+                }
+            }
+    });
 }
 
 QVariant ParamsModel::data(const QModelIndex& index, int role) const
@@ -42,8 +52,9 @@ QVariant ParamsModel::data(const QModelIndex& index, int role) const
 
     switch (role)
     {
-    case ROLE_PARAM_NAME:          return param.name;
+    case ROLE_PARAM_NAME:       return param.name;
     case ROLE_PARAM_TYPE:       return param.type;
+    case ROLE_PARAM_VALUE:      return param.value;
     case ROLE_PARAM_CONTROL:    return param.control;
     case ROLE_ISINPUT:          return param.bInput;
     case ROLE_NODEIDX:          return m_nodeIdx;
@@ -91,12 +102,24 @@ bool ParamsModel::setData(const QModelIndex& index, const QVariant& value, int r
     ParamItem& param = m_items[index.row()];
     switch (role) {
     case ROLE_PARAM_NAME:
+        //TODO: update param name to coredata
         param.name = value.toString();
         break;
 
     case ROLE_PARAM_TYPE:
-        param.type = value.toString();
+        param.type = (zeno::ParamType)value.toInt();
         break;
+
+    case ROLE_PARAM_VALUE:
+    {
+        auto spNode = m_wpNode.lock();
+        if (spNode) {
+            zeno::zvariant defl = UiHelper::qvarToZVar(value, param.type);
+            spNode->update_param(param.name.toStdString(), defl);
+            return true;        //the dataChanged signal will be emitted by registered callback function.
+        }
+        return false;
+    }
 
     case ROLE_PARAM_CONTROL:
         param.control = (zeno::ParamControl)value.toInt();

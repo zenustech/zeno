@@ -33,7 +33,7 @@ struct EmbedZsgGraph : zeno::INode {
             ifs.close();
             /* std::filesystem::remove(zslPath); */
         }
-        auto g = getThisSession()->createGraph();
+        auto g = getThisSession()->createGraph("main");
         g->addSubnetNode("custom")->loadGraph(content.c_str());
         auto argsDict = has_input("argsDict") ? get_input<DictObject>("argsDict") : std::make_shared<DictObject>();
         auto retsDict = std::make_shared<DictObject>();

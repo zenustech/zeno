@@ -61,7 +61,7 @@ namespace zeno {
         std::string name;
         std::string tooltip;
         std::vector<EdgeInfo> links;
-        zvariant defl;
+        zvariant defl;      //optional? because no defl on output.
         ParamControl control = NullControl;
         ParamType type = Param_Null;
         SocketProperty prop = Socket_Normal;
@@ -74,6 +74,7 @@ namespace zeno {
     using LinksData = std::vector<EdgeInfo>;
 
     struct GraphData {
+        std::string name;
         NodesData nodes;
         LinksData links;
     };

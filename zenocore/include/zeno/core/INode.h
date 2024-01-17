@@ -12,6 +12,8 @@
 #include <zeno/types/CurveObject.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/core/data.h>
+#include <zeno/utils/uuid.h>
+#include <functional>
 
 namespace zeno {
 
@@ -24,7 +26,7 @@ struct TempNodeCaller;
 
 struct IParam;
 
-struct INode {
+struct INode : std::enable_shared_from_this<INode> {
 public:
     Graph *graph = nullptr;
     INodeClass *nodeClass = nullptr;
@@ -83,6 +85,9 @@ public:
     ZENO_API std::vector<std::shared_ptr<IParam>> get_output_params() const;
     ZENO_API std::shared_ptr<IParam> get_input_param(std::string const& name) const;
     ZENO_API std::shared_ptr<IParam> get_output_param(std::string const& name) const;
+
+    ZENO_API bool update_param(const std::string& name, const zvariant& new_value);
+    CALLBACK_REGIST(update_param, void, const std::string&, zvariant, zvariant)
     //END new api
 
     void add_input_param(std::shared_ptr<IParam> param);

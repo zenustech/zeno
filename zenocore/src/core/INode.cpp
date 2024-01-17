@@ -20,6 +20,7 @@
 #include <zeno/core/IParam.h>
 #include <zeno/DictObject.h>
 #include <zeno/ListObject.h>
+#include <zeno/utils/helper.h>
 
 namespace zeno {
 
@@ -257,6 +258,22 @@ ZENO_API std::shared_ptr<IParam> INode::get_output_param(std::string const& name
     return nullptr;
 }
 
+ZENO_API bool INode::update_param(const std::string& name, const zvariant& new_value) {
+    for (auto& param : inputs_) {
+        if (param->name == name)
+        {
+            if (!zeno::isEqual(param->defl, new_value, param->type))
+            {
+                zvariant old_value = param->defl;
+                param->defl = new_value;
+                CALLBACK_NOTIFY(update_param, name, old_value, new_value)
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 void INode::directly_setinputs(std::map<std::string, zany> inputs)
 {
     for (auto& [name, val] : inputs) {
@@ -264,7 +281,7 @@ void INode::directly_setinputs(std::map<std::string, zany> inputs)
         if (!sparam) {
             sparam = std::make_shared<IParam>();
             sparam->name = name;
-            sparam->m_spNode;       //此方法针对的是临时节点，不需要设置此项
+            sparam->m_spNode = shared_from_this();
             sparam->type = Param_Null;
             sparam->defl = zvariant();
         }
@@ -332,7 +349,7 @@ void INode::init(const NodeData& dat)
         sparam->defl = param.defl;
         sparam->name = param.name;
         sparam->type = param.type;
-        sparam->m_spNode = std::shared_ptr<INode>(this);
+        sparam->m_spNode = shared_from_this();
     }
     for (const ParamInfo& param : dat.outputs)
     {
@@ -344,7 +361,7 @@ void INode::init(const NodeData& dat)
         sparam->defl = param.defl;
         sparam->name = name;
         sparam->type = param.type;
-        sparam->m_spNode = std::shared_ptr<INode>(this);
+        sparam->m_spNode = shared_from_this();
     }
 }
 

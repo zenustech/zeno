@@ -11,8 +11,14 @@
 
 struct ParamItem
 {
-    bool bInput = true;
+    //BEGIN: temp cache on ui model, the actual value has been stored in m_wpParam.
+    QString name;
+    zeno::ParamType type = zeno::Param_Null;
+    QVariant value;
+    //END
     std::weak_ptr<zeno::IParam> m_wpParam;
+
+    bool bInput = true;
     zeno::ParamControl control = zeno::NullControl;
     QList<QPersistentModelIndex> links;
 };
@@ -45,6 +51,9 @@ public:
 private:
     QPersistentModelIndex m_nodeIdx;
     QVector<ParamItem> m_items;
+
+    std::weak_ptr<zeno::INode> m_wpNode;
+    std::string cbUpdateParam;
 };
 
 

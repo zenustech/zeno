@@ -11,7 +11,7 @@ ZENO_API ISubgraphNode::ISubgraphNode() = default;
 ZENO_API ISubgraphNode::~ISubgraphNode() = default;
 ZENO_API void ISubgraphNode::apply() {
     if (!grap) {
-        grap = getThisSession()->createGraph();
+        grap = getThisSession()->createGraph("");
         auto json = get_subgraph_json();
         grap->loadGraph(json);
         for (auto const &[key, nodename]: grap->getSubOutputs()) {

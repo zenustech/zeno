@@ -25,6 +25,7 @@
 #include "widgets/zlineedit.h"
 #include "widgets/zwidgetfactory.h"
 #include <zeno/core/Session.h>
+#include <zeno/core/Graph.h>
 #include <zeno/types/UserData.h>
 #include <zenovis/ObjectsManager.h>
 #include "nodeeditor/gv/callbackdef.h"
@@ -306,6 +307,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pSearchBtn = new ZToolBarButton(true, ":/icons/toolbar_search_idle.svg", ":/icons/toolbar_search_light.svg");
     pSettings = new ZToolBarButton(false, ":/icons/toolbar_localSetting_idle.svg", ":/icons/toolbar_localSetting_light.svg");
     pLinkLineShape = new ZToolBarButton(true, ":/icons/timeline-curvemap.svg",":/icons/timeline-curvemap.svg");
+    pTestApi = new ZToolBarButton(false, ":/icons/timeline-curvemap.svg", ":/icons/timeline-curvemap.svg");
     pAlways = new QCheckBox(tr("Auto"), this);
     pAlways->setChecked(false);
     pAlways->setProperty("cssClass", "AlwaysCheckBox");
@@ -402,6 +404,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pToolLayout->addWidget(pCustomParam);
     pToolLayout->addWidget(pGroup);
     pToolLayout->addWidget(pLinkLineShape);
+    pToolLayout->addWidget(pTestApi);
     pToolLayout->addWidget(pAlways);
 
     //pToolLayout->addWidget(new ZLineWidget(false, QColor("#121416")));
@@ -475,6 +478,19 @@ void DockContent_Editor::initConnections()
     });
     connect(pLinkLineShape, &ZToolBarButton::toggled, this, [=](bool bChecked) {
         ZenoSettingsManager::GetInstance().setValue(zsLinkLineShape, bChecked);
+    });
+    connect(pTestApi, &ZToolBarButton::clicked, this, [=]() {
+        auto& sess = zeno::getSession();
+        auto spNode = sess.mainGraph->createNode("NumericInt");
+        if (spNode) {
+            spNode->update_param("value", 233);
+        }
+        spNode = sess.mainGraph->createNode("CreateCube");
+        spNode = sess.mainGraph->getNode("CreateCube1");
+        if (spNode) {
+            spNode->update_param("div_w", 24);
+        }
+        sess.mainGraph->addLink({"NumericInt1", "DST", "", "CreateCube1", "div_w", ""});
     });
 
     ZenoMainWindow* pMainWin = zenoApp->getMainWindow();

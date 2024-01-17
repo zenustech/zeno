@@ -63,7 +63,7 @@ struct TempNodeSimpleCaller : TempNodeCaller {
     std::shared_ptr<Graph> graph;
 
     explicit TempNodeSimpleCaller(std::string const &nodety,
-                                  std::shared_ptr<Graph> graph_ = zeno::getSession().createGraph())
+                                  std::shared_ptr<Graph> graph_ = zeno::getSession().createGraph(""))
         : TempNodeCaller(graph_.get(), nodety), graph(graph_)
     {}
 };

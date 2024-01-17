@@ -27,9 +27,7 @@ ZENO_API Context::Context(Context const &other)
     : visited(other.visited)
 {}
 
-ZENO_API Graph::Graph() {
-    int j;
-    j = 0;
+ZENO_API Graph::Graph(const std::string& name) : name(name) {
 }
 
 ZENO_API Graph::~Graph() {
@@ -172,6 +170,7 @@ ZENO_API DirtyChecker &Graph::getDirtyChecker() {
 }
 
 ZENO_API void Graph::init(const GraphData& graph) {
+    name = graph.name;
     //import nodes first.
     for (const auto& [name, node] : graph.nodes) {
         if (node.subgraph) {
@@ -314,6 +313,10 @@ ZENO_API std::shared_ptr<INode> Graph::getNode(std::string const& name) {
     return nodes[name];
 }
 
+ZENO_API std::string Graph::getName() const {
+    return name;
+}
+
 ZENO_API bool Graph::removeNode(std::string const& name) {
     auto it = nodes.find(name);
     if (it == nodes.end())
@@ -339,6 +342,8 @@ ZENO_API bool Graph::addLink(const EdgeInfo& edge) {
     std::shared_ptr<ILink> spLink = std::make_shared<ILink>();
     outParam->links.push_back(spLink);
     inParam->links.push_back(spLink);
+
+    CALLBACK_NOTIFY(addLink, edge);
     return true;
 }
 

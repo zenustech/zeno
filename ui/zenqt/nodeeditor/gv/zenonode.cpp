@@ -626,8 +626,11 @@ ZGraphicsLayout* ZenoNode::initSockets(ParamsModel* pModel, const bool bInput, Z
 
     for (int r = 0; r < pModel->rowCount(); r++)
     {
-        const QModelIndex& viewIdx = pModel->index(r, 0);
-        ZSocketLayout *pSocketLayout = addSocket(viewIdx, bInput, pScene);
+        const QModelIndex& paramIdx = pModel->index(r, 0);
+        if (paramIdx.data(ROLE_ISINPUT).toBool() != bInput)
+            continue;
+
+        ZSocketLayout *pSocketLayout = addSocket(paramIdx, bInput, pScene);
         pSocketsLayout->addLayout(pSocketLayout);
     }
     return pSocketsLayout;

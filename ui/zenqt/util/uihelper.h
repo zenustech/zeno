@@ -35,10 +35,13 @@ public:
     static QPainterPath getRoundPath(QRectF r, int lt, int rt, int lb, int rb, bool bFixRadius);
     static QString generateUuid(const QString &name = "x");
     static uint generateUuidInt();
+    static QVariant zvarToQVar(const zeno::zvariant& var);
+    static zeno::zvariant qvarToZVar(const QVariant& var, const zeno::ParamType type);
     static QVariant initDefaultValue(const zeno::ParamType& type);
     static QVariant parseTextValue(const zeno::ParamType& type, const QString& textValue);
     static QSizeF viewItemTextLayout(QTextLayout& textLayout, int lineWidth, int maxHeight = -1, int* lastVisibleLine = nullptr);
     static zeno::ParamControl getControlByType(const QString& type);
+    static zeno::ParamControl getDefaultControl(const zeno::ParamType type);
     static CONTROL_INFO getControlByType(const QString &nodeCls, bool bInput, const QString &socketName,const QString &socketType);    
     static void getSocketInfo(const QString& objPath, QString& subgName, QString& nodeIdent, QString& paramPath);
     static QList<zeno::ParamControl> getControlLists(const zeno::ParamType& type);

@@ -58,7 +58,7 @@ struct ImplNodeClass : INodeClass {
             sparam->name = param_desc.name;
             sparam->m_spNode = spNode;
             sparam->type = zeno::convertToType(param_desc.type);
-            sparam->defl = zeno::str2var(param_desc.defl, sparam->type);
+            //sparam->defl = zeno::str2var(param_desc.defl, sparam->type);
             spNode->add_output_param(sparam);
         }
 
@@ -74,7 +74,7 @@ ZENO_API Session::Session()
     , globalStatus(std::make_unique<GlobalStatus>())
     , eventCallbacks(std::make_unique<EventCallbacks>())
     , m_userData(std::make_unique<UserData>())
-    , mainGraph(std::make_unique<Graph>())
+    , mainGraph(std::make_shared<Graph>("main"))
 {
     mainGraph->session = const_cast<Session*>(this);
     initNodeCates();
@@ -97,8 +97,8 @@ ZENO_API INodeClass::INodeClass(Descriptor const &desc, std::string const& class
 
 ZENO_API INodeClass::~INodeClass() = default;
 
-ZENO_API std::shared_ptr<Graph> Session::createGraph() {
-    auto graph = std::make_shared<Graph>();
+ZENO_API std::shared_ptr<Graph> Session::createGraph(const std::string& name) {
+    auto graph = std::make_shared<Graph>(name);
     graph->session = const_cast<Session *>(this);
     return graph;
 }

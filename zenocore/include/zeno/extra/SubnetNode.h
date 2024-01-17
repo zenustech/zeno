@@ -28,6 +28,9 @@ struct SubnetNode : INode {
         //outputKeys.push_back(key);
     //}
 
+    ZENO_API void add_param(bool bInput, const ParamInfo& param);
+    ZENO_API void remove_param(bool bInput, const std::string& name);
+
     ZENO_API virtual void apply() override;
 };
 

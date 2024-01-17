@@ -272,9 +272,19 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& topLeft, const QModelIn
     if (role == ROLE_OBJPOS)
     {
         ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
-        QPointF pos = idx.data(ROLE_OBJPOS).toPointF();
-        m_nodes[id]->setPos(pos);
-        m_nodes[id]->nodePosChangedSignal();
+        QVariant var = idx.data(ROLE_OBJPOS);
+        if (var.type() == QVariant::List) {
+            QVariantList lst = var.toList();
+            ZASSERT_EXIT(lst.size() == 2);
+            QPointF pos(lst[0].toFloat(), lst[1].toFloat());
+            m_nodes[id]->setPos(pos);
+            m_nodes[id]->nodePosChangedSignal();
+        }
+        else if (var.type() == QVariant::PointF) {
+            QPointF pos = idx.data(ROLE_OBJPOS).toPoint();
+            m_nodes[id]->setPos(pos);
+            m_nodes[id]->nodePosChangedSignal();
+        }
     }
     if (role == ROLE_OPTIONS)
     {

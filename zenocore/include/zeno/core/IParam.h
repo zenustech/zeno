@@ -31,6 +31,9 @@ struct IParam {
 
     zvariant defl;
     zany result;
+
+    //ZENO_API bool update_defl(const zvariant& var);
+    //ZENO_API bool update_type(const ParamType type);
 };
 
 }

@@ -47,7 +47,7 @@ class GraphModel : public QAbstractListModel
     QML_ELEMENT
 
 public:
-    GraphModel(const QString& graphName, QObject* parent = nullptr);
+    GraphModel(std::shared_ptr<zeno::Graph> spGraph, QObject* parent = nullptr);
     ~GraphModel();
     Q_INVOKABLE LinkModel* getLinkModel() const { return m_linkModel; }
     Q_INVOKABLE int indexFromId(const QString& name) const;
@@ -74,7 +74,6 @@ public:
     zeno::NodeData createNode(const QString& nodeCls, const QPointF& pos);
     void appendSubgraphNode(QString name, QString cls, NODE_DESCRIPTOR desc, GraphModel* subgraph, const QPointF& pos);
     void removeNode(QString name);
-    void addLink(QPair<QString, QString> fromParam, QPair<QString, QString> toParam);
     void addLink(const zeno::EdgeInfo& link);
     QList<SEARCH_RESULT> search(const QString& content, SearchType searchType, SearchOpt searchOpts) const;
     GraphModel* getGraphByPath(const QString& objPath);
@@ -99,6 +98,7 @@ signals:
 private:
     QModelIndex nodeIdx(const QString& name) const;
     void _appendNode(std::shared_ptr<zeno::INode> spNode);
+    void _addLink(QPair<QString, QString> fromParam, QPair<QString, QString> toParam);
 
     QString m_graphName;
     QHash<QString, int> m_name2Row;

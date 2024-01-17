@@ -5,11 +5,18 @@
 #include "variantptr.h"
 
 
-GraphModel::GraphModel(const QString& graphName, QObject* parent)
+GraphModel::GraphModel(std::shared_ptr<zeno::Graph> spGraph, QObject* parent)
     : QAbstractListModel(parent)
-    , m_graphName(graphName)
 {
+    m_graphName = QString::fromStdString(spGraph->getName());
     m_linkModel = new LinkModel(this);
+
+    spGraph->register_addLink([&](zeno::EdgeInfo edge) -> bool {
+        QPair inPair = { QString::fromStdString(edge.outNode), QString::fromStdString(edge.outParam) };
+        QPair outPair = { QString::fromStdString(edge.inNode), QString::fromStdString(edge.inParam) };
+        _addLink(inPair, outPair);
+        return true;
+    });
 }
 
 GraphModel::~GraphModel()
@@ -35,7 +42,7 @@ QModelIndex GraphModel::indexFromName(const QString& name) const {
 void GraphModel::addLink(const QString& fromNodeStr, const QString& fromParamStr,
     const QString& toNodeStr, const QString& toParamStr)
 {
-    addLink(qMakePair(fromNodeStr, fromParamStr), qMakePair(toNodeStr, toParamStr));
+    _addLink(qMakePair(fromNodeStr, fromParamStr), qMakePair(toNodeStr, toParamStr));
 }
 
 void GraphModel::addLink(const zeno::EdgeInfo& link)
@@ -110,18 +117,18 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
             return QVariantList({ item->pos.x(), item->pos.y() });
         case ROLE_PARAMS:
         {
-            return QVariant::fromValue(item->params);
+            return QVariantPtr<ParamsModel>::asVariant(item->params);
         }
         case ROLE_SUBGRAPH:
         {
             if (item->optSubgraph.has_value())
-                return QVariant::fromValue(item->optSubgraph.value());
+                return QVariantPtr<GraphModel>::asVariant(item->optSubgraph.value());
             else
                 return QVariant();
         }
         case ROLE_GRAPH:
         {
-            return QVariant::fromValue(const_cast<GraphModel*>(this));
+            return QVariantPtr<GraphModel>::asVariant(const_cast<GraphModel*>(this));
         }
         case ROLE_INPUTS:
         {
@@ -160,8 +167,15 @@ bool GraphModel::setData(const QModelIndex& index, const QVariant& value, int ro
         }
         case ROLE_OBJPOS:
         {
-            QVariantList lst = value.toList();
-            item->pos = QPointF{ lst[0].toFloat(), lst[1].toFloat() };
+            if (value.type() == QVariant::PointF) {
+                item->pos = value.toPoint();
+            }
+            else {
+                QVariantList lst = value.toList();
+                if (lst.size() != 2)
+                    return false;
+                item->pos = QPointF{ lst[0].toFloat(), lst[1].toFloat() };
+            }
             emit dataChanged(index, index, QVector<int>{role});
             return true;
         }
@@ -227,7 +241,7 @@ void GraphModel::endTransaction()
 
 }
 
-void GraphModel::addLink(QPair<QString, QString> fromParam, QPair<QString, QString> toParam)
+void GraphModel::_addLink(QPair<QString, QString> fromParam, QPair<QString, QString> toParam)
 {
     QModelIndex from, to;
 
@@ -250,7 +264,7 @@ void GraphModel::addLink(QPair<QString, QString> fromParam, QPair<QString, QStri
 void GraphModel::registerCoreNotify(std::shared_ptr<zeno::Graph> coreGraph)
 {
     m_spCoreGraph = coreGraph;
-    cbCreateNode = coreGraph->register_createNode([this](const std::string& name, std::weak_ptr<zeno::INode> spNode) {
+    cbCreateNode = coreGraph->register_createNode([&](const std::string& name, std::weak_ptr<zeno::INode> spNode) {
         auto coreNode = spNode.lock();
         _appendNode(coreNode);
     });
