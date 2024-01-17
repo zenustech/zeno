@@ -6,13 +6,22 @@ ParamsModel::ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent)
 {
     std::vector<std::shared_ptr<zeno::IParam>> inputs = spNode->get_input_params();
     for (std::shared_ptr<zeno::IParam> spParam : inputs) {
-
+        ParamItem item;
+        item.bInput = true;
+        item.control;//TODO
+        item.m_wpParam = spParam;
+        m_items.append(item);
     }
 
     std::vector<std::shared_ptr<zeno::IParam>> outputs = spNode->get_output_params();
     for (std::shared_ptr<zeno::IParam> spParam : outputs) {
-
+        ParamItem item;
+        item.bInput = false;
+        item.m_wpParam = spParam;
+        m_items.append(item);
     }
+
+    //TODO: register callback for core param adding/removing, for the functionally of custom param panel.
 
     /*
     for (SOCKET_DESCRIPTOR socket_desc : desc.inputs)

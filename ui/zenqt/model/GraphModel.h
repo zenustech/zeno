@@ -30,6 +30,11 @@ public:
     //GraphModel* pSubgraph = nullptr;
 
     NodeItem(QObject* parent) : QObject(parent) {}
+    QString getName() {
+        std::shared_ptr<zeno::INode> spCoreNode = spNode.lock();
+        return spCoreNode ? QString::fromStdString(spCoreNode->name) : "";
+    }
+
 };
 
 class GraphModel : public QAbstractListModel

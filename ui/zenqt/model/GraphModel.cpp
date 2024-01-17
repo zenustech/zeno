@@ -115,7 +115,7 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
         case ROLE_SUBGRAPH:
         {
             if (item->optSubgraph.has_value())
-                return QVariant::fromValue(item->optSubgraph);
+                return QVariant::fromValue(item->optSubgraph.value());
             else
                 return QVariant();
         }
@@ -203,7 +203,7 @@ GraphModel* GraphModel::getGraphByPath(const QString& objPath)
      if (leftPath.isEmpty()) {
          return this;
      }
-     ZASSERT_EXIT(pItem->optSubgraph.has_value());
+     ZASSERT_EXIT(pItem->optSubgraph.has_value(), nullptr);
      return pItem->optSubgraph.value()->getGraphByPath(leftPath);
 }
 
@@ -279,7 +279,7 @@ void GraphModel::_appendNode(std::shared_ptr<zeno::INode> spNode)
     pItem->setParent(this);
     pItem->spNode = spNode;
 
-    pItem->params = new ParamsModel(desc, pItem);
+    pItem->params = new ParamsModel(spNode, pItem);
 
     const QString& name = QString::fromStdString(spNode->name);
     m_row2name[nRows] = name;

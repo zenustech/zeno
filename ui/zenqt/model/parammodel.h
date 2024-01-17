@@ -12,8 +12,7 @@
 struct ParamItem
 {
     bool bInput = true;
-    QString name;
-    QString type;   //zeno::ParamType
+    std::weak_ptr<zeno::IParam> m_wpParam;
     zeno::ParamControl control = zeno::NullControl;
     QList<QPersistentModelIndex> links;
 };

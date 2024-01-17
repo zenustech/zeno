@@ -40,7 +40,7 @@ QModelIndex GraphsTreeModel::parent(const QModelIndex& child) const
     {
         if (auto parentModel = qobject_cast<GraphModel*>(pItem->parent()))
         {
-            int row = parentModel->indexFromId(pItem->name);
+            int row = parentModel->indexFromId(pItem->getName());
             return createIndex(row, 0, parentModel);
         }
     }
