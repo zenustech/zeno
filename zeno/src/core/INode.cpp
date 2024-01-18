@@ -99,18 +99,8 @@ ZENO_API void zeno::INode::writeTmpCaches()
 {
     GlobalComm::ViewObjects objs;
     for (auto const& [name, value] : outputs) 
-    {
         if (dynamic_cast<IObject*>(value.get()))
-        {
-            auto methview = value->method_node("view");
-            if (!methview.empty()) {
-                log_warn("{} cache to disk failed", myname);
-                return;
-            }
             objs.try_emplace(name, std::move(value->clone()));
-        }
-
-    }
 
     bool bStatic = (Once & m_status);
     int frameid = bStatic ? -1 : zeno::getSession().globalState->frameid;
