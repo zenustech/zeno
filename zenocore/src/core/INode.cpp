@@ -139,7 +139,8 @@ ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
             bool bDirecyLink = false;
             if (in_param->links.size() == 1)
             {
-                std::shared_ptr<IParam> out_param = in_param->links[0]->fromparam.lock();
+                std::shared_ptr<ILink> spLink = *in_param->links.begin();
+                std::shared_ptr<IParam> out_param = spLink->fromparam.lock();
                 std::shared_ptr<INode> outNode = out_param->m_spNode.lock();
                 outNode->doApply();
                 zany outResult = outNode->get_output(out_param->name);
@@ -153,7 +154,7 @@ ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
                 for (const auto& spLink : in_param->links)
                 {
                     const std::string& keyName = spLink->keyName;
-                    std::shared_ptr<IParam> outParam = in_param->links[0]->fromparam.lock();
+                    std::shared_ptr<IParam> outParam = spLink->fromparam.lock();
                     std::shared_ptr<INode> outNode = outParam->m_spNode.lock();
                     outNode->doApply();
                     zany outResult = outNode->get_output(outParam->name);
@@ -169,7 +170,8 @@ ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
             bool bDirectLink = false;
             if (in_param->links.size() == 1)
             {
-                std::shared_ptr<IParam> out_param = in_param->links[0]->fromparam.lock();
+                std::shared_ptr<ILink> spLink = *in_param->links.begin();
+                std::shared_ptr<IParam> out_param = spLink->fromparam.lock();
                 std::shared_ptr<INode> outNode = out_param->m_spNode.lock();
                 outNode->doApply();
                 zany outResult = outNode->get_output(out_param->name);
@@ -182,7 +184,7 @@ ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
                 for (const auto& spLink : in_param->links)
                 {
                     //list的情况下，keyName是不是没意义，顺序怎么维持？
-                    std::shared_ptr<IParam> outParam = in_param->links[0]->fromparam.lock();
+                    std::shared_ptr<IParam> outParam = spLink->fromparam.lock();
                     std::shared_ptr<INode> outNode = outParam->m_spNode.lock();
                     outNode->doApply();
                     zany outResult = outNode->get_output(outParam->name);
@@ -197,7 +199,8 @@ ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
         {
             if (in_param->links.size() == 1)
             {
-                std::shared_ptr<IParam> outParam = in_param->links[0]->fromparam.lock();
+                std::shared_ptr<ILink> spLink = *in_param->links.begin();
+                std::shared_ptr<IParam> outParam = spLink->fromparam.lock();
                 std::shared_ptr<INode> outNode = outParam->m_spNode.lock();
                 outNode->doApply();
                 zany outResult = outNode->get_output(outParam->name);
@@ -311,7 +314,7 @@ std::pair<std::string, std::string> INode::getinputbound(std::string const& name
 {
     for (auto param : inputs_) {
         if (param->name == name && !param->links.empty()) {
-            auto lnk = param->links[0];
+            auto lnk = *param->links.begin();
             auto outparam = lnk->fromparam.lock();
             if (outparam) {
                 outparam->name;

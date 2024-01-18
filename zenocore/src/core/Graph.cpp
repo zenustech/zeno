@@ -340,6 +340,9 @@ ZENO_API bool Graph::addLink(const EdgeInfo& edge) {
     std::shared_ptr<IParam> inParam = inNode->get_input_param(edge.inParam);
 
     std::shared_ptr<ILink> spLink = std::make_shared<ILink>();
+    spLink->fromparam = outParam;
+    spLink->toparam = inParam;
+
     outParam->links.push_back(spLink);
     inParam->links.push_back(spLink);
 
@@ -348,8 +351,36 @@ ZENO_API bool Graph::addLink(const EdgeInfo& edge) {
 }
 
 ZENO_API bool Graph::removeLink(const EdgeInfo& edge) {
-    //TODO: DaMi implement this.
-    return false;
+    std::shared_ptr<INode> outNode = getNode(edge.outNode);
+    if (!outNode)
+        return false;
+    std::shared_ptr<INode> inNode = getNode(edge.inNode);
+    if (!inNode)
+        return false;
+
+    std::shared_ptr<IParam> outParam = outNode->get_output_param(edge.outParam);
+    std::shared_ptr<IParam> inParam = inNode->get_input_param(edge.inParam);
+
+    outParam->links.remove_if([&](std::shared_ptr<ILink> spLink) {
+        auto _out_param = spLink->fromparam.lock();
+        auto _in_param = spLink->toparam.lock();
+        if (_out_param == outParam && _in_param == inParam) {
+            return true;
+        }
+        return false;
+    });
+
+    inParam->links.remove_if([&](std::shared_ptr<ILink> spLink) {
+        auto _out_param = spLink->fromparam.lock();
+        auto _in_param = spLink->toparam.lock();
+        if (_out_param == outParam && _in_param == inParam) {
+            return true;
+        }
+        return false;
+    });
+
+    CALLBACK_NOTIFY(removeLink, edge)
+    return true;
 }
 
 }

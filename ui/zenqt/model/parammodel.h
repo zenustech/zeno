@@ -44,6 +44,7 @@ public:
     QModelIndex paramIdx(const QString& name, bool bInput) const;
     void addLink(const QModelIndex& paramIdx, const QPersistentModelIndex& linkIdx);
     int removeLink(const QModelIndex& paramIdx);
+    QModelIndex removeOneLink(const QModelIndex& paramIdx, const zeno::EdgeInfo& link);
     void addParam(const ParamItem& param);
 
     int getParamlinkCount(const QModelIndex& paramIdx);

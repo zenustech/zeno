@@ -481,16 +481,24 @@ void DockContent_Editor::initConnections()
     });
     connect(pTestApi, &ZToolBarButton::clicked, this, [=]() {
         auto& sess = zeno::getSession();
-        auto spNode = sess.mainGraph->createNode("NumericInt");
-        if (spNode) {
-            spNode->update_param("value", 233);
+        zeno::EdgeInfo edge;
+        if (false) {
+            auto spNode = sess.mainGraph->createNode("NumericInt");
+            if (spNode) {
+                spNode->update_param("value", 233);
+            }
+            spNode = sess.mainGraph->createNode("CreateCube");
+            spNode = sess.mainGraph->getNode("CreateCube1");
+            if (spNode) {
+                spNode->update_param("div_w", 24);
+            }
+            edge = { "NumericInt1", "DST", "", "CreateCube1", "div_w", "" };
+            sess.mainGraph->addLink(edge);
         }
-        spNode = sess.mainGraph->createNode("CreateCube");
-        spNode = sess.mainGraph->getNode("CreateCube1");
-        if (spNode) {
-            spNode->update_param("div_w", 24);
+        if (false) {
+            edge = { "NumericInt1", "DST", "", "CreateCube1", "div_w", "" };
+            sess.mainGraph->removeLink(edge);
         }
-        sess.mainGraph->addLink({"NumericInt1", "DST", "", "CreateCube1", "div_w", ""});
     });
 
     ZenoMainWindow* pMainWin = zenoApp->getMainWindow();

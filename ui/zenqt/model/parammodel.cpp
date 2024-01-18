@@ -184,6 +184,23 @@ int ParamsModel::removeLink(const QModelIndex& paramIdx)
     return nRow;
 }
 
+QModelIndex ParamsModel::removeOneLink(const QModelIndex& paramIdx, const zeno::EdgeInfo& link)
+{
+    QList<QPersistentModelIndex>& links = m_items[paramIdx.row()].links;
+    if (links.isEmpty())
+        return QModelIndex();
+
+    for (auto it = links.begin(); it != links.end(); it++) {
+        const zeno::EdgeInfo& lnk = (*it).data(ROLE_LINK_INFO).value<zeno::EdgeInfo>();
+        if (lnk == link) {
+            QModelIndex idx = *it;
+            it = links.erase(it);
+            return idx;
+        }
+    }
+    return QModelIndex();
+}
+
 void ParamsModel::addParam(const ParamItem& param)
 {
     int nRows = m_items.size();

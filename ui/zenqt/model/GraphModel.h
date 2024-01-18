@@ -88,6 +88,7 @@ public:
     void updateParamName(QModelIndex nodeIdx, int row, QString newName);
     void removeParam(QModelIndex nodeIdx, int row);
     void removeLink(int row);
+    void removeLink(const zeno::EdgeInfo& link);
     ParamsModel* params(QModelIndex nodeIdx);
     GraphModel* subgraph(QModelIndex nodeIdx);
 
@@ -99,6 +100,7 @@ private:
     QModelIndex nodeIdx(const QString& name) const;
     void _appendNode(std::shared_ptr<zeno::INode> spNode);
     void _addLink(QPair<QString, QString> fromParam, QPair<QString, QString> toParam);
+    bool _removeLink(const zeno::EdgeInfo& edge);
 
     QString m_graphName;
     QHash<QString, int> m_name2Row;

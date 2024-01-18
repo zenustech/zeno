@@ -27,7 +27,7 @@ struct IParam {
     std::string name;
     ParamType type;
     std::weak_ptr<INode> m_spNode;
-    std::vector<std::shared_ptr<ILink>> links;
+    std::list<std::shared_ptr<ILink>> links;
 
     zvariant defl;
     zany result;
