@@ -1108,6 +1108,7 @@ struct PrimsFilterInUserdataPython: INode {
         auto py_code = get_input2<std::string>("py_code");
         Py_Initialize();
         zeno::scope_exit init_defer([=]{ Py_Finalize(); });
+        PyRun_SimpleString("import sys; sys.stderr = sys.stdout");
 
         auto out_list = std::make_shared<ListObject>();
         for (auto p: prims) {
