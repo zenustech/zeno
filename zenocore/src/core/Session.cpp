@@ -75,8 +75,10 @@ ZENO_API Session::Session()
     , eventCallbacks(std::make_unique<EventCallbacks>())
     , m_userData(std::make_unique<UserData>())
     , mainGraph(std::make_shared<Graph>("main"))
+    , assets(std::make_shared<Assets>())
 {
     mainGraph->session = const_cast<Session*>(this);
+    assets->session = const_cast<Session*>(this);
     initNodeCates();
 }
 

@@ -507,6 +507,11 @@ void DockContent_Editor::initConnections()
             edge = { "NumericInt1", "DST", "", "CreateCube1", "div_w", "" };
             sess.mainGraph->removeLink(edge);
         }
+        if (false) {
+            sess.assets->createAsset("aaa");
+            sess.assets->createAsset("bbb");
+            sess.assets->removeAsset("aaa");
+        }
     });
 
     ZenoMainWindow* pMainWin = zenoApp->getMainWindow();

@@ -3,6 +3,7 @@
 #include <zeno/utils/api.h>
 #include <zeno/core/Descriptor.h>
 #include <zeno/core/data.h>
+#include <zeno/core/Assets.h>
 #include <memory>
 #include <string>
 #include <map>
@@ -38,6 +39,7 @@ struct Session {
     std::unique_ptr<EventCallbacks> const eventCallbacks;
     std::unique_ptr<UserData> const m_userData;
     std::shared_ptr<Graph> mainGraph;
+    std::shared_ptr<Assets> assets;
 
     ZENO_API Session();
     ZENO_API ~Session();

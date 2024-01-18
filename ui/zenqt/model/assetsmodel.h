@@ -36,7 +36,15 @@ public:
     void removeAsset(const QString& assetName);
 
 private:
+    void _addAsset(const QString& newName);
+    void _removeAsset(const QString& newName);
+    int rowByName(const QString& name) const;
+
     QVector<GraphModel*> m_assets;
+
+    std::string m_cbCreateAsset;
+    std::string m_cbRemoveAsset;
+    std::string m_cbRenameAsset;
 };
 
 #endif
