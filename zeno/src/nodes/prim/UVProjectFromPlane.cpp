@@ -513,6 +513,11 @@ struct ReadImageFile_v2 : INode {
                 image->verts[i] = pow(image->verts[i], 2.2f);
             }
         }
+        int w = image->userData().get2<int>("w");
+        auto &ij = image->verts.add_attr<vec3f>("ij");
+        for (auto i = 0; i < image->verts.size(); i++) {
+            ij[i] = vec3f(i % w, i / w, 0);
+        }
         set_output("image", image);
     }
 };
