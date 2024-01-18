@@ -88,6 +88,10 @@ virtual void apply() override {
     auto uniform_xpbd_affiliation = get_input2<float>("xpbd_affiliation");
     auto damping_coeff = get_input2<float>("damping_coeff");
 
+
+    // auto paramsList = get_input<zeno::ListObject>("paramList")->getLiterial<zeno::DictObject>();
+
+
     auto make_empty = get_input2<bool>("make_empty_constraint");
 
     if(!make_empty) {
@@ -127,9 +131,10 @@ virtual void apply() override {
             sort_topology_by_coloring_tag(cudaPol,colors,reordered_map,color_offset);
         }
         // std::cout << "quads.size() = " << quads.size() << "\t" << "edge_topos.size() = " << edge_topos.size() << std::endl;
-        eles.append_channels(cudaPol,{{"inds",2},{"r",1},{"vis_inds",2}});
+        eles.append_channels(cudaPol,{{"inds",2},{"r",1},{"rest_scale",1}});
 
         auto rest_scale = get_input2<float>("rest_scale");
+        TILEVEC_OPS::fill(cudaPol,eles,"rest_scale",rest_scale);
 
         cudaPol(zs::range(eles.size()),[
             has_group = has_group,
@@ -160,7 +165,7 @@ virtual void apply() override {
                 // printf("r[%d] : %f\n",oei,(float)eles("r",oei));
         });            
 
-        TILEVEC_OPS::copy(cudaPol,eles,"inds",eles,"vis_inds");
+        // TILEVEC_OPS::copy(cudaPol,eles,"inds",eles,"vis_inds");
     }
 
     if(type == "follow_animation_constraint") {
@@ -1145,7 +1150,8 @@ virtual void apply() override {
         }
         // std::cout << "quads.size() = " << quads.size() << "\t" << "edge_topos.size() = " << edge_topos.size() << std::endl;
 
-        eles.append_channels(cudaPol,{{"inds",4},{"ra",1},{"sign",1},{"vis_inds",10}});      
+        eles.append_channels(cudaPol,{{"inds",4},{"ra",1},{"sign",1},{"rest_scale",1}});      
+        TILEVEC_OPS::fill(cudaPol,eles,"rest_scale",rest_scale);
 
         cudaPol(zs::range(eles.size()),[
             eles = proxy<space>({},eles),
@@ -1167,16 +1173,16 @@ virtual void apply() override {
                 eles("ra",oei) = alpha;
                 eles("sign",oei) = alpha_sign;
 
-                auto topo = bd_topos[ei];
-                zs::vec<int,10> vis_inds {
-                    topo[0],topo[2],
-                    topo[2],topo[3],
-                    topo[3],topo[0],
-                    topo[2],topo[1],
-                    topo[1],topo[3]
-                };
+                // auto topo = bd_topos[ei];
+                // zs::vec<int,10> vis_inds {
+                //     topo[0],topo[2],
+                //     topo[2],topo[3],
+                //     topo[3],topo[0],
+                //     topo[2],topo[1],
+                //     topo[1],topo[3]
+                // };
 
-                eles.tuple(dim_c<10>,"vis_inds",oei) = vis_inds.reinterpret_bits(float_c);
+                // eles.tuple(dim_c<10>,"vis_inds",oei) = vis_inds.reinterpret_bits(float_c);
         });      
     }
 
@@ -1317,11 +1323,12 @@ struct ZSSampleVertAttr2Constraints : zeno::INode {
             sverts = proxy<space>({},source_verts),
             topos = proxy<space>({},topos)] ZS_LAMBDA(int ei) mutable {
                 for(int i = 0;i != cdim;++i) {
-                    auto vi = zs::reinterpret_bits<int>(topos("inds",ei * cdim + i));
+                    auto vi = zs::reinterpret_bits<int>(topos("inds",i,ei));
                     for(int d = 0;d != attr_dim;++d) {
-                        topos(dst_attr_name,d,ei) += sverts(source_attr_name,d,vi);
+                        topos(dst_attr_name,d,ei) += sverts(source_attr_name,d,vi) / (float)cdim;
                     }
                 }
+
         });
 
         set_output("source",std::move(source));
