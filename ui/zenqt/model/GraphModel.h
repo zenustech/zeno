@@ -18,23 +18,31 @@ struct NodeItem : public QObject
     Q_OBJECT
 
 public:
-    //QString name;
-    //QString cls;
-    ParamsModel* params = nullptr;
+    //temp cached data for spNode->...
+    QString name;
+    QString cls;
     QPointF pos;
 
-    std::weak_ptr<zeno::INode> spNode;
+    std::string m_cbSetName;
+    std::string m_cbSetPos;
+    std::string m_cbSetStatus;
+
+    std::weak_ptr<zeno::INode> m_wpNode;
+    ParamsModel* params = nullptr;
+    zeno::NodeStatus status = zeno::None;
 
     //for subgraph:
     std::optional<GraphModel*> optSubgraph;
-    //GraphModel* pSubgraph = nullptr;
 
-    NodeItem(QObject* parent) : QObject(parent) {}
+    NodeItem(QObject* parent);
+    ~NodeItem();
+    void init(GraphModel* pGraphM, std::shared_ptr<zeno::INode> spNode);
     QString getName() {
-        std::shared_ptr<zeno::INode> spCoreNode = spNode.lock();
-        return spCoreNode ? QString::fromStdString(spCoreNode->name) : "";
+        return name;
     }
 
+private:
+    void unregister();
 };
 
 class GraphModel : public QAbstractListModel
@@ -66,14 +74,12 @@ public:
         const QVariant& value, int hits = 1,
         Qt::MatchFlags flags =
         Qt::MatchFlags(Qt::MatchStartsWith | Qt::MatchWrap)) const override;
-    bool removeRows(int row, int count, const QModelIndex& parent = QModelIndex()) override;
     QHash<int, QByteArray> roleNames() const override;
 
     //GraphModel:
-    void registerCoreNotify(std::shared_ptr<zeno::Graph> coreGraph);
     zeno::NodeData createNode(const QString& nodeCls, const QPointF& pos);
     void appendSubgraphNode(QString name, QString cls, NODE_DESCRIPTOR desc, GraphModel* subgraph, const QPointF& pos);
-    void removeNode(QString name);
+    bool removeNode(const QString& name);
     void addLink(const zeno::EdgeInfo& link);
     QList<SEARCH_RESULT> search(const QString& content, SearchType searchType, SearchOpt searchOpts) const;
     GraphModel* getGraphByPath(const QString& objPath);
@@ -97,10 +103,14 @@ signals:
     void clearLayout();
 
 private:
+    void registerCoreNotify();
+    void unRegisterCoreNotify();
     QModelIndex nodeIdx(const QString& name) const;
     void _appendNode(std::shared_ptr<zeno::INode> spNode);
     void _addLink(QPair<QString, QString> fromParam, QPair<QString, QString> toParam);
     bool _removeLink(const zeno::EdgeInfo& edge);
+    void _updateName(const QString& oldName, const QString& newName);
+    bool removeRows(int row, int count, const QModelIndex& parent = QModelIndex()) override;
 
     QString m_graphName;
     QHash<QString, int> m_name2Row;
@@ -109,9 +119,14 @@ private:
 
     std::weak_ptr<zeno::Graph> m_spCoreGraph;
 
-    std::string cbCreateNode;
+    std::string m_cbCreateNode;
+    std::string m_cbRemoveNode;
+    std::string m_cbAddLink;
+    std::string m_cbRemoveLink;
 
     LinkModel* m_linkModel;
+
+    friend class NodeItem;
 };
 
 #endif

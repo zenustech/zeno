@@ -24,7 +24,6 @@ GraphsManager::GraphsManager(QObject* parent)
     GraphModel* main = new GraphModel(zeno::getSession().mainGraph);
     m_model = new GraphsTreeModel(main, this);
     m_assets = new AssetsModel(this);
-    main->registerCoreNotify(zeno::getSession().mainGraph);
 }
 
 GraphsManager::~GraphsManager()

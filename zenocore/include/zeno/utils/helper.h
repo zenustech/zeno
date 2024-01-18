@@ -8,6 +8,7 @@
 #include <zeno/types/StringObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/utils/log.h>
+#include <zeno/core/IParam.h>
 
 namespace zeno {
 
@@ -15,6 +16,7 @@ namespace zeno {
     ZENO_API zvariant str2var(std::string const& defl, ParamType const& type);
     bool isEqual(const zvariant& lhs, const zvariant& rhs, ParamType const type);
     zany strToZAny(std::string const& defl, ParamType const& type);
+    EdgeInfo getEdgeInfo(std::shared_ptr<ILink> spLink);
 }
 
 

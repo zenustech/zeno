@@ -16,6 +16,7 @@
 #include <zeno/utils/log.h>
 #include <zeno/core/IParam.h>
 #include <zeno/utils/uuid.h>
+#include <zeno/utils/helper.h>
 #include <iostream>
 
 namespace zeno {
@@ -241,7 +242,7 @@ std::string Graph::generateNewName(const std::string& node_cls)
     auto& nodes = node_set[node_cls];
     int i = 1;
     while (true) {
-        std::string new_name = node_cls + std::to_string(1);
+        std::string new_name = node_cls + std::to_string(i++);
         if (nodes.find(new_name) == nodes.end()) {
             nodes.insert(new_name);
             return new_name;
@@ -313,6 +314,10 @@ ZENO_API std::shared_ptr<INode> Graph::getNode(std::string const& name) {
     return nodes[name];
 }
 
+ZENO_API std::map<std::string, std::shared_ptr<INode>> Graph::getNodes() const {
+    return nodes;
+}
+
 ZENO_API std::string Graph::getName() const {
     return name;
 }
@@ -321,6 +326,22 @@ ZENO_API bool Graph::removeNode(std::string const& name) {
     auto it = nodes.find(name);
     if (it == nodes.end())
         return false;
+
+    //remove links first
+    std::vector<EdgeInfo> remLinks;
+    for (std::shared_ptr<IParam> spParam : it->second->inputs_) {
+        for (std::shared_ptr<ILink> spLink : spParam->links) {
+            remLinks.push_back(getEdgeInfo(spLink));
+        }
+    }
+    for (std::shared_ptr<IParam> spParam : it->second->outputs_) {
+        for (std::shared_ptr<ILink> spLink : spParam->links) {
+            remLinks.push_back(getEdgeInfo(spLink));
+        }
+    }
+    for (auto edge : remLinks) {
+        removeLink(edge);
+    }
 
     node_set[it->second->nodecls].erase(name);
     nodes.erase(name);

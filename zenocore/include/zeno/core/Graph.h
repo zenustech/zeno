@@ -76,6 +76,7 @@ struct Graph : std::enable_shared_from_this<Graph> {
     CALLBACK_REGIST(removeLink, bool, EdgeInfo)
 
     ZENO_API std::shared_ptr<INode> getNode(std::string const& name);
+    ZENO_API std::map<std::string, std::shared_ptr<INode>> getNodes() const;
     ZENO_API std::string getName() const;
     //END
 

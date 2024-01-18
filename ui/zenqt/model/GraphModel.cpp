@@ -5,31 +5,132 @@
 #include "variantptr.h"
 
 
+NodeItem::NodeItem(QObject* parent) : QObject(parent)
+{
+}
+
+NodeItem::~NodeItem()
+{
+    unregister();
+}
+
+void NodeItem::unregister()
+{
+    if (std::shared_ptr<zeno::INode> spNode = m_wpNode.lock())
+    {
+        bool ret = spNode->unregister_set_name(m_cbSetName);
+        ZASSERT_EXIT(ret);
+        ret = spNode->unregister_set_pos(m_cbSetPos);
+        ZASSERT_EXIT(ret);
+        ret = spNode->unregister_set_status(m_cbSetStatus);
+        ZASSERT_EXIT(ret);
+    }
+    m_cbSetName = "";
+    m_cbSetPos = "";
+    m_cbSetStatus = "";
+}
+
+void NodeItem::init(GraphModel* pGraphM, std::shared_ptr<zeno::INode> spNode)
+{
+    this->m_wpNode = spNode;
+
+    m_cbSetName = spNode->register_set_name([=](const std::string& name) {
+        const QString& oldName = this->name;
+        this->name = QString::fromStdString(name);
+        pGraphM->_updateName(oldName, this->name);
+
+        QModelIndex idx = pGraphM->indexFromName(this->name);
+        emit pGraphM->dataChanged(idx, idx, QVector<int>{ ROLE_NODE_NAME });
+    });
+
+    m_cbSetPos = spNode->register_set_pos([=](std::pair<float, float> pos) {
+        this->pos = { pos.first, pos.second };  //update the cache
+        QModelIndex idx = pGraphM->indexFromName(this->name);
+        emit pGraphM->dataChanged(idx, idx, QVector<int>{ ROLE_OBJPOS });
+    });
+
+    m_cbSetPos = spNode->register_set_status([=](zeno::NodeStatus status) {
+        zeno::NodeStatus oldStatus = this->status;
+        this->status = status;
+        QModelIndex idx = pGraphM->indexFromName(this->name);
+        emit pGraphM->dataChanged(idx, idx, QVector<int>{ ROLE_OPTIONS });
+    });
+
+    this->params = new ParamsModel(spNode, this);
+    this->name = QString::fromStdString(spNode->get_name());
+    this->cls = QString::fromStdString(spNode->get_nodecls());
+    this->status = spNode->get_status();
+    auto pair = spNode->get_pos();
+    this->pos = QPointF(pair.first, pair.second);
+    //TODO: optSubgraph
+}
+
+
 GraphModel::GraphModel(std::shared_ptr<zeno::Graph> spGraph, QObject* parent)
     : QAbstractListModel(parent)
+    , m_spCoreGraph(spGraph)
 {
     m_graphName = QString::fromStdString(spGraph->getName());
     m_linkModel = new LinkModel(this);
+    registerCoreNotify();
 
-    spGraph->register_addLink([&](zeno::EdgeInfo edge) -> bool {
+    for (auto& [name, node] : spGraph->getNodes()) {
+        _appendNode(node);
+    }
+}
+
+void GraphModel::registerCoreNotify()
+{
+    std::shared_ptr<zeno::Graph> coreGraph = m_spCoreGraph.lock();
+    ZASSERT_EXIT(coreGraph);
+
+    m_cbCreateNode = coreGraph->register_createNode([&](const std::string& name, std::weak_ptr<zeno::INode> spNode) {
+        auto coreNode = spNode.lock();
+        _appendNode(coreNode);
+    });
+
+    m_cbRemoveNode = coreGraph->register_removeNode([&](const std::string& name) {
+        QString qName = QString::fromStdString(name);
+        if (m_name2Row.find(qName) == m_name2Row.end())
+            return false;
+        int row = m_name2Row[qName];
+        removeRow(row);
+    });
+
+    m_cbAddLink = coreGraph->register_addLink([&](zeno::EdgeInfo edge) -> bool {
         QPair inPair = { QString::fromStdString(edge.outNode), QString::fromStdString(edge.outParam) };
         QPair outPair = { QString::fromStdString(edge.inNode), QString::fromStdString(edge.inParam) };
         _addLink(inPair, outPair);
         return true;
     });
 
-    spGraph->register_removeLink([&](zeno::EdgeInfo edge) -> bool {
+    m_cbRemoveLink = coreGraph->register_removeLink([&](zeno::EdgeInfo edge) -> bool {
         return _removeLink(edge);
     });
 }
 
-GraphModel::~GraphModel()
+void GraphModel::unRegisterCoreNotify()
 {
     if (std::shared_ptr<zeno::Graph> coreGraph = m_spCoreGraph.lock())
     {
-        bool ret = coreGraph->unregister_createNode(cbCreateNode);
+        bool ret = coreGraph->unregister_createNode(m_cbCreateNode);
+        ZASSERT_EXIT(ret);
+        ret = coreGraph->unregister_removeNode(m_cbRemoveNode);
+        ZASSERT_EXIT(ret);
+        ret = coreGraph->unregister_addLink(m_cbAddLink);
+        ZASSERT_EXIT(ret);
+        ret = coreGraph->unregister_removeLink(m_cbRemoveLink);
         ZASSERT_EXIT(ret);
     }
+    m_cbCreateNode = "";
+    m_cbCreateNode = "";
+    m_cbAddLink = "";
+    m_cbRemoveLink = "";
+}
+
+GraphModel::~GraphModel()
+{
+    unRegisterCoreNotify();
 }
 
 int GraphModel::indexFromId(const QString& name) const
@@ -51,7 +152,9 @@ void GraphModel::addLink(const QString& fromNodeStr, const QString& fromParamStr
 
 void GraphModel::addLink(const zeno::EdgeInfo& link)
 {
-    //TODO
+    std::shared_ptr<zeno::Graph> spGraph = m_spCoreGraph.lock();
+    ZASSERT_EXIT(spGraph);
+    spGraph->addLink(link);
 }
 
 QString GraphModel::name() const
@@ -95,7 +198,7 @@ QString GraphModel::owner() const
 {
     if (auto pItem = qobject_cast<NodeItem*>(parent()))
     {
-        auto spNode = pItem->spNode.lock();
+        auto spNode = pItem->m_wpNode.lock();
         return spNode ? QString::fromStdString(spNode->name) : "";
     }
     else {
@@ -115,17 +218,15 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
     switch (role) {
         case Qt::DisplayRole:
         case ROLE_NODE_NAME: {
-            auto spNode = item->spNode.lock();
-            ZASSERT_EXIT(spNode, QVariant());
-            return QString::fromStdString(spNode->name);
+            return item->name;
         }
         case ROLE_CLASS_NAME: {
-            auto spNode = item->spNode.lock();
-            ZASSERT_EXIT(spNode, QVariant());
-            return QString::fromStdString(spNode->nodecls);
+            return item->cls;
         }
-        case ROLE_OBJPOS:
-            return QVariantList({ item->pos.x(), item->pos.y() });
+        case ROLE_OBJPOS: {
+            return item->pos;   //qpoint supported by qml?
+            //return QVariantList({ item->pos.x(), item->pos.y() });
+        }
         case ROLE_PARAMS:
         {
             return QVariantPtr<ParamsModel>::asVariant(item->params);
@@ -153,6 +254,10 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
             //TODO
             return QVariant::fromValue(data);
         }
+        case ROLE_OPTIONS:
+        {
+            return item->status;
+        }
         case ROLE_NODETYPE:
         {
             //TODO
@@ -178,16 +283,17 @@ bool GraphModel::setData(const QModelIndex& index, const QVariant& value, int ro
         }
         case ROLE_OBJPOS:
         {
+            auto spNode = item->m_wpNode.lock();
             if (value.type() == QVariant::PointF) {
-                item->pos = value.toPoint();
+                QPointF pos = value.toPoint();
+                spNode->set_pos({ pos.x(), pos.y() });
             }
             else {
                 QVariantList lst = value.toList();
                 if (lst.size() != 2)
                     return false;
-                item->pos = QPointF{ lst[0].toFloat(), lst[1].toFloat() };
+                spNode->set_pos({ lst[0].toFloat(), lst[1].toFloat() });
             }
-            emit dataChanged(index, index, QVector<int>{role});
             return true;
         }
         case ROLE_INPUTS:
@@ -296,13 +402,11 @@ bool GraphModel::_removeLink(const zeno::EdgeInfo& edge)
     return true;
 }
 
-void GraphModel::registerCoreNotify(std::shared_ptr<zeno::Graph> coreGraph)
+void GraphModel::_updateName(const QString& oldName, const QString& newName)
 {
-    m_spCoreGraph = coreGraph;
-    cbCreateNode = coreGraph->register_createNode([&](const std::string& name, std::weak_ptr<zeno::INode> spNode) {
-        auto coreNode = spNode.lock();
-        _appendNode(coreNode);
-    });
+    m_name2Row[newName] = m_name2Row[oldName];
+    int row = m_name2Row[newName];
+    m_row2name[row] = newName;
 }
 
 zeno::NodeData GraphModel::createNode(const QString& nodeCls, const QPointF& pos)
@@ -325,10 +429,7 @@ void GraphModel::_appendNode(std::shared_ptr<zeno::INode> spNode)
     beginInsertRows(QModelIndex(), nRows, nRows);
 
     NodeItem* pItem = new NodeItem(this);
-    pItem->setParent(this);
-    pItem->spNode = spNode;
-
-    pItem->params = new ParamsModel(spNode, pItem);
+    pItem->init(this, spNode);
 
     const QString& name = QString::fromStdString(spNode->name);
     m_row2name[nRows] = name;
@@ -365,11 +466,11 @@ void GraphModel::appendSubgraphNode(QString name, QString cls, NODE_DESCRIPTOR d
 #endif
 }
 
-void GraphModel::removeNode(QString ident)
+bool GraphModel::removeNode(const QString& name)
 {
-    int row = m_name2Row[ident];
-    //core remove
-    removeRow(row);
+    auto spCoreGraph = m_spCoreGraph.lock();
+    ZASSERT_EXIT(spCoreGraph, false);
+    return spCoreGraph->removeNode(name.toStdString());
 }
 
 QHash<int, QByteArray> GraphModel::roleNames() const
@@ -386,11 +487,11 @@ QHash<int, QByteArray> GraphModel::roleNames() const
 
 bool GraphModel::removeRows(int row, int count, const QModelIndex& parent)
 {
+    //this is a private impl method, called by callback function.
     beginRemoveRows(parent, row, row);
 
     QString id = m_row2name[row];
     NodeItem* pItem = m_nodes[id];
-    //pItem->params->clear();
 
     for (int r = row + 1; r < rowCount(); r++)
     {

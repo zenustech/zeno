@@ -33,6 +33,7 @@ public:
 
     std::string name;
     std::string nodecls;
+    std::pair<float, float> pos;
 
     /*
     std::map<std::string, std::pair<std::string, std::string>> inputBounds;
@@ -72,10 +73,8 @@ public:
     ZENO_API zvariant get_input_defl(std::string const& name);
     ZENO_API std::string get_nodecls() const;
     ZENO_API std::string get_ident() const;
-    ZENO_API std::string get_name() const;
-    ZENO_API void set_name(std::string const& name);
-    ZENO_API void set_status(NodeStatus status);
-    ZENO_API NodeStatus get_status() const;
+
+
     ZENO_API void set_view(bool bOn);
     ZENO_API bool is_view() const;
     ZENO_API void mark_dirty(bool bOn);
@@ -88,6 +87,19 @@ public:
 
     ZENO_API bool update_param(const std::string& name, const zvariant& new_value);
     CALLBACK_REGIST(update_param, void, const std::string&, zvariant, zvariant)
+
+    ZENO_API void set_name(const std::string& name);
+    CALLBACK_REGIST(set_name, void, const std::string&)
+    ZENO_API std::string get_name() const;
+
+    ZENO_API void set_pos(std::pair<float, float> pos);
+    CALLBACK_REGIST(set_pos, void, std::pair<float, float>)
+    ZENO_API std::pair<float, float> get_pos() const;
+
+    ZENO_API void set_status(NodeStatus status);
+    CALLBACK_REGIST(set_status, void, NodeStatus)
+    ZENO_API NodeStatus get_status() const;
+
     //END new api
 
     void add_input_param(std::shared_ptr<IParam> param);

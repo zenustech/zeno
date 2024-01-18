@@ -482,8 +482,16 @@ void DockContent_Editor::initConnections()
     connect(pTestApi, &ZToolBarButton::clicked, this, [=]() {
         auto& sess = zeno::getSession();
         zeno::EdgeInfo edge;
+        std::shared_ptr<zeno::INode> spNode;
+
+        if (1) {
+            spNode = sess.mainGraph->getNode("NumericInt1");
+            if (spNode)
+                spNode->set_pos({ 1000, 1000 });
+        }
+
         if (false) {
-            auto spNode = sess.mainGraph->createNode("NumericInt");
+            spNode = sess.mainGraph->createNode("NumericInt");
             if (spNode) {
                 spNode->update_param("value", 233);
             }

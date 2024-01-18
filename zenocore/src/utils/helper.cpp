@@ -83,6 +83,26 @@ namespace zeno {
         }
     }
 
+    EdgeInfo getEdgeInfo(std::shared_ptr<ILink> spLink) {
+        EdgeInfo edge;
+        auto spOutParam = spLink->fromparam.lock();
+        auto spInParam = spLink->toparam.lock();
+        if (!spOutParam || !spInParam)
+            return edge;
+
+        auto spOutNode = spOutParam->m_spNode.lock();
+        auto spInNode = spInParam->m_spNode.lock();
+        if (!spOutNode || !spInNode)
+            return edge;
+
+        const std::string& outNode = spOutNode->name;
+        const std::string& outParam = spOutParam->name;
+        const std::string& inNode = spInNode->name;
+        const std::string& inParam = spInParam->name;
+        edge = { outNode, outParam, "", inNode, inParam, spLink->keyName };
+        return edge;
+    }
+
     zany strToZAny(std::string const& defl, ParamType const& type) {
         switch (type) {
         case Param_String: {

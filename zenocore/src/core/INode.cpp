@@ -65,9 +65,10 @@ ZENO_API std::string INode::get_name() const
     return name;
 }
 
-ZENO_API void INode::set_name(std::string const& customname)
+ZENO_API void INode::set_name(const std::string& customname)
 {
     name = customname;
+    CALLBACK_NOTIFY(set_name, name)
 }
 
 ZENO_API void INode::set_view(bool bOn)
@@ -385,6 +386,15 @@ ZENO_API zany INode::resolveInput(std::string const& id) {
         return nullptr;
 }
 
+ZENO_API void INode::set_pos(std::pair<float, float> pos) {
+    pos = pos;
+    CALLBACK_NOTIFY(set_pos, pos)
+}
+
+ZENO_API std::pair<float, float> INode::get_pos() const {
+    return pos;
+}
+
 ZENO_API bool INode::set_input(std::string const& name, zany obj) {
     for (auto& param : inputs_) {
         if (param->name == name) {
@@ -420,7 +430,7 @@ ZENO_API zany INode::get_output(std::string const& sock_name) {
 ZENO_API void INode::set_status(NodeStatus status)
 {
     m_status = status;
-    //TODO: notify mechanism
+    CALLBACK_NOTIFY(set_status, m_status)
 }
 
 ZENO_API NodeStatus INode::get_status() const
