@@ -736,8 +736,6 @@ struct XPBDSolveSmoothAll : INode {
         auto dptag = get_input2<std::string>("dptag");
         auto dt = get_input2<float>("dt");
 
-        // zs::Vector<float> weight_sum{verts.get_allocator(),verts.size()};
-        // cudaPol(zs::range(weight_sum),[]ZS_LAMBDA(auto& w) {w = 0;});
 
         if(!verts.hasProperty("w")) {
             verts.append_channels(cudaPol,{{"w",1}});
@@ -758,6 +756,8 @@ struct XPBDSolveSmoothAll : INode {
                     affiliationOffset = cquads.getPropertyOffset("xpbd_affiliation"),
                     dampingOffset = cquads.getPropertyOffset("damping_coeff"),
                     indsOffset = cquads.getPropertyOffset("inds"),
+                    // rOffset = cquads.getPropertyOffset("r"),
+                    restScaleOffset = cquads.getPropertyOffset("rest_scale"),
                     // weight_sum = proxy<space>(weight_sum),
                     ptagOffset = verts.getPropertyOffset(ptag),
                     pptagOffset = verts.getPropertyOffset(pptag),
@@ -778,7 +778,8 @@ struct XPBDSolveSmoothAll : INode {
                             auto pp1 = verts.pack(dim_c<3>,pptagOffset,edge[1]);
                             auto  minv0 = verts(minvOffset,edge[0]);
                             auto minv1 = verts(minvOffset,edge[1]);
-                            auto r = cquads("r",ci);
+                            auto rest_scale = cquads(restScaleOffset,ci);
+                            auto r = cquads("r",ci) * rest_scale;
                             vec3 dp[2] = {};
 
                             auto lambda = (T)0;
@@ -814,8 +815,8 @@ struct XPBDSolveSmoothAll : INode {
                                 pp[i] = verts.pack(dim_c<3>,pptagOffset,quad[i]);
                                 minv[i] = verts(minvOffset,quad[i]);
                             }
-    
-                            auto ra = cquads("ra",ci);
+                            auto rest_scale = cquads(restScaleOffset,ci);
+                            auto ra = cquads("ra",ci) * rest_scale;
                             auto ras = cquads("sign",ci);
                             vec3 dp[4] = {};
                             auto lambda = (T)0;
@@ -935,13 +936,6 @@ struct XPBDSolveSmoothAll : INode {
                 auto anim_w = (float)(substep_id + 1) / (float)nm_substeps;
 
                 auto& cell_buffer = (*target)[TARGET_CELL_BUFFER];
-
-                // dtiles_t cell_buffer{kverts.get_allocator(),{
-                //     {"cx",3},
-                //     {"x",3},
-                //     {"v",3},
-                //     {"nrm",3}
-                // },kverts.size()};
         
                 cudaPol(zs::range(cell_buffer.size()),[
                     cell_buffer = proxy<space>({},cell_buffer),
