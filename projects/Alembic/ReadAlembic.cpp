@@ -1167,6 +1167,42 @@ ZENDEFNODE(PrimsFilterInUserdataPython, {
     {},
     {"alembic"},
 });
+
+struct SetFaceset: INode {
+    void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        int faceset_count = prim->userData().get2<int>("faceset_count",0);
+        for (auto j = 0; j < faceset_count; j++) {
+            prim->userData().del(zeno::format("faceset_{}", j));
+        }
+        prim->userData().set2("faceset_count", 1);
+        auto faceset_name = get_input2<std::string>("facesetName");
+        prim->userData().set2("faceset_0", faceset_name);
+
+        if (prim->tris.size() > 0) {
+            prim->tris.add_attr<int>("faceset").assign(prim->tris.size(),0);
+        }
+        if (prim->quads.size() > 0) {
+            prim->quads.add_attr<int>("faceset").assign(prim->quads.size(),0);
+        }
+        if (prim->polys.size() > 0) {
+            prim->polys.add_attr<int>("faceset").assign(prim->polys.size(),0);
+        }
+        set_output("out", prim);
+    }
+};
+
+ZENDEFNODE(SetFaceset, {
+    {
+        "prim",
+        {"string", "facesetName", "defFS"},
+    },
+    {
+        {"out"},
+    },
+    {},
+    {"alembic"},
+});
 #endif
 
 
