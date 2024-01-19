@@ -391,10 +391,12 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
                         return;
                     }
                 }
-                auto &outarr = outprim->loops.attr<T>(key);
-                size_t n = std::min(arr.size(), prim->loops.size());
-                for (size_t i = 0; i < n; i++) {
-                    outarr[base + i] = arr[i];
+                if constexpr (!std::is_same_v<decltype(key), std::true_type>) {
+                    auto &outarr = outprim->loops.attr<T>(key);
+                    size_t n = std::min(arr.size(), prim->loops.size());
+                    for (size_t i = 0; i < n; i++) {
+                        outarr[base + i] = arr[i];
+                    }
                 }
 #endif
             };
