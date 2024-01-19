@@ -19,6 +19,11 @@
 #include <cstdio>
 #include <filesystem>
 #include <zeno/utils/string.h>
+#include <zeno/utils/scope_exit.h>
+
+#ifdef ZENO_WITH_PYTHON3
+    #include <Python.h>
+#endif
 
 using namespace Alembic::AbcGeom;
 
@@ -1082,6 +1087,85 @@ ZENDEFNODE(PrimsFilterInUserdata, {
     {"alembic"},
 });
 
+#ifdef ZENO_WITH_PYTHON3
+static PyObject * pycheck(PyObject *pResult) {
+    if (pResult == nullptr) {
+        PyErr_Print();
+        throw zeno::makeError("python err");
+    }
+    return pResult;
+}
+
+static void pycheck(int result) {
+    if (result != 0) {
+        PyErr_Print();
+        throw zeno::makeError("python err");
+    }
+}
+struct PrimsFilterInUserdataPython: INode {
+    void apply() override {
+        auto prims = get_input<ListObject>("list")->get<PrimitiveObject>();
+        auto py_code = get_input2<std::string>("py_code");
+        Py_Initialize();
+        zeno::scope_exit init_defer([=]{ Py_Finalize(); });
+        PyRun_SimpleString("import sys; sys.stderr = sys.stdout");
+
+        auto out_list = std::make_shared<ListObject>();
+        for (auto p: prims) {
+            PyObject* userGlobals = PyDict_New();
+            zeno::scope_exit userGlobals_defer([=]{ Py_DECREF(userGlobals); });
+
+            PyObject* innerDict = PyDict_New();
+            zeno::scope_exit innerDict_defer([=]{ Py_DECREF(innerDict); });
+
+            auto &ud = p->userData();
+            for (auto i = ud.begin(); i != ud.end(); i++) {
+                auto key = i->first;
+                if (ud.has<std::string>(key)) {
+                    auto value = ud.get2<std::string>(key);
+                    PyObject* pyInnerValue = PyUnicode_DecodeUTF8(key.c_str(), key.size(), "strict");
+                    pycheck(PyDict_SetItemString(innerDict, key.c_str(), pyInnerValue));
+                }
+                else if (ud.has<float>(key)) {
+                    auto value = ud.get2<float>(key);
+                    PyObject* pyInnerValue = PyFloat_FromDouble(value);
+                    pycheck(PyDict_SetItemString(innerDict, key.c_str(), pyInnerValue));
+                }
+                else if (ud.has<int>(key)) {
+                    auto value = ud.get2<int>(key);
+                    PyObject* pyInnerValue = PyLong_FromLong(value);
+                    pycheck(PyDict_SetItemString(innerDict, key.c_str(), pyInnerValue));
+                }
+            }
+
+            PyDict_SetItemString(userGlobals, "ud", innerDict);
+
+            PyObject* pResult = pycheck(PyRun_String(py_code.c_str(), Py_file_input, userGlobals, nullptr));
+            zeno::scope_exit pResult_defer([=]{ Py_DECREF(pResult); });
+            PyObject* pValue = pycheck(PyRun_String("result", Py_eval_input, userGlobals, nullptr));
+            zeno::scope_exit pValue_defer([=]{ Py_DECREF(pValue); });
+            int need_insert = PyLong_AsLong(pValue);
+
+            if (need_insert > 0) {
+                out_list->arr.push_back(p);
+            }
+        }
+        set_output("out", out_list);
+    }
+};
+
+ZENDEFNODE(PrimsFilterInUserdataPython, {
+    {
+        {"list", "list"},
+        {"multiline_string", "py_code", "result = len(ud['label']) > 2"},
+    },
+    {
+        {"out"},
+    },
+    {},
+    {"alembic"},
+});
+#endif
 
 
 } // namespace zeno
