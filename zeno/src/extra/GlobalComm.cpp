@@ -784,6 +784,7 @@ GlobalComm::ViewObjects const* GlobalComm::_getViewObjects(const int frameid, bo
             prepareForOptix(m_frames[frameIdx].view_objects.m_curr);
             prepareForBeta();
             lastLoadedFrameID = frameid;
+            inserted = true;
         }
     }
     return &m_frames[frameIdx].view_objects;
@@ -1110,17 +1111,17 @@ ZENO_API const std::string GlobalComm::getObjKeyByObjID(std::string& id)
     return "";
 }
 
-ZENO_API const std::string GlobalComm::getObjKey1(std::string& id, int frame)
+ZENO_API const bool GlobalComm::hasObjKey(std::string& id, int frame)
 {
     std::lock_guard lck(g_objsMutex);
     if (m_currentFrame >= 0 && m_currentFrame < m_frames.size()) {
         for (auto const& [key, ptr] : m_frames[m_currentFrame].view_objects) {
-            if (key.find(id) == 0 && key.find(zeno::format(":{}:", frame)) != std::string::npos) {
-                return key;
+            if (key.find(id) != std::string::npos) {
+                return true;
             }
         }
     }
-    return "";
+    return false;
 }
 
 ZENO_API GlobalComm::RenderType GlobalComm::getRenderTypeByObjects(std::map<std::string, std::shared_ptr<zeno::IObject>>& objs)

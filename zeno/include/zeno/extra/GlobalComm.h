@@ -101,7 +101,7 @@ struct GlobalComm {
     ZENO_API bool getProceduralSkyData(std::string& id, zeno::vec2f& sunLightDir, float& sunSoftnessValue, zeno::vec2f& windDir, float& timeStartValue, float& timeSpeedValue, float& sunLightIntensityValue, float& colorTemperatureMixValue, float& colorTemperatureValue);
     ZENO_API void getAllLightsKey(std::vector<std::string>& keys);
     ZENO_API std::string getObjMatId(std::string& id);
-    ZENO_API const std::string getObjKey1(std::string& id, int frame);
+    ZENO_API const bool hasObjKey(std::string& id, int frame);
     ZENO_API MapObjects getLightObjs();
 
     ZENO_API void addTransferObj(std::string const& key, std::shared_ptr<IObject>);

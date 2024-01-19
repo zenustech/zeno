@@ -181,9 +181,8 @@ ZenoImagePanel::ZenoImagePanel(QWidget *parent) : QWidget(parent) {
         ZASSERT_EXIT(session);
         auto scene = session->get_scene();
         ZASSERT_EXIT(scene);
-        std::string key = zeno::getSession().globalComm->getObjKey1(prim_name, frame);
-        if (key != "")
-                setPrim(key);
+        if (zeno::getSession().globalComm->hasObjKey(prim_name, frame))
+            setPrim(prim_name);
     });
     connect(pGamma, &QCheckBox::stateChanged, this, [=](int state) {
         std::string prim_name = pPrimName->text().toStdString();
