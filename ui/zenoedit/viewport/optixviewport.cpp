@@ -9,6 +9,7 @@
 #include "launch/corelaunch.h"
 #include <zeno/core/Session.h>
 #include <zenovis/Camera.h>
+#include <zenovis/RenderEngine.h>
 #include <zeno/funcs/ParseObjectFromUi.h>
 
 
@@ -138,6 +139,18 @@ void OptixWorker::onUpdateCameraProp(float aperture, float disPlane, UI_VECTYPE 
     if (skipParam.size() == 0 || !skipParam[1])
         m_zenoVis->m_camera_control->setDisPlane(disPlane);
     m_zenoVis->m_camera_control->updatePerspective();
+}
+
+void OptixWorker::onUpdateEngine()
+{
+    zeno::getSession().globalComm->setRenderType(zeno::GlobalComm::NORMAL);
+    auto session = m_zenoVis->getSession();
+    ZASSERT_EXIT(session);
+    auto scene = session->get_scene();
+    ZASSERT_EXIT(scene);
+    auto engine = scene->renderMan->getEngine();
+    ZASSERT_EXIT(engine);
+    engine->update();
 }
 
 void OptixWorker::onFrameSwitched(int frame)
@@ -390,6 +403,7 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(this, &ZOptixViewport::sig_setSlidFeq, m_worker, &OptixWorker::onSetSlidFeq);
     connect(this, &ZOptixViewport::sig_modifyLightData, m_worker, &OptixWorker::onModifyLightData);
     connect(this, &ZOptixViewport::sig_updateCameraProp, m_worker, &OptixWorker::onUpdateCameraProp);
+    connect(this, &ZOptixViewport::sig_updateEngine, m_worker, &OptixWorker::onUpdateEngine);
 
     zeno::getSession().globalComm->setRenderType(zeno::GlobalComm::NORMAL);
     setRenderSeparately(false, false);
@@ -447,6 +461,11 @@ void ZOptixViewport::setSlidFeq(int feq)
 void ZOptixViewport::modifyLightData(UI_VECTYPE pos, UI_VECTYPE scale, UI_VECTYPE rotate, UI_VECTYPE color, float intensity, QString name, UI_VECTYPE skipParam)
 {
     emit sig_modifyLightData(pos, scale, rotate, color, intensity, name, skipParam);
+}
+
+void ZOptixViewport::updateEngine()
+{
+    emit sig_updateEngine();
 }
 
 void ZOptixViewport::stopRender()

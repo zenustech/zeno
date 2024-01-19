@@ -94,10 +94,20 @@ void DisplayWidget::cleanUpScene()
 {
     if (zeno::getSession().globalComm) {
         zeno::getSession().globalComm->clear_objects();
+
         if (m_glView)
-            m_glView->update();
-        else
-            m_optixView->update();
+        {
+            Zenovis* vis = getZenoVis();
+            ZASSERT_EXIT(vis);
+            auto scene = vis->getSession()->get_scene();
+            ZASSERT_EXIT(scene);
+            auto engin = scene->renderMan->getEngine();
+            ZASSERT_EXIT(engin);
+            engin->update();
+        }
+        else {
+            m_optixView->updateEngine();
+        }
     }
 }
 

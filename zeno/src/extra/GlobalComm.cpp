@@ -13,6 +13,9 @@
 #include <zeno/types/PrimitiveObject.h>
 #include "zeno/core/Session.h"
 #include "zeno/utils/vec.h"
+#include <zeno/types/PrimitiveObject.h>
+#include <zeno/VDBGrid.h>
+#include <openvdb/tools/VolumeToMesh.h>
 #ifdef __linux__
     #include<unistd.h>
     #include <sys/statfs.h>
@@ -47,6 +50,91 @@ static void markListIndex(const std::string& root, std::shared_ptr<ListObject> l
     }
 }
 
+static std::shared_ptr<VDBGrid> readSDF(std::string filepath)
+{
+    using GridTypes = std::tuple
+        < openvdb::points::PointDataGrid
+        , openvdb::FloatGrid
+        , openvdb::Vec3fGrid
+        , openvdb::Int32Grid
+        , openvdb::Vec3IGrid
+        >;
+    openvdb::io::File file(filepath);
+    file.open();
+    openvdb::GridPtrVecPtr my_grids = file.getGrids();
+    file.close();
+    std::shared_ptr<zeno::VDBGrid> sdf;
+    for (openvdb::GridPtrVec::iterator iter = my_grids->begin(); iter != my_grids->end(); ++iter) {
+        openvdb::GridBase::Ptr it = *iter;
+        if (zeno::static_for<0, std::tuple_size_v<GridTypes>>([&](auto i) {
+            using GridT = std::tuple_element_t<i, GridTypes>;
+        if ((*iter)->isType<GridT>()) {
+
+            auto pGrid = std::make_shared<zeno::VDBGridWrapper<GridT>>();
+            pGrid->m_grid = openvdb::gridPtrCast<GridT>(*iter);
+            sdf = pGrid;
+            return true;
+        }
+        return false;
+            })) {
+            return sdf;
+        }
+        else {
+            zeno::log_info("failed to readGenericVDBGrid: {}", filepath);
+            return std::make_shared<zeno::VDBIntGrid>();
+        };
+    }
+}
+
+static std::shared_ptr<zeno::PrimitiveObject> convertSDFToPrim(std::shared_ptr<zeno::VDBGrid> vdb)
+{
+    auto sdf = vdb->as<VDBFloatGrid>();
+    auto mesh = IObject::make<PrimitiveObject>();
+    auto adaptivity = 0;
+    auto isoValue = 0;
+    auto allowQuads = false;
+    std::vector<openvdb::Vec3s> points(0);
+    std::vector<openvdb::Vec3I> tris(0);
+    std::vector<openvdb::Vec4I> quads(0);
+    openvdb::tools::volumeToMesh(*(sdf->m_grid), points, tris, quads, isoValue, adaptivity, true);
+    mesh->resize(points.size());
+    auto& meshpos = mesh->add_attr<zeno::vec3f>("pos");
+#pragma omp parallel for
+    for (int i = 0; i < points.size(); i++)
+    {
+        meshpos[i] = zeno::vec3f(points[i][0], points[i][1], points[i][2]);
+    }
+    if (allowQuads) {
+        mesh->tris.resize(tris.size());
+        mesh->quads.resize(quads.size());
+#pragma omp parallel for
+        for (int i = 0; i < tris.size(); i++)
+        {
+            mesh->tris[i] = zeno::vec3i(tris[i][0], tris[i][1], tris[i][2]);
+        }
+#pragma omp parallel for
+        for (int i = 0; i < quads.size(); i++)
+        {
+            mesh->quads[i] = zeno::vec4i(quads[i][0], quads[i][1], quads[i][2], quads[i][3]);
+        }
+    }
+    else {
+        mesh->tris.resize(tris.size() + 2 * quads.size());
+#pragma omp parallel for
+        for (int i = 0; i < tris.size(); i++)
+        {
+            mesh->tris[i] = zeno::vec3i(tris[i][0], tris[i][1], tris[i][2]);
+        }
+#pragma omp parallel for
+        for (int i = 0; i < quads.size(); i++)
+        {
+            mesh->tris[i * 2 + tris.size()] = zeno::vec3i(quads[i][0], quads[i][1], quads[i][2]);
+            mesh->tris[i * 2 + 1 + tris.size()] = zeno::vec3i(quads[i][2], quads[i][3], quads[i][0]);
+        }
+    }
+    return mesh;
+}
+
 void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &objs, std::string key, bool dumpCacheVersionInfo) {
     if (cachedir.empty()) return;
 
@@ -78,14 +166,29 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
         std::vector<size_t> poses;
         std::string keys;
         for (auto const& [key, obj] : objs) {
-            size_t bufsize = bufCaches.size();
+            //fix:cache vdb data
+            auto methview = obj->method_node("view");
+            if (!methview.empty()) {
+                std::string vdbcachepath = cachepath.string();
+                vdbcachepath.erase(vdbcachepath.size() - 9);
+                vdbcachepath = vdbcachepath + "_" + std::filesystem::u8path(key).string() + ".vdb";
+                auto data = obj->as<VDBGrid>();
+                data->output(vdbcachepath);
 
-            std::back_insert_iterator<std::vector<char>> it(bufCaches);
-            if (encodeObject(obj.get(), bufCaches))
-            {
                 keys.push_back('\a');
-                keys.append(key);
-                poses.push_back(bufsize);
+                keys.append(key + ":isVDB");
+                poses.push_back(bufCaches.size());
+            }
+            else {
+                size_t bufsize = bufCaches.size();
+
+                std::back_insert_iterator<std::vector<char>> it(bufCaches);
+                if (encodeObject(obj.get(), bufCaches))
+                {
+                    keys.push_back('\a');
+                    keys.append(key);
+                    poses.push_back(bufsize);
+                }
             }
         }
         keys.push_back('\a');
@@ -285,13 +388,25 @@ bool GlobalComm::fromDiskByObjsManager(std::string cachedir, int frameid, Global
                 }
                 const char* p = dat.data() + pos + poses[lastObjIdx];
 
-                zeno::zany decodedObj = decodeObject(p, poses[lastObjIdx + 1] - poses[lastObjIdx]);
+                if (keys[lastObjIdx].find(":isVDB") != std::string::npos)
+                {
+                    //fix: readVDB and convert to prim
+                    std::string vdbcachepath = cachePath.string();
+                    vdbcachepath.erase(vdbcachepath.size() - 9);
+                    vdbcachepath = vdbcachepath + "_" + std::filesystem::u8path(keys[lastObjIdx].substr(0, keys[lastObjIdx].find_first_of(":"))).string() + ".vdb";
+                    std::shared_ptr<zeno::VDBGrid> sdf = readSDF(vdbcachepath);
+                    std::shared_ptr<zeno::PrimitiveObject> prim = convertSDFToPrim(sdf);
+                    convertToView(prim, nodeid, nodeid);
+                }
+                else {
+                    zeno::zany decodedObj = decodeObject(p, poses[lastObjIdx + 1] - poses[lastObjIdx]);
+                    convertToView(decodedObj, nodeid, nodeid);
+                }
                 //if (std::shared_ptr<ListObject> spListObj = std::dynamic_pointer_cast<ListObject>(decodedObj))
                 //{
                 //    markListIndex(nodeid, spListObj);
                 //}
 
-                convertToView(decodedObj, nodeid, nodeid);
             }
         }
     }
@@ -429,13 +544,24 @@ bool GlobalComm::fromDiskByObjsManagerStatic(std::string cachedir, GlobalComm::V
             }
             const char* p = dat.data() + pos + poses[lastObjIdx];
 
-            zeno::zany decodedObj = decodeObject(p, poses[lastObjIdx + 1] - poses[lastObjIdx]);
+            if (keys[lastObjIdx].find(":isVDB") != std::string::npos)
+            {
+                //fix: readVDB and convert to prim
+                std::string vdbcachepath = cachePath.string();
+                vdbcachepath.erase(vdbcachepath.size() - 9);
+                vdbcachepath = vdbcachepath + "_" + std::filesystem::u8path(keys[lastObjIdx].substr(0, keys[lastObjIdx].find_first_of(":"))).string() + ".vdb";
+                std::shared_ptr<zeno::VDBGrid> sdf = readSDF(vdbcachepath);
+                std::shared_ptr<zeno::PrimitiveObject> prim = convertSDFToPrim(sdf);
+                convertToView(prim, nodeid, nodeid);
+            }
+            else {
+                zeno::zany decodedObj = decodeObject(p, poses[lastObjIdx + 1] - poses[lastObjIdx]);
+                convertToView(decodedObj, nodeid, nodeid);
+            }
             //if (std::shared_ptr<ListObject> spListObj = std::dynamic_pointer_cast<ListObject>(decodedObj))
             //{
             //    markListIndex(nodeid, spListObj);
             //}
-
-            convertToView(decodedObj, nodeid, nodeid);
         }
     }
 
@@ -503,7 +629,20 @@ bool GlobalComm::fromDiskByRunner(std::string cachedir, int frameid, GlobalComm:
                 log_error("zeno cache file broken (4.{})", k);
             }
             const char* p = dat.data() + pos + poses[k];
-            objs.try_emplace(keys[k], decodeObject(p, poses[k + 1] - poses[k]));
+
+            if (keys[k].find(":isVDB") != std::string::npos)
+            {
+                //fix: readVDB and convert to prim
+                std::string& socketName = keys[k].substr(0, keys[k].find_first_of(":"));
+                std::string vdbcachepath = filePath.string();
+                vdbcachepath.erase(vdbcachepath.size() - 9);
+                vdbcachepath = vdbcachepath + "_" + std::filesystem::u8path(socketName).string() + ".vdb";
+                std::shared_ptr<zeno::VDBGrid> sdf = readSDF(vdbcachepath);
+                objs.try_emplace(socketName, sdf);
+            }
+            else {
+                objs.try_emplace(keys[k], decodeObject(p, poses[k + 1] - poses[k]));
+            }
         }
     }
     return true;
@@ -817,6 +956,14 @@ void GlobalComm::prepareForOptix(std::map<std::string, std::shared_ptr<zeno::IOb
         renderType = UNDEFINED;
     else
         renderType = NORMAL;
+
+    //fix: hdrsky obj need updateAll
+    for (auto& [key, obj] : m_newToviewObjs)
+        if (key.find("HDRSky") != std::string::npos)
+        {
+            renderType = NORMAL;
+            break;
+        }
 
     m_lightObjects.clear();
     for (auto const& [key, obj] : objs) {
