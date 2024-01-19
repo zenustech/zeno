@@ -469,7 +469,7 @@ struct WriteAlembic2 : INode {
             if (ud.has<int>("faceset_count")) {
                 int faceset_count = ud.get2<int>("faceset_count");
                 for (auto i = 0; i < faceset_count; i++) {
-                    faceSetNames.emplace_back(ud.get2<std::string>(zeno::format("faceset_{:04}", i)));
+                    faceSetNames.emplace_back(ud.get2<std::string>(zeno::format("faceset_{}", i)));
                 }
                 faceset_idxs.resize(faceset_count);
                 std::vector<int> faceset;
@@ -740,7 +740,7 @@ struct WriteAlembicPrims : INode {
                 if (ud.has<int>("faceset_count")) {
                     int faceset_count = ud.get2<int>("faceset_count");
                     for (auto i = 0; i < faceset_count; i++) {
-                        faceSetNames.emplace_back(ud.get2<std::string>(zeno::format("faceset_{:04}", i)));
+                        faceSetNames.emplace_back(ud.get2<std::string>(zeno::format("faceset_{}", i)));
                     }
                     faceset_idxs.resize(faceset_count);
                     auto &faceset = prim->polys.attr<int>("faceset");
