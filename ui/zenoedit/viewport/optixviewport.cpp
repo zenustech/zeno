@@ -660,6 +660,10 @@ void ZOptixViewport::keyPressEvent(QKeyEvent* event)
 void ZOptixViewport::keyReleaseEvent(QKeyEvent* event)
 {
     _base::keyReleaseEvent(event);
+    int uKey = event->key();
+    if (m_camera->fakeKeyReleaseEvent(uKey)) {
+        return;
+    }
 }
 
 void ZOptixViewport::paintEvent(QPaintEvent* event)
