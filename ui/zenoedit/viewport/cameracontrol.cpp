@@ -297,24 +297,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
         }
     }
 
-    if (!bTransform && ctrl_pressed && (event->buttons() & Qt::MiddleButton)) {
-        float ratio = QApplication::desktop()->devicePixelRatio();
-        float dx = xpos - m_lastMidButtonPos.x(), dy = ypos - m_lastMidButtonPos.y();
-        dx *= ratio / m_res[0];
-        dy *= ratio / m_res[1];
-        float cos_t = cos(getTheta());
-        float sin_t = sin(getTheta());
-        float cos_p = cos(getPhi());
-        float sin_p = sin(getPhi());
-        QVector3D back(cos_t * sin_p, sin_t, -cos_t * cos_p);
-        QVector3D delta = -back * dy;
-        auto c = getCenter();
-        QVector3D center = {c[0], c[1], c[2]};
-        center += delta * getRadius();
-        setCenter({float(center.x()), float(center.y()), float(center.z())});
-        m_lastMidButtonPos = QPointF(xpos, ypos);
-    }
-    else if (!bTransform && (event->buttons() & (rotateButton | moveButton))) {
+    if (!bTransform && (event->buttons() & (rotateButton | moveButton))) {
         float ratio = QApplication::desktop()->devicePixelRatio();
         float dx = xpos - m_lastMidButtonPos.x(), dy = ypos - m_lastMidButtonPos.y();
         dx *= ratio / m_res[0];
