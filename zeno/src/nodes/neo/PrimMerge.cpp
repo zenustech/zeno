@@ -548,7 +548,7 @@ struct PrimMerge : INode {
                 }
             }
             int faceset_count = p->userData().get2<int>("faceset_count", 0);
-            if (faceset_count == 0 && p->userData().has<int>("faceset_0")) {
+            if (faceset_count == 0 && p->userData().has<std::string>("faceset_0")) {
                 faceset_count = 1;
             }
             if (faceset_count > 0) {
