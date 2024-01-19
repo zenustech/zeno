@@ -6,6 +6,7 @@
 #include <zeno/types/UserData.h>
 #include <zeno/utils/log.h>
 #include <zeno/zeno.h>
+#include <unordered_set>
 
 namespace zeno {
 
@@ -501,6 +502,7 @@ struct PrimMerge : INode {
 
         std::vector<std::string> matNameList(0);
         std::vector<std::string> facesetNameList;
+        std::unordered_set<std::string> facesetNameSet;
         for (auto &p : primList) {
             //if p has material
             int matNum = p->userData().get2<int>("matNum", 0);
@@ -566,7 +568,14 @@ struct PrimMerge : INode {
                 for (int i = 0; i < faceset_count; i++) {
                     auto facesetIdx = "faceset_" + to_string(i);
                     auto facesetName = p->userData().get2<std::string>(facesetIdx, "Default");
-                    facesetNameList.emplace_back(facesetName);
+                    std::string newFacesetName = facesetName;
+                    int j = 0;
+                    while (facesetNameSet.count(newFacesetName)) {
+                        j++;
+                        newFacesetName = zeno::format("{}_{}", facesetName, j);
+                    }
+                    facesetNameList.emplace_back(newFacesetName);
+                    facesetNameSet.insert(newFacesetName);
                 }
             } else {
                 if (p->tris.size() > 0) {
@@ -602,9 +611,7 @@ struct PrimMerge : INode {
         int oMatNum = matNameList.size();
         outprim->userData().set2("matNum", oMatNum);
         {
-            zeno::log_info("facesetNameList: {}", int(facesetNameList.size()));
             if (facesetNameList.size() > 0) {
-                //add matNames to userData
                 int i = 0;
                 for (auto name : facesetNameList) {
                     auto facesetIdx = "faceset_" + to_string(i);
