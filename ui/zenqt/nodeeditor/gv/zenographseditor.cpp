@@ -28,8 +28,8 @@
 
 
 ZenoGraphsEditor::ZenoGraphsEditor(ZenoMainWindow* pMainWin)
-	: QWidget(nullptr)
-	, m_mainWin(pMainWin)
+    : QWidget(nullptr)
+    , m_mainWin(pMainWin)
     , m_searchOpts(SEARCHALL)
 {
     initUI();
@@ -48,8 +48,8 @@ ZenoGraphsEditor::~ZenoGraphsEditor()
 
 void ZenoGraphsEditor::initUI()
 {
-	m_ui = new Ui::GraphsEditor;
-	m_ui->setupUi(this);
+    m_ui = new Ui::GraphsEditor;
+    m_ui->setupUi(this);
 
     int _margin = ZenoStyle::dpiScaled(10);
     QMargins margins(_margin, _margin, _margin, _margin);
@@ -87,7 +87,7 @@ void ZenoGraphsEditor::initModel()
     m_sideBarModel = new QStandardItemModel;
 
     QStandardItem* pItem = new QStandardItem;
-	pItem->setData(Side_Subnet);
+    pItem->setData(Side_Subnet);
     m_sideBarModel->appendRow(pItem);
 
     pItem = new QStandardItem;
@@ -103,8 +103,8 @@ void ZenoGraphsEditor::initModel()
 
 void ZenoGraphsEditor::initSignals()
 {
-	auto graphsMgr = zenoApp->graphsManager();
-	connect(&*graphsMgr, SIGNAL(modelInited()), this, SLOT(resetModel()));
+    auto graphsMgr = zenoApp->graphsManager();
+    connect(&*graphsMgr, SIGNAL(modelInited()), this, SLOT(resetModel()));
     connect(graphsMgr->logModel(), &QStandardItemModel::rowsInserted, this, &ZenoGraphsEditor::onLogInserted);
 
     connect(m_selection, &QItemSelectionModel::selectionChanged, this, &ZenoGraphsEditor::onSideBtnToggleChanged);
@@ -113,8 +113,8 @@ void ZenoGraphsEditor::initSignals()
     //connect(m_ui->subnetList, SIGNAL(clicked(const QModelIndex&)), this, SLOT(onListItemActivated(const QModelIndex&)));
     //connect(m_ui->subnetTree, SIGNAL(clicked(const QModelIndex&)), this, SLOT(onTreeItemActivated(const QModelIndex&)));
 
-	connect(m_ui->welcomePage, SIGNAL(newRequest()), m_mainWin, SLOT(onNewFile()));
-	connect(m_ui->welcomePage, SIGNAL(openRequest()), m_mainWin, SLOT(openFileDialog()));
+    connect(m_ui->welcomePage, SIGNAL(newRequest()), m_mainWin, SLOT(onNewFile()));
+    connect(m_ui->welcomePage, SIGNAL(openRequest()), m_mainWin, SLOT(openFileDialog()));
 
     connect(m_ui->moreBtn, SIGNAL(clicked()), this, SLOT(onSubnetOptionClicked()));
     connect(m_ui->btnSearchOpt, SIGNAL(clicked()), this, SLOT(onSearchOptionClicked()));
@@ -165,19 +165,19 @@ void ZenoGraphsEditor::resetModel()
         return;
     }
 
-    SubListSortProxyModel* treeProxyModel = new SubListSortProxyModel(this);
-    treeProxyModel->setSourceModel(pModel);
-    treeProxyModel->setDynamicSortFilter(true);
-    m_ui->subnetTree->setModel(treeProxyModel);
-    treeProxyModel->sort(0, Qt::AscendingOrder);
+    //SubListSortProxyModel* treeProxyModel = new SubListSortProxyModel(this);
+    //treeProxyModel->setSourceModel(pModel);
+    //treeProxyModel->setDynamicSortFilter(true);
+    m_ui->subnetTree->setModel(pModel);
+    //treeProxyModel->sort(0, Qt::AscendingOrder);
     m_ui->subnetList->setSelectionMode(QAbstractItemView::ExtendedSelection);
     connect(m_ui->subnetTree->selectionModel(), &QItemSelectionModel::selectionChanged, this, &ZenoGraphsEditor::onTreeItemSelectionChanged);
 
-    SubListSortProxyModel* proxyModel = new SubListSortProxyModel(this);    
-    proxyModel->setSourceModel(assets);
-    proxyModel->setDynamicSortFilter(true);
-    m_ui->subnetList->setModel(proxyModel);
-    proxyModel->sort(0, Qt::AscendingOrder);
+    //SubListSortProxyModel* proxyModel = new SubListSortProxyModel(this);    
+    //proxyModel->setSourceModel(assets);
+    //proxyModel->setDynamicSortFilter(true);
+    m_ui->subnetList->setModel(assets);
+    //proxyModel->sort(0, Qt::AscendingOrder);
     m_ui->subnetTree->setSelectionMode(QAbstractItemView::ExtendedSelection);
 
     ZSubnetListItemDelegate *delegate = new ZSubnetListItemDelegate(assets, this);
@@ -202,6 +202,8 @@ void ZenoGraphsEditor::resetModel()
     connect(pModel, SIGNAL(modelReset()), this, SLOT(onModelReset()));
     connect(assets, SIGNAL(graphRenamed(const QString&, const QString&)), this, SLOT(onSubGraphRename(const QString&, const QString&)));
     activateTab("/main");
+
+    m_ui->subnetTree->expandAll();
 }
 
 void ZenoGraphsEditor::onModelCleared()
@@ -239,74 +241,74 @@ void ZenoGraphsEditor::onAssetsToRemove(const QModelIndex& parent, int first, in
 
 void ZenoGraphsEditor::onModelReset()
 {
-	m_ui->graphsViewTab->clear();
+    m_ui->graphsViewTab->clear();
 }
 
 void ZenoGraphsEditor::onSubGraphRename(const QString& oldName, const QString& newName)
 {
-	int idx = tabIndexOfName(oldName);
-	if (idx != -1)
-	{
-		QTabBar* pTabBar = m_ui->graphsViewTab->tabBar();
-		pTabBar->setTabText(idx, newName);
-	}
+    int idx = tabIndexOfName(oldName);
+    if (idx != -1)
+    {
+        QTabBar* pTabBar = m_ui->graphsViewTab->tabBar();
+        pTabBar->setTabText(idx, newName);
+    }
 }
 
 void ZenoGraphsEditor::onSearchOptionClicked()
 {
-	QMenu* pOptionsMenu = new QMenu;
+    QMenu* pOptionsMenu = new QMenu;
 
-	QAction* pNode = new QAction(tr("Node"));
+    QAction* pNode = new QAction(tr("Node"));
     pNode->setCheckable(true);
     pNode->setChecked(m_searchOpts & SEARCH_NODECLS);
 
-	QAction* pSubnet = new QAction(tr("Subnet"));
+    QAction* pSubnet = new QAction(tr("Subnet"));
     pSubnet->setCheckable(true);
     pSubnet->setChecked(m_searchOpts & SEARCH_SUBNET);
 
-	QAction* pAnnotation = new QAction(tr("Annotation"));
+    QAction* pAnnotation = new QAction(tr("Annotation"));
     pAnnotation->setCheckable(true);
     pAnnotation->setEnabled(false);
 
-	QAction* pWrangle = new QAction(tr("Parameter"));
+    QAction* pWrangle = new QAction(tr("Parameter"));
     pWrangle->setCheckable(true);
     pWrangle->setChecked(m_searchOpts & SEARCH_ARGS);
 
-	pOptionsMenu->addAction(pNode);
-	pOptionsMenu->addAction(pSubnet);
-	pOptionsMenu->addAction(pAnnotation);
-	pOptionsMenu->addAction(pWrangle);
+    pOptionsMenu->addAction(pNode);
+    pOptionsMenu->addAction(pSubnet);
+    pOptionsMenu->addAction(pAnnotation);
+    pOptionsMenu->addAction(pWrangle);
 
-	connect(pNode, &QAction::triggered, this, [=](bool bChecked) {
+    connect(pNode, &QAction::triggered, this, [=](bool bChecked) {
         if (bChecked)
             m_searchOpts |= SEARCH_NODECLS;
         else
             m_searchOpts &= (~(int)SEARCH_NODECLS);
-	});
+    });
 
-	connect(pSubnet, &QAction::triggered, this, [=](bool bChecked) {
-		if (bChecked)
-			m_searchOpts |= SEARCH_SUBNET;
-		else
-			m_searchOpts &= (~(int)SEARCH_SUBNET);
-		});
+    connect(pSubnet, &QAction::triggered, this, [=](bool bChecked) {
+        if (bChecked)
+            m_searchOpts |= SEARCH_SUBNET;
+        else
+            m_searchOpts &= (~(int)SEARCH_SUBNET);
+        });
 
-	connect(pAnnotation, &QAction::triggered, this, [=](bool bChecked) {
-		if (bChecked)
-			m_searchOpts |= SEARCH_ANNO;
-		else
-			m_searchOpts &= (~(int)SEARCH_ANNO);
-		});
+    connect(pAnnotation, &QAction::triggered, this, [=](bool bChecked) {
+        if (bChecked)
+            m_searchOpts |= SEARCH_ANNO;
+        else
+            m_searchOpts &= (~(int)SEARCH_ANNO);
+        });
 
-	connect(pWrangle, &QAction::triggered, this, [=](bool bChecked) {
-		if (bChecked)
-			m_searchOpts |= SEARCH_ARGS;
-		else
-			m_searchOpts &= (~(int)SEARCH_ARGS);
-		});
+    connect(pWrangle, &QAction::triggered, this, [=](bool bChecked) {
+        if (bChecked)
+            m_searchOpts |= SEARCH_ARGS;
+        else
+            m_searchOpts &= (~(int)SEARCH_ARGS);
+        });
 
-	pOptionsMenu->exec(QCursor::pos());
-	pOptionsMenu->deleteLater();
+    pOptionsMenu->exec(QCursor::pos());
+    pOptionsMenu->deleteLater();
 }
 
 void ZenoGraphsEditor::onNewAsset()
@@ -435,23 +437,23 @@ void ZenoGraphsEditor::onSideBtnToggleChanged(const QItemSelection& selected, co
 
 void ZenoGraphsEditor::onCurrentChanged(const QModelIndex& current, const QModelIndex& previous)
 {
-	if (previous.isValid())
-	{
+    if (previous.isValid())
+    {
         int sideBar = current.data(Qt::UserRole + 1).toInt();
-		switch (previous.data(Qt::UserRole + 1).toInt())
-		{
+        switch (previous.data(Qt::UserRole + 1).toInt())
+        {
         /*
-		case Side_Subnet: m_ui->subnetBtn->setChecked(false); break;
-		case Side_Tree: m_ui->treeviewBtn->setChecked(false); break;
-		case Side_Search: m_ui->searchBtn->setChecked(false); break;
+        case Side_Subnet: m_ui->subnetBtn->setChecked(false); break;
+        case Side_Tree: m_ui->treeviewBtn->setChecked(false); break;
+        case Side_Search: m_ui->searchBtn->setChecked(false); break;
         */
-		}
-	}
+        }
+    }
 
-	if (current.isValid())
-	{
+    if (current.isValid())
+    {
         m_ui->stackedWidget->show();
-		int sideBar = current.data(Qt::UserRole + 1).toInt();
+        int sideBar = current.data(Qt::UserRole + 1).toInt();
         switch (sideBar)
         {
             case Side_Subnet:
@@ -473,7 +475,7 @@ void ZenoGraphsEditor::onCurrentChanged(const QModelIndex& current, const QModel
                 break;
             }
         }
-	}
+    }
     else
     {
         m_ui->stackedWidget->hide();
@@ -482,14 +484,14 @@ void ZenoGraphsEditor::onCurrentChanged(const QModelIndex& current, const QModel
 
 int ZenoGraphsEditor::tabIndexOfName(const QString& subGraphName)
 {
-	for (int i = 0; i < m_ui->graphsViewTab->count(); i++)
-	{
-		if (m_ui->graphsViewTab->tabText(i) == subGraphName)
-		{
-			return i;
-		}
-	}
-	return -1;
+    for (int i = 0; i < m_ui->graphsViewTab->count(); i++)
+    {
+        if (m_ui->graphsViewTab->tabText(i) == subGraphName)
+        {
+            return i;
+        }
+    }
+    return -1;
 }
 
 void ZenoGraphsEditor::closeMaterialTab()
@@ -516,7 +518,7 @@ void ZenoGraphsEditor::closeMaterialTab()
 
 void ZenoGraphsEditor::onListItemActivated(const QModelIndex& index)
 {
-	const QString& subgraphName = index.data().toString();
+    const QString& subgraphName = index.data().toString();
     activateTab(subgraphName);
 }
 
@@ -582,8 +584,8 @@ void ZenoGraphsEditor::activateTab(const QString& subgpath, const QString& focus
 #if 0
 void ZenoGraphsEditor::activateTab(const QString& subGraphName, const QString& path, const QString& objId, bool isError)
 {
-	auto graphsMgm = zenoApp->graphsManager();
-	IGraphsModel* pModel = graphsMgm->currentModel();
+    auto graphsMgm = zenoApp->graphsManager();
+    IGraphsModel* pModel = graphsMgm->currentModel();
 
     if (!pModel->index(subGraphName).isValid())
         return;
@@ -591,10 +593,10 @@ void ZenoGraphsEditor::activateTab(const QString& subGraphName, const QString& p
     {
         closeMaterialTab();
     }
-	int idx = tabIndexOfName(subGraphName);
-	if (idx == -1)
-	{
-		const QModelIndex& subgIdx = pModel->index(subGraphName);
+    int idx = tabIndexOfName(subGraphName);
+    if (idx == -1)
+    {
+        const QModelIndex& subgIdx = pModel->index(subGraphName);
         if (subgIdx.data(ROLE_SUBGRAPH_TYPE).toInt() == SUBGRAPH_METERIAL)
         {
             closeMaterialTab();
@@ -627,8 +629,8 @@ void ZenoGraphsEditor::activateTab(const QString& subGraphName, const QString& p
                 QString subgName = L.last();
                 activateTab(subgName, newPath);
             });
-	}
-	m_ui->graphsViewTab->setCurrentIndex(idx);
+    }
+    m_ui->graphsViewTab->setCurrentIndex(idx);
 
     ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
     ZASSERT_EXIT(pView);
@@ -648,27 +650,27 @@ void ZenoGraphsEditor::showFloatPanel(const QModelIndex &subgIdx, const QModelIn
 
 void ZenoGraphsEditor::onTreeItemActivated(const QModelIndex& index)
 {
-	QModelIndex idx = index;
+    QModelIndex idx = index;
 
-	const QString& objId = idx.data(ROLE_NODE_NAME).toString();
-	QString path, subgName;
-	if (!idx.parent().isValid())
-	{
+    const QString& objId = idx.data(ROLE_NODE_NAME).toString();
+    QString path, subgName;
+    if (!idx.parent().isValid())
+    {
         subgName = idx.data(ROLE_CLASS_NAME).toString();
-		path = "/" + subgName;
-	}
-	else
-	{
-		idx = idx.parent();
+        path = "/" + subgName;
+    }
+    else
+    {
+        idx = idx.parent();
         subgName = idx.data(ROLE_CLASS_NAME).toString();
 
-		while (idx.isValid())
-		{
-			QString objName = idx.data(ROLE_CLASS_NAME).toString();
-			path = "/" + objName + path;
-			idx = idx.parent();
-		}
-	}
+        while (idx.isValid())
+        {
+            QString objName = idx.data(ROLE_CLASS_NAME).toString();
+            path = "/" + objName + path;
+            idx = idx.parent();
+        }
+    }
 
     activateTab(path, objId);
 }

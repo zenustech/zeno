@@ -12,6 +12,7 @@
 #include <optional>
 
 class GraphModel;
+class GraphsTreeModel;
 
 struct NodeItem : public QObject
 {
@@ -55,7 +56,7 @@ class GraphModel : public QAbstractListModel
     QML_ELEMENT
 
 public:
-    GraphModel(std::shared_ptr<zeno::Graph> spGraph, QObject* parent = nullptr);
+    GraphModel(std::shared_ptr<zeno::Graph> spGraph, GraphsTreeModel* pTree, QObject* parent = nullptr);
     ~GraphModel();
     Q_INVOKABLE LinkModel* getLinkModel() const { return m_linkModel; }
     Q_INVOKABLE int indexFromId(const QString& name) const;
@@ -83,6 +84,7 @@ public:
     void addLink(const zeno::EdgeInfo& link);
     QList<SEARCH_RESULT> search(const QString& content, SearchType searchType, SearchOpt searchOpts) const;
     GraphModel* getGraphByPath(const QString& objPath);
+    QString currentPath() const;
     //QModelIndex index(const QString& name) const;
     QModelIndex indexFromName(const QString& name) const;
     void undo();

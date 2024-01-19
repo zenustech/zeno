@@ -1,7 +1,6 @@
 #include "zenoproppanel.h"
 #include "zenoapplication.h"
 #include "model/graphsmanager.h"
-#include "model/GraphsTreeModel.h"
 #include "model/curvemodel.h"
 #include "model/parammodel.h"
 #include "variantptr.h"

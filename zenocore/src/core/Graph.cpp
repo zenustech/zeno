@@ -136,7 +136,7 @@ ZENO_API std::map<std::string, zany> Graph::callSubnetNode(std::string const &id
 ZENO_API std::map<std::string, zany> Graph::callTempNode(std::string const &id,
         std::map<std::string, zany> inputs) const {
 
-    auto cl = safe_at(session->nodeClasses, id, "node class name").get();
+    auto cl = safe_at(getSession().nodeClasses, id, "node class name").get();
     const std::string& name = generateUUID();
     auto se = cl->new_instance(name);
     se->graph = const_cast<Graph*>(this);
@@ -253,7 +253,7 @@ std::string Graph::generateNewName(const std::string& node_cls)
 
 ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls)
 {
-    auto cl = safe_at(session->nodeClasses, cls, "node class name").get();
+    auto cl = safe_at(getSession().nodeClasses, cls, "node class name").get();
     std::string const& name = generateNewName(cls);
     auto node = cl->new_instance(name);
     node->graph = this;

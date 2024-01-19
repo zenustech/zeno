@@ -44,7 +44,6 @@ ZenoNewnodeMenu::ZenoNewnodeMenu(GraphModel* pGraphM, const zeno::NodeCates& cat
 
     addAction(m_wactSearchEdit);
 
-    GraphsTreeModel* pModel = zenoApp->graphsManager()->currentModel();
     m_cateActions = getCategoryActions(m_scenePos);
     addActions(m_cateActions);
 

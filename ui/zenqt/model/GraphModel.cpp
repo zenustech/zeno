@@ -3,6 +3,9 @@
 #include "Descriptors.h"
 #include "zassert.h"
 #include "variantptr.h"
+#include "model/GraphsTreeModel.h"
+#include "model/graphsmanager.h"
+#include "zenoapplication.h"
 
 
 NodeItem::NodeItem(QObject* parent) : QObject(parent)
@@ -66,7 +69,7 @@ void NodeItem::init(GraphModel* pGraphM, std::shared_ptr<zeno::INode> spNode)
 }
 
 
-GraphModel::GraphModel(std::shared_ptr<zeno::Graph> spGraph, QObject* parent)
+GraphModel::GraphModel(std::shared_ptr<zeno::Graph> spGraph, GraphsTreeModel* pTree, QObject* parent)
     : QAbstractListModel(parent)
     , m_spCoreGraph(spGraph)
 {
@@ -76,6 +79,15 @@ GraphModel::GraphModel(std::shared_ptr<zeno::Graph> spGraph, QObject* parent)
 
     for (auto& [name, node] : spGraph->getNodes()) {
         _appendNode(node);
+    }
+
+    if (pTree) {
+        connect(this, SIGNAL(rowsInserted(const QModelIndex&, int, int)),
+            pTree, SLOT(onGraphRowsInserted(const QModelIndex&, int, int)));
+        connect(this, SIGNAL(rowsAboutToBeRemoved(const QModelIndex&, int, int)),
+            pTree, SLOT(onGraphRowsAboutToBeRemoved(const QModelIndex&, int, int)));
+        connect(this, SIGNAL(rowsRemoved(const QModelIndex&, int, int)),
+            pTree, SLOT(onGraphRowsRemoved(const QModelIndex&, int, int)));
     }
 }
 
@@ -336,6 +348,20 @@ GraphModel* GraphModel::getGraphByPath(const QString& objPath)
      }
      ZASSERT_EXIT(pItem->optSubgraph.has_value(), nullptr);
      return pItem->optSubgraph.value()->getGraphByPath(leftPath);
+}
+
+QString GraphModel::currentPath() const
+{
+    QString path;
+    NodeItem* pNode = qobject_cast<NodeItem*>(this->parent());
+    while (pNode) {
+        path = "/" + pNode->name + path;
+        GraphModel* pGraphM = qobject_cast<GraphModel*>(pNode->parent());
+        ZASSERT_EXIT(pGraphM, "");
+        pNode = qobject_cast<NodeItem*>(pGraphM->parent());
+    }
+    path = "/main" + path;
+    return path;
 }
 
 void GraphModel::undo()

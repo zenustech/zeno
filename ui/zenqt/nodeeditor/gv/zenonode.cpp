@@ -638,8 +638,6 @@ ZGraphicsLayout* ZenoNode::initSockets(ParamsModel* pModel, const bool bInput, Z
 
 ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewSockIdx, bool bInput, ZenoSubGraphScene* pScene)
 {
-    GraphsTreeModel* pModel = zenoApp->graphsManager()->currentModel();
-
     QPersistentModelIndex perSockIdx = viewSockIdx;
 
     CallbackForSocket cbSocket;
@@ -974,16 +972,6 @@ void ZenoNode::updateNodePos(const QPointF &pos, bool enableTransaction)
     if (oldPos == pos)
         return;
     //TODO
-#if 0
-    STATUS_UPDATE_INFO info;
-    info.role = ROLE_OBJPOS;
-    info.newValue = pos;
-    info.oldValue = oldPos;
-    GraphsTreeModel *pGraphsModel = zenoApp->graphsManager()->currentModel();
-    ZASSERT_EXIT(pGraphsModel);
-    pGraphsModel->updateBlackboard(nodeId(), QVariant::fromValue(info), m_subGpIndex, enableTransaction);
-    m_bMoving = false;
-#endif
 }
 
 void ZenoNode::onUpdateParamsNotDesc()
@@ -1117,9 +1105,8 @@ ZenoGraphsEditor* ZenoNode::getEditorViewByViewport(QWidget* pWidget)
 void ZenoNode::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
 {
     auto graphsMgr = zenoApp->graphsManager();
-    GraphsTreeModel* pGraphsModel = graphsMgr->currentModel();
     QPointF pos = event->pos();
-    if (pGraphsModel && m_index.data(ROLE_NODETYPE) == zeno::Node_SubgraphNode)
+    if (m_index.data(ROLE_NODETYPE) == zeno::Node_SubgraphNode)
     {
         scene()->clearSelection();
         this->setSelected(true);
@@ -1293,7 +1280,6 @@ void ZenoNode::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
     if (m_bMoving)
     {
         m_bMoving = false;
-        GraphsTreeModel* pGraphsModel = zenoApp->graphsManager()->currentModel();
         QPointF newPos = this->scenePos();
         QPointF oldPos = m_index.data(ROLE_OBJPOS).toPointF();
         if (newPos != oldPos)
@@ -1392,19 +1378,12 @@ void ZenoNode::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
 
 void ZenoNode::onCollaspeBtnClicked()
 {
-	GraphsTreeModel* pGraphsModel = zenoApp->graphsManager()->currentModel();
-    ZASSERT_EXIT(pGraphsModel);
     bool bCollasped = m_index.data(ROLE_COLLASPED).toBool();
     UiHelper::qIndexSetData(m_index, !bCollasped, ROLE_COLLASPED);
 }
 
 void ZenoNode::onOptionsBtnToggled(STATUS_BTN btn, bool toggled)
 {
-    QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
-
-    GraphsTreeModel* pGraphsModel = zenoApp->graphsManager()->currentModel();
-    ZASSERT_EXIT(pGraphsModel);
-
     zeno::NodeStatus options = (zeno::NodeStatus)m_index.data(ROLE_OPTIONS).toInt();
     int oldOpts = options;
 

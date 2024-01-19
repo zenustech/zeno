@@ -21,8 +21,9 @@ GraphsManager::GraphsManager(QObject* parent)
     , m_assets(nullptr)
 {
     m_logModel = new QStandardItemModel(this);
-    GraphModel* main = new GraphModel(zeno::getSession().mainGraph);
-    m_model = new GraphsTreeModel(main, this);
+    m_model = new GraphsTreeModel(this);
+    GraphModel* main = new GraphModel(zeno::getSession().mainGraph, m_model, m_model);
+    m_model->init(main);
     m_assets = new AssetsModel(this);
 }
 
@@ -126,8 +127,12 @@ GraphsTreeModel* GraphsManager::newFile()
 {
     clear();
 
-    if (!m_model)
-        m_model = new GraphsTreeModel(new GraphModel(zeno::getSession().mainGraph), this);
+    if (!m_model) {
+        m_model = new GraphsTreeModel(this);
+        auto main = new GraphModel(zeno::getSession().mainGraph, m_model, m_model);
+        m_model->init(main);
+    }
+
     //TODO: assets may be kept.
 
     emit modelInited();

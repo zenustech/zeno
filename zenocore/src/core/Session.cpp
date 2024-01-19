@@ -77,8 +77,6 @@ ZENO_API Session::Session()
     , mainGraph(std::make_shared<Graph>("main"))
     , assets(std::make_shared<Assets>())
 {
-    mainGraph->session = const_cast<Session*>(this);
-    assets->session = const_cast<Session*>(this);
     initNodeCates();
 }
 
@@ -101,7 +99,6 @@ ZENO_API INodeClass::~INodeClass() = default;
 
 ZENO_API std::shared_ptr<Graph> Session::createGraph(const std::string& name) {
     auto graph = std::make_shared<Graph>(name);
-    graph->session = const_cast<Session *>(this);
     return graph;
 }
 

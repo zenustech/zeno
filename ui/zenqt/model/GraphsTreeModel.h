@@ -8,7 +8,7 @@
 #include "graphmodel.h"
 
 
-//为什么不base StandardModel，是因为StandardItem本身还得挂载一个模型，有点冗余，干脆自己实现一个图treemodel.
+//为什么不base StandardModel，是因为StandardItem有点冗余，干脆自己实现一个简易的图treemodel.
 class GraphsTreeModel : public QAbstractItemModel
 {
     Q_OBJECT
@@ -16,8 +16,9 @@ class GraphsTreeModel : public QAbstractItemModel
     QML_ELEMENT
 
 public:
-    GraphsTreeModel(GraphModel* mainModel, QObject* parent = nullptr);
+    GraphsTreeModel(QObject* parent = nullptr);
     ~GraphsTreeModel();
+    void init(GraphModel* mainModel);
 
     //QAbstractItemModel
     QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const override;
@@ -53,6 +54,8 @@ public:
 
     Q_INVOKABLE GraphModel* getGraphByPath(const QString& objPath);
 
+    Q_INVOKABLE QModelIndex getIndexByPath(const QString& objPath);
+
     //util methods
     bool isDirty() const;
     void clearDirty();
@@ -61,6 +64,11 @@ public:
 signals:
     void dirtyChanged();
     void modelClear();
+
+public slots:
+    void onGraphRowsInserted(const QModelIndex& parent, int first, int last);
+    void onGraphRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last);
+    void onGraphRowsRemoved(const QModelIndex& parent, int first, int last);
 
 private:
     QModelIndex innerIndex(const QModelIndex& treeIdx) const;

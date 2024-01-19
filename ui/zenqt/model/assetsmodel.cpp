@@ -62,7 +62,13 @@ int AssetsModel::rowCount(const QModelIndex& parent) const
 
 QVariant AssetsModel::data(const QModelIndex& index, int role) const
 {
-    GraphModel* pAsset = m_assets[index.row()];
+    int row = index.row();
+    if (row >= 0 && row < m_assets.size()) {
+        if (Qt::DisplayRole == role || ROLE_CLASS_NAME == role) {
+            GraphModel* pAsset = m_assets[row];
+            return pAsset->name();
+        }
+    }
     //todo
     return QVariant();
 }
@@ -93,7 +99,7 @@ void AssetsModel::_addAsset(const QString& newName)
 
     std::shared_ptr<zeno::Assets> asts = zeno::getSession().assets;
     std::shared_ptr<zeno::Graph> spAsset = asts->getAsset(newName.toStdString());
-    auto pNewAsstModel = new GraphModel(spAsset, this);
+    auto pNewAsstModel = new GraphModel(spAsset, nullptr, this);
     m_assets.append(pNewAsstModel);
 
     endInsertRows();

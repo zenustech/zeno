@@ -32,11 +32,11 @@ ZENO_API Graph *INode::getThisGraph() const {
 }
 
 ZENO_API Session *INode::getThisSession() const {
-    return graph->session;
+    return &getSession();
 }
 
 ZENO_API GlobalState *INode::getGlobalState() const {
-    return graph->session->globalState.get();
+    return getSession().globalState.get();
 }
 
 ZENO_API void INode::doComplete() {

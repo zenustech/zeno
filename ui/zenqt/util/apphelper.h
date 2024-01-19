@@ -2,7 +2,6 @@
 #define __ZENOEDIT_HELPER__
 
 #include "zenoapplication.h"
-#include "model/GraphsTreeModel.h"
 #include "zenomainwindow.h"
 #include <zenovis/ObjectsManager.h>
 #include <zeno/types/UserData.h>

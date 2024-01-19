@@ -50,6 +50,7 @@
 #include "dialog/zcheckupdatedlg.h"
 #include "dialog/zrestartdlg.h"
 #include "dialog/zpreferencesdlg.h"
+#include "model/GraphsTreeModel.h"
 
 
 const QString g_latest_layout = "LatestLayout";

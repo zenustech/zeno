@@ -484,7 +484,7 @@ void DockContent_Editor::initConnections()
         zeno::EdgeInfo edge;
         std::shared_ptr<zeno::INode> spNode;
 
-        if (1) {
+        if (0) {
             spNode = sess.mainGraph->getNode("NumericInt1");
             if (spNode)
                 spNode->set_pos({ 1000, 1000 });
@@ -507,10 +507,10 @@ void DockContent_Editor::initConnections()
             edge = { "NumericInt1", "DST", "", "CreateCube1", "div_w", "" };
             sess.mainGraph->removeLink(edge);
         }
-        if (false) {
+        if (1) {
             sess.assets->createAsset("aaa");
             sess.assets->createAsset("bbb");
-            sess.assets->removeAsset("aaa");
+            sess.assets->createAsset("aaa2");
         }
     });
 
