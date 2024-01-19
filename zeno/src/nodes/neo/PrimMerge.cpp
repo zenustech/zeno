@@ -500,6 +500,7 @@ struct PrimMerge : INode {
         //initialize
 
         std::vector<std::string> matNameList(0);
+        std::vector<std::string> facesetNameList;
         for (auto &p : primList) {
             //if p has material
             int matNum = p->userData().get2<int>("matNum", 0);
@@ -544,6 +545,43 @@ struct PrimMerge : INode {
                     p->polys.attr<int>("matid").assign(p->polys.size(), -1);
                 }
             }
+            int faceset_count = p->userData().get2<int>("faceset_count", 0);
+            zeno::log_info("faceset_count: {}", faceset_count);
+            if (faceset_count > 0) {
+                for (int i = 0; i < p->tris.size(); i++) {
+                    if (p->tris.attr<int>("faceset")[i] != -1) {
+                        p->tris.attr<int>("faceset")[i] += int(facesetNameList.size());
+                    }
+                }
+                for (int i = 0; i < p->quads.size(); i++) {
+                    if (p->quads.attr<int>("faceset")[i] != -1) {
+                        p->quads.attr<int>("faceset")[i] += int(facesetNameList.size());
+                    }
+                }
+                for (int i = 0; i < p->polys.size(); i++) {
+                    if (p->polys.attr<int>("faceset")[i] != -1) {
+                        p->polys.attr<int>("faceset")[i] += int(facesetNameList.size());
+                    }
+                }
+                for (int i = 0; i < faceset_count; i++) {
+                    auto facesetIdx = "faceset_" + to_string(i);
+                    auto facesetName = p->userData().get2<std::string>(facesetIdx, "Default");
+                    facesetNameList.emplace_back(facesetName);
+                }
+            } else {
+                if (p->tris.size() > 0) {
+                    p->tris.add_attr<int>("faceset");
+                    p->tris.attr<int>("faceset").assign(p->tris.size(), -1);
+                }
+                if (p->quads.size() > 0) {
+                    p->quads.add_attr<int>("faceset");
+                    p->quads.attr<int>("faceset").assign(p->quads.size(), -1);
+                }
+                if (p->polys.size() > 0) {
+                    p->polys.add_attr<int>("faceset");
+                    p->polys.attr<int>("faceset").assign(p->polys.size(), -1);
+                }
+            }
         }
 
         auto outprim = primMerge(primList, tagAttr);
@@ -563,6 +601,20 @@ struct PrimMerge : INode {
         }
         int oMatNum = matNameList.size();
         outprim->userData().set2("matNum", oMatNum);
+        {
+            zeno::log_info("facesetNameList: {}", int(facesetNameList.size()));
+            if (facesetNameList.size() > 0) {
+                //add matNames to userData
+                int i = 0;
+                for (auto name : facesetNameList) {
+                    auto facesetIdx = "faceset_" + to_string(i);
+                    outprim->userData().setLiterial(facesetIdx, name);
+                    i++;
+                }
+            }
+            int faceset_count = facesetNameList.size();
+            outprim->userData().set2("faceset_count", faceset_count);
+        }
         //auto outprim = std::make_shared<PrimitiveObject>(*primList[0]);
         set_output("prim", std::move(outprim));
     }
