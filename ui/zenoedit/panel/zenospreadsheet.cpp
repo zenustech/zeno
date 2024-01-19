@@ -92,9 +92,8 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
         auto scene = zenovis->getSession()->get_scene();
         ZERROR_EXIT(scene);
 
-        auto key = zeno::getSession().globalComm->getObjKey1(prim_name, frame);
-        if (key != "")
-            setPrim(key);
+        if (zeno::getSession().globalComm->hasObjKey(prim_name, frame))
+            setPrim(prim_name);
     });
 
     connect(pMode, &ZComboBox::_textActivated, [=](const QString& text) {
