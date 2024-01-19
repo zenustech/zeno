@@ -548,7 +548,9 @@ struct PrimMerge : INode {
                 }
             }
             int faceset_count = p->userData().get2<int>("faceset_count", 0);
-            zeno::log_info("faceset_count: {}", faceset_count);
+            if (faceset_count == 0 && p->userData().has<int>("faceset_0")) {
+                faceset_count = 1;
+            }
             if (faceset_count > 0) {
                 for (int i = 0; i < p->tris.size(); i++) {
                     if (p->tris.attr<int>("faceset")[i] != -1) {

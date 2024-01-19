@@ -415,6 +415,39 @@ void write_user_data(std::map<std::string, std::any> &user_attrs, std::string pa
         }
     }
 }
+
+static void write_faceset(std::shared_ptr<PrimitiveObject> prim, OPolyMeshSchema &mesh) {
+    auto &ud = prim->userData();
+    std::vector<std::string> faceSetNames;
+    std::vector<std::vector<int>> faceset_idxs;
+    if (ud.has<int>("faceset_count")) {
+        int faceset_count = ud.get2<int>("faceset_count");
+        for (auto i = 0; i < faceset_count; i++) {
+            faceSetNames.emplace_back(ud.get2<std::string>(zeno::format("faceset_{}", i)));
+        }
+        faceset_idxs.resize(faceset_count);
+        std::vector<int> faceset;
+        if (prim->polys.size() && prim->polys.attr_is<int>("faceset")) {
+            faceset = prim->polys.attr<int>("faceset");
+        }
+        else if (prim->tris.size() && prim->tris.attr_is<int>("faceset")) {
+            faceset = prim->tris.attr<int>("faceset");
+        }
+        for (auto i = 0; i < faceset.size(); i++) {
+            if (faceset[i] >= 0) {
+                faceset_idxs[faceset[i]].push_back(i);
+            }
+        }
+        for (auto i = 0; i < faceset_count; i++) {
+            OFaceSet faceset = mesh.createFaceSet(faceSetNames[i]);
+            OFaceSetSchema facesetSchema = faceset.getSchema ();
+            OFaceSetSchema::Sample my_face_set_samp ( faceset_idxs[i] );
+            // faceset is visible, doesn't change.
+            facesetSchema.set ( my_face_set_samp );
+            facesetSchema.setFaceExclusivity ( kFaceSetExclusive );
+        }
+    }
+}
 struct WriteAlembic2 : INode {
     OArchive archive;
     OPolyMesh meshyObj;
@@ -463,36 +496,7 @@ struct WriteAlembic2 : INode {
         if (prim->polys.size() || prim->tris.size()) {
             // Create a PolyMesh class.
             OPolyMeshSchema &mesh = meshyObj.getSchema();
-            auto &ud = prim->userData();
-            std::vector<std::string> faceSetNames;
-            std::vector<std::vector<int>> faceset_idxs;
-            if (ud.has<int>("faceset_count")) {
-                int faceset_count = ud.get2<int>("faceset_count");
-                for (auto i = 0; i < faceset_count; i++) {
-                    faceSetNames.emplace_back(ud.get2<std::string>(zeno::format("faceset_{}", i)));
-                }
-                faceset_idxs.resize(faceset_count);
-                std::vector<int> faceset;
-                if (prim->polys.size() && prim->polys.attr_is<int>("faceset")) {
-                    faceset = prim->polys.attr<int>("faceset");
-                }
-                else if (prim->tris.size() && prim->tris.attr_is<int>("faceset")) {
-                    faceset = prim->tris.attr<int>("faceset");
-                }
-                for (auto i = 0; i < faceset.size(); i++) {
-                    if (faceset[i] >= 0) {
-                        faceset_idxs[faceset[i]].push_back(i);
-                    }
-                }
-                for (auto i = 0; i < faceset_count; i++) {
-                    OFaceSet faceset = mesh.createFaceSet(faceSetNames[i]);
-                    OFaceSetSchema facesetSchema = faceset.getSchema ();
-                    OFaceSetSchema::Sample my_face_set_samp ( faceset_idxs[i] );
-                    // faceset is visible, doesn't change.
-                    facesetSchema.set ( my_face_set_samp );
-                    facesetSchema.setFaceExclusivity ( kFaceSetExclusive );
-                }
-            }
+            write_faceset(prim, mesh);
 
             OCompoundProperty user = mesh.getUserProperties();
             write_user_data(user_attrs, "", prim, user);
@@ -737,25 +741,7 @@ struct WriteAlembicPrims : INode {
                 auto &ud = prim->userData();
                 std::vector<std::string> faceSetNames;
                 std::vector<std::vector<int>> faceset_idxs;
-                if (ud.has<int>("faceset_count")) {
-                    int faceset_count = ud.get2<int>("faceset_count");
-                    for (auto i = 0; i < faceset_count; i++) {
-                        faceSetNames.emplace_back(ud.get2<std::string>(zeno::format("faceset_{}", i)));
-                    }
-                    faceset_idxs.resize(faceset_count);
-                    auto &faceset = prim->polys.attr<int>("faceset");
-                    for (auto i = 0; i < faceset.size(); i++) {
-                        faceset_idxs[faceset[i]].push_back(i);
-                    }
-                    for (auto i = 0; i < faceset_count; i++) {
-                        OFaceSet faceset = mesh.createFaceSet(faceSetNames[i]);
-                        OFaceSetSchema facesetSchema = faceset.getSchema ();
-                        OFaceSetSchema::Sample my_face_set_samp ( faceset_idxs[i] );
-                        // faceset is visible, doesn't change.
-                        facesetSchema.set ( my_face_set_samp );
-                        facesetSchema.setFaceExclusivity ( kFaceSetExclusive );
-                    }
-                }
+                write_faceset(prim, mesh);
 
                 OCompoundProperty user = mesh.getUserProperties();
                 write_user_data(user_attrs, path, prim, user);

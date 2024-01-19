@@ -945,11 +945,12 @@ struct AlembicSplitByName: INode {
                         arr[i] = attr[faceset_map[f][i]];
                     }
                 });
-                new_prim->userData().del("faceset_count");
                 for (auto j = 0; j < faceset_count; j++) {
                     new_prim->userData().del(zeno::format("faceset_{}", j));
                 }
                 new_prim->userData().set2("_abc_faceset", name);
+                new_prim->userData().set2("faceset_count", 1);
+                new_prim->userData().set2("faceset_0", name);
                 dict->lut[name] = std::move(new_prim);
             }
         }
@@ -977,11 +978,12 @@ struct AlembicSplitByName: INode {
                         arr[i] = attr[faceset_map[f][i]];
                     }
                 });
-                new_prim->userData().del("faceset_count");
                 for (auto j = 0; j < faceset_count; j++) {
                     new_prim->userData().del(zeno::format("faceset_{}", j));
                 }
                 new_prim->userData().set2("_abc_faceset", name);
+                new_prim->userData().set2("faceset_count", 1);
+                new_prim->userData().set2("faceset_0", name);
                 dict->lut[name] = std::move(new_prim);
             }
         }
