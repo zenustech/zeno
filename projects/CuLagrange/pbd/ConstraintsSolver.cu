@@ -383,7 +383,8 @@ struct XPBDSolveSmooth : INode {
                 {"x",3},
                 {"v",3},
                 {"minv",1},
-                {"m",1}
+                {"m",1},
+                // {"collision_cancel",1}
             },nm_verts};
 
             auto pptag = get_input2<std::string>("pptag");
@@ -391,6 +392,11 @@ struct XPBDSolveSmooth : INode {
             TILEVEC_OPS::copy<3>(cudaPol,verts,pptag,vtemp,"x");
             TILEVEC_OPS::copy(cudaPol,verts,"minv",vtemp,"minv");
             TILEVEC_OPS::copy(cudaPol,verts,"m",vtemp,"m");
+            // TILEVEC_OPS::fill(cudaPol,vtemp,"collision_cancel",0);
+            // if(verts.hasProperty("collision_cancel"))
+            //     TILEVEC_OPS::copy(cudaPol,verts,"collision_cancel",vtemp,"collision_cancel");
+            // else
+            //     TILEVEC_OPS::fill(cudaPol,vtemp,"collision_cancel",0);
             cudaPol(zs::range(verts.size()),[
                 vtemp = proxy<space>({},vtemp),
                 pptag = zs::SmallString(pptag),
@@ -414,6 +420,8 @@ struct XPBDSolveSmooth : INode {
                     boundary_velocity_scale = boundary_velocity_scale,
                     w = w,
                     nm_substeps = nm_substeps,
+                    // hasKCollisionCancel = kverts.hasProperty("collision_cancel"),
+                    // kCollisionCancelOffset = kverts.getPropertyOffset("collision_cancel"),
                     vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int kvi) mutable {
                         auto pre_kvert = kverts.pack(dim_c<3>,"px",kvi) * (1 - pw) + kverts.pack(dim_c<3>,"x",kvi) * pw;
                         auto cur_kvert = kverts.pack(dim_c<3>,"px",kvi) * (1 - w) + kverts.pack(dim_c<3>,"x",kvi) * w;
@@ -421,6 +429,8 @@ struct XPBDSolveSmooth : INode {
                         vtemp("minv",voffset + kvi) = 0;  
                         vtemp("m",voffset + kvi) = (T)1000;
                         vtemp.tuple(dim_c<3>,"v",voffset + kvi) = (cur_kvert - pre_kvert) * boundary_velocity_scale;
+                        // if(hasKCollisionCancel)
+                        //     vtemp("collision_cancel",voffset + kvi) = kverts("collision_cancel",kvi);
                 });            
             }
 

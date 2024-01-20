@@ -268,10 +268,10 @@ virtual void apply() override {
         TILEVEC_OPS::copy<3>(cudaPol,verts,"X",vtemp,"X");
         TILEVEC_OPS::copy(cudaPol,verts,"minv",vtemp,"minv");
         TILEVEC_OPS::copy(cudaPol,verts,collision_group_name,vtemp,"collision_group");
+        TILEVEC_OPS::fill(cudaPol,vtemp,"collision_cancel",0);
         if(verts.hasProperty("collision_cancel"))
             TILEVEC_OPS::copy(cudaPol,verts,"collision_cancel",vtemp,"collision_cancel");
-        else
-            TILEVEC_OPS::fill(cudaPol,vtemp,"collision_cancel",0);
+
 
         dtiles_t etemp{edges.get_allocator(),{
             {"inds",2}
@@ -309,11 +309,14 @@ virtual void apply() override {
                 pw = pw,
                 collision_group_name = zs::SmallString(collision_group_name),
                 has_collision_group = has_collision_group,
+                hasKCollisionCancel = kverts.hasProperty("collision_cancel"),
                 vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int kvi) mutable {
                     auto pre_kvert = kverts.pack(dim_c<3>,"px",kvi) * (1 - pw) + kverts.pack(dim_c<3>,"x",kvi) * pw;
                     vtemp.tuple(dim_c<3>,"x",voffset + kvi) = pre_kvert;
                     vtemp.tuple(dim_c<3>,"X",voffset + kvi) = kverts.pack(dim_c<3>,"X",kvi);
                     vtemp("minv",voffset + kvi) = 0;
+                    if(hasKCollisionCancel)
+                        vtemp("collision_cancel",voffset + kvi) = kverts("collision_cancel",kvi);
                     if(has_collision_group)
                         vtemp("collision_group",voffset + kvi) = kverts(collision_group_name,kvi);
                     else
@@ -759,6 +762,8 @@ virtual void apply() override {
     }
 
     if(type == "volume_pin") {
+        auto use_hard_constraint = get_input2<bool>("use_hard_constraint");
+
         constexpr auto eps = 1e-6;
         constraint->setMeta(CONSTRAINT_KEY,category_c::volume_pin_constraint);
 
@@ -817,6 +822,7 @@ virtual void apply() override {
             verts = proxy<space>({},verts),
             ktetBvh = proxy<space>(ktetBvh),
             thickness = thickness,
+            use_hard_constraint = use_hard_constraint,
             eles = proxy<space>({},eles),
             kverts = proxy<space>({},kverts),
             ktets = proxy<space>({},ktets)] ZS_LAMBDA(int oei) mutable {
@@ -849,7 +855,7 @@ virtual void apply() override {
                     }                        
                 };  
                 ktetBvh.iter_neighbors(bv,find_embeded_tet);
-                auto use_hard_constraint = false;
+                // auto use_hard_constraint = true;
                 if(embed_kti >= 0) {
                     // printf("find volume binder V[%d] -> T[%d] with bary[%f %f %f %f]\n",
                     //     pi,embed_kti,(float)bary[0],(float)bary[1],(float)bary[2],(float)bary[3]);
@@ -1266,7 +1272,8 @@ ZENDEFNODE(MakeSurfaceConstraintTopology, {{
                             {"bool","make_empty_constraint","0"},
                             {"bool","do_constraint_topological_coloring","1"},
                             {"float","damping_coeff","0.0"},
-                            {"bool","enable_sliding","0"}
+                            {"bool","enable_sliding","0"},
+                            {"bool","use_hard_constraint","0"}
                         },
                         {{"constraint"}},
                         { 

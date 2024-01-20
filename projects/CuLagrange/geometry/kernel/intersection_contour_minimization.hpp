@@ -164,7 +164,8 @@ namespace zeno {
             const T& maximum_correction,
             const T& progressive_slope,
             const HTHashMap& csET,
-            ICMGradTileVec& icm_grad) {
+            ICMGradTileVec& icm_grad,
+            bool enforce_self_intersection_normal = false) {
         using namespace zs;
         auto exec_tag = wrapv<space>{};
         using vec2i = zs::vec<int,2>; 
@@ -175,6 +176,7 @@ namespace zeno {
         pol(zip(zs::range(csET.size()),csET._activeKeys),[
             icm_grad = proxy<space>({},icm_grad),
             h0 = maximum_correction,
+            enforce_self_intersection_normal = enforce_self_intersection_normal,
             g02 = progressive_slope * progressive_slope,
             verts = proxy<space>({},verts),xtag = zs::SmallString(xtag),
             edges = proxy<space>({},edges),
@@ -223,6 +225,9 @@ namespace zeno {
                         edge_vertices[1],
                         halfedge_opposite_vertex,
                         hnrm,nrm,dnc);
+
+                    if(enforce_self_intersection_normal && dnc > 0)
+                        dnc = -dnc;
 
                     normal_coeff += dnc;
                 }

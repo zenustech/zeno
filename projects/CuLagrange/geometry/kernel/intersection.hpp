@@ -359,6 +359,8 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
                 hasAniMask = verts.hasProperty("ani_mask"),
                 colllisionCancelOffset = verts.getPropertyOffset("collision_cancel"),
                 hasCollisionCancel = verts.hasProperty("collision_cancel"),
+                hasMinv = verts.hasProperty("minv"),
+                minvOffset = verts.getPropertyOffset("minv"),
                 eps = eps,
 #ifdef USE_TMP_BUFFER_BEFORE_HASH    
                 MAX_NM_INTERSECTION_PER_EDGE = MAX_NM_INTERSECTION_PER_EDGE,
@@ -372,29 +374,43 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
                 tri_bvh = proxy<space>(tri_bvh)] ZS_LAMBDA(int ei) mutable {
                     auto edge = edges[ei];
 
+                    if(hasCollisionCancel){
+                        for(int i = 0;i != 2;++i)
+                            if(verts(colllisionCancelOffset,edge[i]) > 0.5)
+                                return;
+                    }
+
                     auto vs = verts.pack(dim_c<3>, xOffset, edge[0]);
                     auto ve = verts.pack(dim_c<3>, xOffset, edge[1]);
 
                     auto bv = bv_t{get_bounding_box(vs,ve)};
 
                     bool edge_has_dynamic_points = true;
-                    if(hasCollisionCancel) {
+                    if(hasMinv) {
                         for(int i = 0;i != 2;++i)
-                            if(verts(colllisionCancelOffset,edge[i]) > 0.5)
+                            if(verts(minvOffset,edge[i]) < 0.0001)
                                 edge_has_dynamic_points = false;
                     }
+
                         
                     int nm_intersect_tri = 0;
                     auto process_potential_ET_intersection_pairs = [&](int ti) mutable {
                         auto tri = tris.pack(dim_c<3>,triIndsOffset,ti,int_c);
+
+                        if(hasCollisionCancel){
+                            for(int i = 0;i != 3;++i)
+                                if(verts(colllisionCancelOffset,tri[i]) > 0.5)
+                                    return;
+                        }
+
                         for(int i = 0;i != 3;++i)
                             if(tri[i] == edge[0] || tri[i] == edge[1])
                                 return;
 
                         auto tri_has_dynamic_points = true;
-                        if(hasCollisionCancel) {
+                        if(hasMinv) {
                             for(int i = 0;i != 3;++i)
-                                if(verts(colllisionCancelOffset,tri[i]) > 0.5)
+                                if(verts(minvOffset,tri[i]) < 0.0001)
                                     tri_has_dynamic_points = false;
                         }
 
@@ -546,18 +562,49 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
                 hasMinv = verts.hasProperty("minv"),
                 kminvOffset = kverts.getPropertyOffset("minv"),
                 hasKMinv = kverts.hasProperty("minv"),
+                hasCollisionCancel = verts.hasProperty("collision_cancel"),
+                collisionCancelOffset = verts.getPropertyOffset("collision_cancel"),
+                hasKCollisionCancel = kverts.hasProperty("collision_cancel"),
+                kCollisionCancelOffset = kverts.getPropertyOffset("collision_cancel"),
                 eps = eps,
                 res = proxy<space>(cs_ET),
                 ktri_bvh = proxy<space>(ktri_bvh)] ZS_LAMBDA(int ei) mutable {
                     auto edge = edges[ei];
+
+                    if(hasCollisionCancel) {
+                        for(int i = 0;i != 2;++i)
+                            if(verts(collisionCancelOffset,edge[i]) > 0.5)
+                                return;
+                    }
 
                     auto vs = verts.pack(dim_c<3>, xOffset, edge[0]);
                     auto ve = verts.pack(dim_c<3>, xOffset, edge[1]);
 
                     auto bv = bv_t{get_bounding_box(vs,ve)};
 
+                    bool is_dynamic_edge = true;
+                    if(hasMinv)
+                        for(int i = 0;i != 2;++i)
+                            if(verts(minvOffset,edge[i]) < 0.0001)
+                                is_dynamic_edge = false;
+
                     auto process_potential_EKT_intersection_pairs = [&](int kti) mutable {
                         auto ktri = ktris.pack(dim_c<3>,ktriIndsOffset,kti,int_c);
+
+                        if(hasKCollisionCancel) {
+                            for(int i = 0;i != 3;++i)
+                                if(kverts(kCollisionCancelOffset,ktri[i]) > 0.5)
+                                    return;
+                        }
+
+                        bool is_dynamic_ktri = true;
+                        if(hasKMinv)
+                            for(int i = 0;i != 3;++i)
+                                if(kverts(kminvOffset,ktri[i]) < 0.0001)
+                                    is_dynamic_ktri = false;
+
+                        if(!is_dynamic_edge || !is_dynamic_ktri)
+                            return;      
 
                         vec3 ktvs[3] = {};
                         for(int i = 0;i != 3;++i)

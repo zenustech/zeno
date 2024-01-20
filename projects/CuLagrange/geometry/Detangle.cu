@@ -94,7 +94,8 @@ struct Detangle2 : zeno::INode {
         }
 
         dtiles_t kvtemp{verts.get_allocator(),{
-            {"x",3}
+            {"x",3},
+            {"collision_cancel",1},
         },0};
         dtiles_t kttemp{tris.get_allocator(),{
             {"inds",3},
@@ -133,9 +134,14 @@ struct Detangle2 : zeno::INode {
                 kxtag = zs::SmallString(kxtag),
                 kpxtag = zs::SmallString(kpxtag),
                 kverts = proxy<space>({},kverts),
+                hasKCollisionCancel = kverts.hasProperty("colllision_cancel"),
                 kvtemp = proxy<space>({},kvtemp)] ZS_LAMBDA(int kvi) mutable {
                     auto kvert = kverts.pack(dim_c<3>,kpxtag,kvi) * (1 - alpha) + kverts.pack(dim_c<3>,kxtag,kvi) * alpha;
                     kvtemp.tuple(dim_c<3>,"x",kvi) = kvert;
+                    if(hasKCollisionCancel)
+                        kvtemp("collision_cancel",kvi) = kverts("collision_cancel",kvi);
+                    else
+                        kvtemp("collision_cancel",kvi) = 0;
             });
             kttemp.resize(ktris.size());    
             TILEVEC_OPS::copy<3>(cudaExec,ktris,"inds",kttemp,"inds");
@@ -211,6 +217,9 @@ struct Detangle2 : zeno::INode {
                 const auto& ktris = kboundary->getQuadraturePoints();
                 const auto& khalfedges = (*kboundary)[ZenoParticles::s_surfHalfEdgeTag];
                 int nm_kinematic_intersection = 0;
+
+                auto kine_icm_grad = (T)0;
+
                 {
                     timer.tick();
 
@@ -318,6 +327,8 @@ struct Detangle2 : zeno::INode {
                     });
 
                     auto ekt_impulse_norm2 = TILEVEC_OPS::dot<3>(cudaExec,verts,"grad","grad");
+
+                    kine_icm_grad += ekt_impulse_norm2;
                     std::cout << "EKT IMPULSE : " << ekt_impulse_norm2 << std::endl;
 
                     timer.tock("assemble EKT icm gradient");   
@@ -427,9 +438,17 @@ struct Detangle2 : zeno::INode {
                     });
 
                     auto ket_impulse_norm2 = TILEVEC_OPS::dot<3>(cudaExec,verts,"grad","grad");
+                    
+                    kine_icm_grad += ket_impulse_norm2;
+                    // if(ket_impulse_norm2 < 1e-7)
+
                     std::cout << "KET IMPULSE : " << ket_impulse_norm2 << std::endl;
                     timer.tock("assemble KET icm gradient");      
-                }            
+                }
+                
+                kine_icm_grad = kine_icm_grad;
+                if(kine_icm_grad < 1e-7)
+                    has_kine_intersection = false;
             }
 
             if(do_self_detangle) {
@@ -449,6 +468,8 @@ struct Detangle2 : zeno::INode {
                 has_self_intersection = csET.size() > 0;
 
                 if(has_self_intersection) {
+
+                    auto enforce_self_intersection_normal = get_input2<bool>("enforce_self_intersection_normal");
                     timer.tick();
                     eval_self_intersection_contour_minimization_gradient(cudaExec,
                         verts,xtag,
@@ -458,120 +479,127 @@ struct Detangle2 : zeno::INode {
                         maximum_correction,
                         progressive_slope,
                         csET,
-                        icm_grad);      
+                        icm_grad,enforce_self_intersection_normal);      
                     timer.tock("eval_self_intersection_contour_minimization_gradient");  
                     
                     auto icm_gradn = TILEVEC_OPS::dot<3>(cudaExec,icm_grad,"grad","grad");
                     std::cout << "icm_self_ET_gradn : " << icm_gradn << std::endl;
+                    if(icm_gradn < 1e-7)
+                        has_self_intersection = false;
+                    else {
+                        timer.tick();
+                        cudaExec(zip(zs::range(csET.size()),csET._activeKeys),[
+                            vertsHasM = verts.hasProperty("m"),
+                            vertsHasMinv = verts.hasProperty("minv"),
+                            impulse_count = proxy<space>(impulse_count),
+                            exec_tag = exec_tag,
+                            mark_intersection = mark_intersection,
+                            use_barycentric_interpolator = use_barycentric_interpolator,
+                            eps = eps,
+                            relaxation_rate = relaxation_rate,
+                            h0 = maximum_correction,
+                            g02 = progressive_slope * progressive_slope,
+                            icm_grad = proxy<space>({},icm_grad),
+                            verts = proxy<space>({},verts),
+                            gradOffset = verts.getPropertyOffset("grad"),
+                            edges = edges.begin("inds", dim_c<2>, int_c),
+                            tris = tris.begin("inds", dim_c<3>, int_c)] ZS_LAMBDA(auto ci,const auto& pair) mutable {
+                                auto edge = edges[pair[0]];
+                                auto tri = tris[pair[1]];
 
-                    timer.tick();
-                    cudaExec(zip(zs::range(csET.size()),csET._activeKeys),[
-                        vertsHasM = verts.hasProperty("m"),
-                        vertsHasMinv = verts.hasProperty("minv"),
-                        impulse_count = proxy<space>(impulse_count),
-                        exec_tag = exec_tag,
-                        mark_intersection = mark_intersection,
-                        use_barycentric_interpolator = use_barycentric_interpolator,
-                        eps = eps,
-                        relaxation_rate = relaxation_rate,
-                        h0 = maximum_correction,
-                        g02 = progressive_slope * progressive_slope,
-                        icm_grad = proxy<space>({},icm_grad),
-                        verts = proxy<space>({},verts),
-                        gradOffset = verts.getPropertyOffset("grad"),
-                        edges = edges.begin("inds", dim_c<2>, int_c),
-                        tris = tris.begin("inds", dim_c<3>, int_c)] ZS_LAMBDA(auto ci,const auto& pair) mutable {
-                            auto edge = edges[pair[0]];
-                            auto tri = tris[pair[1]];
+                                if(mark_intersection) {
+                                    verts("icm_intersected",tri[0]) = (T)1.0;
+                                    verts("icm_intersected",tri[1]) = (T)1.0;
+                                    verts("icm_intersected",tri[2]) = (T)1.0;
 
-                            if(mark_intersection) {
-                                verts("icm_intersected",tri[0]) = (T)1.0;
-                                verts("icm_intersected",tri[1]) = (T)1.0;
-                                verts("icm_intersected",tri[2]) = (T)1.0;
-
-                                verts("icm_intersected",edge[0]) = (T)1.0;
-                                verts("icm_intersected",edge[1]) = (T)1.0;                                
-                            }
-
-                            zs::vec<T,2> edge_ms{};
-                            zs::vec<T,2> edge_minvs{};
-                            if(vertsHasM) {         
-                                for(int i = 0;i != 2;++i)
-                                    edge_ms[i] = verts("m",edge[i]);
-                            }else {
-                                edge_ms = zs::vec<T,2>::uniform(static_cast<T>(1.0));
-                            }
-
-                            if(vertsHasMinv) {
-                                for(int i = 0;i != 2;++i)
-                                    edge_minvs[i] = verts("minv",edge[i]);
-                            }else {
-                                edge_minvs = zs::vec<T,2>::uniform(static_cast<T>(1.0));
-                            }
-
-                            zs::vec<T,3> tri_ms{};
-                            zs::vec<T,3> tri_minvs{};
-                            if(vertsHasM) {         
-                                for(int i = 0;i != 3;++i)
-                                    tri_ms[i] = verts("m",tri[i]);
-                            }else {
-                                tri_ms = zs::vec<T,3>::uniform(static_cast<T>(1.0));
-                            }
-
-                            if(vertsHasMinv) {
-                                for(int i = 0;i != 3;++i)
-                                    tri_minvs[i] = verts("minv",tri[i]);
-                            }else {
-                                tri_minvs = zs::vec<T,3>::uniform(static_cast<T>(1.0));
-                            }
-
-                            auto impulse = icm_grad.pack(dim_c<3>,"grad",ci) * relaxation_rate;
-
-                            T tri_cminv = 1;
-                            T edge_cminv = 1;
-
-                            zs::vec<T,3> tri_bary{};
-                            zs::vec<T,2> edge_bary{};
-
-                            if(use_barycentric_interpolator) {
-                                auto bary = icm_grad.pack(dim_c<4>,"bary",ci);
-                                edge_bary[0] = bary[0];
-                                edge_bary[1] = 1 - bary[0];
-                                tri_bary[0] = bary[1];
-                                tri_bary[1] = bary[2];
-                                tri_bary[2] = bary[3];
-
-                                tri_cminv = 0;
-                                edge_cminv = 0;
-                                for(int i = 0;i != 3;++i)
-                                    tri_cminv += tri_bary[i] * tri_bary[i] / tri_ms[i];
-                                
-                                for(int i = 0;i != 2;++i)
-                                    edge_cminv += edge_bary[i] * edge_bary[i] / edge_ms[i];
-                            }
-
-
-                            for(int i = 0;i != 2;++i) { 
-                                T beta = 1;
-                                if(use_barycentric_interpolator) {
-                                    beta = edge_minvs[i] * edge_bary[i] / edge_cminv;
+                                    verts("icm_intersected",edge[0]) = (T)1.0;
+                                    verts("icm_intersected",edge[1]) = (T)1.0;                                
                                 }
-                                for(int d = 0;d != 3;++d)
-                                    atomic_add(exec_tag,&verts(gradOffset + d,edge[i]),impulse[d]  * beta);
-                            }
 
-                            for(int i = 0;i != 3;++i) {
-                                T beta = 1;
-                                if(use_barycentric_interpolator) {
-                                    beta = tri_minvs[i] * tri_bary[i] / tri_cminv;
+                                zs::vec<T,2> edge_ms{};
+                                zs::vec<T,2> edge_minvs{};
+                                if(vertsHasM) {         
+                                    for(int i = 0;i != 2;++i)
+                                        edge_ms[i] = verts("m",edge[i]);
+                                }else {
+                                    edge_ms = zs::vec<T,2>::uniform(static_cast<T>(1.0));
                                 }
-                                for(int d = 0;d != 3;++d)
-                                    atomic_add(exec_tag,&verts(gradOffset + d,tri[i]),-impulse[d] * beta);             
-                            }
-                    });
-                    timer.tock("assemble self icm gradient");
+
+                                if(vertsHasMinv) {
+                                    for(int i = 0;i != 2;++i)
+                                        edge_minvs[i] = verts("minv",edge[i]);
+                                }else {
+                                    edge_minvs = zs::vec<T,2>::uniform(static_cast<T>(1.0));
+                                }
+
+                                zs::vec<T,3> tri_ms{};
+                                zs::vec<T,3> tri_minvs{};
+                                if(vertsHasM) {         
+                                    for(int i = 0;i != 3;++i)
+                                        tri_ms[i] = verts("m",tri[i]);
+                                }else {
+                                    tri_ms = zs::vec<T,3>::uniform(static_cast<T>(1.0));
+                                }
+
+                                if(vertsHasMinv) {
+                                    for(int i = 0;i != 3;++i)
+                                        tri_minvs[i] = verts("minv",tri[i]);
+                                }else {
+                                    tri_minvs = zs::vec<T,3>::uniform(static_cast<T>(1.0));
+                                }
+
+                                auto impulse = icm_grad.pack(dim_c<3>,"grad",ci) * relaxation_rate;
+
+                                T tri_cminv = 1;
+                                T edge_cminv = 1;
+
+                                zs::vec<T,3> tri_bary{};
+                                zs::vec<T,2> edge_bary{};
+
+                                if(use_barycentric_interpolator) {
+                                    auto bary = icm_grad.pack(dim_c<4>,"bary",ci);
+                                    edge_bary[0] = bary[0];
+                                    edge_bary[1] = 1 - bary[0];
+                                    tri_bary[0] = bary[1];
+                                    tri_bary[1] = bary[2];
+                                    tri_bary[2] = bary[3];
+
+                                    tri_cminv = 0;
+                                    edge_cminv = 0;
+                                    for(int i = 0;i != 3;++i)
+                                        tri_cminv += tri_bary[i] * tri_bary[i] / tri_ms[i];
+                                    
+                                    for(int i = 0;i != 2;++i)
+                                        edge_cminv += edge_bary[i] * edge_bary[i] / edge_ms[i];
+                                }
+
+
+                                for(int i = 0;i != 2;++i) { 
+                                    T beta = 1;
+                                    if(use_barycentric_interpolator) {
+                                        beta = edge_minvs[i] * edge_bary[i] / edge_cminv;
+                                    }
+                                    for(int d = 0;d != 3;++d)
+                                        atomic_add(exec_tag,&verts(gradOffset + d,edge[i]),impulse[d]  * beta);
+                                }
+
+                                for(int i = 0;i != 3;++i) {
+                                    T beta = 1;
+                                    if(use_barycentric_interpolator) {
+                                        beta = tri_minvs[i] * tri_bary[i] / tri_cminv;
+                                    }
+                                    for(int d = 0;d != 3;++d)
+                                        atomic_add(exec_tag,&verts(gradOffset + d,tri[i]),-impulse[d] * beta);             
+                                }
+                        });
+                        timer.tock("assemble self icm gradient");
+                    }
                 }
             }
+
+            auto gradInfNorm = TILEVEC_OPS::inf_norm<3>(cudaExec,verts,"grad");
+            if(gradInfNorm < 1e-3)
+                break;
 
             if(!has_self_intersection && !has_kine_intersection)
                 break;
@@ -625,6 +653,7 @@ ZENDEFNODE(Detangle2, {
         {"bool","use_barycentric_interpolator","0"},
         {"bool","filter_the_update","1"},
         {"bool","enforce_boundary_normal","0"},
+        {"bool","enforce_self_intersection_normal","0"},
         {"bool","detangle_with_boundary","1"},
         {"bool","do_self_detangle","1"},
         {"bool","skip_animation_intersection","1"}
