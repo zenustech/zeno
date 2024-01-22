@@ -1,6 +1,5 @@
 #include "zeditparamlayoutdlg.h"
 
-#if 0
 #include "ui_zeditparamlayoutdlg.h"
 #include "zassert.h"
 #include "util/uihelper.h"
@@ -8,46 +7,44 @@
 #include "util/uihelper.h"
 #include "zenoapplication.h"
 #include "model/graphsmanager.h"
-#include <zenomodel/include/nodeparammodel.h>
-#include <zenomodel/include/panelparammodel.h>
-#include <zenomodel/include/nodesmgr.h>
-#include <zenoui/comctrl/zwidgetfactory.h>
-#include <zenomodel/include/globalcontrolmgr.h>
+#include "model/parammodel.h"
+#include "widgets/zwidgetfactory.h"
+#include "util/globalcontrolmgr.h"
 #include "variantptr.h"
-#include <zenomodel/include/command.h>
 #include "iotags.h"
 #include "style/zenostyle.h"
-#include <zenoui/comctrl/zspinboxslider.h>
+#include "widgets/zspinboxslider.h"
+
 
 static CONTROL_ITEM_INFO controlList[] = {
-    {"Tab", CONTROL_NONE, "", ":/icons/parameter_control_tab.svg"},
-    {"Group", CONTROL_NONE, "", ":/icons/parameter_control_group.svg"},
-    {"Integer",             CONTROL_INT,            "int", ":/icons/parameter_control_integer.svg"},
-    {"Float",               CONTROL_FLOAT,          "float", ":/icons/parameter_control_float.svg"},
-    {"String",              CONTROL_STRING,         "string", ":/icons/parameter_control_string.svg"},
-    {"Boolean",             CONTROL_BOOL,           "bool", ":/icons/parameter_control_boolean.svg"},
-    {"Multiline String",    CONTROL_MULTILINE_STRING, "string", ":/icons/parameter_control_string.svg"},
-    {"read path",           CONTROL_READPATH,       "string", ":/icons/parameter_control_fold.svg"},
-    {"write path",          CONTROL_WRITEPATH,      "string", ":/icons/parameter_control_fold.svg"},
-    {"Enum",                CONTROL_ENUM,           "string", ":/icons/parameter_control_enum.svg"},
-    {"Float Vector 4",      CONTROL_VEC4_FLOAT,     "vec4f", ":/icons/parameter_control_floatVector4.svg"},
-    {"Float Vector 3",      CONTROL_VEC3_FLOAT,     "vec3f", ":/icons/parameter_control_floatVector3.svg"},
-    {"Float Vector 2",      CONTROL_VEC2_FLOAT,     "vec2f", ":/icons/parameter_control_floatVector2.svg"},
-    {"Integer Vector 4",    CONTROL_VEC4_INT,       "vec4i", ":/icons/parameter_control_integerVector4.svg"},
-    {"Integer Vector 3",    CONTROL_VEC3_INT,       "vec3i", ":/icons/parameter_control_integerVector3.svg"},
-    {"Integer Vector 2",    CONTROL_VEC2_INT,       "vec2i", ":/icons/parameter_control_integerVector2.svg"},
-    {"Color",               CONTROL_COLOR,          "color", ":/icons/parameter_control_color.svg"},
-    {"Pure Color",          CONTROL_PURE_COLOR,     "color", ":/icons/parameter_control_color.svg"},
-    {"Color Vec3f",         CONTROL_COLOR_VEC3F,    "color", ":/icons/parameter_control_color.svg"},
-    {"Curve",               CONTROL_CURVE,          "curve", ":/icons/parameter_control_curve.svg"},
-    {"SpinBox",             CONTROL_HSPINBOX,       "int", ":/icons/parameter_control_spinbox.svg"},
-    {"DoubleSpinBox", CONTROL_HDOUBLESPINBOX, "float", ":/icons/parameter_control_spinbox.svg"},
-    {"Slider",              CONTROL_HSLIDER,        "int", ":/icons/parameter_control_slider.svg"},
-    {"SpinBoxSlider",       CONTROL_SPINBOX_SLIDER, "int", ":/icons/parameter_control_slider.svg"},
-    {"Divider", CONTROL_GROUP_LINE, "", ":/icons/parameter_control_divider.svg"},
+    {"Tab",                 zeno::Lineedit,     "", ":/icons/parameter_control_tab.svg"},
+    {"Group",               zeno::NullControl,  "", ":/icons/parameter_control_group.svg"},
+    {"Integer",             zeno::Lineedit,     "int", ":/icons/parameter_control_integer.svg"},
+    {"Float",               zeno::Lineedit,     "float", ":/icons/parameter_control_float.svg"},
+    {"String",              zeno::Lineedit,     "string", ":/icons/parameter_control_string.svg"},
+    {"Boolean",             zeno::Checkbox,     "bool", ":/icons/parameter_control_boolean.svg"},
+    {"Multiline String",    zeno::Multiline,    "string", ":/icons/parameter_control_string.svg"},
+    {"read path",           zeno::Pathedit,     "string", ":/icons/parameter_control_fold.svg"},
+    {"write path",          zeno::Pathedit,     "string", ":/icons/parameter_control_fold.svg"},
+    {"Enum",                zeno::Combobox,     "string", ":/icons/parameter_control_enum.svg"},
+    {"Float Vector 4",      zeno::Vec4edit,     "vec4f", ":/icons/parameter_control_floatVector4.svg"},
+    {"Float Vector 3",      zeno::Vec3edit,     "vec3f", ":/icons/parameter_control_floatVector3.svg"},
+    {"Float Vector 2",      zeno::Vec2edit,     "vec2f", ":/icons/parameter_control_floatVector2.svg"},
+    {"Integer Vector 4",    zeno::Vec4edit,     "vec4i", ":/icons/parameter_control_integerVector4.svg"},
+    {"Integer Vector 3",    zeno::Vec3edit,     "vec3i", ":/icons/parameter_control_integerVector3.svg"},
+    {"Integer Vector 2",    zeno::Vec2edit,     "vec2i", ":/icons/parameter_control_integerVector2.svg"},
+    {"Color",               zeno::Heatmap,      "color", ":/icons/parameter_control_color.svg"},
+    {"Pure Color",          zeno::Color,        "color", ":/icons/parameter_control_color.svg"},
+    {"Color Vec3f",         zeno::ColorVec,     "color", ":/icons/parameter_control_color.svg"},
+    {"Curve",               zeno::CurveEditor,  "curve", ":/icons/parameter_control_curve.svg"},
+    {"SpinBox",             zeno::SpinBox,      "int", ":/icons/parameter_control_spinbox.svg"},
+    {"DoubleSpinBox",       zeno::DoubleSpinBox,"float", ":/icons/parameter_control_spinbox.svg"},
+    {"Slider",              zeno::Slider,       "int", ":/icons/parameter_control_slider.svg"},
+    {"SpinBoxSlider",       zeno::SpinBoxSlider,"int", ":/icons/parameter_control_slider.svg"},
+    {"Divider",             zeno::Seperator,    "",     ":/icons/parameter_control_divider.svg"},
 };
 
-static CONTROL_ITEM_INFO getControl(PARAM_CONTROL ctrl)
+static CONTROL_ITEM_INFO getControl(zeno::ParamControl ctrl)
 {
     for (int i = 0; i < sizeof(controlList) / sizeof(CONTROL_ITEM_INFO); i++)
     {
@@ -72,9 +69,9 @@ static CONTROL_ITEM_INFO getControlByName(const QString& name)
 }
 
 
-ParamTreeItemDelegate::ParamTreeItemDelegate(ViewParamModel *model, QObject *parent)
-    : QStyledItemDelegate(parent),
-    m_model(model) 
+ParamTreeItemDelegate::ParamTreeItemDelegate(ParamsModel* model, QObject *parent)
+    : QStyledItemDelegate(parent)
+    , m_model(model) 
 {
 }
 
@@ -84,7 +81,7 @@ ParamTreeItemDelegate::~ParamTreeItemDelegate()
 
 QWidget* ParamTreeItemDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const
 {
-    bool bEditable = m_model->isEditable(index);
+    bool bEditable = false;// m_model->isEditable(index);
     if (!bEditable)
         return nullptr;
     return QStyledItemDelegate::createEditor(parent, option, index);
@@ -92,6 +89,8 @@ QWidget* ParamTreeItemDelegate::createEditor(QWidget* parent, const QStyleOption
 
 void ParamTreeItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const 
 {
+    QStyledItemDelegate::setModelData(editor, model, index);
+    /*
     QString oldName = index.data().toString();
     QString newName = editor->property(editor->metaObject()->userProperty().name()).toString();
     if (oldName != newName) {
@@ -103,6 +102,7 @@ void ParamTreeItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *mo
             QMessageBox::information(nullptr, tr("Info"), tr("The param name already exists"));
         }
     }
+    */
 }
 
 void ParamTreeItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option,
@@ -111,14 +111,10 @@ void ParamTreeItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem 
 }
 
 
-ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeUI, const QPersistentModelIndex& nodeIdx, IGraphsModel* pGraphsModel, QWidget* parent)
+ZEditParamLayoutDlg::ZEditParamLayoutDlg(ParamsModel* pModel, QWidget* parent)
     : QDialog(parent)
-    , m_model(nullptr)
-    , m_proxyModel(nullptr)
-    , m_nodeIdx(nodeIdx)
-    , m_pGraphsModel(pGraphsModel)
+    , m_model(pModel)
     , m_bSubgraphNode(false)
-    , m_bNodeUI(bNodeUI)
 {
     m_ui = new Ui::EditParamLayoutDlg;
     m_ui->setupUi(this);
@@ -126,25 +122,18 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeU
 
     for (int i = 0; i < sizeof(controlList) / sizeof(CONTROL_ITEM_INFO); i++)
     {
-        if (bNodeUI && (controlList[i].ctrl == CONTROL_HSLIDER || controlList[i].ctrl == CONTROL_SPINBOX_SLIDER))
-            continue;
-        else if (!bNodeUI && controlList[i].ctrl == CONTROL_GROUP_LINE)
-            continue;
         QListWidgetItem *item = new QListWidgetItem(controlList[i].name, m_ui->listConctrl);
         item->setIcon(QIcon(controlList[i].icon));
         m_ui->listConctrl->addItem(item);
-        if (controlList[i].ctrl == CONTROL_NONE)
+        if (controlList[i].ctrl == zeno::NullControl)
             continue;
         m_ui->cbControl->addItem(controlList[i].name);
     }
 
     m_ui->cbTypes->addItems(UiHelper::getCoreTypeList());
 
-    m_model = qobject_cast<ViewParamModel*>(pModel);
+    m_model = qobject_cast<ParamsModel*>(pModel);
     ZASSERT_EXIT(m_model);
-    bool isNodeParamModel = qobject_cast<NodeParamModel*>(m_model) != nullptr;
-    m_bSubgraphNode = m_pGraphsModel->IsSubGraphNode(m_nodeIdx) && isNodeParamModel;
-    m_subgIdx = m_nodeIdx.data(ROLE_SUBGRAPH_IDX).toModelIndex();
 
     if (bNodeUI)
     {
@@ -597,10 +586,7 @@ void ZEditParamLayoutDlg::onBtnAdd()
     }
 }
 
-void ZEditParamLayoutDlg::recordSubInputCommands(bool bSubInput, VParamItem* pItem)
-{
-}
-
+/*
 void ZEditParamLayoutDlg::switchStackProperties(int ctrl, VParamItem* pItem) 
 {
     QVariant controlProperties = pItem->data(ROLE_VPARAM_CTRL_PROPERTIES);
@@ -650,6 +636,7 @@ void ZEditParamLayoutDlg::switchStackProperties(int ctrl, VParamItem* pItem)
         m_ui->stackProperties->setCurrentIndex(0);
     }
 }
+*/
 
 void ZEditParamLayoutDlg::addControlGroup(bool bInput, const QString &name, PARAM_CONTROL ctrl) 
 {

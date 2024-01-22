@@ -5,11 +5,10 @@
  the arch of assets/subgraphs is so complicated and not unit, we have to delay it.
  */
 
-#if 0
-
 #include <QtWidgets>
-#include <zenomodel/include/viewparammodel.h>
-#include <zenomodel/include/vparamitem.h>
+#include "model/parammodel.h"
+#include <zeno/core/data.h>
+
 
 namespace Ui
 {
@@ -19,7 +18,7 @@ namespace Ui
 struct CONTROL_ITEM_INFO
 {
     QString name;
-    PARAM_CONTROL ctrl;
+    zeno::ParamControl ctrl;
     QString defaultType;
     QString icon;
 };
@@ -28,7 +27,7 @@ class ParamTreeItemDelegate : public QStyledItemDelegate
 {
     Q_OBJECT
 public:
-    explicit ParamTreeItemDelegate(ViewParamModel *model, QObject *parent = nullptr);
+    explicit ParamTreeItemDelegate(ParamsModel* model, QObject *parent = nullptr);
     ~ParamTreeItemDelegate();
 
     // editing
@@ -39,8 +38,8 @@ public:
     void setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const override;
     void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
 
-  private:
-    ViewParamModel *m_model;
+private:
+    ParamsModel* m_model;
 };
 
 
@@ -48,7 +47,7 @@ class ZEditParamLayoutDlg : public QDialog
 {
     Q_OBJECT
 public:
-    ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeUI, const QPersistentModelIndex& nodeIdx, IGraphsModel* pGraphsModel, QWidget* parent = nullptr);
+    ZEditParamLayoutDlg(ParamsModel* pModel, QWidget* parent = nullptr);
 
 private slots:
     void onBtnAdd();
@@ -77,20 +76,16 @@ private:
     void initDescValueForProxy();
     void applyForItem(QStandardItem* dstItem, QStandardItem* srcItem);
     void proxyModelSetData(const QModelIndex& index, const QVariant& newValue, int role);
-    void recordSubInputCommands(bool bSubInput, VParamItem* pItem);
-    void switchStackProperties(int ctrl, VParamItem *pItem);
-    void addControlGroup(bool bInput, const QString &name, PARAM_CONTROL ctrl);
+    //void switchStackProperties(int ctrl, VParamItem *pItem);
+    void addControlGroup(bool bInput, const QString &name, zeno::ParamControl ctrl);
     void delControlGroup(bool bInput, const QString &name);
-    void updateControlGroup(bool bInput, const QString &newName, const QString &oldName, PARAM_CONTROL ctrl, int row);
+    void updateControlGroup(bool bInput, const QString &newName, const QString &oldName, zeno::ParamControl ctrl, int row);
     void updateSliderInfo();
 
-    ViewParamModel* m_proxyModel;
-    ViewParamModel* m_model;
-    IGraphsModel* m_pGraphsModel;
+    ParamsModel* m_model;
 
     Ui::EditParamLayoutDlg* m_ui;
     const QPersistentModelIndex m_nodeIdx;
-    QPersistentModelIndex m_subgIdx;
     static const int rowValueControl = 4;
     bool m_bSubgraphNode;
 
@@ -99,7 +94,5 @@ private:
 
     bool m_bNodeUI;
 };
-
-#endif
 
 #endif
