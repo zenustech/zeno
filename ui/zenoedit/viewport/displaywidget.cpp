@@ -217,13 +217,6 @@ void DisplayWidget::setSimpleRenderOption()
         m_glView->setSimpleRenderOption();
 }
 
-void DisplayWidget::setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly) {
-    if (m_optixView)
-    {
-        m_optixView->setRenderSeparately(updateLightCameraOnly, updateMatlOnly);
-    }
-}
-
 bool DisplayWidget::isCameraMoving() const
 {
     if (m_glView)
@@ -548,9 +541,6 @@ void DisplayWidget::onSliderValueChanged(int frame)
     ZTimeline *timeline = mainWin->timeline();
     ZASSERT_EXIT(timeline);
 
-    for (auto displayWid : mainWin->viewports())
-        if (!displayWid->isGLViewport())
-            displayWid->setRenderSeparately(false, false);
     if (mainWin->isAlways())
     {
         auto pGraphsMgr = zenoApp->graphsManagment();

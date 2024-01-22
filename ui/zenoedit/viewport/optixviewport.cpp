@@ -70,7 +70,6 @@ void OptixWorker::onPlayToggled(bool bToggled)
     else {
         m_pTimer->start(m_sampleFeq);
     }
-    setRenderSeparately(false, false);
 }
 
 void OptixWorker::onSetSlidFeq(int feq)
@@ -164,12 +163,6 @@ void OptixWorker::onFrameSwitched(int frame)
 void OptixWorker::cancelRecording()
 {
     m_bRecording = false;
-}
-
-void OptixWorker::setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly) {
-    auto scene = m_zenoVis->getSession()->get_scene();
-    scene->drawOptions->updateLightCameraOnly = updateLightCameraOnly;
-    scene->drawOptions->updateMatlOnly = updateMatlOnly;
 }
 
 void OptixWorker::onSetSafeFrames(bool bLock, int nx, int ny) {
@@ -398,7 +391,6 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
 
     connect(this, &ZOptixViewport::sig_switchTimeFrame, m_worker, &OptixWorker::onFrameSwitched);
     connect(this, &ZOptixViewport::sig_togglePlayButton, m_worker, &OptixWorker::onPlayToggled);
-    connect(this, &ZOptixViewport::sig_setRenderSeparately, m_worker, &OptixWorker::setRenderSeparately);
     connect(this, &ZOptixViewport::sig_setLoopPlaying, m_worker, &OptixWorker::onSetLoopPlaying);
     connect(this, &ZOptixViewport::sig_setSlidFeq, m_worker, &OptixWorker::onSetSlidFeq);
     connect(this, &ZOptixViewport::sig_modifyLightData, m_worker, &OptixWorker::onModifyLightData);
@@ -406,7 +398,6 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(this, &ZOptixViewport::sig_updateEngine, m_worker, &OptixWorker::onUpdateEngine);
 
     zeno::getSession().globalComm->setRenderType(zeno::GlobalComm::NORMAL);
-    setRenderSeparately(false, false);
     m_thdOptix.start();
 }
 
@@ -420,10 +411,6 @@ void ZOptixViewport::setSimpleRenderOption()
 {
     auto scene = m_zenovis->getSession()->get_scene();
     scene->drawOptions->simpleRender = true;
-}
-
-void ZOptixViewport::setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly) {
-    emit sig_setRenderSeparately(updateLightCameraOnly, updateMatlOnly);
 }
 
 void ZOptixViewport::cameraLookTo(int dir)

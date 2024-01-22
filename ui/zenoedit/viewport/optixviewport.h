@@ -33,7 +33,6 @@ public slots:
     void onPlayToggled(bool bToggled);
     void onFrameSwitched(int frame);
     void cancelRecording();
-    void setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly);
     void onSetSafeFrames(bool bLock, int nx, int ny);
     bool recordFrame_impl(VideoRecInfo recInfo, int frame);
     void onSetLoopPlaying(bool enbale);
@@ -60,7 +59,6 @@ public:
     ZOptixViewport(QWidget* parent = nullptr);
     ~ZOptixViewport();
     void setSimpleRenderOption();
-    void setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly);
     void cameraLookTo(int dir);
     void updateCameraProp(float aperture, float disPlane, UI_VECTYPE skipParam = UI_VECTYPE());
     void updatePerspective();
@@ -92,7 +90,6 @@ signals:
     void sig_switchTimeFrame(int frame);
     void sig_setSafeFrames(bool bLock, int nx, int ny);
     void sig_cancelRecording();
-    void sig_setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly);
     void sig_setLoopPlaying(bool enable);
     void sig_setSlidFeq(int feq);
     void sigscreenshoot(QString, QString, int, int);
