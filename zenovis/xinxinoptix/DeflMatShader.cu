@@ -90,7 +90,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 #else
     size_t inst_idx = optixGetInstanceIndex();
     size_t vert_aux_offset = rt_data->auxOffset[inst_idx];
-    size_t vert_idx_offset = (vert_aux_offset + primIdx)*3;
+    size_t vert_idx_offset = vert_aux_offset + primIdx*3;
 
     float3 _vertices_[3];
     optixGetTriangleVertexData( gas, primIdx, sbtGASIndex, 0, _vertices_);
@@ -328,7 +328,7 @@ extern "C" __global__ void __closesthit__radiance()
 
     size_t inst_idx = optixGetInstanceIndex();
     size_t vert_aux_offset = rt_data->auxOffset[inst_idx];
-    size_t vert_idx_offset = (vert_aux_offset + primIdx)*3;
+    size_t vert_idx_offset = vert_aux_offset + primIdx*3;
 
     unsigned short isLight = 0;//rt_data->lightMark[vert_aux_offset + primIdx];
 
