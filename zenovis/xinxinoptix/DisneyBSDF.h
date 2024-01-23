@@ -468,10 +468,13 @@ namespace DisneyBSDF{
         if(clearCtPr>0.0 && reflect)
         {
             vec3 wm = normalize(wi + wo);
+            float ax, ay;
+            BRDFBasics::CalculateAnisotropicParams(mat.clearcoatRoughness,0,ax,ay);
             //ior related clearCt
             float F = BRDFBasics::DielectricFresnel(abs(dot(wm, wo)), mat.clearcoatIOR);
-            vec3 s = mix(vec3(0.04f), vec3(1.0f), F) * BRDFBasics::EvalClearcoat(mat.clearcoatRoughness, wo, wi,
-                                         wm, tmpPdf) * 0.25 * mat.clearcoat;
+            vec3 s = BRDFBasics::EvalMicrofacetReflection(ax, ay, wo, wi, wm,
+                                                          F,
+                                                          tmpPdf) * 0.25 * mat.clearcoat;
             sterm = sterm + s;
             f =  f + s;
             fPdf += tmpPdf * clearCtPr;
@@ -761,11 +764,13 @@ namespace DisneyBSDF{
         }else if(r3<p5)//cc
         {
             prd->hit_type = SPECULAR_HIT;
-            vec3 wm = BRDFBasics::SampleGTR1(mat.clearcoatRoughness, r1, r2);
+            float ax, ay;
+            BRDFBasics::CalculateAnisotropicParams(mat.clearcoatRoughness,0,ax,ay);
+            vec3 swo = wo.z>0?wo:-wo;
+            vec3 wm = BRDFBasics::SampleGGXVNDF(swo, ax, ay, r1, r2);
+            wm = wm.z<0?-wm:wm;
 
-            if (wm.z < 0.0)
-              wm.z = -wm.z;
-            wm = wo.z>0?wm:-wm;
+
             wi = normalize(reflect(-wo, wm));
             tbn.inverse_transform(wi);
             wi = normalize(wi);
