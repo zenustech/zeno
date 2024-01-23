@@ -19,6 +19,11 @@
 #include <cstdio>
 #include <filesystem>
 #include <zeno/utils/string.h>
+#include <zeno/utils/scope_exit.h>
+
+#ifdef ZENO_WITH_PYTHON3
+    #include <Python.h>
+#endif
 
 using namespace Alembic::AbcGeom;
 
@@ -470,7 +475,7 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
         ud.set2("faceset_count", int(faceSetNames.size()));
         for (auto i = 0; i < faceSetNames.size(); i++) {
             auto n = faceSetNames[i];
-            ud.set2(zeno::format("faceset_{:04}", i), n);
+            ud.set2(zeno::format("faceset_{}", i), n);
             IFaceSet faceSet = mesh.getFaceSet(n);
             IFaceSetSchema::Sample faceSetSample = faceSet.getSchema().getValue();
             size_t s = faceSetSample.getFaces()->size();
@@ -596,7 +601,7 @@ static std::shared_ptr<PrimitiveObject> foundABCSubd(Alembic::AbcGeom::ISubDSche
         ud.set2("faceset_count", int(faceSetNames.size()));
         for (auto i = 0; i < faceSetNames.size(); i++) {
             auto n = faceSetNames[i];
-            ud.set2(zeno::format("faceset_{:04}", i), n);
+            ud.set2(zeno::format("faceset_{}", i), n);
             IFaceSet faceSet = subd.getFaceSet(n);
             IFaceSetSchema::Sample faceSetSample = faceSet.getSchema().getValue();
             size_t s = faceSetSample.getFaces()->size();
@@ -909,7 +914,7 @@ struct AlembicSplitByName: INode {
         {
             auto namelist = std::make_shared<zeno::ListObject>();
             for (auto f = 0; f < faceset_count; f++) {
-                auto name = prim->userData().get2<std::string>(zeno::format("faceset_{:04}", f));
+                auto name = prim->userData().get2<std::string>(zeno::format("faceset_{}", f));
                 namelist->arr.push_back(std::make_shared<StringObject>(name));
             }
             set_output("namelist", namelist);
@@ -927,7 +932,7 @@ struct AlembicSplitByName: INode {
                 faceset_map[f].push_back(j);
             }
             for (auto f = 0; f < faceset_count; f++) {
-                auto name = prim->userData().get2<std::string>(zeno::format("faceset_{:04}", f));
+                auto name = prim->userData().get2<std::string>(zeno::format("faceset_{}", f));
                 auto new_prim = std::dynamic_pointer_cast<PrimitiveObject>(prim->clone());
                 new_prim->polys.resize(faceset_map[f].size());
                 for (auto i = 0; i < faceset_map[f].size(); i++) {
@@ -940,11 +945,12 @@ struct AlembicSplitByName: INode {
                         arr[i] = attr[faceset_map[f][i]];
                     }
                 });
-                new_prim->userData().del("faceset_count");
                 for (auto j = 0; j < faceset_count; j++) {
-                    new_prim->userData().del(zeno::format("faceset_{:04}", j));
+                    new_prim->userData().del(zeno::format("faceset_{}", j));
                 }
                 new_prim->userData().set2("_abc_faceset", name);
+                new_prim->userData().set2("faceset_count", 1);
+                new_prim->userData().set2("faceset_0", name);
                 dict->lut[name] = std::move(new_prim);
             }
         }
@@ -959,7 +965,7 @@ struct AlembicSplitByName: INode {
                 faceset_map[f].push_back(j);
             }
             for (auto f = 0; f < faceset_count; f++) {
-                auto name = prim->userData().get2<std::string>(zeno::format("faceset_{:04}", f));
+                auto name = prim->userData().get2<std::string>(zeno::format("faceset_{}", f));
                 auto new_prim = std::dynamic_pointer_cast<PrimitiveObject>(prim->clone());
                 new_prim->tris.resize(faceset_map[f].size());
                 for (auto i = 0; i < faceset_map[f].size(); i++) {
@@ -972,11 +978,12 @@ struct AlembicSplitByName: INode {
                         arr[i] = attr[faceset_map[f][i]];
                     }
                 });
-                new_prim->userData().del("faceset_count");
                 for (auto j = 0; j < faceset_count; j++) {
-                    new_prim->userData().del(zeno::format("faceset_{:04}", j));
+                    new_prim->userData().del(zeno::format("faceset_{}", j));
                 }
                 new_prim->userData().set2("_abc_faceset", name);
+                new_prim->userData().set2("faceset_count", 1);
+                new_prim->userData().set2("faceset_0", name);
                 dict->lut[name] = std::move(new_prim);
             }
         }
@@ -1082,6 +1089,121 @@ ZENDEFNODE(PrimsFilterInUserdata, {
     {"alembic"},
 });
 
+#ifdef ZENO_WITH_PYTHON3
+static PyObject * pycheck(PyObject *pResult) {
+    if (pResult == nullptr) {
+        PyErr_Print();
+        throw zeno::makeError("python err");
+    }
+    return pResult;
+}
+
+static void pycheck(int result) {
+    if (result != 0) {
+        PyErr_Print();
+        throw zeno::makeError("python err");
+    }
+}
+struct PrimsFilterInUserdataPython: INode {
+    void apply() override {
+        auto prims = get_input<ListObject>("list")->get<PrimitiveObject>();
+        auto py_code = get_input2<std::string>("py_code");
+        Py_Initialize();
+        zeno::scope_exit init_defer([=]{ Py_Finalize(); });
+        PyRun_SimpleString("import sys; sys.stderr = sys.stdout");
+
+        auto out_list = std::make_shared<ListObject>();
+        for (auto p: prims) {
+            PyObject* userGlobals = PyDict_New();
+            zeno::scope_exit userGlobals_defer([=]{ Py_DECREF(userGlobals); });
+
+            PyObject* innerDict = PyDict_New();
+            zeno::scope_exit innerDict_defer([=]{ Py_DECREF(innerDict); });
+
+            auto &ud = p->userData();
+            for (auto i = ud.begin(); i != ud.end(); i++) {
+                auto key = i->first;
+                if (ud.has<std::string>(key)) {
+                    auto value = ud.get2<std::string>(key);
+                    PyObject* pyInnerValue = PyUnicode_DecodeUTF8(key.c_str(), key.size(), "strict");
+                    pycheck(PyDict_SetItemString(innerDict, key.c_str(), pyInnerValue));
+                }
+                else if (ud.has<float>(key)) {
+                    auto value = ud.get2<float>(key);
+                    PyObject* pyInnerValue = PyFloat_FromDouble(value);
+                    pycheck(PyDict_SetItemString(innerDict, key.c_str(), pyInnerValue));
+                }
+                else if (ud.has<int>(key)) {
+                    auto value = ud.get2<int>(key);
+                    PyObject* pyInnerValue = PyLong_FromLong(value);
+                    pycheck(PyDict_SetItemString(innerDict, key.c_str(), pyInnerValue));
+                }
+            }
+
+            PyDict_SetItemString(userGlobals, "ud", innerDict);
+
+            PyObject* pResult = pycheck(PyRun_String(py_code.c_str(), Py_file_input, userGlobals, nullptr));
+            zeno::scope_exit pResult_defer([=]{ Py_DECREF(pResult); });
+            PyObject* pValue = pycheck(PyRun_String("result", Py_eval_input, userGlobals, nullptr));
+            zeno::scope_exit pValue_defer([=]{ Py_DECREF(pValue); });
+            int need_insert = PyLong_AsLong(pValue);
+
+            if (need_insert > 0) {
+                out_list->arr.push_back(p);
+            }
+        }
+        set_output("out", out_list);
+    }
+};
+
+ZENDEFNODE(PrimsFilterInUserdataPython, {
+    {
+        {"list", "list"},
+        {"multiline_string", "py_code", "result = len(ud['label']) > 2"},
+    },
+    {
+        {"out"},
+    },
+    {},
+    {"alembic"},
+});
+
+struct SetFaceset: INode {
+    void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        int faceset_count = prim->userData().get2<int>("faceset_count",0);
+        for (auto j = 0; j < faceset_count; j++) {
+            prim->userData().del(zeno::format("faceset_{}", j));
+        }
+        prim->userData().set2("faceset_count", 1);
+        auto faceset_name = get_input2<std::string>("facesetName");
+        prim->userData().set2("faceset_0", faceset_name);
+
+        if (prim->tris.size() > 0) {
+            prim->tris.add_attr<int>("faceset").assign(prim->tris.size(),0);
+        }
+        if (prim->quads.size() > 0) {
+            prim->quads.add_attr<int>("faceset").assign(prim->quads.size(),0);
+        }
+        if (prim->polys.size() > 0) {
+            prim->polys.add_attr<int>("faceset").assign(prim->polys.size(),0);
+        }
+        set_output("out", prim);
+    }
+};
+
+ZENDEFNODE(SetFaceset, {
+    {
+        "prim",
+        {"string", "facesetName", "defFS"},
+    },
+    {
+        {"out"},
+    },
+    {},
+    {"alembic"},
+});
+#endif
 
 
 } // namespace zeno

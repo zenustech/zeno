@@ -3535,6 +3535,7 @@ struct QueryClosestPrimitive : zeno::INode {
 
             auto idTag = get_input2<std::string>("idTag");
             auto distTag = get_input2<std::string>("distTag");
+            auto radiusTag = get_input2<std::string>("radiusTag");
             auto weightTag = get_input2<std::string>("weightTag");
 
             auto &bvhids = prim->add_attr<float>(idTag);
@@ -3548,29 +3549,35 @@ struct QueryClosestPrimitive : zeno::INode {
                 kvs[i].dist = zs::limits<float>::max();
                 kvs[i].pid = i;
                 auto pi = vec3::from_array(prim->verts[i]);
-                lbvh.find_nearest(pi, [&ids, &kvs, &pi, &targetPrim, i, et](int j, float &dist, int &idx) {
-                    float d = zs::limits<float>::max();
-                    if (et == ZenoLinearBvh::point) {
-                        d = zs::dist_pp(pi, vec3::from_array(targetPrim->verts[j]));
-                    } else if (et == ZenoLinearBvh::curve) {
-                        auto line = targetPrim->lines[j];
-                        d = zs::dist_pe_unclassified(pi, vec3::from_array(targetPrim->verts[line[0]]),
-                                                     vec3::from_array(targetPrim->verts[line[1]]));
-                    } else if (et == ZenoLinearBvh::surface) {
-                        auto tri = targetPrim->tris[j];
-                        d = zs::dist_pt(pi, vec3::from_array(targetPrim->verts[tri[0]]),
-                                        vec3::from_array(targetPrim->verts[tri[1]]),
-                                        vec3::from_array(targetPrim->verts[tri[2]]));
-                    } else if (et == ZenoLinearBvh::tet) {
-                        throw std::runtime_error("tet distance query not implemented yet!");
-                    }
-                    if (d < dist) {
-                        dist = d;
-                        idx = j;
-                        ids[i] = j;
-                        kvs[i].dist = d;
-                    }
-                });
+                float radius = zs::limits<float>::max();
+                if (prim->has_attr(radiusTag))
+                    radius = prim->attr<float>(radiusTag)[i];
+                lbvh.find_nearest(
+                    pi,
+                    [&ids, &kvs, &pi, &targetPrim, i, et](int j, float &dist, int &idx) {
+                        float d = zs::limits<float>::max();
+                        if (et == ZenoLinearBvh::point) {
+                            d = zs::dist_pp(pi, vec3::from_array(targetPrim->verts[j]));
+                        } else if (et == ZenoLinearBvh::curve) {
+                            auto line = targetPrim->lines[j];
+                            d = zs::dist_pe_unclassified(pi, vec3::from_array(targetPrim->verts[line[0]]),
+                                                         vec3::from_array(targetPrim->verts[line[1]]));
+                        } else if (et == ZenoLinearBvh::surface) {
+                            auto tri = targetPrim->tris[j];
+                            d = zs::dist_pt(pi, vec3::from_array(targetPrim->verts[tri[0]]),
+                                            vec3::from_array(targetPrim->verts[tri[1]]),
+                                            vec3::from_array(targetPrim->verts[tri[2]]));
+                        } else if (et == ZenoLinearBvh::tet) {
+                            throw std::runtime_error("tet distance query not implemented yet!");
+                        }
+                        if (d < dist) {
+                            dist = d;
+                            idx = j;
+                            ids[i] = j;
+                            kvs[i].dist = d;
+                        }
+                    },
+                    radius);
                 // record info as attribs
                 bvhids[i] = ids[i];
                 dists[i] = kvs[i].dist;
@@ -3661,6 +3668,7 @@ ZENDEFNODE(QueryClosestPrimitive, {
                                       {{"prim"},
                                        {"prim", "targetPrim"},
                                        {"string", "idTag", "bvh_id"},
+                                       {"string", "radiusTag", "query_radius"},
                                        {"string", "distTag", "bvh_dist"},
                                        {"string", "weightTag", "bvh_ws"},
                                        {"string", "bvh_tag", "bvh"}},
