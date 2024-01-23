@@ -69,6 +69,7 @@ public slots:
     void onGraphRowsInserted(const QModelIndex& parent, int first, int last);
     void onGraphRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last);
     void onGraphRowsRemoved(const QModelIndex& parent, int first, int last);
+    void onNameUpdated(const QModelIndex& nodeIdx, const QString& oldName);
 
 private:
     QModelIndex innerIndex(const QModelIndex& treeIdx) const;

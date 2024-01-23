@@ -251,6 +251,24 @@ std::string Graph::generateNewName(const std::string& node_cls)
     return "";
 }
 
+ZENO_API std::string Graph::updateNodeName(const std::string& oldName, const std::string& newName)
+{
+    if (newName.empty() || nodes.find(oldName) == nodes.end()) {
+        return "";
+    }
+    auto spNode = nodes[oldName];
+    std::string name = newName;
+    if (nodes.find(name) != nodes.end()) {
+        name = generateNewName(spNode->nodecls);
+    }
+    spNode->set_name(name);
+    nodes[name] = nodes[oldName];
+    nodes.erase(oldName);
+
+    CALLBACK_NOTIFY(updateNodeName, oldName, name)
+    return name;
+}
+
 ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls, std::pair<float, float> pos)
 {
     auto cl = safe_at(getSession().nodeClasses, cls, "node class name").get();

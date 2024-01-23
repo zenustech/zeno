@@ -196,7 +196,9 @@ ZLayoutBackground* ZenoNode::initHeaderWidget()
     headerWidget->setColors(headerBg.bAcceptHovers, clrHeaderBg, clrHeaderBg, clrHeaderBg);
     headerWidget->setBorder(ZenoStyle::dpiScaled(headerBg.border_witdh), headerBg.clr_border);
 
-    const QString& name = m_index.data(ROLE_CLASS_NAME).toString();
+    const QString& nodeCls = m_index.data(ROLE_CLASS_NAME).toString();
+    const QString& name = m_index.data(ROLE_NODE_NAME).toString();
+    ZASSERT_EXIT(!name.isEmpty(), headerWidget);
 
     QString category;
 
@@ -207,15 +209,15 @@ ZLayoutBackground* ZenoNode::initHeaderWidget()
     QFont font2 = QApplication::font();
     font2.setPointSize(16);
     font2.setWeight(QFont::DemiBold);
-    QString custName = m_index.data(ROLE_NODE_NAME).toString();
-    m_NameItem = new ZGraphicsTextItem(custName.isEmpty() ? name : custName, font2, QColor("#FFFFFF"), this);
+
+    m_NameItem = new ZGraphicsTextItem(name, font2, QColor("#FFFFFF"), this);
     m_NameItem->installEventFilter(this);
     connect(m_NameItem, &ZGraphicsTextItem::editingFinished, this, &ZenoNode::onCustomNameChanged);
 
     pNameLayout->addItem(m_NameItem);
     if (!category.isEmpty())
     {
-        m_pCategoryItem = new ZSimpleTextItem(custName.isEmpty() ? category : category + ":" + name);
+        m_pCategoryItem = new ZSimpleTextItem(name.isEmpty() ? category : category + ":" + nodeCls);
         m_pCategoryItem->setBrush(QColor("#AB6E40"));
         QFont font = QApplication::font();
         m_pCategoryItem->setFont(font);
@@ -1473,5 +1475,21 @@ void ZenoNode::onPasteSocketRefSlot(QModelIndex toIndex)
 
 void ZenoNode::onCustomNameChanged()
 {
-    //TODO
+    m_NameItem->setTextInteractionFlags(Qt::NoTextInteraction);
+    QString newText = m_NameItem->toPlainText();
+    QString oldText = m_index.data(ROLE_NODE_NAME).toString();
+    if (newText == oldText)
+        return;
+
+    QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
+    GraphModel* pGraphM = qobject_cast<GraphModel*>(pModel);
+    ZASSERT_EXIT(pGraphM);
+
+    newText = pGraphM->updateNodeName(m_index, newText);
+    if (m_NameItem)
+    {
+        m_NameItem->setText(newText);
+        m_NameItem->setDefaultTextColor(QColor(255, 255, 255));
+        ZGraphicsLayout::updateHierarchy(m_NameItem);
+    }
 }

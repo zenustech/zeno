@@ -24,7 +24,6 @@ public:
     QString cls;
     QPointF pos;
 
-    std::string m_cbSetName;
     std::string m_cbSetPos;
     std::string m_cbSetStatus;
 
@@ -81,6 +80,7 @@ public:
     zeno::NodeData createNode(const QString& nodeCls, const QPointF& pos);
     void appendSubgraphNode(QString name, QString cls, NODE_DESCRIPTOR desc, GraphModel* subgraph, const QPointF& pos);
     bool removeNode(const QString& name);
+    QString updateNodeName(const QModelIndex& idx, QString newName);
     void addLink(const zeno::EdgeInfo& link);
     QList<SEARCH_RESULT> search(const QString& content, SearchType searchType, SearchOpt searchOpts) const;
     GraphModel* getGraphByPath(const QString& objPath);
@@ -104,6 +104,7 @@ public:
 signals:
     void reloaded();
     void clearLayout();
+    void nameUpdated(const QModelIndex& nodeIdx, const QString& oldName);
 
 private:
     void registerCoreNotify();
@@ -124,6 +125,7 @@ private:
 
     std::string m_cbCreateNode;
     std::string m_cbRemoveNode;
+    std::string m_cbRenameNode;
     std::string m_cbAddLink;
     std::string m_cbRemoveLink;
 

@@ -60,7 +60,7 @@ public slots:
     void onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last);
     void onRowsInserted(const QModelIndex& parent, int first, int last);
     void onViewTransformChanged(qreal factor);
-
+    void onNameUpdated(const QModelIndex& nodeIdx, const QString& oldName);
     void onLinkInserted(const QModelIndex&, int first, int last);
     void onLinkAboutToBeRemoved(const QModelIndex&, int first, int last);
 

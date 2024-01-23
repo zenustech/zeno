@@ -167,6 +167,7 @@ void ZenoSubGraphScene::initModel(GraphModel* pGraphM)
     connect(m_model, &GraphModel::dataChanged, this, &ZenoSubGraphScene::onDataChanged);
     connect(m_model, &GraphModel::rowsAboutToBeRemoved, this, &ZenoSubGraphScene::onRowsAboutToBeRemoved);
     connect(m_model, &GraphModel::rowsInserted, this, &ZenoSubGraphScene::onRowsInserted);
+    connect(m_model, &GraphModel::nameUpdated, this, &ZenoSubGraphScene::onNameUpdated);
 
     //link sync:
     QAbstractItemModel* pLinkModel = m_model->getLinkModel();
@@ -261,6 +262,14 @@ void ZenoSubGraphScene::onZoomed(qreal factor)
     }
 }
 
+void ZenoSubGraphScene::onNameUpdated(const QModelIndex& nodeIdx, const QString& oldName)
+{
+    const QString& newName = nodeIdx.data(ROLE_NODE_NAME).toString();
+    ZASSERT_EXIT(newName != oldName);
+    m_nodes[newName] = m_nodes[oldName];
+    m_nodes.erase(oldName);
+}
+
 void ZenoSubGraphScene::onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
 {
     QModelIndex idx = topLeft;
@@ -296,11 +305,6 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& topLeft, const QModelIn
         ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
         bool bCollasped = idx.data(ROLE_COLLASPED).toBool();
         m_nodes[id]->onCollaspeUpdated(bCollasped);
-    }
-    if (role == ROLE_CLASS_NAME)
-    {
-        ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
-        m_nodes[id]->onNameUpdated(idx.data(ROLE_CLASS_NAME).toString());
     }
 #if 0
     if (role == ROLE_PARAMS_NO_DESC)

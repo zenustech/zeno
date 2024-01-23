@@ -23,7 +23,6 @@ struct Scene;
 struct Session;
 struct GlobalState;
 struct TempNodeCaller;
-
 struct IParam;
 
 struct INode : std::enable_shared_from_this<INode> {
@@ -89,7 +88,6 @@ public:
     CALLBACK_REGIST(update_param, void, const std::string&, zvariant, zvariant)
 
     ZENO_API void set_name(const std::string& name);
-    CALLBACK_REGIST(set_name, void, const std::string&)
     ZENO_API std::string get_name() const;
 
     ZENO_API void set_pos(std::pair<float, float> pos);

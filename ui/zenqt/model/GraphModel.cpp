@@ -22,14 +22,11 @@ void NodeItem::unregister()
 {
     if (std::shared_ptr<zeno::INode> spNode = m_wpNode.lock())
     {
-        bool ret = spNode->unregister_set_name(m_cbSetName);
-        ZASSERT_EXIT(ret);
-        ret = spNode->unregister_set_pos(m_cbSetPos);
+        bool ret = spNode->unregister_set_pos(m_cbSetPos);
         ZASSERT_EXIT(ret);
         ret = spNode->unregister_set_status(m_cbSetStatus);
         ZASSERT_EXIT(ret);
     }
-    m_cbSetName = "";
     m_cbSetPos = "";
     m_cbSetStatus = "";
 }
@@ -37,15 +34,6 @@ void NodeItem::unregister()
 void NodeItem::init(GraphModel* pGraphM, std::shared_ptr<zeno::INode> spNode)
 {
     this->m_wpNode = spNode;
-
-    m_cbSetName = spNode->register_set_name([=](const std::string& name) {
-        const QString& oldName = this->name;
-        this->name = QString::fromStdString(name);
-        pGraphM->_updateName(oldName, this->name);
-
-        QModelIndex idx = pGraphM->indexFromName(this->name);
-        emit pGraphM->dataChanged(idx, idx, QVector<int>{ ROLE_NODE_NAME });
-    });
 
     m_cbSetPos = spNode->register_set_pos([=](std::pair<float, float> pos) {
         this->pos = { pos.first, pos.second };  //update the cache
@@ -94,6 +82,8 @@ GraphModel::GraphModel(std::shared_ptr<zeno::Graph> spGraph, GraphsTreeModel* pT
             m_pTree, SLOT(onGraphRowsAboutToBeRemoved(const QModelIndex&, int, int)));
         connect(this, SIGNAL(rowsRemoved(const QModelIndex&, int, int)),
             m_pTree, SLOT(onGraphRowsRemoved(const QModelIndex&, int, int)));
+        connect(this, SIGNAL(nameUpdated(const QModelIndex&, const QString&)),
+            m_pTree, SLOT(onNameUpdated(const QModelIndex&, const QString&)));
     }
 }
 
@@ -120,6 +110,13 @@ void GraphModel::registerCoreNotify()
         QPair outPair = { QString::fromStdString(edge.inNode), QString::fromStdString(edge.inParam) };
         _addLink(inPair, outPair);
         return true;
+    });
+
+    m_cbRenameNode = coreGraph->register_updateNodeName([&](std::string oldname, std::string newname) {
+        const QString& oldName = QString::fromStdString(oldname);
+        const QString& newName = QString::fromStdString(newname);
+
+        _updateName(oldName, newName);
     });
 
     m_cbRemoveLink = coreGraph->register_removeLink([&](zeno::EdgeInfo edge) -> bool {
@@ -452,9 +449,20 @@ bool GraphModel::_removeLink(const zeno::EdgeInfo& edge)
 
 void GraphModel::_updateName(const QString& oldName, const QString& newName)
 {
+    ZASSERT_EXIT(oldName != newName);
+
     m_name2Row[newName] = m_name2Row[oldName];
     int row = m_name2Row[newName];
     m_row2name[row] = newName;
+
+    m_nodes[newName] = m_nodes[oldName];
+    m_nodes.remove(oldName);
+    auto& item = m_nodes[newName];
+    item->name = newName;   //update cache.
+
+    QModelIndex idx = createIndex(row, 0);
+    emit dataChanged(idx, idx, QVector<int>{ ROLE_NODE_NAME });
+    emit nameUpdated(idx, oldName);
 }
 
 zeno::NodeData GraphModel::createNode(const QString& nodeCls, const QPointF& pos)
@@ -519,6 +527,16 @@ bool GraphModel::removeNode(const QString& name)
     auto spCoreGraph = m_spCoreGraph.lock();
     ZASSERT_EXIT(spCoreGraph, false);
     return spCoreGraph->removeNode(name.toStdString());
+}
+
+QString GraphModel::updateNodeName(const QModelIndex& idx, QString newName)
+{
+    auto spCoreGraph = m_spCoreGraph.lock();
+    ZASSERT_EXIT(spCoreGraph, false);
+
+    std::string oldName = idx.data(ROLE_NODE_NAME).toString().toStdString();
+    newName = QString::fromStdString(spCoreGraph->updateNodeName(oldName, newName.toStdString()));
+    return newName;
 }
 
 QHash<int, QByteArray> GraphModel::roleNames() const

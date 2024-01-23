@@ -68,7 +68,6 @@ ZENO_API std::string INode::get_name() const
 ZENO_API void INode::set_name(const std::string& customname)
 {
     name = customname;
-    CALLBACK_NOTIFY(set_name, name)
 }
 
 ZENO_API void INode::set_view(bool bOn)

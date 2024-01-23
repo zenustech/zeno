@@ -152,9 +152,23 @@ QHash<int, QByteArray> GraphsTreeModel::roleNames() const
 void GraphsTreeModel::onGraphRowsInserted(const QModelIndex& parent, int first, int last)
 {
     GraphModel* pGraphM = qobject_cast<GraphModel*>(sender());
-    QString graphPath = pGraphM->currentPath();
-    QModelIndex treeParentItem = getIndexByPath(graphPath);
-    emit layoutChanged({ treeParentItem });
+    if (pGraphM)
+    {
+        QString graphPath = pGraphM->currentPath();
+        QModelIndex treeParentItem = getIndexByPath(graphPath);
+        emit layoutChanged({ treeParentItem });
+    }
+}
+
+void GraphsTreeModel::onNameUpdated(const QModelIndex& nodeIdx, const QString& oldName)
+{
+    GraphModel* pGraphM = qobject_cast<GraphModel*>(sender());
+    if (pGraphM)
+    {
+        QString nodePath = nodeIdx.data(ROLE_OBJPATH).toString();
+        QModelIndex nodeIdx = getIndexByPath(nodePath);
+        emit dataChanged(nodeIdx, nodeIdx, { Qt::DisplayRole, ROLE_NODE_NAME });
+    }
 }
 
 void GraphsTreeModel::onGraphRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last)
@@ -168,9 +182,11 @@ void GraphsTreeModel::onGraphRowsAboutToBeRemoved(const QModelIndex& parent, int
 void GraphsTreeModel::onGraphRowsRemoved(const QModelIndex& parent, int first, int last)
 {
     GraphModel* pGraphM = qobject_cast<GraphModel*>(sender());
-    QString graphPath = pGraphM->currentPath();
-    QModelIndex treeParentItem = getIndexByPath(graphPath);
-    emit layoutChanged({ treeParentItem });
+    if (pGraphM) {
+        QString graphPath = pGraphM->currentPath();
+        QModelIndex treeParentItem = getIndexByPath(graphPath);
+        emit layoutChanged({ treeParentItem });
+    }
 }
 
 int GraphsTreeModel::depth(const QModelIndex& index) const

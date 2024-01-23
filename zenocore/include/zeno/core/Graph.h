@@ -82,6 +82,9 @@ struct Graph : std::enable_shared_from_this<Graph> {
 
     ZENO_API std::string getName() const;
     ZENO_API void setName(const std::string& name);
+
+    ZENO_API std::string updateNodeName(const std::string& oldName, const std::string& newName = "");
+    CALLBACK_REGIST(updateNodeName, void, std::string, std::string)
     //END
 
     ZENO_API DirtyChecker &getDirtyChecker();
@@ -114,10 +117,9 @@ struct Graph : std::enable_shared_from_this<Graph> {
 
     std::map<std::string, std::string> getSubInputs();
     std::map<std::string, std::string> getSubOutputs();
-
-private:
     std::string generateNewName(const std::string& node_cls);
 
+private:
     std::map<std::string, std::string> subInputNodes;
     std::map<std::string, std::string> subOutputNodes;
 
