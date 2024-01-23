@@ -99,6 +99,7 @@ public:
     void removeLink(const zeno::EdgeInfo& link);
     ParamsModel* params(QModelIndex nodeIdx);
     GraphModel* subgraph(QModelIndex nodeIdx);
+    GraphsTreeModel* treeModel() const;
 
 signals:
     void reloaded();
@@ -126,6 +127,7 @@ private:
     std::string m_cbAddLink;
     std::string m_cbRemoveLink;
 
+    GraphsTreeModel* m_pTree;
     LinkModel* m_linkModel;
 
     friend class NodeItem;

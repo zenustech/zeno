@@ -19,7 +19,7 @@ struct CONTROL_ITEM_INFO
 {
     QString name;
     zeno::ParamControl ctrl;
-    QString defaultType;
+    zeno::ParamType type;
     QString icon;
 };
 
@@ -71,18 +71,16 @@ private slots:
 
 private:
     void initUI();
+    void _initLayoutModel();
     void initIcon(QStandardItem *item);
     QIcon getIcon(const QStandardItem *pItem);
-    void initDescValueForProxy();
     void applyForItem(QStandardItem* dstItem, QStandardItem* srcItem);
     void proxyModelSetData(const QModelIndex& index, const QVariant& newValue, int role);
-    //void switchStackProperties(int ctrl, VParamItem *pItem);
-    void addControlGroup(bool bInput, const QString &name, zeno::ParamControl ctrl);
-    void delControlGroup(bool bInput, const QString &name);
-    void updateControlGroup(bool bInput, const QString &newName, const QString &oldName, zeno::ParamControl ctrl, int row);
+    void switchStackProperties(int ctrl, QStandardItem *pItem);
     void updateSliderInfo();
 
     ParamsModel* m_model;
+    QStandardItemModel* m_paramsLayoutM;
 
     Ui::EditParamLayoutDlg* m_ui;
     const QPersistentModelIndex m_nodeIdx;

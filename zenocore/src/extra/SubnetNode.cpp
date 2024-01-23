@@ -9,7 +9,9 @@
 namespace zeno {
 
 ZENO_API SubnetNode::SubnetNode() : subgraph(std::make_shared<Graph>(""))
-{}
+{
+    subgraph->optParentSubgNode = this;
+}
 
 ZENO_API SubnetNode::~SubnetNode() = default;
 

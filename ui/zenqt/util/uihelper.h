@@ -48,6 +48,7 @@ public:
     static QStringList getAllControls();
     //there is no description on control, for example,  lineedit may be a integer, string or float.
     static zeno::ParamControl getControlByDesc(const QString& descName);
+    static QString getTypeDesc(zeno::ParamType type);
     static QString getControlDesc(zeno::ParamControl ctrl, zeno::ParamType type);
     static bool isFloatType(zeno::ParamType type);
     static bool qIndexSetData(const QModelIndex& index, const QVariant& value, int role);

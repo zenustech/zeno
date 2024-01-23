@@ -20,6 +20,7 @@ namespace zeno {
 
 struct Session;
 struct SubgraphNode;
+struct SubnetNode;
 struct DirtyChecker;
 struct INode;
 
@@ -48,6 +49,8 @@ struct Graph : std::enable_shared_from_this<Graph> {
     std::unique_ptr<Context> ctx;
     std::unique_ptr<DirtyChecker> dirtyChecker;
 
+    std::optional<SubnetNode*> optParentSubgNode;
+
     ZENO_API Graph(const std::string& name);
     ZENO_API ~Graph();
 
@@ -59,7 +62,7 @@ struct Graph : std::enable_shared_from_this<Graph> {
     //BEGIN NEW STANDARD API
     ZENO_API void init(const GraphData& graph);
 
-    ZENO_API std::shared_ptr<INode> createNode(std::string const& cls);
+    ZENO_API std::shared_ptr<INode> createNode(std::string const& cls, std::pair<float, float> pos = {});
     CALLBACK_REGIST(createNode, void, const std::string&, std::weak_ptr<zeno::INode>)
 
     ZENO_API bool removeNode(std::string const& name);
@@ -76,7 +79,9 @@ struct Graph : std::enable_shared_from_this<Graph> {
 
     ZENO_API std::shared_ptr<INode> getNode(std::string const& name);
     ZENO_API std::map<std::string, std::shared_ptr<INode>> getNodes() const;
+
     ZENO_API std::string getName() const;
+    ZENO_API void setName(const std::string& name);
     //END
 
     ZENO_API DirtyChecker &getDirtyChecker();

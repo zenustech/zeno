@@ -527,7 +527,8 @@ void ZenoGraphsEditor::selectTab(const QString& objpath, const QString& path, st
     auto graphsMgm = zenoApp->graphsManager();
     activateTab(objpath);
     ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(graphsMgm->gvScene(objpath)); 
-    pScene->select(objIds);
+    if (pScene)
+        pScene->select(objIds);
 }
 
 ZenoSubGraphView* ZenoGraphsEditor::getCurrentSubGraphView()
@@ -652,27 +653,27 @@ void ZenoGraphsEditor::onTreeItemActivated(const QModelIndex& index)
 {
     QModelIndex idx = index;
 
+    const QString& objPath = index.data(ROLE_OBJPATH).toString();
     const QString& objId = idx.data(ROLE_NODE_NAME).toString();
-    QString path, subgName;
+
+    QString subgPath, subgName;
     if (!idx.parent().isValid())
     {
-        subgName = idx.data(ROLE_CLASS_NAME).toString();
-        path = "/" + subgName;
+        subgPath = "/main";
     }
     else
     {
         idx = idx.parent();
-        subgName = idx.data(ROLE_CLASS_NAME).toString();
+        subgName = idx.data(ROLE_NODE_NAME).toString();
 
         while (idx.isValid())
         {
-            QString objName = idx.data(ROLE_CLASS_NAME).toString();
-            path = "/" + objName + path;
+            QString objName = idx.data(ROLE_NODE_NAME).toString();
+            subgPath = "/" + objName + subgPath;
             idx = idx.parent();
         }
     }
-
-    activateTab(path, objId);
+    activateTab(subgPath, objId);
 }
 
 void ZenoGraphsEditor::onPageActivated(const QPersistentModelIndex& subgIdx, const QPersistentModelIndex& nodeIdx)

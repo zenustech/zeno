@@ -6,6 +6,7 @@
 #include "model/GraphsTreeModel.h"
 #include "model/graphsmanager.h"
 #include "zenoapplication.h"
+#include <zeno/extra/SubnetNode.h>
 
 
 NodeItem::NodeItem(QObject* parent) : QObject(parent)
@@ -65,13 +66,18 @@ void NodeItem::init(GraphModel* pGraphM, std::shared_ptr<zeno::INode> spNode)
     this->status = spNode->get_status();
     auto pair = spNode->get_pos();
     this->pos = QPointF(pair.first, pair.second);
-    //TODO: optSubgraph
+    if (std::shared_ptr<zeno::SubnetNode> subnet = std::dynamic_pointer_cast<zeno::SubnetNode>(spNode))
+    {
+        GraphModel* parentM = qobject_cast<GraphModel*>(this->parent());
+        this->optSubgraph = new GraphModel(subnet->subgraph, parentM->treeModel(), this);
+    }
 }
 
 
 GraphModel::GraphModel(std::shared_ptr<zeno::Graph> spGraph, GraphsTreeModel* pTree, QObject* parent)
     : QAbstractListModel(parent)
     , m_spCoreGraph(spGraph)
+    , m_pTree(pTree)
 {
     m_graphName = QString::fromStdString(spGraph->getName());
     m_linkModel = new LinkModel(this);
@@ -81,13 +87,13 @@ GraphModel::GraphModel(std::shared_ptr<zeno::Graph> spGraph, GraphsTreeModel* pT
         _appendNode(node);
     }
 
-    if (pTree) {
+    if (m_pTree) {
         connect(this, SIGNAL(rowsInserted(const QModelIndex&, int, int)),
-            pTree, SLOT(onGraphRowsInserted(const QModelIndex&, int, int)));
+            m_pTree, SLOT(onGraphRowsInserted(const QModelIndex&, int, int)));
         connect(this, SIGNAL(rowsAboutToBeRemoved(const QModelIndex&, int, int)),
-            pTree, SLOT(onGraphRowsAboutToBeRemoved(const QModelIndex&, int, int)));
+            m_pTree, SLOT(onGraphRowsAboutToBeRemoved(const QModelIndex&, int, int)));
         connect(this, SIGNAL(rowsRemoved(const QModelIndex&, int, int)),
-            pTree, SLOT(onGraphRowsRemoved(const QModelIndex&, int, int)));
+            m_pTree, SLOT(onGraphRowsRemoved(const QModelIndex&, int, int)));
     }
 }
 
@@ -246,7 +252,7 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
         case ROLE_SUBGRAPH:
         {
             if (item->optSubgraph.has_value())
-                return QVariantPtr<GraphModel>::asVariant(item->optSubgraph.value());
+                return QVariant::fromValue(item->optSubgraph.value());
             else
                 return QVariant();
         }
@@ -272,11 +278,18 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
         }
         case ROLE_NODETYPE:
         {
-            //TODO
+            if (item->optSubgraph.has_value()) {
+                return zeno::Node_SubgraphNode;
+            }
+            else {
+                //TODO: other case.
+                return zeno::Node_Normal;
+            }
         }
         case ROLE_OBJPATH:
         {
-            //TODO
+            QString path = currentPath() + '/' + item->name;
+            return path;
         }
         default:
             return QVariant();
@@ -342,9 +355,18 @@ GraphModel* GraphModel::getGraphByPath(const QString& objPath)
 
      NodeItem* pItem = m_nodes[item];
      items.removeAt(0);
+
      QString leftPath = items.join('/');
-     if (leftPath.isEmpty()) {
-         return this;
+     if (leftPath.isEmpty())
+     {
+         if (pItem->optSubgraph.has_value())
+         {
+             return pItem->optSubgraph.value();
+         }
+         else
+         {
+             return this;
+         }
      }
      ZASSERT_EXIT(pItem->optSubgraph.has_value(), nullptr);
      return pItem->optSubgraph.value()->getGraphByPath(leftPath);
@@ -442,7 +464,7 @@ zeno::NodeData GraphModel::createNode(const QString& nodeCls, const QPointF& pos
     if (!spGraph)
         return node;
 
-    spGraph->createNode(nodeCls.toStdString());
+    spGraph->createNode(nodeCls.toStdString(), {pos.x(), pos.y()});
     return node;
 }
 
@@ -567,6 +589,10 @@ GraphModel* GraphModel::subgraph(QModelIndex nodeIdx) {
         return item->optSubgraph.value();
     }
     return nullptr;
+}
+
+GraphsTreeModel* GraphModel::treeModel() const {
+    return m_pTree;
 }
 
 QModelIndex GraphModel::nodeIdx(const QString& ident) const

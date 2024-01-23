@@ -251,13 +251,14 @@ std::string Graph::generateNewName(const std::string& node_cls)
     return "";
 }
 
-ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls)
+ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls, std::pair<float, float> pos)
 {
     auto cl = safe_at(getSession().nodeClasses, cls, "node class name").get();
     std::string const& name = generateNewName(cls);
-    auto node = cl->new_instance(name);
+    std::shared_ptr<INode> node = cl->new_instance(name);
     node->graph = this;
     node->nodeClass = cl;
+    node->pos = pos;
     nodes[name] = node;
 
     CALLBACK_NOTIFY(createNode, name, node)
@@ -319,7 +320,15 @@ ZENO_API std::map<std::string, std::shared_ptr<INode>> Graph::getNodes() const {
 }
 
 ZENO_API std::string Graph::getName() const {
+    if (optParentSubgNode.has_value()) {
+        SubnetNode* pSubnetNode = optParentSubgNode.value();
+        return pSubnetNode->get_name();
+    }
     return name;
+}
+
+ZENO_API void Graph::setName(const std::string& na) {
+    name = na;
 }
 
 ZENO_API bool Graph::removeNode(std::string const& name) {

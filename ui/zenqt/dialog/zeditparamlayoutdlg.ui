@@ -555,13 +555,13 @@
   <customwidget>
    <class>CustomParamTreeView</class>
    <extends>QTreeView</extends>
-   <header>zenoedit/itemview/customparamtreeview.h</header>
+   <header>widgets/customparamtreeview.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>ZComboBox</class>
    <extends>QComboBox</extends>
-   <header>zenoui/comctrl/zcombobox.h</header>
+   <header>widgets/zcombobox.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

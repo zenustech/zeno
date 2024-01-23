@@ -15,6 +15,7 @@
 #include "rapidjson/document.h"
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
+#include <zeno/extra/SubnetNode.h>
 
 namespace zeno {
 
@@ -28,6 +29,12 @@ struct ImplNodeClass : INodeClass {
 
     virtual std::shared_ptr<INode> new_instance(std::string const &name) const override {
         std::shared_ptr<INode> spNode = ctor();
+
+        std::shared_ptr<SubnetNode> spSubnet = std::dynamic_pointer_cast<SubnetNode>(spNode);
+        if (spSubnet) {
+            spSubnet->subgraph->setName(name);
+        }
+
         spNode->name = name;
         spNode->nodecls = classname;
 

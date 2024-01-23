@@ -43,6 +43,7 @@ namespace zeno {
         Param_List,
         //Param_Color,  //need this?
         Param_Curve,
+        Param_Heatmap,
         Param_SrcDst,
     };
 

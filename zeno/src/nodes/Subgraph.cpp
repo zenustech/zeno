@@ -1,6 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/core/Graph.h>
 #include <zeno/types/DummyObject.h>
+#include <zeno/extra/SubnetNode.h>
 //#include <zeno/types/ConditionObject.h>
 //#include <zeno/utils/safe_at.h>
 //#include <cassert>
@@ -181,6 +182,19 @@ ZENDEFNODE(SubCategory, {
     {"subgraph"},
 });*/
 #endif
+
+struct Subnet : zeno::SubnetNode {
+    virtual void apply() override {
+
+    }
+};
+
+ZENDEFNODE(Subnet, {
+    {},
+    {},
+    {},
+    {"subgraph"},
+});
 
 struct SubInput : zeno::INode {
     virtual void complete() override {

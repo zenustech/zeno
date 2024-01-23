@@ -530,6 +530,28 @@ QList<zeno::ParamControl> UiHelper::getControlLists(const zeno::ParamType& type)
     }
 }
 
+QString UiHelper::getTypeDesc(zeno::ParamType type)
+{
+    switch (type)
+    {
+    case zeno::Param_String:    return "string";
+    case zeno::Param_Bool:      return "bool";
+    case zeno::Param_Int:       return "int";
+    case zeno::Param_Float:     return "float";
+    case zeno::Param_Vec2i:     return "vec2i";
+    case zeno::Param_Vec3i:     return "vec3i";
+    case zeno::Param_Vec4i:     return "vec4i";
+    case zeno::Param_Vec2f:     return "vec2f";
+    case zeno::Param_Vec3f:     return "vec3f";
+    case zeno::Param_Vec4f:     return "vec4f";
+    case zeno::Param_Prim:      return "prim";
+    case zeno::Param_List:      return "list";
+    case zeno::Param_Dict:      return "dict";
+    case zeno::Param_Null:
+    default:
+        return "";
+    }
+}
 
 zeno::ParamControl UiHelper::getControlByType(const QString &type)
 {

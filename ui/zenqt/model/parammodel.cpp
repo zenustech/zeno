@@ -67,6 +67,16 @@ QVariant ParamsModel::data(const QModelIndex& index, int role) const
         //TODO: control property
         break;
     }
+    case ROLE_PARAM_INFO: {
+        zeno::ParamInfo info;
+        info.name = param.name.toStdString();
+        info.type = param.type;
+        info.control = param.control;
+        info.defl = UiHelper::qvarToZVar(param.value, info.type);
+        //todo:
+        //control properties.
+        return QVariant::fromValue(info);
+    }
     case ROLE_NODE_IDX:
     {
         return m_nodeIdx;
