@@ -473,7 +473,7 @@ namespace DisneyBSDF{
             //ior related clearCt
             float F = BRDFBasics::DielectricFresnel(abs(dot(wm, wo)), mat.clearcoatIOR);
             vec3 s = BRDFBasics::EvalMicrofacetReflection(ax, ay, wo, wi, wm,
-                                                          F,
+                                                          vec3(F),
                                                           tmpPdf) * 0.25 * mat.clearcoat;
             sterm = sterm + s;
             f =  f + s;
