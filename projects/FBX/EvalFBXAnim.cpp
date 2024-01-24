@@ -10,7 +10,7 @@
 
 #include "assimp/scene.h"
 
-#include "json.hpp"
+#include "tinygltf/json.hpp"
 
 #include "Definition.h"
 
