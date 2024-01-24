@@ -654,6 +654,7 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
             //printf("ALLPOINTS\n");
             pointObj.prog->use();
             float point_scale = 21.6f / std::tan(scene->camera->m_fov * 0.5f * 3.1415926f / 180.0f);
+            point_scale *= scene->drawOptions->viewportPointSizeScale;
             pointObj.prog->set_uniform("mPointScale", point_scale);
             scene->camera->set_program_uniforms(pointObj.prog);
             CHECK_GL(glDrawArrays(GL_POINTS, /*first=*/0, /*count=*/vertex_count));
