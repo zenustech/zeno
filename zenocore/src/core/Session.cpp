@@ -30,16 +30,34 @@ struct ImplNodeClass : INodeClass {
     virtual std::shared_ptr<INode> new_instance(std::string const &name) const override {
         std::shared_ptr<INode> spNode = ctor();
 
+        std::vector<SocketDescriptor> inputs = desc->inputs;
+        std::vector<ParamDescriptor> params = desc->params;
+        std::vector<SocketDescriptor> outputs = desc->outputs;
+
         std::shared_ptr<SubnetNode> spSubnet = std::dynamic_pointer_cast<SubnetNode>(spNode);
         if (spSubnet) {
             spSubnet->subgraph->setName(name);
+            //manually init some args nodes.
+            auto input1 = spSubnet->subgraph->createNode("SubInput");
+            input1->name = "input1";
+            inputs.push_back(SocketDescriptor("", input1->name));
+
+            auto input2 = spSubnet->subgraph->createNode("SubInput");
+            input2->name = "input2";
+            input2->pos = { 0, 700 };
+            inputs.push_back(SocketDescriptor("", input2->name));
+
+            auto output1 = spSubnet->subgraph->createNode("SubOutput");
+            output1->name = "output1";
+            output1->pos = { 1300, 250 };
+            outputs.push_back(SocketDescriptor("", output1->name));
         }
 
         spNode->name = name;
         spNode->nodecls = classname;
 
         //init all params, and set defl value
-        for (SocketDescriptor& param_desc : desc->inputs)
+        for (SocketDescriptor& param_desc : inputs)
         {
             std::shared_ptr<IParam> sparam = std::make_shared<IParam>();
             sparam->name = param_desc.name;
@@ -49,7 +67,7 @@ struct ImplNodeClass : INodeClass {
             spNode->add_input_param(sparam);
         }
 
-        for (ParamDescriptor& param_desc : desc->params)
+        for (ParamDescriptor& param_desc : params)
         {
             std::shared_ptr<IParam> sparam = std::make_shared<IParam>();
             sparam->name = param_desc.name;
@@ -59,7 +77,7 @@ struct ImplNodeClass : INodeClass {
             spNode->add_input_param(sparam);
         }
 
-        for (SocketDescriptor& param_desc : desc->outputs)
+        for (SocketDescriptor& param_desc : outputs)
         {
             std::shared_ptr<IParam> sparam = std::make_shared<IParam>();
             sparam->name = param_desc.name;

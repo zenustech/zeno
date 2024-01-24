@@ -87,6 +87,8 @@ public:
     ZENO_API bool update_param(const std::string& name, const zvariant& new_value);
     CALLBACK_REGIST(update_param, void, const std::string&, zvariant, zvariant)
 
+    ZENO_API void update_editparams(const std::vector<std::pair<zeno::ParamInfo, std::string>>& params);
+
     ZENO_API void set_name(const std::string& name);
     ZENO_API std::string get_name() const;
 

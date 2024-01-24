@@ -21,9 +21,9 @@ ZENO_API Descriptor::Descriptor(
   std::vector<std::string> const &categories,
   std::string const &doc)
   : inputs(inputs), outputs(outputs), params(params), categories(categories), doc(doc) {
-    this->inputs.push_back("SRC");
+    //this->inputs.push_back("SRC");
     //this->inputs.push_back("COND");  // deprecated
-    this->outputs.push_back("DST");
+    //this->outputs.push_back("DST");
 }
 
 }

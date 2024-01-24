@@ -46,6 +46,8 @@ public:
     int removeLink(const QModelIndex& paramIdx);
     QModelIndex removeOneLink(const QModelIndex& paramIdx, const zeno::EdgeInfo& link);
     void addParam(const ParamItem& param);
+    //temp:
+    void batchModifyParams(const std::vector<std::pair<zeno::ParamInfo, std::string>>& params);
 
     int getParamlinkCount(const QModelIndex& paramIdx);
 

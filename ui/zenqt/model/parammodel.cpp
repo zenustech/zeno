@@ -219,6 +219,12 @@ void ParamsModel::addParam(const ParamItem& param)
     endInsertRows();
 }
 
+void ParamsModel::batchModifyParams(const std::vector<std::pair<zeno::ParamInfo, std::string>>& params)
+{
+    auto spNode = m_wpNode.lock();
+    ZASSERT_EXIT(spNode);
+}
+
 bool ParamsModel::removeRows(int row, int count, const QModelIndex& parent)
 {
     beginRemoveRows(parent, row, row);

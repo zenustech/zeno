@@ -187,7 +187,8 @@ enum LOG_ROLE
 };
 
 enum CUSTOM_PARAM_ROLE {
-    ROLE_ELEMENT_TYPE,          //VPARAM_TYPE
+    ROLE_ELEMENT_TYPE = Qt::UserRole + 1,          //VPARAM_TYPE
+    ROLE_MAP_TO_PARAMNAME,                         //recording the existing param name of current param editting item.
 };
 
 enum VPARAM_TYPE

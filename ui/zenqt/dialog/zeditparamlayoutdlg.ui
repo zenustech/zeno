@@ -154,23 +154,10 @@
        </item>
        <item>
         <layout class="QGridLayout" name="gridLayout">
-         <item row="5" column="0">
-          <widget class="QLabel" name="label_5">
+         <item row="1" column="0">
+          <widget class="QLabel" name="label_16">
            <property name="text">
-            <string>hint</string>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="1">
-          <widget class="ZComboBox" name="cbTypes"/>
-         </item>
-         <item row="1" column="1">
-          <widget class="QLineEdit" name="editLabel"/>
-         </item>
-         <item row="2" column="0">
-          <widget class="QLabel" name="label_4">
-           <property name="text">
-            <string>Control</string>
+            <string>Label</string>
            </property>
           </widget>
          </item>
@@ -181,36 +168,39 @@
            </property>
           </widget>
          </item>
-         <item row="0" column="1">
-          <widget class="QLineEdit" name="editName"/>
-         </item>
          <item row="3" column="0">
-          <widget class="QLabel" name="lblType">
-           <property name="text">
-            <string>type</string>
-           </property>
-          </widget>
-         </item>
-         <item row="5" column="1">
-          <widget class="QLineEdit" name="editHint"/>
-         </item>
-         <item row="2" column="1">
-          <widget class="ZComboBox" name="cbControl"/>
-         </item>
-         <item row="4" column="0">
           <widget class="QLabel" name="lblDefaultValue">
            <property name="text">
             <string>default value</string>
            </property>
           </widget>
          </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="label_4">
+           <property name="text">
+            <string>Control</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QLineEdit" name="editName"/>
+         </item>
+         <item row="2" column="1">
+          <widget class="ZComboBox" name="cbControl"/>
+         </item>
          <item row="4" column="1">
+          <widget class="QLineEdit" name="editHint"/>
+         </item>
+         <item row="1" column="1">
+          <widget class="QLineEdit" name="editLabel"/>
+         </item>
+         <item row="3" column="1">
           <widget class="QWidget" name="widget" native="true"/>
          </item>
-         <item row="1" column="0">
-          <widget class="QLabel" name="label_16">
+         <item row="4" column="0">
+          <widget class="QLabel" name="label_5">
            <property name="text">
-            <string>Label</string>
+            <string>hint</string>
            </property>
           </widget>
          </item>

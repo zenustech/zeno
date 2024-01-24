@@ -277,6 +277,14 @@ ZENO_API bool INode::update_param(const std::string& name, const zvariant& new_v
     return false;
 }
 
+ZENO_API void INode::update_editparams(const std::vector<std::pair<zeno::ParamInfo, std::string>>& params)
+{
+    for (auto _pair : params) {
+        const std::string& coreparam = _pair.second;
+        //TODO:
+    }
+}
+
 void INode::directly_setinputs(std::map<std::string, zany> inputs)
 {
     for (auto& [name, val] : inputs) {

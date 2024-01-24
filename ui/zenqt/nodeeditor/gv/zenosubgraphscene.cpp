@@ -1181,7 +1181,15 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
                 for (QPersistentModelIndex nodeIdx : nodes)
                 {
                     QString id = nodeIdx.data(ROLE_NODE_NAME).toString();
-                    m_model->removeNode(id);
+                    QString cls = nodeIdx.data(ROLE_CLASS_NAME).toString();
+                    if ("SubInput" == cls || "SubOutput" == cls) {
+                        //SubInput/Output will not allow to be removed by user, 
+                        //which shoule be done by edit param dialog or core api `removeSubnetArgs`.
+                        zeno::log_warn("SubInput/Output will not allow to be removed by user");
+                    }
+                    else {
+                        m_model->removeNode(id);
+                    }
                 }
                 if (nodes.isEmpty() && !netLabels.isEmpty())
                 {

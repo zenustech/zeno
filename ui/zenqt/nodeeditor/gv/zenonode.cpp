@@ -1127,8 +1127,15 @@ void ZenoNode::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
         QAction* propDlg = new QAction(tr("Custom Param"));
         nodeMenu->addAction(propDlg);
         connect(propDlg, &QAction::triggered, this, [=]() {
-            //ZEditParamLayoutDlg dlg(true, m_index, pGraphsModel);
-            //dlg.exec();
+            ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(m_index.data(ROLE_PARAMS));
+
+            ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(scene());
+            ZASSERT_EXIT(pScene && !pScene->views().isEmpty());
+            if (_ZenoSubGraphView* pView = qobject_cast<_ZenoSubGraphView*>(pScene->views().first()))
+            {
+                ZEditParamLayoutDlg dlg(paramsM, pView);
+                dlg.exec();
+            }
         });
 
         nodeMenu->exec(QCursor::pos());

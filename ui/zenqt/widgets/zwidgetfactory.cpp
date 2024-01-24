@@ -171,7 +171,7 @@ namespace zenoui
                     dim = 3;
                     bFloat = type == zeno::Param_Vec3f;
                 }
-                else if (ctrl == zeno::Param_Vec4i || ctrl == zeno::Param_Vec4f)
+                else if (type == zeno::Param_Vec4i || type == zeno::Param_Vec4f)
                 {
                     dim = 4;
                     bFloat = type == zeno::Param_Vec4f;

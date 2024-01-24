@@ -64,7 +64,6 @@ private slots:
     void onMaxEditFinished();
     void onStepEditFinished();
     void onControlItemChanged(int);
-    void onTypeItemChanged(int);
     void onComboTableItemsCellChanged(int row, int column);
     void onProxyItemNameChanged(const QModelIndex& itemIdx, const QString& oldPath, const QString& newName);
     void onViewParamDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
@@ -84,7 +83,7 @@ private:
 
     Ui::EditParamLayoutDlg* m_ui;
     const QPersistentModelIndex m_nodeIdx;
-    static const int rowValueControl = 4;
+    static const int rowValueControl = 3;
     bool m_bSubgraphNode;
 
     QMap<QString, QString> m_renameRecord;

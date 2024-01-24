@@ -51,9 +51,11 @@ ZenoNewnodeMenu::ZenoNewnodeMenu(GraphModel* pGraphM, const zeno::NodeCates& cat
     for (auto& [cate, nodes] : m_cates) {
         QString catName = QString::fromStdString(cate);
         for (auto& node : nodes) {
-            QString nodeName = QString::fromStdString(node);
-            m_nodeToCate[nodeName] = catName;
-            m_condidates.push_back(nodeName);
+            QString nodecls = QString::fromStdString(node);
+            if (nodecls == "SubInput" || nodecls == "SubOutput")
+                continue;
+            m_nodeToCate[nodecls] = catName;
+            m_condidates.push_back(nodecls);
         }
     }
 
@@ -170,11 +172,14 @@ QList<QAction*> ZenoNewnodeMenu::getCategoryActions(QPointF scenePos)
         pChildMenu->setToolTipsVisible(true);
         for (const auto& node : nodes)
         {
-            QString nodeName = QString::fromStdString(node);
-            QAction* pChildAction = pChildMenu->addAction(nodeName);
+            QString nodecls = QString::fromStdString(node);
+            if (nodecls == "SubInput" || nodecls == "SubOutput")
+                continue;
+
+            QAction* pChildAction = pChildMenu->addAction(nodecls);
             //todo: tooltip
             connect(pChildAction, &QAction::triggered, [=]() {
-                m_pGraphM->createNode(nodeName, m_scenePos);
+                m_pGraphM->createNode(nodecls, m_scenePos);
             });
         }
         pAction->setMenu(pChildMenu);

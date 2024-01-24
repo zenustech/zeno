@@ -185,8 +185,8 @@ namespace zeno {
                 static T ST{nullptr};
 
                 if (!bHasInitializedDefaultObject) {
-                    GetDescriptor().inputs.emplace_back("SRC");
-                    GetDescriptor().outputs.emplace_back("DST");
+                    //GetDescriptor().inputs.emplace_back("SRC");
+                    //GetDescriptor().outputs.emplace_back("DST");
                     GetDescriptor().categories.emplace_back("AutoNode");
                     bHasInitializedDefaultObject = true;
                 }

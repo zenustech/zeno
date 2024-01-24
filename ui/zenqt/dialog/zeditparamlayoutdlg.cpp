@@ -17,7 +17,7 @@
 
 
 static CONTROL_ITEM_INFO controlList[] = {
-    {"Tab",                 zeno::Lineedit,     zeno::Param_Null,   ":/icons/parameter_control_tab.svg"},
+    {"Tab",                 zeno::NullControl,  zeno::Param_Null,   ":/icons/parameter_control_tab.svg"},
     {"Group",               zeno::NullControl,  zeno::Param_Null,   ":/icons/parameter_control_group.svg"},
     {"Integer",             zeno::Lineedit,     zeno::Param_Int,    ":/icons/parameter_control_integer.svg"},
     {"Float",               zeno::Lineedit,     zeno::Param_Float,  ":/icons/parameter_control_float.svg"},
@@ -44,11 +44,11 @@ static CONTROL_ITEM_INFO controlList[] = {
     {"Divider",             zeno::Seperator,    zeno::Param_Null,   ":/icons/parameter_control_divider.svg"},
 };
 
-static CONTROL_ITEM_INFO getControl(zeno::ParamControl ctrl)
+static CONTROL_ITEM_INFO getControl(zeno::ParamControl ctrl, zeno::ParamType type)
 {
     for (int i = 0; i < sizeof(controlList) / sizeof(CONTROL_ITEM_INFO); i++)
     {
-        if (controlList[i].ctrl == ctrl)
+        if (controlList[i].ctrl == ctrl && controlList[i].type == type)
         {
             return controlList[i];
         }
@@ -134,6 +134,7 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(ParamsModel* pModel, QWidget* parent)
     m_ui->setupUi(this);
     initUI();
 
+    m_ui->cbControl->addItem("");
     for (int i = 0; i < sizeof(controlList) / sizeof(CONTROL_ITEM_INFO); i++)
     {
         QListWidgetItem *item = new QListWidgetItem(controlList[i].name, m_ui->listConctrl);
@@ -144,8 +145,6 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(ParamsModel* pModel, QWidget* parent)
         m_ui->cbControl->addItem(controlList[i].name);
     }
 
-    m_ui->cbTypes->addItems(UiHelper::getCoreTypeList());
-
     m_model = qobject_cast<ParamsModel*>(pModel);
     ZASSERT_EXIT(m_model);
 
@@ -153,7 +152,7 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(ParamsModel* pModel, QWidget* parent)
     initIcon(m_paramsLayoutM->invisibleRootItem());
 
     m_ui->paramsView->setModel(m_paramsLayoutM);
-    m_ui->paramsView->setItemDelegate(new ParamTreeItemDelegate(m_model, m_ui->paramsView));
+    //m_ui->paramsView->setItemDelegate(new ParamTreeItemDelegate(m_model, m_ui->paramsView));
 
     QItemSelectionModel* selModel = m_ui->paramsView->selectionModel();
     connect(selModel, SIGNAL(currentChanged(const QModelIndex &, const QModelIndex &)), this,
@@ -181,7 +180,6 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(ParamsModel* pModel, QWidget* parent)
     connect(m_ui->editMax, SIGNAL(editingFinished()), this, SLOT(onMaxEditFinished()));
     connect(m_ui->editStep, SIGNAL(editingFinished()), this, SLOT(onStepEditFinished()));
     connect(m_ui->cbControl, SIGNAL(currentIndexChanged(int)), this, SLOT(onControlItemChanged(int)));
-    connect(m_ui->cbTypes, SIGNAL(currentIndexChanged(int)), this, SLOT(onTypeItemChanged(int)));
 
     m_ui->itemsTable->setHorizontalHeaderLabels({ tr("Item Name") });
     connect(m_ui->itemsTable, SIGNAL(cellChanged(int, int)), this, SLOT(onComboTableItemsCellChanged(int, int)));
@@ -257,6 +255,9 @@ void ZEditParamLayoutDlg::_initLayoutModel()
         m_paramsLayoutM = nullptr;
     }
 
+    m_paramsLayoutM = new QStandardItemModel(this);
+
+    QStandardItem* pRoot = new QStandardItem("root");
     QStandardItem* pInputs = new QStandardItem("input");
     QStandardItem* pOutputs = new QStandardItem("output");
     for (int r = 0; r < m_model->rowCount(); r++) {
@@ -264,7 +265,10 @@ void ZEditParamLayoutDlg::_initLayoutModel()
         bool bInput = paramIdx.data(ROLE_ISINPUT).toBool();
         zeno::ParamInfo info = paramIdx.data(ROLE_PARAM_INFO).value<zeno::ParamInfo>();
         QStandardItem* paramItem = new QStandardItem(QString::fromStdString(info.name));
-        paramItem->setData(QString::fromStdString(info.name), ROLE_PARAM_NAME);
+        const QString& paramName = QString::fromStdString(info.name);
+        paramItem->setData(paramName, Qt::DisplayRole);
+        paramItem->setData(paramName, ROLE_PARAM_NAME);
+        paramItem->setData(paramName, ROLE_MAP_TO_PARAMNAME);
         paramItem->setData(UiHelper::zvarToQVar(info.defl), ROLE_PARAM_VALUE);
         paramItem->setData(info.control, ROLE_PARAM_CONTROL);
         paramItem->setData(info.type, ROLE_PARAM_TYPE);
@@ -275,11 +279,14 @@ void ZEditParamLayoutDlg::_initLayoutModel()
             pOutputs->appendRow(paramItem);
         paramItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
     }
+    pRoot->setData(VPARAM_TAB, ROLE_ELEMENT_TYPE);
     pInputs->setData(VPARAM_GROUP, ROLE_ELEMENT_TYPE);
     pOutputs->setData(VPARAM_GROUP, ROLE_ELEMENT_TYPE);
 
-    m_paramsLayoutM->appendRow(pInputs);
-    m_paramsLayoutM->appendRow(pOutputs);
+    pRoot->appendRow(pInputs);
+    pRoot->appendRow(pOutputs);
+
+    m_paramsLayoutM->appendRow(pRoot);
 }
 
 void ZEditParamLayoutDlg::initIcon(QStandardItem *pItem) 
@@ -305,7 +312,7 @@ QIcon ZEditParamLayoutDlg::getIcon(const QStandardItem *pItem)
     } 
     else if (type == VPARAM_GROUP) 
     {
-        return QIcon(":/icons/parameter_control_group.svg");
+        return QIcon();// ":/icons/parameter_control_group.svg");
     } 
     else if (type != VPARAM_ROOT) 
     {
@@ -395,6 +402,15 @@ void ZEditParamLayoutDlg::onParamTreeDeleted()
         bool bEditable = true;//TODO:
         if (!idx.isValid() || !idx.parent().isValid() || !bEditable)
             return;
+
+        QString existedName = idx.data(ROLE_MAP_TO_PARAMNAME).toString();
+        if (!existedName.isEmpty()) {
+            int flag = QMessageBox::question(this, "", "The current item is mapped to a existing param, are you sure to delete it?", QMessageBox::Yes | QMessageBox::No);
+            if (flag & QMessageBox::No) {
+                return;
+            }
+        }
+
         m_paramsLayoutM->removeRow(idx.row(), idx.parent());
     }
 }
@@ -419,28 +435,26 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
         delete pControlWidget;
     }
 
-    VPARAM_TYPE type = (VPARAM_TYPE)pCurrentItem->data(ROLE_VPARAM_TYPE).toInt();
+    VPARAM_TYPE type = (VPARAM_TYPE)pCurrentItem->data(ROLE_ELEMENT_TYPE).toInt();
     if (type == VPARAM_TAB)
     {
         m_ui->cbControl->setEnabled(false);
-        m_ui->cbTypes->setEnabled(false);
         m_ui->stackProperties->setCurrentIndex(0);
     }
     else if (type == VPARAM_GROUP)
     {
         m_ui->cbControl->setEnabled(false);
-        m_ui->cbTypes->setEnabled(false);
         m_ui->stackProperties->setCurrentIndex(0);
-        m_ui->cbControl->setCurrentText("");
-        m_ui->cbTypes->setCurrentText("");
     }
     else if (type == VPARAM_PARAM)
     {
         QStandardItem* parentItem = pCurrentItem->parent();
-        zeno::ParamControl ctrl = (zeno::ParamControl)pCurrentItem->data(ROLE_PARAM_NAME).toInt();
-        const QString& ctrlName = getControl(ctrl).name;
-        QVariant controlProperties = pCurrentItem->data(ROLE_PARAM_CTRL_PROPERTIES);
+        zeno::ParamControl ctrl = (zeno::ParamControl)pCurrentItem->data(ROLE_PARAM_CONTROL).toInt();
         const zeno::ParamType paramType = (zeno::ParamType)pCurrentItem->data(ROLE_PARAM_TYPE).toInt();
+
+        const QString& ctrlName = ctrl != zeno::NullControl ? getControl(ctrl, paramType).name : "";
+        QVariant controlProperties = pCurrentItem->data(ROLE_PARAM_CTRL_PROPERTIES);
+        
         if (true) 
         {
             const QString &parentName = parentItem->data(ROLE_PARAM_NAME).toString();
@@ -471,27 +485,13 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
 
         {
             BlockSignalScope scope(m_ui->cbControl);
-            BlockSignalScope scope2(m_ui->cbTypes);
 
             m_ui->cbControl->setEnabled(true);
-            m_ui->cbControl->clear();
-
-            QList<zeno::ParamControl> items = UiHelper::getControlLists(paramType);
-            QStringList controlDescs;
-            for (zeno::ParamControl _ctrl : items) {
-                controlDescs.append(UiHelper::getControlDesc(_ctrl, paramType));
-            }
-
-            m_ui->cbControl->addItems(controlDescs);
             m_ui->cbControl->setCurrentText(ctrlName);
-
             QString descType = UiHelper::getTypeDesc(paramType);
-            m_ui->cbTypes->setCurrentText(descType);
-            m_ui->cbTypes->setEnabled(bEditable);
             if (ctrl == zeno::Seperator) 
             {
                 m_ui->cbControl->setEnabled(false);
-                m_ui->cbTypes->setEnabled(false);
             }
         }
 
@@ -578,8 +578,9 @@ void ZEditParamLayoutDlg::onBtnAdd()
             return;
         }
         CONTROL_ITEM_INFO ctrl = getControlByName(ctrlName);
-        QString newItem = UiHelper::getUniqueName(existNames, ctrl.name);
-        auto pNewItem = new QStandardItem(newItem);
+        QString newParamName = UiHelper::getUniqueName(existNames, ctrl.name);
+        auto pNewItem = new QStandardItem(newParamName);
+        pNewItem->setData(newParamName, ROLE_PARAM_NAME);
         pNewItem->setData(ctrl.ctrl, ROLE_PARAM_CONTROL);
         pNewItem->setData(ctrl.type, ROLE_PARAM_TYPE);
         pNewItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
@@ -714,11 +715,12 @@ void ZEditParamLayoutDlg::onNameEditFinished()
     QString oldName = pItem->data(ROLE_PARAM_NAME).toString();
     if (oldName != newName) {
         int dstRow = 0;
-        QStandardItem* pTargetGroup = static_cast<QStandardItem*>(pItem->parent());
+        QStandardItem* pTargetGroup = pItem->parent();
         if (pTargetGroup && !getItem(pTargetGroup, newName, &dstRow))
         {
             pItem->setData(newName, ROLE_PARAM_NAME);
-            onProxyItemNameChanged(pItem->index(), oldPath, newName);
+            pItem->setText(newName);
+            //onProxyItemNameChanged(pItem->index(), oldPath, newName);
         } 
         else 
         {
@@ -798,8 +800,13 @@ void ZEditParamLayoutDlg::onControlItemChanged(int idx)
     cbSets.cbEditFinished = [=](QVariant newValue) {
         proxyModelSetData(layerIdx, newValue, ROLE_PARAM_VALUE);
     };
-    const QString &dataType = m_ui->cbTypes->itemText(idx);
-    zeno::ParamType type = zeno::convertToType(dataType.toStdString());
+
+    zeno::ParamType type = getTypeByControlName(controlName);
+
+    //update type:
+    auto pItem = m_paramsLayoutM->itemFromIndex(layerIdx);
+    pItem->setData(type, ROLE_PARAM_TYPE);
+
     QVariant value = layerIdx.data(ROLE_PARAM_VALUE);
     if (!value.isValid())
         value = UiHelper::initDefaultValue(type);
@@ -810,56 +817,10 @@ void ZEditParamLayoutDlg::onControlItemChanged(int idx)
     if (valueControl) {
         valueControl->setEnabled(true);
         m_ui->gridLayout->addWidget(valueControl, rowValueControl, 1);
-        auto pItem = m_paramsLayoutM->itemFromIndex(layerIdx);
+        
         switchStackProperties(ctrl, pItem);
         pItem->setData(getIcon(pItem), Qt::DecorationRole);
     }
-}
-
-void ZEditParamLayoutDlg::onTypeItemChanged(int idx)
-{
-    const QString& dataType = m_ui->cbTypes->itemText(idx);
-    const zeno::ParamType type = zeno::convertToType(dataType.toStdString());
-    QModelIndex layerIdx = m_ui->paramsView->currentIndex();
-    if (!layerIdx.isValid() && layerIdx.data(ROLE_VPARAM_TYPE) != VPARAM_PARAM)
-        return;
-
-    auto pItem = m_paramsLayoutM->itemFromIndex(layerIdx);
-    zeno::ParamControl ctrl = (zeno::ParamControl)pItem->data(ROLE_PARAM_CONTROL).toInt();
-
-    pItem->setData(dataType, ROLE_PARAM_TYPE);
-    pItem->setData(UiHelper::getControlByType(dataType), ROLE_PARAM_CONTROL);
-    pItem->setData(UiHelper::initDefaultValue(type), ROLE_PARAM_VALUE);
-
-    QLayoutItem* pLayoutItem = m_ui->gridLayout->itemAtPosition(rowValueControl, 1);
-    if (pLayoutItem)
-    {
-        QWidget* pControlWidget = pLayoutItem->widget();
-        delete pControlWidget;
-    }
-
-    CallbackCollection cbSets;
-    cbSets.cbEditFinished = [=](QVariant newValue) {
-        proxyModelSetData(layerIdx, newValue, ROLE_PARAM_VALUE);
-    };
-    QVariant controlProperties = layerIdx.data(ROLE_PARAM_CTRL_PROPERTIES);
-    cbSets.cbGetIndexData = [=]() -> QVariant { return pItem->data(ROLE_PARAM_VALUE); };
-    QWidget *valueControl = zenoui::createWidget(pItem->data(ROLE_PARAM_VALUE), ctrl, type, cbSets, controlProperties);
-    if (valueControl) {
-        valueControl->setEnabled(true);
-        m_ui->gridLayout->addWidget(valueControl, rowValueControl, 1);
-        switchStackProperties(ctrl, pItem);
-        pItem->setData(getIcon(pItem), Qt::DecorationRole);
-    }
-    //update control list
-    QList<zeno::ParamControl> items = UiHelper::getControlLists(type);
-    QStringList controlDescs;
-    for (zeno::ParamControl _ctrl : items) {
-        controlDescs.append(UiHelper::getControlDesc(_ctrl, type));
-    }
-
-    m_ui->cbControl->clear();
-    m_ui->cbControl->addItems(controlDescs);
 }
 
 void ZEditParamLayoutDlg::onStepEditFinished()
@@ -1286,6 +1247,42 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
 
 void ZEditParamLayoutDlg::onApply()
 {
+    //temp case: for only inputs and outputs.
+    std::vector<std::pair<zeno::ParamInfo, std::string>> params;
+
+    QStandardItem* pRoot = m_paramsLayoutM->item(0);
+    QStandardItem* pInputs = pRoot->child(0);
+    for (int i = 0; i < pInputs->rowCount(); i++)
+    {
+        QStandardItem* pItem = pInputs->child(i);
+        zeno::ParamInfo param;
+
+        param.control = (zeno::ParamControl)pItem->data(ROLE_PARAM_CONTROL).toInt();
+        param.type = (zeno::ParamType)pItem->data(ROLE_PARAM_TYPE).toInt();
+        param.defl = UiHelper::qvarToZVar(pItem->data(ROLE_PARAM_VALUE), param.type);
+        param.name = pItem->data(ROLE_PARAM_NAME).toString().toStdString();
+        param.tooltip = pItem->data(ROLE_PARAM_TOOLTIP).toString().toStdString();
+        const QString& existName = pItem->data(ROLE_MAP_TO_PARAMNAME).toString();
+
+        params.push_back({ param, existName.toStdString() });
+    }
+    QStandardItem* pOutputs = pRoot->child(1);
+    for (int i = 0; i < pOutputs->rowCount(); i++)
+    {
+        QStandardItem* pItem = pOutputs->child(i);
+        zeno::ParamInfo param;
+
+        param.control = (zeno::ParamControl)pItem->data(ROLE_PARAM_CONTROL).toInt();
+        param.type = (zeno::ParamType)pItem->data(ROLE_PARAM_TYPE).toInt();
+        param.defl = UiHelper::qvarToZVar(pItem->data(ROLE_PARAM_VALUE), param.type);
+        param.name = pItem->data(ROLE_PARAM_NAME).toString().toStdString();
+        param.tooltip = pItem->data(ROLE_PARAM_TOOLTIP).toString().toStdString();
+        const QString& existName = pItem->data(ROLE_MAP_TO_PARAMNAME).toString();
+
+        params.push_back({ param, existName.toStdString() });
+    }
+
+    m_model->batchModifyParams(params);
     /*
     m_pGraphsModel->beginTransaction("edit custom param for node");
     zeno::scope_exit scope([=]() { m_pGraphsModel->endTransaction(); });
