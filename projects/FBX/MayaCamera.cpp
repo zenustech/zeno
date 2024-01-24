@@ -19,7 +19,7 @@
 #include "assimp/scene.h"
 
 #include "Definition.h"
-#include "json.hpp"
+#include "tinygltf/json.hpp"
 
 #include <memory>
 
