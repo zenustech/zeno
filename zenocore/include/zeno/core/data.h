@@ -66,6 +66,7 @@ namespace zeno {
         ParamType type = Param_Null;
         SocketProperty prop = Socket_Normal;
         std::optional<ControlProperty> ctrlProps;
+        bool bInput = true;
     };
 
     struct NodeData;

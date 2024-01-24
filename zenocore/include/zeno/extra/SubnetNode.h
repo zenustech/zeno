@@ -13,21 +13,17 @@ struct SubnetNode : INode {
     //std::vector<std::string> outputKeys;
     std::shared_ptr<Graph> const subgraph;
 
+    std::vector<std::string> input_names;
+    std::vector<std::string> output_names;
+
     ZENO_API SubnetNode();
     ZENO_API ~SubnetNode();
 
     void init(const NodeData& dat);
 
-    //void addSubnetInput(std::string const &key) {
-        //subnetClass->desc->inputs.push_back({{}, key, {}});
-        //inputKeys.push_back(key);
-    //}
-
-    //void addSubnetOutput(std::string const &key) {
-        //subnetClass->desc->outputs.push_back({{}, key, {}});
-        //outputKeys.push_back(key);
-    //}
-
+    ZENO_API std::vector<std::shared_ptr<IParam>> get_input_params() const override;
+    ZENO_API std::vector<std::shared_ptr<IParam>> get_output_params() const override;
+    ZENO_API void update_editparams(const std::vector<std::pair<zeno::ParamInfo, std::string>>& params) override;
     ZENO_API void add_param(bool bInput, const ParamInfo& param);
     ZENO_API void remove_param(bool bInput, const std::string& name);
 

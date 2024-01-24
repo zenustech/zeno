@@ -1257,6 +1257,7 @@ void ZEditParamLayoutDlg::onApply()
         QStandardItem* pItem = pInputs->child(i);
         zeno::ParamInfo param;
 
+        param.bInput = true;
         param.control = (zeno::ParamControl)pItem->data(ROLE_PARAM_CONTROL).toInt();
         param.type = (zeno::ParamType)pItem->data(ROLE_PARAM_TYPE).toInt();
         param.defl = UiHelper::qvarToZVar(pItem->data(ROLE_PARAM_VALUE), param.type);
@@ -1272,6 +1273,7 @@ void ZEditParamLayoutDlg::onApply()
         QStandardItem* pItem = pOutputs->child(i);
         zeno::ParamInfo param;
 
+        param.bInput = false;
         param.control = (zeno::ParamControl)pItem->data(ROLE_PARAM_CONTROL).toInt();
         param.type = (zeno::ParamType)pItem->data(ROLE_PARAM_TYPE).toInt();
         param.defl = UiHelper::qvarToZVar(pItem->data(ROLE_PARAM_VALUE), param.type);

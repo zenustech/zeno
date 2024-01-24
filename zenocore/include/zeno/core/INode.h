@@ -40,11 +40,8 @@ public:
     std::map<std::string, zany> outputs;    //考虑到参数名字会被更改，放在这里需要调整key，麻烦
     */
 
-    std::vector<std::shared_ptr<IParam>> inputs_;
-    std::vector<std::shared_ptr<IParam>> outputs_;
-
-    //todo: custom param for each node.
-    std::vector<std::shared_ptr<IParam>> custom_inputs;
+    std::map<std::string, std::shared_ptr<IParam>> inputs_;
+    std::map<std::string, std::shared_ptr<IParam>> outputs_;
 
     //std::set<std::string> kframes;
     //std::set<std::string> formulas;
@@ -79,15 +76,15 @@ public:
     ZENO_API void mark_dirty(bool bOn);
     ZENO_API bool is_dirty() const;
 
-    ZENO_API std::vector<std::shared_ptr<IParam>> get_input_params() const;
-    ZENO_API std::vector<std::shared_ptr<IParam>> get_output_params() const;
+    ZENO_API virtual std::vector<std::shared_ptr<IParam>> get_input_params() const;
+    ZENO_API virtual std::vector<std::shared_ptr<IParam>> get_output_params() const;
     ZENO_API std::shared_ptr<IParam> get_input_param(std::string const& name) const;
     ZENO_API std::shared_ptr<IParam> get_output_param(std::string const& name) const;
 
     ZENO_API bool update_param(const std::string& name, const zvariant& new_value);
     CALLBACK_REGIST(update_param, void, const std::string&, zvariant, zvariant)
 
-    ZENO_API void update_editparams(const std::vector<std::pair<zeno::ParamInfo, std::string>>& params);
+    ZENO_API virtual void update_editparams(const std::vector<std::pair<zeno::ParamInfo, std::string>>& params);
 
     ZENO_API void set_name(const std::string& name);
     ZENO_API std::string get_name() const;

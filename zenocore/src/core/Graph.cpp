@@ -356,12 +356,12 @@ ZENO_API bool Graph::removeNode(std::string const& name) {
 
     //remove links first
     std::vector<EdgeInfo> remLinks;
-    for (std::shared_ptr<IParam> spParam : it->second->inputs_) {
+    for (const auto& [_, spParam] : it->second->inputs_) {
         for (std::shared_ptr<ILink> spLink : spParam->links) {
             remLinks.push_back(getEdgeInfo(spLink));
         }
     }
-    for (std::shared_ptr<IParam> spParam : it->second->outputs_) {
+    for (const auto& [_, spParam] : it->second->outputs_) {
         for (std::shared_ptr<ILink> spLink : spParam->links) {
             remLinks.push_back(getEdgeInfo(spLink));
         }

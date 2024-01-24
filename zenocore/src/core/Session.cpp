@@ -51,6 +51,10 @@ struct ImplNodeClass : INodeClass {
             output1->name = "output1";
             output1->pos = { 1300, 250 };
             outputs.push_back(SocketDescriptor("", output1->name));
+
+            spSubnet->input_names.push_back("input1");
+            spSubnet->input_names.push_back("input2");
+            spSubnet->output_names.push_back("output1");
         }
 
         spNode->name = name;

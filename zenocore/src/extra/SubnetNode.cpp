@@ -73,19 +73,62 @@ ZENO_API void SubnetNode::add_param(bool bInput, const ParamInfo& param)
 ZENO_API void SubnetNode::remove_param(bool bInput, const std::string& name)
 {
     if (bInput) {
-        for (int i = 0; i < inputs_.size(); i++) {
-            if (inputs_[i]->name == name) {
-                inputs_.erase(inputs_.begin() + i);
-                break;
-            }
-        }
+        inputs_.erase(name);
     }
     else {
-        for (int i = 0; i < outputs_.size(); i++) {
-            if (outputs_[i]->name == name) {
-                outputs_.erase(outputs_.begin() + i);
-                break;
+        outputs_.erase(name);
+    }
+}
+
+ZENO_API std::vector<std::shared_ptr<IParam>> SubnetNode::get_input_params() const
+{
+    std::vector<std::shared_ptr<IParam>> params;
+    for (auto param : input_names) {
+        auto it = inputs_.find(param);
+        if (it == inputs_.end()) {
+            zeno::log_warn("unknown param {}", param);
+            continue;
+        }
+        params.push_back(it->second);
+    }
+    return params;
+}
+
+ZENO_API std::vector<std::shared_ptr<IParam>> SubnetNode::get_output_params() const
+{
+    std::vector<std::shared_ptr<IParam>> params;
+    for (auto param : output_names) {
+        auto it = outputs_.find(param);
+        if (it == outputs_.end()) {
+            zeno::log_warn("unknown param {}", param);
+            continue;
+        }
+        params.push_back(it->second);
+    }
+    return params;
+}
+
+ZENO_API void SubnetNode::update_editparams(const std::vector<std::pair<zeno::ParamInfo, std::string>>& params)
+{
+    std::set<std::string> inputs_old, outputs_old;
+    for (const auto& param_name : input_names) {
+        inputs_old.insert(param_name);
+    }
+    for (const auto& param_name : output_names) {
+        outputs_old.insert(param_name);
+    }
+
+    for (auto _pair : params) {
+        const std::string& coreparam = _pair.second;
+        const ParamInfo& param = _pair.first;
+        //TODO:
+        if (param.bInput) {
+            if (inputs_.find(coreparam) != inputs_.end()) {
+
             }
+        }
+        else {
+
         }
     }
 }
