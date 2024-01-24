@@ -243,16 +243,29 @@ struct AlembicPrimList : INode {
                 prims->arr.push_back(np);
             });
         }
-        for (auto &prim: prims->arr) {
+        auto new_prims = std::make_shared<zeno::ListObject>();
+        if (get_input2<bool>("splitByFaceset")) {
+            for (auto &prim: prims->arr) {
+                auto list = abc_split_by_name(std::dynamic_pointer_cast<PrimitiveObject>(prim));
+                new_prims->arr.insert(new_prims->arr.end(), list->arr.begin(), list->arr.end());
+            }
+        }
+        else {
+            new_prims = std::dynamic_pointer_cast<zeno::ListObject>(prims->clone());
+        }
+        for (auto &prim: new_prims->arr) {
             auto _prim = std::dynamic_pointer_cast<PrimitiveObject>(prim);
             if (get_input2<bool>("flipFrontBack")) {
                 flipFrontBack(_prim);
             }
-            if (get_input2<int>("triangulate") == 1) {
+            if (get_input2<bool>("killDeadVerts")) {
+                primKillDeadVerts(_prim.get());
+            }
+            if (get_input2<bool>("triangulate")) {
                 zeno::primTriangulate(_prim.get());
             }
         }
-        set_output("prims", std::move(prims));
+        set_output("prims", std::move(new_prims));
     }
 };
 
@@ -262,6 +275,8 @@ ZENDEFNODE(AlembicPrimList, {
         {"ABCTree", "abctree"},
         {"bool", "use_xform", "0"},
         {"bool", "triangulate", "0"},
+        {"bool", "splitByFaceset", "0"},
+        {"bool", "killDeadVerts", "0"},
     },
     {"prims"},
     {},
