@@ -23,7 +23,7 @@
 
 namespace zeno {
 
-// we should handle zeno-area facets here
+// #define TIMING_DETANGLE
 
 struct Detangle2 : zeno::INode {
     virtual void apply () override {
@@ -40,7 +40,7 @@ struct Detangle2 : zeno::INode {
         constexpr auto DETANGLE_CS_ET_BUFFER_KEY = "DETANGLE_CS_ET_BUFFER_KEY";
         constexpr auto DETANGLE_TRI_BVH_BUFFER_KEY = "DETANGLE_TRI_BVH_BUFFER_KEY";
         constexpr auto DETANGLE_ICM_GRADIENT_BUFFER_KEY = "DETANGLE_ICM_GRADIENT_BUFFER_KEY";
-        constexpr auto DEFAULT_MAX_DETANGLE_INTERSECTION_PAIR = 100000;
+        constexpr auto DEFAULT_MAX_DETANGLE_INTERSECTION_PAIR = 200000;
 
         auto zsparticles = get_input<ZenoParticles>("zsparticles");
         auto& verts = zsparticles->getParticles();
@@ -170,16 +170,23 @@ struct Detangle2 : zeno::INode {
 
         for(int iter = 0;iter != nm_iters;++iter) {
             auto refit_tri_bvh = iter > 0;
+#ifdef TIMING_DETANGLE
             timer.tick();
+#endif
             auto tri_bvs = retrieve_bounding_volumes(cudaExec,verts,tris,wrapv<3>{},0,xtag);
+
+            #ifdef TIMING_DETANGLE
             timer.tock("retrieve_tri_bvh_bounding_volumes");
 
             timer.tick();
+            #endif
             if(refit_tri_bvh)
                 tri_bvh.refit(cudaExec,tri_bvs);
             else
-                tri_bvh.build(cudaExec,tri_bvs);   
-            timer.tock("refit_tri_bvh");            
+                tri_bvh.build(cudaExec,tri_bvs);
+            #ifdef TIMING_DETANGLE   
+            timer.tock("refit_tri_bvh");      
+            #endif      
 
 
             cudaExec(zs::range(impulse_count),[]ZS_LAMBDA(auto& count) mutable {count = 0;});
@@ -190,8 +197,9 @@ struct Detangle2 : zeno::INode {
 
 
             auto use_dirty_bits = iter > 0;
-
+            #ifdef TIMING_DETANGLE
             timer.tick();
+            #endif
             cudaExec(zs::range(tris.size()),[
                 eps = eps,
                 tris = proxy<space>({},tris),
@@ -206,7 +214,9 @@ struct Detangle2 : zeno::INode {
                     tris.tuple(dim_c<3>,"nrm",ti) = tnrm;
                     tris("d",ti) = d;
             });
+            #ifdef TIMING_DETANGLE
             timer.tock("eval triangle plane");
+            #endif
 
 
             bool has_kine_intersection = false;
@@ -221,9 +231,11 @@ struct Detangle2 : zeno::INode {
                 auto kine_icm_grad = (T)0;
 
                 {
+                    #ifdef TIMING_DETANGLE
                     timer.tick();
+                    #endif
 
-                    std::cout << "retrive_intersections_between_edges_and_ktris" << std::endl;
+                    // std::cout << "retrive_intersections_between_edges_and_ktris" << std::endl;
                     retrieve_intersection_with_edge_tri_pairs(cudaExec,
                         verts,xtag,
                         edges,
@@ -233,8 +245,11 @@ struct Detangle2 : zeno::INode {
                         csET,
                         icm_grad,
                         use_barycentric_interpolator);
+
+                    #ifdef TIMING_DETANGLE
                     timer.tock("retrieve_intersection_with_EKT_pairs");
-                    std::cout << "finish retrive_intersections_between_edges_and_ktris : " << csET.size() << std::endl;
+                    #endif
+                    // std::cout << "finish retrive_intersections_between_edges_and_ktris : " << csET.size() << std::endl;
 
                     if(csET.size() > 0)
                         has_kine_intersection = true;
@@ -242,7 +257,11 @@ struct Detangle2 : zeno::INode {
 
                     nm_kinematic_intersection += csET.size();
                     auto enforce_boundary_normal = get_input2<bool>("enforce_boundary_normal");
+
+                    #ifdef TIMING_DETANGLE
                     timer.tick();
+                    #endif
+
                     eval_intersection_contour_minimization_gradient_of_edgeA_with_triB(cudaExec,
                         verts,xtag,
                         edges,
@@ -255,8 +274,12 @@ struct Detangle2 : zeno::INode {
                         csET,
                         icm_grad,
                         enforce_boundary_normal);      
+
+                    #ifdef TIMING_DETANGLE
                     timer.tock("eval_intersection_contour_minimization_gradient_with_EKT");  
                     timer.tick();
+                    #endif
+
                     cudaExec(zip(zs::range(csET.size()),csET._activeKeys),[
                         vertsHasM = verts.hasProperty("m"),
                         vertsHasMinv = verts.hasProperty("minv"),
@@ -329,14 +352,17 @@ struct Detangle2 : zeno::INode {
                     auto ekt_impulse_norm2 = TILEVEC_OPS::dot<3>(cudaExec,verts,"grad","grad");
 
                     kine_icm_grad += ekt_impulse_norm2;
-                    std::cout << "EKT IMPULSE : " << ekt_impulse_norm2 << std::endl;
-
+                    // std::cout << "EKT IMPULSE : " << ekt_impulse_norm2 << std::endl;
+                    #ifdef TIMING_DETANGLE
                     timer.tock("assemble EKT icm gradient");   
+                    #endif
                 }
 
                 {
-                    std::cout << "retrive_intersections_between_kedges_and_tris" << std::endl;
+                    // std::cout << "retrive_intersections_between_kedges_and_tris" << std::endl;
+                    #ifdef TIMING_DETANGLE
                     timer.tick();
+                    #endif
                     retrieve_intersection_with_edge_tri_pairs(cudaExec,
                         kvtemp,"x",
                         kedges,
@@ -346,16 +372,21 @@ struct Detangle2 : zeno::INode {
                         csET,
                         icm_grad,
                         use_barycentric_interpolator);
+                    #ifdef TIMING_DETANGLE
                     timer.tock("retrieve_intersection_with_KET_pairs");
+                    #endif
 
-                    std::cout << "finish retrive_intersections_between_kedges_and_tris" << std::endl;
+                    // std::cout << "finish retrive_intersections_between_kedges_and_tris" << std::endl;
 
                     if(csET.size() > 0)
                         has_kine_intersection = true;
 
                     nm_kinematic_intersection += csET.size();
 
+                    #ifdef TIMING_DETANGLE
                     timer.tick();
+                    #endif
+
                     eval_intersection_contour_minimization_gradient_of_edgeA_with_triB(cudaExec,
                         kvtemp,"x",
                         kedges,
@@ -366,10 +397,13 @@ struct Detangle2 : zeno::INode {
                         maximum_correction,
                         progressive_slope,                        
                         csET,
-                        icm_grad);      
+                        icm_grad);   
+                        
+                    #ifdef TIMING_DETANGLE
                     timer.tock("eval_intersection_contour_minimization_gradient_with_KET"); 
-
                     timer.tick();
+                    #endif
+
                     cudaExec(zip(zs::range(csET.size()),csET._activeKeys),[
                         vertsHasM = verts.hasProperty("m"),
                         vertsHasMinv = verts.hasProperty("minv"),
@@ -440,19 +474,19 @@ struct Detangle2 : zeno::INode {
                     auto ket_impulse_norm2 = TILEVEC_OPS::dot<3>(cudaExec,verts,"grad","grad");
                     
                     kine_icm_grad += ket_impulse_norm2;
-                    // if(ket_impulse_norm2 < 1e-7)
 
-                    std::cout << "KET IMPULSE : " << ket_impulse_norm2 << std::endl;
-                    timer.tock("assemble KET icm gradient");      
+                    #ifdef TIMING_DETANGLE
+                    timer.tock("assemble KET icm gradient");   
+                    #endif   
                 }
                 
                 kine_icm_grad = kine_icm_grad;
-                if(kine_icm_grad < 1e-7)
+                if(kine_icm_grad < 1e-5)
                     has_kine_intersection = false;
             }
 
             if(do_self_detangle) {
-                std::cout << "do self detangle" << std::endl;
+                // std::cout << "do self detangle" << std::endl;
 
                 retrieve_self_intersection_tri_edge_pairs(cudaExec,
                     verts,xtag,
@@ -463,7 +497,7 @@ struct Detangle2 : zeno::INode {
                     icm_grad,
                     use_barycentric_interpolator); 
 
-                std::cout << "nm_self_intersections_ET : " << csET.size() << std::endl;
+                // std::cout << "nm_self_intersections_ET : " << csET.size() << std::endl;
 
                 has_self_intersection = csET.size() > 0;
 
@@ -479,12 +513,15 @@ struct Detangle2 : zeno::INode {
                         maximum_correction,
                         progressive_slope,
                         csET,
-                        icm_grad,enforce_self_intersection_normal);      
-                    timer.tock("eval_self_intersection_contour_minimization_gradient");  
+                        icm_grad,enforce_self_intersection_normal);   
+                        
+                    #ifdef TIMING_DETANGLE
+                    timer.tock("eval_self_intersection_contour_minimization_gradient"); 
+                    #endif 
                     
                     auto icm_gradn = TILEVEC_OPS::dot<3>(cudaExec,icm_grad,"grad","grad");
-                    std::cout << "icm_self_ET_gradn : " << icm_gradn << std::endl;
-                    if(icm_gradn < 1e-7)
+                    // std::cout << "icm_self_ET_gradn : " << icm_gradn << std::endl;
+                    if(icm_gradn < 1e-5)
                         has_self_intersection = false;
                     else {
                         timer.tick();
@@ -592,7 +629,9 @@ struct Detangle2 : zeno::INode {
                                         atomic_add(exec_tag,&verts(gradOffset + d,tri[i]),-impulse[d] * beta);             
                                 }
                         });
+                        #ifdef TIMING_DETANGLE
                         timer.tock("assemble self icm gradient");
+                        #endif
                     }
                 }
             }
@@ -604,12 +643,14 @@ struct Detangle2 : zeno::INode {
             if(!has_self_intersection && !has_kine_intersection)
                 break;
 
+            #ifdef TIMING_DETANGLE
             timer.tick();
+            #endif
 
             auto filter_the_update = get_input2<bool>("filter_the_update");
 
             auto gradn = TILEVEC_OPS::dot<3>(cudaExec,verts,"grad","grad");
-            std::cout << "apply gradient : " << gradn <<  std::endl;
+            // std::cout << "apply gradient : " << gradn <<  std::endl;
             cudaExec(zs::range(verts.size()),[
                 impulse_count = proxy<space>(impulse_count),
                 eps = eps,
@@ -627,7 +668,10 @@ struct Detangle2 : zeno::INode {
                     }
                     verts.tuple(dim_c<3>,xtagOffset,vi) = verts.pack(dim_c<3>,xtagOffset,vi) + G;
             });
+
+            #ifdef TIMING_DETANGLE
             timer.tock("write_back_to_displacement");
+            #endif
         }
 
         set_output("zsparticles",zsparticles);

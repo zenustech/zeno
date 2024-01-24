@@ -331,10 +331,10 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
             constexpr auto eps = 1e-6;
 
 
-            zs::CppTimer timer;
+            // zs::CppTimer timer;
 
             res.reset(pol,true);
-            timer.tick();
+            // timer.tick();
 
 
 #ifdef USE_TMP_BUFFER_BEFORE_HASH
@@ -505,8 +505,8 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
             });
 #endif
 
-            printf("nm_intersection_pair : %d\n",res.size());
-            timer.tock("detect intersection pair");
+            // printf("nm_intersection_pair : %d\n",res.size());
+            // timer.tock("detect intersection pair");
     }
 
 
@@ -540,10 +540,10 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
             constexpr auto exec_tag = wrapv<space>{};
             constexpr auto eps = 1e-6;
 
-            zs::CppTimer timer;
+            // zs::CppTimer timer;
             cs_ET.reset(pol,true);
 
-            timer.tick();
+            // timer.tick();
 
             pol(zs::range(edges.size()),[
                 exec_tag = exec_tag,
@@ -674,6 +674,6 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
                     }; 
                     ktri_bvh.iter_neighbors(bv,process_potential_EKT_intersection_pairs);              
             });  
-            timer.tock("detect KET or EKT intersection pair");
+            // timer.tock("detect KET or EKT intersection pair");
     }
 };
