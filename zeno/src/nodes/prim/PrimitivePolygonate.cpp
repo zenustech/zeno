@@ -20,6 +20,14 @@ ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv) {
                  prim->points.size());
     matid.assign(matid.size(), -1);
 
+    bool tri_has_faceset = prim->tris.has_attr("faceset");
+    bool quad_has_faceset = prim->quads.has_attr("faceset");
+    std::vector<int> faceset;
+    faceset.resize(prim->polys.size() + prim->tris.size() +
+                 prim->quads.size() + prim->lines.size() +
+                 prim->points.size());
+    faceset.assign(faceset.size(), -1);
+
     int old_loop_base = prim->loops.size();
     int polynum = prim->polys.size();
     if (prim->tris.size()) {
@@ -32,6 +40,8 @@ ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv) {
             prim->polys.push_back({base + i * 3, 3});
             if(tri_has_mat)
                 matid[polynum + i] = prim->tris.attr<int>("matid")[i];
+            if (tri_has_faceset)
+                faceset[polynum + i] = prim->tris.attr<int>("faceset")[i];
         }
 
         prim->tris.foreach_attr([&](auto const &key, auto const &arr) {
@@ -53,6 +63,8 @@ ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv) {
             prim->polys.push_back({base + i * 4, 4});
             if(quad_has_mat)
                 matid[polynum + i] = prim->quads.attr<int>("matid")[i];
+            if (quad_has_faceset)
+                faceset[polynum + i] = prim->quads.attr<int>("faceset")[i];
         }
 
         prim->quads.foreach_attr([&](auto const &key, auto const &arr) {
@@ -128,6 +140,11 @@ ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv) {
     for(int i=0;i<matid.size();i++)
     {
         prim->polys.attr<int>("matid")[i] = matid[i];
+    }
+    prim->polys.add_attr<int>("faceset");
+    for(int i=0;i<faceset.size();i++)
+    {
+        prim->polys.attr<int>("faceset")[i] = faceset[i];
     }
 
     prim->tris.clear();
