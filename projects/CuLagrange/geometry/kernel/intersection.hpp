@@ -312,14 +312,16 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
         typename TriBVH,
         typename BaryTileVec>
     void retrieve_self_intersection_tri_edge_pairs(Pol& pol,
-        const PosTileVec& verts, const zs::SmallString& xtag,
+        const PosTileVec& verts, const zs::SmallString& xtag, const zs::SmallString& collision_group_name,
         const TriTileVec& tris,
         const EdgeTileVec& edges,
         const TriBVH& tri_bvh,
         zs::bht<int,2,int>& res,
         BaryTileVec& bary_buffer,
-        // bool refit_bvh = false,
-        bool use_barycentric_interpolator = false) {
+        const float& thickness,
+        bool use_barycentric_interpolator = false,
+        bool skip_too_close_pair_at_rest_configuration = false,
+        bool use_collision_group = false) {
             using namespace zs;
             using vec2i = zs::vec<int,2>;
             using bv_t = typename ZenoParticles::lbvh_t::Box;
@@ -361,6 +363,13 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
                 hasCollisionCancel = verts.hasProperty("collision_cancel"),
                 hasMinv = verts.hasProperty("minv"),
                 minvOffset = verts.getPropertyOffset("minv"),
+                hasRestShape = verts.hasProperty("X"),
+                restShapeOffset = verts.getPropertyOffset("X"),
+                hasCollisionGroup = verts.hasProperty(collision_group_name),
+                collisionGroupOffset = verts.getPropertyOffset(collision_group_name),
+                thickness = thickness,
+                use_collision_group = use_collision_group,
+                skip_too_close_pair_at_rest_configuration = skip_too_close_pair_at_rest_configuration,
                 eps = eps,
 #ifdef USE_TMP_BUFFER_BEFORE_HASH    
                 MAX_NM_INTERSECTION_PER_EDGE = MAX_NM_INTERSECTION_PER_EDGE,
@@ -392,7 +401,15 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
                                 edge_has_dynamic_points = false;
                     }
 
-                        
+                    auto do_rest_shape_skip_in_the_same_collision_group = hasRestShape && skip_too_close_pair_at_rest_configuration;
+
+                    auto Vs = vs;
+                    auto Ve = ve;
+                    if(do_rest_shape_skip_in_the_same_collision_group) {
+                        Vs = verts.pack(dim_c<3>,restShapeOffset,edge[0]);
+                        Ve = verts.pack(dim_c<3>,restShapeOffset,edge[1]);
+                    }
+ 
                     int nm_intersect_tri = 0;
                     auto process_potential_ET_intersection_pairs = [&](int ti) mutable {
                         auto tri = tris.pack(dim_c<3>,triIndsOffset,ti,int_c);
@@ -416,6 +433,27 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
 
                         if(!edge_has_dynamic_points && !tri_has_dynamic_points)
                             return;
+
+
+                        if(do_rest_shape_skip_in_the_same_collision_group) {
+                            vec tVs[3] = {};
+                            for(int i = 0;i != 3;++i)
+                                tVs[i] = verts.pack(dim_c<3>,restShapeOffset,tri[i]);
+                            
+                            auto is_same_collision_group = false;
+                            if(use_collision_group) {
+                                is_same_collision_group = zs::abs(verts(collisionGroupOffset,edge[0]) - verts(collisionGroupOffset,tri[0])) < 0.1;
+                            }
+
+                            if(is_same_collision_group) {
+                                for(int i = 0;i != 3;++i) {
+                                    if((tVs[i] - Vs).norm() < thickness)
+                                        return;
+                                    if((tVs[i] - Ve).norm() < thickness)
+                                        return;    
+                                }
+                            }
+                        }
 
                         vec3 tvs[3] = {};
                         for(int i = 0;i != 3;++i)
