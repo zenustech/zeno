@@ -784,6 +784,8 @@ struct FleshDynamicStepping : INode {
 
             cudaPol(zs::range(nmEmbedVerts), [
                     gh_buffer = proxy<space>({},gh_buffer),model = model,
+                    kd_beta = kd_beta,
+                    dt = dt,
                     bcws = proxy<space>({},b_bcws),b_verts = proxy<space>({},b_verts),vtemp = proxy<space>({},vtemp),etemp = proxy<space>({},etemp),
                     eles = proxy<space>({},eles),bone_driven_weight = bone_driven_weight,offset = offset] ZS_LAMBDA(int vi) mutable {
                         auto ei = reinterpret_bits<int>(bcws("inds",vi));
@@ -818,6 +820,13 @@ struct FleshDynamicStepping : INode {
                         auto tpos = vec3::zeros();
                         for(int i = 0;i != 4;++i)
                             tpos += w[i] * vtemp.pack(dim_c<3>,"xn",inds[i]);
+
+                        auto tvel = vec3::zeros();
+                        for(int i = 0;i != 4;++i)
+                            tvel += w[i] * vtemp.pack(dim_c<3>,"xp",inds[i]);
+                        tvel = tpos - tvel;
+                        tvel /= dt;
+
                         auto pdiff = tpos - b_verts.pack<3>("x",vi);
                         // auto pdiff = tpos - b_verts[vi];
 
@@ -828,6 +837,8 @@ struct FleshDynamicStepping : INode {
 
                         for(size_t i = 0;i != 4;++i){
                             auto tmp = -pdiff * alpha * w[i]; 
+
+                            tmp -= tvel * alpha * w[i] * kd_beta;
                             // if(vi == 0 && i == 0) {
                                 // printf("check: %f %f %f\n",(float)tmp[0],(float)tmp[1],(float)tmp[2]);
                             // }
@@ -839,7 +850,7 @@ struct FleshDynamicStepping : INode {
                         }
                         for(int i = 0;i != 4;++i)
                             for(int j = 0;j != 4;++j){
-                                T beta = alpha * w[i] * w[j];
+                                T beta = alpha * w[i] * w[j] * (1 + kd_beta / dt);
                                 if(isnan(beta))
                                     printf("nan H detected at driver : %d %f %f\n",vi,(float)b_verts("strength",vi),(float)alpha);
                                 for(int d = 0;d != 3;++d){
