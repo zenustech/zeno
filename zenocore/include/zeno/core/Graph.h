@@ -62,7 +62,7 @@ struct Graph : std::enable_shared_from_this<Graph> {
     //BEGIN NEW STANDARD API
     ZENO_API void init(const GraphData& graph);
 
-    ZENO_API std::shared_ptr<INode> createNode(std::string const& cls, std::pair<float, float> pos = {});
+    ZENO_API std::shared_ptr<INode> createNode(std::string const& cls, std::string name = "", std::pair<float, float> pos = {});
     CALLBACK_REGIST(createNode, void, const std::string&, std::weak_ptr<zeno::INode>)
 
     ZENO_API bool removeNode(std::string const& name);
@@ -83,7 +83,7 @@ struct Graph : std::enable_shared_from_this<Graph> {
     ZENO_API std::string getName() const;
     ZENO_API void setName(const std::string& name);
 
-    ZENO_API std::string updateNodeName(const std::string& oldName, const std::string& newName = "");
+    ZENO_API std::string updateNodeName(const std::string oldName, const std::string newName = "");
     CALLBACK_REGIST(updateNodeName, void, std::string, std::string)
     //END
 

@@ -73,7 +73,6 @@ private:
     void _initLayoutModel();
     void initIcon(QStandardItem *item);
     QIcon getIcon(const QStandardItem *pItem);
-    void applyForItem(QStandardItem* dstItem, QStandardItem* srcItem);
     void proxyModelSetData(const QModelIndex& index, const QVariant& newValue, int role);
     void switchStackProperties(int ctrl, QStandardItem *pItem);
     void updateSliderInfo();

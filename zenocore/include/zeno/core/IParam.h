@@ -25,15 +25,15 @@ struct ILink {
 
 struct IParam {
     std::string name;
-    ParamType type;
-    std::weak_ptr<INode> m_spNode;
+
+    std::weak_ptr<INode> m_wpNode;
     std::list<std::shared_ptr<ILink>> links;
 
     zvariant defl;
     zany result;
 
-    //ZENO_API bool update_defl(const zvariant& var);
-    //ZENO_API bool update_type(const ParamType type);
+    ParamControl control = NullControl;
+    ParamType type = Param_Null;
 };
 
 }

@@ -75,7 +75,7 @@ ZENO_API bool Graph::applyNode(std::string const &id) {
     auto node = safe_at(nodes, id, "node name").get();
     GraphException::translated([&] {
         node->doApply();
-    }, node->name);
+    }, node->get_name());
     if (dirtyChecker && dirtyChecker->amIDirty(id)) {
         return true;
     }
@@ -251,7 +251,7 @@ std::string Graph::generateNewName(const std::string& node_cls)
     return "";
 }
 
-ZENO_API std::string Graph::updateNodeName(const std::string& oldName, const std::string& newName)
+ZENO_API std::string Graph::updateNodeName(const std::string oldName, const std::string newName)
 {
     if (newName.empty() || nodes.find(oldName) == nodes.end()) {
         return "";
@@ -259,7 +259,7 @@ ZENO_API std::string Graph::updateNodeName(const std::string& oldName, const std
     auto spNode = nodes[oldName];
     std::string name = newName;
     if (nodes.find(name) != nodes.end()) {
-        name = generateNewName(spNode->nodecls);
+        name = generateNewName(spNode->get_nodecls());
     }
     spNode->set_name(name);
     nodes[name] = nodes[oldName];
@@ -269,14 +269,15 @@ ZENO_API std::string Graph::updateNodeName(const std::string& oldName, const std
     return name;
 }
 
-ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls, std::pair<float, float> pos)
+ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls, std::string name, std::pair<float, float> pos)
 {
     auto cl = safe_at(getSession().nodeClasses, cls, "node class name").get();
-    std::string const& name = generateNewName(cls);
+    if (name.empty())
+        name = generateNewName(cls);
     std::shared_ptr<INode> node = cl->new_instance(name);
     node->graph = this;
     node->nodeClass = cl;
-    node->pos = pos;
+    node->m_pos = pos;
     nodes[name] = node;
 
     CALLBACK_NOTIFY(createNode, name, node)
@@ -294,7 +295,7 @@ ZENO_API std::shared_ptr<INode> Graph::createSubnetNode(std::string const& cls)
     auto subnetnode = std::dynamic_pointer_cast<SubnetNode>(node);
     subnetnode->subnetClass = std::move(subcl);
 
-    nodes[node->name] = node;
+    nodes[node->get_name()] = node;
     CALLBACK_NOTIFY(createSubnetNode, subnetnode)
     return node;
 }
@@ -370,7 +371,7 @@ ZENO_API bool Graph::removeNode(std::string const& name) {
         removeLink(edge);
     }
 
-    node_set[it->second->nodecls].erase(name);
+    node_set[it->second->get_nodecls()].erase(name);
     nodes.erase(name);
     CALLBACK_NOTIFY(removeNode, name)
     return true;

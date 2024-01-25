@@ -214,7 +214,7 @@ QString GraphModel::owner() const
     if (auto pItem = qobject_cast<NodeItem*>(parent()))
     {
         auto spNode = pItem->m_wpNode.lock();
-        return spNode ? QString::fromStdString(spNode->name) : "";
+        return spNode ? QString::fromStdString(spNode->get_name()) : "";
     }
     else {
         return "main";
@@ -472,7 +472,7 @@ zeno::NodeData GraphModel::createNode(const QString& nodeCls, const QPointF& pos
     if (!spGraph)
         return node;
 
-    spGraph->createNode(nodeCls.toStdString(), {pos.x(), pos.y()});
+    spGraph->createNode(nodeCls.toStdString(), "", {pos.x(), pos.y()});
     return node;
 }
 
@@ -487,7 +487,7 @@ void GraphModel::_appendNode(std::shared_ptr<zeno::INode> spNode)
     NodeItem* pItem = new NodeItem(this);
     pItem->init(this, spNode);
 
-    const QString& name = QString::fromStdString(spNode->name);
+    const QString& name = QString::fromStdString(spNode->get_name());
     m_row2name[nRows] = name;
     m_name2Row[name] = nRows;
     m_nodes.insert(name, pItem);

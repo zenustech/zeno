@@ -90,14 +90,14 @@ namespace zeno {
         if (!spOutParam || !spInParam)
             return edge;
 
-        auto spOutNode = spOutParam->m_spNode.lock();
-        auto spInNode = spInParam->m_spNode.lock();
+        auto spOutNode = spOutParam->m_wpNode.lock();
+        auto spInNode = spInParam->m_wpNode.lock();
         if (!spOutNode || !spInNode)
             return edge;
 
-        const std::string& outNode = spOutNode->name;
+        const std::string& outNode = spOutNode->get_name();
         const std::string& outParam = spOutParam->name;
-        const std::string& inNode = spInNode->name;
+        const std::string& inNode = spInNode->get_name();
         const std::string& inParam = spInParam->name;
         edge = { outNode, outParam, "", inNode, inParam, spLink->keyName };
         return edge;

@@ -39,8 +39,8 @@ struct ImplSubnetNodeClass : INodeClass {
 
         //TODO: need to find descriptors name, to create Subnet.
 
-        spNode->name = name;
-        spNode->nodecls = classname;
+        spNode->set_name(name);
+        spNode->m_nodecls = classname;
         return spNode;
     }
 };

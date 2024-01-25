@@ -9,27 +9,7 @@ ParamsModel::ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent)
     : QAbstractListModel(parent)
     , m_wpNode(spNode)
 {
-    std::vector<std::shared_ptr<zeno::IParam>> inputs = spNode->get_input_params();
-    for (std::shared_ptr<zeno::IParam> spParam : inputs) {
-        ParamItem item;
-        item.bInput = true;
-        item.control = UiHelper::getDefaultControl(spParam->type);
-        item.m_wpParam = spParam;
-        item.name = QString::fromStdString(spParam->name);
-        item.type = spParam->type;
-        item.value = UiHelper::zvarToQVar(spParam->defl);
-        m_items.append(item);
-    }
-
-    std::vector<std::shared_ptr<zeno::IParam>> outputs = spNode->get_output_params();
-    for (std::shared_ptr<zeno::IParam> spParam : outputs) {
-        ParamItem item;
-        item.bInput = false;
-        item.m_wpParam = spParam;
-        item.name = QString::fromStdString(spParam->name);
-        item.type = spParam->type;
-        m_items.append(item);
-    }
+    initParamItems();
 
     //TODO: register callback for core param adding/removing, for the functionally of custom param panel.
     cbUpdateParam = spNode->register_update_param(
@@ -44,6 +24,36 @@ ParamsModel::ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent)
                 }
             }
     });
+}
+
+void ParamsModel::initParamItems()
+{
+    auto spNode = m_wpNode.lock();
+    ZASSERT_EXIT(spNode);
+    std::vector<std::shared_ptr<zeno::IParam>> inputs = spNode->get_input_params();
+    for (std::shared_ptr<zeno::IParam> spParam : inputs) {
+        ParamItem item;
+        item.bInput = true;
+        item.control = spParam->control;
+        if (item.control == zeno::NullControl)
+            item.control = UiHelper::getDefaultControl(spParam->type);
+        item.m_wpParam = spParam;
+        item.name = QString::fromStdString(spParam->name);
+        item.type = spParam->type;
+        item.value = UiHelper::zvarToQVar(spParam->defl);
+        m_items.append(item);
+    }
+
+    std::vector<std::shared_ptr<zeno::IParam>> outputs = spNode->get_output_params();
+    for (std::shared_ptr<zeno::IParam> spParam : outputs) {
+        ParamItem item;
+        item.bInput = false;
+        item.m_wpParam = spParam;
+        item.control = zeno::NullControl;
+        item.name = QString::fromStdString(spParam->name);
+        item.type = spParam->type;
+        m_items.append(item);
+    }
 }
 
 QVariant ParamsModel::data(const QModelIndex& index, int role) const
@@ -224,6 +234,12 @@ void ParamsModel::batchModifyParams(const std::vector<std::pair<zeno::ParamInfo,
     auto spNode = m_wpNode.lock();
     ZASSERT_EXIT(spNode);
     spNode->update_editparams(params);
+
+    //assuming that the param layout has changed, and we muse reconstruct all params and index.
+    emit layoutAboutToBeChanged();
+    m_items.clear();
+    initParamItems();
+    emit layoutChanged();
 }
 
 bool ParamsModel::removeRows(int row, int count, const QModelIndex& parent)

@@ -91,9 +91,10 @@ public slots:
     void onParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
     void onParamInserted(const QModelIndex& parent, int first, int last);
     void onViewParamAboutToBeRemoved(const QModelIndex& parent, int first, int last);
-
     void onViewParamAboutToBeMoved(const QModelIndex& parent, int start, int end, const QModelIndex& destination, int row);
     void onViewParamsMoved(const QModelIndex& parent, int start, int end, const QModelIndex& destination, int row);
+    void onLayoutAboutToBeChanged();
+    void onLayoutChanged();
 
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
@@ -140,16 +141,15 @@ private:
     void onUpdateFrame(QGraphicsItem* pContrl, int nFrame, QVariant val);
     void onPasteSocketRefSlot(QModelIndex toIndex);
 
+    QVector<ZSocketLayout*> getSocketLayouts(bool bInput) const;
+
     QPersistentModelIndex m_index;
     QPersistentModelIndex m_subGpIndex;
 
-#if 0
-    FuckQMap<QString, ZSocketLayout*> m_inSockets;
-#endif
-    QVector<ZSocketLayout*> m_inSockets;
+    //QVector<ZSocketLayout*> m_inSockets;
+    //QVector<ZSocketLayout*> m_outSockets;
 
     QKeyList<QString, _param_ctrl> m_params;
-    QVector<ZSocketLayout*> m_outSockets;
 
     ZGraphicsTextItem* m_NameItem;
     ZSimpleTextItem *m_pCategoryItem;

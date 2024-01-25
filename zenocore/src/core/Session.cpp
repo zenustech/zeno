@@ -38,34 +38,29 @@ struct ImplNodeClass : INodeClass {
         if (spSubnet) {
             spSubnet->subgraph->setName(name);
             //manually init some args nodes.
-            auto input1 = spSubnet->subgraph->createNode("SubInput");
-            input1->name = "input1";
-            inputs.push_back(SocketDescriptor("", input1->name));
+            auto input1 = spSubnet->subgraph->createNode("SubInput", "input1", {0,0});
+            inputs.push_back(SocketDescriptor("", input1->get_name()));
 
-            auto input2 = spSubnet->subgraph->createNode("SubInput");
-            input2->name = "input2";
-            input2->pos = { 0, 700 };
-            inputs.push_back(SocketDescriptor("", input2->name));
+            auto input2 = spSubnet->subgraph->createNode("SubInput", "input2", {0,700});
+            inputs.push_back(SocketDescriptor("", input2->get_name()));
 
-            auto output1 = spSubnet->subgraph->createNode("SubOutput");
-            output1->name = "output1";
-            output1->pos = { 1300, 250 };
-            outputs.push_back(SocketDescriptor("", output1->name));
+            auto output1 = spSubnet->subgraph->createNode("SubOutput", "output1", { 1300, 250 });
+            outputs.push_back(SocketDescriptor("", output1->get_name()));
 
             spSubnet->input_names.push_back("input1");
             spSubnet->input_names.push_back("input2");
             spSubnet->output_names.push_back("output1");
         }
 
-        spNode->name = name;
-        spNode->nodecls = classname;
+        spNode->set_name(name);
+        spNode->m_nodecls = classname;
 
         //init all params, and set defl value
         for (SocketDescriptor& param_desc : inputs)
         {
             std::shared_ptr<IParam> sparam = std::make_shared<IParam>();
             sparam->name = param_desc.name;
-            sparam->m_spNode = spNode;
+            sparam->m_wpNode = spNode;
             sparam->type = zeno::convertToType(param_desc.type);
             sparam->defl = zeno::str2var(param_desc.defl, sparam->type);
             spNode->add_input_param(sparam);
@@ -75,7 +70,7 @@ struct ImplNodeClass : INodeClass {
         {
             std::shared_ptr<IParam> sparam = std::make_shared<IParam>();
             sparam->name = param_desc.name;
-            sparam->m_spNode = spNode;
+            sparam->m_wpNode = spNode;
             sparam->type = zeno::convertToType(param_desc.type);
             sparam->defl = zeno::str2var(param_desc.defl, sparam->type);
             spNode->add_input_param(sparam);
@@ -85,9 +80,8 @@ struct ImplNodeClass : INodeClass {
         {
             std::shared_ptr<IParam> sparam = std::make_shared<IParam>();
             sparam->name = param_desc.name;
-            sparam->m_spNode = spNode;
+            sparam->m_wpNode = spNode;
             sparam->type = zeno::convertToType(param_desc.type);
-            //sparam->defl = zeno::str2var(param_desc.defl, sparam->type);
             spNode->add_output_param(sparam);
         }
 

@@ -267,6 +267,8 @@ ZLayoutBackground* ZenoNode::initBodyWidget(ZenoSubGraphScene* pScene)
     connect(paramsM, &ParamsModel::dataChanged, this, &ZenoNode::onParamDataChanged);
     connect(paramsM, &ParamsModel::rowsAboutToBeMoved, this, &ZenoNode::onViewParamAboutToBeMoved);
     connect(paramsM, &ParamsModel::rowsMoved, this, &ZenoNode::onViewParamsMoved);
+    connect(paramsM, &ParamsModel::layoutAboutToBeChanged, this, &ZenoNode::onLayoutAboutToBeChanged);
+    bool ret = connect(paramsM, &ParamsModel::layoutChanged, this, &ZenoNode::onLayoutChanged);
 
     m_inputsLayout = initSockets(paramsM, true, pScene);
     m_bodyLayout->addLayout(m_inputsLayout);
@@ -284,6 +286,62 @@ ZLayoutBackground* ZenoNode::initBodyWidget(ZenoSubGraphScene* pScene)
 
     bodyWidget->setLayout(m_bodyLayout);
     return bodyWidget;
+}
+
+void ZenoNode::onLayoutAboutToBeChanged()
+{
+
+}
+
+QVector<ZSocketLayout*> ZenoNode::getSocketLayouts(bool bInput) const
+{
+    QVector<ZSocketLayout*> layouts;
+    if (bInput) {
+        for (int i = 0; i < m_inputsLayout->count(); i++) {
+            ZGvLayoutItem* pItem = m_inputsLayout->itemAt(i);
+            layouts.push_back(static_cast<ZSocketLayout*>(pItem->pLayout));
+        }
+    }
+    else {
+        for (int i = 0; i < m_outputsLayout->count(); i++) {
+            ZGvLayoutItem* pItem = m_outputsLayout->itemAt(i);
+            layouts.push_back(static_cast<ZSocketLayout*>(pItem->pLayout));
+        }
+    }
+    return layouts;
+}
+
+void ZenoNode::onLayoutChanged()
+{
+    ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(this->scene());
+    ZASSERT_EXIT(pScene);
+
+    m_inputsLayout->clear();
+    ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(m_index.data(ROLE_PARAMS));
+    ZASSERT_EXIT(paramsM);
+
+    for (int r = 0; r < paramsM->rowCount(); r++)
+    {
+        const QModelIndex& paramIdx = paramsM->index(r, 0);
+        if (!paramIdx.data(ROLE_ISINPUT).toBool())
+            continue;
+
+        ZSocketLayout* pSocketLayout = addSocket(paramIdx, true, pScene);
+        m_inputsLayout->addLayout(pSocketLayout);
+    }
+
+    m_outputsLayout->clear();
+    for (int r = 0; r < paramsM->rowCount(); r++)
+    {
+        const QModelIndex& paramIdx = paramsM->index(r, 0);
+        if (paramIdx.data(ROLE_ISINPUT).toBool())
+            continue;
+
+        ZSocketLayout* pSocketLayout = addSocket(paramIdx, false, pScene);
+        m_outputsLayout->addLayout(pSocketLayout);
+    }
+
+    updateWhole();
 }
 
 ZGraphicsLayout* ZenoNode::initCustomParamWidgets()
@@ -318,25 +376,13 @@ void ZenoNode::onNameUpdated(const QString& newName)
 
 ZSocketLayout* ZenoNode::getSocketLayout(bool bInput, const QString& name)
 {
-    if (bInput)
+    QVector<ZSocketLayout*> layouts = getSocketLayouts(bInput);
+    for (int i = 0; i < layouts.size(); i++)
     {
-        for (int i = 0; i < m_inSockets.size(); i++)
-        {
-            QModelIndex idx = m_inSockets[i]->viewSocketIdx();
-            QString sockName = idx.data(ROLE_PARAM_NAME).toString();
-            if (sockName == name)
-                return m_inSockets[i];
-        }
-    }
-    else
-    {
-        for (int i = 0; i < m_outSockets.size(); i++)
-        {
-            QModelIndex idx = m_outSockets[i]->viewSocketIdx();
-            QString sockName = idx.data(ROLE_PARAM_NAME).toString();
-            if (sockName == name)
-                return m_outSockets[i];
-        }
+        QModelIndex idx = layouts[i]->viewSocketIdx();
+        QString sockName = idx.data(ROLE_PARAM_NAME).toString();
+        if (sockName == name)
+            return layouts[i];
     }
     return nullptr;
 }
@@ -345,26 +391,28 @@ bool ZenoNode::removeSocketLayout(bool bInput, const QString& name)
 {
     if (bInput)
     {
-        for (int i = 0; i < m_inSockets.size(); i++)
+        QVector<ZSocketLayout*> layouts = getSocketLayouts(bInput);
+        for (int i = 0; i < layouts.size(); i++)
         {
-            QModelIndex idx = m_inSockets[i]->viewSocketIdx();
+            QModelIndex idx = layouts[i]->viewSocketIdx();
             QString sockName = idx.data(ROLE_PARAM_NAME).toString();
             if (sockName == name)
             {
-                m_inSockets.remove(i);
+                m_inputsLayout->removeElement(i);
                 return false;
             }
         }
     }
     else
     {
-        for (int i = 0; i < m_outSockets.size(); i++)
+        QVector<ZSocketLayout*> layouts = getSocketLayouts(bInput);
+        for (int i = 0; i < layouts.size(); i++)
         {
-            QModelIndex idx = m_outSockets[i]->viewSocketIdx();
+            QModelIndex idx = layouts[i]->viewSocketIdx();
             QString sockName = idx.data(ROLE_PARAM_NAME).toString();
             if (sockName == name)
             {
-                m_outSockets.remove(i);
+                m_outputsLayout->removeElement(i);
                 return false;
             }
         }
@@ -403,36 +451,18 @@ void ZenoNode::onParamDataChanged(const QModelIndex& topLeft, const QModelIndex&
 
     if (role == ROLE_PARAM_NAME || role == ROLE_PARAM_TOOLTIP)
     {
-        if (bInput)
+        QVector<ZSocketLayout*> layouts = getSocketLayouts(bInput);
+        for (int i = 0; i < layouts.size(); i++)
         {
-            for (int i = 0; i < m_inSockets.size(); i++)
+            ZSocketLayout* pSocketLayout = layouts[i];
+            QModelIndex socketIdx = pSocketLayout->viewSocketIdx();
+            if (socketIdx == paramIdx)
             {
-                ZSocketLayout* pSocketLayout = m_inSockets[i];
-                QModelIndex socketIdx = pSocketLayout->viewSocketIdx();
-                if (socketIdx == paramIdx)
-                {
-                    if (role == ROLE_PARAM_NAME)
-                        pSocketLayout->updateSockName(paramName);   //only update name on control.
-                    else if (role == ROLE_PARAM_TOOLTIP)
-                        pSocketLayout->updateSockNameToolTip(paramIdx.data(ROLE_PARAM_TOOLTIP).toString());
-                    break;
-                }
-            }
-        }
-        else
-        {
-            for (int i = 0; i < m_outSockets.size(); i++)
-            {
-                ZSocketLayout* pSocketLayout = m_outSockets[i];
-                QModelIndex socketIdx = pSocketLayout->viewSocketIdx();
-                if (socketIdx == paramIdx)
-                {
-                    if (role == ROLE_PARAM_NAME)
-                        pSocketLayout->updateSockName(paramName);
-                    else if (role == ROLE_PARAM_TOOLTIP)
-                        pSocketLayout->updateSockNameToolTip(paramIdx.data(ROLE_PARAM_TOOLTIP).toString());
-                    break;
-                }
+                if (role == ROLE_PARAM_NAME)
+                    pSocketLayout->updateSockName(paramName);   //only update name on control.
+                else if (role == ROLE_PARAM_TOOLTIP)
+                    pSocketLayout->updateSockNameToolTip(paramIdx.data(ROLE_PARAM_TOOLTIP).toString());
+                break;
             }
         }
         updateWhole();
@@ -536,6 +566,8 @@ void ZenoNode::onParamInserted(const QModelIndex& parent, int first, int last)
     }
 }
 
+
+
 void ZenoNode::onViewParamAboutToBeMoved(const QModelIndex& parent, int start, int end, const QModelIndex& destination, int row)
 {
 
@@ -578,8 +610,8 @@ void ZenoNode::onViewParamAboutToBeRemoved(const QModelIndex& parent, int first,
         m_inputsLayout->clear();
         m_outputsLayout->clear();
         m_params.clear();
-        m_inSockets.clear();
-        m_outSockets.clear();
+        //m_inSockets.clear();
+        //m_outSockets.clear();
         return;
     }
 
@@ -689,10 +721,10 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewSockIdx, bool bInput, 
         }
     }
 
-    if (bInput)
-        m_inSockets.append(pMiniLayout);
-    else
-        m_outSockets.append(pMiniLayout);
+    //if (bInput)
+    //    m_inSockets.append(pMiniLayout);
+    //else
+    //    m_outSockets.append(pMiniLayout);
 
     return pMiniLayout;
 }
@@ -826,14 +858,14 @@ void ZenoNode::markError(bool isError)
 
 ZenoSocketItem* ZenoNode::getSocketItem(const QModelIndex& sockIdx)
 {
-    for (ZSocketLayout* socklayout : m_inSockets)
+    for (ZSocketLayout* socklayout : getSocketLayouts(true))
     {
         if (ZenoSocketItem* pItem = socklayout->socketItemByIdx(sockIdx))
         {
             return pItem;
         }
     }
-    for (ZSocketLayout* socklayout : m_outSockets)
+    for (ZSocketLayout* socklayout : getSocketLayouts(false))
     {
         if (ZenoSocketItem* pItem = socklayout->socketItemByIdx(sockIdx))
             return pItem;
@@ -845,7 +877,7 @@ ZenoSocketItem* ZenoNode::getNearestSocket(const QPointF& pos, bool bInput)
 {
     ZenoSocketItem* pItem = nullptr;
     float minDist = std::numeric_limits<float>::max();
-    auto socks = bInput ? m_inSockets : m_outSockets;
+    auto socks = getSocketLayouts(bInput);
     for (ZSocketLayout* sock : socks)
     {
         //todo: socket now is a children of sockettext.
@@ -878,7 +910,7 @@ QModelIndex ZenoNode::getSocketIndex(QGraphicsItem* uiitem, bool bSocketText) co
                 return param.second.viewidx;
         }
     }
-    for (ZSocketLayout* sock : m_inSockets)
+    for (ZSocketLayout* sock : getSocketLayouts(true))
     {
         if (bSocketText) {
             if (sock->socketText() == uiitem) {
@@ -891,7 +923,7 @@ QModelIndex ZenoNode::getSocketIndex(QGraphicsItem* uiitem, bool bSocketText) co
             }
         }
     }
-    for (ZSocketLayout* sock : m_outSockets)
+    for (ZSocketLayout* sock : getSocketLayouts(false))
     {
         if (bSocketText) {
             if (sock->socketText() == uiitem) {
@@ -924,25 +956,12 @@ QPointF ZenoNode::getSocketPos(const QModelIndex& sockIdx)
     }
     else
     {
-        if (bInput)
+        for (ZSocketLayout* socklayout : getSocketLayouts(bInput))
         {
-            for (ZSocketLayout* socklayout : m_inSockets)
-            {
-                bool exist = false;
-                QPointF pos = socklayout->getSocketPos(sockIdx, exist);
-                if (exist)
-                    return pos;
-            }
-        }
-        else
-        {
-            for (ZSocketLayout* socklayout : m_outSockets)
-            {
-                bool exist = false;
-                QPointF pos = socklayout->getSocketPos(sockIdx, exist);
-                if (exist)
-                    return pos;
-            }
+            bool exist = false;
+            QPointF pos = socklayout->getSocketPos(sockIdx, exist);
+            if (exist)
+                return pos;
         }
         zeno::log_warn("socket pos error");
         return QPointF(0, 0);
@@ -1014,10 +1033,10 @@ void ZenoNode::onZoomed()
     }
     if (m_bVisible != bVisible) {
         m_bVisible = bVisible;
-        for (auto item : m_inSockets) {
+        for (auto item : getSocketLayouts(true)) {
             item->setVisible(bVisible);
         }
-        for (auto item : m_outSockets) {
+        for (auto item : getSocketLayouts(false)) {
             item->setVisible(bVisible);
         }
         for (auto it = m_params.begin(); it != m_params.end(); it++) {

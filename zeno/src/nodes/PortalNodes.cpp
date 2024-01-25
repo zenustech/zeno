@@ -11,7 +11,7 @@ namespace zeno {
 struct PortalIn : zeno::INode {
     virtual void complete() override {
         auto name = get_param<std::string>("name");
-        graph->portalIns[name] = this->name;
+        graph->portalIns[name] = this->m_name;
     }
 
     virtual void apply() override {

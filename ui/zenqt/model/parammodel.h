@@ -52,6 +52,8 @@ public:
     int getParamlinkCount(const QModelIndex& paramIdx);
 
 private:
+    void initParamItems();
+
     QPersistentModelIndex m_nodeIdx;
     QVector<ParamItem> m_items;
 

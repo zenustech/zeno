@@ -52,22 +52,22 @@ ZENO_API zvariant INode::get_input_defl(std::string const& name)
 
 ZENO_API std::string INode::get_nodecls() const
 {
-    return nodecls;
+    return m_nodecls;
 }
 
 ZENO_API std::string INode::get_ident() const
 {
-    return name;
+    return m_name;
 }
 
 ZENO_API std::string INode::get_name() const
 {
-    return name;
+    return m_name;
 }
 
 ZENO_API void INode::set_name(const std::string& customname)
 {
-    name = customname;
+    m_name = customname;
 }
 
 ZENO_API void INode::set_view(bool bOn)
@@ -107,14 +107,14 @@ ZENO_API void INode::preApply() {
     }
 
 
-    log_debug("==> enter {}", name);
+    log_debug("==> enter {}", m_name);
     {
 #ifdef ZENO_BENCHMARKING
-        Timer _(name);
+        Timer _(m_name);
 #endif
         apply();
     }
-    log_debug("==> leave {}", name);
+    log_debug("==> leave {}", m_name);
 }
 
 ZENO_API bool INode::requireInput(std::string const& ds) {
@@ -141,7 +141,7 @@ ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
             {
                 std::shared_ptr<ILink> spLink = *in_param->links.begin();
                 std::shared_ptr<IParam> out_param = spLink->fromparam.lock();
-                std::shared_ptr<INode> outNode = out_param->m_spNode.lock();
+                std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
                 outNode->doApply();
                 zany outResult = outNode->get_output(out_param->name);
                 if (spDict = std::dynamic_pointer_cast<DictObject>(outResult)) {
@@ -155,7 +155,7 @@ ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
                 {
                     const std::string& keyName = spLink->keyName;
                     std::shared_ptr<IParam> outParam = spLink->fromparam.lock();
-                    std::shared_ptr<INode> outNode = outParam->m_spNode.lock();
+                    std::shared_ptr<INode> outNode = outParam->m_wpNode.lock();
                     outNode->doApply();
                     zany outResult = outNode->get_output(outParam->name);
                     spDict->lut[keyName] = outResult;
@@ -172,7 +172,7 @@ ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
             {
                 std::shared_ptr<ILink> spLink = *in_param->links.begin();
                 std::shared_ptr<IParam> out_param = spLink->fromparam.lock();
-                std::shared_ptr<INode> outNode = out_param->m_spNode.lock();
+                std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
                 outNode->doApply();
                 zany outResult = outNode->get_output(out_param->name);
                 if (spList = std::dynamic_pointer_cast<ListObject>(outResult))
@@ -185,7 +185,7 @@ ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
                 {
                     //list的情况下，keyName是不是没意义，顺序怎么维持？
                     std::shared_ptr<IParam> outParam = spLink->fromparam.lock();
-                    std::shared_ptr<INode> outNode = outParam->m_spNode.lock();
+                    std::shared_ptr<INode> outNode = outParam->m_wpNode.lock();
                     outNode->doApply();
                     zany outResult = outNode->get_output(outParam->name);
                     spList->arr.push_back(outResult);
@@ -201,7 +201,7 @@ ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
             {
                 std::shared_ptr<ILink> spLink = *in_param->links.begin();
                 std::shared_ptr<IParam> outParam = spLink->fromparam.lock();
-                std::shared_ptr<INode> outNode = outParam->m_spNode.lock();
+                std::shared_ptr<INode> outNode = outParam->m_wpNode.lock();
                 outNode->doApply();
                 zany outResult = outNode->get_output(outParam->name);
                 in_param->result = outResult;
@@ -217,9 +217,9 @@ ZENO_API void INode::doOnlyApply() {
 
 ZENO_API void INode::doApply() {
     //if (checkApplyCondition()) {
-    log_trace("--> enter {}", name);
+    log_trace("--> enter {}", m_name);
     preApply();
-    log_trace("--> leave {}", name);
+    log_trace("--> leave {}", m_name);
 }
 
 ZENO_API std::vector<std::shared_ptr<IParam>> INode::get_input_params() const
@@ -250,8 +250,8 @@ ZENO_API std::vector<std::shared_ptr<IParam>> INode::get_output_params() const
     std::vector<std::shared_ptr<IParam>> params;
     const auto& desc = nodeClass->desc;
     for (auto param : desc->outputs) {
-        auto it = inputs_.find(param.name);
-        if (it == inputs_.end()) {
+        auto it = outputs_.find(param.name);
+        if (it == outputs_.end()) {
             zeno::log_warn("unknown param {}", param.name);
             continue;
         }
@@ -266,7 +266,7 @@ ZENO_API void INode::set_input_defl(std::string const& name, zvariant defl) {
 }
 
 ZENO_API std::shared_ptr<IParam> INode::get_input_param(std::string const& param) const {
-    return safe_at(inputs_, param, "miss input param `" + param + "` on node `" +  name + "`");
+    return safe_at(inputs_, param, "miss input param `" + param + "` on node `" +  m_name + "`");
 }
 
 void INode::add_input_param(std::shared_ptr<IParam> param) {
@@ -278,16 +278,16 @@ void INode::add_output_param(std::shared_ptr<IParam> param) {
 }
 
 ZENO_API std::shared_ptr<IParam> INode::get_output_param(std::string const& param) const {
-    return safe_at(outputs_, param, "miss output param `" + param + "` on node `" + name + "`");
+    return safe_at(outputs_, param, "miss output param `" + param + "` on node `" + m_name + "`");
 }
 
 ZENO_API bool INode::update_param(const std::string& param, const zvariant& new_value) {
-    std::shared_ptr<IParam> spParam = safe_at(inputs_, param, "miss input param `" + param + "` on node `" + name + "`");
+    std::shared_ptr<IParam> spParam = safe_at(inputs_, param, "miss input param `" + param + "` on node `" + m_name + "`");
     if (!zeno::isEqual(spParam->defl, new_value, spParam->type))
     {
         zvariant old_value = spParam->defl;
         spParam->defl = new_value;
-        CALLBACK_NOTIFY(update_param, name, old_value, new_value)
+        CALLBACK_NOTIFY(update_param, m_name, old_value, new_value)
         return true;
     }
     return false;
@@ -304,7 +304,7 @@ void INode::directly_setinputs(std::map<std::string, zany> inputs)
         if (!sparam) {
             sparam = std::make_shared<IParam>();
             sparam->name = name;
-            sparam->m_spNode = shared_from_this();
+            sparam->m_wpNode = shared_from_this();
             sparam->type = Param_Null;
             sparam->defl = zvariant();
         }
@@ -332,20 +332,20 @@ std::vector<std::pair<std::string, zany>> INode::getinputs()
 
 std::pair<std::string, std::string> INode::getinputbound(std::string const& param, std::string const& msg) const
 {
-    std::shared_ptr<IParam> spParam = safe_at(inputs_, param, "miss input param `" + param + "` on node `" + name + "`");
+    std::shared_ptr<IParam> spParam = safe_at(inputs_, param, "miss input param `" + param + "` on node `" + m_name + "`");
     if (!spParam->links.empty()) {
         auto lnk = *spParam->links.begin();
         auto outparam = lnk->fromparam.lock();
         if (outparam) {
             outparam->name;
-            auto pnode = outparam->m_spNode.lock();
+            auto pnode = outparam->m_wpNode.lock();
             if (pnode) {
                 auto id = pnode->get_ident();
                 return { id, outparam->name };
             }
         }
     }
-    throw makeError<KeyError>(name, msg);
+    throw makeError<KeyError>(m_name, msg);
 }
 
 std::vector<std::pair<std::string, zany>> INode::getoutputs2()
@@ -360,7 +360,7 @@ std::vector<std::pair<std::string, zany>> INode::getoutputs2()
 void INode::init(const NodeData& dat)
 {
     if (dat.name.empty())
-        name = dat.name;
+        m_name = dat.name;
     for (const ParamInfo& param : dat.inputs)
     {
         std::shared_ptr<IParam> sparam = get_input_param(param.name);
@@ -371,7 +371,7 @@ void INode::init(const NodeData& dat)
         sparam->defl = param.defl;
         sparam->name = param.name;
         sparam->type = param.type;
-        sparam->m_spNode = shared_from_this();
+        sparam->m_wpNode = shared_from_this();
     }
     for (const ParamInfo& param : dat.outputs)
     {
@@ -381,9 +381,9 @@ void INode::init(const NodeData& dat)
             continue;
         }
         sparam->defl = param.defl;
-        sparam->name = name;
+        sparam->name = m_name;
         sparam->type = param.type;
-        sparam->m_spNode = shared_from_this();
+        sparam->m_wpNode = shared_from_this();
     }
 }
 
@@ -405,16 +405,16 @@ ZENO_API zany INode::resolveInput(std::string const& id) {
 }
 
 ZENO_API void INode::set_pos(std::pair<float, float> pos) {
-    pos = pos;
-    CALLBACK_NOTIFY(set_pos, pos)
+    m_pos = pos;
+    CALLBACK_NOTIFY(set_pos, m_pos)
 }
 
 ZENO_API std::pair<float, float> INode::get_pos() const {
-    return pos;
+    return m_pos;
 }
 
 ZENO_API bool INode::set_input(std::string const& param, zany obj) {
-    std::shared_ptr<IParam> spParam = safe_at(inputs_, param, "miss input param `" + param + "` on node `" + name + "`");
+    std::shared_ptr<IParam> spParam = safe_at(inputs_, param, "miss input param `" + param + "` on node `" + m_name + "`");
     spParam->result = obj;
     return true;
 }
@@ -424,13 +424,13 @@ ZENO_API bool INode::has_output(std::string const& name) const {
 }
 
 ZENO_API bool INode::set_output(std::string const & param, zany obj) {
-    std::shared_ptr<IParam> spParam = safe_at(outputs_, param, "miss output param `" + param + "` on node `" + name + "`");
+    std::shared_ptr<IParam> spParam = safe_at(outputs_, param, "miss output param `" + param + "` on node `" + m_name + "`");
     spParam->result = obj;
     return true;
 }
 
 ZENO_API zany INode::get_output(std::string const& param) {
-    std::shared_ptr<IParam> spParam = safe_at(outputs_, param, "miss output param `" + param + "` on node `" + name + "`");
+    std::shared_ptr<IParam> spParam = safe_at(outputs_, param, "miss output param `" + param + "` on node `" + m_name + "`");
     return spParam->result;
 }
 
