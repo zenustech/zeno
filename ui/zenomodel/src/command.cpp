@@ -167,7 +167,7 @@ ModelDataCommand::ModelDataCommand(IGraphsModel* pModel, const QModelIndex& idx,
     , m_role(role)
     , m_index(idx)
 {
-    m_objPath = idx.data(ROLE_OBJPATH).toString();
+    m_objPath = idx.data(ROLE_OBJPATH).value<QStringList>();
 }
 
 void ModelDataCommand::ensureIdxValid()
@@ -310,7 +310,7 @@ MapParamIndexCommand::MapParamIndexCommand(IGraphsModel* pModel, const QString& 
     QModelIndex paramIdx = m_model->indexFromPath(m_sourceObj);
     QModelIndex oldIdx = paramIdx.data(ROLE_PARAM_COREIDX).toModelIndex();
     if (oldIdx.isValid())
-        m_oldMappingObj = oldIdx.data(ROLE_OBJPATH).toString();
+        m_oldMappingObj = oldIdx.data(ROLE_OBJPATH).value<QStringList>();
 }
 
 void MapParamIndexCommand::redo()
@@ -336,7 +336,7 @@ void MapParamIndexCommand::undo()
 }
 
 
-RenameObjCommand::RenameObjCommand(IGraphsModel* pModel, const QString& objPath, const QString& newName)
+RenameObjCommand::RenameObjCommand(IGraphsModel* pModel, const QStringList& objPath, const QString& newName)
     : m_model(pModel)
     , m_oldPath(objPath)
     , m_newName(newName)
@@ -353,7 +353,7 @@ void RenameObjCommand::redo()
         QAbstractItemModel* model = const_cast<QAbstractItemModel*>(itemIdx.model());
         ZASSERT_EXIT(model);
         model->setData(itemIdx, m_newName, ROLE_PARAM_NAME);
-        m_newPath = itemIdx.data(ROLE_OBJPATH).toString();
+        m_newPath = itemIdx.data(ROLE_OBJPATH).value<QStringList>();
     }
 }
 
@@ -370,7 +370,7 @@ void RenameObjCommand::undo()
 
 
 ////////////////////////////////////////////////////////////////////////////////////
-DictKeyAddRemCommand::DictKeyAddRemCommand(bool bAdd, IGraphsModel *pModel, const QString &dictlistSock, int row)
+DictKeyAddRemCommand::DictKeyAddRemCommand(bool bAdd, IGraphsModel *pModel, const QStringList &dictlistSock, int row)
     : m_model(pModel)
     , m_distlistSock(dictlistSock)
     , m_row(row)
@@ -427,7 +427,7 @@ void DictKeyAddRemCommand::undo()
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
-ModelMoveCommand::ModelMoveCommand(IGraphsModel* pModel, const QString& movingItemPath, int destRow)
+ModelMoveCommand::ModelMoveCommand(IGraphsModel* pModel, const QStringList& movingItemPath, int destRow)
     : m_model(pModel)
     , m_movingObj(movingItemPath)
     , m_destRow(destRow)

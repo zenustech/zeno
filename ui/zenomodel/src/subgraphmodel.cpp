@@ -513,8 +513,10 @@ QVariant SubGraphModel::data(const QModelIndex& index, int role) const
         {
             const QModelIndex& subgIdx = m_pGraphsModel->indexBySubModel(const_cast<SubGraphModel*>(this));
             const QString& subgPath = subgIdx.data(ROLE_OBJPATH).toString();
-            const QString& path = subgPath + cPathSeperator + item.objid;
-            return path;
+            QStringList lstPath;
+            lstPath.push_back(subgPath);
+            lstPath.push_back(item.objid);
+            return lstPath;
         }
         case ROLE_CUSTOMUI_PANEL_IO:
         {

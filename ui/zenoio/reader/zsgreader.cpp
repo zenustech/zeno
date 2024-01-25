@@ -523,9 +523,18 @@ void ZsgReader::_parseSocket(
     }
     pAcceptor->addSocket(bInput, id, inSock, sockProp);
 
-    QString link;
-    if (sockObj.HasMember("link") && sockObj["link"].IsString())
-        link = QString::fromUtf8(sockObj["link"].GetString());
+    QStringList link;
+    if (sockObj.HasMember("link")) {
+        if (sockObj["link"].IsString())
+        {
+            link = QString::fromUtf8(sockObj["link"].GetString()).split(cPathSeperator, Qt::SkipEmptyParts);
+        } else if (sockObj["link"].IsArray())
+        {
+            const auto& arr = sockObj["link"].GetArray();
+            for (auto& sock : arr)
+                link.push_back(QString::fromUtf8(sock.GetString()));
+        }
+    }
 
     if (sockObj.HasMember("default-value"))
     {
@@ -583,10 +592,17 @@ void ZsgReader::_parseDictPanel(
             const QString& keyName = kv.name.GetString();
             const rapidjson::Value& inputObj = kv.value;
 
-            QString link;
-            if (inputObj.HasMember("link") && inputObj["link"].IsString())
-            {
-                link = QString::fromUtf8(inputObj["link"].GetString());
+            QStringList link;
+            if (inputObj.HasMember("link")) {
+                if (inputObj["link"].IsString())
+                {
+                    link = QString::fromUtf8(inputObj["link"].GetString()).split(cPathSeperator, Qt::SkipEmptyParts);
+                }else if (inputObj["link"].IsArray())
+                {
+                    const auto& arr = inputObj["link"].GetArray();
+                    for (auto& sock : arr)
+                        link.push_back(QString::fromUtf8(sock.GetString()));
+                }
             }
 
             QString netlabel;

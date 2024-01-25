@@ -264,11 +264,11 @@ void VParamItem::setData(const QVariant& value, int role)
 
             const QModelIndex& idx = index();
             ViewParamModel* pModel = qobject_cast<ViewParamModel *>(model());
-            QString oldPath = model()->data(idx, ROLE_OBJPATH).toString();
+            QString oldPath = model()->data(idx, ROLE_OBJPATH).value<QStringList>().join(cPathSeperator);
 
             m_name = value.toString();
 
-            QString newPath = model()->data(idx, ROLE_OBJPATH).toString();
+            QString newPath = model()->data(idx, ROLE_OBJPATH).value<QStringList>().join(cPathSeperator);
             if (role == Qt::EditRole && oldPath != newPath && pModel)
             {
                 emit pModel->editNameChanged(idx, oldPath, m_name);
@@ -650,7 +650,7 @@ VPARAM_INFO VParamItem::exportParamInfo()
         param.controlInfos = data(ROLE_VPARAM_CTRL_PROPERTIES);
         QString refPath;
         if (m_index.isValid())
-            refPath = m_index.data(ROLE_OBJPATH).toString();
+            refPath = m_index.data(ROLE_OBJPATH).value<QStringList>().join(cPathSeperator);
         param.refParamPath = refPath;
         param.m_info.control = m_ctrl;
         param.m_info.defaultValue = m_value;

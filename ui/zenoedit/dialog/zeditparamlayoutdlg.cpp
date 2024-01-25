@@ -369,7 +369,7 @@ void ZEditParamLayoutDlg::onComboTableItemsCellChanged(int row, int column)
 
 void ZEditParamLayoutDlg::proxyModelSetData(const QModelIndex& index, const QVariant& newValue, int role)
 {
-    const QString& objPath = index.data(ROLE_OBJPATH).toString();
+    const QStringList& objPath = index.data(ROLE_OBJPATH).value<QStringList>();
     m_proxyModel->setData(index, newValue, role);
 }
 
@@ -531,7 +531,7 @@ void ZEditParamLayoutDlg::onBtnAdd()
         VParamItem* pNewItem = new VParamItem(VPARAM_TAB, newTabName);
         pItem->appendRow(pNewItem);
 
-        QString objPath = pItem->data(ROLE_OBJPATH).toString();
+        QStringList objPath = pItem->data(ROLE_OBJPATH).value<QStringList>();
         VPARAM_INFO vParam = pNewItem->exportParamInfo();
         pNewItem->setData(getIcon(pNewItem), Qt::DecorationRole);
     }
@@ -546,7 +546,7 @@ void ZEditParamLayoutDlg::onBtnAdd()
         VParamItem* pNewItem = new VParamItem(VPARAM_GROUP, newGroup);
         pItem->appendRow(pNewItem);
 
-        QString objPath = pItem->data(ROLE_OBJPATH).toString();
+        QStringList objPath = pItem->data(ROLE_OBJPATH).value<QStringList>();
         VPARAM_INFO vParam = pNewItem->exportParamInfo();
         pNewItem->setData(getIcon(pNewItem), Qt::DecorationRole);
     }
@@ -736,7 +736,7 @@ void ZEditParamLayoutDlg::updateControlGroup(bool bInput, const QString &newName
 
 
 
-void ZEditParamLayoutDlg::onProxyItemNameChanged(const QModelIndex& itemIdx, const QString& oldPath, const QString& newName)
+void ZEditParamLayoutDlg::onProxyItemNameChanged(const QModelIndex& itemIdx, const QStringList& oldPath, const QString& newName)
 {
     //ViewParamSetDataCommand *pCmd = new ViewParamSetDataCommand(m_pGraphsModel, oldPath, newName, ROLE_VPARAM_NAME);
     //m_commandSeq.append(pCmd);
@@ -764,7 +764,7 @@ void ZEditParamLayoutDlg::onNameEditFinished()
         return;
 
     QStandardItem* pItem = m_proxyModel->itemFromIndex(currIdx);
-    QString oldPath = pItem->data(ROLE_OBJPATH).toString();
+    QStringList oldPath = pItem->data(ROLE_OBJPATH).value<QStringList>();
     QString newName = m_ui->editName->text();
     QString oldName = pItem->data(ROLE_VPARAM_NAME).toString();
     if (oldName != newName) {
@@ -917,7 +917,7 @@ void ZEditParamLayoutDlg::onStepEditFinished()
     qreal step = m_ui->editStep->text().toDouble();
     properties["step"] = step;
 
-    const QString &objPath = layerIdx.data(ROLE_OBJPATH).toString();
+    const QStringList &objPath = layerIdx.data(ROLE_OBJPATH).value<QStringList>();
     //ViewParamSetDataCommand *pCommand = new ViewParamSetDataCommand(m_pGraphsModel, objPath, properties, ROLE_VPARAM_CTRL_PROPERTIES);
     //m_commandSeq.append(pCommand);
 

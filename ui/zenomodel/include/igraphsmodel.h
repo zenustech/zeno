@@ -117,7 +117,8 @@ public:
 			int role,
 			const QString& comment = "") = 0;
 	virtual int undoRedo_updateSubgDesc(const QString& descName, const NODE_DESC& desc) = 0;
-	virtual QModelIndex indexFromPath(const QString& path) = 0;
+    virtual QModelIndex indexFromPath(const QString& path) = 0;
+    virtual QModelIndex indexFromPath(const QStringList& path) = 0;
 	virtual bool addExecuteCommand(QUndoCommand* pCommand) = 0;
 	virtual void setIOVersion(zenoio::ZSG_VERSION ver) = 0;
 	virtual zenoio::ZSG_VERSION ioVersion() const = 0;

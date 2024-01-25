@@ -80,11 +80,11 @@ static void onPasteSocketRefSlot(ZenoSubGraphScene* pScene, QModelIndex toIndex)
                     QString paramName = fromIndex.data(ROLE_PARAM_NAME).toString();
                     QString paramType = fromIndex.data(ROLE_PARAM_TYPE).toString();
 
-                    QString toSockName = toIndex.data(ROLE_OBJPATH).toString();
+                    QStringList toSockName = toIndex.data(ROLE_OBJPATH).value<QStringList>();
 
                     // link to inner dict key automatically.
                     int n = pKeyObjModel->rowCount();
-                    pGraphsModel->addExecuteCommand(new DictKeyAddRemCommand(true, pGraphsModel, toIndex.data(ROLE_OBJPATH).toString(), n));
+                    pGraphsModel->addExecuteCommand(new DictKeyAddRemCommand(true, pGraphsModel, toIndex.data(ROLE_OBJPATH).value<QStringList>(), n));
                     toIndex = pKeyObjModel->index(n, 0);
                 }
             }
@@ -141,7 +141,7 @@ static void dealDictSocket(const QModelIndex& fromSockIdx, bool bInput, QModelIn
                 QVariantPtr<QAbstractItemModel>::asPtr(sock.data(ROLE_VPARAM_LINK_MODEL));
             int n = pKeyObjModel->rowCount();
             pGraphsModel->addExecuteCommand(
-                new DictKeyAddRemCommand(true, pGraphsModel, sock.data(ROLE_OBJPATH).toString(), n));
+                new DictKeyAddRemCommand(true, pGraphsModel, sock.data(ROLE_OBJPATH).value<QStringList>(), n));
             sock = pKeyObjModel->index(n, 0);
         }
     }
@@ -396,7 +396,7 @@ bool sceneMenuEvent(
                     {
                         const QString& paramName = selParam.data(ROLE_PARAM_NAME).toString();
                         QString subgName, ident, paramPath;
-                        QString str = selParam.data(ROLE_OBJPATH).toString();
+                        QStringList str = selParam.data(ROLE_OBJPATH).value<QStringList>();
                         UiHelper::getSocketInfo(str, subgName, ident, paramPath);
                         if (paramName == "port") {
                             QString refExpression = QString("ref(%1/_IN_port)").arg(ident);
@@ -418,7 +418,7 @@ bool sceneMenuEvent(
 
                 IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
                 ZASSERT_EXIT(pModel, false);
-                const QString& path = selParam.data(ROLE_OBJPATH).toString();
+                const QString& path = selParam.data(ROLE_OBJPATH).value<QStringList>().join(cPathSeperator);
                 const FuckQMap<QString, CommandParam>& params = pModel->commandParams();
                 if (!params.contains(path))
                 {
@@ -428,6 +428,7 @@ bool sceneMenuEvent(
                         CommandParam val;
                         val.name = paramName;
                         val.value = selParam.data(ROLE_PARAM_VALUE);
+                        val.paramPath = selParam.data(ROLE_OBJPATH).value<QStringList>();
                         if (!pModel->addCommandParam(path, val))
                         {
                             QMessageBox::warning(nullptr, QObject::tr("Create Command Param"), QObject::tr("Create Command Param Failed!"));

@@ -268,7 +268,7 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                 QVariant defl = inSockIdx.data(ROLE_PARAM_VALUE);
 
                 //command params
-                const QString& objPath = inSockIdx.data(ROLE_OBJPATH).toString();
+                const QString& objPath = inSockIdx.data(ROLE_OBJPATH).value<QStringList>().join(cPathSeperator);
                 if (commandParams.contains(objPath))
                 {
                     if (!launchParam.paramPath.isEmpty())

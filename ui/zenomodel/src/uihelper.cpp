@@ -689,54 +689,54 @@ QString UiHelper::getTypeByControl(PARAM_CONTROL ctrl)
     }
 }
 
-void UiHelper::getSocketInfo(const QString& objPath,
+void UiHelper::getSocketInfo(const QStringList& objPath,
                              QString& subgName,
                              QString& nodeIdent,
                              QString& paramPath)
 {
     //see GraphsModel::indexFromPath
-    QStringList lst = objPath.split(cPathSeperator, QtSkipEmptyParts);
+    QStringList lst = objPath;
     //format like: [subgraph-name]:[node-ident]:[node|panel]/[param-layer-path]/[dict-key]
     //example: main:xxxxx-wrangle:[node]inputs/params/key1
     if (lst.size() >= 3)
     {
         subgName = lst[0];
         nodeIdent = lst[1];
-        paramPath = lst[2];
+        paramPath = lst.size() == 4 ? QString(lst[2] + "/" + lst[3]) : lst[2];
     }
 }
 
-QString UiHelper::constructObjPath(const QString& subgraph, const QString& node, const QString& group, const QString& sockName)
+QStringList UiHelper::constructObjPath(const QString& subgraph, const QString& node, const QString& group, const QString& sockName)
 {
     QStringList seq = {subgraph, node, group + sockName};
-    return seq.join(cPathSeperator);
+    return seq;
 }
 
-QString UiHelper::constructObjPath(const QString& subgraph, const QString& node, const QString& paramPath)
+QStringList UiHelper::constructObjPath(const QString& subgraph, const QString& node, const QString& paramPath)
 {
     QStringList seq = {subgraph, node, paramPath};
-    return seq.join(cPathSeperator);
+    return seq;
 }
 
-QString UiHelper::getSockNode(const QString& sockPath)
+QString UiHelper::getSockNode(const QStringList& sockPath)
 {
-    QStringList lst = sockPath.split(cPathSeperator, QtSkipEmptyParts);
+    QStringList lst = sockPath;
     if (lst.size() > 1)
         return lst[1];
     return "";
 }
 
-QString UiHelper::getParamPath(const QString& sockPath)
+QString UiHelper::getParamPath(const QStringList& sockPath)
 {
-    QStringList lst = sockPath.split(cPathSeperator, QtSkipEmptyParts);
+    QStringList lst = sockPath;
     if (lst.size() > 2)
         return lst[2];
     return "";
 }
 
-QString UiHelper::getSockName(const QString& sockPath)
+QString UiHelper::getSockName(const QStringList& sockPath)
 {
-    QStringList lst = sockPath.split(cPathSeperator, QtSkipEmptyParts);
+    QStringList lst = sockPath;
     if (lst.size() > 2)
     {
         lst = lst[2].split("/", QtSkipEmptyParts);
@@ -758,7 +758,7 @@ QString UiHelper::getSockName(const QString& sockPath)
 
 QString UiHelper::getNaiveParamPath(const QModelIndex& param, int dim)
 {
-    QString str = param.data(ROLE_OBJPATH).toString();
+    QStringList str = param.data(ROLE_OBJPATH).value<QStringList>();
     QString subgName, ident, paramPath;
     getSocketInfo(str, subgName, ident, paramPath);
     if (paramPath.startsWith("[node]/inputs/")) {
@@ -782,9 +782,9 @@ QString UiHelper::getNaiveParamPath(const QModelIndex& param, int dim)
     return QString("%1/%2").arg(ident).arg(paramPath);
 }
 
-QString UiHelper::getSockSubgraph(const QString& sockPath)
+QString UiHelper::getSockSubgraph(const QStringList& sockPath)
 {
-    QStringList lst = sockPath.split(cPathSeperator, QtSkipEmptyParts);
+    QStringList lst = sockPath;
     if (lst.size() > 0)
         return lst[0];
     return "";
@@ -1735,8 +1735,8 @@ QPair<NODES_DATA, LINKS_DATA> UiHelper::dumpNodes(const QModelIndexList &nodeInd
     {
         QModelIndex outSockIdx = idx.data(ROLE_OUTSOCK_IDX).toModelIndex();
         QModelIndex inSockIdx = idx.data(ROLE_INSOCK_IDX).toModelIndex();
-        QString outPath = outSockIdx.data(ROLE_OBJPATH).toString();
-        QString inPath = inSockIdx.data(ROLE_OBJPATH).toString();
+        QStringList outPath = outSockIdx.data(ROLE_OBJPATH).value<QStringList>();
+        QStringList inPath = inSockIdx.data(ROLE_OBJPATH).value<QStringList>();
         QString outId = idx.data(ROLE_OUTNODE).toString();
         QString inId = idx.data(ROLE_INNODE).toString();
 
@@ -1883,8 +1883,8 @@ void UiHelper::reAllocIdents(const QString& targetSubgraph,
         QString newInputNode = old2new[inputNode];
         QString newOutputNode = old2new[outputNode];
 
-        const QString& newInSock = UiHelper::constructObjPath(targetSubgraph, newInputNode, inParamPath);
-        const QString& newOutSock = UiHelper::constructObjPath(targetSubgraph, newOutputNode, outParamPath);
+        const QStringList& newInSock = UiHelper::constructObjPath(targetSubgraph, newInputNode, inParamPath);
+        const QStringList& newOutSock = UiHelper::constructObjPath(targetSubgraph, newOutputNode, outParamPath);
 
         outLinks.append(EdgeInfo(newOutSock, newInSock));
     }

@@ -21,7 +21,7 @@ private slots:
 private:
     void initUi();
     void initConnection();
-    void appendRow(const QString &path, const CommandParam& val);
+    void appendRow(const QStringList&path, const CommandParam& val);
     void initTableWidget();
 private:
     QTableWidget* m_pTableWidget;

@@ -169,7 +169,7 @@ void ModelAcceptor::resolveAllLinks()
             {
                 QString subgName = UiHelper::getSockSubgraph(link.inSockPath);
                 QString paramPath = UiHelper::getParamPath(link.outSockPath);
-                QString outSockPath = UiHelper::constructObjPath(subgName, newId, paramPath);
+                QStringList outSockPath = UiHelper::constructObjPath(subgName, newId, paramPath);
                 link.outSockPath = outSockPath;
                 break;
             }
@@ -180,12 +180,12 @@ void ModelAcceptor::resolveAllLinks()
         if (!link.outSockPath.isEmpty())
         {
             outSock = m_pModel->indexFromPath(link.outSockPath);
-            outSockName = link.outSockPath;
+            outSockName = link.outSockPath.join(cPathSeperator);
         }
         if (!link.inSockPath.isEmpty())
         {
             inSock = m_pModel->indexFromPath(link.inSockPath);
-            inSockName = link.inSockPath;
+            inSockName = link.inSockPath.join(cPathSeperator);
         }
 
         if (!inSock.isValid())
@@ -582,7 +582,7 @@ void ModelAcceptor::setInputSocket(
 )
 {
     const QString &subgName = m_currentGraph->name();
-    QString outLinkPath;
+    QStringList outLinkPath;
     if (!outNode.isEmpty() && !outSock.isEmpty()) {
         outLinkPath = UiHelper::constructObjPath(subgName, outNode, "[node]/outputs/", outSock);
     }
@@ -593,7 +593,7 @@ void ModelAcceptor::setInputSocket2(
                 const QString& nodeCls,
                 const QString& inNode,
                 const QString& inSock,
-                const QString& outLinkPath,
+                const QStringList& outLinkPath,
                 const QString& sockProperty,
                 const rapidjson::Value& defaultVal,
                 const NODE_DESCS& legacyDescs)
@@ -625,7 +625,7 @@ void ModelAcceptor::setInputSocket2(
 
     QString subgName, paramCls;
     subgName = m_currentGraph->name();
-    QString inSockPath = UiHelper::constructObjPath(subgName, inNode, "[node]/inputs/", inSock);
+    QStringList inSockPath = UiHelper::constructObjPath(subgName, inNode, "[node]/inputs/", inSock);
 
     QModelIndex sockIdx = m_pModel->indexFromPath(inSockPath);
     if (sockIdx.isValid())
@@ -687,7 +687,7 @@ void ModelAcceptor::setInputSocket2(
             nodeParams->setAddParam(PARAM_LEGACY_INPUT, inSock, info.type, info.defaultValue, info.control, QVariant(), SOCKPROP_LEGACY);
             sockIdx = nodeParams->getParam(PARAM_LEGACY_INPUT, inSock);
             ZASSERT_EXIT(sockIdx.isValid());
-            inSockPath = sockIdx.data(ROLE_OBJPATH).toString();
+            inSockPath = sockIdx.data(ROLE_OBJPATH).value<QStringList>();
             if (!outLinkPath.isEmpty())
             {
                 //collect edge, because output socket may be not initialized.
@@ -705,7 +705,7 @@ void ModelAcceptor::setOutputSocket(const QString& inNode, const QString& inSock
         return;
     QString subgName;
     subgName = m_currentGraph->name();
-    QString inSockPath = UiHelper::constructObjPath(subgName, inNode, "[node]/outputs/", inSock);
+    QStringList inSockPath = UiHelper::constructObjPath(subgName, inNode, "[node]/outputs/", inSock);
     QModelIndex sockIdx = m_pModel->indexFromPath(inSockPath);
     ZASSERT_EXIT(sockIdx.isValid());
     QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(sockIdx.model());
@@ -746,7 +746,7 @@ void ModelAcceptor::setControlAndProperties(const QString& nodeCls, const QStrin
         return;
     QString subgName, paramCls;
     subgName = m_currentGraph->name();
-    QString inSockPath = UiHelper::constructObjPath(subgName, inNode, "[node]/inputs/", inSock);
+    QStringList inSockPath = UiHelper::constructObjPath(subgName, inNode, "[node]/inputs/", inSock);
 
     QModelIndex sockIdx = m_pModel->indexFromPath(inSockPath);
     if (sockIdx.isValid()) {
@@ -768,7 +768,7 @@ void ModelAcceptor::setNetLabel(PARAM_CLASS cls, const QString& inNode, const QS
         nodeCls = "inputs";
     else if (cls == PARAM_OUTPUT)
         nodeCls = "outputs";
-    QString inSockPath = UiHelper::constructObjPath(m_currentGraph->name(), inNode, QString("[node]/%1/").arg(nodeCls), inSock);
+    QStringList inSockPath = UiHelper::constructObjPath(m_currentGraph->name(), inNode, QString("[node]/%1/").arg(nodeCls), inSock);
     QModelIndex sockIdx = m_pModel->indexFromPath(inSockPath);
     ZASSERT_EXIT(sockIdx.isValid());
     m_currentGraph->addNetLabel(sockIdx, netlabel, cls == PARAM_INPUT);
@@ -783,7 +783,7 @@ void ModelAcceptor::setToolTip(PARAM_CLASS cls, const QString &inNode, const QSt
          nodeCls = "inputs";
     else if (cls == PARAM_OUTPUT)
          nodeCls = "outputs";
-    QString inSockPath = UiHelper::constructObjPath(m_currentGraph->name(), inNode, QString("[node]/%1/").arg(nodeCls), inSock);
+    QStringList inSockPath = UiHelper::constructObjPath(m_currentGraph->name(), inNode, QString("[node]/%1/").arg(nodeCls), inSock);
     QModelIndex sockIdx = m_pModel->indexFromPath(inSockPath);
     ZASSERT_EXIT(sockIdx.isValid());
     QAbstractItemModel *pModel = const_cast<QAbstractItemModel *>(sockIdx.model());
@@ -795,7 +795,7 @@ void ModelAcceptor::addInnerDictKey(
             const QString& ident,
             const QString& sockName,
             const QString& keyName,
-            const QString& link,
+            const QStringList& link,
             const QString& netLabel
             )
 {
@@ -814,7 +814,7 @@ void ModelAcceptor::addInnerDictKey(
 
     if (bInput && !link.isEmpty())
     {
-        QString keySockPath = newKeyIdx.data(ROLE_OBJPATH).toString();
+        QStringList keySockPath = newKeyIdx.data(ROLE_OBJPATH).value<QStringList>();
         EdgeInfo fullLink(link, keySockPath);
         m_subgLinks.append(fullLink);
     }
@@ -877,7 +877,18 @@ void ModelAcceptor::endNode(const QString& id, const QString& nodeCls, const rap
 
 void ModelAcceptor::addCommandParam(const rapidjson::Value& val, const QString& path)
 {
-    QModelIndex sockIdx = m_pModel->indexFromPath(path);
+    QStringList pathlst;
+    QModelIndex sockIdx;
+    if (val.HasMember("paramsPath") && val["paramsPath"].IsArray()) {
+        for (auto& i : val["paramsPath"].GetArray())
+            pathlst.push_back(QString::fromUtf8(i.GetString()));
+        sockIdx = m_pModel->indexFromPath(pathlst);
+    }
+    else {
+        pathlst = path.split(cPathSeperator, Qt::SkipEmptyParts);
+        sockIdx = m_pModel->indexFromPath(pathlst);
+    }
+
     if (sockIdx.isValid())
     {
         CommandParam param;
@@ -886,6 +897,7 @@ void ModelAcceptor::addCommandParam(const rapidjson::Value& val, const QString& 
         if (val.HasMember("description"))
             param.description = val["description"].GetString();
         param.value = sockIdx.data(ROLE_PARAM_VALUE);
+        param.paramPath = pathlst;
         m_pModel->addCommandParam(path, param);
     }
 }
