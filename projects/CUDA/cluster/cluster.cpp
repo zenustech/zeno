@@ -32,11 +32,10 @@ void assign_cluster(int vnum, int knum, const std::vector<vec3f>& pos, const std
 }
 
 struct DSU {
-    int vnum;
     std::vector<int> un;
     std::vector<int> siz;
 
-    DSU(int n) : vnum(n) {
+    DSU(int n) {
         un.resize(n);
         siz.resize(n);
 #pragma omp parallel for
@@ -63,18 +62,6 @@ struct DSU {
             siz[vv] += siz[uu];
             siz[uu] = 0;
         }
-    }
-
-    auto get_list() {
-        std::map<int, std::vector<int>> mp{};
-#pragma omp parallel for
-        for (int i = 0; i < vnum; ++i) {
-            if (siz[i] > 0)
-                mp[i] = std::vector<int>(siz[i]);
-        }
-        for (int i = 0; i < vnum; ++i)
-            mp[get_union(i)].push_back(i);
-        return mp;
     }
 };
 
