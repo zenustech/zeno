@@ -160,7 +160,7 @@ bool NodeParamModel::getParams(PARAMS_INFO &params)
         paramInfo.control = param->m_ctrl;
         paramInfo.controlProps = param->m_customData[ROLE_VPARAM_CTRL_PROPERTIES];
         paramInfo.toolTip = param->m_customData[ROLE_VPARAM_TOOLTIP].toString();
-        paramInfo.paramPath = param->data(ROLE_OBJPATH).toString();
+        paramInfo.paramPath = param->data(ROLE_OBJPATH).value<QStringList>().join(cPathSeperator);
         params.insert(name, paramInfo);
     }
     return true;
@@ -346,8 +346,8 @@ EdgeInfo NodeParamModel::exportLink(const QModelIndex& linkIdx)
     QModelIndex inSock = linkIdx.data(ROLE_INSOCK_IDX).toModelIndex();
     ZASSERT_EXIT(outSock.isValid() && inSock.isValid(), link);
 
-    link.outSockPath = outSock.data(ROLE_OBJPATH).toString();
-    link.inSockPath = inSock.data(ROLE_OBJPATH).toString();
+    link.outSockPath = outSock.data(ROLE_OBJPATH).value<QStringList>();
+    link.inSockPath = inSock.data(ROLE_OBJPATH).value<QStringList>();
     return link;
 }
 
@@ -618,8 +618,9 @@ QVariant NodeParamModel::data(const QModelIndex& index, int role) const
             pItem = pItem->parent();
         } while (pItem);
         path = "[node]" + path;
-        path = m_nodeIdx.data(ROLE_OBJPATH).toString() + cPathSeperator + path;
-        return path;
+        QStringList& lstPath = m_nodeIdx.data(ROLE_OBJPATH).value<QStringList>();
+        lstPath.push_back(path);
+        return lstPath;
     }
     case ROLE_PARAM_CLASS:
     {

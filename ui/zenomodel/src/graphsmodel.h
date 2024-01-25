@@ -60,6 +60,7 @@ public:
     QModelIndex index(const QString& subGraphName) const override;
     QModelIndex indexBySubModel(SubGraphModel* pSubModel) const;
     QModelIndex indexFromPath(const QString& path) override;
+    QModelIndex indexFromPath(const QStringList& lst) override;
     QModelIndex linkIndex(const QModelIndex& subgIdx, int r) override;
     QModelIndex linkIndex(const QModelIndex& subgIdx, const QString& outNode, const QString& outSock, const QString& inNode, const QString& inSock) override;
 

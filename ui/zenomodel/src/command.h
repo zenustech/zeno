@@ -102,7 +102,7 @@ private:
     IGraphsModel* m_model;
     const QVariant m_oldData;
     const QVariant m_newData;
-    QString m_objPath;
+    QStringList m_objPath;
     QPersistentModelIndex m_index;
     const int m_role;
 };
@@ -147,20 +147,20 @@ private:
     IGraphsModel *m_model;
     QString m_sourceObj;
     QString m_dstObj;
-    QString m_oldMappingObj;
+    QStringList m_oldMappingObj;
 };
 
 class RenameObjCommand : public QUndoCommand
 {
 public:
-    RenameObjCommand(IGraphsModel* pModel, const QString& objPath, const QString& newName);
+    RenameObjCommand(IGraphsModel* pModel, const QStringList& objPath, const QString& newName);
     void redo() override;
     void undo() override;
 
 private:
     IGraphsModel* m_model;
-    QString m_oldPath;
-    QString m_newPath;
+    QStringList m_oldPath;
+    QStringList m_newPath;
     QString m_oldName;
     QString m_newName;
 };
@@ -168,12 +168,12 @@ private:
 class DictKeyAddRemCommand : public QUndoCommand
 {
 public:
-    DictKeyAddRemCommand(bool bAdd, IGraphsModel* pModel, const QString& dictlistSock, int row);
+    DictKeyAddRemCommand(bool bAdd, IGraphsModel* pModel, const QStringList& dictlistSock, int row);
     void redo() override;
     void undo() override;
 
 private:
-    QString m_distlistSock;
+    QStringList m_distlistSock;
     QString m_keyName;      //cached the key name.
     int m_row;
     IGraphsModel *m_model;
@@ -183,12 +183,12 @@ private:
 class ModelMoveCommand : public QUndoCommand
 {
 public:
-    ModelMoveCommand(IGraphsModel* pModel, const QString& movingItemPath, int destRow);
+    ModelMoveCommand(IGraphsModel* pModel, const QStringList& movingItemPath, int destRow);
     void redo() override;
     void undo() override;
 
 private:
-    QString m_movingObj;
+    QStringList m_movingObj;
     IGraphsModel* m_model;
     int m_srcRow;
     int m_destRow;

@@ -222,7 +222,7 @@ void TransferAcceptor::addInnerDictKey(
         const QString& inNode,
         const QString& sockName,
         const QString& keyName,
-        const QString& link,
+        const QStringList& link,
         const QString& netLabel
     )
 {
@@ -239,8 +239,8 @@ void TransferAcceptor::addInnerDictKey(
         item.netLabel = netLabel;
 
         QString newKeyPath = "[node]/inputs/" + sockName + "/" + keyName;
-        QString inSockPath = UiHelper::constructObjPath(m_currSubgraph, inNode, newKeyPath);
-        QString outSockPath = link;
+        QStringList inSockPath = UiHelper::constructObjPath(m_currSubgraph, inNode, newKeyPath);
+        QStringList outSockPath = link;
         EdgeInfo edge(outSockPath, inSockPath);
         if (edge.isValid())
         {
@@ -270,7 +270,7 @@ void TransferAcceptor::setInputSocket2(
                 const QString& nodeCls,
                 const QString& inNode,
                 const QString& inSock,
-                const QString& outLinkPath,
+                const QStringList& outLinkPath,
                 const QString& sockProperty,
                 const rapidjson::Value& defaultVal,
                 const NODE_DESCS& legacyDescs)
@@ -307,7 +307,7 @@ void TransferAcceptor::setInputSocket2(
             inputs[inSock].info.defaultValue = defaultValue;
         if (!outLinkPath.isEmpty())
         {
-            const QString& inSockPath = UiHelper::constructObjPath(m_currSubgraph, inNode, "[node]/inputs/", inSock);
+            const QStringList& inSockPath = UiHelper::constructObjPath(m_currSubgraph, inNode, "[node]/inputs/", inSock);
             EdgeInfo info(outLinkPath, inSockPath);
             inputs[inSock].info.links.append(info);
             m_links.append(info);
@@ -330,7 +330,7 @@ void TransferAcceptor::setInputSocket2(
 
             if (!outLinkPath.isEmpty())
             {
-                const QString& inSockPath = UiHelper::constructObjPath(m_currSubgraph, inNode, "[node]/inputs/", inSock);
+                const QStringList& inSockPath = UiHelper::constructObjPath(m_currSubgraph, inNode, "[node]/inputs/", inSock);
                 EdgeInfo info(outLinkPath, inSockPath);
                 inputs[inSock].info.links.append(info);
                 m_links.append(info);

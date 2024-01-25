@@ -44,20 +44,20 @@ EdgeInfo IParamModel::exportLink(const QModelIndex& linkIdx)
     //for dict panel socket, write the full path of output socket.
     if (outSock.data(ROLE_PARAM_CLASS) == PARAM_INNER_OUTPUT)
     {
-        link.outSockPath = outSock.data(ROLE_OBJPATH).toString();
+        link.outSockPath = outSock.data(ROLE_OBJPATH).value<QStringList>();
     }
     else
     {
-        link.outSockPath = outCoreParam.data(ROLE_OBJPATH).toString();
+        link.outSockPath = outCoreParam.data(ROLE_OBJPATH).value<QStringList>();
     }
 
     if (inSock.data(ROLE_PARAM_CLASS) == PARAM_INNER_INPUT)
     {
-        link.inSockPath = inSock.data(ROLE_OBJPATH).toString();
+        link.inSockPath = inSock.data(ROLE_OBJPATH).value<QStringList>();
     }
     else
     {
-        link.inSockPath = inCoreParam.data(ROLE_OBJPATH).toString();
+        link.inSockPath = inCoreParam.data(ROLE_OBJPATH).value<QStringList>();
     }
     return link;
 }
@@ -350,7 +350,7 @@ QVariant IParamModel::data(const QModelIndex& index, int role) const
                 path += "/outputs";
             }
             path += "/" + name;
-            path = m_nodeIdx.data(ROLE_OBJPATH).toString() + cPathSeperator + path;
+            path = m_nodeIdx.data(ROLE_OBJPATH).value<QStringList>().join(cPathSeperator) + cPathSeperator + path;
             return path;
         }
         case ROLE_VPARAM_LINK_MODEL:
