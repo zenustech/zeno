@@ -18,6 +18,25 @@ static std::vector<std::string> split_str(std::string const &s, char delimiter =
         tokens.push_back(token);
     return tokens;
 }
+static std::vector<std::string> split_str(std::string const &s, std::set<char> pattens) {
+    std::vector<std::string> tokens;
+    std::string token;
+    for (char c: s) {
+        if (pattens.count(c)) {
+            if (token.size() > 0) {
+                tokens.push_back(token);
+                token = {};
+            }
+        }
+        else {
+            token.push_back(c);
+        }
+    }
+    if (token.size() > 0) {
+        tokens.push_back(token);
+    }
+    return tokens;
+}
 
 template <class S, class T>
 static std::string join_str(std::vector<T> const &elms, S const &delim) {
