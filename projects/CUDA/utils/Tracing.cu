@@ -148,10 +148,10 @@ constexpr float origin() {
     return 1.0f / 32.0f;
 }
 constexpr float int_scale() {
-    return 256.0f;
+    return 64.0f;
 }
 constexpr float float_scale() {
-    return 1.0f / 32768.0f;
+    return 1.0f / 65536.0f;
 }
 
 // Normal points outward for rays exiting the surface, else is flipped.

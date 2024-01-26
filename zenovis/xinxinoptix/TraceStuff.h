@@ -151,9 +151,10 @@ struct RadiancePRD
         bool forward = dot(geometryNormal, new_dir) > 0;
         auto dir = forward? geometryNormal:-geometryNormal;
         auto offset = rtgems::offset_ray(P, dir);
-        float l = length( offset - P );
-        float l2 = this->alphaHit? max(l, 1e-4) : max(l, 1e-5);
-        P = P + l2 * dir;
+        P = offset;
+//        float l = length( offset - P );
+//        float l2 = this->alphaHit? max(l, 1e-4) : max(l, 1e-5);
+//        P = P + l2 * dir;
     }
 
     void offsetUpdateRay(float3& P, float3 new_dir) {
