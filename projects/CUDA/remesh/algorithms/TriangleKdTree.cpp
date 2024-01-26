@@ -183,10 +183,10 @@ TriangleKdTree::TriangleKdTree(const AttrVector<vec3i>& tris, const AttrVector<v
     root_ = new Node();
     root_->faces = new std::vector<int>();
  
-    root_->faces->reserve(tris.size());
-    face_points_.reserve(tris.size());
+    root_->faces->reserve(tris->size());
+    face_points_.reserve(tris->size());
 
-    for (int fit = 0; fit < tris.size(); ++fit) {
+    for (int fit = 0; fit < tris->size(); ++fit) {
         root_->faces->push_back(fit);
         auto fvIt = tris[fit];
         face_points_.push_back({points[fvIt[0]], points[fvIt[1]], points[fvIt[2]]});
@@ -330,14 +330,13 @@ void TriangleKdTree::nearest_recurse(Node* node, const vec3f& point,
 
 void TriangleKdTree::in_box_recursive(Node* node, BoundingBox& box,
                                       std::vector<int>& faces) {
-    // terminal node?
     if (!node->left_child) {
         for (const auto& f : *node->faces) {
             vec3f n;
             const auto& pos = face_points_[f];
             for (int i = 0; i < 3; ++i) {
-                if (box.min()[0] <= pos[i][0] && pos[i][0] <= box.max()[1] &&
-                    box.min()[1] <= pos[i][1] && pos[i][1] <= box.max()[1] &&
+                if (box.min()[0] <= pos[i][0] && pos[i][0] <= box.max()[1] ||
+                    box.min()[1] <= pos[i][1] && pos[i][1] <= box.max()[1] ||
                     box.min()[2] <= pos[i][2] && pos[i][2] <= box.max()[2]) {
                         faces.push_back(f);
                         break;
