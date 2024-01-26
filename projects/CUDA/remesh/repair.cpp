@@ -104,12 +104,6 @@ struct SelectIntersectingFaces : INode {
         float du0 = dot(N1, p1[0]) + d1;
         float du1 = dot(N1, p1[1]) + d1;
         float du2 = dot(N1, p1[2]) + d1;
-        /* coplanarity robustness check */
-        #ifdef USE_TRI_TRI_INT_EPSILON_TEST
-        if(FABS(du0)<TRI_TRI_INT_EPSILON) du0=0.0;
-        if(FABS(du1)<TRI_TRI_INT_EPSILON) du1=0.0;
-        if(FABS(du2)<TRI_TRI_INT_EPSILON) du2=0.0;
-        #endif
         float du0du1 = du0 * du1;
         float du0du2 = du0 * du2;
         if(du0du1>0.0f && du0du2>0.0f)
@@ -123,11 +117,6 @@ struct SelectIntersectingFaces : INode {
         float dv0 = dot(N2, p0[0]) + d2;
         float dv1 = dot(N2, p0[1]) + d2;
         float dv2 = dot(N2, p0[2]) + d2;
-        #ifdef USE_TRI_TRI_INT_EPSILON_TEST
-        if(FABS(dv0)<TRI_TRI_INT_EPSILON) dv0=0.0;
-        if(FABS(dv1)<TRI_TRI_INT_EPSILON) dv1=0.0;
-        if(FABS(dv2)<TRI_TRI_INT_EPSILON) dv2=0.0;
-        #endif
         float dv0dv1 = dv0 * dv1;
         float dv0dv2 = dv0 * dv2;
         if(dv0dv1>0.0f && dv0dv2>0.0f)
@@ -264,6 +253,13 @@ struct SelectIntersectingFaces : INode {
             inBox.clear();
         }
         prim->tris.erase_attr("referred");
+
+        auto &clr = prim->verts.add_attr<vec3f>("clr", vec3f(0.1, 0.6, 0.4));
+        for (int i = 0; i < faces->size(); ++i) {
+            if (intersecting[i] == 1) {
+                clr[faces[i][0]] = clr[faces[i][1]] = clr[faces[i][2]] = vec3f(0.8, 0.3, 0.1);
+            }
+        }
 
         set_output("prim", std::move(prim));
     }
