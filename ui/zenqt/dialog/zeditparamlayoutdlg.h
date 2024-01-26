@@ -27,7 +27,7 @@ class ParamTreeItemDelegate : public QStyledItemDelegate
 {
     Q_OBJECT
 public:
-    explicit ParamTreeItemDelegate(ParamsModel* model, QObject *parent = nullptr);
+    explicit ParamTreeItemDelegate(QStandardItemModel* model, QObject *parent = nullptr);
     ~ParamTreeItemDelegate();
 
     // editing
@@ -39,7 +39,7 @@ public:
     void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
 
 private:
-    ParamsModel* m_model;
+    QStandardItemModel* m_model;
 };
 
 
@@ -59,13 +59,11 @@ private slots:
     void onLabelEditFinished();
     void onHintEditFinished();
     void onParamTreeDeleted();
-    void onChooseParamClicked();
     void onMinEditFinished();
     void onMaxEditFinished();
     void onStepEditFinished();
     void onControlItemChanged(int);
     void onComboTableItemsCellChanged(int row, int column);
-    void onProxyItemNameChanged(const QModelIndex& itemIdx, const QString& oldPath, const QString& newName);
     void onViewParamDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
 
 private:

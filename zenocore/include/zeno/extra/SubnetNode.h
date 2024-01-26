@@ -23,7 +23,7 @@ struct SubnetNode : INode {
 
     ZENO_API std::vector<std::shared_ptr<IParam>> get_input_params() const override;
     ZENO_API std::vector<std::shared_ptr<IParam>> get_output_params() const override;
-    ZENO_API void update_editparams(const std::vector<std::pair<zeno::ParamInfo, std::string>>& params) override;
+    ZENO_API params_change_info update_editparams(const std::vector<std::pair<zeno::ParamInfo, std::string>>& params) override;
     ZENO_API void add_param(bool bInput, const ParamInfo& param);
     ZENO_API void remove_param(bool bInput, const std::string& name);
 

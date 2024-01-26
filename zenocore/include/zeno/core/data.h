@@ -4,9 +4,11 @@
 #include <zeno/core/common.h>
 #include <string>
 #include <map>
+#include <set>
 #include <vector>
 #include <unordered_map>
 #include <optional>
+#include <zeno/utils/api.h>
 
 namespace zeno {
 
@@ -123,6 +125,17 @@ namespace zeno {
         int currFrame = 0;
         bool bAlways = true;
         int timelinefps = 24;
+    };
+
+    struct params_change_info {
+        std::vector<std::string> inputs;
+        std::vector<std::string> outputs;
+        std::set<std::string> new_inputs;
+        std::set<std::string> new_outputs;
+        std::set<std::pair<std::string, std::string>> rename_inputs;
+        std::set<std::pair<std::string, std::string>> rename_outputs;    //pair: <old_name, new_name>
+        std::set<std::string> remove_inputs;
+        std::set<std::string> remove_outputs;
     };
 
     struct ZenoAsset {

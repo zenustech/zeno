@@ -177,37 +177,7 @@ QString GraphModel::name() const
     return m_graphName;
 }
 
-void GraphModel::removeLink(const zeno::EdgeInfo& link)
-{
-    std::shared_ptr<zeno::Graph> spGraph = m_spCoreGraph.lock();
-    ZASSERT_EXIT(spGraph);
-    spGraph->removeLink(link);
-}
 
-QVariant GraphModel::removeLink(const QString& nodeName, const QString& paramName, bool bInput)
-{
-    if (bInput)
-    {
-        ParamsModel* toParamM = m_nodes[nodeName]->params;
-        QModelIndex toIndex = toParamM->paramIdx(paramName, bInput);
-        int nRow = toParamM->removeLink(toIndex);
-       
-        if (nRow != -1)
-        {
-            QModelIndex linkIndex = m_linkModel->index(nRow);
-            QVariant var = m_linkModel->data(linkIndex, ROLE_LINK_FROMPARAM_INFO);
-            QVariantList varList = var.toList();
-
-            ParamsModel* fromParamM = m_nodes[varList[0].toString()]->params;
-            QModelIndex fromIndex = fromParamM->paramIdx(varList[1].toString(), varList[2].toBool());
-            fromParamM->removeLink(fromIndex);
-     
-            m_linkModel->removeRows(nRow, 1);
-            return var;
-        }
-    }
-    return QVariant();
-}
 
 QString GraphModel::owner() const
 {
@@ -423,6 +393,45 @@ void GraphModel::_addLink(QPair<QString, QString> fromParam, QPair<QString, QStr
     }
 }
 
+QVariant GraphModel::removeLink(const QString& nodeName, const QString& paramName, bool bInput)
+{
+    if (bInput)
+    {
+        ParamsModel* toParamM = m_nodes[nodeName]->params;
+        QModelIndex toIndex = toParamM->paramIdx(paramName, bInput);
+        int nRow = toParamM->removeLink(toIndex);
+
+        if (nRow != -1)
+        {
+            QModelIndex linkIndex = m_linkModel->index(nRow);
+            QVariant var = m_linkModel->data(linkIndex, ROLE_LINK_FROMPARAM_INFO);
+            QVariantList varList = var.toList();
+
+            ParamsModel* fromParamM = m_nodes[varList[0].toString()]->params;
+            QModelIndex fromIndex = fromParamM->paramIdx(varList[1].toString(), varList[2].toBool());
+            fromParamM->removeLink(fromIndex);
+
+            m_linkModel->removeRows(nRow, 1);
+            return var;
+        }
+    }
+    return QVariant();
+}
+
+void GraphModel::removeLink(const QModelIndex& linkIdx)
+{
+    zeno::EdgeInfo edge = linkIdx.data(ROLE_LINK_INFO).value<zeno::EdgeInfo>();
+    removeLink(edge);
+}
+
+void GraphModel::removeLink(const zeno::EdgeInfo& link)
+{
+    //emit to core data.
+    std::shared_ptr<zeno::Graph> spGraph = m_spCoreGraph.lock();
+    ZASSERT_EXIT(spGraph);
+    spGraph->removeLink(link);
+}
+
 bool GraphModel::_removeLink(const zeno::EdgeInfo& edge)
 {
     QString outNode = QString::fromStdString(edge.outNode);
@@ -590,10 +599,6 @@ void GraphModel::removeParam(QModelIndex nodeIdx, int row)
     item->params->removeRow(row);
 }
 
-void GraphModel::removeLink(int row)
-{
-    m_linkModel->removeRow(row);
-}
 
 ParamsModel* GraphModel::params(QModelIndex nodeIdx)
 {

@@ -268,6 +268,7 @@ void ZenoSubGraphScene::onNameUpdated(const QModelIndex& nodeIdx, const QString&
     ZASSERT_EXIT(newName != oldName);
     m_nodes[newName] = m_nodes[oldName];
     m_nodes.erase(oldName);
+    m_nodes[newName]->onNameUpdated(newName);
 }
 
 void ZenoSubGraphScene::onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
@@ -808,7 +809,7 @@ void ZenoSubGraphScene::onTempLinkClosed()
 
             //remove the old Link first.
             if (oldLink.isValid())
-                m_model->removeLink(oldLink.row());
+                m_model->removeLink(oldLink);
 
             //dict panel.
             SOCKET_PROPERTY inProp = (SOCKET_PROPERTY)toSockIdx.data(ROLE_PARAM_SOCKPROP).toInt();
@@ -905,7 +906,7 @@ void ZenoSubGraphScene::onTempLinkClosed()
                 if (!links.isEmpty())
                     linkIdx = links[0];
                 if (linkIdx.isValid())
-                    m_model->removeLink(linkIdx.row());
+                    m_model->removeLink(linkIdx);
             }
 
             QModelIndex outNodeIdx = fromSockIdx.data(ROLE_NODE_IDX).toModelIndex();
@@ -925,7 +926,7 @@ void ZenoSubGraphScene::onTempLinkClosed()
     const QPersistentModelIndex& oldLink = m_tempLink->oldLink();
     if (oldLink.isValid())
     {
-        m_model->removeLink(oldLink.row());
+        m_model->removeLink(oldLink);
     }
 
     if (!targetSock)
@@ -1176,7 +1177,7 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
 
                 for (QPersistentModelIndex linkIdx : links)
                 {
-                    m_model->removeLink(linkIdx.row());
+                    m_model->removeLink(linkIdx);
                 }
                 for (QPersistentModelIndex nodeIdx : nodes)
                 {

@@ -8,6 +8,7 @@
 #include <zeno/core/data.h>
 #include <zeno/core/INode.h>
 
+class GraphModel;
 
 struct ParamItem
 {
@@ -45,14 +46,17 @@ public:
     void addLink(const QModelIndex& paramIdx, const QPersistentModelIndex& linkIdx);
     int removeLink(const QModelIndex& paramIdx);
     QModelIndex removeOneLink(const QModelIndex& paramIdx, const zeno::EdgeInfo& link);
+    bool removeSpecificLink(const QModelIndex& paramIdx, const QModelIndex& linkIdx);
     void addParam(const ParamItem& param);
     //temp:
     void batchModifyParams(const std::vector<std::pair<zeno::ParamInfo, std::string>>& params);
 
     int getParamlinkCount(const QModelIndex& paramIdx);
+    int numOfInputParams() const;
 
 private:
     void initParamItems();
+    GraphModel* parentGraph() const;
 
     QPersistentModelIndex m_nodeIdx;
     QVector<ParamItem> m_items;

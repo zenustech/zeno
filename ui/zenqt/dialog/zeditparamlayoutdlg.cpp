@@ -82,9 +82,9 @@ static zeno::ParamType getTypeByControlName(const QString& name)
 
 
 
-ParamTreeItemDelegate::ParamTreeItemDelegate(ParamsModel* model, QObject *parent)
+ParamTreeItemDelegate::ParamTreeItemDelegate(QStandardItemModel* model, QObject *parent)
     : QStyledItemDelegate(parent)
-    , m_model(model) 
+    , m_model(model)
 {
 }
 
@@ -94,7 +94,11 @@ ParamTreeItemDelegate::~ParamTreeItemDelegate()
 
 QWidget* ParamTreeItemDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const
 {
-    bool bEditable = false;// m_model->isEditable(index);
+    auto pItem = m_model->itemFromIndex(index);
+    if (!pItem)
+        return nullptr;
+
+    bool bEditable = pItem->isEditable();
     if (!bEditable)
         return nullptr;
     return QStyledItemDelegate::createEditor(parent, option, index);
@@ -102,20 +106,20 @@ QWidget* ParamTreeItemDelegate::createEditor(QWidget* parent, const QStyleOption
 
 void ParamTreeItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const 
 {
-    QStyledItemDelegate::setModelData(editor, model, index);
-    /*
     QString oldName = index.data().toString();
     QString newName = editor->property(editor->metaObject()->userProperty().name()).toString();
     if (oldName != newName) {
         int dstRow = 0;
-        VParamItem *pTargetGroup = static_cast<VParamItem *>(m_model->itemFromIndex(index.parent()));
-        if (pTargetGroup && !pTargetGroup->getItem(newName, &dstRow)) {
+        QStandardItem* pRoot = m_model->item(0);
+        auto lst = m_model->match(pRoot->index(), ROLE_PARAM_NAME, newName, 1, Qt::MatchRecursive);
+        if (lst.empty()) {
             QStyledItemDelegate::setModelData(editor, model, index);
-        } else {
+            model->setData(index, newName, ROLE_PARAM_NAME);
+        }
+        else {
             QMessageBox::information(nullptr, tr("Info"), tr("The param name already exists"));
         }
     }
-    */
 }
 
 void ParamTreeItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option,
@@ -152,7 +156,7 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(ParamsModel* pModel, QWidget* parent)
     initIcon(m_paramsLayoutM->invisibleRootItem());
 
     m_ui->paramsView->setModel(m_paramsLayoutM);
-    //m_ui->paramsView->setItemDelegate(new ParamTreeItemDelegate(m_model, m_ui->paramsView));
+    m_ui->paramsView->setItemDelegate(new ParamTreeItemDelegate(m_paramsLayoutM, m_ui->paramsView));
 
     QItemSelectionModel* selModel = m_ui->paramsView->selectionModel();
     connect(selModel, SIGNAL(currentChanged(const QModelIndex &, const QModelIndex &)), this,
@@ -168,9 +172,6 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(ParamsModel* pModel, QWidget* parent)
     connect(m_ui->btnApply, SIGNAL(clicked()), this, SLOT(onApply()));
     connect(m_ui->btnOk, SIGNAL(clicked()), this, SLOT(onOk()));
     connect(m_ui->btnCancel, SIGNAL(clicked()), this, SLOT(onCancel()));
-
-    connect(m_paramsLayoutM, SIGNAL(editNameChanged(const QModelIndex&, const QString&, const QString&)),
-            this, SLOT(onProxyItemNameChanged(const QModelIndex&, const QString&, const QString&)));
 
     QShortcut* shortcut = new QShortcut(QKeySequence(Qt::Key_Delete), m_ui->paramsView);
     connect(shortcut, SIGNAL(activated()), this, SLOT(onParamTreeDeleted()));
@@ -278,9 +279,13 @@ void ZEditParamLayoutDlg::_initLayoutModel()
         else
             pOutputs->appendRow(paramItem);
         paramItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
+        paramItem->setEditable(true);
     }
+    pRoot->setEditable(false);
     pRoot->setData(VPARAM_TAB, ROLE_ELEMENT_TYPE);
+    pInputs->setEditable(false);
     pInputs->setData(VPARAM_GROUP, ROLE_ELEMENT_TYPE);
+    pOutputs->setEditable(false);
     pOutputs->setData(VPARAM_GROUP, ROLE_ELEMENT_TYPE);
 
     pRoot->appendRow(pInputs);
@@ -666,14 +671,6 @@ void ZEditParamLayoutDlg::switchStackProperties(int ctrl, QStandardItem* pItem)
     }
 }
 
-void ZEditParamLayoutDlg::onProxyItemNameChanged(const QModelIndex& itemIdx, const QString& oldPath, const QString& newName)
-{
-    //ViewParamSetDataCommand *pCmd = new ViewParamSetDataCommand(m_pGraphsModel, oldPath, newName, ROLE_PARAM_NAME);
-    //m_commandSeq.append(pCmd);
-    if (m_ui->editName->text() != newName)
-        m_ui->editName->setText(newName);
-}
-
 void ZEditParamLayoutDlg::onViewParamDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles) 
 {
     if (roles.isEmpty())
@@ -720,7 +717,6 @@ void ZEditParamLayoutDlg::onNameEditFinished()
         {
             pItem->setData(newName, ROLE_PARAM_NAME);
             pItem->setText(newName);
-            //onProxyItemNameChanged(pItem->index(), oldPath, newName);
         } 
         else 
         {
@@ -839,44 +835,6 @@ void ZEditParamLayoutDlg::onStepEditFinished()
 
     m_paramsLayoutM->setData(layerIdx, properties, ROLE_PARAM_CTRL_PROPERTIES);
     updateSliderInfo();
-}
-
-void ZEditParamLayoutDlg::onChooseParamClicked()
-{
-    //TODO OR NOT TO DO: map to core param
-    /*
-    ZMapCoreparamDlg dlg(m_nodeIdx);
-    if (QDialog::Accepted == dlg.exec())
-    {
-        QModelIndex coreIdx = dlg.coreIndex();
-
-        QModelIndex viewparamIdx = m_ui->paramsView->currentIndex();
-        QStandardItem* pItem = m_paramsLayoutM->itemFromIndex(viewparamIdx);
-        VParamItem* pViewItem = static_cast<VParamItem*>(pItem);
-
-        if (coreIdx.isValid())
-        {
-            pViewItem->mapCoreParam(coreIdx);
-
-            //update control info.
-            const QString& newName = coreIdx.data(ROLE_PARAM_NAME).toString();
-            const QString& typeDesc = coreIdx.data(ROLE_PARAM_TYPE).toString();
-
-            m_ui->editCoreParamName->setText(newName);
-            m_ui->editCoreParamType->setText(typeDesc);
-
-            PARAM_CONTROL newCtrl = UiHelper::getControlByType(typeDesc);
-            pViewItem->setData(newCtrl, ROLE_PARAM_CONTROL);
-        }
-        else
-        {
-            pViewItem->m_index = QModelIndex();
-            pViewItem->setData(zeno::NullControl, ROLE_PARAM_CONTROL);
-            m_ui->editCoreParamName->setText("");
-            m_ui->editCoreParamType->setText("");
-        }
-    }
-    */
 }
 
 void ZEditParamLayoutDlg::onApply()

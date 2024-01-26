@@ -117,9 +117,11 @@ struct Graph : std::enable_shared_from_this<Graph> {
 
     std::map<std::string, std::string> getSubInputs();
     std::map<std::string, std::string> getSubOutputs();
-    std::string generateNewName(const std::string& node_cls);
 
 private:
+    std::string generateNewName(const std::string& node_cls);
+    std::string generateNewName(const std::string& node_cls, std::string specific_name);
+
     std::map<std::string, std::string> subInputNodes;
     std::map<std::string, std::string> subOutputNodes;
 

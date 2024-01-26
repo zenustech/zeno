@@ -108,7 +108,7 @@ ZENO_API std::vector<std::shared_ptr<IParam>> SubnetNode::get_output_params() co
     return params;
 }
 
-ZENO_API void SubnetNode::update_editparams(const std::vector<std::pair<zeno::ParamInfo, std::string>>& params)
+ZENO_API params_change_info SubnetNode::update_editparams(const std::vector<std::pair<zeno::ParamInfo, std::string>>& params)
 {
     std::set<std::string> inputs_old, outputs_old;
     for (const auto& param_name : input_names) {
@@ -118,9 +118,7 @@ ZENO_API void SubnetNode::update_editparams(const std::vector<std::pair<zeno::Pa
         outputs_old.insert(param_name);
     }
 
-    std::set<std::string> new_input_params, new_output_params;
-    std::set<std::pair<std::string, std::string>> rename_input_params, rename_output_params;
-    std::set<std::string> remove_input_params, remove_output_params;
+    params_change_info changes;
 
     for (auto _pair : params) {
         const ParamInfo& param = _pair.first;
@@ -128,9 +126,9 @@ ZENO_API void SubnetNode::update_editparams(const std::vector<std::pair<zeno::Pa
         const std::string newname = param.name;
 
         auto& in_outputs = param.bInput ? inputs_ : outputs_;
-        auto& new_params = param.bInput ? new_input_params : new_output_params;
-        auto& remove_params = param.bInput ? remove_input_params : remove_output_params;
-        auto& rename_params = param.bInput ? rename_input_params : rename_output_params;
+        auto& new_params = param.bInput ? changes.new_inputs : changes.new_outputs;
+        auto& remove_params = param.bInput ? changes.remove_inputs : changes.remove_outputs;
+        auto& rename_params = param.bInput ? changes.rename_inputs : changes.rename_outputs;
 
         if (oldname.empty()) {
             //new added name.
@@ -186,7 +184,7 @@ ZENO_API void SubnetNode::update_editparams(const std::vector<std::pair<zeno::Pa
     //the left names are the names of params which will be removed.
     for (auto rem_name : inputs_old) {
         inputs_.erase(rem_name);
-        remove_input_params.insert(rem_name);
+        changes.remove_inputs.insert(rem_name);
     }
     //update the names.
     input_names.clear();
@@ -194,38 +192,41 @@ ZENO_API void SubnetNode::update_editparams(const std::vector<std::pair<zeno::Pa
         if (param.bInput)
             input_names.push_back(param.name);
     }
+    changes.inputs = input_names;
 
     for (auto rem_name : outputs_old) {
         outputs_.erase(rem_name);
-        remove_output_params.insert(rem_name);
+        changes.remove_outputs.insert(rem_name);
     }
     output_names.clear();
     for (const auto& [param, _] : params) {
         if (!param.bInput)
             output_names.push_back(param.name);
     }
+    changes.outputs = output_names;
 
     //update subnetnode.
-    for (auto name : new_input_params) {
+    for (auto name : changes.new_inputs) {
         subgraph->createNode("SubInput", name);
     }
-    for (const auto& [old_name, new_name] : rename_input_params) {
+    for (const auto& [old_name, new_name] : changes.rename_inputs) {
         subgraph->updateNodeName(old_name, new_name);
     }
-    for (auto name : remove_input_params) {
+    for (auto name : changes.remove_inputs) {
         subgraph->removeNode(name);
     }
 
-    for (auto name : new_output_params) {
+    for (auto name : changes.new_outputs) {
         subgraph->createNode("SubOutput", name);
     }
-    for (const auto& [old_name, new_name] : rename_output_params) {
+    for (const auto& [old_name, new_name] : changes.rename_outputs) {
         subgraph->updateNodeName(old_name, new_name);
     }
-    for (auto name : remove_output_params) {
+    for (auto name : changes.remove_outputs) {
         subgraph->removeNode(name);
     }
 
+    return changes;
 }
 
 ZENO_API void SubnetNode::apply() {

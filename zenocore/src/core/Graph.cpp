@@ -251,6 +251,25 @@ std::string Graph::generateNewName(const std::string& node_cls)
     return "";
 }
 
+std::string Graph::generateNewName(const std::string& node_cls, std::string specific_name)
+{
+    if (node_set.find(node_cls) == node_set.end())
+        node_set.insert(std::make_pair(node_cls, std::set<std::string>()));
+
+    std::string new_name = specific_name;
+    auto& nodes = node_set[node_cls];
+    int i = 1;
+    while (true) {
+        
+        if (nodes.find(new_name) == nodes.end()) {
+            nodes.insert(new_name);
+            return new_name;
+        }
+        new_name = specific_name + "(" + std::to_string(i++) + ")";
+    }
+    return "";
+}
+
 ZENO_API std::string Graph::updateNodeName(const std::string oldName, const std::string newName)
 {
     if (newName.empty() || nodes.find(oldName) == nodes.end()) {
@@ -274,6 +293,8 @@ ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls, std::s
     auto cl = safe_at(getSession().nodeClasses, cls, "node class name").get();
     if (name.empty())
         name = generateNewName(cls);
+    else
+        name = generateNewName(cls, name);
     std::shared_ptr<INode> node = cl->new_instance(name);
     node->graph = this;
     node->nodeClass = cl;

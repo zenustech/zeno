@@ -3,6 +3,9 @@
 #include "util/uihelper.h"
 #include <zeno/core/data.h>
 #include <zeno/core/IParam.h>
+#include "model/LinkModel.h"
+#include "model/GraphModel.h"
+#include "variantptr.h"
 
 
 ParamsModel::ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent)
@@ -204,6 +207,20 @@ int ParamsModel::removeLink(const QModelIndex& paramIdx)
     return nRow;
 }
 
+bool ParamsModel::removeSpecificLink(const QModelIndex& paramIdx, const QModelIndex& linkIdx)
+{
+    int row = paramIdx.row();
+    if (row < 0 || row >= m_items.size())
+        return false;
+
+    QList<QPersistentModelIndex>& links = m_items[row].links;
+    for (auto link : links) {
+        if (link == linkIdx)
+            return true;
+    }
+    return false;
+}
+
 QModelIndex ParamsModel::removeOneLink(const QModelIndex& paramIdx, const zeno::EdgeInfo& link)
 {
     QList<QPersistentModelIndex>& links = m_items[paramIdx.row()].links;
@@ -229,16 +246,100 @@ void ParamsModel::addParam(const ParamItem& param)
     endInsertRows();
 }
 
+GraphModel* ParamsModel::parentGraph() const
+{
+    if (auto pNode = qobject_cast<NodeItem*>(parent())) {
+        return qobject_cast<GraphModel*>(pNode->parent());
+    }
+    return nullptr;
+}
+
 void ParamsModel::batchModifyParams(const std::vector<std::pair<zeno::ParamInfo, std::string>>& params)
 {
     auto spNode = m_wpNode.lock();
     ZASSERT_EXIT(spNode);
-    spNode->update_editparams(params);
+    zeno::params_change_info changes = spNode->update_editparams(params);
 
     //assuming that the param layout has changed, and we muse reconstruct all params and index.
     emit layoutAboutToBeChanged();
+
+    //remove old links from this node.
+    for (int r = 0; r < m_items.size(); r++) {
+        ParamItem& item = m_items[r];
+        for (QPersistentModelIndex linkIdx : item.links) {
+            if (item.bInput) {
+                QModelIndex outSockIdx = linkIdx.data(ROLE_OUTSOCK_IDX).toModelIndex();
+                //only remove link by model itself, with no action about core data.
+                QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(outSockIdx.model());
+                ParamsModel* outParams = qobject_cast<ParamsModel*>(pModel);
+                ZASSERT_EXIT(outParams);
+                bool ret = outParams->removeSpecificLink(outSockIdx, linkIdx);
+                ZASSERT_EXIT(ret);
+            }
+            else {
+                QModelIndex inSockIdx = linkIdx.data(ROLE_INSOCK_IDX).toModelIndex();
+                //only remove link by model itself, with no action about core data.
+                QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(inSockIdx.model());
+                ParamsModel* inParams = qobject_cast<ParamsModel*>(pModel);
+                ZASSERT_EXIT(inParams);
+                bool ret = inParams->removeSpecificLink(inSockIdx, linkIdx);
+                ZASSERT_EXIT(ret);
+            }
+        }
+
+        for (QPersistentModelIndex linkIdx : item.links) {
+            QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(linkIdx.model());
+            LinkModel* linkModel = qobject_cast<LinkModel*>(pModel);
+            ZASSERT_EXIT(linkModel);
+            //no standard api to user, just delete from model, and sync to ui.
+            linkModel->removeRows(linkIdx.row(), 1);
+        }
+
+        item.links.clear();
+    }
+
     m_items.clear();
+    //reconstruct params.
     initParamItems();
+
+    //reconstruct links.
+    for (int r = 0; r < m_items.size(); r++) {
+        std::shared_ptr<zeno::IParam> spParam = m_items[r].m_wpParam.lock();
+        for (auto spLink : spParam->links) {
+            auto spFrom = spLink->fromparam.lock();
+            auto spTo = spLink->toparam.lock();
+            ZASSERT_EXIT(spFrom && spTo);
+            auto spFromNode = spFrom->m_wpNode.lock();
+            auto spToNode = spTo->m_wpNode.lock();
+            ZASSERT_EXIT(spFromNode && spToNode);
+
+            const QString fromNode = QString::fromStdString(spFromNode->get_name());
+            const QString toNode = QString::fromStdString(spToNode->get_name());
+            const QString fromSock = QString::fromStdString(spFrom->name);
+            const QString toSock = QString::fromStdString(spTo->name);
+
+            //add the new link in current graph.
+            GraphModel* pGraphM = parentGraph();
+            QModelIndex fromNodeIdx = pGraphM->indexFromName(fromNode);
+            QModelIndex toNodeIdx = pGraphM->indexFromName(toNode);
+            ZASSERT_EXIT(fromNodeIdx.isValid() && toNodeIdx.isValid());
+
+            ParamsModel* fromParams = QVariantPtr<ParamsModel>::asPtr(fromNodeIdx.data(ROLE_PARAMS));
+            ParamsModel* toParams = QVariantPtr<ParamsModel>::asPtr(toNodeIdx.data(ROLE_PARAMS));
+            ZASSERT_EXIT(fromParams && toParams);
+            QModelIndex fromParam = fromParams->paramIdx(fromSock, false);
+            QModelIndex toParam = toParams->paramIdx(toSock, true);
+            ZASSERT_EXIT(fromParam.isValid() && toParam.isValid());
+
+            LinkModel* lnkModel = pGraphM->getLinkModel();
+            ZASSERT_EXIT(lnkModel);
+            QModelIndex newLink = lnkModel->addLink(fromParam, toParam);  //only add in model layer, not core layer.
+
+            fromParams->m_items[fromParam.row()].links.append(newLink);
+            toParams->m_items[toParam.row()].links.append(newLink);
+        }
+    }
+
     emit layoutChanged();
 }
 
@@ -253,4 +354,14 @@ bool ParamsModel::removeRows(int row, int count, const QModelIndex& parent)
 int ParamsModel::getParamlinkCount(const QModelIndex& paramIdx)
 {
     return m_items[paramIdx.row()].links.size();
+}
+
+int ParamsModel::numOfInputParams() const
+{
+    int n = 0;
+    for (auto item : m_items) {
+        if (item.bInput)
+            n++;
+    }
+    return n;
 }

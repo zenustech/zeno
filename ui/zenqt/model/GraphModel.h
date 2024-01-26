@@ -95,7 +95,7 @@ public:
     //test functions:
     void updateParamName(QModelIndex nodeIdx, int row, QString newName);
     void removeParam(QModelIndex nodeIdx, int row);
-    void removeLink(int row);
+    void removeLink(const QModelIndex& linkIdx);
     void removeLink(const zeno::EdgeInfo& link);
     ParamsModel* params(QModelIndex nodeIdx);
     GraphModel* subgraph(QModelIndex nodeIdx);
