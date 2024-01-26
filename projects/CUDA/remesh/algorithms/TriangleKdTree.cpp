@@ -275,6 +275,10 @@ TriangleKdTree::NearestNeighbor TriangleKdTree::nearest(const vec3f& p) const {
     return data;
 }
 
+void TriangleKdTree::faces_in_box(const std::pair<vec3f, vec3f>& box, std::vector<int>& faces) {
+    in_box_recursive(root_, box, faces);
+}
+
 void TriangleKdTree::nearest_recurse(Node* node, const vec3f& point,
                                      NearestNeighbor& data) const {
     // terminal node?
@@ -305,6 +309,31 @@ void TriangleKdTree::nearest_recurse(Node* node, const vec3f& point,
                 nearest_recurse(node->left_child, point, data);
         }
     }
+}
+
+void TriangleKdTree::in_box_recursive(Node* node, const std::pair<vec3f, vec3f>& box,
+                                      std::vector<int>& faces) {
+    // terminal node?
+    if (!node->left_child) {
+        for (const auto& f : *node->faces) {
+            vec3f n;
+            const auto& pos = face_points_[f];
+            for (int i = 0; i < 3; ++i) {
+                if (box.first[0] <= pos[i][0] && pos[i][0] <= box.second[1] &&
+                    box.first[1] <= pos[i][1] && pos[i][1] <= box.second[1] &&
+                    box.first[2] <= pos[i][2] && pos[i][2] <= box.second[2]) {
+                        faces.push_back(f);
+                        break;
+                    }
+            }
+        }
+        return;
+    }
+
+    if (box.first[node->axis] <= node->split)
+        in_box_recursive(node->left_child, box, faces);
+    if (box.second[node->axis] >= node->split)
+        in_box_recursive(node->right_child, box, faces);
 }
 
 } // namespace pmp
