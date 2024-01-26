@@ -3,6 +3,7 @@
 #include "TraceStuff.h"
 #include "IOMat.h"
 #include "DisneyBRDF.h"
+#include "HairBSDF.h"
 
 namespace DisneyBSDF{
     enum SurfaceEventFlags{
@@ -304,6 +305,8 @@ namespace DisneyBSDF{
       result = clamp(result,vec3(0.0f),vec3(1.0f));
       return result;
     }
+    
+
     static __inline__ __device__
         float3 EvaluateDisney2(
             vec3 illum,
@@ -349,6 +352,17 @@ namespace DisneyBSDF{
         wm = wm.z<0.0f?-wm:wm;
         BRDFBasics::TintColors(mix(mat.basecolor, mat.sssColor, mat.subsurface), eta, mat.specularTint, mat.sheenTint, F0, Csheen, Cspec0);
         Cspec0 = Cspec0;
+        if(mat.isHair > 0.5f){
+            vec3 wo_t = normalize(vec3(0.0f,wo.y,wo.z));
+            vec3 wi_t = normalize(vec3(0.0f,wi.y,wi.z));
+            vec3 d = vec3(0.0f);
+            dterm = dterm * abs(wi.z);
+            sterm = sterm * abs(wi.z);
+            tterm = tterm * abs(wi.z);
+            dterm = dterm + d;
+            fPdf = 1 / M_PIf / 2;
+            return float3(d*abs(wi.z));
+        }
         //material layer mix weight
         float dielectricWt = (1.0 - mat.metallic) * (1.0 - mat.specTrans);
         float metalWt = mat.metallic;
@@ -622,8 +636,33 @@ namespace DisneyBSDF{
         tbn.m_tangent = T;
         tbn.m_binormal = B;
         prd->fromDiff = false;
-        if(r3<p1) // diffuse + sss
-        {
+        if(mat.isHair>0.5f){
+          prd->fromDiff = true;
+          wi = SampleScatterDirection(prd->seed) ;
+          vec3 wo_t = normalize(vec3(0.0f,wo.y,wo.z));
+          vec3 wi_t = normalize(vec3(0.0f,wi.y,wi.z));
+          float Phi = acos(dot(wo_t,wi_t));
+          vec3 extinction = CalculateExtinction(mat.sssParam,1.0f);
+          reflectance = HairBSDF::EvaluteHair(wi.x,dot(wi_t,wi),wo.x,dot(wo_t,wo),Phi,wi.z,1.55f,extinction,mat.basecolor,mat.roughness,0.9f,2.0f);
+                    
+          isSS = false;
+          tbn.inverse_transform(wi);
+          wi = normalize(wi);
+          if(dot(wi, N2)<0)
+          {
+            wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
+          }
+          tbn.inverse_transform(wo);
+          float pdf, pdf2;
+          pdf = 1 / M_PIf / 4;
+          vec3 rd, rs, rt;
+          fPdf = pdf>1e-5?pdf:0.0f;
+          reflectance = pdf>1e-5?reflectance:vec3(0.0f);
+          return true;
+        }
+       
+       
+        if(r3<p1){
           prd->hit_type = DIFFUSE_HIT;
           if(wo.z<0 && mat.subsurface>0)//inside, scattering, go out for sure
           {
@@ -779,6 +818,7 @@ namespace DisneyBSDF{
               wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
             }
         }
+
         tbn.inverse_transform(wo);
         float pdf, pdf2;
         vec3 rd, rs, rt;
