@@ -181,7 +181,7 @@ struct DetangleCCDCollisionWithBoundary : INode {
             nm_ccd_collision.setVal(0);
 
             if(do_pt_detection) {
-                std::cout << "do continous self PT cololision impulse" << std::endl;
+                // std::cout << "do continous self PT cololision impulse" << std::endl;
 
                 auto do_bvh_refit = iter > 0;
                 if(do_jacobi_iter) {
@@ -212,7 +212,7 @@ struct DetangleCCDCollisionWithBoundary : INode {
             }
 
             if(do_ee_detection) {
-                std::cout << "do continous self EE cololision impulse" << std::endl;
+                // std::cout << "do continous self EE cololision impulse" << std::endl;
                 auto do_bvh_refit = iter > 0;
                 if(do_jacobi_iter) {
                     COLLISION_UTILS::calc_continous_self_EE_collision_impulse(cudaPol,
@@ -245,7 +245,7 @@ struct DetangleCCDCollisionWithBoundary : INode {
                 }
             }
 
-            std::cout << "apply CCD impulse" << std::endl;
+            // std::cout << "apply CCD impulse" << std::endl;
             cudaPol(zs::range(verts.size()),[
                 ccd_fail_mark = proxy<space>(ccd_fail_mark),
                 verts = proxy<space>({},verts),
@@ -277,7 +277,7 @@ struct DetangleCCDCollisionWithBoundary : INode {
                 //     atomic_add(exec_tag,&vtemp("v",i,vi),dv[i]);
             });
 
-            std::cout << "nm_kinematic_ccd_collision : " << nm_ccd_collision.getVal() << std::endl;
+            // std::cout << "nm_kinematic_ccd_collision : " << nm_ccd_collision.getVal() << std::endl;
             if(nm_ccd_collision.getVal() <= nm_accept_collisions)
                 break;
         }   
