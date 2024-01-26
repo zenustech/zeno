@@ -25,6 +25,7 @@ public:
     };
 
     NearestNeighbor nearest(const vec3f& p) const;
+    void faces_in_box(const std::pair<vec3f, vec3f>& box, std::vector<int>& faces);
 
 private:
 
@@ -50,6 +51,8 @@ private:
 
     void nearest_recurse(Node* node, const vec3f& point,
                          NearestNeighbor& data) const;
+    void in_box_recursive(Node* node, const std::pair<vec3f, vec3f>& box,
+                          std::vector<int>& faces);
 
     Node* root_;
 
