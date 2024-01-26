@@ -178,6 +178,23 @@ TriangleKdTree::TriangleKdTree(const SurfaceMesh* mesh, unsigned int max_faces,
     build_recurse(root_, max_faces, max_depth);
 }
 
+TriangleKdTree::TriangleKdTree(const AttrVector<vec3i>& tris, const AttrVector<vec3f>& points,
+                               unsigned int max_faces, unsigned int max_depth) {
+    root_ = new Node();
+    root_->faces = new std::vector<int>();
+ 
+    root_->faces->reserve(tris.size());
+    face_points_.reserve(tris.size());
+
+    for (int fit = 0; fit < tris.size(); ++fit) {
+        root_->faces->push_back(fit);
+        auto fvIt = tris[fit];
+        face_points_.push_back({points[fvIt[0]], points[fvIt[1]], points[fvIt[2]]});
+    }
+
+    build_recurse(root_, max_faces, max_depth);
+}
+
 void TriangleKdTree::build_recurse(Node* node, unsigned int max_faces,
                                            unsigned int depth) {
     // should we stop at this level ?
@@ -275,7 +292,7 @@ TriangleKdTree::NearestNeighbor TriangleKdTree::nearest(const vec3f& p) const {
     return data;
 }
 
-void TriangleKdTree::faces_in_box(const std::pair<vec3f, vec3f>& box, std::vector<int>& faces) {
+void TriangleKdTree::faces_in_box(BoundingBox& box, std::vector<int>& faces) {
     in_box_recursive(root_, box, faces);
 }
 
@@ -311,7 +328,7 @@ void TriangleKdTree::nearest_recurse(Node* node, const vec3f& point,
     }
 }
 
-void TriangleKdTree::in_box_recursive(Node* node, const std::pair<vec3f, vec3f>& box,
+void TriangleKdTree::in_box_recursive(Node* node, BoundingBox& box,
                                       std::vector<int>& faces) {
     // terminal node?
     if (!node->left_child) {
@@ -319,9 +336,9 @@ void TriangleKdTree::in_box_recursive(Node* node, const std::pair<vec3f, vec3f>&
             vec3f n;
             const auto& pos = face_points_[f];
             for (int i = 0; i < 3; ++i) {
-                if (box.first[0] <= pos[i][0] && pos[i][0] <= box.second[1] &&
-                    box.first[1] <= pos[i][1] && pos[i][1] <= box.second[1] &&
-                    box.first[2] <= pos[i][2] && pos[i][2] <= box.second[2]) {
+                if (box.min()[0] <= pos[i][0] && pos[i][0] <= box.max()[1] &&
+                    box.min()[1] <= pos[i][1] && pos[i][1] <= box.max()[1] &&
+                    box.min()[2] <= pos[i][2] && pos[i][2] <= box.max()[2]) {
                         faces.push_back(f);
                         break;
                     }
@@ -330,9 +347,9 @@ void TriangleKdTree::in_box_recursive(Node* node, const std::pair<vec3f, vec3f>&
         return;
     }
 
-    if (box.first[node->axis] <= node->split)
+    if (box.min()[node->axis] <= node->split)
         in_box_recursive(node->left_child, box, faces);
-    if (box.second[node->axis] >= node->split)
+    if (box.max()[node->axis] >= node->split)
         in_box_recursive(node->right_child, box, faces);
 }
 
