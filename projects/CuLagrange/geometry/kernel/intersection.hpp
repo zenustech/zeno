@@ -436,7 +436,7 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
 
 
                         if(do_rest_shape_skip_in_the_same_collision_group) {
-                            vec tVs[3] = {};
+                            vec3 tVs[3] = {};
                             for(int i = 0;i != 3;++i)
                                 tVs[i] = verts.pack(dim_c<3>,restShapeOffset,tri[i]);
                             
