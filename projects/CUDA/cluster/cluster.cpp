@@ -73,6 +73,7 @@ struct ParticleClustering : INode {
         float dmax = get_input2<float>("diameter");
         auto cluster_tag = get_input<zeno::StringObject>("cluster_tag")->get();
         bool color = get_input2<bool>("paint_color");
+        bool cluster_center = get_input2<bool>("output_cluster_center");
         auto &pos = pars->verts;
         int vnum = pos->size();
         auto &cluster = pars->add_attr<int>(cluster_tag);
@@ -144,28 +145,30 @@ struct ParticleClustering : INode {
         compute_mean(vnum, knum, pos, cluster, center);
         zeno::log_info("into {} clusters", knum);
 
-        if (color) {
-            auto &clr = pars->verts.add_attr<vec3f>("clr");
+        if (cluster_center) {
+            pars->verts.resize(knum);
+            pars->verts.update();
+            for (int i = 0; i < knum; ++i) {
+                pars->verts[i] = center[i];
+                cluster[i] = i;
+            }
+        } else {
+            if (color) {
+                auto &clr = pars->verts.add_attr<vec3f>("clr");
 #pragma omp parallel for
-            for (int i = 0; i < vnum; ++i) {
-                std::mt19937 rng;
-                rng.seed(cluster[i]);
-                unsigned int r = rng() % 256u;
-                unsigned int g = rng() % 256u;
-                unsigned int b = rng() % 256u;
-                zeno::vec3f c{1.f * r / 256.f, 1.f * g / 256.f, 1.f * b / 256.f};
-                clr[i] = c;
+                for (int i = 0; i < vnum; ++i) {
+                    std::mt19937 rng;
+                    rng.seed(cluster[i]);
+                    unsigned int r = rng() % 256u;
+                    unsigned int g = rng() % 256u;
+                    unsigned int b = rng() % 256u;
+                    zeno::vec3f c{1.f * r / 256.f, 1.f * g / 256.f, 1.f * b / 256.f};
+                    clr[i] = c;
+                }
             }
         }
 
-        auto cluster_center = std::make_shared<ListObject>();
-        for (int i = 0; i < knum; ++i) {
-            auto numeric_obj = std::make_shared<zeno::NumericObject>();
-            numeric_obj->value = center[i];
-            cluster_center->arr.emplace_back(numeric_obj);
-        }
         set_output("pars", std::move(pars));
-        set_output("cluster_center",std::move(cluster_center));
     }
 };
 
@@ -175,9 +178,9 @@ ZENO_DEFNODE(ParticleClustering)
     {"int", "cluster_number", "0"},
     {"float", "diameter", "0"},
     {"string", "cluster_tag", "cluster_index"},
-    {"bool", "paint_color", "1"}},
-    {{"PrimitiveObject", "pars"},
-    {"list", "cluster_center"}},
+    {"bool", "paint_color", "1"},
+    {"bool", "output_cluster_center", "1"}},
+    {{"PrimitiveObject", "pars"}},
     {},
     {"primitive"},
 });
