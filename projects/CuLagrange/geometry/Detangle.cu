@@ -56,6 +56,8 @@ struct Detangle2 : zeno::INode {
         auto progressive_slope = get_input2<float>("progressive_slope");
         auto use_global_scheme = get_input2<bool>("use_global_scheme");
 
+        auto collision_group_name = get_input2<std::string>("collision_group");
+
         if(!zsparticles->hasMeta(DETANGLE_CS_ET_BUFFER_KEY)) {
             zsparticles->setMeta(DETANGLE_CS_ET_BUFFER_KEY,
                 zs::bht<int,2,int>{verts.get_allocator(),DEFAULT_MAX_DETANGLE_INTERSECTION_PAIR});
@@ -487,15 +489,19 @@ struct Detangle2 : zeno::INode {
 
             if(do_self_detangle) {
                 // std::cout << "do self detangle" << std::endl;
-
+                auto skip_too_close_pair_at_rest_shape = true;
+                auto use_collision_group = true;
+                
                 retrieve_self_intersection_tri_edge_pairs(cudaExec,
-                    verts,xtag,
+                    verts,xtag,collision_group_name,
                     tris,
                     edges,
                     tri_bvh,
                     csET,
                     icm_grad,
-                    use_barycentric_interpolator); 
+                    use_barycentric_interpolator,
+                    skip_too_close_pair_at_rest_shape,
+                    use_collision_group); 
 
                 // std::cout << "nm_self_intersections_ET : " << csET.size() << std::endl;
 
