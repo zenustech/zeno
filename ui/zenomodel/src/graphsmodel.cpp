@@ -156,7 +156,7 @@ bool GraphsModel::newMaterialSubgraph(const QModelIndex & currentSubIdx, const Q
     //add material subgraph node
     const QString& subIdent = NodesMgr::createNewNode(this, currentSubIdx, graphName, pos);
     auto subgNodeIdx = nodeIndex(subIdent);
-    QVariant newValue = OPT_VIEW;
+    QVariant newValue = OPT_VIEW | OPT_CACHE;
     ModelSetData(subgNodeIdx, newValue, ROLE_OPTIONS);
    endTransaction();
    emit dataChanged(subgIdx, subgIdx);

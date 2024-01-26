@@ -168,7 +168,9 @@ struct PacketProc {
             QString ident = QString::fromStdString(objKey);
             IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
             QModelIndex& idx = pModel->nodeIndex(ident);
-            pModel->markNodeDataUnchanged(idx);
+            if (idx.isValid()) {
+                pModel->markNodeDataUnchanged(idx);
+            }
         } else {
             zeno::log_warn("unknown packet action type {}", action);
             return false;

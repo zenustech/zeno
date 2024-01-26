@@ -958,6 +958,14 @@ void GlobalComm::prepareForOptix(std::map<std::string, std::shared_ptr<zeno::IOb
     else
         renderType = NORMAL;
 
+    //fix: no new objs also need setCamera
+    if (renderType == UNDEFINED)
+        for (auto& [key, obj] : objs)
+            if (auto cam = std::dynamic_pointer_cast<zeno::CameraObject>(obj)) {
+                renderType = LIGHT_CAMERA;
+                break;
+            }
+
     //fix: hdrsky obj need updateAll
     for (auto& [key, obj] : m_newToviewObjs)
         if (key.find("HDRSky") != std::string::npos)

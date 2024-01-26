@@ -360,7 +360,7 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
 
     //fake GL
     m_zenovis->initializeGL();
-    m_zenovis->setCurrentFrameId(0);    //correct frame automatically.
+    m_zenovis->setCurrentFrameId(zenoApp->getMainWindow()->timelineInfo().currFrame);    //correct frame automatically.
 
     m_camera = new CameraControl(m_zenovis, nullptr, nullptr, this);
     m_zenovis->m_camera_control = m_camera;

@@ -189,8 +189,10 @@ ZLayoutBackground* ZenoNode::initHeaderWidget(IGraphsModel* pGraphsModel)
     NODE_TYPE type = static_cast<NODE_TYPE>(m_index.data(ROLE_NODETYPE).toInt());
 
     QColor clrHeaderBg;
-    if (type == NO_VERSION_NODE || pGraphsModel->IsDeprecatedhNode(m_index))
+    if (type == NO_VERSION_NODE)
         clrHeaderBg = QColor(83, 83, 85);
+    else if (pGraphsModel->IsDeprecatedhNode(m_index))
+        clrHeaderBg = QColor("#FF8000");
     else if (pGraphsModel->IsSubGraphNode(m_index))
         clrHeaderBg = QColor("#1D5F51");
     else
