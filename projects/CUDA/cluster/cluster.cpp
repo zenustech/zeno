@@ -6,6 +6,7 @@
 #include <zeno/core/Graph.h>
 #include <zeno/extra/assetDir.h>
 #include <zeno/funcs/PrimitiveUtils.h>
+#include <zeno/types/ListObject.h>
 #include <zeno/utils/log.h>
 #include <zeno/zeno.h>
 #include "./kdsearch.h"
@@ -72,10 +73,12 @@ struct ParticleClustering : INode {
         float dmax = get_input2<float>("diameter");
         auto cluster_tag = get_input<zeno::StringObject>("cluster_tag")->get();
         bool color = get_input2<bool>("paint_color");
+        bool cluster_center = get_input2<bool>("output_cluster_center");
         auto &pos = pars->verts;
         int vnum = pos->size();
         auto &cluster = pars->add_attr<int>(cluster_tag);
         zeno::log_info("vnum: {}", vnum);
+        std::vector<vec3f> center{};
         if (knum <= 0 && dmax <= 0) {
             zeno::log_warn("please enter either \"cluster_number\" or \"diameter\"");
             set_output("pars", std::move(pars));
@@ -85,13 +88,11 @@ struct ParticleClustering : INode {
             set_output("pars", std::move(pars));
             return;
         } else if (knum > 0) {
-            std::vector<vec3f> center(knum);
+            center.resize(knum);
             srand(37);
             for (int i = 0; i < knum; ++i)
                 center[i] = pos[rand() % vnum];
-
             assign_cluster(vnum, knum, pos, center, cluster);
-
             bool flag;
             std::vector<int> old(vnum);
             do {
@@ -120,34 +121,50 @@ struct ParticleClustering : INode {
                     }
                 }
             }
-    #pragma omp parallel for
-            for (int i = 0; i < vnum; ++i)
-                cluster[i] = dsu.get_union(i);
-            std::map<int, vec3f> centers{};
+            std::map<int, int> cluster_id{};
             knum = 0;
-            for (int i = 0; i < vnum; ++i)
-                if (cluster[i] == i) {
-                    centers[i] = pos[i];
-                    ++knum;
-                }
-    #pragma omp parallel for
-            for (int i = 0; i < vnum; ++i)
-                for (auto &j: centers)
-                    if (distance(pos[i], j.second) < distance(pos[i], centers[cluster[i]]))
-                        cluster[i] = j.first;
-        }
-        zeno::log_info("into {} clusters", knum);
-        if (color) {
-            auto &clr = pars->verts.add_attr<vec3f>("clr");
-#pragma omp parallel for
             for (int i = 0; i < vnum; ++i) {
-                std::mt19937 rng;
-                rng.seed(cluster[i]);
-                unsigned int r = rng() % 256u;
-                unsigned int g = rng() % 256u;
-                unsigned int b = rng() % 256u;
-                zeno::vec3f c{1.f * r / 256.f, 1.f * g / 256.f, 1.f * b / 256.f};
-                clr[i] = c;
+                int dsu_id = dsu.get_union(i);
+                if (cluster_id.count(dsu_id) == 0) {
+                    cluster_id[dsu_id] = knum++;
+                }
+                cluster[i] = cluster_id[dsu_id];
+            }
+            center.resize(knum);
+            for (int i = 0; i < vnum; ++i) {
+                int dsu_id = dsu.get_union(i);
+                if (dsu_id == i)
+                    center[cluster[i]] = pos[i];
+            }
+#pragma omp parallel for
+            for (int i = 0; i < vnum; ++i)
+                for (int j = 0; j < knum; ++j)
+                    if (distance(pos[i], center[j]) < distance(pos[i], center[cluster[i]]))
+                        cluster[i] = j;
+        }
+        compute_mean(vnum, knum, pos, cluster, center);
+        zeno::log_info("into {} clusters", knum);
+
+        if (cluster_center) {
+            pars->verts.resize(knum);
+            pars->verts.update();
+            for (int i = 0; i < knum; ++i) {
+                pars->verts[i] = center[i];
+                cluster[i] = i;
+            }
+        } else {
+            if (color) {
+                auto &clr = pars->verts.add_attr<vec3f>("clr");
+#pragma omp parallel for
+                for (int i = 0; i < vnum; ++i) {
+                    std::mt19937 rng;
+                    rng.seed(cluster[i]);
+                    unsigned int r = rng() % 256u;
+                    unsigned int g = rng() % 256u;
+                    unsigned int b = rng() % 256u;
+                    zeno::vec3f c{1.f * r / 256.f, 1.f * g / 256.f, 1.f * b / 256.f};
+                    clr[i] = c;
+                }
             }
         }
 
@@ -161,8 +178,9 @@ ZENO_DEFNODE(ParticleClustering)
     {"int", "cluster_number", "0"},
     {"float", "diameter", "0"},
     {"string", "cluster_tag", "cluster_index"},
-    {"bool", "paint_color", "1"}},
-    {{"PrimitiveObject", "pars"},},
+    {"bool", "paint_color", "1"},
+    {"bool", "output_cluster_center", "1"}},
+    {{"PrimitiveObject", "pars"}},
     {},
     {"primitive"},
 });
