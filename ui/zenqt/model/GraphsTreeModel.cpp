@@ -154,7 +154,7 @@ void GraphsTreeModel::onGraphRowsInserted(const QModelIndex& parent, int first, 
     GraphModel* pGraphM = qobject_cast<GraphModel*>(sender());
     if (pGraphM)
     {
-        QString graphPath = pGraphM->currentPath();
+        QStringList graphPath = pGraphM->currentPath();
         QModelIndex treeParentItem = getIndexByPath(graphPath);
         emit layoutChanged({ treeParentItem });
     }
@@ -165,7 +165,7 @@ void GraphsTreeModel::onNameUpdated(const QModelIndex& nodeIdx, const QString& o
     GraphModel* pGraphM = qobject_cast<GraphModel*>(sender());
     if (pGraphM)
     {
-        QString nodePath = nodeIdx.data(ROLE_OBJPATH).toString();
+        QStringList nodePath = nodeIdx.data(ROLE_OBJPATH).toStringList();
         QModelIndex nodeIdx = getIndexByPath(nodePath);
         emit dataChanged(nodeIdx, nodeIdx, { Qt::DisplayRole, ROLE_NODE_NAME });
     }
@@ -183,7 +183,7 @@ void GraphsTreeModel::onGraphRowsRemoved(const QModelIndex& parent, int first, i
 {
     GraphModel* pGraphM = qobject_cast<GraphModel*>(sender());
     if (pGraphM) {
-        QString graphPath = pGraphM->currentPath();
+        QStringList graphPath = pGraphM->currentPath();
         QModelIndex treeParentItem = getIndexByPath(graphPath);
         emit layoutChanged({ treeParentItem });
     }
@@ -239,12 +239,12 @@ QModelIndex GraphsTreeModel::rootIndex()
     return {};
 }
 
-GraphModel* GraphsTreeModel::getGraphByPath(const QString& objPath)
+GraphModel* GraphsTreeModel::getGraphByPath(const QStringList& objPath)
 {
     if (!m_main)
         return nullptr;
 
-    QStringList items = objPath.split('/', Qt::SkipEmptyParts);
+    QStringList items = objPath;
     if (items.empty()) {
         //TODO: ASSETS
         return nullptr;
@@ -252,16 +252,15 @@ GraphModel* GraphsTreeModel::getGraphByPath(const QString& objPath)
     else {
         if (items[0] == "main") {
             items.removeAt(0);
-            QString leftPath = items.join('/');
-            return m_main->getGraphByPath(leftPath);
+            return m_main->getGraphByPath(items);
         }
     }
     return nullptr;
 }
 
-QModelIndex GraphsTreeModel::getIndexByPath(const QString& objPath)
+QModelIndex GraphsTreeModel::getIndexByPath(const QStringList& objPath)
 {
-    QStringList items = objPath.split('/', Qt::SkipEmptyParts);
+    QStringList items = objPath;
     if (items.empty()) {
         return QModelIndex();
     }

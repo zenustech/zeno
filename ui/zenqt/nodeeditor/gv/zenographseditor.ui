@@ -35,7 +35,7 @@
       <string notr="true"/>
      </property>
      <property name="currentIndex">
-      <number>1</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="mainEditor">
       <property name="styleSheet">
@@ -76,9 +76,9 @@
            <string notr="true"/>
           </property>
           <property name="currentIndex">
-           <number>0</number>
+           <number>1</number>
           </property>
-          <widget class="QWidget" name="subnetPage">
+          <widget class="QWidget" name="assetsPage">
            <layout class="QVBoxLayout" name="verticalLayout_2">
             <property name="leftMargin">
              <number>0</number>
@@ -113,7 +113,7 @@
 font-size: 12pt;</string>
                 </property>
                 <property name="text">
-                 <string>Subnet</string>
+                 <string>Assets</string>
                 </property>
                </widget>
               </item>
@@ -139,7 +139,7 @@ font-size: 12pt;</string>
              </layout>
             </item>
             <item>
-             <widget class="QListView" name="subnetList">
+             <widget class="QListView" name="assetsList">
               <property name="styleSheet">
                <string notr="true">QListView
 {
@@ -162,10 +162,10 @@ font-size: 12pt;</string>
             </item>
            </layout>
           </widget>
-          <widget class="QWidget" name="treePage">
+          <widget class="QWidget" name="mainPage">
            <layout class="QVBoxLayout" name="verticalLayout2_">
             <item>
-             <widget class="QTreeView" name="subnetTree">
+             <widget class="QTreeView" name="mainTree">
               <property name="focusPolicy">
                <enum>Qt::NoFocus</enum>
               </property>
@@ -326,7 +326,7 @@ font-size: 12pt;</string>
            <bool>true</bool>
           </property>
           <property name="styleSheet">
-           <string notr="true"></string>
+           <string notr="true"/>
           </property>
           <property name="documentMode">
            <bool>true</bool>

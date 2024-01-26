@@ -22,7 +22,7 @@ public:
     GraphsTreeModel* currentModel() const;
     AssetsModel* assetsModel() const;
     QStandardItemModel* logModel() const;
-    GraphModel* getGraph(const QString& objPath) const;
+    GraphModel* getGraph(const QStringList& objPath) const;
     GraphsTreeModel* openZsgFile(const QString &fn);
     bool saveFile(const QString& filePath, APP_SETTINGS settings);
     GraphsTreeModel* newFile();

@@ -227,6 +227,7 @@ bool sceneMenuEvent(
                     {
                         const QString& paramName = selParam.data(ROLE_PARAM_NAME).toString();
                         QString subgName, nodename, paramPath;
+                        //TODO: deprecated.
                         QString str = selParam.data(ROLE_OBJPATH).toString();
                         UiHelper::getSocketInfo(str, subgName, nodename, paramPath);
                         if (paramName == "port") {

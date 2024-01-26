@@ -83,8 +83,8 @@ public:
     QString updateNodeName(const QModelIndex& idx, QString newName);
     void addLink(const zeno::EdgeInfo& link);
     QList<SEARCH_RESULT> search(const QString& content, SearchType searchType, SearchOpt searchOpts) const;
-    GraphModel* getGraphByPath(const QString& objPath);
-    QString currentPath() const;
+    GraphModel* getGraphByPath(const QStringList& objPath);
+    QStringList currentPath() const;
     //QModelIndex index(const QString& name) const;
     QModelIndex indexFromName(const QString& name) const;
     void undo();

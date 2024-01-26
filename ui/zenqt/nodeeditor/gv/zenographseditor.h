@@ -30,7 +30,7 @@ public:
     ZenoGraphsEditor(ZenoMainWindow* pMainWin);
     ~ZenoGraphsEditor();
     //void activateTab(const QString& subGraphName, const QString& path = "", const QString& objId = "", bool isError = false);
-    void activateTab(const QString& objpath, const QString& focusNode = "", bool isError = false);
+    void activateTab(const QStringList& objpath, const QString& focusNode = "", bool isError = false);
     void showFloatPanel(const QModelIndex &subgIdx, const QModelIndexList &nodes);
     void selectTab(const QString& subGraphName, const QString& path, std::vector<QString>& objId);
     ZenoSubGraphView* getCurrentSubGraphView();
@@ -43,7 +43,7 @@ public slots:
     void onListItemActivated(const QModelIndex& index);
     void onTreeItemActivated(const QModelIndex& index);
     void onSearchItemClicked(const QModelIndex& index);
-    void onSubnetOptionClicked();
+    void onAssetOptionClicked();
     void onSearchOptionClicked();
     void onPageActivated(const QPersistentModelIndex& subgIdx, const QPersistentModelIndex& nodeIdx);
     void onPageActivated(const QModelIndex& subgNodeIdx);

@@ -538,7 +538,7 @@ LayerPathWidget::LayerPathWidget(QWidget* parent)
     setPalette(pal);
 }
 
-void LayerPathWidget::setPath(const QString& path)
+void LayerPathWidget::setPath(const QStringList& path)
 {
     if (m_path == path)
         return;
@@ -551,10 +551,10 @@ void LayerPathWidget::setPath(const QString& path)
         pLayout->removeItem(pItem);
     }
 
-    QStringList L = m_path.split("/", QtSkipEmptyParts);
-    for (int i = 0; i < L.length(); i++)
+    //QStringList L = m_path.split("/", QtSkipEmptyParts);
+    for (int i = 0; i < m_path.length(); i++)
     {
-        const QString& item = L[i];
+        const QString& item = m_path[i];
         ZASSERT_EXIT(!item.isEmpty());
         QColor clrHovered, clrSelected;
         clrHovered = QColor(67, 67, 67);
@@ -569,7 +569,7 @@ void LayerPathWidget::setPath(const QString& path)
         connect(pLabel, SIGNAL(clicked()), this, SLOT(onPathItemClicked()));
         pLayout->addWidget(pLabel);
 
-        if (L.indexOf(item) != L.length() - 1)
+        if (i != m_path.length() - 1)
         {
             pLabel = new ZTextLabel;
             pLabel->setText(">");
@@ -585,7 +585,7 @@ void LayerPathWidget::setPath(const QString& path)
     update();
 }
 
-QString LayerPathWidget::path() const
+QStringList LayerPathWidget::path() const
 {
     return m_path;
 }
@@ -593,7 +593,7 @@ QString LayerPathWidget::path() const
 void LayerPathWidget::onPathItemClicked()
 {
     ZTextLabel* pClicked = qobject_cast<ZTextLabel*>(sender());
-    QString path;
+    QStringList pathList;
     QHBoxLayout* pLayout = qobject_cast<QHBoxLayout*>(this->layout());
 
     bool bStartDeleted = false;
@@ -605,13 +605,13 @@ void LayerPathWidget::onPathItemClicked()
         {
             if (pPathItem->text() != '>')
             {
-                path += "/" + pPathItem->text();
+                pathList.push_back(pPathItem->text());
                 if (pPathItem == pClicked)
                     break;
             }
         }
     }
-    emit pathUpdated(path);
+    emit pathUpdated(pathList);
 }
 
 
@@ -647,7 +647,7 @@ ZenoSubGraphScene* ZenoSubGraphView::scene()
     return qobject_cast<ZenoSubGraphScene*>(m_view->scene());
 }
 
-void ZenoSubGraphView::resetPath(const QString& path, const QString& objId, bool isError)
+void ZenoSubGraphView::resetPath(const QStringList& path, const QString& objId, bool isError)
 {
     if (path.isEmpty())
     {
@@ -658,17 +658,6 @@ void ZenoSubGraphView::resetPath(const QString& path, const QString& objId, bool
         m_pathWidget->show();
         m_pathWidget->setPath(path);
     }
-    /*
-    if (!subGraphName.isEmpty() && !objId.isEmpty())
-    {
-        IGraphsModel* pModel = zenoApp->graphsManager()->currentModel();
-        QModelIndex subgIdx = pModel->index(subGraphName);
-        QModelIndex objIdx = pModel->index(objId, subgIdx);
-        ZASSERT_EXIT(objIdx.isValid());
-        QPointF pos = objIdx.data(ROLE_OBJPOS).toPointF();
-        m_view->focusOn(objId, pos, isError);
-    }
-    */
 }
 
 void ZenoSubGraphView::setZoom(const qreal& scale)

@@ -147,16 +147,18 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
                 onDelete();
              });
 
+            /*
             QSortFilterProxyModel* pProxyModel = qobject_cast<QSortFilterProxyModel*>(model);
             ZASSERT_EXIT(pProxyModel, false);
             const QModelIndex& index = pProxyModel->mapToSource(proxyIndex);
+            */
 
             connect(pRename, &QAction::triggered, this, [=]() {
-                onRename(index);
+                onRename(proxyIndex);
             });
 
             connect(pSave, &QAction::triggered, this, [=]() {
-                onSaveSubgraph(index);
+                onSaveSubgraph(proxyIndex);
             });
 
             menu->addAction(pCopySubnet);
@@ -183,7 +185,7 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
 
 void ZSubnetListItemDelegate::onDelete()
 {
-    int button = QMessageBox::question(nullptr, tr("Delete Subgraph"), tr("Do you want to delete the selected subgraphs"));
+    int button = QMessageBox::question(qobject_cast<QWidget*>(this->parent()), tr("Delete Subgraph"), tr("Do you want to delete the selected subgraphs"));
     if (button == QMessageBox::Yes) {
         QStringList nameList;
         for (const QModelIndex &idx : m_selectedIndexs) {
@@ -203,7 +205,9 @@ void ZSubnetListItemDelegate::onDelete()
 
 void ZSubnetListItemDelegate::onRename(const QModelIndex &index) 
 {
-    QString name = QInputDialog::getText(nullptr, tr("Rename"), tr("subgraph name:"), QLineEdit::Normal, index.data(ROLE_CLASS_NAME).toString());
+    QString name = QInputDialog::getText(qobject_cast<QWidget*>(this->parent()), 
+        tr("Rename"), tr("subgraph name:"), 
+        QLineEdit::Normal, index.data(ROLE_CLASS_NAME).toString());
     if (!name.isEmpty()) {
         m_model->setData(index, name, Qt::EditRole);
     }
@@ -213,7 +217,7 @@ void ZSubnetListItemDelegate::onSaveSubgraph(const QModelIndex& index)
 {
     DlgInEventLoopScope;
     QString subgName = index.data(ROLE_CLASS_NAME).toString();
-    QString path = QFileDialog::getSaveFileName(nullptr, "Path to Save", subgName, "Zeno Graph File(*.zsg);; All Files(*);;");
+    QString path = QFileDialog::getSaveFileName(qobject_cast<QWidget*>(this->parent()), "Path to Save", subgName, "Zeno Graph File(*.zsg);; All Files(*);;");
     if (!path.isEmpty()) {
         //todo: writer.
         QString strJson;// = ZsgWriter::getInstance().dumpSubgraphStr(m_model, getSubgraphs(index));

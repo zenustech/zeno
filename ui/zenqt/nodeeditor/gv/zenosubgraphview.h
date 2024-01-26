@@ -79,17 +79,17 @@ class LayerPathWidget : public QWidget
 	Q_OBJECT
 public:
     LayerPathWidget(QWidget* parent = nullptr);
-	void setPath(const QString& path);
-	QString path() const;
+	void setPath(const QStringList& path);
+	QStringList path() const;
 
 signals:
-    void pathUpdated(QString);
+    void pathUpdated(QStringList);
 
 private slots:
 	void onPathItemClicked();
 
 private:
-	QString m_path;
+	QStringList m_path;
 };
 
 class ZenoSubGraphView : public QWidget
@@ -101,7 +101,7 @@ public:
 	ZenoSubGraphView(QWidget* parent = nullptr);
 	void initScene(ZenoSubGraphScene* pScene);
     ZenoSubGraphScene* scene();
-	void resetPath(const QString& path, const QString& objId, bool isError = false);
+	void resetPath(const QStringList& path, const QString& objId, bool isError = false);
     void setZoom(const qreal& scale);
     void focusOnWithNoSelect(const QString& nodeId);
     void focusOn(const QString& nodeId);
@@ -114,10 +114,11 @@ protected:
     void resizeEvent(QResizeEvent *event) override;
 
 signals:
-	void pathUpdated(QString);
+	void pathUpdated(QStringList);
     void zoomed(qreal);
 
 private:
+    QStackedWidget* m_stackedView;
     _ZenoSubGraphView* m_view;
     LayerPathWidget* m_pathWidget;
 

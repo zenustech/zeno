@@ -255,7 +255,8 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
         }
         case ROLE_OBJPATH:
         {
-            QString path = currentPath() + '/' + item->name;
+            QStringList path = currentPath();
+            path.append(item->name);
             return path;
         }
         default:
@@ -309,9 +310,9 @@ QList<SEARCH_RESULT> GraphModel::search(const QString& content, SearchType searc
     return {};
 }
 
-GraphModel* GraphModel::getGraphByPath(const QString& objPath)
+GraphModel* GraphModel::getGraphByPath(const QStringList& objPath)
 {
-     QStringList items = objPath.split('/', Qt::SkipEmptyParts);
+     QStringList items = objPath;
      if (items.empty())
          return this;
 
@@ -323,8 +324,7 @@ GraphModel* GraphModel::getGraphByPath(const QString& objPath)
      NodeItem* pItem = m_nodes[item];
      items.removeAt(0);
 
-     QString leftPath = items.join('/');
-     if (leftPath.isEmpty())
+     if (items.isEmpty())
      {
          if (pItem->optSubgraph.has_value())
          {
@@ -336,20 +336,24 @@ GraphModel* GraphModel::getGraphByPath(const QString& objPath)
          }
      }
      ZASSERT_EXIT(pItem->optSubgraph.has_value(), nullptr);
-     return pItem->optSubgraph.value()->getGraphByPath(leftPath);
+     return pItem->optSubgraph.value()->getGraphByPath(items);
 }
 
-QString GraphModel::currentPath() const
+QStringList GraphModel::currentPath() const
 {
-    QString path;
+    QStringList path;
     NodeItem* pNode = qobject_cast<NodeItem*>(this->parent());
+    if (!pNode)
+        return { this->m_graphName };
+
+    GraphModel* pGraphM = nullptr;
     while (pNode) {
-        path = "/" + pNode->name + path;
-        GraphModel* pGraphM = qobject_cast<GraphModel*>(pNode->parent());
-        ZASSERT_EXIT(pGraphM, "");
+        path.push_front(pNode->name);
+        pGraphM = qobject_cast<GraphModel*>(pNode->parent());
+        ZASSERT_EXIT(pGraphM, {});
         pNode = qobject_cast<NodeItem*>(pGraphM->parent());
     }
-    path = "/main" + path;
+    path.push_front(pGraphM->name());
     return path;
 }
 

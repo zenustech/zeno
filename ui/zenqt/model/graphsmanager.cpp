@@ -55,13 +55,16 @@ QStandardItemModel* GraphsManager::logModel() const
     return m_logModel;
 }
 
-GraphModel* GraphsManager::getGraph(const QString& objPath) const
+GraphModel* GraphsManager::getGraph(const QStringList& objPath) const
 {
-    if (objPath.startsWith("/")) {
+    if (objPath.empty())
+        return nullptr;
+
+    if (objPath[0] == "main") {
         return m_model ? m_model->getGraphByPath(objPath) : nullptr;
     }
     else {
-        return m_assets ? m_assets->getAsset(objPath) : nullptr;
+        return m_assets ? m_assets->getAsset(objPath[0]) : nullptr;
     }
 }
 

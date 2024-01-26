@@ -390,8 +390,9 @@ void ZEditParamLayoutDlg::onComboTableItemsCellChanged(int row, int column)
 
 void ZEditParamLayoutDlg::proxyModelSetData(const QModelIndex& index, const QVariant& newValue, int role)
 {
-    const QString& objPath = index.data(ROLE_OBJPATH).toString();
-    m_paramsLayoutM->setData(index, newValue, role);
+    //TODO: ?
+    //const QString& objPath = index.data(ROLE_OBJPATH).toString();
+    //m_paramsLayoutM->setData(index, newValue, role);
 }
 
 void ZEditParamLayoutDlg::onParamTreeDeleted()
@@ -707,7 +708,6 @@ void ZEditParamLayoutDlg::onNameEditFinished()
         return;
 
     QStandardItem* pItem = m_paramsLayoutM->itemFromIndex(currIdx);
-    QString oldPath = pItem->data(ROLE_OBJPATH).toString();
     QString newName = m_ui->editName->text();
     QString oldName = pItem->data(ROLE_PARAM_NAME).toString();
     if (oldName != newName) {
@@ -828,10 +828,6 @@ void ZEditParamLayoutDlg::onStepEditFinished()
     CONTROL_PROPERTIES properties = layerIdx.data(ROLE_PARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
     qreal step = m_ui->editStep->text().toDouble();
     properties["step"] = step;
-
-    const QString &objPath = layerIdx.data(ROLE_OBJPATH).toString();
-    //ViewParamSetDataCommand *pCommand = new ViewParamSetDataCommand(m_pGraphsModel, objPath, properties, ROLE_PARAM_CTRL_PROPERTIES);
-    //m_commandSeq.append(pCommand);
 
     m_paramsLayoutM->setData(layerIdx, properties, ROLE_PARAM_CTRL_PROPERTIES);
     updateSliderInfo();
