@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD 17)
 target_sources(zeno PRIVATE 
   simplification.cpp
   remesh.cpp
+  repair.cpp
   SurfaceMesh.cpp
   TriSubdiv.cpp
 )

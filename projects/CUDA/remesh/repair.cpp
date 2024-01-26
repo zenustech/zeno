@@ -9,174 +9,15 @@
 #include <zeno/utils/vec.h>
 #include <zeno/zeno.h>
 #include <string>
+#include "./algorithms/TriangleKdTree.h"
+#include "./BoundingBox.h"
 
 namespace zeno {
 
-struct SelectSelfIntersectingFaces : INode {
-    class BBox {
-        public:
-        vec3f min, max;
-        BBox() : min(std::numeric_limits<float>::max()), max(-std::numeric_limits<float>::max()) {}
-        BBox(const std::vector<vec3f>& points) {
-            min = vec3f(std::numeric_limits<float>::max());
-            max = vec3f(-std::numeric_limits<float>::max());
-            for (auto &it: points) {
-                for (int i = 0; i < 3; ++i) {
-                    if (it[i] < min[i])
-                        min[i] = it[i];
-                    if (it[i] > max[i])
-                        max[i] = it[i];
-                }
-            }
-        }
-
-        void add(const BBox& bbox) {
-            for (int i = 0; i < 3; ++i) {
-                if (bbox.min[i] < min[i])
-                    min[i] = bbox.min[i];
-                if (bbox.max[i] > max[i])
-                    max[i] = bbox.max[i];
-            }
-        }
-
-        float diag() {
-            if (max[0] < min[0] || max[1] < min[1] || max[2] < min[2])
-                return 0.f;
-            return distance(max, min); 
-        }
-
-        bool collide(const BBox& b) const {
-            return b.min[0]<max[0] && b.max[0]>min[0] &&
-                b.min[1]<max[1] && b.max[1]>min[1] &&
-                b.min[2]<max[2] && b.max[2]>min[2];
-        }
-
-        void intersect(const BBox & b) {
-            if(min[0] < b.min[0]) min[0] = b.min[0];
-            if(min[1] < b.min[1]) min[1] = b.min[1];
-            if(min[2] < b.min[2]) min[2] = b.min[2];
-
-            if(max[0] > b.max[0]) max[0] = b.max[0];
-            if(max[1] > b.max[1]) max[1] = b.max[1];
-            if(max[2] > b.max[2]) max[2] = b.max[2];
-
-            if(min[0]>max[0] || min[1]>max[1] || min[2]>max[2]) {
-                min = vec3f(std::numeric_limits<float>::max());
-                max = vec3f(-std::numeric_limits<float>::max());
-            }
-        }
-    };
-
-    class MeshGrid {
-        #define EPSIL 0.000001
-        public:
-        BBox bbox{};
-        vec3i siz{};
-        vec3f voxel{}, dim{};
-		std::vector<Link> links;
-		std::vector<Link*> grid;
-
-        MeshGrid(const AttrVector<vec3i>& faces, const AttrVector<vec3f>& verts) {
-			for(auto &fi : faces) {
-                std::vector<vec3f> points{};
-                for (int i = 0; i < 3; ++i)
-                    points.push_back(verts[fi[i]]);
-				bbox.add(BBox(points));
-			}
-			int size = faces->size();
-
-			///inflate the bb calculated
-			float infl = bbox.diag() / size;
-            vec3f dim;
-            bbox.min = bbox.min - infl;
-            bbox.max = bbox.max + infl;
-            dim = bbox.max - bbox.min;
-            siz = vec3f(1);
-
-            double eps  = normalize(dim) * 1e-4;
-            int ncell = std::max(1, size);
-            if(dim[0] > eps) {
-                if(dim[1] > eps) {
-                    if(dim[2] > eps) {
-                        double k = std::pow((double)(ncell/(dim[0]*dim[1]*dim[2])), double(1.0/3.f));
-                        siz[0] = int(dim[0] * k);
-                        siz[1] = int(dim[1] * k);
-                        siz[2] = int(dim[2] * k);
-                    } else {
-                        siz[0] = int(std::sqrt(ncell*dim[0]/dim[1]));
-                        siz[1] = int(std::sqrt(ncell*dim[1]/dim[0]));
-                    }
-                } else {
-                    if(dim[2] > eps) {
-                        siz[0] = int(std::sqrt(ncell*dim[0]/dim[2]));
-                        siz[2] = int(std::sqrt(ncell*dim[2]/dim[0]));
-                    } else
-                        siz[0] = int(ncell);
-                }
-            } else {
-                if(dim[1] > eps) {
-                    if(dim[2] > eps) {
-                        siz[1] = int(std::sqrt(ncell*dim[1]/dim[2]));
-                        siz[2] = int(std::sqrt(ncell*dim[2]/dim[1]));
-                    } else
-                        siz[1] = int(ncell);
-                } else if(dim[2] > eps)
-                    siz[2] = int(ncell);
-            }
-            for (int i = 0; i < 3; ++i)
-                siz[i] = std::max(siz[i],1);
-			voxel = dim / siz;
-			
-			grid.resize(siz[0]*siz[1]*siz[2]+1);
-            links.clear();
-            for (int f = 0; f < faces->size(); ++f) {
-                auto fi = faces[f];
-                std::vector<vec3f> points{};
-                for (int j = 0; j < 3; ++j)
-                    points.push_back(verts[fi[j]]);
-                BBox bb{points};
-                bb.intersect(bbox);
-                if(bb.diag() > 0) {
-                    BBox ib;
-                    this->BoxToIBox( bb,ib );
-                    for(int z=ib.min[2];z<=ib.max[2];++z) {
-                        int bz = z*siz[1];
-                        for(int y=ib.min[1];y<=ib.max[1];++y) {
-                            int by = (y+bz)*siz[0];
-                            for(int x=ib.min[0];x<=ib.max[0];++x)
-                                // Inserire calcolo cella corrente
-                                // if( pt->Intersect( ... )
-                                links.push_back( Link(&(*i),by+x) );
-                        }
-                    }
-                }
-            }
-
-            links.push_back(Link(NULL, int(grid.size())-1));
-
-            sort( links.begin(), links.end() );
-
-            typename std::vector<Link>::iterator pl;
-            unsigned int pg;
-            pl = links.begin();
-            for(pg=0;pg<grid.size();++pg) {
-					assert(pl!=links.end());
-					grid[pg] = &*pl;
-					while( (int)pg == pl->Index() )	{
-						++pl;
-						if(pl==links.end())
-							break;
-					}
-				}
-        }
-    };
-
-    void getInBoxTris(const MeshGrid& gm, const BBox& box, std::vector<int>& inBox) {
-        // TODO(@seeeagull)
-    }
-
+struct SelectIntersectingFaces : INode {
     bool segTriIntersection(const std::pair<vec3f, vec3f>& seg, const std::vector<vec3f>& tri, float& a, float& b) {
-        BBox bb0(std::vector<vec3f>{seg.first, seg.second}), bb1(tri);
+        #define EPSIL 0.000001
+        pmp::BoundingBox bb0(std::vector<vec3f>{seg.first, seg.second}), bb1(tri);
         vec3f inter;
         if (!bb0.collide(bb1))
             return false;
@@ -189,13 +30,13 @@ struct SelectSelfIntersectingFaces : INode {
             char quadrant[3];
             vec3f candidatePlane;
             for (int i = 0; i < 3; i++) {
-                if(seg.first[i] < bb1.min[i]) {
+                if(seg.first[i] < bb1.min()[i]) {
                     quadrant[i] = LEFT;
-                    candidatePlane[i] = bb1.min[i];
+                    candidatePlane[i] = bb1.min()[i];
                     inside = false;
-                } else if (seg.first[i] > bb1.max[i]) {
+                } else if (seg.first[i] > bb1.max()[i]) {
                     quadrant[i] = RIGHT;
-                    candidatePlane[i] = bb1.max[i];
+                    candidatePlane[i] = bb1.max()[i];
                     inside = false;
                 } else {
                     quadrant[i] = MIDDLE;
@@ -319,7 +160,7 @@ struct SelectSelfIntersectingFaces : INode {
         } else if(dv2!=0.0f) {
             a=vp2; b=(vp0-vp2)*dv2; c=(vp1-vp2)*dv2; x0=dv2-dv0; x1=dv2-dv1;
         } else {
-            // @seeeagull: shouldn't reach here
+            // shouldn't reach here
         }
 
         float d,e,f,y0,y1;
@@ -334,7 +175,7 @@ struct SelectSelfIntersectingFaces : INode {
         } else if(du2!=0.0f) {
             d=up2; e=(up0-up2)*du2; f=(up1-up2)*du2; y0=du2-du0; y1=du2-du1;
         } else {
-            // @seeeagull: shouldn't reach here
+            // shouldn't reach here
         }
 
         float xx = x0 * x1;
@@ -350,8 +191,10 @@ struct SelectSelfIntersectingFaces : INode {
         isect2[0] = tmp + e * xx * y1;
         isect2[1] = tmp + f * xx * y0;
 
-        std::sort(isect1[0],isect1[1]);
-        std::sort(isect2[0],isect2[1]);
+        if (isect1[0] > isect1[1])
+            std::swap(isect1[0], isect1[1]);
+        if (isect2[0] > isect2[1])
+            std::swap(isect2[0], isect2[1]);
 
         if(isect1[1]<isect2[0] || isect2[1]<isect1[0]) return 0;
         return 1;
@@ -404,19 +247,19 @@ struct SelectSelfIntersectingFaces : INode {
         auto &referred = prim->tris.add_attr<int>("referred", 0);
         auto &intersecting = prim->tris.add_attr<int>("intersecting", 0);
 
-		MeshGrid gM(faces, verts);
+        auto kdtree = pmp::TriangleKdTree(faces, verts);
         for (int i = 0; i < faces->size(); ++i) {
             auto fi = faces[i];
             referred[i] = 1;
             std::vector<vec3f> pfi{verts[fi[0]], verts[fi[1]], verts[fi[2]]};
-            BBox bbox(pfi);
+            pmp::BoundingBox bbox(pfi);
             std::vector<int> inBox{};
-            getInBoxTris(gM, bbox, inBox);
+            kdtree.faces_in_box(bbox, inBox);
             for(auto fib: inBox) {
                 std::vector<vec3f> pfib{verts[faces[fib][0]], verts[faces[fib][1]], verts[faces[fib][2]]};
                 if(referred[fib] == 0 && (fib != i) )
                     if(faceFaceIntersection(fi, faces[fib], pfi, pfib))
-                        intersecting[fi] = intersecting[fib] = 1;
+                        intersecting[i] = intersecting[fib] = 1;
             }
             inBox.clear();
         }
@@ -426,7 +269,7 @@ struct SelectSelfIntersectingFaces : INode {
     }
 };
 
-ZENO_DEFNODE(SelectSelfIntersectingFaces)
+ZENO_DEFNODE(SelectIntersectingFaces)
 ({
     {{"prim"}},
     {("prim")},
