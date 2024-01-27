@@ -553,19 +553,18 @@ void ZenoGraphsEditor::activateTab(const QStringList& subgpath, const QString& f
     ZASSERT_EXIT(pGraphM);
     if (idx == -1)
     {
-        QString concatPath = subgpath.join("/");
-        ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(graphsMgm->gvScene(concatPath));
+        ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(graphsMgm->gvScene(subgpath));
         if (!pScene)
         {
             pScene = new ZenoSubGraphScene(graphsMgm);
             QString subgpathName = subgpath.join("/");
-            graphsMgm->addScene(subgpathName, pScene);
+            graphsMgm->addScene(subgpath, pScene);
             pScene->initModel(pGraphM);
         }
         ZenoSubGraphView* pView = new ZenoSubGraphView;
         connect(pView, &ZenoSubGraphView::zoomed, pScene, &ZenoSubGraphScene::onZoomed);
         connect(pView, &ZenoSubGraphView::zoomed, this, &ZenoGraphsEditor::zoomed);
-        pView->initScene(pScene);
+        //pView->initScene(pScene);
 
         idx = m_ui->graphsViewTab->addTab(pView, showName);
 
@@ -575,10 +574,6 @@ void ZenoGraphsEditor::activateTab(const QStringList& subgpath, const QString& f
         else
             tabIcon = ":/icons/subnet-general.svg";
         m_ui->graphsViewTab->setTabIcon(idx, QIcon(tabIcon));
-
-        connect(pView, &ZenoSubGraphView::pathUpdated, this, [=](QStringList newPath) {
-            activateTab(newPath);
-        });
     }
     m_ui->graphsViewTab->setCurrentIndex(idx);
 

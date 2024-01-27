@@ -68,12 +68,18 @@ namespace zeno {
             }
 
             if (Param_Vec2f == type) {
+                if (vec.size() != 2)
+                    return vec2f();
                 return vec2f(vec[0], vec[1]);
             }
             else if (Param_Vec3f == type) {
+                if (vec.size() != 3)
+                    return vec3f();
                 return vec3f(vec[0], vec[1], vec[2]);
             }
             else {
+                if (vec.size() != 4)
+                    return vec4f();
                 return vec4f(vec[0], vec[1], vec[2], vec[3]);
             }
             return zvariant();

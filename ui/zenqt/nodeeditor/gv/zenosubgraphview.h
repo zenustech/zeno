@@ -117,7 +117,12 @@ signals:
 	void pathUpdated(QStringList);
     void zoomed(qreal);
 
+public slots:
+    void onPathUpdated(QStringList path);
+
 private:
+    _ZenoSubGraphView* getCurrentView() const;
+
     QStackedWidget* m_stackedView;
     _ZenoSubGraphView* m_view;
     LayerPathWidget* m_pathWidget;

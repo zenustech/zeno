@@ -181,6 +181,8 @@ void GraphsManager::clear()
 
 void GraphsManager::onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last)
 {
+    //TODO: deprecated.
+    /*
     const QModelIndex& idx = m_model->index(first, 0);
     if (idx.isValid())
     {
@@ -191,6 +193,7 @@ void GraphsManager::onRowsAboutToBeRemoved(const QModelIndex& parent, int first,
             m_scenes.remove(subgName);
         }
     }
+    */
 }
 
 void GraphsManager::onModelDataChanged(const QModelIndex& subGpIdx, const QModelIndex& idx, int role)
@@ -213,15 +216,21 @@ void GraphsManager::removeCurrent()
     }
 }
 
-QGraphicsScene* GraphsManager::gvScene(const QString& tabName) const
+QGraphicsScene* GraphsManager::gvScene(const QStringList& graphPath) const
 {
-    if (m_scenes.find(tabName) != m_scenes.end())
-        return nullptr;
-    return m_scenes[tabName];
+    for (auto scene : m_scenes) {
+        auto pModel = scene->getGraphModel();
+        auto path = pModel->currentPath();
+        if (path == graphPath)
+            return scene;
+    }
+    return nullptr;
 }
 
 QGraphicsScene* GraphsManager::gvScene(const QModelIndex& subgIdx) const
 {
+    return nullptr;
+    /*
     if (!subgIdx.isValid())
         return nullptr;
 
@@ -230,21 +239,28 @@ QGraphicsScene* GraphsManager::gvScene(const QModelIndex& subgIdx) const
         return nullptr;
 
     return m_scenes[subgName];
+    */
 }
 
 void GraphsManager::addScene(const QModelIndex& subgIdx, ZenoSubGraphScene* scene)
 {
+    //TODO: deprecated
+    /*
     const QString& subgName = subgIdx.data(ROLE_CLASS_NAME).toString();
     if (m_scenes.find(subgName) != m_scenes.end() || !scene)
         return;
     m_scenes.insert(subgName, scene);
+    */
 }
 
-void GraphsManager::addScene(const QString& tabName, ZenoSubGraphScene* scene)
+void GraphsManager::addScene(const QStringList& graphPath, ZenoSubGraphScene* scene)
 {
-    if (m_scenes.find(tabName) != m_scenes.end())
-        return;
-    m_scenes.insert(tabName, scene);
+    for (auto scene : m_scenes) {
+        auto path = scene->getGraphModel()->currentPath();
+        if (path == graphPath)
+            return;
+    }
+    m_scenes.push_back(scene);
 }
 
 zeno::TimelineInfo GraphsManager::timeInfo() const
@@ -293,9 +309,9 @@ void GraphsManager::setIOVersion(zeno::ZSG_VERSION ver)
 }
 
 void GraphsManager::clearMarkOnGv() {
-    for (QString name : m_scenes.keys()) {
-        if (name.startsWith("/")) {
-            m_scenes[name]->clearMark();
+    for (auto scene : m_scenes) {
+        if (scene->getGraphModel()->currentPath().startsWith("main")) {
+            scene->clearMark();
         }
     }
 }

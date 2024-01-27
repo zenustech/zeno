@@ -32,10 +32,10 @@ public:
     void removeCurrent();
     void appendLog(QtMsgType type, QString fileName, int ln, const QString &msg);
     void appendErr(const QString& nodeName, const QString& msg);
-    QGraphicsScene* gvScene(const QString& graphName) const;
+    QGraphicsScene* gvScene(const QStringList& graphName) const;
     QGraphicsScene* gvScene(const QModelIndex& subgIdx) const;
     void addScene(const QModelIndex& subgIdx, ZenoSubGraphScene* scene);
-    void addScene(const QString& tabName, ZenoSubGraphScene* scene);
+    void addScene(const QStringList& graphPath, ZenoSubGraphScene* scene);
     zeno::TimelineInfo timeInfo() const;
     QString zsgPath() const;
     QString zsgDir() const;
@@ -70,7 +70,8 @@ private:
 
     mutable std::mutex m_mtx;
     zeno::TimelineInfo m_timerInfo;
-    QMap<QString, ZenoSubGraphScene*> m_scenes;    //for gv based editor.
+    QVector<ZenoSubGraphScene*> m_scenes;
+    //QMap<QString, ZenoSubGraphScene*> m_scenes;    //for gv based editor.
 };
 
 #endif
