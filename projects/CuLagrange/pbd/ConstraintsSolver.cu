@@ -1029,6 +1029,8 @@ struct XPBDSolveSmoothAll : INode {
                 const auto& vverts = embed_volume->getParticles();
                 const auto vtets = embed_volume->getQuadraturePoints();
 
+                auto use_hard_constraint = constraint_ptr->readMeta<bool>(PBD_USE_HARD_CONSTRAINT);
+
                 auto substep_id = get_input2<int>("substep_id");
                 auto nm_substeps = get_input2<int>("nm_substeps");
                 auto volume_anim_w = (float)(substep_id + 1) / (float)nm_substeps;
@@ -1040,6 +1042,7 @@ struct XPBDSolveSmoothAll : INode {
                     alpha = volume_anim_w,
                     stiffnessOffset = cquads.getPropertyOffset("relative_stiffness"),
                     // weight_sum = proxy<space>(weight_sum),
+                    use_hard_constraint = use_hard_constraint,
                     wOffset = verts.getPropertyOffset("w"),
                     ptagOffset = verts.getPropertyOffset(ptag),
                     dptagOffset = verts.getPropertyOffset(dptag),
@@ -1062,15 +1065,19 @@ struct XPBDSolveSmoothAll : INode {
                         for(int i = 0;i != 4;++i)
                             vtp += vps[i] * bary[i];
                         
-                        auto dp = vtp - verts.pack(dim_c<3>,ptagOffset,vi);
-                        // verts.tuple(dim_c<3>,ptagOffset,vi) = vtp;
-                        // atomic_add(exec_tag,&weight_sum[vi],w);
-                        atomic_add(exec_tag,&verts(wOffset,vi),w);
-                        for(int d = 0;d != 3;++d){
-                            atomic_add(exec_tag,&verts(dptagOffset + d,vi),dp[d] * w);
-                        }
+                        if(use_hard_constraint) {
+                            verts.tuple(dim_c<3>,ptagOffset,vi) = vtp;
+                            // atomic_add(exec_tag,&weight_sum[vi],w);
+                            // weight_sum[vi] = (T)1.0;
+                            verts(wOffset,vi) = (T)1.0;
+                        } else  {
+                            auto dp = vtp - verts.pack(dim_c<3>,ptagOffset,vi);
 
-                        // weight_sum[vi] = (T)1.0;
+                            atomic_add(exec_tag,&verts(wOffset,vi),w);
+                            for(int d = 0;d != 3;++d){
+                                atomic_add(exec_tag,&verts(dptagOffset + d,vi),dp[d] * w);
+                            }
+                        }
                 });
             }
 

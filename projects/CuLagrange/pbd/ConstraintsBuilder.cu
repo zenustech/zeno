@@ -766,6 +766,7 @@ virtual void apply() override {
 
         constexpr auto eps = 1e-6;
         constraint->setMeta(CONSTRAINT_KEY,category_c::volume_pin_constraint);
+        constraint->setMeta(PBD_USE_HARD_CONSTRAINT,use_hard_constraint);
 
         auto volume = get_input<ZenoParticles>("target");
         const auto& kverts = volume->getParticles();
