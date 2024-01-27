@@ -1834,6 +1834,7 @@ void calc_continous_self_PT_collision_impulse_with_toc(Pol& pol,
     const PosTileVec& verts,const zs::SmallString& xtag,const zs::SmallString& vtag,
     const TrisTileVec& tris,
     const T& thickness,
+    const T& igore_rest_shape_thickness,
     TriBvh& triCCDBvh,
     bool refit_bvh,
     PTHashMap& csPT,
@@ -1889,6 +1890,7 @@ void calc_continous_self_PT_collision_impulse_with_toc(Pol& pol,
             tris = proxy<space>({},tris),
             // csPT = proxy<space>(csPT),
             thickness = thickness,
+            igore_rest_shape_thickness = igore_rest_shape_thickness,
             tocs = proxy<space>(tocs),
             output_debug_inform = output_debug_inform,
             impulse_buffer = proxy<space>(impulse_buffer),
@@ -1933,7 +1935,7 @@ void calc_continous_self_PT_collision_impulse_with_toc(Pol& pol,
                         if(use_collision_group) 
                             is_same_collision_group = zs::abs(verts("collision_group",vi) - verts("collision_group",tri[0])) < 0.1;
                     
-                        if(LSL_GEO::get_vertex_triangle_distance(rts[0],rts[1],rts[2],rp) < thickness && is_same_collision_group)
+                        if(LSL_GEO::get_vertex_triangle_distance(rts[0],rts[1],rts[2],rp) < igore_rest_shape_thickness && is_same_collision_group)
                             return; 
                     }
 
@@ -2594,6 +2596,7 @@ void calc_continous_self_EE_collision_impulse_with_toc(Pol& pol,
     const PosTileVec& verts,const zs::SmallString& xtag,const zs::SmallString& vtag,
     const EdgeTileVec& edges,
     const T& thickness,
+    const T& ignore_rest_shape_thickness,
     const size_t& start_edge_id,
     const size_t& end_edge_id,
     EdgeBvh& edgeCCDBvh,
@@ -2658,6 +2661,7 @@ void calc_continous_self_EE_collision_impulse_with_toc(Pol& pol,
             thickness = thickness,
             output_debug_inform = output_debug_inform,
             eps = eps,
+            ignore_rest_shape_thickness = ignore_rest_shape_thickness,
             csEE = proxy<space>(csEE),
             execTag = execTag,
             edgeBvs = proxy<space>(edgeBvs),
@@ -2717,7 +2721,7 @@ void calc_continous_self_EE_collision_impulse_with_toc(Pol& pol,
                         if(use_collision_group) 
                             is_same_collision_group = zs::abs(verts("collision_group",ea[0]) - verts("collision_group",eb[0])) < 0.1;
 
-                        if(LSL_GEO::get_edge_edge_distance(rpas[0],rpas[1],rpbs[0],rpbs[1]) < thickness && is_same_collision_group)
+                        if(LSL_GEO::get_edge_edge_distance(rpas[0],rpas[1],rpbs[0],rpbs[1]) < ignore_rest_shape_thickness && is_same_collision_group)
                             return;
                     }
 
