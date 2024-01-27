@@ -689,6 +689,7 @@ ZENDEFNODE(Detangle2, {
     {
         {"zsparticles"},
         {"string", "xtag", "x"},
+        {"string","collision_group",""},
         {"int","nm_iters","1"},
         {"bool","use_global_scheme","0"},
         {"float","maximum_correction","0.1"},
