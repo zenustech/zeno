@@ -643,16 +643,16 @@ namespace DisneyBSDF{
           vec3 wi_t = normalize(vec3(0.0f,wi.y,wi.z));
           float Phi = acos(dot(wo_t,wi_t));
           vec3 extinction = CalculateExtinction(mat.sssParam,1.0f);
-          reflectance = HairBSDF::EvaluteHair(wi.x,dot(wi_t,wi),wo.x,dot(wo_t,wo),Phi,wi.z,1.55f,extinction,mat.basecolor,mat.roughness,0.9f,2.0f);
+          reflectance = HairBSDF::EvaluteHair(wi.x,dot(wi_t,wi),wo.x,
+                                              dot(wo_t,wo),Phi,wi.z,1.55f,
+                                              extinction,mat.basecolor,
+                                              mat.roughness,0.5f,2.0f);
                     
           isSS = false;
           tbn.inverse_transform(wi);
           wi = normalize(wi);
-          if(dot(wi, N2)<0)
-          {
-            wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
-          }
-          tbn.inverse_transform(wo);
+
+
           float pdf, pdf2;
           pdf = 1 / M_PIf / 4;
           vec3 rd, rs, rt;

@@ -111,7 +111,7 @@ namespace HairBSDF{
     // Remap _dphi_ to $[-\pi,\pi]$
         while (dphi > M_PIf) dphi -= 2 * M_PIf;
         while (dphi < M_PIf) dphi += 2 * M_PIf;
-        return min(10.0f,10.0f* TrimmedLogistic(dphi, s, -M_PIf, M_PIf));
+        return TrimmedLogistic(dphi, s, -M_PIf, M_PIf);
 
     }
     static __inline__ __device__ vec3
