@@ -82,6 +82,7 @@ struct ShaderFinalize : INode {
             {3, "mat_reflectance"}, 
             {1, "mat_opacity"},
             {1, "mat_thickness"},
+            {1, "mat_isHair"},
 
             {1, "vol_depth"},
             {1, "vol_extinction"},
@@ -139,6 +140,7 @@ struct ShaderFinalize : INode {
             get_input<IObject>("reflectance", std::make_shared<NumericObject>(vec3f(1))),
             get_input<IObject>("opacity", std::make_shared<NumericObject>(float(0.0))),
             get_input<IObject>("thickness", std::make_shared<NumericObject>(float(0.0f))),
+            get_input<IObject>("isHair", std::make_shared<NumericObject>(float(0.0f))),
 
             get_input<IObject>("vol_depth", std::make_shared<NumericObject>((float)(999))),
             get_input<IObject>("vol_extinction", std::make_shared<NumericObject>(float(1))),
@@ -338,6 +340,7 @@ ZENDEFNODE(ShaderFinalize, {
         {"vec3f", "reflectance", "1,1,1"},
         {"float", "opacity", "0"},
         {"float", "thickness", "0.0"},
+        {"float", "isHair", "0.0"},
 
         {"string", "commonCode"},
         {"string", "extensionsCode"},
