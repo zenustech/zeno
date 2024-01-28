@@ -1243,7 +1243,7 @@ void ZenoNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
             ZenoGraphsEditor* pEditor = getEditorViewByViewport(event->widget());
             if (pEditor)
             {
-                pEditor->onPageActivated(index());
+                pEditor->onPageActivated(nodeIdx);
             }
         }
         // for temp support to show handler via transform node

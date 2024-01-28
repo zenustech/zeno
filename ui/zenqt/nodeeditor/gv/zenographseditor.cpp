@@ -569,7 +569,7 @@ void ZenoGraphsEditor::activateTab(const QStringList& subgpath, const QString& f
         idx = m_ui->graphsViewTab->addTab(pView, showName);
 
         QString tabIcon;
-        if (showName == "/main")
+        if (showName == "main")
             tabIcon = ":/icons/subnet-main.svg";
         else
             tabIcon = ":/icons/subnet-general.svg";

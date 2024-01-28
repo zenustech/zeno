@@ -64,7 +64,15 @@ GraphModel* GraphsManager::getGraph(const QStringList& objPath) const
         return m_model ? m_model->getGraphByPath(objPath) : nullptr;
     }
     else {
-        return m_assets ? m_assets->getAsset(objPath[0]) : nullptr;
+        QStringList assetGraphPath = objPath;
+        GraphModel* pModel = m_assets->getAsset(assetGraphPath[0]);
+        if (!pModel) return nullptr;
+
+        assetGraphPath.removeAt(0);
+        if (assetGraphPath.isEmpty())
+            return pModel;
+
+        return pModel->getGraphByPath(assetGraphPath);
     }
 }
 
