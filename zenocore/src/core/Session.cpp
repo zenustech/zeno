@@ -38,13 +38,13 @@ struct ImplNodeClass : INodeClass {
         if (spSubnet) {
             spSubnet->subgraph->setName(name);
             //manually init some args nodes.
-            auto input1 = spSubnet->subgraph->createNode("SubInput", "input1", {0,0});
+            auto input1 = spSubnet->subgraph->createNode("SubInput", "input1", "", {0, 0});
             inputs.push_back(SocketDescriptor("", input1->get_name()));
 
-            auto input2 = spSubnet->subgraph->createNode("SubInput", "input2", {0,700});
+            auto input2 = spSubnet->subgraph->createNode("SubInput", "input2", "", {0,700});
             inputs.push_back(SocketDescriptor("", input2->get_name()));
 
-            auto output1 = spSubnet->subgraph->createNode("SubOutput", "output1", { 1300, 250 });
+            auto output1 = spSubnet->subgraph->createNode("SubOutput", "output1", "", { 1300, 250 });
             outputs.push_back(SocketDescriptor("", output1->get_name()));
 
             spSubnet->input_names.push_back("input1");
@@ -98,7 +98,7 @@ ZENO_API Session::Session()
     , eventCallbacks(std::make_unique<EventCallbacks>())
     , m_userData(std::make_unique<UserData>())
     , mainGraph(std::make_shared<Graph>("main"))
-    , assets(std::make_shared<Assets>())
+    , assets(std::make_shared<AssetsMgr>())
 {
     initNodeCates();
 }

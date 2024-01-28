@@ -49,7 +49,8 @@ public:
     bool removeSpecificLink(const QModelIndex& paramIdx, const QModelIndex& linkIdx);
     void addParam(const ParamItem& param);
     //temp:
-    void batchModifyParams(const std::vector<std::pair<zeno::ParamInfo, std::string>>& params);
+    QStandardItemModel* customParamModel();
+    void batchModifyParams(const zeno::ParamsUpdateInfo& params);
 
     int getParamlinkCount(const QModelIndex& paramIdx);
     int numOfInputParams() const;

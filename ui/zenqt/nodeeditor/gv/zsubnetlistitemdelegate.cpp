@@ -9,6 +9,9 @@
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
 #include "settings/zenosettingsmanager.h"
+#include "dialog/zeditparamlayoutdlg.h"
+#include <zeno/core/Session.h>
+#include "util/uihelper.h"
 
 
 SubgEditValidator::SubgEditValidator(QObject* parent)
@@ -137,6 +140,7 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
             QAction* pRename = new QAction(tr("Rename"));
             QAction* pDelete = new QAction(tr("Delete"));
             QAction* pSave = new QAction(tr("Save Subgrah"));
+            QAction* pCustomParams = new QAction(tr("Custom Params"));
 
             if (m_selectedIndexs.size() > 1) 
             {
@@ -161,12 +165,27 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
                 onSaveSubgraph(proxyIndex);
             });
 
+            connect(pCustomParams, &QAction::triggered, this, [=]() {
+                auto name = proxyIndex.data(ROLE_CLASS_NAME).toString().toStdString();
+                auto& assetsMgr = zeno::getSession().assets;
+                zeno::Asset assets = assetsMgr->getAsset(name);
+
+                auto paramsM = UiHelper::genParamsModel(assets.inputs, assets.outputs);
+                ZEditParamLayoutDlg dlg(paramsM);
+                if (QDialog::Accepted == dlg.exec())
+                {
+                    zeno::ParamsUpdateInfo info = dlg.getEdittedUpdateInfo();
+                    zeno::getSession().assets->updateAssets(name, info);
+                }
+            });
+
             menu->addAction(pCopySubnet);
             menu->addAction(pPasteSubnet);
             menu->addSeparator();
             menu->addAction(pRename);
             menu->addAction(pDelete);
             menu->addAction(pSave);
+            menu->addAction(pCustomParams);
 #if 0
             if (index.data(ROLE_SUBGRAPH_TYPE) != SUBGRAPH_PRESET)
             {

@@ -65,7 +65,8 @@ ZenoNewnodeMenu::ZenoNewnodeMenu(GraphModel* pGraphM, const zeno::NodeCates& cat
             return;
 
         QString name = item->result();
-        m_pGraphM->createNode(name, m_scenePos);
+        QString category = item->category();
+        m_pGraphM->createNode(name, category, m_scenePos);
         this->close();
     });
 }
@@ -167,7 +168,8 @@ QList<QAction*> ZenoNewnodeMenu::getCategoryActions(QPointF scenePos)
 
     for (auto& [cate, nodes] : m_cates)
     {
-        QAction* pAction = new QAction(QString::fromStdString(cate), this);
+        QString category = QString::fromStdString(cate);
+        QAction* pAction = new QAction(category, this);
         QMenu* pChildMenu = new QMenu(this);
         pChildMenu->setToolTipsVisible(true);
         for (const auto& node : nodes)
@@ -179,7 +181,7 @@ QList<QAction*> ZenoNewnodeMenu::getCategoryActions(QPointF scenePos)
             QAction* pChildAction = pChildMenu->addAction(nodecls);
             //todo: tooltip
             connect(pChildAction, &QAction::triggered, [=]() {
-                m_pGraphM->createNode(nodecls, m_scenePos);
+                m_pGraphM->createNode(nodecls, category, m_scenePos);
             });
         }
         pAction->setMenu(pChildMenu);

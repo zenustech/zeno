@@ -250,6 +250,13 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
             }
             else {
                 //TODO: other case.
+                auto spSubnetNode = std::dynamic_pointer_cast<zeno::SubnetNode>(item->m_wpNode.lock());
+                if (spSubnetNode) {
+                    bool bAssets = spSubnetNode->subgraph->isAssets();
+                    if (bAssets) {
+                        return zeno::Node_AssetInstance;
+                    }
+                }
                 return zeno::Node_Normal;
             }
         }
@@ -478,14 +485,14 @@ void GraphModel::_updateName(const QString& oldName, const QString& newName)
     emit nameUpdated(idx, oldName);
 }
 
-zeno::NodeData GraphModel::createNode(const QString& nodeCls, const QPointF& pos)
+zeno::NodeData GraphModel::createNode(const QString& nodeCls, const QString& cate, const QPointF& pos)
 {
     zeno::NodeData node;
     std::shared_ptr<zeno::Graph> spGraph = m_spCoreGraph.lock();
     if (!spGraph)
         return node;
 
-    spGraph->createNode(nodeCls.toStdString(), "", {pos.x(), pos.y()});
+    spGraph->createNode(nodeCls.toStdString(), "", cate.toStdString(), {pos.x(), pos.y()});
     return node;
 }
 

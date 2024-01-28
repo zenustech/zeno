@@ -63,6 +63,7 @@ namespace zeno {
         Node_Group,
         Node_Legacy,
         Node_SubgraphNode,
+        Node_AssetInstance,
         NoVersionNode
     };
 

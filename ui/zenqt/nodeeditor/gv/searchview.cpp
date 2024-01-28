@@ -51,11 +51,17 @@ void SearchResultItem::setResult(const QString& result, const QVector<int>& matc
 
     this->setText(htmlText);
     m_result = result;
+    m_categorty = category;
 }
 
-QString SearchResultItem::result()
+QString SearchResultItem::result() const
 {
     return m_result;
+}
+
+QString SearchResultItem::category() const
+{
+    return m_categorty;
 }
 
 SearchResultWidget::SearchResultWidget(QWidget* parent)

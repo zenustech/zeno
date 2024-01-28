@@ -302,7 +302,16 @@ RECORD_SETTING GraphsManager::recordSettings() const
 zeno::NodeCates GraphsManager::getCates() const
 {
     zeno::NodeCates cates = zeno::getSession().dumpCoreCates();
-    //TODO: collect assets.
+    std::vector<std::string> assetsNames;
+
+    for (int r = 0; r < m_assets->rowCount(); r++)
+    {
+        QModelIndex idx = m_assets->index(r);
+        const QString& asset = idx.data(ROLE_CLASS_NAME).toString();
+        assetsNames.push_back(asset.toStdString());
+    }
+
+    cates.insert(std::make_pair("assets", assetsNames));
     return cates;
 }
 

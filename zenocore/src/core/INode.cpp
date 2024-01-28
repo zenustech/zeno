@@ -293,7 +293,7 @@ ZENO_API bool INode::update_param(const std::string& param, const zvariant& new_
     return false;
 }
 
-ZENO_API params_change_info INode::update_editparams(const std::vector<std::pair<zeno::ParamInfo, std::string>>& params)
+ZENO_API params_change_info INode::update_editparams(const ParamsUpdateInfo& params)
 {
     params_change_info ret;
     return ret;

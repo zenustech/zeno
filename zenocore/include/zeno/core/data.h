@@ -71,6 +71,13 @@ namespace zeno {
         bool bInput = true;
     };
 
+    struct ParamUpdateInfo {
+        zeno::ParamInfo param;
+        std::string oldName;
+    };
+
+    using ParamsUpdateInfo = std::vector<ParamUpdateInfo>;
+
     struct NodeData;
 
     using NodesData = std::map<std::string, NodeData>;

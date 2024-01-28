@@ -254,7 +254,48 @@ GraphModel* ParamsModel::parentGraph() const
     return nullptr;
 }
 
-void ParamsModel::batchModifyParams(const std::vector<std::pair<zeno::ParamInfo, std::string>>& params)
+QStandardItemModel* ParamsModel::customParamModel()
+{
+    QStandardItemModel* customParamsM = new QStandardItemModel(this);
+
+    QStandardItem* pRoot = new QStandardItem("root");
+    QStandardItem* pInputs = new QStandardItem("input");
+    QStandardItem* pOutputs = new QStandardItem("output");
+    for (int r = 0; r < rowCount(); r++) {
+        QModelIndex paramIdx = index(r);
+        bool bInput = paramIdx.data(ROLE_ISINPUT).toBool();
+        zeno::ParamInfo info = paramIdx.data(ROLE_PARAM_INFO).value<zeno::ParamInfo>();
+        QStandardItem* paramItem = new QStandardItem(QString::fromStdString(info.name));
+        const QString& paramName = QString::fromStdString(info.name);
+        paramItem->setData(paramName, Qt::DisplayRole);
+        paramItem->setData(paramName, ROLE_PARAM_NAME);
+        paramItem->setData(paramName, ROLE_MAP_TO_PARAMNAME);
+        paramItem->setData(UiHelper::zvarToQVar(info.defl), ROLE_PARAM_VALUE);
+        paramItem->setData(info.control, ROLE_PARAM_CONTROL);
+        paramItem->setData(info.type, ROLE_PARAM_TYPE);
+        paramItem->setData(bInput, ROLE_ISINPUT);
+        if (bInput)
+            pInputs->appendRow(paramItem);
+        else
+            pOutputs->appendRow(paramItem);
+        paramItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
+        paramItem->setEditable(true);
+    }
+    pRoot->setEditable(false);
+    pRoot->setData(VPARAM_TAB, ROLE_ELEMENT_TYPE);
+    pInputs->setEditable(false);
+    pInputs->setData(VPARAM_GROUP, ROLE_ELEMENT_TYPE);
+    pOutputs->setEditable(false);
+    pOutputs->setData(VPARAM_GROUP, ROLE_ELEMENT_TYPE);
+
+    pRoot->appendRow(pInputs);
+    pRoot->appendRow(pOutputs);
+
+    customParamsM->appendRow(pRoot);
+    return customParamsM;
+}
+
+void ParamsModel::batchModifyParams(const zeno::ParamsUpdateInfo& params)
 {
     auto spNode = m_wpNode.lock();
     ZASSERT_EXIT(spNode);

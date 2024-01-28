@@ -128,11 +128,10 @@ void ParamTreeItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem 
 }
 
 
-ZEditParamLayoutDlg::ZEditParamLayoutDlg(ParamsModel* pModel, QWidget* parent)
+ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, QWidget* parent)
     : QDialog(parent)
-    , m_model(pModel)
     , m_bSubgraphNode(false)
-    , m_paramsLayoutM(nullptr)
+    , m_paramsLayoutM(pModel)
 {
     m_ui = new Ui::EditParamLayoutDlg;
     m_ui->setupUi(this);
@@ -149,10 +148,6 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(ParamsModel* pModel, QWidget* parent)
         m_ui->cbControl->addItem(controlList[i].name);
     }
 
-    m_model = qobject_cast<ParamsModel*>(pModel);
-    ZASSERT_EXIT(m_model);
-
-    _initLayoutModel();
     initIcon(m_paramsLayoutM->invisibleRootItem());
 
     m_ui->paramsView->setModel(m_paramsLayoutM);
@@ -245,53 +240,6 @@ void ZEditParamLayoutDlg::initUI()
     m_ui->paramsView->setFocusPolicy(Qt::NoFocus);
     resize(ZenoStyle::dpiScaled(900), ZenoStyle::dpiScaled(620));
     setFocusPolicy(Qt::ClickFocus);
-}
-
-void ZEditParamLayoutDlg::_initLayoutModel()
-{
-    //temp: temp layout model for params, will be replaced by specific proxy model.
-    if (m_paramsLayoutM) {
-        m_paramsLayoutM->clear();
-        delete m_paramsLayoutM;
-        m_paramsLayoutM = nullptr;
-    }
-
-    m_paramsLayoutM = new QStandardItemModel(this);
-
-    QStandardItem* pRoot = new QStandardItem("root");
-    QStandardItem* pInputs = new QStandardItem("input");
-    QStandardItem* pOutputs = new QStandardItem("output");
-    for (int r = 0; r < m_model->rowCount(); r++) {
-        QModelIndex paramIdx = m_model->index(r);
-        bool bInput = paramIdx.data(ROLE_ISINPUT).toBool();
-        zeno::ParamInfo info = paramIdx.data(ROLE_PARAM_INFO).value<zeno::ParamInfo>();
-        QStandardItem* paramItem = new QStandardItem(QString::fromStdString(info.name));
-        const QString& paramName = QString::fromStdString(info.name);
-        paramItem->setData(paramName, Qt::DisplayRole);
-        paramItem->setData(paramName, ROLE_PARAM_NAME);
-        paramItem->setData(paramName, ROLE_MAP_TO_PARAMNAME);
-        paramItem->setData(UiHelper::zvarToQVar(info.defl), ROLE_PARAM_VALUE);
-        paramItem->setData(info.control, ROLE_PARAM_CONTROL);
-        paramItem->setData(info.type, ROLE_PARAM_TYPE);
-        paramItem->setData(bInput, ROLE_ISINPUT);
-        if (bInput)
-            pInputs->appendRow(paramItem);
-        else
-            pOutputs->appendRow(paramItem);
-        paramItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
-        paramItem->setEditable(true);
-    }
-    pRoot->setEditable(false);
-    pRoot->setData(VPARAM_TAB, ROLE_ELEMENT_TYPE);
-    pInputs->setEditable(false);
-    pInputs->setData(VPARAM_GROUP, ROLE_ELEMENT_TYPE);
-    pOutputs->setEditable(false);
-    pOutputs->setData(VPARAM_GROUP, ROLE_ELEMENT_TYPE);
-
-    pRoot->appendRow(pInputs);
-    pRoot->appendRow(pOutputs);
-
-    m_paramsLayoutM->appendRow(pRoot);
 }
 
 void ZEditParamLayoutDlg::initIcon(QStandardItem *pItem) 
@@ -833,10 +781,14 @@ void ZEditParamLayoutDlg::onStepEditFinished()
     updateSliderInfo();
 }
 
+zeno::ParamsUpdateInfo ZEditParamLayoutDlg::getEdittedUpdateInfo() const
+{
+    return m_paramsUpdate;
+}
+
 void ZEditParamLayoutDlg::onApply()
 {
     //temp case: for only inputs and outputs.
-    std::vector<std::pair<zeno::ParamInfo, std::string>> params;
 
     QStandardItem* pRoot = m_paramsLayoutM->item(0);
     QStandardItem* pInputs = pRoot->child(0);
@@ -853,7 +805,7 @@ void ZEditParamLayoutDlg::onApply()
         param.tooltip = pItem->data(ROLE_PARAM_TOOLTIP).toString().toStdString();
         const QString& existName = pItem->data(ROLE_MAP_TO_PARAMNAME).toString();
 
-        params.push_back({ param, existName.toStdString() });
+        m_paramsUpdate.push_back({ param, existName.toStdString() });
     }
     QStandardItem* pOutputs = pRoot->child(1);
     for (int i = 0; i < pOutputs->rowCount(); i++)
@@ -869,10 +821,10 @@ void ZEditParamLayoutDlg::onApply()
         param.tooltip = pItem->data(ROLE_PARAM_TOOLTIP).toString().toStdString();
         const QString& existName = pItem->data(ROLE_MAP_TO_PARAMNAME).toString();
 
-        params.push_back({ param, existName.toStdString() });
+        m_paramsUpdate.push_back({ param, existName.toStdString() });
     }
 
-    m_model->batchModifyParams(params);
+    //m_model->batchModifyParams(params);
 }
 
 void ZEditParamLayoutDlg::onOk()

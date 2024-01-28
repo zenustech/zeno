@@ -54,7 +54,7 @@ QString UiHelper::createNewNode(QModelIndex subgIdx, const QString& descName, co
     QAbstractItemModel* graphM = const_cast<QAbstractItemModel*>(subgIdx.model());
     if (GraphModel* pModel = qobject_cast<GraphModel*>(graphM))
     {
-        node = pModel->createNode(descName, pt);
+        node = pModel->createNode(descName, "", pt);
     }
     return QString::fromStdString(node.name);
 }
@@ -1704,6 +1704,57 @@ void UiHelper::reAllocIdents(const QString& targetSubgraph,
 
         outLinks.push_back(newLink);
     }
+}
+
+QStandardItemModel* UiHelper::genParamsModel(const std::vector<zeno::ParamInfo>& inputs, const std::vector<zeno::ParamInfo>& outputs)
+{
+    QStandardItemModel* customParamsM = new QStandardItemModel;
+
+    QStandardItem* pRoot = new QStandardItem("root");
+    QStandardItem* pInputs = new QStandardItem("input");
+    QStandardItem* pOutputs = new QStandardItem("output");
+
+    for (zeno::ParamInfo info : inputs) {
+        QStandardItem* paramItem = new QStandardItem(QString::fromStdString(info.name));
+        const QString& paramName = QString::fromStdString(info.name);
+        paramItem->setData(paramName, Qt::DisplayRole);
+        paramItem->setData(paramName, ROLE_PARAM_NAME);
+        paramItem->setData(paramName, ROLE_MAP_TO_PARAMNAME);
+        paramItem->setData(UiHelper::zvarToQVar(info.defl), ROLE_PARAM_VALUE);
+        paramItem->setData(info.control, ROLE_PARAM_CONTROL);
+        paramItem->setData(info.type, ROLE_PARAM_TYPE);
+        paramItem->setData(true, ROLE_ISINPUT);
+        paramItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
+        paramItem->setEditable(true);
+    }
+
+    for (zeno::ParamInfo info : outputs) {
+        QStandardItem* paramItem = new QStandardItem(QString::fromStdString(info.name));
+        const QString& paramName = QString::fromStdString(info.name);
+        paramItem->setData(paramName, Qt::DisplayRole);
+        paramItem->setData(paramName, ROLE_PARAM_NAME);
+        paramItem->setData(paramName, ROLE_MAP_TO_PARAMNAME);
+        paramItem->setData(UiHelper::zvarToQVar(info.defl), ROLE_PARAM_VALUE);
+        paramItem->setData(info.control, ROLE_PARAM_CONTROL);
+        paramItem->setData(info.type, ROLE_PARAM_TYPE);
+        paramItem->setData(false, ROLE_ISINPUT);
+        pOutputs->appendRow(paramItem);
+        paramItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
+        paramItem->setEditable(true);
+    }
+
+    pRoot->setEditable(false);
+    pRoot->setData(VPARAM_TAB, ROLE_ELEMENT_TYPE);
+    pInputs->setEditable(false);
+    pInputs->setData(VPARAM_GROUP, ROLE_ELEMENT_TYPE);
+    pOutputs->setEditable(false);
+    pOutputs->setData(VPARAM_GROUP, ROLE_ELEMENT_TYPE);
+
+    pRoot->appendRow(pInputs);
+    pRoot->appendRow(pOutputs);
+
+    customParamsM->appendRow(pRoot);
+    return customParamsM;
 }
 
 static std::string getZenoVersion()

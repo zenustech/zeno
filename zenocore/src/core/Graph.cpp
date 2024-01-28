@@ -28,7 +28,7 @@ ZENO_API Context::Context(Context const &other)
     : visited(other.visited)
 {}
 
-ZENO_API Graph::Graph(const std::string& name) : name(name) {
+ZENO_API Graph::Graph(const std::string& name, bool bAssets) : m_name(name), m_bAssets(bAssets) {
 }
 
 ZENO_API Graph::~Graph() {
@@ -171,7 +171,7 @@ ZENO_API DirtyChecker &Graph::getDirtyChecker() {
 }
 
 ZENO_API void Graph::init(const GraphData& graph) {
-    name = graph.name;
+    m_name = graph.name;
     //import nodes first.
     for (const auto& [name, node] : graph.nodes) {
         if (node.subgraph) {
@@ -270,6 +270,11 @@ std::string Graph::generateNewName(const std::string& node_cls, std::string spec
     return "";
 }
 
+ZENO_API bool Graph::isAssets() const
+{
+    return m_bAssets;
+}
+
 ZENO_API std::string Graph::updateNodeName(const std::string oldName, const std::string newName)
 {
     if (newName.empty() || nodes.find(oldName) == nodes.end()) {
@@ -288,16 +293,24 @@ ZENO_API std::string Graph::updateNodeName(const std::string oldName, const std:
     return name;
 }
 
-ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls, std::string name, std::pair<float, float> pos)
+ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls, std::string name, std::string cate, std::pair<float, float> pos)
 {
-    auto cl = safe_at(getSession().nodeClasses, cls, "node class name").get();
     if (name.empty())
         name = generateNewName(cls);
     else
         name = generateNewName(cls, name);
-    std::shared_ptr<INode> node = cl->new_instance(name);
+
+    std::shared_ptr<INode> node;
+    if (cate != "assets") {
+        auto cl = safe_at(getSession().nodeClasses, cls, "node class name").get();
+        node = cl->new_instance(name);
+        node->nodeClass = cl;
+    }
+    else {
+        node = getSession().assets->newInstance(cls);
+    }
+
     node->graph = this;
-    node->nodeClass = cl;
     node->m_pos = pos;
     nodes[name] = node;
 
@@ -314,7 +327,7 @@ ZENO_API std::shared_ptr<INode> Graph::createSubnetNode(std::string const& cls)
     node->nodeClass = subcl.get();
 
     auto subnetnode = std::dynamic_pointer_cast<SubnetNode>(node);
-    subnetnode->subnetClass = std::move(subcl);
+    //subnetnode->subnetClass = std::move(subcl);
 
     nodes[node->get_name()] = node;
     CALLBACK_NOTIFY(createSubnetNode, subnetnode)
@@ -364,11 +377,11 @@ ZENO_API std::string Graph::getName() const {
         SubnetNode* pSubnetNode = optParentSubgNode.value();
         return pSubnetNode->get_name();
     }
-    return name;
+    return m_name;
 }
 
 ZENO_API void Graph::setName(const std::string& na) {
-    name = na;
+    m_name = na;
 }
 
 ZENO_API bool Graph::removeNode(std::string const& name) {

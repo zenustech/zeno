@@ -7,7 +7,7 @@
 AssetsModel::AssetsModel(QObject* parent)
     : QAbstractListModel(parent)
 {
-    std::shared_ptr<zeno::Assets> assets =  zeno::getSession().assets;
+    std::shared_ptr<zeno::AssetsMgr> assets =  zeno::getSession().assets;
     m_cbCreateAsset = assets->register_createAsset([&](const std::string& name) {
         _addAsset(QString::fromStdString(name));
     });
@@ -97,8 +97,8 @@ void AssetsModel::_addAsset(const QString& newName)
     int nRows = m_assets.size();
     beginInsertRows(QModelIndex(), nRows, nRows);
 
-    std::shared_ptr<zeno::Assets> asts = zeno::getSession().assets;
-    std::shared_ptr<zeno::Graph> spAsset = asts->getAsset(newName.toStdString());
+    std::shared_ptr<zeno::AssetsMgr> asts = zeno::getSession().assets;
+    std::shared_ptr<zeno::Graph> spAsset = asts->getAsset(newName.toStdString()).sharedGraph;
     auto pNewAsstModel = new GraphModel(spAsset, nullptr, this);
     m_assets.append(pNewAsstModel);
 

@@ -39,7 +39,7 @@ struct Session {
     std::unique_ptr<EventCallbacks> const eventCallbacks;
     std::unique_ptr<UserData> const m_userData;
     std::shared_ptr<Graph> mainGraph;
-    std::shared_ptr<Assets> assets;
+    std::shared_ptr<AssetsMgr> assets;
 
     ZENO_API Session();
     ZENO_API ~Session();

@@ -47,7 +47,8 @@ class ZEditParamLayoutDlg : public QDialog
 {
     Q_OBJECT
 public:
-    ZEditParamLayoutDlg(ParamsModel* pModel, QWidget* parent = nullptr);
+    ZEditParamLayoutDlg(QStandardItemModel* pModel, QWidget* parent = nullptr);
+    zeno::ParamsUpdateInfo getEdittedUpdateInfo() const;
 
 private slots:
     void onBtnAdd();
@@ -68,14 +69,12 @@ private slots:
 
 private:
     void initUI();
-    void _initLayoutModel();
     void initIcon(QStandardItem *item);
     QIcon getIcon(const QStandardItem *pItem);
     void proxyModelSetData(const QModelIndex& index, const QVariant& newValue, int role);
     void switchStackProperties(int ctrl, QStandardItem *pItem);
     void updateSliderInfo();
 
-    ParamsModel* m_model;
     QStandardItemModel* m_paramsLayoutM;
 
     Ui::EditParamLayoutDlg* m_ui;
@@ -85,6 +84,8 @@ private:
 
     QMap<QString, QString> m_renameRecord;
     QVector<QUndoCommand*> m_commandSeq;
+
+    zeno::ParamsUpdateInfo m_paramsUpdate;
 
     bool m_bNodeUI;
 };

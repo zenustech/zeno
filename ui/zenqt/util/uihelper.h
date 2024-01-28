@@ -6,6 +6,7 @@
 #include "uicommon.h"
 #include <zeno/core/data.h>
 #include <QTabWidget>
+#include <QStandardItemModel>
 
 
 class BlockSignalScope
@@ -93,6 +94,7 @@ public:
                                const zeno::LinksData& inLinks,
                                zeno::NodesData& outNodes,
                                zeno::LinksData& outLinks);
+    static QStandardItemModel* genParamsModel(const std::vector<zeno::ParamInfo>& inputs, const std::vector<zeno::ParamInfo>& outputs);
 private:
     static std::pair<qreal, qreal> getRxx2(QRectF r, qreal xRadius, qreal yRadius, bool AbsoluteSize);
 };

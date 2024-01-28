@@ -51,7 +51,7 @@ struct Graph : std::enable_shared_from_this<Graph> {
 
     std::optional<SubnetNode*> optParentSubgNode;
 
-    ZENO_API Graph(const std::string& name);
+    ZENO_API Graph(const std::string& name, bool bAssets = false);
     ZENO_API ~Graph();
 
     Graph(Graph const &) = delete;
@@ -62,7 +62,7 @@ struct Graph : std::enable_shared_from_this<Graph> {
     //BEGIN NEW STANDARD API
     ZENO_API void init(const GraphData& graph);
 
-    ZENO_API std::shared_ptr<INode> createNode(std::string const& cls, std::string name = "", std::pair<float, float> pos = {});
+    ZENO_API std::shared_ptr<INode> createNode(std::string const& cls, std::string name = "", std::string cate = "", std::pair<float, float> pos = {});
     CALLBACK_REGIST(createNode, void, const std::string&, std::weak_ptr<zeno::INode>)
 
     ZENO_API bool removeNode(std::string const& name);
@@ -85,6 +85,8 @@ struct Graph : std::enable_shared_from_this<Graph> {
 
     ZENO_API std::string updateNodeName(const std::string oldName, const std::string newName = "");
     CALLBACK_REGIST(updateNodeName, void, std::string, std::string)
+
+    ZENO_API bool isAssets() const;
     //END
 
     ZENO_API DirtyChecker &getDirtyChecker();
@@ -126,7 +128,8 @@ private:
     std::map<std::string, std::string> subOutputNodes;
 
     std::map<std::string, std::set<std::string>> node_set;
-    std::string name;
+    std::string m_name;
+    const bool m_bAssets;
 };
 
 }

@@ -77,7 +77,7 @@ public:
     QHash<int, QByteArray> roleNames() const override;
 
     //GraphModel:
-    zeno::NodeData createNode(const QString& nodeCls, const QPointF& pos);
+    zeno::NodeData createNode(const QString& nodeCls, const QString& cate, const QPointF& pos);
     void appendSubgraphNode(QString name, QString cls, NODE_DESCRIPTOR desc, GraphModel* subgraph, const QPointF& pos);
     bool removeNode(const QString& name);
     QString updateNodeName(const QModelIndex& idx, QString newName);

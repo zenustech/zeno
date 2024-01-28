@@ -25,10 +25,6 @@ void SubnetNode::init(const NodeData& dat)
     for (const ParamInfo& param : dat.inputs)
     {
         std::shared_ptr<IParam> sparam = std::make_shared<IParam>();
-        if (!sparam) {
-            zeno::log_warn("input param `{}` is not registerd in current zeno version");
-            continue;
-        }
         sparam->defl = param.defl;
         sparam->name = param.name;
         sparam->type = param.type;
@@ -39,12 +35,8 @@ void SubnetNode::init(const NodeData& dat)
     for (const ParamInfo& param : dat.outputs)
     {
         std::shared_ptr<IParam> sparam = std::make_shared<IParam>();
-        if (!sparam) {
-            zeno::log_warn("output param `{}` is not registerd in current zeno version");
-            continue;
-        }
         sparam->defl = param.defl;
-        sparam->name = m_name;
+        sparam->name = param.name;
         sparam->type = param.type;
         sparam->m_wpNode = shared_from_this();
         add_output_param(sparam);
@@ -80,6 +72,11 @@ ZENO_API void SubnetNode::remove_param(bool bInput, const std::string& name)
     }
 }
 
+ZENO_API std::shared_ptr<Graph> SubnetNode::get_graph() const
+{
+    return subgraph;
+}
+
 ZENO_API std::vector<std::shared_ptr<IParam>> SubnetNode::get_input_params() const
 {
     std::vector<std::shared_ptr<IParam>> params;
@@ -108,7 +105,7 @@ ZENO_API std::vector<std::shared_ptr<IParam>> SubnetNode::get_output_params() co
     return params;
 }
 
-ZENO_API params_change_info SubnetNode::update_editparams(const std::vector<std::pair<zeno::ParamInfo, std::string>>& params)
+ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo& params)
 {
     std::set<std::string> inputs_old, outputs_old;
     for (const auto& param_name : input_names) {
@@ -121,8 +118,8 @@ ZENO_API params_change_info SubnetNode::update_editparams(const std::vector<std:
     params_change_info changes;
 
     for (auto _pair : params) {
-        const ParamInfo& param = _pair.first;
-        const std::string oldname = _pair.second;
+        const ParamInfo& param = _pair.param;
+        const std::string oldname = _pair.oldName;
         const std::string newname = param.name;
 
         auto& in_outputs = param.bInput ? inputs_ : outputs_;

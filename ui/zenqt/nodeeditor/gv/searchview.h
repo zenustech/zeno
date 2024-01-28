@@ -11,10 +11,12 @@ public:
 
     void setResult(const QString& result, const QVector<int>& matchIndices,
         const QString& category, bool enableCategory);
-    QString result();
+    QString result() const;
+    QString category() const;
 
 private:
     QString m_result;
+    QString m_categorty;
 };
 
 class SearchResultWidget : public QListWidget

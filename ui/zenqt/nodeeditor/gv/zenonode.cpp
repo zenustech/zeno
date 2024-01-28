@@ -1114,8 +1114,12 @@ void ZenoNode::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
             ZASSERT_EXIT(pScene && !pScene->views().isEmpty());
             if (_ZenoSubGraphView* pView = qobject_cast<_ZenoSubGraphView*>(pScene->views().first()))
             {
-                ZEditParamLayoutDlg dlg(paramsM, pView);
-                dlg.exec();
+                ZEditParamLayoutDlg dlg(paramsM->customParamModel(), pView);
+                if (QDialog::Accepted == dlg.exec())
+                {
+                    zeno::ParamsUpdateInfo info = dlg.getEdittedUpdateInfo();
+                    paramsM->batchModifyParams(info);
+                }
             }
         });
 
@@ -1238,12 +1242,22 @@ void ZenoNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
     else if (items.contains(m_bodyWidget))
     {
         const QModelIndex& nodeIdx = index();
-        if (nodeIdx.data(ROLE_NODETYPE) == zeno::Node_SubgraphNode)
+        zeno::NodeType type = (zeno::NodeType)nodeIdx.data(ROLE_NODETYPE).toInt();
+        if (type == zeno::Node_SubgraphNode)
         {
             ZenoGraphsEditor* pEditor = getEditorViewByViewport(event->widget());
             if (pEditor)
             {
                 pEditor->onPageActivated(nodeIdx);
+            }
+        }
+        else if (type == zeno::Node_AssetInstance)
+        {
+            ZenoGraphsEditor* pEditor = getEditorViewByViewport(event->widget());
+            if (pEditor)
+            {
+                QString assetName = nodeIdx.data(ROLE_CLASS_NAME).toString();
+                pEditor->activateTab({ assetName });
             }
         }
         // for temp support to show handler via transform node
