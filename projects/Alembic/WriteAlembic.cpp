@@ -14,7 +14,6 @@
 #include "zeno/utils/string.h"
 #include "zeno/types/ListObject.h"
 #include "zeno/utils/log.h"
-#include "Alembic/AbcCoreHDF5/ReadWrite.h"
 #include <numeric>
 #include <filesystem>
 
