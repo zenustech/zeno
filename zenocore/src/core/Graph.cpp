@@ -275,6 +275,14 @@ ZENO_API bool Graph::isAssets() const
     return m_bAssets;
 }
 
+ZENO_API std::set<std::string> Graph::searchByClass(const std::string& name) const
+{
+    auto it = node_set.find(name);
+    if (it == node_set.end())
+        return {};
+    return it->second;
+}
+
 ZENO_API std::string Graph::updateNodeName(const std::string oldName, const std::string newName)
 {
     if (newName.empty() || nodes.find(oldName) == nodes.end()) {

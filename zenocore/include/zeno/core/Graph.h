@@ -87,6 +87,9 @@ struct Graph : std::enable_shared_from_this<Graph> {
     CALLBACK_REGIST(updateNodeName, void, std::string, std::string)
 
     ZENO_API bool isAssets() const;
+
+    ZENO_API std::set<std::string> searchByClass(const std::string& name) const;
+
     //END
 
     ZENO_API DirtyChecker &getDirtyChecker();

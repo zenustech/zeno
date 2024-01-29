@@ -19,7 +19,7 @@ class ZSubnetListItemDelegate : public QStyledItemDelegate
 {
     Q_OBJECT
 public:
-    ZSubnetListItemDelegate(AssetsModel* model, QObject* parent = nullptr);
+    ZSubnetListItemDelegate(AssetsModel* model, ZenoGraphsEditor* parent = nullptr);
     ~ZSubnetListItemDelegate();
 
     QWidget* createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
@@ -49,6 +49,7 @@ private:
 private:
     AssetsModel* m_model;
     QModelIndexList m_selectedIndexs;
+    ZenoGraphsEditor* m_pEditor;
 };
 
 class SubListSortProxyModel :public QSortFilterProxyModel

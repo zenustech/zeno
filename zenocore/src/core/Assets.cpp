@@ -178,6 +178,8 @@ ZENO_API void AssetsMgr::updateAssets(const std::string name, ParamsUpdateInfo i
     }
 
     //update assets data
+    assets.inputs.clear();
+    assets.outputs.clear();
     for (auto pair : info) {
         if (pair.param.bInput)
             assets.inputs.push_back(pair.param);

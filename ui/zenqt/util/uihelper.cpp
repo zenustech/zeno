@@ -1726,6 +1726,7 @@ QStandardItemModel* UiHelper::genParamsModel(const std::vector<zeno::ParamInfo>&
         paramItem->setData(true, ROLE_ISINPUT);
         paramItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
         paramItem->setEditable(true);
+        pInputs->appendRow(paramItem);
     }
 
     for (zeno::ParamInfo info : outputs) {
@@ -1738,9 +1739,9 @@ QStandardItemModel* UiHelper::genParamsModel(const std::vector<zeno::ParamInfo>&
         paramItem->setData(info.control, ROLE_PARAM_CONTROL);
         paramItem->setData(info.type, ROLE_PARAM_TYPE);
         paramItem->setData(false, ROLE_ISINPUT);
-        pOutputs->appendRow(paramItem);
         paramItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
         paramItem->setEditable(true);
+        pOutputs->appendRow(paramItem);
     }
 
     pRoot->setEditable(false);

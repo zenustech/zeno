@@ -12,6 +12,8 @@
 #include <zeno/types/UserData.h>
 #include "nodeeditor/gv/zenosubgraphscene.h"
 #include "zassert.h"
+#include "variantptr.h"
+#include "model/parammodel.h"
 
 
 GraphsManager::GraphsManager(QObject* parent)
@@ -313,6 +315,23 @@ zeno::NodeCates GraphsManager::getCates() const
 
     cates.insert(std::make_pair("assets", assetsNames));
     return cates;
+}
+
+void GraphsManager::updateAssets(const QString& assetsName, zeno::ParamsUpdateInfo info)
+{
+    zeno::getSession().assets->updateAssets(assetsName.toStdString(), info);
+    //update to each assets node on the tree
+    GraphModel* mainM = m_model->getGraphByPath({"main"});
+    ZASSERT_EXIT(mainM);
+    QModelIndexList results = mainM->match(QModelIndex(), ROLE_CLASS_NAME, assetsName);
+    for (QModelIndex res : results) {
+        zeno::NodeType type = (zeno::NodeType)res.data(ROLE_NODETYPE).toInt();
+        if (type == zeno::Node_AssetInstance) {
+            ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(res.data(ROLE_PARAMS));
+            ZASSERT_EXIT(paramsM);
+            paramsM->batchModifyParams(info);
+        }
+    }
 }
 
 zeno::ZSG_VERSION GraphsManager::ioVersion() const

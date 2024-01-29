@@ -67,7 +67,7 @@ void NodeItem::init(GraphModel* pGraphM, std::shared_ptr<zeno::INode> spNode)
 
 GraphModel::GraphModel(std::shared_ptr<zeno::Graph> spGraph, GraphsTreeModel* pTree, QObject* parent)
     : QAbstractListModel(parent)
-    , m_spCoreGraph(spGraph)
+    , m_wpCoreGraph(spGraph)
     , m_pTree(pTree)
 {
     m_graphName = QString::fromStdString(spGraph->getName());
@@ -92,7 +92,7 @@ GraphModel::GraphModel(std::shared_ptr<zeno::Graph> spGraph, GraphsTreeModel* pT
 
 void GraphModel::registerCoreNotify()
 {
-    std::shared_ptr<zeno::Graph> coreGraph = m_spCoreGraph.lock();
+    std::shared_ptr<zeno::Graph> coreGraph = m_wpCoreGraph.lock();
     ZASSERT_EXIT(coreGraph);
 
     m_cbCreateNode = coreGraph->register_createNode([&](const std::string& name, std::weak_ptr<zeno::INode> spNode) {
@@ -129,7 +129,7 @@ void GraphModel::registerCoreNotify()
 
 void GraphModel::unRegisterCoreNotify()
 {
-    if (std::shared_ptr<zeno::Graph> coreGraph = m_spCoreGraph.lock())
+    if (std::shared_ptr<zeno::Graph> coreGraph = m_wpCoreGraph.lock())
     {
         bool ret = coreGraph->unregister_createNode(m_cbCreateNode);
         ZASSERT_EXIT(ret);
@@ -170,7 +170,7 @@ void GraphModel::addLink(const QString& fromNodeStr, const QString& fromParamStr
 
 void GraphModel::addLink(const zeno::EdgeInfo& link)
 {
-    std::shared_ptr<zeno::Graph> spGraph = m_spCoreGraph.lock();
+    std::shared_ptr<zeno::Graph> spGraph = m_wpCoreGraph.lock();
     ZASSERT_EXIT(spGraph);
     spGraph->addLink(link);
 }
@@ -312,7 +312,18 @@ QModelIndexList GraphModel::match(const QModelIndex& start, int role,
     const QVariant& value, int hits,
     Qt::MatchFlags flags) const
 {
-    return QModelIndexList();
+    QModelIndexList result;
+    if (role == ROLE_CLASS_NAME) {
+        std::shared_ptr<zeno::Graph> spGraph = m_wpCoreGraph.lock();
+        ZASSERT_EXIT(spGraph, result);
+        std::string content = value.toString().toStdString();
+        auto results = spGraph->searchByClass(content);
+        for (std::string node : results) {
+            QModelIndex nodeIdx = indexFromName(QString::fromStdString(node));
+            result.append(nodeIdx);
+        }
+    }
+    return result;
 }
 
 QList<SEARCH_RESULT> GraphModel::search(const QString& content, SearchType searchType, SearchOpt searchOpts) const
@@ -442,7 +453,7 @@ void GraphModel::removeLink(const QModelIndex& linkIdx)
 void GraphModel::removeLink(const zeno::EdgeInfo& link)
 {
     //emit to core data.
-    std::shared_ptr<zeno::Graph> spGraph = m_spCoreGraph.lock();
+    std::shared_ptr<zeno::Graph> spGraph = m_wpCoreGraph.lock();
     ZASSERT_EXIT(spGraph);
     spGraph->removeLink(link);
 }
@@ -492,7 +503,7 @@ void GraphModel::_updateName(const QString& oldName, const QString& newName)
 zeno::NodeData GraphModel::createNode(const QString& nodeCls, const QString& cate, const QPointF& pos)
 {
     zeno::NodeData node;
-    std::shared_ptr<zeno::Graph> spGraph = m_spCoreGraph.lock();
+    std::shared_ptr<zeno::Graph> spGraph = m_wpCoreGraph.lock();
     if (!spGraph)
         return node;
 
@@ -548,14 +559,14 @@ void GraphModel::appendSubgraphNode(QString name, QString cls, NODE_DESCRIPTOR d
 
 bool GraphModel::removeNode(const QString& name)
 {
-    auto spCoreGraph = m_spCoreGraph.lock();
+    auto spCoreGraph = m_wpCoreGraph.lock();
     ZASSERT_EXIT(spCoreGraph, false);
     return spCoreGraph->removeNode(name.toStdString());
 }
 
 QString GraphModel::updateNodeName(const QModelIndex& idx, QString newName)
 {
-    auto spCoreGraph = m_spCoreGraph.lock();
+    auto spCoreGraph = m_wpCoreGraph.lock();
     ZASSERT_EXIT(spCoreGraph, false);
 
     std::string oldName = idx.data(ROLE_NODE_NAME).toString().toStdString();

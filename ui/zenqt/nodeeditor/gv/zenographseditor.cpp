@@ -25,6 +25,7 @@
 #include "widgets/zpathedit.h"
 #include "widgets/zlabel.h"
 #include "nodeeditor/gv/callbackdef.h"
+#include <zeno/core/Session.h>
 
 
 ZenoGraphsEditor::ZenoGraphsEditor(ZenoMainWindow* pMainWin)
@@ -888,6 +889,21 @@ void ZenoGraphsEditor::onMenuActionTriggered(QAction* pAction)
 void ZenoGraphsEditor::onCommandDispatched(QAction* pAction, bool bTriggered)
 {
     onAction(pAction);
+}
+
+void ZenoGraphsEditor::onAssetsCustomParamsClicked(const QString& assetsName)
+{
+    auto& assetsMgr = zeno::getSession().assets;
+    zeno::Asset assets = assetsMgr->getAsset(assetsName.toStdString());
+
+    auto paramsM = UiHelper::genParamsModel(assets.inputs, assets.outputs);
+    ZEditParamLayoutDlg dlg(paramsM, this);
+    if (QDialog::Accepted == dlg.exec())
+    {
+        auto graphsMgr = zenoApp->graphsManager();
+        zeno::ParamsUpdateInfo info = dlg.getEdittedUpdateInfo();
+        graphsMgr->updateAssets(assetsName, info);
+    }
 }
 
 void ZenoGraphsEditor::onTreeItemSelectionChanged(const QItemSelection &selected, const QItemSelection &deselected) 

@@ -32,6 +32,7 @@ public:
     void removeCurrent();
     void appendLog(QtMsgType type, QString fileName, int ln, const QString &msg);
     void appendErr(const QString& nodeName, const QString& msg);
+    void updateAssets(const QString& assetsName, zeno::ParamsUpdateInfo info);
     QGraphicsScene* gvScene(const QStringList& graphName) const;
     QGraphicsScene* gvScene(const QModelIndex& subgIdx) const;
     void addScene(const QModelIndex& subgIdx, ZenoSubGraphScene* scene);

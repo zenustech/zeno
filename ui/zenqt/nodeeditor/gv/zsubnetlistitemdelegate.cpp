@@ -12,6 +12,7 @@
 #include "dialog/zeditparamlayoutdlg.h"
 #include <zeno/core/Session.h>
 #include "util/uihelper.h"
+#include "nodeeditor/gv/zenographseditor.h"
 
 
 SubgEditValidator::SubgEditValidator(QObject* parent)
@@ -36,9 +37,10 @@ void SubgEditValidator::fixup(QString& wtf) const
 }
 
 
-ZSubnetListItemDelegate::ZSubnetListItemDelegate(AssetsModel* model, QObject* parent)
+ZSubnetListItemDelegate::ZSubnetListItemDelegate(AssetsModel* model, ZenoGraphsEditor* parent)
     : QStyledItemDelegate(parent)
     , m_model(model)
+    , m_pEditor(parent)
 {
 }
 
@@ -166,17 +168,8 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
             });
 
             connect(pCustomParams, &QAction::triggered, this, [=]() {
-                auto name = proxyIndex.data(ROLE_CLASS_NAME).toString().toStdString();
-                auto& assetsMgr = zeno::getSession().assets;
-                zeno::Asset assets = assetsMgr->getAsset(name);
-
-                auto paramsM = UiHelper::genParamsModel(assets.inputs, assets.outputs);
-                ZEditParamLayoutDlg dlg(paramsM);
-                if (QDialog::Accepted == dlg.exec())
-                {
-                    zeno::ParamsUpdateInfo info = dlg.getEdittedUpdateInfo();
-                    zeno::getSession().assets->updateAssets(name, info);
-                }
+                auto name = proxyIndex.data(ROLE_CLASS_NAME).toString();
+                m_pEditor->onAssetsCustomParamsClicked(name);
             });
 
             menu->addAction(pCopySubnet);

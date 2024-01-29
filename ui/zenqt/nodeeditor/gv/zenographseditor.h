@@ -52,6 +52,7 @@ public slots:
     void onAction(QAction* pAction, const QVariantList& args = QVariantList(), bool bChecked = false);
     void onCommandDispatched(QAction* pAction, bool bTriggered);
     void onTreeItemSelectionChanged(const QItemSelection &selected, const QItemSelection &deselected);
+    void onAssetsCustomParamsClicked(const QString& assetsName);
 
 signals:
     void zoomed(qreal);

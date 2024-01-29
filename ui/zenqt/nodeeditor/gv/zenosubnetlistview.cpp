@@ -25,7 +25,7 @@ ZenoSubnetListView::~ZenoSubnetListView()
 void ZenoSubnetListView::initModel(AssetsModel* pModel)
 {
     setModel(pModel);
-    setItemDelegate(new ZSubnetListItemDelegate(pModel, this));
+    //setItemDelegate(new ZSubnetListItemDelegate(pModel, this));
     viewport()->setAutoFillBackground(false);
     update();
 }

@@ -121,7 +121,7 @@ private:
     QHash<int, QString> m_row2name;
     QHash<QString, NodeItem*> m_nodes;
 
-    std::weak_ptr<zeno::Graph> m_spCoreGraph;
+    std::weak_ptr<zeno::Graph> m_wpCoreGraph;
 
     std::string m_cbCreateNode;
     std::string m_cbRemoveNode;
