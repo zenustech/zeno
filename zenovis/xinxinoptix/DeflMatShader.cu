@@ -193,6 +193,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     if (opacity >0.99f || isLight == 1) // No need to calculate an expensive random number if the test is going to fail anyway.
     {
         optixIgnoreIntersection();
+        return;
     }
     else
     {
@@ -208,7 +209,17 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 
         if (p < skip){
             optixIgnoreIntersection();
+            return;
         }else{
+          if(mats.isHair>0.5f)
+          {
+             vec3 extinction = DisneyBSDF::CalculateExtinction(mats.sssParam,1.0f);
+             if(p<length(exp(-extinction)))
+             {
+               optixIgnoreIntersection();
+               return;
+             }
+          }
 
             if(length(prd->attanuation) < 0.01f){
                 prd->attanuation = vec3(0.0f);

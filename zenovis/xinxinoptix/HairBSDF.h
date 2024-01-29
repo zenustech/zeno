@@ -148,7 +148,7 @@ namespace HairBSDF{
         float gammaT = acos(cosGammaT);
         float gammaO = asin(h);
         vec3 R = M_p_Weta(sinTheta_i,cosTheta_i,sinTheta_o,cosTheta_o,beta_m) * N_r(Phi,h,ior,basecolor) ;
-        vec3 T = exp(-sigma_a *(2*cosGammaT/cosTheta_t));
+        vec3 T = exp(-sigma_a * (2*cosGammaT/cosTheta_t));
         vec3 MP =  vec3(M_p_Weta(sinTheta_i,cosTheta_i,sinTheta_o,cosTheta_o,beta_m*2));
         vec3 NP = vec3(N_p(Phi,1,s,gammaO,gammaT));
         vec3 AP = Ap(cosTheta_o,ior,h,1,T);

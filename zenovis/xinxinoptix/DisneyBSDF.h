@@ -352,17 +352,6 @@ namespace DisneyBSDF{
         wm = wm.z<0.0f?-wm:wm;
         BRDFBasics::TintColors(mix(mat.basecolor, mat.sssColor, mat.subsurface), eta, mat.specularTint, mat.sheenTint, F0, Csheen, Cspec0);
         Cspec0 = Cspec0;
-        if(mat.isHair > 0.5f){
-            vec3 wo_t = normalize(vec3(0.0f,wo.y,wo.z));
-            vec3 wi_t = normalize(vec3(0.0f,wi.y,wi.z));
-            vec3 d = vec3(0.0f);
-            dterm = dterm * abs(wi.z);
-            sterm = sterm * abs(wi.z);
-            tterm = tterm * abs(wi.z);
-            dterm = dterm + d;
-            fPdf = 1 / M_PIf / 2;
-            return float3(d*abs(wi.z));
-        }
         //material layer mix weight
         float dielectricWt = (1.0 - mat.metallic) * (1.0 - mat.specTrans);
         float metalWt = mat.metallic;
@@ -403,6 +392,21 @@ namespace DisneyBSDF{
         dterm = vec3(0.0f);
         sterm = vec3(0.0f);
         tterm = vec3(0.0f);
+        if(mat.isHair>0.5f)
+        {
+          vec3 wo_t = normalize(vec3(0.0f,wo.y,wo.z));
+          vec3 wi_t = normalize(vec3(0.0f,wi.y,wi.z));
+          float Phi = acos(dot(wo_t, wi_t));
+          vec3 extinction = CalculateExtinction(mat.sssParam,1.0f);
+          vec3 h = HairBSDF::EvaluteHair(wi.x,dot(wi_t,wi),wo.x,
+                                              dot(wo_t,wo),Phi,wi.z,1.55f,
+                                              extinction,mat.basecolor,
+                                              mat.roughness,0.7f,2.0f);
+          fPdf += 1 / M_PIf / 4;
+          dterm = dterm + h;
+          f = f + h;
+          return f * abs(wi.z);
+        }
         if(diffPr > 0.0 && reflect)
         {
 
@@ -414,7 +418,7 @@ namespace DisneyBSDF{
         }
         if(dielectricPr>0.0 && reflect)
         {
-            float F = BRDFBasics::DielectricFresnel(abs(dot(wm, wo)), mat.ior);
+            float F = BRDFBasics::SchlickDielectic(abs(dot(wm, wo)), mat.ior);
             float ax, ay;
             BRDFBasics::CalculateAnisotropicParams(mat.roughness,mat.anisotropic,ax,ay);
             vec3 s = BRDFBasics::EvalMicrofacetReflection(ax, ay, wo, wi, wm,
@@ -444,7 +448,7 @@ namespace DisneyBSDF{
             if (reflect) {
 
               vec3 wm = normalize(wi + wo);
-              float F = BRDFBasics::DielectricFresnel(abs(dot(wm, wo)), entering?mat.ior:1.0/mat.ior);
+              float F = BRDFBasics::SchlickDielectic(abs(dot(wm, wo)), entering?mat.ior:1.0/mat.ior);
               vec3 s = BRDFBasics::EvalMicrofacetReflection(ax, ay, wo, wi, wm,
                                                             mix(mix(Cspec0, mat.diffractColor, mat.diffraction), vec3(1.0f), F) * mat.specular,
                                             tmpPdf) * glassWt;
@@ -462,7 +466,7 @@ namespace DisneyBSDF{
                 fPdf += 1.0f * glassPr;
               }else {
                 vec3 wm = entering?-normalize(wo + mat.ior * wi) : normalize(wo + 1.0f/mat.ior * wi);
-                float F = BRDFBasics::DielectricFresnel(abs(dot(wm, wo)), entering?mat.ior:1.0/mat.ior);
+                float F = BRDFBasics::SchlickDielectic(abs(dot(wm, wo)), entering?mat.ior:1.0/mat.ior);
                 float tmpPdf;
                 vec3 brdf = BRDFBasics::EvalMicrofacetRefraction(mix(mat.transColor, mat.diffractColor, mat.diffraction),
                                                                  ax, ay,
@@ -485,10 +489,10 @@ namespace DisneyBSDF{
             float ax, ay;
             BRDFBasics::CalculateAnisotropicParams(mat.clearcoatRoughness,0,ax,ay);
             //ior related clearCt
-            float F = BRDFBasics::DielectricFresnel(abs(dot(wm, wo)), mat.clearcoatIOR);
-            vec3 s = BRDFBasics::EvalMicrofacetReflection(ax, ay, wo, wi, wm,
-                                                          vec3(F),
-                                                          tmpPdf) * 0.25 * mat.clearcoat;
+            float F = BRDFBasics::SchlickDielectic(abs(dot(wm, wo)), mat.clearcoatIOR);
+            vec3 s = mix(vec3(0.04f), vec3(1.0f), F) *
+                     BRDFBasics::EvalClearcoat(mat.clearcoatRoughness, wo, wi,
+                                               wm, tmpPdf) * 0.25 * mat.clearcoat;
             sterm = sterm + s;
             f =  f + s;
             fPdf += tmpPdf * clearCtPr;
@@ -646,7 +650,7 @@ namespace DisneyBSDF{
           reflectance = HairBSDF::EvaluteHair(wi.x,dot(wi_t,wi),wo.x,
                                               dot(wo_t,wo),Phi,wi.z,1.55f,
                                               extinction,mat.basecolor,
-                                              mat.roughness,0.5f,2.0f);
+                                              mat.roughness,0.7f,2.0f);
                     
           isSS = false;
           tbn.inverse_transform(wi);
