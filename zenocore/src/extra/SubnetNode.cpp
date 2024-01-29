@@ -77,10 +77,14 @@ ZENO_API std::shared_ptr<Graph> SubnetNode::get_graph() const
     return subgraph;
 }
 
+ZENO_API bool SubnetNode::isAssetsNode() const {
+    return subgraph->isAssets();
+}
+
 ZENO_API std::vector<std::shared_ptr<IParam>> SubnetNode::get_input_params() const
 {
     std::vector<std::shared_ptr<IParam>> params;
-    for (auto param : input_names) {
+    for (auto param : m_input_names) {
         auto it = inputs_.find(param);
         if (it == inputs_.end()) {
             zeno::log_warn("unknown param {}", param);
@@ -94,7 +98,7 @@ ZENO_API std::vector<std::shared_ptr<IParam>> SubnetNode::get_input_params() con
 ZENO_API std::vector<std::shared_ptr<IParam>> SubnetNode::get_output_params() const
 {
     std::vector<std::shared_ptr<IParam>> params;
-    for (auto param : output_names) {
+    for (auto param : m_output_names) {
         auto it = outputs_.find(param);
         if (it == outputs_.end()) {
             zeno::log_warn("unknown param {}", param);
@@ -108,10 +112,10 @@ ZENO_API std::vector<std::shared_ptr<IParam>> SubnetNode::get_output_params() co
 ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo& params)
 {
     std::set<std::string> inputs_old, outputs_old;
-    for (const auto& param_name : input_names) {
+    for (const auto& param_name : m_input_names) {
         inputs_old.insert(param_name);
     }
-    for (const auto& param_name : output_names) {
+    for (const auto& param_name : m_output_names) {
         outputs_old.insert(param_name);
     }
 
@@ -184,23 +188,23 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
         changes.remove_inputs.insert(rem_name);
     }
     //update the names.
-    input_names.clear();
+    m_input_names.clear();
     for (const auto& [param, _] : params) {
         if (param.bInput)
-            input_names.push_back(param.name);
+            m_input_names.push_back(param.name);
     }
-    changes.inputs = input_names;
+    changes.inputs = m_input_names;
 
     for (auto rem_name : outputs_old) {
         outputs_.erase(rem_name);
         changes.remove_outputs.insert(rem_name);
     }
-    output_names.clear();
+    m_output_names.clear();
     for (const auto& [param, _] : params) {
         if (!param.bInput)
-            output_names.push_back(param.name);
+            m_output_names.push_back(param.name);
     }
-    changes.outputs = output_names;
+    changes.outputs = m_output_names;
 
     //update subnetnode.
     for (auto name : changes.new_inputs) {

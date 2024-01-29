@@ -187,8 +187,10 @@ ZLayoutBackground* ZenoNode::initHeaderWidget()
     QColor clrHeaderBg;
     if (type == zeno::NoVersionNode)
         clrHeaderBg = QColor(83, 83, 85);
-    else if (m_index.data(ROLE_NODETYPE) == zeno::Node_SubgraphNode)
+    else if (type == zeno::Node_SubgraphNode)
         clrHeaderBg = QColor("#1D5F51");
+    else if (type == zeno::Node_AssetInstance)
+        clrHeaderBg = QColor("#d69b3c");
     else
         clrHeaderBg = headerBg.clr_normal;
 

@@ -47,9 +47,9 @@ struct ImplNodeClass : INodeClass {
             auto output1 = spSubnet->subgraph->createNode("SubOutput", "output1", "", { 1300, 250 });
             outputs.push_back(SocketDescriptor("", output1->get_name()));
 
-            spSubnet->input_names.push_back("input1");
-            spSubnet->input_names.push_back("input2");
-            spSubnet->output_names.push_back("output1");
+            spSubnet->m_input_names.push_back("input1");
+            spSubnet->m_input_names.push_back("input2");
+            spSubnet->m_output_names.push_back("output1");
         }
 
         spNode->set_name(name);

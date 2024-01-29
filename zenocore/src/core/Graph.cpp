@@ -307,7 +307,7 @@ ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls, std::s
         node->nodeClass = cl;
     }
     else {
-        node = getSession().assets->newInstance(cls);
+        node = getSession().assets->newInstance(cls, name);
     }
 
     node->graph = this;

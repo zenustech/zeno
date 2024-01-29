@@ -15,7 +15,35 @@ ZENO_API AssetsMgr::~AssetsMgr() {
 
 ZENO_API void AssetsMgr::createAsset(const std::string& name) {
     Asset newAsst;
-    newAsst.sharedGraph = std::make_shared<Graph>(name);
+
+    std::shared_ptr<Graph> spGraph = std::make_shared<Graph>(name, true);
+
+    spGraph->setName(name);
+    //manually init some args nodes.
+    spGraph->createNode("SubInput", "input1", "", { 0, 0 });
+    spGraph->createNode("SubInput", "input2", "", { 0,700 });
+    spGraph->createNode("SubOutput", "output1", "", { 1300, 250 });
+    spGraph->createNode("SubOutput", "output2", "", { 1300, 900 });
+
+    ParamInfo param;
+    param.name = "input1";
+    param.bInput = true;
+    newAsst.inputs.push_back(param);
+
+    param.name = "input2";
+    param.bInput = true;
+    newAsst.inputs.push_back(param);
+
+    param.name = "output1";
+    param.bInput = false;
+    newAsst.outputs.push_back(param);
+
+    param.name = "output2";
+    param.bInput = false;
+    newAsst.outputs.push_back(param);
+
+    newAsst.sharedGraph = spGraph;
+
     m_assets.insert(std::make_pair(name, newAsst));
     CALLBACK_NOTIFY(createAsset, name)
 }
@@ -158,7 +186,7 @@ ZENO_API void AssetsMgr::updateAssets(const std::string name, ParamsUpdateInfo i
     }
 }
 
-ZENO_API std::shared_ptr<INode> AssetsMgr::newInstance(const std::string& assetsName) {
+ZENO_API std::shared_ptr<INode> AssetsMgr::newInstance(const std::string& assetsName, const std::string& nodeName) {
     if (m_assets.find(assetsName) == m_assets.end()) {
         return nullptr;
     }
@@ -167,6 +195,8 @@ ZENO_API std::shared_ptr<INode> AssetsMgr::newInstance(const std::string& assets
 
     std::shared_ptr<SubnetNode> spNode = std::make_shared<SubnetNode>();
     spNode->subgraph = assets.sharedGraph;
+    spNode->m_nodecls = assetsName;
+    spNode->m_name = nodeName;
 
     for (const ParamInfo& param : assets.inputs)
     {
@@ -176,6 +206,7 @@ ZENO_API std::shared_ptr<INode> AssetsMgr::newInstance(const std::string& assets
         sparam->type = param.type;
         sparam->m_wpNode = spNode;
         spNode->add_input_param(sparam);
+        spNode->m_input_names.push_back(param.name);
     }
 
     for (const ParamInfo& param : assets.outputs)
@@ -186,6 +217,7 @@ ZENO_API std::shared_ptr<INode> AssetsMgr::newInstance(const std::string& assets
         sparam->type = param.type;
         sparam->m_wpNode = spNode;
         spNode->add_output_param(sparam);
+        spNode->m_output_names.push_back(param.name);
     }
 
     return std::dynamic_pointer_cast<INode>(spNode);

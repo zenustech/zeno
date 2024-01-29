@@ -31,7 +31,7 @@ public:
     ParamsModel* params = nullptr;
     zeno::NodeStatus status = zeno::None;
 
-    //for subgraph:
+    //for subgraph, but not include assets:
     std::optional<GraphModel*> optSubgraph;
 
     NodeItem(QObject* parent);

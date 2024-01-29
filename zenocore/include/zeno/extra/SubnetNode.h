@@ -13,8 +13,8 @@ struct SubnetNode : INode {
     //std::vector<std::string> outputKeys;
     std::shared_ptr<Graph> subgraph;
 
-    std::vector<std::string> input_names;
-    std::vector<std::string> output_names;
+    std::vector<std::string> m_input_names;
+    std::vector<std::string> m_output_names;
 
     ZENO_API SubnetNode();
     ZENO_API ~SubnetNode();
@@ -27,6 +27,7 @@ struct SubnetNode : INode {
     ZENO_API void add_param(bool bInput, const ParamInfo& param);
     ZENO_API void remove_param(bool bInput, const std::string& name);
     ZENO_API std::shared_ptr<Graph> get_graph() const;
+    ZENO_API bool isAssetsNode() const;
     ZENO_API virtual void apply() override;
 };
 
