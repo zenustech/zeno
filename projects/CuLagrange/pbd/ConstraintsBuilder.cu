@@ -88,6 +88,10 @@ virtual void apply() override {
     auto uniform_xpbd_affiliation = get_input2<float>("xpbd_affiliation");
     auto damping_coeff = get_input2<float>("damping_coeff");
 
+
+    // auto paramsList = get_input<zeno::ListObject>("paramList")->getLiterial<zeno::DictObject>();
+
+
     auto make_empty = get_input2<bool>("make_empty_constraint");
 
     if(!make_empty) {
@@ -127,9 +131,10 @@ virtual void apply() override {
             sort_topology_by_coloring_tag(cudaPol,colors,reordered_map,color_offset);
         }
         // std::cout << "quads.size() = " << quads.size() << "\t" << "edge_topos.size() = " << edge_topos.size() << std::endl;
-        eles.append_channels(cudaPol,{{"inds",2},{"r",1}});
+        eles.append_channels(cudaPol,{{"inds",2},{"r",1},{"rest_scale",1}});
 
         auto rest_scale = get_input2<float>("rest_scale");
+        TILEVEC_OPS::fill(cudaPol,eles,"rest_scale",rest_scale);
 
         cudaPol(zs::range(eles.size()),[
             has_group = has_group,
@@ -160,6 +165,7 @@ virtual void apply() override {
                 // printf("r[%d] : %f\n",oei,(float)eles("r",oei));
         });            
 
+        // TILEVEC_OPS::copy(cudaPol,eles,"inds",eles,"vis_inds");
     }
 
     if(type == "follow_animation_constraint") {
@@ -213,6 +219,8 @@ virtual void apply() override {
             kverts = proxy<space>({},kverts)] ZS_LAMBDA(int vi) mutable {
                 verts("minv",vi) = (1 - kverts("ani_mask",vi)) * verts("minv",vi);
         });
+
+        // TILEVEC_OPS::copy(cudaPol,eles,"inds",eles,"vis_inds");
         constraint->setMeta(CONSTRAINT_TARGET,target.get());
     }   
 
@@ -260,10 +268,10 @@ virtual void apply() override {
         TILEVEC_OPS::copy<3>(cudaPol,verts,"X",vtemp,"X");
         TILEVEC_OPS::copy(cudaPol,verts,"minv",vtemp,"minv");
         TILEVEC_OPS::copy(cudaPol,verts,collision_group_name,vtemp,"collision_group");
+        TILEVEC_OPS::fill(cudaPol,vtemp,"collision_cancel",0);
         if(verts.hasProperty("collision_cancel"))
             TILEVEC_OPS::copy(cudaPol,verts,"collision_cancel",vtemp,"collision_cancel");
-        else
-            TILEVEC_OPS::fill(cudaPol,vtemp,"collision_cancel",0);
+
 
         dtiles_t etemp{edges.get_allocator(),{
             {"inds",2}
@@ -288,18 +296,27 @@ virtual void apply() override {
 
             auto has_collision_group = kverts.hasProperty(collision_group_name);
 
+            if(!has_collision_group)
+                std::cout << "the input boundary has no collision group" << std::endl;
+            if(!kverts.hasProperty("px"))
+                std::cout << "the input boundary has no px attr" << std::endl;
+            if(!kverts.hasProperty("X"))
+                std::cout << "the input boundary has no X attr" << std::endl;
+
             cudaPol(zs::range(kverts.size()),[
                 kverts = proxy<space>({},kverts),
                 voffset = voffset,
                 pw = pw,
                 collision_group_name = zs::SmallString(collision_group_name),
                 has_collision_group = has_collision_group,
-                // kverts_pre = proxy<space>({},kverts_pre),
+                hasKCollisionCancel = kverts.hasProperty("collision_cancel"),
                 vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int kvi) mutable {
                     auto pre_kvert = kverts.pack(dim_c<3>,"px",kvi) * (1 - pw) + kverts.pack(dim_c<3>,"x",kvi) * pw;
                     vtemp.tuple(dim_c<3>,"x",voffset + kvi) = pre_kvert;
                     vtemp.tuple(dim_c<3>,"X",voffset + kvi) = kverts.pack(dim_c<3>,"X",kvi);
                     vtemp("minv",voffset + kvi) = 0;
+                    if(hasKCollisionCancel)
+                        vtemp("collision_cancel",voffset + kvi) = kverts("collision_cancel",kvi);
                     if(has_collision_group)
                         vtemp("collision_group",voffset + kvi) = kverts(collision_group_name,kvi);
                     else
@@ -745,8 +762,11 @@ virtual void apply() override {
     }
 
     if(type == "volume_pin") {
+        auto use_hard_constraint = get_input2<bool>("use_hard_constraint");
+
         constexpr auto eps = 1e-6;
         constraint->setMeta(CONSTRAINT_KEY,category_c::volume_pin_constraint);
+        constraint->setMeta(PBD_USE_HARD_CONSTRAINT,use_hard_constraint);
 
         auto volume = get_input<ZenoParticles>("target");
         const auto& kverts = volume->getParticles();
@@ -803,6 +823,7 @@ virtual void apply() override {
             verts = proxy<space>({},verts),
             ktetBvh = proxy<space>(ktetBvh),
             thickness = thickness,
+            use_hard_constraint = use_hard_constraint,
             eles = proxy<space>({},eles),
             kverts = proxy<space>({},kverts),
             ktets = proxy<space>({},ktets)] ZS_LAMBDA(int oei) mutable {
@@ -835,10 +856,12 @@ virtual void apply() override {
                     }                        
                 };  
                 ktetBvh.iter_neighbors(bv,find_embeded_tet);
+                // auto use_hard_constraint = true;
                 if(embed_kti >= 0) {
                     // printf("find volume binder V[%d] -> T[%d] with bary[%f %f %f %f]\n",
                     //     pi,embed_kti,(float)bary[0],(float)bary[1],(float)bary[2],(float)bary[3]);
-                    verts("minv",pi) = 0;
+                    if(use_hard_constraint)
+                        verts("minv",pi) = 0;
                 }
                 eles.tuple(dim_c<2>,"inds",oei) = vec2i{pi,embed_kti}.reinterpret_bits(float_c);
                 eles.tuple(dim_c<4>,"bary",oei) = bary;
@@ -850,21 +873,29 @@ virtual void apply() override {
         constraint->setMeta(CONSTRAINT_KEY,category_c::vertex_pin_to_cell_constraint);
 
         auto target = get_input<ZenoParticles>("target");
+
         const auto& kverts = target->getParticles();
         const auto& ktris = target->getQuadraturePoints();
         constraint->setMeta(CONSTRAINT_TARGET,target.get());   
         auto thickness = get_input2<float>("thickness");
+
 
         auto enable_sliding = get_input2<bool>("enable_sliding");
 
         constraint->setMeta(GLOBAL_DCD_THICKNESS,thickness);
         constraint->setMeta(ENABLE_SLIDING,enable_sliding);
 
-        dtiles_t cell_buffer{kverts.get_allocator(),{
-            {"x",3},
-            {"v",3},
-            {"nrm",3}
-        },kverts.size()};
+
+        if(!target->hasAuxData(TARGET_CELL_BUFFER)) {
+            (*target)[TARGET_CELL_BUFFER] = dtiles_t{kverts.get_allocator(),{
+                {"cx",3},
+                {"x",3},
+                {"v",3},
+                {"nrm",3}
+            },kverts.size()};
+        }
+
+        auto& cell_buffer = (*target)[TARGET_CELL_BUFFER];
 
         compute_cells_and_vertex_normal(cudaPol,
             kverts,"x",
@@ -1126,7 +1157,8 @@ virtual void apply() override {
         }
         // std::cout << "quads.size() = " << quads.size() << "\t" << "edge_topos.size() = " << edge_topos.size() << std::endl;
 
-        eles.append_channels(cudaPol,{{"inds",4},{"ra",1},{"sign",1}});      
+        eles.append_channels(cudaPol,{{"inds",4},{"ra",1},{"sign",1},{"rest_scale",1}});      
+        TILEVEC_OPS::fill(cudaPol,eles,"rest_scale",rest_scale);
 
         cudaPol(zs::range(eles.size()),[
             eles = proxy<space>({},eles),
@@ -1147,6 +1179,17 @@ virtual void apply() override {
                 CONSTRAINT::init_DihedralBendingConstraint(x[0],x[1],x[2],x[3],rest_scale,alpha,alpha_sign);
                 eles("ra",oei) = alpha;
                 eles("sign",oei) = alpha_sign;
+
+                // auto topo = bd_topos[ei];
+                // zs::vec<int,10> vis_inds {
+                //     topo[0],topo[2],
+                //     topo[2],topo[3],
+                //     topo[3],topo[0],
+                //     topo[2],topo[1],
+                //     topo[1],topo[3]
+                // };
+
+                // eles.tuple(dim_c<10>,"vis_inds",oei) = vis_inds.reinterpret_bits(float_c);
         });      
     }
 
@@ -1230,7 +1273,8 @@ ZENDEFNODE(MakeSurfaceConstraintTopology, {{
                             {"bool","make_empty_constraint","0"},
                             {"bool","do_constraint_topological_coloring","1"},
                             {"float","damping_coeff","0.0"},
-                            {"bool","enable_sliding","0"}
+                            {"bool","enable_sliding","0"},
+                            {"bool","use_hard_constraint","0"}
                         },
                         {{"constraint"}},
                         { 
@@ -1238,5 +1282,82 @@ ZENDEFNODE(MakeSurfaceConstraintTopology, {{
                         },
                         {"PBD"}});
 
+
+struct ZSSampleVertAttr2Constraints : zeno::INode {
+
+    virtual void apply() override {
+        using namespace zs;
+        using namespace PBD_CONSTRAINT;
+
+        using vec2 = zs::vec<float,2>;
+        using vec3 = zs::vec<float,3>;
+        using vec4 = zs::vec<float,4>;
+        using vec9 = zs::vec<float,9>;
+        using vec2i = zs::vec<int,2>;
+        using vec3i = zs::vec<int,3>;
+        using vec4i = zs::vec<int,4>;
+        using mat4 = zs::vec<int,4,4>;
+
+        constexpr auto space = execspace_e::cuda;
+        auto cudaPol = zs::cuda_exec();
+
+        auto source = get_input<ZenoParticles>("source");
+        auto constraint = get_input<ZenoParticles>("constraint");
+
+        const auto& source_verts = source->getParticles();
+        auto& topos = constraint->getQuadraturePoints();
+
+        auto source_attr_name = get_input2<std::string>("source_attr_name");
+
+        if(!source_verts.hasProperty(source_attr_name)) {
+            std::cout << "the input source_verts has no specified " << source_attr_name << " channel" << std::endl;
+            throw std::runtime_error("the input source_verts has no specified channel");
+        }
+
+        if(!topos.hasProperty(source_attr_name))
+            topos.append_channels(cudaPol,{{source_attr_name,source_verts.getPropertySize(source_attr_name)}});
+        else if(topos.getPropertySize(source_attr_name) != source_verts.getPropertySize(source_attr_name)) {
+            std::cout << "the size of topo's channel not match with the size of source_verts" << std::endl;
+            throw std::runtime_error("the size of topo's channel not match with the size of source_verts");
+        }
+
+        TILEVEC_OPS::fill(cudaPol,topos,source_attr_name,0);
+
+        cudaPol(zs::range(topos.size()),[
+            source_attr_name = zs::SmallString(source_attr_name),
+            dst_attr_name = zs::SmallString(source_attr_name),
+            cdim = topos.getPropertySize("inds"),
+            attr_dim = source_verts.getPropertySize(source_attr_name),
+            sverts = proxy<space>({},source_verts),
+            topos = proxy<space>({},topos)] ZS_LAMBDA(int ei) mutable {
+                for(int i = 0;i != cdim;++i) {
+                    auto vi = zs::reinterpret_bits<int>(topos("inds",i,ei));
+                    for(int d = 0;d != attr_dim;++d) {
+                        topos(dst_attr_name,d,ei) += sverts(source_attr_name,d,vi) / (float)cdim;
+                    }
+                }
+
+        });
+
+        set_output("source",std::move(source));
+        set_output("constraint",std::move(constraint));
+    }  
+};
+
+
+ZENDEFNODE(ZSSampleVertAttr2Constraints, {
+    {
+        {"source"},
+        {"constraint"},
+        {"string","source_attr_name","attr"}
+    },
+    {
+        {"source"},
+        {"constraint"}
+    },
+    { 
+
+    },
+    {"PBD"}});
 
 };

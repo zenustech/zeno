@@ -1,6 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/ListObject.h>
+#include <iostream>
 
 #include <sstream>
 
@@ -12,6 +13,7 @@ struct PrimitiveAttrPicker : zeno::INode {
         auto selected = get_param<std::string>("selected");
         std::vector<zany> selected_indices_numeric;
         auto prim = get_input<PrimitiveObject>("prim");
+        auto size_of_prim = prim->size();
         if (!selected.empty()) {
             std::vector<int> selected_indices;
             std::stringstream ss;
@@ -36,8 +38,13 @@ struct PrimitiveAttrPicker : zeno::INode {
             if (!new_attr->get().empty()) {
                 auto new_value = get_input2<float>("attrVal");
                 auto &attr = prim->add_attr<float>(new_attr->get());
-                for (const auto& idx : selected_indices)
+                for (const auto& idx : selected_indices) {
+                    if(idx >= size_of_prim) {
+                        std::cout << "selected idx overflow\t" << idx << "\t" << size_of_prim << std::endl;
+                        throw std::runtime_error("selected idx overflow");
+                    }
                     attr[idx] = new_value;
+                }
             }
         }
         auto list = std::make_shared<ListObject>(selected_indices_numeric);

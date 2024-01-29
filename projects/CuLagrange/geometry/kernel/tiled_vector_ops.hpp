@@ -49,6 +49,34 @@ namespace zeno { namespace TILEVEC_OPS {
     }
 
 
+    template<typename Pol,typename SrcTileVec,typename DstTileVec>
+    void copy(Pol& pol,const SrcTileVec& src,const int& src_tag_offset,DstTileVec& dst,const int& dst_tag_offset,int offset = 0) {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        // if(src.size() != dst.size())
+        //     throw std::runtime_error("copy_ops_error::the size of src and dst not match");
+        // if(!src.hasProperty(src_tag)){
+        //     fmt::print(fg(fmt::color::red),"copy_ops_error::the src has no specified channel {}\n",src_tag);
+        //     throw std::runtime_error("copy_ops_error::the src has no specified channel");
+        // }
+        // if(!dst.hasProperty(dst_tag)){
+        //     fmt::print(fg(fmt::color::red),"copy_ops_error::the dst has no specified channel {}\n",dst_tag);
+        //     throw std::runtime_error("copy_ops_error::the dst has no specified channel");
+        // }
+        auto space_dim = src.getPropertySize(src_tag_offset);
+        // if(dst.getPropertySize(dst_tag) != space_dim){
+        //     std::cout << "invalid channel[" << src_tag << "] and [" << dst_tag << "] size : " << space_dim << "\t" << dst.getPropertySize(dst_tag) << std::endl;
+        //     throw std::runtime_error("copy_ops_error::the channel size of src and dst not match");
+        // }
+        pol(zs::range(src.size()),
+            [src = proxy<space>({},src),src_tag_offset,dst = proxy<space>({},dst),dst_tag_offset,offset,space_dim] __device__(int vi) mutable {
+                for(int d = 0;d != space_dim;++d)
+                    dst(dst_tag_offset + d,vi + offset) = src(src_tag_offset + d,vi);
+        });
+    }
+
+
+
     template<int space_dim,typename Pol,typename VTileVec>
     void add(Pol& pol,VTileVec& vtemp,const zs::SmallString& src0,T a0,const zs::SmallString& src1,T a1,const zs::SmallString& dst) {
         using namespace zs;
@@ -92,6 +120,20 @@ namespace zeno { namespace TILEVEC_OPS {
                     vtemp(tag,i,vi) = value;
         });
     }
+
+    template<typename T,typename Pol,typename VTileVec>
+    void fill(Pol& pol,VTileVec& vtemp,const int& tagOffset,const T& value) {
+        using namespace zs;
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+        auto space_dim = vtemp.getPropertySize(tagOffset);
+
+        pol(range(vtemp.size()),
+            [vtemp = proxy<space>({},vtemp),tagOffset,value,space_dim] ZS_LAMBDA(int vi) mutable {
+                for(int d= 0;d != space_dim;++d)
+                    vtemp(tagOffset + d,vi) = value;
+        });
+    }
+
 
     template<int space_dim,typename Pol,typename VTileVec>
     void fill_range(Pol& pol,VTileVec& vtemp,const zs::SmallString& tag,const zs::vec<T,space_dim>& value,int start,int length) {

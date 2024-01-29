@@ -173,14 +173,14 @@ namespace zeno {
 
     template <typename Pol,typename VTileVec,typename ETileVec,typename EmbedTileVec,typename BCWTileVec>
     constexpr void compute_barycentric_weights(Pol& pol,const VTileVec& verts,
-        const ETileVec& quads,const EmbedTileVec& everts,
+        const ETileVec& quads,EmbedTileVec& everts,
         const zs::SmallString& x_tag,BCWTileVec& bcw,
         const zs::SmallString& elm_tag,const zs::SmallString& weight_tag,
         float bvh_thickness,
-        int fitting_in) {
-
+        int fitting_in,
+        const zs::SmallString& success_tag,
+        bool mark_success_tag) {
         // std::cout << "COMPUTE BARYCENTRIC_WEIGHTS BEGIN" << std::endl;
-
         static_assert(zs::is_same_v<typename BCWTileVec::value_type,typename EmbedTileVec::value_type>,"precision not match");
         static_assert(zs::is_same_v<typename VTileVec::value_type,typename ETileVec::value_type>,"precision not match");        
         static_assert(zs::is_same_v<typename VTileVec::value_type,typename BCWTileVec::value_type>,"precision not match"); 
@@ -216,6 +216,8 @@ namespace zeno {
 
         pol(zs::range(numEmbedVerts),
             [verts = proxy<space>({},verts),eles = proxy<space>({},quads),bcw = proxy<space>({},bcw),
+                    success_tag = success_tag,
+                    mark_success_tag = mark_success_tag,
                     everts = proxy<space>({},everts),tetsBvh = proxy<space>(tetsBvh),
                     x_tag,elm_tag,weight_tag,fitting_in] ZS_LAMBDA (int vi) mutable {
                 const auto& p = everts.template pack<3>(x_tag,vi);
@@ -223,7 +225,8 @@ namespace zeno {
                 bool found = false;
                 // if(vi == 10820)
                     // printf("check to locate vert %d using bvh with pos = %f %f %f\n",vi,(float)p[0],(float)p[1],(float)p[2]);
-
+                if(mark_success_tag)
+                    everts(success_tag,vi) = 0.0;
                 // auto dst_bv = bv_t{get_bounding_box(dst )}
                 tetsBvh.iter_neighbors(p,[&](int ei){
                     // printf("test %d v's neighbor element %d ei\n",vi,ei);
@@ -256,6 +259,8 @@ namespace zeno {
                             closest_dist = dist;
                             bcw(elm_tag,vi) = reinterpret_bits<T>(ei);
                             bcw.template tuple<4>(weight_tag,vi) = ws;
+                            // found = true;
+                            // return;
                         }
                     }
                     if(ws[1] < 0){
@@ -264,6 +269,8 @@ namespace zeno {
                             closest_dist = dist;
                             bcw(elm_tag,vi) = reinterpret_bits<T>(ei);
                             bcw.template tuple<4>(weight_tag,vi) = ws;
+                            // found = true;
+                            // return;
                         }
                     }
                     if(ws[2] < 0){
@@ -272,6 +279,8 @@ namespace zeno {
                             closest_dist = dist;
                             bcw(elm_tag,vi) = reinterpret_bits<T>(ei);
                             bcw.template tuple<4>(weight_tag,vi) = ws;
+                            // found = true;
+                            // return;
                         }
                     }
                     if(ws[3] < 0){
@@ -280,6 +289,8 @@ namespace zeno {
                             closest_dist = dist;
                             bcw(elm_tag,vi) = reinterpret_bits<T>(ei);
                             bcw.template tuple<4>(weight_tag,vi) = ws;
+                            // found = true;
+                            // return;
                         }
                     }
 
@@ -287,9 +298,13 @@ namespace zeno {
                         printf("bind vert %d to %d under non-fitting-in mode\n",vi,ei);
                         // return;
                     }
-
-
                 });// finish iter the neighbor tets
+
+                if(closest_dist < 1e5f)
+                    found = true;
+
+                if(mark_success_tag && found)
+                    everts(success_tag,vi) = 1.0;
         });
     }
 
