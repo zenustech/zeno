@@ -39,7 +39,7 @@ bool Zsg2Reader::openFile(const std::string& fn, zeno::ZSG_PARSE_RESULT& result)
     }
 
     std::vector<char> dat(szBuffer);
-    FILE* fp = fopen(filePath.string().c_str(), "rb");
+    FILE* fp = fopen(filePath.string().c_str(), "r");
     if (!fp) {
         zeno::log_error("zsg file does not exist");
         return false;
@@ -95,7 +95,9 @@ bool Zsg2Reader::openFile(const std::string& fn, zeno::ZSG_PARSE_RESULT& result)
         return false;
     }
 
-    zeno::AssetsData subgraphDatas;
+    //zeno::AssetsData subgraphDatas;
+    std::map<std::string, zeno::GraphData> sharedSubg;
+
     //init keys
     for (const auto& subgraph : graph.GetObject())
     {
@@ -103,12 +105,15 @@ bool Zsg2Reader::openFile(const std::string& fn, zeno::ZSG_PARSE_RESULT& result)
         if ("main" == graphName)
             continue;
 
+        sharedSubg[graphName] = zeno::GraphData();
+        /*
         zeno::ZenoAsset asset;
         if (nodesDescs.find(graphName) != nodesDescs.end())
             asset.desc = nodesDescs[graphName];
 
         asset.graph = zeno::GraphData();
         subgraphDatas[graphName] = asset;
+        */
     }
 
     //zsg3.0以下的格式，子图将加入并成为项目的资产
@@ -119,8 +124,8 @@ bool Zsg2Reader::openFile(const std::string& fn, zeno::ZSG_PARSE_RESULT& result)
             continue;
         if (!_parseSubGraph(graphName,
                     subgraph.value,
-                    subgraphDatas,
-                    subgraphDatas[graphName].graph))
+                    sharedSubg,
+                    sharedSubg[graphName]))
         {
             return false;
         }
@@ -130,7 +135,7 @@ bool Zsg2Reader::openFile(const std::string& fn, zeno::ZSG_PARSE_RESULT& result)
     if (doc.HasMember("main") || graph.HasMember("main"))
     {
         const rapidjson::Value& mainGraph = doc.HasMember("main") ? doc["main"] : graph["main"];
-        if (!_parseSubGraph("/main", mainGraph, subgraphDatas, mainData))
+        if (!_parseSubGraph("/main", mainGraph, sharedSubg, mainData))
             return false;
     }
 
@@ -142,14 +147,14 @@ bool Zsg2Reader::openFile(const std::string& fn, zeno::ZSG_PARSE_RESULT& result)
     result.iover = m_ioVer;
     result.descs = nodesDescs;
     result.mainGraph = mainData;
-    result.assetGraphs = subgraphDatas;
+    result.assetGraphs = sharedSubg;
     return true;
 }
 
 bool Zsg2Reader::_parseSubGraph(
             const std::string& graphPath,
             const rapidjson::Value& subgraph,
-            const zeno::AssetsData& subgraphDatas,
+            const std::map<std::string, zeno::GraphData>& subgraphDatas,
             zeno::GraphData& subgData)
 {
     if (!subgraph.IsObject() || !subgraph.HasMember("nodes"))
@@ -172,7 +177,7 @@ zeno::NodeData Zsg2Reader::_parseNode(
                     const std::string& subgPath,
                     const std::string& nodeid,
                     const rapidjson::Value& nodeObj,
-                    const zeno::AssetsData& subgraphDatas,
+                    const std::map<std::string, zeno::GraphData>& sharedSubg,
                     zeno::LinksData& links)
 {
     zeno::NodeData retNode;
@@ -194,11 +199,11 @@ zeno::NodeData Zsg2Reader::_parseNode(
     bool isParsingAssets = subgPath.rfind("/main", 0) != 0;
 
     //should expand the subgraph node recursively.
-    if (subgraphDatas.find(name) != subgraphDatas.end())
+    if (sharedSubg.find(name) != sharedSubg.end())
     {
         if (!isParsingAssets)
         {
-            retNode.subgraph = zenoio::fork(subgPath + "/" + nodeid, subgraphDatas, name);
+            retNode.subgraph = zenoio::fork(subgPath + "/" + nodeid, sharedSubg, name);
         }
     }
 

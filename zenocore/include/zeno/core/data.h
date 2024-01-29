@@ -156,7 +156,7 @@ namespace zeno {
         GraphData mainGraph;
         ZSG_VERSION iover;
         NodeDescs descs;
-        AssetsData assetGraphs;
+        std::map<std::string, zeno::GraphData> assetGraphs;
         TimelineInfo timeline;
     };
 }

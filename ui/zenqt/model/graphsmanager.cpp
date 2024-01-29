@@ -102,7 +102,7 @@ void GraphsManager::createGraphs(const zeno::ZSG_PARSE_RESULT ioresult)
     m_assets = new AssetsModel(this);
     */
     ZASSERT_EXIT(m_assets);
-    m_assets->init(ioresult.assetGraphs);
+    //m_assets->init(ioresult.assetGraphs);
 }
 
 bool GraphsManager::saveFile(const QString& filePath, APP_SETTINGS settings)

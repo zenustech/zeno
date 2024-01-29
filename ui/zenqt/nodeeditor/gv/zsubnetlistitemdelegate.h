@@ -4,6 +4,7 @@
 #include <QtWidgets>
 
 class AssetsModel;
+class ZenoGraphsEditor;
 
 class SubgEditValidator : public QValidator
 {

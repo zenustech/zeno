@@ -109,7 +109,7 @@ namespace zenoio
 
     zeno::GraphData fork(
         const std::string& currentPath,
-        const zeno::AssetsData& subgraphDatas,
+        const std::map<std::string, zeno::GraphData>& sharedSubg,
         const std::string& subnetName)
     {
         zeno::GraphData newGraph;
@@ -120,13 +120,13 @@ namespace zenoio
         std::unordered_map<std::string, std::string> old2new;
         zeno::LinksData oldLinks;
 
-        auto it = subgraphDatas.find(subnetName);
-        if (it == subgraphDatas.end())
+        auto it = sharedSubg.find(subnetName);
+        if (it == sharedSubg.end())
         {
             return newGraph;
         }
 
-        const zeno::GraphData& subgraph = it->second.graph;
+        const zeno::GraphData& subgraph = it->second;
         for (const auto& [name, nodeData] : subgraph.nodes)
         {
             zeno::NodeData nodeDat = nodeData;
@@ -135,7 +135,7 @@ namespace zenoio
             const std::string& newId = zeno::generateUUID();
             old2new.insert(std::make_pair(snodeId, newId));
 
-            if (subgraphDatas.find(name) != subgraphDatas.end())
+            if (sharedSubg.find(name) != sharedSubg.end())
             {
                 const std::string& ssubnetName = name;
                 nodeDat.name = newId;
@@ -144,7 +144,7 @@ namespace zenoio
                 zeno::GraphData fork_subgraph;
                 fork_subgraph = fork(
                     currentPath + "/" + newId,
-                    subgraphDatas,
+                    sharedSubg,
                     ssubnetName);
                 fork_subgraph.links = childLinks;
                 nodeDat.subgraph = fork_subgraph;
