@@ -94,6 +94,7 @@ public:
 
     //test functions:
     void updateParamName(QModelIndex nodeIdx, int row, QString newName);
+    void syncToAssetsInstance(const QString& assetsName, zeno::ParamsUpdateInfo info);
     void removeParam(QModelIndex nodeIdx, int row);
     void removeLink(const QModelIndex& linkIdx);
     void removeLink(const zeno::EdgeInfo& link);
@@ -120,6 +121,8 @@ private:
     QHash<QString, int> m_name2Row;
     QHash<int, QString> m_row2name;
     QHash<QString, NodeItem*> m_nodes;
+
+    QSet<QString> m_subgNodes;
 
     std::weak_ptr<zeno::Graph> m_wpCoreGraph;
 

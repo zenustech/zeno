@@ -323,15 +323,7 @@ void GraphsManager::updateAssets(const QString& assetsName, zeno::ParamsUpdateIn
     //update to each assets node on the tree
     GraphModel* mainM = m_model->getGraphByPath({"main"});
     ZASSERT_EXIT(mainM);
-    QModelIndexList results = mainM->match(QModelIndex(), ROLE_CLASS_NAME, assetsName);
-    for (QModelIndex res : results) {
-        zeno::NodeType type = (zeno::NodeType)res.data(ROLE_NODETYPE).toInt();
-        if (type == zeno::Node_AssetInstance) {
-            ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(res.data(ROLE_PARAMS));
-            ZASSERT_EXIT(paramsM);
-            paramsM->batchModifyParams(info);
-        }
-    }
+    mainM->syncToAssetsInstance(assetsName, info);
 }
 
 zeno::ZSG_VERSION GraphsManager::ioVersion() const

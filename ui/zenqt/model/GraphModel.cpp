@@ -495,6 +495,11 @@ void GraphModel::_updateName(const QString& oldName, const QString& newName)
     auto& item = m_nodes[newName];
     item->name = newName;   //update cache.
 
+    if (m_subgNodes.find(oldName) != m_subgNodes.end()) {
+        m_subgNodes.remove(oldName);
+        m_subgNodes.insert(newName);
+    }
+
     QModelIndex idx = createIndex(row, 0);
     emit dataChanged(idx, idx, QVector<int>{ ROLE_NODE_NAME });
     emit nameUpdated(idx, oldName);
@@ -523,6 +528,10 @@ void GraphModel::_appendNode(std::shared_ptr<zeno::INode> spNode)
     pItem->init(this, spNode);
 
     const QString& name = QString::fromStdString(spNode->get_name());
+
+    if (pItem->optSubgraph.has_value())
+        m_subgNodes.insert(name);
+
     m_row2name[nRows] = name;
     m_name2Row[name] = nRows;
     m_nodes.insert(name, pItem);
@@ -605,12 +614,34 @@ bool GraphModel::removeRows(int row, int count, const QModelIndex& parent)
     m_name2Row.remove(id);
     m_nodes.remove(id);
 
+    if (m_subgNodes.find(id) != m_subgNodes.end())
+        m_subgNodes.remove(id);
+
     delete pItem;
 
     endRemoveRows();
     return true;
 }
 
+void GraphModel::syncToAssetsInstance(const QString& assetsName, zeno::ParamsUpdateInfo info)
+{
+    QModelIndexList results = match(QModelIndex(), ROLE_CLASS_NAME, assetsName);
+    for (QModelIndex res : results) {
+        zeno::NodeType type = (zeno::NodeType)res.data(ROLE_NODETYPE).toInt();
+        if (type == zeno::Node_AssetInstance) {
+            ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(res.data(ROLE_PARAMS));
+            ZASSERT_EXIT(paramsM);
+            paramsM->batchModifyParams(info);
+        }
+    }
+
+    for (QString subgnode : m_subgNodes) {
+        ZASSERT_EXIT(m_nodes.find(subgnode) != m_nodes.end());
+        GraphModel* pSubgM = m_nodes[subgnode]->optSubgraph.value();
+        ZASSERT_EXIT(pSubgM);
+        pSubgM->syncToAssetsInstance(assetsName, info);
+    }
+}
 
 void GraphModel::updateParamName(QModelIndex nodeIdx, int row, QString newName)
 {
