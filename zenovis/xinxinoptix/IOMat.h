@@ -46,6 +46,7 @@ struct MatOutput {
     float smoothness;
     float displacement;
     float shadowReceiver;
+    float isHair;
 
     vec3 nrm;
     vec3 emission;

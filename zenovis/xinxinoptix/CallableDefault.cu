@@ -90,6 +90,7 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     float mat_shadowReceiver = 0.0f;
     float mat_NoL = 1.0f;
     float mat_LoV = 1.0f;
+    float mat_isHair = 0.0f;
     vec3 mat_reflectance = att_reflectance;
     
     bool sssFxiedRadius = false;
@@ -146,6 +147,7 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     float mat_shadowReceiver = 0.0f;
     float mat_NoL = 1.0f;
     float mat_LoV = 1.0f;
+    float mat_isHair = 0.0f;
     vec3 mat_reflectance = att_reflectance;
     
     bool sssFxiedRadius = false;
@@ -199,6 +201,7 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
 
     mats.smoothness = mat_smoothness;
     mats.sssFxiedRadius = sssFxiedRadius;
+    mats.isHair = mat_isHair;
 
     return mats;
 }
