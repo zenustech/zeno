@@ -489,12 +489,6 @@ void DockContent_Editor::initConnections()
                 QMessageBox::warning(nullptr, tr("RunLightCamera"), tr("This function can only be used in cache mode."));
                 return;
             }
-            QVector<DisplayWidget*> views = pMainWin->viewports();
-            for (auto displayWid : views) {
-                if (!displayWid->isGLViewport()) {
-                    displayWid->setRenderSeparately(false, false);
-                }
-            }
             pMainWin->setAlways(true);
         }
         else {
@@ -529,15 +523,6 @@ void DockContent_Editor::initConnections()
         m_btnKill->setVisible(true);
         ZenoMainWindow *pMainWin = zenoApp->getMainWindow();
         ZASSERT_EXIT(pMainWin);
-        std::function<void(bool, bool)> setOptixUpdateSeparately = [=](bool updateLightCameraOnly, bool updateMatlOnly) {
-            QVector<DisplayWidget *> views = pMainWin->viewports();
-            for (auto displayWid : views) {
-                if (!displayWid->isGLViewport()) {
-                    displayWid->setRenderSeparately(updateLightCameraOnly, updateMatlOnly);
-                }
-            }
-        };
-        setOptixUpdateSeparately(false, false);
         pMainWin->onRunTriggered();
     });
 

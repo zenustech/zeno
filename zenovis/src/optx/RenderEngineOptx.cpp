@@ -901,6 +901,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         {
             auto renderType = objsMan->getRenderTypeByObjects(transObjs);
             meshNeedUpdate = matNeedUpdate = true;
+            scene->drawOptions->updateMatlOnly = scene->drawOptions->updateLightCameraOnly = false;
             if (renderType == zeno::GlobalComm::MATERIAL)
             {
                 scene->drawOptions->updateMatlOnly = true;
@@ -954,6 +955,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             }
             if (rendertype == zeno::GlobalComm::NORMAL)
             {
+                scene->drawOptions->updateMatlOnly = scene->drawOptions->updateLightCameraOnly = false;
                 matNeedUpdate = meshNeedUpdate = lightNeedUpdate = true;
             }
             objsMan->setRenderType(zeno::GlobalComm::UNDEFINED);

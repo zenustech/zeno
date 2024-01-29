@@ -918,12 +918,6 @@ void ZenoMainWindow::optixClientRun(int port, const char* cachedir, int cachenum
                     bool updateMatlOnly = renderObj["applyMaterialOnly"].GetInt();
                     ZenoMainWindow* pMainWin = zenoApp->getMainWindow();
                     ZASSERT_EXIT(pMainWin);
-                    QVector<DisplayWidget*> views = pMainWin->viewports();
-                    for (auto displayWid : views) {
-                        if (!displayWid->isGLViewport()) {
-                            displayWid->setRenderSeparately(updateLightCameraOnly, updateMatlOnly);
-                        }
-                    }
                     if (m_bOptixProcRecording)
                     {
                         DisplayWidget* displayWid = getOptixWidget();

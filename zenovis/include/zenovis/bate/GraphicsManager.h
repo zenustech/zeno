@@ -79,6 +79,10 @@ struct GraphicsManager {
                 else {
                     tmp.insert(std::make_pair(key, std::move(it->second)));
                 }
+                //fix: no new objs also need setCamera
+                if (auto cam = std::dynamic_pointer_cast<zeno::CameraObject>(obj))
+                    if (newobjs.find(key) == newobjs.end() && zeno::getSession().globalComm->getRenderTypeBeta(bateEnginIdx) != zeno::GlobalComm::UNDEFINED)
+                        scene->camera->setCamera(cam->get());
             }
             else {
                 auto ig = makeGraphic(scene, obj.get());
