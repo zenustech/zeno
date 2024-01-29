@@ -593,8 +593,17 @@ struct ToZSTetrahedra : INode {
                     atomic_add(exec_omp, &volumeSum, (double)vol);
                     eles("vol", ei) = vol;
                     // vert masses
-                    auto vmass = vol * zsmodel->density / 4;
-                    eles("m", ei) = vol * zsmodel->density;
+                    // auto vmass = vol * zsmodel->density / 4;
+                    if(pars.hasProperty("phi")){
+                        float phi = 0;
+                        for(int i = 0;i != 4;++i)
+                            phi += pars("phi",quad[i]);
+                        phi /= 4.0;
+                        eles("m",ei) = vol * phi;
+                    }else
+                        eles("m", ei) = vol * zsmodel->density;
+
+                    auto vmass = eles("m",ei) / 4;
                     for (int d = 0; d != 4; ++d)
                         atomic_add(zs::exec_omp, &pars("m", quad[d]), vmass);
 

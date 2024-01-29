@@ -1040,7 +1040,7 @@ struct ZSDeformEmbedPrimWithSurfaceMesh3 : zeno::INode {
         set_output("dest",get_input("dest"));
         set_output("source",get_input("source"));
     }
-}; 
+};
 
 ZENDEFNODE(ZSDeformEmbedPrimWithSurfaceMesh3, {{
     {"dest"},{"string","dest_pos_attr","x"},
@@ -1164,7 +1164,7 @@ struct ZSComputeBaryCentricWeights : INode {
         auto& verts = zsvolume->getParticles();
         auto& eles = zsvolume->getQuadraturePoints();
 
-        const auto& everts = zssurf->getParticles();
+        auto& everts = zssurf->getParticles();
         // const auto& e_eles = zssurf->getQuadraturePoints();
 
         auto &bcw = (*zsvolume)[tag];
@@ -1193,7 +1193,12 @@ struct ZSComputeBaryCentricWeights : INode {
 
         TILEVEC_OPS::copy<3>(cudaExec,everts,"x",bcw,"X");
 
-        compute_barycentric_weights(cudaExec,verts,eles,everts,"x",bcw,"inds","w",thickness,fitting_in);
+        auto binding_success_tag = tag + std::string("_binding_success");
+        if(!everts.hasProperty(binding_success_tag))
+            everts.append_channels(cudaExec,{{binding_success_tag,1}});
+        TILEVEC_OPS::fill(cudaExec,everts,binding_success_tag,0);
+
+        compute_barycentric_weights(cudaExec,verts,eles,everts,"x",bcw,"inds","w",thickness,fitting_in,binding_success_tag,true);
 
         cudaExec(zs::range(numEmbedVerts),
             [bcw = proxy<space>({},bcw),fitting_in] ZS_LAMBDA(int vi) mutable {
@@ -1320,12 +1325,13 @@ struct ZSComputeBaryCentricWeights : INode {
         
         // we might also do some smoothing on cnorm
 
+        set_output("zssurf",zssurf);
         set_output("zsvolume", zsvolume);
     }
 };
 
 ZENDEFNODE(ZSComputeBaryCentricWeights, {{{"interpolator","zsvolume"}, {"embed surf", "zssurf"},{"int","mark_elm","0"},{"int","nmCpns","1"},{"string","tag","skin"}},
-                            {{"interpolator on gpu", "zsvolume"}},
+                            {{"interpolator on gpu", "zsvolume"},{"embed surf on gpu","zssurf"}},
                             {{"float","bvh_thickness","0"},{"int","fitting_in","1"},{"string","bvh_channel","x"}},
                             {"ZSGeometry"}});
 
@@ -1802,19 +1808,6 @@ struct ZSDeformEmbedPrim : zeno::INode {
                 if(ei < 0)
                     return;
                 everts.template tuple<3>(outAttr,vi) = eles.template pack<3,3>(deformField,ei) * everts.template pack<3>(inAttr,vi);
-                // if(vi == 114754){
-                //     auto dx = everts.template pack<3>(outAttr,vi);
-                //     auto dX = everts.template pack<3>(inAttr,vi);
-                //     auto F = eles.template pack<3,3>(deformField,ei);
-                //     printf("F : %f %f %f\n%f %f %f\n%f %f %f\n",
-                //         (float)F(0,0),(float)F(0,1),(float)F(0,2),
-                //         (float)F(1,0),(float)F(1,1),(float)F(1,2),
-                //         (float)F(2,0),(float)F(2,1),(float)F(2,2)
-                //     );
-                //     printf("Fdet : %f\n",(float)zs::determinant(F));
-                //     printf("dX : %f %f %f with length %f\n",(float)dX[0],(float)dX[1],(float)dX[2],(float)dX.norm());
-                //     printf("dx : %f %f %f with length %f\n",(float)dx[0],(float)dx[1],(float)dx[2],(float)dx.norm());
-                // }
 
         });
         set_output("zssurf",zssurf);
