@@ -334,6 +334,11 @@ void Zsg2Reader::_parseInputs(
     {
         const std::string& inSock = inObj.name.GetString();
         const auto& inputObj = inObj.value;
+
+        if (inSock == "SRC") {
+            continue;
+        }
+
         if (inputObj.IsNull())
         {
             zeno::ParamInfo param;
@@ -408,8 +413,8 @@ zeno::ParamInfo Zsg2Reader::_parseSocket(
         auto lst = zeno::split_str(outLinkPath, ':');
         if (lst.size() > 2)
         {
-            const std::string& outId = lst[1];
-            const std::string& fuckingpath = lst[2];
+            const std::string outId = lst[1];
+            const std::string fuckingpath = lst[2];
             lst = zeno::split_str(fuckingpath, '/');
             if (lst.size() > 2) {
                 std::string group = lst[1];
@@ -417,8 +422,10 @@ zeno::ParamInfo Zsg2Reader::_parseSocket(
                 std::string key;
                 if (lst.size() > 3)
                     key = lst[3];
-                zeno::EdgeInfo edge = { outId, param, key, id, sockName, "" };
-                links.push_back(edge);
+                if (param != "DST") {
+                    zeno::EdgeInfo edge = { outId, param, key, id, sockName, "" };
+                    links.push_back(edge);
+                }
             }
         }
     }
@@ -515,6 +522,9 @@ void Zsg2Reader::_parseOutputs(
     for (const auto& outParamObj : outputs.GetObject())
     {
         const std::string& outParam = outParamObj.name.GetString();
+        if (outParam == "DST")
+            continue;
+
         const auto& outObj = outParamObj.value;
         if (outObj.IsNull())
         {

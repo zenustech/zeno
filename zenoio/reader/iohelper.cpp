@@ -150,13 +150,11 @@ namespace zenoio
             {
                 nodeDat.name = newName;
 
-                zeno::LinksData childLinks;
                 zeno::GraphData fork_subgraph;
                 fork_subgraph = fork(
                     currentPath + "/" + newName,
                     sharedSubg,
                     cls);
-                fork_subgraph.links = childLinks;
                 fork_subgraph.name = newName;
                 nodeDat.subgraph = fork_subgraph;
                 
@@ -389,6 +387,7 @@ namespace zenoio
             if (controlObj["items"].IsArray())
             {
                 auto& arr = controlObj["items"].GetArray();
+                props.items = std::vector<std::string>();
                 for (int i = 0; i < arr.Size(); i++)
                 {
                     props.items->push_back(arr[i].GetString());

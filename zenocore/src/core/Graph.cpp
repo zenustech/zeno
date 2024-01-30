@@ -174,37 +174,13 @@ ZENO_API void Graph::init(const GraphData& graph) {
     m_name = graph.name;
     //import nodes first.
     for (const auto& [name, node] : graph.nodes) {
-        if (false && node.subgraph) {
-            std::shared_ptr<INode> spNode = getSession().assets->newInstance(node.cls, name);
-            std::shared_ptr<SubnetNode> subnetNode = std::dynamic_pointer_cast<SubnetNode>(spNode);
-            assert(subnetNode);
-            subnetNode->init(node);
+        std::shared_ptr<INode> spNode = createNode(node.cls, name);
+        spNode->init(node);
+        if (node.cls == "SubInput") {
+            //TODO
         }
-        else {
-            std::shared_ptr<INode> spNode = createNode(node.cls);
-            spNode->init(node);
-            if (node.cls == "SubInput") {
-                std::string name;
-                for (const ParamInfo& param : node.inputs) {
-                    if (param.name == "name") {
-                        //todo: exception.
-                        name = std::get<std::string>(param.defl);
-                        break;
-                    }
-                }
-                subInputNodes[name] = node.name;
-            }
-            else if (node.cls == "SubOutput") {
-                std::string name;
-                for (const ParamInfo& param : node.inputs) {
-                    if (param.name == "name") {
-                        //todo: exception.
-                        name = std::get<std::string>(param.defl);
-                        break;
-                    }
-                }
-                subOutputNodes[name] = node.name;
-            }
+        else if (node.cls == "SubOutput") {
+            //TODO
         }
     }
     //import edges
