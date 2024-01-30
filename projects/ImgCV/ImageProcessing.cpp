@@ -13,9 +13,6 @@
 #include <zeno/utils/log.h>
 #include <opencv2/opencv.hpp>
 
-
-using namespace cv;
-
 namespace zeno {
 
 namespace {
@@ -43,6 +40,117 @@ static void RGBtoHSV(float r, float g, float b, float &h, float &s, float &v) {
     }
     s = (cmax != 0) ? delta / cmax : 0.0;
     v = cmax;
+}
+
+static vec3f RGBtoXYZ(vec3f rgb) {//INPUT RANGE 0-1
+    float r = rgb[0];
+    float g = rgb[1];
+    float b = rgb[2];
+    if (r > 0.04045) {
+        r = pow((r + 0.055) / 1.055, 2.4);
+    } else {
+        r = r / 12.92;
+    }
+    if (g > 0.04045) {
+        g = pow((g + 0.055) / 1.055, 2.4);
+    } else {
+        g = g / 12.92;
+    }
+    if (b > 0.04045) {
+        b = pow((b + 0.055) / 1.055, 2.4);
+    } else {
+        b = b / 12.92;
+    }
+    r *= 100;
+    g *= 100;
+    b *= 100;
+    return vec3f(0.412453 * r + 0.357580 * g + 0.180423 * b, 0.212671 * r + 0.715160 * g + 0.072169 * b, 0.019334 * r + 0.119193 * g + 0.950227 * b);
+}
+
+static vec3f XYZtoRGB(vec3f xyz) {//OUTPUT RANGE 0-1
+    float x = xyz[0];
+    float y = xyz[1];
+    float z = xyz[2];
+    x /= 100;
+    y /= 100;
+    z /= 100;
+    float r = x * 3.2406 + y * -1.5372 + z * -0.4986;
+    float g = x * -0.9689 + y * 1.8758 + z * 0.0415;
+    float b = x * 0.0557 + y * -0.2040 + z * 1.0570;
+    if (r > 0.0031308) {
+        r = 1.055 * pow(r, 1 / 2.4) - 0.055;
+    } else {
+        r = 12.92 * r;
+    }
+    if (g > 0.0031308) {
+        g = 1.055 * pow(g, 1 / 2.4) - 0.055;
+    } else {
+        g = 12.92 * g;
+    }
+    if (b > 0.0031308) {
+        b = 1.055 * pow(b, 1 / 2.4) - 0.055;
+    } else {
+        b = 12.92 * b;
+    }
+    return vec3f(r, g, b);
+}
+
+static vec3f XYZtoLab(vec3f xyz) {
+    float x = xyz[0];
+    float y = xyz[1];
+    float z = xyz[2];
+    x /= 95.047;
+    y /= 100;
+    z /= 108.883;
+    if (x > 0.008856) {
+        x = pow(x, 1.0 / 3.0);
+    } else {
+        x = (7.787 * x) + (16.0 / 116.0);
+    }
+    if (y > 0.008856) {
+        y = pow(y, 1.0 / 3.0);
+    } else {
+        y = (7.787 * y) + (16.0 / 116.0);
+    }
+    if (z > 0.008856) {
+        z = pow(z, 1.0 / 3.0);
+    } else {
+        z = (7.787 * z) + (16.0 / 116.0);
+    }
+    return vec3f((116 * y) - 16, 500 * (x - y), 200 * (y - z));
+}
+
+static vec3f LabtoXYZ(vec3f lab) {
+    float l = lab[0];
+    float a = lab[1];
+    float b = lab[2];
+    float y = (l + 16) / 116;
+    float x = a / 500 + y;
+    float z = y - b / 200;
+    if (pow(y, 3) > 0.008856) {
+        y = pow(y, 3);
+    } else {
+        y = (y - 16.0 / 116.0) / 7.787;
+    }
+    if (pow(x, 3) > 0.008856) {
+        x = pow(x, 3);
+    } else {
+        x = (x - 16.0 / 116.0) / 7.787;
+    }
+    if (pow(z, 3) > 0.008856) {
+        z = pow(z, 3);
+    } else {
+        z = (z - 16.0 / 116.0) / 7.787;
+    }
+    return vec3f(x * 95.047, y * 100, z * 108.883);
+}
+
+static vec3f RGBtoLab(vec3f rgb) {//input range 0-1
+    return XYZtoLab(RGBtoXYZ(rgb));
+}
+
+static vec3f LabtoRGB(vec3f lab) {//output range 0-1
+    return XYZtoRGB(LabtoXYZ(lab));
 }
 
 static void HSVtoRGB(float h, float s, float v, float &r, float &g, float &b)
