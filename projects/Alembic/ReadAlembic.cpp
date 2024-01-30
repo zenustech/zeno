@@ -937,7 +937,6 @@ std::shared_ptr<ListObject> abc_split_by_name(std::shared_ptr<PrimitiveObject> p
             for (auto j = 0; j < faceset_count; j++) {
                 new_prim->userData().del(zeno::format("faceset_{}", j));
             }
-            new_prim->userData().set2("_abc_faceset", name);
             new_prim->userData().set2("faceset_count", 1);
             new_prim->userData().set2("faceset_0", name);
             list->arr.push_back(new_prim);
@@ -966,7 +965,6 @@ std::shared_ptr<ListObject> abc_split_by_name(std::shared_ptr<PrimitiveObject> p
             for (auto j = 0; j < faceset_count; j++) {
                 new_prim->userData().del(zeno::format("faceset_{}", j));
             }
-            new_prim->userData().set2("_abc_faceset", name);
             new_prim->userData().set2("faceset_count", 1);
             new_prim->userData().set2("faceset_0", name);
             list->arr.push_back(new_prim);
