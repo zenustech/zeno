@@ -720,7 +720,10 @@ struct WriteAlembicPrims : INode {
             attrs.clear();
             user_attrs.clear();
             for (auto prim: prims) {
-                auto path = prim->userData().get2<std::string>("path");
+                auto path = prim->userData().get2<std::string>("_abc_path");
+                if (!starts_with(path, "/ABC/")) {
+                    log_error("_abc_path must start with /ABC/");
+                }
                 auto n_path = path.substr(5);
                 auto subnames = split_str(n_path, '/');
                 OObject oObject = OObject( archive, 1 );
@@ -742,7 +745,7 @@ struct WriteAlembicPrims : INode {
             zeno::makeError("Not init. Check whether in correct correct frame range.");
         }
         for (auto prim: prims) {
-            auto path = prim->userData().get2<std::string>("path");
+            auto path = prim->userData().get2<std::string>("_abc_path");
 
             if (prim->polys.size() || prim->tris.size()) {
                 // Create a PolyMesh class.
