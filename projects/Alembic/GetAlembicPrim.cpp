@@ -256,6 +256,8 @@ struct AlembicPrimList : INode {
         }
         auto pathInclude = zeno::split_str(get_input2<std::string>("pathInclude"), {' ', '\n'});
         auto pathExclude = zeno::split_str(get_input2<std::string>("pathExclude"), {' ', '\n'});
+        auto facesetInclude = zeno::split_str(get_input2<std::string>("facesetInclude"), {' ', '\n'});
+        auto facesetExclude = zeno::split_str(get_input2<std::string>("facesetExclude"), {' ', '\n'});
         for (auto it = new_prims->arr.begin(); it != new_prims->arr.end();) {
             auto np = std::dynamic_pointer_cast<PrimitiveObject>(*it);
             auto abc_path = np->userData().template get2<std::string>("_abc_path");
@@ -274,6 +276,27 @@ struct AlembicPrimList : INode {
                 for (const auto & p: pathExclude) {
                     if (starts_with(abc_path, p)) {
                         contain = false;
+                    }
+                }
+            }
+            if (contain && np->userData().template has<std::string>("faceset_0")) {
+                auto faceset = np->userData().template get2<std::string>("faceset_0");
+                contain = false;
+                if (facesetInclude.empty()) {
+                    contain = true;
+                }
+                else {
+                    for (const auto & p: facesetInclude) {
+                        if (starts_with(faceset, p)) {
+                            contain = true;
+                        }
+                    }
+                }
+                if (contain) {
+                    for (const auto & p: facesetExclude) {
+                        if (starts_with(faceset, p)) {
+                            contain = false;
+                        }
                     }
                 }
             }
@@ -309,6 +332,8 @@ ZENDEFNODE(AlembicPrimList, {
         {"bool", "killDeadVerts", "0"},
         {"string", "pathInclude", ""},
         {"string", "pathExclude", ""},
+        {"string", "facesetInclude", ""},
+        {"string", "facesetExclude", ""},
     },
     {"prims"},
     {},
