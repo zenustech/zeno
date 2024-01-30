@@ -1666,5 +1666,157 @@ ZENDEFNODE(ImageLevels, {
     {},
     {"image"},
 });
+
+struct ImageQuantization: INode {
+    void apply() override {
+        std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
+        int clusternumber = get_input2<int>("Number of Color");
+        bool outputcenter = get_input2<bool>("Output Cluster Centers");
+        //int simplifyscale = get_input2<int>("Image Simplification Scale");
+        auto clusterattribute = get_input2<std::string>("Cluster Attribute");
+        UserData &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+        auto &imagepos = image->verts.attr<vec3f>("pos");
+        const int HistogramSize = 64 * 64 * 64;// (256/simplifyscale)  256 / 4 = 64
+        std::vector<vec3f> labs(HistogramSize, vec3f(0.0f));
+        std::vector<vec3f> seeds(clusternumber, vec3f(0.0f));
+        std::vector<vec3f> newseeds(clusternumber, vec3f(0.0f));
+        std::vector<int> weights(HistogramSize, 0);
+        std::vector<int> seedsweight(clusternumber, 0);
+        std::vector<int> clusterindices(HistogramSize, 0);
+        #pragma omp parallel
+        {
+            std::vector<vec3f> local_labs(HistogramSize, vec3f(0.0f));
+            std::vector<int> local_weights(HistogramSize, 0);
+
+            #pragma omp for
+            for (int i = 0; i < w * h; i++) {
+                int index = ((zeno::clamp(int(imagepos[i][0] * 255.99), 0, 255) / 4) * 64
+                + (zeno::clamp(int(imagepos[i][1] * 255.99), 0, 255) / 4)) * 64
+                + (zeno::clamp(int(imagepos[i][2] * 255.99), 0, 255) / 4);
+
+                local_labs[index] += RGBtoLab(imagepos[i]);;
+                local_weights[index]++;
+            }
+
+            #pragma omp critical
+            {
+                for (int i = 0; i < HistogramSize; i++) {
+                    labs[i] += local_labs[i];
+                    weights[i] += local_weights[i];
+                }
+            }
+        }
+        int maxindex = 0;
+        vec3f seedcolor;
+        const int squaredSeparationCoefficient = 3650;// For photos, we can use a higher coefficient, from 900 to 6400
+        auto weightclone = weights;
+        for (int i = 0; i < clusternumber; i++) {
+            maxindex = std::max_element(weights.begin(), weights.end()) - weights.begin();
+            if(weightclone[maxindex] == 0){
+                break;
+            }
+            seedcolor = labs[maxindex] / weightclone[maxindex];
+            seeds[i] = seedcolor;
+            weightclone[maxindex] = 0;
+            for (int i = 0; i < HistogramSize; i++)
+            {
+                if(weightclone[i] > 0 ) {
+                    weightclone[i] *= (1 - exp(-zeno::lengthSquared(seedcolor - labs[i] / weights[i]) / squaredSeparationCoefficient));
+                    }
+                }
+            }
+        bool optimumreached = false;
+        while(!optimumreached){
+            optimumreached = true;
+            std::fill(newseeds.begin(), newseeds.end(), vec3f(0.0f));
+            std::fill(seedsweight.begin(), seedsweight.end(), 0);
+            #pragma omp parallel
+            {
+                std::vector<vec3f> local_newseeds(clusternumber, vec3f(0.0f));
+                std::vector<int> local_seedsweight(clusternumber, 0);
+
+                #pragma omp for
+                for (int i = 0; i < HistogramSize; i++) {
+                    if(weights[i] == 0){
+                        continue;
+                    }
+                    //get closest seed index
+                    int mindist = 100000000;
+                    int clusterindex;
+                    for(int j = 0; j < clusternumber; j++){
+                        auto dist = zeno::lengthSquared(labs[i] / weights[i] - seeds[j]);
+                        if(dist < mindist){
+                            mindist = dist;
+                            clusterindex = j;
+                        }
+                    }
+                    if(clusterindices[i] != clusterindex && optimumreached){
+                        optimumreached = false;
+                    }
+                    clusterindices[i] = clusterindex;
+                    // Accumulate colors and weights per cluster.
+                    local_newseeds[clusterindex] += labs[i];
+                    local_seedsweight[clusterindex] += weights[i];
+                }
+
+                #pragma omp critical
+                {
+                    for (int i = 0; i < clusternumber; i++) {
+                        newseeds[i] += local_newseeds[i];
+                        seedsweight[i] += local_seedsweight[i];
+                    }
+                }
+            }
+            // Average accumulated colors to get new seeds.
+            for (int i = 0; i < clusternumber; i++) {// update seeds
+                if (seedsweight[i] == 0){
+                    seeds[i] = vec3f(0.0f);
+                }
+                else{
+                    seeds[i] = newseeds[i] / seedsweight[i];
+                }
+            }
+        }
+        auto &clusterattr = image->verts.add_attr<int>(clusterattribute);
+        //export pallete
+        if (outputcenter) {
+            image->verts.resize(clusternumber);
+            image->verts.update();
+            image->userData().set2("w", clusternumber);
+            image->userData().set2("h", 1);
+            for (int i = 0; i < clusternumber; i++) {
+                image->verts[i] = LabtoRGB(seeds[i]);
+                clusterattr[i] = i;
+            }
+        }
+        else{
+#pragma omp parallel for
+            for (int i = 0; i < w * h; i++) {
+                int index = ((zeno::clamp(int(imagepos[i][0] * 255.99), 0, 255) / 4) * 64 + 
+                            (zeno::clamp(int(imagepos[i][1] * 255.99), 0, 255) / 4)) * 64 + 
+                            (zeno::clamp(int(imagepos[i][2] * 255.99), 0, 255) / 4);
+                image->verts[i] = LabtoRGB(seeds[clusterindices[index]]);
+                clusterattr[i] = clusterindices[index];
+            }
+        }
+        set_output("image", image);
+    }
+};
+ZENDEFNODE(ImageQuantization, {
+    {
+        {"image"},
+        {"int", "Number of Color", "5"},
+        {"bool", "Output Cluster Centers", "1"},
+        {"string", "Cluster Attribute", "cluster"},
+    },
+    {
+        {"image"},
+    },
+    {},
+    {"image"},
+});
+
 }
 }
