@@ -391,10 +391,11 @@ struct BulletUpdateCpdChildPrimTrans : zeno::INode {
         constexpr auto space = execspace_e::openmp;
         auto pol = omp_exec();
 
-#if DEBUG_CPD
-        auto centerlist = std::make_shared<ListObject>();
+        std::shared_ptr<ListObject> initialPrimList;
         auto translationList = std::make_shared<ListObject>();
         auto rotationList = std::make_shared<ListObject>();
+#if DEBUG_CPD
+        auto centerlist = std::make_shared<ListObject>();
         auto minlist = std::make_shared<ListObject>();
         auto maxlist = std::make_shared<ListObject>();
 #endif
@@ -409,9 +410,12 @@ struct BulletUpdateCpdChildPrimTrans : zeno::INode {
         std::shared_ptr<ListObject> primlist;
         std::vector<std::shared_ptr<PrimitiveObject>> visPrims;
         if (hasVisualPrimlist) {
+            // initialPrimList = cpdList->userData().get<ListObject>("initialPrimlist");
             primlist = cpdList->userData().get<ListObject>("visualPrimlist");
             visPrims = primlist->get<PrimitiveObject>();
         } else {
+            initialPrimList = std::make_shared<ListObject>();
+            cpdList->userData().set("initialPrimlist", initialPrimList);
             primlist = std::make_shared<ListObject>();
             cpdList->userData().set("visualPrimlist", primlist);
         }
@@ -454,8 +458,10 @@ struct BulletUpdateCpdChildPrimTrans : zeno::INode {
                     dstPos[i] = zeno::other_to_vec<3>(p);
                 });
 
-                if (!hasVisualPrimlist)
+                if (!hasVisualPrimlist) {
+                    initialPrimList->arr.push_back(prim);
                     primlist->arr.push_back(visPrim);
+                }
 
                 translationList->arr.push_back(std::make_shared<NumericObject>(translate));
                 rotationList->arr.push_back(std::make_shared<NumericObject>(rotation)); // x, y, z, w
@@ -534,8 +540,10 @@ struct BulletUpdateCpdChildPrimTrans : zeno::INode {
                     dstPos[i] = zeno::other_to_vec<3>(p);
                 });
 
-                if (!hasVisualPrimlist)
+                if (!hasVisualPrimlist) {
+                    initialPrimList->arr.push_back(prim);
                     primlist->arr.push_back(visPrim);
+                }
 
                 translationList->arr.push_back(std::make_shared<NumericObject>(translate));
                 rotationList->arr.push_back(std::make_shared<NumericObject>(rotation)); // x, y, z, w
@@ -543,6 +551,7 @@ struct BulletUpdateCpdChildPrimTrans : zeno::INode {
         }
 
         set_output("primList", primlist);
+        set_output("initialPrimList", initialPrimList);
         set_output("translationList", translationList);
         set_output("rotationList", rotationList);
 #if DEBUG_CPD
@@ -560,6 +569,7 @@ ZENDEFNODE(BulletUpdateCpdChildPrimTrans, {
                                               },
                                               {
                                                   "primList",
+                                                  "initialPrimList",
                                                   "translationList",
                                                   "rotationList",
                                                   "centerList",
@@ -1163,7 +1173,7 @@ struct BulletMaintainRigidBodiesAndConstraints : zeno::INode {
             fmt::print(fg(fmt::color::gold), "read (cpd)grouplist at [{}]\n",
                        (void *)rblist->userData().get<ListObject>("compounds").get());
 
-#if DEBUG_DISPLAY 
+#if DEBUG_DISPLAY
             puts("previous rbs\' and compounds\' states");
 
             pol(prevGroups, [](auto cpd) {
