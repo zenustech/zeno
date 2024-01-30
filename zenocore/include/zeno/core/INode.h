@@ -64,7 +64,7 @@ public:
     ZENO_API zany resolveInput(std::string const& id);
 
     //BEGIN new api
-    void init(const NodeData& dat);
+    ZENO_API virtual void init(const NodeData& dat);
     ZENO_API void set_input_defl(std::string const& name, zvariant defl);
     ZENO_API zvariant get_input_defl(std::string const& name);
     ZENO_API std::string get_nodecls() const;

@@ -297,6 +297,9 @@ QStandardItemModel* ParamsModel::customParamModel()
 
 void ParamsModel::batchModifyParams(const zeno::ParamsUpdateInfo& params)
 {
+    if (params.empty())
+        return;
+
     auto spNode = m_wpNode.lock();
     ZASSERT_EXIT(spNode);
     zeno::params_change_info changes = spNode->update_editparams(params);

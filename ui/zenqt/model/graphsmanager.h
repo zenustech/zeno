@@ -4,6 +4,7 @@
 #include <QtWidgets>
 #include <zeno/core/data.h>
 #include "uicommon.h"
+#include <zenoio/include/iocommon.h>
 #include <QStandardItemModel>
 
 class AssetsModel;
@@ -18,7 +19,7 @@ public:
     static GraphsManager& instance();
     ~GraphsManager();
 
-    void createGraphs(const zeno::ZSG_PARSE_RESULT ioresult);
+    void createGraphs(const zenoio::ZSG_PARSE_RESULT ioresult);
     GraphsTreeModel* currentModel() const;
     AssetsModel* assetsModel() const;
     QStandardItemModel* logModel() const;

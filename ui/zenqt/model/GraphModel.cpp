@@ -512,7 +512,34 @@ zeno::NodeData GraphModel::createNode(const QString& nodeCls, const QString& cat
     if (!spGraph)
         return node;
 
-    spGraph->createNode(nodeCls.toStdString(), "", cate.toStdString(), {pos.x(), pos.y()});
+    std::shared_ptr<zeno::INode> spNode = spGraph->createNode(
+        nodeCls.toStdString(),
+        "",
+        cate.toStdString(),
+        {pos.x(), pos.y()});
+
+    if (nodeCls == "Subnet") {
+        QString nodeName = QString::fromStdString(spNode->get_name());
+        ZASSERT_EXIT(m_nodes.find(nodeName) != m_nodes.end(), node);
+
+        zeno::ParamsUpdateInfo updateInfo;
+
+        zeno::ParamUpdateInfo info;
+        info.param.bInput = true;
+        info.param.name = "input1";
+        updateInfo.push_back(info);
+
+        info.param.bInput = true;
+        info.param.name = "input2";
+        updateInfo.push_back(info);
+
+        info.param.bInput = false;
+        info.param.name = "output1";
+        updateInfo.push_back(info);
+
+        m_nodes[nodeName]->params->batchModifyParams(updateInfo);
+    }
+
     return node;
 }
 

@@ -84,7 +84,8 @@ namespace zeno {
     using LinksData = std::vector<EdgeInfo>;
 
     struct GraphData {
-        std::string name;
+        std::string name;   //the name like "subnet1", "subnet2", not a template name.
+        std::string templateName;
         NodesData nodes;
         LinksData links;
     };
@@ -151,14 +152,6 @@ namespace zeno {
     };
 
     using AssetsData = std::map<std::string, ZenoAsset>;
-
-    struct ZSG_PARSE_RESULT {
-        GraphData mainGraph;
-        ZSG_VERSION iover;
-        NodeDescs descs;
-        std::map<std::string, zeno::GraphData> assetGraphs;
-        TimelineInfo timeline;
-    };
 }
 
 #endif

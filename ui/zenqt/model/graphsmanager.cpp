@@ -80,7 +80,7 @@ GraphModel* GraphsManager::getGraph(const QStringList& objPath) const
 
 GraphsTreeModel* GraphsManager::openZsgFile(const QString& fn)
 {
-    zeno::ZSG_PARSE_RESULT result;
+    zenoio::ZSG_PARSE_RESULT result;
     bool ret = zenoio::Zsg2Reader::getInstance().openFile(fn.toStdString(), result);
     m_timerInfo = result.timeline;
     if (!ret)
@@ -91,18 +91,10 @@ GraphsTreeModel* GraphsManager::openZsgFile(const QString& fn)
     return m_model;
 }
 
-void GraphsManager::createGraphs(const zeno::ZSG_PARSE_RESULT ioresult)
+void GraphsManager::createGraphs(const zenoio::ZSG_PARSE_RESULT ioresult)
 {
-    //todo
-    /*
-    if (m_assets)
-        m_assets->clear();
-
-    delete m_assets;
-    m_assets = new AssetsModel(this);
-    */
     ZASSERT_EXIT(m_assets);
-    //m_assets->init(ioresult.assetGraphs);
+    zeno::getSession().mainGraph->init(ioresult.mainGraph);
 }
 
 bool GraphsManager::saveFile(const QString& filePath, APP_SETTINGS settings)

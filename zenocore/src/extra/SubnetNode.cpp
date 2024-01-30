@@ -15,10 +15,8 @@ ZENO_API SubnetNode::SubnetNode() : subgraph(std::make_shared<Graph>(""))
 
 ZENO_API SubnetNode::~SubnetNode() = default;
 
-void SubnetNode::init(const NodeData& dat)
+ZENO_API void SubnetNode::init(const NodeData& dat)
 {
-    //需要先初始化param
-    //INode::init(dat);
     if (dat.name.empty())
         m_name = dat.name;
 

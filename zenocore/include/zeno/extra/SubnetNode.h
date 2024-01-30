@@ -19,7 +19,7 @@ struct SubnetNode : INode {
     ZENO_API SubnetNode();
     ZENO_API ~SubnetNode();
 
-    void init(const NodeData& dat);
+    ZENO_API void init(const NodeData& dat) override;
 
     ZENO_API std::vector<std::shared_ptr<IParam>> get_input_params() const override;
     ZENO_API std::vector<std::shared_ptr<IParam>> get_output_params() const override;

@@ -110,51 +110,62 @@ namespace zenoio
     zeno::GraphData fork(
         const std::string& currentPath,
         const std::map<std::string, zeno::GraphData>& sharedSubg,
-        const std::string& subnetName)
+        const std::string& subnetClassName)
     {
         zeno::GraphData newGraph;
-        zeno::NodesData newDatas;
-        zeno::LinksData newLinks;
+        newGraph.templateName = subnetClassName;
 
-        std::map<std::string, zeno::NodeData> nodes;
         std::unordered_map<std::string, std::string> old2new;
         zeno::LinksData oldLinks;
 
-        auto it = sharedSubg.find(subnetName);
+        auto it = sharedSubg.find(subnetClassName);
         if (it == sharedSubg.end())
         {
             return newGraph;
         }
 
+        std::unordered_map<std::string, int> node_idx_set;
+
         const zeno::GraphData& subgraph = it->second;
         for (const auto& [name, nodeData] : subgraph.nodes)
         {
             zeno::NodeData nodeDat = nodeData;
-            const std::string& snodeId = nodeDat.name;
-            const std::string& name = nodeDat.cls;
-            const std::string& newId = zeno::generateUUID();
-            old2new.insert(std::make_pair(snodeId, newId));
+            const std::string& oldName = nodeDat.name;
 
-            if (sharedSubg.find(name) != sharedSubg.end())
+            bool isSubgraph = nodeDat.subgraph.has_value();
+            const std::string& cls = isSubgraph ? nodeDat.subgraph->templateName : nodeDat.cls;
+            if (isSubgraph) {
+                assert(sharedSubg.find(cls) != sharedSubg.end());
+            }
+
+            if (node_idx_set.find(cls) == node_idx_set.end()) {
+                node_idx_set[cls] = 1;
+            }
+            int newIdNum = node_idx_set[cls]++;
+            const std::string& newName = cls + std::to_string(newIdNum);
+
+            old2new.insert(std::make_pair(oldName, newName));
+
+            if (isSubgraph)
             {
-                const std::string& ssubnetName = name;
-                nodeDat.name = newId;
+                nodeDat.name = newName;
 
                 zeno::LinksData childLinks;
                 zeno::GraphData fork_subgraph;
                 fork_subgraph = fork(
-                    currentPath + "/" + newId,
+                    currentPath + "/" + newName,
                     sharedSubg,
-                    ssubnetName);
+                    cls);
                 fork_subgraph.links = childLinks;
+                fork_subgraph.name = newName;
                 nodeDat.subgraph = fork_subgraph;
-
-                newDatas[newId] = nodeDat;
+                
+                newGraph.nodes[newName] = nodeDat;
             }
             else
             {
-                nodeDat.name = newId;
-                newDatas[newId] = nodeDat;
+                nodeDat.name = newName;
+                newGraph.nodes[newName] = nodeDat;
             }
         }
 
@@ -163,11 +174,9 @@ namespace zenoio
             zeno::EdgeInfo newLink = oldLink;
             newLink.inNode = old2new[newLink.inNode];
             newLink.outNode = old2new[newLink.outNode];
-            newLinks.push_back(newLink);
+            newGraph.links.push_back(newLink);
         }
 
-        newGraph.nodes = nodes;
-        newGraph.links = newLinks;
         return newGraph;
     }
 

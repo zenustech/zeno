@@ -21,7 +21,7 @@ Zsg2Reader& Zsg2Reader::getInstance()
     return reader;
 }
 
-bool Zsg2Reader::openFile(const std::string& fn, zeno::ZSG_PARSE_RESULT& result)
+bool Zsg2Reader::openFile(const std::string& fn, zenoio::ZSG_PARSE_RESULT& result)
 {
     std::filesystem::path filePath(fn);
     if (!std::filesystem::exists(filePath)) {
@@ -49,7 +49,7 @@ bool Zsg2Reader::openFile(const std::string& fn, zeno::ZSG_PARSE_RESULT& result)
     fclose(fp);
     fp = nullptr;
 
-    doc.Parse(&dat[0]);
+    doc.Parse(&dat[0], dat.size());
 
     m_ioVer = zeno::VER_3;
     if (doc.HasMember("version") && doc["version"].IsString())
@@ -106,14 +106,7 @@ bool Zsg2Reader::openFile(const std::string& fn, zeno::ZSG_PARSE_RESULT& result)
             continue;
 
         sharedSubg[graphName] = zeno::GraphData();
-        /*
-        zeno::ZenoAsset asset;
-        if (nodesDescs.find(graphName) != nodesDescs.end())
-            asset.desc = nodesDescs[graphName];
-
-        asset.graph = zeno::GraphData();
-        subgraphDatas[graphName] = asset;
-        */
+        sharedSubg[graphName].templateName = graphName;
     }
 
     //zsg3.0以下的格式，子图将加入并成为项目的资产
@@ -132,6 +125,7 @@ bool Zsg2Reader::openFile(const std::string& fn, zeno::ZSG_PARSE_RESULT& result)
     }
 
     zeno::GraphData mainData;
+    mainData.name = mainData.templateName = "main";
     if (doc.HasMember("main") || graph.HasMember("main"))
     {
         const rapidjson::Value& mainGraph = doc.HasMember("main") ? doc["main"] : graph["main"];
@@ -147,7 +141,7 @@ bool Zsg2Reader::openFile(const std::string& fn, zeno::ZSG_PARSE_RESULT& result)
     result.iover = m_ioVer;
     result.descs = nodesDescs;
     result.mainGraph = mainData;
-    result.assetGraphs = sharedSubg;
+    result.sharedGraphs = sharedSubg;
     return true;
 }
 
@@ -184,44 +178,44 @@ zeno::NodeData Zsg2Reader::_parseNode(
 
     const auto& objValue = nodeObj;
     const rapidjson::Value& nameValue = objValue["name"];
-    const std::string& name = nameValue.GetString();
+    const std::string& cls = nameValue.GetString();
 
     retNode.name = nodeid;
-    retNode.cls = name;
+    retNode.cls = cls;
 
-    std::string customName;
-    if (objValue.HasMember("customName")) {
-        const std::string &tmp = objValue["customName"].GetString();
-        customName = tmp;
-    }
-    retNode.name = customName;
-
-    bool isParsingAssets = subgPath.rfind("/main", 0) != 0;
+    bool isParsingSubg = subgPath.rfind("/main", 0) != 0;
 
     //should expand the subgraph node recursively.
-    if (sharedSubg.find(name) != sharedSubg.end())
+    if (sharedSubg.find(cls) != sharedSubg.end())
     {
-        if (!isParsingAssets)
+        retNode.cls = "Subnet";
+        if (isParsingSubg)
         {
-            retNode.subgraph = zenoio::fork(subgPath + "/" + nodeid, sharedSubg, name);
+            retNode.subgraph = zeno::GraphData();
+            retNode.subgraph->templateName = cls;
+        }
+        else
+        {
+            retNode.subgraph = zenoio::fork(subgPath + "/" + nodeid, sharedSubg, cls);
+            retNode.subgraph->name = retNode.name;
         }
     }
 
     if (objValue.HasMember("inputs"))
     {
-        _parseInputs(subgPath, nodeid, name, objValue["inputs"], retNode, links);
+        _parseInputs(subgPath, nodeid, cls, objValue["inputs"], retNode, links);
     }
     if (objValue.HasMember("params"))
     {
-        _parseParams(nodeid, name, objValue["params"], retNode);
+        _parseParams(nodeid, cls, objValue["params"], retNode);
     }
     if (objValue.HasMember("outputs"))
     {
-        _parseOutputs(nodeid, name, objValue["outputs"], retNode, links);
+        _parseOutputs(nodeid, cls, objValue["outputs"], retNode, links);
     }
     if (objValue.HasMember("customui-panel"))
     {
-        _parseCustomPanel(nodeid, name, objValue["customui-panel"], retNode);
+        _parseCustomPanel(nodeid, cls, objValue["customui-panel"], retNode);
     }
 
     if (objValue.HasMember("uipos"))
@@ -247,18 +241,8 @@ zeno::NodeData Zsg2Reader::_parseNode(
         }
         retNode.status = opts;
     }
-    if (objValue.HasMember("children"))
-    {
-        //这个其实是zsg3.0的属性了，而且zsg3.0不会把资产的节点写到io，除非用户fork并修改了
-        /*
-        zeno::GraphData subg;
-        _parseSubGraph(subgPath + '/' + nodeid, objValue["children"], legacyDescs, subgraphDatas, subg);
-        ret.children = subg.nodes;
-        links.append(subg.links);
-        */
-    }
 
-    if (name == "Blackboard")
+    if (cls == "Blackboard")
     {
         zeno::GroupInfo blackboard;
         //use subkey "blackboard" for zeno2 io, but still compatible with zeno1
@@ -281,7 +265,7 @@ zeno::NodeData Zsg2Reader::_parseNode(
         }
         //TODO: import blackboard.
     }
-    else if (name == "Group") 
+    else if (cls == "Group")
     {
         zeno::GroupInfo group;
         const rapidjson::Value &blackBoardValue = objValue.HasMember("blackboard") ? objValue["blackboard"] : objValue;
@@ -317,7 +301,7 @@ void Zsg2Reader::_parseChildNodes(
         return;
 }
 
-void Zsg2Reader::_parseViews(const rapidjson::Value& jsonViews, zeno::ZSG_PARSE_RESULT& res)
+void Zsg2Reader::_parseViews(const rapidjson::Value& jsonViews, zenoio::ZSG_PARSE_RESULT& res)
 {
     if (jsonViews.HasMember("timeline"))
     {
@@ -325,7 +309,7 @@ void Zsg2Reader::_parseViews(const rapidjson::Value& jsonViews, zeno::ZSG_PARSE_
     }
 }
 
-void Zsg2Reader::_parseTimeline(const rapidjson::Value& jsonTimeline, zeno::ZSG_PARSE_RESULT& res)
+void Zsg2Reader::_parseTimeline(const rapidjson::Value& jsonTimeline, zenoio::ZSG_PARSE_RESULT& res)
 {
     assert(jsonTimeline.HasMember(timeline::start_frame) && jsonTimeline[timeline::start_frame].IsInt());
     assert(jsonTimeline.HasMember(timeline::end_frame) && jsonTimeline[timeline::end_frame].IsInt());

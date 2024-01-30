@@ -12,7 +12,7 @@ namespace zenoio
     {
     public:
         static Zsg2Reader& getInstance();
-        bool openFile(const std::string& fn, zeno::ZSG_PARSE_RESULT& ret);
+        bool openFile(const std::string& fn, zenoio::ZSG_PARSE_RESULT& ret);
 
     private:
         Zsg2Reader();
@@ -76,11 +76,11 @@ namespace zenoio
 
         void _parseViews(
                 const rapidjson::Value& jsonViews,
-                zeno::ZSG_PARSE_RESULT& res);
+                zenoio::ZSG_PARSE_RESULT& res);
 
         void _parseTimeline(
                 const rapidjson::Value& jsonTimeline,
-                zeno::ZSG_PARSE_RESULT& res);
+                zenoio::ZSG_PARSE_RESULT& res);
 
         void _parseChildNodes(
                 const std::string& id,

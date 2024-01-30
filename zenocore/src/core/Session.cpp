@@ -35,22 +35,6 @@ struct ImplNodeClass : INodeClass {
         std::vector<SocketDescriptor> outputs = desc->outputs;
 
         std::shared_ptr<SubnetNode> spSubnet = std::dynamic_pointer_cast<SubnetNode>(spNode);
-        if (spSubnet) {
-            spSubnet->subgraph->setName(name);
-            //manually init some args nodes.
-            auto input1 = spSubnet->subgraph->createNode("SubInput", "input1", "", {0, 0});
-            inputs.push_back(SocketDescriptor("", input1->get_name()));
-
-            auto input2 = spSubnet->subgraph->createNode("SubInput", "input2", "", {0,700});
-            inputs.push_back(SocketDescriptor("", input2->get_name()));
-
-            auto output1 = spSubnet->subgraph->createNode("SubOutput", "output1", "", { 1300, 250 });
-            outputs.push_back(SocketDescriptor("", output1->get_name()));
-
-            spSubnet->m_input_names.push_back("input1");
-            spSubnet->m_input_names.push_back("input2");
-            spSubnet->m_output_names.push_back("output1");
-        }
 
         spNode->set_name(name);
         spNode->m_nodecls = classname;

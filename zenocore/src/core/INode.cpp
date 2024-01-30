@@ -359,7 +359,7 @@ std::vector<std::pair<std::string, zany>> INode::getoutputs2()
     return outputs;
 }
 
-void INode::init(const NodeData& dat)
+ZENO_API void INode::init(const NodeData& dat)
 {
     if (dat.name.empty())
         m_name = dat.name;
