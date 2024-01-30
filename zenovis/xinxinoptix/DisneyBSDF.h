@@ -309,7 +309,6 @@ namespace DisneyBSDF{
 
     static __inline__ __device__
         float3 EvaluateDisney2(
-            vec3 illum,
             struct MatOutput mat,
             vec3 wi, //in world space
             vec3 wo, //in world space
@@ -321,7 +320,6 @@ namespace DisneyBSDF{
             bool is_inside,
             float& fPdf,
             float& rPdf,
-            float nDl,
             vec3 &dterm,
             vec3 &sterm,
             vec3 &tterm,
@@ -822,8 +820,8 @@ namespace DisneyBSDF{
         tbn.inverse_transform(wo);
         float pdf, pdf2;
         vec3 rd, rs, rt;
-        reflectance = EvaluateDisney2(vec3(1.0f), mat, wi, wo, T, B, N, N2, thin,
-                                      is_inside, pdf, pdf2, 0, rd, rs, rt, true);
+        reflectance = EvaluateDisney2(mat, wi, wo, T, B, N, N2, thin,
+                                      is_inside, pdf, pdf2, rd, rs, rt, true);
         fPdf = pdf>1e-5?pdf:0.0f;
         reflectance = pdf>1e-5?reflectance:vec3(0.0f);
         return true;
