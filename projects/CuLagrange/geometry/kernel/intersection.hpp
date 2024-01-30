@@ -353,14 +353,13 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
                 triNrmOffset = tris.getPropertyOffset("nrm"),
                 triDOffset = tris.getPropertyOffset("d"),
                 triIndsOffset = tris.getPropertyOffset("inds"),
-                tris = view<space>(tris),
-                // verts = proxy<space>({},verts),
-                verts = view<space>(verts),
+                tris = proxy<space>({},tris),
+                verts = proxy<space>({},verts),
                 xOffset = verts.getPropertyOffset(xtag),
                 aniMaskOffset = verts.getPropertyOffset("ani_mask"),
                 hasAniMask = verts.hasProperty("ani_mask"),
-                colllisionCancelOffset = verts.getPropertyOffset("collision_cancel"),
                 hasCollisionCancel = verts.hasProperty("collision_cancel"),
+                colllisionCancelOffset = verts.getPropertyOffset("collision_cancel"),
                 hasMinv = verts.hasProperty("minv"),
                 minvOffset = verts.getPropertyOffset("minv"),
                 hasRestShape = verts.hasProperty("X"),
@@ -371,16 +370,13 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
                 use_collision_group = use_collision_group,
                 skip_too_close_pair_at_rest_configuration = skip_too_close_pair_at_rest_configuration,
                 eps = eps,
-#ifdef USE_TMP_BUFFER_BEFORE_HASH    
-                MAX_NM_INTERSECTION_PER_EDGE = MAX_NM_INTERSECTION_PER_EDGE,
-                tmp = proxy<space>(tmp),
-                // nm_ints = proxy<space>(nm_ints),
-#else
                 res = proxy<space>(res),
-#endif
                 use_barycentric_interpolator = use_barycentric_interpolator,
                 bary_buffer = proxy<space>({},bary_buffer),
-                tri_bvh = proxy<space>(tri_bvh)] ZS_LAMBDA(int ei) mutable {
+                tri_bvh = proxy<space>(tri_bvh)
+                ] ZS_LAMBDA(int ei) mutable {
+                    // printf("test edge[%d] intersection with any tris\n",ei);
+
                     auto edge = edges[ei];
 
                     if(hasCollisionCancel){
@@ -397,7 +393,7 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
                     bool edge_has_dynamic_points = true;
                     if(hasMinv) {
                         for(int i = 0;i != 2;++i)
-                            if(verts(minvOffset,edge[i]) < 0.0001)
+                            if(verts(minvOffset,edge[i]) < eps)
                                 edge_has_dynamic_points = false;
                     }
 
@@ -427,7 +423,7 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
                         auto tri_has_dynamic_points = true;
                         if(hasMinv) {
                             for(int i = 0;i != 3;++i)
-                                if(verts(minvOffset,tri[i]) < 0.0001)
+                                if(verts(minvOffset,tri[i]) < eps)
                                     tri_has_dynamic_points = false;
                         }
 
@@ -441,7 +437,7 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
                                 tVs[i] = verts.pack(dim_c<3>,restShapeOffset,tri[i]);
                             
                             auto is_same_collision_group = false;
-                            if(use_collision_group) {
+                            if(use_collision_group && hasCollisionGroup) {
                                 is_same_collision_group = zs::abs(verts(collisionGroupOffset,edge[0]) - verts(collisionGroupOffset,tri[0])) < 0.1;
                             }
 
@@ -517,6 +513,7 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
                         }
                         // tmp[atomic_add(exec_tag,&nm_ints[0],(size_t)1)] = vec2i{ei,ti};   
 #else
+                        printf("find pair E[%d %d] -> T[%d %d %d]\n",edge[0],edge[1],tri[0],tri[1],tri[2]);
                         auto ci = res.insert(vec2i{ei,ti});
                         if(use_barycentric_interpolator) {
                             zs::vec<T,3> bary{};
@@ -564,7 +561,7 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
         // const EdgeTileVec& kedges,
         const TriTileVec& ktris,
         const TriBVH& ktri_bvh,
-        zs::bht<int,2,int>& cs_ET,
+        zs::bht<int,2,int>& res,
         // zs::bht<int,2,int>& cs_KET,
         BaryTileVec& bary_buffer,
         bool use_barycentric_interpolator = false) {
@@ -579,7 +576,7 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
             constexpr auto eps = 1e-6;
 
             // zs::CppTimer timer;
-            cs_ET.reset(pol,true);
+            res.reset(pol,true);
 
             // timer.tick();
 
@@ -605,7 +602,7 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
                 hasKCollisionCancel = kverts.hasProperty("collision_cancel"),
                 kCollisionCancelOffset = kverts.getPropertyOffset("collision_cancel"),
                 eps = eps,
-                res = proxy<space>(cs_ET),
+                res = proxy<space>(res),
                 ktri_bvh = proxy<space>(ktri_bvh)] ZS_LAMBDA(int ei) mutable {
                     auto edge = edges[ei];
 
