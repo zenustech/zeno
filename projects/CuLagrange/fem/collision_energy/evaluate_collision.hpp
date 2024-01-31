@@ -324,7 +324,7 @@ void detect_self_imminent_EE_close_proximity(Pol& pol,
                             rpbs[i] = verts.pack(dim_c<3>,Xtag,eb[i]);
                         }
 
-                        auto is_same_collision_group = false;
+                        auto is_same_collision_group = true;
                         if(use_collision_group) 
                             is_same_collision_group = zs::abs(verts(collision_group_name,ea[0]) - verts(collision_group_name,eb[0])) < 0.1;
 
@@ -676,7 +676,7 @@ void detect_self_imminent_EE_close_proximity(Pol& pol,
                             rpbs[i] = verts.pack(dim_c<3>,Xtag,eb[i]);
                         }
 
-                        auto is_same_collision_group = false;
+                        auto is_same_collision_group = true;
                         if(use_collision_group) 
                             is_same_collision_group = zs::abs(verts(collision_group_name,ea[0]) - verts(collision_group_name,eb[0])) < 0.1;
 
@@ -922,7 +922,7 @@ void detect_self_imminent_PT_close_proximity(Pol& pol,
                         for(int i = 0;i != 3;++i)
                             rts[i] = verts.pack(dim_c<3>,Xtag,tri[i]);
 
-                        auto is_same_collision_group = false;
+                        auto is_same_collision_group = true;
                         if(use_collision_group && has_collision_group) 
                             is_same_collision_group = zs::abs(verts(collisionGroupTag,vi) - verts(collisionGroupTag,tri[0])) < 0.1;
 
@@ -1208,7 +1208,7 @@ void calc_continous_self_PT_collision_impulse(Pol& pol,
                         for(int i = 0;i != 3;++i)
                             rts[i] = verts.pack(dim_c<3>,"X",tri[i]);
 
-                        auto is_same_collision_group = false;
+                        auto is_same_collision_group = true;
                         if(use_collision_group) 
                             is_same_collision_group = zs::abs(verts("collision_group",vi) - verts("collision_group",tri[0])) < 0.1;
                     
@@ -1931,7 +1931,7 @@ void calc_continous_self_PT_collision_impulse_with_toc(Pol& pol,
                         for(int i = 0;i != 3;++i)
                             rts[i] = verts.pack(dim_c<3>,"X",tri[i]);
 
-                        auto is_same_collision_group = false;
+                        auto is_same_collision_group = true;
                         if(use_collision_group) 
                             is_same_collision_group = zs::abs(verts("collision_group",vi) - verts("collision_group",tri[0])) < 0.1;
                     
@@ -2211,7 +2211,7 @@ void calc_continous_self_EE_collision_impulse(Pol& pol,
                             rpbs[i] = verts.pack(dim_c<3>,"X",eb[i]);
                         }
 
-                        auto is_same_collision_group = false;
+                        auto is_same_collision_group = true;
                         if(use_collision_group) 
                             is_same_collision_group = zs::abs(verts("collision_group",ea[0]) - verts("collision_group",eb[0])) < 0.1;
 
@@ -2717,7 +2717,7 @@ void calc_continous_self_EE_collision_impulse_with_toc(Pol& pol,
                             rpbs[i] = verts.pack(dim_c<3>,"X",eb[i]);
                         }
 
-                        auto is_same_collision_group = false;
+                        auto is_same_collision_group = true;
                         if(use_collision_group) 
                             is_same_collision_group = zs::abs(verts("collision_group",ea[0]) - verts("collision_group",eb[0])) < 0.1;
 

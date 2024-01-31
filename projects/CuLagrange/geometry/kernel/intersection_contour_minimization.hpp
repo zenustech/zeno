@@ -118,6 +118,8 @@ namespace zeno {
         SCALER& normal_coeff) {
             // auto htri_normal = LSL_GEO::facet_normal(ht0,ht1,ht2);  
             // auto tri_normal = LSL_GEO::facet_normal(t0,t1,t2); 
+            const auto eps = 1e-6;
+
             const auto& htri_normal = htnrm;
             const auto& tri_normal = tnrm;
             auto R = tri_normal.cross(htri_normal).normalized();
@@ -141,8 +143,16 @@ namespace zeno {
         // auto G = R - ER / EN * N;
             // auto G = R - static_cast<T>(2.0) * ER / EN * N;
             // G = R;
-            normal_coeff = static_cast<T>(2.0) * ER / EN;
+
+            if(zs::abs(EN) > eps)
+                normal_coeff = static_cast<T>(2.0) * ER / EN;
+            else
+                normal_coeff = 0;
             // normal_coeff = ER / EN;
+
+            // if(isnan(normal_coeff)) {
+            //     printf("nan normalcoeff : %f %f %f\n",R.norm(),E.norm(),EN);
+            // }
 
             return R;
     }
@@ -165,64 +175,140 @@ namespace zeno {
             const T& progressive_slope,
             const HTHashMap& csET,
             ICMGradTileVec& icm_grad,
-            bool enforce_self_intersection_normal = false) {
+            bool enforce_self_intersection_normal = false,
+            bool recheck_intersection = false) {
         using namespace zs;
         auto exec_tag = wrapv<space>{};
         using vec2i = zs::vec<int,2>; 
         using vec3 = zs::vec<T,3>;
    
+        constexpr auto eps = 1e-6;
         // icm_grad.resize(csET.size());
         // local scheme
         pol(zip(zs::range(csET.size()),csET._activeKeys),[
+            recheck_intersection = recheck_intersection,
+            icmGradOffset = icm_grad.getPropertyOffset("grad"),
             icm_grad = proxy<space>({},icm_grad),
+            edges = proxy<space>({},edges),
+            edgeOffset = edges.getPropertyOffset("inds"),
+            edgeHeIndsOffset = edges.getPropertyOffset("he_inds"), 
             h0 = maximum_correction,
+            eps = eps,
             enforce_self_intersection_normal = enforce_self_intersection_normal,
             g02 = progressive_slope * progressive_slope,
-            verts = proxy<space>({},verts),xtag = zs::SmallString(xtag),
-            edges = proxy<space>({},edges),
+            verts = proxy<space>({},verts),
+            xtagOffset = verts.getPropertyOffset(xtag),
             halfedges = proxy<space>({},halfedges),
-            tris = proxy<space>({},tris)] ZS_LAMBDA(auto ci,const auto& pair) mutable {
+            hfToFaceOffset = halfedges.getPropertyOffset("to_face"),
+            hfVIDOffset = halfedges.getPropertyOffset("local_vertex_id"),
+            hfOppoHeOffset = halfedges.getPropertyOffset("opposite_he"),
+            tris = proxy<space>({},tris),
+            triOffset = tris.getPropertyOffset("inds"),
+            triNrmOffset = tris.getPropertyOffset("nrm"),
+            triDOffset = tris.getPropertyOffset("d")] ZS_LAMBDA(auto ci,const auto& pair) mutable {
                 auto ei = pair[0];
                 auto ti = pair[1];
 
-                auto edge = edges.pack(dim_c<2>,"inds",ei,int_c);
-                auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
-                for(int i = 0;i != 3;++i)
-                    if(tri[i] == edge[0] || tri[i] == edge[1])
-                        return;
+                auto edge = edges.pack(dim_c<2>,edgeOffset,ei,int_c);
+                auto tri = tris.pack(dim_c<3>,triOffset,ti,int_c);
 
                 vec3 edge_vertices[2] = {};
                 vec3 tri_vertices[3] = {};
                 for(int i = 0;i != 2;++i)
-                    edge_vertices[i] = verts.pack(dim_c<3>,xtag,edge[i]);
+                    edge_vertices[i] = verts.pack(dim_c<3>,xtagOffset,edge[i]);
                 for(int i = 0;i != 3;++i)
-                    tri_vertices[i] = verts.pack(dim_c<3>,xtag,tri[i]);
+                    tri_vertices[i] = verts.pack(dim_c<3>,xtagOffset,tri[i]);
 
                 auto G = vec3::zeros();
+                icm_grad.tuple(dim_c<3>,icmGradOffset,ci) = G;
+
+                auto nrm = tris.pack(dim_c<3>,triNrmOffset,ti);
+
+                if(recheck_intersection) {
+                    if(nrm.norm() < eps)
+                        return;
+                    // printf("do the recheck intersection\n");
+
+                    auto d = tris(triDOffset,ti);
+                    const auto& ve = edge_vertices[1];
+                    const auto& vs = edge_vertices[0];
+                    const auto& tvs = tri_vertices;
+
+                    auto en = (ve - vs).norm();
+                    if(en < eps) {
+                        // printf("reject due to too short the edge\n");
+                        return;   
+                    }
+                        
+                    auto is_parallel = zs::abs(nrm.dot(ve - vs) / en) < 1e-3;
+                    if(is_parallel) {
+                        // printf("reject due to parallel the edge\n");
+                        return;    
+                    }
+                        
+                    auto ts = vs.dot(nrm) + d;
+                    auto te = ve.dot(nrm) + d;  
+                    
+                    if(ts * te > 0) {
+                        // printf("reject due to same side\n");
+                        return;
+                    }
+
+                    auto e0 = tvs[1] - tvs[0];
+                    auto e1 = tvs[2] - tvs[0];
+                    auto e2 = tvs[1] - tvs[2];
+
+                    auto t = ts / (ts - te);
+                    auto p = vs + t * (ve - vs);
+                    auto q = p - tvs[0];
+
+                    auto n0 = e0.cross(q);
+                    auto n1 = e1.cross(q);
+                    if(n0.dot(n1) > 0) {
+                        return;
+                    } 
+
+                    q = p - tvs[2];
+                    n1 = e1.cross(q);
+                    auto n2 = e2.cross(q);
+
+                    if(n1.dot(n2) < 0) {
+                        return;
+                    }
+
+                    q = p - tvs[1];
+                    n0 = e0.cross(q);
+                    n2 = e2.cross(q);
+
+                    if(n0.dot(n2) > 0) {
+                        return;
+                    }                    
+
+                }
 
                 int his[2] = {};
-                his[0] = zs::reinterpret_bits<int>(edges("he_inds",ei));
-                his[1] = zs::reinterpret_bits<int>(halfedges("opposite_he",his[0]));
-
-                auto nrm = tris.pack(dim_c<3>,"nrm",ti);
-
+                his[0] = zs::reinterpret_bits<int>(edges(edgeHeIndsOffset,ei));
+                his[1] = zs::reinterpret_bits<int>(halfedges(hfOppoHeOffset,his[0]));
 
                 T normal_coeff = 0;
-                for(auto hi : his)
-                {
+                for(auto hi : his){
+
                     if(hi < 0)
                         break;
 
-                    auto hti = zs::reinterpret_bits<int>(halfedges("to_face",hi));
-                    auto htri = tris.pack(dim_c<3>,"inds",hti,int_c);
-                    auto halfedge_local_vertex_id = zs::reinterpret_bits<int>(halfedges("local_vertex_id",hi));
+                    auto hti = zs::reinterpret_bits<int>(halfedges(hfToFaceOffset,hi));
+                    auto htri = tris.pack(dim_c<3>,triOffset,hti,int_c);
+                    auto halfedge_local_vertex_id = zs::reinterpret_bits<int>(halfedges(hfVIDOffset,hi));
                     auto halfedge_opposite_vertex_id = htri[(halfedge_local_vertex_id + 2) % 3];
-                    auto halfedge_opposite_vertex = verts.pack(dim_c<3>,xtag,halfedge_opposite_vertex_id);
+                    auto halfedge_opposite_vertex = verts.pack(dim_c<3>,xtagOffset,halfedge_opposite_vertex_id);
 
-                    auto hnrm = tris.pack(dim_c<3>,"nrm",hti);
+                    auto hnrm = tris.pack(dim_c<3>,triNrmOffset,hti);
+                    if(hnrm.norm() < eps)
+                        continue;
+
                     T dnc{};
                     G += eval_HT_contour_minimization_gradient(edge_vertices[0],
-                        edge_vertices[1],
+                        edge_vertices[1],   
                         halfedge_opposite_vertex,
                         hnrm,nrm,dnc);
 
@@ -231,18 +317,14 @@ namespace zeno {
 
                     normal_coeff += dnc;
                 }
-
-                // if(isnan(G.norm())) {
-                //     printf("nan G detected: %f %f %f\n",(float)G[0],(float)G[1],(float)G[2]);
-                // }
+                
                 G -= normal_coeff * nrm;
 
-                // auto Gn = G.norm();
-                // auto Gn2 = Gn * Gn;
-                // G = h0 * G / zs::sqrt(Gn2 + g02);
+                auto Gn = G.norm();
+                auto Gn2 = G.l2NormSqr();
+                G = h0 * G / zs::sqrt(Gn2 + g02);
 
-                icm_grad.tuple(dim_c<3>,"grad",ci) = G;
-                // icm_grad.tuple(dim_c<2>,"inds",ci) = pair.reinterpret_bits(float_c);
+                icm_grad.tuple(dim_c<3>,icmGradOffset,ci) = G;
         }); 
     }
 
@@ -267,64 +349,144 @@ namespace zeno {
             const T& progressive_slope,
             HTHashMap& csET,
             ICMGradTileVec& icm_grad,
-            bool enforce_triangle_normal = false) {
+            bool enforce_triangle_normal = false,
+            bool recheck_intersection = false) {
         using namespace zs;
         auto exec_tag = wrapv<space>{};
         using vec2i = zs::vec<int,2>; 
         using vec3 = zs::vec<T,3>;
+
+        constexpr auto eps = 1e-6;
    
         // icm_grad.resize(csET.size());
         // local scheme
         pol(zip(zs::range(csET.size()),csET._activeKeys),[
             enforce_triangle_normal = enforce_triangle_normal,
             icm_grad = proxy<space>({},icm_grad),
-            kxtag = zs::SmallString(kxtag),
-            verts = proxy<space>({},verts),xtag = zs::SmallString(xtag),
+            icmGradOffset = icm_grad.getPropertyOffset("grad"),
+            verts = proxy<space>({},verts),
+            xtagOffset = verts.getPropertyOffset(xtag),
             edges = proxy<space>({},edges),
+            edgeOffset = edges.getPropertyOffset("inds"),
+            edgeHeOffest = edges.getPropertyOffset("he_inds"),
             halfedges = proxy<space>({},halfedges),
+            recheck_intersection = recheck_intersection,
+            oppoHeOffset = halfedges.getPropertyOffset("opposite_he"),
+            toFaceOffset = halfedges.getPropertyOffset("to_face"),
+            localVIDOffset = halfedges.getPropertyOffset("local_vertex_id"),
             tris = proxy<space>({},tris),
+            triOffset = tris.getPropertyOffset("inds"),
+            triNrmOffset = tris.getPropertyOffset("nrm"),
             h0 = maximum_correction,
+            eps = eps,
             g02 = progressive_slope * progressive_slope,
             kverts = proxy<space>({},kverts),
-            ktris = proxy<space>({},ktris)] ZS_LAMBDA(auto ci,const auto& pair) mutable {
+            kxtagOffset = kverts.getPropertyOffset(kxtag),
+            ktris = proxy<space>({},ktris),
+            ktriOffset = ktris.getPropertyOffset("inds"),
+            ktriNrmOffset = ktris.getPropertyOffset("nrm"),
+            ktriDOffset = ktris.getPropertyOffset("d")] ZS_LAMBDA(auto ci,const auto& pair) mutable {
                 auto ei = pair[0];
                 auto kti = pair[1];
 
-                auto edge = edges.pack(dim_c<2>,"inds",ei,int_c);
-                auto ktri = ktris.pack(dim_c<3>,"inds",kti,int_c);
+                auto edge = edges.pack(dim_c<2>,edgeOffset,ei,int_c);
+                auto ktri = ktris.pack(dim_c<3>,ktriOffset,kti,int_c);
 
                 vec3 edge_vertices[2] = {};
                 vec3 ktri_vertices[3] = {};
                 for(int i = 0;i != 2;++i)
-                    edge_vertices[i] = verts.pack(dim_c<3>,xtag,edge[i]);
+                    edge_vertices[i] = verts.pack(dim_c<3>,xtagOffset,edge[i]);
                 for(int i = 0;i != 3;++i)
-                    ktri_vertices[i] = kverts.pack(dim_c<3>,kxtag,ktri[i]);
+                    ktri_vertices[i] = kverts.pack(dim_c<3>,kxtagOffset,ktri[i]);
+
+                icm_grad.tuple(dim_c<3>,icmGradOffset,ci) = vec3::zeros();
+
+                auto knrm = ktris.pack(dim_c<3>,ktriNrmOffset,kti);
+
+
+                if(recheck_intersection) {
+                    if(knrm.norm() < eps)
+                        return;
+
+                    // auto ktnrm = ktris.pack(dim_c<3>,ktriNrmOffset,kti);
+                    auto d = ktris(ktriDOffset,kti);
+
+                    const auto& ve = edge_vertices[1];
+                    const auto& vs = edge_vertices[0];
+                    const auto& ktvs = ktri_vertices;
+
+                    auto en = (ve - vs).norm();
+                    if(en < eps)
+                        return;                        
+
+                    auto is_parallel = zs::abs(knrm.dot(ve - vs) / en) < 1e-3;
+                    if(is_parallel)
+                        return;      
+                        
+                    auto ts = vs.dot(knrm) + d;
+                    auto te = ve.dot(knrm) + d;  
+                    
+                    if(ts * te > 0) 
+                        return;
+
+                    auto e0 = ktvs[1] - ktvs[0];
+                    auto e1 = ktvs[2] - ktvs[0];
+                    auto e2 = ktvs[1] - ktvs[2];
+
+                    auto t = ts / (ts - te);
+                    auto p = vs + t * (ve - vs);
+                    auto q = p - ktvs[0];
+
+                    auto n0 = e0.cross(q);
+                    auto n1 = e1.cross(q);
+                    if(n0.dot(n1) > 0) {
+                        // if(is_intersect)
+                        //     printf("should intersect but n0 * n1 = %f > 0\n",(float)(n0.dot(n1)));
+                        return;
+                    }
+
+
+                    q = p - ktvs[2];
+                    n1 = e1.cross(q);
+                    auto n2 = e2.cross(q);
+
+                    if(n1.dot(n2) < 0) {
+                        return;
+                    }
+
+                    q = p - ktvs[1];
+                    n0 = e0.cross(q);
+                    n2 = e2.cross(q);
+
+                    if(n0.dot(n2) > 0) {
+                        return;
+                    }
+                }
+
 
                 auto G = vec3::zeros();
 
                 int his[2] = {};
-                his[0] = zs::reinterpret_bits<int>(edges("he_inds",ei));
-                his[1] = zs::reinterpret_bits<int>(halfedges("opposite_he",his[0]));
-
-                auto knrm = ktris.pack(dim_c<3>,"nrm",kti);
-                if(knrm.norm() < 1e-6)
-                    return;
+                his[0] = zs::reinterpret_bits<int>(edges(edgeHeOffest,ei));
+                his[1] = zs::reinterpret_bits<int>(halfedges(oppoHeOffset,his[0]));
 
                 T normal_coeff = 0;
 
-                for(auto hi : his)
-                {
+                for(auto hi : his){
                     if(hi < 0)
                         break;
 
-                    auto hti = zs::reinterpret_bits<int>(halfedges("to_face",hi));
-                    auto htri = tris.pack(dim_c<3>,"inds",hti,int_c);
-                    auto halfedge_local_vertex_id = zs::reinterpret_bits<int>(halfedges("local_vertex_id",hi));
+                    auto hti = zs::reinterpret_bits<int>(halfedges(toFaceOffset,hi));
+                    auto htri = tris.pack(dim_c<3>,triOffset,hti,int_c);
+                    auto halfedge_local_vertex_id = zs::reinterpret_bits<int>(halfedges(localVIDOffset,hi));
                     auto halfedge_opposite_vertex_id = htri[(halfedge_local_vertex_id + 2) % 3];
-                    auto halfedge_opposite_vertex = verts.pack(dim_c<3>,xtag,halfedge_opposite_vertex_id);
+                    auto halfedge_opposite_vertex = verts.pack(dim_c<3>,xtagOffset,halfedge_opposite_vertex_id);
 
-                    auto hnrm = tris.pack(dim_c<3>,"nrm",hti);
-                    if(hnrm.norm() < 1e-6)
+                    auto hnrm = tris.pack(dim_c<3>,triNrmOffset,hti);
+                    if(hnrm.norm() < eps)
+                        continue;
+
+                    if(hnrm.cross(knrm).norm() < eps)
                         continue;
 
                     T dnc{};
@@ -341,19 +503,13 @@ namespace zeno {
                     normal_coeff += dnc;
                 }
 
-                // auto R = G;
                 G -= normal_coeff * knrm;
 
                 // auto Gn = G.norm();
-                auto Gn2 = G.l2NormSqr();
-                G = h0 * G / zs::sqrt(Gn2 + g02);
+                // auto Gn2 = G.l2NormSqr();
+                // G = h0 * G / zs::sqrt(Gn2 + g02);
 
-                // if(isnan(G.norm())) {
-                //     printf("nan G detected at %d %d %f\n",ei,kti,(float)knrm.norm());
-                // }
-
-                icm_grad.tuple(dim_c<3>,"grad",ci) = G;
-                // icm_grad.tuple(dim_c<2>,"inds",ci) = pair.reinterpret_bits(float_c);
+                icm_grad.tuple(dim_c<3>,icmGradOffset,ci) = G;
         }); 
     }
 
