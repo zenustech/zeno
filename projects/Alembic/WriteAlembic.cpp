@@ -480,7 +480,7 @@ struct WriteAlembic2 : INode {
                 Alembic::AbcCoreOgawa::WriteArchive(),
                 path,
                 fps,
-                "Zeno",
+                "Zeno : " + getGlobalState()->zeno_version,
                 "None"
             );
             archive.addTimeSampling(TimeSampling(1.0/fps, frame_start / fps));
@@ -712,7 +712,7 @@ struct WriteAlembicPrims : INode {
                 Alembic::AbcCoreOgawa::WriteArchive(),
                 path,
                 fps,
-                "Zeno",
+                "Zeno : " + getGlobalState()->zeno_version,
                 "None"
             );
             archive.addTimeSampling(TimeSampling(1.0/fps, frame_start / fps));
