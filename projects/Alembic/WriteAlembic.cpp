@@ -485,7 +485,13 @@ struct WriteAlembic2 : INode {
         }
         if (usedPath != path) {
             usedPath = path;
-            archive = {Alembic::AbcCoreOgawa::WriteArchive(), path};
+            archive = CreateArchiveWithInfo(
+                Alembic::AbcCoreOgawa::WriteArchive(),
+                path,
+                fps,
+                "Zeno",
+                "None"
+            );
             archive.addTimeSampling(TimeSampling(1.0/fps, frame_start / fps));
             if (prim->polys.size() || prim->tris.size()) {
                 meshyObj = OPolyMesh( OObject( archive, 1 ), "mesh" );
@@ -713,7 +719,13 @@ struct WriteAlembicPrims : INode {
         }
         if (usedPath != path) {
             usedPath = path;
-            archive = {Alembic::AbcCoreOgawa::WriteArchive(), path};
+            archive = CreateArchiveWithInfo(
+                Alembic::AbcCoreOgawa::WriteArchive(),
+                path,
+                fps,
+                "Zeno",
+                "None"
+            );
             archive.addTimeSampling(TimeSampling(1.0/fps, frame_start / fps));
             meshyObjs.clear();
             pointsObjs.clear();
