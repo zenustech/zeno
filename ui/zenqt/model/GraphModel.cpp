@@ -78,6 +78,8 @@ GraphModel::GraphModel(std::shared_ptr<zeno::Graph> spGraph, GraphsTreeModel* pT
         _appendNode(node);
     }
 
+    _initLink();
+
     if (m_pTree) {
         connect(this, SIGNAL(rowsInserted(const QModelIndex&, int, int)),
             m_pTree, SLOT(onGraphRowsInserted(const QModelIndex&, int, int)));
@@ -414,6 +416,19 @@ void GraphModel::beginTransaction(const QString& name)
 void GraphModel::endTransaction()
 {
 
+}
+
+void GraphModel::_initLink()
+{
+    for (auto item : m_nodes)
+    {
+        ParamsModel* paramsM = item->params;
+        for (int r = 0; r < paramsM->rowCount(); r++)
+        {
+            QModelIndex idx = paramsM->index(r, 0);
+            //TODO
+        }
+    }
 }
 
 void GraphModel::_addLink(QPair<QString, QString> fromParam, QPair<QString, QString> toParam)

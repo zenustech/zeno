@@ -113,6 +113,7 @@ private:
     void unRegisterCoreNotify();
     QModelIndex nodeIdx(const QString& name) const;
     void _appendNode(std::shared_ptr<zeno::INode> spNode);
+    void _initLink();
     void _addLink(QPair<QString, QString> fromParam, QPair<QString, QString> toParam);
     bool _removeLink(const zeno::EdgeInfo& edge);
     void _updateName(const QString& oldName, const QString& newName);

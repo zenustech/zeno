@@ -225,51 +225,55 @@ ZENO_API void INode::doApply() {
 ZENO_API std::vector<std::shared_ptr<IParam>> INode::get_input_params() const
 {
     std::vector<std::shared_ptr<IParam>> params;
-    for (auto& [name, param] : inputs_) {
-        params.push_back(param);
+    //TODO: 如果参数deprecated，是否还需要加入inputs_? 要
+    if (m_nodecls != "DeprecatedNode") {
+        const auto& desc = nodeClass->desc;
+        for (auto param : desc->inputs) {
+            auto it = inputs_.find(param.name);
+            if (it == inputs_.end()) {
+                zeno::log_warn("unknown param {}", param.name);
+                continue;
+            }
+            params.push_back(it->second);
+        }
+        for (auto param : desc->params) {
+            auto it = inputs_.find(param.name);
+            if (it == inputs_.end()) {
+                zeno::log_warn("unknown param {}", param.name);
+                continue;
+            }
+            params.push_back(it->second);
+        }
+    }
+    else {
+        //TODO: the order of deprecated node.
+        for (auto& [name, param] : inputs_) {
+            params.push_back(param);
+        }
     }
     return params;
-    /*
-    const auto& desc = nodeClass->desc;
-    for (auto param : desc->inputs) {
-        auto it = inputs_.find(param.name);
-        if (it == inputs_.end()) {
-            zeno::log_warn("unknown param {}", param.name);
-            continue;
-        }
-        params.push_back(it->second);
-    }
-    for (auto param : desc->params) {
-        auto it = inputs_.find(param.name);
-        if (it == inputs_.end()) {
-            zeno::log_warn("unknown param {}", param.name);
-            continue;
-        }
-        params.push_back(it->second);
-    }
-    return params;
-    */
 }
 
 ZENO_API std::vector<std::shared_ptr<IParam>> INode::get_output_params() const
 {
     std::vector<std::shared_ptr<IParam>> params;
-    for (auto& [name, param] : outputs_) {
-        params.push_back(param);
-    }
-    return params;
-    /*
-    const auto& desc = nodeClass->desc;
-    for (auto param : desc->outputs) {
-        auto it = outputs_.find(param.name);
-        if (it == outputs_.end()) {
-            zeno::log_warn("unknown param {}", param.name);
-            continue;
+    if (m_nodecls != "DeprecatedNode") {
+        const auto& desc = nodeClass->desc;
+        for (auto param : desc->outputs) {
+            auto it = outputs_.find(param.name);
+            if (it == outputs_.end()) {
+                zeno::log_warn("unknown param {}", param.name);
+                continue;
+            }
+            params.push_back(it->second);
         }
-        params.push_back(it->second);
+    }
+    else {
+        for (auto& [name, param] : outputs_) {
+            params.push_back(param);
+        }
     }
     return params;
-    */
 }
 
 ZENO_API void INode::set_input_defl(std::string const& name, zvariant defl) {
