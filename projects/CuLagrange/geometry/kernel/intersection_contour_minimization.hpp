@@ -425,7 +425,7 @@ namespace zeno {
 
                     auto n0 = e0.cross(q);
                     auto n1 = e1.cross(q);
-                    if(n0.dot(n1) > -eps) {
+                    if(n0.dot(n1) > 0) {
                         // if(is_intersect)
                         //     printf("should intersect but n0 * n1 = %f > 0\n",(float)(n0.dot(n1)));
                         return;
@@ -436,7 +436,7 @@ namespace zeno {
                     n1 = e1.cross(q);
                     auto n2 = e2.cross(q);
 
-                    if(n1.dot(n2) < eps) {
+                    if(n1.dot(n2) < 0) {
                         return;
                     }
 

@@ -190,6 +190,7 @@ struct Detangle2 : zeno::INode {
 
         auto nm_detangle_restart_iters = get_input2<int>("nm_detangle_restart_iters");
 
+
         for(int iter = 0;iter != nm_iters;++iter) {
             auto do_proximity_detection = ((iter % nm_detangle_restart_iters) == 0);
             auto do_proximity_recheck = !do_proximity_detection;
