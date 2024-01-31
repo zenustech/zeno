@@ -311,7 +311,7 @@ void write_attrs(std::map<std::string, std::any> &attrs, std::string path, std::
     }
     if (prim->tris.size() > 0) {
         prim->tris.foreach_attr<std::variant<vec3f, float, int>>([&](auto const &key, auto &arr) {
-            zeno::log_info("{} {}", key, int(arr.size()));
+            // zeno::log_info("{} {}", key, int(arr.size()));
             std::string full_key = path + '/' + key;
             using T = std::decay_t<decltype(arr[0])>;
             if constexpr (std::is_same_v<T, zeno::vec3f>) {
