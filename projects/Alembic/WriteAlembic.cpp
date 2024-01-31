@@ -416,7 +416,12 @@ void write_user_data(std::map<std::string, std::any> &user_attrs, std::string pa
     }
 }
 
-static void write_faceset(std::shared_ptr<PrimitiveObject> prim, OPolyMeshSchema &mesh) {
+static void write_faceset(
+        std::shared_ptr<PrimitiveObject> prim
+        , OPolyMeshSchema &mesh
+        , std::map<std::string, OFaceSet> &o_faceset
+        , std::map<std::string, OFaceSetSchema> &o_faceset_schema
+        ) {
     auto &ud = prim->userData();
     std::vector<std::string> faceSetNames;
     std::vector<std::vector<int>> faceset_idxs;
@@ -439,12 +444,14 @@ static void write_faceset(std::shared_ptr<PrimitiveObject> prim, OPolyMeshSchema
             }
         }
         for (auto i = 0; i < faceset_count; i++) {
-            OFaceSet faceset = mesh.createFaceSet(faceSetNames[i]);
-            OFaceSetSchema facesetSchema = faceset.getSchema ();
+            if (o_faceset_schema.count(faceSetNames[i]) == 0) {
+                o_faceset[faceSetNames[i]] = mesh.createFaceSet(faceSetNames[i]);
+                o_faceset_schema[faceSetNames[i]] = o_faceset[faceSetNames[i]].getSchema ();
+            }
             OFaceSetSchema::Sample my_face_set_samp ( faceset_idxs[i] );
             // faceset is visible, doesn't change.
-            facesetSchema.set ( my_face_set_samp );
-            facesetSchema.setFaceExclusivity ( kFaceSetExclusive );
+            o_faceset_schema[faceSetNames[i]].set ( my_face_set_samp );
+            o_faceset_schema[faceSetNames[i]].setFaceExclusivity ( kFaceSetExclusive );
         }
     }
 }
@@ -455,6 +462,8 @@ struct WriteAlembic2 : INode {
     std::string usedPath;
     std::map<std::string, std::any> attrs;
     std::map<std::string, std::any> user_attrs;
+    std::map<std::string, OFaceSet> o_faceset;
+    std::map<std::string, OFaceSetSchema> o_faceset_schema;
 
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
@@ -496,7 +505,7 @@ struct WriteAlembic2 : INode {
         if (prim->polys.size() || prim->tris.size()) {
             // Create a PolyMesh class.
             OPolyMeshSchema &mesh = meshyObj.getSchema();
-            write_faceset(prim, mesh);
+            write_faceset(prim, mesh, o_faceset, o_faceset_schema);
 
             OCompoundProperty user = mesh.getUserProperties();
             write_user_data(user_attrs, "", prim, user);
@@ -681,6 +690,8 @@ struct WriteAlembicPrims : INode {
     std::map<std::string, OPoints> pointsObjs;
     std::map<std::string, std::any> attrs;
     std::map<std::string, std::any> user_attrs;
+    std::map<std::string, std::map<std::string, OFaceSet>> o_faceset;
+    std::map<std::string, std::map<std::string, OFaceSetSchema>> o_faceset_schema;
 
     virtual void apply() override {
         auto prims = get_input<ListObject>("prims")->get<PrimitiveObject>();
@@ -709,7 +720,10 @@ struct WriteAlembicPrims : INode {
             attrs.clear();
             user_attrs.clear();
             for (auto prim: prims) {
-                auto path = prim->userData().get2<std::string>("path");
+                auto path = prim->userData().get2<std::string>("_abc_path");
+                if (!starts_with(path, "/ABC/")) {
+                    log_error("_abc_path must start with /ABC/");
+                }
                 auto n_path = path.substr(5);
                 auto subnames = split_str(n_path, '/');
                 OObject oObject = OObject( archive, 1 );
@@ -731,7 +745,7 @@ struct WriteAlembicPrims : INode {
             zeno::makeError("Not init. Check whether in correct correct frame range.");
         }
         for (auto prim: prims) {
-            auto path = prim->userData().get2<std::string>("path");
+            auto path = prim->userData().get2<std::string>("_abc_path");
 
             if (prim->polys.size() || prim->tris.size()) {
                 // Create a PolyMesh class.
@@ -739,7 +753,7 @@ struct WriteAlembicPrims : INode {
                 auto &ud = prim->userData();
                 std::vector<std::string> faceSetNames;
                 std::vector<std::vector<int>> faceset_idxs;
-                write_faceset(prim, mesh);
+                write_faceset(prim, mesh, o_faceset[path], o_faceset_schema[path]);
 
                 OCompoundProperty user = mesh.getUserProperties();
                 write_user_data(user_attrs, path, prim, user);
