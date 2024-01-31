@@ -225,6 +225,11 @@ ZENO_API void INode::doApply() {
 ZENO_API std::vector<std::shared_ptr<IParam>> INode::get_input_params() const
 {
     std::vector<std::shared_ptr<IParam>> params;
+    for (auto& [name, param] : inputs_) {
+        params.push_back(param);
+    }
+    return params;
+    /*
     const auto& desc = nodeClass->desc;
     for (auto param : desc->inputs) {
         auto it = inputs_.find(param.name);
@@ -243,11 +248,17 @@ ZENO_API std::vector<std::shared_ptr<IParam>> INode::get_input_params() const
         params.push_back(it->second);
     }
     return params;
+    */
 }
 
 ZENO_API std::vector<std::shared_ptr<IParam>> INode::get_output_params() const
 {
     std::vector<std::shared_ptr<IParam>> params;
+    for (auto& [name, param] : outputs_) {
+        params.push_back(param);
+    }
+    return params;
+    /*
     const auto& desc = nodeClass->desc;
     for (auto param : desc->outputs) {
         auto it = outputs_.find(param.name);
@@ -258,6 +269,7 @@ ZENO_API std::vector<std::shared_ptr<IParam>> INode::get_output_params() const
         params.push_back(it->second);
     }
     return params;
+    */
 }
 
 ZENO_API void INode::set_input_defl(std::string const& name, zvariant defl) {
@@ -266,7 +278,10 @@ ZENO_API void INode::set_input_defl(std::string const& name, zvariant defl) {
 }
 
 ZENO_API std::shared_ptr<IParam> INode::get_input_param(std::string const& param) const {
-    return safe_at(inputs_, param, "miss input param `" + param + "` on node `" +  m_name + "`");
+    auto it = inputs_.find(param);
+    if (it != inputs_.end())
+        return it->second;
+    return nullptr;
 }
 
 void INode::add_input_param(std::shared_ptr<IParam> param) {
@@ -278,7 +293,10 @@ void INode::add_output_param(std::shared_ptr<IParam> param) {
 }
 
 ZENO_API std::shared_ptr<IParam> INode::get_output_param(std::string const& param) const {
-    return safe_at(outputs_, param, "miss output param `" + param + "` on node `" + m_name + "`");
+    auto it = outputs_.find(param);
+    if (it != outputs_.end())
+        return it->second;
+    return nullptr;
 }
 
 ZENO_API bool INode::update_param(const std::string& param, const zvariant& new_value) {
@@ -367,8 +385,16 @@ ZENO_API void INode::init(const NodeData& dat)
     {
         std::shared_ptr<IParam> sparam = get_input_param(param.name);
         if (!sparam) {
-            zeno::log_warn("input param `{}` is not registerd in current zeno version");
-            continue;
+            if (m_nodecls == "DeprecatedNode") {
+                sparam = std::make_shared<IParam>();
+                sparam->name = param.name;
+                sparam->isLegacy = true;
+                add_input_param(sparam);
+            }
+            else {
+                zeno::log_warn("input param `{}` is not registerd in current zeno version");
+                continue;
+            }
         }
         sparam->defl = param.defl;
         sparam->name = param.name;
@@ -379,11 +405,19 @@ ZENO_API void INode::init(const NodeData& dat)
     {
         std::shared_ptr<IParam> sparam = get_output_param(param.name);
         if (!sparam) {
-            zeno::log_warn("output param `{}` is not registerd in current zeno version");
-            continue;
+            if (m_nodecls == "DeprecatedNode") {
+                sparam = std::make_shared<IParam>();
+                sparam->name = param.name;
+                sparam->isLegacy = true;
+                add_output_param(sparam);
+            }
+            else {
+                zeno::log_warn("output param `{}` is not registerd in current zeno version");
+                continue;
+            }
         }
         sparam->defl = param.defl;
-        sparam->name = m_name;
+        sparam->name = param.name;
         sparam->type = param.type;
         sparam->m_wpNode = shared_from_this();
     }

@@ -65,6 +65,7 @@ private:
     void registerCoreNotify();
 
     GraphsTreeModel* m_model;
+    GraphModel* m_main;
     QStandardItemModel* m_logModel;     //connection with scene.
     AssetsModel* m_assets;
 

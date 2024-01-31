@@ -87,6 +87,7 @@ public:
     QStringList currentPath() const;
     //QModelIndex index(const QString& name) const;
     QModelIndex indexFromName(const QString& name) const;
+    void clear();
     void undo();
     void redo();
     void beginTransaction(const QString& name);
@@ -115,6 +116,7 @@ private:
     void _addLink(QPair<QString, QString> fromParam, QPair<QString, QString> toParam);
     bool _removeLink(const zeno::EdgeInfo& edge);
     void _updateName(const QString& oldName, const QString& newName);
+    void _clear();
     bool removeRows(int row, int count, const QModelIndex& parent = QModelIndex()) override;
 
     QString m_graphName;
@@ -131,6 +133,7 @@ private:
     std::string m_cbRenameNode;
     std::string m_cbAddLink;
     std::string m_cbRemoveLink;
+    std::string m_cbClearGraph;
 
     GraphsTreeModel* m_pTree;
     LinkModel* m_linkModel;

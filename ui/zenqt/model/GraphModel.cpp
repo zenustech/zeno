@@ -41,7 +41,7 @@ void NodeItem::init(GraphModel* pGraphM, std::shared_ptr<zeno::INode> spNode)
         emit pGraphM->dataChanged(idx, idx, QVector<int>{ ROLE_OBJPOS });
     });
 
-    m_cbSetPos = spNode->register_set_status([=](zeno::NodeStatus status) {
+    m_cbSetStatus = spNode->register_set_status([=](zeno::NodeStatus status) {
         zeno::NodeStatus oldStatus = this->status;
         this->status = status;
         QModelIndex idx = pGraphM->indexFromName(this->name);
@@ -125,6 +125,10 @@ void GraphModel::registerCoreNotify()
     m_cbRemoveLink = coreGraph->register_removeLink([&](zeno::EdgeInfo edge) -> bool {
         return _removeLink(edge);
     });
+
+    m_cbClearGraph = coreGraph->register_clear([&]() {
+        _clear();
+    });
 }
 
 void GraphModel::unRegisterCoreNotify()
@@ -139,16 +143,29 @@ void GraphModel::unRegisterCoreNotify()
         ZASSERT_EXIT(ret);
         ret = coreGraph->unregister_removeLink(m_cbRemoveLink);
         ZASSERT_EXIT(ret);
+        ret = coreGraph->unregister_updateNodeName(m_cbRenameNode);
+        ZASSERT_EXIT(ret);
+        ret = coreGraph->unregister_clear(m_cbClearGraph);
+        ZASSERT_EXIT(ret);
     }
     m_cbCreateNode = "";
     m_cbCreateNode = "";
     m_cbAddLink = "";
     m_cbRemoveLink = "";
+    m_cbRenameNode = "";
+    m_cbClearGraph = "";
 }
 
 GraphModel::~GraphModel()
 {
     unRegisterCoreNotify();
+}
+
+void GraphModel::clear()
+{
+    std::shared_ptr<zeno::Graph> spGraph = m_wpCoreGraph.lock();
+    ZASSERT_EXIT(spGraph);
+    spGraph->clear();
 }
 
 int GraphModel::indexFromId(const QString& name) const
@@ -620,6 +637,14 @@ QHash<int, QByteArray> GraphModel::roleNames() const
     roles[ROLE_OBJPOS] = "pos";
     roles[ROLE_SUBGRAPH] = "subgraph";
     return roles;
+}
+
+void GraphModel::_clear()
+{
+    while (rowCount() > 0) {
+        //only delete ui model element itself, and then unregister from core.
+        removeRows(0, 1);
+    }
 }
 
 bool GraphModel::removeRows(int row, int count, const QModelIndex& parent)

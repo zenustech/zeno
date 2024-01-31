@@ -277,6 +277,21 @@ ZENO_API std::string Graph::updateNodeName(const std::string oldName, const std:
     return name;
 }
 
+ZENO_API void Graph::clear()
+{
+    nodes.clear();
+    nodesToExec.clear();
+    node_set.clear();
+    optParentSubgNode = std::nullopt;
+    ctx.reset();
+    dirtyChecker.reset();
+    portalIns.clear();
+    portals.clear();
+    //m_name = "";  keep name.
+
+    CALLBACK_NOTIFY(clear)
+}
+
 ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls, std::string name, std::string cate, std::pair<float, float> pos)
 {
     if (name.empty())
@@ -286,7 +301,13 @@ ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls, std::s
 
     std::shared_ptr<INode> node;
     if (cate != "assets") {
-        auto cl = safe_at(getSession().nodeClasses, cls, "node class name").get();
+        auto& nodeClass = getSession().nodeClasses;
+        std::string nodecls = cls;
+        auto it = nodeClass.find(nodecls);
+        if (it == nodeClass.end()) {
+            nodecls = "DeprecatedNode";
+        }
+        auto cl = safe_at(getSession().nodeClasses, nodecls, "node class name").get();
         node = cl->new_instance(name);
         node->nodeClass = cl;
     }

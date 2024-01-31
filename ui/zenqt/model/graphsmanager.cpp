@@ -21,11 +21,12 @@ GraphsManager::GraphsManager(QObject* parent)
     , m_model(nullptr)
     , m_logModel(nullptr)
     , m_assets(nullptr)
+    , m_main(nullptr)
 {
     m_logModel = new QStandardItemModel(this);
     m_model = new GraphsTreeModel(this);
-    GraphModel* main = new GraphModel(zeno::getSession().mainGraph, m_model, m_model);
-    m_model->init(main);
+    m_main = new GraphModel(zeno::getSession().mainGraph, m_model, this);
+    m_model->init(m_main);
     m_assets = new AssetsModel(this);
 }
 
@@ -87,6 +88,9 @@ GraphsTreeModel* GraphsManager::openZsgFile(const QString& fn)
         return nullptr;
 
     createGraphs(result);
+    //reset model.
+    newFile();
+
     emit fileOpened(fn);
     return m_model;
 }
@@ -134,8 +138,8 @@ GraphsTreeModel* GraphsManager::newFile()
 
     if (!m_model) {
         m_model = new GraphsTreeModel(this);
-        auto main = new GraphModel(zeno::getSession().mainGraph, m_model, m_model);
-        m_model->init(main);
+        m_main = new GraphModel(zeno::getSession().mainGraph, m_model, this);
+        m_model->init(m_main);
     }
 
     //TODO: assets may be kept.
@@ -168,9 +172,8 @@ void GraphsManager::clear()
     {
         m_model->clear();
 
-        //no need this delete.
-        //delete m_model;
-        //m_model = nullptr;
+        delete m_model;
+        m_model = nullptr;
 
         for (auto scene : m_scenes)
         {
@@ -178,6 +181,14 @@ void GraphsManager::clear()
         }
         m_scenes.clear();
     }
+
+    //clear main model
+    if (m_main) {
+        m_main->clear();
+        delete m_main;
+        m_main = nullptr;
+    }
+
     emit fileClosed();
 }
 
