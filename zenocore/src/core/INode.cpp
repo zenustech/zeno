@@ -303,6 +303,59 @@ ZENO_API std::shared_ptr<IParam> INode::get_output_param(std::string const& para
     return nullptr;
 }
 
+ZENO_API NodeData INode::exportInfo() const
+{
+    NodeData node;
+    node.cls = m_nodecls;
+    node.name = m_name;
+    node.status = m_status;
+    node.uipos = m_pos;
+
+    for (auto sparam : get_input_params()) {
+        ParamInfo param;
+        param.name = sparam->name;
+        param.bInput = true;
+        param.control = sparam->control;
+        param.ctrlProps = sparam->optCtrlprops;
+        param.type = sparam->type;
+        param.defl = sparam->defl;
+        for (auto link : sparam->links) {
+            EdgeInfo info;
+            auto outParam = link->fromparam.lock();
+            auto outNode = outParam->m_wpNode.lock();
+            info.outNode = outNode->get_name();
+            info.outParam = outParam->name;
+            info.inNode = m_name;
+            info.inParam = param.name;
+            param.links.push_back(info);
+        }
+        node.inputs.push_back(param);
+    }
+
+    for (auto sparam : get_output_params()) {
+        ParamInfo param;
+        param.bInput = false;
+        param.name = sparam->name;
+        param.control = sparam->control;
+        param.ctrlProps = sparam->optCtrlprops;
+        param.type = sparam->type;
+        param.defl = sparam->defl;
+        for (auto link : sparam->links) {
+            EdgeInfo info;
+            auto inParam = link->toparam.lock();
+            auto inNode = inParam->m_wpNode.lock();
+            info.inNode = inNode->get_name();
+            info.inParam = inParam->name;
+            info.outNode = m_name;
+            info.outParam = param.name;
+            param.links.push_back(info);
+        }
+        node.outputs.push_back(param);
+    }
+
+    return node;
+}
+
 ZENO_API bool INode::update_param(const std::string& param, const zvariant& new_value) {
     std::shared_ptr<IParam> spParam = safe_at(inputs_, param, "miss input param `" + param + "` on node `" + m_name + "`");
     if (!zeno::isEqual(spParam->defl, new_value, spParam->type))

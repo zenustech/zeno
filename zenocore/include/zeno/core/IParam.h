@@ -34,6 +34,7 @@ struct IParam {
 
     ParamControl control = NullControl;
     ParamType type = Param_Null;
+    std::optional<ControlProperty> optCtrlprops;
     bool isLegacy = false;      //TODO:
 };
 

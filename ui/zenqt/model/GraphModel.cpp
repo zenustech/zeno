@@ -422,11 +422,14 @@ void GraphModel::_initLink()
 {
     for (auto item : m_nodes)
     {
-        ParamsModel* paramsM = item->params;
-        for (int r = 0; r < paramsM->rowCount(); r++)
-        {
-            QModelIndex idx = paramsM->index(r, 0);
-            //TODO
+        auto spNode = item->m_wpNode.lock();
+        ZASSERT_EXIT(spNode);
+        zeno::NodeData nodedata = spNode->exportInfo();
+        for (auto param : nodedata.inputs) {
+            for (auto link : param.links) {
+                _addLink({QString::fromStdString(link.outNode), QString::fromStdString(link.outParam)},
+                    { QString::fromStdString(link.inNode), QString::fromStdString(link.inParam) });
+            }
         }
     }
 }

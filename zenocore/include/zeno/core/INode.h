@@ -80,6 +80,7 @@ public:
     ZENO_API virtual std::vector<std::shared_ptr<IParam>> get_output_params() const;
     ZENO_API std::shared_ptr<IParam> get_input_param(std::string const& name) const;
     ZENO_API std::shared_ptr<IParam> get_output_param(std::string const& name) const;
+    ZENO_API NodeData exportInfo() const;
 
     ZENO_API bool update_param(const std::string& name, const zvariant& new_value);
     CALLBACK_REGIST(update_param, void, const std::string&, zvariant, zvariant)
