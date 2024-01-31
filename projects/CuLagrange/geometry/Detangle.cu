@@ -120,8 +120,8 @@ struct Detangle2 : zeno::INode {
 
         LBvh<3,int,T> ktri_bvh{};
 
-        zs::Vector<int> impulse_count{verts.get_allocator(),verts.size()};
-        cudaExec(zs::range(impulse_count),[]ZS_LAMBDA(auto& count) mutable {count = 0;});
+        // zs::Vector<int> impulse_count{verts.get_allocator(),verts.size()};
+        // cudaExec(zs::range(impulse_count),[]ZS_LAMBDA(auto& count) mutable {count = 0;});
 
         auto relaxation_rate = get_input2<T>("relaxation_rate");
         bool mark_intersection = get_input2<bool>("mark_intersection");
@@ -194,8 +194,12 @@ struct Detangle2 : zeno::INode {
         auto nm_detangle_restart_iters = get_input2<int>("nm_detangle_restart_iters");
 
 
+        int nm_detangle_restart = 0;
+
         for(int iter = 0;iter != nm_iters;++iter) {
             auto do_proximity_detection = ((iter % nm_detangle_restart_iters) == 0);
+            if(do_proximity_detection)
+                ++nm_detangle_restart;
             auto do_proximity_recheck = !do_proximity_detection;
             
             auto refit_tri_bvh = iter > 0;
@@ -219,7 +223,7 @@ struct Detangle2 : zeno::INode {
                 #endif      
             }
 
-            cudaExec(zs::range(impulse_count),[]ZS_LAMBDA(auto& count) mutable {count = 0;});
+            // cudaExec(zs::range(impulse_count),[]ZS_LAMBDA(auto& count) mutable {count = 0;});
 
             TILEVEC_OPS::fill(cudaExec,verts,"grad",(T)0.0);
             // auto use_dirty_bits = iter > 0;
@@ -324,7 +328,7 @@ struct Detangle2 : zeno::INode {
                     cudaExec(zip(zs::range(csEKT.size()),csEKT._activeKeys),[
                         vertsHasM = verts.hasProperty("m"),
                         vertsHasMinv = verts.hasProperty("minv"),
-                        impulse_count = proxy<space>(impulse_count),
+                        // impulse_count = proxy<space>(impulse_count),
                         exec_tag = exec_tag,
                         iter = iter,
                         eps = eps,
@@ -384,7 +388,7 @@ struct Detangle2 : zeno::INode {
                                     beta = minvs[i] * edge_bary[i] / edge_cminv;
                                     // printf("edge[%d][%d]_beta : %f\n",ei,edge[i],(float)beta);
                                 }
-                                atomic_add(exec_tag,&impulse_count[edge[i]],1);
+                                // atomic_add(exec_tag,&impulse_count[edge[i]],1);
                                 for(int d = 0;d != 3;++d)
                                     atomic_add(exec_tag,&verts(gradOffset + d,edge[i]),impulse[d] * beta);
                             }
@@ -459,7 +463,7 @@ struct Detangle2 : zeno::INode {
                         vertsHasM = verts.hasProperty("m"),
                         vertsHasMinv = verts.hasProperty("minv"),
                         exec_tag = exec_tag,
-                        impulse_count = proxy<space>(impulse_count),
+                        // impulse_count = proxy<space>(impulse_count),
                         eps = eps,
                         iter = iter,
                         use_barycentric_interpolator = use_barycentric_interpolator,
@@ -517,7 +521,7 @@ struct Detangle2 : zeno::INode {
                                 if(use_barycentric_interpolator) {
                                     beta = minvs[i] * tri_bary[i] / tri_cminv;
                                 }
-                                atomic_add(exec_tag,&impulse_count[tri[i]],1);
+                                // atomic_add(exec_tag,&impulse_count[tri[i]],1);
                                 for(int d = 0;d != 3;++d)
                                     atomic_add(exec_tag,&verts(gradOffset + d,tri[i]),-impulse[d] * beta);
                             }
@@ -606,7 +610,7 @@ struct Detangle2 : zeno::INode {
                         cudaExec(zip(zs::range(csET.size()),csET._activeKeys),[
                             vertsHasM = verts.hasProperty("m"),
                             vertsHasMinv = verts.hasProperty("minv"),
-                            impulse_count = proxy<space>(impulse_count),
+                            // impulse_count = proxy<space>(impulse_count),
                             exec_tag = exec_tag,
                             mark_intersection = mark_intersection,
                             use_barycentric_interpolator = false,
@@ -695,6 +699,7 @@ struct Detangle2 : zeno::INode {
                                     if(use_barycentric_interpolator) {
                                         beta = edge_minvs[i] * edge_bary[i] / edge_cminv;
                                     }
+                                    // atomic_add(exec_tag,&impulse_count[edge[i]],1);
                                     for(int d = 0;d != 3;++d)
                                         atomic_add(exec_tag,&verts(gradOffset + d,edge[i]),impulse[d]  * beta);
                                 }
@@ -704,6 +709,7 @@ struct Detangle2 : zeno::INode {
                                     if(use_barycentric_interpolator) {
                                         beta = tri_minvs[i] * tri_bary[i] / tri_cminv;
                                     }
+                                    // atomic_add(exec_tag,&impulse_count[tri[i]],1);
                                     for(int d = 0;d != 3;++d)
                                         atomic_add(exec_tag,&verts(gradOffset + d,tri[i]),-impulse[d] * beta);             
                                 }
@@ -736,7 +742,7 @@ struct Detangle2 : zeno::INode {
             auto gradn = TILEVEC_OPS::dot<3>(cudaExec,verts,"grad","grad");
             // std::cout << "apply gradient : " << gradn <<  std::endl;
             cudaExec(zs::range(verts.size()),[
-                impulse_count = proxy<space>(impulse_count),
+                // impulse_count = proxy<space>(impulse_count),
                 eps = eps,
                 post_filter_the_update = post_filter_the_update,
                 h0 = maximum_correction,
@@ -744,7 +750,9 @@ struct Detangle2 : zeno::INode {
                 xtagOffset = verts.getPropertyOffset(xtag),
                 gradOffset = verts.getPropertyOffset("grad"),
                 verts = proxy<space>({},verts)] ZS_LAMBDA(int vi) mutable {
-                    auto G = verts.pack(dim_c<3>,gradOffset,vi);
+                    // if(impulse_count[vi] == 0)
+                    //     return;
+                    auto G = verts.pack(dim_c<3>,gradOffset,vi)/* / (T)impulse_count[vi]*/;
                     if(post_filter_the_update) {
                         auto Gn = G.norm();
                         auto Gn2 = Gn * Gn;
@@ -757,6 +765,8 @@ struct Detangle2 : zeno::INode {
             timer.tock("write_back_to_displacement");
             #endif
         }
+
+        std::cout << "finish detangle with " << nm_detangle_restart << " detangle cycles" << std::endl;
 
         set_output("zsparticles",zsparticles);
     }

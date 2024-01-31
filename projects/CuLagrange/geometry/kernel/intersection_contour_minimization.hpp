@@ -223,10 +223,14 @@ namespace zeno {
                 icm_grad.tuple(dim_c<3>,icmGradOffset,ci) = G;
 
                 auto nrm = tris.pack(dim_c<3>,triNrmOffset,ti);
+                if(nrm.norm() < eps)
+                    return;
+
+                // if((edge_vertices[0] - edge_vertices[1]).norm() < eps)
+                //     return;
 
                 if(recheck_intersection) {
-                    if(nrm.norm() < eps)
-                        return;
+
                     // printf("do the recheck intersection\n");
 
                     auto d = tris(triDOffset,ti);
@@ -320,9 +324,9 @@ namespace zeno {
                 
                 G -= normal_coeff * nrm;
 
-                auto Gn = G.norm();
-                auto Gn2 = G.l2NormSqr();
-                G = h0 * G / zs::sqrt(Gn2 + g02);
+                // auto Gn = G.norm();
+                // auto Gn2 = G.l2NormSqr();
+                // G = h0 * G / zs::sqrt(Gn2 + g02);
 
                 icm_grad.tuple(dim_c<3>,icmGradOffset,ci) = G;
         }); 
@@ -402,12 +406,10 @@ namespace zeno {
                 icm_grad.tuple(dim_c<3>,icmGradOffset,ci) = vec3::zeros();
 
                 auto knrm = ktris.pack(dim_c<3>,ktriNrmOffset,kti);
-
+                if(knrm.norm() < eps)
+                    return;
 
                 if(recheck_intersection) {
-                    if(knrm.norm() < eps)
-                        return;
-
                     // auto ktnrm = ktris.pack(dim_c<3>,ktriNrmOffset,kti);
                     auto d = ktris(ktriDOffset,kti);
 
