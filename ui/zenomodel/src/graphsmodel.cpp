@@ -22,7 +22,7 @@ GraphsModel::GraphsModel(QObject *parent)
     , m_bIOProcessing(false)
     , m_version(zenoio::VER_2_5)
     , m_bApiEnableRun(true)
-    , m_bHasNotDesc(false)
+    , m_bIOImporting(false)
 {
     m_selection = new QItemSelectionModel(this);
     initDescriptors();
@@ -1504,6 +1504,16 @@ bool GraphsModel::IsIOProcessing() const
     return m_bIOProcessing;
 }
 
+void GraphsModel::setIOImporting(bool bIOImporting)
+{
+    m_bIOImporting = bIOImporting;
+}
+
+bool GraphsModel::IsIOImporting() const
+{
+    return m_bIOImporting;
+}
+
 void GraphsModel::removeSubGraph(const QString& name)
 {
     if (name.compare("main", Qt::CaseInsensitive) == 0)
@@ -1632,14 +1642,15 @@ void GraphsModel::_markSubnodesChange(SubGraphModel* pSubg)
     }
 }
 
-void GraphsModel::markNotDescNode()
+void GraphsModel::markNotDescNode(const QString& nodeid)
 {
-    m_bHasNotDesc = true;
+    if (m_bIOProcessing && !m_bIOImporting)
+        m_unVersionNodes.push_back(nodeid);
 }
 
-bool GraphsModel::hasNotDescNode() const
+QStringList GraphsModel::getNotDescNodes() const
 {
-    return m_bHasNotDesc;
+    return m_unVersionNodes;
 }
 
 void GraphsModel::markNodeDataChanged(const QModelIndex& nodeIdx)
