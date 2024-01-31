@@ -513,7 +513,7 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
                         }
                         // tmp[atomic_add(exec_tag,&nm_ints[0],(size_t)1)] = vec2i{ei,ti};   
 #else
-                        printf("find pair E[%d %d] -> T[%d %d %d]\n",edge[0],edge[1],tri[0],tri[1],tri[2]);
+                        // printf("find pair E[%d %d] -> T[%d %d %d]\n",edge[0],edge[1],tri[0],tri[1],tri[2]);
                         auto ci = res.insert(vec2i{ei,ti});
                         if(use_barycentric_interpolator) {
                             zs::vec<T,3> bary{};

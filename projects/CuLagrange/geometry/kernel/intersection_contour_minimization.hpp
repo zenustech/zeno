@@ -144,9 +144,9 @@ namespace zeno {
             normal_coeff = static_cast<T>(2.0) * ER / EN;
             // normal_coeff = ER / EN;
 
-            if(isnan(normal_coeff)) {
-                printf("nan normalcoeff : %f %f %f\n",R.norm(),E.norm(),EN);
-            }
+            // if(isnan(normal_coeff)) {
+            //     printf("nan normalcoeff : %f %f %f\n",R.norm(),E.norm(),EN);
+            // }
 
             return R;
     }
@@ -203,8 +203,6 @@ namespace zeno {
                 auto ei = pair[0];
                 auto ti = pair[1];
 
-
-
                 auto edge = edges.pack(dim_c<2>,edgeOffset,ei,int_c);
                 auto tri = tris.pack(dim_c<3>,triOffset,ti,int_c);
 
@@ -220,9 +218,8 @@ namespace zeno {
 
                 auto nrm = tris.pack(dim_c<3>,triNrmOffset,ti);
 
-
                 if(recheck_intersection) {
-                    printf("do the recheck intersection\n");
+                    // printf("do the recheck intersection\n");
 
                     auto d = tris(triDOffset,ti);
                     const auto& ve = edge_vertices[1];
@@ -230,18 +227,24 @@ namespace zeno {
                     const auto& tvs = tri_vertices;
 
                     auto en = (ve - vs).norm();
-                    if(en < eps)
+                    if(en < eps) {
+                        // printf("reject due to too short the edge\n");
                         return;   
+                    }
                         
                     auto is_parallel = zs::abs(nrm.dot(ve - vs) / en) < 1e-3;
-                    if(is_parallel)
+                    if(is_parallel) {
+                        // printf("reject due to parallel the edge\n");
                         return;    
+                    }
                         
                     auto ts = vs.dot(nrm) + d;
                     auto te = ve.dot(nrm) + d;  
                     
-                    if(ts * te > 0) 
+                    if(ts * te > 0) {
+                        // printf("reject due to same side\n");
                         return;
+                    }
 
                     auto e0 = tvs[1] - tvs[0];
                     auto e1 = tvs[2] - tvs[0];
@@ -253,7 +256,8 @@ namespace zeno {
 
                     auto n0 = e0.cross(q);
                     auto n1 = e1.cross(q);
-                    if(n0.dot(n1) > -eps) {
+                    if(n0.dot(n1) > 0) {
+                        // printf("reject due to pass0\n");
                         return;
                     } 
 
@@ -261,7 +265,8 @@ namespace zeno {
                     n1 = e1.cross(q);
                     auto n2 = e2.cross(q);
 
-                    if(n1.dot(n2) < eps) {
+                    if(n1.dot(n2) < 0) {
+                        // printf("reject due to pass1\n");
                         return;
                     }
 
@@ -270,16 +275,15 @@ namespace zeno {
                     n2 = e2.cross(q);
 
                     if(n0.dot(n2) > 0) {
+                        // printf("reject due to pass2\n");
                         return;
                     }                    
 
                 }
 
-
                 int his[2] = {};
                 his[0] = zs::reinterpret_bits<int>(edges(edgeHeIndsOffset,ei));
                 his[1] = zs::reinterpret_bits<int>(halfedges(hfOppoHeOffset,his[0]));
-
 
                 T normal_coeff = 0;
                 for(auto hi : his)
@@ -294,6 +298,9 @@ namespace zeno {
                     auto halfedge_opposite_vertex = verts.pack(dim_c<3>,xtagOffset,halfedge_opposite_vertex_id);
 
                     auto hnrm = tris.pack(dim_c<3>,triNrmOffset,hti);
+                    if(hnrm.norm() < 1e-6)
+                        continue;
+
                     T dnc{};
                     G += eval_HT_contour_minimization_gradient(edge_vertices[0],
                         edge_vertices[1],   
@@ -304,19 +311,9 @@ namespace zeno {
                         dnc = -dnc;
 
                     normal_coeff += dnc;
-
-                    printf("eval icm grad for edge[%d][%d %d] and tri[%d] htri[%d] nrm[%f] G[%f] normal_coeff[%f]\n",
-                        ei,edge[0],edge[1],ti,hti,nrm.norm(),G.norm(),normal_coeff);
                 }
                 
-                // if(isnan(G.norm())) {
-                //     printf("nan G detected: %f %f %f\n",(float)G[0],(float)G[1],(float)G[2]);
-                // }
                 G -= normal_coeff * nrm;
-
-                // auto Gn = G.norm();
-                // auto Gn2 = Gn * Gn;
-                // G = h0 * G / zs::sqrt(Gn2 + g02);
 
                 icm_grad.tuple(dim_c<3>,icmGradOffset,ci) = G;
                 // icm_grad.tuple(dim_c<2>,"inds",ci) = pair.reinterpret_bits(float_c);
@@ -359,8 +356,8 @@ namespace zeno {
             enforce_triangle_normal = enforce_triangle_normal,
             icm_grad = proxy<space>({},icm_grad),
             icmGradOffset = icm_grad.getPropertyOffset("grad"),
-            kxtag = zs::SmallString(kxtag),
-            verts = proxy<space>({},verts),xtag = zs::SmallString(xtag),
+            verts = proxy<space>({},verts),
+            xtagOffset = verts.getPropertyOffset(xtag),
             edges = proxy<space>({},edges),
             edgeOffset = edges.getPropertyOffset("inds"),
             edgeHeOffest = edges.getPropertyOffset("he_inds"),
@@ -376,6 +373,7 @@ namespace zeno {
             eps = eps,
             g02 = progressive_slope * progressive_slope,
             kverts = proxy<space>({},kverts),
+            kxtagOffset = kverts.getPropertyOffset(kxtag),
             ktris = proxy<space>({},ktris),
             ktriOffset = ktris.getPropertyOffset("inds"),
             ktriNrmOffset = ktris.getPropertyOffset("nrm"),
@@ -389,9 +387,9 @@ namespace zeno {
                 vec3 edge_vertices[2] = {};
                 vec3 ktri_vertices[3] = {};
                 for(int i = 0;i != 2;++i)
-                    edge_vertices[i] = verts.pack(dim_c<3>,xtag,edge[i]);
+                    edge_vertices[i] = verts.pack(dim_c<3>,xtagOffset,edge[i]);
                 for(int i = 0;i != 3;++i)
-                    ktri_vertices[i] = kverts.pack(dim_c<3>,kxtag,ktri[i]);
+                    ktri_vertices[i] = kverts.pack(dim_c<3>,kxtagOffset,ktri[i]);
 
                 icm_grad.tuple(dim_c<3>,icmGradOffset,ci) = vec3::zeros();
 
@@ -473,7 +471,7 @@ namespace zeno {
                     auto htri = tris.pack(dim_c<3>,triOffset,hti,int_c);
                     auto halfedge_local_vertex_id = zs::reinterpret_bits<int>(halfedges(localVIDOffset,hi));
                     auto halfedge_opposite_vertex_id = htri[(halfedge_local_vertex_id + 2) % 3];
-                    auto halfedge_opposite_vertex = verts.pack(dim_c<3>,xtag,halfedge_opposite_vertex_id);
+                    auto halfedge_opposite_vertex = verts.pack(dim_c<3>,xtagOffset,halfedge_opposite_vertex_id);
 
                     auto hnrm = tris.pack(dim_c<3>,triNrmOffset,hti);
                     if(hnrm.norm() < 1e-6)
@@ -497,8 +495,8 @@ namespace zeno {
                 G -= normal_coeff * knrm;
 
                 // auto Gn = G.norm();
-                auto Gn2 = G.l2NormSqr();
-                G = h0 * G / zs::sqrt(Gn2 + g02);
+                // auto Gn2 = G.l2NormSqr();
+                // G = h0 * G / zs::sqrt(Gn2 + g02);
 
                 // if(isnan(G.norm())) {
                 //     printf("nan G detected at %d %d %f\n",ei,kti,(float)knrm.norm());
