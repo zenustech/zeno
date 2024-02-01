@@ -213,8 +213,8 @@ extern "C" __global__ void __anyhit__shadow_cutout()
         }else{
           if(mats.isHair>0.5f)
           {
-             vec3 extinction = DisneyBSDF::CalculateExtinction(mats.sssParam,1.0f);
-             if(p<length(exp(-extinction)))
+             vec3 extinction = exp( - DisneyBSDF::CalculateExtinction(mats.sssParam,1.0f) );
+             if(p<min(min(extinction.x, extinction.y), extinction.z))
              {
                optixIgnoreIntersection();
                return;

@@ -434,6 +434,8 @@ namespace DisneyBSDF{
             float ax, ay;
             BRDFBasics::CalculateAnisotropicParams(mat.roughness,mat.anisotropic,ax,ay);
             vec3 s = BRDFBasics::EvalMicrofacetReflection(ax, ay, wo, wi, wm, F, tmpPdf) * metalWt;
+            tmpPdf *= (mat.roughness<=0.03 && reflectance==false)? 0.0f:1.0f;
+            s = s * (tmpPdf>0.0f? 1.0f:0.0f);
             sterm = sterm + s;
             f = f + s;
             fPdf += tmpPdf * metalPr;
@@ -452,18 +454,20 @@ namespace DisneyBSDF{
               vec3 s = BRDFBasics::EvalMicrofacetReflection(ax, ay, wo, wi, wm,
                                                             mix(mix(Cspec0, mat.diffractColor, mat.diffraction), vec3(1.0f), F) * mat.specular,
                                             tmpPdf) * glassWt;
+              tmpPdf *= (mat.roughness<=0.03 && reflectance==false)? 0.0f:1.0f;
+              s = s * (tmpPdf>0.0f? 1.0f:0.0f);
               sterm = sterm + s;
               f = f + s;
               fPdf += tmpPdf * glassPr;
             } else {
               if(thin)
               {
-                float nDi = fabs(wo.z);
-                vec3 fakeTrans = vec3(1)-BRDFBasics::fresnelSchlick(vec3(1) - mat.transColor,nDi);
-                vec3 t = sqrt(mix(mat.transColor, mat.diffractColor, mat.diffraction)) * fakeTrans * glassWt;
+                vec3 t = sqrt(mix(mat.transColor, mat.diffractColor, mat.diffraction)) * glassWt;
+                float tmpPdf = (reflectance==false)? 0.0f:1.0f;
+                t = t * (tmpPdf>0.0f?1.0f:0.0f);
                 tterm = tterm + t;
                 f = f + t;
-                fPdf += 1.0f * glassPr;
+                fPdf += tmpPdf * glassPr;
               }else {
                 vec3 wm = entering?-normalize(wo + mat.ior * wi) : normalize(wo + 1.0f/mat.ior * wi);
                 float F = BRDFBasics::SchlickDielectic(abs(dot(wm, wo)), entering?mat.ior:1.0/mat.ior);
@@ -475,8 +479,11 @@ namespace DisneyBSDF{
                                                                  vec3(F), tmpPdf);
 
                 vec3 t = brdf * glassWt;
+                tmpPdf *= (mat.roughness<=0.03 && reflectance==false)? 0.0f:1.0f;
+                t = t * (tmpPdf>0.0f? 1.0f:0.0f);
                 tterm = tterm + t;
                 f = f + t;
+
                 fPdf += tmpPdf * glassPr;
 
               }
