@@ -119,7 +119,6 @@ namespace xinxinoptix {
 
 bool resize_dirty = false;
 bool minimized    = false;
-static bool using20xx = false;
 
 // Camera state
 bool             camera_changed = true;
@@ -564,14 +563,8 @@ static void printUsageAndExit( const char* argv0 )
 
 static void initLaunchParams( PathTracerState& state )
 {
-//#ifdef USING_20XX
-    if (using20xx) {
-    state.params.handle         = state.gas_handle;
-//#else
-    } else {
-    state.params.handle         = state.rootHandleIAS;
-    }
-//#endif
+    state.params.handle = state.rootHandleIAS;
+
     CUDA_CHECK( cudaMalloc(
                 reinterpret_cast<void**>( &state.accum_buffer_p.reset() ),
                 state.params.width * state.params.height * sizeof( float4 )
@@ -1653,11 +1646,6 @@ static void detectHuangrenxunHappiness() {
            driverVersion / 1000, (driverVersion % 100) / 10);
     zeno::log_info("CUDA runtime version: {}.{}",
            runtimeVersion / 1000, (runtimeVersion % 100) / 10);
-
-    if ((using20xx = (prop.major <= 7))) {
-        // let's buy the stupid bitcoin card to cihou huangrenxun's wallet-happiness
-        zeno::log_warn("graphic card <= RTX20** detected, disabling instancing. consider upgrade to RTX30** for full performance.");
-    }
 }
 
 //------------------------------------------------------------------------------
@@ -1803,7 +1791,7 @@ void optixinit( int argc, char* argv[] )
     auto cur_path = std::string(_pgmptr);
     cur_path = cur_path.substr(0, cur_path.find_last_of("\\"));
 #endif
-    OptixUtil::sky_tex = cur_path + "/hdr/studio_small_08_1k.hdr";
+    OptixUtil::sky_tex = cur_path + "/hdr/Panorama.hdr";
     OptixUtil::addTexture(OptixUtil::sky_tex.value());
     xinxinoptix::update_hdr_sky(0, {0, 0, 0}, 0.8);
 }
@@ -1889,7 +1877,7 @@ void UpdateStaticMesh(std::map<std::string, int> const &mtlidlut) {
     updateStaticDrawObjects();
     g_staticMeshNum = 0;
     g_staticVertNum = 0;
-    if(!using20xx) {
+    {
         splitMesh(g_vertices, g_mat_indices, g_meshPieces, 0, 0);
         g_staticMeshNum = g_meshPieces.size();
 
@@ -1910,7 +1898,7 @@ void UpdateDynamicMesh(std::map<std::string, int> const &mtlidlut) {
     camera_changed = true;
     g_mtlidlut = mtlidlut;
     updateDynamicDrawObjects();
-    if(!using20xx) {
+    {
         splitMesh(g_vertices, g_mat_indices, g_meshPieces, g_staticMeshNum, g_staticVertNum);
         g_staticAndDynamicMeshNum = g_meshPieces.size();
 
@@ -1937,8 +1925,7 @@ void UpdateStaticInstMesh(const std::map<std::string, int> &mtlidlut)
         instData.staticMeshNum = 0;
         instData.staticVertNum = 0;
     }
-    if (!using20xx)
-    {
+
         for (auto &[instID, instData] : g_instLUT)
         {
             auto &vertices = instData.vertices;
@@ -1967,15 +1954,13 @@ void UpdateStaticInstMesh(const std::map<std::string, int> &mtlidlut)
             mat_indices.resize(vertSize / 3);
             lightMark.resize(vertSize / 3);
         }
-    }
 }
 void UpdateDynamicInstMesh(std::map<std::string, int> const &mtlidlut)
 {
     camera_changed = true;
     g_mtlidlut = mtlidlut;
     updateDynamicDrawInstObjects();
-    if(!using20xx)
-    {
+    
         for (auto &[instID, instData] : g_instLUT)
         {
             auto &vertices = instData.vertices;
@@ -2002,13 +1987,10 @@ void UpdateDynamicInstMesh(std::map<std::string, int> const &mtlidlut)
             mat_indices.resize(vertSize / 3);
             lightMark.resize(vertSize / 3);
         }
-    }
 }
 
 void CopyInstMeshToGlobalMesh()
 {
-    if(!using20xx)
-    {
         auto numVerts = g_staticAndDynamicVertNum;
         auto numMeshPieces = g_staticAndDynamicMeshNum;
         for (auto &[_, instData] : g_instLUT)
@@ -2066,71 +2048,10 @@ void CopyInstMeshToGlobalMesh()
             vertsOffset += vertices.size();
             meshPiecesOffset += meshPieces.size();
         }
-    }
 }
 
 void UpdateMeshGasAndIas(bool staticNeedUpdate)
 {
-//#ifdef USING_20XX
-    // no archieve inst func in using20xx
-    if (using20xx) 
-    {
-#ifdef USE_SHORT
-    const size_t vertices_size_in_bytes = g_vertices.size() * sizeof( ushort3 );
-#else
-    const size_t vertices_size_in_bytes = g_vertices.size() * sizeof( Vertex );
-#endif
-    // CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_vertices.reset() ), vertices_size_in_bytes ) );
-    // CUDA_CHECK( cudaMemcpy(
-    //             reinterpret_cast<void*>( (CUdeviceptr&)state.d_vertices ),
-    //             g_vertices.data(), vertices_size_in_bytes,
-    //             cudaMemcpyHostToDevice
-    //             ) );
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_clr.reset() ), vertices_size_in_bytes ) );
-    CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( (CUdeviceptr&)state.d_clr ),
-                g_clr.data(), vertices_size_in_bytes,
-                cudaMemcpyHostToDevice
-                ) );
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_uv.reset() ), vertices_size_in_bytes ) );
-    CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( (CUdeviceptr&)state.d_uv ),
-                g_uv.data(), vertices_size_in_bytes,
-                cudaMemcpyHostToDevice
-                ) );
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_nrm.reset() ), vertices_size_in_bytes ) );
-    CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( (CUdeviceptr&)state.d_nrm ),
-                g_nrm.data(), vertices_size_in_bytes,
-                cudaMemcpyHostToDevice
-                ) );
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_tan.reset() ), vertices_size_in_bytes ) );
-    CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( (CUdeviceptr&)state.d_tan ),
-                g_tan.data(), vertices_size_in_bytes,
-                cudaMemcpyHostToDevice
-                ) );
-    const size_t mat_indices_size_in_bytes = g_mat_indices.size() * sizeof( uint32_t );
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_mat_indices.reset() ), mat_indices_size_in_bytes ) );
-    CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( (CUdeviceptr)state.d_mat_indices ),
-                g_mat_indices.data(),
-                mat_indices_size_in_bytes,
-                cudaMemcpyHostToDevice
-                ) );
-    const size_t light_mark_size_in_bytes = g_lightMark.size() * sizeof( unsigned short );
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_lightMark.reset() ), light_mark_size_in_bytes ) );
-    CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( (CUdeviceptr)state.d_lightMark ),
-                g_lightMark.data(),
-                light_mark_size_in_bytes,
-                cudaMemcpyHostToDevice
-                ) );
-    buildMeshAccel( state );
-//#else
-    } 
-    else 
-    {
         for(int i=0;i<g_meshPieces.size();i++)
         {
             buildMeshAccelSplitMesh(state, g_meshPieces[i]);
@@ -2229,8 +2150,6 @@ void UpdateMeshGasAndIas(bool staticNeedUpdate)
         timer.tock("done dynamic mesh update");
         std::cout << "end copy\n";
         buildMeshIAS(state, 2, g_meshPieces);
-    }
-//#endif
 }
 
 static std::map<std::string, LightDat> lightdats;
@@ -4002,17 +3921,20 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
                 save_exr((float3 *)optixgetimg_extra("color"), w, h, exr_path);
             }
             else {
-                stbi_write_jpg(path.c_str(), w, h, 4, p, 100);
+                std::string jpg_native_path = std::filesystem::u8path(path).string();
+                stbi_write_jpg(jpg_native_path.c_str(), w, h, 4, p, 100);
                 if (denoise) {
                     const float* _albedo_buffer = reinterpret_cast<float*>(state.albedo_buffer_p.handle);
                     //SaveEXR(_albedo_buffer, w, h, 4, 0, (path+".albedo.exr").c_str(), nullptr);
                     auto a_path = path + ".albedo.pfm";
-                    write_pfm(a_path, w, h, _albedo_buffer);
+                    std::string native_a_path = std::filesystem::u8path(a_path).string();
+                    write_pfm(native_a_path, w, h, _albedo_buffer);
 
                     const float* _normal_buffer = reinterpret_cast<float*>(state.normal_buffer_p.handle);
                     //SaveEXR(_normal_buffer, w, h, 4, 0, (path+".normal.exr").c_str(), nullptr);
                     auto n_path = path + ".normal.pfm";
-                    write_pfm(n_path, w, h, _normal_buffer);
+                    std::string native_n_path = std::filesystem::u8path(n_path).string();
+                    write_pfm(native_n_path, w, h, _normal_buffer);
                 }
             }
         }

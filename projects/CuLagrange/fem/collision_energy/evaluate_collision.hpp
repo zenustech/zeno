@@ -30,7 +30,8 @@
 #include "vertex_face_sqrt_collision.hpp"
 #include "vertex_face_collision.hpp"
 #include "../../geometry/kernel/topology.hpp"
-#include "../../geometry/kernel/intersection.hpp"
+// #include "../../geometry/kernel/intersection.hpp"
+#include "../../geometry/kernel/global_intersection_analysis.hpp"
 
 #include "collision_utils.hpp"
 
@@ -796,7 +797,7 @@ void detect_self_imminent_PT_close_proximity(Pol& pol,
                         for(int i = 0;i != 3;++i)
                             rts[i] = verts.pack(dim_c<3>,Xtag,tri[i]);
 
-                        auto is_same_collision_group = false;
+                        auto is_same_collision_group = true;
                         if(use_collision_group && has_collision_group) 
                             is_same_collision_group = zs::abs(verts(collisionGroupTag,vi) - verts(collisionGroupTag,tri[0])) < 0.1;
 
@@ -807,15 +808,7 @@ void detect_self_imminent_PT_close_proximity(Pol& pol,
                     
                     auto id = csPT.insert(zs::vec<int,2>{vi,ti});
                     vec4i inds{tri[0],tri[1],tri[2],vi};
-                    // for(int i = 0;i != 4;++i)
-                    //     verts("dcd_collision_tag",inds[i]) = 1;
 
-                    // printf("detect imminent PT proxy : PT[%d %d] V[%d %d %d %d] BARY : [%f %f %f]\n",
-                    //     vi,ti,
-                    //     inds[0],inds[1],inds[2],inds[3],
-                    //     (float)tri_bary[0],(float)tri_bary[1],(float)tri_bary[2]);
-
-                    // printf("find PT pairs : V_%d T_%d {%d %d %d} \n",vi,ti,tri[0],tri[1],tri[2]);
                     proximity_buffer.tuple(dim_c<4>,"inds",id + buffer_offset) = inds.reinterpret_bits(float_c);
                     proximity_buffer.tuple(dim_c<4>,"bary",id + buffer_offset) = bary;
                     proximity_buffer("type",id + buffer_offset) = zs::reinterpret_bits<float>((int)0);
@@ -1307,9 +1300,9 @@ void calc_continous_self_PT_collision_impulse(Pol& pol,
                     return;
                 
                 auto impulse = -collision_nrm * rv_nrm * ((T)1 - alpha);
-                if(output_debug_inform) {
-                    printf("find PT collision pairs[%d %d] with ccd : %f impulse : %f %f %f\n",ti,vi,(float)alpha,(float)impulse[0],(float)impulse[1],(float)impulse[2]);
-                }
+                // if(output_debug_inform) {
+                //     printf("find PT collision pairs[%d %d] with ccd : %f impulse : %f %f %f\n",ti,vi,(float)alpha,(float)impulse[0],(float)impulse[1],(float)impulse[2]);
+                // }
 
                 for(int i = 0;i != 4;++i) {
                     // if(invMass("minv",inds[i]) < eps)
@@ -1322,9 +1315,9 @@ void calc_continous_self_PT_collision_impulse(Pol& pol,
 
         });
 
-        std::cout << "finish computing continouse PT impulse" << std::endl;
+        // std::cout << "finish computing continouse PT impulse" << std::endl;
 
-        std::cout << "finish continous PT detection" << std::endl;
+        // std::cout << "finish continous PT detection" << std::endl;
 }
 
 
@@ -1841,6 +1834,7 @@ void calc_continous_self_PT_collision_impulse_with_toc(Pol& pol,
     const PosTileVec& verts,const zs::SmallString& xtag,const zs::SmallString& vtag,
     const TrisTileVec& tris,
     const T& thickness,
+    const T& igore_rest_shape_thickness,
     TriBvh& triCCDBvh,
     bool refit_bvh,
     PTHashMap& csPT,
@@ -1864,9 +1858,9 @@ void calc_continous_self_PT_collision_impulse_with_toc(Pol& pol,
 
         auto execTag = wrapv<space>{};
 
-        std::cout << "do continous PT collilsion detection" << std::endl;
+        // std::cout << "do continous PT collilsion detection" << std::endl;
 
-        std::cout << "build continous PT spacial structure" << std::endl;
+        // std::cout << "build continous PT spacial structure" << std::endl;
 
 
         auto bvs = retrieve_bounding_volumes(pol,verts,tris,verts,wrapv<3>{},(T)1.0,(T)thickness,xtag,vtag);
@@ -1896,6 +1890,7 @@ void calc_continous_self_PT_collision_impulse_with_toc(Pol& pol,
             tris = proxy<space>({},tris),
             // csPT = proxy<space>(csPT),
             thickness = thickness,
+            igore_rest_shape_thickness = igore_rest_shape_thickness,
             tocs = proxy<space>(tocs),
             output_debug_inform = output_debug_inform,
             impulse_buffer = proxy<space>(impulse_buffer),
@@ -1940,7 +1935,7 @@ void calc_continous_self_PT_collision_impulse_with_toc(Pol& pol,
                         if(use_collision_group) 
                             is_same_collision_group = zs::abs(verts("collision_group",vi) - verts("collision_group",tri[0])) < 0.1;
                     
-                        if(LSL_GEO::get_vertex_triangle_distance(rts[0],rts[1],rts[2],rp) < thickness && is_same_collision_group)
+                        if(LSL_GEO::get_vertex_triangle_distance(rts[0],rts[1],rts[2],rp) < igore_rest_shape_thickness && is_same_collision_group)
                             return; 
                     }
 
@@ -1970,8 +1965,8 @@ void calc_continous_self_PT_collision_impulse_with_toc(Pol& pol,
                 }            
         });
 
-        std::cout << "nm close PT proxy : " << csPT.size() << std::endl;
-        std::cout << "compute continouse PT proxy impulse" << std::endl;
+        // std::cout << "nm close PT proxy : " << csPT.size() << std::endl;
+        // std::cout << "compute continouse PT proxy impulse" << std::endl;
         pol(zip(zs::range(csPT.size()),csPT._activeKeys),[
             invMass = proxy<space>({},invMass),
             mass = proxy<space>({},mass),
@@ -2055,23 +2050,23 @@ void calc_continous_self_PT_collision_impulse_with_toc(Pol& pol,
                     return;
                 
                 auto impulse = -collision_nrm * rv_nrm * ((T)1 - alpha);
-                if(output_debug_inform) {
-                    printf("find PT collision pairs[%d %d] with ccd : %f impulse : %f %f %f\n",ti,vi,(float)alpha,(float)impulse[0],(float)impulse[1],(float)impulse[2]);
-                }
+                // if(output_debug_inform) {
+                //     printf("find PT collision pairs[%d %d] with ccd : %f impulse : %f %f %f\n",ti,vi,(float)alpha,(float)impulse[0],(float)impulse[1],(float)impulse[2]);
+                // }
 
                 for(int i = 0;i != 4;++i) {
                     if(invMass("minv",inds[i]) < eps)
                         continue;
                     auto beta = (bary[i] * invMass("minv",inds[i])) / cm;
 
-                    if((impulse * beta).norm() > 5 && output_debug_inform) {
-                        printf("large CCD-PT-impulse detected %f : %f %f %f nrm :  %f\n",
-                            (float)beta,
-                            (float)impulse[0],
-                            (float)impulse[1],
-                            (float)impulse[2],
-                            (float)collision_nrm.norm());
-                    }
+                    // if((impulse * beta).norm() > 5 && output_debug_inform) {
+                    //     printf("large CCD-PT-impulse detected %f : %f %f %f nrm :  %f\n",
+                    //         (float)beta,
+                    //         (float)impulse[0],
+                    //         (float)impulse[1],
+                    //         (float)impulse[2],
+                    //         (float)collision_nrm.norm());
+                    // }
 
                     atomic_add(execTag,&impulse_count[inds[i]],1);
                     for(int d = 0;d != 3;++d)
@@ -2079,8 +2074,8 @@ void calc_continous_self_PT_collision_impulse_with_toc(Pol& pol,
                 }
 
         });
-        std::cout << "finish computing continouse PT impulse" << std::endl;
-        std::cout << "finish continous PT detection" << std::endl;
+        // std::cout << "finish computing continouse PT impulse" << std::endl;
+        // std::cout << "finish continous PT detection" << std::endl;
 }
 
 
@@ -2347,16 +2342,16 @@ void calc_continous_self_EE_collision_impulse(Pol& pol,
                     //     continue;
                     auto beta = (bary[i] * invMass("minv",inds[i])) / cm;
 
-                    if((impulse * beta).norm() > 10 && output_debug_inform) {
-                        printf("large CCD-EE-impulse detected %f : %f %f %f : %f %f : alpha : %f\n",
-                            (float)beta,
-                            (float)impulse[0],
-                            (float)impulse[1],
-                            (float)impulse[2],
-                            (float)rv_nrm,
-                            (float)collision_nrm.norm(),
-                            (float)alpha);
-                    }
+                    // if((impulse * beta).norm() > 10 && output_debug_inform) {
+                    //     printf("large CCD-EE-impulse detected %f : %f %f %f : %f %f : alpha : %f\n",
+                    //         (float)beta,
+                    //         (float)impulse[0],
+                    //         (float)impulse[1],
+                    //         (float)impulse[2],
+                    //         (float)rv_nrm,
+                    //         (float)collision_nrm.norm(),
+                    //         (float)alpha);
+                    // }
 
                     atomic_add(execTag,&impulse_count[inds[i]],1);
                     for(int d = 0;d != 3;++d)
@@ -2366,7 +2361,7 @@ void calc_continous_self_EE_collision_impulse(Pol& pol,
                 // bvh.iter_neighbors(bv,do_close_proximity_detection);
         });
 
-        std::cout << "finish computing continous EE proxy impulse" << std::endl;
+        // std::cout << "finish computing continous EE proxy impulse" << std::endl;
 }
 
 
@@ -2601,6 +2596,7 @@ void calc_continous_self_EE_collision_impulse_with_toc(Pol& pol,
     const PosTileVec& verts,const zs::SmallString& xtag,const zs::SmallString& vtag,
     const EdgeTileVec& edges,
     const T& thickness,
+    const T& ignore_rest_shape_thickness,
     const size_t& start_edge_id,
     const size_t& end_edge_id,
     EdgeBvh& edgeCCDBvh,
@@ -2623,7 +2619,7 @@ void calc_continous_self_EE_collision_impulse_with_toc(Pol& pol,
         constexpr auto eps = (T)1e-6;
 
         // auto edgeCCDBvh = bvh_t{};
-        std::cout << "build continous EE structure" << std::endl;
+        // std::cout << "build continous EE structure" << std::endl;
 
 
         // ALLOCATION BOTTLENECK 1
@@ -2633,7 +2629,7 @@ void calc_continous_self_EE_collision_impulse_with_toc(Pol& pol,
         else
             edgeCCDBvh.build(pol,edgeBvs);
 
-        std::cout << "do continous EE collilsion detection" << std::endl;
+        // std::cout << "do continous EE collilsion detection" << std::endl;
 
 
         auto nm_test_edges = end_edge_id - start_edge_id;
@@ -2665,6 +2661,7 @@ void calc_continous_self_EE_collision_impulse_with_toc(Pol& pol,
             thickness = thickness,
             output_debug_inform = output_debug_inform,
             eps = eps,
+            ignore_rest_shape_thickness = ignore_rest_shape_thickness,
             csEE = proxy<space>(csEE),
             execTag = execTag,
             edgeBvs = proxy<space>(edgeBvs),
@@ -2724,7 +2721,7 @@ void calc_continous_self_EE_collision_impulse_with_toc(Pol& pol,
                         if(use_collision_group) 
                             is_same_collision_group = zs::abs(verts("collision_group",ea[0]) - verts("collision_group",eb[0])) < 0.1;
 
-                        if(LSL_GEO::get_edge_edge_distance(rpas[0],rpas[1],rpbs[0],rpbs[1]) < thickness && is_same_collision_group)
+                        if(LSL_GEO::get_edge_edge_distance(rpas[0],rpas[1],rpbs[0],rpbs[1]) < ignore_rest_shape_thickness && is_same_collision_group)
                             return;
                     }
 
@@ -2753,8 +2750,8 @@ void calc_continous_self_EE_collision_impulse_with_toc(Pol& pol,
                 }
         });
 
-        std::cout << "nm close EE proxy : " << csEE.size() << std::endl;
-        std::cout << "compute continous EE proxy impulse" << std::endl;
+        // std::cout << "nm close EE proxy : " << csEE.size() << std::endl;
+        // std::cout << "compute continous EE proxy impulse" << std::endl;
 
         pol(zip(zs::range(csEE.size()),csEE._activeKeys),[
             xtag = xtag,
@@ -2857,7 +2854,7 @@ void calc_continous_self_EE_collision_impulse_with_toc(Pol& pol,
                 // bvh.iter_neighbors(bv,do_close_proximity_detection);
         });
 
-        std::cout << "finish computing continous EE proxy impulse" << std::endl;
+        // std::cout << "finish computing continous EE proxy impulse" << std::endl;
 }
 
 
@@ -3153,7 +3150,7 @@ inline void do_tetrahedra_surface_tris_and_points_self_collision_detection(Pol& 
         //         else
         //             surf_verts_buffer("mustExclude",pi) = (T)0.0;
         // });
-        auto ring_mask_width = do_global_self_intersection_analysis(pol,
+        auto ring_mask_width = GIA::do_global_self_intersection_analysis(pol,
             surf_verts_buffer,pos_attr_tag,surf_tris_buffer,surf_halfedge,
             gia_res,tris_gia_res);
         std::cout << "ring_mask_width of GIA : " << ring_mask_width << std::endl;

@@ -6,6 +6,8 @@
 #include <zenomodel/include/enum.h>
 #include <zenomodel/include/nodesmgr.h>
 #include <zenomodel/include/uihelper.h>
+#include <zenomodel/include/command.h>
+#include "variantptr.h"
 
 static QVariant parseValue(PyObject* v, const QString& type)
 {
@@ -165,11 +167,12 @@ Graph_createNode(ZSubGraphObject* self, PyObject* arg, PyObject* kw)
         PyErr_WriteUnraisable(Py_None);
         return Py_None;
     }
-    if (PyDict_Check(kw))
+    if (kw && PyDict_Check(kw))
     {
         PyObject* key, * value;
         Py_ssize_t pos = 0;
         INPUT_SOCKETS inputs = nodeIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+        PARAMS_INFO params = nodeIdx.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
         while (PyDict_Next(kw, &pos, &key, &value))
         {
             char* cKey = nullptr;
@@ -223,6 +226,18 @@ Graph_createNode(ZSubGraphObject* self, PyObject* arg, PyObject* kw)
                 info.newValue = val;
                 info.oldValue = socket.info.defaultValue;
                 pModel->updateSocketDefl(socket.info.nodeid, info, self->subgIdx);
+            }
+            else if (params.contains(strKey))
+            {
+                PARAM_INFO param = params[strKey];
+                QVariant val = parseValue(value, param.typeDesc);
+                if (!val.isValid())
+                    continue;
+                PARAM_UPDATE_INFO info;
+                info.name = strKey;
+                info.newValue = val;
+                info.oldValue = param.defaultValue;
+                pModel->updateParamInfo(nodeIdx.data(ROLE_OBJID).toString(), info, self->subgIdx);
             }
         }
     }
@@ -317,10 +332,77 @@ Graph_addLink(ZSubGraphObject* self, PyObject* arg)
         PyErr_WriteUnraisable(Py_None);
         return Py_None;
     }
-    EdgeInfo edge;
-    edge.inSockPath = UiHelper::constructObjPath(graphName, inNode, "[node]/inputs/", inSock);
-    edge.outSockPath = UiHelper::constructObjPath(graphName, outNode, "[node]/outputs/", outSock);
-    pModel->addLink(self->subgIdx, edge);
+    QString inSockPath = UiHelper::constructObjPath(graphName, inNode, "[node]/inputs/", inSock);
+    QModelIndex inSockeIdx =  pModel->indexFromPath(inSockPath);
+    QString outSockPath = UiHelper::constructObjPath(graphName, outNode, "[node]/outputs/", outSock);
+    QModelIndex outSockeIdx = pModel->indexFromPath(outSockPath);
+    //dict panel.
+    SOCKET_PROPERTY inProp = (SOCKET_PROPERTY)inSockeIdx.data(ROLE_PARAM_SOCKPROP).toInt();
+    if (inProp & SOCKPROP_DICTLIST_PANEL)
+    {
+        QString inSockType = inSockeIdx.data(ROLE_PARAM_TYPE).toString();
+        SOCKET_PROPERTY outProp = (SOCKET_PROPERTY)outSockeIdx.data(ROLE_PARAM_SOCKPROP).toInt();
+        QString outSockType = outSockeIdx.data(ROLE_PARAM_TYPE).toString();
+        QAbstractItemModel* pKeyObjModel =
+            QVariantPtr<QAbstractItemModel>::asPtr(inSockeIdx.data(ROLE_VPARAM_LINK_MODEL));
+
+        bool outSockIsContainer = false;
+        if (inSockType == "list")
+        {
+            outSockIsContainer = outSockType == "list";
+        }
+        else if (inSockType == "dict")
+        {
+            const QModelIndex& fromNodeIdx = outSockeIdx.data(ROLE_NODE_IDX).toModelIndex();
+            const QString& outNodeCls = fromNodeIdx.data(ROLE_OBJNAME).toString();
+            const QString& outSockName = outSockeIdx.data(ROLE_PARAM_NAME).toString();
+            outSockIsContainer = outSockType == "dict" || (outNodeCls == "FuncBegin" && outSockName == "args");
+        }
+
+        //if outSock is a container, connects it as usual.
+        if (outSockIsContainer)
+        {
+            //legacy dict/list connection, and then we have to remove all inner dict key connection.
+            ZASSERT_EXIT(pKeyObjModel, Py_None);
+            for (int r = 0; r < pKeyObjModel->rowCount(); r++)
+            {
+                const QModelIndex& keyIdx = pKeyObjModel->index(r, 0);
+                PARAM_LINKS links = keyIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+                for (QPersistentModelIndex _linkIdx : links)
+                {
+                    pModel->removeLink(_linkIdx, true);
+                }
+            }
+        }
+        else
+        {
+            //check multiple links
+            QModelIndexList fromSockets;
+            //check selected nodes.
+            //model: ViewParamModel
+            QString paramName = outSockeIdx.data(ROLE_PARAM_NAME).toString();
+            QString paramType = outSockeIdx.data(ROLE_PARAM_TYPE).toString();
+            QString toSockName = inSockeIdx.data(ROLE_OBJPATH).toString();
+
+            // link to inner dict key automatically.
+            int n = pKeyObjModel->rowCount();
+            pModel->addExecuteCommand(
+                new DictKeyAddRemCommand(true, pModel, inSockeIdx.data(ROLE_OBJPATH).toString(), n));
+            inSockeIdx = pKeyObjModel->index(n, 0);
+        }
+    }
+
+    //remove the edge in inNode:inSock, if exists.
+    if (inProp != SOCKPROP_MULTILINK)
+    {
+        QPersistentModelIndex linkIdx;
+        const PARAM_LINKS& links = inSockeIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+        if (!links.isEmpty())
+            linkIdx = links[0];
+        if (linkIdx.isValid())
+            pModel->removeLink(linkIdx, true);
+    }
+    pModel->addLink(self->subgIdx, outSockeIdx, inSockeIdx);
     return Py_None;
 }
 

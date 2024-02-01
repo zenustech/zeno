@@ -865,7 +865,7 @@ QModelIndex GraphsModel::fork(const QModelIndex& subgIdx, const QModelIndex &sub
 QModelIndex GraphsModel::forkMaterial(const QModelIndex& currSubgIdx, const QModelIndex& subnetNodeIdx, const QString& subgName, const QString& mtlid, const QString& mtlid_old)
 {
     if (subGraph(subgName))
-        return QModelIndex();
+        removeSubGraph(subgName);
     if (!subnetNodeIdx.isValid())
         return QModelIndex();
     QModelIndex index = fork(currSubgIdx, subnetNodeIdx);
