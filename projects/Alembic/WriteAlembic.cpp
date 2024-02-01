@@ -467,7 +467,7 @@ struct WriteAlembic2 : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         bool flipFrontBack = get_input2<int>("flipFrontBack");
-        float fps = has_input("fps")? get_input2<float>("fps") : 24.0f;
+        float fps = get_input2<float>("fps");
         int frameid;
         if (has_input("frameid")) {
             frameid = get_input2<int>("frameid");
@@ -677,7 +677,7 @@ ZENDEFNODE(WriteAlembic2, {
         {"writepath", "path", ""},
         {"int", "frame_start", "0"},
         {"int", "frame_end", "100"},
-        {"fps"},
+        {"float", "fps", "25"},
         {"bool", "flipFrontBack", "1"},
     },
     {
@@ -700,7 +700,7 @@ struct WriteAlembicPrims : INode {
     virtual void apply() override {
         auto prims = get_input<ListObject>("prims")->get<PrimitiveObject>();
         bool flipFrontBack = get_input2<int>("flipFrontBack");
-        float fps = has_input("fps")? get_input2<float>("fps") : 24.0f;
+        float fps = get_input2<float>("fps");
         int frameid;
         if (has_input("frameid")) {
             frameid = get_input2<int>("frameid");
@@ -924,7 +924,7 @@ ZENDEFNODE(WriteAlembicPrims, {
         {"writepath", "path", ""},
         {"int", "frame_start", "0"},
         {"int", "frame_end", "100"},
-        {"fps"},
+        {"float", "fps", "25"},
         {"bool", "flipFrontBack", "1"},
     },
     {
