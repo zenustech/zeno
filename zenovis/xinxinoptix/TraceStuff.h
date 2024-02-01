@@ -109,6 +109,7 @@ struct RadiancePRD
     bool         fromDiff;
     unsigned char adepth;
     bool         alphaHit;
+    int          matIndex;
 
     uint16_t lightmask = EverythingMask;
 
