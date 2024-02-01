@@ -70,7 +70,7 @@ namespace zenoui
         zeno::ParamType type,
         CallbackCollection cbSet,
         QGraphicsScene* scene,
-        const QVariant& controlProps
+        const zeno::ControlProperty& controlProps
     )
     {
         ZtfUtil& inst = ZtfUtil::GetInstance();
@@ -280,16 +280,8 @@ namespace zenoui
             {
                 //todo: legacy case compatible
                 QStringList items;
-                if (controlProps.type() == QMetaType::QVariantMap)
-                {
-                    QVariantMap props = controlProps.toMap();
-                    if (props.find("items") != props.end())
-                        items = props["items"].toStringList();
-                }
-                else if (controlProps.type() == QVariant::StringList)
-                {
-                    items = controlProps.toStringList();
-                }
+                for (auto item : controlProps.items.value())
+                    items.push_back(QString::fromStdString(item));
 
                 ZenoParamComboBox* pComboBox = new ZenoParamComboBox(items, m_nodeParams.comboboxParam);
                 pComboBox->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(100, zenoui::g_ctrlHeight)));
@@ -333,14 +325,13 @@ namespace zenoui
             case zeno::Slider:
             {
                 SLIDER_INFO sliderInfo;
-                if (controlProps.type() == QMetaType::QVariantMap) {
-                    QVariantMap props = controlProps.toMap();
-                    if (props.contains("min") && props.contains("max") && props.contains("step")) {
-                        sliderInfo.min = props["min"].toInt();
-                        sliderInfo.max = props["max"].toInt();
-                        sliderInfo.step = props["step"].toInt();
-                    }
+                const auto& ranges = controlProps.ranges.value();
+                if (controlProps.ranges.has_value() && ranges.size() == 3) {
+                    sliderInfo.min = ranges[0];
+                    sliderInfo.max = ranges[1];
+                    sliderInfo.step = ranges[2];
                 }
+
                 ZenoParamSlider *pSlider = new ZenoParamSlider(Qt::Horizontal, value.toInt(), sliderInfo);
                 pSlider->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, zenoui::g_ctrlHeight)));
                 pSlider->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
@@ -353,14 +344,13 @@ namespace zenoui
             case zeno::SpinBox: 
             {
                 SLIDER_INFO sliderInfo;
-                if (controlProps.type() == QMetaType::QVariantMap) {
-                    QVariantMap props = controlProps.toMap();
-                    if (props.contains("min") && props.contains("max") && props.contains("step")) {
-                        sliderInfo.min = props["min"].toInt();
-                        sliderInfo.max = props["max"].toInt();
-                        sliderInfo.step = props["step"].toInt();
-                    }
+                const auto& ranges = controlProps.ranges.value();
+                if (controlProps.ranges.has_value() && ranges.size() == 3) {
+                    sliderInfo.min = ranges[0];
+                    sliderInfo.max = ranges[1];
+                    sliderInfo.step = ranges[2];
                 }
+
                 ZenoParamSpinBox *pSpinBox = new ZenoParamSpinBox(sliderInfo);
                 pSpinBox->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(100, zenoui::g_ctrlHeight)));
                 pSpinBox->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
@@ -374,14 +364,13 @@ namespace zenoui
             case zeno::SpinBoxSlider:
             {
                 SLIDER_INFO sliderInfo;
-                if (controlProps.type() == QMetaType::QVariantMap) {
-                    QVariantMap props = controlProps.toMap();
-                    if (props.contains("min") && props.contains("max") && props.contains("step")) {
-                        sliderInfo.min = props["min"].toInt();
-                        sliderInfo.max = props["max"].toInt();
-                        sliderInfo.step = props["step"].toInt();
-                    }
+                const auto& ranges = controlProps.ranges.value();
+                if (controlProps.ranges.has_value() && ranges.size() == 3) {
+                    sliderInfo.min = ranges[0];
+                    sliderInfo.max = ranges[1];
+                    sliderInfo.step = ranges[2];
                 }
+
                 ZenoParamSpinBoxSlider *pSlider = new ZenoParamSpinBoxSlider(Qt::Horizontal, value.toInt(), sliderInfo);
                 pSlider->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, zenoui::g_ctrlHeight)));
                 pSlider->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));

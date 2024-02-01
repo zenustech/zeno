@@ -1,6 +1,7 @@
 #pragma once
 
 #include <zeno/utils/api.h>
+#include <zeno/core/data.h>
 #include <string>
 #include <vector>
 
@@ -16,9 +17,10 @@ struct ParamDescriptor {
 
 struct SocketDescriptor {
   std::string type, name, defl, doc;
+  ParamControl control;
 
   ZENO_API SocketDescriptor(std::string const &type,
-	  std::string const &name, std::string const &defl = {}, std::string const &doc = {});
+      std::string const &name, std::string const &defl = {}, ParamControl ctrl = NullControl, std::string const &doc = {});
   ZENO_API ~SocketDescriptor();
 
   //[[deprecated("use {\"sockType\", \"sockName\"} instead of \"sockName\"")]]

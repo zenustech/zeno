@@ -47,6 +47,20 @@ struct ImplNodeClass : INodeClass {
             sparam->m_wpNode = spNode;
             sparam->type = zeno::convertToType(param_desc.type);
             sparam->defl = zeno::str2var(param_desc.defl, sparam->type);
+            if (param_desc.control != NullControl)
+                sparam->control = param_desc.control;
+            if (starts_with(param_desc.type, "enum ")) {
+                //compatible with old case of combobox items.
+                sparam->type = Param_String;
+                sparam->control = Combobox;
+                std::vector<std::string> items = split_str(param_desc.type, ' ');
+                if (!items.empty()) {
+                    items.erase(items.begin());
+                    ControlProperty props = ControlProperty();
+                    props.items = items;
+                    sparam->optCtrlprops = props;
+                }
+            }
             spNode->add_input_param(sparam);
         }
 
@@ -139,12 +153,12 @@ ZENO_API std::string Session::dumpDescriptors() const {
         Descriptor &desc = *cls->desc;
 
         strs.clear();
-        for (auto const &[type, name, defl, _] : desc.inputs) {
+        for (auto const &[type, name, defl, _, __] : desc.inputs) {
             strs.push_back(type + "@" + (name) + "@" + defl);
         }
         res += "{" + join_str(strs, "%") + "}";
         strs.clear();
-        for (auto const &[type, name, defl, _] : desc.outputs) {
+        for (auto const &[type, name, defl, _, __] : desc.outputs) {
             strs.push_back(type + "@" + (name) + "@" + defl);
         }
         res += "{" + join_str(strs, "%") + "}";

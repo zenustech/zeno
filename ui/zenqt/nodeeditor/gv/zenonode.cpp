@@ -730,7 +730,7 @@ QGraphicsItem* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const QModel
     };
 
     const QVariant& deflVal = paramIdx.data(ROLE_PARAM_VALUE);
-    const QVariant& ctrlProps = paramIdx.data(ROLE_PARAM_CTRL_PROPERTIES);
+    zeno::ControlProperty ctrlProps = paramIdx.data(ROLE_PARAM_CTRL_PROPERTIES).value<zeno::ControlProperty>();
 
     auto cbGetIndexData = [=]() -> QVariant { 
         return perIdx.data(ROLE_PARAM_VALUE);

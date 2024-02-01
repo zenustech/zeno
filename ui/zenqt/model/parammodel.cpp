@@ -40,6 +40,7 @@ void ParamsModel::initParamItems()
         item.control = spParam->control;
         if (item.control == zeno::NullControl)
             item.control = UiHelper::getDefaultControl(spParam->type);
+        item.optCtrlprops = spParam->optCtrlprops;
         item.m_wpParam = spParam;
         item.name = QString::fromStdString(spParam->name);
         item.type = spParam->type;
@@ -77,8 +78,10 @@ QVariant ParamsModel::data(const QModelIndex& index, int role) const
         break;
     }
     case ROLE_PARAM_CTRL_PROPERTIES: {
-        //TODO: control property
-        break;
+        if (param.optCtrlprops.has_value())
+            return QVariant::fromValue(param.optCtrlprops.value());
+        else
+            return QVariant();
     }
     case ROLE_PARAM_INFO: {
         zeno::ParamInfo info;

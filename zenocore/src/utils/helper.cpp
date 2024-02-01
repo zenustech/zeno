@@ -18,6 +18,7 @@ namespace zeno {
         else if (type == "prim") { return Param_Prim; }
         else if (type == "list") { return Param_List; }
         else if (type == "dict") { return Param_Dict; }
+        else if (type == "colorvec3f") { return Param_Vec3f; }
         else return Param_Null;
     }
 

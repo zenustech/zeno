@@ -229,6 +229,8 @@ Q_DECLARE_METATYPE(zeno::ParamInfo)
 
 Q_DECLARE_METATYPE(zeno::EdgeInfo)
 
+Q_DECLARE_METATYPE(zeno::ControlProperty)
+
 typedef QList<QPersistentModelIndex> PARAM_LINKS;
 Q_DECLARE_METATYPE(PARAM_LINKS)
 

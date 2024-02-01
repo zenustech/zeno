@@ -3,8 +3,8 @@
 namespace zeno {
 
 SocketDescriptor::SocketDescriptor(std::string const &type,
-	  std::string const &name, std::string const &defl, std::string const &doc)
-      : type(type), name(name), defl(defl), doc(doc) {}
+	  std::string const &name, std::string const &defl, ParamControl ctrl, std::string const &doc)
+      : type(type), name(name), defl(defl), doc(doc), control(ctrl) {}
 SocketDescriptor::~SocketDescriptor() = default;
 
 

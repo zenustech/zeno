@@ -13,7 +13,7 @@ namespace zenoui
         zeno::ParamType type,
         CallbackCollection cbSet,
         QGraphicsScene* scene,
-        const QVariant& controlProps
+        const zeno::ControlProperty& controlProps
     );
     extern const qreal g_ctrlHeight;
 }

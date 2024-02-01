@@ -64,7 +64,7 @@ public:
     ZENO_API zany resolveInput(std::string const& id);
 
     //BEGIN new api
-    ZENO_API virtual void init(const NodeData& dat);
+    ZENO_API void init(const NodeData& dat);
     ZENO_API void set_input_defl(std::string const& name, zvariant defl);
     ZENO_API zvariant get_input_defl(std::string const& name);
     ZENO_API std::string get_nodecls() const;
@@ -111,6 +111,7 @@ protected:
     ZENO_API std::vector<std::pair<std::string, zany>> getinputs();
     ZENO_API std::vector<std::pair<std::string, zany>> getoutputs2();
     ZENO_API std::pair<std::string, std::string> getinputbound(std::string const& name, std::string const& msg = "") const;
+    ZENO_API virtual void initParams(const NodeData& dat);
 
 private:
     zany process(std::shared_ptr<IParam> in_param);

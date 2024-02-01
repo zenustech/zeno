@@ -726,7 +726,6 @@ void GraphModel::removeParam(QModelIndex nodeIdx, int row)
     item->params->removeRow(row);
 }
 
-
 ParamsModel* GraphModel::params(QModelIndex nodeIdx)
 {
     NodeItem* item = m_nodes[m_row2name[nodeIdx.row()]];

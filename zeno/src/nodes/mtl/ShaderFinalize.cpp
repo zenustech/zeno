@@ -285,19 +285,19 @@ struct ShaderFinalize : INode {
 ZENDEFNODE(ShaderFinalize, {
     {
         {"float", "base", "1"},
-        {"colorvec3f", "basecolor", "1,1,1"},
+        {"colorvec3f", "basecolor", "1,1,1", ColorVec},
         {"float", "roughness", "0.4"},
         {"float", "metallic", "0.0"},
-        {"colorvec3f", "metalColor","1.0,1.0,1.0"},
+        {"colorvec3f", "metalColor","1.0,1.0,1.0", ColorVec},
         {"float", "specular", "1.0"},
         {"float", "specularTint", "0.0"},
         {"float", "anisotropic", "0.0"},
         {"float", "anisoRotation", "0.0"},
 
         {"float", "subsurface", "0.0"},
-        {"enum Fixed Adaptive", "sssRadius", "Fixed"},
+        {"enum Fixed Adaptive", "sssRadius", "Fixed", Combobox},
         {"vec3f", "sssParam", "1.0,1.0,1.0"},
-        {"colorvec3f", "sssColor", "1.0,1.0,1.0"},
+        {"colorvec3f", "sssColor", "1.0,1.0,1.0", ColorVec},
         {"float", "scatterDistance", "10000"},
         {"float", "scatterStep", "0"},
 
@@ -336,7 +336,7 @@ ZENDEFNODE(ShaderFinalize, {
         {"list", "tex2dList"},//TODO: bate's asset manager
         {"list", "tex3dList"},
 
-        {"enum Raw Density Absorption", "VolumeEmissionScaler", "Raw"},
+        {"enum Raw Density Absorption", "VolumeEmissionScaler", "Raw", Combobox},
 
         {"float", "vol_depth",    "999"},
         {"float", "vol_extinction", "1"},

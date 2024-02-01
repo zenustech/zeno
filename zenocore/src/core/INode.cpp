@@ -436,46 +436,42 @@ std::vector<std::pair<std::string, zany>> INode::getoutputs2()
 
 ZENO_API void INode::init(const NodeData& dat)
 {
-    if (dat.name.empty())
+    if (!dat.name.empty())
         m_name = dat.name;
+
+    m_pos = dat.uipos;
+    m_status = dat.status;
+    initParams(dat);
+}
+
+ZENO_API void INode::initParams(const NodeData& dat)
+{
     for (const ParamInfo& param : dat.inputs)
     {
         std::shared_ptr<IParam> sparam = get_input_param(param.name);
         if (!sparam) {
-            if (m_nodecls == "DeprecatedNode") {
-                sparam = std::make_shared<IParam>();
-                sparam->name = param.name;
-                sparam->isLegacy = true;
-                add_input_param(sparam);
-            }
-            else {
-                zeno::log_warn("input param `{}` is not registerd in current zeno version");
-                continue;
-            }
+            zeno::log_warn("input param `{}` is not registerd in current zeno version");
+            continue;
         }
         sparam->defl = param.defl;
         sparam->name = param.name;
         sparam->type = param.type;
+        sparam->control = param.control;
+        sparam->optCtrlprops = param.ctrlProps;
         sparam->m_wpNode = shared_from_this();
     }
     for (const ParamInfo& param : dat.outputs)
     {
         std::shared_ptr<IParam> sparam = get_output_param(param.name);
         if (!sparam) {
-            if (m_nodecls == "DeprecatedNode") {
-                sparam = std::make_shared<IParam>();
-                sparam->name = param.name;
-                sparam->isLegacy = true;
-                add_output_param(sparam);
-            }
-            else {
-                zeno::log_warn("output param `{}` is not registerd in current zeno version");
-                continue;
-            }
+            zeno::log_warn("output param `{}` is not registerd in current zeno version");
+            continue;
         }
         sparam->defl = param.defl;
         sparam->name = param.name;
         sparam->type = param.type;
+        sparam->control = param.control;
+        sparam->optCtrlprops = param.ctrlProps;
         sparam->m_wpNode = shared_from_this();
     }
 }

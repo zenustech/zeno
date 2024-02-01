@@ -21,6 +21,7 @@ struct ParamItem
 
     bool bInput = true;
     zeno::ParamControl control = zeno::NullControl;
+    std::optional<zeno::ControlProperty> optCtrlprops;
     QList<QPersistentModelIndex> links;
 };
 
