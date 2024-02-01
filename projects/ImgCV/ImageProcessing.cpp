@@ -1696,7 +1696,7 @@ struct ImageQuantization: INode {
                 + (zeno::clamp(int(imagepos[i][1] * 255.99), 0, 255) / 4)) * 64
                 + (zeno::clamp(int(imagepos[i][2] * 255.99), 0, 255) / 4);
 
-                local_labs[index] += RGBtoLab(imagepos[i]);;
+                local_labs[index] += RGBtoLab(imagepos[i]);
                 local_weights[index]++;
             }
 
