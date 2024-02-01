@@ -71,7 +71,7 @@ void ZenoCommandParamsPanel::initConnection()
     connect(zenoApp->graphsManagment(), &GraphsManagment::modelInited, this, &ZenoCommandParamsPanel::onModelInited);
 }
 
-void ZenoCommandParamsPanel::appendRow(const QString& path, const CommandParam& val)
+void ZenoCommandParamsPanel::appendRow(const QStringList& path, const CommandParam& val)
 {
     auto graphsMgm = zenoApp->graphsManagment();
     ZASSERT_EXIT(graphsMgm);
@@ -80,7 +80,7 @@ void ZenoCommandParamsPanel::appendRow(const QString& path, const CommandParam& 
     const QModelIndex& index = pModel->indexFromPath(path);
     if (!index.isValid())
     {
-        pModel->removeCommandParam(path);
+        pModel->removeCommandParam(path.join(cPathSeperator));
         return;
     }
     const QString& paramName = index.data(ROLE_VPARAM_NAME).toString();
@@ -99,7 +99,7 @@ void ZenoCommandParamsPanel::appendRow(const QString& path, const CommandParam& 
     pDescItem->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     m_pTableWidget->setItem(row, 1, pDescItem);
 
-    QTableWidgetItem* pLinkItem = new QTableWidgetItem(path);
+    QTableWidgetItem* pLinkItem = new QTableWidgetItem(path.join(cPathSeperator));
     pLinkItem->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     pLinkItem->setFlags(pLinkItem->flags() & ~Qt::ItemIsEditable);
     m_pTableWidget->setItem(row, 2, pLinkItem);
@@ -114,7 +114,7 @@ void ZenoCommandParamsPanel::initTableWidget()
     const FuckQMap<QString, CommandParam>& params = pModel->commandParams();
     for (const auto& path : params.keys())
     {
-        appendRow(path, params[path]);
+        appendRow(params[path].paramPath, params[path]);
     }
 }
 
@@ -168,7 +168,7 @@ void ZenoCommandParamsPanel::onItemClicked(QTableWidgetItem* item)
     ZASSERT_EXIT(graphsMgm);
     IGraphsModel* pModel = graphsMgm->currentModel();
     ZASSERT_EXIT(pModel);
-    const QString& ident = UiHelper::getSockNode(path);
+    const QString& ident = UiHelper::getSockNode(pModel->commandParams()[path].paramPath);
     QModelIndex idx = pModel->nodeIndex(ident);
     if (idx.isValid())
     {
@@ -230,7 +230,7 @@ void ZenoCommandParamsPanel::onUpdateCommandParams(const QString& path)
         }
     }
     //add
-    appendRow(path, params[path]);
+    appendRow(params[path].paramPath, params[path]);
 }
 
 void ZenoCommandParamsPanel::onModelClear()

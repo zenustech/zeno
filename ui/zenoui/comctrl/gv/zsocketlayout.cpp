@@ -29,7 +29,7 @@ ZSocketLayout::ZSocketLayout(
     QObject::connect(pModel, &IGraphsModel::updateCommandParamSignal, [=](const QString& path) {
         if (!m_text)
             return;
-        QString socketPath = m_viewSockIdx.data(ROLE_OBJPATH).toString();
+        QString socketPath = m_viewSockIdx.data(ROLE_OBJPATH).value<QStringList>().join(cPathSeperator);
         if (socketPath != path)
             return;
         m_text->update();

@@ -61,7 +61,7 @@ public:
             int r = m_sockKeyIdx.row();
             if (r > 0) {
                 IGraphsModel* pGraphsModel = panel->graphsModel();
-                const QString& objPath = m_sockKeyIdx.data(ROLE_OBJPATH).toString();
+                const QStringList& objPath = m_sockKeyIdx.data(ROLE_OBJPATH).value<QStringList>();
                 pGraphsModel->addExecuteCommand(new ModelMoveCommand(pGraphsModel, objPath, r - 1));
             }
         });
@@ -75,7 +75,7 @@ public:
         QObject::connect(m_pRemoveBtn, &ZenoImageItem::clicked, [=]() {
             QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_sockKeyIdx.model());
             IGraphsModel* pGraphsModel = panel->graphsModel();
-            const QString& dictkeypath = panel->dictlistSocket().data(ROLE_OBJPATH).toString();
+            const QStringList& dictkeypath = panel->dictlistSocket().data(ROLE_OBJPATH).value<QStringList>();
             pGraphsModel->beginTransaction("remove dict socket");
             zeno::scope_exit sp([=]() { pGraphsModel->endTransaction(); });
             pGraphsModel->addExecuteCommand(new DictKeyAddRemCommand(false, pGraphsModel, dictkeypath, m_sockKeyIdx.row()));
@@ -84,7 +84,7 @@ public:
         Callback_EditFinished cbEditFinished = [=](QVariant newValue) {
             if (newValue == m_sockKeyIdx.data().toString())
                 return;
-            const QString& keyObj = m_sockKeyIdx.data(ROLE_OBJPATH).toString();
+            const QStringList& keyObj = m_sockKeyIdx.data(ROLE_OBJPATH).value<QStringList>();
             IGraphsModel* pGraphsModel = panel->graphsModel();
             pGraphsModel->addExecuteCommand(new RenameObjCommand(pGraphsModel, keyObj, newValue.toString()));
         };
@@ -228,7 +228,7 @@ void ZDictPanel::onEditBtnClicked()
     ZASSERT_EXIT(pKeyObjModel);
     int n = pKeyObjModel->rowCount();
     //pKeyObjModel->insertRow(n);
-    const QString& dictKeyPath = m_viewSockIdx.data(ROLE_OBJPATH).toString();
+    const QStringList& dictKeyPath = m_viewSockIdx.data(ROLE_OBJPATH).value<QStringList>();
     m_model->addExecuteCommand(new DictKeyAddRemCommand(true, m_model, dictKeyPath, n));
 }
 

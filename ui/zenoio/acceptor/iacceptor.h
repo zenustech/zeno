@@ -41,7 +41,7 @@ public:
         const QString& nodeCls,
         const QString& inNode,
         const QString& inSock,
-        const QString& outLinkPath,
+        const QStringList& outLinkPath,
         const QString& sockProperty,
         const rapidjson::Value& defaultValue,
         const NODE_DESCS& legacyDescs
@@ -59,7 +59,7 @@ public:
             const QString& ident,
             const QString& sockName,
             const QString& keyName,
-            const QString& link,
+            const QStringList& link,
             const QString& netLabel
     ) = 0;
     virtual void setDictPanelProperty(

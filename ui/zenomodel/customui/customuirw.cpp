@@ -49,10 +49,14 @@ namespace zenomodel
                 writer.Key("core-param");
                 JsonObjBatch _scope(writer);
 
-                const QString& refPath = pItem->m_index.data(ROLE_OBJPATH).toString();
+                const QStringList& refPath = pItem->m_index.data(ROLE_OBJPATH).value<QStringList>();
 
                 writer.Key("name");
-                writer.String(refPath.toUtf8());
+                {
+                    JsonArrayBatch _batchArr(writer);
+                    for (auto& i : refPath)
+                        writer.String(i.toUtf8());
+                }
 
                 writer.Key("class");
                 PARAM_CLASS cls = (PARAM_CLASS)pItem->data(ROLE_PARAM_CLASS).toInt();
@@ -140,7 +144,11 @@ namespace zenomodel
             const rapidjson::Value& coreParam = paramVal["core-param"];
             ZASSERT_EXIT(coreParam.HasMember("name") && coreParam.HasMember("class"), param);
 
-            param.refParamPath = QString::fromUtf8(coreParam["name"].GetString());
+            QStringList lst;
+            for (auto& i : coreParam["name"].GetArray())
+                lst.push_back(i.GetString());
+            param.refParamPath = lst.join(cPathSeperator);
+
             const QString& cls = QString::fromUtf8(coreParam["class"].GetString());
 
             if (cls == "input")

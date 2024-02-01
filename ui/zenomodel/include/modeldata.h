@@ -121,30 +121,36 @@ Q_DECLARE_METATYPE(PARAMS_INFO)
 
 struct EdgeInfo
 {
-    QString outSockPath;    //option: path for socket.
-    QString inSockPath;
+    QStringList outSockPath;    //option: path for socket.
+    QStringList inSockPath;
 
     EdgeInfo() = default;
-    EdgeInfo(const QString &outpath, const QString &inpath)
+    EdgeInfo(const QStringList& outpath, const QStringList& inpath)
         : outSockPath(outpath), inSockPath(inpath) {}
-    
-    bool operator==(const EdgeInfo &rhs) const {
-        return outSockPath == rhs.outSockPath && inSockPath == rhs.inSockPath;
-    }
-    bool operator<(const EdgeInfo &rhs) const {
-        if (outSockPath != rhs.outSockPath) {
-            return outSockPath < rhs.outSockPath;
-        } else if (inSockPath != rhs.inSockPath) {
-            return inSockPath < rhs.inSockPath;
-        } else {
-            return 0;
-        }
+
+    bool operator==(const EdgeInfo& rhs) const {
+        if (outSockPath.size() != rhs.outSockPath.size() || inSockPath.size() != rhs.inSockPath.size())
+            return false;
+        for (int i = 0; i < outSockPath.size(); i++)
+            if (outSockPath[i] != rhs.outSockPath[i])
+                return false;
+        for (int i = 0; i < inSockPath.size(); i++)
+            if (inSockPath[i] != rhs.inSockPath[i])
+                return false;
+        return true;
+
     }
 
     bool isValid() const {
-        return !inSockPath.isEmpty() && !outSockPath.isEmpty();
-    }
+        for (auto& out : outSockPath)
+            if (out.isEmpty())
+                return false;
+        for (auto& in : inSockPath)
+            if (in.isEmpty())
+                return false;
+        return true;
 
+    }
 };
 Q_DECLARE_METATYPE(EdgeInfo)
 
@@ -341,6 +347,7 @@ struct CommandParam
     bool operator==(const CommandParam& rhs) const {
         return name == rhs.name && description == rhs.description && value == rhs.value;
     }
+    QStringList paramPath;
 };
 Q_DECLARE_METATYPE(CommandParam)
 

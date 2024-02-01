@@ -29,8 +29,8 @@ std::optional<NodeLocation> NodeSyncMgr::generateNewNode(NodeLocation& node_loca
     const QString& outSock = QString::fromLocal8Bit(output_sock.c_str());
     const QString& inSock = QString::fromLocal8Bit(input_sock.c_str());
 
-    QString outSockObj = UiHelper::constructObjPath(subgName, outNode, "[node]/outputs/", outSock);
-    QString inSockObj = UiHelper::constructObjPath(subgName, inNode, "[node]/inputs/", inSock);
+    QStringList outSockObj = UiHelper::constructObjPath(subgName, outNode, "[node]/outputs/", outSock);
+    QStringList inSockObj = UiHelper::constructObjPath(subgName, inNode, "[node]/inputs/", inSock);
 
     EdgeInfo edge(outSockObj, inSockObj);
     graph_model->addLink(subgraph, edge, false);

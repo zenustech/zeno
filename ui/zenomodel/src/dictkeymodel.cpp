@@ -20,7 +20,7 @@ DictKeyModel::~DictKeyModel()
 
 void DictKeyModel::clearAll()
 {
-    const QString& dictPath = m_dictParam.data(ROLE_OBJPATH).toString();
+    const QStringList& dictPath = m_dictParam.data(ROLE_OBJPATH).value<QStringList>();
     while (rowCount() > 0)
     {
         m_pGraphs->addExecuteCommand(new DictKeyAddRemCommand(false, m_pGraphs, dictPath, 0));
@@ -200,8 +200,9 @@ QVariant DictKeyModel::data(const QModelIndex& index, int role) const
     case ROLE_OBJPATH:
     {
         const _DictItem &item = m_items[index.row()];
-        QString path;
-        path = m_dictParam.data(ROLE_OBJPATH).toString() + "/" + item.key;
+        QStringList path;
+        path = m_dictParam.data(ROLE_OBJPATH).value<QStringList>();
+        path.push_back(item.key);
         return path;
     }
     case ROLE_COLLASPED:

@@ -90,6 +90,12 @@ QString ZsgWriter::dumpProgramStr(IGraphsModel* pModel, APP_SETTINGS settings)
                     writer.String(commandParams[key].name.toUtf8());
                     writer.Key("description");
                     writer.String(commandParams[key].description.toUtf8());
+                    writer.Key("paramsPath");
+                    {
+                        JsonArrayBatch _batchArr(writer);
+                        for (auto& i : commandParams[key].paramPath)
+                            writer.String(i.toUtf8());
+                    }
                     writer.EndObject();
                 }
                 writer.EndObject();
@@ -232,11 +238,14 @@ void ZsgWriter::dumpSocket(SOCKET_INFO socket, bool bInput, RAPIDJSON_WRITER& wr
                 if (bInput) //no need to export link on output key sockets.
                 {
                     writer.Key("link");
-                    QString otherLinkSock = info.links.isEmpty() ? "" : info.links[0].outSockPath;
+                    QStringList otherLinkSock = info.links.isEmpty() ? QStringList() : info.links[0].outSockPath;
                     if (otherLinkSock.isEmpty())
                         writer.Null();
-                    else
-                        writer.String(otherLinkSock.toUtf8());
+                    else {
+                        JsonArrayBatch _batchArr(writer);
+                        for (auto& i : otherLinkSock)
+                            writer.String(i.toUtf8());
+                    }
                 }
                 if (!info.netLabel.isEmpty())
                 {
@@ -260,8 +269,12 @@ void ZsgWriter::dumpSocket(SOCKET_INFO socket, bool bInput, RAPIDJSON_WRITER& wr
         else
         {
             //writer obj path directly.
-            QString otherLinkSock = bInput ? socket.links[0].outSockPath : socket.links[0].inSockPath;
-            writer.String(otherLinkSock.toUtf8());
+            QStringList otherLinkSock = bInput ? socket.links[0].outSockPath : socket.links[0].inSockPath;
+            {
+                JsonArrayBatch _batchArr(writer);
+                for (auto& i : otherLinkSock)
+                    writer.String(i.toUtf8());
+            }
         }
     }
 

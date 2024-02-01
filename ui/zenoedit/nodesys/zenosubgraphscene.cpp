@@ -871,7 +871,7 @@ void ZenoSubGraphScene::onTempLinkClosed()
                     }
                     if (fromSockets.size() > 1)
                     {
-                        QString toSockName = toSockIdx.data(ROLE_OBJPATH).toString();
+                        QStringList toSockName = toSockIdx.data(ROLE_OBJPATH).value<QStringList>();
                         for (QModelIndex fromSockIdx : fromSockets)
                         {
                             QString ident_ = fromSockIdx.data(ROLE_OBJID).toString();
@@ -883,12 +883,12 @@ void ZenoSubGraphScene::onTempLinkClosed()
                         return;
                     }
 
-                    QString toSockName = toSockIdx.data(ROLE_OBJPATH).toString();
+                    QStringList toSockName = toSockIdx.data(ROLE_OBJPATH).value<QStringList>();
 
                     // link to inner dict key automatically.
                     int n = pKeyObjModel->rowCount();
                     pGraphsModel->addExecuteCommand(
-                        new DictKeyAddRemCommand(true, pGraphsModel, toSockIdx.data(ROLE_OBJPATH).toString(), n));
+                        new DictKeyAddRemCommand(true, pGraphsModel, toSockIdx.data(ROLE_OBJPATH).value<QStringList>(), n));
                     toSockIdx = pKeyObjModel->index(n, 0);
                 }
             }

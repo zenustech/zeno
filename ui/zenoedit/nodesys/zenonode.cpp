@@ -959,10 +959,10 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewSockIdx, bool bInput, 
             {
                 QModelIndex outSock = pModel->getNetOutput(m_subGpIndex, netlabel);
                 ZASSERT_EXIT(outSock.isValid());
-                QString objPath = outSock.data(ROLE_OBJPATH).toString();
+                QStringList objPath = outSock.data(ROLE_OBJPATH).value<QStringList>();
                 //jump directly.
                 QMenu* menu = new QMenu;
-                QString tip = tr("jump to %1").arg(objPath);
+                QString tip = tr("jump to %1").arg(objPath.join(cPathSeperator));
                 QAction* pAction = new QAction(tip);
                 connect(pAction, &QAction::triggered, this, [=]() {
                     QModelIndex nodeIdx = outSock.data(ROLE_NODE_IDX).toModelIndex();
@@ -982,8 +982,8 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewSockIdx, bool bInput, 
                 QMenu* menu = new QMenu;
                 for (auto insock : inSocks)
                 {
-                    QString objPath = insock.data(ROLE_OBJPATH).toString();
-                    QAction* pAction = new QAction(objPath);
+                    QStringList objPath = insock.data(ROLE_OBJPATH).value<QStringList>();
+                    QAction* pAction = new QAction(objPath.join(cPathSeperator));
                     connect(pAction, &QAction::triggered, this, [=]() {
                         QModelIndex nodeIdx = insock.data(ROLE_NODE_IDX).toModelIndex();
                         focusOnNode(nodeIdx);
@@ -2067,11 +2067,11 @@ void ZenoNode::onPasteSocketRefSlot(QModelIndex toIndex)
                     QString paramName = fromIndex.data(ROLE_PARAM_NAME).toString();
                     QString paramType = fromIndex.data(ROLE_PARAM_TYPE).toString();
 
-                    QString toSockName = toIndex.data(ROLE_OBJPATH).toString();
+                    QStringList toSockName = toIndex.data(ROLE_OBJPATH).value<QStringList>();
 
                     // link to inner dict key automatically.
                     int n = pKeyObjModel->rowCount();
-                    pGraphsModel->addExecuteCommand(new DictKeyAddRemCommand(true, pGraphsModel, toIndex.data(ROLE_OBJPATH).toString(), n));
+                    pGraphsModel->addExecuteCommand(new DictKeyAddRemCommand(true, pGraphsModel, toIndex.data(ROLE_OBJPATH).value<QStringList>(), n));
                     toIndex = pKeyObjModel->index(n, 0);
                 }
             }

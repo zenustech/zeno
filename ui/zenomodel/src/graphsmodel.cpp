@@ -150,8 +150,8 @@ bool GraphsModel::newMaterialSubgraph(const QModelIndex & currentSubIdx, const Q
     EdgeInfo link;
     const auto &inParam = nodeParams->getParam(PARAM_OUTPUT, "mtl");
     const auto& outParam = outputNodeParams->getParam(PARAM_INPUT, "port");
-    link.inSockPath = outParam.data(ROLE_OBJPATH).toString();
-    link.outSockPath = inParam.data(ROLE_OBJPATH).toString();
+    link.inSockPath = outParam.data(ROLE_OBJPATH).value<QStringList>();
+    link.outSockPath = inParam.data(ROLE_OBJPATH).value<QStringList>();
     addLink(subgIdx, link, false);
     //add material subgraph node
     const QString& subIdent = NodesMgr::createNewNode(this, currentSubIdx, graphName, pos);
@@ -334,6 +334,11 @@ QModelIndex GraphsModel::indexFromPath(const QString& path)
 {
     QStringList lst = path.split(cPathSeperator, QtSkipEmptyParts);
     //format like: {subgraph-name}:{node-ident}:{[node|panel]param-layer-path}
+    return indexFromPath(lst);
+}
+
+QModelIndex GraphsModel::indexFromPath(const QStringList& lst)
+{
     if (lst.size() == 1)
     {
         const QString& subgName = lst[0];
@@ -350,7 +355,7 @@ QModelIndex GraphsModel::indexFromPath(const QString& path)
     {
         const QString& subgName = lst[0];
         const QString& nodeIdent = lst[1];
-        QString paramPath = lst[2];
+        QString paramPath = lst.size() == 4 ? QString(lst[2] + "/" + lst[3]) : lst[2];
         const QModelIndex& subgIdx = index(subgName);
         const QModelIndex& nodeIdx = index(nodeIdent, subgIdx);
         if (!nodeIdx.isValid())
@@ -949,17 +954,23 @@ NODE_DATA GraphsModel::_fork(const QString& forkSubgName)
         {
             QModelIndex outSockIdx = idx.data(ROLE_OUTSOCK_IDX).toModelIndex();
             QModelIndex inSockIdx = idx.data(ROLE_INSOCK_IDX).toModelIndex();
-            QString outSockPath = outSockIdx.data(ROLE_OBJPATH).toString();
-            QString inSockPath = inSockIdx.data(ROLE_OBJPATH).toString();
+            QStringList outSockPath = outSockIdx.data(ROLE_OBJPATH).value<QStringList>();
+            QStringList inSockPath = inSockIdx.data(ROLE_OBJPATH).value<QStringList>();
             if (oldGraphsToNew.find(inNode) != oldGraphsToNew.end()) {
                 QString newId = oldGraphsToNew[inNode][ROLE_OBJID].toString();
                 QString oldId = UiHelper::getSockNode(inSockPath);
-                inSockPath.replace(oldId, newId);
+                int idx = inSockPath.indexOf(oldId);
+                if (idx != -1)
+                    inSockPath[idx] = newId;
+
             }
             if (oldGraphsToNew.find(outNode) != oldGraphsToNew.end()) {
                 QString newId = oldGraphsToNew[outNode][ROLE_OBJID].toString();
                 QString oldId = UiHelper::getSockNode(outSockPath);
-                outSockPath.replace(oldId, newId);
+                int idx = outSockPath.indexOf(oldId);
+                if (idx != -1)
+                    outSockPath[idx] = newId;
+
             }
             links.append(EdgeInfo(outSockPath, inSockPath));
         }
@@ -1380,7 +1391,7 @@ void GraphsModel::removeLink(const QModelIndex& linkIdx, bool enableTransaction)
     QModelIndex subgIdx = nodeIdx.data(ROLE_SUBGRAPH_IDX).toModelIndex();
 
     ZASSERT_EXIT(inSockIdx.isValid() && outSockIdx.isValid());
-    EdgeInfo link(outSockIdx.data(ROLE_OBJPATH).toString(), inSockIdx.data(ROLE_OBJPATH).toString());
+    EdgeInfo link(outSockIdx.data(ROLE_OBJPATH).value<QStringList>(), inSockIdx.data(ROLE_OBJPATH).value<QStringList>());
     removeLink(subgIdx, link, enableTransaction);
 }
 
@@ -1426,7 +1437,7 @@ void GraphsModel::removeLink(const QModelIndex& subgIdx, const EdgeInfo& link, b
 QModelIndex GraphsModel::addLink(const QModelIndex& subgIdx, const QModelIndex& fromSock, const QModelIndex& toSock, bool enableTransaction)
 {
     ZASSERT_EXIT(fromSock.isValid() && toSock.isValid(), QModelIndex());
-    EdgeInfo link(fromSock.data(ROLE_OBJPATH).toString(), toSock.data(ROLE_OBJPATH).toString());
+    EdgeInfo link(fromSock.data(ROLE_OBJPATH).value<QStringList>(), toSock.data(ROLE_OBJPATH).value<QStringList>());
     return addLink(subgIdx, link, enableTransaction);
 }
 
@@ -1870,9 +1881,9 @@ bool GraphsModel::addCommandParam(const QString& path, const CommandParam& val)
         }
         m_commandParams[path] = val;
         emit updateCommandParamSignal(path);
-        QString subgName = UiHelper::getSockSubgraph(path);
+        QString subgName = UiHelper::getSockSubgraph(m_commandParams[path].paramPath);
         if (SubGraphModel* pSubgModel = subGraph(subgName))
-            pSubgModel->setCommandParam(indexFromPath(path), true);
+            pSubgModel->setCommandParam(indexFromPath(m_commandParams[path].paramPath), true);
 
         return true;
     }
@@ -1884,11 +1895,12 @@ void GraphsModel::removeCommandParam(const QString& path)
     if (!m_commandParams.contains(path))
         return;
 
+    QStringList paramPathToBeRemove = m_commandParams[path].paramPath;
     m_commandParams.remove(path);
     emit updateCommandParamSignal(path);
-    QString subgName = UiHelper::getSockSubgraph(path);
+    QString subgName = UiHelper::getSockSubgraph(paramPathToBeRemove);
     if (SubGraphModel* pSubgModel = subGraph(subgName))
-        pSubgModel->setCommandParam(indexFromPath(path), false);
+        pSubgModel->setCommandParam(indexFromPath(paramPathToBeRemove), false);
 }
 
 bool GraphsModel::updateCommandParam(const QString& path, const CommandParam& newVal)
@@ -2100,7 +2112,7 @@ void GraphsModel::on_subg_rowsAboutToBeRemoved(const QModelIndex& parent, int fi
     const QString& objId = idx.data(ROLE_OBJID).toString();
     for (const auto& path : m_commandParams.keys())
     {
-        if (UiHelper::getSockNode(path) == objId)
+        if (UiHelper::getSockNode(m_commandParams[path].paramPath) == objId)
             removeCommandParam(path);
     }
 }
