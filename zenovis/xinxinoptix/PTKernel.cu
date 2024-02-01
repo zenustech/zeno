@@ -344,6 +344,7 @@ extern "C" __global__ void __raygen__rg()
     params.frame_buffer_S[ image_index ] = accum_color_s;
     params.frame_buffer_T[ image_index ] = accum_color_t;
     params.frame_buffer_B[ image_index ] = accum_color_b;
+    params.frame_buffer_M[ image_index ] = accum_color_b;
 
     if (params.denoise) {
         params.albedo_buffer[ image_index ] = tmp_albedo;

@@ -257,6 +257,7 @@ std::optional<sutil::CUDAOutputBuffer<float3>> output_buffer_diffuse;
 std::optional<sutil::CUDAOutputBuffer<float3>> output_buffer_specular;
 std::optional<sutil::CUDAOutputBuffer<float3>> output_buffer_transmit;
 std::optional<sutil::CUDAOutputBuffer<float3>> output_buffer_background;
+std::optional<sutil::CUDAOutputBuffer<float3>> output_buffer_mask;
 using Vertex = float4;
 
 struct PathTracerState
@@ -751,6 +752,7 @@ static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params
     (*output_buffer_specular).resize( params.width, params.height );
     (*output_buffer_transmit).resize( params.width, params.height );
     (*output_buffer_background).resize( params.width, params.height );
+    (*output_buffer_mask).resize( params.width, params.height );
 
     // Realloc accumulation buffer
     CUDA_CHECK( cudaMalloc(
@@ -819,6 +821,7 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
     state.params.frame_buffer_S = (*output_buffer_specular  ).map();
     state.params.frame_buffer_T = (*output_buffer_transmit  ).map();
     state.params.frame_buffer_B = (*output_buffer_background).map();
+    state.params.frame_buffer_M = (*output_buffer_mask      ).map();
     state.params.num_lights = lightsWrapper.g_lights.size();
     state.params.denoise = denoise;
     for(int j=0;j<1;j++){
@@ -856,6 +859,7 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
     (*output_buffer_specular  ).unmap();
     (*output_buffer_transmit  ).unmap();
     (*output_buffer_background).unmap();
+    (*output_buffer_mask      ).unmap();
 
     try {
         CUDA_SYNC_CHECK();
@@ -1772,6 +1776,14 @@ void optixinit( int argc, char* argv[] )
           state.params.height
       );
       output_buffer_background->setStream( 0 );
+    }
+    if (!output_buffer_mask) {
+      output_buffer_mask.emplace(
+          output_buffer_type,
+          state.params.width,
+          state.params.height
+      );
+      output_buffer_mask->setStream( 0 );
     }
 #ifdef OPTIX_BASE_GL
         if (!gl_display_o) {
@@ -3838,6 +3850,9 @@ void *optixgetimg_extra(std::string name) {
     else if (name == "background") {
         return output_buffer_background->getHostPointer();
     }
+    else if (name == "mask") {
+        return output_buffer_mask->getHostPointer();
+    }
     else if (name == "color") {
         return output_buffer_color->getHostPointer();
     }
@@ -3894,6 +3909,7 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         bool enable_output_aov = zeno::getSession().userData().get2<bool>("output_aov", true);
         bool enable_output_exr = zeno::getSession().userData().get2<bool>("output_exr", true);
         auto exr_path = path.substr(0, path.size() - 4) + ".exr";
+        save_exr((float3 *)optixgetimg_extra("mask"), w, h, exr_path + "_mask.exr");
         // AOV
         if (enable_output_aov) {
             SaveMultiLayerEXR(
@@ -3999,6 +4015,7 @@ void optixcleanup() {
     output_buffer_specular    .reset();
     output_buffer_transmit    .reset();
     output_buffer_background  .reset();
+    output_buffer_mask        .reset();
     g_StaticMeshPieces        .clear();
     g_meshPieces              .clear();
     state = {};
