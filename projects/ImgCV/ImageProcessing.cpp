@@ -1710,14 +1710,14 @@ struct ImageQuantization: INode {
         }
         int maxindex = 0;
         vec3f seedcolor;
-        const int squaredSeparationCoefficient = 3650;// For photos, we can use a higher coefficient, from 900 to 6400
+        const int squaredSeparationCoefficient = 1400;// For photos, we can use a higher coefficient, from 900 to 6400
         auto weightclone = weights;
         for (int i = 0; i < clusternumber; i++) {
-            maxindex = std::max_element(weights.begin(), weights.end()) - weights.begin();
+            maxindex = std::max_element(weightclone.begin(), weightclone.end()) - weightclone.begin();
             if(weightclone[maxindex] == 0){
                 break;
             }
-            seedcolor = labs[maxindex] / weightclone[maxindex];
+            seedcolor = labs[maxindex] / weights[maxindex];
             seeds[i] = seedcolor;
             weightclone[maxindex] = 0;
             for (int i = 0; i < HistogramSize; i++)
@@ -1789,7 +1789,7 @@ struct ImageQuantization: INode {
             for (int i = 0; i < clusternumber; i++) {
                 image->verts[i] = LabtoRGB(seeds[i]);
                 clusterattr[i] = i;
-            }
+                }
         }
         else{
 #pragma omp parallel for
