@@ -6,6 +6,7 @@
 #include <zeno/types/ListObject.h>
 #include <zeno/types/TextureObject.h>
 #include <zeno/utils/string.h>
+#include <zeno/utils/logger.h>
 #include <zeno/types/UserData.h>
 
 #include <memory>
@@ -159,6 +160,8 @@ struct ShaderFinalize : INode {
         } else {
             code += "bool sssFxiedRadius = false;\n";
         }
+
+        code += zeno::format("int mask_value = {};\n", get_input2<int>("mask_value"));
 
         auto mtl = std::make_shared<MaterialObject>();
         mtl->frag = std::move(code);
@@ -357,7 +360,8 @@ ZENDEFNODE(ShaderFinalize, {
         {"float", "vol_sample_anisotropy", "0"},
 
         {"float", "vol_sample_density", "0"},
-        {"vec3f", "vol_sample_emission", "0,0,0"}
+        {"vec3f", "vol_sample_emission", "0,0,0"},
+        {"int", "mask_value", "0"},
     },
     {
         {"MaterialObject", "mtl"},

@@ -94,6 +94,7 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     vec3 mat_reflectance = att_reflectance;
     
     bool sssFxiedRadius = false;
+    int mask_value = 0;
 
     //GENERATED_END_MARK
     /** generated code here end **/
@@ -151,6 +152,7 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     vec3 mat_reflectance = att_reflectance;
     
     bool sssFxiedRadius = false;
+    int mask_value = 0;
 
 #endif // _FALLBACK_
 
@@ -201,6 +203,7 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
 
     mats.smoothness = mat_smoothness;
     mats.sssFxiedRadius = sssFxiedRadius;
+    mats.mask_value = mask_value;
     mats.isHair = mat_isHair;
 
     return mats;
