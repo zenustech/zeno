@@ -238,7 +238,7 @@ extern "C" __global__ void __raygen__rg()
             if(prd.countEmitted==false || prd.depth>0) {
                 auto temp_radiance = prd.radiance * prd.attenuation2;
 
-                //float upperBound = prd.fromDiff?1.0f:1.0f;
+                float upperBound = prd.fromDiff?10.0f:1000.0f;
                 float3 clampped = clamp(vec3(temp_radiance), vec3(0), vec3(10));
 
                 result += prd.depth>1?clampped:temp_radiance;
