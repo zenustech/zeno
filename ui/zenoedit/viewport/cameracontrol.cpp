@@ -278,6 +278,8 @@ void CameraControl::resizeTransformHandler(int dir)
 
 void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
 {
+    bool ctrl_pressed = event->modifiers() & Qt::ControlModifier;
+
     auto session = m_zenovis->getSession();
     auto scene = session->get_scene();
     float xpos = event->x(), ypos = event->y();
@@ -589,6 +591,7 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
             auto cam_pos = realPos();
 
             scene->select_box = std::nullopt;
+            bool ctrl_pressed = event->modifiers() & Qt::ControlModifier;
             bool shift_pressed = event->modifiers() & Qt::ShiftModifier;
             if (!shift_pressed) {
                 scene->selected.clear();
@@ -701,17 +704,8 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
 }
 
 bool CameraControl::fakeKeyPressEvent(int uKey) {
-    if (uKey & Qt::SHIFT) {
-        shift_pressed = true;
-    }
-    if (uKey & Qt::CTRL) {
-        ctrl_pressed = true;
-    }
-    if (uKey & Qt::ALT) {
-        alt_pressed = true;
-    }
     // viewport focus prim
-    if ((uKey & 0xff) == Qt::Key_F && alt_pressed) {
+    if ((uKey & 0xff) == Qt::Key_F && uKey & Qt::AltModifier) {
         auto *scene = m_zenovis->getSession()->get_scene();
         if (scene->selected.size() == 1) {
             std::string nodeId = *scene->selected.begin();
@@ -773,15 +767,6 @@ bool CameraControl::fakeKeyPressEvent(int uKey) {
 }
 
 bool CameraControl::fakeKeyReleaseEvent(int uKey) {
-    if (uKey == Qt::Key_Shift) {
-        shift_pressed = false;
-    }
-    if (uKey == Qt::Key_Control) {
-        ctrl_pressed = false;
-    }
-    if (uKey == Qt::Key_Alt) {
-        alt_pressed = false;
-    }
     return false;
 }
 //void CameraControl::createPointNode(QPointF pnt) {
