@@ -610,8 +610,7 @@ void ModelAcceptor::setInputSocket2(
     NODE_DESC desc;
     bool isCoreDesc = m_pModel->getDescriptor(nodeCls, desc);
     if (!isCoreDesc) {
-        if (legacyDescs.find(nodeCls) == legacyDescs.end())
-            return;
+        ZASSERT_EXIT(legacyDescs.find(nodeCls) != legacyDescs.end());
         desc = legacyDescs[nodeCls];
     }
 
@@ -714,11 +713,6 @@ void ModelAcceptor::setOutputSocket(const QString& inNode, const QString& inSock
     subgName = m_currentGraph->name();
     QString inSockPath = UiHelper::constructObjPath(subgName, inNode, "[node]/outputs/", inSock);
     QModelIndex sockIdx = m_pModel->indexFromPath(inSockPath);
-    if (!sockIdx.isValid())
-    {
-        zeno::log_error("error:{}", inSockPath.toStdString());
-        return;
-    }
     ZASSERT_EXIT(sockIdx.isValid());
     QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(sockIdx.model());
     ZASSERT_EXIT(pModel);
@@ -735,8 +729,7 @@ void ModelAcceptor::setOutputSocket(const QString& inNode, const QString& inSock
 void ModelAcceptor::setDictPanelProperty(bool bInput, const QString& ident, const QString& sockName, bool bCollasped)
 {
     QModelIndex inNodeIdx = m_currentGraph->index(ident);
-    if(!inNodeIdx.isValid());
-    return;
+    ZASSERT_EXIT(inNodeIdx.isValid());
 
     QModelIndex sockIdx = m_currentGraph->nodeParamIndex(inNodeIdx, bInput ? PARAM_INPUT : PARAM_OUTPUT, sockName);
     ZASSERT_EXIT(sockIdx.isValid());
