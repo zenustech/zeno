@@ -161,7 +161,8 @@ struct ShaderFinalize : INode {
             code += "bool sssFxiedRadius = false;\n";
         }
 
-        code += zeno::format("int mask_value = {};\n", get_input2<int>("mask_value"));
+        vec3i mask_value = get_input2<vec3i>("mask_value");
+        code += zeno::format("vec3 mask_value = vec3({}, {}, {});\n", mask_value[0], mask_value[1], mask_value[2]);
 
         auto mtl = std::make_shared<MaterialObject>();
         mtl->frag = std::move(code);
@@ -361,7 +362,7 @@ ZENDEFNODE(ShaderFinalize, {
 
         {"float", "vol_sample_density", "0"},
         {"vec3f", "vol_sample_emission", "0,0,0"},
-        {"int", "mask_value", "0"},
+        {"vec3i", "mask_value", "0,0,0"},
     },
     {
         {"MaterialObject", "mtl"},

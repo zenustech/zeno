@@ -97,7 +97,7 @@ extern "C" __global__ void __raygen__rg()
     float3 tmp_albedo{};
     float3 tmp_normal{};
     unsigned int sobolseed = subframe_index;
-    int mask_value = 0;
+    float3 mask_value = make_float3( 0.0f );
 
     do{
         // The center of each pixel is at fraction (0.5,0.5)
@@ -182,7 +182,7 @@ extern "C" __global__ void __raygen__rg()
         prd.origin = ray_origin;
         prd.direction = ray_direction;
         prd.samplePdf = 1.0f;
-        prd.mask_value = 0;
+        prd.mask_value = make_float3( 0.0f );
 
         prd.depth = 0;
         prd.diffDepth = 0;
@@ -349,7 +349,7 @@ extern "C" __global__ void __raygen__rg()
     params.frame_buffer_S[ image_index ] = accum_color_s;
     params.frame_buffer_T[ image_index ] = accum_color_t;
     params.frame_buffer_B[ image_index ] = accum_color_b;
-    params.frame_buffer_M[ image_index ] = make_float3(float(mask_value));
+    params.frame_buffer_M[ image_index ] = mask_value;
 
     if (params.denoise) {
         params.albedo_buffer[ image_index ] = tmp_albedo;

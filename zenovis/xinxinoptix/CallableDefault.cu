@@ -94,7 +94,7 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     vec3 mat_reflectance = att_reflectance;
     
     bool sssFxiedRadius = false;
-    int mask_value = 0;
+    vec3 mask_value = vec3(0, 0, 0);
 
     //GENERATED_END_MARK
     /** generated code here end **/
@@ -152,7 +152,7 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     vec3 mat_reflectance = att_reflectance;
     
     bool sssFxiedRadius = false;
-    int mask_value = 0;
+    vec3 mask_value = vec3(0, 0, 0);
 
 #endif // _FALLBACK_
 
