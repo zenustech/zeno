@@ -94,7 +94,7 @@ struct Detangle2 : zeno::INode {
 
         auto& icm_grad = (*zsparticles)[DETANGLE_ICM_GRADIENT_BUFFER_KEY];
         TILEVEC_OPS::fill(cudaExec,icm_grad,"grad",(T)0.0);
-        auto use_barycentric_interpolator = get_input2<bool>("use_barycentric_interpolator");
+        // auto use_barycentric_interpolator = get_input2<bool>("use_barycentric_interpolator");
         auto skip_animation_intersection = get_input2<bool>("skip_animation_intersection");
 
         zs::CppTimer timer;
@@ -467,7 +467,7 @@ struct Detangle2 : zeno::INode {
                         // impulse_count = proxy<space>(impulse_count),
                         eps = eps,
                         iter = iter,
-                        use_barycentric_interpolator = use_barycentric_interpolator,
+                        use_barycentric_interpolator = false,
                         mark_intersection = mark_intersection,
                         xtag = zs::SmallString(xtag),
                         gradOffset = verts.getPropertyOffset("grad"),
