@@ -3909,7 +3909,17 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         bool enable_output_aov = zeno::getSession().userData().get2<bool>("output_aov", true);
         bool enable_output_exr = zeno::getSession().userData().get2<bool>("output_exr", true);
         auto exr_path = path.substr(0, path.size() - 4) + ".exr";
-        save_exr((float3 *)optixgetimg_extra("mask"), w, h, exr_path + "_mask.exr");
+        {
+            std::vector<uint8_t> data;
+            data.reserve(w * h * 3);
+            float* ptr = (float *)optixgetimg_extra("mask");
+            for (auto i = 0; i < w * h * 3; i++) {
+                data.push_back(int(ptr[i]));
+            }
+            std::string native_path = std::filesystem::u8path(path + "_mask.png").string();
+            stbi_flip_vertically_on_write(1);
+            stbi_write_png(native_path.c_str(), w, h, 3, data.data(),0);
+        }
         // AOV
         if (enable_output_aov) {
             SaveMultiLayerEXR(
