@@ -3908,8 +3908,9 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         stbi_flip_vertically_on_write(true);
         bool enable_output_aov = zeno::getSession().userData().get2<bool>("output_aov", true);
         bool enable_output_exr = zeno::getSession().userData().get2<bool>("output_exr", true);
+        bool enable_output_mask = zeno::getSession().userData().get2<bool>("output_mask", false);
         auto exr_path = path.substr(0, path.size() - 4) + ".exr";
-        {
+        if (enable_output_mask) {
             std::vector<uint8_t> data;
             data.reserve(w * h * 3);
             float* ptr = (float *)optixgetimg_extra("mask");
