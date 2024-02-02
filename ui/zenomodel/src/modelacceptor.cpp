@@ -128,6 +128,12 @@ void ModelAcceptor::BeginSubgraph(const QString& name, int type)
     {
         if (m_bImport)
         {
+            for (int i = 0; i < pSubModel->rowCount(); i++)
+            {
+                QString ident = pSubModel->index(i, 0).data(ROLE_OBJID).toString();
+                if (m_oldToNewNodeIds.contains(ident))
+                    m_oldToNewNodeIds.remove(ident);
+            }
             pSubModel->clear();
             zeno::log_warn("override subgraph {}", name.toStdString());
         }
@@ -604,7 +610,8 @@ void ModelAcceptor::setInputSocket2(
     NODE_DESC desc;
     bool isCoreDesc = m_pModel->getDescriptor(nodeCls, desc);
     if (!isCoreDesc) {
-        ZASSERT_EXIT(legacyDescs.find(nodeCls) != legacyDescs.end());
+        if (legacyDescs.find(nodeCls) == legacyDescs.end())
+            return;
         desc = legacyDescs[nodeCls];
     }
 
@@ -707,6 +714,11 @@ void ModelAcceptor::setOutputSocket(const QString& inNode, const QString& inSock
     subgName = m_currentGraph->name();
     QString inSockPath = UiHelper::constructObjPath(subgName, inNode, "[node]/outputs/", inSock);
     QModelIndex sockIdx = m_pModel->indexFromPath(inSockPath);
+    if (!sockIdx.isValid())
+    {
+        zeno::log_error("error:{}", inSockPath.toStdString());
+        return;
+    }
     ZASSERT_EXIT(sockIdx.isValid());
     QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(sockIdx.model());
     ZASSERT_EXIT(pModel);
@@ -723,7 +735,8 @@ void ModelAcceptor::setOutputSocket(const QString& inNode, const QString& inSock
 void ModelAcceptor::setDictPanelProperty(bool bInput, const QString& ident, const QString& sockName, bool bCollasped)
 {
     QModelIndex inNodeIdx = m_currentGraph->index(ident);
-    ZASSERT_EXIT(inNodeIdx.isValid());
+    if(!inNodeIdx.isValid());
+    return;
 
     QModelIndex sockIdx = m_currentGraph->nodeParamIndex(inNodeIdx, bInput ? PARAM_INPUT : PARAM_OUTPUT, sockName);
     ZASSERT_EXIT(sockIdx.isValid());
