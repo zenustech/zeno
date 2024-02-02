@@ -186,7 +186,7 @@ struct SmartTexture2D : ShaderNodeClone<SmartTexture2D>
         auto texId = em->tex2Ds.size();
         auto tex = std::make_shared<zeno::Texture2DObject>();
         auto texture_path = get_input2<std::string>("path");
-        if(!std::filesystem::exists(texture_path)){
+        if(!std::filesystem::exists(std::filesystem::u8path(texture_path))){
             zeno::log_warn("texture file not found!");
             auto type = get_input2<std::string>("type");
             vec4f number= vec4f(0,0,0,0);
@@ -229,7 +229,7 @@ struct SmartTexture2D : ShaderNodeClone<SmartTexture2D>
             else if (type == "vec3")
                 em->emitCode(zeno::format("vec3({},{},{})",number[0],number[1],number[2]));
             else if (type == "vec4")
-                em->emitCode(zeno::format("vec3({},{},{},{})",number[0],number[1],number[2],number[4]));
+                em->emitCode(zeno::format("vec4({},{},{},{})",number[0],number[1],number[2],number[3]));
             else
                 throw zeno::Exception("ShaderTexture2D got bad type: " + type);
             

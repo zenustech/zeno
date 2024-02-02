@@ -34,6 +34,9 @@ struct MatOutput {
     float transDistance;
     vec3 transScatterColor;
 
+    float diffraction;
+    vec3  diffractColor;
+
     float subsurface;
     vec3  sssColor;
     vec3  sssParam;
@@ -43,6 +46,8 @@ struct MatOutput {
     float smoothness;
     float displacement;
     float shadowReceiver;
+    float isHair;
+    vec3  mask_value;
 
     vec3 nrm;
     vec3 emission;

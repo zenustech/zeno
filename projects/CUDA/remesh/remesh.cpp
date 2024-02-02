@@ -259,9 +259,22 @@ struct UniformRemeshing : INode {
         auto prim = get_input<PrimitiveObject>("prim");
         auto iterations = get_input2<int>("iterations");
         float edge_length = get_input2<float>("edge_length");
+        int vert_num = get_input2<int>("vert_num");
+        int face_num = get_input2<int>("face_num");
         bool use_min_length = get_input2<bool>("use_min_length");
         auto line_pick_tag = get_input<zeno::StringObject>("line_pick_tag")->get();
         auto &pos = prim->attr<vec3f>("pos");
+        zeno::log_info("before remeshing: verts num = {}, face num = {}", prim->verts.size(), prim->tris.size());
+
+        int scale_constraints = 0;
+        scale_constraints += (edge_length > 1e-10 || use_min_length) ? 1 : 0;
+        scale_constraints += face_num > 0 ? 1 : 0;
+        scale_constraints += vert_num > 0 ? 1 : 0;
+        if (scale_constraints > 1) {
+            zeno::log_error("Only one of the \"edge_length(/use_min_length)\", \"vert_num\" and \"face_num\" parameters can be used at once.");
+            set_output("prim", std::move(prim));
+            return;
+        }
 
         // init line_pick attribute
         if (!prim->lines.has_attr(line_pick_tag)) {
@@ -336,7 +349,20 @@ struct UniformRemeshing : INode {
 
         auto mesh = new zeno::pmp::SurfaceMesh(prim, line_pick_tag);
 
-        if (edge_length < 1e-10) {
+        if (vert_num > 0) {
+            face_num = vert_num * 2;
+        }
+        if (face_num > 0) {
+            float tot_surface = 0;
+            for (auto &it: prim->tris) {
+                vec3f l1 = pos[it[0]] - pos[it[1]];
+                vec3f l2 = pos[it[0]] - pos[it[2]];
+                float s = 0.5f * length(cross(l1, l2));
+                tot_surface += s;
+            }
+            edge_length = std::sqrt(tot_surface / face_num * 4 / std::sqrt(3));
+            zeno::log_info("default edge_length: {}", edge_length);
+        } else if (edge_length < 1e-10) {
             // If no edge length input,
             // take the average of all edges as default.
             auto &lines = prim->lines;
@@ -369,6 +395,8 @@ struct UniformRemeshing : INode {
         prim->verts.erase_attr("curv_max");
         prim->verts.erase_attr("curv_gaussian");
         prim->verts.update();
+        prim->lines.clear();
+        zeno::log_info("after remeshing: verts num = {}, face num = {}", prim->verts.size(), prim->tris.size());
 
         set_output("prim", std::move(prim));
     }
@@ -379,6 +407,8 @@ ZENO_DEFNODE(UniformRemeshing)
     {{"prim"},
      {"int", "iterations", "10"},
      {"float", "edge_length", "0"},
+     {"int", "vert_num", "0"},
+     {"int", "face_num", "0"},
      {"bool", "use_min_length", "0"},
      {"string", "line_pick_tag", "line_selected"},
      {"marked_lines"}},
@@ -396,6 +426,7 @@ struct AdaptiveRemeshing : INode {
         float approximation_tolerance = get_input2<float>("approximation_tolerance");
         auto line_pick_tag = get_input<zeno::StringObject>("line_pick_tag")->get();
         auto &pos = prim->attr<vec3f>("pos");
+        zeno::log_info("before remeshing: verts num = {}, face num = {}", prim->verts.size(), prim->tris.size());
 
         // init line_pick attribute
         if (!prim->lines.has_attr(line_pick_tag)) {
@@ -477,6 +508,8 @@ struct AdaptiveRemeshing : INode {
         prim->verts.erase_attr("curv_max");
         prim->verts.erase_attr("curv_gaussian");
         prim->verts.update();
+        prim->lines.clear();
+        zeno::log_info("after remeshing: verts num = {}, face num = {}", prim->verts.size(), prim->tris.size());
 
         set_output("prim", std::move(prim));
     }

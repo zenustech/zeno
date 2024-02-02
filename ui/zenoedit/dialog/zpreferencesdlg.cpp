@@ -76,11 +76,13 @@ ZenoCachePane::ZenoCachePane(QWidget* parent) : QWidget(parent)
     QVariant varCacheNum = inst.getValue(zsCacheNum);
     QVariant varAutoCleanCache = inst.getValue(zsCacheAutoClean);
     QVariant varEnableShiftChangeFOV = inst.getValue(zsEnableShiftChangeFOV);
+    QVariant varViewportPointSizeScale = inst.getValue(zsViewportPointSizeScale);
 
     bool bEnableCache = varEnableCache.isValid() ? varEnableCache.toBool() : false;
     bool bTempCacheDir = varTempCacheDir.isValid() ? varTempCacheDir.toBool() : false;
     QString cacheRootDir = varCacheRoot.isValid() ? varCacheRoot.toString() : "";
     int cacheNum = varCacheNum.isValid() ? varCacheNum.toInt() : 1;
+    double viewportPointSizeScale = varViewportPointSizeScale.isValid() ? varViewportPointSizeScale.toDouble() : 1;
     bool bAutoCleanCache = varAutoCleanCache.isValid() ? varAutoCleanCache.toBool() : true;
     bool bEnableShiftChangeFOV = varEnableShiftChangeFOV.isValid() ? varEnableShiftChangeFOV.toBool() : true;
 
@@ -112,6 +114,9 @@ ZenoCachePane::ZenoCachePane(QWidget* parent) : QWidget(parent)
     m_pCacheNumSpinBox->setValue(cacheNum);
     m_pCacheNumSpinBox->setEnabled(bEnableCache);
 
+    m_pViewportPointSizeScaleSpinBox = new QDoubleSpinBox;
+    m_pViewportPointSizeScaleSpinBox->setValue(viewportPointSizeScale);
+
     m_pEnableCheckbox = new QCheckBox;
     m_pEnableCheckbox->setCheckState(bEnableCache ? Qt::Checked : Qt::Unchecked);
     connect(m_pEnableCheckbox, &QCheckBox::stateChanged, [=](bool state) {
@@ -141,6 +146,8 @@ ZenoCachePane::ZenoCachePane(QWidget* parent) : QWidget(parent)
     pLayout->addWidget(m_pAutoCleanCache, 4, 1);
     pLayout->addWidget(new QLabel(tr("Enable Shift change FOV")), 5, 0);
     pLayout->addWidget(m_pEnableShiftChangeFOV, 5, 1);
+    pLayout->addWidget(new QLabel(tr("Viewport Point Size scale")), 6, 0);
+    pLayout->addWidget(m_pViewportPointSizeScaleSpinBox, 6, 1);
     QSpacerItem* pSpacerItem = new QSpacerItem(10, 10, QSizePolicy::Expanding);
     pLayout->addItem(pSpacerItem, 0, 2, 5);
     pLayout->setAlignment(Qt::AlignLeft | Qt::AlignTop);
@@ -155,6 +162,7 @@ void ZenoCachePane::saveValue()
     inst.setValue(zsCacheNum, m_pCacheNumSpinBox->value());
     inst.setValue(zsCacheAutoClean, m_pAutoCleanCache->checkState() == Qt::Checked);
     inst.setValue(zsEnableShiftChangeFOV, m_pEnableShiftChangeFOV->checkState() == Qt::Checked);
+    inst.setValue(zsViewportPointSizeScale, m_pViewportPointSizeScaleSpinBox->value());
 }
 
 //layout pane

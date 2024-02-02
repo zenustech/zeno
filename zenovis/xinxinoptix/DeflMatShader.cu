@@ -90,7 +90,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 #else
     size_t inst_idx = optixGetInstanceIndex();
     size_t vert_aux_offset = rt_data->auxOffset[inst_idx];
-    size_t vert_idx_offset = (vert_aux_offset + primIdx)*3;
+    size_t vert_idx_offset = vert_aux_offset + primIdx*3;
 
     float3 _vertices_[3];
     optixGetTriangleVertexData( gas, primIdx, sbtGASIndex, 0, _vertices_);
@@ -193,6 +193,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     if (opacity >0.99f || isLight == 1) // No need to calculate an expensive random number if the test is going to fail anyway.
     {
         optixIgnoreIntersection();
+        return;
     }
     else
     {
@@ -208,7 +209,17 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 
         if (p < skip){
             optixIgnoreIntersection();
+            return;
         }else{
+          if(mats.isHair>0.5f)
+          {
+             vec3 extinction = exp( - DisneyBSDF::CalculateExtinction(mats.sssParam,1.0f) );
+             if(p<min(min(extinction.x, extinction.y), extinction.z))
+             {
+               optixIgnoreIntersection();
+               return;
+             }
+          }
 
             if(length(prd->attanuation) < 0.01f){
                 prd->attanuation = vec3(0.0f);
@@ -224,7 +235,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
             
             if(specTrans > 0.0f){
 
-                if(thin == 0.0f && ior>1.0f)
+                if(thin == 0.0f && ior>=1.0f)
                 {
                     prd->nonThinTransHit++;
                 }
@@ -235,8 +246,8 @@ extern "C" __global__ void __anyhit__shadow_cutout()
                     return;
                 }
 
-                float nDi = fabs(dot(N,ray_dir));
-                vec3 fakeTrans = vec3(1)-BRDFBasics::fresnelSchlick(vec3(1)-basecolor,nDi);
+                float nDi = fabs(dot(N,normalize(ray_dir)));
+                vec3 fakeTrans = vec3(1)-BRDFBasics::fresnelSchlick(vec3(1) - mats.transColor,nDi);
                 prd->attanuation = prd->attanuation * fakeTrans;
 
                 #if (_SPHERE_)
@@ -328,7 +339,7 @@ extern "C" __global__ void __closesthit__radiance()
 
     size_t inst_idx = optixGetInstanceIndex();
     size_t vert_aux_offset = rt_data->auxOffset[inst_idx];
-    size_t vert_idx_offset = (vert_aux_offset + primIdx)*3;
+    size_t vert_idx_offset = vert_aux_offset + primIdx*3;
 
     unsigned short isLight = 0;//rt_data->lightMark[vert_aux_offset + primIdx];
 
@@ -383,11 +394,36 @@ extern "C" __global__ void __closesthit__radiance()
     attrs.instClr = rt_data->instClr[inst_idx];
     attrs.instTang = rt_data->instTang[inst_idx];
     attrs.rayLength = optixGetRayTmax();
+
+    float3 n0 = normalize( decodeNormal(rt_data->nrm[ vert_idx_offset+0 ]) );
+    n0 = n0;
+
+    float3 n1 = normalize( decodeNormal(rt_data->nrm[ vert_idx_offset+1 ]) );
+    n1 = n1;
+
+    float3 n2 = normalize( decodeNormal(rt_data->nrm[ vert_idx_offset+2 ]) );
+    n2 = n2;
+
+    auto N_smooth = normalize(interp(barys, n0, n1, n2));
+    attrs.N = optixTransformNormalFromObjectToWorldSpace(N_smooth);
+
+
 #endif
 
     attrs.pos = attrs.pos + vec3(params.cam.eye);
+    if(! (length(attrs.tang)>0.0f) )
+    {
+      Onb a(attrs.N);
+      attrs.T = a.m_tangent;
+    }
+    else
+    {
+      attrs.T = attrs.tang;
+    }
+    attrs.V = -normalize(ray_dir);
     //MatOutput mats = evalMaterial(rt_data->textures, rt_data->uniforms, attrs);
     MatOutput mats = optixDirectCall<MatOutput, cudaTextureObject_t[], float4*, const MatInput&>( rt_data->dc_index, rt_data->textures, rt_data->uniforms, attrs );
+    prd->mask_value = mats.mask_value;
 
 
 #if _SPHERE_
@@ -398,20 +434,21 @@ extern "C" __global__ void __closesthit__radiance()
     }
 
 #else
-
-    float3 n0 = normalize( decodeNormal(rt_data->nrm[ vert_idx_offset+0 ]) );
+    n0 = normalize( decodeNormal(rt_data->nrm[ vert_idx_offset+0 ]) );
     n0 = dot(n0, N_Local)>(1-mats.smoothness)?n0:N_Local;
 
-    float3 n1 = normalize( decodeNormal(rt_data->nrm[ vert_idx_offset+1 ]) );
+    n1 = normalize( decodeNormal(rt_data->nrm[ vert_idx_offset+1 ]) );
     n1 = dot(n1, N_Local)>(1-mats.smoothness)?n1:N_Local;
 
-    float3 n2 = normalize( decodeNormal(rt_data->nrm[ vert_idx_offset+2 ]) );
+    n2 = normalize( decodeNormal(rt_data->nrm[ vert_idx_offset+2 ]) );
     n2 = dot(n2, N_Local)>(1-mats.smoothness)?n2:N_Local;
 
     N_Local = normalize(interp(barys, n0, n1, n2));
     N_World = optixTransformNormalFromObjectToWorldSpace(N_Local);
 
     N = N_World;
+
+
 
     if(mats.doubleSide>0.5f||mats.thin>0.5f){
         N = faceforward( N_World, -ray_dir, N_World );
@@ -433,10 +470,10 @@ extern "C" __global__ void __closesthit__radiance()
         attrs.tang = cross(attrs.nrm, b);
         N = mats.nrm.x * attrs.tang + mats.nrm.y * b + mats.nrm.z * attrs.nrm;
     }
-    if(dot(vec3(ray_dir), vec3(N)) * dot(vec3(ray_dir), vec3(prd->geometryNormal))<0)
-    {
-      N = prd->geometryNormal;
-    }
+//    if(dot(vec3(ray_dir), vec3(N)) * dot(vec3(ray_dir), vec3(prd->geometryNormal))<0)
+//    {
+//      N = prd->geometryNormal;
+//    }
 
     if (prd->trace_denoise_albedo) {
 
