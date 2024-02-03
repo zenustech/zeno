@@ -177,6 +177,16 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
             QString inputName = inSockIdx.data(ROLE_PARAM_NAME).toString();
             const QString& inSockType = inSockIdx.data(ROLE_PARAM_TYPE).toString();
 
+            if (idx.data(ROLE_OPTIONS).toInt() & OPT_MUTE) {
+                if (outputIt != outputs.end()) {
+                    OUTPUT_SOCKET output = *outputIt++;
+                    inputName = output.info.name; // forward all inputs to outputs by socket name
+                }
+                else {
+                    inputName += ":DUMMYDEP";
+                }
+            }
+
             //check net label.
             const QString& netlabel = inSockIdx.data(ROLE_PARAM_NETLABEL).toString();
             const PARAM_LINKS& links = inSockIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();

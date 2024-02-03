@@ -179,6 +179,9 @@ ZENO_API void INode::doApply() {
 
     if (m_status & NodeStatus::Mute)
     {
+        for (auto const& [ds, bound] : inputBounds) {
+            requireInput(ds);
+        }
         //just pass input data to output.
         for (auto const& [name, _] : this->inputs) {
             if (name == "SRC") continue;//sk
