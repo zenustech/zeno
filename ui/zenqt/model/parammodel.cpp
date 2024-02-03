@@ -88,9 +88,11 @@ QVariant ParamsModel::data(const QModelIndex& index, int role) const
         info.name = param.name.toStdString();
         info.type = param.type;
         info.control = param.control;
+        info.ctrlProps = param.optCtrlprops;
         info.defl = UiHelper::qvarToZVar(param.value, info.type);
-        //todo:
-        //control properties.
+        for (auto linkidx : param.links) {
+            info.links.push_back(linkidx.data(ROLE_LINK_INFO).value<zeno::EdgeInfo>());
+        }
         return QVariant::fromValue(info);
     }
     case ROLE_NODE_IDX:
@@ -124,6 +126,16 @@ QVariant ParamsModel::getIndexList(bool bInput) const
         }
     }
     return varList;
+}
+
+GraphModel* ParamsModel::getGraph() const
+{
+    if (NodeItem* pItem = qobject_cast<NodeItem*>(parent())) {
+        if (GraphModel* pModel = qobject_cast<GraphModel*>(pItem->parent())) {
+            return pModel;
+        }
+    }
+    return nullptr;
 }
 
 bool ParamsModel::setData(const QModelIndex& index, const QVariant& value, int role)
@@ -364,6 +376,8 @@ void ParamsModel::batchModifyParams(const zeno::ParamsUpdateInfo& params)
             const QString toNode = QString::fromStdString(spToNode->get_name());
             const QString fromSock = QString::fromStdString(spFrom->name);
             const QString toSock = QString::fromStdString(spTo->name);
+            const QString outKey = QString::fromStdString(spLink->tokey);
+            const QString inKey = QString::fromStdString(spLink->fromkey);
 
             //add the new link in current graph.
             GraphModel* pGraphM = parentGraph();
@@ -380,7 +394,8 @@ void ParamsModel::batchModifyParams(const zeno::ParamsUpdateInfo& params)
 
             LinkModel* lnkModel = pGraphM->getLinkModel();
             ZASSERT_EXIT(lnkModel);
-            QModelIndex newLink = lnkModel->addLink(fromParam, toParam);  //only add in model layer, not core layer.
+            //only add in model layer, not core layer.
+            QModelIndex newLink = lnkModel->addLink(fromParam, outKey, toParam, inKey);
 
             fromParams->m_items[fromParam.row()].links.append(newLink);
             toParams->m_items[toParam.row()].links.append(newLink);

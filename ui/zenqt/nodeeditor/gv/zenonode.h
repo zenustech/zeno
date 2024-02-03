@@ -49,9 +49,9 @@ public:
     QPersistentModelIndex index() { return m_index; }
     QPersistentModelIndex subgIndex() { return m_subGpIndex; }
     QModelIndex getSocketIndex(QGraphicsItem* uiitem, bool bSocketText) const;
-    QPointF getSocketPos(const QModelIndex& sockIdx);
+    QPointF getSocketPos(const QModelIndex& sockIdx, const QString keyName = "");
     ZenoSocketItem* getNearestSocket(const QPointF& pos, bool bInput);
-    ZenoSocketItem* getSocketItem(const QModelIndex& sockIdx);
+    ZenoSocketItem* getSocketItem(const QModelIndex& sockIdx, const QString keyName);
     void markError(bool isError);
 
     QString nodeId() const;
@@ -86,7 +86,7 @@ public slots:
     void onCollaspeUpdated(bool);
     void onOptionsBtnToggled(STATUS_BTN btn, bool toggled);
     void onOptionsUpdated(int options);
-    void onSocketLinkChanged(const QModelIndex& paramIdx, bool bInput, bool bAdded);
+    void onSocketLinkChanged(const QModelIndex& paramIdx, bool bInput, bool bAdded, const QString keyName);
     void onNameUpdated(const QString& newName);
     void onParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
     void onParamInserted(const QModelIndex& parent, int first, int last);

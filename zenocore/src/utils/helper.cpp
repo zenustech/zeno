@@ -4,6 +4,7 @@
 namespace zeno {
 
     ZENO_API ParamType convertToType(std::string const& type) {
+        //TODO: deprecated literal representation.
         if (type == "string") { return Param_String; }
         else if (type == "bool") { return Param_Bool; }
         else if (type == "int") { return Param_Int; }
@@ -17,7 +18,7 @@ namespace zeno {
         else if (type == "vec4f") { return Param_Vec4f; }
         else if (type == "prim") { return Param_Prim; }
         else if (type == "list") { return Param_List; }
-        else if (type == "dict") { return Param_Dict; }
+        else if (type == "dict" || type == "DictObject") { return Param_Dict; }
         else if (type == "colorvec3f") { return Param_Vec3f; }
         else return Param_Null;
     }
@@ -106,7 +107,7 @@ namespace zeno {
         const std::string& outParam = spOutParam->name;
         const std::string& inNode = spInNode->get_name();
         const std::string& inParam = spInParam->name;
-        edge = { outNode, outParam, "", inNode, inParam, spLink->keyName };
+        edge = { outNode, outParam, spLink->fromkey, inNode, inParam, spLink->tokey };
         return edge;
     }
 

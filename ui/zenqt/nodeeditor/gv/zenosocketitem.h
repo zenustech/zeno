@@ -24,6 +24,7 @@ public:
     ZenoSocketItem(
         const QPersistentModelIndex& viewSockIdx,
         const QSizeF& sz,
+        bool bInnerSocket = false,
         QGraphicsItem *parent = 0);
     enum { Type = ZTYPE_SOCKET };
     int type() const override;
@@ -34,6 +35,8 @@ public:
     QString nodeIdent() const;
     void setSockStatus(SOCK_STATUS status);
     void setHovered(bool bHovered);
+    void setInnerKey(const QString& key);
+    QString innerKey() const;
     SOCK_STATUS sockStatus() const;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0) override;
     QString netLabel() const;
@@ -58,8 +61,10 @@ private:
     int m_innerSockMargin;
     int m_socketXOffset;
     ZGraphicsNetLabel* m_netLabelItem;
+    QString m_innerKey;
     bool m_bInput;
     bool m_bHovered;
+    bool m_bInnerSocket;
 };
 
 #endif

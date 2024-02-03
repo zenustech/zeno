@@ -53,7 +53,7 @@ public:
     );
     ~ZDictSocketLayout();
     void initUI(IGraphsModel* pModel, const CallbackForSocket& cbSock) override;
-    ZenoSocketItem* socketItemByIdx(const QModelIndex& sockIdx) const override;
+    ZenoSocketItem* socketItemByIdx(const QModelIndex& sockIdx, const QString keyName = "") const override;
     QPointF getSocketPos(const QModelIndex& sockIdx, bool& exist) override;
     void setCollasped(bool bCollasped);
     void setVisible(bool bVisible);

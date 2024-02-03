@@ -9,17 +9,18 @@
 #include "zitemfactory.h"
 #include "zenogvhelper.h"
 #include <zeno/utils/scope_exit.h>
+#include "model/parammodel.h"
+#include "model/GraphModel.h"
 
-//TODO: dict panel
 
 class ZDictPanel;
 
 class ZDictItemLayout : public ZGraphicsLayout
 {
 public:
-    ZDictItemLayout(bool bDict, const QModelIndex& keyIdx, const CallbackForSocket& cbSock, ZDictPanel* panel)
+    ZDictItemLayout(bool bDict, const QModelIndex& paramIdx, const QString& key, const CallbackForSocket& cbSock, ZDictPanel* panel)
         : ZGraphicsLayout(true)
-        , m_sockKeyIdx(keyIdx)
+        , m_key(key)
         , m_editText(nullptr)
         , m_pRemoveBtn(nullptr)
         , m_pMoveUpBtn(nullptr)
@@ -28,28 +29,15 @@ public:
         const int cSocketWidth = ZenoStyle::dpiScaled(12);
         const int cSocketHeight = ZenoStyle::dpiScaled(12);
 
-#if 0
-        PARAM_CLASS sockCls = (PARAM_CLASS)m_sockKeyIdx.data(ROLE_PARAM_CLASS).toInt();
-        const bool bInput = sockCls == PARAM_INPUT || sockCls == PARAM_INNER_INPUT;
-
-        m_socket = new ZenoSocketItem(m_sockKeyIdx, QSizeF(cSocketWidth, cSocketHeight));
+        m_socket = new ZenoSocketItem(paramIdx, QSizeF(cSocketWidth, cSocketHeight), true);
+        const bool bInput = paramIdx.data(ROLE_ISINPUT).toBool();
+        m_socket->setInnerKey(m_key);
 
         QObject::connect(m_socket, &ZenoSocketItem::clicked, [=](bool bInput, Qt::MouseButton button) {
             if (cbSock.cbOnSockClicked)
                 cbSock.cbOnSockClicked(m_socket, button);
         });
-        QObject::connect(m_socket, &ZenoSocketItem::netLabelClicked, [=]() {
-            if (cbSock.cbOnSockNetlabelClicked)
-            cbSock.cbOnSockNetlabelClicked(m_socket->netLabel());
-        });
-        QObject::connect(m_socket, &ZenoSocketItem::netLabelEditFinished, [=]() {
-            if (cbSock.cbOnSockNetlabelEdited)
-            cbSock.cbOnSockNetlabelEdited(m_socket);
-        });
-        QObject::connect(m_socket, &ZenoSocketItem::netLabelMenuActionTriggered, [=](QAction* pAction) {
-            if (cbSock.cbActionTriggered)
-            cbSock.cbActionTriggered(pAction, m_sockKeyIdx);
-        });
+
         //move up button
         ImageElement elem;
         elem.image = ":/icons/moveUp.svg";
@@ -58,13 +46,7 @@ public:
         elem.imageOnHovered = ":/icons/moveUp-on.svg";
         m_pMoveUpBtn = new ZenoImageItem(elem, ZenoStyle::dpiScaledSize(QSizeF(20, 20)));
         QObject::connect(m_pMoveUpBtn, &ZenoImageItem::clicked, [=]() {
-            QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_sockKeyIdx.model());
-            int r = m_sockKeyIdx.row();
-            if (r > 0) {
-                IGraphsModel* pGraphsModel = panel->graphsModel();
-                const QString& objPath = m_sockKeyIdx.data(ROLE_OBJPATH).toString();
-                pGraphsModel->addExecuteCommand(new ModelMoveCommand(pGraphsModel, objPath, r - 1));
-            }
+            panel->onMoveUpBtnClicked(m_key);
         });
 
         //close button
@@ -74,28 +56,19 @@ public:
         elem.imageOnHovered = ":/icons/closebtn_on.svg";
         m_pRemoveBtn = new ZenoImageItem(elem, ZenoStyle::dpiScaledSize(QSizeF(20, 20)));
         QObject::connect(m_pRemoveBtn, &ZenoImageItem::clicked, [=]() {
-            QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_sockKeyIdx.model());
-            IGraphsModel* pGraphsModel = panel->graphsModel();
-            const QString& dictkeypath = panel->dictlistSocket().data(ROLE_OBJPATH).toString();
-            pGraphsModel->beginTransaction("remove dict socket");
-            zeno::scope_exit sp([=]() { pGraphsModel->endTransaction(); });
-            pGraphsModel->addExecuteCommand(new DictKeyAddRemCommand(false, pGraphsModel, dictkeypath, m_sockKeyIdx.row()));
+            panel->onRemovedBtnClicked(m_key);
         });
 
         Callback_EditFinished cbEditFinished = [=](QVariant newValue) {
-            if (newValue == m_sockKeyIdx.data().toString())
-                return;
-            const QString& keyObj = m_sockKeyIdx.data(ROLE_OBJPATH).toString();
-            IGraphsModel* pGraphsModel = panel->graphsModel();
-            pGraphsModel->addExecuteCommand(new RenameObjCommand(pGraphsModel, keyObj, newValue.toString()));
+            panel->onKeyEdited(m_key, newValue.toString());
+            m_key = newValue.toString();
+            m_socket->setInnerKey(m_key);
         };
-
 
         CallbackCollection cbSet;
         cbSet.cbEditFinished = cbEditFinished;
 
-        const QString &key = m_sockKeyIdx.data().toString();
-        m_editText = zenoui::createItemWidget(key, zeno::Lineedit, zeno::Param_String, cbSet, nullptr, QVariant());
+        m_editText = zenoui::createItemWidget(key, zeno::Lineedit, zeno::Param_String, cbSet, nullptr, zeno::ControlProperty());
         m_editText->setEnabled(m_bDict);
         m_editText->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
 
@@ -113,22 +86,29 @@ public:
             addItem(m_editText, Qt::AlignVCenter);
             addItem(m_socket, Qt::AlignVCenter);
         }
-#endif
 
         setSpacing(ZenoStyle::dpiScaled(5));
     }
+
     ZenoSocketItem* socketItem() const
     {
         return m_socket;
     }
+
     QPersistentModelIndex socketIdx() const
     {
-        return m_sockKeyIdx;
+        return QModelIndex();
     }
+
+    QString key() const {
+        return m_key;
+    }
+
     void updateName(const QString& newKeyName)
     {
         ZenoGvHelper::setValue(m_editText, zeno::Param_String, newKeyName, nullptr);
     }
+
     void setEnable(bool bEnable)
     {
         m_socket->setEnabled(bEnable);
@@ -138,7 +118,7 @@ public:
     }
 
 private:
-    QPersistentModelIndex m_sockKeyIdx;
+    QString m_key;
     ZenoSocketItem* m_socket;
     QGraphicsItem* m_editText;
     ZenoImageItem* m_pRemoveBtn;
@@ -147,9 +127,9 @@ private:
 };
 
 
-ZDictPanel::ZDictPanel(ZDictSocketLayout* pLayout, const QPersistentModelIndex& viewSockIdx, const CallbackForSocket& cbSock)
+ZDictPanel::ZDictPanel(ZDictSocketLayout* pLayout, const QPersistentModelIndex& paramIdx, const CallbackForSocket& cbSock)
     : ZLayoutBackground()
-    , m_viewSockIdx(viewSockIdx)
+    , m_paramIdx(paramIdx)
     , m_pDictLayout(pLayout)
     , m_pEditBtn(nullptr)
     , m_cbSock(cbSock)
@@ -166,50 +146,58 @@ ZDictPanel::ZDictPanel(ZDictSocketLayout* pLayout, const QPersistentModelIndex& 
     pVLayout->setContentsMargin(8, 0, 8, 8);
     pVLayout->setSpacing(ZenoStyle::dpiScaled(8));
 
-    const QString& coreType = m_viewSockIdx.data(ROLE_PARAM_TYPE).toString();
-    m_bDict = coreType == "dict";
+    const zeno::ParamType type = (zeno::ParamType)m_paramIdx.data(ROLE_PARAM_TYPE).toInt();
 
-#if 0
-    QAbstractItemModel* pKeyObjModel = QVariantPtr<QAbstractItemModel>::asPtr(m_viewSockIdx.data(ROLE_VPARAM_LINK_MODEL));
-    ZASSERT_EXIT(pKeyObjModel);
-    for (int r = 0; r < pKeyObjModel->rowCount(); r++)
+    const QString& coreType = m_paramIdx.data(ROLE_PARAM_TYPE).toString();
+    m_bDict = type == zeno::Param_Dict;
+
+    bool bInput = m_paramIdx.data(ROLE_ISINPUT).toBool();
+
+    zeno::ParamInfo paramInfo = m_paramIdx.data(ROLE_PARAM_INFO).value<zeno::ParamInfo>();
+    for (int r = 0; r < paramInfo.links.size(); r++)
     {
-        const QModelIndex& idxKey = pKeyObjModel->index(r, 0);
-        QString key = idxKey.data().toString();
-
-        ZDictItemLayout* pkey = new ZDictItemLayout(m_bDict, idxKey, cbSock, this);
+        zeno::EdgeInfo edge = paramInfo.links[r];
+        const QString& key = bInput ? QString::fromStdString(edge.inKey) : QString::fromStdString(edge.outKey);
+        ZDictItemLayout* pkey = new ZDictItemLayout(m_bDict, m_paramIdx, key, cbSock, this);
         pVLayout->addLayout(pkey);
     }
 
+    QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(paramIdx.model());
+    ParamsModel* paramsM = qobject_cast<ParamsModel*>(pModel);
+
     QString btnName = m_bDict ? "+ Add Key" : "+ Add Item";
-    m_pEditBtn = new ZenoParamPushButton(btnName, "dictkeypanel");
-    pVLayout->addItem(m_pEditBtn, Qt::AlignHCenter);
+    if (!bInput)
+    {
+        m_pEditBtn = new ZenoParamPushButton(btnName, "dictkeypanel");
+        pVLayout->addItem(m_pEditBtn, Qt::AlignHCenter);
+    }
+    else {
+        connect(paramsM, &ParamsModel::linkAboutToBeInserted, this, [=](const zeno::EdgeInfo& link) {
+            ZDictItemLayout* pkey = new ZDictItemLayout(m_bDict, 
+                m_paramIdx, QString::fromStdString(link.inKey), cbSock, this);
+            int lastItemPos = bInput ? pVLayout->count() : pVLayout->count() - 1;
+            m_layout->addLayout(pkey);
+            ZGraphicsLayout::updateHierarchy(pVLayout);
+        });
 
-    connect(m_pEditBtn, SIGNAL(clicked()), this, SLOT(onEditBtnClicked()));
-    connect(pKeyObjModel, SIGNAL(rowsInserted(const QModelIndex&, int, int)), 
-        this, SLOT(onKeysInserted(const QModelIndex&, int, int)));
+        connect(paramsM, &ParamsModel::linkAboutToBeRemoved, this, [=](const zeno::EdgeInfo& link) {
+            removeKey(QString::fromStdString(link.inKey));
+        });
+    }
 
-    connect(pKeyObjModel, SIGNAL(rowsAboutToBeRemoved(const QModelIndex &, int, int)),
-        this, SLOT(onKeysAboutToBeRemoved(const QModelIndex&, int, int)));
-
-    connect(pKeyObjModel, SIGNAL(rowsMoved(const QModelIndex&, int, int, const QModelIndex&, int)),
-        this, SLOT(onKeysMoved(const QModelIndex&, int, int, const QModelIndex&, int)));
-
-    connect(pKeyObjModel, SIGNAL(dataChanged(const QModelIndex&, const QModelIndex&, const QVector<int>&)),
-        this, SLOT(onKeysModelDataChanged(const QModelIndex&, const QModelIndex&, const QVector<int>&)));
-
-    QAbstractItemModel* paramsModel = const_cast<QAbstractItemModel*>(m_viewSockIdx.model());
-    connect(paramsModel, SIGNAL(dataChanged(const QModelIndex&, const QModelIndex&, const QVector<int>&)),
-        this, SLOT(onAddRemoveLink(const QModelIndex&, const QModelIndex&, const QVector<int>&)));
+    connect(m_pEditBtn, &ZenoParamPushButton::clicked, this, [=]() {
+        QString newKey = generateNewKey();
+        ZDictItemLayout* pkey = new ZDictItemLayout(m_bDict, m_paramIdx, newKey, cbSock, this);
+        int lastItemPos = bInput ? pVLayout->count() : pVLayout->count() - 1;
+        m_layout->insertLayout(lastItemPos, pkey);
+        ZGraphicsLayout::updateHierarchy(pVLayout);
+    });
 
     setLayout(pVLayout);
-#endif
 }
 
 ZDictPanel::~ZDictPanel()
 {
-    int j;
-    j = 0;
 }
 
 void ZDictPanel::setEnable(bool bEnable)
@@ -226,93 +214,35 @@ void ZDictPanel::setEnable(bool bEnable)
     }
 }
 
-void ZDictPanel::onEditBtnClicked()
+QSet<QString> ZDictPanel::keyNames() const
 {
-#if 0
-    QAbstractItemModel* pKeyObjModel = QVariantPtr<QAbstractItemModel>::asPtr(m_viewSockIdx.data(ROLE_VPARAM_LINK_MODEL));
-    ZASSERT_EXIT(pKeyObjModel);
-    int n = pKeyObjModel->rowCount();
-    //pKeyObjModel->insertRow(n);
-    const QString& dictKeyPath = m_viewSockIdx.data(ROLE_OBJPATH).toString();
-    m_model->addExecuteCommand(new DictKeyAddRemCommand(true, m_model, dictKeyPath, n));
-#endif
-}
-
-void ZDictPanel::onKeysAboutToBeRemoved(const QModelIndex& parent, int first, int last)
-{
-    m_layout->removeElement(first);
-    ZGraphicsLayout::updateHierarchy(m_layout);
-    if (m_cbSock.cbOnSockLayoutChanged)
-        m_cbSock.cbOnSockLayoutChanged();
-}
-
-void ZDictPanel::onKeysMoved(const QModelIndex& parent, int start, int end, const QModelIndex& destination, int row)
-{
-    //only support move up for now.
-    m_layout->moveItem(start, row);
-    ZGraphicsLayout::updateHierarchy(m_layout);
-    if (m_cbSock.cbOnSockLayoutChanged)
-        m_cbSock.cbOnSockLayoutChanged();
-}
-
-void ZDictPanel::onKeysInserted(const QModelIndex& parent, int first, int last)
-{
-#if 0
-    QAbstractItemModel* pKeyObjModel = QVariantPtr<QAbstractItemModel>::asPtr(m_viewSockIdx.data(ROLE_VPARAM_LINK_MODEL));
-    pKeyObjModel->setData(QModelIndex(), false, ROLE_COLLASPED);
-
-    const QModelIndex &idxKey = pKeyObjModel->index(first, 0);
-    QString key = idxKey.data().toString();
-    ZDictItemLayout *pkey = new ZDictItemLayout(m_bDict, idxKey, m_cbSock, this);
-    m_layout->insertLayout(first, pkey);
-
-    ZGraphicsLayout::updateHierarchy(m_layout);
-    if (m_cbSock.cbOnSockLayoutChanged)
-        m_cbSock.cbOnSockLayoutChanged();
-#endif
-}
-
-void ZDictPanel::onKeysModelDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
-{
-#if 0
-    if ((roles.contains(Qt::DisplayRole) || roles.contains(ROLE_PARAM_NAME)) && topLeft.column() == 0)
+    QSet<QString> names;
+    for (int i = 0; i < m_layout->count(); i++)
     {
-        ZDictItemLayout* pItemLayout = static_cast<ZDictItemLayout*>(m_layout->itemAt(topLeft.row())->pLayout);
-        const QString &newKeyName = topLeft.data(Qt::DisplayRole).toString();
-        pItemLayout->updateName(newKeyName);
-    }
-    if (roles.contains(ROLE_PARAM_NETLABEL))
-    {
-        ZDictItemLayout* pItemLayout = static_cast<ZDictItemLayout*>(m_layout->itemAt(topLeft.row())->pLayout);
-        const QString& label = topLeft.data(ROLE_PARAM_NETLABEL).toString();
-        pItemLayout->socketItem()->onNetLabelChanged(label);
-    }
-#endif
-}
-
-void ZDictPanel::onAddRemoveLink(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
-{
-    if (topLeft == m_viewSockIdx)
-    {
-#if 0
-        if (roles.contains(ROLE_ADDLINK))
+        auto layoutItem = m_layout->itemAt(i);
+        if (layoutItem->type == Type_Layout)
         {
-            setEnable(false);
+            ZDictItemLayout* pDictItem = static_cast<ZDictItemLayout*>(layoutItem->pLayout);
+            names.insert(pDictItem->key());
         }
-        else if (roles.contains(ROLE_REMOVELINK))
-        {
-            setEnable(true);
-        }
-#endif
     }
+    return names;
 }
 
-QModelIndex ZDictPanel::dictlistSocket() const
+QString ZDictPanel::generateNewKey() const
 {
-    return m_viewSockIdx;
+    QString key = "obj";
+    QSet<QString> names = keyNames();
+    int i = 0;
+    QString newName = QString("obj%1").arg(i);
+    while (names.find(newName) != names.end()) {
+        i++;
+        newName = QString("obj%1").arg(i);
+    }
+    return newName;
 }
 
-ZenoSocketItem* ZDictPanel::socketItemByIdx(const QModelIndex& sockIdx) const
+void ZDictPanel::removeKey(const QString& keyName)
 {
     for (int i = 0; i < m_layout->count(); i++)
     {
@@ -320,7 +250,112 @@ ZenoSocketItem* ZDictPanel::socketItemByIdx(const QModelIndex& sockIdx) const
         if (layoutItem->type == Type_Layout)
         {
             ZDictItemLayout* pDictItem = static_cast<ZDictItemLayout*>(layoutItem->pLayout);
-            if (pDictItem && pDictItem->socketIdx() == sockIdx)
+            if (pDictItem && pDictItem->key() == keyName)
+            {
+                m_layout->removeElement(i);
+                ZGraphicsLayout::updateHierarchy(m_layout);
+                return;
+            }
+        }
+    }
+}
+
+void ZDictPanel::onRemovedBtnClicked(const QString& keyName)
+{
+    bool bInput = m_paramIdx.data(ROLE_ISINPUT).toBool();
+    PARAM_LINKS links = m_paramIdx.data(ROLE_LINKS).value<PARAM_LINKS>();
+    QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_paramIdx.model());
+    ParamsModel* paramsM = qobject_cast<ParamsModel*>(pModel);
+
+    for (auto linkIdx : links) {
+        zeno::EdgeInfo edge = linkIdx.data(ROLE_LINK_INFO).value<zeno::EdgeInfo>();
+        if (bInput && edge.inKey == keyName.toStdString()) {
+            paramsM->getGraph()->removeLink(edge);
+            removeKey(keyName);
+            break;
+        }
+        else if (!bInput && edge.outKey == keyName.toStdString()) {
+            paramsM->getGraph()->removeLink(edge);
+            removeKey(keyName);
+            break;
+        }
+    }
+
+    if (m_cbSock.cbOnSockLayoutChanged)
+        m_cbSock.cbOnSockLayoutChanged();
+}
+
+void ZDictPanel::onMoveUpBtnClicked(const QString& keyName)
+{
+    bool bInput = m_paramIdx.data(ROLE_ISINPUT).toBool();
+    QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_paramIdx.model());
+    ParamsModel* paramsM = qobject_cast<ParamsModel*>(pModel);
+
+    GraphModel* pGraphM = paramsM->getGraph();  //may be a assets.
+    if (!pGraphM)
+        return;
+
+    PARAM_LINKS links = m_paramIdx.data(ROLE_LINKS).value<PARAM_LINKS>();
+    for (auto linkIdx : links) {
+        zeno::EdgeInfo edge = linkIdx.data(ROLE_LINK_INFO).value<zeno::EdgeInfo>();
+        if (bInput && edge.inKey == keyName.toStdString()) {
+            pGraphM->moveUpLinkKey(linkIdx, bInput, edge.inKey);
+            break;
+        }
+        else if (!bInput && edge.outKey == keyName.toStdString()) {
+            pGraphM->moveUpLinkKey(linkIdx, bInput, edge.outKey);
+            break;
+        }
+    }
+
+    for (int i = 0; i < m_layout->count(); i++)
+    {
+        auto layoutItem = m_layout->itemAt(i);
+        if (layoutItem->type == Type_Layout)
+        {
+            ZDictItemLayout* pDictItem = static_cast<ZDictItemLayout*>(layoutItem->pLayout);
+            if (pDictItem && pDictItem->key() == keyName)
+            {
+                m_layout->moveItem(i, i - 1);
+                ZGraphicsLayout::updateHierarchy(m_layout);
+                break;
+            }
+        }
+    }
+
+    if (m_cbSock.cbOnSockLayoutChanged)
+        m_cbSock.cbOnSockLayoutChanged();
+}
+
+void ZDictPanel::onKeyEdited(const QString& oldKey, const QString& newKey)
+{
+    bool bInput = m_paramIdx.data(ROLE_ISINPUT).toBool();
+    PARAM_LINKS links = m_paramIdx.data(ROLE_LINKS).value<PARAM_LINKS>();
+    QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_paramIdx.model());
+    ParamsModel* paramsM = qobject_cast<ParamsModel*>(pModel);
+
+    for (auto linkIdx : links) {
+        zeno::EdgeInfo edge = linkIdx.data(ROLE_LINK_INFO).value<zeno::EdgeInfo>();
+        if (bInput && edge.inKey == oldKey.toStdString()) {
+            paramsM->getGraph()->updateLink(linkIdx, bInput, oldKey, newKey);
+            break;
+        }
+        else if (!bInput && edge.outKey == oldKey.toStdString()) {
+            paramsM->getGraph()->updateLink(linkIdx, bInput, oldKey, newKey);
+            break;
+        }
+    }
+}
+
+ZenoSocketItem* ZDictPanel::socketItemByIdx(const QModelIndex& sockIdx, const QString keyName) const
+{
+    for (int i = 0; i < m_layout->count(); i++)
+    {
+        auto layoutItem = m_layout->itemAt(i);
+        if (layoutItem->type == Type_Layout)
+        {
+            ZDictItemLayout* pDictItem = static_cast<ZDictItemLayout*>(layoutItem->pLayout);
+            if (pDictItem && pDictItem->key() == keyName)
             {
                 return pDictItem->socketItem();
             }

@@ -55,7 +55,8 @@ QVariant LinkModel::data(const QModelIndex& index, int role) const
             const QString& outParam = info.fromParam.data(ROLE_PARAM_NAME).toString();
             const QString& inNode = info.toParam.data(ROLE_NODE_NAME).toString();
             const QString& inParam = info.toParam.data(ROLE_PARAM_NAME).toString();
-            zeno::EdgeInfo edge = { outNode.toStdString(), outParam.toStdString(), "", inNode.toStdString(), inParam.toStdString(), ""};
+            zeno::EdgeInfo edge = { outNode.toStdString(), outParam.toStdString(), info.fromKey.toStdString(),
+                inNode.toStdString(), inParam.toStdString(), info.toKey.toStdString() };
             return QVariant::fromValue(edge);
         }
         case ROLE_LINKID:
@@ -65,6 +66,26 @@ QVariant LinkModel::data(const QModelIndex& index, int role) const
         }
     }
     return QVariant();
+}
+
+bool LinkModel::setData(const QModelIndex& index, const QVariant& value, int role)
+{
+    switch (role)
+    {
+        case ROLE_LINK_OUTKEY:
+        {
+            auto& info = m_items[index.row()];
+            info.fromKey = value.toString();
+            return true;
+        }
+        case ROLE_LINK_INKEY:
+        {
+            auto& info = m_items[index.row()];
+            info.toKey = value.toString();
+            return true;
+        }
+    }
+    return QAbstractListModel::setData(index, value, role);
 }
 
 QHash<int, QByteArray> LinkModel::roleNames() const
@@ -83,7 +104,8 @@ bool LinkModel::removeRows(int row, int count, const QModelIndex& parent)
     return true;
 }
 
-QModelIndex LinkModel::addLink(const QModelIndex& fromParam, const QModelIndex& toParam)
+QModelIndex LinkModel::addLink(const QModelIndex& fromParam, const QString& fromKey,
+    const QModelIndex& toParam, const QString& toKey)
 {
     int row = m_items.size();
     beginInsertRows(QModelIndex(), row, row);
@@ -91,6 +113,8 @@ QModelIndex LinkModel::addLink(const QModelIndex& fromParam, const QModelIndex& 
     _linkItem item;
     item.fromParam = fromParam;
     item.toParam = toParam;
+    item.fromKey = fromKey;
+    item.toKey = toKey;
     item.uuid = QUuid::createUuid();
 
     m_items.append(item);
@@ -98,4 +122,3 @@ QModelIndex LinkModel::addLink(const QModelIndex& fromParam, const QModelIndex& 
     endInsertRows();
     return index(row, 0);
 }
-

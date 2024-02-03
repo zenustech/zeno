@@ -189,6 +189,8 @@ void ZenoSubGraphScene::initLink(const QModelIndex& linkIdx)
     const QString& outId = QString::fromStdString(edge.outNode);
     const QModelIndex& outSockIdx = linkIdx.data(ROLE_OUTSOCK_IDX).toModelIndex();
     const QModelIndex& inSockIdx = linkIdx.data(ROLE_INSOCK_IDX).toModelIndex();
+    const QString inKey = QString::fromStdString(edge.inKey);
+    const QString outKey = QString::fromStdString(edge.outKey);
 
     ZenoNode* inNode = m_nodes[inId];
     ZenoNode* outNode = m_nodes[outId];
@@ -198,12 +200,12 @@ void ZenoSubGraphScene::initLink(const QModelIndex& linkIdx)
     addItem(pEdge);
     m_links[linkid] = pEdge;
 
-    ZenoSocketItem *socketItem = outNode->getSocketItem(outSockIdx);
+    ZenoSocketItem *socketItem = outNode->getSocketItem(outSockIdx, outKey);
     ZASSERT_EXIT(socketItem);
     socketItem->setSockStatus(ZenoSocketItem::STATUS_CONNECTED);
     //socketItem->toggle(true);
 
-    socketItem = inNode->getSocketItem(inSockIdx);
+    socketItem = inNode->getSocketItem(inSockIdx, inKey);
     ZASSERT_EXIT(socketItem);
     socketItem->setSockStatus(ZenoSocketItem::STATUS_CONNECTED);
     //socketItem->toggle(true);
@@ -342,8 +344,10 @@ void ZenoSubGraphScene::viewAddLink(const QModelIndex& linkIdx)
 
     const QString& inId = QString::fromStdString(edge.inNode);
     const QString& inSock = QString::fromStdString(edge.inParam);
+    const QString inKey = QString::fromStdString(edge.inKey);
     const QString& outId = QString::fromStdString(edge.outNode);
     const QString& outSock = QString::fromStdString(edge.outParam);
+    const QString outKey = QString::fromStdString(edge.outKey);
 
     if (m_nodes.find(inId) == m_nodes.end() || m_nodes.find(outId) == m_nodes.end())
     {
@@ -365,8 +369,8 @@ void ZenoSubGraphScene::viewAddLink(const QModelIndex& linkIdx)
     QModelIndex inSockIdx = linkIdx.data(ROLE_INSOCK_IDX).toModelIndex();
     QModelIndex outSockIdx = linkIdx.data(ROLE_OUTSOCK_IDX).toModelIndex();
 
-    pInNode->onSocketLinkChanged(inSockIdx, true, true);
-    pOutNode->onSocketLinkChanged(outSockIdx, false, true);
+    pInNode->onSocketLinkChanged(inSockIdx, true, true, inKey);
+    pOutNode->onSocketLinkChanged(outSockIdx, false, true, outKey);
 }
 
 void ZenoSubGraphScene::onLinkAboutToBeRemoved(const QModelIndex& parent, int first, int last)
@@ -391,16 +395,18 @@ void ZenoSubGraphScene::viewRemoveLink(const QModelIndex& linkIdx)
 
     const QString& inId = QString::fromStdString(edge.inNode);
     const QString& inSock = QString::fromStdString(edge.inParam);
+    const QString inKey = QString::fromStdString(edge.inKey);
     const QString& outId = QString::fromStdString(edge.outNode);
     const QString& outSock = QString::fromStdString(edge.outParam);
+    const QString outKey = QString::fromStdString(edge.outKey);
 
     QModelIndex inSockIdx = linkIdx.data(ROLE_INSOCK_IDX).toModelIndex();
     QModelIndex outSockIdx = linkIdx.data(ROLE_OUTSOCK_IDX).toModelIndex();
 
     if (m_nodes.find(inId) != m_nodes.end())
-        m_nodes[inId]->onSocketLinkChanged(inSockIdx, true, false);
+        m_nodes[inId]->onSocketLinkChanged(inSockIdx, true, false, inKey);
     if (m_nodes.find(outId) != m_nodes.end())
-        m_nodes[outId]->onSocketLinkChanged(outSockIdx, false, false);
+        m_nodes[outId]->onSocketLinkChanged(outSockIdx, false, false, outKey);
 }
 
 QRectF ZenoSubGraphScene::nodesBoundingRect() const
@@ -622,7 +628,8 @@ void ZenoSubGraphScene::onSocketClicked(ZenoSocketItem* pSocketItem, Qt::MouseBu
 
     PARAM_LINKS linkIndice = paramIdx.data(ROLE_LINKS).value<PARAM_LINKS>();
     bool bDisconnetLink = prop != SOCKPROP_MULTILINK && bInput && !linkIndice.isEmpty();
-    if (bDisconnetLink)
+    //it's difficult to handle the situation when trying to disconnect the link.
+    if (false && bDisconnetLink)
     {
         QPersistentModelIndex linkIdx = linkIndice[0];
 
@@ -631,13 +638,14 @@ void ZenoSubGraphScene::onSocketClicked(ZenoSocketItem* pSocketItem, Qt::MouseBu
 
         const QString& outNode = QString::fromStdString(edge.outNode);
         const QString& outSock = QString::fromStdString(edge.outParam);
+        const QString outKey = QString::fromStdString(edge.outKey);
         const QModelIndex& outSockIdx = linkIdx.data(ROLE_OUTSOCK_IDX).toModelIndex();
 
         //remove current link at view.
         viewRemoveLink(linkIdx);
 
         socketPos = m_nodes[outNode]->getSocketPos(outSockIdx);
-        ZenoSocketItem* pOutSocketItem = m_nodes[outNode]->getSocketItem(outSockIdx);
+        ZenoSocketItem* pOutSocketItem = m_nodes[outNode]->getSocketItem(outSockIdx, outKey);
         m_tempLink = new ZenoTempLink(pOutSocketItem, outNode, socketPos, false, QModelIndexList());
         m_tempLink->setOldLink(linkIdx);
         addItem(m_tempLink);
@@ -783,21 +791,21 @@ void ZenoSubGraphScene::onTempLinkClosed()
 
         if (bTargetIsInput != fixedInput)
         {
-            QPersistentModelIndex fromSockIdx, toSockIdx;
+            QPersistentModelIndex outSockIdx, inSockIdx;
             if (fixedInput) {
-                fromSockIdx = targetSock->paramIndex();
-                toSockIdx = m_tempLink->getFixedSocket()->paramIndex();
+                outSockIdx = targetSock->paramIndex();
+                inSockIdx = m_tempLink->getFixedSocket()->paramIndex();
             } else {
-                fromSockIdx = m_tempLink->getFixedSocket()->paramIndex();
-                toSockIdx = targetSock->paramIndex();
+                outSockIdx = m_tempLink->getFixedSocket()->paramIndex();
+                inSockIdx = targetSock->paramIndex();
             }
 
             const QPersistentModelIndex& oldLink = m_tempLink->oldLink();
             if (oldLink.isValid())
             {
                 //same link?
-                if (oldLink.data(ROLE_OUTSOCK_IDX).toModelIndex() == fromSockIdx &&
-                    oldLink.data(ROLE_INSOCK_IDX).toModelIndex() == toSockIdx)
+                if (oldLink.data(ROLE_OUTSOCK_IDX).toModelIndex() == outSockIdx &&
+                    oldLink.data(ROLE_INSOCK_IDX).toModelIndex() == inSockIdx)
                 {
                     viewAddLink(oldLink);
                     return;
@@ -807,12 +815,8 @@ void ZenoSubGraphScene::onTempLinkClosed()
             m_model->beginTransaction(tr("add Link"));
             zeno::scope_exit sp([=]() { m_model->endTransaction(); });
 
-            //remove the old Link first.
-            if (oldLink.isValid())
-                m_model->removeLink(oldLink);
-
             //dict panel.
-            SOCKET_PROPERTY inProp = (SOCKET_PROPERTY)toSockIdx.data(ROLE_PARAM_SOCKPROP).toInt();
+            SOCKET_PROPERTY inProp = (SOCKET_PROPERTY)inSockIdx.data(ROLE_PARAM_SOCKPROP).toInt();
             //TODO: dict case
 #if 0
             if (bTargetIsInput && (inProp & SOCKPROP_DICTLIST_PANEL))
@@ -897,26 +901,26 @@ void ZenoSubGraphScene::onTempLinkClosed()
                 }
             }
 #endif
-            //remove the edge in inNode:inSock, if exists.
-            if (bTargetIsInput && inProp != SOCKPROP_MULTILINK)
-            {
-                QPersistentModelIndex linkIdx;
-                const QModelIndex& paramIdx = targetSock->paramIndex();
-                const PARAM_LINKS& links = paramIdx.data(ROLE_LINKS).value<PARAM_LINKS>();
-                if (!links.isEmpty())
-                    linkIdx = links[0];
-                if (linkIdx.isValid())
-                    m_model->removeLink(linkIdx);
-            }
-
-            QModelIndex outNodeIdx = fromSockIdx.data(ROLE_NODE_IDX).toModelIndex();
-            QModelIndex inNodeIdx = toSockIdx.data(ROLE_NODE_IDX).toModelIndex();
+            QModelIndex outNodeIdx = outSockIdx.data(ROLE_NODE_IDX).toModelIndex();
+            QModelIndex inNodeIdx = inSockIdx.data(ROLE_NODE_IDX).toModelIndex();
 
             zeno::EdgeInfo newEdge;
             newEdge.outNode = outNodeIdx.data(ROLE_NODE_NAME).toString().toStdString();
-            newEdge.outParam = fromSockIdx.data(ROLE_PARAM_NAME).toString().toStdString();
+            newEdge.outParam = outSockIdx.data(ROLE_PARAM_NAME).toString().toStdString();
             newEdge.inNode = inNodeIdx.data(ROLE_NODE_NAME).toString().toStdString();
-            newEdge.inParam = toSockIdx.data(ROLE_PARAM_NAME).toString().toStdString();
+            newEdge.inParam = inSockIdx.data(ROLE_PARAM_NAME).toString().toStdString();
+
+            if (!fixedInput)
+            {
+                if (zeno::Param_Dict == outSockIdx.data(ROLE_PARAM_TYPE))
+                {
+                    ZenoSocketItem* pOutSocket = m_tempLink->getFixedSocket();
+                    const QString& outKey = pOutSocket->innerKey();
+                    if (!outKey.isEmpty()) {
+                        newEdge.outKey = outKey.toStdString();
+                    }
+                }
+            }
 
             m_model->addLink(newEdge);
             return;

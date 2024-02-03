@@ -153,7 +153,7 @@ ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
                 spDict = std::make_shared<DictObject>();
                 for (const auto& spLink : in_param->links)
                 {
-                    const std::string& keyName = spLink->keyName;
+                    const std::string& keyName = spLink->tokey;
                     std::shared_ptr<IParam> outParam = spLink->fromparam.lock();
                     std::shared_ptr<INode> outNode = outParam->m_wpNode.lock();
                     outNode->doApply();

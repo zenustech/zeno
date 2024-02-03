@@ -49,12 +49,17 @@ public:
     QModelIndex removeOneLink(const QModelIndex& paramIdx, const zeno::EdgeInfo& link);
     bool removeSpecificLink(const QModelIndex& paramIdx, const QModelIndex& linkIdx);
     void addParam(const ParamItem& param);
+    GraphModel* getGraph() const;
     //temp:
     QStandardItemModel* customParamModel();
     void batchModifyParams(const zeno::ParamsUpdateInfo& params);
 
     int getParamlinkCount(const QModelIndex& paramIdx);
     int numOfInputParams() const;
+
+signals:
+    void linkAboutToBeInserted(const zeno::EdgeInfo& link);
+    void linkAboutToBeRemoved(const zeno::EdgeInfo& link);
 
 private:
     void initParamItems();

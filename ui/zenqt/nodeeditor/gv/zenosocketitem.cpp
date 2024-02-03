@@ -9,6 +9,7 @@
 ZenoSocketItem::ZenoSocketItem(
         const QPersistentModelIndex& viewSockIdx,
         const QSizeF& sz,
+        bool bInnerSocket,
         QGraphicsItem* parent
 )
     : _base(parent)
@@ -16,13 +17,17 @@ ZenoSocketItem::ZenoSocketItem(
     , m_status(STATUS_UNKNOWN)
     , m_size(sz)
     , m_bHovered(false)
+    , m_bInnerSocket(bInnerSocket)
     , m_netLabelItem(nullptr)
 {
     m_bInput = m_paramIdx.data(ROLE_ISINPUT).toBool();
     m_innerSockMargin = ZenoStyle::dpiScaled(15);
     m_socketXOffset = ZenoStyle::dpiScaled(24);
-    setData(GVKEY_SIZEHINT, m_size);
-    setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
+    if (!m_bInnerSocket)
+    {
+        setData(GVKEY_SIZEHINT, m_size);
+        setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
+    }
     setSockStatus(STATUS_NOCONN);
     setAcceptHoverEvents(true);
 }
@@ -34,9 +39,25 @@ int ZenoSocketItem::type() const
 
 QPointF ZenoSocketItem::center() const
 {
-    //(0, 0) is the position of socket.
-    QPointF center = mapToScene(QPointF(m_size.width() / 2., m_size.height() / 2.));
-    return center;
+    if (m_bInnerSocket) {
+        return this->sceneBoundingRect().center();
+    }
+    else
+    {
+        //(0, 0) is the position of socket.
+        QPointF center = mapToScene(QPointF(m_size.width() / 2., m_size.height() / 2.));
+        return center;
+    }
+}
+
+void ZenoSocketItem::setInnerKey(const QString& key)
+{
+    m_innerKey = key;
+}
+
+QString ZenoSocketItem::innerKey() const
+{
+    return m_innerKey;
 }
 
 QModelIndex ZenoSocketItem::paramIndex() const
@@ -46,11 +67,19 @@ QModelIndex ZenoSocketItem::paramIndex() const
 
 QRectF ZenoSocketItem::boundingRect() const
 {
-    QSizeF wholeSize = QSizeF(m_size.width() + m_socketXOffset, m_size.height());
-    if (m_bInput)
-        return QRectF(QPointF(-m_socketXOffset, 0), wholeSize);
+    if (m_bInnerSocket)
+    {
+        QRectF rc(QPointF(0, 0), m_size + QSize(2 * m_innerSockMargin, 2 * m_innerSockMargin));
+        return rc;
+    }
     else
-        return QRectF(QPointF(0, 0), wholeSize);
+    {
+        QSizeF wholeSize = QSizeF(m_size.width() + m_socketXOffset, m_size.height());
+        if (m_bInput)
+            return QRectF(QPointF(-m_socketXOffset, 0), wholeSize);
+        else
+            return QRectF(QPointF(0, 0), wholeSize);
+    }
 }
 
 bool ZenoSocketItem::isInputSocket() const
@@ -159,6 +188,7 @@ void ZenoSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
         painter->setBrush(innerBgclr);
     }
 
+    if (!m_bInnerSocket)
     {
         QPainterPath path;
         qreal halfpw = pen.widthF() / 2;
@@ -206,5 +236,10 @@ void ZenoSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
             QRectF rc(QPointF(halfpw, halfpw), QPointF(m_size.width(), m_size.height() * 0.9));
             painter->fillRect(rc, bDrawBg ? bgClr : innerBgclr);
         }
+    }
+    else
+    {
+        QRectF rc(m_innerSockMargin, m_innerSockMargin, m_size.width(), m_size.height());
+        painter->drawEllipse(rc);
     }
 }

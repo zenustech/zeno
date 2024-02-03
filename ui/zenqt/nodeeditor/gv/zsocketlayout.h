@@ -8,8 +8,6 @@
 class ZenoSocketItem;
 class ZSimpleTextItem;
 class ZSocketPlainTextItem;
-class ZDictPanel;
-class ZenoImageItem;
 class ZenoParamGroupLine;
 
 class ZSocketLayout : public ZGraphicsLayout
@@ -27,8 +25,8 @@ public:
     QGraphicsItem* socketText() const;
     QGraphicsItem* control() const;
     ZenoSocketItem* socketItem() const;
-    virtual ZenoSocketItem* socketItemByIdx(const QModelIndex& sockIdx) const;
-    virtual QPointF getSocketPos(const QModelIndex& sockIdx, bool& exist);
+    virtual ZenoSocketItem* socketItemByIdx(const QModelIndex& sockIdx, const QString keyName) const;
+    virtual QPointF getSocketPos(const QModelIndex& sockIdx, const QString keyName, bool& exist);
     QPersistentModelIndex viewSocketIdx() const;
     virtual void setVisible(bool bVisible);
 
@@ -38,42 +36,23 @@ protected:
     QGraphicsItem* m_control;
     bool m_bInput;
     bool m_bEditable;
-    const QPersistentModelIndex m_viewSockIdx;
+    const QPersistentModelIndex m_paramIdx;
 };
 
-class ZDictSocketLayout : public ZSocketLayout
+class ZGroupSocketLayout : public ZSocketLayout
 {
 public:
-    ZDictSocketLayout(
-        const QPersistentModelIndex& viewSockIdx,
-        bool bInput
-    );
-    ~ZDictSocketLayout();
-    void initUI(const CallbackForSocket& cbSock) override;
-    ZenoSocketItem* socketItemByIdx(const QModelIndex& sockIdx) const override;
-    QPointF getSocketPos(const QModelIndex& sockIdx, bool& exist) override;
-    void setCollasped(bool bCollasped);
-    void setVisible(bool bVisible);
-
-private:
-    ZDictPanel* m_panel;
-    ZenoImageItem* m_collaspeBtn;
-};
-
-class ZGroupSocketLayout : public ZSocketLayout {
-  public:
     ZGroupSocketLayout(const QPersistentModelIndex &viewSockIdx, bool bInput);
     ~ZGroupSocketLayout();
     void initUI(const CallbackForSocket &cbSock) override;
-    ZenoSocketItem *socketItemByIdx(const QModelIndex &sockIdx) const override;
-    QPointF getSocketPos(const QModelIndex &sockIdx, bool &exist) override;
+    ZenoSocketItem *socketItemByIdx(const QModelIndex &sockIdx, const QString keyName) const override;
+    QPointF getSocketPos(const QModelIndex &sockIdx, const QString keyName, bool &exist) override;
     void updateSockName(const QString &name) override;
     void setVisible(bool bVisible);
 
-  private:
+private:
     ZenoParamGroupLine *m_pGroupLine;
 };
-
 
 
 #endif

@@ -111,9 +111,7 @@ void GraphModel::registerCoreNotify()
     });
 
     m_cbAddLink = coreGraph->register_addLink([&](zeno::EdgeInfo edge) -> bool {
-        QPair inPair = { QString::fromStdString(edge.outNode), QString::fromStdString(edge.outParam) };
-        QPair outPair = { QString::fromStdString(edge.inNode), QString::fromStdString(edge.inParam) };
-        _addLink(inPair, outPair);
+        _addLink(edge);
         return true;
     });
 
@@ -184,7 +182,12 @@ QModelIndex GraphModel::indexFromName(const QString& name) const {
 void GraphModel::addLink(const QString& fromNodeStr, const QString& fromParamStr,
     const QString& toNodeStr, const QString& toParamStr)
 {
-    _addLink(qMakePair(fromNodeStr, fromParamStr), qMakePair(toNodeStr, toParamStr));
+    zeno::EdgeInfo link;
+    link.inNode = toNodeStr.toStdString();
+    link.inParam = toParamStr.toStdString();
+    link.outNode = fromNodeStr.toStdString();
+    link.outParam = fromParamStr.toStdString();
+    _addLink(link);
 }
 
 void GraphModel::addLink(const zeno::EdgeInfo& link)
@@ -427,28 +430,36 @@ void GraphModel::_initLink()
         zeno::NodeData nodedata = spNode->exportInfo();
         for (auto param : nodedata.inputs) {
             for (auto link : param.links) {
-                _addLink({QString::fromStdString(link.outNode), QString::fromStdString(link.outParam)},
-                    { QString::fromStdString(link.inNode), QString::fromStdString(link.inParam) });
+                _addLink(link);
             }
         }
     }
 }
 
-void GraphModel::_addLink(QPair<QString, QString> fromParam, QPair<QString, QString> toParam)
+void GraphModel::_addLink(const zeno::EdgeInfo link)
 {
     QModelIndex from, to;
 
-    ParamsModel* fromParams = m_nodes[fromParam.first]->params;
-    ParamsModel* toParams = m_nodes[toParam.first]->params;
+    QString outNode = QString::fromStdString(link.outNode);
+    QString outParam = QString::fromStdString(link.outParam);
+    QString outKey = QString::fromStdString(link.outKey);
+    QString inNode = QString::fromStdString(link.inNode);
+    QString inParam = QString::fromStdString(link.inParam);
+    QString inKey = QString::fromStdString(link.inKey);
 
-    from = fromParams->paramIdx(fromParam.second, false);
-    to = toParams->paramIdx(toParam.second, true);
+    ParamsModel* fromParams = m_nodes[outNode]->params;
+    ParamsModel* toParams = m_nodes[inNode]->params;
+
+    from = fromParams->paramIdx(outParam, false);
+    to = toParams->paramIdx(inParam, true);
     
     if (from.isValid() && to.isValid())
     {
-        if (toParams->getParamlinkCount(to) > 0)
-            removeLink(toParam.first, toParam.second, true);
-        QModelIndex linkIdx = m_linkModel->addLink(from, to);
+        //notify ui to create dict key slot.
+        if (!link.inKey.empty())
+            emit toParams->linkAboutToBeInserted(link);
+
+        QModelIndex linkIdx = m_linkModel->addLink(from, outKey, to, inKey);
         fromParams->addLink(from, linkIdx);
         toParams->addLink(to, linkIdx);
     }
@@ -493,6 +504,28 @@ void GraphModel::removeLink(const zeno::EdgeInfo& link)
     spGraph->removeLink(link);
 }
 
+bool GraphModel::updateLink(const QModelIndex& linkIdx, bool bInput, const QString& oldkey, const QString& newkey)
+{
+    std::shared_ptr<zeno::Graph> spGraph = m_wpCoreGraph.lock();
+    ZASSERT_EXIT(spGraph, false);
+    zeno::EdgeInfo edge = linkIdx.data(ROLE_LINK_INFO).value<zeno::EdgeInfo>();
+    bool ret = spGraph->updateLink(edge, bInput, oldkey.toStdString(), newkey.toStdString());
+    if (!ret)
+        return ret;
+
+    QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(linkIdx.model());
+    LinkModel* linksM = qobject_cast<LinkModel*>(pModel);
+    linksM->setData(linkIdx, newkey, ROLE_LINK_INKEY);
+}
+
+void GraphModel::moveUpLinkKey(const QModelIndex& linkIdx, bool bInput, const std::string& keyName)
+{
+    std::shared_ptr<zeno::Graph> spGraph = m_wpCoreGraph.lock();
+    ZASSERT_EXIT(spGraph);
+    zeno::EdgeInfo edge = linkIdx.data(ROLE_LINK_INFO).value<zeno::EdgeInfo>();
+    spGraph->moveUpLinkKey(edge, bInput, keyName);
+}
+
 bool GraphModel::_removeLink(const zeno::EdgeInfo& edge)
 {
     QString outNode = QString::fromStdString(edge.outNode);
@@ -509,6 +542,7 @@ bool GraphModel::_removeLink(const zeno::EdgeInfo& edge)
     to = toParams->paramIdx(inParam, true);
     if (from.isValid() && to.isValid())
     {
+        emit toParams->linkAboutToBeRemoved(edge);
         QModelIndex linkIdx = fromParams->removeOneLink(from, edge);
         QModelIndex linkIdx2 = toParams->removeOneLink(to, edge);
         ZASSERT_EXIT(linkIdx == linkIdx2, false);
