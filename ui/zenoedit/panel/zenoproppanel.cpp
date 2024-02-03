@@ -971,6 +971,7 @@ void ZenoPropPanel::setKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &k
 
         bool visible = keys.contains(key);
         getDelfCurveData(newVal[key], vec.at(i), visible, key);
+        curve_util::updateRange(newVal);
     }
 
     AppHelper::socketEditFinished(QVariant::fromValue(newVal), m_idx, ctrl.m_viewIdx);

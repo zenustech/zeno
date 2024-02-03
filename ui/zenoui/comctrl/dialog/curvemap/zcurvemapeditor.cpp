@@ -11,6 +11,7 @@
 #include <zenomodel/include/igraphsmodel.h>.
 #include <zenomodel/include/graphsmanagment.h>
 #include "variantptr.h"
+#include "plotlayout.h"
 
 ZCurveMapEditor::ZCurveMapEditor(bool bTimeline, QWidget* parent)
 	: QDialog(parent)
@@ -116,23 +117,19 @@ void ZCurveMapEditor::initChannelModel()
     m_ui->channelView->setModel(m_channelModel);
     m_ui->channelView->expandAll();
 
-    m_selection = new QItemSelectionModel(m_channelModel);
+    connect(m_ui->channelView->selectionModel(), &QItemSelectionModel::currentChanged, this, [=](const QModelIndex& index) {
+        QString id = index.data(Qt::DisplayRole).toString();
+        emit m_plotLayout->currentModelChanged(id);
+    });
+    connect(m_channelModel, &QStandardItemModel::dataChanged, this, &ZCurveMapEditor::onChannelModelDataChanged);
     //m_ui->channelView->setVisible(m_ui->cbIsTimeline->isChecked());
-}
-
-CurveModel* ZCurveMapEditor::currentModel()
-{
-    auto lst = m_ui->gridview->getSelectedNodes();
-    if (lst.size() == 0)
-        return nullptr;
-    return lst[0]->curves()->model();
 }
 
 void ZCurveMapEditor::init()
 {
-    m_ui->gridview->init(m_ui->cbIsTimeline->isChecked());
+    m_plotLayout = new PlotLayout(m_ui->plotWidget);
 
-    CURVE_RANGE range = m_ui->gridview->range();
+    CURVE_RANGE range = { 0,1,0,1 };
     m_ui->editXFrom->setText(QString::number(range.xFrom));
     m_ui->editXFrom->setValidator(new QDoubleValidator);
     m_ui->editXTo->setText(QString::number(range.xTo));
@@ -148,13 +145,14 @@ void ZCurveMapEditor::init()
     connect(m_ui->editTanLeftY, SIGNAL(editingFinished()), this, SLOT(onLineEditFinished()));
     connect(m_ui->editTanRightX, SIGNAL(editingFinished()), this, SLOT(onLineEditFinished()));
     connect(m_ui->editTanRightY, SIGNAL(editingFinished()), this, SLOT(onLineEditFinished()));
+    connect(m_plotLayout, &PlotLayout::currentIndexChanged, this, &ZCurveMapEditor::onNodesSelectionChanged);
 }
 
 void ZCurveMapEditor::initSignals()
 {
     connect(m_pGroupHdlType, SIGNAL(buttonToggled(QAbstractButton *, bool)), this, SLOT(onButtonToggled(QAbstractButton*, bool)));
-    connect(m_ui->gridview, &CurveMapView::nodeItemsSelectionChanged, this, &ZCurveMapEditor::onNodesSelectionChanged);
-    connect(m_ui->gridview, &CurveMapView::frameChanged, this, &ZCurveMapEditor::onFrameChanged);
+    //connect(m_ui->gridview, &CurveMapView::nodeItemsSelectionChanged, this, &ZCurveMapEditor::onNodesSelectionChanged);
+    //connect(m_ui->gridview, &CurveMapView::frameChanged, this, &ZCurveMapEditor::onFrameChanged);
     connect(m_ui->btnLockX, SIGNAL(toggled(bool)), this, SLOT(onLockBtnToggled(bool)));
     connect(m_ui->btnLockY, SIGNAL(toggled(bool)), this, SLOT(onLockBtnToggled(bool)));
     connect(m_ui->editXFrom, SIGNAL(editingFinished()), this, SLOT(onRangeEdited()));
@@ -179,43 +177,31 @@ void ZCurveMapEditor::addCurves(const CURVES_DATA& curves)
     }
 }
 
+void ZCurveMapEditor::setCurrentChannel(const QString& id)
+{
+    QStandardItem* pRootItem = m_channelModel->itemFromIndex(m_channelModel->index(0, 0));
+    for (int i = 0; i < pRootItem->rowCount(); i++)
+    {
+        if (pRootItem->child(i, 0)->data(Qt::DisplayRole).toString() == id)
+        {
+            m_ui->channelView->setCurrentIndex(pRootItem->child(i, 0)->index());
+            break;
+        }
+    }
+}
+
 void ZCurveMapEditor::addCurve(CurveModel *model)
 {
-    //static const QColor preset[] = {"#CE2F2F", "#2FCD5F", "#307BCD"};
-    static const QMap<QString, QColor> preset = {{"x", "#CE2F2F"}, {"y", "#2FCD5F"}, {"z", "#307BCD"}};
-
-    QString id = model->id();
-    m_models.insert(id, model);
-    m_ui->gridview->addCurve(model);
-
+    m_plotLayout->addCurve(model);
     m_ui->cbIsTimeline->setChecked(model->isTimeline());
 
-    CURVE_RANGE range = m_ui->gridview->range();
+    CURVE_RANGE range = model->range();
     m_ui->editXFrom->setText(QString::number(range.xFrom));
     m_ui->editXTo->setText(QString::number(range.xTo));
     m_ui->editYFrom->setText(QString::number(range.yFrom));
     m_ui->editYTo->setText(QString::number(range.yTo));
-
-    //int n = pRootItem->rowCount();
-    //QColor curveClr;
-    //if (n < sizeof(preset) / sizeof(QColor)) 
-    //{
-    //    curveClr = preset[n];
-    //}
-    //else
-    //{
-    //    curveClr = QColor(77, 77, 77);
-    //}
-
+  
     m_bate_rows.push_back(model);
-    CurveGrid *pGrid = m_ui->gridview->gridItem();
-    QColor col;
-    if (!preset.contains(id))
-        col = QColor("#CE2F2F");
-    else
-        col = preset[id];
-    pGrid->setCurvesColor(id, col);
-    pGrid->setCurvesVisible(id, model->getVisible());
 
     QStandardItem *pItem = new QStandardItem(model->id());
     pItem->setCheckable(true);
@@ -233,30 +219,33 @@ void ZCurveMapEditor::addCurve(CurveModel *model)
         }
         pRootItem->insertRow(i, pItem);
     }
-
+    setCurrentChannel(model->id());
     connect(model, &CurveModel::dataChanged, this, &ZCurveMapEditor::onNodesDataChanged);
-    connect(m_channelModel, &QStandardItemModel::dataChanged, this, &ZCurveMapEditor::onChannelModelDataChanged);
 }
 
 void ZCurveMapEditor::onRangeEdited()
 {
     CURVE_RANGE newRg = {m_ui->editXFrom->text().toDouble(), m_ui->editXTo->text().toDouble(),
                          m_ui->editYFrom->text().toDouble(), m_ui->editYTo->text().toDouble()};
-    CURVE_RANGE rg = m_ui->gridview->range();
+    const auto models = m_plotLayout->curveModels();
+    if (models.isEmpty())
+        return;
+        
+    CURVE_RANGE rg = models.first()->range();
     if (rg.xFrom != newRg.xFrom || rg.xTo != newRg.xTo || rg.yFrom != newRg.yFrom || rg.yTo != newRg.yTo)
     {
-        m_ui->gridview->resetRange(newRg);
+        m_plotLayout->updateRange(newRg);
     }
 }
 
 void ZCurveMapEditor::onCbTimelineChanged(int state)
 {
-    if (state == Qt::Checked) {
-        m_ui->gridview->setChartType(true);
-    } else if (state == Qt::Unchecked) {
-        m_ui->gridview->setChartType(false);
-    }
-    for (CurveModel* model : m_models)
+    //if (state == Qt::Checked) {
+    //    m_ui->gridview->setChartType(true);
+    //} else if (state == Qt::Unchecked) {
+    //    m_ui->gridview->setChartType(false);
+    //}
+    for (CurveModel* model : m_plotLayout->curveModels())
     {
         model->setTimeline(state == Qt::Checked);
     }
@@ -267,7 +256,11 @@ void ZCurveMapEditor::onAddCurveBtnClicked() {
     if (pRootItem->rowCount() != 3)
     {
         CurveModel *newCurve = curve_util::deflModel(this);
-
+        const CurveModel* currModel = m_plotLayout->currentModel();
+        if (currModel)
+        {
+            newCurve->resetRange(currModel->range());
+        }
         if (pRootItem->child(0, 0) == NULL || pRootItem->child(0, 0)->data(Qt::DisplayRole) != "x")
         {
             newCurve->setId("x");
@@ -296,13 +289,10 @@ void ZCurveMapEditor::onDelCurveBtnClicked() {
         QStandardItem *pRootItem = m_channelModel->itemFromIndex(m_channelModel->index(0, 0));
         QString curveName = lst[0].data(Qt::DisplayRole).toString();
         pRootItem->removeRow(lst[0].row());
-
-        CurveGrid *pGrid = m_ui->gridview->gridItem();
-        pGrid->removeCurve(curveName);
-
-        delete m_models[curveName];
-        m_bate_rows.erase(std::find(m_bate_rows.begin(), m_bate_rows.end(), m_models[curveName]));
-        m_models.remove(curveName);
+        const auto& models = getModel();
+        if (models.contains(curveName))
+            m_bate_rows.erase(std::find(m_bate_rows.begin(), m_bate_rows.end(), models[curveName]));
+        m_plotLayout->deleteCurve(curveName);
     }
 }
 
@@ -315,17 +305,18 @@ CurveModel *ZCurveMapEditor::getCurve(int i) const {
 }
 
 CURVES_MODEL ZCurveMapEditor::getModel() const {
-    return m_models;
+    return m_plotLayout->curveModels();
 }
 
 CURVES_DATA ZCurveMapEditor::curves() const
 {
     CURVES_DATA curves;
-    for (QString key : m_models.keys())
+    const auto& models = getModel();
+    for (QString key : models.keys())
     {
-        CURVE_DATA data = m_models[key]->getItems();
-        data.visible = m_models[key]->getVisible();
-        data.timeline = m_models[key]->isTimeline();
+        CURVE_DATA data = models[key]->getItems();
+        data.visible = models[key]->getVisible();
+        data.timeline = models[key]->isTimeline();
         curves.insert(key, data);
     }
     return curves;
@@ -333,39 +324,36 @@ CURVES_DATA ZCurveMapEditor::curves() const
 
 void ZCurveMapEditor::onButtonToggled(QAbstractButton* btn, bool bToggled)
 {
-    CurveModel *pModel = currentModel();
+    const auto& index = m_plotLayout->currentIndex();
+    QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(index.model());
     if (!bToggled || !pModel)
         return;
 
-    auto lst = m_ui->gridview->getSelectedNodes();
-    if (lst.size() == 1)
+    if (index.isValid())
     {
-        CurveNodeItem* node = lst[0];
-        QModelIndex idx = node->index();
-        ZASSERT_EXIT(idx.isValid());
-
         if (btn == m_ui->btnVector)
         {
-            pModel->setData(idx, HDL_VECTOR, ROLE_TYPE);
+            pModel->setData(index, HDL_VECTOR, ROLE_TYPE);
         }
         else if (btn == m_ui->btnAligned)
         {
-            pModel->setData(idx, HDL_ALIGNED, ROLE_TYPE);
+            pModel->setData(index, HDL_ALIGNED, ROLE_TYPE);
         }
         else if (btn == m_ui->btnAsymmetry)
         {
-            pModel->setData(idx, HDL_ASYM, ROLE_TYPE);
+            pModel->setData(index, HDL_ASYM, ROLE_TYPE);
         }
         else if (btn == m_ui->btnFree)
         {
-            pModel->setData(idx, HDL_FREE, ROLE_TYPE);
+            pModel->setData(index, HDL_FREE, ROLE_TYPE);
         }
     }
 }
 
 void ZCurveMapEditor::onLineEditFinished()
 {
-    CurveModel* pModel = currentModel();
+    const auto& index = m_plotLayout->currentIndex();
+    QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(index.model());
     if (!pModel)
         return;
 
@@ -374,11 +362,8 @@ void ZCurveMapEditor::onLineEditFinished()
     
     }
 
-    CurveGrid *pGrid = m_ui->gridview->gridItem();
-    auto lst = m_ui->gridview->getSelectedNodes();
-    if (lst.size() == 1)
+    if (index.isValid())
     {
-        CurveNodeItem* node = lst[0];
         QPointF logicPos = QPointF(m_ui->editPtX->text().toFloat(), m_ui->editPtY->text().toFloat());
         qreal leftX = m_ui->editTanLeftX->text().toFloat();
         qreal leftY = m_ui->editTanLeftY->text().toFloat();
@@ -387,24 +372,39 @@ void ZCurveMapEditor::onLineEditFinished()
         QPointF leftHdlLogic = logicPos + QPointF(leftX, leftY);
         QPointF rightHdlLogic = logicPos + QPointF(rightX, rightY);
 
-        QPointF nodeScenePos = pGrid->logicToScene(logicPos);
-        QPointF leftHdlScene = pGrid->logicToScene(leftHdlLogic);
-        QPointF rightHdlScene = pGrid->logicToScene(rightHdlLogic);
-        QPointF leftHdlOffset = leftHdlScene - nodeScenePos;
-        QPointF rightHdlOffset = rightHdlScene - nodeScenePos;
-
-        const QModelIndex& idx = node->index();
-        pModel->setData(idx, logicPos, ROLE_NODEPOS);
-        pModel->setData(idx, QPointF(leftX, leftY), ROLE_LEFTPOS);
-        pModel->setData(idx, QPointF(rightX, rightY), ROLE_RIGHTPOS);
+        pModel->setData(index, logicPos, ROLE_NODEPOS);
+        pModel->setData(index, QPointF(leftX, leftY), ROLE_LEFTPOS);
+        pModel->setData(index, QPointF(rightX, rightY), ROLE_RIGHTPOS);
     }
 }
 
-void ZCurveMapEditor::onNodesDataChanged()
+void ZCurveMapEditor::onNodesDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
 {
-    CurveGrid *pGrid = m_ui->gridview->gridItem();
-    auto lst = m_ui->gridview->getSelectedNodes();
-    bool enableEditor = lst.size() == 1;
+    if (!topLeft.isValid() || roles.isEmpty())
+        return;
+    onNodesSelectionChanged();
+}
+
+void ZCurveMapEditor::onLockBtnToggled(bool bToggle)
+{
+    if (sender() != m_ui->btnLockX && sender() != m_ui->btnLockY)
+        return;
+
+    const auto& index = m_plotLayout->currentIndex();
+    if (index.isValid())
+    {
+        QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(index.model());
+        if (pModel)
+        {
+            pModel->setData(index, bToggle, sender() == m_ui->btnLockX ? ROLE_LOCKX : ROLE_LOCKY);
+        }
+    }
+}
+
+void ZCurveMapEditor::onNodesSelectionChanged()
+{
+    const auto& index = m_plotLayout->currentIndex();
+    bool enableEditor = index.isValid();
     m_ui->editPtX->setEnabled(enableEditor);
     m_ui->editPtX->setText("");
     m_ui->editPtY->setEnabled(enableEditor);
@@ -423,24 +423,21 @@ void ZCurveMapEditor::onNodesDataChanged()
     m_ui->btnLockY->setEnabled(enableEditor);
     m_ui->btnLockY->toggle(false);
     m_ui->btnLockY->setText("");
-   
-    if (lst.size() == 1)
+
+    if (enableEditor)
     {
-        ZASSERT_EXIT(pGrid);
-        CurveNodeItem *node = lst[0];
-        const QModelIndex& idx = node->index();
-        QPointF logicPos = idx.data(ROLE_NODEPOS).toPointF();
+        QPointF logicPos = index.data(ROLE_NODEPOS).toPointF();
         m_ui->editPtX->setText(QString::number(logicPos.x(), 'g', 3));
         m_ui->editPtY->setText(QString::number(logicPos.y(), 'g', 3));
 
-        QPointF leftPos = idx.data(ROLE_LEFTPOS).toPointF();
-        QPointF rightPos = idx.data(ROLE_RIGHTPOS).toPointF();
+        QPointF leftPos = index.data(ROLE_LEFTPOS).toPointF();
+        QPointF rightPos = index.data(ROLE_RIGHTPOS).toPointF();
 
-        bool bLockX = idx.data(ROLE_LOCKX).toBool();
-        bool bLockY = idx.data(ROLE_LOCKY).toBool();
+        bool bLockX = index.data(ROLE_LOCKX).toBool();
+        bool bLockY = index.data(ROLE_LOCKY).toBool();
 
         m_ui->editTanLeftX->setText(QString::number(leftPos.x(), 'g', 3));
-        m_ui->editTanLeftY->setText(QString::number(leftPos.y() , 'g', 3));
+        m_ui->editTanLeftY->setText(QString::number(leftPos.y(), 'g', 3));
         m_ui->editTanRightX->setText(QString::number(rightPos.x(), 'g', 3));
         m_ui->editTanRightY->setText(QString::number(rightPos.y(), 'g', 3));
 
@@ -455,54 +452,30 @@ void ZCurveMapEditor::onNodesDataChanged()
         m_ui->btnLockX->toggle(bLockX);
         m_ui->btnLockY->toggle(bLockY);
 
-        switch (idx.data(ROLE_TYPE).toInt())
+        switch (index.data(ROLE_TYPE).toInt())
         {
-            case HDL_ASYM:
-            {
-                m_ui->btnAsymmetry->setChecked(true);
-                break;
-            }
-            case HDL_ALIGNED:
-            {
-                m_ui->btnAligned->setChecked(true);
-                break;
-            }
-            case HDL_FREE:
-            {
-                m_ui->btnFree->setChecked(true);
-                break;
-            }
-            case HDL_VECTOR:
-            {
-                m_ui->btnVector->setChecked(true);
-                break;
-            }
+        case HDL_ASYM:
+        {
+            m_ui->btnAsymmetry->setChecked(true);
+            break;
+        }
+        case HDL_ALIGNED:
+        {
+            m_ui->btnAligned->setChecked(true);
+            break;
+        }
+        case HDL_FREE:
+        {
+            m_ui->btnFree->setChecked(true);
+            break;
+        }
+        case HDL_VECTOR:
+        {
+            m_ui->btnVector->setChecked(true);
+            break;
+        }
         }
     }
-}
-
-void ZCurveMapEditor::onLockBtnToggled(bool bToggle)
-{
-    if (sender() != m_ui->btnLockX && sender() != m_ui->btnLockY)
-        return;
-
-    auto lst = m_ui->gridview->getSelectedNodes();
-    if (lst.size() == 1)
-    {
-        CurveNodeItem *node = lst[0];
-        QModelIndex idx = node->index();
-        ZASSERT_EXIT(idx.isValid());
-        CurveModel *pModel = currentModel();
-        if (pModel)
-        {
-            pModel->setData(idx, bToggle, sender() == m_ui->btnLockX ? ROLE_LOCKX : ROLE_LOCKY);
-        }
-    }
-}
-
-void ZCurveMapEditor::onNodesSelectionChanged(QList<CurveNodeItem*> lst)
-{
-    onNodesDataChanged();
 }
 
 void ZCurveMapEditor::onChannelModelDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles)
@@ -513,22 +486,9 @@ void ZCurveMapEditor::onChannelModelDataChanged(const QModelIndex &topLeft, cons
     QString id = topLeft.data(Qt::DisplayRole).toString();
     if (roles[0] == Qt::CheckStateRole)
     {
-        ZASSERT_EXIT(m_models.find(id) != m_models.end());
-
-        CurveGrid* pGrid = m_ui->gridview->gridItem();
-        ZASSERT_EXIT(pGrid);
-
         Qt::CheckState state = topLeft.data(Qt::CheckStateRole).value<Qt::CheckState>();
-        if (state == Qt::Checked)
-        {
-            pGrid->setCurvesVisible(id, true);
-            m_models[id]->setVisible(true);
-        }
-        else if (state == Qt::Unchecked)
-        {
-            pGrid->setCurvesVisible(id, false);
-            m_models[id]->setVisible(false);
-        }
+        bool bVisible = (state == Qt::Checked);
+        m_plotLayout->setVisible(id, bVisible);
     }
 }
 

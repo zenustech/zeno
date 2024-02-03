@@ -132,12 +132,12 @@
       <number>0</number>
      </property>
      <item>
-      <widget class="CurveMapView" name="gridview">
-       <property name="frameShape">
-        <enum>QFrame::Panel</enum>
-       </property>
-       <property name="frameShadow">
-        <enum>QFrame::Plain</enum>
+      <widget class="QWidget" name="plotWidget" native="true">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
        </property>
       </widget>
      </item>
@@ -149,6 +149,22 @@
        <property name="bottomMargin">
         <number>10</number>
        </property>
+       <item row="0" column="1">
+        <spacer name="horizontalSpacer_2">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeType">
+          <enum>QSizePolicy::Fixed</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
        <item row="0" column="5">
         <layout class="QHBoxLayout" name="horizontalLayout_8">
          <property name="spacing">
@@ -246,15 +262,64 @@
          </item>
         </layout>
        </item>
-       <item row="0" column="2">
-        <widget class="QLabel" name="label_3">
+       <item row="2" column="2">
+        <widget class="QLabel" name="label_5">
          <property name="styleSheet">
           <string notr="true"/>
          </property>
          <property name="text">
-          <string>Point X</string>
+          <string>Handle type</string>
          </property>
         </widget>
+       </item>
+       <item row="0" column="3">
+        <layout class="QHBoxLayout" name="horizontalLayout_5">
+         <property name="spacing">
+          <number>6</number>
+         </property>
+         <item>
+          <widget class="QLineEdit" name="editPtX">
+           <property name="minimumSize">
+            <size>
+             <width>52</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="focusPolicy">
+            <enum>Qt::ClickFocus</enum>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="ZIconLabel" name="btnLockX"/>
+         </item>
+         <item>
+          <widget class="QLabel" name="label_6">
+           <property name="styleSheet">
+            <string notr="true"/>
+           </property>
+           <property name="text">
+            <string>Frame</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="editFrame">
+           <property name="contextMenuPolicy">
+            <enum>Qt::DefaultContextMenu</enum>
+           </property>
+           <property name="readOnly">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
        <item row="2" column="3">
         <layout class="QHBoxLayout" name="horizontalLayout_4">
@@ -318,152 +383,6 @@
             <string/>
            </property>
            <property name="checkable">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-       <item row="1" column="2">
-        <widget class="QLabel" name="label_4">
-         <property name="styleSheet">
-          <string notr="true"/>
-         </property>
-         <property name="text">
-          <string>Point Y</string>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="2">
-        <widget class="QLabel" name="label_5">
-         <property name="styleSheet">
-          <string notr="true"/>
-         </property>
-         <property name="text">
-          <string>Handle type</string>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="5">
-        <layout class="QHBoxLayout" name="horizontalLayout_7">
-         <item>
-          <widget class="QPushButton" name="btnLoadPreset">
-           <property name="text">
-            <string>Load Preset</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="btnSavePreset">
-           <property name="text">
-            <string>Save Preset</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <spacer name="horizontalSpacer">
-           <property name="orientation">
-            <enum>Qt::Horizontal</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>40</width>
-             <height>20</height>
-            </size>
-           </property>
-          </spacer>
-         </item>
-        </layout>
-       </item>
-       <item row="0" column="3">
-        <layout class="QHBoxLayout" name="horizontalLayout_5">
-         <property name="spacing">
-          <number>6</number>
-         </property>
-         <item>
-          <widget class="QLineEdit" name="editPtX">
-           <property name="minimumSize">
-            <size>
-             <width>52</width>
-             <height>0</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>16777215</height>
-            </size>
-           </property>
-           <property name="focusPolicy">
-            <enum>Qt::ClickFocus</enum>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="ZIconLabel" name="btnLockX"/>
-         </item>
-         <item>
-          <widget class="QLabel" name="label_6">
-           <property name="styleSheet">
-            <string notr="true"/>
-           </property>
-           <property name="text">
-            <string>Frame</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLineEdit" name="editFrame">
-           <property name="contextMenuPolicy">
-            <enum>Qt::DefaultContextMenu</enum>
-           </property>
-           <property name="readOnly">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-       <item row="1" column="3">
-        <layout class="QHBoxLayout" name="horizontalLayout_6">
-         <property name="spacing">
-          <number>6</number>
-         </property>
-         <item>
-          <widget class="QLineEdit" name="editPtY">
-           <property name="minimumSize">
-            <size>
-             <width>52</width>
-             <height>0</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>16777215</height>
-            </size>
-           </property>
-           <property name="focusPolicy">
-            <enum>Qt::ClickFocus</enum>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="ZIconLabel" name="btnLockY"/>
-         </item>
-         <item>
-          <widget class="QLabel" name="label_7">
-           <property name="styleSheet">
-            <string notr="true"/>
-           </property>
-           <property name="text">
-            <string>Value</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLineEdit" name="editValue">
-           <property name="readOnly">
             <bool>true</bool>
            </property>
           </widget>
@@ -694,22 +613,6 @@
          </item>
         </layout>
        </item>
-       <item row="0" column="1">
-        <spacer name="horizontalSpacer_2">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeType">
-          <enum>QSizePolicy::Fixed</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
        <item row="0" column="4">
         <spacer name="horizontalSpacer_3">
          <property name="orientation">
@@ -726,6 +629,93 @@
          </property>
         </spacer>
        </item>
+       <item row="1" column="2">
+        <widget class="QLabel" name="label_4">
+         <property name="styleSheet">
+          <string notr="true"/>
+         </property>
+         <property name="text">
+          <string>Point Y</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="5">
+        <layout class="QHBoxLayout" name="horizontalLayout_7">
+         <item>
+          <widget class="QPushButton" name="btnLoadPreset">
+           <property name="text">
+            <string>Load Preset</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="btnSavePreset">
+           <property name="text">
+            <string>Save Preset</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="horizontalSpacer">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </item>
+       <item row="1" column="3">
+        <layout class="QHBoxLayout" name="horizontalLayout_6">
+         <property name="spacing">
+          <number>6</number>
+         </property>
+         <item>
+          <widget class="QLineEdit" name="editPtY">
+           <property name="minimumSize">
+            <size>
+             <width>52</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="focusPolicy">
+            <enum>Qt::ClickFocus</enum>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="ZIconLabel" name="btnLockY"/>
+         </item>
+         <item>
+          <widget class="QLabel" name="label_7">
+           <property name="styleSheet">
+            <string notr="true"/>
+           </property>
+           <property name="text">
+            <string>Value</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="editValue">
+           <property name="readOnly">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
        <item row="2" column="0">
         <widget class="QCheckBox" name="cbIsTimeline">
          <property name="styleSheet">
@@ -733,6 +723,16 @@
          </property>
          <property name="text">
           <string>timeline</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="2">
+        <widget class="QLabel" name="label_3">
+         <property name="styleSheet">
+          <string notr="true"/>
+         </property>
+         <property name="text">
+          <string>Point X</string>
          </property>
         </widget>
        </item>
@@ -747,12 +747,6 @@
    <class>ZIconLabel</class>
    <extends>QLabel</extends>
    <header>zenoui/comctrl/zlabel.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>CurveMapView</class>
-   <extends>QGraphicsView</extends>
-   <header>zenoui/comctrl/dialog/curvemap/curvemapview.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

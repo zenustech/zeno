@@ -19,3 +19,11 @@ target_link_libraries(zenoui PUBLIC zeno)
 
 target_include_directories(zenoui PRIVATE ${Qt5Widgets_PRIVATE_INCLUDE_DIRS})
 target_include_directories(zenoui PRIVATE . .. ../include)
+
+if (WIN32)
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+        target_link_libraries(zenoui PRIVATE  ${CMAKE_CURRENT_SOURCE_DIR}/./lib/qwtd.lib)
+    else()
+        target_link_libraries(zenoui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/./lib/qwt.lib)
+    endif()
+endif()
