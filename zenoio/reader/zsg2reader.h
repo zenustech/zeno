@@ -30,7 +30,6 @@ namespace zenoio
                 zeno::LinksData& links);    //在parse节点的时候顺带把节点上的边信息也逐个记录到这里
 
         zeno::ParamInfo _parseSocket(
-                const std::string& subgPath,
                 const std::string& id,
                 const std::string& nodeCls,
                 const std::string& inSock,
@@ -39,7 +38,6 @@ namespace zenoio
                 zeno::LinksData& links);
 
         void _parseInputs(
-                const std::string& subgPath,
                 const std::string& id,
                 const std::string& nodeName,
                 const rapidjson::Value& inputs,
@@ -66,7 +64,6 @@ namespace zenoio
                 zeno::NodeData& ret);
 
         void _parseDictPanel(
-                const std::string& subgPath,
                 bool bInput,
                 const rapidjson::Value& dictPanelObj,
                 const std::string& id,

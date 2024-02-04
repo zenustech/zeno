@@ -108,7 +108,6 @@ namespace zenoio
     }
 
     zeno::GraphData fork(
-        const std::string& currentPath,
         const std::map<std::string, zeno::GraphData>& sharedSubg,
         const std::string& subnetClassName)
     {
@@ -151,10 +150,7 @@ namespace zenoio
                 nodeDat.name = newName;
 
                 zeno::GraphData fork_subgraph;
-                fork_subgraph = fork(
-                    currentPath + "/" + newName,
-                    sharedSubg,
-                    cls);
+                fork_subgraph = fork(sharedSubg, cls);
                 fork_subgraph.name = newName;
                 nodeDat.subgraph = fork_subgraph;
                 

@@ -7,7 +7,6 @@
 namespace zenoio {
 
     zeno::GraphData fork(
-        const std::string& currentPath,
         const std::map<std::string, zeno::GraphData>& sharedSubg,
         const std::string& subnetName);
 

@@ -90,10 +90,8 @@ bool Zsg2Reader::openFile(const std::string& fn, zenoio::ZSG_PARSE_RESULT& resul
         return false;
     }
 
-    zeno::NodeDescs nodesDescs = _parseDescs(doc["descs"]);
-    if (!ret) {
-        return false;
-    }
+    //seems useless to parse desc.
+    //zeno::NodeDescs nodesDescs = _parseDescs(doc["descs"]);
 
     //zeno::AssetsData subgraphDatas;
     std::map<std::string, zeno::GraphData> sharedSubg;
@@ -139,7 +137,6 @@ bool Zsg2Reader::openFile(const std::string& fn, zenoio::ZSG_PARSE_RESULT& resul
     }
 
     result.iover = m_ioVer;
-    result.descs = nodesDescs;
     result.mainGraph = mainData;
     result.sharedGraphs = sharedSubg;
     return true;
@@ -196,14 +193,14 @@ zeno::NodeData Zsg2Reader::_parseNode(
         }
         else
         {
-            retNode.subgraph = zenoio::fork(subgPath + "/" + nodeid, sharedSubg, cls);
+            retNode.subgraph = zenoio::fork(sharedSubg, cls);
             retNode.subgraph->name = retNode.name;
         }
     }
 
     if (objValue.HasMember("inputs"))
     {
-        _parseInputs(subgPath, nodeid, cls, objValue["inputs"], retNode, links);
+        _parseInputs(nodeid, cls, objValue["inputs"], retNode, links);
     }
     if (objValue.HasMember("params"))
     {
@@ -323,7 +320,6 @@ void Zsg2Reader::_parseTimeline(const rapidjson::Value& jsonTimeline, zenoio::ZS
 }
 
 void Zsg2Reader::_parseInputs(
-                const std::string& subgPath,
                 const std::string& id,
                 const std::string& nodeName,
                 const rapidjson::Value& inputs,
@@ -347,7 +343,7 @@ void Zsg2Reader::_parseInputs(
         }
         else if (inputObj.IsObject())
         {
-            zeno::ParamInfo param = _parseSocket(subgPath, id, nodeName, inSock, true, inputObj, links);
+            zeno::ParamInfo param = _parseSocket(id, nodeName, inSock, true, inputObj, links);
             ret.inputs.push_back(param);
         }
         else
@@ -358,7 +354,6 @@ void Zsg2Reader::_parseInputs(
 }
 
 zeno::ParamInfo Zsg2Reader::_parseSocket(
-        const std::string& subgPath,
         const std::string& id,
         const std::string& nodeCls,
         const std::string& sockName,
@@ -432,7 +427,7 @@ zeno::ParamInfo Zsg2Reader::_parseSocket(
 
     if (sockObj.HasMember("dictlist-panel"))
     {
-        _parseDictPanel(subgPath, bInput, sockObj["dictlist-panel"], id, sockName, nodeCls, links);
+        _parseDictPanel(bInput, sockObj["dictlist-panel"], id, sockName, nodeCls, links);
     }
 
     if (sockObj.HasMember("control"))
@@ -463,7 +458,6 @@ zeno::NodesData Zsg2Reader::_parseChildren(const rapidjson::Value& jsonNodes)
 }
 
 void Zsg2Reader::_parseDictPanel(
-            const std::string& subgPath,
             bool bInput,
             const rapidjson::Value& dictPanelObj, 
             const std::string& id,
@@ -506,8 +500,6 @@ void Zsg2Reader::_parseDictPanel(
                     }
                 }
             }
-
-            //ignore output case because there is no link on output socket.
         }
     }
 }
@@ -534,7 +526,7 @@ void Zsg2Reader::_parseOutputs(
         }
         else if (outObj.IsObject())
         {
-            zeno::ParamInfo param = _parseSocket("", id, nodeName, outParam, true, outObj, links);
+            zeno::ParamInfo param = _parseSocket(id, nodeName, outParam, true, outObj, links);
             ret.outputs.push_back(param);
         }
         else
@@ -659,7 +651,7 @@ zeno::NodeDescs Zsg2Reader::_parseDescs(const rapidjson::Value& jsonDescs)
                 for (const auto &input : inputs)
                 {
                     std::string socketName = input.name.GetString();
-                    _parseSocket("", "", nodeCls, socketName, true, input.value, lnks);
+                    _parseSocket("", nodeCls, socketName, true, input.value, lnks);
                 }
             }
         }
@@ -698,7 +690,7 @@ zeno::NodeDescs Zsg2Reader::_parseDescs(const rapidjson::Value& jsonDescs)
                 for (const auto &param : params) 
                 {
                     std::string socketName = param.name.GetString();
-                    _parseSocket("", "", nodeCls, socketName, true, param.value, lnks);
+                    _parseSocket("", nodeCls, socketName, true, param.value, lnks);
                 }
             }
         }
@@ -737,7 +729,7 @@ zeno::NodeDescs Zsg2Reader::_parseDescs(const rapidjson::Value& jsonDescs)
                 for (const auto &output : outputs) 
                 {
                     std::string socketName = output.name.GetString();
-                    _parseSocket("", "", nodeCls, socketName, false, output.value, lnks);
+                    _parseSocket("", nodeCls, socketName, false, output.value, lnks);
                 }
             }
         }
