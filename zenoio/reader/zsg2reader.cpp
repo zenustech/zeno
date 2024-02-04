@@ -13,45 +13,10 @@ using namespace zeno::iotags::curve;
 
 namespace zenoio {
 
-Zsg2Reader::Zsg2Reader() : m_bDiskReading(true), m_ioVer(zeno::VER_3) {}
+Zsg2Reader::Zsg2Reader() {}
 
-Zsg2Reader& Zsg2Reader::getInstance()
+bool Zsg2Reader::_parseMainGraph(const rapidjson::Document& doc, zeno::GraphData& mainData)
 {
-    static Zsg2Reader reader;
-    return reader;
-}
-
-bool Zsg2Reader::openFile(const std::string& fn, zenoio::ZSG_PARSE_RESULT& result)
-{
-    std::filesystem::path filePath(fn);
-    if (!std::filesystem::exists(filePath)) {
-        zeno::log_error("cannot open zsg file: {} ({})", fn);
-        return false;
-    }
-
-    rapidjson::Document doc;
-
-    auto szBuffer = std::filesystem::file_size(filePath);
-    if (szBuffer == 0)
-    {
-        zeno::log_error("the zsg file is a empty file");
-        return false;
-    }
-
-    std::vector<char> dat(szBuffer);
-    FILE* fp = fopen(filePath.string().c_str(), "r");
-    if (!fp) {
-        zeno::log_error("zsg file does not exist");
-        return false;
-    }
-    size_t ret = fread(&dat[0], 1, szBuffer, fp);
-    assert(ret == szBuffer);
-    fclose(fp);
-    fp = nullptr;
-
-    doc.Parse(&dat[0], dat.size());
-
-    m_ioVer = zeno::VER_3;
     if (doc.HasMember("version") && doc["version"].IsString())
     {
         std::string ver = doc["version"].GetString();
@@ -59,28 +24,19 @@ bool Zsg2Reader::openFile(const std::string& fn, zenoio::ZSG_PARSE_RESULT& resul
             m_ioVer = zeno::VER_2;
         else if (ver == "v2.5")
             m_ioVer = zeno::VER_2_5;
-        else if (ver == "v3.0")
-            m_ioVer = zeno::VER_3;
     }
     else {
         zeno::log_warn("unknown io foramt for current zsg");
     }
 
-    if (!doc.IsObject())
-    {
-        zeno::log_error("zsg json file is corrupted");
-        return false;
-    }
-
-    if ((m_ioVer != zeno::VER_3 && !doc.HasMember("graph")) ||
-        (m_ioVer == zeno::VER_3 && (!doc.HasMember("main") || !doc.HasMember("subgraphs"))))
+    if (m_ioVer != zeno::VER_3 && !doc.HasMember("graph"))
     {
         return false;
     }
 
-    const rapidjson::Value &graph = doc.HasMember("graph") ? doc["graph"] : doc["subgraphs"];
+    const rapidjson::Value& graph = doc.HasMember("graph") ? doc["graph"] : doc["subgraphs"];
     if (graph.IsNull()) {
-        zeno::log_error("json format incorrect in zsg file: {}", fn);
+        zeno::log_error("json format incorrect in zsg file: {}");
         return false;
     }
 
@@ -99,7 +55,7 @@ bool Zsg2Reader::openFile(const std::string& fn, zenoio::ZSG_PARSE_RESULT& resul
     //init keys
     for (const auto& subgraph : graph.GetObject())
     {
-        const std::string &graphName = subgraph.name.GetString();
+        const std::string& graphName = subgraph.name.GetString();
         if ("main" == graphName)
             continue;
 
@@ -114,15 +70,14 @@ bool Zsg2Reader::openFile(const std::string& fn, zenoio::ZSG_PARSE_RESULT& resul
         if ("main" == graphName)
             continue;
         if (!_parseSubGraph(graphName,
-                    subgraph.value,
-                    sharedSubg,
-                    sharedSubg[graphName]))
+            subgraph.value,
+            sharedSubg,
+            sharedSubg[graphName]))
         {
             return false;
         }
     }
 
-    zeno::GraphData mainData;
     mainData.name = mainData.templateName = "main";
     if (doc.HasMember("main") || graph.HasMember("main"))
     {
@@ -131,14 +86,6 @@ bool Zsg2Reader::openFile(const std::string& fn, zenoio::ZSG_PARSE_RESULT& resul
             return false;
     }
 
-    if (doc.HasMember("views"))
-    {
-        _parseViews(doc["views"], result);
-    }
-
-    result.iover = m_ioVer;
-    result.mainGraph = mainData;
-    result.sharedGraphs = sharedSubg;
     return true;
 }
 
@@ -212,7 +159,7 @@ zeno::NodeData Zsg2Reader::_parseNode(
     }
     if (objValue.HasMember("customui-panel"))
     {
-        _parseCustomPanel(nodeid, cls, objValue["customui-panel"], retNode);
+        //deprecated legacy customui.
     }
 
     if (objValue.HasMember("uipos"))
@@ -286,71 +233,6 @@ zeno::NodeData Zsg2Reader::_parseNode(
     }
 
     return retNode;
-}
-
-void Zsg2Reader::_parseChildNodes(
-                    const std::string& rootPath,
-                    const rapidjson::Value& jsonNodes,
-                    const zeno::NodeDescs& descriptors,
-                    zeno::NodeData& ret)
-{
-    if (!jsonNodes.HasMember("nodes"))
-        return;
-}
-
-void Zsg2Reader::_parseViews(const rapidjson::Value& jsonViews, zenoio::ZSG_PARSE_RESULT& res)
-{
-    if (jsonViews.HasMember("timeline"))
-    {
-        _parseTimeline(jsonViews["timeline"], res);
-    }
-}
-
-void Zsg2Reader::_parseTimeline(const rapidjson::Value& jsonTimeline, zenoio::ZSG_PARSE_RESULT& res)
-{
-    assert(jsonTimeline.HasMember(timeline::start_frame) && jsonTimeline[timeline::start_frame].IsInt());
-    assert(jsonTimeline.HasMember(timeline::end_frame) && jsonTimeline[timeline::end_frame].IsInt());
-    assert(jsonTimeline.HasMember(timeline::curr_frame) && jsonTimeline[timeline::curr_frame].IsInt());
-    assert(jsonTimeline.HasMember(timeline::always) && jsonTimeline[timeline::always].IsBool());
-
-    res.timeline.beginFrame = jsonTimeline[timeline::start_frame].GetInt();
-    res.timeline.endFrame = jsonTimeline[timeline::end_frame].GetInt();
-    res.timeline.currFrame = jsonTimeline[timeline::curr_frame].GetInt();
-    res.timeline.bAlways = jsonTimeline[timeline::always].GetBool();
-}
-
-void Zsg2Reader::_parseInputs(
-                const std::string& id,
-                const std::string& nodeName,
-                const rapidjson::Value& inputs,
-                zeno::NodeData& ret,
-                zeno::LinksData& links)
-{
-    for (const auto& inObj : inputs.GetObject())
-    {
-        const std::string& inSock = inObj.name.GetString();
-        const auto& inputObj = inObj.value;
-
-        if (inSock == "SRC") {
-            continue;
-        }
-
-        if (inputObj.IsNull())
-        {
-            zeno::ParamInfo param;
-            param.name = inSock;
-            ret.inputs.push_back(param);
-        }
-        else if (inputObj.IsObject())
-        {
-            zeno::ParamInfo param = _parseSocket(id, nodeName, inSock, true, inputObj, links);
-            ret.inputs.push_back(param);
-        }
-        else
-        {
-            zeno::log_error("unknown format");
-        }
-    }
 }
 
 zeno::ParamInfo Zsg2Reader::_parseSocket(
@@ -449,14 +331,6 @@ zeno::ParamInfo Zsg2Reader::_parseSocket(
     return param;
 }
 
-zeno::NodesData Zsg2Reader::_parseChildren(const rapidjson::Value& jsonNodes)
-{
-    //there is no children concept in zsg2.5
-    zeno::NodesData children;
-    //_parseSubGraph(, , , children);
-    return children;
-}
-
 void Zsg2Reader::_parseDictPanel(
             bool bInput,
             const rapidjson::Value& dictPanelObj, 
@@ -465,6 +339,11 @@ void Zsg2Reader::_parseDictPanel(
             const std::string& nodeName,
             zeno::LinksData& links)
 {
+    if (!bInput)
+    {
+        //no need to parse output dict keys, because we can get it from input links from these output dict sockets.
+        return;
+    }
     if (dictPanelObj.HasMember("collasped") && dictPanelObj["collasped"].IsBool())
     {
         //deprecated.
@@ -500,38 +379,6 @@ void Zsg2Reader::_parseDictPanel(
                     }
                 }
             }
-        }
-    }
-}
-
-void Zsg2Reader::_parseOutputs(
-        const std::string &id,
-        const std::string &nodeName,
-        const rapidjson::Value& outputs,
-        zeno::NodeData& ret,
-        zeno::LinksData& links)
-{
-    for (const auto& outParamObj : outputs.GetObject())
-    {
-        const std::string& outParam = outParamObj.name.GetString();
-        if (outParam == "DST")
-            continue;
-
-        const auto& outObj = outParamObj.value;
-        if (outObj.IsNull())
-        {
-            zeno::ParamInfo param;
-            param.name = outParam;
-            ret.outputs.push_back(param);
-        }
-        else if (outObj.IsObject())
-        {
-            zeno::ParamInfo param = _parseSocket(id, nodeName, outParam, true, outObj, links);
-            ret.outputs.push_back(param);
-        }
-        else
-        {
-            zeno::log_error("unknown format");
         }
     }
 }
@@ -580,173 +427,5 @@ bool Zsg2Reader::_parseParams(const std::string& id, const std::string& nodeCls,
     }
     return true;
 }
-
-
-void Zsg2Reader::_parseCustomPanel(const std::string& id, const std::string& nodeName, const rapidjson::Value& jsonCutomUI, zeno::NodeData& ret)
-{
-    //VPARAM_INFO invisibleRoot = zenomodel::importCustomUI(jsonCutomUI);
-    //ret.customPanel = invisibleRoot;
-    //TODO
-}
-
-zeno::NodeDescs Zsg2Reader::_parseDescs(const rapidjson::Value& jsonDescs)
-{
-    zeno::NodeDescs _descs;     //不需要系统内置节点的desc，只要读文件的就可以
-    zeno::LinksData lnks;       //没用的
-    for (const auto& node : jsonDescs.GetObject())
-    {
-        const std::string& nodeCls = node.name.GetString();
-        const auto& objValue = node.value;
-
-        zeno::NodeDesc desc;
-        desc.name = nodeCls;
-        if (objValue.HasMember("inputs"))
-        {
-            if (objValue["inputs"].IsArray()) 
-            {
-                //系统节点导出的描述，形如：
-                /*
-                "inputs": [
-                    [
-                        "ListObject",
-                        "keys",
-                        ""
-                    ],
-                    [
-                        "",
-                        "SRC",
-                        ""
-                    ]
-                ],
-                */
-                auto inputs = objValue["inputs"].GetArray();
-                for (int i = 0; i < inputs.Size(); i++) 
-                {
-                    if (inputs[i].IsArray())
-                    {
-                        auto input_triple = inputs[i].GetArray();
-                        std::string socketType, socketName, socketDefl;
-                        if (input_triple.Size() > 0 && input_triple[0].IsString())
-                            socketType = input_triple[0].GetString();
-                        if (input_triple.Size() > 1 && input_triple[1].IsString())
-                            socketName = input_triple[1].GetString();
-                        if (input_triple.Size() > 2 && input_triple[2].IsString())
-                            socketDefl = input_triple[2].GetString();
-
-                        if (!socketName.empty())
-                        {
-                            zeno::ParamInfo param;
-                            param.name = socketName;
-                            param.type = zeno::convertToType(socketDefl);
-                            param.defl = socketDefl;    //不转了，太麻烦了。..反正普通节点的desc也只是参考
-
-                            desc.inputs.push_back(param);
-                        }
-                    }
-                }
-            } 
-            else if (objValue["inputs"].IsObject()) 
-            {
-                auto inputs = objValue["inputs"].GetObject();
-                for (const auto &input : inputs)
-                {
-                    std::string socketName = input.name.GetString();
-                    _parseSocket("", nodeCls, socketName, true, input.value, lnks);
-                }
-            }
-        }
-        if (objValue.HasMember("params"))
-        {
-            if (objValue["params"].IsArray()) 
-            {
-                auto params = objValue["params"].GetArray();
-                for (int i = 0; i < params.Size(); i++) 
-                {
-                    if (params[i].IsArray()) {
-                        auto param_triple = params[i].GetArray();
-                        std::string socketType, socketName, socketDefl;
-
-                        if (param_triple.Size() > 0 && param_triple[0].IsString())
-                            socketType = param_triple[0].GetString();
-                        if (param_triple.Size() > 1 && param_triple[1].IsString())
-                            socketName = param_triple[1].GetString();
-                        if (param_triple.Size() > 2 && param_triple[2].IsString())
-                            socketDefl = param_triple[2].GetString();
-
-                        if (!socketName.empty())
-                        {
-                            zeno::ParamInfo param;
-                            param.name = socketName;
-                            param.type = zeno::convertToType(socketDefl);
-                            param.defl = socketDefl;    //不转了，太麻烦了。..反正普通节点的desc也只是参考
-                            desc.inputs.push_back(param);
-                        }
-                    }
-                }
-            } 
-            else if (objValue["params"].IsObject()) 
-            {
-                auto params = objValue["params"].GetObject();
-                for (const auto &param : params) 
-                {
-                    std::string socketName = param.name.GetString();
-                    _parseSocket("", nodeCls, socketName, true, param.value, lnks);
-                }
-            }
-        }
-        if (objValue.HasMember("outputs"))
-        {
-            if (objValue["outputs"].IsArray()) 
-            {
-                auto outputs = objValue["outputs"].GetArray();
-                for (int i = 0; i < outputs.Size(); i++)
-                {
-                    if (outputs[i].IsArray()) {
-                        auto output_triple = outputs[i].GetArray();
-                        std::string socketType, socketName, socketDefl;
-
-                        if (output_triple.Size() > 0 && output_triple[0].IsString())
-                            socketType = output_triple[0].GetString();
-                        if (output_triple.Size() > 1 && output_triple[1].IsString())
-                            socketName = output_triple[1].GetString();
-                        if (output_triple.Size() > 2 && output_triple[2].IsString())
-                            socketDefl = output_triple[2].GetString();
-
-                        if (!socketName.empty())
-                        {
-                            zeno::ParamInfo param;
-                            param.name = socketName;
-                            param.type = zeno::convertToType(socketDefl);
-                            param.defl = socketDefl;
-                            desc.outputs.push_back(param);
-                        }
-                    }
-                }
-            } 
-            else if (objValue["outputs"].IsObject()) 
-            {
-                auto outputs = objValue["outputs"].GetObject();
-                for (const auto &output : outputs) 
-                {
-                    std::string socketName = output.name.GetString();
-                    _parseSocket("", nodeCls, socketName, false, output.value, lnks);
-                }
-            }
-        }
-        if (objValue.HasMember("categories") && objValue["categories"].IsArray())
-        {
-            auto categories = objValue["categories"].GetArray();
-            for (int i = 0; i < categories.Size(); i++)
-            {
-                desc.categories.push_back(categories[i].GetString());
-            }
-        }
-
-        _descs.insert(std::make_pair(nodeCls, desc));
-    }
-    return _descs;
-}
-
-
 
 }

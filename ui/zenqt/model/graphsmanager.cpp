@@ -81,12 +81,12 @@ GraphModel* GraphsManager::getGraph(const QStringList& objPath) const
 
 GraphsTreeModel* GraphsManager::openZsgFile(const QString& fn)
 {
-    zenoio::ZSG_PARSE_RESULT result;
-    bool ret = zenoio::Zsg2Reader::getInstance().openFile(fn.toStdString(), result);
-    m_timerInfo = result.timeline;
-    if (!ret)
+    zenoio::Zsg2Reader reader;
+    zenoio::ZSG_PARSE_RESULT result = reader.openFile(fn.toStdString());
+    if (!result.bSucceed)
         return nullptr;
 
+    m_timerInfo = result.timeline;
     createGraphs(result);
     //reset model.
     newFile();

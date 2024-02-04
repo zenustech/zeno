@@ -14,8 +14,8 @@ namespace zenoio {
     struct ZSG_PARSE_RESULT {
         zeno::GraphData mainGraph;
         zeno::ZSG_VERSION iover;
-        std::map<std::string, zeno::GraphData> sharedGraphs;
         zeno::TimelineInfo timeline;
+        bool bSucceed;
     };
 }
 
