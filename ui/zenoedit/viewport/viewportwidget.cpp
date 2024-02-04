@@ -293,7 +293,7 @@ void ViewportWidget::keyPressEvent(QKeyEvent *event)
     int key = settings.getShortCut(ShortCut_MovingHandler);
     int uKey = event->key();
     Qt::KeyboardModifiers modifiers = event->modifiers();
-    if (modifiers & Qt::ShiftModifier) {
+    if (modifiers & Qt::ShiftModifier && uKey != Qt::Key_Plus) {
         uKey += Qt::SHIFT;
     }
     if (modifiers & Qt::ControlModifier) {
