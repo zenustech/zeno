@@ -27,7 +27,8 @@ struct SubnetNode : INode {
     ZENO_API void remove_param(bool bInput, const std::string& name);
     ZENO_API std::shared_ptr<Graph> get_graph() const;
     ZENO_API bool isAssetsNode() const;
-    ZENO_API virtual void apply() override;
+    ZENO_API void apply() override;
+    ZENO_API NodeData exportInfo() const override;
 };
 
 struct ImplSubnetNodeClass : INodeClass {

@@ -18,6 +18,7 @@ namespace zenoio
             if (_parseGraph(mainGraph, assets, ret))
             {
                 ret.name = "main";
+                ret.type = zeno::Subnet_Main;
                 return true;
             }
         }
@@ -46,7 +47,7 @@ namespace zenoio
         const std::string& subgPath,    //也许无用了，因为边信息不再以path的方式储存（解析麻烦），先保留着
         const std::string& nodeid,
         const rapidjson::Value& nodeObj,
-        const zeno::AssetsData& subgraphDatas,
+        const zeno::AssetsData& assets,
         zeno::LinksData& links)
     {
         zeno::NodeData retNode;
@@ -57,11 +58,12 @@ namespace zenoio
 
         retNode.name = nodeid;
         retNode.cls = cls;
+        retNode.type = zeno::Node_Normal;
 
         bool isParsingSubg = subgPath.rfind("/main", 0) != 0;
 
         //should expand the subgraph node recursively.
-        if (subgraphDatas.find(cls) != subgraphDatas.end())
+        if (assets.find(cls) != assets.end())
         {
             retNode.type = zeno::Node_AssetInstance;
             //暂时不fork，直接引用，避免同步问题。
@@ -85,23 +87,30 @@ namespace zenoio
             auto uipos = objValue["uipos"].GetArray();
             retNode.uipos = { uipos[0].GetFloat(), uipos[1].GetFloat() };
         }
-        if (objValue.HasMember("options"))
+        if (objValue.HasMember("status"))
         {
-            auto optionsArr = objValue["options"].GetArray();
+            auto optionsArr = objValue["status"].GetArray();
             zeno::NodeStatus opts = zeno::None;
             for (int i = 0; i < optionsArr.Size(); i++)
             {
                 assert(optionsArr[i].IsString());
 
                 const std::string& optName = optionsArr[i].GetString();
-                if (optName == "ONCE") {} //deprecated 
-                else if (optName == "PREP") {} //deprecated 
-                else if (optName == "VIEW") { opts = opts | zeno::View; }
-                else if (optName == "MUTE") { opts = opts | zeno::Mute; }
-                else if (optName == "CACHE") {} //deprecated 
-                else if (optName == "collapsed") {}
+                if (optName == "VIEW")
+                {
+                    opts = opts | zeno::View;
+                }
+                else if (optName == "MUTE")
+                {
+                    opts = opts | zeno::Mute;
+                }
             }
             retNode.status = opts;
+        }
+        if (objValue.HasMember("collasped"))
+        {
+            bool bCollasped = objValue["collasped"].GetBool();
+            retNode.bCollasped = bCollasped;
         }
 
         if (cls == "Blackboard")
@@ -151,7 +160,9 @@ namespace zenoio
         }
 
         if (objValue.HasMember("subnet")) {
-            //TODO:
+            zeno::GraphData subgraph;
+            _parseGraph(objValue["subnet"], assets, subgraph);
+            retNode.subgraph = subgraph;
         }
 
         return retNode;
@@ -206,19 +217,32 @@ namespace zenoio
         }
 
         //link:
-        if (bInput && sockObj.HasMember("link"))
+        if (bInput && sockObj.HasMember("links") && sockObj["links"].IsArray())
         {
-            std::string outLinkPath = sockObj["link"].GetString();
-            //TODO:
+            auto& arr = sockObj["links"].GetArray();
+            for (int i = 0; i < arr.Size(); i++) {
+                auto& linkObj = arr[i];
+                const std::string outnode = linkObj["out-node"].GetString();
+                const std::string outsock = linkObj["out-socket"].GetString();
+                const std::string outkey = linkObj["out-key"].GetString();
+                const std::string innode = id;
+                const std::string insock = inSock;
+                const std::string inkey = linkObj["in-key"].GetString();
+
+                zeno::EdgeInfo link = { outnode, outsock, outkey, innode, insock, inkey };
+                param.links.push_back(link);
+                links.push_back(link);
+            }
         }
 
         if (sockObj.HasMember("control"))
         {
-            zeno::ParamControl ctrl;
+            zeno::ParamControl ctrl = zeno::NullControl;
             zeno::ControlProperty props;
             bool bret = zenoio::importControl(sockObj["control"], ctrl, props);
             if (bret) {
-                param.control = ctrl;
+                if (ctrl == zeno::NullControl)
+                    param.control = zeno::getDefaultControl(param.type);
                 if (props.items || props.ranges)
                     param.ctrlProps = props;
             }

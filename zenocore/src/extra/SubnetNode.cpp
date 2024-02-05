@@ -25,6 +25,7 @@ ZENO_API void SubnetNode::initParams(const NodeData& dat)
         sparam->type = param.type;
         sparam->m_wpNode = shared_from_this();
         add_input_param(sparam);
+        m_input_names.push_back(param.name);
     }
 
     for (const ParamInfo& param : dat.outputs)
@@ -35,6 +36,7 @@ ZENO_API void SubnetNode::initParams(const NodeData& dat)
         sparam->type = param.type;
         sparam->m_wpNode = shared_from_this();
         add_output_param(sparam);
+        m_output_names.push_back(param.name);
     }
 
     //需要检查SubInput/SubOutput是否对的上？
@@ -257,6 +259,15 @@ ZENO_API void SubnetNode::apply() {
             assert(ret);
         }
     }
+}
+
+ZENO_API NodeData SubnetNode::exportInfo() const {
+    NodeData node = INode::exportInfo();
+    if (subgraph) {
+        node.subgraph = subgraph->exportGraph();
+    }
+    node.type = Node_SubgraphNode;
+    return node;
 }
 
 }

@@ -239,6 +239,32 @@ namespace zeno {
         }, lhs, rhs);
     }
 
+    ZENO_API zeno::ParamControl getDefaultControl(const zeno::ParamType type)
+    {
+        switch (type)
+        {
+        case zeno::Param_Null:      return zeno::NullControl;
+        case zeno::Param_Bool:      return zeno::Checkbox;
+        case zeno::Param_Int:       return zeno::Lineedit;
+        case zeno::Param_String:    return zeno::Lineedit;
+        case zeno::Param_Float:     return zeno::Lineedit;
+        case zeno::Param_Vec2i:     return zeno::Vec2edit;
+        case zeno::Param_Vec3i:     return zeno::Vec3edit;
+        case zeno::Param_Vec4i:     return zeno::Vec4edit;
+        case zeno::Param_Vec2f:     return zeno::Vec2edit;
+        case zeno::Param_Vec3f:     return zeno::Vec3edit;
+        case zeno::Param_Vec4f:     return zeno::Vec4edit;
+        case zeno::Param_Prim:
+        case zeno::Param_Dict:
+        case zeno::Param_List:      return zeno::NullControl;
+            //Param_Color:  //need this?
+        case zeno::Param_Curve:     return zeno::CurveEditor;
+        case zeno::Param_SrcDst:
+        default:
+            return zeno::NullControl;
+        }
+    }
+
     ZENO_API std::string getControlDesc(zeno::ParamControl ctrl, zeno::ParamType type)
     {
         switch (ctrl)
