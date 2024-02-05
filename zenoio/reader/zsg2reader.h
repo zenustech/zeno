@@ -13,12 +13,7 @@ namespace zenoio
     protected:
         bool _parseMainGraph(const rapidjson::Document& doc, zeno::GraphData& ret) override;
 
-        zeno::NodeData _parseNode(
-            const std::string& subgPath,    //也许无用了，因为边信息不再以path的方式储存（解析麻烦），先保留着
-            const std::string& nodeid,
-            const rapidjson::Value& nodeObj,
-            const std::map<std::string, zeno::GraphData>& subgraphDatas,
-            zeno::LinksData& links) override;    //在parse节点的时候顺带把节点上的边信息也逐个记录到这里
+
 
         zeno::ParamInfo _parseSocket(
             const bool bInput,
@@ -34,6 +29,13 @@ namespace zenoio
                 const rapidjson::Value &subgraph,
                 const std::map<std::string, zeno::GraphData>& subgraphDatas,
                 zeno::GraphData& subgData);
+
+        zeno::NodeData _parseNode(
+                const std::string& subgPath,    //也许无用了，因为边信息不再以path的方式储存（解析麻烦），先保留着
+                const std::string& nodeid,
+                const rapidjson::Value& nodeObj,
+                const std::map<std::string, zeno::GraphData>& subgraphDatas,
+                zeno::LinksData& links);    //在parse节点的时候顺带把节点上的边信息也逐个记录到这里
 
         bool _parseParams(
                 const std::string& id,

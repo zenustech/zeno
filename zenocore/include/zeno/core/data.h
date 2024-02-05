@@ -88,6 +88,7 @@ namespace zeno {
         std::string templateName;
         NodesData nodes;
         LinksData links;
+        SubnetType type;
     };
 
     struct NodeData {
@@ -102,7 +103,9 @@ namespace zeno {
 
         std::pair<float, float> uipos;
         NodeStatus status = NodeStatus::None;
+        NodeType type;
         bool bAssetsNode = false;
+        bool bCollasped = false;
     };
 
     struct NodeDesc {

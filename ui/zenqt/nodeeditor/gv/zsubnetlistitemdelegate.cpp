@@ -5,7 +5,7 @@
 #include "model/assetsmodel.h"
 #include "zenoapplication.h"
 #include "util/log.h"
-#include <zenoio/writer/zsgwriter.h>
+#include <zenoio/writer/zenwriter.h>
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
 #include "settings/zenosettingsmanager.h"

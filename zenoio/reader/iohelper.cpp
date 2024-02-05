@@ -3,6 +3,8 @@
 #include <zeno/zeno.h>
 #include <zeno/utils/log.h>
 #include <zeno/utils/string.h>
+#include <zeno/utils/helper.h>
+#include <filesystem>
 
 
 namespace zenoio
@@ -105,6 +107,48 @@ namespace zenoio
         {
             return zeno::NullControl;
         }
+    }
+
+    zeno::ZSG_VERSION getVersion(const std::string& fn)
+    {
+        std::filesystem::path filePath(fn);
+        if (!std::filesystem::exists(filePath)) {
+            zeno::log_error("cannot open zsg file: {} ({})", fn);
+            return zeno::UNKNOWN_VER;
+        }
+
+        rapidjson::Document doc;
+
+        auto szBuffer = std::filesystem::file_size(filePath);
+        if (szBuffer == 0)
+        {
+            zeno::log_error("the zsg file is a empty file");
+            return zeno::UNKNOWN_VER;
+        }
+
+        std::vector<char> dat(szBuffer);
+        FILE* fp = fopen(filePath.string().c_str(), "r");
+        if (!fp) {
+            zeno::log_error("zsg file does not exist");
+            return zeno::UNKNOWN_VER;
+        }
+
+        size_t ret = fread(&dat[0], 1, szBuffer, fp);
+        assert(ret == szBuffer);
+        fclose(fp);
+        fp = nullptr;
+
+        doc.Parse(&dat[0], dat.size());
+        std::string ver = doc["version"].GetString();
+
+        if (ver == "v2")
+            return zeno::VER_2;
+        else if (ver == "v2.5")
+            return zeno::VER_2_5;
+        else if (ver == "v3")
+            return zeno::VER_3;
+        else
+            return zeno::UNKNOWN_VER;
     }
 
     zeno::GraphData fork(
@@ -351,6 +395,167 @@ namespace zenoio
         return defl;
     }
 
+    void writeZVariant(zeno::zvariant defl, zeno::ParamType type, RAPIDJSON_WRITER& writer)
+    {
+        switch (type)
+        {
+            case zeno::Param_Int:
+            {
+                int val = 0;
+                if (std::holds_alternative<int>(defl))
+                {
+                    val = (std::get<int>(defl));
+                }
+                else if (std::holds_alternative<float>(defl))
+                {
+                    val = (std::get<float>(defl));
+                }
+                writer.Int(val);
+                break;
+            }
+            case zeno::Param_Float:
+            {
+                float val = 0;
+                if (std::holds_alternative<int>(defl))
+                {
+                    val = (std::get<int>(defl));
+                }
+                else if (std::holds_alternative<float>(defl))
+                {
+                    val = (std::get<float>(defl));
+                }
+                writer.Double(val);
+                break;
+            }
+            case zeno::Param_Bool:
+            {
+                int val = 0;
+                if (std::holds_alternative<int>(defl))
+                {
+                    val = (std::get<int>(defl));
+                }
+                writer.Bool(val != 0);
+                break;
+            }
+            case zeno::Param_String:
+            {
+                std::string val;
+                if (std::holds_alternative<std::string>(defl))
+                {
+                    val = (std::get<std::string>(defl));
+                }
+                writer.String(val.c_str());
+                break;
+            }
+            case zeno::Param_Vec2i:
+            case zeno::Param_Vec2f:
+            case zeno::Param_Vec3i:
+            case zeno::Param_Vec3f:
+            case zeno::Param_Vec4i:
+            case zeno::Param_Vec4f:
+            {
+                if (std::holds_alternative<zeno::vec2f>(defl))
+                {
+                    auto vec = std::get<zeno::vec2f>(defl);
+                    writer.StartArray();
+                    for (auto elem : vec) {
+                        writer.Double(elem);
+                    }
+                    writer.EndArray();
+                }
+                else if (std::holds_alternative<zeno::vec2i>(defl))
+                {
+                    auto vec = std::get<zeno::vec2i>(defl);
+                    writer.StartArray();
+                    for (auto elem : vec) {
+                        writer.Int(elem);
+                    }
+                    writer.EndArray();
+                }
+                else if (std::holds_alternative<zeno::vec2s>(defl))
+                {
+                    auto vec = std::get<zeno::vec2s>(defl);
+                    writer.StartArray();
+                    for (auto elem : vec) {
+                        writer.String(elem.c_str());
+                    }
+                    writer.EndArray();
+                }
+                else if (std::holds_alternative<zeno::vec3i>(defl))
+                {
+                    auto vec = std::get<zeno::vec3i>(defl);
+                    writer.StartArray();
+                    for (auto elem : vec) {
+                        writer.Int(elem);
+                    }
+                    writer.EndArray();
+                }
+                else if (std::holds_alternative<zeno::vec3f>(defl))
+                {
+                    auto vec = std::get<zeno::vec3f>(defl);
+                    writer.StartArray();
+                    for (auto elem : vec) {
+                        writer.Double(elem);
+                    }
+                    writer.EndArray();
+                }
+                else if (std::holds_alternative<zeno::vec3s>(defl))
+                {
+                    auto vec = std::get<zeno::vec3s>(defl);
+                    writer.StartArray();
+                    for (auto elem : vec) {
+                        writer.String(elem.c_str());
+                    }
+                    writer.EndArray();
+                }
+                else if (std::holds_alternative<zeno::vec4i>(defl))
+                {
+                    auto vec = std::get<zeno::vec4i>(defl);
+                    writer.StartArray();
+                    for (auto elem : vec) {
+                        writer.Int(elem);
+                    }
+                    writer.EndArray();
+                }
+                else if (std::holds_alternative<zeno::vec4f>(defl))
+                {
+                    auto vec = std::get<zeno::vec4f>(defl);
+                    writer.StartArray();
+                    for (auto elem : vec) {
+                        writer.Double(elem);
+                    }
+                    writer.EndArray();
+                }
+                else if (std::holds_alternative<zeno::vec4s>(defl))
+                {
+                    auto vec = std::get<zeno::vec4s>(defl);
+                    writer.StartArray();
+                    for (auto elem : vec) {
+                        writer.String(elem.c_str());
+                    }
+                    writer.EndArray();
+                }
+                else
+                {
+                    writer.Null();
+                }
+                break;
+            }
+            case zeno::Param_Curve:
+            {
+                //todo: wrap the json object as string, and parse it when calculate,
+                //by the method of parseCurve on ParseObjectFromUi.cpp
+                writer.Null();
+                break;
+            }
+            default:
+            {
+                writer.Null();
+                break;
+            }
+        }
+    }
+
     bool importControl(const rapidjson::Value& controlObj, zeno::ParamControl& ctrl, zeno::ControlProperty& props)
     {
         if (!controlObj.IsObject())
@@ -391,6 +596,40 @@ namespace zenoio
             }
         }
         return true;
+    }
+
+    void dumpControl(zeno::ParamType type, zeno::ParamControl ctrl, std::optional<zeno::ControlProperty> ctrlProps, RAPIDJSON_WRITER& writer)
+    {
+        writer.StartObject();
+
+        writer.Key("name");
+        std::string controlDesc = zeno::getControlDesc(ctrl, type);
+        writer.String(controlDesc.c_str());
+
+        if (ctrlProps.has_value())
+        {
+            zeno::ControlProperty props = ctrlProps.value();
+            if (props.items.has_value()) {
+                writer.Key("items");
+                writer.StartArray();
+                for (auto item : props.items.value())
+                    writer.String(item.c_str());
+                writer.EndArray();
+            }
+            else if (props.ranges.has_value()) {
+                writer.Key("min");
+                writer.Double(props.ranges.value()[0]);
+                writer.Key("max");
+                writer.Double(props.ranges.value()[1]);
+                writer.Key("step");
+                writer.Double(props.ranges.value()[2]);
+            }
+            else {
+                writer.Null();
+            }
+        }
+
+        writer.EndObject();
     }
 
 }

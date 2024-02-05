@@ -67,9 +67,18 @@ namespace zeno {
         NoVersionNode
     };
 
+    enum SUBGRAPH_TYPE
+    {
+        SUBGRAPH_NOR = 0,
+        SUBGRAPH_METERIAL,
+        SUBGRAPH_PRESET
+    };
+
     enum SubnetType
     {
-
+        Subnet_Normal,
+        Subnet_Material,
+        Subnet_Main,    //only one main graph on whole zeno system.
     };
 
     enum SocketProperty : unsigned int
@@ -125,6 +134,7 @@ namespace zeno {
         VER_2,          //old version io
         VER_2_5,        //new version io
         VER_3,          //the final io format, supporting tree layout.
+        UNKNOWN_VER,
     };
 
     using zvariant = std::variant<

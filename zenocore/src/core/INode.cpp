@@ -310,6 +310,11 @@ ZENO_API NodeData INode::exportInfo() const
     node.name = m_name;
     node.status = m_status;
     node.uipos = m_pos;
+    //TODO: node type
+    if (node.subgraph.has_value())
+        node.type = Node_SubgraphNode;
+    else
+        node.type = Node_Normal;
 
     for (auto sparam : get_input_params()) {
         ParamInfo param;

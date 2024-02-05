@@ -86,6 +86,8 @@ struct Graph : std::enable_shared_from_this<Graph> {
     ZENO_API std::shared_ptr<INode> getNode(std::string const& name);
     ZENO_API std::map<std::string, std::shared_ptr<INode>> getNodes() const;
 
+    ZENO_API GraphData exportGraph() const;
+
     ZENO_API std::string getName() const;
     ZENO_API void setName(const std::string& name);
 
@@ -114,8 +116,7 @@ struct Graph : std::enable_shared_from_this<Graph> {
         std::string const &sn, std::string const &ss);
 
     //容易有歧义：这个input是defl value，还是实质的对象？按原来zeno的语义，是指defl value
-    ZENO_API void setNodeInput(std::string const &id, std::string const &par,
-        zany const &val);
+    ZENO_API void setNodeInput(std::string const &id, std::string const &par, zany const &val);
 
     ZENO_API void setKeyFrame(std::string const &id, std::string const &par, zany const &val);
     ZENO_API void setFormula(std::string const &id, std::string const &par, zany const &val);

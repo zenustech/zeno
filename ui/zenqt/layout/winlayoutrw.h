@@ -5,9 +5,8 @@
 #include <QtWidgets>
 #include <util/jsonhelper.h>
 #include "layout/docktabcontent.h"
-#include <zenoio/writer/zsgwriter.h>
 #include <zenoio/reader/zsg2reader.h>
-//#include "util/apphelper.h"
+
 
 struct LayerOutNode;
 typedef std::shared_ptr<LayerOutNode> PtrLayoutNode;

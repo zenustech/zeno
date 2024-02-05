@@ -20,7 +20,7 @@
 #include "dialog/zrecframeselectdlg.h"
 #include "util/apphelper.h"
 #include "zassert.h"
-#include <zenoio/writer/zsgwriter.h>
+#include <zenoio/writer/zenwriter.h>
 #include "viewport/picker.h"
 #include "viewport/nodesync.h"
 #include "layout/winlayoutrw.h"

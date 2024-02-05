@@ -378,6 +378,23 @@ ZENO_API std::map<std::string, std::shared_ptr<INode>> Graph::getNodes() const {
     return nodes;
 }
 
+ZENO_API GraphData Graph::exportGraph() const {
+    GraphData graph;
+    graph.name = m_name;
+    if ("main" == graph.name) {
+        graph.type = Subnet_Main;
+    }
+    else {
+        graph.type = Subnet_Normal;
+    }
+
+    for (auto& [name, node] : nodes) {
+        zeno::NodeData nodeinfo = node->exportInfo();
+        graph.nodes.insert(std::make_pair(name, nodeinfo));
+    }
+    return graph;
+}
+
 ZENO_API std::string Graph::getName() const {
     if (optParentSubgNode.has_value()) {
         SubnetNode* pSubnetNode = optParentSubgNode.value();

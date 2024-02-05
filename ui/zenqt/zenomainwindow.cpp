@@ -22,7 +22,7 @@
 #include <zeno/core/Session.h>
 #include <zeno/extra/GlobalComm.h>
 #include <zenoio/reader/zsg2reader.h>
-#include <zenoio/writer/zsgwriter.h>
+#include <zenoio/writer/zenwriter.h>
 #include <zenovis/DrawOptions.h>
 #include "uicommon.h"
 #include "style/zenostyle.h"
@@ -1856,7 +1856,7 @@ void ZenoMainWindow::clearErrorMark()
 
 bool ZenoMainWindow::saveAs() {
     DlgInEventLoopScope;
-    QString path = QFileDialog::getSaveFileName(this, "Path to Save", "", "Zeno Graph File(*.zsg);; All Files(*);;");
+    QString path = QFileDialog::getSaveFileName(this, "Path to Save", "", "Zeno File(*.zen);; All Files(*);;");
     if (!path.isEmpty()) {
         return saveFile(path);
     }
@@ -1866,7 +1866,7 @@ bool ZenoMainWindow::saveAs() {
 QString ZenoMainWindow::getOpenFileByDialog() {
     DlgInEventLoopScope;
     const QString &initialPath = "";
-    QFileDialog fileDialog(this, tr("Open"), initialPath, "Zeno Graph File (*.zsg)\nAll Files (*)");
+    QFileDialog fileDialog(this, tr("Open"), initialPath, "Legacy Zeno Graph File (*.zsg)\nZeno File (*.zen)\nAll Files (*)");
     fileDialog.setAcceptMode(QFileDialog::AcceptOpen);
     fileDialog.setFileMode(QFileDialog::ExistingFile);
     if (fileDialog.exec() != QDialog::Accepted)

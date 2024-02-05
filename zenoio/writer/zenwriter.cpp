@@ -1,11 +1,8 @@
 #include "ZenWriter.h"
-#include <zenomodel/include/modelrole.h>
 #include <zeno/utils/logger.h>
 #include <zeno/funcs/ParseObjectFromUi.h>
-#include <zenomodel/include/uihelper.h>
-#include "variantptr.h"
-#include <zenomodel/include/viewparammodel.h>
-#include <zenomodel/customui/customuirw.h>
+#include <zeno/utils/helper.h>
+#include <zenoio/include/iohelper.h>
 
 using namespace zeno::iotags;
 
@@ -16,81 +13,41 @@ namespace zenoio
     {
     }
 
-    void ZenWriter::dumpToClipboard(const GraphData& nodes)
+    std::string ZenWriter::dumpToClipboard(const zeno::GraphData& graph)
     {
-        QString strJson;
-
         rapidjson::StringBuffer s;
         RAPIDJSON_WRITER writer(s);
         {
-            JsonObjBatch batch(writer);
+            JsonObjScope batch(writer);
             writer.Key("nodes");
             {
-                JsonObjBatch _batch(writer);
-                for (const QString& nodeId : nodes.keys())
+                JsonObjScope _batch(writer);
+                for (const auto& [name, node_] : graph.nodes)
                 {
-                    const NODE_DATA& nodeData = nodes[nodeId];
-                    if (nodeData.find(ROLE_NODETYPE) != nodeData.end() &&
-                        NO_VERSION_NODE == nodeData[ROLE_NODETYPE])
-                    {
+                    if (node_.type == zeno::NoVersionNode) {
                         continue;
                     }
-
-                    writer.Key(nodeId.toUtf8());
-                    dumpNode(nodeData, writer);
+                    writer.Key(name.c_str());
+                    dumpNode(node_, writer);
                 }
             }
         }
-
-        strJson = QString::fromUtf8(s.GetString());
-        QMimeData* pMimeData = new QMimeData;
-        pMimeData->setText(strJson);
-        QApplication::clipboard()->setMimeData(pMimeData);
+        std::string strJson = s.GetString();
+        return strJson;
     }
 
     std::string ZenWriter::dumpProgramStr(zeno::GraphData maingraph, AppSettings settings)
     {
         std::string strJson;
-        if (!pModel)
-            return strJson;
 
         rapidjson::StringBuffer s;
         RAPIDJSON_WRITER writer(s);
 
         {
-            JsonObjBatch batch(writer);
+            JsonObjScope batch(writer);
 
-            writer.Key("graph");
-            {
-                JsonObjBatch _batch(writer);
-                for (int i = 0; i < pModel->rowCount(); i++)
-                {
-                    const QModelIndex& subgIdx = pModel->index(i, 0);
-                    const QString& subgName = subgIdx.data(ROLE_OBJNAME).toString();
-                    writer.Key(subgName.toUtf8());
-                    _dumpSubGraph(pModel, subgIdx, writer);
-                }
-            }
-
-            const FuckQMap<QString, CommandParam>& commandParams = pModel->commandParams();
-            if (!commandParams.isEmpty())
-            {
-                writer.Key("command");
-                {
-                    writer.StartObject();
-                    for (const auto& key : commandParams.keys())
-                    {
-                        writer.Key(key.toUtf8());
-                        writer.StartObject();
-                        writer.Key("name");
-                        writer.String(commandParams[key].name.toUtf8());
-                        writer.Key("description");
-                        writer.String(commandParams[key].description.toUtf8());
-                        writer.EndObject();
-                    }
-                    writer.EndObject();
-                }
-            }
+            writer.Key("main");
+            dumpGraph(maingraph, writer);
 
             writer.Key("views");
             {
@@ -99,56 +56,110 @@ namespace zenoio
                 writer.EndObject();
             }
 
-            writer.Key("settings");
-            dumpSettings(settings, writer);
-
             writer.Key("version");
-            writer.String("v2.5");  //distinguish the new version ui from the stable zeno2.
+            writer.String("v3");
         }
 
-        strJson = QString::fromUtf8(s.GetString());
+        strJson = s.GetString();
         return strJson;
     }
 
-    void ZenWriter::_dumpSubGraph(IGraphsModel* pModel, const QModelIndex& subgIdx, RAPIDJSON_WRITER& writer)
+
+    void ZenWriter::dumpGraph(zeno::GraphData graph, RAPIDJSON_WRITER& writer)
     {
-        JsonObjBatch batch(writer);
-        if (!pModel)
-            return;
-
+        JsonObjScope batch(writer);
         {
-            int type = subgIdx.data(ROLE_SUBGRAPH_TYPE).toInt();
             writer.Key("type");
-            writer.Int(type);
+            writer.Int(graph.type);
             writer.Key("nodes");
-            JsonObjBatch _batch(writer);
+            JsonObjScope _batch(writer);
 
-            int n = pModel->itemCount(subgIdx);
-            for (int i = 0; i < n; i++)
+            for (auto& [name, node] : graph.nodes)
             {
-                const QModelIndex& idx = pModel->index(i, subgIdx);
-                const NODE_DATA& node = pModel->itemData(idx, subgIdx);
-                if (node.find(ROLE_NODETYPE) != node.end() && NO_VERSION_NODE == node[ROLE_NODETYPE])
-                {
+                if (node.type == zeno::NoVersionNode)
                     continue;
-                }
-                const QString& id = node[ROLE_OBJID].toString();
-                writer.Key(id.toUtf8());
+                writer.Key(name.c_str());
                 dumpNode(node, writer);
             }
         }
+    }
+
+    void ZenWriter::dumpNode(const zeno::NodeData& node, RAPIDJSON_WRITER& writer)
+    {
+        JsonObjScope batch(writer);
+
+        writer.Key("name");
+        writer.String(node.name.c_str());
+
+        writer.Key("class");
+        writer.String(node.cls.c_str());
+
+        writer.Key("inputs");
         {
-            writer.Key("view_rect");
-            JsonObjBatch _batch(writer);
-            QRectF viewRc = pModel->viewRect(subgIdx);
-            if (!viewRc.isNull())
+            JsonObjScope _batch(writer);
+            for (const auto& param : node.inputs)
             {
-                writer.Key("x"); writer.Double(viewRc.x());
-                writer.Key("y"); writer.Double(viewRc.y());
-                writer.Key("width"); writer.Double(viewRc.width());
-                writer.Key("height"); writer.Double(viewRc.height());
+                writer.Key(param.name.c_str());
+                dumpSocket(param, writer);
             }
         }
+        writer.Key("outputs");
+        {
+            JsonObjScope _scope(writer);
+            for (const auto& param : node.outputs)
+            {
+                writer.Key(param.name.c_str());
+                dumpSocket(param, writer);
+            }
+        }
+        writer.Key("uipos");
+        {
+            writer.StartArray();
+            writer.Double(node.uipos.first);    //x
+            writer.Double(node.uipos.second);   //y
+            writer.EndArray();
+        }
+
+        writer.Key("status");
+        {
+            std::vector<std::string> options;
+            if (node.status & zeno::Mute) {
+                options.push_back("MUTE");
+            }
+            if (node.status & zeno::View) {
+                options.push_back("View");
+            }
+            writer.StartArray();
+            for (auto item : options)
+            {
+                writer.String(item.c_str(), item.length());
+            }
+            writer.EndArray();
+        }
+
+        writer.Key("collasped");
+        writer.Bool(node.bCollasped);
+
+        if (node.cls == "Blackboard") {
+            // do not compatible with zeno1
+
+            for (auto param : node.inputs)
+            {
+                //TODO
+            }
+        }
+        else if (node.cls == "Group") {
+            // TODO
+        }
+        //TODO: custom ui for panel
+
+        if (node.subgraph.has_value() && node.type == zeno::Node_SubgraphNode)
+        {
+            writer.Key("subnet");
+            dumpGraph(node.subgraph.value(), writer);
+        }
+
+        //TODO: assets
     }
 
     void ZenWriter::dumpSocket(zeno::ParamInfo param, RAPIDJSON_WRITER& writer)
@@ -156,255 +167,75 @@ namespace zenoio
         //new io format for socket.
         writer.StartObject();
 
+        zeno::SocketProperty prop;
+        param.prop;
         //property
-        if (socket.sockProp != SOCKPROP_NORMAL)
+        if (param.prop != zeno::Socket_Normal)
         {
             writer.Key("property");
-            {
-                if (socket.sockProp & SOCKPROP_DICTLIST_PANEL) {
-                    writer.String("dict-panel");
-                }
-                else if (socket.sockProp & SOCKPROP_EDITABLE) {
-                    writer.String("editable");
-                }
-                else if (socket.sockProp & SOCKPROP_GROUP_LINE) {
-                    writer.String("group-line");
-                }
-                else {
-                    writer.String("normal");
-                }
+            if (param.prop & zeno::Socket_Editable) {
+                writer.String("editable");
+            }
+            else if (param.prop & zeno::Socket_Legacy) {
+                writer.String("legacy");
+            }
+            else {
+                writer.String("normal");
             }
         }
 
-        if (bInput)
+        if (param.bInput)
         {
-            writer.Key("link");
-            if (socket.links.isEmpty())
+            writer.Key("links");
+            if (param.links.empty())
             {
                 writer.Null();
             }
             else
             {
-                //writer obj path directly.
-                QString otherLinkSock = bInput ? socket.links[0].outSockPath : socket.links[0].inSockPath;
-                writer.String(otherLinkSock.toUtf8());
+                writer.StartArray();
+                for (auto link : param.links) {
+
+                    JsonObjScope scope(writer);
+                    writer.Key("out-node");
+                    writer.String(link.outNode.c_str());
+                    writer.Key("out-socket");
+                    writer.String(link.outParam.c_str());
+                    writer.Key("out-key");
+                    writer.String(link.outKey.c_str());
+
+                    writer.Key("in-key");
+                    writer.String(link.inKey.c_str());
+                }
+                writer.EndArray();
             }
         }
 
-        const QString& sockType = socket.type;
         writer.Key("type");
-        writer.String(sockType.toUtf8());
+        writer.String(zeno::paramTypeToString(param.type).c_str());
 
-        if (bInput)
+        if (param.bInput)
         {
             writer.Key("default-value");
-            QVariant deflVal = socket.defaultValue;
-            bool bOK = false;
-            if (deflVal.canConvert<CURVES_DATA>() && (sockType == "float" || sockType.startsWith("vec"))) {
-                bOK = AddVariant(deflVal, "curve", writer);
-            }
-            else {
-                bool bValid = UiHelper::validateVariant(deflVal, sockType);
-                if (!bValid)
-                    deflVal = QVariant();
-                bOK = AddVariant(deflVal, sockType, writer);
-            }
-
-            if (!bOK)
-            {
-                zeno::log_error("write default-value error. nodeId : {}, socket : {}", socket.nodeid.toStdString(), socket.name.toStdString());
-            }
+            writeZVariant(param.defl, param.type, writer);
 
             writer.Key("control");
-            JsonHelper::dumpControl(socket.control, socket.ctrlProps, writer);
+            dumpControl(param.type, param.control, param.ctrlProps, writer);
         }
 
-        if (!socket.toolTip.isEmpty())
+        if (!param.tooltip.empty())
         {
             writer.Key("tooltip");
-            writer.String(socket.toolTip.toUtf8());
+            writer.String(param.tooltip.c_str());
         }
         writer.EndObject();
-    }
-
-    void ZenWriter::dumpNode(const NodeData& data, RAPIDJSON_WRITER& writer)
-    {
-        JsonObjBatch batch(writer);
-
-        writer.Key("name");
-        const QString& name = data[ROLE_OBJNAME].toString();
-        writer.String(name.toUtf8());
-
-        const QString& customName = data[ROLE_CUSTOM_OBJNAME].toString();
-        if (!customName.isEmpty())
-        {
-            writer.Key("customName");
-            writer.String(customName.toUtf8());
-        }
-
-        const INPUT_SOCKETS& inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
-        const OUTPUT_SOCKETS& outputs = data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
-        const PARAMS_INFO& params = data[ROLE_PARAMETERS].value<PARAMS_INFO>();
-
-        writer.Key("inputs");
-        {
-            JsonObjBatch _batch(writer);
-            for (const INPUT_SOCKET& inSock : inputs)
-            {
-                writer.Key(inSock.info.name.toUtf8());
-                dumpSocket(inSock.info, true, writer, false);
-            }
-        }
-        writer.Key("params");
-        {
-            JsonObjBatch _batch(writer);
-            for (const PARAM_INFO& info : params)
-            {
-                writer.Key(info.name.toUtf8());
-                dumpParams(info, writer);
-            }
-        }
-        writer.Key("outputs");
-        {
-            JsonObjBatch _scope(writer);
-            for (const OUTPUT_SOCKET& outSock : outputs)
-            {
-                writer.Key(outSock.info.name.toUtf8());
-                dumpSocket(outSock.info, false, writer, false);
-            }
-        }
-        writer.Key("uipos");
-        {
-            QPointF pos = data[ROLE_OBJPOS].toPointF();
-            writer.StartArray();
-            writer.Double(pos.x());
-            writer.Double(pos.y());
-            writer.EndArray();
-        }
-
-        writer.Key("options");
-        {
-            QStringList options;
-            int opts = data[ROLE_OPTIONS].toInt();
-            if (opts & OPT_ONCE) {
-                options.push_back("ONCE");
-            }
-            if (opts & OPT_MUTE) {
-                options.push_back("MUTE");
-            }
-            if (opts & OPT_PREP) {
-                options.push_back("PREP");
-            }
-            if (opts & OPT_VIEW) {
-                options.push_back("VIEW");
-            }
-            if (data[ROLE_COLLASPED].toBool())
-            {
-                options.push_back("collapsed");
-            }
-            AddStringList(options, writer);
-        }
-
-        //dump custom keys in dictnode.
-        {
-            QStringList inDictKeys, outDictKeys;
-            for (const INPUT_SOCKET& inSock : inputs) {
-                if (inSock.info.sockProp & SOCKPROP_EDITABLE) {
-                    inDictKeys.append(inSock.info.name);
-                }
-            }
-            for (const OUTPUT_SOCKET& outSock : outputs) {
-                if (outSock.info.sockProp & SOCKPROP_EDITABLE) {
-                    outDictKeys.append(outSock.info.name);
-                }
-            }
-            //replace socket_keys with dict_keys, which is more expressive.
-            if (!inDictKeys.isEmpty() || !outDictKeys.isEmpty())
-            {
-                writer.Key("dict_keys");
-                JsonObjBatch _batch(writer);
-
-                writer.Key("inputs");
-                writer.StartArray();
-                for (auto inSock : inDictKeys) {
-                    writer.String(inSock.toUtf8());
-                }
-                writer.EndArray();
-
-                writer.Key("outputs");
-                writer.StartArray();
-                for (auto outSock : outDictKeys) {
-                    writer.String(outSock.toUtf8());
-                }
-                writer.EndArray();
-            }
-        }
-
-        if (name == "Blackboard") {
-            // do not compatible with zeno1
-            PARAMS_INFO params = data[ROLE_PARAMS_NO_DESC].value<PARAMS_INFO>();
-            BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
-            writer.Key("blackboard");
-            {
-                JsonObjBatch _batch(writer);
-                writer.Key("special");
-                writer.Bool(info.special);
-                writer.Key("width");
-                writer.Double(info.sz.width());
-                writer.Key("height");
-                writer.Double(info.sz.height());
-                writer.Key("title");
-                writer.String(info.title.toUtf8());
-                writer.Key("content");
-                writer.String(info.content.toUtf8());
-            }
-
-        }
-        else if (name == "Group") {
-            // do not compatible with zeno1
-            PARAMS_INFO params = data[ROLE_PARAMS_NO_DESC].value<PARAMS_INFO>();
-            BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
-            writer.Key("blackboard");
-            {
-                JsonObjBatch _batch(writer);
-                writer.Key("width");
-                writer.Double(info.sz.width());
-                writer.Key("height");
-                writer.Double(info.sz.height());
-                writer.Key("title");
-                writer.String(info.title.toUtf8());
-                writer.Key("background");
-                writer.String(info.background.name().toUtf8());
-                writer.Key("items");
-                writer.StartArray();
-                for (auto item : info.items) {
-                    writer.String(item.toUtf8());
-                }
-                writer.EndArray();
-            }
-        }
-        //custom ui for panel
-        ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(data[ROLE_PANEL_PARAMS]);
-        if (viewParams && viewParams->isDirty())
-        {
-            writer.Key("customui-panel");
-            zenomodel::exportCustomUI(viewParams, writer);
-        }
-
-        //custom ui for node
-        ViewParamModel* viewNodeParams = QVariantPtr<ViewParamModel>::asPtr(data[ROLE_NODE_PARAMS]);
-        if (viewNodeParams && viewNodeParams->isDirty())
-        {
-            writer.Key("customui-node");
-            zenomodel::exportCustomUI(viewNodeParams, writer);
-        }
     }
 
     void ZenWriter::dumpTimeline(zeno::TimelineInfo info, RAPIDJSON_WRITER& writer)
     {
         writer.Key("timeline");
         {
-            JsonObjBatch _batch(writer);
+            JsonObjScope _batch(writer);
             writer.Key(timeline::start_frame);
             writer.Int(info.beginFrame);
             writer.Key(timeline::end_frame);
@@ -415,70 +246,6 @@ namespace zenoio
             writer.Bool(info.bAlways);
             writer.Key(timeline::timeline_fps);
             writer.Int(info.timelinefps);
-        }
-    }
-
-    void ZenWriter::dumpParams(const PARAM_INFO& info, RAPIDJSON_WRITER& writer)
-    {
-        writer.StartObject();
-
-        writer.Key("value");
-        AddVariant(info.value, info.typeDesc, writer);
-
-        writer.Key("control");
-        JsonHelper::dumpControl(info.control, info.controlProps, writer);
-
-        writer.Key("type");
-        writer.String(info.typeDesc.toUtf8());
-
-        if (!info.toolTip.isEmpty())
-        {
-            writer.Key("tooltip");
-            writer.String(info.toolTip.toUtf8());
-        }
-        writer.EndObject();
-    }
-
-    void ZenWriter::dumpSettings(const APP_SETTINGS settings, RAPIDJSON_WRITER& writer)
-    {
-        const RECORD_SETTING& info = settings.recordInfo;
-        JsonObjBatch batch(writer);
-        {
-            writer.Key("recordinfo");
-            writer.StartObject();
-            writer.Key(recordinfo::record_path);
-            writer.String(info.record_path.toUtf8());
-            writer.Key(recordinfo::videoname);
-            writer.String(info.videoname.toUtf8());
-            writer.Key(recordinfo::fps);
-            writer.Int(info.fps);
-            writer.Key(recordinfo::bitrate);
-            writer.Int(info.bitrate);
-            writer.Key(recordinfo::numMSAA);
-            writer.Int(info.numMSAA);
-            writer.Key(recordinfo::numOptix);
-            writer.Int(info.numOptix);
-            writer.Key(recordinfo::width);
-            writer.Int(info.width);
-            writer.Key(recordinfo::height);
-            writer.Int(info.height);
-            writer.Key(recordinfo::bExportVideo);
-            writer.Bool(info.bExportVideo);
-            writer.Key(recordinfo::needDenoise);
-            writer.Bool(info.needDenoise);
-            writer.Key(recordinfo::bAutoRemoveCache);
-            writer.Bool(info.bAutoRemoveCache);
-            writer.Key(recordinfo::bAov);
-            writer.Bool(info.bAov);
-            writer.Key(recordinfo::bExr);
-            writer.Bool(info.bExr);
-            writer.EndObject();
-
-            writer.Key("userdatainfo");
-            writer.StartObject();
-            writer.Key(userdatainfo::optixShowBackground);
-            writer.Bool(settings.userdataInfo.optix_show_background);
-            writer.EndObject();
         }
     }
 }

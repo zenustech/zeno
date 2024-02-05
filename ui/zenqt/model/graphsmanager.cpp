@@ -6,8 +6,10 @@
 #include <zeno/utils/log.h>
 #include <zeno/utils/scope_exit.h>
 #include <zeno/core/Graph.h>
+#include <zenoio/include/iohelper.h>
 #include "util/uihelper.h"
-#include <zenoio/writer/zsgwriter.h>
+#include <zenoio/writer/zenwriter.h>
+#include <zenoio/reader/zenreader.h>
 #include <zeno/core/Session.h>
 #include <zeno/types/UserData.h>
 #include "nodeeditor/gv/zenosubgraphscene.h"
@@ -81,10 +83,25 @@ GraphModel* GraphsManager::getGraph(const QStringList& objPath) const
 
 GraphsTreeModel* GraphsManager::openZsgFile(const QString& fn)
 {
-    zenoio::Zsg2Reader reader;
-    zenoio::ZSG_PARSE_RESULT result = reader.openFile(fn.toStdString());
+    zeno::ZSG_VERSION ver = zenoio::getVersion(fn.toStdString());
+    zenoio::ZSG_PARSE_RESULT result;
+
+    if (ver == zeno::VER_2_5) {
+        zenoio::Zsg2Reader reader;
+        result = reader.openFile(fn.toStdString());
+    }
+    else if (ver == zeno::VER_3) {
+        zenoio::ZenReader reader;
+        result = reader.openFile(fn.toStdString());
+    }
+    else {
+        result.bSucceed = false;
+    }
+
     if (!result.bSucceed)
         return nullptr;
+
+    m_filePath = fn;
 
     m_timerInfo = result.timeline;
     createGraphs(result);
@@ -101,15 +118,19 @@ void GraphsManager::createGraphs(const zenoio::ZSG_PARSE_RESULT ioresult)
     zeno::getSession().mainGraph->init(ioresult.mainGraph);
 }
 
-bool GraphsManager::saveFile(const QString& filePath, APP_SETTINGS settings)
+bool GraphsManager::saveFile(const QString& filePath, APP_SETTINGS)
 {
     if (m_model == nullptr) {
         zeno::log_error("The current model is empty.");
         return false;
     }
 
-    //todo: writer.
-    QString strContent;// = ZsgWriter::getInstance().dumpProgramStr(m_model, settings);
+    zenoio::AppSettings settings;       //TODO:
+
+    zeno::GraphData graph = zeno::getSession().mainGraph->exportGraph();
+
+    zenoio::ZenWriter writer;
+    std::string strContent = writer.dumpProgramStr(graph, settings);
     QFile f(filePath);
     zeno::log_debug("saving {} chars to file [{}]", strContent.size(), filePath.toStdString());
     if (!f.open(QIODevice::WriteOnly)) {
@@ -119,7 +140,7 @@ bool GraphsManager::saveFile(const QString& filePath, APP_SETTINGS settings)
         return false;
     }
 
-    f.write(strContent.toUtf8());
+    f.write(strContent.c_str());
     f.close();
     zeno::log_info("saved '{}' successfully", filePath.toStdString());
 

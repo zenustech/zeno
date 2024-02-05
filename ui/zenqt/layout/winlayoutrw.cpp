@@ -58,7 +58,9 @@ PtrLayoutNode findParent(PtrLayoutNode root, QDockWidget* pWidget)
 
 void _writeLayout(PtrLayoutNode root, const QSize& szMainwin, PRETTY_WRITER& writer, void(*cbDumpTabsToZsg)(QDockWidget*, RAPIDJSON_WRITER&))
 {
-    JsonObjBatch scope(writer);
+    writer.StartObject();
+    zeno::scope_exit sp([&]() { writer.EndObject(); });
+
     if (root->type == NT_HOR || root->type == NT_VERT)
     {
         writer.Key("orientation");

@@ -23,6 +23,32 @@ namespace zeno {
         else return Param_Null;
     }
 
+    ZENO_API std::string paramTypeToString(ParamType type)
+    {
+        switch (type)
+        {
+        case Param_Null:    return "";
+        case Param_Bool:    return "bool";
+        case Param_Int:     return "int";
+        case Param_String:  return "string";
+        case Param_Float:   return "float";
+        case Param_Vec2i:   return "vec2i";
+        case Param_Vec3i:   return "vec3i";
+        case Param_Vec4i:   return "vec4i";
+        case Param_Vec2f:   return "vec2f";
+        case Param_Vec3f:   return "vec3f";
+        case Param_Vec4f:   return "vec4f";
+        case Param_Prim:    return "prim";
+        case Param_Dict:    return "dict";
+        case Param_List:    return "list";
+        case Param_Curve:   return "curve";
+        case Param_Heatmap: return "heatmap";
+        case Param_SrcDst:  return "";
+        default:
+            return "";
+        }
+    }
+
     ZENO_API zvariant str2var(std::string const& defl, ParamType const& type) {
         switch (type) {
         case Param_String: {
@@ -211,5 +237,52 @@ namespace zeno {
                 return false;
             }
         }, lhs, rhs);
+    }
+
+    ZENO_API std::string getControlDesc(zeno::ParamControl ctrl, zeno::ParamType type)
+    {
+        switch (ctrl)
+        {
+        case zeno::Lineedit:
+        {
+            switch (type) {
+            case zeno::Param_Float:     return "Float";
+            case zeno::Param_Int:       return "Integer";
+            case zeno::Param_String:    return "String";
+            }
+            return "";
+        }
+        case zeno::Checkbox:
+        {
+            return "Boolean";
+        }
+        case zeno::Multiline:           return "Multiline String";
+        case zeno::Pathedit:            return "read path";
+        case zeno::Combobox:            return "Enum";
+        case zeno::Vec4edit:
+        {
+            return type == zeno::Param_Int ? "Integer Vector 4" : "Float Vector 4";
+        }
+        case zeno::Vec3edit:
+        {
+            return type == zeno::Param_Int ? "Integer Vector 3" : "Float Vector 3";
+        }
+        case zeno::Vec2edit:
+        {
+            return type == zeno::Param_Int ? "Integer Vector 2" : "Float Vector 2";
+        }
+        case zeno::Heatmap:             return "Color";
+        case zeno::Color:               return "Pure Color";
+        case zeno::ColorVec:            return "Color Vec3f";
+        case zeno::CurveEditor:         return "Curve";
+        case zeno::SpinBox:             return "SpinBox";
+        case zeno::DoubleSpinBox:       return "DoubleSpinBox";
+        case zeno::Slider:              return "Slider";
+        case zeno::SpinBoxSlider:       return "SpinBoxSlider";
+        case zeno::Seperator:           return "group-line";
+        case zeno::PythonEditor:        return "PythonEditor";
+        default:
+            return "";
+        }
     }
 }
