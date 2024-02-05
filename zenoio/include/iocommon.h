@@ -11,6 +11,12 @@ namespace zenoio {
     //    VER_2_5,        //new version io
     //};
 
+    struct AppSettings
+    {
+        zeno::TimelineInfo timeline;
+        //todo: other settings.
+    };
+
     struct ZSG_PARSE_RESULT {
         zeno::GraphData mainGraph;
         zeno::ZSG_VERSION iover;

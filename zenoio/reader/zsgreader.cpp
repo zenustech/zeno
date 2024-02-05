@@ -84,10 +84,10 @@ namespace zenoio {
     }
 
     zeno::ParamInfo ZsgReader::_parseSocket(
+        const bool bInput,
         const std::string& id,
         const std::string& nodeCls,
         const std::string& inSock,
-        bool bInput,
         const rapidjson::Value& sockObj,
         zeno::LinksData& links)
     {
@@ -142,7 +142,7 @@ namespace zenoio {
             }
             else if (inputObj.IsObject())
             {
-                zeno::ParamInfo param = _parseSocket(id, nodeName, inSock, true, inputObj, links);
+                zeno::ParamInfo param = _parseSocket(true, id, nodeName, inSock, inputObj, links);
                 ret.inputs.push_back(param);
             }
             else
@@ -174,7 +174,7 @@ namespace zenoio {
             }
             else if (outObj.IsObject())
             {
-                zeno::ParamInfo param = _parseSocket(id, nodeName, outParam, true, outObj, links);
+                zeno::ParamInfo param = _parseSocket(true, id, nodeName, outParam, outObj, links);
                 ret.outputs.push_back(param);
             }
             else
@@ -246,7 +246,7 @@ namespace zenoio {
                     for (const auto& input : inputs)
                     {
                         std::string socketName = input.name.GetString();
-                        _parseSocket("", nodeCls, socketName, true, input.value, lnks);
+                        _parseSocket(true, "", nodeCls, socketName, input.value, lnks);
                     }
                 }
             }
@@ -285,7 +285,7 @@ namespace zenoio {
                     for (const auto& param : params)
                     {
                         std::string socketName = param.name.GetString();
-                        _parseSocket("", nodeCls, socketName, true, param.value, lnks);
+                        _parseSocket(true, "", nodeCls, socketName, param.value, lnks);
                     }
                 }
             }

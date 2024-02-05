@@ -236,10 +236,10 @@ zeno::NodeData Zsg2Reader::_parseNode(
 }
 
 zeno::ParamInfo Zsg2Reader::_parseSocket(
+        const bool bInput,
         const std::string& id,
         const std::string& nodeCls,
         const std::string& sockName,
-        bool bInput,
         const rapidjson::Value& sockObj,
         zeno::LinksData& links)
 {
