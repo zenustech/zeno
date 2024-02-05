@@ -7,6 +7,7 @@
 #include <zeno/utils/logger.h>
 #include <zeno/utils/vec.h>
 #include <map>
+#include <set>
 #include "./BoundingBox.h"
 
 namespace zeno {
@@ -227,6 +228,22 @@ public:
         if (nh != PMP_MAX_INDEX) {
             hconn_[nh].prev_halfedge_ = h;
         }
+    }
+    inline void build_dup_list() {
+        auto &vduplicate = prim_->verts.attr<int>("v_duplicate");
+        dup_list_.clear();
+        for (int v = 0; v < vertices_size_; ++v) {
+            int src = vduplicate[v];
+            if (dup_list_.count(src) == 0)
+                dup_list_[src] = std::set<int>{};
+            dup_list_[src].insert(v);
+        }
+    }
+    inline std::set<int>& get_dup_list(int v) {
+        return dup_list_[v];
+    }
+    inline void erase_dup_list(int v) {
+        dup_list_.erase(v);
     }
 
     VertexAroundVertexCirculator vertices(int v) const {
@@ -476,6 +493,7 @@ public:
     size_t lines_size_;
     size_t faces_size_;
 
+    std::map<int, std::set<int>> dup_list_{};
     std::map<std::pair<int, int>, int> line_map_{};
     std::string line_pick_tag_;
 

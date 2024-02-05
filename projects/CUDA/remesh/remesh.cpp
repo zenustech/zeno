@@ -534,6 +534,10 @@ ZENO_DEFNODE(AdaptiveRemeshing)
 struct RepairDegenerateTriangle : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
+        auto iterations = get_input2<int>("iterations");
+        float edge_length = get_input2<float>("min_edge_length");
+        float area = get_input2<float>("min_area");
+        float angle = get_input2<float>("max_angle(degree)");
         auto &pos = prim->attr<vec3f>("pos");
         auto &efeature = prim->lines.add_attr<int>("e_feature");
 
@@ -553,9 +557,9 @@ struct RepairDegenerateTriangle : INode {
         splitNonManifoldEdges(prim, lines_map, marked_lines, efeature);
         splitNonManifoldVertices(prim, lines_map);
 
-        auto mesh = new zeno::pmp::SurfaceMesh(prim, "e_feature");
+        auto mesh = new pmp::SurfaceMesh(prim, "e_feature");
 
-        zeno::pmp::SurfaceRemeshing(mesh, "e_feature").remove_degenerate_triangles();
+        pmp::SurfaceRemeshing(mesh, "e_feature").remove_degenerate_triangles(edge_length, area, angle, iterations);
 
         returnNonManifold(prim);
 
@@ -573,7 +577,11 @@ struct RepairDegenerateTriangle : INode {
 
 ZENO_DEFNODE(RepairDegenerateTriangle)
 ({
-    {{"prim"}},
+    {{"prim"},
+    {"int", "iterations", "10"},
+    {"float", "min_edge_length", "0.0001"},
+    {"float", "min_area", "0.00000001"},
+    {"float", "max_angle(degree)", "170"}},
     {"prim"},
     {},
     {"primitive"},

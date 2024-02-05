@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <set>
 #include <Eigen/Core>
 #include <zeno/funcs/PrimitiveUtils.h>
 #include <zeno/utils/vec.h>
@@ -35,8 +36,11 @@ public:
                             bool use_projection = true);
 
     // remove degenerate triangles for mesh without remeshing
-    // no need to call it after remeshing since it is contained in the process
-    void remove_degenerate_triangles();
+    // do not preserve feature vertices and edges
+    void remove_degenerate_triangles(float min_edge_length,
+                                     float min_area,
+                                     float max_angle,
+                                     unsigned int iterations = 10);
 
 
 private:
@@ -46,12 +50,19 @@ private:
     int split_long_edges();
     enum COLLAPSE_COND {SHORT, CROSSES, DEGENERATE};
     void collapse_edges(COLLAPSE_COND cond);
+    void degenerate_collapse_check(int v0, int v1,
+                                   bool &h01, bool &h10,
+                                   std::vector<int> &col_edges);
+    void degenerate_collapse(const std::vector<int> &col_edges, int direction);
     void flip_edges();
     void tangential_smoothing(unsigned int iterations = 1);
     void laplacian_smoothing();
-    void remove_caps();
-
-    void check_triangles();
+    void remove_caps(float max_angle = 170.f, bool try_collapse = false);
+    void collapse_triangles(float min_edge_length, float min_area);
+    void check_triangles(float min_edge_length = std::numeric_limits<float>::epsilon(),
+                         float min_area = std::numeric_limits<float>::epsilon(),
+                         float max_angle = 170.f,
+                         bool mark = false);
     vec3f minimize_squared_areas(int v, bool& inversable);
     vec3f weighted_centroid(int v);
     template<class T>
@@ -88,7 +99,8 @@ private:
     }
     bool is_degenerate(int v0, int v1) const {
         auto& points = mesh_->prim_->attr<vec3f>("pos");
-        return distance(points[v0], points[v1]) < std::numeric_limits<float>::epsilon();
+        auto& vsizing = mesh_->prim_->verts.attr<float>("v_sizing");
+        return distance(points[v0], points[v1]) < vsizing[v0];
     }
     bool should_collapse(COLLAPSE_COND cond, int v0, int v1) const {
         if (cond == COLLAPSE_COND::SHORT) {
