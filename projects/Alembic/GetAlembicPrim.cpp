@@ -208,11 +208,63 @@ struct AllAlembicPrim : INode {
                 prims->arr.push_back(np);
             });
         }
+        auto pathInclude = zeno::split_str(get_input2<std::string>("pathInclude"), {' ', '\n'});
+        auto pathExclude = zeno::split_str(get_input2<std::string>("pathExclude"), {' ', '\n'});
+        auto facesetInclude = zeno::split_str(get_input2<std::string>("facesetInclude"), {' ', '\n'});
+        auto facesetExclude = zeno::split_str(get_input2<std::string>("facesetExclude"), {' ', '\n'});
+        for (auto it = prims->arr.begin(); it != prims->arr.end();) {
+            auto np = std::dynamic_pointer_cast<PrimitiveObject>(*it);
+            auto abc_path = np->userData().template get2<std::string>("_abc_path");
+            bool contain = false;
+            if (pathInclude.empty()) {
+                contain = true;
+            }
+            else {
+                for (const auto & p: pathInclude) {
+                    if (starts_with(abc_path, p)) {
+                        contain = true;
+                    }
+                }
+            }
+            if (contain) {
+                for (const auto & p: pathExclude) {
+                    if (starts_with(abc_path, p)) {
+                        contain = false;
+                    }
+                }
+            }
+            if (contain && np->userData().template has<std::string>("faceset_0")) {
+                auto faceset = np->userData().template get2<std::string>("faceset_0");
+                contain = false;
+                if (facesetInclude.empty()) {
+                    contain = true;
+                }
+                else {
+                    for (const auto & p: facesetInclude) {
+                        if (starts_with(faceset, p)) {
+                            contain = true;
+                        }
+                    }
+                }
+                if (contain) {
+                    for (const auto & p: facesetExclude) {
+                        if (starts_with(faceset, p)) {
+                            contain = false;
+                        }
+                    }
+                }
+            }
+            if (contain) {
+                ++it;
+            } else {
+                it = prims->arr.erase(it);
+            }
+        }
         auto outprim = zeno::primMerge(prims->getRaw<PrimitiveObject>());
         if (get_input2<bool>("flipFrontBack")) {
             flipFrontBack(outprim);
         }
-        if (get_input2<int>("triangulate") == 1) {
+        if (get_input2<bool>("triangulate")) {
             zeno::primTriangulate(outprim.get());
         }
         set_output("prim", std::move(outprim));
@@ -225,6 +277,10 @@ ZENDEFNODE(AllAlembicPrim, {
         {"ABCTree", "abctree"},
         {"bool", "use_xform", "0"},
         {"bool", "triangulate", "0"},
+        {"string", "pathInclude", ""},
+        {"string", "pathExclude", ""},
+        {"string", "facesetInclude", ""},
+        {"string", "facesetExclude", ""},
     },
     {{"PrimitiveObject", "prim"}},
     {},
