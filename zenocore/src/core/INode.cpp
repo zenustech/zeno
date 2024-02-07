@@ -330,8 +330,10 @@ ZENO_API NodeData INode::exportInfo() const
             auto outNode = outParam->m_wpNode.lock();
             info.outNode = outNode->get_name();
             info.outParam = outParam->name;
+            info.outKey = link->fromkey;
             info.inNode = m_name;
             info.inParam = param.name;
+            info.inKey = link->tokey;
             param.links.push_back(info);
         }
         node.inputs.push_back(param);
@@ -351,13 +353,14 @@ ZENO_API NodeData INode::exportInfo() const
             auto inNode = inParam->m_wpNode.lock();
             info.inNode = inNode->get_name();
             info.inParam = inParam->name;
+            info.inKey = link->tokey;
             info.outNode = m_name;
             info.outParam = param.name;
+            info.outKey = link->fromkey;
             param.links.push_back(info);
         }
         node.outputs.push_back(param);
     }
-
     return node;
 }
 

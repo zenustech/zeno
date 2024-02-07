@@ -365,8 +365,8 @@ void Zsg2Reader::_parseDictPanel(
                 auto lst = zeno::split_str(link, ':');
                 if (lst.size() > 2)
                 {
-                    const std::string& outId = lst[1];
-                    const std::string& fuckingpath = lst[2];
+                    const std::string outId = lst[1];
+                    const std::string fuckingpath = lst[2];
                     lst = zeno::split_str(fuckingpath, '/');
                     if (lst.size() > 2) {
                         std::string group = lst[1];
