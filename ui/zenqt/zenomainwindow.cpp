@@ -1730,15 +1730,16 @@ void ZenoMainWindow::save()
 
 bool ZenoMainWindow::saveFile(QString filePath)
 {
+    const auto graphsMgr = zenoApp->graphsManager();
     APP_SETTINGS settings;
     settings.timeline = timelineInfo();
-    settings.recordInfo = zenoApp->graphsManager()->recordSettings();
+    settings.recordInfo = graphsMgr->recordSettings();
     settings.layoutInfo.layerOutNode = m_layoutRoot;
     settings.layoutInfo.size = size();
     settings.layoutInfo.cbDumpTabsToZsg = &AppHelper::dumpTabsToZsg;
     auto& ud = zeno::getSession().userData();
     settings.userdataInfo.optix_show_background = ud.get2<bool>("optix_show_background", false);
-    zenoApp->graphsManager()->saveFile(filePath, settings);
+    graphsMgr->saveFile(filePath, settings);
     recordRecentFile(filePath);
 
     m_ui->statusbar->showMessage(tr("File Saved"));

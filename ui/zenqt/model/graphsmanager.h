@@ -26,6 +26,7 @@ public:
     GraphModel* getGraph(const QStringList& objPath) const;
     GraphsTreeModel* openZsgFile(const QString &fn);
     bool saveFile(const QString& filePath, APP_SETTINGS settings);
+    bool isInitializing() const;
     GraphsTreeModel* newFile();
     void importGraph(const QString& fn);
     void importSubGraphs(const QString& fn, const QMap<QString, QString>& map);
@@ -74,7 +75,8 @@ private:
     mutable std::mutex m_mtx;
     zeno::TimelineInfo m_timerInfo;
     QVector<ZenoSubGraphScene*> m_scenes;
-    //QMap<QString, ZenoSubGraphScene*> m_scenes;    //for gv based editor.
+    zeno::ZSG_VERSION m_version;
+    bool m_bIniting = false;
 };
 
 #endif

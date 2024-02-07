@@ -458,6 +458,10 @@ void GraphModel::_addLink(const zeno::EdgeInfo link)
         //notify ui to create dict key slot.
         if (!link.inKey.empty())
             emit toParams->linkAboutToBeInserted(link);
+        if (!link.outKey.empty()) {
+            if (zenoApp->graphsManager()->isInitializing())
+                emit fromParams->linkAboutToBeInserted(link);
+        }
 
         QModelIndex linkIdx = m_linkModel->addLink(from, outKey, to, inKey);
         fromParams->addLink(from, linkIdx);

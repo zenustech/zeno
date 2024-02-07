@@ -462,8 +462,6 @@ ZENO_API void INode::initParams(const NodeData& dat)
             continue;
         }
         sparam->defl = param.defl;
-        sparam->name = param.name;
-        sparam->type = param.type;
         sparam->control = param.control;
         sparam->optCtrlprops = param.ctrlProps;
         sparam->m_wpNode = shared_from_this();
@@ -476,8 +474,6 @@ ZENO_API void INode::initParams(const NodeData& dat)
             continue;
         }
         sparam->defl = param.defl;
-        sparam->name = param.name;
-        sparam->type = param.type;
         sparam->control = param.control;
         sparam->optCtrlprops = param.ctrlProps;
         sparam->m_wpNode = shared_from_this();

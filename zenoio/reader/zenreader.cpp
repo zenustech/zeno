@@ -211,8 +211,11 @@ namespace zenoio
             }
         }
 
-        if (sockObj.HasMember("type") && sockObj.HasMember("default-value")) {
+        if (sockObj.HasMember("type")) {
             param.type = zeno::convertToType(sockObj["type"].GetString());
+        }
+
+        if (sockObj.HasMember("default-value")) {
             param.defl = zenoio::jsonValueToZVar(sockObj["default-value"], param.type);
         }
 
@@ -241,6 +244,7 @@ namespace zenoio
             zeno::ControlProperty props;
             bool bret = zenoio::importControl(sockObj["control"], ctrl, props);
             if (bret) {
+                param.control = ctrl;
                 if (ctrl == zeno::NullControl)
                     param.control = zeno::getDefaultControl(param.type);
                 if (props.items || props.ranges)

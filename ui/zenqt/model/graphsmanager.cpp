@@ -24,6 +24,7 @@ GraphsManager::GraphsManager(QObject* parent)
     , m_logModel(nullptr)
     , m_assets(nullptr)
     , m_main(nullptr)
+    , m_version(zeno::VER_3)
 {
     m_logModel = new QStandardItemModel(this);
     m_model = new GraphsTreeModel(this);
@@ -86,6 +87,9 @@ GraphsTreeModel* GraphsManager::openZsgFile(const QString& fn)
     zeno::ZSG_VERSION ver = zenoio::getVersion(fn.toStdString());
     zenoio::ZSG_PARSE_RESULT result;
 
+    m_bIniting = true;
+    zeno::scope_exit sp([=] { m_bIniting = false; });
+
     if (ver == zeno::VER_2_5) {
         zenoio::Zsg2Reader reader;
         result = reader.openFile(fn.toStdString());
@@ -95,12 +99,14 @@ GraphsTreeModel* GraphsManager::openZsgFile(const QString& fn)
         result = reader.openFile(fn.toStdString());
     }
     else {
+        m_version = zeno::UNKNOWN_VER;
         result.bSucceed = false;
     }
 
     if (!result.bSucceed)
         return nullptr;
 
+    m_version = ver;
     m_filePath = fn;
 
     m_timerInfo = result.timeline;
@@ -110,6 +116,11 @@ GraphsTreeModel* GraphsManager::openZsgFile(const QString& fn)
 
     emit fileOpened(fn);
     return m_model;
+}
+
+bool GraphsManager::isInitializing() const
+{
+    return m_bIniting;
 }
 
 void GraphsManager::createGraphs(const zenoio::ZSG_PARSE_RESULT ioresult)
@@ -352,12 +363,12 @@ void GraphsManager::updateAssets(const QString& assetsName, zeno::ParamsUpdateIn
 
 zeno::ZSG_VERSION GraphsManager::ioVersion() const
 {
-    return zeno::VER_3;
+    return m_version;
 }
 
 void GraphsManager::setIOVersion(zeno::ZSG_VERSION ver)
 {
-    //??
+    m_version = ver;
 }
 
 void GraphsManager::clearMarkOnGv() {

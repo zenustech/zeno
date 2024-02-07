@@ -171,7 +171,8 @@ ZDictPanel::ZDictPanel(ZDictSocketLayout* pLayout, const QPersistentModelIndex& 
         m_pEditBtn = new ZenoParamPushButton(btnName, "dictkeypanel");
         pVLayout->addItem(m_pEditBtn, Qt::AlignHCenter);
     }
-    else {
+    
+    {
         connect(paramsM, &ParamsModel::linkAboutToBeInserted, this, [=](const zeno::EdgeInfo& link) {
             ZDictItemLayout* pkey = new ZDictItemLayout(m_bDict, 
                 m_paramIdx, QString::fromStdString(link.inKey), cbSock, this);
