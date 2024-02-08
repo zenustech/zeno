@@ -8,6 +8,7 @@
 #include "../panel/zenolights.h"
 #include "viewport/displaywidget.h"
 #include "util/jsonhelper.h"
+#include "util/apphelper.h"
 
 
 PtrLayoutNode findNode(PtrLayoutNode root, QDockWidget* pWidget)
@@ -131,7 +132,7 @@ QString exportLayout(PtrLayoutNode root, const QSize& szMainwin)
 {
     rapidjson::StringBuffer s;
     PRETTY_WRITER writer(s);
-    //_writeLayout(root, szMainwin, writer, &AppHelper::dumpTabsToZsg);
+    _writeLayout(root, szMainwin, writer, &AppHelper::dumpTabsToZsg);
     QString strJson = QString::fromUtf8(s.GetString());
     return strJson;
 }

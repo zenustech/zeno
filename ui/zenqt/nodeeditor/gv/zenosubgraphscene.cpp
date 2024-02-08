@@ -63,8 +63,8 @@ void ZenoSubGraphScene::initModel(GraphModel* pGraphM)
 {
     m_model = pGraphM;
 
-    disconnect(m_model, SIGNAL(reloaded()), this, SLOT(reload()));
-    disconnect(m_model, SIGNAL(clearLayout()), this, SLOT(clearLayout()));
+    //disconnect(m_model, SIGNAL(reloaded()), this, SLOT(reload()));
+    //disconnect(m_model, SIGNAL(clearLayout()), this, SLOT(clearLayout()));
     disconnect(m_model, &GraphModel::dataChanged, this, &ZenoSubGraphScene::onDataChanged);
     disconnect(m_model, &GraphModel::rowsAboutToBeRemoved, this, &ZenoSubGraphScene::onRowsAboutToBeRemoved);
 	disconnect(m_model, &GraphModel::rowsInserted, this, &ZenoSubGraphScene::onRowsInserted);
@@ -162,8 +162,8 @@ void ZenoSubGraphScene::initModel(GraphModel* pGraphM)
         }
     }
 #endif
-    connect(m_model, SIGNAL(reloaded()), this, SLOT(reload()));
-    connect(m_model, SIGNAL(clearLayout()), this, SLOT(clearLayout()));
+    //connect(m_model, SIGNAL(reloaded()), this, SLOT(reload()));
+    //connect(m_model, SIGNAL(clearLayout()), this, SLOT(clearLayout()));
     connect(m_model, &GraphModel::dataChanged, this, &ZenoSubGraphScene::onDataChanged);
     connect(m_model, &GraphModel::rowsAboutToBeRemoved, this, &ZenoSubGraphScene::onRowsAboutToBeRemoved);
     connect(m_model, &GraphModel::rowsInserted, this, &ZenoSubGraphScene::onRowsInserted);

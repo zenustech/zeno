@@ -445,17 +445,13 @@ void ZenoMainWindow::initDocksWidget(ZDockWidget* pLeft, PtrLayoutNode root)
             PANEL_TYPE type = ZDockWidget::title2Type(tab);
             if (type != PANEL_EMPTY)
             {
-            #ifdef ZENO_OPTIX_PROC
-                if (type == PANEL_OPTIX_VIEW)
-                    type = PANEL_GL_VIEW;
-            #endif
                 if ((type == PANEL_GL_VIEW || type == PANEL_OPTIX_VIEW) && root->widgetInfos.size() != 0)
                 {
                     if (dockContentViewIndex < root->widgetInfos.size())
                         pLeft->onAddTab(type, root->widgetInfos[dockContentViewIndex++]);
                 }
                 else {
-                pLeft->onAddTab(type);
+                    pLeft->onAddTab(type);
                 }
             }
         }

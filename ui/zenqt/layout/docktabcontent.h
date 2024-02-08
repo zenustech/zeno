@@ -114,7 +114,7 @@ private:
     ZToolBarButton *pCustomParam;
     ZToolBarButton *pGroup;
     ZToolBarButton *pLinkLineShape;
-    ZToolBarButton* pTestApi;
+    ZToolBarButton* pTestApi = nullptr;
     QCheckBox*pAlways;
     ZToolBarButton *pSearchBtn;
     ZToolBarButton *pSettings;

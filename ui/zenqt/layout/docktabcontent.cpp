@@ -159,6 +159,7 @@ void DockToolbarWidget::initUI()
 
     QWidget *pToolbar = new QWidget;
     pToolbar->setFixedHeight(ZenoStyle::dpiScaled(sToolbarHeight));
+    pToolbar->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
     QHBoxLayout* pToolLayout = new QHBoxLayout;
     pToolLayout->setContentsMargins(ZenoStyle::dpiScaled(8), ZenoStyle::dpiScaled(4),
@@ -307,7 +308,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pSearchBtn = new ZToolBarButton(true, ":/icons/toolbar_search_idle.svg", ":/icons/toolbar_search_light.svg");
     pSettings = new ZToolBarButton(false, ":/icons/toolbar_localSetting_idle.svg", ":/icons/toolbar_localSetting_light.svg");
     pLinkLineShape = new ZToolBarButton(true, ":/icons/timeline-curvemap.svg",":/icons/timeline-curvemap.svg");
-    pTestApi = new ZToolBarButton(false, ":/icons/timeline-curvemap.svg", ":/icons/timeline-curvemap.svg");
+    //pTestApi = new ZToolBarButton(false, ":/icons/timeline-curvemap.svg", ":/icons/timeline-curvemap.svg");
     pAlways = new QCheckBox(tr("Auto"), this);
     pAlways->setChecked(false);
     pAlways->setProperty("cssClass", "AlwaysCheckBox");
@@ -332,7 +333,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     QFont fnt = QApplication::font();
 
     m_btnRun->setIcon(ZenoStyle::dpiScaledSize(QSize(16, 16)), ":/icons/run_all_btn.svg",
-                          ":/icons/run_all_btn.svg", "", "");
+        ":/icons/run_all_btn.svg", "", "");
     m_btnRun->setRadius(ZenoStyle::dpiScaled(2));
     m_btnRun->setFont(fnt);
     m_btnRun->setText(tr("Run"));
@@ -404,7 +405,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pToolLayout->addWidget(pCustomParam);
     pToolLayout->addWidget(pGroup);
     pToolLayout->addWidget(pLinkLineShape);
-    pToolLayout->addWidget(pTestApi);
+    //pToolLayout->addWidget(pTestApi);     //TOFIX: 添加此项竟然导致最大化窗口无效，要研究布局细节。
     pToolLayout->addWidget(pAlways);
 
     //pToolLayout->addWidget(new ZLineWidget(false, QColor("#121416")));
@@ -479,40 +480,42 @@ void DockContent_Editor::initConnections()
     connect(pLinkLineShape, &ZToolBarButton::toggled, this, [=](bool bChecked) {
         ZenoSettingsManager::GetInstance().setValue(zsLinkLineShape, bChecked);
     });
-    connect(pTestApi, &ZToolBarButton::clicked, this, [=]() {
-        auto& sess = zeno::getSession();
-        zeno::EdgeInfo edge;
-        std::shared_ptr<zeno::INode> spNode;
+    if (pTestApi) {
+        connect(pTestApi, &ZToolBarButton::clicked, this, [=]() {
+            auto& sess = zeno::getSession();
+            zeno::EdgeInfo edge;
+            std::shared_ptr<zeno::INode> spNode;
 
-        if (0) {
-            spNode = sess.mainGraph->getNode("NumericInt1");
-            if (spNode)
-                spNode->set_pos({ 1000, 1000 });
-        }
+            if (0) {
+                spNode = sess.mainGraph->getNode("NumericInt1");
+                if (spNode)
+                    spNode->set_pos({ 1000, 1000 });
+            }
 
-        if (false) {
-            spNode = sess.mainGraph->createNode("NumericInt");
-            if (spNode) {
-                spNode->update_param("value", 233);
+            if (false) {
+                spNode = sess.mainGraph->createNode("NumericInt");
+                if (spNode) {
+                    spNode->update_param("value", 233);
+                }
+                spNode = sess.mainGraph->createNode("CreateCube");
+                spNode = sess.mainGraph->getNode("CreateCube1");
+                if (spNode) {
+                    spNode->update_param("div_w", 24);
+                }
+                edge = { "NumericInt1", "DST", "", "CreateCube1", "div_w", "" };
+                sess.mainGraph->addLink(edge);
             }
-            spNode = sess.mainGraph->createNode("CreateCube");
-            spNode = sess.mainGraph->getNode("CreateCube1");
-            if (spNode) {
-                spNode->update_param("div_w", 24);
+            if (false) {
+                edge = { "NumericInt1", "DST", "", "CreateCube1", "div_w", "" };
+                sess.mainGraph->removeLink(edge);
             }
-            edge = { "NumericInt1", "DST", "", "CreateCube1", "div_w", "" };
-            sess.mainGraph->addLink(edge);
-        }
-        if (false) {
-            edge = { "NumericInt1", "DST", "", "CreateCube1", "div_w", "" };
-            sess.mainGraph->removeLink(edge);
-        }
-        if (1) {
-            sess.assets->createAsset("aaa");
-            sess.assets->createAsset("bbb");
-            sess.assets->createAsset("aaa2");
-        }
-    });
+            if (1) {
+                sess.assets->createAsset("aaa");
+                sess.assets->createAsset("bbb");
+                sess.assets->createAsset("aaa2");
+            }
+        });
+    }
 
     ZenoMainWindow* pMainWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(pMainWin);

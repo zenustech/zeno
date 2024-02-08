@@ -196,12 +196,12 @@ void ZenoGraphsEditor::resetModel()
     m_ui->graphsViewTab->clear();
 
     connect(pModel, &GraphsTreeModel::modelClear, this, &ZenoGraphsEditor::onModelCleared);
-
+    /*
     connect(assets, SIGNAL(rowsAboutToBeRemoved(const QModelIndex&, int, int)), this, SLOT(onAssetsToRemove(const QModelIndex&, int, int)));
     connect(pModel, SIGNAL(rowsAboutToBeRemoved(const QModelIndex&, int, int)), this, SLOT(onSubGraphsToRemove(const QModelIndex&, int, int)));
-
     connect(pModel, SIGNAL(modelReset()), this, SLOT(onModelReset()));
     connect(assets, SIGNAL(graphRenamed(const QString&, const QString&)), this, SLOT(onSubGraphRename(const QString&, const QString&)));
+    */
     activateTab({ "main" });
 
     m_ui->mainTree->expandAll();
