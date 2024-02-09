@@ -4,6 +4,8 @@
 #include <QtWidgets>
 #include <zeno/core/data.h>
 #include <QQuickItem>
+#include "uicommon.h"
+#include <zeno/core/Assets.h>
 
 class GraphModel;
 
@@ -13,13 +15,19 @@ class AssetsModel : public QAbstractListModel
     typedef QAbstractListModel _base;
     QML_ELEMENT
 
+    struct _AssetItem
+    {
+        zeno::AssetInfo info;
+        GraphModel* pGraphM;
+    };
+
 public:
     AssetsModel(QObject* parent = nullptr);
     ~AssetsModel();
 
     void init(const zeno::AssetsData& assets);
     void clear();
-    Q_INVOKABLE GraphModel* getAsset(const QString& graphName) const;
+    Q_INVOKABLE GraphModel* getAssetGraph(const QString& graphName) const;
 
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
@@ -31,16 +39,17 @@ public:
     bool removeRows(int row, int count, const QModelIndex& parent = QModelIndex()) override;
     QHash<int, QByteArray> roleNames() const override;
 
-    void newAsset(const QString& assetName);
+    void newAsset(const zeno::AssetInfo asset);
     void addAsset(const zeno::GraphData& graph);
     void removeAsset(const QString& assetName);
+    zeno::AssetInfo getAsset(const QString& assetName) const;
 
 private:
-    void _addAsset(const QString& newName);
+    void _addAsset(zeno::AssetInfo info);
     void _removeAsset(const QString& newName);
     int rowByName(const QString& name) const;
 
-    QVector<GraphModel*> m_assets;
+    QVector<_AssetItem> m_assets;
 
     std::string m_cbCreateAsset;
     std::string m_cbRemoveAsset;

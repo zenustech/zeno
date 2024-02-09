@@ -21,6 +21,7 @@
 #include "util/uihelper.h"
 #include "settings/zsettings.h"
 #include "dialog/zeditparamlayoutdlg.h"
+#include "dialog/znewassetdlg.h"
 #include "settings/zenosettingsmanager.h"
 #include "widgets/zpathedit.h"
 #include "widgets/zlabel.h"
@@ -315,19 +316,13 @@ void ZenoGraphsEditor::onSearchOptionClicked()
 void ZenoGraphsEditor::onNewAsset()
 {
     bool bOk = false;
-    QString newAssetName = QInputDialog::getText(this, tr("create asset"), tr("new asset name:")
-        , QLineEdit::Normal, "AssetName", &bOk);
 
-    if (newAssetName.compare("main", Qt::CaseInsensitive) == 0)
+    ZNewAssetDlg dlg;
+    if (QDialog::Accepted == dlg.exec())
     {
-        QMessageBox msg(QMessageBox::Warning, tr("Zeno"), tr("main asset is not allowed to be created"));
-        msg.exec();
-        return;
-    }
-
-    if (bOk) {
+        zeno::AssetInfo asset = dlg.getAsset();
         AssetsModel* pModel = zenoApp->graphsManager()->assetsModel();
-        pModel->newAsset(newAssetName);
+        pModel->newAsset(asset);
     }
 }
 

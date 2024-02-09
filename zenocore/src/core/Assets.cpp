@@ -13,12 +13,14 @@ ZENO_API AssetsMgr::~AssetsMgr() {
 
 }
 
-ZENO_API void AssetsMgr::createAsset(const std::string& name) {
+ZENO_API void AssetsMgr::createAsset(const zeno::AssetInfo asset) {
     Asset newAsst;
 
-    std::shared_ptr<Graph> spGraph = std::make_shared<Graph>(name, true);
+    newAsst.m_info = asset;
 
-    spGraph->setName(name);
+    std::shared_ptr<Graph> spGraph = std::make_shared<Graph>(asset.name, true);
+
+    spGraph->setName(asset.name);
     //manually init some args nodes.
     spGraph->createNode("SubInput", "input1", "", { 0, 0 });
     spGraph->createNode("SubInput", "input2", "", { 0,700 });
@@ -44,8 +46,8 @@ ZENO_API void AssetsMgr::createAsset(const std::string& name) {
 
     newAsst.sharedGraph = spGraph;
 
-    m_assets.insert(std::make_pair(name, newAsst));
-    CALLBACK_NOTIFY(createAsset, name)
+    m_assets.insert(std::make_pair(asset.name, newAsst));
+    CALLBACK_NOTIFY(createAsset, asset)
 }
 
 ZENO_API void AssetsMgr::removeAsset(const std::string& name) {

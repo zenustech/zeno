@@ -510,9 +510,13 @@ void DockContent_Editor::initConnections()
                 sess.mainGraph->removeLink(edge);
             }
             if (1) {
-                sess.assets->createAsset("aaa");
-                sess.assets->createAsset("bbb");
-                sess.assets->createAsset("aaa2");
+                zeno::AssetInfo info;
+                info.name = "aaa";
+                sess.assets->createAsset(info);
+                info.name = "bbb";
+                sess.assets->createAsset(info);
+                info.name = "ccc";
+                sess.assets->createAsset(info);
             }
         });
     }

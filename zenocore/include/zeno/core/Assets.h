@@ -5,11 +5,29 @@
 
 namespace zeno {
 
+struct AssetInfo
+{
+    std::string name;
+    std::string path;
+    int majorVer;
+    int minorVer;
+};
+
 struct Asset {
+    AssetInfo m_info;
     std::shared_ptr<Graph> sharedGraph;
     std::vector<ParamInfo> inputs;
     std::vector<ParamInfo> outputs;
 };
+
+struct ZenoAsset {
+    std::vector<ParamInfo> inputs;
+    std::vector<ParamInfo> outputs;
+    AssetInfo info;
+    GraphData graph;
+};
+
+using AssetsData = std::map<std::string, ZenoAsset>;
 
 struct AssetsMgr : std::enable_shared_from_this<AssetsMgr> {
     Session *session = nullptr;
@@ -24,8 +42,8 @@ struct AssetsMgr : std::enable_shared_from_this<AssetsMgr> {
     AssetsMgr(AssetsMgr&&) = delete;
     AssetsMgr& operator=(AssetsMgr&&) = delete;
 
-    ZENO_API void createAsset(const std::string& name);
-    CALLBACK_REGIST(createAsset, void, const std::string&)
+    ZENO_API void createAsset(const zeno::AssetInfo asset);
+    CALLBACK_REGIST(createAsset, void, zeno::AssetInfo)
 
     ZENO_API void removeAsset(const std::string& name);
     CALLBACK_REGIST(removeAsset, void, const std::string&)

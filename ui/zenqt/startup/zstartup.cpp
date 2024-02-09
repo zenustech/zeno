@@ -24,28 +24,13 @@ void startUp(bool bEnableCrashReport)
     zeno::setConfigVariable("EXECFILE", QCoreApplication::applicationFilePath().toStdString());
 
     QSettings settings(zsCompanyName, zsEditor);
-    QVariant nas_loc_v = settings.value("nas_loc");
-    if (!nas_loc_v.isNull()) {
-        zeno::setConfigVariable("NASLOC", nas_loc_v.toString().toStdString());
-    }
-
-    QVariant zencache_v = settings.value("zencachedir");
-    if (!zencache_v.isNull()) {
-        zeno::setConfigVariable("ZENCACHE", zencache_v.toString().toStdString());
-    }
-
-#if 0
-    QVariant scalefac_v = settings.value("scale_factor");
-    if (!scalefac_v.isNull()) {
-        float scalefac = scalefac_v.toFloat();
-        if (scalefac >= 1.0f)
-            qputenv("QT_SCALE_FACTOR", QString::number(scalefac).toUtf8());
-    }
-#endif
 
     static int calledOnce = ([]{
         zeno::getSession().eventCallbacks->triggerEvent("init");
     }(), 0);
+
+    QDir docDir(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation));
+    docDir.mkpath("Zeno/assets");
 }
 
 std::string getZenoVersion() {

@@ -148,13 +148,6 @@ namespace zeno {
         std::set<std::string> remove_inputs;
         std::set<std::string> remove_outputs;
     };
-
-    struct ZenoAsset {
-        NodeDesc desc;
-        GraphData graph;
-    };
-
-    using AssetsData = std::map<std::string, ZenoAsset>;
 }
 
 #endif

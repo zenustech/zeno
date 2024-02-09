@@ -2,6 +2,7 @@
 #define __ZEN_READER_H__
 
 #include "zsgreader.h"
+#include <zeno/core/Assets.h>
 
 namespace zenoio
 {

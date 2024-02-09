@@ -3,21 +3,16 @@
 
 #include <zeno/core/data.h>
 #include <zenoio/include/iocommon.h>
+#include "commonwriter.h"
 
 namespace zenoio
 {
-    class ZenWriter
+    class ZenWriter : public CommonWriter
     {
     public:
         ZenWriter();
         std::string dumpProgramStr(zeno::GraphData graph, AppSettings settings);
         std::string dumpToClipboard(const zeno::GraphData& nodes);
-
-    private:
-        void dumpGraph(zeno::GraphData graph, RAPIDJSON_WRITER& writer);
-        void dumpNode(const zeno::NodeData& data, RAPIDJSON_WRITER& writer);
-        void dumpSocket(zeno::ParamInfo info, RAPIDJSON_WRITER& writer);
-        void dumpTimeline(zeno::TimelineInfo info, RAPIDJSON_WRITER& writer);
     };
 }
 

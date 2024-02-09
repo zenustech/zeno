@@ -64,6 +64,8 @@ int main(int argc, char *argv[])
         }
     }
 
+    startUp(true);
+
     ZenoMainWindow mainWindow;
     zeno::getSession().eventCallbacks->triggerEvent("editorConstructed");
     mainWindow.showMaximized();
