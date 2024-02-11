@@ -5,14 +5,6 @@
 
 namespace zeno {
 
-struct AssetInfo
-{
-    std::string name;
-    std::string path;
-    int majorVer;
-    int minorVer;
-};
-
 struct Asset {
     AssetInfo m_info;
     std::shared_ptr<Graph> sharedGraph;

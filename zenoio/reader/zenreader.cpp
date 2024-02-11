@@ -60,15 +60,6 @@ namespace zenoio
         retNode.cls = cls;
         retNode.type = zeno::Node_Normal;
 
-        bool isParsingSubg = subgPath.rfind("/main", 0) != 0;
-
-        //should expand the subgraph node recursively.
-        if (assets.find(cls) != assets.end())
-        {
-            retNode.type = zeno::Node_AssetInstance;
-            //暂时不fork，直接引用，避免同步问题。
-        }
-
         if (objValue.HasMember("inputs"))
         {
             _parseInputs(nodeid, cls, objValue["inputs"], retNode, links);
@@ -163,6 +154,29 @@ namespace zenoio
             zeno::GraphData subgraph;
             _parseGraph(objValue["subnet"], assets, subgraph);
             retNode.subgraph = subgraph;
+            retNode.type = zeno::Node_SubgraphNode;
+        }
+
+        if (objValue.HasMember("asset")) {
+            zeno::AssetInfo info;
+            auto& assetObj = objValue["asset"];
+            if (assetObj.HasMember("name") && assetObj.HasMember("version"))
+            {
+                info.name = assetObj["name"].GetString();
+                std::string verStr = assetObj["version"].GetString();
+                std::vector<std::string> vec = zeno::split_str(verStr.c_str(), '.');
+                if (vec.size() == 1)
+                {
+                    info.majorVer = std::stoi(vec[0]);
+                }
+                else if (vec.size() == 2)
+                {
+                    info.majorVer = std::stoi(vec[0]);
+                    info.minorVer = std::stoi(vec[1]);
+                }
+            }
+            retNode.type = zeno::Node_AssetInstance;
+            retNode.asset = info;
         }
 
         return retNode;

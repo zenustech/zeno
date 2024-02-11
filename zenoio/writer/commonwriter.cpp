@@ -107,7 +107,18 @@ namespace zenoio
             dumpGraph(node.subgraph.value(), writer);
         }
 
-        //TODO: assets
+        if (node.asset.has_value()) {
+            zeno::AssetInfo asset = node.asset.value();
+            writer.Key("asset");
+            JsonObjScope scope(writer);
+            writer.Key("name");
+            writer.String(asset.name.c_str());
+            writer.Key("path");
+            writer.String(asset.path.c_str());
+            writer.Key("version");
+            std::string version = std::to_string(asset.majorVer) + "." + std::to_string(asset.minorVer);
+            writer.String(version.c_str());
+        }
     }
 
     void CommonWriter::dumpSocket(zeno::ParamInfo param, RAPIDJSON_WRITER& writer)

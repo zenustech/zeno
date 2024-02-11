@@ -263,10 +263,15 @@ ZENO_API void SubnetNode::apply() {
 
 ZENO_API NodeData SubnetNode::exportInfo() const {
     NodeData node = INode::exportInfo();
-    if (subgraph) {
-        node.subgraph = subgraph->exportGraph();
+    Asset asset = zeno::getSession().assets->getAsset(node.cls);
+    if (!asset.m_info.name.empty()) {
+        node.asset = asset.m_info;
+        node.type = Node_AssetInstance;
     }
-    node.type = Node_SubgraphNode;
+    else {
+        node.subgraph = subgraph->exportGraph();
+        node.type = Node_SubgraphNode;
+    }
     return node;
 }
 

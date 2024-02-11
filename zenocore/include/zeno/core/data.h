@@ -91,6 +91,14 @@ namespace zeno {
         SubnetType type;
     };
 
+    struct AssetInfo
+    {
+        std::string name;
+        std::string path;
+        int majorVer;
+        int minorVer;
+    };
+
     struct NodeData {
         std::string name;
         std::string cls;
@@ -100,11 +108,11 @@ namespace zeno {
 
         //if current node is a subgraph node, which means type =NodeStatus::SubgraphNode.
         std::optional<GraphData> subgraph;
+        std::optional<AssetInfo> asset;
 
         std::pair<float, float> uipos;
         NodeStatus status = NodeStatus::None;
         NodeType type;
-        bool bAssetsNode = false;
         bool bCollasped = false;
     };
 
