@@ -30,13 +30,6 @@
     <number>0</number>
    </property>
    <item>
-    <widget class="QStackedWidget" name="mainStackedWidget">
-     <property name="styleSheet">
-      <string notr="true"/>
-     </property>
-     <property name="currentIndex">
-      <number>0</number>
-     </property>
      <widget class="QWidget" name="mainEditor">
       <property name="styleSheet">
        <string notr="true"/>
@@ -60,10 +53,7 @@
        <item>
         <widget class="QSplitter" name="splitter">
          <property name="styleSheet">
-          <string notr="true">QSplitter::handle
-{
-    background-color: rgb(37,37,38) ;
-}</string>
+          <string notr="true">QSplitter::handle { background-color: rgb(37,37,38) ;}</string>
          </property>
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
@@ -109,8 +99,7 @@
               <item>
                <widget class="QLabel" name="label">
                 <property name="styleSheet">
-                 <string notr="true">color: #737B85;
-font-size: 12pt;</string>
+                 <string notr="true">color: #737B85; font-size: 12pt;</string>
                 </property>
                 <property name="text">
                  <string>Assets</string>
@@ -142,12 +131,12 @@ font-size: 12pt;</string>
              <widget class="QListView" name="assetsList">
               <property name="styleSheet">
                <string notr="true">QListView
-{
-	background-color: transparent;
-	show-decoration-selected: 1;
-	font-size: 12pt;
-    font-weight: bold;
-}</string>
+                    {
+                        background-color: transparent;
+                        show-decoration-selected: 1;
+                        font-size: 12pt;
+                        font-weight: bold;
+                    }</string>
               </property>
               <property name="frameShape">
                <enum>QFrame::NoFrame</enum>
@@ -201,8 +190,7 @@ font-size: 12pt;</string>
               <item>
                <widget class="QLabel" name="label_2">
                 <property name="styleSheet">
-                 <string notr="true">color: #858280;
-font-size: 12pt;</string>
+                 <string notr="true">color: #858280; font-size: 12pt;</string>
                 </property>
                 <property name="text">
                  <string>SEARCH</string>
@@ -342,34 +330,6 @@ font-size: 12pt;</string>
        </item>
       </layout>
      </widget>
-     <widget class="QScrollArea" name="welcomeScrollPage">
-      <property name="frameShape">
-       <enum>QFrame::NoFrame</enum>
-      </property>
-      <property name="sizeAdjustPolicy">
-       <enum>QAbstractScrollArea::AdjustIgnored</enum>
-      </property>
-      <property name="widgetResizable">
-       <bool>true</bool>
-      </property>
-      <widget class="ZenoWelcomePage" name="welcomePage">
-       <property name="geometry">
-        <rect>
-         <x>0</x>
-         <y>0</y>
-         <width>977</width>
-         <height>581</height>
-        </rect>
-       </property>
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-      </widget>
-     </widget>
-    </widget>
    </item>
   </layout>
  </widget>

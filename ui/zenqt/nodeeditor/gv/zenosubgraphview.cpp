@@ -61,6 +61,12 @@ _ZenoSubGraphView::_ZenoSubGraphView(QWidget *parent)
  //   connect(ctrly, SIGNAL(triggered()), this, SLOT(redo()));
  //   addAction(ctrly);
 
+    QAction* pActSave = new QAction("Save", this);
+    pActSave->setShortcut(QKeySequence::Save);
+    pActSave->setShortcutContext(Qt::WidgetShortcut);
+    connect(pActSave, SIGNAL(triggered()), this, SLOT(save()));
+    addAction(pActSave);
+
     QAction *ctrlc = new QAction("Copy", this);
     ctrlc->setShortcut(QKeySequence::Copy);
     ctrlc->setShortcutContext(Qt::WidgetShortcut);
@@ -130,6 +136,11 @@ void _ZenoSubGraphView::redo()
 void _ZenoSubGraphView::undo()
 {
     m_scene->undo();
+}
+
+void _ZenoSubGraphView::save()
+{
+    m_scene->save();
 }
 
 void _ZenoSubGraphView::copy()
@@ -637,7 +648,18 @@ ZenoSubGraphView::ZenoSubGraphView(QWidget* parent)
 
     setLayout(pLayout);
 
+    QAction* pActSave = new QAction("Save", this);
+    pActSave->setShortcut(QKeySequence::Save);
+    pActSave->setShortcutContext(Qt::WidgetShortcut);
+    connect(pActSave, SIGNAL(triggered()), this, SLOT(save()));
+    addAction(pActSave);
+
     connect(m_pathWidget, SIGNAL(pathUpdated(QStringList)), this, SLOT(onPathUpdated(QStringList)));
+}
+
+void ZenoSubGraphView::save()
+{
+
 }
 
 _ZenoSubGraphView* ZenoSubGraphView::getCurrentView() const

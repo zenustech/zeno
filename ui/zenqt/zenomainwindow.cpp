@@ -1432,7 +1432,7 @@ void ZenoMainWindow::loadRecentFiles()
 void ZenoMainWindow::initShortCut() 
 {
     QStringList lst;
-    lst << ShortCut_Open << ShortCut_Save << ShortCut_SaveAs << ShortCut_Import 
+    lst << ShortCut_Open /*<< ShortCut_Save << ShortCut_SaveAs*/ << ShortCut_Import 
         << ShortCut_Export_Graph << ShortCut_Undo << ShortCut_Redo << ShortCut_ScreenShoot << ShortCut_RecordVideo
         << ShortCut_NewSubgraph << ShortCut_New_File;
     updateShortCut(lst);

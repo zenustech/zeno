@@ -42,6 +42,7 @@ public slots:
     void redo();
     void undo();
     void copy();
+    void save();
     void paste();
     void find();
     void esc();
@@ -119,6 +120,7 @@ signals:
 
 public slots:
     void onPathUpdated(QStringList path);
+    void save();
 
 private:
     _ZenoSubGraphView* getCurrentView() const;

@@ -22,7 +22,6 @@ namespace zenoio
             const rapidjson::Value& sockObj,
             zeno::LinksData& links) override;
 
-    private:
         bool _parseGraph(
             const rapidjson::Value& graph,
             const zeno::AssetsData& assets,
@@ -34,6 +33,8 @@ namespace zenoio
             const rapidjson::Value& nodeObj,
             const zeno::AssetsData& subgraphDatas,
             zeno::LinksData& links);    //在parse节点的时候顺带把节点上的边信息也逐个记录到这里
+
+
     };
 }
 

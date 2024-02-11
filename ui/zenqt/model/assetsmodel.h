@@ -42,12 +42,15 @@ public:
     void newAsset(const zeno::AssetInfo asset);
     void addAsset(const zeno::GraphData& graph);
     void removeAsset(const QString& assetName);
+    void saveAsset(const QString& name);
     zeno::AssetInfo getAsset(const QString& assetName) const;
 
 private:
     void _addAsset(zeno::AssetInfo info);
     void _removeAsset(const QString& newName);
     int rowByName(const QString& name) const;
+    void _initAssets();
+    void _initAsset(const QString& path);
 
     QVector<_AssetItem> m_assets;
 

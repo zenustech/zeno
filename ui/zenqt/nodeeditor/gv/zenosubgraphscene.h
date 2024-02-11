@@ -25,6 +25,7 @@ public:
     void undo();
     void redo();
     void copy();
+    void save();
     void paste(QPointF pos);
     QRectF nodesBoundingRect() const;
     QModelIndex subGraphIndex() const;

@@ -37,6 +37,24 @@ namespace zenoio
             writer.Key("Parameters");
             {
                 JsonObjScope batch(writer);
+                writer.Key("inputs");
+                {
+                    JsonObjScope _batch(writer);
+                    for (auto param : asset.inputs)
+                    {
+                        writer.Key(param.name.c_str());
+                        dumpSocket(param, writer);
+                    }
+                }
+                writer.Key("outputs");
+                {
+                    JsonObjScope _batch(writer);
+                    for (auto param : asset.outputs)
+                    {
+                        writer.Key(param.name.c_str());
+                        dumpSocket(param, writer);
+                    }
+                }
             }
         }
 

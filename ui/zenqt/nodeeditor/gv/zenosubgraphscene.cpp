@@ -548,6 +548,15 @@ QModelIndexList ZenoSubGraphScene::selectLinkIndice() const
     return linkIndice;
 }
 
+void ZenoSubGraphScene::save()
+{
+    ZASSERT_EXIT(m_model);
+    QStringList path = m_model->currentPath();
+    ZASSERT_EXIT(!path.empty());
+    const QString& projName = path[0];
+    UiHelper::saveProject(projName);
+}
+
 void ZenoSubGraphScene::copy()
 {
     QList<QGraphicsItem*> selItems = this->selectedItems();

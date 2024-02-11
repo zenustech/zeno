@@ -12,6 +12,11 @@
 #include <QUuid>
 #include <zeno/funcs/ParseObjectFromUi.h>
 #include "util/globalcontrolmgr.h"
+#include "zenoapplication.h"
+#include "zenomainwindow.h"
+#include "model/graphsmanager.h"
+#include "model/assetsmodel.h"
+
 
 const char* g_setKey = "setKey";
 
@@ -1768,4 +1773,14 @@ static std::string getZenoVersion()
     int day = std::stoi(std::string(date + 4, 2));
     int year = std::stoi(std::string(date + 7, 4));
     return zeno::format("{:04d}.{:02d}.{:02d}", year, month, day);
+}
+
+void UiHelper::saveProject(const QString& name)
+{
+    if (name == "main") {
+        zenoApp->getMainWindow()->save();
+    }
+    else {
+        zenoApp->graphsManager()->assetsModel()->saveAsset(name);
+    }
 }

@@ -42,7 +42,7 @@ struct AssetsMgr : std::enable_shared_from_this<AssetsMgr> {
     AssetsMgr(AssetsMgr&&) = delete;
     AssetsMgr& operator=(AssetsMgr&&) = delete;
 
-    ZENO_API void createAsset(const zeno::AssetInfo asset);
+    ZENO_API void createAsset(const zeno::ZenoAsset asset);
     CALLBACK_REGIST(createAsset, void, zeno::AssetInfo)
 
     ZENO_API void removeAsset(const std::string& name);

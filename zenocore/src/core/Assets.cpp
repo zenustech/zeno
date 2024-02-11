@@ -13,41 +13,22 @@ ZENO_API AssetsMgr::~AssetsMgr() {
 
 }
 
-ZENO_API void AssetsMgr::createAsset(const zeno::AssetInfo asset) {
+ZENO_API void AssetsMgr::createAsset(const zeno::ZenoAsset asset) {
     Asset newAsst;
 
-    newAsst.m_info = asset;
+    newAsst.m_info = asset.info;
 
-    std::shared_ptr<Graph> spGraph = std::make_shared<Graph>(asset.name, true);
+    std::shared_ptr<Graph> spGraph = std::make_shared<Graph>(asset.info.name, true);
 
-    spGraph->setName(asset.name);
-    //manually init some args nodes.
-    spGraph->createNode("SubInput", "input1", "", { 0, 0 });
-    spGraph->createNode("SubInput", "input2", "", { 0,700 });
-    spGraph->createNode("SubOutput", "output1", "", { 1300, 250 });
-    spGraph->createNode("SubOutput", "output2", "", { 1300, 900 });
+    spGraph->setName(asset.info.name);
+    spGraph->init(asset.graph);
 
-    ParamInfo param;
-    param.name = "input1";
-    param.bInput = true;
-    newAsst.inputs.push_back(param);
-
-    param.name = "input2";
-    param.bInput = true;
-    newAsst.inputs.push_back(param);
-
-    param.name = "output1";
-    param.bInput = false;
-    newAsst.outputs.push_back(param);
-
-    param.name = "output2";
-    param.bInput = false;
-    newAsst.outputs.push_back(param);
-
+    newAsst.inputs = asset.inputs;
+    newAsst.outputs = asset.outputs;
     newAsst.sharedGraph = spGraph;
 
-    m_assets.insert(std::make_pair(asset.name, newAsst));
-    CALLBACK_NOTIFY(createAsset, asset)
+    m_assets.insert(std::make_pair(asset.info.name, newAsst));
+    CALLBACK_NOTIFY(createAsset, asset.info)
 }
 
 ZENO_API void AssetsMgr::removeAsset(const std::string& name) {
@@ -208,6 +189,7 @@ ZENO_API std::shared_ptr<INode> AssetsMgr::newInstance(const std::string& assets
         sparam->defl = param.defl;
         sparam->name = param.name;
         sparam->type = param.type;
+        sparam->control = param.control;
         sparam->m_wpNode = spNode;
         spNode->add_input_param(sparam);
         spNode->m_input_names.push_back(param.name);

@@ -60,7 +60,6 @@ void ZenoGraphsEditor::initUI()
 
     m_ui->splitter->setStretchFactor(1, 5);
 
-    m_ui->mainStackedWidget->setCurrentWidget(m_ui->welcomeScrollPage);
     m_ui->stackedWidget->setCurrentIndex(0);
 
     QFont font = QApplication::font();
@@ -112,12 +111,6 @@ void ZenoGraphsEditor::initSignals()
     connect(m_selection, &QItemSelectionModel::selectionChanged, this, &ZenoGraphsEditor::onSideBtnToggleChanged);
     connect(m_selection, &QItemSelectionModel::currentChanged, this, &ZenoGraphsEditor::onCurrentChanged);
 
-    //connect(m_ui->assetsList, SIGNAL(clicked(const QModelIndex&)), this, SLOT(onListItemActivated(const QModelIndex&)));
-    //connect(m_ui->mainTree, SIGNAL(clicked(const QModelIndex&)), this, SLOT(onTreeItemActivated(const QModelIndex&)));
-
-    connect(m_ui->welcomePage, SIGNAL(newRequest()), m_mainWin, SLOT(onNewFile()));
-    connect(m_ui->welcomePage, SIGNAL(openRequest()), m_mainWin, SLOT(openFileDialog()));
-
     connect(m_ui->moreBtn, SIGNAL(clicked()), this, SLOT(onAssetOptionClicked()));
     connect(m_ui->btnSearchOpt, SIGNAL(clicked()), this, SLOT(onSearchOptionClicked()));
     connect(m_ui->graphsViewTab, &QTabWidget::tabCloseRequested, this, [=](int index) {
@@ -153,7 +146,7 @@ void ZenoGraphsEditor::initSignals()
 
 void ZenoGraphsEditor::initRecentFiles()
 {
-    m_ui->welcomePage->initRecentFiles();
+    //m_ui->welcomePage->initRecentFiles();
 }
 
 void ZenoGraphsEditor::resetModel()
@@ -193,7 +186,6 @@ void ZenoGraphsEditor::resetModel()
         }
     });
 
-    m_ui->mainStackedWidget->setCurrentWidget(m_ui->mainEditor);
     m_ui->graphsViewTab->clear();
 
     connect(pModel, &GraphsTreeModel::modelClear, this, &ZenoGraphsEditor::onModelCleared);
@@ -210,7 +202,6 @@ void ZenoGraphsEditor::resetModel()
 
 void ZenoGraphsEditor::onModelCleared()
 {
-    m_ui->mainStackedWidget->setCurrentWidget(m_ui->welcomeScrollPage);
     m_ui->searchEdit->clear();
 }
 
@@ -561,6 +552,8 @@ void ZenoGraphsEditor::activateTab(const QStringList& subgpath, const QString& f
         connect(pView, &ZenoSubGraphView::zoomed, pScene, &ZenoSubGraphScene::onZoomed);
         connect(pView, &ZenoSubGraphView::zoomed, this, &ZenoGraphsEditor::zoomed);
         //pView->initScene(pScene);
+
+
 
         idx = m_ui->graphsViewTab->addTab(pView, showName);
 
