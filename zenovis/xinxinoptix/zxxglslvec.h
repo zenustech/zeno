@@ -83,7 +83,7 @@ struct vec3{
         return vec3(x, cos(a) * y - sin(a) * z, sin(a) * y + cos(a) * z);
     }
     __forceinline__ __device__ vec3 rotY(float a) {
-        return vec3(cos(a) * x - sin(a) * z, y, cos(a) * z + sin(a) * x);
+        return vec3(cos(a) * x + sin(a) * z, y, cos(a) * z - sin(a) * x);
     }
     __forceinline__ __device__ vec3 rotZ(float a) {
         return vec3(cos(a) * x - sin(a) * y, cos(a) * y + sin(a) * x, z);
