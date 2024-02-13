@@ -87,6 +87,7 @@ int record_main(const QCoreApplication& app)
         {"video", "video", "export video"},
         {"aov", "aov", "aov"},
         {"exr", "exr", "exr"},
+        {"mask", "mask", "mask"},
         {"needDenoise", "needDenoise", "needDenoise"},
         {"videoname", "videoname", "export video's name"},
         {"subzsg", "subgraphzsg", "subgraph zsg file path"},
@@ -169,6 +170,8 @@ int record_main(const QCoreApplication& app)
     auto& ud = zeno::getSession().userData();
     ud.set2("output_aov", enableAOV != 0);
     ud.set2("output_exr", param.export_exr);
+    int enableMask = cmdParser.isSet("mask") ? cmdParser.value("mask").toInt() : 0;
+    ud.set2("output_mask", enableMask != 0);
     param.videoName = cmdParser.isSet("videoname") ? cmdParser.value("videoname") : "output.mp4";
     param.subZsg = cmdParser.isSet("subzsg") ? cmdParser.value("subzsg") : "";
 
