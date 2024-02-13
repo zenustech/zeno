@@ -302,8 +302,8 @@ static __inline__ __device__ vec3 hdrSky2(
 ){
   dir = dir
             .rotY(to_radians(params.sky_rot_y))
-            .rotX(to_radians(params.sky_rot_x))
-            .rotZ(to_radians(params.sky_rot_z))
+            .rotX(to_radians(-params.sky_rot_x))
+            .rotZ(to_radians(-params.sky_rot_z))
             .rotY(to_radians(params.sky_rot));
             
   vec3 uv = sphereUV(dir, true);
@@ -326,8 +326,8 @@ static __inline__ __device__ vec3 hdrSky(
 ){
     dir = dir
             .rotY(to_radians(params.sky_rot_y))
-            .rotX(to_radians(params.sky_rot_x))
-            .rotZ(to_radians(params.sky_rot_z))
+            .rotX(to_radians(-params.sky_rot_x))
+            .rotZ(to_radians(-params.sky_rot_z))
             .rotY(to_radians(params.sky_rot));
 
     vec3 uv = sphereUV(dir, true);

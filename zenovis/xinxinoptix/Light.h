@@ -38,8 +38,8 @@ vec3 ImportanceSampleEnv(float* env_cdf, int* env_start, int nx, int ny, float p
     //pdf = env_cdf[start + nx*ny] / twoPi2sinTheta;
     vec3 dir = normalize(vec3(cos(theta), sin(phi - 0.5f * 3.1415926f), sin(theta)));
     dir = dir.rotY(to_radians(-params.sky_rot))
-             .rotZ(to_radians(-params.sky_rot_z))
-             .rotX(to_radians(-params.sky_rot_x))
+             .rotZ(to_radians(params.sky_rot_z))
+             .rotX(to_radians(params.sky_rot_x))
              .rotY(to_radians(-params.sky_rot_y));
     return dir;
 }
