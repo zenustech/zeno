@@ -36,18 +36,20 @@ namespace zenoio {
         }
 
         std::vector<char> dat(szBuffer);
-        FILE* fp = fopen(filePath.string().c_str(), "r");
+        FILE* fp = fopen(filePath.string().c_str(), "rb");
         if (!fp) {
             zeno::log_error("zsg file does not exist");
             return result;
         }
 
-        size_t ret = fread(&dat[0], 1, szBuffer, fp);
-        assert(ret == szBuffer);
+        size_t actualSz = fread(&dat[0], 1, szBuffer, fp);
+        if (actualSz != szBuffer) {
+            zeno::log_warn("the bytes read from file is different from the size of whole file");
+        }
         fclose(fp);
         fp = nullptr;
 
-        doc.Parse(&dat[0], dat.size());
+        doc.Parse(&dat[0], actualSz);
 
         if (!doc.IsObject())
         {

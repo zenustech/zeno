@@ -127,18 +127,20 @@ namespace zenoio
         }
 
         std::vector<char> dat(szBuffer);
-        FILE* fp = fopen(filePath.string().c_str(), "r");
+        FILE* fp = fopen(filePath.string().c_str(), "rb");
         if (!fp) {
             zeno::log_error("zsg file does not exist");
             return zeno::UNKNOWN_VER;
         }
 
-        size_t ret = fread(&dat[0], 1, szBuffer, fp);
-        assert(ret == szBuffer);
+        size_t actualSz = fread(&dat[0], 1, szBuffer, fp);
+        if (actualSz != szBuffer) {
+            zeno::log_warn("the bytes read from file is different from the size of whole file");
+        }
         fclose(fp);
         fp = nullptr;
 
-        doc.Parse(&dat[0], dat.size());
+        doc.Parse(&dat[0], actualSz);
         std::string ver = doc["version"].GetString();
 
         if (ver == "v2")
@@ -234,7 +236,11 @@ namespace zenoio
                 defl = (int)val.GetFloat();
             }
             else if (val.IsString()) {
-                defl = (int)std::stof(val.GetString());
+                std::string sval(val.GetString());
+                if (!sval.empty())
+                    defl = std::stof(sval);
+                else
+                    defl = 0;
             }
             else {
                 zeno::log_error("error type");
@@ -250,7 +256,13 @@ namespace zenoio
             else if (val.IsDouble())
                 defl = val.GetFloat();
             else if (val.IsString())
-                defl = std::stof(val.GetString());
+            {
+                std::string sval(val.GetString());
+                if (!sval.empty())
+                    defl = std::stof(sval);
+                else
+                    defl = (float)0.0;
+            }
             else
                 zeno::log_error("error type");
             break;
