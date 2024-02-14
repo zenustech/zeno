@@ -3924,17 +3924,6 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         bool enable_output_exr = zeno::getSession().userData().get2<bool>("output_exr", true);
         bool enable_output_mask = zeno::getSession().userData().get2<bool>("output_mask", false);
         auto exr_path = path.substr(0, path.size() - 4) + ".exr";
-        if (enable_output_mask) {
-            std::vector<uint8_t> data;
-            data.reserve(w * h * 3);
-            float* ptr = (float *)optixgetimg_extra("mask");
-            for (auto i = 0; i < w * h * 3; i++) {
-                data.push_back(int(ptr[i]));
-            }
-            std::string native_path = std::filesystem::u8path(path + "_mask.png").string();
-            stbi_flip_vertically_on_write(1);
-            stbi_write_png(native_path.c_str(), w, h, 3, data.data(),0);
-        }
         // AOV
         if (enable_output_aov) {
             SaveMultiLayerEXR(
@@ -3944,6 +3933,7 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
                             (float*)optixgetimg_extra("specular"),
                             (float*)optixgetimg_extra("transmit"),
                             (float*)optixgetimg_extra("background"),
+                            (float*)optixgetimg_extra("mask"),
                     },
                     w,
                     h,
@@ -3953,6 +3943,7 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
                             "specular.",
                             "transmit.",
                             "background.",
+                            "mask.",
                     },
                     exr_path.c_str()
             );
@@ -3960,6 +3951,21 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         else {
             if (enable_output_exr) {
                 save_exr((float3 *)optixgetimg_extra("color"), w, h, exr_path);
+            }
+            else if (enable_output_mask) {
+                SaveMultiLayerEXR(
+                        {
+                                (float*)optixgetimg_extra("color"),
+                                (float*)optixgetimg_extra("mask"),
+                        },
+                        w,
+                        h,
+                        {
+                                "",
+                                "mask.",
+                        },
+                        exr_path.c_str()
+                );
             }
             else {
                 std::string jpg_native_path = std::filesystem::u8path(path).string();
