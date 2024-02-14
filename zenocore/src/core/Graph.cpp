@@ -184,6 +184,7 @@ ZENO_API void Graph::init(const GraphData& graph) {
                 subnetnode->subgraph = asset.sharedGraph;
             }
         }
+        spNode->init(node);
         if (node.cls == "SubInput") {
             //TODO
         }
