@@ -285,12 +285,19 @@ struct HitGroupData
 #endif
     unsigned short* lightMark;
     uint32_t* auxOffset;
-    
+#ifdef USE_SHORT
+    ushort3* instPos;
+    ushort3* instNrm;
+    ushort3* instUv;
+    ushort3* instClr;
+    ushort3* instTang;
+#else
     float3* instPos;
     float3* instNrm;
     float3* instUv;
     float3* instClr;
     float3* instTang;
+#endif
     float4* uniforms;
     cudaTextureObject_t textures[32];
 

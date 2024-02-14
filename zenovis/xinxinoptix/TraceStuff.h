@@ -163,9 +163,9 @@ struct RadiancePRD
 //      double y = (double)(P.y);
 //      double z = (double)(P.z);
 //        auto beforeOffset = make_float3(x, y, z);
-        this->origin = P;
-        this->direction = new_dir;
-        offsetRay(this->origin, new_dir);
+        //this->origin = P;
+        //this->direction = new_dir;
+        offsetRay(P, new_dir);
 //        double x2 = (double)(beforeOffset.x);
 //        double y2 = (double)(beforeOffset.y);
 //        double z2 = (double)(beforeOffset.z);

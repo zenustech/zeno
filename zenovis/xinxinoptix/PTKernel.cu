@@ -206,6 +206,7 @@ extern "C" __global__ void __raygen__rg()
         // Primary Ray
         unsigned char background_trace = 0;
         prd.alphaHit = false;
+
         traceRadiance(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_);
         mask_value = prd.mask_value;
 
@@ -279,9 +280,8 @@ extern "C" __global__ void __raygen__rg()
             prd.radiance_s = make_float3(0);
             prd.radiance_t = make_float3(0);
             prd.alphaHit = false;
-
+            prd._tmin_ = 0;
             traceRadiance(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_);
-
 
             if(prd.hit_type>0 && primary_hit_type==0)
             {

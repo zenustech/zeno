@@ -140,11 +140,11 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     attrs.tang = optixTransformVectorFromObjectToWorldSpace(attrs.tang);
     attrs.rayLength = optixGetRayTmax();
 
-    attrs.instPos = rt_data->instPos[inst_idx];
-    attrs.instNrm = rt_data->instNrm[inst_idx];
-    attrs.instUv = rt_data->instUv[inst_idx];
-    attrs.instClr = rt_data->instClr[inst_idx];
-    attrs.instTang = rt_data->instTang[inst_idx];
+    attrs.instPos =  decodeColor( rt_data->instPos[inst_idx] );
+    attrs.instNrm =  decodeColor( rt_data->instNrm[inst_idx] );
+    attrs.instUv =   decodeColor( rt_data->instUv[inst_idx]  );
+    attrs.instClr =  decodeColor( rt_data->instClr[inst_idx] );
+    attrs.instTang = decodeColor( rt_data->instTang[inst_idx]);
 
     unsigned short isLight = 0;//rt_data->lightMark[vert_aux_offset + primIdx];
 #endif
@@ -388,11 +388,11 @@ extern "C" __global__ void __closesthit__radiance()
     attrs.tang = normalize(interp(barys, tan0, tan1, tan2));
     attrs.tang = optixTransformVectorFromObjectToWorldSpace(attrs.tang);
 
-    attrs.instPos = rt_data->instPos[inst_idx];
-    attrs.instNrm = rt_data->instNrm[inst_idx];
-    attrs.instUv = rt_data->instUv[inst_idx];
-    attrs.instClr = rt_data->instClr[inst_idx];
-    attrs.instTang = rt_data->instTang[inst_idx];
+    attrs.instPos =  decodeColor( rt_data->instPos[inst_idx] );
+    attrs.instNrm =  decodeColor( rt_data->instNrm[inst_idx] );
+    attrs.instUv =   decodeColor( rt_data->instUv[inst_idx]  );
+    attrs.instClr =  decodeColor( rt_data->instClr[inst_idx] );
+    attrs.instTang = decodeColor( rt_data->instTang[inst_idx]);
     attrs.rayLength = optixGetRayTmax();
 
     float3 n0 = normalize( decodeNormal(rt_data->nrm[ vert_idx_offset+0 ]) );
@@ -528,32 +528,17 @@ extern "C" __global__ void __closesthit__radiance()
         auto trans = DisneyBSDF::Transmission2(prd->sigma_s(), prd->sigma_t, prd->channelPDF, optixGetRayTmax(), true);
         prd->attenuation2 *= trans;
         prd->attenuation *= trans;
-        //prd->origin = P + 1e-5 * ray_dir; 
-        if(prd->maxDistance>optixGetRayTmax())
-            prd->maxDistance-=optixGetRayTmax();
-        prd->alphaHit = true;
-        prd->offsetUpdateRay(P, ray_dir); 
+        prd->origin = P;
+        prd->direction = ray_dir;
+        //auto n = prd->geometryNormal;
+        //n = faceforward(n, -ray_dir, n);
+        prd->offsetUpdateRay(prd->origin, ray_dir);
+        prd->_tmin_ = 1e-5;
         return;
     }
 
     prd->attenuation2 = prd->attenuation;
     prd->countEmitted = false;
-    if(isLight==1)
-    {
-        prd->countEmitted = true;
-        //hit light, emit
-//        float dist = length(P - optixGetWorldRayOrigin()) + 1e-5;
-//        float3 lv1 = v1-v0;
-//        float3 lv2 = v2-v0;
-//        float A = 0.5 * length(cross(lv1, lv2));
-//        float3 lnrm = normalize(cross(normalize(lv1), normalize(lv2)));
-//        float3 L     = normalize(P - optixGetWorldRayOrigin());
-//        float  LnDl  = clamp(-dot( lnrm, L ), 0.0f, 1.0f);
-//        float weight = LnDl * A / (M_PIf * dist);
-//        prd->radiance = attrs.clr * weight;
-        prd->offsetUpdateRay(P, ray_dir); 
-        return;
-    }
     prd->prob2 = prd->prob;
     prd->passed = false;
     if(mats.opacity>0.99f)
@@ -574,9 +559,13 @@ extern "C" __global__ void __closesthit__radiance()
         prd->adepth++;
         //prd->samplePdf = 0.0f;
         prd->radiance = make_float3(0.0f);
-        //prd->origin = P + 1e-5 * ray_dir;
         prd->alphaHit = true;
-        prd->offsetUpdateRay(P, ray_dir);
+        prd->origin = P;
+        prd->direction = ray_dir;
+        //auto n = prd->geometryNormal;
+        //n = faceforward(n, -ray_dir, n);
+        prd->offsetUpdateRay(prd->origin, ray_dir);
+        prd->_tmin_ = 1e-5;
         return;
     }
     if(mats.opacity<=0.99f)
@@ -602,10 +591,14 @@ extern "C" __global__ void __closesthit__radiance()
         //you shall pass!
         prd->radiance = make_float3(0.0f);
 
+
+        prd->alphaHit = true;
         prd->origin = P;
         prd->direction = ray_dir;
-        prd->alphaHit = true;
-        prd->offsetUpdateRay(P, ray_dir);
+        //auto n = prd->geometryNormal;
+        //n = faceforward(n, -ray_dir, n);
+        prd->offsetUpdateRay(prd->origin, -ray_dir);
+        prd->_tmin_ = 1e-5;
 
         prd->prob *= 1;
         prd->countEmitted = false;

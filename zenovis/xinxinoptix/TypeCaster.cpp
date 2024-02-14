@@ -14,3 +14,8 @@ ushort3 toHalf(float4 in)
               *(unsigned short*)&(hy),
               *(unsigned short*)&(hz)};
 }
+
+ushort3 toHalf(float3 in)
+{
+  return toHalf({in.x, in.y, in.z, 0.0f});
+}
