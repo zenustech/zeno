@@ -90,6 +90,13 @@ namespace zeno {
     };
     ENUM_FLAGS(SocketProperty)
 
+    enum ConnectProperty
+    {
+        NoSocket,
+        Socket_Redundancy,
+        Socket_Primary,
+    };
+
     //ui issues:
     enum VParamType
     {

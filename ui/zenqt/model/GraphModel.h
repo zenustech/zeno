@@ -30,6 +30,7 @@ public:
     std::weak_ptr<zeno::INode> m_wpNode;
     ParamsModel* params = nullptr;
     zeno::NodeStatus status = zeno::None;
+    bool bCollasped = false;
 
     //for subgraph, but not include assets:
     std::optional<GraphModel*> optSubgraph;

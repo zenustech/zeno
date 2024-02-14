@@ -16,6 +16,7 @@ ZGraphicsLayout::ZGraphicsLayout(bool bHor)
     , m_parent(nullptr)
     , m_bHorizontal(bHor)
     , m_parentItem(nullptr)
+    , m_bHide(false)
 {
 }
 
@@ -27,6 +28,34 @@ void ZGraphicsLayout::setHorizontal(bool bHor)
 ZGraphicsLayout::~ZGraphicsLayout()
 {
     clear();
+}
+
+void ZGraphicsLayout::hide()
+{
+    m_bHide = true;
+    for (auto item : m_items)
+    {
+        if (item->type == Type_Item) {
+            item->pItem->setVisible(false);
+        }
+        else if (item->type == Type_Layout) {
+            item->pLayout->hide();
+        }
+    }
+}
+
+void ZGraphicsLayout::show()
+{
+    m_bHide = false;
+    for (auto item : m_items)
+    {
+        if (item->type == Type_Item) {
+            item->pItem->setVisible(true);
+        }
+        else if (item->type == Type_Layout) {
+            item->pLayout->show();
+        }
+    }
 }
 
 void ZGraphicsLayout::addItem(QGraphicsItem* pItem)
@@ -348,6 +377,8 @@ QSizeF ZGraphicsLayout::calculateSize()
 {
     //todo: support fixed size directly for whole layout.
     QSizeF size(0, 0);
+    if (m_bHide)
+        return size;
 
     QSizeF szMargin(m_margins.left() + m_margins.right(), m_margins.top() + m_margins.bottom());
     size += szMargin;
@@ -422,6 +453,9 @@ QSizeF ZGraphicsLayout::calculateSize()
             }
             case Type_Layout:
             {
+                if (item->pLayout->m_bHide)
+                    continue;
+
                 QSizeF _size = item->pLayout->calculateSize();
                 if (m_bHorizontal) {
                     size.setHeight(qMax(_size.height() + szMargin.height(), size.height()));

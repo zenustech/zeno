@@ -18,14 +18,20 @@ struct ParamDescriptor {
 struct SocketDescriptor {
   std::string type, name, defl, doc;
   ParamControl control;
+  ConnectProperty connectProp;
 
-  ZENO_API SocketDescriptor(std::string const &type,
-      std::string const &name, std::string const &defl = {}, ParamControl ctrl = NullControl, std::string const &doc = {});
+  ZENO_API SocketDescriptor(
+      std::string const &type,
+      std::string const &name,
+      std::string const &defl = {},
+      ParamControl ctrl = NullControl,
+      ConnectProperty connProp = NoSocket,
+      std::string const &doc = {});
   ZENO_API ~SocketDescriptor();
 
   //[[deprecated("use {\"sockType\", \"sockName\"} instead of \"sockName\"")]]
   SocketDescriptor(const char *name)
-      : SocketDescriptor({}, name) {}
+      : SocketDescriptor({}, name) {}	
 };
 
 struct Descriptor {

@@ -51,7 +51,6 @@ ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
     , m_bodyLayout(nullptr)
     , m_bUIInited(false)
     , m_inputsLayout(nullptr)
-    , m_paramsLayout(nullptr)
     , m_outputsLayout(nullptr)
     , m_groupNode(nullptr)
     , m_pStatusWidgets(nullptr)
@@ -574,7 +573,6 @@ void ZenoNode::onViewParamAboutToBeRemoved(const QModelIndex& parent, int first,
     if (!parent.isValid())
     {
         //remove all component.
-        m_paramsLayout->clear();
         m_inputsLayout->clear();
         m_outputsLayout->clear();
         m_params.clear();
@@ -1384,12 +1382,6 @@ void ZenoNode::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
     _base::hoverLeaveEvent(event);
 }
 
-void ZenoNode::onCollaspeBtnClicked()
-{
-    bool bCollasped = m_index.data(ROLE_COLLASPED).toBool();
-    UiHelper::qIndexSetData(m_index, !bCollasped, ROLE_COLLASPED);
-}
-
 void ZenoNode::onOptionsBtnToggled(STATUS_BTN btn, bool toggled)
 {
     zeno::NodeStatus options = (zeno::NodeStatus)m_index.data(ROLE_OPTIONS).toInt();
@@ -1420,15 +1412,62 @@ void ZenoNode::onOptionsBtnToggled(STATUS_BTN btn, bool toggled)
     UiHelper::qIndexSetData(m_index, options, ROLE_OPTIONS);
 }
 
+void ZenoNode::onCollaspeBtnClicked()
+{
+    bool bCollasped = m_index.data(ROLE_COLLASPED).toBool();
+    UiHelper::qIndexSetData(m_index, !bCollasped, ROLE_COLLASPED);
+}
+
 void ZenoNode::onCollaspeUpdated(bool collasped)
 {
     if (collasped)
     {
-        m_bodyWidget->hide();
+        //m_bodyWidget->hide();
+        for (int i = 0; i < m_inputsLayout->count(); i++) {
+            ZGvLayoutItem* pItem = m_inputsLayout->itemAt(i);
+            ZSocketLayout* pLayout = static_cast<ZSocketLayout*>(pItem->pLayout);
+            ZASSERT_EXIT(pLayout);
+            auto idx = pLayout->viewSocketIdx();
+            auto prop = (zeno::ConnectProperty)idx.data(ROLE_PARAM_CONNECTPROP).toInt();
+            if (prop != zeno::Socket_Primary) {
+                pLayout->hide();
+            }
+        }
+
+        for (int i = 0; i < m_outputsLayout->count(); i++) {
+            ZGvLayoutItem* pItem = m_outputsLayout->itemAt(i);
+            ZSocketLayout* pLayout = static_cast<ZSocketLayout*>(pItem->pLayout);
+            ZASSERT_EXIT(pLayout);
+            auto idx = pLayout->viewSocketIdx();
+            auto prop = (zeno::ConnectProperty)idx.data(ROLE_PARAM_CONNECTPROP).toInt();
+            if (prop != zeno::Socket_Primary) {
+                pLayout->hide();
+            }
+        }
     }
     else
     {
-        m_bodyWidget->show();
+        for (int i = 0; i < m_inputsLayout->count(); i++) {
+            ZGvLayoutItem* pItem = m_inputsLayout->itemAt(i);
+            ZSocketLayout* pLayout = static_cast<ZSocketLayout*>(pItem->pLayout);
+            ZASSERT_EXIT(pLayout);
+            auto idx = pLayout->viewSocketIdx();
+            auto prop = (zeno::ConnectProperty)idx.data(ROLE_PARAM_CONNECTPROP).toInt();
+            if (prop != zeno::Socket_Primary) {
+                pLayout->show();
+            }
+        }
+
+        for (int i = 0; i < m_outputsLayout->count(); i++) {
+            ZGvLayoutItem* pItem = m_outputsLayout->itemAt(i);
+            ZSocketLayout* pLayout = static_cast<ZSocketLayout*>(pItem->pLayout);
+            ZASSERT_EXIT(pLayout);
+            auto idx = pLayout->viewSocketIdx();
+            auto prop = (zeno::ConnectProperty)idx.data(ROLE_PARAM_CONNECTPROP).toInt();
+            if (prop != zeno::Socket_Primary) {
+                pLayout->show();
+            }
+        }
     }
     updateWhole();
     update();

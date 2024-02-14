@@ -94,6 +94,8 @@ public:
     static ZGraphicsLayout* visitRoot(ZGraphicsLayout* currentLayout);
     void clearCacheSize();
     void setDebugName(const QString& dbgName);
+    void hide();
+    void show();
 
 private:
     void setup(QRectF rc);
@@ -112,6 +114,7 @@ private:
     qreal m_spacing;
     QMargins m_margins;
     bool m_bHorizontal;
+    bool m_bHide;
 };
 
 #endif

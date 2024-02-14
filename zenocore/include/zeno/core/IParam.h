@@ -35,6 +35,7 @@ struct IParam {
 
     ParamControl control = NullControl;
     ParamType type = Param_Null;
+    ConnectProperty connectProp = NoSocket;
     std::optional<ControlProperty> optCtrlprops;
     bool isLegacy = false;      //TODO:
 };

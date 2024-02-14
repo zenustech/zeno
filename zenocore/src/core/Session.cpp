@@ -47,6 +47,7 @@ struct ImplNodeClass : INodeClass {
             sparam->m_wpNode = spNode;
             sparam->type = zeno::convertToType(param_desc.type);
             sparam->defl = zeno::str2var(param_desc.defl, sparam->type);
+            sparam->connectProp = param_desc.connectProp;
             if (param_desc.control != NullControl)
                 sparam->control = param_desc.control;
             if (starts_with(param_desc.type, "enum ")) {
@@ -80,6 +81,10 @@ struct ImplNodeClass : INodeClass {
             sparam->name = param_desc.name;
             sparam->m_wpNode = spNode;
             sparam->type = zeno::convertToType(param_desc.type);
+            if (param_desc.connectProp == NoSocket)
+                sparam->connectProp = Socket_Primary;
+            else
+                sparam->connectProp = param_desc.connectProp;
             spNode->add_output_param(sparam);
         }
 
@@ -153,18 +158,18 @@ ZENO_API std::string Session::dumpDescriptors() const {
         Descriptor &desc = *cls->desc;
 
         strs.clear();
-        for (auto const &[type, name, defl, _, __] : desc.inputs) {
-            strs.push_back(type + "@" + (name) + "@" + defl);
+        for (auto const &desc : desc.inputs) {
+            strs.push_back(desc.type + "@" + (desc.name) + "@" + desc.defl);
         }
         res += "{" + join_str(strs, "%") + "}";
         strs.clear();
-        for (auto const &[type, name, defl, _, __] : desc.outputs) {
-            strs.push_back(type + "@" + (name) + "@" + defl);
+        for (auto const &desc : desc.outputs) {
+            strs.push_back(desc.type + "@" + (desc.name) + "@" + desc.defl);
         }
         res += "{" + join_str(strs, "%") + "}";
         strs.clear();
-        for (auto const &[type, name, defl, _] : desc.params) {
-            strs.push_back(type + "@" + (name) + "@" + defl);
+        for (auto const &desc : desc.params) {
+            strs.push_back(desc.type + "@" + (desc.name) + "@" + desc.defl);
         }
         res += "{" + join_str(strs, "%") + "}";
         res += "{" + join_str(desc.categories, "%") + "}";

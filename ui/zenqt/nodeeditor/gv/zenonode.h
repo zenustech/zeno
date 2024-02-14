@@ -159,7 +159,6 @@ private:
     QGraphicsRectItem* m_border;
     ZGraphicsLayout* m_bodyLayout;
     ZGraphicsLayout* m_inputsLayout;
-    ZGraphicsLayout* m_paramsLayout;
     ZGraphicsLayout* m_outputsLayout;
 
     //when initui, zenonode should not emit any signals.

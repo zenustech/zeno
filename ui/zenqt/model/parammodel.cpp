@@ -45,6 +45,7 @@ void ParamsModel::initParamItems()
         item.name = QString::fromStdString(spParam->name);
         item.type = spParam->type;
         item.value = UiHelper::zvarToQVar(spParam->defl);
+        item.connectProp = spParam->connectProp;
         m_items.append(item);
     }
 
@@ -56,6 +57,7 @@ void ParamsModel::initParamItems()
         item.control = zeno::NullControl;
         item.name = QString::fromStdString(spParam->name);
         item.type = spParam->type;
+        item.connectProp = spParam->connectProp;
         m_items.append(item);
     }
 }
@@ -70,6 +72,7 @@ QVariant ParamsModel::data(const QModelIndex& index, int role) const
     case ROLE_PARAM_TYPE:       return param.type;
     case ROLE_PARAM_VALUE:      return param.value;
     case ROLE_PARAM_CONTROL:    return param.control;
+    case ROLE_PARAM_CONNECTPROP:return param.connectProp;
     case ROLE_ISINPUT:          return param.bInput;
     case ROLE_NODEIDX:          return m_nodeIdx;
     case ROLE_LINKS:            return QVariant::fromValue(param.links);

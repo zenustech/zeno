@@ -292,6 +292,10 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
             path.append(item->name);
             return path;
         }
+        case ROLE_COLLASPED:
+        {
+            return item->bCollasped;
+        }
         default:
             return QVariant();
     }
@@ -320,6 +324,12 @@ bool GraphModel::setData(const QModelIndex& index, const QVariant& value, int ro
                     return false;
                 spNode->set_pos({ lst[0].toFloat(), lst[1].toFloat() });
             }
+            return true;
+        }
+        case ROLE_COLLASPED:
+        {
+            item->bCollasped = value.toBool();
+            emit dataChanged(index, index, QVector<int>{role});
             return true;
         }
         case ROLE_INPUTS:
