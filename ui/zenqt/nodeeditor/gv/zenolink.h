@@ -78,6 +78,7 @@ private:
 class ZenoFullLink : public ZenoLink
 {
     Q_OBJECT
+
 public:
     ZenoFullLink(const QPersistentModelIndex& idx, ZenoNode* outNode, ZenoNode* inNode);
     ~ZenoFullLink();
@@ -107,8 +108,9 @@ private slots:
 
 private:
     void focusOnNode(const QModelIndex &nodeIdx);
+    bool isPrimLink();
+    void getConnectedState(zeno::ConnectProperty& inSockProp, bool& inNodeCollasped);
 
-private:
     QPersistentModelIndex m_index;
     QPointF m_srcPos, m_dstPos;
     QString m_inNode;

@@ -64,6 +64,11 @@ QVariant LinkModel::data(const QModelIndex& index, int role) const
             const auto& info = m_items[index.row()];
             return info.uuid;
         }
+        case ROLE_COLLASPED:
+        {
+            const auto& info = m_items[index.row()];
+            return info.m_bCollasped;
+        }
     }
     return QVariant();
 }
@@ -82,6 +87,13 @@ bool LinkModel::setData(const QModelIndex& index, const QVariant& value, int rol
         {
             auto& info = m_items[index.row()];
             info.toKey = value.toString();
+            return true;
+        }
+        case ROLE_COLLASPED:
+        {
+            auto& info = m_items[index.row()];
+            info.m_bCollasped = value.toBool();
+            emit dataChanged(index, index, { role });
             return true;
         }
     }

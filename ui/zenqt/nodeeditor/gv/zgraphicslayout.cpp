@@ -44,6 +44,11 @@ void ZGraphicsLayout::hide()
     }
 }
 
+bool ZGraphicsLayout::isHide() const
+{
+    return m_bHide;
+}
+
 void ZGraphicsLayout::show()
 {
     m_bHide = false;
@@ -729,6 +734,8 @@ void ZGraphicsLayout::setup(QRectF rc)
                 if (item->type == Type_Layout)
                 {
                     ZASSERT_EXIT(item->pLayout);
+                    if (item->pLayout->isHide())
+                        continue;
                     item->pLayout->setup(_rc);
                 }
                 else if (item->type == Type_Item)

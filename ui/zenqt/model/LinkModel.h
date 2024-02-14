@@ -15,6 +15,7 @@ class LinkModel : public QAbstractListModel
         QPersistentModelIndex toParam;
         QString toKey;
         QUuid uuid;
+        bool m_bCollasped = false;
     };
 
     typedef QVector<_linkItem> LINKS_ITEM;

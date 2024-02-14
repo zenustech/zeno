@@ -96,6 +96,7 @@ public:
     void setDebugName(const QString& dbgName);
     void hide();
     void show();
+    bool isHide() const;
 
 private:
     void setup(QRectF rc);

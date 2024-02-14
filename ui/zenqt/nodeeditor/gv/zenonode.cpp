@@ -912,6 +912,7 @@ QPointF ZenoNode::getSocketPos(const QModelIndex& sockIdx, const QString keyName
 
     bool bCollasped = m_index.data(ROLE_COLLASPED).toBool();
     const bool bInput = sockIdx.data(ROLE_ISINPUT).toBool();
+    /*
     if (bCollasped)
     {
         QRectF rc = m_headerWidget->sceneBoundingRect();
@@ -922,6 +923,7 @@ QPointF ZenoNode::getSocketPos(const QModelIndex& sockIdx, const QString keyName
         }
     }
     else
+    */
     {
         for (ZSocketLayout* socklayout : getSocketLayouts(bInput))
         {
@@ -1001,10 +1003,12 @@ void ZenoNode::onZoomed()
     if (m_bVisible != bVisible) {
         m_bVisible = bVisible;
         for (auto item : getSocketLayouts(true)) {
-            item->setVisible(bVisible);
+            if (!item->isHide())
+                item->setVisible(bVisible);
         }
         for (auto item : getSocketLayouts(false)) {
-            item->setVisible(bVisible);
+            if (!item->isHide())
+                item->setVisible(bVisible);
         }
         for (auto it = m_params.begin(); it != m_params.end(); it++) {
             if (it->second.param_control)
