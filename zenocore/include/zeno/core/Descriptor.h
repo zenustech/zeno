@@ -18,14 +18,14 @@ struct ParamDescriptor {
 struct SocketDescriptor {
   std::string type, name, defl, doc;
   ParamControl control;
-  ConnectProperty connectProp;
+  SocketType socketType;
 
   ZENO_API SocketDescriptor(
       std::string const &type,
       std::string const &name,
       std::string const &defl = {},
       ParamControl ctrl = NullControl,
-      ConnectProperty connProp = NoSocket,
+      SocketType connProp = PrimarySocket,  //lefacy for zeno.....
       std::string const &doc = {});
   ZENO_API ~SocketDescriptor();
 

@@ -109,7 +109,7 @@ private slots:
 private:
     void focusOnNode(const QModelIndex &nodeIdx);
     bool isPrimLink();
-    void getConnectedState(zeno::ConnectProperty& inSockProp, bool& inNodeCollasped);
+    void getConnectedState(zeno::SocketType& inSockProp, bool& inNodeCollasped);
 
     QPersistentModelIndex m_index;
     QPointF m_srcPos, m_dstPos;

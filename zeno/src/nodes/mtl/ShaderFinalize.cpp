@@ -332,9 +332,9 @@ ZENDEFNODE(ShaderFinalize, {
 
         {"string", "commonCode"},
         {"string", "extensionsCode"},
-        {"string", "mtlid", "Mat1"},
-        {"list", "tex2dList"},//TODO: bate's asset manager
-        {"list", "tex3dList"},
+        {"string", "mtlid", "Mat1", Lineedit, PrimarySocket},
+        {"list", "tex2dList", "", NullControl, PrimarySocket},//TODO: bate's asset manager
+        {"list", "tex3dList", "", NullControl, PrimarySocket},
 
         {"enum Raw Density Absorption", "VolumeEmissionScaler", "Raw", Combobox},
 

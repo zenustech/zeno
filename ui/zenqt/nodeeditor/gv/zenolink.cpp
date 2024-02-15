@@ -252,10 +252,10 @@ void ZenoFullLink::onInSocketPosChanged()
     const QModelIndex& inSockIdx = m_index.data(ROLE_INSOCK_IDX).toModelIndex();
 
     bool bCollasped = false;
-    zeno::ConnectProperty inSockProp = zeno::NoSocket;
+    zeno::SocketType inSockProp = zeno::NoSocket;
     getConnectedState(inSockProp, bCollasped);
 
-    if (inSockProp == zeno::Socket_Primary) {
+    if (inSockProp == zeno::PrimarySocket) {
         setVisible(true);
         m_dstPos = pNode->getSocketPos(inSockIdx, inKey);
     }
@@ -270,13 +270,13 @@ void ZenoFullLink::onInSocketPosChanged()
     }
 }
 
-void ZenoFullLink::getConnectedState(zeno::ConnectProperty& inSockProp, bool& inNodeCollasped)
+void ZenoFullLink::getConnectedState(zeno::SocketType& inSockProp, bool& inNodeCollasped)
 {
     const QModelIndex& inSockIdx = m_index.data(ROLE_INSOCK_IDX).toModelIndex();
     ZASSERT_EXIT(inSockIdx.isValid());
     const QModelIndex& inNode = inSockIdx.data(ROLE_NODE_IDX).toModelIndex();
     inNodeCollasped = inNode.data(ROLE_COLLASPED).toBool();
-    inSockProp = (zeno::ConnectProperty)inSockIdx.data(ROLE_PARAM_CONNECTPROP).toInt();
+    inSockProp = (zeno::SocketType)inSockIdx.data(ROLE_SOCKET_TYPE).toInt();
 }
 
 void ZenoFullLink::onOutSocketPosChanged()
@@ -300,9 +300,9 @@ bool ZenoFullLink::isPrimLink()
     const QModelIndex& inSockIdx = m_index.data(ROLE_INSOCK_IDX).toModelIndex();
     ZASSERT_EXIT(outSockIdx.isValid() && inSockIdx.isValid(), false);
 
-    zeno::ConnectProperty outprop = (zeno::ConnectProperty)outSockIdx.data(ROLE_PARAM_CONNECTPROP).toInt();
-    zeno::ConnectProperty inprop = (zeno::ConnectProperty)inSockIdx.data(ROLE_PARAM_CONNECTPROP).toInt();
-    return outprop == zeno::Socket_Primary && outprop == inprop;
+    zeno::SocketType outprop = (zeno::SocketType)outSockIdx.data(ROLE_SOCKET_TYPE).toInt();
+    zeno::SocketType inprop = (zeno::SocketType)inSockIdx.data(ROLE_SOCKET_TYPE).toInt();
+    return outprop == zeno::PrimarySocket && outprop == inprop;
 }
 
 void ZenoFullLink::focusOnNode(const QModelIndex& nodeIdx)
@@ -392,10 +392,10 @@ void ZenoFullLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styl
     else
     {
         bool bCollasped = false;
-        zeno::ConnectProperty inSockProp = zeno::NoSocket;
+        zeno::SocketType inSockProp = zeno::NoSocket;
         getConnectedState(inSockProp, bCollasped);
 
-        if (inSockProp == zeno::Socket_Primary) {
+        if (inSockProp == zeno::PrimarySocket) {
             painter->save();
             QPen pen;
             pen.setColor(isSelected() ? QColor(0xFA6400) : QColor("#FFFFFF"));

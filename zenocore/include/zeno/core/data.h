@@ -67,6 +67,7 @@ namespace zeno {
         ParamControl control = NullControl;
         ParamType type = Param_Null;
         SocketProperty prop = Socket_Normal;
+        SocketType socketType = NoSocket;
         std::optional<ControlProperty> ctrlProps;
         bool bInput = true;
     };

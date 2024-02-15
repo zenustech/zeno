@@ -90,11 +90,11 @@ namespace zeno {
     };
     ENUM_FLAGS(SocketProperty)
 
-    enum ConnectProperty
+    enum SocketType
     {
         NoSocket,
-        Socket_Redundancy,
-        Socket_Primary,
+        ParamSocket,
+        PrimarySocket,
     };
 
     //ui issues:

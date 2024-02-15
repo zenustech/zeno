@@ -1432,8 +1432,8 @@ void ZenoNode::onCollaspeUpdated(bool collasped)
             ZSocketLayout* pLayout = static_cast<ZSocketLayout*>(pItem->pLayout);
             ZASSERT_EXIT(pLayout);
             auto idx = pLayout->viewSocketIdx();
-            auto prop = (zeno::ConnectProperty)idx.data(ROLE_PARAM_CONNECTPROP).toInt();
-            if (prop != zeno::Socket_Primary) {
+            auto prop = (zeno::SocketType)idx.data(ROLE_SOCKET_TYPE).toInt();
+            if (prop != zeno::PrimarySocket) {
                 pLayout->hide();
             }
         }
@@ -1443,8 +1443,8 @@ void ZenoNode::onCollaspeUpdated(bool collasped)
             ZSocketLayout* pLayout = static_cast<ZSocketLayout*>(pItem->pLayout);
             ZASSERT_EXIT(pLayout);
             auto idx = pLayout->viewSocketIdx();
-            auto prop = (zeno::ConnectProperty)idx.data(ROLE_PARAM_CONNECTPROP).toInt();
-            if (prop != zeno::Socket_Primary) {
+            auto prop = (zeno::SocketType)idx.data(ROLE_SOCKET_TYPE).toInt();
+            if (prop != zeno::PrimarySocket) {
                 pLayout->hide();
             }
         }
@@ -1456,8 +1456,8 @@ void ZenoNode::onCollaspeUpdated(bool collasped)
             ZSocketLayout* pLayout = static_cast<ZSocketLayout*>(pItem->pLayout);
             ZASSERT_EXIT(pLayout);
             auto idx = pLayout->viewSocketIdx();
-            auto prop = (zeno::ConnectProperty)idx.data(ROLE_PARAM_CONNECTPROP).toInt();
-            if (prop != zeno::Socket_Primary) {
+            auto prop = (zeno::SocketType)idx.data(ROLE_SOCKET_TYPE).toInt();
+            if (prop != zeno::PrimarySocket) {
                 pLayout->show();
             }
         }
@@ -1467,8 +1467,8 @@ void ZenoNode::onCollaspeUpdated(bool collasped)
             ZSocketLayout* pLayout = static_cast<ZSocketLayout*>(pItem->pLayout);
             ZASSERT_EXIT(pLayout);
             auto idx = pLayout->viewSocketIdx();
-            auto prop = (zeno::ConnectProperty)idx.data(ROLE_PARAM_CONNECTPROP).toInt();
-            if (prop != zeno::Socket_Primary) {
+            auto prop = (zeno::SocketType)idx.data(ROLE_SOCKET_TYPE).toInt();
+            if (prop != zeno::PrimarySocket) {
                 pLayout->show();
             }
         }

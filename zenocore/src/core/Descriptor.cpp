@@ -7,13 +7,13 @@ SocketDescriptor::SocketDescriptor(
         std::string const &name,
         std::string const &defl,
         ParamControl ctrl,
-        ConnectProperty connProp,
+        SocketType connProp,
         std::string const &doc)
         : type(type)
         , name(name)
         , defl(defl)
         , doc(doc)
-        , connectProp(connProp)
+        , socketType(connProp)
         , control(ctrl) {}
 
 SocketDescriptor::~SocketDescriptor() = default;

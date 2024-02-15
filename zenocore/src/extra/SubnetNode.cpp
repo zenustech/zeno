@@ -146,6 +146,7 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
             sparam->name = newname;
             sparam->type = param.type;
             sparam->control = param.control;
+            sparam->socketType = param.socketType;
             sparam->m_wpNode = shared_from_this();
             in_outputs[newname] = sparam;
 
@@ -173,6 +174,7 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
             spParam->defl = param.defl;
             spParam->name = newname;
             spParam->control = param.control;
+            spParam->socketType = param.socketType;
         }
         else {
             throw makeError<KeyError>(oldname, "the name does not exist on the node");

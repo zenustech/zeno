@@ -610,14 +610,17 @@ zeno::NodeData GraphModel::createNode(const QString& nodeCls, const QString& cat
         zeno::ParamUpdateInfo info;
         info.param.bInput = true;
         info.param.name = "input1";
+        info.param.socketType = zeno::PrimarySocket;
         updateInfo.push_back(info);
 
         info.param.bInput = true;
         info.param.name = "input2";
+        info.param.socketType = zeno::PrimarySocket;
         updateInfo.push_back(info);
 
         info.param.bInput = false;
         info.param.name = "output1";
+        info.param.socketType = zeno::PrimarySocket;
         updateInfo.push_back(info);
 
         m_nodes[nodeName]->params->batchModifyParams(updateInfo);

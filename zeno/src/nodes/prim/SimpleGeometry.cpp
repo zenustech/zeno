@@ -471,7 +471,7 @@ ZENDEFNODE(CreateCube, {
         {"float", "size", "1", Lineedit},
         {"bool", "quads", "0", Lineedit},
     },
-    {{"prim", "prim", "", NullControl, Socket_Primary}},
+    {{"prim", "prim", "", NullControl, PrimarySocket}},
     {},
     {"create"},
     {"创建一个立方体"},

@@ -66,6 +66,7 @@ private slots:
     void onControlItemChanged(int);
     void onComboTableItemsCellChanged(int row, int column);
     void onViewParamDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
+    void onSocketTypeChanged(int idx);
 
 private:
     void initUI();

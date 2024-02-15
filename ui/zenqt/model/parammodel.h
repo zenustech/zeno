@@ -21,7 +21,7 @@ struct ParamItem
 
     bool bInput = true;
     zeno::ParamControl control = zeno::NullControl;
-    zeno::ConnectProperty connectProp = zeno::NoSocket;
+    zeno::SocketType connectProp = zeno::NoSocket;
     std::optional<zeno::ControlProperty> optCtrlprops;
     QList<QPersistentModelIndex> links;
 };

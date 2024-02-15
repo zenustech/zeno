@@ -66,6 +66,9 @@ void ZSocketLayout::initUI(const CallbackForSocket& cbSock)
 
     QSizeF szSocket(10, 20);
     m_socket = new ZenoSocketItem(m_paramIdx, ZenoStyle::dpiScaledSize(szSocket));
+
+    zeno::SocketType sockType = (zeno::SocketType)m_paramIdx.data(ROLE_SOCKET_TYPE).toInt();
+    m_socket->setVisible(sockType != zeno::NoSocket);
     m_socket->setZValue(ZVALUE_ELEMENT);
     m_socket->setEnabled(bEnableNode);
     if (bEnableNode) {

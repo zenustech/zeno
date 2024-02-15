@@ -176,6 +176,7 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, QWidget* pa
     connect(m_ui->editMax, SIGNAL(editingFinished()), this, SLOT(onMaxEditFinished()));
     connect(m_ui->editStep, SIGNAL(editingFinished()), this, SLOT(onStepEditFinished()));
     connect(m_ui->cbControl, SIGNAL(currentIndexChanged(int)), this, SLOT(onControlItemChanged(int)));
+    connect(m_ui->cbSocketType, SIGNAL(currentIndexChanged(int)), this, SLOT(onSocketTypeChanged(int)));
 
     m_ui->itemsTable->setHorizontalHeaderLabels({ tr("Item Name") });
     connect(m_ui->itemsTable, SIGNAL(cellChanged(int, int)), this, SLOT(onComboTableItemsCellChanged(int, int)));
@@ -405,36 +406,33 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
         QStandardItem* parentItem = pCurrentItem->parent();
         zeno::ParamControl ctrl = (zeno::ParamControl)pCurrentItem->data(ROLE_PARAM_CONTROL).toInt();
         const zeno::ParamType paramType = (zeno::ParamType)pCurrentItem->data(ROLE_PARAM_TYPE).toInt();
+        const zeno::SocketType socketType = (zeno::SocketType)pCurrentItem->data(ROLE_SOCKET_TYPE).toInt();
 
         const QString& ctrlName = ctrl != zeno::NullControl ? getControl(ctrl, paramType).name : "";
         QVariant controlProperties = pCurrentItem->data(ROLE_PARAM_CTRL_PROPERTIES);
-        
-        if (true) 
-        {
-            const QString &parentName = parentItem->data(ROLE_PARAM_NAME).toString();
-            //ZASSERT_EXIT(parentName == iotags::params::node_inputs || parentName == iotags::params::node_outputs);
-            //bool bInput = parentName == iotags::params::node_inputs;
 
-            QVariant deflVal = pCurrentItem->data(ROLE_PARAM_VALUE);
+        const QString &parentName = parentItem->text();
 
-            CallbackCollection cbSets;
-            cbSets.cbEditFinished = [=](QVariant newValue) {
-                proxyModelSetData(pCurrentItem->index(), newValue, ROLE_PARAM_VALUE);
-            };
-            if (!deflVal.isValid())
-                deflVal = UiHelper::initDefaultValue(paramType);
+        QVariant deflVal = pCurrentItem->data(ROLE_PARAM_VALUE);
 
-            cbSets.cbGetIndexData = [=]() -> QVariant {
-                if (!pCurrentItem->data(ROLE_PARAM_VALUE).isValid()) {
-                    return UiHelper::initDefaultValue(paramType);
-                }
-                return pCurrentItem->data(ROLE_PARAM_VALUE);
-            };
-            QWidget *valueControl = zenoui::createWidget(deflVal, ctrl, paramType, cbSets, controlProperties);
-            if (valueControl) {
-                valueControl->setEnabled(bEditable);
-                m_ui->gridLayout->addWidget(valueControl, rowValueControl, 1);
+        CallbackCollection cbSets;
+        cbSets.cbEditFinished = [=](QVariant newValue) {
+            proxyModelSetData(pCurrentItem->index(), newValue, ROLE_PARAM_VALUE);
+        };
+        if (!deflVal.isValid())
+            deflVal = UiHelper::initDefaultValue(paramType);
+
+        cbSets.cbGetIndexData = [=]() -> QVariant {
+            if (!pCurrentItem->data(ROLE_PARAM_VALUE).isValid()) {
+                return UiHelper::initDefaultValue(paramType);
             }
+            return pCurrentItem->data(ROLE_PARAM_VALUE);
+        };
+
+        QWidget *valueControl = zenoui::createWidget(deflVal, ctrl, paramType, cbSets, controlProperties);
+        if (valueControl) {
+            valueControl->setEnabled(bEditable);
+            m_ui->gridLayout->addWidget(valueControl, rowValueControl, 1);
         }
 
         {
@@ -449,20 +447,21 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
             }
         }
 
-        /*
-        if (pCurrentItem->m_index.isValid()) 
         {
-            const QString &refName = pCurrentItem->m_index.data(ROLE_PARAM_NAME).toString();
-            m_ui->editCoreParamName->setText(refName);
-            const QString &refType = pCurrentItem->m_index.data(ROLE_PARAM_TYPE).toString();
-            m_ui->editCoreParamType->setText(refType);
-        } 
-        else 
-        {
-            m_ui->editCoreParamName->setText(ctrlName);
-            m_ui->editCoreParamType->setText(paramType);
+            BlockSignalScope scope(m_ui->cbSocketType);
+            if (parentName == "input") {
+                m_ui->cbSocketType->setEnabled(true);
+                if (zeno::NoSocket == socketType)
+                    m_ui->cbSocketType->setCurrentText(tr("No Socket"));
+                else if (zeno::PrimarySocket == socketType)
+                    m_ui->cbSocketType->setCurrentText(tr("Primary Socket"));
+                else if (zeno::ParamSocket == socketType)
+                    m_ui->cbSocketType->setCurrentText(tr("Parameter Socket"));
+            }
+            else if (parentName == "output") {
+                m_ui->cbSocketType->setEnabled(false);
+            }
         }
-        */
 
         m_ui->itemsTable->setRowCount(0);
 
@@ -633,7 +632,7 @@ void ZEditParamLayoutDlg::onViewParamDataChanged(const QModelIndex &topLeft, con
     }
 }
 
-static QStandardItem* /*VParamItem::*/getItem(QStandardItem* pItem, const QString& uniqueName, int* targetIdx)
+static QStandardItem* getItem(QStandardItem* pItem, const QString& uniqueName, int* targetIdx)
 {
     for (int r = 0; r < pItem->rowCount(); r++)
     {
@@ -708,6 +707,25 @@ void ZEditParamLayoutDlg::onMinEditFinished()
     properties["min"] = from;
     proxyModelSetData(layerIdx, properties, ROLE_PARAM_CTRL_PROPERTIES);
     updateSliderInfo();
+}
+
+void ZEditParamLayoutDlg::onSocketTypeChanged(int idx)
+{
+    const QModelIndex& currIdx = m_ui->paramsView->currentIndex();
+    if (!currIdx.isValid())
+        return;
+
+    QStandardItem* pItem = m_paramsLayoutM->itemFromIndex(currIdx);
+    const QString& socketType = m_ui->cbSocketType->itemText(idx);
+    if (socketType == tr("No Socket")) {
+        pItem->setData(zeno::NoSocket, ROLE_SOCKET_TYPE);
+    }
+    else if (socketType == tr("Primary Socket")) {
+        pItem->setData(zeno::PrimarySocket, ROLE_SOCKET_TYPE);
+    }
+    else if (socketType == tr("Parameter Socket")) {
+        pItem->setData(zeno::ParamSocket, ROLE_SOCKET_TYPE);
+    }
 }
 
 void ZEditParamLayoutDlg::onMaxEditFinished()
@@ -803,6 +821,7 @@ void ZEditParamLayoutDlg::onApply()
         param.defl = UiHelper::qvarToZVar(pItem->data(ROLE_PARAM_VALUE), param.type);
         param.name = pItem->data(ROLE_PARAM_NAME).toString().toStdString();
         param.tooltip = pItem->data(ROLE_PARAM_TOOLTIP).toString().toStdString();
+        param.socketType = (zeno::SocketType)pItem->data(ROLE_SOCKET_TYPE).toInt();
         const QString& existName = pItem->data(ROLE_MAP_TO_PARAMNAME).toString();
 
         m_paramsUpdate.push_back({ param, existName.toStdString() });
@@ -819,6 +838,7 @@ void ZEditParamLayoutDlg::onApply()
         param.defl = UiHelper::qvarToZVar(pItem->data(ROLE_PARAM_VALUE), param.type);
         param.name = pItem->data(ROLE_PARAM_NAME).toString().toStdString();
         param.tooltip = pItem->data(ROLE_PARAM_TOOLTIP).toString().toStdString();
+        param.socketType = (zeno::SocketType)pItem->data(ROLE_SOCKET_TYPE).toInt();
         const QString& existName = pItem->data(ROLE_MAP_TO_PARAMNAME).toString();
 
         m_paramsUpdate.push_back({ param, existName.toStdString() });

@@ -45,7 +45,7 @@ void ParamsModel::initParamItems()
         item.name = QString::fromStdString(spParam->name);
         item.type = spParam->type;
         item.value = UiHelper::zvarToQVar(spParam->defl);
-        item.connectProp = spParam->connectProp;
+        item.connectProp = spParam->socketType;
         m_items.append(item);
     }
 
@@ -57,7 +57,7 @@ void ParamsModel::initParamItems()
         item.control = zeno::NullControl;
         item.name = QString::fromStdString(spParam->name);
         item.type = spParam->type;
-        item.connectProp = spParam->connectProp;
+        item.connectProp = spParam->socketType;
         m_items.append(item);
     }
 }
@@ -72,7 +72,7 @@ QVariant ParamsModel::data(const QModelIndex& index, int role) const
     case ROLE_PARAM_TYPE:       return param.type;
     case ROLE_PARAM_VALUE:      return param.value;
     case ROLE_PARAM_CONTROL:    return param.control;
-    case ROLE_PARAM_CONNECTPROP:return param.connectProp;
+    case ROLE_SOCKET_TYPE:return param.connectProp;
     case ROLE_ISINPUT:          return param.bInput;
     case ROLE_NODEIDX:          return m_nodeIdx;
     case ROLE_LINKS:            return QVariant::fromValue(param.links);
@@ -93,6 +93,7 @@ QVariant ParamsModel::data(const QModelIndex& index, int role) const
         info.control = param.control;
         info.ctrlProps = param.optCtrlprops;
         info.defl = UiHelper::qvarToZVar(param.value, info.type);
+        info.socketType = param.connectProp;
         for (auto linkidx : param.links) {
             info.links.push_back(linkidx.data(ROLE_LINK_INFO).value<zeno::EdgeInfo>());
         }
@@ -292,6 +293,7 @@ QStandardItemModel* ParamsModel::customParamModel()
         paramItem->setData(info.control, ROLE_PARAM_CONTROL);
         paramItem->setData(info.type, ROLE_PARAM_TYPE);
         paramItem->setData(bInput, ROLE_ISINPUT);
+        paramItem->setData(info.socketType, ROLE_SOCKET_TYPE);
         if (bInput)
             pInputs->appendRow(paramItem);
         else
