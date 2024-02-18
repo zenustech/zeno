@@ -161,11 +161,12 @@ namespace zenoio {
             {
                 zeno::ParamInfo param;
                 param.name = outParam;
+                param.socketType = zeno::PrimarySocket;
                 ret.outputs.push_back(param);
             }
             else if (outObj.IsObject())
             {
-                zeno::ParamInfo param = _parseSocket(true, id, nodeName, outParam, outObj, links);
+                zeno::ParamInfo param = _parseSocket(false, id, nodeName, outParam, outObj, links);
                 ret.outputs.push_back(param);
             }
             else
