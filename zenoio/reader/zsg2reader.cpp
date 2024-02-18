@@ -264,6 +264,7 @@ zeno::ParamInfo Zsg2Reader::_parseSocket(
 
     param.prop = prop;
     param.name = sockName;
+    param.socketType = bInput ? zeno::ParamSocket : zeno::PrimarySocket; //以前的定义是不包含这个的。
 
     if (m_bDiskReading &&
         (prop == zeno::SocketProperty::Socket_Editable ||
@@ -404,6 +405,7 @@ bool Zsg2Reader::_parseParams(const std::string& id, const std::string& nodeCls,
 
             //它不知道会不会和SubInput的type参数冲突，这个很讨厌，这里直接解析算了，放弃历史包袱
             param.defl = zenoio::jsonValueToZVar(valueObj[iotags::params::params_valueKey], param.type);
+            param.socketType = zeno::NoSocket; //以前的定义是不包含这个的。
 
             if (valueObj.HasMember("control"))
             {

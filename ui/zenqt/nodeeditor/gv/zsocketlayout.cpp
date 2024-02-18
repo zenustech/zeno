@@ -178,6 +178,11 @@ QPersistentModelIndex ZSocketLayout::viewSocketIdx() const
     return m_paramIdx;
 }
 
+void ZSocketLayout::setSocketVisible(bool bVisible)
+{
+    m_socket->setVisible(bVisible);
+}
+
 void ZSocketLayout::setVisible(bool bVisible) 
 {
     if (m_socket->sockStatus() != ZenoSocketItem::STATUS_CONNECTED && m_control) {

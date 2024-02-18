@@ -72,6 +72,7 @@ struct ImplNodeClass : INodeClass {
             sparam->m_wpNode = spNode;
             sparam->type = zeno::convertToType(param_desc.type);
             sparam->defl = zeno::str2var(param_desc.defl, sparam->type);
+            sparam->socketType = NoSocket;
             spNode->add_input_param(sparam);
         }
 
@@ -81,10 +82,7 @@ struct ImplNodeClass : INodeClass {
             sparam->name = param_desc.name;
             sparam->m_wpNode = spNode;
             sparam->type = zeno::convertToType(param_desc.type);
-            if (param_desc.socketType == NoSocket)
-                sparam->socketType = PrimarySocket;
-            else
-                sparam->socketType = param_desc.socketType;
+            sparam->socketType = PrimarySocket;
             spNode->add_output_param(sparam);
         }
 

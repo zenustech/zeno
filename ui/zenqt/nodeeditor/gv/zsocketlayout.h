@@ -29,6 +29,7 @@ public:
     virtual QPointF getSocketPos(const QModelIndex& sockIdx, const QString keyName, bool& exist);
     QPersistentModelIndex viewSocketIdx() const;
     virtual void setVisible(bool bVisible);
+    void setSocketVisible(bool bVisible);
 
 protected:
     ZenoSocketItem* m_socket;

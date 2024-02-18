@@ -1459,6 +1459,7 @@ void ZenoNode::onCollaspeUpdated(bool collasped)
             auto prop = (zeno::SocketType)idx.data(ROLE_SOCKET_TYPE).toInt();
             if (prop != zeno::PrimarySocket) {
                 pLayout->show();
+                pLayout->setSocketVisible(prop == zeno::ParamSocket);
             }
         }
 
@@ -1468,8 +1469,9 @@ void ZenoNode::onCollaspeUpdated(bool collasped)
             ZASSERT_EXIT(pLayout);
             auto idx = pLayout->viewSocketIdx();
             auto prop = (zeno::SocketType)idx.data(ROLE_SOCKET_TYPE).toInt();
+            ZASSERT_EXIT(prop == zeno::PrimarySocket);
             if (prop != zeno::PrimarySocket) {
-                pLayout->show();
+                pLayout->hide();
             }
         }
     }
