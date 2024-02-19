@@ -4,7 +4,6 @@
 #include <zeno/para/parallel_for.h>
 #include <zeno/para/parallel_scan.h>
 #include <zeno/utils/variantswitch.h>
-#include "zeno/utils/log.h"
 
 namespace zeno {
 
