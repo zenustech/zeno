@@ -28,7 +28,6 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
             }
         }
     }
-    zeno::log_info("poly {}", poly_flag);
 
     auto outprim = std::make_shared<PrimitiveObject>();
 
