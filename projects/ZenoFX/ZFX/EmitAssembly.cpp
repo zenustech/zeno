@@ -47,6 +47,7 @@ struct EmitAssembly : Visitor<EmitAssembly> {
         , "exp"
         , "log"
         , "floor"
+        , "round"
         , "ceil"
         , "abs"
         , "fb2i"

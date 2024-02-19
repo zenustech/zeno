@@ -134,6 +134,8 @@ public:
     void endApiLevel() override;
     void setIOProcessing(bool bIOProcessing) override;
     bool IsIOProcessing() const override;
+    void setIOImporting(bool bIOImporting) override;
+    bool IsIOImporting() const override;
     QModelIndexList findSubgraphNode(const QString& subgName) override;
     int ModelSetData(
         const QPersistentModelIndex& idx,
@@ -149,8 +151,8 @@ public:
     bool setCustomName(const QModelIndex &subgIdx, const QModelIndex &Idx, const QString &value) const override;
     void markNodeDataChanged(const QModelIndex& idx, bool recursively = true) override;
     void markNodeDataUnchanged(const QModelIndex& idx) override;
-    void markNotDescNode() override;
-    bool hasNotDescNode() const override;
+    void markNotDescNode(const QString& nodeid) override;
+    QStringList getNotDescNodes() const override;
     void clearNodeDataChanged() override;
     QStringList subgraphsName() const override;
 
@@ -224,6 +226,8 @@ private:
     QHash<QString, LinkModel*> m_legacyLinks;
     QSet<QPersistentModelIndex> m_changedNodes;
 
+    QStringList m_unVersionNodes;
+
     FuckQMap<QString, CommandParam> m_commandParams;//key:path  value:name
 
     NODE_DESCS m_nodesDesc;
@@ -235,8 +239,8 @@ private:
     int m_apiLevel;
     bool m_dirty;
     bool m_bIOProcessing;
+    bool m_bIOImporting;
     bool m_bApiEnableRun;
-    bool m_bHasNotDesc;         //has nodes which are not descripied by core decs.
     zenoio::ZSG_VERSION m_version;
 
     friend class ApiLevelScope;

@@ -152,6 +152,54 @@ ZENDEFNODE(PrimitiveCalcNormal, {
     {"primitive"},
 });
 
+struct PrimitiveOrderVertexByNormal : zeno::INode{
+  virtual void apply() override {
+    auto prim = get_input<PrimitiveObject>("prim");
+    auto nrmAttr = get_input<StringObject>("nrmAttr")->get();
+    if(prim->tris.has_attr(nrmAttr))
+    {
+      auto &nrm = prim->tris.attr<zeno::vec3f>(nrmAttr);
+      auto &pos = prim->verts.values;
+      if(prim->tris.has_attr("uv0"))
+      {
+        auto &uv0 = prim->tris.attr<zeno::vec3f>("uv0");
+        auto &uv1 = prim->tris.attr<zeno::vec3f>("uv1");
+        auto &uv2 = prim->tris.attr<zeno::vec3f>("uv2");
+        for (int i = 0; i < prim->tris.size(); i++) {
+          auto ind = prim->tris[i];
+          auto n = cross(pos[ind[1]] - pos[ind[0]], pos[ind[2]] - pos[ind[0]]);
+          if (dot(n, nrm[i]) < 0) // face flipped
+          {
+            prim->tris[i] = {ind[0], ind[2], ind[1]};
+            auto t = uv1[i];
+            uv1[i] = uv2[i];
+            uv2[i] = t;
+          }
+        }
+      }else
+      {
+        for (int i = 0; i < prim->tris.size(); i++) {
+          auto ind = prim->tris[i];
+          auto n = cross(pos[ind[1]] - pos[ind[0]], pos[ind[2]] - pos[ind[0]]);
+          if (dot(n, nrm[i]) < 0) // face flipped
+          {
+            prim->tris[i] = {ind[0], ind[2], ind[1]};
+          }
+        }
+      }
+    }
+    set_output("prim", get_input("prim"));
+  }
+};
+ZENDEFNODE(PrimitiveOrderVertexByNormal, {
+                                    {
+                                        {"prim"},
+                                        {"string", "nrmAttr", "nrm"}
+                                    },
+                                    {"prim"},
+                                    {},
+                                    {"primitive"},
+});
 //ZENO_API void primCalcInsetDir(zeno::PrimitiveObject* prim, float flip, std::string insetAttr)
 //{
     //auto &out = prim->verts.add_attr<vec3f>(insetAttr);

@@ -2,6 +2,7 @@
 
 
 #include <map>
+#include <set>
 #include <string>
 #include <memory>
 #include <sstream>
@@ -16,6 +17,25 @@ static std::vector<std::string> split_str(std::string const &s, char delimiter =
     std::istringstream iss(s);
     while (std::getline(iss, token, delimiter))
         tokens.push_back(token);
+    return tokens;
+}
+static std::vector<std::string> split_str(std::string const &s, std::set<char> pattens) {
+    std::vector<std::string> tokens;
+    std::string token;
+    for (char c: s) {
+        if (pattens.count(c)) {
+            if (token.size() > 0) {
+                tokens.push_back(token);
+                token = {};
+            }
+        }
+        else {
+            token.push_back(c);
+        }
+    }
+    if (token.size() > 0) {
+        tokens.push_back(token);
+    }
     return tokens;
 }
 

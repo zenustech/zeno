@@ -128,6 +128,12 @@ void ModelAcceptor::BeginSubgraph(const QString& name, int type)
     {
         if (m_bImport)
         {
+            for (int i = 0; i < pSubModel->rowCount(); i++)
+            {
+                QString ident = pSubModel->index(i, 0).data(ROLE_OBJID).toString();
+                if (m_oldToNewNodeIds.contains(ident))
+                    m_oldToNewNodeIds.remove(ident);
+            }
             pSubModel->clear();
             zeno::log_warn("override subgraph {}", name.toStdString());
         }

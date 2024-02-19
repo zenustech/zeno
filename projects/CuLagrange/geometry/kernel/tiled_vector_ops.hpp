@@ -553,6 +553,31 @@ namespace zeno { namespace TILEVEC_OPS {
         // pol.profile(false);
         return res.getVal();
     }
+
+    template<int space_dim ,typename Pol,typename VTileVec>
+    T dot(Pol &pol,const VTileVec &vtemp,const zs::SmallString& tag0, const zs::SmallString& tag1,const size_t& len) {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        Vector<T> res{vtemp.get_allocator(), 1};
+        res.setVal(0);
+        // auto tag0Offset=vtemp.getPropertyOffset(tag0);
+        // auto tag1Offset=vtemp.getPropertyOffset(tag1);
+        
+        // pol.profile(true);
+        bool shouldSync = pol.shouldSync();
+        pol.sync(true);
+        pol(range(len),
+                [data = proxy<space>({}, vtemp), res = proxy<space>(res), tag0, tag1, n = vtemp.size()] __device__(int pi) mutable {
+                    auto v0 = data.template pack<space_dim>(tag0,pi);
+                    auto v1 = data.template pack<space_dim>(tag1,pi);
+                    atomic_add(exec_cuda, res.data(), v0.dot(v1));
+                    // reduce_to(pi, n, v0.dot(v1), res[0]);
+                });
+        pol.sync(shouldSync);
+        // pol.profile(false);
+        return res.getVal();
+    }
+
 #endif
 
     template<int space_dim,int simplex_dim,typename Pol,typename VTileVec,typename ETileVec>

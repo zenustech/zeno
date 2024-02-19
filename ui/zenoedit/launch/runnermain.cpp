@@ -25,6 +25,7 @@
 #include "viewdecode.h"
 #include "settings/zsettings.h"
 #include <zeno/funcs/ParseObjectFromUi.h>
+#include "startup/zstartup.h"
 
 namespace {
 
@@ -132,6 +133,7 @@ static int runner_start(std::string const &progJson, int sessionid, const LAUNCH
                 + ":" + std::to_string(graph->endFrameNumber)
                 + "\"}", "", 0);
 
+    zeno::getSession().globalState->zeno_version = getZenoVersion();
     bool bHasDumpStatic = false;
 
     if (!param.generator.isEmpty())
