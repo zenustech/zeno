@@ -48,7 +48,7 @@ private:
     void postprocessing();
 
     int split_long_edges();
-    enum COLLAPSE_COND {SHORT, CROSSES, DEGENERATE};
+    enum COLLAPSE_COND {SHORT, CROSSES};
     void collapse_edges(COLLAPSE_COND cond);
     void degenerate_collapse_check(int v0, int v1,
                                    bool &h01, bool &h10,
@@ -97,18 +97,11 @@ private:
         }
         return (face_cnt == 3 || face_cnt == 4);
     }
-    bool is_degenerate(int v0, int v1) const {
-        auto& points = mesh_->prim_->attr<vec3f>("pos");
-        auto& vsizing = mesh_->prim_->verts.attr<float>("v_sizing");
-        return distance(points[v0], points[v1]) < vsizing[v0];
-    }
     bool should_collapse(COLLAPSE_COND cond, int v0, int v1) const {
         if (cond == COLLAPSE_COND::SHORT) {
             return is_too_short(v0, v1);
         } else if (cond == COLLAPSE_COND::CROSSES) {
             return is_crosses(v0, v1);
-        } else if (cond == COLLAPSE_COND::DEGENERATE) {
-            return is_degenerate(v0, v1);
         }
     }
 
