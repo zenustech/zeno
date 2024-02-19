@@ -51,17 +51,22 @@ struct Session {
 
     ZENO_API UserData &userData() const;
     ZENO_API std::shared_ptr<Graph> createGraph(const std::string& name);
+    ZENO_API bool run_main_graph();
     ZENO_API std::string dumpDescriptors() const;
     ZENO_API std::string dumpDescriptorsJSON() const;
     ZENO_API zeno::NodeCates dumpCoreCates();
     ZENO_API void defNodeClass(std::shared_ptr<INode>(*ctor)(), std::string const &id, Descriptor const &desc = {});
+    ZENO_API void setApiLevelEnable(bool bEnable);
+    ZENO_API void beginApiCall();
+    ZENO_API void endApiCall();
 
 private:
     void initNodeCates();
 
     zeno::NodeCates m_cates;
-
-
+    int m_apiLevel = 0;
+    bool m_bApiLevelEnable = true;
+    bool m_bAutoRun = true;
 };
 
 ZENO_API Session &getSession();

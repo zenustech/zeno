@@ -71,10 +71,7 @@ namespace zenoio
         writer.Key("status");
         {
             std::vector<std::string> options;
-            if (node.status & zeno::Mute) {
-                options.push_back("MUTE");
-            }
-            if (node.status & zeno::View) {
+            if (node.bView) {
                 options.push_back("View");
             }
             writer.StartArray();

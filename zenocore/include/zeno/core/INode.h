@@ -47,9 +47,6 @@ public:
     //std::set<std::string> formulas;
     zany muted_output;
 
-    NodeStatus m_status = NodeStatus::None;
-    bool m_dirty = false;
-
     ZENO_API INode();
     ZENO_API virtual ~INode();
 
@@ -70,9 +67,10 @@ public:
     ZENO_API std::string get_nodecls() const;
     ZENO_API std::string get_ident() const;
 
-
     ZENO_API void set_view(bool bOn);
+    CALLBACK_REGIST(set_view, void, bool)
     ZENO_API bool is_view() const;
+
     ZENO_API void mark_dirty(bool bOn);
     ZENO_API bool is_dirty() const;
 
@@ -93,10 +91,6 @@ public:
     ZENO_API void set_pos(std::pair<float, float> pos);
     CALLBACK_REGIST(set_pos, void, std::pair<float, float>)
     ZENO_API std::pair<float, float> get_pos() const;
-
-    ZENO_API void set_status(NodeStatus status);
-    CALLBACK_REGIST(set_status, void, NodeStatus)
-    ZENO_API NodeStatus get_status() const;
 
     //END new api
 
@@ -192,6 +186,10 @@ public:
     }
 
     ZENO_API TempNodeCaller temp_node(std::string const &id);
+
+private:
+    bool m_bView = false;
+    bool m_dirty = true;
 
 };
 

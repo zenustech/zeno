@@ -850,14 +850,14 @@ void ZenoGraphsEditor::toggleViewForSelected(bool bOn)
         for (QModelIndex idx : nodes)
         {
             QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(idx.model());
-            zeno::NodeStatus options = (zeno::NodeStatus)idx.data(ROLE_OPTIONS).toInt();
+            zeno::NodeStatus options = (zeno::NodeStatus)idx.data(ROLE_NODE_STATUS).toInt();
             if (bOn) {
                 options = options | zeno::View;
             }
             else {
                 options = options ^ zeno::View;
             }
-            pModel->setData(idx, options, ROLE_OPTIONS);
+            pModel->setData(idx, options, ROLE_NODE_STATUS);
         }
     }
 }

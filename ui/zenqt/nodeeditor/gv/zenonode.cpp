@@ -218,8 +218,8 @@ ZLayoutBackground* ZenoNode::initHeaderWidget()
     pNameLayout->addItem(m_NameItem);
 
     m_pStatusWidgets = new ZenoMinStatusBtnItem(m_renderParams.status);
-    int options = m_index.data(ROLE_OPTIONS).toInt();
-    m_pStatusWidgets->setOptions(options);
+    bool bView = m_index.data(ROLE_NODE_ISVIEW).toBool();
+    m_pStatusWidgets->setView(bView);
     connect(m_pStatusWidgets, SIGNAL(toggleChanged(STATUS_BTN, bool)), this, SLOT(onOptionsBtnToggled(STATUS_BTN, bool)));
 
     ZGraphicsLayout* pHLayout = new ZGraphicsLayout(true);
@@ -1388,32 +1388,20 @@ void ZenoNode::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
 
 void ZenoNode::onOptionsBtnToggled(STATUS_BTN btn, bool toggled)
 {
-    zeno::NodeStatus options = (zeno::NodeStatus)m_index.data(ROLE_OPTIONS).toInt();
+    zeno::NodeStatus options = (zeno::NodeStatus)m_index.data(ROLE_NODE_STATUS).toInt();
     int oldOpts = options;
 
     if (btn == STATUS_MUTE)
     {
-        if (toggled)
-        {
-            options = options | zeno::Mute;
-        }
-        else
-        {
-            options = options ^ zeno::Mute;
-        }
+        //TODO:
     }
     else if (btn == STATUS_VIEW)
     {
-        if (toggled)
-        {
-            options = options | zeno::View;
-        }
-        else
-        {
-            options = options ^ zeno::View;
-        }
+        QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
+        GraphModel* pGraphM = qobject_cast<GraphModel*>(pModel);
+        ZASSERT_EXIT(pGraphM);
+        pGraphM->setView(m_index, toggled);
     }
-    UiHelper::qIndexSetData(m_index, options, ROLE_OPTIONS);
 }
 
 void ZenoNode::onCollaspeBtnClicked()
@@ -1477,6 +1465,16 @@ void ZenoNode::onCollaspeUpdated(bool collasped)
     }
     updateWhole();
     update();
+}
+
+void ZenoNode::onViewUpdated(bool bView)
+{
+    if (m_pStatusWidgets)
+    {
+        m_pStatusWidgets->blockSignals(true);
+        m_pStatusWidgets->setView(bView);
+        m_pStatusWidgets->blockSignals(false);
+    }
 }
 
 void ZenoNode::onOptionsUpdated(int options)

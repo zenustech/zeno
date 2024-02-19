@@ -72,15 +72,16 @@ ZENO_API void INode::set_name(const std::string& customname)
 
 ZENO_API void INode::set_view(bool bOn)
 {
-    if (bOn)
-        m_status = m_status | NodeStatus::View;
-    else
-        m_status = m_status ^ NodeStatus::View;
+    CORE_API_BATCH
+
+    m_bView = bOn;
+    CALLBACK_NOTIFY(set_view, m_bView)
+    graph->viewNodeUpdated(m_name, bOn);
 }
 
 ZENO_API bool INode::is_view() const
 {
-    return m_status & NodeStatus::View;
+    return m_bView;
 }
 
 ZENO_API void INode::mark_dirty(bool bOn)
@@ -106,13 +107,13 @@ ZENO_API void INode::preApply() {
             zeno::log_warn("the param {} may not be initialized", name);
     }
 
-
     log_debug("==> enter {}", m_name);
     {
 #ifdef ZENO_BENCHMARKING
         Timer _(m_name);
 #endif
         apply();
+        mark_dirty(false);
     }
     log_debug("==> leave {}", m_name);
 }
@@ -308,7 +309,7 @@ ZENO_API NodeData INode::exportInfo() const
     NodeData node;
     node.cls = m_nodecls;
     node.name = m_name;
-    node.status = m_status;
+    node.bView = m_bView;
     node.uipos = m_pos;
     //TODO: node type
     if (node.subgraph.has_value())
@@ -448,7 +449,7 @@ ZENO_API void INode::init(const NodeData& dat)
         m_name = dat.name;
 
     m_pos = dat.uipos;
-    m_status = dat.status;
+    m_bView = dat.bView;
     initParams(dat);
 }
 
@@ -525,17 +526,6 @@ ZENO_API bool INode::set_output(std::string const & param, zany obj) {
 ZENO_API zany INode::get_output(std::string const& param) {
     std::shared_ptr<IParam> spParam = safe_at(outputs_, param, "miss output param `" + param + "` on node `" + m_name + "`");
     return spParam->result;
-}
-
-ZENO_API void INode::set_status(NodeStatus status)
-{
-    m_status = status;
-    CALLBACK_NOTIFY(set_status, m_status)
-}
-
-ZENO_API NodeStatus INode::get_status() const
-{
-    return m_status;
 }
 
 ZENO_API bool INode::has_keyframe(std::string const &id) const {

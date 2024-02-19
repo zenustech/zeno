@@ -108,7 +108,7 @@ std::optional<NodeLocation> NodeSyncMgr::checkNodeLinkedSpecificNode(const QMode
             if (search_result.empty()) return {};
             auto linked_node = search_result[0].targetIdx;
             auto linked_subgraph = search_result[0].subgIdx;
-            auto option = linked_node.data(ROLE_OPTIONS).toInt();
+            auto option = linked_node.data(ROLE_NODE_STATUS).toInt();
             if (option & zeno::View)
                 return NodeLocation(linked_node,
                                     linked_subgraph);
@@ -165,12 +165,12 @@ void NodeSyncMgr::updateNodeVisibility(NodeLocation& node_location) {
         return;
 
     auto node_id = nodeIdx.data(ROLE_NODE_NAME).toString();
-    int old_option = nodeIdx.data(ROLE_OPTIONS).toInt();
+    int old_option = nodeIdx.data(ROLE_NODE_STATUS).toInt();
     int new_option = old_option;
     new_option ^= zeno::View;
 
     QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(nodeIdx.model());
-    pModel->setData(nodeIdx, new_option, ROLE_OPTIONS);
+    pModel->setData(nodeIdx, new_option, ROLE_NODE_STATUS);
 }
 
 void NodeSyncMgr::updateNodeInputString(NodeLocation node_location,

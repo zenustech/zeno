@@ -297,11 +297,16 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& topLeft, const QModelIn
             m_nodes[id]->nodePosChangedSignal();
         }
     }
-    if (role == ROLE_OPTIONS)
+    if (role == ROLE_NODE_STATUS)
     {
         ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
-        int options = idx.data(ROLE_OPTIONS).toInt();
+        int options = idx.data(ROLE_NODE_STATUS).toInt();
         m_nodes[id]->onOptionsUpdated(options);
+    }
+    if (role == ROLE_NODE_ISVIEW)
+    {
+        ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
+
     }
     if (role == ROLE_COLLASPED)
     {
@@ -1258,8 +1263,8 @@ void ZenoSubGraphScene::updateNodeStatus(bool &bOn, int option)
     bOn = !bOn;
     for (const QModelIndex &idx : selectNodesIndice()) 
     {
-        int options = idx.data(ROLE_OPTIONS).toInt();
-        UiHelper::qIndexSetData(idx, options, ROLE_OPTIONS);
+        int options = idx.data(ROLE_NODE_STATUS).toInt();
+        UiHelper::qIndexSetData(idx, options, ROLE_NODE_STATUS);
     }
     
 }

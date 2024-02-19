@@ -25,11 +25,11 @@ public:
     QPointF pos;
 
     std::string m_cbSetPos;
-    std::string m_cbSetStatus;
+    std::string m_cbSetView;
 
     std::weak_ptr<zeno::INode> m_wpNode;
     ParamsModel* params = nullptr;
-    zeno::NodeStatus status = zeno::None;
+    bool bView = false;
     bool bCollasped = false;
 
     //for subgraph, but not include assets:
@@ -81,6 +81,8 @@ public:
     zeno::NodeData createNode(const QString& nodeCls, const QString& cate, const QPointF& pos);
     void appendSubgraphNode(QString name, QString cls, NODE_DESCRIPTOR desc, GraphModel* subgraph, const QPointF& pos);
     bool removeNode(const QString& name);
+    void setView(const QModelIndex& idx, bool bOn);
+    void setMute(const QModelIndex& idx, bool bOn);
     QString updateNodeName(const QModelIndex& idx, QString newName);
     void addLink(const zeno::EdgeInfo& link);
     QList<SEARCH_RESULT> search(const QString& content, SearchType searchType, SearchOpt searchOpts) const;

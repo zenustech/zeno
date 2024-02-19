@@ -1,5 +1,7 @@
 #pragma once
 
+#include <zeno/utils/scope_exit.h>
+
 #if defined(_MSC_VER)
 # if defined(ZENO_DLLEXPORT)
 #  define ZENO_API __declspec(dllexport)
@@ -33,3 +35,7 @@
     for (auto& [key, func] : m_callback_##api_name) { \
         func(__VA_ARGS__);\
     }
+
+#define CORE_API_BATCH \
+    getSession().beginApiCall();\
+    zeno::scope_exit([](){ getSession().endApiCall(); });

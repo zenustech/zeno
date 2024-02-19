@@ -68,35 +68,40 @@ ZENO_API void Graph::completeNode(std::string const &id) {
 }
 
 ZENO_API bool Graph::applyNode(std::string const &id) {
-    if (ctx->visited.find(id) != ctx->visited.end()) {
-        return false;
-    }
-    ctx->visited.insert(id);
     auto node = safe_at(nodes, id, "node name").get();
     GraphException::translated([&] {
         node->doApply();
     }, node->get_name());
-    if (dirtyChecker && dirtyChecker->amIDirty(id)) {
-        return true;
-    }
-    return false;
+    return true;
 }
 
-ZENO_API void Graph::applyNodes(std::set<std::string> const &ids) {
+ZENO_API void Graph::applyNodes(std::set<std::string> const &nodes) {
     ctx = std::make_unique<Context>();
 
     scope_exit _{[&] {
         ctx = nullptr;
     }};
 
-    for (auto const &id: ids) {
-        applyNode(id);
+    for (auto const& node_name: nodes) {
+        applyNode(node_name);
     }
 }
 
-ZENO_API void Graph::applyNodesToExec() {
-    log_debug("{} nodes to exec", nodesToExec.size());
-    applyNodes(nodesToExec);
+ZENO_API void Graph::runGraph() {
+    log_debug("{} nodes to exec", m_viewnodes.size());
+    applyNodes(m_viewnodes);
+}
+
+void Graph::viewNodeUpdated(const std::string node, bool bView) {
+    if (bView) {
+        //TODO: only run calculation chain which associate with `node`.
+        //getSession().run_main_graph();
+        m_viewnodes.insert(node);
+    }
+    else {
+        m_viewnodes.erase(node);
+        //TODO: update objsmanager to hide objs.
+    }
 }
 
 ZENO_API void Graph::bindNodeInput(std::string const &dn, std::string const &ds,
@@ -171,6 +176,9 @@ ZENO_API DirtyChecker &Graph::getDirtyChecker() {
 }
 
 ZENO_API void Graph::init(const GraphData& graph) {
+    getSession().setApiLevelEnable(false);
+    zeno::scope_exit([]() { getSession().setApiLevelEnable(false); });
+
     m_name = graph.name;
     //import nodes first.
     for (const auto& [name, node] : graph.nodes) {
@@ -185,6 +193,7 @@ ZENO_API void Graph::init(const GraphData& graph) {
             }
         }
         spNode->init(node);
+        spNode->mark_dirty(true);
         if (node.cls == "SubInput") {
             //TODO
         }
@@ -271,6 +280,8 @@ ZENO_API std::set<std::string> Graph::searchByClass(const std::string& name) con
 
 ZENO_API std::string Graph::updateNodeName(const std::string oldName, const std::string newName)
 {
+    CORE_API_BATCH
+
     if (newName.empty() || nodes.find(oldName) == nodes.end()) {
         return "";
     }
@@ -304,6 +315,8 @@ ZENO_API void Graph::clear()
 
 ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls, std::string name, std::string cate, std::pair<float, float> pos)
 {
+    CORE_API_BATCH
+
     if (name.empty())
         name = generateNewName(cls);
     else
@@ -449,6 +462,7 @@ ZENO_API bool Graph::addLink(const EdgeInfo& edge) {
     //1.如果连进来的是dictlist，并且没有指定key，则认为是直接连此输入参数(类型为dictlist)
     //2.如果连进来的是dictlist，并且指定了key，则认为是连入dictlist内部并作为输入端的子成员。
     //3.如果连进来的是非dictlist，并且没有指定key，则认为是连入输入端dictlist并作为输入端的内部子成员。
+    CORE_API_BATCH
 
     std::shared_ptr<INode> outNode = getNode(edge.outNode);
     if (!outNode)
@@ -517,6 +531,8 @@ ZENO_API bool Graph::addLink(const EdgeInfo& edge) {
 }
 
 ZENO_API bool Graph::removeLink(const EdgeInfo& edge) {
+    CORE_API_BATCH
+
     std::shared_ptr<INode> outNode = getNode(edge.outNode);
     if (!outNode)
         return false;
@@ -551,6 +567,8 @@ ZENO_API bool Graph::removeLink(const EdgeInfo& edge) {
 
 ZENO_API bool Graph::removeLinks(const std::string nodename, bool bInput, const std::string paramname)
 {
+    CORE_API_BATCH
+
     std::shared_ptr<INode> spNode = getNode(nodename);
     std::shared_ptr<IParam> spParam;
     if (bInput)
@@ -576,6 +594,8 @@ ZENO_API bool Graph::removeLinks(const std::string nodename, bool bInput, const 
 
 ZENO_API bool Graph::updateLink(const EdgeInfo& edge, bool bInput, const std::string oldkey, const std::string newkey)
 {
+    CORE_API_BATCH
+
     std::shared_ptr<INode> outNode = getNode(edge.outNode);
     if (!outNode)
         return false;
@@ -599,6 +619,8 @@ ZENO_API bool Graph::updateLink(const EdgeInfo& edge, bool bInput, const std::st
 
 ZENO_API bool Graph::moveUpLinkKey(const EdgeInfo& edge, bool bInput, const std::string keyName)
 {
+    CORE_API_BATCH
+
     std::shared_ptr<INode> outNode = getNode(edge.outNode);
     if (!outNode)
         return false;

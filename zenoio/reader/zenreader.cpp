@@ -89,14 +89,12 @@ namespace zenoio
                 const std::string& optName = optionsArr[i].GetString();
                 if (optName == "VIEW")
                 {
-                    opts = opts | zeno::View;
+                    retNode.bView = true;
                 }
                 else if (optName == "MUTE")
                 {
-                    opts = opts | zeno::Mute;
                 }
             }
-            retNode.status = opts;
         }
         if (objValue.HasMember("collasped"))
         {

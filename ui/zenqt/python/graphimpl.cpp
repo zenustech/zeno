@@ -178,7 +178,7 @@ Graph_createNode(ZSubGraphObject* self, PyObject* arg, PyObject* kw)
             QString strKey= QString::fromUtf8(cKey);
             if (strKey == "view" || strKey == "mute" || strKey == "once")
             {
-                int options = nodeIdx.data(ROLE_OPTIONS).toInt();
+                int options = nodeIdx.data(ROLE_NODE_STATUS).toInt();
                 if (strKey == "view")
                 {
                     bool view = false;
@@ -197,7 +197,7 @@ Graph_createNode(ZSubGraphObject* self, PyObject* arg, PyObject* kw)
                     if (PyArg_Parse(value, "b", &once) && once)
                         options |= OPT_ONCE;
                 }
-                pSubModel->setData(nodeIdx, options, ROLE_OPTIONS);
+                pSubModel->setData(nodeIdx, options, ROLE_NODE_STATUS);
             }
             else if (strKey == "fold")
             {

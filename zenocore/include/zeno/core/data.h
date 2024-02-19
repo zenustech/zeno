@@ -112,7 +112,7 @@ namespace zeno {
         std::optional<AssetInfo> asset;
 
         std::pair<float, float> uipos;
-        NodeStatus status = NodeStatus::None;
+        bool bView = false;
         NodeType type;
         bool bCollasped = false;
     };

@@ -24,11 +24,11 @@ void NodeItem::unregister()
     {
         bool ret = spNode->unregister_set_pos(m_cbSetPos);
         ZASSERT_EXIT(ret);
-        ret = spNode->unregister_set_status(m_cbSetStatus);
+        ret = spNode->unregister_set_view(m_cbSetView);
         ZASSERT_EXIT(ret);
     }
     m_cbSetPos = "";
-    m_cbSetStatus = "";
+    m_cbSetView = "";
 }
 
 void NodeItem::init(GraphModel* pGraphM, std::shared_ptr<zeno::INode> spNode)
@@ -41,17 +41,16 @@ void NodeItem::init(GraphModel* pGraphM, std::shared_ptr<zeno::INode> spNode)
         emit pGraphM->dataChanged(idx, idx, QVector<int>{ ROLE_OBJPOS });
     });
 
-    m_cbSetStatus = spNode->register_set_status([=](zeno::NodeStatus status) {
-        zeno::NodeStatus oldStatus = this->status;
-        this->status = status;
+    m_cbSetView = spNode->register_set_view([=](bool bView) {
+        this->bView = bView;
         QModelIndex idx = pGraphM->indexFromName(this->name);
-        emit pGraphM->dataChanged(idx, idx, QVector<int>{ ROLE_OPTIONS });
+        emit pGraphM->dataChanged(idx, idx, QVector<int>{ ROLE_NODE_ISVIEW });
     });
 
     this->params = new ParamsModel(spNode, this);
     this->name = QString::fromStdString(spNode->get_name());
     this->cls = QString::fromStdString(spNode->get_nodecls());
-    this->status = spNode->get_status();
+    this->bView = spNode->is_view();
     auto pair = spNode->get_pos();
     this->pos = QPointF(pair.first, pair.second);
     if (std::shared_ptr<zeno::SubnetNode> subnetnode = std::dynamic_pointer_cast<zeno::SubnetNode>(spNode))
@@ -264,9 +263,13 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
             //TODO
             return QVariant::fromValue(data);
         }
-        case ROLE_OPTIONS:
+        case ROLE_NODE_STATUS:
         {
-            return item->status;
+            return QVariant();
+        }
+        case ROLE_NODE_ISVIEW:
+        {
+            return item->bView;
         }
         case ROLE_NODETYPE:
         {
@@ -331,6 +334,14 @@ bool GraphModel::setData(const QModelIndex& index, const QVariant& value, int ro
             item->bCollasped = value.toBool();
             emit dataChanged(index, index, QVector<int>{role});
             return true;
+        }
+        case ROLE_NODE_STATUS:
+        {
+            break;
+        }
+        case ROLE_NODE_ISVIEW:
+        {
+            break;
         }
         case ROLE_INPUTS:
         {
@@ -684,6 +695,21 @@ bool GraphModel::removeNode(const QString& name)
     auto spCoreGraph = m_wpCoreGraph.lock();
     ZASSERT_EXIT(spCoreGraph, false);
     return spCoreGraph->removeNode(name.toStdString());
+}
+
+void GraphModel::setView(const QModelIndex& idx, bool bOn)
+{
+    auto spCoreGraph = m_wpCoreGraph.lock();
+    ZASSERT_EXIT(spCoreGraph);
+    NodeItem* item = m_nodes[m_row2name[idx.row()]];
+    auto spCoreNode = item->m_wpNode.lock();
+    ZASSERT_EXIT(spCoreNode);
+    spCoreNode->set_view(bOn);
+}
+
+void GraphModel::setMute(const QModelIndex& idx, bool bOn)
+{
+    //TODO
 }
 
 QString GraphModel::updateNodeName(const QModelIndex& idx, QString newName)

@@ -1445,6 +1445,11 @@ void ZenoMinStatusBtnItem::setOptions(int options)
     setChecked(STATUS_VIEW, options & zeno::View);
 }
 
+void ZenoMinStatusBtnItem::setView(bool isView)
+{
+    setChecked(STATUS_VIEW, isView);
+}
+
 void ZenoMinStatusBtnItem::setChecked(STATUS_BTN btn, bool bChecked)
 {
     if (btn == STATUS_MUTE)

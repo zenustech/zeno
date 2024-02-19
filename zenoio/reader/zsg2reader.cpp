@@ -178,12 +178,11 @@ zeno::NodeData Zsg2Reader::_parseNode(
             const std::string& optName = optionsArr[i].GetString();
             if (optName == "ONCE") {} //deprecated 
             else if (optName == "PREP") {} //deprecated 
-            else if (optName == "VIEW") { opts = opts | zeno::View; }
-            else if (optName == "MUTE") { opts = opts | zeno::Mute; }
+            else if (optName == "VIEW") { retNode.bView = true; }
+            else if (optName == "MUTE") { }
             else if (optName == "CACHE") {} //deprecated 
             else if (optName == "collapsed") {}
         }
-        retNode.status = opts;
     }
 
     if (cls == "Blackboard")

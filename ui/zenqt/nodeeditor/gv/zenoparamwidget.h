@@ -450,6 +450,7 @@ public:
 	void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
     void setChecked(STATUS_BTN btn, bool bChecked);
     void setOptions(int options);
+    void setView(bool isView);
     void onZoomed();
 
 protected:

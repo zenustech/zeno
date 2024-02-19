@@ -126,6 +126,33 @@ ZENO_API std::shared_ptr<Graph> Session::createGraph(const std::string& name) {
     return graph;
 }
 
+ZENO_API void Session::setApiLevelEnable(bool bEnable)
+{
+    m_bApiLevelEnable = bEnable;
+}
+
+ZENO_API void Session::beginApiCall()
+{
+    if (!m_bApiLevelEnable) return;
+    m_apiLevel++;
+}
+
+ZENO_API void Session::endApiCall()
+{
+    if (!m_bApiLevelEnable) return;
+    m_apiLevel--;
+    if (m_apiLevel == 0) {
+        //TODO: always mode
+        if (m_bAutoRun)
+            run_main_graph();
+    }
+}
+
+ZENO_API bool Session::run_main_graph() {
+    mainGraph->runGraph();
+    return true;
+}
+
 void Session::initNodeCates() {
     for (auto const& [key, cls] : nodeClasses) {
         if (!key.empty() && key.front() == '^')

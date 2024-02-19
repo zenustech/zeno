@@ -32,7 +32,7 @@ ZENO_API void ISubgraphNode::apply() {
             node->inputs["_IN_port"] = std::make_shared<DummyObject>();
         */
     }
-    gra.applyNodesToExec();
+    gra.runGraph();
     for (auto const &[key, nodename]: gra.getSubOutputs()) {
         auto *node = gra.nodes.at(nodename).get();
         //set_output(key, node->outputs.at("_OUT_port"));

@@ -105,7 +105,7 @@ struct Graph : std::enable_shared_from_this<Graph> {
 
     ZENO_API DirtyChecker &getDirtyChecker();
     ZENO_API void clearNodes();
-    ZENO_API void applyNodesToExec();
+    ZENO_API void runGraph();
     ZENO_API void applyNodes(std::set<std::string> const &ids);
     ZENO_API void addNode(std::string const &cls, std::string const &id);
     ZENO_API Graph *addSubnetNode(std::string const &id);
@@ -132,6 +132,7 @@ struct Graph : std::enable_shared_from_this<Graph> {
 
     std::map<std::string, std::string> getSubInputs();
     std::map<std::string, std::string> getSubOutputs();
+    void viewNodeUpdated(const std::string node, bool bView);
 
 private:
     std::string generateNewName(const std::string& node_cls);
@@ -141,6 +142,7 @@ private:
     std::map<std::string, std::string> subOutputNodes;
 
     std::map<std::string, std::set<std::string>> node_set;
+    std::set<std::string> m_viewnodes;
     std::string m_name;
     const bool m_bAssets;
 };

@@ -131,7 +131,7 @@ Node_getattr(ZNodeObject* self, char* name)
     }
     else if (strcmp(name, "view") == 0 || strcmp(name, "mute") == 0 || strcmp(name, "once") == 0) {
         int opt = strcmp(name, "view") == 0 ? OPT_VIEW : strcmp(name, "mute") == 0 ? OPT_MUTE : OPT_ONCE;
-        bool bOn = self->nodeIdx.data(ROLE_OPTIONS).toInt() & opt;
+        bool bOn = self->nodeIdx.data(ROLE_NODE_STATUS).toInt() & opt;
         PyObject* value = Py_BuildValue("b", bOn);
         return value;
     }
@@ -277,7 +277,7 @@ Node_setattr(ZNodeObject* self, char* name, PyObject* v)
             PyErr_WriteUnraisable(Py_None);
             return -1;
         }
-        int options_old = self->nodeIdx.data(ROLE_OPTIONS).toInt();
+        int options_old = self->nodeIdx.data(ROLE_NODE_STATUS).toInt();
         int options = options_old;
         int opt = strcmp(name, "view") == 0 ? OPT_VIEW : strcmp(name, "mute") == 0 ? OPT_MUTE : OPT_ONCE;
         if (bOn) {
@@ -286,7 +286,7 @@ Node_setattr(ZNodeObject* self, char* name, PyObject* v)
         else if (options & opt) {
             options ^= opt;
         }
-        pModel->setData(self->nodeIdx, options, ROLE_OPTIONS);
+        pModel->setData(self->nodeIdx, options, ROLE_NODE_STATUS);
     }
     else if (strcmp(name, "fold") == 0)
     {
