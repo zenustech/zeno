@@ -1,5 +1,5 @@
-#ifndef __ZCURVEMAP_EDITOR_H__
-#define __ZCURVEMAP_EDITOR_H__
+#ifndef __ZQWTCURVEMAP_EDITOR_H__
+#define __ZQWTCURVEMAP_EDITOR_H__
 
 #include <QtWidgets>
 #include <zenomodel/include/modeldata.h>
@@ -7,22 +7,20 @@
 
 using namespace curve_util;
 
-class CurveMapView;
-class CurveNodeItem;
-class CurveModel;
-
 namespace Ui
 {
-	class FCurveDlg;
+	class QwtCurveDlg;
 }
 
-class ZCurveMapEditor : public QDialog
+class PlotLayout;
+
+class ZQwtCurveMapEditor : public QDialog
 {
 	Q_OBJECT
 
 public:
-    ZCurveMapEditor(bool bTimeline, QWidget* parent = nullptr);
-    ~ZCurveMapEditor();
+    ZQwtCurveMapEditor(bool bTimeline, QWidget* parent = nullptr);
+    ~ZQwtCurveMapEditor();
     void addCurve(CurveModel* model);
     void addCurves(const CURVES_DATA& curves);
     int curveCount() const;
@@ -32,9 +30,9 @@ public:
 
 public slots:
 	void onButtonToggled(QAbstractButton* btn, bool bToggled);
-	void onNodesSelectionChanged(QList<CurveNodeItem*> lst);
+	void onNodesSelectionChanged();
 	void onChannelModelDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles = QVector<int>());
-    void onNodesDataChanged();
+    void onNodesDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
 	void onFrameChanged(qreal frame);
 	void onLineEditFinished();
     void onLockBtnToggled(bool bToggle);
@@ -51,17 +49,16 @@ private:
 	void initButtonShadow();
     void initStylesheet();
     void initChannelModel();
-    CurveModel* currentModel();
+    void setCurrentChannel(const QString& id);
 
-	Ui::FCurveDlg* m_ui;
+	Ui::QwtCurveDlg* m_ui;
 
 	QButtonGroup* m_pGroupHdlType;
-	QMap<QString, CurveModel*> m_models;
 	QStandardItemModel* m_channelModel;
-	QItemSelectionModel* m_selection;
 	bool m_bTimeline;
 
     std::vector<CurveModel *> m_bate_rows;
+    PlotLayout* m_plotLayout;
 };
 
 

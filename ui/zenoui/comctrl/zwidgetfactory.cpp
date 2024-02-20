@@ -3,7 +3,11 @@
 #include <zenoui/comctrl/zlinewidget.h>
 #include <zenoui/comctrl/zlineedit.h>
 #include <zenoui/comctrl/ztextedit.h>
+#ifdef _WIN32
+#include <zenoui/comctrl/dialog/curvemap/zqwtcurvemapeditor.h>
+#else
 #include <zenoui/comctrl/dialog/curvemap/zcurvemapeditor.h>
+#endif // _WIN32
 #include <zenoui/comctrl/dialog/zenoheatmapeditor.h>
 #include <zenoui/comctrl/zcombobox.h>
 #include <zenoui/comctrl/zlabel.h>
@@ -225,11 +229,12 @@ namespace zenoui
             {
                 QPushButton* pBtn = new QPushButton("Edit Curve");
                 pBtn->setProperty("cssClass", "proppanel");
+#ifdef _WIN32
                 QObject::connect(pBtn, &QPushButton::clicked, [=]() {
-                    ZCurveMapEditor* pEditor = new ZCurveMapEditor(true);
+                    ZQwtCurveMapEditor* pEditor = new ZQwtCurveMapEditor(true);
                     pEditor->setAttribute(Qt::WA_DeleteOnClose);
 
-                    QObject::connect(pEditor, &ZCurveMapEditor::finished, [=](int result) {
+                    QObject::connect(pEditor, &ZQwtCurveMapEditor::finished, [=](int result) {
                         CURVES_DATA curves = pEditor->curves();
                         cbSet.cbEditFinished(QVariant::fromValue(curves));
                     });
@@ -240,6 +245,23 @@ namespace zenoui
                     pEditor->addCurves(curves);
                     pEditor->exec();
                 });
+#else
+                QObject::connect(pBtn, &QPushButton::clicked, [=]() {
+                    ZCurveMapEditor* pEditor = new ZCurveMapEditor(true);
+                pEditor->setAttribute(Qt::WA_DeleteOnClose);
+
+                QObject::connect(pEditor, &ZCurveMapEditor::finished, [=](int result) {
+                    CURVES_DATA curves = pEditor->curves();
+                cbSet.cbEditFinished(QVariant::fromValue(curves));
+                });
+
+                CURVES_DATA curves;
+                if (cbSet.cbGetIndexData)
+                    curves = cbSet.cbGetIndexData().value<CURVES_DATA>();
+                pEditor->addCurves(curves);
+                pEditor->exec();
+                });
+#endif // _WIN32
                 return pBtn;
             }
             case CONTROL_HSLIDER:

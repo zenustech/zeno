@@ -7,7 +7,11 @@
 #include "zveceditoritem.h"
 #include "style/zenostyle.h"
 #include "../dialog/zenoheatmapeditor.h"
+#ifdef _WIN32
+#include "../dialog/curvemap/zqwtcurvemapeditor.h"
+#else
 #include "../dialog/curvemap/zcurvemapeditor.h"
+#endif
 #include "variantptr.h"
 #include "zassert.h"
 #include "zgraphicstextitem.h"
@@ -350,10 +354,11 @@ namespace zenoui
                 pEditBtn->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(100, zenoui::g_ctrlHeight)));
                 pEditBtn->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 pEditBtn->setData(GVKEY_TYPE, type);
+#ifdef _WIN32
                 QObject::connect(pEditBtn, &ZenoParamPushButton::clicked, [=]() {
-                    ZCurveMapEditor *pEditor = new ZCurveMapEditor(true);
+                    ZQwtCurveMapEditor*pEditor = new ZQwtCurveMapEditor(true);
 
-                    QObject::connect(pEditor, &ZCurveMapEditor::finished, [=](int result) {
+                    QObject::connect(pEditor, &ZQwtCurveMapEditor::finished, [=](int result) {
                         cbSet.cbEditFinished(QVariant::fromValue(pEditor->curves()));
                     });
 
@@ -363,6 +368,21 @@ namespace zenoui
                     pEditor->addCurves(curves);
                     pEditor->exec();
                 });
+#else
+                QObject::connect(pEditBtn, &ZenoParamPushButton::clicked, [=]() {
+                    ZCurveMapEditor* pEditor = new ZCurveMapEditor(true);
+
+                QObject::connect(pEditor, &ZCurveMapEditor::finished, [=](int result) {
+                    cbSet.cbEditFinished(QVariant::fromValue(pEditor->curves()));
+                });
+
+                pEditor->setAttribute(Qt::WA_DeleteOnClose);
+
+                CURVES_DATA curves = cbSet.cbGetIndexData().value<CURVES_DATA>();
+                pEditor->addCurves(curves);
+                pEditor->exec();
+                });
+#endif
                 pItemWidget = pEditBtn;
                 break;
             }
