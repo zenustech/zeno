@@ -66,7 +66,7 @@ void cornerLoop(zeno::PrimitiveObject* prim, int nx, int ny, std::string &channe
     auto &lb = prim->add_attr<T>("lb"+channel);
     auto &rb = prim->add_attr<T>("rb"+channel);
 #pragma omp parallel for
-    for(size_t tidx = 0; tidx<nx*ny; tidx++)
+    for(auto tidx = 0; tidx<nx*ny; tidx++)
     {
         int i = tidx%nx;
         int j = tidx/nx;
@@ -90,7 +90,7 @@ void cornerLoopSum(zeno::PrimitiveObject* prim, int nx, int ny, std::string &cha
     auto &rb  = prim->attr<T>("rb"+channel);
     auto &res = prim->attr<T>(addChannel);
 #pragma omp parallel for
-    for(size_t tidx = 0; tidx<nx*ny; tidx++)
+    for(auto tidx = 0; tidx<nx*ny; tidx++)
     {
         int i = tidx%nx;
         int j = tidx/nx;
@@ -223,7 +223,7 @@ void sample2D(std::vector<zeno::vec3f> &coord, std::vector<T> &field, std::vecto
               zeno::vec3f bmin, bool isPeriodic) {
     std::vector<T> temp(coord.size());
 #pragma omp parallel for
-    for (size_t tidx = 0; tidx < coord.size(); tidx++) {
+    for (auto tidx = 0; tidx < coord.size(); tidx++) {
         auto uv = coord[tidx];
         zeno::vec3f uv2;
         if (isPeriodic) {
@@ -245,7 +245,7 @@ void sample2D(std::vector<zeno::vec3f> &coord, std::vector<T> &field, std::vecto
         temp[tidx] = lerp<T>(lerp<T>(field[idx00], field[idx01], cx), lerp<T>(field[idx10], field[idx11], cx), cy);
     }
 #pragma omp parallel for
-    for (size_t tidx = 0; tidx < coord.size(); tidx++) {
+    for (auto tidx = 0; tidx < coord.size(); tidx++) {
         primAttr[tidx] = temp[tidx];
     }
 }
