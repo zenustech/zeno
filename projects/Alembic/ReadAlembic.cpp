@@ -1171,6 +1171,43 @@ ZENDEFNODE(PrimsFilterInUserdataPython, {
     {},
     {"alembic"},
 });
+#endif
+
+struct SetPath: INode {
+    void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        int faceset_count = prim->userData().get2<int>("path_count",0);
+        for (auto j = 0; j < faceset_count; j++) {
+            prim->userData().del(zeno::format("path_{}", j));
+        }
+        prim->userData().set2("path_count", 1);
+        auto faceset_name = get_input2<std::string>("pathName");
+        prim->userData().set2("path_0", faceset_name);
+
+        if (prim->tris.size() > 0) {
+            prim->tris.add_attr<int>("path").assign(prim->tris.size(),0);
+        }
+        if (prim->quads.size() > 0) {
+            prim->quads.add_attr<int>("path").assign(prim->quads.size(),0);
+        }
+        if (prim->polys.size() > 0) {
+            prim->polys.add_attr<int>("path").assign(prim->polys.size(),0);
+        }
+        set_output("out", prim);
+    }
+};
+
+ZENDEFNODE(SetPath, {
+    {
+        "prim",
+        {"string", "pathName", "/ABC/your_path"},
+    },
+    {
+        {"out"},
+    },
+    {},
+    {"alembic"},
+});
 
 struct SetFaceset: INode {
     void apply() override {
@@ -1207,7 +1244,6 @@ ZENDEFNODE(SetFaceset, {
     {},
     {"alembic"},
 });
-#endif
 
 
 } // namespace zeno
