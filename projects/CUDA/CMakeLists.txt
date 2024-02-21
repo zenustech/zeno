@@ -36,18 +36,32 @@ if (ZS_PYTHON_FOUND)
 
   add_custom_target(copy_py)
   add_dependencies(zeno copy_py)
-  cmake_path(GET ZS_OVERWRITE_PYTHON_INCLUDE_DIR PARENT_PATH PYTHON_ENV_PATH)
-  cmake_path(GET PYTHON_ENV_PATH PARENT_PATH PYTHON_ENV_PATH)
-  message(STATUS "python3 libraries: ${ZS_OVERWRITE_PYTHON_LIBRARIES}")
-  message(STATUS "python3 include directories: ${ZS_OVERWRITE_PYTHON_INCLUDE_DIR}, parent: ${PYTHON_ENV_PATH}")
   # message(STATUS "retrieved python impl: ${Python3_INTERPRETER_ID}")
-  add_custom_command(
-    TARGET copy_py
-    POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${PYTHON_ENV_PATH}/lib ${RESOURCE_BASE_DIR}/lib
+  message(STATUS "python3 libraries: ${ZS_OVERWRITE_PYTHON_LIBRARIES}")
+  message(STATUS "python3 include directories: ${ZS_OVERWRITE_PYTHON_INCLUDE_DIR}")
+  if (WIN32)
+    cmake_path(GET ZS_OVERWRITE_PYTHON_INCLUDE_DIR PARENT_PATH PYTHON_ENV_PATH)
+    message(STATUS "python3 parent: ${PYTHON_ENV_PATH}")
+    add_custom_command(
+      TARGET copy_py
+      POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_directory ${PYTHON_ENV_PATH}/lib ${RESOURCE_BASE_DIR}/lib
+      COMMAND ${CMAKE_COMMAND} -E copy_directory ${PYTHON_ENV_PATH}/dlls ${RESOURCE_BASE_DIR}/dlls
 
-    COMMENT "copying python lib directory ${PYTHON_ENV_PATH}/lib to ${RESOURCE_BASE_DIR}/lib"
-  )
+      COMMENT "copying python lib directory ${PYTHON_ENV_PATH}/lib to ${RESOURCE_BASE_DIR}/lib"
+    )
+  else()
+    cmake_path(GET ZS_OVERWRITE_PYTHON_INCLUDE_DIR PARENT_PATH PYTHON_ENV_PATH)
+    cmake_path(GET PYTHON_ENV_PATH PARENT_PATH PYTHON_ENV_PATH)
+    message(STATUS "python3 parent: ${PYTHON_ENV_PATH}")
+    add_custom_command(
+      TARGET copy_py
+      POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_directory ${PYTHON_ENV_PATH}/lib ${RESOURCE_BASE_DIR}/lib
+
+      COMMENT "copying python lib directory ${PYTHON_ENV_PATH}/lib to ${RESOURCE_BASE_DIR}/lib"
+    )
+  endif()
 endif(ZS_PYTHON_FOUND)
 
 
