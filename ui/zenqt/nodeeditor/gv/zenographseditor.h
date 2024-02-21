@@ -35,6 +35,9 @@ public:
     void selectTab(const QString& subGraphName, const QString& path, std::vector<QString>& objId);
     ZenoSubGraphView* getCurrentSubGraphView();
 
+    void showWelcomPage();
+    bool welComPageShowed();
+
 public slots:
 	void resetModel();
     void sideButtonToggled(bool bToggled);
@@ -84,6 +87,8 @@ private:
     QItemSelectionModel* m_selection;
     QStandardItemModel* m_sideBarModel;
     int m_searchOpts;
+
+    ZenoWelcomePage* m_pWelcomPage;
 };
 
 

@@ -20,6 +20,7 @@
 #include "groupnode.h"
 #include "viewport/cameracontrol.h"
 #include "model/GraphModel.h"
+#include "zenowelcomepage.h"
 
 
 bool sceneMenuEvent(

@@ -138,6 +138,7 @@ public slots:
     bool openFile(QString filePath);
     bool saveFile(QString filePath);
     bool saveQuit();
+    void saveQuitShowWelcom();
     void save();
     bool saveAs();
     void onMaximumTriggered();

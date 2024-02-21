@@ -81,6 +81,10 @@ void ZenoGraphsEditor::initUI()
     m_ui->graphsViewTab->setCornerWidget(pPageListButton);
     m_ui->graphsViewTab->setDocumentMode(false);
     initRecentFiles();
+
+    m_pWelcomPage = new ZenoWelcomePage(this);
+    m_pWelcomPage->initRecentFiles();
+    m_pWelcomPage->hide();
 }
 
 void ZenoGraphsEditor::initModel()
@@ -132,6 +136,8 @@ void ZenoGraphsEditor::initSignals()
     }
 
     connect(&ZenoSettingsManager::GetInstance(), &ZenoSettingsManager::valueChanged, this, [=](QString zsName) {
+        if (welComPageShowed())
+            return;
         if (zsName == zsSubgraphType)
         {
             int type = ZenoSettingsManager::GetInstance().getValue(zsName).toInt();
@@ -530,6 +536,19 @@ ZenoSubGraphView* ZenoGraphsEditor::getCurrentSubGraphView()
     return nullptr;
 }
 
+void ZenoGraphsEditor::showWelcomPage()
+{
+    m_ui->splitter->replaceWidget(1, m_pWelcomPage);
+    m_ui->splitter->setStretchFactor(1, 5);
+}
+
+bool ZenoGraphsEditor::welComPageShowed()
+{
+    if (ZenoWelcomePage* page = qobject_cast<ZenoWelcomePage*>(m_ui->splitter->widget(1)))
+        return true;
+    return false;
+}
+
 void ZenoGraphsEditor::activateTab(const QStringList& subgpath, const QString& focusNode, bool isError)
 {
     //objpath is a path like /main, /main/aaa or asset name like `PresetMatrial`.
@@ -554,6 +573,8 @@ void ZenoGraphsEditor::activateTab(const QStringList& subgpath, const QString& f
         //pView->initScene(pScene);
 
 
+        if (ZenoWelcomePage* page = qobject_cast<ZenoWelcomePage*>(m_ui->splitter->widget(1)))  //if is welcompage, replace with graphsViewTab
+            m_ui->splitter->replaceWidget(1, m_ui->graphsViewTab);
 
         idx = m_ui->graphsViewTab->addTab(pView, showName);
 
@@ -1108,6 +1129,8 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
     }
     else if (actionType == ZenoMainWindow::ACTION_ZOOM) 
     {
+        if (welComPageShowed())
+            return;
         ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
         if (pView)
         {
