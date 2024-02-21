@@ -2,7 +2,7 @@ find_package(Qt5 REQUIRED COMPONENTS Widgets Svg OpenGL Network)
 
 file(GLOB_RECURSE source CONFIGURE_DEPENDS *.h *.cpp *.ui)
 file(GLOB_RECURSE resource CONFIGURE_DEPENDS *.qrc)
-file(GLOB_RECURSE source_qwt CONFIGURE_DEPENDS ./qwt/include/*.h)
+file(GLOB_RECURSE source_qwt CONFIGURE_DEPENDS qwt/include/*.h)
 qt5_add_big_resources(source ${resource})  # cihou msvc: fatal error C1060: compiler is out of heap space
 
 if (NOT WIN32)
