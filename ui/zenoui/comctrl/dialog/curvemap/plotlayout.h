@@ -2,9 +2,9 @@
 #define PLOTLAYOUT_H
 
 #include <QtWidgets>
-#include <qwt/qwt_plot.h>
-#include <qwt/qwt_plot_curve.h>
-#include <qwt/qwt_plot_marker.h>
+#include <qwt_plot.h>
+#include <qwt_plot_curve.h>
+#include <qwt_plot_marker.h>
 
 class CurveModel;
 struct CURVE_RANGE;

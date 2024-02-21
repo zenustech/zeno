@@ -19,11 +19,7 @@
 #include "util/log.h"
 #include "util/apphelper.h"
 #include <zenomodel/include/curveutil.h>
-#ifdef _WIN32
 #include <zenoui/comctrl/dialog/curvemap/zqwtcurvemapeditor.h>
-#else
-#include <zenoui/comctrl/dialog/curvemap/zcurvemapeditor.h>
-#endif // _WIN32
 #include <zenoui/comctrl/dialog/zenoheatmapeditor.h>
 #include "zenomainwindow.h"
 #include <zenomodel/include/viewparammodel.h>
@@ -1039,7 +1035,6 @@ void ZenoPropPanel::delKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &k
 
 void ZenoPropPanel::editKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &keys) 
 {
-#ifdef _WIN32
     ZQwtCurveMapEditor* pEditor = new ZQwtCurveMapEditor(true);
     connect(pEditor, &ZQwtCurveMapEditor::finished, this, [=](int result) {
         CURVES_DATA newCurves = pEditor->curves();
@@ -1076,44 +1071,6 @@ void ZenoPropPanel::editKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &
     AppHelper::socketEditFinished(newVal, m_idx, ctrl.m_viewIdx);
     updateTimelineKeys(val);
     });
-#else
-    ZCurveMapEditor* pEditor = new ZCurveMapEditor(true);
-    connect(pEditor, &ZCurveMapEditor::finished, this, [=](int result) {
-        CURVES_DATA newCurves = pEditor->curves();
-    CURVES_DATA val;
-    if (ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).canConvert<CURVES_DATA>())
-        val = ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).value<CURVES_DATA>();
-    QVariant newVal;
-    if (!newCurves.isEmpty() || val.size() != keys.size()) {
-        for (const QString& key : keys) {
-            if (newCurves.contains(key))
-                val[key] = newCurves[key];
-            else {
-                val[key] = CURVE_DATA();
-                if (ZVecEditor* lineEdit = qobject_cast<ZVecEditor*>(ctrl.pControl)) {
-                    UI_VECTYPE vec = lineEdit->text();
-                    int idx = key == "x" ? 0 : key == "y" ? 1 : key == "z" ? 2 : 3;
-                    if (vec.size() > idx)
-                        getDelfCurveData(val[key], vec.at(idx), false, key);
-                }
-            }
-        }
-        newVal = QVariant::fromValue(val);
-    }
-    else
-    {
-        if (ZLineEdit* lineEdit = qobject_cast<ZLineEdit*>(ctrl.pControl)) {
-            newVal = QVariant::fromValue(lineEdit->text().toFloat());
-        }
-        else if (ZVecEditor* lineEdit = qobject_cast<ZVecEditor*>(ctrl.pControl)) {
-            newVal = QVariant::fromValue(lineEdit->text());
-        }
-        val = CURVES_DATA();
-    }
-    AppHelper::socketEditFinished(newVal, m_idx, ctrl.m_viewIdx);
-    updateTimelineKeys(val);
-    });
-#endif // _WIN32
     
     CURVES_DATA curves = getCurvesData(ctrl.m_viewIdx, keys);
     if (curves.size() > 1)
