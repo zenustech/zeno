@@ -24,6 +24,33 @@ find_package(Eigen3 REQUIRED)
 set(WHEREAMI_BUILD_SHARED_LIBS ON)
 add_subdirectory(zpc)
 
+if (ZS_PYTHON_FOUND)
+
+  if (DEFINED CMAKE_LIBRARY_OUTPUT_DIRECTORY)
+    set(RESOURCE_BASE_DIR ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+  elseif (DEFINED CMAKE_RUNTIME_OUTPUT_DIRECTORY)
+    set(RESOURCE_BASE_DIR ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+  else()
+    set(RESOURCE_BASE_DIR ${CMAKE_CURRENT_BINARY_DIR})
+  endif()
+
+  add_custom_target(copy_py)
+  add_dependencies(zeno copy_py)
+  cmake_path(GET ZS_OVERWRITE_PYTHON_INCLUDE_DIR PARENT_PATH PYTHON_ENV_PATH)
+  cmake_path(GET PYTHON_ENV_PATH PARENT_PATH PYTHON_ENV_PATH)
+  message(STATUS "python3 libraries: ${ZS_OVERWRITE_PYTHON_LIBRARIES}")
+  message(STATUS "python3 include directories: ${ZS_OVERWRITE_PYTHON_INCLUDE_DIR}, parent: ${PYTHON_ENV_PATH}")
+  # message(STATUS "retrieved python impl: ${Python3_INTERPRETER_ID}")
+  add_custom_command(
+    TARGET copy_py
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${PYTHON_ENV_PATH}/lib ${RESOURCE_BASE_DIR}/lib
+
+    COMMENT "copying python lib directory ${PYTHON_ENV_PATH}/lib to ${RESOURCE_BASE_DIR}/lib"
+  )
+endif(ZS_PYTHON_FOUND)
+
+
 add_library(zshelper INTERFACE)
 target_include_directories(zshelper INTERFACE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
