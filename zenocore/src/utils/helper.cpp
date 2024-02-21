@@ -20,6 +20,7 @@ namespace zeno {
         else if (type == "list") { return Param_List; }
         else if (type == "dict" || type == "DictObject" || type == "DictObject:NumericObject") { return Param_Dict; }
         else if (type == "colorvec3f") { return Param_Vec3f; }
+        else if (starts_with(type, "enum ")) { return Param_String; }
         else return Param_Null;
     }
 
@@ -113,7 +114,7 @@ namespace zeno {
             return zvariant();
         }
         default:
-            return zvariant();
+            return defl;
         }
     }
 
@@ -135,6 +136,10 @@ namespace zeno {
         const std::string& inParam = spInParam->name;
         edge = { outNode, outParam, spLink->fromkey, inNode, inParam, spLink->tokey };
         return edge;
+    }
+
+    std::string generateObjKey(std::shared_ptr<IObject> spObject) {
+        return "";    //TODO
     }
 
     zany strToZAny(std::string const& defl, ParamType const& type) {

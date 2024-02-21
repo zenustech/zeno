@@ -115,6 +115,10 @@ private:
     int m_sliderFeq = 1000 / 24;
     bool bIsCurrent = false;
 
+    std::string m_cbAddObject;
+    std::string m_cbRemoveObj;
+    std::string m_cbViewObj;
+
     std::tuple<int, int, bool> originWindowSizeInfo{-1, -1, false};
 };
 

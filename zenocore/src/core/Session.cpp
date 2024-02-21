@@ -71,6 +71,20 @@ struct ImplNodeClass : INodeClass {
             sparam->name = param_desc.name;
             sparam->m_wpNode = spNode;
             sparam->type = zeno::convertToType(param_desc.type);
+
+            if (starts_with(param_desc.type, "enum ")) {
+                //compatible with old case of combobox items.
+                sparam->type = Param_String;
+                sparam->control = Combobox;
+                std::vector<std::string> items = split_str(param_desc.type, ' ');
+                if (!items.empty()) {
+                    items.erase(items.begin());
+                    ControlProperty props = ControlProperty();
+                    props.items = items;
+                    sparam->optCtrlprops = props;
+                }
+            }
+
             sparam->defl = zeno::str2var(param_desc.defl, sparam->type);
             sparam->socketType = NoSocket;
             spNode->add_input_param(sparam);
@@ -100,6 +114,7 @@ ZENO_API Session::Session()
     , m_userData(std::make_unique<UserData>())
     , mainGraph(std::make_shared<Graph>("main"))
     , assets(std::make_shared<AssetsMgr>())
+    , objsMan(std::make_unique<ObjectManager>())
 {
     initNodeCates();
 }
@@ -151,6 +166,14 @@ ZENO_API void Session::endApiCall()
 ZENO_API bool Session::run_main_graph() {
     mainGraph->runGraph();
     return true;
+}
+
+ZENO_API void Session::set_auto_run(bool bOn) {
+    m_bAutoRun = bOn;
+}
+
+ZENO_API bool Session::is_auto_run() const {
+    return m_bAutoRun;
 }
 
 void Session::initNodeCates() {

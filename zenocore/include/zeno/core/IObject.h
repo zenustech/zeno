@@ -13,6 +13,7 @@ struct UserData;
 struct IObject {
     using polymorphic_base_type = IObject;
 
+    std::string key;
     mutable std::any m_userData;
 
 #ifndef ZENO_APIFREE

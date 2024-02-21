@@ -1191,10 +1191,10 @@ struct CreateSphere : zeno::INode {
         glm::mat4 transform = glm::mat4 (1.0);
         transform = glm::translate(transform, glm::vec3(position[0], position[1], position[2]));
 
-            auto order = get_input2<std::string>("EulerRotationOrder:");
+            auto order = get_input2<std::string>("EulerRotationOrder");
             auto orderTyped = magic_enum::enum_cast<EulerAngle::RotationOrder>(order).value_or(EulerAngle::RotationOrder::YXZ);
 
-            auto measure = get_input2<std::string>("EulerAngleMeasure:");
+            auto measure = get_input2<std::string>("EulerAngleMeasure");
             auto measureTyped = magic_enum::enum_cast<EulerAngle::Measure>(measure).value_or(EulerAngle::Measure::Radians);
 
             glm::vec3 eularAngleXYZ = glm::vec3(rotate[0], rotate[1], rotate[2]);

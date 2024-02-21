@@ -76,7 +76,15 @@ ZENO_API void INode::set_view(bool bOn)
 
     m_bView = bOn;
     CALLBACK_NOTIFY(set_view, m_bView)
+
     graph->viewNodeUpdated(m_name, bOn);
+
+    for (auto const& [name, param] : outputs_)
+    {
+        if (auto spObj = std::dynamic_pointer_cast<IObject>(param->result)) {
+            getSession().objsMan->viewObject(spObj, m_bView);
+        }
+    }
 }
 
 ZENO_API bool INode::is_view() const
@@ -103,19 +111,32 @@ ZENO_API void INode::preApply() {
 
     for (const auto& [name, param] : inputs_) {
         bool ret = requireInput(param);
-        if (ret)
+        if (!ret)
             zeno::log_warn("the param {} may not be initialized", name);
     }
 
     log_debug("==> enter {}", m_name);
     {
+        mark_dirty(false);
 #ifdef ZENO_BENCHMARKING
         Timer _(m_name);
 #endif
         apply();
-        mark_dirty(false);
+        addObjToManager();
     }
     log_debug("==> leave {}", m_name);
+}
+
+void INode::addObjToManager()
+{
+    for (auto const& [name, param] : outputs_)
+    {
+        if (auto spObj = std::dynamic_pointer_cast<IObject>(param->result)) {
+            if (spObj->key.empty())
+                spObj->key = m_name;        //TODO: sync when the name was changed.
+            getSession().objsMan->addObject(spObj->key, spObj, shared_from_this());
+        }
+    }
 }
 
 ZENO_API bool INode::requireInput(std::string const& ds) {
@@ -366,6 +387,7 @@ ZENO_API NodeData INode::exportInfo() const
 }
 
 ZENO_API bool INode::update_param(const std::string& param, const zvariant& new_value) {
+    CORE_API_BATCH
     std::shared_ptr<IParam> spParam = safe_at(inputs_, param, "miss input param `" + param + "` on node `" + m_name + "`");
     if (!zeno::isEqual(spParam->defl, new_value, spParam->type))
     {

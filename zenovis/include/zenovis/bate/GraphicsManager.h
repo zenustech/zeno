@@ -39,6 +39,29 @@ struct GraphicsManager {
         return false;
     }
 
+    bool add_object(std::shared_ptr<zeno::IObject> obj) {
+        if (!obj || obj->key.empty()) return false;
+
+        auto& wtf = graphics.m_curr.m_curr;
+        if (wtf.find(obj->key) == wtf.end()) {
+            zeno::log_debug("load_object: loading graphics [{}]", obj->key);
+            auto ig = makeGraphic(scene, obj.get());
+            zeno::log_debug("load_object: loaded graphics to {}", ig.get());
+            ig->nameid = obj->key;
+            ig->objholder = obj;
+            graphics.m_curr.m_curr.insert(std::make_pair(obj->key, std::move(ig)));
+        }
+        return true;
+    }
+
+    bool remove_object(std::string key) {
+        auto& wtf = graphics.m_curr.m_curr;
+        if (wtf.find(key) == wtf.end())
+            return false;
+        wtf.erase(key);
+        return true;
+    }
+
     bool load_objects(std::vector<std::pair<std::string, std::shared_ptr<zeno::IObject>>> const &objs) {
         auto ins = graphics.insertPass();
         realtime_graphics.clear();

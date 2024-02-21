@@ -531,35 +531,10 @@ void DockContent_Editor::initConnections()
     connect(zenoApp->graphsManager(), &GraphsManager::fileOpened, this, resetAlways);
     connect(zenoApp->graphsManager(), &GraphsManager::modelInited, this, resetAlways);
     connect(pAlways, &QCheckBox::toggled, this, [=](bool checked) {
-        if (checked)
-        {
-            QSettings settings(zsCompanyName, zsEditor);
-            if (!settings.value("zencache-enable").toBool()) {
-                QMessageBox::warning(nullptr, tr("RunLightCamera"), tr("This function can only be used in cache mode."));
-                return;
-            }
-            QVector<DisplayWidget*> views = pMainWin->viewports();
-            for (auto displayWid : views) {
-                if (!displayWid->isGLViewport()) {
-                    displayWid->setRenderSeparately(false, false);
-                }
-            }
-            if (m_btnRun->text() == tr("Run"))
-            {
-                pMainWin->setAlways(true);
-                pMainWin->setAlwaysLightCameraMaterial(false, false);
-            }
-            else {
-                if (m_btnRun->text() == tr("RunLightCamera"))
-                    pMainWin->setAlwaysLightCameraMaterial(true, false);
-                else if (m_btnRun->text() == tr("RunMaterial"))
-                    pMainWin->setAlwaysLightCameraMaterial(false, true);
-                pMainWin->setAlways(false);
-            }
-        }
-        else {
-            pMainWin->setAlways(false);
-            pMainWin->setAlwaysLightCameraMaterial(false, false);
+        auto& sess = zeno::getSession();
+        sess.set_auto_run(checked);
+        if (checked) {
+            sess.run_main_graph();
         }
     });
     connect(m_pEditor, &ZenoGraphsEditor::zoomed, [=](qreal newFactor) {
@@ -583,15 +558,10 @@ void DockContent_Editor::initConnections()
     });
 
     connect(m_btnRun, &ZToolMenuButton::clicked, this, [=]() {
-        auto pGraphsModel = zenoApp->graphsManager()->currentModel();
-        if (!pGraphsModel)
-            return;
+        auto& sess = zeno::getSession();
         m_btnRun->setVisible(false);
         m_btnKill->setVisible(true);
-
-        ZenoMainWindow *pMainWin = zenoApp->getMainWindow();
-        ZASSERT_EXIT(pMainWin);
-        //TODO: Run entrance
+        sess.run_main_graph();
     });
 
     connect(m_btnKill, &ZTextIconButton::clicked, this, [=]() {
