@@ -43,13 +43,30 @@ struct GraphicsManager {
         if (!obj || obj->key.empty()) return false;
 
         auto& wtf = graphics.m_curr.m_curr;
-        if (wtf.find(obj->key) == wtf.end()) {
+        auto it = wtf.find(obj->key);
+        if (it == wtf.end()) {
             zeno::log_debug("load_object: loading graphics [{}]", obj->key);
             auto ig = makeGraphic(scene, obj.get());
+            if (!ig)
+                return false;
             zeno::log_debug("load_object: loaded graphics to {}", ig.get());
             ig->nameid = obj->key;
             ig->objholder = obj;
             graphics.m_curr.m_curr.insert(std::make_pair(obj->key, std::move(ig)));
+        }
+        else {
+            if (it->second->objholder != obj) {
+                auto ig = makeGraphic(scene, obj.get());
+                if (!ig)
+                    return false;
+                ig->nameid = obj->key;
+                ig->objholder = obj;
+                it->second = std::move(ig);
+                return true;
+            }
+            else {
+                return false;
+            }
         }
         return true;
     }

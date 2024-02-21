@@ -176,8 +176,11 @@ ZENO_API DirtyChecker &Graph::getDirtyChecker() {
 }
 
 ZENO_API void Graph::init(const GraphData& graph) {
-    getSession().setApiLevelEnable(false);
-    zeno::scope_exit([]() { getSession().setApiLevelEnable(false); });
+    auto& sess = getSession();
+    sess.setApiLevelEnable(false);
+    zeno::scope_exit([&]() {
+        sess.setApiLevelEnable(true);
+    });
 
     m_name = graph.name;
     //import nodes first.

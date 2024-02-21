@@ -394,6 +394,7 @@ ZENO_API bool INode::update_param(const std::string& param, const zvariant& new_
         zvariant old_value = spParam->defl;
         spParam->defl = new_value;
         CALLBACK_NOTIFY(update_param, m_name, old_value, new_value)
+        mark_dirty(true);
         return true;
     }
     return false;
@@ -504,8 +505,10 @@ ZENO_API void INode::initParams(const NodeData& dat)
 }
 
 ZENO_API bool INode::has_input(std::string const &id) const {
-    return get_input_param(id) != nullptr;
-    //return inputs.find(id) != inputs.end();
+    auto param = get_input_param(id);
+    if (!param)
+        return false;
+    return !param->links.empty();
 }
 
 ZENO_API zany INode::get_input(std::string const &id) const {

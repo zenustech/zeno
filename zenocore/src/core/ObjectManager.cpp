@@ -17,14 +17,16 @@ namespace zeno {
     {
         std::lock_guard lck(g_objsMutex);
         auto it = m_objects.find(id);
-        if (it != m_objects.end()) {
-            it->second.view_node = view_node;
-            return;
+        if (it == m_objects.end()) {
+            _ObjInfo info;
+            info.obj = obj;
+            info.view_node = view_node;
+            m_objects.insert(std::make_pair(id, info));
         }
-        _ObjInfo info;
-        info.obj = obj;
-        info.view_node = view_node;
-        m_objects.insert(std::make_pair(id, info));
+        else {
+            it->second.obj = obj;
+            it->second.view_node = view_node;
+        }
         CALLBACK_NOTIFY(addObject, obj)
     }
 

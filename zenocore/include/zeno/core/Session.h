@@ -70,7 +70,7 @@ private:
     zeno::NodeCates m_cates;
     int m_apiLevel = 0;
     bool m_bApiLevelEnable = true;
-    bool m_bAutoRun = true;
+    bool m_bAutoRun = false;
 };
 
 ZENO_API Session &getSession();
