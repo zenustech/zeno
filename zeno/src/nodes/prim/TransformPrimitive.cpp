@@ -90,7 +90,7 @@ struct TransformPrimitive : zeno::INode {//zhxx happy node
         glm::mat4 pre_mat = glm::mat4(1.0);
         glm::mat4 pre_apply = glm::mat4(1.0);
         glm::mat4 local = glm::mat4(1.0);
-        if (has_input("Matrix"))
+        if (has_input<MatrixObject>("Matrix"))
             pre_mat = std::get<glm::mat4>(get_input<zeno::MatrixObject>("Matrix")->m);
         if (has_input("translation"))
             translate = get_input<zeno::NumericObject>("translation")->get<zeno::vec3f>();
@@ -104,9 +104,9 @@ struct TransformPrimitive : zeno::INode {//zhxx happy node
             shear = get_input<zeno::NumericObject>("shear")->get<zeno::vec3f>();
         if (has_input("offset"))
             offset = get_input<zeno::NumericObject>("offset")->get<zeno::vec3f>();
-        if (has_input("local"))
+        if (has_input<MatrixObject>("local"))
            local = std::get<glm::mat4>(get_input<zeno::MatrixObject>("local")->m);
-        if (has_input("preTransform"))
+        if (has_input<MatrixObject>("preTransform"))
             pre_apply = std::get<glm::mat4>(get_input<zeno::MatrixObject>("preTransform")->m);
 
         glm::mat4 matTrans = glm::translate(glm::vec3(translate[0], translate[1], translate[2]));
@@ -309,7 +309,7 @@ struct PrimitiveTransform : zeno::INode {
         glm::mat4 pre_mat = glm::mat4(1.0);
         glm::mat4 pre_apply = glm::mat4(1.0);
         glm::mat4 local = glm::mat4(1.0);
-        if (has_input("Matrix"))
+        if (has_input<zeno::MatrixObject>("Matrix"))
             pre_mat = std::get<glm::mat4>(get_input<zeno::MatrixObject>("Matrix")->m);
         if (has_input("translation"))
             translate = get_input<zeno::NumericObject>("translation")->get<zeno::vec3f>();
@@ -323,9 +323,9 @@ struct PrimitiveTransform : zeno::INode {
             shear = get_input<zeno::NumericObject>("shear")->get<zeno::vec3f>();
         if (has_input("offset"))
             offset = get_input<zeno::NumericObject>("offset")->get<zeno::vec3f>();
-        if (has_input("local"))
+        if (has_input<zeno::MatrixObject>("local"))
             local = std::get<glm::mat4>(get_input<zeno::MatrixObject>("local")->m);
-        if (has_input("preTransform"))
+        if (has_input<zeno::MatrixObject>("preTransform"))
             pre_apply = std::get<glm::mat4>(get_input<zeno::MatrixObject>("preTransform")->m);
 
         glm::mat4 matTrans = glm::translate(glm::vec3(translate[0], translate[1], translate[2]));
@@ -383,7 +383,7 @@ struct PrimitiveTransform : zeno::INode {
 
 ZENDEFNODE(PrimitiveTransform, {
     {
-        {"PrimitiveObject", "prim"},
+        {"PrimitiveObject", "prim", "", PrimarySocket},
         {"string", "path"},
         {"vec3f", "translation", "0,0,0"},
         {"vec3f", "eulerXYZ", "0,0,0"},

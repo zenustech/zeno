@@ -6,8 +6,8 @@ SocketDescriptor::SocketDescriptor(
         std::string const &type,
         std::string const &name,
         std::string const &defl,
-        ParamControl ctrl,
         SocketType connProp,
+        ParamControl ctrl,
         std::string const &doc)
         : type(type)
         , name(name)

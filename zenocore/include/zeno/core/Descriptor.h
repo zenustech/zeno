@@ -24,8 +24,8 @@ struct SocketDescriptor {
       std::string const &type,
       std::string const &name,
       std::string const &defl = {},
-      ParamControl ctrl = NullControl,
       SocketType connProp = ParamSocket,  //lefacy for zeno.....
+      ParamControl ctrl = NullControl,
       std::string const &doc = {});
   ZENO_API ~SocketDescriptor();
 

@@ -506,9 +506,7 @@ ZENO_API void INode::initParams(const NodeData& dat)
 
 ZENO_API bool INode::has_input(std::string const &id) const {
     auto param = get_input_param(id);
-    if (!param)
-        return false;
-    return !param->links.empty();
+    return param != nullptr;
 }
 
 ZENO_API zany INode::get_input(std::string const &id) const {
