@@ -45,10 +45,14 @@ if (ZS_PYTHON_FOUND)
     add_custom_command(
       TARGET copy_py
       POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy_directory ${PYTHON_ENV_PATH}/lib ${RESOURCE_BASE_DIR}/lib
-      COMMAND ${CMAKE_COMMAND} -E copy_directory ${PYTHON_ENV_PATH}/dlls ${RESOURCE_BASE_DIR}/dlls
+      # COMMAND ${CMAKE_COMMAND} -E copy_directory ${PYTHON_ENV_PATH}/lib ${RESOURCE_BASE_DIR}/lib
+      # COMMAND ${CMAKE_COMMAND} -E copy_directory ${PYTHON_ENV_PATH}/dlls ${RESOURCE_BASE_DIR}/dlls
+      COMMAND ${CMAKE_COMMAND}
+      -DOBJECTS=${PYTHON_ENV_PATH}/lib;${PYTHON_ENV_PATH}/dlls
+      -DOUTPUT=${RESOURCE_BASE_DIR}
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/copy_dir.cmake
 
-      COMMENT "copying python lib directory ${PYTHON_ENV_PATH}/lib to ${RESOURCE_BASE_DIR}/lib"
+      COMMENT "copying python lib directories at ${PYTHON_ENV_PATH} to ${RESOURCE_BASE_DIR}"
     )
   else()
     cmake_path(GET ZS_OVERWRITE_PYTHON_INCLUDE_DIR PARENT_PATH PYTHON_ENV_PATH)
