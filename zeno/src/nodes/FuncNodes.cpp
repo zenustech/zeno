@@ -40,7 +40,7 @@ struct FuncEnd : zeno::ContextManagedNode {
         FuncBegin *fore = nullptr;
         {
             auto [sn, ss] = getinputbound("FUNC");
-            fore = dynamic_cast<FuncBegin *>(graph->nodes.at(sn).get());
+            fore = dynamic_cast<FuncBegin *>(graph->m_nodes.at(sn).get());
             if (!fore) {
                 throw makeError("FuncEnd::FUNC must be conn to FuncBegin::FUNC!");
             }
@@ -106,7 +106,7 @@ struct FuncSimpleEnd : zeno::ContextManagedNode {
         FuncSimpleBegin *fore = nullptr;
         {
             auto [sn, ss] = getinputbound("FUNC");
-            fore = dynamic_cast<FuncSimpleBegin *>(graph->nodes.at(sn).get());
+            fore = dynamic_cast<FuncSimpleBegin *>(graph->m_nodes.at(sn).get());
             if (!fore) {
                 throw makeError("FuncSimpleEnd::FUNC must be conn to FuncSimpleBegin::FUNC!");
             }

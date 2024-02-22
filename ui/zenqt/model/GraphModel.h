@@ -26,11 +26,13 @@ public:
 
     std::string m_cbSetPos;
     std::string m_cbSetView;
+    std::string m_cbMarkDirty;
 
     std::weak_ptr<zeno::INode> m_wpNode;
     ParamsModel* params = nullptr;
     bool bView = false;
     bool bCollasped = false;
+    bool bDirty = false;
 
     //for subgraph, but not include assets:
     std::optional<GraphModel*> optSubgraph;

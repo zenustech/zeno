@@ -64,7 +64,7 @@ namespace zeno {
                 //ref只记录了最终端节点的id，比如上述例子的334fbddf-CreateSphere。
                 //所以，唯有遍历当前Graph的节点，检查是否以ident结尾
                 bool bFound = false;
-                for (auto const& [ident_, inode] : pGraph->nodes) {
+                for (auto const& [ident_, inode] : pGraph->m_nodes) {
                     if (ident_.length() >= ident.length() &&
                         ident_.compare(ident_.length() - ident.length(), ident.length(), ident) == 0) {
                         ident = ident_;
@@ -76,7 +76,7 @@ namespace zeno {
                 if (!bFound)
                     return code;
 
-                auto& pNode = pGraph->nodes[ident];
+                auto& pNode = pGraph->m_nodes[ident];
                 zany input = pNode->resolveInput(param);
 
                 if (zeno::objectIsLiterial<float>(input)) {

@@ -47,10 +47,17 @@ void NodeItem::init(GraphModel* pGraphM, std::shared_ptr<zeno::INode> spNode)
         emit pGraphM->dataChanged(idx, idx, QVector<int>{ ROLE_NODE_ISVIEW });
     });
 
+    m_cbMarkDirty = spNode->register_mark_dirty([=](bool bDirty) {
+        this->bDirty = bDirty;
+        QModelIndex idx = pGraphM->indexFromName(this->name);
+        emit pGraphM->dataChanged(idx, idx, QVector<int>{ ROLE_NODE_DIRTY });
+    });
+
     this->params = new ParamsModel(spNode, this);
     this->name = QString::fromStdString(spNode->get_name());
     this->cls = QString::fromStdString(spNode->get_nodecls());
     this->bView = spNode->is_view();
+    this->bDirty = spNode->is_dirty();
     auto pair = spNode->get_pos();
     this->pos = QPointF(pair.first, pair.second);
     if (std::shared_ptr<zeno::SubnetNode> subnetnode = std::dynamic_pointer_cast<zeno::SubnetNode>(spNode))
@@ -270,6 +277,10 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
         case ROLE_NODE_ISVIEW:
         {
             return item->bView;
+        }
+        case ROLE_NODE_DIRTY:
+        {
+            return item->bDirty;
         }
         case ROLE_NODETYPE:
         {

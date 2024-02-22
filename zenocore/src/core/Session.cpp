@@ -8,6 +8,7 @@
 #include <zeno/core/Graph.h>
 #include <zeno/core/INode.h>
 #include <zeno/core/IParam.h>
+#include <zeno/core/CalcManager.h>
 #include <zeno/utils/safe_at.h>
 #include <zeno/utils/logger.h>
 #include <zeno/utils/string.h>
@@ -115,6 +116,7 @@ ZENO_API Session::Session()
     , mainGraph(std::make_shared<Graph>("main"))
     , assets(std::make_shared<AssetsMgr>())
     , objsMan(std::make_unique<ObjectManager>())
+    , calcMan(std::make_unique<CalcManager>())
 {
     initNodeCates();
 }

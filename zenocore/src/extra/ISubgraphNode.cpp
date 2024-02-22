@@ -21,7 +21,7 @@ ZENO_API void ISubgraphNode::apply() {
     Graph &gra = *grap;
 
     for (auto const &[key, nodename]: gra.getSubInputs()) {
-        auto *node = gra.nodes.at(nodename).get();
+        auto *node = gra.m_nodes.at(nodename).get();
         bool hasValue = has_input(key);
 
         /*
@@ -34,7 +34,7 @@ ZENO_API void ISubgraphNode::apply() {
     }
     gra.runGraph();
     for (auto const &[key, nodename]: gra.getSubOutputs()) {
-        auto *node = gra.nodes.at(nodename).get();
+        auto *node = gra.m_nodes.at(nodename).get();
         //set_output(key, node->outputs.at("_OUT_port"));
     }
 }

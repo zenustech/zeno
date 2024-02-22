@@ -234,7 +234,7 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
 
 ZENO_API void SubnetNode::apply() {
     for (auto const &[key, nodeid]: subgraph->getSubInputs()) {
-        auto subinput = safe_at(subgraph->nodes, nodeid, "node name").get();
+        auto subinput = safe_at(subgraph->m_nodes, nodeid, "node name").get();
         std::shared_ptr<IParam> spParam = get_input_param(key);
         if (spParam) {
             bool ret = subinput->set_output("port", spParam->result);
@@ -256,7 +256,7 @@ ZENO_API void SubnetNode::apply() {
     subgraph->applyNodes(nodesToExec);
 
     for (auto const &[key, nodeid]: subgraph->getSubOutputs()) {
-        auto suboutput = safe_at(subgraph->nodes, nodeid, "node name").get();
+        auto suboutput = safe_at(subgraph->m_nodes, nodeid, "node name").get();
         zany result = suboutput->get_input("port");
         if (result) {
             bool ret = set_output(key, result);

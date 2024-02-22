@@ -39,7 +39,7 @@ struct Context {
 struct Graph : std::enable_shared_from_this<Graph> {
     //SubgraphNode *subgraphNode = nullptr;
 
-    std::map<std::string, std::shared_ptr<INode>> nodes;
+    std::map<std::string, std::shared_ptr<INode>> m_nodes;
     std::set<std::string> nodesToExec;
     int beginFrameNumber = 0, endFrameNumber = 0;  // only use by runnermain.cpp
 
@@ -133,6 +133,7 @@ struct Graph : std::enable_shared_from_this<Graph> {
     std::map<std::string, std::string> getSubInputs();
     std::map<std::string, std::string> getSubOutputs();
     void viewNodeUpdated(const std::string node, bool bView);
+    void markDirtyWhenFrameChanged();
 
 private:
     std::string generateNewName(const std::string& node_cls);
@@ -142,6 +143,10 @@ private:
     std::map<std::string, std::string> subOutputNodes;
 
     std::map<std::string, std::set<std::string>> node_set;
+    std::set<std::string> frame_nodes;      //record all nodes depended on frame num.
+    std::set<std::string> subnet_nodes;
+    std::set<std::string> asset_nodes;
+
     std::set<std::string> m_viewnodes;
     std::string m_name;
     const bool m_bAssets;

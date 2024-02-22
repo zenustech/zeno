@@ -314,6 +314,16 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& topLeft, const QModelIn
         bool bCollasped = idx.data(ROLE_COLLASPED).toBool();
         m_nodes[id]->onCollaspeUpdated(bCollasped);
     }
+    if (role == ROLE_NODE_DIRTY)
+    {
+        QVariant varDataChanged = idx.data(ROLE_NODE_DIRTY);
+        if (varDataChanged.canConvert<bool>())
+        {
+            bool bDirty = varDataChanged.toBool();
+            if (m_nodes.find(id) != m_nodes.end())
+                m_nodes[id]->onMarkDataChanged(bDirty);
+        }
+    }
 #if 0
     if (role == ROLE_PARAMS_NO_DESC)
     {

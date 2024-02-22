@@ -30,6 +30,7 @@ struct GlobalComm;
 struct GlobalStatus;
 struct EventCallbacks;
 struct UserData;
+struct CalcManager;
 
 struct Session {
     std::map<std::string, std::unique_ptr<INodeClass>> nodeClasses;
@@ -40,6 +41,7 @@ struct Session {
     std::unique_ptr<EventCallbacks> const eventCallbacks;
     std::unique_ptr<UserData> const m_userData;
     std::unique_ptr<ObjectManager> const objsMan;
+    std::unique_ptr<CalcManager> const calcMan;
     std::shared_ptr<Graph> mainGraph;
     std::shared_ptr<AssetsMgr> assets;
 

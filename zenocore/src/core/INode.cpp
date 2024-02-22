@@ -95,6 +95,20 @@ ZENO_API bool INode::is_view() const
 ZENO_API void INode::mark_dirty(bool bOn)
 {
     m_dirty = bOn;
+    if (m_dirty) {
+        for (auto& [name, param] : outputs_) {
+            for (auto link : param->links) {
+                auto inParam = link->toparam.lock();
+                assert(inParam);
+                if (inParam) {
+                    auto inNode = inParam->m_wpNode.lock();
+                    assert(inNode);
+                    inNode->mark_dirty(m_dirty);
+                }
+            }
+        }
+    }
+    CALLBACK_NOTIFY(mark_dirty, m_dirty)
 }
 
 ZENO_API bool INode::is_dirty() const
@@ -117,12 +131,12 @@ ZENO_API void INode::preApply() {
 
     log_debug("==> enter {}", m_name);
     {
-        mark_dirty(false);
 #ifdef ZENO_BENCHMARKING
         Timer _(m_name);
 #endif
         apply();
         addObjToManager();
+        mark_dirty(false);
     }
     log_debug("==> leave {}", m_name);
 }
@@ -468,12 +482,14 @@ std::vector<std::pair<std::string, zany>> INode::getoutputs2()
 
 ZENO_API void INode::init(const NodeData& dat)
 {
+    //IO init
     if (!dat.name.empty())
         m_name = dat.name;
 
     m_pos = dat.uipos;
     m_bView = dat.bView;
     initParams(dat);
+    m_dirty = true;
 }
 
 ZENO_API void INode::initParams(const NodeData& dat)

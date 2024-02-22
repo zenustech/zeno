@@ -165,6 +165,9 @@ void ZenoNode::initUI(ZenoSubGraphScene* pScene, const QModelIndex& subGIdx, con
         setColors(false, QColor("#000000"), QColor("#000000"), QColor("#000000"));
     }
 
+    if (m_index.data(ROLE_NODE_DIRTY).toBool())
+        onMarkDataChanged(true);
+
     m_border->setZValue(ZVALUE_NODE_BORDER);
     m_border->hide();
 

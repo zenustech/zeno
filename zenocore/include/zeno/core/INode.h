@@ -72,6 +72,7 @@ public:
     ZENO_API bool is_view() const;
 
     ZENO_API void mark_dirty(bool bOn);
+    CALLBACK_REGIST(mark_dirty, void, bool)
     ZENO_API bool is_dirty() const;
 
     ZENO_API virtual std::vector<std::shared_ptr<IParam>> get_input_params() const;

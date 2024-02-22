@@ -51,6 +51,8 @@
 #include "dialog/zrestartdlg.h"
 #include "dialog/zpreferencesdlg.h"
 #include "model/GraphsTreeModel.h"
+#include <zeno/core/Session.h>
+#include <zeno/core/CalcManager.h>
 
 
 const QString g_latest_layout = "LatestLayout";
@@ -646,10 +648,13 @@ void ZenoMainWindow::initTimelineDock()
     });
 
     connect(m_pTimeline, &ZTimeline::sliderValueChanged, this, [=](int frame) {
+        zeno::getSession().calcMan->mark_frame_change_dirty();
+        /*
         QVector<DisplayWidget*> views = viewports();
         for (DisplayWidget* view : views) {
             view->onSliderValueChanged(frame);
         }
+        */
     });
 
     auto graphs = zenoApp->graphsManager();
