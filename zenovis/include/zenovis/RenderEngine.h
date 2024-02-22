@@ -15,7 +15,9 @@ struct Scene;
 struct RenderEngine {
     virtual void draw() = 0;
     virtual void update() = 0;
-
+    virtual void addObject(std::shared_ptr<zeno::IObject> spObj) {}
+    virtual void removeObject(const std::string& key) {}
+    virtual void viewObject(std::shared_ptr<zeno::IObject> spObj, bool bView) {}
     virtual ~RenderEngine() = default;
 };
 

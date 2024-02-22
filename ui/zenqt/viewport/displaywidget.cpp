@@ -76,10 +76,37 @@ DisplayWidget::DisplayWidget(bool bGLView, QWidget *parent)
     //it seems there is no need to use timer, because optix is seperated from GL and update by a thread.
     m_pTimer = new QTimer(this);
     connect(m_pTimer, SIGNAL(timeout()), this, SLOT(updateFrame()));
+
+    // core -->  ui --> render
+    auto& sess = zeno::getSession();
+    m_cbAddObject = sess.objsMan->register_addObject([&](std::shared_ptr<zeno::IObject> spObj) {
+        auto engine = getZenoVis()->getSession()->get_scene()->renderMan->getEngine();
+        ZASSERT_EXIT(engine);
+        engine->addObject(spObj);
+        updateFrame();
+    });
+
+    m_cbRemoveObj = sess.objsMan->register_removeObject([&](std::string key) {
+        auto engine = getZenoVis()->getSession()->get_scene()->renderMan->getEngine();
+        ZASSERT_EXIT(engine);
+        engine->removeObject(key);
+        updateFrame();
+    });
+
+    m_cbViewObj = sess.objsMan->register_viewObject([&](std::shared_ptr<zeno::IObject> spObj, bool bView) {
+        auto engine = getZenoVis()->getSession()->get_scene()->renderMan->getEngine();
+        ZASSERT_EXIT(engine);
+        engine->viewObject(spObj, bView);
+        updateFrame();
+    });
 }
 
 DisplayWidget::~DisplayWidget()
 {
+    auto& sess = zeno::getSession();
+    sess.objsMan->unregister_addObject(m_cbAddObject);
+    sess.objsMan->unregister_removeObject(m_cbRemoveObj);
+    sess.objsMan->unregister_viewObject(m_cbViewObj);
 }
 
 void DisplayWidget::initRecordMgr()

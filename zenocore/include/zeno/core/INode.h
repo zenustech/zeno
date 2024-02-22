@@ -109,6 +109,7 @@ protected:
 
 private:
     zany process(std::shared_ptr<IParam> in_param);
+    void addObjToManager();
     float resolve(const std::string& formulaOrKFrame, const ParamType type);
     template<class T, class E> zany resolveVec(const zvariant& defl, const ParamType type);
 

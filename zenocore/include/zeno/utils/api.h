@@ -38,4 +38,4 @@
 
 #define CORE_API_BATCH \
     getSession().beginApiCall();\
-    zeno::scope_exit([](){ getSession().endApiCall(); });
+    zeno::scope_exit scope([](){ getSession().endApiCall(); });

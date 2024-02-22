@@ -4,6 +4,7 @@
 #include <zeno/core/Descriptor.h>
 #include <zeno/core/data.h>
 #include <zeno/core/Assets.h>
+#include <zeno/core/ObjectManager.h>
 #include <memory>
 #include <string>
 #include <map>
@@ -38,6 +39,7 @@ struct Session {
     std::unique_ptr<GlobalStatus> const globalStatus;
     std::unique_ptr<EventCallbacks> const eventCallbacks;
     std::unique_ptr<UserData> const m_userData;
+    std::unique_ptr<ObjectManager> const objsMan;
     std::shared_ptr<Graph> mainGraph;
     std::shared_ptr<AssetsMgr> assets;
 
@@ -52,6 +54,8 @@ struct Session {
     ZENO_API UserData &userData() const;
     ZENO_API std::shared_ptr<Graph> createGraph(const std::string& name);
     ZENO_API bool run_main_graph();
+    ZENO_API void set_auto_run(bool bOn);
+    ZENO_API bool is_auto_run() const;
     ZENO_API std::string dumpDescriptors() const;
     ZENO_API std::string dumpDescriptorsJSON() const;
     ZENO_API zeno::NodeCates dumpCoreCates();
@@ -66,7 +70,7 @@ private:
     zeno::NodeCates m_cates;
     int m_apiLevel = 0;
     bool m_bApiLevelEnable = true;
-    bool m_bAutoRun = true;
+    bool m_bAutoRun = false;
 };
 
 ZENO_API Session &getSession();
