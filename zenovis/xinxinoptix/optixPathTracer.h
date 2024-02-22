@@ -244,6 +244,12 @@ struct Params
     bool show_background  :1;
 
     bool denoise : 1;
+
+    float physical_camera_aperture;
+    float physical_camera_shutter_speed;
+    float physical_camera_iso;
+    bool  physical_camera_aces;
+    bool  physical_camera_exposure;
 };
 
 

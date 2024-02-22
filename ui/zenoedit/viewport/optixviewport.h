@@ -3,6 +3,7 @@
 
 #include <QtWidgets>
 #include "recordvideomgr.h"
+#include "zenovis/Camera.h"
 #include <zenomodel/include/modeldata.h>
 
 class Zenovis;
@@ -42,6 +43,8 @@ public slots:
     void onUpdateCameraProp(float aperture, float disPlane, UI_VECTYPE skipParam = UI_VECTYPE());
     void onCleanUpScene();
 
+    void onSetData(float, float, float, bool, bool);
+
 private:
     Zenovis *m_zenoVis;
     QImage m_renderImg;
@@ -80,6 +83,9 @@ public:
     void modifyLightData(UI_VECTYPE pos, UI_VECTYPE scale, UI_VECTYPE rotate, UI_VECTYPE color, float intensity, QString name, UI_VECTYPE skipParam);
     void cleanUpScene();
 
+    zenovis::ZOptixCameraSettingInfo getdata_from_optix_thread();
+    void setdata_on_optix_thread(zenovis::ZOptixCameraSettingInfo value);
+
 signals:
     void cameraAboutToRefresh();
     void stopRenderOptix();
@@ -99,6 +105,8 @@ signals:
     void sig_modifyLightData(UI_VECTYPE pos, UI_VECTYPE scale, UI_VECTYPE rotate, UI_VECTYPE color, float intensity, QString name, UI_VECTYPE skipParam);
     void sig_updateCameraProp(float aperture, float disPlane, UI_VECTYPE skipParam = UI_VECTYPE());
     void sig_cleanUpScene();
+
+    void sig_setdata_on_optix_thread(float, float, float, bool, bool);
 
 public slots:
     void onFrameRunFinished(int frame);

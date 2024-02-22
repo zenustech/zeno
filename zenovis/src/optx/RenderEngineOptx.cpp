@@ -1007,6 +1007,13 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             xinxinoptix::set_perspective(glm::value_ptr(lodright), glm::value_ptr(lodup),
                                         glm::value_ptr(cam.m_lodfront), glm::value_ptr(cam.m_lodcenter),
                                         cam.getAspect(), cam.m_fov, cam.focalPlaneDistance, cam.m_aperture);
+            xinxinoptix::set_physical_camera_param(
+                cam.zOptixCameraSettingInfo.aperture,
+                cam.zOptixCameraSettingInfo.shutter_speed,
+                cam.zOptixCameraSettingInfo.iso,
+                cam.zOptixCameraSettingInfo.aces,
+                cam.zOptixCameraSettingInfo.exposure
+            );
         }
 
         if (meshNeedUpdate || matNeedUpdate || staticNeedUpdate) {
