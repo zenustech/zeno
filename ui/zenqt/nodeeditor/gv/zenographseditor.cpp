@@ -538,6 +538,11 @@ ZenoSubGraphView* ZenoGraphsEditor::getCurrentSubGraphView()
 
 void ZenoGraphsEditor::showWelcomPage()
 {
+    for (int i = 0; i < m_ui->graphsViewTab->count(); i++)
+    {
+        delete m_ui->graphsViewTab->widget(i);
+        m_ui->graphsViewTab->removeTab(i);
+    }
     m_ui->splitter->replaceWidget(1, m_pWelcomPage);
     m_ui->splitter->setStretchFactor(1, 5);
 }

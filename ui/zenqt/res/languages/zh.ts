@@ -2427,6 +2427,44 @@
     </message>
 </context>
 <context>
+    <name>NewAssetDlg</name>
+	<message>
+        <source>name</source>
+        <translation>资产名</translation>
+    </message>
+	<message>
+        <source>version</source>
+        <translation>版本</translation>
+    </message>
+	<message>
+        <source>save path</source>
+        <translation>保存路径</translation>
+    </message>
+</context>
+<context>
+    <name>ZNewAssetDlg</name>
+    <message>
+        <source>asset file already exists.</source>
+        <translation>资产文件已存在</translation>
+    </message>
+	<message>
+        <source>New Asset</source>
+        <translation>新建资产</translation>
+    </message>
+	<message>
+        <source>asset file %1 already exists.</source>
+        <translation>资产文件 %1 已存在</translation>
+    </message>
+	<message>
+        <source>the asset name cannot be empty</source>
+        <translation>资产名不能为空</translation>
+    </message>
+		<message>
+        <source>the asset with name %1 has existed, please change another name</source>
+        <translation>资产名 %1 已存在</translation>
+    </message>
+</context>
+<context>
     <name>ZenoGraphsEditor</name>
     <message>
         <source>Node</source>
