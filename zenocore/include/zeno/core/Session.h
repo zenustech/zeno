@@ -65,6 +65,7 @@ struct Session {
     ZENO_API void setApiLevelEnable(bool bEnable);
     ZENO_API void beginApiCall();
     ZENO_API void endApiCall();
+    ZENO_API void switchToFrame(int frameid);
 
 private:
     void initNodeCates();

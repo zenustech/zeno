@@ -53,6 +53,7 @@
 #include "model/GraphsTreeModel.h"
 #include <zeno/core/Session.h>
 #include <zeno/core/CalcManager.h>
+#include <zeno/utils/api.h>
 
 
 const QString g_latest_layout = "LatestLayout";
@@ -648,7 +649,8 @@ void ZenoMainWindow::initTimelineDock()
     });
 
     connect(m_pTimeline, &ZTimeline::sliderValueChanged, this, [=](int frame) {
-        zeno::getSession().calcMan->mark_frame_change_dirty();
+        auto& sess = zeno::getSession();
+        sess.switchToFrame(frame);
         /*
         QVector<DisplayWidget*> views = viewports();
         for (DisplayWidget* view : views) {

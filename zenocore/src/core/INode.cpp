@@ -123,6 +123,7 @@ ZENO_API void INode::preApply() {
     if (!m_dirty)
         return;
 
+    //TODO: the param order should be arranged by the descriptors.
     for (const auto& [name, param] : inputs_) {
         bool ret = requireInput(param);
         if (!ret)
@@ -148,6 +149,9 @@ void INode::addObjToManager()
         if (auto spObj = std::dynamic_pointer_cast<IObject>(param->result)) {
             if (spObj->key.empty())
                 spObj->key = m_name;        //TODO: sync when the name was changed.
+            if (std::dynamic_pointer_cast<NumericObject>(spObj)) {
+                return;
+            }
             getSession().objsMan->addObject(spObj->key, spObj, shared_from_this());
         }
     }

@@ -165,6 +165,13 @@ ZENO_API void Session::endApiCall()
     }
 }
 
+ZENO_API void Session::switchToFrame(int frameid)
+{
+    CORE_API_BATCH
+    calcMan->mark_frame_change_dirty();
+    globalState->frameid = frameid;
+}
+
 ZENO_API bool Session::run_main_graph() {
     mainGraph->runGraph();
     return true;
