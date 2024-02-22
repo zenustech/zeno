@@ -231,7 +231,7 @@ void ZenoMainWindow::onMenuActionTriggered(bool bTriggered)
         break;
     }
     case ACTION_CLOSE: {
-        saveQuit();
+        saveQuitShowWelcom();
         break;
     }
     case ACTION_SAVE_LAYOUT: {
@@ -1675,6 +1675,20 @@ bool ZenoMainWindow::saveQuit() {
     //clear timeline info.
     resetTimeline(zeno::TimelineInfo());
     return true;
+}
+
+void ZenoMainWindow::saveQuitShowWelcom()
+{
+    saveQuit();
+    auto docks = findChildren<ZDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
+    for (ZDockWidget* pDock : docks)
+        if (pDock->isVisible())
+            if (ZDockTabWidget* tabwidget = qobject_cast<ZDockTabWidget*>(pDock->widget()))
+                for (int i = 0; i < tabwidget->count(); i++)
+                    if (DockContent_Editor* pEditor = qobject_cast<DockContent_Editor*>(tabwidget->widget(i)))
+                        if (ZenoGraphsEditor* editor = pEditor->getEditor())
+                            editor->showWelcomPage();
+
 }
 
 void ZenoMainWindow::save()

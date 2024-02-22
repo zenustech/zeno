@@ -447,37 +447,53 @@ void DockContent_Editor::initConnections()
     });
     connect(pSearchBtn, &ZToolBarButton::toggled, this, [=](bool isShow) 
     { 
+        if (m_pEditor->welComPageShowed())
+            return;
         m_pEditor->onSubnetListPanel(isShow, ZenoGraphsEditor::Side_Search); 
         pTreeView->setChecked(false);
         pListView->setChecked(false);
     });
     connect(pFold, &ZToolBarButton::clicked, this, [=]() {
+        if (m_pEditor->welComPageShowed())
+            return;
         QAction act("Collaspe");
         act.setProperty("ActionType", ZenoMainWindow::ACTION_COLLASPE);
         m_pEditor->onAction(&act);
     });
     connect(pUnfold, &ZToolBarButton::clicked, this, [=]() {
+        if (m_pEditor->welComPageShowed())
+            return;
         QAction act("Expand");
         act.setProperty("ActionType", ZenoMainWindow::ACTION_EXPAND);
         m_pEditor->onAction(&act);
     });
     connect(pCustomParam, &ZToolBarButton::clicked, this, [=]() {
+        if (m_pEditor->welComPageShowed())
+            return;
         QAction act("CustomUI");
         act.setProperty("ActionType", ZenoMainWindow::ACTION_CUSTOM_UI);
         m_pEditor->onAction(&act);
     });
     connect(pGroup, &ZToolBarButton::clicked, this, [=]() {
+        if (m_pEditor->welComPageShowed())
+            return;
         QAction act;
         act.setProperty("ActionType", ZenoMainWindow::ACTION_GROUP);
         m_pEditor->onAction(&act);
     });
     connect(pSnapGrid, &ZToolBarButton::toggled, this, [=](bool bChecked) {
+        if (m_pEditor->welComPageShowed())
+            return;
         ZenoSettingsManager::GetInstance().setValue(zsSnapGrid, bChecked);
     });
     connect(pShowGrid, &ZToolBarButton::toggled, this, [=](bool bChecked) {
+        if (m_pEditor->welComPageShowed())
+            return;
         ZenoSettingsManager::GetInstance().setValue(zsShowGrid, bChecked);
     });
     connect(pLinkLineShape, &ZToolBarButton::toggled, this, [=](bool bChecked) {
+        if (m_pEditor->welComPageShowed())
+            return;
         ZenoSettingsManager::GetInstance().setValue(zsLinkLineShape, bChecked);
     });
     if (pTestApi) {
@@ -531,6 +547,8 @@ void DockContent_Editor::initConnections()
     connect(zenoApp->graphsManager(), &GraphsManager::fileOpened, this, resetAlways);
     connect(zenoApp->graphsManager(), &GraphsManager::modelInited, this, resetAlways);
     connect(pAlways, &QCheckBox::toggled, this, [=](bool checked) {
+        if (m_pEditor->welComPageShowed())
+            return;
         if (checked)
         {
             QSettings settings(zsCompanyName, zsEditor);
@@ -583,6 +601,8 @@ void DockContent_Editor::initConnections()
     });
 
     connect(m_btnRun, &ZToolMenuButton::clicked, this, [=]() {
+        if (m_pEditor->welComPageShowed())
+            return;
         auto pGraphsModel = zenoApp->graphsManager()->currentModel();
         if (!pGraphsModel)
             return;
