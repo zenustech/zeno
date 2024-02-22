@@ -97,6 +97,8 @@ extern "C" __global__ void __raygen__rg()
     float3 tmp_albedo{};
     float3 tmp_normal{};
     unsigned int sobolseed = subframe_index;
+    float3 mask_value = make_float3( 0.0f );
+
     do{
         // The center of each pixel is at fraction (0.5,0.5)
         float2 subpixel_jitter = sobolRnd(sobolseed);
@@ -180,6 +182,7 @@ extern "C" __global__ void __raygen__rg()
         prd.origin = ray_origin;
         prd.direction = ray_direction;
         prd.samplePdf = 1.0f;
+        prd.mask_value = make_float3( 0.0f );
 
         prd.depth = 0;
         prd.diffDepth = 0;
@@ -204,6 +207,8 @@ extern "C" __global__ void __raygen__rg()
         unsigned char background_trace = 0;
         prd.alphaHit = false;
         traceRadiance(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_);
+        mask_value = prd.mask_value;
+
         auto primary_hit_type = prd.hit_type;
         background_trace = primary_hit_type;
 
@@ -344,6 +349,7 @@ extern "C" __global__ void __raygen__rg()
     params.frame_buffer_S[ image_index ] = accum_color_s;
     params.frame_buffer_T[ image_index ] = accum_color_t;
     params.frame_buffer_B[ image_index ] = accum_color_b;
+    params.frame_buffer_M[ image_index ] = mask_value;
 
     if (params.denoise) {
         params.albedo_buffer[ image_index ] = tmp_albedo;
