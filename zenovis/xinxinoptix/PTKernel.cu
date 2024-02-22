@@ -362,10 +362,17 @@ extern "C" __global__ void __raygen__rg()
     params.accum_buffer_T[ image_index ] = make_float4( accum_color_t, 1.0f);
     params.accum_buffer_B[ image_index ] = make_float4( accum_color_b, 1.0f);
     //vec3 aecs_fitted = ACESFitted(vec3(accum_color), 2.2);
-    vec3 rgb_mapped = PhysicalCamera(vec3(accum_color));
-    vec3 d_mapped = PhysicalCamera(vec3(accum_color_d));
-    vec3 s_mapped = PhysicalCamera(vec3(accum_color_s));
-    vec3 t_mapped = PhysicalCamera(vec3(accum_color_t));
+    aperture      = aperture < 0.0001 ? params.physical_camera_aperture: aperture;
+    float shutter_speed = params.physical_camera_shutter_speed;
+    float iso           = params.physical_camera_iso;
+    float aces          = params.physical_camera_aces;
+    float exposure      = params.physical_camera_exposure;
+    float midGray       = 0.18f;
+
+    vec3 rgb_mapped = PhysicalCamera(vec3(accum_color), aperture, shutter_speed, iso, midGray, exposure, aces);
+    vec3 d_mapped = PhysicalCamera(vec3(accum_color_d), aperture, shutter_speed, iso, midGray, exposure, aces);
+    vec3 s_mapped = PhysicalCamera(vec3(accum_color_s), aperture, shutter_speed, iso, midGray, exposure, aces);
+    vec3 t_mapped = PhysicalCamera(vec3(accum_color_t), aperture, shutter_speed, iso, midGray, exposure, aces);
 
 
     float3 out_color = rgb_mapped;

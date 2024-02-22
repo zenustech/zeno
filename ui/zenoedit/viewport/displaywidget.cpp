@@ -763,6 +763,21 @@ void DisplayWidget::onMouseHoverMoved()
 #endif
 }
 
+void DisplayWidget::onSetCamera(zenovis::ZOptixCameraSettingInfo value)
+{
+    if (!m_bGLView) {
+        m_optixView->setdata_on_optix_thread(value);
+    }
+}
+
+zenovis::ZOptixCameraSettingInfo DisplayWidget::getCamera() const
+{
+    if (!m_bGLView) {
+        return m_optixView->getdata_from_optix_thread();
+    }
+    return zenovis::ZOptixCameraSettingInfo{};
+}
+
 void DisplayWidget::onDockViewAction(bool triggered)
 {
     QAction* action = qobject_cast<QAction*>(sender());

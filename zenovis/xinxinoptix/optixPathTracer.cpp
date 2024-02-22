@@ -3773,6 +3773,13 @@ void set_window_size(int nx, int ny) {
     resize_dirty = true;
 }
 
+void set_physical_camera_param(float aperture, float shutter_speed, float iso, bool aces, bool exposure) {
+    state.params.physical_camera_aperture = aperture;
+    state.params.physical_camera_shutter_speed = shutter_speed;
+    state.params.physical_camera_iso = iso;
+    state.params.physical_camera_aces = aces;
+    state.params.physical_camera_exposure = exposure;
+}
 void set_perspective(float const *U, float const *V, float const *W, float const *E, float aspect, float fov, float fpd, float aperture) {
     set_perspective_by_fov(U,V,W,E,aspect,fov,0,0.024f,fpd,aperture,0.0f,0.0f,0.0f,0.0f);
 }
