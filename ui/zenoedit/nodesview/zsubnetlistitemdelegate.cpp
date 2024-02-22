@@ -232,10 +232,8 @@ void ZSubnetListItemDelegate::onSaveSubgraph(const QModelIndex& index)
     }
 }
 
-QModelIndexList ZSubnetListItemDelegate::getSubgraphs(const QModelIndex& subgIdx)
+void ZSubnetListItemDelegate::getSubgraphs(const QModelIndex& subgIdx, QModelIndexList& subgraphs)
 {
-    QModelIndexList subgraphs;
-    subgraphs << subgIdx;
     int count = m_model->itemCount(subgIdx);
     for (int i = 0; i < count; i++)
     {
@@ -246,12 +244,10 @@ QModelIndexList ZSubnetListItemDelegate::getSubgraphs(const QModelIndex& subgIdx
         const QModelIndex& modelIdx = m_model->index(subgName);
         if (modelIdx.isValid() && !subgraphs.contains(modelIdx))
         {
-            const QModelIndexList &lst = getSubgraphs(modelIdx);
-            if (!lst.isEmpty())
-                subgraphs << lst;
+            getSubgraphs(modelIdx, subgraphs);
         }
     }
-    return subgraphs;
+    subgraphs << subgIdx;
 }
 
 QWidget* ZSubnetListItemDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const

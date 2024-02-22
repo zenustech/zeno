@@ -521,7 +521,11 @@ static inline void SphericalRectInit(SphericalRect& srect,
 static inline float2 SphericalRectSample(SphericalRect& srect, float u, float v) {
     // 1. compute ’cu’
     float au = u * srect.S + srect.k;
-    float fu = (cosf(au) * srect.b0 - srect.b1) / sinf(au);
+    if(abs(sinf(au))<1e-5)
+    {
+      return {0, 0};
+    }
+    float fu = (cosf(au) * srect.b0 - srect.b1) / sinf(au) ;
     float cu = (fu>0 ? +1.f:-1.f) /sqrtf(fu*fu + srect.b0sq);
     cu = clamp(cu, -1.0f, 1.0f); // avoid NaNs
     // 2. compute ’xu’
@@ -537,7 +541,7 @@ static inline float2 SphericalRectSample(SphericalRect& srect, float u, float v)
     //return (squad.o + xu*squad.x + yv*squad.y + squad.z0*squad.z);
 
     return { (xu-srect.x0) / (srect.x1 - srect.x0),
-             (yv-srect.y0) / (srect.y1 - srect.y0) }; 
+             (yv-srect.y0) / (srect.y1 - srect.y0) };
 }
 
 static inline bool SpreadClampRect(float3& v,

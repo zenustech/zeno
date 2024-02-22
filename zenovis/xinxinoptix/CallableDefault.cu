@@ -23,13 +23,18 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     auto att_instClr = attrs.instClr;
     auto att_instTang = attrs.instTang;
     auto att_rayLength = attrs.rayLength;
-    auto att_NoL      = attrs.NoL;
-    auto att_LoV      = attrs.LoV;
-    auto att_N        = attrs.N;
-    auto att_T        = attrs.T;
-    auto att_L        = attrs.L;
-    auto att_V        = attrs.V;
-    auto att_H        = attrs.H;
+
+    vec3 b = normalize(cross(attrs.T, attrs.N));
+    vec3 t = normalize(cross(attrs.N, b));
+    vec3 n = normalize(attrs.N);
+
+    auto att_N        = vec3(0.0f,0.0f,1.0f);
+    auto att_T        = vec3(1.0f,0.0f,0.0f);
+    auto att_L        = normalize(vec3(dot(t, attrs.L), dot(b, attrs.L), dot(n, attrs.L)));
+    auto att_V        = normalize(vec3(dot(t, attrs.V), dot(b, attrs.V), dot(n, attrs.V)));
+    auto att_H        = vec3(0.0f,0.0f,1.0f);
+    auto att_NoL      = att_L.z;
+    auto att_LoV      = dot(att_L, att_V);
     auto att_reflectance = attrs.reflectance;
     auto att_fresnel  = attrs.fresnel;
 
@@ -71,6 +76,9 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     vec3 mat_transScatterColor = vec3(1.0f,1.0f,1.0f);
     float mat_ior = 1.0f;
 
+    float mat_diffraction = 0.0f;
+    vec3  mat_diffractColor = vec3(0.0f);
+
     float mat_flatness = 0.0f;
     float mat_thin = 0.0f;
     float mat_doubleSide= 0.0f;
@@ -82,9 +90,11 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     float mat_shadowReceiver = 0.0f;
     float mat_NoL = 1.0f;
     float mat_LoV = 1.0f;
+    float mat_isHair = 0.0f;
     vec3 mat_reflectance = att_reflectance;
     
     bool sssFxiedRadius = false;
+    vec3 mask_value = vec3(0, 0, 0);
 
     //GENERATED_END_MARK
     /** generated code here end **/
@@ -124,6 +134,9 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     vec3 mat_transScatterColor = vec3(1.0f,1.0f,1.0f);
     float mat_ior = 1.0f;
 
+    float mat_diffraction = 0.0f;
+    vec3  mat_diffractColor = vec3(0.0f);
+
     float mat_flatness = 0.0f;
     float mat_thin = 0.0f;
     float mat_doubleSide= 0.0f;
@@ -135,9 +148,11 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     float mat_shadowReceiver = 0.0f;
     float mat_NoL = 1.0f;
     float mat_LoV = 1.0f;
+    float mat_isHair = 0.0f;
     vec3 mat_reflectance = att_reflectance;
     
     bool sssFxiedRadius = false;
+    vec3 mask_value = vec3(0, 0, 0);
 
 #endif // _FALLBACK_
 
@@ -161,7 +176,7 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     mats.sheen = mat_sheen;
     mats.sheenTint = mat_sheenTint;
 
-    mats.clearcoat = clamp(mat_clearcoat, 0.0f, 1.0f);
+    mats.clearcoat = max(mat_clearcoat, 0.0f);
     mats.clearcoatColor = mat_clearcoatColor;
     mats.clearcoatRoughness = clamp(mat_clearcoatRoughness, 0.01, 0.99);
     mats.clearcoatIOR = mat_clearcoatIOR;
@@ -174,6 +189,9 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     mats.transScatterColor = mat_transScatterColor;
     mats.ior = max(0.0f,mat_ior);
 
+    mats.diffraction = clamp(mat_diffraction, 0.0f, 1.0f);
+    mats.diffractColor = clamp(mat_diffractColor, vec3(0.0f), vec3(1.0f));
+
     mats.opacity = mat_opacity;
     mats.nrm = mat_normal;
     mats.emission = mat_emissionIntensity * mat_emission;
@@ -185,6 +203,8 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
 
     mats.smoothness = mat_smoothness;
     mats.sssFxiedRadius = sssFxiedRadius;
+    mats.mask_value = mask_value;
+    mats.isHair = mat_isHair;
 
     return mats;
 }

@@ -14,14 +14,18 @@
 class IOBreakingScope
 {
 public:
-    IOBreakingScope(IGraphsModel* model) : m_model(model) {
-        if (m_model)
+    IOBreakingScope(IGraphsModel* model, bool bImporting = false) : m_model(model) {
+        if (m_model) {
             m_model->setIOProcessing(true);
+            //m_model->setIOImporting(bImporting);
+    }
     }
 
     ~IOBreakingScope() {
-        if (m_model)
+        if (m_model) {
             m_model->setIOProcessing(false);
+            //m_model->setIOImporting(false);
+    }
     }
 
 private:

@@ -5,7 +5,7 @@
 #include <zenomodel/include/api.h>
 #include <zenomodel/include/igraphsmodel.h>
 #include <zenomodel/include/graphsmanagment.h>
-#include "json.hpp"
+#include "tinygltf/json.hpp"
 
 using Path = std::filesystem::path;
 using Json = nlohmann::json;

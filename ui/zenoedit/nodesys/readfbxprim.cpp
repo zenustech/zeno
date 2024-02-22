@@ -20,7 +20,7 @@
 #include <sstream>
 #include <string>
 
-#include "json.hpp"
+#include "tinygltf/json.hpp"
 
 using Path = std::filesystem::path;
 using Json = nlohmann::json;

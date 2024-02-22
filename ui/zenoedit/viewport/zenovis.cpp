@@ -39,6 +39,12 @@ void Zenovis::initializeGL()
 
 void Zenovis::paintGL()
 {
+    {
+        auto& inst = ZenoSettingsManager::GetInstance();
+        QVariant varViewportPointSizeScale = inst.getValue(zsViewportPointSizeScale);
+        double viewportPointSizeScale = varViewportPointSizeScale.isValid() ? varViewportPointSizeScale.toDouble() : 1;
+        session->set_viewport_point_size_scale(viewportPointSizeScale);
+    }
     int frameid = session->get_curr_frameid();
     doFrameUpdate();
     session->new_frame();

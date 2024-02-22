@@ -2070,7 +2070,7 @@ ZENDEFNODE(Primcluster,
             "prim",
         }, /* params: */ {
         }, /* category: */ {
-            "erode",
+            "deprecated",
         } });
 
 } // namespace
