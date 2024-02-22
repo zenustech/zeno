@@ -1353,7 +1353,7 @@ struct PointFuse : INode {
             bvh.iter_neighbors(p, [&](int vj) {
                 if (vi == vj)
                     return;
-                if (auto d2 = lengthSquared(pos[vi] - pos[vj]); d2 < dist2)
+                if (auto d2 = lengthSquared(pos[vi] - pos[vj]); d2 <= dist2)
                     neighbors[vi].push_back(vj);
             });
         });
@@ -1410,14 +1410,29 @@ struct PointFuse : INode {
         pol(newPos, [](zeno::vec3f &p) { p = vec3f(0, 0, 0); });
         std::vector<int> cnts(numNewVerts);
         // init for min/max attribs
-        for (const auto &minAttrib : minAttribs) {
-            if (verts.has_attr(minAttrib)) 
-                match([&k = minAttrib, &newVerts](auto &vertArr) -> std::enable_if_t<
+        for (const auto &aveAttrib : aveAttribs) {
+            if (newVerts.has_attr(aveAttrib)) 
+                match([](auto &vertArr) -> std::enable_if_t<
                                         variant_contains<RM_CVREF_T(vertArr[0]), AttrAcceptAll>::value> {
                     using T = RM_CVREF_T(vertArr[0]);
-                    auto newVertAttribs = newVerts.attr<T>(k);
+                    std::memset(vertArr.data(), 0, sizeof(T) * vertArr.size());
+                }, [](...) {})(newVerts.attr(aveAttrib));
+        }
+        for (const auto &sumAttrib : sumAttribs) {
+            if (newVerts.has_attr(sumAttrib)) 
+                match([](auto &vertArr) -> std::enable_if_t<
+                                        variant_contains<RM_CVREF_T(vertArr[0]), AttrAcceptAll>::value> {
+                    using T = RM_CVREF_T(vertArr[0]);
+                    std::memset(vertArr.data(), 0, sizeof(T) * vertArr.size());
+                }, [](...) {})(newVerts.attr(sumAttrib));
+        }
+        for (const auto &minAttrib : minAttribs) {
+            if (newVerts.has_attr(minAttrib)) 
+                match([](auto &vertArr) -> std::enable_if_t<
+                                        variant_contains<RM_CVREF_T(vertArr[0]), AttrAcceptAll>::value> {
+                    using T = RM_CVREF_T(vertArr[0]);
                     if constexpr (std::is_arithmetic_v<T>) {
-                        std::fill(std::begin(newVertAttribs), std::end(newVertAttribs), std::numeric_limits<T>::max());
+                        std::fill(std::begin(vertArr), std::end(vertArr), std::numeric_limits<T>::max());
                     }
                     else {
                         using TT = typename T::value_type;
@@ -1425,18 +1440,17 @@ struct PointFuse : INode {
                         T e;
                         for (auto &v : e)
                             v = std::numeric_limits<TT>::max();
-                        std::fill(std::begin(newVertAttribs), std::end(newVertAttribs), e);
+                        std::fill(std::begin(vertArr), std::end(vertArr), e);
                     }
-                }, [](...) {})(verts.attr(minAttrib));
+                }, [](...) {})(newVerts.attr(minAttrib));
         }
         for (const auto &maxAttrib : maxAttribs) {
-            if (verts.has_attr(maxAttrib)) 
-                match([&k = maxAttrib, &newVerts](auto &vertArr) -> std::enable_if_t<
+            if (newVerts.has_attr(maxAttrib)) 
+                match([](auto &vertArr) -> std::enable_if_t<
                                         variant_contains<RM_CVREF_T(vertArr[0]), AttrAcceptAll>::value> {
                     using T = RM_CVREF_T(vertArr[0]);
-                    auto newVertAttribs = newVerts.attr<T>(k);
                     if constexpr (std::is_arithmetic_v<T>) {
-                        std::fill(std::begin(newVertAttribs), std::end(newVertAttribs), std::numeric_limits<T>::lowest());
+                        std::fill(std::begin(vertArr), std::end(vertArr), std::numeric_limits<T>::lowest());
                     }
                     else {
                         using TT = typename T::value_type;
@@ -1444,9 +1458,9 @@ struct PointFuse : INode {
                         T e;
                         for (auto &v : e)
                             v = std::numeric_limits<TT>::lowest();
-                        std::fill(std::begin(newVertAttribs), std::end(newVertAttribs), e);
+                        std::fill(std::begin(vertArr), std::end(vertArr), e);
                     }
-                }, [](...) {})(verts.attr(maxAttrib));
+                }, [](...) {})(newVerts.attr(maxAttrib));
         }
         // fuse
         pol(range(pos.size()), [&cnts, &fas, &newPos, &pos, &fwdMap, &newVerts, &verts, &aveAttribs, &sumAttribs, 
