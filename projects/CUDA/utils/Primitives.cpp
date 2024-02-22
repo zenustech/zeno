@@ -1296,6 +1296,232 @@ ZENDEFNODE(PrimitiveFuse2, {
                                {"zs_geom"},
                            });
 
+struct PointFuse : INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("points");
+        using namespace zs;
+        using zsbvh_t = ZenoLinearBvh;
+        using bvh_t = zsbvh_t::lbvh_t;
+        constexpr auto space = execspace_e::openmp;
+        auto pol = omp_exec();
+
+        auto &verts = prim->verts;
+        const auto &pos = verts.values;
+        auto sumAttribs_ = get_input2<std::string>("sum_vert_attribs");
+        auto minAttribs_ = get_input2<std::string>("min_vert_attribs");
+        auto maxAttribs_ = get_input2<std::string>("max_vert_attribs");
+        std::set<std::string> sumAttribs = separate_string_by(sumAttribs_, " :;,.");
+        std::set<std::string> minAttribs = separate_string_by(minAttribs_, " :;,.");
+        std::set<std::string> maxAttribs = separate_string_by(maxAttribs_, " :;,.");
+        std::set<std::string> aveAttribs;
+        RM_CVREF_T(prim->verts) newVerts;
+        verts.foreach_attr<AttrAcceptAll>([&](auto const &key, auto const &arr) {
+            using T = std::decay_t<decltype(arr[0])>;
+            newVerts.add_attr<T>(key);
+            if (sumAttribs.find(key) == sumAttribs.end() 
+                && minAttribs.find(key) == minAttribs.end() 
+                && maxAttribs.find(key) == maxAttribs.end())
+                aveAttribs.emplace(key);
+        });
+        sumAttribs.erase("pos");
+        minAttribs.erase("pos");
+        maxAttribs.erase("pos");
+        // remove duplicates
+        for (const auto &sumAttrib : sumAttribs) {
+            minAttribs.erase(sumAttrib);
+            maxAttribs.erase(sumAttrib);
+        }
+        for (const auto &minAttrib : minAttribs) {
+            maxAttribs.erase(minAttrib);
+        }
+
+        /// @brief establish vert proximity topo
+        auto dist = get_input2<float>("proximity_theshold");
+        std::shared_ptr<zsbvh_t> zsbvh;
+        ZenoLinearBvh::element_e et = ZenoLinearBvh::point;
+        auto bvs = retrieve_bounding_volumes(pol, pos, dist);
+        et = ZenoLinearBvh::point;
+        zsbvh = std::make_shared<zsbvh_t>();
+        zsbvh->et = et;
+        bvh_t &bvh = zsbvh->get();
+        bvh.build(pol, bvs);
+
+        // exclusion topo
+        std::vector<std::vector<int>> neighbors(pos.size());
+        pol(range(pos.size()), [bvh = proxy<space>(bvh), &pos, &neighbors, dist2 = dist * dist](int vi) mutable {
+            const auto &p = vec_to_other<zs::vec<float, 3>>(pos[vi]);
+            bvh.iter_neighbors(p, [&](int vj) {
+                if (vi == vj)
+                    return;
+                if (auto d2 = lengthSquared(pos[vi] - pos[vj]); d2 < dist2)
+                    neighbors[vi].push_back(vj);
+            });
+        });
+
+        std::vector<int> numNeighbors(pos.size() + 1);
+        pol(zip(numNeighbors, neighbors), [](auto &n, const std::vector<int> &neis) { n = neis.size(); });
+
+        SparseMatrix<int, true> spmat(pos.size(), pos.size());
+        spmat._ptrs.resize(pos.size() + 1);
+        exclusive_scan(pol, std::begin(numNeighbors), std::end(numNeighbors), std::begin(spmat._ptrs));
+
+        auto numEntries = spmat._ptrs[pos.size()];
+        spmat._inds.resize(numEntries);
+
+        pol(range(pos.size()),
+            [&neighbors, inds = view<space>(spmat._inds), offsets = view<space>(spmat._ptrs)](int vi) {
+                auto offset = offsets[vi];
+                for (int vj : neighbors[vi])
+                    inds[offset++] = vj;
+            });
+        std::vector<int> fas(pos.size());
+        union_find(pol, spmat, range(fas));
+
+        bht<int, 1, int> vtab{pos.size() * 3 / 2};
+        pol(range(pos.size()), [&fas, vtab = proxy<space>(vtab)](int vi) mutable {
+            auto fa = fas[vi];
+            while (fa != fas[fa])
+                fa = fas[fa];
+            fas[vi] = fa;
+            vtab.insert(fa);
+            // if (fa > vi)
+            //    printf("should not happen!!! fa: %d, self: %d\n", fa, vi);
+        });
+        if (vtab._buildSuccess.getVal() == 0)
+            throw std::runtime_error("PointFuse hash failed!!");
+
+        /// @brief preserving vertex islands order
+        auto numNewVerts = vtab.size();
+        std::vector<int> fwdMap(numNewVerts);
+        std::vector<std::pair<int, int>> kvs(numNewVerts);
+        auto keys = vtab._activeKeys;
+        pol(enumerate(keys, kvs), [](int id, auto key, std::pair<int, int> &kv) { kv = std::make_pair(key[0], id); });
+        struct {
+            constexpr bool operator()(const std::pair<int, int> &a, const std::pair<int, int> &b) const {
+                return a.first < b.first;
+            }
+        } lessOp;
+        std::sort(kvs.begin(), kvs.end(), lessOp);
+        pol(enumerate(kvs), [&fwdMap](int no, auto kv) { fwdMap[kv.second] = no; });
+        //
+
+        newVerts.resize(numNewVerts);
+        auto &newPos = newVerts.attr<vec3f>("pos");
+        pol(newPos, [](zeno::vec3f &p) { p = vec3f(0, 0, 0); });
+        std::vector<int> cnts(numNewVerts);
+        // init for min/max attribs
+        for (const auto &minAttrib : minAttribs) {
+            if (verts.has_attr(minAttrib)) 
+                match([&k = minAttrib, &newVerts](auto &vertArr) -> std::enable_if_t<
+                                        variant_contains<RM_CVREF_T(vertArr[0]), AttrAcceptAll>::value> {
+                    using T = RM_CVREF_T(vertArr[0]);
+                    auto newVertAttribs = newVerts.attr<T>(k);
+                    if constexpr (std::is_arithmetic_v<T>) {
+                        std::fill(std::begin(newVertAttribs), std::end(newVertAttribs), std::numeric_limits<T>::max());
+                    }
+                    else {
+                        using TT = typename T::value_type;
+                        // constexpr int dim = std::tuple_size_v<T>;
+                        T e;
+                        for (auto &v : e)
+                            v = std::numeric_limits<TT>::max();
+                        std::fill(std::begin(newVertAttribs), std::end(newVertAttribs), e);
+                    }
+                }, [](...) {})(verts.attr(minAttrib));
+        }
+        for (const auto &maxAttrib : maxAttribs) {
+            if (verts.has_attr(maxAttrib)) 
+                match([&k = maxAttrib, &newVerts](auto &vertArr) -> std::enable_if_t<
+                                        variant_contains<RM_CVREF_T(vertArr[0]), AttrAcceptAll>::value> {
+                    using T = RM_CVREF_T(vertArr[0]);
+                    auto newVertAttribs = newVerts.attr<T>(k);
+                    if constexpr (std::is_arithmetic_v<T>) {
+                        std::fill(std::begin(newVertAttribs), std::end(newVertAttribs), std::numeric_limits<T>::lowest());
+                    }
+                    else {
+                        using TT = typename T::value_type;
+                        // constexpr int dim = std::tuple_size_v<T>;
+                        T e;
+                        for (auto &v : e)
+                            v = std::numeric_limits<TT>::lowest();
+                        std::fill(std::begin(newVertAttribs), std::end(newVertAttribs), e);
+                    }
+                }, [](...) {})(verts.attr(maxAttrib));
+        }
+        // fuse
+        pol(range(pos.size()), [&cnts, &fas, &newPos, &pos, &fwdMap, &newVerts, &verts, &aveAttribs, &sumAttribs, 
+                &minAttribs, &maxAttribs, vtab = proxy<space>(vtab),
+                                tag = wrapv<space>{}](int vi) mutable {
+            auto fa = fas[vi];
+            auto dst = fwdMap[vtab.query(fa)];
+            fas[vi] = dst;
+            atomic_add(tag, &cnts[dst], 1);
+            /// pos
+            for (int d = 0; d != 3; ++d)
+                atomic_add(tag, &newPos[dst][d], pos[vi][d]);
+            /// preserved attribs
+            newVerts.foreach_attr<AttrAcceptAll>([&](auto const &key, auto &arr) {
+                using T = std::decay_t<decltype(arr[0])>;
+                const auto &srcAttrib = verts.attr<T>(key);
+                if (aveAttribs.find(key) != aveAttribs.end() 
+                    || sumAttribs.find(key) != sumAttribs.end()) {
+                    if constexpr (std::is_arithmetic_v<T>) {
+                        atomic_add(tag, &arr[dst], srcAttrib[vi]);
+                    } else {
+                        using TT = typename T::value_type;
+                        constexpr int dim = std::tuple_size_v<T>;
+                        for (int d = 0; d != dim; ++d)
+                            atomic_add(tag, &arr[dst][d], srcAttrib[vi][d]);
+                    }
+                } else if (minAttribs.find(key) != minAttribs.end()) {
+                    if constexpr (std::is_arithmetic_v<T>) {
+                        atomic_min(tag, &arr[dst], srcAttrib[vi]);
+                    } else {
+                        using TT = typename T::value_type;
+                        constexpr int dim = std::tuple_size_v<T>;
+                        for (int d = 0; d != dim; ++d)
+                            atomic_min(tag, &arr[dst][d], srcAttrib[vi][d]);
+                    }
+                } else if (maxAttribs.find(key) != maxAttribs.end()) {
+                    if constexpr (std::is_arithmetic_v<T>) {
+                        atomic_max(tag, &arr[dst], srcAttrib[vi]);
+                    } else {
+                        using TT = typename T::value_type;
+                        constexpr int dim = std::tuple_size_v<T>;
+                        for (int d = 0; d != dim; ++d)
+                            atomic_max(tag, &arr[dst][d], srcAttrib[vi][d]);
+                    }
+                }
+            });
+        });
+        pol(enumerate(newPos, cnts), [&newVerts, &aveAttribs](int i, zeno::vec3f &p, int sz) {
+            newVerts.foreach_attr<AttrAcceptAll>([&](auto const &key, auto &arr) { 
+                if (aveAttribs.find(key) != aveAttribs.end())
+                    arr[i] = arr[i] / sz; 
+            });
+            p /= (float)sz;
+        });
+
+        /// @brief update verts
+        verts = newVerts;
+        set_output("points", std::move(prim));
+    }
+};
+
+ZENDEFNODE(PointFuse, {
+                              {{"PrimitiveObject", "points"},
+                               {"float", "proximity_theshold", "0.00001"},
+                               {"string", "sum_vert_attribs", ""},
+                               {"string", "min_vert_attribs", ""},
+                               {"string", "max_vert_attribs", ""},
+                               },
+                              {
+                                  {"PrimitiveObject", "points"},
+                              },
+                              {},
+                              {"zs_geom"},
+                          });
+
 #else
 
 struct PrimitiveFuse : INode {
