@@ -276,7 +276,7 @@ struct ValidateAdaptiveGrid : INode {
 
     auto pol = omp_exec();
     auto zsag = convert_floatgrid_to_adaptive_grid(
-        sdf, MemoryHandle{memsrc_e::um, -1}, "sdf");
+        sdf, MemoryHandle{memsrc_e::host, -1}, "sdf");
     zsag.reorder(pol);
     // adaptive tile tree
     AdaptiveTileTree<3, zs::f32, 3, 2> att;
@@ -284,7 +284,8 @@ struct ValidateAdaptiveGrid : INode {
     // att.restructure(pol, zsag);
     {
       // test
-      pol(enumerate(pos), [&pos, &sdf, zsagv = view<space>(zsag)](
+      int passed = 0;
+      pol(enumerate(pos), [&passed, &pos, &sdf, zsagv = view<space>(zsag)](
                               int i, const auto &p) mutable {
         auto zsacc = zsagv.getAccessor();
         // ref
@@ -299,7 +300,10 @@ struct ValidateAdaptiveGrid : INode {
         if (zs::abs(vref - v) >= limits<float>::epsilon() &&
             vref != sdf->background())
           fmt::print("\tref: {}, actual: {}\n", vref, v);
+        else
+          atomic_add(exec_omp, &passed, 1);
       });
+      fmt::print("{} points passed validation out of {}\n", passed, pos.size());
     }
     set_output("sdf", get_input("sdf"));
   }
