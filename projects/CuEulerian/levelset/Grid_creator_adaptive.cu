@@ -253,12 +253,59 @@ struct ZSVDBToAdaptiveGrid : INode {
 
 ZENDEFNODE(ZSVDBToAdaptiveGrid,
            {/* inputs: */
-            {"VDB", "AdaptiveGrid", {"string", "Attribute", ""}},
+            {"VDB", "AdaptiveGrid", {"string", "Attribute", "sdf"}},
             /* outputs: */
             {"AdaptiveGrid"},
             /* params: */
             {},
             /* category: */
             {"Eulerian"}});
+
+struct ValidateAdaptiveGrid : INode {
+  void apply() override {
+    using namespace zs;
+    constexpr auto space = execspace_e::openmp;
+    openvdb::FloatGrid::Ptr sdf;
+    if (has_input("sdf"))
+      sdf = get_input("sdf")->as<VDBFloatGrid>()->m_grid;
+    else
+      throw std::runtime_error("no sdf input detected.");
+
+    auto points = get_input<PrimitiveObject>("points");
+    const auto &pos = points->verts.values;
+
+    auto pol = omp_exec();
+    auto zsag = convert_floatgrid_to_adaptive_grid(
+        sdf, MemoryHandle{memsrc_e::um, -1}, "sdf");
+    zsag.reorder(pol);
+    // adaptive tile tree
+    AdaptiveTileTree<3, zs::f32, 3, 2> att;
+    zsag.restructure(pol, att);
+    // att.restructure(pol, zsag);
+    {
+      // test
+      pol(enumerate(pos), [&pos, &sdf, zsagv = view<space>(zsag)](
+                              int i, const auto &p) mutable {
+        auto zsacc = zsagv.getAccessor();
+        // ref
+        openvdb::Vec3R vdbp(p[0], p[1], p[2]);
+        openvdb::tools::GridSampler<openvdb::FloatGrid,
+                                    openvdb::tools::BoxSampler>
+            sampler(*sdf);
+        openvdb::FloatGrid::ValueType vref = sampler.wsSample(vdbp);
+        //
+        zs::vec<float, 3> zsp{p[0], p[1], p[2]};
+        auto v = zsagv.wSample(zsacc, 0, zsp);
+        if (zs::abs(vref - v) >= limits<float>::epsilon() &&
+            vref != sdf->background())
+          fmt::print("\tref: {}, actual: {}\n", vref, v);
+      });
+    }
+    set_output("sdf", get_input("sdf"));
+  }
+};
+
+ZENDEFNODE(ValidateAdaptiveGrid,
+           {{"sdf", "points"}, {"sdf"}, {}, {"Eulerian"}});
 
 } // namespace zeno
