@@ -57,11 +57,31 @@ vec3 ACESFitted(vec3 color, float gamma)
     // Clamp to [0, 1]
     color = clamp(color, 0.0f, 1.0f);
 
-    color = pow(color, vec3(1.0f / gamma));
+    //color = pow(color, vec3(1.0f / gamma));
 
     return color;
 }
-
+static __inline__ __device__
+vec3 HdrToLDR(vec3 in)
+{
+  vec3 mapped = in;//vec3(1.0f) - exp(-in * 1.0/32.0);
+  //mapped = pow(mapped, 1.0f/2.2f);
+  return mapped;
+}
+static __inline__ __device__
+vec3 PhysicalCamera(vec3 in,
+                   float aperture = 2,
+                   float shutterSpeed = 1.0/25,
+                   float iso = 150,
+                   float middleGrey = 0.18f,
+                   bool enableExposure = true,
+                   bool enableACES = true)
+{
+  vec3 mapped;
+  float exposure = middleGrey / ( (1000.0f / 65.0f) * aperture * aperture / (iso * shutterSpeed) );
+  mapped = in * exposure;
+  return  enableExposure? (enableACES? ACESFitted(mapped, 2.2):mapped ) : (enableACES? ACESFitted(in, 2.2) : in);
+}
 extern "C" __global__ void __raygen__rg()
 {
 
@@ -208,7 +228,8 @@ extern "C" __global__ void __raygen__rg()
         prd.alphaHit = false;
 
         traceRadiance(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_);
-        mask_value = prd.mask_value;
+        float3 m = prd.mask_value;
+        mask_value = mask_value + m;
 
         auto primary_hit_type = prd.hit_type;
         background_trace = primary_hit_type;
@@ -307,6 +328,7 @@ extern "C" __global__ void __raygen__rg()
     float3         accum_color_s  = aov[2] / samples_per_launch;
     float3         accum_color_t  = aov[3] / samples_per_launch;
     float3         accum_color_b  = result_b / samples_per_launch;
+    float3         accum_mask     = mask_value / samples_per_launch;
     
     if( subframe_index > 0 )
     {
@@ -316,11 +338,13 @@ extern "C" __global__ void __raygen__rg()
         const float3 accum_color_prev_s = make_float3( params.accum_buffer_S[ image_index ]);
         const float3 accum_color_prev_t = make_float3( params.accum_buffer_T[ image_index ]);
         const float3 accum_color_prev_b = make_float3( params.accum_buffer_B[ image_index ]);
+        const float3 accum_mask_prev    = params.frame_buffer_M[ image_index ];
         accum_color   = lerp( accum_color_prev, accum_color, a );
         accum_color_d = lerp( accum_color_prev_d, accum_color_d, a );
         accum_color_s = lerp( accum_color_prev_s, accum_color_s, a );
         accum_color_t = lerp( accum_color_prev_t, accum_color_t, a );
         accum_color_b = lerp( accum_color_prev_b, accum_color_b, a );
+        accum_mask    = lerp( accum_mask_prev, accum_mask, a);
 
         if (params.denoise) {
 
@@ -338,18 +362,24 @@ extern "C" __global__ void __raygen__rg()
     params.accum_buffer_T[ image_index ] = make_float4( accum_color_t, 1.0f);
     params.accum_buffer_B[ image_index ] = make_float4( accum_color_b, 1.0f);
     //vec3 aecs_fitted = ACESFitted(vec3(accum_color), 2.2);
-    float3 out_color = accum_color;
-    float3 out_color_d = accum_color_d;
-    float3 out_color_s = accum_color_s;
-    float3 out_color_t = accum_color_t;
+    vec3 rgb_mapped = PhysicalCamera(vec3(accum_color));
+    vec3 d_mapped = PhysicalCamera(vec3(accum_color_d));
+    vec3 s_mapped = PhysicalCamera(vec3(accum_color_s));
+    vec3 t_mapped = PhysicalCamera(vec3(accum_color_t));
+
+
+    float3 out_color = rgb_mapped;
+    float3 out_color_d = d_mapped;
+    float3 out_color_s = s_mapped;
+    float3 out_color_t = t_mapped;
     float3 out_color_b = accum_color_b;
     params.frame_buffer[ image_index ] = make_color ( out_color );
-    params.frame_buffer_C[ image_index ] = accum_color;
-    params.frame_buffer_D[ image_index ] = accum_color_d;
-    params.frame_buffer_S[ image_index ] = accum_color_s;
-    params.frame_buffer_T[ image_index ] = accum_color_t;
+    params.frame_buffer_C[ image_index ] = out_color;
+    params.frame_buffer_D[ image_index ] = out_color_d;
+    params.frame_buffer_S[ image_index ] = out_color_s;
+    params.frame_buffer_T[ image_index ] = out_color_t;
     params.frame_buffer_B[ image_index ] = accum_color_b;
-    params.frame_buffer_M[ image_index ] = mask_value;
+    params.frame_buffer_M[ image_index ] = accum_mask;
 
     if (params.denoise) {
         params.albedo_buffer[ image_index ] = tmp_albedo;

@@ -528,12 +528,12 @@ extern "C" __global__ void __closesthit__radiance()
         auto trans = DisneyBSDF::Transmission2(prd->sigma_s(), prd->sigma_t, prd->channelPDF, optixGetRayTmax(), true);
         prd->attenuation2 *= trans;
         prd->attenuation *= trans;
-        prd->origin = P;
+        //prd->origin = P;
         prd->direction = ray_dir;
         //auto n = prd->geometryNormal;
         //n = faceforward(n, -ray_dir, n);
-        prd->offsetUpdateRay(prd->origin, ray_dir);
-        prd->_tmin_ = 1e-5;
+        //prd->offsetUpdateRay(prd->origin, ray_dir);
+        prd->_tmin_ = optixGetRayTmax();
         return;
     }
 
@@ -560,12 +560,12 @@ extern "C" __global__ void __closesthit__radiance()
         //prd->samplePdf = 0.0f;
         prd->radiance = make_float3(0.0f);
         prd->alphaHit = true;
-        prd->origin = P;
+        //prd->origin = P;
         prd->direction = ray_dir;
         //auto n = prd->geometryNormal;
         //n = faceforward(n, -ray_dir, n);
-        prd->offsetUpdateRay(prd->origin, ray_dir);
-        prd->_tmin_ = 1e-5;
+        //prd->offsetUpdateRay(prd->origin, ray_dir);
+        prd->_tmin_ = optixGetRayTmax();
         return;
     }
     if(mats.opacity<=0.99f)
@@ -593,12 +593,12 @@ extern "C" __global__ void __closesthit__radiance()
 
 
         prd->alphaHit = true;
-        prd->origin = P;
+        //prd->origin = P;
         prd->direction = ray_dir;
         //auto n = prd->geometryNormal;
         //n = faceforward(n, -ray_dir, n);
-        prd->offsetUpdateRay(prd->origin, -ray_dir);
-        prd->_tmin_ = 1e-5;
+        //prd->offsetUpdateRay(prd->origin, -ray_dir);
+        prd->_tmin_ = optixGetRayTmax();
 
         prd->prob *= 1;
         prd->countEmitted = false;
@@ -896,7 +896,8 @@ extern "C" __global__ void __closesthit__radiance()
     auto shadingP = rtgems::offset_ray(P + params.cam.eye,  prd->geometryNormal); // world space
 
     prd->radiance = {};
-    prd->direction = normalize(wi);
+
+
 
     float3 radianceNoShadow = {};
     float3* dummy_prt = nullptr;
@@ -916,12 +917,16 @@ extern "C" __global__ void __closesthit__radiance()
     }
 
     if(mats.thin<0.5f && mats.doubleSide<0.5f){
-        prd->origin = rtgems::offset_ray(P, (next_ray_is_going_inside)? -prd->geometryNormal : prd->geometryNormal);
+        auto p_prim = vec3(prd->origin) + optixGetRayTmax() * vec3(prd->direction);
+        float3 p = p_prim;
+        prd->origin = rtgems::offset_ray(p, (next_ray_is_going_inside)? -prd->geometryNormal : prd->geometryNormal);
     }
     else {
-        prd->origin = rtgems::offset_ray(P, ( dot(prd->direction, prd->geometryNormal) < 0 )? -prd->geometryNormal : prd->geometryNormal);
+        auto p_prim = vec3(prd->origin) + optixGetRayTmax() * vec3(prd->direction);
+        float3 p = p_prim;
+        prd->origin = rtgems::offset_ray(p, ( dot(prd->direction, prd->geometryNormal) < 0 )? -prd->geometryNormal : prd->geometryNormal);
     }
-    
+    prd->direction = normalize(wi);
     if (prd->medium != DisneyBSDF::vacuum) {
         prd->_mask_ = (uint8_t)(EverythingMask ^ VolumeMatMask);
     } else {

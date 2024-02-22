@@ -66,6 +66,7 @@ extern "C" __global__ void __closesthit__radiance()
         light_index = primitiveIndex + params.firstSphereLightIdx;
 
     } else {
+      //////
 
         if (isPlaneLightGAS(instanceId)) {
 
@@ -108,9 +109,10 @@ extern "C" __global__ void __closesthit__radiance()
     auto visible = (light.config & zeno::LightConfigVisible);
 
     if (!visible && prd->depth == 0) {
-        auto pos = P;
-        prd->geometryNormal = light_normal;
-        prd->offsetUpdateRay(pos, ray_dir); 
+        //auto pos = P;
+        //prd->geometryNormal = light_normal;
+        //prd->offsetUpdateRay(pos, ray_dir);
+        prd->_tmin_ = optixGetRayTmax();
         return;
     }
 
