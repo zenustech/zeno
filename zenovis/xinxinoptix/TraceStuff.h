@@ -110,6 +110,7 @@ struct RadiancePRD
     unsigned char adepth;
     bool         alphaHit;
     vec3         mask_value;
+    unsigned char max_depth;
 
     uint16_t lightmask = EverythingMask;
 
