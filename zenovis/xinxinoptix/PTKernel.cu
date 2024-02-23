@@ -105,6 +105,13 @@ extern "C" __global__ void __raygen__rg()
     unsigned int eventseed = tea<4>( idx.y * w + idx.x, subframe_index + 1);
     float focalPlaneDistance = cam.focal_distance>0.01f? cam.focal_distance: 0.01f;
     float aperture = clamp(cam.aperture,0.0f,100.0f);
+    float physical_aperture = 0.0f;
+    if(aperture < 0.05f || aperture > 24.0f){
+        physical_aperture = 0.0f;
+    }else{
+        physical_aperture = cam.focal_length / aperture;
+    }
+    
 
     float3 result = make_float3( 0.0f );
     float3 result_d = make_float3( 0.0f );
@@ -131,7 +138,7 @@ extern "C" __global__ void __raygen__rg()
         float2 r01 = sobolRnd(eventseed);
 
         float r0 = r01.x * 2.0f * M_PIf;
-        float r1 = sqrtf(r01.y) * aperture;
+        float r1 = sqrtf(r01.y) * physical_aperture;
 
         float sin_yaw = sinf(cam.yaw);
         float cos_yaw = cosf(cam.yaw);
