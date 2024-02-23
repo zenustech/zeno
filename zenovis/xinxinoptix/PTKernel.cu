@@ -339,10 +339,10 @@ extern "C" __global__ void __raygen__rg()
     float midGray       = 0.18f;
     auto samples_per_launch = static_cast<float>( params.samples_per_launch );
 
-    vec3         accum_color    = PhysicalCamera(vec3(result), aperture, shutter_speed, iso, midGray, exposure, false) / samples_per_launch;
-    vec3         accum_color_d  = PhysicalCamera(vec3(aov[1]), aperture, shutter_speed, iso, midGray, exposure, false) / samples_per_launch;
-    vec3         accum_color_s  = PhysicalCamera(vec3(aov[2]), aperture, shutter_speed, iso, midGray, exposure, false) / samples_per_launch;
-    vec3         accum_color_t  = PhysicalCamera(vec3(aov[3]), aperture, shutter_speed, iso, midGray, exposure, false) / samples_per_launch;
+    vec3         accum_color    = PhysicalCamera(vec3(result), aperture, shutter_speed, iso, midGray, exposure, aces) / samples_per_launch;
+    vec3         accum_color_d  = PhysicalCamera(vec3(aov[1]), aperture, shutter_speed, iso, midGray, exposure, aces) / samples_per_launch;
+    vec3         accum_color_s  = PhysicalCamera(vec3(aov[2]), aperture, shutter_speed, iso, midGray, exposure, aces) / samples_per_launch;
+    vec3         accum_color_t  = PhysicalCamera(vec3(aov[3]), aperture, shutter_speed, iso, midGray, exposure, aces) / samples_per_launch;
     float3         accum_color_b  = result_b / samples_per_launch;
     float3         accum_mask     = mask_value / samples_per_launch;
     
@@ -379,10 +379,10 @@ extern "C" __global__ void __raygen__rg()
     params.accum_buffer_B[ image_index ] = make_float4( accum_color_b, 1.0f);
 
 
-    vec3 rgb_mapped = PhysicalCamera(vec3(accum_color), aperture, shutter_speed, iso, midGray, false, aces);
-    vec3 d_mapped = PhysicalCamera(vec3(accum_color_d), aperture, shutter_speed, iso, midGray, false, aces);
-    vec3 s_mapped = PhysicalCamera(vec3(accum_color_s), aperture, shutter_speed, iso, midGray, false, aces);
-    vec3 t_mapped = PhysicalCamera(vec3(accum_color_t), aperture, shutter_speed, iso, midGray, false, aces);
+    vec3 rgb_mapped = PhysicalCamera(vec3(accum_color), aperture, shutter_speed, iso, midGray, false, false);
+    vec3 d_mapped = PhysicalCamera(vec3(accum_color_d), aperture, shutter_speed, iso, midGray, false, false);
+    vec3 s_mapped = PhysicalCamera(vec3(accum_color_s), aperture, shutter_speed, iso, midGray, false, false);
+    vec3 t_mapped = PhysicalCamera(vec3(accum_color_t), aperture, shutter_speed, iso, midGray, false, false);
 
 
     float3 out_color = rgb_mapped;
