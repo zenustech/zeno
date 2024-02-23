@@ -5,7 +5,10 @@
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
 #include "model/graphsmanager.h"
+#include "model/parammodel.h"
 #include <zeno/utils/log.h>
+#include "variantptr.h"
+#include "zassert.h"
 
 
 PythonNode::PythonNode(const NodeUtilParam& params, QGraphicsItem* parent)
@@ -59,9 +62,9 @@ sys.stderr = catchOutErr\n\
     PyObject* pModule = PyImport_AddModule("__main__"); //create main module
     PyRun_SimpleString(stdOutErr.c_str()); //invoke code to redirect
 
-    IGraphsModel* pModel = zenoApp->graphsManager()->currentModel();
-    QModelIndex subgIdx = pModel->index("main");
-    QModelIndex scriptIdx = pModel->paramIndex(subgIdx, index(), "script", true);
+    ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(index().data(ROLE_PARAMS));
+    ZASSERT_EXIT(paramsM);
+    QModelIndex scriptIdx = paramsM->paramIdx("script", true);
     ZASSERT_EXIT(scriptIdx.isValid());
     QString script = scriptIdx.data(ROLE_PARAM_VALUE).toString();
 

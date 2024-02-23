@@ -4,12 +4,12 @@
 #include <QtWidgets>
 #include "zenoapplication.h"
 #include "model/graphsmanager.h"
-#include <zenomodel/include/enum.h>
-#include <zenomodel/include/nodesmgr.h>
-#include "nodesview/zenographseditor.h"
-#include "nodesys/zenosubgraphscene.h"
+#include "../nodeeditor/gv/zenographseditor.h"
+#include "../nodeeditor/gv/zenosubgraphscene.h"
 #include "zenomainwindow.h"
 
+//need refactor
+#if 0
 static PyObject*
 zeno_getGraph(PyObject* self, PyObject* args)
 {
@@ -278,21 +278,29 @@ static PyModuleDef zenomodule = {
     -1,
     ZenoMethods
 };
+#endif
+
+static PyModuleDef zenomodule = {
+    PyModuleDef_HEAD_INIT,
+    "zeno",
+    "Example module that creates an extension type.",
+    -1
+};
 
 PyMODINIT_FUNC
 PyInit_zeno(void)
 {
-    PyObject* m;
-    if (PyType_Ready(&SubgraphType) < 0)
-        return NULL;
+    //if (PyType_Ready(&SubgraphType) < 0)
+    //    return NULL;
 
-    if (PyType_Ready(&ZNodeType) < 0)
-        return NULL;
+    //if (PyType_Ready(&ZNodeType) < 0)
+    //    return NULL;
 
-    m = PyModule_Create(&zenomodule);
+    PyObject* m = PyModule_Create(&zenomodule);
     if (m == NULL)
         return NULL;
 
+    /*
     Py_INCREF(&SubgraphType);
     if (PyModule_AddObject(m, "Graph", (PyObject*)&SubgraphType) < 0) {
         Py_DECREF(&SubgraphType);
@@ -305,7 +313,9 @@ PyInit_zeno(void)
         Py_DECREF(m);
         return NULL;
     }
+    */
 
     return m;
 }
+
 #endif

@@ -3,9 +3,11 @@
 #include <QtWidgets>
 #include "zenoapplication.h"
 #include "model/graphsmanager.h"
-#include <zenomodel/include/enum.h>
-#include <zenomodel/include/nodesmgr.h>
+//#include <zenomodel/include/enum.h>
+//#include <zenomodel/include/nodesmgr.h>
 
+
+#if 0
 
 static int
 Node_init(ZNodeObject* self, PyObject* args, PyObject* kwds)
@@ -394,4 +396,6 @@ PyTypeObject ZNodeType = {
         nullptr,                            /* tp_alloc */
         PyType_GenericNew,                  /* tp_new */
 };
+#endif
+
 #endif

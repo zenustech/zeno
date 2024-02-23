@@ -3,10 +3,12 @@
 #include <QtWidgets>
 #include "zenoapplication.h"
 #include "model/graphsmanager.h"
-#include <zenomodel/include/enum.h>
-#include <zenomodel/include/nodesmgr.h>
+//#include <zenomodel/include/enum.h>
+//#include <zenomodel/include/nodesmgr.h>
 #include "util/uihelper.h"
 
+//need refactor
+#if 0
 static QVariant parseValue(PyObject* v, const QString& type)
 {
     QVariant val;
@@ -102,7 +104,6 @@ static int
 Graph_init(ZSubGraphObject* self, PyObject* args, PyObject* kwds)
 {
     static char* kwList[] = { "hGraph", NULL };
-    ZENO_HANDLE hGraph;
     char* _subgName;
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "s", kwList, &_subgName))
         return -1;
@@ -436,4 +437,7 @@ PyTypeObject SubgraphType = {
         nullptr,                            /* tp_alloc */
         PyType_GenericNew,                  /* tp_new */
 };
+
+#endif
+
 #endif

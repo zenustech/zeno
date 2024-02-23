@@ -42,7 +42,7 @@ option(ZENO_USE_FAST_MATH "Build ZENO with -ffast-math" OFF)
 option(ZENO_OPTIX_PROC "Optix with a new proc" OFF)
 option(ZENO_WIN32_RC "Build ZENO with win32 resource file" OFF)
 option(ZENO_NODESVIEW_OPTIM "Optimize Node Graphics View manually" ON)
-option(ZENO_WITH_PYTHON3 "Build ZENO with python" OFF)
+option(ZENO_WITH_PYTHON3 "Build ZENO with python" ON)
 
 if (NOT DEFINED CMAKE_POSITION_INDEPENDENT_CODE)
     # Otherwise we can't link .so libs with .a libs
