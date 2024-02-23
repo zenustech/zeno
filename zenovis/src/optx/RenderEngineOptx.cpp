@@ -1003,6 +1003,12 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
             auto lodright = glm::normalize(glm::cross(cam.m_lodfront, cam.m_lodup));
             auto lodup = glm::normalize(glm::cross(lodright, cam.m_lodfront));
+
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            std::uniform_int_distribution<int32_t> dis(std::numeric_limits<int32_t>::min(), std::numeric_limits<int32_t>::max());
+
+            xinxinoptix::set_outside_random_number(dis(gen));
         
             xinxinoptix::set_perspective(glm::value_ptr(lodright), glm::value_ptr(lodup),
                                         glm::value_ptr(cam.m_lodfront), glm::value_ptr(cam.m_lodcenter),

@@ -83,6 +83,8 @@ extern "C" __global__ void __raygen__rg()
     int sid = (idx.y%4) * 8 + idx.x%8;
     unsigned int seed = tea<4>( idx.y * w + idx.x, subframe_index);
     unsigned int eventseed = tea<4>( idx.y * w + idx.x, subframe_index + 1);
+    seed += params.outside_random_number;
+    eventseed += params.outside_random_number;
     float focalPlaneDistance = cam.focal_distance>0.01f? cam.focal_distance: 0.01f;
     float aperture = clamp(cam.aperture,0.0f,100.0f);
 

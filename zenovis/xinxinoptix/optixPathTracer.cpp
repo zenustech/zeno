@@ -3829,6 +3829,9 @@ void set_perspective_by_focal_length(float const *U, float const *V, float const
     camera_changed = true;
 }
 
+void set_outside_random_number(int32_t outside_random_number) {
+    state.params.outside_random_number = outside_random_number;
+}
 static void write_pfm(std::string& path, int w, int h, const float *rgb) {
     std::string header = zeno::format("PF\n{} {}\n-1.0\n", w, h);
     std::vector<char> data(header.size() + w * h * sizeof(zeno::vec3f));
