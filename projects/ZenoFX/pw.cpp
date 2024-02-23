@@ -85,7 +85,7 @@ struct ParticlesWrangle : zeno::INode {
             opts.define_symbol('@' + key, dim);
         });
 
-        auto params = has_input("params") ?
+        auto params = has_input<zeno::DictObject>("params") ?
             get_input<zeno::DictObject>("params") :
             std::make_shared<zeno::DictObject>();
         {
@@ -218,7 +218,8 @@ struct ParticlesWrangle : zeno::INode {
 
 ZENDEFNODE(ParticlesWrangle, {
     {{"PrimitiveObject", "prim", "", PrimarySocket},
-     {"string", "zfxCode"}, {"DictObject:NumericObject", "params"}},
+     {"string", "zfxCode", "", ParamSocket, Multiline},
+     {"DictObject:NumericObject", "params"}},
     {{"PrimitiveObject", "prim"}},
     {},
     {"zenofx"},

@@ -134,6 +134,7 @@ struct Graph : std::enable_shared_from_this<Graph> {
     std::map<std::string, std::string> getSubOutputs();
     void viewNodeUpdated(const std::string node, bool bView);
     void markDirtyWhenFrameChanged();
+    void onNodeParamUpdated(std::shared_ptr<IParam> spParam, zvariant old_value, zvariant new_value);
 
 private:
     std::string generateNewName(const std::string& node_cls);

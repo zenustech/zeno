@@ -18,6 +18,8 @@
 #include <zeno/utils/uuid.h>
 #include <zeno/utils/helper.h>
 #include <iostream>
+#include <regex>
+
 
 namespace zeno {
 
@@ -90,6 +92,31 @@ ZENO_API void Graph::applyNodes(std::set<std::string> const &nodes) {
 ZENO_API void Graph::runGraph() {
     log_debug("{} nodes to exec", m_viewnodes.size());
     applyNodes(m_viewnodes);
+}
+
+void Graph::onNodeParamUpdated(std::shared_ptr<IParam> spParam, zvariant old_value, zvariant new_value) {
+    assert(spParam);
+    if (Param_String == spParam->type) {
+        auto spNode = spParam->m_wpNode.lock();
+        assert(spNode);
+
+        const std::string& nodecls = spNode->get_nodecls();
+        const std::string& nodename = spNode->get_name();
+
+        std::string oldstr, newstr;
+        if (std::holds_alternative<std::string>(old_value))
+            oldstr = std::get<std::string>(old_value);
+        if (std::holds_alternative<std::string>(new_value))
+            newstr = std::get<std::string>(new_value);
+
+        frame_nodes.erase(nodename);
+
+        std::regex pattern("\\$F");
+        std::match_results<std::string::iterator> results;
+        if (std::regex_search(newstr, pattern, std::regex_constants::match_default)) {
+            frame_nodes.insert(nodename);
+        }
+    }
 }
 
 void Graph::viewNodeUpdated(const std::string node, bool bView) {

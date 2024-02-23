@@ -55,18 +55,12 @@ struct GraphicsManager {
             graphics.m_curr.m_curr.insert(std::make_pair(obj->key, std::move(ig)));
         }
         else {
-            if (it->second->objholder != obj) {
-                auto ig = makeGraphic(scene, obj.get());
-                if (!ig)
-                    return false;
-                ig->nameid = obj->key;
-                ig->objholder = obj;
-                it->second = std::move(ig);
-                return true;
-            }
-            else {
+            auto ig = makeGraphic(scene, obj.get());
+            if (!ig)
                 return false;
-            }
+            ig->nameid = obj->key;
+            ig->objholder = obj;
+            it->second = std::move(ig);
         }
         return true;
     }
