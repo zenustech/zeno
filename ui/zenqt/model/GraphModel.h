@@ -114,6 +114,7 @@ signals:
     void reloaded();
     void clearLayout();
     void nameUpdated(const QModelIndex& nodeIdx, const QString& oldName);
+    void nodeRemoved(QString nodeId);
 
 private:
     void registerCoreNotify();
