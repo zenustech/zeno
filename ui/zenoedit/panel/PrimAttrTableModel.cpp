@@ -346,3 +346,12 @@ QVariant PrimAttrTableModel::userData(const zeno::zany& object) const
     }
     return QVariant();
 }
+
+zeno::zany PrimAttrTableModel::userDataByIndex(const QModelIndex& index) const
+{
+    auto it = std::next(m_prim->userData().begin(), index.row());
+    if (it != m_prim->userData().end())
+        return it->second;
+    else
+        return zeno::zany();
+}
