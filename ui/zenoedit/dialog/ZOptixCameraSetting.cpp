@@ -15,10 +15,12 @@ ZOptixCameraSetting::ZOptixCameraSetting(zenovis::ZOptixCameraSettingInfo &info,
     QVBoxLayout *mainLayout = new QVBoxLayout;
 
     QDoubleSpinBox* m_aperture = new QDoubleSpinBox();
+    m_aperture->setDecimals(4);
     m_aperture->setRange(0.0, 10000);
     m_aperture->setValue(info.aperture);
 
     QDoubleSpinBox* m_shutter_speed = new QDoubleSpinBox();
+    m_shutter_speed->setDecimals(4);
     m_shutter_speed->setRange(0.0, 10000);
     m_shutter_speed->setValue(info.shutter_speed);
 
