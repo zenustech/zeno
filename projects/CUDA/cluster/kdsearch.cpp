@@ -151,7 +151,7 @@ void KdSplit::fix_radius_search(float box_dist, float radius, const vec3f& point
 void KdLeaf::fix_radius_search(float box_dist, float radius, const vec3f& point, std::set<int>& closest) {
 	for (int i = lid; i < rid; i++) {
 		float dist = lengthSquared(tree->pts[tree->pidx[i]] - point);
-		if (dist < radius)
+		if (dist <= radius)
 			closest.insert(tree->pidx[i]);
 	}
 }
