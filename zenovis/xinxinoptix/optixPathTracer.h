@@ -240,6 +240,7 @@ struct Params
     float sunSoftness;
     float elapsedTime;
 
+    int32_t outside_random_number;
     bool simpleRender     :1;
     bool show_background  :1;
 
