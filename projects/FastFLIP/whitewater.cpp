@@ -227,7 +227,7 @@ struct WhitewaterSolver : INode {
         auto Normal = openvdb::tools::gradient(*Solid_sdf);
 
 #pragma omp parallel for
-        for (size_t idx = 0; idx < pars->size(); ++idx) {
+        for (auto idx = 0; idx < pars->size(); ++idx) {
             auto liquid_sdf_axr = Liquid_sdf->getConstUnsafeAccessor();
             auto solid_sdf_axr = Solid_sdf->getConstUnsafeAccessor();
             auto norm_axr = Normal->getConstUnsafeAccessor();
