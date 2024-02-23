@@ -843,12 +843,12 @@
         <translation type="unfinished">打开</translation>
     </message>
     <message>
-        <source>Save</source>
-        <translation type="unfinished">保存</translation>
+        <source>Save Main</source>
+        <translation type="unfinished">保存主图</translation>
     </message>
     <message>
-        <source>Save As</source>
-        <translation type="unfinished">另存为</translation>
+        <source>Save Main As</source>
+        <translation type="unfinished">主图另存为</translation>
     </message>
     <message>
         <source>Import</source>
@@ -1007,8 +1007,8 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>New Subgraph</source>
-        <translation>新建子图</translation>
+        <source>New Asset</source>
+        <translation>新建资产</translation>
     </message>
     <message>
         <source>Ctrl+E</source>

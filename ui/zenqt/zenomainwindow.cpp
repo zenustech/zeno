@@ -1472,7 +1472,7 @@ void ZenoMainWindow::updateShortCut(QStringList keys)
     if (keys.contains(ShortCut_RecordVideo))
         m_ui->actionRecord_Video->setShortcut(settings.getShortCut(ShortCut_RecordVideo));
     if (keys.contains(ShortCut_NewSubgraph))
-        m_ui->actionNew_Subgraph->setShortcut(settings.getShortCut(ShortCut_NewSubgraph));
+        m_ui->actionNew_Asset->setShortcut(settings.getShortCut(ShortCut_NewSubgraph));
 }
 
 void ZenoMainWindow::shortCutDlg() 
@@ -1561,7 +1561,7 @@ void ZenoMainWindow::recordRecentFile(const QString& filePath)
 void ZenoMainWindow::setActionProperty() 
 {
     m_ui->actionNew_File->setProperty("ActionType", ACTION_NEWFILE);
-    m_ui->actionNew_Subgraph->setProperty("ActionType", ACTION_NEW_SUBGRAPH);
+    m_ui->actionNew_Asset->setProperty("ActionType", ACTION_NEW_SUBGRAPH);
     m_ui->action_Open->setProperty("ActionType", ACTION_OPEN);
     m_ui->action_Save->setProperty("ActionType", ACTION_SAVE);
     m_ui->action_Save_As->setProperty("ActionType", ACTION_SAVE_AS);
