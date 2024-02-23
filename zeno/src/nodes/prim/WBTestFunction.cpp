@@ -24,6 +24,9 @@
 #include <numeric>
 #include <cassert>
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 namespace zeno
 {
@@ -488,6 +491,42 @@ ZENDEFNODE(Grid2DSample_M, {
     {
         "WBTest",
     }});
+
+struct GaussianGrid : INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto nx = get_input2<int>("nx");
+        auto ny = get_input2<int>("ny");
+        auto SigmaX = get_input2<float>("SigmaX");
+        auto SigmaY = get_input2<float>("SigmaY");
+        auto amplitude = get_input2<float>("amplitude");
+        auto centerx = nx / 2;
+        auto centery = ny / 2;
+        for(int i = 0; i < ny; i++){
+            for(int j = 0; j < nx; j++){
+                float x = j - centerx;
+                float y = i - centery;
+                float g = amplitude * (1.0 / (2.0 * M_PI * SigmaX * SigmaY)) * exp(-(x * x) / (2 * SigmaX * SigmaX) - (y * y) / (2 * SigmaY * SigmaY));
+                prim->verts[i * nx + j] = {x, g, y};
+            }
+        }
+        set_output("prim", prim);
+    }
+};
+
+ZENDEFNODE(GaussianGrid, {
+    {
+        {"prim"},
+        {"int", "nx", "10"},
+        {"int", "ny", "10"},
+        {"float", "SigmaX", "1"},
+        {"float", "SigmaY", "1"},
+        {"float", "amplitude", "1"},
+    },
+    {"prim"},
+    {},
+    { "prim" },
+});
 
 
 } // namespace
