@@ -72,8 +72,8 @@ void ZSocketLayout::initUI(const CallbackForSocket& cbSock)
     m_socket->setZValue(ZVALUE_ELEMENT);
     m_socket->setEnabled(bEnableNode);
     if (bEnableNode) {
-        QObject::connect(m_socket, &ZenoSocketItem::clicked, [=](bool bInput, Qt::MouseButton button) {
-            cbSock.cbOnSockClicked(m_socket, button);
+        QObject::connect(m_socket, &ZenoSocketItem::clicked, [=](bool bInput, zeno::LinkFunction lnkProp) {
+            cbSock.cbOnSockClicked(m_socket, lnkProp);
         });
     }
     QObject::connect(m_socket, &ZenoSocketItem::netLabelClicked, [=]() {

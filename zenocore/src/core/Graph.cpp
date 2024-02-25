@@ -297,6 +297,7 @@ ZENO_API void Graph::init(const GraphData& graph) {
         spLink->toparam = inParam;
         spLink->fromkey = link.outKey;
         spLink->tokey = link.inKey;
+        spLink->lnkProp = link.lnkfunc;
         outParam->links.emplace_back(spLink);
         inParam->links.emplace_back(spLink);
     }
@@ -634,6 +635,7 @@ ZENO_API bool Graph::addLink(const EdgeInfo& edge) {
     spLink->toparam = inParam;
     spLink->fromkey = adjustEdge.outKey;
     spLink->tokey = adjustEdge.inKey;
+    spLink->lnkProp = adjustEdge.lnkfunc;
 
     outParam->links.push_back(spLink);
     inParam->links.push_back(spLink);

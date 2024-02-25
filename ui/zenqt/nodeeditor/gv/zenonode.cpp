@@ -644,8 +644,8 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& paramIdx, bool bInput, Zen
     QPersistentModelIndex perSockIdx = paramIdx;
 
     CallbackForSocket cbSocket;
-    cbSocket.cbOnSockClicked = [=](ZenoSocketItem* pSocketItem, Qt::MouseButton button) {
-        emit socketClicked(pSocketItem, button);
+    cbSocket.cbOnSockClicked = [=](ZenoSocketItem* pSocketItem, zeno::LinkFunction lnkProp) {
+        emit socketClicked(pSocketItem, lnkProp);
     };
     cbSocket.cbOnSockLayoutChanged = [=]() {
         emit inSocketPosChanged();

@@ -4,6 +4,7 @@
 #include <QtWidgets>
 //#include "uicommon.h"
 #include "nodeeditor/gv/nodesys_common.h"
+#include <zeno/core/common.h>
 
 class ZenoSubGraphScene;
 class ZenoSocketItem;
@@ -42,12 +43,17 @@ class ZenoTempLink : public ZenoLink
 {
     Q_OBJECT
 public:
-    ZenoTempLink(ZenoSocketItem* socketItem, QString nodeId, QPointF fixedPos, bool fixInput, QModelIndexList selNodes);
+    ZenoTempLink(ZenoSocketItem* socketItem,
+        QString nodeId,
+        QPointF fixedPos,
+        bool fixInput,
+        zeno::LinkFunction lnkProp,
+        QModelIndexList selNodes);
     ~ZenoTempLink();
     virtual QPointF getSrcPos() const override;
     virtual QPointF getDstPos() const override;
     void setFloatingPos(QPointF pos);
-    void getFixedInfo(QString& nodeId, QPointF& fixedPos, bool& bFixedInput);
+    void getFixedInfo(QString& nodeId, QPointF& fixedPos, bool& bFixedInput, zeno::LinkFunction& lnkProp);
     ZenoSocketItem* getFixedSocket() const;
     ZenoSocketItem* getAdsorbedSocket() const;
     void setAdsortedSocket(ZenoSocketItem* pSocket);
@@ -70,6 +76,7 @@ private:
     QPointF m_fixedPos;
     ZenoSocketItem* m_adsortedSocket;
     ZenoSocketItem* m_fixedSocket;
+    const zeno::LinkFunction m_lnkProp;
     QPersistentModelIndex m_oldLink;    //the link which belongs to
     QModelIndexList m_selNodes;
     bool m_bfixInput;
@@ -117,6 +124,7 @@ private:
     QString m_outNode;
     bool m_bHover;
     bool m_bLegacyLink;
+    zeno::LinkFunction m_lnkProp;
 };
 
 #endif

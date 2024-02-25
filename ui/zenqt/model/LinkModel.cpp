@@ -69,6 +69,11 @@ QVariant LinkModel::data(const QModelIndex& index, int role) const
             const auto& info = m_items[index.row()];
             return info.m_bCollasped;
         }
+        case ROLE_LINK_PROP:
+        {
+            const auto& info = m_items[index.row()];
+            return info.lnkProp;
+        }
     }
     return QVariant();
 }
@@ -117,7 +122,7 @@ bool LinkModel::removeRows(int row, int count, const QModelIndex& parent)
 }
 
 QModelIndex LinkModel::addLink(const QModelIndex& fromParam, const QString& fromKey,
-    const QModelIndex& toParam, const QString& toKey)
+    const QModelIndex& toParam, const QString& toKey, zeno::LinkFunction lnkProp)
 {
     int row = m_items.size();
     beginInsertRows(QModelIndex(), row, row);
@@ -128,6 +133,7 @@ QModelIndex LinkModel::addLink(const QModelIndex& fromParam, const QString& from
     item.fromKey = fromKey;
     item.toKey = toKey;
     item.uuid = QUuid::createUuid();
+    item.lnkProp = lnkProp;
 
     m_items.append(item);
 

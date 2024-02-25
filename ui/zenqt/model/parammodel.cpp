@@ -383,6 +383,7 @@ void ParamsModel::batchModifyParams(const zeno::ParamsUpdateInfo& params)
             const QString toSock = QString::fromStdString(spTo->name);
             const QString outKey = QString::fromStdString(spLink->tokey);
             const QString inKey = QString::fromStdString(spLink->fromkey);
+            zeno::LinkFunction lnkProp = spLink->lnkProp;
 
             //add the new link in current graph.
             GraphModel* pGraphM = parentGraph();
@@ -400,7 +401,7 @@ void ParamsModel::batchModifyParams(const zeno::ParamsUpdateInfo& params)
             LinkModel* lnkModel = pGraphM->getLinkModel();
             ZASSERT_EXIT(lnkModel);
             //only add in model layer, not core layer.
-            QModelIndex newLink = lnkModel->addLink(fromParam, outKey, toParam, inKey);
+            QModelIndex newLink = lnkModel->addLink(fromParam, outKey, toParam, inKey, lnkProp);
 
             fromParams->m_items[fromParam.row()].links.append(newLink);
             toParams->m_items[toParam.row()].links.append(newLink);

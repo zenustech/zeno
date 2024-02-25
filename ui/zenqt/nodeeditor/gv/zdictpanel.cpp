@@ -33,9 +33,9 @@ public:
         const bool bInput = paramIdx.data(ROLE_ISINPUT).toBool();
         m_socket->setInnerKey(m_key);
 
-        QObject::connect(m_socket, &ZenoSocketItem::clicked, [=](bool bInput, Qt::MouseButton button) {
+        QObject::connect(m_socket, &ZenoSocketItem::clicked, [=](bool bInput, zeno::LinkFunction lnkProp) {
             if (cbSock.cbOnSockClicked)
-                cbSock.cbOnSockClicked(m_socket, button);
+                cbSock.cbOnSockClicked(m_socket, lnkProp);
         });
 
         //move up button

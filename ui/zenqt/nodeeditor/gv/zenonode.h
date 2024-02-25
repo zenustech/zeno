@@ -72,7 +72,7 @@ public:
     virtual void setSelected(bool selected);
 
 signals:
-    void socketClicked(ZenoSocketItem*, Qt::MouseButton);
+    void socketClicked(ZenoSocketItem*, zeno::LinkFunction);
     void doubleClicked(const QString &nodename);
     void paramChanged(const QString& nodeid, const QString& paramName, const QVariant& var);
     void socketPosInited(const QString& nodeid, const QString& sockName, bool bInput);

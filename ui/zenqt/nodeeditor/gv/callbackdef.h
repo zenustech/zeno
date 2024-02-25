@@ -6,13 +6,14 @@
 #include <QVariant>
 #include <QModelIndex>
 #include <QAction>
+#include <zeno/core/common.h>
 
 typedef std::function<void(QString, QString)> Callback_EditContentsChange;
 typedef std::function<void(QString)> Callback_OnClicked;
 
 class ZenoSocketItem;
 
-typedef std::function<void(ZenoSocketItem*, Qt::MouseButton)> Callback_OnSockClicked;
+typedef std::function<void(ZenoSocketItem*, zeno::LinkFunction)> Callback_OnSockClicked;
 
 typedef std::function<void(ZenoSocketItem*)> Callback_OnSockLabelEdited;
 

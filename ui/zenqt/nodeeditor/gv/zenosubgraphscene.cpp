@@ -627,14 +627,10 @@ void ZenoSubGraphScene::reload(const QModelIndex& subGpIdx)
     initModel(pGraphM);
 }
 
-void ZenoSubGraphScene::onSocketClicked(ZenoSocketItem* pSocketItem, Qt::MouseButton button)
+void ZenoSubGraphScene::onSocketClicked(ZenoSocketItem* pSocketItem, zeno::LinkFunction lnkProp)
 {
     if (m_tempLink)
         return;
-
-    if (button == Qt::RightButton) {
-        return;
-    }
 
     ZASSERT_EXIT(pSocketItem);
 
@@ -670,7 +666,7 @@ void ZenoSubGraphScene::onSocketClicked(ZenoSocketItem* pSocketItem, Qt::MouseBu
 
         socketPos = m_nodes[outNode]->getSocketPos(outSockIdx);
         ZenoSocketItem* pOutSocketItem = m_nodes[outNode]->getSocketItem(outSockIdx, outKey);
-        m_tempLink = new ZenoTempLink(pOutSocketItem, outNode, socketPos, false, QModelIndexList());
+        m_tempLink = new ZenoTempLink(pOutSocketItem, outNode, socketPos, false, lnkProp, QModelIndexList());
         m_tempLink->setOldLink(linkIdx);
         addItem(m_tempLink);
 
@@ -686,7 +682,7 @@ void ZenoSubGraphScene::onSocketClicked(ZenoSocketItem* pSocketItem, Qt::MouseBu
             return y1 < y2;
         });
 
-        m_tempLink = new ZenoTempLink(pSocketItem, nodeid, socketPos, bInput, selNodes);
+        m_tempLink = new ZenoTempLink(pSocketItem, nodeid, socketPos, bInput, lnkProp, selNodes);
         addItem(m_tempLink);
         pSocketItem->setSockStatus(ZenoSocketItem::STATUS_TRY_CONN);
     }
@@ -724,7 +720,8 @@ void ZenoSubGraphScene::onSocketAbsorted(const QPointF& mousePos)
     bool bFixedInput = false;
     QString nodeId;
     QPointF fixedPos;
-    m_tempLink->getFixedInfo(nodeId, fixedPos, bFixedInput);
+    zeno::LinkFunction lnkProp = zeno::Link_Copy;
+    m_tempLink->getFixedInfo(nodeId, fixedPos, bFixedInput, lnkProp);
 
     QPointF pos = mousePos;
     QList<QGraphicsItem *> catchedItems = items(pos);
@@ -811,7 +808,8 @@ void ZenoSubGraphScene::onTempLinkClosed()
         QString fixedNodeId;
         bool fixedInput = false;
         QPointF fixedPos;
-        m_tempLink->getFixedInfo(fixedNodeId, fixedPos, fixedInput);
+        zeno::LinkFunction lnkProp = zeno::Link_Copy;
+        m_tempLink->getFixedInfo(fixedNodeId, fixedPos, fixedInput, lnkProp);
 
         if (bTargetIsInput != fixedInput)
         {
@@ -933,6 +931,7 @@ void ZenoSubGraphScene::onTempLinkClosed()
             newEdge.outParam = outSockIdx.data(ROLE_PARAM_NAME).toString().toStdString();
             newEdge.inNode = inNodeIdx.data(ROLE_NODE_NAME).toString().toStdString();
             newEdge.inParam = inSockIdx.data(ROLE_PARAM_NAME).toString().toStdString();
+            newEdge.lnkfunc = lnkProp;
 
             if (!fixedInput)
             {

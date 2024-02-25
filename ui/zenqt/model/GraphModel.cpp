@@ -478,6 +478,7 @@ void GraphModel::_addLink(const zeno::EdgeInfo link)
     QString inNode = QString::fromStdString(link.inNode);
     QString inParam = QString::fromStdString(link.inParam);
     QString inKey = QString::fromStdString(link.inKey);
+    zeno::LinkFunction lnkProp = link.lnkfunc;
 
     ParamsModel* fromParams = m_nodes[outNode]->params;
     ParamsModel* toParams = m_nodes[inNode]->params;
@@ -495,7 +496,7 @@ void GraphModel::_addLink(const zeno::EdgeInfo link)
                 emit fromParams->linkAboutToBeInserted(link);
         }
 
-        QModelIndex linkIdx = m_linkModel->addLink(from, outKey, to, inKey);
+        QModelIndex linkIdx = m_linkModel->addLink(from, outKey, to, inKey, lnkProp);
         fromParams->addLink(from, linkIdx);
         toParams->addLink(to, linkIdx);
     }

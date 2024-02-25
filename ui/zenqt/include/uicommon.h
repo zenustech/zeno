@@ -154,6 +154,7 @@ enum MODEL_ROLE {
     ROLE_ISINPUT,
     ROLE_LINKS,
     ROLE_LINKID,        //a uuid for a specific link
+    ROLE_LINK_PROP,
     ROLE_OBJPOS,
     ROLE_OBJPATH,
     ROLE_COLLASPED,

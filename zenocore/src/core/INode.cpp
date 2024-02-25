@@ -184,6 +184,10 @@ ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
                 std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
                 outNode->doApply();
                 zany outResult = outNode->get_output(out_param->name);
+                if (Link_Copy == spLink->lnkProp)
+                    outResult = outResult->clone();
+                else
+                    outResult = outResult;
                 if (spDict = std::dynamic_pointer_cast<DictObject>(outResult)) {
                     bDirecyLink = true;
                 }
@@ -198,6 +202,10 @@ ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
                     std::shared_ptr<INode> outNode = outParam->m_wpNode.lock();
                     outNode->doApply();
                     zany outResult = outNode->get_output(outParam->name);
+                    if (Link_Copy == spLink->lnkProp)
+                        outResult = outResult->clone();
+                    else
+                        outResult = outResult;
                     spDict->lut[keyName] = outResult;
                 }
             }
@@ -215,6 +223,10 @@ ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
                 std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
                 outNode->doApply();
                 zany outResult = outNode->get_output(out_param->name);
+                if (Link_Copy == spLink->lnkProp)
+                    outResult = outResult->clone();
+                else
+                    outResult = outResult;
                 if (spList = std::dynamic_pointer_cast<ListObject>(outResult))
                     bDirectLink = true;
             }
@@ -228,7 +240,10 @@ ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
                     std::shared_ptr<INode> outNode = outParam->m_wpNode.lock();
                     outNode->doApply();
                     zany outResult = outNode->get_output(outParam->name);
-                    spList->arr.push_back(outResult);
+                    if (Link_Copy == spLink->lnkProp)
+                        spList->arr.push_back(outResult->clone());
+                    else
+                        spList->arr.push_back(outResult);
                 }
             }
             in_param->result = spList;
@@ -244,7 +259,15 @@ ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
                 std::shared_ptr<INode> outNode = outParam->m_wpNode.lock();
                 outNode->doApply();
                 zany outResult = outNode->get_output(outParam->name);
-                in_param->result = outResult;
+                if (Link_Copy == spLink->lnkProp) {
+                    in_param->result = outResult->clone();
+                    if (false) {
+                        in_param->result->key = m_name;
+                    }
+                }
+                else {
+                    in_param->result = outResult;
+                }
             }
         }
     }
