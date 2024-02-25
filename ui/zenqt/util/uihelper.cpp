@@ -94,35 +94,52 @@ zeno::zvariant UiHelper::qvarToZVar(const QVariant& var, const zeno::ParamType t
     }
     else if (var.type() == QVariant::UserType)
     {
-        UI_VECTYPE vec = var.value<UI_VECTYPE>();
-        if (vec.isEmpty()) {
-            zeno::log_warn("unexpected qt variant {}", var.typeName());
-            return zeno::zvariant();
+        if (var.userType() == QMetaTypeId<UI_VECTYPE>::qt_metatype_id())
+        {
+            UI_VECTYPE vec = var.value<UI_VECTYPE>();
+            if (vec.isEmpty()) {
+                zeno::log_warn("unexpected qt variant {}", var.typeName());
+                return zeno::zvariant();
+            }
+            else {
+                if (vec.size() == 2) {
+                    if (type == zeno::Param_Vec2f) {
+                        return zeno::vec2f(vec[0], vec[1]);
+                    }
+                    else if (type == zeno::Param_Vec2i) {
+                        return zeno::vec2i((int)vec[0], (int)vec[1]);
+                    }
+                }
+                if (vec.size() == 3) {
+                    if (type == zeno::Param_Vec3f) {
+                        return zeno::vec3f(vec[0], vec[1], vec[2]);
+                    }
+                    else if (type == zeno::Param_Vec3i) {
+                        return zeno::vec3i((int)vec[0], (int)vec[1], (int)vec[2]);
+                    }
+                }
+                if (vec.size() == 4) {
+                    if (type == zeno::Param_Vec4f) {
+                        return zeno::vec2f(vec[0], vec[1], vec[2], vec[3]);
+                    }
+                    else if (type == zeno::Param_Vec4i) {
+                        return zeno::vec2i((int)vec[0], (int)vec[1], (int)vec[2], (int)vec[3]);
+                    }
+                }
+            }
         }
-        else {
+        else if (var.userType() == QMetaTypeId<UI_VECSTRING>::qt_metatype_id()) {
+            UI_VECSTRING vec = var.value<UI_VECSTRING>();
             if (vec.size() == 2) {
-                if (type == zeno::Param_Vec2f) {
-                    return zeno::vec2f(vec[0], vec[1]);
-                }
-                else if (type == zeno::Param_Vec2i) {
-                    return zeno::vec2i((int)vec[0], (int)vec[1]);
-                }
+                return zeno::vec2s(vec[0].toStdString(), vec[1].toStdString());
             }
             if (vec.size() == 3) {
-                if (type == zeno::Param_Vec3f) {
-                    return zeno::vec3f(vec[0], vec[1], vec[2]);
-                }
-                else if (type == zeno::Param_Vec3i) {
-                    return zeno::vec3i((int)vec[0], (int)vec[1], (int)vec[2]);
-                }
+                return zeno::vec3s(vec[0].toStdString(), vec[1].toStdString(),
+                    vec[2].toStdString());
             }
             if (vec.size() == 4) {
-                if (type == zeno::Param_Vec4f) {
-                    return zeno::vec2f(vec[0], vec[1], vec[2], vec[3]);
-                }
-                else if (type == zeno::Param_Vec4i) {
-                    return zeno::vec2i((int)vec[0], (int)vec[1], (int)vec[2], (int)vec[3]);
-                }
+                return zeno::vec4s(vec[0].toStdString(), vec[1].toStdString(),
+                    vec[2].toStdString(), vec[3].toStdString());
             }
         }
     }
