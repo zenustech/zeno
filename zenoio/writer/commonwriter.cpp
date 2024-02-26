@@ -177,6 +177,17 @@ namespace zenoio
 
             writer.Key("control");
             dumpControl(param.type, param.control, param.ctrlProps, writer);
+
+            writer.Key("socket-type");
+            if (param.socketType == zeno::ParamSocket) {
+                writer.String("parameter");
+            }
+            else if (param.socketType == zeno::PrimarySocket) {
+                writer.String("primary");
+            }
+            else {
+                writer.String("none");
+            }
         }
 
         if (!param.tooltip.empty())

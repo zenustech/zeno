@@ -190,6 +190,7 @@ ZENO_API std::shared_ptr<INode> AssetsMgr::newInstance(const std::string& assets
         sparam->name = param.name;
         sparam->type = param.type;
         sparam->control = param.control;
+        sparam->socketType = param.socketType;
         sparam->m_wpNode = spNode;
         spNode->add_input_param(sparam);
         spNode->m_input_names.push_back(param.name);
@@ -202,6 +203,7 @@ ZENO_API std::shared_ptr<INode> AssetsMgr::newInstance(const std::string& assets
         sparam->name = param.name;
         sparam->type = param.type;
         sparam->m_wpNode = spNode;
+        sparam->socketType = PrimarySocket;
         spNode->add_output_param(sparam);
         spNode->m_output_names.push_back(param.name);
     }

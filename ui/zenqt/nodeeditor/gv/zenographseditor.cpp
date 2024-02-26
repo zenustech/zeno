@@ -314,7 +314,7 @@ void ZenoGraphsEditor::onNewAsset()
 {
     bool bOk = false;
 
-    ZNewAssetDlg dlg;
+    ZNewAssetDlg dlg(this);
     if (QDialog::Accepted == dlg.exec())
     {
         zeno::AssetInfo asset = dlg.getAsset();

@@ -231,6 +231,19 @@ namespace zenoio
             param.defl = zenoio::jsonValueToZVar(sockObj["default-value"], param.type);
         }
 
+        if (sockObj.HasMember("socket-type") && sockObj["socket-type"].IsString()) {
+            const std::string& sockType = sockObj["socket-type"].GetString();
+            if (sockType == "primary") {
+                param.socketType = zeno::PrimarySocket;
+            }
+            else if (sockType == "parameter") {
+                param.socketType = zeno::ParamSocket;
+            }
+            else {
+                param.socketType = zeno::NoSocket;
+            }
+        }
+
         //link:
         if (bInput && sockObj.HasMember("links") && sockObj["links"].IsArray())
         {
