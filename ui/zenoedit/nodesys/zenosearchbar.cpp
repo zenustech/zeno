@@ -44,6 +44,8 @@ ZenoSearchBar::ZenoSearchBar(const QModelIndex& idx, QWidget *parentWidget)
     
     m_countLabel = new ZTextLabel(this);
     m_countLabel->setTextColor(Qt::white);
+    m_countLabel->setMinimumWidth(ZenoStyle::dpiScaled(30));
+    m_countLabel->setText(QString("%1|%2").arg(0).arg(m_results.size()));
     pEditLayout->addWidget(m_pLineEdit);
     pEditLayout->addWidget(m_countLabel);
     pEditLayout->addWidget(pSearchBackward);
@@ -81,8 +83,8 @@ void ZenoSearchBar::onSearchExec(const QString& content)
     m_results = pGraphsModel->searchInSubgraph(content, m_index);
     if (!m_results.isEmpty())
     {
-        m_countLabel->setText(QString::number(m_results.size()));
         m_idx = 0;
+        m_countLabel->setText(QString("%1|%2").arg(m_idx + 1).arg(m_results.size()));
         SEARCH_RECORD rec = _getRecord();
         emit searchReached(rec);
     }
@@ -94,6 +96,7 @@ void ZenoSearchBar::onSearchForward()
         m_idx = 0;
     if (!m_results.isEmpty() && m_idx < m_results.size())
     {
+        m_countLabel->setText(QString("%1|%2").arg(m_idx + 1).arg(m_results.size()));
         SEARCH_RECORD rec = _getRecord();
         emit searchReached(rec);
     }
@@ -106,6 +109,7 @@ void ZenoSearchBar::onSearchBackward()
 
     if (!m_results.isEmpty() && m_idx < m_results.size())
     {
+        m_countLabel->setText(QString("%1|%2").arg(m_idx + 1).arg(m_results.size()));
         SEARCH_RECORD rec = _getRecord();
         emit searchReached(rec);
     }
