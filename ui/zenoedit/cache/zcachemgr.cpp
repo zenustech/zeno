@@ -148,7 +148,11 @@ void ZCacheMgr::removeObjTmpCacheDir()
 
 bool ZCacheMgr::nextRunSkipCreateDir(LAUNCH_PARAM& param)
 {
-    if (m_bTempDir != param.tempDir)    //switch cache mode(tmp->notmp or notmp->tmp)
+    if (param.reRun)
+    {
+        return false;
+    }
+    else if (m_bTempDir != param.tempDir)    //switch cache mode(tmp->notmp or notmp->tmp)
     {
         return false;
     }
