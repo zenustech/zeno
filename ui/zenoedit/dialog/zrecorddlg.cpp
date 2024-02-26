@@ -33,6 +33,7 @@ ZRecordVideoDlg::ZRecordVideoDlg(QWidget* parent)
     m_ui->linePath->setText(info.record_path);
     m_ui->lineName->setText(info.videoname);;
     m_ui->cbAOV->setChecked(info.bAov);
+    m_ui->cbMask->setChecked(info.bMask);
     m_ui->cbExportEXR->setChecked(info.bExr);
 
     m_ui->cbPresets->addItems({"540P", "720P", "1080P", "2K", "4K"});
@@ -71,6 +72,7 @@ bool ZRecordVideoDlg::getInfo(VideoRecInfo &info)
 {
     auto &ud = zeno::getSession().userData();
     ud.set2("output_aov", m_ui->cbAOV->checkState() == Qt::Checked);
+    ud.set2("output_mask", m_ui->cbMask->checkState() == Qt::Checked);
     ud.set2("output_exr", m_ui->cbExportEXR->checkState() == Qt::Checked);
     auto &path = info.record_path;
     auto &fn = info.videoname;
@@ -123,6 +125,7 @@ bool ZRecordVideoDlg::getInfo(VideoRecInfo &info)
     record_settings.needDenoise = info.needDenoise;
     record_settings.bAutoRemoveCache = info.bAutoRemoveCache;
     record_settings.bAov = m_ui->cbAOV->checkState() == Qt::Checked;
+    record_settings.bMask = m_ui->cbMask->checkState() == Qt::Checked;
     record_settings.bExr = info.bExportEXR;
 
     zenoApp->graphsManagment()->setRecordSettings(record_settings);

@@ -495,7 +495,8 @@ vec3 EvalClearcoat(float ccR, vec3 V, vec3 L, vec3 H, float &pdf)
   float VDotH = abs(dot(V, H));
 
   float F = mix(0.04, 1.0, SchlickWeight(VDotH));
-  float D = clamp(GTR2Aniso(abs(H.z), H.x, H.y, ccR*ccR, ccR*ccR),0.0f, 100.0f);
+  float D = clamp(GTR2(abs(H.z), ccR),0.0f, 100.0f);
+//  float D = clamp(GTR2Aniso(abs(H.z), H.x, H.y, ccR*ccR, ccR*ccR),0.0f, 100.0f);
   float G = SmithG(L.z, 0.25f) * SmithG(V.z, 0.25f);
   float jacobian = 1.0f / (4.0f * VDotH);
 

@@ -24,6 +24,56 @@ find_package(Eigen3 REQUIRED)
 set(WHEREAMI_BUILD_SHARED_LIBS ON)
 add_subdirectory(zpc)
 
+if (ZS_PYTHON_FOUND)
+
+  if (DEFINED CMAKE_LIBRARY_OUTPUT_DIRECTORY)
+    set(RESOURCE_BASE_DIR ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+  elseif (DEFINED CMAKE_RUNTIME_OUTPUT_DIRECTORY)
+    set(RESOURCE_BASE_DIR ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+  else()
+    set(RESOURCE_BASE_DIR ${CMAKE_CURRENT_BINARY_DIR})
+  endif()
+
+  add_custom_target(copy_py)
+  add_dependencies(zeno copy_py)
+  # message(STATUS "retrieved python impl: ${Python3_INTERPRETER_ID}")
+  message(STATUS "python3 libraries: ${ZS_OVERWRITE_PYTHON_LIBRARIES}")
+  message(STATUS "python3 include directories: ${ZS_OVERWRITE_PYTHON_INCLUDE_DIR}")
+  if (WIN32)
+    cmake_path(GET ZS_OVERWRITE_PYTHON_INCLUDE_DIR PARENT_PATH PYTHON_ENV_PATH)
+    message(STATUS "python3 parent: ${PYTHON_ENV_PATH}")
+    add_custom_command(
+      TARGET copy_py
+      POST_BUILD
+      # COMMAND ${CMAKE_COMMAND} -E copy_directory ${PYTHON_ENV_PATH}/lib ${RESOURCE_BASE_DIR}/lib
+      # COMMAND ${CMAKE_COMMAND} -E copy_directory ${PYTHON_ENV_PATH}/dlls ${RESOURCE_BASE_DIR}/dlls
+      COMMAND ${CMAKE_COMMAND}
+      -DOBJECTS=${PYTHON_ENV_PATH}/lib
+      -DOUTPUT=${RESOURCE_BASE_DIR}
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/copy_dir.cmake
+
+      COMMAND ${CMAKE_COMMAND}
+      -DOBJECTS=${PYTHON_ENV_PATH}/dlls
+      -DOUTPUT=${RESOURCE_BASE_DIR}
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/copy_dir.cmake
+
+      COMMENT "copying python lib directories at ${PYTHON_ENV_PATH} to ${RESOURCE_BASE_DIR}"
+    )
+  else()
+    cmake_path(GET ZS_OVERWRITE_PYTHON_INCLUDE_DIR PARENT_PATH PYTHON_ENV_PATH)
+    cmake_path(GET PYTHON_ENV_PATH PARENT_PATH PYTHON_ENV_PATH)
+    message(STATUS "python3 parent: ${PYTHON_ENV_PATH}")
+    add_custom_command(
+      TARGET copy_py
+      POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_directory ${PYTHON_ENV_PATH}/lib ${RESOURCE_BASE_DIR}/lib
+
+      COMMENT "copying python lib directory ${PYTHON_ENV_PATH}/lib to ${RESOURCE_BASE_DIR}/lib"
+    )
+  endif()
+endif(ZS_PYTHON_FOUND)
+
+
 add_library(zshelper INTERFACE)
 target_include_directories(zshelper INTERFACE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
@@ -88,3 +138,4 @@ target_sources(zeno PRIVATE
 )
 
 add_subdirectory(remesh)
+add_subdirectory(cluster)

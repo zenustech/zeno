@@ -87,6 +87,10 @@ void Session::set_num_samples(int num_samples) {
     // TODO
 }
 
+void Session::set_viewport_point_size_scale(double scale) {
+    impl->scene->drawOptions->viewportPointSizeScale = scale;
+}
+
 void Session::set_normal_check(bool check) {
     impl->scene->drawOptions->normal_check = check;
 }

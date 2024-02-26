@@ -90,7 +90,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 #else
     size_t inst_idx = optixGetInstanceIndex();
     size_t vert_aux_offset = rt_data->auxOffset[inst_idx];
-    size_t vert_idx_offset = (vert_aux_offset + primIdx)*3;
+    size_t vert_idx_offset = vert_aux_offset + primIdx*3;
 
     float3 _vertices_[3];
     optixGetTriangleVertexData( gas, primIdx, sbtGASIndex, 0, _vertices_);
@@ -193,6 +193,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     if (opacity >0.99f || isLight == 1) // No need to calculate an expensive random number if the test is going to fail anyway.
     {
         optixIgnoreIntersection();
+        return;
     }
     else
     {
@@ -208,7 +209,17 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 
         if (p < skip){
             optixIgnoreIntersection();
+            return;
         }else{
+          if(mats.isHair>0.5f)
+          {
+             vec3 extinction = exp( - DisneyBSDF::CalculateExtinction(mats.sssParam,1.0f) );
+             if(p<min(min(extinction.x, extinction.y), extinction.z))
+             {
+               optixIgnoreIntersection();
+               return;
+             }
+          }
 
             if(length(prd->attanuation) < 0.01f){
                 prd->attanuation = vec3(0.0f);
@@ -328,7 +339,7 @@ extern "C" __global__ void __closesthit__radiance()
 
     size_t inst_idx = optixGetInstanceIndex();
     size_t vert_aux_offset = rt_data->auxOffset[inst_idx];
-    size_t vert_idx_offset = (vert_aux_offset + primIdx)*3;
+    size_t vert_idx_offset = vert_aux_offset + primIdx*3;
 
     unsigned short isLight = 0;//rt_data->lightMark[vert_aux_offset + primIdx];
 
@@ -405,9 +416,14 @@ extern "C" __global__ void __closesthit__radiance()
       Onb a(attrs.N);
       attrs.T = a.m_tangent;
     }
+    else
+    {
+      attrs.T = attrs.tang;
+    }
     attrs.V = -normalize(ray_dir);
     //MatOutput mats = evalMaterial(rt_data->textures, rt_data->uniforms, attrs);
     MatOutput mats = optixDirectCall<MatOutput, cudaTextureObject_t[], float4*, const MatInput&>( rt_data->dc_index, rt_data->textures, rt_data->uniforms, attrs );
+    prd->mask_value = mats.mask_value;
 
 
 #if _SPHERE_

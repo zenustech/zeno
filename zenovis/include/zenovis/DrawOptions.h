@@ -23,6 +23,7 @@ struct DrawOptions {
     int num_samples = 1;
     int msaa_samples = 0;
     bool denoise = false;
+    float viewportPointSizeScale = 1;
 
     std::shared_ptr<IGraphicHandler> handler;
 

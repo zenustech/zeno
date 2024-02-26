@@ -14,6 +14,20 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
                                                           std::string const &tagAttr) {
     //zeno::log_critical("asdfjhl {}", primList.size());
     //throw;
+    int poly_flag = 0;
+    for (auto &p : primList) {
+        if (p->polys.size()) {
+            poly_flag += 1;
+        }
+    }
+    // check if mix polys and tris
+    if (0 < poly_flag && poly_flag < primList.size()) {
+        for (auto &p : primList) {
+            if (p->polys.size() == 0) {
+                primPolygonate(p, true);
+            }
+        }
+    }
 
     auto outprim = std::make_shared<PrimitiveObject>();
 

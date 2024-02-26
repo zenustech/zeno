@@ -6,6 +6,7 @@
 #include <zeno/types/ListObject.h>
 #include <zeno/types/TextureObject.h>
 #include <zeno/utils/string.h>
+#include <zeno/utils/logger.h>
 #include <zeno/types/UserData.h>
 
 #include <memory>
@@ -82,6 +83,7 @@ struct ShaderFinalize : INode {
             {3, "mat_reflectance"}, 
             {1, "mat_opacity"},
             {1, "mat_thickness"},
+            {1, "mat_isHair"},
 
             {1, "vol_depth"},
             {1, "vol_extinction"},
@@ -139,6 +141,7 @@ struct ShaderFinalize : INode {
             get_input<IObject>("reflectance", std::make_shared<NumericObject>(vec3f(1))),
             get_input<IObject>("opacity", std::make_shared<NumericObject>(float(0.0))),
             get_input<IObject>("thickness", std::make_shared<NumericObject>(float(0.0f))),
+            get_input<IObject>("isHair", std::make_shared<NumericObject>(float(0.0f))),
 
             get_input<IObject>("vol_depth", std::make_shared<NumericObject>((float)(999))),
             get_input<IObject>("vol_extinction", std::make_shared<NumericObject>(float(1))),
@@ -157,6 +160,9 @@ struct ShaderFinalize : INode {
         } else {
             code += "bool sssFxiedRadius = false;\n";
         }
+
+        vec3i mask_value = get_input2<vec3i>("mask_value");
+        code += zeno::format("vec3 mask_value = vec3({}, {}, {});\n", mask_value[0], mask_value[1], mask_value[2]);
 
         auto mtl = std::make_shared<MaterialObject>();
         mtl->frag = std::move(code);
@@ -338,6 +344,7 @@ ZENDEFNODE(ShaderFinalize, {
         {"vec3f", "reflectance", "1,1,1"},
         {"float", "opacity", "0"},
         {"float", "thickness", "0.0"},
+        {"float", "isHair", "0.0"},
 
         {"string", "commonCode"},
         {"string", "extensionsCode"},
@@ -354,7 +361,8 @@ ZENDEFNODE(ShaderFinalize, {
         {"float", "vol_sample_anisotropy", "0"},
 
         {"float", "vol_sample_density", "0"},
-        {"vec3f", "vol_sample_emission", "0,0,0"}
+        {"vec3f", "vol_sample_emission", "0,0,0"},
+        {"vec3i", "mask_value", "0,0,0"},
     },
     {
         {"MaterialObject", "mtl"},

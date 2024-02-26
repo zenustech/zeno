@@ -131,13 +131,20 @@ struct JsonGetChild : zeno::INode {
             float z = float(json->json[name][2]);
             set_output2("out", vec3f(x, y, z));
         }
+        else if (type == "vec4f") {
+            float x = float(json->json[name][0]);
+            float y = float(json->json[name][1]);
+            float z = float(json->json[name][2]);
+            float w = float(json->json[name][3]);
+            set_output2("out", vec4f(x, y, z, w));
+        }
     }
 };
 ZENDEFNODE(JsonGetChild, {
     {
         {"json"},
         {"string", "name"},
-        {"enum json int float string vec2f vec3f", "type"},
+        {"enum json int float string vec2f vec3f vec4f", "type"},
     },
     {
         "out",

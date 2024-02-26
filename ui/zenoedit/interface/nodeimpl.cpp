@@ -157,9 +157,9 @@ Node_getattr(ZNodeObject* self, char* name)
     return Py_None;
 }
 
-static QVariant parseValue(PyObject *v, const QString& type)
+static QVariant parseValue(PyObject *v, const QString& type, const QVariant& defVal)
 {
-    QVariant val;
+    QVariant val = defVal;
     if (type == "string")
     {
         char* _val = nullptr;
@@ -189,45 +189,49 @@ static QVariant parseValue(PyObject *v, const QString& type)
         PyObject* obj;
         if (PyArg_Parse(v, "O", &obj))
         {
-            int count = Py_SIZE(obj);
-            UI_VECTYPE vec;
-            vec.resize(count);
+            auto tp_name = Py_TYPE(obj)->tp_name;
             bool bError = false;
-            if (type.contains("i"))
+            if (defVal.canConvert<UI_VECTYPE>() && QString::fromLocal8Bit(tp_name) == "list")
             {
-                for (int i = 0; i < count; i++)
+                UI_VECTYPE vec = defVal.value<UI_VECTYPE>();
+                int count = vec.size() > Py_SIZE(obj) ? Py_SIZE(obj) : vec.size();
+                if (type.contains("i"))
                 {
-                    PyObject* item = PyTuple_GET_ITEM(obj, i);
-                    int iVal;
-                    if (PyArg_Parse(item, "i", &iVal))
+                    for (int i = 0; i < count; i++)
                     {
-                        vec[i] = iVal;
-                    }
-                    else {
-                        bError = true;
-                        break;
+                        PyObject* item = PyList_GET_ITEM(obj, i);
+                        int iVal;
+                        if (PyArg_Parse(item, "i", &iVal))
+                        {
+                            vec[i] = iVal;
+                        }
+                        else {
+                            bError = true;
+                            break;
+                        }
                     }
                 }
-            }
-            else if (type.contains("f"))
-            {
-                for (int i = 0; i < count; i++)
+                else if (type.contains("f"))
                 {
-                    PyObject* item = PyTuple_GET_ITEM(obj, i);
-                    float dbVval;
-                    if (PyArg_Parse(item, "f", &dbVval))
+                    for (int i = 0; i < count; i++)
                     {
-                        vec[i] = dbVval;
-                    }
-                    else {
-                        bError = true;
-                        break;
+                        PyObject* item = PyList_GET_ITEM(obj, i);
+                        float dbVval;
+                        if (PyArg_Parse(item, "f", &dbVval))
+                        {
+                            vec[i] = dbVval;
+                        }
+                        else {
+                            bError = true;
+                            break;
+                        }
                     }
                 }
-            }
-            else
-            {
-                bError = true;
+                else
+                {
+                    bError = true;
+                }
+                val = QVariant::fromValue(vec);
             }
             if (bError)
             {
@@ -235,7 +239,6 @@ static QVariant parseValue(PyObject *v, const QString& type)
                 PyErr_WriteUnraisable(Py_None);
                 return val;
             }
-            val = QVariant::fromValue(vec);
         }
     }
     if (!val.isValid())
@@ -254,7 +257,7 @@ Node_setattr(ZNodeObject* self, char* name, PyObject* v)
     {
         PyErr_SetString(PyExc_Exception, "Model is NULL");
         PyErr_WriteUnraisable(Py_None);
-        return -1;
+        return 0;
     }
     if (strcmp(name, "pos") == 0)
     {
@@ -263,7 +266,7 @@ Node_setattr(ZNodeObject* self, char* name, PyObject* v)
         {
             PyErr_SetString(PyExc_Exception, "args error");
             PyErr_WriteUnraisable(Py_None);
-            return -1;
+            return 0;
         }
 
         pModel->setData(self->nodeIdx, QPointF(x, y), ROLE_OBJPOS);
@@ -275,7 +278,7 @@ Node_setattr(ZNodeObject* self, char* name, PyObject* v)
         {
             PyErr_SetString(PyExc_Exception, "args error");
             PyErr_WriteUnraisable(Py_None);
-            return -1;
+            return 0;
         }
         int options_old = self->nodeIdx.data(ROLE_OPTIONS).toInt();
         int options = options_old;
@@ -296,7 +299,7 @@ Node_setattr(ZNodeObject* self, char* name, PyObject* v)
         {
             PyErr_SetString(PyExc_Exception, "args error");
             PyErr_WriteUnraisable(Py_None);
-            return -1;
+            return 0;
         }
         pModel->setData(self->nodeIdx, bCollasped, ROLE_COLLASPED);
     }
@@ -311,14 +314,14 @@ Node_setattr(ZNodeObject* self, char* name, PyObject* v)
         {
             PyErr_SetString(PyExc_Exception, "Model is NULL");
             PyErr_WriteUnraisable(Py_None);
-            return -1;
+            return 0;
         }
         if (inputs.contains(name))
         {
             INPUT_SOCKET socket = inputs[name];
-            QVariant val = parseValue(v, socket.info.type);
+            QVariant val = parseValue(v, socket.info.type, socket.info.defaultValue);
             if (!val.isValid())
-                return -1;
+                return 0;
             info.newValue = val;
             info.oldValue = socket.info.defaultValue;
             pCurrModel->updateSocketDefl(socket.info.nodeid, info, self->subgIdx);
@@ -327,9 +330,9 @@ Node_setattr(ZNodeObject* self, char* name, PyObject* v)
         else if (params.contains(name))
         {
             PARAM_INFO param = params[name];
-            QVariant val = parseValue(v, param.typeDesc);
+            QVariant val = parseValue(v, param.typeDesc, param.defaultValue);
             if (!val.isValid())
-                return -1;
+                return 0;
             info.newValue = val;
             info.oldValue = param.defaultValue;
             pCurrModel->updateParamInfo(self->nodeIdx.data(ROLE_OBJID).toString(), info, self->subgIdx);

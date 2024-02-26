@@ -45,7 +45,7 @@ private slots:
     void onSaveSubgraph(const QModelIndex& index);
 
 private:
-    QModelIndexList getSubgraphs(const QModelIndex& index);
+    void getSubgraphs(const QModelIndex& index, QModelIndexList& subgraphs);
 
 private:
     IGraphsModel* m_model;

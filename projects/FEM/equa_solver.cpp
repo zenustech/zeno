@@ -25,7 +25,7 @@ struct Jiggle : zeno::INode {
             auto& ppjiggle =  prim->attr<zeno::vec3f>("prepreJiggle");
 
             #pragma omp parallel for
-            for(size_t i = 0;i < prim->size();++i){
+            for(auto i = 0;i < prim->size();++i){
                 cjiggle[i] = ppos_vec[i];
                 pjiggle[i] = ppos_vec[i];
                 ppjiggle[i] = ppos_vec[i];
@@ -51,7 +51,7 @@ struct Jiggle : zeno::INode {
 
 //  try explicit integrator first
         #pragma omp parallel for
-        for(size_t i = 0;i < prim->size();++i){
+        for(auto i = 0;i < prim->size();++i){
             const auto& cpos = cpos_vec[i];
             const auto& ppos = ppos_vec[i];
             const auto& pppos = pppos_vec[i];
@@ -156,7 +156,7 @@ struct BuildLapaceOperator : zeno::INode {
 
         // std::cout << "checkout_1" << std::endl;
         #pragma omp parallel for
-        for(size_t elm_id = 0;elm_id < prim->quads.size();++elm_id){
+        for(auto elm_id = 0;elm_id < prim->quads.size();++elm_id){
             const auto& elm = prim->quads[elm_id];
             Mat3x3d Dm;
             for(size_t i = 1;i < 4;++i){
@@ -213,7 +213,7 @@ struct BuildLapaceOperator : zeno::INode {
 
 //      Compute the Laplace Operator For Elastic Object
         #pragma omp parallel for
-        for(size_t elm_id = 0;elm_id < prim->quads.size();++elm_id){
+        for(auto elm_id = 0;elm_id < prim->quads.size();++elm_id){
             const auto& elm = prim->quads[elm_id];
             Mat12x12d elm_H = elm_stiffness[elm_id] * vols[elm_id] * elm_dFdx[elm_id].transpose() * elm_dFdx[elm_id];
 
@@ -341,7 +341,7 @@ struct SolveFEMFast : zeno::INode {
 
                 // std::cout << "HELO LAMBDA TEST" << std::endl;
                 #pragma omp parallel for
-                for(size_t i = 0;i < shape->size();++i)
+                for(auto i = 0;i < shape->size();++i)
                     cpos[i] = zeno::vec3f(x[i*3 + 0],x[i*3 + 1],x[i*3 + 2]);
 
                 auto f_start = std::clock();    

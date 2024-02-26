@@ -1988,12 +1988,12 @@ void ZenoMainWindow::save()
     if (!pModel)
         return;
 
-    /*
-    if (pModel->hasNotDescNode())
+    QStringList notVerLst = pModel->getNotDescNodes();
+    if (!notVerLst.isEmpty())
     {
         int flag = QMessageBox::question(this, "",
-            tr("there is some nodes which are not descriped by the current version\n"
-                "the save action will lose them, we recommand you choose \"Save As\" to save it"),
+            tr("there is some nodes (including %1), include which are not descriped by the current version\n"
+                "the save action will lose them, we recommand you choose \"Save As\" to save it").arg(notVerLst.join(',')),
             QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
         if (flag & QMessageBox::No)
         {
@@ -2002,7 +2002,6 @@ void ZenoMainWindow::save()
         saveAs();
         return;
     }
-    */
 
     zenoio::ZSG_VERSION ver = pModel->ioVersion();
     if (zenoio::VER_2 == ver)
