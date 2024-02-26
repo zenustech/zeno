@@ -1,3 +1,6 @@
+#ifdef ZENO_WITH_PYTHON3
+#include <Python.h>
+#endif
 #include "apphelper.h"
 #include <zenomodel/include/modeldata.h>
 #include <zenomodel/include/modelrole.h>
@@ -515,4 +518,72 @@ void AppHelper::dumpTabsToZsg(QDockWidget* dockWidget, RAPIDJSON_WRITER& writer)
             }
         }
     }
+}
+
+void AppHelper::pythonExcute(const QString& code)
+{
+#ifdef ZENO_WITH_PYTHON3
+    std::string stdOutErr =
+        "import sys\n\
+class CatchOutErr:\n\
+    def __init__(self):\n\
+        self.value = ''\n\
+    def write(self, txt):\n\
+        self.value += txt\n\
+    def flush(self):\n\
+        pass\n\
+catchOutErr = CatchOutErr()\n\
+sys.stdout = catchOutErr\n\
+sys.stderr = catchOutErr\n\
+"; //this is python code to redirect stdouts/stderr
+
+    Py_Initialize();
+    PyObject* pModule = PyImport_AddModule("__main__"); //create main module
+    PyRun_SimpleString(stdOutErr.c_str()); //invoke code to redirect
+
+    //Py_Initialize();
+    if (PyRun_SimpleString(code.toUtf8()) < 0) {
+        zeno::log_warn("Python Script run failed");
+    }
+    PyObject* catcher = PyObject_GetAttrString(pModule, "catchOutErr"); //get our catchOutErr created above
+    PyObject* output = PyObject_GetAttrString(catcher, "value"); //get the stdout and stderr from our catchOutErr object
+    if (output != Py_None)
+    {
+        QString str = QString::fromStdString(_PyUnicode_AsString(output));
+        QStringList lst = str.split('\n');
+        for (const auto& line : lst)
+        {
+            if (!line.isEmpty())
+            {
+                if (zenoApp->isUIApplication())
+                    ZWidgetErrStream::appendFormatMsg(line.toStdString());
+            }
+        }
+    }
+#else
+    zeno::log_warn("The option 'ZENO_WITH_PYTHON3' should be ON");
+#endif
+}
+
+void AppHelper::generatePython(const QString& id)
+{
+    auto main = zenoApp->getMainWindow();
+    ZASSERT_EXIT(main);
+
+    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+
+    TIMELINE_INFO tinfo = main->timelineInfo();
+
+    LAUNCH_PARAM launchParam;
+    launchParam.beginFrame = tinfo.beginFrame;
+    launchParam.endFrame = tinfo.endFrame;
+    QString path = pModel->filePath();
+    path = path.left(path.lastIndexOf("/"));
+    launchParam.zsgPath = path;
+
+    launchParam.projectFps = main->timelineInfo().timelinefps;
+    launchParam.generator = id;
+
+    AppHelper::initLaunchCacheParam(launchParam);
+    launchProgram(pModel, launchParam);
 }
