@@ -5,12 +5,16 @@
 #include <vector>
 #include <memory>
 #include <map>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 namespace zeno {
 
 struct ListObject : IObjectClone<ListObject> {
   std::vector<zany> arr;
   std::map<std::string, std::string> itemidxs;
+  glm::mat4 transformMat = glm::mat4(1);
 
   ListObject() = default;
 

@@ -10,6 +10,9 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 namespace zeno {
 
@@ -142,6 +145,8 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
 
     std::shared_ptr<MaterialObject> mtl;
     std::shared_ptr<InstancingObject> inst;
+
+    glm::mat4 transformMat = glm::mat4(1);
 
     // deprecated:
     template <class Accept = std::variant<vec3f, float>, class F>

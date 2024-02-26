@@ -197,20 +197,20 @@ ZENDEFNODE(TransformPrimitive, {
     {"deprecated"},
 });
 
+static glm::vec3 mapplypos(glm::mat4 const &matrix, glm::vec3 const &vector) {
+    auto vector4 = matrix * glm::vec4(vector, 1.0f);
+    return glm::vec3(vector4) / vector4.w;
+}
+static glm::vec3 mapplynrm(glm::mat4 const &matrix, glm::vec3 const &vector) {
+    glm::mat3 normMatrix(matrix);
+    normMatrix = glm::transpose(glm::inverse(normMatrix));
+    auto vector3 = normMatrix * vector;
+    return glm::normalize(vector3);
+}
 // euler rot order: roll-pitch-yaw
 // euler rot unit use degrees
 struct PrimitiveTransform : zeno::INode {
-    static glm::vec3 mapplypos(glm::mat4 const &matrix, glm::vec3 const &vector) {
-        auto vector4 = matrix * glm::vec4(vector, 1.0f);
-        return glm::vec3(vector4) / vector4.w;
-    }
 
-    static glm::vec3 mapplynrm(glm::mat4 const &matrix, glm::vec3 const &vector) {
-        glm::mat3 normMatrix(matrix);
-        normMatrix = glm::transpose(glm::inverse(normMatrix));
-        auto vector3 = normMatrix * vector;
-        return glm::normalize(vector3);
-    }
 
     static std::optional<std::shared_ptr<IObject>> get_from_list(std::string path, std::shared_ptr<IObject> iObject, std::map<std::string, std::string>& listitemidxs) {
         if (path.empty() || path == "/") {
@@ -420,6 +420,60 @@ ZENDEFNODE(PrimitiveTransform, {
     {
         {"enum " + EulerAngle::RotationOrderListString(), "EulerRotationOrder", EulerAngle::RotationOrderDefaultString()},
         {"enum " + EulerAngle::MeasureListString(), "EulerAngleMeasure", "Degree"}
+    },
+    {"primitive"},
+});
+
+struct PrimitiveCollapse : zeno::INode {
+    static void transformObj(std::shared_ptr<IObject> iObject, glm::mat4 parent_matrix = glm::mat4(1)) {
+        if (auto prim = std::dynamic_pointer_cast<PrimitiveObject>(iObject)) {
+            auto matrix = prim->transformMat * parent_matrix;
+            if (matrix != glm::mat4(1)) {
+                if (prim->has_attr("pos")) {
+                    auto &pos = prim->attr<zeno::vec3f>("pos");
+                    prim->verts.add_attr<zeno::vec3f>("_origin_pos") = pos;
+                    #pragma omp parallel for
+                    for (int i = 0; i < pos.size(); i++) {
+                        auto p = zeno::vec_to_other<glm::vec3>(pos[i]);
+                        p = mapplypos(matrix, p);
+                        pos[i] = zeno::other_to_vec<3>(p);
+                    }
+                }
+
+                if (prim->has_attr("nrm")) {
+                    auto &nrm = prim->attr<zeno::vec3f>("nrm");
+                    prim->verts.add_attr<zeno::vec3f>("_origin_nrm") = nrm;
+                    #pragma omp parallel for
+                    for (int i = 0; i < nrm.size(); i++) {
+                        auto n = zeno::vec_to_other<glm::vec3>(nrm[i]);
+                        n = mapplynrm(matrix, n);
+                        nrm[i] = zeno::other_to_vec<3>(n);
+                    }
+                }
+            }
+        }
+        else {
+            auto list = std::dynamic_pointer_cast<ListObject>(iObject);
+            for (auto &item : list->arr) {
+                transformObj(item, list->transformMat);
+            }
+        }
+    }
+    virtual void apply() override {
+        auto iObject = get_input2<IObject>("in");
+        transformObj(iObject);
+        set_output("outPrim", std::move(iObject));
+    }
+};
+
+ZENDEFNODE(PrimitiveCollapse, {
+    {
+        "in"
+    },
+    {
+        "out"
+    },
+    {
     },
     {"primitive"},
 });
