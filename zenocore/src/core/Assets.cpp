@@ -171,15 +171,89 @@ ZENO_API void AssetsMgr::updateAssets(const std::string name, ParamsUpdateInfo i
     }
 }
 
-ZENO_API std::shared_ptr<INode> AssetsMgr::newInstance(const std::string& assetsName, const std::string& nodeName) {
+GraphData AssetsMgr::forkAssetGraph(std::shared_ptr<Graph> assetGraph)
+{
+    zeno::GraphData newGraph;
+    newGraph.templateName = assetGraph->getName();
+
+    std::unordered_map<std::string, std::string> old2new;
+    std::unordered_map<std::string, int> node_idx_set;
+
+    for (const auto& [name, spNode] : assetGraph->getNodes())
+    {
+        zeno::NodeData nodeDat;
+        const std::string& oldName = spNode->get_name();
+        const std::string& cls = spNode->get_nodecls();
+
+        if (node_idx_set.find(cls) == node_idx_set.end()) {
+            node_idx_set[cls] = 1;
+        }
+        int newIdNum = node_idx_set[cls]++;
+        const std::string& newName = cls + std::to_string(newIdNum);
+
+        old2new.insert(std::make_pair(oldName, newName));
+
+        if (auto spSubnetNode = std::dynamic_pointer_cast<SubnetNode>(spNode))
+        {
+            const std::string& cls = spSubnetNode->get_nodecls();
+            if (m_assets.find(cls) != m_assets.end()) {
+                //asset node
+                GraphData fork_graph = forkAssetGraph(spSubnetNode->subgraph);
+                nodeDat = spSubnetNode->exportInfo();
+                nodeDat.subgraph = fork_graph;
+            }
+            else {
+                nodeDat = spSubnetNode->exportInfo();
+            }
+        }
+        else {
+            nodeDat = spNode->exportInfo();
+        }
+        nodeDat.name = newName;
+        newGraph.nodes[newName] = nodeDat;
+    }
+
+    LinksData oldLinks = assetGraph->exportLinks();
+    for (zeno::EdgeInfo oldLink : oldLinks) {
+        zeno::EdgeInfo newLink = oldLink;
+        newLink.inNode = old2new[newLink.inNode];
+        newLink.outNode = old2new[newLink.outNode];
+        newGraph.links.push_back(newLink);
+    }
+    return newGraph;
+}
+
+ZENO_API bool AssetsMgr::isAssetGraph(std::shared_ptr<Graph> spGraph) const
+{
+    for (auto& [name, asset] : m_assets) {
+        if (asset.sharedGraph == spGraph)
+            return true;
+    }
+    return false;
+}
+
+ZENO_API std::shared_ptr<INode> AssetsMgr::newInstance(const std::string& assetsName, const std::string& nodeName, bool expandAsset) {
     if (m_assets.find(assetsName) == m_assets.end()) {
         return nullptr;
     }
 
-    auto& assets = m_assets[assetsName];
+    Asset& assets = m_assets[assetsName];
 
     std::shared_ptr<SubnetNode> spNode = std::make_shared<SubnetNode>();
-    spNode->subgraph = assets.sharedGraph;
+
+    std::shared_ptr<Graph> assetGraph;
+    //should expand the asset graph into a tree.
+    if (expandAsset) {
+        assert(assets.sharedGraph);
+        GraphData forkedGraph = forkAssetGraph(assets.sharedGraph);
+        assetGraph = std::make_shared<Graph>(assetsName, true);
+        assetGraph->init(forkedGraph);
+    }
+    else {
+        assetGraph = assets.sharedGraph;
+    }
+
+    spNode->subgraph = assetGraph;
     spNode->m_nodecls = assetsName;
     spNode->m_name = nodeName;
 

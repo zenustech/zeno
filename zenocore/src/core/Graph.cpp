@@ -432,7 +432,8 @@ ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls, std::s
         node->nodeClass = cl;
     }
     else {
-        node = getSession().assets->newInstance(cls, name);
+        bool isCurrentGraphAsset = getSession().assets->isAssetGraph(shared_from_this());
+        node = getSession().assets->newInstance(cls, name, !isCurrentGraphAsset);
         asset_nodes.insert(name);
     }
 
@@ -521,6 +522,18 @@ ZENO_API GraphData Graph::exportGraph() const {
         graph.nodes.insert(std::make_pair(name, nodeinfo));
     }
     return graph;
+}
+
+ZENO_API LinksData Graph::exportLinks() const
+{
+    LinksData links;
+    for (auto& [name, node] : m_nodes) {
+        zeno::NodeData nodeinfo = node->exportInfo();
+        for (ParamInfo param : nodeinfo.inputs) {
+            links.insert(links.end(), param.links.begin(), param.links.end());
+        }
+    }
+    return links;
 }
 
 ZENO_API std::string Graph::getName() const {

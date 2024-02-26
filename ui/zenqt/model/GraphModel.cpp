@@ -62,11 +62,8 @@ void NodeItem::init(GraphModel* pGraphM, std::shared_ptr<zeno::INode> spNode)
     this->pos = QPointF(pair.first, pair.second);
     if (std::shared_ptr<zeno::SubnetNode> subnetnode = std::dynamic_pointer_cast<zeno::SubnetNode>(spNode))
     {
-        if (!subnetnode->isAssetsNode()) {
-            //the graphM of asset node should be get from AssetsModel.
-            GraphModel* parentM = qobject_cast<GraphModel*>(this->parent());
-            this->optSubgraph = new GraphModel(subnetnode->subgraph, parentM->treeModel(), this);
-        }
+        GraphModel* parentM = qobject_cast<GraphModel*>(this->parent());
+        this->optSubgraph = new GraphModel(subnetnode->subgraph, parentM->treeModel(), this);
     }
 }
 
@@ -284,21 +281,16 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
         }
         case ROLE_NODETYPE:
         {
-            if (item->optSubgraph.has_value()) {
-                return zeno::Node_SubgraphNode;
-            }
-            else {
-                //TODO: other case.
-                std::shared_ptr<zeno::INode> spNode = item->m_wpNode.lock();
-                auto spSubnetNode = std::dynamic_pointer_cast<zeno::SubnetNode>(spNode);
-                if (spSubnetNode) {
-                    bool bAssets = spSubnetNode->subgraph->isAssets();
-                    if (bAssets) {
-                        return zeno::Node_AssetInstance;
-                    }
+            std::shared_ptr<zeno::INode> spNode = item->m_wpNode.lock();
+            auto spSubnetNode = std::dynamic_pointer_cast<zeno::SubnetNode>(spNode);
+            if (spSubnetNode) {
+                bool bAssets = spSubnetNode->subgraph->isAssets();
+                if (bAssets) {
+                    return zeno::Node_AssetInstance;
                 }
-                return zeno::Node_Normal;
-            }
+                return zeno::Node_SubgraphNode;
+           }
+           return zeno::Node_Normal;
         }
         case ROLE_OBJPATH:
         {

@@ -88,6 +88,8 @@ struct Graph : std::enable_shared_from_this<Graph> {
 
     ZENO_API GraphData exportGraph() const;
 
+    ZENO_API LinksData exportLinks() const;
+
     ZENO_API std::string getName() const;
     ZENO_API void setName(const std::string& name);
 

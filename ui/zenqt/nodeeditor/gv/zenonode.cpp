@@ -1252,14 +1252,16 @@ void ZenoNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
     {
         const QModelIndex& nodeIdx = index();
         zeno::NodeType type = (zeno::NodeType)nodeIdx.data(ROLE_NODETYPE).toInt();
-        if (type == zeno::Node_SubgraphNode)
+        if (type == zeno::Node_SubgraphNode || type == zeno::Node_AssetInstance)
         {
+            //fork and expand asset graph
             ZenoGraphsEditor* pEditor = getEditorViewByViewport(event->widget());
             if (pEditor)
             {
                 pEditor->onPageActivated(nodeIdx);
             }
         }
+        /*
         else if (type == zeno::Node_AssetInstance)
         {
             ZenoGraphsEditor* pEditor = getEditorViewByViewport(event->widget());
@@ -1269,6 +1271,7 @@ void ZenoNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
                 pEditor->activateTab({ assetName });
             }
         }
+        */
         // for temp support to show handler via transform node
         else if (nodeName().contains("TransformPrimitive"))
         {
