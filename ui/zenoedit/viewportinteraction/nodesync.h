@@ -8,6 +8,9 @@
 #include <optional>
 #include <unordered_map>
 #include "timeline/ztimeline.h"
+#include <zenomodel/include/nodeparammodel.h>
+#include "variantptr.h"
+
 namespace zeno {
 struct NodeLocation{
     QModelIndex node;
@@ -120,9 +123,42 @@ class NodeSyncMgr {
                                       node_location.subgraph,
                                       true);
     }
+    void setNodeInputVec(NodeLocation& node_location,
+        const std::string& input_name,
+        const UI_VECTYPE new_value) {
+        auto graph_model = zenoApp->graphsManagment()->currentModel();
+        if (!graph_model) {
+            return;
+        }
+        QModelIndex& idx = node_location.node;
+        NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(idx.data(ROLE_NODE_PARAMS));
+        const QModelIndex& paramIdx = nodeParams->getParam(PARAM_INPUT, QString::fromStdString(input_name));
+        graph_model->ModelSetData(paramIdx, QVariant::fromValue(new_value), ROLE_PARAM_VALUE);
+    }
     void updateNodeInputString(NodeLocation node_location,
                                const std::string& input_name,
                                const std::string& new_value);
+    template <class T>
+    void updateNodeInputNumeric(NodeLocation node_location, const std::string& input_name, const T& new_value) {
+        auto graph_model = zenoApp->graphsManagment()->currentModel();
+        if (!graph_model) {
+            return;
+        }
+
+        auto node_id = node_location.node.data(ROLE_OBJID).toString();
+        auto inputs = node_location.node.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+        auto old_value = inputs[input_name.c_str()].info.defaultValue.value<QString>();
+        PARAM_UPDATE_INFO update_info{
+            input_name.c_str(),
+            QVariant::fromValue(old_value),
+            QVariant::fromValue(new_value)
+        };
+        graph_model->updateSocketDefl(node_id,
+            update_info,
+            node_location.subgraph,
+            true);
+    };
+
     void updateNodeParamString(NodeLocation node_location,
                                const std::string& param_name,
                                const std::string& new_value);

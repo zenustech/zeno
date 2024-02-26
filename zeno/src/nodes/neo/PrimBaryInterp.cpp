@@ -50,7 +50,7 @@ struct PrimBarycentricInterp : INode {
         }
 
         #pragma omp parallel for
-        for (size_t index = 0; index < points->size(); ++index) {
+        for (auto index = 0; index < points->size(); ++index) {
             auto tidx = prim->tris[(int)triIndex[index]];
             int v0 = (int)(tidx[0]), v1 = (int)(tidx[1]), v2 = (int)(tidx[2]);
             vec3f w = wIndex[index];

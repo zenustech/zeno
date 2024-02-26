@@ -120,7 +120,7 @@ void computeTrianglesTangent(zeno::PrimitiveObject *prim)
     bool has_uv = tris.has_attr("uv0")&&tris.has_attr("uv1")&&tris.has_attr("uv2");
     //printf("!!has_uv = %d\n", has_uv);
 #pragma omp parallel for
-    for (size_t i = 0; i < prim->tris.size(); ++i)
+    for (auto i = 0; i < prim->tris.size(); ++i)
     {
         if(has_uv) {
             const auto &pos0 = pos[tris[i][0]];

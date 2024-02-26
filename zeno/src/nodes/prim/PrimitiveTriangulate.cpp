@@ -214,4 +214,103 @@ ZENDEFNODE(PrimitiveTriangulate,
         }});
 
 }
+
+ZENO_API void primTriangulateIntoPolys(PrimitiveObject *prim) {
+    if (prim->tris.size()) {
+        primPolygonate(prim, true);
+    }
+    else if (prim->polys.size()) {
+        int new_poly_count = 0;
+        int new_loops_count = 0;
+        for (auto [_s, c] : prim->polys) {
+            new_poly_count += c > 3 ? c - 2 : 1;
+            new_loops_count += c > 3 ? 3 * (c - 2) : c;
+        }
+
+        {
+            AttrVector<int> loops;
+            loops.values.reserve(new_loops_count);
+            std::vector<int> loops_mapping_old;
+            loops_mapping_old.reserve(new_loops_count);
+            for (auto j = 0; j < prim->polys.size(); j++) {
+                auto [s, c] = prim->polys[j];
+                if (c > 3) {
+                    for (auto i = 0; i < c - 2; i++) {
+                        loops.emplace_back(prim->loops[s]);
+                        loops.emplace_back(prim->loops[s + 1 + i]);
+                        loops.emplace_back(prim->loops[s + 2 + i]);
+                        loops_mapping_old.emplace_back(s);
+                        loops_mapping_old.emplace_back(s + 1 + i);
+                        loops_mapping_old.emplace_back(s + 2 + i);
+                    }
+                }
+                else {
+                    for (auto i = s; i < s + c; i++) {
+                        loops.emplace_back(prim->loops[i]);
+                        loops_mapping_old.emplace_back(i);
+                    }
+                }
+            }
+            prim->loops.foreach_attr<AttrAcceptAll>([&](auto const &key, auto &arr) {
+                using T = std::decay_t<decltype(arr[0])>;
+                auto &attr = loops.add_attr<T>(key);
+                for (auto i = 0; i < attr.size(); i++) {
+                    attr[i] = arr[loops_mapping_old[i]];
+                }
+            });
+            prim->loops = loops;
+        }
+        {
+            AttrVector<vec2i> polys;
+            polys.values.reserve(new_poly_count);
+            std::vector<int> polys_mapping_old;
+            polys_mapping_old.reserve(new_poly_count);
+            for (auto j = 0; j < prim->polys.size(); j++) {
+                auto [_s, c] = prim->polys[j];
+                if (c > 3) {
+                    for (auto i = 0; i < c - 2; i++) {
+                        polys.values.emplace_back(0, 3);
+                        polys_mapping_old.emplace_back(j);
+                    }
+                }
+                else {
+                    polys.values.emplace_back(0, c);
+                    polys_mapping_old.emplace_back(j);
+                }
+            }
+            int start = 0;
+            for (auto i = 0; i < polys.size(); i++) {
+                auto [_s, c] = polys[i];
+                polys[i] = {start, c};
+                start += c;
+            }
+            prim->polys.foreach_attr<AttrAcceptAll>([&](auto const &key, auto &arr) {
+                using T = std::decay_t<decltype(arr[0])>;
+                auto &attr = polys.add_attr<T>(key);
+                for (auto i = 0; i < attr.size(); i++) {
+                    attr[i] = arr[polys_mapping_old[i]];
+                }
+            });
+            prim->polys = polys;
+        }
+    }
+}
+
+struct PrimTriangulateIntoPolys : INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        primTriangulateIntoPolys(prim.get());
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENDEFNODE(PrimTriangulateIntoPolys,
+        { /* inputs: */ {
+            {"primitive", "prim"},
+        }, /* outputs: */ {
+            {"primitive", "prim"},
+        }, /* params: */ {
+        }, /* category: */ {
+            "primitive",
+        }});
 }
