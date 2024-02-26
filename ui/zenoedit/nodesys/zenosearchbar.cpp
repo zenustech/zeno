@@ -4,7 +4,7 @@
 #include <zenoui/style/zenostyle.h>
 #include "zenoapplication.h"
 #include <zenomodel/include/graphsmanagment.h>
-
+#include <zenoui/comctrl/zlabel.h>
 
 ZenoSearchBar::ZenoSearchBar(const QModelIndex& idx, QWidget *parentWidget)
     : QWidget(parentWidget)
@@ -42,7 +42,10 @@ ZenoSearchBar::ZenoSearchBar(const QModelIndex& idx, QWidget *parentWidget)
         QColor(66, 66, 66));
     QHBoxLayout *pEditLayout = new QHBoxLayout;
     
+    m_countLabel = new ZTextLabel(this);
+    m_countLabel->setTextColor(Qt::white);
     pEditLayout->addWidget(m_pLineEdit);
+    pEditLayout->addWidget(m_countLabel);
     pEditLayout->addWidget(pSearchBackward);
     pEditLayout->addWidget(pSearchForward);
     pEditLayout->addWidget(pCloseBtn);
@@ -78,6 +81,7 @@ void ZenoSearchBar::onSearchExec(const QString& content)
     m_results = pGraphsModel->searchInSubgraph(content, m_index);
     if (!m_results.isEmpty())
     {
+        m_countLabel->setText(QString::number(m_results.size()));
         m_idx = 0;
         SEARCH_RECORD rec = _getRecord();
         emit searchReached(rec);
