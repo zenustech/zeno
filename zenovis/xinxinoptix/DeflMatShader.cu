@@ -918,14 +918,14 @@ extern "C" __global__ void __closesthit__radiance()
     }
 
     if(mats.thin<0.5f && mats.doubleSide<0.5f){
-        auto p_prim = vec3(prd->origin) + optixGetRayTmax() * vec3(prd->direction);
-        float3 p = p_prim;
-        prd->origin = rtgems::offset_ray(p, (next_ray_is_going_inside)? -prd->geometryNormal : prd->geometryNormal);
+        //auto p_prim = vec3(prd->origin) + optixGetRayTmax() * vec3(prd->direction);
+        //float3 p = p_prim;
+        prd->origin = rtgems::offset_ray(P, (next_ray_is_going_inside)? -prd->geometryNormal : prd->geometryNormal);
     }
     else {
-        auto p_prim = vec3(prd->origin) + optixGetRayTmax() * vec3(prd->direction);
-        float3 p = p_prim;
-        prd->origin = rtgems::offset_ray(p, ( dot(prd->direction, prd->geometryNormal) < 0 )? -prd->geometryNormal : prd->geometryNormal);
+        //auto p_prim = vec3(prd->origin) + optixGetRayTmax() * vec3(prd->direction);
+        //float3 p = p_prim;
+        prd->origin = rtgems::offset_ray(P, ( dot(prd->direction, prd->geometryNormal) < 0 )? -prd->geometryNormal : prd->geometryNormal);
     }
     prd->direction = normalize(wi);
     if (prd->medium != DisneyBSDF::vacuum) {
