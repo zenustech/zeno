@@ -43,6 +43,14 @@ void Camera::setCamera(zeno::CameraData const &cam) {
     this->m_need_sync = true;
 }
 
+void Camera::setPhysicalCamera(float aperture, float shutter_speed, float iso, bool aces, bool exposure) {
+    this->zOptixCameraSettingInfo.aperture = aperture;
+    this->zOptixCameraSettingInfo.shutter_speed = shutter_speed;
+    this->zOptixCameraSettingInfo.iso = iso;
+    this->zOptixCameraSettingInfo.aces = aces;
+    this->zOptixCameraSettingInfo.exposure = exposure;
+}
+
 void Camera::placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up) {
     front = glm::normalize(front);
     up = glm::normalize(up);
