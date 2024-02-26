@@ -750,6 +750,16 @@ struct GraphicsManager {
                 if (auto cam = dynamic_cast<zeno::CameraObject *>(obj))
                 {
                     scene->camera->setCamera(cam->get());     // pyb fix
+                    auto &ud = cam->userData();
+                    if (ud.has("aces")) {
+                        scene->camera->setPhysicalCamera(
+                            ud.get2<float>("aperture"),
+                            ud.get2<float>("shutter_speed"),
+                            ud.get2<float>("iso"),
+                            ud.get2<bool>("aces"),
+                            ud.get2<bool>("exposure")
+                        );
+                    }
                 }
 
                 auto ig = std::make_unique<ZxxGraphic>(key, obj);
@@ -780,6 +790,16 @@ struct GraphicsManager {
                 if (!scene->drawOptions->updateMatlOnly) {
                     if (auto cam = dynamic_cast<zeno::CameraObject *>(obj)) {
                         scene->camera->setCamera(cam->get()); // pyb fix
+                        auto &ud = cam->userData();
+                        if (ud.has("aces")) {
+                            scene->camera->setPhysicalCamera(
+                                ud.get2<float>("aperture"),
+                                ud.get2<float>("shutter_speed"),
+                                ud.get2<float>("iso"),
+                                ud.get2<bool>("aces"),
+                                ud.get2<bool>("exposure")
+                            );
+                        }
                     }
                 }
 
