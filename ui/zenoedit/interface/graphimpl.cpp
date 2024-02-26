@@ -9,9 +9,9 @@
 #include <zenomodel/include/command.h>
 #include "variantptr.h"
 
-static QVariant parseValue(PyObject* v, const QString& type)
+static QVariant parseValue(PyObject* v, const QString& type, const QVariant& defVal)
 {
-    QVariant val;
+    QVariant val = defVal;
     if (type == "string")
     {
         char* _val = nullptr;
@@ -39,47 +39,50 @@ static QVariant parseValue(PyObject* v, const QString& type)
     else if (type.startsWith("vec"))
     {
         PyObject* obj;
-        if (PyArg_Parse(v, "O", &obj))
+        if (PyArg_Parse(v, "O", &obj) && Py_TYPE(obj)->tp_name == "list")
         {
-            int count = Py_SIZE(obj);
-            UI_VECTYPE vec;
-            vec.resize(count);
             bool bError = false;
-            if (type.contains("i"))
+            if (defVal.canConvert<UI_VECTYPE>())
             {
-                for (int i = 0; i < count; i++)
+                UI_VECTYPE vec = defVal.value<UI_VECTYPE>();
+                int count = vec.size() > Py_SIZE(obj) ? Py_SIZE(obj) : vec.size();
+                if (type.contains("i"))
                 {
-                    PyObject* item = PyTuple_GET_ITEM(obj, i);
-                    int iVal;
-                    if (PyArg_Parse(item, "i", &iVal))
+                    for (int i = 0; i < count; i++)
                     {
-                        vec[i] = iVal;
-                    }
-                    else {
-                        bError = true;
-                        break;
+                        PyObject* item = PyList_GET_ITEM(obj, i);
+                        int iVal;
+                        if (PyArg_Parse(item, "i", &iVal))
+                        {
+                            vec[i] = iVal;
+                        }
+                        else {
+                            bError = true;
+                            break;
+                        }
                     }
                 }
-            }
-            else if (type.contains("f"))
-            {
-                for (int i = 0; i < count; i++)
+                else if (type.contains("f"))
                 {
-                    PyObject* item = PyTuple_GET_ITEM(obj, i);
-                    float dbVval;
-                    if (PyArg_Parse(item, "f", &dbVval))
+                    for (int i = 0; i < count; i++)
                     {
-                        vec[i] = dbVval;
-                    }
-                    else {
-                        bError = true;
-                        break;
+                        PyObject* item = PyList_GET_ITEM(obj, i);
+                        float dbVval;
+                        if (PyArg_Parse(item, "f", &dbVval))
+                        {
+                            vec[i] = dbVval;
+                        }
+                        else {
+                            bError = true;
+                            break;
+                        }
                     }
                 }
-            }
-            else
-            {
-                bError = true;
+                else
+                {
+                    bError = true;
+                }
+                val = QVariant::fromValue(vec);
             }
             if (bError)
             {
@@ -87,7 +90,6 @@ static QVariant parseValue(PyObject* v, const QString& type)
                 PyErr_WriteUnraisable(Py_None);
                 return val;
             }
-            val = QVariant::fromValue(vec);
         }
     }
     if (!val.isValid())
@@ -218,7 +220,7 @@ Graph_createNode(ZSubGraphObject* self, PyObject* arg, PyObject* kw)
             else if (inputs.contains(strKey))
             {
                 INPUT_SOCKET socket = inputs[strKey];
-                QVariant val = parseValue(value, socket.info.type);
+                QVariant val = parseValue(value, socket.info.type, socket.info.defaultValue);
                 if (!val.isValid())
                     continue;
                 PARAM_UPDATE_INFO info;
@@ -230,7 +232,7 @@ Graph_createNode(ZSubGraphObject* self, PyObject* arg, PyObject* kw)
             else if (params.contains(strKey))
             {
                 PARAM_INFO param = params[strKey];
-                QVariant val = parseValue(value, param.typeDesc);
+                QVariant val = parseValue(value, param.typeDesc, param.defaultValue);
                 if (!val.isValid())
                     continue;
                 PARAM_UPDATE_INFO info;
