@@ -13,7 +13,7 @@ namespace zeno {
     {
     }
 
-    ZENO_API void ObjectManager::addObject(const std::string& id, std::shared_ptr<IObject> obj, std::shared_ptr<INode> view_node)
+    ZENO_API void ObjectManager::addObject(const std::string& id, std::shared_ptr<IObject> obj, std::shared_ptr<INode> view_node, bool bView)
     {
         std::lock_guard lck(g_objsMutex);
         auto it = m_objects.find(id);
@@ -27,7 +27,7 @@ namespace zeno {
             it->second.obj = obj;
             it->second.view_node = view_node;
         }
-        CALLBACK_NOTIFY(addObject, obj)
+        CALLBACK_NOTIFY(addObject, obj, bView)
     }
 
     ZENO_API void ObjectManager::removeObject(const std::string& id)
@@ -49,6 +49,19 @@ namespace zeno {
     {
         std::lock_guard lck(g_objsMutex);
         CALLBACK_NOTIFY(viewObject, obj, bView)
+    }
+
+    ZENO_API int ObjectManager::registerObjId(const std::string& objprefix)
+    {
+        if (m_objRegister.find(objprefix) == m_objRegister.end()) {
+            m_objRegister.insert(std::make_pair(objprefix, 0));
+            m_objRegister[objprefix]++;
+            return 0;
+        }
+        else {
+            int newObjId = m_objRegister[objprefix]++;
+            return newObjId;
+        }
     }
 
     void ObjectManager::clear()

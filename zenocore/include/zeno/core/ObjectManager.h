@@ -27,8 +27,8 @@ public:
      ObjectManager();
     ~ObjectManager();
 
-    ZENO_API void addObject(const std::string& id, std::shared_ptr<IObject> obj, std::shared_ptr<INode> view_node);
-    CALLBACK_REGIST(addObject, void, std::shared_ptr<IObject>)
+    ZENO_API void addObject(const std::string& id, std::shared_ptr<IObject> obj, std::shared_ptr<INode> view_node, bool bView);
+    CALLBACK_REGIST(addObject, void, std::shared_ptr<IObject>, bool)
 
     ZENO_API void removeObject(const std::string& id);
     CALLBACK_REGIST(removeObject, void, std::string)
@@ -39,9 +39,12 @@ public:
     ZENO_API void viewObject(std::shared_ptr<IObject> obj, bool bView);
     CALLBACK_REGIST(viewObject, void, std::shared_ptr<IObject>, bool)
 
+    ZENO_API int registerObjId(const std::string& objprefix);
+
 private:
     void clear();
 
+    std::map<std::string, int> m_objRegister;
     std::map<std::string, _ObjInfo> m_objects;
     //std::set<std::string> m_viewObjs;
 };

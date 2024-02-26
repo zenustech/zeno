@@ -79,11 +79,13 @@ DisplayWidget::DisplayWidget(bool bGLView, QWidget *parent)
 
     // core -->  ui --> render
     auto& sess = zeno::getSession();
-    m_cbAddObject = sess.objsMan->register_addObject([&](std::shared_ptr<zeno::IObject> spObj) {
-        auto engine = getZenoVis()->getSession()->get_scene()->renderMan->getEngine();
-        ZASSERT_EXIT(engine);
-        engine->addObject(spObj);
-        updateFrame();
+    m_cbAddObject = sess.objsMan->register_addObject([&](std::shared_ptr<zeno::IObject> spObj, bool bView) {
+        if (bView) {
+            auto engine = getZenoVis()->getSession()->get_scene()->renderMan->getEngine();
+            ZASSERT_EXIT(engine);
+            engine->addObject(spObj);
+            updateFrame();
+        }
     });
 
     m_cbRemoveObj = sess.objsMan->register_removeObject([&](std::string key) {

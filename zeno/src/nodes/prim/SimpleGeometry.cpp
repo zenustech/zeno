@@ -70,7 +70,7 @@ namespace {
 
 struct CreateCube : zeno::INode {
     virtual void apply() override {
-        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        auto prim = std::make_shared<zeno::PrimitiveObject>("Cube");
         auto size = get_input2<float>("size");
         auto div_w = get_input2<int>("div_w");
         auto div_h = get_input2<int>("div_h");
@@ -479,7 +479,7 @@ ZENDEFNODE(CreateCube, {
 
 struct CreateDisk : zeno::INode {
     virtual void apply() override {
-        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        auto prim = std::make_shared<zeno::PrimitiveObject>("Disk");
         auto position = get_input2<zeno::vec3f>("position");
         auto scaleSize = get_input2<zeno::vec3f>("scaleSize");
         auto radius = get_input2<float>("radius");
@@ -543,7 +543,7 @@ ZENDEFNODE(CreateDisk, {
 
 struct CreatePlane : zeno::INode {
     virtual void apply() override {
-        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        auto prim = std::make_shared<zeno::PrimitiveObject>("Plane");
         auto position = get_input2<zeno::vec3f>("position");
         auto scale = get_input2<zeno::vec3f>("scaleSize");
         auto size = get_input2<float>("size");
@@ -707,7 +707,7 @@ ZENDEFNODE(CreatePlane, {
 
 struct CreateTube : zeno::INode {
     virtual void apply() override {
-        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        auto prim = std::make_shared<zeno::PrimitiveObject>("Tube");
         auto position = get_input2<zeno::vec3f>("position");
         auto scale = get_input2<zeno::vec3f>("scaleSize");
         auto radius1 = get_input2<float>("radius1");
@@ -962,7 +962,7 @@ struct CreateTorus : zeno::INode {
             minorSegment = 3;
         }
 
-        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        auto prim = std::make_shared<zeno::PrimitiveObject>("Torus");
         prim->verts.resize(majorSegment * minorSegment);
         auto &nrm = prim->verts.add_attr<vec3f>("nrm");
         for (auto j = 0; j < minorSegment; j++) {
@@ -1071,7 +1071,7 @@ ZENDEFNODE(CreateTorus, {
 
 struct CreateSphere : zeno::INode {
     virtual void apply() override {
-        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        auto prim = std::make_shared<zeno::PrimitiveObject>("Sphere");
         auto position = get_input2<zeno::vec3f>("position");
         auto scale = get_input2<zeno::vec3f>("scaleSize");
         auto rotate = get_input2<zeno::vec3f>("rotate");
@@ -1318,7 +1318,7 @@ ZENDEFNODE(CreateSphere, {
 
 struct CreateCone : zeno::INode {
     virtual void apply() override {
-        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        auto prim = std::make_shared<zeno::PrimitiveObject>("Cone");
         auto position = get_input2<zeno::vec3f>("position");
         auto scaleSize = get_input2<zeno::vec3f>("scaleSize");
         auto radius = get_input2<float>("radius");
@@ -1359,7 +1359,7 @@ ZENDEFNODE(CreateCone, {
 
 struct CreateCylinder : zeno::INode {
     virtual void apply() override {
-        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        auto prim = std::make_shared<zeno::PrimitiveObject>("Cylinder");
 
         auto position = get_input2<zeno::vec3f>("position");
         auto scaleSize = get_input2<zeno::vec3f>("scaleSize");
