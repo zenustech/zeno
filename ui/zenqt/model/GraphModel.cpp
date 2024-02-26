@@ -779,6 +779,8 @@ bool GraphModel::removeRows(int row, int count, const QModelIndex& parent)
     delete pItem;
 
     endRemoveRows();
+
+    emit nodeRemoved(id);
     return true;
 }
 

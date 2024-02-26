@@ -48,7 +48,7 @@
       <string>New</string>
      </property>
      <addaction name="actionNew_File"/>
-     <addaction name="actionNew_Subgraph"/>
+     <addaction name="actionNew_Asset"/>
     </widget>
     <addaction name="menu_New"/>
     <addaction name="action_Open"/>
@@ -158,18 +158,12 @@ border-top: 1px solid black;</string>
   </action>
   <action name="action_Save">
    <property name="text">
-    <string>Save</string>
-   </property>
-   <property name="shortcut">
-    <string notr="true">Ctrl+S</string>
+    <string>Save Main</string>
    </property>
   </action>
   <action name="action_Save_As">
    <property name="text">
-    <string>Save As</string>
-   </property>
-   <property name="shortcut">
-    <string notr="true">Ctrl+Shift+S</string>
+    <string>Save Main As</string>
    </property>
   </action>
   <action name="action_Import">
@@ -426,9 +420,9 @@ border-top: 1px solid black;</string>
     <string>Ctrl+N</string>
    </property>
   </action>
-  <action name="actionNew_Subgraph">
+  <action name="actionNew_Asset">
    <property name="text">
-    <string>New Subgraph</string>
+    <string>New Asset</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+E</string>

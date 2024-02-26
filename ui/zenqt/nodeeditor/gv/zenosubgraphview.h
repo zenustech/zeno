@@ -122,6 +122,8 @@ public slots:
     void onPathUpdated(QStringList path);
     void save();
 
+    void onNodeRemoved(QString nodeid);
+
 private:
     _ZenoSubGraphView* getCurrentView() const;
 

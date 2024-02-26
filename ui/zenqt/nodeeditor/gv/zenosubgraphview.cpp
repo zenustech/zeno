@@ -663,6 +663,26 @@ void ZenoSubGraphView::save()
 
 }
 
+void ZenoSubGraphView::onNodeRemoved(QString nodeid)
+{
+    GraphModel* model = qobject_cast<GraphModel*>(sender());
+
+    if (QHBoxLayout* pLayout = qobject_cast<QHBoxLayout*>(m_pathWidget->layout()))
+    {
+        QStringList pathList;
+        for (int i = 0; i < pLayout->count(); i++)
+        {
+            QLayoutItem* pItem = pLayout->itemAt(i);
+            QWidget* w = pItem->widget();
+            if (ZTextLabel* pPathItem = qobject_cast<ZTextLabel*>(w))
+                if (pPathItem->text() != '>')
+                    pathList.push_back(pPathItem->text());
+        }
+        if (model->currentPath() != pathList)
+            resetPath(model->currentPath(), "", false);
+    }
+}
+
 _ZenoSubGraphView* ZenoSubGraphView::getCurrentView() const
 {
     _ZenoSubGraphView* pView = qobject_cast<_ZenoSubGraphView*>(m_stackedView->currentWidget());

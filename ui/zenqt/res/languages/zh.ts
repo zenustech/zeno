@@ -843,12 +843,12 @@
         <translation type="unfinished">打开</translation>
     </message>
     <message>
-        <source>Save</source>
-        <translation type="unfinished">保存</translation>
+        <source>Save Main</source>
+        <translation type="unfinished">保存主图</translation>
     </message>
     <message>
-        <source>Save As</source>
-        <translation type="unfinished">另存为</translation>
+        <source>Save Main As</source>
+        <translation type="unfinished">主图另存为</translation>
     </message>
     <message>
         <source>Import</source>
@@ -1007,8 +1007,8 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>New Subgraph</source>
-        <translation>新建子图</translation>
+        <source>New Asset</source>
+        <translation>新建资产</translation>
     </message>
     <message>
         <source>Ctrl+E</source>
@@ -2424,6 +2424,44 @@
     <message>
         <source>transfer to net label</source>
         <translation type="unfinished">转为标签</translation>
+    </message>
+</context>
+<context>
+    <name>NewAssetDlg</name>
+	<message>
+        <source>name</source>
+        <translation>资产名</translation>
+    </message>
+	<message>
+        <source>version</source>
+        <translation>版本</translation>
+    </message>
+	<message>
+        <source>save path</source>
+        <translation>保存路径</translation>
+    </message>
+</context>
+<context>
+    <name>ZNewAssetDlg</name>
+    <message>
+        <source>asset file already exists.</source>
+        <translation>资产文件已存在</translation>
+    </message>
+	<message>
+        <source>New Asset</source>
+        <translation>新建资产</translation>
+    </message>
+	<message>
+        <source>asset file %1 already exists.</source>
+        <translation>资产文件 %1 已存在</translation>
+    </message>
+	<message>
+        <source>the asset name cannot be empty</source>
+        <translation>资产名不能为空</translation>
+    </message>
+		<message>
+        <source>the asset with name %1 has existed, please change another name</source>
+        <translation>资产名 %1 已存在</translation>
     </message>
 </context>
 <context>

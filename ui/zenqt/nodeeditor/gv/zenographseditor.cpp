@@ -538,6 +538,11 @@ ZenoSubGraphView* ZenoGraphsEditor::getCurrentSubGraphView()
 
 void ZenoGraphsEditor::showWelcomPage()
 {
+    for (int i = 0; i < m_ui->graphsViewTab->count(); i++)
+    {
+        delete m_ui->graphsViewTab->widget(i);
+        m_ui->graphsViewTab->removeTab(i);
+    }
     m_ui->splitter->replaceWidget(1, m_pWelcomPage);
     m_ui->splitter->setStretchFactor(1, 5);
 }
@@ -591,6 +596,8 @@ void ZenoGraphsEditor::activateTab(const QStringList& subgpath, const QString& f
     ZASSERT_EXIT(pView);
     pView->resetPath(subgpath, focusNode, isError);
     //m_mainWin->onNodesSelected(pModel->index(subGraphName), pView->scene()->selectNodesIndice(), true);
+
+    connect(pGraphM, &GraphModel::nodeRemoved, pView, &ZenoSubGraphView::onNodeRemoved, Qt::UniqueConnection);
 }
 
 #if 0
