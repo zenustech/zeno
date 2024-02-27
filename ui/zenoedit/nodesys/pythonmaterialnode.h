@@ -17,6 +17,7 @@ protected:
 private slots:
     void onExecuteClicked();
     void onEditClicked();
+    void onGenerateClicked();
 private:
     MaterialMatchInfo getMatchInfo();
     void setMatchInfo(const MaterialMatchInfo& info);

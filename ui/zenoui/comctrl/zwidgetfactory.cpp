@@ -71,6 +71,7 @@ namespace zenoui
             }
             case CONTROL_READPATH:
             case CONTROL_WRITEPATH:
+            case CONTROL_DIRECTORY:
             {
                 ZPathEdit *pathLineEdit = new ZPathEdit(cbSet.cbSwitch,value.toString());
                 pathLineEdit->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));

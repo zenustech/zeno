@@ -1,6 +1,3 @@
-#ifdef ZENO_WITH_PYTHON3
-    #include <Python.h>
-#endif
 #include "pythonnode.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
@@ -20,71 +17,67 @@ PythonNode::~PythonNode()
 
 ZGraphicsLayout* PythonNode::initCustomParamWidgets()
 {
+    ZGraphicsLayout* pVLayout = new ZGraphicsLayout(false);
     ZGraphicsLayout* pHLayout = new ZGraphicsLayout(true);
 
-    ZSimpleTextItem* pNameItem = new ZSimpleTextItem("    ");
-    pNameItem->setBrush(m_renderParams.socketClr.color());
-    pNameItem->setFont(m_renderParams.socketFont);
-    pNameItem->updateBoundingRect();
-
-    pHLayout->addItem(pNameItem);
-
-    pHLayout->addSpacing(48);
+    pHLayout->addSpacing(100);
 
     ZenoParamPushButton* pEditBtn = new ZenoParamPushButton("Execute", -1, QSizePolicy::Expanding);
     pEditBtn->setMinimumHeight(32);
     pHLayout->addItem(pEditBtn);
     connect(pEditBtn, SIGNAL(clicked()), this, SLOT(onExecuteClicked()));
-    return pHLayout;
+
+    ZGraphicsLayout* pHLayout1 = new ZGraphicsLayout(true);
+    pHLayout1->addSpacing(100);
+    ZenoParamPushButton* pGenerateBtn = new ZenoParamPushButton("Generate", -1, QSizePolicy::Expanding);
+    pGenerateBtn->setMinimumHeight(32);
+    pHLayout1->addItem(pGenerateBtn);
+    connect(pGenerateBtn, SIGNAL(clicked()), this, SLOT(onGenerateClicked()));
+
+    pVLayout->addLayout(pHLayout);
+    pVLayout->addSpacing(10);
+    pVLayout->addLayout(pHLayout1);
+    return pVLayout;
 }
 
 void PythonNode::onExecuteClicked()
 {
-#ifdef ZENO_WITH_PYTHON3
-    std::string stdOutErr =
-        "import sys\n\
-class CatchOutErr:\n\
-    def __init__(self):\n\
-        self.value = ''\n\
-    def write(self, txt):\n\
-        self.value += txt\n\
-    def flush(self):\n\
-        pass\n\
-catchOutErr = CatchOutErr()\n\
-sys.stdout = catchOutErr\n\
-sys.stderr = catchOutErr\n\
-"; //this is python code to redirect stdouts/stderr
-
-    Py_Initialize();
-    PyObject* pModule = PyImport_AddModule("__main__"); //create main module
-    PyRun_SimpleString(stdOutErr.c_str()); //invoke code to redirect
-
     IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
     QModelIndex subgIdx = pModel->index("main");
     QModelIndex scriptIdx = pModel->paramIndex(subgIdx, index(), "script", true);
     ZASSERT_EXIT(scriptIdx.isValid());
     QString script = scriptIdx.data(ROLE_PARAM_VALUE).toString();
-
-    //Py_Initialize();
-    if (PyRun_SimpleString(script.toUtf8()) < 0) {
-        zeno::log_warn("Python Script run failed");
-    }
-    PyObject* catcher = PyObject_GetAttrString(pModule, "catchOutErr"); //get our catchOutErr created above
-    PyObject* output = PyObject_GetAttrString(catcher, "value"); //get the stdout and stderr from our catchOutErr object
-    if (output != Py_None)
+    QModelIndex argsIdx = pModel->paramIndex(subgIdx, index(), "args", true);
+    QString args = argsIdx.data(ROLE_PARAM_VALUE).toString();
+    if (!args.isEmpty())
     {
-        QString str = QString::fromStdString(_PyUnicode_AsString(output));
-        QStringList lst = str.split('\n');
-        for (const auto& line : lst)
+        rapidjson::Document doc;
+        doc.Parse(args.toUtf8());
+
+        if (!doc.IsObject()) {
+            zeno::log_warn("document root not object: {}", std::string(args.toUtf8()));
+        }
+        else
         {
-            if (!line.isEmpty())
+            auto objVal = doc.GetObject();
+            for (auto iter = objVal.MemberBegin(); iter != objVal.MemberEnd(); iter++)
             {
-                if (zenoApp->isUIApplication())
-                    ZWidgetErrStream::appendFormatMsg(line.toStdString());
+                if (iter->value.IsString())
+                    script = script.arg(iter->value.GetString());
+                else if (iter->value.IsFloat())
+                    script = script.arg(iter->value.GetFloat());
+                else if (iter->value.IsInt())
+                    script = script.arg(iter->value.GetInt());
+                else
+                    zeno::log_error("data type error");
+
             }
         }
     }
-#else
-    zeno::log_warn("The option 'ZENO_WITH_PYTHON3' should be ON");
-#endif
+    AppHelper::pythonExcute(script);
+}
+
+void PythonNode::onGenerateClicked()
+{
+    AppHelper::generatePython(this->nodeId());
 }

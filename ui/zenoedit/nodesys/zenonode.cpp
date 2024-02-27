@@ -1144,6 +1144,7 @@ ZGraphicsLayout* ZenoNode::addParam(const QModelIndex& viewparamIdx, ZenoSubGrap
         case CONTROL_HSPINBOX:
         case CONTROL_HDOUBLESPINBOX:
         case CONTROL_SPINBOX_SLIDER:
+        case CONTROL_DIRECTORY:
         {
             QGraphicsItem* pWidget = initParamWidget(pScene, viewparamIdx);
             paramCtrl.ctrl_layout->addItem(pWidget, Qt::AlignRight | Qt::AlignVCenter);
