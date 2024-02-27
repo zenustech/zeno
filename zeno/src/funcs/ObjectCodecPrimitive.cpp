@@ -75,6 +75,8 @@ void encodeAttrVector(AttrVector<T0> const &arr, It &it) {
 std::shared_ptr<PrimitiveObject> decodePrimitiveObject(const char *it);
 std::shared_ptr<PrimitiveObject> decodePrimitiveObject(const char *it) {
     auto obj = std::make_shared<PrimitiveObject>();
+    std::copy_n(it, sizeof(obj->transformMat), (char *)&obj->transformMat);
+    it += sizeof(obj->transformMat);
     decodeAttrVector(obj->verts, it);
     decodeAttrVector(obj->points, it);
     decodeAttrVector(obj->lines, it);
@@ -93,6 +95,7 @@ std::shared_ptr<PrimitiveObject> decodePrimitiveObject(const char *it) {
 
 bool encodePrimitiveObject(PrimitiveObject const *obj, std::back_insert_iterator<std::vector<char>> it);
 bool encodePrimitiveObject(PrimitiveObject const *obj, std::back_insert_iterator<std::vector<char>> it) {
+    it = std::copy_n((char const *)&obj->transformMat, sizeof(obj->transformMat), it);
     encodeAttrVector(obj->verts, it);
     encodeAttrVector(obj->points, it);
     encodeAttrVector(obj->lines, it);

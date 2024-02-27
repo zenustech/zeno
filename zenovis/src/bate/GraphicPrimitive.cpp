@@ -18,7 +18,7 @@
 #include <zenovis/opengl/buffer.h>
 #include <zenovis/opengl/shader.h>
 #include <zenovis/opengl/texture.h>
-
+#include <iostream>
 namespace zenovis {
 namespace {
 
@@ -357,8 +357,11 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
     ZhxxDrawObject polyEdgeObj = {};
     ZhxxDrawObject polyUvObj = {};
 
+    glm::mat4 transformMat = glm::mat4(1);
+
     explicit ZhxxGraphicPrimitive(Scene *scene_, zeno::PrimitiveObject *primArg)
         : scene(scene_), primUnique(std::make_shared<zeno::PrimitiveObject>(*primArg)) {
+        this->transformMat = primArg->transformMat;
         prim = primUnique.get();
         invisible = prim->userData().get2<bool>("invisible", 0);
         zeno::log_trace("rendering primitive size {}", prim->size());
@@ -710,6 +713,7 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
 
             triObj.prog->set_uniformi("mRenderWireframe", false);
             triObj.prog->set_uniformi("mCustomColor", custom_color);
+            triObj.prog->set_uniform("mModel", this->transformMat);
 
             triObj.ebo->bind();
             if (!scene->drawOptions->render_wireframe) {

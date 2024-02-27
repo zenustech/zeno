@@ -15,6 +15,7 @@
 #include <zeno/zeno.h>
 #include <zeno/utils/eulerangle.h>
 #include <zeno/utils/string.h>
+#include <iostream>
 
 namespace zeno {
 namespace {
@@ -197,6 +198,14 @@ ZENDEFNODE(TransformPrimitive, {
     {"deprecated"},
 });
 
+static void printMat4(const glm::mat4& matrix) {
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            std::cout << matrix[i][j] << " ";
+        }
+        std::cout << std::endl;
+    }
+}
 static glm::vec3 mapplypos(glm::mat4 const &matrix, glm::vec3 const &vector) {
     auto vector4 = matrix * glm::vec4(vector, 1.0f);
     return glm::vec3(vector4) / vector4.w;
@@ -265,29 +274,8 @@ struct PrimitiveTransform : zeno::INode {
             }
             auto pivot_to_local = glm::translate(glm::vec3(-_pivot[0], -_pivot[1], -_pivot[2]));
             auto pivot_to_world = glm::translate(glm::vec3(_pivot[0], _pivot[1], _pivot[2]));
-            matrix = pivot_to_world * matrix * pivot_to_local;
-
-            if (prim->has_attr("pos")) {
-                auto &pos = prim->attr<zeno::vec3f>("pos");
-                prim->verts.add_attr<zeno::vec3f>("_origin_pos") = pos;
-    #pragma omp parallel for
-                for (int i = 0; i < pos.size(); i++) {
-                    auto p = zeno::vec_to_other<glm::vec3>(pos[i]);
-                    p = mapplypos(matrix, p);
-                    pos[i] = zeno::other_to_vec<3>(p);
-                }
-            }
-
-            if (prim->has_attr("nrm")) {
-                auto &nrm = prim->attr<zeno::vec3f>("nrm");
-                prim->verts.add_attr<zeno::vec3f>("_origin_nrm") = nrm;
-    #pragma omp parallel for
-                for (int i = 0; i < nrm.size(); i++) {
-                    auto n = zeno::vec_to_other<glm::vec3>(nrm[i]);
-                    n = mapplynrm(matrix, n);
-                    nrm[i] = zeno::other_to_vec<3>(n);
-                }
-            }
+            prim->transformMat = pivot_to_world * matrix * pivot_to_local;
+            printMat4(prim->transformMat);
 
             auto& user_data = prim->userData();
             user_data.setLiterial("_translate", translate);
@@ -374,6 +362,7 @@ struct PrimitiveTransform : zeno::INode {
         if (std::dynamic_pointer_cast<PrimitiveObject>(iObject)) {
             iObject = iObject->clone();
             transformObj(iObject, matrix, pivotType, pivotPos, translate, rotation, scaling);
+            printMat4(std::dynamic_pointer_cast<PrimitiveObject>(iObject)->transformMat);
         }
         else {
             if (path != "")
@@ -427,7 +416,8 @@ ZENDEFNODE(PrimitiveTransform, {
 struct PrimitiveCollapse : zeno::INode {
     static void transformObj(std::shared_ptr<IObject> iObject, glm::mat4 parent_matrix = glm::mat4(1)) {
         if (auto prim = std::dynamic_pointer_cast<PrimitiveObject>(iObject)) {
-            auto matrix = prim->transformMat * parent_matrix;
+            auto matrix = parent_matrix * prim->transformMat;
+            prim->transformMat = glm::mat4(1);
             if (matrix != glm::mat4(1)) {
                 if (prim->has_attr("pos")) {
                     auto &pos = prim->attr<zeno::vec3f>("pos");

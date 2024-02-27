@@ -12,6 +12,9 @@ std::shared_ptr<ListObject> decodeListObject(const char *it);
 std::shared_ptr<ListObject> decodeListObject(const char *it) {
     auto obj = std::make_shared<ListObject>();
 
+    std::copy_n(it, sizeof(obj->transformMat), (char *)&obj->transformMat);
+    it += sizeof(obj->transformMat);
+
     size_t size = *(int *)it;
     it += sizeof(size);
 
@@ -31,6 +34,8 @@ std::shared_ptr<ListObject> decodeListObject(const char *it) {
 
 bool encodeListObject(ListObject const *obj, std::back_insert_iterator<std::vector<char>> it);
 bool encodeListObject(ListObject const *obj, std::back_insert_iterator<std::vector<char>> it) {
+    it = std::copy_n((char const *)&obj->transformMat, sizeof(obj->transformMat), it);
+
     size_t size = obj->arr.size();
     std::copy_n((char const *)&size, sizeof(size), it);
 

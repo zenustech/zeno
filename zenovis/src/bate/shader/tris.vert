@@ -1,5 +1,6 @@
 R"(#version 330
 
+uniform mat4 mModel;
 uniform mat4 mVP;
 uniform mat4 mInvVP;
 uniform mat4 mView;
@@ -31,7 +32,7 @@ void main()
     gl_Position = mVP * vec4(vTexCoord, 1.0);
   }
   else {
-    gl_Position = mVP * vec4(position, 1.0);
+    gl_Position = mVP * mModel * vec4(position, 1.0);
   }
 }
 )"
