@@ -23,9 +23,9 @@ out vec3 iTangent;
 
 void main()
 {
-  position = vPosition;
+  position = vec3(mModel * vec4(vPosition, 1.0));
   iColor = vColor;
-  iNormal = vNormal;
+  iNormal = mat3(transpose(inverse(mModel))) * vNormal;
   iTexCoord = vTexCoord;
   iTangent = vTangent;
   if (mUvMode) {
