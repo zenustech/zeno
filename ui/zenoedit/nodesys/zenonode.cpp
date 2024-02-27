@@ -11,7 +11,6 @@
 #include <zenoui/style/zenostyle.h>
 #include <zenoui/comctrl/zveceditor.h>
 #include "variantptr.h"
-#include <zenoui/comctrl/dialog/curvemap/zcurvemapeditor.h>
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
 #include <zenomodel/include/graphsmanagment.h>

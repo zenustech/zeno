@@ -2,7 +2,16 @@ find_package(Qt5 REQUIRED COMPONENTS Widgets Svg OpenGL Network)
 
 file(GLOB_RECURSE source CONFIGURE_DEPENDS *.h *.cpp *.ui)
 file(GLOB_RECURSE resource CONFIGURE_DEPENDS *.qrc)
+file(GLOB_RECURSE source_qwt CONFIGURE_DEPENDS qwt/include/*.h)
 qt5_add_big_resources(source ${resource})  # cihou msvc: fatal error C1060: compiler is out of heap space
+
+if (NOT WIN32)
+FOREACH(item ${source})
+    IF(item IN_LIST source_qwt)
+        LIST(REMOVE_ITEM source ${item})
+    ENDIF(item IN_LIST source_qwt)
+ENDFOREACH(item)
+endif()
 
 add_library(zenoui OBJECT ${source})
 
@@ -18,4 +27,14 @@ target_link_libraries(zenoui PUBLIC Qt5::Widgets Qt5::Svg Qt5::Network)
 target_link_libraries(zenoui PUBLIC zeno)
 
 target_include_directories(zenoui PRIVATE ${Qt5Widgets_PRIVATE_INCLUDE_DIRS})
-target_include_directories(zenoui PRIVATE . .. ../include)
+target_include_directories(zenoui PRIVATE . .. ../include ./qwt/include)
+
+if (WIN32)
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+        target_link_libraries(zenoui PRIVATE  ${CMAKE_CURRENT_SOURCE_DIR}/./qwt/libs/win/qwtd.lib)
+    else()
+        target_link_libraries(zenoui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/./qwt/libs/win/qwt.lib)
+    endif()
+else()
+    target_link_libraries(zenoui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/./qwt/libs/linux/libqwt.a)
+endif()
