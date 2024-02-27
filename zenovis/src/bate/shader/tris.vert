@@ -32,7 +32,7 @@ void main()
     gl_Position = mVP * vec4(vTexCoord, 1.0);
   }
   else {
-    gl_Position = mVP * mModel * vec4(position, 1.0);
+    gl_Position = mVP * mModel * vec4(vPosition, 1.0);
   }
 }
 )"
