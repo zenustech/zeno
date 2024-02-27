@@ -210,6 +210,7 @@ struct GraphicsManager {
                 auto prim_in_lslislSp = std::make_shared<zeno::PrimitiveObject>(*prim_in0);
                 // ^^^ Don't wuhui, I mean: Literial Synthetic Lazy internal static Local Shared Pointer
                 auto prim_in = prim_in_lslislSp.get();
+                zeno::transformPrimObj(prim_in);
 
                 auto isInst = prim_in->userData().get2<int>("isInst", 0);
 

@@ -12,6 +12,7 @@ ZENO_API void primTriangulateQuads(PrimitiveObject *prim);
 ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv = true, bool has_lines = true);
 ZENO_API void primTriangulateIntoPolys(PrimitiveObject *prim);
 ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv = true);
+ZENO_API void transformPrimObj(PrimitiveObject *prim, glm::mat4 parent_matrix = glm::mat4(1));
 
 ZENO_API void primSepTriangles(PrimitiveObject *prim, bool smoothNormal = true, bool keepTriFaces = true);
 //ZENO_API void primSmoothNormal(PrimitiveObject *prim, bool isFlipped = false);

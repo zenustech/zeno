@@ -18,6 +18,46 @@
 #include <iostream>
 
 namespace zeno {
+
+static glm::vec3 mapplypos(glm::mat4 const &matrix, glm::vec3 const &vector) {
+    auto vector4 = matrix * glm::vec4(vector, 1.0f);
+    return glm::vec3(vector4) / vector4.w;
+}
+static glm::vec3 mapplynrm(glm::mat4 const &matrix, glm::vec3 const &vector) {
+    glm::mat3 normMatrix(matrix);
+    normMatrix = glm::transpose(glm::inverse(normMatrix));
+    auto vector3 = normMatrix * vector;
+    return glm::normalize(vector3);
+}
+
+ZENO_API void transformPrimObj(PrimitiveObject *prim, glm::mat4 parent_matrix) {
+    auto matrix = parent_matrix * prim->transformMat;
+    prim->transformMat = glm::mat4(1);
+    if (matrix != glm::mat4(1)) {
+        if (prim->has_attr("pos")) {
+            auto &pos = prim->attr<zeno::vec3f>("pos");
+            prim->verts.add_attr<zeno::vec3f>("_origin_pos") = pos;
+            #pragma omp parallel for
+            for (int i = 0; i < pos.size(); i++) {
+                auto p = zeno::vec_to_other<glm::vec3>(pos[i]);
+                p = mapplypos(matrix, p);
+                pos[i] = zeno::other_to_vec<3>(p);
+            }
+        }
+
+        if (prim->has_attr("nrm")) {
+            auto &nrm = prim->attr<zeno::vec3f>("nrm");
+            prim->verts.add_attr<zeno::vec3f>("_origin_nrm") = nrm;
+            #pragma omp parallel for
+            for (int i = 0; i < nrm.size(); i++) {
+                auto n = zeno::vec_to_other<glm::vec3>(nrm[i]);
+                n = mapplynrm(matrix, n);
+                nrm[i] = zeno::other_to_vec<3>(n);
+            }
+        }
+    }
+
+}
 namespace {
 
 struct SetMatrix : zeno::INode{//ZHXX: use Assign instead!
@@ -205,16 +245,6 @@ static void printMat4(const glm::mat4& matrix) {
         }
         std::cout << std::endl;
     }
-}
-static glm::vec3 mapplypos(glm::mat4 const &matrix, glm::vec3 const &vector) {
-    auto vector4 = matrix * glm::vec4(vector, 1.0f);
-    return glm::vec3(vector4) / vector4.w;
-}
-static glm::vec3 mapplynrm(glm::mat4 const &matrix, glm::vec3 const &vector) {
-    glm::mat3 normMatrix(matrix);
-    normMatrix = glm::transpose(glm::inverse(normMatrix));
-    auto vector3 = normMatrix * vector;
-    return glm::normalize(vector3);
 }
 // euler rot order: roll-pitch-yaw
 // euler rot unit use degrees
@@ -416,31 +446,7 @@ ZENDEFNODE(PrimitiveTransform, {
 struct PrimitiveCollapse : zeno::INode {
     static void transformObj(std::shared_ptr<IObject> iObject, glm::mat4 parent_matrix = glm::mat4(1)) {
         if (auto prim = std::dynamic_pointer_cast<PrimitiveObject>(iObject)) {
-            auto matrix = parent_matrix * prim->transformMat;
-            prim->transformMat = glm::mat4(1);
-            if (matrix != glm::mat4(1)) {
-                if (prim->has_attr("pos")) {
-                    auto &pos = prim->attr<zeno::vec3f>("pos");
-                    prim->verts.add_attr<zeno::vec3f>("_origin_pos") = pos;
-                    #pragma omp parallel for
-                    for (int i = 0; i < pos.size(); i++) {
-                        auto p = zeno::vec_to_other<glm::vec3>(pos[i]);
-                        p = mapplypos(matrix, p);
-                        pos[i] = zeno::other_to_vec<3>(p);
-                    }
-                }
-
-                if (prim->has_attr("nrm")) {
-                    auto &nrm = prim->attr<zeno::vec3f>("nrm");
-                    prim->verts.add_attr<zeno::vec3f>("_origin_nrm") = nrm;
-                    #pragma omp parallel for
-                    for (int i = 0; i < nrm.size(); i++) {
-                        auto n = zeno::vec_to_other<glm::vec3>(nrm[i]);
-                        n = mapplynrm(matrix, n);
-                        nrm[i] = zeno::other_to_vec<3>(n);
-                    }
-                }
-            }
+            transformPrimObj(prim.get());
         }
         else {
             auto list = std::dynamic_pointer_cast<ListObject>(iObject);
