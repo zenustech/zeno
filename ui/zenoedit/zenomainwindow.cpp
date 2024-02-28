@@ -1107,6 +1107,7 @@ void ZenoMainWindow::solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param, LAUN
             pGraphsModel->updateCommandParam(key, param);
         }
     }
+    AppHelper::markAllNodesInMainGraphDirty(false);
 
     zeno::getSession().globalComm->clearState();
     launchParam.beginFrame = recInfo.frameRange.first;

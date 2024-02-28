@@ -459,6 +459,8 @@ bool AppHelper::openZsgAndRun(const ZENO_RECORD_RUN_INITPARAM& param, LAUNCH_PAR
         }
     }
 
+    AppHelper::markAllNodesInMainGraphDirty(false);
+
     launchProgram(pModel, launchParam);
     return true;
 }

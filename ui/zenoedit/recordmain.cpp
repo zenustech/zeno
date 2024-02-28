@@ -229,6 +229,22 @@ int record_main(const QCoreApplication& app)
         auto pGraphs = zenoApp->graphsManagment();
         ZERROR_EXIT(pGraphs, -1);
 
+        //fix: tell optixcmd which nodes need to be load
+        IGraphsModel* pModel = pGraphs->currentModel();
+        if (!pModel)
+            return -1;
+        std::string toViewNodesList;
+        std::string toViewNodesIsOnceList;
+        QModelIndex subgIdx = pModel->index("main");
+        for (int i = 0; i < pModel->itemCount(subgIdx); i++)
+        {
+            const QModelIndex& idx = pModel->index(i, subgIdx);
+            if (idx.data(ROLE_OPTIONS).toInt() & OPT_VIEW) {
+                toViewNodesList.append(idx.data(ROLE_OBJID).toString().toStdString() + '\a');
+                toViewNodesIsOnceList.append(idx.data(ROLE_OBJID).toString().toStdString() + '\a');
+            }
+        }
+
         ZERROR_EXIT(args[1] == "--record", -1);
         args[1] = "--optixcmd";
         args[2] = QString::number(0);      //no need tcp
@@ -240,6 +256,10 @@ int record_main(const QCoreApplication& app)
         args.append(QString::number(enableAOV));
         args.append("--exr");
         args.append(QString::number(param.export_exr));
+        args.append("--toViewNodesList");
+        args.append(QString::fromStdString(toViewNodesList));
+        args.append("--toViewNodesIsOnceList");
+        args.append(QString::fromStdString(toViewNodesIsOnceList));
         args.removeAt(0);
 
         optixProc->setInputChannelMode(QProcess::InputChannelMode::ManagedInputChannel);
