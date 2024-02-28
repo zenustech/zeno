@@ -40,7 +40,7 @@ ZENO_API void SubnetNode::initParams(const NodeData& dat)
         sparam->defl = param.defl;
         sparam->name = param.name;
         sparam->type = param.type;
-        sparam->socketType = param.socketType;
+        sparam->socketType = PrimarySocket;
         sparam->m_wpNode = shared_from_this();
         add_output_param(sparam);
         m_output_names.push_back(param.name);

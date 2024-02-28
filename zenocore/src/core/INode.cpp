@@ -378,6 +378,7 @@ ZENO_API NodeData INode::exportInfo() const
         param.ctrlProps = sparam->optCtrlprops;
         param.type = sparam->type;
         param.defl = sparam->defl;
+        param.socketType = sparam->socketType;
         for (auto link : sparam->links) {
             EdgeInfo info;
             auto outParam = link->fromparam.lock();
@@ -399,6 +400,7 @@ ZENO_API NodeData INode::exportInfo() const
         param.name = sparam->name;
         param.control = sparam->control;
         param.ctrlProps = sparam->optCtrlprops;
+        param.socketType = sparam->socketType;
         param.type = sparam->type;
         param.defl = sparam->defl;
         for (auto link : sparam->links) {
