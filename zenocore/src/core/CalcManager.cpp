@@ -1,5 +1,6 @@
 #include <zeno/core/CalcManager.h>
 #include <zeno/core/Session.h>
+#include <zeno/core/Graph.h>
 
 
 namespace zeno {

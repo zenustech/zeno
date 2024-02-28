@@ -93,6 +93,8 @@ public:
     CALLBACK_REGIST(set_pos, void, std::pair<float, float>)
     ZENO_API std::pair<float, float> get_pos() const;
 
+    ZENO_API bool in_asset_file() const;
+
     //END new api
 
     void add_input_param(std::shared_ptr<IParam> param);

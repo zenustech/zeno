@@ -2,7 +2,7 @@
 #define __COMMON_WRITER_H__
 
 #include <zeno/core/data.h>
-#include <zenoio/include/iocommon.h>
+#include <zeno/io/iocommon.h>
 
 namespace zenoio
 {

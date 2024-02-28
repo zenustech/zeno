@@ -49,8 +49,7 @@ if (WIN32)
     target_link_libraries(zenqt PRIVATE ws2_32.lib winmm.lib wldap32.lib Advapi32.lib Crypt32.lib)
 endif()
 
-target_link_libraries(zenqt PRIVATE zenoio zenovis)
-target_link_libraries(zenqt PRIVATE zenocore)
+target_link_libraries(zenqt PRIVATE zenocore zenovis)
 target_include_directories(zenqt PRIVATE . ./include ../3rdparty/include)
 
 if (WIN32)

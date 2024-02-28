@@ -5,7 +5,7 @@
 #include <QtWidgets>
 #include <util/jsonhelper.h>
 #include "layout/docktabcontent.h"
-#include <zenoio/reader/zsg2reader.h>
+#include <zeno/io/zsg2reader.h>
 
 
 struct LayerOutNode;

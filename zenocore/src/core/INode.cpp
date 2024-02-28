@@ -2,6 +2,8 @@
 #include <zeno/core/Graph.h>
 #include <zeno/core/Descriptor.h>
 #include <zeno/core/Session.h>
+#include <zeno/core/Assets.h>
+#include <zeno/core/ObjectManager.h>
 #include <zeno/types/DummyObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/StringObject.h>
@@ -561,6 +563,10 @@ ZENO_API void INode::set_pos(std::pair<float, float> pos) {
 
 ZENO_API std::pair<float, float> INode::get_pos() const {
     return m_pos;
+}
+
+ZENO_API bool INode::in_asset_file() const {
+    return getSession().assets->isAssetGraph(this->graph->shared_from_this());
 }
 
 ZENO_API bool INode::set_input(std::string const& param, zany obj) {

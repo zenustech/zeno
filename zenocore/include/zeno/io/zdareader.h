@@ -9,8 +9,9 @@ namespace zenoio
     class ZdaReader : public ZenReader
     {
     public:
-        ZdaReader();
-        zeno::ZenoAsset getParsedAsset() const;
+        ZENO_API ZdaReader();
+        ZENO_API zeno::ZenoAsset getParsedAsset() const;
+        ZENO_API void setDelayReadGraph(bool bDelay);
 
     protected:
         bool _parseMainGraph(const rapidjson::Document& doc, zeno::GraphData& ret) override;
@@ -23,6 +24,7 @@ namespace zenoio
         );
 
         zeno::ZenoAsset m_asset;
+        bool m_bDelayReadGraphData;
     };
 }
 

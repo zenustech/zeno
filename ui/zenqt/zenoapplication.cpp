@@ -1,4 +1,4 @@
-#include <zenoio/reader/zsg2reader.h>
+#include <zeno/io/zsg2reader.h>
 #include "zenoapplication.h"
 #include "model/graphsmanager.h"
 #include "zenomainwindow.h"

@@ -3,7 +3,7 @@
 
 #include <zeno/utils/uuid.h>
 #include <zeno/core/data.h>
-#include <zenoio/include/iocommon.h>
+#include <zeno/io/iocommon.h>
 
 namespace zenoio {
 
@@ -16,7 +16,7 @@ namespace zenoio {
     void writeZVariant(zeno::zvariant var, zeno::ParamType type, RAPIDJSON_WRITER& writer);
     bool importControl(const rapidjson::Value& controlObj, zeno::ParamControl& ctrl, zeno::ControlProperty& props);
     void dumpControl(zeno::ParamType type, zeno::ParamControl ctrl, std::optional<zeno::ControlProperty> ctrlProps, RAPIDJSON_WRITER& writer);
-    zeno::ZSG_VERSION getVersion(const std::string& fn);
+    ZENO_API zeno::ZSG_VERSION getVersion(const std::string& fn);
 }
 
 #endif

@@ -192,7 +192,7 @@ ZLayoutBackground* ZenoNode::initHeaderWidget()
         clrHeaderBg = QColor(83, 83, 85);
     else if (type == zeno::Node_SubgraphNode)
         clrHeaderBg = QColor("#1D5F51");
-    else if (type == zeno::Node_AssetInstance)
+    else if (type == zeno::Node_AssetInstance || type == zeno::Node_AssetReference)
         clrHeaderBg = QColor("#d69b3c");
     else
         clrHeaderBg = headerBg.clr_normal;
@@ -1261,8 +1261,7 @@ void ZenoNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
                 pEditor->onPageActivated(nodeIdx);
             }
         }
-        /*
-        else if (type == zeno::Node_AssetInstance)
+        else if (type == zeno::Node_AssetReference)
         {
             ZenoGraphsEditor* pEditor = getEditorViewByViewport(event->widget());
             if (pEditor)
@@ -1271,7 +1270,6 @@ void ZenoNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
                 pEditor->activateTab({ assetName });
             }
         }
-        */
         // for temp support to show handler via transform node
         else if (nodeName().contains("TransformPrimitive"))
         {

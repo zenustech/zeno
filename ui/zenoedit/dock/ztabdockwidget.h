@@ -5,7 +5,7 @@
 #include <QtWidgets>
 #include "zenodockwidget.h"
 #include "docktabcontent.h"
-#include <zenoio/include/iocommon.h>
+#include <zeno/io/iocommon.h>
 #include "layout/winlayoutrw.h"
 
 class ZenoMainWindow;

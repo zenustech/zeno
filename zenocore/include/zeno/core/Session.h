@@ -3,8 +3,6 @@
 #include <zeno/utils/api.h>
 #include <zeno/core/Descriptor.h>
 #include <zeno/core/data.h>
-#include <zeno/core/Assets.h>
-#include <zeno/core/ObjectManager.h>
 #include <memory>
 #include <string>
 #include <map>
@@ -31,6 +29,8 @@ struct GlobalStatus;
 struct EventCallbacks;
 struct UserData;
 struct CalcManager;
+struct ObjectManager;
+struct AssetsMgr;
 
 struct Session {
     std::map<std::string, std::unique_ptr<INodeClass>> nodeClasses;
@@ -66,6 +66,7 @@ struct Session {
     ZENO_API void beginApiCall();
     ZENO_API void endApiCall();
     ZENO_API void switchToFrame(int frameid);
+    ZENO_API int registerObjId(const std::string& objprefix);
 
 private:
     void initNodeCates();

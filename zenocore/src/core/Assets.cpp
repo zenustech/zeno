@@ -1,33 +1,103 @@
 #include <zeno/core/Assets.h>
 #include <zeno/extra/SubnetNode.h>
 #include <zeno/core/IParam.h>
+#include <filesystem>
+#include <zeno/io/zdareader.h>
+#ifdef _WIN32
+#include <windows.h>
+#include <shlobj.h>
+#endif
 
 
 namespace zeno {
 
 ZENO_API AssetsMgr::AssetsMgr() {
-
+    initAssetsInfo();
 }
 
 ZENO_API AssetsMgr::~AssetsMgr() {
 
 }
 
+void AssetsMgr::initAssetsInfo() {
+#ifdef _WIN32
+    WCHAR documents[MAX_PATH];
+    SHGetFolderPathW(NULL, CSIDL_PERSONAL, NULL, SHGFP_TYPE_CURRENT, documents);
+
+    std::filesystem::path docPath(documents);
+
+    std::filesystem::path zenoDir = std::filesystem::u8path(docPath.string() + "/Zeno");
+    if (!std::filesystem::is_directory(zenoDir)) {
+        std::filesystem::create_directories(zenoDir);
+    }
+    std::filesystem::path assetsDir = std::filesystem::u8path(zenoDir.string() + "/assets");
+    if (!std::filesystem::is_directory(assetsDir)) {
+        std::filesystem::create_directories(assetsDir);
+    }
+
+    for (auto const& dir_entry : std::filesystem::directory_iterator(assetsDir))
+    {
+        std::filesystem::path itemPath = dir_entry.path();
+        if (itemPath.extension() == ".zda") {
+            std::string zdaPath = itemPath.string();
+            zenoio::ZdaReader reader;
+            reader.setDelayReadGraph(true);
+            zeno::scope_exit sp([&] {reader.setDelayReadGraph(false); });
+
+            zenoio::ZSG_PARSE_RESULT result = reader.openFile(zdaPath);
+            if (result.bSucceed) {
+                zeno::ZenoAsset zasset = reader.getParsedAsset();
+                zasset.info.path = zdaPath;
+                createAsset(zasset);
+            }
+        }
+    }
+#endif
+}
+
+ZENO_API std::shared_ptr<Graph> AssetsMgr::getAssetGraph(const std::string& name, bool bLoadIfNotExist) {
+    if (m_assets.find(name) != m_assets.end()) {
+        if (!m_assets[name].sharedGraph) {
+            zenoio::ZdaReader reader;
+            reader.setDelayReadGraph(false);
+            const AssetInfo& info = m_assets[name].m_info;
+            std::string zdaPath = info.path;
+            zenoio::ZSG_PARSE_RESULT result = reader.openFile(zdaPath);
+            if (result.bSucceed) {
+                zeno::ZenoAsset zasset = reader.getParsedAsset();
+                assert(zasset.optGraph.has_value());
+                std::shared_ptr<Graph> spGraph = std::make_shared<Graph>(info.name, true);
+                spGraph->setName(info.name);
+                spGraph->init(zasset.optGraph.value());
+                m_assets[name].sharedGraph = spGraph;
+            }
+        }
+        return m_assets[name].sharedGraph;
+    }
+    return nullptr;
+}
+
 ZENO_API void AssetsMgr::createAsset(const zeno::ZenoAsset asset) {
     Asset newAsst;
 
     newAsst.m_info = asset.info;
-
-    std::shared_ptr<Graph> spGraph = std::make_shared<Graph>(asset.info.name, true);
-
-    spGraph->setName(asset.info.name);
-    spGraph->init(asset.graph);
-
+    if (asset.optGraph.has_value())
+    {
+        std::shared_ptr<Graph> spGraph = std::make_shared<Graph>(asset.info.name, true);
+        spGraph->setName(asset.info.name);
+        spGraph->init(asset.optGraph.value());
+        newAsst.sharedGraph = spGraph;
+    }
     newAsst.inputs = asset.inputs;
     newAsst.outputs = asset.outputs;
-    newAsst.sharedGraph = spGraph;
 
-    m_assets.insert(std::make_pair(asset.info.name, newAsst));
+    if (m_assets.find(asset.info.name) != m_assets.end()) {
+        m_assets[asset.info.name] = newAsst;
+    }
+    else {
+        m_assets.insert(std::make_pair(asset.info.name, newAsst));
+    }
+
     CALLBACK_NOTIFY(createAsset, asset.info)
 }
 
@@ -46,6 +116,14 @@ ZENO_API Asset AssetsMgr::getAsset(const std::string& name) const {
         return m_assets.at(name);
     }
     return Asset();
+}
+
+ZENO_API std::vector<Asset> AssetsMgr::getAssets() const {
+    std::vector<Asset> assets;
+    for (auto& [name, asset] : m_assets) {
+        assets.push_back(asset);
+    }
+    return assets;
 }
 
 ZENO_API void AssetsMgr::updateAssets(const std::string name, ParamsUpdateInfo info) {
@@ -171,54 +249,39 @@ ZENO_API void AssetsMgr::updateAssets(const std::string name, ParamsUpdateInfo i
     }
 }
 
-GraphData AssetsMgr::forkAssetGraph(std::shared_ptr<Graph> assetGraph)
+std::shared_ptr<Graph> AssetsMgr::forkAssetGraph(std::shared_ptr<Graph> assetGraph)
 {
-    zeno::GraphData newGraph;
-    newGraph.templateName = assetGraph->getName();
-
-    std::unordered_map<std::string, std::string> old2new;
-    std::unordered_map<std::string, int> node_idx_set;
+    std::shared_ptr<Graph> newGraph = std::make_shared<Graph>(assetGraph->getName(), true);
 
     for (const auto& [name, spNode] : assetGraph->getNodes())
     {
         zeno::NodeData nodeDat;
-        const std::string& oldName = spNode->get_name();
+        const std::string& name = spNode->get_name();
         const std::string& cls = spNode->get_nodecls();
-
-        if (node_idx_set.find(cls) == node_idx_set.end()) {
-            node_idx_set[cls] = 1;
-        }
-        int newIdNum = node_idx_set[cls]++;
-        const std::string& newName = cls + std::to_string(newIdNum);
-
-        old2new.insert(std::make_pair(oldName, newName));
 
         if (auto spSubnetNode = std::dynamic_pointer_cast<SubnetNode>(spNode))
         {
             const std::string& cls = spSubnetNode->get_nodecls();
             if (m_assets.find(cls) != m_assets.end()) {
                 //asset node
-                GraphData fork_graph = forkAssetGraph(spSubnetNode->subgraph);
-                nodeDat = spSubnetNode->exportInfo();
-                nodeDat.subgraph = fork_graph;
+                auto spNewSubnetNode = newGraph->createNode(cls, name, "assets", spNode->get_pos());
             }
             else {
+                std::shared_ptr<INode> spNewNode = newGraph->createNode(cls, name);
                 nodeDat = spSubnetNode->exportInfo();
+                spNewNode->init(nodeDat);   //should clone graph.
             }
         }
         else {
+            std::shared_ptr<INode> spNewNode = newGraph->createNode(cls, name);
             nodeDat = spNode->exportInfo();
+            spNewNode->init(nodeDat);
         }
-        nodeDat.name = newName;
-        newGraph.nodes[newName] = nodeDat;
     }
 
     LinksData oldLinks = assetGraph->exportLinks();
     for (zeno::EdgeInfo oldLink : oldLinks) {
-        zeno::EdgeInfo newLink = oldLink;
-        newLink.inNode = old2new[newLink.inNode];
-        newLink.outNode = old2new[newLink.outNode];
-        newGraph.links.push_back(newLink);
+        newGraph->addLink(oldLink);
     }
     return newGraph;
 }
@@ -232,29 +295,30 @@ ZENO_API bool AssetsMgr::isAssetGraph(std::shared_ptr<Graph> spGraph) const
     return false;
 }
 
-ZENO_API std::shared_ptr<INode> AssetsMgr::newInstance(const std::string& assetsName, const std::string& nodeName, bool expandAsset) {
-    if (m_assets.find(assetsName) == m_assets.end()) {
+ZENO_API std::shared_ptr<INode> AssetsMgr::newInstance(const std::string& assetName, const std::string& nodeName, bool createInAsset) {
+    if (m_assets.find(assetName) == m_assets.end()) {
         return nullptr;
     }
 
-    Asset& assets = m_assets[assetsName];
+    Asset& assets = m_assets[assetName];
+    if (!assets.sharedGraph) {
+        getAssetGraph(assetName, true);
+    }
+    assert(assets.sharedGraph);
 
     std::shared_ptr<SubnetNode> spNode = std::make_shared<SubnetNode>();
 
     std::shared_ptr<Graph> assetGraph;
-    //should expand the asset graph into a tree.
-    if (expandAsset) {
-        assert(assets.sharedGraph);
-        GraphData forkedGraph = forkAssetGraph(assets.sharedGraph);
-        assetGraph = std::make_shared<Graph>(assetsName, true);
-        assetGraph->init(forkedGraph);
+    if (!createInAsset) {
+        //should expand the asset graph into a tree.
+        assetGraph = forkAssetGraph(assets.sharedGraph);
     }
     else {
         assetGraph = assets.sharedGraph;
     }
 
     spNode->subgraph = assetGraph;
-    spNode->m_nodecls = assetsName;
+    spNode->m_nodecls = assetName;
     spNode->m_name = nodeName;
 
     for (const ParamInfo& param : assets.inputs)

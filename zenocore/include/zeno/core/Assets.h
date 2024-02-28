@@ -16,7 +16,7 @@ struct ZenoAsset {
     std::vector<ParamInfo> inputs;
     std::vector<ParamInfo> outputs;
     AssetInfo info;
-    GraphData graph;
+    std::optional<GraphData> optGraph;
 };
 
 using AssetsData = std::map<std::string, ZenoAsset>;
@@ -44,14 +44,18 @@ struct AssetsMgr : std::enable_shared_from_this<AssetsMgr> {
     CALLBACK_REGIST(renameAsset, void, const std::string&, const std::string&)
 
     ZENO_API Asset getAsset(const std::string& name) const;
+    ZENO_API std::shared_ptr<Graph> getAssetGraph(const std::string& name, bool bLoadIfNotExist);
+    ZENO_API std::vector<Asset> getAssets() const;
     ZENO_API void updateAssets(const std::string name, ParamsUpdateInfo info);
-    ZENO_API std::shared_ptr<INode> newInstance(const std::string& assetsName, const std::string& nodeName, bool expandAsset);
+    ZENO_API std::shared_ptr<INode> newInstance(const std::string& assetsName, const std::string& nodeName, bool createInAsset);
+
 
     ZENO_API bool isAssetGraph(std::shared_ptr<Graph> spGraph) const;
 
 private:
-    GraphData forkAssetGraph(std::shared_ptr<Graph> assetGraph);
-
+    void initAssetsInfo();
+    std::shared_ptr<Graph> forkAssetGraph(std::shared_ptr<Graph> assetGraph);
+    bool m_bInitAssetInfo = false;
 };
 
 }

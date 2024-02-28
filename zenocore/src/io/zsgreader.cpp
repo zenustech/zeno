@@ -1,10 +1,10 @@
-#include "zsgreader.h"
+#include <zeno/io/zsgreader.h>
 #include <zeno/utils/logger.h>
 #include <zeno/funcs/ParseObjectFromUi.h>
-#include "include/iotags.h"
+#include <zeno/io/iotags.h>
 #include <fstream>
 #include <filesystem>
-#include <zenoio/include/iohelper.h>
+#include <zeno/io/iohelper.h>
 #include <zeno/utils/helper.h>
 
 
@@ -15,7 +15,7 @@ namespace zenoio {
 
     ZsgReader::ZsgReader() : m_bDiskReading(true), m_ioVer(zeno::VER_3) {}
 
-    ZSG_PARSE_RESULT ZsgReader::openFile(const std::string& fn)
+    ZENO_API ZSG_PARSE_RESULT ZsgReader::openFile(const std::string& fn)
     {
         ZSG_PARSE_RESULT result;
         result.bSucceed = false;

@@ -5,10 +5,11 @@
 #include "zenoapplication.h"
 #include <zenomodel/include/modelrole.h>
 #include "util/log.h"
-#include <zenoio/writer/zsgwriter.h>
+#include <zeno/io/zsgwriter.h>
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
 #include "settings/zenosettingsmanager.h"
+
 
 SubgEditValidator::SubgEditValidator(QObject* parent)
 {

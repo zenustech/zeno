@@ -5,7 +5,7 @@
 #include "common.h"
 #include "modeldata.h"
 #include "modelrole.h"
-#include <zenoio/include/iocommon.h>
+#include <zeno/io/iocommon.h>
 
 class LinkModel;
 class ViewParamModel;

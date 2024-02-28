@@ -1,11 +1,11 @@
-#include "zenreader.h"
-#include <zenoio/include/iohelper.h>
+#include <zeno/io/zenreader.h>
+#include <zeno/io/iohelper.h>
 #include <zeno/utils/helper.h>
 
 
 namespace zenoio
 {
-    ZenReader::ZenReader()
+    ZENO_API ZenReader::ZenReader()
     {
     }
 

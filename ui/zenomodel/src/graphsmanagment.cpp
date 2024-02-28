@@ -1,12 +1,12 @@
 #include "graphsmanagment.h"
 #include <zenomodel/include/zenomodel.h>
 #include <zenomodel/include/modelrole.h>
-#include <zenoio/reader/zsg2reader.h>
+#include <zeno/io/zsg2reader.h>
 #include <zenomodel/include/uihelper.h>
 #include <zeno/utils/log.h>
 #include <zeno/utils/scope_exit.h>
 #include "common_def.h"
-#include <zenoio/writer/zsgwriter.h>
+#include <zeno/io/zsgwriter.h>
 #include <zeno/core/Session.h>
 #include <zeno/types/UserData.h>
 

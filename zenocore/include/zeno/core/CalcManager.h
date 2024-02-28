@@ -2,8 +2,6 @@
 
 #include <zeno/core/Descriptor.h>
 #include <zeno/core/data.h>
-#include <zeno/core/Assets.h>
-#include <zeno/core/ObjectManager.h>
 #include <set>
 
 namespace zeno {

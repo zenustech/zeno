@@ -2,7 +2,7 @@
 #define __ZSG_READER_H__
 
 #include <rapidjson/document.h>
-#include <zenoio/include/iocommon.h>
+#include <zeno/io//iocommon.h>
 #include <zeno/core/data.h>
 
 namespace zenoio
@@ -11,7 +11,7 @@ namespace zenoio
     {
     public:
         ZsgReader();
-        ZSG_PARSE_RESULT openFile(const std::string& fn);
+        ZENO_API ZSG_PARSE_RESULT openFile(const std::string& fn);
 
     protected:
         virtual bool _parseMainGraph(const rapidjson::Document& doc, zeno::GraphData& ret);

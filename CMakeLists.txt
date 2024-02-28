@@ -172,7 +172,6 @@ endfunction()
 
 add_subdirectory(zenocore)
 add_subdirectory(zeno)
-add_subdirectory(zenoio)
 
 ## --- begin cihou perf-geeks
 if (ZENO_MARCH_NATIVE)

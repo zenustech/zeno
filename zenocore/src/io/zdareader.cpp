@@ -1,11 +1,15 @@
-#include "zdareader.h"
+#include <zeno/io/zdareader.h>
 #include <zeno/utils/string.h>
 
 
 namespace zenoio
 {
-    ZdaReader::ZdaReader() {
+    ZENO_API ZdaReader::ZdaReader() : m_bDelayReadGraphData(false) {
 
+    }
+
+    ZENO_API void ZdaReader::setDelayReadGraph(bool bDelay) {
+        m_bDelayReadGraphData = bDelay;
     }
 
     bool ZdaReader::_parseMainGraph(const rapidjson::Document& doc, zeno::GraphData& ret) {
@@ -35,18 +39,22 @@ namespace zenoio
         }
 
         zeno::AssetsData assets;//todo
-        if (!_parseGraph(doc["graph"], assets, ret))
-            return false;
+        if (!m_bDelayReadGraphData)
+        {
+            if (!_parseGraph(doc["graph"], assets, ret))
+                return false;
+        }
 
         _parseParams(doc["Parameters"], m_asset.inputs, m_asset.outputs);
 
         ret.type = zeno::Subnet_Normal;
         ret.name = m_asset.info.name;
-        m_asset.graph = ret;
+        if (!m_bDelayReadGraphData)
+            m_asset.optGraph = ret;
         return true;
     }
 
-    zeno::ZenoAsset ZdaReader::getParsedAsset() const
+    ZENO_API zeno::ZenoAsset ZdaReader::getParsedAsset() const
     {
         return m_asset;
     }

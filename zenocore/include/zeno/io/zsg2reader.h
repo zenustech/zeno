@@ -8,12 +8,10 @@ namespace zenoio
     class Zsg2Reader : public ZsgReader 
     {
     public:
-        Zsg2Reader();
+        ZENO_API Zsg2Reader();
 
     protected:
         bool _parseMainGraph(const rapidjson::Document& doc, zeno::GraphData& ret) override;
-
-
 
         zeno::ParamInfo _parseSocket(
             const bool bInput,

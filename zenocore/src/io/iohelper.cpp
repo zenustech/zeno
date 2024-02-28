@@ -1,5 +1,5 @@
 #include <rapidjson/document.h>
-#include "../include/iohelper.h"
+#include <zeno/io/iohelper.h>
 #include <zeno/zeno.h>
 #include <zeno/utils/log.h>
 #include <zeno/utils/string.h>
@@ -109,7 +109,7 @@ namespace zenoio
         }
     }
 
-    zeno::ZSG_VERSION getVersion(const std::string& fn)
+    ZENO_API zeno::ZSG_VERSION getVersion(const std::string& fn)
     {
         std::filesystem::path filePath(fn);
         if (!std::filesystem::exists(filePath)) {

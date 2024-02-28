@@ -286,11 +286,14 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
             if (spSubnetNode) {
                 bool bAssets = spSubnetNode->subgraph->isAssets();
                 if (bAssets) {
-                    return zeno::Node_AssetInstance;
+                    if (spSubnetNode->in_asset_file())
+                        return zeno::Node_AssetReference;
+                    else
+                        return zeno::Node_AssetInstance;
                 }
                 return zeno::Node_SubgraphNode;
-           }
-           return zeno::Node_Normal;
+            }
+            return zeno::Node_Normal;
         }
         case ROLE_OBJPATH:
         {

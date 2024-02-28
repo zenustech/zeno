@@ -4,7 +4,7 @@
 #include <QtWidgets>
 #include <zeno/core/data.h>
 #include "uicommon.h"
-#include <zenoio/include/iocommon.h>
+#include <zeno/io/iocommon.h>
 #include <QStandardItemModel>
 
 class AssetsModel;

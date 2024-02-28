@@ -1,19 +1,19 @@
-#include "zenwriter.h"
+#include <zeno/io/zenwriter.h>
 #include <zeno/utils/logger.h>
 #include <zeno/funcs/ParseObjectFromUi.h>
 #include <zeno/utils/helper.h>
-#include <zenoio/include/iohelper.h>
+#include <zeno/io/iohelper.h>
 
 using namespace zeno::iotags;
 
 
 namespace zenoio
 {
-    ZenWriter::ZenWriter()
+    ZENO_API ZenWriter::ZenWriter()
     {
     }
 
-    std::string ZenWriter::dumpToClipboard(const zeno::GraphData& graph)
+    ZENO_API std::string ZenWriter::dumpToClipboard(const zeno::GraphData& graph)
     {
         rapidjson::StringBuffer s;
         RAPIDJSON_WRITER writer(s);
@@ -36,7 +36,7 @@ namespace zenoio
         return strJson;
     }
 
-    std::string ZenWriter::dumpProgramStr(zeno::GraphData maingraph, AppSettings settings)
+    ZENO_API std::string ZenWriter::dumpProgramStr(zeno::GraphData maingraph, AppSettings settings)
     {
         std::string strJson;
 

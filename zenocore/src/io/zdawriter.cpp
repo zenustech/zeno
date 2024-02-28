@@ -1,8 +1,8 @@
-#include "zdawriter.h"
+#include <zeno/io/zdawriter.h>
 #include <zeno/utils/logger.h>
 #include <zeno/funcs/ParseObjectFromUi.h>
 #include <zeno/utils/helper.h>
-#include <zenoio/include/iohelper.h>
+#include <zeno/io/iohelper.h>
 #include <format>
 
 using namespace zeno::iotags;
@@ -10,11 +10,11 @@ using namespace zeno::iotags;
 
 namespace zenoio
 {
-    ZdaWriter::ZdaWriter()
+    ZENO_API ZdaWriter::ZdaWriter()
     {
     }
 
-    std::string ZdaWriter::dumpAsset(zeno::ZenoAsset asset)
+    ZENO_API std::string ZdaWriter::dumpAsset(zeno::ZenoAsset asset)
     {
         std::string strJson;
 
@@ -31,8 +31,11 @@ namespace zenoio
             std::string ver = zeno::format("{}.{}", asset.info.majorVer, asset.info.minorVer);
             writer.String(ver.c_str());
 
-            writer.Key("graph");
-            dumpGraph(asset.graph, writer);
+            if (asset.optGraph.has_value())
+            {
+                writer.Key("graph");
+                dumpGraph(asset.optGraph.value(), writer);
+            }
 
             writer.Key("Parameters");
             {

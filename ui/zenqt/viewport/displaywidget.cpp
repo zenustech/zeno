@@ -9,6 +9,7 @@
 #include <zeno/extra/GlobalState.h>
 #include <zeno/utils/log.h>
 #include <zeno/types/CameraObject.h>
+#include <zeno/core/ObjectManager.h>
 #include "util/uihelper.h"
 #include "zenomainwindow.h"
 #include "camerakeyframe.h"
@@ -20,7 +21,7 @@
 #include "dialog/zrecframeselectdlg.h"
 #include "util/apphelper.h"
 #include "zassert.h"
-#include <zenoio/writer/zenwriter.h>
+#include <zeno/io/zenwriter.h>
 #include "viewport/picker.h"
 #include "viewport/nodesync.h"
 #include "layout/winlayoutrw.h"

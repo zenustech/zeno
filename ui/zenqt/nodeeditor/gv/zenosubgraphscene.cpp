@@ -5,8 +5,8 @@
 #include "cameranode.h"
 #include "pythonnode.h"
 #include "zenolink.h"
-#include <zenoio/reader/zsg2reader.h>
-#include <zenoio/writer/zenwriter.h>
+#include <zeno/io/zsg2reader.h>
+#include <zeno/io/zenwriter.h>
 #include "util/uihelper.h"
 #include "uicommon.h"
 #include "nodeeditor/gv/nodegrid.h"

@@ -1,5 +1,7 @@
 #include <zeno/core/Session.h>
 #include <zeno/core/IObject.h>
+#include <zeno/core/Assets.h>
+#include <zeno/core/ObjectManager.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
 #include <zeno/extra/GlobalStatus.h>
@@ -163,6 +165,12 @@ ZENO_API void Session::endApiCall()
         if (m_bAutoRun)
             run_main_graph();
     }
+}
+
+ZENO_API int Session::registerObjId(const std::string& objprefix)
+{
+    int objid = objsMan->registerObjId(objprefix);
+    return objid;
 }
 
 ZENO_API void Session::switchToFrame(int frameid)

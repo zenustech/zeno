@@ -21,8 +21,8 @@
 #include <zeno/utils/envconfig.h>
 #include <zeno/core/Session.h>
 #include <zeno/extra/GlobalComm.h>
-#include <zenoio/reader/zsg2reader.h>
-#include <zenoio/writer/zenwriter.h>
+#include <zeno/io/zsg2reader.h>
+#include <zeno/io/zenwriter.h>
 #include <zenovis/DrawOptions.h>
 #include "uicommon.h"
 #include "style/zenostyle.h"

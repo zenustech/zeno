@@ -5,6 +5,7 @@
 #include <zeno/types/DummyObject.h>
 #include <zeno/utils/log.h>
 #include <zeno/core/IParam.h>
+#include <zeno/core/Assets.h>
 
 namespace zeno {
 
@@ -19,6 +20,8 @@ ZENO_API void SubnetNode::initParams(const NodeData& dat)
 {
     for (const ParamInfo& param : dat.inputs)
     {
+        if (inputs_.find(param.name) != inputs_.end())
+            continue;
         std::shared_ptr<IParam> sparam = std::make_shared<IParam>();
         sparam->defl = param.defl;
         sparam->name = param.name;
@@ -31,6 +34,8 @@ ZENO_API void SubnetNode::initParams(const NodeData& dat)
 
     for (const ParamInfo& param : dat.outputs)
     {
+        if (outputs_.find(param.name) != outputs_.end())
+            continue;
         std::shared_ptr<IParam> sparam = std::make_shared<IParam>();
         sparam->defl = param.defl;
         sparam->name = param.name;
@@ -42,7 +47,7 @@ ZENO_API void SubnetNode::initParams(const NodeData& dat)
     }
 
     //需要检查SubInput/SubOutput是否对的上？
-    if (dat.subgraph)
+    if (dat.subgraph && subgraph->getNodes().empty())
         subgraph->init(*dat.subgraph);
 }
 

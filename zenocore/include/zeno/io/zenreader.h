@@ -9,7 +9,7 @@ namespace zenoio
     class ZenReader : public ZsgReader
     {
     public:
-        ZenReader();
+        ZENO_API ZenReader();
 
     protected:
         bool _parseMainGraph(const rapidjson::Document& doc, zeno::GraphData& ret) override;

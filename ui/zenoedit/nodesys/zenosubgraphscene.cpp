@@ -9,8 +9,8 @@
 #include "livenode.h"
 #include "zenolink.h"
 #include <zenomodel/include/modelrole.h>
-#include <zenoio/reader/zsg2reader.h>
-#include <zenoio/writer/zsgwriter.h>
+#include <zeno/io/zsg2reader.h>
+#include <zeno/io/zsgwriter.h>
 #include <zenomodel/include/uihelper.h>
 #include <zenoui/nodesys/nodesys_common.h>
 #include <zenoui/nodesys/nodegrid.h>

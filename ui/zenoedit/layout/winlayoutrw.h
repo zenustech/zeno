@@ -5,8 +5,8 @@
 #include <QtWidgets>
 #include <zenomodel/include/jsonhelper.h>
 #include "../dock/docktabcontent.h"
-#include <zenoio/writer/zsgwriter.h>
-#include <zenoio/reader/zsg2reader.h>
+#include <zeno/io/zsgwriter.h>
+#include <zeno/io/zsg2reader.h>
 //#include "util/apphelper.h"
 
 struct LayerOutNode;

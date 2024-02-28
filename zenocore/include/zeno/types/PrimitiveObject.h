@@ -166,7 +166,7 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
             return generateUUID();
         }
         else {
-            int objid = getSession().objsMan->registerObjId(m_prefix);
+            int objid = getSession().registerObjId(m_prefix);
             return m_prefix + std::to_string(objid);
         }
     }

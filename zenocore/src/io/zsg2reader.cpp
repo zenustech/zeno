@@ -1,10 +1,10 @@
-#include "zsg2reader.h"
+#include <zeno/io/zsg2reader.h>
 #include <zeno/utils/logger.h>
 #include <zeno/funcs/ParseObjectFromUi.h>
-#include "include/iotags.h"
+#include <zeno/io/iotags.h>
 #include <fstream>
 #include <filesystem>
-#include <zenoio/include/iohelper.h>
+#include <zeno/io/iohelper.h>
 #include <zeno/utils/helper.h>
 
 
@@ -13,7 +13,7 @@ using namespace zeno::iotags::curve;
 
 namespace zenoio {
 
-Zsg2Reader::Zsg2Reader() {}
+ZENO_API Zsg2Reader::Zsg2Reader() {}
 
 bool Zsg2Reader::_parseMainGraph(const rapidjson::Document& doc, zeno::GraphData& mainData)
 {

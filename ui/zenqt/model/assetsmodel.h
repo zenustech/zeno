@@ -18,7 +18,7 @@ class AssetsModel : public QAbstractListModel
     struct _AssetItem
     {
         zeno::AssetInfo info;
-        GraphModel* pGraphM;
+        GraphModel* pGraphM = nullptr;
     };
 
 public:
@@ -27,7 +27,7 @@ public:
 
     void init(const zeno::AssetsData& assets);
     void clear();
-    Q_INVOKABLE GraphModel* getAssetGraph(const QString& graphName) const;
+    Q_INVOKABLE GraphModel* getAssetGraph(const QString& graphName);
 
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
@@ -49,8 +49,6 @@ private:
     void _addAsset(zeno::AssetInfo info);
     void _removeAsset(const QString& newName);
     int rowByName(const QString& name) const;
-    void _initAssets();
-    void _initAsset(const QString& path);
 
     QVector<_AssetItem> m_assets;
 

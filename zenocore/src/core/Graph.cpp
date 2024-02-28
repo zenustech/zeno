@@ -5,6 +5,7 @@
 #include <zeno/utils/safe_at.h>
 #include <zeno/utils/scope_exit.h>
 #include <zeno/core/Descriptor.h>
+#include <zeno/core/Assets.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/extra/GraphException.h>
@@ -433,7 +434,7 @@ ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls, std::s
     }
     else {
         bool isCurrentGraphAsset = getSession().assets->isAssetGraph(shared_from_this());
-        node = getSession().assets->newInstance(cls, name, !isCurrentGraphAsset);
+        node = getSession().assets->newInstance(cls, name, isCurrentGraphAsset);
         asset_nodes.insert(name);
     }
 

@@ -2,9 +2,9 @@
 #include "graphmodel.h"
 #include <zeno/core/Session.h>
 #include <zeno/core/Assets.h>
-#include <zenoio/writer/zdawriter.h>
+#include <zeno/io/zdawriter.h>
 #include <zeno/utils/log.h>
-#include <zenoio/reader/zdareader.h>
+#include <zeno/io/zdareader.h>
 
 
 AssetsModel::AssetsModel(QObject* parent)
@@ -23,39 +23,13 @@ AssetsModel::AssetsModel(QObject* parent)
         //TODO
     });
 
-    _initAssets();
+    for (zeno::Asset asset : assets->getAssets()) {
+        _addAsset(asset.m_info);
+    }
 }
 
 AssetsModel::~AssetsModel()
 {
-
-}
-
-void AssetsModel::_initAssets()
-{
-    QDir dir(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation));
-    dir.mkpath("Zeno/assets");
-    dir.cd("Zeno");
-    dir.cd("assets");
-    for (const QFileInfo& file : dir.entryInfoList(QDir::Files))
-    {
-        QString path = file.filePath();
-        _initAsset(path);
-    }
-}
-
-void AssetsModel::_initAsset(const QString& path)
-{
-    zenoio::ZdaReader reader;
-    zenoio::ZSG_PARSE_RESULT result = reader.openFile(path.toStdString());
-    if (!result.bSucceed) {
-        return;
-    }
-
-    zeno::ZenoAsset zasset = reader.getParsedAsset();
-    zasset.info.path = path.toStdString();
-    auto& assets = zeno::getSession().assets;
-    assets->createAsset(zasset);
 }
 
 void AssetsModel::init(const zeno::AssetsData& assets)
@@ -68,11 +42,23 @@ void AssetsModel::clear()
 
 }
 
-GraphModel* AssetsModel::getAssetGraph(const QString& graphName) const
+GraphModel* AssetsModel::getAssetGraph(const QString& graphName)
 {
     for (int i = 0; i < m_assets.length(); i++) {
-        if (m_assets[i].pGraphM->name() == graphName) {
-            return m_assets[i].pGraphM;
+        const std::string& assetName = m_assets[i].info.name;
+        if (assetName == graphName.toStdString()) {
+            GraphModel* pModel = m_assets[i].pGraphM;
+            if (!pModel) {
+                //delay load
+                std::shared_ptr<zeno::AssetsMgr> assets = zeno::getSession().assets;
+                std::shared_ptr<zeno::Graph> spAsset = assets->getAssetGraph(assetName, true);
+                if (spAsset) {
+                    auto pNewAsstModel = new GraphModel(spAsset, nullptr, this);
+                    m_assets[i].pGraphM = pNewAsstModel;
+                    return pNewAsstModel;
+                }
+            }
+            return pModel;
         }
     }
     return nullptr;
@@ -90,7 +76,7 @@ zeno::AssetInfo AssetsModel::getAsset(const QString& assetName) const
 
 int AssetsModel::rowByName(const QString& name) const {
     for (int i = 0; i < m_assets.size(); i++) {
-        if (m_assets[i].pGraphM->name() == name) {
+        if (m_assets[i].info.name == name.toStdString()) {
             return i;
         }
     }
@@ -107,8 +93,7 @@ QVariant AssetsModel::data(const QModelIndex& index, int role) const
     int row = index.row();
     if (row >= 0 && row < m_assets.size()) {
         if (Qt::DisplayRole == role || ROLE_CLASS_NAME == role) {
-            GraphModel* pAsset = m_assets[row].pGraphM;
-            return pAsset->name();
+            return QString::fromStdString(m_assets[row].info.name);
         }
     }
     //todo
@@ -126,7 +111,7 @@ void AssetsModel::newAsset(const zeno::AssetInfo info)
     zeno::ZenoAsset asset;
     asset.info = info;
 
-    zeno::GraphData& sample = asset.graph;
+    zeno::GraphData sample;
     sample.type = zeno::Subnet_Main;
     sample.name = info.name;
 
@@ -154,6 +139,8 @@ void AssetsModel::newAsset(const zeno::AssetInfo info)
     sample.nodes.insert(std::make_pair("input2", input2));
     sample.nodes.insert(std::make_pair("output1", output1));
     sample.nodes.insert(std::make_pair("output2", output2));
+
+    asset.optGraph = sample;
 
     std::vector<zeno::ParamInfo>& inputs = asset.inputs;
     std::vector<zeno::ParamInfo>& outputs = asset.outputs;
@@ -199,7 +186,7 @@ void AssetsModel::saveAsset(const QString& name)
 
     zeno::ZenoAsset zasset;
     zasset.info = asset.m_info;
-    zasset.graph = asset.sharedGraph->exportGraph();
+    zasset.optGraph = asset.sharedGraph->exportGraph();
     zasset.inputs = asset.inputs;
     zasset.outputs = asset.outputs;
 
@@ -225,15 +212,17 @@ void AssetsModel::_addAsset(zeno::AssetInfo info)
     int nRows = m_assets.size();
     beginInsertRows(QModelIndex(), nRows, nRows);
 
-    std::shared_ptr<zeno::AssetsMgr> asts = zeno::getSession().assets;
-    std::shared_ptr<zeno::Graph> spAsset = asts->getAsset(info.name).sharedGraph;
-    auto pNewAsstModel = new GraphModel(spAsset, nullptr, this);
-
     _AssetItem item;
     item.info = info;
-    item.pGraphM = pNewAsstModel;
-    m_assets.append(item);
 
+    std::shared_ptr<zeno::AssetsMgr> asts = zeno::getSession().assets;
+    std::shared_ptr<zeno::Graph> spAsset = asts->getAsset(info.name).sharedGraph;
+    if (spAsset) {
+        auto pNewAsstModel = new GraphModel(spAsset, nullptr, this);
+        item.pGraphM = pNewAsstModel;
+    }
+
+    m_assets.append(item);
     endInsertRows();
 }
 
