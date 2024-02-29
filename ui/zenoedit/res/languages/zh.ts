@@ -178,12 +178,8 @@
         <translation type="vanished">终止</translation>
     </message>
     <message>
-        <source>RunLightCamera</source>
-        <translation>运行灯光相机</translation>
-    </message>
-    <message>
-        <source>RunMaterial</source>
-        <translation>运行材质</translation>
+        <source>ReRun</source>
+        <translation>重新运行</translation>
     </message>
     <message>
         <source>This function can only be used in cache mode.</source>
@@ -2431,12 +2427,8 @@
         <translation type="vanished">运行</translation>
     </message>
     <message>
-        <source>RunLightCamera</source>
-        <translation type="vanished">运行灯光相机</translation>
-    </message>
-    <message>
-        <source>RunMaterial</source>
-        <translation type="vanished">运行材质</translation>
+        <source>ReRun</source>
+        <translation type="vanished">重新运行</translation>
     </message>
 </context>
 <context>

@@ -58,6 +58,8 @@ int optixcmd(const QCoreApplication& app, int port)
         {"optixShowBackground", "optixShowBackground", "optix record with background"},
         {"paramsPath", "paramsPath", "paramsPath"},
         {"paramsJson", "paramsJson", "paramsJson"},
+        {"toViewNodesList", "toViewNodesList", "toViewNodesList"},
+        {"toViewNodesIsOnceList", "toViewNodesIsOnceList", "toViewNodesIsOnceList"},
         });
     cmdParser.process(app);
 
@@ -104,6 +106,19 @@ int optixcmd(const QCoreApplication& app, int port)
         //    param.iFrame = count;
         //}
     }
+    if (cmdParser.isSet("toViewNodesList") && cmdParser.isSet("toViewNodesIsOnceList"))
+    {
+        QStringList toViewNodesList = cmdParser.value("toViewNodesList").split('\a');
+        QStringList toViewNodesIsOnceList = cmdParser.value("toViewNodesIsOnceList").split('\a');
+        if (toViewNodesList.size() == toViewNodesIsOnceList.size())
+        {
+            std::map<std::string, bool> toViewNodesId;
+            for (int i = 0; i < toViewNodesList.size(); i++)
+                toViewNodesId.insert(std::make_pair(toViewNodesList.at(i).toStdString(), toViewNodesIsOnceList.at(i).toInt()));
+            zeno::getSession().globalComm->setToViewNodes(toViewNodesId);
+        }
+    }
+
     param.iBitrate = cmdParser.isSet("bitrate") ? cmdParser.value("bitrate").toInt() : 20000;
     param.iFps = cmdParser.isSet("fps") ? cmdParser.value("fps").toInt() : 24;
     param.bOptix = cmdParser.isSet("optix") ? cmdParser.value("optix").toInt() : 0;

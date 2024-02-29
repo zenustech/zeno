@@ -761,7 +761,7 @@ void ZenoMainWindow::toggleTimelinePlay(bool bOn)
     m_pTimeline->togglePlayButton(bOn);
 }
 
-void ZenoMainWindow::onRunTriggered()
+void ZenoMainWindow::onRunTriggered(bool rerun)
 {
     QVector<DisplayWidget*> views = viewports();
 
@@ -783,6 +783,7 @@ void ZenoMainWindow::onRunTriggered()
         if (!pModel)
             return;
         LAUNCH_PARAM launchParam;
+        launchParam.reRun = rerun;
         launchParam.beginFrame = beginFrame;
         launchParam.endFrame = endFrame;
         QString path = pModel->filePath();
@@ -1106,6 +1107,7 @@ void ZenoMainWindow::solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param, LAUN
             pGraphsModel->updateCommandParam(key, param);
         }
     }
+    AppHelper::markAllNodesInMainGraphDirty(false);
 
     zeno::getSession().globalComm->clearState();
     launchParam.beginFrame = recInfo.frameRange.first;

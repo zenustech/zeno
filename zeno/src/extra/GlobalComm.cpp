@@ -894,10 +894,18 @@ ZENO_API bool GlobalComm::removeCache(int frame)
             zeno::log_info("remove dir: {}", dirToRemove);
         }
     }
-    if (frame == endFrameNumber && std::filesystem::exists(std::filesystem::u8path(cacheFramePath)) && std::filesystem::is_empty(std::filesystem::u8path(cacheFramePath)))
+    if (frame == endFrameNumber && std::filesystem::exists(std::filesystem::u8path(cacheFramePath)))
     {
-        std::filesystem::remove(std::filesystem::u8path(cacheFramePath));
-        zeno::log_info("remove dir: {}", std::filesystem::u8path(cacheFramePath).string());
+        std::filesystem::path staticToRemove = std::filesystem::u8path(cacheFramePath + "/_static");
+        if (std::filesystem::exists(staticToRemove))
+        {
+            std::filesystem::remove_all(staticToRemove);
+        }
+        if (std::filesystem::is_empty(std::filesystem::u8path(cacheFramePath)))
+        {
+            std::filesystem::remove(std::filesystem::u8path(cacheFramePath));
+            zeno::log_info("remove dir: {}", std::filesystem::u8path(cacheFramePath).string());
+        }
     }
     return true;
 }
