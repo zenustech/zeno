@@ -851,7 +851,7 @@ struct ReadAlembic : INode {
     virtual void apply() override {
         int frameid;
         if (has_input("frameid")) {
-            frameid = get_input<NumericObject>("frameid")->get<int>();
+            frameid = std::lround(get_input<NumericObject>("frameid")->get<float>());
         } else {
             frameid = getGlobalState()->frameid;
         }
