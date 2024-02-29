@@ -1,13 +1,9 @@
-#ifdef ZENO_WITH_PYTHON3
-    #include <Python.h>
-#endif
 #include "pythonmaterialnode.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
 #include <zenomodel/include/graphsmanagment.h>
 #include <zenomodel/include/igraphsmodel.h>
 #include "dialog/zmaterialinfosettingdlg.h"
-
 
 PythonMaterialNode::PythonMaterialNode(const NodeUtilParam& params, QGraphicsItem* parent)
     : ZenoNode(params, parent)
@@ -28,6 +24,13 @@ ZGraphicsLayout* PythonMaterialNode::initCustomParamWidgets()
     pEditBtn->setMinimumHeight(32);
     pHLayout->addItem(pEditBtn);
     connect(pEditBtn, SIGNAL(clicked()), this, SLOT(onExecuteClicked()));
+
+    pHLayout->addSpacing(10);
+    ZenoParamPushButton* pGenerateBtn = new ZenoParamPushButton("Generate", -1, QSizePolicy::Expanding);
+    pGenerateBtn->setMinimumHeight(32);
+    pHLayout->addItem(pGenerateBtn);
+    connect(pGenerateBtn, SIGNAL(clicked()), this, SLOT(onGenerateClicked()));
+
     pVLayout->addLayout(pHLayout);
 
     pVLayout->addSpacing(10);
@@ -52,107 +55,16 @@ ZGraphicsLayout* PythonMaterialNode::initCustomParamWidgets()
 
 void PythonMaterialNode::onExecuteClicked()
 {
-#ifdef ZENO_WITH_PYTHON3
-    std::string stdOutErr =
-        "import sys\n\
-class CatchOutErr:\n\
-    def __init__(self):\n\
-        self.value = ''\n\
-    def write(self, txt):\n\
-        self.value += txt\n\
-    def flush(self):\n\
-        pass\n\
-catchOutErr = CatchOutErr()\n\
-sys.stdout = catchOutErr\n\
-sys.stderr = catchOutErr\n\
-"; //this is python code to redirect stdouts/stderr
-
-    Py_Initialize();
-    PyObject* pModule = PyImport_AddModule("__main__"); //create main module
-    PyRun_SimpleString(stdOutErr.c_str()); //invoke code to redirect
-
+    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    QModelIndex subgIdx = subgIndex();
+    QModelIndex scriptIdx = pModel->paramIndex(subgIdx, index(), "script", true);
+    ZASSERT_EXIT(scriptIdx.isValid());
+    QString script = scriptIdx.data(ROLE_PARAM_VALUE).toString();
     MaterialMatchInfo info = getMatchInfo();
-
-    QString script = R"(
-import json
-import re
-import zeno
-
-mat_data = {}
-names_data = []
-keys_data = {}
-match_data = {}
-names = '%1'
-if names != '':
-    names_data = names.split(',')
-else:
-    print("names is empty")
-materialPath = '%2'
-if materialPath != '':
-    with open(materialPath, 'r') as mat_file:
-        mat_data = json.load(mat_file)
-keys = '%3'
-if keys != '':
-    keys_data = json.loads(keys)
-else:
-    print("key words is empty")
-matchInfo = '%4'
-if matchInfo != '':
-    match_data = json.loads(matchInfo)
-rows = int(len(names_data)**0.5)
-cols = int(len(names_data) / rows if rows > 0 else 1)
-pos = (%5,%6)
-count = 0
-defaultMat = '';
-for key, value in keys_data.items():
-    if value == 'default':
-        defaultMat = key
-for mat in names_data:
-    subgName = defaultMat
-    for preSet, pattern in keys_data.items():
-        if re.search(pattern, mat, re.I):
-            subgName = preSet
-            break
-    if subgName == '':
-        print('Can not match ', mat)
-    else:
-        node = zeno.forkMaterial(subgName, mat, mat)
-        row = int(count % rows) + 1
-        col = int(count / rows) + 1
-        newPos = (pos[0] + row * 600, pos[1]+col * 600)
-        node.pos = newPos
-        count = count + 1
-        if subgName in match_data and mat in mat_data:
-            match = match_data[subgName]
-            material = mat_data[mat]
-            for k, v in match.items():
-                if v in material:
-                    setattr(node, k,material[v])
-)";
-
     QPointF pos = nodePos();
-    //Py_Initialize();
-    if (PyRun_SimpleString(script.arg(info.m_names, info.m_materialPath, info.m_keyWords, info.m_matchInputs, QString::number(pos.x()), QString::number(pos.y())).toUtf8()) < 0) {
-        zeno::log_warn("Python Script run failed");
-    }
-    PyObject* catcher = PyObject_GetAttrString(pModule, "catchOutErr"); //get our catchOutErr created above
-    PyObject* output = PyObject_GetAttrString(catcher, "value"); //get the stdout and stderr from our catchOutErr object
-    if (output != Py_None)
-    {
-        QString str = QString::fromStdString(_PyUnicode_AsString(output));
-        QStringList lst = str.split('\n');
-        for (const auto& line : lst)
-        {
-            if (!line.isEmpty())
-            {
-                if (zenoApp->isUIApplication())
-                    ZWidgetErrStream::appendFormatMsg(line.toStdString());
-            }
-        }
-    }
-#else
-    zeno::log_warn("The option 'ZENO_WITH_PYTHON3' should be ON");
-#endif
+    script = script.arg(info.m_names, info.m_materialPath, info.m_keyWords, info.m_matchInputs, QString::number(pos.x()), QString::number(pos.y()));
+
+    AppHelper::pythonExcute(script);
 }
 
 
@@ -161,6 +73,11 @@ void PythonMaterialNode::onEditClicked()
     MaterialMatchInfo info = getMatchInfo();
     ZMaterialInfoSettingDlg::getMatchInfo(info);
     setMatchInfo(info);
+}
+
+void PythonMaterialNode::onGenerateClicked()
+{
+    AppHelper::generatePython(this->nodeId());
 }
 
 MaterialMatchInfo PythonMaterialNode::getMatchInfo()

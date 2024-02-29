@@ -122,7 +122,7 @@ void CurveModel::setVisible(bool visible) {
 }
 
 
-bool CurveModel::getVisible() {
+bool CurveModel::getVisible() const{
     return m_bVisible;
 }
 

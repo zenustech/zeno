@@ -4,7 +4,7 @@
 #include <zenoui/style/zenostyle.h>
 #include "zenoapplication.h"
 #include <zenomodel/include/graphsmanagment.h>
-
+#include <zenoui/comctrl/zlabel.h>
 
 ZenoSearchBar::ZenoSearchBar(const QModelIndex& idx, QWidget *parentWidget)
     : QWidget(parentWidget)
@@ -42,7 +42,12 @@ ZenoSearchBar::ZenoSearchBar(const QModelIndex& idx, QWidget *parentWidget)
         QColor(66, 66, 66));
     QHBoxLayout *pEditLayout = new QHBoxLayout;
     
+    m_countLabel = new ZTextLabel(this);
+    m_countLabel->setTextColor(Qt::white);
+    m_countLabel->setMinimumWidth(ZenoStyle::dpiScaled(26));
+    m_countLabel->setText(QString("%1/%2").arg(0).arg(m_results.size()));
     pEditLayout->addWidget(m_pLineEdit);
+    pEditLayout->addWidget(m_countLabel);
     pEditLayout->addWidget(pSearchBackward);
     pEditLayout->addWidget(pSearchForward);
     pEditLayout->addWidget(pCloseBtn);
@@ -79,6 +84,7 @@ void ZenoSearchBar::onSearchExec(const QString& content)
     if (!m_results.isEmpty())
     {
         m_idx = 0;
+        m_countLabel->setText(QString("%1/%2").arg(m_idx + 1).arg(m_results.size()));
         SEARCH_RECORD rec = _getRecord();
         emit searchReached(rec);
     }
@@ -90,6 +96,7 @@ void ZenoSearchBar::onSearchForward()
         m_idx = 0;
     if (!m_results.isEmpty() && m_idx < m_results.size())
     {
+        m_countLabel->setText(QString("%1/%2").arg(m_idx + 1).arg(m_results.size()));
         SEARCH_RECORD rec = _getRecord();
         emit searchReached(rec);
     }
@@ -102,6 +109,7 @@ void ZenoSearchBar::onSearchBackward()
 
     if (!m_results.isEmpty() && m_idx < m_results.size())
     {
+        m_countLabel->setText(QString("%1/%2").arg(m_idx + 1).arg(m_results.size()));
         SEARCH_RECORD rec = _getRecord();
         emit searchReached(rec);
     }
@@ -126,7 +134,7 @@ void ZenoSearchBar::keyPressEvent(QKeyEvent* event)
     {
         hide();
     }
-    else if (event->key() == Qt::Key_F3)
+    else if (event->key() == Qt::Key_F3 || event->key() == Qt::Key_Enter || event->key() == Qt::Key_Return)
     {
         onSearchForward();
     }

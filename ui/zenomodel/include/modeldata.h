@@ -33,7 +33,8 @@ enum PARAM_CONTROL {
     CONTROL_VEC2_FLOAT,
     CONTROL_DICTPANEL,      //for socket, this control allow to link multiple sockets.  for panel, this control displays as a table.
     CONTROL_NONVISIBLE,     //for legacy param like _KEYS, _POINTS, _HANDLES.
-    CONTROL_GROUP_LINE
+    CONTROL_GROUP_LINE,
+    CONTROL_DIRECTORY
 };
 
 enum NODE_TYPE {

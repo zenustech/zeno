@@ -923,7 +923,7 @@ vec3f SurfaceRemeshing::minimize_squared_areas(int v, bool &inversable) {
     auto &points = mesh_->prim_->attr<vec3f>("pos");
 
     for (int h : mesh_->halfedges(v)) {
-        assert(!mesh_->is_boundary(h));
+        // assert(!mesh_->is_boundary(h));
 
         // get edge opposite to vertex v
         int v0 = mesh_->to_vertex(h);

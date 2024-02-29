@@ -42,14 +42,47 @@ if (ZS_PYTHON_FOUND)
   if (WIN32)
     cmake_path(GET ZS_OVERWRITE_PYTHON_INCLUDE_DIR PARENT_PATH PYTHON_ENV_PATH)
     message(STATUS "python3 parent: ${PYTHON_ENV_PATH}")
+    string (REPLACE ";" " " ZS_PYTHON_LIBS "${ZS_OVERWRITE_PYTHON_LIBRARIES}")
+    separate_arguments(ZS_PYTHON_LIBS)
     add_custom_command(
       TARGET copy_py
       POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy_directory ${PYTHON_ENV_PATH}/lib ${RESOURCE_BASE_DIR}/lib
-      COMMAND ${CMAKE_COMMAND} -E copy_directory ${PYTHON_ENV_PATH}/dlls ${RESOURCE_BASE_DIR}/dlls
+      # COMMAND ${CMAKE_COMMAND} -E copy_directory ${PYTHON_ENV_PATH}/lib ${RESOURCE_BASE_DIR}/lib
+      # COMMAND ${CMAKE_COMMAND} -E copy_directory ${PYTHON_ENV_PATH}/dlls ${RESOURCE_BASE_DIR}/dlls
+      COMMAND ${CMAKE_COMMAND}
+      -DOBJECTS=${PYTHON_ENV_PATH}/lib
+      -DOUTPUT=${RESOURCE_BASE_DIR}
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/copy_dir.cmake
 
-      COMMENT "copying python lib directory ${PYTHON_ENV_PATH}/lib to ${RESOURCE_BASE_DIR}/lib"
+      COMMAND ${CMAKE_COMMAND}
+      -DOBJECTS=${PYTHON_ENV_PATH}/dlls
+      -DOUTPUT=${RESOURCE_BASE_DIR}
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/copy_dir.cmake
+
+      COMMAND ${CMAKE_COMMAND}
+      -DOBJECTS=${PYTHON_ENV_PATH}/library
+      -DOUTPUT=${RESOURCE_BASE_DIR}
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/copy_dir.cmake
+
+      COMMAND ${CMAKE_COMMAND}
+      -DLIB="${PYTHON_ENV_PATH}/zlib.dll"
+      -DDLL_DIR=${PYTHON_ENV_PATH}
+      -DOUTPUT=$<TARGET_FILE_DIR:zpc_py_interop>
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/copy_dll.cmake
+
+      COMMENT "copying python lib directories at ${PYTHON_ENV_PATH} to ${RESOURCE_BASE_DIR}"
     )
+    foreach(lib ${ZS_PYTHON_LIBS})
+      add_custom_command(
+        TARGET copy_py
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND}
+        -DLIB=${lib}
+        -DDLL_DIR=${PYTHON_ENV_PATH}
+        -DOUTPUT=$<TARGET_FILE_DIR:zpc_py_interop>
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/copy_dll.cmake
+      )
+    endforeach()
   else()
     cmake_path(GET ZS_OVERWRITE_PYTHON_INCLUDE_DIR PARENT_PATH PYTHON_ENV_PATH)
     cmake_path(GET PYTHON_ENV_PATH PARENT_PATH PYTHON_ENV_PATH)

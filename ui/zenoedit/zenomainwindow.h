@@ -138,6 +138,7 @@ signals:
     void visFrameUpdated(bool bGLView, int frameid);
     void alwaysModeChanged(bool bAlways);
     void runFinished();
+    void runStarted();
 
 public slots:
     void openFileDialog();

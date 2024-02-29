@@ -12,6 +12,61 @@
 #include "globalcontrolmgr.h"
 #include "dictkeymodel.h"
 
+const QString g_script =
+R"(import json
+import re
+import zeno
+
+mat_data = {}
+names_data = []
+keys_data = {}
+match_data = {}
+names = '%1'  #nameList
+if names != '':
+    names_data = names.split(',')
+else:
+    print('names is empty')
+materialPath = '%2'  #materialPath
+if materialPath != '':
+    with open(materialPath, 'r') as mat_file:
+        mat_data = json.load(mat_file)
+keys = '%3'  #keyWords
+if keys != '':
+    keys_data = json.loads(keys)
+else:
+    print('key words is empty')
+matchInfo = '%4'  #matchInputs
+if matchInfo != '':
+    match_data = json.loads(matchInfo)
+rows = int(len(names_data)**0.5)
+cols = int(len(names_data) / rows if rows > 0 else 1)
+pos = (%5,%6)  #node pos, can not edit
+count = 0
+defaultMat = '';
+for key, value in keys_data.items():
+    if value == 'default':
+        defaultMat = key
+for mat in names_data:
+    subgName = defaultMat
+    for preSet, pattern in keys_data.items():
+        if re.search(pattern, mat, re.I):
+            subgName = preSet
+            break
+    if subgName == '':
+        print('Can not match ', mat)
+    else:
+        node = zeno.forkMaterial(subgName, mat, mat)
+        row = int(count % rows) + 1
+        col = int(count / rows) + 1
+        newPos = (pos[0] + row * 600, pos[1]+col * 600)
+        node.pos = newPos
+        count = count + 1
+        if subgName in match_data and mat in mat_data:
+            match = match_data[subgName]
+            material = mat_data[mat]
+            for k, v in match.items():
+                if v in material:
+                    setattr(node, k,material[v]))";
 
 GraphsModel::GraphsModel(QObject *parent)
     : IGraphsModel(parent)
@@ -528,6 +583,8 @@ NODE_DESCS GraphsModel::getCoreDescs()
                 QVariant defl;
 
                 parseDescStr(input, name, type, defl);
+                if (z_name == "PythonMaterialNode" && name == "script")
+                    defl = g_script;
 
                 INPUT_SOCKET socket;
                 socket.info.type = type;
