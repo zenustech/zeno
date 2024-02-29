@@ -358,6 +358,9 @@ ZENO_API std::set<std::string> Graph::searchByClass(const std::string& name) con
 
 ZENO_API std::string Graph::updateNodeName(const std::string oldName, const std::string newName)
 {
+    if (oldName == newName)
+        return "";
+
     CORE_API_BATCH
 
     auto sync_to_set = [=](std::set<std::string>& nodes, std::string oldName, std::string newName) {
@@ -383,6 +386,8 @@ ZENO_API std::string Graph::updateNodeName(const std::string oldName, const std:
     sync_to_set(frame_nodes, oldName, newName);
     sync_to_set(subnet_nodes, oldName, newName);
     sync_to_set(asset_nodes, oldName, newName);
+    sync_to_set(subinput_nodes, oldName, newName);
+    sync_to_set(suboutput_nodes, oldName, newName);
 
     CALLBACK_NOTIFY(updateNodeName, oldName, name)
     return name;
@@ -436,6 +441,12 @@ ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls, std::s
     if (cls == "Subnet") {
         subnet_nodes.insert(name);
     }
+    if (cls == "SubInput") {
+        subinput_nodes.insert(name);
+    }
+    if (cls == "SubOutput") {
+        suboutput_nodes.insert(name);
+    }
 
     node->graph = this;
     node->m_pos = pos;
@@ -480,14 +491,14 @@ ZENO_API Graph* Graph::addSubnetNode(std::string const& id) {
 #endif
 }
 
-std::map<std::string, std::string> Graph::getSubInputs()
+std::set<std::string> Graph::getSubInputs()
 {
-    return subInputNodes;
+    return subinput_nodes;
 }
 
-std::map<std::string, std::string> Graph::getSubOutputs()
+std::set<std::string> Graph::getSubOutputs()
 {
-    return subOutputNodes;
+    return suboutput_nodes;
 }
 
 ZENO_API std::shared_ptr<INode> Graph::getNode(std::string const& name) {

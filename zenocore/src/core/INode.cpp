@@ -150,10 +150,10 @@ void INode::addObjToManager()
     for (auto const& [name, param] : outputs_)
     {
         if (auto spObj = std::dynamic_pointer_cast<IObject>(param->result)) {
-            assert(!spObj->key.empty());
             if (std::dynamic_pointer_cast<NumericObject>(spObj)) {
                 return;
             }
+            assert(!spObj->key.empty());
             getSession().objsMan->addObject(spObj->key, spObj, shared_from_this(), m_bView);
         }
     }
@@ -509,6 +509,8 @@ ZENO_API void INode::init(const NodeData& dat)
 
     m_pos = dat.uipos;
     m_bView = dat.bView;
+    if (m_bView)
+        graph->viewNodeUpdated(m_name, m_bView);
     initParams(dat);
     m_dirty = true;
 }

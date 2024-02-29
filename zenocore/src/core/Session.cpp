@@ -19,6 +19,7 @@
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
 #include <zeno/extra/SubnetNode.h>
+#include <zeno/extra/GraphException.h>
 
 namespace zeno {
 
@@ -181,7 +182,13 @@ ZENO_API void Session::switchToFrame(int frameid)
 }
 
 ZENO_API bool Session::run_main_graph() {
-    mainGraph->runGraph();
+
+    zeno::GraphException::catched([&] {
+        mainGraph->runGraph();
+    }, *globalStatus);
+    if (globalStatus->failed()) {
+        zeno::log_error(globalStatus->toJson());
+    }
     return true;
 }
 

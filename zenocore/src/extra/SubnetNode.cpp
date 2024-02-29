@@ -238,9 +238,9 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
 }
 
 ZENO_API void SubnetNode::apply() {
-    for (auto const &[key, nodeid]: subgraph->getSubInputs()) {
-        auto subinput = safe_at(subgraph->m_nodes, nodeid, "node name").get();
-        std::shared_ptr<IParam> spParam = get_input_param(key);
+    for (auto const &subinput_node: subgraph->getSubInputs()) {
+        auto subinput = subgraph->getNode(subinput_node);
+        std::shared_ptr<IParam> spParam = get_input_param(subinput_node);
         if (spParam) {
             bool ret = subinput->set_output("port", spParam->result);
             assert(ret);
@@ -254,17 +254,16 @@ ZENO_API void SubnetNode::apply() {
     }
 
     std::set<std::string> nodesToExec;
-    for (auto const &[key, nodeid]: subgraph->getSubOutputs()) {
-        nodesToExec.insert(nodeid);
+    for (auto const &suboutput_node: subgraph->getSubOutputs()) {
+        nodesToExec.insert(suboutput_node);
     }
-    log_debug("{} subnet nodes to exec", nodesToExec.size());
     subgraph->applyNodes(nodesToExec);
 
-    for (auto const &[key, nodeid]: subgraph->getSubOutputs()) {
-        auto suboutput = safe_at(subgraph->m_nodes, nodeid, "node name").get();
+    for (auto const &suboutput_node: subgraph->getSubOutputs()) {
+        auto suboutput = subgraph->getNode(suboutput_node);
         zany result = suboutput->get_input("port");
         if (result) {
-            bool ret = set_output(key, result);
+            bool ret = set_output(suboutput_node, result);
             assert(ret);
         }
     }

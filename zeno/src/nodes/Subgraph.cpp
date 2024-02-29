@@ -12,7 +12,7 @@ namespace {
 
 struct Subnet : zeno::SubnetNode {
     virtual void apply() override {
-
+        zeno::SubnetNode::apply();
     }
 };
 

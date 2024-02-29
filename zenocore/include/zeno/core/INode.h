@@ -172,9 +172,9 @@ public:
     }
 
     template <class T>
-    [[deprecated("use get_input2<T>(id + ':')")]]
+    [[deprecated("use get_input2<T>(id)")]]
     T get_param(std::string const &id) const {
-        return get_input2<T>(id + ':');
+        return get_input2<T>(id);
     }
 
     //[[deprecated("use get_param<T>")]]

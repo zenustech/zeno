@@ -132,8 +132,8 @@ struct Graph : std::enable_shared_from_this<Graph> {
     ZENO_API std::map<std::string, zany> callTempNode(std::string const &id,
             std::map<std::string, zany> inputs) const;
 
-    std::map<std::string, std::string> getSubInputs();
-    std::map<std::string, std::string> getSubOutputs();
+    std::set<std::string> getSubInputs();
+    std::set<std::string> getSubOutputs();
     void viewNodeUpdated(const std::string node, bool bView);
     void markDirtyWhenFrameChanged();
     void onNodeParamUpdated(std::shared_ptr<IParam> spParam, zvariant old_value, zvariant new_value);
@@ -149,6 +149,8 @@ private:
     std::set<std::string> frame_nodes;      //record all nodes depended on frame num.
     std::set<std::string> subnet_nodes;
     std::set<std::string> asset_nodes;
+    std::set<std::string> subinput_nodes;
+    std::set<std::string> suboutput_nodes;
 
     std::set<std::string> m_viewnodes;
     std::string m_name;

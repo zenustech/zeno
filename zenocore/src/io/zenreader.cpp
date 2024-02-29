@@ -87,7 +87,7 @@ namespace zenoio
                 assert(optionsArr[i].IsString());
 
                 const std::string& optName = optionsArr[i].GetString();
-                if (optName == "VIEW")
+                if (optName == "View")
                 {
                     retNode.bView = true;
                 }
