@@ -1011,6 +1011,9 @@ struct AlembicSplitByName: INode {
         auto list = abc_split_by_name(prim, false);
         for (auto& prim: list->get<PrimitiveObject>()) {
             auto name = prim->userData().get2<std::string>("faceset_0");
+            if (get_input2<bool>("killDeadVerts")) {
+                primKillDeadVerts(prim.get());
+            }
             dict->lut[name] = std::move(prim);
         }
         set_output("dict", dict);
@@ -1020,6 +1023,7 @@ struct AlembicSplitByName: INode {
 ZENDEFNODE(AlembicSplitByName, {
     {
         {"prim"},
+        {"bool", "killDeadVerts", "1"},
     },
     {
         {"DictObject", "dict"},
