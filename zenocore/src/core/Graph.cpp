@@ -259,14 +259,6 @@ ZENO_API void Graph::init(const GraphData& graph) {
     for (const auto& [name, node] : graph.nodes) {
         std::string cate = node.asset.has_value() ? "assets" : "";
         std::shared_ptr<INode> spNode = createNode(node.cls, name, cate);
-        if (cate == "assets") {
-            const Asset& asset = zeno::getSession().assets->getAsset(node.asset->name);
-            if (!asset.m_info.name.empty() && asset.sharedGraph)
-            {
-                std::shared_ptr<SubnetNode> subnetnode = std::dynamic_pointer_cast<SubnetNode>(spNode);
-                subnetnode->subgraph = asset.sharedGraph;
-            }
-        }
         spNode->init(node);
         if (node.cls == "SubInput") {
             //TODO
