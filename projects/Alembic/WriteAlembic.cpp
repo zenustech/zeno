@@ -14,6 +14,7 @@
 #include "zeno/utils/string.h"
 #include "zeno/types/ListObject.h"
 #include "zeno/utils/log.h"
+#include "zeno/funcs/PrimitiveUtils.h"
 #include <numeric>
 #include <filesystem>
 
@@ -351,6 +352,9 @@ void write_user_data(std::map<std::string, std::any> &user_attrs, std::string pa
     for (const auto& [key, value] : ud.m_data) {
         std::string full_key = path + '/' + key;
         if (key == "faceset_count" || zeno::starts_with(key, "faceset_")) {
+            continue;
+        }
+        if (key == "matNum" || zeno::starts_with(key, "Material_") || key == "mtlid") {
             continue;
         }
         if (ud.has<int>(key)) {
@@ -717,6 +721,8 @@ struct WriteAlembicPrims : INode {
         if (!fs::exists(folderPath)) {
             fs::create_directories(folderPath);
         }
+        std::vector<std::shared_ptr<PrimitiveObject>> new_prims;
+
         if (usedPath != path) {
             usedPath = path;
             archive = CreateArchiveWithInfo(
@@ -731,7 +737,33 @@ struct WriteAlembicPrims : INode {
             pointsObjs.clear();
             attrs.clear();
             user_attrs.clear();
-            for (auto prim: prims) {
+            {
+                std::vector<std::string> paths;
+                std::map<std::string, std::vector<std::shared_ptr<PrimitiveObject>>> path_to_prims;
+
+                for (auto prim: prims) {
+                    auto path = prim->userData().get2<std::string>("_abc_path");
+                    if (path_to_prims.count(path) == 0) {
+                        paths.push_back(path);
+                        path_to_prims[path] = {};
+                    }
+                    path_to_prims[path].push_back(prim);
+                }
+                for (auto path : paths) {
+                    if (path_to_prims[path].size() > 1) {
+                        std::vector<zeno::PrimitiveObject *> primList;
+                        for (auto prim: path_to_prims[path]) {
+                            primList.push_back(prim.get());
+                        }
+                        auto prim = primMergeWithFacesetMatid(primList);
+                        new_prims.push_back(prim);
+                    }
+                    else {
+                        new_prims.push_back(path_to_prims[path][0]);
+                    }
+                }
+            }
+            for (auto prim: new_prims) {
                 auto path = prim->userData().get2<std::string>("_abc_path");
                 if (!starts_with(path, "/ABC/")) {
                     log_error("_abc_path must start with /ABC/");
@@ -756,7 +788,7 @@ struct WriteAlembicPrims : INode {
         if (archive.valid() == false) {
             zeno::makeError("Not init. Check whether in correct correct frame range.");
         }
-        for (auto prim: prims) {
+        for (auto prim: new_prims) {
             auto path = prim->userData().get2<std::string>("_abc_path");
 
             if (prim->polys.size() || prim->tris.size()) {
