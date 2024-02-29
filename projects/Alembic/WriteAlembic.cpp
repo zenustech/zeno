@@ -207,7 +207,7 @@ template<typename T1, typename T2>
 void write_attrs(std::map<std::string, std::any> &attrs, std::string path, std::shared_ptr<PrimitiveObject> prim, T1& schema, T2& samp) {
     OCompoundProperty arbAttrs = schema.getArbGeomParams();
     prim->verts.foreach_attr<std::variant<vec3f, float, int>>([&](auto const &key, auto &arr) {
-        if (key == "v" || key == "nrm") {
+        if (key == "v" || key == "nrm" || key == "faceset" || key == "matid") {
             return;
         }
         std::string full_key = path + '/' + key;
