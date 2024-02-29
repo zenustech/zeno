@@ -6,14 +6,20 @@
 #include <zenovis/bate/IGraphic.h>
 #include <zenovis/opengl/vao.h>
 #include <zenovis/opengl/scope.h>
+#include "zenovis/bate/FrameBufferRender.h"
 
 namespace zenovis::bate {
-
+struct PixelInfo {
+    unsigned int obj_id;
+    unsigned int elem_id;
+    unsigned int blank;
+};
 struct RenderEngineBate : RenderEngine {
     std::unique_ptr<opengl::VAO> vao;
     std::unique_ptr<GraphicsManager> graphicsMan;
     std::vector<std::unique_ptr<IGraphicDraw>> hudGraphics;
     std::unique_ptr<IGraphicDraw> primHighlight;
+    std::unique_ptr<FrameBufferRender> fbr;
     Scene *scene;
 
     auto setupState() {
@@ -29,6 +35,7 @@ struct RenderEngineBate : RenderEngine {
 
         vao = std::make_unique<opengl::VAO>();
         graphicsMan = std::make_unique<GraphicsManager>(scene);
+        fbr = std::make_unique<FrameBufferRender>(scene);
 
         hudGraphics.push_back(makeGraphicGrid(scene));
         hudGraphics.push_back(makeGraphicAxis(scene));
@@ -46,6 +53,8 @@ struct RenderEngineBate : RenderEngine {
         CHECK_GL(glClearColor(scene->drawOptions->bgcolor.r, scene->drawOptions->bgcolor.g,
                               scene->drawOptions->bgcolor.b, 0.0f));
         CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+        fbr->generate_buffers();
+        fbr->bind();
 
         auto bindVao = opengl::scopeGLBindVertexArray(vao->vao);
         graphicsMan->draw();
@@ -76,6 +85,10 @@ struct RenderEngineBate : RenderEngine {
             CHECK_GL(glClear(GL_DEPTH_BUFFER_BIT));
             scene->drawOptions->handler->draw();
         }
+//        fbr->unbind();
+//        fbr->draw_to_screen();
+        fbr->destroy_buffers();
+        fbr->unbind();
     }
 };
 
