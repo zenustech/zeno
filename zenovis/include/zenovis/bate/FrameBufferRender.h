@@ -11,6 +11,7 @@
 #include "zenovis/opengl/texture.h"
 #include "zenovis/opengl/vao.h"
 #include "zenovis/DrawOptions.h"
+#include "stb_image_write.h"
 
 #include <unordered_map>
 #include <fstream>
@@ -106,8 +107,7 @@ static const char* frag_code = R"(
     void main()
     {
         vec3 col = texture(screenTexture, TexCoords).rgb;
-        float grayscale = 0.2126 * col.r + 0.7152 * col.g + 0.0722 * col.b;
-        FragColor = vec4(vec3(grayscale), 1.0);
+        FragColor = vec4(col, 1.0);
     }
 )";
 
@@ -244,6 +244,18 @@ struct FrameBufferRender {
         CHECK_GL(glActiveTexture(GL_TEXTURE0));
         CHECK_GL(glBindTexture(GL_TEXTURE_2D, screen_tex->tex)); // use the now resolved color attachment as the quad's texture
         CHECK_GL(glDrawArrays(GL_TRIANGLES, 0, 6));
+    }
+
+    void save_image() {
+        return;
+        int width = w;
+        int height = h;
+        CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, intermediate_fbo->fbo));
+        auto pixels = std::vector<uint8_t>(width * height * 4);
+        CHECK_GL(glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels.data()));
+        stbi_flip_vertically_on_write(true);
+        stbi_write_png("output.png", width, height, 3, pixels.data(), 0);
+        CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
     }
 };
 }

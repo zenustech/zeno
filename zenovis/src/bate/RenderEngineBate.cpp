@@ -9,11 +9,6 @@
 #include "zenovis/bate/FrameBufferRender.h"
 
 namespace zenovis::bate {
-struct PixelInfo {
-    unsigned int obj_id;
-    unsigned int elem_id;
-    unsigned int blank;
-};
 struct RenderEngineBate : RenderEngine {
     std::unique_ptr<opengl::VAO> vao;
     std::unique_ptr<GraphicsManager> graphicsMan;
@@ -86,6 +81,7 @@ struct RenderEngineBate : RenderEngine {
             scene->drawOptions->handler->draw();
         }
         fbr->unbind();
+        fbr->save_image();
         fbr->draw_to_screen();
         fbr->destroy_buffers();
     }
