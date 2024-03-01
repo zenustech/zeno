@@ -36,6 +36,14 @@ static QVariant parseValue(PyObject* v, const QString& type, const QVariant& def
             val = _val;
         }
     }
+    else if (type == "bool")
+    {
+        bool _val;
+        if (PyArg_Parse(v, "b", &_val))
+        {
+            val = _val;
+        }
+    }
     else if (type.startsWith("vec"))
     {
         PyObject* obj;

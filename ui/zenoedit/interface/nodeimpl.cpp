@@ -69,6 +69,10 @@ static PyObject* buildValue(const QVariant& value, const QString& type)
     {
         return Py_BuildValue("f", value.toFloat());
     }
+    else if (type == "bool")
+    {
+        return Py_BuildValue("b", value.toBool());
+    }
     else if (type.startsWith("vec"))
     {
         const auto& vec = value.value<UI_VECTYPE>();
@@ -180,6 +184,14 @@ static QVariant parseValue(PyObject *v, const QString& type, const QVariant& def
     {
         float _val;
         if (PyArg_Parse(v, "f", &_val))
+        {
+            val = _val;
+        }
+    }
+    else if (type == "bool")
+    {
+        bool _val;
+        if (PyArg_Parse(v, "b", &_val))
         {
             val = _val;
         }
