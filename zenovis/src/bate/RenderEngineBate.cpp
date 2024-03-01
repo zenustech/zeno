@@ -85,10 +85,9 @@ struct RenderEngineBate : RenderEngine {
             CHECK_GL(glClear(GL_DEPTH_BUFFER_BIT));
             scene->drawOptions->handler->draw();
         }
-//        fbr->unbind();
-//        fbr->draw_to_screen();
-        fbr->destroy_buffers();
         fbr->unbind();
+        fbr->draw_to_screen();
+        fbr->destroy_buffers();
     }
 };
 
