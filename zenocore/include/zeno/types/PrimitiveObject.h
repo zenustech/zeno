@@ -146,30 +146,8 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
     std::shared_ptr<MaterialObject> mtl;
     std::shared_ptr<InstancingObject> inst;
 
-    std::string m_prefix;
-
-    PrimitiveObject() {
-        key = newObjKey();
-    }
-    PrimitiveObject(const std::string& prefix) : m_prefix(prefix) {
-        key = newObjKey();
-    }
-
-    std::shared_ptr<IObject> clone() const override {
-        auto spClonedObj = IObjectClone<PrimitiveObject>::clone();
-        spClonedObj->key = newObjKey();
-        return spClonedObj;
-    }
-
-    std::string newObjKey() const {
-        if (m_prefix.empty()) {
-            return generateUUID();
-        }
-        else {
-            int objid = getSession().registerObjId(m_prefix);
-            return m_prefix + std::to_string(objid);
-        }
-    }
+    PrimitiveObject() {}
+    PrimitiveObject(const std::string& prefix) : IObjectClone<PrimitiveObject>(prefix) {}
 
     // deprecated:
     template <class Accept = std::variant<vec3f, float>, class F>

@@ -1,7 +1,9 @@
 #pragma once
 
+#include <zeno/core/Session.h>
 #include <zeno/utils/api.h>
 #include <zeno/utils/safe_dynamic_cast.h>
+#include <zeno/utils/uuid.h>
 #include <string>
 #include <memory>
 #include <any>
@@ -60,8 +62,18 @@ template <class Derived, class CustomBase = IObject>
 struct IObjectClone : CustomBase {
     //using has_iobject_clone = std::true_type;
 
+    IObjectClone() {
+        key = newObjKey();
+    }
+
+    IObjectClone(const std::string& prefix) : m_prefix(prefix) {
+        key = newObjKey();
+    }
+
     virtual std::shared_ptr<IObject> clone() const override {
-        return std::make_shared<Derived>(static_cast<Derived const &>(*this));
+        auto spClonedObj = std::make_shared<Derived>(static_cast<Derived const &>(*this));
+        spClonedObj->key = newObjKey();
+        return spClonedObj;
     }
 
     virtual std::shared_ptr<IObject> move_clone() override {
@@ -85,6 +97,18 @@ struct IObjectClone : CustomBase {
         *dst = std::move(*src);
         return true;
     }
+
+    std::string newObjKey() const {
+        if (m_prefix.empty()) {
+            return generateUUID();
+        }
+        else {
+            int objid = getSession().registerObjId(m_prefix);
+            return m_prefix + std::to_string(objid);
+        }
+    }
+
+    std::string m_prefix;
 };
 
 using zany = std::shared_ptr<IObject>;

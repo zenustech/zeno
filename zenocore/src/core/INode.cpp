@@ -139,13 +139,24 @@ ZENO_API void INode::preApply() {
         Timer _(m_name);
 #endif
         apply();
-        addObjToManager();
-        mark_dirty(false);
     }
     log_debug("==> leave {}", m_name);
 }
 
-void INode::addObjToManager()
+ZENO_API void INode::unregisterObjs()
+{
+    for (auto const& [name, param] : outputs_)
+    {
+        if (auto spObj = std::dynamic_pointer_cast<IObject>(param->result)) {
+            if (spObj->key.empty()) {
+                continue;
+            }
+            getSession().objsMan->removeObject(spObj->key);
+        }
+    }
+}
+
+ZENO_API void INode::addObjToManager()
 {
     for (auto const& [name, param] : outputs_)
     {
@@ -272,8 +283,11 @@ ZENO_API void INode::doOnlyApply() {
 ZENO_API void INode::doApply() {
     //if (checkApplyCondition()) {
     log_trace("--> enter {}", m_name);
+    unregisterObjs();
     preApply();
     log_trace("--> leave {}", m_name);
+    addObjToManager();
+    mark_dirty(false);
 }
 
 ZENO_API std::vector<std::shared_ptr<IParam>> INode::get_input_params() const
