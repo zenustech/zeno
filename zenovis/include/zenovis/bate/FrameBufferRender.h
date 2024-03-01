@@ -186,9 +186,9 @@ struct FrameBufferRender {
         // generate depth texture
         depth_rbo = make_unique<RenderObject>();
         CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, depth_rbo->rbo));
-        CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, GL_DEPTH24_STENCIL8, w, h));
+        CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, GL_DEPTH_COMPONENT32F, w, h));
         CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, 0));
-        CHECK_GL(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, depth_rbo->rbo));
+        CHECK_GL(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rbo->rbo));
 
         // check fbo
         if(!fbo->complete()) printf("fbo error\n");
@@ -238,12 +238,14 @@ struct FrameBufferRender {
         CHECK_GL(glClear(GL_COLOR_BUFFER_BIT));
         CHECK_GL(glDisable(GL_DEPTH_TEST));
 
+        glDisable(GL_MULTISAMPLE);
         // draw Screen quad
         shader->use();
         CHECK_GL(glBindVertexArray(quad_vao->vao));
         CHECK_GL(glActiveTexture(GL_TEXTURE0));
         CHECK_GL(glBindTexture(GL_TEXTURE_2D, screen_tex->tex)); // use the now resolved color attachment as the quad's texture
         CHECK_GL(glDrawArrays(GL_TRIANGLES, 0, 6));
+        glEnable(GL_MULTISAMPLE);
     }
 
     void save_image() {

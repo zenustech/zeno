@@ -81,7 +81,6 @@ struct RenderEngineBate : RenderEngine {
             scene->drawOptions->handler->draw();
         }
         fbr->unbind();
-        fbr->save_image();
         fbr->draw_to_screen();
         fbr->destroy_buffers();
     }
