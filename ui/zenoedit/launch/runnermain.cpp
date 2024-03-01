@@ -166,6 +166,15 @@ static int runner_start(std::string const &progJson, int sessionid, const LAUNCH
         session->globalComm->newFrame();
         session->globalState->frameBegin();
 
+        ////construct cache lock.
+        std::string sLockFile;
+        if (!bHasDumpStatic && param.enableCache)
+            sLockFile = param.cacheDir.toStdString() + "/" + zeno::iotags::sZencache_lockfile_prefix + "_static" + ".lock";
+        if (param.enableCache)
+            sLockFile = param.cacheDir.toStdString() + "/" + zeno::iotags::sZencache_lockfile_prefix + std::to_string(frame) + ".lock";
+        QLockFile lckFile(QString::fromStdString(sLockFile));
+        bool ret = lckFile.tryLock();
+
         while (session->globalState->substepBegin())
         {
             zeno::GraphException::catched([&] {
@@ -182,20 +191,12 @@ static int runner_start(std::string const &progJson, int sessionid, const LAUNCH
         send_packet("{\"action\":\"newFrame\",\"key\":\"" + std::to_string(frame) +"\"}", "", 0);
 
         if (!bHasDumpStatic && param.enableCache) {
-            //construct cache lock.
-            std::string sLockFile = param.cacheDir.toStdString() + "/" + zeno::iotags::sZencache_lockfile_prefix + "_static" + ".lock";
-            QLockFile lckFile(QString::fromStdString(sLockFile));
-            bool ret = lckFile.tryLock();
             //dump cache to disk.
             session->globalComm->dumpFrameCache(-1);
             bHasDumpStatic = true;
         }
 
         if (param.enableCache) {
-            //construct cache lock.
-            std::string sLockFile = param.cacheDir.toStdString() + "/" + zeno::iotags::sZencache_lockfile_prefix + std::to_string(frame) + ".lock";
-            QLockFile lckFile(QString::fromStdString(sLockFile));
-            bool ret = lckFile.tryLock();
             //dump cache to disk.
             session->globalComm->dumpFrameCache(frame);
         } else {
@@ -208,6 +209,7 @@ static int runner_start(std::string const &progJson, int sessionid, const LAUNCH
                 buffer.clear();
             }
         }
+        lckFile.unlock();
 
         send_packet("{\"action\":\"finishFrame\",\"key\":\"" + std::to_string(frame) + "\"}", "", 0);
 
