@@ -359,7 +359,7 @@ struct FrameBufferPicker : IPicker {
 
                     // ----- draw object to cover invisible points -----
                     empty_and_offset_shader->use();
-                    empty_and_offset_shader->set_uniform("offset", 0.00001f);
+                    empty_and_offset_shader->set_uniform("offset", -0.00001f);
                     scene->camera->set_program_uniforms(empty_and_offset_shader);
 
                     auto tri_count = prim->tris.size();
