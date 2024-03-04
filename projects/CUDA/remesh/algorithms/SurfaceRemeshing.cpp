@@ -148,18 +148,17 @@ void SurfaceRemeshing::adaptive_remeshing(float min_edge_length, float max_edge_
     check_triangles();
 }
 
-void SurfaceRemeshing::check_triangles(float min_edge_length, float min_area, float max_angle, bool mark) {
+void SurfaceRemeshing::check_triangles(float min_edge_length, float min_area, float max_angle, std::string tag, bool color) {
     auto &points = mesh_->prim_->attr<vec3f>("pos");
+    auto &faces = mesh_->prim_->tris;
     auto &vduplicate = mesh_->prim_->verts.attr<int>("v_duplicate");
     auto &fdeleted = mesh_->prim_->tris.attr<int>("f_deleted");
-    auto &degenerate = mesh_->prim_->tris.add_attr<int>("f_degenerate", 0);
-    // TODO(@seeeagull): clr for debug
-    auto &clr = mesh_->prim_->verts.add_attr<vec3f>("clr", vec3f(0.1, 0.6, 0.4));
+    auto &degenerate = mesh_->prim_->tris.add_attr<int>(tag.empty()?"degenerate":tag, 0);
 
     for (int t = 0; t < mesh_->faces_size_; ++t) {
         if (mesh_->has_garbage_ && fdeleted[t])
             continue;
-        auto tri = mesh_->prim_->tris[t];
+        auto tri = faces[t];
         auto l1 = points[tri[1]] - points[tri[0]], l2 = points[tri[2]] - points[tri[1]], l3 = points[tri[0]] - points[tri[2]];
         auto e1 = length(l1), e2 = length(l2), e3 = length(l3);
         auto area = 0.5 * length(cross(l1, l3));
@@ -169,13 +168,23 @@ void SurfaceRemeshing::check_triangles(float min_edge_length, float min_area, fl
         auto aa = acos(min(min(a1, a2), a3)) * 180.0f / M_PI;
         if (area < min_area || e1 < min_edge_length || e2 < min_edge_length || e3 < min_edge_length || aa > max_angle) {
             degenerate[t] = 1;
-            clr[tri[0]] = clr[tri[1]] = clr[tri[2]] = vec3f(0.8, 0.3, 0.1);
             zeno::log_warn("remesh: Degenerate triangle {}({} {} {}) with area {} and max angle {}!",
                 tri, vduplicate[tri[0]], vduplicate[tri[1]], vduplicate[tri[2]], area, aa);
         }
     }
-    if (!mark)
-        mesh_->prim_->tris.erase_attr("f_degenerate");
+
+    if (color) {
+        auto &clr = mesh_->prim_->verts.add_attr<vec3f>("clr", vec3f(0.1, 0.6, 0.4));
+        for (int t = 0; t < mesh_->faces_size_; ++t) {
+            if (degenerate[t]) {
+                auto tri = faces[t];
+                clr[tri[0]] = clr[tri[1]] = clr[tri[2]] = vec3f(0.8, 0.3, 0.1);
+            }
+        }
+    }
+
+    if (tag.empty())
+        mesh_->prim_->tris.erase_attr(tag.empty()?"degenerate":tag);
 }
 
 void SurfaceRemeshing::preprocessing() {
@@ -510,7 +519,7 @@ void SurfaceRemeshing::degenerate_collapse_check(int v0, int v1,
             if (v1_list.count(vv1) > 0) {
                 bool hh01 = true, hh10 = true;
                 col_edges.push_back(ith>>1);
-                mesh_->is_collapse_ok(ith, hh01, hh10);
+                mesh_->is_collapse_ok(ith, hh01, hh10, true);
                 h01 &= hh01;
                 h10 &= hh10;
             }
@@ -897,17 +906,34 @@ void SurfaceRemeshing::collapse_triangles(float min_edge_length, float min_area)
         auto aa = acos(max(max(a1, a2), a3)) * 180.0f / M_PI;
         if (short_edges > 0 || area < min_area) {
             int top;
-            bool flag = false;
             if (e1 < e2)
                 top = (e1 < e3) ? 2 : 1;
             else
                 top = (e2 < e3) ? 0 : 1;
             int vl = tri[(top+1)%3], vr = tri[(top+2)%3];
+            std::vector<int> col_edges{};
+            bool hf0 = true, hf1 = true;
 
             if (short_edges >= 2 || (area < min_area && aa >= 30.f)) {
-                flag = true;
+                // first collapse the shortest edge
+                degenerate_collapse_check(vl, vr, hf0, hf1, col_edges);
+                if (hf0)
+                    degenerate_collapse(col_edges, 0);
+                else if (hf1)
+                    degenerate_collapse(col_edges, 1);
+                // then collapse the remained edge
+                if (hf0 || hf1) {
+                    int v_bottom = hf0 ? vr : vl;
+                    hf0 = hf1 = true;
+                    col_edges.clear();
+                    degenerate_collapse_check(tri[top], v_bottom, hf0, hf1, col_edges);
+                    if (hf0)
+                        degenerate_collapse(col_edges, 0);
+                    else if (hf1)
+                        degenerate_collapse(col_edges, 1);
+                }
             } else {
-                flag = true;
+                bool flag = true;
                 for (auto it: mesh_->halfedges(tri[top])) {
                     int vt = mesh_->to_vertex(it);
                     if ((vt == vl || vt == vr) && !mesh_->is_boundary_e(it>>1)) {
@@ -915,27 +941,44 @@ void SurfaceRemeshing::collapse_triangles(float min_edge_length, float min_area)
                         break;
                     }
                 }
-            }
-
-            // first collapse the shortest edge
-            std::vector<int> col_edges{};
-            bool hf0 = true, hf1 = true;
-            degenerate_collapse_check(vl, vr, hf0, hf1, col_edges);
-            if (hf0)
-                degenerate_collapse(col_edges, 0);
-            else if (hf1)
-                degenerate_collapse(col_edges, 1);
-
-            // then collapse the remained edge if needed
-            if (flag && (hf0 || hf1)) {
-                int v_bottom = hf0 ? vr : vl;
-                hf0 = hf1 = true;
-                col_edges.clear();
-                degenerate_collapse_check(tri[top], v_bottom, hf0, hf1, col_edges);
-                if (hf0)
-                    degenerate_collapse(col_edges, 0);
-                else if (hf1)
-                    degenerate_collapse(col_edges, 1);
+                if (flag) {
+                    // first collapse vl to vtop
+                    degenerate_collapse_check(vl, tri[top], hf0, hf1, col_edges);
+                    if (hf0)
+                        degenerate_collapse(col_edges, 0);
+                    // then collapse vr to vtop
+                    if (hf0) {
+                        hf0 = hf1 = true;
+                        col_edges.clear();
+                        degenerate_collapse_check(vr, tri[top], hf0, hf1, col_edges);
+                        if (hf0)
+                            degenerate_collapse(col_edges, 0);
+                    }
+                } else {
+                    degenerate_collapse_check(vl, vr, hf0, hf1, col_edges);
+                    if (hf0)
+                        degenerate_collapse(col_edges, 0);
+                    else if (hf1)
+                        degenerate_collapse(col_edges, 1);
+                    else {
+                        hf0 = hf1 = true;
+                        col_edges.clear();
+                        degenerate_collapse_check(vl, tri[top], hf0, hf1, col_edges);
+                        if (hf0)
+                            degenerate_collapse(col_edges, 0);
+                        else if (hf1)
+                            degenerate_collapse(col_edges, 1);
+                        else {
+                            hf0 = hf1 = true;
+                            col_edges.clear();
+                            degenerate_collapse_check(vr, tri[top], hf0, hf1, col_edges);
+                            if (hf0)
+                                degenerate_collapse(col_edges, 0);
+                            else if (hf1)
+                                degenerate_collapse(col_edges, 1);
+                        }
+                    }
+                }
             }
         }        
     }
@@ -944,21 +987,22 @@ void SurfaceRemeshing::collapse_triangles(float min_edge_length, float min_area)
 void SurfaceRemeshing::remove_degenerate_triangles(float min_edge_length,
                                                    float min_area,
                                                    float max_angle,
-                                                   unsigned int iterations) {
+                                                   std::string degenerate_tag,
+                                                   unsigned int iterations,
+                                                   bool color) {
     auto &vfeature = mesh_->prim_->verts.add_attr<int>("v_feature", 0);
     auto &vlocked = mesh_->prim_->verts.add_attr<int>("v_locked", 0);
     auto &elocked = mesh_->prim_->lines.add_attr<int>("e_locked", 0);
 
     for (int iter = 0; iter < iterations; ++iter) {
-        zeno::log_info("iter {}", iter);
         mesh_->build_dup_list();
         collapse_triangles(min_edge_length, min_area);
-        remove_caps(max_angle);
+        remove_caps(max_angle, true);
         mesh_->garbage_collection();
     }
 
     // check triangles
-    check_triangles(min_edge_length, min_area, max_angle, true);
+    check_triangles(min_edge_length, min_area, max_angle, degenerate_tag, color);
 
     // remove properties
     mesh_->prim_->verts.erase_attr("v_feature");
@@ -982,7 +1026,10 @@ void SurfaceRemeshing::remove_caps(float max_angle, bool try_collapse) {
     for (int e = 0; e < mesh_->lines_size_; ++e) {
         if (mesh_->has_garbage_ && edeleted[e])
             continue;
-        if (!elocked[e] && mesh_->is_flip_ok(e, true)) {
+        bool flip_ok = mesh_->is_flip_ok(e, true);
+        if (!try_collapse && !flip_ok)
+            continue;
+        if (!elocked[e]) {
             h = e << 1;
             a = points[mesh_->to_vertex(h)];
 
@@ -1026,14 +1073,15 @@ void SurfaceRemeshing::remove_caps(float max_angle, bool try_collapse) {
                     if (bmin > amin)
                         mesh_->flip(e);
                 } else {
-                    if (bmin > amin && bmin >= aa) {
+                    if (flip_ok && bmin > amin && bmin >= aa) {
                         mesh_->flip(e);
                     } else {
-                        auto tar_point = (a + c) * 0.5;
+                        int v1 = mesh_->to_vertex(e<<1), v2 = mesh_->to_vertex(e<<1|1);
+                        auto tar_point = (a + c) * 0.5f;
                         fdeleted[f] = 1;
+                        mesh_->has_garbage_ = true;
                         for (auto &it: mesh_->get_dup_list(vduplicate[v]))
                             points[it] = tar_point;
-                        int v1 = mesh_->to_vertex(e<<1), v2 = mesh_->to_vertex(e<<1|1);
                         auto v2_list = mesh_->get_dup_list(vduplicate[v2]);
                         for (auto &vi: mesh_->get_dup_list(vduplicate[v1])) {
                             for (auto ite: mesh_->halfedges(vi)) {
@@ -1043,22 +1091,29 @@ void SurfaceRemeshing::remove_caps(float max_angle, bool try_collapse) {
                                     int vnew = (vi==v1 && vj==v2 || vi==v2 && vj==v1) ? v : mesh_->new_vertex(tar_point);
                                     int new_lines, new_faces;
                                     mesh_->split(ite>>1, vnew, new_lines, new_faces);
-                                    for (int ii = 1; ii <= new_lines; ++ii) {
+                                    for (int ii = 0; ii < new_lines; ++ii) {
                                         mesh_->prim_->lines.foreach_attr<zeno::AttrAcceptAll>([&](auto const &key, auto &arr) {
                                             using T = std::decay_t<decltype(arr[0])>;
                                             arr.push_back(T(0));
                                         });
                                     }
-                                    for (int ii = 1; ii <= new_faces; ++ii) {
+                                    for (int ii = 0; ii < new_faces; ++ii) {
                                         mesh_->prim_->tris.foreach_attr<zeno::AttrAcceptAll>([&](auto const &key, auto &arr) {
                                             using T = std::decay_t<decltype(arr[0])>;
                                             arr.push_back(T(0));
                                         });
                                     }
-                                    mesh_->prim_->verts.foreach_attr<zeno::AttrAcceptAll>([&](auto const &key, auto &arr) {
-                                        using T = std::decay_t<decltype(arr[0])>;
-                                        arr.push_back(arr[v]);
-                                    });
+                                    if (vnew == v) {
+                                        for (auto itn: mesh_->halfedges(vnew)) {
+                                            if (mesh_->to_vertex(itn) == vnew)
+                                                fdeleted[mesh_->hconn_[itn].face_] = 1;
+                                        }
+                                    } else {
+                                        mesh_->prim_->verts.foreach_attr<zeno::AttrAcceptAll>([&](auto const &key, auto &arr) {
+                                            using T = std::decay_t<decltype(arr[0])>;
+                                            arr.push_back(arr[v]);
+                                        });
+                                    }
                                 }
                             }
                         }

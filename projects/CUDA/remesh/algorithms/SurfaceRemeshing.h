@@ -40,7 +40,9 @@ public:
     void remove_degenerate_triangles(float min_edge_length,
                                      float min_area,
                                      float max_angle,
-                                     unsigned int iterations = 10);
+                                     std::string degenerate_tag,
+                                     unsigned int iterations = 10,
+                                     bool color = false);
 
 
 private:
@@ -62,7 +64,8 @@ private:
     void check_triangles(float min_edge_length = std::numeric_limits<float>::epsilon(),
                          float min_area = std::numeric_limits<float>::epsilon(),
                          float max_angle = 170.f,
-                         bool mark = false);
+                         std::string tag = "",
+                         bool color = false);
     vec3f minimize_squared_areas(int v, bool& inversable);
     vec3f weighted_centroid(int v);
     template<class T>

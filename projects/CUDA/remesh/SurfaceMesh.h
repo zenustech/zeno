@@ -259,7 +259,7 @@ public:
     }
 
     int find_halfedge(int start, int end) const;
-    void is_collapse_ok(int v0v1, bool &hcol01, bool &hcol10);
+    void is_collapse_ok(int v0v1, bool &hcol01, bool &hcol10, bool relaxed = false);
     void collapse(int h);
     void garbage_collection();
     int split(int e, int v, int& new_lines, int& new_faces);

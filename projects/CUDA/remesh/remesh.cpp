@@ -537,7 +537,9 @@ struct RepairDegenerateTriangle : INode {
         auto iterations = get_input2<int>("iterations");
         float edge_length = get_input2<float>("min_edge_length");
         float area = get_input2<float>("min_area");
-        float angle = get_input2<float>("max_angle(degree)");
+        float angle = get_input2<float>("max_angle");
+        auto degenerate_tag = get_input<zeno::StringObject>("degenerate_tag")->get();
+        bool color = get_input2<float>("color");
         auto &pos = prim->attr<vec3f>("pos");
         auto &efeature = prim->lines.add_attr<int>("e_feature");
 
@@ -559,7 +561,8 @@ struct RepairDegenerateTriangle : INode {
 
         auto mesh = new pmp::SurfaceMesh(prim, "e_feature");
 
-        pmp::SurfaceRemeshing(mesh, "e_feature").remove_degenerate_triangles(edge_length, area, angle, iterations);
+        pmp::SurfaceRemeshing(mesh, "e_feature")
+            .remove_degenerate_triangles(edge_length, area, angle, degenerate_tag, iterations, color);
 
         returnNonManifold(prim);
 
@@ -570,6 +573,7 @@ struct RepairDegenerateTriangle : INode {
         prim->lines.erase_attr("e_deleted");
         prim->tris.erase_attr("f_deleted");
         prim->verts.update();
+        lines.clear();
 
         set_output("prim", std::move(prim));
     }
@@ -579,9 +583,11 @@ ZENO_DEFNODE(RepairDegenerateTriangle)
 ({
     {{"prim"},
     {"int", "iterations", "10"},
-    {"float", "min_edge_length", "0.0001"},
-    {"float", "min_area", "0.00000001"},
-    {"float", "max_angle(degree)", "170"}},
+    {"float", "min_edge_length", "0.001"},
+    {"float", "min_area", "0.000001"},
+    {"float", "max_angle", "170"},
+    {"string", "degenerate_tag", "degenerate"},
+    {"bool", "color", "0"}},
     {"prim"},
     {},
     {"primitive"},
@@ -777,17 +783,17 @@ bool segTriIntersection(const std::pair<vec3f, vec3f>& seg, const std::vector<ve
         bool intersect = true;
         if (det > EPSIL) {
             a = dot(tvec, pvec);
-            if ( a < 0.0 ||  a > det)
+            if (a < 0.0 || a > det)
             intersect = false;
             b = dot(dir, qvec);
-            if ( b < 0.0 ||  a +  b > det)
+            if (b < 0.0 || a + b > det)
             intersect = false;
         } else if(det < -EPSIL) {
             a = dot(tvec, pvec);
-            if ( a > 0.0 ||  a < det)
+            if (a > 0.0 || a < det)
             intersect = false;
             b = dot(dir, qvec);
-            if ( b > 0.0 ||  a +  b < det)
+            if (b > 0.0 || a + b < det)
             intersect = false;
         } else 
             intersect = false;
@@ -940,6 +946,7 @@ struct SelectIntersectingFaces : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         auto intersect_tag = get_input<zeno::StringObject>("intersecting_tag")->get();
+        bool color = get_input2<float>("color");
         auto &verts = prim->verts;
         auto &faces = prim->tris;
         auto &referred = prim->tris.add_attr<int>("referred", 0);
@@ -963,10 +970,12 @@ struct SelectIntersectingFaces : INode {
         }
         prim->tris.erase_attr("referred");
 
-        auto &clr = prim->verts.add_attr<vec3f>("clr", vec3f(0.1, 0.6, 0.4));
-        for (int i = 0; i < faces->size(); ++i) {
-            if (intersecting[i] == 1) {
-                clr[faces[i][0]] = clr[faces[i][1]] = clr[faces[i][2]] = vec3f(0.8, 0.3, 0.1);
+        if (color) {
+            auto &clr = prim->verts.add_attr<vec3f>("clr", vec3f(0.1, 0.6, 0.4));
+            for (int i = 0; i < faces->size(); ++i) {
+                if (intersecting[i] == 1) {
+                    clr[faces[i][0]] = clr[faces[i][1]] = clr[faces[i][2]] = vec3f(0.8, 0.3, 0.1);
+                }
             }
         }
 
@@ -977,7 +986,8 @@ struct SelectIntersectingFaces : INode {
 ZENO_DEFNODE(SelectIntersectingFaces)
 ({
     {{"prim"},
-    {"string", "intersecting_tag", "intersecting"}},
+    {"string", "intersecting_tag", "intersecting"},
+    {"bool", "color", "0"}},
     {("prim")},
     {},
     {"primitive"},
