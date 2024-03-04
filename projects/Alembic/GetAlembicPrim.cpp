@@ -311,7 +311,7 @@ struct AlembicPrimList : INode {
             if (get_input2<bool>("flipFrontBack")) {
                 flipFrontBack(_prim);
             }
-            if (get_input2<bool>("killDeadVerts")) {
+            if (get_input2<bool>("splitByFaceset") && get_input2<bool>("killDeadVerts")) {
                 primKillDeadVerts(_prim.get());
             }
             if (get_input2<bool>("triangulate")) {
@@ -329,7 +329,7 @@ ZENDEFNODE(AlembicPrimList, {
         {"bool", "use_xform", "0"},
         {"bool", "triangulate", "0"},
         {"bool", "splitByFaceset", "0"},
-        {"bool", "killDeadVerts", "0"},
+        {"bool", "killDeadVerts", "1"},
         {"string", "pathInclude", ""},
         {"string", "pathExclude", ""},
         {"string", "facesetInclude", ""},
