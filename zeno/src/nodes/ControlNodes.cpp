@@ -237,6 +237,10 @@ struct EndForEach : EndFor {
             if (fore->m_accumate)
                 set_output("accumate", std::move(fore->m_accumate));
         }
+
+        bool bTmpCache = (m_status & NodeStatus::Cached);
+        if (bTmpCache)
+            writeTmpCaches();
     }
 };
 
