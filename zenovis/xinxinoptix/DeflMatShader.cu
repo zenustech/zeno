@@ -299,7 +299,7 @@ extern "C" __global__ void __closesthit__radiance()
     const uint               primIdx = optixGetPrimitiveIndex();
 
     const float3 ray_orig = optixGetWorldRayOrigin();
-    const float3 ray_dir  = normalize(optixGetWorldRayDirection());
+    const float3 ray_dir  = optixGetWorldRayDirection();
     float3 P = ray_orig + optixGetRayTmax() * ray_dir;
 
     HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
@@ -318,6 +318,9 @@ extern "C" __global__ void __closesthit__radiance()
 
     float3 _normal_object_  = ( _pos_object_ - make_float3( q ) ) / q.w;
     float3 _normal_world_   = normalize( optixTransformNormalFromObjectToWorldSpace( _normal_object_ ) );
+
+    float3& P_Local = _pos_object_;
+    float3& N_Local = _normal_object_;
 
     float3 N = _normal_world_;
 
@@ -346,20 +349,19 @@ extern "C" __global__ void __closesthit__radiance()
     float3 _vertices_[3];
     optixGetTriangleVertexData( gas, primIdx, sbtGASIndex, 0, _vertices_);
     
-    const float3& v0 = optixTransformPointFromObjectToWorldSpace(_vertices_[0]);
-    const float3& v1 = optixTransformPointFromObjectToWorldSpace(_vertices_[1]);
-    const float3& v2 = optixTransformPointFromObjectToWorldSpace(_vertices_[2]);
+    const float3& v0 = _vertices_[0];
+    const float3& v1 = _vertices_[1];
+    const float3& v2 = _vertices_[2];
 
     /* MODMA */
     float2       barys    = optixGetTriangleBarycentrics();
-    auto P_Local = interp(barys, v0, v1, v2);
-    P = P_Local; // this value has precision issue for big float
+    const auto P_Local = interp(barys, v0, v1, v2);
+    P = optixTransformPointFromObjectToWorldSpace(P_Local); // this value has precision issue for big float
 
     attrs.pos = P;
 
     float3 N_Local = normalize( cross( normalize(_vertices_[1]-_vertices_[0]), normalize(_vertices_[2]-_vertices_[1]) ) ); // this value has precision issue for big float
     float3 N_World = normalize(optixTransformNormalFromObjectToWorldSpace(N_Local));
-
 
     if (isBadVector(N_World)) 
     {  
@@ -420,7 +422,7 @@ extern "C" __global__ void __closesthit__radiance()
     {
       attrs.T = attrs.tang;
     }
-    attrs.V = -normalize(ray_dir);
+    attrs.V = -(ray_dir);
     //MatOutput mats = evalMaterial(rt_data->textures, rt_data->uniforms, attrs);
     MatOutput mats = optixDirectCall<MatOutput, cudaTextureObject_t[], float4*, const MatInput&>( rt_data->dc_index, rt_data->textures, rt_data->uniforms, attrs );
     prd->mask_value = mats.mask_value;
@@ -443,12 +445,10 @@ extern "C" __global__ void __closesthit__radiance()
     n2 = normalize( decodeNormal(rt_data->nrm[ vert_idx_offset+2 ]) );
     n2 = dot(n2, N_Local)>(1-mats.smoothness)?n2:N_Local;
 
-    N_Local = normalize(interp(barys, n0, n1, n2));
-    N_World = optixTransformNormalFromObjectToWorldSpace(N_Local);
+    auto NS_Local = normalize(interp(barys, n0, n1, n2));
+    N_World = optixTransformNormalFromObjectToWorldSpace(NS_Local);
 
     N = N_World;
-
-
 
     if(mats.doubleSide>0.5f||mats.thin>0.5f){
         N = faceforward( N_World, -ray_dir, N_World );
@@ -922,11 +922,17 @@ extern "C" __global__ void __closesthit__radiance()
       prd->done = true;
     }
 
-    if(mats.thin<0.5f && mats.doubleSide<0.5f){
-        prd->origin = rtgems::offset_ray(P, (next_ray_is_going_inside)? -prd->geometryNormal : prd->geometryNormal);
+    if(mats.thin>0.5f || mats.doubleSide>0.5f){
+
+        auto tdir = optixTransformVectorFromWorldToObjectSpace(prd->direction);
+        //tdir = normalize(tdir);
+        auto facing = dot(tdir, N_Local) > 0;
+
+        auto tmp = rtgems::offset_ray(P_Local,  facing? N_Local:-N_Local);
+        prd->origin = optixTransformPointFromObjectToWorldSpace(tmp);
     }
     else {
-        prd->origin = rtgems::offset_ray(P, ( dot(prd->direction, prd->geometryNormal) < 0 )? -prd->geometryNormal : prd->geometryNormal);
+        prd->origin = rtgems::offset_ray(P, (next_ray_is_going_inside)? -prd->geometryNormal : prd->geometryNormal);
     }
     
     if (prd->medium != DisneyBSDF::vacuum) {
