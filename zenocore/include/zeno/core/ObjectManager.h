@@ -4,7 +4,6 @@
 #include <zeno/core/INode.h>
 #include <zeno/utils/PolymorphicMap.h>
 #include <zeno/utils/api.h>
-#include <zeno/utils/objpath.h>
 #include <memory>
 #include <string>
 #include <vector>
