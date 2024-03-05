@@ -7,6 +7,7 @@
 #include "nodesview/zenographseditor.h"
 #include <zeno/types/UserData.h>
 #include "settings/zenosettingsmanager.h"
+#include <cmath>
 
 
 using std::string;
@@ -364,7 +365,22 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
         } else if ((rotateKey == modifiers) && (event->buttons() & rotateButton)) {
             setOrthoMode(false);
             setTheta(getTheta() - dy * M_PI);
-            setPhi(getPhi() + dx * M_PI);
+            if (int(abs(getTheta()) / M_PI) % 2 == 0) {
+                if (glm::fract(abs(getTheta()) / M_PI) < 0.5) {
+                    setPhi(getPhi() + dx * M_PI);
+                }
+                else {
+                    setPhi(getPhi() - dx * M_PI);
+                }
+            }
+            else {
+                if (glm::fract(abs(getTheta()) / M_PI) < 0.5) {
+                    setPhi(getPhi() - dx * M_PI);
+                }
+                else {
+                    setPhi(getPhi() + dx * M_PI);
+                }
+            }
         }
         m_lastMidButtonPos = QPointF(xpos, ypos);
     } else if (event->buttons() & Qt::LeftButton) {
