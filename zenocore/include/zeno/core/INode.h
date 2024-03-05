@@ -67,7 +67,9 @@ public:
     ZENO_API zvariant get_input_defl(std::string const& name);
     ZENO_API std::string get_nodecls() const;
     ZENO_API std::string get_ident() const;
+    ZENO_API ObjPath get_path() const;
     std::string get_uuid() const;
+    void initUuid(Graph* pGraph, const std::string nodecls);
 
     ZENO_API void set_view(bool bOn);
     CALLBACK_REGIST(set_view, void, bool)
@@ -199,7 +201,7 @@ public:
 private:
     bool m_bView = false;
     bool m_dirty = true;
-
+    ObjPath m_uuidPath;
 };
 
 }

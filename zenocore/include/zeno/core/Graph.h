@@ -130,7 +130,7 @@ struct Graph : std::enable_shared_from_this<Graph> {
     ZENO_API std::map<std::string, zany> callSubnetNode(std::string const &id,
             std::map<std::string, zany> inputs) const;
     ZENO_API std::map<std::string, zany> callTempNode(std::string const &id,
-            std::map<std::string, zany> inputs) const;
+            std::map<std::string, zany> inputs);
 
     std::set<std::string> getSubInputs();
     std::set<std::string> getSubOutputs();

@@ -31,8 +31,9 @@ struct ImplNodeClass : INodeClass {
     ImplNodeClass(std::shared_ptr<INode>(*ctor)(), Descriptor const &desc, std::string const &name)
         : INodeClass(desc, name), ctor(ctor) {}
 
-    virtual std::shared_ptr<INode> new_instance(std::string const &name) const override {
+    virtual std::shared_ptr<INode> new_instance(Graph* pGraph, std::string const &name) const override {
         std::shared_ptr<INode> spNode = ctor();
+        spNode->initUuid(pGraph, classname);
 
         std::vector<SocketDescriptor> inputs = desc->inputs;
         std::vector<ParamDescriptor> params = desc->params;
@@ -41,7 +42,6 @@ struct ImplNodeClass : INodeClass {
         std::shared_ptr<SubnetNode> spSubnet = std::dynamic_pointer_cast<SubnetNode>(spNode);
 
         spNode->set_name(name);
-        spNode->m_nodecls = classname;
 
         //init all params, and set defl value
         for (SocketDescriptor& param_desc : inputs)

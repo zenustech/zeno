@@ -35,9 +35,9 @@ struct ImplSubnetNodeClass : INodeClass {
     ImplSubnetNodeClass() : INodeClass({}, "") {
     }
 
-    virtual std::shared_ptr<INode> new_instance(std::string const& name) const override {
+    virtual std::shared_ptr<INode> new_instance(Graph* pGraph, std::string const& name) const override {
         std::shared_ptr<SubnetNode> spNode = std::make_shared<SubnetNode>();
-
+        spNode->initUuid(pGraph, classname);
         //TODO: need to find descriptors name, to create Subnet.
 
         spNode->set_name(name);

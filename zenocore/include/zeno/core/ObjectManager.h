@@ -4,6 +4,7 @@
 #include <zeno/core/INode.h>
 #include <zeno/utils/PolymorphicMap.h>
 #include <zeno/utils/api.h>
+#include <zeno/utils/objpath.h>
 #include <memory>
 #include <string>
 #include <vector>
@@ -11,6 +12,7 @@
 #include <map>
 #include <set>
 #include <functional>
+
 
 namespace zeno {
 
@@ -20,7 +22,8 @@ class ObjectManager
 {
     struct _ObjInfo {
         std::shared_ptr<IObject> obj;
-        std::weak_ptr<INode> view_node;
+        std::set<ObjPath> attach_nodes;
+        //ObjPath view_node;
     };
 
 public:
@@ -46,6 +49,7 @@ private:
 
     std::map<std::string, int> m_objRegister;
     std::map<std::string, _ObjInfo> m_objects;
+    std::set<ObjPath> viewNodes;
     //std::set<std::string> m_viewObjs;
 };
 

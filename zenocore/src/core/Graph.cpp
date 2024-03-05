@@ -215,11 +215,11 @@ ZENO_API std::map<std::string, zany> Graph::callSubnetNode(std::string const &id
 }
 
 ZENO_API std::map<std::string, zany> Graph::callTempNode(std::string const &id,
-        std::map<std::string, zany> inputs) const {
+        std::map<std::string, zany> inputs) {
 
     auto cl = safe_at(getSession().nodeClasses, id, "node class name").get();
     const std::string& name = generateUUID();
-    auto se = cl->new_instance(name);
+    auto se = cl->new_instance(this, name);
     se->graph = const_cast<Graph*>(this);
     se->directly_setinputs(inputs);
     se->doOnlyApply();
@@ -437,7 +437,7 @@ ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls, std::s
             nodecls = "DeprecatedNode";
         }
         auto cl = safe_at(getSession().nodeClasses, nodecls, "node class name").get();
-        node = cl->new_instance(name);
+        node = cl->new_instance(this, name);
         node->nodeClass = cl;
         uuid = node->get_uuid();
     }
@@ -476,7 +476,7 @@ ZENO_API std::shared_ptr<INode> Graph::createSubnetNode(std::string const& cls)
     //todo: deprecated
     auto subcl = std::make_unique<ImplSubnetNodeClass>();
     std::string const& name = generateNewName(cls);
-    auto node = subcl->new_instance(name);
+    auto node = subcl->new_instance(this, name);
     node->graph = this;
     node->nodeClass = subcl.get();
 
@@ -674,6 +674,8 @@ ZENO_API bool Graph::addLink(const EdgeInfo& edge) {
     outParam->links.push_back(spLink);
     inParam->links.push_back(spLink);
 
+    inNode->mark_dirty(true);
+
     CALLBACK_NOTIFY(addLink, adjustEdge);
     return true;
 }
@@ -708,6 +710,7 @@ ZENO_API bool Graph::removeLink(const EdgeInfo& edge) {
         }
         return false;
     });
+    inNode->mark_dirty(true);
 
     CALLBACK_NOTIFY(removeLink, edge)
     return true;
