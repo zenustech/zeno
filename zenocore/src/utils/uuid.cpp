@@ -11,7 +11,7 @@
 
 namespace zeno
 {
-    ZENO_API std::string generateUUID()
+    ZENO_API std::string generateUUID(const std::string& prefix)
     {
 #if defined(_WIN32)
         char buf[GUID_LEN] = { 0 };
@@ -27,7 +27,8 @@ namespace zeno
             guid.Data4[3], guid.Data4[4], guid.Data4[5],
             guid.Data4[6], guid.Data4[7]);
 
-        return std::move(std::string(buf));
+        std::string res = prefix + std::string(buf);
+        return std::move(res);
 #elif defined(__linux__)
         char buf[GUID_LEN] = { 0 };
 

@@ -39,6 +39,7 @@ ZENO_API Graph::~Graph() {
 }
 
 ZENO_API zany Graph::getNodeInput(std::string const& sn, std::string const& ss) const {
+    //todo: deprecated
     auto node = safe_at(m_nodes, sn, "node name").get();
     return node->get_input(ss);
 }
@@ -61,17 +62,20 @@ ZENO_API void Graph::addNode(std::string const &cls, std::string const &id) {
 #endif
 }
 
-ZENO_API Graph *Graph::getSubnetGraph(std::string const &id) const {
-    auto node = static_cast<SubnetNode *>(safe_at(m_nodes, id, "node name").get());
+ZENO_API Graph *Graph::getSubnetGraph(std::string const & node_name) const {
+    const std::string uuid = safe_at(m_name2uuid, node_name, "uuid");
+    auto node = static_cast<SubnetNode *>(safe_at(m_nodes, uuid, "node name").get());
     return node->subgraph.get();
 }
 
-ZENO_API void Graph::completeNode(std::string const &id) {
-    safe_at(m_nodes, id, "node name")->doComplete();
+ZENO_API void Graph::completeNode(std::string const &node_name) {
+    const std::string uuid = safe_at(m_name2uuid, node_name, "uuid");
+    safe_at(m_nodes, uuid, "node name")->doComplete();
 }
 
-ZENO_API bool Graph::applyNode(std::string const &id) {
-    auto node = safe_at(m_nodes, id, "node name").get();
+ZENO_API bool Graph::applyNode(std::string const &node_name) {
+    const std::string uuid = safe_at(m_name2uuid, node_name, "uuid");
+    auto node = safe_at(m_nodes, uuid, "node name").get();
     GraphException::translated([&] {
         node->doApply();
     }, node->get_name());
@@ -298,11 +302,11 @@ ZENO_API void Graph::init(const GraphData& graph) {
 
 void Graph::markDirtyWhenFrameChanged()
 {
-    for (const std::string& name : frame_nodes) {
-        m_nodes[name]->mark_dirty(true);
+    for (const std::string& uuid : frame_nodes) {
+        m_nodes[uuid]->mark_dirty(true);
     }
-    for (const std::string& subnet : subnet_nodes) {
-        auto spSubnetNode = std::dynamic_pointer_cast<SubnetNode>(m_nodes[subnet]);
+    for (const std::string& uuid : subnet_nodes) {
+        auto spSubnetNode = std::dynamic_pointer_cast<SubnetNode>(m_nodes[uuid]);
         spSubnetNode->graph->markDirtyWhenFrameChanged();
     }
 }
@@ -370,24 +374,29 @@ ZENO_API std::string Graph::updateNodeName(const std::string oldName, const std:
         }
     };
 
-    if (newName.empty() || m_nodes.find(oldName) == m_nodes.end()) {
+    if (newName.empty())
+        return "";
+
+    const std::string uuid = safe_at(m_name2uuid, oldName, "uuid");
+    if (m_nodes.find(uuid) == m_nodes.end()) {
         return "";
     }
 
-    auto spNode = m_nodes[oldName];
+    auto spNode = m_nodes[uuid];
     std::string name = newName;
     if (m_nodes.find(name) != m_nodes.end()) {
         name = generateNewName(spNode->get_nodecls());
     }
     spNode->set_name(name);
-    m_nodes[name] = m_nodes[oldName];
-    m_nodes.erase(oldName);
 
-    sync_to_set(frame_nodes, oldName, newName);
-    sync_to_set(subnet_nodes, oldName, newName);
-    sync_to_set(asset_nodes, oldName, newName);
-    sync_to_set(subinput_nodes, oldName, newName);
-    sync_to_set(suboutput_nodes, oldName, newName);
+    m_name2uuid[newName] = m_name2uuid[oldName];
+    m_name2uuid.erase(oldName);
+
+    //sync_to_set(frame_nodes, oldName, newName);
+    //sync_to_set(subnet_nodes, oldName, newName);
+    //sync_to_set(asset_nodes, oldName, newName);
+    //sync_to_set(subinput_nodes, oldName, newName);
+    //sync_to_set(suboutput_nodes, oldName, newName);
 
     CALLBACK_NOTIFY(updateNodeName, oldName, name)
     return name;
@@ -396,6 +405,7 @@ ZENO_API std::string Graph::updateNodeName(const std::string oldName, const std:
 ZENO_API void Graph::clear()
 {
     m_nodes.clear();
+    m_name2uuid.clear();
     nodesToExec.clear();
     node_set.clear();
     optParentSubgNode = std::nullopt;
@@ -417,6 +427,7 @@ ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls, std::s
     else
         name = generateNewName(cls, name);
 
+    std::string uuid;
     std::shared_ptr<INode> node;
     if (cate != "assets") {
         auto& nodeClass = getSession().nodeClasses;
@@ -428,30 +439,33 @@ ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls, std::s
         auto cl = safe_at(getSession().nodeClasses, nodecls, "node class name").get();
         node = cl->new_instance(name);
         node->nodeClass = cl;
+        uuid = node->get_uuid();
     }
     else {
         bool isCurrentGraphAsset = getSession().assets->isAssetGraph(shared_from_this());
         node = getSession().assets->newInstance(cls, name, isCurrentGraphAsset);
-        asset_nodes.insert(name);
+        uuid = node->get_uuid();
+        asset_nodes.insert(uuid);
     }
 
     if (cls == "GetFrameNum") {
-        frame_nodes.insert(name);
+        frame_nodes.insert(uuid);
     }
     if (cls == "Subnet") {
-        subnet_nodes.insert(name);
+        subnet_nodes.insert(uuid);
     }
     if (cls == "SubInput") {
-        subinput_nodes.insert(name);
+        subinput_nodes.insert(uuid);
     }
     if (cls == "SubOutput") {
-        suboutput_nodes.insert(name);
+        suboutput_nodes.insert(uuid);
     }
 
     node->graph = this;
     node->m_pos = pos;
     node->mark_dirty(true);
-    m_nodes[name] = node;
+    m_name2uuid[name] = uuid;
+    m_nodes[uuid] = node;
 
     CALLBACK_NOTIFY(createNode, name, node)
     return node;
@@ -459,6 +473,7 @@ ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls, std::s
 
 ZENO_API std::shared_ptr<INode> Graph::createSubnetNode(std::string const& cls)
 {
+    //todo: deprecated
     auto subcl = std::make_unique<ImplSubnetNodeClass>();
     std::string const& name = generateNewName(cls);
     auto node = subcl->new_instance(name);
@@ -502,9 +517,11 @@ std::set<std::string> Graph::getSubOutputs()
 }
 
 ZENO_API std::shared_ptr<INode> Graph::getNode(std::string const& name) {
-    if (m_nodes.find(name) == m_nodes.end())
+    if (m_name2uuid.find(name) == m_name2uuid.end()) {
         return nullptr;
-    return m_nodes[name];
+    }
+    const std::string& uuid = m_name2uuid[name];
+    return safe_at(m_nodes, uuid, "");
 }
 
 ZENO_API std::map<std::string, std::shared_ptr<INode>> Graph::getNodes() const {
@@ -521,9 +538,9 @@ ZENO_API GraphData Graph::exportGraph() const {
         graph.type = Subnet_Normal;
     }
 
-    for (auto& [name, node] : m_nodes) {
+    for (auto& [uuid, node] : m_nodes) {
         zeno::NodeData nodeinfo = node->exportInfo();
-        graph.nodes.insert(std::make_pair(name, nodeinfo));
+        graph.nodes.insert(std::make_pair(node->get_name(), nodeinfo));
     }
     return graph;
 }
@@ -531,7 +548,7 @@ ZENO_API GraphData Graph::exportGraph() const {
 ZENO_API LinksData Graph::exportLinks() const
 {
     LinksData links;
-    for (auto& [name, node] : m_nodes) {
+    for (auto& [uuid, node] : m_nodes) {
         zeno::NodeData nodeinfo = node->exportInfo();
         for (ParamInfo param : nodeinfo.inputs) {
             links.insert(links.end(), param.links.begin(), param.links.end());
@@ -553,18 +570,18 @@ ZENO_API void Graph::setName(const std::string& na) {
 }
 
 ZENO_API bool Graph::removeNode(std::string const& name) {
-    auto it = m_nodes.find(name);
-    if (it == m_nodes.end())
-        return false;
+    auto it = m_name2uuid.find(name);
+    std::string uuid = safe_at(m_name2uuid, name, "get uuid when calling removeNode");
+    auto spNode = safe_at(m_nodes, uuid, "");
 
     //remove links first
     std::vector<EdgeInfo> remLinks;
-    for (const auto& [_, spParam] : it->second->inputs_) {
+    for (const auto& [_, spParam] : spNode->inputs_) {
         for (std::shared_ptr<ILink> spLink : spParam->links) {
             remLinks.push_back(getEdgeInfo(spLink));
         }
     }
-    for (const auto& [_, spParam] : it->second->outputs_) {
+    for (const auto& [_, spParam] : spNode->outputs_) {
         for (std::shared_ptr<ILink> spLink : spParam->links) {
             remLinks.push_back(getEdgeInfo(spLink));
         }
@@ -573,7 +590,7 @@ ZENO_API bool Graph::removeNode(std::string const& name) {
         removeLink(edge);
     }
 
-    const std::string nodecls = it->second->get_nodecls();
+    const std::string nodecls = spNode->get_nodecls();
 
     node_set[nodecls].erase(name);
     m_nodes.erase(name);

@@ -32,6 +32,7 @@ public:
 
     std::string m_name;
     std::string m_nodecls;
+    std::string m_uuid;
     std::pair<float, float> m_pos;
 
     /*
@@ -66,6 +67,7 @@ public:
     ZENO_API zvariant get_input_defl(std::string const& name);
     ZENO_API std::string get_nodecls() const;
     ZENO_API std::string get_ident() const;
+    std::string get_uuid() const;
 
     ZENO_API void set_view(bool bOn);
     CALLBACK_REGIST(set_view, void, bool)

@@ -24,10 +24,15 @@
 #include <zeno/DictObject.h>
 #include <zeno/ListObject.h>
 #include <zeno/utils/helper.h>
+#include <zeno/utils/uuid.h>
+
 
 namespace zeno {
 
-ZENO_API INode::INode() = default;
+ZENO_API INode::INode() {
+    m_uuid = generateUUID();
+}
+
 ZENO_API INode::~INode() = default;
 
 ZENO_API Graph *INode::getThisGraph() const {
@@ -61,6 +66,11 @@ ZENO_API std::string INode::get_nodecls() const
 ZENO_API std::string INode::get_ident() const
 {
     return m_name;
+}
+
+std::string INode::get_uuid() const
+{
+    return m_uuid;
 }
 
 ZENO_API std::string INode::get_name() const
