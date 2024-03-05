@@ -76,11 +76,10 @@ const vec3f barycentric_coordinates(const vec3f &p, const vec3f &u, const vec3f 
     return result;
 }
 
-SurfaceRemeshing::SurfaceRemeshing(SurfaceMesh *mesh, std::string line_pick_tag)
-    : mesh_(mesh), line_pick_tag_(line_pick_tag), refmesh_(nullptr), kd_tree_(nullptr) {
-
+SurfaceRemeshing::SurfaceRemeshing(SurfaceMesh *mesh, std::string line_pick_tag, std::string length_tag)
+    : mesh_(mesh), line_pick_tag_(line_pick_tag), length_tag_(length_tag), refmesh_(nullptr), kd_tree_(nullptr) {
+    NO_LAPLACIAN_.insert(length_tag);
     auto vnormal = mesh_->prim_->verts.add_attr<vec3f>("v_normal");
-
     SurfaceNormals::compute_vertex_normals(mesh);
 }
 
@@ -140,7 +139,6 @@ void SurfaceRemeshing::adaptive_remeshing(float min_edge_length, float max_edge_
         mesh_->garbage_collection();
         flip_edges();
         laplacian_smoothing();
-
     }
 
     remove_caps();
@@ -192,7 +190,8 @@ void SurfaceRemeshing::preprocessing() {
     auto &vfeature = mesh_->prim_->verts.add_attr<int>("v_feature", 0);
     auto &efeature = mesh_->prim_->lines.attr<int>(line_pick_tag_);
     auto &vduplicate = mesh_->prim_->verts.attr<int>("v_duplicate");
-    auto &vsizing = mesh_->prim_->verts.add_attr<float>("v_sizing");
+    bool has_length = mesh_->prim_->verts.has_attr(length_tag_);
+    auto &vsizing = mesh_->prim_->verts.add_attr<float>(length_tag_);
     auto &vlocked = mesh_->prim_->verts.add_attr<int>("v_locked", 0);
     auto &elocked = mesh_->prim_->lines.add_attr<int>("e_locked", 0);
     auto &vdeleted = mesh_->prim_->verts.attr<int>("v_deleted");
@@ -239,7 +238,7 @@ void SurfaceRemeshing::preprocessing() {
                 continue;
             vsizing[v] = target_edge_length_;
         }
-    } else {
+    } else if (!has_length) {
         // compute curvature for all mesh vertices, using cotan or Cohen-Steiner
         // don't use two-ring neighborhood, since we otherwise compute
         // curvature over sharp features edges, leading to high curvatures.
@@ -249,7 +248,6 @@ void SurfaceRemeshing::preprocessing() {
         curv.analyze_tensor(1);
 
         // use vsizing_ to store/smooth curvatures to avoid another vertex property
-
         // curvature values for feature vertices and boundary vertices
         // are not meaningful. mark them as negative values.
         for (int v = 0; v < mesh_->vertices_size_; ++v) {
@@ -328,7 +326,7 @@ void SurfaceRemeshing::preprocessing() {
         auto &refvdeleted = refmesh_->prim_->verts.attr<int>("v_deleted");
 
         // copy sizing field from prim_
-        refsizing_ = refmesh_->prim_->verts.add_attr<float>("v_sizing");
+        refsizing_ = refmesh_->prim_->verts.add_attr<float>(length_tag_);
         for (int v = 0; v < refmesh_->vertices_size_; ++v) {
             if (refmesh_->has_garbage_ && refvdeleted[v])
                 continue;
@@ -350,7 +348,7 @@ void SurfaceRemeshing::postprocessing() {
     mesh_->prim_->verts.erase_attr("v_feature");
     mesh_->prim_->verts.erase_attr("v_locked");
     mesh_->prim_->lines.erase_attr("e_locked");
-    mesh_->prim_->verts.erase_attr("v_sizing");
+    mesh_->prim_->verts.erase_attr(length_tag_);
 }
 
 void SurfaceRemeshing::project_to_reference(int v) {
@@ -360,7 +358,7 @@ void SurfaceRemeshing::project_to_reference(int v) {
 
     auto &points = mesh_->prim_->attr<vec3f>("pos");
     auto &vnormal = mesh_->prim_->verts.attr<vec3f>("v_normal");
-    auto &vsizing = mesh_->prim_->verts.attr<float>("v_sizing");
+    auto &vsizing = mesh_->prim_->verts.attr<float>(length_tag_);
 
     // find closest triangle of reference mesh
     TriangleKdTree::NearestNeighbor nn = kd_tree_->nearest(points[v]);
@@ -420,7 +418,7 @@ int SurfaceRemeshing::split_long_edges() {
     auto &edeleted = mesh_->prim_->lines.attr<int>("e_deleted");
     auto &vlocked = mesh_->prim_->verts.attr<int>("v_locked");
     auto &elocked = mesh_->prim_->lines.attr<int>("e_locked");
-    auto &vsizing = mesh_->prim_->verts.attr<float>("v_sizing");
+    auto &vsizing = mesh_->prim_->verts.attr<float>(length_tag_);
     auto &vduplicate = mesh_->prim_->verts.attr<int>("v_duplicate");
 
     int lines = mesh_->lines_size_;
@@ -469,7 +467,7 @@ int SurfaceRemeshing::split_long_edges() {
                         arr.push_back(0.5f * (arr[v0] + arr[v1]));
                     }
                 } else if constexpr (std::is_same_v<T, float>) {
-                    if (key == "v_sizing") {
+                    if (key == length_tag_) {
                         arr.push_back(0.5f * (vsizing[v0] + vsizing[v1]));
                     } else {
                         arr.push_back(0.5f * (arr[v0] + arr[v1]));
@@ -764,7 +762,7 @@ void SurfaceRemeshing::tangential_smoothing(unsigned int iterations) {
     auto &efeature = mesh_->prim_->lines.attr<int>(line_pick_tag_);
     auto &vdeleted = mesh_->prim_->verts.attr<int>("v_deleted");
     auto &vlocked = mesh_->prim_->verts.attr<int>("v_locked");
-    auto &vsizing = mesh_->prim_->verts.attr<float>("v_sizing");
+    auto &vsizing = mesh_->prim_->verts.attr<float>(length_tag_);
     // add property
     auto update = mesh_->prim_->verts.add_attr<vec3f>("update", vec3f(0.0f));
 
@@ -1177,7 +1175,7 @@ vec3f SurfaceRemeshing::weighted_centroid(int v) {
     double ww = 0;
 
     auto &points = mesh_->prim_->attr<vec3f>("pos");
-    auto &vsizing = mesh_->prim_->verts.attr<float>("v_sizing");
+    auto &vsizing = mesh_->prim_->verts.attr<float>(length_tag_);
 
     for (int h : mesh_->halfedges(v)) {
         int v1 = v;
@@ -1261,8 +1259,6 @@ void SurfaceRemeshing::accumulate_laplacian(std::vector<T>& arr, bool calculate_
     }
 }
 
-static std::set<std::string> NO_LAPLACIAN({"v_normal", "v_sizing", "v_duplicate", "v_feature", "v_locked", "v_deleted"});
-
 void SurfaceRemeshing::planar_laplacian(float delta) {
     auto &pos = mesh_->prim_->attr<vec3f>("pos");
     auto &vdeleted = mesh_->prim_->verts.attr<int>("v_deleted");
@@ -1284,7 +1280,7 @@ void SurfaceRemeshing::planar_laplacian(float delta) {
     mesh_->prim_->verts.erase_attr("v_lpzsum");
 
     mesh_->prim_->verts.foreach_attr<zeno::AttrAcceptAll>([&](auto const &key, auto &arr) {
-        if (NO_LAPLACIAN.count(key) == 0) {
+        if (NO_LAPLACIAN_.count(key) == 0) {
             using T = std::decay_t<decltype(arr[0])>;
             auto &vlpzsum = mesh_->prim_->verts.add_attr<T>("v_lpzsum", T(0));
             accumulate_laplacian(arr, false, true);

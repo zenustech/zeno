@@ -383,7 +383,7 @@ struct UniformRemeshing : INode {
             }
             zeno::log_info("default edge_length: {}", edge_length);
         }
-        zeno::pmp::SurfaceRemeshing(mesh, line_pick_tag).uniform_remeshing(edge_length, iterations);
+        zeno::pmp::SurfaceRemeshing(mesh, line_pick_tag, "v_sizing").uniform_remeshing(edge_length, iterations);
 
         returnNonManifold(prim);
 
@@ -427,6 +427,7 @@ struct AdaptiveRemeshing : INode {
         float min_length = get_input2<float>("min_length");
         float approximation_tolerance = get_input2<float>("approximation_tolerance");
         auto line_pick_tag = get_input<zeno::StringObject>("line_pick_tag")->get();
+        auto length_tag = get_input<zeno::StringObject>("length_tag")->get();
         auto &pos = prim->attr<vec3f>("pos");
         zeno::log_info("before remeshing: verts num = {}, face num = {}", prim->verts.size(), prim->tris.size());
 
@@ -496,7 +497,7 @@ struct AdaptiveRemeshing : INode {
             approximation_tolerance = 0.0005 * bb;
             zeno::log_info("default approximation_tolerance: {}", approximation_tolerance);
         }
-        zeno::pmp::SurfaceRemeshing(mesh, line_pick_tag)
+        zeno::pmp::SurfaceRemeshing(mesh, line_pick_tag, length_tag)
             .adaptive_remeshing(min_length, max_length, approximation_tolerance, iterations);
 
         returnNonManifold(prim);
@@ -525,6 +526,7 @@ ZENO_DEFNODE(AdaptiveRemeshing)
      {"float", "min_length", "0"},
      {"float", "approximation_tolerance", "0"},
      {"string", "line_pick_tag", "line_selected"},
+     {"string", "length_tag", "length"},
      {"marked_lines"}},
     {"prim"},
     {},
@@ -561,7 +563,7 @@ struct RepairDegenerateTriangle : INode {
 
         auto mesh = new pmp::SurfaceMesh(prim, "e_feature");
 
-        pmp::SurfaceRemeshing(mesh, "e_feature")
+        pmp::SurfaceRemeshing(mesh, "e_feature", "v_sizing")
             .remove_degenerate_triangles(edge_length, area, angle, degenerate_tag, iterations, color);
 
         returnNonManifold(prim);

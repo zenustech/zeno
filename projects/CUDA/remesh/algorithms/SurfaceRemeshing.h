@@ -18,7 +18,7 @@ class TriangleKdTree;
 class SurfaceRemeshing {
 public:
     // Construct with mesh to be remeshed.
-    SurfaceRemeshing(SurfaceMesh* mesh, std::string line_pick_tag);
+    SurfaceRemeshing(SurfaceMesh* mesh, std::string line_pick_tag, std::string length_tag);
 
     // destructor
     ~SurfaceRemeshing();
@@ -78,13 +78,13 @@ private:
 
     bool is_too_long(int v0, int v1) const {
         auto& points = mesh_->prim_->attr<vec3f>("pos");
-        auto& vsizing = mesh_->prim_->verts.attr<float>("v_sizing");
+        auto& vsizing = mesh_->prim_->verts.attr<float>(length_tag_);
         return distance(points[v0], points[v1]) >
                4.0 / 3.0 * std::min(vsizing[v0], vsizing[v1]);
     }
     bool is_too_short(int v0, int v1) const {
         auto& points = mesh_->prim_->attr<vec3f>("pos");
-        auto& vsizing = mesh_->prim_->verts.attr<float>("v_sizing");
+        auto& vsizing = mesh_->prim_->verts.attr<float>(length_tag_);
         return distance(points[v0], points[v1]) <
                4.0 / 5.0 * std::min(vsizing[v0], vsizing[v1]);
     }
@@ -121,6 +121,8 @@ private:
     float max_edge_length_;
     float approx_error_;
     std::string line_pick_tag_;
+    std::string length_tag_;
+    std::set<std::string> NO_LAPLACIAN_ = {"v_normal", "v_duplicate", "v_feature", "v_locked", "v_deleted"};
 
 
     AttrVector<vec3f> refpoints_;
