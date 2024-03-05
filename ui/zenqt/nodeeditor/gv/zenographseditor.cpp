@@ -598,6 +598,7 @@ void ZenoGraphsEditor::activateTab(const QStringList& subgpath, const QString& f
     //m_mainWin->onNodesSelected(pModel->index(subGraphName), pView->scene()->selectNodesIndice(), true);
 
     connect(pGraphM, &GraphModel::nodeRemoved, pView, &ZenoSubGraphView::onNodeRemoved, Qt::UniqueConnection);
+    connect(pGraphM, &GraphModel::rowsAboutToBeRemoved, pView, &ZenoSubGraphView::onRowsAboutToBeRemoved, Qt::UniqueConnection);
 }
 
 #if 0

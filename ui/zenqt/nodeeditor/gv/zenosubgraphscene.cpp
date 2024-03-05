@@ -28,6 +28,7 @@
 #include "viewport/picker.h"
 #include "settings/zenosettingsmanager.h"
 #include "widgets/ztimeline.h"
+#include "zenosubgraphview.h"
 //#include "nodeeditor/gv/pythonmaterialnode.h"
 
 
@@ -1070,6 +1071,7 @@ void ZenoSubGraphScene::onRowsAboutToBeRemoved(const QModelIndex& parent, int fi
         if (pGroup) {
             pGroup->removeChildItem(pNode);
         }
+
         removeItem(pNode);
         delete pNode;
         m_nodes.erase(id);

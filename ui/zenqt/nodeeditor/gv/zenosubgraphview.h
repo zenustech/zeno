@@ -123,6 +123,7 @@ public slots:
     void save();
 
     void onNodeRemoved(QString nodeid);
+    void onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last);
 
 private:
     _ZenoSubGraphView* getCurrentView() const;

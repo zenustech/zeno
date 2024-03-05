@@ -308,6 +308,20 @@ void GraphsManager::addScene(const QStringList& graphPath, ZenoSubGraphScene* sc
     m_scenes.push_back(scene);
 }
 
+bool GraphsManager::removeScene(const QStringList& graphPath)
+{
+    for (int i = 0; i < m_scenes.size(); i++) {
+        auto path = m_scenes[i]->getGraphModel()->currentPath();
+        if (path == graphPath)
+        {
+            delete m_scenes[i];
+            m_scenes.removeAt(i);
+            return true;
+        }
+    }
+    return false;
+}
+
 zeno::TimelineInfo GraphsManager::timeInfo() const
 {
     return m_timerInfo;
