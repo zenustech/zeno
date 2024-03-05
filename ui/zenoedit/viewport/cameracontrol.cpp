@@ -31,6 +31,15 @@ void CameraControl::setRes(QVector2D res) {
     m_res = res;
 }
 
+float CameraControl::getRoll() const {
+    auto *scene = m_zenovis->getSession()->get_scene();
+    return scene->camera->m_roll;
+}
+void CameraControl::setRoll(float roll) {
+    auto *scene = m_zenovis->getSession()->get_scene();
+    scene->camera->m_roll = roll;
+}
+
 float CameraControl::getTheta() const {
     auto *scene = m_zenovis->getSession()->get_scene();
     return scene->camera->m_theta;
@@ -277,6 +286,7 @@ void CameraControl::resizeTransformHandler(int dir)
 void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
 {
     bool ctrl_pressed = event->modifiers() & Qt::ControlModifier;
+    bool alt_pressed = event->modifiers() & Qt::AltModifier;
 
     auto session = m_zenovis->getSession();
     auto scene = session->get_scene();
@@ -314,6 +324,15 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
         QVector3D center = {c[0], c[1], c[2]};
         center += delta * getRadius();
         setCenter({float(center.x()), float(center.y()), float(center.z())});
+        m_lastMidButtonPos = QPointF(xpos, ypos);
+    }
+    else if (!bTransform && alt_pressed && (event->buttons() & Qt::MiddleButton)) {
+        float ratio = QApplication::desktop()->devicePixelRatio();
+        float dy = ypos - m_lastMidButtonPos.y();
+        dy *= ratio / m_res[1];
+        float roll = getRoll();
+        roll += dy;
+        setRoll(roll);
         m_lastMidButtonPos = QPointF(xpos, ypos);
     }
     else if (!bTransform && (event->buttons() & (rotateButton | moveButton))) {
