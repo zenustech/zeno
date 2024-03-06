@@ -29,6 +29,9 @@ public:
      ObjectManager();
     ~ObjectManager();
 
+    ZENO_API void beforeRun();
+    ZENO_API void afterRun();
+
     ZENO_API void addObject(const std::string& id, std::shared_ptr<IObject> obj, std::shared_ptr<INode> view_node, bool bView);
     CALLBACK_REGIST(addObject, void, std::shared_ptr<IObject>, bool)
 
@@ -43,12 +46,15 @@ public:
 
     ZENO_API int registerObjId(const std::string& objprefix);
 
+    ZENO_API std::set<ObjPath> getAttachNodes(const std::string& id);
+
 private:
     void clear();
 
     std::map<std::string, int> m_objRegister;
     std::map<std::string, _ObjInfo> m_objects;
-    std::set<ObjPath> viewNodes;
+    std::set<std::string> m_viewObjs;
+    std::set<std::string> m_lastViewObjs;
     //std::set<std::string> m_viewObjs;
 };
 

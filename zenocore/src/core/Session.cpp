@@ -164,7 +164,7 @@ ZENO_API void Session::endApiCall()
     if (m_apiLevel == 0) {
         //TODO: always mode
         if (m_bAutoRun)
-            run_main_graph();
+            run();
     }
 }
 
@@ -181,14 +181,8 @@ ZENO_API void Session::switchToFrame(int frameid)
     globalState->frameid = frameid;
 }
 
-ZENO_API bool Session::run_main_graph() {
-
-    zeno::GraphException::catched([&] {
-        mainGraph->runGraph();
-    }, *globalStatus);
-    if (globalStatus->failed()) {
-        zeno::log_error(globalStatus->toJson());
-    }
+ZENO_API bool Session::run() {
+    calcMan->run();
     return true;
 }
 

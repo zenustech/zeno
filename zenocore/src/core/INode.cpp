@@ -26,6 +26,7 @@
 #include <zeno/utils/helper.h>
 #include <zeno/utils/uuid.h>
 #include <zeno/extra/SubnetNode.h>
+#include <zeno/core/CalcManager.h>
 
 
 namespace zeno {
@@ -117,13 +118,6 @@ ZENO_API void INode::set_view(bool bOn)
     CALLBACK_NOTIFY(set_view, m_bView)
 
     graph->viewNodeUpdated(m_name, bOn);
-
-    for (auto const& [name, param] : outputs_)
-    {
-        if (auto spObj = std::dynamic_pointer_cast<IObject>(param->result)) {
-            getSession().objsMan->viewObject(spObj, m_bView);
-        }
-    }
 }
 
 ZENO_API bool INode::is_view() const
@@ -148,6 +142,19 @@ ZENO_API void INode::mark_dirty(bool bOn)
         }
     }
     CALLBACK_NOTIFY(mark_dirty, m_dirty)
+}
+
+void INode::mark_dirty_objs()
+{
+    for (auto const& [name, param] : outputs_)
+    {
+        if (auto spObj = std::dynamic_pointer_cast<IObject>(param->result)) {
+            if (spObj->key.empty()) {
+                continue;
+            }
+            getSession().calcMan->collect_removing_objs(spObj->key);
+        }
+    }
 }
 
 ZENO_API bool INode::is_dirty() const
@@ -192,7 +199,7 @@ ZENO_API void INode::unregisterObjs()
     }
 }
 
-ZENO_API void INode::addObjToManager()
+ZENO_API void INode::registerObjToManager()
 {
     for (auto const& [name, param] : outputs_)
     {
@@ -315,13 +322,15 @@ ZENO_API void INode::doOnlyApply() {
 }
 
 ZENO_API void INode::doApply() {
-    //if (checkApplyCondition()) {
-    if (!m_dirty)
-        return;
 
-    unregisterObjs();
+    if (!m_dirty) {
+        registerObjToManager();//如果只是打view，也是需要加到manager的。
+        return;
+    }
+
+    //unregisterObjs();     //是否可以不用提前unregister? 因为afterRun它会干掉之前view的那个
     preApply();
-    addObjToManager();
+    registerObjToManager();
     mark_dirty(false);
 }
 

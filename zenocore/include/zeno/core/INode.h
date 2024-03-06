@@ -105,12 +105,13 @@ public:
     void add_output_param(std::shared_ptr<IParam> param);
     void directly_setinputs(std::map<std::string, zany> inputs);
     std::map<std::string, zany> getoutputs();
+    void mark_dirty_objs();
 
 protected:
     ZENO_API virtual void complete();
     ZENO_API virtual void apply() = 0;
     ZENO_API virtual void unregisterObjs();
-    ZENO_API virtual void addObjToManager();
+    ZENO_API virtual void registerObjToManager();
     ZENO_API std::vector<std::pair<std::string, zany>> getinputs();
     ZENO_API std::vector<std::pair<std::string, zany>> getoutputs2();
     ZENO_API std::pair<std::string, std::string> getinputbound(std::string const& name, std::string const& msg = "") const;

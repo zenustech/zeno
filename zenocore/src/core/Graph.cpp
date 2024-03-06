@@ -392,6 +392,8 @@ ZENO_API std::string Graph::updateNodeName(const std::string oldName, const std:
     m_name2uuid[newName] = m_name2uuid[oldName];
     m_name2uuid.erase(oldName);
 
+    sync_to_set(m_viewnodes, oldName, newName);
+
     //sync_to_set(frame_nodes, oldName, newName);
     //sync_to_set(subnet_nodes, oldName, newName);
     //sync_to_set(asset_nodes, oldName, newName);
@@ -524,6 +526,28 @@ ZENO_API std::shared_ptr<INode> Graph::getNode(std::string const& name) {
     return safe_at(m_nodes, uuid, "");
 }
 
+ZENO_API std::shared_ptr<INode> Graph::getNode(ObjPath path) {
+    if (path.empty())
+        return nullptr;
+
+    std::string uuid = path.front();
+    auto it = m_nodes.find(uuid);
+    if (it == m_nodes.end()) {
+        return nullptr;
+    }
+    path.pop_front();
+
+    if (!path.empty())
+    {
+        //subnet
+        if (std::shared_ptr<SubnetNode> subnetNode = std::dynamic_pointer_cast<SubnetNode>(it->second))
+        {
+            return subnetNode->graph->getNode(path);
+        }
+    }
+    return it->second;
+}
+
 ZENO_API std::map<std::string, std::shared_ptr<INode>> Graph::getNodes() const {
     return m_nodes;
 }
@@ -590,14 +614,17 @@ ZENO_API bool Graph::removeNode(std::string const& name) {
         removeLink(edge);
     }
 
+    spNode->mark_dirty_objs();
+
     const std::string nodecls = spNode->get_nodecls();
 
     node_set[nodecls].erase(name);
-    m_nodes.erase(name);
+    m_nodes.erase(uuid);
 
-    frame_nodes.erase(name);
-    subnet_nodes.erase(name);
-    asset_nodes.erase(name);
+    frame_nodes.erase(uuid);
+    subnet_nodes.erase(uuid);
+    asset_nodes.erase(uuid);
+    m_viewnodes.erase(name);
 
     CALLBACK_NOTIFY(removeNode, name)
     return true;

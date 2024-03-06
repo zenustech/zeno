@@ -28,10 +28,12 @@ namespace zeno {
             it->second.obj = obj;
             it->second.attach_nodes.insert(path);
         }
-        if (bView)
-            viewNodes.insert(path);
-        else
-            viewNodes.erase(path);
+        if (bView) {
+            m_viewObjs.insert(id);
+            m_lastViewObjs.erase(id);   //上一次运行有view，这一次也有view
+        }
+        else {
+        }
         CALLBACK_NOTIFY(addObject, obj, bView)
     }
 
@@ -67,6 +69,32 @@ namespace zeno {
             int newObjId = m_objRegister[objprefix]++;
             return newObjId;
         }
+    }
+
+    ZENO_API std::set<ObjPath> ObjectManager::getAttachNodes(const std::string& id)
+    {
+        auto it = m_objects.find(id);
+        if (it != m_objects.end())
+        {
+            return it->second.attach_nodes;
+        }
+        return std::set<ObjPath>();
+    }
+
+    ZENO_API void ObjectManager::beforeRun()
+    {
+        m_lastViewObjs = m_viewObjs;
+        m_viewObjs.clear();
+    }
+
+    ZENO_API void ObjectManager::afterRun()
+    {
+        //剩下来的都是上一次view，而这一次没有view的。
+        for (auto objkey : m_lastViewObjs)
+        {
+            removeObject(objkey);
+        }
+        m_lastViewObjs.clear();
     }
 
     void ObjectManager::clear()
