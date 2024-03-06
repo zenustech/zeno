@@ -188,8 +188,8 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
                 "object");
 
             node_sync.updateNodeInputString(new_node_location.value(), "key", prim_attr_view->model()->headerData(index, Qt::Vertical).toString().toStdString());
-            QModelIndex& idx = prim_attr_view->model()->index(index, 0);
-            QStringList& vecLst = idx.data(Qt::DisplayRole).toString().split(",", Qt::SkipEmptyParts);
+            const QModelIndex& idx = prim_attr_view->model()->index(index, 0);
+            const QStringList& vecLst = idx.data(Qt::DisplayRole).toString().split(",", QString::SkipEmptyParts);
 
             zeno::zany object = dataModel->userDataByIndex(idx);
             if (zeno::objectIsLiterial<float>(object)) {

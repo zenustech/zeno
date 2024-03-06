@@ -305,7 +305,11 @@ void ZenoGraphsEditor::onNewSubgraph()
         msg.exec();
         return;
     }
-
+    if (m_model->index(newSubgName).isValid())
+    {
+        QMessageBox::warning(this, tr("Create Subgraph"), tr("Already has a subgraph called %1").arg(newSubgName));
+        return;
+    }
     if (bOk) {
         m_model->newSubgraph(newSubgName);
     }
@@ -942,6 +946,11 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
             if (bOk)
             {
                 QModelIndex fromSubgIdx = pView->scene()->subGraphIndex();
+                if (m_model->index(newSubgName).isValid())
+                {
+                    QMessageBox::warning(this, tr("Create Subgraph"), tr("Already has a subgraph called %1").arg(newSubgName));
+                    return;
+                }
                 QModelIndex toSubgIdx = m_model->extractSubGraph(nodes, links, fromSubgIdx, newSubgName, true);
                 if (toSubgIdx.isValid())
                 {

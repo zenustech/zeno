@@ -1576,12 +1576,28 @@ void ZenoMainWindow::importGraph(bool bPreset) {
         pGraphs->importSubGraphs(filePath, subgraphNames);
     if (bPreset)
     {
+        bool bSetData = true;
         for (const auto& name : subgraphNames)
         {
             QModelIndex index = pGraphs->currentModel()->index(name);
             if (index.isValid())
             {
-                pGraphs->currentModel()->setData(index, SUBGRAPH_PRESET, ROLE_SUBGRAPH_TYPE);
+                if (index.data(ROLE_SUBGRAPH_TYPE).toInt() == SUBGRAPH_PRESET)
+                {
+                    bSetData = false;
+                    break;
+                }
+            }
+        }
+        if (bSetData)
+        {
+            for (const auto& name : subgraphNames)
+            {
+                QModelIndex index = pGraphs->currentModel()->index(name);
+                if (index.isValid())
+                {
+                    pGraphs->currentModel()->setData(index, SUBGRAPH_PRESET, ROLE_SUBGRAPH_TYPE);
+                }
             }
         }
         ZenoSettingsManager::GetInstance().setValue(zsSubgraphType, SUBGRAPH_PRESET);

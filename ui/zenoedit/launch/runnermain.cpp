@@ -26,6 +26,8 @@
 #include "settings/zsettings.h"
 #include <zeno/funcs/ParseObjectFromUi.h>
 #include "startup/zstartup.h"
+#include <zeno/types/ListObject.h>
+#include <zenomodel/include/jsonhelper.h>
 
 namespace {
 
@@ -145,12 +147,68 @@ static int runner_start(std::string const &progJson, int sessionid, const LAUNCH
         graph->applyNodes(nodes);
 
         //yield result from the GenerateCommands node.
-        const auto& sourceInput = graph->getNodeInput(ident, "source");
-        const auto& strObj = std::dynamic_pointer_cast<zeno::StringObject>(sourceInput);
-        if (strObj && !strObj->get().empty())
+        const auto& node = graph->getNode(ident);
+        rapidjson::StringBuffer s;
+        RAPIDJSON_WRITER writer(s);
         {
-            std::string commands = strObj->get();
-            send_packet("{\"action\":\"generate\",\"key\":\"" + ident + "\"" + "}", commands.c_str(), commands.length() + 1);
+            JsonObjBatch objBatch(writer);
+            for (auto const& [ds, bound] : node->inputBounds) {
+                const auto& sourceInput = graph->getNodeInput(ident, ds);
+                if (ident.find("PythonNode") > 0 && ds == "args")
+                {
+                    auto list = std::dynamic_pointer_cast<zeno::ListObject>(sourceInput);
+                    writer.Key("args");
+                    {
+                        JsonObjBatch argBatch(writer);
+                        int idx = 0;
+                        for (const auto& obj : list->arr)
+                        {
+                            QString paramName = "arg" + QString::number(idx);
+                            std::shared_ptr<zeno::NumericObject> num = std::dynamic_pointer_cast<zeno::NumericObject>(obj);
+                            if (num) {
+                                writer.Key(paramName.toUtf8());
+                                if (std::get_if<float>(&num->value))
+                                {
+                                    writer.Double(num->get<float>());
+                                }
+                                else if (std::get_if<int>(&num->value))
+                                {
+                                    writer.Int(num->get<int>());
+                                }
+                                else
+                                {
+                                    zeno::log_error("parse obj error");
+                                }
+                                idx++;
+                            }
+                            else
+                            {
+                                std::shared_ptr<zeno::StringObject> pStr = std::dynamic_pointer_cast<zeno::StringObject>(obj);
+                                if (pStr) {
+                                    writer.Key(paramName.toUtf8());
+                                    writer.String(pStr->get().c_str());
+                                    idx++;
+                                }
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    const auto& strObj = std::dynamic_pointer_cast<zeno::StringObject>(sourceInput);
+                    if (strObj && !strObj->get().empty())
+                    {
+                        writer.Key(ds.c_str());
+                        std::string commands = strObj->get();
+                        writer.String(commands.c_str());
+                    }
+                }
+            }
+        }
+        std::string strJson = s.GetString();
+        if (strJson != "")
+        {
+            send_packet("{\"action\":\"generate\",\"key\":\"" + ident + "\"" + "}", strJson.c_str(), strJson.length() + 1);
             return 0;
         }
         //and then send packet back to ui process.

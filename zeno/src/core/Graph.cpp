@@ -171,6 +171,11 @@ ZENO_API void Graph::setNodeStatus(std::string const& id,
     safe_at(nodes, id, "node name")->m_status = status;
 }
 
+ZENO_API INode* Graph::getNode(std::string const& id)
+{
+    return safe_at(nodes, id, "node name").get();
+}
+
 ZENO_API void Graph::addNodeOutput(std::string const& id, std::string const& par) {
     // add "dynamic" output which is not descriped by core.
     safe_at(nodes, id, "node name")->outputs[par] = nullptr;
