@@ -287,6 +287,8 @@ bool GlobalComm::fromDiskByObjsManager(std::string cachedir, int frameid, Global
                 if (std::shared_ptr<IObject> obj = std::dynamic_pointer_cast<IObject>(lp)) {
                     id = obj->userData().get2<std::string>("object-id", "");
                 }
+                if (toviewNodeId.substr(toviewNodeId.find_first_of("-") + 1) == "EndForEach")
+                    id += std::to_string(i);
                 convertToView(lp, id, toviewNodeId);
             }
             return;
@@ -468,6 +470,8 @@ bool GlobalComm::fromDiskByObjsManagerStatic(std::string cachedir, GlobalComm::V
                 if (std::shared_ptr<IObject> obj = std::dynamic_pointer_cast<IObject>(lp)) {
                     id = obj->userData().get2<std::string>("object-id", "");
                 }
+                if (toviewNodeId.substr(toviewNodeId.find_first_of("-") + 1) == "EndForEach")
+                    id += std::to_string(i);
                 convertToView(lp, id, toviewNodeId);
             }
             return;
