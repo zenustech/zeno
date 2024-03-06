@@ -46,6 +46,11 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
     m_checkSortingEnabled->setText(tr("enable sort"));
     pTitleLayout->addWidget(m_checkSortingEnabled);
 
+    m_checkShowFaceSetName = new QCheckBox(this);
+    m_checkShowFaceSetName->setProperty("cssClass", "proppanel");
+    m_checkShowFaceSetName->setText(tr("faceset Name"));
+    pTitleLayout->addWidget(m_checkShowFaceSetName);
+    m_checkShowFaceSetName->hide();
 
     ZComboBox* pMode = new ZComboBox();
     pMode->addItem("Vertex");
@@ -107,6 +112,15 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
             prim_attr_view->setSortingEnabled(false);
         }
         else {
+            m_checkShowFaceSetName->hide();
+            if (text == "Tris")
+                for (int i = 0; i < prim_attr_view->model()->columnCount(); i++)
+                    if (prim_attr_view->model()->headerData(i, Qt::Horizontal).toString() == "faceset")
+                    {
+                        m_checkShowFaceSetName->show();
+                        break;
+                    }
+
             prim_attr_view->setSortingEnabled(m_checkSortingEnabled->checkState());
         }
     });
@@ -114,6 +128,12 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
     // enable sort
     connect(m_checkSortingEnabled, &QCheckBox::stateChanged, this, [this](int state) {
         prim_attr_view->setSortingEnabled(state != Qt::CheckState::Unchecked);
+    });
+
+    // show faceset name/index
+    connect(m_checkShowFaceSetName, &QCheckBox::stateChanged, this, [this](int state) {
+        this->dataModel->setShowFaceSetName(state != Qt::CheckState::Unchecked);
+        this->prim_attr_view->update();
     });
 
     // corner button of tableview
@@ -274,6 +294,13 @@ void ZenoSpreadsheet::setPrim(std::string primid) {
         this->dataModel->setModelData(nullptr);
     }
 
+    m_checkShowFaceSetName->hide();
+    for (int i = 0; i < prim_attr_view->model()->columnCount(); i++)
+        if (prim_attr_view->model()->headerData(i, Qt::Horizontal).toString() == "faceset")
+        {
+            m_checkShowFaceSetName->show();
+            break;
+        }
 }
 
 bool ZenoSpreadsheet::eventFilter(QObject* watched, QEvent* event)
