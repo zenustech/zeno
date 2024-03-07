@@ -32,5 +32,5 @@
 	path = projects/Geometry/fTetWild
 	url = https://github.com/seeeagull/fTetWild.git
 [submodule "projects/CUDA/projects/CUDA/zpc_jit"]
-	path = projects/CUDA/projects/CUDA/zpc_jit
+	path = projects/CUDA/zpc_jit
 	url = https://github.com/zenustech/POC_zpc_jit.git
