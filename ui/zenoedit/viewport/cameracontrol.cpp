@@ -470,6 +470,8 @@ void CameraControl::fakeMouseDoubleClickEvent(QMouseEvent *event)
         if (subgraph_name.isEmpty())
         {
         auto obj_node_location = zeno::NodeSyncMgr::GetInstance().searchNodeOfPrim(picked_prim);
+            if (!obj_node_location.has_value())
+                return;
             subgraph_name = obj_node_location->subgraph.data(ROLE_OBJNAME).toString();
             obj_node_name = obj_node_location->node.data(ROLE_OBJID).toString();
         }

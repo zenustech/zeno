@@ -288,7 +288,7 @@ bool GlobalComm::fromDiskByObjsManager(std::string cachedir, int frameid, Global
                     id = obj->userData().get2<std::string>("object-id", "");
                 }
                 if (toviewNodeId.substr(toviewNodeId.find_first_of("-") + 1) == "EndForEach")
-                    id += std::to_string(i);
+                    id = toviewNodeId + ":"  + std::to_string(i);
                 convertToView(lp, id, toviewNodeId);
             }
             return;
@@ -471,7 +471,7 @@ bool GlobalComm::fromDiskByObjsManagerStatic(std::string cachedir, GlobalComm::V
                     id = obj->userData().get2<std::string>("object-id", "");
                 }
                 if (toviewNodeId.substr(toviewNodeId.find_first_of("-") + 1) == "EndForEach")
-                    id += std::to_string(i);
+                    id = toviewNodeId + ":" + std::to_string(i);
                 convertToView(lp, id, toviewNodeId);
             }
             return;
