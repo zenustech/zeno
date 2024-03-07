@@ -132,6 +132,7 @@ static void bvh_vectors_wrangle_radius_two(zfx::x64::Executable *exec,
       if (!chs[k].which)
         ctx.channel(k)[0] = chs[k].base[chs[k].stride * i];
     }
+
     if (primRadiusAttr.empty()){
       lbvh->iter_neighbors(pos[i], [&](int pid) {
         if (!isBox)
@@ -153,6 +154,7 @@ static void bvh_vectors_wrangle_radius_two(zfx::x64::Executable *exec,
         ctx.execute();
       });
     }
+
     else if(!primRadiusAttr.empty()){
       auto &radius = prim->verts.attr<float>(primRadiusAttr);
       lbvh->iter_neighbors_radius(pos[i], radius[i], [&](int pid) {
@@ -1199,6 +1201,9 @@ struct ParticlesNeighborBvhRadiusWrangle : zeno::INode {
     if (prim->size() == 0 || primNei->size() == 0) {
       set_output("prim", std::move(prim));
       return;
+    }
+    if((!radiusAttr.empty()) && !prim->has_attr(radiusAttr)) {
+      throw std::runtime_error("radiusAttr not found in prim");
     }
 
         // BEGIN张心欣快乐自动加@IND
