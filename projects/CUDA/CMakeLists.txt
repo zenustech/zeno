@@ -103,8 +103,8 @@ if (ZS_PYTHON_FOUND AND ZENO_WITH_PyZpc)
   add_custom_command(
     TARGET copy_py
     POST_BUILD
-    COMMAND "${ZS_OVERWRITE_PYTHON_EXECUTABLE} -m pip install GitPython"
-    COMMAND "${ZS_OVERWRITE_PYTHON_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/install/install.py" 
+    COMMAND ${ZS_OVERWRITE_PYTHON_EXECUTABLE} -m pip install GitPython
+    COMMAND ${ZS_OVERWRITE_PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/install/install.py 
     --zeno_bin_dir "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" 
     --zeno_pyzpc_repo_dir "${CMAKE_CURRENT_BINARY_DIR}/git" 
     --git_proxy "${PYZPC_GIT_PROXY}"
