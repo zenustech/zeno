@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.19)
 
+set(PYZPC_GIT_PROXY "none" CACHE STRING "Git proxy used to clone PyZPC repository.")
+
 if(NOT ZENO_WITH_zenvdb OR NOT ZENO_WITH_ZenoFX OR NOT ZENO_WITH_CUDA)
   message(FATAL_ERROR "zenvdb, ZenoFX and CUDA must be ON when PyZpc is ON! "
     "Please specify: -DZENO_WITH_zenvdb:BOOL=ON -DZENO_WITH_ZenoFX:BOOL=ON  -DZENO_WITH_CUDA:BOOL=ON")
@@ -52,3 +54,16 @@ endforeach()
 configure_file(zeno_PyZpc_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/zeno_PyZpc_config.h @ONLY)
 
 add_subdirectory(interop)
+
+add_custom_target(install_pyzpc)
+add_dependencies(zeno install_pyzpc)
+add_custom_command(
+  TARGET install_pyzpc
+  POST_BUILD
+  COMMAND "${Python3_ROOT_DIR}/python" "${CMAKE_CURRENT_SOURCE_DIR}/install/install.py" 
+  --python_bin_dir "${Python3_ROOT_DIR}" 
+  --zeno_bin_dir "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" 
+  --zeno_pyzpc_repo_dir "${CMAKE_CURRENT_BINARY_DIR}/git" 
+  --git_proxy "${PYZPC_GIT_PROXY}"
+  COMMENT "installing pyzpc module..."
+)

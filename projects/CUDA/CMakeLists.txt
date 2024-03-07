@@ -99,6 +99,7 @@ if (ZS_PYTHON_FOUND AND ZENO_WITH_PyZpc)
     add_custom_command(
       TARGET copy_py
       POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_directory ${PYTHON_ENV_PATH}/bin ${RESOURCE_BASE_DIR}/bin
       COMMAND ${CMAKE_COMMAND} -E copy_directory ${PYTHON_ENV_PATH}/lib ${RESOURCE_BASE_DIR}/lib
 
       COMMENT "copying python lib directory ${PYTHON_ENV_PATH}/lib to ${RESOURCE_BASE_DIR}/lib"
