@@ -25,10 +25,10 @@ if(ZENO_FBXSDK)
     message(STATUS "FBX_SDK_DIR: ${FBX_SDK_DIR}")
     target_compile_definitions(zeno PRIVATE -DZENO_FBXSDK)
     if(WIN32)
-        target_include_directories(zeno PRIVATE ${FBX_SDK_DIR}/windows/2020.3.1/include)
+        target_include_directories(zeno PRIVATE ${FBX_SDK_DIR}/2020.3.1/include)
 
-        target_link_libraries(zeno PRIVATE ${FBX_SDK_DIR}/windows/2020.3.1/lib/vs2019/x64/release/libfbxsdk-md.lib)
-        target_link_libraries(zeno PRIVATE ${FBX_SDK_DIR}/windows/2020.3.1/lib/vs2019/x64/release/libxml2-md.lib)
+        target_link_libraries(zeno PRIVATE ${FBX_SDK_DIR}/2020.3.1/lib/vs2019/x64/release/libfbxsdk-md.lib)
+        target_link_libraries(zeno PRIVATE ${FBX_SDK_DIR}/2020.3.1/lib/vs2019/x64/release/libxml2-md.lib)
     else()
         target_include_directories(zeno PRIVATE ${FBX_SDK_DIR}/linux/include)
 
