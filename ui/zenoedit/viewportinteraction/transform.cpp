@@ -114,50 +114,9 @@ void FakeTransformer::addObject(const std::string& name) {
     }
 }
 
-void FakeTransformer::addObject(const std::unordered_set<std::string>& names) {
+void FakeTransformer::addObjects(const std::unordered_set<std::string>& names) {
     for (const auto& name : names) {
         addObject(name);
-    }
-}
-
-void FakeTransformer::removeObject(const std::string& name) {
-    if (name.empty()) return;
-    auto p = m_objects.find(name);
-    if (p == m_objects.end())
-        return ;
-
-    std::lock_guard lck(g_objsMutex);
-
-    auto& comm =  zeno::getSession().globalComm;
-    auto object = comm->getViewObject(p->second);
-    if (!object)
-        return;
-
-    m_objects_center *= m_objects.size();
-    auto& user_data = object->userData();
-    zeno::vec3f bmin, bmax;
-    if (user_data.has("_bboxMin") && user_data.has("_bboxMax")) {
-        bmin = user_data.getLiterial<zeno::vec3f>("_bboxMin");
-        bmax = user_data.getLiterial<zeno::vec3f>("_bboxMax");
-    } else {
-        auto prim = std::dynamic_pointer_cast<PrimitiveObject>(object);
-        if (prim) {
-            std::tie(bmin, bmax) = zeno::primBoundingBox(prim.get());
-            user_data.setLiterial("_bboxMin", bmin);
-            user_data.setLiterial("_bboxMax", bmax);
-        }
-    }
-
-    auto m = zeno::vec_to_other<glm::vec3>(bmax);
-    auto n = zeno::vec_to_other<glm::vec3>(bmin);
-    m_objects_center -= (m + n) / 2.0f;
-    m_objects.erase(p);
-    m_objects_center /= m_objects.size();
-}
-
-void FakeTransformer::removeObject(const std::unordered_set<std::string>& names) {
-    for (const auto& name : names) {
-        removeObject(name);
     }
 }
 
