@@ -115,36 +115,6 @@ void FakeTransformer::addObject(const std::unordered_set<std::string>& names) {
     }
 }
 
-void FakeTransformer::removeObject(const std::string& name) {
-    if (name.empty()) return;
-    auto p = m_objects.find(name);
-    if (p == m_objects.end())
-        return ;
-    auto object = p->second;
-    m_objects_center *= m_objects.size();
-    auto& user_data = object->userData();
-    zeno::vec3f bmin, bmax;
-    if (user_data.has("_bboxMin") && user_data.has("_bboxMax")) {
-        bmin = user_data.getLiterial<zeno::vec3f>("_bboxMin");
-        bmax = user_data.getLiterial<zeno::vec3f>("_bboxMax");
-    } else {
-        std::tie(bmin, bmax) = zeno::primBoundingBox(object);
-        user_data.setLiterial("_bboxMin", bmin);
-        user_data.setLiterial("_bboxMax", bmax);
-    }
-    auto m = zeno::vec_to_other<glm::vec3>(bmax);
-    auto n = zeno::vec_to_other<glm::vec3>(bmin);
-    m_objects_center -= (m + n) / 2.0f;
-    m_objects.erase(p);
-    m_objects_center /= m_objects.size();
-}
-
-void FakeTransformer::removeObject(const std::unordered_set<std::string>& names) {
-    for (const auto& name : names) {
-        removeObject(name);
-    }
-}
-
 bool FakeTransformer::calcTransformStart(glm::vec3 ori, glm::vec3 dir, glm::vec3 front) {
     auto x_axis = m_localX;
     auto y_axis = m_localY;
