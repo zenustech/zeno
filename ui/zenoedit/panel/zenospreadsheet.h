@@ -26,6 +26,7 @@ private:
 private:
     QTableView* prim_attr_view;
     QCheckBox* m_checkSortingEnabled;
+    QCheckBox* m_checkShowFaceSetName;
     QMap<QString, QString> m_keyWords;
 };
 

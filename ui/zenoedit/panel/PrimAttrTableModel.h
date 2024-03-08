@@ -22,10 +22,12 @@ public:
     void setSelAttr(std::string sel_attr_);
 
     zeno::zany userDataByIndex(const QModelIndex& index) const;
+    void setShowFaceSetName(bool enable);
 
 private:
     std::shared_ptr<zeno::PrimitiveObject> m_prim = nullptr;
     std::string sel_attr = "Vertex";
+    bool showFaceSetName = false;
 
     QVariant vertexData(const QModelIndex &index) const;
     QVariant trisData(const QModelIndex &index) const;
