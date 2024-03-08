@@ -65,6 +65,8 @@ struct ScaleHandler final : IGraphicHandler {
     size_t vertex_count;
 
     vec3f center;
+    vec3f localX;
+    vec3f localY;
     float bound;
     float scale;
     int coord_sys;
@@ -80,8 +82,8 @@ struct ScaleHandler final : IGraphicHandler {
     static constexpr float ocircle_factor = 1.0f; // outer circle
     static constexpr float color_factor = 0.8f;
 
-    explicit ScaleHandler(Scene *scene_, vec3f &center_, float scale_)
-        : scene(scene_), center(center_), scale(scale_) {
+    explicit ScaleHandler(Scene *scene_, vec3f &center_, vec3f localX_, vec3f localY_, float scale_)
+        : scene(scene_), center(center_), localX(localX_), localY(localY_), scale(scale_) {
         vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
     }
 
@@ -103,9 +105,9 @@ struct ScaleHandler final : IGraphicHandler {
         lines_prog->use();
         scene->camera->set_program_uniforms(lines_prog);
 
-        auto x_axis = vec3f(1, 0, 0);
-        auto y_axis = vec3f(0, 1, 0);
-        auto z_axis = vec3f(0, 0, 1);
+        auto x_axis = localX;
+        auto y_axis = localY;
+        auto z_axis = zeno::cross(x_axis, y_axis);
 
         auto axis_size = bound * axis_factor;
         auto cube_size = bound * cube_factor;
@@ -157,9 +159,9 @@ struct ScaleHandler final : IGraphicHandler {
     }
 
     virtual int collisionTest(glm::vec3 ori, glm::vec3 dir) override {
-        auto x_axis = glm::vec3(1, 0, 0);
-        auto y_axis = glm::vec3(0, 1, 0);
-        auto z_axis = glm::vec3(0, 0, 1);
+        auto x_axis = zeno::vec_to_other<glm::vec3>(localX);
+        auto y_axis = zeno::vec_to_other<glm::vec3>(localY);
+        auto z_axis = glm::cross(x_axis, y_axis);
 
         auto model_matrix = glm::translate(zeno::vec_to_other<glm::vec3>(center));
         const auto& view = scene->camera->m_view;
@@ -234,8 +236,10 @@ struct ScaleHandler final : IGraphicHandler {
         return INTERACT_NONE;
     }
 
-    virtual void setCenter(zeno::vec3f c) override {
+    virtual void setCenter(zeno::vec3f c, zeno::vec3f x, zeno::vec3f y) override {
         center = c;
+        localX = x;
+        localY = y;
     }
 
     virtual void setCoordSys(int c) override {
@@ -253,8 +257,8 @@ struct ScaleHandler final : IGraphicHandler {
 
 } // namespace
 
-std::shared_ptr<IGraphicHandler> makeScaleHandler(Scene *scene, vec3f center, float scale) {
-    return std::make_shared<ScaleHandler>(scene, center, scale);
+std::shared_ptr<IGraphicHandler> makeScaleHandler(Scene *scene, vec3f center, vec3f localX_, vec3f localY_, float scale) {
+    return std::make_shared<ScaleHandler>(scene, center, localX_, localY_, scale);
 }
 
 } // namespace zenovis
