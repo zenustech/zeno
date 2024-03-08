@@ -54,7 +54,7 @@ private:
     zenovis::Session* session() const;
 
     // 计算translate并调用doTransform
-    void translate(glm::vec3 start, glm::vec3 end, glm::vec3 axis);
+    void translate(glm::vec3 start, glm::vec3 end, glm::vec3 axis, glm::mat3 to_local, glm::mat3 to_world, glm::mat3 org_to_local);
     // 计算scale并调用doTransform
     void scale(float scale_size, vec3i axis);
     // 计算rotate并调用doTransform
@@ -106,6 +106,10 @@ private:
     glm::vec3 m_objects_center;
 
     glm::vec3 m_pivot;
+    glm::vec3 m_localXOrg;
+    glm::vec3 m_localYOrg;
+    glm::vec3 m_localX;
+    glm::vec3 m_localY;
     glm::vec3 m_trans;
     glm::vec4 m_rotate;
     glm::vec3 m_scale;
@@ -114,6 +118,8 @@ private:
     glm::vec3 m_rotate_start;
     // glm::vec3 m_scale_start;
     glm::vec3 _objects_center_start;
+    glm::vec3 _objects_localX_start;
+    glm::vec3 _objects_localY_start;
 
     bool m_status;
     int m_operation;

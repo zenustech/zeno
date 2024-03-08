@@ -68,6 +68,8 @@ struct RotateHandler final : IGraphicHandler {
     size_t vertex_count;
 
     vec3f center;
+    vec3f localX;
+    vec3f localY;
     float bound;
     float scale;
     int coord_sys;
@@ -76,8 +78,8 @@ struct RotateHandler final : IGraphicHandler {
     std::unique_ptr<Buffer> lines_ebo;
     size_t lines_count;
 
-    explicit RotateHandler(Scene *scene_, vec3f &center_, float scale_)
-        : scene(scene_), center(center_), scale(scale_) {
+    explicit RotateHandler(Scene *scene_, vec3f &center_, vec3f localX_, vec3f localY_, float scale_)
+        : scene(scene_), center(center_), localX(localX_), localY(localY_), scale(scale_) {
         vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
         ibo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
     }
@@ -98,20 +100,22 @@ struct RotateHandler final : IGraphicHandler {
         lines_prog->use();
         scene->camera->set_program_uniforms(lines_prog);
 
-        auto x_axis = vec3f(1, 0, 0);
-        auto y_axis = vec3f(0, 1, 0);
-        auto z_axis = vec3f(0, 0, 1);
+        auto x_axis = localX;
+        auto y_axis = localY;
+        auto z_axis = zeno::cross(x_axis, y_axis);
 
         lines_prog->set_uniform("alpha", 1.0f);
 
+        float size = 0.02f;
+
         if (mode == INTERACT_NONE || mode == INTERACT_YZ)
-            drawCircle(center, y_axis, z_axis, color_yz, bound, bound * 0.01f, vbo);
+            drawCircle(center, y_axis, z_axis, color_yz, bound, bound * size, vbo);
 
         if (mode == INTERACT_NONE || mode == INTERACT_XZ)
-            drawCircle(center, z_axis, x_axis, color_xz, bound, bound * 0.01f, vbo);
+            drawCircle(center, z_axis, x_axis, color_xz, bound, bound * size, vbo);
 
         if (mode == INTERACT_NONE || mode == INTERACT_XY)
-            drawCircle(center, x_axis, y_axis, color_xy, bound, bound * 0.01f, vbo);
+            drawCircle(center, x_axis, y_axis, color_xy, bound, bound * size, vbo);
 
         lines_prog->set_uniform("alpha", 0.3f);
 
@@ -120,9 +124,9 @@ struct RotateHandler final : IGraphicHandler {
     }
 
     virtual int collisionTest(glm::vec3 ray_origin, glm::vec3 ray_direction) override {
-        auto x_axis = glm::vec3(1, 0, 0);
-        auto y_axis = glm::vec3(0, 1, 0);
-        auto z_axis = glm::vec3(0, 0, 1);
+        auto x_axis = zeno::vec_to_other<glm::vec3>(localX);
+        auto y_axis = zeno::vec_to_other<glm::vec3>(localY);
+        auto z_axis = glm::cross(x_axis, y_axis);
 
         auto model_matrix =glm::translate(zeno::vec_to_other<glm::vec3>(center));
 
@@ -154,8 +158,10 @@ struct RotateHandler final : IGraphicHandler {
         return INTERACT_NONE;
     }
 
-    virtual void setCenter(zeno::vec3f c) override {
+    virtual void setCenter(zeno::vec3f c, zeno::vec3f x, zeno::vec3f y) override {
         center = c;
+        localX = x;
+        localY = y;
     }
 
     virtual void setCoordSys(int c) override {
@@ -176,8 +182,8 @@ struct RotateHandler final : IGraphicHandler {
 
 } // namespace
 
-std::shared_ptr<IGraphicHandler> makeRotateHandler(Scene *scene, vec3f center, float scale) {
-    return std::make_shared<RotateHandler>(scene, center, scale);
+std::shared_ptr<IGraphicHandler> makeRotateHandler(Scene *scene, vec3f center, vec3f localX_, vec3f localY_, float scale) {
+    return std::make_shared<RotateHandler>(scene, center, localX_, localY_, scale);
 }
 
 } // namespace zenovis
