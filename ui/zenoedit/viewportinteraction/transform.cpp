@@ -109,7 +109,7 @@ void FakeTransformer::addObject(const std::string& name) {
     m_objects_center /= m_objects.size();
 }
 
-void FakeTransformer::addObject(const std::unordered_set<std::string>& names) {
+void FakeTransformer::addObjects(const std::unordered_set<std::string>& names) {
     for (const auto& name : names) {
         addObject(name);
     }

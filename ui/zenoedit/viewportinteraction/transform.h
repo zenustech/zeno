@@ -26,8 +26,7 @@ enum {
 class FakeTransformer {
 public:
     FakeTransformer(ViewportWidget* viewport);
-    void addObject(const std::string& name);
-    void addObject(const std::unordered_set<std::string>& names);
+    void addObjects(const std::unordered_set<std::string>& names);
     bool calcTransformStart(glm::vec3 ori, glm::vec3 dir, glm::vec3 front);
     bool clickedAnyHandler(QVector3D ori, QVector3D dir, glm::vec3 front);
     bool hoveredAnyHandler(QVector3D ori, QVector3D dir, glm::vec3 front);
@@ -48,6 +47,7 @@ public:
     void clear();
 
 private:
+    void addObject(const std::string& name);
     zenovis::Scene* scene() const;
     zenovis::Session* session() const;
 

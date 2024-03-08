@@ -236,7 +236,7 @@ void CameraControl::changeTransformOperation(const QString &node)
     for (auto const &[key, _] : scene->objectsMan->pairs()) {
         if (key.find(node.toStdString()) != std::string::npos) {
             scene->selected.insert(key);
-            m_transformer->addObject(key);
+            m_transformer->addObjects(scene->selected);
         }
     }
     m_transformer->setTransOpt(opt);
@@ -606,7 +606,7 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                     if (scene->select_mode == zenovis::PICK_MODE::PICK_OBJECT)
                         onPrimSelected();
                     m_transformer->clear();
-                    m_transformer->addObject(m_picker->get_picked_prims());
+                    m_transformer->addObjects(m_picker->get_picked_prims());
                 }
                 for(auto prim:m_picker->get_picked_prims())
                 {
@@ -641,7 +641,7 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                 if (scene->select_mode == zenovis::PICK_MODE::PICK_OBJECT)
                     onPrimSelected();
                 m_transformer->clear();
-                m_transformer->addObject(m_picker->get_picked_prims());
+                m_transformer->addObjects(m_picker->get_picked_prims());
                 std::cout<<"selected items:"<<m_picker->get_picked_prims().size()<<"\n";
                 std::vector<QString> nodes;
                 QString sgname;
