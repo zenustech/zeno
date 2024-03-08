@@ -595,7 +595,6 @@ void AppHelper::generatePython(const QString& id)
     AppHelper::initLaunchCacheParam(launchParam);
     launchProgram(pModel, launchParam);
 }
-}
 
 void AppHelper::markAllNodesInMainGraphDirty(bool markNodeStyle)
 {
