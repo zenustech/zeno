@@ -69,6 +69,8 @@ private:
     QPersistentModelIndex m_nodeIdx;
     QVector<ParamItem> m_items;
 
+    QStandardItemModel* m_customParamsM;
+
     std::weak_ptr<zeno::INode> m_wpNode;
     std::string cbUpdateParam;
 };

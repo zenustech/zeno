@@ -107,7 +107,7 @@ void ZenoPropPanel::clearLayout()
 
     if (m_idx.isValid())
     {
-        QStandardItemModel* paramsModel = QVariantPtr<QStandardItemModel>::asPtr(m_idx.data(ROLE_PANEL_PARAMS));
+        QStandardItemModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS))->customParamModel();
         if (paramsModel)
         {
             disconnect(paramsModel, &QStandardItemModel::rowsInserted, this, &ZenoPropPanel::onViewParamInserted);
@@ -141,7 +141,7 @@ void ZenoPropPanel::reset(const QModelIndex& subgIdx, const QModelIndexList& nod
     if (!m_idx.isValid())
         return;
 
-    QStandardItemModel* paramsModel = QVariantPtr<QStandardItemModel>::asPtr(m_idx.data(ROLE_PANEL_PARAMS));
+    QStandardItemModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS))->customParamModel();
     if (!paramsModel)
         return;
 
@@ -206,7 +206,7 @@ void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, in
     if (!m_idx.isValid())
         return;
 
-    QStandardItemModel* paramsModel = QVariantPtr<QStandardItemModel>::asPtr(m_idx.data(ROLE_PANEL_PARAMS));
+    QStandardItemModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS))->customParamModel();
     ZASSERT_EXIT(paramsModel);
 
     if (!parent.isValid())
@@ -440,10 +440,8 @@ bool ZenoPropPanel::syncAddTab(QTabWidget* pTabWidget, QStandardItem* pTabItem, 
     } 
     else 
     {
-        for (int j = 0; j < pTabItem->rowCount(); j++) {
-            QStandardItem *pGroupItem = pTabItem->child(j);
-            syncAddGroup(pTabLayout, pGroupItem, j);
-        }
+        if (VPARAM_GROUP == pTabItem->data(ROLE_ELEMENT_TYPE).toInt())
+            syncAddGroup(pTabLayout, pTabItem, row);
     }
 
     pTabLayout->addStretch();
@@ -457,7 +455,7 @@ void ZenoPropPanel::onViewParamAboutToBeRemoved(const QModelIndex& parent, int f
     if (m_controls.isEmpty() || !m_idx.isValid())
         return;
 
-    QStandardItemModel* paramsModel = QVariantPtr<QStandardItemModel>::asPtr(m_idx.data(ROLE_PANEL_PARAMS));
+    QStandardItemModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS))->customParamModel();
     ZASSERT_EXIT(paramsModel);
 
     QStandardItem* parentItem = paramsModel->itemFromIndex(parent);
@@ -545,10 +543,10 @@ void ZenoPropPanel::onViewParamAboutToBeRemoved(const QModelIndex& parent, int f
 
 void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
 {
-    if (topLeft.data(ROLE_VPARAM_TYPE) != VPARAM_PARAM || !m_idx.isValid() || m_controls.isEmpty())
+    if (topLeft.data(ROLE_ELEMENT_TYPE) != VPARAM_PARAM || !m_idx.isValid() || m_controls.isEmpty())
         return;
 
-    QStandardItemModel* paramsModel = QVariantPtr<QStandardItemModel>::asPtr(m_idx.data(ROLE_PANEL_PARAMS));
+    QStandardItemModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS))->customParamModel();
     ZASSERT_EXIT(paramsModel);
 
     QStandardItem* paramItem = paramsModel->itemFromIndex(topLeft);
@@ -761,7 +759,7 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
 
 void ZenoPropPanel::onViewParamsMoved(const QModelIndex &parent, int start, int end, const QModelIndex &destination, int destRow) 
 {
-    QStandardItemModel *viewParams = QVariantPtr<QStandardItemModel>::asPtr(m_idx.data(ROLE_PANEL_PARAMS));
+    QStandardItemModel* viewParams = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS))->customParamModel();
     QStandardItem *parentItem = viewParams->itemFromIndex(parent);
     ZASSERT_EXIT(parentItem);
     ZASSERT_EXIT(parentItem->data(ROLE_VPARAM_TYPE) == VPARAM_GROUP);
@@ -870,7 +868,7 @@ void ZenoPropPanel::onSettings()
         if (!m_idx.isValid())
             return;
 
-        QStandardItemModel* viewParams = QVariantPtr<QStandardItemModel>::asPtr(m_idx.data(ROLE_PANEL_PARAMS));
+        QStandardItemModel* viewParams = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS))->customParamModel();
         ZASSERT_EXIT(viewParams);
 
         if (m_idx.data(ROLE_NODETYPE) != zeno::Node_SubgraphNode) 
