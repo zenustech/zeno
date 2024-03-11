@@ -25,7 +25,7 @@ FakeTransformer::FakeTransformer(ViewportWidget* viewport)
       , m_scale(1.0f)
       , m_rotate({0, 0, 0, 1})
       , m_status(false)
-      , m_operation(NONE)
+      , m_operation(TransOpt::NONE)
       , m_handler_scale(1.f)
       , m_viewport(viewport)
 {
@@ -125,7 +125,7 @@ bool FakeTransformer::calcTransformStart(glm::vec3 ori, glm::vec3 dir, glm::vec3
     auto y_axis = m_localY;
     auto z_axis = glm::cross(m_localX, m_localY);
     std::optional<glm::vec3> t;
-    if (m_operation == TRANSLATE) {
+    if (m_operation == TransOpt::TRANSLATE) {
         if (m_operation_mode == zenovis::INTERACT_X || m_operation_mode == zenovis::INTERACT_Y || m_operation_mode == zenovis::INTERACT_XY)
             t = hitOnPlane(ori, dir, z_axis, m_objects_center);
         else if (m_operation_mode == zenovis::INTERACT_Z || m_operation_mode == zenovis::INTERACT_XZ)
@@ -137,7 +137,7 @@ bool FakeTransformer::calcTransformStart(glm::vec3 ori, glm::vec3 dir, glm::vec3
         if (t.has_value()) m_trans_start = t.value();
         else return false;
     }
-    else if (m_operation == ROTATE) {
+    else if (m_operation == TransOpt::ROTATE) {
         if (m_operation_mode == zenovis::INTERACT_YZ)
             t = hitOnPlane(ori, dir, x_axis, m_objects_center);
         else if (m_operation_mode == zenovis::INTERACT_XZ)
@@ -172,7 +172,7 @@ bool FakeTransformer::hoveredAnyHandler(QVector3D ori, QVector3D dir, glm::vec3 
 }
 
 void FakeTransformer::transform(QVector3D camera_pos, QVector3D ray_dir, glm::vec2 mouse_start, glm::vec2 mouse_pos, glm::vec3 front, glm::mat4 vp) {
-    if (m_operation == NONE) return;
+    if (m_operation == TransOpt::NONE) return;
 
     auto pZenovis = m_viewport->getZenoVis();
     ZASSERT_EXIT(pZenovis);
@@ -202,7 +202,7 @@ void FakeTransformer::transform(QVector3D camera_pos, QVector3D ray_dir, glm::ve
     pivot_to_world[2] = localZOrg;
     auto pivot_to_local = glm::inverse(pivot_to_world);
 
-    if (m_operation == TRANSLATE) {
+    if (m_operation == TransOpt::TRANSLATE) {
         if (m_operation_mode == zenovis::INTERACT_X) {
             auto cur_pos = hitOnPlane(ori, dir, localZ, m_objects_center);
             if (cur_pos.has_value()) {
@@ -240,7 +240,7 @@ void FakeTransformer::transform(QVector3D camera_pos, QVector3D ray_dir, glm::ve
                 translate(m_trans_start, cur_pos.value(), {1, 1, 1}, cur_to_local, cur_to_world, pivot_to_local);
         }
     }
-    else if (m_operation == ROTATE) {
+    else if (m_operation == TransOpt::ROTATE) {
         if (m_operation_mode == zenovis::INTERACT_YZ) {
             auto cur_pos = hitOnPlane(ori, dir, x_axis, m_objects_center);
             if (cur_pos.has_value()) {
@@ -282,7 +282,7 @@ void FakeTransformer::transform(QVector3D camera_pos, QVector3D ray_dir, glm::ve
             rotate(start_vec, end_vec, axis);
         }
     }
-    else if (m_operation == SCALE) {
+    else if (m_operation == TransOpt::SCALE) {
         // make a circle, center is m_objects_center
         // when mouse press, get the circle's radius, r = len(m_objects_center - mouse_start)
         // when mouse move, get the len from center to mouse_pos, d = len(m_objects_center - mouse_pos)
@@ -463,13 +463,13 @@ void FakeTransformer::endTransform(bool moved) {
         for (auto& [obj_name, obj] : objs) {
             auto& user_data = obj->userData();
 
-            if (m_operation == TRANSLATE) {
+            if (m_operation == TransOpt::TRANSLATE) {
                 auto trans = user_data.getLiterial<zeno::vec3f>("_translate");
                 trans += other_to_vec<3>(m_trans);
                 user_data.setLiterial("_translate", trans);
             }
 
-            if (m_operation == ROTATE) {
+            if (m_operation == TransOpt::ROTATE) {
                 auto rotate = user_data.getLiterial<zeno::vec4f>("_rotate");
                 auto pre_q = glm::quat(rotate[3], rotate[0], rotate[1], rotate[2]);
                 auto dif_q = glm::quat(m_rotate[3], m_rotate[0], m_rotate[1], m_rotate[2]);
@@ -478,7 +478,7 @@ void FakeTransformer::endTransform(bool moved) {
                 user_data.setLiterial("_rotate", rotate);
             }
 
-            if (m_operation == SCALE) {
+            if (m_operation == TransOpt::SCALE) {
                 auto scale = user_data.getLiterial<zeno::vec3f>("_scale");
                 for (int i = 0; i < 3; i++)
                     scale[i] *= m_scale[i];
@@ -595,12 +595,12 @@ void FakeTransformer::toTranslate() {
     auto session = this->session();
     ZASSERT_EXIT(session);
 
-    if (m_operation == TRANSLATE) {
-        m_operation = NONE;
+    if (m_operation == TransOpt::TRANSLATE) {
+        m_operation = TransOpt::NONE;
         m_handler = nullptr;
     }
     else {
-        m_operation = TRANSLATE;
+        m_operation = TransOpt::TRANSLATE;
         auto scene = session->get_scene();
         ZASSERT_EXIT(scene);
         m_handler = zenovis::makeTransHandler(scene, zeno::other_to_vec<3>(m_objects_center), zeno::other_to_vec<3>(m_localX), zeno::other_to_vec<3>(m_localY), m_handler_scale);
@@ -614,12 +614,12 @@ void FakeTransformer::toRotate() {
     auto session = this->session();
     ZASSERT_EXIT(session);
 
-    if (m_operation == ROTATE) {
-        m_operation = NONE;
+    if (m_operation == TransOpt::ROTATE) {
+        m_operation = TransOpt::NONE;
         m_handler = nullptr;
     }
     else {
-        m_operation = ROTATE;
+        m_operation = TransOpt::ROTATE;
         auto scene = session->get_scene();
         ZASSERT_EXIT(scene);
         m_handler = zenovis::makeRotateHandler(scene, zeno::other_to_vec<3>(m_objects_center), zeno::other_to_vec<3>(m_localX), zeno::other_to_vec<3>(m_localY), m_handler_scale);
@@ -633,12 +633,12 @@ void FakeTransformer::toScale() {
     auto session = this->session();
     ZASSERT_EXIT(session);
 
-    if (m_operation == SCALE) {
-        m_operation = NONE;
+    if (m_operation == TransOpt::SCALE) {
+        m_operation = TransOpt::NONE;
         m_handler = nullptr;
     }
     else {
-        m_operation = SCALE;
+        m_operation = TransOpt::SCALE;
         auto scene = session->get_scene();
         ZASSERT_EXIT(scene);
         m_handler = zenovis::makeScaleHandler(scene, zeno::other_to_vec<3>(m_objects_center), zeno::other_to_vec<3>(m_localX), zeno::other_to_vec<3>(m_localY), m_handler_scale);
@@ -704,26 +704,30 @@ void FakeTransformer::resizeHandler(int dir) {
 
 void FakeTransformer::changeTransOpt() {
     if (m_objects.empty()) return;
-    if (m_operation == SCALE)
-        m_operation = NONE;
-    else
-        ++m_operation;
+    if (m_operation == TransOpt::SCALE)
+        m_operation = TransOpt::NONE;
+    else if (m_operation == TransOpt::NONE)
+        m_operation = TransOpt::TRANSLATE;
+    else if (m_operation == TransOpt::TRANSLATE)
+        m_operation = TransOpt::ROTATE;
+    else if (m_operation == TransOpt::ROTATE)
+        m_operation = TransOpt::SCALE;
 
     auto session = this->session();
     ZASSERT_EXIT(session);
     auto scene = this->scene();
 
     switch (m_operation) {
-    case TRANSLATE:
+    case TransOpt::TRANSLATE:
         m_handler = zenovis::makeTransHandler(scene, zeno::other_to_vec<3>(m_objects_center), zeno::other_to_vec<3>(m_localX), zeno::other_to_vec<3>(m_localY), m_handler_scale);
         break;
-    case ROTATE:
+    case TransOpt::ROTATE:
         m_handler = zenovis::makeRotateHandler(scene, zeno::other_to_vec<3>(m_objects_center), zeno::other_to_vec<3>(m_localX), zeno::other_to_vec<3>(m_localY), m_handler_scale);
         break;
-    case SCALE:
+    case TransOpt::SCALE:
         m_handler = zenovis::makeScaleHandler(scene, zeno::other_to_vec<3>(m_objects_center), zeno::other_to_vec<3>(m_localX), zeno::other_to_vec<3>(m_localY), m_handler_scale);
         break;
-    case NONE:
+    case TransOpt::NONE:
         m_handler = nullptr;
     default:
         break;
@@ -740,16 +744,16 @@ void FakeTransformer::changeCoordSys() {
         m_handler->setCoordSys(m_coord_sys);
 }
 
-int FakeTransformer::getTransOpt() {
+TransOpt FakeTransformer::getTransOpt() {
     return m_operation;
 }
 
-void FakeTransformer::setTransOpt(int opt) {
+void FakeTransformer::setTransOpt(TransOpt opt) {
     m_operation = opt;
 }
 
 bool FakeTransformer::isTransformMode() const {
-    return m_operation != NONE;
+    return m_operation != TransOpt::NONE;
 }
 
 glm::vec3 FakeTransformer::getCenter() const {
@@ -761,7 +765,7 @@ void FakeTransformer::clear() {
     m_trans = {0, 0, 0};
     m_scale = {1, 1, 1};
     m_rotate = {0, 0, 0, 1};
-    m_operation = NONE;
+    m_operation = TransOpt::NONE;
     m_handler = nullptr;
 
     auto session = this->session();
