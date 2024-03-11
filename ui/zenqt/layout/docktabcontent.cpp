@@ -552,7 +552,7 @@ void DockContent_Editor::initConnections()
         auto& sess = zeno::getSession();
         sess.set_auto_run(checked);
         if (checked) {
-            sess.run_main_graph();
+            sess.run();
         }
     });
     connect(m_pEditor, &ZenoGraphsEditor::zoomed, [=](qreal newFactor) {
@@ -585,7 +585,7 @@ void DockContent_Editor::initConnections()
         m_btnRun->setVisible(false);
         m_btnKill->setVisible(true);
         auto& sess = zeno::getSession();
-        sess.run_main_graph();
+        sess.run();
     });
 
     connect(m_btnKill, &ZTextIconButton::clicked, this, [=]() {

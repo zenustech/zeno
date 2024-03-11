@@ -6,6 +6,7 @@
 #include <map>
 #include <set>
 #include <vector>
+#include <list>
 #include <unordered_map>
 #include <optional>
 #include <zeno/utils/api.h>
@@ -91,6 +92,8 @@ namespace zeno {
         LinksData links;
         SubnetType type;
     };
+
+    using ObjPath = std::list<std::string>;
 
     struct AssetInfo
     {

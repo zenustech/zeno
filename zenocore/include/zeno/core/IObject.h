@@ -66,12 +66,18 @@ struct IObjectClone : CustomBase {
         key = newObjKey();
     }
 
+    IObjectClone(const IObjectClone& rhs) : CustomBase(rhs) {
+        m_prefix = rhs.m_prefix;
+        key = newObjKey();
+    }
+
     IObjectClone(const std::string& prefix) : m_prefix(prefix) {
         key = newObjKey();
     }
 
     virtual std::shared_ptr<IObject> clone() const override {
         auto spClonedObj = std::make_shared<Derived>(static_cast<Derived const &>(*this));
+        spClonedObj->m_prefix = m_prefix;
         spClonedObj->key = newObjKey();
         return spClonedObj;
     }

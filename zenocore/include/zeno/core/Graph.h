@@ -39,7 +39,7 @@ struct Context {
 struct Graph : std::enable_shared_from_this<Graph> {
     //SubgraphNode *subgraphNode = nullptr;
 
-    std::map<std::string, std::shared_ptr<INode>> m_nodes;
+    std::map<std::string, std::shared_ptr<INode>> m_nodes;  //based on uuid.
     std::set<std::string> nodesToExec;
     int beginFrameNumber = 0, endFrameNumber = 0;  // only use by runnermain.cpp
 
@@ -84,6 +84,7 @@ struct Graph : std::enable_shared_from_this<Graph> {
     ZENO_API bool moveUpLinkKey(const EdgeInfo& edge, bool bInput, const std::string keyName);
 
     ZENO_API std::shared_ptr<INode> getNode(std::string const& name);
+    ZENO_API std::shared_ptr<INode> getNode(ObjPath path);
     ZENO_API std::map<std::string, std::shared_ptr<INode>> getNodes() const;
 
     ZENO_API GraphData exportGraph() const;
@@ -130,7 +131,7 @@ struct Graph : std::enable_shared_from_this<Graph> {
     ZENO_API std::map<std::string, zany> callSubnetNode(std::string const &id,
             std::map<std::string, zany> inputs) const;
     ZENO_API std::map<std::string, zany> callTempNode(std::string const &id,
-            std::map<std::string, zany> inputs) const;
+            std::map<std::string, zany> inputs);
 
     std::set<std::string> getSubInputs();
     std::set<std::string> getSubOutputs();
@@ -144,6 +145,8 @@ private:
 
     std::map<std::string, std::string> subInputNodes;
     std::map<std::string, std::string> subOutputNodes;
+
+    std::map<std::string, std::string> m_name2uuid;
 
     std::map<std::string, std::set<std::string>> node_set;
     std::set<std::string> frame_nodes;      //record all nodes depended on frame num.

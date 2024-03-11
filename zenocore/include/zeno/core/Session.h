@@ -19,7 +19,7 @@ struct INodeClass {
 
     ZENO_API INodeClass(Descriptor const &desc, std::string const &classname);
     ZENO_API virtual ~INodeClass();
-    virtual std::shared_ptr<INode> new_instance(std::string const &classname) const = 0;
+    virtual std::shared_ptr<INode> new_instance(Graph* pGraph, std::string const &classname) const = 0;
 };
 
 struct IObject;
@@ -55,7 +55,7 @@ struct Session {
 
     ZENO_API UserData &userData() const;
     ZENO_API std::shared_ptr<Graph> createGraph(const std::string& name);
-    ZENO_API bool run_main_graph();
+    ZENO_API bool run();
     ZENO_API void set_auto_run(bool bOn);
     ZENO_API bool is_auto_run() const;
     ZENO_API std::string dumpDescriptors() const;

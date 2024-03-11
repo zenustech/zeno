@@ -8,7 +8,7 @@
 
 namespace zeno
 {
-    ZENO_API std::string generateUUID();
+    ZENO_API std::string generateUUID(const std::string& prefix = "");
 }
 
 #endif

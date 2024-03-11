@@ -32,6 +32,7 @@ public:
 
     std::string m_name;
     std::string m_nodecls;
+    std::string m_uuid;
     std::pair<float, float> m_pos;
 
     /*
@@ -66,6 +67,9 @@ public:
     ZENO_API zvariant get_input_defl(std::string const& name);
     ZENO_API std::string get_nodecls() const;
     ZENO_API std::string get_ident() const;
+    ZENO_API ObjPath get_path() const;
+    std::string get_uuid() const;
+    void initUuid(Graph* pGraph, const std::string nodecls);
 
     ZENO_API void set_view(bool bOn);
     CALLBACK_REGIST(set_view, void, bool)
@@ -101,12 +105,13 @@ public:
     void add_output_param(std::shared_ptr<IParam> param);
     void directly_setinputs(std::map<std::string, zany> inputs);
     std::map<std::string, zany> getoutputs();
+    void mark_dirty_objs();
 
 protected:
     ZENO_API virtual void complete();
     ZENO_API virtual void apply() = 0;
     ZENO_API virtual void unregisterObjs();
-    ZENO_API virtual void addObjToManager();
+    ZENO_API virtual void registerObjToManager();
     ZENO_API std::vector<std::pair<std::string, zany>> getinputs();
     ZENO_API std::vector<std::pair<std::string, zany>> getoutputs2();
     ZENO_API std::pair<std::string, std::string> getinputbound(std::string const& name, std::string const& msg = "") const;
@@ -197,7 +202,7 @@ public:
 private:
     bool m_bView = false;
     bool m_dirty = true;
-
+    ObjPath m_uuidPath;
 };
 
 }

@@ -24,10 +24,37 @@
 #include <zeno/DictObject.h>
 #include <zeno/ListObject.h>
 #include <zeno/utils/helper.h>
+#include <zeno/utils/uuid.h>
+#include <zeno/extra/SubnetNode.h>
+#include <zeno/core/CalcManager.h>
+
 
 namespace zeno {
 
-ZENO_API INode::INode() = default;
+ZENO_API INode::INode() {}
+
+void INode::initUuid(Graph* pGraph, const std::string nodecls) {
+    m_nodecls = nodecls;
+    m_uuid = generateUUID(nodecls);
+    this->graph = pGraph;
+    std::list<std::string> path;
+    path.push_front(m_uuid);
+    while (pGraph) {
+        const std::string name = pGraph->getName();
+        if (name == "main") {
+            break;
+        }
+        else {
+            assert(pGraph->optParentSubgNode.has_value());
+            auto pSubnetNode = pGraph->optParentSubgNode.value();
+            assert(pSubnetNode);
+            path.push_front(pSubnetNode->m_uuid);
+            pGraph = pSubnetNode->graph;
+        }
+    }
+    m_uuidPath = ObjPath(path);
+}
+
 ZENO_API INode::~INode() = default;
 
 ZENO_API Graph *INode::getThisGraph() const {
@@ -63,6 +90,16 @@ ZENO_API std::string INode::get_ident() const
     return m_name;
 }
 
+ZENO_API ObjPath INode::get_path() const
+{
+    return m_uuidPath;
+}
+
+std::string INode::get_uuid() const
+{
+    return m_uuid;
+}
+
 ZENO_API std::string INode::get_name() const
 {
     return m_name;
@@ -81,13 +118,6 @@ ZENO_API void INode::set_view(bool bOn)
     CALLBACK_NOTIFY(set_view, m_bView)
 
     graph->viewNodeUpdated(m_name, bOn);
-
-    for (auto const& [name, param] : outputs_)
-    {
-        if (auto spObj = std::dynamic_pointer_cast<IObject>(param->result)) {
-            getSession().objsMan->viewObject(spObj, m_bView);
-        }
-    }
 }
 
 ZENO_API bool INode::is_view() const
@@ -112,6 +142,19 @@ ZENO_API void INode::mark_dirty(bool bOn)
         }
     }
     CALLBACK_NOTIFY(mark_dirty, m_dirty)
+}
+
+void INode::mark_dirty_objs()
+{
+    for (auto const& [name, param] : outputs_)
+    {
+        if (auto spObj = std::dynamic_pointer_cast<IObject>(param->result)) {
+            if (spObj->key.empty()) {
+                continue;
+            }
+            getSession().calcMan->collect_removing_objs(spObj->key);
+        }
+    }
 }
 
 ZENO_API bool INode::is_dirty() const
@@ -156,7 +199,7 @@ ZENO_API void INode::unregisterObjs()
     }
 }
 
-ZENO_API void INode::addObjToManager()
+ZENO_API void INode::registerObjToManager()
 {
     for (auto const& [name, param] : outputs_)
     {
@@ -182,8 +225,6 @@ zany INode::get_output_result(std::shared_ptr<INode> outNode, std::string out_pa
             outResult->key = generateUUID();
         }
     }
-    else
-        outResult = outResult;
     return outResult;
 }
 
@@ -281,12 +322,15 @@ ZENO_API void INode::doOnlyApply() {
 }
 
 ZENO_API void INode::doApply() {
-    //if (checkApplyCondition()) {
-    log_trace("--> enter {}", m_name);
-    unregisterObjs();
+
+    if (!m_dirty) {
+        registerObjToManager();//如果只是打view，也是需要加到manager的。
+        return;
+    }
+
+    //unregisterObjs();     //是否可以不用提前unregister? 因为afterRun它会干掉之前view的那个
     preApply();
-    log_trace("--> leave {}", m_name);
-    addObjToManager();
+    registerObjToManager();
     mark_dirty(false);
 }
 

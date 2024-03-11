@@ -17,15 +17,22 @@ namespace zeno {
     {
         std::lock_guard lck(g_objsMutex);
         auto it = m_objects.find(id);
+        auto path = view_node->get_path();
         if (it == m_objects.end()) {
             _ObjInfo info;
             info.obj = obj;
-            info.view_node = view_node;
+            info.attach_nodes.insert(path);
             m_objects.insert(std::make_pair(id, info));
         }
         else {
             it->second.obj = obj;
-            it->second.view_node = view_node;
+            it->second.attach_nodes.insert(path);
+        }
+        if (bView) {
+            m_viewObjs.insert(id);
+            m_lastViewObjs.erase(id);   //上一次运行有view，这一次也有view
+        }
+        else {
         }
         CALLBACK_NOTIFY(addObject, obj, bView)
     }
@@ -62,6 +69,32 @@ namespace zeno {
             int newObjId = m_objRegister[objprefix]++;
             return newObjId;
         }
+    }
+
+    ZENO_API std::set<ObjPath> ObjectManager::getAttachNodes(const std::string& id)
+    {
+        auto it = m_objects.find(id);
+        if (it != m_objects.end())
+        {
+            return it->second.attach_nodes;
+        }
+        return std::set<ObjPath>();
+    }
+
+    ZENO_API void ObjectManager::beforeRun()
+    {
+        m_lastViewObjs = m_viewObjs;
+        m_viewObjs.clear();
+    }
+
+    ZENO_API void ObjectManager::afterRun()
+    {
+        //剩下来的都是上一次view，而这一次没有view的。
+        for (auto objkey : m_lastViewObjs)
+        {
+            removeObject(objkey);
+        }
+        m_lastViewObjs.clear();
     }
 
     void ObjectManager::clear()

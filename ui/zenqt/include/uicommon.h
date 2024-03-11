@@ -151,7 +151,6 @@ enum MODEL_ROLE {
     ROLE_SOCKET_TYPE,
     ROLE_PARAM_INFO,
     ROLE_VPARAM_TYPE,
-    ROLE_PANEL_PARAMS,  //custom param ui with layout.
     ROLE_ISINPUT,
     ROLE_LINKS,
     ROLE_LINKID,        //a uuid for a specific link

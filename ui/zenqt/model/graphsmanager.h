@@ -39,6 +39,7 @@ public:
     QGraphicsScene* gvScene(const QModelIndex& subgIdx) const;
     void addScene(const QModelIndex& subgIdx, ZenoSubGraphScene* scene);
     void addScene(const QStringList& graphPath, ZenoSubGraphScene* scene);
+    bool removeScene(const QStringList& graphPat);
     zeno::TimelineInfo timeInfo() const;
     QString zsgPath() const;
     QString zsgDir() const;
