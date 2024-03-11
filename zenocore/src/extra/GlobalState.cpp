@@ -48,4 +48,17 @@ ZENO_API void GlobalState::clearState() {
     log_debug("entering session id={}", sessionid);
 }
 
+ZENO_API int GlobalState::getFrameId() const {
+    return frameid;
+}
+
+ZENO_API void GlobalState::updateFrameId(int frame) {
+    //todo: mutex
+    frameid = frame;
+}
+
+ZENO_API void GlobalState::setCalcObjStatus(CalcObjStatus status) {
+    m_status = status;
+}
+
 }

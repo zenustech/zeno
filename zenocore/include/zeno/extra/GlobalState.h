@@ -9,9 +9,16 @@ namespace zeno {
 
 struct IObject;
 
+enum CalcObjStatus
+{
+    Collecting,
+    Loading,
+    Finished,
+};
+
 struct GlobalState {
     bool working = false;
-    int frameid = 0;
+
     int substepid = 0;
     float frame_time = 1.f / 60.f;
     float frame_time_elapsed = 0;
@@ -46,6 +53,14 @@ struct GlobalState {
     ZENO_API void frameBegin();
     ZENO_API void frameEnd();
     ZENO_API void clearState();
+    ZENO_API int getFrameId() const;
+    ZENO_API void updateFrameId(int frameid);
+    ZENO_API CalcObjStatus getCalcObjStatus() const { return m_status; }
+    ZENO_API void setCalcObjStatus(CalcObjStatus status);
+
+private:
+    int frameid = 0;
+    CalcObjStatus m_status = Finished;
 };
 
 }

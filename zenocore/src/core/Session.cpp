@@ -178,7 +178,7 @@ ZENO_API void Session::switchToFrame(int frameid)
 {
     CORE_API_BATCH
     calcMan->mark_frame_change_dirty();
-    globalState->frameid = frameid;
+    globalState->updateFrameId(frameid);
 }
 
 ZENO_API bool Session::run() {

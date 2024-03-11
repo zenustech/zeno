@@ -796,9 +796,9 @@ struct ParticlesNeighborBvhWrangle : zeno::INode {
         // BEGIN心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动有$F$DT$T做参数
         auto const &gs = *this->getGlobalState();
         params->lut["PI"] = objectFromLiterial((float)(std::atan(1.f) * 4));
-        params->lut["F"] = objectFromLiterial((float)gs.frameid);
+        params->lut["F"] = objectFromLiterial((float)gs.getFrameId());
         params->lut["DT"] = objectFromLiterial(gs.frame_time);
-        params->lut["T"] = objectFromLiterial(gs.frame_time * gs.frameid + gs.frame_time_elapsed);
+        params->lut["T"] = objectFromLiterial(gs.frame_time * gs.getFrameId() + gs.frame_time_elapsed);
         // END心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动有$F$DT$T做参数
         // BEGIN心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动引用portal做参数
         for (auto const &[key, ref]: getThisGraph()->portalIns) {
@@ -1022,9 +1022,9 @@ struct ParticlesNeighborBvhWrangleSorted : zeno::INode {
         // BEGIN心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动有$F$DT$T做参数
         auto const &gs = *this->getGlobalState();
         params->lut["PI"] = objectFromLiterial((float)(std::atan(1.f) * 4));
-        params->lut["F"] = objectFromLiterial((float)gs.frameid);
+        params->lut["F"] = objectFromLiterial((float)gs.getFrameId());
         params->lut["DT"] = objectFromLiterial(gs.frame_time);
-        params->lut["T"] = objectFromLiterial(gs.frame_time * gs.frameid + gs.frame_time_elapsed);
+        params->lut["T"] = objectFromLiterial(gs.frame_time * gs.getFrameId() + gs.frame_time_elapsed);
         // END心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动有$F$DT$T做参数
         // BEGIN心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动引用portal做参数
         for (auto const &[key, ref]: getThisGraph()->portalIns) {
@@ -1252,9 +1252,9 @@ struct ParticlesNeighborBvhRadiusWrangle : zeno::INode {
         // BEGIN心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动有$F$DT$T做参数
         auto const &gs = *this->getGlobalState();
         params->lut["PI"] = objectFromLiterial((float)(std::atan(1.f) * 4));
-        params->lut["F"] = objectFromLiterial((float)gs.frameid);
+        params->lut["F"] = objectFromLiterial((float)gs.getFrameId());
         params->lut["DT"] = objectFromLiterial(gs.frame_time);
-        params->lut["T"] = objectFromLiterial(gs.frame_time * gs.frameid + gs.frame_time_elapsed);
+        params->lut["T"] = objectFromLiterial(gs.frame_time * gs.getFrameId() + gs.frame_time_elapsed);
         // END心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动有$F$DT$T做参数
         // BEGIN心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动引用portal做参数
         for (auto const &[key, ref]: getThisGraph()->portalIns) {

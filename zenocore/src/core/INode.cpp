@@ -208,7 +208,7 @@ ZENO_API void INode::registerObjToManager()
                 return;
             }
             assert(!spObj->key.empty());
-            getSession().objsMan->addObject(spObj->key, spObj, shared_from_this(), m_bView);
+            getSession().objsMan->collectingObject(spObj->key, spObj, shared_from_this(), m_bView);
         }
     }
 }
@@ -667,7 +667,7 @@ ZENO_API zany INode::get_keyframe(std::string const &id) const
     if (!curves) {
         return value;
     }
-    int frame = getGlobalState()->frameid;
+    int frame = getGlobalState()->getFrameId();
     if (curves->keys.size() == 1) {
         auto val = curves->keys.begin()->second.eval(frame);
         value = objectFromLiterial(val);
@@ -771,7 +771,7 @@ ZENO_API TempNodeCaller INode::temp_node(std::string const &id) {
 
 float INode::resolve(const std::string& formulaOrKFrame, const ParamType type)
 {
-    int frame = getGlobalState()->frameid;
+    int frame = getGlobalState()->getFrameId();
     if (zeno::starts_with(formulaOrKFrame, "=")) {
         std::string code = formulaOrKFrame.substr(1);
         auto res = getThisGraph()->callTempNode(
@@ -826,7 +826,7 @@ zany INode::process(std::shared_ptr<IParam> in_param)
         return nullptr;
     }
 
-    int frame = getGlobalState()->frameid;
+    int frame = getGlobalState()->getFrameId();
     zany result;
 
     const ParamType type = in_param->type;

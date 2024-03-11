@@ -853,7 +853,7 @@ struct ReadAlembic : INode {
         if (has_input("frameid")) {
             frameid = get_input<NumericObject>("frameid")->get<int>();
         } else {
-            frameid = getGlobalState()->frameid;
+            frameid = getGlobalState()->getFrameId();
         }
         auto abctree = std::make_shared<ABCTree>();
         {

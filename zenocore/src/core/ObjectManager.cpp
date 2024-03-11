@@ -13,16 +13,38 @@ namespace zeno {
     {
     }
 
-    ZENO_API void ObjectManager::addObject(const std::string& id, std::shared_ptr<IObject> obj, std::shared_ptr<INode> view_node, bool bView)
+    ZENO_API void ObjectManager::commit()
     {
         std::lock_guard lck(g_objsMutex);
-        auto it = m_objects.find(id);
+        m_commitRender = m_collecting;
+        m_collecting.clear();
+        auto& pGlobalStatue = zeno::getSession().globalState;
+
+        while (pGlobalStatue->getCalcObjStatus() == zeno::Loading) {
+            //waiting.
+        }
+
+        pGlobalStatue->setCalcObjStatus(zeno::Finished);
+    }
+
+    ZENO_API void ObjectManager::revert()
+    {
+
+    }
+
+    ZENO_API void ObjectManager::collectingObject(const std::string& id, std::shared_ptr<IObject> obj, std::shared_ptr<INode> view_node, bool bView)
+    {
+        std::lock_guard lck(g_objsMutex);
+
+        zeno::getSession().globalState->setCalcObjStatus(zeno::Collecting);
+
+        auto it = m_collecting.find(id);
         auto path = view_node->get_path();
-        if (it == m_objects.end()) {
+        if (it == m_collecting.end()) {
             _ObjInfo info;
             info.obj = obj;
             info.attach_nodes.insert(path);
-            m_objects.insert(std::make_pair(id, info));
+            m_collecting.insert(std::make_pair(id, info));
         }
         else {
             it->second.obj = obj;
@@ -34,14 +56,14 @@ namespace zeno {
         }
         else {
         }
-        CALLBACK_NOTIFY(addObject, obj, bView)
+        CALLBACK_NOTIFY(collectingObject, obj, bView)
     }
 
     ZENO_API void ObjectManager::removeObject(const std::string& id)
     {
         std::lock_guard lck(g_objsMutex);
-        if (m_objects.find(id) != m_objects.end()) {
-            m_objects.erase(id);
+        if (m_collecting.find(id) != m_collecting.end()) {
+            m_collecting.erase(id);
             CALLBACK_NOTIFY(removeObject, id)
         }
     }
@@ -73,8 +95,8 @@ namespace zeno {
 
     ZENO_API std::set<ObjPath> ObjectManager::getAttachNodes(const std::string& id)
     {
-        auto it = m_objects.find(id);
-        if (it != m_objects.end())
+        auto it = m_collecting.find(id);
+        if (it != m_collecting.end())
         {
             return it->second.attach_nodes;
         }

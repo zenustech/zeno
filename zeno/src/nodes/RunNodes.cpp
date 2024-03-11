@@ -102,7 +102,7 @@ ZENDEFNODE(GetFrameTimeElapsed, {
 struct GetFrameNum : zeno::INode {
     virtual void apply() override {
         auto num = std::make_shared<zeno::NumericObject>();
-        num->set(getGlobalState()->frameid);
+        num->set(getGlobalState()->getFrameId());
         set_output("FrameNum", std::move(num));
     }
 };
@@ -117,7 +117,7 @@ ZENDEFNODE(GetFrameNum, {
 struct GetTime : zeno::INode {
     virtual void apply() override {
         auto time = std::make_shared<zeno::NumericObject>();
-        time->set(getGlobalState()->frameid * getGlobalState()->frame_time
+        time->set(getGlobalState()->getFrameId() * getGlobalState()->frame_time
             + getGlobalState()->frame_time_elapsed);
         set_output("time", std::move(time));
     }
