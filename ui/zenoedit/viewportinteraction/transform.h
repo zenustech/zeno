@@ -16,7 +16,7 @@ class ViewportWidget;
 
 namespace zeno {
 
-enum {
+enum class TransOpt {
     NONE,
     TRANSLATE,
     ROTATE,
@@ -40,8 +40,8 @@ public:
     void resizeHandler(int dir);
     void changeTransOpt();
     void changeCoordSys();
-    int getTransOpt();
-    void setTransOpt(int opt);
+    TransOpt getTransOpt();
+    void setTransOpt(TransOpt opt);
     bool isTransformMode() const;
     glm::vec3 getCenter() const;
     void clear();
@@ -120,7 +120,7 @@ private:
     glm::vec3 _objects_localY_start;
 
     bool m_status;
-    int m_operation;
+    TransOpt m_operation;
     int m_operation_mode;
     int m_coord_sys;
     float m_handler_scale;
