@@ -7,12 +7,14 @@
 #include "startup/zstartup.h"
 #include <style/zenostyle.h>
 #include "settings/zenosettingsmanager.h"
+#include "calculation/calculationmgr.h"
 #include "uicommon.h"
 
 
 ZenoApplication::ZenoApplication(int &argc, char **argv)
     : QApplication(argc, argv)
     , m_bUIApp(true)
+    , m_calcMgr(new CalculationMgr(this))
 {
     initMetaTypes();
     initFonts();
@@ -151,6 +153,11 @@ void ZenoApplication::initFonts()
 GraphsManager* ZenoApplication::graphsManager() const
 {
     return &GraphsManager::instance();
+}
+
+CalculationMgr* ZenoApplication::calculationMgr() const
+{
+    return m_calcMgr;
 }
 
 std::shared_ptr<ProcessClipboard> ZenoApplication::procClipboard() const

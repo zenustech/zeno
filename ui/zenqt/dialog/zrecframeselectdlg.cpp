@@ -21,7 +21,7 @@ ZRecFrameSelectDlg::ZRecFrameSelectDlg(QWidget* parent)
     m_ui = new Ui::RecFrameSelectDlg;
     m_ui->setupUi(this);
 
-    const bool bWorking = zeno::getSession().globalState->working;  //external running
+    const bool bWorking = zeno::getSession().globalState->is_working();  //external running
     int nRunFrames = zeno::getSession().globalComm->numOfFinishedFrame();
     auto pair = zeno::getSession().globalComm->frameRange();
 

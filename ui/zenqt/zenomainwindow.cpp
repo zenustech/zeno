@@ -852,7 +852,7 @@ DisplayWidget* ZenoMainWindow::getOnlyViewport() const
 bool ZenoMainWindow::resetProc()
 {
     //should kill the runner proc.
-    const bool bWorking = zeno::getSession().globalState->working;
+    const bool bWorking = zeno::getSession().globalState->is_working();
     if (bWorking)
     {
         int flag = QMessageBox::question(this, tr("Kill Process"), tr("Background process is running, you need kill the process."), QMessageBox::Yes | QMessageBox::No);

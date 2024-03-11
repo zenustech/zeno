@@ -806,7 +806,7 @@ void DisplayWidget::onRecord()
 
         std::function<void()> killRunProcIfCancel = [bRunBeforeRecord]() {
             // record run, should kill the runner proc.
-            const bool bWorking = zeno::getSession().globalState->working;
+            const bool bWorking = zeno::getSession().globalState->is_working();
             if (bWorking && bRunBeforeRecord)
             {
                 //kill

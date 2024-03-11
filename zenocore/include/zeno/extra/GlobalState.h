@@ -4,6 +4,7 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <mutex>
 
 namespace zeno {
 
@@ -17,7 +18,6 @@ enum CalcObjStatus
 };
 
 struct GlobalState {
-    bool working = false;
 
     int substepid = 0;
     float frame_time = 1.f / 60.f;
@@ -57,10 +57,14 @@ struct GlobalState {
     ZENO_API void updateFrameId(int frameid);
     ZENO_API CalcObjStatus getCalcObjStatus() const { return m_status; }
     ZENO_API void setCalcObjStatus(CalcObjStatus status);
+    ZENO_API void set_working(bool working);
+    ZENO_API bool is_working() const;
 
 private:
     int frameid = 0;
+    bool m_working = false;
     CalcObjStatus m_status = Finished;
+    mutable std::mutex mtx;
 };
 
 }

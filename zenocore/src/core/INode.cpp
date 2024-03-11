@@ -27,6 +27,7 @@
 #include <zeno/utils/uuid.h>
 #include <zeno/extra/SubnetNode.h>
 #include <zeno/core/CalcManager.h>
+#include <zeno/extra/GraphException.h>
 
 
 namespace zeno {
@@ -176,6 +177,10 @@ ZENO_API void INode::preApply() {
             zeno::log_warn("the param {} may not be initialized", name);
     }
 
+    if (!zeno::getSession().globalState->is_working()) {
+        throw GraphException();
+    }
+
     log_debug("==> enter {}", m_name);
     {
 #ifdef ZENO_BENCHMARKING
@@ -219,7 +224,7 @@ ZENO_API bool INode::requireInput(std::string const& ds) {
 
 zany INode::get_output_result(std::shared_ptr<INode> outNode, std::string out_param, bool bCopy) {
     zany outResult = outNode->get_output(out_param);
-    if (bCopy) {
+    if (bCopy && outResult) {
         outResult = outResult->clone();
         if (outResult->key.empty()) {
             outResult->key = generateUUID();

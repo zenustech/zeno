@@ -56,7 +56,7 @@ namespace zeno {
         }
         else {
         }
-        CALLBACK_NOTIFY(collectingObject, obj, bView)
+        //CALLBACK_NOTIFY(collectingObject, obj, bView)
     }
 
     ZENO_API void ObjectManager::removeObject(const std::string& id)
