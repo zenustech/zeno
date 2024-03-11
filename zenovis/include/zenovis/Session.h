@@ -7,6 +7,7 @@
 #include <vector>
 #include <set>
 #include <zeno/core/IObject.h>
+#include <zeno/core/ObjectManager.h>
 #include <zeno/utils/disable_copy.h>
 #include <zeno/utils/vec.h>
 #include <zenovis/Scene.h>
@@ -36,6 +37,7 @@ struct Session : zeno::disable_copy {
     void set_show_grid(bool flag);
     void set_uv_mode(bool enable);
     void look_perspective();
+    void load_objects(const zeno::RenderObjsInfo& objs);
     void look_to_dir(float cx, float cy, float cz,
                      float dx, float dy, float dz,
                      float ux, float uy, float uz);

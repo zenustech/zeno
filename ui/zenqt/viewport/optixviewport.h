@@ -4,6 +4,7 @@
 #include <QtWidgets>
 #include "recordvideomgr.h"
 #include "uicommon.h"
+#include <zeno/core/ObjectManager.h>
 
 class Zenovis;
 class CameraControl;
@@ -79,6 +80,7 @@ public:
     void setSlidFeq(int feq);
     void modifyLightData(UI_VECTYPE pos, UI_VECTYPE scale, UI_VECTYPE rotate, UI_VECTYPE color, float intensity, QString name, UI_VECTYPE skipParam);
     void cleanUpScene();
+    void load_objects(const zeno::RenderObjsInfo& objs);
 
 signals:
     void cameraAboutToRefresh();

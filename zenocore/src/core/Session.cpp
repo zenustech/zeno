@@ -10,7 +10,6 @@
 #include <zeno/core/Graph.h>
 #include <zeno/core/INode.h>
 #include <zeno/core/IParam.h>
-#include <zeno/core/CalcManager.h>
 #include <zeno/utils/safe_at.h>
 #include <zeno/utils/logger.h>
 #include <zeno/utils/string.h>
@@ -119,7 +118,6 @@ ZENO_API Session::Session()
     , mainGraph(std::make_shared<Graph>("main"))
     , assets(std::make_shared<AssetsMgr>())
     , objsMan(std::make_unique<ObjectManager>())
-    , calcMan(std::make_unique<CalcManager>())
 {
     initNodeCates();
 }
@@ -177,13 +175,26 @@ ZENO_API int Session::registerObjId(const std::string& objprefix)
 ZENO_API void Session::switchToFrame(int frameid)
 {
     CORE_API_BATCH
-    calcMan->mark_frame_change_dirty();
+    //calcMan->mark_frame_change_dirty();
     globalState->updateFrameId(frameid);
 }
 
 ZENO_API bool Session::run() {
     globalState->set_working(true);
-    calcMan->run();
+
+    objsMan->beforeRun();
+    zeno::scope_exit sp([&]() { objsMan->afterRun(); });
+
+    //对之前删除节点时记录的obj，对应的所有其他关联节点，都标脏
+    objsMan->remove_attach_node_by_removing_objs();
+
+    zeno::GraphException::catched([&] {
+        mainGraph->runGraph();
+        }, *globalStatus);
+    if (globalStatus->failed()) {
+        zeno::log_error(globalStatus->toJson());
+    }
+
     return true;
 }
 

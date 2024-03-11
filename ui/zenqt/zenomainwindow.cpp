@@ -52,7 +52,6 @@
 #include "dialog/zpreferencesdlg.h"
 #include "model/GraphsTreeModel.h"
 #include <zeno/core/Session.h>
-#include <zeno/core/CalcManager.h>
 #include <zeno/utils/api.h>
 
 

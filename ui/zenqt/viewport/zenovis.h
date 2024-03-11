@@ -3,6 +3,7 @@
 
 #include <QtWidgets>
 #include <zenovis/Session.h>
+#include <zeno/core/ObjectManager.h>
 
 class CameraControl;
 class CameraKeyframeWidget;
@@ -57,6 +58,7 @@ public:
 
 //private:
     void doFrameUpdate();
+    void load_objects(const zeno::RenderObjsInfo& objs);
 
     int m_solver_frameid;
     int m_solver_interval;

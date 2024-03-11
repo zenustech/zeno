@@ -26,7 +26,6 @@
 #include <zeno/utils/helper.h>
 #include <zeno/utils/uuid.h>
 #include <zeno/extra/SubnetNode.h>
-#include <zeno/core/CalcManager.h>
 #include <zeno/extra/GraphException.h>
 
 
@@ -153,7 +152,7 @@ void INode::mark_dirty_objs()
             if (spObj->key.empty()) {
                 continue;
             }
-            getSession().calcMan->collect_removing_objs(spObj->key);
+            getSession().objsMan->collect_removing_objs(spObj->key);
         }
     }
 }

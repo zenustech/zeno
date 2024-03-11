@@ -15,7 +15,14 @@
 
 namespace zeno {
 
-    extern ZENO_API std::recursive_mutex g_objsMutex;
+    using SharedObjects = std::map<std::string, std::shared_ptr<zeno::IObject>>;
+
+    struct RenderObjsInfo {
+        SharedObjects newObjs;
+        SharedObjects modifyObjs;
+        SharedObjects remObjs;
+    };
+
 
 class ObjectManager
 {
@@ -26,6 +33,7 @@ class ObjectManager
     };
 
     using ViewObjects = std::map<std::string, _ObjInfo>;
+    
 
     enum CacheType {
         MemoryCache,
@@ -64,6 +72,11 @@ public:
     ZENO_API void commit();
     ZENO_API void revert();
 
+    ZENO_API void export_loading_objs(RenderObjsInfo& info);
+    ZENO_API void clear_last_run();
+    ZENO_API void collect_removing_objs(const std::string& objkey);
+    ZENO_API void remove_attach_node_by_removing_objs();
+
 private:
     void clear();
 
@@ -75,7 +88,13 @@ private:
 
     std::set<std::string> m_viewObjs;
     std::set<std::string> m_lastViewObjs;
-    //std::set<std::string> m_viewObjs;
+    std::set<std::string> m_removing_objs;
+
+    std::set<std::string> m_newAdded;
+    std::set<std::string> m_modify;
+    std::set<std::string> m_remove;
+
+    mutable std::mutex m_mtx;
 };
 
 }

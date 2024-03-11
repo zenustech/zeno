@@ -195,6 +195,10 @@ void Session::look_perspective() {
     impl->scene->camera->updateMatrix();
 }
 
+void Session::load_objects(const zeno::RenderObjsInfo& objs) {
+    impl->scene->load_objects(objs);
+}
+
 void Session::look_to_dir(float cx, float cy, float cz,
                           float dx, float dy, float dz,
                           float ux, float uy, float uz) {

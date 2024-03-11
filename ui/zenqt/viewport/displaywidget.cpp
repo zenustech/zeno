@@ -26,6 +26,7 @@
 #include "viewport/nodesync.h"
 #include "layout/winlayoutrw.h"
 #include "model/graphsmanager.h"
+#include "calculation/calculationmgr.h"
 
 
 using std::string;
@@ -78,6 +79,19 @@ DisplayWidget::DisplayWidget(bool bGLView, QWidget *parent)
     m_pTimer = new QTimer(this);
     connect(m_pTimer, SIGNAL(timeout()), this, SLOT(updateFrame()));
 
+    connect(zenoApp->calculationMgr(), &CalculationMgr::calcFinished, this, [=](bool bSucceed, QString) {
+        if (bSucceed) {
+            zeno::RenderObjsInfo objs;
+            zeno::getSession().objsMan->export_loading_objs(objs);
+            if (m_bGLView) {
+                m_glView->load_objects(objs);
+            }
+            else {
+                m_optixView->load_objects(objs);
+            }
+        }
+    });
+#if 0
     // core -->  ui --> render
     auto& sess = zeno::getSession();
     m_cbAddObject = sess.objsMan->register_collectingObject([&](std::shared_ptr<zeno::IObject> spObj, bool bView) {
@@ -102,6 +116,7 @@ DisplayWidget::DisplayWidget(bool bGLView, QWidget *parent)
         engine->viewObject(spObj, bView);
         updateFrame();
     });
+#endif
 }
 
 DisplayWidget::~DisplayWidget()

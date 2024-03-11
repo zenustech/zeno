@@ -409,6 +409,11 @@ ZOptixViewport::~ZOptixViewport()
     m_thdOptix.wait();
 }
 
+void ZOptixViewport::load_objects(const zeno::RenderObjsInfo& objs)
+{
+    //todo: emit
+}
+
 void ZOptixViewport::setSimpleRenderOption()
 {
     auto scene = m_zenovis->getSession()->get_scene();
