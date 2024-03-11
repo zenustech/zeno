@@ -355,7 +355,7 @@ void FakeTransformer::startTransform() {
 }
 
 void FakeTransformer::createNewTransformNode(NodeLocation& node_location,
-                                             const std::string& obj_name) {
+                                             const std::string& _obj_name) {
     auto& node_sync = NodeSyncMgr::GetInstance();
 
     auto out_sock = node_sync.getPrimSockName(node_location);
@@ -363,39 +363,6 @@ void FakeTransformer::createNewTransformNode(NodeLocation& node_location,
                                                        "PrimitiveTransform",
                                                        out_sock,
                                                        "prim");
-
-    auto user_data = m_objects[obj_name]->userData();
-
-    auto translate_vec3 = user_data.getLiterial<zeno::vec3f>("_translate");
-    QVector<double> translate = {
-        translate_vec3[0],
-        translate_vec3[1],
-        translate_vec3[2]
-    };
-    node_sync.updateNodeInputVec(new_node_location.value(),
-                                 "translation",
-                                 translate);
-
-    auto scaling_vec3 = user_data.getLiterial<zeno::vec3f>("_scale");
-    QVector<double> scaling = {
-        scaling_vec3[0],
-        scaling_vec3[1],
-        scaling_vec3[2]
-    };
-    node_sync.updateNodeInputVec(new_node_location.value(),
-                                 "scaling",
-                                 scaling);
-
-    auto rotate_vec4 = user_data.getLiterial<zeno::vec4f>("_rotate");
-    QVector<double> rotate = {
-        rotate_vec4[0],
-        rotate_vec4[1],
-        rotate_vec4[2],
-        rotate_vec4[3]
-    };
-    node_sync.updateNodeInputVec(new_node_location.value(),
-                                 "quatRotation",
-                                 rotate);
 
     // make node not visible
     node_sync.updateNodeVisibility(node_location);
@@ -485,23 +452,17 @@ void FakeTransformer::endTransform(bool moved) {
             auto& node_sync = NodeSyncMgr::GetInstance();
             auto prim_node_location = node_sync.searchNodeOfPrim(obj_name);
             auto& prim_node = prim_node_location->node;
-            if (node_sync.checkNodeType(prim_node, "PrimitiveTransform") &&
-                // prim comes from a exist TransformPrimitive node
-                node_sync.checkNodeInputHasValue(prim_node, "translation") &&
-                node_sync.checkNodeInputHasValue(prim_node, "quatRotation") &&
-                node_sync.checkNodeInputHasValue(prim_node, "scaling")) {
+            if (node_sync.checkNodeType(prim_node, "PrimitiveTransform")) {
                 syncToTransformNode(prim_node_location.value(), obj_name);
             }
             else {
                 // prim comes from another type node
-                auto linked_transform_node =
-                    node_sync.checkNodeLinkedSpecificNode(prim_node, "PrimitiveTransform");
-                if (linked_transform_node.has_value())
-                    // prim links to a exist TransformPrimitive node
-                    syncToTransformNode(linked_transform_node.value(), obj_name);
-                else
-                    // prim doesn't link to a exist TransformPrimitive node
+                auto linked_transform_node = node_sync.checkNodeLinkedSpecificNode(prim_node, "PrimitiveTransform");
+                if (!linked_transform_node.has_value()) {
                     createNewTransformNode(prim_node_location.value(), obj_name);
+                    linked_transform_node = node_sync.checkNodeLinkedSpecificNode(prim_node, "PrimitiveTransform");
+                }
+                syncToTransformNode(linked_transform_node.value(), obj_name);
             }
         }
     }
