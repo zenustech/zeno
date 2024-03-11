@@ -208,7 +208,7 @@ template<typename T1, typename T2>
 void write_attrs(std::map<std::string, std::any> &attrs, std::string path, std::shared_ptr<PrimitiveObject> prim, T1& schema, T2& samp) {
     OCompoundProperty arbAttrs = schema.getArbGeomParams();
     prim->verts.foreach_attr<std::variant<vec3f, float, int>>([&](auto const &key, auto &arr) {
-        if (key == "v" || key == "nrm" || key == "faceset" || key == "matid") {
+        if (key == "v" || key == "nrm" || key == "faceset" || key == "matid" || key == "abcpath") {
             return;
         }
         std::string full_key = path + '/' + key;
@@ -352,6 +352,9 @@ void write_user_data(std::map<std::string, std::any> &user_attrs, std::string pa
     for (const auto& [key, value] : ud.m_data) {
         std::string full_key = path + '/' + key;
         if (key == "faceset_count" || zeno::starts_with(key, "faceset_")) {
+            continue;
+        }
+        if (key == "abcpath_count" || zeno::starts_with(key, "abcpath_")) {
             continue;
         }
         if (key == "matNum" || zeno::starts_with(key, "Material_") || key == "mtlid") {
@@ -742,7 +745,7 @@ struct WriteAlembicPrims : INode {
                 std::map<std::string, std::vector<std::shared_ptr<PrimitiveObject>>> path_to_prims;
 
                 for (auto prim: prims) {
-                    auto path = prim->userData().get2<std::string>("_abc_path");
+                    auto path = prim->userData().get2<std::string>("abcpath_0");
                     if (path_to_prims.count(path) == 0) {
                         paths.push_back(path);
                         path_to_prims[path] = {};
@@ -764,9 +767,9 @@ struct WriteAlembicPrims : INode {
                 }
             }
             for (auto prim: new_prims) {
-                auto path = prim->userData().get2<std::string>("_abc_path");
+                auto path = prim->userData().get2<std::string>("abcpath_0");
                 if (!starts_with(path, "/ABC/")) {
-                    log_error("_abc_path must start with /ABC/");
+                    log_error("abcpath_0 must start with /ABC/");
                 }
                 auto n_path = path.substr(5);
                 auto subnames = split_str(n_path, '/');
@@ -789,7 +792,7 @@ struct WriteAlembicPrims : INode {
             zeno::makeError("Not init. Check whether in correct correct frame range.");
         }
         for (auto prim: new_prims) {
-            auto path = prim->userData().get2<std::string>("_abc_path");
+            auto path = prim->userData().get2<std::string>("abcpath_0");
 
             if (prim->polys.size() || prim->tris.size()) {
                 // Create a PolyMesh class.

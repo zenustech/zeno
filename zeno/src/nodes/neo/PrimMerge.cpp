@@ -14,6 +14,7 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMergeWithFacesetMatid(std::v
     std::vector<std::string> matNameList(0);
     std::vector<std::string> facesetNameList;
     std::unordered_set<std::string> facesetNameSet;
+    std::unordered_map<std::string, int> abcpathNameMap;
     for (auto &p : primList) {
         //if p has material
         int matNum = p->userData().get2<int>("matNum", 0);
@@ -101,6 +102,51 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMergeWithFacesetMatid(std::v
                 p->polys.attr<int>("faceset").assign(p->polys.size(), -1);
             }
         }
+        int path_count = p->userData().get2<int>("abcpath_count", 0);
+        if (path_count == 0) {
+            p->userData().set2("abcpath_count", 1);
+            p->userData().set2("abcpath_0", "/ABC/Default");
+
+            if (p->tris.size() > 0) {
+                p->tris.add_attr<int>("abcpath").assign(p->tris.size(),0);
+            }
+            if (p->quads.size() > 0) {
+                p->quads.add_attr<int>("abcpath").assign(p->quads.size(),0);
+            }
+            if (p->polys.size() > 0) {
+                p->polys.add_attr<int>("abcpath").assign(p->polys.size(),0);
+            }
+            path_count = 1;
+        }
+        {
+            std::unordered_map<int, int> cur_abcpath_index_map;
+            for (auto i = 0; i < path_count; i++) {
+                auto path = p->userData().get2<std::string>(format("abcpath_{}", i));
+                if (abcpathNameMap.count(path) == 0) {
+                    int new_index = abcpathNameMap.size();
+                    abcpathNameMap[path] = new_index;
+                    zeno::log_info("{} {}", path, new_index);
+                }
+                cur_abcpath_index_map[i] = abcpathNameMap[path];
+                zeno::log_info("{} {}", i, abcpathNameMap[path]);
+            }
+
+            for (int i = 0; i < p->tris.size(); i++) {
+                if (p->tris.attr<int>("abcpath")[i] != -1) {
+                    p->tris.attr<int>("abcpath")[i] = cur_abcpath_index_map[p->tris.attr<int>("abcpath")[i]];
+                }
+            }
+            for (int i = 0; i < p->quads.size(); i++) {
+                if (p->quads.attr<int>("abcpath")[i] != -1) {
+                    p->quads.attr<int>("abcpath")[i] = cur_abcpath_index_map[p->quads.attr<int>("abcpath")[i]];
+                }
+            }
+            for (int i = 0; i < p->polys.size(); i++) {
+                if (p->polys.attr<int>("abcpath")[i] != -1) {
+                    p->polys.attr<int>("abcpath")[i] = cur_abcpath_index_map[p->polys.attr<int>("abcpath")[i]];
+                }
+            }
+        }
     }
     auto outprim = primMerge(primList, tagAttr);
 
@@ -130,6 +176,13 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMergeWithFacesetMatid(std::v
         }
         int faceset_count = facesetNameList.size();
         outprim->userData().set2("faceset_count", faceset_count);
+    }
+    {
+        for (auto const &[k, v]: abcpathNameMap) {
+            outprim->userData().set2(format("abcpath_{}", v), k);
+        }
+        int abcpath_count = abcpathNameMap.size();
+        outprim->userData().set2("abcpath_count", abcpath_count);
     }
     return outprim;
 }
