@@ -32,6 +32,7 @@ std::set<std::string> lightCameraNodes({
     });
 std::string matlNode = "ShaderFinalize";
 
+std::set<std::string> GlobalComm::m_transformdObjs;
 MapObjects GlobalComm::m_newToviewObjs;
 MapObjects GlobalComm::m_newToviewObjsStatic;
 PolymorphicMap<std::map<std::string, std::shared_ptr<IObject>>> GlobalComm::m_static_objects;
@@ -306,6 +307,10 @@ bool GlobalComm::fromDiskByObjsManager(std::string cachedir, int frameid, Global
                     m_newToviewObjs.insert(std::make_pair(name, std::move(p)));
                 }
             }
+            if (m_transformdObjs.find(name) != m_transformdObjs.end())  //load a transformed obj
+            {
+                m_newToviewObjs.insert(std::make_pair(name, std::move(p)));
+            }
             objs.try_emplace(name, std::move(p));
         }
     };
@@ -488,6 +493,10 @@ bool GlobalComm::fromDiskByObjsManagerStatic(std::string cachedir, GlobalComm::V
                 if (cacheUpdatedNodesInfo.find(name) != cacheUpdatedNodesInfo.end()) {
                     m_newToviewObjsStatic.insert(std::make_pair(name, std::move(p)));
                 }
+            }
+            if (m_transformdObjs.find(name) != m_transformdObjs.end())  //load a transformed obj
+            {
+                m_newToviewObjsStatic.insert(std::make_pair(name, std::move(p)));
             }
             objs.try_emplace(name, std::move(p));
         }
@@ -763,6 +772,7 @@ GlobalComm::ViewObjects const* GlobalComm::_getViewObjects(const int frameid, bo
             bool ret = fromDiskByObjsManager(cacheFramePath, frameid, m_frames[frameIdx].view_objects, toViewNodesId);
             if (!ret)
                 return nullptr;
+            m_transformdObjs.clear();
 
             inserted = true;
             prepareForOptix(m_frames[frameIdx].view_objects.m_curr);
@@ -1401,6 +1411,12 @@ ZENO_API void GlobalComm::addTransferObj(std::string const& key, std::shared_ptr
 {
     std::lock_guard lck(g_objsMutex);
     m_transferObjs.insert(std::make_pair(key, obj));
+}
+
+ZENO_API void GlobalComm::noteTransformObj(std::string const& key)
+{
+    std::lock_guard lck(g_objsMutex);
+    m_transformdObjs.insert(key);
 }
 
 ZENO_API void GlobalComm::clearTransferObjs()

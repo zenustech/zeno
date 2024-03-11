@@ -487,6 +487,7 @@ void FakeTransformer::endTransform(bool moved) {
             }
 
             objsManger->addTransferObj(obj_name, obj);
+            objsManger->noteTransformObj(obj_name);
         }
 
         // sync to node system
@@ -529,7 +530,7 @@ void FakeTransformer::endTransform(bool moved) {
             else {
                 // prim comes from another type node
                 auto linked_transform_node =
-                    node_sync.checkNodeLinkedSpecificNode(prim_node, "PrimitiveTransform", true);
+                    node_sync.checkNodeLinkedSpecificNode(prim_node, "PrimitiveTransform", false);
                 if (linked_transform_node.has_value())
                     // prim links to a exist TransformPrimitive node
                     syncToTransformNode(linked_transform_node.value(), obj_name);
