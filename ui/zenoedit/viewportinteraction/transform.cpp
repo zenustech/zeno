@@ -354,8 +354,7 @@ void FakeTransformer::startTransform() {
     markObjectsInteractive();
 }
 
-void FakeTransformer::createNewTransformNode(NodeLocation& node_location,
-                                             const std::string& _obj_name) {
+void FakeTransformer::createNewTransformNode(NodeLocation& node_location) {
     auto& node_sync = NodeSyncMgr::GetInstance();
 
     auto out_sock = node_sync.getPrimSockName(node_location);
@@ -459,7 +458,7 @@ void FakeTransformer::endTransform(bool moved) {
                 // prim comes from another type node
                 auto linked_transform_node = node_sync.checkNodeLinkedSpecificNode(prim_node, "PrimitiveTransform");
                 if (!linked_transform_node.has_value()) {
-                    createNewTransformNode(prim_node_location.value(), obj_name);
+                    createNewTransformNode(prim_node_location.value());
                     linked_transform_node = node_sync.checkNodeLinkedSpecificNode(prim_node, "PrimitiveTransform");
                 }
                 syncToTransformNode(linked_transform_node.value(), obj_name);
