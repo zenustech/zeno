@@ -349,4 +349,46 @@ ZENO_API std::shared_ptr<INode> AssetsMgr::newInstance(const std::string& assetN
     return std::dynamic_pointer_cast<INode>(spNode);
 }
 
+ZENO_API void zeno::AssetsMgr::updateAssetInstance(const std::string& assetName, std::shared_ptr<SubnetNode>& spNode)
+{
+    if(m_assets.find(assetName) == m_assets.end()) {
+        return;
+    }
+
+    Asset& assets = m_assets[assetName];
+    if (!assets.sharedGraph) {
+        getAssetGraph(assetName, true);
+    }
+    assert(assets.sharedGraph);
+
+    std::shared_ptr<Graph> assetGraph = forkAssetGraph(assets.sharedGraph);
+
+    spNode->subgraph = assetGraph;
+
+    for (const ParamInfo& param : assets.inputs)
+    {
+        std::shared_ptr<IParam> sparam = std::make_shared<IParam>();
+        sparam->defl = param.defl;
+        sparam->name = param.name;
+        sparam->type = param.type;
+        sparam->control = param.control;
+        sparam->socketType = param.socketType;
+        sparam->m_wpNode = spNode;
+        spNode->add_input_param(sparam);
+        spNode->m_input_names.push_back(param.name);
+    }
+
+    for (const ParamInfo& param : assets.outputs)
+    {
+        std::shared_ptr<IParam> sparam = std::make_shared<IParam>();
+        sparam->defl = param.defl;
+        sparam->name = param.name;
+        sparam->type = param.type;
+        sparam->m_wpNode = spNode;
+        sparam->socketType = PrimarySocket;
+        spNode->add_output_param(sparam);
+        spNode->m_output_names.push_back(param.name);
+    }
+}
+
 }

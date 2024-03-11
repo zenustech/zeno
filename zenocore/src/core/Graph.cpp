@@ -581,6 +581,8 @@ ZENO_API bool Graph::removeNode(std::string const& name) {
     frame_nodes.erase(name);
     subnet_nodes.erase(name);
     asset_nodes.erase(name);
+    if (m_viewnodes.find(name) != m_viewnodes.end())
+        m_viewnodes.erase(name);
 
     CALLBACK_NOTIFY(removeNode, name)
     return true;

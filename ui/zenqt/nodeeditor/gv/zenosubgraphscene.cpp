@@ -30,6 +30,39 @@
 #include "widgets/ztimeline.h"
 //#include "nodeeditor/gv/pythonmaterialnode.h"
 
+ZForegroundItem::ZForegroundItem(QGraphicsItem* parent)
+    : QGraphicsRectItem(parent)
+{
+    setZValue(ZVALUE_POPUPWIDGET);
+}
+
+ZForegroundItem::~ZForegroundItem()
+{
+}
+
+QRectF ZForegroundItem::boundingRect() const
+{
+    if (!scene()->views().isEmpty())
+    {
+        const QGraphicsView* pView = this->scene()->views().first();
+        return pView->mapToScene(pView->viewport()->rect()).boundingRect();
+    }
+    return QRectF();
+}
+
+void ZForegroundItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
+{
+    ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(this->scene());
+    ZASSERT_EXIT(pScene);
+    GraphModel* pModel = pScene->getGraphModel();
+    if (pModel && pModel->isLocked())
+    {
+        painter->setOpacity(0.3);
+        painter->setBrush(QColor(83, 83, 85));
+        const auto& rect = boundingRect();
+        painter->fillRect(rect, QColor(83, 83, 85));
+    }
+}
 
 ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
     : QGraphicsScene(parent)
@@ -62,6 +95,9 @@ GraphModel* ZenoSubGraphScene::getGraphModel() const
 void ZenoSubGraphScene::initModel(GraphModel* pGraphM)
 {
     m_model = pGraphM;
+
+    ZForegroundItem* foreItem = new ZForegroundItem;
+    addItem(foreItem);
 
     //disconnect(m_model, SIGNAL(reloaded()), this, SLOT(reload()));
     //disconnect(m_model, SIGNAL(clearLayout()), this, SLOT(clearLayout()));
@@ -976,7 +1012,7 @@ void ZenoSubGraphScene::mousePressEvent(QGraphicsSceneMouseEvent* event)
 
 void ZenoSubGraphScene::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 {
-    if (m_tempLink)
+    if (m_tempLink && !m_model->isLocked())
     {
         onSocketAbsorted(event->scenePos());
         return;
@@ -986,7 +1022,7 @@ void ZenoSubGraphScene::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 
 void ZenoSubGraphScene::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
-    if (m_tempLink && event->button() != Qt::MidButton && event->button() != Qt::RightButton)
+    if (m_tempLink && event->button() != Qt::MidButton && event->button() != Qt::RightButton && !m_model->isLocked())
     {
         onTempLinkClosed();
         removeItem(m_tempLink);
@@ -1015,9 +1051,15 @@ void ZenoSubGraphScene::afterSelectionChanged()
             ZenoNode* pNode = m_nodes[name];
             ZASSERT_EXIT(pNode);
             if (bSelected)
+            {
                 selNodes.push_back(pNode->index());
+                pNode->setZValue(ZVALUE_SELECTED);
+            }
             else
+            {
                 unSelNodes.push_back(pNode->index());
+                pNode->setZValue(-2);
+            }
         }
         mainWin->onNodesSelected(m_subgIdx, unSelNodes, false);
         mainWin->onNodesSelected(m_subgIdx, selectNodesIndice(), true);
@@ -1161,6 +1203,8 @@ void ZenoSubGraphScene::updateKeyFrame()
 void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
 {
     QGraphicsScene::keyPressEvent(event);
+    if (m_model->isLocked())
+        return;
     if (!event->isAccepted() && event->key() == Qt::Key_Delete)
     {
         if (m_tempLink)

@@ -204,7 +204,7 @@ ZLayoutBackground* ZenoNode::initHeaderWidget()
     const QString& name = m_index.data(ROLE_NODE_NAME).toString();
     ZASSERT_EXIT(!name.isEmpty(), headerWidget);
 
-    QString category;
+    const QString& category = m_index.data(ROLE_NODE_CATEGORY).toString();
 
     ZGraphicsLayout* pNameLayout = new ZGraphicsLayout(false);
     qreal margin = ZenoStyle::dpiScaled(10);
@@ -219,7 +219,16 @@ ZLayoutBackground* ZenoNode::initHeaderWidget()
     connect(m_NameItem, &ZGraphicsTextItem::editingFinished, this, &ZenoNode::onCustomNameChanged);
 
     pNameLayout->addItem(m_NameItem);
-
+    //if (!category.isEmpty())
+    {
+        m_pCategoryItem = new ZSimpleTextItem(category.isEmpty() ? nodeCls : category + ":" + nodeCls);
+        m_pCategoryItem->setBrush(QColor("#AB6E40"));
+        font2.setPointSize(12);
+        m_pCategoryItem->setFont(font2);
+        m_pCategoryItem->updateBoundingRect();
+        m_pCategoryItem->setAcceptHoverEvents(false);
+        pNameLayout->addItem(m_pCategoryItem);
+    }
     m_pStatusWidgets = new ZenoMinStatusBtnItem(m_renderParams.status);
     bool bView = m_index.data(ROLE_NODE_ISVIEW).toBool();
     m_pStatusWidgets->setView(bView);
@@ -714,15 +723,21 @@ QGraphicsItem* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const QModel
     zeno::ParamControl ctrl = (zeno::ParamControl)paramIdx.data(ROLE_PARAM_CONTROL).toInt();
     bool bFloat = UiHelper::isFloatType(sockType);
     auto cbUpdateSocketDefl = [=](QVariant newValue) {
+        const auto& oldVal = paramIdx.data(ROLE_PARAM_VALUE);
+        if (oldVal == newValue)
+            return;
         if (bFloat)
         {
-            if (!AppHelper::updateCurve(paramIdx.data(ROLE_PARAM_VALUE), newValue))
+            if (!AppHelper::updateCurve(oldVal, newValue))
             {
                 onParamDataChanged(perIdx, perIdx, QVector<int>() << ROLE_PARAM_VALUE);
                 return;
             }
         }
-        UiHelper::qIndexSetData(perIdx, newValue, ROLE_PARAM_VALUE);
+        if (!UiHelper::qIndexSetData(perIdx, newValue, ROLE_PARAM_VALUE))
+        {
+            QMessageBox::warning(nullptr, tr("Warning"), tr("Set data failed!"));
+        }
     };
     auto cbUpdateSocketDefldWithSlider = [=](QVariant newValue) {
         //TODO: need this anymore?
@@ -1135,6 +1150,20 @@ void ZenoNode::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
         nodeMenu->exec(QCursor::pos());
         nodeMenu->deleteLater();
     }
+    else if (m_index.data(ROLE_NODETYPE) == zeno::Node_AssetInstance)
+    {
+        GraphModel* pSubgGraphM = m_index.data(ROLE_SUBGRAPH).value<GraphModel*>();
+        ZASSERT_EXIT(pSubgGraphM);
+        bool bLocked = pSubgGraphM->isLocked();
+        QMenu* nodeMenu = new QMenu;
+        QAction* pLock = new QAction(bLocked ? tr("UnLock") : tr("Lock"));
+        nodeMenu->addAction(pLock);
+        connect(pLock, &QAction::triggered, this, [=]() {
+            pSubgGraphM->setLocked(!bLocked);
+        });
+        nodeMenu->exec(QCursor::pos());
+        nodeMenu->deleteLater();
+    }
     else if (m_index.data(ROLE_CLASS_NAME).toString() == "BindMaterial")
     {
 #if 0
@@ -1311,7 +1340,7 @@ void ZenoNode::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
                 if (item == this || !dynamic_cast<ZenoNode*>(item))
                     continue;
                 ZenoNode *pNode = dynamic_cast<ZenoNode *>(item);
-                UiHelper::qIndexSetData(m_index, pNode->scenePos(), ROLE_OBJPOS);
+                UiHelper::qIndexSetData(pNode->index(), pNode->scenePos(), ROLE_OBJPOS);
             }
         }
     }
@@ -1404,6 +1433,14 @@ void ZenoNode::onOptionsBtnToggled(STATUS_BTN btn, bool toggled)
         QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
         GraphModel* pGraphM = qobject_cast<GraphModel*>(pModel);
         ZASSERT_EXIT(pGraphM);
+        if (pGraphM->isLocked())
+        {
+            QMessageBox::warning(nullptr, tr("Warning"), tr("Graph is locked!"));
+            disconnect(m_pStatusWidgets, SIGNAL(toggleChanged(STATUS_BTN, bool)), this, SLOT(onOptionsBtnToggled(STATUS_BTN, bool)));
+            m_pStatusWidgets->setView(!toggled);
+            connect(m_pStatusWidgets, SIGNAL(toggleChanged(STATUS_BTN, bool)), this, SLOT(onOptionsBtnToggled(STATUS_BTN, bool)));
+            return;
+        }
         pGraphM->setView(m_index, toggled);
     }
 }
