@@ -278,18 +278,15 @@ bool GlobalComm::fromDiskByObjsManager(std::string cachedir, int frameid, Global
 
     m_newToviewObjs.clear();
 
-    std::function<void(zany const&, std::string, std::string)> convertToView = [&](zany const& p, std::string name, std::string toviewNodeId) -> void {
+    std::function<void(zany const&, std::string, std::string, std::string)> convertToView = [&](zany const& p, std::string name, std::string toviewNodeId, std::string listpath) -> void {
         if (ListObject* lst = dynamic_cast<ListObject*>(p.get())) {
             log_info("ToView got ListObject (size={}), expanding", lst->arr.size());
             for (size_t i = 0; i < lst->arr.size(); i++) {
                 zany const& lp = lst->arr[i];
-                std::string id = "";
-                if (std::shared_ptr<IObject> obj = std::dynamic_pointer_cast<IObject>(lp)) {
-                    id = obj->userData().get2<std::string>("object-id", "");
-                }
-                if (toviewNodeId.substr(toviewNodeId.find_first_of("-") + 1) == "EndForEach")
-                    id = toviewNodeId + ":"  + std::to_string(i);
-                convertToView(lp, id, toviewNodeId);
+                std::string id, idx = "";
+                id = name + "/" + std::to_string(i);
+                idx = listpath + '/' + lp->userData().get2<std::string>("object-id", "");
+                convertToView(lp, id, toviewNodeId, idx);
             }
             return;
         }
@@ -297,8 +294,8 @@ bool GlobalComm::fromDiskByObjsManager(std::string cachedir, int frameid, Global
             log_error("ToView: given object is nullptr");
         }
         else {
-            std::string listitemIdx = p->userData().get2<std::string>("list-index", "");
-            if (listitemIdx != "") {
+            if (listpath != "") {
+                p->userData().set2("list-index", listpath);
                 if (cacheUpdatedNodesInfo.find(toviewNodeId) != cacheUpdatedNodesInfo.end() || lastLoadedFrameID != frameid || lastListitemToViewNodesId.find(name) == lastListitemToViewNodesId.end() || lastListitemToViewNodesId[name] != toviewNodeId) {
                     m_newToviewObjs.insert(std::make_pair(name, std::move(p)));
                 }
@@ -398,11 +395,14 @@ bool GlobalComm::fromDiskByObjsManager(std::string cachedir, int frameid, Global
                     vdbcachepath = vdbcachepath + "_" + std::filesystem::u8path(keys[lastObjIdx].substr(0, keys[lastObjIdx].find_first_of(":"))).string() + ".vdb";
                     std::shared_ptr<zeno::VDBGrid> sdf = readSDF(vdbcachepath);
                     std::shared_ptr<zeno::PrimitiveObject> prim = convertSDFToPrim(sdf);
-                    convertToView(prim, nodeid, nodeid);
+                    convertToView(prim, nodeid, nodeid, "");
                 }
                 else {
                     zeno::zany decodedObj = decodeObject(p, poses[lastObjIdx + 1] - poses[lastObjIdx]);
-                    convertToView(decodedObj, nodeid, nodeid);
+                    if (ListObject* lst = dynamic_cast<ListObject*>(decodedObj.get()))
+                        convertToView(decodedObj, nodeid + ":", nodeid,  nodeid);
+                    else
+                        convertToView(decodedObj, nodeid, nodeid, "");
                 }
                 //if (std::shared_ptr<ListObject> spListObj = std::dynamic_pointer_cast<ListObject>(decodedObj))
                 //{
@@ -461,18 +461,15 @@ bool GlobalComm::fromDiskByObjsManagerStatic(std::string cachedir, GlobalComm::V
             }
         }
     }
-    std::function<void(zany const&, std::string, std::string)> convertToView = [&](zany const& p, std::string name, std::string toviewNodeId) -> void {
+    std::function<void(zany const&, std::string, std::string, std::string)> convertToView = [&](zany const& p, std::string name, std::string toviewNodeId, std::string listpath) -> void {
         if (ListObject* lst = dynamic_cast<ListObject*>(p.get())) {
             log_info("ToView got ListObject (size={}), expanding", lst->arr.size());
             for (size_t i = 0; i < lst->arr.size(); i++) {
                 zany const& lp = lst->arr[i];
-                std::string id = "";
-                if (std::shared_ptr<IObject> obj = std::dynamic_pointer_cast<IObject>(lp)) {
-                    id = obj->userData().get2<std::string>("object-id", "");
-                }
-                if (toviewNodeId.substr(toviewNodeId.find_first_of("-") + 1) == "EndForEach")
-                    id = toviewNodeId + ":" + std::to_string(i);
-                convertToView(lp, id, toviewNodeId);
+                std::string id, idx = "";
+                id = name + "/" + std::to_string(i);
+                idx = listpath + '/' + lp->userData().get2<std::string>("object-id", "");
+                convertToView(lp, id, toviewNodeId, idx);
             }
             return;
         }
@@ -480,8 +477,8 @@ bool GlobalComm::fromDiskByObjsManagerStatic(std::string cachedir, GlobalComm::V
             log_error("ToView: given object is nullptr");
         }
         else {
-            std::string listitemIdx = p->userData().get2<std::string>("list-index", "");
-            if (listitemIdx != "") {
+            if (listpath != "") {
+                p->userData().set2("list-index", listpath);
                 if (cacheUpdatedNodesInfo.find(toviewNodeId) != cacheUpdatedNodesInfo.end() || lastListitemToViewNodesId.find(name) == lastListitemToViewNodesId.end() || lastListitemToViewNodesId[name] != toviewNodeId) {
                     m_newToviewObjsStatic.insert(std::make_pair(name, std::move(p)));
                 }
@@ -556,11 +553,14 @@ bool GlobalComm::fromDiskByObjsManagerStatic(std::string cachedir, GlobalComm::V
                 vdbcachepath = vdbcachepath + "_" + std::filesystem::u8path(keys[lastObjIdx].substr(0, keys[lastObjIdx].find_first_of(":"))).string() + ".vdb";
                 std::shared_ptr<zeno::VDBGrid> sdf = readSDF(vdbcachepath);
                 std::shared_ptr<zeno::PrimitiveObject> prim = convertSDFToPrim(sdf);
-                convertToView(prim, nodeid, nodeid);
+                convertToView(prim, nodeid, nodeid, "");
             }
             else {
                 zeno::zany decodedObj = decodeObject(p, poses[lastObjIdx + 1] - poses[lastObjIdx]);
-                convertToView(decodedObj, nodeid, nodeid);
+                if (ListObject* lst = dynamic_cast<ListObject*>(decodedObj.get()))
+                    convertToView(decodedObj, nodeid + ":", nodeid, nodeid);
+                else
+                    convertToView(decodedObj, nodeid, nodeid, "");
             }
             //if (std::shared_ptr<ListObject> spListObj = std::dynamic_pointer_cast<ListObject>(decodedObj))
             //{

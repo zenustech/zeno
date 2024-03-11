@@ -143,6 +143,11 @@ ZENO_API void INode::preApply() {
         Timer _(myname);
 #endif
         apply();
+
+        for (auto const& [name, value] : outputs)
+            if (dynamic_cast<IObject*>(value.get()))
+                value->userData().set2("object-id", myname);
+
         if (bTmpCache)
             writeTmpCaches();
 
