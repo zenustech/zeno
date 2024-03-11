@@ -31,7 +31,7 @@ enum {
     INTERACT_NONE,
 };
 
-enum {
+enum class COORD_SYS {
     WORLD_COORD_SYS,
     LOCAL_COORD_SYS,
     VIEW_COORD_SYS
@@ -54,7 +54,7 @@ struct IGraphicHandler : IGraphicDraw {
 
     virtual int collisionTest(glm::vec3 ori, glm::vec3 dir) = 0;
     virtual void setCenter(zeno::vec3f center, zeno::vec3f localX, zeno::vec3f localY) = 0;
-    virtual void setCoordSys(int coord_sys) = 0;
+    virtual void setCoordSys(COORD_SYS coord_sys) = 0;
     virtual void resize(float scale) = 0;
     virtual std::optional<glm::vec3> getIntersect(glm::vec3 ori, glm::vec3 dir) = 0;
     virtual void setMode(int interact_mode);
