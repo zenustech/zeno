@@ -122,7 +122,7 @@ private:
     bool m_isTransforming;
     TransOpt m_operation;
     int m_operation_mode;
-    int m_coord_sys;
+    zenovis::COORD_SYS m_coord_sys;
     float m_handler_scale;
     std::shared_ptr<zenovis::IGraphicHandler> m_handler;
     ViewportWidget* m_viewport;

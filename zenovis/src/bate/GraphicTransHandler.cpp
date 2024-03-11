@@ -69,7 +69,7 @@ struct TransHandler final : IGraphicHandler {
     vec3f localY;
     float bound;
     float scale;
-    int coord_sys;
+    COORD_SYS coord_sys;
 
     Program *lines_prog;
     std::unique_ptr<Buffer> lines_ebo;
@@ -209,7 +209,7 @@ struct TransHandler final : IGraphicHandler {
         localY = y;
     }
 
-    virtual void setCoordSys(int c) override {
+    virtual void setCoordSys(COORD_SYS c) override {
         coord_sys = c;
     }
 

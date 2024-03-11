@@ -736,10 +736,12 @@ void FakeTransformer::changeTransOpt() {
 }
 
 void FakeTransformer::changeCoordSys() {
-    if (m_coord_sys == zenovis::VIEW_COORD_SYS)
-        m_coord_sys = zenovis::WORLD_COORD_SYS;
-    else
-        ++m_coord_sys;
+    if (m_coord_sys == zenovis::COORD_SYS::VIEW_COORD_SYS)
+        m_coord_sys = zenovis::COORD_SYS::WORLD_COORD_SYS;
+    else if (m_coord_sys == zenovis::COORD_SYS::WORLD_COORD_SYS)
+        m_coord_sys = zenovis::COORD_SYS::LOCAL_COORD_SYS;
+    else if (m_coord_sys == zenovis::COORD_SYS::LOCAL_COORD_SYS)
+        m_coord_sys = zenovis::COORD_SYS::VIEW_COORD_SYS;
     if (m_handler)
         m_handler->setCoordSys(m_coord_sys);
 }
