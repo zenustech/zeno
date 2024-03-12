@@ -1,241 +1,493 @@
-#include "usdDefinition.h"
-#include "usdImporter.h"
-#include "usdHelper.h"
+#include <iostream>
+
+#include <pxr/pxr.h>
+#include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usd/primRange.h>
+#include <pxr/usd/usd/relationship.h>
+#include <pxr/usd/usdGeom/sphere.h>
+#include <pxr/usd/usdGeom/mesh.h>
 
 #include <zeno/zeno.h>
 #include <zeno/core/IObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/PrimitiveTools.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/UserData.h>
 #include <zeno/types/DictObject.h>
 #include <zeno/types/ListObject.h>
-#include <zeno/utils/logger.h>
 #include <zeno/extra/GlobalState.h>
+#include <zeno/utils/vec.h>
+#include <zeno/utils/logger.h>
+#include <zeno/utils/eulerangle.h>
 
-struct ZUSDContext : zeno::IObjectClone<ZUSDContext> {
-    EUsdImporter usdImporter;
+#include <glm/glm.hpp>
+#include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+#include <zeno/types/MatrixObject.h>
+#include <zeno/utils/string.h>
+#include <cmath>
+
+struct USDDescription {
+    std::string mUSDPath = "";
+    pxr::UsdStageRefPtr mStage = nullptr;
 };
 
-struct USDOpenStage : zeno::INode {
-    virtual void apply() override {
-        auto path = get_input<zeno::StringObject>("path")->get();
+// converting USD mesh to zeno mesh
+void _convertGeomFromUSDToZeno(const pxr::UsdPrim& usdPrim, zeno::PrimitiveObject& zPrim) {
+    const std::string& typeName = usdPrim.GetTypeName().GetString();
+    if (typeName == "Mesh") {
+        /*** Load from USD prim ***/
+        const auto& usdMesh = pxr::UsdGeomMesh(usdPrim);
+        auto verCounts = usdMesh.GetFaceVertexCountsAttr();
+        auto verIndices = usdMesh.GetFaceVertexIndicesAttr();
+        auto points = usdMesh.GetPointsAttr();
+        auto usdNormals = usdMesh.GetNormalsAttr();
+        auto extent = usdMesh.GetExtentAttr(); // bounding box
+        auto vertUVs = usdPrim.GetAttribute(pxr::TfToken("primvars:st"));
+        auto orient = usdMesh.GetOrientationAttr();
+        // TODO: double sided
+        // TODO: XformOp order to zeno transform
 
-        EUsdImporter usdImporter;
-        EUsdOpenStageOptions options;
-        options.Identifier = path;
-        usdImporter.OpenStage(options);
+        pxr::TfToken faceOrder;
+        usdMesh.GetOrientationAttr().Get(&faceOrder);
+        bool isReversedFaceOrder = (faceOrder.GetString() == "leftHanded");
 
-        auto zusdcontext = std::make_shared<ZUSDContext>();
-        zusdcontext->usdImporter = usdImporter;
-
-        set_output("zuc", std::move(zusdcontext));
-    }
-};
-ZENDEFNODE(USDOpenStage,
-           {       /* inputs: */
-            {
-                {"readpath", "path"},
-            },  /* outputs: */
-            {
-                "zuc"
-            },  /* params: */
-            {
-            },  /* category: */
-            {
-                "USD",
-            }
-           });
-
-
-struct USDSimpleTraverse : zeno::INode {
-
-    void imported_mesh_data_to_prim(std::shared_ptr<zeno::PrimitiveObject> prim, EGeomMeshData& value){
-        // Point
-        for(auto const& p : value.Points){
-            prim->verts.emplace_back(p[0], p[1], p[2]);
-        }
-        // Polys
-        size_t pointer = 0;
-        for(auto const& p : value.FaceCounts){
-            prim->polys.emplace_back(pointer, p);
-            pointer += p;
-        }
-        for(auto const& p : value.FaceIndices){
-            prim->loops.emplace_back(p);
-        }
-        // Vertex-Color
-        prim->loops.add_attr<zeno::vec3f>("clr");
-        for(int i=0; i<value.Colors.size(); ++i){
-            auto& e = value.Colors[i];
-            prim->loops.attr<zeno::vec3f>("clr")[i] = {e[0], e[1], e[2]};
-        }
-        // Vertex-Normal
-        prim->loops.add_attr<zeno::vec3f>("nrm");
-        for(int i=0; i<value.Normals.size(); ++i){
-            auto& e = value.Normals[i];
-            prim->loops.attr<zeno::vec3f>("nrm")[i] = {e[0], e[1], e[2]};
-        }
-        // Vertex-UV
-        // TODO UV-Sets
-        for(auto const&[uv_index, uv_value]: value.UVs){
-            prim->uvs.resize(uv_value.size());
-            for(int i=0; i<uv_value.size(); ++i) {
-                auto& e = uv_value[i];
-                prim->uvs[i] = {e[0], e[1]};
-            }
-            break;
-        }
-        if(prim->uvs.size()) {
-            prim->loops.add_attr<int>("uvs");
-            for (auto i = 0; i < prim->loops.size(); i++) {
-                prim->loops.attr<int>("uvs")[i] = /*prim->loops[i]*/ i; // Already Indices
+        /*
+        * vertexCountPerFace indicates the vertex count of each face of mesh
+        * -1: not initialized
+        * 0: mesh including triangles, quads or polys simutaneously, treat as poly, 0 1 2 is NOT included 
+        * 1: point
+        * 2: line
+        * 3: triangle
+        * 4: quad
+        * 5 and 5+: poly
+        * a mesh with 0 | 1 | 2 and 3 | 3+ will crash this code
+        */
+        int vertexCountPerFace = -1;
+        pxr::VtArray<int> verCountValues;
+        verCounts.Get(&verCountValues);
+        for (const int& verCount : verCountValues) {
+            if (vertexCountPerFace == -1){ // initialize face vertex count
+                vertexCountPerFace = verCount;
+            } else {
+                if (vertexCountPerFace != verCount) {
+                    // this is a poly mesh
+                    vertexCountPerFace = 0;
+                    break;
+                }
             }
         }
-    }
 
-    void imported_skel_data_to_prim(std::shared_ptr<zeno::PrimitiveObject> prim,
-                                    pxr::GfMatrix4f& root_matrix,
-                                    pxr::VtArray<pxr::GfVec3f>& skin_points,
-                                    EGeomMeshData& value){
+        /*** Zeno Prim definition ***/
+        auto& verts = zPrim.verts;
 
-        for (auto& pos: skin_points) {
-            pos = root_matrix.Transform(pos);
-            prim->verts.emplace_back(pos[0], pos[1], pos[2]);
+        /*** Start setting up mesh ***/
+        pxr::VtArray<pxr::GfVec3f> pointValues;
+        points.Get(&pointValues);
+        for (const auto& point : pointValues) {
+            verts.emplace_back(point.data()[0], point.data()[1], point.data()[2]);
         }
-        size_t pointer = 0;
-        for(auto const& p : value.FaceCounts){
-            prim->polys.emplace_back(pointer, p);
-            pointer += p;
-        }
-        for(auto const& p : value.FaceIndices){
-            prim->loops.emplace_back(p);
-        }
-    }
 
-    /*
-     *  uv
-     *      - point     verts.uv
-     *      - vertex    loops.uvs
-     *  nrm
-     *      - point     verts.nrm
-     *      - vertex    loops.nrm   ?
-     *  clr
-     *      - point     verts.clr
-     *      - vertex    loops.clr   ?
-     *      .
-     *      +
-     */
-    virtual void apply() override {
-        int frameid = -1;
-        if (has_input("frameid")) {
-            frameid = get_input<zeno::NumericObject>("frameid")->get<int>();
+        if (vertUVs.HasValue()) {
+            auto& uvs = verts.add_attr<zeno::vec2f>("uvs");
+            pxr::VtArray<pxr::GfVec2f> uvValues;
+            vertUVs.Get(&uvValues);
+            for (const auto& uvValue : uvValues) {
+                uvs.emplace_back(uvValue.data()[0], uvValue.data()[1]);
+            }
+        }
+
+        if (usdNormals.HasValue()) {
+            auto& norms = zPrim.verts.add_attr<zeno::vec3f>("nrm");
+            pxr::VtArray<pxr::GfVec3f> normalValues;
+            usdNormals.Get(&normalValues);
+            for (const auto& normalValue : normalValues) {
+                norms.emplace_back(normalValue.data()[0], normalValue.data()[1], normalValue.data()[2]);
+            }
+        }
+
+        pxr::VtArray<int> indexValues;
+        verIndices.Get(&indexValues);
+
+        if (vertexCountPerFace == 3) { // triangle mesh
+            auto& tris = zPrim.tris;
+            for (int start = 0; start < indexValues.size(); start += vertexCountPerFace) {
+                if (isReversedFaceOrder) {
+                    tris.emplace_back(
+                        indexValues[start],
+                        indexValues[start + 2],
+                        indexValues[start + 1]
+                    );
+                } else {
+                    tris.emplace_back(
+                        indexValues[start],
+                        indexValues[start + 1],
+                        indexValues[start + 2]
+                    );
+                }
+            }
+        } else if (vertexCountPerFace == 4) { // quad mesh
+            auto& quads = zPrim.quads;
+            for (int start = 0; start < indexValues.size(); start += vertexCountPerFace) {
+                if (isReversedFaceOrder) {
+                    quads.emplace_back(
+                        indexValues[start + 3],
+                        indexValues[start + 2],
+                        indexValues[start + 1],
+                        indexValues[start]
+                    );
+                } else {
+                    quads.emplace_back(
+                        indexValues[start],
+                        indexValues[start + 1],
+                        indexValues[start + 2],
+                        indexValues[start + 3]
+                    );
+                }
+            }
+        } else if (vertexCountPerFace >= 5 || vertexCountPerFace == 0) { // poly mesh
+            auto& polys = zPrim.polys;
+            auto& loops = zPrim.loops;
+            int start = 0;
+            for (int verFaceCount : verCountValues) {
+                for (int subFaceIndex = 0; subFaceIndex < verFaceCount; ++subFaceIndex) {
+                    if (isReversedFaceOrder) {
+                        loops.emplace_back(indexValues[start + verFaceCount - 1 - subFaceIndex]);
+                    } else {
+                        loops.emplace_back(indexValues[start + subFaceIndex]);
+                    }
+                }
+                polys.emplace_back(start, verFaceCount);
+                start += verFaceCount;
+            }
         } else {
-            frameid = getGlobalState()->frameid;
+            // TODO: points, lines and errors to be considered
+            ;
         }
+    }
+    else if (typeName == "Sphere") {
+        ; // TODO
+    }
+    else if (typeName == "Cube") {
+        ; // TODO
+    }
+    else {
+        // not supported yet
+        ;
+    }
+}
 
-        auto zusdcontext = get_input<ZUSDContext>("zuc");
+// converting zeno mesh to USD mesh
+void _convertMeshFromZenoToUSD() {
+    ;
+}
 
-        auto prims = std::make_shared<zeno::ListObject>();
-        auto stage = zusdcontext->usdImporter.mStage;
-        auto stageinfo = EUsdStageInfo(stage);
-        auto &translationContext = zusdcontext->usdImporter.mTranslationContext;
-        auto &ImportedData = translationContext.Imported;
-        auto _xformableTranslator = translationContext.GetTranslatorByName("UsdGeomXformable");
-        auto _geomTranslator = translationContext.GetTranslatorByName("UsdGeomMesh");
-        auto xformableTranslator = std::dynamic_pointer_cast<EUsdGeomXformableTranslator>(_xformableTranslator);
-        auto geomTranslator = std::dynamic_pointer_cast<EUsdGeomMeshTranslator>(_geomTranslator);
-
-        std::cout << "Imported Sizes Mesh: " << ImportedData.PathToMeshImportData.size() << " FrameMesh: " << ImportedData.PathToFrameToMeshImportData.size() << "\n";
-        std::cout << "Imported Sizes Skel: " << ImportedData.PathToSkelImportData.size() << "\n";
-
-        try{
-
-            // Geom Mesh
-            for(auto & [key, value]: ImportedData.PathToFrameToMeshImportData){
-                auto prim = std::make_shared<zeno::PrimitiveObject>();
-                int key_mesh = Helper::GetImportedAnimMeshDataKey(frameid, value);
-
-                if(ImportedData.PathToFrameToTransform.find(key) != ImportedData.PathToFrameToTransform.end()){
-                    auto FrameToTransform = ImportedData.PathToFrameToTransform[key];
-                    int key_trans = Helper::GetImportedAnimMeshDataKey(frameid, FrameToTransform);
-                    value[key_mesh].ApplyTransform(FrameToTransform[key_trans], stageinfo);
-                }
-
-                imported_mesh_data_to_prim(prim, value[key_mesh]);
-                prims->arr.emplace_back(prim);
-            }
-
-            // Geom Mesh Cache
-            // We may apply transform for each frame, so we copy the value from import data.
-            for(auto [key, value]: ImportedData.PathToMeshImportData){
-                auto prim = std::make_shared<zeno::PrimitiveObject>();
-
-                if(ImportedData.PathToFrameToTransform.find(key) != ImportedData.PathToFrameToTransform.end()){
-                    auto FrameToTransform = ImportedData.PathToFrameToTransform[key];
-                    int kf = Helper::GetImportedAnimMeshDataKey(frameid, FrameToTransform);
-                    // apply mesh anim-trans
-                    value.ApplyTransform(FrameToTransform[kf], stageinfo);
-                }
-
-                imported_mesh_data_to_prim(prim, value);
-                prims->arr.emplace_back(prim);
-            }
-
-            // Skeletal Mesh
-            for(auto  [path, skel_data] : ImportedData.PathToSkelImportData)
-            {
-                std::cout << "Iter (PathToSkel) Key " << path << "\n";
-
-                auto& anim_info = skel_data.SkeletalAnimData.AnimationInfo;
-                auto& root_motions = skel_data.SkeletalAnimData.RootMotionTransforms;
-
-                int frameindex = Helper::GetRangeFrameKey((double)frameid, anim_info);
-
-                // Skel Root Trans
-                pxr::GfMatrix4f root_matrix(1.0f);
-                if(! root_motions.empty()) {
-                    root_matrix = Helper::ETransformToUsdMatrix(root_motions[frameindex]);
-                }
-
-                for(auto& [_, skel_mesh_data]: skel_data.SkeletalMeshData)
-                {
-                    auto prim = std::make_shared<zeno::PrimitiveObject>();
-                    auto mesh_points = skel_mesh_data.MeshData.Points;
-
-                    pxr::VtArray<pxr::GfVec3f> skin_points{};
-                    Helper::EvalSkeletalSkin(skel_data, skel_mesh_data, mesh_points, frameindex, skin_points);
-
-                    // Skeletal BlendShape
-                    Helper::EvalSkeletalBlendShape(skel_data, skel_mesh_data, frameindex, skin_points);
-
-                    imported_skel_data_to_prim(prim, root_matrix, skin_points, skel_mesh_data.MeshData);
-                    prims->arr.emplace_back(prim);
-                }
-            }
-
-        } catch (const std::exception& e) {
-            // Handle the exception
-            std::cerr << "Exception caught: " << e.what() << '\n';
-        } catch (...) {
-            // Handle any other exception types
-            std::cerr << "Unknown exception caught\n";
+/*
+* Manager USDStage handles
+*/
+class USDDescriptionManager {
+public:
+    static USDDescriptionManager& instance() {
+        if (!_instance) {
+            _instance = new USDDescriptionManager;
         }
+        return *_instance;
+    }
 
-        set_output("prims", std::move(prims));
+    USDDescription& getOrCreateDescription(const std::string& usdPath) {
+        auto it = mStageMap.find(usdPath);
+        if (it != mStageMap.end()) {
+            return it->second;
+        }
+        auto& stageNode = mStageMap[usdPath];
+        stageNode.mUSDPath = usdPath;
+        stageNode.mStage = pxr::UsdStage::Open(usdPath);
+        return stageNode;
+    }
+
+    // TODO: onDestroy ?
+private:
+    static USDDescriptionManager* _instance;
+
+    static USDDescription ILLEGAL_DESC;
+
+    // store the relationship between .usd and prims
+    std::map<std::string, USDDescription> mStageMap;
+};
+
+USDDescription USDDescriptionManager::ILLEGAL_DESC = USDDescription();
+USDDescriptionManager* USDDescriptionManager::_instance = nullptr;
+
+struct ReadUSD : zeno::INode {
+    virtual void apply() override {
+        const auto& usdPath = get_input2<zeno::StringObject>("path")->get();
+
+        USDDescriptionManager::instance().getOrCreateDescription(usdPath);
+
+        set_output2("USDDescription", usdPath);
     }
 };
-ZENDEFNODE(USDSimpleTraverse,
-           {       /* inputs: */
-            {
-                "zuc", "frameid",
-            },  /* outputs: */
-            {
-                "prims"
-            },  /* params: */
-            {
-            },  /* category: */
-            {
-                "USD",
+ZENDEFNODE(ReadUSD,
+    {
+        /* inputs */
+        {
+            {"readpath", "path"}
+        },
+        /* outputs */
+        {
+            {"string", "USDDescription"}
+        },
+        /* params */
+        {},
+        /* category */
+        {"USD"}
+    }
+);
+
+// return a zeno prim from the given use prim path
+struct ImportUSDPrim : zeno::INode {
+    virtual void apply() override {
+        std::string& usdPath = get_input2<zeno::StringObject>("USDDescription")->get();
+        std::string& primPath = get_input2<zeno::StringObject>("primPath")->get();
+
+        auto& stageDesc = USDDescriptionManager::instance().getOrCreateDescription(usdPath);
+        auto stage = stageDesc.mStage;
+        if (stage == nullptr) {
+            std::cerr << "failed to find usd description for " << usdPath;
+            return;
+        }
+
+        auto prim = stage->GetPrimAtPath(pxr::SdfPath(primPath));
+        if (!prim.IsValid()) {
+            std::cout << "[USDReference] failed to reference prim at " << primPath << std::endl;
+            return;
+        }
+
+        auto zPrim = std::make_shared<zeno::PrimitiveObject>();
+        zeno::UserData& primData = zPrim->userData();
+
+        primData.set2("usdPath", usdPath);
+        primData.set2("primPath", primPath);
+        primData.set2("typeName", prim.GetTypeName().GetString());
+
+        // construct geometry from USD format
+        _convertGeomFromUSDToZeno(prim, *zPrim);
+
+        // set all properties into userData
+        // TODO: relationships
+        /*
+        const auto& attributes = prim.GetAttributes();
+        for (const auto& attr : attributes) {
+            pxr::VtValue val;
+            std::stringstream ss;
+            attr.Get(&val);
+            if (val.IsEmpty()) {
+                ss << "(Empty)";
+            } else {
+                ss << val;
             }
-           });
+            primData.set2(attr.GetName().GetString(), std::move(ss.str()));
+        }
+        */
+
+        set_output2("prim", std::move(zPrim));
+    }
+};
+ZENDEFNODE(ImportUSDPrim,
+    {
+        /* inputs */
+        {
+            {"string", "USDDescription"},
+            {"string", "primPath"}
+        },
+        /* outputs */
+        {
+            {"primitive", "prim"}
+        },
+        /* params */
+        {},
+        /* category */
+        {"USD"}
+    }
+);
+
+/*
+* Show all prims' info of the given USD, including their types, paths and properties.
+*/
+struct USDShowAllPrims : zeno::INode {
+    virtual void apply() override {
+        std::string& usdPath = get_input2<zeno::StringObject>("USDDescription")->get();
+
+        auto& usdManager = USDDescriptionManager::instance();
+        auto stage = usdManager.getOrCreateDescription(usdPath).mStage;
+        if (stage== nullptr) {
+            std::cerr << "failed to find usd description for " << usdPath << std::endl;
+            return;
+        }
+
+        // traverse and get description of all prims
+        auto range = stage->Traverse();
+        for (auto& it : range) {
+            // handle USD scene, traverse and construct zeno graph
+            const std::string& primType = it.GetTypeName().GetString();
+            const std::string& primPath = it.GetPath().GetString();
+
+            std::cout << "[TYPE] " << primType << " [PATH] " << primPath << std::endl;
+            const auto& attributes = it.GetAttributes();
+            const auto& relations = it.GetRelationships();
+            std::cout << "[Relationships] ";
+            for (const auto& relation : relations) {
+                std::cout << relation.GetName().GetString() << '\t';
+            }
+            std::cout << std::endl << "[Attributes] ";
+            for (const auto& attr : attributes) {
+                std::cout << "[" << attr.GetTypeName().GetType().GetTypeName() << "]" << attr.GetName().GetString() << '\t';
+            }
+            std::cout << '\n' << std::endl;
+        }
+    }
+};
+ZENDEFNODE(USDShowAllPrims,
+    {
+        /* inputs */
+        {
+            {"string", "USDDescription"}
+        },
+    /* outputs */
+    {
+    },
+    /* params */
+    {},
+    /* category */
+    {"USD"}
+    });
+
+/*
+* Show userData of the given prim, in key-value format
+*/
+struct ShowPrimUserData : zeno::INode {
+    virtual void apply() override {
+        auto& prim = get_input2<zeno::PrimitiveObject>("prim");
+        auto& userData = prim->userData();
+
+        std::cout << "showing userData for prim:" << std::endl;
+        for (const auto& data : userData) {
+            std::cout << "[Key] " << data.first << " [Value] " << data.second->as<zeno::StringObject>()->get() << std::endl;
+        }
+    }
+};
+ZENDEFNODE(ShowPrimUserData,
+    {
+    /* inputs */
+    {
+        {"primitive", "prim"},
+    },
+    /* outputs */
+    {
+        // {"primitive", "prim"}
+    },
+    /* params */
+    {},
+    /* category */
+    {"USD"}
+    });
+
+/*
+* Show all attributes and their values of a USD prim, for dev
+*/
+struct ShowUSDPrimAttribute : zeno::INode {
+    virtual void apply() override {
+        std::string& usdPath = get_input2<zeno::StringObject>("USDDescription")->get();
+        std::string& primPath = get_input2<zeno::StringObject>("primPath")->get();
+
+        auto& stageDesc = USDDescriptionManager::instance().getOrCreateDescription(usdPath);
+        auto stage = stageDesc.mStage;
+        if (stage == nullptr) {
+            std::cerr << "failed to find usd description for " << usdPath;
+            return;
+        }
+
+        auto prim = stage->GetPrimAtPath(pxr::SdfPath(primPath));
+        if (!prim.IsValid()) {
+            std::cout << "[USDReference] failed to reference prim at " << primPath << std::endl;
+            return;
+        }
+
+        std::cout << "Showing attributes for prim: " << primPath << std::endl;
+        auto& attributes = prim.GetAttributes();
+        for (auto& attr : attributes) {
+            pxr::VtValue val;
+            attr.Get(&val);
+            std::cout << "[Attribute Name] " << attr.GetName().GetString() << " [Attribute Type] " << attr.GetTypeName().GetCPPTypeName() << std::endl;
+            std::cout << "[Attribute Value] " << val << '\n' << std::endl;
+        }
+    }
+};
+ZENDEFNODE(ShowUSDPrimAttribute,
+    {
+        /* inputs */
+        {
+            {"string", "USDDescription"},
+            {"string", "primPath"}
+        },
+        /* outputs */
+        {
+            // {"primitive", "prim"}
+        },
+        /* params */
+        {},
+        /* category */
+        {"USD"}
+    });
+
+// convert USD prim to zeno prim
+struct USDToZenoPrim : zeno::INode {
+    virtual void apply() override {
+        ;
+    }
+};
+ZENDEFNODE(USDToZenoPrim,
+    {
+        /* inputs */
+        {
+            {"string", "USDDescription"},
+            {"string", "primPath"},
+            {"int", "frame"}
+        },
+    /* outputs */
+    {
+        // {"primitive", "prim"}
+    },
+    /* params */
+    {},
+    /* category */
+    {"USD"}
+    });
+
+struct USDOpinion : zeno::INode {
+    ;
+};
+
+
+struct USDSublayer : zeno::INode {
+    virtual void apply() override {
+        ;
+    }
+};
+
+struct USDCollapse : zeno::INode {
+    virtual void apply() override {
+        ;
+    }
+};
+
+struct USDSave : zeno::INode {
+    virtual void apply() override {
+        ;
+    }
+};
