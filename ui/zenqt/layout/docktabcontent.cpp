@@ -553,7 +553,7 @@ void DockContent_Editor::initConnections()
         auto& sess = zeno::getSession();
         sess.set_auto_run(checked);
         if (checked) {
-            sess.run();
+            zenoApp->calculationMgr()->run();
         }
     });
     connect(m_pEditor, &ZenoGraphsEditor::zoomed, [=](qreal newFactor) {

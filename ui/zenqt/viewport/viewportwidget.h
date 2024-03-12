@@ -53,7 +53,7 @@ public:
     void setSimpleRenderOption();
     void setViewWidgetInfo(DockContentWidgetInfo& info);
     void glDrawForCommandLine();
-    void load_objects(const zeno::RenderObjsInfo& objs);
+    void load_objects();
 
 signals:
     void frameRecorded(int);

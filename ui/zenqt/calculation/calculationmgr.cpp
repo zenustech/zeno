@@ -2,10 +2,14 @@
 #include <zeno/core/Session.h>
 #include <zeno/core/Graph.h>
 #include <zeno/extra/GraphException.h>
+#include "viewport/displaywidget.h"
+#include "zassert.h"
 
 
 CalcWorker::CalcWorker(QObject* parent) {
-
+    zeno::getSession().registerRunTrigger([=]() {
+        run();
+    });
 }
 
 void CalcWorker::run() {
@@ -54,3 +58,24 @@ void CalculationMgr::kill()
     zeno::getSession().globalState->set_working(false);
 }
 
+void CalculationMgr::registerRenderWid(DisplayWidget* pDisp)
+{
+    m_registerRenders.insert(pDisp);
+    connect(this, &CalculationMgr::calcFinished, pDisp, &DisplayWidget::onCalcFinished);
+    connect(pDisp, &DisplayWidget::render_objects_loaded, this, &CalculationMgr::on_render_objects_loaded);
+}
+
+void CalculationMgr::unRegisterRenderWid(DisplayWidget* pDisp) {
+    m_loadedRender.remove(pDisp);
+}
+
+void CalculationMgr::on_render_objects_loaded()
+{
+    DisplayWidget* pWid = qobject_cast<DisplayWidget*>(sender());
+    ZASSERT_EXIT(pWid);
+    m_loadedRender.insert(pWid);
+    if (m_loadedRender.size() == m_registerRenders.size())
+    {
+        //todo: notify calc to continue, if still have something to calculate.
+    }
+}

@@ -61,6 +61,7 @@ public:
     void cameraLookTo(int dir);
 protected:
     void mouseReleaseEvent(QMouseEvent* event) override;
+
 public slots:
     void updateFrame(const QString& action = "");
     void onRun();
@@ -76,11 +77,13 @@ public slots:
     void onNodeSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
     void onMouseHoverMoved();
     void onDockViewAction(bool triggered);
+    void onCalcFinished(bool bSucceed, QString msg);
 
 signals:
     void frameUpdated(int new_frame);
     void frameRunFinished(int frame);
     void optixProcStartRecord();
+    void render_objects_loaded();
 
 public:
     enum DockViewActionType {
@@ -114,10 +117,6 @@ private:
     const bool m_bGLView;
     int m_sliderFeq = 1000 / 24;
     bool bIsCurrent = false;
-
-    std::string m_cbAddObject;
-    std::string m_cbRemoveObj;
-    std::string m_cbViewObj;
 
     std::tuple<int, int, bool> originWindowSizeInfo{-1, -1, false};
 };

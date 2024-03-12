@@ -760,6 +760,52 @@ struct GraphicsManager {
         // return ins.has_changed();
         return changed;
     }
+
+    void add_object(std::shared_ptr<zeno::IObject> obj) {
+        if (obj->key.empty())
+            return;
+        if (!scene->drawOptions->updateMatlOnly) {
+            if (auto cam = std::dynamic_pointer_cast<zeno::CameraObject>(obj)) {
+                scene->camera->setCamera(cam->get()); // pyb fix
+            }
+        }
+
+        auto& wtf = graphics.m_curr;
+        auto it = wtf.find(obj->key);
+        if (it == wtf.end()) {
+            auto ig = std::make_unique<ZxxGraphic>(obj->key, obj.get());
+            graphics.m_curr.insert(std::make_pair(obj->key, std::move(ig)));
+        }
+        else {
+            auto ig = std::make_unique<ZxxGraphic>(obj->key, obj.get());
+            if (!ig)
+                return;
+            ig->key = obj->key;
+            it->second = std::move(ig);
+        }
+    }
+
+    void remove_object(const std::string key) {
+        auto& wtf = graphics.m_curr;
+        if (wtf.find(key) == wtf.end())
+            return;
+        wtf.erase(key);
+    }
+
+    void load_objects2(const zeno::RenderObjsInfo& objs) {
+        size_t idx = 0;
+        for (auto [key, spObj] : objs.newObjs) {
+            add_object(spObj);
+            objOrder[key] = idx++;
+        }
+        for (auto [key, spObj] : objs.modifyObjs) {
+            add_object(spObj);
+        }
+        for (auto [key, spObj] : objs.remObjs) {
+            remove_object(key);
+        }
+    }
+
     bool load_objects(std::vector<std::pair<std::string, zeno::IObject *>> const &objs) {
         auto ins = graphics.insertPass();
         objOrder.clear();
@@ -834,6 +880,11 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
         char *argv[] = {nullptr};
         xinxinoptix::optixinit(std::size(argv), argv);
+    }
+
+
+    void load_objects(const zeno::RenderObjsInfo& objs) override {
+        graphicsMan->load_objects2(objs);
     }
 
     void update() override {

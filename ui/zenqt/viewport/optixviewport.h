@@ -42,6 +42,7 @@ public slots:
     void onModifyLightData(UI_VECTYPE pos, UI_VECTYPE scale, UI_VECTYPE rotate, UI_VECTYPE color, float intensity, QString nodename, UI_VECTYPE skipParam);
     void onUpdateCameraProp(float aperture, float disPlane, UI_VECTYPE skipParam = UI_VECTYPE());
     void onCleanUpScene();
+    void load_objects();
 
 private:
     Zenovis *m_zenoVis;
@@ -80,7 +81,7 @@ public:
     void setSlidFeq(int feq);
     void modifyLightData(UI_VECTYPE pos, UI_VECTYPE scale, UI_VECTYPE rotate, UI_VECTYPE color, float intensity, QString name, UI_VECTYPE skipParam);
     void cleanUpScene();
-    void load_objects(const zeno::RenderObjsInfo& objs);
+    void load_objects();
 
 signals:
     void cameraAboutToRefresh();
@@ -101,6 +102,7 @@ signals:
     void sig_modifyLightData(UI_VECTYPE pos, UI_VECTYPE scale, UI_VECTYPE rotate, UI_VECTYPE color, float intensity, QString name, UI_VECTYPE skipParam);
     void sig_updateCameraProp(float aperture, float disPlane, UI_VECTYPE skipParam = UI_VECTYPE());
     void sig_cleanUpScene();
+    void sig_loadObjects();
 
 public slots:
     void onFrameRunFinished(int frame);

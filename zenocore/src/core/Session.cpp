@@ -160,10 +160,20 @@ ZENO_API void Session::endApiCall()
     if (!m_bApiLevelEnable) return;
     m_apiLevel--;
     if (m_apiLevel == 0) {
-        //TODO: always mode
-        if (m_bAutoRun)
-            run();
+        if (m_bAutoRun) {
+            if (m_callbackRunTrigger) {
+                m_callbackRunTrigger();
+            }
+            else {
+                run();
+            }
+        }
     }
+}
+
+ZENO_API void Session::registerRunTrigger(std::function<void()> func)
+{
+    m_callbackRunTrigger = func;
 }
 
 ZENO_API int Session::registerObjId(const std::string& objprefix)

@@ -219,8 +219,10 @@ void ViewportWidget::updatePerspective()
     m_camera->updatePerspective();
 }
 
-void ViewportWidget::load_objects(const zeno::RenderObjsInfo& objs)
+void ViewportWidget::load_objects()
 {
+    zeno::RenderObjsInfo objs;
+    zeno::getSession().objsMan->export_loading_objs(objs);
     m_zenovis->load_objects(objs);
 }
 

@@ -333,6 +333,13 @@ void OptixWorker::onCleanUpScene()
     m_zenoVis->cleanUpScene();
 }
 
+void OptixWorker::load_objects()
+{
+    zeno::RenderObjsInfo objs;
+    zeno::getSession().objsMan->export_loading_objs(objs);
+    m_zenoVis->load_objects(objs);
+}
+
 
 ZOptixViewport::ZOptixViewport(QWidget* parent)
     : QWidget(parent)
@@ -398,6 +405,7 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(this, &ZOptixViewport::sig_modifyLightData, m_worker, &OptixWorker::onModifyLightData);
     connect(this, &ZOptixViewport::sig_updateCameraProp, m_worker, &OptixWorker::onUpdateCameraProp);
     connect(this, &ZOptixViewport::sig_cleanUpScene, m_worker, &OptixWorker::onCleanUpScene);
+    bool ret = connect(this, &ZOptixViewport::sig_loadObjects, m_worker, &OptixWorker::load_objects);
 
     setRenderSeparately(false, false);
     m_thdOptix.start();
@@ -409,9 +417,9 @@ ZOptixViewport::~ZOptixViewport()
     m_thdOptix.wait();
 }
 
-void ZOptixViewport::load_objects(const zeno::RenderObjsInfo& objs)
+void ZOptixViewport::load_objects()
 {
-    //todo: emit
+    emit sig_loadObjects();
 }
 
 void ZOptixViewport::setSimpleRenderOption()
