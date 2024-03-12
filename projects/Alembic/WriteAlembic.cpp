@@ -15,6 +15,7 @@
 #include "zeno/types/ListObject.h"
 #include "zeno/utils/log.h"
 #include "zeno/funcs/PrimitiveUtils.h"
+#include "zeno/extra/TempNode.h"
 #include <numeric>
 #include <filesystem>
 
@@ -478,7 +479,7 @@ struct WriteAlembic2 : INode {
         float fps = get_input2<float>("fps");
         int frameid;
         if (has_input("frameid")) {
-            frameid = get_input2<int>("frameid");
+            frameid = std::lround(get_input2<float>("frameid"));
         } else {
             frameid = getGlobalState()->frameid;
         }
@@ -489,6 +490,23 @@ struct WriteAlembic2 : INode {
 
         if (!fs::exists(folderPath)) {
             fs::create_directories(folderPath);
+        }
+        if (get_input2<bool>("splitPrimByABCPath") && prim->userData().get2<int>("abcpath_count", 0)) {
+            auto primList = primUnmergeFaces(prim.get(), "abcpath");
+            auto listPrim = std::make_shared<ListObject>();
+            for (auto &primPtr : primList) {
+                listPrim->arr.push_back(std::move(primPtr));
+            }
+            (void)zeno::TempNodeSimpleCaller("WriteAlembicPrims")
+                    .set2("prims", listPrim)
+                    .set2("frameid", frameid)
+                    .set2("frame_start", frame_start)
+                    .set2("frame_end", frame_end)
+                    .set2("fps", fps)
+                    .set2("path", path)
+                    .set2("flipFrontBack", int(flipFrontBack))
+                    .call();
+            return;
         }
         if (usedPath != path) {
             usedPath = path;
@@ -689,6 +707,7 @@ ZENDEFNODE(WriteAlembic2, {
         {"int", "frame_end", "100"},
         {"float", "fps", "25"},
         {"bool", "flipFrontBack", "1"},
+        {"bool", "splitPrimByABCPath", "1"},
     },
     {
     },
@@ -712,7 +731,7 @@ struct WriteAlembicPrims : INode {
         float fps = get_input2<float>("fps");
         int frameid;
         if (has_input("frameid")) {
-            frameid = get_input2<int>("frameid");
+            frameid = std::lround(get_input2<float>("frameid"));
         } else {
             frameid = getGlobalState()->frameid;
         }
