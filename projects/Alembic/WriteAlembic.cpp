@@ -745,6 +745,32 @@ struct WriteAlembicPrims : INode {
         }
         std::vector<std::shared_ptr<PrimitiveObject>> new_prims;
 
+        {
+            std::vector<std::string> paths;
+            std::map<std::string, std::vector<std::shared_ptr<PrimitiveObject>>> path_to_prims;
+
+            for (auto prim: prims) {
+                auto path = prim->userData().get2<std::string>("abcpath_0");
+                if (path_to_prims.count(path) == 0) {
+                    paths.push_back(path);
+                    path_to_prims[path] = {};
+                }
+                path_to_prims[path].push_back(prim);
+            }
+            for (auto path : paths) {
+                if (path_to_prims[path].size() > 1) {
+                    std::vector<zeno::PrimitiveObject *> primList;
+                    for (auto prim: path_to_prims[path]) {
+                        primList.push_back(prim.get());
+                    }
+                    auto prim = primMergeWithFacesetMatid(primList);
+                    new_prims.push_back(prim);
+                }
+                else {
+                    new_prims.push_back(path_to_prims[path][0]);
+                }
+            }
+        }
         if (usedPath != path) {
             usedPath = path;
             archive = CreateArchiveWithInfo(
@@ -759,32 +785,8 @@ struct WriteAlembicPrims : INode {
             pointsObjs.clear();
             attrs.clear();
             user_attrs.clear();
-            {
-                std::vector<std::string> paths;
-                std::map<std::string, std::vector<std::shared_ptr<PrimitiveObject>>> path_to_prims;
-
-                for (auto prim: prims) {
-                    auto path = prim->userData().get2<std::string>("abcpath_0");
-                    if (path_to_prims.count(path) == 0) {
-                        paths.push_back(path);
-                        path_to_prims[path] = {};
-                    }
-                    path_to_prims[path].push_back(prim);
-                }
-                for (auto path : paths) {
-                    if (path_to_prims[path].size() > 1) {
-                        std::vector<zeno::PrimitiveObject *> primList;
-                        for (auto prim: path_to_prims[path]) {
-                            primList.push_back(prim.get());
-                        }
-                        auto prim = primMergeWithFacesetMatid(primList);
-                        new_prims.push_back(prim);
-                    }
-                    else {
-                        new_prims.push_back(path_to_prims[path][0]);
-                    }
-                }
-            }
+            o_faceset.clear();
+            o_faceset_schema.clear();
             for (auto prim: new_prims) {
                 auto path = prim->userData().get2<std::string>("abcpath_0");
                 if (!starts_with(path, "/ABC/")) {
