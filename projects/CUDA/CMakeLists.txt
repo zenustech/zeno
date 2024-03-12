@@ -18,13 +18,15 @@ set(ZENSIM_INSTALL OFF)
 set(ZS_BUILD_SHARED_LIBS ON)
 set(ZS_ENABLE_ZENO_CU_WRANGLE ON)
 set(CMAKE_CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+set(PYZPC_GIT_PROXY "none" CACHE STRING "Git proxy used to clone PyZPC repository.")
+
 find_package(CUDAToolkit REQUIRED COMPONENTS cufft REQUIRED)
 find_package(Eigen3 REQUIRED)
 
 set(WHEREAMI_BUILD_SHARED_LIBS ON)
 add_subdirectory(zpc)
 
-if (ZS_PYTHON_FOUND)
+if (ZS_PYTHON_FOUND AND ZENO_WITH_PyZpc)
 
   if (DEFINED CMAKE_LIBRARY_OUTPUT_DIRECTORY)
     set(RESOURCE_BASE_DIR ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
@@ -34,11 +36,19 @@ if (ZS_PYTHON_FOUND)
     set(RESOURCE_BASE_DIR ${CMAKE_CURRENT_BINARY_DIR})
   endif()
 
+  get_target_property(ZENO_BIN_DIR zeno RUNTIME_OUTPUT_DIRECTORY)
   add_custom_target(copy_py)
   add_dependencies(zeno copy_py)
   # message(STATUS "retrieved python impl: ${Python3_INTERPRETER_ID}")
   message(STATUS "python3 libraries: ${ZS_OVERWRITE_PYTHON_LIBRARIES}")
   message(STATUS "python3 include directories: ${ZS_OVERWRITE_PYTHON_INCLUDE_DIR}")
+  set(ENV{ZENO_BIN_DIR} "${ZENO_BIN_DIR}")
+  add_custom_command(
+    TARGET copy_py
+    POST_BUILD
+    COMMAND ${ZS_OVERWRITE_PYTHON_EXECUTABLE} -m pip install ${CMAKE_CURRENT_SOURCE_DIR}/zpc_jit
+    COMMENT "installing pyzpc into the specified conda environment: ${ZS_OVERWRITE_PYTHON_EXECUTABLE}"
+  )
   if (WIN32)
     cmake_path(GET ZS_OVERWRITE_PYTHON_INCLUDE_DIR PARENT_PATH PYTHON_ENV_PATH)
     message(STATUS "python3 parent: ${PYTHON_ENV_PATH}")
@@ -90,12 +100,13 @@ if (ZS_PYTHON_FOUND)
     add_custom_command(
       TARGET copy_py
       POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_directory ${PYTHON_ENV_PATH}/bin ${RESOURCE_BASE_DIR}/bin
       COMMAND ${CMAKE_COMMAND} -E copy_directory ${PYTHON_ENV_PATH}/lib ${RESOURCE_BASE_DIR}/lib
 
       COMMENT "copying python lib directory ${PYTHON_ENV_PATH}/lib to ${RESOURCE_BASE_DIR}/lib"
     )
   endif()
-endif(ZS_PYTHON_FOUND)
+endif(ZS_PYTHON_FOUND AND ZENO_WITH_PyZpc)
 
 
 add_library(zshelper INTERFACE)

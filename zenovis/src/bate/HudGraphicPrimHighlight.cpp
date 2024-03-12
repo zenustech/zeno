@@ -51,7 +51,7 @@ static const char * frag_shader = R"(
 
     void main()
     {
-        gl_FragDepth = gl_FragCoord.z - 0.0001f;
+        gl_FragDepth = gl_FragCoord.z + 0.0001f;
         FragColor = vec4(0.89, 0.57, 0.15, 1.0);
     }
 )";
@@ -72,6 +72,9 @@ struct PrimitiveHighlight : IGraphicDraw {
     }
 
     virtual void draw() override {
+        CHECK_GL(glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE));
+        glDepthFunc(GL_GREATER);
+        CHECK_GL(glClearDepth(0.0));
         if (scene->select_mode == PICK_MODE::PICK_OBJECT) {
             for (const auto &prim_id : scene->selected) {
                 // ----- get primitive -----
