@@ -249,10 +249,10 @@ ZENO_API void AssetsMgr::updateAssets(const std::string name, ParamsUpdateInfo i
     }
 }
 
-std::shared_ptr<Graph> AssetsMgr::forkAssetGraph(std::shared_ptr<Graph> assetGraph)
+std::shared_ptr<Graph> AssetsMgr::forkAssetGraph(std::shared_ptr<Graph> assetGraph, std::shared_ptr<SubnetNode> subNode)
 {
     std::shared_ptr<Graph> newGraph = std::make_shared<Graph>(assetGraph->getName(), true);
-
+    newGraph->optParentSubgNode = subNode.get();
     for (const auto& [name, spNode] : assetGraph->getNodes())
     {
         zeno::NodeData nodeDat;
@@ -295,7 +295,7 @@ ZENO_API bool AssetsMgr::isAssetGraph(std::shared_ptr<Graph> spGraph) const
     return false;
 }
 
-ZENO_API std::shared_ptr<INode> AssetsMgr::newInstance(const std::string& assetName, const std::string& nodeName, bool createInAsset) {
+ZENO_API std::shared_ptr<INode> AssetsMgr::newInstance(Graph* pGraph, const std::string& assetName, const std::string& nodeName, bool createInAsset) {
     if (m_assets.find(assetName) == m_assets.end()) {
         return nullptr;
     }
@@ -307,11 +307,12 @@ ZENO_API std::shared_ptr<INode> AssetsMgr::newInstance(const std::string& assetN
     assert(assets.sharedGraph);
 
     std::shared_ptr<SubnetNode> spNode = std::make_shared<SubnetNode>();
-
+    spNode->graph = pGraph;
+    spNode->initUuid(pGraph, assetName);
     std::shared_ptr<Graph> assetGraph;
     if (!createInAsset) {
         //should expand the asset graph into a tree.
-        assetGraph = forkAssetGraph(assets.sharedGraph);
+        assetGraph = forkAssetGraph(assets.sharedGraph, spNode);
     }
     else {
         assetGraph = assets.sharedGraph;
@@ -360,8 +361,7 @@ ZENO_API void zeno::AssetsMgr::updateAssetInstance(const std::string& assetName,
         getAssetGraph(assetName, true);
     }
     assert(assets.sharedGraph);
-
-    std::shared_ptr<Graph> assetGraph = forkAssetGraph(assets.sharedGraph);
+    std::shared_ptr<Graph> assetGraph = forkAssetGraph(assets.sharedGraph, spNode);
 
     spNode->subgraph = assetGraph;
 

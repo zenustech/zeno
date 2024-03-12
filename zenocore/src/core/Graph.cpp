@@ -445,7 +445,7 @@ ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls, std::s
     }
     else {
         bool isCurrentGraphAsset = getSession().assets->isAssetGraph(shared_from_this());
-        node = getSession().assets->newInstance(cls, name, isCurrentGraphAsset);
+        node = getSession().assets->newInstance(this, cls, name, isCurrentGraphAsset);
         uuid = node->get_uuid();
         asset_nodes.insert(uuid);
     }
@@ -510,12 +510,24 @@ ZENO_API Graph* Graph::addSubnetNode(std::string const& id) {
 
 std::set<std::string> Graph::getSubInputs()
 {
-    return subinput_nodes;
+    std::set<std::string> inputs;
+    for (auto&[name, uuid] : m_name2uuid)
+    {
+        if (subinput_nodes.find(uuid) != subinput_nodes.end())
+            inputs.insert(name);
+    }
+    return inputs;
 }
 
 std::set<std::string> Graph::getSubOutputs()
 {
-    return suboutput_nodes;
+    std::set<std::string> outputs;
+    for (auto& [name, uuid] : m_name2uuid)
+    {
+        if (suboutput_nodes.find(uuid) != suboutput_nodes.end())
+            outputs.insert(name);
+    }
+    return outputs;
 }
 
 ZENO_API std::shared_ptr<INode> Graph::getNode(std::string const& name) {
