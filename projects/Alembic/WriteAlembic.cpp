@@ -491,23 +491,6 @@ struct WriteAlembic2 : INode {
         if (!fs::exists(folderPath)) {
             fs::create_directories(folderPath);
         }
-        if (get_input2<bool>("splitPrimByABCPath") && prim->userData().get2<int>("abcpath_count", 0)) {
-            auto primList = primUnmergeFaces(prim.get(), "abcpath");
-            auto listPrim = std::make_shared<ListObject>();
-            for (auto &primPtr : primList) {
-                listPrim->arr.push_back(std::move(primPtr));
-            }
-            (void)zeno::TempNodeSimpleCaller("WriteAlembicPrims")
-                    .set2("prims", listPrim)
-                    .set2("frameid", frameid)
-                    .set2("frame_start", frame_start)
-                    .set2("frame_end", frame_end)
-                    .set2("fps", fps)
-                    .set2("path", path)
-                    .set2("flipFrontBack", int(flipFrontBack))
-                    .call();
-            return;
-        }
         if (usedPath != path) {
             usedPath = path;
             archive = CreateArchiveWithInfo(
@@ -707,7 +690,6 @@ ZENDEFNODE(WriteAlembic2, {
         {"int", "frame_end", "100"},
         {"float", "fps", "25"},
         {"bool", "flipFrontBack", "1"},
-        {"bool", "splitPrimByABCPath", "1"},
     },
     {
     },
@@ -726,7 +708,15 @@ struct WriteAlembicPrims : INode {
     std::map<std::string, std::map<std::string, OFaceSetSchema>> o_faceset_schema;
 
     virtual void apply() override {
-        auto prims = get_input<ListObject>("prims")->get<PrimitiveObject>();
+        std::vector<std::shared_ptr<PrimitiveObject>> prims;
+
+        if (has_input("prim")) {
+            auto prim = get_input2<PrimitiveObject>("prim");
+            prims = primUnmergeFaces(prim.get(), "abcpath");
+        }
+        else {
+            prims = get_input<ListObject>("prims")->get<PrimitiveObject>();
+        }
         bool flipFrontBack = get_input2<int>("flipFrontBack");
         float fps = get_input2<float>("fps");
         int frameid;
@@ -992,6 +982,7 @@ struct WriteAlembicPrims : INode {
 
 ZENDEFNODE(WriteAlembicPrims, {
     {
+        {"prim"},
         {"list", "prims"},
         {"frameid"},
         {"writepath", "path", ""},
