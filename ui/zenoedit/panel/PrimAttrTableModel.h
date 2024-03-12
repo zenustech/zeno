@@ -21,6 +21,8 @@ public:
     void setModelData(zeno::PrimitiveObject* prim);
     void setSelAttr(std::string sel_attr_);
 
+    zeno::zany userDataByIndex(const QModelIndex& index) const;
+
 private:
     std::shared_ptr<zeno::PrimitiveObject> m_prim = nullptr;
     std::string sel_attr = "Vertex";

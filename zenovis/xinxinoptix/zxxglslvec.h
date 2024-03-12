@@ -728,6 +728,26 @@ __forceinline__ __device__ vec4 clamp(vec4 a, vec4 b, vec4 c)
     return min(max(a, b), c);
 }
 
+__forceinline__ __device__ float saturate(float a)
+{
+    return clamp(a, 0.0f, 1.0f);
+}
+
+__forceinline__ __device__ vec2 saturate(vec2 a)
+{
+    return clamp(a, 0.0f, 1.0f);
+}
+
+__forceinline__ __device__ vec3 saturate(vec3 a)
+{
+    return clamp(a, 0.0f, 1.0f);
+}
+
+__forceinline__ __device__ vec4 saturate(vec4 a)
+{
+    return clamp(a, 0.0f, 1.0f);
+}
+
 __forceinline__ __device__ float mix(float a, float b, float c)
 {
     return (1-c)*a + c * b;

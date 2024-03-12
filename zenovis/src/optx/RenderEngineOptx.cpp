@@ -102,7 +102,7 @@ struct GraphicsManager {
                 atang[vidx[2]] += area * tang[i];
             }
 #pragma omp parallel for
-            for(size_t i=0;i<atang.size();i++)
+            for(auto i=0;i<atang.size();i++)
             {
                 atang[i] = atang[i]/(length(atang[i])+1e-6);
 
@@ -121,7 +121,7 @@ struct GraphicsManager {
                 const auto &uv1data = tris.attr<zeno::vec3f>("uv1");
                 const auto &uv2data = tris.attr<zeno::vec3f>("uv2");
 #pragma omp parallel for
-                for (size_t i = 0; i < prim->tris.size(); ++i) {
+                for (auto i = 0; i < prim->tris.size(); ++i) {
                     const auto &pos0 = pos[tris[i][0]];
                     const auto &pos1 = pos[tris[i][1]];
                     const auto &pos2 = pos[tris[i][2]];
@@ -159,7 +159,7 @@ struct GraphicsManager {
             } else {
                 const auto &uvarray = prim->attr<zeno::vec3f>("uv");
 #pragma omp parallel for
-                for (size_t i = 0; i < prim->tris.size(); ++i) {
+                for (auto i = 0; i < prim->tris.size(); ++i) {
                     const auto &pos0 = pos[tris[i][0]];
                     const auto &pos1 = pos[tris[i][1]];
                     const auto &pos2 = pos[tris[i][2]];

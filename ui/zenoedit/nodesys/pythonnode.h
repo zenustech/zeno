@@ -15,6 +15,7 @@ protected:
 
 private slots:
     void onExecuteClicked();
+    void onGenerateClicked();
 };
 
 #endif

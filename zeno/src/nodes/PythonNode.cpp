@@ -4,12 +4,11 @@ namespace zeno {
     namespace {
         struct PythonNode : zeno::INode {
             virtual void apply() override {
-
             }
         };
 
         ZENDEFNODE(PythonNode, {
-            {{"string", "script"}},
+            {{"string", "script"},{"list", "args"}},
             {},
             {},
             {"command"},
@@ -38,7 +37,7 @@ namespace zeno {
         };
 
         ZENDEFNODE(PythonMaterialNode, {
-            {{"string", "nameList"},{"string", "keyWords"},{"readpath", "materialPath"},{"string", "matchInputs"}},
+            {{"string", "nameList"},{"string", "keyWords"},{"readpath", "materialPath"},{"string", "matchInputs"}, {"string", "script"}},
             {},
             {},
             {"command"},

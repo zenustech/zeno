@@ -16,6 +16,7 @@
 #include "dialog/zforksubgrapdlg.h"
 #include "nodesview/zenographseditor.h"
 #include "settings/zenosettingsmanager.h"
+#include <zenomodel/include/uihelper.h>
 
 ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
     dataModel = new PrimAttrTableModel();
@@ -149,6 +150,74 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
             }
         }
     }
+    //QMimeData* pMimeData = new QMimeData;
+    //pMimeData->setText(index.data(Qt::DisplayRole).toString());
+    //QApplication::clipboard()->setMimeData(pMimeData);
+    });
+    connect(prim_attr_view->verticalHeader(), &QHeaderView::sectionDoubleClicked, this, [=](int index) {
+        if (pMode->currentText() == "UserData")
+        {
+            auto graph_model = zenoApp->graphsManagment()->currentModel();
+            if (!graph_model)
+                return;
+            const auto setType = [&](QModelIndex& node, QString type) {
+                if (auto graph_model = zenoApp->graphsManagment()->currentModel()) {
+                    QModelIndex& idx = node;
+                    NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(idx.data(ROLE_NODE_PARAMS));
+                    const QModelIndex& paramIdx = nodeParams->getParam(PARAM_INPUT, QString::fromStdString("data"));
+                    graph_model->ModelSetData(paramIdx, type, ROLE_PARAM_TYPE);
+                    graph_model->ModelSetData(paramIdx, UiHelper::getControlByType(type), ROLE_PARAM_CTRL);
+                }
+            };
+            auto& node_sync = zeno::NodeSyncMgr::GetInstance();
+            auto prim_node_location = node_sync.searchNodeOfPrim(pPrimName->text().toStdString());
+            if (!prim_node_location.has_value())
+                return;
+            //auto out_sock = node_sync.getPrimSockName(prim_node_location.value());
+            NODE_DATA ndata = graph_model->itemData(prim_node_location.value().node, graph_model->index("main"));
+            std::string out_sock("");
+            for (OUTPUT_SOCKET& outputSock: ndata[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>())
+            {
+                out_sock = outputSock.info.name.toStdString();
+                break;
+            }
+
+            auto new_node_location = node_sync.generateNewNode(prim_node_location.value(),
+                "SetUserData2",
+                out_sock,
+                "object");
+
+            node_sync.updateNodeInputString(new_node_location.value(), "key", prim_attr_view->model()->headerData(index, Qt::Vertical).toString().toStdString());
+            const QModelIndex& idx = prim_attr_view->model()->index(index, 0);
+            const QStringList& vecLst = idx.data(Qt::DisplayRole).toString().split(",", QString::SkipEmptyParts);
+
+            zeno::zany object = dataModel->userDataByIndex(idx);
+            if (zeno::objectIsLiterial<float>(object)) {
+                node_sync.updateNodeInputNumeric<float>(new_node_location.value(), "data", zeno::objectToLiterial<float>(object));
+                setType(new_node_location.value().node, "float");
+            }
+            else if (zeno::objectIsLiterial<int>(object)) {
+                node_sync.updateNodeInputNumeric<int>(new_node_location.value(), "data", zeno::objectToLiterial<int>(object));
+                setType(new_node_location.value().node, "int");
+            }
+            else if (zeno::objectIsLiterial<zeno::vec2f>(object) || zeno::objectIsLiterial<zeno::vec2i>(object)) {
+                node_sync.setNodeInputVec(new_node_location.value(), "data", UI_VECTYPE({ vecLst[0].toFloat(), vecLst[1].toFloat() }));
+                setType(new_node_location.value().node, "vec2f");
+            }
+            else if (zeno::objectIsLiterial<zeno::vec3f>(object) || zeno::objectIsLiterial<zeno::vec3i>(object)) {
+                node_sync.setNodeInputVec(new_node_location.value(), "data", UI_VECTYPE({vecLst[0].toFloat(), vecLst[1].toFloat(), vecLst[2].toFloat() }));
+                setType(new_node_location.value().node, "vec3f");
+            }
+            else if (zeno::objectIsLiterial<zeno::vec4f>(object) || zeno::objectIsLiterial<zeno::vec4i>(object)) {
+                node_sync.setNodeInputVec(new_node_location.value(), "data", UI_VECTYPE({vecLst[0].toFloat(), vecLst[1].toFloat(), vecLst[2].toFloat(), vecLst[3].toFloat() }));
+                setType(new_node_location.value().node, "vec4f");
+            }
+            else if (zeno::objectIsLiterial<std::string>(object)) {
+                node_sync.updateNodeInputString(new_node_location.value(), "data", idx.data(Qt::DisplayRole).toString().toStdString());
+                setType(new_node_location.value().node, "string");
+            }
+            node_sync.updateNodeVisibility(new_node_location.value());
+        }
     });
 }
 

@@ -3,7 +3,7 @@
 #include <zenoui/comctrl/zlinewidget.h>
 #include <zenoui/comctrl/zlineedit.h>
 #include <zenoui/comctrl/ztextedit.h>
-#include <zenoui/comctrl/dialog/curvemap/zcurvemapeditor.h>
+#include <zenoui/comctrl/dialog/curvemap/zqwtcurvemapeditor.h>
 #include <zenoui/comctrl/dialog/zenoheatmapeditor.h>
 #include <zenoui/comctrl/zcombobox.h>
 #include <zenoui/comctrl/zlabel.h>
@@ -71,6 +71,7 @@ namespace zenoui
             }
             case CONTROL_READPATH:
             case CONTROL_WRITEPATH:
+            case CONTROL_DIRECTORY:
             {
                 ZPathEdit *pathLineEdit = new ZPathEdit(cbSet.cbSwitch,value.toString());
                 pathLineEdit->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
@@ -226,10 +227,10 @@ namespace zenoui
                 QPushButton* pBtn = new QPushButton("Edit Curve");
                 pBtn->setProperty("cssClass", "proppanel");
                 QObject::connect(pBtn, &QPushButton::clicked, [=]() {
-                    ZCurveMapEditor* pEditor = new ZCurveMapEditor(true);
+                    ZQwtCurveMapEditor* pEditor = new ZQwtCurveMapEditor(true);
                     pEditor->setAttribute(Qt::WA_DeleteOnClose);
 
-                    QObject::connect(pEditor, &ZCurveMapEditor::finished, [=](int result) {
+                    QObject::connect(pEditor, &ZQwtCurveMapEditor::finished, [=](int result) {
                         CURVES_DATA curves = pEditor->curves();
                         cbSet.cbEditFinished(QVariant::fromValue(curves));
                     });
