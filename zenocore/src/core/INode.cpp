@@ -490,7 +490,7 @@ ZENO_API bool INode::update_param(const std::string& param, const zvariant& new_
         zvariant old_value = spParam->defl;
         spParam->defl = new_value;
         graph->onNodeParamUpdated(spParam, old_value, new_value);
-        CALLBACK_NOTIFY(update_param, m_name, old_value, new_value)
+        CALLBACK_NOTIFY(update_param, param, old_value, new_value)
         mark_dirty(true);
         return true;
     }

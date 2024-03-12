@@ -153,6 +153,7 @@ private:
     QKeyList<QString, _param_ctrl> m_params;
 
     ZGraphicsTextItem* m_NameItem;
+    ZSimpleTextItem* m_pCategoryItem;
     ZSimpleTextItem *m_NameItemTip;
     ZenoMinStatusBtnItem* m_pStatusWidgets;
     ZLayoutBackground* m_dirtyMarker;

@@ -482,6 +482,11 @@ void _ZenoSubGraphView::resizeEvent(QResizeEvent* event)
 
 void _ZenoSubGraphView::contextMenuEvent(QContextMenuEvent* event)
 {
+    if (const GraphModel* pModel = m_scene->getGraphModel())
+    {
+        if (pModel->isLocked())
+            return;
+    }
     QPoint pos = event->pos();
     QPointF scenePos = mapToScene(pos);
 

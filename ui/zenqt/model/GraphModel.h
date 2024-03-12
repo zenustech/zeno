@@ -101,6 +101,8 @@ public:
     //test functions:
     void updateParamName(QModelIndex nodeIdx, int row, QString newName);
     void syncToAssetsInstance(const QString& assetsName, zeno::ParamsUpdateInfo info);
+    void syncToAssetsInstance(const QString& assetsName);
+    void updateAssetInstance(const std::shared_ptr<zeno::Graph> spGraph);
     void removeParam(QModelIndex nodeIdx, int row);
     void removeLink(const QModelIndex& linkIdx);
     void removeLink(const zeno::EdgeInfo& link);
@@ -109,6 +111,8 @@ public:
     ParamsModel* params(QModelIndex nodeIdx);
     GraphModel* subgraph(QModelIndex nodeIdx);
     GraphsTreeModel* treeModel() const;
+    void setLocked(bool bLocked);
+    bool isLocked() const;
 
 signals:
     void reloaded();
@@ -146,6 +150,8 @@ private:
 
     GraphsTreeModel* m_pTree;
     LinkModel* m_linkModel;
+
+    bool m_bLocked = false;
 
     friend class NodeItem;
 };

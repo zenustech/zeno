@@ -7,6 +7,7 @@
 #include "model/graphsmanager.h"
 #include "zenoapplication.h"
 #include <zeno/extra/SubnetNode.h>
+#include <zeno/core/Assets.h>
 
 
 NodeItem::NodeItem(QObject* parent) : QObject(parent)
@@ -63,7 +64,13 @@ void NodeItem::init(GraphModel* pGraphM, std::shared_ptr<zeno::INode> spNode)
     if (std::shared_ptr<zeno::SubnetNode> subnetnode = std::dynamic_pointer_cast<zeno::SubnetNode>(spNode))
     {
         GraphModel* parentM = qobject_cast<GraphModel*>(this->parent());
-        this->optSubgraph = new GraphModel(subnetnode->subgraph, parentM->treeModel(), this);
+        auto pModel = new GraphModel(subnetnode->subgraph, parentM->treeModel(), this);
+        bool bAssets = subnetnode->subgraph->isAssets();
+        if (bAssets) {
+            if (!subnetnode->in_asset_file())
+                pModel->setLocked(true);
+        }
+        this->optSubgraph = pModel;
     }
 }
 
@@ -249,7 +256,7 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
             if (item->optSubgraph.has_value())
                 return QVariant::fromValue(item->optSubgraph.value());
             else
-                return QVariant();
+                return QVariant();  
         }
         case ROLE_GRAPH:
         {
@@ -295,6 +302,18 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
             }
             return zeno::Node_Normal;
         }
+        case ROLE_NODE_CATEGORY:
+        {
+            std::shared_ptr<zeno::INode> spNode = item->m_wpNode.lock();
+            if (spNode->nodeClass && !spNode->nodeClass->desc->categories.empty())
+            {
+                return QString::fromStdString(spNode->nodeClass->desc->categories.front());
+            }
+            else
+            {
+                return "";
+            }
+        }
         case ROLE_OBJPATH:
         {
             QStringList path = currentPath();
@@ -312,6 +331,12 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
 
 bool GraphModel::setData(const QModelIndex& index, const QVariant& value, int role)
 {
+    if (m_bLocked)
+    {
+        zeno::log_error("Graph is locked");
+        emit dataChanged(index, index, QVector<int>{role});
+        return false;
+    }
     NodeItem* item = m_nodes[m_row2name[index.row()]];
 
     switch (role) {
@@ -721,6 +746,11 @@ void GraphModel::setMute(const QModelIndex& idx, bool bOn)
 
 QString GraphModel::updateNodeName(const QModelIndex& idx, QString newName)
 {
+    if (m_bLocked)
+    {
+        zeno::log_error("Graph is locked");
+        return newName;
+    }
     auto spCoreGraph = m_wpCoreGraph.lock();
     ZASSERT_EXIT(spCoreGraph, false);
 
@@ -799,6 +829,47 @@ void GraphModel::syncToAssetsInstance(const QString& assetsName, zeno::ParamsUpd
     }
 }
 
+void GraphModel::syncToAssetsInstance(const QString& assetsName)
+{
+    QModelIndexList results = match(QModelIndex(), ROLE_CLASS_NAME, assetsName);
+    for (const QModelIndex& res : results) {
+        zeno::NodeType type = (zeno::NodeType)res.data(ROLE_NODETYPE).toInt();
+        if (type == zeno::Node_AssetInstance) {
+            const QString &name = res.data(ROLE_NODE_NAME).toString();
+            ZASSERT_EXIT(m_nodes.find(name) != m_nodes.end());
+            GraphModel* pSubgM = m_nodes[name]->optSubgraph.value();
+            ZASSERT_EXIT(pSubgM);
+            //TO DO: compare diff
+            if (!pSubgM->isLocked())
+                continue;
+            while (pSubgM->rowCount() > 0)
+            {
+                const QString& nodeName = pSubgM->index(0, 0).data(ROLE_NODE_NAME).toString();
+                pSubgM->removeNode(nodeName);
+            }
+            std::shared_ptr<zeno::INode> spNode = m_nodes[name]->m_wpNode.lock();
+            auto spSubnetNode = std::dynamic_pointer_cast<zeno::SubnetNode>(spNode);
+            if (spSubnetNode) {
+                auto& assetsMgr = zeno::getSession().assets;
+                assetsMgr->updateAssetInstance(assetsName.toStdString(), spSubnetNode);
+                pSubgM->updateAssetInstance(spSubnetNode->subgraph);
+                spNode->mark_dirty(true);
+            }
+        }
+    }
+}
+
+void GraphModel::updateAssetInstance(const std::shared_ptr<zeno::Graph> spGraph)
+{
+    m_wpCoreGraph = spGraph;
+    registerCoreNotify();
+    for (auto& [name, node] : spGraph->getNodes()) {
+        _appendNode(node);
+    }
+
+    _initLink();
+}
+
 void GraphModel::updateParamName(QModelIndex nodeIdx, int row, QString newName)
 {
     NodeItem* item = m_nodes[m_row2name[nodeIdx.row()]];
@@ -834,4 +905,14 @@ QModelIndex GraphModel::nodeIdx(const QString& ident) const
 {
     int nRow = m_name2Row[ident];
     return createIndex(nRow, 0);
+}
+
+void GraphModel::setLocked(bool bLocked)
+{
+    m_bLocked = bLocked;
+}
+
+bool GraphModel::isLocked() const
+{
+    return m_bLocked;
 }

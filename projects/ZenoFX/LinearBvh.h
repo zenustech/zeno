@@ -32,27 +32,21 @@ struct LBvh : IObjectClone<LBvh> {
   std::vector<Ti> auxIndices, levels, parents, leafIndices;
   float thickness{0};
   std::string radiusAttr{""};
-  std::string neiRadiusAttr{""};
   element_e eleCategory{element_e::point}; // element category
 
   LBvh() noexcept = default;
   LBvh(const std::shared_ptr<PrimitiveObject> &prim, float thickness = 0.f) {
-    build(prim, thickness, radiusAttr, neiRadiusAttr);
+    build(prim, thickness, radiusAttr);
   }
   template <element_e et>
   LBvh(const std::shared_ptr<PrimitiveObject> &prim, float thickness,
        element_t<et> t) {
-    build(prim, thickness, radiusAttr, neiRadiusAttr, t);
+    build(prim, thickness, radiusAttr, t);
   }
   template <element_e et>
   LBvh(const std::shared_ptr<PrimitiveObject> &prim, float thickness, std::string radiusAttr,
        element_t<et> t) {
-    build(prim, thickness, radiusAttr, neiRadiusAttr, t);
-  }
-    template <element_e et>
-  LBvh(const std::shared_ptr<PrimitiveObject> &prim, float thickness, std::string radiusAttr,std::string neiRadiusAttr,
-       element_t<et> t) {
-    build(prim, thickness, radiusAttr, neiRadiusAttr, t);
+    build(prim, thickness, radiusAttr, t);
   }
 
   std::size_t getNumLeaves() const noexcept { return leafIndices.size(); }
@@ -60,10 +54,9 @@ struct LBvh : IObjectClone<LBvh> {
   BvFunc getBvFunc(const std::shared_ptr<PrimitiveObject> &prim) const;
 
   template <element_e et>
-  void build(const std::shared_ptr<PrimitiveObject> &prim, float thickness, std::string radiusAttr,std::string neiRadiusAttr,
-             element_t<et>);
+  void build(const std::shared_ptr<PrimitiveObject> &prim, float thickness, std::string radiusAttr, element_t<et>);
 
-  void build(const std::shared_ptr<PrimitiveObject> &prim, float thickness, std::string radiusAttr, std::string neiRadiusAttr);
+  void build(const std::shared_ptr<PrimitiveObject> &prim, float thickness, std::string radiusAttr);
 
 
   void refit();
@@ -78,35 +71,12 @@ struct LBvh : IObjectClone<LBvh> {
 
   static bool intersect_radius(const Box &box, const TV &p, const float &radius) noexcept {
   constexpr int dim = 3;
-  float sqDist = 0.0;
   for (Ti d = 0; d != dim; ++d) {
-    if (p[d] < box.first[d]) {
-      float diff = box.first[d] - p[d];
-      sqDist += diff * diff;
-    } else if (p[d] > box.second[d]) {
-      float diff = p[d] - box.second[d];
-      sqDist += diff * diff;
+    if (p[d] < (box.first[d] - radius) || p[d] > (box.second[d] + radius)) {
+      return false;
     }
   }
-  return sqDist <= radius * radius;
-}
-
-  static bool intersect_radius_two(const Box &box, const TV &p, const float &radius, const float &neiradius) noexcept {
-  constexpr int dim = 3;
-  float sqDist = 0.0;
-  for (Ti d = 0; d != dim; ++d) {
-    if (p[d] < box.first[d]) {
-      float diff = box.first[d] - p[d];
-      sqDist += diff * diff;
-    } else if (p[d] > box.second[d]) {
-      float diff = p[d] - box.second[d];
-      sqDist += diff * diff;
-    }
-  }
-  //auto dist = distance(box, p);
-  //return dist <= radius + neiradius;
-  float sqRadius = (radius + neiradius) * (radius + neiradius);
-  return sqDist <= sqRadius;
+  return true;
 }
 
   static float distance(const Box &bv, const TV &x) {
@@ -248,32 +218,6 @@ struct LBvh : IObjectClone<LBvh> {
           break;
       if (level == 0) {
         if (intersect_radius(sortedBvs[node], pos, radius))
-          f(auxIndices[node]);
-        node++;
-      } else
-        node = auxIndices[node];
-    }
-  }
-
-      template <class F> void iter_neighbors_radius_two(TV const &pos, const float &radius, std::vector<float> const &neiRadius, F &&f) const {
-    auto psize = neiRadius.size();
-    if (auto numLeaves = getNumLeaves(); numLeaves <= 2) {
-      for (Ti i = 0; i != numLeaves; ++i) {
-          if (intersect_radius_two(sortedBvs[i], pos, radius, neiRadius[auxIndices[i]]))
-            f(auxIndices[i]);
-        
-      }
-      return;
-    }
-    const Ti numNodes = sortedBvs.size();
-    Ti node = 0;
-    while (node != -1 && node != numNodes) {
-      Ti level = levels[node];
-      for (; level; --level, ++node)
-        if (!intersect_radius_two(sortedBvs[node], pos, radius, 0))
-          break;
-      if (level == 0) {
-        if (intersect_radius_two(sortedBvs[node], pos, radius, neiRadius[auxIndices[node]]))
           f(auxIndices[node]);
         node++;
       } else

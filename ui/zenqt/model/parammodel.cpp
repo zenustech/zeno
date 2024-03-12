@@ -145,6 +145,15 @@ GraphModel* ParamsModel::getGraph() const
 
 bool ParamsModel::setData(const QModelIndex& index, const QVariant& value, int role)
 {
+    if (GraphModel* pModel = getGraph())
+    {
+        if (pModel->isLocked())
+        {
+            zeno::log_error("Graph is locked");
+            emit dataChanged(index, index, QVector<int>{role});
+            return false;
+        }
+    }
     ParamItem& param = m_items[index.row()];
     switch (role) {
     case ROLE_PARAM_NAME:

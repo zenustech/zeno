@@ -14,6 +14,7 @@
 #include "zeno/utils/string.h"
 #include "zeno/types/ListObject.h"
 #include "zeno/utils/log.h"
+#include "zeno/funcs/PrimitiveUtils.h"
 #include <numeric>
 #include <filesystem>
 
@@ -207,7 +208,7 @@ template<typename T1, typename T2>
 void write_attrs(std::map<std::string, std::any> &attrs, std::string path, std::shared_ptr<PrimitiveObject> prim, T1& schema, T2& samp) {
     OCompoundProperty arbAttrs = schema.getArbGeomParams();
     prim->verts.foreach_attr<std::variant<vec3f, float, int>>([&](auto const &key, auto &arr) {
-        if (key == "v" || key == "nrm") {
+        if (key == "v" || key == "nrm" || key == "faceset" || key == "matid") {
             return;
         }
         std::string full_key = path + '/' + key;
@@ -353,6 +354,9 @@ void write_user_data(std::map<std::string, std::any> &user_attrs, std::string pa
         if (key == "faceset_count" || zeno::starts_with(key, "faceset_")) {
             continue;
         }
+        if (key == "matNum" || zeno::starts_with(key, "Material_") || key == "mtlid") {
+            continue;
+        }
         if (ud.has<int>(key)) {
             if (user_attrs.count(full_key) == 0) {
                 auto p = OInt32Property(user, key);
@@ -376,7 +380,7 @@ void write_user_data(std::map<std::string, std::any> &user_attrs, std::string pa
                 user_attrs[full_key] = p;
             }
             auto v = ud.get2<vec2i>(key);
-            std::any_cast<OV2iProperty>(user_attrs[full_key]).set(Imath_3_2::V2i(v[0], v[1]));
+            std::any_cast<OV2iProperty>(user_attrs[full_key]).set(Imath::V2i(v[0], v[1]));
         }
         else if (ud.has<vec3i>(key)) {
             if (user_attrs.count(full_key) == 0) {
@@ -385,7 +389,7 @@ void write_user_data(std::map<std::string, std::any> &user_attrs, std::string pa
                 user_attrs[full_key] = p;
             }
             auto v = ud.get2<vec3i>(key);
-            std::any_cast<OV3iProperty>(user_attrs[full_key]).set(Imath_3_2::V3i(v[0], v[1], v[2]));
+            std::any_cast<OV3iProperty>(user_attrs[full_key]).set(Imath::V3i(v[0], v[1], v[2]));
         }
         else if (ud.has<vec2f>(key)) {
             if (user_attrs.count(full_key) == 0) {
@@ -394,7 +398,7 @@ void write_user_data(std::map<std::string, std::any> &user_attrs, std::string pa
                 user_attrs[full_key] = p;
             }
             auto v = ud.get2<vec2f>(key);
-            std::any_cast<OV2fProperty>(user_attrs[full_key]).set(Imath_3_2::V2f(v[0], v[1]));
+            std::any_cast<OV2fProperty>(user_attrs[full_key]).set(Imath::V2f(v[0], v[1]));
         }
         else if (ud.has<vec3f>(key)) {
             if (user_attrs.count(full_key) == 0) {
@@ -403,7 +407,7 @@ void write_user_data(std::map<std::string, std::any> &user_attrs, std::string pa
                 user_attrs[full_key] = p;
             }
             auto v = ud.get2<vec3f>(key);
-            std::any_cast<OV3fProperty>(user_attrs[full_key]).set(Imath_3_2::V3f(v[0], v[1], v[2]));
+            std::any_cast<OV3fProperty>(user_attrs[full_key]).set(Imath::V3f(v[0], v[1], v[2]));
         }
         else if (ud.has<std::string>(key)) {
             if (user_attrs.count(full_key) == 0) {
@@ -717,6 +721,8 @@ struct WriteAlembicPrims : INode {
         if (!fs::exists(folderPath)) {
             fs::create_directories(folderPath);
         }
+        std::vector<std::shared_ptr<PrimitiveObject>> new_prims;
+
         if (usedPath != path) {
             usedPath = path;
             archive = CreateArchiveWithInfo(
@@ -731,7 +737,33 @@ struct WriteAlembicPrims : INode {
             pointsObjs.clear();
             attrs.clear();
             user_attrs.clear();
-            for (auto prim: prims) {
+            {
+                std::vector<std::string> paths;
+                std::map<std::string, std::vector<std::shared_ptr<PrimitiveObject>>> path_to_prims;
+
+                for (auto prim: prims) {
+                    auto path = prim->userData().get2<std::string>("_abc_path");
+                    if (path_to_prims.count(path) == 0) {
+                        paths.push_back(path);
+                        path_to_prims[path] = {};
+                    }
+                    path_to_prims[path].push_back(prim);
+                }
+                for (auto path : paths) {
+                    if (path_to_prims[path].size() > 1) {
+                        std::vector<zeno::PrimitiveObject *> primList;
+                        for (auto prim: path_to_prims[path]) {
+                            primList.push_back(prim.get());
+                        }
+                        auto prim = primMergeWithFacesetMatid(primList);
+                        new_prims.push_back(prim);
+                    }
+                    else {
+                        new_prims.push_back(path_to_prims[path][0]);
+                    }
+                }
+            }
+            for (auto prim: new_prims) {
                 auto path = prim->userData().get2<std::string>("_abc_path");
                 if (!starts_with(path, "/ABC/")) {
                     log_error("_abc_path must start with /ABC/");
@@ -756,7 +788,7 @@ struct WriteAlembicPrims : INode {
         if (archive.valid() == false) {
             zeno::makeError("Not init. Check whether in correct correct frame range.");
         }
-        for (auto prim: prims) {
+        for (auto prim: new_prims) {
             auto path = prim->userData().get2<std::string>("_abc_path");
 
             if (prim->polys.size() || prim->tris.size()) {
