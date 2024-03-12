@@ -105,6 +105,7 @@ struct GlobalComm {
     ZENO_API MapObjects getLightObjs();
 
     ZENO_API void addTransferObj(std::string const& key, std::shared_ptr<IObject>);
+    ZENO_API void noteTransformObj(std::string const& key);
     ZENO_API MapObjects getTransferObjs();
     ZENO_API void clearTransferObjs();
 
@@ -131,7 +132,8 @@ private:
     static int lastLoadedFrameID;
 
     //-----ObjectsManager-----
-    MapObjects m_transferObjs;
+    MapObjects m_transferObjs;                          //objects to be transformed
+    static std::set<std::string> m_transformdObjs;      //note which objects transformed util next run
     MapObjects m_lightObjects;
     bool needUpdateLight = true;
 

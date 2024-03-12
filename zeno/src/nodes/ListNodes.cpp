@@ -181,36 +181,6 @@ struct MakeList : zeno::INode {
         for (auto& pair : inputs) {
             if (std::isdigit(pair.first.back())) {
                 max_input_index = std::max<int>(max_input_index, std::stoi(pair.first.substr(3)));
-                {   //construct idindex mapping
-                    pair.second->userData().set2("object-id", inputBounds[pair.first].first);
-                    if (auto l = std::dynamic_pointer_cast<ListObject>(pair.second)) {
-                        if (doConcat) {
-                            std::string tmp = "";
-                            int diffIdCount = 0;
-                            for (auto [key, index] : l->itemidxs)
-                            {
-                                auto& k = key.substr(key.find_first_of("/") + 1);
-                                auto& second = k.substr(0, k.find_first_of("/"));
-                                list->itemidxs.insert(std::make_pair(myname + "/" + k, index.replace(0, index.find_first_of("/"), std::to_string(constructMappingIndex + std::stoi(index.substr(0,index.find_first_of("/")))))));
-                                if (tmp != second)
-                                {
-                                    diffIdCount++;
-                                    tmp = second;
-                                }
-                            }
-                            constructMappingIndex += diffIdCount;
-                        }
-                        else {
-                            for (auto& [key, index] : l->itemidxs)
-                                list->itemidxs.insert(std::make_pair(myname + "/" + key, std::to_string(constructMappingIndex) + "/" + index));
-                            constructMappingIndex++;
-                        }
-                    }
-                    else {
-                        list->itemidxs.insert(std::make_pair(myname + "/" + inputBounds[pair.first].first, std::to_string(constructMappingIndex) + "/"));
-                        constructMappingIndex++;
-                    }
-                }
             }
         }
 
@@ -229,28 +199,6 @@ struct MakeList : zeno::INode {
                 list->arr.push_back(std::move(obj));
             }
         }
-
-        std::function<void(std::shared_ptr<zeno::ListObject> const&)> updateIndex = [&](std::shared_ptr<zeno::ListObject> const& p) -> void {
-            for (size_t i = 0; i < p->arr.size(); i++) {
-                zany const& lp = p->arr[i];
-                if (auto l = std::dynamic_pointer_cast<ListObject>(lp)) {
-                    updateIndex(l);
-                }
-                else {
-                    for (auto& [nodepath, nodeidx] : list->itemidxs)
-                        if (nodepath.find(lp->userData().get2<std::string>("object-id", "")) != std::string::npos)
-                        {
-                            lp->userData().set2("list-index", nodepath);
-                            break;
-                        }
-                }
-            }
-        };
-        updateIndex(list);  //construct all obj's list-index 
-        std::string listitemidxs = "";
-        for (auto& [nodepath, nodeidx] : list->itemidxs)  //set itemidxs to userData(otherwise can't write to cache)
-            listitemidxs.append(nodepath + ":" + nodeidx + ";");
-        list->userData().set2("list-item-idxs", listitemidxs);
 
         set_output("list", std::move(list));
     }

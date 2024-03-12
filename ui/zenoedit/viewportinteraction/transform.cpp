@@ -11,6 +11,7 @@
 #include <glm/gtx/quaternion.hpp>
 #include <zeno/core/Session.h>
 #include <zeno/extra/GlobalComm.h>
+#include <regex>
 
 namespace zeno {
 
@@ -59,7 +60,7 @@ void FakeTransformer::addObject(const std::string& name) {
 
     std::lock_guard lck(g_objsMutex);
     for (auto const& [key, ptr] : zeno::getSession().globalComm->pairs()) {
-        if (key.find(name) != std::string::npos) {
+        if (key == name) {
             auto object = dynamic_cast<PrimitiveObject*>(ptr);
             auto& user_data = object->userData();
             zeno::vec3f bmin, bmax;
@@ -486,6 +487,7 @@ void FakeTransformer::endTransform(bool moved) {
             }
 
             objsManger->addTransferObj(obj_name, obj);
+            objsManger->noteTransformObj(obj_name);
         }
 
         // sync to node system
@@ -509,7 +511,7 @@ void FakeTransformer::endTransform(bool moved) {
             {
                 auto& objectPath = user_data.get2<std::string>("list-index", "");
                 rightMostNodeId = objectPath.substr(0, objectPath.find_first_of("/"));
-                listitemGroup[rightMostNodeId].append(objectPath + ";");
+                listitemGroup[rightMostNodeId].append(objectPath.substr(objectPath.find_first_of('/') + 1) + "(index:" + obj_name.substr(obj_name.find_first_of(":") + 1) + ")" + ";");
                 continue;
             }
 
@@ -528,7 +530,7 @@ void FakeTransformer::endTransform(bool moved) {
             else {
                 // prim comes from another type node
                 auto linked_transform_node =
-                    node_sync.checkNodeLinkedSpecificNode(prim_node, "PrimitiveTransform", true);
+                    node_sync.checkNodeLinkedSpecificNode(prim_node, "PrimitiveTransform", false);
                 if (linked_transform_node.has_value())
                     // prim links to a exist TransformPrimitive node
                     syncToTransformNode(linked_transform_node.value(), obj_name);
@@ -539,14 +541,20 @@ void FakeTransformer::endTransform(bool moved) {
         }
         for (auto& [key, groupPath]: listitemGroup)
         {
-            std::string first = groupPath.substr(0, groupPath.find_first_of(";"));
-            auto& obj1 = first.substr(first.find_last_of("/") + 1);
-            std::string rightMostNodeId = first.substr(0, first.find_first_of("/"));
+            std::smatch res;
+            if (std::regex_search(groupPath, res, std::regex("\\(index:(.*?)\\)")))
+                if (res.size() != 2)
+                    continue;
+            auto& obj1 = key + ":" + res[1].str();
 
             std::optional<NodeLocation> last{};
-            auto prim_node_location = node_sync.searchNodeOfPrim(rightMostNodeId);
+            auto prim_node_location = node_sync.searchNodeOfPrim(key);
             if (!prim_node_location.has_value())
                 continue;;
+            while (prim_node_location.has_value() && prim_node_location->node.data(ROLE_OBJNAME) == "PrimitiveTransform") {
+                auto& next_node_id = UiHelper::getSockNode(prim_node_location->node.data(ROLE_INPUTS).value<INPUT_SOCKETS>()["prim"].info.links[0].outSockPath);
+                prim_node_location = node_sync.searchNodeOfPrim(next_node_id.toStdString());
+            }
             while (prim_node_location.has_value())
             {
                 last = prim_node_location;

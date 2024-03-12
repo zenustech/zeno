@@ -15,6 +15,7 @@
 #include <zeno/zeno.h>
 #include <zeno/utils/eulerangle.h>
 #include <zeno/utils/string.h>
+#include <regex>
 
 namespace zeno {
 namespace {
@@ -212,14 +213,11 @@ struct PrimitiveTransform : zeno::INode {
         return glm::normalize(vector3);
     }
 
-    static std::optional<std::shared_ptr<IObject>> get_from_list(std::string path, std::shared_ptr<IObject> iObject, std::map<std::string, std::string>& listitemidxs) {
+    static std::optional<std::shared_ptr<IObject>> get_from_list(std::string path, std::shared_ptr<IObject> iObject) {
         if (path.empty() || path == "/") {
             return iObject;
         }
         auto cur_root = iObject;
-        if (auto rootlst = std::dynamic_pointer_cast<ListObject>(cur_root)) {
-            path = listitemidxs[path];
-        }
 
         auto idxs = split_str(path, '/');
         std::vector<int> idxs_int;
@@ -392,23 +390,42 @@ struct PrimitiveTransform : zeno::INode {
             iObject = iObject->clone();
             transformObj(iObject, matrix, pivotType, pivotPos, localX, localY, translate, rotation, scaling);
         }
-        else {
+        else if (std::dynamic_pointer_cast<ListObject>(iObject)){
             if (path != "")
             {
-                std::map<std::string, std::string> listitemidxsMap;
-                std::string listitemidxs = iObject->userData().get2<std::string>("list-item-idxs", "");
-                listitemidxs.erase(listitemidxs.length() - 1);
-                for (const auto& idx : split_str(listitemidxs, ';'))
-                    listitemidxsMap.insert(std::make_pair(idx.substr(0, idx.find_first_of(":")), idx.substr(idx.find_first_of(":") + 1)));
-
-                path.erase(path.length() - 1);
-                auto idxs = split_str(path, ';');
-                for (const auto& idx : idxs) {
-                    auto select = get_from_list(idx, iObject, listitemidxsMap);
+                std::vector<std::string> matches;   //if path like: xxx-makelist/xxx-createCube(index:0/0);xxx-makelist/xxx-createCube(index:0/1)
+                std::regex pattern("\\(index:(.*?)\\)");
+                std::sregex_iterator it(path.begin(), path.end(), pattern);
+                std::sregex_iterator end;
+                while (it != end) {
+                    std::smatch match = *it;
+                    if (match.size() < 2)
+                        continue;
+                    matches.push_back(match[1].str());
+                    ++it;
+                }
+                if (matches.size() == 0)            //if path like: 0/0;0/1;1
+                    matches = split_str(path, ';');
+                for (const auto& idx : matches) {
+                    auto select = get_from_list(idx, iObject);
                     if (select.has_value()) {
                         transformObj(select.value(), matrix, pivotType, pivotPos, localX, localY, translate, rotation, scaling);
                     }
                 }
+            }
+            else {                                  // if path is empty, transform all
+                std::function<void(std::shared_ptr<IObject> const&)> transformList = [&](std::shared_ptr<IObject> const& p) -> void {
+                    if (ListObject* lst = dynamic_cast<ListObject*>(p.get())) {
+                        for (size_t i = 0; i < lst->arr.size(); i++)
+                            transformList(lst->arr[i]);
+                        return;
+                    }
+                    if (!p)
+                        log_error("primitiveTransform: given object is nullptr");
+                    else
+                        transformObj(p, matrix, pivotType, pivotPos, localX, localY, translate, rotation, scaling);
+                };
+                transformList(iObject);
             }
         }
 

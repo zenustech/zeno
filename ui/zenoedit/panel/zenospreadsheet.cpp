@@ -228,7 +228,8 @@ void ZenoSpreadsheet::clear() {
 }
 
 void ZenoSpreadsheet::setPrim(std::string primid) {
-    pPrimName->setText(QString(primid.c_str()).split(':')[0]);
+    //pPrimName->setText(QString(primid.c_str()).split(':')[0]);
+    pPrimName->setText(QString(primid.c_str()));
 
     ZenoMainWindow* pWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(pWin);

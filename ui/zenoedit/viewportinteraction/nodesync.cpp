@@ -201,7 +201,11 @@ void NodeSyncMgr::updateNodeParamString(NodeLocation node_location,
 std::string NodeSyncMgr::getPrimSockName(const std::string& node_type) {
     if (m_prim_sock_map.find(node_type) != m_prim_sock_map.end())
         return m_prim_sock_map[node_type];
-    return "prim";
+    //return "prim";
+    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    NODE_DESC desc;
+    pGraphsModel->getDescriptor(QString::fromStdString(node_type), desc);
+    return desc.outputs.firstKey().toStdString();
 }
 
 std::string NodeSyncMgr::getPrimSockName(NodeLocation& node_location) {

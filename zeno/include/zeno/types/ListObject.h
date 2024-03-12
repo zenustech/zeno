@@ -10,7 +10,6 @@ namespace zeno {
 
 struct ListObject : IObjectClone<ListObject> {
   std::vector<zany> arr;
-  std::map<std::string, std::string> itemidxs;
 
   ListObject() = default;
 
