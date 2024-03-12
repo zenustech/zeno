@@ -14,11 +14,13 @@ struct ContextManagedNode : INode {
     void push_context() {
         assert(!m_ctx);
         m_ctx = std::move(graph->ctx);
-        graph->ctx = std::make_unique<Context>(*m_ctx);
+        if (m_ctx)
+            graph->ctx = std::make_unique<Context>(*m_ctx);
     }
 
     std::unique_ptr<Context> pop_context() {
-        assert(m_ctx);
+        if (!m_ctx)
+            return nullptr;
         auto old_ctx = std::move(graph->ctx);
         graph->ctx = std::move(m_ctx);
         return old_ctx;
