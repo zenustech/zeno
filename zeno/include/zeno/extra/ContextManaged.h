@@ -29,6 +29,7 @@ struct ContextManagedNode : INode {
     std::unique_ptr<Context> pop_context() {
         if (bNewContext) {
             graph->ctx.reset();
+            bNewContext = false;
             return nullptr;
         }
         assert(m_ctx);

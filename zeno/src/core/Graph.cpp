@@ -80,12 +80,10 @@ ZENO_API void Graph::completeNode(std::string const &id) {
 }
 
 ZENO_API bool Graph::applyNode(std::string const &id) {
-    if (ctx) {
-        if (ctx->visited.find(id) != ctx->visited.end()) {
-            return false;
-        }
-        ctx->visited.insert(id);
+    if (ctx->visited.find(id) != ctx->visited.end()) {
+        return false;
     }
+    ctx->visited.insert(id);
     auto node = safe_at(nodes, id, "node name").get();
     GraphException::translated([&] {
         node->doApply();
