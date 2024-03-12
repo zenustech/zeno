@@ -796,7 +796,13 @@ struct WriteAlembicPrims : INode {
                 auto subnames = split_str(n_path, '/');
                 OObject oObject = OObject( archive, 1 );
                 for (auto i = 0; i < subnames.size() - 1; i++) {
-                    oObject = OObject( archive, subnames[i] );
+                    auto child = oObject.getChild(subnames[i]);
+                    if (child.valid()) {
+                        oObject = child;
+                    }
+                    else {
+                        oObject = OObject( oObject, subnames[i] );
+                    }
                 }
                 if (prim->polys.size() || prim->tris.size()) {
                     meshyObjs[path] = OPolyMesh (oObject, subnames[subnames.size() - 1]);
