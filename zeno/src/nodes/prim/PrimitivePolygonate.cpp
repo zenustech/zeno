@@ -55,6 +55,9 @@ ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv) {
         }
 
         prim->tris.foreach_attr([&](auto const &key, auto const &arr) {
+            if (key == "uv0" || key == "uv1" || key == "uv2") {
+                return;
+            }
             using T = std::decay_t<decltype(arr[0])>;
             auto &newarr = prim->polys.add_attr<T>(key);
             newarr.insert(newarr.end(), arr.begin(), arr.end());
@@ -80,6 +83,9 @@ ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv) {
         }
 
         prim->quads.foreach_attr([&](auto const &key, auto const &arr) {
+            if (key == "uv0" || key == "uv1" || key == "uv2" || key == "uv3") {
+                return;
+            }
             using T = std::decay_t<decltype(arr[0])>;
             auto &newarr = prim->polys.add_attr<T>(key);
             newarr.insert(newarr.end(), arr.begin(), arr.end());
