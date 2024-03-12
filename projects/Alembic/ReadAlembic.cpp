@@ -915,7 +915,7 @@ struct ReadAlembic : INode {
 ZENDEFNODE(ReadAlembic, {
     {
         {"readpath", "path"},
-        {"bool", "read_face_set", "0"},
+        {"bool", "read_face_set", "1"},
         {"frameid"},
     },
     {
