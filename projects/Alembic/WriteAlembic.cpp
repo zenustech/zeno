@@ -380,7 +380,7 @@ void write_user_data(std::map<std::string, std::any> &user_attrs, std::string pa
                 user_attrs[full_key] = p;
             }
             auto v = ud.get2<vec2i>(key);
-            std::any_cast<OV2iProperty>(user_attrs[full_key]).set(Imath_3_2::V2i(v[0], v[1]));
+            std::any_cast<OV2iProperty>(user_attrs[full_key]).set(Imath::V2i(v[0], v[1]));
         }
         else if (ud.has<vec3i>(key)) {
             if (user_attrs.count(full_key) == 0) {
@@ -389,7 +389,7 @@ void write_user_data(std::map<std::string, std::any> &user_attrs, std::string pa
                 user_attrs[full_key] = p;
             }
             auto v = ud.get2<vec3i>(key);
-            std::any_cast<OV3iProperty>(user_attrs[full_key]).set(Imath_3_2::V3i(v[0], v[1], v[2]));
+            std::any_cast<OV3iProperty>(user_attrs[full_key]).set(Imath::V3i(v[0], v[1], v[2]));
         }
         else if (ud.has<vec2f>(key)) {
             if (user_attrs.count(full_key) == 0) {
@@ -398,7 +398,7 @@ void write_user_data(std::map<std::string, std::any> &user_attrs, std::string pa
                 user_attrs[full_key] = p;
             }
             auto v = ud.get2<vec2f>(key);
-            std::any_cast<OV2fProperty>(user_attrs[full_key]).set(Imath_3_2::V2f(v[0], v[1]));
+            std::any_cast<OV2fProperty>(user_attrs[full_key]).set(Imath::V2f(v[0], v[1]));
         }
         else if (ud.has<vec3f>(key)) {
             if (user_attrs.count(full_key) == 0) {
@@ -407,7 +407,7 @@ void write_user_data(std::map<std::string, std::any> &user_attrs, std::string pa
                 user_attrs[full_key] = p;
             }
             auto v = ud.get2<vec3f>(key);
-            std::any_cast<OV3fProperty>(user_attrs[full_key]).set(Imath_3_2::V3f(v[0], v[1], v[2]));
+            std::any_cast<OV3fProperty>(user_attrs[full_key]).set(Imath::V3f(v[0], v[1], v[2]));
         }
         else if (ud.has<std::string>(key)) {
             if (user_attrs.count(full_key) == 0) {
