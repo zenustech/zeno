@@ -111,6 +111,7 @@ virtual void apply() override {
         auto cudaPol = cuda_exec();
 
         auto zsparticles = get_input<ZenoParticles>("zsparticles");
+        auto xtag = get_input2<std::string>("xtag");
 
         auto& verts = zsparticles->getParticles();
         auto& tris = zsparticles->category == ZenoParticles::category_e::tet ? 
@@ -122,11 +123,12 @@ virtual void apply() override {
             tris.append_channels(cudaPol,{{"nrm",3}});
         cudaPol(zs::range(tris.size()),
             [tris = proxy<space>({},tris),
+            xtagOffset = verts.getPropertyOffset(xtag),
                 verts = proxy<space>({},verts)] ZS_LAMBDA(int ti) {
             auto tri = tris.template pack<3>("inds",ti).reinterpret_bits(int_c);
-            auto v0 = verts.template pack<3>("x",tri[0]);
-            auto v1 = verts.template pack<3>("x",tri[1]);
-            auto v2 = verts.template pack<3>("x",tri[2]);
+            auto v0 = verts.template pack<3>(xtagOffset,tri[0]);
+            auto v1 = verts.template pack<3>(xtagOffset,tri[1]);
+            auto v2 = verts.template pack<3>(xtagOffset,tri[2]);
 
             auto e01 = v1 - v0;
             auto e02 = v2 - v0;
@@ -200,7 +202,7 @@ virtual void apply() override {
 };
 
 
-ZENDEFNODE(ZSCalcSurfaceNormal, {{"zsparticles"},
+ZENDEFNODE(ZSCalcSurfaceNormal, {{"zsparticles",{"string","xtag","x"}},
                                     {"zsparticles"},
                                     {
                                     {"int","nm_smooth_iters","0"}
