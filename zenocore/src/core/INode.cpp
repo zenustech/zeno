@@ -45,7 +45,8 @@ void INode::initUuid(Graph* pGraph, const std::string nodecls) {
             break;
         }
         else {
-            assert(pGraph->optParentSubgNode.has_value());
+            if (!pGraph->optParentSubgNode.has_value())
+                break;
             auto pSubnetNode = pGraph->optParentSubgNode.value();
             assert(pSubnetNode);
             path.push_front(pSubnetNode->m_uuid);

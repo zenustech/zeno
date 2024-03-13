@@ -305,9 +305,11 @@ void Graph::markDirtyWhenFrameChanged()
     for (const std::string& uuid : frame_nodes) {
         m_nodes[uuid]->mark_dirty(true);
     }
-    for (const std::string& uuid : subnet_nodes) {
+    std::set<std::string> nodes = subnet_nodes;
+    nodes.insert(asset_nodes.begin(), asset_nodes.end());
+    for (const std::string& uuid : nodes) {
         auto spSubnetNode = std::dynamic_pointer_cast<SubnetNode>(m_nodes[uuid]);
-        spSubnetNode->graph->markDirtyWhenFrameChanged();
+        spSubnetNode->subgraph->markDirtyWhenFrameChanged();
     }
 }
 
@@ -384,15 +386,15 @@ ZENO_API std::string Graph::updateNodeName(const std::string oldName, const std:
 
     auto spNode = m_nodes[uuid];
     std::string name = newName;
-    if (m_nodes.find(name) != m_nodes.end()) {
+    if (m_name2uuid.find(name) != m_name2uuid.end()) {
         name = generateNewName(spNode->get_nodecls());
     }
     spNode->set_name(name);
 
-    m_name2uuid[newName] = m_name2uuid[oldName];
+    m_name2uuid[name] = m_name2uuid[oldName];
     m_name2uuid.erase(oldName);
 
-    sync_to_set(m_viewnodes, oldName, newName);
+    sync_to_set(m_viewnodes, oldName, name);
 
     //sync_to_set(frame_nodes, oldName, newName);
     //sync_to_set(subnet_nodes, oldName, newName);
@@ -445,7 +447,7 @@ ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls, std::s
     }
     else {
         bool isCurrentGraphAsset = getSession().assets->isAssetGraph(shared_from_this());
-        node = getSession().assets->newInstance(cls, name, isCurrentGraphAsset);
+        node = getSession().assets->newInstance(this, cls, name, isCurrentGraphAsset);
         uuid = node->get_uuid();
         asset_nodes.insert(uuid);
     }
@@ -485,7 +487,7 @@ ZENO_API std::shared_ptr<INode> Graph::createSubnetNode(std::string const& cls)
     auto subnetnode = std::dynamic_pointer_cast<SubnetNode>(node);
     //subnetnode->subnetClass = std::move(subcl);
 
-    m_nodes[node->get_name()] = node;
+    m_nodes[node->get_uuid()] = node;
     CALLBACK_NOTIFY(createSubnetNode, subnetnode)
     return node;
 }
@@ -510,12 +512,24 @@ ZENO_API Graph* Graph::addSubnetNode(std::string const& id) {
 
 std::set<std::string> Graph::getSubInputs()
 {
-    return subinput_nodes;
+    std::set<std::string> inputs;
+    for (auto&[name, uuid] : m_name2uuid)
+    {
+        if (subinput_nodes.find(uuid) != subinput_nodes.end())
+            inputs.insert(name);
+    }
+    return inputs;
 }
 
 std::set<std::string> Graph::getSubOutputs()
 {
-    return suboutput_nodes;
+    std::set<std::string> outputs;
+    for (auto& [name, uuid] : m_name2uuid)
+    {
+        if (suboutput_nodes.find(uuid) != suboutput_nodes.end())
+            outputs.insert(name);
+    }
+    return outputs;
 }
 
 ZENO_API std::shared_ptr<INode> Graph::getNode(std::string const& name) {
