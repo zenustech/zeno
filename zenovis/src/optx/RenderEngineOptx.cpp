@@ -36,6 +36,7 @@
 #include <map>
 #include <string>
 #include <string_view>
+#include <random>
 
 namespace zenovis::optx {
 
@@ -749,6 +750,16 @@ struct GraphicsManager {
                 if (auto cam = dynamic_cast<zeno::CameraObject *>(obj))
                 {
                     scene->camera->setCamera(cam->get());     // pyb fix
+                    auto &ud = cam->userData();
+                    if (ud.has("aces")) {
+                        scene->camera->setPhysicalCamera(
+                            ud.get2<float>("aperture"),
+                            ud.get2<float>("shutter_speed"),
+                            ud.get2<float>("iso"),
+                            ud.get2<bool>("aces"),
+                            ud.get2<bool>("exposure")
+                        );
+                    }
                 }
 
                 auto ig = std::make_unique<ZxxGraphic>(key, obj);
@@ -779,6 +790,16 @@ struct GraphicsManager {
                 if (!scene->drawOptions->updateMatlOnly) {
                     if (auto cam = dynamic_cast<zeno::CameraObject *>(obj)) {
                         scene->camera->setCamera(cam->get()); // pyb fix
+                        auto &ud = cam->userData();
+                        if (ud.has("aces")) {
+                            scene->camera->setPhysicalCamera(
+                                ud.get2<float>("aperture"),
+                                ud.get2<float>("shutter_speed"),
+                                ud.get2<float>("iso"),
+                                ud.get2<bool>("aces"),
+                                ud.get2<bool>("exposure")
+                            );
+                        }
                     }
                 }
 
@@ -1003,10 +1024,23 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
             auto lodright = glm::normalize(glm::cross(cam.m_lodfront, cam.m_lodup));
             auto lodup = glm::normalize(glm::cross(lodright, cam.m_lodfront));
+
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            std::uniform_int_distribution<int32_t> dis(std::numeric_limits<int32_t>::min(), std::numeric_limits<int32_t>::max());
+
+            xinxinoptix::set_outside_random_number(dis(gen));
         
             xinxinoptix::set_perspective(glm::value_ptr(lodright), glm::value_ptr(lodup),
                                         glm::value_ptr(cam.m_lodfront), glm::value_ptr(cam.m_lodcenter),
                                         cam.getAspect(), cam.m_fov, cam.focalPlaneDistance, cam.m_aperture);
+            xinxinoptix::set_physical_camera_param(
+                cam.zOptixCameraSettingInfo.aperture,
+                cam.zOptixCameraSettingInfo.shutter_speed,
+                cam.zOptixCameraSettingInfo.iso,
+                cam.zOptixCameraSettingInfo.aces,
+                cam.zOptixCameraSettingInfo.exposure
+            );
         }
 
         if (meshNeedUpdate || matNeedUpdate || staticNeedUpdate) {

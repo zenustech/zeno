@@ -148,7 +148,7 @@ constexpr float origin() {
     return 1.0f / 32.0f;
 }
 constexpr float int_scale() {
-    return 64.0f;
+    return 256.0f;
 }
 constexpr float float_scale() {
     return 1.0f / 65536.0f;
