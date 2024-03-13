@@ -883,8 +883,25 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     }
 
 
-    void load_objects(const zeno::RenderObjsInfo& objs) override {
-        graphicsMan->load_objects2(objs);
+    void load_objects(const zeno::RenderObjsInfo& objs_) override {
+        std::vector<std::pair<std::string, zeno::IObject*>> objs2;
+        if (!objs_.newObjs.empty()) {
+            meshNeedUpdate = matNeedUpdate = true;
+            for (auto [key, spObj] : objs_.newObjs) {
+                objs2.push_back(std::make_pair(key, spObj.get()));
+            }
+        }
+        if (graphicsMan->need_update_light(objs2) || scene->objectsMan->needUpdateLight)
+        {
+            graphicsMan->load_light_objects(objs_.newObjs);
+            lightNeedUpdate = true;
+            scene->objectsMan->needUpdateLight = false;
+            scene->drawOptions->needRefresh = true;
+        }
+
+        graphicsMan->load_objects2(objs_);
+
+        graphicsMan->load_shader_uniforms(objs2);
     }
 
     void update() override {
