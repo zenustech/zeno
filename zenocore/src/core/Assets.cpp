@@ -253,7 +253,7 @@ std::shared_ptr<Graph> AssetsMgr::forkAssetGraph(std::shared_ptr<Graph> assetGra
 {
     std::shared_ptr<Graph> newGraph = std::make_shared<Graph>(assetGraph->getName(), true);
     newGraph->optParentSubgNode = subNode.get();
-    for (const auto& [name, spNode] : assetGraph->getNodes())
+    for (const auto& [uuid, spNode] : assetGraph->getNodes())
     {
         zeno::NodeData nodeDat;
         const std::string& name = spNode->get_name();
@@ -261,7 +261,6 @@ std::shared_ptr<Graph> AssetsMgr::forkAssetGraph(std::shared_ptr<Graph> assetGra
 
         if (auto spSubnetNode = std::dynamic_pointer_cast<SubnetNode>(spNode))
         {
-            const std::string& cls = spSubnetNode->get_nodecls();
             if (m_assets.find(cls) != m_assets.end()) {
                 //asset node
                 auto spNewSubnetNode = newGraph->createNode(cls, name, "assets", spNode->get_pos());

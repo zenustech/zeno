@@ -831,14 +831,13 @@ void GraphModel::syncToAssetsInstance(const QString& assetsName, zeno::ParamsUpd
 
 void GraphModel::syncToAssetsInstance(const QString& assetsName)
 {
-    QModelIndexList results = match(QModelIndex(), ROLE_CLASS_NAME, assetsName);
-    for (const QModelIndex& res : results) {
-        zeno::NodeType type = (zeno::NodeType)res.data(ROLE_NODETYPE).toInt();
-        if (type == zeno::Node_AssetInstance) {
-            const QString &name = res.data(ROLE_NODE_NAME).toString();
-            ZASSERT_EXIT(m_nodes.find(name) != m_nodes.end());
-            GraphModel* pSubgM = m_nodes[name]->optSubgraph.value();
-            ZASSERT_EXIT(pSubgM);
+    for (const QString & name : m_subgNodes)
+    {
+        ZASSERT_EXIT(m_nodes.find(name) != m_nodes.end());
+        GraphModel* pSubgM = m_nodes[name]->optSubgraph.value();
+        ZASSERT_EXIT(pSubgM);
+        if (assetsName == m_nodes[name]->cls)
+        {
             //TO DO: compare diff
             if (!pSubgM->isLocked())
                 continue;
@@ -855,6 +854,10 @@ void GraphModel::syncToAssetsInstance(const QString& assetsName)
                 pSubgM->updateAssetInstance(spSubnetNode->subgraph);
                 spNode->mark_dirty(true);
             }
+        }
+        else
+        {
+            pSubgM->syncToAssetsInstance(assetsName);
         }
     }
 }

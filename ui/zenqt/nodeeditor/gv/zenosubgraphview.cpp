@@ -694,7 +694,8 @@ void ZenoSubGraphView::onRowsAboutToBeRemoved(const QModelIndex& parent, int fir
     for (int r = first; r <= last; r++)
     {
         QModelIndex idx = model->index(r, 0, parent);
-        if (idx.data(ROLE_NODETYPE) == zeno::Node_SubgraphNode)
+        int nodeType = idx.data(ROLE_NODETYPE).toInt();
+        if (nodeType == zeno::Node_SubgraphNode || nodeType == zeno::Node_AssetInstance)
         {
             //ÒÆ³ýview scene
             GraphModel* pSubnetModel = idx.data(ROLE_SUBGRAPH).value<GraphModel*>();;
