@@ -372,7 +372,6 @@ bool GetMesh(FbxNode* pNode, std::shared_ptr<PrimitiveObject> prim) {
     for (int i = 0; i < numVertices; ++i) {
         auto pos = bindMatrix.MultT( FbxVector4(vertices[i][0], vertices[i][1], vertices[i][2], 1.0));
         prim->verts[i] = vec3f(pos[0], pos[1], pos[2]);
-        zeno::log_info("ss {}", vertices[i][3]);
     }
     int numPolygons = pMesh->GetPolygonCount();
     prim->polys.resize(numPolygons);
@@ -582,6 +581,22 @@ struct NewFBXImportSkeleton : INode {
 
                 bone_names.emplace_back(pose->GetNode(j)->GetName());
                 boneNames[j] = j;
+            }
+            std::vector<int> bone_connects;
+            for (int j = 0; j < pose->GetCount(); ++j) {
+                auto parent_name = pose->GetNode(j)->GetParent()->GetName();
+                auto index = std::find(bone_names.begin(), bone_names.end(), parent_name) - bone_names.begin();
+                if (index < bone_names.size()) {
+                    bone_connects.push_back(index);
+                    bone_connects.push_back(j);
+                }
+            }
+            {
+                prim->loops.values = bone_connects;
+                prim->polys.resize(bone_connects.size() / 2);
+                for (auto j = 0; j < bone_connects.size() / 2; j++) {
+                    prim->polys[j] = {j * 2, 2};
+                }
             }
             ud.set2("boneName_count", int(bone_names.size()));
             for (auto i = 0; i < bone_names.size(); i++) {
