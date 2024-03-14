@@ -48,6 +48,10 @@ struct RenderEngineBate : RenderEngine {
         graphicsMan->remove_object(key);
     }
 
+    void load_objects(const zeno::RenderObjsInfo& objs) override {
+        graphicsMan->load_objects2(objs);
+    }
+
     void viewObject(std::shared_ptr<zeno::IObject> spObj, bool bView) override {
         if (bView)
             graphicsMan->add_object(spObj);

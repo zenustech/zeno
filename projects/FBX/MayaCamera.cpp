@@ -160,7 +160,7 @@ struct CameraEval: zeno::INode {
         if (has_input("frameid")) {
             frameid = get_input<zeno::NumericObject>("frameid")->get<int>();
         } else {
-            frameid = getGlobalState()->frameid;
+            frameid = getGlobalState()->getFrameId();
         }
 
         auto nodelist = get_input<zeno::ListObject>("nodelist")->get<zeno::CameraObject>();
@@ -400,7 +400,7 @@ struct LiveMeshNode : INode {
         if (has_input("frameid")) {
             frameid = get_input<zeno::NumericObject>("frameid")->get<int>();
         } else {
-            frameid = getGlobalState()->frameid;
+            frameid = getGlobalState()->getFrameId();
         }
 
         if(! vertSrc.empty()){

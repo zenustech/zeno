@@ -424,7 +424,7 @@ struct ImportAlembicPrim : INode {
         if (has_input("frameid")) {
             frameid = get_input2<int>("frameid");
         } else {
-            frameid = getGlobalState()->frameid;
+            frameid = getGlobalState()->getFrameId();
         }
         auto abctree = std::make_shared<ABCTree>();
         {

@@ -8,6 +8,7 @@
 
 class GraphsManager;
 class ZenoMainWindow;
+class CalculationMgr;
 
 class ZenoApplication : public QApplication
 {
@@ -16,6 +17,7 @@ public:
     ZenoApplication(int &argc, char **argv);
     ~ZenoApplication();
     GraphsManager* graphsManager() const;
+    CalculationMgr* calculationMgr() const;
     void initFonts();
     void initStyleSheets();
     ZenoMainWindow* getMainWindow();
@@ -33,6 +35,7 @@ private:
 
     std::shared_ptr<ZWidgetErrStream> m_spUILogStream;
     std::shared_ptr<ProcessClipboard> m_spProcClipboard;
+    CalculationMgr* m_calcMgr;
     QDir m_appDataPath;
     bool m_bUIApp;
 };

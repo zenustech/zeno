@@ -323,7 +323,7 @@ struct WriteCustomVAT : INode {
         if (has_input("frameid")) {
             frameid = get_param<int>("frameid");
         } else {
-            frameid = getGlobalState()->frameid;
+            frameid = getGlobalState()->getFrameId();
         }
         int frameStart = get_param<int>("frameStart");
         int frameEnd = get_param<int>("frameEnd");
@@ -477,7 +477,7 @@ struct ReadCustomVAT : INode {
         if (has_input("frameid")) {
             frameid = get_param<int>("frameid");
         } else {
-            frameid = getGlobalState()->frameid;
+            frameid = getGlobalState()->getFrameId();
         }
         auto prim = std::make_shared<zeno::PrimitiveObject>();
         if (frameid < v.size()) {

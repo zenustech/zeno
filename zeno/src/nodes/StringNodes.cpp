@@ -150,7 +150,7 @@ struct StringFormat : zeno::INode {
         auto str = get_input2<std::string>("str");
         for (int i = 0; i < str.size() - 1; i++) {
             if (str[i] == '$' && str[i + 1] == 'F') {
-                str.replace(i, 2, std::to_string(getGlobalState()->frameid));
+                str.replace(i, 2, std::to_string(getGlobalState()->getFrameId()));
                 break;
             }
         }
@@ -346,7 +346,7 @@ struct ExportPath : zeno::INode {  // deprecated
     virtual void apply() override {
         char buf[100];
         auto ext = get_param<std::string>("ext");
-        sprintf(buf, "%06d", getGlobalState()->frameid);
+        sprintf(buf, "%06d", getGlobalState()->getFrameId());
         auto path = fs::path(getGlobalState()->iopath) / buf;
         if (!fs::is_directory(path)) {
             fs::create_directory(path);
@@ -370,7 +370,7 @@ ZENDEFNODE(ExportPath, {
 struct EndFrame : zeno::INode {  // deprecated
     virtual void apply() override {
         char buf[100];
-        sprintf(buf, "%06d", getGlobalState()->frameid);
+        sprintf(buf, "%06d", getGlobalState()->getFrameId());
         auto path = fs::path(getGlobalState()->iopath) / buf;
         if (!fs::is_directory(path)) {
             fs::create_directory(path);

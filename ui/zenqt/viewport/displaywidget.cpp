@@ -26,6 +26,7 @@
 #include "viewport/nodesync.h"
 #include "layout/winlayoutrw.h"
 #include "model/graphsmanager.h"
+#include "calculation/calculationmgr.h"
 
 
 using std::string;
@@ -78,38 +79,13 @@ DisplayWidget::DisplayWidget(bool bGLView, QWidget *parent)
     m_pTimer = new QTimer(this);
     connect(m_pTimer, SIGNAL(timeout()), this, SLOT(updateFrame()));
 
-    // core -->  ui --> render
-    auto& sess = zeno::getSession();
-    m_cbAddObject = sess.objsMan->register_addObject([&](std::shared_ptr<zeno::IObject> spObj, bool bView) {
-        if (bView) {
-            auto engine = getZenoVis()->getSession()->get_scene()->renderMan->getEngine();
-            ZASSERT_EXIT(engine);
-            engine->addObject(spObj);
-            updateFrame();
-        }
-    });
-
-    m_cbRemoveObj = sess.objsMan->register_removeObject([&](std::string key) {
-        auto engine = getZenoVis()->getSession()->get_scene()->renderMan->getEngine();
-        ZASSERT_EXIT(engine);
-        engine->removeObject(key);
-        updateFrame();
-    });
-
-    m_cbViewObj = sess.objsMan->register_viewObject([&](std::shared_ptr<zeno::IObject> spObj, bool bView) {
-        auto engine = getZenoVis()->getSession()->get_scene()->renderMan->getEngine();
-        ZASSERT_EXIT(engine);
-        engine->viewObject(spObj, bView);
-        updateFrame();
-    });
+    auto pCalcMgr = zenoApp->calculationMgr();
+    pCalcMgr->registerRenderWid(this);
 }
 
 DisplayWidget::~DisplayWidget()
 {
-    auto& sess = zeno::getSession();
-    sess.objsMan->unregister_addObject(m_cbAddObject);
-    sess.objsMan->unregister_removeObject(m_cbRemoveObj);
-    sess.objsMan->unregister_viewObject(m_cbViewObj);
+    zenoApp->calculationMgr()->unRegisterRenderWid(this);
 }
 
 void DisplayWidget::initRecordMgr()
@@ -401,6 +377,19 @@ void DisplayWidget::onPlayClicked(bool bChecked)
 #else
         emit m_optixView->sig_togglePlayButton(bChecked);
 #endif
+    }
+}
+
+void DisplayWidget::onCalcFinished(bool bSucceed, QString msg) {
+    if (bSucceed) {
+        if (m_bGLView) {
+            m_glView->load_objects();
+            emit render_objects_loaded();
+        }
+        else {
+            m_optixView->load_objects();
+        }
+        updateFrame();
     }
 }
 
@@ -806,7 +795,7 @@ void DisplayWidget::onRecord()
 
         std::function<void()> killRunProcIfCancel = [bRunBeforeRecord]() {
             // record run, should kill the runner proc.
-            const bool bWorking = zeno::getSession().globalState->working;
+            const bool bWorking = zeno::getSession().globalState->is_working();
             if (bWorking && bRunBeforeRecord)
             {
                 //kill

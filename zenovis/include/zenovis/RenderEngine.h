@@ -7,6 +7,7 @@
 #include <string>
 #include <memory>
 #include <map>
+#include <zeno/core/ObjectManager.h>
 
 namespace zenovis {
 
@@ -18,6 +19,7 @@ struct RenderEngine {
     virtual void addObject(std::shared_ptr<zeno::IObject> spObj) {}
     virtual void removeObject(const std::string& key) {}
     virtual void viewObject(std::shared_ptr<zeno::IObject> spObj, bool bView) {}
+    virtual void load_objects(const zeno::RenderObjsInfo& objs) {}
     virtual ~RenderEngine() = default;
 };
 

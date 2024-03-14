@@ -481,7 +481,7 @@ struct EvalFBXAnim : zeno::INode {
         if (has_input("frameid")) {
             frameid = get_input<zeno::NumericObject>("frameid")->get<int>();
         } else {
-            frameid = getGlobalState()->frameid;
+            frameid = getGlobalState()->getFrameId();
         }
 
         SFBXEvalOption evalOption;

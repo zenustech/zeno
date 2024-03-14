@@ -487,15 +487,14 @@ struct GraphicsManager {
     explicit GraphicsManager(Scene *scene) : scene(scene) {
     }
 
-    bool load_shader_uniforms(std::vector<std::pair<std::string, zeno::IObject *>> const &objs)
+    bool load_shader_uniforms(std::vector<std::pair<std::string, std::shared_ptr<zeno::IObject>>> const &objs)
     {
         std::vector<float4> shaderUniforms;
         shaderUniforms.resize(0);
         for (auto const &[key, obj] : objs) {
-            if (auto prim_in = dynamic_cast<zeno::PrimitiveObject *>(obj)){
+            if (auto prim_in = dynamic_cast<zeno::PrimitiveObject*>(obj.get())){
                 if ( prim_in->userData().get2<int>("ShaderUniforms", 0)==1 )
                 {
-
                     shaderUniforms.resize(prim_in->verts.size());
                     for(int i=0;i<prim_in->verts.size();i++)
                     {
@@ -760,6 +759,38 @@ struct GraphicsManager {
         // return ins.has_changed();
         return changed;
     }
+
+    void add_object(std::shared_ptr<zeno::IObject> obj) {
+        if (obj->key.empty())
+            return;
+        if (!scene->drawOptions->updateMatlOnly) {
+            if (auto cam = std::dynamic_pointer_cast<zeno::CameraObject>(obj)) {
+                scene->camera->setCamera(cam->get()); // pyb fix
+            }
+        }
+
+        auto& wtf = graphics.m_curr;
+        auto it = wtf.find(obj->key);
+        if (it == wtf.end()) {
+            auto ig = std::make_unique<ZxxGraphic>(obj->key, obj.get());
+            graphics.m_curr.insert(std::make_pair(obj->key, std::move(ig)));
+        }
+        else {
+            auto ig = std::make_unique<ZxxGraphic>(obj->key, obj.get());
+            if (!ig)
+                return;
+            ig->key = obj->key;
+            it->second = std::move(ig);
+        }
+    }
+
+    void remove_object(const std::string key) {
+        auto& wtf = graphics.m_curr;
+        if (wtf.find(key) == wtf.end())
+            return;
+        wtf.erase(key);
+    }
+
     bool load_objects(std::vector<std::pair<std::string, zeno::IObject *>> const &objs) {
         auto ins = graphics.insertPass();
         objOrder.clear();
@@ -836,6 +867,41 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         xinxinoptix::optixinit(std::size(argv), argv);
     }
 
+    void load_objects(const zeno::RenderObjsInfo& objs) override {
+        //light update condition
+        bool bUpdateLight = !objs.empty();
+        if (bUpdateLight) {
+            graphicsMan->load_light_objects(objs.lightObjs);
+            lightNeedUpdate = true;
+            scene->drawOptions->needRefresh = true;
+        }
+
+        size_t idx = 0;
+        for (auto [key, spObj] : objs.newObjs) {
+            graphicsMan->add_object(spObj);
+            graphicsMan->objOrder[key] = idx++;
+        }
+        for (auto [key, spObj] : objs.modifyObjs) {
+            graphicsMan->add_object(spObj);
+        }
+        for (auto key : objs.remObjs) {
+            graphicsMan->remove_object(key);
+        }
+
+        bool bUpdateMesh = !objs.empty();
+        if (bUpdateMesh) {
+            meshNeedUpdate = matNeedUpdate = true;
+        }
+
+        if (!objs.allObjects.empty()) {
+            std::vector<std::pair<std::string, std::shared_ptr<zeno::IObject>>> vecObjs;
+            for (auto [key, spObj] : objs.allObjects) {
+                vecObjs.push_back(std::make_pair(key, spObj));
+            }
+            graphicsMan->load_shader_uniforms(vecObjs);
+        }
+    }
+
     void update() override {
 
         if(graphicsMan->need_update_light(scene->objectsMan->pairs())
@@ -864,7 +930,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 matNeedUpdate = meshNeedUpdate = false;
             }
         }
-        graphicsMan->load_shader_uniforms(scene->objectsMan->pairs());
+        graphicsMan->load_shader_uniforms(scene->objectsMan->pairsShared());
     }
 
 #define MY_CAM_ID(cam) cam.m_nx, cam.m_ny, cam.m_lodup, cam.m_lodfront, cam.m_lodcenter, cam.m_fov, cam.focalPlaneDistance, cam.m_aperture

@@ -81,6 +81,23 @@ ZENDEFNODE(PrintMessageStdErr, {
 });
 
 
+struct InfiniteLoop : zeno::INode {
+    virtual void apply() override {
+        while (true) {
+            int j;
+            j = 0;
+        }
+    }
+};
+
+ZENDEFNODE(InfiniteLoop, {
+    {{"int", "input", "2"}},
+    {{"int", "output"}},
+    {},
+    {"debug"}
+});
+
+
 struct TriggerExitProcess : zeno::INode {
     virtual void apply() override {
         int status = get_param<int>("status");

@@ -41,7 +41,6 @@ struct Session {
     std::unique_ptr<EventCallbacks> const eventCallbacks;
     std::unique_ptr<UserData> const m_userData;
     std::unique_ptr<ObjectManager> const objsMan;
-    std::unique_ptr<CalcManager> const calcMan;
     std::shared_ptr<Graph> mainGraph;
     std::shared_ptr<AssetsMgr> assets;
 
@@ -67,6 +66,7 @@ struct Session {
     ZENO_API void endApiCall();
     ZENO_API void switchToFrame(int frameid);
     ZENO_API int registerObjId(const std::string& objprefix);
+    ZENO_API void registerRunTrigger(std::function<void()> func);
 
 private:
     void initNodeCates();
@@ -75,6 +75,8 @@ private:
     int m_apiLevel = 0;
     bool m_bApiLevelEnable = true;
     bool m_bAutoRun = false;
+
+    std::function<void()> m_callbackRunTrigger;
 };
 
 ZENO_API Session &getSession();

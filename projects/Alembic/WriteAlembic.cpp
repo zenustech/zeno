@@ -49,7 +49,7 @@ struct WriteAlembic : INode {
         if (has_input("frameid")) {
             frameid = get_param<int>("frameid");
         } else {
-            frameid = getGlobalState()->frameid;
+            frameid = getGlobalState()->getFrameId();
         }
         int frame_start = get_param<int>("frame_start");
         int frame_end = get_param<int>("frame_end");
@@ -477,7 +477,7 @@ struct WriteAlembic2 : INode {
         if (has_input("frameid")) {
             frameid = get_input2<int>("frameid");
         } else {
-            frameid = getGlobalState()->frameid;
+            frameid = getGlobalState()->getFrameId();
         }
         int frame_start = get_input2<int>("frame_start");
         int frame_end = get_input2<int>("frame_end");
@@ -711,7 +711,7 @@ struct WriteAlembicPrims : INode {
         if (has_input("frameid")) {
             frameid = get_input2<int>("frameid");
         } else {
-            frameid = getGlobalState()->frameid;
+            frameid = getGlobalState()->getFrameId();
         }
         int frame_start = get_input2<int>("frame_start");
         int frame_end = get_input2<int>("frame_end");

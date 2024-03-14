@@ -73,6 +73,18 @@ struct GraphicsManager {
         return true;
     }
 
+    void load_objects2(const zeno::RenderObjsInfo& objs) {
+        for (auto [key, spObj] : objs.newObjs) {
+            add_object(spObj);
+        }
+        for (auto [key, spObj] : objs.modifyObjs) {
+            add_object(spObj);
+        }
+        for (auto key : objs.remObjs) {
+            remove_object(key);
+        }
+    }
+
     bool load_objects(std::vector<std::pair<std::string, std::shared_ptr<zeno::IObject>>> const &objs) {
         auto ins = graphics.insertPass();
         realtime_graphics.clear();

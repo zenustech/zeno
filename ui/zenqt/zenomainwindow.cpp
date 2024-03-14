@@ -52,7 +52,6 @@
 #include "dialog/zpreferencesdlg.h"
 #include "model/GraphsTreeModel.h"
 #include <zeno/core/Session.h>
-#include <zeno/core/CalcManager.h>
 #include <zeno/utils/api.h>
 
 
@@ -648,16 +647,7 @@ void ZenoMainWindow::initTimelineDock()
         }
     });
 
-    connect(m_pTimeline, &ZTimeline::sliderValueChanged, this, [=](int frame) {
-        auto& sess = zeno::getSession();
-        sess.switchToFrame(frame);
-        /*
-        QVector<DisplayWidget*> views = viewports();
-        for (DisplayWidget* view : views) {
-            view->onSliderValueChanged(frame);
-        }
-        */
-    });
+    connect(m_pTimeline, &ZTimeline::sliderValueChanged, this, &ZenoMainWindow::onFrameSwitched);
 
     auto graphs = zenoApp->graphsManager();
     connect(graphs, &GraphsManager::modelDataChanged, this, [=]() {
@@ -707,6 +697,12 @@ void ZenoMainWindow::initTimelineDock()
 ZTimeline* ZenoMainWindow::timeline() const
 {
     return m_pTimeline;
+}
+
+void ZenoMainWindow::onFrameSwitched(int frameid)
+{
+    auto& sess = zeno::getSession();
+    sess.switchToFrame(frameid);
 }
 
 void ZenoMainWindow::onMaximumTriggered()
@@ -852,7 +848,7 @@ DisplayWidget* ZenoMainWindow::getOnlyViewport() const
 bool ZenoMainWindow::resetProc()
 {
     //should kill the runner proc.
-    const bool bWorking = zeno::getSession().globalState->working;
+    const bool bWorking = zeno::getSession().globalState->is_working();
     if (bWorking)
     {
         int flag = QMessageBox::question(this, tr("Kill Process"), tr("Background process is running, you need kill the process."), QMessageBox::Yes | QMessageBox::No);

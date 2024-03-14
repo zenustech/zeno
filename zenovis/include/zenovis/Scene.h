@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 #include <zeno/core/IObject.h>
+#include <zeno/core/ObjectManager.h>
 #include <zeno/utils/disable_copy.h>
 #include <zeno/utils/vec.h>
 #include <map>
@@ -43,6 +44,7 @@ struct Scene : zeno::disable_copy {
 
     void draw();
     bool loadFrameObjects(int frameid);
+    void load_objects(const zeno::RenderObjsInfo& objs);
     void cleanUpScene();
     void switchRenderEngine(std::string const &name);
     std::vector<char> record_frame_offline(int hdrSize = 1, int rgbComps = 3);

@@ -9,6 +9,7 @@
 #include "layout/winlayoutrw.h"
 #include <viewport/transform.h>
 #include <viewport/picker.h>
+#include <zeno/core/ObjectManager.h>
 
 class ZTimeline;
 class ZenoMainWindow;
@@ -52,6 +53,7 @@ public:
     void setSimpleRenderOption();
     void setViewWidgetInfo(DockContentWidgetInfo& info);
     void glDrawForCommandLine();
+    void load_objects();
 
 signals:
     void frameRecorded(int);

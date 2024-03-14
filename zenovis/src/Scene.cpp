@@ -77,6 +77,11 @@ bool Scene::cameraFocusOnNode(std::string const &nodeid, zeno::vec3f &center, fl
     return false;
 }
 
+void Scene::load_objects(const zeno::RenderObjsInfo& objs) {
+    if (renderMan && renderMan->getEngine())
+        renderMan->getEngine()->load_objects(objs);
+}
+
 bool Scene::loadFrameObjects(int frameid) {
     auto &ud = zeno::getSession().userData();
     ud.set2<int>("frameid", std::move(frameid));

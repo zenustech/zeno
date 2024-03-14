@@ -81,7 +81,7 @@ namespace {
                 if (w != 1) {
                     oss << std::setfill('0') << std::setw(w);
                 }
-                oss << getGlobalState()->frameid;
+                oss << getGlobalState()->getFrameId();
                 code.replace(pos, 2 + w - 1, oss.str());
             } else break;
 
@@ -102,7 +102,7 @@ namespace {
 
             //for (int i = 0; i < code.size(); i++) {
                 //if (code[i] == '$' && code[i+1] == 'F') {
-                    //code.replace(i, 2, std::to_string(getGlobalState()->frameid));
+                    //code.replace(i, 2, std::to_string(getGlobalState()->getFrameId()));
                 //} else if (code == '$' && code[i+1] == 'N') {
                     ////这里把$N替换成啥
                   ////  code.replace(i, 2, std::to_string())

@@ -36,7 +36,7 @@ ZENO_API void GlobalState::frameEnd() {
 }
 
 ZENO_API void GlobalState::clearState() {
-    working = false;
+    m_working = false;
     frameid = 0;
     substepid = 0;
     frame_time = 1.f / 60.f;
@@ -46,6 +46,29 @@ ZENO_API void GlobalState::clearState() {
     time_step_integrated = false;
     sessionid++;
     log_debug("entering session id={}", sessionid);
+}
+
+ZENO_API int GlobalState::getFrameId() const {
+    return frameid;
+}
+
+ZENO_API void GlobalState::updateFrameId(int frame) {
+    //todo: mutex
+    frameid = frame;
+}
+
+ZENO_API bool GlobalState::is_working() const {
+    std::lock_guard lk(mtx);
+    return m_working;
+}
+
+ZENO_API void GlobalState::set_working(bool working) {
+    std::lock_guard lk(mtx);
+    m_working = working;
+}
+
+ZENO_API void GlobalState::setCalcObjStatus(CalcObjStatus status) {
+    m_status = status;
 }
 
 }

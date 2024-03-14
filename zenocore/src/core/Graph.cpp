@@ -32,6 +32,7 @@ ZENO_API Context::Context(Context const &other)
 {}
 
 ZENO_API Graph::Graph(const std::string& name, bool bAssets) : m_name(name), m_bAssets(bAssets) {
+    
 }
 
 ZENO_API Graph::~Graph() {
@@ -77,6 +78,9 @@ ZENO_API bool Graph::applyNode(std::string const &node_name) {
     const std::string uuid = safe_at(m_name2uuid, node_name, "uuid");
     auto node = safe_at(m_nodes, uuid, "node name").get();
     GraphException::translated([&] {
+        if (!zeno::getSession().globalState->is_working()) {
+            throw GraphException();
+        }
         node->doApply();
     }, node->get_name());
     return true;

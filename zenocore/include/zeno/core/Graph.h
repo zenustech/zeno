@@ -37,7 +37,7 @@ struct Context {
 };
 
 struct Graph : std::enable_shared_from_this<Graph> {
-    //SubgraphNode *subgraphNode = nullptr;
+    Session* session = nullptr;
 
     std::map<std::string, std::shared_ptr<INode>> m_nodes;  //based on uuid.
     std::set<std::string> nodesToExec;

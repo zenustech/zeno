@@ -26,7 +26,7 @@
 #include <zeno/utils/helper.h>
 #include <zeno/utils/uuid.h>
 #include <zeno/extra/SubnetNode.h>
-#include <zeno/core/CalcManager.h>
+#include <zeno/extra/GraphException.h>
 
 
 namespace zeno {
@@ -153,7 +153,7 @@ void INode::mark_dirty_objs()
             if (spObj->key.empty()) {
                 continue;
             }
-            getSession().calcMan->collect_removing_objs(spObj->key);
+            getSession().objsMan->collect_removing_objs(spObj->key);
         }
     }
 }
@@ -175,6 +175,10 @@ ZENO_API void INode::preApply() {
         bool ret = requireInput(param);
         if (!ret)
             zeno::log_warn("the param {} may not be initialized", name);
+    }
+
+    if (!zeno::getSession().globalState->is_working()) {
+        throw GraphException();
     }
 
     log_debug("==> enter {}", m_name);
@@ -209,7 +213,7 @@ ZENO_API void INode::registerObjToManager()
                 return;
             }
             assert(!spObj->key.empty());
-            getSession().objsMan->addObject(spObj->key, spObj, shared_from_this(), m_bView);
+            getSession().objsMan->collectingObject(spObj->key, spObj, shared_from_this(), m_bView);
         }
     }
 }
@@ -220,7 +224,7 @@ ZENO_API bool INode::requireInput(std::string const& ds) {
 
 zany INode::get_output_result(std::shared_ptr<INode> outNode, std::string out_param, bool bCopy) {
     zany outResult = outNode->get_output(out_param);
-    if (bCopy) {
+    if (bCopy && outResult) {
         outResult = outResult->clone();
         if (outResult->key.empty()) {
             outResult->key = generateUUID();
@@ -668,7 +672,7 @@ ZENO_API zany INode::get_keyframe(std::string const &id) const
     if (!curves) {
         return value;
     }
-    int frame = getGlobalState()->frameid;
+    int frame = getGlobalState()->getFrameId();
     if (curves->keys.size() == 1) {
         auto val = curves->keys.begin()->second.eval(frame);
         value = objectFromLiterial(val);
@@ -772,7 +776,7 @@ ZENO_API TempNodeCaller INode::temp_node(std::string const &id) {
 
 float INode::resolve(const std::string& formulaOrKFrame, const ParamType type)
 {
-    int frame = getGlobalState()->frameid;
+    int frame = getGlobalState()->getFrameId();
     if (zeno::starts_with(formulaOrKFrame, "=")) {
         std::string code = formulaOrKFrame.substr(1);
         auto res = getThisGraph()->callTempNode(
@@ -827,7 +831,7 @@ zany INode::process(std::shared_ptr<IParam> in_param)
         return nullptr;
     }
 
-    int frame = getGlobalState()->frameid;
+    int frame = getGlobalState()->getFrameId();
     zany result;
 
     const ParamType type = in_param->type;

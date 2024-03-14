@@ -32,6 +32,7 @@
 #include "zassert.h"
 #include "viewport/zenovis.h"
 #include "layout/zdockwidget.h"
+#include "calculation/calculationmgr.h"
 
 
 ZToolBarButton::ZToolBarButton(bool bCheckable, const QString& icon, const QString& iconOn)
@@ -552,7 +553,7 @@ void DockContent_Editor::initConnections()
         auto& sess = zeno::getSession();
         sess.set_auto_run(checked);
         if (checked) {
-            sess.run();
+            zenoApp->calculationMgr()->run();
         }
     });
     connect(m_pEditor, &ZenoGraphsEditor::zoomed, [=](qreal newFactor) {
@@ -584,14 +585,17 @@ void DockContent_Editor::initConnections()
 
         m_btnRun->setVisible(false);
         m_btnKill->setVisible(true);
-        auto& sess = zeno::getSession();
-        sess.run();
+
+        zenoApp->calculationMgr()->run();
+    });
+
+    connect(zenoApp->calculationMgr(), &CalculationMgr::calcFinished, this, [=](bool bSucceed, QString msg) {
+        m_btnRun->setVisible(true);
+        m_btnKill->setVisible(false);
     });
 
     connect(m_btnKill, &ZTextIconButton::clicked, this, [=]() {
-        //TODO: Kill
-        m_btnRun->setVisible(true);
-        m_btnKill->setVisible(false);
+        zenoApp->calculationMgr()->kill();
     });
 
     connect(&ZenoSettingsManager::GetInstance(), &ZenoSettingsManager::valueChanged, this, [=](QString name) {
