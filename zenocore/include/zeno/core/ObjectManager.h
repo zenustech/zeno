@@ -21,6 +21,12 @@ namespace zeno {
         SharedObjects newObjs;
         SharedObjects modifyObjs;
         SharedObjects remObjs;
+        SharedObjects lightObjs;    //TODO:
+        SharedObjects allObjects;
+
+        bool empty() const {
+            return newObjs.empty() && modifyObjs.empty() && remObjs.empty() && lightObjs.empty();
+        }
     };
 
 

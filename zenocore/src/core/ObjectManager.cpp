@@ -41,11 +41,16 @@ namespace zeno {
         }
         if (bView) {
             m_viewObjs.insert(id);
-            m_lastViewObjs.erase(id);   //上一次运行有view，这一次也有view
+            if (m_lastViewObjs.find(id) != m_lastViewObjs.end()) {
+                m_lastViewObjs.erase(id);   //上一次运行有view，这一次也有view
+            }
+            else {
+                //上一次没有view，这次有view，要么就是新增，要么就是重新打view
+                m_newAdded.insert(id);
+            }
         }
         else {
         }
-        //CALLBACK_NOTIFY(collectingObject, obj, bView)
     }
 
     ZENO_API void ObjectManager::removeObject(const std::string& id)
@@ -53,20 +58,18 @@ namespace zeno {
         std::lock_guard lck(m_mtx);
         if (m_collecting.find(id) != m_collecting.end()) {
             m_collecting.erase(id);
-            //CALLBACK_NOTIFY(removeObject, id)
         }
     }
 
     ZENO_API void ObjectManager::notifyTransfer(std::shared_ptr<IObject> obj)
     {
-        std::lock_guard lck(m_mtx);
+        //std::lock_guard lck(m_mtx);
         //CALLBACK_NOTIFY(notifyTransfer, obj)
     }
 
     ZENO_API void ObjectManager::viewObject(std::shared_ptr<IObject> obj, bool bView)
     {
-        std::lock_guard lck(m_mtx);
-        //CALLBACK_NOTIFY(viewObject, obj, bView)
+        //std::lock_guard lck(m_mtx);
     }
 
     ZENO_API int ObjectManager::registerObjId(const std::string& objprefix)
@@ -105,11 +108,7 @@ namespace zeno {
     ZENO_API void ObjectManager::afterRun()
     {
         std::lock_guard lck(m_mtx);
-        //剩下来的都是上一次view，而这一次没有view的。
-        for (auto objkey : m_lastViewObjs)
-        {
-            //removeObject(objkey);
-        }
+        //m_lastViewObjs剩下来的都是上一次view，而这一次没有view的。
         m_remove = m_lastViewObjs;
         m_lastViewObjs.clear();
     }
