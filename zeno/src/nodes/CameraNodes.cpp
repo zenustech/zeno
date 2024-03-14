@@ -389,4 +389,146 @@ ZENO_DEFNODE(LightNode)({
     {"shader"},
 });
 
+
+struct ScreenSpaceProjectedGrid : INode {
+    float hitOnFloor(vec3f pos, vec3f dir) const {
+        float t = (0 - pos[1]) / dir[1];
+        return t;
+    }
+    virtual void apply() override {
+        auto cam = get_input2<CameraObject>("cam");
+        auto prim = std::make_unique<PrimitiveObject>();
+        auto raw_width = get_input2<int>("width");
+        auto raw_height = get_input2<int>("height");
+        auto u_padding = get_input2<int>("u_padding");
+        auto v_padding = get_input2<int>("v_padding");
+        auto fov = glm::radians(cam->fov);
+        auto pos = cam->pos;
+        auto up = cam->up;
+        auto view = cam->view;
+        auto infinite = cam->ffar;
+
+        auto width = raw_width + u_padding * 2;
+        auto height = raw_height + v_padding * 2;
+
+        auto right = zeno::cross(view, up);
+        float ratio = float(raw_width) / float(raw_height);
+        float right_scale = std::tan(fov / 2) * ratio * float(width - 1) / float(raw_width - 1);
+        float up_scale = std::tan(fov / 2) * float(height - 1) / float(raw_height - 1);
+        prim->verts.resize(width * height);
+        for (auto j = 0; j <= height - 1; j++) {
+            float v = float(j) / float(height - 1) * 2.0f - 1.0f;
+            for (auto i = 0; i <= width - 1; i++) {
+                float u = float(i) / float(width - 1) * 2.0f - 1.0f;
+                auto dir = view + u * right * right_scale + v * up * up_scale;
+                auto ndir = zeno::normalize(dir);
+                auto t = hitOnFloor(pos, ndir);
+                if (t > 0 && t * zeno::dot(ndir, dir) < infinite) {
+                    prim->verts[j * width + i] = pos + ndir * t;
+                }
+                else {
+                    prim->verts[j * width + i] = pos + dir * infinite;
+                    prim->verts[j * width + i][1] = 0;
+                }
+            }
+        }
+        std::vector<vec3i> tris;
+        tris.reserve((width - 1) * (height - 1) * 2);
+        for (auto j = 0; j < height - 1; j++) {
+            for (auto i = 0; i < width - 1; i++) {
+                auto _0 = j * width + i;
+                auto _1 = j * width + i + 1;
+                auto _2 = j * width + i + 1 + width;
+                auto _3 = j * width + i + width;
+                tris.emplace_back(_0, _1, _2);
+                tris.emplace_back(_0, _2, _3);
+            }
+        }
+        prim->tris.values = tris;
+
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENO_DEFNODE(ScreenSpaceProjectedGrid)({
+     {
+         "cam",
+         {"int", "width", "1920"},
+         {"int", "height", "1080"},
+         {"int", "u_padding", "0"},
+         {"int", "v_padding", "0"},
+     },
+     {
+         "prim",
+     },
+     {
+     },
+     {"shader"},
+ });
+
+
+struct CameraFrustum : INode {
+    virtual void apply() override {
+        auto cam = get_input2<CameraObject>("cam");
+        auto width = get_input2<int>("width");
+        auto height = get_input2<int>("height");
+        auto fov = glm::radians(cam->fov);
+        auto pos = cam->pos;
+        auto up = cam->up;
+        auto view = cam->view;
+        auto fnear = cam->fnear;
+        auto ffar = cam->ffar;
+        auto right = zeno::cross(view, up);
+        float ratio = float(width) / float(height);
+        auto prim = std::make_unique<PrimitiveObject>();
+        prim->verts.resize(8);
+        vec3f _near_left_up = pos + fnear * (view - right * std::tan(fov / 2) * ratio + up * std::tan(fov / 2));
+        vec3f _near_left_down = pos + fnear * (view - right * std::tan(fov / 2) * ratio - up * std::tan(fov / 2));
+        vec3f _near_right_up = pos + fnear * (view + right * std::tan(fov / 2) * ratio + up * std::tan(fov / 2));
+        vec3f _near_right_down = pos + fnear * (view + right * std::tan(fov / 2) * ratio - up * std::tan(fov / 2));
+        vec3f _far_left_up = pos + ffar * (view - right * std::tan(fov / 2) * ratio + up * std::tan(fov / 2));
+        vec3f _far_left_down = pos + ffar * (view - right * std::tan(fov / 2) * ratio - up * std::tan(fov / 2));
+        vec3f _far_right_up = pos + ffar * (view + right * std::tan(fov / 2) * ratio + up * std::tan(fov / 2));
+        vec3f _far_right_down = pos + ffar * (view + right * std::tan(fov / 2) * ratio - up * std::tan(fov / 2));
+        prim->verts[0] = _near_left_up;
+        prim->verts[1] = _near_left_down;
+        prim->verts[2] = _near_right_up;
+        prim->verts[3] = _near_right_down;
+        prim->verts[4] = _far_left_up;
+        prim->verts[5] = _far_left_down;
+        prim->verts[6] = _far_right_up;
+        prim->verts[7] = _far_right_down;
+
+        prim->lines.resize(12);
+        prim->lines[0] = {0, 1};
+        prim->lines[1] = {2, 3};
+        prim->lines[2] = {0, 2};
+        prim->lines[3] = {1, 3};
+        prim->lines[0 + 4] = vec2i(0, 1) + 4;
+        prim->lines[1 + 4] = vec2i(2, 3) + 4;
+        prim->lines[2 + 4] = vec2i(0, 2) + 4;
+        prim->lines[3 + 4] = vec2i(1, 3) + 4;
+        prim->lines[0 + 8] = vec2i(0, 4);
+        prim->lines[1 + 8] = vec2i(1, 5);
+        prim->lines[2 + 8] = vec2i(2, 6);
+        prim->lines[3 + 8] = vec2i(3, 7);
+
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENO_DEFNODE(CameraFrustum)({
+     {
+         "cam",
+         {"int", "width", "1920"},
+         {"int", "height", "1080"},
+     },
+     {
+         "prim",
+     },
+     {
+     },
+     {"shader"},
+ });
+
 };
