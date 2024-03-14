@@ -647,16 +647,7 @@ void ZenoMainWindow::initTimelineDock()
         }
     });
 
-    connect(m_pTimeline, &ZTimeline::sliderValueChanged, this, [=](int frame) {
-        auto& sess = zeno::getSession();
-        sess.switchToFrame(frame);
-        /*
-        QVector<DisplayWidget*> views = viewports();
-        for (DisplayWidget* view : views) {
-            view->onSliderValueChanged(frame);
-        }
-        */
-    });
+    connect(m_pTimeline, &ZTimeline::sliderValueChanged, this, &ZenoMainWindow::onFrameSwitched);
 
     auto graphs = zenoApp->graphsManager();
     connect(graphs, &GraphsManager::modelDataChanged, this, [=]() {
@@ -706,6 +697,12 @@ void ZenoMainWindow::initTimelineDock()
 ZTimeline* ZenoMainWindow::timeline() const
 {
     return m_pTimeline;
+}
+
+void ZenoMainWindow::onFrameSwitched(int frameid)
+{
+    auto& sess = zeno::getSession();
+    sess.switchToFrame(frameid);
 }
 
 void ZenoMainWindow::onMaximumTriggered()

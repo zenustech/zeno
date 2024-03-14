@@ -80,7 +80,7 @@ struct GraphicsManager {
         for (auto [key, spObj] : objs.modifyObjs) {
             add_object(spObj);
         }
-        for (auto [key, spObj] : objs.remObjs) {
+        for (auto key : objs.remObjs) {
             remove_object(key);
         }
     }

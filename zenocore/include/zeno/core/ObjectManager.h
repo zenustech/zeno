@@ -20,7 +20,7 @@ namespace zeno {
     struct RenderObjsInfo {
         SharedObjects newObjs;
         SharedObjects modifyObjs;
-        SharedObjects remObjs;
+        std::set<std::string> remObjs;
         SharedObjects lightObjs;    //TODO:
         SharedObjects allObjects;
 
@@ -88,13 +88,12 @@ private:
 
     std::map<std::string, int> m_objRegister;
 
-    ViewObjects m_collecting;
-    ViewObjects m_commitRender;     //提交给渲染使用的objs，仅针对当前帧。
-    std::map<int, FrameData> m_frameData;
+    ViewObjects m_objects;  //记录所有当前计算的对象，当切换帧的时候，可能使得部分依赖帧的对象重算。
+    std::map<int, FrameData> m_frameData;   //记录流体相关的帧缓存
 
     std::set<std::string> m_viewObjs;
     std::set<std::string> m_lastViewObjs;
-    std::set<std::string> m_removing_objs;
+    std::set<std::string> m_removing_objs;  //这里是删除节点时记录的要删除的obj，要考虑rollback的情况
 
     std::set<std::string> m_newAdded;
     std::set<std::string> m_modify;

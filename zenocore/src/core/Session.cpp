@@ -185,7 +185,7 @@ ZENO_API int Session::registerObjId(const std::string& objprefix)
 ZENO_API void Session::switchToFrame(int frameid)
 {
     CORE_API_BATCH
-    //calcMan->mark_frame_change_dirty();
+    mainGraph->markDirtyWhenFrameChanged();
     globalState->updateFrameId(frameid);
 }
 

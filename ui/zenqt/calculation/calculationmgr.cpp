@@ -41,6 +41,7 @@ CalculationMgr::CalculationMgr(QObject* parent)
 
 void CalculationMgr::onCalcFinished(bool bSucceed, QString msg)
 {
+    //确保此时计算线程不再跑逻辑，这里暂时是代码上约束，也就是CalcWorker::run()走完就发信号。
     m_thread.quit();
     m_thread.wait();
     emit calcFinished(bSucceed, msg);

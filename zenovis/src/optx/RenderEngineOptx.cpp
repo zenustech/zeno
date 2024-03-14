@@ -884,7 +884,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         for (auto [key, spObj] : objs.modifyObjs) {
             graphicsMan->add_object(spObj);
         }
-        for (auto [key, spObj] : objs.remObjs) {
+        for (auto key : objs.remObjs) {
             graphicsMan->remove_object(key);
         }
 

@@ -26,14 +26,13 @@ namespace zeno {
 
         zeno::getSession().globalState->setCalcObjStatus(zeno::Collecting);
 
-        auto it = m_collecting.find(id);
+        auto it = m_objects.find(id);
         auto path = view_node->get_path();
-        if (it == m_collecting.end()) {
+        if (it == m_objects.end()) {
             _ObjInfo info;
             info.obj = obj;
             info.attach_nodes.insert(path);
-            m_collecting.insert(std::make_pair(id, info));
-            m_newAdded.insert(id);
+            m_objects.insert(std::make_pair(id, info));
         }
         else {
             it->second.obj = obj;
@@ -56,9 +55,10 @@ namespace zeno {
     ZENO_API void ObjectManager::removeObject(const std::string& id)
     {
         std::lock_guard lck(m_mtx);
-        if (m_collecting.find(id) != m_collecting.end()) {
-            m_collecting.erase(id);
+        if (m_objects.find(id) != m_objects.end()) {
+            m_objects.erase(id);
         }
+        m_remove.insert(id);
     }
 
     ZENO_API void ObjectManager::notifyTransfer(std::shared_ptr<IObject> obj)
@@ -87,8 +87,8 @@ namespace zeno {
 
     ZENO_API std::set<ObjPath> ObjectManager::getAttachNodes(const std::string& id)
     {
-        auto it = m_collecting.find(id);
-        if (it != m_collecting.end())
+        auto it = m_objects.find(id);
+        if (it != m_objects.end())
         {
             return it->second.attach_nodes;
         }
@@ -143,22 +143,19 @@ namespace zeno {
     {
         std::lock_guard lck(m_mtx);
         for (auto objkey : m_newAdded) {
-            auto it = m_collecting.find(objkey);
-            if (it != m_collecting.end()) {
+            auto it = m_objects.find(objkey);
+            if (it != m_objects.end()) {
                 info.newObjs.insert(std::make_pair(objkey, it->second.obj));
             }
         }
         for (auto objkey : m_modify) {
-            auto it = m_collecting.find(objkey);
-            if (it != m_collecting.end()) {
+            auto it = m_objects.find(objkey);
+            if (it != m_objects.end()) {
                 info.modifyObjs.insert(std::make_pair(objkey, it->second.obj));
             }
         }
         for (auto objkey : m_remove) {
-            auto it = m_collecting.find(objkey);
-            if (it != m_collecting.end()) {
-                info.remObjs.insert(std::make_pair(objkey, it->second.obj));
-            }
+            info.remObjs.insert(objkey);
         }
     }
 
