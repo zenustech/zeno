@@ -110,7 +110,7 @@ void Graph::onNodeParamUpdated(std::shared_ptr<IParam> spParam, zvariant old_val
         assert(spNode);
 
         const std::string& nodecls = spNode->get_nodecls();
-        const std::string& nodename = spNode->get_name();
+        const std::string& uuid = spNode->get_uuid();
 
         std::string oldstr, newstr;
         if (std::holds_alternative<std::string>(old_value))
@@ -118,24 +118,24 @@ void Graph::onNodeParamUpdated(std::shared_ptr<IParam> spParam, zvariant old_val
         if (std::holds_alternative<std::string>(new_value))
             newstr = std::get<std::string>(new_value);
 
-        frame_nodes.erase(nodename);
+        frame_nodes.erase(uuid);
 
         std::regex pattern("\\$F");
         if (std::regex_search(newstr, pattern, std::regex_constants::match_default)) {
-            frame_nodes.insert(nodename);
+            frame_nodes.insert(uuid);
         }
     }
     else if (Param_Vec2f == spParam->type) {
         auto spNode = spParam->m_wpNode.lock();
         assert(spNode);
-        const std::string& nodename = spNode->get_name();
-        frame_nodes.erase(nodename);
+        const std::string& uuid = spNode->get_uuid();
+        frame_nodes.erase(uuid);
         if (std::holds_alternative<vec2s>(new_value)) {
             auto vec = std::get<vec2s>(new_value);
             std::regex pattern("\\$F");
             for (auto val : vec) {
                 if (std::regex_search(val, pattern)) {
-                    frame_nodes.insert(nodename);
+                    frame_nodes.insert(uuid);
                 }
             }
         }
@@ -143,14 +143,14 @@ void Graph::onNodeParamUpdated(std::shared_ptr<IParam> spParam, zvariant old_val
     else if (Param_Vec3f == spParam->type) {
         auto spNode = spParam->m_wpNode.lock();
         assert(spNode);
-        const std::string& nodename = spNode->get_name();
-        frame_nodes.erase(nodename);
+        const std::string& uuid = spNode->get_uuid();
+        frame_nodes.erase(uuid);
         if (std::holds_alternative<vec3s>(new_value)) {
             auto vec = std::get<vec3s>(new_value);
             std::regex pattern("\\$F");
             for (auto val : vec) {
                 if (std::regex_search(val, pattern)) {
-                    frame_nodes.insert(nodename);
+                    frame_nodes.insert(uuid);
                 }
             }
         }
@@ -158,14 +158,14 @@ void Graph::onNodeParamUpdated(std::shared_ptr<IParam> spParam, zvariant old_val
     else if (Param_Vec4f == spParam->type) {
         auto spNode = spParam->m_wpNode.lock();
         assert(spNode);
-        const std::string& nodename = spNode->get_name();
-        frame_nodes.erase(nodename);
+        const std::string& uuid = spNode->get_uuid();
+        frame_nodes.erase(uuid);
         if (std::holds_alternative<vec4s>(new_value)) {
             auto vec = std::get<vec4s>(new_value);
             std::regex pattern("\\$F");
             for (auto val : vec) {
                 if (std::regex_search(val, pattern)) {
-                    frame_nodes.insert(nodename);
+                    frame_nodes.insert(uuid);
                 }
             }
         }
