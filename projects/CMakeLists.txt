@@ -43,6 +43,7 @@ set(ZENO_EXTENSIONS
     RPC
     Roads
     Geometry
+    PluginPOC
     )
 
 foreach (name IN ITEMS ${ZENO_EXTENSIONS})
