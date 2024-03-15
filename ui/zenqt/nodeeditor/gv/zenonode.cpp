@@ -243,6 +243,18 @@ ZLayoutBackground* ZenoNode::initHeaderWidget()
 
     headerWidget->setLayout(pHLayout);
     headerWidget->setZValue(ZVALUE_BACKGROUND);
+    if (const GraphModel* pModel = QVariantPtr<GraphModel>::asPtr(m_index.data(ROLE_GRAPH)))
+    {
+        m_pStatusWidgets->setEnabled(!pModel->isLocked());
+        connect(pModel, &GraphModel::lockStatusChanged, this, [=]() {
+            m_pStatusWidgets->setEnabled(!pModel->isLocked());
+            for (auto layout : getSocketLayouts(true))
+            {
+                if (auto pControl = layout->control())
+                    pControl->setEnabled(!pModel->isLocked());
+            }
+        });
+    }
     return headerWidget;
 }
 
@@ -676,7 +688,7 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& paramIdx, bool bInput, Zen
 
     zeno::NodeType nodetype = static_cast<zeno::NodeType>(m_index.data(ROLE_NODETYPE).toInt());
     bool bSocketEnable = true;
-    if (SOCKPROP_LEGACY == paramIdx.data(ROLE_PARAM_SOCKPROP) || nodetype == zeno::NoVersionNode)
+    if (SOCKPROP_LEGACY == paramIdx.data(ROLE_PARAM_SOCKPROP) || nodetype == zeno::NoVersionNode || pScene->getGraphModel()->isLocked())
     {
         bSocketEnable = false;
     }
@@ -1256,6 +1268,11 @@ void ZenoNode::mousePressEvent(QGraphicsSceneMouseEvent* event)
 
 void ZenoNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
 {
+    if (const GraphModel* pModel = QVariantPtr<GraphModel>::asPtr(m_index.data(ROLE_GRAPH)))
+    {
+        if (pModel->isLocked())
+            return;
+    }
     _base::mouseDoubleClickEvent(event);
     QList<QGraphicsItem*> items = scene()->items(event->scenePos());
     if (items.contains(m_NameItem))
@@ -1433,14 +1450,6 @@ void ZenoNode::onOptionsBtnToggled(STATUS_BTN btn, bool toggled)
         QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
         GraphModel* pGraphM = qobject_cast<GraphModel*>(pModel);
         ZASSERT_EXIT(pGraphM);
-        if (pGraphM->isLocked())
-        {
-            QMessageBox::warning(nullptr, tr("Warning"), tr("Graph is locked!"));
-            disconnect(m_pStatusWidgets, SIGNAL(toggleChanged(STATUS_BTN, bool)), this, SLOT(onOptionsBtnToggled(STATUS_BTN, bool)));
-            m_pStatusWidgets->setView(!toggled);
-            connect(m_pStatusWidgets, SIGNAL(toggleChanged(STATUS_BTN, bool)), this, SLOT(onOptionsBtnToggled(STATUS_BTN, bool)));
-            return;
-        }
         pGraphM->setView(m_index, toggled);
     }
 }

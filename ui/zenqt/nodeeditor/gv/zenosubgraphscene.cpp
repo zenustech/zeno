@@ -31,40 +31,6 @@
 #include "zenosubgraphview.h"
 //#include "nodeeditor/gv/pythonmaterialnode.h"
 
-ZForegroundItem::ZForegroundItem(QGraphicsItem* parent)
-    : QGraphicsRectItem(parent)
-{
-    setZValue(ZVALUE_POPUPWIDGET);
-}
-
-ZForegroundItem::~ZForegroundItem()
-{
-}
-
-QRectF ZForegroundItem::boundingRect() const
-{
-    if (!scene()->views().isEmpty())
-    {
-        const QGraphicsView* pView = this->scene()->views().first();
-        return pView->mapToScene(pView->viewport()->rect()).boundingRect();
-    }
-    return QRectF();
-}
-
-void ZForegroundItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
-{
-    ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(this->scene());
-    ZASSERT_EXIT(pScene);
-    GraphModel* pModel = pScene->getGraphModel();
-    if (pModel && pModel->isLocked())
-    {
-        painter->setOpacity(0.3);
-        painter->setBrush(QColor(83, 83, 85));
-        const auto& rect = boundingRect();
-        painter->fillRect(rect, QColor(83, 83, 85));
-    }
-}
-
 ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
     : QGraphicsScene(parent)
     , m_tempLink(nullptr)
@@ -96,9 +62,6 @@ GraphModel* ZenoSubGraphScene::getGraphModel() const
 void ZenoSubGraphScene::initModel(GraphModel* pGraphM)
 {
     m_model = pGraphM;
-
-    ZForegroundItem* foreItem = new ZForegroundItem;
-    addItem(foreItem);
 
     //disconnect(m_model, SIGNAL(reloaded()), this, SLOT(reload()));
     //disconnect(m_model, SIGNAL(clearLayout()), this, SLOT(clearLayout()));
@@ -1013,7 +976,9 @@ void ZenoSubGraphScene::mousePressEvent(QGraphicsSceneMouseEvent* event)
 
 void ZenoSubGraphScene::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 {
-    if (m_tempLink && !m_model->isLocked())
+    if (m_model->isLocked())
+        return;
+    if (m_tempLink /*&& !m_model->isLocked()*/)
     {
         onSocketAbsorted(event->scenePos());
         return;
@@ -1054,12 +1019,10 @@ void ZenoSubGraphScene::afterSelectionChanged()
             if (bSelected)
             {
                 selNodes.push_back(pNode->index());
-                pNode->setZValue(ZVALUE_SELECTED);
             }
             else
             {
                 unSelNodes.push_back(pNode->index());
-                pNode->setZValue(-2);
             }
         }
         mainWin->onNodesSelected(m_subgIdx, unSelNodes, false);

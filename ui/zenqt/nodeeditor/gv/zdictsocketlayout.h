@@ -16,6 +16,7 @@ public:
     QPointF getSocketPos(const QModelIndex& sockIdx, const QString keyName, bool& exist) override;
     void setCollasped(bool bCollasped);
     void setVisible(bool bVisible);
+    QGraphicsItem* control() const override;
 
 private:
     ZDictPanel* m_panel;

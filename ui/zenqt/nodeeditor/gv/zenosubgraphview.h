@@ -34,6 +34,7 @@ protected:
     void focusOutEvent(QFocusEvent* event) override;
     void contextMenuEvent(QContextMenuEvent *event) override;
     void drawBackground(QPainter* painter, const QRectF& rect) override;
+    void drawForeground(QPainter* painter, const QRectF& rect) override;
     bool eventFilter(QObject* watched, QEvent* event) override;
     void scrollContentsBy(int dx, int dy) override;
     void showEvent(QShowEvent *event) override;

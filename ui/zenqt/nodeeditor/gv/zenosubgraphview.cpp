@@ -540,7 +540,14 @@ void _ZenoSubGraphView::drawBackground(QPainter* painter, const QRectF& rect)
     drawGrid(painter, rect);
 }
 
-
+void _ZenoSubGraphView::drawForeground(QPainter* painter, const QRectF& rect)
+{
+    if (m_scene->getGraphModel()->isLocked())
+    {
+        painter->setOpacity(0.3);
+        painter->fillRect(rect, QColor(83, 83, 85));
+    }
+}
 //////////////////////////////////////////////////////////////////////////////////
 LayerPathWidget::LayerPathWidget(QWidget* parent)
     : QWidget(parent)

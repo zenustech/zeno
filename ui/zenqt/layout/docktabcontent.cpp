@@ -33,7 +33,7 @@
 #include "viewport/zenovis.h"
 #include "layout/zdockwidget.h"
 #include "calculation/calculationmgr.h"
-
+#include "model/GraphModel.h"
 
 ZToolBarButton::ZToolBarButton(bool bCheckable, const QString& icon, const QString& iconOn)
     : ZToolButton(ZToolButton::Opt_HasIcon, icon, iconOn)
@@ -267,6 +267,10 @@ void DockContent_Parameter::onNodesSelected(const QModelIndex& subgIdx, const QM
                         return;
                     m_pNameLineEdit->setText(idx.data(ROLE_NODE_NAME).toString());
                 });
+                if (const GraphModel* pModel = qobject_cast<const GraphModel*>(pSubgModel))
+                {
+                    this->setEnabled(!pModel->isLocked());
+                }
                 //TODO: When Switch node, the connection should be cleared.
             }
 
