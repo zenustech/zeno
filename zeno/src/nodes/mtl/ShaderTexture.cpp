@@ -100,6 +100,8 @@ struct ShaderTexture3D : ShaderNodeClone<ShaderTexture3D>
         auto texId = get_input2<int>("texId");
         auto type = get_input2<std::string>("type");
         auto coord = em->determineExpr(get_input("coord").get());
+
+        auto cihou = get_input2<bool>("cihou");
         
         auto space = get_input2<std::string>("space");
         auto world_space = (space == "World")? "true":"false";
@@ -119,7 +121,7 @@ struct ShaderTexture3D : ShaderNodeClone<ShaderTexture3D>
         std::string DataTypeNVDB = "DataTypeNVDB" + sid;
         std::string GridTypeNVDB = "GridTypeNVDB" + sid;
 
-        em->emitCode(type + "(samplingVDB<"+ ORDER +","+ world_space + "," + DataTypeNVDB +">(vdb_grids[" + sid + "], vec3(" + coord + "), attrs))");
+        em->emitCode(type + "(samplingVDB<"+ ORDER +","+ world_space + "," + DataTypeNVDB +">(vdb_grids[" + sid + "], vec3(" + coord + "), attrs, " + std::to_string(cihou) + "))");
     }
 };
 
@@ -143,8 +145,10 @@ ZENDEFNODE(ShaderTexture3D, {
     {
         {"int", "texId", "0"},
         {"vec3f", "coord", "0,0,0"},
+        {"bool", "cihou", "0"},
         {"enum World Local", "space", "World"},
         {"enum vec2", "type", "vec2"},
+        
         {"enum " + ShaderTexture3D::methodListString(), "method", ShaderTexture3D::methodDefaultString()} 
     },
     {

@@ -102,36 +102,35 @@ inline __device__ float _LERP_(float t, float s1, float s2)
 }
 
 struct VolumeIn2 {
-    float3 pos;
+    float3 pos_world;
+    float3 pos_view;
+
 	float sigma_t;
 	uint32_t* seed;
-    unsigned long long sbt_ptr;
+    
+    void* sbt_ptr;
+    float* world2object;
 
 	inline float rndf() const {
 		return rnd(*seed);
 	}
 
     vec3 _local_pos_ = vec3(CUDART_NAN_F);
-    vec3 localPosLazy() {
+    vec3 _uniform_pos_ = vec3(CUDART_NAN_F);
+
+    __device__ vec3 localPosLazy() {
 		if (isfinite(_local_pos_.x)) return _local_pos_;
 
-        using GridTypeNVDB = GridTypeNVDB0;
-        const HitGroupData* sbt_data = reinterpret_cast<HitGroupData*>( sbt_ptr );
-
-        assert(sbt_data != nullptr);
-
-        const auto grid_ptr = sbt_data->vdb_grids[0];
-        const auto* _grid = reinterpret_cast<const GridTypeNVDB*>(grid_ptr);
-        //const auto& _acc = _grid->tree().getAccessor();
-        auto pos_indexed = reinterpret_cast<const nanovdb::Vec3f&>(pos);
-        pos_indexed = _grid->worldToIndexF(pos_indexed);
-
-        _local_pos_ = reinterpret_cast<vec3&>(pos_indexed);
+        if (world2object != nullptr) {
+            mat4* _w2o = reinterpret_cast<mat4*>(world2object);
+            vec4 tmp = (*_w2o) * vec4(pos_view.x, pos_view.y, pos_view.z, 1.0f);
+            
+            _local_pos_ = *(vec3*)&tmp;
+        }
         return _local_pos_;
     };
 
-	vec3 _uniform_pos_ = vec3(CUDART_NAN_F);
-    vec3 uniformPosLazy() {
+    __device__ vec3 uniformPosLazy() {
 		if (isfinite(_uniform_pos_.x)) return _uniform_pos_;
 
         using GridTypeNVDB = GridTypeNVDB0;
@@ -141,6 +140,12 @@ struct VolumeIn2 {
 
         const auto grid_ptr = sbt_data->vdb_grids[0];
         const auto* _grid = reinterpret_cast<const GridTypeNVDB*>(grid_ptr);
+
+        if (_grid == nullptr) {
+            auto local_pos = localPosLazy();
+            _uniform_pos_ = local_pos + 0.5f;
+            return _uniform_pos_;
+        }
 
         auto bbox = _grid->indexBBox();
 
@@ -193,44 +198,26 @@ inline __device__ float nanoSampling(Acc& acc, nanovdb::Vec3f& point_indexd, con
     }
 
     return 0.0f;
-
-    // auto point_floor = nanovdb::RoundDown<nanovdb::Vec3f>(point_indexd); 
-    // auto point_a = nanovdb::Coord(point_floor[0], point_floor[1], point_floor[2]);
-    // auto delta = point_indexd - point_floor; 
-
-    //     auto value_000 = acc.getValue(point_a);
-    //     auto value_100 = acc.getValue(point_a + nanovdb::Coord(1, 0, 0));
-    //     auto value_010 = acc.getValue(point_a + nanovdb::Coord(0, 1, 0));
-    //     auto value_110 = acc.getValue(point_a + nanovdb::Coord(1, 1, 0));
-    //     auto value_001 = acc.getValue(point_a + nanovdb::Coord(0, 0, 1));
-    //     auto value_101 = acc.getValue(point_a + nanovdb::Coord(1, 0, 1));
-    //     auto value_011 = acc.getValue(point_a + nanovdb::Coord(0, 1, 1));
-    //     auto value_111 = acc.getValue(point_a + nanovdb::Coord(1, 1, 1));
-
-    //     auto value_00 = _LERP_(delta[0], value_000, value_100);
-    //     auto value_10 = _LERP_(delta[0], value_010, value_110);
-    //     auto value_01 = _LERP_(delta[0], value_001, value_101);
-    //     auto value_11 = _LERP_(delta[0], value_011, value_111);
-        
-    //     auto value_0 = _LERP_(delta[1], value_00, value_10);
-    //     auto value_1 = _LERP_(delta[1], value_01, value_11);
-
-    // return _LERP_(delta[2], value_0, value_1);
 }
 
 template <uint8_t Order, bool WorldSpace, typename DataTypeNVDB>
-static __inline__ __device__ vec2 samplingVDB(const unsigned long long grid_ptr, vec3 att_pos, const VolumeIn2& volin) {
+static __inline__ __device__ vec2 samplingVDB(const unsigned long long grid_ptr, vec3 att_pos, VolumeIn2& volin, bool cihou) {
     using GridTypeNVDB = nanovdb::NanoGrid<DataTypeNVDB>;
 
     const auto* _grid = reinterpret_cast<const GridTypeNVDB*>(grid_ptr);
     const auto& _acc = _grid->tree().getAccessor();
+
     if (_grid == nullptr) { return {}; }
 
     auto pos_indexed = reinterpret_cast<const nanovdb::Vec3f&>(att_pos);
 
-    if constexpr(WorldSpace)
+    if constexpr(WorldSpace) 
     {
-        pos_indexed = _grid->worldToIndexF(pos_indexed);
+        if (cihou) {
+            pos_indexed = volin.localPosLazy();
+        } else {
+            pos_indexed = _grid->worldToIndexF(pos_indexed);
+        }
     } //_grid->tree().root().maximum();
 
     return vec2 { nanoSampling<decltype(_acc), DataTypeNVDB, Order>(_acc, pos_indexed, volin), _grid->tree().root().maximum() };
@@ -240,7 +227,7 @@ extern "C" __device__ VolumeOut __direct_callable__evalmat(const float4* uniform
 
     auto& prd = attrs;
 
-    vec3& att_pos = reinterpret_cast<vec3&>(attrs.pos);
+    vec3& att_pos = reinterpret_cast<vec3&>(attrs.pos_world);
     auto att_clr = vec3(0);
     auto att_uv = vec3(0);
     auto att_nrm = vec3(0);

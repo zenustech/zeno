@@ -1,3 +1,7 @@
+#include <nanovdb/NanoVDB.h>
+#include <nanovdb/util/Ray.h>
+#include <nanovdb/util/HDDA.h>
+
 #include "Light.h"
 #include "volume.h"
 
@@ -7,80 +11,107 @@
 
 // #include <cuda_fp16.h>
 // #include "nvfunctional"
-#include <nanovdb/NanoVDB.h>
-#include <nanovdb/util/Ray.h>
-#include <nanovdb/util/HDDA.h>
-#include <nanovdb/util/SampleFromVoxels.h>
 
 using DataTypeNVDB0 = nanovdb::Fp32;
 using GridTypeNVDB0 = nanovdb::NanoGrid<DataTypeNVDB0>;
+
+__inline__ __device__ bool rayBox(const float3& ray_ori, const float3& ray_dir, const nanovdb::BBox<nanovdb::Vec3f>& box, 
+                        float& t0, float& t1) {
+
+    auto iray = nanovdb::Ray<float>( reinterpret_cast<const nanovdb::Vec3f&>( ray_ori ),
+                                     reinterpret_cast<const nanovdb::Vec3f&>( ray_dir ), t0, t1 );
+    return iray.intersects( box, t0, t1 );
+}
 
 extern "C" __global__ void __intersection__volume()
 {
     const auto* sbt_data = reinterpret_cast<const HitGroupData*>( optixGetSbtDataPointer() );
     const auto* grid = reinterpret_cast<const GridTypeNVDB0*>( sbt_data->vdb_grids[0] );
-    if ( grid == nullptr) { return; }
 
-    const float3 ray_orig = optixGetWorldRayOrigin() + params.cam.eye;
-    const float3 ray_dir  = optixGetWorldRayDirection();
+    auto box = [&]() -> nanovdb::BBox<nanovdb::Vec3f> {
+        if ( grid == nullptr) {
+            return nanovdb::BBox<nanovdb::Vec3f>(nanovdb::Vec3f(-0.5f), nanovdb::Vec3f(0.5f));
+        } else {
+            auto& ibox = grid->indexBBox();
+            return nanovdb::BBox<nanovdb::Vec3f>(ibox.min(), ibox.max()+nanovdb::Coord(1));
+        }
+    } ();
 
-    auto dbox = grid->worldBBox(); //grid->indexBBox();
+    const float3 ray_ori = optixGetObjectRayOrigin();
+          float3 ray_dir = optixGetObjectRayDirection(); // not normalized
+
+    ray_dir = normalize(ray_dir);
+
     float t0 = optixGetRayTmin();
-    float t1 = _FLT_MAX_; //optixGetRayTmax();
+    float t1 = 1e16f; //optixGetRayTmax();
 
-    auto iray = nanovdb::Ray<float>( reinterpret_cast<const nanovdb::Vec3f&>( ray_orig ),
-                                     reinterpret_cast<const nanovdb::Vec3f&>( ray_dir ), t0, t1 );
-    // auto fbox = nanovdb::BBox<nanovdb::Vec3f>(nanovdb::Vec3f(dbox.min()), nanovdb::Vec3f(dbox.max()));
+    auto dirlen = length(optixGetObjectRayDirection());
+    
+    { // world distance to object distance 
+        t0 = t0 * dirlen; 
+        t1 = t1 * dirlen;
+    } 
+
+    //bool inside = box.isInside(reinterpret_cast<const nanovdb::Vec3f&>(ray_ori));
+    auto hitted = rayBox( ray_ori, ray_dir, box, t0, t1 );
+    if (!hitted) { return; }
+
+    RadiancePRD *prd = getPRD<RadiancePRD>();
+
+    //auto scale = optixTransformVectorFromObjectToWorldSpace(ray_dir);
+    auto len = 1.0f / dirlen;
+    // object distance to world distance 
+    t0 = t0 * len;
+    t1 = t1 * len;
+    
+    t0 = max(t0, 0.0f);
+    t1 = max(t1, 0.0f);
+
+    // report the entry-point as hit-point
+    //auto kind = optixGetHitKind();
+    t0 = fmaxf(t0, optixGetRayTmin());
+
+    if (t1 <= t0) { // skip tmin
+        return;
+    }
 
     auto flags = optixGetRayFlags();
     auto anyhit = flags & OPTIX_RAY_FLAG_ENFORCE_ANYHIT;
 
-    if( iray.intersects( dbox, t0, t1 )) // t0 >= 0
-    {
-        // report the entry-point as hit-point
-        //auto kind = optixGetHitKind();
-        t0 = fmaxf(t0, optixGetRayTmin());
+    if (anyhit) {
 
-        if (anyhit) {
-            ShadowPRD *prd = getPRD<ShadowPRD>();
+        ShadowPRD *prd = getPRD<ShadowPRD>();
+        prd->vol.t0 = t0;
+        prd->vol.t1 = min(prd->maxDistance, t1);
 
-            prd->vol.vol_t0 = t0;
-            prd->vol.origin_inside = (t0 == 0);
-            prd->vol.vol_t1 = min(prd->maxDistance, t1);
-            prd->vol.surface_inside = (optixGetRayTmax() < t1);
-        } else {
+    } else {
 
-            RadiancePRD* prd = getPRD();
-            prd->vol.vol_t0 = t0;
-            prd->vol.origin_inside = (t0 == 0);
+        RadiancePRD* prd = getPRD();
+        prd->vol.t0 = t0;
+        prd->vol.t1 = t1; //min(optixGetRayTmax(), t1);
+    }
 
-            prd->vol.vol_t1 = t1; //min(optixGetRayTmax(), t1);
-            prd->vol.surface_inside = (optixGetRayTmax() < t1); // In case triangles were visited before volume
-        }
-
-        if (optixGetRayTmax() > 0) {
-            optixReportIntersection(t0, 0);
-        }
-    } 
+    if (optixGetRayTmax() > 0) {
+        optixReportIntersection(t0, 0);
+    }
+}
 }
 
 extern "C" __global__ void __closesthit__radiance_volume()
 {
     RadiancePRD* prd = getPRD();
-    
+
     prd->countEmitted = false;
     prd->radiance = vec3(0);
 
-    prd->_tmin_ = 0;
-    prd->_mask_ = EverythingMask;
 
     const HitGroupData* sbt_data = reinterpret_cast<HitGroupData*>( optixGetSbtDataPointer() );
 
     const float3 ray_orig = optixGetWorldRayOrigin();
     const float3 ray_dir  = optixGetWorldRayDirection();
 
-        float t0 = prd->vol.vol_t0; // world space
-        float t1 = prd->vol.vol_t1; // world space
+    float t0 = prd->vol.t0; // world space
+    float t1 = prd->vol.t1; // world space
 
     ShadowPRD testPRD {};
     testPRD.maxDistance = _FLT_MAX_;
@@ -215,8 +246,8 @@ extern "C" __global__ void __anyhit__occlusion_volume()
     const HitGroupData* sbt_data = reinterpret_cast<HitGroupData*>( optixGetSbtDataPointer() );
 
     ShadowPRD* prd = getPRD<ShadowPRD>();
-    const float t0 = prd->vol.vol_t0;
-    const float t1 = prd->vol.vol_t1;
+    const float t0 = prd->vol.t0;
+    const float t1 = prd->vol.t1;
     //t1 = prd->maxDistance;
 
     const float t_max = t1 - t0; // world space
@@ -224,7 +255,6 @@ extern "C" __global__ void __anyhit__occlusion_volume()
 
     float3 test_point = ray_orig; 
     float3 transmittance = make_float3(1.0f);
-
     float hgp = 1.0f;
     pbrt::HenyeyGreenstein hg(9.0f);
     

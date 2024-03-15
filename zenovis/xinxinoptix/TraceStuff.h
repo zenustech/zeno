@@ -44,11 +44,10 @@ enum medium{
 };
 
 struct VolumePRD {
-    float vol_t0;
-    float vol_t1;
+    float t0;
+    float t1;
 
-    bool origin_inside  :1;
-    bool surface_inside :1;
+    bool afterSingleScatter = false;
 };
 
 struct ShadowPRD {

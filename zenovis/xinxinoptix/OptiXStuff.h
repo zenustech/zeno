@@ -491,9 +491,31 @@ inline std::map<std::string, std::pair<uint, uint>> g_vdb_indice_visible;
 
 inline std::map<uint, std::vector<std::string>> g_vdb_list_for_each_shader;
 
+inline std::vector<std::tuple<std::string, glm::mat4>> volumeTrans;
+inline std::vector<std::tuple<std::string, std::shared_ptr<VolumeWrapper>>> volumeBoxs;
+
+inline bool preloadVolumeBox(std::string& key, std::string& matid, glm::mat4& transform) {
+
+    volumeTrans.push_back( {matid, transform} );
+    return true;
+}
+
+inline bool processVolumeBox() {
+
+    volumeBoxs.clear();
+    for (auto& [key, val] : volumeTrans) {
+        auto volume_ptr = std::make_shared<VolumeWrapper>();
+        volume_ptr->transform = val;
+        buildVolumeAccel(volume_ptr->accel, *volume_ptr, context);
+        volumeBoxs.emplace_back( std::tuple{ key, volume_ptr } );
+    }
+    volumeTrans.clear();
+    return true;
+}
+
 inline bool preloadVDB(const zeno::TextureObjectVDB& texVDB, 
                        uint index_of_shader, uint index_inside_shader,
-                       const glm::f64mat4& transform, 
+                       const glm::mat4& transform, 
                        std::string& combined_key)
 {
     auto path = texVDB.path;
@@ -539,7 +561,7 @@ inline bool preloadVDB(const zeno::TextureObjectVDB& texVDB,
 
         auto& cached = g_vdb_cached_map[vdb_key];
 
-        if (transform == g_vdb_cached_map[vdb_key]->transform && fileTime == cached->file_time && texVDB.eleType == cached->type) {
+        if (transform == cached->transform && fileTime == cached->file_time && texVDB.eleType == cached->type) {
 
             g_vdb_indice_visible[vdb_key] = std::make_pair(index_of_shader, index_inside_shader);
             return true;
