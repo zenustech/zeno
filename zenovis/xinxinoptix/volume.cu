@@ -127,12 +127,19 @@ extern "C" __global__ void __closesthit__radiance_volume()
     float t0 = prd->vol.t0; // world space
     float t1 = prd->vol.t1; // world space
 
-    ShadowPRD testPRD {};
-    testPRD.maxDistance = _FLT_MAX_;
+    RadiancePRD testPRD {};
+    testPRD.done = false;
+    testPRD.seed = prd->seed;
+    testPRD.depth == 0;
+    testPRD._tmin_ = t0;
+    testPRD.maxDistance = t1;
     testPRD.test_distance = true;
     
-    uint16_t _mask_ = EverythingMask ^ VolumeMatMask;
-    traceRadiance(params.handle, ray_orig,ray_dir, 0, _FLT_MAX_, &testPRD, _mask_);
+    uint8_t _mask_ = EverythingMask ^ VolumeMatMask;
+
+    do {
+        traceRadiance(params.handle, ray_orig, ray_dir, testPRD._tmin_, testPRD.maxDistance, &testPRD, _mask_);
+    } while(testPRD.test_distance && !testPRD.done);
 
     bool surface_inside = false;
     if(testPRD.maxDistance < t1)

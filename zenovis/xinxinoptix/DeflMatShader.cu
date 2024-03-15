@@ -269,11 +269,6 @@ vec3 projectedBarycentricCoord(vec3 p, vec3 q, vec3 u, vec3 v)
 extern "C" __global__ void __closesthit__radiance()
 {
     RadiancePRD* prd = getPRD();
-    if(prd->test_distance)
-    {
-        prd->maxDistance = optixGetRayTmax();
-        return;
-    }
 
     const OptixTraversableHandle gas = optixGetGASTraversableHandle();
     const uint           sbtGASIndex = optixGetSbtGASIndex();
@@ -510,24 +505,10 @@ extern "C" __global__ void __closesthit__radiance()
 
     prd->attenuation2 = prd->attenuation;
     prd->countEmitted = false;
-    if(isLight==1)
-    {
-        prd->countEmitted = true;
-        //hit light, emit
-//        float dist = length(P - optixGetWorldRayOrigin()) + 1e-5;
-//        float3 lv1 = v1-v0;
-//        float3 lv2 = v2-v0;
-//        float A = 0.5 * length(cross(lv1, lv2));
-//        float3 lnrm = normalize(cross(normalize(lv1), normalize(lv2)));
-//        float3 L     = normalize(P - optixGetWorldRayOrigin());
-//        float  LnDl  = clamp(-dot( lnrm, L ), 0.0f, 1.0f);
-//        float weight = LnDl * A / (M_PIf * dist);
-//        prd->radiance = attrs.clr * weight;
-        prd->offsetUpdateRay(P, ray_dir); 
-        return;
-    }
+    
     prd->prob2 = prd->prob;
     prd->passed = false;
+
     if(mats.opacity>0.99f)
     {
 
@@ -548,7 +529,8 @@ extern "C" __global__ void __closesthit__radiance()
         prd->radiance = make_float3(0.0f);
         //prd->origin = P + 1e-5 * ray_dir;
         prd->alphaHit = true;
-        prd->offsetUpdateRay(P, ray_dir);
+        // prd->offsetUpdateRay(P, ray_dir);
+        prd->_tmin_ = optixGetRayTmax();
         return;
     }
     if(mats.opacity<=0.99f)
@@ -574,10 +556,11 @@ extern "C" __global__ void __closesthit__radiance()
         //you shall pass!
         prd->radiance = make_float3(0.0f);
 
-        prd->origin = P;
-        prd->direction = ray_dir;
+        prd->_tmin_ = optixGetRayTmax();
+        //prd->origin = P;
+        //prd->direction = ray_dir;
         prd->alphaHit = true;
-        prd->offsetUpdateRay(P, ray_dir);
+        //prd->offsetUpdateRay(P, ray_dir);
 
         prd->prob *= 1;
         prd->countEmitted = false;
