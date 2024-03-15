@@ -224,6 +224,7 @@ static __inline__ __device__ vec2 samplingVDB(const unsigned long long grid_ptr,
 
     const auto* _grid = reinterpret_cast<const GridTypeNVDB*>(grid_ptr);
     const auto& _acc = _grid->tree().getAccessor();
+    if (_grid == nullptr) { return {}; }
 
     auto pos_indexed = reinterpret_cast<const nanovdb::Vec3f&>(att_pos);
 
