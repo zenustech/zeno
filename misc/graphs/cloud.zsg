@@ -46,8 +46,8 @@
                         }
                     },
                     "uipos": [
-                        779.6022935569188,
-                        -223.93436902763586
+                        847.9498901367188,
+                        -230.40411376953129
                     ],
                     "options": []
                 },
@@ -112,8 +112,8 @@
                         }
                     },
                     "uipos": [
-                        1319.858101449291,
-                        -248.2218313325551
+                        1406.887451171875,
+                        -249.89547729492188
                     ],
                     "options": []
                 },
@@ -138,6 +138,14 @@
                             ],
                             "control": {
                                 "name": "Float Vector 3"
+                            }
+                        },
+                        "cihou": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
                             }
                         },
                         "space": {
@@ -198,8 +206,8 @@
                         }
                     },
                     "uipos": [
-                        251.55892150082264,
-                        -253.8964674481437
+                        315.8817443847656,
+                        -273.4729919433594
                     ],
                     "options": []
                 },
@@ -273,8 +281,8 @@
                         }
                     },
                     "uipos": [
-                        -302.25351152247529,
-                        -197.17662663369857
+                        -162.4212646484375,
+                        -215.3548126220703
                     ],
                     "options": []
                 },
@@ -356,8 +364,8 @@
                         }
                     },
                     "uipos": [
-                        1283.087972493321,
-                        -1055.3199620891392
+                        1323.400634765625,
+                        -1027.2763671875
                     ],
                     "options": []
                 },
@@ -427,10 +435,12 @@
                         }
                     },
                     "uipos": [
-                        3119.473247415288,
-                        -974.0826940383206
+                        2693.1064453125,
+                        -1195.4610595703126
                     ],
-                    "options": []
+                    "options": [
+                        "VIEW"
+                    ]
                 },
                 "50472588-CameraNode": {
                     "name": "CameraNode",
@@ -530,8 +540,8 @@
                         }
                     },
                     "uipos": [
-                        2684.509858148063,
-                        -591.8284341123385
+                        2630.83544921875,
+                        -776.2097778320313
                     ],
                     "options": [
                         "VIEW"
@@ -567,8 +577,8 @@
                         }
                     },
                     "uipos": [
-                        32.02481572482566,
-                        -1190.0211975973937
+                        341.3425903320313,
+                        -1012.2785034179688
                     ],
                     "options": []
                 },
@@ -616,8 +626,8 @@
                         }
                     },
                     "uipos": [
-                        1320.0032504595798,
-                        -559.1264725836006
+                        1320.0032958984376,
+                        -559.12646484375
                     ],
                     "options": []
                 },
@@ -643,8 +653,8 @@
                         }
                     },
                     "uipos": [
-                        2154.5257690625637,
-                        -1101.752731712067
+                        2154.52587890625,
+                        -1116.519287109375
                     ],
                     "options": []
                 },
@@ -701,14 +711,193 @@
                         }
                     },
                     "uipos": [
-                        593.7975011029309,
-                        -1037.3869175970286
+                        832.791748046875,
+                        -1001.50390625
                     ],
                     "options": []
                 },
-                "59e5d9be-ShaderVolume": {
-                    "name": "ShaderVolume",
+                "d38c57a2-HDRSky": {
+                    "name": "HDRSky",
                     "inputs": {
+                        "enable": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": true,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "path": {
+                            "link": null,
+                            "type": "readpath",
+                            "default-value": "",
+                            "control": {
+                                "name": "read path"
+                            }
+                        },
+                        "rotation": {
+                            "link": "main:5c99dfa6-GetFrameNum:[node]/outputs/FrameNum",
+                            "type": "float",
+                            "default-value": -618.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "rotation3d": {
+                            "link": null,
+                            "type": "vec3f",
+                            "default-value": [
+                                0.0,
+                                90.0,
+                                0.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 3"
+                            }
+                        },
+                        "strength": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "HDRSky": {
+                            "type": ""
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        3080.00048828125,
+                        -1059.173095703125
+                    ],
+                    "options": []
+                },
+                "2d8b6c0-CreateVolumeBox": {
+                    "name": "CreateVolumeBox",
+                    "inputs": {
+                        "pos": {
+                            "link": null,
+                            "type": "vec3f",
+                            "default-value": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 3"
+                            }
+                        },
+                        "scale": {
+                            "link": null,
+                            "type": "vec3f",
+                            "default-value": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 3"
+                            }
+                        },
+                        "rotate": {
+                            "link": null,
+                            "type": "vec3f",
+                            "default-value": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 3"
+                            }
+                        },
+                        "vdbGrid": {
+                            "link": "main:6fc231d0-ReadVDB:[node]/outputs/data",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {
+                        "EulerAngleMeasure": {
+                            "value": "Degree",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "",
+                                    "Degree",
+                                    "Radians"
+                                ]
+                            },
+                            "type": "enum  Degree Radians"
+                        },
+                        "EulerRotationOrder": {
+                            "value": "XYZ",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "",
+                                    "XYZ",
+                                    "XZY",
+                                    "YXZ",
+                                    "YZX",
+                                    "ZXY",
+                                    "ZYX"
+                                ]
+                            },
+                            "type": "enum  XYZ XZY YXZ YZX ZXY ZYX"
+                        }
+                    },
+                    "outputs": {
+                        "prim": {
+                            "type": ""
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        2562.505126953125,
+                        -58.059940338134769
+                    ],
+                    "options": []
+                },
+                "59d369e2-BindMaterial": {
+                    "name": "BindMaterial",
+                    "inputs": {
+                        "object": {
+                            "link": "main:2d8b6c0-CreateVolumeBox:[node]/outputs/prim",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
                         "mtlid": {
                             "link": null,
                             "type": "string",
@@ -717,18 +906,76 @@
                                 "name": "String"
                             }
                         },
-                        "commonCode": {
+                        "SRC": {
                             "link": null,
-                            "type": "string",
-                            "default-value": "",
+                            "type": "",
+                            "default-value": null,
                             "control": {
-                                "name": "String"
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "object": {
+                            "type": ""
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        3081.4189453125,
+                        46.18369674682617
+                    ],
+                    "options": [
+                        "VIEW"
+                    ]
+                },
+                "6fc231d0-ReadVDB": {
+                    "name": "ReadVDB",
+                    "inputs": {
+                        "path": {
+                            "link": "main:3a44c43c-StringEval:[node]/outputs/result",
+                            "type": "readpath",
+                            "default-value": null,
+                            "control": {
+                                "name": "read path"
                             }
                         },
-                        "extensionsCode": {
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "data": {
+                            "type": ""
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        2142.05078125,
+                        76.95609283447266
+                    ],
+                    "options": [
+                        "ONCE"
+                    ]
+                },
+                "2287195b-ShaderVolume": {
+                    "name": "ShaderVolume",
+                    "inputs": {
+                        "mtlid": {
                             "link": null,
                             "type": "string",
-                            "default-value": "",
+                            "default-value": "VolMat1",
                             "control": {
                                 "name": "String"
                             }
@@ -785,14 +1032,14 @@
                         },
                         "albedo": {
                             "link": "main:22a002b3-ShaderFillVec:[node]/outputs/out",
-                            "type": "vec3f",
+                            "type": "colorvec3f",
                             "default-value": [
                                 0.5,
                                 0.5,
                                 0.5
                             ],
                             "control": {
-                                "name": "Float Vector 3"
+                                "name": "Color Vec3f"
                             }
                         },
                         "density": {
@@ -857,81 +1104,8 @@
                         }
                     },
                     "uipos": [
-                        1999.9482856820396,
-                        -635.6877546101002
-                    ],
-                    "options": [
-                        "VIEW"
-                    ]
-                },
-                "d38c57a2-HDRSky": {
-                    "name": "HDRSky",
-                    "inputs": {
-                        "enable": {
-                            "link": null,
-                            "type": "bool",
-                            "default-value": true,
-                            "control": {
-                                "name": "Boolean"
-                            }
-                        },
-                        "path": {
-                            "link": null,
-                            "type": "readpath",
-                            "default-value": "",
-                            "control": {
-                                "name": "read path"
-                            }
-                        },
-                        "rotation": {
-                            "link": "main:5c99dfa6-GetFrameNum:[node]/outputs/FrameNum",
-                            "type": "float",
-                            "default-value": -618.0,
-                            "control": {
-                                "name": "Float"
-                            }
-                        },
-                        "rotation3d": {
-                            "link": null,
-                            "type": "vec3f",
-                            "default-value": [
-                                0.0,
-                                90.0,
-                                0.0
-                            ],
-                            "control": {
-                                "name": "Float Vector 3"
-                            }
-                        },
-                        "strength": {
-                            "link": null,
-                            "type": "float",
-                            "default-value": 0.20000000298023225,
-                            "control": {
-                                "name": "Float"
-                            }
-                        },
-                        "SRC": {
-                            "link": null,
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        }
-                    },
-                    "params": {},
-                    "outputs": {
-                        "HDRSky": {
-                            "type": ""
-                        },
-                        "DST": {
-                            "type": ""
-                        }
-                    },
-                    "uipos": [
-                        2735.844745784092,
-                        -1192.454249500137
+                        2084.913818359375,
+                        -666.8727416992188
                     ],
                     "options": [
                         "VIEW"
@@ -3345,6 +3519,62 @@
                 ]
             ],
             "params": [],
+            "outputs": [
+                [
+                    "",
+                    "prim",
+                    ""
+                ],
+                [
+                    "",
+                    "DST",
+                    ""
+                ]
+            ],
+            "categories": [
+                "create"
+            ]
+        },
+        "CreateVolumeBox": {
+            "inputs": [
+                [
+                    "vec3f",
+                    "pos",
+                    ""
+                ],
+                [
+                    "vec3f",
+                    "scale",
+                    ""
+                ],
+                [
+                    "vec3f",
+                    "rotate",
+                    ""
+                ],
+                [
+                    "",
+                    "vdbGrid",
+                    ""
+                ],
+                [
+                    "",
+                    "SRC",
+                    ""
+                ]
+            ],
+            "params": [
+                [
+                    "enum  Degree Radians",
+                    "EulerAngleMeasure",
+                    "Degree"
+                ],
+                [
+                    "enum  XYZ XZY YXZ YZX ZXY ZYX",
+                    "EulerRotationOrder",
+                    "XYZ"
+                ]
+            ],
             "outputs": [
                 [
                     "",
@@ -21540,6 +21770,11 @@
                     ""
                 ],
                 [
+                    "bool",
+                    "cihou",
+                    "0"
+                ],
+                [
                     "enum World Local",
                     "space",
                     "World"
@@ -21727,16 +21962,6 @@
                     "VolMat1"
                 ],
                 [
-                    "string",
-                    "commonCode",
-                    ""
-                ],
-                [
-                    "string",
-                    "extensionsCode",
-                    ""
-                ],
-                [
                     "list",
                     "tex2dList",
                     ""
@@ -21762,7 +21987,7 @@
                     ""
                 ],
                 [
-                    "vec3f",
+                    "colorvec3f",
                     "albedo",
                     ""
                 ],
@@ -21794,6 +22019,61 @@
                     "RatioTracking"
                 ]
             ],
+            "outputs": [
+                [
+                    "MaterialObject",
+                    "mtl",
+                    ""
+                ],
+                [
+                    "",
+                    "DST",
+                    ""
+                ]
+            ],
+            "categories": [
+                "shader"
+            ]
+        },
+        "ShaderVolumeHomogeneous": {
+            "inputs": [
+                [
+                    "colorvec3f",
+                    "albedo",
+                    ""
+                ],
+                [
+                    "vec3f",
+                    "extinction",
+                    ""
+                ],
+                [
+                    "float",
+                    "anisotropy",
+                    ""
+                ],
+                [
+                    "bool",
+                    "debug",
+                    "0"
+                ],
+                [
+                    "bool",
+                    "multiscatter",
+                    "0"
+                ],
+                [
+                    "string",
+                    "mtlid",
+                    "VolMat1"
+                ],
+                [
+                    "",
+                    "SRC",
+                    ""
+                ]
+            ],
+            "params": [],
             "outputs": [
                 [
                     "MaterialObject",
