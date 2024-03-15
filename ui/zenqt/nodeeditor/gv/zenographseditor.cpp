@@ -575,8 +575,6 @@ void ZenoGraphsEditor::activateTab(const QStringList& subgpath, const QString& f
         ZenoSubGraphView* pView = new ZenoSubGraphView;
         connect(pView, &ZenoSubGraphView::zoomed, pScene, &ZenoSubGraphScene::onZoomed);
         connect(pView, &ZenoSubGraphView::zoomed, this, &ZenoGraphsEditor::zoomed);
-        //pView->initScene(pScene);
-
 
         if (ZenoWelcomePage* page = qobject_cast<ZenoWelcomePage*>(m_ui->splitter->widget(1)))  //if is welcompage, replace with graphsViewTab
             m_ui->splitter->replaceWidget(1, m_ui->graphsViewTab);

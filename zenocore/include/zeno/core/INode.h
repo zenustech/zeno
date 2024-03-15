@@ -68,6 +68,7 @@ public:
     ZENO_API std::string get_nodecls() const;
     ZENO_API std::string get_ident() const;
     ZENO_API ObjPath get_path() const;
+    ObjPath get_uuid_path() const;
     std::string get_uuid() const;
     void initUuid(Graph* pGraph, const std::string nodecls);
 

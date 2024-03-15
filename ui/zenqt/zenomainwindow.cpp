@@ -44,7 +44,7 @@
 #include "settings/zenosettingsmanager.h"
 #include "util/apphelper.h"
 #include "dialog/zaboutdlg.h"
-#include <zeno/extra/GlobalStatus.h>
+#include <zeno/extra/GlobalError.h>
 #include <zeno/extra/GlobalState.h>
 #include "dialog/ZImportSubgraphsDlg.h"
 #include "dialog/zcheckupdatedlg.h"
@@ -53,6 +53,7 @@
 #include "model/GraphsTreeModel.h"
 #include <zeno/core/Session.h>
 #include <zeno/utils/api.h>
+#include "calculation/calculationmgr.h"
 
 
 const QString g_latest_layout = "LatestLayout";
@@ -110,6 +111,10 @@ void ZenoMainWindow::init(PANEL_TYPE onlyView)
         if (sender != this)
             loadRecentFiles();
     });
+
+    auto calcMgr = zenoApp->calculationMgr();
+    if (calcMgr)
+        connect(calcMgr, &CalculationMgr::calcFinished, this, &ZenoMainWindow::onCalcFinished);
 }
 
 void ZenoMainWindow::initWindowProperty()
@@ -703,6 +708,18 @@ void ZenoMainWindow::onFrameSwitched(int frameid)
 {
     auto& sess = zeno::getSession();
     sess.switchToFrame(frameid);
+}
+
+void ZenoMainWindow::onCalcFinished(bool bSucceed, QStringList nodePath, QString msg)
+{
+    if (!bSucceed) {
+        ZenoGraphsEditor* pEditor = getAnyEditor();
+        if (pEditor) {
+            QString nodeName = nodePath.back();
+            nodePath.pop_back();
+            pEditor->activateTab(nodePath, nodeName, true);
+        }
+    }
 }
 
 void ZenoMainWindow::onMaximumTriggered()

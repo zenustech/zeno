@@ -25,7 +25,7 @@ struct INodeClass {
 struct IObject;
 struct GlobalState;
 struct GlobalComm;
-struct GlobalStatus;
+struct GlobalError;
 struct EventCallbacks;
 struct UserData;
 struct CalcManager;
@@ -37,7 +37,7 @@ struct Session {
 
     std::unique_ptr<GlobalState> const globalState;
     std::unique_ptr<GlobalComm> const globalComm;
-    std::unique_ptr<GlobalStatus> const globalStatus;
+    std::unique_ptr<GlobalError> const globalError;
     std::unique_ptr<EventCallbacks> const eventCallbacks;
     std::unique_ptr<UserData> const m_userData;
     std::unique_ptr<ObjectManager> const objsMan;

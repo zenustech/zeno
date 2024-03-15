@@ -97,6 +97,7 @@ public:
     static QStandardItemModel* genParamsModel(const std::vector<zeno::ParamInfo>& inputs, const std::vector<zeno::ParamInfo>& outputs);
 
     static void saveProject(const QString& name);
+    static QStringList stdlistToQStringList(const zeno::ObjPath& objpath);
 
 private:
     static std::pair<qreal, qreal> getRxx2(QRectF r, qreal xRadius, qreal yRadius, bool AbsoluteSize);

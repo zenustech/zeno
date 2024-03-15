@@ -4,7 +4,7 @@
 #include <zeno/core/ObjectManager.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
-#include <zeno/extra/GlobalStatus.h>
+#include <zeno/extra/GlobalError.h>
 #include <zeno/extra/EventCallbacks.h>
 #include <zeno/types/UserData.h>
 #include <zeno/core/Graph.h>
@@ -112,7 +112,7 @@ struct ImplNodeClass : INodeClass {
 ZENO_API Session::Session()
     : globalState(std::make_unique<GlobalState>())
     , globalComm(std::make_unique<GlobalComm>())
-    , globalStatus(std::make_unique<GlobalStatus>())
+    , globalError(std::make_unique<GlobalError>())
     , eventCallbacks(std::make_unique<EventCallbacks>())
     , m_userData(std::make_unique<UserData>())
     , mainGraph(std::make_shared<Graph>("main"))
@@ -200,9 +200,9 @@ ZENO_API bool Session::run() {
 
     zeno::GraphException::catched([&] {
         mainGraph->runGraph();
-        }, *globalStatus);
-    if (globalStatus->failed()) {
-        zeno::log_error(globalStatus->toJson());
+        }, *globalError);
+    if (globalError->failed()) {
+        zeno::log_error("");
     }
 
     return true;

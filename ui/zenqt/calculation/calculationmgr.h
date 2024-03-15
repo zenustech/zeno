@@ -15,7 +15,7 @@ public:
     CalcWorker(QObject* parent = nullptr);
 
 signals:
-    void calcFinished(bool, QString);
+    void calcFinished(bool, QStringList, QString);
 
 public slots:
     void run();
@@ -33,10 +33,10 @@ public:
     void unRegisterRenderWid(DisplayWidget* pDisp);
 
 signals:
-    void calcFinished(bool, QString);
+    void calcFinished(bool, QStringList, QString);
 
 private slots:
-    void onCalcFinished(bool, QString);
+    void onCalcFinished(bool, QStringList, QString);
     void on_render_objects_loaded();
 
 private:

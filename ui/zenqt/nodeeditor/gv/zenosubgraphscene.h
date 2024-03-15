@@ -44,9 +44,9 @@ public:
     void select(const std::vector<QString>& nodes);
     void select(const QStringList& nodes);
     void select(const QModelIndexList &nodes);
-    void markError(const QString& nodeid);
+    ZenoNode* markError(const QString& nodeName);
     void clearMark();
-    QGraphicsItem* getNode(const QString& id);
+    QGraphicsItem* getNode(const QString& nodeName);
     void collectNodeSelChanged(const QString& name, bool bSelected);
     GraphModel* getGraphModel() const;
 

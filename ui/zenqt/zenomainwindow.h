@@ -165,6 +165,7 @@ public slots:
     void onZenovisFrameUpdate(bool bGLView, int frameid);
     void onCheckUpdate();
     void onFrameSwitched(int frameid);
+    void onCalcFinished(bool bSucceed, QStringList nodeUuidPath, QString msg);
 
 protected:
     void resizeEvent(QResizeEvent* event) override;

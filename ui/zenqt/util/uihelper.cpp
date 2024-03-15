@@ -1806,3 +1806,11 @@ void UiHelper::saveProject(const QString& name)
         }
     }
 }
+
+QStringList UiHelper::stdlistToQStringList(const zeno::ObjPath& objpath)
+{
+    QStringList lst;
+    for (auto path : objpath)
+        lst.append(QString::fromStdString(path));
+    return lst;
+}

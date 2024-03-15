@@ -4,6 +4,9 @@
 #include <zeno/extra/GraphException.h>
 #include "viewport/displaywidget.h"
 #include "zassert.h"
+#include "util/uihelper.h"
+#include "zenoapplication.h"
+#include "zenomainwindow.h"
 
 
 CalcWorker::CalcWorker(QObject* parent) {
@@ -14,16 +17,18 @@ CalcWorker::CalcWorker(QObject* parent) {
 
 void CalcWorker::run() {
     auto& sess = zeno::getSession();
+
     zeno::GraphException::catched([&] {
         sess.run();
-    }, *sess.globalStatus);
+    }, *sess.globalError);
     sess.globalState->set_working(false);
-    if (sess.globalStatus->failed()) {
-        std::string err = sess.globalStatus->toJson();
-        emit calcFinished(false, QString::fromStdString(err));
+    if (sess.globalError->failed()) {
+        QStringList namePath = UiHelper::stdlistToQStringList(sess.globalError->getNode());
+        QString errMsg = QString::fromStdString(sess.globalError->getErrorMsg());
+        emit calcFinished(false, namePath, errMsg);
     }
     else {
-        emit calcFinished(true, "");
+        emit calcFinished(true, {}, "");
     }
 }
 
@@ -39,12 +44,12 @@ CalculationMgr::CalculationMgr(QObject* parent)
     connect(m_worker, &CalcWorker::calcFinished, this, &CalculationMgr::onCalcFinished);
 }
 
-void CalculationMgr::onCalcFinished(bool bSucceed, QString msg)
+void CalculationMgr::onCalcFinished(bool bSucceed, QStringList namePath, QString msg)
 {
     //确保此时计算线程不再跑逻辑，这里暂时是代码上约束，也就是CalcWorker::run()走完就发信号。
     m_thread.quit();
     m_thread.wait();
-    emit calcFinished(bSucceed, msg);
+    emit calcFinished(bSucceed, namePath, msg);
 }
 
 void CalculationMgr::run()

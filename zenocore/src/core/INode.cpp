@@ -91,7 +91,31 @@ ZENO_API std::string INode::get_ident() const
     return m_name;
 }
 
-ZENO_API ObjPath INode::get_path() const
+ZENO_API ObjPath INode::get_path() const {
+    std::list<std::string> path;
+    path.push_front(m_name);
+
+    Graph* pGraph = graph;
+
+    while (pGraph) {
+        const std::string name = pGraph->getName();
+        if (name == "main") {
+            path.push_front("main");
+            break;
+        }
+        else {
+            if (!pGraph->optParentSubgNode.has_value())
+                break;
+            auto pSubnetNode = pGraph->optParentSubgNode.value();
+            assert(pSubnetNode);
+            path.push_front(pSubnetNode->m_name);
+            pGraph = pSubnetNode->graph;
+        }
+    }
+    return ObjPath(path);
+}
+
+ObjPath INode::get_uuid_path() const
 {
     return m_uuidPath;
 }
@@ -177,9 +201,9 @@ ZENO_API void INode::preApply() {
             zeno::log_warn("the param {} may not be initialized", name);
     }
 
-    if (!zeno::getSession().globalState->is_working()) {
-        throw GraphException();
-    }
+    //if (!zeno::getSession().globalState->is_working()) {
+    //    throw GraphException();
+    //}
 
     log_debug("==> enter {}", m_name);
     {
