@@ -30,9 +30,11 @@ struct VolumeOut {
     float max_density;
     float density;
 
+    float3 albedo;
+    float3 extinction;
+    
     float anisotropy;
     float3 emission;
-    float3 albedo;
 };
 
 namespace pbrt {

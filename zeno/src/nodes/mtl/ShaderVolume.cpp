@@ -13,26 +13,19 @@
 #include <iostream>
 #include "magic_enum.hpp"
 
-#include <rapidjson/document.h>
-#include <rapidjson/rapidjson.h>
-#include <rapidjson/writer.h>
-#include <rapidjson/stringbuffer.h>
+#include "json.hpp"
 
 namespace zeno {
 
 struct ShaderVolume : INode {
 
-virtual void apply() override {
+    virtual void apply() override {
         EmissionPass em;
-
-        if (has_input("commonCode")) {
-            em.commonCode += get_input<StringObject>("commonCode")->get();
-        }
 
         auto code = em.finalizeCode({
 
             {1, "depth"},
-            {1, "extinction"},
+            //{1, "extinction"},
             {3, "albedo"},
             {1, "anisotropy"},
 
@@ -42,7 +35,7 @@ virtual void apply() override {
         }, {
            
             get_input<IObject>("depth", std::make_shared<NumericObject>((float)(999))),
-            get_input<IObject>("extinction", std::make_shared<NumericObject>(float(1))),
+            //get_input<IObject>("extinction", std::make_shared<NumericObject>(float(1))),
             get_input<IObject>("albedo", std::make_shared<NumericObject>(vec3f(0.5))),
             get_input<IObject>("anisotropy", std::make_shared<NumericObject>(float(0))),
 
@@ -50,13 +43,11 @@ virtual void apply() override {
             get_input<IObject>("emission", std::make_shared<NumericObject>(vec3f(0))),
             
         });
-        
+
+        code += "auto extinction = vec3(1.0f); \n";
+
         auto mtl = std::make_shared<MaterialObject>();
         mtl->frag = std::move(code);
-
-        if (has_input("extensionsCode")) {
-            mtl->extensions = get_input<zeno::StringObject>("extensionsCode")->get();
-        }
 
             if (has_input("tex2dList")) {
                 auto tex2dList = get_input<ListObject>("tex2dList")->get<zeno::Texture2DObject>();
@@ -84,22 +75,12 @@ virtual void apply() override {
 
         std::string parameters = "";
         {
-            using namespace rapidjson;
-            Document d; d.SetObject();
-            auto& allocator = d.GetAllocator();
+            nlohmann::json j;
+            
+            j["vol_depth"] = vol_depth;
+            j["vol_extinction"] = vol_extinction;
 
-            Value s = Value();
-            s.SetInt(vol_depth);
-            d.AddMember("vol_depth", s, allocator);
-
-            s = Value();
-            s.SetFloat(vol_extinction); 
-            d.AddMember("vol_extinction", s, allocator);
-
-            StringBuffer buffer;
-            Writer<StringBuffer> writer(buffer);
-            d.Accept(writer);
-            parameters = buffer.GetString();
+            parameters = j.dump();
         }
         mtl->parameters = parameters;
         mtl->mtlidkey = get_input2<std::string>("mtlid");
@@ -160,13 +141,11 @@ virtual void apply() override {
             }
             em.commonCode += type_string.str();
             //std::cout << commonCode << std::endl; 
-            auto ud = get_input<ListObject>("tex3dList")->userData();
-
-            if ( ud.has("transform") ) {
             
-                auto transformString = ud.get2<std::string>("transform");
-                mtl->transform = transformString;
-            }
+        } else {
+
+            em.commonCode += "using DataTypeNVDB0 = float; nanovdb::Fp32;             \n";
+            em.commonCode += "using GridTypeNVDB0 = nanovdb::NanoGrid<DataTypeNVDB0>; \n";
         }
 
         mtl->common = std::move(em.commonCode);
@@ -177,8 +156,6 @@ virtual void apply() override {
 ZENDEFNODE(ShaderVolume, {
     {
         {"string", "mtlid", "VolMat1"},
-        {"string", "commonCode"},
-        {"string", "extensionsCode"},
 
         {"list", "tex2dList"},
         {"list", "tex3dList"},
@@ -187,7 +164,7 @@ ZENDEFNODE(ShaderVolume, {
         {"float", "extinction", "1"},
         {"float", "anisotropy", "0"},
 
-        {"vec3f", "albedo", "0.5,0.5,0.5"},
+        {"colorvec3f", "albedo", "0.5,0.5,0.5"},
         {"float", "density", "0"},
         {"vec3f", "emission", "0.0,0.0,0.0"}
     },
@@ -196,6 +173,67 @@ ZENDEFNODE(ShaderVolume, {
         {"enum RatioTracking", "Transmittance", "RatioTracking"},
         {"enum Raw Density Absorption", "EmissionScale", "Raw"},
     },
+    {"shader"}
+});
+
+struct ShaderVolumeHomogeneous : INode {
+
+    virtual void apply() override {
+
+        auto mtl = std::make_shared<MaterialObject>();
+
+        auto extinction = get_input2<zeno::vec3f>("extinction");
+        extinction = clamp(extinction, 1e-5, 1e+5);
+
+        auto albedo     = get_input2<zeno::vec3f>("albedo");
+        auto anisotropy = get_input2<float>("anisotropy");
+
+        std::stringstream ss {};
+        ss << std::setprecision(9);
+        ss << "auto anisotropy = float(" << anisotropy << ");\n";
+        ss << std::setprecision(9);
+        ss << "auto density  = 0.0f;\n";
+        ss << "vec3 emission = vec3(0.0f);   \n";
+        ss << "vec3 albedo = vec3(" << albedo[0] << "," << albedo[1] << "," << albedo[2] << "); \n";
+        ss << "vec3 extinction = vec3(" << extinction[0] << "," << extinction[1] << "," << extinction[2] << "); \n";
+
+        mtl->frag = ss.str();
+
+        auto equiangular  = get_input2<bool>("debug");
+        auto multiscatter = get_input2<bool>("multiscatter");
+
+        std::string parameters = "";
+        {
+            nlohmann::json j;
+            j["vol_depth"] = 0;
+            
+            j["equiangular"] = equiangular;
+            j["multiscatter"] = multiscatter;
+
+            parameters = j.dump();
+        }
+        mtl->parameters = parameters;
+        mtl->mtlidkey = get_input2<std::string>("mtlid");
+
+        mtl->common += "using DataTypeNVDB0 = float; nanovdb::Fp32;             \n";
+        mtl->common += "using GridTypeNVDB0 = nanovdb::NanoGrid<DataTypeNVDB0>; \n";
+        mtl->common += "#define VolumeEmissionScale VolumeEmissionScaleType::Raw\n";
+        set_output("mtl", std::move(mtl));
+    }
+};
+
+ZENDEFNODE(ShaderVolumeHomogeneous, {
+    {
+        {"colorvec3f", "albedo", "0.5,0.5,0.5"},
+        {"vec3f", "extinction", "1"},
+        {"float", "anisotropy", "0"},
+        
+        {"bool", "debug", "false"},
+        {"bool", "multiscatter", "false"},
+        {"string", "mtlid", "VolMat1"},
+    },
+    { {"MaterialObject", "mtl"} },
+    {},
     {"shader"}
 });
 

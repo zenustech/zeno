@@ -1436,41 +1436,47 @@ static void createSBT( PathTracerState& state )
 
             HitGroupRecord rec = {};
 
-            rec.data.uniforms        = reinterpret_cast<float4*>( (CUdeviceptr)state.d_uniforms );
+            rec.data.uniforms = reinterpret_cast<float4*>( (CUdeviceptr)state.d_uniforms );
 
-            if (OptixUtil::g_vdb_list_for_each_shader.count(j) == 0) {
-                continue;
+            if (OptixUtil::g_vdb_list_for_each_shader.count(j) != 0) {
+
+                auto& vdb_list = OptixUtil::g_vdb_list_for_each_shader.at(j);
+				//if (OptixUtil::g_cached_vdb_map.count(key_vdb) == 0) continue;
+				//auto& volumeWrapper = OptixUtil::g_vdb[key_vdb];
+
+				for(uint t=0; t<min(vdb_list.size(), 8ull); ++t)
+				{
+					auto vdb_key = vdb_list[t];
+					auto vdb_ptr = OptixUtil::g_vdb_cached_map.at(vdb_key);
+
+					rec.data.vdb_grids[t] = vdb_ptr->grids.front()->deviceptr;
+					rec.data.vdb_max_v[t] = vdb_ptr->grids.front()->max_value;
+				}
             }
 
-            auto& vdb_list = OptixUtil::g_vdb_list_for_each_shader.at(j);
-
-            //if (OptixUtil::g_cached_vdb_map.count(key_vdb) == 0) continue;
-            //auto& volumeWrapper = OptixUtil::g_vdb[key_vdb];
-
-            for(uint t=0; t<min(vdb_list.size(), 8ull); ++t)
-            {
-                auto vdb_key = vdb_list[t];
-                auto vdb_ptr = OptixUtil::g_vdb_cached_map.at(vdb_key);
-
-                rec.data.vdb_grids[t] = vdb_ptr->grids.front()->deviceptr;
-                rec.data.vdb_max_v[t] = vdb_ptr->grids.front()->max_value;
-            }
-
-             for(uint t=0;t<32;t++)
+            for(uint t=0;t<32;t++)
             {
                 rec.data.textures[t] = shader_ref.getTexture(t);
             }
 
             {
-                using namespace rapidjson;
-                Document document;
-                document.Parse(shader_ref.parameters.c_str());
+                auto j = nlohmann::json::parse(shader_ref.parameters);
 
-                auto vol_depth = document["vol_depth"].GetInt();
-                auto vol_extin = document["vol_extinction"].GetFloat();
-                
-                rec.data.vol_depth = vol_depth;
-                rec.data.vol_extinction = vol_extin;
+                if (!j["vol_depth"].is_null()) {
+                    rec.data.vol_depth = j["vol_depth"];
+                }
+
+                if (!j["vol_extinction"].is_null()) {
+                    rec.data.vol_extinction = j["vol_extinction"];
+                }
+
+                if (!j["equiangular"].is_null()) {
+                    rec.data.equiangular = j["equiangular"];
+                }
+
+                if (!j["multiscatter"].is_null()) {
+                    rec.data.multiscatter = j["multiscatter"];
+                }
             }
 
             hitgroup_records[sbt_idx] = rec;

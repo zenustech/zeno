@@ -16,7 +16,7 @@ QSet<QString> lightCameraNodes({
     "LightNode", "BindLight", "ProceduralSky", "HDRSky",
     });
 
-std::set<std::string> matNodeNames = {"ShaderFinalize", "ShaderVolume"};
+std::set<std::string> matNodeNames = {"ShaderFinalize", "ShaderVolume", "ShaderVolumeHomogeneous"};
 
 static QString nameMangling(const QString& prefix, const QString& ident) {
     if (prefix.isEmpty())

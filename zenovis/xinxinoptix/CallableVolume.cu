@@ -246,6 +246,7 @@ extern "C" __device__ VolumeOut __direct_callable__evalmat(const float4* uniform
 
     vec3 emission = vec3(0.0f);
     vec3 albedo = vec3(0.5f);
+    auto extinction = vec3(1.0f);
     //GENERATED_END_MARK
 #else
 	auto anisotropy = 0.0f;
@@ -255,6 +256,7 @@ extern "C" __device__ VolumeOut __direct_callable__evalmat(const float4* uniform
 
     vec3 emission = tmp / 50.f;
     vec3 albedo = tmp;
+    auto extinction = vec3(1.0f);
 #endif // _FALLBACK_
 
 VolumeOut output;
@@ -263,6 +265,7 @@ VolumeOut output;
 
     output.albedo = clamp(albedo, 0.0f, 1.0f);
     output.anisotropy = clamp(anisotropy, -1.0f, 1.0f);
+    output.extinction = extinction;
 
     output.density = fmaxf(density, 0.0f);
     output.emission = fmaxf(emission, vec3(0.0f));

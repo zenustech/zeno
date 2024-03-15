@@ -14,6 +14,8 @@ target_sources(zenovis PRIVATE
   Shape.h
   XAS.h
 
+  ../../ui/include/json.hpp
+
   LightTree.cpp
   LightTree.h
   LightBounds.cpp
