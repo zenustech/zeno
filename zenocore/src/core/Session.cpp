@@ -192,6 +192,8 @@ ZENO_API void Session::switchToFrame(int frameid)
 ZENO_API bool Session::run() {
     globalState->set_working(true);
 
+    zeno::log_info("Session::run()");
+
     objsMan->beforeRun();
     zeno::scope_exit sp([&]() { objsMan->afterRun(); });
 

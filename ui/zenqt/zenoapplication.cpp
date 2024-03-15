@@ -35,8 +35,9 @@ ZenoApplication::ZenoApplication(int &argc, char **argv)
     if (m_bUIApp) {
         m_spUILogStream = std::make_shared<ZWidgetErrStream>(std::clog);
         m_spUILogStream->registerMsgHandler();
-        //register optix log proxy
-        bool ret = connect(m_spUILogStream->optixLogProxy().get(), SIGNAL(optixlogReady(const QString&)), this, SLOT(onOptixlogReady(const QString&)), Qt::QueuedConnection);
+        //register thread log proxy
+        connect(m_spUILogStream->threadLogProxy().get(), SIGNAL(threadlogReady(const QString&)), 
+            this, SLOT(onThreadLogReady(const QString&)), Qt::QueuedConnection);
     }
 
     m_spProcClipboard = std::make_shared<ProcessClipboard>();
@@ -46,7 +47,7 @@ ZenoApplication::~ZenoApplication()
 {
 }
 
-void ZenoApplication::onOptixlogReady(const QString& msg)
+void ZenoApplication::onThreadLogReady(const QString& msg)
 {
     if (msg.startsWith("["))
     {

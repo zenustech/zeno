@@ -27,7 +27,7 @@ public:
     bool isUIApplication() const { return m_bUIApp; }
 
 private slots:
-    void onOptixlogReady(const QString& msg);
+    void onThreadLogReady(const QString& msg);
 
 private:
     QString readQss(const QString& qssPath);

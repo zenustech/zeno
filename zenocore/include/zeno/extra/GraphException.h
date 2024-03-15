@@ -3,6 +3,7 @@
 #include <zeno/extra/GlobalError.h>
 #include <zeno/utils/Error.h>
 #include <zeno/utils/log.h>
+#include <zeno/utils/helper.h>
 #include <stdexcept>
 #include <string>
 
@@ -17,13 +18,13 @@ struct GraphException {
         try {
             std::rethrow_exception(ep);
         } catch (ErrorException const &e) {
-            //log_error("==> error during [{}]: {}", nodeName, e.what());
+            log_error("==> error during [{}]: {}", objPathToStr(nodePath), e.what());
             return GlobalError(nodePath, e.getError(), param);
         } catch (std::exception const &e) {
-            //log_error("==> exception during [{}]: {}", nodeName, e.what());
+            log_error("==> exception during [{}]: {}", objPathToStr(nodePath), e.what());
             return GlobalError(nodePath, std::make_shared<StdError>(std::current_exception()), param);
         } catch (...) {
-            //log_error("==> exception during [{}]: <unknown>", nodeName);
+            log_error("==> exception during [{}]: <unknown>", objPathToStr(nodePath));
             return GlobalError(nodePath, std::make_shared<StdError>(std::current_exception()), param);
         }
         return GlobalError(ObjPath(), nullptr);
