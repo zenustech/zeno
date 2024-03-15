@@ -36,7 +36,6 @@ static CONTROL_ITEM_INFO controlList[] = {
     {"Integer Vector 3",    CONTROL_VEC3_INT,       "vec3i", ":/icons/parameter_control_integerVector3.svg"},
     {"Integer Vector 2",    CONTROL_VEC2_INT,       "vec2i", ":/icons/parameter_control_integerVector2.svg"},
     {"Color",               CONTROL_COLOR,          "color", ":/icons/parameter_control_color.svg"},
-    {"Pure Color",          CONTROL_PURE_COLOR,     "color", ":/icons/parameter_control_color.svg"},
     {"Color Vec3f",         CONTROL_COLOR_VEC3F,    "vec3f", ":/icons/parameter_control_color.svg"},
     {"Curve",               CONTROL_CURVE,          "curve", ":/icons/parameter_control_curve.svg"},
     {"SpinBox",             CONTROL_HSPINBOX,       "int", ":/icons/parameter_control_spinbox.svg"},
