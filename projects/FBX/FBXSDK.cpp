@@ -13,6 +13,7 @@
 #include "zeno/utils/log.h"
 #include <zeno/types/UserData.h>
 #include "zeno/types/PrimitiveObject.h"
+#include "zeno/utils/scope_exit.h"
 
 namespace FBX{
     void GetChildNodePathRecursive(FbxNode* node, std::string& path) {
@@ -618,6 +619,188 @@ struct NewFBXImportSkeleton : INode {
 ZENDEFNODE(NewFBXImportSkeleton, {
     {
         {"readpath", "path"},
+        {"bool", "ConvertUnits", "1"},
+    },
+    {
+        "prim",
+    },
+    {},
+    {"primitive"},
+});
+
+struct NewFBXImportAnimation : INode {
+    virtual void apply() override {
+        int frameid;
+        if (has_input("frameid")) {
+            frameid = std::lround(get_input2<float>("frameid"));
+        } else {
+            frameid = getGlobalState()->frameid;
+        }
+        float fps = get_input2<float>("fps");
+        float t = float(frameid) / fps;
+        FbxTime curTime;       // The time for each key in the animation curve(s)
+        curTime.SetSecondDouble(t);   // Starting time
+
+        // Change the following filename to a suitable filename value.
+        auto lFilename = get_input2<std::string>("path");
+
+        // Initialize the SDK manager. This object handles all our memory management.
+        FbxManager* lSdkManager = FbxManager::Create();
+
+        // Create the IO settings object.
+        FbxIOSettings *ios = FbxIOSettings::Create(lSdkManager, IOSROOT);
+        lSdkManager->SetIOSettings(ios);
+        // Destroy the SDK manager and all the other objects it was handling.
+        zeno::scope_exit sp([=]() { lSdkManager->Destroy(); });
+
+        // Create an importer using the SDK manager.
+        FbxImporter* lImporter = FbxImporter::Create(lSdkManager,"");
+
+        // Use the first argument as the filename for the importer.
+        if(!lImporter->Initialize(lFilename.c_str(), -1, lSdkManager->GetIOSettings())) {
+            printf("Call to FbxImporter::Initialize() failed.\n");
+            printf("Error returned: %s\n\n", lImporter->GetStatus().GetErrorString());
+            exit(-1);
+        }
+        int major, minor, revision;
+        lImporter->GetFileVersion(major, minor, revision);
+
+        // Create a new scene so that it can be populated by the imported file.
+        FbxScene* lScene = FbxScene::Create(lSdkManager,"myScene");
+
+        // Import the contents of the file into the scene.
+        lImporter->Import(lScene);
+
+        // The file is imported; so get rid of the importer.
+        lImporter->Destroy();
+
+        // Print the nodes of the scene and their attributes recursively.
+        // Note that we are not printing the root node because it should
+        // not contain any attributes.
+        auto prim = std::make_shared<PrimitiveObject>();
+        auto &ud = prim->userData();
+        ud.set2("version", vec3i(major, minor, revision));
+
+        FbxArray<FbxString*> animationStackNames;
+        std::vector<std::string> clip_names;
+        lScene->FillAnimStackNameArray(animationStackNames);
+        for (auto i = 0; i < animationStackNames.GetCount(); i++) {
+            clip_names.emplace_back(animationStackNames[i]->Buffer());
+        }
+        for (auto i = 0; i < clip_names.size(); i++) {
+            ud.set2(format("avail_anim_clip_{}", i), clip_names[i]);
+        }
+        ud.set2("avail_anim_clip_count", int(clip_names.size()));
+
+        auto clip_name = get_input2<std::string>("clipName");
+        if (clip_name == "") {
+            clip_name = lScene->ActiveAnimStackName.Get().Buffer();
+        }
+
+        int stack_index = int(std::find(clip_names.begin(), clip_names.end(), clip_name) - clip_names.begin());
+        if (stack_index == clip_names.size()) {
+            zeno::log_error("FBX: Can not find clip name");
+        }
+        zeno::log_info("stack_index: {}", stack_index);
+
+
+        FbxAnimStack* animStack = lScene->GetSrcObject<FbxAnimStack>(stack_index);
+        ud.set2("clipinfo.name", std::string(animStack->GetName()));
+        zeno::log_info("animStack: {}", animStack->GetName());
+
+
+        lScene->SetCurrentAnimationStack(animStack);
+
+        FbxTime mStart, mStop;
+        FbxTakeInfo* lCurrentTakeInfo = lScene->GetTakeInfo(*(animationStackNames[stack_index]));
+        float src_fps = 0;
+        if (lCurrentTakeInfo)  {
+            mStart = lCurrentTakeInfo->mLocalTimeSpan.GetStart();
+            mStop = lCurrentTakeInfo->mLocalTimeSpan.GetStop();
+            int frameCount = lCurrentTakeInfo->mLocalTimeSpan.GetDuration().GetFrameCount();
+            src_fps = frameCount / lCurrentTakeInfo->mLocalTimeSpan.GetDuration().GetSecondDouble();
+        }
+        else {
+            // Take the time line value
+            FbxTimeSpan lTimeLineTimeSpan;
+            lScene->GetGlobalSettings().GetTimelineDefaultTimeSpan(lTimeLineTimeSpan);
+
+            mStart = lTimeLineTimeSpan.GetStart();
+            mStop  = lTimeLineTimeSpan.GetStop();
+            int frameCount = lTimeLineTimeSpan.GetDuration().GetFrameCount();
+            src_fps = frameCount / lTimeLineTimeSpan.GetDuration().GetSecondDouble();
+        }
+
+        ud.set2("clipinfo.source_range", vec2f(mStart.GetSecondDouble(), mStop.GetSecondDouble()));
+        ud.set2("clipinfo.source_fps", src_fps);
+        ud.set2("clipinfo.fps", fps);
+
+        {
+            auto node_count = lScene->GetNodeCount();
+            prim->verts.resize(node_count);
+            std::vector<std::string> bone_names;
+            auto &boneNames = prim->verts.add_attr<int>("boneName");
+            auto &transform_r0 = prim->verts.add_attr<vec3f>("transform_r0");
+            auto &transform_r1 = prim->verts.add_attr<vec3f>("transform_r1");
+            auto &transform_r2 = prim->verts.add_attr<vec3f>("transform_r2");
+            for (int j = 0; j < node_count; ++j) {
+                auto pNode = lScene->GetNode(j);
+                FbxAMatrix lGlobalPosition = pNode->EvaluateGlobalTransform(curTime);
+                FbxMatrix transformMatrix;
+                memcpy(&transformMatrix, &lGlobalPosition, sizeof(FbxMatrix));
+                auto t = transformMatrix.GetRow(3);
+                prim->verts[j] = vec3f(t[0], t[1], t[2]);
+
+                auto r0 = transformMatrix.GetRow(0);
+                auto r1 = transformMatrix.GetRow(1);
+                auto r2 = transformMatrix.GetRow(2);
+                transform_r0[j] = vec3f(r0[0], r0[1], r0[2]);
+                transform_r1[j] = vec3f(r1[0], r1[1], r1[2]);
+                transform_r2[j] = vec3f(r2[0], r2[1], r2[2]);
+
+                bone_names.emplace_back(pNode->GetName());
+                boneNames[j] = j;
+            }
+            std::vector<int> bone_connects;
+            for (int j = 0; j < node_count; ++j) {
+                auto pNode = lScene->GetNode(j);
+                if (pNode->GetParent()) {
+                    auto parent_name = pNode->GetParent()->GetName();
+                    auto index = std::find(bone_names.begin(), bone_names.end(), parent_name) - bone_names.begin();
+                    if (index < bone_names.size()) {
+                        bone_connects.push_back(index);
+                        bone_connects.push_back(j);
+                    }
+                }
+            }
+            {
+                prim->loops.values = bone_connects;
+                prim->polys.resize(bone_connects.size() / 2);
+                for (auto j = 0; j < bone_connects.size() / 2; j++) {
+                    prim->polys[j] = {j * 2, 2};
+                }
+            }
+            ud.set2("boneName_count", int(bone_names.size()));
+            for (auto i = 0; i < bone_names.size(); i++) {
+                ud.set2(zeno::format("boneName_{}", i), bone_names[i]);
+            }
+        }
+
+        if (get_input2<bool>("ConvertUnits")) {
+            for (auto & v: prim->verts) {
+                v = v * 0.01;
+            }
+        }
+        set_output("prim", prim);
+    }
+};
+
+ZENDEFNODE(NewFBXImportAnimation, {
+    {
+        {"readpath", "path"},
+        {"string", "clipName", ""},
+        {"frameid"},
+        {"float", "fps", "25"},
         {"bool", "ConvertUnits", "1"},
     },
     {
