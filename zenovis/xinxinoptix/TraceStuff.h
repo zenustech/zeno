@@ -81,7 +81,7 @@ struct RadiancePRD
     float3       attenuation2;
     float3       origin;
     float3       direction;
-    float3       camPos;
+    
     float        minSpecRough;
     bool         passed;
     float        prob;

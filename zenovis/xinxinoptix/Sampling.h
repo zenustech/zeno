@@ -229,6 +229,14 @@ static __host__ __device__ __inline__ float3 sphereUV(const float3 &dir, bool in
     return float3 {u, v, 0.0f};
 } 
 
+static __host__ __device__ __inline__ float3 interp(float2 barys, float3 a, float3 b, float3 c)
+{
+    float w0 = 1 - barys.x - barys.y;
+    float w1 = barys.x;
+    float w2 = barys.y;
+    return w0*a + w1*b + w2*c;
+}
+
 inline float NextFloatUp(float v) {
     // Handle infinity and negative zero for _NextFloatUp()_
     if (isinf(v) && v > 0.) return v;

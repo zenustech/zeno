@@ -834,7 +834,7 @@ struct OptixShaderCore {
     raii<OptixProgramGroup>   m_radiance_hit_group  {};
     raii<OptixProgramGroup>   m_occlusion_hit_group {};
 
-    std::string _source;
+    const char* _source;
 
     std::string _hittingEntry;
     std::string _shadingEntry;
@@ -871,7 +871,7 @@ struct OptixShaderCore {
         std::string tmp_name = "MatShader.cu";
         tmp_name = "$" + std::to_string(idx) + tmp_name;
          
-        if(createModule(module.reset(), context, _source.c_str(), tmp_name.c_str(), macro, _c_group))
+        if(createModule(module.reset(), context, _source, tmp_name.c_str(), macro, _c_group))
         {
             std::cout<<"module created"<<std::endl;
 

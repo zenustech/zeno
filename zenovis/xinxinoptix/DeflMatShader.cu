@@ -14,14 +14,6 @@
 #include "DisneyBRDF.h"
 #include "DisneyBSDF.h"
 
-__forceinline__ __device__ float3 interp(float2 barys, float3 a, float3 b, float3 c)
-{
-    float w0 = 1 - barys.x - barys.y;
-    float w1 = barys.x;
-    float w2 = barys.y;
-    return w0*a + w1*b + w2*c;
-}
-
 static __inline__ __device__ bool isBadVector(const vec3& vector) {
 
     for (size_t i=0; i<3; ++i) {
@@ -288,7 +280,7 @@ extern "C" __global__ void __closesthit__radiance()
     const uint               primIdx = optixGetPrimitiveIndex();
 
     const float3 ray_orig = optixGetWorldRayOrigin();
-    const float3 ray_dir  = normalize(optixGetWorldRayDirection());
+    const float3 ray_dir  = optixGetWorldRayDirection();
     float3 P = ray_orig + optixGetRayTmax() * ray_dir;
 
     HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
@@ -329,8 +321,6 @@ extern "C" __global__ void __closesthit__radiance()
     size_t inst_idx = optixGetInstanceIndex();
     size_t vert_aux_offset = rt_data->auxOffset[inst_idx];
     size_t vert_idx_offset = (vert_aux_offset + primIdx)*3;
-
-    unsigned short isLight = 0;//rt_data->lightMark[vert_aux_offset + primIdx];
 
     float3 _vertices_[3];
     optixGetTriangleVertexData( gas, primIdx, sbtGASIndex, 0, _vertices_);
@@ -406,10 +396,22 @@ extern "C" __global__ void __closesthit__radiance()
       attrs.tang = a.m_tangent;
     }
     attrs.nrm = N;
-    attrs.V = -normalize(ray_dir);
+    attrs.V = -(ray_dir);
     //MatOutput mats = evalMaterial(rt_data->textures, rt_data->uniforms, attrs);
     MatOutput mats = optixDirectCall<MatOutput, cudaTextureObject_t[], float4*, const MatInput&>( rt_data->dc_index, rt_data->textures, rt_data->uniforms, attrs );
 
+    if (prd->test_distance) {
+    
+        if(mats.opacity>0.99f) { // it's actually transparency not opacity
+            prd->_tmin_ = optixGetRayTmax();
+        } else if(rnd(prd->seed)<mats.opacity) {
+            prd->_tmin_ = optixGetRayTmax();
+        } else {
+            prd->test_distance = false;
+            prd->maxDistance = optixGetRayTmax();
+        }
+        return;
+    }
 
 #if _SPHERE_
 
@@ -419,9 +421,6 @@ extern "C" __global__ void __closesthit__radiance()
     }
 
 #else
-
-
-
 
     if(mats.doubleSide>0.5f||mats.thin>0.5f){
         N = faceforward( N_World, -ray_dir, N_World );

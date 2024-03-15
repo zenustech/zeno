@@ -162,7 +162,6 @@ extern "C" __global__ void __raygen__rg()
         RadiancePRD prd;
         prd.pixel_area   = cam.height/(float)(h)/(cam.focal_length);
         prd.adepth       = 0;
-        prd.camPos       = cam.eye;
         prd.emission     = make_float3(0.f);
         prd.radiance     = make_float3(0.f);
         prd.attenuation  = make_float3(1.f);
