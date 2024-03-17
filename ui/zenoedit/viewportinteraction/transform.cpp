@@ -110,6 +110,7 @@ void FakeTransformer::addObject(const std::string& name) {
 }
 
 void FakeTransformer::addObjects(const std::unordered_set<std::string>& names) {
+    this->clear();
     for (const auto& name : names) {
         addObject(name);
     }
