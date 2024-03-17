@@ -119,7 +119,7 @@ private:
     glm::vec3 _objects_localX_start;
     glm::vec3 _objects_localY_start;
 
-    bool m_status;
+    bool m_isTransforming;
     TransOpt m_operation;
     int m_operation_mode;
     int m_coord_sys;

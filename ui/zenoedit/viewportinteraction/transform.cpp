@@ -22,7 +22,7 @@ FakeTransformer::FakeTransformer(ViewportWidget* viewport)
       , m_trans(0.0f)
       , m_scale(1.0f)
       , m_rotate({0, 0, 0, 1})
-      , m_status(false)
+      , m_isTransforming(false)
       , m_operation(TransOpt::NONE)
       , m_handler_scale(1.f)
       , m_viewport(viewport)
@@ -315,7 +315,7 @@ void FakeTransformer::transform(QVector3D camera_pos, QVector3D ray_dir, glm::ve
 }
 
 bool FakeTransformer::isTransforming() const {
-    return m_status;
+    return m_isTransforming;
 }
 
 void FakeTransformer::startTransform() {
@@ -514,14 +514,14 @@ void FakeTransformer::unmarkObjectInteractive(const std::string& obj_name) {
 }
 
 void FakeTransformer::markObjectsInteractive() {
-    m_status = true;
+    m_isTransforming = true;
     for (const auto& [obj_name, obj] : m_objects) {
         markObjectInteractive(obj_name);
     }
 }
 
 void FakeTransformer::unmarkObjectsInteractive() {
-    m_status = false;
+    m_isTransforming = false;
     for (const auto& [obj_name, obj] : m_objects) {
         unmarkObjectInteractive(obj_name);
     }
