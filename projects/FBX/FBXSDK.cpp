@@ -14,6 +14,9 @@
 #include <zeno/types/UserData.h>
 #include "zeno/types/PrimitiveObject.h"
 #include "zeno/utils/scope_exit.h"
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 namespace FBX{
     void GetChildNodePathRecursive(FbxNode* node, std::string& path) {
@@ -363,8 +366,8 @@ bool GetMesh(FbxNode* pNode, std::shared_ptr<PrimitiveObject> prim) {
     FbxAMatrix bindMatrix = pNode->EvaluateGlobalTransform();
     auto s = bindMatrix.GetS();
     auto t = bindMatrix.GetT();
-    zeno::log_info("s {} {} {}", s[0], s[1], s[2]);
-    zeno::log_info("t {} {} {}", t[0], t[1], t[2]);
+//    zeno::log_info("s {} {} {}", s[0], s[1], s[2]);
+//    zeno::log_info("t {} {} {}", t[0], t[1], t[2]);
 
     int numVertices = pMesh->GetControlPointsCount();
     FbxVector4* vertices = pMesh->GetControlPoints();
@@ -390,7 +393,7 @@ bool GetMesh(FbxNode* pNode, std::shared_ptr<PrimitiveObject> prim) {
     }
     loops.shrink_to_fit();
     prim->loops.values = loops;
-    zeno::log_info("pMesh->GetDeformerCount(FbxDeformer::eSkin) {}", pMesh->GetDeformerCount(FbxDeformer::eSkin));
+//    zeno::log_info("pMesh->GetDeformerCount(FbxDeformer::eSkin) {}", pMesh->GetDeformerCount(FbxDeformer::eSkin));
     auto &ud = prim->userData();
     if (pMesh->GetDeformerCount(FbxDeformer::eSkin)) {
         auto &bi = prim->verts.add_attr<vec4i>("boneName");
@@ -701,12 +704,12 @@ struct NewFBXImportAnimation : INode {
         if (stack_index == clip_names.size()) {
             zeno::log_error("FBX: Can not find clip name");
         }
-        zeno::log_info("stack_index: {}", stack_index);
+//        zeno::log_info("stack_index: {}", stack_index);
 
 
         FbxAnimStack* animStack = lScene->GetSrcObject<FbxAnimStack>(stack_index);
         ud.set2("clipinfo.name", std::string(animStack->GetName()));
-        zeno::log_info("animStack: {}", animStack->GetName());
+//        zeno::log_info("animStack: {}", animStack->GetName());
 
 
         lScene->SetCurrentAnimationStack(animStack);
@@ -802,6 +805,118 @@ ZENDEFNODE(NewFBXImportAnimation, {
         {"frameid"},
         {"float", "fps", "25"},
         {"bool", "ConvertUnits", "1"},
+    },
+    {
+        "prim",
+    },
+    {},
+    {"primitive"},
+});
+struct NewFBXBoneDeform : INode {
+    std::vector<std::string> getBoneNames(PrimitiveObject *prim) {
+        auto boneName_count = prim->userData().get2<int>("boneName_count");
+        std::vector<std::string> boneNames;
+        boneNames.reserve(boneName_count);
+        for (auto i = 0; i < boneName_count; i++) {
+            auto boneName = prim->userData().get2<std::string>(format("boneName_{}", i));
+            boneNames.emplace_back(boneName);
+        }
+        return boneNames;
+    }
+    std::vector<int> getBoneMapping(std::vector<std::string> &old, std::vector<std::string> &_new) {
+        std::vector<int> mapping;
+        mapping.reserve(old.size());
+        for (auto i = 0; i < old.size(); i++) {
+            auto index = std::find(_new.begin(), _new.end(), old[i]) - _new.begin();
+            if (index == _new.size()) {
+                index = -1;
+                zeno::log_error("connot find bone: {}, {}", i, old[i]);
+            }
+            mapping.push_back(index);
+        }
+        return mapping;
+    }
+    std::vector<glm::mat4> getBoneMatrix(PrimitiveObject *prim) {
+        std::vector<glm::mat4> matrixs;
+        auto &verts = prim->verts;
+        auto &transform_r0 = prim->verts.add_attr<vec3f>("transform_r0");
+        auto &transform_r1 = prim->verts.add_attr<vec3f>("transform_r1");
+        auto &transform_r2 = prim->verts.add_attr<vec3f>("transform_r2");
+        for (auto i = 0; i < prim->verts.size(); i++) {
+            glm::mat4 matrix;
+            matrix[0] = {transform_r0[i][0], transform_r0[i][1], transform_r0[i][2], 0};
+            matrix[1] = {transform_r1[i][0], transform_r1[i][1], transform_r1[i][2], 0};
+            matrix[2] = {transform_r2[i][0], transform_r2[i][1], transform_r2[i][2], 0};
+            matrix[3] = {verts[i][0], verts[i][1], verts[i][2], 1};
+            matrixs.push_back(matrix);
+        }
+        return matrixs;
+    }
+    std::vector<glm::mat4> getInvertedBoneMatrix(PrimitiveObject *prim) {
+        std::vector<glm::mat4> inv_matrixs;
+        auto matrixs = getBoneMatrix(prim);
+        for (auto i = 0; i < matrixs.size(); i++) {
+            auto m = matrixs[i];
+            auto inv_m = glm::inverse(m);
+            inv_matrixs.push_back(inv_m);
+        }
+        return inv_matrixs;
+    }
+    vec3f transform_pos(glm::mat4 &transform, vec3f pos) {
+        auto p = transform * glm::vec4(pos[0], pos[1], pos[2], 1);
+        return {p.x, p.y, p.z};
+    }
+    virtual void apply() override {
+        auto geometryToDeform = get_input2<PrimitiveObject>("GeometryToDeform");
+        auto geometryToDeformBoneNames = getBoneNames(geometryToDeform.get());
+        auto restPointTransformsPrim = get_input2<PrimitiveObject>("RestPointTransforms");
+        auto restPointTransformsBoneNames = getBoneNames(restPointTransformsPrim.get());
+        auto restPointTransformsBoneMapping = getBoneMapping(geometryToDeformBoneNames, restPointTransformsBoneNames);
+        auto restPointTransformsInv = getInvertedBoneMatrix(restPointTransformsPrim.get());
+        auto deformPointTransformsPrim = get_input2<PrimitiveObject>("DeformPointTransforms");
+        auto deformPointTransformsBoneNames = getBoneNames(deformPointTransformsPrim.get());
+        auto deformPointTransformsBoneMapping = getBoneMapping(geometryToDeformBoneNames, deformPointTransformsBoneNames);
+        auto deformPointTransforms = getBoneMatrix(deformPointTransformsPrim.get());
+
+        std::vector<glm::mat4> matrixs;
+        matrixs.reserve(geometryToDeformBoneNames.size());
+        for (auto i = 0; i < geometryToDeformBoneNames.size(); i++) {
+            auto res_inv_matrix = restPointTransformsInv[restPointTransformsBoneMapping[i]];
+            auto deform_matrix = deformPointTransforms[deformPointTransformsBoneMapping[i]];
+            auto matrix = deform_matrix * res_inv_matrix;
+            matrixs.push_back(matrix);
+        }
+
+        auto prim = std::dynamic_pointer_cast<PrimitiveObject>(geometryToDeform->clone());
+
+        auto &bi = prim->verts.add_attr<vec4i>("boneName");
+        auto &bw = prim->verts.add_attr<vec4f>("boneWeight");
+        size_t vert_count = prim->verts.size();
+        #pragma omp parallel for
+        for (auto i = 0; i < vert_count; i++) {
+            auto opos = prim->verts[i];
+            vec3f pos = {};
+            float w = 0;
+            for (auto j = 0; j < 4; j++) {
+                if (bi[i][j] < 0) {
+                    continue;
+                }
+                auto matrix = matrixs[bi[i][j]];
+                pos += transform_pos(matrix, opos) * bw[i][j];
+                w += bw[i][j];
+            }
+            prim->verts[i] = pos / w;
+        }
+
+        set_output("prim", prim);
+    }
+};
+
+ZENDEFNODE(NewFBXBoneDeform, {
+    {
+        "GeometryToDeform",
+        "RestPointTransforms",
+        "DeformPointTransforms",
     },
     {
         "prim",
