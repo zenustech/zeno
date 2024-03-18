@@ -1,5 +1,8 @@
 #include "zeno/types/UserData.h"
 #include "zeno/funcs/ObjectGeometryInfo.h"
+#include "zeno/types/ListObject.h"
+#include "zeno/utils/log.h"
+#include "zeno/funcs/PrimitiveUtils.h"
 #include <cstring>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -11,6 +14,7 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/zeno.h>
 #include <zeno/utils/eulerangle.h>
+#include <zeno/utils/string.h>
 
 namespace zeno {
 namespace {
@@ -208,6 +212,108 @@ struct PrimitiveTransform : zeno::INode {
         return glm::normalize(vector3);
     }
 
+    static std::optional<std::shared_ptr<IObject>> get_from_list(std::string path, std::shared_ptr<IObject> iObject) {
+        if (path.empty() || path == "/") {
+            return iObject;
+        }
+        auto cur_root = iObject;
+        auto idxs = split_str(path, '/');
+        std::vector<int> idxs_int;
+        for (const auto &idx: idxs) {
+            if (idx.empty()) {
+                continue;
+            }
+            auto i = std::stoi(idx);
+            if (auto list = std::dynamic_pointer_cast<ListObject>(cur_root)) {
+                if (i >= list->arr.size()) {
+                    zeno::log_warn("out of range");
+                    return std::nullopt;
+                }
+                cur_root = list->arr[i];
+            }
+            else {
+                return cur_root;
+            }
+        }
+        return cur_root;
+    }
+
+    static void transformObj(
+            std::shared_ptr<IObject> iObject
+            , glm::mat4 matrix
+            , std::string pivotType
+            , vec3f pivotPos
+            , vec3f localX
+            , vec3f localY
+            , vec3f translate
+            , vec4f rotation
+            , vec3f scaling
+    ) {
+        if (auto prim = std::dynamic_pointer_cast<PrimitiveObject>(iObject)) {
+
+            zeno::vec3f _pivot = {};
+            zeno::vec3f lX = {1, 0, 0};
+            zeno::vec3f lY = {0, 1, 0};
+            if (pivotType == "bboxCenter") {
+                zeno::vec3f _min;
+                zeno::vec3f _max;
+                std::tie(_min, _max) = primBoundingBox(prim.get());
+                _pivot = (_min + _max) / 2;
+            }
+            else if (pivotType == "custom") {
+                _pivot = pivotPos;
+                lX = localX;
+                lY = localY;
+            }
+            auto lZ = zeno::cross(lX, lY);
+            lY = zeno::cross(lZ, lX);
+
+            auto pivot_to_world = glm::mat4(1);
+            pivot_to_world[0] = {lX[0], lX[1], lX[2], 0};
+            pivot_to_world[1] = {lY[0], lY[1], lY[2], 0};
+            pivot_to_world[2] = {lZ[0], lZ[1], lZ[2], 0};
+            pivot_to_world[3] = {_pivot[0], _pivot[1], _pivot[2], 1};
+            auto pivot_to_local = glm::inverse(pivot_to_world);
+            matrix = pivot_to_world * matrix * pivot_to_local;
+
+            if (prim->has_attr("pos")) {
+                auto &pos = prim->attr<zeno::vec3f>("pos");
+                prim->verts.add_attr<zeno::vec3f>("_origin_pos") = pos;
+    #pragma omp parallel for
+                for (int i = 0; i < pos.size(); i++) {
+                    auto p = zeno::vec_to_other<glm::vec3>(pos[i]);
+                    p = mapplypos(matrix, p);
+                    pos[i] = zeno::other_to_vec<3>(p);
+                }
+            }
+
+            if (prim->has_attr("nrm")) {
+                auto &nrm = prim->attr<zeno::vec3f>("nrm");
+                prim->verts.add_attr<zeno::vec3f>("_origin_nrm") = nrm;
+    #pragma omp parallel for
+                for (int i = 0; i < nrm.size(); i++) {
+                    auto n = zeno::vec_to_other<glm::vec3>(nrm[i]);
+                    n = mapplynrm(matrix, n);
+                    nrm[i] = zeno::other_to_vec<3>(n);
+                }
+            }
+
+            auto& user_data = prim->userData();
+            user_data.setLiterial("_translate", translate);
+            user_data.setLiterial("_rotate", rotation);
+            user_data.setLiterial("_scale", scaling);
+            user_data.set2("_pivot", _pivot);
+            user_data.set2("_localX", lX);
+            user_data.set2("_localY", lY);
+            user_data.del("_bboxMin");
+            user_data.del("_bboxMax");
+        }
+        else if (auto list = std::dynamic_pointer_cast<ListObject>(iObject)) {
+            for (auto &item : list->arr) {
+                transformObj(item, matrix, pivotType, pivotPos, localX, localY, translate, rotation, scaling);
+            }
+        }
+    }
     virtual void apply() override {
         zeno::vec3f translate = {0,0,0};
         zeno::vec4f rotation = {0,0,0,1};
@@ -236,6 +342,8 @@ struct PrimitiveTransform : zeno::INode {
             local = std::get<glm::mat4>(get_input<zeno::MatrixObject>("local")->m);
         if (has_input("preTransform"))
             pre_apply = std::get<glm::mat4>(get_input<zeno::MatrixObject>("preTransform")->m);
+        auto localX = zeno::normalize(get_input2<vec3f>("localX"));
+        auto localY = zeno::normalize(get_input2<vec3f>("localY"));
 
         glm::mat4 matTrans = glm::translate(glm::vec3(translate[0], translate[1], translate[2]));
 
@@ -269,72 +377,31 @@ struct PrimitiveTransform : zeno::INode {
 
         auto matrix = pre_mat*local*matTrans*matRotate*matQuat*matScal*matShearZ*matShearY*matShearX*glm::translate(glm::vec3(offset[0], offset[1], offset[2]))*glm::inverse(local)*pre_apply;
 
-        auto prim = get_input<PrimitiveObject>("prim");
+        auto iObject = get_input2<IObject>("prim");
+        auto path = get_input2<std::string>("path");
 
-        zeno::vec3f _pivot = {};
-        if (get_input2<bool>("use_pivot")) {
-            _pivot = get_input2<vec3f>("pivotPos");
+        std::string pivotType = get_input2<std::string>("pivot");
+        auto pivotPos = get_input2<vec3f>("pivotPos");
+
+        if (std::dynamic_pointer_cast<PrimitiveObject>(iObject)) {
+            iObject = iObject->clone();
+            transformObj(iObject, matrix, pivotType, pivotPos, localX, localY, translate, rotation, scaling);
         }
         else {
-            zeno::vec3f _min;
-            zeno::vec3f _max;
-            objectGetBoundingBox(prim.get(), _min, _max);
-            _pivot = (_min + _max) / 2;
-        }
-        auto lX = zeno::normalize(get_input2<vec3f>("localX"));
-        auto lY = zeno::normalize(get_input2<vec3f>("localY"));
-        auto lZ = zeno::cross(lX, lY);
-        lY = zeno::cross(lZ, lX);
-
-        auto pivot_to_world = glm::mat4(1);
-        pivot_to_world[0] = {lX[0], lX[1], lX[2], 0};
-        pivot_to_world[1] = {lY[0], lY[1], lY[2], 0};
-        pivot_to_world[2] = {lZ[0], lZ[1], lZ[2], 0};
-        pivot_to_world[3] = {_pivot[0], _pivot[1], _pivot[2], 1};
-        auto pivot_to_local = glm::inverse(pivot_to_world);
-        matrix = pivot_to_world * matrix * pivot_to_local;
-
-        auto outprim = std::make_unique<PrimitiveObject>(*prim);
-
-        if (prim->has_attr("pos")) {
-            auto &pos = outprim->attr<zeno::vec3f>("pos");
-            outprim->verts.add_attr<zeno::vec3f>("_origin_pos") = pos;
-#pragma omp parallel for
-            for (int i = 0; i < pos.size(); i++) {
-                auto p = zeno::vec_to_other<glm::vec3>(pos[i]);
-                p = mapplypos(matrix, p);
-                pos[i] = zeno::other_to_vec<3>(p);
+            auto select = get_from_list(path, iObject);
+            if (select.has_value()) {
+                transformObj(select.value(), matrix, pivotType, pivotPos, localX, localY, translate, rotation, scaling);
             }
         }
 
-        if (prim->has_attr("nrm")) {
-            auto &nrm = outprim->attr<zeno::vec3f>("nrm");
-            outprim->verts.add_attr<zeno::vec3f>("_origin_nrm") = nrm;
-#pragma omp parallel for
-            for (int i = 0; i < nrm.size(); i++) {
-                auto n = zeno::vec_to_other<glm::vec3>(nrm[i]);
-                n = mapplynrm(matrix, n);
-                nrm[i] = zeno::other_to_vec<3>(n);
-            }
-        }
-
-        auto& user_data = outprim->userData();
-        user_data.setLiterial("_translate", translate);
-        vec4f rotate = {myQuat.x, myQuat.y, myQuat.z, myQuat.w};
-        user_data.setLiterial("_rotate", rotate);
-        user_data.setLiterial("_scale", scaling);
-        user_data.set2("_pivot", _pivot);
-        user_data.set2("_localX", lX);
-        user_data.set2("_localY", lY);
-        //auto oMat = std::make_shared<MatrixObject>();
-        //oMat->m = matrix;
-        set_output("outPrim", std::move(outprim));
+        set_output("outPrim", std::move(iObject));
     }
 };
 
 ZENDEFNODE(PrimitiveTransform, {
     {
         {"PrimitiveObject", "prim"},
+        {"string", "path"},
         {"vec3f", "translation", "0,0,0"},
         {"vec3f", "eulerXYZ", "0,0,0"},
         {"vec4f", "quatRotation", "0,0,0,1"},
@@ -342,7 +409,7 @@ ZENDEFNODE(PrimitiveTransform, {
         {"vec3f", "shear", "0,0,0"},
         {"vec3f", "localX", "1,0,0"},
         {"vec3f", "localY", "0,1,0"},
-        {"bool", "use_pivot", "0"},
+        {"enum world bboxCenter custom", "pivot", "bboxCenter"},
         {"vec3f", "pivotPos", "0,0,0"},
         {"Matrix"},
         {"preTransform"},

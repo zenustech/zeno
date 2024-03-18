@@ -59,16 +59,9 @@ void FakeTransformer::addObject(const std::string& name) {
 
     auto object = dynamic_cast<PrimitiveObject*>(scene->objectsMan->get(name).value());
     auto& user_data = object->userData();
-    zeno::vec3f bmin, bmax;
-    if (user_data.has("_bboxMin") && user_data.has("_bboxMax")) {
-        bmin = user_data.getLiterial<zeno::vec3f>("_bboxMin");
-        bmax = user_data.getLiterial<zeno::vec3f>("_bboxMax");
-    } else {
-        std::tie(bmin, bmax) = zeno::primBoundingBox(object);
-        user_data.setLiterial("_bboxMin", bmin);
-        user_data.setLiterial("_bboxMax", bmax);
-    }
     if (!user_data.has("_pivot")) {
+        zeno::vec3f bmin, bmax;
+        std::tie(bmin, bmax) = zeno::primBoundingBox(object);
         zeno::vec3f translate = {0, 0, 0};
         user_data.setLiterial("_translate", translate);
         zeno::vec4f rotate = {0, 0, 0, 1};
@@ -88,8 +81,6 @@ void FakeTransformer::addObject(const std::string& name) {
             object->verts.add_attr<zeno::vec3f>("_origin_nrm") = nrm;
         }
     }
-    auto m = zeno::vec_to_other<glm::vec3>(bmax);
-    auto n = zeno::vec_to_other<glm::vec3>(bmin);
     m_pivot = zeno::vec_to_other<glm::vec3>(user_data.get2<vec3f>("_pivot"));
     m_localXOrg = zeno::vec_to_other<glm::vec3>(user_data.get2<vec3f>("_localX"));
     m_localYOrg = zeno::vec_to_other<glm::vec3>(user_data.get2<vec3f>("_localY"));
@@ -665,6 +656,8 @@ void FakeTransformer::doTransform() {
 
     for (auto &[obj_name, obj] : m_objects) {
         auto& user_data = obj->userData();
+        user_data.del("_bboxMin");
+        user_data.del("_bboxMax");
 
         // get transform info
         auto translate = zeno::vec_to_other<glm::vec3>(user_data.getLiterial<zeno::vec3f>("_translate"));
@@ -686,7 +679,7 @@ void FakeTransformer::doTransform() {
             auto &opos = obj->attr<zeno::vec3f>("_origin_pos");
 #pragma omp parallel for
             // for (auto &po : pos) {
-            for (size_t i = 0; i < pos.size(); ++i) {
+            for (auto i = 0; i < pos.size(); ++i) {
                 auto p = zeno::vec_to_other<glm::vec3>(opos[i]);
                 auto t = transform_matrix * glm::vec4(p, 1.0f);
                 auto pt = glm::vec3(t) / t.w;
@@ -699,7 +692,7 @@ void FakeTransformer::doTransform() {
             auto &onrm = obj->attr<zeno::vec3f>("_origin_nrm");
 #pragma omp parallel for
             // for (auto &vec : nrm) {
-            for (size_t i = 0; i < nrm.size(); ++i) {
+            for (auto i = 0; i < nrm.size(); ++i) {
                 auto n = zeno::vec_to_other<glm::vec3>(nrm[i]);
                 glm::mat3 norm_matrix(transform_matrix);
                 norm_matrix = glm::transpose(glm::inverse(norm_matrix));

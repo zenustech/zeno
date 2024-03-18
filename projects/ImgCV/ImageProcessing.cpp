@@ -13,9 +13,6 @@
 #include <zeno/utils/log.h>
 #include <opencv2/opencv.hpp>
 
-
-using namespace cv;
-
 namespace zeno {
 
 namespace {
@@ -43,6 +40,117 @@ static void RGBtoHSV(float r, float g, float b, float &h, float &s, float &v) {
     }
     s = (cmax != 0) ? delta / cmax : 0.0;
     v = cmax;
+}
+
+static vec3f RGBtoXYZ(vec3f rgb) {//INPUT RANGE 0-1
+    float r = rgb[0];
+    float g = rgb[1];
+    float b = rgb[2];
+    if (r > 0.04045) {
+        r = pow((r + 0.055) / 1.055, 2.4);
+    } else {
+        r = r / 12.92;
+    }
+    if (g > 0.04045) {
+        g = pow((g + 0.055) / 1.055, 2.4);
+    } else {
+        g = g / 12.92;
+    }
+    if (b > 0.04045) {
+        b = pow((b + 0.055) / 1.055, 2.4);
+    } else {
+        b = b / 12.92;
+    }
+    r *= 100;
+    g *= 100;
+    b *= 100;
+    return vec3f(0.412453 * r + 0.357580 * g + 0.180423 * b, 0.212671 * r + 0.715160 * g + 0.072169 * b, 0.019334 * r + 0.119193 * g + 0.950227 * b);
+}
+
+static vec3f XYZtoRGB(vec3f xyz) {//OUTPUT RANGE 0-1
+    float x = xyz[0];
+    float y = xyz[1];
+    float z = xyz[2];
+    x /= 100;
+    y /= 100;
+    z /= 100;
+    float r = x * 3.2406 + y * -1.5372 + z * -0.4986;
+    float g = x * -0.9689 + y * 1.8758 + z * 0.0415;
+    float b = x * 0.0557 + y * -0.2040 + z * 1.0570;
+    if (r > 0.0031308) {
+        r = 1.055 * pow(r, 1 / 2.4) - 0.055;
+    } else {
+        r = 12.92 * r;
+    }
+    if (g > 0.0031308) {
+        g = 1.055 * pow(g, 1 / 2.4) - 0.055;
+    } else {
+        g = 12.92 * g;
+    }
+    if (b > 0.0031308) {
+        b = 1.055 * pow(b, 1 / 2.4) - 0.055;
+    } else {
+        b = 12.92 * b;
+    }
+    return vec3f(r, g, b);
+}
+
+static vec3f XYZtoLab(vec3f xyz) {
+    float x = xyz[0];
+    float y = xyz[1];
+    float z = xyz[2];
+    x /= 95.047;
+    y /= 100;
+    z /= 108.883;
+    if (x > 0.008856) {
+        x = pow(x, 1.0 / 3.0);
+    } else {
+        x = (7.787 * x) + (16.0 / 116.0);
+    }
+    if (y > 0.008856) {
+        y = pow(y, 1.0 / 3.0);
+    } else {
+        y = (7.787 * y) + (16.0 / 116.0);
+    }
+    if (z > 0.008856) {
+        z = pow(z, 1.0 / 3.0);
+    } else {
+        z = (7.787 * z) + (16.0 / 116.0);
+    }
+    return vec3f((116 * y) - 16, 500 * (x - y), 200 * (y - z));
+}
+
+static vec3f LabtoXYZ(vec3f lab) {
+    float l = lab[0];
+    float a = lab[1];
+    float b = lab[2];
+    float y = (l + 16) / 116;
+    float x = a / 500 + y;
+    float z = y - b / 200;
+    if (pow(y, 3) > 0.008856) {
+        y = pow(y, 3);
+    } else {
+        y = (y - 16.0 / 116.0) / 7.787;
+    }
+    if (pow(x, 3) > 0.008856) {
+        x = pow(x, 3);
+    } else {
+        x = (x - 16.0 / 116.0) / 7.787;
+    }
+    if (pow(z, 3) > 0.008856) {
+        z = pow(z, 3);
+    } else {
+        z = (z - 16.0 / 116.0) / 7.787;
+    }
+    return vec3f(x * 95.047, y * 100, z * 108.883);
+}
+
+static vec3f RGBtoLab(vec3f rgb) {//input range 0-1
+    return XYZtoLab(RGBtoXYZ(rgb));
+}
+
+static vec3f LabtoRGB(vec3f lab) {//output range 0-1
+    return XYZtoRGB(LabtoXYZ(lab));
 }
 
 static void HSVtoRGB(float h, float s, float v, float &r, float &g, float &b)
@@ -1558,5 +1666,157 @@ ZENDEFNODE(ImageLevels, {
     {},
     {"image"},
 });
+
+struct ImageQuantization: INode {
+    void apply() override {
+        std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
+        int clusternumber = get_input2<int>("Number of Color");
+        bool outputcenter = get_input2<bool>("Output Cluster Centers");
+        //int simplifyscale = get_input2<int>("Image Simplification Scale");
+        auto clusterattribute = get_input2<std::string>("Cluster Attribute");
+        UserData &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+        auto &imagepos = image->verts.attr<vec3f>("pos");
+        const int HistogramSize = 64 * 64 * 64;// (256/simplifyscale)  256 / 4 = 64
+        std::vector<vec3f> labs(HistogramSize, vec3f(0.0f));
+        std::vector<vec3f> seeds(clusternumber, vec3f(0.0f));
+        std::vector<vec3f> newseeds(clusternumber, vec3f(0.0f));
+        std::vector<int> weights(HistogramSize, 0);
+        std::vector<int> seedsweight(clusternumber, 0);
+        std::vector<int> clusterindices(HistogramSize, 0);
+        #pragma omp parallel
+        {
+            std::vector<vec3f> local_labs(HistogramSize, vec3f(0.0f));
+            std::vector<int> local_weights(HistogramSize, 0);
+
+            #pragma omp for
+            for (int i = 0; i < w * h; i++) {
+                int index = ((zeno::clamp(int(imagepos[i][0] * 255.99), 0, 255) / 4) * 64
+                + (zeno::clamp(int(imagepos[i][1] * 255.99), 0, 255) / 4)) * 64
+                + (zeno::clamp(int(imagepos[i][2] * 255.99), 0, 255) / 4);
+
+                local_labs[index] += RGBtoLab(imagepos[i]);
+                local_weights[index]++;
+            }
+
+            #pragma omp critical
+            {
+                for (int i = 0; i < HistogramSize; i++) {
+                    labs[i] += local_labs[i];
+                    weights[i] += local_weights[i];
+                }
+            }
+        }
+        int maxindex = 0;
+        vec3f seedcolor;
+        const int squaredSeparationCoefficient = 1400;// For photos, we can use a higher coefficient, from 900 to 6400
+        auto weightclone = weights;
+        for (int i = 0; i < clusternumber; i++) {
+            maxindex = std::max_element(weightclone.begin(), weightclone.end()) - weightclone.begin();
+            if(weightclone[maxindex] == 0){
+                break;
+            }
+            seedcolor = labs[maxindex] / weights[maxindex];
+            seeds[i] = seedcolor;
+            weightclone[maxindex] = 0;
+            for (int i = 0; i < HistogramSize; i++)
+            {
+                if(weightclone[i] > 0 ) {
+                    weightclone[i] *= (1 - exp(-zeno::lengthSquared(seedcolor - labs[i] / weights[i]) / squaredSeparationCoefficient));
+                    }
+                }
+            }
+        bool optimumreached = false;
+        while(!optimumreached){
+            optimumreached = true;
+            std::fill(newseeds.begin(), newseeds.end(), vec3f(0.0f));
+            std::fill(seedsweight.begin(), seedsweight.end(), 0);
+            #pragma omp parallel
+            {
+                std::vector<vec3f> local_newseeds(clusternumber, vec3f(0.0f));
+                std::vector<int> local_seedsweight(clusternumber, 0);
+
+                #pragma omp for
+                for (int i = 0; i < HistogramSize; i++) {
+                    if(weights[i] == 0){
+                        continue;
+                    }
+                    //get closest seed index
+                    int mindist = 100000000;
+                    int clusterindex;
+                    for(int j = 0; j < clusternumber; j++){
+                        auto dist = zeno::lengthSquared(labs[i] / weights[i] - seeds[j]);
+                        if(dist < mindist){
+                            mindist = dist;
+                            clusterindex = j;
+                        }
+                    }
+                    if(clusterindices[i] != clusterindex && optimumreached){
+                        optimumreached = false;
+                    }
+                    clusterindices[i] = clusterindex;
+                    // Accumulate colors and weights per cluster.
+                    local_newseeds[clusterindex] += labs[i];
+                    local_seedsweight[clusterindex] += weights[i];
+                }
+
+                #pragma omp critical
+                {
+                    for (int i = 0; i < clusternumber; i++) {
+                        newseeds[i] += local_newseeds[i];
+                        seedsweight[i] += local_seedsweight[i];
+                    }
+                }
+            }
+            // Average accumulated colors to get new seeds.
+            for (int i = 0; i < clusternumber; i++) {// update seeds
+                if (seedsweight[i] == 0){
+                    seeds[i] = vec3f(0.0f);
+                }
+                else{
+                    seeds[i] = newseeds[i] / seedsweight[i];
+                }
+            }
+        }
+        auto &clusterattr = image->verts.add_attr<int>(clusterattribute);
+        //export pallete
+        if (outputcenter) {
+            image->verts.resize(clusternumber);
+            image->verts.update();
+            image->userData().set2("w", clusternumber);
+            image->userData().set2("h", 1);
+            for (int i = 0; i < clusternumber; i++) {
+                image->verts[i] = LabtoRGB(seeds[i]);
+                clusterattr[i] = i;
+                }
+        }
+        else{
+#pragma omp parallel for
+            for (int i = 0; i < w * h; i++) {
+                int index = ((zeno::clamp(int(imagepos[i][0] * 255.99), 0, 255) / 4) * 64 + 
+                            (zeno::clamp(int(imagepos[i][1] * 255.99), 0, 255) / 4)) * 64 + 
+                            (zeno::clamp(int(imagepos[i][2] * 255.99), 0, 255) / 4);
+                image->verts[i] = LabtoRGB(seeds[clusterindices[index]]);
+                clusterattr[i] = clusterindices[index];
+            }
+        }
+        set_output("image", image);
+    }
+};
+ZENDEFNODE(ImageQuantization, {
+    {
+        {"image"},
+        {"int", "Number of Color", "5"},
+        {"bool", "Output Cluster Centers", "1"},
+        {"string", "Cluster Attribute", "cluster"},
+    },
+    {
+        {"image"},
+    },
+    {},
+    {"image"},
+});
+
 }
 }

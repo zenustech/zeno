@@ -893,7 +893,10 @@ bool NodeParamModel::setData(const QModelIndex& index, const QVariant& value, in
             {
                 onLinkAdded(pItem);
             }
-            markNodeChanged();
+            if (pItem->getParamClass() == PARAM_INPUT)
+            {
+                markNodeChanged();
+            }
             break;
         }
         case ROLE_PARAM_CTRL: {

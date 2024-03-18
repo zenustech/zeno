@@ -4,6 +4,7 @@
 #include <zeno/funcs/PrimitiveUtils.h>
 #include <zeno/para/parallel_for.h>
 #include <stdexcept>
+#include <zeno/para/parallel_sort.h>
 
 namespace zeno {
 
@@ -32,13 +33,13 @@ struct PrimSort : INode {
         
         if (prim->attr_is<float>(attr)){
             auto &tag = prim->verts.attr<float>(attr);
-            std::stable_sort(indices.begin(), indices.end(), [&tag, reverse] (size_t a, size_t b) {//stable sort
+            zeno::parallel_stable_sort(indices.begin(), indices.end(), [&tag, reverse] (size_t a, size_t b) {// or std::stable_sort
                 return reverse ? tag[a] > tag[b] : tag[a] < tag[b];
             });
         }
         else if (prim->attr_is<int>(attr)){
             auto &tag = prim->verts.attr<int>(attr);
-            std::stable_sort(indices.begin(), indices.end(), [&tag, reverse] (size_t a, size_t b) {
+            zeno::parallel_stable_sort(indices.begin(), indices.end(), [&tag, reverse] (size_t a, size_t b) {
                 return reverse ? tag[a] > tag[b] : tag[a] < tag[b];
             });
         }

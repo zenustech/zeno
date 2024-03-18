@@ -957,7 +957,7 @@ ZENDEFNODE(NoiseImageGen2, {
         {"PrimitiveObject", "image"},
     },
     {},
-    {"comp"},
+    {"image"},
 });
 
 //-----------------------------------  just for compatibility with old graph -----------------------------------
@@ -2070,7 +2070,7 @@ ZENDEFNODE(Primcluster,
             "prim",
         }, /* params: */ {
         }, /* category: */ {
-            "erode",
+            "deprecated",
         } });
 
 } // namespace

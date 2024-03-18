@@ -302,7 +302,19 @@
     </message>
     <message>
         <source>Running...</source>
-        <translation type="unfinished"></translation>
+        <translation>运行中...</translation>
+    </message>
+    <message>
+        <source>Normal</source>
+        <translation>普通子图</translation>
+    </message>
+    <message>
+        <source>Material</source>
+        <translation>材质子图</translation>
+    </message>
+    <message>
+        <source>Preset</source>
+        <translation>预设子图</translation>
     </message>
 </context>
 <context>
@@ -457,6 +469,10 @@
     <message>
         <source>height</source>
         <translation type="unfinished">高度</translation>
+    </message>
+    <message>
+        <source>UV</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -704,13 +720,6 @@
     <message>
         <source>B</source>
         <translation>B</translation>
-    </message>
-</context>
-<context>
-    <name>HeatMapPreview</name>
-    <message>
-        <source>Show parts of image that have actually been viewed with more than 100% zoom</source>
-        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -1030,6 +1039,10 @@
         <source>About Zeno</source>
         <translation>关于 Zeno</translation>
     </message>
+    <message>
+        <source>Preferences</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>MapCoreparamDlg</name>
@@ -1040,17 +1053,6 @@
     <message>
         <source>TextLabel</source>
         <translation type="unfinished">文字标签</translation>
-    </message>
-</context>
-<context>
-    <name>NodesListView</name>
-    <message>
-        <source>Nodes</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Center On</source>
-        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -1356,7 +1358,7 @@
     </message>
     <message>
         <source>Param Name</source>
-        <translation type="unfinished">参数名称</translation>
+        <translation type="obsolete">参数名称</translation>
     </message>
     <message>
         <source>Create Command Param Failed!</source>
@@ -1364,15 +1366,15 @@
     </message>
     <message>
         <source>Edit Command Param</source>
-        <translation type="unfinished">编辑命令行参数</translation>
+        <translation type="obsolete">编辑命令行参数</translation>
     </message>
     <message>
         <source>Update Command Param</source>
-        <translation type="unfinished">更新命令行参数</translation>
+        <translation type="obsolete">更新命令行参数</translation>
     </message>
     <message>
         <source>Update Command Param Failed!</source>
-        <translation type="unfinished">更新命令行参数失败！</translation>
+        <translation type="obsolete">更新命令行参数失败！</translation>
     </message>
     <message>
         <source>Delete Command Param</source>
@@ -1381,6 +1383,77 @@
     <message>
         <source>Delete %1 Command Param</source>
         <translation type="unfinished">删除%1命令行参数</translation>
+    </message>
+</context>
+<context>
+    <name>QwtCurveDlg</name>
+    <message>
+        <source>Curve Editor</source>
+        <translation type="unfinished">曲线编辑器</translation>
+    </message>
+    <message>
+        <source>Add Curve</source>
+        <translation type="unfinished">增加曲线</translation>
+    </message>
+    <message>
+        <source>Delete Curve</source>
+        <translation type="unfinished">删除曲线</translation>
+    </message>
+    <message>
+        <source>Tan Left X</source>
+        <translation type="unfinished">切线左侧X</translation>
+    </message>
+    <message>
+        <source>Right X</source>
+        <translation type="unfinished">右侧X</translation>
+    </message>
+    <message>
+        <source>Tan Left Y</source>
+        <translation type="unfinished">切线左侧Y</translation>
+    </message>
+    <message>
+        <source>Right Y</source>
+        <translation type="unfinished">右侧Y</translation>
+    </message>
+    <message>
+        <source>Handle type</source>
+        <translation type="unfinished">把手类型</translation>
+    </message>
+    <message>
+        <source>Frame</source>
+        <translation type="unfinished">帧</translation>
+    </message>
+    <message>
+        <source>X Range</source>
+        <translation type="unfinished">X范围</translation>
+    </message>
+    <message>
+        <source>Y Range</source>
+        <translation type="unfinished">Y范围</translation>
+    </message>
+    <message>
+        <source>Point Y</source>
+        <translation type="unfinished">中心点Y</translation>
+    </message>
+    <message>
+        <source>Load Preset</source>
+        <translation type="unfinished">加载预设</translation>
+    </message>
+    <message>
+        <source>Save Preset</source>
+        <translation type="unfinished">保存预设</translation>
+    </message>
+    <message>
+        <source>Value</source>
+        <translation type="unfinished">值</translation>
+    </message>
+    <message>
+        <source>timeline</source>
+        <translation type="unfinished">时间轴</translation>
+    </message>
+    <message>
+        <source>Point X</source>
+        <translation type="unfinished">中心点X</translation>
     </message>
 </context>
 <context>
@@ -1531,6 +1604,10 @@
         <source>AOV</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Mask</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>RecordVideoMgr</name>
@@ -1554,56 +1631,35 @@
 <context>
     <name>ScreenshotPopup</name>
     <message>
-        <source>Export to Image</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Output:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Output file path</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Select an output file</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Select</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>100%</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>150%</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>200%</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>None</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>20 px</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>50 px</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Cancel</source>
-        <translation type="unfinished">取消</translation>
+        <translation type="obsolete">取消</translation>
     </message>
     <message>
         <source>Save</source>
-        <translation type="unfinished">保存</translation>
+        <translation type="obsolete">保存</translation>
+    </message>
+</context>
+<context>
+    <name>ShortcutsPane</name>
+    <message>
+        <source>Default</source>
+        <translation type="unfinished">默认</translation>
+    </message>
+    <message>
+        <source>Houdini</source>
+        <translation type="unfinished">胡迪尼</translation>
+    </message>
+    <message>
+        <source>Maya</source>
+        <translation type="unfinished">玛雅</translation>
+    </message>
+    <message>
+        <source>Description</source>
+        <translation type="unfinished">描述</translation>
+    </message>
+    <message>
+        <source>ShortCut</source>
+        <translation type="unfinished">快捷键</translation>
     </message>
 </context>
 <context>
@@ -1813,6 +1869,49 @@
     </message>
 </context>
 <context>
+    <name>ZForkSubgraphDlg</name>
+    <message>
+        <source>Fork Subgraphs</source>
+        <translation type="unfinished">Fork子图</translation>
+    </message>
+    <message>
+        <source>Subgraph</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Name</source>
+        <translation type="unfinished">名称</translation>
+    </message>
+    <message>
+        <source>Mtlid</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Ok</source>
+        <translation type="unfinished">确定</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation type="unfinished">取消</translation>
+    </message>
+    <message>
+        <source>Import Material File</source>
+        <translation type="unfinished">导入材质数据</translation>
+    </message>
+    <message>
+        <source>Material File: </source>
+        <translation type="unfinished">材质文件：</translation>
+    </message>
+    <message>
+        <source>warring</source>
+        <translation type="unfinished">警告</translation>
+    </message>
+    <message>
+        <source>fork preset subgraph &apos;%1&apos; failed.</source>
+        <translation type="unfinished">Fork预设子图‘%1’失败。</translation>
+    </message>
+</context>
+<context>
     <name>ZGraphicsNetLabel</name>
     <message>
         <source>Delete Net Label</source>
@@ -1844,6 +1943,25 @@
     <message>
         <source>include %1 subgraphs with the same name</source>
         <translation>有%1个同名子图</translation>
+    </message>
+</context>
+<context>
+    <name>ZLanguagePane</name>
+    <message>
+        <source>English</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Chinese</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Language</source>
+        <translation type="unfinished">语言</translation>
+    </message>
+    <message>
+        <source>Please restart Zeno to apply changes.</source>
+        <translation type="unfinished">请重启Zeno以应用更改。</translation>
     </message>
 </context>
 <context>
@@ -1882,6 +2000,124 @@
     <message>
         <source>ZLayoutMangeDlg</source>
         <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>ZLayoutPane</name>
+    <message>
+        <source>Delete</source>
+        <translation type="unfinished">删除</translation>
+    </message>
+    <message>
+        <source>Rename</source>
+        <translation type="unfinished">重命名</translation>
+    </message>
+    <message>
+        <source>Name</source>
+        <translation type="unfinished">名称</translation>
+    </message>
+</context>
+<context>
+    <name>ZMatchPresetSubgraphDlg</name>
+    <message>
+        <source>Math Info</source>
+        <translation type="unfinished">匹配信息</translation>
+    </message>
+    <message>
+        <source>Ok</source>
+        <translation type="unfinished">确定</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation type="unfinished">取消</translation>
+    </message>
+</context>
+<context>
+    <name>ZMaterialInfoSettingDlg</name>
+    <message>
+        <source>Match Settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Separated by &apos;,&apos;, such as: N1, N2, N3...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Preset Subgraph</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>key words</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>ZMaterialInfoSettingDlgClass</name>
+    <message>
+        <source>ZMaterialInfoSettingDlg</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Material Names:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Key Words:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Material File Path:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Match Inputs:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Ok</source>
+        <translation type="unfinished">确定</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation type="unfinished">取消</translation>
+    </message>
+</context>
+<context>
+    <name>ZPreferencesDlg</name>
+    <message>
+        <source>OK</source>
+        <translation type="unfinished">确定</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation type="unfinished">取消</translation>
+    </message>
+    <message>
+        <source>Preferences</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>ZPreferencesTabWidget</name>
+    <message>
+        <source>Language</source>
+        <translation type="unfinished">语言</translation>
+    </message>
+    <message>
+        <source>NASLOC</source>
+        <translation type="unfinished">NASLOC</translation>
+    </message>
+    <message>
+        <source>Zeno Cache</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Shortcuts</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Layout Manage</source>
+        <translation type="unfinished">布局管理</translation>
     </message>
 </context>
 <context>
@@ -2043,11 +2279,11 @@
     <name>ZShortCutSettingDlg</name>
     <message>
         <source>Description</source>
-        <translation>描述</translation>
+        <translation type="vanished">描述</translation>
     </message>
     <message>
         <source>ShortCut</source>
-        <translation>快捷键</translation>
+        <translation type="vanished">快捷键</translation>
     </message>
     <message>
         <source>OK</source>
@@ -2063,15 +2299,15 @@
     </message>
     <message>
         <source>Default</source>
-        <translation>默认</translation>
+        <translation type="vanished">默认</translation>
     </message>
     <message>
         <source>Houdini</source>
-        <translation>胡迪尼</translation>
+        <translation type="vanished">胡迪尼</translation>
     </message>
     <message>
         <source>Maya</source>
-        <translation>玛雅</translation>
+        <translation type="vanished">玛雅</translation>
     </message>
 </context>
 <context>
@@ -2142,6 +2378,10 @@
     <message>
         <source>Save Subgrah</source>
         <translation>保存子图</translation>
+    </message>
+    <message>
+        <source>Trans to Preset Subgrah</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -2217,6 +2457,10 @@
     <message>
         <source>Command Params</source>
         <translation type="unfinished">命令行参数</translation>
+    </message>
+    <message>
+        <source>Open Path</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -2327,10 +2571,53 @@
     </message>
 </context>
 <context>
+    <name>ZenoCachePane</name>
+    <message>
+        <source>Enable cache</source>
+        <translation type="unfinished">启用cache</translation>
+    </message>
+    <message>
+        <source>Cache num</source>
+        <translation type="unfinished">cache加载上限</translation>
+    </message>
+    <message>
+        <source>Temp cache directory</source>
+        <translation type="unfinished">临时目录</translation>
+    </message>
+    <message>
+        <source>Cache root</source>
+        <translation type="unfinished">自定义目录</translation>
+    </message>
+    <message>
+        <source>Cache auto clean up</source>
+        <translation type="unfinished">自动清理cache</translation>
+    </message>
+    <message>
+        <source>Enable Shift change FOV</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Viewport Point Size scale</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>ZenoCommandParamsPanel</name>
     <message>
         <source>Save Params</source>
         <translation type="unfinished">保存参数</translation>
+    </message>
+    <message>
+        <source>Name</source>
+        <translation type="unfinished">名称</translation>
+    </message>
+    <message>
+        <source>Description</source>
+        <translation type="unfinished">描述</translation>
+    </message>
+    <message>
+        <source>Link</source>
+        <translation type="unfinished">链接</translation>
     </message>
 </context>
 <context>
@@ -2568,6 +2855,18 @@
         <source>Tab List</source>
         <translation type="unfinished">选项卡列表</translation>
     </message>
+    <message>
+        <source>Material Subnet</source>
+        <translation type="unfinished">材质子图</translation>
+    </message>
+    <message>
+        <source>Preset Subnet</source>
+        <translation type="unfinished">预设子图</translation>
+    </message>
+    <message>
+        <source>import preset subnet</source>
+        <translation type="unfinished">导入预设子图</translation>
+    </message>
 </context>
 <context>
     <name>ZenoImagePanel</name>
@@ -2794,17 +3093,18 @@
         <translation>当前zsg为旧格式文件，为了确保不被新格式覆盖，只能通过“另存为”操作保存为新格式</translation>
     </message>
     <message>
-        <source>there is some nodes which are not descriped by the current version
-the save action will lose them, we recommand you choose &quot;Save As&quot; to save it</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Kill Process</source>
         <translation type="unfinished">结束进程</translation>
     </message>
     <message>
         <source>Background process is running, you need kill the process.</source>
         <translation type="unfinished">后台进程正在运行，您需要终止该进程。</translation>
+    </message>
+    <message>
+        <source>there is some nodes (including %1), include which are not descriped by the current version
+the save action will lose them, we recommand you choose &quot;Save As&quot; to save it</source>
+        <translation type="unfinished">当前zsg工程里存在一部分节点（包括 %1)，在当前的zeno版本里是不存在的，可能是当前zeno版本编译选项缺失，或者这些节点已经被废弃。
+如果继续保存，将会丢失这些节点，推荐使用“另存为”操作保存</translation>
     </message>
 </context>
 <context>
@@ -2860,6 +3160,22 @@ the save action will lose them, we recommand you choose &quot;Save As&quot; to s
     <message>
         <source>CustomName invalid!</source>
         <translation type="unfinished">自定义名称不合法！</translation>
+    </message>
+    <message>
+        <source>Delete Net Label</source>
+        <translation type="unfinished">删除标签</translation>
+    </message>
+    <message>
+        <source>Create Material Subgraph</source>
+        <translation type="unfinished">创建材质子图</translation>
+    </message>
+    <message>
+        <source>Info</source>
+        <translation type="unfinished">信息</translation>
+    </message>
+    <message>
+        <source>Create material subgraph &apos;%1&apos; failed.</source>
+        <translation type="unfinished">创建材质子图‘%1’失败。</translation>
     </message>
 </context>
 <context>
@@ -3068,6 +3384,46 @@ All Files (*)</source>
     <message>
         <source>Prim: </source>
         <translation>图元对象： </translation>
+    </message>
+    <message>
+        <source>enable sort</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Create Material Subgraph</source>
+        <translation type="unfinished">创建材质子图</translation>
+    </message>
+    <message>
+        <source>Fork Preset Material Subgraphs</source>
+        <translation type="unfinished">Fork预设材质子图</translation>
+    </message>
+    <message>
+        <source>Preset Material Subgraph</source>
+        <translation type="unfinished">预设材质子图</translation>
+    </message>
+    <message>
+        <source>Info</source>
+        <translation type="unfinished">信息</translation>
+    </message>
+    <message>
+        <source>Create material subgraph &apos;%1&apos; failed.</source>
+        <translation type="unfinished">创建材质子图‘%1’失败。</translation>
+    </message>
+    <message>
+        <source>Set Key Words</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Preset Subgraph</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>key words</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Separated by &apos;|&apos;, such as : W1|W2|W3...</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -3321,149 +3677,10 @@ All Files (*)</source>
     </message>
 </context>
 <context>
-    <name>connector</name>
-    <message>
-        <source>Docking</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Custom Docks</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Default Connector</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Custom Connector</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Dark</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>custom</name>
-    <message>
-        <source>Enabled Visual Connector</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>default</name>
-    <message>
-        <source>Enabled Visual Connector</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Create Default Edge</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>edges</name>
-    <message>
-        <source>Curved Edges</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Edge Endings</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Ortho Edges</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
     <name>navigable</name>
     <message>
-        <source>Navigable Sample</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Grid</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Image</source>
-        <translation type="unfinished">图片</translation>
-    </message>
-</context>
-<context>
-    <name>nodes</name>
-    <message>
-        <source>Default Nodes</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Custom Nodes</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Dark</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>resizer</name>
-    <message>
-        <source>Resizer Sample</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>style</name>
-    <message>
-        <source>Dark</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>tools</name>
-    <message>
-        <source>Small</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Medium</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Large</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Clear heat map</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Increase preview size</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Decrease preview size</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>topology</name>
-    <message>
-        <source>Dark</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Small</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Medium</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Large</source>
-        <translation type="unfinished"></translation>
+        <translation type="obsolete">图片</translation>
     </message>
 </context>
 </TS>

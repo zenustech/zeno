@@ -12,11 +12,12 @@ namespace zeno {
     struct HeatmapObject : zeno::IObject {
         std::vector<zeno::vec3f> colors;
         zeno::vec3f interp(float x) const {
-            x = zeno::clamp(x, 0, 1) * colors.size();
+            if(x <= 0) return colors[0];
+            if(x >= 1) return colors[colors.size() - 1];
+            x = zeno::clamp(x, 0, 1) * (colors.size()-1);
             int i = (int) zeno::floor(x);
-            i = zeno::clamp(i, 0, colors.size() - 2);
             float f = x - i;
-            return (1 - f) * colors.at(i) + f * colors.at(i + 1);
+            return zeno::mix(colors[i], colors[i + 1], f);
         }
     };
     void primSampleHeatmap(

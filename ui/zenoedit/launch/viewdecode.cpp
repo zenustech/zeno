@@ -129,6 +129,41 @@ struct PacketProc {
                 //todo: error and exit because there is no cache obj.
                 return false;
             }
+        } else if (action == "generate") {
+            QString ident = QString::fromStdString(objKey);
+            rapidjson::Document doc;
+            doc.Parse(buf, len);
+
+            if (!doc.IsObject()) {
+                zeno::log_warn("document root not object: {}", std::string(buf, len));
+                return false;
+            }
+            auto root = doc.GetObject();
+            IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+            QModelIndex nodeIdx = pModel->nodeIndex(ident);
+            QModelIndex subgIdx = nodeIdx.data(ROLE_SUBGRAPH_IDX).toModelIndex();
+            for (auto iter = root.MemberBegin(); iter != root.MemberEnd(); iter++)
+            {
+                QString val;
+                if (ident.contains("PythonNode") && iter->name == "args")
+                {
+                    if (iter->value.IsObject())
+                    {
+                        rapidjson::StringBuffer sbBuf;
+                        rapidjson::Writer<rapidjson::StringBuffer> jWriter(sbBuf);
+                        iter->value.Accept(jWriter);
+                        val = QString::fromUtf8(sbBuf.GetString());
+                    }
+                }
+                else if (iter->value.IsString())
+                {
+                    val = iter->value.GetString();
+                }
+
+                QString socket = iter->name.GetString();
+                pModel->updateSocketDefl(ident, { socket, "", val }, subgIdx, false);
+            }
+
         } else if (action == "frameRange") {
             auto pos = objKey.find(':');
             if (pos != std::string::npos) {

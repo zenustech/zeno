@@ -1162,6 +1162,129 @@ ZENDEFNODE(UpdatePrimitiveFromZSParticles, {
                                                {"MPM"},
                                            });
 
+struct UpdatePrimitiveAttributesFromZSParticles : INode {
+
+    template<typename Pol,typename SrcTileVec,typename DstTileVec>
+    static void copy(Pol& pol,const SrcTileVec& src,const zs::SmallString& src_tag,DstTileVec& dst,const zs::SmallString& dst_tag,int offset = 0) {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        // if(src.size() != dst.size())
+        //     throw std::runtime_error("copy_ops_error::the size of src and dst not match");
+        if(!src.hasProperty(src_tag)){
+            fmt::print(fg(fmt::color::red),"copy_ops_error::the src has no specified channel {}\n",src_tag);
+            throw std::runtime_error("copy_ops_error::the src has no specified channel");
+        }
+        if(!dst.hasProperty(dst_tag)){
+            fmt::print(fg(fmt::color::red),"copy_ops_error::the dst has no specified channel {}\n",dst_tag);
+            throw std::runtime_error("copy_ops_error::the dst has no specified channel");
+        }
+        auto space_dim = src.getPropertySize(src_tag);
+        if(dst.getPropertySize(dst_tag) != space_dim){
+            std::cout << "invalid channel[" << src_tag << "] and [" << dst_tag << "] size : " << space_dim << "\t" << dst.getPropertySize(dst_tag) << std::endl;
+            throw std::runtime_error("copy_ops_error::the channel size of src and dst not match");
+        }
+        pol(zs::range(src.size()),
+            [src = proxy<space>({},src),src_tag,dst = proxy<space>({},dst),dst_tag,offset,space_dim] __device__(int vi) mutable {
+                for(int i = 0;i != space_dim;++i)
+                    dst(dst_tag,i,vi + offset) = src(src_tag,i,vi);
+        });
+    }
+
+    static std::set<std::string> separate_string_by(const std::string &tags, const std::string &sep) {
+        std::set<std::string> res;
+        using Ti = RM_CVREF_T(std::string::npos);
+        Ti st = tags.find_first_not_of(sep, 0);
+        for (auto ed = tags.find_first_of(sep, st + 1); ed != std::string::npos; ed = tags.find_first_of(sep, st + 1)) {
+            res.insert(tags.substr(st, ed - st));
+            st = tags.find_first_not_of(sep, ed);
+            if (st == std::string::npos)
+                break;
+        }
+        if (st != std::string::npos && st < tags.size()) {
+            res.insert(tags.substr(st));
+        }
+        return res;
+    }
+
+    void apply() override {
+        using namespace zs;
+        auto cudaPol = cuda_exec();
+        auto ompExec = zs::omp_exec();
+
+        std::set<std::string> updateAttrs = separate_string_by(get_input2<std::string>("attrs"), " :;,.");
+        auto location = get_param<std::string>("location");
+
+        auto parobjPtrs = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
+        const auto parobjPtr = parobjPtrs[0];
+
+        auto prim = parobjPtr->prim;
+
+        const auto& sourceBufferDevice = location == "vert" ? parobjPtr->getParticles() : parobjPtr->getQuadraturePoints();
+
+        std::vector<PropertyTag> tags{};
+        for(const auto& sourceAttrName : updateAttrs) {
+            tags.push_back(PropertyTag{zs::SmallString(sourceAttrName),(int)sourceBufferDevice.getPropertySize(sourceAttrName)});
+        }
+        ZenoParticles::particles_t sourceBuffer{sourceBufferDevice.get_allocator(),tags,sourceBufferDevice.size()};
+        for(const auto& sourceAttrName : updateAttrs)
+            copy(cudaPol,sourceBufferDevice,sourceAttrName,sourceBuffer,sourceAttrName);
+        sourceBuffer = sourceBuffer.clone({memsrc_e::host});
+        
+        auto handle_attributes_transfer = [&](auto& destBuffer) {
+            for(const auto& sourceAttrName : updateAttrs) {
+                auto destAttrName = sourceAttrName;
+                auto attrDim = sourceBuffer.getPropertySize(sourceAttrName);
+                if (sourceAttrName == "x" && location == "vert")
+                    destAttrName = "pos";
+                if (!destBuffer.has_attr(destAttrName)) {
+                    if(attrDim == 1)
+                        destBuffer.template add_attr<float>(destAttrName);
+                    else if(attrDim == 3)
+                        destBuffer.template add_attr<zeno::vec3f>(destAttrName);
+                    else
+                        throw std::runtime_error("INVALID SPECIFIED TYPE");
+                }
+    
+                if(attrDim == 1) {
+                    auto &attr = destBuffer.template attr<float>(destAttrName);
+                    ompExec(range(attr.size()), [sourceBuffer = proxy<execspace_e::host>({}, sourceBuffer), &attr,
+                            sourceAttrName = zs::SmallString(sourceAttrName)](auto pi) {
+                        attr[pi] = sourceBuffer(sourceAttrName, pi);
+                    });
+                } else if(attrDim == 3) {
+                    auto &attr = destBuffer.template attr<zeno::vec3f>(destAttrName);
+                    ompExec(range(attr.size()), [sourceBuffer = proxy<execspace_e::host>({}, sourceBuffer), &attr,
+                            sourceAttrName = zs::SmallString(sourceAttrName)](auto pi) {
+                        attr[pi] = sourceBuffer.template array<3, float>(sourceAttrName, pi);
+                    });
+                } else {
+                    throw std::runtime_error("INVALID SPECIFIED TYPE");
+                }
+            }
+        };
+        
+        if(location == "vert")
+            handle_attributes_transfer(prim->verts);
+        else if(location == "quad" && sourceBuffer.getPropertySize("inds") == 3)
+            handle_attributes_transfer(prim->tris);
+        else if(location == "quad" && sourceBuffer.getPropertySize("inds") == 4)
+            handle_attributes_transfer(prim->quads);
+        
+        set_output("ZSParticles", get_input("ZSParticles"));
+        set_output("prim",parobjPtrs[0]->prim);
+    }
+};
+
+ZENDEFNODE(UpdatePrimitiveAttributesFromZSParticles,
+        {
+            {"ZSParticles",{"string", "attrs", ""}},
+            {"ZSParticles","prim"},
+            {
+                {"enum vert quad", "location", "vert"}
+            },
+            {"MPM"},
+        });
+
 struct UpdatePrimitiveAttrFromZSParticles : INode {
     void apply() override {
         auto parobjPtrs = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
@@ -1169,7 +1292,7 @@ struct UpdatePrimitiveAttrFromZSParticles : INode {
         using namespace zs;
         // auto prim_idx = get_input<zeno::NumericObject>("index")->get<int>();
         int prim_idx = 0;
-        auto deviceAttrName = get_param<std::string>("attr");
+        auto deviceAttrName = get_input2<std::string>("attr");
         auto attrType = get_param<std::string>("type");
         auto location = get_param<std::string>("location");
         if (parobjPtrs.size() <= prim_idx)
@@ -1338,9 +1461,9 @@ struct UpdatePrimitiveAttrFromZSParticles : INode {
 
 ZENDEFNODE(UpdatePrimitiveAttrFromZSParticles,
            {
+               {"ZSParticles",{"string", "attr", "x"}},
                {"ZSParticles"},
-               {"ZSParticles"},
-               {{"string", "attr", "x"}, {"enum float vec3f", "type", "vec3f"}, {"enum vert quad", "location", "vert"}},
+               {{"enum float vec3f", "type", "vec3f"}, {"enum vert quad", "location", "vert"}},
                {"MPM"},
            });
 

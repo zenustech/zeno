@@ -50,7 +50,16 @@ CONTROL_INFO GlobalControlMgr::controlInfo(const QString& nodeCls, PARAM_CLASS c
         map["items"] = items;
         return CONTROL_INFO(CONTROL_ENUM, map);
     }
-    if (coreParam == "zfxCode" && coreType == "string") 
+    if (coreParam == "zfxCode" && coreType == "string" ||
+        coreParam == "commands" && coreType == "string")
+    {
+        return CONTROL_INFO(CONTROL_MULTILINE_STRING, QVariant());
+    }
+    if (nodeCls == "GenerateCommands" && coreParam == "source")
+    {
+        return CONTROL_INFO(CONTROL_BUTTON, QVariant());
+    }
+    if ((nodeCls == "PythonNode" || nodeCls == "PythonMaterialNode") && coreParam == "script")
     {
         return CONTROL_INFO(CONTROL_MULTILINE_STRING, QVariant());
     }

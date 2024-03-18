@@ -18,6 +18,7 @@ const char* const zsCacheDir= "zencachedir";
 const char* const zsCacheNum = "zencachenum";
 const char* const zsCacheAutoClean = "zencache-autoclean";
 const char* const zsEnableShiftChangeFOV = "viewport-EnableShiftChangeFOV";
+const char* const zsViewportPointSizeScale = "viewport-PointSizeScale";
 const char* const zsSubgraphType = "SubgraphType";
 
 //short cut

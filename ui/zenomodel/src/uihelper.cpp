@@ -141,6 +141,7 @@ bool UiHelper::validateVariant(const QVariant& var, const QString& type)
     case CONTROL_WRITEPATH:
     case CONTROL_READPATH:
     case CONTROL_ENUM:
+    case CONTROL_DIRECTORY:
         return (QVariant::String == varType);
     case CONTROL_MULTILINE_STRING:
         return var.type() == QVariant::String;
@@ -257,6 +258,7 @@ QVariant UiHelper::parseStringByType(const QString &defaultValue, const QString 
     case CONTROL_MULTILINE_STRING:
     case CONTROL_COLOR:
     case CONTROL_ENUM:
+    case CONTROL_DIRECTORY:
         return defaultValue;
     case CONTROL_COLOR_VEC3F:
     case CONTROL_VEC2_FLOAT:
@@ -310,7 +312,8 @@ QVariant UiHelper::parseTextValue(PARAM_CONTROL editCtrl, const QString& textVal
     case CONTROL_COLOR:
     case CONTROL_CURVE:
     case CONTROL_ENUM:
-	case CONTROL_STRING: varValue = textValue; break;
+	case CONTROL_STRING: 
+    case CONTROL_DIRECTORY:varValue = textValue; break;
 	}
     return varValue;
 }
@@ -403,6 +406,8 @@ QString UiHelper::getControlDesc(PARAM_CONTROL ctrl)
     case CONTROL_SPINBOX_SLIDER:    return "SpinBoxSlider";
     case CONTROL_DICTPANEL:         return "Dict Panel";
     case CONTROL_GROUP_LINE:             return "group-line";
+    case CONTROL_PYTHON_EDITOR: return "PythonEditor";
+    case CONTROL_DIRECTORY: return "directory";
     default:
         return "";
     }
@@ -506,6 +511,14 @@ PARAM_CONTROL UiHelper::getControlByDesc(const QString& descName)
     {
         return CONTROL_GROUP_LINE;
     }
+    else if (descName == "PythonEditor")
+    {
+        return CONTROL_PYTHON_EDITOR;
+    }
+    else if (descName == "directory")
+    {
+        return CONTROL_DIRECTORY;
+    }
     else
     {
         return CONTROL_NONE;
@@ -573,6 +586,7 @@ QStringList UiHelper::getControlLists(const QString& type, bool isNodeUI)
         ctrls = { CONTROL_ENUM }; //todo
     }
     else if (type == "NumericObject") { ctrls = { CONTROL_FLOAT }; }
+    else if (type == "directory") { ctrls = { CONTROL_DIRECTORY }; }
     else { ctrls = { CONTROL_NONE }; }
 
     QStringList ctrlNames;
@@ -641,6 +655,9 @@ PARAM_CONTROL UiHelper::getControlByType(const QString &type)
     } else if (type == "group-line") {
         return CONTROL_GROUP_LINE;
     }
+    else if (type == "directory") {
+        return CONTROL_DIRECTORY;
+    }
     else {
         zeno::log_trace("parse got undefined control type {}", type.toStdString());
         return CONTROL_NONE;
@@ -679,6 +696,7 @@ QString UiHelper::getTypeByControl(PARAM_CONTROL ctrl)
     case CONTROL_HSPINBOX:
     case CONTROL_SPINBOX_SLIDER:
          return "int";
+    case CONTROL_DIRECTORY: return "string";
     default:
         return "";
     }
@@ -873,6 +891,7 @@ QVariant UiHelper::initVariantByControl(PARAM_CONTROL ctrl)
         case CONTROL_READPATH:
         case CONTROL_MULTILINE_STRING:
         case CONTROL_STRING:
+        case CONTROL_DIRECTORY:
             return "";
         case CONTROL_COLOR:
         {

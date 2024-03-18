@@ -6,12 +6,19 @@
 #include <zeno/types/ListObject.h>
 #include <zeno/types/TextureObject.h>
 #include <zeno/utils/string.h>
+#include <zeno/utils/logger.h>
 #include <zeno/types/UserData.h>
 
 #include <memory>
 #include <string>
 #include <iostream>
 #include "magic_enum.hpp"
+#include "zeno/utils/vec.h"
+
+#include <rapidjson/document.h>
+#include <rapidjson/rapidjson.h>
+#include <rapidjson/writer.h>
+#include <rapidjson/stringbuffer.h>
 
 namespace zeno {
 
@@ -61,6 +68,9 @@ struct ShaderFinalize : INode {
             {3, "mat_transScatterColor"},
             {1, "mat_ior"},
 
+            {1, "mat_diffraction"},
+            {3, "mat_diffractColor"},
+
             {1, "mat_flatness"},
             {1, "mat_shadowReceiver"},
             {1, "mat_thin"},
@@ -73,6 +83,7 @@ struct ShaderFinalize : INode {
             {3, "mat_reflectance"}, 
             {1, "mat_opacity"},
             {1, "mat_thickness"},
+            {1, "mat_isHair"},
 
             {1, "vol_depth"},
             {1, "vol_extinction"},
@@ -110,10 +121,13 @@ struct ShaderFinalize : INode {
             get_input<IObject>("specTrans", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("transColor", std::make_shared<NumericObject>(vec3f(1.0f))),
             get_input<IObject>("transTint", std::make_shared<NumericObject>(vec3f(1.0f))),
-            get_input<IObject>("transTintDepth", std::make_shared<NumericObject>(float(1.0f))),
+            get_input<IObject>("transTintDepth", std::make_shared<NumericObject>(float(10000.0f))),
             get_input<IObject>("transDistance", std::make_shared<NumericObject>(float(1.0f))),
             get_input<IObject>("transScatterColor", std::make_shared<NumericObject>(vec3f(1.0f))),
             get_input<IObject>("ior", std::make_shared<NumericObject>(float(1.5f))),
+
+            get_input<IObject>("diffraction", std::make_shared<NumericObject>(float(0.0f))),
+            get_input<IObject>("diffractColor", std::make_shared<NumericObject>(vec3f(0.0f))),
 
             get_input<IObject>("flatness", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("shadowReceiver", std::make_shared<NumericObject>(float(0.0f))),
@@ -127,8 +141,9 @@ struct ShaderFinalize : INode {
             get_input<IObject>("reflectance", std::make_shared<NumericObject>(vec3f(1))),
             get_input<IObject>("opacity", std::make_shared<NumericObject>(float(0.0))),
             get_input<IObject>("thickness", std::make_shared<NumericObject>(float(0.0f))),
+            get_input<IObject>("isHair", std::make_shared<NumericObject>(float(0.0f))),
 
-            get_input<IObject>("vol_depth", std::make_shared<NumericObject>((float)(99))),
+            get_input<IObject>("vol_depth", std::make_shared<NumericObject>((float)(999))),
             get_input<IObject>("vol_extinction", std::make_shared<NumericObject>(float(1))),
             get_input<IObject>("vol_sample_albedo", std::make_shared<NumericObject>(vec3f(0.5))),
             get_input<IObject>("vol_sample_anisotropy", std::make_shared<NumericObject>(float(0))),
@@ -141,10 +156,13 @@ struct ShaderFinalize : INode {
 
         auto sssRadiusMethod = get_input2<std::string>("sssRadius");
         if (sssRadiusMethod == "Fixed") {
-            commonCode += "#define _SSS_FIXED_RADIUS_ 1 \n";
+            code += "bool sssFxiedRadius = true;\n";
         } else {
-            commonCode += "#define _SSS_FIXED_RADIUS_ 0 \n";
+            code += "bool sssFxiedRadius = false;\n";
         }
+
+        vec3f mask_value = (vec3f)get_input2<vec3i>("mask_value") / 255.0f;
+        code += zeno::format("vec3 mask_value = vec3({}, {}, {});\n", mask_value[0], mask_value[1], mask_value[2]);
 
         auto mtl = std::make_shared<MaterialObject>();
         mtl->frag = std::move(code);
@@ -179,10 +197,29 @@ struct ShaderFinalize : INode {
             auto VolumeEmissionScaler = get_input2<std::string>("VolumeEmissionScaler");
             commonCode += "#define VolumeEmissionScaler VolumeEmissionScalerType::" + VolumeEmissionScaler + "\n";
 
-            vol_depth = clamp(vol_depth, 9, 99);
+            vol_depth = clamp(vol_depth, 9, 9999);
+            vol_extinction = clamp(vol_extinction, 1e-5, 1e+5);
 
-            commonCode += "static const int   _vol_depth = " + std::to_string(vol_depth) + ";\n";
-            commonCode += "static const float _vol_extinction = " + std::to_string(vol_extinction) + ";\n";
+            std::string parameters = "";
+            {
+                using namespace rapidjson;
+                Document d; d.SetObject();
+                auto& allocator = d.GetAllocator();
+
+                Value s = Value();
+                s.SetInt(vol_depth);
+                d.AddMember("vol_depth", s, allocator);
+
+                s = Value();
+                s.SetFloat(vol_extinction); 
+                d.AddMember("vol_extinction", s, allocator);
+
+                StringBuffer buffer;
+                Writer<StringBuffer> writer(buffer);
+                d.Accept(writer);
+                parameters = buffer.GetString();
+            }
+            mtl->parameters = parameters;
 
             auto tex3dList = get_input<ListObject>("tex3dList")->getRaw(); //get<zeno::StringObject>();
 
@@ -287,10 +324,13 @@ ZENDEFNODE(ShaderFinalize, {
         {"float", "specTrans", "0.0"},
         {"vec3f", "transColor", "1.0,1.0,1.0"},
         {"vec3f", "transTint", "1.0,1.0,1.0"},
-        {"float", "transTintDepth", "0.0"},
+        {"float", "transTintDepth", "10000.0"},
         {"float", "transDistance", "10.0"},
         {"vec3f", "transScatterColor", "1.0,1.0,1.0"},
-        {"float", "ior", "1.5"},
+        {"float", "ior", "1.3"},
+
+        {"float", "diffraction", "0.0"},
+        {"vec3f", "diffractColor", "0.0,0.0,0.0"},
 
         {"float", "flatness", "0.0"},
         {"float", "shadowReceiver", "0.0"},
@@ -304,6 +344,7 @@ ZENDEFNODE(ShaderFinalize, {
         {"vec3f", "reflectance", "1,1,1"},
         {"float", "opacity", "0"},
         {"float", "thickness", "0.0"},
+        {"float", "isHair", "0.0"},
 
         {"string", "commonCode"},
         {"string", "extensionsCode"},
@@ -313,14 +354,15 @@ ZENDEFNODE(ShaderFinalize, {
 
         {"enum Raw Density Absorption", "VolumeEmissionScaler", "Raw"},
 
-        {"float", "vol_depth",     "99"},
+        {"float", "vol_depth",    "999"},
         {"float", "vol_extinction", "1"},
         {"vec3f", "vol_sample_albedo", "0.5,0.5,0.5"},
 
         {"float", "vol_sample_anisotropy", "0"},
 
         {"float", "vol_sample_density", "0"},
-        {"vec3f", "vol_sample_emission", "0,0,0"}
+        {"vec3f", "vol_sample_emission", "0,0,0"},
+        {"vec3i", "mask_value", "0,0,0"},
     },
     {
         {"MaterialObject", "mtl"},

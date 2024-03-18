@@ -23,6 +23,7 @@ public:
 	virtual QModelIndex index(const QString& id, const QModelIndex& subGpIdx) = 0;
 	virtual QModelIndex index(int r, const QModelIndex& subGpIdx) = 0;
 	virtual QModelIndex nodeIndex(const QString& ident) = 0;
+	virtual QModelIndex paramIndex(const QModelIndex& subgIdx, const QModelIndex& nodeIdx, const QString& name, bool bInput) = 0;
 	/* end: node index: */
 
 	virtual QModelIndex nodeIndex(uint32_t sid, uint32_t nodeid) = 0;
@@ -95,13 +96,15 @@ public:
 	virtual void setFilePath(const QString& fn) = 0;
 	virtual QRectF viewRect(const QModelIndex& subgIdx) = 0;
 	virtual void markDirty() = 0;
-	virtual void markNotDescNode() = 0;
-	virtual bool hasNotDescNode() const = 0;
+	virtual void markNotDescNode(const QString& nodeid) = 0;
+	virtual QStringList getNotDescNodes() const = 0;
 	virtual void clearDirty() = 0;
 	virtual void collaspe(const QModelIndex& subgIdx) = 0;
 	virtual void expand(const QModelIndex& subgIdx) = 0;
     virtual void setIOProcessing(bool bIOProcessing) = 0;
 	virtual bool IsIOProcessing() const = 0;
+	virtual void setIOImporting(bool bIOImporting) = 0;
+	virtual bool IsIOImporting() const = 0;
     virtual void beginTransaction(const QString& name) = 0;
     virtual void endTransaction() = 0;
     virtual void beginApiLevel() = 0;

@@ -83,3 +83,12 @@ void ZFramelessDialog::mouseMoveEvent(QMouseEvent* event)
         move(event->globalPos() - m_movePos);
     }
 }
+
+void ZFramelessDialog::keyPressEvent(QKeyEvent* e)
+{
+    if (e->key() == Qt::Key_Enter || e->key() == Qt::Key_Return)
+    {
+        return;
+    }
+    QDialog::keyPressEvent(e);
+}

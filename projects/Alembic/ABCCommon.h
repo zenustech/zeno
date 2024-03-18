@@ -32,6 +32,8 @@ void writeObjFile(
 );
 
 bool SaveEXR(const float* rgb, int width, int height, const char* outfilename);
+
+std::shared_ptr<ListObject> abc_split_by_name(std::shared_ptr<PrimitiveObject> prim, bool add_when_none = false);
 }
 
 #endif //ZENO_ABCCOMMON_H

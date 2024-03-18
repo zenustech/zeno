@@ -12,6 +12,61 @@
 #include "globalcontrolmgr.h"
 #include "dictkeymodel.h"
 
+const QString g_script =
+R"(import json
+import re
+import zeno
+
+mat_data = {}
+names_data = []
+keys_data = {}
+match_data = {}
+names = '%1'  #nameList
+if names != '':
+    names_data = names.split(',')
+else:
+    print('names is empty')
+materialPath = '%2'  #materialPath
+if materialPath != '':
+    with open(materialPath, 'r') as mat_file:
+        mat_data = json.load(mat_file)
+keys = '%3'  #keyWords
+if keys != '':
+    keys_data = json.loads(keys)
+else:
+    print('key words is empty')
+matchInfo = '%4'  #matchInputs
+if matchInfo != '':
+    match_data = json.loads(matchInfo)
+rows = int(len(names_data)**0.5)
+cols = int(len(names_data) / rows if rows > 0 else 1)
+pos = (%5,%6)  #node pos, can not edit
+count = 0
+defaultMat = '';
+for key, value in keys_data.items():
+    if value == 'default':
+        defaultMat = key
+for mat in names_data:
+    subgName = defaultMat
+    for preSet, pattern in keys_data.items():
+        if re.search(pattern, mat, re.I):
+            subgName = preSet
+            break
+    if subgName == '':
+        print('Can not match ', mat)
+    else:
+        node = zeno.forkMaterial(subgName, mat, mat)
+        row = int(count % rows) + 1
+        col = int(count / rows) + 1
+        newPos = (pos[0] + row * 600, pos[1]+col * 600)
+        node.pos = newPos
+        count = count + 1
+        if subgName in match_data and mat in mat_data:
+            match = match_data[subgName]
+            material = mat_data[mat]
+            for k, v in match.items():
+                if v in material:
+                    setattr(node, k,material[v]))";
 
 GraphsModel::GraphsModel(QObject *parent)
     : IGraphsModel(parent)
@@ -22,7 +77,7 @@ GraphsModel::GraphsModel(QObject *parent)
     , m_bIOProcessing(false)
     , m_version(zenoio::VER_2_5)
     , m_bApiEnableRun(true)
-    , m_bHasNotDesc(false)
+    , m_bIOImporting(false)
 {
     m_selection = new QItemSelectionModel(this);
     initDescriptors();
@@ -249,6 +304,12 @@ QModelIndex GraphsModel::subgIndex(uint32_t sid)
     return index(subgName);
 }
 
+QModelIndex GraphsModel::paramIndex(const QModelIndex& subgIdx, const QModelIndex& nodeIdx, const QString& name, bool bInput)
+{
+    SubGraphModel* pGraph = subGraph(subgIdx.row());
+    return pGraph->nodeParamIndex(nodeIdx, bInput ? PARAM_INPUT : PARAM_OUTPUT, name);
+}
+
 QModelIndex GraphsModel::_createIndex(SubGraphModel* pSubModel) const
 {
     if (!pSubModel)
@@ -442,6 +503,7 @@ bool GraphsModel::setData(const QModelIndex& index, const QVariant& value, int r
         if (SubGraphModel* pModel = subGraph(name))
         {
             pModel->setType((SUBGRAPH_TYPE)value.toInt());
+            emit dataChanged(index, index);
         }
     }
     else if (role == ROLE_MTLID)
@@ -521,6 +583,8 @@ NODE_DESCS GraphsModel::getCoreDescs()
                 QVariant defl;
 
                 parseDescStr(input, name, type, defl);
+                if (z_name == "PythonMaterialNode" && name == "script")
+                    defl = g_script;
 
                 INPUT_SOCKET socket;
                 socket.info.type = type;
@@ -858,7 +922,7 @@ QModelIndex GraphsModel::fork(const QModelIndex& subgIdx, const QModelIndex &sub
 QModelIndex GraphsModel::forkMaterial(const QModelIndex& currSubgIdx, const QModelIndex& subnetNodeIdx, const QString& subgName, const QString& mtlid, const QString& mtlid_old)
 {
     if (subGraph(subgName))
-        return QModelIndex();
+        removeSubGraph(subgName);
     if (!subnetNodeIdx.isValid())
         return QModelIndex();
     QModelIndex index = fork(currSubgIdx, subnetNodeIdx);
@@ -1497,6 +1561,16 @@ bool GraphsModel::IsIOProcessing() const
     return m_bIOProcessing;
 }
 
+void GraphsModel::setIOImporting(bool bIOImporting)
+{
+    m_bIOImporting = bIOImporting;
+}
+
+bool GraphsModel::IsIOImporting() const
+{
+    return m_bIOImporting;
+}
+
 void GraphsModel::removeSubGraph(const QString& name)
 {
     if (name.compare("main", Qt::CaseInsensitive) == 0)
@@ -1625,14 +1699,15 @@ void GraphsModel::_markSubnodesChange(SubGraphModel* pSubg)
     }
 }
 
-void GraphsModel::markNotDescNode()
+void GraphsModel::markNotDescNode(const QString& nodeid)
 {
-    m_bHasNotDesc = true;
+    if (m_bIOProcessing && !m_bIOImporting)
+        m_unVersionNodes.push_back(nodeid);
 }
 
-bool GraphsModel::hasNotDescNode() const
+QStringList GraphsModel::getNotDescNodes() const
 {
-    return m_bHasNotDesc;
+    return m_unVersionNodes;
 }
 
 void GraphsModel::markNodeDataChanged(const QModelIndex& nodeIdx)
@@ -1700,11 +1775,13 @@ void GraphsModel::_markNodeChanged(const QModelIndex& nodeIdx)
             if (sockProp & SOCKPROP_DICTLIST_PANEL)
             {
                 QAbstractItemModel* pKeyObjModel = QVariantPtr<QAbstractItemModel>::asPtr(sock.data(ROLE_VPARAM_LINK_MODEL));
-                for (int _r = 0; _r < pKeyObjModel->rowCount(); _r++)
-                {
-                    const QModelIndex& keyIdx = pKeyObjModel->index(_r, 0);
-                    ZASSERT_EXIT(keyIdx.isValid());
-                    socketLst << keyIdx;
+                if (pKeyObjModel) {
+                    for (int _r = 0; _r < pKeyObjModel->rowCount(); _r++)
+                    {
+                        const QModelIndex& keyIdx = pKeyObjModel->index(_r, 0);
+                        ZASSERT_EXIT(keyIdx.isValid());
+                        socketLst << keyIdx;
+                    }
                 }
             }
             else

@@ -356,7 +356,7 @@ struct FEMIntegrator : zeno::IObject {
             AssignElmInterpShape(nm_elms,interpShape,interpPs,interpWs);
         
             #pragma omp parallel for 
-            for(size_t elm_id = 0;elm_id < nm_elms;++elm_id){
+            for(auto elm_id = 0;elm_id < nm_elms;++elm_id){
                 auto tet = shape->quads[elm_id];
                 TetAttributes attrbs;
                 AssignElmAttribs(elm_id,shape,elmView,attrbs);
@@ -421,7 +421,7 @@ struct FEMIntegrator : zeno::IObject {
             timer.tick();
 
             #pragma omp parallel for 
-            for(size_t elm_id = 0;elm_id < nm_elms;++elm_id){
+            for(auto elm_id = 0;elm_id < nm_elms;++elm_id){
                 auto tet = shape->quads[elm_id];
 
                 TetAttributes attrbs;
@@ -508,7 +508,7 @@ struct FEMIntegrator : zeno::IObject {
             AssignElmInterpShape(nm_elms,interpShape,interpPs,interpWs);
 
             #pragma omp parallel for 
-            for(size_t elm_id = 0;elm_id < nm_elms;++elm_id){
+            for(auto elm_id = 0;elm_id < nm_elms;++elm_id){
                 auto tet = shape->quads[elm_id];
 
                 TetAttributes attrbs;
@@ -638,7 +638,7 @@ struct FEMIntegrator : zeno::IObject {
         constexpr int seg = 8;
         const auto nseg = (elms.size() + seg - 1) / seg;
         #pragma omp parallel for
-        for(size_t ii = 0;ii < nseg;++ii) 
+        for(auto ii = 0;ii < nseg;++ii)
         for(size_t k = 0; k != seg; ++k) {
             size_t elm_id = ii * seg + k;
             if (elm_id >= elms.size()) break;

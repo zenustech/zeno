@@ -221,7 +221,7 @@ struct LineResample : INode {
             }
         } else {
 #pragma omp parallel for
-            for (size_t i=0; i<prim->lines.size();i++) {
+            for (auto i=0; i<prim->lines.size();i++) {
                 linesLen[i] = prim->lines.attr<float>("parameterization")[i];
             }
         }
@@ -234,7 +234,7 @@ struct LineResample : INode {
             retprim->add_attr<float>("t");
             auto &t_arr = retprim->attr<float>("t");
 #pragma omp parallel for
-            for(size_t i=0; i<retprim->size();i++) {
+            for(auto i=0; i<retprim->size();i++) {
                 t_arr[i] = sampleBy[i];
             }
         } else {
@@ -243,11 +243,11 @@ struct LineResample : INode {
             retprim->add_attr<float>("t");
             auto &t_arr = retprim->attr<float>("t");
 #pragma omp parallel for
-            for (size_t i=0; i<retprim->size(); i++) {
+            for (auto i=0; i<retprim->size(); i++) {
                 t_arr[i] = (float)i / float(segments);
             }
 #pragma omp parallel for
-            for (size_t i=0; i<segments; i++) {
+            for (auto i=0; i<segments; i++) {
                 retprim->lines[i] = zeno::vec2i(i, i+1);
             }
         }
@@ -260,7 +260,7 @@ struct LineResample : INode {
                 }, prim->attr(key));
         }
 #pragma omp parallel for
-        for(size_t i=0; i<retprim->size();i++) {
+        for(auto i=0; i<retprim->size();i++) {
             float insertU = retprim->attr<float>("t")[i];
             auto it = std::upper_bound(linesLen.begin(), linesLen.end(), insertU);
             size_t index = it - linesLen.begin();
@@ -616,30 +616,61 @@ ZENDEFNODE(TracePositionOneStep,
 struct PrimCopyAttr : INode {
     void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
-        auto sourceName = get_input<StringObject>("sourceName")->get();
-        auto targetName = get_input<StringObject>("targetName")->get();
-        auto type = get_input2<std::string>("type");
+        auto sourceName = get_input2<std::string>("sourceName");
+        auto targetName = get_input2<std::string>("targetName");
+        auto scope = get_input2<std::string>("scope");
 
-        if (!prim->verts.has_attr(sourceName))
-            zeno::log_error("no such attr named '{}'.", sourceName);
-//        if (prim->verts.has_attr(targetName))
-//            zeno::log_warn("already has such attr named '{}'.", targetName);
+        if (scope == "vert") {
+            if (!prim->verts.has_attr(sourceName)) {
+                zeno::log_error("verts no such attr named '{}'.", sourceName);
+            }
+            prim->verts.attr_visit<AttrAcceptAll>(sourceName, [&] (auto const &attarr) {
+                using T = std::decay_t<decltype(attarr[0])>;
+                auto &targetAttr = prim->verts.template add_attr<T>(targetName);
+                std::copy(attarr.begin(), attarr.end(), targetAttr.begin());
+            });
+        }
+        else if (scope == "tri") {
+            if (!prim->tris.has_attr(sourceName)) {
+                zeno::log_error("tris no such attr named '{}'.", sourceName);
+            }
+            prim->tris.attr_visit<AttrAcceptAll>(sourceName, [&] (auto const &attarr) {
+                using T = std::decay_t<decltype(attarr[0])>;
+                auto &targetAttr = prim->tris.template add_attr<T>(targetName);
+                std::copy(attarr.begin(), attarr.end(), targetAttr.begin());
+            });
+        }
+        else if (scope == "loop") {
+            if (!prim->loops.has_attr(sourceName)) {
+                zeno::log_error("loops no such attr named '{}'.", sourceName);
+            }
+            prim->loops.attr_visit<AttrAcceptAll>(sourceName, [&] (auto const &attarr) {
+                using T = std::decay_t<decltype(attarr[0])>;
+                auto &targetAttr = prim->loops.template add_attr<T>(targetName);
+                std::copy(attarr.begin(), attarr.end(), targetAttr.begin());
+            });
+        }
+        else if (scope == "poly") {
+            if (!prim->polys.has_attr(sourceName)) {
+                zeno::log_error("polys no such attr named '{}'.", sourceName);
+            }
+            prim->polys.attr_visit<AttrAcceptAll>(sourceName, [&] (auto const &attarr) {
+                using T = std::decay_t<decltype(attarr[0])>;
+                auto &targetAttr = prim->polys.template add_attr<T>(targetName);
+                std::copy(attarr.begin(), attarr.end(), targetAttr.begin());
+            });
+        }
+        else if (scope == "line") {
+            if (!prim->lines.has_attr(sourceName)) {
+                zeno::log_error("lines no such attr named '{}'.", sourceName);
+            }
+            prim->lines.attr_visit<AttrAcceptAll>(sourceName, [&] (auto const &attarr) {
+                using T = std::decay_t<decltype(attarr[0])>;
+                auto &targetAttr = prim->lines.template add_attr<T>(targetName);
+                std::copy(attarr.begin(), attarr.end(), targetAttr.begin());
+            });
+        }
 
-        std::visit(
-            [&](auto ty) {
-              using T = decltype(ty);
-
-              auto &sourceAttr = prim->verts.attr<T>(sourceName);     // 源属性
-              auto &targetAttr = prim->verts.add_attr<T>(targetName); // 目标属性
-#pragma omp parallel for
-              for (intptr_t i = 0; i < prim->verts.size(); i++) {
-                  targetAttr[i] = sourceAttr[i];
-              }
-            },
-            enum_variant<std::variant<float, vec2f, vec3f, vec4f, int, vec2i, vec3i, vec4i>>(
-                array_index({"float", "vec2f", "vec3f", "vec4f", "int", "vec2i", "vec3i", "vec4i"}, type)));
-
-//        prim->verts.erase_attr(sourceName);
         set_output("prim", std::move(prim));
     }
 };
@@ -648,7 +679,7 @@ ZENDEFNODE(PrimCopyAttr,
                    "prim",
                    {"string", "sourceName", "s"},
                    {"string", "targetName", "t"},
-                   {"enum float vec2f vec3f vec4f int vec2i vec3i vec4i", "type", "float"},
+                   {"enum vert tri loop poly line", "scope", "vert"},
                }, /* outputs: */ {
                    "prim",
                }, /* params: */ {
@@ -859,22 +890,29 @@ struct PrimSetAttr : INode {
             [&](auto ty) {
               using T = decltype(ty);
 
+              auto val = value->get<T>();
               if (method == "vert") {
-                  if (!prim->has_attr(name)) {
-                      prim->add_attr<T>(name);
-                  }
-                  auto &attr_arr = prim->attr<T>(name);
-
-                  auto val = value->get<T>();
+                  auto &attr_arr = prim->add_attr<T>(name);
                   if (index < attr_arr.size()) {
                       attr_arr[index] = val;
                   }
               } else if (method == "tri") {
-                  if (!prim->tris.has_attr(name)) {
-                      prim->tris.add_attr<T>(name);
+                  auto &attr_arr = prim->tris.add_attr<T>(name);
+                  if (index < attr_arr.size()) {
+                      attr_arr[index] = val;
                   }
-                  auto &attr_arr = prim->tris.attr<T>(name);
-                  auto val = value->get<T>();
+              } else if (method == "line") {
+                  auto &attr_arr = prim->lines.add_attr<T>(name);
+                  if (index < attr_arr.size()) {
+                      attr_arr[index] = val;
+                  }
+              } else if (method == "loop") {
+                  auto &attr_arr = prim->loops.add_attr<T>(name);
+                  if (index < attr_arr.size()) {
+                      attr_arr[index] = val;
+                  }
+              } else if (method == "poly") {
+                  auto &attr_arr = prim->polys.add_attr<T>(name);
                   if (index < attr_arr.size()) {
                       attr_arr[index] = val;
                   }
@@ -894,7 +932,7 @@ ZENDEFNODE(PrimSetAttr,
                    {"int", "value", "0"},
                    {"string", "name", "index"},
                    {"enum float vec2f vec3f vec4f int vec2i vec3i vec4i", "type", "int"},
-                   {"enum vert tri", "method", "tri"},
+                   {"enum vert tri line loop poly", "method", "tri"},
                    {"int", "index", "0"},
                }, /* outputs: */ {
                    "prim",
@@ -928,6 +966,21 @@ struct PrimGetAttr : INode {
                   if (index < attr_arr.size()) {
                       value->set<T>(attr_arr[index]);
                   }
+              } else if (method == "line") {
+                  auto &attr_arr = prim->lines.attr<T>(name);
+                  if (index < attr_arr.size()) {
+                      value->set<T>(attr_arr[index]);
+                  }
+              } else if (method == "loop") {
+                  auto &attr_arr = prim->loops.attr<T>(name);
+                  if (index < attr_arr.size()) {
+                      value->set<T>(attr_arr[index]);
+                  }
+              } else if (method == "poly") {
+                  auto &attr_arr = prim->polys.attr<T>(name);
+                  if (index < attr_arr.size()) {
+                      value->set<T>(attr_arr[index]);
+                  }
               } else {
                   throw Exception("bad type: " + method);
               }
@@ -943,7 +996,7 @@ ZENDEFNODE(PrimGetAttr,
                    "prim",
                    {"string", "name", "index"},
                    {"enum float vec2f vec3f vec4f int vec2i vec3i vec4i", "type", "int"},
-                   {"enum vert tri", "method", "tri"},
+                   {"enum vert tri line loop poly", "method", "tri"},
                    {"int", "index", "0"},
                }, /* outputs: */ {
                    "value",
@@ -970,7 +1023,7 @@ struct PrimitiveDelAttrs : zeno::INode {
             for(std::string attr : names) {
                 prim->verts.attrs.erase(attr);
                 prim->tris.attrs.erase(attr);
-                prim->quads.attrs.erase(attr);
+                prim->lines.attrs.erase(attr);
                 prim->loops.attrs.erase(attr);
                 prim->polys.attrs.erase(attr);
             }
@@ -985,7 +1038,7 @@ struct PrimitiveDelAttrs : zeno::INode {
             for(std::string attr : myKeys){
                 prim->verts.attrs.erase(attr);
                 prim->tris.attrs.erase(attr);
-                prim->quads.attrs.erase(attr);
+                prim->lines.attrs.erase(attr);
                 prim->loops.attrs.erase(attr);
                 prim->polys.attrs.erase(attr);
             }
@@ -1335,7 +1388,7 @@ struct PrimAttribBlur : INode {
 //        QueryPerformanceCounter(&t1_0);
 
 #pragma omp parallel for
-        for (size_t point_idx = 0; point_idx < prim->verts.size(); point_idx++) {   // 遍历所有点，找它的邻居
+        for (auto point_idx = 0; point_idx < prim->verts.size(); point_idx++) {   // 遍历所有点，找它的邻居
             std::map<std::string, int> neighborVertID;
             std::map<std::string, float> neighborEdgeLength;
             for(int i = 0; i < 8; i++) {
@@ -1349,7 +1402,7 @@ struct PrimAttribBlur : INode {
 
             if (prim_type == "line") {
 #pragma omp parallel for shared(flag)
-                for (size_t line_idx = 0; line_idx < prim->lines.size(); line_idx++) {
+                for (auto line_idx = 0; line_idx < prim->lines.size(); line_idx++) {
                     if(flag) continue;
                     if (prim->lines[line_idx][0] == point_idx) {
                         neighborVertID["neighbor_" + std::to_string(find_neighbor_count)] = prim->lines[line_idx][1];
@@ -1383,7 +1436,7 @@ struct PrimAttribBlur : INode {
                 //========================================
 
 #pragma omp parallel for
-                for (size_t tri_idx = 0; tri_idx < prim->tris.size(); tri_idx++) {
+                for (auto tri_idx = 0; tri_idx < prim->tris.size(); tri_idx++) {
                     auto const &ind = prim->tris[tri_idx];
                     if (ind[0] == point_idx) {
                         pointNeighborSign[ind[1]] = 1;
@@ -1487,7 +1540,7 @@ struct PrimAttribBlur : INode {
               for (int loop = 0; loop < iterations; loop++) {
 #pragma omp parallel for
                   // data => data_temp
-                  for (size_t i = 0; i < prim->verts.size(); i++) {
+                  for (auto i = 0; i < prim->verts.size(); i++) {
                       std::vector<int> neighborIDs(8);
                       neighborIDs[0] = neighbor_0[i];
                       neighborIDs[1] = neighbor_1[i];
@@ -1515,7 +1568,7 @@ struct PrimAttribBlur : INode {
                   }
 #pragma omp parallel for
                   // data_temp => data
-                  for (size_t i = 0; i < prim->verts.size(); i++) {
+                  for (auto i = 0; i < prim->verts.size(); i++) {
                       std::vector<int> neighborIDs(8);
                       neighborIDs[0] = neighbor_0[i];
                       neighborIDs[1] = neighbor_1[i];
@@ -1737,10 +1790,24 @@ struct PrimHasAttr : INode {
     void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         auto attrName = get_input2<std::string>("attrName");
+        auto scope = get_input2<std::string>("scope");
 
         bool x = false;
-        if (prim->verts.has_attr(attrName))
-            x = true;
+        if (scope == "vert") {
+            x = prim->verts.has_attr(attrName);
+        }
+        else if (scope == "tri") {
+            x = prim->tris.has_attr(attrName);
+        }
+        else if (scope == "loop") {
+            x = prim->loops.has_attr(attrName);
+        }
+        else if (scope == "poly") {
+            x = prim->polys.has_attr(attrName);
+        }
+        else if (scope == "line") {
+            x = prim->lines.has_attr(attrName);
+        }
 
         auto hasAttr = std::make_shared<NumericObject>();
         hasAttr->set<bool>(x);
@@ -1750,6 +1817,7 @@ struct PrimHasAttr : INode {
 ZENDEFNODE(PrimHasAttr,
            { /* inputs: */ {
                    "prim",
+                   {"enum vert tri loop poly line", "scope", "vert"},
                    {"string", "attrName", "attr_x"},
                }, /* outputs: */ {
                    "hasAttr",

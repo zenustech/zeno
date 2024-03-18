@@ -3,7 +3,7 @@
 #include <zenoui/comctrl/zlinewidget.h>
 #include <zenoui/comctrl/zlineedit.h>
 #include <zenoui/comctrl/ztextedit.h>
-#include <zenoui/comctrl/dialog/curvemap/zcurvemapeditor.h>
+#include <zenoui/comctrl/dialog/curvemap/zqwtcurvemapeditor.h>
 #include <zenoui/comctrl/dialog/zenoheatmapeditor.h>
 #include <zenoui/comctrl/zcombobox.h>
 #include <zenoui/comctrl/zlabel.h>
@@ -23,6 +23,7 @@
 #include <zenoui/comctrl/zpathedit.h>
 #include <zenomodel/include/modeldata.h>
 #include <zenomodel/include/uihelper.h>
+#include <zenoui/zfxsys/zfxhighlighter.h>
 
 namespace zenoui
 {
@@ -70,6 +71,7 @@ namespace zenoui
             }
             case CONTROL_READPATH:
             case CONTROL_WRITEPATH:
+            case CONTROL_DIRECTORY:
             {
                 ZPathEdit *pathLineEdit = new ZPathEdit(cbSet.cbSwitch,value.toString());
                 pathLineEdit->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
@@ -83,6 +85,7 @@ namespace zenoui
             case CONTROL_MULTILINE_STRING:
             {
                 ZTextEdit* pTextEdit = new ZTextEdit;
+                auto highlighter = new ZfxHighlighter(pTextEdit->document());
                 pTextEdit->setFrameShape(QFrame::NoFrame);
                 pTextEdit->setProperty("cssClass", "proppanel");
                 pTextEdit->setProperty("control", ctrl);
@@ -105,6 +108,17 @@ namespace zenoui
                 });
                 return pTextEdit;
             }
+            //case CONTROL_PYTHON_EDITOR:
+            //{
+            //    ZPythonEditor* pythonEditor = new ZPythonEditor(UiHelper::variantToString(value));
+            //    pythonEditor->setFixedHeight(ZenoStyle::dpiScaled(250));
+
+            //    QObject::connect(pythonEditor, &ZPythonEditor::editingFinished, [=]() {
+            //        const QString& newValue = pythonEditor->text();
+            //    cbSet.cbEditFinished(newValue);
+            //    });
+            //    return pythonEditor;
+            //}
             case CONTROL_COLOR:
             {
                 QPushButton* pBtn = new QPushButton("Edit Heatmap");
@@ -213,10 +227,10 @@ namespace zenoui
                 QPushButton* pBtn = new QPushButton("Edit Curve");
                 pBtn->setProperty("cssClass", "proppanel");
                 QObject::connect(pBtn, &QPushButton::clicked, [=]() {
-                    ZCurveMapEditor* pEditor = new ZCurveMapEditor(true);
+                    ZQwtCurveMapEditor* pEditor = new ZQwtCurveMapEditor(true);
                     pEditor->setAttribute(Qt::WA_DeleteOnClose);
 
-                    QObject::connect(pEditor, &ZCurveMapEditor::finished, [=](int result) {
+                    QObject::connect(pEditor, &ZQwtCurveMapEditor::finished, [=](int result) {
                         CURVES_DATA curves = pEditor->curves();
                         cbSet.cbEditFinished(QVariant::fromValue(curves));
                     });

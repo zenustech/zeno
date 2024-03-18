@@ -248,7 +248,7 @@ void launchProgram(IGraphsModel* pModel, LAUNCH_PARAM param)
         JsonArrayBatch batch(writer);
         JsonHelper::AddVariantList({"setBeginFrameNumber", param.beginFrame}, "int", writer);
         JsonHelper::AddVariantList({"setEndFrameNumber", param.endFrame}, "int", writer);
-        serializeScene(pModel, writer, param.applyLightAndCameraOnly, param.applyMaterialOnly, param.paramPath);
+        serializeScene(pModel, writer, param);
     }
     std::string progJson(s.GetString());
 #ifdef DEBUG_SERIALIZE

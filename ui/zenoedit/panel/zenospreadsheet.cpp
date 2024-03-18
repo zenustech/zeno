@@ -16,7 +16,7 @@
 #include "dialog/zforksubgrapdlg.h"
 #include "nodesview/zenographseditor.h"
 #include "settings/zenosettingsmanager.h"
-#include "nodesys/zenosubgraphscene.h"
+#include <zenomodel/include/uihelper.h>
 
 ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
     dataModel = new PrimAttrTableModel();
@@ -150,6 +150,74 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
             }
         }
     }
+    //QMimeData* pMimeData = new QMimeData;
+    //pMimeData->setText(index.data(Qt::DisplayRole).toString());
+    //QApplication::clipboard()->setMimeData(pMimeData);
+    });
+    connect(prim_attr_view->verticalHeader(), &QHeaderView::sectionDoubleClicked, this, [=](int index) {
+        if (pMode->currentText() == "UserData")
+        {
+            auto graph_model = zenoApp->graphsManagment()->currentModel();
+            if (!graph_model)
+                return;
+            const auto setType = [&](QModelIndex& node, QString type) {
+                if (auto graph_model = zenoApp->graphsManagment()->currentModel()) {
+                    QModelIndex& idx = node;
+                    NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(idx.data(ROLE_NODE_PARAMS));
+                    const QModelIndex& paramIdx = nodeParams->getParam(PARAM_INPUT, QString::fromStdString("data"));
+                    graph_model->ModelSetData(paramIdx, type, ROLE_PARAM_TYPE);
+                    graph_model->ModelSetData(paramIdx, UiHelper::getControlByType(type), ROLE_PARAM_CTRL);
+                }
+            };
+            auto& node_sync = zeno::NodeSyncMgr::GetInstance();
+            auto prim_node_location = node_sync.searchNodeOfPrim(pPrimName->text().toStdString());
+            if (!prim_node_location.has_value())
+                return;
+            //auto out_sock = node_sync.getPrimSockName(prim_node_location.value());
+            NODE_DATA ndata = graph_model->itemData(prim_node_location.value().node, graph_model->index("main"));
+            std::string out_sock("");
+            for (OUTPUT_SOCKET& outputSock: ndata[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>())
+            {
+                out_sock = outputSock.info.name.toStdString();
+                break;
+            }
+
+            auto new_node_location = node_sync.generateNewNode(prim_node_location.value(),
+                "SetUserData2",
+                out_sock,
+                "object");
+
+            node_sync.updateNodeInputString(new_node_location.value(), "key", prim_attr_view->model()->headerData(index, Qt::Vertical).toString().toStdString());
+            const QModelIndex& idx = prim_attr_view->model()->index(index, 0);
+            const QStringList& vecLst = idx.data(Qt::DisplayRole).toString().split(",", QString::SkipEmptyParts);
+
+            zeno::zany object = dataModel->userDataByIndex(idx);
+            if (zeno::objectIsLiterial<float>(object)) {
+                node_sync.updateNodeInputNumeric<float>(new_node_location.value(), "data", zeno::objectToLiterial<float>(object));
+                setType(new_node_location.value().node, "float");
+            }
+            else if (zeno::objectIsLiterial<int>(object)) {
+                node_sync.updateNodeInputNumeric<int>(new_node_location.value(), "data", zeno::objectToLiterial<int>(object));
+                setType(new_node_location.value().node, "int");
+            }
+            else if (zeno::objectIsLiterial<zeno::vec2f>(object) || zeno::objectIsLiterial<zeno::vec2i>(object)) {
+                node_sync.setNodeInputVec(new_node_location.value(), "data", UI_VECTYPE({ vecLst[0].toFloat(), vecLst[1].toFloat() }));
+                setType(new_node_location.value().node, "vec2f");
+            }
+            else if (zeno::objectIsLiterial<zeno::vec3f>(object) || zeno::objectIsLiterial<zeno::vec3i>(object)) {
+                node_sync.setNodeInputVec(new_node_location.value(), "data", UI_VECTYPE({vecLst[0].toFloat(), vecLst[1].toFloat(), vecLst[2].toFloat() }));
+                setType(new_node_location.value().node, "vec3f");
+            }
+            else if (zeno::objectIsLiterial<zeno::vec4f>(object) || zeno::objectIsLiterial<zeno::vec4i>(object)) {
+                node_sync.setNodeInputVec(new_node_location.value(), "data", UI_VECTYPE({vecLst[0].toFloat(), vecLst[1].toFloat(), vecLst[2].toFloat(), vecLst[3].toFloat() }));
+                setType(new_node_location.value().node, "vec4f");
+            }
+            else if (zeno::objectIsLiterial<std::string>(object)) {
+                node_sync.updateNodeInputString(new_node_location.value(), "data", idx.data(Qt::DisplayRole).toString().toStdString());
+                setType(new_node_location.value().node, "string");
+            }
+            node_sync.updateNodeVisibility(new_node_location.value());
+        }
     });
 }
 
@@ -210,7 +278,52 @@ void ZenoSpreadsheet::setPrim(std::string primid) {
 
 bool ZenoSpreadsheet::eventFilter(QObject* watched, QEvent* event)
 {
-    if (watched == prim_attr_view && event->type() == QEvent::ContextMenu)
+    if (watched == prim_attr_view && event->type() == QEvent::KeyPress)
+    {
+        QKeyEvent* keyEvt = dynamic_cast<QKeyEvent*>(event);
+        if (keyEvt == QKeySequence::Copy) {
+            if (QItemSelectionModel* pSelectionModel = prim_attr_view->selectionModel())
+            {
+                int cols = dataModel->columnCount(QModelIndex());
+                const QModelIndexList& lst = pSelectionModel->selectedIndexes();
+                QString copyStr;
+                QList<int> rowsExist;
+                for (const auto& idx : lst)
+                {
+                    int row = idx.row();
+                    if (rowsExist.contains(row))
+                        continue;
+                    rowsExist << row;
+                    QString str;
+                    for (int col = 0; col < cols; col++)
+                    {
+                        const QModelIndex index = prim_attr_view->model()->index(row, col);
+                        if (lst.contains(index))
+                        {
+                            if (!str.isEmpty())
+                                str += ":";
+                            str += index.data(Qt::DisplayRole).toString();
+                        }
+
+                    }
+                    if (!str.isEmpty())
+                    {
+                        if (!copyStr.isEmpty())
+                            copyStr += ",";
+                        copyStr += str;
+                    }
+                }
+                if (!copyStr.isEmpty())
+                {
+                    QMimeData* pMimeData = new QMimeData;
+                    pMimeData->setText(copyStr);
+                    QApplication::clipboard()->setMimeData(pMimeData);
+                    return true;
+                }
+            }
+        }
+    }
+    else if (watched == prim_attr_view && event->type() == QEvent::ContextMenu)
     {
         QStringList matLst;
         if (QItemSelectionModel* pSelectionModel = prim_attr_view->selectionModel())
@@ -237,6 +350,8 @@ bool ZenoSpreadsheet::eventFilter(QObject* watched, QEvent* event)
             QMenu* pPresetMenu = new QMenu(tr("Preset Material Subgraph"), pMenu);
             pMenu->addMenu(pPresetMenu);
             IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+            const auto& nodeIdx = pGraphsModel->nodeIndex(pPrimName->text());
+            ZASSERT_EXIT(nodeIdx.isValid(), false);
             for (const auto& subgIdx : pGraphsModel->subgraphsIndice(SUBGRAPH_PRESET))
             {
                 QString name = subgIdx.data(ROLE_OBJNAME).toString();
@@ -250,58 +365,58 @@ bool ZenoSpreadsheet::eventFilter(QObject* watched, QEvent* event)
                 }
 
                 ZForkSubgraphDlg dlg(map, this);
+                dlg.setNodeIdex(nodeIdx);
                 dlg.exec();
                 });
             }
 
             connect(newSubGraph, &QAction::triggered, this, [=]() {
-                ZenoMainWindow* pWin = zenoApp->getMainWindow();
-                ZASSERT_EXIT(pWin);
-                ZenoGraphsEditor* pEditor = pWin->getAnyEditor();
-                ZASSERT_EXIT(pEditor);
-                ZenoSubGraphView* pView = pEditor->getCurrentSubGraphView();
-                ZASSERT_EXIT(pView);
-                auto sugIdx = pView->scene()->subGraphIndex();
-                ZASSERT_EXIT(sugIdx.isValid());
+                QPointF pos = nodeIdx.data(ROLE_OBJPOS).toPointF();
                 for (const auto& mtlid : matLst)
                 {
-                    if (!pGraphsModel->newMaterialSubgraph(sugIdx, mtlid, QPointF(800, 0)))
+                    const auto& sugIdx = nodeIdx.data(ROLE_SUBGRAPH_IDX).toModelIndex();
+                    if (!pGraphsModel->newMaterialSubgraph(sugIdx, mtlid, pos + QPointF(600, 0)))
                         QMessageBox::warning(nullptr, tr("Info"), tr("Create material subgraph '%1' failed.").arg(mtlid));
                 }
             });
             connect(newMatSubGraph, &QAction::triggered, this, [=]() {
+                getKeyWords();
                 QMap<QString, QString> map;
-                for (const auto& mtlid : matLst)
+                QString defaultMat;
+                for (const auto& keywords : m_keyWords)
                 {
-                    if (mtlid.contains("Cloth", Qt::CaseInsensitive) || mtlid.contains("Xiezi", Qt::CaseInsensitive))
+                    if (keywords == "default")
                     {
-                        map[mtlid] = "ClothTypeMat";
-                    }
-                    else if (mtlid.contains("Hair", Qt::CaseInsensitive) || mtlid.contains("Eyelash", Qt::CaseInsensitive))
-                    {
-                        map[mtlid] = "OpacityTypeMat";
-                    }
-                    else if (mtlid.contains("Arm", Qt::CaseInsensitive) || mtlid.contains("Torso", Qt::CaseInsensitive)
-                        || mtlid.contains("Eyeball", Qt::CaseInsensitive)|| mtlid.contains("Head", Qt::CaseInsensitive)
-                        || mtlid.contains("Leg", Qt::CaseInsensitive) || mtlid.contains("Teeth", Qt::CaseInsensitive)
-                        || mtlid.contains("Tongue", Qt::CaseInsensitive))
-                    {
-                        map[mtlid] = "SkinTypeMat";
-                    }
-                    else if (mtlid.contains("EyeAO", Qt::CaseInsensitive) || mtlid.contains("Tearline", Qt::CaseInsensitive))
-                    {
-                        map[mtlid] = "TransmitTypeMat";
-                    }
-                    else if (mtlid.contains("Paint", Qt::CaseInsensitive))
-                    {
-                        map[mtlid] = "CarPaintTypeMat";
-                    }
-                    else 
-                    {
-                        map[mtlid] = "RegularTypeMat";
+                        defaultMat = m_keyWords.key(keywords);
                     }
                 }
+                for (const auto& mtlid : matLst)
+                {
+                    bool bFind = false;
+                    for (const auto& keywords : m_keyWords)
+                    {
+                        if (keywords.isEmpty())
+                            continue;
+                        QRegularExpression re(keywords, QRegularExpression::CaseInsensitiveOption);
+                        QRegularExpressionMatch match =  re.match(mtlid);
+                        if (match.hasMatch())
+                        {
+                            map[mtlid] = m_keyWords.key(keywords);
+                            bFind = true;
+                            break;
+                        }
+                    }
+                    if (!bFind)
+                    {
+                        if (!defaultMat.isEmpty())
+                            map[mtlid] = defaultMat;
+                        else
+                            zeno::log_warn("can not match {}", mtlid.toStdString());
+                    }
+                    
+                }
                 ZForkSubgraphDlg dlg(map, this);
+                dlg.setNodeIdex(nodeIdx);
                 dlg.exec();
             });
             
@@ -312,3 +427,63 @@ bool ZenoSpreadsheet::eventFilter(QObject* watched, QEvent* event)
     return QWidget::eventFilter(watched, event);
 }
 
+void ZenoSpreadsheet::getKeyWords()
+{
+    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    const auto indexList = pGraphsModel->subgraphsIndice(SUBGRAPH_PRESET);
+    if (indexList.isEmpty())
+        return;
+    QDialog dlg;
+    dlg.setWindowTitle(tr("Set Key Words"));
+    QVBoxLayout* pLayout = new QVBoxLayout(&dlg);
+
+    QTableWidget* keyTableWidget = new QTableWidget(&dlg); 
+    keyTableWidget->verticalHeader()->setVisible(false);
+    //keyTableWidget->setProperty("cssClass", "select_subgraph");
+    keyTableWidget->setColumnCount(2);
+    QStringList labels = { tr("Preset Subgraph"), tr("key words") };
+    keyTableWidget->setHorizontalHeaderLabels(labels);
+    keyTableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+    keyTableWidget->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
+    for (const auto& subgIdx : indexList)
+    {
+        int row = keyTableWidget->rowCount();
+        keyTableWidget->insertRow(row);
+        QString name = subgIdx.data(ROLE_OBJNAME).toString();
+        QTableWidgetItem* pItem = new QTableWidgetItem(name);
+        pItem->setFlags(pItem->flags() & ~Qt::ItemIsEditable);
+        keyTableWidget->setItem(row, 0, pItem);
+
+        QTableWidgetItem* pKeyItem = new QTableWidgetItem();
+        keyTableWidget->setItem(row, 1, pKeyItem);
+        if (m_keyWords.contains(name))
+        {
+            pKeyItem->setText(m_keyWords[name]);
+        }
+    }
+    if (keyTableWidget->rowCount() > 0)
+    {
+        int height = keyTableWidget->rowHeight(0) * keyTableWidget->rowCount();
+        int hearderH = keyTableWidget->horizontalHeader()->height();
+        keyTableWidget->setMinimumHeight(height + hearderH);
+    }
+    keyTableWidget->viewport()->installEventFilter(this);
+    QDialogButtonBox* pButtonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+    QLabel* pLabel = new QLabel(tr("Separated by '|', such as : W1|W2|W3..."), &dlg);
+    pLayout->addWidget(pLabel);
+    pLayout->addWidget(keyTableWidget);
+    pLayout->addWidget(pButtonBox);
+    connect(pButtonBox, SIGNAL(accepted()), &dlg, SLOT(accept()));
+    connect(pButtonBox, SIGNAL(rejected()), &dlg, SLOT(reject()));
+    if (QDialog::Accepted == dlg.exec()) {
+        for (int row = 0; row < keyTableWidget->rowCount(); row++)
+        {
+            QString keys = keyTableWidget->item(row, 1)->text();
+            if (!keys.isEmpty())
+            {
+                QString jsonKey = keyTableWidget->item(row, 0)->text();
+                 m_keyWords[jsonKey] = keys;
+            }
+        }
+    }
+}

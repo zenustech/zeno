@@ -130,6 +130,7 @@ void ZTcpServer::startProc(const std::string& progJson, LAUNCH_PARAM param)
         "--zsg", param.zsgPath,
         "--projectFps", QString::number(param.projectFps),
         "--objcachedir", zenoApp->cacheMgr()->objCachePath(),
+        "--generator", param.generator
     };
 
     m_proc->start(QCoreApplication::applicationFilePath(), args);
@@ -144,6 +145,7 @@ void ZTcpServer::startProc(const std::string& progJson, LAUNCH_PARAM param)
 
     connect(m_proc.get(), SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(onProcFinished(int, QProcess::ExitStatus)));
     connect(m_proc.get(), SIGNAL(readyRead()), this, SLOT(onProcPipeReady()));
+    emit zenoApp->getMainWindow()->runStarted();
 #ifdef ZENO_OPTIX_PROC
     //finally we need to send the cache path to the seperate optix process.
     sendCacheRenderInfoToOptix(cachedir, param.cacheNum, param.applyLightAndCameraOnly, param.applyMaterialOnly);

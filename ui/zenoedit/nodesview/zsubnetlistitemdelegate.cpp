@@ -169,6 +169,14 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
             menu->addAction(pRename);
             menu->addAction(pDelete);
             menu->addAction(pSave);
+            if (index.data(ROLE_SUBGRAPH_TYPE) != SUBGRAPH_PRESET)
+            {
+                QAction* pPreset = new QAction(tr("Trans to Preset Subgrah"));
+                menu->addAction(pPreset);
+                connect(pPreset, &QAction::triggered, this, [=]() {
+                        m_model->setData(index, SUBGRAPH_PRESET, ROLE_SUBGRAPH_TYPE);
+                });
+            }
             menu->exec(QCursor::pos());
         }
     }
@@ -208,7 +216,9 @@ void ZSubnetListItemDelegate::onSaveSubgraph(const QModelIndex& index)
     QString subgName = index.data(ROLE_OBJNAME).toString();
     QString path = QFileDialog::getSaveFileName(nullptr, "Path to Save", subgName, "Zeno Graph File(*.zsg);; All Files(*);;");
     if (!path.isEmpty()) {
-        QString strJson = ZsgWriter::getInstance().dumpSubgraphStr(m_model, getSubgraphs(index));
+        QModelIndexList lst;
+        getSubgraphs(index, lst);
+        QString strJson = ZsgWriter::getInstance().dumpSubgraphStr(m_model, lst);
         QFile file(path);
         zeno::log_debug("saving {} chars to file [{}]", strJson.size(), path.toStdString());
         if (!file.open(QIODevice::WriteOnly)) {
@@ -223,10 +233,8 @@ void ZSubnetListItemDelegate::onSaveSubgraph(const QModelIndex& index)
     }
 }
 
-QModelIndexList ZSubnetListItemDelegate::getSubgraphs(const QModelIndex& subgIdx)
+void ZSubnetListItemDelegate::getSubgraphs(const QModelIndex& subgIdx, QModelIndexList& subgraphs)
 {
-    QModelIndexList subgraphs;
-    subgraphs << subgIdx;
     int count = m_model->itemCount(subgIdx);
     for (int i = 0; i < count; i++)
     {
@@ -237,12 +245,10 @@ QModelIndexList ZSubnetListItemDelegate::getSubgraphs(const QModelIndex& subgIdx
         const QModelIndex& modelIdx = m_model->index(subgName);
         if (modelIdx.isValid() && !subgraphs.contains(modelIdx))
         {
-            const QModelIndexList &lst = getSubgraphs(modelIdx);
-            if (!lst.isEmpty())
-                subgraphs << lst;
+            getSubgraphs(modelIdx, subgraphs);
         }
     }
-    return subgraphs;
+    subgraphs << subgIdx;
 }
 
 QWidget* ZSubnetListItemDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const

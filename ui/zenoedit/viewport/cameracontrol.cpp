@@ -276,6 +276,8 @@ void CameraControl::resizeTransformHandler(int dir)
 
 void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
 {
+    bool ctrl_pressed = event->modifiers() & Qt::ControlModifier;
+
     auto session = m_zenovis->getSession();
     auto scene = session->get_scene();
     float xpos = event->x(), ypos = event->y();
@@ -297,7 +299,24 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
         }
     }
 
-    if (!bTransform && (event->buttons() & (rotateButton | moveButton))) {
+    if (!bTransform && ctrl_pressed && (event->buttons() & Qt::MiddleButton)) {
+        float ratio = QApplication::desktop()->devicePixelRatio();
+        float dx = xpos - m_lastMidButtonPos.x(), dy = ypos - m_lastMidButtonPos.y();
+        dx *= ratio / m_res[0];
+        dy *= ratio / m_res[1];
+        float cos_t = cos(getTheta());
+        float sin_t = sin(getTheta());
+        float cos_p = cos(getPhi());
+        float sin_p = sin(getPhi());
+        QVector3D back(cos_t * sin_p, sin_t, -cos_t * cos_p);
+        QVector3D delta = -back * dy;
+        auto c = getCenter();
+        QVector3D center = {c[0], c[1], c[2]};
+        center += delta * getRadius();
+        setCenter({float(center.x()), float(center.y()), float(center.z())});
+        m_lastMidButtonPos = QPointF(xpos, ypos);
+    }
+    else if (!bTransform && (event->buttons() & (rotateButton | moveButton))) {
         float ratio = QApplication::desktop()->devicePixelRatio();
         float dx = xpos - m_lastMidButtonPos.x(), dy = ypos - m_lastMidButtonPos.y();
         dx *= ratio / m_res[0];
@@ -567,6 +586,7 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
             auto cam_pos = realPos();
 
             scene->select_box = std::nullopt;
+            bool ctrl_pressed = event->modifiers() & Qt::ControlModifier;
             bool shift_pressed = event->modifiers() & Qt::ShiftModifier;
             if (!shift_pressed) {
                 scene->selected.clear();
@@ -687,11 +707,20 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
 }
 
 bool CameraControl::fakeKeyPressEvent(int uKey) {
-    if (uKey & Qt::SHIFT) {
-        shift_pressed = true;
-    }
-    if (uKey & Qt::CTRL) {
-        ctrl_pressed = true;
+    // viewport focus prim
+    if ((uKey & 0xff) == Qt::Key_F && uKey & Qt::AltModifier) {
+        auto *scene = m_zenovis->getSession()->get_scene();
+        if (scene->selected.size() == 1) {
+            std::string nodeId = *scene->selected.begin();
+            nodeId = nodeId.substr(0, nodeId.find_first_of(':'));
+            zeno::vec3f center;
+            float radius;
+            if (m_zenovis->getSession()->focus_on_node(nodeId, center, radius)) {
+                focus(QVector3D(center[0], center[1], center[2]), radius * 3.0f);
+            }
+        }
+        updatePerspective();
+        return true;
     }
     if (!middle_button_pressed) {
         return false;
@@ -741,12 +770,6 @@ bool CameraControl::fakeKeyPressEvent(int uKey) {
 }
 
 bool CameraControl::fakeKeyReleaseEvent(int uKey) {
-    if (uKey == Qt::Key_Shift) {
-        shift_pressed = false;
-    }
-    if (uKey == Qt::Key_Control) {
-        ctrl_pressed = false;
-    }
     return false;
 }
 //void CameraControl::createPointNode(QPointF pnt) {

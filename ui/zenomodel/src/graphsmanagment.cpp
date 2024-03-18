@@ -14,14 +14,18 @@
 class IOBreakingScope
 {
 public:
-    IOBreakingScope(IGraphsModel* model) : m_model(model) {
-        if (m_model)
+    IOBreakingScope(IGraphsModel* model, bool bImporting = false) : m_model(model) {
+        if (m_model) {
             m_model->setIOProcessing(true);
+            m_model->setIOImporting(bImporting);
+        }
     }
 
     ~IOBreakingScope() {
-        if (m_model)
+        if (m_model) {
             m_model->setIOProcessing(false);
+            m_model->setIOImporting(false);
+        }
     }
 
 private:
@@ -141,7 +145,7 @@ void GraphsManagment::importGraph(const QString& fn)
     if (!m_model)
         return;
 
-    IOBreakingScope batch(m_model);
+    IOBreakingScope batch(m_model, true);
     std::shared_ptr<IAcceptor> acceptor(zeno_model::createIOAcceptor(m_model, true));
 	if (!ZsgReader::getInstance().openFile(fn, acceptor.get()))
 	{
@@ -155,7 +159,7 @@ void GraphsManagment::importSubGraphs(const QString& fn, const QMap<QString, QSt
     if (!m_model)
         return;
 
-    IOBreakingScope batch(m_model);
+    IOBreakingScope batch(m_model, true);
     std::shared_ptr<IAcceptor> acceptor(zeno_model::createIOAcceptor(m_model, true));    
     if (!ZsgReader::getInstance().importSubgraphs(fn, acceptor.get(), map, m_model))
     {

@@ -209,8 +209,8 @@ namespace zeno
                 opacityFunc.argTypes = {2, 2, 1};
                 opacityFunc.code = 
                 "(" + em->typeNameOf(2) + " base, " + em->typeNameOf(2) + " blend, " + em->typeNameOf(1) + " opacity) {\n"
-                "   blend.r = " + blendFuncName + "(base.r, blend.r);\n"
-                "   blend.g = " + blendFuncName + "(base.g, blend.g);\n"
+                "   blend.x = " + blendFuncName + "(base.x, blend.x);\n"
+                "   blend.y = " + blendFuncName + "(base.y, blend.y);\n"
                 "   return blend * opacity + base * (1.0 - opacity);\n"
                 "}\n";
                 break;
@@ -219,9 +219,9 @@ namespace zeno
                 opacityFunc.argTypes = {3, 3, 1};
                 opacityFunc.code = 
                 "(" + em->typeNameOf(3) + " base, " + em->typeNameOf(3) + " blend, " + em->typeNameOf(1) + " opacity) {\n"
-                "   blend.r = " + blendFuncName + "(base.r, blend.r);\n"
-                "   blend.g = " + blendFuncName + "(base.g, blend.g);\n"
-                "   blend.b = " + blendFuncName + "(base.b, blend.b);\n"
+                "   blend.x = " + blendFuncName + "(base.x, blend.x);\n"
+                "   blend.y = " + blendFuncName + "(base.y, blend.y);\n"
+                "   blend.z = " + blendFuncName + "(base.z, blend.z);\n"
                 "   return blend * opacity + base * (1.0 - opacity);\n"
                 "}\n";
                 break;
@@ -230,10 +230,10 @@ namespace zeno
                 opacityFunc.argTypes = {4, 4, 1};
                 opacityFunc.code = 
                 "(" + em->typeNameOf(4) + " base, " + em->typeNameOf(4) + " blend, " + em->typeNameOf(1) + " opacity) {\n"
-                "   blend.r = " + blendFuncName + "(base.r, blend.r);\n"
-                "   blend.g = " + blendFuncName + "(base.g, blend.g);\n"
-                "   blend.b = " + blendFuncName + "(base.b, blend.b);\n"
-                "   blend.a = " + blendFuncName + "(base.a, blend.a);\n"
+                "   blend.x = " + blendFuncName + "(base.x, blend.x);\n"
+                "   blend.y = " + blendFuncName + "(base.y, blend.y);\n"
+                "   blend.z = " + blendFuncName + "(base.z, blend.z);\n"
+                "   blend.w = " + blendFuncName + "(base.w, blend.w);\n"
                 "   return blend * opacity + base * (1.0 - opacity);\n"
                 "}\n";
                 break;

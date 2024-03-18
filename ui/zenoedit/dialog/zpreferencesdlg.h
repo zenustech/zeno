@@ -32,6 +32,7 @@ private:
     QCheckBox* m_pAutoCleanCache;
     QCheckBox* m_pEnableCheckbox;
     QSpinBox* m_pCacheNumSpinBox;
+    QDoubleSpinBox* m_pViewportPointSizeScaleSpinBox;
 
     QCheckBox* m_pEnableShiftChangeFOV;
 };
