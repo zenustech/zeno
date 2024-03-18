@@ -163,18 +163,25 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
                 onSaveSubgraph(index);
             });
 
+            bool bForkLocked = index.data(ROLE_FORK_LOCKSTATUS).toBool();
+            QAction* pForkLock = new QAction(bForkLocked ? tr("Fork unlocked") : tr("Fork locked"));
+            connect(pForkLock, &QAction::triggered, this, [=]() {
+                setForkLock(pProxyModel, !bForkLocked);
+            });
+
             menu->addAction(pCopySubnet);
             menu->addAction(pPasteSubnet);
             menu->addSeparator();
             menu->addAction(pRename);
             menu->addAction(pDelete);
             menu->addAction(pSave);
+            menu->addAction(pForkLock);
             if (index.data(ROLE_SUBGRAPH_TYPE) != SUBGRAPH_PRESET)
             {
                 QAction* pPreset = new QAction(tr("Trans to Preset Subgrah"));
                 menu->addAction(pPreset);
                 connect(pPreset, &QAction::triggered, this, [=]() {
-                        m_model->setData(index, SUBGRAPH_PRESET, ROLE_SUBGRAPH_TYPE);
+                    transToPresetSubgraph(pProxyModel);
                 });
             }
             menu->exec(QCursor::pos());
@@ -197,8 +204,10 @@ void ZSubnetListItemDelegate::onDelete()
             }
             nameList << subgName;
         }
-        for (const QString &name : nameList)
-            m_model->removeSubGraph(name);
+        for (const QString& name : nameList)
+        {
+             m_model->removeSubGraph(name);
+        }
     }
 }
 
@@ -276,6 +285,35 @@ void ZSubnetListItemDelegate::setSelectedIndexs(const QModelIndexList &list)
 {
     m_selectedIndexs = list;
 }
+
+void ZSubnetListItemDelegate::setForkLock(QSortFilterProxyModel* pProxyModel, bool bLocked)
+{
+    QModelIndexList indexs;
+    for (const QModelIndex& idx : m_selectedIndexs) {
+        const QModelIndex& srcIdx = pProxyModel->mapToSource(idx);
+        if (srcIdx.isValid())
+            indexs << srcIdx;
+    }
+    for (const auto& idx : indexs)
+    {
+        m_model->setData(idx, bLocked, ROLE_FORK_LOCKSTATUS);
+    }
+}
+
+void ZSubnetListItemDelegate::transToPresetSubgraph(QSortFilterProxyModel* pProxyModel)
+{
+    QModelIndexList indexs;
+    for (const QModelIndex& idx : m_selectedIndexs) {
+        const QModelIndex& srcIdx = pProxyModel->mapToSource(idx);
+        if (srcIdx.isValid())
+            indexs << srcIdx;
+    }
+    for (const auto& idx : indexs)
+    {
+        m_model->setData(idx, SUBGRAPH_PRESET, ROLE_SUBGRAPH_TYPE);
+    }
+}
+
 
 SubListSortProxyModel::SubListSortProxyModel(QObject* parent) : QSortFilterProxyModel(parent)
 {

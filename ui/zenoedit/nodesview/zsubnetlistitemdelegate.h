@@ -46,6 +46,8 @@ private slots:
 
 private:
     void getSubgraphs(const QModelIndex& index, QModelIndexList& subgraphs);
+    void setForkLock(QSortFilterProxyModel* model, bool bLocked);
+    void transToPresetSubgraph(QSortFilterProxyModel* model);
 
 private:
     IGraphsModel* m_model;
