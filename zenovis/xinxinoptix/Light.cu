@@ -189,14 +189,18 @@ extern "C" __global__ void __closesthit__radiance()
 
         if (!valid) { return; }
 
-        //valid &= rect.EvalAfterHit(&lsr, lightDirection, lightDistance, prdorigin);
-        //lsr.PDF = 1.0f / lsr.PDF;
         SphericalRect squad;
         SphericalRectInit(squad, shadingP, rect.v, rect.axisX, rect.lenX, rect.axisY, rect.lenY);
         lsr.PDF = 1.0f / squad.S;  
         if ( !isfinite(lsr.PDF) ) { return; }
+        
+        lsr.n = light.N;
+        lsr.NoL = dot(light.N, -ray_dir);
         lsr.uv = uvOffset + lsr.uv * uvScale;
 
+        lsr.dir = lightDirection;
+        lsr.dist = lightDistance;
+        lsr.p = ray_orig + ray_dir * lightDistance;
         break;
     }
     case zeno::LightShape::Sphere: {
