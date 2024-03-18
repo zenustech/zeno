@@ -87,15 +87,6 @@ int PrimAttrTableModel::columnCount(const QModelIndex &parent) const {
     }
 }
 
-template<typename T>
-QString attrName(const zeno::AttrVector<T>& attr, zeno::AttrVectorIndex index) {
-    if (index.attrIndex == 0) {
-        return QString("pos");
-    }
-
-    return QString(attr.template attr_keys<AttrAcceptAll>()[index.attrIndex - 1].c_str());
-}
-
 QVariant PrimAttrTableModel::data(const QModelIndex& index, int role) const
 {
     if (!index.isValid())
@@ -111,14 +102,7 @@ QVariant PrimAttrTableModel::data(const QModelIndex& index, int role) const
             return vertexData(index);
         }
         else if (sel_attr == "Tris") {
-            if (showFaceSetName)
-            {
-                auto idx = m_prim->tris.attr_index(index.column());
-                if (attrName(m_prim->tris, idx) == "faceset")
-                    if (m_prim->userData().has("faceset_" + std::to_string(trisData(index).toInt())))
-                        return QString::fromStdString(m_prim->userData().get2<std::string>("faceset_" + std::to_string(trisData(index).toInt()), ""));
-            }
-            return trisData(index);;
+            return trisData(index);
         }
         else if (sel_attr == "Points") {
             return pointsData(index);
@@ -149,6 +133,15 @@ QVariant PrimAttrTableModel::data(const QModelIndex& index, int role) const
         return "-";
     }
     return QVariant();
+}
+
+template<typename T>
+QString attrName(const zeno::AttrVector<T>& attr, zeno::AttrVectorIndex index) {
+    if (index.attrIndex == 0) {
+        return QString("pos");
+    }
+
+    return QString(attr.template attr_keys<AttrAcceptAll>()[index.attrIndex - 1].c_str());
 }
 
 QVariant PrimAttrTableModel::headerData(int section, Qt::Orientation orientation, int role) const
@@ -361,9 +354,4 @@ zeno::zany PrimAttrTableModel::userDataByIndex(const QModelIndex& index) const
         return it->second;
     else
         return zeno::zany();
-}
-
-void PrimAttrTableModel::setShowFaceSetName(bool enable)
-{
-    showFaceSetName = enable;
 }
