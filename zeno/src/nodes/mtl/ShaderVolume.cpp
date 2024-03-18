@@ -12,8 +12,7 @@
 #include <string>
 #include <iostream>
 #include "magic_enum.hpp"
-
-#include "json.hpp"
+#include <tinygltf/json.hpp>
 
 namespace zeno {
 

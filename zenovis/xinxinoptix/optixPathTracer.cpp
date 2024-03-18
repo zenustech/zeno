@@ -64,7 +64,7 @@
 #include <zeno/utils/orthonormal.h>
 #include <zeno/types/LightObject.h>
 
-#include "../../ui/include/json.hpp"
+#include <tinygltf/json.hpp>
 #include <unordered_map>
 
 #include <glm/glm.hpp>
