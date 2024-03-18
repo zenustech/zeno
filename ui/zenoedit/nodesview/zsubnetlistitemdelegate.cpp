@@ -176,14 +176,13 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
             menu->addAction(pDelete);
             menu->addAction(pSave);
             menu->addAction(pForkLock);
-            if (index.data(ROLE_SUBGRAPH_TYPE) != SUBGRAPH_PRESET)
-            {
-                QAction* pPreset = new QAction(tr("Trans to Preset Subgrah"));
-                menu->addAction(pPreset);
-                connect(pPreset, &QAction::triggered, this, [=]() {
-                    transToPresetSubgraph(pProxyModel);
-                });
-            }
+            bool bPreset = index.data(ROLE_SUBGRAPH_TYPE) == SUBGRAPH_PRESET;
+            QAction* pPreset = new QAction(bPreset ? tr("Trans to Normal Subgrah") : tr("Trans to Preset Subgrah"));
+            menu->addAction(pPreset);
+            connect(pPreset, &QAction::triggered, this, [=]() {
+                setSubgraphType(pProxyModel, bPreset);
+            });
+
             menu->exec(QCursor::pos());
         }
     }
@@ -300,7 +299,7 @@ void ZSubnetListItemDelegate::setForkLock(QSortFilterProxyModel* pProxyModel, bo
     }
 }
 
-void ZSubnetListItemDelegate::transToPresetSubgraph(QSortFilterProxyModel* pProxyModel)
+void ZSubnetListItemDelegate::setSubgraphType(QSortFilterProxyModel* pProxyModel, bool bPreset)
 {
     QModelIndexList indexs;
     for (const QModelIndex& idx : m_selectedIndexs) {
@@ -310,7 +309,7 @@ void ZSubnetListItemDelegate::transToPresetSubgraph(QSortFilterProxyModel* pProx
     }
     for (const auto& idx : indexs)
     {
-        m_model->setData(idx, SUBGRAPH_PRESET, ROLE_SUBGRAPH_TYPE);
+        m_model->setData(idx, bPreset ? SUBGRAPH_NOR : SUBGRAPH_PRESET, ROLE_SUBGRAPH_TYPE);
     }
 }
 
