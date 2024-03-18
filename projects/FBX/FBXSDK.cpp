@@ -562,34 +562,34 @@ struct NewFBXImportSkeleton : INode {
                 continue;
             }
             std::string name = pose->GetName();
-            prim->verts.resize(pose->GetCount());
+            prim->verts.resize(pose->GetCount() - 1);
             std::vector<std::string> bone_names;
             auto &boneNames = prim->verts.add_attr<int>("boneName");
             auto &transform_r0 = prim->verts.add_attr<vec3f>("transform_r0");
             auto &transform_r1 = prim->verts.add_attr<vec3f>("transform_r1");
             auto &transform_r2 = prim->verts.add_attr<vec3f>("transform_r2");
-            for (int j = 0; j < pose->GetCount(); ++j) {
+            for (int j = 1; j < pose->GetCount(); ++j) {
                 FbxMatrix transformMatrix = pose->GetMatrix(j);
                 auto t = transformMatrix.GetRow(3);
-                prim->verts[j] = vec3f(t[0], t[1], t[2]);
+                prim->verts[j - 1] = vec3f(t[0], t[1], t[2]);
 
                 auto r0 = transformMatrix.GetRow(0);
                 auto r1 = transformMatrix.GetRow(1);
                 auto r2 = transformMatrix.GetRow(2);
-                transform_r0[j] = vec3f(r0[0], r0[1], r0[2]);
-                transform_r1[j] = vec3f(r1[0], r1[1], r1[2]);
-                transform_r2[j] = vec3f(r2[0], r2[1], r2[2]);
+                transform_r0[j - 1] = vec3f(r0[0], r0[1], r0[2]);
+                transform_r1[j - 1] = vec3f(r1[0], r1[1], r1[2]);
+                transform_r2[j - 1] = vec3f(r2[0], r2[1], r2[2]);
 
                 bone_names.emplace_back(pose->GetNode(j)->GetName());
-                boneNames[j] = j;
+                boneNames[j - 1] = j - 1;
             }
             std::vector<int> bone_connects;
-            for (int j = 0; j < pose->GetCount(); ++j) {
+            for (int j = 1; j < pose->GetCount(); ++j) {
                 auto parent_name = pose->GetNode(j)->GetParent()->GetName();
                 auto index = std::find(bone_names.begin(), bone_names.end(), parent_name) - bone_names.begin();
                 if (index < bone_names.size()) {
                     bone_connects.push_back(index);
-                    bone_connects.push_back(j);
+                    bone_connects.push_back(j - 1);
                 }
             }
             {
