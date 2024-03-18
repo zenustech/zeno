@@ -5,6 +5,8 @@
 #include <QThread>
 #include <string>
 #include <QtWidgets>
+#include "uicommon.h"
+
 
 class DisplayWidget;
 
@@ -16,6 +18,7 @@ public:
 
 signals:
     void calcFinished(bool, QStringList, QString);
+    void nodeStatusChanged(zeno::ObjPath, NodeState);
 
 public slots:
     void run();
@@ -37,6 +40,7 @@ signals:
 
 private slots:
     void onCalcFinished(bool, QStringList, QString);
+    void onNodeStatusReported(zeno::ObjPath, NodeState);
     void on_render_objects_loaded();
 
 private:

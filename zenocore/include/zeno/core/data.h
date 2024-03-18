@@ -93,8 +93,6 @@ namespace zeno {
         SubnetType type;
     };
 
-    using ObjPath = std::list<std::string>;
-
     struct AssetInfo
     {
         std::string name;

@@ -115,11 +115,6 @@ ZENO_API ObjPath INode::get_path() const {
     return ObjPath(path);
 }
 
-ObjPath INode::get_uuid_path() const
-{
-    return m_uuidPath;
-}
-
 std::string INode::get_uuid() const
 {
     return m_uuid;
@@ -182,15 +177,11 @@ void INode::mark_dirty_objs()
     }
 }
 
-ZENO_API bool INode::is_dirty() const
-{
-    return m_dirty;
-}
-
 ZENO_API void INode::complete() {}
 
 ZENO_API void INode::preApply() {
 
+    m_status = Node_Pending;
     if (!m_dirty)
         return;
 
@@ -210,6 +201,7 @@ ZENO_API void INode::preApply() {
 #ifdef ZENO_BENCHMARKING
         Timer _(m_name);
 #endif
+        m_status = Node_Running;
         apply();
     }
     log_debug("==> leave {}", m_name);
@@ -357,10 +349,13 @@ ZENO_API void INode::doApply() {
         return;
     }
 
-    //unregisterObjs();     //是否可以不用提前unregister? 因为afterRun它会干掉之前view的那个
     preApply();
+
     registerObjToManager();
+
     mark_dirty(false);
+    m_status = Node_RunSucceed;
+    zeno::getSession().reportNodeStatus(shared_from_this());
 }
 
 ZENO_API std::vector<std::shared_ptr<IParam>> INode::get_input_params() const

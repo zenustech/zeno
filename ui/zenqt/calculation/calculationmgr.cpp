@@ -7,11 +7,23 @@
 #include "util/uihelper.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
+#include <zeno/core/common.h>
+#include "model/graphsmanager.h"
+#include "model/GraphsTreeModel.h"
 
 
 CalcWorker::CalcWorker(QObject* parent) {
-    zeno::getSession().registerRunTrigger([=]() {
+    auto& sess = zeno::getSession();
+    sess.registerRunTrigger([=]() {
         run();
+    });
+
+    sess.registerNodeCallback([=](zeno::ObjPath nodePath, bool bDirty, zeno::NodeRunStatus status) {
+        //QStringList namePath = UiHelper::stdlistToQStringList(nodePath);
+        NodeState state;
+        state.bDirty = bDirty;
+        state.runstatus = status;
+        emit nodeStatusChanged(nodePath, state);
     });
 }
 
@@ -22,6 +34,7 @@ void CalcWorker::run() {
         sess.run();
     }, *sess.globalError);
     sess.globalState->set_working(false);
+
     if (sess.globalError->failed()) {
         QStringList namePath = UiHelper::stdlistToQStringList(sess.globalError->getNode());
         QString errMsg = QString::fromStdString(sess.globalError->getErrorMsg());
@@ -42,6 +55,18 @@ CalculationMgr::CalculationMgr(QObject* parent)
     m_worker->moveToThread(&m_thread);
     connect(&m_thread, &QThread::started, m_worker, &CalcWorker::run);
     connect(m_worker, &CalcWorker::calcFinished, this, &CalculationMgr::onCalcFinished);
+    connect(m_worker, &CalcWorker::nodeStatusChanged, this, &CalculationMgr::onNodeStatusReported);
+}
+
+void CalculationMgr::onNodeStatusReported(zeno::ObjPath uuidPath, NodeState state)
+{
+    GraphsTreeModel* pMainTree = zenoApp->graphsManager()->currentModel();
+    if (pMainTree) {
+        const QModelIndex targetNode = pMainTree->getIndexByUuidPath(uuidPath);
+        if (targetNode.isValid()) {
+            UiHelper::qIndexSetData(targetNode, QVariant::fromValue(state), ROLE_NODE_RUN_STATE);
+        }
+    }
 }
 
 void CalculationMgr::onCalcFinished(bool bSucceed, QStringList namePath, QString msg)

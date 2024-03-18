@@ -176,6 +176,18 @@ ZENO_API void Session::registerRunTrigger(std::function<void()> func)
     m_callbackRunTrigger = func;
 }
 
+ZENO_API void Session::registerNodeCallback(F_NodeStatus func)
+{
+    m_funcNodeStatus = func;
+}
+
+void Session::reportNodeStatus(std::shared_ptr<INode> spNode)
+{
+    if (spNode && m_funcNodeStatus) {
+        m_funcNodeStatus(spNode->get_uuid_path(), spNode->is_dirty(), spNode->get_run_status());
+    }
+}
+
 ZENO_API int Session::registerObjId(const std::string& objprefix)
 {
     int objid = objsMan->registerObjId(objprefix);

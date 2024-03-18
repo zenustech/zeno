@@ -4,6 +4,7 @@
 #include <QtWidgets>
 #include "log/zwidgetostream.h"
 #include "util/procclipboard.h"
+#include "uicommon.h"
 #include <zeno/utils/scope_exit.h>
 
 class GraphsManager;

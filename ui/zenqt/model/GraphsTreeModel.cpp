@@ -258,6 +258,11 @@ GraphModel* GraphsTreeModel::getGraphByPath(const QStringList& objPath)
     return nullptr;
 }
 
+QModelIndex GraphsTreeModel::getIndexByUuidPath(const zeno::ObjPath& objPath)
+{
+    return m_main->indexFromUuidPath(objPath);
+}
+
 QModelIndex GraphsTreeModel::getIndexByPath(const QStringList& objPath)
 {
     QStringList items = objPath;

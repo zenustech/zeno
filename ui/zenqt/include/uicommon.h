@@ -163,6 +163,7 @@ enum MODEL_ROLE {
     ROLE_NODE_STATUS,
     ROLE_NODE_ISVIEW,
     ROLE_NODE_DIRTY,
+    ROLE_NODE_RUN_STATE,
     ROLE_NODEDATA,
 
     ROLE_NODEIDX,
@@ -486,5 +487,13 @@ struct BLACKBOARD_INFO
 };
 Q_DECLARE_METATYPE(BLACKBOARD_INFO)
 
+struct NodeState
+{
+    zeno::NodeRunStatus runstatus;
+    bool bDirty;
+};
+Q_DECLARE_METATYPE(NodeState)
+
+Q_DECLARE_METATYPE(zeno::ObjPath)
 
 #endif
