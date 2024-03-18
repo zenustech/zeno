@@ -763,6 +763,21 @@ void DisplayWidget::onMouseHoverMoved()
 #endif
 }
 
+void DisplayWidget::onSetCamera(zenovis::ZOptixCameraSettingInfo value)
+{
+    if (!m_bGLView) {
+        m_optixView->setdata_on_optix_thread(value);
+    }
+}
+
+zenovis::ZOptixCameraSettingInfo DisplayWidget::getCamera() const
+{
+    if (!m_bGLView) {
+        return m_optixView->getdata_from_optix_thread();
+    }
+    return zenovis::ZOptixCameraSettingInfo{};
+}
+
 void DisplayWidget::onDockViewAction(bool triggered)
 {
     QAction* action = qobject_cast<QAction*>(sender());
@@ -1266,13 +1281,13 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
                 auto _far = scene->camera->m_far;
                 auto fov = scene->camera->m_fov;
                 auto cz = glm::length(scene->camera->m_lodcenter);
-                if (depth != 1) {
-                    depth = depth * 2 - 1;
-                    cz = 2 * _near * _far / ((_far + _near) - depth * (_far - _near));
-//                    glm::vec4 ndc = {0, 0, depth, 1};
-//                    glm::vec4 clip_c = glm::inverse(scene->camera->m_proj) * ndc;
-//                    clip_c /= clip_c.w;
-//                    cz = -clip_c.z;
+                if (depth != 0) {
+//                    depth = depth * 2 - 1;
+//                    cz = 2 * _near * _far / ((_far + _near) - depth * (_far - _near));
+                    glm::vec4 ndc = {0, 0, depth, 1};
+                    glm::vec4 clip_c = glm::inverse(scene->camera->m_proj) * ndc;
+                    clip_c /= clip_c.w;
+                    cz = -clip_c.z;
                 }
                 auto w = scene->camera->m_nx;
                 auto h = scene->camera->m_ny;
