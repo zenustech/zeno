@@ -897,6 +897,7 @@ extern "C" __global__ void __closesthit__radiance()
     auto shadingP = rtgems::offset_ray(P + params.cam.eye,  prd->geometryNormal); // world space
 
     prd->radiance = {};
+    prd->direction = normalize(wi);
 
 
 
@@ -927,7 +928,6 @@ extern "C" __global__ void __closesthit__radiance()
         //float3 p = p_prim;
         prd->origin = rtgems::offset_ray(P, ( dot(prd->direction, prd->geometryNormal) < 0 )? -prd->geometryNormal : prd->geometryNormal);
     }
-    prd->direction = normalize(wi);
     if (prd->medium != DisneyBSDF::vacuum) {
         prd->_mask_ = (uint8_t)(EverythingMask ^ VolumeMatMask);
     } else {
