@@ -10,6 +10,7 @@ ZENO_API PrimitiveObject* primParsedFrom(const char *binData, std::size_t binSiz
 
 ZENO_API void primTriangulateQuads(PrimitiveObject *prim);
 ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv = true, bool has_lines = true);
+ZENO_API void primTriangulateIntoPolys(PrimitiveObject *prim);
 ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv = true);
 
 ZENO_API void primSepTriangles(PrimitiveObject *prim, bool smoothNormal = true, bool keepTriFaces = true);
@@ -27,6 +28,7 @@ ZENO_API void primDecodeUVs(PrimitiveObject *prim);
 ZENO_API void primLoopUVsToVerts(PrimitiveObject *prim);
 
 ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::PrimitiveObject *> const &primList, std::string const &tagAttr = {});
+ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMergeWithFacesetMatid(std::vector<zeno::PrimitiveObject *> const &primList, std::string const &tagAttr = {});
 ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPrim, PrimitiveObject *meshPrim, std::string dirAttr = {}, std::string tanAttr = {}, std::string radAttr = {}, std::string onbType = "XYZ", float radius = 1.f, bool copyParsAttr = true, bool copyMeshAttr = true);
 
 ZENO_API void primLineSort(PrimitiveObject *prim, bool reversed = false);

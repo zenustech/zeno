@@ -6,6 +6,7 @@
 #include <zeno/types/ListObject.h>
 #include <zeno/types/TextureObject.h>
 #include <zeno/utils/string.h>
+#include <zeno/utils/logger.h>
 #include <zeno/types/UserData.h>
 
 namespace zeno {
@@ -64,7 +65,9 @@ struct ShaderFinalize : INode {
             {3, "mat_emission"},
             {3, "mat_reflectance"}, 
             {1, "mat_opacity"},
-            {1, "mat_thickness"}
+            {1, "mat_thickness"},
+            {1, "mat_isHair"}
+
         }, {
             get_input<IObject>("base", std::make_shared<NumericObject>(float(1.0f))),
             get_input<IObject>("basecolor", std::make_shared<NumericObject>(vec3f(1.0f))),
@@ -112,7 +115,8 @@ struct ShaderFinalize : INode {
             get_input<IObject>("emission", std::make_shared<NumericObject>(vec3f(0))),
             get_input<IObject>("reflectance", std::make_shared<NumericObject>(vec3f(1))),
             get_input<IObject>("opacity", std::make_shared<NumericObject>(float(0.0))),
-            get_input<IObject>("thickness", std::make_shared<NumericObject>(float(0.0f)))
+            get_input<IObject>("thickness", std::make_shared<NumericObject>(float(0.0f))),
+            get_input<IObject>("isHair", std::make_shared<NumericObject>(float(0.0f)))
         });
         auto commonCode = em.getCommonCode();
 
@@ -122,6 +126,9 @@ struct ShaderFinalize : INode {
         } else {
             code += "bool sssFxiedRadius = false;\n";
         }
+
+        vec3f mask_value = (vec3f)get_input2<vec3i>("mask_value") / 255.0f;
+        code += zeno::format("vec3 mask_value = vec3({}, {}, {});\n", mask_value[0], mask_value[1], mask_value[2]);
 
         auto mtl = std::make_shared<MaterialObject>();
         mtl->mtlidkey = get_input2<std::string>("mtlid");
@@ -204,11 +211,13 @@ ZENDEFNODE(ShaderFinalize, {
         {"vec3f", "reflectance", "1,1,1"},
         {"float", "opacity", "0"},
         {"float", "thickness", "0.0"},
+        {"float", "isHair", "0.0"},
 
         {"string", "commonCode"},
         {"string", "extensionsCode"},
         {"string", "mtlid", "Mat1"},
         {"list", "tex2dList"},//TODO: bate's asset manager
+        {"vec3i", "mask_value", "0,0,0"},
     },
     {
         {"MaterialObject", "mtl"},

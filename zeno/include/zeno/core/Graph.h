@@ -81,6 +81,7 @@ struct Graph : std::enable_shared_from_this<Graph> {
     ZENO_API std::map<std::string, zany> callTempNode(std::string const &id,
             std::map<std::string, zany> inputs) const;
     ZENO_API void setTempCache(std::string const& id);
+    ZENO_API INode* getNode(std::string const& id);
 };
 
 }

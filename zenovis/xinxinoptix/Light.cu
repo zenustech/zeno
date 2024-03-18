@@ -61,6 +61,7 @@ extern "C" __global__ void __closesthit__radiance()
         light_index = primitiveIndex + params.firstSphereLightIdx;
 
     } else {
+      //////
 
         if (isPlaneLightGAS(instanceId)) {
 

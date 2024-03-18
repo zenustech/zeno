@@ -34,6 +34,8 @@ public:
     static bool getCurveValue(QVariant & val);
     static bool updateCurve(QVariant oldVal, QVariant& val);
     static void dumpTabsToZsg(QDockWidget* dockWidget, RAPIDJSON_WRITER& writer);
+    static void pythonExcute(const QString& code);
+    static void generatePython(const QString& id);
 };
 
 

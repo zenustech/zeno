@@ -117,11 +117,10 @@ static void bvh_vectors_wrangle_radius_two(zfx::x64::Executable *exec,
                                 const float *maskarr,
                                 PrimitiveObject *prim,
                                 std::vector<zeno::vec3f> const &pos,
-                                std::string radiusAttr,
+                                std::string primRadiusAttr,
                                 std::vector<zeno::vec3f> const &opos,
                                 PrimitiveObject *primNei,
-                                std::string neiRadiusAttr,
-                                bool isBox, float bvhradius,
+                                bool isBox, float bvhradius,//basic radius aka thickness
                                 zeno::LBvh *lbvh) {
   if (chs.size() == 0)
     return;
@@ -133,11 +132,21 @@ static void bvh_vectors_wrangle_radius_two(zfx::x64::Executable *exec,
       if (!chs[k].which)
         ctx.channel(k)[0] = chs[k].base[chs[k].stride * i];
     }
-    if (radiusAttr.empty()&&neiRadiusAttr.empty()){
+
+    if (primRadiusAttr.empty()){
       lbvh->iter_neighbors(pos[i], [&](int pid) {
         if (!isBox)
-          if (lengthSquared(pos[i] - opos[pid]) > (bvhradius) * (bvhradius))
-            return;
+        {
+          if(!lbvh->radiusAttr.empty()){
+            auto &neiRadius = primNei->verts.attr<float>(lbvh->radiusAttr);
+            if (lengthSquared(pos[i] - opos[pid]) > (bvhradius + neiRadius[pid]) * (bvhradius + neiRadius[pid]))
+              return;
+          }
+          else{
+            if (lengthSquared(pos[i] - opos[pid]) > bvhradius * bvhradius)
+              return;
+          }
+        }
         for (int k = 0; k < chs.size(); k++) {
           if (chs[k].which)
             ctx.channel(k)[0] = chs2[k].base[chs2[k].stride * pid];
@@ -145,36 +154,27 @@ static void bvh_vectors_wrangle_radius_two(zfx::x64::Executable *exec,
         ctx.execute();
       });
     }
-    else if(!radiusAttr.empty()&&neiRadiusAttr.empty()){
-      auto &radius = prim->verts.attr<float>(radiusAttr);
+
+    else if(!primRadiusAttr.empty()){
+      auto &radius = prim->verts.attr<float>(primRadiusAttr);
       lbvh->iter_neighbors_radius(pos[i], radius[i], [&](int pid) {
-        if (!isBox)
-          if (lengthSquared(pos[i] - opos[pid]) > (bvhradius + radius[i]) * (bvhradius + radius[i]))
-            return;
+        if (!isBox){
+          if(!lbvh->radiusAttr.empty()){
+            auto &neiRadius = primNei->verts.attr<float>(lbvh->radiusAttr);
+            if (lengthSquared(pos[i] - opos[pid]) > (bvhradius + radius[i]  + neiRadius[pid]) * (bvhradius + radius[i]  + neiRadius[pid]))
+              return;
+          }
+          else{
+            if (lengthSquared(pos[i] - opos[pid]) > (bvhradius + radius[i]) * (bvhradius + radius[i]))
+              return;
+          }
+        }
         for (int k = 0; k < chs.size(); k++) {
           if (chs[k].which)
             ctx.channel(k)[0] = chs2[k].base[chs2[k].stride * pid];
         }
         ctx.execute();
       });
-    }
-    else if(!radiusAttr.empty()&&!neiRadiusAttr.empty()){
-      auto &radius = prim->verts.attr<float>(radiusAttr);
-      auto &neiRadius = primNei->verts.attr<float>(neiRadiusAttr);
-      lbvh->iter_neighbors_radius_two(pos[i], radius[i], neiRadius, [&](int pid) {
-        if (!isBox)
-          if (lengthSquared(pos[i] - opos[pid]) > (bvhradius + radius[i]  + neiRadius[pid]) * (bvhradius + radius[i]  + neiRadius[pid]))
-          //if (length(pos[i] - opos[pid]) > sqrt((bvhradius + radius[i]  + neiRadius[pid]) * (bvhradius + radius[i]  + neiRadius[pid])))
-            return;
-        for (int k = 0; k < chs.size(); k++) {
-          if (chs[k].which)
-            ctx.channel(k)[0] = chs2[k].base[chs2[k].stride * pid];
-        }
-        ctx.execute();
-      });
-    }
-    else{
-        throw zeno::makeError("neiRadiusAttr need to be empty when radiusAttr is empty");
     }
     for (int k = 0; k < chs.size(); k++) {
       if (!chs[k].which)
@@ -249,21 +249,19 @@ ZENDEFNODE(BuildPrimitiveBvh,
 
 struct ParticlesBuildBvhRadius : zeno::INode {
   virtual void apply() override {
-    auto prim = get_input<zeno::PrimitiveObject>("prim");
+    auto prim = get_input<zeno::PrimitiveObject>("primNei");
     float radius = get_input2<float>("basicRadius");
     auto radiusAttr = get_input2<std::string>("radiusAttr");
-    auto neiRadiusAttr = get_input2<std::string>("neiRadiusAttr");
     auto lbvh = std::make_shared<zeno::LBvh>(
-        prim, radius, radiusAttr, neiRadiusAttr, zeno::LBvh::element_c<zeno::LBvh::element_e::point>);
+        prim, radius, radiusAttr, zeno::LBvh::element_c<zeno::LBvh::element_e::point>);
     set_output("lbvh", std::move(lbvh));
   }
 };
 
 ZENDEFNODE(ParticlesBuildBvhRadius, {
-                                  {{"PrimitiveObject", "prim"},
-                                   {"float", "basicRadius", "1"},
-                                   {"string", "radiusAttr", ""},
-                                   {"string", "neiRadiusAttr", ""}},
+                                  {{"PrimitiveObject", "primNei"},
+                                   {"float", "basicRadius", "0"},
+                                   {"string", "radiusAttr", ""},},
                                   {{"LBvh", "lbvh"}},
                                   {},
                                   {"zenofx"},
@@ -1199,11 +1197,13 @@ struct ParticlesNeighborBvhRadiusWrangle : zeno::INode {
     auto lbvh = get_input<zeno::LBvh>("lbvh");
     auto code = get_input<zeno::StringObject>("zfxCode")->get();
     auto radiusAttr = get_input2<std::string>("radiusAttr");
-    auto neighborRadiusAttr = get_input2<std::string>("neighborRadiusAttr");	
 
     if (prim->size() == 0 || primNei->size() == 0) {
       set_output("prim", std::move(prim));
       return;
+    }
+    if((!radiusAttr.empty()) && !prim->has_attr(radiusAttr)) {
+      throw std::runtime_error("radiusAttr not found in prim");
     }
 
         // BEGIN张心欣快乐自动加@IND
@@ -1401,7 +1401,7 @@ struct ParticlesNeighborBvhRadiusWrangle : zeno::INode {
     std::string maskAttr = get_input2<std::string>("maskAttr");
     const auto &mask = maskAttr == "" ? std::vector<float>(prim->verts.size(), 1.0f) : prim->attr<float>(maskAttr);
     bvh_vectors_wrangle_radius_two(exec, chs, chs2, mask.data(), prim.get(), prim->attr<zeno::vec3f>("pos"), radiusAttr,
-                        primNei->attr<zeno::vec3f>("pos"), primNei.get(), neighborRadiusAttr, 
+                        primNei->attr<zeno::vec3f>("pos"), primNei.get(), 
                         get_input2<bool>("is_box"),
                         lbvh.get()->thickness, lbvh.get());
 
@@ -1416,7 +1416,6 @@ ZENDEFNODE(ParticlesNeighborBvhRadiusWrangle,
                 {"LBvh", "lbvh"},
                 {"bool", "is_box", "0"},
                 {"string", "radiusAttr", "radius"},
-                {"string", "neighborRadiusAttr", "neighborRadius"},
                 {"string", "maskAttr", ""}, 
                 {"string", "zfxCode"},
                 {"DictObject:NumericObject", "params"}},

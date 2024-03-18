@@ -90,12 +90,8 @@ void ZenoGvHelper::setValue(QGraphicsItem* item, PARAM_CONTROL ctrl, const QVari
             else if (ZenoParamPushButton* pBtn = qobject_cast<ZenoParamPushButton*>(pItem))
             {
                 //nothing need to be done.
-                // purecolor
-                if (value.canConvert<QColor>()) {
-                    pBtn->setProperty("color", value.value<QColor>().name());
-                }
                 // colorvec3f
-                else if (value.canConvert<UI_VECTYPE>()) {
+                if (value.canConvert<UI_VECTYPE>()) {
                     UI_VECTYPE vec = value.value<UI_VECTYPE>();
                     if (vec.size() == 3) {
                         auto color = QColor::fromRgbF(vec[0], vec[1], vec[2]);

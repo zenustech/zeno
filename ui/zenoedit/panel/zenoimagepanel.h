@@ -92,7 +92,7 @@ class ZenoImagePanel : public QWidget {
 
     QLabel* pStatusBar = new QLabel();
     QLabel* pPrimName = new QLabel();
-    QCheckBox *pGamma = new QCheckBox("Gamma");
+    QCheckBox *pGamma = new QCheckBox("IsLinearColorspace");
     ZComboBox *pMode = new ZComboBox();
     QPushButton *pFit = new QPushButton("Fit");
     ZenoImageView *image_view = nullptr;

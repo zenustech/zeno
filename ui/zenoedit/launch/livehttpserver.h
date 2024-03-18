@@ -5,7 +5,7 @@
 #include "crow.h"
 #endif
 
-#include "json.hpp"
+#include "tinygltf/json.hpp"
 
 using json = nlohmann::json;
 

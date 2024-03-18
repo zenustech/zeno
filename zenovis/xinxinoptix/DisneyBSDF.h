@@ -3,6 +3,7 @@
 #include "TraceStuff.h"
 #include "IOMat.h"
 #include "DisneyBRDF.h"
+#include "HairBSDF.h"
 
 namespace DisneyBSDF{
     enum SurfaceEventFlags{
@@ -304,6 +305,8 @@ namespace DisneyBSDF{
       result = clamp(result,vec3(0.0f),vec3(1.0f));
       return result;
     }
+    
+
     static __inline__ __device__
         float3 EvaluateDisney2(
             vec3 illum,
@@ -357,6 +360,7 @@ namespace DisneyBSDF{
         float schlickWt = BRDFBasics::SchlickWeight(abs(dot(wo, wm)));
         float F = BRDFBasics::DielectricFresnel(abs(dot(wo, wm)), mat.ior);
         float psss = mat.subsurface;
+        float sssPortion = psss / (1.0 + psss);
         //event probability
         float diffPr = dielectricWt;
         float sssPr = dielectricWt  * psss;
@@ -388,10 +392,25 @@ namespace DisneyBSDF{
         dterm = vec3(0.0f);
         sterm = vec3(0.0f);
         tterm = vec3(0.0f);
+        if(mat.isHair>0.5f)
+        {
+          vec3 wo_t = normalize(vec3(0.0f,wo.y,wo.z));
+          vec3 wi_t = normalize(vec3(0.0f,wi.y,wi.z));
+          float Phi = acos(dot(wo_t, wi_t));
+          vec3 extinction = CalculateExtinction(mat.sssParam,1.0f);
+          vec3 h = HairBSDF::EvaluteHair(wi.x,dot(wi_t,wi),wo.x,
+                                              dot(wo_t,wo),Phi,wi.z,1.55f,
+                                              extinction,mat.basecolor,
+                                              mat.roughness,0.7f,2.0f);
+          fPdf += 1 / M_PIf / 4;
+          dterm = dterm + h;
+          f = f + h;
+          return f * abs(wi.z);
+        }
         if(diffPr > 0.0 && reflect)
         {
 
-            vec3 d = BRDFBasics::EvalDisneyDiffuse(thin? mat.basecolor:mix(mat.basecolor,mat.sssColor,mat.subsurface), mat.subsurface, mat.roughness, mat.sheen,
+            vec3 d = BRDFBasics::EvalDisneyDiffuse(thin? mat.basecolor : mix(mat.basecolor,mat.sssColor,mat.subsurface), mat.subsurface, mat.roughness, mat.sheen,
                                              Csheen, wo, wi, wm, tmpPdf) * dielectricWt;
             dterm = dterm + d;
             f = f + d;
@@ -399,7 +418,7 @@ namespace DisneyBSDF{
         }
         if(dielectricPr>0.0 && reflect)
         {
-            float F = BRDFBasics::DielectricFresnel(abs(dot(wm, wo)), mat.ior);
+            float F = BRDFBasics::SchlickDielectic(abs(dot(wm, wo)), mat.ior);
             float ax, ay;
             BRDFBasics::CalculateAnisotropicParams(mat.roughness,mat.anisotropic,ax,ay);
             vec3 s = BRDFBasics::EvalMicrofacetReflection(ax, ay, wo, wi, wm,
@@ -415,6 +434,8 @@ namespace DisneyBSDF{
             float ax, ay;
             BRDFBasics::CalculateAnisotropicParams(mat.roughness,mat.anisotropic,ax,ay);
             vec3 s = BRDFBasics::EvalMicrofacetReflection(ax, ay, wo, wi, wm, F, tmpPdf) * metalWt;
+            tmpPdf *= (mat.roughness<=0.03 && reflectance==false)? 0.0f:1.0f;
+            s = s * (tmpPdf>0.0f? 1.0f:0.0f);
             sterm = sterm + s;
             f = f + s;
             fPdf += tmpPdf * metalPr;
@@ -429,23 +450,27 @@ namespace DisneyBSDF{
             if (reflect) {
 
               vec3 wm = normalize(wi + wo);
-              float F = BRDFBasics::DielectricFresnel(abs(dot(wm, wo)), entering?mat.ior:1.0/mat.ior);
+              float F = BRDFBasics::SchlickDielectic(abs(dot(wm, wo)), entering?mat.ior:1.0/mat.ior);
               vec3 s = BRDFBasics::EvalMicrofacetReflection(ax, ay, wo, wi, wm,
                                                             mix(mix(Cspec0, mat.diffractColor, mat.diffraction), vec3(1.0f), F) * mat.specular,
                                             tmpPdf) * glassWt;
+              tmpPdf *= (mat.roughness<=0.03 && reflectance==false)? 0.0f:1.0f;
+              s = s * (tmpPdf>0.0f? 1.0f:0.0f);
               sterm = sterm + s;
               f = f + s;
-              fPdf += tmpPdf * glassPr * F;
+              fPdf += tmpPdf * glassPr;
             } else {
               if(thin)
               {
                 vec3 t = sqrt(mix(mat.transColor, mat.diffractColor, mat.diffraction)) * glassWt;
+                float tmpPdf = (reflectance==false)? 0.0f:1.0f;
+                t = t * (tmpPdf>0.0f?1.0f:0.0f);
                 tterm = tterm + t;
                 f = f + t;
-                fPdf += 1.0f * glassPr;
+                fPdf += tmpPdf * glassPr;
               }else {
                 vec3 wm = entering?-normalize(wo + mat.ior * wi) : normalize(wo + 1.0f/mat.ior * wi);
-                float F = BRDFBasics::DielectricFresnel(abs(dot(wm, wo)), entering?mat.ior:1.0/mat.ior);
+                float F = BRDFBasics::SchlickDielectic(abs(dot(wm, wo)), entering?mat.ior:1.0/mat.ior);
                 float tmpPdf;
                 vec3 brdf = BRDFBasics::EvalMicrofacetRefraction(mix(mat.transColor, mat.diffractColor, mat.diffraction),
                                                                  ax, ay,
@@ -454,9 +479,12 @@ namespace DisneyBSDF{
                                                                  vec3(F), tmpPdf);
 
                 vec3 t = brdf * glassWt;
+                tmpPdf *= (mat.roughness<=0.03 && reflectance==false)? 0.0f:1.0f;
+                t = t * (tmpPdf>0.0f? 1.0f:0.0f);
                 tterm = tterm + t;
                 f = f + t;
-                fPdf += tmpPdf * glassPr * (1.0 - F);
+
+                fPdf += tmpPdf * glassPr;
 
               }
             }
@@ -465,10 +493,13 @@ namespace DisneyBSDF{
         if(clearCtPr>0.0 && reflect)
         {
             vec3 wm = normalize(wi + wo);
+            float ax, ay;
+            BRDFBasics::CalculateAnisotropicParams(mat.clearcoatRoughness,0,ax,ay);
             //ior related clearCt
-            float F = BRDFBasics::DielectricFresnel(abs(dot(wm, wo)), mat.clearcoatIOR);
-            vec3 s = mix(vec3(0.04f), vec3(1.0f), F) * BRDFBasics::EvalClearcoat(mat.clearcoatRoughness, wo, wi,
-                                         wm, tmpPdf) * 0.25 * mat.clearcoat;
+            float F = BRDFBasics::SchlickDielectic(abs(dot(wm, wo)), mat.clearcoatIOR);
+            vec3 s = mix(vec3(0.04f), vec3(1.0f), F) *
+                     BRDFBasics::EvalClearcoat(mat.clearcoatRoughness, wo, wi,
+                                               wm, tmpPdf) * 0.25 * mat.clearcoat;
             sterm = sterm + s;
             f =  f + s;
             fPdf += tmpPdf * clearCtPr;
@@ -490,7 +521,7 @@ namespace DisneyBSDF{
                                   channelPDF, 0.001 / (abs(wi.z) + 0.005f), true);
           }
           // vec3 d = 1.0f/M_PIf * (1.0f - 0.5f * term) * (trans?vec3(1.0f):vec3(0.0f))  * dielectricWt * subsurface;
-          vec3 d = (trans? vec3(1.0f): vec3(0.0f)) * transmit  * dielectricWt * mat.subsurface;
+          vec3 d = (trans? vec3(1.0f): vec3(0.0f)) * transmit  * dielectricWt;
           dterm = dterm + d;
           f = f + d;
           fPdf += tmpPdf * sssPr;
@@ -586,6 +617,7 @@ namespace DisneyBSDF{
         float schlickWt = BRDFBasics::SchlickWeight(hov);
         float F = BRDFBasics::DielectricFresnel(hov, mat.ior);
         float psss = mat.subsurface;
+        float sssPortion = psss / (1.0f + psss);
         //dielectricWt *= 1.0f - psub;
 
         //event probability
@@ -615,8 +647,33 @@ namespace DisneyBSDF{
         tbn.m_tangent = T;
         tbn.m_binormal = B;
         prd->fromDiff = false;
-        if(r3<p1) // diffuse + sss
-        {
+        if(mat.isHair>0.5f){
+          prd->fromDiff = true;
+          wi = SampleScatterDirection(prd->seed) ;
+          vec3 wo_t = normalize(vec3(0.0f,wo.y,wo.z));
+          vec3 wi_t = normalize(vec3(0.0f,wi.y,wi.z));
+          float Phi = acos(dot(wo_t,wi_t));
+          vec3 extinction = CalculateExtinction(mat.sssParam,1.0f);
+          reflectance = HairBSDF::EvaluteHair(wi.x,dot(wi_t,wi),wo.x,
+                                              dot(wo_t,wo),Phi,wi.z,1.55f,
+                                              extinction,mat.basecolor,
+                                              mat.roughness,0.7f,2.0f);
+                    
+          isSS = false;
+          tbn.inverse_transform(wi);
+          wi = normalize(wi);
+
+
+          float pdf, pdf2;
+          pdf = 1 / M_PIf / 4;
+          vec3 rd, rs, rt;
+          fPdf = pdf>1e-5?pdf:0.0f;
+          reflectance = pdf>1e-5?reflectance:vec3(0.0f);
+          return true;
+        }
+       
+       
+        if(r3<p1){
           prd->hit_type = DIFFUSE_HIT;
           if(wo.z<0 && mat.subsurface>0)//inside, scattering, go out for sure
           {
@@ -757,11 +814,13 @@ namespace DisneyBSDF{
         }else if(r3<p5)//cc
         {
             prd->hit_type = SPECULAR_HIT;
-            vec3 wm = BRDFBasics::SampleGTR1(mat.clearcoatRoughness, r1, r2);
+            float ax, ay;
+            BRDFBasics::CalculateAnisotropicParams(mat.clearcoatRoughness,0,ax,ay);
+            vec3 swo = wo.z>0?wo:-wo;
+            vec3 wm = BRDFBasics::SampleGGXVNDF(swo, ax, ay, r1, r2);
+            wm = wm.z<0?-wm:wm;
 
-            if (wm.z < 0.0)
-              wm.z = -wm.z;
-            wm = wo.z>0?wm:-wm;
+
             wi = normalize(reflect(-wo, wm));
             tbn.inverse_transform(wi);
             wi = normalize(wi);
@@ -770,6 +829,7 @@ namespace DisneyBSDF{
               wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
             }
         }
+
         tbn.inverse_transform(wo);
         float pdf, pdf2;
         vec3 rd, rs, rt;

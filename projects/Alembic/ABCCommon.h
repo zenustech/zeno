@@ -10,7 +10,7 @@ namespace zeno {
 extern void traverseABC(
     Alembic::AbcGeom::IObject &obj,
     ABCTree &tree,
-    std::variant<int, float> frameid_or_t,
+    int frameid,
     bool read_done,
     bool read_face_set,
     std::string path
@@ -32,6 +32,8 @@ void writeObjFile(
 );
 
 bool SaveEXR(const float* rgb, int width, int height, const char* outfilename);
+
+std::shared_ptr<ListObject> abc_split_by_name(std::shared_ptr<PrimitiveObject> prim, bool add_when_none = false);
 }
 
 #endif //ZENO_ABCCOMMON_H

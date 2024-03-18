@@ -23,7 +23,7 @@ static __inline__ __device__ vec3 fresnelSchlick(vec3 r0, float radians)
 static __inline__ __device__ float fresnelSchlick(float r0, float radians)
 {
     //previous : mix(1.0, fresnel(radians), r0); //wrong
-    return mix(fresnel(radians), 1.0f, r0); //giving: (1 - r0) * pow(radians, 5) + r0, consistant with line 15
+    return mix(fresnel(radians), 1.0f, r0); //giving: (1 - r0) * pow(1 - radians, 5) + r0, consistant with line 15
 }
 static __inline__ __device__ float SchlickWeight(float u)
 {
@@ -214,7 +214,7 @@ float ThinTransmissionRoughness(float ior, float roughness)
 static __inline__ __device__
 void CalculateAnisotropicParams(float roughness, float anisotropic, float &ax, float &ay)
 {
-    float aspect = sqrtf(1.0f - 0.9f * anisotropic);
+    float aspect = sqrtf(1.0f - min(anisotropic,0.999f));
     ax = max(0.001f, roughness*roughness / (aspect));
     ay = max(0.001f, roughness*roughness * aspect);
 }
@@ -422,6 +422,8 @@ vec3 EvalDisneyDiffuse(vec3 baseColor, float subsurface, float roughness, float 
 static __inline__ __device__
 float GTR2Aniso(float NDotH, float HDotX, float HDotY, float ax, float ay)
 {
+  ax = max(0.001f, ax);
+  ay = max(0.001f, ay);
   float a = HDotX / ax;
   float b = HDotY / ay;
   float c = a * a + b * b + NDotH * NDotH;
@@ -493,7 +495,8 @@ vec3 EvalClearcoat(float ccR, vec3 V, vec3 L, vec3 H, float &pdf)
   float VDotH = abs(dot(V, H));
 
   float F = mix(0.04, 1.0, SchlickWeight(VDotH));
-  float D = clamp(GTR1(H.z, ccR),0.0f, 10.0f);
+  float D = clamp(GTR2(abs(H.z), ccR),0.0f, 100.0f);
+//  float D = clamp(GTR2Aniso(abs(H.z), H.x, H.y, ccR*ccR, ccR*ccR),0.0f, 100.0f);
   float G = SmithG(L.z, 0.25f) * SmithG(V.z, 0.25f);
   float jacobian = 1.0f / (4.0f * VDotH);
 

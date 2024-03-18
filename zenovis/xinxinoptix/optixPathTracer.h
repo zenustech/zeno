@@ -165,6 +165,7 @@ struct Params
     float3*      frame_buffer_S;
     float3*      frame_buffer_T;
     float3*      frame_buffer_B;
+    float3*      frame_buffer_M;
 
     float3*      debug_buffer;
     float3*      albedo_buffer;
@@ -239,10 +240,17 @@ struct Params
     float sunSoftness;
     float elapsedTime;
 
+    int32_t outside_random_number;
     bool simpleRender     :1;
     bool show_background  :1;
 
     bool denoise : 1;
+
+    float physical_camera_aperture;
+    float physical_camera_shutter_speed;
+    float physical_camera_iso;
+    bool  physical_camera_aces;
+    bool  physical_camera_exposure;
 };
 
 
@@ -288,12 +296,19 @@ struct HitGroupData
 #endif
     unsigned short* lightMark;
     uint32_t* auxOffset;
-    
+#ifdef USE_SHORT
+    ushort3* instPos;
+    ushort3* instNrm;
+    ushort3* instUv;
+    ushort3* instClr;
+    ushort3* instTang;
+#else
     float3* instPos;
     float3* instNrm;
     float3* instUv;
     float3* instClr;
     float3* instTang;
+#endif
     float4* uniforms;
     cudaTextureObject_t textures[32];
 

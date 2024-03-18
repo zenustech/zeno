@@ -11,4 +11,9 @@ void parallel_sort(It first, It last, Func func) {
     std::sort(ZENO_PAR_UNSEQ first, last, func);
 }
 
+template <class It, class Func>
+void parallel_stable_sort(It first, It last, Func func) {
+    std::stable_sort(ZENO_PAR_UNSEQ first, last, func);
+}
+
 }

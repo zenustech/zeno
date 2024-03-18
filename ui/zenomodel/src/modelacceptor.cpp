@@ -128,6 +128,12 @@ void ModelAcceptor::BeginSubgraph(const QString& name, int type)
     {
         if (m_bImport)
         {
+            for (int i = 0; i < pSubModel->rowCount(); i++)
+            {
+                QString ident = pSubModel->index(i, 0).data(ROLE_OBJID).toString();
+                if (m_oldToNewNodeIds.contains(ident))
+                    m_oldToNewNodeIds.remove(ident);
+            }
             pSubModel->clear();
             zeno::log_warn("override subgraph {}", name.toStdString());
         }
@@ -1045,6 +1051,10 @@ void ModelAcceptor::setOptions(const QString& id, const QStringList& options)
         else if (optName == "MUTE")
         {
             opts |= OPT_MUTE;
+        }
+        else if (optName == "CACHE")
+        {
+            opts |= OPT_CACHE;
         }
         else if (optName == "collapsed")
         {

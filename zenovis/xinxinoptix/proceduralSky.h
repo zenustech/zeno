@@ -3,11 +3,6 @@
 #include "zxxglslvec.h"
 #include "TraceStuff.h"
 
-static __inline__ __device__ float saturate(float num)
-{
-    return clamp(num,0.0f,1.0f);
-}
-
 static __inline__ __device__ float hash( float n )
 {
     return fract(sin(n)*43758.5453f);

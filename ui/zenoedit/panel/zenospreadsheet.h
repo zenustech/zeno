@@ -22,8 +22,11 @@ public:
 protected:
     bool eventFilter(QObject* watched, QEvent* event) override;
 private:
+    void getKeyWords();
+private:
     QTableView* prim_attr_view;
     QCheckBox* m_checkSortingEnabled;
+    QMap<QString, QString> m_keyWords;
 };
 
 

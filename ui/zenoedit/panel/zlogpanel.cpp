@@ -479,6 +479,9 @@ void ZlogPanel::initSignals()
             }
         }
     });
+    connect(zenoApp->getMainWindow(), &ZenoMainWindow::runStarted, this, [=]() {
+        m_logModel->clear();
+    });
 }
 
 void ZlogPanel::onSyncLogs()

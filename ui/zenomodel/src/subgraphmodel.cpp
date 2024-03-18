@@ -857,7 +857,7 @@ bool SubGraphModel::_insertNode(int row, const NODE_DATA& nodeData, const QModel
     if (nodeData.find(ROLE_NODETYPE) != nodeData.end() &&
         nodeData[ROLE_NODETYPE] == NO_VERSION_NODE)
     {
-        m_pGraphsModel->markNotDescNode();
+        m_pGraphsModel->markNotDescNode(id);
     }
 
     m_pGraphsModel->markDirty();

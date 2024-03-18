@@ -221,7 +221,7 @@ struct LineResample : INode {
             }
         } else {
 #pragma omp parallel for
-            for (size_t i=0; i<prim->lines.size();i++) {
+            for (auto i=0; i<prim->lines.size();i++) {
                 linesLen[i] = prim->lines.attr<float>("parameterization")[i];
             }
         }
@@ -234,7 +234,7 @@ struct LineResample : INode {
             retprim->add_attr<float>("t");
             auto &t_arr = retprim->attr<float>("t");
 #pragma omp parallel for
-            for(size_t i=0; i<retprim->size();i++) {
+            for(auto i=0; i<retprim->size();i++) {
                 t_arr[i] = sampleBy[i];
             }
         } else {
@@ -243,11 +243,11 @@ struct LineResample : INode {
             retprim->add_attr<float>("t");
             auto &t_arr = retprim->attr<float>("t");
 #pragma omp parallel for
-            for (size_t i=0; i<retprim->size(); i++) {
+            for (auto i=0; i<retprim->size(); i++) {
                 t_arr[i] = (float)i / float(segments);
             }
 #pragma omp parallel for
-            for (size_t i=0; i<segments; i++) {
+            for (auto i=0; i<segments; i++) {
                 retprim->lines[i] = zeno::vec2i(i, i+1);
             }
         }
@@ -260,7 +260,7 @@ struct LineResample : INode {
                 }, prim->attr(key));
         }
 #pragma omp parallel for
-        for(size_t i=0; i<retprim->size();i++) {
+        for(auto i=0; i<retprim->size();i++) {
             float insertU = retprim->attr<float>("t")[i];
             auto it = std::upper_bound(linesLen.begin(), linesLen.end(), insertU);
             size_t index = it - linesLen.begin();
@@ -1388,7 +1388,7 @@ struct PrimAttribBlur : INode {
 //        QueryPerformanceCounter(&t1_0);
 
 #pragma omp parallel for
-        for (size_t point_idx = 0; point_idx < prim->verts.size(); point_idx++) {   // 遍历所有点，找它的邻居
+        for (auto point_idx = 0; point_idx < prim->verts.size(); point_idx++) {   // 遍历所有点，找它的邻居
             std::map<std::string, int> neighborVertID;
             std::map<std::string, float> neighborEdgeLength;
             for(int i = 0; i < 8; i++) {
@@ -1402,7 +1402,7 @@ struct PrimAttribBlur : INode {
 
             if (prim_type == "line") {
 #pragma omp parallel for shared(flag)
-                for (size_t line_idx = 0; line_idx < prim->lines.size(); line_idx++) {
+                for (auto line_idx = 0; line_idx < prim->lines.size(); line_idx++) {
                     if(flag) continue;
                     if (prim->lines[line_idx][0] == point_idx) {
                         neighborVertID["neighbor_" + std::to_string(find_neighbor_count)] = prim->lines[line_idx][1];
@@ -1436,7 +1436,7 @@ struct PrimAttribBlur : INode {
                 //========================================
 
 #pragma omp parallel for
-                for (size_t tri_idx = 0; tri_idx < prim->tris.size(); tri_idx++) {
+                for (auto tri_idx = 0; tri_idx < prim->tris.size(); tri_idx++) {
                     auto const &ind = prim->tris[tri_idx];
                     if (ind[0] == point_idx) {
                         pointNeighborSign[ind[1]] = 1;
@@ -1540,7 +1540,7 @@ struct PrimAttribBlur : INode {
               for (int loop = 0; loop < iterations; loop++) {
 #pragma omp parallel for
                   // data => data_temp
-                  for (size_t i = 0; i < prim->verts.size(); i++) {
+                  for (auto i = 0; i < prim->verts.size(); i++) {
                       std::vector<int> neighborIDs(8);
                       neighborIDs[0] = neighbor_0[i];
                       neighborIDs[1] = neighbor_1[i];
@@ -1568,7 +1568,7 @@ struct PrimAttribBlur : INode {
                   }
 #pragma omp parallel for
                   // data_temp => data
-                  for (size_t i = 0; i < prim->verts.size(); i++) {
+                  for (auto i = 0; i < prim->verts.size(); i++) {
                       std::vector<int> neighborIDs(8);
                       neighborIDs[0] = neighbor_0[i];
                       neighborIDs[1] = neighbor_1[i];

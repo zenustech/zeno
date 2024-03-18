@@ -494,7 +494,7 @@ void SurfaceMesh::flip(int e) {
         vconn_[vb0].halfedge_ = b1;
 }
 
-void SurfaceMesh::is_collapse_ok(int v0v1, bool &hcol01, bool &hcol10) {
+void SurfaceMesh::is_collapse_ok(int v0v1, bool &hcol01, bool &hcol10, bool relaxed) {
     int v1v0 = v0v1 ^ 1;
     int v0 = to_vertex(v1v0);
     int v1 = to_vertex(v0v1);
@@ -546,6 +546,9 @@ void SurfaceMesh::is_collapse_ok(int v0v1, bool &hcol01, bool &hcol10) {
                 return;
             }
     }
+
+    if (relaxed)
+        return;
 
     // check whether there are triangles flipped after collapsing
     auto& pos = prim_->attr<vec3f>("pos");
