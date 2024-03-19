@@ -17,11 +17,14 @@ public:
     CalcWorker(QObject* parent = nullptr);
 
 signals:
-    void calcFinished(bool, QStringList, QString);
+    void calcFinished(bool, zeno::ObjPath, QString);
     void nodeStatusChanged(zeno::ObjPath, NodeState);
 
 public slots:
     void run();
+
+private:
+    bool m_bReportNodeStatus = true;    //在正常运行模式下，是否发送每个节点的运行状态到前端
 };
 
 
@@ -36,10 +39,11 @@ public:
     void unRegisterRenderWid(DisplayWidget* pDisp);
 
 signals:
-    void calcFinished(bool, QStringList, QString);
+    void calcFinished(bool, zeno::ObjPath, QString);
+    void nodeStatusChanged(zeno::ObjPath, NodeState);
 
 private slots:
-    void onCalcFinished(bool, QStringList, QString);
+    void onCalcFinished(bool, zeno::ObjPath, QString);
     void onNodeStatusReported(zeno::ObjPath, NodeState);
     void on_render_objects_loaded();
 

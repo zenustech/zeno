@@ -209,6 +209,8 @@ ZENO_API bool Session::run() {
     objsMan->beforeRun();
     zeno::scope_exit sp([&]() { objsMan->afterRun(); });
 
+    globalError->clearState();
+
     //对之前删除节点时记录的obj，对应的所有其他关联节点，都标脏
     objsMan->remove_attach_node_by_removing_objs();
 

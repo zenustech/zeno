@@ -291,6 +291,34 @@ ZLayoutBackground* ZenoNode::initBodyWidget(ZenoSubGraphScene* pScene)
     return bodyWidget;
 }
 
+void ZenoNode::onRunStateChanged()
+{
+    const NodeState& state = m_index.data(ROLE_NODE_RUN_STATE).value<NodeState>();
+    this->onMarkDataChanged(state.bDirty);
+    switch (state.runstatus) {
+        case zeno::Node_Pending:
+        {
+            this->markError(false);
+            break;
+        }
+        case zeno::Node_RunError:
+        {
+            this->markError(true);
+            break;
+        }
+        case zeno::Node_Running:
+        {
+            this->markError(false);
+            break;
+        }
+        case zeno::Node_RunSucceed:
+        {
+            this->markError(false);
+            break;
+        }
+    }
+}
+
 void ZenoNode::onLayoutAboutToBeChanged()
 {
 

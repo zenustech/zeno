@@ -710,14 +710,19 @@ void ZenoMainWindow::onFrameSwitched(int frameid)
     sess.switchToFrame(frameid);
 }
 
-void ZenoMainWindow::onCalcFinished(bool bSucceed, QStringList nodePath, QString msg)
+void ZenoMainWindow::onCalcFinished(bool bSucceed, zeno::ObjPath nodeUuidPath, QString msg)
 {
     if (!bSucceed) {
         ZenoGraphsEditor* pEditor = getAnyEditor();
         if (pEditor) {
-            QString nodeName = nodePath.back();
-            nodePath.pop_back();
-            pEditor->activateTab(nodePath, nodeName, true);
+            GraphsTreeModel* pTreeM = zenoApp->graphsManager()->currentModel();
+            if (pTreeM) {
+                QModelIndex nodeIdx = pTreeM->getIndexByUuidPath(nodeUuidPath);
+                QStringList nodePath = nodeIdx.data(ROLE_OBJPATH).toStringList();
+                QString nodeName = nodePath.back();
+                nodePath.pop_back();
+                pEditor->activateTab(nodePath, nodeName, true);
+            }
         }
     }
 }

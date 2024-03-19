@@ -18,13 +18,14 @@ CalcWorker::CalcWorker(QObject* parent) {
         run();
     });
 
-    sess.registerNodeCallback([=](zeno::ObjPath nodePath, bool bDirty, zeno::NodeRunStatus status) {
-        //QStringList namePath = UiHelper::stdlistToQStringList(nodePath);
-        NodeState state;
-        state.bDirty = bDirty;
-        state.runstatus = status;
-        emit nodeStatusChanged(nodePath, state);
-    });
+    if (m_bReportNodeStatus) {
+        sess.registerNodeCallback([=](zeno::ObjPath nodePath, bool bDirty, zeno::NodeRunStatus status) {
+            NodeState state;
+            state.bDirty = bDirty;
+            state.runstatus = status;
+            emit nodeStatusChanged(nodePath, state);
+        });
+    }
 }
 
 void CalcWorker::run() {
@@ -36,9 +37,13 @@ void CalcWorker::run() {
     sess.globalState->set_working(false);
 
     if (sess.globalError->failed()) {
-        QStringList namePath = UiHelper::stdlistToQStringList(sess.globalError->getNode());
         QString errMsg = QString::fromStdString(sess.globalError->getErrorMsg());
-        emit calcFinished(false, namePath, errMsg);
+        NodeState state;
+        state.bDirty = true;
+        state.runstatus = zeno::Node_RunError;
+        zeno::ObjPath path = sess.globalError->getNode();
+        emit nodeStatusChanged(path, state);
+        emit calcFinished(false, path, errMsg);
     }
     else {
         emit calcFinished(true, {}, "");
@@ -69,12 +74,12 @@ void CalculationMgr::onNodeStatusReported(zeno::ObjPath uuidPath, NodeState stat
     }
 }
 
-void CalculationMgr::onCalcFinished(bool bSucceed, QStringList namePath, QString msg)
+void CalculationMgr::onCalcFinished(bool bSucceed, zeno::ObjPath nodeUuidPath, QString msg)
 {
     //确保此时计算线程不再跑逻辑，这里暂时是代码上约束，也就是CalcWorker::run()走完就发信号。
     m_thread.quit();
     m_thread.wait();
-    emit calcFinished(bSucceed, namePath, msg);
+    emit calcFinished(bSucceed, nodeUuidPath, msg);
 }
 
 void CalculationMgr::run()

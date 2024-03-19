@@ -77,7 +77,7 @@ public slots:
     void onNodeSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
     void onMouseHoverMoved();
     void onDockViewAction(bool triggered);
-    void onCalcFinished(bool bSucceed, QStringList, QString);
+    void onCalcFinished(bool bSucceed, zeno::ObjPath, QString);
 
 signals:
     void frameUpdated(int new_frame);

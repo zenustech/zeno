@@ -84,6 +84,7 @@ signals:
 public slots:
     void onCollaspeBtnClicked();
     void onCollaspeUpdated(bool);
+    void onRunStateChanged();
     void onOptionsBtnToggled(STATUS_BTN btn, bool toggled);
     void onOptionsUpdated(int options);
     void onViewUpdated(bool bView);

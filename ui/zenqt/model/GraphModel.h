@@ -32,7 +32,7 @@ public:
     ParamsModel* params = nullptr;
     bool bView = false;
     bool bCollasped = false;
-    bool bDirty = false;
+    NodeState runState;
 
     //for subgraph, but not include assets:
     std::optional<GraphModel*> optSubgraph;

@@ -49,7 +49,7 @@ void NodeItem::init(GraphModel* pGraphM, std::shared_ptr<zeno::INode> spNode)
     });
 
     m_cbMarkDirty = spNode->register_mark_dirty([=](bool bDirty) {
-        this->bDirty = bDirty;
+        this->runState.bDirty = bDirty;
         QModelIndex idx = pGraphM->indexFromName(this->name);
         emit pGraphM->dataChanged(idx, idx, QVector<int>{ ROLE_NODE_DIRTY });
     });
@@ -58,7 +58,7 @@ void NodeItem::init(GraphModel* pGraphM, std::shared_ptr<zeno::INode> spNode)
     this->name = QString::fromStdString(spNode->get_name());
     this->cls = QString::fromStdString(spNode->get_nodecls());
     this->bView = spNode->is_view();
-    this->bDirty = spNode->is_dirty();
+    this->runState.bDirty = spNode->is_dirty();
     auto pair = spNode->get_pos();
     this->pos = QPointF(pair.first, pair.second);
     if (std::shared_ptr<zeno::SubnetNode> subnetnode = std::dynamic_pointer_cast<zeno::SubnetNode>(spNode))
@@ -290,9 +290,13 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
         {
             return item->bView;
         }
+        case ROLE_NODE_RUN_STATE:
+        {
+            return QVariant::fromValue(item->runState);
+        }
         case ROLE_NODE_DIRTY:
         {
-            return item->bDirty;
+            return item->runState.bDirty;
         }
         case ROLE_NODETYPE:
         {
@@ -376,8 +380,9 @@ bool GraphModel::setData(const QModelIndex& index, const QVariant& value, int ro
         }
         case ROLE_NODE_RUN_STATE:
         {
-            NodeState state = value.value<NodeState>();
-            break;
+            item->runState = value.value<NodeState>();
+            emit dataChanged(index, index, QVector<int>{role});
+            return true;
         }
         case ROLE_NODE_STATUS:
         {

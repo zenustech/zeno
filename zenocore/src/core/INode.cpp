@@ -330,7 +330,11 @@ ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
                 std::shared_ptr<ILink> spLink = *in_param->links.begin();
                 std::shared_ptr<IParam> out_param = spLink->fromparam.lock();
                 std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
-                outNode->doApply();
+
+                GraphException::translated([&] {
+                    outNode->doApply();
+                }, outNode.get());
+
                 in_param->result = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
             }
         }
