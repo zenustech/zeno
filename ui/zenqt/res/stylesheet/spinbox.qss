@@ -7,6 +7,10 @@ QSpinBox {
     padding-right: 0px;
 }
 
+QSpinBox:disabled{
+    background: #3C424E;
+}
+
 QSpinBox::down-button
 {
 	image: url(:/icons/spinbox-downbutton.svg);
@@ -73,6 +77,11 @@ QSpinBox[cssClass = "control"]::up-button:hover
      image: url(:/icons/rightArrow-on.svg);
 }
  
+QSpinBox[cssClass = "control"]:disabled
+{
+    background: #3C424E;
+}
+
 QDoubleSpinBox
 {
     background: #191D21;
@@ -83,6 +92,10 @@ QDoubleSpinBox
     border:0;
 }
    
+QDoubleSpinBox:disabled{
+    background: #3C424E;
+}
+
 QDoubleSpinBox:focus{
     border: 2px solid #4B9EF4;
 }

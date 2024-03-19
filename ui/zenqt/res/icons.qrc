@@ -366,5 +366,6 @@
     <file>icons/RunKill_on.svg</file>
 	<file>icons/always_checkbox.svg</file>
 	<file>icons/always_checkbox_on.svg</file>
+	<file>icons/checkbox-disable.svg</file>
 </qresource>
 </RCC>

@@ -382,7 +382,7 @@ void ZenoParamCheckBox::paint(QPainter *painter, const QStyleOptionGraphicsItem 
     QRectF rect = boundingRect();
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing);
-    painter->fillRect(rect, QColor("#191D21"));
+    painter->fillRect(rect, isEnabled() ? QColor("#191D21") : QColor("#3C424E"));
 
     if (m_checkState == Qt::Checked) 
     {

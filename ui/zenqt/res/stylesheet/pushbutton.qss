@@ -323,6 +323,10 @@ QPushButton[cssClass="proppanel"]
 	color: #FFFFFF;
 }
 
+QPushButton[cssClass="proppanel"]:disabled{
+    background: #3C424E;
+}
+
 QPushButton[cssClass="proppanel"]:hover
 {
 	color: #FFFFFF;
