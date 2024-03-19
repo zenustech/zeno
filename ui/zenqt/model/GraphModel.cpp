@@ -114,9 +114,10 @@ void GraphModel::registerCoreNotify()
 
     m_cbRemoveNode = coreGraph->register_removeNode([&](const std::string& name) {
         QString qName = QString::fromStdString(name);
-        if (m_name2Row.find(qName) == m_name2Row.end())
-            return false;
-        int row = m_name2Row[qName];
+        ZASSERT_EXIT(m_name2uuid.find(qName) != m_name2uuid.end(), false);
+        QString uuid = m_name2uuid[qName];
+        ZASSERT_EXIT(m_uuid2Row.find(uuid) != m_uuid2Row.end(), false);
+        int row = m_uuid2Row[uuid];
         removeRow(row);
     });
 
@@ -128,7 +129,6 @@ void GraphModel::registerCoreNotify()
     m_cbRenameNode = coreGraph->register_updateNodeName([&](std::string oldname, std::string newname) {
         const QString& oldName = QString::fromStdString(oldname);
         const QString& newName = QString::fromStdString(newname);
-
         _updateName(oldName, newName);
     });
 
@@ -180,13 +180,21 @@ void GraphModel::clear()
 
 int GraphModel::indexFromId(const QString& name) const
 {
-    if (m_name2Row.find(name) == m_name2Row.end())
+    if (m_name2uuid.find(name) == m_name2uuid.end())
         return -1;
-    return m_name2Row[name];
+
+    QString uuid = m_name2uuid[name];
+    if (m_uuid2Row.find(uuid) == m_uuid2Row.end())
+        return -1;
+    return m_uuid2Row[uuid];
 }
 
 QModelIndex GraphModel::indexFromName(const QString& name) const {
-    return createIndex(indexFromId(name), 0);
+    int row = indexFromId(name);
+    if (row == -1) {
+        return QModelIndex();
+    }
+    return createIndex(row, 0);
 }
 
 void GraphModel::addLink(const QString& fromNodeStr, const QString& fromParamStr,
@@ -233,7 +241,7 @@ int GraphModel::rowCount(const QModelIndex& parent) const
 
 QVariant GraphModel::data(const QModelIndex& index, int role) const
 {
-    NodeItem* item = m_nodes[m_row2name[index.row()]];
+    NodeItem* item = m_nodes[m_row2uuid[index.row()]];
 
     switch (role) {
         case Qt::DisplayRole:
@@ -331,7 +339,7 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
 
 bool GraphModel::setData(const QModelIndex& index, const QVariant& value, int role)
 {
-    NodeItem* item = m_nodes[m_row2name[index.row()]];
+    NodeItem* item = m_nodes[m_row2uuid[index.row()]];
 
     switch (role) {
         case ROLE_CLASS_NAME: {
@@ -359,6 +367,11 @@ bool GraphModel::setData(const QModelIndex& index, const QVariant& value, int ro
             item->bCollasped = value.toBool();
             emit dataChanged(index, index, QVector<int>{role});
             return true;
+        }
+        case ROLE_NODE_RUN_STATE:
+        {
+            NodeState state = value.value<NodeState>();
+            break;
         }
         case ROLE_NODE_STATUS:
         {
@@ -400,33 +413,60 @@ QList<SEARCH_RESULT> GraphModel::search(const QString& content, SearchType searc
     return {};
 }
 
+QModelIndex GraphModel::indexFromUuidPath(const zeno::ObjPath& uuidPath)
+{
+    if (uuidPath.empty())
+        return QModelIndex();
+
+    const QString& uuid = QString::fromStdString(uuidPath.front());
+    if (m_nodes.find(uuid) != m_nodes.end()) {
+        NodeItem* pItem = m_nodes[uuid];
+        zeno::ObjPath _path = uuidPath;
+        _path.pop_front();
+        if (_path.empty()) {
+            return createIndex(m_uuid2Row[uuid], 0, nullptr);
+        }
+        else if (pItem->optSubgraph.has_value()) {
+            return pItem->optSubgraph.value()->indexFromUuidPath(_path);
+        }
+    }
+    return QModelIndex();
+}
+
 GraphModel* GraphModel::getGraphByPath(const QStringList& objPath)
 {
-     QStringList items = objPath;
-     if (items.empty())
-         return this;
+    QStringList items = objPath;
+    if (items.empty())
+        return this;
 
-     QString item = items[0];
-     if (m_nodes.find(item) == m_nodes.end()) {
-         return nullptr;
-     }
+    QString item = items[0];
 
-     NodeItem* pItem = m_nodes[item];
-     items.removeAt(0);
+    if (m_name2uuid.find(item) == m_name2uuid.end()) {
+        return nullptr;
+    }
 
-     if (items.isEmpty())
-     {
-         if (pItem->optSubgraph.has_value())
-         {
-             return pItem->optSubgraph.value();
-         }
-         else
-         {
-             return this;
-         }
-     }
-     ZASSERT_EXIT(pItem->optSubgraph.has_value(), nullptr);
-     return pItem->optSubgraph.value()->getGraphByPath(items);
+    QString uuid = m_name2uuid[item];
+    auto it = m_nodes.find(uuid);
+    if (it == m_nodes.end()) {
+        return nullptr;
+    }
+
+    NodeItem* pItem = it.value();
+    items.removeAt(0);
+
+    if (items.isEmpty())
+    {
+        if (pItem->optSubgraph.has_value())
+        {
+            return pItem->optSubgraph.value();
+        }
+        else
+        {
+            return this;
+        }
+    }
+    ZASSERT_EXIT(pItem->optSubgraph.has_value(), nullptr);
+    return pItem->optSubgraph.value()->getGraphByPath(items);
 }
 
 QStringList GraphModel::currentPath() const
@@ -494,8 +534,12 @@ void GraphModel::_addLink(const zeno::EdgeInfo link)
     QString inKey = QString::fromStdString(link.inKey);
     zeno::LinkFunction lnkProp = link.lnkfunc;
 
-    ParamsModel* fromParams = m_nodes[outNode]->params;
-    ParamsModel* toParams = m_nodes[inNode]->params;
+    if (m_name2uuid.find(outNode) == m_name2uuid.end() ||
+        m_name2uuid.find(inNode) == m_name2uuid.end())
+        return;
+
+    ParamsModel* fromParams = m_nodes[m_name2uuid[outNode]]->params;
+    ParamsModel* toParams = m_nodes[m_name2uuid[inNode]]->params;
 
     from = fromParams->paramIdx(outParam, false);
     to = toParams->paramIdx(inParam, true);
@@ -520,7 +564,8 @@ QVariant GraphModel::removeLink(const QString& nodeName, const QString& paramNam
 {
     if (bInput)
     {
-        ParamsModel* toParamM = m_nodes[nodeName]->params;
+        ZASSERT_EXIT(m_name2uuid.find(nodeName) != m_name2uuid.end(), QVariant());
+        ParamsModel* toParamM = m_nodes[m_name2uuid[nodeName]]->params;
         QModelIndex toIndex = toParamM->paramIdx(paramName, bInput);
         int nRow = toParamM->removeLink(toIndex);
 
@@ -530,7 +575,10 @@ QVariant GraphModel::removeLink(const QString& nodeName, const QString& paramNam
             QVariant var = m_linkModel->data(linkIndex, ROLE_LINK_FROMPARAM_INFO);
             QVariantList varList = var.toList();
 
-            ParamsModel* fromParamM = m_nodes[varList[0].toString()]->params;
+            QString fromNodeName = varList.isEmpty() ? "" : varList[0].toString();
+            ZASSERT_EXIT(m_name2uuid.find(fromNodeName) != m_name2uuid.end(), QVariant());
+
+            ParamsModel* fromParamM = m_nodes[m_name2uuid[fromNodeName]]->params;
             QModelIndex fromIndex = fromParamM->paramIdx(varList[1].toString(), varList[2].toBool());
             fromParamM->removeLink(fromIndex);
 
@@ -584,10 +632,13 @@ bool GraphModel::_removeLink(const zeno::EdgeInfo& edge)
     QString outParam = QString::fromStdString(edge.outParam);
     QString inParam = QString::fromStdString(edge.inParam);
 
+    ZASSERT_EXIT(m_name2uuid.find(outNode) != m_name2uuid.end(), false);
+    ZASSERT_EXIT(m_name2uuid.find(inNode) != m_name2uuid.end(), false);
+
     QModelIndex from, to;
 
-    ParamsModel* fromParams = m_nodes[outNode]->params;
-    ParamsModel* toParams = m_nodes[inNode]->params;
+    ParamsModel* fromParams = m_nodes[m_name2uuid[outNode]]->params;
+    ParamsModel* toParams = m_nodes[m_name2uuid[inNode]]->params;
 
     from = fromParams->paramIdx(outParam, false);
     to = toParams->paramIdx(inParam, true);
@@ -606,13 +657,10 @@ void GraphModel::_updateName(const QString& oldName, const QString& newName)
 {
     ZASSERT_EXIT(oldName != newName);
 
-    m_name2Row[newName] = m_name2Row[oldName];
-    int row = m_name2Row[newName];
-    m_row2name[row] = newName;
+    m_name2uuid[newName] = m_name2uuid[oldName];
 
-    m_nodes[newName] = m_nodes[oldName];
-    m_nodes.remove(oldName);
-    auto& item = m_nodes[newName];
+    QString uuid = m_name2uuid[newName];
+    auto& item = m_nodes[uuid];
     item->name = newName;   //update cache.
 
     if (m_subgNodes.find(oldName) != m_subgNodes.end()) {
@@ -620,6 +668,7 @@ void GraphModel::_updateName(const QString& oldName, const QString& newName)
         m_subgNodes.insert(newName);
     }
 
+    int row = m_uuid2Row[uuid];
     QModelIndex idx = createIndex(row, 0);
     emit dataChanged(idx, idx, QVector<int>{ ROLE_NODE_NAME });
     emit nameUpdated(idx, oldName);
@@ -640,7 +689,8 @@ zeno::NodeData GraphModel::createNode(const QString& nodeCls, const QString& cat
 
     if (nodeCls == "Subnet") {
         QString nodeName = QString::fromStdString(spNode->get_name());
-        ZASSERT_EXIT(m_nodes.find(nodeName) != m_nodes.end(), node);
+        QString uuid = m_name2uuid[nodeName];
+        ZASSERT_EXIT(m_nodes.find(uuid) != m_nodes.end(), node);
 
         zeno::ParamsUpdateInfo updateInfo;
 
@@ -660,7 +710,7 @@ zeno::NodeData GraphModel::createNode(const QString& nodeCls, const QString& cat
         info.param.socketType = zeno::PrimarySocket;
         updateInfo.push_back(info);
 
-        m_nodes[nodeName]->params->batchModifyParams(updateInfo);
+        m_nodes[uuid]->params->batchModifyParams(updateInfo);
     }
 
     return node;
@@ -678,13 +728,15 @@ void GraphModel::_appendNode(std::shared_ptr<zeno::INode> spNode)
     pItem->init(this, spNode);
 
     const QString& name = QString::fromStdString(spNode->get_name());
+    const QString& uuid = QString::fromStdString(spNode->get_uuid());
 
     if (pItem->optSubgraph.has_value())
         m_subgNodes.insert(name);
 
-    m_row2name[nRows] = name;
-    m_name2Row[name] = nRows;
-    m_nodes.insert(name, pItem);
+    m_row2uuid[nRows] = uuid;
+    m_uuid2Row[uuid] = nRows;
+    m_nodes.insert(uuid, pItem);
+    m_name2uuid.insert(name, uuid);
 
     endInsertRows();
 
@@ -727,7 +779,7 @@ void GraphModel::setView(const QModelIndex& idx, bool bOn)
 {
     auto spCoreGraph = m_wpCoreGraph.lock();
     ZASSERT_EXIT(spCoreGraph);
-    NodeItem* item = m_nodes[m_row2name[idx.row()]];
+    NodeItem* item = m_nodes[m_row2uuid[idx.row()]];
     auto spCoreNode = item->m_wpNode.lock();
     ZASSERT_EXIT(spCoreNode);
     spCoreNode->set_view(bOn);
@@ -773,19 +825,21 @@ bool GraphModel::removeRows(int row, int count, const QModelIndex& parent)
     //this is a private impl method, called by callback function.
     beginRemoveRows(parent, row, row);
 
-    QString id = m_row2name[row];
+    QString id = m_row2uuid[row];
     NodeItem* pItem = m_nodes[id];
+    const QString& name = pItem->getName();
 
     for (int r = row + 1; r < rowCount(); r++)
     {
-        const QString& id_ = m_row2name[r];
-        m_row2name[r - 1] = id_;
-        m_name2Row[id_] = r - 1;
+        const QString& id_ = m_row2uuid[r];
+        m_row2uuid[r - 1] = id_;
+        m_uuid2Row[id_] = r - 1;
     }
 
-    m_row2name.remove(rowCount() - 1);
-    m_name2Row.remove(id);
+    m_row2uuid.remove(rowCount() - 1);
+    m_uuid2Row.remove(id);
     m_nodes.remove(id);
+    m_name2uuid.remove(name);
 
     if (m_subgNodes.find(id) != m_subgNodes.end())
         m_subgNodes.remove(id);
@@ -811,8 +865,10 @@ void GraphModel::syncToAssetsInstance(const QString& assetsName, zeno::ParamsUpd
     }
 
     for (QString subgnode : m_subgNodes) {
-        ZASSERT_EXIT(m_nodes.find(subgnode) != m_nodes.end());
-        GraphModel* pSubgM = m_nodes[subgnode]->optSubgraph.value();
+        ZASSERT_EXIT(m_name2uuid.find(subgnode) != m_name2uuid.end());
+        QString uuid = m_name2uuid[subgnode];
+        ZASSERT_EXIT(m_nodes.find(uuid) != m_nodes.end());
+        GraphModel* pSubgM = m_nodes[uuid]->optSubgraph.value();
         ZASSERT_EXIT(pSubgM);
         pSubgM->syncToAssetsInstance(assetsName, info);
     }
@@ -822,10 +878,12 @@ void GraphModel::syncToAssetsInstance(const QString& assetsName)
 {
     for (const QString & name : m_subgNodes)
     {
-        ZASSERT_EXIT(m_nodes.find(name) != m_nodes.end());
-        GraphModel* pSubgM = m_nodes[name]->optSubgraph.value();
+        ZASSERT_EXIT(m_name2uuid.find(name) != m_name2uuid.end());
+        QString uuid = m_name2uuid[name];
+        ZASSERT_EXIT(m_nodes.find(uuid) != m_nodes.end());
+        GraphModel* pSubgM = m_nodes[uuid]->optSubgraph.value();
         ZASSERT_EXIT(pSubgM);
-        if (assetsName == m_nodes[name]->cls)
+        if (assetsName == m_nodes[uuid]->cls)
         {
             //TO DO: compare diff
             if (!pSubgM->isLocked())
@@ -835,7 +893,7 @@ void GraphModel::syncToAssetsInstance(const QString& assetsName)
                 const QString& nodeName = pSubgM->index(0, 0).data(ROLE_NODE_NAME).toString();
                 pSubgM->removeNode(nodeName);
             }
-            std::shared_ptr<zeno::INode> spNode = m_nodes[name]->m_wpNode.lock();
+            std::shared_ptr<zeno::INode> spNode = m_nodes[uuid]->m_wpNode.lock();
             auto spSubnetNode = std::dynamic_pointer_cast<zeno::SubnetNode>(spNode);
             if (spSubnetNode) {
                 auto& assetsMgr = zeno::getSession().assets;
@@ -864,25 +922,25 @@ void GraphModel::updateAssetInstance(const std::shared_ptr<zeno::Graph> spGraph)
 
 void GraphModel::updateParamName(QModelIndex nodeIdx, int row, QString newName)
 {
-    NodeItem* item = m_nodes[m_row2name[nodeIdx.row()]];
+    NodeItem* item = m_nodes[m_row2uuid[nodeIdx.row()]];
     QModelIndex paramIdx = item->params->index(row, 0);
     item->params->setData(paramIdx, newName, ROLE_PARAM_NAME);
 }
 
 void GraphModel::removeParam(QModelIndex nodeIdx, int row)
 {
-    NodeItem* item = m_nodes[m_row2name[nodeIdx.row()]];
+    NodeItem* item = m_nodes[m_row2uuid[nodeIdx.row()]];
     item->params->removeRow(row);
 }
 
 ParamsModel* GraphModel::params(QModelIndex nodeIdx)
 {
-    NodeItem* item = m_nodes[m_row2name[nodeIdx.row()]];
+    NodeItem* item = m_nodes[m_row2uuid[nodeIdx.row()]];
     return item->params;
 }
 
 GraphModel* GraphModel::subgraph(QModelIndex nodeIdx) {
-    NodeItem* item = m_nodes[m_row2name[nodeIdx.row()]];
+    NodeItem* item = m_nodes[m_row2uuid[nodeIdx.row()]];
     if (item->optSubgraph.has_value()) {
         return item->optSubgraph.value();
     }
@@ -891,12 +949,6 @@ GraphModel* GraphModel::subgraph(QModelIndex nodeIdx) {
 
 GraphsTreeModel* GraphModel::treeModel() const {
     return m_pTree;
-}
-
-QModelIndex GraphModel::nodeIdx(const QString& ident) const
-{
-    int nRow = m_name2Row[ident];
-    return createIndex(nRow, 0);
 }
 
 void GraphModel::setLocked(bool bLocked)

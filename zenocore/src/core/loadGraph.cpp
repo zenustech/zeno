@@ -72,7 +72,7 @@ ZENO_API void Graph::loadGraph(const char *json) {
     d.Parse(json);
 
     if (!d.IsArray()) {
-        throw GraphException { "None", nullptr };
+        throw GraphException{ {}, "", nullptr };
     }
 
     Graph *g = this;
@@ -127,7 +127,7 @@ ZENO_API void Graph::loadGraph(const char *json) {
             } else {
                 log_warn("got unexpected command: {}", cmd);
             }
-        }, maybeNodeName);
+        }, nullptr);
     }
 }
 

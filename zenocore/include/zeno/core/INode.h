@@ -68,7 +68,8 @@ public:
     ZENO_API std::string get_nodecls() const;
     ZENO_API std::string get_ident() const;
     ZENO_API ObjPath get_path() const;
-    std::string get_uuid() const;
+    ZENO_API ObjPath get_uuid_path() const { return m_uuidPath; }
+    ZENO_API std::string get_uuid() const;
     void initUuid(Graph* pGraph, const std::string nodecls);
 
     ZENO_API void set_view(bool bOn);
@@ -77,7 +78,8 @@ public:
 
     ZENO_API void mark_dirty(bool bOn);
     CALLBACK_REGIST(mark_dirty, void, bool)
-    ZENO_API bool is_dirty() const;
+    ZENO_API bool is_dirty() const { return m_dirty; }
+    ZENO_API NodeRunStatus get_run_status() const { return m_status; }
 
     ZENO_API virtual std::vector<std::shared_ptr<IParam>> get_input_params() const;
     ZENO_API virtual std::vector<std::shared_ptr<IParam>> get_output_params() const;
@@ -200,9 +202,10 @@ public:
     ZENO_API TempNodeCaller temp_node(std::string const &id);
 
 private:
+    ObjPath m_uuidPath;
+    NodeRunStatus m_status = Node_NoRun;
     bool m_bView = false;
     bool m_dirty = true;
-    ObjPath m_uuidPath;
 };
 
 }

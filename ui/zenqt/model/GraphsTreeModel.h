@@ -56,6 +56,8 @@ public:
 
     Q_INVOKABLE QModelIndex getIndexByPath(const QStringList& objPath);
 
+    Q_INVOKABLE QModelIndex getIndexByUuidPath(const zeno::ObjPath& objPath);
+
     //util methods
     bool isDirty() const;
     void clearDirty();

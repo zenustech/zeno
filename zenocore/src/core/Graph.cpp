@@ -10,7 +10,7 @@
 #include <zeno/types/StringObject.h>
 #include <zeno/extra/GraphException.h>
 #include <zeno/funcs/LiterialConverter.h>
-#include <zeno/extra/GlobalStatus.h>
+#include <zeno/extra/GlobalError.h>
 #include <zeno/extra/SubnetNode.h>
 #include <zeno/extra/DirtyChecker.h>
 #include <zeno/utils/Error.h>
@@ -82,7 +82,7 @@ ZENO_API bool Graph::applyNode(std::string const &node_name) {
             throw GraphException();
         }
         node->doApply();
-    }, node->get_name());
+    }, node);
     return true;
 }
 

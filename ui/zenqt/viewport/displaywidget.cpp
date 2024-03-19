@@ -380,7 +380,7 @@ void DisplayWidget::onPlayClicked(bool bChecked)
     }
 }
 
-void DisplayWidget::onCalcFinished(bool bSucceed, QString msg) {
+void DisplayWidget::onCalcFinished(bool bSucceed, QStringList, QString) {
     if (bSucceed) {
         if (m_bGLView) {
             m_glView->load_objects();

@@ -91,9 +91,28 @@ ZENO_API std::string INode::get_ident() const
     return m_name;
 }
 
-ZENO_API ObjPath INode::get_path() const
-{
-    return m_uuidPath;
+ZENO_API ObjPath INode::get_path() const {
+    std::list<std::string> path;
+    path.push_front(m_name);
+
+    Graph* pGraph = graph;
+
+    while (pGraph) {
+        const std::string name = pGraph->getName();
+        if (name == "main") {
+            path.push_front("main");
+            break;
+        }
+        else {
+            if (!pGraph->optParentSubgNode.has_value())
+                break;
+            auto pSubnetNode = pGraph->optParentSubgNode.value();
+            assert(pSubnetNode);
+            path.push_front(pSubnetNode->m_name);
+            pGraph = pSubnetNode->graph;
+        }
+    }
+    return ObjPath(path);
 }
 
 std::string INode::get_uuid() const
@@ -158,15 +177,11 @@ void INode::mark_dirty_objs()
     }
 }
 
-ZENO_API bool INode::is_dirty() const
-{
-    return m_dirty;
-}
-
 ZENO_API void INode::complete() {}
 
 ZENO_API void INode::preApply() {
 
+    m_status = Node_Pending;
     if (!m_dirty)
         return;
 
@@ -177,15 +192,16 @@ ZENO_API void INode::preApply() {
             zeno::log_warn("the param {} may not be initialized", name);
     }
 
-    if (!zeno::getSession().globalState->is_working()) {
-        throw GraphException();
-    }
+    //if (!zeno::getSession().globalState->is_working()) {
+    //    throw GraphException();
+    //}
 
     log_debug("==> enter {}", m_name);
     {
 #ifdef ZENO_BENCHMARKING
         Timer _(m_name);
 #endif
+        m_status = Node_Running;
         apply();
     }
     log_debug("==> leave {}", m_name);
@@ -333,10 +349,13 @@ ZENO_API void INode::doApply() {
         return;
     }
 
-    //unregisterObjs();     //是否可以不用提前unregister? 因为afterRun它会干掉之前view的那个
     preApply();
+
     registerObjToManager();
+
     mark_dirty(false);
+    m_status = Node_RunSucceed;
+    zeno::getSession().reportNodeStatus(shared_from_this());
 }
 
 ZENO_API std::vector<std::shared_ptr<IParam>> INode::get_input_params() const

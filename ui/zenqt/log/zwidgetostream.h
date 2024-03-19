@@ -6,14 +6,14 @@
 #include <QString>
 #include <string>
 
-class ProxySendOptixLog : public QObject
+class ProxySendThreadLog : public QObject
 {
     Q_OBJECT
 public:
-    ProxySendOptixLog() {}
+    ProxySendThreadLog() {}
 
 signals:
-    void optixlogReady(const QString& msg);
+    void threadlogReady(const QString& msg);
 };
 
 
@@ -25,7 +25,7 @@ public:
     virtual ~ZWidgetErrStream();
     static void registerMsgHandler();
     static void appendFormatMsg(std::string const& str);
-    std::shared_ptr<ProxySendOptixLog> optixLogProxy() const;
+    std::shared_ptr<ProxySendThreadLog> threadLogProxy() const;
 
 protected:
     virtual std::streamsize xsputn(const char* p, std::streamsize n) override;
@@ -42,7 +42,7 @@ private:
     std::streambuf *m_old_buf;
     std::string m_linebuffer;
 
-    std::shared_ptr<ProxySendOptixLog> m_spProxyOptixLog;
+    std::shared_ptr<ProxySendThreadLog> m_spProxyThreadLog;
 };
 
 #endif

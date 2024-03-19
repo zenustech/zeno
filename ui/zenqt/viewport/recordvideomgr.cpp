@@ -14,7 +14,7 @@
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
 #include <zeno/types/HeatmapObject.h>
-#include <zeno/extra/GlobalStatus.h>
+#include <zeno/extra/GlobalError.h>
 #include <zeno/core/Session.h>
 
 
@@ -245,10 +245,10 @@ void RecordVideoMgr::disconnectSignal()
 
 void RecordVideoMgr::onFrameDrawn(int currFrame)
 {
-    auto& pGlobalStatus = zeno::getSession().globalStatus;
+    auto& pGlobalStatus = zeno::getSession().globalError;
     if (m_recordInfo.bRecordByCommandLine && pGlobalStatus->failed())
     {
-        emit recordFailed(QString::fromStdString(pGlobalStatus->error->message));
+        emit recordFailed(QString::fromStdString(pGlobalStatus->getError()->message));
         return;
     }
     auto& pGlobalComm = zeno::getSession().globalComm;

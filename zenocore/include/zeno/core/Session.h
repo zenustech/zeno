@@ -6,6 +6,7 @@
 #include <memory>
 #include <string>
 #include <map>
+#include <zeno/core/common.h>
 
 namespace zeno {
 
@@ -25,7 +26,7 @@ struct INodeClass {
 struct IObject;
 struct GlobalState;
 struct GlobalComm;
-struct GlobalStatus;
+struct GlobalError;
 struct EventCallbacks;
 struct UserData;
 struct CalcManager;
@@ -37,7 +38,7 @@ struct Session {
 
     std::unique_ptr<GlobalState> const globalState;
     std::unique_ptr<GlobalComm> const globalComm;
-    std::unique_ptr<GlobalStatus> const globalStatus;
+    std::unique_ptr<GlobalError> const globalError;
     std::unique_ptr<EventCallbacks> const eventCallbacks;
     std::unique_ptr<UserData> const m_userData;
     std::unique_ptr<ObjectManager> const objsMan;
@@ -67,6 +68,8 @@ struct Session {
     ZENO_API void switchToFrame(int frameid);
     ZENO_API int registerObjId(const std::string& objprefix);
     ZENO_API void registerRunTrigger(std::function<void()> func);
+    ZENO_API void registerNodeCallback(F_NodeStatus func);
+    void reportNodeStatus(std::shared_ptr<INode> spNode);
 
 private:
     void initNodeCates();
@@ -77,6 +80,7 @@ private:
     bool m_bAutoRun = false;
 
     std::function<void()> m_callbackRunTrigger;
+    F_NodeStatus m_funcNodeStatus;
 };
 
 ZENO_API Session &getSession();

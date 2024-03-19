@@ -4,6 +4,8 @@
 #include <variant>
 #include <string>
 #include <vector>
+#include <list>
+#include <functional>
 #include <zeno/utils/vec.h>
 
 
@@ -137,6 +139,15 @@ namespace zeno {
         Link_Ref
     };
 
+    enum NodeRunStatus
+    {
+        Node_NoRun,
+        Node_Pending,
+        Node_Running,
+        Node_RunError,
+        Node_RunSucceed
+    };
+
     enum ZSG_VERSION
     {
         VER_2,          //old version io
@@ -155,6 +166,10 @@ namespace zeno {
         int,
         float,
         std::string>;
+
+    using ObjPath = std::list<std::string>;
+
+    typedef std::function<void(ObjPath, bool, NodeRunStatus)> F_NodeStatus;
 }
 
 

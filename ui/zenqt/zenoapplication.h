@@ -4,6 +4,7 @@
 #include <QtWidgets>
 #include "log/zwidgetostream.h"
 #include "util/procclipboard.h"
+#include "uicommon.h"
 #include <zeno/utils/scope_exit.h>
 
 class GraphsManager;
@@ -27,7 +28,7 @@ public:
     bool isUIApplication() const { return m_bUIApp; }
 
 private slots:
-    void onOptixlogReady(const QString& msg);
+    void onThreadLogReady(const QString& msg);
 
 private:
     QString readQss(const QString& qssPath);

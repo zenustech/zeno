@@ -21,6 +21,7 @@ namespace zeno {
     zany strToZAny(std::string const& defl, ParamType const& type);
     EdgeInfo getEdgeInfo(std::shared_ptr<ILink> spLink);
     std::string generateObjKey(std::shared_ptr<IObject> spObject);
+    ZENO_API std::string objPathToStr(ObjPath path);
 }
 
 

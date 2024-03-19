@@ -4,7 +4,7 @@
 #include <zeno/core/ObjectManager.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
-#include <zeno/extra/GlobalStatus.h>
+#include <zeno/extra/GlobalError.h>
 #include <zeno/extra/EventCallbacks.h>
 #include <zeno/types/UserData.h>
 #include <zeno/core/Graph.h>
@@ -112,7 +112,7 @@ struct ImplNodeClass : INodeClass {
 ZENO_API Session::Session()
     : globalState(std::make_unique<GlobalState>())
     , globalComm(std::make_unique<GlobalComm>())
-    , globalStatus(std::make_unique<GlobalStatus>())
+    , globalError(std::make_unique<GlobalError>())
     , eventCallbacks(std::make_unique<EventCallbacks>())
     , m_userData(std::make_unique<UserData>())
     , mainGraph(std::make_shared<Graph>("main"))
@@ -176,6 +176,18 @@ ZENO_API void Session::registerRunTrigger(std::function<void()> func)
     m_callbackRunTrigger = func;
 }
 
+ZENO_API void Session::registerNodeCallback(F_NodeStatus func)
+{
+    m_funcNodeStatus = func;
+}
+
+void Session::reportNodeStatus(std::shared_ptr<INode> spNode)
+{
+    if (spNode && m_funcNodeStatus) {
+        m_funcNodeStatus(spNode->get_uuid_path(), spNode->is_dirty(), spNode->get_run_status());
+    }
+}
+
 ZENO_API int Session::registerObjId(const std::string& objprefix)
 {
     int objid = objsMan->registerObjId(objprefix);
@@ -192,6 +204,8 @@ ZENO_API void Session::switchToFrame(int frameid)
 ZENO_API bool Session::run() {
     globalState->set_working(true);
 
+    zeno::log_info("Session::run()");
+
     objsMan->beforeRun();
     zeno::scope_exit sp([&]() { objsMan->afterRun(); });
 
@@ -200,9 +214,9 @@ ZENO_API bool Session::run() {
 
     zeno::GraphException::catched([&] {
         mainGraph->runGraph();
-        }, *globalStatus);
-    if (globalStatus->failed()) {
-        zeno::log_error(globalStatus->toJson());
+        }, *globalError);
+    if (globalError->failed()) {
+        zeno::log_error("");
     }
 
     return true;

@@ -142,6 +142,14 @@ namespace zeno {
         return "";    //TODO
     }
 
+    ZENO_API std::string objPathToStr(ObjPath path) {
+        std::string ret;
+        for (auto item : path) {
+            ret += "/" + item;
+        }
+        return ret;
+    }
+
     zany strToZAny(std::string const& defl, ParamType const& type) {
         switch (type) {
         case Param_String: {

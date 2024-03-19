@@ -5,6 +5,8 @@
 #include <QThread>
 #include <string>
 #include <QtWidgets>
+#include "uicommon.h"
+
 
 class DisplayWidget;
 
@@ -15,7 +17,8 @@ public:
     CalcWorker(QObject* parent = nullptr);
 
 signals:
-    void calcFinished(bool, QString);
+    void calcFinished(bool, QStringList, QString);
+    void nodeStatusChanged(zeno::ObjPath, NodeState);
 
 public slots:
     void run();
@@ -33,10 +36,11 @@ public:
     void unRegisterRenderWid(DisplayWidget* pDisp);
 
 signals:
-    void calcFinished(bool, QString);
+    void calcFinished(bool, QStringList, QString);
 
 private slots:
-    void onCalcFinished(bool, QString);
+    void onCalcFinished(bool, QStringList, QString);
+    void onNodeStatusReported(zeno::ObjPath, NodeState);
     void on_render_objects_loaded();
 
 private:

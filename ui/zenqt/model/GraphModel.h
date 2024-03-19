@@ -89,8 +89,8 @@ public:
     void addLink(const zeno::EdgeInfo& link);
     QList<SEARCH_RESULT> search(const QString& content, SearchType searchType, SearchOpt searchOpts) const;
     GraphModel* getGraphByPath(const QStringList& objPath);
+    QModelIndex indexFromUuidPath(const zeno::ObjPath& uuidPath);
     QStringList currentPath() const;
-    //QModelIndex index(const QString& name) const;
     QModelIndex indexFromName(const QString& name) const;
     void clear();
     void undo();
@@ -124,7 +124,6 @@ signals:
 private:
     void registerCoreNotify();
     void unRegisterCoreNotify();
-    QModelIndex nodeIdx(const QString& name) const;
     void _appendNode(std::shared_ptr<zeno::INode> spNode);
     void _initLink();
     void _addLink(const zeno::EdgeInfo link);
@@ -134,9 +133,10 @@ private:
     bool removeRows(int row, int count, const QModelIndex& parent = QModelIndex()) override;
 
     QString m_graphName;
-    QHash<QString, int> m_name2Row;
-    QHash<int, QString> m_row2name;
-    QHash<QString, NodeItem*> m_nodes;
+    QHash<QString, int> m_uuid2Row;
+    QHash<int, QString> m_row2uuid;
+    QHash<QString, NodeItem*> m_nodes;  //based on uuid
+    QHash<QString, QString> m_name2uuid;
 
     QSet<QString> m_subgNodes;
 

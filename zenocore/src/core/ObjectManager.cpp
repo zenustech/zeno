@@ -27,7 +27,7 @@ namespace zeno {
         zeno::getSession().globalState->setCalcObjStatus(zeno::Collecting);
 
         auto it = m_objects.find(id);
-        auto path = view_node->get_path();
+        auto path = view_node->get_uuid_path();
         if (it == m_objects.end()) {
             _ObjInfo info;
             info.obj = obj;
