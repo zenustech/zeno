@@ -411,6 +411,8 @@ void ZEditableTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem 
         col = QColor("#496DA0");
     else if (property(g_setKey) == "true")
         col = QColor("#3A6E64");
+    else if (!this->isEnabled())
+        col = QColor("#3C424E");
     else
         col = QColor("#191D21");
     painter->setBrush(col);

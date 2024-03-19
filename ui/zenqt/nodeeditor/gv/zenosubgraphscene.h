@@ -15,15 +15,6 @@ class ZenoSocketItem;
 class NodeGridItem;
 class GraphModel;
 
-class ZForegroundItem : public QGraphicsRectItem
-{
-public:
-    ZForegroundItem(QGraphicsItem* parent = nullptr);
-    virtual ~ZForegroundItem();
-    QRectF	boundingRect() const override;
-    void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
-};
-
 class ZenoSubGraphScene : public QGraphicsScene
 {
 	Q_OBJECT

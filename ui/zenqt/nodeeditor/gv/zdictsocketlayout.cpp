@@ -145,3 +145,8 @@ QPointF ZDictSocketLayout::getSocketPos(const QModelIndex& sockIdx, const QStrin
     exist = false;
     return QPointF();
 }
+
+QGraphicsItem* ZDictSocketLayout::control() const
+{
+    return m_panel;
+}

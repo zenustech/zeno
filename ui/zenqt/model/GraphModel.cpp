@@ -343,12 +343,6 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
 
 bool GraphModel::setData(const QModelIndex& index, const QVariant& value, int role)
 {
-    if (m_bLocked)
-    {
-        zeno::log_error("Graph is locked");
-        emit dataChanged(index, index, QVector<int>{role});
-        return false;
-    }
     NodeItem* item = m_nodes[m_row2uuid[index.row()]];
 
     switch (role) {
@@ -803,11 +797,6 @@ void GraphModel::setMute(const QModelIndex& idx, bool bOn)
 
 QString GraphModel::updateNodeName(const QModelIndex& idx, QString newName)
 {
-    if (m_bLocked)
-    {
-        zeno::log_error("Graph is locked");
-        return newName;
-    }
     auto spCoreGraph = m_wpCoreGraph.lock();
     ZASSERT_EXIT(spCoreGraph, false);
 
@@ -970,6 +959,7 @@ GraphsTreeModel* GraphModel::treeModel() const {
 void GraphModel::setLocked(bool bLocked)
 {
     m_bLocked = bLocked;
+    emit lockStatusChanged();
 }
 
 bool GraphModel::isLocked() const

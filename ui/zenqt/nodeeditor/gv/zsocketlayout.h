@@ -23,7 +23,7 @@ public:
     virtual void updateSockName(const QString &name);
     void updateSockNameToolTip(const QString &tip);
     QGraphicsItem* socketText() const;
-    QGraphicsItem* control() const;
+    virtual QGraphicsItem* control() const;
     ZenoSocketItem* socketItem() const;
     virtual ZenoSocketItem* socketItemByIdx(const QModelIndex& sockIdx, const QString keyName) const;
     virtual QPointF getSocketPos(const QModelIndex& sockIdx, const QString keyName, bool& exist);

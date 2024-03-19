@@ -7,6 +7,11 @@ QSpinBox {
     padding-right: 0px;
 }
 
+QSpinBox:disabled{
+    color: #8f9ba8;
+    background: #3C424E;
+}
+
 QSpinBox::down-button
 {
 	image: url(:/icons/spinbox-downbutton.svg);
@@ -73,6 +78,12 @@ QSpinBox[cssClass = "control"]::up-button:hover
      image: url(:/icons/rightArrow-on.svg);
 }
  
+QSpinBox[cssClass = "control"]:disabled
+{
+    color: #8f9ba8;
+    background: #3C424E;
+}
+
 QDoubleSpinBox
 {
     background: #191D21;
@@ -83,6 +94,11 @@ QDoubleSpinBox
     border:0;
 }
    
+QDoubleSpinBox:disabled{
+    background: #3C424E;
+    color: #8f9ba8;
+}
+
 QDoubleSpinBox:focus{
     border: 2px solid #4B9EF4;
 }
@@ -138,6 +154,7 @@ QDoubleSpinBox#MixedSpinBox:focus
 QDoubleSpinBox#MixedSpinBox:disabled 
 {
     background-color: #2F2F2F;
+    color: #8f9ba8;
 }
 
 QDoubleSpinBox#MixedSpinBox::up-button

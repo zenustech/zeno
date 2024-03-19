@@ -103,6 +103,21 @@ QLineEdit[cssClass="zeno2_2_lineedit"]:focus {
     color: #FFFFFF;
 }
 
+QLineEdit[cssClass="zeno2_2_lineedit"]:disabled{
+    background-color: #3C424E;
+    color: #8f9ba8;
+}
+
+QLineEdit[cssClass="zeno2_2_lineedit"][setKey="null"]:disabled{
+    background-color: #3C424E;
+    color: #8f9ba8;
+}
+
+QLineEdit[cssClass="path_edit"]:disabled{
+    background: #3C424E;
+    color: #8f9ba8;
+}
+
 QLineEdit[cssClass="path_edit"] {
     border: 0;
     background-color: #191D21;
@@ -128,6 +143,16 @@ QTextEdit[cssClass="proppanel"] {
     color: #FFFFFF;
 }
 
+QTextEdit:disabled {
+    background-color: #3C424E;
+    color: #8f9ba8;
+}
+
+QTextEdit[cssClass="proppanel"]:disabled {
+    color: #8f9ba8;
+    background-color: #3C424E;
+}
+
 QTextEdit:focus {
     border: 2px solid #4B9EF4;
 }
@@ -142,7 +167,8 @@ QPlainTextEdit[cssClass="logpanel"]
     color: #A3B1C0; 
     background-color: rgb(24,29,33); 
     border: 1px solid rgb(18,20,22);
-    font-family:'Arial' 9pt;
+    font-family:'Arial';
+    font-size: 13pt;
 }
 
 QLineEdit[cssClass = "blackboard_title"]
