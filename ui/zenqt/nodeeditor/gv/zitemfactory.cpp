@@ -325,8 +325,14 @@ namespace zenoui
             case zeno::Slider:
             {
                 SLIDER_INFO sliderInfo;
-                const auto& ranges = controlProps.ranges.value();
-                if (controlProps.ranges.has_value() && ranges.size() == 3) {
+
+                zeno::ControlProperty ctrlProps = controlProps;
+                if (!ctrlProps.ranges.has_value()) {
+                    ctrlProps.ranges = { 0., 100., 1. };
+                }
+
+                const auto& ranges = ctrlProps.ranges.value();
+                if (ctrlProps.ranges.has_value() && ranges.size() == 3) {
                     sliderInfo.min = ranges[0];
                     sliderInfo.max = ranges[1];
                     sliderInfo.step = ranges[2];
@@ -344,8 +350,14 @@ namespace zenoui
             case zeno::SpinBox: 
             {
                 SLIDER_INFO sliderInfo;
-                const auto& ranges = controlProps.ranges.value();
-                if (controlProps.ranges.has_value() && ranges.size() == 3) {
+
+                zeno::ControlProperty ctrlProps = controlProps;
+                if (!ctrlProps.ranges.has_value()) {
+                    ctrlProps.ranges = { 0., 100., 1. };
+                }
+
+                const auto& ranges = ctrlProps.ranges.value();
+                if (ctrlProps.ranges.has_value() && ranges.size() == 3) {
                     sliderInfo.min = ranges[0];
                     sliderInfo.max = ranges[1];
                     sliderInfo.step = ranges[2];
@@ -364,8 +376,14 @@ namespace zenoui
             case zeno::SpinBoxSlider:
             {
                 SLIDER_INFO sliderInfo;
-                const auto& ranges = controlProps.ranges.value();
-                if (controlProps.ranges.has_value() && ranges.size() == 3) {
+
+                zeno::ControlProperty ctrlProps = controlProps;
+                if (!ctrlProps.ranges.has_value()) {
+                    ctrlProps.ranges = { 0., 100., 1. };
+                }
+
+                const auto& ranges = ctrlProps.ranges.value();
+                if (ctrlProps.ranges.has_value() && ranges.size() == 3) {
                     sliderInfo.min = ranges[0];
                     sliderInfo.max = ranges[1];
                     sliderInfo.step = ranges[2];
@@ -376,8 +394,8 @@ namespace zenoui
                 pSlider->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 pSlider->setValue(value.toInt());
                 QObject::connect(pSlider, &ZenoParamSpinBoxSlider::valueChanged, [=](int value) {
-					cbSet.cbEditFinished(value); 
-				});
+                    cbSet.cbEditFinished(value); 
+                });
                 pItemWidget = pSlider;
                 break;
             }
