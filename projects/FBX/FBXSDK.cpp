@@ -2,6 +2,7 @@
 #include <memory>
 #include <sstream>
 #include <stack>
+#include <numeric>
 
 #include <zeno/zeno.h>
 #include <zeno/core/IObject.h>
@@ -359,6 +360,39 @@ void PrintAttribute(FbxNodeAttribute* pAttribute) {
 //
 //    printf("</node>\n");
 //}
+
+template<typename T>
+void getAttr(T* arr, std::string name, std::shared_ptr<PrimitiveObject> prim) {
+    if (arr->GetMappingMode() == FbxLayerElement::EMappingMode::eByControlPoint) {
+        zeno::log_info("{}, eByControlPoint", name);
+        auto &attr = prim->verts.add_attr<vec3f>(name);
+        for (auto i = 0; i < prim->verts.size(); i++) {
+            int pIndex = i;
+            if (arr->GetReferenceMode() == FbxLayerElement::EReferenceMode::eIndexToDirect) {
+                pIndex = arr->GetIndexArray().GetAt(i);
+            }
+            auto x = arr->GetDirectArray().GetAt(pIndex)[0];
+            auto y = arr->GetDirectArray().GetAt(pIndex)[1];
+            auto z = arr->GetDirectArray().GetAt(pIndex)[2];
+            attr[i] = vec3f(x, y, z);
+        }
+    }
+    else if (arr->GetMappingMode() == FbxLayerElement::EMappingMode::eByPolygonVertex) {
+        zeno::log_info("{}, eByPolygonVertex", name);
+        auto &attr = prim->loops.add_attr<vec3f>(name);
+        for (auto i = 0; i < prim->loops.size(); i++) {
+            int pIndex = i;
+            if (arr->GetReferenceMode() == FbxLayerElement::EReferenceMode::eIndexToDirect) {
+                pIndex = arr->GetIndexArray().GetAt(i);
+            }
+            auto x = arr->GetDirectArray().GetAt(pIndex)[0];
+            auto y = arr->GetDirectArray().GetAt(pIndex)[1];
+            auto z = arr->GetDirectArray().GetAt(pIndex)[2];
+            attr[i] = vec3f(x, y, z);
+        }
+    }
+}
+
 bool GetMesh(FbxNode* pNode, std::shared_ptr<PrimitiveObject> prim) {
     FbxMesh* pMesh = pNode->GetMesh();
     if (!pMesh) return false;
@@ -432,6 +466,50 @@ bool GetMesh(FbxNode* pNode, std::shared_ptr<PrimitiveObject> prim) {
         for (auto i = 0; i < bone_names.size(); i++) {
             ud.set2(zeno::format("boneName_{}", i), bone_names[i]);
         }
+    }
+    if (pMesh->GetElementUVCount() > 0) {
+        auto* arr = pMesh->GetElementUV(0);
+        std::string name = "uv";
+        if (arr->GetMappingMode() == FbxLayerElement::EMappingMode::eByControlPoint) {
+            zeno::log_info("{}, eByControlPoint", name);
+            auto &attr = prim->verts.add_attr<vec3f>(name);
+            for (auto i = 0; i < prim->verts.size(); i++) {
+                int pIndex = i;
+                if (arr->GetReferenceMode() == FbxLayerElement::EReferenceMode::eIndexToDirect) {
+                    pIndex = arr->GetIndexArray().GetAt(i);
+                }
+                auto x = arr->GetDirectArray().GetAt(pIndex)[0];
+                auto y = arr->GetDirectArray().GetAt(pIndex)[1];
+                attr[i] = vec3f(x, y, 0);
+            }
+        }
+        else if (arr->GetMappingMode() == FbxLayerElement::EMappingMode::eByPolygonVertex) {
+            zeno::log_info("{}, eByPolygonVertex", name);
+            if (arr->GetReferenceMode() == FbxLayerElement::EReferenceMode::eDirect) {
+                auto &uvs = prim->loops.add_attr<int>("uvs");
+                std::iota(uvs.begin(), uvs.end(), 0);
+                prim->uvs.resize(prim->loops.size());
+            }
+            else if (arr->GetReferenceMode() == FbxLayerElement::EReferenceMode::eIndexToDirect) {
+                auto &uvs = prim->loops.add_attr<int>("uvs");
+                for (auto i = 0; i < prim->loops.size(); i++) {
+                    uvs[i] = arr->GetIndexArray().GetAt(i);
+                }
+                int count = arr->GetDirectArray().GetCount();
+                prim->uvs.resize(count);
+            }
+            for (auto i = 0; i < prim->uvs.size(); i++) {
+                auto x = arr->GetDirectArray().GetAt(i)[0];
+                auto y = arr->GetDirectArray().GetAt(i)[1];
+                prim->uvs[i] = vec2f(x, y);
+            }
+        }
+    }
+    if (pMesh->GetElementNormalCount() > 0) {
+        getAttr(pMesh->GetElementNormal(0), "nrm", prim);
+    }
+    if (pMesh->GetElementTangentCount() > 0) {
+        getAttr(pMesh->GetElementTangent(0), "tang", prim);
     }
     return true;
 }
@@ -866,6 +944,10 @@ struct NewFBXBoneDeform : INode {
         auto p = transform * glm::vec4(pos[0], pos[1], pos[2], 1);
         return {p.x, p.y, p.z};
     }
+    vec3f transform_nrm(glm::mat4 &transform, vec3f pos) {
+        auto p = glm::transpose(glm::inverse(transform)) * glm::vec4(pos[0], pos[1], pos[2], 0);
+        return {p.x, p.y, p.z};
+    }
     virtual void apply() override {
         auto geometryToDeform = get_input2<PrimitiveObject>("GeometryToDeform");
         auto geometryToDeformBoneNames = getBoneNames(geometryToDeform.get());
@@ -906,6 +988,23 @@ struct NewFBXBoneDeform : INode {
                 w += bw[i][j];
             }
             prim->verts[i] = pos / w;
+        }
+        if (prim->verts.attr_is<vec3f>("nrm")) {
+            auto &nrms = prim->verts.attr<vec3f>("nrm");
+            for (auto i = 0; i < vert_count; i++) {
+                glm::mat4 matrix(0);
+                float w = 0;
+                for (auto j = 0; j < 4; j++) {
+                    if (bi[i][j] < 0) {
+                        continue;
+                    }
+                    matrix += matrixs[bi[i][j]] * bw[i][j];
+                    w += bw[i][j];
+                }
+                matrix = matrix / w;
+                auto nrm = transform_nrm(matrix, nrms[i]);
+                nrms[i] = zeno::normalize(nrm );
+            }
         }
 
         set_output("prim", prim);
