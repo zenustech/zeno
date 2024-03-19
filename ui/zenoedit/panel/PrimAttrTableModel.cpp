@@ -5,6 +5,8 @@
 #include "PrimAttrTableModel.h"
 #include <zeno/types/PrimitiveObject.h>
 #include "zeno/types/UserData.h"
+#include "zeno/utils/format.h"
+#include "zeno/utils/log.h"
 #include <zeno/types/AttrVector.h>
 #include <zeno/funcs/LiterialConverter.h>
 
@@ -228,9 +230,14 @@ void PrimAttrTableModel::setSelAttr(std::string sel_attr_) {
     sel_attr = sel_attr_;
     endResetModel();
 }
+void PrimAttrTableModel::setStrMapping(bool enable) {
+    beginResetModel();
+    enable_str_mapping = enable;
+    endResetModel();
+}
 
 template<typename T>
-QVariant attrData(const zeno::AttrVector<T> &attr, const QModelIndex& modelIndex) {
+QVariant attrData(const zeno::AttrVector<T> &attr, const QModelIndex& modelIndex, bool enable_str_mapping, zeno::UserData &ud) {
     int row = modelIndex.row();
     int column = modelIndex.column();
 
@@ -261,7 +268,14 @@ QVariant attrData(const zeno::AttrVector<T> &attr, const QModelIndex& modelIndex
         return v[index.elementIndex];
     }
     else if (attr.template attr_is<int>(attr_name)) {
-        return attr.template attr<int>(attr_name).at(row);
+        if (enable_str_mapping && ud.get2<int>(attr_name+"_count", 0) > 0) {
+            int v = attr.template attr<int>(attr_name).at(row);
+            std::string name = ud.get2<std::string>(zeno::format("{}_{}", attr_name, v), std::string());
+            return QString(name.c_str());
+        }
+        else {
+            return attr.template attr<int>(attr_name).at(row);
+        }
     }
     else if (attr.template attr_is<zeno::vec2i>(attr_name)) {
         auto v = attr.template attr<zeno::vec2i>(attr_name).at(row);
@@ -273,7 +287,13 @@ QVariant attrData(const zeno::AttrVector<T> &attr, const QModelIndex& modelIndex
     }
     else if (attr.template attr_is<zeno::vec4i>(attr_name)) {
         auto v = attr.template attr<zeno::vec4i>(attr_name).at(row);
-        return v[index.elementIndex];
+        if (enable_str_mapping && ud.get2<int>(attr_name+"_count", 0) > 0) {
+            std::string name = ud.get2<std::string>(zeno::format("{}_{}", attr_name, v[index.elementIndex]), std::string());
+            return QString(name.c_str());
+        }
+        else {
+            return v[index.elementIndex];
+        }
     }
     else {
         return QVariant();
@@ -281,29 +301,29 @@ QVariant attrData(const zeno::AttrVector<T> &attr, const QModelIndex& modelIndex
 }
 
 QVariant PrimAttrTableModel::vertexData(const QModelIndex &index) const {
-    return attrData(m_prim->verts, index);
+    return attrData(m_prim->verts, index, enable_str_mapping, m_prim->userData());
 }
 
 QVariant PrimAttrTableModel::trisData(const QModelIndex &index) const {
-    return attrData(m_prim->tris, index);
+    return attrData(m_prim->tris, index, enable_str_mapping, m_prim->userData());
 }
 QVariant PrimAttrTableModel::pointsData(const QModelIndex &index) const {
-    return attrData(m_prim->points, index);
+    return attrData(m_prim->points, index, enable_str_mapping, m_prim->userData());
 }
 QVariant PrimAttrTableModel::linesData(const QModelIndex &index) const {
-    return attrData(m_prim->lines, index);
+    return attrData(m_prim->lines, index, enable_str_mapping, m_prim->userData());
 }
 QVariant PrimAttrTableModel::quadsData(const QModelIndex &index) const {
-    return attrData(m_prim->quads, index);
+    return attrData(m_prim->quads, index, enable_str_mapping, m_prim->userData());
 }
 QVariant PrimAttrTableModel::polysData(const QModelIndex &index) const {
-    return attrData(m_prim->polys, index);
+    return attrData(m_prim->polys, index, enable_str_mapping, m_prim->userData());
 }
 QVariant PrimAttrTableModel::loopsData(const QModelIndex &index) const {
-    return attrData(m_prim->loops, index);
+    return attrData(m_prim->loops, index, enable_str_mapping, m_prim->userData());
 }
 QVariant PrimAttrTableModel::uvsData(const QModelIndex &index) const {
-    return attrData(m_prim->uvs, index);
+    return attrData(m_prim->uvs, index, enable_str_mapping, m_prim->userData());
 }
 
 QVariant PrimAttrTableModel::userData(const zeno::zany& object) const
