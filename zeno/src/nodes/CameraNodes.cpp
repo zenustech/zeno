@@ -429,8 +429,8 @@ struct ScreenSpaceProjectedGrid : INode {
                 }
                 else {
                     prim->verts[j * width + i] = pos + dir * infinite;
-                    prim->verts[j * width + i][1] = 0;
                 }
+                prim->verts[j * width + i][1] = sea_level;
             }
         }
         std::vector<vec3i> tris;
