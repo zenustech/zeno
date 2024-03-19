@@ -391,8 +391,8 @@ ZENO_DEFNODE(LightNode)({
 
 
 struct ScreenSpaceProjectedGrid : INode {
-    float hitOnFloor(vec3f pos, vec3f dir) const {
-        float t = (0 - pos[1]) / dir[1];
+    float hitOnFloor(vec3f pos, vec3f dir, float sea_level) const {
+        float t = (sea_level - pos[1]) / dir[1];
         return t;
     }
     virtual void apply() override {
@@ -402,6 +402,7 @@ struct ScreenSpaceProjectedGrid : INode {
         auto raw_height = get_input2<int>("height");
         auto u_padding = get_input2<int>("u_padding");
         auto v_padding = get_input2<int>("v_padding");
+        auto sea_level = get_input2<float>("sea_level");
         auto fov = glm::radians(cam->fov);
         auto pos = cam->pos;
         auto up = cam->up;
@@ -422,7 +423,7 @@ struct ScreenSpaceProjectedGrid : INode {
                 float u = float(i) / float(width - 1) * 2.0f - 1.0f;
                 auto dir = view + u * right * right_scale + v * up * up_scale;
                 auto ndir = zeno::normalize(dir);
-                auto t = hitOnFloor(pos, ndir);
+                auto t = hitOnFloor(pos, ndir, sea_level);
                 if (t > 0 && t * zeno::dot(ndir, dir) < infinite) {
                     prim->verts[j * width + i] = pos + ndir * t;
                 }
@@ -457,6 +458,7 @@ ZENO_DEFNODE(ScreenSpaceProjectedGrid)({
          {"int", "height", "1080"},
          {"int", "u_padding", "0"},
          {"int", "v_padding", "0"},
+         {"float", "sea_level", "0"},
      },
      {
          "prim",
