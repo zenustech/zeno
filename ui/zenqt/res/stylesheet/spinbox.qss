@@ -8,6 +8,7 @@ QSpinBox {
 }
 
 QSpinBox:disabled{
+    color: #8f9ba8;
     background: #3C424E;
 }
 
@@ -79,6 +80,7 @@ QSpinBox[cssClass = "control"]::up-button:hover
  
 QSpinBox[cssClass = "control"]:disabled
 {
+    color: #8f9ba8;
     background: #3C424E;
 }
 
@@ -94,6 +96,7 @@ QDoubleSpinBox
    
 QDoubleSpinBox:disabled{
     background: #3C424E;
+    color: #8f9ba8;
 }
 
 QDoubleSpinBox:focus{
@@ -151,6 +154,7 @@ QDoubleSpinBox#MixedSpinBox:focus
 QDoubleSpinBox#MixedSpinBox:disabled 
 {
     background-color: #2F2F2F;
+    color: #8f9ba8;
 }
 
 QDoubleSpinBox#MixedSpinBox::up-button

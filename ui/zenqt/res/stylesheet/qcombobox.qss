@@ -35,6 +35,7 @@ QComboBox::down-arrow:on, QComboBox::down-arrow:hover {
 }
 
 QComboBox:disabled{
+    color: #8f9ba8;
     background: #3C424E;
 }
 

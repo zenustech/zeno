@@ -69,7 +69,7 @@ void ZComboBox::initStyleOption(ZStyleOptionComboBox* option)
     option->btnNormal = QColor(50, 50, 50);
     option->btnHovered = QColor(50, 50, 50);
     option->btnHovered = QColor(50, 50, 50);
-
+     
     option->textMargin = 5;
     option->palette.setColor(QPalette::ButtonText, option->clrText);
 }

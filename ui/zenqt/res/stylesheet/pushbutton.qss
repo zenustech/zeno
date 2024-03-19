@@ -10,6 +10,11 @@ QPushButton[cssClass="grayButton"]
 	color: #737B85;
 }
 
+QPushButton[cssClass="grayButton"]:disabled{
+    background: #3C424E;
+    color: #8f9ba8;
+}
+
 QPushButton[cssClass="grayButton"]:hover
 {
 	color: rgb(255, 255, 255);
@@ -325,6 +330,7 @@ QPushButton[cssClass="proppanel"]
 
 QPushButton[cssClass="proppanel"]:disabled{
     background: #3C424E;
+    color: #8f9ba8;
 }
 
 QPushButton[cssClass="proppanel"]:hover

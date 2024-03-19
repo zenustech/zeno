@@ -105,14 +105,17 @@ QLineEdit[cssClass="zeno2_2_lineedit"]:focus {
 
 QLineEdit[cssClass="zeno2_2_lineedit"]:disabled{
     background-color: #3C424E;
+    color: #8f9ba8;
 }
 
 QLineEdit[cssClass="zeno2_2_lineedit"][setKey="null"]:disabled{
     background-color: #3C424E;
+    color: #8f9ba8;
 }
 
 QLineEdit[cssClass="path_edit"]:disabled{
     background: #3C424E;
+    color: #8f9ba8;
 }
 
 QLineEdit[cssClass="path_edit"] {
@@ -142,9 +145,11 @@ QTextEdit[cssClass="proppanel"] {
 
 QTextEdit:disabled {
     background-color: #3C424E;
+    color: #8f9ba8;
 }
 
 QTextEdit[cssClass="proppanel"]:disabled {
+    color: #8f9ba8;
     background-color: #3C424E;
 }
 
