@@ -48,6 +48,37 @@ ZENO_DEFNODE(MakeCamera)({
     {"shader"},
 });
 
+struct SetPhysicalCamera : INode {
+    virtual void apply() override {
+        auto camera = get_input("camera");
+        auto &ud = camera->userData();
+        ud.set2("aperture", get_input2<float>("aperture"));
+        ud.set2("shutter_speed", get_input2<float>("shutter_speed"));
+        ud.set2("iso", get_input2<float>("iso"));
+        ud.set2("aces", get_input2<bool>("aces"));
+        ud.set2("exposure", get_input2<bool>("exposure"));
+
+        set_output("camera", std::move(camera));
+    }
+};
+
+ZENO_DEFNODE(SetPhysicalCamera)({
+    {
+        "camera",
+        {"float", "aperture", "2"},
+        {"float", "shutter_speed", "0.04"},
+        {"float", "iso", "150"},
+        {"bool", "aces", "0"},
+        {"bool", "exposure", "0"},
+    },
+    {
+            {"CameraObject", "camera"},
+    },
+    {
+    },
+    {"shader"},
+});
+
 struct TargetCamera : INode {
     virtual void apply() override {
         auto camera = std::make_unique<CameraObject>();

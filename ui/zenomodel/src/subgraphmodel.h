@@ -110,6 +110,8 @@ public:
     void setType(SUBGRAPH_TYPE type);
     void setMtlid(const QString& mtlid);
     QString mtlid();
+    void setForkLock(bool bLocked);
+    bool forkLocked();
 
     void replaceSubGraphNode(const QString& oldName, const QString& newName);
     void setViewRect(const QRectF& rc);
@@ -147,6 +149,7 @@ private:
     QString m_name;
     SUBGRAPH_TYPE m_type;
     QString m_mtlid;
+    bool m_bForkLocked;
     QHash<QString, int> m_key2Row;
     QHash<int, QString> m_row2Key;
     QHash<QString, _NodeItem> m_nodes;

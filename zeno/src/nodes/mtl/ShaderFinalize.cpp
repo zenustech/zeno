@@ -161,7 +161,7 @@ struct ShaderFinalize : INode {
             code += "bool sssFxiedRadius = false;\n";
         }
 
-        vec3i mask_value = get_input2<vec3i>("mask_value");
+        vec3f mask_value = (vec3f)get_input2<vec3i>("mask_value") / 255.0f;
         code += zeno::format("vec3 mask_value = vec3({}, {}, {});\n", mask_value[0], mask_value[1], mask_value[2]);
 
         auto mtl = std::make_shared<MaterialObject>();

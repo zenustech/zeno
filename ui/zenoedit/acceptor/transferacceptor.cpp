@@ -20,7 +20,7 @@ bool TransferAcceptor::setLegacyDescs(const rapidjson::Value& graphObj, const NO
     return false;
 }
 
-void TransferAcceptor::BeginSubgraph(const QString &name, int type)
+void TransferAcceptor::BeginSubgraph(const QString &name, int type, bool bForkLocked)
 {
     //no cache, for data consistency.
     m_currSubgraph = name;

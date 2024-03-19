@@ -1083,12 +1083,19 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
 
     std::vector<uint32_t> vertexAuxOffsetGlobal(num_instances);
     uint32_t vertexAuxOffset = 0u;
-    
+#ifdef USE_SHORT
+    std::vector<ushort3> instPos(num_instances);
+    std::vector<ushort3> instNrm(num_instances);
+    std::vector<ushort3> instUv(num_instances);
+    std::vector<ushort3> instClr(num_instances);
+    std::vector<ushort3> instTang(num_instances);
+#else
     std::vector<float3> instPos(num_instances);
     std::vector<float3> instNrm(num_instances);
     std::vector<float3> instUv(num_instances);
     std::vector<float3> instClr(num_instances);
     std::vector<float3> instTang(num_instances);
+#endif
     size_t sbt_offset = 0;
 
     for( size_t i = 0; i < g_staticAndDynamicMeshNum; ++i )
@@ -1107,11 +1114,11 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
         vertexAuxOffsetGlobal[i] = vertexAuxOffset;
         vertexAuxOffset += mesh->verts.size(); 
 
-        instPos[i] = defaultInstPos;
-        instNrm[i] = defaultInstNrm;
-        instUv[i] = defaultInstUv;
-        instClr[i] = defaultInstClr;
-        instTang[i] = defaultInstTang;
+        instPos[i] = toHalf({0,0,0,0});
+        instNrm[i] = toHalf({0,0,0,0});;
+        instUv[i] = toHalf({0,0,0,0});;
+        instClr[i] = toHalf({0,0,0,0});;
+        instTang[i] = toHalf({0,0,0,0});;
     }
 
     std::size_t instanceId = g_staticAndDynamicMeshNum;
@@ -1144,11 +1151,11 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
 
                     vertexAuxOffsetGlobal[instanceId] = vertexAuxOffset; 
                     
-                    instPos[instanceId] = instAttrs.pos[k];
-                    instNrm[instanceId] = instAttrs.nrm[k];
-                    instUv[instanceId] = instAttrs.uv[k];
-                    instClr[instanceId] = instAttrs.clr[k];
-                    instTang[instanceId] = instAttrs.tang[k];
+                    instPos[instanceId] = toHalf(instAttrs.pos[k]);
+                    instNrm[instanceId] = toHalf(instAttrs.nrm[k]);
+                    instUv[instanceId] = toHalf(instAttrs.uv[k]);
+                    instClr[instanceId] = toHalf(instAttrs.clr[k]);
+                    instTang[instanceId] = toHalf(instAttrs.tang[k]);
 
                     ++instanceId;
                 }
@@ -1170,11 +1177,11 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
 
                 vertexAuxOffsetGlobal[instanceId] = vertexAuxOffset; 
 
-                instPos[instanceId] = defaultInstPos;
-                instNrm[instanceId] = defaultInstNrm;
-                instUv[instanceId] = defaultInstUv;
-                instClr[instanceId] = defaultInstClr;
-                instTang[instanceId] = defaultInstTang;
+                instPos[instanceId] = toHalf({0,0,0,0});;
+                instNrm[instanceId] = toHalf({0,0,0,0});;
+                instUv[instanceId] = toHalf({0,0,0,0});;
+                instClr[instanceId] = toHalf({0,0,0,0});;
+                instTang[instanceId] = toHalf({0,0,0,0});;
                 
                 ++instanceId;
                 ++meshesOffset;
@@ -1504,12 +1511,19 @@ static void createSBT( PathTracerState& state )
 #endif
             hitgroup_records[sbt_idx].data.lightMark       = reinterpret_cast<unsigned short*>( (CUdeviceptr)state.d_lightMark );
             hitgroup_records[sbt_idx].data.auxOffset       = reinterpret_cast<uint32_t*>( (CUdeviceptr)state.vertexAuxOffsetGlobal );
-            
+#ifdef USE_SHORT
+            hitgroup_records[sbt_idx].data.instPos         = reinterpret_cast<ushort3*>( (CUdeviceptr)state.d_instPos );
+            hitgroup_records[sbt_idx].data.instNrm         = reinterpret_cast<ushort3*>( (CUdeviceptr)state.d_instNrm );
+            hitgroup_records[sbt_idx].data.instUv          = reinterpret_cast<ushort3*>( (CUdeviceptr)state.d_instUv );
+            hitgroup_records[sbt_idx].data.instClr         = reinterpret_cast<ushort3*>( (CUdeviceptr)state.d_instClr );
+            hitgroup_records[sbt_idx].data.instTang        = reinterpret_cast<ushort3*>( (CUdeviceptr)state.d_instTang );
+#else
             hitgroup_records[sbt_idx].data.instPos         = reinterpret_cast<float3*>( (CUdeviceptr)state.d_instPos );
             hitgroup_records[sbt_idx].data.instNrm         = reinterpret_cast<float3*>( (CUdeviceptr)state.d_instNrm );
             hitgroup_records[sbt_idx].data.instUv          = reinterpret_cast<float3*>( (CUdeviceptr)state.d_instUv );
             hitgroup_records[sbt_idx].data.instClr         = reinterpret_cast<float3*>( (CUdeviceptr)state.d_instClr );
             hitgroup_records[sbt_idx].data.instTang        = reinterpret_cast<float3*>( (CUdeviceptr)state.d_instTang );
+#endif
             for(int t=0;t<32;t++)
             {
                 hitgroup_records[sbt_idx].data.textures[t] = shader_ref.getTexture(t);
@@ -3759,6 +3773,13 @@ void set_window_size(int nx, int ny) {
     resize_dirty = true;
 }
 
+void set_physical_camera_param(float aperture, float shutter_speed, float iso, bool aces, bool exposure) {
+    state.params.physical_camera_aperture = aperture;
+    state.params.physical_camera_shutter_speed = shutter_speed;
+    state.params.physical_camera_iso = iso;
+    state.params.physical_camera_aces = aces;
+    state.params.physical_camera_exposure = exposure;
+}
 void set_perspective(float const *U, float const *V, float const *W, float const *E, float aspect, float fov, float fpd, float aperture) {
     set_perspective_by_fov(U,V,W,E,aspect,fov,0,0.024f,fpd,aperture,0.0f,0.0f,0.0f,0.0f);
 }
@@ -3772,12 +3793,8 @@ void set_perspective_by_fov(float const *U, float const *V, float const *W, floa
     float half_radfov = fov * float(M_PI) / 360.0f;
     float half_tanfov = std::tan(half_radfov);
     cam.focal_length = L / 2.0f / half_tanfov;
-    cam.focal_length = std::max(0.01f,cam.focal_length);
-    if(aperture > 24.0f || aperture <  0.5f){
-        cam.aperture = 0.0f;
-    }else{
-        cam.aperture = cam.focal_length / aperture;
-    }
+    cam.focal_length = std::max(0.0001f,cam.focal_length);
+    cam.aperture = std::max(0.0f,aperture);
     
 
     // L = L/cam.focal_length;
@@ -3810,14 +3827,8 @@ void set_perspective_by_focal_length(float const *U, float const *V, float const
     cam.up = normalize(make_float3(V[0], V[1], V[2]));
     cam.front = normalize(make_float3(W[0], W[1], W[2]));
 
-    cam.focal_length = focal_length;
-    cam.focal_length = std::max(0.01f,cam.focal_length);
-
-    if(aperture > 24.0f || aperture < 0.5f){
-        cam.aperture = 0.0f;
-    }else{
-        cam.aperture = cam.focal_length / aperture;
-    }
+    cam.focal_length = std::max(0.0001f,focal_length);
+    cam.aperture = std::max(0.0f,aperture);
 
     cam.width = w;
     cam.height = h;
@@ -3829,6 +3840,9 @@ void set_perspective_by_focal_length(float const *U, float const *V, float const
     camera_changed = true;
 }
 
+void set_outside_random_number(int32_t outside_random_number) {
+    state.params.outside_random_number = outside_random_number;
+}
 static void write_pfm(std::string& path, int w, int h, const float *rgb) {
     std::string header = zeno::format("PF\n{} {}\n-1.0\n", w, h);
     std::vector<char> data(header.size() + w * h * sizeof(zeno::vec3f));
@@ -3930,6 +3944,7 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
                             (float*)optixgetimg_extra("specular"),
                             (float*)optixgetimg_extra("transmit"),
                             (float*)optixgetimg_extra("background"),
+                            (float*)optixgetimg_extra("mask"),
                     },
                     w,
                     h,
@@ -3939,6 +3954,7 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
                             "specular.",
                             "transmit.",
                             "background.",
+                            "mask.",
                     },
                     exr_path.c_str()
             );

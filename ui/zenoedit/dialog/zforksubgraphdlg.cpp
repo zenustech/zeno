@@ -237,7 +237,21 @@ void ZForkSubgraphDlg::onOkClicked()
                 }
                 if (valueMap.contains(name))
                 {
-                    pGraphsModel->ModelSetData(inputIdx, valueMap[name], ROLE_PARAM_VALUE);
+                    QVariant newVal = valueMap[name];
+                    auto deflVal = inputIdx.data(ROLE_PARAM_VALUE);
+                    if (deflVal.canConvert<UI_VECTYPE>() && newVal.canConvert<UI_VECTYPE>())
+                    {
+                        UI_VECTYPE deflVec = deflVal.value<UI_VECTYPE>();
+                        UI_VECTYPE newVec = newVal.value<UI_VECTYPE>();
+                        newVec.resize(deflVec.size());
+                        newVal = QVariant::fromValue(newVec);
+                    }
+                    if (deflVal.type() != newVal.type())
+                    {
+                        zeno::log_error("{}-{} value type error", subgName.toStdString(), name.toStdString());
+                        continue;
+                    }
+                    pGraphsModel->ModelSetData(inputIdx, newVal, ROLE_PARAM_VALUE);
                 }
             }
         }

@@ -24,6 +24,7 @@
 #include "launch/corelaunch.h"
 #include "settings/zenosettingsmanager.h"
 #include "settings/zsettings.h"
+#include "dialog/ZOptixCameraSetting.h"
 #include <zenoui/comctrl/zcombobox.h>
 #include <zeno/core/Session.h>
 #include <zeno/types/UserData.h>
@@ -899,6 +900,8 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
         auto& ud = zeno::getSession().userData();
         m_background->setChecked(ud.get2<bool>("optix_show_background", false));
         pToolLayout->addWidget(m_background);
+        m_camera_setting = new QPushButton("Camera");
+        pToolLayout->addWidget(m_camera_setting);
     }
 
     pToolLayout->addWidget(new ZLineWidget(false, QColor("#121416")));
@@ -935,6 +938,19 @@ void DockContent_View::initConnections()
         connect(m_uv_mode, &QCheckBox::stateChanged, this, [=](int state) {
             bool bChecked = (state == Qt::Checked);
             m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_UV_MODE, bChecked);
+        });
+    }
+
+    if (m_camera_setting) {
+        connect(m_camera_setting, &QPushButton::clicked, this, [=](bool bToggled) {
+            zenovis::ZOptixCameraSettingInfo info = m_pDisplay->getCamera();
+//            zeno::log_info("get Camera from optix thread {}", info.iso);
+
+            ZOptixCameraSetting dialog(info);
+            if (dialog.exec() == QDialog::Accepted) {
+//                zeno::log_info("set ZOptixCameraSettingInfo");
+                m_pDisplay->onSetCamera(info);
+            }
         });
     }
 

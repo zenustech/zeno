@@ -45,6 +45,10 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
     m_checkSortingEnabled->setProperty("cssClass", "proppanel");
     m_checkSortingEnabled->setText(tr("enable sort"));
     pTitleLayout->addWidget(m_checkSortingEnabled);
+    m_checkStringMapping = new QCheckBox(this);
+    m_checkStringMapping->setProperty("cssClass", "proppanel");
+    m_checkStringMapping->setText(tr("String mapping"));
+    pTitleLayout->addWidget(m_checkStringMapping);
 
 
     ZComboBox* pMode = new ZComboBox();
@@ -114,6 +118,10 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
     // enable sort
     connect(m_checkSortingEnabled, &QCheckBox::stateChanged, this, [this](int state) {
         prim_attr_view->setSortingEnabled(state != Qt::CheckState::Unchecked);
+    });
+    connect(m_checkStringMapping, &QCheckBox::stateChanged, this, [this](int state) {
+        dataModel->setStrMapping(state != Qt::CheckState::Unchecked);
+        prim_attr_view->update();
     });
 
     // corner button of tableview
