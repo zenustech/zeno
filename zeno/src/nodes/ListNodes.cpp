@@ -44,7 +44,8 @@ struct ListGetItem : zeno::INode {
 };
 
 ZENDEFNODE(ListGetItem, {
-    {"list", {"int", "index"}},
+    {{"list", "list", "", ParamSocket},
+     {"int", "index"}},
     {"object"},
     {},
     {"list"},
@@ -66,7 +67,7 @@ struct ExtractList : zeno::INode {
 };
 
 ZENDEFNODE(ExtractList, {
-    {"list"},
+    {{"list", "list", "", ParamSocket}},
     {},
     {},
     {"list"},
@@ -171,38 +172,15 @@ ZENDEFNODE(MakeSmallList, {
 
 struct MakeList : zeno::INode {
     virtual void apply() override {
-        auto list = std::make_shared<zeno::ListObject>();
-        auto doConcat = get_param<bool>("doConcat");
-
-        int max_input_index = 0;
-        for (auto& pair : getinputs()) {
-            if (std::isdigit(pair.first.back())) {
-                max_input_index = std::max<int>(max_input_index, std::stoi(pair.first.substr(3)));
-            }
-        }
-        for (int i = 0; i <= max_input_index; ++i) {
-            std::stringstream namess;
-            namess << "obj" << i;
-            auto name = namess.str();
-            if (!has_input(name)) continue;
-            if (doConcat && has_input<ListObject>(name)) {
-                auto objlist = get_input<ListObject>(name);
-                for (auto const &obj: objlist->arr) {
-                    list->arr.push_back(std::move(obj));
-                }
-            } else {
-                auto obj = get_input(name);
-                list->arr.push_back(std::move(obj));
-            }
-        }
+        auto list = get_input<zeno::ListObject>("objs");
         set_output("list", std::move(list));
     }
 };
 
 ZENDEFNODE(MakeList, {
-    {},
+    {{"list", "objs", "", zeno::PrimarySocket}},
     {"list"},
-    {{"bool", "doConcat", "1"}},
+    {},
     {"list"},
     });
 

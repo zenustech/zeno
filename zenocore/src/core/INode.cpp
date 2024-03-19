@@ -192,10 +192,6 @@ ZENO_API void INode::preApply() {
             zeno::log_warn("the param {} may not be initialized", name);
     }
 
-    //if (!zeno::getSession().globalState->is_working()) {
-    //    throw GraphException();
-    //}
-
     log_debug("==> enter {}", m_name);
     {
 #ifdef ZENO_BENCHMARKING
@@ -263,17 +259,23 @@ ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
         case Param_Dict:
         {
             std::shared_ptr<DictObject> spDict;
-            //如果只有一条边，并且对面的object刚好是一个dict，那么应该是直接连接（暂不考虑嵌套dict吧...)
+            //连接的元素是list还是list of list的规则，参照Graph::addLink下注释。
             bool bDirecyLink = false;
-            if (in_param->links.size() == 1)
+            const auto& inLinks = in_param->links;
+            if (inLinks.size() == 1)
             {
-                std::shared_ptr<ILink> spLink = *in_param->links.begin();
+                std::shared_ptr<ILink> spLink = inLinks.front();
                 std::shared_ptr<IParam> out_param = spLink->fromparam.lock();
                 std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
-                outNode->doApply();
-                zany outResult = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
-                if (spDict = std::dynamic_pointer_cast<DictObject>(outResult)) {
+
+                if (out_param->type == in_param->type && !spLink->tokey.empty())
+                {
                     bDirecyLink = true;
+                    GraphException::translated([&] {
+                        outNode->doApply();
+                    }, outNode.get());
+                    zany outResult = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
+                    spDict = std::dynamic_pointer_cast<DictObject>(outResult);
                 }
             }
             if (!bDirecyLink)
@@ -284,7 +286,11 @@ ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
                     const std::string& keyName = spLink->tokey;
                     std::shared_ptr<IParam> out_param = spLink->fromparam.lock();
                     std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
-                    outNode->doApply();
+
+                    GraphException::translated([&] {
+                        outNode->doApply();
+                    }, outNode.get());
+
                     zany outResult = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
                     spDict->lut[keyName] = outResult;
                 }
@@ -298,13 +304,20 @@ ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
             bool bDirectLink = false;
             if (in_param->links.size() == 1)
             {
-                std::shared_ptr<ILink> spLink = *in_param->links.begin();
+                std::shared_ptr<ILink> spLink = in_param->links.front();
                 std::shared_ptr<IParam> out_param = spLink->fromparam.lock();
                 std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
-                outNode->doApply();
-                zany outResult = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
-                if (spList = std::dynamic_pointer_cast<ListObject>(outResult))
+
+                if (out_param->type == in_param->type && !spLink->tokey.empty()) {
                     bDirectLink = true;
+
+                    GraphException::translated([&] {
+                        outNode->doApply();
+                    }, outNode.get());
+
+                    zany outResult = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
+                    spList = std::dynamic_pointer_cast<ListObject>(outResult);
+                }
             }
             if (!bDirectLink)
             {
@@ -314,7 +327,11 @@ ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
                     //list的情况下，keyName是不是没意义，顺序怎么维持？
                     std::shared_ptr<IParam> out_param = spLink->fromparam.lock();
                     std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
-                    outNode->doApply();
+
+                    GraphException::translated([&] {
+                        outNode->doApply();
+                    }, outNode.get());
+
                     zany outResult = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
                     spList->arr.push_back(outResult);
                 }
