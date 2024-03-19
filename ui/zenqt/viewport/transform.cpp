@@ -51,36 +51,40 @@ void FakeTransformer::addObject(const std::string& name) {
     ZASSERT_EXIT(sess);
     auto scene = sess->get_scene();
     ZASSERT_EXIT(scene);
-    if (!scene->objectsMan->get(name).has_value())
-        return;
 
-    auto object = dynamic_cast<PrimitiveObject*>(scene->objectsMan->get(name).value());
-    auto& user_data = object->userData();
-    if (!user_data.has("_pivot")) {
-        zeno::vec3f bmin, bmax;
-        std::tie(bmin, bmax) = zeno::primBoundingBox(object);
-        zeno::vec3f translate = {0, 0, 0};
-        user_data.setLiterial("_translate", translate);
-        zeno::vec4f rotate = {0, 0, 0, 1};
-        user_data.setLiterial("_rotate", rotate);
-        zeno::vec3f scale = {1, 1, 1};
-        user_data.setLiterial("_scale", scale);
-        auto bboxCenter = (bmin + bmax) / 2;
-        user_data.set2("_pivot", bboxCenter);
-        if (object->has_attr("pos") && !object->has_attr("_origin_pos")) {
-            auto &pos = object->attr<zeno::vec3f>("pos");
-            object->verts.add_attr<zeno::vec3f>("_origin_pos") = pos;
-        }
-        if (object->has_attr("nrm") && !object->has_attr("_origin_nrm")) {
-            auto &nrm = object->attr<zeno::vec3f>("nrm");
-            object->verts.add_attr<zeno::vec3f>("_origin_nrm") = nrm;
+    RenderObjsInfo info;
+    zeno::getSession().objsMan->export_all_objs(info);
+    for (auto const& [key, ptr] : info.allObjects) {
+        if (key == name) {
+            auto object = dynamic_cast<PrimitiveObject*>(ptr.get());
+            auto& user_data = object->userData();
+            if (!user_data.has("_pivot")) {
+                zeno::vec3f bmin, bmax;
+                std::tie(bmin, bmax) = zeno::primBoundingBox(object);
+                zeno::vec3f translate = { 0, 0, 0 };
+                user_data.setLiterial("_translate", translate);
+                zeno::vec4f rotate = { 0, 0, 0, 1 };
+                user_data.setLiterial("_rotate", rotate);
+                zeno::vec3f scale = { 1, 1, 1 };
+                user_data.setLiterial("_scale", scale);
+                auto bboxCenter = (bmin + bmax) / 2;
+                user_data.set2("_pivot", bboxCenter);
+                if (object->has_attr("pos") && !object->has_attr("_origin_pos")) {
+                    auto& pos = object->attr<zeno::vec3f>("pos");
+                    object->verts.add_attr<zeno::vec3f>("_origin_pos") = pos;
+                }
+                if (object->has_attr("nrm") && !object->has_attr("_origin_nrm")) {
+                    auto& nrm = object->attr<zeno::vec3f>("nrm");
+                    object->verts.add_attr<zeno::vec3f>("_origin_nrm") = nrm;
+                }
+            }
+            m_pivot = zeno::vec_to_other<glm::vec3>(user_data.get2<vec3f>("_pivot"));
+            m_objects_center *= m_objects.size();
+            m_objects_center += m_pivot + zeno::vec_to_other<glm::vec3>(user_data.get2<vec3f>("_translate"));
+            m_objects[name] = object;
+            m_objects_center /= m_objects.size();
         }
     }
-    m_pivot = zeno::vec_to_other<glm::vec3>(user_data.get2<vec3f>("_pivot"));
-    m_objects_center *= m_objects.size();
-    m_objects_center += m_pivot + zeno::vec_to_other<glm::vec3>(user_data.get2<vec3f>("_translate"));
-    m_objects[name] = object;
-    m_objects_center /= m_objects.size();
 }
 
 void FakeTransformer::addObject(const std::unordered_set<std::string>& names) {

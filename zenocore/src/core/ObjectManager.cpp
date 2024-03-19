@@ -159,6 +159,20 @@ namespace zeno {
         }
     }
 
+    ZENO_API void ObjectManager::export_all_objs(RenderObjsInfo& info)
+    {
+        std::lock_guard lck(m_mtx);
+        for (auto& [k, v] : m_objects)
+            info.allObjects.emplace(std::move(std::pair(k, v.obj)));
+    }
+
+    ZENO_API void ObjectManager::export_all_objs(std::vector<std::pair<std::string, std::shared_ptr<zeno::IObject>>>& info)
+    {
+        std::lock_guard lck(m_mtx);
+        for (auto& [k, v] : m_objects)
+            info.emplace_back(k, v.obj);
+    }
+
     void ObjectManager::clear()
     {
         //todo
