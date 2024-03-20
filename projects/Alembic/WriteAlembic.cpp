@@ -15,6 +15,7 @@
 #include "zeno/types/ListObject.h"
 #include "zeno/utils/log.h"
 #include "zeno/funcs/PrimitiveUtils.h"
+#include "zeno/extra/TempNode.h"
 #include <numeric>
 #include <filesystem>
 
@@ -208,7 +209,7 @@ template<typename T1, typename T2>
 void write_attrs(std::map<std::string, std::any> &attrs, std::string path, std::shared_ptr<PrimitiveObject> prim, T1& schema, T2& samp) {
     OCompoundProperty arbAttrs = schema.getArbGeomParams();
     prim->verts.foreach_attr<std::variant<vec3f, float, int>>([&](auto const &key, auto &arr) {
-        if (key == "v" || key == "nrm" || key == "faceset" || key == "matid") {
+        if (key == "v" || key == "nrm" || key == "faceset" || key == "matid" || key == "abcpath") {
             return;
         }
         std::string full_key = path + '/' + key;
@@ -354,6 +355,9 @@ void write_user_data(std::map<std::string, std::any> &user_attrs, std::string pa
         if (key == "faceset_count" || zeno::starts_with(key, "faceset_")) {
             continue;
         }
+        if (key == "abcpath_count" || zeno::starts_with(key, "abcpath_")) {
+            continue;
+        }
         if (key == "matNum" || zeno::starts_with(key, "Material_") || key == "mtlid") {
             continue;
         }
@@ -475,7 +479,7 @@ struct WriteAlembic2 : INode {
         float fps = get_input2<float>("fps");
         int frameid;
         if (has_input("frameid")) {
-            frameid = get_input2<int>("frameid");
+            frameid = std::lround(get_input2<float>("frameid"));
         } else {
             frameid = getGlobalState()->frameid;
         }
@@ -704,12 +708,20 @@ struct WriteAlembicPrims : INode {
     std::map<std::string, std::map<std::string, OFaceSetSchema>> o_faceset_schema;
 
     virtual void apply() override {
-        auto prims = get_input<ListObject>("prims")->get<PrimitiveObject>();
+        std::vector<std::shared_ptr<PrimitiveObject>> prims;
+
+        if (has_input("prim")) {
+            auto prim = get_input2<PrimitiveObject>("prim");
+            prims = primUnmergeFaces(prim.get(), "abcpath");
+        }
+        else {
+            prims = get_input<ListObject>("prims")->get<PrimitiveObject>();
+        }
         bool flipFrontBack = get_input2<int>("flipFrontBack");
         float fps = get_input2<float>("fps");
         int frameid;
         if (has_input("frameid")) {
-            frameid = get_input2<int>("frameid");
+            frameid = std::lround(get_input2<float>("frameid"));
         } else {
             frameid = getGlobalState()->frameid;
         }
@@ -723,6 +735,32 @@ struct WriteAlembicPrims : INode {
         }
         std::vector<std::shared_ptr<PrimitiveObject>> new_prims;
 
+        {
+            std::vector<std::string> paths;
+            std::map<std::string, std::vector<std::shared_ptr<PrimitiveObject>>> path_to_prims;
+
+            for (auto prim: prims) {
+                auto path = prim->userData().get2<std::string>("abcpath_0");
+                if (path_to_prims.count(path) == 0) {
+                    paths.push_back(path);
+                    path_to_prims[path] = {};
+                }
+                path_to_prims[path].push_back(prim);
+            }
+            for (auto path : paths) {
+                if (path_to_prims[path].size() > 1) {
+                    std::vector<zeno::PrimitiveObject *> primList;
+                    for (auto prim: path_to_prims[path]) {
+                        primList.push_back(prim.get());
+                    }
+                    auto prim = primMergeWithFacesetMatid(primList);
+                    new_prims.push_back(prim);
+                }
+                else {
+                    new_prims.push_back(path_to_prims[path][0]);
+                }
+            }
+        }
         if (usedPath != path) {
             usedPath = path;
             archive = CreateArchiveWithInfo(
@@ -737,42 +775,24 @@ struct WriteAlembicPrims : INode {
             pointsObjs.clear();
             attrs.clear();
             user_attrs.clear();
-            {
-                std::vector<std::string> paths;
-                std::map<std::string, std::vector<std::shared_ptr<PrimitiveObject>>> path_to_prims;
-
-                for (auto prim: prims) {
-                    auto path = prim->userData().get2<std::string>("_abc_path");
-                    if (path_to_prims.count(path) == 0) {
-                        paths.push_back(path);
-                        path_to_prims[path] = {};
-                    }
-                    path_to_prims[path].push_back(prim);
-                }
-                for (auto path : paths) {
-                    if (path_to_prims[path].size() > 1) {
-                        std::vector<zeno::PrimitiveObject *> primList;
-                        for (auto prim: path_to_prims[path]) {
-                            primList.push_back(prim.get());
-                        }
-                        auto prim = primMergeWithFacesetMatid(primList);
-                        new_prims.push_back(prim);
-                    }
-                    else {
-                        new_prims.push_back(path_to_prims[path][0]);
-                    }
-                }
-            }
+            o_faceset.clear();
+            o_faceset_schema.clear();
             for (auto prim: new_prims) {
-                auto path = prim->userData().get2<std::string>("_abc_path");
+                auto path = prim->userData().get2<std::string>("abcpath_0");
                 if (!starts_with(path, "/ABC/")) {
-                    log_error("_abc_path must start with /ABC/");
+                    log_error("abcpath_0 must start with /ABC/");
                 }
                 auto n_path = path.substr(5);
                 auto subnames = split_str(n_path, '/');
                 OObject oObject = OObject( archive, 1 );
                 for (auto i = 0; i < subnames.size() - 1; i++) {
-                    oObject = OObject( archive, subnames[i] );
+                    auto child = oObject.getChild(subnames[i]);
+                    if (child.valid()) {
+                        oObject = child;
+                    }
+                    else {
+                        oObject = OObject( oObject, subnames[i] );
+                    }
                 }
                 if (prim->polys.size() || prim->tris.size()) {
                     meshyObjs[path] = OPolyMesh (oObject, subnames[subnames.size() - 1]);
@@ -789,7 +809,7 @@ struct WriteAlembicPrims : INode {
             zeno::makeError("Not init. Check whether in correct correct frame range.");
         }
         for (auto prim: new_prims) {
-            auto path = prim->userData().get2<std::string>("_abc_path");
+            auto path = prim->userData().get2<std::string>("abcpath_0");
 
             if (prim->polys.size() || prim->tris.size()) {
                 // Create a PolyMesh class.
@@ -962,6 +982,7 @@ struct WriteAlembicPrims : INode {
 
 ZENDEFNODE(WriteAlembicPrims, {
     {
+        {"prim"},
         {"list", "prims"},
         {"frameid"},
         {"writepath", "path", ""},
