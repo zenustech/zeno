@@ -81,9 +81,15 @@ public:
     ZENO_API void export_loading_objs(RenderObjsInfo& info);
     ZENO_API void export_all_objs(RenderObjsInfo& info);
     ZENO_API void export_all_objs(std::vector<std::pair<std::string, std::shared_ptr<zeno::IObject>>>& info);
+    ZENO_API std::shared_ptr<IObject> getObj(std::string name);
     ZENO_API void clear_last_run();
     ZENO_API void collect_removing_objs(const std::string& objkey);
     ZENO_API void remove_attach_node_by_removing_objs();
+
+    //viewport interactive obj
+    ZENO_API void markObjInteractive(std::set<std::string>& newobjKeys);
+    ZENO_API void unmarkObjInteractive(std::set<std::string>& removeobjKeys);
+    ZENO_API void getModifyObjsInfo(std::map<std::string, std::shared_ptr<zeno::IObject>>& modifyInteractiveObjs);  //interactive objs
 
 private:
     void clear();
@@ -98,8 +104,9 @@ private:
     std::set<std::string> m_removing_objs;  //这里是删除节点时记录的要删除的obj，要考虑rollback的情况
 
     std::set<std::string> m_newAdded;
-    std::set<std::string> m_modify;
     std::set<std::string> m_remove;
+
+    std::set<std::string> m_modify;         //viewport interactive obj
 
     mutable std::mutex m_mtx;
 };

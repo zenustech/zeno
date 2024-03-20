@@ -139,7 +139,6 @@ private:
     QHash<int, QString> m_row2uuid;
     QHash<QString, NodeItem*> m_nodes;  //based on uuid
     QHash<QString, QString> m_name2uuid;
-    QHash<QString, QString> m_uuid2name;
     QSet<QString> m_subgNodes;
 
     std::weak_ptr<zeno::Graph> m_wpCoreGraph;

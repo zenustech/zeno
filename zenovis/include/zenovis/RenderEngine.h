@@ -22,7 +22,6 @@ struct RenderEngine {
     virtual void load_objects(const zeno::RenderObjsInfo& objs) {}
     virtual ~RenderEngine() = default;
 
-    virtual void update_interactive_objects(const zeno::RenderObjsInfo& objs) {}
 };
 
 class RenderManager {

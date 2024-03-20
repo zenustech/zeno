@@ -52,39 +52,37 @@ void FakeTransformer::addObject(const std::string& name) {
     auto scene = sess->get_scene();
     ZASSERT_EXIT(scene);
 
-    RenderObjsInfo info;
-    zeno::getSession().objsMan->export_all_objs(info);
-    for (auto const& [key, ptr] : info.allObjects) {
-        if (key == name) {
-            auto object = dynamic_cast<PrimitiveObject*>(ptr.get());
-            auto& user_data = object->userData();
-            if (!user_data.has("_pivot")) {
-                zeno::vec3f bmin, bmax;
-                std::tie(bmin, bmax) = zeno::primBoundingBox(object);
-                zeno::vec3f translate = { 0, 0, 0 };
-                user_data.setLiterial("_translate", translate);
-                zeno::vec4f rotate = { 0, 0, 0, 1 };
-                user_data.setLiterial("_rotate", rotate);
-                zeno::vec3f scale = { 1, 1, 1 };
-                user_data.setLiterial("_scale", scale);
-                auto bboxCenter = (bmin + bmax) / 2;
-                user_data.set2("_pivot", bboxCenter);
-                if (object->has_attr("pos") && !object->has_attr("_origin_pos")) {
-                    auto& pos = object->attr<zeno::vec3f>("pos");
-                    object->verts.add_attr<zeno::vec3f>("_origin_pos") = pos;
-                }
-                if (object->has_attr("nrm") && !object->has_attr("_origin_nrm")) {
-                    auto& nrm = object->attr<zeno::vec3f>("nrm");
-                    object->verts.add_attr<zeno::vec3f>("_origin_nrm") = nrm;
-                }
-            }
-            m_pivot = zeno::vec_to_other<glm::vec3>(user_data.get2<vec3f>("_pivot"));
-            m_objects_center *= m_objects.size();
-            m_objects_center += m_pivot + zeno::vec_to_other<glm::vec3>(user_data.get2<vec3f>("_translate"));
-            m_objects[name] = object;
-            m_objects_center /= m_objects.size();
+    auto spobj = zeno::getSession().objsMan->getObj(name);
+    if (!spobj)
+        return;
+    auto object = dynamic_cast<PrimitiveObject*>(spobj.get());
+    auto& user_data = object->userData();
+    if (!user_data.has("_pivot")) {
+        zeno::vec3f bmin, bmax;
+        std::tie(bmin, bmax) = zeno::primBoundingBox(object);
+        zeno::vec3f translate = { 0, 0, 0 };
+        user_data.setLiterial("_translate", translate);
+        zeno::vec4f rotate = { 0, 0, 0, 1 };
+        user_data.setLiterial("_rotate", rotate);
+        zeno::vec3f scale = { 1, 1, 1 };
+        user_data.setLiterial("_scale", scale);
+        auto bboxCenter = (bmin + bmax) / 2;
+        user_data.set2("_pivot", bboxCenter);
+        if (object->has_attr("pos") && !object->has_attr("_origin_pos")) {
+            auto& pos = object->attr<zeno::vec3f>("pos");
+            object->verts.add_attr<zeno::vec3f>("_origin_pos") = pos;
+        }
+        if (object->has_attr("nrm") && !object->has_attr("_origin_nrm")) {
+            auto& nrm = object->attr<zeno::vec3f>("nrm");
+            object->verts.add_attr<zeno::vec3f>("_origin_nrm") = nrm;
         }
     }
+    m_pivot = zeno::vec_to_other<glm::vec3>(user_data.get2<vec3f>("_pivot"));
+    m_objects_center *= m_objects.size();
+    m_objects_center += m_pivot + zeno::vec_to_other<glm::vec3>(user_data.get2<vec3f>("_translate"));
+    m_objects[name] = object;
+    m_objects_center /= m_objects.size();
+    m_objectsKeys.insert(name);
 }
 
 void FakeTransformer::addObject(const std::unordered_set<std::string>& names) {
@@ -115,6 +113,7 @@ void FakeTransformer::removeObject(const std::string& name) {
     m_objects_center -= (m + n) / 2.0f;
     m_objects.erase(p);
     m_objects_center /= m_objects.size();
+    m_objectsKeys.erase(name);
 }
 
 void FakeTransformer::removeObject(const std::unordered_set<std::string>& names) {
@@ -536,28 +535,14 @@ void FakeTransformer::toScale() {
     session->set_handler(m_handler);
 }
 
-void FakeTransformer::markObjectInteractive(const std::string& obj_name) {
-    auto& user_data = m_objects[obj_name]->userData();
-    user_data.setLiterial("interactive", 1);
-}
-
-void FakeTransformer::unmarkObjectInteractive(const std::string& obj_name) {
-    auto& user_data = m_objects[obj_name]->userData();
-    user_data.setLiterial("interactive", 0);
-}
-
 void FakeTransformer::markObjectsInteractive() {
     m_status = true;
-    for (const auto& [obj_name, obj] : m_objects) {
-        markObjectInteractive(obj_name);
-    }
+    zeno::getSession().objsMan->markObjInteractive(m_objectsKeys);
 }
 
 void FakeTransformer::unmarkObjectsInteractive() {
     m_status = false;
-    for (const auto& [obj_name, obj] : m_objects) {
-        unmarkObjectInteractive(obj_name);
-    }
+    zeno::getSession().objsMan->unmarkObjInteractive(m_objectsKeys);
 }
 
 void FakeTransformer::resizeHandler(int dir) {
@@ -634,6 +619,7 @@ glm::vec3 FakeTransformer::getCenter() const {
 
 void FakeTransformer::clear() {
     m_objects.clear();
+    m_objectsKeys.clear();
     m_trans = {0, 0, 0};
     m_scale = {1, 1, 1};
     m_rotate = {0, 0, 0, 1};

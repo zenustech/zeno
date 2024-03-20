@@ -461,11 +461,6 @@ QList<SEARCH_RESULT> GraphModel::searchByUuidPath(const zeno::ObjPath& uuidPath)
     if (uuidPath.empty())
         return results;
 
-    QStringList objpath;
-    for (auto& uuid : uuidPath)
-        if (m_uuid2name.find(QString::fromStdString(uuid)) != m_uuid2name.end())
-           objpath.append(m_uuid2name[QString::fromStdString(uuid)]);
-
     SEARCH_RESULT result;
     result.targetIdx = indexFromUuidPath(uuidPath);
     result.subGraph = getGraphByPath(uuidPath2ObjPath(uuidPath));
@@ -481,16 +476,13 @@ QStringList GraphModel::uuidPath2ObjPath(const zeno::ObjPath& uuidPath)
     if (tmp.empty())
         return res;
 
-    if (m_uuid2name.find(QString::fromStdString(tmp.front())) != m_uuid2name.end()) {
-        res.append(m_uuid2name[QString::fromStdString(tmp.front())]);
-
-        auto it = m_nodes.find(QString::fromStdString(tmp.front()));
-        if (it == m_nodes.end())
-            return res;
+    auto it = m_nodes.find(QString::fromStdString(tmp.front()));
+    if (it == m_nodes.end()) {
+        NodeItem* pItem = it.value();
+        res.append(pItem->getName());
 
         tmp.pop_front();
 
-        NodeItem* pItem = it.value();
         if (pItem->optSubgraph.has_value())
             res.append(pItem->optSubgraph.value()->uuidPath2ObjPath(tmp));
     }
@@ -748,8 +740,6 @@ void GraphModel::_updateName(const QString& oldName, const QString& newName)
     auto& item = m_nodes[uuid];
     item->name = newName;   //update cache.
 
-    m_uuid2name[uuid] = newName;
-
     if (m_subgNodes.find(oldName) != m_subgNodes.end()) {
         m_subgNodes.remove(oldName);
         m_subgNodes.insert(newName);
@@ -826,7 +816,6 @@ void GraphModel::_appendNode(std::shared_ptr<zeno::INode> spNode)
     m_uuid2Row[uuid] = nRows;
     m_nodes.insert(uuid, pItem);
     m_name2uuid.insert(name, uuid);
-    m_uuid2name.insert(uuid, name);
 
     endInsertRows();
 
@@ -930,7 +919,6 @@ bool GraphModel::removeRows(int row, int count, const QModelIndex& parent)
     m_uuid2Row.remove(id);
     m_nodes.remove(id);
     m_name2uuid.remove(name);
-    m_uuid2name.remove(id);
 
     if (m_subgNodes.find(id) != m_subgNodes.end())
         m_subgNodes.remove(id);
