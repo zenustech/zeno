@@ -456,7 +456,10 @@ struct ScreenSpaceProjectedGrid : INode {
                 .call();
 
         // Create nodes
-        auto new_prim = outs.get("outPrim");
+        auto new_prim = std::dynamic_pointer_cast<PrimitiveObject>(outs.get("outPrim"));
+        for (auto i = 0; i < new_prim->verts.size(); i++) {
+            new_prim->verts[i][1] = sea_level;
+        }
         set_output("prim", std::move(new_prim));
     }
 };
