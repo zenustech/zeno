@@ -53,11 +53,11 @@ struct SetPhysicalCamera : INode {
     virtual void apply() override {
         auto camera = get_input("camera");
         auto &ud = camera->userData();
-        ud.set2("aperture", get_input2<float>("aperture"));
-        ud.set2("shutter_speed", get_input2<float>("shutter_speed"));
-        ud.set2("iso", get_input2<float>("iso"));
-        ud.set2("aces", get_input2<bool>("aces"));
-        ud.set2("exposure", get_input2<bool>("exposure"));
+        ud.set2("physical_aperture", get_input2<float>("aperture"));
+        ud.set2("physical_shutter_speed", get_input2<float>("shutter_speed"));
+        ud.set2("physical_iso", get_input2<float>("iso"));
+        ud.set2("physical_aces", get_input2<bool>("aces"));
+        ud.set2("physical_exposure", get_input2<bool>("exposure"));
 
         set_output("camera", std::move(camera));
     }

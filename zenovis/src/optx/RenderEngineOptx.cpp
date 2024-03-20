@@ -751,13 +751,13 @@ struct GraphicsManager {
                 {
                     scene->camera->setCamera(cam->get());     // pyb fix
                     auto &ud = cam->userData();
-                    if (ud.has("aces")) {
+                    if (ud.has("physical_aces")) {
                         scene->camera->setPhysicalCamera(
-                            ud.get2<float>("aperture"),
-                            ud.get2<float>("shutter_speed"),
-                            ud.get2<float>("iso"),
-                            ud.get2<bool>("aces"),
-                            ud.get2<bool>("exposure")
+                            ud.get2<float>("physical_aperture"),
+                            ud.get2<float>("physical_shutter_speed"),
+                            ud.get2<float>("physical_iso"),
+                            ud.get2<bool>("physical_aces"),
+                            ud.get2<bool>("physical_exposure")
                         );
                     }
                 }
@@ -791,13 +791,13 @@ struct GraphicsManager {
                     if (auto cam = dynamic_cast<zeno::CameraObject *>(obj)) {
                         scene->camera->setCamera(cam->get()); // pyb fix
                         auto &ud = cam->userData();
-                        if (ud.has("aces")) {
+                        if (ud.has("physical_aces")) {
                             scene->camera->setPhysicalCamera(
-                                ud.get2<float>("aperture"),
-                                ud.get2<float>("shutter_speed"),
-                                ud.get2<float>("iso"),
-                                ud.get2<bool>("aces"),
-                                ud.get2<bool>("exposure")
+                                ud.get2<float>("physical_aperture"),
+                                ud.get2<float>("physical_shutter_speed"),
+                                ud.get2<float>("physical_iso"),
+                                ud.get2<bool>("physical_aces"),
+                                ud.get2<bool>("physical_exposure")
                             );
                         }
                     }
