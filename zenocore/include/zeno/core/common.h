@@ -131,6 +131,7 @@ namespace zeno {
         PythonEditor,
         PushButton,
         Seperator,
+        NoMultiSockPanel,   //disable dist/list panel
     };
 
     enum LinkFunction

@@ -722,7 +722,8 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& paramIdx, bool bInput, Zen
     }
 
     ZSocketLayout* pMiniLayout = nullptr;
-    if (type == zeno::Param_Dict || type == zeno::Param_List) {
+    if ((type == zeno::Param_Dict || type == zeno::Param_List) && 
+        ctrl != zeno::NoMultiSockPanel) {
         pMiniLayout = new ZDictSocketLayout(paramIdx, bInput);
     }
     else {

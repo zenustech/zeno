@@ -17,7 +17,7 @@ struct ListLength : zeno::INode {
 };
 
 ZENDEFNODE(ListLength, {
-    {"list"},
+    {{"list", "list", "", PrimarySocket, NoMultiSockPanel}},
     {"length"},
     {},
     {"list"},
@@ -44,7 +44,7 @@ struct ListGetItem : zeno::INode {
 };
 
 ZENDEFNODE(ListGetItem, {
-    {{"list", "list", "", ParamSocket},
+    {{"list", "list", "", PrimarySocket, NoMultiSockPanel},
      {"int", "index"}},
     {"object"},
     {},
@@ -67,7 +67,7 @@ struct ExtractList : zeno::INode {
 };
 
 ZENDEFNODE(ExtractList, {
-    {{"list", "list", "", ParamSocket}},
+    {{"list", "list", "", PrimarySocket, NoMultiSockPanel}},
     {},
     {},
     {"list"},
@@ -98,7 +98,10 @@ struct AppendList : zeno::INode {
 };
 
 ZENDEFNODE(AppendList, {
-    {"list", "object"},
+    {
+        {"list", "list", "", PrimarySocket, NoMultiSockPanel},
+        {"", "object", "", PrimarySocket}
+    },
     {"list"},
     {},
     {"list"},
@@ -116,7 +119,10 @@ struct ExtendList : zeno::INode {
 };
 
 ZENDEFNODE(ExtendList, {
-    {"list1", "list2"},
+    {
+        {"list", "list1", "", PrimarySocket, NoMultiSockPanel},
+        {"list", "list2", "", PrimarySocket, NoMultiSockPanel}
+    },
     {{"list", "list1"}},
     {},
     {"list"},

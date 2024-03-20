@@ -1397,9 +1397,15 @@ void ZenoMainWindow::exportGraph()
 bool ZenoMainWindow::openFile(QString filePath)
 {
     auto pGraphs = zenoApp->graphsManager();
-    GraphsTreeModel* pModel = pGraphs->openZsgFile(filePath);
+    zenoio::ERR_CODE code = zenoio::PARSE_NOERROR;
+    GraphsTreeModel* pModel = pGraphs->openZsgFile(filePath, code);
     if (!pModel)
+    {
+        if (code == zenoio::PARSE_VERSION_UNKNOWN) {
+            QMessageBox::information(this, tr("Open File"), tr("The format of file is unknown"));
+        }
         return false;
+    }
 
     //cleanup
     zeno::getSession().globalComm->clearFrameState();
