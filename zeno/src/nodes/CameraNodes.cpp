@@ -9,7 +9,6 @@
 #include <glm/mat4x4.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtx/quaternion.hpp>
-#include "zeno/funcs/PrimitiveUtils.h"
 
 namespace zeno {
 
@@ -425,16 +424,13 @@ struct ScreenSpaceProjectedGrid : INode {
                 auto dir = view + u * right * right_scale + v * up * up_scale;
                 auto ndir = zeno::normalize(dir);
                 auto t = hitOnFloor(pos, ndir, sea_level);
-                auto index = j * width + i;
-                auto &flag = prim->verts.add_attr<int>("flag");
                 if (t > 0 && t * zeno::dot(ndir, dir) < infinite) {
-                    prim->verts[index] = pos + ndir * t;
-                    prim->verts[index][1] = sea_level;
-                    flag[index] = 1;
+                    prim->verts[j * width + i] = pos + ndir * t;
                 }
                 else {
-                    flag[index] = 0;
+                    prim->verts[j * width + i] = pos + dir * infinite;
                 }
+                prim->verts[j * width + i][1] = sea_level;
             }
         }
         std::vector<vec3i> tris;
@@ -450,8 +446,6 @@ struct ScreenSpaceProjectedGrid : INode {
             }
         }
         prim->tris.values = tris;
-
-        primFilterVerts(prim.get(), "flag", 0, true, "", "verts");
 
         set_output("prim", std::move(prim));
     }
