@@ -890,6 +890,182 @@ ZENDEFNODE(NewFBXImportAnimation, {
     {},
     {"primitive"},
 });
+
+struct NewFBXImportCamera : INode {
+    virtual void apply() override {
+        int frameid;
+        if (has_input("frameid")) {
+            frameid = std::lround(get_input2<float>("frameid"));
+        } else {
+            frameid = getGlobalState()->frameid;
+        }
+        float fps = get_input2<float>("fps");
+        float t = float(frameid) / fps;
+        FbxTime curTime;       // The time for each key in the animation curve(s)
+        curTime.SetSecondDouble(t);   // Starting time
+
+        // Change the following filename to a suitable filename value.
+        auto lFilename = get_input2<std::string>("path");
+
+        // Initialize the SDK manager. This object handles all our memory management.
+        FbxManager* lSdkManager = FbxManager::Create();
+
+        // Create the IO settings object.
+        FbxIOSettings *ios = FbxIOSettings::Create(lSdkManager, IOSROOT);
+        lSdkManager->SetIOSettings(ios);
+        // Destroy the SDK manager and all the other objects it was handling.
+        zeno::scope_exit sp([=]() { lSdkManager->Destroy(); });
+
+        // Create an importer using the SDK manager.
+        FbxImporter* lImporter = FbxImporter::Create(lSdkManager,"");
+
+        // Use the first argument as the filename for the importer.
+        if(!lImporter->Initialize(lFilename.c_str(), -1, lSdkManager->GetIOSettings())) {
+            printf("Call to FbxImporter::Initialize() failed.\n");
+            printf("Error returned: %s\n\n", lImporter->GetStatus().GetErrorString());
+            exit(-1);
+        }
+        int major, minor, revision;
+        lImporter->GetFileVersion(major, minor, revision);
+
+        // Create a new scene so that it can be populated by the imported file.
+        FbxScene* lScene = FbxScene::Create(lSdkManager,"myScene");
+
+        // Import the contents of the file into the scene.
+        lImporter->Import(lScene);
+
+        // The file is imported; so get rid of the importer.
+        lImporter->Destroy();
+
+        // Print the nodes of the scene and their attributes recursively.
+        // Note that we are not printing the root node because it should
+        // not contain any attributes.
+        auto prim = std::make_shared<PrimitiveObject>();
+        auto &ud = prim->userData();
+        ud.set2("version", vec3i(major, minor, revision));
+
+        FbxArray<FbxString*> animationStackNames;
+        std::vector<std::string> clip_names;
+        lScene->FillAnimStackNameArray(animationStackNames);
+        for (auto i = 0; i < animationStackNames.GetCount(); i++) {
+            clip_names.emplace_back(animationStackNames[i]->Buffer());
+        }
+        for (auto i = 0; i < clip_names.size(); i++) {
+            ud.set2(format("avail_anim_clip_{}", i), clip_names[i]);
+        }
+        ud.set2("avail_anim_clip_count", int(clip_names.size()));
+
+        auto clip_name = get_input2<std::string>("clipName");
+        if (clip_name == "") {
+            clip_name = lScene->ActiveAnimStackName.Get().Buffer();
+        }
+
+        int stack_index = int(std::find(clip_names.begin(), clip_names.end(), clip_name) - clip_names.begin());
+        if (stack_index == clip_names.size()) {
+            zeno::log_error("FBX: Can not find clip name");
+        }
+
+
+        FbxAnimStack* animStack = lScene->GetSrcObject<FbxAnimStack>(stack_index);
+        ud.set2("clipinfo.name", std::string(animStack->GetName()));
+
+
+        lScene->SetCurrentAnimationStack(animStack);
+
+        FbxTime mStart, mStop;
+        FbxTakeInfo* lCurrentTakeInfo = lScene->GetTakeInfo(*(animationStackNames[stack_index]));
+        float src_fps = 0;
+        if (lCurrentTakeInfo)  {
+            mStart = lCurrentTakeInfo->mLocalTimeSpan.GetStart();
+            mStop = lCurrentTakeInfo->mLocalTimeSpan.GetStop();
+            int frameCount = lCurrentTakeInfo->mLocalTimeSpan.GetDuration().GetFrameCount();
+            src_fps = frameCount / lCurrentTakeInfo->mLocalTimeSpan.GetDuration().GetSecondDouble();
+        }
+        else {
+            // Take the time line value
+            FbxTimeSpan lTimeLineTimeSpan;
+            lScene->GetGlobalSettings().GetTimelineDefaultTimeSpan(lTimeLineTimeSpan);
+
+            mStart = lTimeLineTimeSpan.GetStart();
+            mStop  = lTimeLineTimeSpan.GetStop();
+            int frameCount = lTimeLineTimeSpan.GetDuration().GetFrameCount();
+            src_fps = frameCount / lTimeLineTimeSpan.GetDuration().GetSecondDouble();
+        }
+
+        ud.set2("clipinfo.source_range", vec2f(mStart.GetSecondDouble(), mStop.GetSecondDouble()));
+        ud.set2("clipinfo.source_fps", src_fps);
+        ud.set2("clipinfo.fps", fps);
+
+        {
+            auto node_count = lScene->GetNodeCount();
+            for (int j = 0; j < node_count; ++j) {
+                auto pNode = lScene->GetNode(j);
+                FbxAMatrix lGlobalPosition = pNode->EvaluateGlobalTransform(curTime);
+                FbxMatrix transformMatrix;
+                memcpy(&transformMatrix, &lGlobalPosition, sizeof(FbxMatrix));
+                auto t = transformMatrix.GetRow(3);
+                auto pos = vec3f(t[0], t[1], t[2]);
+
+                auto r0 = transformMatrix.GetRow(0);
+                auto r1 = transformMatrix.GetRow(1);
+                auto r2 = transformMatrix.GetRow(2);
+                auto view = vec3f(r0[0], r0[1], r0[2]);
+                auto up = vec3f(r1[0], r1[1], r1[2]);
+                auto right = vec3f(r2[0], r2[1], r2[2]);
+                FbxCamera* pCamera = pNode->GetCamera();
+                if (pCamera) {
+                    set_output2("pos", pos);
+                    set_output2("right", right);
+                    set_output2("up", up);
+                    set_output2("view", view);
+
+                    float focal_length = pCamera->FocalLength.Get();
+                    set_output2("focal_length", focal_length);
+                    float m_ha = pCamera->GetApertureWidth() * 25.4; // inch -> mm
+                    float m_va = pCamera->GetApertureHeight() * 25.4; // inch -> mm
+                    set_output2("horizontalAperture", m_ha);
+                    set_output2("verticalAperture", m_va);
+                    auto m_nx = get_input2<float>("nx");
+                    auto m_ny = get_input2<float>("ny");
+                    float c_aspect = m_ha/m_va;
+                    float u_aspect = m_nx/m_ny;
+                    float fov_y = glm::degrees(2.0f * std::atan(m_va/(u_aspect/c_aspect) / (2.0f * focal_length)));
+                    set_output2("fov_y", fov_y);
+                    float _near = pCamera->NearPlane.Get();
+                    float _far = pCamera->FarPlane.Get();
+                    set_output2("near", _near);
+                    set_output2("far", _far);
+                }
+            }
+        }
+    }
+};
+
+ZENDEFNODE(NewFBXImportCamera, {
+    {
+        {"readpath", "path"},
+        {"string", "clipName", ""},
+        {"frameid"},
+        {"float", "fps", "25"},
+        {"bool", "ConvertUnits", "1"},
+        {"int", "nx", "1920"},
+        {"int", "ny", "1080"},
+    },
+    {
+        "pos",
+        "up",
+        "view",
+        "right",
+        "fov_y",
+        "focal_length",
+        "horizontalAperture",
+        "verticalAperture",
+        "near",
+        "far",
+    },
+    {},
+    {"primitive"},
+});
 struct NewFBXBoneDeform : INode {
     std::vector<std::string> getBoneNames(PrimitiveObject *prim) {
         auto boneName_count = prim->userData().get2<int>("boneName_count");
