@@ -9,6 +9,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include "zeno/extra/TempNode.h"
 
 namespace zeno {
 
@@ -397,7 +398,7 @@ struct ScreenSpaceProjectedGrid : INode {
     }
     virtual void apply() override {
         auto cam = get_input2<CameraObject>("cam");
-        auto prim = std::make_unique<PrimitiveObject>();
+        auto prim = std::make_shared<PrimitiveObject>();
         auto raw_width = get_input2<int>("width");
         auto raw_height = get_input2<int>("height");
         auto u_padding = get_input2<int>("u_padding");
@@ -430,7 +431,6 @@ struct ScreenSpaceProjectedGrid : INode {
                 else {
                     prim->verts[j * width + i] = pos + dir * infinite;
                 }
-                prim->verts[j * width + i][1] = sea_level;
             }
         }
         std::vector<vec3i> tris;
@@ -447,7 +447,17 @@ struct ScreenSpaceProjectedGrid : INode {
         }
         prim->tris.values = tris;
 
-        set_output("prim", std::move(prim));
+        auto outs = zeno::TempNodeSimpleCaller("PrimitiveClip")
+                .set("prim", std::move(prim))
+                .set2<vec3f>("origin", pos)
+                .set2<vec3f>("direction", view)
+                .set2<float>("distance", infinite * 0.999)
+                .set2<bool>("reverse:", false)
+                .call();
+
+        // Create nodes
+        auto new_prim = outs.get("outPrim");
+        set_output("prim", std::move(new_prim));
     }
 };
 
