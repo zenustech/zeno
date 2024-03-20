@@ -15,6 +15,8 @@ class TriangleKdTree {
 public:
     TriangleKdTree(const SurfaceMesh* mesh, unsigned int max_faces = 10,
                    unsigned int max_depth = 30);
+    TriangleKdTree(const AttrVector<vec3i>& tris, const AttrVector<vec3f>& points,
+                   unsigned int max_faces = 10, unsigned int max_depth = 30);
 
     ~TriangleKdTree() { delete root_; }
 
@@ -25,6 +27,7 @@ public:
     };
 
     NearestNeighbor nearest(const vec3f& p) const;
+    void faces_in_box(BoundingBox& box, std::vector<int>& faces);
 
 private:
 
@@ -50,6 +53,8 @@ private:
 
     void nearest_recurse(Node* node, const vec3f& point,
                          NearestNeighbor& data) const;
+    void in_box_recursive(Node* node, BoundingBox& box,
+                          std::vector<int>& faces);
 
     Node* root_;
 

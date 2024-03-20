@@ -9,7 +9,183 @@
 #include <unordered_set>
 
 namespace zeno {
+ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMergeWithFacesetMatid(std::vector<zeno::PrimitiveObject *> const &primList,
+                                                          std::string const &tagAttr) {
+    std::vector<std::string> matNameList(0);
+    std::vector<std::string> facesetNameList;
+    std::unordered_set<std::string> facesetNameSet;
+    std::unordered_map<std::string, int> abcpathNameMap;
+    for (auto &p : primList) {
+        //if p has material
+        int matNum = p->userData().get2<int>("matNum", 0);
+        if (matNum > 0) {
+            //for p's tris, quads...
+            //    tris("matid")[i] += matNameList.size();
+            for (int i = 0; i < p->tris.size(); i++) {
+                if (p->tris.attr<int>("matid")[i] != -1) {
+                    p->tris.attr<int>("matid")[i] += matNameList.size();
+                }
+            }
+            for (int i = 0; i < p->quads.size(); i++) {
+                if (p->quads.attr<int>("matid")[i] != -1) {
+                    p->quads.attr<int>("matid")[i] += matNameList.size();
+                }
+            }
+            for (int i = 0; i < p->polys.size(); i++) {
+                if (p->polys.attr<int>("matid")[i] != -1) {
+                    p->polys.attr<int>("matid")[i] += matNameList.size();
+                }
+            }
+            //for p's materials
+            //    add them to material list
+            for (int i = 0; i < matNum; i++) {
+                auto matIdx = "Material_" + to_string(i);
+                auto matName = p->userData().get2<std::string>(matIdx, "Default");
+                matNameList.emplace_back(matName);
+            }
+        } else {
+            //for p's tris, quads...
+            //    tris("matid")[] = -1;
+            if (p->tris.size() > 0) {
+                p->tris.add_attr<int>("matid");
+                p->tris.attr<int>("matid").assign(p->tris.size(), -1);
+            }
+            if (p->quads.size() > 0) {
+                p->quads.add_attr<int>("matid");
+                p->quads.attr<int>("matid").assign(p->quads.size(), -1);
+            }
+            if (p->polys.size() > 0) {
+                p->polys.add_attr<int>("matid");
+                p->polys.attr<int>("matid").assign(p->polys.size(), -1);
+            }
+        }
+        int faceset_count = p->userData().get2<int>("faceset_count", 0);
+        if (faceset_count > 0) {
+            for (int i = 0; i < p->tris.size(); i++) {
+                if (p->tris.attr<int>("faceset")[i] != -1) {
+                    p->tris.attr<int>("faceset")[i] += int(facesetNameList.size());
+                }
+            }
+            for (int i = 0; i < p->quads.size(); i++) {
+                if (p->quads.attr<int>("faceset")[i] != -1) {
+                    p->quads.attr<int>("faceset")[i] += int(facesetNameList.size());
+                }
+            }
+            for (int i = 0; i < p->polys.size(); i++) {
+                if (p->polys.attr<int>("faceset")[i] != -1) {
+                    p->polys.attr<int>("faceset")[i] += int(facesetNameList.size());
+                }
+            }
+            for (int i = 0; i < faceset_count; i++) {
+                auto facesetIdx = "faceset_" + to_string(i);
+                auto facesetName = p->userData().get2<std::string>(facesetIdx, "Default");
+                std::string newFacesetName = facesetName;
+                int j = 0;
+                while (facesetNameSet.count(newFacesetName)) {
+                    j++;
+                    newFacesetName = zeno::format("{}_{}", facesetName, j);
+                }
+                facesetNameList.emplace_back(newFacesetName);
+                facesetNameSet.insert(newFacesetName);
+            }
+        } else {
+            if (p->tris.size() > 0) {
+                p->tris.add_attr<int>("faceset");
+                p->tris.attr<int>("faceset").assign(p->tris.size(), -1);
+            }
+            if (p->quads.size() > 0) {
+                p->quads.add_attr<int>("faceset");
+                p->quads.attr<int>("faceset").assign(p->quads.size(), -1);
+            }
+            if (p->polys.size() > 0) {
+                p->polys.add_attr<int>("faceset");
+                p->polys.attr<int>("faceset").assign(p->polys.size(), -1);
+            }
+        }
+        int path_count = p->userData().get2<int>("abcpath_count", 0);
+        if (path_count == 0) {
+            p->userData().set2("abcpath_count", 1);
+            p->userData().set2("abcpath_0", "/ABC/Default");
 
+            if (p->tris.size() > 0) {
+                p->tris.add_attr<int>("abcpath").assign(p->tris.size(),0);
+            }
+            if (p->quads.size() > 0) {
+                p->quads.add_attr<int>("abcpath").assign(p->quads.size(),0);
+            }
+            if (p->polys.size() > 0) {
+                p->polys.add_attr<int>("abcpath").assign(p->polys.size(),0);
+            }
+            path_count = 1;
+        }
+        {
+            std::unordered_map<int, int> cur_abcpath_index_map;
+            for (auto i = 0; i < path_count; i++) {
+                auto path = p->userData().get2<std::string>(format("abcpath_{}", i));
+                if (abcpathNameMap.count(path) == 0) {
+                    int new_index = abcpathNameMap.size();
+                    abcpathNameMap[path] = new_index;
+                    zeno::log_info("{} {}", path, new_index);
+                }
+                cur_abcpath_index_map[i] = abcpathNameMap[path];
+                zeno::log_info("{} {}", i, abcpathNameMap[path]);
+            }
+
+            for (int i = 0; i < p->tris.size(); i++) {
+                if (p->tris.attr<int>("abcpath")[i] != -1) {
+                    p->tris.attr<int>("abcpath")[i] = cur_abcpath_index_map[p->tris.attr<int>("abcpath")[i]];
+                }
+            }
+            for (int i = 0; i < p->quads.size(); i++) {
+                if (p->quads.attr<int>("abcpath")[i] != -1) {
+                    p->quads.attr<int>("abcpath")[i] = cur_abcpath_index_map[p->quads.attr<int>("abcpath")[i]];
+                }
+            }
+            for (int i = 0; i < p->polys.size(); i++) {
+                if (p->polys.attr<int>("abcpath")[i] != -1) {
+                    p->polys.attr<int>("abcpath")[i] = cur_abcpath_index_map[p->polys.attr<int>("abcpath")[i]];
+                }
+            }
+        }
+    }
+    auto outprim = primMerge(primList, tagAttr);
+
+    for (auto &p : primList) {
+        outprim->userData().merge(p->userData());
+    }
+
+    if (matNameList.size() > 0) {
+        //add matNames to userData
+        int i = 0;
+        for (auto name : matNameList) {
+            auto matIdx = "Material_" + to_string(i);
+            outprim->userData().setLiterial(matIdx, name);
+            i++;
+        }
+    }
+    int oMatNum = matNameList.size();
+    outprim->userData().set2("matNum", oMatNum);
+    {
+        if (facesetNameList.size() > 0) {
+            int i = 0;
+            for (auto name : facesetNameList) {
+                auto facesetIdx = "faceset_" + to_string(i);
+                outprim->userData().setLiterial(facesetIdx, name);
+                i++;
+            }
+        }
+        int faceset_count = facesetNameList.size();
+        outprim->userData().set2("faceset_count", faceset_count);
+    }
+    {
+        for (auto const &[k, v]: abcpathNameMap) {
+            outprim->userData().set2(format("abcpath_{}", v), k);
+        }
+        int abcpath_count = abcpathNameMap.size();
+        outprim->userData().set2("abcpath_count", abcpath_count);
+    }
+    return outprim;
+}
 ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::PrimitiveObject *> const &primList,
                                                           std::string const &tagAttr) {
     //zeno::log_critical("asdfjhl {}", primList.size());
@@ -514,127 +690,8 @@ struct PrimMerge : INode {
         auto tagAttr = get_input<StringObject>("tagAttr")->get();
         //initialize
 
-        std::vector<std::string> matNameList(0);
-        std::vector<std::string> facesetNameList;
-        std::unordered_set<std::string> facesetNameSet;
-        for (auto &p : primList) {
-            //if p has material
-            int matNum = p->userData().get2<int>("matNum", 0);
-            if (matNum > 0) {
-                //for p's tris, quads...
-                //    tris("matid")[i] += matNameList.size();
-                for (int i = 0; i < p->tris.size(); i++) {
-                    if (p->tris.attr<int>("matid")[i] != -1) {
-                        p->tris.attr<int>("matid")[i] += matNameList.size();
-                    }
-                }
-                for (int i = 0; i < p->quads.size(); i++) {
-                    if (p->quads.attr<int>("matid")[i] != -1) {
-                        p->quads.attr<int>("matid")[i] += matNameList.size();
-                    }
-                }
-                for (int i = 0; i < p->polys.size(); i++) {
-                    if (p->polys.attr<int>("matid")[i] != -1) {
-                        p->polys.attr<int>("matid")[i] += matNameList.size();
-                    }
-                }
-                //for p's materials
-                //    add them to material list
-                for (int i = 0; i < matNum; i++) {
-                    auto matIdx = "Material_" + to_string(i);
-                    auto matName = p->userData().get2<std::string>(matIdx, "Default");
-                    matNameList.emplace_back(matName);
-                }
-            } else {
-                //for p's tris, quads...
-                //    tris("matid")[] = -1;
-                if (p->tris.size() > 0) {
-                    p->tris.add_attr<int>("matid");
-                    p->tris.attr<int>("matid").assign(p->tris.size(), -1);
-                }
-                if (p->quads.size() > 0) {
-                    p->quads.add_attr<int>("matid");
-                    p->quads.attr<int>("matid").assign(p->quads.size(), -1);
-                }
-                if (p->polys.size() > 0) {
-                    p->polys.add_attr<int>("matid");
-                    p->polys.attr<int>("matid").assign(p->polys.size(), -1);
-                }
-            }
-            int faceset_count = p->userData().get2<int>("faceset_count", 0);
-            if (faceset_count > 0) {
-                for (int i = 0; i < p->tris.size(); i++) {
-                    if (p->tris.attr<int>("faceset")[i] != -1) {
-                        p->tris.attr<int>("faceset")[i] += int(facesetNameList.size());
-                    }
-                }
-                for (int i = 0; i < p->quads.size(); i++) {
-                    if (p->quads.attr<int>("faceset")[i] != -1) {
-                        p->quads.attr<int>("faceset")[i] += int(facesetNameList.size());
-                    }
-                }
-                for (int i = 0; i < p->polys.size(); i++) {
-                    if (p->polys.attr<int>("faceset")[i] != -1) {
-                        p->polys.attr<int>("faceset")[i] += int(facesetNameList.size());
-                    }
-                }
-                for (int i = 0; i < faceset_count; i++) {
-                    auto facesetIdx = "faceset_" + to_string(i);
-                    auto facesetName = p->userData().get2<std::string>(facesetIdx, "Default");
-                    std::string newFacesetName = facesetName;
-                    int j = 0;
-                    while (facesetNameSet.count(newFacesetName)) {
-                        j++;
-                        newFacesetName = zeno::format("{}_{}", facesetName, j);
-                    }
-                    facesetNameList.emplace_back(newFacesetName);
-                    facesetNameSet.insert(newFacesetName);
-                }
-            } else {
-                if (p->tris.size() > 0) {
-                    p->tris.add_attr<int>("faceset");
-                    p->tris.attr<int>("faceset").assign(p->tris.size(), -1);
-                }
-                if (p->quads.size() > 0) {
-                    p->quads.add_attr<int>("faceset");
-                    p->quads.attr<int>("faceset").assign(p->quads.size(), -1);
-                }
-                if (p->polys.size() > 0) {
-                    p->polys.add_attr<int>("faceset");
-                    p->polys.attr<int>("faceset").assign(p->polys.size(), -1);
-                }
-            }
-        }
+        auto outprim = primMergeWithFacesetMatid(primList, tagAttr);
 
-        auto outprim = primMerge(primList, tagAttr);
-
-        for (auto &p : primList) {
-            outprim->userData().merge(p->userData());
-        }
-
-        if (matNameList.size() > 0) {
-            //add matNames to userData
-            int i = 0;
-            for (auto name : matNameList) {
-                auto matIdx = "Material_" + to_string(i);
-                outprim->userData().setLiterial(matIdx, name);
-                i++;
-            }
-        }
-        int oMatNum = matNameList.size();
-        outprim->userData().set2("matNum", oMatNum);
-        {
-            if (facesetNameList.size() > 0) {
-                int i = 0;
-                for (auto name : facesetNameList) {
-                    auto facesetIdx = "faceset_" + to_string(i);
-                    outprim->userData().setLiterial(facesetIdx, name);
-                    i++;
-                }
-            }
-            int faceset_count = facesetNameList.size();
-            outprim->userData().set2("faceset_count", faceset_count);
-        }
         //auto outprim = std::make_shared<PrimitiveObject>(*primList[0]);
         set_output("prim", std::move(outprim));
     }

@@ -19,6 +19,8 @@ public:
     void setRes(QVector2D res);
     QVector2D res() const { return m_res; }
 
+    float getRoll() const;
+    void setRoll(float roll);
     float getTheta() const;
     void setTheta(float theta);
     float getPhi() const;

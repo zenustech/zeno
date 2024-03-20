@@ -141,6 +141,9 @@ static __inline__ __device__ float sampleIES(const float* iesProfile, float h_an
     auto v_ratio = (v_angle-v_angles[v_idx]) / (v_angles[v_idx+1]-v_angles[v_idx]);
     auto h_ratio = (h_angle-h_angles[h_idx]) / (h_angles[h_idx+1]-h_angles[h_idx]);
 
+    v_ratio = clamp(v_ratio, 0.0f, 1.0f);
+    h_ratio = clamp(h_ratio, 0.0f, 1.0f);
+
     auto _ab_ = mix(_a_, _b_, v_ratio);
     auto _cd_ = mix(_c_, _d_, v_ratio);
 
@@ -282,6 +285,8 @@ void DirectLighting(RadiancePRD *prd, ShadowPRD& shadowPRD, const float3& shadin
             auto n_len = dot(-lsr.dir, light.N);
             auto t_len = dot(-lsr.dir, light.T);
             auto b_len = dot(-lsr.dir, light.B);
+
+            if (n_len <= 0) {return;}
 
             auto tanU = t_len / n_len;
             auto tanV = b_len / n_len;

@@ -29,11 +29,6 @@ static __inline__ __device__ bool isTriangleLightGAS(uint instanceId) {
 extern "C" __global__ void __closesthit__radiance()
 {
     RadiancePRD* prd = getPRD();
-    if(prd->test_distance)
-    {
-        prd->maxDistance = optixGetRayTmax();
-        prd->test_distance = false; return;
-    }
     
     const OptixTraversableHandle gas = optixGetGASTraversableHandle();
     const uint           sbtGASIndex = optixGetSbtGASIndex();
@@ -66,6 +61,7 @@ extern "C" __global__ void __closesthit__radiance()
         light_index = primitiveIndex + params.firstSphereLightIdx;
 
     } else {
+      //////
 
         if (isPlaneLightGAS(instanceId)) {
 
@@ -108,9 +104,7 @@ extern "C" __global__ void __closesthit__radiance()
     auto visible = (light.config & zeno::LightConfigVisible);
 
     if (!visible && prd->depth == 0) {
-        auto pos = P;
-        prd->geometryNormal = light_normal;
-        prd->offsetUpdateRay(pos, ray_dir); 
+        prd->_tmin_ = optixGetRayTmax();
         return;
     }
 
@@ -128,33 +122,100 @@ extern "C" __global__ void __closesthit__radiance()
     }
 
     const auto lightShape = light.shape;
+    const auto shadingP = ray_orig + params.cam.eye;
 
-    auto prdorigin = ray_orig + params.cam.eye;
+    const auto insideEllipse = [&]() -> bool {
+
+        float3 _vertices_[3];
+        optixGetTriangleVertexData( gas, optixGetPrimitiveIndex(), sbtGASIndex, 0, _vertices_ );
+    
+        const float3& v0 = _vertices_[0];
+        const float3& v1 = _vertices_[1];
+        const float3& v2 = _vertices_[2];
+
+        float2 barys = optixGetTriangleBarycentrics();
+        float3 P_Local = interp(barys, v0, v1, v2);
+
+        auto delta = P_Local - light.rect.v;
+            
+        float2 uv = { dot(delta, light.rect.axisX) / light.rect.lenX,
+                      dot(delta, light.rect.axisY) / light.rect.lenY };
+
+        auto uvd = uv - 0.5f;
+        return length(uvd) <= 0.5f;
+    };
+
+    if (prd->test_distance) {
+            
+        if (lightShape != zeno::LightShape::Ellipse) 
+        {
+            prd->maxDistance = optixGetRayTmax();
+            prd->test_distance = false; return;
+        }
+
+        if (insideEllipse()) {
+            prd->maxDistance = optixGetRayTmax();
+            prd->test_distance = false;
+        } else {
+            prd->done = false;
+            prd->_tmin_ = optixGetRayTmax();
+        }
+
+        return;
+    }
 
     switch (lightShape) {
     case zeno::LightShape::Plane:
     case zeno::LightShape::Ellipse: {
-        auto valid = light.rect.EvalAfterHit(&lsr, lightDirection, lightDistance, prdorigin);
-        if (!valid) {
+
+        auto valid = true; 
+        if (light.rect.isEllipse && !insideEllipse()) {
+            valid &= false;
             prd->done = false;
-            auto pos = P;
-            prd->geometryNormal = light_normal;
-            prd->offsetUpdateRay(pos, ray_dir); 
-            return;
-        };
+            prd->_tmin_ = optixGetRayTmax();
+        }
+        // valid = light.rect.EvalAfterHit(&lsr, lightDirection, lightDistance, shadingP);
+        // if (!valid) {
+        //     prd->done = false;
+        //     prd->_tmin_ = optixGetRayTmax();
+        //     return;
+        // };
+        if (!valid) { return; }
+
+        auto rect = light.rect;
+        float2 uvScale, uvOffset;
+        valid &= SpreadClampRect(rect.v, rect.axisX, rect.lenX, rect.axisY, rect.lenY, 
+                            rect.normal, shadingP, 
+                            light.spreadMajor, uvScale, uvOffset);  
+
+        if (!valid) { return; }
+
+        SphericalRect squad;
+        SphericalRectInit(squad, shadingP, rect.v, rect.axisX, rect.lenX, rect.axisY, rect.lenY);
+        lsr.PDF = 1.0f / squad.S;  
+        if ( !isfinite(lsr.PDF) ) { return; }
+        
+        lsr.n = light.N;
+        lsr.NoL = dot(light.N, -ray_dir);
+        lsr.uv = uvOffset + lsr.uv * uvScale;
+
+        lsr.dir = lightDirection;
+        lsr.dist = lightDistance;
+        lsr.p = ray_orig + ray_dir * lightDistance;
         break;
     }
     case zeno::LightShape::Sphere: {
-        light.sphere.EvalAfterHit(&lsr, lightDirection, lightDistance, prdorigin);
+        light.sphere.EvalAfterHit(&lsr, lightDirection, lightDistance, shadingP);
         cihouSphereLightUV(lsr, light); break;
     }
     case zeno::LightShape::TriangleMesh: {
+    
         float2 bary2 = optixGetTriangleBarycentrics();
         float3 bary3 = { 1.0f-bary2.x-bary2.y, bary2.x, bary2.y };
         
         float3* normalBuffer = reinterpret_cast<float3*>(params.triangleLightNormalBuffer);
         float2* coordsBuffer = reinterpret_cast<float2*>(params.triangleLightCoordsBuffer);
-        light.triangle.EvalAfterHit(&lsr, lightDirection, lightDistance, prdorigin, prd->geometryNormal, bary3, normalBuffer, coordsBuffer);
+        light.triangle.EvalAfterHit(&lsr, lightDirection, lightDistance, shadingP, prd->geometryNormal, bary3, normalBuffer, coordsBuffer);
         break;
     }
     default: return;
@@ -190,7 +251,7 @@ extern "C" __global__ void __closesthit__radiance()
         auto lightTree = reinterpret_cast<pbrt::LightTreeSampler*>(params.lightTreeSampler);
         if (lightTree == nullptr) { return; }
 
-        auto PMF = lightTree->PMF(reinterpret_cast<const Vector3f&>(prdorigin),
+        auto PMF = lightTree->PMF(reinterpret_cast<const Vector3f&>(shadingP),
                                          reinterpret_cast<const Vector3f&>(prd->geometryNormal), light_index);
 
         auto lightPickPDF = (1.0f - _SKY_PROB_) * PMF;

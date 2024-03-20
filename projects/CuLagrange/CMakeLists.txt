@@ -111,6 +111,8 @@ target_sources(zeno PRIVATE
   geometry/kernel/tiled_vector_ops.hpp
   geometry/kernel/intersection.hpp
 
+
+  geometry/Transform.cu
   geometry/SolveLaplacian.cu
   geometry/VectorField.cu
   geometry/BaryCentricInterpolator.cu

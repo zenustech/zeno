@@ -152,10 +152,10 @@ void loadVolumeVDB(VolumeWrapper& volume, const std::string& path) {
 
     const auto parent_matrix = volume.transform;
 
-    const auto child_matrix = [&]() -> glm::f64mat4 {
+    const auto child_matrix = [&]() -> auto {
 
         auto tmp = baseGrid->transform().baseMap()->getAffineMap()->getMat4();
-        glm::f64mat4 result;
+        glm::mat4 result;
         for (uint i=0; i<16; ++i) {
             auto ele = *(tmp[0]+i);
             result[i/4][i%4] = ele;
@@ -282,14 +282,16 @@ void buildVolumeAccel( VolumeAccel& accel, const VolumeWrapper& volume, const Op
     // GAS is created from a single AABB. Because the index space is by definition axis aligned with the
     // volume's voxels, this AABB is the bounding-box of the volume's "active voxels".
     {
-        auto baseGrid = volume.grids.front();
-
 		// get this grid's aabb
-        sutil::Aabb aabb;
+        sutil::Aabb aabb = [&]()
         {
+            if (volume.grids.size() == 0) {
+                return sutil::Aabb( {-0.5, -0.5, -0.5}, {0.5, 0.5, 0.5} );
+            }
             // indexBBox returns the extrema of the (integer) voxel coordinates.
             // Thus the actual bounds of the space covered by those voxels extends
             // by one unit (or one "voxel size") beyond those maximum indices.
+            auto baseGrid = volume.grids.front();
             auto bbox = baseGrid->indexedBox();
             nanovdb::Coord boundsMin( bbox.min() );
             nanovdb::Coord boundsMax( bbox.max() + nanovdb::Coord( 1 ) ); // extend by one unit
@@ -303,8 +305,8 @@ void buildVolumeAccel( VolumeAccel& accel, const VolumeWrapper& volume, const Op
                 static_cast<float>( boundsMax[1] ),
                 static_cast<float>( boundsMax[2] )};
 
-            aabb =sutil::Aabb( min, max );
-        }
+            return sutil::Aabb( min, max );
+        }();
 
 		// up to device
         CUdeviceptr d_aabb;
@@ -381,6 +383,9 @@ void cleanupVolumeAccel( VolumeAccel& accel )
 {
     if (accel.d_buffer != 0) {
 	    CUDA_CHECK_NOTHROW( cudaFree( reinterpret_cast<void*>( accel.d_buffer ) ) );
+
+        accel.d_buffer = 0u;
+        accel.handle = 0u;
     }
 }
 
@@ -388,6 +393,15 @@ void getOptixTransform( const VolumeWrapper& volume, float transform[] )
 {
     // Extract the index-to-world-space affine transform from the Grid and convert
     // to 3x4 row-major matrix for Optix.
+    if (volume.grids.size() == 0) {
+        auto dummy = glm::transpose(volume.transform);
+        auto dummy_ptr = glm::value_ptr( dummy );
+        for (size_t i=0; i<12; ++i) {   
+            transform[i] = dummy_ptr[i];
+        }
+        return;
+    }
+
     auto baseGrid = volume.grids.front();
     const nanovdb::Map& map = baseGrid->nanoMAP();
 

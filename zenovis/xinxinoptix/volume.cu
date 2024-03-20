@@ -1,3 +1,7 @@
+#include <nanovdb/NanoVDB.h>
+#include <nanovdb/util/Ray.h>
+#include <nanovdb/util/HDDA.h>
+
 #include "Light.h"
 #include "volume.h"
 
@@ -7,141 +11,287 @@
 
 // #include <cuda_fp16.h>
 // #include "nvfunctional"
-#include <nanovdb/NanoVDB.h>
-#include <nanovdb/util/Ray.h>
-#include <nanovdb/util/HDDA.h>
-#include <nanovdb/util/SampleFromVoxels.h>
 
 using DataTypeNVDB0 = nanovdb::Fp32;
 using GridTypeNVDB0 = nanovdb::NanoGrid<DataTypeNVDB0>;
+
+__inline__ __device__ bool rayBox(const float3& ray_ori, const float3& ray_dir, const nanovdb::BBox<nanovdb::Vec3f>& box, 
+                        float& t0, float& t1) {
+
+    auto iray = nanovdb::Ray<float>( reinterpret_cast<const nanovdb::Vec3f&>( ray_ori ),
+                                     reinterpret_cast<const nanovdb::Vec3f&>( ray_dir ), t0, t1 );
+    return iray.intersects( box, t0, t1 );
+}
 
 extern "C" __global__ void __intersection__volume()
 {
     const auto* sbt_data = reinterpret_cast<const HitGroupData*>( optixGetSbtDataPointer() );
     const auto* grid = reinterpret_cast<const GridTypeNVDB0*>( sbt_data->vdb_grids[0] );
-    if ( grid == nullptr) { return; }
 
-    const float3 ray_orig = optixGetWorldRayOrigin() + params.cam.eye;
-    const float3 ray_dir  = optixGetWorldRayDirection();
+    auto box = [&]() -> nanovdb::BBox<nanovdb::Vec3f> {
+        if ( grid == nullptr) {
+            return nanovdb::BBox<nanovdb::Vec3f>(nanovdb::Vec3f(-0.5f), nanovdb::Vec3f(0.5f));
+        } else {
+            auto& ibox = grid->indexBBox();
+            return nanovdb::BBox<nanovdb::Vec3f>(ibox.min(), ibox.max()+nanovdb::Coord(1));
+        }
+    } ();
 
-    auto dbox = grid->worldBBox(); //grid->indexBBox();
+    const float3 ray_ori = optixGetObjectRayOrigin();
+          float3 ray_dir = optixGetObjectRayDirection(); // not normalized
+
+    ray_dir = normalize(ray_dir);
+
     float t0 = optixGetRayTmin();
-    float t1 = _FLT_MAX_; //optixGetRayTmax();
+    float t1 = 1e16f; //optixGetRayTmax();
 
-    auto iray = nanovdb::Ray<float>( reinterpret_cast<const nanovdb::Vec3f&>( ray_orig ),
-                                     reinterpret_cast<const nanovdb::Vec3f&>( ray_dir ), t0, t1 );
-    // auto fbox = nanovdb::BBox<nanovdb::Vec3f>(nanovdb::Vec3f(dbox.min()), nanovdb::Vec3f(dbox.max()));
+    auto dirlen = length(optixGetObjectRayDirection());
+    
+    { // world distance to object distance 
+        t0 = t0 * dirlen; 
+        t1 = t1 * dirlen;
+    } 
+
+    //bool inside = box.isInside(reinterpret_cast<const nanovdb::Vec3f&>(ray_ori));
+    auto hitted = rayBox( ray_ori, ray_dir, box, t0, t1 );
+    if (!hitted) { return; }
+
+    RadiancePRD *prd = getPRD<RadiancePRD>();
+
+    //auto scale = optixTransformVectorFromObjectToWorldSpace(ray_dir);
+    auto len = 1.0f / dirlen;
+    // object distance to world distance 
+    t0 = t0 * len;
+    t1 = t1 * len;
+    
+    t0 = max(t0, 0.0f);
+    t1 = max(t1, 0.0f);
+
+    // report the entry-point as hit-point
+    //auto kind = optixGetHitKind();
+    t0 = fmaxf(t0, optixGetRayTmin());
+
+    if (t1 <= t0) { // skip tmin
+        return;
+    }
 
     auto flags = optixGetRayFlags();
     auto anyhit = flags & OPTIX_RAY_FLAG_ENFORCE_ANYHIT;
 
-    if( iray.intersects( dbox, t0, t1 )) // t0 >= 0
-    {
-        // report the entry-point as hit-point
-        //auto kind = optixGetHitKind();
-        t0 = fmaxf(t0, optixGetRayTmin());
+    if (anyhit) {
 
-        if (anyhit) {
-            ShadowPRD *prd = getPRD<ShadowPRD>();
+        ShadowPRD *prd = getPRD<ShadowPRD>();
+        prd->vol.t0 = t0;
+        prd->vol.t1 = min(prd->maxDistance, t1);
 
-            prd->vol.vol_t0 = t0;
-            prd->vol.origin_inside = (t0 == 0);
-            prd->vol.vol_t1 = min(prd->maxDistance, t1);
-            prd->vol.surface_inside = (optixGetRayTmax() < t1);
-        } else {
+    } else {
 
-            RadiancePRD* prd = getPRD();
-            prd->vol.vol_t0 = t0;
-            prd->vol.origin_inside = (t0 == 0);
+        RadiancePRD* prd = getPRD();
+        prd->vol.t0 = t0;
+        prd->vol.t1 = t1; //min(optixGetRayTmax(), t1);
+    }
 
-            prd->vol.vol_t1 = t1; //min(optixGetRayTmax(), t1);
-            prd->vol.surface_inside = (optixGetRayTmax() < t1); // In case triangles were visited before volume
-        }
+    if (optixGetRayTmax() > 0) {
+        optixReportIntersection(t0, 0);
+    }
+}
 
-        if (optixGetRayTmax() > 0) {
-            optixReportIntersection(t0, 0);
-        }
-    } 
+__forceinline__ __device__ auto EvalVolume(uint32_t* seed, float* m16, float sigma_t, float3& pos) {
+
+    const HitGroupData* sbt_data = reinterpret_cast<HitGroupData*>( optixGetSbtDataPointer() );
+
+    VolumeIn vin;
+    vin.pos_view = pos;
+    vin.pos_world = pos + params.cam.eye;
+    vin.seed = seed;
+    vin.sigma_t = sigma_t;
+    vin.sbt_ptr = (void*)sbt_data;
+    
+    vin.world2object = m16;
+
+    return optixDirectCall<VolumeOut, const float4*, const VolumeIn&>( sbt_data->dc_index, sbt_data->uniforms, vin );
 }
 
 extern "C" __global__ void __closesthit__radiance_volume()
 {
     RadiancePRD* prd = getPRD();
-    
+
     prd->countEmitted = false;
     prd->radiance = vec3(0);
-
-    prd->_tmin_ = 0;
-    prd->_mask_ = EverythingMask;
 
     const HitGroupData* sbt_data = reinterpret_cast<HitGroupData*>( optixGetSbtDataPointer() );
 
     const float3 ray_orig = optixGetWorldRayOrigin();
     const float3 ray_dir  = optixGetWorldRayDirection();
 
-        float t0 = prd->vol.vol_t0; // world space
-        float t1 = prd->vol.vol_t1; // world space
+    float t0 = prd->vol.t0; // world space
+    float t1 = prd->vol.t1; // world space
 
-    ShadowPRD testPRD {};
-    testPRD.maxDistance = _FLT_MAX_;
+    RadiancePRD testPRD {};
+    testPRD.done = false;
+    testPRD.seed = prd->seed;
+    testPRD.depth == 0;
+    testPRD._tmin_ = t0;
+    testPRD.maxDistance = t1;
     testPRD.test_distance = true;
     
-    uint16_t _mask_ = EverythingMask ^ VolumeMatMask;
-    traceRadiance(params.handle, ray_orig,ray_dir, 0, _FLT_MAX_, &testPRD, _mask_);
+    uint8_t _mask_ = EverythingMask ^ VolumeMatMask;
 
+    do {
+        traceRadiance(params.handle, ray_orig, ray_dir, testPRD._tmin_, testPRD.maxDistance, &testPRD, _mask_);
+    } while(testPRD.test_distance && !testPRD.done);
+
+    bool surface_inside = false;
     if(testPRD.maxDistance < t1)
     {
         t1 = testPRD.maxDistance;
-        prd->vol.surface_inside = true;
+        surface_inside = true;
     }
 
-    const float t_max = fmax(0.f, t1 - t0); // world space
-    float t_ele = 0;
+    const float t_max = fmaxf(0.f, t1 - t0); // world space
 
     float3 new_orig = ray_orig; 
-    float3 emitting = make_float3(0.0);
-    float3 scattering = make_float3(1.0);
-   
-    float sigma_t = sbt_data->vol_extinction;
+    float3 new_dir  = ray_dir;
+
+    auto cihouVolumeEdge = [&]() {
+
+        if (surface_inside) { // Hit other material
+
+            prd->_mask_ = _mask_;
+            prd->_tmin_ = NextFloatDown(t1);
+
+        } else { // Volume edge
+
+            prd->_mask_ = EverythingMask;
+            prd->_tmin_ = t1;
+        }
+
+        new_orig = ray_orig;
+    };
+
+    float m16[16] = {}; m16[15] = 1;
+    optixGetWorldToObjectTransformMatrix(m16);
+
+    if (0 == sbt_data->vol_depth) { // Homogeneous
+
+        new_orig = ray_orig + 0.5f * (t0 + t1) * ray_dir;
+        VolumeOut homo_out = EvalVolume(&prd->seed, m16, 0.0f, new_orig);
+        //auto hg = pbrt::HenyeyGreenstein(vol_out.anisotropy);
+
+        float3 transmittance = vec3(1.0f);
+        float3 weight = vec3(1.0f); 
+        float dt;
+
+        if (sbt_data->multiscatter) {
+
+            auto prob = prd->rndf();
+            dt = -logf(1.0f-prob) / average(homo_out.extinction);
+
+            auto pdf = expf(-homo_out.extinction * dt) * homo_out.extinction;
+            weight = (homo_out.extinction * homo_out.albedo ) / pdf;
+
+        } else {
+
+            auto total_transmittance = expf(-homo_out.extinction * t_max);
+            dt = -logf(1.0f - prd->rndf() * (1.0f - average(total_transmittance))) / average(homo_out.extinction);
+
+            auto cdf = 1.0f - total_transmittance;
+            auto pdf = expf(-homo_out.extinction * dt) * homo_out.extinction;
+
+            weight = cdf / pdf;
+            weight *= homo_out.extinction;
+
+            //auto tmp = expf(-t_max * homo_out.density);
+            //dt = -logf(1.0 - prd->rndf() *(1-tmp)) / homo_out.density;
+        }
+
+        if (prd->vol.afterSingleScatter) {
+
+            dt = t_max;
+            prd->vol.afterSingleScatter = false;
+        }
+
+        if (dt >= t_max) {
+            
+            cihouVolumeEdge();
+            transmittance = expf(-homo_out.extinction * t_max);
+
+        } else {
+
+            new_orig = ray_orig + (t0+dt) * ray_dir;
+            transmittance = expf(-homo_out.extinction * dt);
+
+            if (sbt_data->multiscatter) {
+
+                pbrt::HenyeyGreenstein hg (homo_out.anisotropy);
+                float2 uu = { prd->rndf(), prd->rndf() };
+                auto pdf = hg.sample(-ray_dir, new_dir, uu);              
+                prd->samplePdf = pdf;
+            } else {
+
+                prd->vol.afterSingleScatter = true;
+                prd->_mask_ = VolumeMatMask;
+            }
+        }
+
+        prd->updateAttenuation( transmittance );
+
+        prd->origin = new_orig;
+        prd->direction = new_dir;
+        prd->geometryNormal = {};
+
+        if (dt >= t_max) { // ingore lighting
+            return; 
+        }
+
+        ShadowPRD shadowPRD {};
+        shadowPRD.seed = prd->seed;
+        shadowPRD.origin = new_orig; //camera sapce
+        shadowPRD.attanuation = vec3(1.0f);
+        
+        auto evalBxDF = [&](const float3& _wi_, const float3& _wo_, float& thisPDF) -> float3 {
+
+            pbrt::HenyeyGreenstein hg(homo_out.anisotropy);
+            thisPDF = hg.p(_wo_, _wi_);
+            return homo_out.albedo * thisPDF;
+        };
+
+        prd->depth += 1;
+        prd->lightmask = VolumeMatMask;
+        DirectLighting<true>(prd, shadowPRD, new_orig+params.cam.eye, ray_dir, evalBxDF);
+        //prd->radiance += prd->emission;
+        prd->radiance = prd->radiance * weight;
+        return;
+    }
+
     float v_density = 0.0;
+    float sigma_t = sbt_data->vol_extinction;
 
     VolumeOut vol_out;
-    auto new_dir = ray_dir;
-
     auto level = sbt_data->vol_depth;
-    auto step_scale = 1.0f/sigma_t;
+    auto step_scale = 1.0f / sigma_t;
+
+    float3 emitting = make_float3(0.0);
+    float3 scattering = make_float3(1.0);
+
+    float t_ele = 0;
 
     while(--level > 0) {
         auto prob = prd->rndf();
-        t_ele -= logf(1.0f-prob) * step_scale;
+        auto dt = -logf(1.0f-prob) * step_scale;
+
+        t_ele += dt;
 
         if (t_ele >= t_max) {
 
-            if (prd->vol.surface_inside) { // Hit other material
-
-                prd->_mask_ = _mask_;
-                prd->_tmin_ = 0;
-
-                new_orig = ray_orig;
-
-            } else { // Volume edge
-
-                prd->_mask_ = EverythingMask;
-                prd->_tmin_ = 1e-5f;
-
-                new_orig = ray_orig + t1 * ray_dir;
-                new_orig = rtgems::offset_ray(new_orig, ray_dir);
-            }
-
+            cihouVolumeEdge();
             v_density = 0;
             break;
         } // over shoot, outside of volume
 
         new_orig = ray_orig + (t0+t_ele) * ray_dir;
+        vol_out = EvalVolume(&prd->seed, m16, sigma_t, new_orig);
 
-        VolumeIn vol_in { new_orig+params.cam.eye, sigma_t, &prd->seed, reinterpret_cast<unsigned long long>(sbt_data) };
-
-        vol_out = optixDirectCall<VolumeOut, const float4*, const VolumeIn&>( sbt_data->dc_index, sbt_data->uniforms, vol_in);
         v_density = clamp(vol_out.density / sigma_t, 0.0f, 1.0f);
         emitting += vol_out.emission;
 
@@ -166,7 +316,6 @@ extern "C" __global__ void __closesthit__radiance_volume()
         if(prd->trace_denoise_albedo) {
             prd->tmp_albedo = vol_out.albedo;
         }
-
         break;
     }
 
@@ -198,10 +347,10 @@ extern "C" __global__ void __closesthit__radiance_volume()
         return scattering * thisPDF;
     };
 
+    prd->depth += 1;
     prd->lightmask = VolumeMatMask;
     DirectLighting<true>(prd, shadowPRD, new_orig+params.cam.eye, ray_dir, evalBxDF);
     
-    prd->depth += 1;
     prd->radiance += prd->emission;
     
     return;
@@ -215,8 +364,8 @@ extern "C" __global__ void __anyhit__occlusion_volume()
     const HitGroupData* sbt_data = reinterpret_cast<HitGroupData*>( optixGetSbtDataPointer() );
 
     ShadowPRD* prd = getPRD<ShadowPRD>();
-    const float t0 = prd->vol.vol_t0;
-    const float t1 = prd->vol.vol_t1;
+    const float t0 = prd->vol.t0;
+    const float t1 = prd->vol.t1;
     //t1 = prd->maxDistance;
 
     const float t_max = t1 - t0; // world space
@@ -224,11 +373,28 @@ extern "C" __global__ void __anyhit__occlusion_volume()
 
     float3 test_point = ray_orig; 
     float3 transmittance = make_float3(1.0f);
-
     float hgp = 1.0f;
     pbrt::HenyeyGreenstein hg(9.0f);
-    
+
+    float m16[16] = {}; m16[15] = 1;
+    optixGetWorldToObjectTransformMatrix(m16);
+
     const float sigma_t = sbt_data->vol_extinction;
+
+    if (0 == sbt_data->vol_depth) { // Homogeneous
+
+        test_point += ray_dir * 0.5f * (t0 + t1);
+
+        VolumeOut homo_out = EvalVolume(&prd->seed, m16, sigma_t, test_point);
+        hg = pbrt::HenyeyGreenstein(homo_out.anisotropy);
+
+        transmittance = expf(-homo_out.extinction * t_max);
+        prd->attanuation *= transmittance;
+
+        //transmittance *= vol_out.albedo * hg.p(-ray_dir, ray_dir);
+        optixIgnoreIntersection();
+        return;
+    }
 
     auto level = sbt_data->vol_depth;
     while(--level > 0) {
@@ -242,8 +408,7 @@ extern "C" __global__ void __anyhit__occlusion_volume()
             break;
         } // over shoot, outside of volume
 
-        VolumeIn vol_in { test_point+params.cam.eye, sigma_t, &prd->seed, reinterpret_cast<unsigned long long>(sbt_data) };
-        VolumeOut vol_out = optixDirectCall<VolumeOut, const float4*, const VolumeIn&>( sbt_data->dc_index, sbt_data->uniforms, vol_in );
+        VolumeOut vol_out = EvalVolume(&prd->seed, m16, sigma_t, test_point);
 
         const auto v_density = vol_out.density / sigma_t;
 
