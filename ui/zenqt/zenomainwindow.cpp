@@ -1918,7 +1918,7 @@ QString ZenoMainWindow::getOpenFileByDialog() {
     return filePath;
 }
 
-void ZenoMainWindow::onNodesSelected(const QModelIndex &subgIdx, const QModelIndexList &nodes, bool select) {
+void ZenoMainWindow::onNodesSelected(GraphModel* subgIdx, const QModelIndexList &nodes, bool select) {
     //dispatch to all property panel.
     auto docks = findChildren<ZDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
     for (ZDockWidget* dock : docks) {

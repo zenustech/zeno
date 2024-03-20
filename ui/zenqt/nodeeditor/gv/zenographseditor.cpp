@@ -658,7 +658,7 @@ void ZenoGraphsEditor::activateTab(const QString& subGraphName, const QString& p
 }
 #endif
 
-void ZenoGraphsEditor::showFloatPanel(const QModelIndex &subgIdx, const QModelIndexList &nodes) {
+void ZenoGraphsEditor::showFloatPanel(GraphModel* subgIdx, const QModelIndexList &nodes) {
     ZenoSubGraphView *pView = qobject_cast<ZenoSubGraphView *>(m_ui->graphsViewTab->currentWidget());
     if (pView != NULL)
     {
@@ -818,7 +818,7 @@ void ZenoGraphsEditor::onSearchEdited(const QString& content)
         }
         else if (res.type == SEARCH_NODECLS || res.type == SEARCH_NODEID || res.type == SEARCH_ARGS || res.type == SEARCH_CUSTOM_NAME)
         {
-            QString subgName = res.subgIdx.data(ROLE_CLASS_NAME).toString();
+            QString subgName = res.subGraph->name();
             QModelIndexList lst = pModel->match(pModel->index(0, 0), ROLE_CLASS_NAME, subgName, 1, Qt::MatchExactly);
 
             QStandardItem* parentItem = nullptr;
@@ -1014,7 +1014,7 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
         if (pView) 
         {
             ZenoSubGraphScene *pScene = pView->scene();
-            UiHelper::createNewNode(pScene->subGraphIndex(), "Group", QPointF());
+            UiHelper::createNewNode(pScene->getGraphModel(), "Group", QPointF());
         }
     }
     else if (actionType == ZenoMainWindow::ACTION_EASY_GRAPH) 

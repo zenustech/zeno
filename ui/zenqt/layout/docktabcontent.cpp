@@ -246,7 +246,7 @@ void DockContent_Parameter::initConnections()
     });
 }
 
-void DockContent_Parameter::onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select)
+void DockContent_Parameter::onNodesSelected(GraphModel* subgIdx, const QModelIndexList& nodes, bool select)
 {
     if (ZenoPropPanel* prop = findChild<ZenoPropPanel*>())
     {

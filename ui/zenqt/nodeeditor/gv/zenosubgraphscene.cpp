@@ -1031,8 +1031,8 @@ void ZenoSubGraphScene::afterSelectionChanged()
                 unSelNodes.push_back(pNode->index());
             }
         }
-        mainWin->onNodesSelected(m_subgIdx, unSelNodes, false);
-        mainWin->onNodesSelected(m_subgIdx, selectNodesIndice(), true);
+        mainWin->onNodesSelected(m_model, unSelNodes, false);
+        mainWin->onNodesSelected(m_model, selectNodesIndice(), true);
         updateKeyFrame();
     }
     m_selChanges.clear();

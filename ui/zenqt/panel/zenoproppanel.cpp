@@ -120,7 +120,7 @@ void ZenoPropPanel::clearLayout()
     update();
 }
 
-void ZenoPropPanel::reset(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select)
+void ZenoPropPanel::reset(GraphModel* subgIdx, const QModelIndexList& nodes, bool select)
 {
     if (m_bReentry)
         return;
@@ -136,7 +136,7 @@ void ZenoPropPanel::reset(const QModelIndex& subgIdx, const QModelIndexList& nod
         return;
     }
 
-    m_subgIdx = subgIdx;
+    m_model = subgIdx;
     m_idx = nodes[0];
     if (!m_idx.isValid())
         return;

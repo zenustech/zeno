@@ -32,7 +32,7 @@ private:
 class UiHelper
 {
 public:
-    static QString createNewNode(QModelIndex subgIdx, const QString& descName, const QPointF& pt);
+    static QString createNewNode(GraphModel* subgIdx, const QString& descName, const QPointF& pt);
     static QPainterPath getRoundPath(QRectF r, int lt, int rt, int lb, int rb, bool bFixRadius);
     static QString generateUuid(const QString &name = "x");
     static uint generateUuidInt();

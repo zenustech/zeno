@@ -49,18 +49,14 @@ BlockSignalScope::~BlockSignalScope()
 		m_pObject->blockSignals(false);
 }
 
-QString UiHelper::createNewNode(QModelIndex subgIdx, const QString& descName, const QPointF& pt)
+QString UiHelper::createNewNode(GraphModel* subgIdx, const QString& descName, const QPointF& pt)
 {
-    if (!subgIdx.isValid())
+    if (!subgIdx)
         return "";
 
     zeno::NodeData node;
     //NODE_DATA node = newNodeData(pModel, descName, pt);
-    QAbstractItemModel* graphM = const_cast<QAbstractItemModel*>(subgIdx.model());
-    if (GraphModel* pModel = qobject_cast<GraphModel*>(graphM))
-    {
-        node = pModel->createNode(descName, "", pt);
-    }
+    node = subgIdx->createNode(descName, "", pt);
     return QString::fromStdString(node.name);
 }
 

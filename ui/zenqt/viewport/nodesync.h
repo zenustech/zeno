@@ -13,9 +13,9 @@
 namespace zeno {
 struct NodeLocation{
     QModelIndex node;
-    QModelIndex subgraph;
+    GraphModel* subgraph;
     NodeLocation(const QModelIndex& n,
-                 const QModelIndex& s)
+                 GraphModel* s)
         : node(n),
           subgraph(s){
     }

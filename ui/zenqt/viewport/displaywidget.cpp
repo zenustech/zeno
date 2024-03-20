@@ -1108,7 +1108,7 @@ void DisplayWidget::onKill() {
     //todo: kill
 }
 
-void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndexList &nodes, bool select) {
+void DisplayWidget::onNodeSelected(GraphModel* subgIdx, const QModelIndexList &nodes, bool select) {
     // tmp code for Primitive Filter Node interaction
     if (nodes.isEmpty() || nodes.size() > 1 || !m_bGLView)
         return;

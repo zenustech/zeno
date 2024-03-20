@@ -296,7 +296,7 @@ PANEL_TYPE ZDockWidget::title2Type(const QString& title)
     return type;
 }
 
-void ZDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select)
+void ZDockWidget::onNodesSelected(GraphModel* subgIdx, const QModelIndexList& nodes, bool select)
 {
     //if (nodes.count() <= 0)
     //    return;

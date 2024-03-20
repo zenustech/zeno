@@ -28,7 +28,7 @@ class ZenoPropPanel : public QWidget
 public:
     ZenoPropPanel(QWidget* parent = nullptr);
     ~ZenoPropPanel();
-    void reset(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
+    void reset(GraphModel* subgIdx, const QModelIndexList& nodes, bool select);
     virtual QSize sizeHint() const override;
     virtual QSize minimumSizeHint() const override;
     bool updateCustomName(const QString &value, QString &oldValue);
@@ -62,7 +62,7 @@ private:
     void onUpdateFrame(QWidget *pContrl, int nFrame, QVariant val);
 
 
-    QPersistentModelIndex m_subgIdx;
+    GraphModel* m_model;
     QPersistentModelIndex m_idx;
 
     QTabWidget* m_tabWidget;
