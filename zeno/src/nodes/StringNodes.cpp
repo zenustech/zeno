@@ -10,6 +10,7 @@
 #include <zeno/utils/logger.h>
 #include <string_view>
 #include <regex>
+#include <charconv>
 
 namespace zeno {
 namespace {
@@ -251,7 +252,6 @@ ZENDEFNODE(StringRegexMatch, {
     {"string"},
 });
 
-
 struct StringSplitAndMerge: zeno::INode{
     
     std::vector<std::string> split(const std::string& s, std::string seperator)
@@ -300,10 +300,93 @@ ZENDEFNODE(StringSplitAndMerge, {
         {"string", "output"}
     },
     {},
-    {"string"},
+    {"depreceted"},
 });
 
+std::vector<std::string_view> stringsplit(std::string_view str, std::string_view delims = " ")//do not keep empty
+{
+	std::vector<std::string_view> output;
+        size_t pos = 0;
+        size_t posbegin = 0;
+        std::string_view word;
+        while ((pos = str.find(delims, pos)) != std::string_view::npos) {
+            word = str.substr(posbegin, pos-posbegin);
+            output.push_back(word);
+            pos += delims.length();
+            posbegin = pos;
+        }
+        if (posbegin < str.length()) { 
+            word = str.substr(posbegin);
+            output.push_back(word);
+        }
+	return output;
+}
 
+struct StringSplitAndMerge2: zeno::INode{
+    virtual void apply() override {
+        auto str = get_input2<std::string>("String");
+        auto separator = get_input2<std::string>("Separator");
+        auto mergeMethod = get_input2<std::string>("Merge Method");
+        auto mergeIndex = get_input2<std::string>("Merge index");
+        auto clipCountFromStart = get_input2<int>("Clip Count From Start");
+        auto clipCountFromEnd = get_input2<int>("Clip Count From End");
+        auto remainSeparator = get_input2<bool>("Remain Separator");
+        auto splitStr = stringsplit(str, separator);
+        std::string output;
+        output.reserve(str.size());
+        if (mergeMethod == "Custom_Index_Merge") {
+            std::vector<std::string_view> mergeIndexList = stringsplit(mergeIndex, ",");
+            for (size_t j = 0; j < mergeIndexList.size(); ++j) {
+                auto idx = mergeIndexList[j];
+                if (idx.empty()) continue;
+                int i;
+                auto result = std::from_chars(idx.data(), idx.data() + idx.size(), i);
+                if (result.ec == std::errc::invalid_argument || result.ec == std::errc::result_out_of_range || result.ptr != idx.data() + idx.size()) {
+                    throw std::runtime_error("[StringSplitAndMerge2] Merge index is not a valid number.");//invalid_argument, result_out_of_range, or not all characters are parsed(eg. 123a)
+                }
+                if (i < 0) i = splitStr.size() + i;
+                if (i < 0 || i >= splitStr.size()) {
+                    throw std::runtime_error("[StringSplitAndMerge2] Merge index is out of range.");
+                }
+                output += splitStr[i];
+                if (remainSeparator && j != mergeIndexList.size() - 1) {
+                    output += separator;
+                }
+            }
+        }
+        else if (mergeMethod == "Clip_And_Merge") {
+            int start = std::max(0, clipCountFromStart);
+            int end = std::max(start, static_cast<int>(splitStr.size()) - clipCountFromEnd);
+            for (int i = start; i < end; ++i) {
+                output += splitStr[i];
+                if (remainSeparator && i != end - 1) {
+                    output += separator;
+                }
+            }
+        }
+        else {
+            throw std::runtime_error("[StringSplitAndMerge2] Unknown merge method.");
+        }
+        set_output2("string", output);
+    }
+};
+
+ZENDEFNODE(StringSplitAndMerge2, {
+    {
+        {"multiline_string", "String", ""},
+        {"string", "Separator", "_"},
+        {"enum Custom_Index_Merge Clip_And_Merge", "Merge Method", "Custom_Index_Merge"},
+        {"string", "Merge index", "0,1"},
+        {"int", "Clip Count From Start", "0"},
+        {"int", "Clip Count From End", "0"},
+        {"bool", "Remain Separator", "false"},
+    },
+    {
+        {"string", "string"}
+    },
+    {},
+    {"string"},
+});
 
 struct FormatString : zeno::INode {
     virtual void apply() override {
