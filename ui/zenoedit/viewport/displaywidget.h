@@ -8,6 +8,7 @@
 #include "launch/corelaunch.h"
 #include "dock/docktabcontent.h"
 #include "layout/winlayoutrw.h"
+#include <zenovis/Camera.h>
 
 class ViewportWidget;
 #ifdef ZENO_OPTIX_PROC
@@ -78,6 +79,8 @@ public slots:
     void onNodeSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
     void onMouseHoverMoved();
     void onDockViewAction(bool triggered);
+    void onSetCamera(zenovis::ZOptixCameraSettingInfo value);
+    zenovis::ZOptixCameraSettingInfo getCamera() const;
 
 signals:
     void frameUpdated(int new_frame);

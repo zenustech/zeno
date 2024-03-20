@@ -94,6 +94,9 @@ ZENO_ERROR  Zeno_ForkGraph(
     }
 
     QModelIndex newForkNode = pModel->fork(subgIdx, toForkIdx);
+    if (!newForkNode.isValid()) {
+        return Err_SubgNotExist;
+    }
     const QString& newSubgName = newForkNode.data(ROLE_OBJNAME).toString();
     QModelIndex newSubgIdx = pModel->index(newSubgName);
 

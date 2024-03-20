@@ -15,6 +15,7 @@ SubGraphModel::SubGraphModel(GraphsModel* pGraphsModel, QObject *parent)
     , m_pGraphsModel(pGraphsModel)
     , m_stack(new QUndoStack(this))
     , m_type(SUBGRAPH_TYPE::SUBGRAPH_NOR)
+    , m_bForkLocked(false)
 {
 	connect(this, &QAbstractItemModel::dataChanged, m_pGraphsModel, &GraphsModel::on_subg_dataChanged);
 	connect(this, &QAbstractItemModel::rowsAboutToBeInserted, m_pGraphsModel, &GraphsModel::on_subg_rowsAboutToBeInserted);
@@ -923,6 +924,17 @@ QString SubGraphModel::mtlid()
     }
     return m_mtlid;
 }
+
+void SubGraphModel::setForkLock(bool bLocked)
+{
+    m_bForkLocked = bLocked;
+}
+
+bool SubGraphModel::forkLocked()
+{
+    return m_bForkLocked;
+}
+
 void SubGraphModel::replaceSubGraphNode(const QString& oldName, const QString& newName)
 {
     auto iter = m_name2identLst.find(oldName);

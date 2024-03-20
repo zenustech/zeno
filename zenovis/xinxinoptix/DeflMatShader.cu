@@ -140,11 +140,11 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     attrs.tang = optixTransformVectorFromObjectToWorldSpace(attrs.tang);
     attrs.rayLength = optixGetRayTmax();
 
-    attrs.instPos = rt_data->instPos[inst_idx];
-    attrs.instNrm = rt_data->instNrm[inst_idx];
-    attrs.instUv = rt_data->instUv[inst_idx];
-    attrs.instClr = rt_data->instClr[inst_idx];
-    attrs.instTang = rt_data->instTang[inst_idx];
+    attrs.instPos =  decodeColor( rt_data->instPos[inst_idx] );
+    attrs.instNrm =  decodeColor( rt_data->instNrm[inst_idx] );
+    attrs.instUv =   decodeColor( rt_data->instUv[inst_idx]  );
+    attrs.instClr =  decodeColor( rt_data->instClr[inst_idx] );
+    attrs.instTang = decodeColor( rt_data->instTang[inst_idx]);
 
     unsigned short isLight = 0;//rt_data->lightMark[vert_aux_offset + primIdx];
 #endif
@@ -388,11 +388,11 @@ extern "C" __global__ void __closesthit__radiance()
     attrs.tang = normalize(interp(barys, tan0, tan1, tan2));
     attrs.tang = optixTransformVectorFromObjectToWorldSpace(attrs.tang);
 
-    attrs.instPos = rt_data->instPos[inst_idx];
-    attrs.instNrm = rt_data->instNrm[inst_idx];
-    attrs.instUv = rt_data->instUv[inst_idx];
-    attrs.instClr = rt_data->instClr[inst_idx];
-    attrs.instTang = rt_data->instTang[inst_idx];
+    attrs.instPos =  decodeColor( rt_data->instPos[inst_idx] );
+    attrs.instNrm =  decodeColor( rt_data->instNrm[inst_idx] );
+    attrs.instUv =   decodeColor( rt_data->instUv[inst_idx]  );
+    attrs.instClr =  decodeColor( rt_data->instClr[inst_idx] );
+    attrs.instTang = decodeColor( rt_data->instTang[inst_idx]);
     attrs.rayLength = optixGetRayTmax();
 
     float3 n0 = normalize( decodeNormal(rt_data->nrm[ vert_idx_offset+0 ]) );
@@ -528,32 +528,17 @@ extern "C" __global__ void __closesthit__radiance()
         auto trans = DisneyBSDF::Transmission2(prd->sigma_s(), prd->sigma_t, prd->channelPDF, optixGetRayTmax(), true);
         prd->attenuation2 *= trans;
         prd->attenuation *= trans;
-        //prd->origin = P + 1e-5 * ray_dir; 
-        if(prd->maxDistance>optixGetRayTmax())
-            prd->maxDistance-=optixGetRayTmax();
-        prd->alphaHit = true;
-        prd->offsetUpdateRay(P, ray_dir); 
+        //prd->origin = P;
+        prd->direction = ray_dir;
+        //auto n = prd->geometryNormal;
+        //n = faceforward(n, -ray_dir, n);
+        //prd->offsetUpdateRay(prd->origin, ray_dir);
+        prd->_tmin_ = optixGetRayTmax();
         return;
     }
 
     prd->attenuation2 = prd->attenuation;
     prd->countEmitted = false;
-    if(isLight==1)
-    {
-        prd->countEmitted = true;
-        //hit light, emit
-//        float dist = length(P - optixGetWorldRayOrigin()) + 1e-5;
-//        float3 lv1 = v1-v0;
-//        float3 lv2 = v2-v0;
-//        float A = 0.5 * length(cross(lv1, lv2));
-//        float3 lnrm = normalize(cross(normalize(lv1), normalize(lv2)));
-//        float3 L     = normalize(P - optixGetWorldRayOrigin());
-//        float  LnDl  = clamp(-dot( lnrm, L ), 0.0f, 1.0f);
-//        float weight = LnDl * A / (M_PIf * dist);
-//        prd->radiance = attrs.clr * weight;
-        prd->offsetUpdateRay(P, ray_dir); 
-        return;
-    }
     prd->prob2 = prd->prob;
     prd->passed = false;
     if(mats.opacity>0.99f)
@@ -574,9 +559,13 @@ extern "C" __global__ void __closesthit__radiance()
         prd->adepth++;
         //prd->samplePdf = 0.0f;
         prd->radiance = make_float3(0.0f);
-        //prd->origin = P + 1e-5 * ray_dir;
         prd->alphaHit = true;
-        prd->offsetUpdateRay(P, ray_dir);
+        //prd->origin = P;
+        prd->direction = ray_dir;
+        //auto n = prd->geometryNormal;
+        //n = faceforward(n, -ray_dir, n);
+        //prd->offsetUpdateRay(prd->origin, ray_dir);
+        prd->_tmin_ = optixGetRayTmax();
         return;
     }
     if(mats.opacity<=0.99f)
@@ -602,10 +591,14 @@ extern "C" __global__ void __closesthit__radiance()
         //you shall pass!
         prd->radiance = make_float3(0.0f);
 
-        prd->origin = P;
-        prd->direction = ray_dir;
+
         prd->alphaHit = true;
-        prd->offsetUpdateRay(P, ray_dir);
+        //prd->origin = P;
+        prd->direction = ray_dir;
+        //auto n = prd->geometryNormal;
+        //n = faceforward(n, -ray_dir, n);
+        //prd->offsetUpdateRay(prd->origin, -ray_dir);
+        prd->_tmin_ = optixGetRayTmax();
 
         prd->prob *= 1;
         prd->countEmitted = false;
@@ -691,6 +684,7 @@ extern "C" __global__ void __closesthit__radiance()
         prd->diffDepth++;
     }
 
+
     prd->passed = false;
     bool inToOut = false;
     bool outToIn = false;
@@ -701,7 +695,7 @@ extern "C" __global__ void __closesthit__radiance()
     //if(flag == DisneyBSDF::transmissionEvent || flag == DisneyBSDF::diracEvent) {
         next_ray_is_going_inside = dot(vec3(prd->geometryNormal),vec3(wi))<=0;
     }
-
+    prd->max_depth = ((prd->depth==0 && isSS) || (prd->depth>0 && (mats.specTrans>0||mats.isHair>0)) )?16:prd->max_depth;
     if(mats.thin>0.5f || mats.doubleSide>0.5f)
     {
         if (prd->curMatIdx > 0) {
@@ -905,6 +899,8 @@ extern "C" __global__ void __closesthit__radiance()
     prd->radiance = {};
     prd->direction = normalize(wi);
 
+
+
     float3 radianceNoShadow = {};
     float3* dummy_prt = nullptr;
     if (mats.shadowReceiver > 0.5f) {
@@ -923,12 +919,15 @@ extern "C" __global__ void __closesthit__radiance()
     }
 
     if(mats.thin<0.5f && mats.doubleSide<0.5f){
+        //auto p_prim = vec3(prd->origin) + optixGetRayTmax() * vec3(prd->direction);
+        //float3 p = p_prim;
         prd->origin = rtgems::offset_ray(P, (next_ray_is_going_inside)? -prd->geometryNormal : prd->geometryNormal);
     }
     else {
+        //auto p_prim = vec3(prd->origin) + optixGetRayTmax() * vec3(prd->direction);
+        //float3 p = p_prim;
         prd->origin = rtgems::offset_ray(P, ( dot(prd->direction, prd->geometryNormal) < 0 )? -prd->geometryNormal : prd->geometryNormal);
     }
-    
     if (prd->medium != DisneyBSDF::vacuum) {
         prd->_mask_ = (uint8_t)(EverythingMask ^ VolumeMatMask);
     } else {
