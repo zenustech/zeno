@@ -658,11 +658,11 @@ void ZenoGraphsEditor::activateTab(const QString& subGraphName, const QString& p
 }
 #endif
 
-void ZenoGraphsEditor::showFloatPanel(GraphModel* subgIdx, const QModelIndexList &nodes) {
+void ZenoGraphsEditor::showFloatPanel(GraphModel* subgraph, const QModelIndexList &nodes) {
     ZenoSubGraphView *pView = qobject_cast<ZenoSubGraphView *>(m_ui->graphsViewTab->currentWidget());
     if (pView != NULL)
     {
-        pView->showFloatPanel(subgIdx, nodes);
+        pView->showFloatPanel(subgraph, nodes);
     }
 }
 

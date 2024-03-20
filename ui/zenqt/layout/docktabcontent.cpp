@@ -246,12 +246,12 @@ void DockContent_Parameter::initConnections()
     });
 }
 
-void DockContent_Parameter::onNodesSelected(GraphModel* subgIdx, const QModelIndexList& nodes, bool select)
+void DockContent_Parameter::onNodesSelected(GraphModel* subgraph, const QModelIndexList& nodes, bool select)
 {
     if (ZenoPropPanel* prop = findChild<ZenoPropPanel*>())
     {
         auto pModel = zenoApp->graphsManager()->currentModel();
-        prop->reset(subgIdx, nodes, select);
+        prop->reset(subgraph, nodes, select);
 
         if (!nodes.isEmpty())
         {

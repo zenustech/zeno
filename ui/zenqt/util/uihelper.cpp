@@ -49,14 +49,14 @@ BlockSignalScope::~BlockSignalScope()
 		m_pObject->blockSignals(false);
 }
 
-QString UiHelper::createNewNode(GraphModel* subgIdx, const QString& descName, const QPointF& pt)
+QString UiHelper::createNewNode(GraphModel* subgraph, const QString& descName, const QPointF& pt)
 {
-    if (!subgIdx)
+    if (!subgraph)
         return "";
 
     zeno::NodeData node;
     //NODE_DATA node = newNodeData(pModel, descName, pt);
-    node = subgIdx->createNode(descName, "", pt);
+    node = subgraph->createNode(descName, "", pt);
     return QString::fromStdString(node.name);
 }
 

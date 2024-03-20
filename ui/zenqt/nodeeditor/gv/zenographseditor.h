@@ -31,7 +31,7 @@ public:
     ~ZenoGraphsEditor();
     //void activateTab(const QString& subGraphName, const QString& path = "", const QString& objId = "", bool isError = false);
     void activateTab(const QStringList& objpath, const QString& focusNode = "", bool isError = false);
-    void showFloatPanel(GraphModel* subgIdx, const QModelIndexList &nodes);
+    void showFloatPanel(GraphModel* subgraph, const QModelIndexList &nodes);
     void selectTab(const QString& subGraphName, const QString& path, std::vector<QString>& objId);
     ZenoSubGraphView* getCurrentSubGraphView();
 

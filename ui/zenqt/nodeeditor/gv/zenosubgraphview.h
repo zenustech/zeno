@@ -107,7 +107,7 @@ public:
     void setZoom(const qreal& scale);
     void focusOnWithNoSelect(const QString& nodeId);
     void focusOn(const QString& nodeId);
-    void showFloatPanel(GraphModel* subgIdx, const QModelIndexList &nodes);
+    void showFloatPanel(GraphModel* subgraph, const QModelIndexList &nodes);
     void selectNodes(const QModelIndexList &nodes);
     void cameraFocus();
 

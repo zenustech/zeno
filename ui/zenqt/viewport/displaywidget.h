@@ -74,7 +74,7 @@ public slots:
     void onSliderValueChanged(int);
     void onRunFinished();
     void onCommandDispatched(int actionType, bool bTriggered);
-    void onNodeSelected(GraphModel* subgIdx, const QModelIndexList& nodes, bool select);
+    void onNodeSelected(GraphModel* subgraph, const QModelIndexList& nodes, bool select);
     void onMouseHoverMoved();
     void onDockViewAction(bool triggered);
     void onCalcFinished(bool bSucceed, zeno::ObjPath, QString);
