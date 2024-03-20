@@ -300,7 +300,7 @@ ZENDEFNODE(StringSplitAndMerge, {
         {"string", "output"}
     },
     {},
-    {"depreceted"},
+    {"deprecated"},
 });
 
 std::vector<std::string_view> stringsplit(std::string_view str, std::string_view delims = " ")//do not keep empty
