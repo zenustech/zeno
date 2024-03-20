@@ -154,9 +154,6 @@ bool UiHelper::validateVariant(const QVariant& var, const QString& type)
             return true;
         }
     }
-    case CONTROL_PURE_COLOR: {
-        return QVariant::Color == varType;
-    }
     case CONTROL_CURVE:
     {
         return (varType == QMetaType::User);
@@ -397,7 +394,6 @@ QString UiHelper::getControlDesc(PARAM_CONTROL ctrl)
     case CONTROL_VEC3_INT:          return "Integer Vector 3";
     case CONTROL_VEC2_INT:          return "Integer Vector 2";
     case CONTROL_COLOR:             return "Color";
-    case CONTROL_PURE_COLOR:        return "Pure Color";
     case CONTROL_COLOR_VEC3F:       return "Color Vec3f";
     case CONTROL_CURVE:             return "Curve";
     case CONTROL_HSPINBOX:          return "SpinBox";
@@ -475,10 +471,6 @@ PARAM_CONTROL UiHelper::getControlByDesc(const QString& descName)
     {
         return CONTROL_COLOR;
     } 
-    else if (descName == "Pure Color") 
-    {
-        return CONTROL_PURE_COLOR;
-    }
     else if (descName == "Color Vec3f")
     {
         return CONTROL_COLOR_VEC3F;
@@ -571,7 +563,7 @@ QStringList UiHelper::getControlLists(const QString& type, bool isNodeUI)
     else if (type == "string") { ctrls = { CONTROL_STRING, CONTROL_MULTILINE_STRING, CONTROL_ENUM}; }
     else if (type == "vec2f") { ctrls = { CONTROL_VEC2_FLOAT }; }
     else if (type == "vec2i") { ctrls = { CONTROL_VEC2_INT }; }
-    else if (type == "vec3f") { ctrls = { CONTROL_VEC3_FLOAT }; }
+    else if (type == "vec3f") { ctrls = { CONTROL_VEC3_FLOAT, CONTROL_COLOR_VEC3F}; }
     else if (type == "vec3i") { ctrls = { CONTROL_VEC3_INT }; }
     else if (type == "vec4f") { ctrls = { CONTROL_VEC4_FLOAT }; }
     else if (type == "vec4i") { ctrls = { CONTROL_VEC4_INT }; }
@@ -579,7 +571,7 @@ QStringList UiHelper::getControlLists(const QString& type, bool isNodeUI)
     else if (type == "readpath") { ctrls = { CONTROL_READPATH }; }
     else if (type == "multiline_string") { ctrls = { CONTROL_STRING, CONTROL_MULTILINE_STRING }; }
     else if (type == "color") {   //color is more general than heatmap.
-        ctrls = {CONTROL_COLOR, CONTROL_PURE_COLOR, CONTROL_COLOR_VEC3F};
+        ctrls = {CONTROL_COLOR};
     }
     else if (type == "curve") { ctrls = { CONTROL_CURVE }; }
     else if (type.startsWith("enum ")) {
@@ -635,8 +627,6 @@ PARAM_CONTROL UiHelper::getControlByType(const QString &type)
         return CONTROL_MULTILINE_STRING;
     } else if (type == "color") {   //color is more general than heatmap.
         return CONTROL_COLOR;
-    } else if (type == "purecolor") {   
-        return CONTROL_PURE_COLOR;
     } else if (type == "colorvec3f") {   //colorvec3f is for coloreditor, color is heatmap? ^^^^
         return CONTROL_COLOR_VEC3F;
     } else if (type == "curve") {
@@ -688,7 +678,6 @@ QString UiHelper::getTypeByControl(PARAM_CONTROL ctrl)
     case CONTROL_WRITEPATH: return "string";
     case CONTROL_READPATH: return "string";
     case CONTROL_COLOR: return "color";     //todo: is vec3?
-    case CONTROL_PURE_COLOR: return "purecolor";
     case CONTROL_COLOR_VEC3F: return "colorvec3f"; // ^^^ color vec is here
     case CONTROL_CURVE: return "curve";
     case CONTROL_ENUM: return "string";
@@ -909,6 +898,7 @@ QVariant UiHelper::initVariantByControl(PARAM_CONTROL ctrl)
         }
         case CONTROL_VEC3_FLOAT:
         case CONTROL_VEC3_INT:
+        case CONTROL_COLOR_VEC3F:
         {
             UI_VECTYPE vec(3);
             return QVariant::fromValue(vec);

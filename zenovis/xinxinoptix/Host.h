@@ -40,6 +40,14 @@ static inline float __int_as_float(int i) {
     return bitConvert<int, float>(i);;
 }
 
+static inline uint __float_as_uint(float f) {
+    return bitConvert<float, uint>(f);
+}
+
+static inline float __uint_as_float(uint i) {
+    return bitConvert<uint, float>(i);;
+}
+
 // #ifndef isnan
 // static inline bool isnan(float v) {
 //     return std::isnan(v);

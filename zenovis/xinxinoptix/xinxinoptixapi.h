@@ -47,7 +47,7 @@ void optixupdatematerial(std::vector<std::shared_ptr<ShaderPrepared>> &shaders);
 void updateSphereXAS();
 
 void updateVolume(uint32_t volume_shader_offset);
-void buildRootIAS();
+void updateRootIAS();
 void buildLightTree();
 void optixupdateend();
 

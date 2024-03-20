@@ -11,11 +11,14 @@ namespace nanovdb {
 };
 
 struct VolumeIn {
-    float3 pos;
+    float3 pos_world;
+    float3 pos_view;
+
     float sigma_t;
     uint32_t* seed;
 
-    unsigned long long sbt_ptr;
+    void* sbt_ptr;
+    float* world2object;
 
     float3 _local_pos_ = make_float3(CUDART_NAN_F);
     float3 _uniform_pos_ = make_float3(CUDART_NAN_F);
@@ -27,9 +30,11 @@ struct VolumeOut {
     float max_density;
     float density;
 
+    float3 albedo;
+    float3 extinction;
+    
     float anisotropy;
     float3 emission;
-    float3 albedo;
 };
 
 namespace pbrt {

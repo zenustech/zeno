@@ -14,14 +14,6 @@
 #include "DisneyBRDF.h"
 #include "DisneyBSDF.h"
 
-__forceinline__ __device__ float3 interp(float2 barys, float3 a, float3 b, float3 c)
-{
-    float w0 = 1 - barys.x - barys.y;
-    float w1 = barys.x;
-    float w2 = barys.y;
-    return w0*a + w1*b + w2*c;
-}
-
 static __inline__ __device__ bool isBadVector(const vec3& vector) {
 
     for (size_t i=0; i<3; ++i) {
@@ -288,18 +280,13 @@ vec3 projectedBarycentricCoord(vec3 p, vec3 q, vec3 u, vec3 v)
 extern "C" __global__ void __closesthit__radiance()
 {
     RadiancePRD* prd = getPRD();
-    if(prd->test_distance)
-    {
-        prd->maxDistance = optixGetRayTmax();
-        return;
-    }
 
     const OptixTraversableHandle gas = optixGetGASTraversableHandle();
     const uint           sbtGASIndex = optixGetSbtGASIndex();
     const uint               primIdx = optixGetPrimitiveIndex();
 
     const float3 ray_orig = optixGetWorldRayOrigin();
-    const float3 ray_dir  = normalize(optixGetWorldRayDirection());
+    const float3 ray_dir  = optixGetWorldRayDirection();
     float3 P = ray_orig + optixGetRayTmax() * ray_dir;
 
     HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
@@ -420,11 +407,22 @@ extern "C" __global__ void __closesthit__radiance()
     {
       attrs.T = attrs.tang;
     }
-    attrs.V = -normalize(ray_dir);
+    attrs.V = -(ray_dir);
     //MatOutput mats = evalMaterial(rt_data->textures, rt_data->uniforms, attrs);
     MatOutput mats = optixDirectCall<MatOutput, cudaTextureObject_t[], float4*, const MatInput&>( rt_data->dc_index, rt_data->textures, rt_data->uniforms, attrs );
-    prd->mask_value = mats.mask_value;
 
+    if (prd->test_distance) {
+    
+        if(mats.opacity>0.99f) { // it's actually transparency not opacity
+            prd->_tmin_ = optixGetRayTmax();
+        } else if(rnd(prd->seed)<mats.opacity) {
+            prd->_tmin_ = optixGetRayTmax();
+        } else {
+            prd->test_distance = false;
+            prd->maxDistance = optixGetRayTmax();
+        }
+        return;
+    }
 
 #if _SPHERE_
 
@@ -532,7 +530,6 @@ extern "C" __global__ void __closesthit__radiance()
         prd->direction = ray_dir;
         //auto n = prd->geometryNormal;
         //n = faceforward(n, -ray_dir, n);
-        //prd->offsetUpdateRay(prd->origin, ray_dir);
         prd->_tmin_ = optixGetRayTmax();
         return;
     }
@@ -541,6 +538,7 @@ extern "C" __global__ void __closesthit__radiance()
     prd->countEmitted = false;
     prd->prob2 = prd->prob;
     prd->passed = false;
+
     if(mats.opacity>0.99f)
     {
 
@@ -560,11 +558,6 @@ extern "C" __global__ void __closesthit__radiance()
         //prd->samplePdf = 0.0f;
         prd->radiance = make_float3(0.0f);
         prd->alphaHit = true;
-        //prd->origin = P;
-        prd->direction = ray_dir;
-        //auto n = prd->geometryNormal;
-        //n = faceforward(n, -ray_dir, n);
-        //prd->offsetUpdateRay(prd->origin, ray_dir);
         prd->_tmin_ = optixGetRayTmax();
         return;
     }
@@ -590,15 +583,8 @@ extern "C" __global__ void __closesthit__radiance()
         //prd->samplePdf = 0.0f;
         //you shall pass!
         prd->radiance = make_float3(0.0f);
-
-
-        prd->alphaHit = true;
-        //prd->origin = P;
-        prd->direction = ray_dir;
-        //auto n = prd->geometryNormal;
-        //n = faceforward(n, -ray_dir, n);
-        //prd->offsetUpdateRay(prd->origin, -ray_dir);
         prd->_tmin_ = optixGetRayTmax();
+        prd->alphaHit = true;
 
         prd->prob *= 1;
         prd->countEmitted = false;
@@ -907,6 +893,7 @@ extern "C" __global__ void __closesthit__radiance()
 
 
     prd->radiance = {};
+    prd->direction = normalize(wi);
 
 
 
@@ -937,7 +924,6 @@ extern "C" __global__ void __closesthit__radiance()
         //float3 p = p_prim;
         prd->origin = rtgems::offset_ray(P, ( dot(prd->direction, prd->geometryNormal) < 0 )? -prd->geometryNormal : prd->geometryNormal);
     }
-
     if (prd->medium != DisneyBSDF::vacuum) {
         prd->_mask_ = (uint8_t)(EverythingMask ^ VolumeMatMask);
     } else {

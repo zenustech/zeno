@@ -723,6 +723,13 @@
     </message>
 </context>
 <context>
+    <name>HeatMapPreview</name>
+    <message>
+        <source>Show parts of image that have actually been viewed with more than 100% zoom</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>ImageGroupBox</name>
     <message>
         <source>Select an image</source>
@@ -1041,7 +1048,7 @@
     </message>
     <message>
         <source>Preferences</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">首选项</translation>
     </message>
 </context>
 <context>
@@ -1053,6 +1060,17 @@
     <message>
         <source>TextLabel</source>
         <translation type="unfinished">文字标签</translation>
+    </message>
+</context>
+<context>
+    <name>NodesListView</name>
+    <message>
+        <source>Nodes</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Center On</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -1632,11 +1650,55 @@
     <name>ScreenshotPopup</name>
     <message>
         <source>Cancel</source>
-        <translation type="obsolete">取消</translation>
+        <translation type="unfinished">取消</translation>
     </message>
     <message>
         <source>Save</source>
-        <translation type="obsolete">保存</translation>
+        <translation type="unfinished">保存</translation>
+    </message>
+    <message>
+        <source>Export to Image</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Output:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Output file path</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Select an output file</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Select</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>100%</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>150%</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>200%</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>None</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>20 px</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>50 px</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -2040,15 +2102,15 @@
     </message>
     <message>
         <source>Separated by &apos;,&apos;, such as: N1, N2, N3...</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">以逗号分割，例如：N1, N2, N3...</translation>
     </message>
     <message>
         <source>Preset Subgraph</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">预设子图</translation>
     </message>
     <message>
         <source>key words</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">关键字</translation>
     </message>
 </context>
 <context>
@@ -2059,19 +2121,19 @@
     </message>
     <message>
         <source>Material Names:</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">材质名称：</translation>
     </message>
     <message>
         <source>Key Words:</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">关键字：</translation>
     </message>
     <message>
         <source>Material File Path:</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">材质文件路径：</translation>
     </message>
     <message>
         <source>Match Inputs:</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">匹配输入参数：</translation>
     </message>
     <message>
         <source>Ok</source>
@@ -2080,6 +2142,17 @@
     <message>
         <source>Cancel</source>
         <translation type="unfinished">取消</translation>
+    </message>
+</context>
+<context>
+    <name>ZOptixCameraSetting</name>
+    <message>
+        <source>ACES</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Exposure</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -2094,7 +2167,7 @@
     </message>
     <message>
         <source>Preferences</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">首选项</translation>
     </message>
 </context>
 <context>
@@ -2113,7 +2186,7 @@
     </message>
     <message>
         <source>Shortcuts</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">快捷键</translation>
     </message>
     <message>
         <source>Layout Manage</source>
@@ -2381,7 +2454,19 @@
     </message>
     <message>
         <source>Trans to Preset Subgrah</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">转为预设子图</translation>
+    </message>
+    <message>
+        <source>Fork unlocked</source>
+        <translation type="unfinished">Fork解锁</translation>
+    </message>
+    <message>
+        <source>Fork locked</source>
+        <translation type="unfinished">Fork锁定</translation>
+    </message>
+    <message>
+        <source>Trans to Normal Subgrah</source>
+        <translation type="unfinished">转为普通子图</translation>
     </message>
 </context>
 <context>
@@ -2866,6 +2951,14 @@
     <message>
         <source>import preset subnet</source>
         <translation type="unfinished">导入预设子图</translation>
+    </message>
+    <message>
+        <source>Create Subgraph</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Already has a subgraph called %1</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -3415,11 +3508,11 @@ All Files (*)</source>
     </message>
     <message>
         <source>Preset Subgraph</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">预设子图</translation>
     </message>
     <message>
         <source>key words</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">关键字</translation>
     </message>
     <message>
         <source>Separated by &apos;|&apos;, such as : W1|W2|W3...</source>
@@ -3439,6 +3532,14 @@ All Files (*)</source>
     <message>
         <source>add Link</source>
         <translation>添加连接</translation>
+    </message>
+    <message>
+        <source>Delete Subgraph</source>
+        <translation type="unfinished">删除子图</translation>
+    </message>
+    <message>
+        <source>Do you want to delete the subgraph &apos;%1&apos;</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -3677,10 +3778,149 @@ All Files (*)</source>
     </message>
 </context>
 <context>
+    <name>connector</name>
+    <message>
+        <source>Docking</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Custom Docks</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Default Connector</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Custom Connector</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Dark</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>custom</name>
+    <message>
+        <source>Enabled Visual Connector</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>default</name>
+    <message>
+        <source>Enabled Visual Connector</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Create Default Edge</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>edges</name>
+    <message>
+        <source>Curved Edges</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Edge Endings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Ortho Edges</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>navigable</name>
     <message>
         <source>Image</source>
-        <translation type="obsolete">图片</translation>
+        <translation type="unfinished">图片</translation>
+    </message>
+    <message>
+        <source>Navigable Sample</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Grid</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>nodes</name>
+    <message>
+        <source>Default Nodes</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Custom Nodes</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Dark</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>resizer</name>
+    <message>
+        <source>Resizer Sample</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>style</name>
+    <message>
+        <source>Dark</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>tools</name>
+    <message>
+        <source>Small</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Medium</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Large</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Clear heat map</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Increase preview size</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Decrease preview size</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>topology</name>
+    <message>
+        <source>Dark</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Small</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Medium</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Large</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 </TS>

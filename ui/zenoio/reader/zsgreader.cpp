@@ -188,7 +188,10 @@ bool ZsgReader::_parseSubGraph(const QString& name, const rapidjson::Value& subg
     int type = SUBGRAPH_TYPE::SUBGRAPH_NOR;
     if (subgraph.HasMember("type"))
         type = subgraph["type"].GetInt();
-    pAcceptor->BeginSubgraph(name, type);
+    bool bForkLocked = false;
+    if (subgraph.HasMember("forkLock"))
+        bForkLocked = subgraph["forkLock"].GetBool();
+    pAcceptor->BeginSubgraph(name, type, bForkLocked);
 
     const auto& nodes = subgraph["nodes"];
     if (nodes.IsNull())
