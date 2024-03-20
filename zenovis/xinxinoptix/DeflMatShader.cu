@@ -740,7 +740,7 @@ extern "C" __global__ void __closesthit__radiance()
                         vec3 channelPDF = vec3(1.0f/3.0f);
                         prd->pushMat(extinction);
                         prd->isSS = false;
-                        prd->scatterDistance = mats.transDistance;
+                        prd->scatterDistance = mats.scatterDistance;
                         prd->maxDistance = mats.scatterStep>0.5f? DisneyBSDF::SampleDistance(prd->seed, prd->scatterDistance) : 1e16f;
                     } else {
 
@@ -847,6 +847,9 @@ extern "C" __global__ void __closesthit__radiance()
 
     prd->countEmitted = false;
     prd->attenuation *= reflectance;
+    if(mats.subsurface>0 && (mats.thin>0.5 || mats.doubleSide>0.5) && istransmission){
+      prd->attenuation2 *= reflectance;
+    }
     prd->depth++;
 
     if(prd->depth>=3)
@@ -894,7 +897,14 @@ extern "C" __global__ void __closesthit__radiance()
     shadowPRD.nonThinTransHit = (mats.thin < 0.5f && mats.specTrans > 0) ? 1 : 0;
 
     shadowPRD.origin = rtgems::offset_ray(P,  prd->geometryNormal); // camera space
+    if(mats.subsurface>0 && (mats.thin>0.5 || mats.doubleSide>0.5) && istransmission){
+      shadowPRD.origin = rtgems::offset_ray(P,  -prd->geometryNormal);
+    }
     auto shadingP = rtgems::offset_ray(P + params.cam.eye,  prd->geometryNormal); // world space
+    if(mats.subsurface>0 && (mats.thin>0.5 || mats.doubleSide>0.5) && istransmission){
+      shadingP = rtgems::offset_ray(P + params.cam.eye,  -prd->geometryNormal);
+    }
+
 
     prd->radiance = {};
 
@@ -916,7 +926,7 @@ extern "C" __global__ void __closesthit__radiance()
       prd->radiance.z = 0;
       prd->done = true;
     }
-
+    prd->direction = normalize(wi);
     if(mats.thin<0.5f && mats.doubleSide<0.5f){
         //auto p_prim = vec3(prd->origin) + optixGetRayTmax() * vec3(prd->direction);
         //float3 p = p_prim;
@@ -927,7 +937,7 @@ extern "C" __global__ void __closesthit__radiance()
         //float3 p = p_prim;
         prd->origin = rtgems::offset_ray(P, ( dot(prd->direction, prd->geometryNormal) < 0 )? -prd->geometryNormal : prd->geometryNormal);
     }
-    prd->direction = normalize(wi);
+
     if (prd->medium != DisneyBSDF::vacuum) {
         prd->_mask_ = (uint8_t)(EverythingMask ^ VolumeMatMask);
     } else {
