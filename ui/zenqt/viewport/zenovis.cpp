@@ -40,7 +40,7 @@ void Zenovis::initializeGL()
 void Zenovis::paintGL()
 {
     int frameid = session->get_curr_frameid();
-    doFrameUpdate();
+    //doFrameUpdate();
     session->new_frame();
     emit frameDrawn(frameid);
 }

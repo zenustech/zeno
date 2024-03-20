@@ -52,6 +52,10 @@ struct RenderEngineBate : RenderEngine {
         graphicsMan->load_objects2(objs);
     }
 
+    void update_interactive_objects(const zeno::RenderObjsInfo& objs) override {
+        graphicsMan->update_interactive_objects(objs);
+    }
+
     void viewObject(std::shared_ptr<zeno::IObject> spObj, bool bView) override {
         if (bView)
             graphicsMan->add_object(spObj);

@@ -101,6 +101,10 @@ bool Scene::loadFrameObjects(int frameid) {
 void Scene::draw() {
     if (renderMan->getDefaultEngineName() != "optx")
     {
+        zeno::RenderObjsInfo objs;
+        zeno::getSession().objsMan->export_all_objs(objs);
+        renderMan->getEngine()->update_interactive_objects(objs); //only for gl engnine
+
         //CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
         auto offset = camera->m_block_window? camera->viewport_offset : zeno::vec2i(0, 0);
         CHECK_GL(glViewport(offset[0], offset[1], camera->m_nx, camera->m_ny));
