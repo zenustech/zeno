@@ -16,15 +16,15 @@ namespace zeno {
 struct MakeCamera : INode {
     virtual void apply() override {
         auto camera = std::make_unique<CameraObject>();
-
-        camera->pos = get_input2<vec3f>("pos");
-        camera->up = get_input2<vec3f>("up");
-        camera->view = get_input2<vec3f>("view");
-        camera->ffar = get_input2<float>("far");
-        camera->fnear = get_input2<float>("near");
-        camera->fov = get_input2<float>("fov");
-        camera->aperture = get_input2<float>("aperture");
-        camera->focalPlaneDistance = get_input2<float>("focalPlaneDistance");
+        auto &ud = camera->userData();
+        ud.set2("pos", get_input2<vec3f>("pos"));
+        ud.set2("up", get_input2<vec3f>("up"));
+        ud.set2("view", get_input2<vec3f>("view"));
+        ud.set2("far", get_input2<float>("far"));
+        ud.set2("pos", get_input2<float>("near"));
+        ud.set2("fov", get_input2<float>("fov"));
+        ud.set2("aperture", get_input2<float>("aperture"));
+        ud.set2("focalPlaneDistance", get_input2<float>("focalPlaneDistance"));
 
         set_output("camera", std::move(camera));
     }
@@ -91,18 +91,20 @@ struct TargetCamera : INode {
         vec3f view = zeno::normalize(target - pos);
         vec3f right = zeno::cross(view, refUp);
         vec3f up = zeno::cross(right, view);
+        auto &ud = camera->userData();
+        ud.set2("pos", pos);
+        ud.set2("up", up);
+        ud.set2("view", view);
+        ud.set2("far", get_input2<float>("far"));
+        ud.set2("pos", get_input2<float>("near"));
+        ud.set2("fov", get_input2<float>("fov"));
+        ud.set2("aperture", get_input2<float>("aperture"));
+        ud.set2("focalPlaneDistance", get_input2<float>("focalPlaneDistance"));
 
-        camera->pos = pos;
-        camera->up = up;
-        camera->view = view;
-        camera->ffar = get_input2<float>("far");
-        camera->fnear = get_input2<float>("near");
-        camera->fov = get_input2<float>("fov");
-        camera->aperture = get_input2<float>("aperture");
         if(AF){
-            camera->focalPlaneDistance = zeno::length(target-pos);
+            ud.set2("focalPlaneDistance", zeno::length(target-pos));
         }else{
-            camera->focalPlaneDistance = get_input2<float>("focalPlaneDistance");
+            ud.set2("focalPlaneDistance", get_input2<float>("focalPlaneDistance"));
         }
 
         set_output("camera", std::move(camera));
@@ -397,18 +399,19 @@ struct ScreenSpaceProjectedGrid : INode {
         return t;
     }
     virtual void apply() override {
-        auto cam = get_input2<CameraObject>("cam");
+        auto camera = get_input2<CameraObject>("cam");
         auto prim = std::make_shared<PrimitiveObject>();
         auto raw_width = get_input2<int>("width");
         auto raw_height = get_input2<int>("height");
         auto u_padding = get_input2<int>("u_padding");
         auto v_padding = get_input2<int>("v_padding");
         auto sea_level = get_input2<float>("sea_level");
-        auto fov = glm::radians(cam->fov);
-        auto pos = cam->pos;
-        auto up = cam->up;
-        auto view = cam->view;
-        auto infinite = cam->ffar;
+        auto &ud = camera->userData();
+        auto fov = glm::radians(ud.get2<float>("fov"));
+        auto pos = ud.get2<vec3f>("pos");
+        auto up = ud.get2<vec3f>("up");
+        auto view = ud.get2<vec3f>("view");
+        auto infinite = ud.get2<float>("far");
 
         auto width = raw_width + u_padding * 2;
         auto height = raw_height + v_padding * 2;
@@ -484,15 +487,16 @@ ZENO_DEFNODE(ScreenSpaceProjectedGrid)({
 
 struct CameraFrustum : INode {
     virtual void apply() override {
-        auto cam = get_input2<CameraObject>("cam");
+        auto camera = get_input2<CameraObject>("cam");
         auto width = get_input2<int>("width");
         auto height = get_input2<int>("height");
-        auto fov = glm::radians(cam->fov);
-        auto pos = cam->pos;
-        auto up = cam->up;
-        auto view = cam->view;
-        auto fnear = cam->fnear;
-        auto ffar = cam->ffar;
+        auto &ud = camera->userData();
+        auto fov = glm::radians(ud.get2<float>("fov"));
+        auto pos = ud.get2<vec3f>("pos");
+        auto up = ud.get2<vec3f>("up");
+        auto view = ud.get2<vec3f>("view");
+        auto fnear = ud.get2<float>("near");
+        auto ffar = ud.get2<float>("far");
         auto right = zeno::cross(view, up);
         float ratio = float(width) / float(height);
         auto prim = std::make_unique<PrimitiveObject>();
