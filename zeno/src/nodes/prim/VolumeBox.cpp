@@ -56,7 +56,7 @@ struct CreateVolumeBox : zeno::INode {
 
                 auto tmp = grid->getTransform().baseMap()->getAffineMap()->getMat4();
                 glm::mat4 result;
-                for (uint i=0; i<16; ++i) {
+                for (size_t i=0; i<16; ++i) {
                     auto ele = *(tmp[0]+i);
                     result[i/4][i%4] = ele;
                 }

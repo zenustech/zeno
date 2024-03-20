@@ -40,12 +40,12 @@ static inline float __int_as_float(int i) {
     return bitConvert<int, float>(i);;
 }
 
-static inline uint __float_as_uint(float f) {
-    return bitConvert<float, uint>(f);
+static inline uint32_t __float_as_uint(float f) {
+    return bitConvert<float, uint32_t>(f);
 }
 
-static inline float __uint_as_float(uint i) {
-    return bitConvert<uint, float>(i);;
+static inline float __uint_as_float(uint32_t i) {
+    return bitConvert<uint32_t, float>(i);;
 }
 
 // #ifndef isnan
