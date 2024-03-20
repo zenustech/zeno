@@ -1023,5 +1023,37 @@ ZENDEFNODE(NewFBXBoneDeform, {
     {},
     {"primitive"},
 });
+
+
+struct NormalView : INode {
+    virtual void apply() override {
+        auto prim = get_input2<PrimitiveObject>("prim");
+        auto &nrms = prim->verts.attr<vec3f>("nrm");
+        auto scale = get_input2<float>("scale");
+        auto normals = std::make_shared<zeno::PrimitiveObject>();
+        normals->verts.resize(prim->verts.size() * 2);
+        for (auto i = 0; i < prim->verts.size(); i++) {
+            normals->verts[i] = prim->verts[i];
+            normals->verts[i + prim->size()] = prim->verts[i] + nrms[i] * scale;
+        }
+        normals->lines.resize(prim->verts.size());
+        for (auto i = 0; i < prim->verts.size(); i++) {
+            normals->lines[i] = vec2i(i, i + prim->verts.size());
+        }
+        set_output("normals", normals);
+    }
+};
+
+ZENDEFNODE(NormalView, {
+    {
+        "prim",
+        {"float", "scale", "0.01"},
+    },
+    {
+        "normals",
+    },
+    {},
+    {"debug"},
+});
 }
 #endif
