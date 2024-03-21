@@ -42,6 +42,7 @@ public slots:
     void onModifyLightData(UI_VECTYPE pos, UI_VECTYPE scale, UI_VECTYPE rotate, UI_VECTYPE color, float intensity, QString nodename, UI_VECTYPE skipParam);
     void onUpdateCameraProp(float aperture, float disPlane, UI_VECTYPE skipParam = UI_VECTYPE());
     void onCleanUpScene();
+    void onSetBackground(bool bShowBg);
 
     void onSetData(float, float, float, bool, bool);
 
@@ -70,6 +71,7 @@ public:
     void setCameraRes(const QVector2D& res);
     void setSafeFrames(bool bLock, int nx, int ny);
     void setNumSamples(int samples);
+    void showBackground(bool bShow);
     Zenovis* getZenoVis() const;
     bool isCameraMoving() const;
     void updateCamera();
@@ -105,7 +107,7 @@ signals:
     void sig_modifyLightData(UI_VECTYPE pos, UI_VECTYPE scale, UI_VECTYPE rotate, UI_VECTYPE color, float intensity, QString name, UI_VECTYPE skipParam);
     void sig_updateCameraProp(float aperture, float disPlane, UI_VECTYPE skipParam = UI_VECTYPE());
     void sig_cleanUpScene();
-
+    void sig_setBackground(bool bShowBg);
     void sig_setdata_on_optix_thread(float, float, float, bool, bool);
 
 public slots:
