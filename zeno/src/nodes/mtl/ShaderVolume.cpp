@@ -223,8 +223,8 @@ struct ShaderVolumeHomogeneous : INode {
 
 ZENDEFNODE(ShaderVolumeHomogeneous, {
     {
-        {"colorvec3f", "albedo", "0.5,0.5,0.5"},
-        {"vec3f", "extinction", "1"},
+        {"colorvec3f", "albedo", "1,1,1"},
+        {"vec3f", "extinction", "0.01,0.01,0.01"},
         {"float", "anisotropy", "0"},
         
         {"bool", "debug", "false"},
