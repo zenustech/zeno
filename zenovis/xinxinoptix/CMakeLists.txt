@@ -95,7 +95,17 @@ set(FILE_LIST
     # ${CUDA_PATH}/include/@nvfunctional 
     ${CUDA_PATH}/include/@math_constants.h
     ${CUDA_PATH}/include/@vector_types.h
-    ${CUDA_PATH}/include/@vector_functions.h    
+    ${CUDA_PATH}/include/@vector_functions.h 
+    
+    ${CMAKE_CURRENT_SOURCE_DIR}/@OptiXToolkit/ShaderUtil/Preprocessor.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@OptiXToolkit/ShaderUtil/SelfIntersectionAvoidance.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@OptiXToolkit/ShaderUtil/CudaSelfIntersectionAvoidance.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@OptiXToolkit/ShaderUtil/OptixSelfIntersectionAvoidance.h
+
+    ${CMAKE_CURRENT_SOURCE_DIR}/OptiXToolkit/ShaderUtil/@SelfIntersectionAvoidanceTypes.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/OptiXToolkit/ShaderUtil/SelfIntersectionAvoidance/@SelfIntersectionAvoidanceImpl.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/OptiXToolkit/ShaderUtil/@SelfIntersectionAvoidance/CudaSelfIntersectionAvoidanceImpl.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/OptiXToolkit/ShaderUtil/@SelfIntersectionAvoidance/OptixSelfIntersectionAvoidanceImpl.h
 
     ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@cuda/random.h
     ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@cuda/helpers.h
