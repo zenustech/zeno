@@ -467,7 +467,7 @@ struct SphericalRect {
     float S;
 };
 
-static inline void SphericalRectInit(SphericalRect& srect, 
+__device__ inline void SphericalRectInit(SphericalRect& srect, 
     const float3& o, const float3& s, 
     const float3& axisX, const float& lenX, 
     const float3& axisY, const float& lenY) {
@@ -544,7 +544,7 @@ static inline float2 SphericalRectSample(SphericalRect& srect, float u, float v)
              (yv-srect.y0) / (srect.y1 - srect.y0) };
 }
 
-static inline bool SpreadClampRect(float3& v,
+__device__ inline bool SpreadClampRect(float3& v,
                     const float3& axisX, float& lenX, 
                     const float3& axisY, float& lenY,
                     const float3& normal, const float3& shadingP, 

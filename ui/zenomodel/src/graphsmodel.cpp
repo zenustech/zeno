@@ -12,6 +12,61 @@
 #include "globalcontrolmgr.h"
 #include "dictkeymodel.h"
 
+const QString g_script =
+R"(import json
+import re
+import zeno
+
+mat_data = {}
+names_data = []
+keys_data = {}
+match_data = {}
+names = '%1'  #nameList
+if names != '':
+    names_data = names.split(',')
+else:
+    print('names is empty')
+materialPath = '%2'  #materialPath
+if materialPath != '':
+    with open(materialPath, 'r') as mat_file:
+        mat_data = json.load(mat_file)
+keys = '%3'  #keyWords
+if keys != '':
+    keys_data = json.loads(keys)
+else:
+    print('key words is empty')
+matchInfo = '%4'  #matchInputs
+if matchInfo != '':
+    match_data = json.loads(matchInfo)
+rows = int(len(names_data)**0.5)
+cols = int(len(names_data) / rows if rows > 0 else 1)
+pos = (%5,%6)  #node pos, can not edit
+count = 0
+defaultMat = '';
+for key, value in keys_data.items():
+    if value == 'default':
+        defaultMat = key
+for mat in names_data:
+    subgName = defaultMat
+    for preSet, pattern in keys_data.items():
+        if re.search(pattern, mat, re.I):
+            subgName = preSet
+            break
+    if subgName == '':
+        print('Can not match ', mat)
+    else:
+        node = zeno.forkMaterial(subgName, mat, mat)
+        row = int(count % rows) + 1
+        col = int(count / rows) + 1
+        newPos = (pos[0] + row * 600, pos[1]+col * 600)
+        node.pos = newPos
+        count = count + 1
+        if subgName in match_data and mat in mat_data:
+            match = match_data[subgName]
+            material = mat_data[mat]
+            for k, v in match.items():
+                if v in material:
+                    setattr(node, k,material[v]))";
 
 GraphsModel::GraphsModel(QObject *parent)
     : IGraphsModel(parent)
@@ -408,6 +463,13 @@ QVariant GraphsModel::data(const QModelIndex& index, int role) const
                 return pSubgModel->mtlid();
             }
         }
+        case ROLE_FORK_LOCKSTATUS:
+        {
+            if (SubGraphModel* pSubgModel = subGraph(m_row2Key[index.row()]))
+            {
+                return pSubgModel->forkLocked();
+            }
+        }
     }
     return QVariant();
 }
@@ -457,6 +519,14 @@ bool GraphsModel::setData(const QModelIndex& index, const QVariant& value, int r
         if (SubGraphModel* pModel = subGraph(name))
         {
             pModel->setMtlid(value.toString());
+        }
+    }
+    else if (role == ROLE_FORK_LOCKSTATUS)
+    {
+        const QString& name = data(index, Qt::DisplayRole).toString();
+        if (SubGraphModel* pModel = subGraph(name))
+        {
+            pModel->setForkLock(value.toBool());
         }
     }
 	return false;
@@ -528,6 +598,8 @@ NODE_DESCS GraphsModel::getCoreDescs()
                 QVariant defl;
 
                 parseDescStr(input, name, type, defl);
+                if (z_name == "PythonMaterialNode" && name == "script")
+                    defl = g_script;
 
                 INPUT_SOCKET socket;
                 socket.info.type = type;
@@ -852,6 +924,11 @@ QModelIndex GraphsModel::fork(const QModelIndex& subgIdx, const QModelIndex &sub
     const QString& subnetName = subnetNodeIdx.data(ROLE_OBJNAME).toString();
     SubGraphModel* pModel = subGraph(subnetName);
     ZASSERT_EXIT(pModel, QModelIndex());
+    if (pModel->forkLocked())
+    {
+        zeno::log_error("{} fork behavior is locked", subnetName.toStdString());
+        return QModelIndex();
+    }
 
     NODE_DATA subnetData = _fork(subnetName);
     SubGraphModel *pCurrentModel = subGraph(subgIdx.row());
@@ -869,6 +946,8 @@ QModelIndex GraphsModel::forkMaterial(const QModelIndex& currSubgIdx, const QMod
     if (!subnetNodeIdx.isValid())
         return QModelIndex();
     QModelIndex index = fork(currSubgIdx, subnetNodeIdx);
+    if (!index.isValid())
+        return QModelIndex();
     ModelSetData(index, OPT_VIEW, ROLE_OPTIONS);
     
     QString name = index.data(ROLE_OBJNAME).toString();
@@ -907,6 +986,8 @@ NODE_DATA GraphsModel::_fork(const QString& forkSubgName)
 {
     SubGraphModel* pModel = subGraph(forkSubgName);
     ZASSERT_EXIT(pModel, NODE_DATA());
+    if (pModel->forkLocked())
+        return NodesMgr::newNodeData(this, forkSubgName);
 
     QMap<QString, NODE_DATA> nodes;
     QMap<QString, NODE_DATA> oldGraphsToNew;
@@ -983,6 +1064,7 @@ NODE_DATA GraphsModel::_fork(const QString& forkSubgName)
     SubGraphModel* pForkModel = new SubGraphModel(this);
     pForkModel->setName(forkName);
     pForkModel->setType(pModel->type());
+    pForkModel->setForkLock(pModel->forkLocked());
     appendSubGraph(pForkModel);
 
     NODES_DATA newNodes;

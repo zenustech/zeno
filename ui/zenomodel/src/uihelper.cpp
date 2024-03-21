@@ -141,6 +141,7 @@ bool UiHelper::validateVariant(const QVariant& var, const QString& type)
     case CONTROL_WRITEPATH:
     case CONTROL_READPATH:
     case CONTROL_ENUM:
+    case CONTROL_DIRECTORY:
         return (QVariant::String == varType);
     case CONTROL_MULTILINE_STRING:
         return var.type() == QVariant::String;
@@ -152,9 +153,6 @@ bool UiHelper::validateVariant(const QVariant& var, const QString& type)
         {
             return true;
         }
-    }
-    case CONTROL_PURE_COLOR: {
-        return QVariant::Color == varType;
     }
     case CONTROL_CURVE:
     {
@@ -257,6 +255,7 @@ QVariant UiHelper::parseStringByType(const QString &defaultValue, const QString 
     case CONTROL_MULTILINE_STRING:
     case CONTROL_COLOR:
     case CONTROL_ENUM:
+    case CONTROL_DIRECTORY:
         return defaultValue;
     case CONTROL_COLOR_VEC3F:
     case CONTROL_VEC2_FLOAT:
@@ -310,7 +309,8 @@ QVariant UiHelper::parseTextValue(PARAM_CONTROL editCtrl, const QString& textVal
     case CONTROL_COLOR:
     case CONTROL_CURVE:
     case CONTROL_ENUM:
-	case CONTROL_STRING: varValue = textValue; break;
+	case CONTROL_STRING: 
+    case CONTROL_DIRECTORY:varValue = textValue; break;
 	}
     return varValue;
 }
@@ -394,7 +394,6 @@ QString UiHelper::getControlDesc(PARAM_CONTROL ctrl)
     case CONTROL_VEC3_INT:          return "Integer Vector 3";
     case CONTROL_VEC2_INT:          return "Integer Vector 2";
     case CONTROL_COLOR:             return "Color";
-    case CONTROL_PURE_COLOR:        return "Pure Color";
     case CONTROL_COLOR_VEC3F:       return "Color Vec3f";
     case CONTROL_CURVE:             return "Curve";
     case CONTROL_HSPINBOX:          return "SpinBox";
@@ -404,6 +403,7 @@ QString UiHelper::getControlDesc(PARAM_CONTROL ctrl)
     case CONTROL_DICTPANEL:         return "Dict Panel";
     case CONTROL_GROUP_LINE:             return "group-line";
     case CONTROL_PYTHON_EDITOR: return "PythonEditor";
+    case CONTROL_DIRECTORY: return "directory";
     default:
         return "";
     }
@@ -471,10 +471,6 @@ PARAM_CONTROL UiHelper::getControlByDesc(const QString& descName)
     {
         return CONTROL_COLOR;
     } 
-    else if (descName == "Pure Color") 
-    {
-        return CONTROL_PURE_COLOR;
-    }
     else if (descName == "Color Vec3f")
     {
         return CONTROL_COLOR_VEC3F;
@@ -510,6 +506,10 @@ PARAM_CONTROL UiHelper::getControlByDesc(const QString& descName)
     else if (descName == "PythonEditor")
     {
         return CONTROL_PYTHON_EDITOR;
+    }
+    else if (descName == "directory")
+    {
+        return CONTROL_DIRECTORY;
     }
     else
     {
@@ -563,7 +563,7 @@ QStringList UiHelper::getControlLists(const QString& type, bool isNodeUI)
     else if (type == "string") { ctrls = { CONTROL_STRING, CONTROL_MULTILINE_STRING, CONTROL_ENUM}; }
     else if (type == "vec2f") { ctrls = { CONTROL_VEC2_FLOAT }; }
     else if (type == "vec2i") { ctrls = { CONTROL_VEC2_INT }; }
-    else if (type == "vec3f") { ctrls = { CONTROL_VEC3_FLOAT }; }
+    else if (type == "vec3f") { ctrls = { CONTROL_VEC3_FLOAT, CONTROL_COLOR_VEC3F}; }
     else if (type == "vec3i") { ctrls = { CONTROL_VEC3_INT }; }
     else if (type == "vec4f") { ctrls = { CONTROL_VEC4_FLOAT }; }
     else if (type == "vec4i") { ctrls = { CONTROL_VEC4_INT }; }
@@ -571,13 +571,14 @@ QStringList UiHelper::getControlLists(const QString& type, bool isNodeUI)
     else if (type == "readpath") { ctrls = { CONTROL_READPATH }; }
     else if (type == "multiline_string") { ctrls = { CONTROL_STRING, CONTROL_MULTILINE_STRING }; }
     else if (type == "color") {   //color is more general than heatmap.
-        ctrls = {CONTROL_COLOR, CONTROL_PURE_COLOR, CONTROL_COLOR_VEC3F};
+        ctrls = {CONTROL_COLOR};
     }
     else if (type == "curve") { ctrls = { CONTROL_CURVE }; }
     else if (type.startsWith("enum ")) {
         ctrls = { CONTROL_ENUM }; //todo
     }
     else if (type == "NumericObject") { ctrls = { CONTROL_FLOAT }; }
+    else if (type == "directory") { ctrls = { CONTROL_DIRECTORY }; }
     else { ctrls = { CONTROL_NONE }; }
 
     QStringList ctrlNames;
@@ -626,8 +627,6 @@ PARAM_CONTROL UiHelper::getControlByType(const QString &type)
         return CONTROL_MULTILINE_STRING;
     } else if (type == "color") {   //color is more general than heatmap.
         return CONTROL_COLOR;
-    } else if (type == "purecolor") {   
-        return CONTROL_PURE_COLOR;
     } else if (type == "colorvec3f") {   //colorvec3f is for coloreditor, color is heatmap? ^^^^
         return CONTROL_COLOR_VEC3F;
     } else if (type == "curve") {
@@ -645,6 +644,9 @@ PARAM_CONTROL UiHelper::getControlByType(const QString &type)
         return CONTROL_NONE;
     } else if (type == "group-line") {
         return CONTROL_GROUP_LINE;
+    }
+    else if (type == "directory") {
+        return CONTROL_DIRECTORY;
     }
     else {
         zeno::log_trace("parse got undefined control type {}", type.toStdString());
@@ -676,7 +678,6 @@ QString UiHelper::getTypeByControl(PARAM_CONTROL ctrl)
     case CONTROL_WRITEPATH: return "string";
     case CONTROL_READPATH: return "string";
     case CONTROL_COLOR: return "color";     //todo: is vec3?
-    case CONTROL_PURE_COLOR: return "purecolor";
     case CONTROL_COLOR_VEC3F: return "colorvec3f"; // ^^^ color vec is here
     case CONTROL_CURVE: return "curve";
     case CONTROL_ENUM: return "string";
@@ -684,6 +685,7 @@ QString UiHelper::getTypeByControl(PARAM_CONTROL ctrl)
     case CONTROL_HSPINBOX:
     case CONTROL_SPINBOX_SLIDER:
          return "int";
+    case CONTROL_DIRECTORY: return "string";
     default:
         return "";
     }
@@ -878,6 +880,7 @@ QVariant UiHelper::initVariantByControl(PARAM_CONTROL ctrl)
         case CONTROL_READPATH:
         case CONTROL_MULTILINE_STRING:
         case CONTROL_STRING:
+        case CONTROL_DIRECTORY:
             return "";
         case CONTROL_COLOR:
         {
@@ -895,6 +898,7 @@ QVariant UiHelper::initVariantByControl(PARAM_CONTROL ctrl)
         }
         case CONTROL_VEC3_FLOAT:
         case CONTROL_VEC3_INT:
+        case CONTROL_COLOR_VEC3F:
         {
             UI_VECTYPE vec(3);
             return QVariant::fromValue(vec);

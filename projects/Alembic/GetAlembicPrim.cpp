@@ -72,7 +72,7 @@ int get_alembic_prim_index(std::shared_ptr<zeno::ABCTree> abctree, std::string n
     int index = 0;
     abctree->visitPrims([&] (auto const &p) {
         auto &ud = p->userData();
-        auto _abc_path = ud.template get2<std::string>("_abc_path", "");
+        auto _abc_path = ud.template get2<std::string>("abcpath_0", "");
         if (_abc_path == name) {
             return false;
         }
@@ -247,7 +247,7 @@ struct AlembicPrimList : INode {
         auto new_prims = std::make_shared<zeno::ListObject>();
         if (get_input2<bool>("splitByFaceset")) {
             for (auto &prim: prims->arr) {
-                auto list = abc_split_by_name(std::dynamic_pointer_cast<PrimitiveObject>(prim));
+                auto list = abc_split_by_name(std::dynamic_pointer_cast<PrimitiveObject>(prim), true);
                 new_prims->arr.insert(new_prims->arr.end(), list->arr.begin(), list->arr.end());
             }
         }
@@ -260,7 +260,7 @@ struct AlembicPrimList : INode {
         auto facesetExclude = zeno::split_str(get_input2<std::string>("facesetExclude"), {' ', '\n'});
         for (auto it = new_prims->arr.begin(); it != new_prims->arr.end();) {
             auto np = std::dynamic_pointer_cast<PrimitiveObject>(*it);
-            auto abc_path = np->userData().template get2<std::string>("_abc_path");
+            auto abc_path = np->userData().template get2<std::string>("abcpath_0");
             bool contain = false;
             if (pathInclude.empty()) {
                 contain = true;
@@ -311,7 +311,7 @@ struct AlembicPrimList : INode {
             if (get_input2<bool>("flipFrontBack")) {
                 flipFrontBack(_prim);
             }
-            if (get_input2<bool>("killDeadVerts")) {
+            if (get_input2<bool>("splitByFaceset") && get_input2<bool>("killDeadVerts")) {
                 primKillDeadVerts(_prim.get());
             }
             if (get_input2<bool>("triangulate")) {
@@ -329,7 +329,7 @@ ZENDEFNODE(AlembicPrimList, {
         {"bool", "use_xform", "0"},
         {"bool", "triangulate", "0"},
         {"bool", "splitByFaceset", "0"},
-        {"bool", "killDeadVerts", "0"},
+        {"bool", "killDeadVerts", "1"},
         {"string", "pathInclude", ""},
         {"string", "pathExclude", ""},
         {"string", "facesetInclude", ""},

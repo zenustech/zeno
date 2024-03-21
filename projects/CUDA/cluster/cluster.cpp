@@ -8,6 +8,7 @@
 #include <zeno/funcs/PrimitiveUtils.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/utils/log.h>
+#include <zeno/utils/string.h>
 #include <zeno/zeno.h>
 #include "./kdsearch.h"
 
@@ -24,6 +25,12 @@ void compute_mean(int vnum, int knum, const std::vector<vec3f>& pos, const std::
         center[i] = sum[i] / count[i];
 }
 
+template <typename T>
+void compute_sum(int vnum, int knum, const std::vector<T>& attr, const std::vector<int>& cluster, std::vector<T>& sum) {
+    std::fill(sum.begin(), sum.end(), T(0));
+    for(int i = 0; i < vnum; i++)
+        sum[cluster[i]] += attr[i];
+}
 void assign_cluster(int vnum, int knum, const std::vector<vec3f>& pos, const std::vector<vec3f>& center, std::vector<int>& cluster) {
 #pragma omp parallel for
     for (int i = 0; i < vnum; i++)
@@ -74,6 +81,8 @@ struct ParticleClustering : INode {
         auto cluster_tag = get_input<zeno::StringObject>("cluster_tag")->get();
         bool color = get_input2<bool>("paint_color");
         bool cluster_center = get_input2<bool>("output_cluster_center");
+        auto sumAttribs_ = get_input2<std::string>("sum_vert_attribs");
+        std::vector<std::string> sumAttribs = zeno::split_str(sumAttribs_);
         auto &pos = pars->verts;
         int vnum = pos->size();
         auto &cluster = pars->add_attr<int>(cluster_tag);
@@ -143,6 +152,24 @@ struct ParticleClustering : INode {
                         cluster[i] = j;
         }
         compute_mean(vnum, knum, pos, cluster, center);
+        std::map<std::string, std::vector<float>> sumAttrsFloat;
+        std::map<std::string, std::vector<vec3f>> sumAttrsVec3f;
+        if (!sumAttribs.empty()) {
+            for (const auto &attr: sumAttribs) {
+                if (pars->has_attr(attr)) {
+                    if(pars->attr_is<float>(attr)){
+                        auto &attrs = pars->attr<float>(attr);
+                        sumAttrsFloat[attr].resize(knum);
+                        compute_sum<float>(vnum, knum, attrs, cluster, sumAttrsFloat[attr]);
+                    }
+                    else if(pars->attr_is<vec3f>(attr)){
+                        auto &attrs = pars->attr<vec3f>(attr);
+                        sumAttrsVec3f[attr].resize(knum);
+                        compute_sum<vec3f>(vnum, knum, attrs, cluster, sumAttrsVec3f[attr]);
+                    }
+                }
+            }
+        }
         zeno::log_info("into {} clusters", knum);
 
         if (cluster_center) {
@@ -151,6 +178,18 @@ struct ParticleClustering : INode {
             for (int i = 0; i < knum; ++i) {
                 pars->verts[i] = center[i];
                 cluster[i] = i;
+            }
+            if(!sumAttribs.empty()){
+                for (const auto &attr: sumAttribs) {
+                    if(pars->attr_is<float>(attr)){
+                        auto &attrs = pars->attr<float>(attr);
+                        attrs = sumAttrsFloat[attr];
+                    }
+                    else if(pars->attr_is<vec3f>(attr)){
+                        auto &attrs = pars->attr<vec3f>(attr);
+                        attrs = sumAttrsVec3f[attr];
+                    }
+                }
             }
         } else {
             if (color) {
@@ -179,7 +218,8 @@ ZENO_DEFNODE(ParticleClustering)
     {"float", "diameter", "0"},
     {"string", "cluster_tag", "cluster_index"},
     {"bool", "paint_color", "1"},
-    {"bool", "output_cluster_center", "1"}},
+    {"bool", "output_cluster_center", "1"},
+    {"string", "sum_vert_attribs", ""}},
     {{"PrimitiveObject", "pars"}},
     {},
     {"primitive"},

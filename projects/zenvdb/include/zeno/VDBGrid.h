@@ -52,6 +52,8 @@ void writeFloatGrid(const std::string &fn, typename GridT::Ptr grid) {
 struct VDBGrid : zeno::IObject {
   virtual void output(std::string path) = 0;
   virtual void input(std::string path) = 0;
+  
+  virtual const openvdb::math::Transform& getTransform() = 0;
   virtual void setTransform(openvdb::math::Transform::Ptr const &trans) = 0;
   virtual std::string method_node(std::string const &op) override {
       if (op == "view") {
@@ -118,6 +120,10 @@ struct VDBGridWrapper : zeno::IObjectClone<VDBGridWrapper<GridT>, VDBGrid> {
 
   virtual void input(std::string path) override {
     m_grid = readFloatGrid<GridT>(path);
+  }
+
+  virtual const openvdb::math::Transform& getTransform() override {
+    return m_grid->transform();
   }
 
   virtual void
@@ -238,6 +244,10 @@ struct VDBGridWrapper<openvdb::Vec3fGrid> : zeno::IObjectClone<VDBGridWrapper<op
     m_packedGrid = packed_FloatGrid3{};
     auto &packed = refPackedGrid();
     packed.from_vec3(m_grid);
+  }
+
+  virtual const openvdb::math::Transform& getTransform() override {
+    return m_grid->transform();
   }
 
   virtual void

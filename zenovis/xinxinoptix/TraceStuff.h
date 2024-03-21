@@ -44,11 +44,10 @@ enum medium{
 };
 
 struct VolumePRD {
-    float vol_t0;
-    float vol_t1;
+    float t0;
+    float t1;
 
-    bool origin_inside  :1;
-    bool surface_inside :1;
+    bool afterSingleScatter = false;
 };
 
 struct ShadowPRD {
@@ -82,7 +81,7 @@ struct RadiancePRD
     float3       attenuation2;
     float3       origin;
     float3       direction;
-    float3       camPos;
+    
     float        minSpecRough;
     bool         passed;
     float        prob;
@@ -110,6 +109,7 @@ struct RadiancePRD
     unsigned char adepth;
     bool         alphaHit;
     vec3         mask_value;
+    unsigned char max_depth;
 
     uint16_t lightmask = EverythingMask;
 
@@ -163,9 +163,9 @@ struct RadiancePRD
 //      double y = (double)(P.y);
 //      double z = (double)(P.z);
 //        auto beforeOffset = make_float3(x, y, z);
-        this->origin = P;
-        this->direction = new_dir;
-        offsetRay(this->origin, new_dir);
+        //this->origin = P;
+        //this->direction = new_dir;
+        offsetRay(P, new_dir);
 //        double x2 = (double)(beforeOffset.x);
 //        double y2 = (double)(beforeOffset.y);
 //        double z2 = (double)(beforeOffset.z);

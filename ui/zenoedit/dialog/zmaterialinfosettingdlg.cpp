@@ -153,12 +153,10 @@ void ZMaterialInfoSettingDlg::initKeys()
             }
         }
     }
-    if (ui->m_keyTableWidget->rowCount() > 0)
-    {
-        int height = ui->m_keyTableWidget->rowHeight(0) * ui->m_keyTableWidget->rowCount();
-        int hearderH = ui->m_keyTableWidget->horizontalHeader()->height();
-        ui->m_keyTableWidget->setMinimumHeight(height + hearderH);
-    }
+    int height = ui->m_keyTableWidget->rowHeight(0) * 5;
+    int hearderH = ui->m_keyTableWidget->horizontalHeader()->height();
+    ui->m_keyTableWidget->setMinimumHeight(height + hearderH);
+    ui->m_keyTableWidget->setMaximumHeight(ZenoStyle::dpiScaled(450));
     ui->m_keyTableWidget->viewport()->installEventFilter(this);
     connect(ui->m_keyTableWidget, &QTableWidget::itemChanged, this, &ZMaterialInfoSettingDlg::onPathEditFinished);
 }
@@ -185,6 +183,7 @@ void ZMaterialInfoSettingDlg::initMatch()
     ui->m_matchTreeView->setModel(m_pModel);
     ui->m_matchTreeView->setHeaderHidden(true);
     ui->m_matchTreeView->setMinimumHeight(ZenoStyle::dpiScaled(200));
+    ui->m_matchTreeView->setMaximumHeight(ZenoStyle::dpiScaled(450));
     ui->m_matchTreeView->hide();
     ui->m_matchLabel->hide();
 }

@@ -19,7 +19,7 @@
 #include "util/log.h"
 #include "util/apphelper.h"
 #include <zenomodel/include/curveutil.h>
-#include <zenoui/comctrl/dialog/curvemap/zcurvemapeditor.h>
+#include <zenoui/comctrl/dialog/curvemap/zqwtcurvemapeditor.h>
 #include <zenoui/comctrl/dialog/zenoheatmapeditor.h>
 #include "zenomainwindow.h"
 #include <zenomodel/include/viewparammodel.h>
@@ -640,7 +640,7 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
                     pLineEdit->setProperty(g_setKey, properties.first());
                     pLineEdit->style()->unpolish(pLineEdit);
                     pLineEdit->style()->polish(pLineEdit);
-                    pLineEdit->update();                    
+                    pLineEdit->update();
                     
                 } else {
                     literalNum = UiHelper::variantToString(value);
@@ -688,12 +688,8 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
             } 
             else if (QPushButton *pBtn = qobject_cast<QPushButton *>(ctrl.pControl)) 
             {
-                // purecolor
-                if (value.canConvert<QColor>()) {
-                    pBtn->setStyleSheet(QString("background-color:%1; border:0;").arg(value.value<QColor>().name()));
-                }
                 // colorvec3f
-                else if (value.canConvert<UI_VECTYPE>()) {
+                if (value.canConvert<UI_VECTYPE>()) {
                     UI_VECTYPE vec = value.value<UI_VECTYPE>();
                     if (vec.size() == 3) {
                         auto color = QColor::fromRgbF(vec[0], vec[1], vec[2]);
@@ -971,6 +967,7 @@ void ZenoPropPanel::setKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &k
 
         bool visible = keys.contains(key);
         getDelfCurveData(newVal[key], vec.at(i), visible, key);
+        curve_util::updateRange(newVal);
     }
 
     AppHelper::socketEditFinished(QVariant::fromValue(newVal), m_idx, ctrl.m_viewIdx);
@@ -1034,40 +1031,43 @@ void ZenoPropPanel::delKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &k
 
 void ZenoPropPanel::editKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &keys) 
 {
-    ZCurveMapEditor *pEditor = new ZCurveMapEditor(true);
-    connect(pEditor, &ZCurveMapEditor::finished, this, [=](int result) {
+    ZQwtCurveMapEditor* pEditor = new ZQwtCurveMapEditor(true);
+    connect(pEditor, &ZQwtCurveMapEditor::finished, this, [=](int result) {
         CURVES_DATA newCurves = pEditor->curves();
-        CURVES_DATA val;
-        if (ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).canConvert<CURVES_DATA>())
-            val = ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).value<CURVES_DATA>();
-        QVariant newVal;
-        if (!newCurves.isEmpty() || val.size() != keys.size()) {
-            for (const QString &key : keys) {
-                if (newCurves.contains(key))
-                    val[key] = newCurves[key];
-                else {
-                    val[key] = CURVE_DATA();
-                    if (ZVecEditor *lineEdit = qobject_cast<ZVecEditor *>(ctrl.pControl)) {
-                        UI_VECTYPE vec = lineEdit->text();
-                        int idx = key == "x" ? 0 : key == "y" ? 1 : key == "z" ? 2 : 3;
-                        if (vec.size() > idx)
-                            getDelfCurveData(val[key], vec.at(idx), false, key);
-                    }
+    CURVES_DATA val;
+    if (ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).canConvert<CURVES_DATA>())
+        val = ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).value<CURVES_DATA>();
+    QVariant newVal;
+    if (!newCurves.isEmpty() || val.size() != keys.size()) {
+        for (const QString& key : keys) {
+            if (newCurves.contains(key))
+                val[key] = newCurves[key];
+            else {
+                val[key] = CURVE_DATA();
+                if (ZVecEditor* lineEdit = qobject_cast<ZVecEditor*>(ctrl.pControl)) {
+                    UI_VECTYPE vec = lineEdit->text();
+                    int idx = key == "x" ? 0 : key == "y" ? 1 : key == "z" ? 2 : 3;
+                    if (vec.size() > idx)
+                        getDelfCurveData(val[key], vec.at(idx), false, key);
                 }
             }
-            newVal = QVariant::fromValue(val);
-        } else
-        {
-            if (ZLineEdit *lineEdit = qobject_cast<ZLineEdit *>(ctrl.pControl)) {
-                newVal = QVariant::fromValue(lineEdit->text().toFloat());
-            } else if (ZVecEditor *lineEdit = qobject_cast<ZVecEditor *>(ctrl.pControl)) {
-                newVal = QVariant::fromValue(lineEdit->text());
-            }
-            val = CURVES_DATA();
         }
-        AppHelper::socketEditFinished(newVal, m_idx, ctrl.m_viewIdx);
-        updateTimelineKeys(val);
+        newVal = QVariant::fromValue(val);
+    }
+    else
+    {
+        if (ZLineEdit* lineEdit = qobject_cast<ZLineEdit*>(ctrl.pControl)) {
+            newVal = QVariant::fromValue(lineEdit->text().toFloat());
+        }
+        else if (ZVecEditor* lineEdit = qobject_cast<ZVecEditor*>(ctrl.pControl)) {
+            newVal = QVariant::fromValue(lineEdit->text());
+        }
+        val = CURVES_DATA();
+    }
+    AppHelper::socketEditFinished(newVal, m_idx, ctrl.m_viewIdx);
+    updateTimelineKeys(val);
     });
+    
     CURVES_DATA curves = getCurvesData(ctrl.m_viewIdx, keys);
     if (curves.size() > 1)
         curve_util::updateRange(curves);

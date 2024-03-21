@@ -47,12 +47,14 @@ void optixupdatematerial(std::vector<std::shared_ptr<ShaderPrepared>> &shaders);
 void updateSphereXAS();
 
 void updateVolume(uint32_t volume_shader_offset);
-void buildRootIAS();
+void updateRootIAS();
 void buildLightTree();
 void optixupdateend();
 
 void set_window_size(int nx, int ny);
+void set_outside_random_number(int32_t outside_random_number);
 void set_perspective(float const *U, float const *V, float const *W, float const *E, float aspect, float fov, float fpd, float aperture);
+void set_physical_camera_param(float aperture, float shutter_speed, float iso, bool aces, bool exposure);
 void set_perspective_by_fov(float const *U, float const *V, float const *W, float const *E, float aspect, float fov, int fov_type, float L, float focal_distance, float aperture, float pitch, float yaw, float h_shift, float v_shift);
 void set_perspective_by_focal_length(float const *U, float const *V, float const *W, float const *E, float aspect, float focal_length, float w, float h, float focal_distance, float aperture, float pitch, float yaw, float h_shift, float v_shift);
 void load_object(std::string const &key, std::string const &mtlid, const std::string& instID, float const *verts, size_t numverts, int const *tris, size_t numtris, std::map<std::string, std::pair<float const *, size_t>> const &vtab,int const *matids, std::vector<std::string> const &matNameList);

@@ -3,11 +3,6 @@
 #include "zxxglslvec.h"
 #include "TraceStuff.h"
 
-static __inline__ __device__ float saturate(float num)
-{
-    return clamp(num,0.0f,1.0f);
-}
-
 static __inline__ __device__ float hash( float n )
 {
     return fract(sin(n)*43758.5453f);
@@ -332,13 +327,13 @@ static __inline__ __device__ vec3 hdrSky(
 
     vec3 uv = sphereUV(dir, true);
 
-    vec3 col = (vec3)texture2D(params.sky_texture, vec2(uv[0], uv[1])) * params.sky_strength;
+    vec3 col = (vec3)texture2D(params.sky_texture, vec2(uv[0], uv[1]));//* params.sky_strength;
     vec3 col2 = clamp(col, vec3(0.0f), vec3(upperBound));
     int i = uv[0] * params.skynx;
     int j = uv[1] * params.skyny;
     //float p = params.skycdf[params.skynx * params.skyny + j * params.skynx + i];
-    pdf = luminance(col) / params.envavg / (2.0f * M_PIf * M_PIf);
-    return mix(col, col2, isclamp);
+    pdf = luminance(col) / params.envavg  / (2.0f * M_PIf * M_PIf);
+    return mix(col, col2, isclamp) * params.sky_strength;
 }
 
 static __inline__ __device__ vec3 colorTemperatureToRGB(float temperatureInKelvins)

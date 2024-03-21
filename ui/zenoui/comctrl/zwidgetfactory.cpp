@@ -3,7 +3,7 @@
 #include <zenoui/comctrl/zlinewidget.h>
 #include <zenoui/comctrl/zlineedit.h>
 #include <zenoui/comctrl/ztextedit.h>
-#include <zenoui/comctrl/dialog/curvemap/zcurvemapeditor.h>
+#include <zenoui/comctrl/dialog/curvemap/zqwtcurvemapeditor.h>
 #include <zenoui/comctrl/dialog/zenoheatmapeditor.h>
 #include <zenoui/comctrl/zcombobox.h>
 #include <zenoui/comctrl/zlabel.h>
@@ -71,6 +71,7 @@ namespace zenoui
             }
             case CONTROL_READPATH:
             case CONTROL_WRITEPATH:
+            case CONTROL_DIRECTORY:
             {
                 ZPathEdit *pathLineEdit = new ZPathEdit(cbSet.cbSwitch,value.toString());
                 pathLineEdit->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
@@ -131,14 +132,10 @@ namespace zenoui
                 });
                 return pBtn;
             }
-            case CONTROL_PURE_COLOR:
             case CONTROL_COLOR_VEC3F:
             {
                 QColor currentColor;
-                if (ctrl == CONTROL_PURE_COLOR) {
-                    currentColor = value.value<QColor>();
-                }
-                else if (ctrl == CONTROL_COLOR_VEC3F) {
+                if (ctrl == CONTROL_COLOR_VEC3F) {
                     auto colorVec = value.value<UI_VECTYPE>();
                     currentColor = QColor::fromRgbF(colorVec[0], colorVec[1], colorVec[2]);
                 }
@@ -150,10 +147,7 @@ namespace zenoui
                     if (color.isValid()) 
                     {
                         pBtn->setStyleSheet(QString("background-color:%1; border:0;").arg(color.name()));
-                        if (ctrl == CONTROL_PURE_COLOR) {
-                            cbSet.cbEditFinished(QVariant::fromValue(color));
-                        }
-                        else if (ctrl == CONTROL_COLOR_VEC3F) {
+                        if (ctrl == CONTROL_COLOR_VEC3F) {
                             UI_VECTYPE colorVec(3);
                             color.getRgbF(&colorVec[0], &colorVec[1], &colorVec[2]);
                             cbSet.cbEditFinished(QVariant::fromValue<UI_VECTYPE>(colorVec));
@@ -226,10 +220,10 @@ namespace zenoui
                 QPushButton* pBtn = new QPushButton("Edit Curve");
                 pBtn->setProperty("cssClass", "proppanel");
                 QObject::connect(pBtn, &QPushButton::clicked, [=]() {
-                    ZCurveMapEditor* pEditor = new ZCurveMapEditor(true);
+                    ZQwtCurveMapEditor* pEditor = new ZQwtCurveMapEditor(true);
                     pEditor->setAttribute(Qt::WA_DeleteOnClose);
 
-                    QObject::connect(pEditor, &ZCurveMapEditor::finished, [=](int result) {
+                    QObject::connect(pEditor, &ZQwtCurveMapEditor::finished, [=](int result) {
                         CURVES_DATA curves = pEditor->curves();
                         cbSet.cbEditFinished(QVariant::fromValue(curves));
                     });

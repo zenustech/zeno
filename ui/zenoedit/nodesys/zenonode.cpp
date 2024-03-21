@@ -11,7 +11,6 @@
 #include <zenoui/style/zenostyle.h>
 #include <zenoui/comctrl/zveceditor.h>
 #include "variantptr.h"
-#include <zenoui/comctrl/dialog/curvemap/zcurvemapeditor.h>
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
 #include <zenomodel/include/graphsmanagment.h>
@@ -1137,13 +1136,13 @@ ZGraphicsLayout* ZenoNode::addParam(const QModelIndex& viewparamIdx, ZenoSubGrap
         case CONTROL_READPATH:
         case CONTROL_WRITEPATH:
         case CONTROL_MULTILINE_STRING:
-        case CONTROL_PURE_COLOR:
         case CONTROL_COLOR_VEC3F:
         case CONTROL_CURVE:
         case CONTROL_HSLIDER:
         case CONTROL_HSPINBOX:
         case CONTROL_HDOUBLESPINBOX:
         case CONTROL_SPINBOX_SLIDER:
+        case CONTROL_DIRECTORY:
         {
             QGraphicsItem* pWidget = initParamWidget(pScene, viewparamIdx);
             paramCtrl.ctrl_layout->addItem(pWidget, Qt::AlignRight | Qt::AlignVCenter);

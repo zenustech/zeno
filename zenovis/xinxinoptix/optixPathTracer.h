@@ -19,8 +19,8 @@ enum RayType
 enum VisibilityMask {
     NothingMask    = 0u,
     DefaultMatMask = 1u << 0,
-    VolumeMatMask  = 1u << 1,
-    LightMatMask   = 1u << 2,
+    LightMatMask   = 1u << 1,
+    VolumeMatMask  = 1u << 2,
     EverythingMask = 255u
 }; 
 
@@ -240,10 +240,17 @@ struct Params
     float sunSoftness;
     float elapsedTime;
 
+    int32_t outside_random_number;
     bool simpleRender     :1;
     bool show_background  :1;
 
     bool denoise : 1;
+
+    float physical_camera_aperture;
+    float physical_camera_shutter_speed;
+    float physical_camera_iso;
+    bool  physical_camera_aces;
+    bool  physical_camera_exposure;
 };
 
 
@@ -262,6 +269,10 @@ struct HitGroupData
     uint16_t dc_index;
     uint16_t vol_depth=999;
     float vol_extinction=1.0f;
+    
+    bool equiangular  = false;
+    bool multiscatter = false;
+
     //float4* vertices;
 #ifdef USE_SHORT_COMPACT
     ushort2* uv;
@@ -285,12 +296,19 @@ struct HitGroupData
 #endif
     unsigned short* lightMark;
     uint32_t* auxOffset;
-    
+#ifdef USE_SHORT
+    ushort3* instPos;
+    ushort3* instNrm;
+    ushort3* instUv;
+    ushort3* instClr;
+    ushort3* instTang;
+#else
     float3* instPos;
     float3* instNrm;
     float3* instUv;
     float3* instClr;
     float3* instTang;
+#endif
     float4* uniforms;
     cudaTextureObject_t textures[32];
 

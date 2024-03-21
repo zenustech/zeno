@@ -33,7 +33,7 @@ ZENDEFNODE(NumericIntVec2, {
     {},
     {{"vec2i", "vec2"}},
     {{"int", "x", "0"}, {"int", "y", "0"}},
-    {"numeric"},
+    {"deprecated"},
 });
 
 
@@ -51,7 +51,7 @@ ZENDEFNODE(PackNumericIntVec2, {
     {{"int", "x", "0"}, {"int", "y", "0"}},
     {{"vec2i", "vec2"}},
     {},
-    {"numeric"},
+    {"deprecated"},
 });
 
 
