@@ -8,6 +8,7 @@
 #include <pxr/usd/usd/relationship.h>
 #include <pxr/usd/usdGeom/sphere.h>
 #include <pxr/usd/usdGeom/mesh.h>
+#include <pxr/usd/usdGeom/xform.h>
 
 #include <zeno/zeno.h>
 #include <zeno/core/IObject.h>
@@ -38,7 +39,10 @@ struct USDDescription {
 };
 
 // converting USD mesh to zeno mesh
-void _convertGeomFromUSDToZeno(const pxr::UsdPrim& usdPrim, zeno::PrimitiveObject& zPrim) {
+void _convertPrimFromUSDToZeno(const pxr::UsdPrim& usdPrim, zeno::PrimitiveObject& zPrim) {
+    /*
+    * Converting mesh
+    */
     const std::string& typeName = usdPrim.GetTypeName().GetString();
     if (typeName == "Mesh") {
         /*** Load from USD prim ***/
@@ -50,9 +54,12 @@ void _convertGeomFromUSDToZeno(const pxr::UsdPrim& usdPrim, zeno::PrimitiveObjec
         auto extent = usdMesh.GetExtentAttr(); // bounding box
         auto vertUVs = usdPrim.GetAttribute(pxr::TfToken("primvars:st"));
         auto orient = usdMesh.GetOrientationAttr();
-        // TODO: double sided
-        // TODO: XformOp order to zeno transform
+        auto doubleSided = usdMesh.GetDoubleSidedAttr();
 
+        bool isDoubleSided;
+        doubleSided.Get(&isDoubleSided); // TODO: double sided
+
+        // decide whether we use left handed order to construct faces
         pxr::TfToken faceOrder;
         usdMesh.GetOrientationAttr().Get(&faceOrder);
         bool isReversedFaceOrder = (faceOrder.GetString() == "leftHanded");
@@ -182,9 +189,31 @@ void _convertGeomFromUSDToZeno(const pxr::UsdPrim& usdPrim, zeno::PrimitiveObjec
     }
 }
 
-// converting zeno mesh to USD mesh
-void _convertMeshFromZenoToUSD() {
-    ;
+zeno::MatrixObject _getTransformMartrixFromUSDPrim(const pxr::UsdPrim& usdPrim) {
+    /*
+    * extract matrices from usd matrices
+    */
+    bool resetsXformStack;
+    glm::mat4 finalMat(1.0f);
+    glm::mat4 tempMat;
+    auto xformOps = pxr::UsdGeomXform(usdPrim).GetOrderedXformOps(&resetsXformStack);
+    if (xformOps.size() > 0) {
+        for (auto& xformOp : xformOps) {
+            pxr::GfMatrix4d transMatrix;
+            transMatrix = xformOp.GetOpTransform(pxr::UsdTimeCode::Default());
+            double* matValues = transMatrix.data();
+            for (int i = 0; i < 4; ++i) {
+                for (int j = 0; j < 4; ++j) {
+                    tempMat[i][j] = static_cast<float>(matValues[i * 4 + j]);
+                }
+            }
+            finalMat = tempMat * finalMat;
+        }
+    }
+
+    auto& ret = zeno::MatrixObject();
+    ret.m = finalMat;
+    return ret;
 }
 
 /*
@@ -258,44 +287,31 @@ struct ImportUSDPrim : zeno::INode {
         auto& stageDesc = USDDescriptionManager::instance().getOrCreateDescription(usdPath);
         auto stage = stageDesc.mStage;
         if (stage == nullptr) {
-            std::cerr << "failed to find usd description for " << usdPath;
+            std::cout << "failed to find usd description for " << usdPath;
             return;
         }
 
         auto prim = stage->GetPrimAtPath(pxr::SdfPath(primPath));
         if (!prim.IsValid()) {
-            std::cout << "[USDReference] failed to reference prim at " << primPath << std::endl;
+            std::cout << "[ImportUSDPrim] failed to import prim at " << primPath << std::endl;
             return;
         }
 
         auto zPrim = std::make_shared<zeno::PrimitiveObject>();
         zeno::UserData& primData = zPrim->userData();
 
-        primData.set2("usdPath", usdPath);
-        primData.set2("primPath", primPath);
-        primData.set2("typeName", prim.GetTypeName().GetString());
-
         // construct geometry from USD format
-        _convertGeomFromUSDToZeno(prim, *zPrim);
+        _convertPrimFromUSDToZeno(prim, *zPrim);
 
-        // set all properties into userData
-        // TODO: relationships
-        /*
-        const auto& attributes = prim.GetAttributes();
-        for (const auto& attr : attributes) {
-            pxr::VtValue val;
-            std::stringstream ss;
-            attr.Get(&val);
-            if (val.IsEmpty()) {
-                ss << "(Empty)";
-            } else {
-                ss << val;
-            }
-            primData.set2(attr.GetName().GetString(), std::move(ss.str()));
-        }
-        */
+        auto mat = std::make_shared<zeno::MatrixObject>(_getTransformMartrixFromUSDPrim(prim));
+
+        primData.set2("_usdStagePath", usdPath);
+        primData.set2("_usdPrimPath", primPath);
+        primData.set2("_usdPrimType", prim.GetTypeName().GetString());
 
         set_output2("prim", std::move(zPrim));
+        set_output("xformMatrix", mat);
+        zeno::zany any;
     }
 };
 ZENDEFNODE(ImportUSDPrim,
@@ -307,7 +323,8 @@ ZENDEFNODE(ImportUSDPrim,
         },
         /* outputs */
         {
-            {"primitive", "prim"}
+            {"primitive", "prim"},
+            {"Matrix", "xformMatrix"}
         },
         /* params */
         {},
@@ -315,6 +332,52 @@ ZENDEFNODE(ImportUSDPrim,
         {"USD"}
     }
 );
+
+struct ViewUSDTree : zeno::INode {
+    int _getDepth(const std::string& primPath) const {
+        int depth = 0;
+        for (char ch : primPath) {
+            if (ch == '/') {
+                ++depth;
+            }
+        }
+        return depth;
+    }
+
+    virtual void apply() override {
+        std::string& usdPath = get_input2<zeno::StringObject>("USDDescription")->get();
+        auto stage = USDDescriptionManager::instance().getOrCreateDescription(usdPath).mStage;
+        if (stage == nullptr) {
+            std::cerr << "failed to find usd description for " << usdPath << std::endl;
+            return;
+        }
+
+        auto range = stage->Traverse();
+
+        for (auto prim : range) {
+            const std::string& primPath = prim.GetPath().GetString();
+            int depth = _getDepth(primPath) - 1;
+            for (int i = 0; i < depth; ++i) {
+                std::cout << '\t';
+            }
+            std::cout << '[' << prim.GetTypeName() << "] " << prim.GetName() << std::endl;
+        }
+    }
+};
+ZENDEFNODE(ViewUSDTree,
+    {
+        /* inputs */
+        {
+            {"string", "USDDescription"}
+        },
+    /* outputs */
+    {
+    },
+    /* params */
+    {},
+    /* category */
+    {"USD"}
+    });
 
 /*
 * Show all prims' info of the given USD, including their types, paths and properties.
@@ -342,10 +405,19 @@ struct USDShowAllPrims : zeno::INode {
             const auto& relations = it.GetRelationships();
             std::cout << "[Relationships] ";
             for (const auto& relation : relations) {
+                pxr::SdfPathVector targets;
+                relation.GetTargets(&targets);
+                if (targets.empty()) {
+                    continue;
+                }
+
                 std::cout << relation.GetName().GetString() << '\t';
             }
             std::cout << std::endl << "[Attributes] ";
             for (const auto& attr : attributes) {
+                if (!attr.IsValid() || !attr.HasValue()) {
+                    continue;
+                }
                 std::cout << "[" << attr.GetTypeName().GetType().GetTypeName() << "]" << attr.GetName().GetString() << '\t';
             }
             std::cout << '\n' << std::endl;
@@ -404,6 +476,7 @@ struct ShowUSDPrimAttribute : zeno::INode {
     virtual void apply() override {
         std::string& usdPath = get_input2<zeno::StringObject>("USDDescription")->get();
         std::string& primPath = get_input2<zeno::StringObject>("primPath")->get();
+        std::string& attrName = get_input2<zeno::StringObject>("attributeName")->get();
 
         auto& stageDesc = USDDescriptionManager::instance().getOrCreateDescription(usdPath);
         auto stage = stageDesc.mStage;
@@ -414,17 +487,39 @@ struct ShowUSDPrimAttribute : zeno::INode {
 
         auto prim = stage->GetPrimAtPath(pxr::SdfPath(primPath));
         if (!prim.IsValid()) {
-            std::cout << "[USDReference] failed to reference prim at " << primPath << std::endl;
+            std::cout << "[ShowUSDPrimAttribute] failed to find prim at " << primPath << std::endl;
             return;
         }
 
         std::cout << "Showing attributes for prim: " << primPath << std::endl;
-        auto& attributes = prim.GetAttributes();
-        for (auto& attr : attributes) {
+        if (attrName.empty()) { // showing all prims in the stage
+            auto& attributes = prim.GetAttributes();
+            for (auto& attr : attributes) {
+                if (!attr.IsValid() || !attr.HasValue()) {
+                    continue;
+                }
+                pxr::VtValue val;
+                attr.Get(&val);
+                if (val.IsArrayValued() && val.GetArraySize() == 0) {
+                    continue;
+                }
+
+                std::cout << "[Attribute Name] " << attr.GetName().GetString() << " [Attribute Type] " << attr.GetTypeName().GetCPPTypeName();
+                if (val.IsArrayValued()) {
+                    std::cout << " [Array Size] " << val.GetArraySize();
+                }
+                std::cout << "\n[Attribute Value] " << val << '\n' << std::endl;
+            }
+        }
+        else { // showing indicated prim
+            auto& attr = prim.GetAttribute(pxr::TfToken(attrName));
             pxr::VtValue val;
             attr.Get(&val);
-            std::cout << "[Attribute Name] " << attr.GetName().GetString() << " [Attribute Type] " << attr.GetTypeName().GetCPPTypeName() << std::endl;
-            std::cout << "[Attribute Value] " << val << '\n' << std::endl;
+            std::cout << "[Attribute Name] " << attr.GetName().GetString() << " [Attribute Type] " << attr.GetTypeName().GetCPPTypeName();
+            if (val.IsArrayValued()) {
+                std::cout << " [Array Size] " << val.GetArraySize();
+            }
+            std::cout << "\n[Attribute Value] " << val << '\n' << std::endl;
         }
     }
 };
@@ -433,7 +528,8 @@ ZENDEFNODE(ShowUSDPrimAttribute,
         /* inputs */
         {
             {"string", "USDDescription"},
-            {"string", "primPath"}
+            {"string", "primPath"},
+            {"string", "attributeName", ""}
         },
         /* outputs */
         {
@@ -443,6 +539,58 @@ ZENDEFNODE(ShowUSDPrimAttribute,
         {},
         /* category */
         {"USD"}
+    });
+
+struct ShowUSDPrimRelationShip : zeno::INode {
+    virtual void apply() override {
+        std::string& usdPath = get_input2<zeno::StringObject>("USDDescription")->get();
+        std::string& primPath = get_input2<zeno::StringObject>("primPath")->get();
+
+        auto& stageDesc = USDDescriptionManager::instance().getOrCreateDescription(usdPath);
+        auto stage = stageDesc.mStage;
+        if (stage == nullptr) {
+            std::cerr << "failed to find usd description for " << usdPath;
+            return;
+        }
+
+        auto prim = stage->GetPrimAtPath(pxr::SdfPath(primPath));
+        if (!prim.IsValid()) {
+            std::cout << "[ShowUSDPrimAttribute] failed to find prim at " << primPath << std::endl;
+            return;
+        }
+
+        std::cout << "Showing relationships for prim: " << primPath << std::endl;
+
+        auto relations = prim.GetRelationships();
+        for (auto& relation : relations) {
+            pxr::SdfPathVector targets;
+            relation.GetTargets(&targets);
+            if (targets.size() == 0) {
+                continue;
+            }
+            std::cout << "[Relation Name] " << relation.GetName() << std::endl;
+            for (auto& target : targets) {
+                std::cout << "[Relation Target] " << target.GetAsString() << std::endl;
+            }
+            std::cout << std::endl;
+        }
+    }
+};
+ZENDEFNODE(ShowUSDPrimRelationShip,
+    {
+        /* inputs */
+        {
+            {"string", "USDDescription"},
+            {"string", "primPath"}
+        },
+    /* outputs */
+    {
+        // {"primitive", "prim"}
+    },
+    /* params */
+    {},
+    /* category */
+    {"USD"}
     });
 
 // convert USD prim to zeno prim
@@ -468,6 +616,29 @@ ZENDEFNODE(USDToZenoPrim,
     /* category */
     {"USD"}
     });
+
+// generate transform node from prim
+struct EvalUSDXform : zeno::INode {
+    virtual void apply() override{
+        ;
+    }
+};
+ZENDEFNODE(EvalUSDXform,
+    {
+        /* inputs */
+        {
+            {"primitive", "prim"}
+        },
+        /* outputs */
+        {
+            // {"primitive", "prim"}
+        },
+        /* params */
+        {},
+        /* category */
+        {"USD"}
+    }
+);
 
 struct USDOpinion : zeno::INode {
     ;
