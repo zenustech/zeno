@@ -86,6 +86,7 @@ public:
     void setView(const QModelIndex& idx, bool bOn);
     void setMute(const QModelIndex& idx, bool bOn);
     QString updateNodeName(const QModelIndex& idx, QString newName);
+    void updateSocketValue(const QModelIndex& nodeidx, const QString socketName, const QVariant newValue);
     void addLink(const zeno::EdgeInfo& link);
     QList<SEARCH_RESULT> search(const QString& content, SearchType searchType, SearchOpt searchOpts);
     QList<SEARCH_RESULT> searchByUuidPath(const zeno::ObjPath& uuidPath);

@@ -116,10 +116,10 @@ zeno::zvariant UiHelper::qvarToZVar(const QVariant& var, const zeno::ParamType t
                 }
                 if (vec.size() == 4) {
                     if (type == zeno::Param_Vec4f) {
-                        return zeno::vec2f(vec[0], vec[1], vec[2], vec[3]);
+                        return zeno::vec4f(vec[0], vec[1], vec[2], vec[3]);
                     }
                     else if (type == zeno::Param_Vec4i) {
-                        return zeno::vec2i((int)vec[0], (int)vec[1], (int)vec[2], (int)vec[3]);
+                        return zeno::vec4i((int)vec[0], (int)vec[1], (int)vec[2], (int)vec[3]);
                     }
                 }
             }

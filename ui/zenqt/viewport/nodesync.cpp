@@ -120,7 +120,7 @@ std::optional<NodeLocation> NodeSyncMgr::checkNodeLinkedSpecificNode(const QMode
             auto option = linked_node.data(ROLE_NODE_STATUS).toInt();
             if (option & zeno::View)
                 return NodeLocation(linked_node,
-                                    linked_subgraph);
+                    linked_subgraph);
         }
     }
     return {};

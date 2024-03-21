@@ -195,9 +195,9 @@ namespace zeno {
 
     ZENO_API std::shared_ptr<zeno::IObject> ObjectManager::getObj(std::string name)
     {
-        for (auto& [k, v] : m_objects)
-            if (k == name)
-                return v.obj;
+        std::lock_guard lck(m_mtx);
+        if (m_objects.find(name) != m_objects.end())
+            return m_objects[name].obj;
         return nullptr;
     }
 

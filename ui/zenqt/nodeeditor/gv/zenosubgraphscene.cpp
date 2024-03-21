@@ -306,7 +306,7 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& topLeft, const QModelIn
     if (role == ROLE_NODE_ISVIEW)
     {
         ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
-
+        m_nodes[id]->onViewUpdated(idx.data(ROLE_NODE_ISVIEW).toBool());
     }
     if (role == ROLE_COLLASPED)
     {

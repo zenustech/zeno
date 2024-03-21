@@ -8,6 +8,9 @@
 #include "zenoapplication.h"
 #include <zeno/extra/SubnetNode.h>
 #include <zeno/core/Assets.h>
+#include <zeno/core/data.h>
+#include <zeno/core/IParam.h>
+#include "util/uihelper.h"
 
 
 NodeItem::NodeItem(QObject* parent) : QObject(parent)
@@ -272,19 +275,30 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
         }
         case ROLE_INPUTS:
         {
-            PARAMS_INFO inputs;
-            //TODO
-            return QVariant::fromValue(inputs);
+            if (item->params)
+                return QVariant::fromValue(item->params->getInputs());
+            return QVariant();
+        }
+        case ROLE_OUTPUTS:
+        {
+            if (item->params)
+                return QVariant::fromValue(item->params->getOutputs());
+            return QVariant();
         }
         case ROLE_NODEDATA:
         {
             zeno::NodeData data;
-            //TODO
+            std::shared_ptr<zeno::INode> spNode = item->m_wpNode.lock();
+            data = spNode->exportInfo();
             return QVariant::fromValue(data);
         }
         case ROLE_NODE_STATUS:
         {
-            return QVariant();
+            int options = zeno::None;
+            if (item->bView)
+                options |= zeno::View;
+            //if (item->bMute)
+            return QVariant(options);
         }
         case ROLE_NODE_ISVIEW:
         {
@@ -380,6 +394,8 @@ bool GraphModel::setData(const QModelIndex& index, const QVariant& value, int ro
         }
         case ROLE_NODE_STATUS:
         {
+            setView(index, value.toInt() & zeno::View);
+            // setMute();
             break;
         }
         case ROLE_NODE_ISVIEW:
@@ -877,6 +893,15 @@ QString GraphModel::updateNodeName(const QModelIndex& idx, QString newName)
     std::string oldName = idx.data(ROLE_NODE_NAME).toString().toStdString();
     newName = QString::fromStdString(spCoreGraph->updateNodeName(oldName, newName.toStdString()));
     return newName;
+}
+
+void GraphModel::updateSocketValue(const QModelIndex& nodeidx, const QString socketName, const QVariant newValue)
+{
+    if (ParamsModel* paramModel = params(nodeidx))
+    {
+        QModelIndex& socketIdx = paramModel->paramIdx(socketName, true);
+        paramModel->setData(socketIdx, newValue, ROLE_PARAM_VALUE);
+    }
 }
 
 QHash<int, QByteArray> GraphModel::roleNames() const
