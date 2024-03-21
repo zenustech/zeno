@@ -122,6 +122,8 @@ static float quadVertices[] = {   // vertex attributes for a quad that fills the
     1.0f,  1.0f,  1.0f, 1.0f
 };
 
+// TODO: Test record video
+// TODE: Test pciker
 struct FrameBufferRender {
     Scene* scene;
 
@@ -137,7 +139,7 @@ struct FrameBufferRender {
 
     int w = 0;
     int h = 0;
-    int samples = 0;
+    int samples = 16;
 
     opengl::Program * shader = nullptr;
 
@@ -173,7 +175,6 @@ struct FrameBufferRender {
         // get viewport size
         w = scene->camera->m_nx;
         h = scene->camera->m_ny;
-        samples = 4;
 
         // generate picking texture
         picking_texture = make_unique<Texture>();
