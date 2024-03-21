@@ -76,14 +76,14 @@ namespace zeno { namespace CONSTRAINT {
     constexpr bool solve_DistanceConstraint(
         const VECTOR3d &p0, const SCALER& invMass0, 
         const VECTOR3d &p1, const SCALER& invMass1,
-        const VECTOR3d &pp0,
-        const VECTOR3d &pp1,
+        const VECTOR3d &pp0,const VECTOR3d &pp1,
         const SCALER& restLength,
         const SCALER& xpbd_affiliation,
         const SCALER& kdamp_ratio,
         const SCALER& dt,
         SCALER& lambda,
-        VECTOR3d &corr0, VECTOR3d &corr1)
+        VECTOR3d &corr0, VECTOR3d &corr1,
+        bool stretch_resistence_only = false)
     {				
         SCALER wsum = invMass0 + invMass1;
         if(wsum < static_cast<SCALER>(1e-6)) {
@@ -92,42 +92,47 @@ namespace zeno { namespace CONSTRAINT {
 
         VECTOR3d n = p0 - p1;
         SCALER d = n.norm();
+        if(d > static_cast<SCALER>(1e-6)) {
+            n /= d;
+        }
+        else {
+            corr0 = VECTOR3d::uniform(0);
+            corr1 = VECTOR3d::uniform(0);
+            return false;
+        }     
+
+
         SCALER C = d - restLength;
 
-        if (d > static_cast<SCALER>(1e-6))
-            n /= d;
-        else
-        {
+        SCALER alpha = 0.0;
+        if (xpbd_affiliation != 0.0){
+            alpha = static_cast<SCALER>(1.0) / (xpbd_affiliation * dt * dt);
+        }
+
+
+        if(stretch_resistence_only && C < 0) {
             corr0 = VECTOR3d::uniform(0);
             corr1 = VECTOR3d::uniform(0);
             return false;
         }
 
+        auto gradC = n;
 
-        SCALER alpha = 0.0;
-        if (xpbd_affiliation != 0.0)
-        {
-            alpha = static_cast<SCALER>(1.0) / (xpbd_affiliation * dt * dt);
-        }
-
-        const auto& gradC = n;
-
-        SCALER dsum = 0.0, gamma = 1.0;
+        SCALER dsum = 0.0, gamma = 0.0;
         if(kdamp_ratio > 0) {
             auto beta = kdamp_ratio * dt * dt;
             gamma = alpha * beta / dt;
-            dsum = gamma * n.dot((p0 - pp0) - (p1 - pp1));
+            dsum = gamma * gradC.dot((p0 - pp0) - (p1 - pp1));
             // gamma += 1.0;
         }
 
-        const SCALER delta_lambda = -(C + alpha * lambda + dsum) / ((gamma + static_cast<SCALER>(1.0)) * wsum + alpha);
+        const SCALER dL = -(C + alpha * lambda + dsum) / ((gamma + static_cast<float>(1.0))* wsum + alpha);
+        const VECTOR3d dp = n * dL;
 
-        lambda += delta_lambda;
+        lambda += dL;
 
-        const VECTOR3d pt = n * delta_lambda;
-
-        corr0 =  invMass0 * pt;
-        corr1 = -invMass1 * pt;
+        corr0 =  invMass0 * dp;
+        corr1 = -invMass1 * dp;
         return true;
     }
 
@@ -408,7 +413,7 @@ namespace zeno { namespace CONSTRAINT {
            alpha = static_cast<SCALER>(1.0) / (xpbd_affliation * dt * dt);
 
         SCALER dsum = 0.0;
-        SCALER gamma = 1.0;
+        SCALER gamma = 0.0;
         if(kdamp_ratio > 0) {
             auto beta = kdamp_ratio * dt * dt;
             gamma = alpha * beta / dt;

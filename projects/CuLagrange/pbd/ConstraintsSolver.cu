@@ -170,7 +170,7 @@ struct XPBDSolve : INode {
                         verts.tuple(dim_c<3>,ptag,pi) = kc + knrm * rd;
                     }
 
-                    if(category == category_c::edge_length_constraint || category == category_c::dihedral_spring_constraint) {
+                    if(category == category_c::edge_length_constraint || category == category_c::dihedral_spring_constraint || category == category_c::long_range_attachment) {
                         // printf("do xpbd solve\n");
 
                         auto edge = cquads.pack(dim_c<2>,"inds",coffset + gi,int_c);
@@ -194,6 +194,7 @@ struct XPBDSolve : INode {
                         //     lambda,
                         //     dp0,dp1))
                         //         return;
+                        bool stretch_resistence_only = category == category_c::long_range_attachment;
                         if(!CONSTRAINT::solve_DistanceConstraint(
                             p0,minv0,
                             p1,minv1,
@@ -203,7 +204,8 @@ struct XPBDSolve : INode {
                             kd,
                             dt,
                             lambda,
-                            dp0,dp1))
+                            dp0,dp1,
+                            stretch_resistence_only))
                                 return;
 
                         verts.tuple(dim_c<3>,ptag,edge[0]) = p0 + dp0;
@@ -758,7 +760,7 @@ struct XPBDSolveSmoothAll : INode {
             auto category = constraint_ptr->readMeta(CONSTRAINT_KEY,wrapt<category_c>{});
             const auto& cquads = constraint_ptr->getQuadraturePoints();
 
-            if(category == category_c::edge_length_constraint || category == category_c::dihedral_bending_constraint) {
+            if(category == category_c::edge_length_constraint || category == category_c::dihedral_bending_constraint || category == category_c::long_range_attachment) {
                 cudaPol(zs::range(cquads.size()),[
                     cquads = proxy<space>({},cquads),
                     dt = dt,
@@ -793,6 +795,7 @@ struct XPBDSolveSmoothAll : INode {
                             vec3 dp[2] = {};
 
                             auto lambda = (T)0;
+                            bool do_stretch_resistence_only = category == category_c::long_range_attachment;
                             if(!CONSTRAINT::solve_DistanceConstraint(
                                 p0,minv0,
                                 p1,minv1,
@@ -802,12 +805,13 @@ struct XPBDSolveSmoothAll : INode {
                                 kd,
                                 dt,
                                 lambda,
-                                dp[0],dp[1]))
+                                dp[0],dp[1],
+                                do_stretch_resistence_only))
                                     return;
                             // printf("smooth stretch update : %f %f\n",(float)dp[0].norm(),(float)dp[1].norm());
                             for(int i = 0;i != 2;++i) {
                                 if(isnan(dp[i].norm()))
-                                    printf("nan dp[%d] detected at stretch\n",i);
+                                    printf("nan dp[%d] detected at bending\n",i);
                                 // atomic_add(exec_tag,&weight_sum[edge[i]],w);
                                 atomic_add(exec_tag,&verts(wOffset,edge[i]),w);
                                 for(int d = 0;d != 3;++d)

@@ -1361,14 +1361,6 @@ struct FleshDynamicStepping : INode {
             TILEVEC_OPS::copy(cudaPol,inbbw,"w",bbw,"w");
             TILEVEC_OPS::copy(cudaPol,inbbw,"strength",bbw,"strength");
             TILEVEC_OPS::copy(cudaPol,inbbw,"cnorm",bbw,"cnorm");
-
-            // if(zsbones_verts.has_attr<float>("drivenStrength"))
-            //     ompExec(zs::range(zsbones_verts.size()),
-            //         [bverts = proxy<host_space>(bverts),&zsbones_verts] (int i) mutable {
-            //             auto v = zsbones_verts[i];
-            //             bverts[i] = zs::vec<T,3>{v[0],v[1],v[2]};
-            //     });
-
         }
         // bverts = bverts.clone({zs::memsrc_e::device,0});
         // std::cout << "bverts.size() = " << bverts.size() << std::endl;
@@ -1385,24 +1377,6 @@ struct FleshDynamicStepping : INode {
                 {"inds",3},
                 {"nrm",3}},0,zs::memsrc_e::device,0);
 
-
-        // dtiles_t surf_tris_buffer{tris.get_allocator(),{
-        //     {"inds",3},
-        //     {"nrm",3},
-        //     {"he_inds",1}
-        // },tris.size()};
-
-        // dtiles_t surf_verts_buffer{points.get_allocator(),{
-        //     {"inds",1},
-        //     {"xn",3},
-        //     {"is_loop_vertex",1},
-        //     {"mustExclude",1}
-        // },points.size()};
-        // TILEVEC_OPS::copy(cudaPol,points,"inds",surf_verts_buffer,"inds");
-        // TILEVEC_OPS::copy(cudaPol,tris,"inds",surf_tris_buffer,"inds");
-        // TILEVEC_OPS::copy(cudaPol,tris,"he_inds",surf_tris_buffer,"he_inds");
-        // reorder_topology(cudaPol,points,surf_tris_buffer);
-        // zs::Vector<int> nodal_colors{surf_verts_buffer.get_allocator(),surf_verts_buffer.size()};
         dtiles_t gia_res{points.get_allocator(),{
             {"ring_mask",1},
             {"type_mask",1},

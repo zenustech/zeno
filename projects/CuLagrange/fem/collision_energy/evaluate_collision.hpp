@@ -865,7 +865,7 @@ void detect_self_imminent_PT_close_proximity(Pol& pol,
                     if(verts("collision_cancel",vi) > 1e-3)
                         return;
                 auto p = verts.pack(dim_c<3>,xtag,vi);
-                auto bv = bv_t{get_bounding_box(p - thickness/(T)2,p + thickness/(T)2)};
+                auto bv = bv_t{ (p - thickness/(T)2,p + thickness/(T)2)};
 
                 
                 zs::vec<T,3> ts[3] = {};

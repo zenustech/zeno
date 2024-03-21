@@ -11,6 +11,7 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
+#include "../../Utils.hpp"
 
 #include "constraint_function_kernel/constraint.cuh"
 #include "../geometry/kernel/tiled_vector_ops.hpp"
@@ -88,10 +89,6 @@ virtual void apply() override {
     auto uniform_xpbd_affiliation = get_input2<float>("xpbd_affiliation");
     auto damping_coeff = get_input2<float>("damping_coeff");
 
-
-    // auto paramsList = get_input<zeno::ListObject>("paramList")->getLiterial<zeno::DictObject>();
-
-
     auto make_empty = get_input2<bool>("make_empty_constraint");
 
     if(!make_empty) {
@@ -112,6 +109,150 @@ virtual void apply() override {
     constraint->setMeta(CONSTRAINT_TARGET,source.get());
 
     auto do_constraint_topological_coloring = get_input2<bool>("do_constraint_topological_coloring");
+
+    if(type == "lra_stretch") {
+        constraint->setMeta(CONSTRAINT_KEY,category_c::long_range_attachment);
+        auto radii = get_input2<float>("thickness");
+        auto attach_group_name = get_input2<std::string>("group_name");
+        auto has_group = verts.hasProperty(attach_group_name);
+
+        if(!has_group) {
+            std::cout << "the input vertices has no specified group tag : " << attach_group_name << std::endl;
+            throw std::runtime_error("the input vertices has no specified LRA group");
+        }
+
+        zs::bht<int,1,int> attachAnchors{verts.get_allocator(),(size_t)verts.size()};
+        attachAnchors.reset(cudaPol,true);
+
+        cudaPol(zs::range(verts.size()),[
+            verts = proxy<space>({},verts),
+            attachAnchors = proxy<space>(attachAnchors)] ZS_LAMBDA(int vi) mutable {
+                if(verts("minv",vi) == 0.)
+                attachAnchors.insert(vi);
+        });
+
+        auto nmAttachAnchors = attachAnchors.size();
+        dtiles_t vtemp{verts.get_allocator(),{
+            {"x",3},
+            {"id",1}
+        },nmAttachAnchors};
+
+        // std::cout << "nmAttachAnchors : " << nmAttachAnchors << std::endl;
+
+        cudaPol(zip(zs::range(nmAttachAnchors),attachAnchors._activeKeys),[
+            verts = proxy<space>({},verts),
+            // thickness = thickness,
+            vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(auto ci,const auto& pvec) mutable {
+                auto vi = pvec[0];
+                vtemp.tuple(dim_c<3>,"x",ci) = verts.pack(dim_c<3>,"x",vi);
+                vtemp("id",ci) = zs::reinterpret_bits<float>(vi);
+        });
+
+        auto attBvh = bvh_t{};
+        auto attBvs = retrieve_bounding_volumes(cudaPol,vtemp,radii,"x");
+        attBvh.build(cudaPol,attBvs);
+
+        zs::Vector<int> maxNmPairsBuffer{verts.get_allocator(),1};
+        maxNmPairsBuffer.setVal(0);
+
+        constexpr auto exec_tag = wrapv<space>{};
+
+        cudaPol(zs::range(verts.size()),[
+            exec_tag = exec_tag,
+            verts = proxy<space>({},verts),
+            vtemp = proxy<space>({},vtemp),
+            attBvh = proxy<space>(attBvh),
+            thickness = radii,
+            maxNmPairsBuffer = proxy<space>(maxNmPairsBuffer),
+            attach_group_name = zs::SmallString(attach_group_name)] ZS_LAMBDA(int vi) mutable {
+                auto p = verts.pack(dim_c<3>,"x",vi);
+                if(verts("minv",vi) == 0.0)
+                    return;
+
+                auto bv = bv_t(p,p);
+
+                auto do_close_proximity_detection = [&](int ai) mutable {
+                    auto ap = vtemp.pack(dim_c<3>,"x",ai);
+                    auto avi = zs::reinterpret_bits<int>(vtemp("id",ai));
+                    if(avi == vi)
+                        return;
+                    
+                    auto groupVi = verts(attach_group_name,vi);
+                    auto groupAVi = verts(attach_group_name,avi);
+                    if(zs::abs(groupVi - groupAVi) > 0.5)
+                        return;
+
+                    // we need to switch the distance evaluation from euclidean distance to geodesic one
+                    auto dist = (ap - p).norm();
+                    if(dist < thickness) {
+                        atomic_add(exec_tag,&maxNmPairsBuffer[0],1);
+                    }
+                };
+                attBvh.iter_neighbors(bv,do_close_proximity_detection);
+        });
+
+        auto maxNmPairs = maxNmPairsBuffer.getVal(0);
+        std::cout << "maxNmPairs : " << maxNmPairs << std::endl;
+        zs::bht<int,2,int> attachPairs{verts.get_allocator(),(size_t)maxNmPairs};
+        attachPairs.reset(cudaPol,true);
+
+        cudaPol(zs::range(verts.size()),[
+            // exec_tag = exec_tag,
+            verts = proxy<space>({},verts),
+            vtemp = proxy<space>({},vtemp),
+            attBvh = proxy<space>(attBvh),
+            thickness = radii,
+            attachPairs = proxy<space>(attachPairs),
+            attach_group_name = zs::SmallString(attach_group_name)] ZS_LAMBDA(int vi) mutable {
+                auto p = verts.pack(dim_c<3>,"x",vi);
+                auto bv = bv_t(p,p);
+
+                auto do_close_proximity_detection = [&](int ai) mutable {
+                    auto ap = vtemp.pack(dim_c<3>,"x",ai);
+                    auto avi = zs::reinterpret_bits<int>(vtemp("id",ai));
+                    if(avi == vi)
+                        return;
+                    
+                    auto groupVi = verts(attach_group_name,vi);
+                    auto groupAVi = verts(attach_group_name,avi);
+                    if(zs::abs(groupVi - groupAVi) > 0.5)
+                        return;
+
+                    // we need to switch the distance evaluation from euclidean distance to geodesic one
+                    auto dist = (ap - p).norm();
+                    if(dist < thickness) {
+                        attachPairs.insert(vec2i(vi,avi));
+                    }
+                };
+                attBvh.iter_neighbors(bv,do_close_proximity_detection);
+        });
+
+        auto rest_scale = get_input2<float>("rest_scale");
+        std::cout << "number of attach pairs : " << attachPairs.size() << std::endl;
+        eles.resize(attachPairs.size());
+        eles.append_channels(cudaPol,{{"inds",2},{"r",1}});
+        cudaPol(zip(zs::range(attachPairs.size()),attachPairs._activeKeys),[
+            rest_scale = rest_scale,
+            eles = proxy<space>({},eles),
+            verts = proxy<space>({},verts)] ZS_LAMBDA(auto ai,const auto& pair) mutable {
+                eles.tuple(dim_c<2>,"inds",ai) = pair.reinterpret_bits<float>();
+                auto v0 = verts.pack(dim_c<3>,"x",pair[0]);
+                auto v1 = verts.pack(dim_c<3>,"x",pair[1]);
+                eles("r",ai) = (v0 - v1).norm() * rest_scale;
+        });
+
+        zs::Vector<zs::vec<int,1>> point_topos{verts.get_allocator(),0};
+        point_topos.resize(eles.size());
+        cudaPol(zip(zs::range(attachPairs.size()),attachPairs._activeKeys),[
+            point_topos = proxy<space>(point_topos)] ZS_LAMBDA(auto ai,const auto& pair) mutable {
+            point_topos[ai] = pair[0];
+        });
+
+        if(do_constraint_topological_coloring) {
+            topological_coloring(cudaPol,point_topos,colors);
+            sort_topology_by_coloring_tag(cudaPol,colors,reordered_map,color_offset);
+        }
+    }
 
     if(type == "stretch") {
         constraint->setMeta(CONSTRAINT_KEY,category_c::edge_length_constraint);
@@ -1270,6 +1411,7 @@ ZENDEFNODE(MakeSurfaceConstraintTopology, {{
                             {"float","thickness","0.1"},
                             {"int","substep_id","0"},
                             {"int","nm_substeps","1"},
+                            {"int","max_constraint_pairs","1"},
                             {"bool","make_empty_constraint","0"},
                             {"bool","do_constraint_topological_coloring","1"},
                             {"float","damping_coeff","0.0"},

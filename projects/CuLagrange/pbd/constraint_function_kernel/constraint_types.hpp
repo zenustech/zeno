@@ -21,6 +21,7 @@ constexpr auto PBD_USE_HARD_CONSTRAINT = "PBD_USE_HARD_CONSTRAINT";
 // constexpr auto DCD_COLLISIONS_MESH_COLLIDER = "DCD_COLLISION_MESH_COLLIDER";
 
 enum category_c : int {
+    long_range_attachment,
     edge_length_constraint,
     isometric_bending_constraint,
     dihedral_bending_constraint,
