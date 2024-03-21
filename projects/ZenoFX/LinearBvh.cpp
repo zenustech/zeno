@@ -68,7 +68,7 @@ LBvh::getBvFunc(const std::shared_ptr<PrimitiveObject> &prim) const {
       return bv;
     };
   else if (eleCategory == element_e::point)
-      if (radiusAttr.empty() && neiRadiusAttr.empty()) {
+      if (radiusAttr.empty()) {
         getBv = [&points = prim->points, &refpos = prim->attr<vec3f>("pos"),  
              defaultBox, this](Ti i) -> Box {
         auto point = points[i];
@@ -83,7 +83,7 @@ LBvh::getBvFunc(const std::shared_ptr<PrimitiveObject> &prim) const {
       return bv;
         };
       } 
-      else if(!radiusAttr.empty() && neiRadiusAttr.empty()) {
+      else if(!radiusAttr.empty()) {
         getBv = [&points = prim->points, &refpos = prim->attr<vec3f>("pos"), 
         &radius = prim->verts.attr<float>(radiusAttr),
              defaultBox, this](Ti i) -> Box {
@@ -99,38 +99,17 @@ LBvh::getBvFunc(const std::shared_ptr<PrimitiveObject> &prim) const {
       return bv;
       };
     }
-      else if(!radiusAttr.empty() && !neiRadiusAttr.empty()) {
-        getBv = [&points = prim->points, &refpos = prim->attr<vec3f>("pos"), 
-        &radius = prim->verts.attr<float>(radiusAttr),
-        &neiRadius = prim->verts.attr<float>(neiRadiusAttr),
-             defaultBox, this](Ti i) -> Box {
-        auto point = points[i];
-        Box bv = defaultBox;
-        const auto &p = refpos[point];
-        for (int d = 0; d != 3; ++d) {
-          if (p[d] - thickness - radius[i] - neiRadius[point] < bv.first[d])
-            bv.first[d] = p[d] - thickness - radius[i]- neiRadius[point] ;
-          if (p[d] + thickness + radius[i]  + neiRadius[point]> bv.second[d])
-            bv.second[d] = p[d] + thickness + radius[i] + neiRadius[point];
-          }
-      return bv;
-      };
-    }
-      else{
-          throw std::runtime_error("neiRadiusAttr should be empty when radiusAttr is empty");
-      }
   else if (eleCategory == element_e::unknown)
     getBv = [defaultBox](Ti) -> Box { return defaultBox; };
   return getBv;
 }
 
 template <LBvh::element_e et>
-void LBvh::build(const std::shared_ptr<PrimitiveObject> &prim, float thickness, std::string radiusAttr, std::string neiRadiusAttr,//neiprim????
+void LBvh::build(const std::shared_ptr<PrimitiveObject> &prim, float thickness, std::string radiusAttr,
                  element_t<et>) {
   this->primPtr = prim;
   this->thickness = thickness;
   this->radiusAttr = radiusAttr;
-  this->neiRadiusAttr = neiRadiusAttr;
   Ti numLeaves = 0; // refpos.size();
 
   {
@@ -490,30 +469,30 @@ void LBvh::build(const std::shared_ptr<PrimitiveObject> &prim, float thickness, 
 
 template void
 LBvh::build<LBvh::element_e::point>(const std::shared_ptr<PrimitiveObject> &,
-                                    float, std::string, std::string, element_t<element_e::point>);
+                                    float, std::string, element_t<element_e::point>);
 template void
 LBvh::build<LBvh::element_e::line>(const std::shared_ptr<PrimitiveObject> &,
-                                   float, std::string, std::string, element_t<element_e::line>);
+                                   float, std::string, element_t<element_e::line>);
 template void
 LBvh::build<LBvh::element_e::tri>(const std::shared_ptr<PrimitiveObject> &,
-                                  float, std::string, std::string, element_t<element_e::tri>);
+                                  float, std::string, element_t<element_e::tri>);
 template void
 LBvh::build<LBvh::element_e::tet>(const std::shared_ptr<PrimitiveObject> &,
-                                  float, std::string, std::string, element_t<element_e::tet>);
+                                  float, std::string, element_t<element_e::tet>);
 
 void LBvh::build(const std::shared_ptr<PrimitiveObject> &prim,
-                 float thickness, std::string radiusAttr, std::string neiRadiusAttr) {
+                 float thickness, std::string radiusAttr) {
   // determine element category
   if (prim->quads.size() > 0)
-    build(prim, thickness, radiusAttr, neiRadiusAttr, element_c<element_e::tet>);
+    build(prim, thickness, radiusAttr, element_c<element_e::tet>);
   else if (prim->tris.size() > 0)
-    build(prim, thickness, radiusAttr, neiRadiusAttr, element_c<element_e::tri>);
+    build(prim, thickness, radiusAttr, element_c<element_e::tri>);
   else if (prim->lines.size() > 0)
-    build(prim, thickness, radiusAttr, neiRadiusAttr, element_c<element_e::line>);
+    build(prim, thickness, radiusAttr, element_c<element_e::line>);
   else if (prim->points.size() > 0)
-    build(prim, thickness, radiusAttr, neiRadiusAttr, element_c<element_e::point>);
+    build(prim, thickness, radiusAttr, element_c<element_e::point>);
   else
-    build(prim, thickness, radiusAttr, neiRadiusAttr, element_c<element_e::point>);
+    build(prim, thickness, radiusAttr, element_c<element_e::point>);
 }
 
 void LBvh::refit() {

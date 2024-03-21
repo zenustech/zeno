@@ -151,14 +151,14 @@ struct ParticleToLevelSet : zeno::INode{
         {
             auto rname = get_input<StringObject>("rname")->get();
 #pragma omp parallel for
-            for(size_t p=0; p<pr.size(); p++)
+            for(auto p=0; p<pr.size(); p++)
               {
                   pr[p] = par->attr<float>(rname)[p];
               };
         } else
         {
 #pragma omp parallel for
-            for(size_t p=0; p<pr.size(); p++)
+            for(auto p=0; p<pr.size(); p++)
               {
                   pr[p] = radius;
               };

@@ -160,6 +160,9 @@ void ZsgWriter::_dumpSubGraph(IGraphsModel* pModel, const QModelIndex& subgIdx, 
         int type = subgIdx.data(ROLE_SUBGRAPH_TYPE).toInt();
         writer.Key("type");
         writer.Int(type);
+        bool bLocked = subgIdx.data(ROLE_FORK_LOCKSTATUS).toBool();
+        writer.Key("forkLock");
+        writer.Bool(bLocked);
         writer.Key("nodes");
         JsonObjBatch _batch(writer);
 

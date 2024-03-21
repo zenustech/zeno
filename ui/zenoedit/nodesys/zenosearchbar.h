@@ -4,6 +4,7 @@
 #include <zenoui/nodesys/nodesys_common.h>
 #include <zenomodel/include/igraphsmodel.h>
 
+class ZTextLabel;
 class ZenoSearchBar : public QWidget
 {
 	Q_OBJECT
@@ -38,6 +39,7 @@ private:
     QVector<SEARCH_RECORD> m_records;
     QModelIndexList m_results;
     QLineEdit* m_pLineEdit;
+    ZTextLabel* m_countLabel;
     QPersistentModelIndex m_index;
     int m_idx;
 };

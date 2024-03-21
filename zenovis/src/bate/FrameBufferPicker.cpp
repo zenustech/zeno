@@ -312,6 +312,9 @@ struct FrameBufferPicker : IPicker {
                 if (scene->select_mode == PICK_MODE::PICK_OBJECT) {
                     pick_particle = prim->tris->empty() && prim->quads->empty() && prim->polys->empty() && prim->loops->empty();
                     CHECK_GL(glEnable(GL_DEPTH_TEST));
+                    CHECK_GL(glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE));
+                    glDepthFunc(GL_GREATER);
+                    CHECK_GL(glClearDepth(0.0));
 
                     // shader uniform
                     obj_shader->use();
@@ -343,6 +346,9 @@ struct FrameBufferPicker : IPicker {
                 if (scene->select_mode == PICK_MODE::PICK_VERTEX || pick_particle) {
                     // ----- enable depth test -----
                     CHECK_GL(glEnable(GL_DEPTH_TEST));
+                    CHECK_GL(glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE));
+                    glDepthFunc(GL_GREATER);
+                    CHECK_GL(glClearDepth(0.0));
                     // CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
                     // ----- draw points -----
@@ -353,7 +359,7 @@ struct FrameBufferPicker : IPicker {
 
                     // ----- draw object to cover invisible points -----
                     empty_and_offset_shader->use();
-                    empty_and_offset_shader->set_uniform("offset", 0.00001f);
+                    empty_and_offset_shader->set_uniform("offset", -0.00001f);
                     scene->camera->set_program_uniforms(empty_and_offset_shader);
 
                     auto tri_count = prim->tris.size();
@@ -368,6 +374,9 @@ struct FrameBufferPicker : IPicker {
                 if (scene->select_mode == PICK_MODE::PICK_LINE) {
                     // ----- enable depth test -----
                     CHECK_GL(glEnable(GL_DEPTH_TEST));
+                    CHECK_GL(glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE));
+                    glDepthFunc(GL_GREATER);
+                    CHECK_GL(glClearDepth(0.0));
                     // CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
                     // ----- draw lines -----
                     prim_shader->use();
@@ -416,6 +425,9 @@ struct FrameBufferPicker : IPicker {
                 if (scene->select_mode == PICK_MODE::PICK_MESH) {
                     // ----- enable depth test -----
                     CHECK_GL(glEnable(GL_DEPTH_TEST));
+                    CHECK_GL(glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE));
+                    glDepthFunc(GL_GREATER);
+                    CHECK_GL(glClearDepth(0.0));
                     // CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
                     // ----- draw triangles -----
                     prim_shader->use();

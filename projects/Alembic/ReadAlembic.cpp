@@ -729,6 +729,25 @@ static std::shared_ptr<PrimitiveObject> foundABCCurves(Alembic::AbcGeom::ICurves
     return prim;
 }
 
+void prim_set_abcpath(PrimitiveObject* prim, std::string path_name) {
+    int faceset_count = prim->userData().get2<int>("abcpath_count",0);
+    for (auto j = 0; j < faceset_count; j++) {
+        prim->userData().del(zeno::format("abcpath_{}", j));
+    }
+    prim->userData().set2("abcpath_count", 1);
+    prim->userData().set2("abcpath_0", path_name);
+
+    if (prim->tris.size() > 0) {
+        prim->tris.add_attr<int>("abcpath").assign(prim->tris.size(),0);
+    }
+    if (prim->quads.size() > 0) {
+        prim->quads.add_attr<int>("abcpath").assign(prim->quads.size(),0);
+    }
+    if (prim->polys.size() > 0) {
+        prim->polys.add_attr<int>("abcpath").assign(prim->polys.size(),0);
+    }
+}
+
 void traverseABC(
     Alembic::AbcGeom::IObject &obj,
     ABCTree &tree,
@@ -754,7 +773,7 @@ void traverseABC(
             auto &mesh = meshy.getSchema();
             tree.prim = foundABCMesh(mesh, frameid, read_done, read_face_set);
             tree.prim->userData().set2("_abc_name", obj.getName());
-            tree.prim->userData().set2("_abc_path", path);
+            prim_set_abcpath(tree.prim.get(), path);
         } else if (Alembic::AbcGeom::IXformSchema::matches(md)) {
             if (!read_done) {
                 log_debug("[alembic] found a Xform [{}]", obj.getName());
@@ -777,7 +796,7 @@ void traverseABC(
             auto &points_sch = points.getSchema();
             tree.prim = foundABCPoints(points_sch, frameid, read_done);
             tree.prim->userData().set2("_abc_name", obj.getName());
-            tree.prim->userData().set2("_abc_path", path);
+            prim_set_abcpath(tree.prim.get(), path);
             tree.prim->userData().set2("faceset_count", 0);
         } else if(Alembic::AbcGeom::ICurvesSchema::matches(md)) {
             if (!read_done) {
@@ -787,7 +806,7 @@ void traverseABC(
             auto &curves_sch = curves.getSchema();
             tree.prim = foundABCCurves(curves_sch, frameid, read_done);
             tree.prim->userData().set2("_abc_name", obj.getName());
-            tree.prim->userData().set2("_abc_path", path);
+            prim_set_abcpath(tree.prim.get(), path);
             tree.prim->userData().set2("faceset_count", 0);
         } else if (Alembic::AbcGeom::ISubDSchema::matches(md)) {
             if (!read_done) {
@@ -797,7 +816,7 @@ void traverseABC(
             auto &subd_sch = subd.getSchema();
             tree.prim = foundABCSubd(subd_sch, frameid, read_done, read_face_set);
             tree.prim->userData().set2("_abc_name", obj.getName());
-            tree.prim->userData().set2("_abc_path", path);
+            prim_set_abcpath(tree.prim.get(), path);
         }
     }
 
@@ -851,7 +870,7 @@ struct ReadAlembic : INode {
     virtual void apply() override {
         int frameid;
         if (has_input("frameid")) {
-            frameid = get_input<NumericObject>("frameid")->get<int>();
+            frameid = std::lround(get_input<NumericObject>("frameid")->get<float>());
         } else {
             frameid = getGlobalState()->frameid;
         }
@@ -878,7 +897,7 @@ struct ReadAlembic : INode {
             auto namelist = std::make_shared<zeno::ListObject>();
             abctree->visitPrims([&] (auto const &p) {
                 auto &ud = p->userData();
-                auto _abc_path = ud.template get2<std::string>("_abc_path", "");
+                auto _abc_path = ud.template get2<std::string>("abcpath_0", "");
                 namelist->arr.push_back(std::make_shared<StringObject>(_abc_path));
             });
             auto &ud = abctree->userData();
@@ -896,7 +915,7 @@ struct ReadAlembic : INode {
 ZENDEFNODE(ReadAlembic, {
     {
         {"readpath", "path"},
-        {"bool", "read_face_set", "0"},
+        {"bool", "read_face_set", "1"},
         {"frameid"},
     },
     {
@@ -907,8 +926,32 @@ ZENDEFNODE(ReadAlembic, {
     {"alembic"},
 });
 
-std::shared_ptr<ListObject> abc_split_by_name(std::shared_ptr<PrimitiveObject> prim) {
+void prim_set_faceset(PrimitiveObject* prim, std::string faceset_name) {
+    int faceset_count = prim->userData().get2<int>("faceset_count",0);
+    for (auto j = 0; j < faceset_count; j++) {
+        prim->userData().del(zeno::format("faceset_{}", j));
+    }
+    prim->userData().set2("faceset_count", 1);
+    prim->userData().set2("faceset_0", faceset_name);
+
+    if (prim->tris.size() > 0) {
+        prim->tris.add_attr<int>("faceset").assign(prim->tris.size(),0);
+    }
+    if (prim->quads.size() > 0) {
+        prim->quads.add_attr<int>("faceset").assign(prim->quads.size(),0);
+    }
+    if (prim->polys.size() > 0) {
+        prim->polys.add_attr<int>("faceset").assign(prim->polys.size(),0);
+    }
+}
+
+std::shared_ptr<ListObject> abc_split_by_name(std::shared_ptr<PrimitiveObject> prim, bool add_when_none) {
     int faceset_count = prim->userData().get2<int>("faceset_count");
+    if (add_when_none && faceset_count == 0) {
+        auto name = prim->userData().get2<std::string>("_abc_name");
+        prim_set_faceset(prim.get(), name);
+        faceset_count = 1;
+    }
     std::map<int, std::vector<int>> faceset_map;
     for (auto f = 0; f < faceset_count; f++) {
         faceset_map[f] = {};
@@ -937,8 +980,7 @@ std::shared_ptr<ListObject> abc_split_by_name(std::shared_ptr<PrimitiveObject> p
             for (auto j = 0; j < faceset_count; j++) {
                 new_prim->userData().del(zeno::format("faceset_{}", j));
             }
-            new_prim->userData().set2("faceset_count", 1);
-            new_prim->userData().set2("faceset_0", name);
+            prim_set_faceset(new_prim.get(), name);
             list->arr.push_back(new_prim);
         }
     }
@@ -965,8 +1007,7 @@ std::shared_ptr<ListObject> abc_split_by_name(std::shared_ptr<PrimitiveObject> p
             for (auto j = 0; j < faceset_count; j++) {
                 new_prim->userData().del(zeno::format("faceset_{}", j));
             }
-            new_prim->userData().set2("faceset_count", 1);
-            new_prim->userData().set2("faceset_0", name);
+            prim_set_faceset(new_prim.get(), name);
             list->arr.push_back(new_prim);
         }
     }
@@ -986,9 +1027,12 @@ struct AlembicSplitByName: INode {
         }
 
         auto dict = std::make_shared<zeno::DictObject>();
-        auto list = abc_split_by_name(prim);
+        auto list = abc_split_by_name(prim, false);
         for (auto& prim: list->get<PrimitiveObject>()) {
             auto name = prim->userData().get2<std::string>("faceset_0");
+            if (get_input2<bool>("killDeadVerts")) {
+                primKillDeadVerts(prim.get());
+            }
             dict->lut[name] = std::move(prim);
         }
         set_output("dict", dict);
@@ -998,6 +1042,7 @@ struct AlembicSplitByName: INode {
 ZENDEFNODE(AlembicSplitByName, {
     {
         {"prim"},
+        {"bool", "killDeadVerts", "1"},
     },
     {
         {"DictObject", "dict"},
@@ -1172,26 +1217,13 @@ ZENDEFNODE(PrimsFilterInUserdataPython, {
     {"alembic"},
 });
 
+#endif
 struct SetFaceset: INode {
     void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
-        int faceset_count = prim->userData().get2<int>("faceset_count",0);
-        for (auto j = 0; j < faceset_count; j++) {
-            prim->userData().del(zeno::format("faceset_{}", j));
-        }
-        prim->userData().set2("faceset_count", 1);
         auto faceset_name = get_input2<std::string>("facesetName");
-        prim->userData().set2("faceset_0", faceset_name);
+        prim_set_faceset(prim.get(), faceset_name);
 
-        if (prim->tris.size() > 0) {
-            prim->tris.add_attr<int>("faceset").assign(prim->tris.size(),0);
-        }
-        if (prim->quads.size() > 0) {
-            prim->quads.add_attr<int>("faceset").assign(prim->quads.size(),0);
-        }
-        if (prim->polys.size() > 0) {
-            prim->polys.add_attr<int>("faceset").assign(prim->polys.size(),0);
-        }
         set_output("out", prim);
     }
 };
@@ -1207,7 +1239,28 @@ ZENDEFNODE(SetFaceset, {
     {},
     {"alembic"},
 });
-#endif
+
+struct SetABCPath: INode {
+    void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto abcpathName = get_input2<std::string>("abcpathName");
+        prim_set_abcpath(prim.get(), abcpathName);
+
+        set_output("out", prim);
+    }
+};
+
+ZENDEFNODE(SetABCPath, {
+    {
+        "prim",
+        {"string", "abcpathName", "/ABC/your_path"},
+    },
+    {
+        {"out"},
+    },
+    {},
+    {"alembic"},
+});
 
 
 } // namespace zeno

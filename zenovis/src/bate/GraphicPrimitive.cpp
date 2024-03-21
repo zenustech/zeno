@@ -134,7 +134,7 @@ static void computeTrianglesTangent(zeno::PrimitiveObject *prim) {
         uv2_data = tris.attr<zeno::vec3f>("uv2").data();
     }
 #pragma omp parallel for
-    for (size_t i = 0; i < prim->tris.size(); ++i) {
+    for (auto i = 0; i < prim->tris.size(); ++i) {
         if (has_uv) {
             const auto &pos0 = pos[tris[i][0]];
             const auto &pos1 = pos[tris[i][1]];
@@ -719,7 +719,7 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
             }
 
             if (scene->drawOptions->render_wireframe || selected || scene->drawOptions->uv_mode) {
-                CHECK_GL(glDepthFunc(GL_LEQUAL));
+                CHECK_GL(glDepthFunc(GL_GEQUAL));
                 if (polyEdgeObj.count) {
                     if (scene->drawOptions->uv_mode) {
                         if (polyUvObj.count) {
@@ -763,7 +763,7 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
                     CHECK_GL(glPolygonMode(GL_FRONT_AND_BACK, GL_FILL));
                     CHECK_GL(glDisable(GL_POLYGON_OFFSET_LINE));
                 }
-                CHECK_GL(glDepthFunc(GL_LESS));
+                CHECK_GL(glDepthFunc(GL_GREATER));
             }
             triObj.ebo->unbind();
             if (triObj.vbos.size()) {

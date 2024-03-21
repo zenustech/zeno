@@ -7,7 +7,7 @@
 #include "zveceditoritem.h"
 #include "style/zenostyle.h"
 #include "../dialog/zenoheatmapeditor.h"
-#include "../dialog/curvemap/zcurvemapeditor.h"
+#include "../dialog/curvemap/zqwtcurvemapeditor.h"
 #include "variantptr.h"
 #include "zassert.h"
 #include "zgraphicstextitem.h"
@@ -153,6 +153,7 @@ namespace zenoui
             }
             case CONTROL_READPATH:
             case CONTROL_WRITEPATH:
+            case CONTROL_DIRECTORY:
             {
                 const QString& path = UiHelper::variantToString(value);
                 ZenoParamPathEdit* pPathEditor = new ZenoParamPathEdit(path, ctrl, m_nodeParams.lineEditParam, cbSet.cbGetZsgDir);
@@ -229,14 +230,10 @@ namespace zenoui
                 });
                 break;
             }
-            case CONTROL_PURE_COLOR: 
             case CONTROL_COLOR_VEC3F:
             {
                 QColor currentColor;
-                if (ctrl == CONTROL_PURE_COLOR) {
-                    currentColor = value.value<QColor>();
-                }
-                else if (ctrl == CONTROL_COLOR_VEC3F) {
+                if (ctrl == CONTROL_COLOR_VEC3F) {
                     auto colorVec = value.value<UI_VECTYPE>();
                     currentColor = QColor::fromRgbF(colorVec[0], colorVec[1], colorVec[2]);
                 }
@@ -252,10 +249,7 @@ namespace zenoui
                     if (color.isValid()) 
                     {
                         pEditBtn->setProperty("color", color.name());
-                        if (ctrl == CONTROL_PURE_COLOR) {
-                            cbSet.cbEditFinished(QVariant::fromValue(color));
-                        }
-                        else if (ctrl == CONTROL_COLOR_VEC3F) {
+                        if (ctrl == CONTROL_COLOR_VEC3F) {
                             UI_VECTYPE colorVec(3);
                             color.getRgbF(&colorVec[0], &colorVec[1], &colorVec[2]);
                             cbSet.cbEditFinished(QVariant::fromValue<UI_VECTYPE>(colorVec));
@@ -351,9 +345,9 @@ namespace zenoui
                 pEditBtn->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 pEditBtn->setData(GVKEY_TYPE, type);
                 QObject::connect(pEditBtn, &ZenoParamPushButton::clicked, [=]() {
-                    ZCurveMapEditor *pEditor = new ZCurveMapEditor(true);
+                    ZQwtCurveMapEditor*pEditor = new ZQwtCurveMapEditor(true);
 
-                    QObject::connect(pEditor, &ZCurveMapEditor::finished, [=](int result) {
+                    QObject::connect(pEditor, &ZQwtCurveMapEditor::finished, [=](int result) {
                         cbSet.cbEditFinished(QVariant::fromValue(pEditor->curves()));
                     });
 

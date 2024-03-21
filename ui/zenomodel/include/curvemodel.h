@@ -40,7 +40,7 @@ public:
     QString id() const;
     void setId(QString id);
     void setVisible(bool visible);
-    bool getVisible();
+    bool getVisible() const;
     std::string z_serialize() const;
     void z_deserialize(std::string_view s);
     QPointF clipNodePos(const QModelIndex& idx, const QPointF& currPos);
