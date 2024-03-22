@@ -33,12 +33,6 @@ ZENO_API void primFlipFaces(PrimitiveObject *prim) {
             std::swap(quad[2], quad[1]);
         });
     if (prim->polys.size()) {
-        parallel_for_each(prim->polys.begin(), prim->polys.end(), [&] (auto const &poly) {
-            auto const &[start, len] = poly;
-            for (int i = 0; i < (len >> 1); i++) {
-                std::swap(prim->loops[start + i], prim->loops[start + len - 1 - i]);
-            }
-        });
         prim->loops.forall_attr<AttrAcceptAll>([&] (auto const &key, auto &arr) {
             parallel_for_each(prim->polys.begin(), prim->polys.end(), [&] (auto const &poly) {
                 auto const &[start, len] = poly;
