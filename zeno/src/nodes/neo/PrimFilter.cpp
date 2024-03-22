@@ -70,6 +70,38 @@ static void revamp_vector(std::vector<T> &arr, std::vector<int> const &revamp) {
     std::swap(arr, newarr);
 }
 
+void primKillDeadUVs(PrimitiveObject *prim) {
+    if (!(prim->loops.size() > 0 && prim->loops.attr_is<int>("uvs"))) {
+        return;
+    }
+    auto &uvs = prim->loops.attr<int>("uvs");
+    std::set<int> reached;
+    for (auto const &[start, len]: prim->polys) {
+        for (int i = start; i < start + len; i++) {
+            reached.insert(uvs[i]);
+        }
+    }
+    std::vector<int> revamp(reached.begin(), reached.end());
+    auto old_prim_size = prim->uvs.size();
+    prim->uvs.forall_attr<AttrAcceptAll>([&] (auto const &key, auto &arr) {
+        revamp_vector(arr, revamp);
+    });
+    prim->uvs.resize(revamp.size());
+
+    std::vector<int> unrevamp(old_prim_size);
+    for (int i = 0; i < revamp.size(); i++) {
+        unrevamp[revamp[i]] = i;
+    }
+
+    auto mock = [&] (int &ind) {
+        ind = unrevamp[ind];
+    };
+    for (auto const &[start, len]: prim->polys) {
+        for (int i = start; i < start + len; i++) {
+            mock(uvs[i]);
+        }
+    }
+}
 void primKillDeadLoops(PrimitiveObject *prim) {
     if (prim->loops.size() == 0) {
         return;
@@ -158,6 +190,7 @@ ZENO_API void primKillDeadVerts(PrimitiveObject *prim) {
             mock(prim->loops[i]);
         }
     }
+    primKillDeadUVs(prim);
     primKillDeadLoops(prim);
 }
 
