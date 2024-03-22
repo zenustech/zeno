@@ -1,5 +1,6 @@
 #pragma once 
 
+#ifdef ZENO_ENABLE_OPTIX
 #include <optix.h>
 #include <sutil/sutil.h>
 #include <sutil/vec_math.h>
@@ -95,3 +96,5 @@ inline void cleanupSpheresGPU() {
 }
 
 } // NAMESPACE END
+
+#endif
