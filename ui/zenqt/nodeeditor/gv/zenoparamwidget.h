@@ -15,6 +15,7 @@
 #include "widgets/znumslider.h"
 #include "widgets/zspinboxslider.h"
 #include "nodeeditor/gv/zenosvgitem.h"
+#include "zlayoutbackground.h"
 
 
 class ZenoTextLayoutItem;
@@ -438,6 +439,73 @@ protected:
 private:
     QString m_text;
     QSizeF m_size;
+};
+
+class StatusButton : public QGraphicsObject
+{
+    Q_OBJECT
+    typedef QGraphicsObject _base;
+public:
+    StatusButton(qreal W, qreal H, qreal rtradius, QGraphicsItem* parent = nullptr);
+    void setColor(bool bOn, QColor clrOn, QColor clrOff);
+    QRectF boundingRect() const override;
+    QPainterPath shape() const override;
+    void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
+
+signals:
+    void hoverChanged(bool);
+    void toggled(bool);
+
+public slots:
+    void setHovered(bool bHovered);
+    void toggle(bool bSelected);
+
+protected:
+    void hoverEnterEvent(QGraphicsSceneHoverEvent* event) override;
+    void hoverMoveEvent(QGraphicsSceneHoverEvent* event) override;
+    void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
+    void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
+    void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
+
+private:
+    void initPath();
+
+    QPainterPath m_path;
+    qreal m_rtradius;
+    qreal m_width;
+    qreal m_height;
+    bool m_bOn;
+    bool m_bHovered;
+    QColor m_clrOn;
+    QColor m_clrOff;
+};
+
+class ZenoMinStatusItem : public ZLayoutBackground
+{
+    Q_OBJECT
+    typedef ZLayoutBackground _base;
+public:
+    ZenoMinStatusItem(QGraphicsItem* parent = nullptr);
+    QRectF boundingRect() const override;
+    void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
+    void setChecked(STATUS_BTN btn, bool bChecked);
+    void setOptions(int options);
+    void setView(bool isView);
+    void onZoomed();
+
+protected:
+    void hoverEnterEvent(QGraphicsSceneHoverEvent* event) override;
+    void hoverMoveEvent(QGraphicsSceneHoverEvent* event) override;
+    void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
+
+signals:
+    void toggleChanged(STATUS_BTN btn, bool hovered);
+
+protected:
+    ZenoImageItem* m_mute;
+    ZenoImageItem* m_view;
+    StatusButton* m_minMute;
+    StatusButton* m_minView;
 };
 
 class ZenoMinStatusBtnItem : public QGraphicsObject

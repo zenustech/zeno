@@ -67,6 +67,8 @@ public:
     ZENO_API zvariant get_input_defl(std::string const& name);
     ZENO_API std::string get_nodecls() const;
     ZENO_API std::string get_ident() const;
+    ZENO_API std::string get_show_name() const;
+    ZENO_API std::string get_show_icon() const;
     ZENO_API ObjPath get_path() const;
     ZENO_API ObjPath get_uuid_path() const { return m_uuidPath; }
     ZENO_API std::string get_uuid() const;

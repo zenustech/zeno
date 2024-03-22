@@ -91,6 +91,24 @@ ZENO_API std::string INode::get_ident() const
     return m_name;
 }
 
+ZENO_API std::string INode::get_show_name() const {
+    if (nodeClass && nodeClass->desc) {
+        std::string dispName = nodeClass->desc->displayName;
+        if (!dispName.empty())
+            return dispName;
+    }
+    return m_nodecls;
+}
+
+ZENO_API std::string INode::get_show_icon() const {
+    if (nodeClass && nodeClass->desc) {
+        return nodeClass->desc->iconResPath;
+    }
+    else {
+        return "";
+    }
+}
+
 ZENO_API ObjPath INode::get_path() const {
     std::list<std::string> path;
     path.push_front(m_name);

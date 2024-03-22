@@ -172,14 +172,14 @@ void ZenoNode::initUI(ZenoSubGraphScene* pScene, const QModelIndex& subGIdx, con
     m_border->hide();
 
     m_bUIInited = true;
-    onZoomed();
+    //onZoomed();
 }
 
 ZLayoutBackground* ZenoNode::initHeaderWidget()
 {
     ZLayoutBackground* headerWidget = new ZLayoutBackground;
     auto headerBg = m_renderParams.headerBg;
-    headerWidget->setRadius(headerBg.lt_radius, headerBg.rt_radius, headerBg.lb_radius, headerBg.rb_radius);
+    headerWidget->setRadius(headerBg.lt_radius, 10, headerBg.lb_radius, 0);
     qreal bdrWidth = ZenoStyle::dpiScaled(headerBg.border_witdh);
     headerWidget->setBorder(bdrWidth, headerBg.clr_border);
 
@@ -202,34 +202,41 @@ ZLayoutBackground* ZenoNode::initHeaderWidget()
 
     const QString& nodeCls = m_index.data(ROLE_CLASS_NAME).toString();
     const QString& name = m_index.data(ROLE_NODE_NAME).toString();
-    ZASSERT_EXIT(!name.isEmpty(), headerWidget);
+    const QString& dispName = m_index.data(ROLE_NODE_DISPLAY_NAME).toString();
+    ZASSERT_EXIT(!dispName.isEmpty(), headerWidget);
+    const QString& iconResPath = m_index.data(ROLE_NODE_DISPLAY_ICON).toString();
 
     const QString& category = m_index.data(ROLE_NODE_CATEGORY).toString();
 
-    ZGraphicsLayout* pNameLayout = new ZGraphicsLayout(false);
-    qreal margin = ZenoStyle::dpiScaled(10);
-    pNameLayout->setContentsMargin(margin, margin, margin, margin);
-
     QFont font2 = QApplication::font();
-    font2.setPointSize(16);
-    font2.setWeight(QFont::DemiBold);
+    font2.setPointSize(20);
+    font2.setWeight(QFont::Normal);
 
-    m_NameItem = new ZGraphicsTextItem(name, font2, QColor("#FFFFFF"), this);
+    m_NameItem = new ZGraphicsTextItem(dispName, font2, QColor("#F1E9E9"), this);
     m_NameItem->installEventFilter(this);
     connect(m_NameItem, &ZGraphicsTextItem::editingFinished, this, &ZenoNode::onCustomNameChanged);
 
-    pNameLayout->addItem(m_NameItem);
-    //if (!category.isEmpty())
+    ZGraphicsLayout* pNameLayout = new ZGraphicsLayout(true);
+    //qreal margin = ZenoStyle::dpiScaled(10);
+    //pNameLayout->setContentsMargin(margin, margin, margin, margin);
+
+    //icons
+    const QSizeF szIcon = ZenoStyle::dpiScaledSize(QSizeF(32, 32));
+    if (!iconResPath.isEmpty())
     {
-        m_pCategoryItem = new ZSimpleTextItem(category.isEmpty() ? nodeCls : category + ":" + nodeCls);
-        m_pCategoryItem->setBrush(QColor("#AB6E40"));
-        font2.setPointSize(12);
-        m_pCategoryItem->setFont(font2);
-        m_pCategoryItem->updateBoundingRect();
-        m_pCategoryItem->setAcceptHoverEvents(false);
-        pNameLayout->addItem(m_pCategoryItem);
+        ImageElement elem;
+        elem.image = elem.imageHovered = elem.imageOn = elem.imageOnHovered = iconResPath;
+        auto node_icon = new ZenoImageItem(elem, szIcon);
+        pNameLayout->addItem(node_icon, Qt::AlignVCenter);
     }
-    m_pStatusWidgets = new ZenoMinStatusBtnItem(m_renderParams.status);
+    else
+    {
+        pNameLayout->addSpacing(szIcon.width());
+    }
+    pNameLayout->addItem(m_NameItem, Qt::AlignVCenter);
+    pNameLayout->addSpacing(-1);
+
+    m_pStatusWidgets = new ZenoMinStatusItem(); ;// new ZenoMinStatusBtnItem(m_renderParams.status);
     bool bView = m_index.data(ROLE_NODE_ISVIEW).toBool();
     m_pStatusWidgets->setView(bView);
     connect(m_pStatusWidgets, SIGNAL(toggleChanged(STATUS_BTN, bool)), this, SLOT(onOptionsBtnToggled(STATUS_BTN, bool)));
@@ -237,7 +244,9 @@ ZLayoutBackground* ZenoNode::initHeaderWidget()
     ZGraphicsLayout* pHLayout = new ZGraphicsLayout(true);
     pHLayout->setDebugName("Header HLayout");
     pHLayout->addSpacing(10);
+
     pHLayout->addLayout(pNameLayout);
+    //pHLayout->addItem(m_NameItem, Qt::AlignCenter);
     pHLayout->addSpacing(100, QSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed));
     pHLayout->addItem(m_pStatusWidgets);
 
@@ -263,7 +272,7 @@ ZLayoutBackground* ZenoNode::initBodyWidget(ZenoSubGraphScene* pScene)
     ZLayoutBackground* bodyWidget = new ZLayoutBackground(this);
     const auto& bodyBg = m_renderParams.bodyBg;
     bodyWidget->setRadius(bodyBg.lt_radius, bodyBg.rt_radius, bodyBg.lb_radius, bodyBg.rb_radius);
-    bodyWidget->setColors(bodyBg.bAcceptHovers, bodyBg.clr_normal);
+    bodyWidget->setColors(bodyBg.bAcceptHovers, QColor("#2A2A2A"));
 
     qreal bdrWidth = ZenoStyle::dpiScaled(bodyBg.border_witdh);
     bodyWidget->setBorder(ZenoStyle::scaleWidth(2), QColor(18, 20, 22));

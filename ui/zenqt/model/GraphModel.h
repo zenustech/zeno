@@ -21,6 +21,8 @@ struct NodeItem : public QObject
 public:
     //temp cached data for spNode->...
     QString name;
+    QString dispName;
+    QString dispIcon;
     QString cls;
     QPointF pos;
 

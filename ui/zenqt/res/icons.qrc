@@ -1,5 +1,6 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource>
+    <file>icons/node/box.svg</file>
     <file>icons/add.svg</file>
     <file>icons/add-on.svg</file>
     <file>icons/addpanel.svg</file>

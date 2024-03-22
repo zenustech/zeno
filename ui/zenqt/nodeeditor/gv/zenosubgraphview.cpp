@@ -504,7 +504,7 @@ void _ZenoSubGraphView::contextMenuEvent(QContextMenuEvent* event)
 void _ZenoSubGraphView::drawGrid(QPainter* painter, const QRectF& rect)
 {
     //background color
-    painter->fillRect(rect, QColor("#1d1d1d"));
+    painter->fillRect(rect, QColor("#1A1A1A"));
     bool showGrid = ZenoSettingsManager::GetInstance().getValue(zsShowGrid).toBool();
     if (showGrid)
     {

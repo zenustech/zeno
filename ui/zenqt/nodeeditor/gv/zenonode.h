@@ -156,7 +156,7 @@ private:
     ZGraphicsTextItem* m_NameItem;
     ZSimpleTextItem* m_pCategoryItem;
     ZSimpleTextItem *m_NameItemTip;
-    ZenoMinStatusBtnItem* m_pStatusWidgets;
+    ZenoMinStatusItem* m_pStatusWidgets;
     ZLayoutBackground* m_dirtyMarker;
 
     QGraphicsRectItem* m_border;

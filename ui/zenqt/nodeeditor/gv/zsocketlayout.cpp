@@ -95,7 +95,7 @@ void ZSocketLayout::initUI(const CallbackForSocket& cbSock)
             UiHelper::qIndexSetData(m_paramIdx, newText, ROLE_PARAM_NAME);
         };
         ZSocketEditableItem *pItem = new ZSocketEditableItem(m_paramIdx, sockName, m_bInput, cbSock.cbOnSockClicked, cbFuncRenameSock);
-        setSpacing(ZenoStyle::dpiScaled(32));
+        setSpacing(ZenoStyle::dpiScaled(20));
         if (!m_bInput) 
         {
             pItem->setAlignment(Qt::AlignVCenter | Qt::AlignRight);
@@ -105,7 +105,7 @@ void ZSocketLayout::initUI(const CallbackForSocket& cbSock)
     else
     {
         m_text = new ZSocketPlainTextItem(m_paramIdx, sockName, m_bInput, cbSock.cbOnSockClicked);
-        setSpacing(ZenoStyle::dpiScaled(32));
+        setSpacing(ZenoStyle::dpiScaled(20));
         m_text->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, zenoui::g_ctrlHeight)));
         m_text->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed));
     }

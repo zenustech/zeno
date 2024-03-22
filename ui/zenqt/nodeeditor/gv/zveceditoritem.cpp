@@ -40,7 +40,7 @@ void ZVecEditorItem::initUI(const QVariant& vec, bool bFloat, QGraphicsScene* pS
             pLineEdit->setText(text);
         }
 
-        pLineEdit->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(64, 24)));
+        pLineEdit->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(32, 16)));
         pLineEdit->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
 
         pLineEdit->setNumSlider(pScene, UiHelper::getSlideStep("", bFloat ? zeno::Param_Float : zeno::Param_Int));

@@ -1369,6 +1369,226 @@ QSizeF ZenoBoardTextLayoutItem::sizeHint(Qt::SizeHint which, const QSizeF& const
     return constraint;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////
+StatusButton::StatusButton(qreal W, qreal H, qreal rtradius, QGraphicsItem* parent)
+    : QGraphicsObject(parent)
+    , m_width(W)
+    , m_height(H)
+    , m_rtradius(rtradius)
+    , m_bOn(false)
+    , m_bHovered(false)
+{
+    setAcceptHoverEvents(true);
+    setFlag(QGraphicsItem::ItemIsSelectable);
+    initPath();
+}
+
+void StatusButton::setColor(bool bOn, QColor clrOn, QColor clrOff)
+{
+    m_bOn = bOn;
+    m_clrOff = clrOff;
+    m_clrOn = clrOn;
+}
+
+QRectF StatusButton::boundingRect() const
+{
+    return QRectF(0, 0, m_width, m_height);
+}
+
+void StatusButton::initPath()
+{
+    if (m_rtradius == 0) {
+        m_path.addRect(QRectF(0, 0, m_width, m_height));
+    }
+    else {
+        m_path.moveTo(0, m_height);
+        m_path.lineTo(m_width, m_height);
+        m_path.lineTo(m_width, m_rtradius);
+        QRectF rcArc(m_width - 2 * m_rtradius, 0, 2 * m_rtradius, 2 * m_rtradius);
+        m_path.arcTo(rcArc, 0, 90);
+        m_path.lineTo(0, 0);
+    }
+}
+
+QPainterPath StatusButton::shape() const
+{
+    return m_path;
+}
+
+void StatusButton::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
+{
+    painter->setRenderHint(QPainter::Antialiasing, true);
+    if (m_bHovered || m_bOn)
+        painter->fillPath(m_path, m_clrOn);
+    else
+        painter->fillPath(m_path, m_clrOff);
+}
+
+void StatusButton::setHovered(bool bHovered)
+{
+    m_bHovered = bHovered;
+    update();
+}
+
+void StatusButton::toggle(bool bSelected)
+{
+    if (bSelected == m_bOn)
+        return;
+
+    m_bOn = bSelected;
+    if (!m_bOn) {
+        m_bHovered = false;
+    }
+    emit toggled(m_bOn);
+    update();
+}
+
+void StatusButton::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
+{
+    _base::hoverEnterEvent(event);
+    m_bHovered = true;
+}
+
+void StatusButton::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
+{
+    _base::hoverLeaveEvent(event);
+}
+
+void StatusButton::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
+{
+    _base::hoverLeaveEvent(event);
+    m_bHovered = false;
+}
+
+void StatusButton::mousePressEvent(QGraphicsSceneMouseEvent* event)
+{
+    _base::mousePressEvent(event);
+    event->setAccepted(true);
+}
+
+void StatusButton::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
+{
+    _base::mouseReleaseEvent(event);
+    toggle(!m_bOn);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+ZenoMinStatusItem::ZenoMinStatusItem(QGraphicsItem* parent)
+    : ZLayoutBackground(parent)
+{
+    const int W = ZenoStyle::dpiScaled(22.);
+    const int H = ZenoStyle::dpiScaled(50.);
+
+    setColors(false, QColor(0, 0, 0, 0));
+
+    m_minMute = new StatusButton(W, H, 0);
+    m_minMute->setColor(false, QColor("#E302F8"), QColor("#2F3135"));
+
+    m_minView = new StatusButton(W, H, 9);
+    m_minView->setColor(false, QColor("#26C5C5"), QColor("#2F3135"));
+
+    ZGraphicsLayout* pLayout = new ZGraphicsLayout(true);
+    pLayout->setSpacing(1);
+    pLayout->addItem(m_minMute);
+    pLayout->addItem(m_minView);
+    this->setLayout(pLayout);
+
+    m_mute = new ZenoImageItem(
+        ":/icons/MUTE_dark.svg",
+        ":/icons/MUTE_light.svg",
+        ":/icons/MUTE_light.svg",
+        ZenoStyle::dpiScaledSize(QSize(50, 42)),
+        this);
+
+    m_view = new ZenoImageItem(
+        ":/icons/VIEW_dark.svg",
+        ":/icons/VIEW_light.svg",
+        ":/icons/VIEW_light.svg",
+        ZenoStyle::dpiScaledSize(QSize(50, 42)),
+        this);
+    m_mute->setCheckable(true);
+    m_view->setCheckable(true);
+    m_mute->hide();
+    m_view->hide();
+
+    QSizeF sz2 = m_mute->size();
+    qreal sMarginTwoBar = ZenoStyle::dpiScaled(4);
+    //todo: kill these magin number.
+    QPointF base = QPointF(0, -sz2.height() - sMarginTwoBar);
+    m_mute->setPos(base);
+    base += QPointF(ZenoStyle::dpiScaled(38), 0);
+    m_view->setPos(base);
+
+    connect(m_minView, SIGNAL(hoverChanged(bool)), m_view, SLOT(setHovered(bool)));
+    connect(m_minMute, SIGNAL(hoverChanged(bool)), m_mute, SLOT(setHovered(bool)));
+
+    connect(m_view, SIGNAL(hoverChanged(bool)), m_minView, SLOT(setHovered(bool)));
+    connect(m_mute, SIGNAL(hoverChanged(bool)), m_minMute, SLOT(setHovered(bool)));
+
+    connect(m_minView, SIGNAL(toggled(bool)), m_view, SLOT(toggle(bool)));
+    connect(m_minMute, SIGNAL(toggled(bool)), m_mute, SLOT(toggle(bool)));
+
+    connect(m_view, SIGNAL(toggled(bool)), m_minView, SLOT(toggle(bool)));
+    connect(m_mute, SIGNAL(toggled(bool)), m_minMute, SLOT(toggle(bool)));
+
+    connect(m_minMute, &StatusButton::toggled, [=](bool hovered) {
+        emit toggleChanged(STATUS_MUTE, hovered);
+    });
+    connect(m_minView, &StatusButton::toggled, [=](bool hovered) {
+        emit toggleChanged(STATUS_VIEW, hovered);
+    });
+}
+
+QRectF ZenoMinStatusItem::boundingRect() const
+{
+    return _base::boundingRect();
+}
+
+void ZenoMinStatusItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
+{
+    _base::paint(painter, option, widget);
+}
+
+void ZenoMinStatusItem::setChecked(STATUS_BTN btn, bool bChecked)
+{
+
+}
+
+void ZenoMinStatusItem::setOptions(int options)
+{
+
+}
+
+void ZenoMinStatusItem::setView(bool isView)
+{
+
+}
+
+void ZenoMinStatusItem::onZoomed()
+{
+
+}
+
+void ZenoMinStatusItem::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
+{
+    m_mute->show();
+    m_view->show();
+    _base::hoverEnterEvent(event);
+}
+
+void ZenoMinStatusItem::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
+{
+    _base::hoverMoveEvent(event);
+}
+
+void ZenoMinStatusItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
+{
+    m_mute->hide();
+    m_view->hide();
+    _base::hoverLeaveEvent(event);
+}
+
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 ZenoMinStatusBtnItem::ZenoMinStatusBtnItem(const StatusComponent& statusComp, QGraphicsItem* parent)

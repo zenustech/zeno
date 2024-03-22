@@ -83,6 +83,7 @@ void ZLayoutBackground::paint(QPainter* painter, const QStyleOptionGraphicsItem*
     }
     else
     {
+        painter->setRenderHint(QPainter::Antialiasing, true);
         QPainterPath path = shape();
         painter->fillPath(path, m_color);
     }

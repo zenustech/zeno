@@ -349,10 +349,10 @@ ZSocketPlainTextItem::ZSocketPlainTextItem(
     , m_viewSockIdx(viewSockIdx)
     , m_socket(nullptr)
 {
-    setBrush(QColor("#dee6ed"));
+    setBrush(QColor("#AAAAAA"));
     QFont font = QApplication::font();
     font.setPointSize(12);
-    font.setWeight(QFont::DemiBold);
+    font.setWeight(QFont::Light);
     setFont(font);
     updateBoundingRect();
 
@@ -367,17 +367,9 @@ QVariant ZSocketPlainTextItem::itemChange(GraphicsItemChange change, const QVari
 
 void ZSocketPlainTextItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* pItem, QWidget* pWidget)
 {
-    bool bMarked = false;//? m_viewSockIdx.data(ROLE_VPARAM_COMMAND).toBool();
-    if (bMarked)
-    {
-        setBrush(QColor("#599EED"));
-    }
-    else
-    {
-        setBrush(QColor("#dee6ed"));
-    }
     _base::paint(painter, pItem, pWidget);
 }
+
 
 ZEditableTextItem::ZEditableTextItem(const QString &text, QGraphicsItem *parent)
     : _base(parent)
