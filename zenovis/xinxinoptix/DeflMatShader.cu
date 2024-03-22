@@ -30,6 +30,27 @@ static __inline__ __device__ bool isBadVector(const float3& vector) {
     return isBadVector(reinterpret_cast<const vec3&>(vector));
 }
 
+__inline__ __device__ void cihouSphereInstanceAux(MatInput& attrs) {
+
+    if (params.sphereInstAuxLutBuffer != 0 && optixGetInstanceId() < params.firstSoloSphereOffset) {
+
+        auto lut = reinterpret_cast<unsigned long long*>(params.sphereInstAuxLutBuffer);
+        assert(lut != nullptr);
+
+        auto tmp = lut[optixGetInstanceId()];
+        auto auxBuffer = reinterpret_cast<float3*>(tmp);
+        assert(auxBuffer != nullptr);
+
+        attrs.clr = {};
+        attrs.tang = {};
+        attrs.instPos = {}; //rt_data->instPos[inst_idx2];
+        attrs.instNrm = {}; //rt_data->instNrm[inst_idx2];
+        attrs.instUv = {}; //rt_data->instUv[inst_idx2];
+        attrs.instClr = auxBuffer[optixGetPrimitiveIndex()];
+        attrs.instTang = {}; //rt_data->instTang[inst_idx2];
+    }
+}
+
 extern "C" __global__ void __anyhit__shadow_cutout()
 {
 
@@ -72,13 +93,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     attrs.nrm = N;
     attrs.uv = sphereUV(_normal_object_, false);
 
-    attrs.clr = {};
-    attrs.tang = {};
-    attrs.instPos = {}; //rt_data->instPos[inst_idx2];
-    attrs.instNrm = {}; //rt_data->instNrm[inst_idx2];
-    attrs.instUv = {}; //rt_data->instUv[inst_idx2];
-    attrs.instClr = {}; //rt_data->instClr[inst_idx2];
-    attrs.instTang = {}; //rt_data->instTang[inst_idx2];
+    cihouSphereInstanceAux(attrs);
 
     unsigned short isLight = 0;
 #else
@@ -332,13 +347,7 @@ extern "C" __global__ void __closesthit__radiance()
     attrs.nrm = N;
     attrs.uv = sphereUV(objNorm, false);
 
-    attrs.clr = {};
-    attrs.tang = {};
-    attrs.instPos = {}; //rt_data->instPos[inst_idx2];
-    attrs.instNrm = {}; //rt_data->instNrm[inst_idx2];
-    attrs.instUv = {}; //rt_data->instUv[inst_idx2];
-    attrs.instClr = {}; //rt_data->instClr[inst_idx2];
-    attrs.instTang = {}; //rt_data->instTang[inst_idx2];
+    cihouSphereInstanceAux(attrs);
 
 #else
 
