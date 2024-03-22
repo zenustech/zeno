@@ -23,7 +23,7 @@ std::unordered_set<std::string> lightCameraNodes({
     "CameraEval", "CameraNode", "CihouMayaCameraFov", "ExtractCameraData", "GetAlembicCamera","MakeCamera",
     "LightNode", "BindLight", "ProceduralSky", "HDRSky",
     });
-std::string matlNode = "ShaderFinalize";
+std::set<std::string> matNodeNames = {"ShaderFinalize", "ShaderVolume", "ShaderVolumeHomogeneous"};
 
 void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &objs, bool cacheLightCameraOnly, bool cacheMaterialOnly, std::string fileName) {
     if (cachedir.empty()) return;
@@ -49,7 +49,7 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
                 poses[0].push_back(bufsize);
             }
         }
-        if (cacheMaterialOnly && (matlNode == nodeName || std::dynamic_pointer_cast<MaterialObject>(obj)))
+        if (cacheMaterialOnly && (matNodeNames.count(nodeName)>0 || std::dynamic_pointer_cast<MaterialObject>(obj)))
         {
             bufsize = bufCaches[1].size();
             if (encodeObject(obj.get(), bufCaches[1]))
@@ -69,7 +69,7 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
                     keys[0].append(key);
                     poses[0].push_back(bufsize);
                 }
-            } else if (matlNode == nodeName || std::dynamic_pointer_cast<MaterialObject>(obj)) {
+            } else if (matNodeNames.count(nodeName)>0 || std::dynamic_pointer_cast<MaterialObject>(obj)) {
                 bufsize = bufCaches[1].size();
                 if (encodeObject(obj.get(), bufCaches[1]))
                 {

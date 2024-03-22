@@ -504,7 +504,7 @@ namespace DisneyBSDF{
             f =  f + s;
             fPdf += tmpPdf * clearCtPr;
         }
-        if((sssPr>0.0&&reflectance) || (sssPr>0.0 && dot(wo, N2)<0.0))
+        if((sssPr>0.0&&reflectance) || (sssPr>0.0 && dot(wo, N2)<0.0) || (sssPr>0.0 && (thin)))
         {
           bool trans = (dot(wi, N2) * dot(wo, N2)<0) && (wi.z * wo.z<0);
           float FL = BRDFBasics::SchlickWeight(abs(wi.z));
@@ -683,8 +683,7 @@ namespace DisneyBSDF{
             tbn.inverse_transform(wi);
             wi = normalize(wi);
 
-            if(dot(wi, N2)<0)
-            {
+            if (dot(wi, N2) < 0) {
               wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
             }
           }

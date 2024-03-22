@@ -38,6 +38,7 @@ ZENO_API void primFilterVerts(PrimitiveObject *prim, std::string tagAttr, int ta
 
 ZENO_API void primMarkIsland(PrimitiveObject *prim, std::string tagAttr);
 ZENO_API std::vector<std::shared_ptr<PrimitiveObject>> primUnmergeVerts(PrimitiveObject *prim, std::string tagAttr);
+ZENO_API std::vector<std::shared_ptr<PrimitiveObject>> primUnmergeFaces(PrimitiveObject *prim, std::string tagAttr);
 
 ZENO_API void primSimplifyTag(PrimitiveObject *prim, std::string tagAttr);
 ZENO_API void primColorByTag(PrimitiveObject *prim, std::string tagAttr, std::string clrAttr, int seed = -1);

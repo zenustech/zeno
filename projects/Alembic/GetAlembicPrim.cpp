@@ -72,7 +72,7 @@ int get_alembic_prim_index(std::shared_ptr<zeno::ABCTree> abctree, std::string n
     int index = 0;
     abctree->visitPrims([&] (auto const &p) {
         auto &ud = p->userData();
-        auto _abc_path = ud.template get2<std::string>("_abc_path", "");
+        auto _abc_path = ud.template get2<std::string>("abcpath_0", "");
         if (_abc_path == name) {
             return false;
         }
@@ -260,7 +260,7 @@ struct AlembicPrimList : INode {
         auto facesetExclude = zeno::split_str(get_input2<std::string>("facesetExclude"), {' ', '\n'});
         for (auto it = new_prims->arr.begin(); it != new_prims->arr.end();) {
             auto np = std::dynamic_pointer_cast<PrimitiveObject>(*it);
-            auto abc_path = np->userData().template get2<std::string>("_abc_path");
+            auto abc_path = np->userData().template get2<std::string>("abcpath_0");
             bool contain = false;
             if (pathInclude.empty()) {
                 contain = true;

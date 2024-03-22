@@ -729,6 +729,25 @@ static std::shared_ptr<PrimitiveObject> foundABCCurves(Alembic::AbcGeom::ICurves
     return prim;
 }
 
+void prim_set_abcpath(PrimitiveObject* prim, std::string path_name) {
+    int faceset_count = prim->userData().get2<int>("abcpath_count",0);
+    for (auto j = 0; j < faceset_count; j++) {
+        prim->userData().del(zeno::format("abcpath_{}", j));
+    }
+    prim->userData().set2("abcpath_count", 1);
+    prim->userData().set2("abcpath_0", path_name);
+
+    if (prim->tris.size() > 0) {
+        prim->tris.add_attr<int>("abcpath").assign(prim->tris.size(),0);
+    }
+    if (prim->quads.size() > 0) {
+        prim->quads.add_attr<int>("abcpath").assign(prim->quads.size(),0);
+    }
+    if (prim->polys.size() > 0) {
+        prim->polys.add_attr<int>("abcpath").assign(prim->polys.size(),0);
+    }
+}
+
 void traverseABC(
     Alembic::AbcGeom::IObject &obj,
     ABCTree &tree,
@@ -754,7 +773,7 @@ void traverseABC(
             auto &mesh = meshy.getSchema();
             tree.prim = foundABCMesh(mesh, frameid, read_done, read_face_set);
             tree.prim->userData().set2("_abc_name", obj.getName());
-            tree.prim->userData().set2("_abc_path", path);
+            prim_set_abcpath(tree.prim.get(), path);
         } else if (Alembic::AbcGeom::IXformSchema::matches(md)) {
             if (!read_done) {
                 log_debug("[alembic] found a Xform [{}]", obj.getName());
@@ -777,7 +796,7 @@ void traverseABC(
             auto &points_sch = points.getSchema();
             tree.prim = foundABCPoints(points_sch, frameid, read_done);
             tree.prim->userData().set2("_abc_name", obj.getName());
-            tree.prim->userData().set2("_abc_path", path);
+            prim_set_abcpath(tree.prim.get(), path);
             tree.prim->userData().set2("faceset_count", 0);
         } else if(Alembic::AbcGeom::ICurvesSchema::matches(md)) {
             if (!read_done) {
@@ -787,7 +806,7 @@ void traverseABC(
             auto &curves_sch = curves.getSchema();
             tree.prim = foundABCCurves(curves_sch, frameid, read_done);
             tree.prim->userData().set2("_abc_name", obj.getName());
-            tree.prim->userData().set2("_abc_path", path);
+            prim_set_abcpath(tree.prim.get(), path);
             tree.prim->userData().set2("faceset_count", 0);
         } else if (Alembic::AbcGeom::ISubDSchema::matches(md)) {
             if (!read_done) {
@@ -797,7 +816,7 @@ void traverseABC(
             auto &subd_sch = subd.getSchema();
             tree.prim = foundABCSubd(subd_sch, frameid, read_done, read_face_set);
             tree.prim->userData().set2("_abc_name", obj.getName());
-            tree.prim->userData().set2("_abc_path", path);
+            prim_set_abcpath(tree.prim.get(), path);
         }
     }
 
@@ -878,7 +897,7 @@ struct ReadAlembic : INode {
             auto namelist = std::make_shared<zeno::ListObject>();
             abctree->visitPrims([&] (auto const &p) {
                 auto &ud = p->userData();
-                auto _abc_path = ud.template get2<std::string>("_abc_path", "");
+                auto _abc_path = ud.template get2<std::string>("abcpath_0", "");
                 namelist->arr.push_back(std::make_shared<StringObject>(_abc_path));
             });
             auto &ud = abctree->userData();
@@ -896,7 +915,7 @@ struct ReadAlembic : INode {
 ZENDEFNODE(ReadAlembic, {
     {
         {"readpath", "path"},
-        {"bool", "read_face_set", "0"},
+        {"bool", "read_face_set", "1"},
         {"frameid"},
     },
     {
@@ -1213,6 +1232,28 @@ ZENDEFNODE(SetFaceset, {
     {
         "prim",
         {"string", "facesetName", "defFS"},
+    },
+    {
+        {"out"},
+    },
+    {},
+    {"alembic"},
+});
+
+struct SetABCPath: INode {
+    void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto abcpathName = get_input2<std::string>("abcpathName");
+        prim_set_abcpath(prim.get(), abcpathName);
+
+        set_output("out", prim);
+    }
+};
+
+ZENDEFNODE(SetABCPath, {
+    {
+        "prim",
+        {"string", "abcpathName", "/ABC/your_path"},
     },
     {
         {"out"},

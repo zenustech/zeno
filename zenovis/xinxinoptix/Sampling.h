@@ -229,6 +229,40 @@ static __host__ __device__ __inline__ float3 sphereUV(const float3 &dir, bool in
     return float3 {u, v, 0.0f};
 } 
 
+static __host__ __device__ __inline__ float3 interp(float2 barys, float3 a, float3 b, float3 c)
+{
+    float w0 = 1 - barys.x - barys.y;
+    float w1 = barys.x;
+    float w2 = barys.y;
+    return w0*a + w1*b + w2*c;
+}
+
+inline float NextFloatUp(float v) {
+    // Handle infinity and negative zero for _NextFloatUp()_
+    if (isinf(v) && v > 0.) return v;
+    if (v == -0.f) v = 0.f;
+
+    // Advance _v_ to next higher float
+    uint32_t ui = __float_as_uint(v);
+    if (v >= 0)
+        ++ui;
+    else
+        --ui;
+    return __uint_as_float(ui);
+}
+
+inline float NextFloatDown(float v) {
+    // Handle infinity and positive zero for _NextFloatDown()_
+    if (isinf(v) && v < 0.) return v;
+    if (v == 0.f) v = -0.f;
+    uint32_t ui = __float_as_uint(v);
+    if (v > 0)
+        --ui;
+    else
+        ++ui;
+    return __uint_as_float(ui);
+}
+
 // *Really* minimal PCG32 code / (c) 2014 M.E. O'Neill / pcg-random.org
 // Licensed under Apache License 2.0 (NO WARRANTY, etc. see website)
 
