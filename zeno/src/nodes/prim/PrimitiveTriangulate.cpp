@@ -155,7 +155,7 @@ ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv, bool has_line
         prim->polys.foreach_attr<AttrAcceptAll>([&](auto const &key, auto &arr) {
           using T = std::decay_t<decltype(arr[0])>;
           auto &attr = prim->tris.add_attr<T>(key);
-          for (auto i = 0; i < attr.size(); i++) {
+          for (auto i = tribase; i < attr.size(); i++) {
               attr[i] = arr[mapping[i]];
           }
         });
