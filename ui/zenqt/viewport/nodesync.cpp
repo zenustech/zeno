@@ -4,6 +4,8 @@
 #include "model/graphsmanager.h"
 #include "model/graphstreemodel.h"
 #include "zassert.h"
+#include <zeno/core/ObjectManager.h>
+#include <zeno/core/Session.h>
 
 
 namespace zeno {
@@ -17,7 +19,7 @@ std::optional<NodeLocation> NodeSyncMgr::generateNewNode(NodeLocation& node_loca
         return {};
     }
 
-    auto& subgraph = node_location.subgraph;
+    auto subgraph = node_location.subgraph;
     auto pos = nodeIdx.data(ROLE_OBJPOS).toPointF();
     pos.setX(pos.x() + 100);
 
@@ -29,7 +31,7 @@ std::optional<NodeLocation> NodeSyncMgr::generateNewNode(NodeLocation& node_loca
 
     auto this_node_id = nodeIdx.data(ROLE_NODE_NAME).toString();
 
-    const QString& subgName = subgraph.data(ROLE_CLASS_NAME).toString();
+    const QString& subgName = subgraph->name();
     const QString& outNode = this_node_id;
     const QString& inNode = new_node_id;
     const QString& outSock = QString::fromLocal8Bit(output_sock.c_str());
@@ -51,8 +53,15 @@ std::optional<NodeLocation> NodeSyncMgr::generateNewNode(NodeLocation& node_loca
 }
 
 std::optional<NodeLocation> NodeSyncMgr::searchNodeOfPrim(const std::string& prim_name) {
-    QString node_id(prim_name.substr(0, prim_name.find_first_of(':')).c_str());
-    return searchNode(node_id.toStdString());
+    auto graph_model = zenoApp->graphsManager()->currentModel();
+    if (!graph_model) {
+        return {};
+    }
+    std::set<ObjPath> nodeNameSet = zeno::getSession().objsMan->getAttachNodes(prim_name);
+    if (nodeNameSet.empty())
+        return {};
+    auto search_result = graph_model->searchByUuidPath(*nodeNameSet.begin());
+    return NodeLocation(search_result[0].targetIdx, search_result[0].subGraph);
 }
 
 std::optional<NodeLocation> NodeSyncMgr::searchNode(const std::string& node_id) {
@@ -60,11 +69,11 @@ std::optional<NodeLocation> NodeSyncMgr::searchNode(const std::string& node_id) 
     if (!graph_model) {
         return {};
     }
-    auto search_result = graph_model->search(node_id.c_str(), SEARCH_NODEID, SEARCH_MATCH_EXACTLY);
+    auto search_result = graph_model->search(QString::fromStdString(node_id), SEARCH_NODEID, SEARCH_MATCH_EXACTLY);
     if (search_result.empty())
         return {};
     return NodeLocation(search_result[0].targetIdx,
-                        search_result[0].subgIdx);
+                        search_result[0].subGraph);
 }
 
 bool NodeSyncMgr::checkNodeType(const QModelIndex& node,
@@ -107,11 +116,11 @@ std::optional<NodeLocation> NodeSyncMgr::checkNodeLinkedSpecificNode(const QMode
             auto search_result = graph_model->search(next_node_id, SEARCH_NODEID, SEARCH_MATCH_EXACTLY);
             if (search_result.empty()) return {};
             auto linked_node = search_result[0].targetIdx;
-            auto linked_subgraph = search_result[0].subgIdx;
+            auto linked_subgraph = search_result[0].subGraph;
             auto option = linked_node.data(ROLE_NODE_STATUS).toInt();
             if (option & zeno::View)
                 return NodeLocation(linked_node,
-                                    linked_subgraph);
+                    linked_subgraph);
         }
     }
     return {};

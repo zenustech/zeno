@@ -296,7 +296,7 @@ PANEL_TYPE ZDockWidget::title2Type(const QString& title)
     return type;
 }
 
-void ZDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select)
+void ZDockWidget::onNodesSelected(GraphModel* subgraph, const QModelIndexList& nodes, bool select)
 {
     //if (nodes.count() <= 0)
     //    return;
@@ -306,7 +306,7 @@ void ZDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelIndexL
         if (DockContent_Parameter* prop = qobject_cast<DockContent_Parameter*>(wid))
         {
             if (select && nodes.size() <= 1) {
-                prop->onNodesSelected(subgIdx, nodes, select);
+                prop->onNodesSelected(subgraph, nodes, select);
             }
         }
         else if (ZenoSpreadsheet* panel = qobject_cast<ZenoSpreadsheet*>(wid))
@@ -339,11 +339,11 @@ void ZDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelIndexL
         else if (DockContent_Editor *editor = qobject_cast<DockContent_Editor *>(wid)) {
             if (select && nodes.size() <= 1)
             {
-                editor->getEditor()->showFloatPanel(subgIdx, nodes);
+                editor->getEditor()->showFloatPanel(subgraph, nodes);
             }
         }
         else if (DockContent_View *view = qobject_cast<DockContent_View *>(wid)) {
-            view->getDisplayWid()->onNodeSelected(subgIdx, nodes, select);
+            view->getDisplayWid()->onNodeSelected(subgraph, nodes, select);
         }
         else if (ZenoImagePanel *image = qobject_cast<ZenoImagePanel *>(wid))
         {

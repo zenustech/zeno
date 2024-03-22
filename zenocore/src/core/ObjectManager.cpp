@@ -139,6 +139,26 @@ namespace zeno {
         }
     }
 
+    ZENO_API void ObjectManager::markObjInteractive(std::set<std::string>& newobjKeys)
+    {
+        std::lock_guard lck(m_mtx);
+        m_modify = newobjKeys;
+    }
+
+    ZENO_API void ObjectManager::unmarkObjInteractive(std::set<std::string>& removeobjKeys)
+    {
+        std::lock_guard lck(m_mtx);
+        m_modify.clear();
+    }
+
+    ZENO_API void ObjectManager::getModifyObjsInfo(std::map<std::string, std::shared_ptr<zeno::IObject>>& modifyInteractiveObjs)
+    {
+        std::lock_guard lck(m_mtx);
+        for (auto& key : m_modify)
+            if (m_objects.find(key) != m_objects.end())
+                modifyInteractiveObjs.insert(std::make_pair(key, m_objects[key].obj));
+    }
+
     ZENO_API void ObjectManager::export_loading_objs(RenderObjsInfo& info)
     {
         std::lock_guard lck(m_mtx);
@@ -157,6 +177,28 @@ namespace zeno {
         for (auto objkey : m_remove) {
             info.remObjs.insert(objkey);
         }
+    }
+
+    ZENO_API void ObjectManager::export_all_objs(RenderObjsInfo& info)
+    {
+        std::lock_guard lck(m_mtx);
+        for (auto& [k, v] : m_objects)
+            info.allObjects.emplace(std::move(std::pair(k, v.obj)));
+    }
+
+    ZENO_API void ObjectManager::export_all_objs(std::vector<std::pair<std::string, std::shared_ptr<zeno::IObject>>>& info)
+    {
+        std::lock_guard lck(m_mtx);
+        for (auto& [k, v] : m_objects)
+            info.emplace_back(k, v.obj);
+    }
+
+    ZENO_API std::shared_ptr<zeno::IObject> ObjectManager::getObj(std::string name)
+    {
+        std::lock_guard lck(m_mtx);
+        if (m_objects.find(name) != m_objects.end())
+            return m_objects[name].obj;
+        return nullptr;
     }
 
     void ObjectManager::clear()

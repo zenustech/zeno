@@ -11,6 +11,7 @@
 #include "viewport/transform.h"
 #include "viewport/picker.h"
 #include "util/log.h"
+#include "model/GraphModel.h"
 
 
 using std::string;
@@ -669,7 +670,7 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                         {
                             return;
                         }
-                        auto subgraph_name = obj_node_location->subgraph.data(ROLE_CLASS_NAME).toString();
+                        auto subgraph_name = obj_node_location.value().subgraph->name();
                         auto obj_node_name = obj_node_location->node.data(ROLE_NODE_NAME).toString();
                         nodes.push_back(obj_node_name);
 //                        ZenoMainWindow *pWin = zenoApp->getMainWindow();

@@ -62,6 +62,7 @@ public:
     bool isDirty() const;
     void clearDirty();
     QList<SEARCH_RESULT> search(const QString& content, int searchType, int searchOpts) const;
+    QList<SEARCH_RESULT> searchByUuidPath(const zeno::ObjPath& uuidPath);
 
 signals:
     void dirtyChanged();

@@ -43,7 +43,7 @@ public:
     QVector<DisplayWidget*> viewports() const;
     ZenoGraphsEditor* getAnyEditor() const;
     void setCurrentWidget(PANEL_TYPE type);
-    void onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
+    void onNodesSelected(GraphModel* subgraph, const QModelIndexList& nodes, bool select);
     void onPrimitiveSelected(const std::unordered_set<std::string>& primids);
     void onUpdateViewport(const QString& action);
     void updateLights();

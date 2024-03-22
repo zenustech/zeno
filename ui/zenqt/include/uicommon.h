@@ -245,14 +245,14 @@ Q_DECLARE_METATYPE(PARAM_LINKS)
 
 Q_DECLARE_METATYPE(QLinearGradient)
 
+class GraphModel;
 struct SEARCH_RESULT
 {
     SearchType type;
     QModelIndex targetIdx;  //node or subgraph index.
-    QModelIndex subgIdx;
+    GraphModel* subGraph;
     QString socket;     //the socket/param which contains the result.
 };
-
 struct LiveObjectData{
     std::string verSrc = "";
     std::string camSrc = "";
