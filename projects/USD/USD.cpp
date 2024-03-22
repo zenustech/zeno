@@ -216,7 +216,7 @@ zeno::MatrixObject _getTransformMartrixFromUSDPrim(const pxr::UsdPrim& usdPrim) 
         }
     }
 
-    auto& ret = zeno::MatrixObject();
+    auto ret = zeno::MatrixObject();
     ret.m = finalMat;
     return ret;
 }
@@ -401,7 +401,7 @@ struct USDShowAllPrims : zeno::INode {
 
         // traverse and get description of all prims
         auto range = stage->Traverse();
-        for (auto& it : range) {
+        for (auto it : range) {
             // handle USD scene, traverse and construct zeno graph
             const std::string& primType = it.GetTypeName().GetString();
             const std::string& primPath = it.GetPath().GetString();
