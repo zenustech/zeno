@@ -12,7 +12,9 @@
 #include <zenovis/opengl/buffer.h>
 #include <zenovis/opengl/common.h>
 #include <zenovis/opengl/scope.h>
-#include "../xinxinoptix/xinxinoptixapi.h"
+#ifdef ZENO_ENABLE_OPTIX
+    #include "../xinxinoptix/xinxinoptixapi.h"
+#endif
 #include <cstdlib>
 #include <map>
 
