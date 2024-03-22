@@ -10,15 +10,20 @@
 # 几何相关
 * [x] 实现Mesh导入构建
 * [x] 支持Xform 目前支持将xformop list合成单个matrix导入zeno
+* [x] Cube基本导入
+* [x] Sphere导入(没有规定精细度)
+* [ ] Point Line
+* [ ] Cylinder
+* [ ] 其他基本几何体
+* [ ] 支持层级引入 例如import一个根节点 其下的叶节点也一并导入(sublayer??)
 * [ ] 支持骨骼 Skeleton导入，并用骨骼初始化mesh的transform
 * [ ] 支持动画 SkelAnimation导入 并且支持多帧播放
-* [ ] 支持层级引入 例如import一个根节点 其下的叶节点也一并导入(sublayer??)
-* [ ] 支持各种基础几何的导入构建 Sphere Cube Cylinder Point Line等
-* [ ] 实现以上和以下所有内容的导出方案(如果能导入 一般来说导出就没什么问题了)
+* [ ] 实现所有已支持内容的对应导出方案
 # mtlx
 * [ ] 支持Material/mtlx + Shader
 # 灯光相机
-* [ ] 实现灯光相机 各种xxxLight Camera
+* [ ] 各种xxxLight
+* [ ] Camera
 # instancing
 * [ ] 实现实例化 USD instancing
 # 进阶以及可选

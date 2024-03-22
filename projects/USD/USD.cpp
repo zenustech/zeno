@@ -183,13 +183,128 @@ void _convertMeshFromUSDToZeno(const pxr::UsdPrim& usdPrim, zeno::PrimitiveObjec
         }
     }
     else if (typeName == "Sphere") {
-        ; // TODO
+        auto sphere = pxr::UsdGeomSphere(usdPrim);
+        pxr::VtValue radiusValue;
+        sphere.GetRadiusAttr().Get(&radiusValue);
+        float radius = static_cast<float>(radiusValue.Get<double>());
+
+        auto& verts = zPrim.verts;
+        auto& polys = zPrim.polys;
+        auto& loops = zPrim.loops;
+        auto& uvs = zPrim.uvs;
+        auto& norms = verts.add_attr<zeno::vec3f>("nrm");
+
+        const int ROWS = 30;
+        const int COLUMNS = 30;
+
+        verts.emplace_back(0.0f, radius, 0.0f);
+        for (int row = 1; row < ROWS; row++) {
+            float v = 1.0f * row / ROWS;
+            float theta = M_PI * v;
+            for (int column = 0; column < COLUMNS; column++) {
+                float u = 1.0f * column / COLUMNS;
+                float phi = M_PI * 2 * u;
+                float x = radius * sin(theta) * cos(phi);
+                float y = radius * cos(theta);
+                float z = radius * -sin(theta) * sin(phi);
+                verts.emplace_back(x, y, z);
+            }
+        }
+        verts.emplace_back(0.0f, -radius, 0.0f);
+
+        // setup sphere poly indices
+        {
+            //head
+            for (auto column = 0; column < COLUMNS; column++) {
+                if (column == COLUMNS - 1) {
+                    loops.emplace_back(0);
+                    loops.emplace_back(COLUMNS);
+                    loops.emplace_back(1);
+                    polys.emplace_back(column * 3, 3);
+                } else {
+                    loops.emplace_back(0);
+                    loops.emplace_back(column + 1);
+                    loops.emplace_back(column + 2);
+                    polys.emplace_back(column * 3, 3);
+                }
+            }
+            //body
+            for (auto row = 1; row < ROWS - 1; row++) {
+                for (auto column = 0; column < COLUMNS; column++) {
+                    if (column == COLUMNS - 1) {
+                        loops.emplace_back((row - 1) * COLUMNS + 1);
+                        loops.emplace_back((row - 1) * COLUMNS + COLUMNS);
+                        loops.emplace_back(row * COLUMNS + COLUMNS);
+                        loops.emplace_back(row * COLUMNS + 1);
+                        polys.emplace_back(COLUMNS * 3 + (row - 1) * COLUMNS * 4 + column * 4, 4);
+                    } else {
+                        loops.emplace_back((row - 1) * COLUMNS + column + 2);
+                        loops.emplace_back((row - 1) * COLUMNS + column + 1);
+                        loops.emplace_back(row * COLUMNS + column + 1);
+                        loops.emplace_back(row * COLUMNS + column + 2);
+                        polys.emplace_back(loops.size() - 4, 4);
+                    }
+                }
+            }
+            //tail
+            for (auto column = 0; column < COLUMNS; column++) {
+                if (column == COLUMNS - 1) {
+                    loops.emplace_back((ROWS - 2) * COLUMNS + 1);
+                    loops.emplace_back((ROWS - 2) * COLUMNS + column + 1);
+                    loops.emplace_back((ROWS - 1) * COLUMNS + 1);
+                    polys.emplace_back(COLUMNS * 3 + (ROWS - 2) * COLUMNS * 4 + column * 3, 3);
+                } else {
+                    loops.emplace_back((ROWS - 2) * COLUMNS + column + 2);
+                    loops.emplace_back((ROWS - 2) * COLUMNS + column + 1);
+                    loops.emplace_back((ROWS - 1) * COLUMNS + 1);
+                    polys.emplace_back(loops.size() - 3, 3);
+                }
+            }
+        }
+
     }
     else if (typeName == "Cube") {
-        ; // TODO
+        auto sizeAttr = usdPrim.GetAttribute(pxr::TfToken("size"));
+        double size, halfSize;
+        sizeAttr.Get(&size);
+        halfSize = size * 0.5;
+
+        // use quad mode as default
+        auto& verts = zPrim.verts;
+        auto& polys = zPrim.polys;
+        auto& loops = zPrim.loops;
+
+        // TODO: support uv
+        // auto& uvs = zPrim.uvs;
+
+        for (int y = -1; y <= 1; y += 2) {
+            for (int z = -1; z <= 1; z += 2) {
+                for (int x = -1; x <= 1; x += 2) {
+                    verts.emplace_back(x * halfSize, y * halfSize, z * halfSize);
+                }
+            }
+        }
+
+        static const int CUBE_FACE_INDICES[] = {
+                4, 6, 7, 5, // up
+                0, 1, 3, 2, // down
+                0, 2, 6, 4, // left
+                1, 5, 7, 3, // right
+                0, 4, 5, 1, // front
+                2, 3, 7, 6 // back
+        };
+        int faceStartIndex = 0;
+        for (int i = 0; i < 6; ++i) {
+            for (int j = 0; j < 4; ++j) {
+                loops.emplace_back(CUBE_FACE_INDICES[i * 4 + j]);
+            }
+            polys.emplace_back(faceStartIndex, 4);
+            faceStartIndex += 4;
+        }
+        // TODO: normals ?
     }
     else {
-        // not supported yet
+        // other geometry types are not supported yet
         ;
     }
 }
@@ -216,7 +331,7 @@ zeno::MatrixObject _getTransformMartrixFromUSDPrim(const pxr::UsdPrim& usdPrim) 
         }
     }
 
-    auto& ret = zeno::MatrixObject();
+    auto ret = zeno::MatrixObject();
     ret.m = finalMat;
     return ret;
 }
@@ -330,7 +445,7 @@ ZENDEFNODE(ImportUSDPrim,
         {
             {"primitive", "prim"},
             {"Matrix", "xformMatrix"},
-            {"skeleton"}, // USDPrimKeeper
+            //{"skeleton"}, // USDPrimKeeper
         },
         /* params */
         {},
@@ -401,7 +516,7 @@ struct USDShowAllPrims : zeno::INode {
 
         // traverse and get description of all prims
         auto range = stage->Traverse();
-        for (auto& it : range) {
+        for (auto it : range) {
             // handle USD scene, traverse and construct zeno graph
             const std::string& primType = it.GetTypeName().GetString();
             const std::string& primPath = it.GetPath().GetString();
