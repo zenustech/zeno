@@ -9,7 +9,7 @@ namespace zeno {
 ZENO_API PrimitiveObject* primParsedFrom(const char *binData, std::size_t binSize);
 
 ZENO_API void primTriangulateQuads(PrimitiveObject *prim);
-ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv = true, bool has_lines = true);
+ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv = true, bool has_lines = true, bool with_attr = true);
 ZENO_API void primTriangulateIntoPolys(PrimitiveObject *prim);
 ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv = true);
 

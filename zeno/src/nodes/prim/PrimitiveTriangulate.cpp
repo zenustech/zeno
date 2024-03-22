@@ -40,25 +40,9 @@ ZENO_API void primTriangulateQuads(PrimitiveObject *prim) {
     prim->quads.clear();
 }
 
-ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv, bool has_lines) {
-    //prim->tris.reserve(prim->tris.size() + prim->polys.size());
-    bool hasmat = prim->polys.has_attr("matid");
-    if(!hasmat)
-    {
-        prim->polys.add_attr<int>("matid");
-        prim->polys.attr<int>("matid").assign(prim->polys.size(), -1);
-    }
-    bool has_faceset = prim->polys.has_attr("faceset");
-    if(!has_faceset)
-    {
-        prim->polys.add_attr<int>("faceset");
-        prim->polys.attr<int>("faceset").assign(prim->polys.size(), -1);
-    }
-    bool has_abcpath = prim->polys.has_attr("abcpath");
-    if(!has_abcpath)
-    {
-        prim->polys.add_attr<int>("abcpath");
-        prim->polys.attr<int>("abcpath").assign(prim->polys.size(), -1);
+ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv, bool has_lines, bool with_attr) {
+    if (prim->polys.size() == 0) {
+        return;
     }
   boolean_switch(has_lines, [&] (auto has_lines) {
     std::vector<std::conditional_t<has_lines.value, vec2i, int>> scansum(prim->polys.size());
@@ -70,37 +54,21 @@ ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv, bool has_line
                                                    return ind[1] >= 3 ? ind[1] - 2 : 0;
                                                }
                                            });
+    std::vector<int> mapping;
     int tribase = prim->tris.size();
     int linebase = prim->lines.size();
     if constexpr (has_lines.value) {
         prim->tris.resize(tribase + redsum[0]);
+        mapping.resize(tribase + redsum[0]);
         prim->lines.resize(linebase + redsum[1]);
     } else {
         prim->tris.resize(tribase + redsum);
-    }
-
-    if (prim->tris.has_attr("matid")) {
-        prim->tris.attr<int>("matid").resize(prim->tris.size());
-    } else {
-        prim->tris.add_attr<int>("matid");
-    }
-    if (prim->tris.has_attr("faceset")) {
-        prim->tris.attr<int>("faceset").resize(prim->tris.size());
-    } else {
-        prim->tris.add_attr<int>("faceset");
-    }
-    if (prim->tris.has_attr("abcpath")) {
-        prim->tris.attr<int>("abcpath").resize(prim->tris.size());
-    } else {
-        prim->tris.add_attr<int>("abcpath");
+        mapping.resize(tribase + redsum);
     }
 
     if (!(prim->loops.has_attr("uvs") && prim->uvs.size() > 0) || !with_uv) {
         parallel_for(prim->polys.size(), [&] (size_t i) {
             auto [start, len] = prim->polys[i];
-            auto matidx = prim->polys.attr<int>("matid")[i];
-            auto faceset_idx = prim->polys.attr<int>("faceset")[i];
-            auto abcpath_idx = prim->polys.attr<int>("abcpath")[i];
 
             if (len >= 3) {
                 int scanbase;
@@ -113,18 +81,14 @@ ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv, bool has_line
                         prim->loops[start],
                         prim->loops[start + 1],
                         prim->loops[start + 2]);
-                prim->tris.attr<int>("matid")[scanbase] = matidx;
-                prim->tris.attr<int>("faceset")[scanbase] = faceset_idx;
-                prim->tris.attr<int>("abcpath")[scanbase] = abcpath_idx;
+                mapping[scanbase] = i;
                 scanbase++;
                 for (int j = 3; j < len; j++) {
                     prim->tris[scanbase] = vec3i(
                             prim->loops[start],
                             prim->loops[start + j - 1],
                             prim->loops[start + j]);
-                    prim->tris.attr<int>("matid")[scanbase] = matidx;
-                    prim->tris.attr<int>("faceset")[scanbase] = faceset_idx;
-                    prim->tris.attr<int>("abcpath")[scanbase] = abcpath_idx;
+                    mapping[scanbase] = i;
                     scanbase++;
                 }
             }
@@ -147,9 +111,6 @@ ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv, bool has_line
 
         parallel_for(prim->polys.size(), [&] (size_t i) {
             auto [start, len] = prim->polys[i];
-            auto matidx = prim->polys.attr<int>("matid")[i];
-            auto faceset_idx = prim->polys.attr<int>("faceset")[i];
-            auto abcpath_idx = prim->polys.attr<int>("abcpath")[i];
 
             if (len >= 3) {
                 int scanbase;
@@ -165,9 +126,7 @@ ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv, bool has_line
                         prim->loops[start],
                         prim->loops[start + 1],
                         prim->loops[start + 2]);
-                prim->tris.attr<int>("matid")[scanbase] = matidx;
-                prim->tris.attr<int>("faceset")[scanbase] = faceset_idx;
-                prim->tris.attr<int>("abcpath")[scanbase] = abcpath_idx;
+                mapping[scanbase] = i;
                 scanbase++;
                 for (int j = 3; j < len; j++) {
                     uv0[scanbase] = {uvs[loop_uv[start]][0], uvs[loop_uv[start]][1], 0};
@@ -177,9 +136,7 @@ ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv, bool has_line
                             prim->loops[start],
                             prim->loops[start + j - 1],
                             prim->loops[start + j]);
-                    prim->tris.attr<int>("matid")[scanbase] = matidx;
-                    prim->tris.attr<int>("faceset")[scanbase] = faceset_idx;
-                    prim->tris.attr<int>("abcpath")[scanbase] = abcpath_idx;
+                    mapping[scanbase] = i;
                     scanbase++;
                 }
             }
@@ -194,6 +151,15 @@ ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv, bool has_line
         });
 
     }
+    if (with_attr) {
+        prim->polys.foreach_attr<AttrAcceptAll>([&](auto const &key, auto &arr) {
+          using T = std::decay_t<decltype(arr[0])>;
+          auto &attr = prim->tris.add_attr<T>(key);
+          for (auto i = 0; i < attr.size(); i++) {
+              attr[i] = arr[mapping[i]];
+          }
+        });
+    }
     prim->loops.clear();
     prim->polys.clear();
     prim->loops.erase_attr("uvs");
@@ -207,7 +173,7 @@ struct PrimitiveTriangulate : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         if (get_param<bool>("from_poly")) {
-            primTriangulate(prim.get(), get_param<bool>("with_uv"), get_param<bool>("has_lines"));
+            primTriangulate(prim.get(), get_param<bool>("with_uv"), get_param<bool>("has_lines"), get_input2<bool>("with_attr"));
         }
         if (get_param<bool>("from_quads")) {
             primTriangulateQuads(prim.get());
@@ -219,6 +185,7 @@ struct PrimitiveTriangulate : INode {
 ZENDEFNODE(PrimitiveTriangulate,
         { /* inputs: */ {
         {"primitive", "prim"},
+        {"bool", "with_attr", "1"},
         }, /* outputs: */ {
         {"primitive", "prim"},
         }, /* params: */ {
