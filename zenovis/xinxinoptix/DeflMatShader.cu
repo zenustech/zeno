@@ -95,7 +95,6 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 
     cihouSphereInstanceAux(attrs);
 
-    unsigned short isLight = 0;
 #else
     size_t inst_idx = optixGetInstanceIndex();
     size_t vert_aux_offset = rt_data->auxOffset[inst_idx];
@@ -155,7 +154,6 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     attrs.instClr =  decodeColor( rt_data->instClr[inst_idx] );
     attrs.instTang = decodeColor( rt_data->instTang[inst_idx]);
 
-    unsigned short isLight = 0;//rt_data->lightMark[vert_aux_offset + primIdx];
 #endif
 
     attrs.pos = attrs.pos + vec3(params.cam.eye);
@@ -199,7 +197,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
         opacity = 0;
     //opacity = clamp(opacity, 0.0f, 0.99f);
     // Stochastic alpha test to get an alpha blend effect.
-    if (opacity >0.99f || isLight == 1) // No need to calculate an expensive random number if the test is going to fail anyway.
+    if (opacity >0.99f) // No need to calculate an expensive random number if the test is going to fail anyway.
     {
         optixIgnoreIntersection();
         return;
@@ -309,9 +307,8 @@ extern "C" __global__ void __closesthit__radiance()
     HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
     MatInput attrs{};
     float estimation = 0;
-#if (_SPHERE_)
 
-    unsigned short isLight = 0;
+#if (_SPHERE_)
 
     float4 q;
     // sphere center (q.x, q.y, q.z), sphere radius q.w
@@ -354,8 +351,6 @@ extern "C" __global__ void __closesthit__radiance()
     size_t inst_idx = optixGetInstanceIndex();
     size_t vert_aux_offset = rt_data->auxOffset[inst_idx];
     size_t vert_idx_offset = vert_aux_offset + primIdx*3;
-
-    unsigned short isLight = 0;//rt_data->lightMark[vert_aux_offset + primIdx];
 
     float3 _vertices_[3];
     optixGetTriangleVertexData( gas, primIdx, sbtGASIndex, 0, _vertices_);
