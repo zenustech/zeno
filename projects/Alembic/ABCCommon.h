@@ -22,8 +22,6 @@ extern std::shared_ptr<zeno::ListObject> get_xformed_prims(std::shared_ptr<zeno:
 
 extern std::shared_ptr<PrimitiveObject> get_alembic_prim(std::shared_ptr<zeno::ABCTree> abctree, int index);
 
-extern void flipFrontBack(std::shared_ptr<PrimitiveObject> &prim);
-
 void writeObjFile(
     const std::shared_ptr<zeno::PrimitiveObject>& primitive,
     const char *path,

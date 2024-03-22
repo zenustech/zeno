@@ -208,7 +208,7 @@ struct AlembicToSoftBodyVAT: public INode {
                 }
                 auto mergedPrim = zeno::primMerge(prims->getRaw<PrimitiveObject>());
                 if (get_input2<bool>("flipFrontBack")) {
-                    flipFrontBack(mergedPrim);
+                    primFlipFaces(mergedPrim.get());
                 }
                 zeno::primTriangulate(mergedPrim.get());
                 frameList->arr.push_back(mergedPrim);
@@ -402,7 +402,7 @@ struct AlembicToDynamicRemeshVAT : public INode {
         }
         auto mergedPrim = zeno::primMerge(prims->getRaw<PrimitiveObject>());
         if (shouldFlipFrontBack) {
-          flipFrontBack(mergedPrim);
+            primFlipFaces(mergedPrim.get());
         }
         zeno::primTriangulate(mergedPrim.get());
         maxTriNum = zeno::max(mergedPrim->tris.size(), maxTriNum);
