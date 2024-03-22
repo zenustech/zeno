@@ -1,5 +1,6 @@
 #include <zeno/core/ObjectManager.h>
 #include <zeno/core/Graph.h>
+#include <zeno/types/ListObject.h>
 
 
 namespace zeno {
@@ -179,18 +180,24 @@ namespace zeno {
         }
     }
 
-    ZENO_API void ObjectManager::export_all_objs(RenderObjsInfo& info)
+    ZENO_API void ObjectManager::export_all_view_objs(RenderObjsInfo& info)
     {
         std::lock_guard lck(m_mtx);
-        for (auto& [k, v] : m_objects)
-            info.allObjects.emplace(std::move(std::pair(k, v.obj)));
+        for (auto& key : m_viewObjs) {
+            auto& it = m_objects.find(key);
+            if (it != m_objects.end())
+                info.allObjects.emplace(std::move(std::pair(key, it->second.obj)));
+        }
     }
 
-    ZENO_API void ObjectManager::export_all_objs(std::vector<std::pair<std::string, std::shared_ptr<zeno::IObject>>>& info)
+    ZENO_API void ObjectManager::export_all_view_objs(std::vector<std::pair<std::string, std::shared_ptr<zeno::IObject>>>& info)
     {
         std::lock_guard lck(m_mtx);
-        for (auto& [k, v] : m_objects)
-            info.emplace_back(k, v.obj);
+        for (auto& key : m_viewObjs) {
+            auto& it = m_objects.find(key);
+            if (it != m_objects.end())
+                info.emplace_back(key, it->second.obj);
+        }
     }
 
     ZENO_API std::shared_ptr<zeno::IObject> ObjectManager::getObj(std::string name)

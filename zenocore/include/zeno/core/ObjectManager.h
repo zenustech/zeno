@@ -79,8 +79,8 @@ public:
     ZENO_API void revert();
 
     ZENO_API void export_loading_objs(RenderObjsInfo& info);
-    ZENO_API void export_all_objs(RenderObjsInfo& info);
-    ZENO_API void export_all_objs(std::vector<std::pair<std::string, std::shared_ptr<zeno::IObject>>>& info);
+    ZENO_API void export_all_view_objs(RenderObjsInfo& info);
+    ZENO_API void export_all_view_objs(std::vector<std::pair<std::string, std::shared_ptr<zeno::IObject>>>& info);
     ZENO_API std::shared_ptr<IObject> getObj(std::string name);
     ZENO_API void clear_last_run();
     ZENO_API void collect_removing_objs(const std::string& objkey);

@@ -46,7 +46,7 @@ class NodeSyncMgr {
                        const std::string& node_type);
     bool checkNodeInputHasValue(const QModelIndex& node,
                                 const std::string& input_name);
-    std::optional<NodeLocation> checkNodeLinkedSpecificNode(const QModelIndex& node,       // check which node's output?
+    std::optional<NodeLocation> checkNodeLinkedSpecificNode(NodeLocation& node_location,       // check which node's output?
                                                             const std::string& node_type); // check node output linked which node type
     // get input or output
     std::vector<NodeLocation> getInputNodes(const QModelIndex& node,
@@ -123,8 +123,7 @@ class NodeSyncMgr {
                                const std::string& new_value);
 
     // other tool functions
-    std::string getPrimSockName(const std::string& node_type);
-    std::string getPrimSockName(NodeLocation& node_location);
+    std::string getPrimSockName(const NodeLocation& node_location);
 
     NodeSyncMgr(const NodeSyncMgr &) = delete;
     const NodeSyncMgr &operator=(const NodeSyncMgr &) = delete;

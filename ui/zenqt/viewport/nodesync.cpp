@@ -93,17 +93,16 @@ bool NodeSyncMgr::checkNodeInputHasValue(const QModelIndex& node, const std::str
     return inSocket.links.empty();
 }
 
-std::optional<NodeLocation> NodeSyncMgr::checkNodeLinkedSpecificNode(const QModelIndex& node,
+std::optional<NodeLocation> NodeSyncMgr::checkNodeLinkedSpecificNode(NodeLocation& node_location,
                                                                      const std::string& node_type) {
     auto graph_model = zenoApp->graphsManager()->currentModel();
     if (!graph_model) {
         return {};
     }
 
-    auto this_outputs = node.data(ROLE_OUTPUTS).value<PARAMS_INFO>();
-    auto this_node_id = node.data(ROLE_NODE_NAME).toString(); // TransformPrimitive-1f4erf21
-    auto this_node_type = this_node_id.section("-", 1); // TransformPrimitive
-    auto prim_sock_name = getPrimSockName(this_node_type.toStdString());
+    auto this_outputs = node_location.node.data(ROLE_OUTPUTS).value<PARAMS_INFO>();
+    auto this_node_id = node_location.node.data(ROLE_NODE_NAME).toString(); // BindMaterial1
+    auto prim_sock_name = getPrimSockName(node_location);
 
     QString sockName = QString::fromLocal8Bit(prim_sock_name.c_str());
     if (this_outputs.find(sockName) == this_outputs.end())
@@ -211,15 +210,18 @@ void NodeSyncMgr::updateNodeParamString(NodeLocation node_location,
     updateNodeInputString(node_location, param_name, new_value);
 }
 
-std::string NodeSyncMgr::getPrimSockName(const std::string& node_type) {
-    if (m_prim_sock_map.find(node_type) != m_prim_sock_map.end())
-        return m_prim_sock_map[node_type];
-    return "prim";
-}
-
-std::string NodeSyncMgr::getPrimSockName(NodeLocation& node_location) {
-    auto node_type = node_location.node.data(ROLE_NODE_NAME).toString().section("-", 1);
-    return getPrimSockName(node_type.toStdString());
+std::string NodeSyncMgr::getPrimSockName(const NodeLocation& node_location) {
+    auto& nodename = node_location.node.data(ROLE_NODE_NAME).toString().toStdString();
+    if (m_prim_sock_map.find(nodename) != m_prim_sock_map.end())
+        return m_prim_sock_map[nodename];
+    else {
+        PARAMS_INFO outputs = node_location.node.data(ROLE_OUTPUTS).value<PARAMS_INFO>();
+        outputs.remove("DST");
+        if (!outputs.empty())
+            return outputs.firstKey().toStdString();
+        else
+            return "prim";
+    }
 }
 
 }
