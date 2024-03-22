@@ -103,32 +103,15 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMergeWithFacesetMatid(std::v
             }
         }
         int path_count = p->userData().get2<int>("abcpath_count", 0);
-        if (path_count == 0) {
-            p->userData().set2("abcpath_count", 1);
-            p->userData().set2("abcpath_0", "/ABC/Default");
-
-            if (p->tris.size() > 0) {
-                p->tris.add_attr<int>("abcpath").assign(p->tris.size(),0);
-            }
-            if (p->quads.size() > 0) {
-                p->quads.add_attr<int>("abcpath").assign(p->quads.size(),0);
-            }
-            if (p->polys.size() > 0) {
-                p->polys.add_attr<int>("abcpath").assign(p->polys.size(),0);
-            }
-            path_count = 1;
-        }
-        {
+        if (path_count > 0) {
             std::unordered_map<int, int> cur_abcpath_index_map;
             for (auto i = 0; i < path_count; i++) {
                 auto path = p->userData().get2<std::string>(format("abcpath_{}", i));
                 if (abcpathNameMap.count(path) == 0) {
                     int new_index = abcpathNameMap.size();
                     abcpathNameMap[path] = new_index;
-                    zeno::log_info("{} {}", path, new_index);
                 }
                 cur_abcpath_index_map[i] = abcpathNameMap[path];
-                zeno::log_info("{} {}", i, abcpathNameMap[path]);
             }
 
             for (int i = 0; i < p->tris.size(); i++) {
@@ -145,6 +128,17 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMergeWithFacesetMatid(std::v
                 if (p->polys.attr<int>("abcpath")[i] != -1) {
                     p->polys.attr<int>("abcpath")[i] = cur_abcpath_index_map[p->polys.attr<int>("abcpath")[i]];
                 }
+            }
+        }
+        else  {
+            if (p->tris.size() > 0) {
+                p->tris.add_attr<int>("abcpath").assign(p->tris.size(),-1);
+            }
+            if (p->quads.size() > 0) {
+                p->quads.add_attr<int>("abcpath").assign(p->quads.size(),-1);
+            }
+            if (p->polys.size() > 0) {
+                p->polys.add_attr<int>("abcpath").assign(p->polys.size(),-1);
             }
         }
     }
