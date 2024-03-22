@@ -10,6 +10,7 @@
 #include <Alembic/AbcCoreOgawa/All.h>
 #include <Alembic/Abc/ErrorHandler.h>
 #include "ABCTree.h"
+#include "ABCCommon.h"
 #include "zeno/utils/format.h"
 #include "zeno/utils/string.h"
 #include "zeno/types/ListObject.h"
@@ -736,6 +737,27 @@ struct WriteAlembicPrims : INode {
         std::vector<std::shared_ptr<PrimitiveObject>> new_prims;
 
         {
+            // unmerged prim when abcpath_count of a prim in list more than 1
+            std::vector<std::shared_ptr<PrimitiveObject>> temp_prims;
+            int counter = 0;
+            for (auto prim: prims) {
+                counter += 1;
+                if (!prim->userData().has<std::string>("abcpath_0")) {
+                    prim_set_abcpath(prim.get(), "/ABC/Default");
+                }
+                if (prim->userData().get2<int>("abcpath_count") == 1) {
+                    temp_prims.push_back(prim);
+                }
+                else {
+                    auto unmerged_prims = primUnmergeFaces(prim.get(), "abcpath");
+                    for (const auto& unmerged_prim: unmerged_prims) {
+                        temp_prims.push_back(unmerged_prim);
+                    }
+                }
+            }
+            prims = temp_prims;
+
+            // merge by abcpath
             std::vector<std::string> paths;
             std::map<std::string, std::vector<std::shared_ptr<PrimitiveObject>>> path_to_prims;
 
