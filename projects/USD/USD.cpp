@@ -33,13 +33,18 @@
 #include <zeno/utils/string.h>
 #include <cmath>
 
+// record usd stage path and the file pointer
 struct USDDescription {
     std::string mUSDPath = "";
     pxr::UsdStageRefPtr mStage = nullptr;
 };
 
+struct USDPrimKeeper : zeno::IObject {
+    pxr::UsdPrim mPrim;
+};
+
 // converting USD mesh to zeno mesh
-void _convertPrimFromUSDToZeno(const pxr::UsdPrim& usdPrim, zeno::PrimitiveObject& zPrim) {
+void _convertMeshFromUSDToZeno(const pxr::UsdPrim& usdPrim, zeno::PrimitiveObject& zPrim) {
     /*
     * Converting mesh
     */
@@ -301,7 +306,7 @@ struct ImportUSDPrim : zeno::INode {
         zeno::UserData& primData = zPrim->userData();
 
         // construct geometry from USD format
-        _convertPrimFromUSDToZeno(prim, *zPrim);
+        _convertMeshFromUSDToZeno(prim, *zPrim);
 
         auto mat = std::make_shared<zeno::MatrixObject>(_getTransformMartrixFromUSDPrim(prim));
 
@@ -310,7 +315,7 @@ struct ImportUSDPrim : zeno::INode {
         primData.set2("_usdPrimType", prim.GetTypeName().GetString());
 
         set_output2("prim", std::move(zPrim));
-        set_output("xformMatrix", mat);
+        set_output("xformMatrix", std::move(mat));
         zeno::zany any;
     }
 };
@@ -324,7 +329,8 @@ ZENDEFNODE(ImportUSDPrim,
         /* outputs */
         {
             {"primitive", "prim"},
-            {"Matrix", "xformMatrix"}
+            {"Matrix", "xformMatrix"},
+            {"skeleton"}, // USDPrimKeeper
         },
         /* params */
         {},
@@ -444,7 +450,7 @@ ZENDEFNODE(USDShowAllPrims,
 */
 struct ShowPrimUserData : zeno::INode {
     virtual void apply() override {
-        auto& prim = get_input2<zeno::PrimitiveObject>("prim");
+        auto prim = get_input2<zeno::PrimitiveObject>("prim");
         auto& userData = prim->userData();
 
         std::cout << "showing userData for prim:" << std::endl;
@@ -493,7 +499,7 @@ struct ShowUSDPrimAttribute : zeno::INode {
 
         std::cout << "Showing attributes for prim: " << primPath << std::endl;
         if (attrName.empty()) { // showing all prims in the stage
-            auto& attributes = prim.GetAttributes();
+            auto attributes = prim.GetAttributes();
             for (auto& attr : attributes) {
                 if (!attr.IsValid() || !attr.HasValue()) {
                     continue;
@@ -512,7 +518,7 @@ struct ShowUSDPrimAttribute : zeno::INode {
             }
         }
         else { // showing indicated prim
-            auto& attr = prim.GetAttribute(pxr::TfToken(attrName));
+            auto attr = prim.GetAttribute(pxr::TfToken(attrName));
             pxr::VtValue val;
             attr.Get(&val);
             std::cout << "[Attribute Name] " << attr.GetName().GetString() << " [Attribute Type] " << attr.GetTypeName().GetCPPTypeName();
