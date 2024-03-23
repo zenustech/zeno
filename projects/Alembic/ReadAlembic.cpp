@@ -7,7 +7,7 @@
 #include <zeno/types/PrimitiveTools.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/UserData.h>
-#include <zeno/extra/GlobalState.h>
+#include <zeno/funcs/PrimitiveUtils.h>
 #include <Alembic/AbcGeom/All.h>
 #include <Alembic/AbcCoreAbstract/All.h>
 #include <Alembic/AbcCoreOgawa/All.h>
@@ -741,25 +741,6 @@ static std::shared_ptr<PrimitiveObject> foundABCCurves(Alembic::AbcGeom::ICurves
     return prim;
 }
 
-void prim_set_abcpath(PrimitiveObject* prim, std::string path_name) {
-    int faceset_count = prim->userData().get2<int>("abcpath_count",0);
-    for (auto j = 0; j < faceset_count; j++) {
-        prim->userData().del(zeno::format("abcpath_{}", j));
-    }
-    prim->userData().set2("abcpath_count", 1);
-    prim->userData().set2("abcpath_0", path_name);
-
-    if (prim->tris.size() > 0) {
-        prim->tris.add_attr<int>("abcpath").assign(prim->tris.size(),0);
-    }
-    if (prim->quads.size() > 0) {
-        prim->quads.add_attr<int>("abcpath").assign(prim->quads.size(),0);
-    }
-    if (prim->polys.size() > 0) {
-        prim->polys.add_attr<int>("abcpath").assign(prim->polys.size(),0);
-    }
-}
-
 void traverseABC(
     Alembic::AbcGeom::IObject &obj,
     ABCTree &tree,
@@ -940,25 +921,6 @@ ZENDEFNODE(ReadAlembic, {
     {},
     {"alembic"},
 });
-
-void prim_set_faceset(PrimitiveObject* prim, std::string faceset_name) {
-    int faceset_count = prim->userData().get2<int>("faceset_count",0);
-    for (auto j = 0; j < faceset_count; j++) {
-        prim->userData().del(zeno::format("faceset_{}", j));
-    }
-    prim->userData().set2("faceset_count", 1);
-    prim->userData().set2("faceset_0", faceset_name);
-
-    if (prim->tris.size() > 0) {
-        prim->tris.add_attr<int>("faceset").assign(prim->tris.size(),0);
-    }
-    if (prim->quads.size() > 0) {
-        prim->quads.add_attr<int>("faceset").assign(prim->quads.size(),0);
-    }
-    if (prim->polys.size() > 0) {
-        prim->polys.add_attr<int>("faceset").assign(prim->polys.size(),0);
-    }
-}
 
 std::shared_ptr<ListObject> abc_split_by_name(std::shared_ptr<PrimitiveObject> prim, bool add_when_none) {
     int faceset_count = prim->userData().get2<int>("faceset_count");
