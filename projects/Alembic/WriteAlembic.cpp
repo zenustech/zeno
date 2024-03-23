@@ -702,15 +702,21 @@ struct WriteAlembicPrims : INode {
             int counter = 0;
             for (auto prim: prims) {
                 counter += 1;
-                if (!prim->userData().has<std::string>("abcpath_0")) {
-                    prim_set_abcpath(prim.get(), "/ABC/Default");
+                if (prim->userData().get2<int>("abcpath_count", 0) == 0) {
+                    prim_set_abcpath(prim.get(), "/ABC/unassigned");
                 }
                 if (prim->userData().get2<int>("abcpath_count") == 1) {
+                    if (prim->userData().get2<int>("faceset_count", 0) == 0) {
+                        prim_set_faceset(prim.get(), "defFS");
+                    }
                     temp_prims.push_back(prim);
                 }
                 else {
                     auto unmerged_prims = primUnmergeFaces(prim.get(), "abcpath");
                     for (const auto& unmerged_prim: unmerged_prims) {
+                        if (unmerged_prim->userData().get2<int>("faceset_count", 0) == 0) {
+                            prim_set_faceset(unmerged_prim.get(), "defFS");
+                        }
                         temp_prims.push_back(unmerged_prim);
                     }
                 }
