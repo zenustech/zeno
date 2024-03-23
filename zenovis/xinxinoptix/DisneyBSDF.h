@@ -450,7 +450,7 @@ namespace DisneyBSDF{
             if (reflect) {
 
               vec3 wm = normalize(wi + wo);
-              float F = BRDFBasics::SchlickDielectic(abs(dot(wm, wo)), entering?mat.ior:1.0/mat.ior);
+              float F = BRDFBasics::DielectricFresnel(abs(dot(wm, wo)), entering?mat.ior:1.0/mat.ior);
               vec3 s = BRDFBasics::EvalMicrofacetReflection(ax, ay, wo, wi, wm,
                                                             mix(mix(Cspec0, mat.diffractColor, mat.diffraction), vec3(1.0f), F) * mat.specular,
                                             tmpPdf) * glassWt;
@@ -470,7 +470,7 @@ namespace DisneyBSDF{
                 fPdf += tmpPdf * glassPr;
               }else {
                 vec3 wm = entering?-normalize(wo + mat.ior * wi) : normalize(wo + 1.0f/mat.ior * wi);
-                float F = BRDFBasics::SchlickDielectic(abs(dot(wm, wo)), entering?mat.ior:1.0/mat.ior);
+                float F = BRDFBasics::DielectricFresnel(abs(dot(wm, wo)), entering?mat.ior:1.0/mat.ior);
                 float tmpPdf;
                 vec3 brdf = BRDFBasics::EvalMicrofacetRefraction(mix(mat.transColor, mat.diffractColor, mat.diffraction),
                                                                  ax, ay,
