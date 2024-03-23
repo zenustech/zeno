@@ -235,7 +235,7 @@ struct AlembicPrimList : INode {
         auto new_prims = std::make_shared<zeno::ListObject>();
         if (get_input2<bool>("splitByFaceset")) {
             for (auto &prim: prims->arr) {
-                auto list = abc_split_by_name(std::dynamic_pointer_cast<PrimitiveObject>(prim), true);
+                auto list = abc_split_by_name(std::dynamic_pointer_cast<PrimitiveObject>(prim), false);
                 new_prims->arr.insert(new_prims->arr.end(), list->arr.begin(), list->arr.end());
             }
         }

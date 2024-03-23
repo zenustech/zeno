@@ -350,7 +350,14 @@ static void read_user_data(std::shared_ptr<PrimitiveObject> prim, ICompoundPrope
     }
 }
 
-static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMeshSchema &mesh, int frameid, bool read_done, bool read_face_set, bool outOfRangeAsEmpty) {
+static std::shared_ptr<PrimitiveObject> foundABCMesh(
+        Alembic::AbcGeom::IPolyMeshSchema &mesh
+        , int frameid
+        , bool read_done
+        , bool read_face_set
+        , bool outOfRangeAsEmpty
+        , std::string abc_name
+) {
     auto prim = std::make_shared<PrimitiveObject>();
 
     std::shared_ptr<Alembic::AbcCoreAbstract::v12::TimeSampling> time = mesh.getTimeSampling();
@@ -475,10 +482,8 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
         auto &ud = prim->userData();
         std::vector<std::string> faceSetNames;
         mesh.getFaceSetNames(faceSetNames);
-        ud.set2("faceset_count", int(faceSetNames.size()));
         for (auto i = 0; i < faceSetNames.size(); i++) {
             auto n = faceSetNames[i];
-            ud.set2(zeno::format("faceset_{}", i), n);
             IFaceSet faceSet = mesh.getFaceSet(n);
             IFaceSetSchema::Sample faceSetSample = faceSet.getSchema().getValue();
             size_t s = faceSetSample.getFaces()->size();
@@ -487,6 +492,22 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
                 faceset[f] = i;
             }
         }
+        bool found_unbind_faces = false;
+        int next_faceset_index = faceSetNames.size();
+        for (auto i = 0; i < faceset.size(); i++) {
+            if (faceset[i] == -1) {
+                found_unbind_faces = true;
+                faceset[i] = next_faceset_index;
+            }
+        }
+        if (found_unbind_faces) {
+            faceSetNames.push_back(abc_name);
+        }
+        for (auto i = 0; i < faceSetNames.size(); i++) {
+            auto n = faceSetNames[i];
+            ud.set2(zeno::format("faceset_{}", i), n);
+        }
+        ud.set2("faceset_count", int(faceSetNames.size()));
     }
 
     return prim;
@@ -765,7 +786,7 @@ void traverseABC(
 
             Alembic::AbcGeom::IPolyMesh meshy(obj);
             auto &mesh = meshy.getSchema();
-            tree.prim = foundABCMesh(mesh, frameid, read_done, read_face_set, outOfRangeAsEmpty);
+            tree.prim = foundABCMesh(mesh, frameid, read_done, read_face_set, outOfRangeAsEmpty, obj.getName());
             tree.prim->userData().set2("_abc_name", obj.getName());
             prim_set_abcpath(tree.prim.get(), path);
         } else if (Alembic::AbcGeom::IXformSchema::matches(md)) {
