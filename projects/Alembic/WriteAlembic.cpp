@@ -444,10 +444,22 @@ static void write_faceset(
         }
     }
 }
+
+void prim_to_poly_if_only_vertex(PrimitiveObject* p) {
+    if (p->polys.size() || p->tris.size()) {
+        return;
+    }
+    p->loops.resize(p->verts.size());
+    std::iota(p->loops.begin(), p->loops.end(), 0);
+    p->polys.resize(p->verts.size());
+    for (auto i = 0; i < p->polys.size(); i++) {
+        p->polys[i] = {i, 1};
+    }
+}
+
 struct WriteAlembic2 : INode {
     OArchive archive;
     OPolyMesh meshyObj;
-    OPoints pointsObj;
     std::string usedPath;
     std::map<std::string, std::any> attrs;
     std::map<std::string, std::any> user_attrs;
@@ -482,12 +494,7 @@ struct WriteAlembic2 : INode {
                 "None"
             );
             archive.addTimeSampling(TimeSampling(1.0/fps, frame_start / fps));
-            if (prim->polys.size() || prim->tris.size()) {
-                meshyObj = OPolyMesh( OObject( archive, 1 ), "mesh" );
-            }
-            else {
-                pointsObj = OPoints (OObject( archive, 1 ), "points");
-            }
+            meshyObj = OPolyMesh( OObject( archive, 1 ), "mesh" );
             attrs.clear();
             user_attrs.clear();
         }
@@ -500,7 +507,8 @@ struct WriteAlembic2 : INode {
         if (flipFrontBack) {
             primFlipFaces(prim.get());
         }
-        if (prim->polys.size() || prim->tris.size()) {
+        {
+            prim_to_poly_if_only_vertex(prim.get());
             // Create a PolyMesh class.
             OPolyMeshSchema &mesh = meshyObj.getSchema();
             write_faceset(prim, mesh, o_faceset, o_faceset_schema);
@@ -618,27 +626,6 @@ struct WriteAlembic2 : INode {
                 }
             }
         }
-        else {
-            OPointsSchema &points = pointsObj.getSchema();
-            OCompoundProperty user = points.getUserProperties();
-            write_user_data(user_attrs, "", prim, user);
-            points.setTimeSampling(1);
-            OPointsSchema::Sample samp(V3fArraySample( ( const V3f * )prim->verts.data(), prim->verts.size() ));
-            std::vector<uint64_t> ids(prim->verts.size());
-            if (prim->verts.attr_is<int>("id")) {
-                auto &ids_ = prim->verts.attr<int>("id");
-                for (auto i = 0; i < prim->verts.size(); i++) {
-                    ids[i] = ids_[i];
-                }
-            }
-            else {
-                std::iota(ids.begin(), ids.end(), 0);
-            }
-            samp.setIds(Alembic::Abc::UInt64ArraySample(ids.data(), ids.size()));
-            write_velocity(prim, samp);
-            write_attrs(attrs, "", prim, points, samp);
-            points.set( samp );
-        }
     }
 };
 
@@ -662,7 +649,6 @@ struct WriteAlembicPrims : INode {
     OArchive archive;
     std::string usedPath;
     std::map<std::string, OPolyMesh> meshyObjs;
-    std::map<std::string, OPoints> pointsObjs;
     std::map<std::string, std::any> attrs;
     std::map<std::string, std::any> user_attrs;
     std::map<std::string, std::map<std::string, OFaceSet>> o_faceset;
@@ -702,6 +688,7 @@ struct WriteAlembicPrims : INode {
             int counter = 0;
             for (auto prim: prims) {
                 counter += 1;
+                prim_to_poly_if_only_vertex(prim.get());
                 if (prim->userData().get2<int>("abcpath_count", 0) == 0) {
                     prim_set_abcpath(prim.get(), "/ABC/unassigned");
                 }
@@ -760,7 +747,6 @@ struct WriteAlembicPrims : INode {
             );
             archive.addTimeSampling(TimeSampling(1.0/fps, frame_start / fps));
             meshyObjs.clear();
-            pointsObjs.clear();
             attrs.clear();
             user_attrs.clear();
             o_faceset.clear();
@@ -782,12 +768,7 @@ struct WriteAlembicPrims : INode {
                         oObject = OObject( oObject, subnames[i] );
                     }
                 }
-                if (prim->polys.size() || prim->tris.size()) {
-                    meshyObjs[path] = OPolyMesh (oObject, subnames[subnames.size() - 1]);
-                }
-                else {
-                    pointsObjs[path] = OPoints (oObject, subnames[subnames.size() - 1]);
-                }
+                meshyObjs[path] = OPolyMesh (oObject, subnames[subnames.size() - 1]);
             }
         }
         if (!(frame_start <= frameid && frameid <= frame_end)) {
@@ -802,7 +783,7 @@ struct WriteAlembicPrims : INode {
             }
             auto path = prim->userData().get2<std::string>("abcpath_0");
 
-            if (prim->polys.size() || prim->tris.size()) {
+            {
                 // Create a PolyMesh class.
                 OPolyMeshSchema &mesh = meshyObjs[path].getSchema();
                 auto &ud = prim->userData();
@@ -922,27 +903,6 @@ struct WriteAlembicPrims : INode {
                         mesh.set( mesh_samp );
                     }
                 }
-            }
-            else {
-                OPointsSchema &points = pointsObjs[path].getSchema();
-                OCompoundProperty user = points.getUserProperties();
-                write_user_data(user_attrs, path, prim, user);
-                points.setTimeSampling(1);
-                OPointsSchema::Sample samp(V3fArraySample( ( const V3f * )prim->verts.data(), prim->verts.size() ));
-                std::vector<uint64_t> ids(prim->verts.size());
-                if (prim->verts.attr_is<int>("id")) {
-                    auto &ids_ = prim->verts.attr<int>("id");
-                    for (auto i = 0; i < prim->verts.size(); i++) {
-                        ids[i] = ids_[i];
-                    }
-                }
-                else {
-                    std::iota(ids.begin(), ids.end(), 0);
-                }
-                samp.setIds(Alembic::Abc::UInt64ArraySample(ids.data(), ids.size()));
-                write_velocity(prim, samp);
-                write_attrs(attrs, path, prim, points, samp);
-                points.set( samp );
             }
         }
     }

@@ -410,6 +410,8 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(
         }
     }
 
+    bool is_point = true;
+
     if (auto marr = mesamp.getFaceCounts()) {
         if (!read_done) {
             log_debug("[alembic] totally {} faces", marr->size());
@@ -421,6 +423,9 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(
             int cnt = (*marr)[i];
             parr.emplace_back(base, cnt);
             base += cnt;
+            if (cnt != 1) {
+                is_point = false;
+            }
         }
     }
     if (auto uv = mesh.getUVsParam()) {
@@ -475,6 +480,12 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(
     read_attributes(prim, arbattrs, iSS, read_done);
     ICompoundProperty usrData = mesh.getUserProperties();
     read_user_data(prim, usrData, iSS, read_done);
+
+    if (is_point) {
+        prim->loops.clear();
+        prim->polys.clear();
+        return prim;
+    }
 
     if (read_face_set) {
         auto &faceset = prim->polys.add_attr<int>("faceset");
