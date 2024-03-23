@@ -13,7 +13,8 @@ extern void traverseABC(
     int frameid,
     bool read_done,
     bool read_face_set,
-    std::string path
+    std::string path,
+    bool outOfRangeAsEmpty
 );
 
 extern Alembic::AbcGeom::IArchive readABC(std::string const &path);
