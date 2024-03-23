@@ -29,6 +29,8 @@
 #include "zeno/utils/log.h"
 #include "zeno/utils/string.h"
 #include <filesystem>
+#include <cryptopp/md5.h>
+#include <cryptopp/hex.h>
 
 //#include <GLFW/glfw3.h>
 
@@ -610,6 +612,7 @@ inline std::vector<float> loadIES(const std::string& path, float& coneAngle)
 }
 inline std::map<std::string, std::shared_ptr<cuTexture>> g_tex;
 inline std::map<std::string, std::filesystem::file_time_type> g_tex_last_write_time;
+inline std::map<std::string, std::string> md5_path_mapping;
 inline std::optional<std::string> sky_tex;
 inline std::map<std::string, int> sky_nx_map;
 inline std::map<std::string, int> sky_ny_map;
@@ -682,7 +685,16 @@ inline void calc_sky_cdf_map(int nx, int ny, int nc, T *img) {
         }
     }
 }
-
+static std::string calculateMD5(const std::vector<char>& input) {
+    CryptoPP::byte digest[CryptoPP::MD5::DIGESTSIZE];
+    CryptoPP::MD5().CalculateDigest(digest, (const CryptoPP::byte*)input.data(), input.size());
+    CryptoPP::HexEncoder encoder;
+    std::string output;
+    encoder.Attach(new CryptoPP::StringSink(output));
+    encoder.Put(digest, sizeof(digest));
+    encoder.MessageEnd();
+    return output;
+}
 inline void addTexture(std::string path)
 {
     zeno::log_debug("loading texture :{}", path);
@@ -698,6 +710,17 @@ inline void addTexture(std::string path)
         if(g_tex.count(path)) {
             return;
         }
+    }
+    auto input = readData(native_path);
+    std::string md5Hash = calculateMD5(input);
+
+    if (md5_path_mapping.count(md5Hash)) {
+        g_tex[path] = g_tex[md5_path_mapping[md5Hash]];
+        zeno::log_info("path {} reuse {} tex", path, md5_path_mapping[md5Hash]);
+        return;
+    }
+    else {
+        md5_path_mapping[md5Hash] = path;
     }
     int nx, ny, nc;
     stbi_set_flip_vertically_on_load(true);
