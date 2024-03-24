@@ -127,19 +127,26 @@ protected:
     ZLayoutBackground* m_bodyWidget;
     ZLayoutBackground* m_headerWidget;
 
+    ZLayoutBackground* m_mainHeaderBg;
+    ZGraphicsLayout* m_topInputSockets;
+    ZGraphicsLayout* m_bottomOutputSockets;
+
 private slots:
     void onCustomNameChanged();
 
 private:
+    ZLayoutBackground* initMainHeaderBg();
+    ZGraphicsLayout* initVerticalSockets(bool bInput);
     void _drawBorderWangStyle(QPainter* painter);
     ZSocketLayout* getSocketLayout(bool bInput, const QString& sockName);
+    ZSocketLayout* getSocketLayout(bool bInput, int idx);
     bool removeSocketLayout(bool bInput, const QString& sockName);
     void focusOnNode(const QModelIndex& nodeIdx);
 
     ZenoGraphsEditor* getEditorViewByViewport(QWidget* pWidget);
     QGraphicsItem* initSocketWidget(ZenoSubGraphScene* scene, const QModelIndex& paramIdx);
     void updateWhole();
-    ZSocketLayout* addSocket(const QModelIndex& idx, bool bInput, ZenoSubGraphScene* pScene);
+    SocketBackgroud* addSocket(const QModelIndex& idx, bool bInput, ZenoSubGraphScene* pScene);
     void onUpdateFrame(QGraphicsItem* pContrl, int nFrame, QVariant val);
     void onPasteSocketRefSlot(QModelIndex toIndex);
 
@@ -157,7 +164,8 @@ private:
     ZSimpleTextItem* m_pCategoryItem;
     ZSimpleTextItem *m_NameItemTip;
     ZenoMinStatusItem* m_pStatusWidgets;
-    ZLayoutBackground* m_dirtyMarker;
+    ZenoMinStatusItem* m_pStatusWidgets2;   //on collasped case.
+    QGraphicsPolygonItem* m_statusMarker;
 
     QGraphicsRectItem* m_border;
     ZGraphicsLayout* m_bodyLayout;

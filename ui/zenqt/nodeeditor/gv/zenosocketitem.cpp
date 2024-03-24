@@ -5,6 +5,8 @@
 #include "uicommon.h"
 #include "zassert.h"
 
+#define BASED_ON_SPEHERE
+
 
 ZenoSocketItem::ZenoSocketItem(
         const QPersistentModelIndex& viewSockIdx,
@@ -18,18 +20,28 @@ ZenoSocketItem::ZenoSocketItem(
     , m_size(sz)
     , m_bHovered(false)
     , m_bInnerSocket(bInnerSocket)
-    , m_netLabelItem(nullptr)
+    , m_innerSockMargin(0)
+    , m_socketXOffset(0)
 {
     m_bInput = m_paramIdx.data(ROLE_ISINPUT).toBool();
+#ifndef BASED_ON_SPEHERE
     m_innerSockMargin = ZenoStyle::dpiScaled(15);
     m_socketXOffset = ZenoStyle::dpiScaled(24);
+#endif
     if (!m_bInnerSocket)
     {
         setData(GVKEY_SIZEHINT, m_size);
         setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
     }
+    setBrush(QColor("#CCA44E"), QColor("#CCA44E"));
     setSockStatus(STATUS_NOCONN);
     setAcceptHoverEvents(true);
+}
+
+ZenoSocketItem::~ZenoSocketItem()
+{
+    int j;
+    j = 0;
 }
 
 int ZenoSocketItem::type() const
@@ -48,6 +60,16 @@ QPointF ZenoSocketItem::center() const
         QPointF center = mapToScene(QPointF(m_size.width() / 2., m_size.height() / 2.));
         return center;
     }
+}
+
+QSizeF ZenoSocketItem::getSize() const {
+    return m_size;
+}
+
+void ZenoSocketItem::setBrush(const QBrush& brush, const QBrush& brushOn)
+{
+    m_brush = brush;
+    m_brushOn = brushOn;
 }
 
 void ZenoSocketItem::setInnerKey(const QString& key)
@@ -151,7 +173,7 @@ void ZenoSocketItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 
 QString ZenoSocketItem::netLabel() const
 {
-    return m_netLabelItem ? m_netLabelItem->toPlainText() : "";
+    return "";
 }
 
 void ZenoSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
@@ -162,6 +184,13 @@ void ZenoSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
 #endif
     painter->setRenderHint(QPainter::Antialiasing, true);
 
+#ifdef BASED_ON_SPEHERE
+    QRectF rc(m_innerSockMargin, m_innerSockMargin, m_size.width(), m_size.height());
+    bool bOn = m_status == STATUS_TRY_CONN || m_status == STATUS_CONNECTED;
+    painter->setPen(Qt::NoPen);
+    painter->setBrush(bOn ? m_brushOn : m_brush);
+    painter->drawEllipse(rc);
+#else
     QColor bgClr;
     if (!isEnabled()) {
         bgClr = QColor(83, 83, 85);
@@ -248,4 +277,5 @@ void ZenoSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
         QRectF rc(m_innerSockMargin, m_innerSockMargin, m_size.width(), m_size.height());
         painter->drawEllipse(rc);
     }
+#endif
 }

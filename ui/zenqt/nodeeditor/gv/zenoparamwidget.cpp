@@ -1370,11 +1370,12 @@ QSizeF ZenoBoardTextLayoutItem::sizeHint(Qt::SizeHint which, const QSizeF& const
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
-StatusButton::StatusButton(qreal W, qreal H, qreal rtradius, QGraphicsItem* parent)
+StatusButton::StatusButton(qreal W, qreal H, qreal rtradius, qreal rbradius, QGraphicsItem* parent)
     : QGraphicsObject(parent)
     , m_width(W)
     , m_height(H)
     , m_rtradius(rtradius)
+    , m_rbradius(rbradius)
     , m_bOn(false)
     , m_bHovered(false)
 {
@@ -1402,7 +1403,14 @@ void StatusButton::initPath()
     }
     else {
         m_path.moveTo(0, m_height);
-        m_path.lineTo(m_width, m_height);
+        if (m_rbradius > 0.) {
+            m_path.lineTo(m_width - m_rbradius, m_height);
+            QRectF rcArc(m_width - 2 * m_rbradius, m_height - 2 * m_rbradius, 2 * m_rbradius, 2 * m_rbradius);
+            m_path.arcTo(rcArc, 270, 90);
+        }
+        else {
+            m_path.lineTo(m_width, m_height);
+        }
         m_path.lineTo(m_width, m_rtradius);
         QRectF rcArc(m_width - 2 * m_rtradius, 0, 2 * m_rtradius, 2 * m_rtradius);
         m_path.arcTo(rcArc, 0, 90);
@@ -1474,18 +1482,15 @@ void StatusButton::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
-ZenoMinStatusItem::ZenoMinStatusItem(QGraphicsItem* parent)
+ZenoMinStatusItem::ZenoMinStatusItem(qreal W, qreal H, qreal rtradius, qreal rbradius, QGraphicsItem* parent)
     : ZLayoutBackground(parent)
 {
-    const int W = ZenoStyle::dpiScaled(22.);
-    const int H = ZenoStyle::dpiScaled(50.);
-
     setColors(false, QColor(0, 0, 0, 0));
 
-    m_minMute = new StatusButton(W, H, 0);
+    m_minMute = new StatusButton(W, H, 0, 0);
     m_minMute->setColor(false, QColor("#E302F8"), QColor("#2F3135"));
 
-    m_minView = new StatusButton(W, H, 9);
+    m_minView = new StatusButton(W, H, rtradius, rbradius);
     m_minView->setColor(false, QColor("#26C5C5"), QColor("#2F3135"));
 
     ZGraphicsLayout* pLayout = new ZGraphicsLayout(true);

@@ -392,6 +392,11 @@ ZEditableTextItem::ZEditableTextItem(QGraphicsItem* parent)
     initUI("");
 }
 
+ZEditableTextItem::~ZEditableTextItem() {
+    int j;
+    j = 0;
+}
+
 void ZEditableTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
 #if 1
@@ -427,7 +432,7 @@ void ZEditableTextItem::initUI(const QString& text)
     setCursor(Qt::IBeamCursor);
 
     QFont font = QApplication::font();
-    font.setPointSize(10);
+    font.setPointSize(8);
     font.setWeight(QFont::Medium);
     setFont(font);
 

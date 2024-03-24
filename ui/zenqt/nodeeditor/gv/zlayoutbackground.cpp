@@ -14,6 +14,7 @@ ZLayoutBackground::ZLayoutBackground(QGraphicsItem* parent, Qt::WindowFlags wFla
     , m_borderWidth(0)
     , m_bFixRadius(true)
     , m_bSelected(false)
+    , m_bBasedOnGradient(false)
 {
     setAcceptHoverEvents(true);
 }
@@ -66,27 +67,10 @@ void ZLayoutBackground::setGeometry(const QRectF& rect)
     QGraphicsWidget::setGeometry(rect);
 }
 
-void ZLayoutBackground::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
+void ZLayoutBackground::setLinearGradient(QLinearGradient grad)
 {
-    if (m_borderWidth > 0)
-    {
-        painter->setRenderHint(QPainter::Antialiasing, true);
-        QRectF r = boundingRect();
-        r.adjust(-m_borderWidth/2, 0, m_borderWidth/2, m_borderWidth/2);
-        QPainterPath path;
-        path.addRect(r);
-        QPen pen(m_clrBorder, m_borderWidth);
-        pen.setJoinStyle(Qt::MiterJoin);
-        painter->setPen(pen);
-        painter->setBrush(m_color);
-        painter->drawPath(path);
-    }
-    else
-    {
-        painter->setRenderHint(QPainter::Antialiasing, true);
-        QPainterPath path = shape();
-        painter->fillPath(path, m_color);
-    }
+    m_bgLinerGrad = grad;
+    m_bBasedOnGradient = true;
 }
 
 void ZLayoutBackground::toggle(bool bSelected)
@@ -141,4 +125,52 @@ void ZLayoutBackground::mousePressEvent(QGraphicsSceneMouseEvent* event)
 void ZLayoutBackground::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
 {
     _base::mouseDoubleClickEvent(event);
+}
+
+void ZLayoutBackground::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
+{
+    if (m_bBasedOnGradient)
+    {
+        painter->setRenderHint(QPainter::Antialiasing, true);
+    }
+
+    if (m_borderWidth > 0)
+    {
+        painter->setRenderHint(QPainter::Antialiasing, true);
+        QRectF r = boundingRect();
+        r.adjust(-m_borderWidth / 2, 0, m_borderWidth / 2, m_borderWidth / 2);
+        QPainterPath path;
+        path.addRect(r);
+        QPen pen(m_clrBorder, m_borderWidth);
+        pen.setJoinStyle(Qt::MiterJoin);
+        painter->setPen(pen);
+
+        if (m_bBasedOnGradient) {
+            QLinearGradient linearGradientH(r.topLeft(), r.topRight());
+            linearGradientH.setColorAt(0, QColor(255, 255, 255));
+            linearGradientH.setColorAt(1, QColor(0,0,0));
+            painter->setBrush(linearGradientH);
+        }
+        else {
+            painter->setBrush(m_color);
+        }
+
+        painter->drawPath(path);
+    }
+    else
+    {
+        painter->setRenderHint(QPainter::Antialiasing, true);
+        QPainterPath path = shape();
+
+        if (m_bBasedOnGradient) {
+            QRectF r = boundingRect();
+            QLinearGradient linearGradientH(r.topLeft(), r.topRight());
+            linearGradientH.setColorAt(0, QColor("#1A5779"));
+            linearGradientH.setColorAt(1, QColor("#2082BA"));
+            painter->fillPath(path, linearGradientH);
+        }
+        else {
+            painter->fillPath(path, m_color);
+        }
+    }
 }

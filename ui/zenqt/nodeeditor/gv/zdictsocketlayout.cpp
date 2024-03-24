@@ -12,8 +12,8 @@
 #include "control/common_id.h"
 
 
-ZDictSocketLayout::ZDictSocketLayout(const QPersistentModelIndex& paramIdx, bool bInput)
-    : ZSocketLayout(paramIdx, bInput)
+ZDictSocketLayout::ZDictSocketLayout(const QPersistentModelIndex& paramIdx, bool bInput, SocketBackgroud* parentItem)
+    : ZSocketLayout(paramIdx, bInput, parentItem)
     , m_panel(nullptr)
 {
 }

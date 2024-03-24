@@ -94,6 +94,7 @@ public:
     static ZGraphicsLayout* visitRoot(ZGraphicsLayout* currentLayout);
     void clearCacheSize();
     void setDebugName(const QString& dbgName);
+    QString getDebugName() const;
     void hide();
     void show();
     bool isHide() const;

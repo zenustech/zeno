@@ -168,6 +168,10 @@ void ZGraphicsLayout::setDebugName(const QString& dbgName)
     m_dbgName = dbgName;
 }
 
+QString ZGraphicsLayout::getDebugName() const {
+    return m_dbgName;
+}
+
 void ZGraphicsLayout::addSpacing(qreal size)
 {
 #ifndef _DEBUG_ZLAYOUT
@@ -372,7 +376,7 @@ void ZGraphicsLayout::clear()
             item->pLayout->clear();
         }
         else if (item->type == Type_Item) {
-            delete item->pItem;
+            //delete item->pItem;
         }
         m_items.removeFirst();
     }

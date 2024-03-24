@@ -446,7 +446,7 @@ class StatusButton : public QGraphicsObject
     Q_OBJECT
     typedef QGraphicsObject _base;
 public:
-    StatusButton(qreal W, qreal H, qreal rtradius, QGraphicsItem* parent = nullptr);
+    StatusButton(qreal W, qreal H, qreal rtradius, qreal rbradius, QGraphicsItem* parent = nullptr);
     void setColor(bool bOn, QColor clrOn, QColor clrOff);
     QRectF boundingRect() const override;
     QPainterPath shape() const override;
@@ -472,6 +472,7 @@ private:
 
     QPainterPath m_path;
     qreal m_rtradius;
+    qreal m_rbradius;
     qreal m_width;
     qreal m_height;
     bool m_bOn;
@@ -485,7 +486,7 @@ class ZenoMinStatusItem : public ZLayoutBackground
     Q_OBJECT
     typedef ZLayoutBackground _base;
 public:
-    ZenoMinStatusItem(QGraphicsItem* parent = nullptr);
+    ZenoMinStatusItem(qreal W, qreal H, qreal rtradius, qreal rbradius, QGraphicsItem* parent = nullptr);
     QRectF boundingRect() const override;
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
     void setChecked(STATUS_BTN btn, bool bChecked);

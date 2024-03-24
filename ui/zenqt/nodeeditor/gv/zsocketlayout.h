@@ -9,14 +9,13 @@ class ZenoSocketItem;
 class ZSimpleTextItem;
 class ZSocketPlainTextItem;
 class ZenoParamGroupLine;
+class SocketBackgroud;
+
 
 class ZSocketLayout : public ZGraphicsLayout
 {
 public:
-    ZSocketLayout(
-            const QPersistentModelIndex& viewSockIdx,
-            bool bInput
-            );
+    ZSocketLayout(const QPersistentModelIndex& viewSockIdx, bool bInput, SocketBackgroud* parentItem);
     ~ZSocketLayout();
     virtual void initUI(const CallbackForSocket& cbSock);
     void setControl(QGraphicsItem* pControl);
@@ -38,6 +37,7 @@ protected:
     bool m_bInput;
     bool m_bEditable;
     const QPersistentModelIndex m_paramIdx;
+    SocketBackgroud* m_parentItem;
 };
 
 class ZGroupSocketLayout : public ZSocketLayout

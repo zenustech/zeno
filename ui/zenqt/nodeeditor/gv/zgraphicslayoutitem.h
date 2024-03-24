@@ -19,6 +19,10 @@ public:
 
     ~ZGraphicsLayoutItem()
     {
+        if (m_layout && m_layout->getDebugName() == "value") {
+            int j;
+            j = 0;
+        }
         delete m_layout;        //todo: sp wrap.
         m_layout = nullptr;
     }
