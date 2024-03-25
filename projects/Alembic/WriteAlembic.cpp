@@ -471,6 +471,7 @@ struct WriteAlembic2 : INode {
     std::map<std::string, std::any> user_attrs;
     std::map<std::string, OFaceSet> o_faceset;
     std::map<std::string, OFaceSetSchema> o_faceset_schema;
+    int real_frame_start = -1;
 
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
@@ -499,13 +500,17 @@ struct WriteAlembic2 : INode {
                 "Zeno : " + getGlobalState()->zeno_version,
                 "None"
             );
-            archive.addTimeSampling(TimeSampling(1.0/fps, frame_start / fps));
+            real_frame_start = -1;
             meshyObj = OPolyMesh( OObject( archive, 1 ), "mesh" );
             attrs.clear();
             user_attrs.clear();
         }
         if (!(frame_start <= frameid && frameid <= frame_end)) {
             return;
+        }
+        if (real_frame_start == -1) {
+            real_frame_start = frameid;
+            archive.addTimeSampling(TimeSampling(1.0/fps, real_frame_start / fps));
         }
         if (archive.valid() == false) {
             zeno::makeError("Not init. Check whether in correct correct frame range.");
@@ -659,6 +664,7 @@ struct WriteAlembicPrims : INode {
     std::map<std::string, std::any> user_attrs;
     std::map<std::string, std::map<std::string, OFaceSet>> o_faceset;
     std::map<std::string, std::map<std::string, OFaceSetSchema>> o_faceset_schema;
+    int real_frame_start = -1;
 
     virtual void apply() override {
         std::vector<std::shared_ptr<PrimitiveObject>> prims;
@@ -751,12 +757,12 @@ struct WriteAlembicPrims : INode {
                 "Zeno : " + getGlobalState()->zeno_version,
                 "None"
             );
-            archive.addTimeSampling(TimeSampling(1.0/fps, frame_start / fps));
             meshyObjs.clear();
             attrs.clear();
             user_attrs.clear();
             o_faceset.clear();
             o_faceset_schema.clear();
+            real_frame_start = -1;
             for (auto prim: new_prims) {
                 auto path = prim->userData().get2<std::string>("abcpath_0");
                 if (!starts_with(path, "/ABC/")) {
@@ -779,6 +785,10 @@ struct WriteAlembicPrims : INode {
         }
         if (!(frame_start <= frameid && frameid <= frame_end)) {
             return;
+        }
+        if (real_frame_start == -1) {
+            real_frame_start = frameid;
+            archive.addTimeSampling(TimeSampling(1.0/fps, real_frame_start / fps));
         }
         if (archive.valid() == false) {
             zeno::makeError("Not init. Check whether in correct correct frame range.");
