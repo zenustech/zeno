@@ -165,18 +165,18 @@ namespace zeno {
         std::lock_guard lck(m_mtx);
         for (auto objkey : m_newAdded) {
             auto it = m_objects.find(objkey);
-            if (it != m_objects.end()) {
-                info.newObjs.insert(std::make_pair(objkey, it->second.obj));
-            }
+            if (it != m_objects.end())
+                convertToView(it->second.obj, info.newObjs, std::set<std::string>());
         }
         for (auto objkey : m_modify) {
             auto it = m_objects.find(objkey);
-            if (it != m_objects.end()) {
-                info.modifyObjs.insert(std::make_pair(objkey, it->second.obj));
-            }
+            if (it != m_objects.end())
+                convertToView(it->second.obj, info.modifyObjs, std::set<std::string>());
         }
         for (auto objkey : m_remove) {
-            info.remObjs.insert(objkey);
+            auto it = m_objects.find(objkey);
+            if (it != m_objects.end())
+                convertToView(it->second.obj, SharedObjects(), info.remObjs, true);
         }
     }
 
@@ -206,6 +206,23 @@ namespace zeno {
         if (m_objects.find(name) != m_objects.end())
             return m_objects[name].obj;
         return nullptr;
+    }
+
+    void ObjectManager::convertToView(zany const& objToBeConvert, SharedObjects& objConvertResult, std::set<std::string>& keyConvertResult, bool convertKeyOnly)
+    {
+        if (std::shared_ptr<ListObject> lst = std::dynamic_pointer_cast<ListObject>(objToBeConvert)) {
+            for (size_t i = 0; i < lst->arr.size(); i++)
+                convertToView(lst->arr[i], objConvertResult, keyConvertResult, convertKeyOnly);
+            return;
+        }
+        if (!objToBeConvert)
+            return;
+        else {
+            if (convertKeyOnly)
+                keyConvertResult.insert(objToBeConvert->key);
+            else
+                objConvertResult.insert(std::make_pair(objToBeConvert->key, objToBeConvert));
+        }
     }
 
     void ObjectManager::clear()
