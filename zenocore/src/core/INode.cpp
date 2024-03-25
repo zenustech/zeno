@@ -370,6 +370,8 @@ ZENO_API void INode::doApply() {
         return;
     }
 
+    unregisterObjs();
+
     preApply();
 
     registerObjToManager();
