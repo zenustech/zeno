@@ -18,9 +18,17 @@ constexpr auto TARGET_CELL_BUFFER = "TARGET_CELL_BUFFER";
 
 constexpr auto PBD_USE_HARD_CONSTRAINT = "PBD_USE_HARD_CONSTRAINT";
 
+constexpr auto SHAPE_MATCHING_REST_CM = "SHAPE_MATCHING_REST_CM";
+constexpr auto SHAPE_MATCHING_WEIGHT_SUM = "SHAPE_MATCHING_WEIGHT_SUM";
+
+constexpr auto SHAPE_MATCHING_SHAPE_OFFSET = "SHAPE_MATCHING_SHAPE_OFFSET";
+
+constexpr auto SHAPE_MATCHING_MATRIX_BUFFER = "SHAPE_MATCHING_MATRIX_BUFFER";
+
 // constexpr auto DCD_COLLISIONS_MESH_COLLIDER = "DCD_COLLISION_MESH_COLLIDER";
 
 enum category_c : int {
+    shape_matching_constraint,
     long_range_attachment,
     edge_length_constraint,
     isometric_bending_constraint,

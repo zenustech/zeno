@@ -21,6 +21,8 @@
 #include "constraint_function_kernel/constraint_types.hpp"
 #include "../fem/collision_energy/evaluate_collision.hpp"
 
+#include "zensim/math/matrix/QRSVD.hpp"
+
 namespace zeno {
 
 
@@ -728,6 +730,7 @@ struct XPBDSolveSmoothAll : INode {
         using vec2 = zs::vec<float,2>;
         using vec3 = zs::vec<float,3>;
         using vec4 = zs::vec<float,4>;
+        using mat3 = zs::vec<float,3,3>;
         using vec2i = zs::vec<int,2>;
         using vec3i = zs::vec<int,3>;
         using vec4i = zs::vec<int,4>;
@@ -759,6 +762,112 @@ struct XPBDSolveSmoothAll : INode {
         for(auto& constraint_ptr : constraint_ptr_list) {
             auto category = constraint_ptr->readMeta(CONSTRAINT_KEY,wrapt<category_c>{});
             const auto& cquads = constraint_ptr->getQuadraturePoints();
+
+            if(category == category_c::shape_matching_constraint) {
+                auto shape_matching_rest_cm = constraint_ptr->readMeta<std::vector<vec3>>(SHAPE_MATCHING_REST_CM);
+                auto shape_matching_weight_sum = constraint_ptr->readMeta<std::vector<float>>(SHAPE_MATCHING_WEIGHT_SUM);
+                auto shape_matching_offsets = constraint_ptr->readMeta<zs::Vector<int>>(SHAPE_MATCHING_SHAPE_OFFSET);
+                auto nm_shapes = shape_matching_rest_cm.size();
+
+                auto dAs = constraint_ptr->readMeta<zs::Vector<mat3>>(SHAPE_MATCHING_MATRIX_BUFFER);
+
+                zs::Vector<vec3> cmVec{verts.get_allocator(),1};
+                
+                // auto wsum = constraint_ptr->readMeta<float>(SHAPE_MATCHING_WEIGHT_SUM);
+                // auto restCM = constraint_ptr->readMeta<vec3>(SHAPE_MATCHING_REST_CM);
+                for(int shape_id = 0;shape_id != nm_shapes;++shape_id) {
+                    auto shape_size = shape_matching_offsets.getVal(shape_id + 1) - shape_matching_offsets.getVal(shape_id);
+                    if(shape_size == 0)
+                        continue;
+
+                    auto restCM = shape_matching_rest_cm[shape_id];
+                    auto wsum = shape_matching_weight_sum[shape_id];
+
+                    cmVec.setVal(vec3::zeros());
+                    cudaPol(zs::range(shape_size),[
+                        exec_tag = exec_tag,
+                        verts = proxy<space>({},verts),
+                        offset = shape_matching_offsets.getVal(shape_id),
+                        ptagOffset = verts.getPropertyOffset(ptag),
+                        minvOffset = verts.getPropertyOffset("minv"),
+                        indsOffset = cquads.getPropertyOffset("inds"),
+                        cquads = proxy<space>({},cquads),
+                        cmVec = proxy<space>(cmVec)] ZS_LAMBDA(int ci) mutable {
+                            auto vi = zs::reinterpret_bits<int>(cquads(indsOffset,ci + offset));
+                            auto pi = verts.pack(dim_c<3>,ptagOffset,vi);
+                            auto wi = static_cast<T>(1.0) / (static_cast<T>(1e-6) + verts(minvOffset,vi));
+                            auto pw = pi * wi;
+                            for(int d = 0;d != 3;++d)
+                                atomic_add(exec_tag,&cmVec[0][d],pw[d]); 
+                    });
+
+                    auto cm = cmVec.getVal(0) / wsum;
+                    // dAs.setVal(mat3::zeros());
+
+                    cudaPol(zs::range(shape_size),[
+                        offset = shape_matching_offsets.getVal(shape_id),
+                        cquads = proxy<space>({},cquads),
+                        verts = proxy<space>({},verts),
+                        XtagOffset = verts.getPropertyOffset("X"),
+                        minvOffset = verts.getPropertyOffset("minv"),
+                        ptagOffset = verts.getPropertyOffset(ptag),
+                        restCM = restCM,
+                        cm = cm,
+                        dAs = proxy<space>(dAs)] ZS_LAMBDA(int ci) mutable {
+                            auto vi = zs::reinterpret_bits<int>(cquads("inds",ci + offset));
+                            auto q = verts.pack(dim_c<3>,XtagOffset,vi) - restCM;
+                            auto p = verts.pack(dim_c<3>,ptagOffset,vi) - cm;
+                            auto w = static_cast<float>(1.0) / (verts(minvOffset,vi) + static_cast<float>(1e-6));
+                            p *= w;
+                            dAs[ci + offset] = dyadic_prod(p,q);
+                    });
+
+                    zs::Vector<mat3> A{verts.get_allocator(),1};
+                    A.setVal(mat3::zeros());
+
+                    cudaPol(zs::range(shape_size * 9),[
+                        exec_tag = exec_tag,
+                        offset = shape_matching_offsets.getVal(shape_id),
+                        A = proxy<space>(A),
+                        dAs = proxy<space>(dAs)] ZS_LAMBDA(int dof) mutable {
+                            auto dAid = dof / 9;
+                            auto Aoffset = dof % 9;
+                            auto r = Aoffset / 3;
+                            auto c = Aoffset % 3;
+                            const auto& dA = dAs[dAid + offset];
+                            atomic_add(exec_tag,&A[0][r][c],dA[r][c]);
+                    });
+
+                    auto Am = A.getVal(0);
+                    Am /= wsum;
+
+                    auto [R,S] = math::polar_decomposition(Am);
+                    cudaPol(zs::range(shape_size),[
+                        offset = shape_matching_offsets.getVal(shape_id),
+                        cquads = proxy<space>({},cquads),
+                        stiffnessOffset = cquads.getPropertyOffset("relative_stiffness"),
+                        R = R,
+                        cm = cm,
+                        restCM = restCM,
+                        wOffset = verts.getPropertyOffset("w"),
+                        dptagOffset = verts.getPropertyOffset(dptag),
+                        verts = proxy<space>({},verts),
+                        XtagOffset = verts.getPropertyOffset("X"),
+                        ptagOffset = verts.getPropertyOffset(ptag)] ZS_LAMBDA(int ci) mutable {
+                            auto vi = zs::reinterpret_bits<int>(cquads("inds",ci + offset));
+                            auto Xi = verts.pack(dim_c<3>,XtagOffset,vi);
+                            auto w = cquads(stiffnessOffset,ci + offset);
+                            auto goal = cm + R * (Xi - restCM);
+
+                            auto dp = goal - verts.pack(dim_c<3>,ptagOffset,vi);
+
+                            verts.tuple(dim_c<3>,dptagOffset,vi) = verts.pack(dim_c<3>,dptagOffset,vi) + dp * w;
+                            verts(wOffset,vi) += w;
+                    });
+
+                }
+            
+            }
 
             if(category == category_c::edge_length_constraint || category == category_c::dihedral_bending_constraint || category == category_c::long_range_attachment) {
                 cudaPol(zs::range(cquads.size()),[

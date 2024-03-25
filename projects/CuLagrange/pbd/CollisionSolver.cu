@@ -64,6 +64,13 @@ struct DetangleCCDCollisionWithBoundary : INode {
         auto kboundary = get_input2<ZenoParticles>("boundary");
 
         
+        auto among_same_group = get_input2<bool>("among_same_group");
+        auto among_different_groups = get_input2<bool>("among_different_groups");
+
+        int group_strategy = 0;
+        group_strategy |= (among_same_group ? 1 : 0);
+        group_strategy |= (among_different_groups ? 2 : 0);
+
         auto boundary_velocity_scale = get_input2<float>("boundary_velocity_scale");
         // auto current_kx_tag = get_input2<std::string>("current_kx_tag");
         // auto pre_kx_tag = get_input2<std::string>("previous_kx_tag");
@@ -208,7 +215,8 @@ struct DetangleCCDCollisionWithBoundary : INode {
                         do_bvh_refit,
                         csPT,
                         impulse_buffer,
-                        impulse_count,true,true);
+                        impulse_count,true,true,false,group_strategy);
+                    std::cout << "nm_PT_continuous_collisions : " << csPT.size() << std::endl;
                 }
             }
 
@@ -243,7 +251,8 @@ struct DetangleCCDCollisionWithBoundary : INode {
                         do_bvh_refit,
                         csEE,
                         impulse_buffer,
-                        impulse_count,true,true);
+                        impulse_count,true,true,false,group_strategy);
+                    std::cout << "nm_EE_continuous_collisions : " << csPT.size() << std::endl;
                 }
             }
 
@@ -317,6 +326,8 @@ ZENDEFNODE(DetangleCCDCollisionWithBoundary, {{{"zsparticles"},
                                 {"int","substep_id","0"},
                                 {"int","nm_substeps","1"},
                                 {"float","boundary_velocity_scale","1"},
+                                {"bool","among_same_group","1"},
+                                {"bool","among_different_groups","1"}
                             },
 							{{"zsparticles"}},
 							{},

@@ -66,6 +66,7 @@ virtual void apply() override {
     using vec3 = zs::vec<float,3>;
     using vec4 = zs::vec<float,4>;
     using vec9 = zs::vec<float,9>;
+    using mat3 = zs::vec<float,3,3>;
     using vec2i = zs::vec<int,2>;
     using vec3i = zs::vec<int,3>;
     using vec4i = zs::vec<int,4>;
@@ -109,6 +110,143 @@ virtual void apply() override {
     constraint->setMeta(CONSTRAINT_TARGET,source.get());
 
     auto do_constraint_topological_coloring = get_input2<bool>("do_constraint_topological_coloring");
+
+
+    if(type == "shape_matching") {
+        constraint->setMeta(CONSTRAINT_KEY,category_c::shape_matching_constraint);
+        auto radii = get_input2<float>("thickness");
+        auto shape_matching_group_name = get_input2<std::string>("group_name");
+
+        zs::bht<int,1,int> shape_matching_set{verts.get_allocator(),verts.size()};
+        shape_matching_set.reset(cudaPol,true);
+
+        int nm_shapes = 1;
+
+        auto has_group = verts.hasProperty(shape_matching_group_name);
+        int shape_group_offset = -1;
+
+        constexpr auto exec_tag = wrapv<space>{};
+
+        if(has_group) {
+            shape_group_offset = verts.getPropertyOffset(shape_matching_group_name);
+
+            zs::Vector<int> maxGroupID{verts.get_allocator(),1};
+            maxGroupID.setVal(0);
+
+            cudaPol(zs::range(verts.size()),[
+                exec_tag = exec_tag,
+                verts = proxy<space>({},verts),
+                maxGroupID = proxy<space>(maxGroupID),
+                shape_group_offset = shape_group_offset] ZS_LAMBDA(int vi) mutable {
+                    auto groupID = (int)verts(shape_group_offset,vi);
+                    atomic_max(exec_tag,&maxGroupID[0],groupID);
+            });
+
+            auto maxGroupID_val = maxGroupID.getVal(0);
+            nm_shapes = maxGroupID_val + 1;
+        }
+
+        std::cout << "shape_matching::nm_shapes : " << nm_shapes << std::endl;
+
+        std::vector<vec3> shape_matching_rest_cm((size_t)nm_shapes,vec3::zeros());
+        std::vector<float> shape_matching_weight_sum((size_t)nm_shapes,0.f);
+
+        zs::Vector<int> nm_vertices_every_shape{verts.get_allocator(),(size_t)nm_shapes};
+        cudaPol(zs::range(nm_vertices_every_shape),[] ZS_LAMBDA(auto& cnt) mutable {cnt = 0;});
+
+        eles.resize(verts.size());
+        eles.append_channels(cudaPol,{{"inds",1}});
+        TILEVEC_OPS::fill(cudaPol,eles,"inds",zs::reinterpret_bits<float>((int)-1));
+
+        zs::Vector<int> shape_matching_shape_offsets{verts.get_allocator(),(size_t)(nm_shapes + 1)};
+        cudaPol(zs::range(shape_matching_shape_offsets),[] ZS_LAMBDA(auto& offset) mutable {offset = 0;});
+
+        // find the number of groups
+        for(int shape_id = 0;shape_id < nm_shapes;++shape_id) {
+            cudaPol(zs::range(verts.size()),[
+                verts = proxy<space>({},verts),
+                eles = proxy<space>({},eles),
+                shape_matching_set = proxy<space>(shape_matching_set),
+                shape_id = shape_id,
+                has_group = has_group,
+                nm_vertices_every_shape = proxy<space>(nm_vertices_every_shape),
+                shape_group_offset = shape_group_offset] ZS_LAMBDA(int vi) mutable {
+                    if(has_group) {
+                        auto groupID = (int)verts(shape_group_offset,vi);
+                        if(groupID == shape_id) {
+                            auto ei = shape_matching_set.insert(vi);
+                            atomic_add(exec_tag,&nm_vertices_every_shape[shape_id],1);
+                            eles("inds",ei) = zs::reinterpret_bits<float>(vi);
+                        }
+                    } else {
+                        auto ei = shape_matching_set.insert(vi);
+                        atomic_add(exec_tag,&nm_vertices_every_shape[shape_id],1);
+                        eles("inds",ei) = zs::reinterpret_bits<float>(vi);
+                    }
+            });
+        }
+
+        exclusive_scan(cudaPol,std::begin(nm_vertices_every_shape),std::end(nm_vertices_every_shape),std::begin(shape_matching_shape_offsets));
+        shape_matching_shape_offsets.setVal(shape_matching_set.size(),nm_shapes);
+
+        for(int shape_id = 0;shape_id < nm_shapes;++shape_id) {
+            zs::Vector<vec3> restCm{verts.get_allocator(),1};
+            restCm.setVal(vec3::zeros());
+            zs::Vector<T> wsum{verts.get_allocator(),1};
+            wsum.setVal(static_cast<T>(0));
+
+            // std::cout << "shapeMatching::compute barycentric point" << std::endl;
+
+            auto shape_size = nm_vertices_every_shape.getVal(shape_id);
+            auto offset = shape_matching_shape_offsets.getVal(shape_id);
+
+            // std::cout << "shape[" << shape_id << "] : " << shape_size << "\t" << offset << std::endl;
+
+            cudaPol(zs::range(shape_size),[
+                offset = shape_matching_shape_offsets.getVal(shape_id),
+                exec_tag = exec_tag,
+                eles = proxy<space>({},eles),
+                xtagOffset = verts.getPropertyOffset("x"),
+                minvTagOffset = verts.getPropertyOffset("minv"),
+                verts = proxy<space>({},verts),
+                restCm = proxy<space>(restCm),
+                wsum = proxy<space>(wsum)] ZS_LAMBDA(int vi_within_shape) mutable {
+                    auto vi = zs::reinterpret_bits<int>(eles("inds",vi_within_shape + offset));
+
+                    auto xi = verts.pack(dim_c<3>,xtagOffset,vi);
+                    auto minvi = verts(minvTagOffset,vi);
+                    auto wi = static_cast<T>(1.0) / (minvi + static_cast<T>(1e-6));
+
+                    auto xw = xi * wi;
+
+                    for(int d = 0;d != 3;++d) {
+                        atomic_add(exec_tag,&restCm[0][d],xw[d]);
+                    }
+                    atomic_add(exec_tag,&wsum[0],wi);
+            });
+
+            auto rCm = restCm.getVal(0);
+            auto ws = wsum.getVal(0);
+            rCm = rCm / ws;
+
+            // std::cout << "rCm[" << shape_id << "] : " << rCm[0] << "\t" << rCm[1] << "\t" << rCm[2] << std::endl;
+
+            // shape_matching_rest_cm.setVal(rCm,shape_id);
+            shape_matching_rest_cm[shape_id] = rCm;
+            shape_matching_weight_sum[shape_id] = ws;
+            // shape_matching_weight_sum.setVal(ws,shape_id);
+
+        }
+
+        zs::Vector<mat3> dAsBuffer{verts.get_allocator(),eles.size()};
+
+        constraint->setMeta(SHAPE_MATCHING_REST_CM,shape_matching_rest_cm);
+        constraint->setMeta(SHAPE_MATCHING_WEIGHT_SUM,shape_matching_weight_sum);
+        constraint->setMeta(SHAPE_MATCHING_SHAPE_OFFSET,shape_matching_shape_offsets);
+        constraint->setMeta(SHAPE_MATCHING_MATRIX_BUFFER,dAsBuffer);
+
+        // std::cout << "shapeMatching::finish set aux data" << std::endl;
+    }
 
     if(type == "lra_stretch") {
         constraint->setMeta(CONSTRAINT_KEY,category_c::long_range_attachment);
@@ -192,7 +330,7 @@ virtual void apply() override {
         });
 
         auto maxNmPairs = maxNmPairsBuffer.getVal(0);
-        std::cout << "maxNmPairs : " << maxNmPairs << std::endl;
+        // std::cout << "maxNmPairs : " << maxNmPairs << std::endl;
         zs::bht<int,2,int> attachPairs{verts.get_allocator(),(size_t)maxNmPairs};
         attachPairs.reset(cudaPol,true);
 
@@ -228,7 +366,7 @@ virtual void apply() override {
         });
 
         auto rest_scale = get_input2<float>("rest_scale");
-        std::cout << "number of attach pairs : " << attachPairs.size() << std::endl;
+        // std::cout << "number of attach pairs : " << attachPairs.size() << std::endl;
         eles.resize(attachPairs.size());
         eles.append_channels(cudaPol,{{"inds",2},{"r",1}});
         cudaPol(zip(zs::range(attachPairs.size()),attachPairs._activeKeys),[
@@ -373,6 +511,13 @@ virtual void apply() override {
         eles.append_channels(cudaPol,{{"inds",4},{"bary",4},{"type",1}});
         eles.resize(MAX_IMMINENT_COLLISION_PAIRS);
 
+        auto among_same_group = get_input2<bool>("among_same_group");
+        auto among_different_groups = get_input2<bool>("among_different_groups");
+
+        int group_strategy = 0;
+        group_strategy |= (among_same_group ? 1 : 0);
+        group_strategy |= (among_different_groups ? 2 : 0);
+
         const auto &edges = (*source)[ZenoParticles::s_surfEdgeTag];
         auto has_input_collider = has_input<ZenoParticles>("target");
 
@@ -505,7 +650,8 @@ virtual void apply() override {
             eles,
             csPT,
             true,
-            true);
+            true,
+            group_strategy);
 
         // std::cout << "nm_imminent_csPT : " << csPT.size() << std::endl;
 
@@ -521,7 +667,8 @@ virtual void apply() override {
             edgeBvh,
             eles,csEE,
             true,
-            true);
+            true,
+            group_strategy);
         // std::cout << "nm_imminent_csEE : " << csEE.size() << std::endl;
         // std::cout << "csEE + csPT = " << csPT.size() + csEE.size() << std::endl;
         if(!verts.hasProperty("dcd_collision_tag"))
@@ -1157,8 +1304,8 @@ virtual void apply() override {
                 point_topos[id] = pvec[0];
         });
 
-        std::cout << "binder name : " << pin_point_group_name << std::endl;
-        std::cout << "nm binder point : " << point_topos.size() << std::endl;
+        // std::cout << "binder name : " << pin_point_group_name << std::endl;
+        // std::cout << "nm binder point : " << point_topos.size() << std::endl;
 
         if(do_constraint_topological_coloring) {
             topological_coloring(cudaPol,point_topos,colors,false);
@@ -1416,7 +1563,9 @@ ZENDEFNODE(MakeSurfaceConstraintTopology, {{
                             {"bool","do_constraint_topological_coloring","1"},
                             {"float","damping_coeff","0.0"},
                             {"bool","enable_sliding","0"},
-                            {"bool","use_hard_constraint","0"}
+                            {"bool","use_hard_constraint","0"},
+                            {"bool","among_same_group","1"},
+                            {"bool","among_different_groups","1"}
                         },
                         {{"constraint"}},
                         { 
