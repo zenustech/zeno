@@ -4,18 +4,15 @@
 #include "style/zenostyle.h"
 
 
-StatusGroup::StatusGroup(qreal W, qreal H, qreal rtradius, qreal rbradius, QGraphicsItem* parent)
+StatusGroup::StatusGroup(RoundRectInfo info, QGraphicsItem* parent)
     : ZLayoutBackground(parent)
 {
     setColors(false, QColor(0, 0, 0, 0));
 
     RoundRectInfo rectInfo, roundInfo;
-    rectInfo.W = W;
-    rectInfo.H = H;
-    roundInfo.W = W;
-    roundInfo.H = H;
-    roundInfo.rtradius = rtradius;
-    roundInfo.rbradius = rbradius;
+    rectInfo.W = info.W;
+    rectInfo.H = info.H;
+    roundInfo = info;
 
     m_minMute = new StatusButton(rectInfo);
     m_minMute->setColor(false, QColor("#E302F8"), QColor("#2F3135"));

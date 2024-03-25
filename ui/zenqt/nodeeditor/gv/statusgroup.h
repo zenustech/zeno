@@ -15,7 +15,7 @@ class StatusGroup : public ZLayoutBackground
     typedef ZLayoutBackground _base;
 
 public:
-    StatusGroup(qreal W, qreal H, qreal rtradius, qreal rbradius, QGraphicsItem* parent = nullptr);
+    StatusGroup(RoundRectInfo info, QGraphicsItem* parent = nullptr);
     QRectF boundingRect() const override;
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
     void setChecked(STATUS_BTN btn, bool bChecked);

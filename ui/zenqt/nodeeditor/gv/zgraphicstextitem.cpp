@@ -137,9 +137,17 @@ ZSimpleTextItem::ZSimpleTextItem(const QString& text, QGraphicsItem* parent)
 #endif
 }
 
+ZSimpleTextItem::ZSimpleTextItem(const QString& text, const QFont& font, const QColor& color, QGraphicsItem* parent)
+    : base(text, parent)
+{
+    setBrush(color);
+    setFont(font);
+    updateBoundingRect();
+    setAcceptHoverEvents(false);
+}
+
 ZSimpleTextItem::~ZSimpleTextItem()
 {
-
 }
 
 QRectF ZSimpleTextItem::boundingRect() const
@@ -381,6 +389,7 @@ ZEditableTextItem::ZEditableTextItem(const QString &text, QGraphicsItem *parent)
     , m_bShowSlider(false)
     , m_pSlider(nullptr)
     , m_bValidating(false)
+    , m_bTextLengthAsBounding(false)
 {
     _base::setText(text);
     initUI(text);
@@ -392,6 +401,7 @@ ZEditableTextItem::ZEditableTextItem(QGraphicsItem* parent)
     , m_bShowSlider(false)
     , m_pSlider(nullptr)
     , m_bValidating(false)
+    , m_bTextLengthAsBounding(false)
 {
     initUI("");
 }
@@ -455,9 +465,14 @@ void ZEditableTextItem::initUI(const QString& text)
 
 QRectF ZEditableTextItem::boundingRect() const
 {
-    qreal w = document()->size().width();
-    qreal h = document()->size().height();
-    return QRectF(0, 0, w, h);
+    if (m_bTextLengthAsBounding) {
+        qreal w = document()->size().width();
+        qreal h = document()->size().height();
+        return QRectF(0, 0, w, h);
+    }
+    else {
+        return _base::boundingRect();
+    }
 }
 
 QGraphicsView* ZEditableTextItem::_getFocusViewByCursor()
@@ -518,6 +533,10 @@ QString ZEditableTextItem::text() const
 bool ZEditableTextItem::showSlider() const
 {
     return m_bShowSlider;
+}
+
+void ZEditableTextItem::setTextLengthAsBounding(bool bOn) {
+    m_bTextLengthAsBounding = bOn;
 }
 
 void ZEditableTextItem::setNumSlider(QGraphicsScene* pScene, const QVector<qreal>& steps)

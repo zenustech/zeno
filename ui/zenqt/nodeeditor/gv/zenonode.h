@@ -153,6 +153,7 @@ private:
     void onPasteSocketRefSlot(QModelIndex toIndex);
 
     QVector<ZSocketLayout*> getSocketLayouts(bool bInput) const;
+    QVector<ZenoSocketItem*> getSocketItems(bool bInput) const;
 
     QPersistentModelIndex m_index;
     QPersistentModelIndex m_subGpIndex;
@@ -166,6 +167,7 @@ private:
     ZSimpleTextItem* m_pCategoryItem;
     ZSimpleTextItem *m_NameItemTip;
     StatusGroup* m_pStatusWidgets;
+    //StatusGroup* m_pStatusWidgets2;
     QGraphicsPolygonItem* m_statusMarker;
 
     QGraphicsRectItem* m_border;
