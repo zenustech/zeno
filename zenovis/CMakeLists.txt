@@ -55,3 +55,6 @@ endif()
     #install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/stbi/include DESTINATION include/Zeno/zenovis)
     #install(TARGETS zenovis EXPORT ZenoTargets)
 #endif()
+
+find_package(cryptopp CONFIG REQUIRED)
+target_link_libraries(zenovis PRIVATE cryptopp::cryptopp)

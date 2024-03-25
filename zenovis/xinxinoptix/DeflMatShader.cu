@@ -345,6 +345,11 @@ extern "C" __global__ void __closesthit__radiance()
     size_t inst_idx = optixGetInstanceIndex();
     size_t vert_aux_offset = rt_data->auxOffset[inst_idx];
     size_t vert_idx_offset = vert_aux_offset + primIdx*3;
+    //size_t tri_aux_offset = rt_data->auxTriOffset[inst_idx];
+    //size_t tri_idx_offset = tri_aux_offset + primIdx;
+    //size_t vidx0 = rt_data->vidx[tri_idx_offset * 3 + 0];
+    //size_t vidx1 = rt_data->vidx[tri_idx_offset * 3 + 1];
+    //size_t vidx2 = rt_data->vidx[tri_idx_offset * 3 + 2];
 
     unsigned short isLight = 0;//rt_data->lightMark[vert_aux_offset + primIdx];
 
