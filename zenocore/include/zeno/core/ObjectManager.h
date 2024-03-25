@@ -58,6 +58,7 @@ public:
 
     ZENO_API void beforeRun();
     ZENO_API void afterRun();
+    ZENO_API void clearLastUnregisterObjs();
 
     ZENO_API void collectingObject(const std::string& id, std::shared_ptr<IObject> obj, std::shared_ptr<INode> view_node, bool bView);
     CALLBACK_REGIST(collectingObject, void, std::shared_ptr<IObject>, bool)
@@ -107,6 +108,8 @@ private:
     std::set<std::string> m_newAdded;       //渲染端需要新增的obj
     std::set<std::string> m_remove;         //渲染端需要移除的obj
     std::set<std::string> m_modify;         //渲染端(viewport)的 interactive obj
+
+    std::vector<std::string> m_lastUnregisterObjs;
 
     mutable std::mutex m_mtx;
 };

@@ -56,10 +56,7 @@ namespace zeno {
     ZENO_API void ObjectManager::removeObject(const std::string& id)
     {
         std::lock_guard lck(m_mtx);
-        if (m_objects.find(id) != m_objects.end()) {
-            m_objects.erase(id);
-        }
-        m_remove.insert(id);
+        m_lastUnregisterObjs.push_back(id); //先标记，下一次run的时候在去m_objects中移除
     }
 
     ZENO_API void ObjectManager::notifyTransfer(std::shared_ptr<IObject> obj)
@@ -112,6 +109,19 @@ namespace zeno {
         //m_lastViewObjs剩下来的都是上一次view，而这一次没有view的。
         m_remove = m_lastViewObjs;
         m_lastViewObjs.clear();
+        m_removing_objs.clear();
+    }
+
+    ZENO_API void ObjectManager::clearLastUnregisterObjs()
+    {
+        for (auto& key : m_lastUnregisterObjs)
+        {
+            if (m_objects.find(key) != m_objects.end()) {
+                m_objects.erase(key);
+            }
+            m_remove.insert(key);
+        }
+        m_lastUnregisterObjs.clear();
     }
 
     ZENO_API void ObjectManager::clear_last_run()
