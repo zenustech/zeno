@@ -186,8 +186,15 @@ ZENDEFNODE(WriteAlembic, {
     {"deprecated"},
 });
 
-template<typename T1, typename T2>
-void write_attrs(std::map<std::string, std::any> &attrs, std::string path, std::shared_ptr<PrimitiveObject> prim, T1& schema, T2& samp) {
+template<typename T1>
+void write_attrs(
+        std::map<std::string, std::any> &verts_attrs
+        , std::map<std::string, std::any> &loops_attrs
+        , std::map<std::string, std::any> &polys_attrs
+        , std::string path
+        , std::shared_ptr<PrimitiveObject> prim
+        , T1& schema
+) {
     OCompoundProperty arbAttrs = schema.getArbGeomParams();
     prim->verts.foreach_attr<std::variant<vec3f, float, int>>([&](auto const &key, auto &arr) {
         if (key == "v" || key == "nrm") {
@@ -196,8 +203,8 @@ void write_attrs(std::map<std::string, std::any> &attrs, std::string path, std::
         std::string full_key = path + '/' + key;
         using T = std::decay_t<decltype(arr[0])>;
         if constexpr (std::is_same_v<T, zeno::vec3f>) {
-            if (attrs.count(full_key) == 0) {
-                attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kVaryingScope, 3);
+            if (verts_attrs.count(full_key) == 0) {
+                verts_attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kVaryingScope, 3);
             }
             auto samp = OFloatGeomParam::Sample();
             std::vector<float> v(arr.size() * 3);
@@ -207,21 +214,21 @@ void write_attrs(std::map<std::string, std::any> &attrs, std::string path, std::
                 v[i * 3 + 2] = arr[i][2];
             }
             samp.setVals(v);
-            std::any_cast<OFloatGeomParam>(attrs[full_key]).set(samp);
+            std::any_cast<OFloatGeomParam>(verts_attrs[full_key]).set(samp);
         } else if constexpr (std::is_same_v<T, float>) {
-            if (attrs.count(full_key) == 0) {
-                attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kVaryingScope, 1);
+            if (verts_attrs.count(full_key) == 0) {
+                verts_attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kVaryingScope, 1);
             }
             auto samp = OFloatGeomParam::Sample();
             samp.setVals(arr);
-            std::any_cast<OFloatGeomParam>(attrs[full_key]).set(samp);
+            std::any_cast<OFloatGeomParam>(verts_attrs[full_key]).set(samp);
         } else if constexpr (std::is_same_v<T, int>) {
-            if (attrs.count(full_key) == 0) {
-                attrs[full_key] = OInt32GeomParam (arbAttrs.getPtr(), key, false, kVaryingScope, 1);
+            if (verts_attrs.count(full_key) == 0) {
+                verts_attrs[full_key] = OInt32GeomParam (arbAttrs.getPtr(), key, false, kVaryingScope, 1);
             }
             auto samp = OInt32GeomParam::Sample();
             samp.setVals(arr);
-            std::any_cast<OInt32GeomParam>(attrs[full_key]).set(samp);
+            std::any_cast<OInt32GeomParam>(verts_attrs[full_key]).set(samp);
         }
     });
     if (prim->loops.size() > 0) {
@@ -229,8 +236,8 @@ void write_attrs(std::map<std::string, std::any> &attrs, std::string path, std::
             std::string full_key = path + '/' + key;
             using T = std::decay_t<decltype(arr[0])>;
             if constexpr (std::is_same_v<T, zeno::vec3f>) {
-                if (attrs.count(full_key) == 0) {
-                    attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kFacevaryingScope, 3);
+                if (loops_attrs.count(full_key) == 0) {
+                    loops_attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kFacevaryingScope, 3);
                 }
                 auto samp = OFloatGeomParam::Sample();
                 std::vector<float> v(arr.size() * 3);
@@ -240,21 +247,21 @@ void write_attrs(std::map<std::string, std::any> &attrs, std::string path, std::
                     v[i * 3 + 2] = arr[i][2];
                 }
                 samp.setVals(v);
-                std::any_cast<OFloatGeomParam>(attrs[full_key]).set(samp);
+                std::any_cast<OFloatGeomParam>(loops_attrs[full_key]).set(samp);
             } else if constexpr (std::is_same_v<T, float>) {
-                if (attrs.count(full_key) == 0) {
-                    attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kFacevaryingScope, 1);
+                if (loops_attrs.count(full_key) == 0) {
+                    loops_attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kFacevaryingScope, 1);
                 }
                 auto samp = OFloatGeomParam::Sample();
                 samp.setVals(arr);
-                std::any_cast<OFloatGeomParam>(attrs[full_key]).set(samp);
+                std::any_cast<OFloatGeomParam>(loops_attrs[full_key]).set(samp);
             } else if constexpr (std::is_same_v<T, int>) {
-                if (attrs.count(full_key) == 0) {
-                    attrs[full_key] = OInt32GeomParam (arbAttrs.getPtr(), key, false, kFacevaryingScope, 1);
+                if (loops_attrs.count(full_key) == 0) {
+                    loops_attrs[full_key] = OInt32GeomParam (arbAttrs.getPtr(), key, false, kFacevaryingScope, 1);
                 }
                 auto samp = OInt32GeomParam::Sample();
                 samp.setVals(arr);
-                std::any_cast<OInt32GeomParam>(attrs[full_key]).set(samp);
+                std::any_cast<OInt32GeomParam>(loops_attrs[full_key]).set(samp);
             }
         });
     }
@@ -266,8 +273,8 @@ void write_attrs(std::map<std::string, std::any> &attrs, std::string path, std::
             std::string full_key = path + '/' + key;
             using T = std::decay_t<decltype(arr[0])>;
             if constexpr (std::is_same_v<T, zeno::vec3f>) {
-                if (attrs.count(full_key) == 0) {
-                    attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kUniformScope, 3);
+                if (polys_attrs.count(full_key) == 0) {
+                    polys_attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kUniformScope, 3);
                 }
                 auto samp = OFloatGeomParam::Sample();
                 std::vector<float> v(arr.size() * 3);
@@ -277,21 +284,21 @@ void write_attrs(std::map<std::string, std::any> &attrs, std::string path, std::
                     v[i * 3 + 2] = arr[i][2];
                 }
                 samp.setVals(v);
-                std::any_cast<OFloatGeomParam>(attrs[full_key]).set(samp);
+                std::any_cast<OFloatGeomParam>(polys_attrs[full_key]).set(samp);
             } else if constexpr (std::is_same_v<T, float>) {
-                if (attrs.count(full_key) == 0) {
-                    attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kUniformScope, 1);
+                if (polys_attrs.count(full_key) == 0) {
+                    polys_attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kUniformScope, 1);
                 }
                 auto samp = OFloatGeomParam::Sample();
                 samp.setVals(arr);
-                std::any_cast<OFloatGeomParam>(attrs[full_key]).set(samp);
+                std::any_cast<OFloatGeomParam>(polys_attrs[full_key]).set(samp);
             } else if constexpr (std::is_same_v<T, int>) {
-                if (attrs.count(full_key) == 0) {
-                    attrs[full_key] = OInt32GeomParam (arbAttrs.getPtr(), key, false, kUniformScope, 1);
+                if (polys_attrs.count(full_key) == 0) {
+                    polys_attrs[full_key] = OInt32GeomParam (arbAttrs.getPtr(), key, false, kUniformScope, 1);
                 }
                 auto samp = OInt32GeomParam::Sample();
                 samp.setVals(arr);
-                std::any_cast<OInt32GeomParam>(attrs[full_key]).set(samp);
+                std::any_cast<OInt32GeomParam>(polys_attrs[full_key]).set(samp);
             }
         });
     }
@@ -304,8 +311,8 @@ void write_attrs(std::map<std::string, std::any> &attrs, std::string path, std::
             std::string full_key = path + '/' + key;
             using T = std::decay_t<decltype(arr[0])>;
             if constexpr (std::is_same_v<T, zeno::vec3f>) {
-                if (attrs.count(full_key) == 0) {
-                    attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kUniformScope, 3);
+                if (polys_attrs.count(full_key) == 0) {
+                    polys_attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kUniformScope, 3);
                 }
                 auto samp = OFloatGeomParam::Sample();
                 std::vector<float> v(arr.size() * 3);
@@ -315,22 +322,22 @@ void write_attrs(std::map<std::string, std::any> &attrs, std::string path, std::
                     v[i * 3 + 2] = arr[i][2];
                 }
                 samp.setVals(v);
-                std::any_cast<OFloatGeomParam>(attrs[full_key]).set(samp);
+                std::any_cast<OFloatGeomParam>(polys_attrs[full_key]).set(samp);
             } else if constexpr (std::is_same_v<T, float>) {
                 // zeno::log_info("std::is_same_v<T, float>");
-                if (attrs.count(full_key) == 0) {
-                    attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kUniformScope, 1);
+                if (polys_attrs.count(full_key) == 0) {
+                    polys_attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kUniformScope, 1);
                 }
                 auto samp = OFloatGeomParam::Sample();
                 samp.setVals(arr);
-                std::any_cast<OFloatGeomParam>(attrs[full_key]).set(samp);
+                std::any_cast<OFloatGeomParam>(polys_attrs[full_key]).set(samp);
             } else if constexpr (std::is_same_v<T, int>) {
-                if (attrs.count(full_key) == 0) {
-                    attrs[full_key] = OInt32GeomParam (arbAttrs.getPtr(), key, false, kUniformScope, 1);
+                if (polys_attrs.count(full_key) == 0) {
+                    polys_attrs[full_key] = OInt32GeomParam (arbAttrs.getPtr(), key, false, kUniformScope, 1);
                 }
                 auto samp = OInt32GeomParam::Sample();
                 samp.setVals(arr);
-                std::any_cast<OInt32GeomParam>(attrs[full_key]).set(samp);
+                std::any_cast<OInt32GeomParam>(polys_attrs[full_key]).set(samp);
             }
         });
     }
@@ -467,7 +474,9 @@ struct WriteAlembic2 : INode {
     OArchive archive;
     OPolyMesh meshyObj;
     std::string usedPath;
-    std::map<std::string, std::any> attrs;
+    std::map<std::string, std::any> verts_attrs;
+    std::map<std::string, std::any> loops_attrs;
+    std::map<std::string, std::any> polys_attrs;
     std::map<std::string, std::any> user_attrs;
     std::map<std::string, OFaceSet> o_faceset;
     std::map<std::string, OFaceSetSchema> o_faceset_schema;
@@ -502,7 +511,9 @@ struct WriteAlembic2 : INode {
             );
             real_frame_start = -1;
             meshyObj = OPolyMesh( OObject( archive, 1 ), "mesh" );
-            attrs.clear();
+            verts_attrs.clear();
+            loops_attrs.clear();
+            polys_attrs.clear();
             user_attrs.clear();
         }
         if (!(frame_start <= frameid && frameid <= frame_end)) {
@@ -574,7 +585,7 @@ struct WriteAlembic2 : INode {
                             uvsamp);
                     write_velocity(prim, mesh_samp);
                     write_normal(prim, mesh_samp);
-                    write_attrs(attrs, "", prim, mesh, mesh_samp);
+                    write_attrs(verts_attrs, loops_attrs, polys_attrs, "", prim, mesh);
                     mesh.set( mesh_samp );
                 }
                 else {
@@ -584,7 +595,7 @@ struct WriteAlembic2 : INode {
                             Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ));
                     write_velocity(prim, mesh_samp);
                     write_normal(prim, mesh_samp);
-                    write_attrs(attrs, "", prim, mesh, mesh_samp);
+                    write_attrs(verts_attrs, loops_attrs, polys_attrs, "", prim, mesh);
                     mesh.set( mesh_samp );
                 }
             }
@@ -623,7 +634,7 @@ struct WriteAlembic2 : INode {
                             uvsamp);
                     write_velocity(prim, mesh_samp);
                     write_normal(prim, mesh_samp);
-                    write_attrs(attrs, "", prim, mesh, mesh_samp);
+                    write_attrs(verts_attrs, loops_attrs, polys_attrs, "", prim, mesh);
                     mesh.set( mesh_samp );
                 } else {
                     OPolyMeshSchema::Sample mesh_samp(
@@ -632,7 +643,7 @@ struct WriteAlembic2 : INode {
                             Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ));
                     write_velocity(prim, mesh_samp);
                     write_normal(prim, mesh_samp);
-                    write_attrs(attrs, "", prim, mesh, mesh_samp);
+                    write_attrs(verts_attrs, loops_attrs, polys_attrs, "", prim, mesh);
                     mesh.set( mesh_samp );
                 }
             }
@@ -660,7 +671,9 @@ struct WriteAlembicPrims : INode {
     OArchive archive;
     std::string usedPath;
     std::map<std::string, OPolyMesh> meshyObjs;
-    std::map<std::string, std::any> attrs;
+    std::map<std::string, std::any> verts_attrs;
+    std::map<std::string, std::any> loops_attrs;
+    std::map<std::string, std::any> polys_attrs;
     std::map<std::string, std::any> user_attrs;
     std::map<std::string, std::map<std::string, OFaceSet>> o_faceset;
     std::map<std::string, std::map<std::string, OFaceSetSchema>> o_faceset_schema;
@@ -758,7 +771,9 @@ struct WriteAlembicPrims : INode {
                 "None"
             );
             meshyObjs.clear();
-            attrs.clear();
+            verts_attrs.clear();
+            loops_attrs.clear();
+            polys_attrs.clear();
             user_attrs.clear();
             o_faceset.clear();
             o_faceset_schema.clear();
@@ -857,7 +872,7 @@ struct WriteAlembicPrims : INode {
                                 uvsamp);
                         write_velocity(prim, mesh_samp);
                         write_normal(prim, mesh_samp);
-                        write_attrs(attrs, path, prim, mesh, mesh_samp);
+                        write_attrs(verts_attrs, loops_attrs, polys_attrs, path, prim, mesh);
                         mesh.set( mesh_samp );
                     }
                     else {
@@ -867,7 +882,7 @@ struct WriteAlembicPrims : INode {
                                 Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ));
                         write_velocity(prim, mesh_samp);
                         write_normal(prim, mesh_samp);
-                        write_attrs(attrs, path, prim, mesh, mesh_samp);
+                        write_attrs(verts_attrs, loops_attrs, polys_attrs, path, prim, mesh);
                         mesh.set( mesh_samp );
                     }
                 }
@@ -906,7 +921,7 @@ struct WriteAlembicPrims : INode {
                                 uvsamp);
                         write_velocity(prim, mesh_samp);
                         write_normal(prim, mesh_samp);
-                        write_attrs(attrs, path, prim, mesh, mesh_samp);
+                        write_attrs(verts_attrs, loops_attrs, polys_attrs, path, prim, mesh);
                         mesh.set( mesh_samp );
                     } else {
                         OPolyMeshSchema::Sample mesh_samp(
@@ -915,7 +930,7 @@ struct WriteAlembicPrims : INode {
                                 Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ));
                         write_velocity(prim, mesh_samp);
                         write_normal(prim, mesh_samp);
-                        write_attrs(attrs, path, prim, mesh, mesh_samp);
+                        write_attrs(verts_attrs, loops_attrs, polys_attrs, path, prim, mesh);
                         mesh.set( mesh_samp );
                     }
                 }
