@@ -24,6 +24,7 @@ public:
     QRectF boundingRect() const override;
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
     QPainterPath shape() const override;
+    qreal textLength() const;
 
 signals:
     void editingFinished();
@@ -110,6 +111,7 @@ public:
     void setNumSlider(QGraphicsScene* pScene, const QVector<qreal>& steps);
     QString text() const;
     bool showSlider() const;
+    QRectF boundingRect() const override;
 
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
@@ -123,6 +125,9 @@ protected:
 
 private slots:
     void onContentsChanged();
+
+signals:
+    void contentsChanged();
 
 private:
     void initUI(const QString& text);

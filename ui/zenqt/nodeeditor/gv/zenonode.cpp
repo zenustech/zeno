@@ -37,6 +37,8 @@
 #include "zassert.h"
 #include "widgets/ztimeline.h"
 #include "socketbackground.h"
+#include "statusgroup.h"
+#include "statusbutton.h"
 
 
 ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
@@ -58,7 +60,6 @@ ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
     , m_outputsLayout(nullptr)
     , m_groupNode(nullptr)
     , m_pStatusWidgets(nullptr)
-    , m_pStatusWidgets2(nullptr)
     , m_bVisible(true)
     , m_NameItemTip(nullptr)
     , m_statusMarker(nullptr)
@@ -201,6 +202,7 @@ ZLayoutBackground* ZenoNode::initMainHeaderBg()
 
     const QString& dispName = m_index.data(ROLE_NODE_DISPLAY_NAME).toString();
     ZASSERT_EXIT(!dispName.isEmpty(), headerWidget);
+    const QString& name = m_index.data(ROLE_NODE_NAME).toString();
     const QString& iconResPath = m_index.data(ROLE_NODE_DISPLAY_ICON).toString();
 
     QFont font2 = QApplication::font();
@@ -212,7 +214,16 @@ ZLayoutBackground* ZenoNode::initMainHeaderBg()
 
     ZGraphicsLayout* pHLayout = new ZGraphicsLayout(true);
     pHLayout->setDebugName("Main Header HLayout");
-    pHLayout->addSpacing(ZenoStyle::dpiScaled(16.));
+
+    RoundRectInfo buttonShapeInfo;
+    buttonShapeInfo.W = ZenoStyle::dpiScaled(24.);
+    buttonShapeInfo.H = ZenoStyle::dpiScaled(56.);
+    buttonShapeInfo.ltradius = ZenoStyle::dpiScaled(9.);
+    buttonShapeInfo.lbradius = ZenoStyle::dpiScaled(9.);
+
+    StatusButton* pMute = new StatusButton(buttonShapeInfo);
+    pMute->setColor(false, QColor("#E302F8"), QColor("#2F3135"));
+    pHLayout->addItem(pMute);
 
     const QSizeF szIcon = ZenoStyle::dpiScaledSize(QSizeF(36, 36));
     if (!iconResPath.isEmpty())
@@ -220,28 +231,55 @@ ZLayoutBackground* ZenoNode::initMainHeaderBg()
         ImageElement elem;
         elem.image = elem.imageHovered = elem.imageOn = elem.imageOnHovered = iconResPath;
         auto node_icon = new ZenoImageItem(elem, szIcon);
-        pHLayout->addItem(node_icon, Qt::AlignVCenter);
+        //补充一些距离
+        pHLayout->addSpacing(ZenoStyle::dpiScaled(20.));
+        pHLayout->addItem(node_icon, Qt::AlignCenter);
+        pHLayout->addSpacing(ZenoStyle::dpiScaled(20.));
     }
     else
     {
         auto nameItem = new ZGraphicsTextItem(dispName, font2, QColor("#F1E9E9"), this);
-        pHLayout->addItem(nameItem, Qt::AlignVCenter);
+        pHLayout->addItem(nameItem, Qt::AlignCenter);
     }
 
     const qreal W_status = ZenoStyle::dpiScaled(24.);
     const qreal H_status = ZenoStyle::dpiScaled(56.);
     const qreal radius = ZenoStyle::dpiScaled(9.);
 
-    m_pStatusWidgets2 = new ZenoMinStatusItem(W_status, H_status, radius, radius);
+    buttonShapeInfo.ltradius = buttonShapeInfo.lbradius = 0.;
+    buttonShapeInfo.rtradius = buttonShapeInfo.rbradius = ZenoStyle::dpiScaled(9.);
+
+    StatusButton* pView = new StatusButton(buttonShapeInfo);
+    pView->setColor(false, QColor("#26C5C5"), QColor("#2F3135"));
     bool bView = m_index.data(ROLE_NODE_ISVIEW).toBool();
-    m_pStatusWidgets2->setView(bView);
-    connect(m_pStatusWidgets2, SIGNAL(toggleChanged(STATUS_BTN, bool)), this, SLOT(onOptionsBtnToggled(STATUS_BTN, bool)));
+    pView->toggle(bView);
 
     pHLayout->addSpacing(ZenoStyle::dpiScaled(10));   //补充一些距离
-    pHLayout->addItem(m_pStatusWidgets2, Qt::AlignRight);
+    pHLayout->addItem(pView, Qt::AlignRight);
 
     headerWidget->setLayout(pHLayout);
     headerWidget->setZValue(ZVALUE_BACKGROUND);
+
+    //创建可以显示的名字组
+    font2.setPointSize(14);
+
+    auto nameItem = new ZEditableTextItem(name, headerWidget);
+    nameItem->setDefaultTextColor(QColor("#F1E9E9"));
+    nameItem->setBackground(QColor(0, 0, 0, 0));
+    nameItem->setFont(font2);
+    qreal txtWid = nameItem->boundingRect().width();
+    nameItem->setPos(-txtWid - 2, 10);
+
+    connect(nameItem, &ZEditableTextItem::contentsChanged, this, [=]() {
+        qreal ww = nameItem->textLength();
+        nameItem->setPos(-ww - 2, 10);
+    });
+
+    //显示两个有点啰嗦
+    //auto dispNameItem = new ZGraphicsTextItem(dispName, font2, QColor("#626262"), headerWidget);
+    //txtWid = dispNameItem->boundingRect().width();
+    //dispNameItem->setPos(-txtWid - 2, 20);
+
     return headerWidget;
 }
 
@@ -321,7 +359,7 @@ ZLayoutBackground* ZenoNode::initHeaderWidget()
     const qreal H_status = ZenoStyle::dpiScaled(50.);
     const qreal radius = ZenoStyle::dpiScaled(9.);
 
-    m_pStatusWidgets = new ZenoMinStatusItem(W_status, H_status, radius, 0);
+    m_pStatusWidgets = new StatusGroup(W_status, H_status, radius, 0);
     bool bView = m_index.data(ROLE_NODE_ISVIEW).toBool();
     m_pStatusWidgets->setView(bView);
     connect(m_pStatusWidgets, SIGNAL(toggleChanged(STATUS_BTN, bool)), this, SLOT(onOptionsBtnToggled(STATUS_BTN, bool)));
@@ -1164,7 +1202,6 @@ bool ZenoNode::isMoving() {
 void ZenoNode::onZoomed()
 {
     m_pStatusWidgets->onZoomed();
-    m_pStatusWidgets2->onZoomed();
     bool bVisible = true;
     if (editor_factor < 0.2) {
         bVisible = false;
@@ -1674,12 +1711,6 @@ void ZenoNode::onViewUpdated(bool bView)
         m_pStatusWidgets->setView(bView);
         m_pStatusWidgets->blockSignals(false);
     }
-    if (m_pStatusWidgets2)
-    {
-        m_pStatusWidgets2->blockSignals(true);
-        m_pStatusWidgets2->setView(bView);
-        m_pStatusWidgets2->blockSignals(false);
-    }
 }
 
 void ZenoNode::onOptionsUpdated(int options)
@@ -1689,12 +1720,6 @@ void ZenoNode::onOptionsUpdated(int options)
         m_pStatusWidgets->blockSignals(true);
         m_pStatusWidgets->setOptions(options);
         m_pStatusWidgets->blockSignals(false);
-    }
-    if (m_pStatusWidgets2)
-    {
-        m_pStatusWidgets2->blockSignals(true);
-        m_pStatusWidgets2->setOptions(options);
-        m_pStatusWidgets2->blockSignals(false);
     }
 }
 

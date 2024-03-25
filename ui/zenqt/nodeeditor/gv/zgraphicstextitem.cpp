@@ -76,6 +76,10 @@ QPainterPath ZGraphicsTextItem::shape() const
     return path;
 }
 
+qreal ZGraphicsTextItem::textLength() const {
+    return document()->size().width();
+}
+
 void ZGraphicsTextItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
     QGraphicsTextItem::mousePressEvent(event);
@@ -449,6 +453,13 @@ void ZEditableTextItem::initUI(const QString& text)
     connect(pDoc, SIGNAL(contentsChanged()), this, SLOT(onContentsChanged()));
 }
 
+QRectF ZEditableTextItem::boundingRect() const
+{
+    qreal w = document()->size().width();
+    qreal h = document()->size().height();
+    return QRectF(0, 0, w, h);
+}
+
 QGraphicsView* ZEditableTextItem::_getFocusViewByCursor()
 {
     QPointF cursorPos = this->cursor().pos();
@@ -490,6 +501,8 @@ void ZEditableTextItem::onContentsChanged()
         }
         iVal = 0;
     }
+    update();
+    emit contentsChanged();
 }
 
 void ZEditableTextItem::setValidator(const QValidator* pValidator)

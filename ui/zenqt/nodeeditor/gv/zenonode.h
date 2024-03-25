@@ -19,6 +19,8 @@ class ZenoGraphsEditor;
 class ZenoSubGraphScene;
 class GroupNode;
 class ParamsModel;
+class StatusGroup;
+class StatusButton;
 
 class ZenoNode : public ZLayoutBackground
 {
@@ -163,8 +165,7 @@ private:
     ZGraphicsTextItem* m_NameItem;
     ZSimpleTextItem* m_pCategoryItem;
     ZSimpleTextItem *m_NameItemTip;
-    ZenoMinStatusItem* m_pStatusWidgets;
-    ZenoMinStatusItem* m_pStatusWidgets2;   //on collasped case.
+    StatusGroup* m_pStatusWidgets;
     QGraphicsPolygonItem* m_statusMarker;
 
     QGraphicsRectItem* m_border;

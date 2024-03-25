@@ -77,6 +77,17 @@ struct APP_SETTINGS
     //todo: other settings.
 };
 
+struct RoundRectInfo
+{
+    QRectF rc;
+    qreal W = 0.;
+    qreal H = 0.;
+    qreal ltradius = 0.;
+    qreal lbradius = 0.;
+    qreal rtradius = 0.;
+    qreal rbradius = 0.;
+};
+
 enum SearchType : unsigned int
 {
     SEARCH_SUBNET,
