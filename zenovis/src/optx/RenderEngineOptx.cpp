@@ -1198,9 +1198,11 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     int texid=0;
                     for(auto tex:mtldet->tex2Ds)
                     {
-                        OptixUtil::addTexture(tex->path.c_str());
-                        shaderTex.emplace_back(tex->path);
-                        texid++;
+                        if (cachedMeshesMaterials.count(mtldet->mtlidkey) > 0) {
+                            OptixUtil::addTexture(tex->path.c_str());
+                            shaderTex.emplace_back(tex->path);
+                            texid++;
+                        }
                     }
 
                     ShaderPrepared shaderP; 
