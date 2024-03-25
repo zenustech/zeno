@@ -1,4 +1,6 @@
+#include <cmath>
 #include <iostream>
+#include <algorithm>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/stage.h>
@@ -9,6 +11,9 @@
 #include <pxr/usd/usdGeom/sphere.h>
 #include <pxr/usd/usdGeom/mesh.h>
 #include <pxr/usd/usdGeom/xform.h>
+#include <pxr/usd/usdGeom/cylinder.h>
+#include <pxr/usd/usdGeom/cone.h>
+#include <pxr/usd/usdGeom/capsule.h>
 
 #include <zeno/zeno.h>
 #include <zeno/core/IObject.h>
@@ -31,7 +36,6 @@
 
 #include <zeno/types/MatrixObject.h>
 #include <zeno/utils/string.h>
-#include <cmath>
 
 // record usd stage path and the file pointer
 struct USDDescription {
@@ -302,6 +306,162 @@ void _convertMeshFromUSDToZeno(const pxr::UsdPrim& usdPrim, zeno::PrimitiveObjec
             faceStartIndex += 4;
         }
         // TODO: normals ?
+    }
+    else if (typeName == "Cylinder") {
+        auto cylinder = pxr::UsdGeomCylinder(usdPrim);
+        
+        /*** Read from USD ***/
+        char axis;
+        float height;
+        float radius;
+        pxr::VtValue heightValue;
+        pxr::VtValue radiusValue;
+        pxr::VtValue axisValue;
+        cylinder.GetHeightAttr().Get(&heightValue);
+        cylinder.GetRadiusAttr().Get(&radiusValue);
+        cylinder.GetAxisAttr().Get(&axisValue);
+        height = static_cast<float>(heightValue.Get<double>());
+        radius = static_cast<float>(radiusValue.Get<double>());
+        axis = axisValue.Get<pxr::TfToken>().GetString()[0];
+
+        auto& verts = zPrim.verts;
+        auto& tris = zPrim.tris;
+
+        /*** Constructing cylinder ***/
+        const int COLUMNS = 32;
+        // vertices of the top
+        for (size_t i = 0; i < COLUMNS; i++) {
+            float rad = 2.0f * M_PI * i / COLUMNS;
+            float r0 = cos(rad) * radius;
+            float r1 = -sin(rad) * radius;
+            float h = 0.5f * height;
+            if (axis == 'Z') {
+                std::swap(r1, h);
+            } else if (axis == 'X') {
+                std::swap(r0, h);
+            } else {
+                // we use Y-axis as default, no need to exchange
+            }
+            verts.emplace_back(r0, h, r1);
+        }
+        // vertices of the bottom
+        for (size_t i = 0; i < COLUMNS; i++) {
+            float rad = 2.0f * M_PI * i / COLUMNS;
+            float r0 = cos(rad) * radius;
+            float r1 = -sin(rad) * radius;
+            float h = -0.5f * height;
+            if (axis == 'Z') {
+                std::swap(r1, h);
+            } else if (axis == 'X') {
+                std::swap(r0, h);
+            } else {
+                // we use Y-axis as default, no need to exchange
+            }
+            verts.emplace_back(r0, h, r1);
+        }
+        if (axis == 'Z') {
+            verts.emplace_back(0.0f, 0.0f, 0.5f * height);
+            verts.emplace_back(0.0f, 0.0f, -0.5f * height);
+        } else if (axis == 'X') {
+            verts.emplace_back(0.5f * height, 0.0f, 0.0f);
+            verts.emplace_back(-0.5f * height, 0.0f, 0.0f);
+        } else {
+            verts.emplace_back(0.0f, 0.5f * height, 0.0f);
+            verts.emplace_back(0.0f, -0.5f * height, 0.0f);
+        }
+
+        for (size_t i = 0; i < COLUMNS; i++) {
+            if (axis != 'Y') {
+                tris.emplace_back(COLUMNS * 2, (i + 1) % COLUMNS, i); // top
+                tris.emplace_back(i + COLUMNS, (i + 1) % COLUMNS + COLUMNS, COLUMNS * 2 + 1); // bottom
+
+                // side
+                size_t _0 = i;
+                size_t _1 = (i + 1) % COLUMNS;
+                size_t _2 = (i + 1) % COLUMNS + COLUMNS;
+                size_t _3 = i + COLUMNS;
+                tris.emplace_back(_1, _2, _0);
+                tris.emplace_back(_2, _3, _0);
+            }
+            else {
+                tris.emplace_back(COLUMNS * 2, i, (i + 1) % COLUMNS); // top
+                tris.emplace_back(i + COLUMNS, COLUMNS * 2 + 1, (i + 1) % COLUMNS + COLUMNS); // bottom
+
+                // side
+                size_t _0 = i;
+                size_t _1 = (i + 1) % COLUMNS;
+                size_t _2 = (i + 1) % COLUMNS + COLUMNS;
+                size_t _3 = i + COLUMNS;
+                tris.emplace_back(_1, _0, _2);
+                tris.emplace_back(_2, _0, _3);
+            }
+        }
+    }
+    else if (typeName == "Cone") {
+        auto cone = pxr::UsdGeomCone(usdPrim);
+
+        /*** Read from USD ***/
+        char axis;
+        float height;
+        float radius;
+        pxr::VtValue heightValue;
+        pxr::VtValue radiusValue;
+        pxr::VtValue axisValue;
+        cone.GetHeightAttr().Get(&heightValue);
+        cone.GetRadiusAttr().Get(&radiusValue);
+        cone.GetAxisAttr().Get(&axisValue);
+        height = static_cast<float>(heightValue.Get<double>());
+        radius = static_cast<float>(radiusValue.Get<double>());
+        axis = axisValue.Get<pxr::TfToken>().GetString()[0];
+
+        auto& verts = zPrim.verts;
+        auto& tris = zPrim.tris;
+        /*** Constructing cylinder ***/
+        const int COLUMNS = 32;
+        // vertices of the bottom
+        for (size_t i = 0; i < COLUMNS; i++) {
+            float rad = 2.0f * M_PI * i / COLUMNS;
+            float r0 = cos(rad) * radius;
+            float r1 = -sin(rad) * radius;
+            float h = -0.5f * height;
+            if (axis == 'Z') {
+                std::swap(r1, h);
+            } else if (axis == 'X') {
+                std::swap(r0, h);
+            } else {
+                // we use Y-axis as default, no need to exchange
+            }
+            verts.emplace_back(r0, h, r1);
+        }
+        if (axis == 'Z') {
+            verts.emplace_back(0.0f, 0.0f, 0.5f * height);
+            verts.emplace_back(0.0f, 0.0f, -0.5f * height);
+        }
+        else if (axis == 'X') {
+            verts.emplace_back(0.5f * height, 0.0f, 0.0f);
+            verts.emplace_back(-0.5f * height, 0.0f, 0.0f);
+        }
+        else {
+            verts.emplace_back(0.0f, 0.5f * height, 0.0f);
+            verts.emplace_back(0.0f, -0.5f * height, 0.0f);
+        }
+
+        for (size_t i = 0; i < COLUMNS; i++) {
+            if (axis != 'Y') {
+                tris.emplace_back(COLUMNS, (i + 1) % COLUMNS, i);
+                tris.emplace_back(i, (i + 1) % COLUMNS, COLUMNS + 1);
+            }
+            else {
+                tris.emplace_back(COLUMNS, i, (i + 1) % COLUMNS);
+                tris.emplace_back(i, COLUMNS + 1, (i + 1) % COLUMNS);
+            }
+        }
+    }
+    else if (typeName == "Capsule") {
+        ; // TODO
+    }
+    else if (typeName == "Plane") {
+        ;
     }
     else {
         // other geometry types are not supported yet

@@ -12,16 +12,19 @@
 * [x] 支持Xform 目前支持将xformop list合成单个matrix导入zeno
 * [x] Cube基本导入
 * [x] Sphere导入(没有规定精细度)
-* [ ] Point Line
-* [ ] Cylinder
-* [ ] 其他基本几何体
+* [x] Cylinder导入
+* [x] Cone导入
+* [ ] Capsule: (TfToken)axis (double)height (double)radius
+* [ ] Plane: (TfToken)axis (bool)doubleSided extent (double)length (double)width
+* [ ] Points?
+* [ ] Curves?
 * [ ] 支持层级引入 例如import一个根节点 其下的叶节点也一并导入(sublayer??)
 * [ ] 支持骨骼 Skeleton导入，并用骨骼初始化mesh的transform
 * [ ] 支持动画 SkelAnimation导入 并且支持多帧播放
 * [ ] 实现所有已支持内容的对应导出方案
-# mtlx
+# mtlx @hcx
 * [ ] 支持Material/mtlx + Shader
-# 灯光相机
+# 灯光相机 @hcx
 * [ ] 各种xxxLight
 * [ ] Camera
 # instancing
