@@ -7,7 +7,7 @@
 #include <zeno/types/PrimitiveTools.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/UserData.h>
-#include <zeno/extra/GlobalState.h>
+#include <zeno/funcs/PrimitiveUtils.h>
 #include <Alembic/AbcGeom/All.h>
 #include <Alembic/AbcCoreAbstract/All.h>
 #include <Alembic/AbcCoreOgawa/All.h>
@@ -82,6 +82,7 @@ static void read_attributes(std::shared_ptr<PrimitiveObject> prim, ICompoundProp
     size_t numProps = arbattrs.getNumProperties();
     for (auto i = 0; i < numProps; i++) {
         PropertyHeader p = arbattrs.getPropertyHeader(i);
+        zeno::log_error("getName {}", p.getName());
         if (IFloatGeomParam::matches(p)) {
             IFloatGeomParam param(arbattrs, p.getName());
 
@@ -350,7 +351,14 @@ static void read_user_data(std::shared_ptr<PrimitiveObject> prim, ICompoundPrope
     }
 }
 
-static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMeshSchema &mesh, int frameid, bool read_done, bool read_face_set) {
+static std::shared_ptr<PrimitiveObject> foundABCMesh(
+        Alembic::AbcGeom::IPolyMeshSchema &mesh
+        , int frameid
+        , bool read_done
+        , bool read_face_set
+        , bool outOfRangeAsEmpty
+        , std::string abc_name
+) {
     auto prim = std::make_shared<PrimitiveObject>();
 
     std::shared_ptr<Alembic::AbcCoreAbstract::v12::TimeSampling> time = mesh.getTimeSampling();
@@ -360,6 +368,9 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
     set_time_info(prim->userData(), time->getTimeSamplingType(), start, int(mesh.getNumSamples()));
 
     int sample_index = clamp(frameid - start_frame, 0, (int)mesh.getNumSamples() - 1);
+    if (outOfRangeAsEmpty && frameid - start_frame != sample_index) {
+        return prim;
+    }
     ISampleSelector iSS = Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index);
     Alembic::AbcGeom::IPolyMeshSchema::Sample mesamp = mesh.getValue(iSS);
 
@@ -400,6 +411,8 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
         }
     }
 
+    bool is_point = true;
+
     if (auto marr = mesamp.getFaceCounts()) {
         if (!read_done) {
             log_debug("[alembic] totally {} faces", marr->size());
@@ -411,6 +424,9 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
             int cnt = (*marr)[i];
             parr.emplace_back(base, cnt);
             base += cnt;
+            if (cnt != 1) {
+                is_point = false;
+            }
         }
     }
     if (auto uv = mesh.getUVsParam()) {
@@ -466,16 +482,20 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
     ICompoundProperty usrData = mesh.getUserProperties();
     read_user_data(prim, usrData, iSS, read_done);
 
+    if (is_point) {
+        prim->loops.clear();
+        prim->polys.clear();
+        return prim;
+    }
+
     if (read_face_set) {
         auto &faceset = prim->polys.add_attr<int>("faceset");
         std::fill(faceset.begin(), faceset.end(), -1);
         auto &ud = prim->userData();
         std::vector<std::string> faceSetNames;
         mesh.getFaceSetNames(faceSetNames);
-        ud.set2("faceset_count", int(faceSetNames.size()));
         for (auto i = 0; i < faceSetNames.size(); i++) {
             auto n = faceSetNames[i];
-            ud.set2(zeno::format("faceset_{}", i), n);
             IFaceSet faceSet = mesh.getFaceSet(n);
             IFaceSetSchema::Sample faceSetSample = faceSet.getSchema().getValue();
             size_t s = faceSetSample.getFaces()->size();
@@ -484,12 +504,28 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
                 faceset[f] = i;
             }
         }
+        bool found_unbind_faces = false;
+        int next_faceset_index = faceSetNames.size();
+        for (auto i = 0; i < faceset.size(); i++) {
+            if (faceset[i] == -1) {
+                found_unbind_faces = true;
+                faceset[i] = next_faceset_index;
+            }
+        }
+        if (found_unbind_faces) {
+            faceSetNames.push_back(abc_name);
+        }
+        for (auto i = 0; i < faceSetNames.size(); i++) {
+            auto n = faceSetNames[i];
+            ud.set2(zeno::format("faceset_{}", i), n);
+        }
+        ud.set2("faceset_count", int(faceSetNames.size()));
     }
 
     return prim;
 }
 
-static std::shared_ptr<PrimitiveObject> foundABCSubd(Alembic::AbcGeom::ISubDSchema &subd, int frameid, bool read_done, bool read_face_set) {
+static std::shared_ptr<PrimitiveObject> foundABCSubd(Alembic::AbcGeom::ISubDSchema &subd, int frameid, bool read_done, bool read_face_set, bool outOfRangeAsEmpty) {
     auto prim = std::make_shared<PrimitiveObject>();
 
     std::shared_ptr<Alembic::AbcCoreAbstract::v12::TimeSampling> time = subd.getTimeSampling();
@@ -499,6 +535,9 @@ static std::shared_ptr<PrimitiveObject> foundABCSubd(Alembic::AbcGeom::ISubDSche
     set_time_info(prim->userData(), time->getTimeSamplingType(), start, int(subd.getNumSamples()));
 
     int sample_index = clamp(frameid - start_frame, 0, (int)subd.getNumSamples() - 1);
+    if (outOfRangeAsEmpty && frameid - start_frame != sample_index) {
+        return prim;
+    }
     ISampleSelector iSS = Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index);
     Alembic::AbcGeom::ISubDSchema::Sample mesamp = subd.getValue(iSS);
 
@@ -649,7 +688,7 @@ static Alembic::Abc::v12::M44d foundABCXform(Alembic::AbcGeom::IXformSchema &xfm
     return samp.getMatrix();
 }
 
-static std::shared_ptr<PrimitiveObject> foundABCPoints(Alembic::AbcGeom::IPointsSchema &mesh, int frameid, bool read_done) {
+static std::shared_ptr<PrimitiveObject> foundABCPoints(Alembic::AbcGeom::IPointsSchema &mesh, int frameid, bool read_done, bool outOfRangeAsEmpty) {
     auto prim = std::make_shared<PrimitiveObject>();
 
     std::shared_ptr<Alembic::AbcCoreAbstract::v12::TimeSampling> time = mesh.getTimeSampling();
@@ -659,6 +698,9 @@ static std::shared_ptr<PrimitiveObject> foundABCPoints(Alembic::AbcGeom::IPoints
     set_time_info(prim->userData(), time->getTimeSamplingType(), start, int(mesh.getNumSamples()));
 
     int sample_index = clamp(frameid - start_frame, 0, (int)mesh.getNumSamples() - 1);
+    if (outOfRangeAsEmpty && frameid - start_frame != sample_index) {
+        return prim;
+    }
     auto iSS = Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index);
     Alembic::AbcGeom::IPointsSchema::Sample mesamp = mesh.getValue(iSS);
     if (auto marr = mesamp.getPositions()) {
@@ -687,7 +729,7 @@ static std::shared_ptr<PrimitiveObject> foundABCPoints(Alembic::AbcGeom::IPoints
     return prim;
 }
 
-static std::shared_ptr<PrimitiveObject> foundABCCurves(Alembic::AbcGeom::ICurvesSchema &mesh, int frameid, bool read_done) {
+static std::shared_ptr<PrimitiveObject> foundABCCurves(Alembic::AbcGeom::ICurvesSchema &mesh, int frameid, bool read_done, bool outOfRangeAsEmpty) {
     auto prim = std::make_shared<PrimitiveObject>();
 
     std::shared_ptr<Alembic::AbcCoreAbstract::v12::TimeSampling> time = mesh.getTimeSampling();
@@ -697,6 +739,9 @@ static std::shared_ptr<PrimitiveObject> foundABCCurves(Alembic::AbcGeom::ICurves
     set_time_info(prim->userData(), time->getTimeSamplingType(), start, int(mesh.getNumSamples()));
 
     int sample_index = clamp(frameid - start_frame, 0, (int)mesh.getNumSamples() - 1);
+    if (outOfRangeAsEmpty && frameid - start_frame != sample_index) {
+        return prim;
+    }
     auto iSS = Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index);
     Alembic::AbcGeom::ICurvesSchema::Sample mesamp = mesh.getValue(iSS);
     if (auto marr = mesamp.getPositions()) {
@@ -729,32 +774,14 @@ static std::shared_ptr<PrimitiveObject> foundABCCurves(Alembic::AbcGeom::ICurves
     return prim;
 }
 
-void prim_set_abcpath(PrimitiveObject* prim, std::string path_name) {
-    int faceset_count = prim->userData().get2<int>("abcpath_count",0);
-    for (auto j = 0; j < faceset_count; j++) {
-        prim->userData().del(zeno::format("abcpath_{}", j));
-    }
-    prim->userData().set2("abcpath_count", 1);
-    prim->userData().set2("abcpath_0", path_name);
-
-    if (prim->tris.size() > 0) {
-        prim->tris.add_attr<int>("abcpath").assign(prim->tris.size(),0);
-    }
-    if (prim->quads.size() > 0) {
-        prim->quads.add_attr<int>("abcpath").assign(prim->quads.size(),0);
-    }
-    if (prim->polys.size() > 0) {
-        prim->polys.add_attr<int>("abcpath").assign(prim->polys.size(),0);
-    }
-}
-
 void traverseABC(
     Alembic::AbcGeom::IObject &obj,
     ABCTree &tree,
     int frameid,
     bool read_done,
     bool read_face_set,
-    std::string path
+    std::string path,
+    bool outOfRangeAsEmpty
 ) {
     {
         auto const &md = obj.getMetaData();
@@ -771,7 +798,7 @@ void traverseABC(
 
             Alembic::AbcGeom::IPolyMesh meshy(obj);
             auto &mesh = meshy.getSchema();
-            tree.prim = foundABCMesh(mesh, frameid, read_done, read_face_set);
+            tree.prim = foundABCMesh(mesh, frameid, read_done, read_face_set, outOfRangeAsEmpty, obj.getName());
             tree.prim->userData().set2("_abc_name", obj.getName());
             prim_set_abcpath(tree.prim.get(), path);
         } else if (Alembic::AbcGeom::IXformSchema::matches(md)) {
@@ -794,7 +821,7 @@ void traverseABC(
             }
             Alembic::AbcGeom::IPoints points(obj);
             auto &points_sch = points.getSchema();
-            tree.prim = foundABCPoints(points_sch, frameid, read_done);
+            tree.prim = foundABCPoints(points_sch, frameid, read_done, outOfRangeAsEmpty);
             tree.prim->userData().set2("_abc_name", obj.getName());
             prim_set_abcpath(tree.prim.get(), path);
             tree.prim->userData().set2("faceset_count", 0);
@@ -804,7 +831,7 @@ void traverseABC(
             }
             Alembic::AbcGeom::ICurves curves(obj);
             auto &curves_sch = curves.getSchema();
-            tree.prim = foundABCCurves(curves_sch, frameid, read_done);
+            tree.prim = foundABCCurves(curves_sch, frameid, read_done, outOfRangeAsEmpty);
             tree.prim->userData().set2("_abc_name", obj.getName());
             prim_set_abcpath(tree.prim.get(), path);
             tree.prim->userData().set2("faceset_count", 0);
@@ -814,7 +841,7 @@ void traverseABC(
             }
             Alembic::AbcGeom::ISubD subd(obj);
             auto &subd_sch = subd.getSchema();
-            tree.prim = foundABCSubd(subd_sch, frameid, read_done, read_face_set);
+            tree.prim = foundABCSubd(subd_sch, frameid, read_done, read_face_set, outOfRangeAsEmpty);
             tree.prim->userData().set2("_abc_name", obj.getName());
             prim_set_abcpath(tree.prim.get(), path);
         }
@@ -834,7 +861,7 @@ void traverseABC(
         Alembic::AbcGeom::IObject child(obj, name);
 
         auto childTree = std::make_shared<ABCTree>();
-        traverseABC(child, *childTree, frameid, read_done, read_face_set, path);
+        traverseABC(child, *childTree, frameid, read_done, read_face_set, path, outOfRangeAsEmpty);
         tree.children.push_back(std::move(childTree));
     }
 }
@@ -889,7 +916,8 @@ struct ReadAlembic : INode {
             // fmt::print("archive.getNumTimeSamplings: {}\n", archive.getNumTimeSamplings());
             auto obj = archive.getTop();
             bool read_face_set = get_input2<bool>("read_face_set");
-            traverseABC(obj, *abctree, frameid, read_done, read_face_set, "");
+            bool outOfRangeAsEmpty = get_input2<bool>("outOfRangeAsEmpty");
+            traverseABC(obj, *abctree, frameid, read_done, read_face_set, "", outOfRangeAsEmpty);
             read_done = true;
             usedPath = path;
         }
@@ -916,6 +944,7 @@ ZENDEFNODE(ReadAlembic, {
     {
         {"readpath", "path"},
         {"bool", "read_face_set", "1"},
+        {"bool", "outOfRangeAsEmpty", "0"},
         {"frameid"},
     },
     {
@@ -925,25 +954,6 @@ ZENDEFNODE(ReadAlembic, {
     {},
     {"alembic"},
 });
-
-void prim_set_faceset(PrimitiveObject* prim, std::string faceset_name) {
-    int faceset_count = prim->userData().get2<int>("faceset_count",0);
-    for (auto j = 0; j < faceset_count; j++) {
-        prim->userData().del(zeno::format("faceset_{}", j));
-    }
-    prim->userData().set2("faceset_count", 1);
-    prim->userData().set2("faceset_0", faceset_name);
-
-    if (prim->tris.size() > 0) {
-        prim->tris.add_attr<int>("faceset").assign(prim->tris.size(),0);
-    }
-    if (prim->quads.size() > 0) {
-        prim->quads.add_attr<int>("faceset").assign(prim->quads.size(),0);
-    }
-    if (prim->polys.size() > 0) {
-        prim->polys.add_attr<int>("faceset").assign(prim->polys.size(),0);
-    }
-}
 
 std::shared_ptr<ListObject> abc_split_by_name(std::shared_ptr<PrimitiveObject> prim, bool add_when_none) {
     int faceset_count = prim->userData().get2<int>("faceset_count");
