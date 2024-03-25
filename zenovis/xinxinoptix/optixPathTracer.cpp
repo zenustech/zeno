@@ -773,24 +773,26 @@ void updateSphereXAS() {
     optix_instances.reserve(sphereInstanceGroupAgentList.size() + SphereTransformedTable.size());
     const float mat3r4c[12] = {1,0,0,0,0,1,0,0,0,0,1,0};
 
-    size_t instance_idx = 0u;
-    size_t sbt_offset = 0u;
+	std::vector<CUdeviceptr> aux_lut;
+	aux_lut.reserve(sphereInstanceGroupAgentList.size());
 
     for (auto& sphereAgent : sphereInstanceGroupAgentList) {
 
         if (sphereAgent->inst_sphere_gas_handle == 0) continue;
 
+		sphereAgent->updateAux();
+		aux_lut.push_back(sphereAgent->aux_buffer.handle);
+
         OptixInstance inst{};
-        ++instance_idx;
 
         auto combinedID = sphereAgent->base.materialID + ":" + std::to_string(ShaderMaker::Sphere);
         auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
 
-        sbt_offset = shader_index * RAY_TYPE_COUNT;
+        auto sbt_offset = shader_index * RAY_TYPE_COUNT;
 
         inst.flags = OPTIX_INSTANCE_FLAG_NONE;
         inst.sbtOffset = sbt_offset;
-        inst.instanceId = instance_idx;
+        inst.instanceId = optix_instances.size();
         inst.visibilityMask = DefaultMatMask; 
         inst.traversableHandle = sphereAgent->inst_sphere_gas_handle;
 
@@ -798,21 +800,33 @@ void updateSphereXAS() {
         optix_instances.push_back( inst );
     }
 
-    if (uniformed_sphere_gas_handle != 0) {
+	if (aux_lut.size() > 0) {
+
+		auto data_size = sizeof(CUdeviceptr) * aux_lut.size();
+		sphereInstanceAuxLutBuffer.resize(data_size);
+		cudaMemcpy((void*)sphereInstanceAuxLutBuffer.handle, aux_lut.data(), data_size, cudaMemcpyHostToDevice);
+
+	} else {
+		sphereInstanceAuxLutBuffer.reset();
+	}
+
+	state.params.firstSoloSphereOffset = optix_instances.size();
+	state.params.sphereInstAuxLutBuffer = (void*)sphereInstanceAuxLutBuffer.handle;
+
+	if (uniformed_sphere_gas_handle != 0) {
 
         for(auto& [key, dsphere] : SphereTransformedTable) {
 
             auto combinedID = dsphere.materialID + ":" + std::to_string(ShaderMaker::Sphere);
             auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
 
-            sbt_offset = shader_index * RAY_TYPE_COUNT;
+            auto sbt_offset = shader_index * RAY_TYPE_COUNT;
             
             OptixInstance inst{};
-            ++instance_idx;
             
             inst.flags = OPTIX_INSTANCE_FLAG_NONE;
             inst.sbtOffset = sbt_offset;
-            inst.instanceId = instance_idx;
+            inst.instanceId = optix_instances.size();
             inst.visibilityMask = DefaultMatMask;
             inst.traversableHandle = uniformed_sphere_gas_handle;
 
@@ -3516,8 +3530,15 @@ void UpdateInst()
             auto sia = std::make_shared<SphereInstanceAgent>(sphereInstanceBase);
 
             sia->radius_list = std::vector<float>(element_count, sphereInstanceBase.radius);
+			sia->aux_list = std::vector<float>(element_count * 3, 0);
+
             for (size_t i=0; i<element_count; ++i) {
                 sia->radius_list[i] *= instTrs.tang[3*i +0];
+
+				sia->aux_list[i*3+0] = instTrs.clr[3*i +0];
+				sia->aux_list[i*3+1] = instTrs.clr[3*i +1];
+				sia->aux_list[i*3+2] = instTrs.clr[3*i +2];
+
             }
 
             sia->center_list.resize(element_count);

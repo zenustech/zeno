@@ -58,17 +58,32 @@ struct SphereInstanceAgent {
     std::vector<float> radius_list{};
     std::vector<zeno::vec3f> center_list{};
 
+    std::vector<float> aux_list {};
+    raii<CUdeviceptr> aux_buffer {};
+
     raii<CUdeviceptr>      inst_sphere_gas_buffer {};
     OptixTraversableHandle inst_sphere_gas_handle {};
 
     SphereInstanceAgent(SphereInstanceGroupBase _base):base(_base){}
     //SphereInstanceAgent(SphereInstanceBase &_base):base(_base){}
 
+    void updateAux() {
+
+        size_t data_size = sizeof(float) * aux_list.size();
+
+        aux_buffer.resize( data_size );
+        cudaMemcpy((void*)aux_buffer.handle, aux_list.data(), data_size, cudaMemcpyHostToDevice);
+    }
+
     ~SphereInstanceAgent() {
+
+        aux_buffer.reset();
         inst_sphere_gas_handle = 0;
         inst_sphere_gas_buffer.reset();
     }
 };
+
+inline raii<CUdeviceptr> sphereInstanceAuxLutBuffer {};
 
 inline std::vector<std::shared_ptr<SphereInstanceAgent>> sphereInstanceGroupAgentList;
 void buildInstancedSpheresGAS(const OptixDeviceContext &context, std::vector<std::shared_ptr<SphereInstanceAgent>>& agentList);
@@ -92,6 +107,8 @@ inline void cleanupSpheresGPU() {
 
     sphereBufferXAS.reset();
     sphereHandleXAS = 0llu;
+
+    sphereInstanceAuxLutBuffer.reset();
 }
 
 } // NAMESPACE END

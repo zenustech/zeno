@@ -193,6 +193,9 @@ struct Params
     unsigned long long triangleLightCoordsBuffer;
     unsigned long long triangleLightNormalBuffer;
 
+    uint32_t firstSoloSphereOffset;
+    void* sphereInstAuxLutBuffer;
+
     float skyLightProbablity() {
 
         if (sky_strength <= 0.0f)
