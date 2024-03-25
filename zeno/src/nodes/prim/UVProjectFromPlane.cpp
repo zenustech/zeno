@@ -253,9 +253,8 @@ struct PrimSample2D : zeno::INode {
             for (auto i = 0; i < uv.size(); i++) {
                 auto coord = zeno::vec_to_other<glm::vec3>(uv[i]);
                 coord = mapplypos(matrix, coord);
-                uv[i] = zeno::other_to_vec<3>(coord);
 
-                clrs[i] = queryColor(uv[i], data, w, h, borderColor);
+                clrs[i] = queryColor(zeno::other_to_vec<3>(coord), data, w, h, borderColor);
             }
         }
         else if (uvSource == "tris") {
