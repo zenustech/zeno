@@ -190,7 +190,7 @@ template<typename T1, typename T2>
 void write_attrs(std::map<std::string, std::any> &attrs, std::string path, std::shared_ptr<PrimitiveObject> prim, T1& schema, T2& samp) {
     OCompoundProperty arbAttrs = schema.getArbGeomParams();
     prim->verts.foreach_attr<std::variant<vec3f, float, int>>([&](auto const &key, auto &arr) {
-        if (key == "v" || key == "nrm" || key == "faceset" || key == "matid" || key == "abcpath") {
+        if (key == "v" || key == "nrm") {
             return;
         }
         std::string full_key = path + '/' + key;
@@ -260,6 +260,9 @@ void write_attrs(std::map<std::string, std::any> &attrs, std::string path, std::
     }
     if (prim->polys.size() > 0) {
         prim->polys.foreach_attr<std::variant<vec3f, float, int>>([&](auto const &key, auto &arr) {
+            if (key == "faceset" || key == "matid" || key == "abcpath") {
+                return;
+            }
             std::string full_key = path + '/' + key;
             using T = std::decay_t<decltype(arr[0])>;
             if constexpr (std::is_same_v<T, zeno::vec3f>) {
@@ -294,6 +297,9 @@ void write_attrs(std::map<std::string, std::any> &attrs, std::string path, std::
     }
     if (prim->tris.size() > 0) {
         prim->tris.foreach_attr<std::variant<vec3f, float, int>>([&](auto const &key, auto &arr) {
+            if (key == "faceset" || key == "matid" || key == "abcpath") {
+                return;
+            }
             // zeno::log_info("{} {}", key, int(arr.size()));
             std::string full_key = path + '/' + key;
             using T = std::decay_t<decltype(arr[0])>;
