@@ -15,6 +15,7 @@
 #include <Alembic/Abc/ErrorHandler.h>
 #include "ABCTree.h"
 #include "zeno/types/DictObject.h"
+#include "ABCCommon.h"
 #include <cstring>
 #include <cstdio>
 #include <filesystem>
@@ -28,6 +29,60 @@
 using namespace Alembic::AbcGeom;
 
 namespace zeno {
+void TimeAndSamplesMap::add(TimeSamplingPtr iTime, size_t iNumSamples)
+{
+
+    if (iNumSamples == 0)
+    {
+        iNumSamples = 1;
+    }
+
+    for (size_t i = 0; i < mTimeSampling.size(); ++i)
+    {
+        if (mTimeSampling[i]->getTimeSamplingType() ==
+            iTime->getTimeSamplingType())
+        {
+            chrono_t curLastTime =
+                    mTimeSampling[i]->getSampleTime(mExpectedSamples[i]);
+
+            chrono_t lastTime = iTime->getSampleTime(iNumSamples);
+            if (lastTime < curLastTime)
+            {
+                lastTime = curLastTime;
+            }
+
+            if (mTimeSampling[i]->getSampleTime(0) > iTime->getSampleTime(0))
+            {
+                mTimeSampling[i] = iTime;
+            }
+
+            mExpectedSamples[i] = mTimeSampling[i]->getNearIndex(lastTime,
+                                                                 std::numeric_limits< index_t >::max()).first;
+
+            return;
+        }
+    }
+
+    mTimeSampling.push_back(iTime);
+    mExpectedSamples.push_back(iNumSamples);
+}
+
+TimeSamplingPtr TimeAndSamplesMap::get(TimeSamplingPtr iTime,
+                                       std::size_t & oNumSamples) const
+{
+    for (size_t i = 0; i < mTimeSampling.size(); ++i)
+    {
+        if (mTimeSampling[i]->getTimeSamplingType() ==
+            iTime->getTimeSamplingType())
+        {
+            oNumSamples = mExpectedSamples[i];
+            return mTimeSampling[i];
+        }
+    }
+
+    oNumSamples = 0;
+    return TimeSamplingPtr();
+}
 static int clamp(int i, int _min, int _max) {
     if (i < _min) {
         return _min;
@@ -349,6 +404,26 @@ static void read_user_data(std::shared_ptr<PrimitiveObject> prim, ICompoundPrope
             }
         }
     }
+}
+
+static int read_visible_attr(ICompoundProperty arbattrs, const ISampleSelector &iSS) {
+    if (!arbattrs) {
+        return -1;
+    }
+    size_t numProps = arbattrs.getNumProperties();
+    for (auto i = 0; i < numProps; i++) {
+        PropertyHeader p = arbattrs.getPropertyHeader(i);
+        if (p.getName() != "visible") {
+            continue;
+        }
+        if (ICharProperty::matches(p)) {
+            ICharProperty param(arbattrs, p.getName());
+
+            auto value = param.getValue(iSS);
+            return value;
+        }
+    }
+    return -1;
 }
 
 static std::shared_ptr<PrimitiveObject> foundABCMesh(
@@ -781,6 +856,8 @@ void traverseABC(
     bool read_done,
     bool read_face_set,
     std::string path,
+    const TimeAndSamplesMap & iTimeMap,
+    int parent_visible,
     bool outOfRangeAsEmpty
 ) {
     {
@@ -790,6 +867,28 @@ void traverseABC(
         }
         tree.name = obj.getName();
         path = zeno::format("{}/{}", path, tree.name);
+        auto visible_prop = obj.getProperties().getPropertyHeader("visible");
+        if (visible_prop) {
+            size_t totalSamples = 0;
+            TimeSamplingPtr timePtr =
+                    iTimeMap.get(visible_prop->getTimeSampling(), totalSamples);
+            float time_per_cycle = visible_prop->getTimeSampling()->getTimeSamplingType().getTimePerCycle();
+            double start = visible_prop->getTimeSampling()->getStoredTimes().front();
+            int start_frame = std::lround(start / time_per_cycle );
+
+            int sample_index = clamp(frameid - start_frame, 0, (int)totalSamples - 1);
+            ISampleSelector iSS = Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index);
+            auto visible = read_visible_attr(obj.getProperties(), iSS);
+            if (visible != -1) {
+                tree.visible = visible;
+            }
+            else {
+                tree.visible = parent_visible;
+            }
+        }
+        else {
+            tree.visible = parent_visible;
+        }
 
         if (Alembic::AbcGeom::IPolyMesh::matches(md)) {
             if (!read_done) {
@@ -845,6 +944,14 @@ void traverseABC(
             tree.prim->userData().set2("_abc_name", obj.getName());
             prim_set_abcpath(tree.prim.get(), path);
         }
+        if (tree.prim) {
+            tree.prim->userData().set2("vis", tree.visible);
+            if (tree.visible == 0) {
+                tree.prim->polys.clear();
+                tree.prim->loops.clear();
+                tree.prim->verts.clear();
+            }
+        }
     }
 
     size_t nch = obj.getNumChildren();
@@ -861,7 +968,7 @@ void traverseABC(
         Alembic::AbcGeom::IObject child(obj, name);
 
         auto childTree = std::make_shared<ABCTree>();
-        traverseABC(child, *childTree, frameid, read_done, read_face_set, path, outOfRangeAsEmpty);
+        traverseABC(child, *childTree, frameid, read_done, read_face_set, path, iTimeMap, tree.visible, outOfRangeAsEmpty);
         tree.children.push_back(std::move(childTree));
     }
 }
@@ -917,7 +1024,14 @@ struct ReadAlembic : INode {
             auto obj = archive.getTop();
             bool read_face_set = get_input2<bool>("read_face_set");
             bool outOfRangeAsEmpty = get_input2<bool>("outOfRangeAsEmpty");
-            traverseABC(obj, *abctree, frameid, read_done, read_face_set, "", outOfRangeAsEmpty);
+            Alembic::Util::uint32_t numSamplings = archive.getNumTimeSamplings();
+            TimeAndSamplesMap timeMap;
+            for (Alembic::Util::uint32_t s = 0; s < numSamplings; ++s)             {
+                timeMap.add(archive.getTimeSampling(s),
+                            archive.getMaxNumSamplesForTimeSamplingIndex(s));
+            }
+
+            traverseABC(obj, *abctree, frameid, read_done, read_face_set, "", timeMap, -1, outOfRangeAsEmpty);
             read_done = true;
             usedPath = path;
         }

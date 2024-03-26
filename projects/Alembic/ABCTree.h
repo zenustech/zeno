@@ -20,6 +20,7 @@ struct ABCTree : PrimitiveObject {
     Alembic::Abc::M44d xform = Alembic::Abc::M44d();
     std::shared_ptr<CameraInfo> camera_info;
     std::vector<std::shared_ptr<ABCTree>> children;
+    int visible = -1;
 
     template <class Func>
     bool visitPrims(Func const &func) const {

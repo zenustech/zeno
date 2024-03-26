@@ -424,10 +424,16 @@ struct ImportAlembicPrim : INode {
             }
             double start, _end;
             GetArchiveStartAndEndTime(archive, start, _end);
+            TimeAndSamplesMap timeMap;
+            Alembic::Util::uint32_t numSamplings = archive.getNumTimeSamplings();
+            for (Alembic::Util::uint32_t s = 0; s < numSamplings; ++s)             {
+                timeMap.add(archive.getTimeSampling(s),
+                            archive.getMaxNumSamplesForTimeSamplingIndex(s));
+            }
             auto obj = archive.getTop();
             bool read_face_set = get_input2<bool>("read_face_set");
             bool outOfRangeAsEmpty = get_input2<bool>("outOfRangeAsEmpty");
-            traverseABC(obj, *abctree, frameid, read_done, read_face_set, "", outOfRangeAsEmpty);
+            traverseABC(obj, *abctree, frameid, read_done, read_face_set, "", timeMap, -1, outOfRangeAsEmpty);
         }
         bool use_xform = get_input2<bool>("use_xform");
         auto index = get_input2<int>("index");
