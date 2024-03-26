@@ -197,7 +197,7 @@ struct AlembicToSoftBodyVAT: public INode {
                 const int32_t frameIndex = frameEnd - idx - 1;
                 auto abctree = std::make_shared<ABCTree>();
                 auto prims = std::make_shared<zeno::ListObject>();
-                traverseABC(obj, *abctree, idx, read_done, false, "");
+                traverseABC(obj, *abctree, idx, read_done, false, "", false);
                 if (use_xform) {
                     prims = get_xformed_prims(abctree);
                 } else {
@@ -208,7 +208,7 @@ struct AlembicToSoftBodyVAT: public INode {
                 }
                 auto mergedPrim = zeno::primMerge(prims->getRaw<PrimitiveObject>());
                 if (get_input2<bool>("flipFrontBack")) {
-                    flipFrontBack(mergedPrim);
+                    primFlipFaces(mergedPrim.get());
                 }
                 zeno::primTriangulate(mergedPrim.get());
                 frameList->arr.push_back(mergedPrim);
@@ -391,7 +391,7 @@ struct AlembicToDynamicRemeshVAT : public INode {
         const int32_t frameIndex = frameEnd - idx - 1;
         auto abctree = std::make_shared<ABCTree>();
         auto prims = std::make_shared<zeno::ListObject>();
-        traverseABC(obj, *abctree, idx, read_done, false, "");
+        traverseABC(obj, *abctree, idx, read_done, false, "", false);
         if (use_xform) {
           prims = get_xformed_prims(abctree);
         } else {
@@ -402,7 +402,7 @@ struct AlembicToDynamicRemeshVAT : public INode {
         }
         auto mergedPrim = zeno::primMerge(prims->getRaw<PrimitiveObject>());
         if (shouldFlipFrontBack) {
-          flipFrontBack(mergedPrim);
+            primFlipFaces(mergedPrim.get());
         }
         zeno::primTriangulate(mergedPrim.get());
         maxTriNum = zeno::max(mergedPrim->tris.size(), maxTriNum);

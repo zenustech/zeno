@@ -332,6 +332,43 @@ void OptixWorker::needUpdateCamera()
     m_pTimer->start(m_sampleFeq);
 }
 
+void OptixWorker::onCleanUpScene()
+{
+    m_zenoVis->cleanUpScene();
+}
+
+void OptixWorker::onSetBackground(bool bShowBg)
+{
+    auto& ud = zeno::getSession().userData();
+    ud.set2("optix_show_background", bShowBg);
+
+    ZASSERT_EXIT(m_zenoVis);
+    auto session = m_zenoVis->getSession();
+    ZASSERT_EXIT(session);
+    auto scene = session->get_scene();
+    ZASSERT_EXIT(scene);
+    scene->objectsMan->needUpdateLight = true;
+    scene->drawOptions->simpleRender = true;
+    updateFrame();
+}
+
+void OptixWorker::onSetData(
+    float aperture,
+    float shutter_speed,
+    float iso,
+    bool aces,
+    bool exposure
+) {
+//    zeno::log_info("I am in optix thread, now I want to set value {}", iso);
+    auto scene = m_zenoVis->getSession()->get_scene();
+    scene->camera->zOptixCameraSettingInfo.aperture = aperture;
+    scene->camera->zOptixCameraSettingInfo.shutter_speed = shutter_speed;
+    scene->camera->zOptixCameraSettingInfo.iso = iso;
+    scene->camera->zOptixCameraSettingInfo.aces = aces;
+    scene->camera->zOptixCameraSettingInfo.exposure = exposure;
+    scene->drawOptions->needRefresh = true;
+}
+
 ZOptixViewport::ZOptixViewport(QWidget* parent)
     : QWidget(parent)
     , m_zenovis(nullptr)
@@ -396,6 +433,8 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(this, &ZOptixViewport::sig_modifyLightData, m_worker, &OptixWorker::onModifyLightData);
     connect(this, &ZOptixViewport::sig_updateCameraProp, m_worker, &OptixWorker::onUpdateCameraProp);
     connect(this, &ZOptixViewport::sig_updateEngine, m_worker, &OptixWorker::onUpdateEngine);
+    connect(this, &ZOptixViewport::sig_setBackground, m_worker, &OptixWorker::onSetBackground);
+    connect(this, &ZOptixViewport::sig_setdata_on_optix_thread, m_worker, &OptixWorker::onSetData);
 
     zeno::getSession().globalComm->setRenderType(zeno::GlobalComm::NORMAL);
     m_thdOptix.start();
@@ -405,6 +444,24 @@ ZOptixViewport::~ZOptixViewport()
 {
     m_thdOptix.quit();
     m_thdOptix.wait();
+}
+
+zenovis::ZOptixCameraSettingInfo ZOptixViewport::getdata_from_optix_thread()
+{
+    auto scene = m_zenovis->getSession()->get_scene();
+    return scene->camera->zOptixCameraSettingInfo;
+}
+
+void ZOptixViewport::setdata_on_optix_thread(zenovis::ZOptixCameraSettingInfo value)
+{
+//    zeno::log_info("setdata_on_optix_thread {}", value.iso);
+    emit sig_setdata_on_optix_thread(
+            value.aperture,
+            value.shutter_speed,
+            value.iso,
+            value.aces,
+            value.exposure
+    );
 }
 
 void ZOptixViewport::setSimpleRenderOption()
@@ -517,6 +574,11 @@ void ZOptixViewport::setNumSamples(int samples)
     if (scene) {
         scene->drawOptions->num_samples = samples;
     }
+}
+
+void ZOptixViewport::showBackground(bool bShow)
+{
+    emit sig_setBackground(bShow);
 }
 
 void ZOptixViewport::resizeEvent(QResizeEvent* event)

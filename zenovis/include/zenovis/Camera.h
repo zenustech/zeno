@@ -11,6 +11,13 @@ namespace zenovis {
 namespace opengl {
     class Program;
 }
+struct ZOptixCameraSettingInfo {
+    float aperture = 2.0;
+    float shutter_speed = 1.0/25;
+    float iso = 150;
+    bool aces = false;
+    bool exposure = false;
+};
 
 struct Camera {
     int m_nx{512}, m_ny{512};
@@ -35,11 +42,13 @@ struct Camera {
 
     float m_theta = 0;
     float m_phi = 0;
+    float m_roll = 0;
     zeno::vec3f m_center = {};
     bool m_ortho_mode = false;
     float m_radius = 5;
 
     zeno::vec2i viewport_offset = {};
+    ZOptixCameraSettingInfo zOptixCameraSettingInfo = {};
 
     // only used in real-shader
     struct ZxxHappyLookParam {
@@ -66,6 +75,7 @@ struct Camera {
     float get_safe_frames() const;
     bool is_locked_window() const;
     void setCamera(zeno::CameraData const &cam);
+    void setPhysicalCamera(float aperture, float shutter_speed, float iso, bool aces, bool exposure);
     void placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up);
     void lookCamera(float cx, float cy, float cz, float theta, float phi, float radius, bool ortho_mode, float fov, float aperture, float focalPlaneDistance);
     void focusCamera(float cx, float cy, float cz, float radius);

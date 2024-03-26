@@ -13,7 +13,8 @@ extern void traverseABC(
     int frameid,
     bool read_done,
     bool read_face_set,
-    std::string path
+    std::string path,
+    bool outOfRangeAsEmpty
 );
 
 extern Alembic::AbcGeom::IArchive readABC(std::string const &path);
@@ -21,8 +22,6 @@ extern Alembic::AbcGeom::IArchive readABC(std::string const &path);
 extern std::shared_ptr<zeno::ListObject> get_xformed_prims(std::shared_ptr<zeno::ABCTree> abctree);
 
 extern std::shared_ptr<PrimitiveObject> get_alembic_prim(std::shared_ptr<zeno::ABCTree> abctree, int index);
-
-extern void flipFrontBack(std::shared_ptr<PrimitiveObject> &prim);
 
 void writeObjFile(
     const std::shared_ptr<zeno::PrimitiveObject>& primitive,

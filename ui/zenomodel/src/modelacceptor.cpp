@@ -111,7 +111,7 @@ void ModelAcceptor::setUserDataInfo(const USERDATA_SETTING& info)
     m_userdatInfo = info;
 }
 
-void ModelAcceptor::BeginSubgraph(const QString& name, int type)
+void ModelAcceptor::BeginSubgraph(const QString& name, int type, bool bForkLocked)
 {
     if (m_bImport && name == "main")
     {
@@ -143,6 +143,7 @@ void ModelAcceptor::BeginSubgraph(const QString& name, int type)
         pSubModel = new SubGraphModel(m_pModel);
         pSubModel->setName(name);
         pSubModel->setType((SUBGRAPH_TYPE)type);
+        pSubModel->setForkLock(bForkLocked);
         m_pModel->appendSubGraph(pSubModel);
     }
     m_currentGraph = pSubModel;

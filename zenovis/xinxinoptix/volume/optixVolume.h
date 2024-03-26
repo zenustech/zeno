@@ -123,10 +123,26 @@ inline static void makeTypedGridWrapper(zeno::TextureObjectVDB::ElementType et, 
     });
 }
 
+struct VolumeAccel
+{
+	OptixTraversableHandle handle = 0;
+	CUdeviceptr            d_buffer = 0;
+
+	VolumeAccel() = default;
+	VolumeAccel(VolumeAccel&&) = default;
+
+	~VolumeAccel() {
+		if (0 != d_buffer) {
+        	CUDA_CHECK_NOTHROW( cudaFree( (void*)( d_buffer ) ) );
+        	d_buffer = 0; handle = 0;
+    	}
+	}
+};
+
 struct VolumeWrapper
 {
 	//openvdb::math::Transform::Ptr transform; // openvdb::math::Mat4f::identity();
-	glm::f64mat4 transform; 
+	glm::mat4 transform; 
 	std::vector<std::string> selected;
 
 	std::filesystem::file_time_type file_time;
@@ -134,7 +150,11 @@ struct VolumeWrapper
 	std::vector<std::shared_ptr<GridWrapper>> grids;
 	std::vector<std::function<void()>> tasks;
 
-	zeno::TextureObjectVDB::ElementType type; 
+	zeno::TextureObjectVDB::ElementType type;
+
+	VolumeAccel accel {};
+
+	~VolumeWrapper() = default;
 };
 
 bool loadVolume( VolumeWrapper& volume, const std::string& path );
@@ -155,16 +175,12 @@ sutil::Aabb worldAabb( const VolumeWrapper& volume );
 
 // The VolumeAccel struct contains a volume's geometric representation for
 // Optix: a traversalbe handle, and the (compacted) GAS device-buffer.
-struct VolumeAccel
-{
-	OptixTraversableHandle handle = 0;
-	CUdeviceptr            d_buffer = 0;
-};
+
 
 void buildVolumeAccel( VolumeAccel& accel, const VolumeWrapper& volume, const OptixDeviceContext& context );
 void cleanupVolumeAccel( VolumeAccel& accel );
 
-static inline void prepareVolumeTransform(std::string &raw, glm::f64mat4& linear_transform) {
+static inline void prepareVolumeTransform(std::string &raw, glm::mat4& linear_transform) {
 	rapidjson::Document d;
 	d.Parse(raw.c_str());
 	if ( d.IsNull() ) {return;}
@@ -192,16 +208,20 @@ static inline void prepareVolumeTransform(std::string &raw, glm::f64mat4& linear
 	parsing("rotate", rotate_vector);
 	parsing("translate", translate_vector);
 
+	glm::f64mat4 _transform(1.0); 
+
 	if (translate_vector != glm::f64vec3(0)) {
-		linear_transform = glm::translate(linear_transform, translate_vector);
+		_transform = glm::translate(_transform, translate_vector);
 	}
 
 	glm::f64vec3 rotate_axis = glm::f64vec3(rotate_vector);
 	if (rotate_vector.w != 0.0 && rotate_axis != glm::f64vec3(1, 1, 1)) {
-		linear_transform = glm::rotate(linear_transform, glm::radians(rotate_vector.w), rotate_axis);
+		_transform = glm::rotate(_transform, glm::radians(rotate_vector.w), rotate_axis);
 	}
 
 	if (scale_vector != glm::f64vec3(1)) {
-		linear_transform = glm::scale(linear_transform, scale_vector);
+		_transform = glm::scale(_transform, scale_vector);
 	}
+
+	linear_transform = _transform;
 }

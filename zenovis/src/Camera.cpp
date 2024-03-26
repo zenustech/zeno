@@ -37,10 +37,27 @@ void Camera::setCamera(zeno::CameraData const &cam) {
         m_center = center;
         m_theta = theta;
         m_phi = phi;
+
+        float cos_t = glm::cos(m_theta), sin_t = glm::sin(m_theta);
+        float cos_p = glm::cos(m_phi), sin_p = glm::sin(m_phi);
+        glm::vec3 front(cos_t * sin_p, sin_t, -cos_t * cos_p);
+        glm::vec3 up(-sin_t * sin_p, cos_t, sin_t * cos_p);
+        glm::vec3 left = glm::cross(up, front);
+        float map_to_up = glm::dot(up, zeno::vec_to_other<glm::vec3>(cam.up));
+        float map_to_left = glm::dot(left, zeno::vec_to_other<glm::vec3>(cam.up));
+        m_roll = glm::atan(map_to_left, map_to_up);
     }
 
     this->m_auto_radius = !cam.isSet;
     this->m_need_sync = true;
+}
+
+void Camera::setPhysicalCamera(float aperture, float shutter_speed, float iso, bool aces, bool exposure) {
+    this->zOptixCameraSettingInfo.aperture = aperture;
+    this->zOptixCameraSettingInfo.shutter_speed = shutter_speed;
+    this->zOptixCameraSettingInfo.iso = iso;
+    this->zOptixCameraSettingInfo.aces = aces;
+    this->zOptixCameraSettingInfo.exposure = exposure;
 }
 
 void Camera::placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up) {
@@ -67,6 +84,8 @@ void Camera::updateMatrix() {
     float cos_p = glm::cos(m_phi), sin_p = glm::sin(m_phi);
     glm::vec3 front(cos_t * sin_p, sin_t, -cos_t * cos_p);
     glm::vec3 up(-sin_t * sin_p, cos_t, sin_t * cos_p);
+    glm::vec3 left = glm::cross(up, front);
+    up = glm::cos(m_roll) * up + glm::sin(m_roll) * left;
 
     if (!m_ortho_mode) {
         m_near = 0.05f;

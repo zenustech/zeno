@@ -30,7 +30,7 @@ std::set<std::string> lightCameraNodes({
 "CameraEval", "CameraNode", "CihouMayaCameraFov", "ExtractCameraData", "GetAlembicCamera","MakeCamera",
 "LightNode", "BindLight", "ProceduralSky", "HDRSky",
     });
-std::string matlNode = "ShaderFinalize";
+std::set<std::string> matNodeNames = {"ShaderFinalize", "ShaderVolume", "ShaderVolumeHomogeneous"};
 
 std::set<std::string> GlobalComm::m_transformdObjs;
 MapObjects GlobalComm::m_newToviewObjs;

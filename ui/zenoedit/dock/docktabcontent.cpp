@@ -24,6 +24,7 @@
 #include "launch/corelaunch.h"
 #include "settings/zenosettingsmanager.h"
 #include "settings/zsettings.h"
+#include "dialog/ZOptixCameraSetting.h"
 #include <zenoui/comctrl/zcombobox.h>
 #include <zeno/core/Session.h>
 #include <zeno/types/UserData.h>
@@ -842,6 +843,8 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
         auto& ud = zeno::getSession().userData();
         m_background->setChecked(ud.get2<bool>("optix_show_background", false));
         pToolLayout->addWidget(m_background);
+        m_camera_setting = new QPushButton("Camera");
+        pToolLayout->addWidget(m_camera_setting);
     }
 
     pToolLayout->addWidget(new ZLineWidget(false, QColor("#121416")));
@@ -881,6 +884,19 @@ void DockContent_View::initConnections()
         });
     }
 
+    if (m_camera_setting) {
+        connect(m_camera_setting, &QPushButton::clicked, this, [=](bool bToggled) {
+            zenovis::ZOptixCameraSettingInfo info = m_pDisplay->getCamera();
+//            zeno::log_info("get Camera from optix thread {}", info.iso);
+
+            ZOptixCameraSetting dialog(info);
+            if (dialog.exec() == QDialog::Accepted) {
+//                zeno::log_info("set ZOptixCameraSettingInfo");
+                m_pDisplay->onSetCamera(info);
+            }
+        });
+    }
+
     connect(m_smooth_shading, &ZToolBarButton::toggled, this, [=](bool bToggled) {
         m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_SMOOTH_SHADING, bToggled);
     });
@@ -909,20 +925,7 @@ void DockContent_View::initConnections()
         m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_SCREEN_SHOOT, true);
     });
     connect(m_background, &QCheckBox::stateChanged, this, [=](int state) {
-        auto &ud = zeno::getSession().userData();
-        ud.set2("optix_show_background", state > 0);
-
-        {
-            Zenovis *pZenoVis = m_pDisplay->getZenoVis();
-            ZASSERT_EXIT(pZenoVis);
-            auto session = pZenoVis->getSession();
-            ZASSERT_EXIT(session);
-            auto scene = session->get_scene();
-            ZASSERT_EXIT(scene);
-            zeno::getSession().globalComm->setNeedUpdateLight(true);
-            m_pDisplay->setSimpleRenderOption();
-            zenoApp->getMainWindow()->updateViewport();
-        }
+        m_pDisplay->onSetBackground(state > 0);
     });
 
     connect(m_resizeViewport, &ZToolBarButton::clicked, this, [=]() {

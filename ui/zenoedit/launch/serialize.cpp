@@ -11,6 +11,9 @@
 
 using namespace JsonHelper;
 
+
+std::set<std::string> matNodeNames = {"ShaderFinalize", "ShaderVolume", "ShaderVolumeHomogeneous"};
+
 static QString nameMangling(const QString& prefix, const QString& ident) {
     if (prefix.isEmpty())
         return ident;

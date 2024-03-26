@@ -9,7 +9,7 @@ namespace zeno {
 ZENO_API PrimitiveObject* primParsedFrom(const char *binData, std::size_t binSize);
 
 ZENO_API void primTriangulateQuads(PrimitiveObject *prim);
-ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv = true, bool has_lines = true);
+ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv = true, bool has_lines = true, bool with_attr = true);
 ZENO_API void primTriangulateIntoPolys(PrimitiveObject *prim);
 ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv = true);
 
@@ -33,11 +33,14 @@ ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPri
 
 ZENO_API void primLineSort(PrimitiveObject *prim, bool reversed = false);
 ZENO_API void primLineDistance(PrimitiveObject *prim, std::string resAttr, int start = 0);
+ZENO_API void prim_set_abcpath(PrimitiveObject* prim, std::string path_name);
+ZENO_API void prim_set_faceset(PrimitiveObject* prim, std::string faceset_name);
 
 ZENO_API void primFilterVerts(PrimitiveObject *prim, std::string tagAttr, int tagValue, bool isInversed = false, std::string revampAttrO = {}, std::string method = "verts");
 
 ZENO_API void primMarkIsland(PrimitiveObject *prim, std::string tagAttr);
 ZENO_API std::vector<std::shared_ptr<PrimitiveObject>> primUnmergeVerts(PrimitiveObject *prim, std::string tagAttr);
+ZENO_API std::vector<std::shared_ptr<PrimitiveObject>> primUnmergeFaces(PrimitiveObject *prim, std::string tagAttr);
 
 ZENO_API void primSimplifyTag(PrimitiveObject *prim, std::string tagAttr);
 ZENO_API void primColorByTag(PrimitiveObject *prim, std::string tagAttr, std::string clrAttr, int seed = -1);

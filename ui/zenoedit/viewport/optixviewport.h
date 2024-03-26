@@ -3,6 +3,7 @@
 
 #include <QtWidgets>
 #include "recordvideomgr.h"
+#include "zenovis/Camera.h"
 #include <zenomodel/include/modeldata.h>
 
 class Zenovis;
@@ -40,6 +41,9 @@ public slots:
     void onModifyLightData(UI_VECTYPE pos, UI_VECTYPE scale, UI_VECTYPE rotate, UI_VECTYPE color, float intensity, QString nodename, UI_VECTYPE skipParam);
     void onUpdateCameraProp(float aperture, float disPlane, UI_VECTYPE skipParam = UI_VECTYPE());
     void onUpdateEngine();
+    void onSetBackground(bool bShowBg);
+
+    void onSetData(float, float, float, bool, bool);
 
 private:
     Zenovis *m_zenoVis;
@@ -65,6 +69,7 @@ public:
     void setCameraRes(const QVector2D& res);
     void setSafeFrames(bool bLock, int nx, int ny);
     void setNumSamples(int samples);
+    void showBackground(bool bShow);
     Zenovis* getZenoVis() const;
     bool isCameraMoving() const;
     void updateCamera();
@@ -77,6 +82,9 @@ public:
     void setSlidFeq(int feq);
     void modifyLightData(UI_VECTYPE pos, UI_VECTYPE scale, UI_VECTYPE rotate, UI_VECTYPE color, float intensity, QString name, UI_VECTYPE skipParam);
     void updateEngine();
+
+    zenovis::ZOptixCameraSettingInfo getdata_from_optix_thread();
+    void setdata_on_optix_thread(zenovis::ZOptixCameraSettingInfo value);
 
 signals:
     void cameraAboutToRefresh();
@@ -96,6 +104,8 @@ signals:
     void sig_modifyLightData(UI_VECTYPE pos, UI_VECTYPE scale, UI_VECTYPE rotate, UI_VECTYPE color, float intensity, QString name, UI_VECTYPE skipParam);
     void sig_updateCameraProp(float aperture, float disPlane, UI_VECTYPE skipParam = UI_VECTYPE());
     void sig_updateEngine();
+    void sig_setBackground(bool bShowBg);
+    void sig_setdata_on_optix_thread(float, float, float, bool, bool);
 
 public slots:
     void onFrameRunFinished(int frame);

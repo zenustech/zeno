@@ -9,28 +9,11 @@
 #include <zeno/utils/logger.h>
 #include <zeno/types/UserData.h>
 
-#include <memory>
-#include <string>
-#include <iostream>
-#include "magic_enum.hpp"
-#include "zeno/utils/vec.h"
-
-#include <rapidjson/document.h>
-#include <rapidjson/rapidjson.h>
-#include <rapidjson/writer.h>
-#include <rapidjson/stringbuffer.h>
-
 namespace zeno {
-
 
 struct ShaderFinalize : INode {
     virtual void apply() override {
         EmissionPass em;
-        auto backend = get_param<std::string>("backend");
-        if (backend == "HLSL")
-            em.backend = em.HLSL;
-        else if (backend == "GLSL")
-            em.backend = em.GLSL;
 
         if (has_input("commonCode"))
             em.commonCode += get_input<StringObject>("commonCode")->get();
@@ -83,15 +66,7 @@ struct ShaderFinalize : INode {
             {3, "mat_reflectance"}, 
             {1, "mat_opacity"},
             {1, "mat_thickness"},
-            {1, "mat_isHair"},
-
-            {1, "vol_depth"},
-            {1, "vol_extinction"},
-            {3, "vol_sample_albedo"},
-            {1, "vol_sample_anisotropy"},
-
-            {1, "vol_sample_density"},
-            {3, "vol_sample_emission"},
+            {1, "mat_isHair"}
 
         }, {
             get_input<IObject>("base", std::make_shared<NumericObject>(float(1.0f))),
@@ -141,16 +116,7 @@ struct ShaderFinalize : INode {
             get_input<IObject>("reflectance", std::make_shared<NumericObject>(vec3f(1))),
             get_input<IObject>("opacity", std::make_shared<NumericObject>(float(0.0))),
             get_input<IObject>("thickness", std::make_shared<NumericObject>(float(0.0f))),
-            get_input<IObject>("isHair", std::make_shared<NumericObject>(float(0.0f))),
-
-            get_input<IObject>("vol_depth", std::make_shared<NumericObject>((float)(999))),
-            get_input<IObject>("vol_extinction", std::make_shared<NumericObject>(float(1))),
-            get_input<IObject>("vol_sample_albedo", std::make_shared<NumericObject>(vec3f(0.5))),
-            get_input<IObject>("vol_sample_anisotropy", std::make_shared<NumericObject>(float(0))),
-
-            get_input<IObject>("vol_sample_density", std::make_shared<NumericObject>(float(0))),
-            get_input<IObject>("vol_sample_emission", std::make_shared<NumericObject>(vec3f(0))),
-            
+            get_input<IObject>("isHair", std::make_shared<NumericObject>(float(0.0f)))
         });
         auto commonCode = em.getCommonCode();
 
@@ -161,10 +127,11 @@ struct ShaderFinalize : INode {
             code += "bool sssFxiedRadius = false;\n";
         }
 
-        vec3i mask_value = get_input2<vec3i>("mask_value");
+        vec3f mask_value = (vec3f)get_input2<vec3i>("mask_value") / 255.0f;
         code += zeno::format("vec3 mask_value = vec3({}, {}, {});\n", mask_value[0], mask_value[1], mask_value[2]);
 
         auto mtl = std::make_shared<MaterialObject>();
+        mtl->mtlidkey = get_input2<std::string>("mtlid");
         mtl->frag = std::move(code);
 
         if (has_input("extensionsCode"))
@@ -189,107 +156,7 @@ struct ShaderFinalize : INode {
             }
         }
 
-        if (has_input("tex3dList"))
-        {
-            int   vol_depth = (int)get_input2<float>("vol_depth");
-            float vol_extinction = get_input2<float>("vol_extinction");
-
-            auto VolumeEmissionScaler = get_input2<std::string>("VolumeEmissionScaler");
-            commonCode += "#define VolumeEmissionScaler VolumeEmissionScalerType::" + VolumeEmissionScaler + "\n";
-
-            vol_depth = clamp(vol_depth, 9, 9999);
-            vol_extinction = clamp(vol_extinction, 1e-5, 1e+5);
-
-            std::string parameters = "";
-            {
-                using namespace rapidjson;
-                Document d; d.SetObject();
-                auto& allocator = d.GetAllocator();
-
-                Value s = Value();
-                s.SetInt(vol_depth);
-                d.AddMember("vol_depth", s, allocator);
-
-                s = Value();
-                s.SetFloat(vol_extinction); 
-                d.AddMember("vol_extinction", s, allocator);
-
-                StringBuffer buffer;
-                Writer<StringBuffer> writer(buffer);
-                d.Accept(writer);
-                parameters = buffer.GetString();
-            }
-            mtl->parameters = parameters;
-
-            auto tex3dList = get_input<ListObject>("tex3dList")->getRaw(); //get<zeno::StringObject>();
-
-            for (const auto& tex3d : tex3dList) {
-
-                const auto ele = dynamic_cast<zeno::StringObject*>(tex3d);
-                if (ele == nullptr) {
-                    auto texObject = std::dynamic_pointer_cast<zeno::TextureObjectVDB>(tex3d->clone());
-                    mtl->tex3Ds.push_back(texObject); 
-                    continue;
-                }
-
-                auto path = ele->get();
-                auto ud = ele->userData();
-
-                const std::string _key_ = "channel";
-                std::string channel_string = "0";
-
-                if (ud.has(_key_)) {
-
-                    if (ud.isa<zeno::StringObject>(_key_)) {
-                        //auto get = ud.get<zeno::StringObject>("channel");
-                        channel_string = ud.get2<std::string>(_key_);
-
-                    } else if (ud.isa<zeno::NumericObject>(_key_)) {
-                        auto channel_number = ud.get2<int>(_key_);
-                        channel_number = max(0, channel_number);
-                        channel_string = std::to_string(channel_number);
-                    } 
-                }
-
-                auto toVDB = std::make_shared<TextureObjectVDB>();
-                toVDB->path = path;
-                toVDB->channel = channel_string;
-                toVDB->eleType = TextureObjectVDB::ElementType::Fp32;
-
-                mtl->tex3Ds.push_back(std::move(toVDB)); 
-            }
-
-            std::stringstream type_string;
-
-            // using DataTypeNVDB = float; nanovdb::Fp32;
-            // using GridTypeNVDB = nanovdb::NanoGrid<DataTypeNVDB>;
-
-            for (size_t i=0; i<mtl->tex3Ds.size(); ++i) {
-                auto& tex3d = mtl->tex3Ds.at(i);
-                auto idx = std::to_string(i);
-
-                auto nano_type = magic_enum::enum_name(tex3d->eleType);
-
-                type_string << "using DataTypeNVDB" << idx << " = nanovdb::" << nano_type << "; \n";
-                type_string << "using GridTypeNVDB" << idx << " = nanovdb::NanoGrid<DataTypeNVDB" << idx + ">; \n";
-            }
-            commonCode += type_string.str();
-            //std::cout << commonCode << std::endl; 
-            auto ud = get_input<ListObject>("tex3dList")->userData();
-
-            if ( ud.has("transform") ) {
-            
-                auto transformString = ud.get2<std::string>("transform");
-                mtl->transform = transformString;
-            }
-        }
-
         mtl->common = std::move(commonCode);
-        //if (has_input("mtlid"))
-        //{
-            mtl->mtlidkey = get_input2<std::string>("mtlid");
-        //}
-
         set_output("mtl", std::move(mtl));
     }
 };
@@ -350,25 +217,13 @@ ZENDEFNODE(ShaderFinalize, {
         {"string", "extensionsCode"},
         {"string", "mtlid", "Mat1"},
         {"list", "tex2dList"},//TODO: bate's asset manager
-        {"list", "tex3dList"},
-
-        {"enum Raw Density Absorption", "VolumeEmissionScaler", "Raw"},
-
-        {"float", "vol_depth",    "999"},
-        {"float", "vol_extinction", "1"},
-        {"vec3f", "vol_sample_albedo", "0.5,0.5,0.5"},
-
-        {"float", "vol_sample_anisotropy", "0"},
-
-        {"float", "vol_sample_density", "0"},
-        {"vec3f", "vol_sample_emission", "0,0,0"},
         {"vec3i", "mask_value", "0,0,0"},
     },
     {
         {"MaterialObject", "mtl"},
     },
     {
-        {"enum GLSL HLSL", "backend", "GLSL"},
+        {"enum CUDA", "backend", "CUDA"},
     },
     {"shader"},
 });

@@ -10,11 +10,13 @@
 #include <Alembic/AbcCoreOgawa/All.h>
 #include <Alembic/Abc/ErrorHandler.h>
 #include "ABCTree.h"
+#include "ABCCommon.h"
 #include "zeno/utils/format.h"
 #include "zeno/utils/string.h"
 #include "zeno/types/ListObject.h"
 #include "zeno/utils/log.h"
 #include "zeno/funcs/PrimitiveUtils.h"
+#include "zeno/extra/TempNode.h"
 #include <numeric>
 #include <filesystem>
 
@@ -76,6 +78,9 @@ struct WriteAlembic : INode {
             // only modifying the parts that have changed.
             std::vector<int32_t> vertex_index_per_face;
             std::vector<int32_t> vertex_count_per_face;
+            if (flipFrontBack) {
+                primFlipFaces(prim.get());
+            }
 
             if (prim->loops.size()) {
                 for (const auto& [start, size]: prim->polys) {
@@ -83,11 +88,6 @@ struct WriteAlembic : INode {
                         vertex_index_per_face.push_back(prim->loops[start + i]);
                     }
                     auto base = vertex_index_per_face.size() - size;
-                    if (flipFrontBack) {
-                        for (int j = 0; j < (size / 2); j++) {
-                            std::swap(vertex_index_per_face[base + j], vertex_index_per_face[base + size - 1 - j]);
-                        }
-                    }
                     vertex_count_per_face.push_back(size);
                 }
                 if (prim->loops.has_attr("uvs")) {
@@ -100,12 +100,6 @@ struct WriteAlembic : INode {
                         for (auto i = 0; i < size; i++) {
                             auto uv_index = prim->loops.attr<int>("uvs")[start + i];
                             uv_indices.push_back(uv_index);
-                        }
-                        auto base = uv_indices.size() - size;
-                        if (flipFrontBack) {
-                            for (int j = 0; j < (size / 2); j++) {
-                                std::swap(uv_indices[base + j], uv_indices[base + size - 1 - j]);
-                            }
                         }
                     }
                     // UVs and Normals use GeomParams, which can be written or read
@@ -133,14 +127,8 @@ struct WriteAlembic : INode {
             else {
                 for (auto i = 0; i < prim->tris.size(); i++) {
                     vertex_index_per_face.push_back(prim->tris[i][0]);
-                    if (flipFrontBack) {
-                        vertex_index_per_face.push_back(prim->tris[i][2]);
-                        vertex_index_per_face.push_back(prim->tris[i][1]);
-                    }
-                    else {
-                        vertex_index_per_face.push_back(prim->tris[i][1]);
-                        vertex_index_per_face.push_back(prim->tris[i][2]);
-                    }
+                    vertex_index_per_face.push_back(prim->tris[i][1]);
+                    vertex_index_per_face.push_back(prim->tris[i][2]);
                 }
                 vertex_count_per_face.resize(prim->tris.size(), 3);
                 if (prim->tris.has_attr("uv0")) {
@@ -151,14 +139,8 @@ struct WriteAlembic : INode {
                     auto& uv2 = prim->tris.attr<zeno::vec3f>("uv2");
                     for (auto i = 0; i < prim->tris.size(); i++) {
                         uv_data.emplace_back(uv0[i][0], uv0[i][1]);
-                        if (flipFrontBack) {
-                            uv_data.emplace_back(uv2[i][0], uv2[i][1]);
-                            uv_data.emplace_back(uv1[i][0], uv1[i][1]);
-                        }
-                        else {
-                            uv_data.emplace_back(uv1[i][0], uv1[i][1]);
-                            uv_data.emplace_back(uv2[i][0], uv2[i][1]);
-                        }
+                        uv_data.emplace_back(uv1[i][0], uv1[i][1]);
+                        uv_data.emplace_back(uv2[i][0], uv2[i][1]);
                         uv_indices.push_back(uv_indices.size());
                         uv_indices.push_back(uv_indices.size());
                         uv_indices.push_back(uv_indices.size());
@@ -208,7 +190,7 @@ template<typename T1, typename T2>
 void write_attrs(std::map<std::string, std::any> &attrs, std::string path, std::shared_ptr<PrimitiveObject> prim, T1& schema, T2& samp) {
     OCompoundProperty arbAttrs = schema.getArbGeomParams();
     prim->verts.foreach_attr<std::variant<vec3f, float, int>>([&](auto const &key, auto &arr) {
-        if (key == "v" || key == "nrm" || key == "faceset" || key == "matid") {
+        if (key == "v" || key == "nrm") {
             return;
         }
         std::string full_key = path + '/' + key;
@@ -278,6 +260,9 @@ void write_attrs(std::map<std::string, std::any> &attrs, std::string path, std::
     }
     if (prim->polys.size() > 0) {
         prim->polys.foreach_attr<std::variant<vec3f, float, int>>([&](auto const &key, auto &arr) {
+            if (key == "faceset" || key == "matid" || key == "abcpath") {
+                return;
+            }
             std::string full_key = path + '/' + key;
             using T = std::decay_t<decltype(arr[0])>;
             if constexpr (std::is_same_v<T, zeno::vec3f>) {
@@ -312,6 +297,9 @@ void write_attrs(std::map<std::string, std::any> &attrs, std::string path, std::
     }
     if (prim->tris.size() > 0) {
         prim->tris.foreach_attr<std::variant<vec3f, float, int>>([&](auto const &key, auto &arr) {
+            if (key == "faceset" || key == "matid" || key == "abcpath") {
+                return;
+            }
             // zeno::log_info("{} {}", key, int(arr.size()));
             std::string full_key = path + '/' + key;
             using T = std::decay_t<decltype(arr[0])>;
@@ -354,6 +342,9 @@ void write_user_data(std::map<std::string, std::any> &user_attrs, std::string pa
         if (key == "faceset_count" || zeno::starts_with(key, "faceset_")) {
             continue;
         }
+        if (key == "abcpath_count" || zeno::starts_with(key, "abcpath_")) {
+            continue;
+        }
         if (key == "matNum" || zeno::starts_with(key, "Material_") || key == "mtlid") {
             continue;
         }
@@ -380,7 +371,7 @@ void write_user_data(std::map<std::string, std::any> &user_attrs, std::string pa
                 user_attrs[full_key] = p;
             }
             auto v = ud.get2<vec2i>(key);
-            std::any_cast<OV2iProperty>(user_attrs[full_key]).set(Imath_3_2::V2i(v[0], v[1]));
+            std::any_cast<OV2iProperty>(user_attrs[full_key]).set(Imath::V2i(v[0], v[1]));
         }
         else if (ud.has<vec3i>(key)) {
             if (user_attrs.count(full_key) == 0) {
@@ -389,7 +380,7 @@ void write_user_data(std::map<std::string, std::any> &user_attrs, std::string pa
                 user_attrs[full_key] = p;
             }
             auto v = ud.get2<vec3i>(key);
-            std::any_cast<OV3iProperty>(user_attrs[full_key]).set(Imath_3_2::V3i(v[0], v[1], v[2]));
+            std::any_cast<OV3iProperty>(user_attrs[full_key]).set(Imath::V3i(v[0], v[1], v[2]));
         }
         else if (ud.has<vec2f>(key)) {
             if (user_attrs.count(full_key) == 0) {
@@ -398,7 +389,7 @@ void write_user_data(std::map<std::string, std::any> &user_attrs, std::string pa
                 user_attrs[full_key] = p;
             }
             auto v = ud.get2<vec2f>(key);
-            std::any_cast<OV2fProperty>(user_attrs[full_key]).set(Imath_3_2::V2f(v[0], v[1]));
+            std::any_cast<OV2fProperty>(user_attrs[full_key]).set(Imath::V2f(v[0], v[1]));
         }
         else if (ud.has<vec3f>(key)) {
             if (user_attrs.count(full_key) == 0) {
@@ -407,7 +398,7 @@ void write_user_data(std::map<std::string, std::any> &user_attrs, std::string pa
                 user_attrs[full_key] = p;
             }
             auto v = ud.get2<vec3f>(key);
-            std::any_cast<OV3fProperty>(user_attrs[full_key]).set(Imath_3_2::V3f(v[0], v[1], v[2]));
+            std::any_cast<OV3fProperty>(user_attrs[full_key]).set(Imath::V3f(v[0], v[1], v[2]));
         }
         else if (ud.has<std::string>(key)) {
             if (user_attrs.count(full_key) == 0) {
@@ -459,10 +450,22 @@ static void write_faceset(
         }
     }
 }
+
+void prim_to_poly_if_only_vertex(PrimitiveObject* p) {
+    if (p->polys.size() || p->tris.size()) {
+        return;
+    }
+    p->loops.resize(p->verts.size());
+    std::iota(p->loops.begin(), p->loops.end(), 0);
+    p->polys.resize(p->verts.size());
+    for (auto i = 0; i < p->polys.size(); i++) {
+        p->polys[i] = {i, 1};
+    }
+}
+
 struct WriteAlembic2 : INode {
     OArchive archive;
     OPolyMesh meshyObj;
-    OPoints pointsObj;
     std::string usedPath;
     std::map<std::string, std::any> attrs;
     std::map<std::string, std::any> user_attrs;
@@ -475,7 +478,7 @@ struct WriteAlembic2 : INode {
         float fps = get_input2<float>("fps");
         int frameid;
         if (has_input("frameid")) {
-            frameid = get_input2<int>("frameid");
+            frameid = std::lround(get_input2<float>("frameid"));
         } else {
             frameid = getGlobalState()->frameid;
         }
@@ -497,12 +500,7 @@ struct WriteAlembic2 : INode {
                 "None"
             );
             archive.addTimeSampling(TimeSampling(1.0/fps, frame_start / fps));
-            if (prim->polys.size() || prim->tris.size()) {
-                meshyObj = OPolyMesh( OObject( archive, 1 ), "mesh" );
-            }
-            else {
-                pointsObj = OPoints (OObject( archive, 1 ), "points");
-            }
+            meshyObj = OPolyMesh( OObject( archive, 1 ), "mesh" );
             attrs.clear();
             user_attrs.clear();
         }
@@ -512,7 +510,11 @@ struct WriteAlembic2 : INode {
         if (archive.valid() == false) {
             zeno::makeError("Not init. Check whether in correct correct frame range.");
         }
-        if (prim->polys.size() || prim->tris.size()) {
+        if (flipFrontBack) {
+            primFlipFaces(prim.get());
+        }
+        {
+            prim_to_poly_if_only_vertex(prim.get());
             // Create a PolyMesh class.
             OPolyMeshSchema &mesh = meshyObj.getSchema();
             write_faceset(prim, mesh, o_faceset, o_faceset_schema);
@@ -540,11 +542,6 @@ struct WriteAlembic2 : INode {
                         vertex_index_per_face.push_back(prim->loops[start + i]);
                     }
                     auto base = vertex_index_per_face.size() - size;
-                    if (flipFrontBack) {
-                        for (int j = 0; j < (size / 2); j++) {
-                            std::swap(vertex_index_per_face[base + j], vertex_index_per_face[base + size - 1 - j]);
-                        }
-                    }
                     vertex_count_per_face.push_back(size);
                 }
                 if (prim->loops.has_attr("uvs")) {
@@ -557,12 +554,6 @@ struct WriteAlembic2 : INode {
                         for (auto i = 0; i < size; i++) {
                             auto uv_index = prim->loops.attr<int>("uvs")[start + i];
                             uv_indices.push_back(uv_index);
-                        }
-                        auto base = uv_indices.size() - size;
-                        if (flipFrontBack) {
-                            for (int j = 0; j < (size / 2); j++) {
-                                std::swap(uv_indices[base + j], uv_indices[base + size - 1 - j]);
-                            }
                         }
                     }
                     // UVs and Normals use GeomParams, which can be written or read
@@ -595,14 +586,8 @@ struct WriteAlembic2 : INode {
             else {
                 for (auto i = 0; i < prim->tris.size(); i++) {
                     vertex_index_per_face.push_back(prim->tris[i][0]);
-                    if (flipFrontBack) {
-                        vertex_index_per_face.push_back(prim->tris[i][2]);
-                        vertex_index_per_face.push_back(prim->tris[i][1]);
-                    }
-                    else {
-                        vertex_index_per_face.push_back(prim->tris[i][1]);
-                        vertex_index_per_face.push_back(prim->tris[i][2]);
-                    }
+                    vertex_index_per_face.push_back(prim->tris[i][1]);
+                    vertex_index_per_face.push_back(prim->tris[i][2]);
                 }
                 vertex_count_per_face.resize(prim->tris.size(), 3);
                 if (prim->tris.has_attr("uv0")) {
@@ -613,14 +598,8 @@ struct WriteAlembic2 : INode {
                     auto& uv2 = prim->tris.attr<zeno::vec3f>("uv2");
                     for (auto i = 0; i < prim->tris.size(); i++) {
                         uv_data.emplace_back(uv0[i][0], uv0[i][1]);
-                        if (flipFrontBack) {
-                            uv_data.emplace_back(uv2[i][0], uv2[i][1]);
-                            uv_data.emplace_back(uv1[i][0], uv1[i][1]);
-                        }
-                        else {
-                            uv_data.emplace_back(uv1[i][0], uv1[i][1]);
-                            uv_data.emplace_back(uv2[i][0], uv2[i][1]);
-                        }
+                        uv_data.emplace_back(uv1[i][0], uv1[i][1]);
+                        uv_data.emplace_back(uv2[i][0], uv2[i][1]);
                         uv_indices.push_back(uv_indices.size());
                         uv_indices.push_back(uv_indices.size());
                         uv_indices.push_back(uv_indices.size());
@@ -653,27 +632,6 @@ struct WriteAlembic2 : INode {
                 }
             }
         }
-        else {
-            OPointsSchema &points = pointsObj.getSchema();
-            OCompoundProperty user = points.getUserProperties();
-            write_user_data(user_attrs, "", prim, user);
-            points.setTimeSampling(1);
-            OPointsSchema::Sample samp(V3fArraySample( ( const V3f * )prim->verts.data(), prim->verts.size() ));
-            std::vector<uint64_t> ids(prim->verts.size());
-            if (prim->verts.attr_is<int>("id")) {
-                auto &ids_ = prim->verts.attr<int>("id");
-                for (auto i = 0; i < prim->verts.size(); i++) {
-                    ids[i] = ids_[i];
-                }
-            }
-            else {
-                std::iota(ids.begin(), ids.end(), 0);
-            }
-            samp.setIds(Alembic::Abc::UInt64ArraySample(ids.data(), ids.size()));
-            write_velocity(prim, samp);
-            write_attrs(attrs, "", prim, points, samp);
-            points.set( samp );
-        }
     }
 };
 
@@ -697,19 +655,26 @@ struct WriteAlembicPrims : INode {
     OArchive archive;
     std::string usedPath;
     std::map<std::string, OPolyMesh> meshyObjs;
-    std::map<std::string, OPoints> pointsObjs;
     std::map<std::string, std::any> attrs;
     std::map<std::string, std::any> user_attrs;
     std::map<std::string, std::map<std::string, OFaceSet>> o_faceset;
     std::map<std::string, std::map<std::string, OFaceSetSchema>> o_faceset_schema;
 
     virtual void apply() override {
-        auto prims = get_input<ListObject>("prims")->get<PrimitiveObject>();
+        std::vector<std::shared_ptr<PrimitiveObject>> prims;
+
+        if (has_input("prim")) {
+            auto prim = get_input2<PrimitiveObject>("prim");
+            prims = primUnmergeFaces(prim.get(), "abcpath");
+        }
+        else {
+            prims = get_input<ListObject>("prims")->get<PrimitiveObject>();
+        }
         bool flipFrontBack = get_input2<int>("flipFrontBack");
         float fps = get_input2<float>("fps");
         int frameid;
         if (has_input("frameid")) {
-            frameid = get_input2<int>("frameid");
+            frameid = std::lround(get_input2<float>("frameid"));
         } else {
             frameid = getGlobalState()->frameid;
         }
@@ -723,6 +688,60 @@ struct WriteAlembicPrims : INode {
         }
         std::vector<std::shared_ptr<PrimitiveObject>> new_prims;
 
+        {
+            // unmerged prim when abcpath_count of a prim in list more than 1
+            std::vector<std::shared_ptr<PrimitiveObject>> temp_prims;
+            int counter = 0;
+            for (auto prim: prims) {
+                counter += 1;
+                prim_to_poly_if_only_vertex(prim.get());
+                if (prim->userData().get2<int>("abcpath_count", 0) == 0) {
+                    prim_set_abcpath(prim.get(), "/ABC/unassigned");
+                }
+                if (prim->userData().get2<int>("abcpath_count") == 1) {
+                    if (prim->userData().get2<int>("faceset_count", 0) == 0) {
+                        prim_set_faceset(prim.get(), "defFS");
+                    }
+                    temp_prims.push_back(prim);
+                }
+                else {
+                    auto unmerged_prims = primUnmergeFaces(prim.get(), "abcpath");
+                    for (const auto& unmerged_prim: unmerged_prims) {
+                        if (unmerged_prim->userData().get2<int>("faceset_count", 0) == 0) {
+                            prim_set_faceset(unmerged_prim.get(), "defFS");
+                        }
+                        temp_prims.push_back(unmerged_prim);
+                    }
+                }
+            }
+            prims = temp_prims;
+
+            // merge by abcpath
+            std::vector<std::string> paths;
+            std::map<std::string, std::vector<std::shared_ptr<PrimitiveObject>>> path_to_prims;
+
+            for (auto prim: prims) {
+                auto path = prim->userData().get2<std::string>("abcpath_0");
+                if (path_to_prims.count(path) == 0) {
+                    paths.push_back(path);
+                    path_to_prims[path] = {};
+                }
+                path_to_prims[path].push_back(prim);
+            }
+            for (auto path : paths) {
+                if (path_to_prims[path].size() > 1) {
+                    std::vector<zeno::PrimitiveObject *> primList;
+                    for (auto prim: path_to_prims[path]) {
+                        primList.push_back(prim.get());
+                    }
+                    auto prim = primMergeWithFacesetMatid(primList);
+                    new_prims.push_back(prim);
+                }
+                else {
+                    new_prims.push_back(path_to_prims[path][0]);
+                }
+            }
+        }
         if (usedPath != path) {
             usedPath = path;
             archive = CreateArchiveWithInfo(
@@ -734,52 +753,28 @@ struct WriteAlembicPrims : INode {
             );
             archive.addTimeSampling(TimeSampling(1.0/fps, frame_start / fps));
             meshyObjs.clear();
-            pointsObjs.clear();
             attrs.clear();
             user_attrs.clear();
-            {
-                std::vector<std::string> paths;
-                std::map<std::string, std::vector<std::shared_ptr<PrimitiveObject>>> path_to_prims;
-
-                for (auto prim: prims) {
-                    auto path = prim->userData().get2<std::string>("_abc_path");
-                    if (path_to_prims.count(path) == 0) {
-                        paths.push_back(path);
-                        path_to_prims[path] = {};
-                    }
-                    path_to_prims[path].push_back(prim);
-                }
-                for (auto path : paths) {
-                    if (path_to_prims[path].size() > 1) {
-                        std::vector<zeno::PrimitiveObject *> primList;
-                        for (auto prim: path_to_prims[path]) {
-                            primList.push_back(prim.get());
-                        }
-                        auto prim = primMergeWithFacesetMatid(primList);
-                        new_prims.push_back(prim);
-                    }
-                    else {
-                        new_prims.push_back(path_to_prims[path][0]);
-                    }
-                }
-            }
+            o_faceset.clear();
+            o_faceset_schema.clear();
             for (auto prim: new_prims) {
-                auto path = prim->userData().get2<std::string>("_abc_path");
+                auto path = prim->userData().get2<std::string>("abcpath_0");
                 if (!starts_with(path, "/ABC/")) {
-                    log_error("_abc_path must start with /ABC/");
+                    log_error("abcpath_0 must start with /ABC/");
                 }
                 auto n_path = path.substr(5);
                 auto subnames = split_str(n_path, '/');
                 OObject oObject = OObject( archive, 1 );
                 for (auto i = 0; i < subnames.size() - 1; i++) {
-                    oObject = OObject( archive, subnames[i] );
+                    auto child = oObject.getChild(subnames[i]);
+                    if (child.valid()) {
+                        oObject = child;
+                    }
+                    else {
+                        oObject = OObject( oObject, subnames[i] );
+                    }
                 }
-                if (prim->polys.size() || prim->tris.size()) {
-                    meshyObjs[path] = OPolyMesh (oObject, subnames[subnames.size() - 1]);
-                }
-                else {
-                    pointsObjs[path] = OPoints (oObject, subnames[subnames.size() - 1]);
-                }
+                meshyObjs[path] = OPolyMesh (oObject, subnames[subnames.size() - 1]);
             }
         }
         if (!(frame_start <= frameid && frameid <= frame_end)) {
@@ -789,9 +784,12 @@ struct WriteAlembicPrims : INode {
             zeno::makeError("Not init. Check whether in correct correct frame range.");
         }
         for (auto prim: new_prims) {
-            auto path = prim->userData().get2<std::string>("_abc_path");
+            if (flipFrontBack) {
+                primFlipFaces(prim.get());
+            }
+            auto path = prim->userData().get2<std::string>("abcpath_0");
 
-            if (prim->polys.size() || prim->tris.size()) {
+            {
                 // Create a PolyMesh class.
                 OPolyMeshSchema &mesh = meshyObjs[path].getSchema();
                 auto &ud = prim->userData();
@@ -822,11 +820,6 @@ struct WriteAlembicPrims : INode {
                             vertex_index_per_face.push_back(prim->loops[start + i]);
                         }
                         auto base = vertex_index_per_face.size() - size;
-                        if (flipFrontBack) {
-                            for (int j = 0; j < (size / 2); j++) {
-                                std::swap(vertex_index_per_face[base + j], vertex_index_per_face[base + size - 1 - j]);
-                            }
-                        }
                         vertex_count_per_face.push_back(size);
                     }
                     if (prim->loops.has_attr("uvs")) {
@@ -839,12 +832,6 @@ struct WriteAlembicPrims : INode {
                             for (auto i = 0; i < size; i++) {
                                 auto uv_index = prim->loops.attr<int>("uvs")[start + i];
                                 uv_indices.push_back(uv_index);
-                            }
-                            auto base = uv_indices.size() - size;
-                            if (flipFrontBack) {
-                                for (int j = 0; j < (size / 2); j++) {
-                                    std::swap(uv_indices[base + j], uv_indices[base + size - 1 - j]);
-                                }
                             }
                         }
                         // UVs and Normals use GeomParams, which can be written or read
@@ -877,14 +864,8 @@ struct WriteAlembicPrims : INode {
                 else {
                     for (auto i = 0; i < prim->tris.size(); i++) {
                         vertex_index_per_face.push_back(prim->tris[i][0]);
-                        if (flipFrontBack) {
-                            vertex_index_per_face.push_back(prim->tris[i][2]);
-                            vertex_index_per_face.push_back(prim->tris[i][1]);
-                        }
-                        else {
-                            vertex_index_per_face.push_back(prim->tris[i][1]);
-                            vertex_index_per_face.push_back(prim->tris[i][2]);
-                        }
+                        vertex_index_per_face.push_back(prim->tris[i][1]);
+                        vertex_index_per_face.push_back(prim->tris[i][2]);
                     }
                     vertex_count_per_face.resize(prim->tris.size(), 3);
                     if (prim->tris.has_attr("uv0")) {
@@ -895,14 +876,8 @@ struct WriteAlembicPrims : INode {
                         auto& uv2 = prim->tris.attr<zeno::vec3f>("uv2");
                         for (auto i = 0; i < prim->tris.size(); i++) {
                             uv_data.emplace_back(uv0[i][0], uv0[i][1]);
-                            if (flipFrontBack) {
-                                uv_data.emplace_back(uv2[i][0], uv2[i][1]);
-                                uv_data.emplace_back(uv1[i][0], uv1[i][1]);
-                            }
-                            else {
-                                uv_data.emplace_back(uv1[i][0], uv1[i][1]);
-                                uv_data.emplace_back(uv2[i][0], uv2[i][1]);
-                            }
+                            uv_data.emplace_back(uv1[i][0], uv1[i][1]);
+                            uv_data.emplace_back(uv2[i][0], uv2[i][1]);
                             uv_indices.push_back(uv_indices.size());
                             uv_indices.push_back(uv_indices.size());
                             uv_indices.push_back(uv_indices.size());
@@ -935,33 +910,13 @@ struct WriteAlembicPrims : INode {
                     }
                 }
             }
-            else {
-                OPointsSchema &points = pointsObjs[path].getSchema();
-                OCompoundProperty user = points.getUserProperties();
-                write_user_data(user_attrs, path, prim, user);
-                points.setTimeSampling(1);
-                OPointsSchema::Sample samp(V3fArraySample( ( const V3f * )prim->verts.data(), prim->verts.size() ));
-                std::vector<uint64_t> ids(prim->verts.size());
-                if (prim->verts.attr_is<int>("id")) {
-                    auto &ids_ = prim->verts.attr<int>("id");
-                    for (auto i = 0; i < prim->verts.size(); i++) {
-                        ids[i] = ids_[i];
-                    }
-                }
-                else {
-                    std::iota(ids.begin(), ids.end(), 0);
-                }
-                samp.setIds(Alembic::Abc::UInt64ArraySample(ids.data(), ids.size()));
-                write_velocity(prim, samp);
-                write_attrs(attrs, path, prim, points, samp);
-                points.set( samp );
-            }
         }
     }
 };
 
 ZENDEFNODE(WriteAlembicPrims, {
     {
+        {"prim"},
         {"list", "prims"},
         {"frameid"},
         {"writepath", "path", ""},

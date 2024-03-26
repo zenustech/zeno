@@ -14,13 +14,7 @@
 #include "DisneyBRDF.h"
 #include "DisneyBSDF.h"
 
-__forceinline__ __device__ float3 interp(float2 barys, float3 a, float3 b, float3 c)
-{
-    float w0 = 1 - barys.x - barys.y;
-    float w1 = barys.x;
-    float w2 = barys.y;
-    return w0*a + w1*b + w2*c;
-}
+#include <OptiXToolkit/ShaderUtil/SelfIntersectionAvoidance.h>
 
 static __inline__ __device__ bool isBadVector(const vec3& vector) {
 
@@ -140,11 +134,11 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     attrs.tang = optixTransformVectorFromObjectToWorldSpace(attrs.tang);
     attrs.rayLength = optixGetRayTmax();
 
-    attrs.instPos = rt_data->instPos[inst_idx];
-    attrs.instNrm = rt_data->instNrm[inst_idx];
-    attrs.instUv = rt_data->instUv[inst_idx];
-    attrs.instClr = rt_data->instClr[inst_idx];
-    attrs.instTang = rt_data->instTang[inst_idx];
+    attrs.instPos =  decodeColor( rt_data->instPos[inst_idx] );
+    attrs.instNrm =  decodeColor( rt_data->instNrm[inst_idx] );
+    attrs.instUv =   decodeColor( rt_data->instUv[inst_idx]  );
+    attrs.instClr =  decodeColor( rt_data->instClr[inst_idx] );
+    attrs.instTang = decodeColor( rt_data->instTang[inst_idx]);
 
     unsigned short isLight = 0;//rt_data->lightMark[vert_aux_offset + primIdx];
 #endif
@@ -288,18 +282,13 @@ vec3 projectedBarycentricCoord(vec3 p, vec3 q, vec3 u, vec3 v)
 extern "C" __global__ void __closesthit__radiance()
 {
     RadiancePRD* prd = getPRD();
-    if(prd->test_distance)
-    {
-        prd->maxDistance = optixGetRayTmax();
-        return;
-    }
 
     const OptixTraversableHandle gas = optixGetGASTraversableHandle();
     const uint           sbtGASIndex = optixGetSbtGASIndex();
     const uint               primIdx = optixGetPrimitiveIndex();
 
     const float3 ray_orig = optixGetWorldRayOrigin();
-    const float3 ray_dir  = normalize(optixGetWorldRayDirection());
+    const float3 ray_dir  = optixGetWorldRayDirection();
     float3 P = ray_orig + optixGetRayTmax() * ray_dir;
 
     HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
@@ -313,19 +302,35 @@ extern "C" __global__ void __closesthit__radiance()
     // sphere center (q.x, q.y, q.z), sphere radius q.w
     optixGetSphereData( gas, primIdx, sbtGASIndex, 0.0f, &q );
 
-    float3 _pos_world_      = P;
-    float3 _pos_object_     = optixTransformPointFromWorldToObjectSpace( _pos_world_ );
+    float3& sphere_center = *(float3*)&q;
 
-    float3 _normal_object_  = ( _pos_object_ - make_float3( q ) ) / q.w;
-    float3 _normal_world_   = normalize( optixTransformNormalFromObjectToWorldSpace( _normal_object_ ) );
+    float3 objPos   = optixTransformPointFromWorldToObjectSpace(P);
+    float3 objNorm  = normalize( ( objPos - sphere_center ) / q.w );
 
-    float3 N = _normal_world_;
+    objPos = sphere_center + objNorm * q.w;
+
+    const float c0 = 5.9604644775390625E-8f;
+    const float c1 = 1.788139769587360206060111522674560546875E-7f;
+    const float c2 = 1.19209317972490680404007434844970703125E-7f;
+
+    auto fma = [](auto a, auto b, auto c) -> auto {
+        return a * b + c;
+    };
+
+    vec3 objErr = fma( vec3( c0 ), abs( sphere_center ), vec3( c1 * q.w * 2.0f ) );
+    float objOffset = dot( objErr, abs( objNorm ) );
+
+    float3 wldPos, wldNorm; float wldOffset;
+    SelfIntersectionAvoidance::transformSafeSpawnOffset( wldPos, wldNorm, wldOffset, objPos, objNorm, objOffset );
+
+    P = wldPos;
+    float3 N = wldNorm;
 
     prd->geometryNormal = N;
 
     attrs.pos = P;
     attrs.nrm = N;
-    attrs.uv = sphereUV(_normal_object_, false);
+    attrs.uv = sphereUV(objNorm, false);
 
     attrs.clr = {};
     attrs.tang = {};
@@ -340,35 +345,43 @@ extern "C" __global__ void __closesthit__radiance()
     size_t inst_idx = optixGetInstanceIndex();
     size_t vert_aux_offset = rt_data->auxOffset[inst_idx];
     size_t vert_idx_offset = vert_aux_offset + primIdx*3;
+    //size_t tri_aux_offset = rt_data->auxTriOffset[inst_idx];
+    //size_t tri_idx_offset = tri_aux_offset + primIdx;
+    //size_t vidx0 = rt_data->vidx[tri_idx_offset * 3 + 0];
+    //size_t vidx1 = rt_data->vidx[tri_idx_offset * 3 + 1];
+    //size_t vidx2 = rt_data->vidx[tri_idx_offset * 3 + 2];
 
     unsigned short isLight = 0;//rt_data->lightMark[vert_aux_offset + primIdx];
 
     float3 _vertices_[3];
     optixGetTriangleVertexData( gas, primIdx, sbtGASIndex, 0, _vertices_);
     
-    const float3& v0 = optixTransformPointFromObjectToWorldSpace(_vertices_[0]);
-    const float3& v1 = optixTransformPointFromObjectToWorldSpace(_vertices_[1]);
-    const float3& v2 = optixTransformPointFromObjectToWorldSpace(_vertices_[2]);
+    const float3& v0 = _vertices_[0];
+    const float3& v1 = _vertices_[1];
+    const float3& v2 = _vertices_[2];
+
+    float3 objPos, objNorm; float objOffset; 
+    //SelfIntersectionAvoidance::getSafeTriangleSpawnOffset( objPos, objNorm, objOffset );
+    float2 barys = optixGetTriangleBarycentrics();
+    SelfIntersectionAvoidance::getSafeTriangleSpawnOffset( objPos, objNorm, objOffset, v0, v1, v2, barys );
+
+    float3 wldPos, wldNorm; float wldOffset;
+    SelfIntersectionAvoidance::transformSafeSpawnOffset( wldPos, wldNorm, wldOffset, objPos, objNorm, objOffset );
 
     /* MODMA */
-    float2       barys    = optixGetTriangleBarycentrics();
-    auto P_Local = interp(barys, v0, v1, v2);
-    P = P_Local; // this value has precision issue for big float
-
+    P = wldPos;
     attrs.pos = P;
 
-    float3 N_Local = normalize( cross( normalize(_vertices_[1]-_vertices_[0]), normalize(_vertices_[2]-_vertices_[1]) ) ); // this value has precision issue for big float
-    float3 N_World = normalize(optixTransformNormalFromObjectToWorldSpace(N_Local));
+    const float3& N_Local = objNorm;
+    float3 N = wldNorm;
 
-
-    if (isBadVector(N_World)) 
+    if (isBadVector(N)) 
     {  
-        N_World = normalize(DisneyBSDF::SampleScatterDirection(prd->seed));
-        N_World = faceforward( N_World, -ray_dir, N_World );
+        N = normalize(DisneyBSDF::SampleScatterDirection(prd->seed));
+        N = faceforward( N, -ray_dir, N );
     }
-    prd->geometryNormal = N_World;
+    prd->geometryNormal = N;
 
-    float3 N = N_World;
     attrs.nrm = N;
 
     const float3& uv0  = decodeColor( rt_data->uv[ vert_idx_offset+0 ] );
@@ -388,11 +401,11 @@ extern "C" __global__ void __closesthit__radiance()
     attrs.tang = normalize(interp(barys, tan0, tan1, tan2));
     attrs.tang = optixTransformVectorFromObjectToWorldSpace(attrs.tang);
 
-    attrs.instPos = rt_data->instPos[inst_idx];
-    attrs.instNrm = rt_data->instNrm[inst_idx];
-    attrs.instUv = rt_data->instUv[inst_idx];
-    attrs.instClr = rt_data->instClr[inst_idx];
-    attrs.instTang = rt_data->instTang[inst_idx];
+    attrs.instPos =  decodeColor( rt_data->instPos[inst_idx] );
+    attrs.instNrm =  decodeColor( rt_data->instNrm[inst_idx] );
+    attrs.instUv =   decodeColor( rt_data->instUv[inst_idx]  );
+    attrs.instClr =  decodeColor( rt_data->instClr[inst_idx] );
+    attrs.instTang = decodeColor( rt_data->instTang[inst_idx]);
     attrs.rayLength = optixGetRayTmax();
 
     float3 n0 = normalize( decodeNormal(rt_data->nrm[ vert_idx_offset+0 ]) );
@@ -420,11 +433,22 @@ extern "C" __global__ void __closesthit__radiance()
     {
       attrs.T = attrs.tang;
     }
-    attrs.V = -normalize(ray_dir);
+    attrs.V = -(ray_dir);
     //MatOutput mats = evalMaterial(rt_data->textures, rt_data->uniforms, attrs);
     MatOutput mats = optixDirectCall<MatOutput, cudaTextureObject_t[], float4*, const MatInput&>( rt_data->dc_index, rt_data->textures, rt_data->uniforms, attrs );
-    prd->mask_value = mats.mask_value;
 
+    if (prd->test_distance) {
+    
+        if(mats.opacity>0.99f) { // it's actually transparency not opacity
+            prd->_tmin_ = optixGetRayTmax();
+        } else if(rnd(prd->seed)<mats.opacity) {
+            prd->_tmin_ = optixGetRayTmax();
+        } else {
+            prd->test_distance = false;
+            prd->maxDistance = optixGetRayTmax();
+        }
+        return;
+    }
 
 #if _SPHERE_
 
@@ -443,15 +467,11 @@ extern "C" __global__ void __closesthit__radiance()
     n2 = normalize( decodeNormal(rt_data->nrm[ vert_idx_offset+2 ]) );
     n2 = dot(n2, N_Local)>(1-mats.smoothness)?n2:N_Local;
 
-    N_Local = normalize(interp(barys, n0, n1, n2));
-    N_World = optixTransformNormalFromObjectToWorldSpace(N_Local);
-
-    N = N_World;
-
-
+    N_smooth = normalize(interp(barys, n0, n1, n2));
+    N = optixTransformNormalFromObjectToWorldSpace(N_smooth);
 
     if(mats.doubleSide>0.5f||mats.thin>0.5f){
-        N = faceforward( N_World, -ray_dir, N_World );
+        N = faceforward( N, -ray_dir, N );
         prd->geometryNormal = faceforward( prd->geometryNormal, -ray_dir, prd->geometryNormal );
     }
 #endif
@@ -528,34 +548,19 @@ extern "C" __global__ void __closesthit__radiance()
         auto trans = DisneyBSDF::Transmission2(prd->sigma_s(), prd->sigma_t, prd->channelPDF, optixGetRayTmax(), true);
         prd->attenuation2 *= trans;
         prd->attenuation *= trans;
-        //prd->origin = P + 1e-5 * ray_dir; 
-        if(prd->maxDistance>optixGetRayTmax())
-            prd->maxDistance-=optixGetRayTmax();
-        prd->alphaHit = true;
-        prd->offsetUpdateRay(P, ray_dir); 
+        //prd->origin = P;
+        prd->direction = ray_dir;
+        //auto n = prd->geometryNormal;
+        //n = faceforward(n, -ray_dir, n);
+        prd->_tmin_ = optixGetRayTmax();
         return;
     }
 
     prd->attenuation2 = prd->attenuation;
     prd->countEmitted = false;
-    if(isLight==1)
-    {
-        prd->countEmitted = true;
-        //hit light, emit
-//        float dist = length(P - optixGetWorldRayOrigin()) + 1e-5;
-//        float3 lv1 = v1-v0;
-//        float3 lv2 = v2-v0;
-//        float A = 0.5 * length(cross(lv1, lv2));
-//        float3 lnrm = normalize(cross(normalize(lv1), normalize(lv2)));
-//        float3 L     = normalize(P - optixGetWorldRayOrigin());
-//        float  LnDl  = clamp(-dot( lnrm, L ), 0.0f, 1.0f);
-//        float weight = LnDl * A / (M_PIf * dist);
-//        prd->radiance = attrs.clr * weight;
-        prd->offsetUpdateRay(P, ray_dir); 
-        return;
-    }
     prd->prob2 = prd->prob;
     prd->passed = false;
+
     if(mats.opacity>0.99f)
     {
 
@@ -574,9 +579,8 @@ extern "C" __global__ void __closesthit__radiance()
         prd->adepth++;
         //prd->samplePdf = 0.0f;
         prd->radiance = make_float3(0.0f);
-        //prd->origin = P + 1e-5 * ray_dir;
         prd->alphaHit = true;
-        prd->offsetUpdateRay(P, ray_dir);
+        prd->_tmin_ = optixGetRayTmax();
         return;
     }
     if(mats.opacity<=0.99f)
@@ -601,11 +605,8 @@ extern "C" __global__ void __closesthit__radiance()
         //prd->samplePdf = 0.0f;
         //you shall pass!
         prd->radiance = make_float3(0.0f);
-
-        prd->origin = P;
-        prd->direction = ray_dir;
+        prd->_tmin_ = optixGetRayTmax();
         prd->alphaHit = true;
-        prd->offsetUpdateRay(P, ray_dir);
 
         prd->prob *= 1;
         prd->countEmitted = false;
@@ -691,6 +692,7 @@ extern "C" __global__ void __closesthit__radiance()
         prd->diffDepth++;
     }
 
+
     prd->passed = false;
     bool inToOut = false;
     bool outToIn = false;
@@ -701,7 +703,7 @@ extern "C" __global__ void __closesthit__radiance()
     //if(flag == DisneyBSDF::transmissionEvent || flag == DisneyBSDF::diracEvent) {
         next_ray_is_going_inside = dot(vec3(prd->geometryNormal),vec3(wi))<=0;
     }
-
+    prd->max_depth = ((prd->depth==0 && isSS) || (prd->depth>0 && (mats.specTrans>0||mats.isHair>0)) )?16:prd->max_depth;
     if(mats.thin>0.5f || mats.doubleSide>0.5f)
     {
         if (prd->curMatIdx > 0) {
@@ -746,7 +748,7 @@ extern "C" __global__ void __closesthit__radiance()
                         vec3 channelPDF = vec3(1.0f/3.0f);
                         prd->pushMat(extinction);
                         prd->isSS = false;
-                        prd->scatterDistance = mats.transDistance;
+                        prd->scatterDistance = mats.scatterDistance;
                         prd->maxDistance = mats.scatterStep>0.5f? DisneyBSDF::SampleDistance(prd->seed, prd->scatterDistance) : 1e16f;
                     } else {
 
@@ -853,6 +855,9 @@ extern "C" __global__ void __closesthit__radiance()
 
     prd->countEmitted = false;
     prd->attenuation *= reflectance;
+    if(mats.subsurface>0 && (mats.thin>0.5 || mats.doubleSide>0.5) && istransmission){
+      prd->attenuation2 *= reflectance;
+    }
     prd->depth++;
 
     if(prd->depth>=3)
@@ -899,11 +904,26 @@ extern "C" __global__ void __closesthit__radiance()
     shadowPRD.attanuation = make_float3(1.0f, 1.0f, 1.0f);
     shadowPRD.nonThinTransHit = (mats.thin < 0.5f && mats.specTrans > 0) ? 1 : 0;
 
-    shadowPRD.origin = rtgems::offset_ray(P,  prd->geometryNormal); // camera space
+    float3 frontPos, backPos;
+    SelfIntersectionAvoidance::offsetSpawnPoint( frontPos, backPos, wldPos, prd->geometryNormal, wldOffset );
+
+    shadowPRD.origin = dot(-ray_dir, wldNorm) > 0 ? frontPos : backPos;
+    //auto shadingP = rtgems::offset_ray(shadowPRD.origin + params.cam.eye,  prd->geometryNormal); // world space
+    
+    shadowPRD.origin = frontPos;
+    if(mats.subsurface>0 && (mats.thin>0.5 || mats.doubleSide>0.5) && istransmission){
+        shadowPRD.origin = backPos; //rtgems::offset_ray(P,  -prd->geometryNormal);
+    }
+    
     auto shadingP = rtgems::offset_ray(P + params.cam.eye,  prd->geometryNormal); // world space
+    if(mats.subsurface>0 && (mats.thin>0.5 || mats.doubleSide>0.5) && istransmission){
+        shadingP = rtgems::offset_ray(P + params.cam.eye,  -prd->geometryNormal);
+    }
 
     prd->radiance = {};
     prd->direction = normalize(wi);
+    prd->origin = dot(prd->direction, wldNorm) > 0 ? frontPos : backPos;
+
 
     float3 radianceNoShadow = {};
     float3* dummy_prt = nullptr;
@@ -922,13 +942,19 @@ extern "C" __global__ void __closesthit__radiance()
       prd->done = true;
     }
 
+    prd->direction = normalize(wi);
+
     if(mats.thin<0.5f && mats.doubleSide<0.5f){
-        prd->origin = rtgems::offset_ray(P, (next_ray_is_going_inside)? -prd->geometryNormal : prd->geometryNormal);
+        //auto p_prim = vec3(prd->origin) + optixGetRayTmax() * vec3(prd->direction);
+        //float3 p = p_prim;
+        prd->origin = next_ray_is_going_inside? backPos : frontPos;
     }
     else {
-        prd->origin = rtgems::offset_ray(P, ( dot(prd->direction, prd->geometryNormal) < 0 )? -prd->geometryNormal : prd->geometryNormal);
+        //auto p_prim = vec3(prd->origin) + optixGetRayTmax() * vec3(prd->direction);
+        //float3 p = p_prim;
+        prd->origin = dot(prd->direction, prd->geometryNormal) < 0? backPos : frontPos;
     }
-    
+
     if (prd->medium != DisneyBSDF::vacuum) {
         prd->_mask_ = (uint8_t)(EverythingMask ^ VolumeMatMask);
     } else {

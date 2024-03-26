@@ -64,6 +64,7 @@
 #include <zeno/utils/orthonormal.h>
 #include <zeno/types/LightObject.h>
 
+#include <tinygltf/json.hpp>
 #include <unordered_map>
 
 #include <glm/glm.hpp>
@@ -71,7 +72,6 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <rapidjson/document.h>
 
 #include "LightBounds.h"
 #include "LightTree.h"
@@ -132,8 +132,6 @@ int32_t mouse_button = -1;
 //int32_t samples_per_launch = 16;
 
 std::vector<std::shared_ptr<VolumeWrapper>> list_volume;
-std::vector<std::shared_ptr<VolumeAccel>>   list_volume_accel;
-
 std::vector<uint> list_volume_index_in_shader_list;
 
 //------------------------------------------------------------------------------
@@ -592,135 +590,6 @@ static void initLaunchParams( PathTracerState& state )
     state.params.subframe_index     = 0u;
 }
 
-static void updateRootIAS()
-{
-  timer.tick();
-  auto campos = state.params.cam.eye;
-  const float mat3r4c[12] = {1,0,0,-campos.x,   0,1,0,-campos.y,   0,0,1,-campos.z};
-  std::vector<OptixInstance> optix_instances{};
-  uint sbt_offset = 0u;
-  {
-    if (state.meshHandleIAS != 0u) {
-      OptixInstance inst{};
-
-      inst.flags = OPTIX_INSTANCE_FLAG_NONE;
-      inst.sbtOffset = 0;
-      inst.instanceId = 0;
-      inst.visibilityMask = DefaultMatMask;
-      inst.traversableHandle = state.meshHandleIAS;
-
-      memcpy(inst.transform, mat3r4c, sizeof(float) * 12);
-      optix_instances.push_back( inst );
-    }
-  }
-
-  auto optix_instance_idx = optix_instances.size()-1;
-
-  if (sphereHandleXAS != 0u) {
-    OptixInstance opinstance {};
-    ++optix_instance_idx;
-    sbt_offset = 0u;
-
-    opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
-    opinstance.instanceId = optix_instance_idx;
-    opinstance.sbtOffset = sbt_offset;
-    opinstance.visibilityMask = DefaultMatMask;
-    opinstance.traversableHandle = sphereHandleXAS;
-    memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
-    optix_instances.push_back( opinstance );
-  }
-
-  // process volume
-  for ( uint i=0; i<list_volume.size(); ++i ) {
-
-    OptixInstance optix_instance {};
-    ++optix_instance_idx;
-
-    sbt_offset = list_volume_index_in_shader_list[i] * RAY_TYPE_COUNT;
-
-    optix_instance.flags = OPTIX_INSTANCE_FLAG_NONE;
-    optix_instance.instanceId = optix_instance_idx;
-    optix_instance.sbtOffset = sbt_offset;
-    optix_instance.visibilityMask = VolumeMatMask; //VOLUME_OBJECT;
-    optix_instance.traversableHandle = list_volume_accel[i]->handle;
-    getOptixTransform( *(list_volume[i]), optix_instance.transform ); // transform as stored in Grid
-
-    optix_instance.transform[3] -= campos.x;
-    optix_instance.transform[7] -= campos.y;
-    optix_instance.transform[11] -= campos.z;
-
-    optix_instances.push_back( optix_instance );
-  }
-
-  uint32_t MAX_INSTANCE_ID;
-  optixDeviceContextGetProperty( state.context,
-                                OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID, &MAX_INSTANCE_ID, sizeof(MAX_INSTANCE_ID));
-  state.params.maxInstanceID = MAX_INSTANCE_ID;
-
-  //process light
-  if (lightsWrapper.lightTrianglesGas != 0)
-  {
-    ++optix_instance_idx;
-    OptixInstance opinstance {};
-
-    auto combinedID = std::string("Light") + ":" + std::to_string(ShaderMaker::Mesh);
-    auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
-
-    opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
-    opinstance.instanceId = MAX_INSTANCE_ID-2;
-    opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
-    opinstance.visibilityMask = LightMatMask;
-    opinstance.traversableHandle = lightsWrapper.lightTrianglesGas;
-    memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
-
-    optix_instances.push_back( opinstance );
-  }
-
-  if (lightsWrapper.lightPlanesGas != 0)
-  {
-    ++optix_instance_idx;
-    OptixInstance opinstance {};
-
-    auto combinedID = std::string("Light") + ":" + std::to_string(ShaderMaker::Mesh);
-    auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
-
-    opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
-    opinstance.instanceId = MAX_INSTANCE_ID-1;
-    opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
-    opinstance.visibilityMask = LightMatMask;
-    opinstance.traversableHandle = lightsWrapper.lightPlanesGas;
-    memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
-
-    optix_instances.push_back( opinstance );
-  }
-
-  if (lightsWrapper.lightSpheresGas != 0)
-  {
-    ++optix_instance_idx;
-    OptixInstance opinstance {};
-
-    auto combinedID = std::string("Light") + ":" + std::to_string(ShaderMaker::Sphere);
-    auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
-
-    opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
-    opinstance.instanceId = MAX_INSTANCE_ID;
-    opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
-    opinstance.visibilityMask = LightMatMask;
-    opinstance.traversableHandle = lightsWrapper.lightSpheresGas;
-    memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
-
-    optix_instances.push_back( opinstance );
-  }
-
-  OptixAccelBuildOptions accel_options{};
-  accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
-  accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
-
-  buildIAS(state.context, accel_options, optix_instances, state.rootBufferIAS, state.rootHandleIAS);
-
-  timer.tock("update Root IAS");
-  state.params.handle = state.rootHandleIAS;
-}
 static void handleCameraUpdate( Params& params )
 {
     if( !camera_changed )
@@ -1083,12 +952,19 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
 
     std::vector<uint32_t> vertexAuxOffsetGlobal(num_instances);
     uint32_t vertexAuxOffset = 0u;
-    
+#ifdef USE_SHORT
+    std::vector<ushort3> instPos(num_instances);
+    std::vector<ushort3> instNrm(num_instances);
+    std::vector<ushort3> instUv(num_instances);
+    std::vector<ushort3> instClr(num_instances);
+    std::vector<ushort3> instTang(num_instances);
+#else
     std::vector<float3> instPos(num_instances);
     std::vector<float3> instNrm(num_instances);
     std::vector<float3> instUv(num_instances);
     std::vector<float3> instClr(num_instances);
     std::vector<float3> instTang(num_instances);
+#endif
     size_t sbt_offset = 0;
 
     for( size_t i = 0; i < g_staticAndDynamicMeshNum; ++i )
@@ -1107,11 +983,11 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
         vertexAuxOffsetGlobal[i] = vertexAuxOffset;
         vertexAuxOffset += mesh->verts.size(); 
 
-        instPos[i] = defaultInstPos;
-        instNrm[i] = defaultInstNrm;
-        instUv[i] = defaultInstUv;
-        instClr[i] = defaultInstClr;
-        instTang[i] = defaultInstTang;
+        instPos[i] = toHalf({0,0,0,0});
+        instNrm[i] = toHalf({0,0,0,0});;
+        instUv[i] = toHalf({0,0,0,0});;
+        instClr[i] = toHalf({0,0,0,0});;
+        instTang[i] = toHalf({0,0,0,0});;
     }
 
     std::size_t instanceId = g_staticAndDynamicMeshNum;
@@ -1144,11 +1020,11 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
 
                     vertexAuxOffsetGlobal[instanceId] = vertexAuxOffset; 
                     
-                    instPos[instanceId] = instAttrs.pos[k];
-                    instNrm[instanceId] = instAttrs.nrm[k];
-                    instUv[instanceId] = instAttrs.uv[k];
-                    instClr[instanceId] = instAttrs.clr[k];
-                    instTang[instanceId] = instAttrs.tang[k];
+                    instPos[instanceId] = toHalf(instAttrs.pos[k]);
+                    instNrm[instanceId] = toHalf(instAttrs.nrm[k]);
+                    instUv[instanceId] = toHalf(instAttrs.uv[k]);
+                    instClr[instanceId] = toHalf(instAttrs.clr[k]);
+                    instTang[instanceId] = toHalf(instAttrs.tang[k]);
 
                     ++instanceId;
                 }
@@ -1170,11 +1046,11 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
 
                 vertexAuxOffsetGlobal[instanceId] = vertexAuxOffset; 
 
-                instPos[instanceId] = defaultInstPos;
-                instNrm[instanceId] = defaultInstNrm;
-                instUv[instanceId] = defaultInstUv;
-                instClr[instanceId] = defaultInstClr;
-                instTang[instanceId] = defaultInstTang;
+                instPos[instanceId] = toHalf({0,0,0,0});;
+                instNrm[instanceId] = toHalf({0,0,0,0});;
+                instUv[instanceId] = toHalf({0,0,0,0});;
+                instClr[instanceId] = toHalf({0,0,0,0});;
+                instTang[instanceId] = toHalf({0,0,0,0});;
                 
                 ++instanceId;
                 ++meshesOffset;
@@ -1242,133 +1118,173 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
     timer.tock("Build Mesh IAS");    
 }
 
-void buildRootIAS()
+void updateRootIAS()
 {
     timer.tick();
-    auto campos = state.params.cam.eye;
-    const float mat3r4c[12] = {1,0,0,0,   0,1,0,0,   0,0,1,0};
+    const auto campos = state.params.cam.eye;
+    const float mat3r4c[12] = {1,0,0,-campos.x,   
+                               0,1,0,-campos.y,   
+                               0,0,1,-campos.z};
+
     std::vector<OptixInstance> optix_instances{};
+    uint optix_instance_idx = 0u;
     uint sbt_offset = 0u;
-    {
-        if (state.meshHandleIAS != 0u) {
-            OptixInstance inst{};
 
-            inst.flags = OPTIX_INSTANCE_FLAG_NONE;
-            inst.sbtOffset = 0;
-            inst.instanceId = 0;
-            inst.visibilityMask = DefaultMatMask; 
-            inst.traversableHandle = state.meshHandleIAS;
+    if (state.meshHandleIAS != 0u) {
+        OptixInstance inst{};
 
-            memcpy(inst.transform, mat3r4c, sizeof(float) * 12);
-            optix_instances.push_back( inst );
-        }
+        inst.flags = OPTIX_INSTANCE_FLAG_NONE;
+        inst.sbtOffset = 0;
+        inst.instanceId = optix_instance_idx;
+        inst.visibilityMask = DefaultMatMask;
+        inst.traversableHandle = state.meshHandleIAS;
+
+        memcpy(inst.transform, mat3r4c, sizeof(float) * 12);
+        optix_instances.push_back( inst );
     }
 
-        auto optix_instance_idx = optix_instances.size()-1;
+    if (sphereHandleXAS != 0u) {
+        OptixInstance opinstance {};
+        ++optix_instance_idx;
+        sbt_offset = 0u;
 
-        if (sphereHandleXAS != 0u) {
-            OptixInstance opinstance {};
-            ++optix_instance_idx;
-            sbt_offset = 0u;
+        opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
+        opinstance.instanceId = optix_instance_idx;
+        opinstance.sbtOffset = sbt_offset;
+        opinstance.visibilityMask = DefaultMatMask;
+        opinstance.traversableHandle = sphereHandleXAS;
+        memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
+        optix_instances.push_back( opinstance );
+    }
 
-            opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
-            opinstance.instanceId = optix_instance_idx;
-            opinstance.sbtOffset = sbt_offset;
-            opinstance.visibilityMask = DefaultMatMask;
-            opinstance.traversableHandle = sphereHandleXAS;
-            memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
-            optix_instances.push_back( opinstance );
-        }
+    // process volume
+	for (uint i=0; i<OptixUtil::volumeBoxs.size(); ++i) {
+        
+		OptixInstance optix_instance {};
+    	++optix_instance_idx;
 
-        // process volume
-        for ( uint i=0; i<list_volume.size(); ++i ) {
-            
-            OptixInstance optix_instance {};
-            ++optix_instance_idx;
+		auto& [key, val] = OptixUtil::volumeBoxs.at(i);
 
-            sbt_offset = list_volume_index_in_shader_list[i] * RAY_TYPE_COUNT;
+		auto combinedID = key + ":" + std::to_string(ShaderMaker::Volume);
+    	auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
 
-            optix_instance.flags = OPTIX_INSTANCE_FLAG_NONE;
-            optix_instance.instanceId = optix_instance_idx;
-            optix_instance.sbtOffset = sbt_offset;
-            optix_instance.visibilityMask = VolumeMatMask; //VOLUME_OBJECT;
-            optix_instance.traversableHandle = list_volume_accel[i]->handle;
-            getOptixTransform( *(list_volume[i]), optix_instance.transform ); // transform as stored in Grid
+    	sbt_offset = shader_index * RAY_TYPE_COUNT;
 
-            optix_instances.push_back( optix_instance );
-        }
+		optix_instance.flags = OPTIX_INSTANCE_FLAG_NONE;
+		optix_instance.instanceId = optix_instance_idx;
+		optix_instance.sbtOffset = sbt_offset;
+		optix_instance.visibilityMask = VolumeMatMask; //VOLUME_OBJECT;
+		optix_instance.traversableHandle = val->accel.handle;
+        
+		getOptixTransform( *(val), optix_instance.transform );
+        
+        if ( OptixUtil::g_vdb_list_for_each_shader.count(shader_index) > 0 ) {
 
-        uint32_t MAX_INSTANCE_ID;
-        optixDeviceContextGetProperty( state.context,
-            OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID, &MAX_INSTANCE_ID, sizeof(MAX_INSTANCE_ID));
-        state.params.maxInstanceID = MAX_INSTANCE_ID;
+            auto& vdb_list = OptixUtil::g_vdb_list_for_each_shader.at(shader_index);
 
-        //process light
-        if (lightsWrapper.lightTrianglesGas != 0)
-        {
-            ++optix_instance_idx;
-            OptixInstance opinstance {};
+            if (vdb_list.size() > 0)
+            {
+                auto vdb_key = vdb_list.front();
+                auto vdb_ptr = OptixUtil::g_vdb_cached_map.at(vdb_key);
 
-            auto combinedID = std::string("Light") + ":" + std::to_string(ShaderMaker::Mesh);
-            auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
+                auto volume_index_offset = list_volume_index_in_shader_list[0];
+                optix_instance.traversableHandle = list_volume[shader_index-volume_index_offset]->accel.handle;
 
-            opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
-            opinstance.instanceId = MAX_INSTANCE_ID-2;
-            opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
-            opinstance.visibilityMask = LightMatMask;
-            opinstance.traversableHandle = lightsWrapper.lightTrianglesGas;
-            memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
+                auto ibox = vdb_ptr->grids.front()->indexedBox();
 
-            optix_instances.push_back( opinstance );
-        }
+                auto imax = glm::vec3(ibox.max().x(), ibox.max().y(), ibox.max().z()); 
+                auto imin = glm::vec3(ibox.min().x(), ibox.min().y(), ibox.min().z()); 
 
-        if (lightsWrapper.lightPlanesGas != 0)
-        {
-            ++optix_instance_idx;
-            OptixInstance opinstance {};
+                auto diff = imax + 1.0f - imin;
+                auto center = imin + diff / 2.0f;
 
-            auto combinedID = std::string("Light") + ":" + std::to_string(ShaderMaker::Mesh);
-            auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
+                glm::mat4 dirtyMatrix(1.0f);
+                dirtyMatrix = glm::scale(dirtyMatrix, 1.0f/diff);
+                dirtyMatrix = glm::translate(dirtyMatrix, -center);
+                
+                dirtyMatrix = val->transform * dirtyMatrix;
 
-            opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
-            opinstance.instanceId = MAX_INSTANCE_ID-1;
-            opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
-            opinstance.visibilityMask = LightMatMask;
-            opinstance.traversableHandle = lightsWrapper.lightPlanesGas;
-            memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
+                auto dummy = glm::transpose(dirtyMatrix);
+                auto dummy_ptr = glm::value_ptr( dummy );
+                for (size_t i=0; i<12; ++i) {   
+                    //optix_instance.transform[i] = mat3r4c[i];
+                    optix_instance.transform[i] = dummy_ptr[i];
+                }
+            }
+        } // count  
 
-            optix_instances.push_back( opinstance );
-        }
+		optix_instance.transform[3] -= campos.x;
+		optix_instance.transform[7] -= campos.y;
+		optix_instance.transform[11] -= campos.z;
 
-        if (lightsWrapper.lightSpheresGas != 0)
-        {
-            ++optix_instance_idx;
-            OptixInstance opinstance {};
+		optix_instances.push_back( optix_instance );
+	}
 
-            auto combinedID = std::string("Light") + ":" + std::to_string(ShaderMaker::Sphere);
-            auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
+    uint32_t MAX_INSTANCE_ID;
+    optixDeviceContextGetProperty( state.context, OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID, &MAX_INSTANCE_ID, sizeof(MAX_INSTANCE_ID) );
+    state.params.maxInstanceID = MAX_INSTANCE_ID;
 
-            opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
-            opinstance.instanceId = MAX_INSTANCE_ID;
-            opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
-            opinstance.visibilityMask = LightMatMask;
-            opinstance.traversableHandle = lightsWrapper.lightSpheresGas;
-            memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
+  	//process light
+	if (lightsWrapper.lightTrianglesGas != 0)
+	{
+		OptixInstance opinstance {};
 
-            optix_instances.push_back( opinstance );
-        }
-    
-    OptixAccelBuildOptions accel_options{};
-    accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
-    accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
+		auto combinedID = std::string("Light") + ":" + std::to_string(ShaderMaker::Mesh);
+		auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
 
-    buildIAS(state.context, accel_options, optix_instances, state.rootBufferIAS, state.rootHandleIAS);
+		opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
+		opinstance.instanceId = MAX_INSTANCE_ID-2;
+		opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
+		opinstance.visibilityMask = LightMatMask;
+		opinstance.traversableHandle = lightsWrapper.lightTrianglesGas;
+		memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
 
-    timer.tock("Build Root IAS");
-    state.params.handle = state.rootHandleIAS;
+		optix_instances.push_back( opinstance );
+	}
+
+	if (lightsWrapper.lightPlanesGas != 0)
+	{
+		OptixInstance opinstance {};
+
+		auto combinedID = std::string("Light") + ":" + std::to_string(ShaderMaker::Mesh);
+		auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
+
+		opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
+		opinstance.instanceId = MAX_INSTANCE_ID-1;
+		opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
+		opinstance.visibilityMask = LightMatMask;
+		opinstance.traversableHandle = lightsWrapper.lightPlanesGas;
+		memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
+
+		optix_instances.push_back( opinstance );
+	}
+
+	if (lightsWrapper.lightSpheresGas != 0)
+	{
+		OptixInstance opinstance {};
+
+		auto combinedID = std::string("Light") + ":" + std::to_string(ShaderMaker::Sphere);
+		auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
+
+		opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
+		opinstance.instanceId = MAX_INSTANCE_ID;
+		opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
+		opinstance.visibilityMask = LightMatMask;
+		opinstance.traversableHandle = lightsWrapper.lightSpheresGas;
+		memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
+
+		optix_instances.push_back( opinstance );
+	}
+
+	OptixAccelBuildOptions accel_options{};
+	accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
+	accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
+
+	buildIAS(state.context, accel_options, optix_instances, state.rootBufferIAS, state.rootHandleIAS);  
+
+	timer.tock("update Root IAS");
+	state.params.handle = state.rootHandleIAS;
 }
-
-
 
 static void buildMeshAccel( PathTracerState& state )
 {
@@ -1504,12 +1420,19 @@ static void createSBT( PathTracerState& state )
 #endif
             hitgroup_records[sbt_idx].data.lightMark       = reinterpret_cast<unsigned short*>( (CUdeviceptr)state.d_lightMark );
             hitgroup_records[sbt_idx].data.auxOffset       = reinterpret_cast<uint32_t*>( (CUdeviceptr)state.vertexAuxOffsetGlobal );
-            
+#ifdef USE_SHORT
+            hitgroup_records[sbt_idx].data.instPos         = reinterpret_cast<ushort3*>( (CUdeviceptr)state.d_instPos );
+            hitgroup_records[sbt_idx].data.instNrm         = reinterpret_cast<ushort3*>( (CUdeviceptr)state.d_instNrm );
+            hitgroup_records[sbt_idx].data.instUv          = reinterpret_cast<ushort3*>( (CUdeviceptr)state.d_instUv );
+            hitgroup_records[sbt_idx].data.instClr         = reinterpret_cast<ushort3*>( (CUdeviceptr)state.d_instClr );
+            hitgroup_records[sbt_idx].data.instTang        = reinterpret_cast<ushort3*>( (CUdeviceptr)state.d_instTang );
+#else
             hitgroup_records[sbt_idx].data.instPos         = reinterpret_cast<float3*>( (CUdeviceptr)state.d_instPos );
             hitgroup_records[sbt_idx].data.instNrm         = reinterpret_cast<float3*>( (CUdeviceptr)state.d_instNrm );
             hitgroup_records[sbt_idx].data.instUv          = reinterpret_cast<float3*>( (CUdeviceptr)state.d_instUv );
             hitgroup_records[sbt_idx].data.instClr         = reinterpret_cast<float3*>( (CUdeviceptr)state.d_instClr );
             hitgroup_records[sbt_idx].data.instTang        = reinterpret_cast<float3*>( (CUdeviceptr)state.d_instTang );
+#endif
             for(int t=0;t<32;t++)
             {
                 hitgroup_records[sbt_idx].data.textures[t] = shader_ref.getTexture(t);
@@ -1524,41 +1447,47 @@ static void createSBT( PathTracerState& state )
 
             HitGroupRecord rec = {};
 
-            rec.data.uniforms        = reinterpret_cast<float4*>( (CUdeviceptr)state.d_uniforms );
+            rec.data.uniforms = reinterpret_cast<float4*>( (CUdeviceptr)state.d_uniforms );
 
-            if (OptixUtil::g_vdb_list_for_each_shader.count(j) == 0) {
-                continue;
+            if (OptixUtil::g_vdb_list_for_each_shader.count(j) != 0) {
+
+                auto& vdb_list = OptixUtil::g_vdb_list_for_each_shader.at(j);
+				//if (OptixUtil::g_cached_vdb_map.count(key_vdb) == 0) continue;
+				//auto& volumeWrapper = OptixUtil::g_vdb[key_vdb];
+
+				for(uint t=0; t<min(vdb_list.size(), 8ull); ++t)
+				{
+					auto vdb_key = vdb_list[t];
+					auto vdb_ptr = OptixUtil::g_vdb_cached_map.at(vdb_key);
+
+					rec.data.vdb_grids[t] = vdb_ptr->grids.front()->deviceptr;
+					rec.data.vdb_max_v[t] = vdb_ptr->grids.front()->max_value;
+				}
             }
 
-            auto& vdb_list = OptixUtil::g_vdb_list_for_each_shader.at(j);
-
-            //if (OptixUtil::g_cached_vdb_map.count(key_vdb) == 0) continue;
-            //auto& volumeWrapper = OptixUtil::g_vdb[key_vdb];
-
-            for(uint t=0; t<min(vdb_list.size(), 8ull); ++t)
-            {
-                auto vdb_key = vdb_list[t];
-                auto vdb_ptr = OptixUtil::g_vdb_cached_map.at(vdb_key);
-
-                rec.data.vdb_grids[t] = vdb_ptr->grids.front()->deviceptr;
-                rec.data.vdb_max_v[t] = vdb_ptr->grids.front()->max_value;
-            }
-
-             for(uint t=0;t<32;t++)
+            for(uint t=0;t<32;t++)
             {
                 rec.data.textures[t] = shader_ref.getTexture(t);
             }
 
             {
-                using namespace rapidjson;
-                Document document;
-                document.Parse(shader_ref.parameters.c_str());
+                auto j = nlohmann::json::parse(shader_ref.parameters);
 
-                auto vol_depth = document["vol_depth"].GetInt();
-                auto vol_extin = document["vol_extinction"].GetFloat();
-                
-                rec.data.vol_depth = vol_depth;
-                rec.data.vol_extinction = vol_extin;
+                if (!j["vol_depth"].is_null()) {
+                    rec.data.vol_depth = j["vol_depth"];
+                }
+
+                if (!j["vol_extinction"].is_null()) {
+                    rec.data.vol_extinction = j["vol_extinction"];
+                }
+
+                if (!j["equiangular"].is_null()) {
+                    rec.data.equiangular = j["equiangular"];
+                }
+
+                if (!j["multiscatter"].is_null()) {
+                    rec.data.multiscatter = j["multiscatter"];
+                }
             }
 
             hitgroup_records[sbt_idx] = rec;
@@ -1614,11 +1543,6 @@ static void cleanupState( PathTracerState& state )
 
     cleanupSpheresGPU();
     lightsWrapper.reset();
-
-    for (auto& ele : list_volume_accel) {
-        cleanupVolumeAccel(*ele);
-    }
-    list_volume_accel.clear();
     
     for (auto& ele : list_volume) {
         cleanupVolume(*ele);
@@ -1832,12 +1756,6 @@ void updateVolume(uint volume_shader_offset) {
     list_volume.clear();
     list_volume_index_in_shader_list.clear();
 
-    for (uint i=0; i<list_volume_accel.size(); ++i) {
-        auto ele = list_volume_accel[i];
-        cleanupVolumeAccel(*ele);
-    }
-    list_volume_accel.clear();
-
     OptixUtil::logInfoVRAM("Before Volume GAS");
 
     std::map<uint, std::vector<std::string>> tmp_map{};
@@ -1856,10 +1774,8 @@ void updateVolume(uint volume_shader_offset) {
    OptixUtil::g_vdb_list_for_each_shader = tmp_map;
 
     for (uint i=0; i<list_volume.size(); ++i) {
-        VolumeAccel accel;
-        buildVolumeAccel( accel, *(list_volume[i]), state.context );
-
-        list_volume_accel.push_back(std::make_shared<VolumeAccel>(std::move(accel)) );
+        //VolumeAccel accel;
+        buildVolumeAccel( list_volume[i]->accel, *(list_volume[i]), state.context );
     }
 
     OptixUtil::logInfoVRAM("After Volume GAS");
@@ -3060,10 +2976,10 @@ static void updateDynamicDrawObjects() {
     }
 
     g_vertices.resize(g_staticVertNum + n * 3);
-    g_clr.resize(g_staticVertNum + n*3);
-    g_nrm.resize(g_staticVertNum + n*3);
-    g_uv.resize(g_staticVertNum + n*3);
-    g_tan.resize(g_staticVertNum + n*3);
+    g_clr.resize(g_staticVertNum + n * 3);
+    g_nrm.resize(g_staticVertNum + n * 3);
+    g_uv.resize(g_staticVertNum + n * 3);
+    g_tan.resize(g_staticVertNum + n * 3);
     g_mat_indices.resize(g_staticVertNum/3 + n);
     g_lightMark.resize(g_staticVertNum/3 + n);
     n = 0;
@@ -3759,6 +3675,13 @@ void set_window_size(int nx, int ny) {
     resize_dirty = true;
 }
 
+void set_physical_camera_param(float aperture, float shutter_speed, float iso, bool aces, bool exposure) {
+    state.params.physical_camera_aperture = aperture;
+    state.params.physical_camera_shutter_speed = shutter_speed;
+    state.params.physical_camera_iso = iso;
+    state.params.physical_camera_aces = aces;
+    state.params.physical_camera_exposure = exposure;
+}
 void set_perspective(float const *U, float const *V, float const *W, float const *E, float aspect, float fov, float fpd, float aperture) {
     set_perspective_by_fov(U,V,W,E,aspect,fov,0,0.024f,fpd,aperture,0.0f,0.0f,0.0f,0.0f);
 }
@@ -3772,12 +3695,8 @@ void set_perspective_by_fov(float const *U, float const *V, float const *W, floa
     float half_radfov = fov * float(M_PI) / 360.0f;
     float half_tanfov = std::tan(half_radfov);
     cam.focal_length = L / 2.0f / half_tanfov;
-    cam.focal_length = std::max(0.01f,cam.focal_length);
-    if(aperture > 24.0f || aperture <  0.5f){
-        cam.aperture = 0.0f;
-    }else{
-        cam.aperture = cam.focal_length / aperture;
-    }
+    cam.focal_length = std::max(0.0001f,cam.focal_length);
+    cam.aperture = std::max(0.0f,aperture);
     
 
     // L = L/cam.focal_length;
@@ -3810,14 +3729,8 @@ void set_perspective_by_focal_length(float const *U, float const *V, float const
     cam.up = normalize(make_float3(V[0], V[1], V[2]));
     cam.front = normalize(make_float3(W[0], W[1], W[2]));
 
-    cam.focal_length = focal_length;
-    cam.focal_length = std::max(0.01f,cam.focal_length);
-
-    if(aperture > 24.0f || aperture < 0.5f){
-        cam.aperture = 0.0f;
-    }else{
-        cam.aperture = cam.focal_length / aperture;
-    }
+    cam.focal_length = std::max(0.0001f,focal_length);
+    cam.aperture = std::max(0.0f,aperture);
 
     cam.width = w;
     cam.height = h;
@@ -3829,6 +3742,9 @@ void set_perspective_by_focal_length(float const *U, float const *V, float const
     camera_changed = true;
 }
 
+void set_outside_random_number(int32_t outside_random_number) {
+    state.params.outside_random_number = outside_random_number;
+}
 static void write_pfm(std::string& path, int w, int h, const float *rgb) {
     std::string header = zeno::format("PF\n{} {}\n-1.0\n", w, h);
     std::vector<char> data(header.size() + w * h * sizeof(zeno::vec3f));
@@ -3930,6 +3846,7 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
                             (float*)optixgetimg_extra("specular"),
                             (float*)optixgetimg_extra("transmit"),
                             (float*)optixgetimg_extra("background"),
+                            (float*)optixgetimg_extra("mask"),
                     },
                     w,
                     h,
@@ -3939,6 +3856,7 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
                             "specular.",
                             "transmit.",
                             "background.",
+                            "mask.",
                     },
                     exr_path.c_str()
             );

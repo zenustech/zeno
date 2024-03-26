@@ -15,7 +15,7 @@ public:
 
 	//IAcceptor
 	bool setLegacyDescs(const rapidjson::Value& graphObj, const NODE_DESCS& nodesParams) override;
-	void BeginSubgraph(const QString& name, int type) override;
+	void BeginSubgraph(const QString& name, int type, bool bForkLocked) override;
 	bool setCurrentSubGraph(IGraphsModel* pModel, const QModelIndex& subgIdx) override;
 	void EndSubgraph() override;
     void EndGraphs() override;
