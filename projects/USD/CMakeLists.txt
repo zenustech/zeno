@@ -1,45 +1,27 @@
-#
-# XXX Please using '/' slash for file path on windows
-#
-# -DZENO_LIVESYNC=ON
-#      sync server
-#
-# -DZENO_WITH_USD=ON
-#
-# -DZENO_USD_VERBOSE=ON
-#      verbose message for dev
-#
-# -DZENO_USD_ROOT=""
-#      usd building dir, e.g. c:/src/usd-build
-#
-# -DZENO_USD_DEV_ROOT=""
-#      not used for production
-#
+cmake_minimum_required(VERSION 3.15)
+
+cmake_host_system_information(RESULT OS_TYPE QUERY DISTRIB_PRETTY_NAME)
+
+option(TRY_SYSTEM_LIB OFF)
+
+if((TRY_SYSTEM_LIB) AND (OS_TYPE MATCHES "Arch Linux"))
+  message(STATUS "Using USD install from pacman")
+  target_include_directories(zeno PRIVATE /usr/include/python3.11)
+  find_package(pxr REQUIRED)
+  find_package(MaterialX REQUIRED)
+  find_package(Imath REQUIRED)
+  find_package(OpenGL REQUIRED)
+  find_package(X11 REQUIRED)
+  set(linklist tbb usd_ms MaterialXCore X11 Imath::ImathConfig OpenGL)
+  target_link_libraries(zeno PRIVATE ${linklist}) 
+endif()
 
 file(GLOB USD_SOURCE *.cpp *.h)
 zeno_disable_warning(${USD_SOURCE})
 target_sources(zeno PRIVATE ${USD_SOURCE})
 target_include_directories(zeno PRIVATE .)
 
-target_include_directories(zeno PRIVATE /usr/include/python3.11)
-find_package(pxr REQUIRED)
-find_package(MaterialX REQUIRED)
-find_package(Imath REQUIRED)
-find_package(OpenGL REQUIRED)
-find_package(X11 REQUIRED)
-target_link_libraries(zeno PRIVATE tbb usd_ms MaterialXCore X11 Imath::ImathConfig OpenGL) 
 
-list(usdLib )
-if(DEFINED ZENO_USD_DEV_ROOT)
-    file(GLOB DEV_SOURCE ${ZENO_USD_DEV_ROOT}/*.cpp ${ZENO_USD_DEV_ROOT}/*.h)
-    message(STATUS "Dev Root ${ZENO_USD_DEV_ROOT} Get ${DEV_SOURCE}")
-    target_include_directories(zeno PRIVATE ${ZENO_USD_DEV_ROOT})
-    target_sources(zeno PRIVATE ${DEV_SOURCE})
-else()
-    file(GLOB DEV_SOURCE ${CMAKE_CURRENT_LIST_DIR}/dev/*.cpp ${CMAKE_CURRENT_LIST_DIR}/dev/*.h)
-    target_include_directories(zeno PRIVATE ${CMAKE_CURRENT_LIST_DIR}/dev)
-    target_sources(zeno PRIVATE ${DEV_SOURCE})
-endif()
 
 if(DEFINED ZENO_USD_ROOT)
     set(TBB_ROOT_DIR ${ZENO_USD_ROOT})
@@ -55,12 +37,4 @@ if(DEFINED ZENO_USD_ROOT)
         target_link_directories(zeno PRIVATE ${ZENO_USD_ROOT}/lib)
         target_link_libraries(zeno PRIVATE tbb usd_ar usd_arch usd_kind usd_usdLux usd_usdGeom usd_pcp usd_usdUtils usd_usd usd_usdShade usd_sdf usd_ts usd_tf usd_vt usd_usdSkel usd_usdImaging usd_gf)
     endif()
-endif()
-
-if(DEFINED ZENO_USD_VERBOSE)
-    get_cmake_property(_variableNames VARIABLES)
-    list (SORT _variableNames)
-    foreach (_variableName ${_variableNames})
-        message(STATUS "\t\t${_variableName}=${${_variableName}}")
-    endforeach()
 endif()
