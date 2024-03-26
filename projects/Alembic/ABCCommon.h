@@ -34,7 +34,7 @@ extern void traverseABC(
     bool read_face_set,
     std::string path,
     const TimeAndSamplesMap & iTimeMap,
-    int parent_visible,
+    ObjectVisibility parent_visible,
     bool outOfRangeAsEmpty
 );
 

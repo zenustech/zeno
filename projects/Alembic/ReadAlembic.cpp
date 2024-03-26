@@ -405,9 +405,9 @@ static void read_user_data(std::shared_ptr<PrimitiveObject> prim, ICompoundPrope
     }
 }
 
-static int read_visible_attr(ICompoundProperty arbattrs, const ISampleSelector &iSS) {
+static ObjectVisibility read_visible_attr(ICompoundProperty arbattrs, const ISampleSelector &iSS) {
     if (!arbattrs) {
-        return -1;
+        return ObjectVisibility::kVisibilityDeferred;
     }
     size_t numProps = arbattrs.getNumProperties();
     for (auto i = 0; i < numProps; i++) {
@@ -419,10 +419,18 @@ static int read_visible_attr(ICompoundProperty arbattrs, const ISampleSelector &
             ICharProperty param(arbattrs, p.getName());
 
             auto value = param.getValue(iSS);
-            return value;
+            if (value == 0) {
+                return ObjectVisibility::kVisibilityHidden;
+            }
+            else if (value == 1) {
+                return ObjectVisibility::kVisibilityVisible;
+            }
+            else {
+                return ObjectVisibility::kVisibilityDeferred;
+            }
         }
     }
-    return -1;
+    return ObjectVisibility::kVisibilityDeferred;
 }
 
 static std::shared_ptr<PrimitiveObject> foundABCMesh(
@@ -856,7 +864,7 @@ void traverseABC(
     bool read_face_set,
     std::string path,
     const TimeAndSamplesMap & iTimeMap,
-    int parent_visible,
+    ObjectVisibility parent_visible,
     bool outOfRangeAsEmpty
 ) {
     {
@@ -1030,7 +1038,7 @@ struct ReadAlembic : INode {
                             archive.getMaxNumSamplesForTimeSamplingIndex(s));
             }
 
-            traverseABC(obj, *abctree, frameid, read_done, read_face_set, "", timeMap, -1, outOfRangeAsEmpty);
+            traverseABC(obj, *abctree, frameid, read_done, read_face_set, "", timeMap, ObjectVisibility::kVisibilityDeferred, outOfRangeAsEmpty);
             read_done = true;
             usedPath = path;
         }
