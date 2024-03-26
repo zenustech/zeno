@@ -1207,7 +1207,8 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
             // find prim in object manager
             auto input_node_id = input_nodes[0].get_node_id();
             string prim_name;
-            auto key = zeno::getSession().globalComm->getObjKeyByObjID(input_node_id.toStdString());
+            auto id = input_node_id.toStdString();
+            auto key = zeno::getSession().globalComm->getObjKeyByObjID(id);
             if (key != "")
                 prim_name = key;
             if (prim_name.empty())

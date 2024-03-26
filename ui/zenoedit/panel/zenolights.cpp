@@ -546,7 +546,8 @@ void ZenoLights::modifyLightData() {
         if (pDisplay->isGLViewport())
             continue;
 
-        bool ret = zeno::getSession().globalComm->setLightObjData(name, pos, scale, rotate, zeno::vec3f(r, g, b), intensity, verts);
+        auto rgb = zeno::vec3f(r, g, b);
+        bool ret = zeno::getSession().globalComm->setLightObjData(name, pos, scale, rotate, rgb, intensity, verts);
         if (ret)
         {
             pDisplay->setSimpleRenderOption();
@@ -612,7 +613,8 @@ void ZenoLights::write_param_into_node(const QString& primid) {
                     zeno::vec3f r;
                     zeno::vec3f c;
                     float intensity;
-                    bool ret = zeno::getSession().globalComm->getLightObjData(primid.toStdString(), p, s, r, c, intensity);
+                    auto id = primid.toStdString();
+                    bool ret = zeno::getSession().globalComm->getLightObjData(id, p, s, r, c, intensity);
                     if (ret)
                     {
                         inputs["position"].info.defaultValue.setValue(UI_VECTYPE({ p[0], p[1], p[2] }));
@@ -632,7 +634,7 @@ void ZenoLights::write_param_into_node(const QString& primid) {
                     float sunLightIntensity;
                     float colorTemperatureMix;
                     float colorTemperature;
-                    ret = zeno::getSession().globalComm->getProceduralSkyData(primid.toStdString(), d, sunLightSoftness, w, timeStart, timeSpeed, sunLightIntensity, colorTemperatureMix, colorTemperature);
+                    ret = zeno::getSession().globalComm->getProceduralSkyData(id, d, sunLightSoftness, w, timeStart, timeSpeed, sunLightIntensity, colorTemperatureMix, colorTemperature);
                     if(ret) {
                         inputs["sunLightDir"].info.defaultValue.setValue(UI_VECTYPE({ d[0], d[1] }));
                         inputs["windDir"].info.defaultValue.setValue(UI_VECTYPE({ w[0], w[1] }));

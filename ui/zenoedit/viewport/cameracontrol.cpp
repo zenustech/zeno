@@ -245,7 +245,8 @@ void CameraControl::changeTransformOperation(const QString &node)
     ZASSERT_EXIT(m_zenovis);
 
     auto scene = m_zenovis->getSession()->get_scene();
-    auto key = zeno::getSession().globalComm->getObjKeyByObjID(node.toStdString());
+    std::string objid = node.toStdString();
+    auto key = zeno::getSession().globalComm->getObjKeyByObjID(objid);
     if (key != "") {
         scene->selected.insert(key);
         m_transformer->clear();

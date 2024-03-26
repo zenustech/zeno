@@ -153,7 +153,7 @@ ZENO_API void INode::preApply() {
 
         if (dc.amIDirty(myname) && zeno::getSession().globalState->frameid == zeno::getSession().globalComm->frameRange().first)
         {
-            auto& func = zeno::getSession().globalComm->getSendPacketFunction();
+            auto func = zeno::getSession().globalComm->getSendPacketFunction();
             func("{\"action\":\"nodeFinished\",\"key\":\"" + myname + "\"}", "", 0);
         }
     }
