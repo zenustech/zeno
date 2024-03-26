@@ -137,7 +137,6 @@ static void read_attributes(std::shared_ptr<PrimitiveObject> prim, ICompoundProp
     size_t numProps = arbattrs.getNumProperties();
     for (auto i = 0; i < numProps; i++) {
         PropertyHeader p = arbattrs.getPropertyHeader(i);
-        zeno::log_error("getName {}", p.getName());
         if (IFloatGeomParam::matches(p)) {
             IFloatGeomParam param(arbattrs, p.getName());
 
