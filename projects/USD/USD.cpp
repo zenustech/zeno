@@ -54,6 +54,10 @@ void _convertMeshFromUSDToZeno(const pxr::UsdPrim& usdPrim, zeno::PrimitiveObjec
     * Converting mesh
     */
     const std::string& typeName = usdPrim.GetTypeName().GetString();
+
+    /*
+    * TODO: these codes will be refactored
+    */
     if (typeName == "Mesh") {
         /*** Load from USD prim ***/
         const auto& usdMesh = pxr::UsdGeomMesh(usdPrim);
@@ -479,7 +483,9 @@ void _convertMeshFromUSDToZeno(const pxr::UsdPrim& usdPrim, zeno::PrimitiveObjec
         auto& tris = zPrim.tris;
         const int COLUMNS = 32;
         ; // TODO
-    } else if (typeName == "Plane") {
+
+    }
+    else if (typeName == "Plane") {
         auto plane = pxr::UsdGeomPlane(usdPrim);
 
         char axis;
@@ -524,7 +530,7 @@ void _convertMeshFromUSDToZeno(const pxr::UsdPrim& usdPrim, zeno::PrimitiveObjec
             verts.emplace_back(-0.5f * width, 0.0f, -0.5f * length);
             verts.emplace_back(0.5f * width, 0.0f, -0.5f * length);
             verts.emplace_back(-0.5f * width, 0.0f, 0.5f * length);
-            verts.emplace_back(0.5f * width, 0.0f, -0.5f * length);
+            verts.emplace_back(0.5f * width, 0.0f, 0.5f * length);
             for (int i = 0; i < 4; ++i) {
                 normals.emplace_back(0.0f, 1.0f, 0.0f);
             }
@@ -542,7 +548,7 @@ void _convertMeshFromUSDToZeno(const pxr::UsdPrim& usdPrim, zeno::PrimitiveObjec
     }
     else {
         // other geometry types are not supported yet
-        ;
+        std::cout << "Found not-supported geom type: " << typeName << std::endl;
     }
 }
 
