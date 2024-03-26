@@ -713,9 +713,12 @@ inline void addTexture(std::string path)
     }
     auto input = readData(native_path);
     std::string md5Hash = calculateMD5(input);
+    zeno::log_info("path {} md5 {} tex", path, md5Hash);
+    std::cout << "path" << path << "md5" << md5Hash << std::endl;
 
     if (md5_path_mapping.count(md5Hash)) {
         g_tex[path] = g_tex[md5_path_mapping[md5Hash]];
+        std::cout << "reuse" << std::endl;
         zeno::log_info("path {} reuse {} tex", path, md5_path_mapping[md5Hash]);
         return;
     }

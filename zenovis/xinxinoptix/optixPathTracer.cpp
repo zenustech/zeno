@@ -2976,10 +2976,10 @@ static void updateDynamicDrawObjects() {
     }
 
     g_vertices.resize(g_staticVertNum + n * 3);
-    g_clr.resize(g_staticVertNum + n*3);
-    g_nrm.resize(g_staticVertNum + n*3);
-    g_uv.resize(g_staticVertNum + n*3);
-    g_tan.resize(g_staticVertNum + n*3);
+    g_clr.resize(g_staticVertNum + n * 3);
+    g_nrm.resize(g_staticVertNum + n * 3);
+    g_uv.resize(g_staticVertNum + n * 3);
+    g_tan.resize(g_staticVertNum + n * 3);
     g_mat_indices.resize(g_staticVertNum/3 + n);
     g_lightMark.resize(g_staticVertNum/3 + n);
     n = 0;
