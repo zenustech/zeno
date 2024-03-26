@@ -1101,7 +1101,7 @@ struct PrimsFilterInUserdata: INode {
     void apply() override {
         auto prims = get_input<ListObject>("list")->get<PrimitiveObject>();
         auto filter_str = get_input2<std::string>("filters");
-        std::vector<std::string> filters = zeno::split_str(filter_str);
+        std::vector<std::string> filters = zeno::split_str(filter_str, {' ', '\n'});
         std::vector<std::string> filters_;
         auto out_list = std::make_shared<ListObject>();
 
@@ -1113,11 +1113,21 @@ struct PrimsFilterInUserdata: INode {
 
         auto name = get_input2<std::string>("name");
         auto contain = get_input2<bool>("contain");
+        auto fuzzy = get_input2<bool>("fuzzy");
         for (auto p: prims) {
             auto &ud = p->userData();
             bool this_contain = false;
             if (ud.has<std::string>(name)) {
-                this_contain = std::count(filters_.begin(), filters_.end(), ud.get2<std::string>(name)) > 0;
+                if (fuzzy) {
+                    for (auto & filter: filters_) {
+                        if (ud.get2<std::string>(name).find(filter) != std::string::npos) {
+                            this_contain = this_contain || true;
+                        }
+                    }
+                }
+                else {
+                    this_contain = std::count(filters_.begin(), filters_.end(), ud.get2<std::string>(name)) > 0;
+                }
             }
             else if (ud.has<int>(name)) {
                 this_contain = std::count(filters_.begin(), filters_.end(), std::to_string(ud.get2<int>(name))) > 0;
@@ -1140,6 +1150,7 @@ ZENDEFNODE(PrimsFilterInUserdata, {
         {"string", "name", ""},
         {"string", "filters"},
         {"bool", "contain", "1"},
+        {"bool", "fuzzy", "0"},
     },
     {
         {"out"},
