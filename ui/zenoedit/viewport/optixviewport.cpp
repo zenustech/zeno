@@ -332,11 +332,6 @@ void OptixWorker::needUpdateCamera()
     m_pTimer->start(m_sampleFeq);
 }
 
-void OptixWorker::onCleanUpScene()
-{
-    m_zenoVis->cleanUpScene();
-}
-
 void OptixWorker::onSetBackground(bool bShowBg)
 {
     auto& ud = zeno::getSession().userData();
@@ -347,7 +342,7 @@ void OptixWorker::onSetBackground(bool bShowBg)
     ZASSERT_EXIT(session);
     auto scene = session->get_scene();
     ZASSERT_EXIT(scene);
-    scene->objectsMan->needUpdateLight = true;
+    zeno::getSession().globalComm->setNeedUpdateLight(true);
     scene->drawOptions->simpleRender = true;
     updateFrame();
 }

@@ -961,7 +961,7 @@ void GlobalComm::prepareForOptix(std::map<std::string, std::shared_ptr<zeno::IOb
             lastToViewNodesType.insert({ key, LIGHT_CAMERA });
             count[LIGHT_CAMERA]++;
         }
-        else if (matlNode == nodeName || std::dynamic_pointer_cast<zeno::MaterialObject>(obj)) {
+        else if (matNodeNames.count(nodeName) > 0 || std::dynamic_pointer_cast<zeno::MaterialObject>(obj)) {
             lastToViewNodesType.insert({ key, MATERIAL });
             count[MATERIAL]++;
         }
@@ -1162,7 +1162,7 @@ ZENO_API GlobalComm::RenderType GlobalComm::getRenderTypeByObjects(std::map<std:
         std::string nodeName = key.substr(key.find("-") + 1);
         if (lightCameraNodes.count(nodeName) || obj->userData().get2<int>("isL", 0) || dynamic_cast<zeno::CameraObject*>(obj.get()))
             count[LIGHT_CAMERA]++;
-        else if (matlNode == nodeName || dynamic_cast<zeno::MaterialObject*>(obj.get()))
+        else if (matNodeNames.count(nodeName) > 0 || dynamic_cast<zeno::MaterialObject*>(obj.get()))
             count[MATERIAL]++;
         else
             count[NORMAL]++;
