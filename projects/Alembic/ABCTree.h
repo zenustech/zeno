@@ -3,6 +3,12 @@
 #include <zeno/core/IObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <Alembic/AbcGeom/Foundation.h>
+#include <Alembic/AbcGeom/All.h>
+#include <Alembic/AbcCoreAbstract/All.h>
+#include <Alembic/AbcCoreOgawa/All.h>
+#include <Alembic/AbcCoreHDF5/All.h>
+#include <Alembic/Abc/ErrorHandler.h>
+using Alembic::AbcGeom::ObjectVisibility;
 
 namespace zeno {
 
@@ -20,6 +26,7 @@ struct ABCTree : PrimitiveObject {
     Alembic::Abc::M44d xform = Alembic::Abc::M44d();
     std::shared_ptr<CameraInfo> camera_info;
     std::vector<std::shared_ptr<ABCTree>> children;
+    ObjectVisibility visible = ObjectVisibility::kVisibilityDeferred;
 
     template <class Func>
     bool visitPrims(Func const &func) const {
