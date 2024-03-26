@@ -380,7 +380,7 @@ void DisplayWidget::onPlayClicked(bool bChecked)
     }
 }
 
-void DisplayWidget::onCalcFinished(bool bSucceed, QStringList, QString) {
+void DisplayWidget::onCalcFinished(bool bSucceed, zeno::ObjPath, QString) {
     if (bSucceed) {
         if (m_bGLView) {
             m_glView->load_objects();
@@ -1108,7 +1108,7 @@ void DisplayWidget::onKill() {
     //todo: kill
 }
 
-void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndexList &nodes, bool select) {
+void DisplayWidget::onNodeSelected(GraphModel* subgraph, const QModelIndexList &nodes, bool select) {
     // tmp code for Primitive Filter Node interaction
     if (nodes.isEmpty() || nodes.size() > 1 || !m_bGLView)
         return;
@@ -1135,7 +1135,7 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
             if (prim_name.empty())
                 return;
 
-            zeno::NodeLocation node_location(nodes[0], subgIdx);
+            zeno::NodeLocation node_location(nodes[0], subgraph);
             // set callback to picker
             auto callback = [node_location,
                              prim_name](unordered_map<string, unordered_set<int>> &picked_elems) -> void {
@@ -1190,7 +1190,7 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
         ZASSERT_EXIT(picker);
         if (select) {
             picker->switch_draw_mode();
-            zeno::NodeLocation node_location(nodes[0], subgIdx);
+            zeno::NodeLocation node_location(nodes[0], subgraph);
             auto pick_callback = [nodes, node_location, this](float depth, int x, int y) {
                 Zenovis *pZenovis = m_glView->getZenoVis();
                 ZASSERT_EXIT(pZenovis && pZenovis->getSession());

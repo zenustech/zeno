@@ -78,9 +78,6 @@ ZENO_API bool Graph::applyNode(std::string const &node_name) {
     const std::string uuid = safe_at(m_name2uuid, node_name, "uuid");
     auto node = safe_at(m_nodes, uuid, "node name").get();
     GraphException::translated([&] {
-        if (!zeno::getSession().globalState->is_working()) {
-            throw GraphException();
-        }
         node->doApply();
     }, node);
     return true;
@@ -649,7 +646,7 @@ ZENO_API bool Graph::removeNode(std::string const& name) {
 }
 
 ZENO_API bool Graph::addLink(const EdgeInfo& edge) {
-    //如果遇到连接dict/list的情况，并且输入端是dict/list，
+    //如果输入端是dict/list，
     //外部调用者在调用此api时，有如下规则：
     //1.如果连进来的是dictlist，并且没有指定key，则认为是直接连此输入参数(类型为dictlist)
     //2.如果连进来的是dictlist，并且指定了key，则认为是连入dictlist内部并作为输入端的子成员。

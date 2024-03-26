@@ -646,7 +646,7 @@ struct PrimMerge : INode {
 
 ZENDEFNODE(PrimMerge, {
                           {
-                              {"list", "listPrim"},
+                              {"list", "listPrim", "", PrimarySocket},
                               {"string", "tagAttr", ""},
                           },
                           {

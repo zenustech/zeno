@@ -10,7 +10,7 @@
 namespace zeno {
 
 struct GraphException {
-    ObjPath nodePath;
+    ObjPath nodePath;   //based on uuid path
     std::string param;
     std::exception_ptr ep;
 
@@ -37,7 +37,7 @@ struct GraphException {
         } catch (GraphException const &ge) {
             throw ge;
         } catch (...) {
-            throw GraphException{ pNode->get_path(), param, std::current_exception() };
+            throw GraphException{ pNode->get_uuid_path(), param, std::current_exception() };
         }
     }
 

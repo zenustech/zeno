@@ -380,8 +380,8 @@ namespace zenoui
                 pSlider->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 pSlider->setValue(value.toInt());
                 QObject::connect(pSlider, &ZenoParamSpinBoxSlider::valueChanged, [=](int value) {
-					cbSet.cbEditFinished(value); 
-				});
+                    cbSet.cbEditFinished(value); 
+                });
                 pItemWidget = pSlider;
                 break;
             }

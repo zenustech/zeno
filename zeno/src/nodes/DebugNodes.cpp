@@ -3,6 +3,7 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/utils/logger.h>
 #include <cstdio>
+#include <thread>
 
 namespace {
 
@@ -212,6 +213,24 @@ ZENDEFNODE(TriggerViewportFault, {
     {},
     {"debug"},
 });
+
+
+struct MockRunning : zeno::INode {
+    virtual void apply() override {
+        int secs = get_input<zeno::NumericObject>("wait seconds")->get<int>();
+        std::this_thread::sleep_for(std::chrono::seconds(secs));
+    }
+};
+
+ZENDEFNODE(MockRunning, {
+    {{"SRC"},
+     {"int", "wait seconds", "1", zeno::NoSocket, zeno::SpinBox}
+    },
+    {"DST"},
+    {},
+    {"debug"},
+});
+
 
 struct Blackboard : zeno::INode {
     virtual void apply() override {

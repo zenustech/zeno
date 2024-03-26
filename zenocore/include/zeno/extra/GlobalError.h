@@ -17,7 +17,7 @@ struct GlobalError {
     ZENO_API GlobalError(const GlobalError& err);
 
     ZENO_API bool failed() const {
-        return !m_namePath.empty();
+        return !m_nodeUuidPath.empty();
     }
     void clearState();
     ZENO_API std::shared_ptr<Error> getError() const;
@@ -25,7 +25,7 @@ struct GlobalError {
     ZENO_API std::string getErrorMsg() const;
 
 private:
-    ObjPath m_namePath;
+    ObjPath m_nodeUuidPath;
     std::string m_param;
     std::shared_ptr<Error> m_error;
 };

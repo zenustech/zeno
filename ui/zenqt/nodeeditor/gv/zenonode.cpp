@@ -303,6 +303,34 @@ ZLayoutBackground* ZenoNode::initBodyWidget(ZenoSubGraphScene* pScene)
     return bodyWidget;
 }
 
+void ZenoNode::onRunStateChanged()
+{
+    const NodeState& state = m_index.data(ROLE_NODE_RUN_STATE).value<NodeState>();
+    this->onMarkDataChanged(state.bDirty);
+    switch (state.runstatus) {
+        case zeno::Node_Pending:
+        {
+            this->markError(false);
+            break;
+        }
+        case zeno::Node_RunError:
+        {
+            this->markError(true);
+            break;
+        }
+        case zeno::Node_Running:
+        {
+            this->markError(false);
+            break;
+        }
+        case zeno::Node_RunSucceed:
+        {
+            this->markError(false);
+            break;
+        }
+    }
+}
+
 void ZenoNode::onLayoutAboutToBeChanged()
 {
 
@@ -694,7 +722,8 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& paramIdx, bool bInput, Zen
     }
 
     ZSocketLayout* pMiniLayout = nullptr;
-    if (type == zeno::Param_Dict || type == zeno::Param_List) {
+    if ((type == zeno::Param_Dict || type == zeno::Param_List) && 
+        ctrl != zeno::NoMultiSockPanel) {
         pMiniLayout = new ZDictSocketLayout(paramIdx, bInput);
     }
     else if (ctrl == zeno::Seperator) {

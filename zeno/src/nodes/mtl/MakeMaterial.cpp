@@ -174,7 +174,7 @@ struct ExtractMaterialShader : zeno::INode
       BindMaterial,
       {
           {
-              {"object"},
+              {"", "object", "", PrimarySocket},
               {"string", "mtlid", "Mat1"},
           },
           {

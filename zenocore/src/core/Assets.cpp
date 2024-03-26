@@ -45,7 +45,7 @@ void AssetsMgr::initAssetsInfo() {
             zeno::scope_exit sp([&] {reader.setDelayReadGraph(false); });
 
             zenoio::ZSG_PARSE_RESULT result = reader.openFile(zdaPath);
-            if (result.bSucceed) {
+            if (result.code == zenoio::PARSE_NOERROR) {
                 zeno::ZenoAsset zasset = reader.getParsedAsset();
                 zasset.info.path = zdaPath;
                 createAsset(zasset);
@@ -63,7 +63,7 @@ ZENO_API std::shared_ptr<Graph> AssetsMgr::getAssetGraph(const std::string& name
             const AssetInfo& info = m_assets[name].m_info;
             std::string zdaPath = info.path;
             zenoio::ZSG_PARSE_RESULT result = reader.openFile(zdaPath);
-            if (result.bSucceed) {
+            if (result.code == zenoio::PARSE_NOERROR) {
                 zeno::ZenoAsset zasset = reader.getParsedAsset();
                 assert(zasset.optGraph.has_value());
                 std::shared_ptr<Graph> spGraph = std::make_shared<Graph>(info.name, true);

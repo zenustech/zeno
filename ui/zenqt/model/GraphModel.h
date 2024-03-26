@@ -32,7 +32,7 @@ public:
     ParamsModel* params = nullptr;
     bool bView = false;
     bool bCollasped = false;
-    bool bDirty = false;
+    NodeState runState;
 
     //for subgraph, but not include assets:
     std::optional<GraphModel*> optSubgraph;
@@ -86,8 +86,11 @@ public:
     void setView(const QModelIndex& idx, bool bOn);
     void setMute(const QModelIndex& idx, bool bOn);
     QString updateNodeName(const QModelIndex& idx, QString newName);
+    void updateSocketValue(const QModelIndex& nodeidx, const QString socketName, const QVariant newValue);
     void addLink(const zeno::EdgeInfo& link);
-    QList<SEARCH_RESULT> search(const QString& content, SearchType searchType, SearchOpt searchOpts) const;
+    QList<SEARCH_RESULT> search(const QString& content, SearchType searchType, SearchOpt searchOpts);
+    QList<SEARCH_RESULT> searchByUuidPath(const zeno::ObjPath& uuidPath);
+    QStringList uuidPath2ObjPath(const zeno::ObjPath& uuidPath);
     GraphModel* getGraphByPath(const QStringList& objPath);
     QModelIndex indexFromUuidPath(const zeno::ObjPath& uuidPath);
     QStringList currentPath() const;
@@ -137,7 +140,6 @@ private:
     QHash<int, QString> m_row2uuid;
     QHash<QString, NodeItem*> m_nodes;  //based on uuid
     QHash<QString, QString> m_name2uuid;
-
     QSet<QString> m_subgNodes;
 
     std::weak_ptr<zeno::Graph> m_wpCoreGraph;

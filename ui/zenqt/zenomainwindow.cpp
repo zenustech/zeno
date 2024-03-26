@@ -710,14 +710,19 @@ void ZenoMainWindow::onFrameSwitched(int frameid)
     sess.switchToFrame(frameid);
 }
 
-void ZenoMainWindow::onCalcFinished(bool bSucceed, QStringList nodePath, QString msg)
+void ZenoMainWindow::onCalcFinished(bool bSucceed, zeno::ObjPath nodeUuidPath, QString msg)
 {
     if (!bSucceed) {
         ZenoGraphsEditor* pEditor = getAnyEditor();
         if (pEditor) {
-            QString nodeName = nodePath.back();
-            nodePath.pop_back();
-            pEditor->activateTab(nodePath, nodeName, true);
+            GraphsTreeModel* pTreeM = zenoApp->graphsManager()->currentModel();
+            if (pTreeM) {
+                QModelIndex nodeIdx = pTreeM->getIndexByUuidPath(nodeUuidPath);
+                QStringList nodePath = nodeIdx.data(ROLE_OBJPATH).toStringList();
+                QString nodeName = nodePath.back();
+                nodePath.pop_back();
+                pEditor->activateTab(nodePath, nodeName, true);
+            }
         }
     }
 }
@@ -1392,9 +1397,15 @@ void ZenoMainWindow::exportGraph()
 bool ZenoMainWindow::openFile(QString filePath)
 {
     auto pGraphs = zenoApp->graphsManager();
-    GraphsTreeModel* pModel = pGraphs->openZsgFile(filePath);
+    zenoio::ERR_CODE code = zenoio::PARSE_NOERROR;
+    GraphsTreeModel* pModel = pGraphs->openZsgFile(filePath, code);
     if (!pModel)
+    {
+        if (code == zenoio::PARSE_VERSION_UNKNOWN) {
+            QMessageBox::information(this, tr("Open File"), tr("The format of file is unknown"));
+        }
         return false;
+    }
 
     //cleanup
     zeno::getSession().globalComm->clearFrameState();
@@ -1907,12 +1918,12 @@ QString ZenoMainWindow::getOpenFileByDialog() {
     return filePath;
 }
 
-void ZenoMainWindow::onNodesSelected(const QModelIndex &subgIdx, const QModelIndexList &nodes, bool select) {
+void ZenoMainWindow::onNodesSelected(GraphModel* subgraph, const QModelIndexList &nodes, bool select) {
     //dispatch to all property panel.
     auto docks = findChildren<ZDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
     for (ZDockWidget* dock : docks) {
         if (dock->isVisible())
-            dock->onNodesSelected(subgIdx, nodes, select);
+            dock->onNodesSelected(subgraph, nodes, select);
     }
 }
 

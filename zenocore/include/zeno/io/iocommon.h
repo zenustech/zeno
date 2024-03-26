@@ -37,11 +37,17 @@ namespace zenoio {
         //todo: other settings.
     };
 
+    enum ERR_CODE {
+        PARSE_NOERROR,
+        PARSE_VERSION_UNKNOWN,
+        PARSE_ERROR
+    };
+
     struct ZSG_PARSE_RESULT {
         zeno::GraphData mainGraph;
         zeno::ZSG_VERSION iover;
         zeno::TimelineInfo timeline;
-        bool bSucceed;
+        ERR_CODE code;
     };
 }
 

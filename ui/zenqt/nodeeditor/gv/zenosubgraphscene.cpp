@@ -306,13 +306,18 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& topLeft, const QModelIn
     if (role == ROLE_NODE_ISVIEW)
     {
         ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
-
+        m_nodes[id]->onViewUpdated(idx.data(ROLE_NODE_ISVIEW).toBool());
     }
     if (role == ROLE_COLLASPED)
     {
         ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
         bool bCollasped = idx.data(ROLE_COLLASPED).toBool();
         m_nodes[id]->onCollaspeUpdated(bCollasped);
+    }
+    if (role == ROLE_NODE_RUN_STATE)
+    {
+        ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
+        m_nodes[id]->onRunStateChanged();
     }
     if (role == ROLE_NODE_DIRTY)
     {
@@ -1026,8 +1031,8 @@ void ZenoSubGraphScene::afterSelectionChanged()
                 unSelNodes.push_back(pNode->index());
             }
         }
-        mainWin->onNodesSelected(m_subgIdx, unSelNodes, false);
-        mainWin->onNodesSelected(m_subgIdx, selectNodesIndice(), true);
+        mainWin->onNodesSelected(m_model, unSelNodes, false);
+        mainWin->onNodesSelected(m_model, selectNodesIndice(), true);
         updateKeyFrame();
     }
     m_selChanges.clear();

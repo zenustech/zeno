@@ -13,9 +13,9 @@
 namespace zeno {
 struct NodeLocation{
     QModelIndex node;
-    QModelIndex subgraph;
+    GraphModel* subgraph;
     NodeLocation(const QModelIndex& n,
-                 const QModelIndex& s)
+                 GraphModel* s)
         : node(n),
           subgraph(s){
     }
@@ -46,7 +46,7 @@ class NodeSyncMgr {
                        const std::string& node_type);
     bool checkNodeInputHasValue(const QModelIndex& node,
                                 const std::string& input_name);
-    std::optional<NodeLocation> checkNodeLinkedSpecificNode(const QModelIndex& node,       // check which node's output?
+    std::optional<NodeLocation> checkNodeLinkedSpecificNode(NodeLocation& node_location,       // check which node's output?
                                                             const std::string& node_type); // check node output linked which node type
     // get input or output
     std::vector<NodeLocation> getInputNodes(const QModelIndex& node,
@@ -108,19 +108,12 @@ class NodeSyncMgr {
         auto node_id = node_location.node.data(ROLE_NODE_NAME).toString();
         auto inputs = node_location.node.data(ROLE_INPUTS).value<PARAMS_INFO>();
         //TODO: zvariant to qvariant.
-        QVariant old_value;// = inputs[input_name.c_str()].defl;
+        QVariant old_value = UiHelper::zvarToQVar(inputs[input_name.c_str()].defl);
         QVariant value;
         if (!getNewValue<T>(old_value, new_value, value))
             return;
-        //PARAM_UPDATE_INFO update_info{
-        //    input_name.c_str(),
-        //    old_value,
-        //    value
-        //};
-        //graph_model->updateSocketDefl(node_id,
-        //                              update_info,
-        //                              node_location.subgraph,
-        //                              true);
+
+        node_location.subgraph->updateSocketValue(node_location.node, QString::fromStdString(input_name), value);
     }
     void updateNodeInputString(NodeLocation node_location,
                                const std::string& input_name,
@@ -130,8 +123,7 @@ class NodeSyncMgr {
                                const std::string& new_value);
 
     // other tool functions
-    std::string getPrimSockName(const std::string& node_type);
-    std::string getPrimSockName(NodeLocation& node_location);
+    std::string getPrimSockName(const NodeLocation& node_location);
 
     NodeSyncMgr(const NodeSyncMgr &) = delete;
     const NodeSyncMgr &operator=(const NodeSyncMgr &) = delete;

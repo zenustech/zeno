@@ -83,22 +83,13 @@ ZENDEFNODE(DictSetItem, {
 
 struct MakeDict : zeno::INode {
     virtual void apply() override {
-        auto dict = std::make_shared<zeno::DictObject>();
-        for (auto pair : getinputs())
-        {
-            const std::string &key = pair.first;
-            if (key != "SRC")
-            {
-                auto obj = get_input(key);
-                dict->lut[key] = std::move(obj);
-            }
-        }
+        auto dict = get_input<zeno::DictObject>("objs");
         set_output("dict", std::move(dict));
     }
 };
 
 ZENDEFNODE(MakeDict, {
-    {},
+    {{"dict", "objs", "", zeno::PrimarySocket}},
     {{"DictObject", "dict"}},
     {},
     {"dict"},

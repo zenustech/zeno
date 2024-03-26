@@ -82,7 +82,7 @@ GraphModel* GraphsManager::getGraph(const QStringList& objPath) const
     }
 }
 
-GraphsTreeModel* GraphsManager::openZsgFile(const QString& fn)
+GraphsTreeModel* GraphsManager::openZsgFile(const QString& fn, zenoio::ERR_CODE& code)
 {
     zeno::ZSG_VERSION ver = zenoio::getVersion(fn.toStdString());
     zenoio::ZSG_PARSE_RESULT result;
@@ -100,11 +100,14 @@ GraphsTreeModel* GraphsManager::openZsgFile(const QString& fn)
     }
     else {
         m_version = zeno::UNKNOWN_VER;
-        result.bSucceed = false;
+        result.code = zenoio::PARSE_VERSION_UNKNOWN;
     }
 
-    if (!result.bSucceed)
+    if (result.code != zenoio::PARSE_NOERROR)
+    {
+        code = result.code;
         return nullptr;
+    }
 
     m_version = ver;
     m_filePath = fn;

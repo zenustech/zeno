@@ -18,7 +18,7 @@ namespace zenoio {
     ZENO_API ZSG_PARSE_RESULT ZsgReader::openFile(const std::string& fn)
     {
         ZSG_PARSE_RESULT result;
-        result.bSucceed = false;
+        result.code = PARSE_ERROR;
 
         std::filesystem::path filePath(fn);
         if (!std::filesystem::exists(filePath)) {
@@ -66,7 +66,7 @@ namespace zenoio {
         }
         
         result.iover = m_ioVer;
-        result.bSucceed = true;
+        result.code = PARSE_NOERROR;
         return result;
     }
 

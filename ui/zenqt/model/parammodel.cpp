@@ -143,6 +143,56 @@ GraphModel* ParamsModel::getGraph() const
     return nullptr;
 }
 
+PARAMS_INFO ParamsModel::getInputs()
+{
+    PARAMS_INFO params_inputs;
+    for (ParamItem& item : m_items)
+    {
+        if (item.bInput)
+        {
+            zeno::ParamInfo info;
+            info.name = item.name.toStdString();
+            info.type = item.type;
+            info.control = item.control;
+            info.ctrlProps = item.optCtrlprops;
+            info.defl = UiHelper::qvarToZVar(item.value, info.type);
+            info.socketType = item.connectProp;
+            for (auto linkidx : item.links) {
+                info.links.push_back(linkidx.data(ROLE_LINK_INFO).value<zeno::EdgeInfo>());
+            }
+            //info.tooltip //std::string tooltip;
+            //info.prop   //SocketProperty prop = Socket_Normal;
+            params_inputs.insert(item.name, info);
+        }
+    }
+    return params_inputs;
+}
+
+PARAMS_INFO ParamsModel::getOutputs()
+{
+    PARAMS_INFO params_outputs;
+    for (ParamItem& item : m_items)
+    {
+        if (!item.bInput)
+        {
+            zeno::ParamInfo info;
+            info.name = item.name.toStdString();
+            info.type = item.type;
+            info.control = item.control;
+            info.ctrlProps = item.optCtrlprops;
+            info.defl = UiHelper::qvarToZVar(item.value, info.type);
+            info.socketType = item.connectProp;
+            for (auto linkidx : item.links) {
+                info.links.push_back(linkidx.data(ROLE_LINK_INFO).value<zeno::EdgeInfo>());
+            }
+            //info.tooltip //std::string tooltip;
+            //info.prop   //SocketProperty prop = Socket_Normal;
+            params_outputs.insert(item.name, info);
+        }
+    }
+    return params_outputs;
+}
+
 bool ParamsModel::setData(const QModelIndex& index, const QVariant& value, int role)
 {
     ParamItem& param = m_items[index.row()];

@@ -101,7 +101,11 @@ void ZenoWelcomePage::initSignals()
         QDesktopServices::openUrl(QUrl("https://github.com/zenustech/zeno"));
     });
 
-    connect(zenoApp->getMainWindow(), &ZenoMainWindow::recentFilesChanged, this, [=](const QObject *sender) {
+    auto mainWin = zenoApp->getMainWindow();
+
+    connect(this, SIGNAL(newRequest()), mainWin, SLOT(onNewFile()));
+    connect(this, SIGNAL(openRequest()), mainWin, SLOT(openFileDialog()));
+    connect(mainWin, &ZenoMainWindow::recentFilesChanged, this, [=](const QObject *sender) {
         if (sender != this) {
             initRecentFiles();
         }

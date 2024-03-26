@@ -49,18 +49,14 @@ BlockSignalScope::~BlockSignalScope()
 		m_pObject->blockSignals(false);
 }
 
-QString UiHelper::createNewNode(QModelIndex subgIdx, const QString& descName, const QPointF& pt)
+QString UiHelper::createNewNode(GraphModel* subgraph, const QString& descName, const QPointF& pt)
 {
-    if (!subgIdx.isValid())
+    if (!subgraph)
         return "";
 
     zeno::NodeData node;
     //NODE_DATA node = newNodeData(pModel, descName, pt);
-    QAbstractItemModel* graphM = const_cast<QAbstractItemModel*>(subgIdx.model());
-    if (GraphModel* pModel = qobject_cast<GraphModel*>(graphM))
-    {
-        node = pModel->createNode(descName, "", pt);
-    }
+    node = subgraph->createNode(descName, "", pt);
     return QString::fromStdString(node.name);
 }
 
@@ -120,10 +116,10 @@ zeno::zvariant UiHelper::qvarToZVar(const QVariant& var, const zeno::ParamType t
                 }
                 if (vec.size() == 4) {
                     if (type == zeno::Param_Vec4f) {
-                        return zeno::vec2f(vec[0], vec[1], vec[2], vec[3]);
+                        return zeno::vec4f(vec[0], vec[1], vec[2], vec[3]);
                     }
                     else if (type == zeno::Param_Vec4i) {
-                        return zeno::vec2i((int)vec[0], (int)vec[1], (int)vec[2], (int)vec[3]);
+                        return zeno::vec4i((int)vec[0], (int)vec[1], (int)vec[2], (int)vec[3]);
                     }
                 }
             }

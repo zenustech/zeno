@@ -8,6 +8,9 @@
 #include "zenoapplication.h"
 #include <zeno/extra/SubnetNode.h>
 #include <zeno/core/Assets.h>
+#include <zeno/core/data.h>
+#include <zeno/core/IParam.h>
+#include "util/uihelper.h"
 
 
 NodeItem::NodeItem(QObject* parent) : QObject(parent)
@@ -49,7 +52,7 @@ void NodeItem::init(GraphModel* pGraphM, std::shared_ptr<zeno::INode> spNode)
     });
 
     m_cbMarkDirty = spNode->register_mark_dirty([=](bool bDirty) {
-        this->bDirty = bDirty;
+        this->runState.bDirty = bDirty;
         QModelIndex idx = pGraphM->indexFromName(this->name);
         emit pGraphM->dataChanged(idx, idx, QVector<int>{ ROLE_NODE_DIRTY });
     });
@@ -58,7 +61,7 @@ void NodeItem::init(GraphModel* pGraphM, std::shared_ptr<zeno::INode> spNode)
     this->name = QString::fromStdString(spNode->get_name());
     this->cls = QString::fromStdString(spNode->get_nodecls());
     this->bView = spNode->is_view();
-    this->bDirty = spNode->is_dirty();
+    this->runState.bDirty = spNode->is_dirty();
     auto pair = spNode->get_pos();
     this->pos = QPointF(pair.first, pair.second);
     if (std::shared_ptr<zeno::SubnetNode> subnetnode = std::dynamic_pointer_cast<zeno::SubnetNode>(spNode))
@@ -272,27 +275,42 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
         }
         case ROLE_INPUTS:
         {
-            PARAMS_INFO inputs;
-            //TODO
-            return QVariant::fromValue(inputs);
+            if (item->params)
+                return QVariant::fromValue(item->params->getInputs());
+            return QVariant();
+        }
+        case ROLE_OUTPUTS:
+        {
+            if (item->params)
+                return QVariant::fromValue(item->params->getOutputs());
+            return QVariant();
         }
         case ROLE_NODEDATA:
         {
             zeno::NodeData data;
-            //TODO
+            std::shared_ptr<zeno::INode> spNode = item->m_wpNode.lock();
+            data = spNode->exportInfo();
             return QVariant::fromValue(data);
         }
         case ROLE_NODE_STATUS:
         {
-            return QVariant();
+            int options = zeno::None;
+            if (item->bView)
+                options |= zeno::View;
+            //if (item->bMute)
+            return QVariant(options);
         }
         case ROLE_NODE_ISVIEW:
         {
             return item->bView;
         }
+        case ROLE_NODE_RUN_STATE:
+        {
+            return QVariant::fromValue(item->runState);
+        }
         case ROLE_NODE_DIRTY:
         {
-            return item->bDirty;
+            return item->runState.bDirty;
         }
         case ROLE_NODETYPE:
         {
@@ -370,11 +388,14 @@ bool GraphModel::setData(const QModelIndex& index, const QVariant& value, int ro
         }
         case ROLE_NODE_RUN_STATE:
         {
-            NodeState state = value.value<NodeState>();
-            break;
+            item->runState = value.value<NodeState>();
+            emit dataChanged(index, index, QVector<int>{role});
+            return true;
         }
         case ROLE_NODE_STATUS:
         {
+            setView(index, value.toInt() & zeno::View);
+            // setMute();
             break;
         }
         case ROLE_NODE_ISVIEW:
@@ -407,10 +428,82 @@ QModelIndexList GraphModel::match(const QModelIndex& start, int role,
     return result;
 }
 
-QList<SEARCH_RESULT> GraphModel::search(const QString& content, SearchType searchType, SearchOpt searchOpts) const
+QList<SEARCH_RESULT> GraphModel::search(const QString& content, SearchType searchType, SearchOpt searchOpts)
 {
-    //TODO:
-    return {};
+    QList<SEARCH_RESULT> results;
+    if (content.isEmpty())
+        return results;
+
+    if (searchType & SEARCH_NODEID) {
+        QModelIndexList lst;
+        if (searchOpts == SEARCH_MATCH_EXACTLY) {
+            QModelIndex idx = indexFromName(content);
+            if (idx.isValid())
+                lst.append(idx);
+        }
+        else {
+            lst = _base::match(this->index(0, 0), ROLE_NODE_NAME, content, -1, Qt::MatchContains);
+        }
+        if (!lst.isEmpty()) {
+            for (const QModelIndex& nodeIdx : lst) {
+                SEARCH_RESULT result;
+                result.targetIdx = nodeIdx;
+                result.subGraph = this;
+                result.type = SEARCH_NODEID;
+                results.append(result);
+            }
+        }
+        for (auto& subnode : m_subgNodes)
+        {
+            if (m_name2uuid.find(subnode) == m_name2uuid.end())
+                continue;
+            NodeItem* pItem = m_nodes[m_name2uuid[subnode]];
+            if (!pItem->optSubgraph.has_value())
+                continue;
+            QList<SEARCH_RESULT>& subnodeRes = pItem->optSubgraph.value()->search(content, searchType, searchOpts);
+            for (auto& res: subnodeRes)
+                results.push_back(res);
+        }
+    }
+
+    //TODO
+
+    return results;
+}
+
+QList<SEARCH_RESULT> GraphModel::searchByUuidPath(const zeno::ObjPath& uuidPath)
+{
+    QList<SEARCH_RESULT> results;
+    if (uuidPath.empty())
+        return results;
+
+    SEARCH_RESULT result;
+    result.targetIdx = indexFromUuidPath(uuidPath);
+    result.subGraph = getGraphByPath(uuidPath2ObjPath(uuidPath));
+    result.type = SEARCH_NODEID;
+    results.append(result);
+    return results;
+}
+
+QStringList GraphModel::uuidPath2ObjPath(const zeno::ObjPath& uuidPath)
+{
+    QStringList res;
+    zeno::ObjPath tmp = uuidPath;
+    if (tmp.empty())
+        return res;
+
+    auto it = m_nodes.find(QString::fromStdString(tmp.front()));
+    if (it == m_nodes.end()) {
+        NodeItem* pItem = it.value();
+        res.append(pItem->getName());
+
+        tmp.pop_front();
+
+        if (pItem->optSubgraph.has_value())
+            res.append(pItem->optSubgraph.value()->uuidPath2ObjPath(tmp));
+    }
+
+    return res;
 }
 
 QModelIndex GraphModel::indexFromUuidPath(const zeno::ObjPath& uuidPath)
@@ -687,6 +780,8 @@ zeno::NodeData GraphModel::createNode(const QString& nodeCls, const QString& cat
         cate.toStdString(),
         {pos.x(), pos.y()});
 
+    node = spNode->exportInfo();
+
     if (nodeCls == "Subnet") {
         QString nodeName = QString::fromStdString(spNode->get_name());
         QString uuid = m_name2uuid[nodeName];
@@ -798,6 +893,15 @@ QString GraphModel::updateNodeName(const QModelIndex& idx, QString newName)
     std::string oldName = idx.data(ROLE_NODE_NAME).toString().toStdString();
     newName = QString::fromStdString(spCoreGraph->updateNodeName(oldName, newName.toStdString()));
     return newName;
+}
+
+void GraphModel::updateSocketValue(const QModelIndex& nodeidx, const QString socketName, const QVariant newValue)
+{
+    if (ParamsModel* paramModel = params(nodeidx))
+    {
+        QModelIndex& socketIdx = paramModel->paramIdx(socketName, true);
+        paramModel->setData(socketIdx, newValue, ROLE_PARAM_VALUE);
+    }
 }
 
 QHash<int, QByteArray> GraphModel::roleNames() const

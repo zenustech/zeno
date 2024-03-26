@@ -246,12 +246,12 @@ void DockContent_Parameter::initConnections()
     });
 }
 
-void DockContent_Parameter::onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select)
+void DockContent_Parameter::onNodesSelected(GraphModel* subgraph, const QModelIndexList& nodes, bool select)
 {
     if (ZenoPropPanel* prop = findChild<ZenoPropPanel*>())
     {
         auto pModel = zenoApp->graphsManager()->currentModel();
-        prop->reset(subgIdx, nodes, select);
+        prop->reset(subgraph, nodes, select);
 
         if (!nodes.isEmpty())
         {
@@ -594,7 +594,7 @@ void DockContent_Editor::initConnections()
         zenoApp->calculationMgr()->run();
     });
 
-    connect(zenoApp->calculationMgr(), &CalculationMgr::calcFinished, this, [=](bool bSucceed, QStringList, QString) {
+    connect(zenoApp->calculationMgr(), &CalculationMgr::calcFinished, this, [=](bool bSucceed, zeno::ObjPath, QString) {
         m_btnRun->setVisible(true);
         m_btnKill->setVisible(false);
     });

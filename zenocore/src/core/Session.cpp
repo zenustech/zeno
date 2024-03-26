@@ -209,6 +209,10 @@ ZENO_API bool Session::run() {
     objsMan->beforeRun();
     zeno::scope_exit sp([&]() { objsMan->afterRun(); });
 
+    globalError->clearState();
+
+    //本次运行清除m_objects中上一次运行时被标记移除的obj，不能立刻清除因为视窗export_loading_objs时，需要在m_objects中查找被删除的obj
+    objsMan->clearLastUnregisterObjs();
     //对之前删除节点时记录的obj，对应的所有其他关联节点，都标脏
     objsMan->remove_attach_node_by_removing_objs();
 
