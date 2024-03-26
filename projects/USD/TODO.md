@@ -15,7 +15,7 @@
 * [x] Cylinder导入
 * [x] Cone导入
 * [ ] Capsule: (TfToken)axis (double)height (double)radius
-* [ ] Plane: (TfToken)axis (bool)doubleSided extent (double)length (double)width
+* [x] Plane: (TfToken)axis (double)length (double)width
 * [ ] Points?
 * [ ] Curves?
 * [ ] 支持层级引入 例如import一个根节点 其下的叶节点也一并导入(sublayer??)

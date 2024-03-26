@@ -14,6 +14,7 @@
 #include <pxr/usd/usdGeom/cylinder.h>
 #include <pxr/usd/usdGeom/cone.h>
 #include <pxr/usd/usdGeom/capsule.h>
+#include <pxr/usd/usdGeom/plane.h>
 
 #include <zeno/zeno.h>
 #include <zeno/core/IObject.h>
@@ -458,10 +459,86 @@ void _convertMeshFromUSDToZeno(const pxr::UsdPrim& usdPrim, zeno::PrimitiveObjec
         }
     }
     else if (typeName == "Capsule") {
+        auto capsule = pxr::UsdGeomCapsule(usdPrim);
+
+        /*** Read from USD ***/
+        char axis;
+        float height;
+        float radius;
+        pxr::VtValue heightValue;
+        pxr::VtValue radiusValue;
+        pxr::VtValue axisValue;
+        capsule.GetHeightAttr().Get(&heightValue);
+        capsule.GetRadiusAttr().Get(&radiusValue);
+        capsule.GetAxisAttr().Get(&axisValue);
+        height = static_cast<float>(heightValue.Get<double>());
+        radius = static_cast<float>(radiusValue.Get<double>());
+        axis = axisValue.Get<pxr::TfToken>().GetString()[0];
+
+        auto& verts = zPrim.verts;
+        auto& tris = zPrim.tris;
+        const int COLUMNS = 32;
         ; // TODO
-    }
-    else if (typeName == "Plane") {
-        ;
+    } else if (typeName == "Plane") {
+        auto plane = pxr::UsdGeomPlane(usdPrim);
+
+        char axis;
+        bool doubleSided; // TODO
+        float length;
+        float width;
+        pxr::VtValue tempValue;
+
+        plane.GetDoubleSidedAttr().Get(&doubleSided);
+
+        plane.GetAxisAttr().Get(&tempValue);
+        axis = tempValue.Get<pxr::TfToken>().GetString()[0];
+
+        plane.GetLengthAttr().Get(&tempValue);
+        length = static_cast<float>(tempValue.Get<double>());
+
+        plane.GetWidthAttr().Get(&tempValue);
+        width = static_cast<float>(tempValue.Get<double>());
+
+        auto& verts = zPrim.verts;
+        auto& tris = zPrim.tris;
+        auto& uvs = verts.add_attr<zeno::vec3f>("uv");
+        auto& normals = verts.add_attr<zeno::vec3f>("nrm");
+
+        if (axis == 'Z') {
+            verts.emplace_back(-0.5f * width, 0.5f * length, 0.0f);
+            verts.emplace_back(0.5f * width, 0.5f * length, 0.0f);
+            verts.emplace_back(-0.5f * width, -0.5f * length, 0.0f);
+            verts.emplace_back(0.5f * width, -0.5f * length, 0.0f);
+            for (int i = 0; i < 4; ++i) {
+                normals.emplace_back(0.0f, 0.0f, 1.0f);
+            }
+        } else if (axis == 'X') {
+            verts.emplace_back(0.0f, 0.5f * length, 0.5f * width);
+            verts.emplace_back(0.0f, 0.5f * length, -0.5f * width);
+            verts.emplace_back(0.0f, -0.5f * length, 0.5f * width);
+            verts.emplace_back(0.0f, -0.5f * length, -0.5f * width);
+            for (int i = 0; i < 4; ++i) {
+                normals.emplace_back(1.0f, 0.0f, 0.0f);
+            }
+        } else {
+            verts.emplace_back(-0.5f * width, 0.0f, -0.5f * length);
+            verts.emplace_back(0.5f * width, 0.0f, -0.5f * length);
+            verts.emplace_back(-0.5f * width, 0.0f, 0.5f * length);
+            verts.emplace_back(0.5f * width, 0.0f, -0.5f * length);
+            for (int i = 0; i < 4; ++i) {
+                normals.emplace_back(0.0f, 1.0f, 0.0f);
+            }
+        }
+
+        // uvs
+        uvs.emplace_back(0.0f, 0.0f, 0.0f);
+        uvs.emplace_back(1.0f, 0.0f, 0.0f);
+        uvs.emplace_back(0.0f, 1.0f, 0.0f);
+        uvs.emplace_back(1.0f, 1.0f, 0.0f);
+
+        // indices
+        tris.emplace_back(0, 2, 1);
+        tris.emplace_back(1, 2, 3);
     }
     else {
         // other geometry types are not supported yet
