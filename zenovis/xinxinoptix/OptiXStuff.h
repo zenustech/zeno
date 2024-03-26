@@ -852,6 +852,17 @@ inline void addTexture(std::string path)
         zeno::log_info("-{}", i->first);
     }
 }
+inline void removeTexture(std::string path) {
+    if (path.size()) {
+        g_tex.erase(path);
+        sky_nx_map.erase(path);
+        sky_ny_map.erase(path);
+        sky_cdf_map.erase(path);
+        sky_pdf_map.erase(path);
+        sky_start_map.erase(path);
+        sky_avg_map.erase(path);
+    }
+}
 
 struct OptixShaderCore {
     raii<OptixModule>                        module {}; 
