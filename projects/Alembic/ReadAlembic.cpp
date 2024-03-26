@@ -954,9 +954,9 @@ void traverseABC(
         if (tree.prim) {
             tree.prim->userData().set2("vis", tree.visible);
             if (tree.visible == 0) {
-                tree.prim->polys.clear();
-                tree.prim->loops.clear();
-                tree.prim->verts.clear();
+                for (auto i = 0; i < tree.prim->verts.size(); i++) {
+                    tree.prim->verts[i] = {};
+                }
             }
         }
     }
