@@ -170,7 +170,9 @@ bool ParamsModel::setData(const QModelIndex& index, const QVariant& value, int r
     case ROLE_PARAM_CONTROL:
         param.control = (zeno::ParamControl)value.toInt();
         break;
-
+    case ROLE_PARAM_CTRL_PROPERTIES:
+        param.optCtrlprops = value.value<zeno::ControlProperty>();
+        break;
     default:
         return false;
     }
@@ -279,42 +281,7 @@ QStandardItemModel* ParamsModel::customParamModel()
     if (!m_customParamsM)
     {
         m_customParamsM = new QStandardItemModel(this);
-
-        QStandardItem* pRoot = new QStandardItem("root");
-        QStandardItem* pInputs = new QStandardItem("input");
-        QStandardItem* pOutputs = new QStandardItem("output");
-        for (int r = 0; r < rowCount(); r++) {
-            QModelIndex paramIdx = index(r);
-            bool bInput = paramIdx.data(ROLE_ISINPUT).toBool();
-            zeno::ParamInfo info = paramIdx.data(ROLE_PARAM_INFO).value<zeno::ParamInfo>();
-            QStandardItem* paramItem = new QStandardItem(QString::fromStdString(info.name));
-            const QString& paramName = QString::fromStdString(info.name);
-            paramItem->setData(paramName, Qt::DisplayRole);
-            paramItem->setData(paramName, ROLE_PARAM_NAME);
-            paramItem->setData(paramName, ROLE_MAP_TO_PARAMNAME);
-            paramItem->setData(UiHelper::zvarToQVar(info.defl), ROLE_PARAM_VALUE);
-            paramItem->setData(info.control, ROLE_PARAM_CONTROL);
-            paramItem->setData(info.type, ROLE_PARAM_TYPE);
-            paramItem->setData(bInput, ROLE_ISINPUT);
-            paramItem->setData(info.socketType, ROLE_SOCKET_TYPE);
-            if (bInput)
-                pInputs->appendRow(paramItem);
-            else
-                pOutputs->appendRow(paramItem);
-            paramItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
-            paramItem->setEditable(true);
-        }
-        pRoot->setEditable(false);
-        pRoot->setData(VPARAM_TAB, ROLE_ELEMENT_TYPE);
-        pInputs->setEditable(false);
-        pInputs->setData(VPARAM_GROUP, ROLE_ELEMENT_TYPE);
-        pOutputs->setEditable(false);
-        pOutputs->setData(VPARAM_GROUP, ROLE_ELEMENT_TYPE);
-
-        pRoot->appendRow(pInputs);
-        pRoot->appendRow(pOutputs);
-
-        m_customParamsM->appendRow(pRoot);
+        resetCustomParamModel();
     }
     
     return m_customParamsM;
@@ -412,8 +379,52 @@ void ParamsModel::batchModifyParams(const zeno::ParamsUpdateInfo& params)
             toParams->m_items[toParam.row()].links.append(newLink);
         }
     }
-
+    resetCustomParamModel();
     emit layoutChanged();
+}
+
+void ParamsModel::resetCustomParamModel()
+{
+    if (!m_customParamsM)
+        return;
+    m_customParamsM->clear();
+    QStandardItem* pRoot = new QStandardItem("root");
+    QStandardItem* pInputs = new QStandardItem("input");
+    QStandardItem* pOutputs = new QStandardItem("output");
+    for (int r = 0; r < rowCount(); r++) {
+        QModelIndex paramIdx = index(r);
+        bool bInput = paramIdx.data(ROLE_ISINPUT).toBool();
+        zeno::ParamInfo info = paramIdx.data(ROLE_PARAM_INFO).value<zeno::ParamInfo>();
+        QStandardItem* paramItem = new QStandardItem(QString::fromStdString(info.name));
+        const QString& paramName = QString::fromStdString(info.name);
+        paramItem->setData(paramName, Qt::DisplayRole);
+        paramItem->setData(paramName, ROLE_PARAM_NAME);
+        paramItem->setData(paramName, ROLE_MAP_TO_PARAMNAME);
+        paramItem->setData(UiHelper::zvarToQVar(info.defl), ROLE_PARAM_VALUE);
+        paramItem->setData(info.control, ROLE_PARAM_CONTROL);
+        paramItem->setData(info.type, ROLE_PARAM_TYPE);
+        paramItem->setData(bInput, ROLE_ISINPUT);
+        paramItem->setData(info.socketType, ROLE_SOCKET_TYPE);
+        if (info.ctrlProps.has_value())
+            paramItem->setData(QVariant::fromValue(info.ctrlProps.value()), ROLE_PARAM_CTRL_PROPERTIES);
+        if (bInput)
+            pInputs->appendRow(paramItem);
+        else
+            pOutputs->appendRow(paramItem);
+        paramItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
+        paramItem->setEditable(true);
+    }
+    pRoot->setEditable(false);
+    pRoot->setData(VPARAM_TAB, ROLE_ELEMENT_TYPE);
+    pInputs->setEditable(false);
+    pInputs->setData(VPARAM_GROUP, ROLE_ELEMENT_TYPE);
+    pOutputs->setEditable(false);
+    pOutputs->setData(VPARAM_GROUP, ROLE_ELEMENT_TYPE);
+
+    pRoot->appendRow(pInputs);
+    pRoot->appendRow(pOutputs);
+
+    m_customParamsM->appendRow(pRoot);
 }
 
 bool ParamsModel::removeRows(int row, int count, const QModelIndex& parent)

@@ -66,8 +66,12 @@ namespace JsonHelper
     bool importControl(const rapidjson::Value& controlObj, zeno::ParamControl& ctrl, QVariant& props);
     CurveModel* _parseCurveModel(QString channel, const rapidjson::Value& jsonCurve, QObject* parentRef);
     CURVE_DATA parseCurve(QString channel, const rapidjson::Value& jsonCurve);
+    CURVES_DATA parseCurves(const QString& jsonStr);
     void dumpCurveModel(const CurveModel *pModel, RAPIDJSON_WRITER &writer);
     void dumpCurve(const CURVE_DATA& curve, RAPIDJSON_WRITER& writer);
+    QString dumpCurves(const CURVES_DATA& curves);
+    bool parseHeatmap(const QString& json, int &nres, QString &grad);
+    QString dumpHeatmap(int nres, const QString& grad);
 }
 
 

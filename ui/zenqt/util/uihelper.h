@@ -78,6 +78,7 @@ public:
     static QVariant parseJson(const rapidjson::Value& val, QObject* parentRef = nullptr);
 
     static QString gradient2colorString(const QLinearGradient& grad);
+    static QLinearGradient colorString2Grad(const QString& colorStr);
     static QVariant getParamValue(const QModelIndex& idx, const QString& name);
     static int tabIndexOfName(const QTabWidget* pTabWidget, const QString& name);
     static void getAllParamsIndex(const QModelIndex &nodeIdx,

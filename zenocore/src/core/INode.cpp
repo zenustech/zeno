@@ -902,7 +902,19 @@ zany INode::process(std::shared_ptr<IParam> in_param)
         case Param_Vec4f:   result = resolveVec<vec4f, vec4s>(defl, type);  break;
         case Param_Vec4i:   result = resolveVec<vec4i, vec4s>(defl, type);  break;
         case Param_Curve:
-            break;  //TODO
+        {
+            if (std::holds_alternative<std::string>(defl))
+            {
+                result = zeno::parseCurveObj(std::get<std::string>(defl));
+            }
+            break;
+        }
+        case Param_Heatmap:
+        {
+            if (std::holds_alternative<std::string>(defl))
+                result = zeno::parseHeatmapObj(std::get<std::string>(defl));
+            break;
+        }
         case Param_List:
         {
             //TODO: List现在还没有ui支持，而且List是泛型容器，对于非Literal值不好设定默认值。

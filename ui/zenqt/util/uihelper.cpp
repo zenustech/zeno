@@ -213,6 +213,30 @@ QVariant UiHelper::initDefaultValue(const zeno::ParamType& type)
     {
         return QVariant(false);
     }
+    else if (type == zeno::Param_Vec2i || type == zeno::Param_Vec2f)
+    {
+        UI_VECTYPE vec(2);
+        return QVariant::fromValue(vec);
+    }
+    else if (type == zeno::Param_Vec3i || type == zeno::Param_Vec3f)
+    {
+        UI_VECTYPE vec(3);
+        return QVariant::fromValue(vec);
+    }
+    else if (type == zeno::Param_Vec4i || type == zeno::Param_Vec4f)
+    {
+        UI_VECTYPE vec(4);
+        return QVariant::fromValue(vec);
+    }
+    else if (type == zeno::Param_Curve)
+    {
+        return JsonHelper::dumpCurves(curve_util::deflCurves());
+    }
+    else if (type == zeno::Param_Heatmap)
+    {
+        return JsonHelper::dumpHeatmap(1024, "");
+    }
+
     /*
     else if (type.startsWith("vec"))
     {
@@ -307,7 +331,6 @@ QString UiHelper::getControlDesc(zeno::ParamControl ctrl)
     case CONTROL_VEC3_INT:          return "Integer Vector 3";
     case CONTROL_VEC2_INT:          return "Integer Vector 2";
     case CONTROL_COLOR:             return "Color";
-    case CONTROL_PURE_COLOR:        return "Pure Color";
     case CONTROL_COLOR_VEC3F:       return "Color Vec3f";
     case CONTROL_CURVE:             return "Curve";
     case CONTROL_HSPINBOX:          return "SpinBox";
@@ -341,7 +364,9 @@ QString UiHelper::getControlDesc(zeno::ParamControl ctrl, zeno::ParamType type)
         return "Boolean";
     }
     case zeno::Multiline:           return "Multiline String";
-    case zeno::Pathedit:            return "read path";
+    case zeno::ReadPathEdit:            return "read path";
+    case zeno::WritePathEdit:            return "write path";
+    case zeno::DirectoryPathEdit:            return "directory";
     case zeno::Combobox:            return "Enum";
     case zeno::Vec4edit:
     {
@@ -356,7 +381,6 @@ QString UiHelper::getControlDesc(zeno::ParamControl ctrl, zeno::ParamType type)
         return type == zeno::Param_Int ? "Integer Vector 2" : "Float Vector 2";
     }
     case zeno::Heatmap:             return "Color";
-    case zeno::Color:               return "Pure Color";
     case zeno::ColorVec:            return "Color Vec3f";
     case zeno::CurveEditor:         return "Curve";
     case zeno::SpinBox:             return "SpinBox";
@@ -395,11 +419,15 @@ zeno::ParamControl UiHelper::getControlByDesc(const QString& descName)
     }
     else if (descName == "read path")
     {
-        return zeno::Pathedit;
+        return zeno::ReadPathEdit;
     }
     else if (descName == "write path")
     {
-        return zeno::Pathedit;
+        return zeno::WritePathEdit;
+    }
+    else if (descName == "directory")
+    {
+        return zeno::DirectoryPathEdit;
     }
     else if (descName == "Enum")
     {
@@ -433,10 +461,6 @@ zeno::ParamControl UiHelper::getControlByDesc(const QString& descName)
     {
         return zeno::Heatmap;
     } 
-    else if (descName == "Pure Color") 
-    {
-        return zeno::Color;
-    }
     else if (descName == "Color Vec3f")
     {
         return zeno::ColorVec;
@@ -547,6 +571,8 @@ QList<zeno::ParamControl> UiHelper::getControlLists(const zeno::ParamType& type)
         return { zeno::Vec4edit };
     case zeno::Param_Curve:
         return { zeno::CurveEditor };
+    case zeno::Param_Heatmap:
+        return { zeno::Heatmap };
     default:
         return {};
     }
@@ -569,6 +595,7 @@ QString UiHelper::getTypeDesc(zeno::ParamType type)
     case zeno::Param_Prim:      return "prim";
     case zeno::Param_List:      return "list";
     case zeno::Param_Dict:      return "dict";
+    case zeno::Param_Heatmap: return "color";
     case zeno::Param_Null:
     default:
         return "";
@@ -605,17 +632,18 @@ zeno::ParamControl UiHelper::getControlByType(const QString &type)
             return zeno::NullControl;
         }
     } else if (type == "writepath") {
-        return zeno::Pathedit;
+        return zeno::WritePathEdit;
     } else if (type == "readpath") {
-        return zeno::Pathedit;
-    } else if (type == "multiline_string") {
+        return zeno::ReadPathEdit;
+    } else if (type == "directory") {
+        return zeno::DirectoryPathEdit;
+    }
+    else if (type == "multiline_string") {
         return zeno::Multiline;
     } else if (type == "color") {   //color is more general than heatmap.
         return zeno::Heatmap;
-    } else if (type == "purecolor") {   
-        return zeno::Color;
     } else if (type == "colorvec3f") {   //colorvec3f is for coloreditor, color is heatmap? ^^^^
-        return zeno::Color;
+        return zeno::ColorVec;
     } else if (type == "curve") {
         return zeno::CurveEditor;
     } else if (type.startsWith("enum ")) {
@@ -658,6 +686,7 @@ zeno::ParamControl UiHelper::getDefaultControl(const zeno::ParamType type)
     case zeno::Param_List:      return zeno::NullControl;
             //Param_Color:  //need this?
     case zeno::Param_Curve:     return zeno::CurveEditor;
+    case zeno::Param_Heatmap: return zeno::Heatmap;
     case zeno::Param_SrcDst:
     default:
         return zeno::NullControl;
@@ -1555,6 +1584,38 @@ QString UiHelper::gradient2colorString(const QLinearGradient& grad)
         colorStr += "\n";
     }
     return colorStr;
+}
+
+QLinearGradient UiHelper::colorString2Grad(const QString& colorStr)
+{
+    QLinearGradient grad;
+    if (colorStr.isEmpty())
+        return grad;
+    QStringList L = colorStr.split("\n", QtSkipEmptyParts);
+    ZASSERT_EXIT(!L.isEmpty(), grad);
+
+    bool bOk = false;
+    int n = L[0].toInt(&bOk);
+    ZASSERT_EXIT(bOk && n == L.size() - 1, grad);
+    for (int i = 1; i <= n; i++)
+    {
+        QStringList color_info = L[i].split(" ", QtSkipEmptyParts);
+        ZASSERT_EXIT(color_info.size() == 4, grad);
+
+        float f = color_info[0].toFloat(&bOk);
+        ZASSERT_EXIT(bOk, grad);
+        float r = color_info[1].toFloat(&bOk);
+        ZASSERT_EXIT(bOk, grad);
+        float g = color_info[2].toFloat(&bOk);
+        ZASSERT_EXIT(bOk, grad);
+        float b = color_info[3].toFloat(&bOk);
+        ZASSERT_EXIT(bOk, grad);
+
+        QColor clr;
+        clr.setRgbF(r, g, b);
+        grad.setColorAt(f, clr);
+    }
+    return grad;
 }
 
 int UiHelper::tabIndexOfName(const QTabWidget* pTabWidget, const QString& name)

@@ -11,7 +11,7 @@ namespace zeno {
 
 struct MakeCurve : zeno::INode {
     virtual void apply() override {
-        auto curve = get_input<CurveObject>("curve:");
+        auto curve = get_input<CurveObject>("curve");
         set_output("curve", curve);
     }
 };

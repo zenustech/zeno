@@ -1029,10 +1029,7 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
         QDialog dlg(this);
         QGridLayout *pLayout = new QGridLayout(&dlg);
         QDialogButtonBox *pButtonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
-        CALLBACK_SWITCH cbSwitch = [=](bool bOn) {
-            zenoApp->getMainWindow()->setInDlgEventLoop(bOn); //deal with ubuntu dialog slow problem when update viewport.
-        };
-        ZPathEdit *pathLineEdit = new ZPathEdit(cbSwitch, v, &dlg);
+        ZPathEdit *pathLineEdit = new ZPathEdit(v, zeno::ReadPathEdit, &dlg);
         pLayout->addWidget(new QLabel("Set NASLOC"), 2, 0);
         pLayout->addWidget(pathLineEdit, 2, 1);
         pLayout->addWidget(pButtonBox, 4, 1);
@@ -1064,10 +1061,7 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
         int cacheNum = varCacheNum.isValid() ? varCacheNum.toInt() : 1;
         bool bAutoCleanCache = varAutoCleanCache.isValid() ? varAutoCleanCache.toBool() : true;
 
-        CALLBACK_SWITCH cbSwitch = [=](bool bOn) {
-            zenoApp->getMainWindow()->setInDlgEventLoop(bOn); //deal with ubuntu dialog slow problem when update viewport.
-        };
-        ZPathEdit *pathLineEdit = new ZPathEdit(cbSwitch, cacheRootDir);
+        ZPathEdit *pathLineEdit = new ZPathEdit(cacheRootDir, zeno::ReadPathEdit);
         pathLineEdit->setFixedWidth(256);
         pathLineEdit->setEnabled(!bTempCacheDir && bEnableCache);
         QCheckBox *pTempCacheDir = new QCheckBox;
