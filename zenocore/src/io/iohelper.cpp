@@ -280,8 +280,6 @@ namespace zenoio
             break;
         }
         case zeno::Param_String:
-        case zeno::Param_Curve:
-        case zeno::Param_Heatmap:
         {
             if (val.IsString())
                 defl = val.GetString();
@@ -399,12 +397,33 @@ namespace zenoio
             }
             break;
         }
-        //case zeno::Param_Curve:
-        //{
-        //    //todo: wrap the json object as string, and parse it when calculate,
-        //    //by the method of parseCurve on ParseObjectFromUi.cpp
-        //    break;
-        //}
+        case zeno::Param_Curve:
+        {
+            //todo: wrap the json object as string, and parse it when calculate,
+            //by the method of parseCurve on ParseObjectFromUi.cpp
+            if (val.IsString())
+                defl = val.GetString();
+            if (val.IsObject())
+            {
+                rapidjson::StringBuffer sbBuf;
+                RAPIDJSON_WRITER jWriter(sbBuf);
+                val.Accept(jWriter);
+                defl = std::string(sbBuf.GetString());
+            }
+            break;
+        }
+        case zeno::Param_Heatmap:
+        {
+            if (val.IsString())
+            {
+                defl = val.GetString();
+            }
+            else
+            {
+                //TO DO:read old version data
+            }
+            break;
+        }
         }
         return defl;
     }

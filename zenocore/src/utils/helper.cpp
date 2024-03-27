@@ -53,6 +53,8 @@ namespace zeno {
     }
 
     ZENO_API zvariant str2var(std::string const& defl, ParamType const& type) {
+        if (defl.empty())
+            return initDeflValue(type);
         switch (type) {
         case Param_String: {
             return defl;
@@ -63,11 +65,9 @@ namespace zeno {
             return zvariant();
         }
         case Param_Int: {
-            if (defl == "") return 0;
             return std::stoi(defl);
         }
         case Param_Float: {
-            if (defl == "") return 0;
             return std::stof(defl);
         }
         case Param_Vec2i:
@@ -118,6 +118,58 @@ namespace zeno {
         default:
             return defl;
         }
+    }
+
+    zvariant zeno::initDeflValue(ParamType const& type)
+    {
+        if (type == zeno::Param_String) {
+            return "";
+        }
+        else if (type == zeno::Param_Float)
+        {
+            return (float)0.;
+        }
+        else if (type == zeno::Param_Int)
+        {
+            return (int)0;
+        }
+        else if (type == zeno::Param_Bool)
+        {
+            return false;
+        }
+        else if (type == zeno::Param_Vec2i)
+        {
+            return vec2i();
+        }
+        else if (type == zeno::Param_Vec2f)
+        {
+            return vec2f();
+        }
+        else if (type == zeno::Param_Vec3i)
+        {
+            return vec3i();
+        }
+        else if (type == zeno::Param_Vec3f)
+        {
+            return vec3f();
+        }
+        else if (type == zeno::Param_Vec4i)
+        {
+            return vec4i();
+        }
+        else if (type == zeno::Param_Vec4f)
+        {
+            return vec4f();
+        }
+        else if (type == zeno::Param_Curve)
+        {
+            return "{}";
+        }
+        else if (type == zeno::Param_Heatmap)
+        {
+            return "{\"nres\":1024, \"color\":\"\"}";
+        }
+        return zvariant();
     }
 
     EdgeInfo getEdgeInfo(std::shared_ptr<ILink> spLink) {
