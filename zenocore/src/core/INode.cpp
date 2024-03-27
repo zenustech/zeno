@@ -668,8 +668,20 @@ ZENO_API void INode::initParams(const NodeData& dat)
 }
 
 ZENO_API bool INode::has_input(std::string const &id) const {
-    auto param = get_input_param(id);
-    return param != nullptr;
+    auto it = inputs_.find(id);
+    if (it != inputs_.end()) {
+        if (it->second->type == Param_Null)
+            return std::visit([&](auto const& arg) {
+                using T = std::decay_t<decltype(arg)>;
+                if constexpr (std::is_same_v<T, std::string>) {
+                    if (arg == "" && !it->second->result)   //如果类型为Param_Null，初始值为空且输入obj为空，返回false
+                        return false;
+                }
+                return true;
+            }, it->second->defl);
+        return true;
+    }
+    return false;
 }
 
 ZENO_API zany INode::get_input(std::string const &id) const {
