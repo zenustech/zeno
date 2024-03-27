@@ -697,12 +697,10 @@ struct GraphicsManager {
                     std::string need_remove_tex;
                     if (OptixUtil::sky_tex.has_value() && OptixUtil::sky_tex.value() != path) {
                         need_remove_tex = OptixUtil::sky_tex.value();
+                        OptixUtil::removeTexture(need_remove_tex);
                     }
                     OptixUtil::sky_tex = path;
                     OptixUtil::addTexture(path);
-                    if (need_remove_tex.size()) {
-                        OptixUtil::removeTexture(need_remove_tex);
-                    }
                 }
                 xinxinoptix::update_hdr_sky(evnTexRotation, evnTex3DRotation, evnTexStrength);
                 xinxinoptix::using_hdr_sky(enableHdr);
