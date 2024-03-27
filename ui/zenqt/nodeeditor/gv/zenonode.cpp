@@ -204,7 +204,7 @@ ZGraphicsLayout* ZenoNode::initVerticalSockets(bool bInput)
 
         QSizeF szSocket(14, 14);
         ZenoSocketItem* socket = new ZenoSocketItem(paramIdx, ZenoStyle::dpiScaledSize(szSocket));
-        socket->setBrush(QColor("#CECCCC"), QColor("#FFFFFF"));
+        socket->setBrush(QColor("#CECCCC"), QColor("#CECCCC"));
         pSocketLayout->addItem(socket);
         pSocketLayout->addSpacing(-1);
 
@@ -1037,7 +1037,7 @@ void ZenoNode::onSocketLinkChanged(const QModelIndex& paramIdx, bool bInput, boo
     {
         QString sockName = paramIdx.data(ROLE_PARAM_NAME).toString();
         // special case, we need to show the button param.
-        if (this->nodeName() == "GenerateCommands" && sockName == "source")
+        if (this->nodeClass() == "GenerateCommands" && sockName == "source")
             return;
 
         ZSocketLayout* pSocketLayout = getSocketLayout(bInput, sockName);
@@ -1233,10 +1233,16 @@ QString ZenoNode::nodeId() const
     return m_index.data(ROLE_NODE_NAME).toString();
 }
 
-QString ZenoNode::nodeName() const
+QString ZenoNode::nodeClass() const
 {
     ZASSERT_EXIT(m_index.isValid(), "");
     return m_index.data(ROLE_CLASS_NAME).toString();
+}
+
+QString ZenoNode::nodeUuid() const
+{
+    ZASSERT_EXIT(m_index.isValid(), "");
+    return "";
 }
 
 QPointF ZenoNode::nodePos() const
@@ -1567,7 +1573,7 @@ void ZenoNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
             }
         }
         // for temp support to show handler via transform node
-        else if (nodeName().contains("TransformPrimitive"))
+        else if (nodeClass().contains("TransformPrimitive"))
         {
             QVector<DisplayWidget*> views = zenoApp->getMainWindow()->viewports();
             for (auto pDisplay : views)
@@ -1634,14 +1640,17 @@ QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant &value)
         m_bMoving = true;
         ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(scene());
         bool isSnapGrid = ZenoSettingsManager::GetInstance().getValue(zsSnapGrid).toBool();
-        if (pScene && isSnapGrid)
-        {
-            QPointF pos = value.toPointF();
-            int x = pos.x(), y = pos.y();
-            x = x - x % SCENE_GRID_SIZE;
-            y = y - y % SCENE_GRID_SIZE;
-            return QPointF(x, y);
+        if (pScene) {
+            if (isSnapGrid)
+            {
+                QPointF pos = value.toPointF();
+                int x = pos.x(), y = pos.y();
+                x = x - x % SCENE_GRID_SIZE;
+                y = y - y % SCENE_GRID_SIZE;
+                return QPointF(x, y);
+            }
         }
+        
     }
     else if (change == QGraphicsItem::ItemPositionHasChanged)
     {
@@ -1649,6 +1658,10 @@ QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant &value)
         m_lastMoving = value.toPointF();
         emit inSocketPosChanged();
         emit outSocketPosChanged();
+        ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(scene());
+        if (pScene) {
+            pScene->onNodePositionChanged(this);
+        }
     }
     else if (change == ItemScenePositionHasChanged)
     {

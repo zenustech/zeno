@@ -123,6 +123,7 @@ public:
         ACTION_SNAPGRID,
         ACTION_SHOWGRID,
         ACTION_GROUP,
+        ACTION_SHOWTHUMB,
 
     };
 signals:

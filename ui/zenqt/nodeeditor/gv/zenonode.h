@@ -27,7 +27,7 @@ class ZenoNode : public ZLayoutBackground
     Q_OBJECT
     typedef ZLayoutBackground _base;
 
-  public:
+public:
     struct _param_ctrl
     {
         ZSimpleTextItem* param_name;
@@ -48,7 +48,7 @@ public:
 
     void initUI(ZenoSubGraphScene* pScene, const QModelIndex& subGIdx, const QModelIndex& index);
 
-    QPersistentModelIndex index() { return m_index; }
+    QPersistentModelIndex index() const { return m_index; }
     QPersistentModelIndex subgIndex() { return m_subGpIndex; }
     QModelIndex getSocketIndex(QGraphicsItem* uiitem, bool bSocketText) const;
     QPointF getSocketPos(const QModelIndex& sockIdx, const QString keyName = "");
@@ -57,7 +57,8 @@ public:
     void markError(bool isError);
 
     QString nodeId() const;
-    QString nodeName() const;
+    QString nodeClass() const;
+    QString nodeUuid() const;
     QPointF nodePos() const;
     void updateNodePos(const QPointF &pos, bool enableTransaction = true);
     virtual void onUpdateParamsNotDesc();

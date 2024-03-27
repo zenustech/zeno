@@ -23,6 +23,7 @@ public:
     QString name;
     QString dispName;
     QString dispIcon;
+    zeno::ObjPath uuidPath;
     QString cls;
     QPointF pos;
 

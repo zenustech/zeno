@@ -61,7 +61,7 @@ class ZGraphicsLayout
 {
 public:
     ZGraphicsLayout(bool bHor);
-    ~ZGraphicsLayout();
+    virtual ~ZGraphicsLayout();
     void addItem(QGraphicsItem* item);
     void addItem(QGraphicsItem* item, Qt::Alignment flag);
     int count() const;

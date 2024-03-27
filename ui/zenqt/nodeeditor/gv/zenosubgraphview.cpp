@@ -21,6 +21,7 @@
 #include "viewport/cameracontrol.h"
 #include "model/GraphModel.h"
 #include "zenowelcomepage.h"
+#include "thumbnailview.h"
 
 
 bool sceneMenuEvent(
@@ -648,6 +649,7 @@ void LayerPathWidget::onPathItemClicked()
 ZenoSubGraphView::ZenoSubGraphView(QWidget* parent)
     : QWidget(parent)
     , m_prop(nullptr)
+    , m_thumbnail(nullptr)
     , m_floatPanelShow(false)
     , m_stackedView(new QStackedWidget)
 {
@@ -815,6 +817,9 @@ void ZenoSubGraphView::resetPath(const QStringList& path, const QString& objId, 
             pCurrentView->focusOn(name, pos, isError);
         }
     }
+
+    bool bShowThumbnail = ZenoSettingsManager::GetInstance().getValue(zsShowThumbnail).toBool();
+    showThumbnail(bShowThumbnail);
 }
 
 void ZenoSubGraphView::setZoom(const qreal& scale)
@@ -833,6 +838,30 @@ void ZenoSubGraphView::focusOn(const QString& nodeId)
 {
     auto pView = getCurrentView();
     pView->focusOn(nodeId, QPointF(), false);
+}
+
+void ZenoSubGraphView::showThumbnail(bool bChecked)
+{
+    bool bShowThumbnail = bChecked;
+    auto pView = getCurrentView();
+    if (!pView)
+        return;
+
+    ZenoSubGraphScene* scene = qobject_cast<ZenoSubGraphScene*>(pView->scene());
+    if (!scene)
+        return;
+
+    if (!m_thumbnail)
+        m_thumbnail = new ThumbnailView(this);
+
+    if (bShowThumbnail) {
+        m_thumbnail->resetScene(scene);
+        m_thumbnail->move(this->width() - m_thumbnail->width(), this->height() - m_thumbnail->height());
+        m_thumbnail->show();
+    }
+    else {
+        m_thumbnail->hide();
+    }
 }
 
 void ZenoSubGraphView::showFloatPanel(const QModelIndex &subgIdx, const QModelIndexList &nodes) {
@@ -909,5 +938,6 @@ void ZenoSubGraphView::resizeEvent(QResizeEvent *event) {
         m_prop->resize(m_prop->width(), this->height() * 1.0);
         m_prop->move(this->width() - m_prop->width(), 0);
     }
+    //showThumbnail();
     QWidget::resizeEvent(event);
 }

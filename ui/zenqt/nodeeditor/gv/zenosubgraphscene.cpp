@@ -80,7 +80,7 @@ void ZenoSubGraphScene::initModel(GraphModel* pGraphM)
         addItem(pNode);
         const QString& nodeid = pNode->nodeId();
         m_nodes[nodeid] = pNode;
-        if (pNode->nodeName() == "Group") 
+        if (pNode->nodeClass() == "Group") 
         {
             blackboardVect << pNode;
         }
@@ -173,6 +173,11 @@ void ZenoSubGraphScene::initModel(GraphModel* pGraphM)
     QAbstractItemModel* pLinkModel = m_model->getLinkModel();
     connect(pLinkModel, &QAbstractItemModel::rowsInserted, this, &ZenoSubGraphScene::onLinkInserted);
     connect(pLinkModel, &QAbstractItemModel::rowsAboutToBeRemoved, this, &ZenoSubGraphScene::onLinkAboutToBeRemoved);
+}
+
+void ZenoSubGraphScene::onNodePositionChanged(const ZenoNode* pNode)
+{
+    emit nodePosChanged(pNode);
 }
 
 void ZenoSubGraphScene::initLink(const QModelIndex& linkIdx)
@@ -510,6 +515,15 @@ ZenoNode* ZenoSubGraphScene::markError(const QString& nodeName)
     //pNode->setSelected(true);
     m_errNodes.append(nodeName);
     return pNode;
+}
+
+QList<ZenoNode*> ZenoSubGraphScene::getNodesItem() const
+{
+    QList<ZenoNode*> items;
+    for (auto& [_, node] : m_nodes) {
+        items.append(node);
+    }
+    return items;
 }
 
 void ZenoSubGraphScene::clearMark()
@@ -1083,6 +1097,8 @@ void ZenoSubGraphScene::onRowsAboutToBeRemoved(const QModelIndex& parent, int fi
             pGroup->removeChildItem(pNode);
         }
 
+        emit nodeAboutToRemoved(pNode);
+
         removeItem(pNode);
         delete pNode;
         m_nodes.erase(id);
@@ -1127,6 +1143,7 @@ void ZenoSubGraphScene::onRowsInserted(const QModelIndex& parent, int first, int
             }
         }
     }
+    emit nodeInserted(pNode);
 }
 
 void ZenoSubGraphScene::selectObjViaNodes() {

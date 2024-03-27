@@ -63,6 +63,7 @@ void NodeItem::init(GraphModel* pGraphM, std::shared_ptr<zeno::INode> spNode)
     this->runState.bDirty = spNode->is_dirty();
     auto pair = spNode->get_pos();
     this->pos = QPointF(pair.first, pair.second);
+    this->uuidPath = spNode->get_uuid_path();
     if (std::shared_ptr<zeno::SubnetNode> subnetnode = std::dynamic_pointer_cast<zeno::SubnetNode>(spNode))
     {
         GraphModel* parentM = qobject_cast<GraphModel*>(this->parent());
@@ -222,8 +223,6 @@ QString GraphModel::name() const
     return m_graphName;
 }
 
-
-
 QString GraphModel::owner() const
 {
     if (auto pItem = qobject_cast<NodeItem*>(parent()))
@@ -255,6 +254,9 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
         }
         case ROLE_NODE_DISPLAY_ICON: {
             return item->dispIcon;
+        }
+        case ROLE_NODE_UUID_PATH: {
+            return QVariant::fromValue(item->uuidPath);
         }
         case ROLE_CLASS_NAME: {
             return item->cls;

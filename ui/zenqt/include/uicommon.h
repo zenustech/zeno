@@ -148,6 +148,7 @@ enum SOCKET_PROPERTY {
 enum MODEL_ROLE {
     ROLE_NODE_NAME = Qt::UserRole + 1,  //node name, like `box1`, `cube1`...
     ROLE_CLASS_NAME,    //asset name, or node class name, like `CreateCube`.
+    ROLE_NODE_UUID_PATH,
     ROLE_NODE_DISPLAY_NAME,     //the name displayed on node ui.
     ROLE_NODE_CATEGORY,
     ROLE_NODE_DISPLAY_ICON,     //the res path, like `:/icons/add.svg`.

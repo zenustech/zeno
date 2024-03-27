@@ -296,6 +296,7 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
     , m_pEditor(nullptr)
     , m_btnRun(nullptr)
     , m_btnKill(nullptr)
+    , pShowThumb(nullptr)
 {
 }
 
@@ -308,6 +309,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pUnfold = new ZToolBarButton(false, ":/icons/nodeEditor_nodeUnfold_unselected.svg", ":/icons/nodeEditor_nodeUnfold_selected.svg");
     pSnapGrid = new ZToolBarButton(true, ":/icons/nodeEditor_snap_unselected.svg", ":/icons/nodeEditor_snap_selected.svg");
     pShowGrid = new ZToolBarButton(true, ":/icons/nodeEditor_grid_unselected.svg", ":/icons/nodeEditor_grid_selected.svg");
+    pShowThumb = new ZToolBarButton(true, ":/icons/nodeEditor_blackboard_unselected.svg", ":/icons/nodeEditor_blackboard_selected.svg");
     pCustomParam = new ZToolBarButton(false, ":/icons/nodeEditor_nodePara_unselected.svg", ":/icons/nodeEditor_nodePara_selected.svg");
     pGroup = new ZToolBarButton(false, ":/icons/nodeEditor_blackboard_unselected.svg", ":/icons/nodeEditor_blackboard_selected.svg");
     pSearchBtn = new ZToolBarButton(true, ":/icons/toolbar_search_idle.svg", ":/icons/toolbar_search_light.svg");
@@ -359,6 +361,11 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
 
     pListView->setChecked(false);
     pShowGrid->setChecked(ZenoSettingsManager::GetInstance().getValue(zsShowGrid).toBool());
+
+    //必须要等初始化界面后才能让用户点击显示
+    pShowThumb->setChecked(false);
+    ZenoSettingsManager::GetInstance().setValue(zsShowThumbnail, false);
+
     pSnapGrid->setChecked(ZenoSettingsManager::GetInstance().getValue(zsSnapGrid).toBool());
     pLinkLineShape->setChecked(ZenoSettingsManager::GetInstance().getValue(zsLinkLineShape).toBool());
     pShowGrid->setToolTip(pShowGrid->isChecked() ? tr("Hide Grid") : tr("Show Grid"));
@@ -410,6 +417,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pToolLayout->addWidget(pCustomParam);
     pToolLayout->addWidget(pGroup);
     pToolLayout->addWidget(pLinkLineShape);
+    pToolLayout->addWidget(pShowThumb);
     //pToolLayout->addWidget(pTestApi);     //TOFIX: 添加此项竟然导致最大化窗口无效，要研究布局细节。
     pToolLayout->addWidget(pAlways);
 
@@ -495,6 +503,14 @@ void DockContent_Editor::initConnections()
         if (m_pEditor->welComPageShowed())
             return;
         ZenoSettingsManager::GetInstance().setValue(zsShowGrid, bChecked);
+    });
+    connect(pShowThumb, &ZToolBarButton::toggled, this, [=](bool bChecked) {
+        if (m_pEditor->welComPageShowed())
+            return;
+        ZenoSettingsManager::GetInstance().setValue(zsShowThumbnail, bChecked);
+        QAction act;
+        act.setProperty("ActionType", ZenoMainWindow::ACTION_SHOWTHUMB);
+        m_pEditor->onAction(&act, {}, bChecked);
     });
     connect(pLinkLineShape, &ZToolBarButton::toggled, this, [=](bool bChecked) {
         if (m_pEditor->welComPageShowed())
@@ -612,6 +628,10 @@ void DockContent_Editor::initConnections()
         {
             pSnapGrid->setChecked(ZenoSettingsManager::GetInstance().getValue(name).toBool());
             pSnapGrid->setToolTip(pSnapGrid->isChecked() ? tr("UnSnap Grid") : tr("Snap Grid"));
+        }
+        else if (name == zsShowThumbnail)
+        {
+            pShowThumb->setChecked(ZenoSettingsManager::GetInstance().getValue(name).toBool());
         }
         else if (name == zsLinkLineShape)
         {

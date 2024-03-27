@@ -9,6 +9,7 @@ class ZenoSubGraphScene;
 class ZenoNewnodeMenu;
 class LayerPathWidget;
 class ZenoSearchBar;
+class ThumbnailView;
 
 class _ZenoSubGraphView : public QGraphicsView
 {
@@ -100,14 +101,15 @@ class ZenoSubGraphView : public QWidget
     typedef QWidget _base;
 
 public:
-	ZenoSubGraphView(QWidget* parent = nullptr);
-	void initScene(ZenoSubGraphScene* pScene);
+    ZenoSubGraphView(QWidget* parent = nullptr);
+    void initScene(ZenoSubGraphScene* pScene);
     ZenoSubGraphScene* scene();
-	void resetPath(const QStringList& path, const QString& objId, bool isError = false);
+    void resetPath(const QStringList& path, const QString& objId, bool isError = false);
     void setZoom(const qreal& scale);
     void focusOnWithNoSelect(const QString& nodeId);
     void focusOn(const QString& nodeId);
     void showFloatPanel(const QModelIndex &subgIdx, const QModelIndexList &nodes);
+    void showThumbnail(bool bChecked);
     void selectNodes(const QModelIndexList &nodes);
     void cameraFocus();
 
@@ -131,6 +133,7 @@ private:
 
     QStackedWidget* m_stackedView;
     _ZenoSubGraphView* m_view;
+    ThumbnailView* m_thumbnail;
     LayerPathWidget* m_pathWidget;
 
     QModelIndex m_lastSelectedNode;
