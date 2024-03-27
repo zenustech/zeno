@@ -37,7 +37,7 @@ void write_velocity(std::shared_ptr<PrimitiveObject> prim, T& mesh_samp) {
 static void write_normal(std::shared_ptr<PrimitiveObject> prim, OPolyMeshSchema::Sample& mesh_samp) {
     if (prim->verts.has_attr("nrm")) {
         auto &nrm = (std::vector<N3f>&)prim->verts.attr<vec3f>("nrm");
-        ON3fGeomParam::Sample oNormalsSample(nrm, kFacevaryingScope);
+        ON3fGeomParam::Sample oNormalsSample(nrm, kVaryingScope);
         mesh_samp.setNormals(oNormalsSample);
     }
 }
@@ -194,6 +194,9 @@ void write_attrs(
         , std::string path
         , std::shared_ptr<PrimitiveObject> prim
         , T1& schema
+        , int frameid
+        , int real_frame_start
+        , std::map<int, vec3i> &prim_size_per_frame
 ) {
     OCompoundProperty arbAttrs = schema.getArbGeomParams();
     prim->verts.foreach_attr<std::variant<vec3f, float, int>>([&](auto const &key, auto &arr) {
@@ -205,6 +208,12 @@ void write_attrs(
         if constexpr (std::is_same_v<T, zeno::vec3f>) {
             if (verts_attrs.count(full_key) == 0) {
                 verts_attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kVaryingScope, 3);
+                for (auto i = real_frame_start; i < frameid; i++) {
+                    auto samp = OFloatGeomParam::Sample();
+                    std::vector<float> v(std::get<0>(prim_size_per_frame[i]) * 3);
+                    samp.setVals(v);
+                    std::any_cast<OFloatGeomParam>(verts_attrs[full_key]).set(samp);
+                }
             }
             auto samp = OFloatGeomParam::Sample();
             std::vector<float> v(arr.size() * 3);
@@ -218,6 +227,12 @@ void write_attrs(
         } else if constexpr (std::is_same_v<T, float>) {
             if (verts_attrs.count(full_key) == 0) {
                 verts_attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kVaryingScope, 1);
+                for (auto i = real_frame_start; i < frameid; i++) {
+                    auto samp = OFloatGeomParam::Sample();
+                    std::vector<float> v(std::get<0>(prim_size_per_frame[i]));
+                    samp.setVals(v);
+                    std::any_cast<OFloatGeomParam>(verts_attrs[full_key]).set(samp);
+                }
             }
             auto samp = OFloatGeomParam::Sample();
             samp.setVals(arr);
@@ -225,6 +240,12 @@ void write_attrs(
         } else if constexpr (std::is_same_v<T, int>) {
             if (verts_attrs.count(full_key) == 0) {
                 verts_attrs[full_key] = OInt32GeomParam (arbAttrs.getPtr(), key, false, kVaryingScope, 1);
+                for (auto i = real_frame_start; i < frameid; i++) {
+                    auto samp = OInt32GeomParam::Sample();
+                    std::vector<int> v(std::get<0>(prim_size_per_frame[i]));
+                    samp.setVals(v);
+                    std::any_cast<OInt32GeomParam >(verts_attrs[full_key]).set(samp);
+                }
             }
             auto samp = OInt32GeomParam::Sample();
             samp.setVals(arr);
@@ -238,6 +259,12 @@ void write_attrs(
             if constexpr (std::is_same_v<T, zeno::vec3f>) {
                 if (loops_attrs.count(full_key) == 0) {
                     loops_attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kFacevaryingScope, 3);
+                    for (auto i = real_frame_start; i < frameid; i++) {
+                        auto samp = OFloatGeomParam::Sample();
+                        std::vector<float> v(std::get<1>(prim_size_per_frame[i]) * 3);
+                        samp.setVals(v);
+                        std::any_cast<OFloatGeomParam>(loops_attrs[full_key]).set(samp);
+                    }
                 }
                 auto samp = OFloatGeomParam::Sample();
                 std::vector<float> v(arr.size() * 3);
@@ -251,6 +278,12 @@ void write_attrs(
             } else if constexpr (std::is_same_v<T, float>) {
                 if (loops_attrs.count(full_key) == 0) {
                     loops_attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kFacevaryingScope, 1);
+                    for (auto i = real_frame_start; i < frameid; i++) {
+                        auto samp = OFloatGeomParam::Sample();
+                        std::vector<float> v(std::get<1>(prim_size_per_frame[i]));
+                        samp.setVals(v);
+                        std::any_cast<OFloatGeomParam>(loops_attrs[full_key]).set(samp);
+                    }
                 }
                 auto samp = OFloatGeomParam::Sample();
                 samp.setVals(arr);
@@ -258,6 +291,12 @@ void write_attrs(
             } else if constexpr (std::is_same_v<T, int>) {
                 if (loops_attrs.count(full_key) == 0) {
                     loops_attrs[full_key] = OInt32GeomParam (arbAttrs.getPtr(), key, false, kFacevaryingScope, 1);
+                    for (auto i = real_frame_start; i < frameid; i++) {
+                        auto samp = OInt32GeomParam::Sample();
+                        std::vector<int> v(std::get<1>(prim_size_per_frame[i]));
+                        samp.setVals(v);
+                        std::any_cast<OInt32GeomParam>(loops_attrs[full_key]).set(samp);
+                    }
                 }
                 auto samp = OInt32GeomParam::Sample();
                 samp.setVals(arr);
@@ -275,6 +314,12 @@ void write_attrs(
             if constexpr (std::is_same_v<T, zeno::vec3f>) {
                 if (polys_attrs.count(full_key) == 0) {
                     polys_attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kUniformScope, 3);
+                    for (auto i = real_frame_start; i < frameid; i++) {
+                        auto samp = OFloatGeomParam::Sample();
+                        std::vector<float> v(std::get<2>(prim_size_per_frame[i]) * 3);
+                        samp.setVals(v);
+                        std::any_cast<OFloatGeomParam>(polys_attrs[full_key]).set(samp);
+                    }
                 }
                 auto samp = OFloatGeomParam::Sample();
                 std::vector<float> v(arr.size() * 3);
@@ -288,6 +333,12 @@ void write_attrs(
             } else if constexpr (std::is_same_v<T, float>) {
                 if (polys_attrs.count(full_key) == 0) {
                     polys_attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kUniformScope, 1);
+                    for (auto i = real_frame_start; i < frameid; i++) {
+                        auto samp = OFloatGeomParam::Sample();
+                        std::vector<float> v(std::get<2>(prim_size_per_frame[i]));
+                        samp.setVals(v);
+                        std::any_cast<OFloatGeomParam>(polys_attrs[full_key]).set(samp);
+                    }
                 }
                 auto samp = OFloatGeomParam::Sample();
                 samp.setVals(arr);
@@ -295,6 +346,12 @@ void write_attrs(
             } else if constexpr (std::is_same_v<T, int>) {
                 if (polys_attrs.count(full_key) == 0) {
                     polys_attrs[full_key] = OInt32GeomParam (arbAttrs.getPtr(), key, false, kUniformScope, 1);
+                    for (auto i = real_frame_start; i < frameid; i++) {
+                        auto samp = OInt32GeomParam::Sample();
+                        std::vector<int> v(std::get<2>(prim_size_per_frame[i]));
+                        samp.setVals(v);
+                        std::any_cast<OInt32GeomParam>(polys_attrs[full_key]).set(samp);
+                    }
                 }
                 auto samp = OInt32GeomParam::Sample();
                 samp.setVals(arr);
@@ -313,6 +370,12 @@ void write_attrs(
             if constexpr (std::is_same_v<T, zeno::vec3f>) {
                 if (polys_attrs.count(full_key) == 0) {
                     polys_attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kUniformScope, 3);
+                    for (auto i = real_frame_start; i < frameid; i++) {
+                        auto samp = OFloatGeomParam::Sample();
+                        std::vector<float> v(std::get<2>(prim_size_per_frame[i]) * 3);
+                        samp.setVals(v);
+                        std::any_cast<OFloatGeomParam>(polys_attrs[full_key]).set(samp);
+                    }
                 }
                 auto samp = OFloatGeomParam::Sample();
                 std::vector<float> v(arr.size() * 3);
@@ -327,6 +390,12 @@ void write_attrs(
                 // zeno::log_info("std::is_same_v<T, float>");
                 if (polys_attrs.count(full_key) == 0) {
                     polys_attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kUniformScope, 1);
+                    for (auto i = real_frame_start; i < frameid; i++) {
+                        auto samp = OFloatGeomParam::Sample();
+                        std::vector<float> v(std::get<2>(prim_size_per_frame[i]));
+                        samp.setVals(v);
+                        std::any_cast<OFloatGeomParam>(polys_attrs[full_key]).set(samp);
+                    }
                 }
                 auto samp = OFloatGeomParam::Sample();
                 samp.setVals(arr);
@@ -334,6 +403,12 @@ void write_attrs(
             } else if constexpr (std::is_same_v<T, int>) {
                 if (polys_attrs.count(full_key) == 0) {
                     polys_attrs[full_key] = OInt32GeomParam (arbAttrs.getPtr(), key, false, kUniformScope, 1);
+                    for (auto i = real_frame_start; i < frameid; i++) {
+                        auto samp = OInt32GeomParam::Sample();
+                        std::vector<int> v(std::get<2>(prim_size_per_frame[i]));
+                        samp.setVals(v);
+                        std::any_cast<OInt32GeomParam>(polys_attrs[full_key]).set(samp);
+                    }
                 }
                 auto samp = OInt32GeomParam::Sample();
                 samp.setVals(arr);
@@ -636,7 +711,7 @@ struct WriteAlembic2 : INode {
                             uvsamp);
                     write_velocity(prim, mesh_samp);
                     write_normal(prim, mesh_samp);
-                    write_attrs(verts_attrs, loops_attrs, polys_attrs, "", prim, mesh);
+                    write_attrs(verts_attrs, loops_attrs, polys_attrs, "", prim, mesh, frameid, real_frame_start, prim_size_per_frame);
                     mesh.set( mesh_samp );
                 }
                 else {
@@ -646,7 +721,7 @@ struct WriteAlembic2 : INode {
                             Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ));
                     write_velocity(prim, mesh_samp);
                     write_normal(prim, mesh_samp);
-                    write_attrs(verts_attrs, loops_attrs, polys_attrs, "", prim, mesh);
+                    write_attrs(verts_attrs, loops_attrs, polys_attrs, "", prim, mesh, frameid, real_frame_start, prim_size_per_frame);
                     mesh.set( mesh_samp );
                 }
             }
@@ -692,7 +767,7 @@ struct WriteAlembic2 : INode {
                             uvsamp);
                     write_velocity(prim, mesh_samp);
                     write_normal(prim, mesh_samp);
-                    write_attrs(verts_attrs, loops_attrs, polys_attrs, "", prim, mesh);
+                    write_attrs(verts_attrs, loops_attrs, polys_attrs, "", prim, mesh, frameid, real_frame_start, prim_size_per_frame);
                     mesh.set( mesh_samp );
                 } else {
                     OPolyMeshSchema::Sample mesh_samp(
@@ -701,7 +776,7 @@ struct WriteAlembic2 : INode {
                             Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ));
                     write_velocity(prim, mesh_samp);
                     write_normal(prim, mesh_samp);
-                    write_attrs(verts_attrs, loops_attrs, polys_attrs, "", prim, mesh);
+                    write_attrs(verts_attrs, loops_attrs, polys_attrs, "", prim, mesh, frameid, real_frame_start, prim_size_per_frame);
                     mesh.set( mesh_samp );
                 }
             }
