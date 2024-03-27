@@ -24,8 +24,9 @@ static CONTROL_ITEM_INFO controlList[] = {
     {"String",              zeno::Lineedit,     zeno::Param_String, ":/icons/parameter_control_string.svg"},
     {"Boolean",             zeno::Checkbox,     zeno::Param_Bool,   ":/icons/parameter_control_boolean.svg"},
     {"Multiline String",    zeno::Multiline,    zeno::Param_String, ":/icons/parameter_control_string.svg"},
-    {"read path",           zeno::Pathedit,     zeno::Param_String, ":/icons/parameter_control_fold.svg"},
-    {"write path",          zeno::Pathedit,     zeno::Param_String, ":/icons/parameter_control_fold.svg"},
+    {"read path",                   zeno::ReadPathEdit,     zeno::Param_String, ":/icons/parameter_control_fold.svg"},
+    {"write path",                   zeno::WritePathEdit,     zeno::Param_String, ":/icons/parameter_control_fold.svg"},
+    {"directory",                   zeno::DirectoryPathEdit,     zeno::Param_String, ":/icons/parameter_control_fold.svg"},
     {"Enum",                zeno::Combobox,     zeno::Param_String, ":/icons/parameter_control_enum.svg"},
     {"Float Vector 4",      zeno::Vec4edit,     zeno::Param_Vec4f,  ":/icons/parameter_control_floatVector4.svg"},
     {"Float Vector 3",      zeno::Vec3edit,     zeno::Param_Vec3f,  ":/icons/parameter_control_floatVector3.svg"},
@@ -34,7 +35,6 @@ static CONTROL_ITEM_INFO controlList[] = {
     {"Integer Vector 3",    zeno::Vec3edit,     zeno::Param_Vec3i,  ":/icons/parameter_control_integerVector3.svg"},
     {"Integer Vector 2",    zeno::Vec2edit,     zeno::Param_Vec2i,  ":/icons/parameter_control_integerVector2.svg"},
     {"Color",               zeno::Heatmap,      zeno::Param_Heatmap,":/icons/parameter_control_color.svg"},
-    {"Pure Color",          zeno::Color,        zeno::Param_Vec3f,  ":/icons/parameter_control_color.svg"},
     {"Color Vec3f",         zeno::ColorVec,     zeno::Param_Vec3f,  ":/icons/parameter_control_color.svg"},
     {"Curve",               zeno::CurveEditor,  zeno::Param_Curve,  ":/icons/parameter_control_curve.svg"},
     {"SpinBox",             zeno::SpinBox,      zeno::Param_Int,    ":/icons/parameter_control_spinbox.svg"},
@@ -131,7 +131,7 @@ void ParamTreeItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem 
 ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, QWidget* parent)
     : QDialog(parent)
     , m_bSubgraphNode(false)
-    , m_paramsLayoutM(pModel)
+    //, m_paramsLayoutM(pModel)
 {
     m_ui = new Ui::EditParamLayoutDlg;
     m_ui->setupUi(this);
@@ -147,7 +147,7 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, QWidget* pa
             continue;
         m_ui->cbControl->addItem(controlList[i].name);
     }
-
+    initModel(pModel);
     initIcon(m_paramsLayoutM->invisibleRootItem());
 
     m_ui->paramsView->setModel(m_paramsLayoutM);
@@ -213,6 +213,25 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, QWidget* pa
     });
 
     connect(m_paramsLayoutM, &QStandardItemModel::dataChanged, this, &ZEditParamLayoutDlg::onViewParamDataChanged);
+}
+
+void ZEditParamLayoutDlg::initModel(const QStandardItemModel* pModel)
+{
+    m_paramsLayoutM = new QStandardItemModel(this);
+    auto cloneItem = [](auto const& cloneItem, QStandardItem* pItem)->QStandardItem* {
+        QStandardItem* newItem = pItem->clone();
+        for (int i = 0; i < pItem->rowCount(); i++)
+        {
+            QStandardItem* childItem = pItem->child(i);
+            newItem->appendRow(cloneItem(cloneItem, childItem));
+        }
+        return newItem;
+    };
+    for (int r = 0; r < pModel->rowCount(); r++)
+    {
+        QStandardItem* newItem = pModel->item(r, 0);
+        m_paramsLayoutM->appendRow(cloneItem(cloneItem, newItem));
+    }
 }
 
 void ZEditParamLayoutDlg::initUI() 
@@ -310,10 +329,15 @@ void ZEditParamLayoutDlg::onComboTableItemsCellChanged(int row, int column)
     if (lst.isEmpty())
         return;
 
-    CONTROL_PROPERTIES properties = layerIdx.data(ROLE_PARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
-    properties["items"] = lst;
+    zeno::ControlProperty properties = layerIdx.data(ROLE_PARAM_CTRL_PROPERTIES).value<zeno::ControlProperty>();
+    std::vector<std::string> items;
+    for (const auto& item : lst)
+    {
+        items.push_back(item.toStdString());
+    }
+    properties.items = items;
 
-    proxyModelSetData(layerIdx, properties, ROLE_PARAM_CTRL_PROPERTIES);
+    proxyModelSetData(layerIdx, QVariant::fromValue(properties), ROLE_PARAM_CTRL_PROPERTIES);
 
     if (row == m_ui->itemsTable->rowCount() - 1)
     {
@@ -341,7 +365,7 @@ void ZEditParamLayoutDlg::proxyModelSetData(const QModelIndex& index, const QVar
 {
     //TODO: ?
     //const QString& objPath = index.data(ROLE_OBJPATH).toString();
-    //m_paramsLayoutM->setData(index, newValue, role);
+    m_paramsLayoutM->setData(index, newValue, role);
 }
 
 void ZEditParamLayoutDlg::onParamTreeDeleted()
@@ -409,7 +433,7 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
         const zeno::SocketType socketType = (zeno::SocketType)pCurrentItem->data(ROLE_SOCKET_TYPE).toInt();
 
         const QString& ctrlName = ctrl != zeno::NullControl ? getControl(ctrl, paramType).name : "";
-        QVariant controlProperties = pCurrentItem->data(ROLE_PARAM_CTRL_PROPERTIES);
+        zeno::ControlProperty controlProperties = pCurrentItem->data(ROLE_PARAM_CTRL_PROPERTIES).value<zeno::ControlProperty>();
 
         const QString &parentName = parentItem->text();
 
@@ -440,7 +464,7 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
 
             m_ui->cbControl->setEnabled(true);
             m_ui->cbControl->setCurrentText(ctrlName);
-            QString descType = UiHelper::getTypeDesc(paramType);
+            //QString descType = UiHelper::getTypeDesc(paramType);
             if (ctrl == zeno::Seperator) 
             {
                 m_ui->cbControl->setEnabled(false);
@@ -547,11 +571,10 @@ void ZEditParamLayoutDlg::onBtnAdd()
             case zeno::DoubleSpinBox:
             case zeno::Slider:
             {
-                CONTROL_PROPERTIES properties;
-                properties["step"] = 1;
-                properties["min"] = 0;
-                properties["max"] = 100;
-                pNewItem->setData(properties, ROLE_PARAM_CTRL_PROPERTIES);
+                std::array<float, 3> ranges = { 0.0, 100.0,1.0};
+                zeno::ControlProperty pros;
+                pros.ranges = ranges;
+                pNewItem->setData(QVariant::fromValue(pros), ROLE_PARAM_CTRL_PROPERTIES);
                 break;
             }
             case zeno::Seperator: 
@@ -567,12 +590,12 @@ void ZEditParamLayoutDlg::onBtnAdd()
 
 void ZEditParamLayoutDlg::switchStackProperties(int ctrl, QStandardItem* pItem)
 {
-    QVariant controlProperties = pItem->data(ROLE_PARAM_CTRL_PROPERTIES);
+    zeno::ControlProperty pros = pItem->data(ROLE_PARAM_CTRL_PROPERTIES).value<zeno::ControlProperty>();
     if (ctrl == zeno::Combobox) {
-        CONTROL_PROPERTIES pros = controlProperties.toMap();
-        
-        if (pros.find("items") != pros.end()) {
-                const QStringList &items = pros["items"].toStringList();
+        if (pros.items.has_value()) {
+                QStringList items;
+                for (auto item : pros.items.value())
+                    items.push_back(QString::fromStdString(item));
                 m_ui->itemsTable->setRowCount(items.size() + 1);
                 QString value = pItem->data(ROLE_PARAM_VALUE).toString();
                 for (int r = 0; r < items.size(); r++) {
@@ -598,23 +621,16 @@ void ZEditParamLayoutDlg::switchStackProperties(int ctrl, QStandardItem* pItem)
              ctrl == zeno::DoubleSpinBox)
     {
         m_ui->stackProperties->setCurrentIndex(2);
-        QVariantMap map = controlProperties.toMap();
-        SLIDER_INFO info;
-        if (!map.isEmpty()) {
-                info.step = map["step"].toDouble();
-                info.min = map["min"].toDouble();
-                info.max = map["max"].toDouble();
-        } else {
-                CONTROL_PROPERTIES properties;
-                properties["step"] = info.step;
-                properties["min"] = info.min;
-                properties["max"] = info.max;
-                pItem->setData(properties, ROLE_PARAM_CTRL_PROPERTIES);
+        if (!pros.ranges.has_value()) {
+            std::array<float, 3> ranges = { 0.0, 100.0,1.0 };;
+            pros.ranges = ranges;
+            pItem->setData(QVariant::fromValue(pros), ROLE_PARAM_CTRL_PROPERTIES);
         }
-        m_ui->editStep->setText(QString::number(info.step));
-        m_ui->editMin->setText(QString::number(info.min));
-        m_ui->editMax->setText(QString::number(info.max));
-    } else {
+        m_ui->editStep->setText(QString::number(pros.ranges->at(2)));
+        m_ui->editMin->setText(QString::number(pros.ranges->at(0)));
+        m_ui->editMax->setText(QString::number(pros.ranges->at(1)));
+    }
+    else {
         m_ui->stackProperties->setCurrentIndex(0);
     }
 }
@@ -702,10 +718,12 @@ void ZEditParamLayoutDlg::onMinEditFinished()
     if (!layerIdx.isValid() && layerIdx.data(ROLE_VPARAM_TYPE) != VPARAM_PARAM)
         return;
 
-    CONTROL_PROPERTIES properties = layerIdx.data(ROLE_PARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
+    zeno::ControlProperty properties = layerIdx.data(ROLE_PARAM_CTRL_PROPERTIES).value<zeno::ControlProperty>();
     qreal from = m_ui->editMin->text().toDouble();
-    properties["min"] = from;
-    proxyModelSetData(layerIdx, properties, ROLE_PARAM_CTRL_PROPERTIES);
+    auto ranges = properties.ranges.value();
+    ranges[0] = from;
+    properties.ranges = ranges;
+    proxyModelSetData(layerIdx, QVariant::fromValue(properties), ROLE_PARAM_CTRL_PROPERTIES);
     updateSliderInfo();
 }
 
@@ -734,10 +752,12 @@ void ZEditParamLayoutDlg::onMaxEditFinished()
     if (!layerIdx.isValid() && layerIdx.data(ROLE_VPARAM_TYPE) != VPARAM_PARAM)
         return;
 
-    CONTROL_PROPERTIES properties = layerIdx.data(ROLE_PARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
+    zeno::ControlProperty properties = layerIdx.data(ROLE_PARAM_CTRL_PROPERTIES).value<zeno::ControlProperty>();
     qreal to = m_ui->editMax->text().toDouble();
-    properties["max"] = to;
-    proxyModelSetData(layerIdx, properties, ROLE_PARAM_CTRL_PROPERTIES);
+    auto ranges = properties.ranges.value();
+    ranges[1] = to;
+    properties.ranges = ranges;
+    proxyModelSetData(layerIdx, QVariant::fromValue(properties), ROLE_PARAM_CTRL_PROPERTIES);
     updateSliderInfo();
 }
 
@@ -773,7 +793,7 @@ void ZEditParamLayoutDlg::onControlItemChanged(int idx)
     if (!value.isValid())
         value = UiHelper::initDefaultValue(type);
 
-    QVariant controlProperties = layerIdx.data(ROLE_PARAM_CTRL_PROPERTIES);
+    zeno::ControlProperty controlProperties = layerIdx.data(ROLE_PARAM_CTRL_PROPERTIES).value< zeno::ControlProperty>();
     cbSets.cbGetIndexData = [=]() -> QVariant { return UiHelper::initDefaultValue(type); };
     QWidget *valueControl = zenoui::createWidget(value, ctrl, type, cbSets, controlProperties);
     if (valueControl) {
@@ -791,11 +811,12 @@ void ZEditParamLayoutDlg::onStepEditFinished()
     if (!layerIdx.isValid() && layerIdx.data(ROLE_VPARAM_TYPE) != VPARAM_PARAM)
         return;
 
-    CONTROL_PROPERTIES properties = layerIdx.data(ROLE_PARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
+    zeno::ControlProperty properties = layerIdx.data(ROLE_PARAM_CTRL_PROPERTIES).value<zeno::ControlProperty>();
     qreal step = m_ui->editStep->text().toDouble();
-    properties["step"] = step;
-
-    m_paramsLayoutM->setData(layerIdx, properties, ROLE_PARAM_CTRL_PROPERTIES);
+    auto ranges = properties.ranges.value();
+    ranges[0] = step;
+    properties.ranges = ranges;
+    m_paramsLayoutM->setData(layerIdx, QVariant::fromValue(properties), ROLE_PARAM_CTRL_PROPERTIES);
     updateSliderInfo();
 }
 
@@ -822,6 +843,7 @@ void ZEditParamLayoutDlg::onApply()
         param.name = pItem->data(ROLE_PARAM_NAME).toString().toStdString();
         param.tooltip = pItem->data(ROLE_PARAM_TOOLTIP).toString().toStdString();
         param.socketType = (zeno::SocketType)pItem->data(ROLE_SOCKET_TYPE).toInt();
+        param.ctrlProps = pItem->data(ROLE_PARAM_CTRL_PROPERTIES).value<zeno::ControlProperty>();
         const QString& existName = pItem->data(ROLE_MAP_TO_PARAMNAME).toString();
 
         m_paramsUpdate.push_back({ param, existName.toStdString() });
@@ -839,6 +861,7 @@ void ZEditParamLayoutDlg::onApply()
         param.name = pItem->data(ROLE_PARAM_NAME).toString().toStdString();
         param.tooltip = pItem->data(ROLE_PARAM_TOOLTIP).toString().toStdString();
         param.socketType = (zeno::SocketType)pItem->data(ROLE_SOCKET_TYPE).toInt();
+        param.ctrlProps = pItem->data(ROLE_PARAM_CTRL_PROPERTIES).value<zeno::ControlProperty>();
         const QString& existName = pItem->data(ROLE_MAP_TO_PARAMNAME).toString();
 
         m_paramsUpdate.push_back({ param, existName.toStdString() });

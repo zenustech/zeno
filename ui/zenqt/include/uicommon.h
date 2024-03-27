@@ -297,6 +297,8 @@ struct CURVE_POINT {
     QPointF leftHandler;
     QPointF rightHandler;
     int controlType;
+    bool bLockX = false;
+    bool bLockY = false;
     bool operator==(const CURVE_POINT& rhs) const {
         return point == rhs.point && leftHandler == rhs.leftHandler && rightHandler == rhs.rightHandler &&
             controlType == rhs.controlType;
@@ -308,8 +310,8 @@ struct CURVE_DATA {
     QVector<CURVE_POINT> points;
     int cycleType = 0;
     CURVE_RANGE rg;
-    bool visible;
-    bool timeline;
+    bool visible = false;
+    bool timeline = true;
     bool operator==(const CURVE_DATA& rhs) const {
         return key == rhs.key && cycleType == rhs.cycleType && visible == rhs.visible &&
             timeline == rhs.timeline && rg == rhs.rg && points == rhs.points;

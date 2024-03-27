@@ -9,7 +9,7 @@
 #include <zeno/types/NumericObject.h>
 
 namespace zeno {
-    struct HeatmapObject : zeno::IObject {
+    struct HeatmapObject : IObjectClone<HeatmapObject> {
         std::vector<zeno::vec3f> colors;
         zeno::vec3f interp(float x) const {
             if(x <= 0) return colors[0];

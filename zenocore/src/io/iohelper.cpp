@@ -33,11 +33,15 @@ namespace zenoio
         }
         else if (descName == "read path")
         {
-            return zeno::Pathedit;
+            return zeno::ReadPathEdit;
         }
         else if (descName == "write path")
         {
-            return zeno::Pathedit;
+            return zeno::WritePathEdit;
+        }
+        else if (descName == "directory")
+        {
+            return zeno::DirectoryPathEdit;
         }
         else if (descName == "Enum")
         {
@@ -70,10 +74,6 @@ namespace zenoio
         else if (descName == "Color")
         {
             return zeno::Heatmap;
-        }
-        else if (descName == "Pure Color")
-        {
-            return zeno::Color;
         }
         else if (descName == "Curve")
         {
@@ -280,6 +280,8 @@ namespace zenoio
             break;
         }
         case zeno::Param_String:
+        case zeno::Param_Curve:
+        case zeno::Param_Heatmap:
         {
             if (val.IsString())
                 defl = val.GetString();
@@ -397,12 +399,12 @@ namespace zenoio
             }
             break;
         }
-        case zeno::Param_Curve:
-        {
-            //todo: wrap the json object as string, and parse it when calculate,
-            //by the method of parseCurve on ParseObjectFromUi.cpp
-            break;
-        }
+        //case zeno::Param_Curve:
+        //{
+        //    //todo: wrap the json object as string, and parse it when calculate,
+        //    //by the method of parseCurve on ParseObjectFromUi.cpp
+        //    break;
+        //}
         }
         return defl;
     }
@@ -450,6 +452,8 @@ namespace zenoio
                 break;
             }
             case zeno::Param_String:
+            case zeno::Param_Curve:
+            case zeno::Param_Heatmap:
             {
                 std::string val;
                 if (std::holds_alternative<std::string>(defl))
@@ -553,13 +557,6 @@ namespace zenoio
                 }
                 break;
             }
-            case zeno::Param_Curve:
-            {
-                //todo: wrap the json object as string, and parse it when calculate,
-                //by the method of parseCurve on ParseObjectFromUi.cpp
-                writer.Null();
-                break;
-            }
             default:
             {
                 writer.Null();
@@ -635,9 +632,6 @@ namespace zenoio
                 writer.Double(props.ranges.value()[1]);
                 writer.Key("step");
                 writer.Double(props.ranges.value()[2]);
-            }
-            else {
-                writer.Null();
             }
         }
 

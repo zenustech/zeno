@@ -222,10 +222,10 @@ ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilPa
     {
         return new SubnetNode(false, params);
     }
-    else if (descName == "MakeHeatmap")
-    {
-        return new MakeHeatMapNode(params);
-    }
+    //else if (descName == "MakeHeatmap")
+    //{
+    //    return new MakeHeatMapNode(params);
+    //}
     else if (descName == "Group")
     {
         return new GroupNode(params);

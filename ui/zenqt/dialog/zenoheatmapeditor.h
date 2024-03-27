@@ -7,6 +7,7 @@ namespace Ui
 }
 
 #include <QtWidgets>
+#include <uicommon.h>
 
 class ZenoRampBar;
 
@@ -100,9 +101,9 @@ class ZenoHeatMapEditor : public QDialog
 {
 	Q_OBJECT
 public:
-	ZenoHeatMapEditor(const QLinearGradient& grad, QWidget* parent = nullptr);
+	ZenoHeatMapEditor(const QString& heatmap, QWidget* parent = nullptr);
 	~ZenoHeatMapEditor();
-	QLinearGradient colorRamps() const;
+    QString colorRamps() const;
 
 signals:
 	void colorPicked(QColor);
@@ -128,7 +129,7 @@ private slots:
 
 private:
 	void initSignals();
-	void init(const QLinearGradient& grad);
+	void init(const QString& grad);
 	void installFilters();
 	void initRamps(const QLinearGradient& grad);
 	void initColorView();

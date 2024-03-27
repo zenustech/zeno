@@ -13,6 +13,7 @@
 #include "zgraphicstextitem.h"
 #include "util/uihelper.h"
 #include "util/ztfutil.h"
+#include "util/jsonhelper.h"
 
 /*tmp macro*/
 //#define ENABLE_WIDGET_LINEEDIT
@@ -123,7 +124,9 @@ namespace zenoui
                 pItemWidget = pCheckbox;
                 break;
             }
-            case zeno::Pathedit:
+            case zeno::ReadPathEdit:
+            case zeno::WritePathEdit:
+            case zeno::DirectoryPathEdit:
             {
                 const QString& path = UiHelper::variantToString(value);
                 ZenoParamPathEdit* pPathEditor = new ZenoParamPathEdit(path, ctrl, m_nodeParams.lineEditParam, cbSet.cbGetZsgDir);
@@ -170,7 +173,6 @@ namespace zenoui
             //}
             case zeno::Heatmap:
             {
-                QLinearGradient grad = value.value<QLinearGradient>();
                 ZenoParamPushButton* pEditBtn = new ZenoParamPushButton("Edit", -1, QSizePolicy::Expanding);
 
                 pEditBtn->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(100, zenoui::g_ctrlHeight)));
@@ -178,10 +180,11 @@ namespace zenoui
                 pEditBtn->setData(GVKEY_TYPE, type);
 
                 QObject::connect(pEditBtn, &ZenoParamPushButton::clicked, [=]() {
-                    ZenoHeatMapEditor editor(grad);
+                    QString val = cbSet.cbGetIndexData().toString();
+                    ZenoHeatMapEditor editor(val);
                     editor.exec();
-                    QLinearGradient newGrad = editor.colorRamps();
-                    cbSet.cbEditFinished(QVariant::fromValue(newGrad));
+                    QString newVal = editor.colorRamps();
+                    cbSet.cbEditFinished(QVariant::fromValue(newVal));
                     });
                 pItemWidget = pEditBtn;
                 break;
@@ -200,15 +203,12 @@ namespace zenoui
                 });
                 break;
             }
-            case zeno::Color:
             case zeno::ColorVec:
             {
                 QColor currentColor;
-                if (ctrl == zeno::Color) {
-                    currentColor = value.value<QColor>();
-                }
-                else if (ctrl == zeno::ColorVec) {
+                if (ctrl == zeno::ColorVec) {
                     auto colorVec = value.value<UI_VECTYPE>();
+                    colorVec.resize(3);
                     currentColor = QColor::fromRgbF(colorVec[0], colorVec[1], colorVec[2]);
                 }
                 
@@ -223,10 +223,7 @@ namespace zenoui
                     if (color.isValid()) 
                     {
                         pEditBtn->setProperty("color", color.name());
-                        if (ctrl == zeno::Color) {
-                            cbSet.cbEditFinished(QVariant::fromValue(color));
-                        }
-                        else if (ctrl == zeno::ColorVec) {
+                        if (ctrl == zeno::ColorVec) {
                             UI_VECTYPE colorVec(3);
                             color.getRgbF(&colorVec[0], &colorVec[1], &colorVec[2]);
                             cbSet.cbEditFinished(QVariant::fromValue<UI_VECTYPE>(colorVec));
@@ -280,8 +277,11 @@ namespace zenoui
             {
                 //todo: legacy case compatible
                 QStringList items;
-                for (auto item : controlProps.items.value())
-                    items.push_back(QString::fromStdString(item));
+                if (controlProps.items.has_value())
+                {
+                    for (auto item : controlProps.items.value())
+                        items.push_back(QString::fromStdString(item));
+                }
 
                 ZenoParamComboBox* pComboBox = new ZenoParamComboBox(items, m_nodeParams.comboboxParam);
                 pComboBox->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(100, zenoui::g_ctrlHeight)));
@@ -310,12 +310,14 @@ namespace zenoui
                     ZCurveMapEditor *pEditor = new ZCurveMapEditor(true);
 
                     QObject::connect(pEditor, &ZCurveMapEditor::finished, [=](int result) {
-                        cbSet.cbEditFinished(QVariant::fromValue(pEditor->curves()));
+                        QString newVal = JsonHelper::dumpCurves(pEditor->curves());
+                        cbSet.cbEditFinished(newVal);
                     });
 
                     pEditor->setAttribute(Qt::WA_DeleteOnClose);
 
-                    CURVES_DATA curves = cbSet.cbGetIndexData().value<CURVES_DATA>();
+                    const QString& str = cbSet.cbGetIndexData().toString();
+                    CURVES_DATA curves = JsonHelper::parseCurves(str);
                     pEditor->addCurves(curves);
                     pEditor->exec();
                 });
@@ -325,14 +327,9 @@ namespace zenoui
             case zeno::Slider:
             {
                 SLIDER_INFO sliderInfo;
-
-                zeno::ControlProperty ctrlProps = controlProps;
-                if (!ctrlProps.ranges.has_value()) {
-                    ctrlProps.ranges = { 0., 100., 1. };
-                }
-
-                const auto& ranges = ctrlProps.ranges.value();
-                if (ctrlProps.ranges.has_value() && ranges.size() == 3) {
+                
+                if (controlProps.ranges.has_value()) {
+                    const auto& ranges = controlProps.ranges.value();
                     sliderInfo.min = ranges[0];
                     sliderInfo.max = ranges[1];
                     sliderInfo.step = ranges[2];
@@ -350,14 +347,8 @@ namespace zenoui
             case zeno::SpinBox: 
             {
                 SLIDER_INFO sliderInfo;
-
-                zeno::ControlProperty ctrlProps = controlProps;
-                if (!ctrlProps.ranges.has_value()) {
-                    ctrlProps.ranges = { 0., 100., 1. };
-                }
-
-                const auto& ranges = ctrlProps.ranges.value();
-                if (ctrlProps.ranges.has_value() && ranges.size() == 3) {
+                if (controlProps.ranges.has_value()) {
+                    const auto& ranges = controlProps.ranges.value();
                     sliderInfo.min = ranges[0];
                     sliderInfo.max = ranges[1];
                     sliderInfo.step = ranges[2];
@@ -376,14 +367,9 @@ namespace zenoui
             case zeno::SpinBoxSlider:
             {
                 SLIDER_INFO sliderInfo;
-
-                zeno::ControlProperty ctrlProps = controlProps;
-                if (!ctrlProps.ranges.has_value()) {
-                    ctrlProps.ranges = { 0., 100., 1. };
-                }
-
-                const auto& ranges = ctrlProps.ranges.value();
-                if (ctrlProps.ranges.has_value() && ranges.size() == 3) {
+                
+                if (controlProps.ranges.has_value()) {
+                    const auto& ranges = controlProps.ranges.value();
                     sliderInfo.min = ranges[0];
                     sliderInfo.max = ranges[1];
                     sliderInfo.step = ranges[2];
@@ -397,6 +383,25 @@ namespace zenoui
                     cbSet.cbEditFinished(value); 
                 });
                 pItemWidget = pSlider;
+                break;
+            }
+            case zeno::DoubleSpinBox:
+            {
+                SLIDER_INFO sliderInfo;
+                if (controlProps.ranges.has_value()) {
+                    const auto& ranges = controlProps.ranges.value();
+                    sliderInfo.min = ranges[0];
+                    sliderInfo.max = ranges[1];
+                    sliderInfo.step = ranges[2];
+                }
+                ZenoParamDoubleSpinBox* pSpinBox = new ZenoParamDoubleSpinBox(sliderInfo);
+                pSpinBox->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(100, zenoui::g_ctrlHeight)));
+                pSpinBox->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
+                pSpinBox->setValue(value.toDouble());
+                QObject::connect(pSpinBox, &ZenoParamDoubleSpinBox::valueChanged, [=](double value) {
+                    cbSet.cbEditFinished(value);
+                });
+                pItemWidget = pSpinBox;
                 break;
             }
             default:

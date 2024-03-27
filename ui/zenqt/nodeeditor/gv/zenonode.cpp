@@ -726,6 +726,9 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& paramIdx, bool bInput, Zen
         ctrl != zeno::NoMultiSockPanel) {
         pMiniLayout = new ZDictSocketLayout(paramIdx, bInput);
     }
+    else if (ctrl == zeno::Seperator) {
+        pMiniLayout = new ZGroupSocketLayout(paramIdx, bInput);
+    }
     else {
         pMiniLayout = new ZSocketLayout(paramIdx, bInput);
         qreal margin = ZenoStyle::dpiScaled(16);

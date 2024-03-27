@@ -316,11 +316,11 @@ void ZenoParamPathEdit::mousePressEvent(QGraphicsSceneMouseEvent *event)
             dirPath = dir.path();
         }
 
-        if (m_control == zeno::Pathedit) {
+        if (m_control == zeno::ReadPathEdit) {
             path = QFileDialog::getOpenFileName(nullptr, "File to Open", dirPath, "All Files(*);;");
-        } /*else if (m_control == CONTROL_WRITEPATH) {
+        } else if (m_control == zeno::WritePathEdit) {
             path = QFileDialog::getSaveFileName(nullptr, "Path to Save", dirPath, "All Files(*);;");
-        } */else {
+        } else if (m_control == zeno::DirectoryPathEdit) {
             path = QFileDialog::getExistingDirectory(nullptr, "Path to Save", "");
         }
         if (path.isEmpty()) {
