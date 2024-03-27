@@ -194,7 +194,7 @@ struct PacketProc {
         } else if (action == "nodeFinished") {
             QString ident = QString::fromStdString(objKey);
             IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-            QModelIndex& idx = pModel->nodeIndex(ident);
+            QModelIndex idx = pModel->nodeIndex(ident);
             if (idx.isValid()) {
                 pModel->markNodeDataUnchanged(idx);
             }

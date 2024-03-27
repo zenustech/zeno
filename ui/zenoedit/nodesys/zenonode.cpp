@@ -1956,7 +1956,8 @@ void ZenoNode::onOptionsBtnToggled(STATUS_BTN btn, bool toggled)
 
     std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
     ZASSERT_EXIT(mgr);
-    bool toggleCachedNodeViewBtn = btn == STATUS_VIEW && mgr->nodeCacheExist(m_index.data(ROLE_OBJID).toString(), options & OPT_ONCE);  //toggle viewBtn and it has been cached
+    QString nodeid = m_index.data(ROLE_OBJID).toString();
+    bool toggleCachedNodeViewBtn = btn == STATUS_VIEW && mgr->nodeCacheExist(nodeid, options & OPT_ONCE);  //toggle viewBtn and it has been cached
     if (!toggleCachedNodeViewBtn) {
         if (btn == STATUS_CACHE)
             pGraphsModel->markNodeDataChanged(m_index, false);

@@ -646,7 +646,7 @@ bool GlobalComm::fromDiskByRunner(std::string cachedir, int frameid, GlobalComm:
             if (keys[k].find(":isVDB") != std::string::npos)
             {
                 //fix: readVDB and convert to prim
-                std::string& socketName = keys[k].substr(0, keys[k].find_first_of(":"));
+                std::string socketName = keys[k].substr(0, keys[k].find_first_of(":"));
                 std::string vdbcachepath = filePath.string();
                 vdbcachepath.erase(vdbcachepath.size() - 9);
                 vdbcachepath = vdbcachepath + "_" + std::filesystem::u8path(socketName).string() + ".vdb";
@@ -1239,7 +1239,7 @@ ZENO_API bool GlobalComm::setLightObjData(std::string& id, zeno::vec3f& pos, zen
 ZENO_API bool GlobalComm::setProceduralSkyData(std::string id, zeno::vec2f& sunLightDir, float& sunSoftnessValue, zeno::vec2f& windDir, float& timeStartValue, float& timeSpeedValue, float& sunLightIntensityValue, float& colorTemperatureMixValue, float& colorTemperatureValue)
 {
     std::lock_guard lck(g_objsMutex);
-    auto& setFunc = [&](zeno::PrimitiveObject* prim_in) {
+    auto setFunc = [&](zeno::PrimitiveObject* prim_in) {
         prim_in->userData().set2("sunLightDir", std::move(sunLightDir));
         prim_in->userData().set2("sunLightSoftness", std::move(sunSoftnessValue));
         prim_in->userData().set2("windDir", std::move(windDir));
@@ -1299,7 +1299,7 @@ ZENO_API bool GlobalComm::setProceduralSkyData(std::string id, zeno::vec2f& sunL
 ZENO_API bool GlobalComm::getProceduralSkyData(std::string& id, zeno::vec2f& sunLightDir, float& sunSoftnessValue, zeno::vec2f& windDir, float& timeStartValue, float& timeSpeedValue, float& sunLightIntensityValue, float& colorTemperatureMixValue, float& colorTemperatureValue)
 {
     std::lock_guard lck(g_objsMutex);
-    auto& getFunc = [&](zeno::PrimitiveObject* prim_in) {
+    auto getFunc = [&](zeno::PrimitiveObject* prim_in) {
         sunLightDir = prim_in->userData().get2<zeno::vec2f>("sunLightDir");
         windDir = prim_in->userData().get2<zeno::vec2f>("windDir");
         sunSoftnessValue = prim_in->userData().get2<float>("sunLightSoftness");
@@ -1381,7 +1381,7 @@ ZENO_API void GlobalComm::setRenderTypeBeta(int bateEnginIdx, RenderType type)
 ZENO_API GlobalComm::RenderType GlobalComm::getRenderTypeBeta(int bateEnginIdx)
 {
     std::lock_guard lck(g_objsMutex);
-    auto& it = renderTypeBeta.find(bateEnginIdx);
+    auto it = renderTypeBeta.find(bateEnginIdx);
     if (it == renderTypeBeta.end())
     {
         return UNDEFINED;

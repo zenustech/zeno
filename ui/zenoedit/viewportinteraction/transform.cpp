@@ -385,7 +385,7 @@ void FakeTransformer::createNewTransformNode(NodeLocation& node_location,
     {
         if (listitemGroupPath == "")
         {
-            auto& objectPath = user_data.get2<std::string>("list-index", "");
+            auto objectPath = user_data.get2<std::string>("list-index", "");
             node_sync.updateNodeInputString(new_node_location.value(), "path", objectPath);
         }
         else {
@@ -509,7 +509,7 @@ void FakeTransformer::endTransform(bool moved) {
             auto& user_data = obj->userData();
             if (user_data.has("list-index"))
             {
-                auto& objectPath = user_data.get2<std::string>("list-index", "");
+                auto objectPath = user_data.get2<std::string>("list-index", "");
                 rightMostNodeId = objectPath.substr(0, objectPath.find_first_of("/"));
                 listitemGroup[rightMostNodeId].append(objectPath.substr(objectPath.find_first_of('/') + 1) + "(index:" + obj_name.substr(obj_name.find_first_of(":") + 1) + ")" + ";");
                 continue;
@@ -545,14 +545,14 @@ void FakeTransformer::endTransform(bool moved) {
             if (std::regex_search(groupPath, res, std::regex("\\(index:(.*?)\\)")))
                 if (res.size() != 2)
                     continue;
-            auto& obj1 = key + ":" + res[1].str();
+            auto obj1 = key + ":" + res[1].str();
 
             std::optional<NodeLocation> last{};
             auto prim_node_location = node_sync.searchNodeOfPrim(key);
             if (!prim_node_location.has_value())
                 continue;;
             while (prim_node_location.has_value() && prim_node_location->node.data(ROLE_OBJNAME) == "PrimitiveTransform") {
-                auto& next_node_id = UiHelper::getSockNode(prim_node_location->node.data(ROLE_INPUTS).value<INPUT_SOCKETS>()["prim"].info.links[0].outSockPath);
+                auto next_node_id = UiHelper::getSockNode(prim_node_location->node.data(ROLE_INPUTS).value<INPUT_SOCKETS>()["prim"].info.links[0].outSockPath);
                 prim_node_location = node_sync.searchNodeOfPrim(next_node_id.toStdString());
             }
             while (prim_node_location.has_value())
