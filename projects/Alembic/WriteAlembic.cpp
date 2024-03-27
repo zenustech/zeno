@@ -342,7 +342,14 @@ void write_attrs(
         });
     }
 }
-void write_user_data(std::map<std::string, std::any> &user_attrs, std::string path, std::shared_ptr<PrimitiveObject> prim, OCompoundProperty& user) {
+void write_user_data(
+        std::map<std::string, std::any> &user_attrs
+        , std::string path
+        , std::shared_ptr<PrimitiveObject> prim
+        , OCompoundProperty& user
+        , int frameid
+        , int real_frame_start
+) {
     auto &ud = prim->userData();
     for (const auto& [key, value] : ud.m_data) {
         std::string full_key = path + '/' + key;
@@ -360,6 +367,11 @@ void write_user_data(std::map<std::string, std::any> &user_attrs, std::string pa
                 auto p = OInt32Property(user, key);
                 p.setTimeSampling(1);
                 user_attrs[full_key] = p;
+                if (real_frame_start != frameid) {
+                    for (auto i = real_frame_start; i < frameid; i++) {
+                        p.set({});
+                    }
+                }
             }
             std::any_cast<OInt32Property>(user_attrs[full_key]).set(ud.get2<int>(key));
         }
@@ -368,6 +380,11 @@ void write_user_data(std::map<std::string, std::any> &user_attrs, std::string pa
                 auto p = OFloatProperty(user, key);
                 p.setTimeSampling(1);
                 user_attrs[full_key] = p;
+                if (real_frame_start != frameid) {
+                    for (auto i = real_frame_start; i < frameid; i++) {
+                        p.set({});
+                    }
+                }
             }
             std::any_cast<OFloatProperty>(user_attrs[full_key]).set(ud.get2<float>(key));
         }
@@ -376,6 +393,11 @@ void write_user_data(std::map<std::string, std::any> &user_attrs, std::string pa
                 auto p = OV2iProperty(user, key);
                 p.setTimeSampling(1);
                 user_attrs[full_key] = p;
+                if (real_frame_start != frameid) {
+                    for (auto i = real_frame_start; i < frameid; i++) {
+                        p.set({});
+                    }
+                }
             }
             auto v = ud.get2<vec2i>(key);
             std::any_cast<OV2iProperty>(user_attrs[full_key]).set(Imath::V2i(v[0], v[1]));
@@ -385,6 +407,11 @@ void write_user_data(std::map<std::string, std::any> &user_attrs, std::string pa
                 auto p = OV3iProperty(user, key);
                 p.setTimeSampling(1);
                 user_attrs[full_key] = p;
+                if (real_frame_start != frameid) {
+                    for (auto i = real_frame_start; i < frameid; i++) {
+                        p.set({});
+                    }
+                }
             }
             auto v = ud.get2<vec3i>(key);
             std::any_cast<OV3iProperty>(user_attrs[full_key]).set(Imath::V3i(v[0], v[1], v[2]));
@@ -394,6 +421,11 @@ void write_user_data(std::map<std::string, std::any> &user_attrs, std::string pa
                 auto p = OV2fProperty(user, key);
                 p.setTimeSampling(1);
                 user_attrs[full_key] = p;
+                if (real_frame_start != frameid) {
+                    for (auto i = real_frame_start; i < frameid; i++) {
+                        p.set({});
+                    }
+                }
             }
             auto v = ud.get2<vec2f>(key);
             std::any_cast<OV2fProperty>(user_attrs[full_key]).set(Imath::V2f(v[0], v[1]));
@@ -403,6 +435,11 @@ void write_user_data(std::map<std::string, std::any> &user_attrs, std::string pa
                 auto p = OV3fProperty(user, key);
                 p.setTimeSampling(1);
                 user_attrs[full_key] = p;
+                if (real_frame_start != frameid) {
+                    for (auto i = real_frame_start; i < frameid; i++) {
+                        p.set({});
+                    }
+                }
             }
             auto v = ud.get2<vec3f>(key);
             std::any_cast<OV3fProperty>(user_attrs[full_key]).set(Imath::V3f(v[0], v[1], v[2]));
@@ -412,6 +449,11 @@ void write_user_data(std::map<std::string, std::any> &user_attrs, std::string pa
                 auto p = OStringProperty(user, key);
                 p.setTimeSampling(1);
                 user_attrs[full_key] = p;
+                if (real_frame_start != frameid) {
+                    for (auto i = real_frame_start; i < frameid; i++) {
+                        p.set({});
+                    }
+                }
             }
             std::any_cast<OStringProperty>(user_attrs[full_key]).set(ud.get2<std::string>(key));
         }
@@ -480,6 +522,7 @@ struct WriteAlembic2 : INode {
     std::map<std::string, std::any> user_attrs;
     std::map<std::string, OFaceSet> o_faceset;
     std::map<std::string, OFaceSetSchema> o_faceset_schema;
+    std::map<int, vec3i> prim_size_per_frame;
     int real_frame_start = -1;
 
     virtual void apply() override {
@@ -515,6 +558,7 @@ struct WriteAlembic2 : INode {
             loops_attrs.clear();
             polys_attrs.clear();
             user_attrs.clear();
+            prim_size_per_frame.clear();
         }
         if (!(frame_start <= frameid && frameid <= frame_end)) {
             return;
@@ -536,7 +580,7 @@ struct WriteAlembic2 : INode {
             write_faceset(prim, mesh, o_faceset, o_faceset_schema);
 
             OCompoundProperty user = mesh.getUserProperties();
-            write_user_data(user_attrs, "", prim, user);
+            write_user_data(user_attrs, "", prim, user, frameid, real_frame_start);
 
             mesh.setTimeSampling(1);
 
@@ -553,6 +597,13 @@ struct WriteAlembic2 : INode {
             std::vector<int32_t> vertex_count_per_face;
 
             if (prim->loops.size()) {
+                {
+                    prim_size_per_frame[frameid] = {
+                        int(prim->verts.size()),
+                        int(prim->loops.size()),
+                        int(prim->polys.size()),
+                    };
+                }
                 for (const auto& [start, size]: prim->polys) {
                     for (auto i = 0; i < size; i++) {
                         vertex_index_per_face.push_back(prim->loops[start + i]);
@@ -600,6 +651,13 @@ struct WriteAlembic2 : INode {
                 }
             }
             else {
+                {
+                    prim_size_per_frame[frameid] = {
+                        int(prim->verts.size()),
+                        int(prim->tris.size() * 3),
+                        int(prim->tris.size()),
+                    };
+                }
                 for (auto i = 0; i < prim->tris.size(); i++) {
                     vertex_index_per_face.push_back(prim->tris[i][0]);
                     vertex_index_per_face.push_back(prim->tris[i][1]);
@@ -666,7 +724,7 @@ ZENDEFNODE(WriteAlembic2, {
     {},
     {"alembic"},
 });
-
+/*
 struct WriteAlembicPrims : INode {
     OArchive archive;
     std::string usedPath;
@@ -955,6 +1013,6 @@ ZENDEFNODE(WriteAlembicPrims, {
     {},
     {"alembic"},
 });
-
+*/
 } // namespace
 } // namespace zeno
