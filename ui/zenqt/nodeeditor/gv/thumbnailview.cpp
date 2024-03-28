@@ -34,6 +34,7 @@ void ThumbnailView::resetScene(ZenoSubGraphScene* pOriginScene)
     if (!m_scene) {
         m_scene = new ThumbnailScene(viewRect);
         setScene(m_scene);
+        connect(m_scene, &ThumbnailScene::navigatorChanged, this, &ThumbnailView::navigatorChanged);
     }
     m_scene->initScene(pOriginScene);
 }

@@ -852,7 +852,10 @@ void ZenoSubGraphView::showThumbnail(bool bChecked)
         return;
 
     if (!m_thumbnail)
+    {
         m_thumbnail = new ThumbnailView(this);
+        connect(m_thumbnail, &ThumbnailView::navigatorChanged, this, &ZenoSubGraphView::onNavigatorChanged);
+    }
 
     if (bShowThumbnail) {
         m_thumbnail->resetScene(scene);
@@ -861,6 +864,38 @@ void ZenoSubGraphView::showThumbnail(bool bChecked)
     }
     else {
         m_thumbnail->hide();
+    }
+}
+
+void ZenoSubGraphView::onNavigatorChanged(QRectF rcNav, QRectF rcOri)
+{
+    auto pView = getCurrentView();
+    if (!pView)
+        return;
+
+    ZenoSubGraphScene* scene = qobject_cast<ZenoSubGraphScene*>(pView->scene());
+    if (!scene)
+        return;
+
+    QRectF actualSceneRc = scene->sceneRect();
+    QRectF viewRc = pView->sceneRect();
+
+    if (rcOri.width() > 0 && rcOri.height() > 0)
+    {
+        qreal hscale = rcNav.width() / rcOri.width();
+        qreal vscale = rcNav.height() / rcOri.height();
+        qreal hrelpos = (rcNav.left() - rcOri.left()) / rcNav.width();
+        qreal vrelpos = (rcNav.top() - rcOri.top()) / rcNav.height();
+
+        QPointF actualLT = actualSceneRc.topLeft();
+        QPointF offset(actualSceneRc.width() * hrelpos, actualSceneRc.height() * vrelpos);
+        QPointF viewLT = actualLT + offset;
+
+        qreal boundWidth = actualSceneRc.width() * hscale;
+        qreal boundHeight = actualSceneRc.height() * vscale;
+        QRectF rcView(viewLT, QSizeF(boundWidth, boundHeight));
+        pView->fitInView(rcView, Qt::KeepAspectRatio);
+        editor_factor = pView->transform().m11();
     }
 }
 

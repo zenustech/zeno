@@ -124,7 +124,7 @@ signals:
 public slots:
     void onPathUpdated(QStringList path);
     void save();
-
+    void onNavigatorChanged(QRectF, QRectF);
     void onNodeRemoved(QString nodeid);
     void onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last);
 

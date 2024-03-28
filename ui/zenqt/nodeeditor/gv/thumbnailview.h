@@ -15,6 +15,9 @@ public:
     ThumbnailView(QWidget* parent = nullptr);
     void resetScene(ZenoSubGraphScene* pScene);
 
+signals:
+    void navigatorChanged(QRectF, QRectF);
+
 protected:
     void drawBackground(QPainter* painter, const QRectF& rect) override;
 
