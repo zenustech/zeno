@@ -8,6 +8,7 @@
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/primRange.h>
 #include <pxr/usd/usd/relationship.h>
+
 #include <pxr/usd/usdGeom/sphere.h>
 #include <pxr/usd/usdGeom/mesh.h>
 #include <pxr/usd/usdGeom/xform.h>
@@ -15,6 +16,14 @@
 #include <pxr/usd/usdGeom/cone.h>
 #include <pxr/usd/usdGeom/capsule.h>
 #include <pxr/usd/usdGeom/plane.h>
+
+#include <pxr/usd/usdLux/cylinderLight.h>
+#include <pxr/usd/usdLux/diskLight.h>
+#include <pxr/usd/usdLux/distantLight.h>
+#include <pxr/usd/usdLux/domeLight.h>
+#include <pxr/usd/usdLux/geometryLight.h>
+#include <pxr/usd/usdLux/rectLight.h>
+#include <pxr/usd/usdLux/sphereLight.h>
 
 #include <zeno/zeno.h>
 #include <zeno/core/IObject.h>
@@ -25,6 +34,7 @@
 #include <zeno/types/UserData.h>
 #include <zeno/types/DictObject.h>
 #include <zeno/types/ListObject.h>
+#include <zeno/types/LightObject.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/utils/vec.h>
 #include <zeno/utils/logger.h>
@@ -47,6 +57,91 @@ struct USDDescription {
 struct USDPrimKeeper : zeno::IObject {
     pxr::UsdPrim mPrim;
 };
+
+zeno::vec3f _temperatureToRGB(float temperatureInKelvins) {
+    // copy from ProcedrualSkeNode.cpp
+    zeno::vec3f retColor;
+
+    temperatureInKelvins = zeno::clamp(temperatureInKelvins, 1000.0f, 40000.0f) / 100.0f;
+
+    if (temperatureInKelvins <= 66.0f)
+    {
+        retColor[0] = 1.0f;
+        retColor[1] = zeno::clamp(0.39008157876901960784f * log(temperatureInKelvins) - 0.63184144378862745098f, 0.0f, 1.0f);
+    } else {
+        float t = temperatureInKelvins - 60.0f;
+        retColor[0] = zeno::clamp(1.29293618606274509804f * pow(t, -0.1332047592f), 0.0f, 1.0f);
+        retColor[1] = zeno::clamp(1.12989086089529411765f * pow(t, -0.0755148492f), 0.0f, 1.0f);
+    }
+
+    if (temperatureInKelvins >= 66.0f)
+        retColor[2] = 1.0f;
+    else if (temperatureInKelvins <= 19.0f)
+        retColor[2] = 0.0f;
+    else
+        retColor[2] = zeno::clamp(0.54320678911019607843f * log(temperatureInKelvins - 10.0f) - 1.19625408914f, 0.0f, 1.0f);
+
+    return retColor;
+}
+
+void _handleUSDCommonLightAttributes(const pxr::UsdPrim& usdPrim, zeno::PrimitiveObject& zPrim) {
+    auto light = pxr::UsdLuxBoundableLightBase(usdPrim);
+
+    /*** handle attributes about lighting ***/
+    float intensity;
+    float exposure;
+    bool useTemperature;
+    zeno::vec3f color;
+
+    light.GetIntensityAttr().Get(&intensity);
+    light.GetExposureAttr().Get(&exposure);
+    light.GetEnableColorTemperatureAttr().Get(&useTemperature);
+
+    if (useTemperature) {
+        float temperature;
+        light.GetColorTemperatureAttr().Get(&temperature);
+        color = _temperatureToRGB(temperature);
+    } else {
+        pxr::GfVec3f _color;
+        light.GetColorAttr().Get(&_color);
+        color = { _color[0], _color[1], _color[2] };
+    }
+
+    auto scaler = powf(2.0f, exposure);
+    if (std::isnan(scaler) || std::isinf(scaler) || scaler < 0.0f) {
+        scaler = 1.0f;
+    }
+    color *= intensity * scaler;
+
+    // check if color is legal
+    for (float& _c : color) {
+        if (std::isnan(_c) || std::isinf(_c) || _c < 0.0f) {
+            _c = 1.0f;
+        }
+    }
+    auto& verts = zPrim.verts;
+    auto& colors = verts.add_attr<zeno::vec3f>("clr");
+    for (auto& c : colors) {
+        c = color;
+    }
+
+    // neccessary lighting info for zeno light prim
+    auto typeEnum = zeno::LightType::Diffuse;
+    auto typeOrder = magic_enum::enum_integer(typeEnum);
+
+    auto shapeEnum = zeno::LightShape::TriangleMesh;
+    auto shapeOrder = magic_enum::enum_integer(shapeEnum);
+
+    zPrim.userData().set2("type", std::move(typeOrder));
+    zPrim.userData().set2("shape", std::move(shapeOrder));
+
+    zPrim.userData().set2("intensity", intensity);
+    zPrim.userData().set2("color", std::move(color));
+
+    zPrim.userData().set2("isRealTimeObject", true);
+    zPrim.userData().set2("isL", true);
+    zPrim.userData().set2("ivD", false);
+}
 
 // converting USD mesh to zeno mesh
 void _convertMeshFromUSDToZeno(const pxr::UsdPrim& usdPrim, zeno::PrimitiveObject& zPrim) {
@@ -200,13 +295,14 @@ void _convertMeshFromUSDToZeno(const pxr::UsdPrim& usdPrim, zeno::PrimitiveObjec
         auto& verts = zPrim.verts;
         auto& polys = zPrim.polys;
         auto& loops = zPrim.loops;
-        auto& uvs = zPrim.uvs;
+        auto& uvs = zPrim.uvs; // TODO
         auto& norms = verts.add_attr<zeno::vec3f>("nrm");
 
         const int ROWS = 30;
         const int COLUMNS = 30;
 
         verts.emplace_back(0.0f, radius, 0.0f);
+        norms.emplace_back(0.0f, 1.0f, 0.0f);
         for (int row = 1; row < ROWS; row++) {
             float v = 1.0f * row / ROWS;
             float theta = M_PI * v;
@@ -217,9 +313,11 @@ void _convertMeshFromUSDToZeno(const pxr::UsdPrim& usdPrim, zeno::PrimitiveObjec
                 float y = radius * cos(theta);
                 float z = radius * -sin(theta) * sin(phi);
                 verts.emplace_back(x, y, z);
+                norms.emplace_back(zeno::normalize(zeno::vec3f(x, y, z)));
             }
         }
         verts.emplace_back(0.0f, -radius, 0.0f);
+        norms.emplace_back(0.0f, -1.0f, 0.0f);
 
         // setup sphere poly indices
         {
@@ -402,6 +500,114 @@ void _convertMeshFromUSDToZeno(const pxr::UsdPrim& usdPrim, zeno::PrimitiveObjec
             }
         }
     }
+    else if (typeName == "CylinderLight") {
+        auto light = pxr::UsdLuxCylinderLight(usdPrim);
+
+        float height; // length of the cylinder in its local X axis
+        float radius;
+        light.GetLengthAttr().Get(&height); // so why USD calls it 'length' at CylinderLight and 'height' at Cylinder ??
+        light.GetRadiusAttr().Get(&radius);
+
+        auto& verts = zPrim.verts;
+        auto& tris = zPrim.tris;
+
+        /*** Constructing cylinder ***/
+        const int COLUMNS = 32;
+        // vertices of the top
+        for (size_t i = 0; i < COLUMNS; i++) {
+            float rad = 2.0f * M_PI * i / COLUMNS;
+            float r0 = cos(rad) * radius;
+            float r1 = -sin(rad) * radius;
+            float h = 0.5f * height;
+            verts.emplace_back(h, r0, r1);
+        }
+        // vertices of the bottom
+        for (size_t i = 0; i < COLUMNS; i++) {
+            float rad = 2.0f * M_PI * i / COLUMNS;
+            float r0 = cos(rad) * radius;
+            float r1 = -sin(rad) * radius;
+            float h = -0.5f * height;
+            verts.emplace_back(h, r0, r1);
+        }
+        verts.emplace_back(0.5f * height, 0.0f, 0.0f);
+        verts.emplace_back(-0.5f * height, 0.0f, 0.0f);
+
+        for (size_t i = 0; i < COLUMNS; i++) {
+            tris.emplace_back(COLUMNS * 2, (i + 1) % COLUMNS, i); // top
+            tris.emplace_back(i + COLUMNS, (i + 1) % COLUMNS + COLUMNS, COLUMNS * 2 + 1); // bottom
+
+            // side
+            size_t _0 = i;
+            size_t _1 = (i + 1) % COLUMNS;
+            size_t _2 = (i + 1) % COLUMNS + COLUMNS;
+            size_t _3 = i + COLUMNS;
+            tris.emplace_back(_1, _2, _0);
+            tris.emplace_back(_2, _3, _0);
+        }
+
+        _handleUSDCommonLightAttributes(usdPrim, zPrim);
+    }
+    else if (typeName == "DiskLight") {
+        /*
+        * Details of DiskLight from USD doc:
+        * Light emitted from one side of a circular disk.
+        * The disk is centered in the XY plane and emits light along the -Z axis.
+        */
+        auto light = pxr::UsdLuxDiskLight(usdPrim);
+
+        float radius;
+        light.GetRadiusAttr().Get(&radius);
+
+        auto& verts = zPrim.verts;
+        auto& tris = zPrim.tris;
+
+        const int COLUMNS = 32;
+        verts.emplace_back(0.0f, 0.0f, 0.0f);
+        for (int i = 0; i < COLUMNS; ++i) {
+            float rad = 2.0f * M_PI * i / COLUMNS;
+            float x = cos(rad) * radius;
+            float y = sin(rad) * radius;
+            verts.emplace_back(x, y, 0.0f);
+        }
+
+        for (int i = 1; i < COLUMNS; ++i) {
+            tris.emplace_back(0, i + 1, i);
+        }
+        // the last part
+        tris.emplace_back(0, 1, COLUMNS);
+
+        _handleUSDCommonLightAttributes(usdPrim, zPrim);
+    }
+    else if (typeName == "DistantLight") { // TODO: we don't support light source with no shape, so skip it for now
+        /*
+        * Light emitted from a distant source along the -Z axis.
+        * Also known as a directional light.
+        */
+        /*
+        auto light = pxr::UsdLuxDistantLight(usdPrim);
+
+        _handleUSDCommonLightAttributes(usdPrim, zPrim);
+
+        // distant light is not common at all, so we set up some variables here
+        float angle;
+        light.GetAngleAttr().Get(&angle);
+        // TODO: angle is not used in zeno lighting for now, ignore it
+
+        auto typeEnum = zeno::LightType::Direction;
+        auto typeOrder = magic_enum::enum_integer(typeEnum);
+
+        zPrim.userData().set2("type", std::move(typeOrder));
+        */
+    }
+    else if (typeName == "DomeLight") {
+        auto light = pxr::UsdLuxDomeLight(usdPrim);
+
+        float guideRadius;
+        light.GetGuideRadiusAttr().Get(&guideRadius);
+        ;
+
+        _handleUSDCommonLightAttributes(usdPrim, zPrim);
+    }
     else if (typeName == "Cone") {
         auto cone = pxr::UsdGeomCone(usdPrim);
 
@@ -467,23 +673,111 @@ void _convertMeshFromUSDToZeno(const pxr::UsdPrim& usdPrim, zeno::PrimitiveObjec
 
         /*** Read from USD ***/
         char axis;
-        float height;
+        float height; // in USD capsule, the height doesn't include the radius of two spheres
         float radius;
-        pxr::VtValue heightValue;
-        pxr::VtValue radiusValue;
-        pxr::VtValue axisValue;
-        capsule.GetHeightAttr().Get(&heightValue);
-        capsule.GetRadiusAttr().Get(&radiusValue);
-        capsule.GetAxisAttr().Get(&axisValue);
-        height = static_cast<float>(heightValue.Get<double>());
-        radius = static_cast<float>(radiusValue.Get<double>());
-        axis = axisValue.Get<pxr::TfToken>().GetString()[0];
+        pxr::VtValue tempValue;
+        capsule.GetHeightAttr().Get(&tempValue);
+        height = static_cast<float>(tempValue.Get<double>());
+        capsule.GetRadiusAttr().Get(&tempValue);
+        radius = static_cast<float>(tempValue.Get<double>());
+        capsule.GetAxisAttr().Get(&tempValue);
+        axis = tempValue.Get<pxr::TfToken>().GetString()[0];
 
         auto& verts = zPrim.verts;
-        auto& tris = zPrim.tris;
-        const int COLUMNS = 32;
-        ; // TODO
+        auto& polys = zPrim.polys;
+        auto& loops = zPrim.loops;
+        auto& uvs = zPrim.uvs;
+        auto& norms = verts.add_attr<zeno::vec3f>("nrm");
 
+        const int COLUMNS = 32;
+        const int HALF_ROWS = 16;
+        const int ROWS = HALF_ROWS * 2;
+
+        verts.emplace_back(0.0f, 0.5f * height + radius, 0.0f); // top point
+        norms.emplace_back(0.0f, 1.0f, 0.0f);
+        // top half-sphere
+        for (int row = 1; row < HALF_ROWS; row++) {
+            float v = 1.0f * row / ROWS;
+            float theta = M_PI * v;
+            for (int column = 0; column < COLUMNS; column++) {
+                float u = 1.0f * column / COLUMNS;
+                float phi = M_PI * 2 * u;
+                float x = radius * sin(theta) * cos(phi);
+                float y = radius * cos(theta);
+                float z = radius * -sin(theta) * sin(phi);
+                verts.emplace_back(x, y + 0.5f * height, z);
+                norms.emplace_back(zeno::normalize(zeno::vec3f(x, y, z)));
+            }
+        }
+        // down half-sphere
+        for (int row = HALF_ROWS; row < ROWS; row++) {
+            float v = 1.0f * row / ROWS;
+            float theta = M_PI * v;
+            for (int column = 0; column < COLUMNS; column++) {
+                float u = 1.0f * column / COLUMNS;
+                float phi = M_PI * 2 * u;
+                float x = radius * sin(theta) * cos(phi);
+                float y = radius * cos(theta);
+                float z = radius * -sin(theta) * sin(phi);
+                verts.emplace_back(x, y - 0.5f * height, z);
+                norms.emplace_back(zeno::normalize(zeno::vec3f(x, y, z)));
+            }
+        }
+        verts.emplace_back(0.0f, -0.5f * height - radius, 0.0f);
+        norms.emplace_back(0.0f, -1.0f, 0.0f);
+
+        // setup capsule poly indices
+        {
+            //head
+            for (auto column = 0; column < COLUMNS; column++) {
+                if (column == COLUMNS - 1) {
+                    loops.emplace_back(0);
+                    loops.emplace_back(COLUMNS);
+                    loops.emplace_back(1);
+                    polys.emplace_back(column * 3, 3);
+                }
+                else {
+                    loops.emplace_back(0);
+                    loops.emplace_back(column + 1);
+                    loops.emplace_back(column + 2);
+                    polys.emplace_back(column * 3, 3);
+                }
+            }
+            //body
+            for (auto row = 1; row < ROWS - 1; row++) {
+                for (auto column = 0; column < COLUMNS; column++) {
+                    if (column == COLUMNS - 1) {
+                        loops.emplace_back((row - 1) * COLUMNS + 1);
+                        loops.emplace_back((row - 1) * COLUMNS + COLUMNS);
+                        loops.emplace_back(row * COLUMNS + COLUMNS);
+                        loops.emplace_back(row * COLUMNS + 1);
+                        polys.emplace_back(COLUMNS * 3 + (row - 1) * COLUMNS * 4 + column * 4, 4);
+                    }
+                    else {
+                        loops.emplace_back((row - 1) * COLUMNS + column + 2);
+                        loops.emplace_back((row - 1) * COLUMNS + column + 1);
+                        loops.emplace_back(row * COLUMNS + column + 1);
+                        loops.emplace_back(row * COLUMNS + column + 2);
+                        polys.emplace_back(loops.size() - 4, 4);
+                    }
+                }
+            }
+            //tail
+            for (auto column = 0; column < COLUMNS; column++) {
+                if (column == COLUMNS - 1) {
+                    loops.emplace_back((ROWS - 2) * COLUMNS + 1);
+                    loops.emplace_back((ROWS - 2) * COLUMNS + column + 1);
+                    loops.emplace_back((ROWS - 1) * COLUMNS + 1);
+                    polys.emplace_back(COLUMNS * 3 + (ROWS - 2) * COLUMNS * 4 + column * 3, 3);
+                }
+                else {
+                    loops.emplace_back((ROWS - 2) * COLUMNS + column + 2);
+                    loops.emplace_back((ROWS - 2) * COLUMNS + column + 1);
+                    loops.emplace_back((ROWS - 1) * COLUMNS + 1);
+                    polys.emplace_back(loops.size() - 3, 3);
+                }
+            }
+        }
     }
     else if (typeName == "Plane") {
         auto plane = pxr::UsdGeomPlane(usdPrim);
