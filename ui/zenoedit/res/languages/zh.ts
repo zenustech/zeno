@@ -3225,11 +3225,11 @@ the save action will lose them, we recommand you choose &quot;Save As&quot; to s
     </message>
     <message>
         <source>zsg path</source>
-        <translation type="unfinished">zsg路径</translation>
+        <translation>资源路径</translation>
     </message>
     <message>
         <source>Whether to use $ZSG replace zsg file path?</source>
-        <translation type="unfinished">是否使用$ZSG替换zsg文件夹的路径？</translation>
+        <translation>检测到路径与zsg工程在同一目录，是否使用$ZSG作为相对路径？</translation>
     </message>
 </context>
 <context>

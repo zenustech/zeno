@@ -182,10 +182,12 @@ int record_main(const QCoreApplication& app)
     }
     if (cmdParser.isSet("aov")) {
         param.bAov = cmdParser.value("aov").toInt();
+        auto& ud = zeno::getSession().userData();
         ud.set2("output_aov", param.bAov != 0);
     }
     if (cmdParser.isSet("exr")) {
         param.export_exr = cmdParser.value("exr").toInt() != 0;
+        auto& ud = zeno::getSession().userData();
         ud.set2("output_exr", param.export_exr);
     }
     if (cmdParser.isSet("videoname")) {
