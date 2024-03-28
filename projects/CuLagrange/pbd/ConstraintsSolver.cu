@@ -757,11 +757,25 @@ struct XPBDSolveSmoothAll : INode {
         }
 
         TILEVEC_OPS::fill(cudaPol,verts,"w",0);
+
+        auto iter_id = get_input2<int>("iter_id");
         
 
         for(auto& constraint_ptr : constraint_ptr_list) {
             auto category = constraint_ptr->readMeta(CONSTRAINT_KEY,wrapt<category_c>{});
             const auto& cquads = constraint_ptr->getQuadraturePoints();
+
+
+            if(constraint_ptr->userData().has("stride")) {
+                auto stride = objectToLiterial<int>(constraint_ptr->userData().get("stride"));
+                // std::cout << "find constraint with stride = " << stride << std::endl;
+                if(iter_id % stride != 0) {
+                    // std::cout << "skip constraint solving due to stride-skipping" << std::endl;
+                    continue;
+                }
+            } else {
+                // std::cout << "the constraint has no stride information" << std::endl;
+            }
 
             if(category == category_c::shape_matching_constraint) {
                 auto shape_matching_rest_cm = constraint_ptr->readMeta<std::vector<vec3>>(SHAPE_MATCHING_REST_CM);
@@ -1392,6 +1406,7 @@ ZENDEFNODE(XPBDSolveSmoothAll, {{{"zsparticles"},
                                 {"float","dt","1.0"},
                                 {"int","nm_substeps","1"},
                                 {"int","substep_id","0"},
+                                {"int","iter_id","0"}
                             },
 							{{"zsparticles"},{"constraints"}},
 							{},

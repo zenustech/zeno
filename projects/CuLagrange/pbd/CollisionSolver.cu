@@ -122,7 +122,8 @@ struct DetangleCCDCollisionWithBoundary : INode {
                 auto cur_kvert = kverts.pack(dim_c<3>,"px",kvi) * (1 -  w) + kverts.pack(dim_c<3>,"x",kvi) *  w;
                 auto pre_kvert = kverts.pack(dim_c<3>,"px",kvi) * (1 - pw) + kverts.pack(dim_c<3>,"x",kvi) * pw;
                 vtemp("collision_group",kvi + voffset) = kverts(collision_group_name,kvi);
-                vtemp.tuple(dim_c<3>,"X",kvi + voffset) = kverts.pack(dim_c<3>,"X",kvi);
+                // for alignment, we directly assign the current boundary as reference shape
+                vtemp.tuple(dim_c<3>,"X",kvi + voffset) = kverts.pack(dim_c<3>,"x",kvi);
                 vtemp.tuple(dim_c<3>,"x",kvi + voffset) = pre_kvert;
                 vtemp.tuple(dim_c<3>,"v",kvi + voffset) = (cur_kvert - pre_kvert) * boundary_velocity_scale;
                 vtemp("minv",kvi + voffset) = (T)0;
@@ -216,7 +217,7 @@ struct DetangleCCDCollisionWithBoundary : INode {
                         csPT,
                         impulse_buffer,
                         impulse_count,true,true,false,group_strategy);
-                    std::cout << "nm_PT_continuous_collisions : " << csPT.size() << std::endl;
+                    // std::cout << "nm_PT_continuous_collisions : " << csPT.size() << std::endl;
                 }
             }
 
@@ -252,7 +253,7 @@ struct DetangleCCDCollisionWithBoundary : INode {
                         csEE,
                         impulse_buffer,
                         impulse_count,true,true,false,group_strategy);
-                    std::cout << "nm_EE_continuous_collisions : " << csPT.size() << std::endl;
+                    // std::cout << "nm_EE_continuous_collisions : " << csPT.size() << std::endl;
                 }
             }
 
