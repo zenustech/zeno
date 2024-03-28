@@ -254,6 +254,9 @@ void write_attrs(
     });
     if (prim->loops.size() > 0) {
         prim->loops.foreach_attr<std::variant<vec3f, float, int>>([&](auto const &key, auto &arr) {
+            if (key == "uvs") {
+                return;
+            }
             std::string full_key = path + '/' + key;
             using T = std::decay_t<decltype(arr[0])>;
             if constexpr (std::is_same_v<T, zeno::vec3f>) {
