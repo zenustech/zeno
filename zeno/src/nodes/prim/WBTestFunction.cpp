@@ -489,7 +489,7 @@ ZENDEFNODE(Grid2DSample_M, {
     },
     /* category: */
     {
-        "WBTest",
+        "deprecated",
     }});
 
 struct GaussianGrid : INode {

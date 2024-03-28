@@ -29,6 +29,8 @@
 #include "zeno/utils/log.h"
 #include "zeno/utils/string.h"
 #include <filesystem>
+#include <cryptopp/md5.h>
+#include <cryptopp/hex.h>
 
 //#include <GLFW/glfw3.h>
 
@@ -332,6 +334,7 @@ inline void createRTProgramGroups(OptixDeviceContext &context, OptixModule &_mod
                 ) );
 }
 struct cuTexture{
+    std::string md5;
     cudaArray_t gpuImageArray;
     cudaTextureObject_t texture;
     cuTexture(){gpuImageArray = nullptr;texture=0;}
@@ -610,6 +613,7 @@ inline std::vector<float> loadIES(const std::string& path, float& coneAngle)
 }
 inline std::map<std::string, std::shared_ptr<cuTexture>> g_tex;
 inline std::map<std::string, std::filesystem::file_time_type> g_tex_last_write_time;
+inline std::map<std::string, std::string> md5_path_mapping;
 inline std::optional<std::string> sky_tex;
 inline std::map<std::string, int> sky_nx_map;
 inline std::map<std::string, int> sky_ny_map;
@@ -682,7 +686,16 @@ inline void calc_sky_cdf_map(int nx, int ny, int nc, T *img) {
         }
     }
 }
-
+static std::string calculateMD5(const std::vector<char>& input) {
+    CryptoPP::byte digest[CryptoPP::MD5::DIGESTSIZE];
+    CryptoPP::MD5().CalculateDigest(digest, (const CryptoPP::byte*)input.data(), input.size());
+    CryptoPP::HexEncoder encoder;
+    std::string output;
+    encoder.Attach(new CryptoPP::StringSink(output));
+    encoder.Put(digest, sizeof(digest));
+    encoder.MessageEnd();
+    return output;
+}
 inline void addTexture(std::string path)
 {
     zeno::log_debug("loading texture :{}", path);
@@ -698,6 +711,20 @@ inline void addTexture(std::string path)
         if(g_tex.count(path)) {
             return;
         }
+    }
+    auto input = readData(native_path);
+    std::string md5Hash = calculateMD5(input);
+    zeno::log_info("path {} md5 {} tex", path, md5Hash);
+    std::cout << "path" << path << "md5" << md5Hash << std::endl;
+
+    if (md5_path_mapping.count(md5Hash)) {
+        g_tex[path] = g_tex[md5_path_mapping[md5Hash]];
+        std::cout << "reuse" << std::endl;
+        zeno::log_info("path {} reuse {} tex", path, md5_path_mapping[md5Hash]);
+        return;
+    }
+    else {
+        md5_path_mapping[md5Hash] = path;
     }
     int nx, ny, nc;
     stbi_set_flip_vertically_on_load(true);
@@ -821,9 +848,23 @@ inline void addTexture(std::string path)
         g_tex[path] = makeCudaTexture(img, nx, ny, nc);
         stbi_image_free(img);
     }
+    g_tex[path]->md5 = md5Hash;
 
     for (auto i = g_tex.begin(); i != g_tex.end(); i++) {
         zeno::log_info("-{}", i->first);
+    }
+}
+inline void removeTexture(std::string path) {
+    if (path.size()) {
+        md5_path_mapping.erase(g_tex[path]->md5);
+        g_tex.erase(path);
+        sky_nx_map.erase(path);
+        sky_ny_map.erase(path);
+        sky_cdf_map.erase(path);
+        sky_pdf_map.erase(path);
+        sky_start_map.erase(path);
+        sky_avg_map.erase(path);
+        g_tex_last_write_time.erase(path);
     }
 }
 
