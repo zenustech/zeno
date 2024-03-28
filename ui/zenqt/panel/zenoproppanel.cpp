@@ -434,9 +434,8 @@ bool ZenoPropPanel::syncAddTab(QTabWidget* pTabWidget, QStandardItem* pTabItem, 
     pTabLayout->setSpacing(0);
     if (m_idx.data(ROLE_NODETYPE) == zeno::Node_Group) 
     {
-        //TODO:
-        //ZenoBlackboardPropWidget *propWidget = new ZenoBlackboardPropWidget(m_idx, m_subgIdx, pTabWid);
-        //pTabLayout->addWidget(propWidget);
+        ZenoBlackboardPropWidget *propWidget = new ZenoBlackboardPropWidget(m_idx, pTabWid);
+        pTabLayout->addWidget(propWidget);
     } 
     else 
     {

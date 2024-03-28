@@ -133,21 +133,29 @@ void ZenoSubGraphScene::initModel(GraphModel* pGraphM)
             }
         }
 
-#if 0
         for (auto node : blackboardVect)
         {
-            PARAMS_INFO params = node->index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
-            BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
-            if (info.items.contains(id) && qobject_cast<GroupNode*>(node))
+            if (ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(node->index().data(ROLE_PARAMS)))
             {
-                GroupNode *pGroupNode = qobject_cast<GroupNode *>(node);
-                if (pGroupNode)
-                    pGroupNode->appendChildItem(inNode);
-                else
-                    inNode->setGroupNode(pGroupNode);
+                auto index = paramsM->index(paramsM->indexFromName("items", true), 0);
+                if (index.isValid())
+                {
+                    QString val = index.data(ROLE_PARAM_VALUE).toString();
+                    if (!val.isEmpty())
+                    {
+                        auto items = val.split(",");
+                        if (items.contains(id) && qobject_cast<GroupNode*>(node))
+                        {
+                            GroupNode* pGroupNode = qobject_cast<GroupNode*>(node);
+                            if (pGroupNode)
+                                pGroupNode->appendChildItem(inNode);
+                            else
+                                inNode->setGroupNode(pGroupNode);
+                        }
+                    }
+                }
             }
         }
-#endif
     }
 
     //TODO:
@@ -288,13 +296,19 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& topLeft, const QModelIn
             QVariantList lst = var.toList();
             ZASSERT_EXIT(lst.size() == 2);
             QPointF pos(lst[0].toFloat(), lst[1].toFloat());
-            m_nodes[id]->setPos(pos);
-            m_nodes[id]->nodePosChangedSignal();
+            if (pos != m_nodes[id]->pos())
+            {
+                m_nodes[id]->setPos(pos);
+                m_nodes[id]->nodePosChangedSignal();
+            }
         }
         else if (var.type() == QVariant::PointF) {
-            QPointF pos = idx.data(ROLE_OBJPOS).toPoint();
-            m_nodes[id]->setPos(pos);
-            m_nodes[id]->nodePosChangedSignal();
+            QPointF pos = idx.data(ROLE_OBJPOS).toPointF();
+            if (pos != m_nodes[id]->pos())
+            {
+                m_nodes[id]->setPos(pos);
+                m_nodes[id]->nodePosChangedSignal();
+            }
         }
     }
     if (role == ROLE_NODE_STATUS)
@@ -1118,7 +1132,7 @@ void ZenoSubGraphScene::onRowsInserted(const QModelIndex& parent, int first, int
             GroupNode *pGroup = dynamic_cast<GroupNode *>(pNode);
             pGroup->resize(rect.size());
             pGroup->updateBlackboard();
-            pGroup->updateNodePos(rect.topLeft(), false);
+            UiHelper::qIndexSetData(pGroup->index(), rect.topLeft(), ROLE_OBJPOS);
             for (auto item : selectedItems()) 
             {
                 ZenoNode *pChildNode = dynamic_cast<ZenoNode *>(item);

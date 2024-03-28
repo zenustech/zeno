@@ -271,6 +271,59 @@ ZENO_API void Graph::init(const GraphData& graph) {
         else if (node.cls == "SubOutput") {
             //TODO
         }
+        else if (node.cls == "Group") {
+            if (node.group.has_value())
+            {
+                std::shared_ptr<IParam> param = spNode->get_input_param("title");
+                if (param)
+                {
+                    param->defl = node.group->title;
+                }
+                param = spNode->get_input_param("background");
+                if (param)
+                {
+                    param->defl = node.group->background;
+                }
+                param = spNode->get_input_param("size");
+                if (param)
+                {
+                    param->defl = node.group->sz;
+                }
+                param = spNode->get_input_param("items");
+                if (param)
+                {
+                    param->defl = join_str(node.group->items, ",");
+                }
+            }
+        }
+        //Compatible with older versions
+        else if (node.cls == "MakeHeatmap")
+        {
+            std::string color;
+            int nres = 0;
+            for (const auto& input : node.inputs)
+            {
+                if (input.name == "_RAMPS" && std::holds_alternative<std::string>(input.defl))
+                {
+                    color = std::get<std::string>(input.defl);
+                }
+                else if (input.name == "nres" && std::holds_alternative<int>(input.defl))
+                {
+                    nres = std::get<int>(input.defl);
+                }
+            }
+            if (!color.empty() && nres > 0)
+            {
+                auto param = spNode->get_input_param("heatmap");
+                if (param)
+                {
+                    std::regex pattern("\n");
+                    std::string fmt = "\\n";
+                    color = std::regex_replace(color, pattern, fmt);
+                    param->defl = "{\"nres\": " + std::to_string(nres) + ", \"color\":\"" + color + "\"}";
+                }
+            }
+        }
     }
     //import edges
     for (const auto& link : graph.links) {
@@ -640,6 +693,7 @@ ZENO_API bool Graph::removeNode(std::string const& name) {
     subnet_nodes.erase(uuid);
     asset_nodes.erase(uuid);
     m_viewnodes.erase(name);
+    m_name2uuid.erase(name);
 
     CALLBACK_NOTIFY(removeNode, name)
     return true;

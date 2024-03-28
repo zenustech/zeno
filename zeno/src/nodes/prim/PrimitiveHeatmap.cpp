@@ -49,7 +49,7 @@ struct MakeHeatmap : zeno::INode {
 };
 
 ZENDEFNODE(MakeHeatmap,
-        { /* inputs: */ {{"color", "heatmap", "", ParamSocket, zeno::Heatmap},
+        { /* inputs: */ {{"color", "heatmap", "", zeno::NoSocket, zeno::Heatmap},
         }, /* outputs: */ {
         "heatmap",
         }, /* params: */ {

@@ -418,11 +418,26 @@ namespace zenoio
             {
                 defl = val.GetString();
             }
-            else
-            {
-                //TO DO:read old version data
-            }
             break;
+        }
+        case zeno::Param_Null:
+        {
+            if (val.IsString())
+            {
+                defl = val.GetString();
+            }
+            else if (val.IsInt())
+            {
+                defl = val.GetInt();
+            }
+            else if (val.IsFloat())
+            {
+                defl = val.GetFloat();
+            }
+            else if (val.IsBool())
+            {
+                defl = val.GetBool();
+            }
         }
         }
         return defl;

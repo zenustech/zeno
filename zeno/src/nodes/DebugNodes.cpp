@@ -244,5 +244,16 @@ ZENDEFNODE(Blackboard, {
     {"layout"},
 });
 
+struct Group : zeno::INode {
+    virtual void apply() override {
+    }
+};
+
+ZENDEFNODE(Group, {
+    {{"string", "title", "title"},{"string", "items"},{"vec3f", "background", "0, 0.39, 0.66"},{"vec2f", "size", "500,500"}},
+    {},
+    {},
+    {"layout"},
+    });
 
 }

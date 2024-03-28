@@ -326,6 +326,8 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
                 }
                 return zeno::Node_SubgraphNode;
             }
+            if (spNode && spNode->m_nodecls == "Group")
+                return zeno::Node_Group;
             return zeno::Node_Normal;
         }
         case ROLE_NODE_CATEGORY:

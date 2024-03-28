@@ -125,7 +125,7 @@ namespace zenoio
             }
             //TODO: import blackboard.
         }
-        else if (cls == "Group")
+        /*else if (cls == "Group")
         {
             zeno::GroupInfo group;
             const rapidjson::Value& blackBoardValue = objValue.HasMember("blackboard") ? objValue["blackboard"] : objValue;
@@ -144,9 +144,9 @@ namespace zenoio
                     std::string key = item_keys[i].GetString();
                     group.items.push_back(key);
                 }
-            }
+            }*/
             //TODO: import group.
-        }
+        //}
 
         if (objValue.HasMember("subnet")) {
             zeno::GraphData subgraph;
