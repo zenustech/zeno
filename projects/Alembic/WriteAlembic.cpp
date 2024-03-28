@@ -802,7 +802,7 @@ ZENDEFNODE(WriteAlembic2, {
     {},
     {"alembic"},
 });
-/*
+
 struct WriteAlembicPrims : INode {
     OArchive archive;
     std::string usedPath;
@@ -813,6 +813,7 @@ struct WriteAlembicPrims : INode {
     std::map<std::string, std::any> user_attrs;
     std::map<std::string, std::map<std::string, OFaceSet>> o_faceset;
     std::map<std::string, std::map<std::string, OFaceSetSchema>> o_faceset_schema;
+    std::map<std::string, std::map<int, vec3i>> prim_size_per_frame;
     int real_frame_start = -1;
 
     virtual void apply() override {
@@ -913,6 +914,7 @@ struct WriteAlembicPrims : INode {
             user_attrs.clear();
             o_faceset.clear();
             o_faceset_schema.clear();
+            prim_size_per_frame.clear();
             real_frame_start = -1;
             for (auto prim: new_prims) {
                 auto path = prim->userData().get2<std::string>("abcpath_0");
@@ -959,7 +961,7 @@ struct WriteAlembicPrims : INode {
                 write_faceset(prim, mesh, o_faceset[path], o_faceset_schema[path]);
 
                 OCompoundProperty user = mesh.getUserProperties();
-                write_user_data(user_attrs, path, prim, user);
+                write_user_data(user_attrs, path, prim, user, frameid, real_frame_start);
 
                 mesh.setTimeSampling(1);
 
@@ -976,6 +978,13 @@ struct WriteAlembicPrims : INode {
                 std::vector<int32_t> vertex_count_per_face;
 
                 if (prim->loops.size()) {
+                    {
+                        prim_size_per_frame[path][frameid] = {
+                            int(prim->verts.size()),
+                            int(prim->loops.size()),
+                            int(prim->polys.size()),
+                        };
+                    }
                     for (const auto& [start, size]: prim->polys) {
                         for (auto i = 0; i < size; i++) {
                             vertex_index_per_face.push_back(prim->loops[start + i]);
@@ -1008,7 +1017,7 @@ struct WriteAlembicPrims : INode {
                                 uvsamp);
                         write_velocity(prim, mesh_samp);
                         write_normal(prim, mesh_samp);
-                        write_attrs(verts_attrs, loops_attrs, polys_attrs, path, prim, mesh);
+                        write_attrs(verts_attrs, loops_attrs, polys_attrs, path, prim, mesh, frameid, real_frame_start, prim_size_per_frame[path]);
                         mesh.set( mesh_samp );
                     }
                     else {
@@ -1018,11 +1027,18 @@ struct WriteAlembicPrims : INode {
                                 Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ));
                         write_velocity(prim, mesh_samp);
                         write_normal(prim, mesh_samp);
-                        write_attrs(verts_attrs, loops_attrs, polys_attrs, path, prim, mesh);
+                        write_attrs(verts_attrs, loops_attrs, polys_attrs, path, prim, mesh, frameid, real_frame_start, prim_size_per_frame[path]);
                         mesh.set( mesh_samp );
                     }
                 }
                 else {
+                    {
+                        prim_size_per_frame[path][frameid] = {
+                            int(prim->verts.size()),
+                            int(prim->tris.size() * 3),
+                            int(prim->tris.size()),
+                        };
+                    }
                     for (auto i = 0; i < prim->tris.size(); i++) {
                         vertex_index_per_face.push_back(prim->tris[i][0]);
                         vertex_index_per_face.push_back(prim->tris[i][1]);
@@ -1057,7 +1073,7 @@ struct WriteAlembicPrims : INode {
                                 uvsamp);
                         write_velocity(prim, mesh_samp);
                         write_normal(prim, mesh_samp);
-                        write_attrs(verts_attrs, loops_attrs, polys_attrs, path, prim, mesh);
+                        write_attrs(verts_attrs, loops_attrs, polys_attrs, path, prim, mesh, frameid, real_frame_start, prim_size_per_frame[path]);
                         mesh.set( mesh_samp );
                     } else {
                         OPolyMeshSchema::Sample mesh_samp(
@@ -1066,7 +1082,7 @@ struct WriteAlembicPrims : INode {
                                 Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ));
                         write_velocity(prim, mesh_samp);
                         write_normal(prim, mesh_samp);
-                        write_attrs(verts_attrs, loops_attrs, polys_attrs, path, prim, mesh);
+                        write_attrs(verts_attrs, loops_attrs, polys_attrs, path, prim, mesh, frameid, real_frame_start, prim_size_per_frame[path]);
                         mesh.set( mesh_samp );
                     }
                 }
@@ -1091,6 +1107,6 @@ ZENDEFNODE(WriteAlembicPrims, {
     {},
     {"alembic"},
 });
-*/
+
 } // namespace
 } // namespace zeno
