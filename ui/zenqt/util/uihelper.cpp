@@ -1652,84 +1652,17 @@ QString UiHelper::getNaiveParamPath(const QModelIndex& param, int dim)
     return QString("%1/%2").arg(name).arg(paramPath);
 }
 
-QPair<zeno::NodesData, zeno::LinksData>
-    UiHelper::dumpNodes(const QModelIndexList &nodeIndice, const QModelIndexList &linkIndice)
+zeno::NodesData UiHelper::dumpNodes(const QModelIndexList &nodeIndice)
 {
     zeno::NodesData nodes;
-    zeno::LinksData links;
 
     QSet<QString> existedNodes;
-    for (auto idx : nodeIndice)
+    for (const auto& idx : nodeIndice)
     {
-        existedNodes.insert(idx.data(ROLE_NODE_NAME).toString());
+        zeno::NodeData data = idx.data(ROLE_NODEDATA).value<zeno::NodeData>();
+        nodes[data.name] = data;
     }
-
-    for (auto idx : linkIndice)
-    {
-        QVariantList outInfo = idx.data(ROLE_LINK_FROMPARAM_INFO).toList();
-        ZASSERT_EXIT(outInfo.size() == 3, {});
-
-        QVariantList inInfo = idx.data(ROLE_LINK_TOPARAM_INFO).toList();
-        ZASSERT_EXIT(inInfo.size() == 3, {});
-
-        QString outId = outInfo[0].toString();
-        QString inId = inInfo[0].toString();
-
-        if (existedNodes.find(outId) != existedNodes.end() &&
-            existedNodes.find(inId) != existedNodes.end())
-        {
-            const QString& outParam = outInfo[1].toString();
-            const QString& inParam = inInfo[1].toString();
-            zeno::EdgeInfo edge = {
-                outId.toStdString(),
-                outParam.toStdString(),
-                "",
-                inId.toStdString(),
-                inParam.toStdString(),
-                ""
-            };
-            links.push_back(edge);
-        }
-    }
-
-    for (auto idx : nodeIndice)
-    {
-        zeno::NodeData node = idx.data(ROLE_NODEDATA).value<zeno::NodeData>();
-        for (zeno::ParamInfo& param : node.inputs)
-        {
-            for (auto it = param.links.begin(); it != param.links.end(); )
-            {
-                if (std::find(links.begin(), links.end(), *it) == links.end())
-                {
-                    it = param.links.erase(it);
-                }
-                else
-                {
-                    it++;
-                }
-            }
-        }
-
-        for (zeno::ParamInfo& param : node.outputs)
-        {
-            for (auto it = param.links.begin(); it != param.links.end(); )
-            {
-                if (std::find(links.begin(), links.end(), *it) == links.end())
-                {
-                    it = param.links.erase(it);
-                }
-                else
-                {
-                    it++;
-                }
-            }
-        }
-
-        const std::string& oldId = node.name;
-        nodes.insert(std::make_pair(oldId, node));
-    }
-
-    return { nodes, links };
+    return nodes;
 }
 
 void UiHelper::reAllocIdents(const QString& targetSubgraph,

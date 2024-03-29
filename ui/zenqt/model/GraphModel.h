@@ -116,6 +116,7 @@ public:
     GraphsTreeModel* treeModel() const;
     void setLocked(bool bLocked);
     bool isLocked() const;
+    void importNodes(const zeno::NodesData& nodes, const zeno::LinksData& links, const QPointF& pos);
 
 signals:
     void reloaded();

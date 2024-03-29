@@ -9,6 +9,28 @@ namespace zenoio
     {
     }
 
+    bool ZenReader::importNodes(const std::string& fn, zeno::NodesData& nodes, zeno::LinksData& links)
+    {
+        rapidjson::Document doc;
+        doc.Parse(fn.c_str());
+
+        if (!doc.IsObject() || !doc.HasMember("nodes"))
+            return false;
+
+        const rapidjson::Value& val = doc["nodes"];
+        if (val.IsNull())
+            return false;
+
+        for (const auto& node : val.GetObject())
+        {
+            const std::string& nodeid = node.name.GetString();
+            zeno::AssetsData assets;
+            const zeno::NodeData& nodeData = _parseNode("", nodeid, node.value, assets, links);
+            nodes.insert(std::make_pair(nodeid, nodeData));
+        }
+        return true;
+    }
+
     bool ZenReader::_parseMainGraph(const rapidjson::Document& doc, zeno::GraphData& ret)
     {
         zeno::AssetsData assets;        //todo

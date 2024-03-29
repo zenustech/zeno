@@ -29,6 +29,7 @@
 #include "settings/zenosettingsmanager.h"
 #include "widgets/ztimeline.h"
 #include "zenosubgraphview.h"
+#include <zeno/io/zenreader.h>
 //#include "nodeeditor/gv/pythonmaterialnode.h"
 
 ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
@@ -600,44 +601,43 @@ void ZenoSubGraphScene::copy()
 
     //first record all nodes.
     QModelIndexList selNodes = selectNodesIndice();
-    QModelIndexList selLinks = selectLinkIndice();
-    QPair<zeno::NodesData, zeno::LinksData> datas = UiHelper::dumpNodes(selNodes, selLinks);
-    //ZsgWriter::getInstance().dumpToClipboard(datas.first);
+    zeno::NodesData datas = UiHelper::dumpNodes(selNodes);
+   
+    zenoio::ZenWriter writer;
+    QString strJson = QString::fromStdString(writer.dumpToClipboard(datas));
+    QMimeData* pMimeData = new QMimeData;
+    pMimeData->setText(strJson);
+    QApplication::clipboard()->setMimeData(pMimeData);
 }
 
 void ZenoSubGraphScene::paste(QPointF pos)
 {
     const QMimeData* pMimeData = QApplication::clipboard()->mimeData();
-    //TODO: paste io
-#if 0
-    IGraphsModel *pGraphsModel = zenoApp->graphsManager()->currentModel();
-    if (pMimeData->hasText() && pGraphsModel)
+
+    if (pMimeData->hasText() && m_model)
     {
+        zenoio::ZenReader reader;
         const QString& strJson = pMimeData->text();
-
-        TransferAcceptor acceptor(pGraphsModel);
-        Zsg2Reader::getInstance().importNodes(pGraphsModel, m_subgIdx, strJson, pos, &acceptor);
-
-        QMap<QString, NODE_DATA> nodes;
-        QList<EdgeInfo> links;
-        QString subgName = m_subgIdx.data(ROLE_CLASS_NAME).toString();
-        UiHelper::reAllocIdents(subgName, acceptor.nodes(), acceptor.links(), nodes, links);
-        UiHelper::renameNetLabels(pGraphsModel, m_subgIdx, nodes);
+        std::pair<zeno::NodesData, zeno::LinksData> datas;
+        reader.importNodes(strJson.toStdString(), datas.first, datas.second);
+        //UiHelper::renameNetLabels(pGraphsModel, m_subgIdx, nodes);
 
         //todo: ret value for api.
-        pGraphsModel->importNodes(nodes, links, pos, m_subgIdx, true);
+        m_model->importNodes(datas.first, datas.second, pos);
 
         //mark selection for all nodes.
         clearSelection();
-        for (QString ident : nodes.keys())
+        for (const auto&[ident, node] : datas.first)
         {
-            ZASSERT_EXIT(m_nodes.find(ident) != m_nodes.end());
-            m_nodes[ident]->setSelected(true);
-            collectNodeSelChanged(ident, true);
+            QString name = QString::fromStdString(ident);
+            if (m_nodes.find(name) != m_nodes.end())
+            {
+                m_nodes[name]->setSelected(true);
+                collectNodeSelChanged(name, true);
+            }
         }
         afterSelectionChanged();
     }
-#endif
 }
 
 void ZenoSubGraphScene::reload(const QModelIndex& subGpIdx)
