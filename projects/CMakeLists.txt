@@ -44,6 +44,7 @@ set(ZENO_EXTENSIONS
     Roads
     Geometry
     PluginPOC
+    TestNode
     )
 
 foreach (name IN ITEMS ${ZENO_EXTENSIONS})
