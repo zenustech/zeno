@@ -362,63 +362,6 @@ void write_attrs(
             }
         });
     }
-    if (prim->tris.size() > 0) {
-        prim->tris.foreach_attr<std::variant<vec3f, float, int>>([&](auto const &key, auto &arr) {
-            if (key == "faceset" || key == "matid" || key == "abcpath") {
-                return;
-            }
-            // zeno::log_info("{} {}", key, int(arr.size()));
-            std::string full_key = path + '/' + key;
-            using T = std::decay_t<decltype(arr[0])>;
-            if constexpr (std::is_same_v<T, zeno::vec3f>) {
-                if (polys_attrs.count(full_key) == 0) {
-                    polys_attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kUniformScope, 3);
-                    for (auto i = real_frame_start; i < frameid; i++) {
-                        auto samp = OFloatGeomParam::Sample();
-                        std::vector<float> v(std::get<2>(prim_size_per_frame[i]) * 3);
-                        samp.setVals(v);
-                        std::any_cast<OFloatGeomParam>(polys_attrs[full_key]).set(samp);
-                    }
-                }
-                auto samp = OFloatGeomParam::Sample();
-                std::vector<float> v(arr.size() * 3);
-                for (auto i = 0; i < arr.size(); i++) {
-                    v[i * 3 + 0] = arr[i][0];
-                    v[i * 3 + 1] = arr[i][1];
-                    v[i * 3 + 2] = arr[i][2];
-                }
-                samp.setVals(v);
-                std::any_cast<OFloatGeomParam>(polys_attrs[full_key]).set(samp);
-            } else if constexpr (std::is_same_v<T, float>) {
-                // zeno::log_info("std::is_same_v<T, float>");
-                if (polys_attrs.count(full_key) == 0) {
-                    polys_attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kUniformScope, 1);
-                    for (auto i = real_frame_start; i < frameid; i++) {
-                        auto samp = OFloatGeomParam::Sample();
-                        std::vector<float> v(std::get<2>(prim_size_per_frame[i]));
-                        samp.setVals(v);
-                        std::any_cast<OFloatGeomParam>(polys_attrs[full_key]).set(samp);
-                    }
-                }
-                auto samp = OFloatGeomParam::Sample();
-                samp.setVals(arr);
-                std::any_cast<OFloatGeomParam>(polys_attrs[full_key]).set(samp);
-            } else if constexpr (std::is_same_v<T, int>) {
-                if (polys_attrs.count(full_key) == 0) {
-                    polys_attrs[full_key] = OInt32GeomParam (arbAttrs.getPtr(), key, false, kUniformScope, 1);
-                    for (auto i = real_frame_start; i < frameid; i++) {
-                        auto samp = OInt32GeomParam::Sample();
-                        std::vector<int> v(std::get<2>(prim_size_per_frame[i]));
-                        samp.setVals(v);
-                        std::any_cast<OInt32GeomParam>(polys_attrs[full_key]).set(samp);
-                    }
-                }
-                auto samp = OInt32GeomParam::Sample();
-                samp.setVals(arr);
-                std::any_cast<OInt32GeomParam>(polys_attrs[full_key]).set(samp);
-            }
-        });
-    }
 }
 void write_user_data(
         std::map<std::string, std::any> &user_attrs
@@ -674,7 +617,10 @@ struct WriteAlembic2 : INode {
             std::vector<int32_t> vertex_index_per_face;
             std::vector<int32_t> vertex_count_per_face;
 
-            if (prim->loops.size()) {
+            if (prim->tris.size()) {
+                zeno::primPolygonate(prim.get(), true);
+            }
+            {
                 {
                     prim_size_per_frame[frameid] = {
                         int(prim->verts.size()),
@@ -718,61 +664,6 @@ struct WriteAlembic2 : INode {
                     mesh.set( mesh_samp );
                 }
                 else {
-                    OPolyMeshSchema::Sample mesh_samp(
-                    V3fArraySample( ( const V3f * )prim->verts.data(), prim->verts.size() ),
-                            Int32ArraySample( vertex_index_per_face.data(), vertex_index_per_face.size() ),
-                            Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ));
-                    write_velocity(prim, mesh_samp);
-                    write_normal(prim, mesh_samp);
-                    write_attrs(verts_attrs, loops_attrs, polys_attrs, "", prim, mesh, frameid, real_frame_start, prim_size_per_frame);
-                    mesh.set( mesh_samp );
-                }
-            }
-            else {
-                {
-                    prim_size_per_frame[frameid] = {
-                        int(prim->verts.size()),
-                        int(prim->tris.size() * 3),
-                        int(prim->tris.size()),
-                    };
-                }
-                for (auto i = 0; i < prim->tris.size(); i++) {
-                    vertex_index_per_face.push_back(prim->tris[i][0]);
-                    vertex_index_per_face.push_back(prim->tris[i][1]);
-                    vertex_index_per_face.push_back(prim->tris[i][2]);
-                }
-                vertex_count_per_face.resize(prim->tris.size(), 3);
-                if (prim->tris.has_attr("uv0")) {
-                    std::vector<zeno::vec2f> uv_data;
-                    std::vector<uint32_t> uv_indices;
-                    auto& uv0 = prim->tris.attr<zeno::vec3f>("uv0");
-                    auto& uv1 = prim->tris.attr<zeno::vec3f>("uv1");
-                    auto& uv2 = prim->tris.attr<zeno::vec3f>("uv2");
-                    for (auto i = 0; i < prim->tris.size(); i++) {
-                        uv_data.emplace_back(uv0[i][0], uv0[i][1]);
-                        uv_data.emplace_back(uv1[i][0], uv1[i][1]);
-                        uv_data.emplace_back(uv2[i][0], uv2[i][1]);
-                        uv_indices.push_back(uv_indices.size());
-                        uv_indices.push_back(uv_indices.size());
-                        uv_indices.push_back(uv_indices.size());
-                    }
-
-                    // UVs and Normals use GeomParams, which can be written or read
-                    // as indexed or not, as you'd like.
-                    OV2fGeomParam::Sample uvsamp;
-                    uvsamp.setVals(V2fArraySample( (const V2f *)uv_data.data(), uv_data.size()));
-                    uvsamp.setIndices(UInt32ArraySample( uv_indices.data(), uv_indices.size() ));
-                    uvsamp.setScope(kFacevaryingScope);
-                    OPolyMeshSchema::Sample mesh_samp(
-                    V3fArraySample( ( const V3f * )prim->verts.data(), prim->verts.size() ),
-                            Int32ArraySample( vertex_index_per_face.data(), vertex_index_per_face.size() ),
-                            Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ),
-                            uvsamp);
-                    write_velocity(prim, mesh_samp);
-                    write_normal(prim, mesh_samp);
-                    write_attrs(verts_attrs, loops_attrs, polys_attrs, "", prim, mesh, frameid, real_frame_start, prim_size_per_frame);
-                    mesh.set( mesh_samp );
-                } else {
                     OPolyMeshSchema::Sample mesh_samp(
                     V3fArraySample( ( const V3f * )prim->verts.data(), prim->verts.size() ),
                             Int32ArraySample( vertex_index_per_face.data(), vertex_index_per_face.size() ),
@@ -977,7 +868,10 @@ struct WriteAlembicPrims : INode {
                 std::vector<int32_t> vertex_index_per_face;
                 std::vector<int32_t> vertex_count_per_face;
 
-                if (prim->loops.size()) {
+                if (prim->tris.size()) {
+                    zeno::primPolygonate(prim.get(), true);
+                }
+                {
                     {
                         prim_size_per_frame[path][frameid] = {
                             int(prim->verts.size()),
@@ -1021,61 +915,6 @@ struct WriteAlembicPrims : INode {
                         mesh.set( mesh_samp );
                     }
                     else {
-                        OPolyMeshSchema::Sample mesh_samp(
-                        V3fArraySample( ( const V3f * )prim->verts.data(), prim->verts.size() ),
-                                Int32ArraySample( vertex_index_per_face.data(), vertex_index_per_face.size() ),
-                                Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ));
-                        write_velocity(prim, mesh_samp);
-                        write_normal(prim, mesh_samp);
-                        write_attrs(verts_attrs, loops_attrs, polys_attrs, path, prim, mesh, frameid, real_frame_start, prim_size_per_frame[path]);
-                        mesh.set( mesh_samp );
-                    }
-                }
-                else {
-                    {
-                        prim_size_per_frame[path][frameid] = {
-                            int(prim->verts.size()),
-                            int(prim->tris.size() * 3),
-                            int(prim->tris.size()),
-                        };
-                    }
-                    for (auto i = 0; i < prim->tris.size(); i++) {
-                        vertex_index_per_face.push_back(prim->tris[i][0]);
-                        vertex_index_per_face.push_back(prim->tris[i][1]);
-                        vertex_index_per_face.push_back(prim->tris[i][2]);
-                    }
-                    vertex_count_per_face.resize(prim->tris.size(), 3);
-                    if (prim->tris.has_attr("uv0")) {
-                        std::vector<zeno::vec2f> uv_data;
-                        std::vector<uint32_t> uv_indices;
-                        auto& uv0 = prim->tris.attr<zeno::vec3f>("uv0");
-                        auto& uv1 = prim->tris.attr<zeno::vec3f>("uv1");
-                        auto& uv2 = prim->tris.attr<zeno::vec3f>("uv2");
-                        for (auto i = 0; i < prim->tris.size(); i++) {
-                            uv_data.emplace_back(uv0[i][0], uv0[i][1]);
-                            uv_data.emplace_back(uv1[i][0], uv1[i][1]);
-                            uv_data.emplace_back(uv2[i][0], uv2[i][1]);
-                            uv_indices.push_back(uv_indices.size());
-                            uv_indices.push_back(uv_indices.size());
-                            uv_indices.push_back(uv_indices.size());
-                        }
-
-                        // UVs and Normals use GeomParams, which can be written or read
-                        // as indexed or not, as you'd like.
-                        OV2fGeomParam::Sample uvsamp;
-                        uvsamp.setVals(V2fArraySample( (const V2f *)uv_data.data(), uv_data.size()));
-                        uvsamp.setIndices(UInt32ArraySample( uv_indices.data(), uv_indices.size() ));
-                        uvsamp.setScope(kFacevaryingScope);
-                        OPolyMeshSchema::Sample mesh_samp(
-                        V3fArraySample( ( const V3f * )prim->verts.data(), prim->verts.size() ),
-                                Int32ArraySample( vertex_index_per_face.data(), vertex_index_per_face.size() ),
-                                Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ),
-                                uvsamp);
-                        write_velocity(prim, mesh_samp);
-                        write_normal(prim, mesh_samp);
-                        write_attrs(verts_attrs, loops_attrs, polys_attrs, path, prim, mesh, frameid, real_frame_start, prim_size_per_frame[path]);
-                        mesh.set( mesh_samp );
-                    } else {
                         OPolyMeshSchema::Sample mesh_samp(
                         V3fArraySample( ( const V3f * )prim->verts.data(), prim->verts.size() ),
                                 Int32ArraySample( vertex_index_per_face.data(), vertex_index_per_face.size() ),
