@@ -393,9 +393,14 @@ void getAttr(T* arr, std::string name, std::shared_ptr<PrimitiveObject> prim) {
     }
 }
 
-bool GetMesh(FbxNode* pNode, std::shared_ptr<PrimitiveObject> prim) {
+bool GetMesh(FbxNode* pNode, std::shared_ptr<PrimitiveObject> prim, std::string name) {
     FbxMesh* pMesh = pNode->GetMesh();
     if (!pMesh) return false;
+    std::string nodeName = pNode->GetName();
+    if (name.size() > 0 && nodeName != name) {
+        return false;
+    }
+    prim->userData().set2("RootName", nodeName);
 
     FbxAMatrix bindMatrix = pNode->EvaluateGlobalTransform();
     auto s = bindMatrix.GetS();
@@ -554,9 +559,26 @@ struct NewFBXImportSkin : INode {
         auto &ud = prim->userData();
         ud.set2("version", vec3i(major, minor, revision));
         FbxNode* lRootNode = lScene->GetRootNode();
+        std::vector<std::string> availableRootNames;
         if(lRootNode) {
             for(int i = 0; i < lRootNode->GetChildCount(); i++) {
-                if (GetMesh(lRootNode->GetChild(i), prim)) {
+                auto pNode = lRootNode->GetChild(i);
+                FbxMesh* pMesh = pNode->GetMesh();
+                if (pMesh) {
+                    std::string meshName = pNode->GetName();
+                    availableRootNames.emplace_back(meshName);
+                }
+            }
+            ud.set2("AvailableRootName_count", int(availableRootNames.size()));
+            for (int i = 0; i < availableRootNames.size(); i++) {
+                ud.set2(format("AvailableRootName_{}", i), availableRootNames[i]);
+            }
+        }
+        auto rootName = get_input2<std::string>("rootName");
+        if(lRootNode) {
+            for(int i = 0; i < lRootNode->GetChildCount(); i++) {
+                auto pNode = lRootNode->GetChild(i);
+                if (GetMesh(pNode, prim, rootName)) {
                     break;
                 }
             }
@@ -575,6 +597,7 @@ struct NewFBXImportSkin : INode {
 ZENDEFNODE(NewFBXImportSkin, {
     {
         {"readpath", "path"},
+        {"string", "rootName", ""},
         {"bool", "ConvertUnits", "1"},
     },
     {
