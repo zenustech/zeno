@@ -1254,5 +1254,53 @@ ZENDEFNODE(NormalView, {
     {},
     {"debug"},
 });
+
+struct BoneTransformView : INode {
+    virtual void apply() override {
+        auto bones = get_input2<PrimitiveObject>("bones");
+        auto view = std::make_shared<zeno::PrimitiveObject>();
+        auto scale = get_input2<float>("scale");
+        auto index = get_input2<int>("index");
+        view->verts.resize(bones->verts.size() * 6);
+        auto &transform_r0 = bones->verts.attr<vec3f>("transform_r0");
+        auto &transform_r1 = bones->verts.attr<vec3f>("transform_r1");
+        auto &transform_r2 = bones->verts.attr<vec3f>("transform_r2");
+        auto &clr = view->verts.add_attr<vec3f>("clr");
+        for (auto i = 0; i < bones->verts.size(); i++) {
+            view->verts[i * 6 + 0] = bones->verts[i];
+            view->verts[i * 6 + 1] = bones->verts[i] + transform_r0[i] * scale;
+            view->verts[i * 6 + 2] = bones->verts[i];
+            view->verts[i * 6 + 3] = bones->verts[i] + transform_r1[i] * scale;
+            view->verts[i * 6 + 4] = bones->verts[i];
+            view->verts[i * 6 + 5] = bones->verts[i] + transform_r2[i] * scale;
+            clr[i * 6 + 0] = {0.8, 0.2, 0.2};
+            clr[i * 6 + 1] = {0.8, 0.2, 0.2};
+            clr[i * 6 + 2] = {0.2, 0.8, 0.2};
+            clr[i * 6 + 3] = {0.2, 0.8, 0.2};
+            clr[i * 6 + 4] = {0.2, 0.2, 0.8};
+            clr[i * 6 + 5] = {0.2, 0.2, 0.8};
+        }
+        view->loops.resize(view->verts.size());
+        std::iota(view->loops.begin(), view->loops.end(), 0);
+        view->polys.resize(bones->verts.size() * 3);
+        for (auto i = 0; i < bones->verts.size() * 3; i++) {
+            view->polys[i] = {i * 2, 2};
+        }
+        set_output("view", view);
+    }
+};
+
+ZENDEFNODE(BoneTransformView, {
+    {
+        "bones",
+        {"float", "scale", "0.1"},
+        {"int", "index", "-1"},
+    },
+    {
+        "view",
+    },
+    {},
+    {"debug"},
+});
 }
 #endif
