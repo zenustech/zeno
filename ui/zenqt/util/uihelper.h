@@ -29,6 +29,8 @@ private:
     bool* m_pbVar;
 };
 
+class GraphModel;
+
 class UiHelper
 {
 public:
@@ -98,6 +100,9 @@ public:
 
     static void saveProject(const QString& name);
     static QStringList stdlistToQStringList(const zeno::ObjPath& objpath);
+    static QStringList findPreviousNode(GraphModel* pModel, const QString& node);
+    static QStringList findSuccessorNode(GraphModel* pModel, const QString& node);
+    static int getIndegree(const QModelIndex& nodeIdx);
 
 private:
     static std::pair<qreal, qreal> getRxx2(QRectF r, qreal xRadius, qreal yRadius, bool AbsoluteSize);

@@ -642,7 +642,8 @@ ZENO_API void INode::initParams(const NodeData& dat)
     {
         std::shared_ptr<IParam> sparam = get_input_param(param.name);
         if (!sparam) {
-            zeno::log_warn("input param `{}` is not registerd in current zeno version");
+            //legacy zsg有大量此类参数，导致占用输出，因此先屏蔽
+            //zeno::log_warn("input param `{}` is not registerd in current zeno version");
             continue;
         }
         sparam->defl = param.defl;
@@ -654,7 +655,7 @@ ZENO_API void INode::initParams(const NodeData& dat)
     {
         std::shared_ptr<IParam> sparam = get_output_param(param.name);
         if (!sparam) {
-            zeno::log_warn("output param `{}` is not registerd in current zeno version");
+            //zeno::log_warn("output param `{}` is not registerd in current zeno version");
             continue;
         }
         sparam->defl = param.defl;

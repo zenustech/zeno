@@ -1313,3 +1313,54 @@ void ZenoSubGraphScene::keyReleaseEvent(QKeyEvent* event)
 {
     QGraphicsScene::keyReleaseEvent(event);
 }
+
+void ZenoSubGraphScene::rearrangeGraph(bool bHorional)
+{
+    QMap<QString, int> nodeLayers;   //保存已处理节点的层次。
+    QQueue<QString> queue;           //记录当前入度为0的节点，按先进先出的顺序。
+    QVector<QStringList> layerNodes;    //记录各层次的所有节点
+    QMap<QString, int> nodeIndegree;    //记录所有节点的入度。
+
+    //首先遍历整张图，求得所有节点的入度，并把入度为0的节点加入queue。
+    for (int i = 0; i < m_model->rowCount(); i++)
+    {
+        QModelIndex idx = m_model->index(i);
+        const QString& name = idx.data(ROLE_NODE_NAME).toString();
+        ZASSERT_EXIT(!name.isEmpty());
+        int degree = UiHelper::getIndegree(idx);
+        nodeIndegree[name] = degree;
+        queue.push_back(name);
+    }
+
+    while (!queue.isEmpty())
+    {
+        //出列!
+        QString node = queue.takeFirst();
+        //如果想知道node所在的层次，需要找node的前继节点中最深的层次，然后加1
+        QStringList prevNodes = UiHelper::findPreviousNode(m_model, node);
+        int maxDepth = 0;
+        for (auto prevNode : prevNodes) {
+            ZASSERT_EXIT(nodeLayers.find(prevNode) != nodeLayers.end());
+            maxDepth = qMax(maxDepth, nodeLayers[prevNode]);
+        }
+        int currLayer = maxDepth + 1;
+        nodeLayers[node] = currLayer;
+        if (layerNodes.size() < currLayer + 1) {
+            layerNodes.resize(currLayer + 1);
+        }
+        layerNodes[currLayer].append(node);
+
+        //node的后继者的入度全部减一。
+        QStringList successorNodes = UiHelper::findSuccessorNode(m_model, node);
+        for (auto successorNode : successorNodes)
+        {
+            int indegree = --nodeIndegree[successorNode];
+            ZASSERT_EXIT(indegree >= 0);
+            if (indegree == 0)
+            {
+                queue.append(successorNode);
+                nodeIndegree.remove(successorNode);
+            }
+        }
+    }
+}

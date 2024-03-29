@@ -124,6 +124,7 @@ public:
         ACTION_SHOWGRID,
         ACTION_GROUP,
         ACTION_SHOWTHUMB,
+        ACTION_REARRANGE_GRAPH,
 
     };
 signals:

@@ -297,6 +297,7 @@ DockContent_Editor::DockContent_Editor(QWidget* parent)
     , m_btnRun(nullptr)
     , m_btnKill(nullptr)
     , pShowThumb(nullptr)
+    , pRearrangeGraph(nullptr)
 {
 }
 
@@ -309,6 +310,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pUnfold = new ZToolBarButton(false, ":/icons/nodeEditor_nodeUnfold_unselected.svg", ":/icons/nodeEditor_nodeUnfold_selected.svg");
     pSnapGrid = new ZToolBarButton(true, ":/icons/nodeEditor_snap_unselected.svg", ":/icons/nodeEditor_snap_selected.svg");
     pShowGrid = new ZToolBarButton(true, ":/icons/nodeEditor_grid_unselected.svg", ":/icons/nodeEditor_grid_selected.svg");
+    pRearrangeGraph = new ZToolBarButton(false, ":/icons/nodeEditor_grid_unselected.svg", ":/icons/nodeEditor_grid_selected.svg");
     pShowThumb = new ZToolBarButton(true, ":/icons/nodeEditor_blackboard_unselected.svg", ":/icons/nodeEditor_blackboard_selected.svg");
     pCustomParam = new ZToolBarButton(false, ":/icons/nodeEditor_nodePara_unselected.svg", ":/icons/nodeEditor_nodePara_selected.svg");
     pGroup = new ZToolBarButton(false, ":/icons/nodeEditor_blackboard_unselected.svg", ":/icons/nodeEditor_blackboard_selected.svg");
@@ -418,6 +420,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pToolLayout->addWidget(pGroup);
     pToolLayout->addWidget(pLinkLineShape);
     pToolLayout->addWidget(pShowThumb);
+    pToolLayout->addWidget(pRearrangeGraph);
     //pToolLayout->addWidget(pTestApi);     //TOFIX: 添加此项竟然导致最大化窗口无效，要研究布局细节。
     pToolLayout->addWidget(pAlways);
 
@@ -511,6 +514,13 @@ void DockContent_Editor::initConnections()
         QAction act;
         act.setProperty("ActionType", ZenoMainWindow::ACTION_SHOWTHUMB);
         m_pEditor->onAction(&act, {}, bChecked);
+    });
+    connect(pRearrangeGraph, &ZToolBarButton::clicked, this, [=]() {
+        if (m_pEditor->welComPageShowed())
+            return;
+        QAction act;
+        act.setProperty("ActionType", ZenoMainWindow::ACTION_REARRANGE_GRAPH);
+        m_pEditor->onAction(&act);
     });
     connect(pLinkLineShape, &ZToolBarButton::toggled, this, [=](bool bChecked) {
         if (m_pEditor->welComPageShowed())

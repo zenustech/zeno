@@ -287,7 +287,7 @@ ZLayoutBackground* ZenoNode::initMainHeaderBg()
     headerWidget->setZValue(ZVALUE_BACKGROUND);
 
     //创建可以显示的名字组
-    font2.setPointSize(14);
+    font2.setPointSize(20);
 
     auto nameItem = new ZEditableTextItem(name, headerWidget);
     nameItem->setDefaultTextColor(QColor("#CCCCCC"));

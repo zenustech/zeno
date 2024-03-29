@@ -1814,3 +1814,26 @@ QStringList UiHelper::stdlistToQStringList(const zeno::ObjPath& objpath)
         lst.append(QString::fromStdString(path));
     return lst;
 }
+
+QStringList UiHelper::findPreviousNode(GraphModel* pModel, const QString& node)
+{
+    QStringList nodes;
+    return nodes;
+}
+
+QStringList UiHelper::findSuccessorNode(GraphModel* pModel, const QString& node)
+{
+    QStringList nodes;
+    return nodes;
+}
+
+int UiHelper::getIndegree(const QModelIndex& nodeIdx)
+{
+    if (!nodeIdx.isValid())
+        return 0;
+    ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(nodeIdx.data(ROLE_PARAMS));
+    ZASSERT_EXIT(paramsM, 0);
+    int inDegrees = 0, outDegrees = 0;
+    paramsM->getDegrees(inDegrees, outDegrees);
+    return inDegrees;
+}

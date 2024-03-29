@@ -110,6 +110,7 @@ public:
     void focusOn(const QString& nodeId);
     void showFloatPanel(const QModelIndex &subgIdx, const QModelIndexList &nodes);
     void showThumbnail(bool bChecked);
+    void rearrangeGraph();
     void selectNodes(const QModelIndexList &nodes);
     void cameraFocus();
 

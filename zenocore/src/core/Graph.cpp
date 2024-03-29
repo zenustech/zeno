@@ -280,13 +280,13 @@ ZENO_API void Graph::init(const GraphData& graph) {
 
         std::shared_ptr<IParam> outParam = outNode->get_output_param(link.outParam);
         if (!outParam) {
-            zeno::log_warn("no output param `{}` on node `{}`", link.outParam, link.outNode);
+            //zeno::log_warn("no output param `{}` on node `{}`", link.outParam, link.outNode);
             continue;
         }
 
         std::shared_ptr<IParam> inParam = inNode->get_input_param(link.inParam);
         if (!inParam) {
-            zeno::log_warn("no input param `{}` on node `{}`", link.inParam, link.inNode);
+            //zeno::log_warn("no input param `{}` on node `{}`", link.inParam, link.inNode);
             continue;
         }
 

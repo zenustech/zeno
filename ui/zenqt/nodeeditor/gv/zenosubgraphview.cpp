@@ -840,6 +840,19 @@ void ZenoSubGraphView::focusOn(const QString& nodeId)
     pView->focusOn(nodeId, QPointF(), false);
 }
 
+void ZenoSubGraphView::rearrangeGraph()
+{
+    auto pView = getCurrentView();
+    if (pView)
+    {
+        ZenoSubGraphScene* scene = qobject_cast<ZenoSubGraphScene*>(pView->scene());
+        if (scene)
+        {
+            scene->rearrangeGraph(true);
+        }
+    }
+}
+
 void ZenoSubGraphView::showThumbnail(bool bChecked)
 {
     bool bShowThumbnail = bChecked;

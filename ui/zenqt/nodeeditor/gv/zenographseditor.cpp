@@ -961,6 +961,11 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
         ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
         pView->showThumbnail(bChecked);
     }
+    if (actionType == ZenoMainWindow::ACTION_REARRANGE_GRAPH)
+    {
+        ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
+        pView->rearrangeGraph();
+    }
     if (actionType == ZenoMainWindow::ACTION_COLLASPE)
     {
 #if 0

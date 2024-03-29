@@ -424,6 +424,18 @@ bool ParamsModel::removeRows(int row, int count, const QModelIndex& parent)
     return true;
 }
 
+void ParamsModel::getDegrees(int& inDegrees, int& outDegrees) {
+    inDegrees = outDegrees = 0;
+    for (auto item : m_items) {
+        if (item.bInput) {
+            inDegrees += item.links.size();
+        }
+        else {
+            outDegrees += item.links.size();
+        }
+    }
+}
+
 int ParamsModel::getParamlinkCount(const QModelIndex& paramIdx)
 {
     return m_items[paramIdx.row()].links.size();
