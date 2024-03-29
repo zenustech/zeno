@@ -1412,5 +1412,126 @@ ZENDEFNODE(CreateCylinder, {
     {},
     {"create"},
 });
+
+
+struct CreateCapsule : zeno::INode {
+    virtual void apply() override {
+        auto prim = std::make_shared<zeno::PrimitiveObject>();
+
+        auto position = get_input2<zeno::vec3f>("position");
+        auto scaleSize = get_input2<zeno::vec3f>("scaleSize");
+        auto rotation = get_input2<zeno::vec3f>("rotate");
+        auto radius = get_input2<float>("radius");
+        auto height = get_input2<float>("height"); // height doesn't include radius
+        auto halfRows = get_input2<int>("halfRows");
+        auto columns = get_input2<int>("columns");
+
+        auto& verts = prim->verts;
+        auto& polys = prim->polys;
+        auto& loops = prim->loops;
+        auto& uvs = prim->uvs;
+        auto& norms = verts.add_attr<vec3f>("nrm");
+
+        verts.emplace_back(0.0f, 0.5f * height + radius, 0.0f); // top point
+        norms.emplace_back(0.0f, 1.0f, 0.0f);
+        // top half-sphere
+        for (int row = 1; row < halfRows; row++) {
+            float v = 0.5f * row / halfRows;
+            float theta = M_PI * v;
+            for (int column = 0; column < columns; column++) {
+                float u = 1.0f * column / columns;
+                float phi = M_PI * 2 * u;
+                float x = radius * sin(theta) * cos(phi);
+                float y = radius * cos(theta);
+                float z = radius * -sin(theta) * sin(phi);
+                verts.emplace_back(x, y + 0.5f * height, z);
+                norms.emplace_back(zeno::normalize(zeno::vec3f(x, y, z)));
+            }
+        }
+        // down half-sphere
+        for (int row = halfRows; row < halfRows * 2; row++) {
+            float v = 0.5f * row / halfRows;
+            float theta = M_PI * v;
+            for (int column = 0; column < columns; column++) {
+                float u = 1.0f * column / columns;
+                float phi = M_PI * 2 * u;
+                float x = radius * sin(theta) * cos(phi);
+                float y = radius * cos(theta);
+                float z = radius * -sin(theta) * sin(phi);
+                verts.emplace_back(x, y - 0.5f * height, z);
+                norms.emplace_back(zeno::normalize(zeno::vec3f(x, y, z)));
+            }
+        }
+        verts.emplace_back(0.0f, -0.5f * height - radius, 0.0f);
+        norms.emplace_back(0.0f, -1.0f, 0.0f);
+
+        // setup capsule poly indices
+        {
+            //head
+            for (auto column = 0; column < columns; column++) {
+                if (column == columns - 1) {
+                    loops.emplace_back(0);
+                    loops.emplace_back(columns);
+                    loops.emplace_back(1);
+                    polys.emplace_back(column * 3, 3);
+                } else {
+                    loops.emplace_back(0);
+                    loops.emplace_back(column + 1);
+                    loops.emplace_back(column + 2);
+                    polys.emplace_back(column * 3, 3);
+                }
+            }
+            //body
+            for (auto row = 1; row < halfRows * 2 - 1; row++) {
+                for (auto column = 0; column < columns; column++) {
+                    if (column == columns - 1) {
+                        loops.emplace_back((row - 1) * columns + 1);
+                        loops.emplace_back((row - 1) * columns + columns);
+                        loops.emplace_back(row * columns + columns);
+                        loops.emplace_back(row * columns + 1);
+                        polys.emplace_back(columns * 3 + (row - 1) * columns * 4 + column * 4, 4);
+                    } else {
+                        loops.emplace_back((row - 1) * columns + column + 2);
+                        loops.emplace_back((row - 1) * columns + column + 1);
+                        loops.emplace_back(row * columns + column + 1);
+                        loops.emplace_back(row * columns + column + 2);
+                        polys.emplace_back(loops.size() - 4, 4);
+                    }
+                }
+            }
+            //tail
+            for (auto column = 0; column < columns; column++) {
+                if (column == columns - 1) {
+                    loops.emplace_back((halfRows * 2 - 2) * columns + 1);
+                    loops.emplace_back((halfRows * 2 - 2) * columns + column + 1);
+                    loops.emplace_back((halfRows * 2 - 1) * columns + 1);
+                    polys.emplace_back(columns * 3 + (halfRows * 2 - 2) * columns * 4 + column * 3, 3);
+                } else {
+                    loops.emplace_back((halfRows * 2 - 2) * columns + column + 2);
+                    loops.emplace_back((halfRows * 2 - 2) * columns + column + 1);
+                    loops.emplace_back((halfRows * 2 - 1) * columns + 1);
+                    polys.emplace_back(loops.size() - 3, 3);
+                }
+            }
+        }
+
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENDEFNODE(CreateCapsule, {
+    {
+        {"vec3f", "position", "0, 0, 0"},
+        {"vec3f", "scaleSize", "1, 1, 1"},
+        {"vec3f", "rotate", "0, 0, 0"},
+        {"float", "radius", "1"},
+        {"float", "height", "2"},
+        {"int", "halfRows", "32"}
+        {"int", "columns", "16"},
+    },
+    {"prim"},
+    {},
+    {"create"},
+    });
 }
 }

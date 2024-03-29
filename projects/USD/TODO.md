@@ -6,28 +6,29 @@
 * [ ] 摸索各个平台和编译器的构建(linux cmake vs)+写文档
 * [ ] 考虑将USD封装为lib库
 # 编辑方案
-* [x] 将USD prim导入为zeno prim 就可以直接用zeno的编辑系统进行编辑
+* [x] 最终决定: 将USD prim用等价UI节点的方式eval出来
 * [ ] 其他坑点有待研究
 # 几何相关
-* [x] 实现Mesh导入构建
-* [x] 支持Xform 目前支持将xformop list合成单个matrix导入zeno
+* [x] 下面这些全部用UI吐节点的方式实现
+* [ ] 实现Mesh导入构建
+* [ ] 支持Xform 目前支持将xformop list合成单个matrix导入zeno
 * [x] Cube基本导入
 * [x] Sphere导入(没有规定精细度)
 * [x] Cylinder导入
 * [x] Cone导入
-* [ ] Capsule 差一个对axis的支持
+* [ ] Capsule: 还需要写一个zeno的CreateCapsule rotate还没支持
 * [x] Plane
 * [ ] 支持层级引入 例如import一个根节点 其下的叶节点也一并导入(sublayer??)
 * [ ] 支持骨骼 Skeleton导入，并用骨骼初始化mesh的transform
 * [ ] 支持动画 SkelAnimation导入 并且支持多帧播放
-* [ ] 如何编辑USD prim
-* [ ] 实现所有已支持内容的对应导出方案
+* [x] 支持编辑USD prim: 导入时转换为等价zeno节点即可
+* [ ] 支持导出USD prim
 # mtlx @hcx
 * [ ] Material/mtlx
 * [ ] Shader
 # 灯光相机 @hcx
-* [x] CylinderLight
-* [x] DiskLight
+* [ ] CylinderLight
+* [ ] DiskLight
 * [ ] DistantLight: 目前不支持无形光源 暂时忽略
 * [ ] DomeLight: 暂时没有支持texture
 * [ ] RectLight

@@ -298,8 +298,8 @@ void _convertMeshFromUSDToZeno(const pxr::UsdPrim& usdPrim, zeno::PrimitiveObjec
         auto& uvs = zPrim.uvs; // TODO
         auto& norms = verts.add_attr<zeno::vec3f>("nrm");
 
-        const int ROWS = 30;
-        const int COLUMNS = 30;
+        const int ROWS = 32;
+        const int COLUMNS = 32;
 
         verts.emplace_back(0.0f, radius, 0.0f);
         norms.emplace_back(0.0f, 1.0f, 0.0f);
@@ -602,11 +602,118 @@ void _convertMeshFromUSDToZeno(const pxr::UsdPrim& usdPrim, zeno::PrimitiveObjec
     else if (typeName == "DomeLight") {
         auto light = pxr::UsdLuxDomeLight(usdPrim);
 
-        float guideRadius;
-        light.GetGuideRadiusAttr().Get(&guideRadius);
-        ;
+        float radius;
+        light.GetGuideRadiusAttr().Get(&radius);
+        // constructing the huge sphere
+
+        auto& verts = zPrim.verts;
+        auto& tris = zPrim.tris;
+        auto& uvs = zPrim.uvs; // TODO
+        auto& norms = verts.add_attr<zeno::vec3f>("nrm");
+
+        const int ROWS = 32;
+        const int COLUMNS = 32;
+
+        verts.emplace_back(0.0f, radius, 0.0f);
+        norms.emplace_back(0.0f, -1.0f, 0.0f);
+        for (int row = 1; row < ROWS; row++) {
+            float v = 1.0f * row / ROWS;
+            float theta = M_PI * v;
+            for (int column = 0; column < COLUMNS; column++) {
+                float u = 1.0f * column / COLUMNS;
+                float phi = M_PI * 2 * u;
+                float x = radius * sin(theta) * cos(phi);
+                float y = radius * cos(theta);
+                float z = radius * -sin(theta) * sin(phi);
+                verts.emplace_back(x, y, z);
+                norms.emplace_back(zeno::normalize(-zeno::vec3f(x, y, z)));
+            }
+        }
+        verts.emplace_back(0.0f, -radius, 0.0f);
+        norms.emplace_back(0.0f, 1.0f, 0.0f);
+
+        // setup sphere poly indices
+        {
+            //head
+            for (auto column = 0; column < COLUMNS; column++) {
+                if (column == COLUMNS - 1) {
+                    tris.emplace_back(0, COLUMNS, 1);
+                }
+                else {
+                    tris.emplace_back(0, column + 1, column + 2);
+                }
+            }
+            //body
+            for (auto row = 1; row < ROWS - 1; row++) {
+                for (auto column = 0; column < COLUMNS; column++) {
+                    if (column == COLUMNS - 1) {
+                        tris.emplace_back(
+                            (row - 1) * COLUMNS + 1,
+                            (row - 1) * COLUMNS + COLUMNS,
+                            row * COLUMNS + COLUMNS
+                        );
+                        tris.emplace_back(
+                            (row - 1) * COLUMNS + 1,
+                            row * COLUMNS + COLUMNS,
+                            row * COLUMNS + 1
+                        );
+                    }
+                    else {
+                        tris.emplace_back(
+                            (row - 1) * COLUMNS + column + 2,
+                            (row - 1) * COLUMNS + column + 1,
+                            row * COLUMNS + column + 1
+                        );
+                        tris.emplace_back(
+                            (row - 1)* COLUMNS + column + 2,
+                            row* COLUMNS + column + 1,
+                            row* COLUMNS + column + 2
+                        );
+                    }
+                }
+            }
+            //tail
+            for (auto column = 0; column < COLUMNS; column++) {
+                if (column == COLUMNS - 1) {
+                    tris.emplace_back(
+                        (ROWS - 2)* COLUMNS + 1,
+                        (ROWS - 2)* COLUMNS + column + 1,
+                        (ROWS - 1)* COLUMNS + 1
+                    );
+                }
+                else {
+                    tris.emplace_back(
+                        (ROWS - 2)* COLUMNS + column + 2,
+                        (ROWS - 2)* COLUMNS + column + 1,
+                        (ROWS - 1)* COLUMNS + 1
+                    );
+                }
+            }
+        }
 
         _handleUSDCommonLightAttributes(usdPrim, zPrim);
+
+        // TODO: handle texture lighting
+        /*
+        auto texFileAttr = light.GetTextureFileAttr();
+        if (texFileAttr.HasAssetInfo()) {
+            pxr::SdfAssetPath texPath;
+            texFileAttr.Get(&texPath);
+            const std::string& path = texPath.GetAssetPath();
+            if (!path.empty()) {
+                zPrim.userData().set2("lightTexture", std::move(path));
+                zPrim.userData().set2("lightGamma", 1.0f); // TODO
+            }
+        }*/
+    }
+    else if (typeName == "RectLight") {
+        ;
+    }
+    else if (typeName == "SphereLight") {
+        ;
+    }
+    else if (typeName == "GeometryLight") {
+        ;
     }
     else if (typeName == "Cone") {
         auto cone = pxr::UsdGeomCone(usdPrim);
@@ -1251,41 +1358,18 @@ ZENDEFNODE(ShowUSDPrimRelationShip,
     {"USD"}
     });
 
-// convert USD prim to zeno prim
-struct USDToZenoPrim : zeno::INode {
-    virtual void apply() override {
-        ;
-    }
-};
-ZENDEFNODE(USDToZenoPrim,
-    {
-        /* inputs */
-        {
-            {"string", "USDDescription"},
-            {"string", "primPath"},
-            {"int", "frame"}
-        },
-    /* outputs */
-    {
-        // {"primitive", "prim"}
-    },
-    /* params */
-    {},
-    /* category */
-    {"USD"}
-    });
-
 // generate transform node from prim
-struct EvalUSDXform : zeno::INode {
+struct EvalUSDPrim: zeno::INode {
     virtual void apply() override{
         ;
     }
 };
-ZENDEFNODE(EvalUSDXform,
+ZENDEFNODE(EvalUSDPrim,
     {
         /* inputs */
         {
-            {"primitive", "prim"}
+            {"string", "USDDescription"},
+            {"string", "primPath"}
         },
         /* outputs */
         {
@@ -1297,26 +1381,3 @@ ZENDEFNODE(EvalUSDXform,
         {"USD"}
     }
 );
-
-struct USDOpinion : zeno::INode {
-    ;
-};
-
-
-struct USDSublayer : zeno::INode {
-    virtual void apply() override {
-        ;
-    }
-};
-
-struct USDCollapse : zeno::INode {
-    virtual void apply() override {
-        ;
-    }
-};
-
-struct USDSave : zeno::INode {
-    virtual void apply() override {
-        ;
-    }
-};

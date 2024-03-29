@@ -7,6 +7,7 @@
 #include "commandnode.h"
 #include "readfbxprim.h"
 #include "livenode.h"
+#include "usdnode.h"
 #include "zenolink.h"
 #include <zenomodel/include/modelrole.h>
 #include <zenoio/reader/zsgreader.h>
@@ -252,6 +253,10 @@ ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilPa
     else if(descName == "EvalBlenderFile")
     {
         return new EvalBlenderFile(params);
+    }
+    else if (descName == "EvalUSDPrim")
+    {
+        return new EvalUSDPrim(params);
     }
     else if (descName == "PythonNode")
     {
