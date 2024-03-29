@@ -289,8 +289,9 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
         case ROLE_NODEDATA:
         {
             zeno::NodeData data;
-            //TODO
-            return QVariant::fromValue(data);
+            auto spNode = item->m_wpNode.lock();
+            ZASSERT_EXIT(spNode, QVariant());
+            return QVariant::fromValue(spNode->exportInfo());
         }
         case ROLE_NODE_STATUS:
         {

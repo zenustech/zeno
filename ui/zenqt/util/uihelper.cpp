@@ -1818,12 +1818,36 @@ QStringList UiHelper::stdlistToQStringList(const zeno::ObjPath& objpath)
 QStringList UiHelper::findPreviousNode(GraphModel* pModel, const QString& node)
 {
     QStringList nodes;
+    const QModelIndex& nodeIdx = pModel->indexFromName(node);
+    if (!nodeIdx.isValid())
+        return nodes;
+
+    zeno::NodeData nodeDat = nodeIdx.data(ROLE_NODEDATA).value<zeno::NodeData>();
+    for (const zeno::ParamInfo& param : nodeDat.inputs)
+    {
+        for (const zeno::EdgeInfo& link : param.links)
+        {
+            nodes.append(QString::fromStdString(link.outNode));
+        }
+    }
     return nodes;
 }
 
 QStringList UiHelper::findSuccessorNode(GraphModel* pModel, const QString& node)
 {
     QStringList nodes;
+    const QModelIndex& nodeIdx = pModel->indexFromName(node);
+    if (!nodeIdx.isValid())
+        return nodes;
+
+    zeno::NodeData nodeDat = nodeIdx.data(ROLE_NODEDATA).value<zeno::NodeData>();
+    for (const zeno::ParamInfo& param : nodeDat.outputs)
+    {
+        for (const zeno::EdgeInfo& link : param.links)
+        {
+            nodes.append(QString::fromStdString(link.inNode));
+        }
+    }
     return nodes;
 }
 

@@ -31,6 +31,7 @@
 #include "zenosubgraphview.h"
 //#include "nodeeditor/gv/pythonmaterialnode.h"
 
+
 ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
     : QGraphicsScene(parent)
     , m_tempLink(nullptr)
@@ -1329,7 +1330,8 @@ void ZenoSubGraphScene::rearrangeGraph(bool bHorional)
         ZASSERT_EXIT(!name.isEmpty());
         int degree = UiHelper::getIndegree(idx);
         nodeIndegree[name] = degree;
-        queue.push_back(name);
+        if (degree == 0)
+            queue.push_back(name);
     }
 
     while (!queue.isEmpty())
@@ -1338,12 +1340,16 @@ void ZenoSubGraphScene::rearrangeGraph(bool bHorional)
         QString node = queue.takeFirst();
         //如果想知道node所在的层次，需要找node的前继节点中最深的层次，然后加1
         QStringList prevNodes = UiHelper::findPreviousNode(m_model, node);
-        int maxDepth = 0;
-        for (auto prevNode : prevNodes) {
-            ZASSERT_EXIT(nodeLayers.find(prevNode) != nodeLayers.end());
-            maxDepth = qMax(maxDepth, nodeLayers[prevNode]);
+        int maxDepth = 0, currLayer = 0;
+        if (!prevNodes.isEmpty())
+        {
+            for (auto prevNode : prevNodes) {
+                ZASSERT_EXIT(nodeLayers.find(prevNode) != nodeLayers.end());
+                maxDepth = qMax(maxDepth, nodeLayers[prevNode]);
+            }
+            currLayer = maxDepth + 1;
         }
-        int currLayer = maxDepth + 1;
+
         nodeLayers[node] = currLayer;
         if (layerNodes.size() < currLayer + 1) {
             layerNodes.resize(currLayer + 1);
@@ -1361,6 +1367,67 @@ void ZenoSubGraphScene::rearrangeGraph(bool bHorional)
                 queue.append(successorNode);
                 nodeIndegree.remove(successorNode);
             }
+        }
+    }
+
+    auto getLayerHeight = [&](bool bHorizonal, const QStringList& nodes, qreal space) -> QSizeF {
+        qreal W = 0, H = 0;
+        if (bHorizonal)
+        {
+            for (QString node : nodes)
+            {
+                ZASSERT_EXIT(m_nodes.find(node) != m_nodes.end(), QSizeF());
+                ZenoNode* pNodeItem = m_nodes[node];
+                QRectF rc = pNodeItem->boundingRect();
+                H += rc.height();
+                W = qMax(rc.width(), W);
+            }
+            H += (nodes.size() - 1) * space;
+            
+        }
+        else {
+            for (QString node : nodes)
+            {
+                //todo
+                ZASSERT_EXIT(m_nodes.find(node) != m_nodes.end(), QSizeF());
+                ZenoNode* pNodeItem = m_nodes[node];
+                QRectF rc = pNodeItem->boundingRect();
+                W += rc.width();
+                H = qMax(rc.height(), H);
+            }
+            W += (nodes.size() - 1) * space;
+        }
+        return QSizeF(W, H);
+    };
+
+    if (bHorional)
+    {
+        qreal ycenter = 0.;
+        if (layerNodes.isEmpty())
+            return;
+        //决定中轴线的位置。
+        qreal vspace = 150.;
+        qreal xspace = 300.;
+        QSizeF sz = getLayerHeight(bHorional, layerNodes[0], vspace);
+        ycenter = sz.height() / 2;
+
+        qreal x = 0;
+        for (int i = 0; i < layerNodes.size(); i++)
+        {
+            sz = getLayerHeight(bHorional, layerNodes[i], vspace);
+            ZASSERT_EXIT(!sz.isEmpty());
+            qreal y = ycenter - sz.height() / 2;    //start pos
+
+            //为每个节点设置位置
+            for (QString node : layerNodes[i])
+            {
+                ZASSERT_EXIT(m_nodes.find(node) != m_nodes.end());
+                ZenoNode* pNode = m_nodes[node];
+                pNode->setPos(x, y);
+                y += pNode->boundingRect().height();
+                y += vspace;
+            }
+            x = x + sz.width() + xspace;
         }
     }
 }
