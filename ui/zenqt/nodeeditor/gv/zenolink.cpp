@@ -49,7 +49,12 @@ QPainterPath ZenoLink::shape() const
         } else {
             float dist = dst.x() - src.x();
             dist = std::clamp(std::abs(dist), 40.f, 700.f) * BEZIER;
-            path.cubicTo(src.x() + dist, src.y(), dst.x() - dist, dst.y(), dst.x(), dst.y());
+            if (m_bothCollaspedNode) {
+                path.cubicTo(src.x(), src.y() + dist, dst.x(), dst.y() - dist, dst.x(), dst.y());
+            }
+            else {
+                path.cubicTo(src.x() + dist, src.y(), dst.x() - dist, dst.y(), dst.x(), dst.y());
+            }
         }
 
         hasLastPath = true;
@@ -261,6 +266,11 @@ void ZenoFullLink::onInSocketPosChanged()
     QString inKey = QString::fromStdString(edge.inKey);
 
     const QModelIndex& inSockIdx = m_index.data(ROLE_INSOCK_IDX).toModelIndex();
+    const QModelIndex& outSockIdx = m_index.data(ROLE_OUTSOCK_IDX).toModelIndex();
+    const QModelIndex& inNodeIdx = inSockIdx.data(ROLE_NODE_IDX).toModelIndex();
+    const QModelIndex& outNodeIdx = outSockIdx.data(ROLE_NODE_IDX).toModelIndex();
+    m_bothCollaspedNode = inNodeIdx.data(ROLE_COLLASPED).toBool() &&
+        outNodeIdx.data(ROLE_COLLASPED).toBool();
 
     bool bCollasped = false;
     zeno::SocketType inSockProp = zeno::NoSocket;
@@ -302,7 +312,13 @@ void ZenoFullLink::onOutSocketPosChanged()
     zeno::EdgeInfo edge = m_index.data(ROLE_LINK_INFO).value<zeno::EdgeInfo>();
     QString outKey = QString::fromStdString(edge.outKey);
 
+    const QModelIndex& inSockIdx = m_index.data(ROLE_INSOCK_IDX).toModelIndex();
     const QModelIndex& outSockIdx = m_index.data(ROLE_OUTSOCK_IDX).toModelIndex();
+    const QModelIndex& inNodeIdx = inSockIdx.data(ROLE_NODE_IDX).toModelIndex();
+    const QModelIndex& outNodeIdx = outSockIdx.data(ROLE_NODE_IDX).toModelIndex();
+    m_bothCollaspedNode = inNodeIdx.data(ROLE_COLLASPED).toBool() &&
+        outNodeIdx.data(ROLE_COLLASPED).toBool();
+
     m_srcPos = pNode->getSocketPos(outSockIdx, outKey);
 }
 
