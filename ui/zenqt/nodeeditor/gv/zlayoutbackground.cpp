@@ -67,9 +67,10 @@ void ZLayoutBackground::setGeometry(const QRectF& rect)
     QGraphicsWidget::setGeometry(rect);
 }
 
-void ZLayoutBackground::setLinearGradient(QLinearGradient grad)
+void ZLayoutBackground::setLinearGradient(QColor from, QColor to)
 {
-    m_bgLinerGrad = grad;
+    m_linearFrom = from;
+    m_linearTo = to;
     m_bBasedOnGradient = true;
 }
 
@@ -147,8 +148,8 @@ void ZLayoutBackground::paint(QPainter* painter, const QStyleOptionGraphicsItem*
 
         if (m_bBasedOnGradient) {
             QLinearGradient linearGradientH(r.topLeft(), r.topRight());
-            linearGradientH.setColorAt(0, QColor(255, 255, 255));
-            linearGradientH.setColorAt(1, QColor(0,0,0));
+            linearGradientH.setColorAt(0, m_linearFrom);
+            linearGradientH.setColorAt(1, m_linearTo);
             painter->setBrush(linearGradientH);
         }
         else {
@@ -165,8 +166,8 @@ void ZLayoutBackground::paint(QPainter* painter, const QStyleOptionGraphicsItem*
         if (m_bBasedOnGradient) {
             QRectF r = boundingRect();
             QLinearGradient linearGradientH(r.topLeft(), r.topRight());
-            linearGradientH.setColorAt(0, QColor("#1A5779"));
-            linearGradientH.setColorAt(1, QColor("#2082BA"));
+            linearGradientH.setColorAt(0, m_linearFrom);
+            linearGradientH.setColorAt(1, m_linearTo);
             painter->fillPath(path, linearGradientH);
         }
         else {

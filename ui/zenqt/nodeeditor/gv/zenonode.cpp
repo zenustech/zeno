@@ -222,11 +222,23 @@ ZLayoutBackground* ZenoNode::initMainHeaderBg()
 
     zeno::NodeType type = static_cast<zeno::NodeType>(m_index.data(ROLE_NODETYPE).toInt());
 
-    QLinearGradient linearGradientH({ 0,0 }, { 100,100 });
-    linearGradientH.setColorAt(0, Qt::black);
-    linearGradientH.setColorAt(1, Qt::white);
-    linearGradientH.setSpread(QGradient::PadSpread);
-    headerWidget->setLinearGradient(linearGradientH);
+    QColor clrBgFrom, clrBgTo;
+    if (type == zeno::NoVersionNode) {
+        clrBgFrom = clrBgTo = QColor(83, 83, 85);
+    }
+    else if (type == zeno::Node_SubgraphNode) {
+        clrBgFrom = QColor("#1A5447");
+        clrBgTo = QColor("#289880");
+    }
+    else if (type == zeno::Node_AssetInstance || type == zeno::Node_AssetReference) {
+        clrBgFrom = clrBgTo = QColor("#d69b3c");
+    }
+    else {
+        clrBgFrom = QColor("#1A5779");
+        clrBgTo = QColor("#2082BA");
+    }
+
+    headerWidget->setLinearGradient(clrBgFrom, clrBgTo);
 
     const QString& dispName = m_index.data(ROLE_NODE_DISPLAY_NAME).toString();
     ZASSERT_EXIT(!dispName.isEmpty(), headerWidget);
@@ -317,23 +329,24 @@ ZLayoutBackground* ZenoNode::initHeaderWidget()
 
     zeno::NodeType type = static_cast<zeno::NodeType>(m_index.data(ROLE_NODETYPE).toInt());
 
-    QColor clrHeaderBg;
-    if (type == zeno::NoVersionNode)
-        clrHeaderBg = QColor(83, 83, 85);
-    else if (type == zeno::Node_SubgraphNode)
-        clrHeaderBg = QColor("#1D5F51");
-    else if (type == zeno::Node_AssetInstance || type == zeno::Node_AssetReference)
-        clrHeaderBg = QColor("#d69b3c");
-    else
-        clrHeaderBg = headerBg.clr_normal;
+    QColor clrBgFrom, clrBgTo;
+    if (type == zeno::NoVersionNode) {
+        clrBgFrom = clrBgTo = QColor(83, 83, 85);
+    }
+    else if (type == zeno::Node_SubgraphNode) {
+        clrBgFrom = QColor("#1A5447");
+        clrBgTo = QColor("#289880");
+    }
+    else if (type == zeno::Node_AssetInstance || type == zeno::Node_AssetReference) {
+        clrBgFrom = clrBgTo = QColor("#d69b3c");
+    }
+    else {
+        clrBgFrom = QColor("#1A5779");
+        clrBgTo = QColor("#2082BA");
+    }
 
     //headerWidget->setColors(headerBg.bAcceptHovers, clrHeaderBg, clrHeaderBg, clrHeaderBg);
-
-    QLinearGradient linearGradientH({ 0,0 }, { 100,100 });
-    linearGradientH.setColorAt(0, Qt::black);
-    linearGradientH.setColorAt(1, Qt::white);
-    linearGradientH.setSpread(QGradient::PadSpread);
-    headerWidget->setLinearGradient(linearGradientH);
+    headerWidget->setLinearGradient(clrBgFrom, clrBgTo);
 
     headerWidget->setBorder(ZenoStyle::dpiScaled(headerBg.border_witdh), headerBg.clr_border);
 
@@ -349,7 +362,7 @@ ZLayoutBackground* ZenoNode::initHeaderWidget()
     font2.setPointSize(18);
     font2.setWeight(QFont::Normal);
 
-    auto nameItem = new ZSimpleTextItem(nodeCls, font2, QColor("#F1E9E9"));
+    auto clsItem = new ZSimpleTextItem(nodeCls, font2, QColor("#F1E9E9"));
 
     //qreal margin = ZenoStyle::dpiScaled(10);
     //pNameLayout->setContentsMargin(margin, margin, margin, margin);
@@ -391,7 +404,7 @@ ZLayoutBackground* ZenoNode::initHeaderWidget()
 
     //pHLayout->addLayout(pNameLayout);
     pHLayout->addSpacing(ZenoStyle::dpiScaled(5.));
-    pHLayout->addItem(nameItem, Qt::AlignVCenter);
+    pHLayout->addItem(clsItem, Qt::AlignVCenter);
 
     //补充一些距离
     pHLayout->addSpacing(szIcon.width() + ZenoStyle::dpiScaled(20.));
@@ -423,6 +436,17 @@ ZLayoutBackground* ZenoNode::initHeaderWidget()
     m_statusMarker->setBrush(QBrush(QColor("#EAED4B")));
     m_statusMarker->setPen(Qt::NoPen);
     m_statusMarker->setPos(QPointF(0, 0));
+
+    //创建可以显示的名字组，并且不纳入header的布局，仅仅设置相对位置
+    font2.setPointSize(20);
+
+    auto nameItem = new ZEditableTextItem(name, headerWidget);
+    nameItem->setDefaultTextColor(QColor("#868686"));
+    nameItem->setTextLengthAsBounding(true);
+    nameItem->setBackground(QColor(0, 0, 0, 0));
+    nameItem->setFont(font2);
+    qreal txtHeight = nameItem->boundingRect().height();
+    nameItem->setPos(14, -txtHeight - 2);
 
     return headerWidget;
 }
@@ -1210,8 +1234,9 @@ QPointF ZenoNode::getSocketPos(const QModelIndex& sockIdx, const QString keyName
         {
             return pSocket->center();
         }
-        zeno::log_warn("socket pos error");
-        return QPointF(0, 0);
+        //zeno::log_warn("socket pos error");
+        QPointF pos = this->sceneBoundingRect().topLeft() + QPointF(10,10);
+        return pos;
     }
     else
     {

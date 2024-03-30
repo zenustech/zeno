@@ -18,7 +18,7 @@ public:
     void setRadius(int lt, int rt, int lb, int rb);
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
     void toggle(bool bSelected);
-    void setLinearGradient(QLinearGradient grad);
+    void setLinearGradient(QColor from, QColor to);
 
 signals:
     void doubleClicked();
@@ -42,7 +42,9 @@ private:
     QColor m_clrNormal, m_clrHovered, m_clrSelected;
     QColor m_color;
     QColor m_clrBorder;
-    QLinearGradient m_bgLinerGrad;
+
+    QColor m_linearFrom, m_linearTo;
+
     bool m_bFixRadius;
     bool m_bSelected;
     bool m_bBasedOnGradient;

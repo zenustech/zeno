@@ -272,7 +272,8 @@ void ZenoFullLink::onInSocketPosChanged()
     }
     else {
         if (bCollasped) {
-            setVisible(false);
+            setVisible(true);
+            m_dstPos = pNode->getSocketPos(inSockIdx, inKey);
         }
         else {
             setVisible(true);
@@ -426,8 +427,8 @@ void ZenoFullLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styl
             QPen pen;
             pen.setColor(isSelected() ? QColor(0xFA6400) : QColor("#4B9EF4"));
             pen.setWidthF(ZenoStyle::scaleWidth(1));
-            if (zeno::Link_Ref == m_lnkProp)
-                pen.setStyle(Qt::DashLine);
+            /*if (zeno::Link_Ref == m_lnkProp)
+                */pen.setStyle(Qt::DotLine);
             painter->setRenderHint(QPainter::Antialiasing);
             painter->setPen(pen);
             painter->setBrush(Qt::NoBrush);
