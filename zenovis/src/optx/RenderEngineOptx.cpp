@@ -1142,6 +1142,30 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             } // preserve material names for materials-only updating case 
 
             //for (auto const &[key, obj]: graphicsMan->graphics)
+            // Auto unload unused texure
+            {
+                std::vector<std::string> realNeedTexPaths;
+                for(auto const &[matkey, mtldet] : matMap) {
+                    for(auto tex: mtldet->tex2Ds) {
+                        if (cachedMeshesMaterials.count(mtldet->mtlidkey) > 0 || cachedSphereMaterials.count(mtldet->mtlidkey) > 0) {
+                            realNeedTexPaths.emplace_back(tex->path);
+                        }
+                    }
+                }
+                std::vector<std::string> needToRemoveTexPaths;
+                for(auto const &[tex, _]: OptixUtil::g_tex) {
+                    if (std::find(realNeedTexPaths.begin(), realNeedTexPaths.end(), tex) != realNeedTexPaths.end()) {
+                        continue;
+                    }
+                    if (OptixUtil::sky_tex.has_value() && tex == OptixUtil::sky_tex.value()) {
+                        continue;
+                    }
+                    needToRemoveTexPaths.emplace_back(tex);
+                }
+                for (const auto& need_remove_tex: needToRemoveTexPaths) {
+                    OptixUtil::removeTexture(need_remove_tex);
+                }
+            }
             for(auto const &[matkey, mtldet] : matMap)
             {       
                     bool has_vdb = false;
