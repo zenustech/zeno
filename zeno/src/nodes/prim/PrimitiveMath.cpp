@@ -36,7 +36,13 @@ struct PlaneProjectPrimitive2DAABB : INode {
 };
 
 ZENDEFNODE(PlaneProjectPrimitive2DAABB, {
-    {"origin", "normal", "tangent", "bitangent", "prim"},
+    {
+        {"", "normal", "", PrimarySocket},
+        {"", "tangent", "", PrimarySocket},
+        {"", "origin", "", PrimarySocket},
+        {"", "prim", "", PrimarySocket},
+        {"", "bitangent", "", PrimarySocket},
+    },
     {"boundMin2D", "boundMax2D"},
     {},
     {"math"},

@@ -183,7 +183,9 @@ struct ParticlesBuildHashGrid : zeno::INode {
 };
 
 ZENDEFNODE(ParticlesBuildHashGrid, {
-    {{"PrimitiveObject", "primNei"}, {"numeric:float", "radius"}, {"numeric:float", "radiusMin"}},
+    {{"PrimitiveObject", "primNei", "", PrimarySocket},
+     {"numeric:float", "radius"},
+     {"numeric:float", "radiusMin"}},
     {{"hashgrid", "hashGrid"}},
     {},
     {"zenofx"},
@@ -398,8 +400,11 @@ struct ParticlesNeighborWrangle : zeno::INode {
 };
 
 ZENDEFNODE(ParticlesNeighborWrangle, {
-    {{"PrimitiveObject", "prim"}, {"PrimitiveObject", "primNei"}, {"HashGrid", "hashGrid"},
-     {"string", "zfxCode"}, {"DictObject:NumericObject", "params"}},
+    {{"PrimitiveObject", "prim", "", PrimarySocket},
+     {"PrimitiveObject", "primNei", "", PrimarySocket},
+     {"HashGrid", "hashGrid"},
+     {"string", "zfxCode"},
+     {"DictObject:NumericObject", "params", "", PrimarySocket}},
     {{"PrimitiveObject", "prim"}},
     {},
     {"zenofx"},

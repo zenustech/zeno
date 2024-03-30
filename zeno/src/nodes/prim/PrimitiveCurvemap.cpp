@@ -295,8 +295,8 @@ namespace zeno { // credits by zhouhang
     };
 ZENDEFNODE(PrimitiveCurvemap, {
     {
-    {"PrimitiveObject", "prim"},
-    "curvemap",
+    {"PrimitiveObject", "prim", "", PrimarySocket},
+    {"", "curvemap", "", PrimarySocket},
     {"string", "attrName", "pos"},
     {"int", "sourceX", "0"},
     {"int", "sourceY", "1"},

@@ -75,7 +75,7 @@ struct PrimMarkIsland : INode {
 
 ZENDEFNODE(PrimMarkIsland, {
     {
-    {"PrimitiveObject", "prim"},
+    {"PrimitiveObject", "prim", "", PrimarySocket},
     {"string", "tagAttr", "tag"},
     },
     {

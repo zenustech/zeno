@@ -419,7 +419,7 @@ struct VDBVoxelAsParticles : INode {
 };
 
 ZENDEFNODE(VDBVoxelAsParticles, {
-                            {"vdbGrid",
+                            {{"", "vdbGrid", "", PrimarySocket},
                              {"string", "valToAttr", "sdf"}},
                             {"primPars"},
                             {
@@ -479,7 +479,7 @@ struct VDBLeafAsParticles : INode {
 };
 
 ZENDEFNODE(VDBLeafAsParticles, {
-                            {"vdbGrid"},
+                            {{"", "vdbGrid", "", PrimarySocket}},
                             {"primPars"},
                             {},
                             {"visualize"},

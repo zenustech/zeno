@@ -113,7 +113,7 @@ struct WBPrimBend : INode {
 };
 ZENDEFNODE(WBPrimBend,
            { /* inputs: */ {
-                   "prim",
+                   {"", "prim", "", PrimarySocket},
                    {"int", "Limit Deformation", "1"},
                    {"int", "Symmetric Deformation", "0"},
                    {"float", "Bend Angle (degree)", "90"},
@@ -186,7 +186,7 @@ struct ParameterizeLine : INode {
 };
 ZENDEFNODE(ParameterizeLine,
            {  /* inputs: */ {
-                "prim",
+                {"", "prim", "", PrimarySocket},
             }, /* outputs: */ {
                 "prim",
             }, /* params: */ {
@@ -320,7 +320,7 @@ struct LineResample : INode {
 };
 ZENDEFNODE(LineResample,
     {  /* inputs: */ {
-            "prim",
+            {"", "prim", "", PrimarySocket},
             {"int", "segments", "3"},
             "PrimSampler",
             {"string", "SampleBy", "t"},
@@ -368,7 +368,7 @@ struct CurveOrientation  : INode {
 };
 ZENDEFNODE(CurveOrientation,
            {  /* inputs: */ {
-                "prim",
+                {"", "prim", "", PrimarySocket},
                 {"string", "dirName", "dir"},
                 {"string", "tanName", "tan"},
                 {"string", "bitanName", "bitan"},
@@ -460,7 +460,7 @@ struct LineCarve : INode {
 };
 ZENDEFNODE(LineCarve,
     {  /* inputs: */ {
-            "prim",
+            {"", "prim", "", PrimarySocket},
             {"float", "insertU", "0.15"},
             {"bool", "cut", "0"},
             {"bool", "cut insert to end", "1"},
@@ -539,7 +539,7 @@ struct VisVec3Attribute : INode {
 };
 ZENDEFNODE(VisVec3Attribute,
            {  /* inputs: */ {
-                   "prim",
+                   {"", "prim", "", PrimarySocket},
                    {"string", "name", "vel"},
                    {"bool", "normalize", "1"},
                    {"float", "lengthScale", "1.0"},
@@ -603,8 +603,8 @@ struct TracePositionOneStep : INode {
 };
 ZENDEFNODE(TracePositionOneStep,
            {  /* inputs: */ {
-                   "primData",
-                   "primStart",
+                   {"", "primData", "", PrimarySocket},
+                   {"", "primStart", "", PrimarySocket},
                    {"string", "lineTag", "lineID"},
                }, /* outputs: */ {
                    "primVis",
@@ -676,7 +676,7 @@ struct PrimCopyAttr : INode {
 };
 ZENDEFNODE(PrimCopyAttr,
            { /* inputs: */ {
-                   "prim",
+                   {"", "prim", "", PrimarySocket},
                    {"string", "sourceName", "s"},
                    {"string", "targetName", "t"},
                    {"enum vert tri loop poly line", "scope", "vert"},
@@ -715,8 +715,8 @@ struct BVHNearestPos : INode {
 };
 ZENDEFNODE(BVHNearestPos,
            { /* inputs: */ {
-                   "prim",
-                   "primNei",
+                   {"", "prim", "", PrimarySocket},
+                   {"", "primNei", "", PrimarySocket},
                    {"string", "bvhIdTag", "bvh_id"},
                    {"string", "bvhWeightTag", "bvh_ws"},
                    {"string", "bvhPosTag", "bvh_pos"},
@@ -782,8 +782,8 @@ struct BVHNearestAttr : INode {
 };
 ZENDEFNODE(BVHNearestAttr,
            { /* inputs: */ {
-                   "prim",
-                   "primNei",
+                   {"", "prim", "", PrimarySocket},
+                   {"", "primNei", "", PrimarySocket},
                    {"string", "bvhIdTag", "bvh_id"},
                    {"string", "bvhWeightTag", "bvh_ws"},
                    {"string", "bvhAttrTag", "bvh_attr"},
@@ -856,7 +856,7 @@ struct HeightStarPattern : zeno::INode {
 };
 ZENDEFNODE(HeightStarPattern,
            {/* inputs: */ {
-                   {"PrimitiveObject", "prim"},
+                   {"PrimitiveObject", "prim", "", PrimarySocket},
                    {"float", "rotate", "0"},
                    {"float", "anglerandom", "0"},
                    {"float", "shapesize", "0.5"},
@@ -928,7 +928,7 @@ struct PrimSetAttr : INode {
 };
 ZENDEFNODE(PrimSetAttr,
            { /* inputs: */ {
-                   "prim",
+                   {"", "prim", "", PrimarySocket},
                    {"int", "value", "0"},
                    {"string", "name", "index"},
                    {"enum float vec2f vec3f vec4f int vec2i vec3i vec4i", "type", "int"},
@@ -993,7 +993,7 @@ struct PrimGetAttr : INode {
 };
 ZENDEFNODE(PrimGetAttr,
            { /* inputs: */ {
-                   "prim",
+                   {"", "prim", "", PrimarySocket},
                    {"string", "name", "index"},
                    {"enum float vec2f vec3f vec4f int vec2i vec3i vec4i", "type", "int"},
                    {"enum vert tri line loop poly", "method", "tri"},
@@ -1049,7 +1049,7 @@ struct PrimitiveDelAttrs : zeno::INode {
 };
 ZENDEFNODE(PrimitiveDelAttrs,
            { /* inputs: */ {
-                   "prim",
+                   {"", "prim", "", PrimarySocket},
                    {"bool", "invert", "0"},
                    {"string", "names", "name_1 name_2"},
                }, /* outputs: */ {
@@ -1208,7 +1208,7 @@ struct MatTranspose : INode {
 };
 ZENDEFNODE(MatTranspose,
            { /* inputs: */ {
-                   "mat",
+                   {"", "mat", "", PrimarySocket},
                }, /* outputs: */ {
                    "transposeMat",
                }, /* params: */ {
@@ -1243,7 +1243,7 @@ struct PrimCurveDir : INode {
 };
 ZENDEFNODE(PrimCurveDir,
            {  /* inputs: */ {
-                   "prim_curve",
+                   {"", "prim_curve", "", PrimarySocket},
                    {"string", "dirName", "nrm"},
                }, /* outputs: */ {
                    "prim_curve",
@@ -1629,7 +1629,7 @@ struct PrimAttribBlur : INode {
 };
 ZENDEFNODE(PrimAttribBlur,
            {/* inputs: */ {
-                   "prim",
+                   {"", "prim", "", PrimarySocket},
                    {"enum line tri", "primType", "tri"},
 //                   {"string", "group", "mask"},
                    {"string", "attributes", "ratio"},
@@ -1665,7 +1665,7 @@ struct PrimCurveFromVerts : INode {
 };
 ZENDEFNODE(PrimCurveFromVerts,
            { /* inputs: */ {
-                   "primVerts",
+                   {"", "primVerts", "", PrimarySocket}
                }, /* outputs: */ {
                    "primCurve",
                }, /* params: */ {
@@ -1773,7 +1773,7 @@ struct CreatePrimCurve : INode {
 };
 ZENDEFNODE(CreatePrimCurve,
            {{
-                   {"prim", "inputPoints"},
+                   {"prim", "inputPoints", "", PrimarySocket},
                    {"float", "precision", "0.01"},
                },
                {
@@ -1816,7 +1816,7 @@ struct PrimHasAttr : INode {
 };
 ZENDEFNODE(PrimHasAttr,
            { /* inputs: */ {
-                   "prim",
+                   {"", "prim", "", PrimarySocket},
                    {"enum vert tri loop poly line", "scope", "vert"},
                    {"string", "attrName", "attr_x"},
                }, /* outputs: */ {

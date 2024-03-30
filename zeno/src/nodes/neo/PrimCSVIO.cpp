@@ -68,7 +68,7 @@ struct WritePrimToCSV : INode {
 
 ZENDEFNODE(WritePrimToCSV,
         { /* inputs: */ {
-        {"primitive", "prim"},
+        {"primitive", "prim", "", PrimarySocket},
         {"writepath", "path"},
         {"enum verts points lines tris quads loops polys", "type", "verts"},
         }, /* outputs: */ {

@@ -330,7 +330,7 @@ namespace zeno {
     };
 
 ZENDEFNODE(PrimitiveClip, {
-    {{"PrimitiveObject", "prim"}, {"vec3f", "origin", "0,0,0"}, {"vec3f", "direction", "0,0,1"}, {"float", "distance", "0"}},
+    {{"PrimitiveObject", "prim", "", PrimarySocket}, {"vec3f", "origin", "0,0,0"}, {"vec3f", "direction", "0,0,1"}, {"float", "distance", "0"}},
     {{"PrimitiveObject", "outPrim"}},
     {{"bool", "reverse", "0"}},
     {"primitive"},

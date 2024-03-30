@@ -120,7 +120,7 @@ struct PrimitiveLineSort : zeno::INode {
 
 ZENDEFNODE(PrimitiveLineSort, {
     {
-    {"PrimitiveObject", "prim"},
+    {"PrimitiveObject", "prim", "", PrimarySocket},
     },
     {
     {"PrimitiveObject", "prim"},

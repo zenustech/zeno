@@ -233,7 +233,7 @@ struct PrimSepTriangles : INode {
 
 ZENDEFNODE(PrimSepTriangles,
         { /* inputs: */ {
-        {"primitive", "prim"},
+        {"primitive", "prim", "", PrimarySocket},
         {"bool", "smoothNormal", "1"},
         {"bool", "keepTriFaces", "1"},
         }, /* outputs: */ {

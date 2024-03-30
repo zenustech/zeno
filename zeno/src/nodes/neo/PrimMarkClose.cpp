@@ -47,7 +47,7 @@ struct PrimMarkClose : INode {
 
 ZENDEFNODE(PrimMarkClose, {
     {
-    {"PrimitiveObject", "prim"},
+    {"PrimitiveObject", "prim", "", PrimarySocket},
     {"float", "distance", "0.00001"},
     {"string", "tagAttr", "weld"},
     },
@@ -84,7 +84,7 @@ struct PrimMarkSameIf : INode {
 
 ZENDEFNODE(PrimMarkSameIf, {
     {
-    {"PrimitiveObject", "prim"},
+    {"PrimitiveObject", "prim", "", PrimarySocket},
     {"string", "tagAttrIn", "index"},
     {"int", "tagValueIs", "0"},
     {"string", "tagAttrOut", "weld"},
@@ -125,7 +125,7 @@ struct PrimMarkIndex : INode {
 
 ZENDEFNODE(PrimMarkIndex, {
     {
-    {"PrimitiveObject", "prim"},
+    {"PrimitiveObject", "prim", "", PrimarySocket},
     {"string", "tagAttr", "index"},
     {"enum int float", "type", "int"},
     {"int", "base", "0"},
@@ -172,7 +172,7 @@ struct PrimCheckTagInRange : INode {
 
 ZENDEFNODE(PrimCheckTagInRange, {
     {
-    {"PrimitiveObject", "prim"},
+    {"PrimitiveObject", "prim", "", PrimarySocket},
     {"string", "tagAttr", "index"},
     {"int", "beg", "0"},
     {"int", "end", "0"},

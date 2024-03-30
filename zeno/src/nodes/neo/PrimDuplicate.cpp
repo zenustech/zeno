@@ -188,8 +188,8 @@ struct PrimDuplicate : INode {
 
 ZENDEFNODE(PrimDuplicate, {
     {
-    {"PrimitiveObject", "parsPrim"},
-    {"PrimitiveObject", "meshPrim"},
+    {"PrimitiveObject", "parsPrim", "", PrimarySocket},
+    {"PrimitiveObject", "meshPrim", "", PrimarySocket},
     {"string", "dirAttr", ""},
     {"string", "tanAttr", ""},
     {"string", "radAttr", ""},
@@ -237,8 +237,8 @@ struct PrimDuplicateConnLines : INode {
 
 ZENDEFNODE(PrimDuplicateConnLines, {
     {
-    {"PrimitiveObject", "parsPrim"},
-    {"PrimitiveObject", "meshPrim"},
+    {"PrimitiveObject", "parsPrim", "", PrimarySocket},
+    {"PrimitiveObject", "meshPrim", "", PrimarySocket},
     {"string", "dirAttr", ""},
     {"string", "tanAttr", ""},
     {"string", "radAttr", ""},

@@ -348,7 +348,7 @@ ZENDEFNODE(ShaderFinalize, {
 
         {"string", "commonCode"},
         {"string", "extensionsCode"},
-        {"string", "mtlid", "Mat1", PrimarySocket, Lineedit},
+        {"string", "mtlid", "Mat1"},
         {"list", "tex2dList", "", PrimarySocket},//TODO: bate's asset manager
         {"list", "tex3dList", "", PrimarySocket},
 

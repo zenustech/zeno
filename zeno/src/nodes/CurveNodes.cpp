@@ -43,7 +43,7 @@ struct EvalCurve : zeno::INode {
 ZENO_DEFNODE(EvalCurve)({
     {
         {"float", "value"},
-        {"curve", "curve"},
+        {"curve", "curve", "", PrimarySocket},
     },
     {
         {"float", "value"},
@@ -78,10 +78,10 @@ struct EvalCurveOnPrimAttr : zeno::INode {
 
 ZENO_DEFNODE(EvalCurveOnPrimAttr)({
     {
-        {"prim"},
+        {"prim", "prim", "", PrimarySocket},
         {"string", "attrName", "tmp"},
         {"string", "dstName", ""},
-        {"curve", "curve"},
+        {"curve", "curve", "", PrimarySocket},
     },
     {
         {"prim"},
@@ -109,7 +109,7 @@ struct GetCurveControlPoint : zeno::INode {
 
 ZENO_DEFNODE(GetCurveControlPoint)({
     {
-        {"curve", "curve"},
+        {"curve", "curve", "", PrimarySocket},
         {"string", "key", "x"},
         {"int", "index", "0"},
     },
@@ -147,7 +147,7 @@ struct UpdateCurveControlPoint : zeno::INode {
 
 ZENO_DEFNODE(UpdateCurveControlPoint)({
     {
-        {"curve", "curve"},
+        {"curve", "curve", "", PrimarySocket},
         {"string", "key", "x"},
         {"int", "index", "0"},
         {"optional float", "point_x"},
@@ -181,7 +181,7 @@ struct UpdateCurveCycleType : zeno::INode {
 
 ZENO_DEFNODE(UpdateCurveCycleType)({
     {
-        {"curve", "curve"},
+        {"curve", "curve", "", PrimarySocket},
         {"string", "key", "x"},
         {"enum CLAMP CYCLE MIRROR", "type", "CLAMP"},
     },
@@ -214,7 +214,7 @@ struct UpdateCurveXYRange : zeno::INode {
 
 ZENO_DEFNODE(UpdateCurveXYRange)({
     {
-        {"curve", "curve"},
+        {"curve", "curve", "", PrimarySocket},
         {"string", "key", "x"},
         {"optional float", "x_from"},
         {"optional float", "x_to"},

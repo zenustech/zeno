@@ -40,7 +40,7 @@ struct PrimitiveTraceTrail : zeno::INode {
 
 ZENDEFNODE(PrimitiveTraceTrail,
     { /* inputs: */ {
-    {"PrimitiveObject", "parsPrim"},
+    {"PrimitiveObject", "parsPrim", "", PrimarySocket},
     }, /* outputs: */ {
     {"PrimitiveObject", "trailPrim"},
     }, /* params: */ {
@@ -75,7 +75,7 @@ struct PrimitiveCalcVelocity : zeno::INode {
 
 ZENDEFNODE(PrimitiveCalcVelocity,
     { /* inputs: */ {
-    {"PrimitiveObject", "prim"},
+    {"PrimitiveObject", "prim", "", PrimarySocket},
     {"float", "dt", "0.04"},
     }, /* outputs: */ {
     {"PrimitiveObject", "prim"},
@@ -112,7 +112,7 @@ struct PrimitiveInterpSubframe : zeno::INode {
 
 ZENDEFNODE(PrimitiveInterpSubframe,
     { /* inputs: */ {
-    {"PrimitiveObject", "prim"},
+    {"PrimitiveObject", "prim", "", PrimarySocket},
     {"float", "portion"},
     }, /* outputs: */ {
     {"PrimitiveObject", "prim"},

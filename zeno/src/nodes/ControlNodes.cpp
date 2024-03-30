@@ -105,7 +105,7 @@ struct EndFor : zeno::ContextManagedNode {
 };
 
 ZENDEFNODE(EndFor, {
-    {"FOR"},
+    {{"", "FOR", "", PrimarySocket}},
     {},
     {},
     {"control"},
@@ -128,7 +128,7 @@ struct BreakFor : zeno::INode {
 };
 
 ZENDEFNODE(BreakFor, {
-    {"FOR", {"bool", "breaks", "1"}},
+    {{"", "FOR", "", PrimarySocket}, {"bool", "breaks", "1"}},
     {},
     {},
     {"control"},
@@ -164,7 +164,10 @@ struct BeginForEach : IBeginFor {
 };
 
 ZENDEFNODE(BeginForEach, {
-    {"list", "accumate"},
+    {
+        {"", "list", "", PrimarySocket},
+        {"", "accumate", "", PrimarySocket},
+    },
     {"object", "accumate", {"int", "index"}, "FOR"},
     {},
     {"control"},
@@ -241,7 +244,13 @@ struct EndForEach : EndFor {
 };
 
 ZENDEFNODE(EndForEach, {
-    {"object", "list", "accumate", {"bool", "accept", "1"}, "FOR"},
+    {
+        {"", "FOR", "", PrimarySocket},
+        {"", "object", "", PrimarySocket},
+        {"", "list", "", PrimarySocket},
+        {"", "accumate", "", PrimarySocket},
+        {"bool", "accept", "1"}
+    },
     {"list", "droppedList", "accumate"},
     {{"bool", "doConcat", "0"}},
     {"control"},
@@ -313,7 +322,7 @@ struct SubstepDt : zeno::INode {
 };
 
 ZENDEFNODE(SubstepDt, {
-    {"FOR", {"float", "desired_dt", "0.04"}},
+    {{"", "FOR", "", PrimarySocket}, {"float", "desired_dt", "0.04"}},
     {{"float", "actual_dt"}, {"float", "portion"}},
     {},
     {"control"},
@@ -349,7 +358,11 @@ struct IfElse : zeno::INode {
 };
 
 ZENDEFNODE(IfElse, {
-    {"true", "false", {"bool", "cond"}},
+    {
+        {"", "true", "", PrimarySocket},
+        {"", "false", "", PrimarySocket},
+        {"bool", "cond"},
+    },
     {"result"},
     {},
     {"control"},

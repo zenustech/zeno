@@ -70,7 +70,10 @@ struct FuncEnd : zeno::ContextManagedNode {
 };
 
 ZENDEFNODE(FuncEnd, {
-    {"rets", "FUNC"},
+    {
+        {"", "rets", "", PrimarySocket},
+        {"", "FUNC", "", PrimarySocket},
+    },
     {"function"},
     {},
     {"control"},
@@ -133,7 +136,10 @@ struct FuncSimpleEnd : zeno::ContextManagedNode {
 };
 
 ZENDEFNODE(FuncSimpleEnd, {
-    {"ret", "FUNC"},
+    {
+        {"", "ret", "", PrimarySocket},
+        {"", "FUNC", "", PrimarySocket},
+    },
     {"function"},
     {},
     {"control"},
@@ -161,8 +167,8 @@ struct FuncCall : zeno::ContextManagedNode {
 
 ZENDEFNODE(FuncCall, {
     {
-        {"FunctionObject", "function"},
-        {"FunctionObject", "args"},
+        {"FunctionObject", "function", "", PrimarySocket},
+        {"FunctionObject", "args", "", PrimarySocket},
     },
     {
         {"FunctionObject", "rets"},
@@ -190,10 +196,10 @@ struct FuncCallInDict : zeno::ContextManagedNode {
 
 ZENDEFNODE(FuncCallInDict, {
     {
-        {"DictObject", "funcDict"},
+        {"DictObject", "funcDict", "", PrimarySocket},
         {"bool", "mayNotFound", "1"},
         {"string", "dictKey"},
-        {"DictObject", "args"},
+        {"DictObject", "args", "", PrimarySocket},
     },
     {
         {"DictObject", "rets"},
@@ -227,8 +233,8 @@ struct FuncSimpleCall : zeno::ContextManagedNode {
 
 ZENDEFNODE(FuncSimpleCall, {
     {
-        {"FunctionObject", "function"},
-        {"IObject", "arg"},
+        {"FunctionObject", "function", "", PrimarySocket},
+        {"IObject", "arg", "", PrimarySocket},
     },
     {
         {"IObject", "ret"},
@@ -264,11 +270,11 @@ struct FuncSimpleCallInDict : zeno::ContextManagedNode {
 
 ZENDEFNODE(FuncSimpleCallInDict, {
     {
-        {"DictObject", "funcDict"},
+        {"DictObject", "funcDict", "", PrimarySocket},
         {"string", "dictKey"},
-        {"IObject", "arg"},
+        {"IObject", "arg", "", PrimarySocket},
         {"bool", "mayNotFound", "1"},
-        {"IObject", "notFoundRet"},
+        {"IObject", "notFoundRet", "", PrimarySocket},
     },
     {
         {"bool", "isFound"},

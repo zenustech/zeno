@@ -451,7 +451,7 @@ struct PrimFilter : INode {
 
 ZENDEFNODE(PrimFilter, {
     {
-    {"PrimitiveObject", "prim"},
+    {"PrimitiveObject", "prim", "", PrimarySocket},
     {"string", "tagAttr", "tag"},
     {"string", "revampAttrO", ""},
     {"int", "tagValue", "0"},
@@ -476,7 +476,7 @@ struct PrimKillDeadVerts : INode {
 
 ZENDEFNODE(PrimKillDeadVerts, {
     {
-    {"PrimitiveObject", "prim"},
+    {"PrimitiveObject", "prim", "", PrimarySocket},
     },
     {
     {"PrimitiveObject", "prim"},

@@ -191,21 +191,6 @@ ZENDEFNODE(MakeList, {
     });
 
 
-struct MultiMakeList : zeno::INode {
-    virtual void apply() override {
-        auto lst = get_input2<zeno::ListObject>("list");
-        set_output("list", std::move(lst));
-    }
-};
-
-ZENDEFNODE(MultiMakeList, {
-    {{"list","list"}},
-    {"list"},
-    {},
-    {"list"},
-    });
-
-
 struct NumericRangeList : zeno::INode {
     virtual void apply() override {
         auto list = std::make_shared<zeno::ListObject>();
@@ -237,7 +222,9 @@ struct IsList : zeno::INode {
 };
 
 ZENDEFNODE(IsList, {
-    {"list"},
+    {
+        {"", "list", "", PrimarySocket},
+    },
     {"result"},
     {},
     {"list"},

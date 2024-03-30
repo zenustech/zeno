@@ -211,7 +211,7 @@ struct SetPrimInvisible : INode {
 
 ZENDEFNODE(SetPrimInvisible, {
     {
-        { "prim" },
+        { "", "prim", "", PrimarySocket },
         { "bool", "invisible", "1" },
     },
     {

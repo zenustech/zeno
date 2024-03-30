@@ -25,7 +25,7 @@ struct PrimitiveScale : zeno::INode {
 
 ZENDEFNODE(PrimitiveScale, {
     {
-    {"PrimitiveObject", "prim"},
+    {"PrimitiveObject", "prim", "", PrimarySocket},
     {"vec3f", "origin", "0,0,0"},
     {"vec3f", "axis", "0,1,0"},
     {"float", "scale", "0"},

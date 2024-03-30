@@ -168,7 +168,7 @@ struct ParticleToLevelSet : zeno::INode{
     }
 };
 ZENDEFNODE(ParticleToLevelSet, {
-    {"Particles", {"float","Radius"}, {"float","Dx"}, {"string", "rname"}},
+    {{"", "Particles", "", PrimarySocket}, {"float","Radius"}, {"float","Dx"}, {"string", "rname"}},
     {"SurfaceSDF"},
     {},
     {"openvdb"},

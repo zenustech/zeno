@@ -74,8 +74,8 @@ struct PrimMatchUVLine : INode {
 
 ZENO_DEFNODE(PrimMatchUVLine)({
     {
-        "prim",
-        "prim2",
+        {"", "prim", "", PrimarySocket},
+        {"", "prim2", "", PrimarySocket},
         {"string", "uvAttr", "tmp"},
         {"string", "uvAttr2", "tmp"},
         {"bool", "copyOtherAttrs", "1"},

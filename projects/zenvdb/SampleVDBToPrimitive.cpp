@@ -137,7 +137,11 @@ struct SampleVDBToPrimitive : INode {
 };
 
 ZENDEFNODE(SampleVDBToPrimitive, {
-                                     {"prim", "vdbGrid", {"string", "sampleBy","pos"}, {"string", "primAttr", "sdf"}},
+                                     {
+                                        {"", "prim", "", PrimarySocket},
+                                        {"", "vdbGrid", "", PrimarySocket},
+                                        {"string", "sampleBy","pos"},
+                                        {"string", "primAttr", "sdf"}},
                                      {"prim"},
                                      {{"enum Clamp Periodic", "SampleType", "Clamp"}},
                                      {"openvdb"},
@@ -182,8 +186,8 @@ struct PrimSample3D : zeno::INode {
 };
 ZENDEFNODE(PrimSample3D, {
     {
-        {"PrimitiveObject", "prim"},
-        {"vdbGrid"},
+        {"PrimitiveObject", "prim", "", PrimarySocket},
+        {"", "vdbGrid", "", PrimarySocket},
         {"string", "srcChannel", "pos"},
         {"string", "dstChannel", "clr"},
         {"float", "remapMin", "0"},
@@ -224,8 +228,8 @@ struct PrimSample : zeno::INode {
 };
 ZENDEFNODE(PrimSample, {
     {
-        {"PrimitiveObject", "prim"},
-        {"sampledObject"},
+        {"PrimitiveObject", "prim", "", PrimarySocket},
+        {"", "sampledObject", "", PrimarySocket},
         {"string", "srcChannel", "uv"},
         {"string", "dstChannel", "clr"},
         {"float", "remapMin", "0"},

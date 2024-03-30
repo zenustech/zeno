@@ -35,7 +35,7 @@ struct PrimTranslate : INode {
 
 ZENDEFNODE(PrimTranslate, {
                               {
-                                  {"PrimitiveObject", "prim"},
+                                  {"PrimitiveObject", "prim", "", PrimarySocket},
                                   {"vec3f", "offset", "0,0,0"},
                               },
                               {
@@ -56,7 +56,7 @@ struct PrimScale : INode {
 
 ZENDEFNODE(PrimScale, {
                           {
-                              {"PrimitiveObject", "prim"},
+                              {"PrimitiveObject", "prim", "", PrimarySocket},
                               {"vec3f", "scale", "1,1,1"},
                           },
                           {

@@ -165,7 +165,7 @@ struct PrimitivePolygonate : INode {
 
 ZENDEFNODE(PrimitivePolygonate,
         { /* inputs: */ {
-        {"primitive", "prim"},
+        {"primitive", "prim", "", PrimarySocket},
         }, /* outputs: */ {
         {"primitive", "prim"},
         }, /* params: */ {

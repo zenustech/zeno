@@ -45,7 +45,7 @@ struct VDBFillActiveVoxels : INode {
 
 ZENO_DEFNODE(VDBFillActiveVoxels)(
      { /* inputs: */ {
-     "grid",
+     {"", "grid", "", PrimarySocket},
      {"NumericObject", "fillValue", "0.0"},
      }, /* outputs: */ {
        "grid",
@@ -138,7 +138,7 @@ struct VDBTouchAABBRegion : INode {
 
 ZENO_DEFNODE(VDBTouchAABBRegion)(
      { /* inputs: */ {
-     "grid",
+     {"", "grid", "", PrimarySocket},
      {"vec3f", "bmin", "-1,-1,-1"},
      {"vec3f", "bmax", "1,1,1"},
      }, /* outputs: */ {
@@ -191,7 +191,8 @@ struct VDBTopoCopy : INode{
 };
 ZENO_DEFNODE(VDBTopoCopy)(
      { /* inputs: */ {
-     "grid", "topo"
+     {"", "grid", "", PrimarySocket},
+     {"", "topo", "", PrimarySocket}
      }, /* outputs: */ {
        "grid",
      }, /* params: */ {

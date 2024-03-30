@@ -221,7 +221,7 @@ struct PrimDualMesh : INode {
 
 ZENDEFNODE(PrimDualMesh, {
     {
-    {"PrimitiveObject", "prim"},
+    {"PrimitiveObject", "prim", "", PrimarySocket},
     {"bool", "polygonate", "1"},
     {"bool", "keepBounds", "0"},
     //{"enum faces lines", "faceType", "faces"},

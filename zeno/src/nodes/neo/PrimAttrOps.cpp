@@ -54,7 +54,7 @@ struct PrimFillAttr : INode {
 
 ZENDEFNODE(PrimFillAttr, {
     {
-    {"PrimitiveObject", "prim"},
+    {"PrimitiveObject", "prim", "", PrimarySocket},
         {"enum vert tri loop poly line", "scope", "vert"},
     {"string", "attr", "rad"},
     {"enum float vec3f int", "type", "float"},
@@ -79,7 +79,7 @@ struct PrimFillColor : PrimFillAttr {
 
 ZENDEFNODE(PrimFillColor, {
     {
-    {"PrimitiveObject", "prim"},
+    {"PrimitiveObject", "prim", "", PrimarySocket},
     {"vec3f", "value", "1,0.5,0.5"},
     },
     {
@@ -152,7 +152,7 @@ struct PrimFloatAttrToInt : INode {
 
 ZENDEFNODE(PrimFloatAttrToInt, {
     {
-    {"PrimitiveObject", "prim"},
+    {"PrimitiveObject", "prim", "", PrimarySocket},
     {"string", "attr", "tag"},
     {"string", "attrOut", "tag"},
     {"float", "divisor", "1"},
@@ -232,7 +232,7 @@ struct PrimIntAttrToFloat : INode {
 
 ZENDEFNODE(PrimIntAttrToFloat, {
     {
-    {"PrimitiveObject", "prim"},
+    {"PrimitiveObject", "prim", "", PrimarySocket},
     {"string", "attr", "tag"},
     {"string", "attrOut", "tag"},
     {"float", "divisor", "1"},
@@ -290,8 +290,8 @@ struct PrimAttrInterp : INode {
 
 ZENDEFNODE(PrimAttrInterp, {
     {
-    {"PrimitiveObject", "prim"},
-    {"PrimitiveObject", "prim2"},
+    {"PrimitiveObject", "prim", "", PrimarySocket},
+    {"PrimitiveObject", "prim2", "", PrimarySocket},
     {"string", "attr", ""},
     {"float", "factor", "0.5"},
     {"string", "facAttr", ""},
@@ -428,7 +428,7 @@ struct PrimAttrRemap : INode {
 
 ZENDEFNODE(PrimAttrRemap, {
     {
-        {"PrimitiveObject", "prim"},
+        {"PrimitiveObject", "prim", "", PrimarySocket},
         {"enum vert tri loop poly line", "scope", "vert"},
         {"string", "attr", ""},
         {"bool", "Auto Compute input range", "0"},

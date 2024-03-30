@@ -42,7 +42,7 @@ struct PrimFlipFaces : zeno::INode {
 };
 
 ZENDEFNODE(PrimFlipFaces, {
-    {"prim"},
+    {{"", "prim", "", PrimarySocket}},
     {"prim"},
     {},
     {"primitive"},

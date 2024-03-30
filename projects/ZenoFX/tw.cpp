@@ -271,8 +271,8 @@ struct TrianglesWrangle : zeno::INode {
 };
 
 ZENDEFNODE(TrianglesWrangle, {
-    {{"PrimitiveObject", "prim"},
-     {"string", "zfxCode"}, {"DictObject:NumericObject", "params"},
+    {{"PrimitiveObject", "prim", "", PrimarySocket},
+     {"string", "zfxCode"}, {"DictObject:NumericObject", "params", "", PrimarySocket},
      {"enum points lines tris quads loops polys", "faceType", "tris"}},
     {{"PrimitiveObject", "prim"}},
     {},

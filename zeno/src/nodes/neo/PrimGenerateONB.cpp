@@ -34,7 +34,7 @@ struct PrimGenerateONB : INode {
 
 ZENO_DEFNODE(PrimGenerateONB)({
     {
-        "prim",
+        {"", "prim", "", PrimarySocket},
         {"string", "dirAttr", "nrm"},
         {"string", "tanAttrOut", "tang"},
         {"string", "bitanAttrOut", "bitang"},
@@ -95,7 +95,7 @@ struct PrimLineGenerateONB : zeno::INode {
 
 ZENO_DEFNODE(PrimLineGenerateONB)({
     {
-        "prim",
+        {"", "prim", "", PrimarySocket},
         {"string", "dirAttrOut", "dir"},
         {"string", "tanAttrOut", "tang"},
         {"string", "bitanAttrOut", "bitang"},

@@ -242,7 +242,7 @@ struct PrimitiveFilterByAttr : INode {
 
 ZENDEFNODE(PrimitiveFilterByAttr,
     { /* inputs: */ {
-    "prim",
+    {"", "prim", "", PrimarySocket},
     {"NumericObject", "value", "0"},
     }, /* outputs: */ {
     "prim",
@@ -299,7 +299,7 @@ struct SubLine : INode { // deprecated zhxx-happy-node, FilterByAttr already aut
 };
 ZENDEFNODE(SubLine,
     { /* inputs: */ {
-    "line",
+    {"", "line", "", PrimarySocket},
     {"NumericObject", "value", "0"},
     }, /* outputs: */ {
     "prim",
