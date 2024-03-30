@@ -845,10 +845,14 @@ void ZenoSubGraphView::rearrangeGraph()
     auto pView = getCurrentView();
     if (pView)
     {
+        bool bHor = true;
+        if (QMessageBox::question(nullptr, tr("rearrangement graph"), tr("Do you want to rearrange all nodes with Vertical alignment")) == QMessageBox::Yes)
+            bHor = false;
+
         ZenoSubGraphScene* scene = qobject_cast<ZenoSubGraphScene*>(pView->scene());
         if (scene)
         {
-            scene->rearrangeGraph(true);
+            scene->rearrangeGraph(bHor);
         }
     }
 }

@@ -1370,6 +1370,13 @@ void ZenoSubGraphScene::rearrangeGraph(bool bHorional)
         }
     }
 
+    //将所有节点展开或折叠
+    bool bCollasped = !bHorional;
+    for (auto& [name, pNode] : m_nodes)
+    {
+        UiHelper::qIndexSetData(pNode->index(), bCollasped, ROLE_COLLASPED);
+    }
+
     auto getLayerHeight = [&](bool bHorizonal, const QStringList& nodes, qreal space) -> QSizeF {
         qreal W = 0, H = 0;
         if (bHorizonal)
@@ -1428,6 +1435,35 @@ void ZenoSubGraphScene::rearrangeGraph(bool bHorional)
                 y += vspace;
             }
             x = x + sz.width() + xspace;
+        }
+    }
+    else {
+        qreal xcenter = 0.;
+        if (layerNodes.isEmpty())
+            return;
+        //决定中轴线的位置。
+        qreal hspace = 150.;
+        qreal yspace = 300.;
+        QSizeF sz = getLayerHeight(bHorional, layerNodes[0], hspace);
+        xcenter = sz.width() / 2;
+
+        qreal y = 0;
+        for (int i = 0; i < layerNodes.size(); i++)
+        {
+            sz = getLayerHeight(bHorional, layerNodes[i], hspace);
+            ZASSERT_EXIT(!sz.isEmpty());
+            qreal x = xcenter - sz.width() / 2;    //start pos
+
+            //为每个节点设置位置
+            for (QString node : layerNodes[i])
+            {
+                ZASSERT_EXIT(m_nodes.find(node) != m_nodes.end());
+                ZenoNode* pNode = m_nodes[node];
+                pNode->setPos(x, y);
+                x += pNode->boundingRect().width(); //TOFIX: 好像没算上左边名称的长度
+                x += hspace;
+            }
+            y = y + sz.height() + yspace;
         }
     }
 }

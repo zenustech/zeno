@@ -428,8 +428,9 @@ void ZenoFullLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styl
         if (inSockProp == zeno::PrimarySocket) {
             painter->save();
             QPen pen;
-            pen.setColor(isSelected() ? QColor(0xFA6400) : QColor("#FFFFFF"));
-            pen.setWidthF(ZenoStyle::scaleWidth(3));
+            pen.setColor(isSelected() ? QColor(92, 36, 36) : QColor(192, 36, 36, 153));
+            pen.setWidthF(ZenoStyle::scaleWidth(4));
+            pen.setJoinStyle(Qt::RoundJoin);
             if (zeno::Link_Ref == m_lnkProp)
                 pen.setStyle(Qt::DashLine);
             painter->setRenderHint(QPainter::Antialiasing);
