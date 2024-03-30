@@ -84,7 +84,7 @@ namespace zenoio
                 else if (inputObj.IsObject())
                 {
                     zeno::LinksData links;
-                    zeno::ParamInfo param = _parseSocket(true, "", "", inSock, inputObj, links);
+                    zeno::ParamInfo param = _parseSocket(true, false, "", "", inSock, inputObj, links);
                     inputs.push_back(param);
                 }
                 else
@@ -112,7 +112,7 @@ namespace zenoio
                 else if (outputObj.IsObject())
                 {
                     zeno::LinksData links;
-                    zeno::ParamInfo param = _parseSocket(false, "", "", outSock, outputObj, links);
+                    zeno::ParamInfo param = _parseSocket(false, false, "", "", outSock, outputObj, links);
                     outputs.push_back(param);
                 }
                 else

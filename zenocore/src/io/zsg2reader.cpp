@@ -63,7 +63,7 @@ bool Zsg2Reader::_parseMainGraph(const rapidjson::Document& doc, zeno::GraphData
         sharedSubg[graphName].templateName = graphName;
     }
 
-    //zsg3.0以下的格式，子图将加入并成为项目的资产
+    //zsg3.0以下的格式，子图直接成为Subnet递归展开
     for (const auto& subgraph : graph.GetObject())
     {
         const std::string& graphName = subgraph.name.GetString();
@@ -236,6 +236,7 @@ zeno::NodeData Zsg2Reader::_parseNode(
 
 zeno::ParamInfo Zsg2Reader::_parseSocket(
         const bool bInput,
+        const bool bSubnetNode,
         const std::string& id,
         const std::string& nodeCls,
         const std::string& sockName,
@@ -280,6 +281,12 @@ zeno::ParamInfo Zsg2Reader::_parseSocket(
     if (sockObj.HasMember("type") && sockObj.HasMember("default-value")) {
         param.type = zeno::convertToType(sockObj["type"].GetString());
         param.defl = zenoio::jsonValueToZVar(sockObj["default-value"], param.type);
+        if (bSubnetNode && (param.type == zeno::Param_Null ||
+            param.type == zeno::Param_Prim))
+        {
+            //这种情况大概率是连对象
+            param.socketType = zeno::PrimarySocket;
+        }
     }
 
     //link:
