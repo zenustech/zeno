@@ -518,7 +518,10 @@ void ZenoSubGraphScene::select(const QModelIndexList &indexs)
     {
         const QString &id = index.data(ROLE_NODE_NAME).toString();
         if (m_nodes.find(id) != m_nodes.end());
+        {
+            ZASSERT_EXIT(m_nodes[id]);
             m_nodes[id]->setSelected(true);
+        }
     }
     afterSelectionChanged();
 }
