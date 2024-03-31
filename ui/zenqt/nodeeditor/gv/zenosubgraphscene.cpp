@@ -29,6 +29,7 @@
 #include "settings/zenosettingsmanager.h"
 #include "widgets/ztimeline.h"
 #include "zenosubgraphview.h"
+#include <zeno/io/zenreader.h>
 //#include "nodeeditor/gv/pythonmaterialnode.h"
 
 
@@ -134,21 +135,29 @@ void ZenoSubGraphScene::initModel(GraphModel* pGraphM)
             }
         }
 
-#if 0
         for (auto node : blackboardVect)
         {
-            PARAMS_INFO params = node->index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
-            BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
-            if (info.items.contains(id) && qobject_cast<GroupNode*>(node))
+            if (ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(node->index().data(ROLE_PARAMS)))
             {
-                GroupNode *pGroupNode = qobject_cast<GroupNode *>(node);
-                if (pGroupNode)
-                    pGroupNode->appendChildItem(inNode);
-                else
-                    inNode->setGroupNode(pGroupNode);
+                auto index = paramsM->index(paramsM->indexFromName("items", true), 0);
+                if (index.isValid())
+                {
+                    QString val = index.data(ROLE_PARAM_VALUE).toString();
+                    if (!val.isEmpty())
+                    {
+                        auto items = val.split(",");
+                        if (items.contains(id) && qobject_cast<GroupNode*>(node))
+                        {
+                            GroupNode* pGroupNode = qobject_cast<GroupNode*>(node);
+                            if (pGroupNode)
+                                pGroupNode->appendChildItem(inNode);
+                            else
+                                inNode->setGroupNode(pGroupNode);
+                        }
+                    }
+                }
             }
         }
-#endif
     }
 
     //TODO:
@@ -228,10 +237,10 @@ ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilPa
     {
         return new SubnetNode(false, params);
     }
-    else if (descName == "MakeHeatmap")
-    {
-        return new MakeHeatMapNode(params);
-    }
+    //else if (descName == "MakeHeatmap")
+    //{
+    //    return new MakeHeatMapNode(params);
+    //}
     else if (descName == "Group")
     {
         return new GroupNode(params);
@@ -294,13 +303,19 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& topLeft, const QModelIn
             QVariantList lst = var.toList();
             ZASSERT_EXIT(lst.size() == 2);
             QPointF pos(lst[0].toFloat(), lst[1].toFloat());
-            m_nodes[id]->setPos(pos);
-            m_nodes[id]->nodePosChangedSignal();
+            if (pos != m_nodes[id]->pos())
+            {
+                m_nodes[id]->setPos(pos);
+                m_nodes[id]->nodePosChangedSignal();
+            }
         }
         else if (var.type() == QVariant::PointF) {
-            QPointF pos = idx.data(ROLE_OBJPOS).toPoint();
-            m_nodes[id]->setPos(pos);
-            m_nodes[id]->nodePosChangedSignal();
+            QPointF pos = idx.data(ROLE_OBJPOS).toPointF();
+            if (pos != m_nodes[id]->pos())
+            {
+                m_nodes[id]->setPos(pos);
+                m_nodes[id]->nodePosChangedSignal();
+            }
         }
     }
     if (role == ROLE_NODE_STATUS)
@@ -312,7 +327,7 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& topLeft, const QModelIn
     if (role == ROLE_NODE_ISVIEW)
     {
         ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
-
+        m_nodes[id]->onViewUpdated(idx.data(ROLE_NODE_ISVIEW).toBool());
     }
     if (role == ROLE_COLLASPED)
     {
@@ -601,44 +616,43 @@ void ZenoSubGraphScene::copy()
 
     //first record all nodes.
     QModelIndexList selNodes = selectNodesIndice();
-    QModelIndexList selLinks = selectLinkIndice();
-    QPair<zeno::NodesData, zeno::LinksData> datas = UiHelper::dumpNodes(selNodes, selLinks);
-    //ZsgWriter::getInstance().dumpToClipboard(datas.first);
+    zeno::NodesData datas = UiHelper::dumpNodes(selNodes);
+   
+    zenoio::ZenWriter writer;
+    QString strJson = QString::fromStdString(writer.dumpToClipboard(datas));
+    QMimeData* pMimeData = new QMimeData;
+    pMimeData->setText(strJson);
+    QApplication::clipboard()->setMimeData(pMimeData);
 }
 
 void ZenoSubGraphScene::paste(QPointF pos)
 {
     const QMimeData* pMimeData = QApplication::clipboard()->mimeData();
-    //TODO: paste io
-#if 0
-    IGraphsModel *pGraphsModel = zenoApp->graphsManager()->currentModel();
-    if (pMimeData->hasText() && pGraphsModel)
+
+    if (pMimeData->hasText() && m_model)
     {
+        zenoio::ZenReader reader;
         const QString& strJson = pMimeData->text();
-
-        TransferAcceptor acceptor(pGraphsModel);
-        Zsg2Reader::getInstance().importNodes(pGraphsModel, m_subgIdx, strJson, pos, &acceptor);
-
-        QMap<QString, NODE_DATA> nodes;
-        QList<EdgeInfo> links;
-        QString subgName = m_subgIdx.data(ROLE_CLASS_NAME).toString();
-        UiHelper::reAllocIdents(subgName, acceptor.nodes(), acceptor.links(), nodes, links);
-        UiHelper::renameNetLabels(pGraphsModel, m_subgIdx, nodes);
+        std::pair<zeno::NodesData, zeno::LinksData> datas;
+        reader.importNodes(strJson.toStdString(), datas.first, datas.second);
+        //UiHelper::renameNetLabels(pGraphsModel, m_subgIdx, nodes);
 
         //todo: ret value for api.
-        pGraphsModel->importNodes(nodes, links, pos, m_subgIdx, true);
+        m_model->importNodes(datas.first, datas.second, pos);
 
         //mark selection for all nodes.
         clearSelection();
-        for (QString ident : nodes.keys())
+        for (const auto&[ident, node] : datas.first)
         {
-            ZASSERT_EXIT(m_nodes.find(ident) != m_nodes.end());
-            m_nodes[ident]->setSelected(true);
-            collectNodeSelChanged(ident, true);
+            QString name = QString::fromStdString(ident);
+            if (m_nodes.find(name) != m_nodes.end())
+            {
+                m_nodes[name]->setSelected(true);
+                collectNodeSelChanged(name, true);
+            }
         }
         afterSelectionChanged();
     }
-#endif
 }
 
 void ZenoSubGraphScene::reload(const QModelIndex& subGpIdx)
@@ -1046,8 +1060,8 @@ void ZenoSubGraphScene::afterSelectionChanged()
                 unSelNodes.push_back(pNode->index());
             }
         }
-        mainWin->onNodesSelected(m_subgIdx, unSelNodes, false);
-        mainWin->onNodesSelected(m_subgIdx, selectNodesIndice(), true);
+        mainWin->onNodesSelected(m_model, unSelNodes, false);
+        mainWin->onNodesSelected(m_model, selectNodesIndice(), true);
         updateKeyFrame();
     }
     m_selChanges.clear();
@@ -1135,7 +1149,7 @@ void ZenoSubGraphScene::onRowsInserted(const QModelIndex& parent, int first, int
             GroupNode *pGroup = dynamic_cast<GroupNode *>(pNode);
             pGroup->resize(rect.size());
             pGroup->updateBlackboard();
-            pGroup->updateNodePos(rect.topLeft(), false);
+            UiHelper::qIndexSetData(pGroup->index(), rect.topLeft(), ROLE_OBJPOS);
             for (auto item : selectedItems()) 
             {
                 ZenoNode *pChildNode = dynamic_cast<ZenoNode *>(item);

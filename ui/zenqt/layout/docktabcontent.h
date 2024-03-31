@@ -4,6 +4,7 @@
 #include <QtWidgets>
 #include <unordered_set>
 #include "widgets/ztoolbutton.h"
+#include "model/GraphModel.h"
 
 class ZIconToolButton;
 class ZenoGraphsEditor;
@@ -74,7 +75,7 @@ class DockContent_Parameter : public DockToolbarWidget
     Q_OBJECT
 public:
     explicit DockContent_Parameter(QWidget* parent = nullptr);
-    void onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
+    void onNodesSelected(GraphModel* subgraph, const QModelIndexList& nodes, bool select);
     void onPrimitiveSelected(const std::unordered_set<std::string>& primids);
 
 protected:

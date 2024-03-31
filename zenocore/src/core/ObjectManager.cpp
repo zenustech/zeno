@@ -1,5 +1,6 @@
 #include <zeno/core/ObjectManager.h>
 #include <zeno/core/Graph.h>
+#include <zeno/types/ListObject.h>
 
 
 namespace zeno {
@@ -55,10 +56,7 @@ namespace zeno {
     ZENO_API void ObjectManager::removeObject(const std::string& id)
     {
         std::lock_guard lck(m_mtx);
-        if (m_objects.find(id) != m_objects.end()) {
-            m_objects.erase(id);
-        }
-        m_remove.insert(id);
+        m_lastUnregisterObjs.push_back(id); //先标记，下一次run的时候在去m_objects中移除
     }
 
     ZENO_API void ObjectManager::notifyTransfer(std::shared_ptr<IObject> obj)
@@ -111,6 +109,19 @@ namespace zeno {
         //m_lastViewObjs剩下来的都是上一次view，而这一次没有view的。
         m_remove = m_lastViewObjs;
         m_lastViewObjs.clear();
+        m_removing_objs.clear();
+    }
+
+    ZENO_API void ObjectManager::clearLastUnregisterObjs()
+    {
+        for (auto& key : m_lastUnregisterObjs)
+        {
+            if (m_objects.find(key) != m_objects.end()) {
+                m_objects.erase(key);
+            }
+            m_remove.insert(key);
+        }
+        m_lastUnregisterObjs.clear();
     }
 
     ZENO_API void ObjectManager::clear_last_run()
@@ -139,23 +150,88 @@ namespace zeno {
         }
     }
 
+    ZENO_API void ObjectManager::markObjInteractive(std::set<std::string>& newobjKeys)
+    {
+        std::lock_guard lck(m_mtx);
+        m_modify = newobjKeys;
+    }
+
+    ZENO_API void ObjectManager::unmarkObjInteractive(std::set<std::string>& removeobjKeys)
+    {
+        std::lock_guard lck(m_mtx);
+        m_modify.clear();
+    }
+
+    ZENO_API void ObjectManager::getModifyObjsInfo(std::map<std::string, std::shared_ptr<zeno::IObject>>& modifyInteractiveObjs)
+    {
+        std::lock_guard lck(m_mtx);
+        for (auto& key : m_modify)
+            if (m_objects.find(key) != m_objects.end())
+                modifyInteractiveObjs.insert(std::make_pair(key, m_objects[key].obj));
+    }
+
     ZENO_API void ObjectManager::export_loading_objs(RenderObjsInfo& info)
     {
         std::lock_guard lck(m_mtx);
         for (auto objkey : m_newAdded) {
             auto it = m_objects.find(objkey);
-            if (it != m_objects.end()) {
-                info.newObjs.insert(std::make_pair(objkey, it->second.obj));
-            }
+            if (it != m_objects.end())
+                convertToView(it->second.obj, info.newObjs, std::set<std::string>());
         }
         for (auto objkey : m_modify) {
             auto it = m_objects.find(objkey);
-            if (it != m_objects.end()) {
-                info.modifyObjs.insert(std::make_pair(objkey, it->second.obj));
-            }
+            if (it != m_objects.end())
+                convertToView(it->second.obj, info.modifyObjs, std::set<std::string>());
         }
         for (auto objkey : m_remove) {
-            info.remObjs.insert(objkey);
+            auto it = m_objects.find(objkey);
+            if (it != m_objects.end())
+                convertToView(it->second.obj, SharedObjects(), info.remObjs, true);
+        }
+    }
+
+    ZENO_API void ObjectManager::export_all_view_objs(RenderObjsInfo& info)
+    {
+        std::lock_guard lck(m_mtx);
+        for (auto& key : m_viewObjs) {
+            auto& it = m_objects.find(key);
+            if (it != m_objects.end())
+                info.allObjects.emplace(std::move(std::pair(key, it->second.obj)));
+        }
+    }
+
+    ZENO_API void ObjectManager::export_all_view_objs(std::vector<std::pair<std::string, std::shared_ptr<zeno::IObject>>>& info)
+    {
+        std::lock_guard lck(m_mtx);
+        for (auto& key : m_viewObjs) {
+            auto& it = m_objects.find(key);
+            if (it != m_objects.end())
+                info.emplace_back(key, it->second.obj);
+        }
+    }
+
+    ZENO_API std::shared_ptr<zeno::IObject> ObjectManager::getObj(std::string name)
+    {
+        std::lock_guard lck(m_mtx);
+        if (m_objects.find(name) != m_objects.end())
+            return m_objects[name].obj;
+        return nullptr;
+    }
+
+    void ObjectManager::convertToView(zany const& objToBeConvert, SharedObjects& objConvertResult, std::set<std::string>& keyConvertResult, bool convertKeyOnly)
+    {
+        if (std::shared_ptr<ListObject> lst = std::dynamic_pointer_cast<ListObject>(objToBeConvert)) {
+            for (size_t i = 0; i < lst->arr.size(); i++)
+                convertToView(lst->arr[i], objConvertResult, keyConvertResult, convertKeyOnly);
+            return;
+        }
+        if (!objToBeConvert)
+            return;
+        else {
+            if (convertKeyOnly)
+                keyConvertResult.insert(objToBeConvert->key);
+            else
+                objConvertResult.insert(std::make_pair(objToBeConvert->key, objToBeConvert));
         }
     }
 

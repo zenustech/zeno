@@ -5,7 +5,7 @@ namespace zeno {
 
     ZENO_API ParamType convertToType(std::string const& type) {
         //TODO: deprecated literal representation.
-        if (type == "string") { return Param_String; }
+        if (type == "string" || type == "readpath" || type == "writepath" || type == "diratory") { return Param_String; }
         else if (type == "bool") { return Param_Bool; }
         else if (type == "int") { return Param_Int; }
         else if (type == "float") { return Param_Float; }
@@ -20,6 +20,8 @@ namespace zeno {
         else if (type == "list") { return Param_List; }
         else if (type == "dict" || type == "DictObject" || type == "DictObject:NumericObject") { return Param_Dict; }
         else if (type == "colorvec3f") { return Param_Vec3f; }
+        else if (type == "color") { return Param_Heatmap; }
+        else if (type == "curve") { return Param_Curve; }
         else if (starts_with(type, "enum ")) { return Param_String; }
         else return Param_Null;
     }
@@ -43,7 +45,7 @@ namespace zeno {
         case Param_Dict:    return "dict";
         case Param_List:    return "list";
         case Param_Curve:   return "curve";
-        case Param_Heatmap: return "heatmap";
+        case Param_Heatmap: return "color";
         case Param_SrcDst:  return "";
         default:
             return "";
@@ -51,6 +53,8 @@ namespace zeno {
     }
 
     ZENO_API zvariant str2var(std::string const& defl, ParamType const& type) {
+        if (defl.empty())
+            return initDeflValue(type);
         switch (type) {
         case Param_String: {
             return defl;
@@ -61,11 +65,9 @@ namespace zeno {
             return zvariant();
         }
         case Param_Int: {
-            if (defl == "") return 0;
             return std::stoi(defl);
         }
         case Param_Float: {
-            if (defl == "") return 0;
             return std::stof(defl);
         }
         case Param_Vec2i:
@@ -116,6 +118,58 @@ namespace zeno {
         default:
             return defl;
         }
+    }
+
+    zvariant zeno::initDeflValue(ParamType const& type)
+    {
+        if (type == zeno::Param_String) {
+            return "";
+        }
+        else if (type == zeno::Param_Float)
+        {
+            return (float)0.;
+        }
+        else if (type == zeno::Param_Int)
+        {
+            return (int)0;
+        }
+        else if (type == zeno::Param_Bool)
+        {
+            return false;
+        }
+        else if (type == zeno::Param_Vec2i)
+        {
+            return vec2i();
+        }
+        else if (type == zeno::Param_Vec2f)
+        {
+            return vec2f();
+        }
+        else if (type == zeno::Param_Vec3i)
+        {
+            return vec3i();
+        }
+        else if (type == zeno::Param_Vec3f)
+        {
+            return vec3f();
+        }
+        else if (type == zeno::Param_Vec4i)
+        {
+            return vec4i();
+        }
+        else if (type == zeno::Param_Vec4f)
+        {
+            return vec4f();
+        }
+        else if (type == zeno::Param_Curve)
+        {
+            return "{}";
+        }
+        else if (type == zeno::Param_Heatmap)
+        {
+            return "{\"nres\":1024, \"color\":\"\"}";
+        }
+        return zvariant();
     }
 
     EdgeInfo getEdgeInfo(std::shared_ptr<ILink> spLink) {
@@ -272,6 +326,7 @@ namespace zeno {
         case zeno::Param_List:      return zeno::NullControl;
             //Param_Color:  //need this?
         case zeno::Param_Curve:     return zeno::CurveEditor;
+        case zeno::Param_Heatmap: return zeno::Heatmap;
         case zeno::Param_SrcDst:
         default:
             return zeno::NullControl;
@@ -296,7 +351,9 @@ namespace zeno {
             return "Boolean";
         }
         case zeno::Multiline:           return "Multiline String";
-        case zeno::Pathedit:            return "read path";
+        case zeno::ReadPathEdit:            return "read path";
+        case zeno::WritePathEdit:            return "write path";
+        case zeno::DirectoryPathEdit:            return "directory";
         case zeno::Combobox:            return "Enum";
         case zeno::Vec4edit:
         {
@@ -311,7 +368,6 @@ namespace zeno {
             return type == zeno::Param_Int ? "Integer Vector 2" : "Float Vector 2";
         }
         case zeno::Heatmap:             return "Color";
-        case zeno::Color:               return "Pure Color";
         case zeno::ColorVec:            return "Color Vec3f";
         case zeno::CurveEditor:         return "Curve";
         case zeno::SpinBox:             return "SpinBox";

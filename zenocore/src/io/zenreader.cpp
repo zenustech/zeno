@@ -9,6 +9,28 @@ namespace zenoio
     {
     }
 
+    bool ZenReader::importNodes(const std::string& fn, zeno::NodesData& nodes, zeno::LinksData& links)
+    {
+        rapidjson::Document doc;
+        doc.Parse(fn.c_str());
+
+        if (!doc.IsObject() || !doc.HasMember("nodes"))
+            return false;
+
+        const rapidjson::Value& val = doc["nodes"];
+        if (val.IsNull())
+            return false;
+
+        for (const auto& node : val.GetObject())
+        {
+            const std::string& nodeid = node.name.GetString();
+            zeno::AssetsData assets;
+            const zeno::NodeData& nodeData = _parseNode("", nodeid, node.value, assets, links);
+            nodes.insert(std::make_pair(nodeid, nodeData));
+        }
+        return true;
+    }
+
     bool ZenReader::_parseMainGraph(const rapidjson::Document& doc, zeno::GraphData& ret)
     {
         zeno::AssetsData assets;        //todo
@@ -125,7 +147,7 @@ namespace zenoio
             }
             //TODO: import blackboard.
         }
-        else if (cls == "Group")
+        /*else if (cls == "Group")
         {
             zeno::GroupInfo group;
             const rapidjson::Value& blackBoardValue = objValue.HasMember("blackboard") ? objValue["blackboard"] : objValue;
@@ -144,9 +166,9 @@ namespace zenoio
                     std::string key = item_keys[i].GetString();
                     group.items.push_back(key);
                 }
-            }
+            }*/
             //TODO: import group.
-        }
+        //}
 
         if (objValue.HasMember("subnet")) {
             zeno::GraphData subgraph;

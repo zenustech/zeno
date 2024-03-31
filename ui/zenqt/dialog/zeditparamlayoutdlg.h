@@ -75,6 +75,7 @@ private:
     void proxyModelSetData(const QModelIndex& index, const QVariant& newValue, int role);
     void switchStackProperties(int ctrl, QStandardItem *pItem);
     void updateSliderInfo();
+    void initModel(const QStandardItemModel* pModel);
 
     QStandardItemModel* m_paramsLayoutM;
 

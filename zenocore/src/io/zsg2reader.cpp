@@ -206,6 +206,7 @@ zeno::NodeData Zsg2Reader::_parseNode(
         if (blackBoardValue.HasMember("params")) {
             //todo
         }
+        retNode.group = blackboard;
         //TODO: import blackboard.
     }
     else if (cls == "Group")
@@ -214,7 +215,15 @@ zeno::NodeData Zsg2Reader::_parseNode(
         const rapidjson::Value &blackBoardValue = objValue.HasMember("blackboard") ? objValue["blackboard"] : objValue;
 
         group.title = blackBoardValue.HasMember("title") ? blackBoardValue["title"].GetString() : "";
-        group.background = blackBoardValue.HasMember("background") ? blackBoardValue["background"].GetString() : "#3C4645";
+        std::string color = blackBoardValue.HasMember("background") ? blackBoardValue["background"].GetString() : "#3C4645";
+        color.replace(0, 1, "");
+        int num = std::stoi(color, NULL, 16);
+        int red = num >> 16 & 0xFF;
+        int green = num >> 8 & 0xFF;
+        int blue = num & 0xFF;
+        group.background[0] = red / 255.0;
+        group.background[1] = green / 255.0;
+        group.background[2] = blue / 255.0;
 
         if (blackBoardValue.HasMember("width") && blackBoardValue.HasMember("height")) {
             float w = blackBoardValue["width"].GetFloat();
@@ -228,6 +237,7 @@ zeno::NodeData Zsg2Reader::_parseNode(
                 group.items.push_back(key);
             }
         }
+        retNode.group = group;
         //TODO: import group.
     }
 

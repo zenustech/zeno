@@ -107,9 +107,9 @@ struct GraphicsManager {
             // if (realtime_graphics.find(key) == realtime_graphics.end())
             gra->draw();
         }
-        for (auto const &[key, gra] : realtime_graphics.pairs<IGraphicDraw>()) {
-            gra->draw();
-        }
+        //for (auto const &[key, gra] : realtime_graphics.pairs<IGraphicDraw>()) {
+        //    gra->draw();
+        //}
         // printf("graphics count: %d\n", graphics.size());
         // printf("realtime graphics count: %d\n", realtime_graphics.size());
     }

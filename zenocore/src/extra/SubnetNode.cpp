@@ -27,6 +27,8 @@ ZENO_API void SubnetNode::initParams(const NodeData& dat)
         sparam->name = param.name;
         sparam->type = param.type;
         sparam->socketType = param.socketType;
+        sparam->control = param.control;
+        sparam->optCtrlprops = param.ctrlProps;
         sparam->m_wpNode = shared_from_this();
         add_input_param(sparam);
         m_input_names.push_back(param.name);
@@ -153,6 +155,7 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
             sparam->name = newname;
             sparam->type = param.type;
             sparam->control = param.control;
+            sparam->optCtrlprops = param.ctrlProps;
             sparam->socketType = param.socketType;
             sparam->m_wpNode = shared_from_this();
             in_outputs[newname] = sparam;
@@ -181,6 +184,7 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
             spParam->defl = param.defl;
             spParam->name = newname;
             spParam->control = param.control;
+            spParam->optCtrlprops = param.ctrlProps;
             spParam->socketType = param.socketType;
         }
         else {

@@ -34,7 +34,7 @@ class GraphModel;
 class UiHelper
 {
 public:
-    static QString createNewNode(QModelIndex subgIdx, const QString& descName, const QPointF& pt);
+    static QString createNewNode(GraphModel* subgraph, const QString& descName, const QPointF& pt);
     static QPainterPath getRoundPath(QRectF r, int lt, int rt, int lb, int rb, bool bFixRadius);
     static QString generateUuid(const QString &name = "x");
     static uint generateUuidInt();
@@ -80,6 +80,7 @@ public:
     static QVariant parseJson(const rapidjson::Value& val, QObject* parentRef = nullptr);
 
     static QString gradient2colorString(const QLinearGradient& grad);
+    static QLinearGradient colorString2Grad(const QString& colorStr);
     static QVariant getParamValue(const QModelIndex& idx, const QString& name);
     static int tabIndexOfName(const QTabWidget* pTabWidget, const QString& name);
     static void getAllParamsIndex(const QModelIndex &nodeIdx,
@@ -90,7 +91,7 @@ public:
     static QVector<qreal> scaleFactors();
     static QString UiHelper::getNaiveParamPath(const QModelIndex& param, int dim = -1);
 
-    static QPair<zeno::NodesData, zeno::LinksData> dumpNodes(const QModelIndexList& nodeIndice, const QModelIndexList& linkIndice);
+    static zeno::NodesData dumpNodes(const QModelIndexList& nodeIndice);
     static void reAllocIdents(const QString& targetSubgraph,
                                const zeno::NodesData& inNodes,
                                const zeno::LinksData& inLinks,

@@ -120,7 +120,7 @@ void ZenoPropPanel::clearLayout()
     update();
 }
 
-void ZenoPropPanel::reset(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select)
+void ZenoPropPanel::reset(GraphModel* subgraph, const QModelIndexList& nodes, bool select)
 {
     if (m_bReentry)
         return;
@@ -136,7 +136,7 @@ void ZenoPropPanel::reset(const QModelIndex& subgIdx, const QModelIndexList& nod
         return;
     }
 
-    m_subgIdx = subgIdx;
+    m_model = subgraph;
     m_idx = nodes[0];
     if (!m_idx.isValid())
         return;
@@ -305,7 +305,7 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
     zeno::ParamControl ctrl = (zeno::ParamControl)paramItem->data(ROLE_PARAM_CONTROL).toInt();
 
     const zeno::ParamType type = (zeno::ParamType)paramItem->data(ROLE_PARAM_TYPE).toInt();
-    const QVariant &pros = paramItem->data(ROLE_PARAM_CTRL_PROPERTIES);
+    const zeno::ControlProperty &pros = paramItem->data(ROLE_PARAM_CTRL_PROPERTIES).value<zeno::ControlProperty>();
 
     QPersistentModelIndex perIdx(paramItem->index());
     CallbackCollection cbSet;
@@ -376,7 +376,7 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
 
     m_controls[tabName][groupName][paramName] = panelCtrl;
 
-    if (bFloat) {
+    if (bFloat && pControl) {
         m_floatColtrols << panelCtrl;
         pLabel->installEventFilter(this);
         pControl->installEventFilter(this);   
@@ -434,9 +434,8 @@ bool ZenoPropPanel::syncAddTab(QTabWidget* pTabWidget, QStandardItem* pTabItem, 
     pTabLayout->setSpacing(0);
     if (m_idx.data(ROLE_NODETYPE) == zeno::Node_Group) 
     {
-        //TODO:
-        //ZenoBlackboardPropWidget *propWidget = new ZenoBlackboardPropWidget(m_idx, m_subgIdx, pTabWid);
-        //pTabLayout->addWidget(propWidget);
+        ZenoBlackboardPropWidget *propWidget = new ZenoBlackboardPropWidget(m_idx, pTabWid);
+        pTabLayout->addWidget(propWidget);
     } 
     else 
     {
@@ -672,12 +671,8 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
             } 
             else if (QPushButton *pBtn = qobject_cast<QPushButton *>(ctrl.pControl)) 
             {
-                // purecolor
-                if (value.canConvert<QColor>()) {
-                    pBtn->setStyleSheet(QString("background-color:%1; border:0;").arg(value.value<QColor>().name()));
-                }
                 // colorvec3f
-                else if (value.canConvert<UI_VECTYPE>()) {
+                if (value.canConvert<UI_VECTYPE>()) {
                     UI_VECTYPE vec = value.value<UI_VECTYPE>();
                     if (vec.size() == 3) {
                         auto color = QColor::fromRgbF(vec[0], vec[1], vec[2]);
@@ -939,8 +934,8 @@ bool ZenoPropPanel::eventFilter(QObject *obj, QEvent *event)
 void ZenoPropPanel::setKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &keys) 
 {
     CURVES_DATA newVal;
-    if (ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).canConvert<CURVES_DATA>())
-        newVal = ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).value<CURVES_DATA>();
+    if (ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).type() == QVariant::String)
+        newVal = JsonHelper::parseCurves(ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).toString());
     UI_VECTYPE vec;
     if (ZLineEdit *lineEdit = qobject_cast<ZLineEdit *>(ctrl.pControl)) {
         vec << lineEdit->text().toFloat();
@@ -957,22 +952,22 @@ void ZenoPropPanel::setKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &k
         bool visible = keys.contains(key);
         getDelfCurveData(newVal[key], vec.at(i), visible, key);
     }
-
-    UiHelper::qIndexSetData(ctrl.m_viewIdx, QVariant::fromValue(newVal), ROLE_PARAM_VALUE);
+    
+    UiHelper::qIndexSetData(ctrl.m_viewIdx, JsonHelper::dumpCurves(newVal), ROLE_PARAM_VALUE);
     updateTimelineKeys(newVal);
 }
 
 void ZenoPropPanel::delKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &keys) 
 {
-    CURVES_DATA newVal;
-    if (ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).canConvert<CURVES_DATA>())
-        newVal = ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).value<CURVES_DATA>();
+    CURVES_DATA val;
+    if (ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).type() == QVariant::String)
+        val = JsonHelper::parseCurves(ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).toString());
     ZenoMainWindow *mainWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(mainWin);
     ZTimeline *timeline = mainWin->timeline();
     ZASSERT_EXIT(timeline);
     int emptySize = 0;
-    for (auto &curve : newVal) {
+    for (auto &curve : val) {
         QString key = curve.key;
         if (curve.visible == false && curve.points.size() < 2) {
             emptySize++;
@@ -999,23 +994,23 @@ void ZenoPropPanel::delKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &k
             }
         }
     }
-    QVariant val;
-    if (emptySize == newVal.size()) 
+    QVariant newVal;
+    if (emptySize == val.size()) 
     {
         if (ZVecEditor *lineEdit = qobject_cast<ZVecEditor *>(ctrl.pControl)) {
-            val = QVariant::fromValue(lineEdit->text());
+            newVal = QVariant::fromValue(lineEdit->text());
         } else if (ZLineEdit *lineEdit = qobject_cast<ZLineEdit *>(ctrl.pControl)) {
-            val = QVariant::fromValue(lineEdit->text().toFloat());
+            newVal = QVariant::fromValue(lineEdit->text().toFloat());
         }
-        newVal = CURVES_DATA();
+        val = CURVES_DATA();
     }
     else 
     {
-        val = QVariant::fromValue(newVal);
+        newVal = JsonHelper::dumpCurves(val);
     }
 
-    UiHelper::qIndexSetData(ctrl.m_viewIdx, QVariant::fromValue(newVal), ROLE_PARAM_VALUE);
-    updateTimelineKeys(newVal);
+    UiHelper::qIndexSetData(ctrl.m_viewIdx, newVal, ROLE_PARAM_VALUE);
+    updateTimelineKeys(val);
 }
 
 void ZenoPropPanel::editKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &keys) 
@@ -1024,8 +1019,8 @@ void ZenoPropPanel::editKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &
     connect(pEditor, &ZCurveMapEditor::finished, this, [=](int result) {
         CURVES_DATA newCurves = pEditor->curves();
         CURVES_DATA val;
-        if (ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).canConvert<CURVES_DATA>())
-            val = ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).value<CURVES_DATA>();
+        if (ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).type() == QVariant::String)
+            val = JsonHelper::parseCurves(ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).toString());
         QVariant newVal;
         if (!newCurves.isEmpty() || val.size() != keys.size()) {
             for (const QString &key : keys) {
@@ -1041,7 +1036,7 @@ void ZenoPropPanel::editKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &
                     }
                 }
             }
-            newVal = QVariant::fromValue(val);
+            newVal = JsonHelper::dumpCurves(val);
         } else
         {
             if (ZLineEdit *lineEdit = qobject_cast<ZLineEdit *>(ctrl.pControl)) {
@@ -1051,7 +1046,7 @@ void ZenoPropPanel::editKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &
             }
             val = CURVES_DATA();
         }
-        UiHelper::qIndexSetData(ctrl.m_viewIdx, QVariant::fromValue(newVal), ROLE_PARAM_VALUE);
+        UiHelper::qIndexSetData(ctrl.m_viewIdx, newVal, ROLE_PARAM_VALUE);
         updateTimelineKeys(val);
     });
     CURVES_DATA curves = getCurvesData(ctrl.m_viewIdx, keys);
@@ -1071,8 +1066,8 @@ void ZenoPropPanel::editKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &
 void ZenoPropPanel::clearKeyFrame(const _PANEL_CONTROL& ctrl, const QStringList& keys)
 {
     CURVES_DATA val;
-    if (ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).canConvert<CURVES_DATA>())
-        val = ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).value<CURVES_DATA>();
+    if (ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).type() == QVariant::String)
+        val = JsonHelper::parseCurves(ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).toString());
     int emptySize = 0;
 
     for (auto &curve : val) {
@@ -1108,10 +1103,10 @@ void ZenoPropPanel::clearKeyFrame(const _PANEL_CONTROL& ctrl, const QStringList&
     }
     else
     {
-        newVal = QVariant::fromValue(val);
+        newVal = JsonHelper::dumpCurves(val);
     }
 
-    UiHelper::qIndexSetData(ctrl.m_viewIdx, QVariant::fromValue(newVal), ROLE_PARAM_VALUE);
+    UiHelper::qIndexSetData(ctrl.m_viewIdx, newVal, ROLE_PARAM_VALUE);
     updateTimelineKeys(val);
 }
 
@@ -1150,8 +1145,9 @@ QStringList ZenoPropPanel::getKeys(const QObject *obj, const _PANEL_CONTROL &ctr
                 if (!key.isEmpty())
                     keys << key;
             }
-        } else if (ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).canConvert<CURVES_DATA>()) {
-            CURVES_DATA val = ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).value<CURVES_DATA>();
+        } else if (ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).type() == QVariant::String)
+        {
+            CURVES_DATA val = JsonHelper::parseCurves(ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).toString());
             keys << val.keys();
         }
     } else if (ZVecEditor *vecEdit = qobject_cast<ZVecEditor *>(ctrl.pControl)) //control vec
@@ -1166,8 +1162,8 @@ QStringList ZenoPropPanel::getKeys(const QObject *obj, const _PANEL_CONTROL &ctr
 
 CURVES_DATA ZenoPropPanel::getCurvesData(const QPersistentModelIndex &perIdx, const QStringList &keys) {
     CURVES_DATA val;
-    if (perIdx.data(ROLE_PARAM_VALUE).canConvert<CURVES_DATA>())
-        val = perIdx.data(ROLE_PARAM_VALUE).value<CURVES_DATA>();
+    if (perIdx.data(ROLE_PARAM_VALUE).type() == QVariant::String)
+        val = JsonHelper::parseCurves(perIdx.data(ROLE_PARAM_VALUE).toString());
     CURVES_DATA curves;
     for (auto key : keys) {
         if (val.contains(key)) {

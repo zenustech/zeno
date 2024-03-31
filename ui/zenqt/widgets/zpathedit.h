@@ -3,16 +3,19 @@
 
 #include "zlineedit.h"
 #include "nodeeditor/gv/callbackdef.h"
+#include <zeno/core/common.h>
 
 class ZPathEdit : public ZLineEdit
 {
     Q_OBJECT
 public:
-    explicit ZPathEdit(const CALLBACK_SWITCH& cbSwitch, QWidget *parent = nullptr);
-  explicit ZPathEdit(const CALLBACK_SWITCH& cbSwitch, const QString &text, QWidget *parent = nullptr);
-
+    explicit ZPathEdit(zeno::ParamControl ctrl = zeno::ReadPathEdit, QWidget *parent = nullptr);
+    explicit ZPathEdit(const QString &text, zeno::ParamControl ctrl = zeno::ReadPathEdit, QWidget *parent = nullptr);
+    void setPathFlag(zeno::ParamControl ctrl);
 private:
-  void initUI(const CALLBACK_SWITCH& cbSwitch);
+  void initUI();
+
+  zeno::ParamControl m_ctrl;
 };
 
 #endif

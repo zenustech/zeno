@@ -298,7 +298,7 @@ ZLayoutBackground* ZenoNode::initMainHeaderBg()
     headerWidget->setLayout(pHLayout);
     headerWidget->setZValue(ZVALUE_BACKGROUND);
 
-    //´´½¨¿ÉÒÔÏÔÊ¾µÄÃû×Ö×é
+    //åˆ›å»ºå¯ä»¥æ˜¾ç¤ºçš„åå­—ç»„
     font2.setPointSize(20);
 
     auto nameItem = new ZEditableTextItem(name, headerWidget);
@@ -406,7 +406,7 @@ ZLayoutBackground* ZenoNode::initHeaderWidget()
     pHLayout->addSpacing(ZenoStyle::dpiScaled(5.));
     pHLayout->addItem(clsItem, Qt::AlignVCenter);
 
-    //²¹³äÒ»Ğ©¾àÀë
+    //è¡¥å……ä¸€äº›è·ç¦»
     pHLayout->addSpacing(szIcon.width() + ZenoStyle::dpiScaled(20.));
 
     //pHLayout->addSpacing(100, QSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed));
@@ -437,7 +437,7 @@ ZLayoutBackground* ZenoNode::initHeaderWidget()
     m_statusMarker->setPen(Qt::NoPen);
     m_statusMarker->setPos(QPointF(0, 0));
 
-    //´´½¨¿ÉÒÔÏÔÊ¾µÄÃû×Ö×é£¬²¢ÇÒ²»ÄÉÈëheaderµÄ²¼¾Ö£¬½ö½öÉèÖÃÏà¶ÔÎ»ÖÃ
+    //åˆ›å»ºå¯ä»¥æ˜¾ç¤ºçš„åå­—ç»„ï¼Œå¹¶ä¸”ä¸çº³å…¥headerçš„å¸ƒå±€ï¼Œä»…ä»…è®¾ç½®ç›¸å¯¹ä½ç½®
     font2.setPointSize(20);
 
     auto nameItem = new ZEditableTextItem(name, headerWidget);
@@ -930,6 +930,9 @@ SocketBackgroud* ZenoNode::addSocket(const QModelIndex& paramIdx, bool bInput, Z
     if ((type == zeno::Param_Dict || type == zeno::Param_List) && 
         ctrl != zeno::NoMultiSockPanel) {
         pMiniLayout = new ZDictSocketLayout(paramIdx, bInput, pBackground);
+    }
+    else if (ctrl == zeno::Seperator) {
+        pMiniLayout = new ZGroupSocketLayout(paramIdx, bInput);
     }
     else {
         pMiniLayout = new ZSocketLayout(paramIdx, bInput, pBackground);

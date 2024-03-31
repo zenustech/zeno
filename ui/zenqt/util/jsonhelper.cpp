@@ -372,6 +372,24 @@ namespace JsonHelper
         return curve;
     }
 
+    CURVES_DATA JsonHelper::parseCurves(const QString& curveJson)
+    {
+        CURVES_DATA curves;
+        rapidjson::Document doc;
+        doc.Parse(curveJson.toStdString().c_str());
+
+        if (!doc.IsObject())
+            return curves;
+        for (auto iter = doc.MemberBegin(); iter != doc.MemberEnd(); iter++) {
+            if (iter->value.IsObject()) {
+                bool bSucceed = false;
+                CURVE_DATA dat = parseCurve(iter->name.GetString(), iter->value);
+                curves[iter->name.GetString()] = dat;
+            }
+        }
+        return curves;
+    }
+
     CurveModel* _parseCurveModel(QString channel, const rapidjson::Value& jsonCurve, QObject* parentRef)
     {
         ZASSERT_EXIT(jsonCurve.HasMember(key_range), nullptr);
@@ -471,8 +489,8 @@ namespace JsonHelper
                 const QPointF &leftPos = pt.leftHandler;
                 const QPointF &rightPos = pt.rightHandler;
                 HANDLE_TYPE hdlType = (HANDLE_TYPE)pt.controlType;
-                bool bLockX = false;    //todo: lock io
-                bool bLockY = false;
+                bool bLockX = pt.bLockX;    //todo: lock io
+                bool bLockY = pt.bLockY;
 
                 JsonObjBatch scope2(writer);
                 writer.Key("x");
@@ -517,6 +535,44 @@ namespace JsonHelper
         }
         writer.Key(key_visible);
         writer.Bool(curve.visible);
+    }
+
+    QString JsonHelper::dumpCurves(const CURVES_DATA& curves)
+    {
+        rapidjson::StringBuffer s;
+        RAPIDJSON_WRITER writer(s);
+        writer.StartObject();
+        for (auto curve : curves) {
+            writer.Key(curve.key.toUtf8());
+            dumpCurve(curve, writer);
+        }
+        writer.EndObject();
+        return QString::fromUtf8(s.GetString());
+    }
+
+    bool JsonHelper::parseHeatmap(const QString& json, int& nres, QString& grad)
+    {
+        rapidjson::Document doc;
+        doc.Parse(json.toStdString().c_str());
+
+        if (!doc.IsObject() || !doc.HasMember("nres") || !doc.HasMember("color"))
+            return false;
+        nres = doc["nres"].GetInt();
+        grad = doc["color"].GetString();
+        return true;
+    }
+
+    QString JsonHelper::dumpHeatmap(int nres, const QString& grad)
+    {
+        rapidjson::StringBuffer s;
+        RAPIDJSON_WRITER writer(s);
+        writer.StartObject();
+        writer.Key("nres");
+        writer.Int(nres);
+        writer.Key("color");
+        writer.String(grad.toUtf8());
+        writer.EndObject();
+        return QString::fromUtf8(s.GetString());
     }
 
     void dumpCurveModel(const CurveModel* pModel, RAPIDJSON_WRITER& writer)

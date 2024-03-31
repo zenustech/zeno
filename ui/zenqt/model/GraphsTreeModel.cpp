@@ -302,7 +302,10 @@ void GraphsTreeModel::clearDirty() {
 
 QList<SEARCH_RESULT> GraphsTreeModel::search(const QString& content, int searchType, int searchOpts) const
 {
-    //TODO
-    QList<SEARCH_RESULT> result;
-    return result;
+    return m_main->search(content, SearchType(searchType), SearchOpt(searchOpts));
+}
+
+QList<SEARCH_RESULT> GraphsTreeModel::searchByUuidPath(const zeno::ObjPath& uuidPath)
+{
+    return m_main->searchByUuidPath(uuidPath);
 }

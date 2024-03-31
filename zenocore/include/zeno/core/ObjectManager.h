@@ -58,6 +58,7 @@ public:
 
     ZENO_API void beforeRun();
     ZENO_API void afterRun();
+    ZENO_API void clearLastUnregisterObjs();
 
     ZENO_API void collectingObject(const std::string& id, std::shared_ptr<IObject> obj, std::shared_ptr<INode> view_node, bool bView);
     CALLBACK_REGIST(collectingObject, void, std::shared_ptr<IObject>, bool)
@@ -79,11 +80,20 @@ public:
     ZENO_API void revert();
 
     ZENO_API void export_loading_objs(RenderObjsInfo& info);
+    ZENO_API void export_all_view_objs(RenderObjsInfo& info);
+    ZENO_API void export_all_view_objs(std::vector<std::pair<std::string, std::shared_ptr<zeno::IObject>>>& info);
+    ZENO_API std::shared_ptr<IObject> getObj(std::string name);
     ZENO_API void clear_last_run();
     ZENO_API void collect_removing_objs(const std::string& objkey);
     ZENO_API void remove_attach_node_by_removing_objs();
 
+    //viewport interactive obj
+    ZENO_API void markObjInteractive(std::set<std::string>& newobjKeys);
+    ZENO_API void unmarkObjInteractive(std::set<std::string>& removeobjKeys);
+    ZENO_API void getModifyObjsInfo(std::map<std::string, std::shared_ptr<zeno::IObject>>& modifyInteractiveObjs);  //interactive objs
+
 private:
+    void convertToView(zany const& objToBeConvert, SharedObjects& objConvertResult, std::set<std::string>& keyConvertResult, bool convertKeyOnly = false);
     void clear();
 
     std::map<std::string, int> m_objRegister;
@@ -95,9 +105,11 @@ private:
     std::set<std::string> m_lastViewObjs;
     std::set<std::string> m_removing_objs;  //这里是删除节点时记录的要删除的obj，要考虑rollback的情况
 
-    std::set<std::string> m_newAdded;
-    std::set<std::string> m_modify;
-    std::set<std::string> m_remove;
+    std::set<std::string> m_newAdded;       //渲染端需要新增的obj
+    std::set<std::string> m_remove;         //渲染端需要移除的obj
+    std::set<std::string> m_modify;         //渲染端(viewport)的 interactive obj
+
+    std::vector<std::string> m_lastUnregisterObjs;
 
     mutable std::mutex m_mtx;
 };

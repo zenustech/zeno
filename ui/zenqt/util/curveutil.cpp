@@ -90,9 +90,10 @@ namespace curve_util
         rg.xFrom = 0;
         rg.yFrom = 0;
         rg.xTo = 1;
-        rg.yTo = 1;
+        rg.yTo = 1; 
         curve.rg = rg;
-        curve.points.append({QPointF(rg.xFrom, rg.yFrom), QPointF(0, 0), QPointF(0, 0), 0});
+        curve.visible = true;
+        curve.points.append({QPointF(rg.xFrom, rg .yFrom), QPointF(0, 0), QPointF(0, 0), 0});
         curve.points.append({QPointF(rg.xTo, rg.yTo), QPointF(0, 0), QPointF(0, 0), 0});
 
         CURVES_DATA curves;

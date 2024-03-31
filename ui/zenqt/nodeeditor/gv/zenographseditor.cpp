@@ -658,11 +658,11 @@ void ZenoGraphsEditor::activateTab(const QString& subGraphName, const QString& p
 }
 #endif
 
-void ZenoGraphsEditor::showFloatPanel(const QModelIndex &subgIdx, const QModelIndexList &nodes) {
+void ZenoGraphsEditor::showFloatPanel(GraphModel* subgraph, const QModelIndexList &nodes) {
     ZenoSubGraphView *pView = qobject_cast<ZenoSubGraphView *>(m_ui->graphsViewTab->currentWidget());
     if (pView != NULL)
     {
-        pView->showFloatPanel(subgIdx, nodes);
+        pView->showFloatPanel(subgraph, nodes);
     }
 }
 
@@ -818,7 +818,7 @@ void ZenoGraphsEditor::onSearchEdited(const QString& content)
         }
         else if (res.type == SEARCH_NODECLS || res.type == SEARCH_NODEID || res.type == SEARCH_ARGS || res.type == SEARCH_CUSTOM_NAME)
         {
-            QString subgName = res.subgIdx.data(ROLE_CLASS_NAME).toString();
+            QString subgName = res.subGraph->name();
             QModelIndexList lst = pModel->match(pModel->index(0, 0), ROLE_CLASS_NAME, subgName, 1, Qt::MatchExactly);
 
             QStandardItem* parentItem = nullptr;
@@ -1024,7 +1024,7 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
         if (pView) 
         {
             ZenoSubGraphScene *pScene = pView->scene();
-            UiHelper::createNewNode(pScene->subGraphIndex(), "Group", QPointF());
+            UiHelper::createNewNode(pScene->getGraphModel(), "Group", QPointF());
         }
     }
     else if (actionType == ZenoMainWindow::ACTION_EASY_GRAPH) 
@@ -1039,10 +1039,7 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
         QDialog dlg(this);
         QGridLayout *pLayout = new QGridLayout(&dlg);
         QDialogButtonBox *pButtonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
-        CALLBACK_SWITCH cbSwitch = [=](bool bOn) {
-            zenoApp->getMainWindow()->setInDlgEventLoop(bOn); //deal with ubuntu dialog slow problem when update viewport.
-        };
-        ZPathEdit *pathLineEdit = new ZPathEdit(cbSwitch, v, &dlg);
+        ZPathEdit *pathLineEdit = new ZPathEdit(v, zeno::ReadPathEdit, &dlg);
         pLayout->addWidget(new QLabel("Set NASLOC"), 2, 0);
         pLayout->addWidget(pathLineEdit, 2, 1);
         pLayout->addWidget(pButtonBox, 4, 1);
@@ -1074,10 +1071,7 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
         int cacheNum = varCacheNum.isValid() ? varCacheNum.toInt() : 1;
         bool bAutoCleanCache = varAutoCleanCache.isValid() ? varAutoCleanCache.toBool() : true;
 
-        CALLBACK_SWITCH cbSwitch = [=](bool bOn) {
-            zenoApp->getMainWindow()->setInDlgEventLoop(bOn); //deal with ubuntu dialog slow problem when update viewport.
-        };
-        ZPathEdit *pathLineEdit = new ZPathEdit(cbSwitch, cacheRootDir);
+        ZPathEdit *pathLineEdit = new ZPathEdit(cacheRootDir, zeno::ReadPathEdit);
         pathLineEdit->setFixedWidth(256);
         pathLineEdit->setEnabled(!bTempCacheDir && bEnableCache);
         QCheckBox *pTempCacheDir = new QCheckBox;

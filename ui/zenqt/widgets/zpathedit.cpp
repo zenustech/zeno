@@ -1,42 +1,86 @@
 #include "zpathedit.h"
 #include "zlineedit.h"
 #include "uicommon.h"
+#include <zeno/extra/TempNode.h>
+#include <zeno/extra/assetDir.h>
+#include "zenomainwindow.h"
+#include "zenoapplication.h"
+#include "model/graphsmanager.h"
 
-
-ZPathEdit::ZPathEdit(const CALLBACK_SWITCH& cbSwitch, QWidget *parent)
+ZPathEdit::ZPathEdit(zeno::ParamControl ctrl, QWidget *parent)
     : ZLineEdit(parent)
+    , m_ctrl(ctrl)
 {
-    initUI(cbSwitch);
+    initUI();
 }
 
-ZPathEdit::ZPathEdit(const CALLBACK_SWITCH& cbSwitch, const QString &text, QWidget *parent)
+ZPathEdit::ZPathEdit(const QString &text, zeno::ParamControl ctrl, QWidget *parent)
     : ZLineEdit(text, parent)
+    , m_ctrl(ctrl)
 {
-    initUI(cbSwitch);
+    initUI();
 }
 
-void ZPathEdit::initUI(const CALLBACK_SWITCH& cbSwitch)
+void ZPathEdit::setPathFlag(zeno::ParamControl ctrl)
+{
+    m_ctrl = ctrl;
+}
+
+void ZPathEdit::initUI()
 {
     setFocusPolicy(Qt::ClickFocus);
     setIcons(":/icons/file-loader.svg", ":/icons/file-loader-on.svg");
     setProperty("cssClass", "path_edit");
 
     QObject::connect(this, &ZLineEdit::btnClicked, [=]() {
-        int ctrl = this->property("control").toInt();
-        QString path;
-        cbSwitch(true);
-        if (ctrl == zeno::Pathedit) {
-            path = QFileDialog::getOpenFileName(nullptr, "File to Open", "", "All Files(*);;");
-        } else {
+        QString path = this->text();
+
+        QString zsgDir = zenoApp->graphsManager()->zsgDir();
+        QString filePath = path;
+
+        // need to resolve the formula path
+        if (path.startsWith('=')) {
+            zeno::setConfigVariable("ZSG", zsgDir.toStdString());
+            auto code = std::make_shared<zeno::StringObject>();
+            code->set(path.mid(1).toStdString());
+            auto outs = zeno::TempNodeSimpleCaller("StringEval")
+                .set("zfxCode", code)
+                .call();
+            std::shared_ptr<zeno::StringObject> spStrObj = outs.get<zeno::StringObject>("result");
+            if (spStrObj)
+            {
+                filePath = QString::fromStdString(spStrObj->get());
+            }
+        }
+
+        QString dirPath;
+
+        if (filePath.isEmpty()) {
+            dirPath = zsgDir;
+        }
+        else {
+            QFileInfo fileInfo(filePath);
+            QDir dir = fileInfo.dir();
+            dirPath = dir.path();
+        }
+        if (m_ctrl == zeno::ReadPathEdit) {
+            path = QFileDialog::getOpenFileName(nullptr, "File to Open", dirPath, "All Files(*);;");
+        } 
+        else if (m_ctrl == zeno::WritePathEdit) {
+            path = QFileDialog::getSaveFileName(nullptr, "Path to Save", dirPath, "All Files(*);;");
+        }
+        else {
             path = QFileDialog::getExistingDirectory(nullptr, "Path to Save", "");
         }
         if (path.isEmpty()) {
-            cbSwitch(false);
+            zenoApp->getMainWindow()->setInDlgEventLoop(false);
             return;
         }
+        if (!zsgDir.isEmpty() && path.indexOf(zsgDir) != -1)
+            path.replace(zsgDir, "=$ZSG");
         setText(path);
         emit textEditFinished();
         clearFocus();
-        cbSwitch(false);
+        zenoApp->getMainWindow()->setInDlgEventLoop(false);
     });
 }

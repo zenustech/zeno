@@ -43,10 +43,7 @@ ZNASLOCPane::ZNASLOCPane(QWidget* parent)
 {
     const QString& path = ZenoSettingsManager::GetInstance().getValue(zsNASLOC).toString();
     QHBoxLayout* pLayout = new QHBoxLayout(this);
-    CALLBACK_SWITCH cbSwitch = [=](bool bOn) {
-        zenoApp->getMainWindow()->setInDlgEventLoop(bOn); //deal with ubuntu dialog slow problem when update viewport.
-    };
-    m_pPthEdit = new ZPathEdit(cbSwitch, path, this);
+    m_pPthEdit = new ZPathEdit(path, zeno::ReadPathEdit, this);
     pLayout->addWidget(new QLabel("Set NASLOC"));
     pLayout->addWidget(m_pPthEdit);
     pLayout->addItem(new QSpacerItem(10, 10, QSizePolicy::Expanding));
@@ -84,10 +81,7 @@ ZenoCachePane::ZenoCachePane(QWidget* parent) : QWidget(parent)
     bool bAutoCleanCache = varAutoCleanCache.isValid() ? varAutoCleanCache.toBool() : true;
     bool bEnableShiftChangeFOV = varEnableShiftChangeFOV.isValid() ? varEnableShiftChangeFOV.toBool() : true;
 
-    CALLBACK_SWITCH cbSwitch = [=](bool bOn) {
-        zenoApp->getMainWindow()->setInDlgEventLoop(bOn); //deal with ubuntu dialog slow problem when update viewport.
-    };
-    m_pPathEdit = new ZPathEdit(cbSwitch, cacheRootDir);
+    m_pPathEdit = new ZPathEdit(cacheRootDir, zeno::ReadPathEdit);
     m_pPathEdit->setFixedWidth(256);
     m_pPathEdit->setEnabled(!bTempCacheDir && bEnableCache);
     m_pTempCacheDir = new QCheckBox;

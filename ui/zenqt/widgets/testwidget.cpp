@@ -12,22 +12,20 @@ TestNormalWidget::TestNormalWidget()
     setPalette(pal);
 
     QString type = "";
-    QStringList items = {"23.5 fps", "24 fps", "25 fps", "30 fps", "60 fps"};
-    QVariant properties = items;
+    std::vector<std::string> items = {"23.5 fps", "24 fps", "25 fps", "30 fps", "60 fps"};
+    zeno::ControlProperty properties;
+    properties.items = items;
 
     CallbackCollection cbSet;
 
     QWidget* pWidget = zenoui::createWidget("turnLeft", zeno::Combobox, zeno::Param_Null, cbSet, properties);
     pLayout->addWidget(pWidget);
 
+    std::array<float, 3> sliderInfo = { 1.0, 100.0, 1.0 };
+    properties.ranges = sliderInfo;
+
     QWidget* pSlider = zenoui::createWidget(10, zeno::Slider, zeno::Param_Int, cbSet, properties);
     pLayout->addWidget(pSlider);
-
-    SLIDER_INFO sliderInfo;
-    sliderInfo.step = 1;
-    sliderInfo.min = 1;
-    sliderInfo.max = 100;
-    properties = QVariant::fromValue(sliderInfo);
 
     QWidget* pSpinBox = zenoui::createWidget(10, zeno::SpinBoxSlider, zeno::Param_Int, cbSet, properties);
     pLayout->addWidget(pSpinBox);

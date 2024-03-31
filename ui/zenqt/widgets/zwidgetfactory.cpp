@@ -20,6 +20,7 @@
 #include "nodeeditor/gv/zitemfactory.h"
 #include "widgets/zpathedit.h"
 #include "util/uihelper.h"
+#include "util/jsonhelper.h"
 
 
 namespace zenoui
@@ -29,7 +30,7 @@ namespace zenoui
         zeno::ParamControl ctrl,
         const zeno::ParamType type,
         CallbackCollection cbSet,
-        const QVariant& properties
+        const zeno::ControlProperty& controlProps
     )
     {
         switch (ctrl)
@@ -64,9 +65,11 @@ namespace zenoui
                 });
                 return pCheckbox;
             }
-            case zeno::Pathedit:
+            case zeno::ReadPathEdit:
+            case zeno::WritePathEdit:
+            case zeno::DirectoryPathEdit:
             {
-                ZPathEdit *pathLineEdit = new ZPathEdit(cbSet.cbSwitch,value.toString());
+                ZPathEdit *pathLineEdit = new ZPathEdit(value.toString(), ctrl);
                 pathLineEdit->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
                 pathLineEdit->setProperty("control", ctrl);
                 
@@ -116,23 +119,20 @@ namespace zenoui
                 QPushButton* pBtn = new QPushButton("Edit Heatmap");
                 pBtn->setProperty("cssClass", "proppanel");
                 QObject::connect(pBtn, &QPushButton::clicked, [=]() {
-                    QLinearGradient grad = value.value<QLinearGradient>();
-                    ZenoHeatMapEditor editor(grad);
+                    QString val = cbSet.cbGetIndexData().toString();
+                    ZenoHeatMapEditor editor(val);
                     editor.exec();
-                    QLinearGradient newGrad = editor.colorRamps();
-                    cbSet.cbEditFinished(QVariant::fromValue(newGrad));
+                    QString newVal = editor.colorRamps();
+                    cbSet.cbEditFinished(QVariant::fromValue(newVal));
                 });
                 return pBtn;
             }
-            case zeno::Color:
             case zeno::ColorVec:
             {
                 QColor currentColor;
-                if (ctrl == zeno::Color) {
-                    currentColor = value.value<QColor>();
-                }
-                else if (ctrl == zeno::ColorVec) {
+                if (ctrl == zeno::ColorVec) {
                     auto colorVec = value.value<UI_VECTYPE>();
+                    colorVec.resize(3);
                     currentColor = QColor::fromRgbF(colorVec[0], colorVec[1], colorVec[2]);
                 }
                 QPushButton *pBtn = new QPushButton;
@@ -143,10 +143,7 @@ namespace zenoui
                     if (color.isValid()) 
                     {
                         pBtn->setStyleSheet(QString("background-color:%1; border:0;").arg(color.name()));
-                        if (ctrl == zeno::Color) {
-                            cbSet.cbEditFinished(QVariant::fromValue(color));
-                        }
-                        else if (ctrl == zeno::ColorVec) {
+                        if (ctrl == zeno::ColorVec) {
                             UI_VECTYPE colorVec(3);
                             color.getRgbF(&colorVec[0], &colorVec[1], &colorVec[2]);
                             cbSet.cbEditFinished(QVariant::fromValue<UI_VECTYPE>(colorVec));
@@ -188,15 +185,10 @@ namespace zenoui
             case zeno::Combobox:
             {
                 QStringList items;
-                if (properties.type() == QMetaType::QVariantMap)
+                if (controlProps.items.has_value())
                 {
-                    QVariantMap props = properties.toMap();
-                    if (props.find("items") != props.end())
-                        items = props["items"].toStringList();
-                }
-                else if (properties.type() == QVariant::StringList)
-                {
-                    items = properties.toStringList();
+                    for (auto item : controlProps.items.value())
+                        items.push_back(QString::fromStdString(item));
                 }
 
                 ZComboBox *pComboBox = new ZComboBox;
@@ -220,13 +212,16 @@ namespace zenoui
                     pEditor->setAttribute(Qt::WA_DeleteOnClose);
 
                     QObject::connect(pEditor, &ZCurveMapEditor::finished, [=](int result) {
-                        CURVES_DATA curves = pEditor->curves();
-                        cbSet.cbEditFinished(QVariant::fromValue(curves));
+                        QString newVal = JsonHelper::dumpCurves(pEditor->curves());
+                        cbSet.cbEditFinished(newVal);
                     });
 
                     CURVES_DATA curves;
                     if (cbSet.cbGetIndexData)
-                        curves = cbSet.cbGetIndexData().value<CURVES_DATA>();
+                    {
+                        const QString &str = cbSet.cbGetIndexData().toString();
+                        curves = JsonHelper::parseCurves(str);
+                    }
                     pEditor->addCurves(curves);
                     pEditor->exec();
                 });
@@ -257,13 +252,12 @@ namespace zenoui
                 pSlider->setValue(value.toInt());
 
                 SLIDER_INFO sliderInfo;
-                if (properties.type() == QMetaType::QVariantMap) {
-                    QVariantMap props = properties.toMap();
-                    if (props.contains("min") && props.contains("max") && props.contains("step")) {
-                        sliderInfo.min = props["min"].toInt();
-                        sliderInfo.max = props["max"].toInt();
-                        sliderInfo.step = props["step"].toInt();
-                    }
+                
+                if (controlProps.ranges.has_value()) {
+                    const auto& ranges = controlProps.ranges.value();
+                    sliderInfo.min = ranges[0];
+                    sliderInfo.max = ranges[1];
+                    sliderInfo.step = ranges[2];
                 }
                 pSlider->setSingleStep(sliderInfo.step);
                 pSlider->setRange(sliderInfo.min, sliderInfo.max);
@@ -297,13 +291,12 @@ namespace zenoui
                 pSpinBox->setValue(value.toInt());
                 pSpinBox->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
                 SLIDER_INFO sliderInfo;
-                if (properties.type() == QMetaType::QVariantMap) {
-                    QVariantMap props = properties.toMap();
-                    if (props.contains("min") && props.contains("max") && props.contains("step")) {
-                        sliderInfo.min = props["min"].toInt();
-                        sliderInfo.max = props["max"].toInt();
-                        sliderInfo.step = props["step"].toInt();
-                    }
+                
+                if (controlProps.ranges.has_value()) {
+                    const auto& ranges = controlProps.ranges.value();
+                    sliderInfo.min = ranges[0];
+                    sliderInfo.max = ranges[1];
+                    sliderInfo.step = ranges[2];
                 }
                 pSpinBox->setSingleStep(sliderInfo.step);
                 pSpinBox->setRange(sliderInfo.min, sliderInfo.max);
@@ -319,13 +312,11 @@ namespace zenoui
                 pSpinBox->setValue(value.toDouble());
                 pSpinBox->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
                 SLIDER_INFO sliderInfo;
-                if (properties.type() == QMetaType::QVariantMap) {
-                    QVariantMap props = properties.toMap();
-                    if (props.contains("min") && props.contains("max") && props.contains("step")) {
-                        sliderInfo.min = props["min"].toDouble();
-                        sliderInfo.max = props["max"].toDouble();
-                        sliderInfo.step = props["step"].toDouble();
-                    }
+                if (controlProps.ranges.has_value()) {
+                    const auto& ranges = controlProps.ranges.value();
+                    sliderInfo.min = ranges[0];
+                    sliderInfo.max = ranges[1];
+                    sliderInfo.step = ranges[2];
                 }
                 pSpinBox->setSingleStep(sliderInfo.step);
                 pSpinBox->setRange(sliderInfo.min, sliderInfo.max);
@@ -338,13 +329,11 @@ namespace zenoui
             {
                 ZSpinBoxSlider* pSlider = new ZSpinBoxSlider;
                 SLIDER_INFO sliderInfo;
-                if (properties.type() == QMetaType::QVariantMap) {
-                    QVariantMap props = properties.toMap();
-                    if (props.contains("min") && props.contains("max") && props.contains("step")) {
-                        sliderInfo.min = props["min"].toInt();
-                        sliderInfo.max = props["max"].toInt();
-                        sliderInfo.step = props["step"].toInt();
-                    }
+                if (controlProps.ranges.has_value()) {
+                    const auto& ranges = controlProps.ranges.value();
+                    sliderInfo.min = ranges[0];
+                    sliderInfo.max = ranges[1];
+                    sliderInfo.step = ranges[2];
                 }
                 pSlider->setSingleStep(sliderInfo.step);
                 pSlider->setRange(sliderInfo.min, sliderInfo.max);
@@ -368,7 +357,10 @@ namespace zenoui
         switch (ctrl)
         {
         case zeno::Lineedit:    return qobject_cast<ZLineEdit*>(pControl) != nullptr;    //be careful type changed.
-        case zeno::Pathedit:    return qobject_cast<ZLineEdit*>(pControl) != nullptr;
+        case zeno::ReadPathEdit:
+        case zeno::WritePathEdit:
+        case zeno::DirectoryPathEdit:
+            return qobject_cast<ZLineEdit*>(pControl) != nullptr;
         case zeno::Checkbox:    return qobject_cast<QCheckBox*>(pControl) != nullptr;
         case zeno::Vec2edit:
         case zeno::Vec3edit:
@@ -376,7 +368,7 @@ namespace zenoui
         case zeno::Combobox:    return qobject_cast<QComboBox*>(pControl) != nullptr;
         case zeno::Multiline:   return qobject_cast<ZTextEdit*>(pControl) != nullptr;
         case zeno::CurveEditor: //only support a button to emit dialog of curve
-        case zeno::Color:       return qobject_cast<QPushButton*>(pControl) != nullptr;
+        case zeno::ColorVec:       return qobject_cast<QPushButton*>(pControl) != nullptr;
         }
     }
 

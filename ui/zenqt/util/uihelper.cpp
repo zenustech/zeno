@@ -49,18 +49,14 @@ BlockSignalScope::~BlockSignalScope()
 		m_pObject->blockSignals(false);
 }
 
-QString UiHelper::createNewNode(QModelIndex subgIdx, const QString& descName, const QPointF& pt)
+QString UiHelper::createNewNode(GraphModel* subgraph, const QString& descName, const QPointF& pt)
 {
-    if (!subgIdx.isValid())
+    if (!subgraph)
         return "";
 
     zeno::NodeData node;
     //NODE_DATA node = newNodeData(pModel, descName, pt);
-    QAbstractItemModel* graphM = const_cast<QAbstractItemModel*>(subgIdx.model());
-    if (GraphModel* pModel = qobject_cast<GraphModel*>(graphM))
-    {
-        node = pModel->createNode(descName, "", pt);
-    }
+    node = subgraph->createNode(descName, "", pt);
     return QString::fromStdString(node.name);
 }
 
@@ -120,10 +116,10 @@ zeno::zvariant UiHelper::qvarToZVar(const QVariant& var, const zeno::ParamType t
                 }
                 if (vec.size() == 4) {
                     if (type == zeno::Param_Vec4f) {
-                        return zeno::vec2f(vec[0], vec[1], vec[2], vec[3]);
+                        return zeno::vec4f(vec[0], vec[1], vec[2], vec[3]);
                     }
                     else if (type == zeno::Param_Vec4i) {
-                        return zeno::vec2i((int)vec[0], (int)vec[1], (int)vec[2], (int)vec[3]);
+                        return zeno::vec4i((int)vec[0], (int)vec[1], (int)vec[2], (int)vec[3]);
                     }
                 }
             }
@@ -213,6 +209,30 @@ QVariant UiHelper::initDefaultValue(const zeno::ParamType& type)
     {
         return QVariant(false);
     }
+    else if (type == zeno::Param_Vec2i || type == zeno::Param_Vec2f)
+    {
+        UI_VECTYPE vec(2);
+        return QVariant::fromValue(vec);
+    }
+    else if (type == zeno::Param_Vec3i || type == zeno::Param_Vec3f)
+    {
+        UI_VECTYPE vec(3);
+        return QVariant::fromValue(vec);
+    }
+    else if (type == zeno::Param_Vec4i || type == zeno::Param_Vec4f)
+    {
+        UI_VECTYPE vec(4);
+        return QVariant::fromValue(vec);
+    }
+    else if (type == zeno::Param_Curve)
+    {
+        return JsonHelper::dumpCurves(curve_util::deflCurves());
+    }
+    else if (type == zeno::Param_Heatmap)
+    {
+        return JsonHelper::dumpHeatmap(1024, "");
+    }
+
     /*
     else if (type.startsWith("vec"))
     {
@@ -307,7 +327,6 @@ QString UiHelper::getControlDesc(zeno::ParamControl ctrl)
     case CONTROL_VEC3_INT:          return "Integer Vector 3";
     case CONTROL_VEC2_INT:          return "Integer Vector 2";
     case CONTROL_COLOR:             return "Color";
-    case CONTROL_PURE_COLOR:        return "Pure Color";
     case CONTROL_COLOR_VEC3F:       return "Color Vec3f";
     case CONTROL_CURVE:             return "Curve";
     case CONTROL_HSPINBOX:          return "SpinBox";
@@ -341,7 +360,9 @@ QString UiHelper::getControlDesc(zeno::ParamControl ctrl, zeno::ParamType type)
         return "Boolean";
     }
     case zeno::Multiline:           return "Multiline String";
-    case zeno::Pathedit:            return "read path";
+    case zeno::ReadPathEdit:            return "read path";
+    case zeno::WritePathEdit:            return "write path";
+    case zeno::DirectoryPathEdit:            return "directory";
     case zeno::Combobox:            return "Enum";
     case zeno::Vec4edit:
     {
@@ -356,7 +377,6 @@ QString UiHelper::getControlDesc(zeno::ParamControl ctrl, zeno::ParamType type)
         return type == zeno::Param_Int ? "Integer Vector 2" : "Float Vector 2";
     }
     case zeno::Heatmap:             return "Color";
-    case zeno::Color:               return "Pure Color";
     case zeno::ColorVec:            return "Color Vec3f";
     case zeno::CurveEditor:         return "Curve";
     case zeno::SpinBox:             return "SpinBox";
@@ -395,11 +415,15 @@ zeno::ParamControl UiHelper::getControlByDesc(const QString& descName)
     }
     else if (descName == "read path")
     {
-        return zeno::Pathedit;
+        return zeno::ReadPathEdit;
     }
     else if (descName == "write path")
     {
-        return zeno::Pathedit;
+        return zeno::WritePathEdit;
+    }
+    else if (descName == "directory")
+    {
+        return zeno::DirectoryPathEdit;
     }
     else if (descName == "Enum")
     {
@@ -433,10 +457,6 @@ zeno::ParamControl UiHelper::getControlByDesc(const QString& descName)
     {
         return zeno::Heatmap;
     } 
-    else if (descName == "Pure Color") 
-    {
-        return zeno::Color;
-    }
     else if (descName == "Color Vec3f")
     {
         return zeno::ColorVec;
@@ -547,6 +567,8 @@ QList<zeno::ParamControl> UiHelper::getControlLists(const zeno::ParamType& type)
         return { zeno::Vec4edit };
     case zeno::Param_Curve:
         return { zeno::CurveEditor };
+    case zeno::Param_Heatmap:
+        return { zeno::Heatmap };
     default:
         return {};
     }
@@ -569,6 +591,7 @@ QString UiHelper::getTypeDesc(zeno::ParamType type)
     case zeno::Param_Prim:      return "prim";
     case zeno::Param_List:      return "list";
     case zeno::Param_Dict:      return "dict";
+    case zeno::Param_Heatmap: return "color";
     case zeno::Param_Null:
     default:
         return "";
@@ -605,17 +628,18 @@ zeno::ParamControl UiHelper::getControlByType(const QString &type)
             return zeno::NullControl;
         }
     } else if (type == "writepath") {
-        return zeno::Pathedit;
+        return zeno::WritePathEdit;
     } else if (type == "readpath") {
-        return zeno::Pathedit;
-    } else if (type == "multiline_string") {
+        return zeno::ReadPathEdit;
+    } else if (type == "directory") {
+        return zeno::DirectoryPathEdit;
+    }
+    else if (type == "multiline_string") {
         return zeno::Multiline;
     } else if (type == "color") {   //color is more general than heatmap.
         return zeno::Heatmap;
-    } else if (type == "purecolor") {   
-        return zeno::Color;
     } else if (type == "colorvec3f") {   //colorvec3f is for coloreditor, color is heatmap? ^^^^
-        return zeno::Color;
+        return zeno::ColorVec;
     } else if (type == "curve") {
         return zeno::CurveEditor;
     } else if (type.startsWith("enum ")) {
@@ -658,6 +682,7 @@ zeno::ParamControl UiHelper::getDefaultControl(const zeno::ParamType type)
     case zeno::Param_List:      return zeno::NullControl;
             //Param_Color:  //need this?
     case zeno::Param_Curve:     return zeno::CurveEditor;
+    case zeno::Param_Heatmap: return zeno::Heatmap;
     case zeno::Param_SrcDst:
     default:
         return zeno::NullControl;
@@ -1557,6 +1582,38 @@ QString UiHelper::gradient2colorString(const QLinearGradient& grad)
     return colorStr;
 }
 
+QLinearGradient UiHelper::colorString2Grad(const QString& colorStr)
+{
+    QLinearGradient grad;
+    if (colorStr.isEmpty())
+        return grad;
+    QStringList L = colorStr.split("\n", QtSkipEmptyParts);
+    ZASSERT_EXIT(!L.isEmpty(), grad);
+
+    bool bOk = false;
+    int n = L[0].toInt(&bOk);
+    ZASSERT_EXIT(bOk && n == L.size() - 1, grad);
+    for (int i = 1; i <= n; i++)
+    {
+        QStringList color_info = L[i].split(" ", QtSkipEmptyParts);
+        ZASSERT_EXIT(color_info.size() == 4, grad);
+
+        float f = color_info[0].toFloat(&bOk);
+        ZASSERT_EXIT(bOk, grad);
+        float r = color_info[1].toFloat(&bOk);
+        ZASSERT_EXIT(bOk, grad);
+        float g = color_info[2].toFloat(&bOk);
+        ZASSERT_EXIT(bOk, grad);
+        float b = color_info[3].toFloat(&bOk);
+        ZASSERT_EXIT(bOk, grad);
+
+        QColor clr;
+        clr.setRgbF(r, g, b);
+        grad.setColorAt(f, clr);
+    }
+    return grad;
+}
+
 int UiHelper::tabIndexOfName(const QTabWidget* pTabWidget, const QString& name)
 {
     if (!pTabWidget)
@@ -1595,84 +1652,17 @@ QString UiHelper::getNaiveParamPath(const QModelIndex& param, int dim)
     return QString("%1/%2").arg(name).arg(paramPath);
 }
 
-QPair<zeno::NodesData, zeno::LinksData>
-    UiHelper::dumpNodes(const QModelIndexList &nodeIndice, const QModelIndexList &linkIndice)
+zeno::NodesData UiHelper::dumpNodes(const QModelIndexList &nodeIndice)
 {
     zeno::NodesData nodes;
-    zeno::LinksData links;
 
     QSet<QString> existedNodes;
-    for (auto idx : nodeIndice)
+    for (const auto& idx : nodeIndice)
     {
-        existedNodes.insert(idx.data(ROLE_NODE_NAME).toString());
+        zeno::NodeData data = idx.data(ROLE_NODEDATA).value<zeno::NodeData>();
+        nodes[data.name] = data;
     }
-
-    for (auto idx : linkIndice)
-    {
-        QVariantList outInfo = idx.data(ROLE_LINK_FROMPARAM_INFO).toList();
-        ZASSERT_EXIT(outInfo.size() == 3, {});
-
-        QVariantList inInfo = idx.data(ROLE_LINK_TOPARAM_INFO).toList();
-        ZASSERT_EXIT(inInfo.size() == 3, {});
-
-        QString outId = outInfo[0].toString();
-        QString inId = inInfo[0].toString();
-
-        if (existedNodes.find(outId) != existedNodes.end() &&
-            existedNodes.find(inId) != existedNodes.end())
-        {
-            const QString& outParam = outInfo[1].toString();
-            const QString& inParam = inInfo[1].toString();
-            zeno::EdgeInfo edge = {
-                outId.toStdString(),
-                outParam.toStdString(),
-                "",
-                inId.toStdString(),
-                inParam.toStdString(),
-                ""
-            };
-            links.push_back(edge);
-        }
-    }
-
-    for (auto idx : nodeIndice)
-    {
-        zeno::NodeData node = idx.data(ROLE_NODEDATA).value<zeno::NodeData>();
-        for (zeno::ParamInfo& param : node.inputs)
-        {
-            for (auto it = param.links.begin(); it != param.links.end(); )
-            {
-                if (std::find(links.begin(), links.end(), *it) == links.end())
-                {
-                    it = param.links.erase(it);
-                }
-                else
-                {
-                    it++;
-                }
-            }
-        }
-
-        for (zeno::ParamInfo& param : node.outputs)
-        {
-            for (auto it = param.links.begin(); it != param.links.end(); )
-            {
-                if (std::find(links.begin(), links.end(), *it) == links.end())
-                {
-                    it = param.links.erase(it);
-                }
-                else
-                {
-                    it++;
-                }
-            }
-        }
-
-        const std::string& oldId = node.name;
-        nodes.insert(std::make_pair(oldId, node));
-    }
-
-    return { nodes, links };
+    return nodes;
 }
 
 void UiHelper::reAllocIdents(const QString& targetSubgraph,

@@ -13,7 +13,6 @@
 class AppHelper
 {
 public:
-    static QLinearGradient colorString2Grad(const QString& colorStr);
     static QString nativeWindowTitle(const QString& currentFilePath);
     static VideoRecInfo getRecordInfo(const ZENO_RECORD_RUN_INITPARAM& param);
     static QVector<QString> getKeyFrameProperty(const QVariant &val);

@@ -36,6 +36,8 @@ CURVE_DATA CurveModel::getItems() const {
         pt.leftHandler = pItem->data(ROLE_LEFTPOS).value<QPointF>();
         pt.rightHandler = pItem->data(ROLE_RIGHTPOS).value<QPointF>();
         pt.controlType = pItem->data(ROLE_TYPE).toInt();
+        pt.bLockX = pItem->data(ROLE_LOCKX).toBool();
+        pt.bLockY = pItem->data(ROLE_LOCKY).toBool();
     }
     dat.cycleType = 0;
     dat.key = m_id;

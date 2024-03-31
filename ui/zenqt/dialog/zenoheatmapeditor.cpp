@@ -5,6 +5,7 @@
 #include "util/uihelper.h"
 #include "zassert.h"
 #include "zeno/utils/vec.h"
+#include "util/jsonhelper.h"
 
 
 ZenoRampSelector::ZenoRampSelector(ZenoRampBar* pRampBar, QGraphicsItem* parent)
@@ -391,13 +392,13 @@ void SVColorView::paintEvent(QPaintEvent* event)
 
 
 /////////////////////////////////////////////////////////////////////
-ZenoHeatMapEditor::ZenoHeatMapEditor(const QLinearGradient& grad, QWidget* parent)
+ZenoHeatMapEditor::ZenoHeatMapEditor(const QString& heatmap, QWidget* parent)
 	: QDialog(parent)
 {
 	setWindowFlags(Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint);
 	m_ui = new Ui::HeatMapEditor;
 	m_ui->setupUi(this);
-	init(grad);
+	init(heatmap);
 	initSignals();
 	installFilters();
 }
@@ -406,8 +407,12 @@ ZenoHeatMapEditor::~ZenoHeatMapEditor()
 {
 }
 
-void ZenoHeatMapEditor::init(const QLinearGradient& grad)
+void ZenoHeatMapEditor::init(const QString& heatmap)
 {
+    int nres = 1024;
+    QString colorStr;
+    JsonHelper::parseHeatmap(heatmap, nres, colorStr);
+    QLinearGradient grad = UiHelper::colorString2Grad(colorStr);
 	initRamps(grad);
 	m_ui->cbPreset->addItems({"BlackBody", "Grayscale", "InfraRed", "TwoTone", "WhiteToRed"});
 	m_ui->hueSlider;
@@ -421,12 +426,16 @@ void ZenoHeatMapEditor::init(const QLinearGradient& grad)
     m_ui->lblBorV->setProperty("cssClass", "color_label");
     m_ui->lblPosition->setProperty("cssClass", "color_label");
 	//m_ui->clrHex->setFont(QFont("HarmonyOS Sans", 10));
+    m_ui->m_nresLineEdit->setText(QString::number(nres));
 	initColorView();
 }
 
-QLinearGradient ZenoHeatMapEditor::colorRamps() const
+QString ZenoHeatMapEditor::colorRamps() const
 {
-	return m_ui->rampBarView->colorRamps();
+    QString colorStr = UiHelper::gradient2colorString(m_ui->rampBarView->colorRamps());
+    int nres = m_ui->m_nresLineEdit->text().toInt();
+    QString res = JsonHelper::dumpHeatmap(nres, colorStr);
+	return res;
 }
 
 void ZenoHeatMapEditor::installFilters()

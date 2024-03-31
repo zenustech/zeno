@@ -246,12 +246,12 @@ void DockContent_Parameter::initConnections()
     });
 }
 
-void DockContent_Parameter::onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select)
+void DockContent_Parameter::onNodesSelected(GraphModel* subgraph, const QModelIndexList& nodes, bool select)
 {
     if (ZenoPropPanel* prop = findChild<ZenoPropPanel*>())
     {
         auto pModel = zenoApp->graphsManager()->currentModel();
-        prop->reset(subgIdx, nodes, select);
+        prop->reset(subgraph, nodes, select);
 
         if (!nodes.isEmpty())
         {
@@ -374,14 +374,15 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pSnapGrid->setToolTip(pSnapGrid->isChecked() ? tr("UnSnap Grid") : tr("Snap Grid"));
     pLinkLineShape->setToolTip(pLinkLineShape->isChecked() ? tr("Straight Link") : tr("Curve Link"));
 
-    QStringList items;
+    zeno::ControlProperty props;
+    std::vector<std::string> items;
     QVector<qreal> factors = UiHelper::scaleFactors();
     for (qreal factor : factors) {
         int per = factor * 100;
         QString sPer = QString("%1%").arg(per);
-        items.append(sPer);
+        items.push_back(sPer.toStdString());
     }
-    QVariant props = items;
+    props.items = items;
 
     Callback_EditFinished funcZoomEdited = [=](QVariant newValue) {
         const QString& percent = newValue.toString();
@@ -812,17 +813,18 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
 
     pMenuBar->addMenu(m_menuView);
 
-    QStringList items = {
-        tr("Free"),
+    std::vector<std::string> items = {
+        tr("Free").toStdString(),
         "1024x768",
         "1280x720",
         "1280x768",
         "1280x800",
         "1680x1050",
         "1920x1080",
-        tr("Customize Size")
+        tr("Customize Size").toStdString()
     };
-    QVariant props = items;
+    zeno::ControlProperty props;
+    props.items = items;
 
     QFontMetrics fontMetrics(font);
     Callback_EditFinished funcRender = [=](QVariant newValue) {
@@ -891,7 +893,7 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
     m_cbRes->setProperty("focusBorder", "none");
     m_cbRes->setEditable(false);
     m_cbRes->view()->setFixedWidth(ZenoStyle::dpiScaled(110));
-    m_cbRes->setFixedSize(fontMetrics.horizontalAdvance(items[0]) + ZenoStyle::dpiScaled(28), ZenoStyle::dpiScaled(20));
+    m_cbRes->setFixedSize(fontMetrics.horizontalAdvance(QString::fromStdString(items[0])) + ZenoStyle::dpiScaled(28), ZenoStyle::dpiScaled(20));
 
     pToolLayout->addWidget(pMenuBar);
     pToolLayout->setAlignment(pMenuBar, Qt::AlignVCenter);

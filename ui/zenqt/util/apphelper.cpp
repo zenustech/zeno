@@ -13,37 +13,6 @@
 #include "layout/docktabcontent.h"
 #include "layout/zdockwidget.h"
 
-
-QLinearGradient AppHelper::colorString2Grad(const QString& colorStr)
-{
-    QLinearGradient grad;
-    QStringList L = colorStr.split("\n", QtSkipEmptyParts);
-    ZASSERT_EXIT(!L.isEmpty(), grad);
-
-    bool bOk = false;
-    int n = L[0].toInt(&bOk);
-    ZASSERT_EXIT(bOk && n == L.size() - 1, grad);
-    for (int i = 1; i <= n; i++)
-    {
-        QStringList color_info = L[i].split(" ", QtSkipEmptyParts);
-        ZASSERT_EXIT(color_info.size() == 4, grad);
-
-        float f = color_info[0].toFloat(&bOk);
-        ZASSERT_EXIT(bOk, grad);
-        float r = color_info[1].toFloat(&bOk);
-        ZASSERT_EXIT(bOk, grad);
-        float g = color_info[2].toFloat(&bOk);
-        ZASSERT_EXIT(bOk, grad);
-        float b = color_info[3].toFloat(&bOk);
-        ZASSERT_EXIT(bOk, grad);
-
-        QColor clr;
-        clr.setRgbF(r, g, b);
-        grad.setColorAt(f, clr);
-    }
-    return grad;
-}
-
 QString AppHelper::nativeWindowTitle(const QString& currentFilePath)
 {
     QString ver = QString::fromStdString(getZenoVersion());
@@ -96,9 +65,9 @@ VideoRecInfo AppHelper::getRecordInfo(const ZENO_RECORD_RUN_INITPARAM& param)
 QVector<QString> AppHelper::getKeyFrameProperty(const QVariant& val)
 {
     QVector<QString> ret;
-    if (val.canConvert<CURVES_DATA>())
+    if (val.type() == QVariant::String)
     {
-        CURVES_DATA curves = val.value<CURVES_DATA>();
+        CURVES_DATA curves = JsonHelper::parseCurves(val.toString());
         ret.resize(curves.size());
         ZenoMainWindow* mainWin = zenoApp->getMainWindow();
         ZASSERT_EXIT(mainWin, ret);
@@ -136,14 +105,14 @@ QVector<QString> AppHelper::getKeyFrameProperty(const QVariant& val)
 
 bool AppHelper::getCurveValue(QVariant& val)
 {
-    if (val.canConvert<CURVES_DATA>())
+    if (val.type() == QVariant::String)
     {
         ZenoMainWindow* mainWin = zenoApp->getMainWindow();
         ZASSERT_EXIT(mainWin, false);
         ZTimeline* timeline = mainWin->timeline();
         ZASSERT_EXIT(timeline, false);
         int nFrame = timeline->value();
-        CURVES_DATA curves = val.value<CURVES_DATA>();
+        CURVES_DATA curves = JsonHelper::parseCurves(val.toString());
         if (curves.size() > 1)
         {
             UI_VECTYPE newVal;
@@ -169,10 +138,10 @@ bool AppHelper::getCurveValue(QVariant& val)
 
 bool AppHelper::updateCurve(QVariant oldVal, QVariant& newValue)
 {
-    if (oldVal.canConvert<CURVES_DATA>())
+    if (oldVal.type() == QVariant::String)
     {
         bool bUpdate = false;
-        CURVES_DATA curves = oldVal.value<CURVES_DATA>();
+        CURVES_DATA curves = JsonHelper::parseCurves(oldVal.toString());
         UI_VECTYPE datas;
         //vec
         if (newValue.canConvert<UI_VECTYPE>())
@@ -199,7 +168,7 @@ bool AppHelper::updateCurve(QVariant oldVal, QVariant& newValue)
                     bUpdate = true;
             }
         }
-        newValue = QVariant::fromValue(curves);
+        newValue = JsonHelper::dumpCurves(curves);
         return bUpdate;
     }
     return true;
