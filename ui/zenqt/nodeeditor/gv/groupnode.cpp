@@ -10,6 +10,7 @@
 #include "nodeeditor/gv/zitemfactory.h"
 #include "zenosubgraphscene.h"
 #include <QtSvg/QSvgRenderer>
+#include "variantptr.h"
 
 #define min(a, b) ((a) < (b) ? (a) : (b))
 #define max(a, b) ((a) > (b) ? (a) : (b))
@@ -135,22 +136,28 @@ GroupNode::~GroupNode() {
 
 void GroupNode::updateClidItem(bool isAdd, const QString nodeId)
 {
-    //TODO: refactor
-    /*
-    PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
-    BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
-    if (isAdd && !info.items.contains(nodeId)) {
-        info.items << nodeId;
-    } else if (!isAdd && info.items.contains(nodeId)) {
-        info.items.removeOne(nodeId);
+    if (ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(index().data(ROLE_PARAMS)))
+    {
+        int i = paramsM->indexFromName("items", true);
+        if (i >= 0)
+        {
+            auto index = paramsM->index(i, 0);
+            QString items = index.data(ROLE_PARAM_VALUE).toString();
+            QStringList itemList;
+            if (!items.isEmpty())
+                itemList = items.split(",");
+            if (isAdd && !itemList.contains(nodeId)) {
+                itemList << nodeId;
+            }
+            else if (!isAdd && itemList.contains(nodeId)) {
+                itemList.removeOne(nodeId);
+            }
+            else {
+                return;
+            }
+            UiHelper::qIndexSetData(index, itemList.join(","), ROLE_PARAM_VALUE);
+        }
     }
-    else {
-        return;
-    }
-    IGraphsModel *pModel = zenoApp->graphsManager()->currentModel();
-    ZASSERT_EXIT(pModel);
-    pModel->updateBlackboard(index().data(ROLE_NODE_NAME).toString(), QVariant::fromValue(info), subGraphIndex(), false);
-    */
 }
 
 bool GroupNode::nodePosChanged(ZenoNode *item) 
@@ -185,7 +192,7 @@ bool GroupNode::nodePosChanged(ZenoNode *item)
         updateChildRelativePos(item);
         if (m_itemRelativePosMap.contains(item->nodeId())) {
             QPointF pos = m_itemRelativePosMap[item->nodeId()];
-            item->updateNodePos(mapToScene(pos), false);
+            UiHelper::qIndexSetData(item->index(), mapToScene(pos), ROLE_OBJPOS);
         }
     }
     return false;
@@ -208,25 +215,6 @@ QRectF GroupNode::boundingRect() const {
     QRectF rect = ZenoNode::boundingRect();
     rect.adjust(0, rect.y() - m_pTextItem->boundingRect().height(), 0, 0);
     return rect;
-}
-
-void GroupNode::onUpdateParamsNotDesc() 
-{
-    /*
-    PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
-    BLACKBOARD_INFO blackboard = params["blackboard"].value.value<BLACKBOARD_INFO>();
-    m_pTextItem->setText(blackboard.title);
-    QPalette palette = m_pTextItem->palette();
-    palette.setColor(QPalette::Window, blackboard.background);
-    m_pTextItem->setPalette(palette);
-    setSvgData(blackboard.background.name());
-    if (blackboard.sz.isValid() && blackboard.sz != this->size()) {
-        resize(blackboard.sz);
-        emit nodePosChangedSignal();
-    }
-    if (blackboard.sz.width() != m_pTextItem->boundingRect().width())
-        m_pTextItem->resize(QSizeF(blackboard.sz.width(), m_pTextItem->boundingRect().height()));
-    */
 }
 
 void GroupNode::appendChildItem(ZenoNode *item)
@@ -259,7 +247,7 @@ void GroupNode::updateChildItemsPos()
                 pNode->updateChildItemsPos();
             }
         }
-        item->updateNodePos(item->pos(), false);
+        UiHelper::qIndexSetData(item->index(), item->pos(), ROLE_OBJPOS);
     }
 }
 
@@ -285,20 +273,46 @@ void GroupNode::updateChildRelativePos(const ZenoNode *item)
 }
 
 ZLayoutBackground *GroupNode::initBodyWidget(ZenoSubGraphScene *pScene) {
-    //TODO
-    /*
-    PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
-    BLACKBOARD_INFO blackboard = params["blackboard"].value.value<BLACKBOARD_INFO>();
-    if (blackboard.sz.isValid()) {
-        resize(blackboard.sz);
-        m_pTextItem->resize(QSizeF(boundingRect().width(), m_pTextItem->boundingRect().height()));
+    if (ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(index().data(ROLE_PARAMS)))
+    {
+        auto index = paramsM->index(paramsM->indexFromName("title", true), 0);
+        if (index.isValid())
+        {
+            QString title = index.data(ROLE_PARAM_VALUE).toString();
+            m_pTextItem->setText(title);
+        }
+        index = paramsM->index(paramsM->indexFromName("background", true), 0);
+        if (index.isValid())
+        {
+            UI_VECTYPE background = index.data(ROLE_PARAM_VALUE).value<UI_VECTYPE>();
+            if (background.size() == 3)
+            {
+                QPalette palette = m_pTextItem->palette();
+                QColor col = QColor::fromRgbF(background[0], background[1], background[2]);
+                palette.setColor(QPalette::Window, col);
+                m_pTextItem->setPalette(palette);
+                setSvgData(col.name());
+            }
+        }
+        index = paramsM->index(paramsM->indexFromName("size", true), 0);
+        if (index.isValid())
+        {
+            UI_VECTYPE sizeVec = index.data(ROLE_PARAM_VALUE).value<UI_VECTYPE>();
+            if (sizeVec.size() == 2)
+            {
+                QSizeF size(sizeVec[0], sizeVec[1]);
+                if (size != this->size()) {
+                    resize(size);
+                    emit nodePosChangedSignal();
+                }
+                if (size.width() != m_pTextItem->boundingRect().width())
+                    m_pTextItem->resize(QSizeF(size.width(), m_pTextItem->boundingRect().height()));
+            }
+        }
     }
-    QPalette palette = m_pTextItem->palette();
-    palette.setColor(QPalette::Window, blackboard.background);
-    m_pTextItem->setPalette(palette);
-    m_pTextItem->setText(blackboard.title);
-    setSvgData(blackboard.background.name());
-    */
+    ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(index().data(ROLE_PARAMS));
+    ZASSERT_EXIT(paramsM, nullptr);
+    connect(paramsM, &ParamsModel::dataChanged, this, &GroupNode::onDataChanged);
     return new ZLayoutBackground(this);
 }
 
@@ -391,7 +405,7 @@ void GroupNode::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
         if (oldPos == scenePos())
             emit nodePosChangedSignal(); //update childitems
         else
-            updateNodePos(scenePos());
+            UiHelper::qIndexSetData(this->index(), scenePos(), ROLE_OBJPOS);
         return;
     } 
 }
@@ -451,28 +465,42 @@ bool GroupNode::isDragArea(QPointF pos) {
 }
 
 void GroupNode::updateBlackboard() {
-    PARAMS_INFO params = index().data(ROLE_INPUTS).value<PARAMS_INFO>();
-    /*
-    BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
-    info.sz = this->size();
-    info.title = m_pTextItem->text();
-    IGraphsModel *pModel = zenoApp->graphsManager()->currentModel();
-    ZASSERT_EXIT(pModel);
-    pModel->updateBlackboard(index().data(ROLE_NODE_NAME).toString(), QVariant::fromValue(info), subGraphIndex(), true);
-    */
+    if (ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(index().data(ROLE_PARAMS)))
+    {
+        auto index = paramsM->index(paramsM->indexFromName("title", true), 0);
+        if (index.isValid() && index.data(ROLE_PARAM_VALUE).toString() != m_pTextItem->text())
+        {
+            UiHelper::qIndexSetData(index, m_pTextItem->text(), ROLE_PARAM_VALUE);
+        }
+        index = paramsM->index(paramsM->indexFromName("size", true), 0);
+        if (index.isValid())
+        {
+            UI_VECTYPE val;
+            val << this->size().width() << this->size().height();
+            UiHelper::qIndexSetData(index, QVariant::fromValue(val), ROLE_PARAM_VALUE);
+        }
+    }
 }
 
-void GroupNode::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
+void GroupNode::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) 
+{
     ZenoNode::paint(painter, option, widget);
-    //TODO
-    /*
-    PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
-    BLACKBOARD_INFO blackboard = params["blackboard"].value.value<BLACKBOARD_INFO>();
+
+    QColor background(0, 100, 168);
+    if (ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(index().data(ROLE_PARAMS)))
+    {
+        auto index = paramsM->index(paramsM->indexFromName("background", true), 0);
+        if (index.isValid())
+        {
+            UI_VECTYPE val = index.data(ROLE_PARAM_VALUE).value<UI_VECTYPE>();
+            if (val.size() == 3)
+                background = QColor::fromRgbF(val[0], val[1], val[2]);
+        }
+    }
     
     //draw background
     QFontMetrics fm(this->font());
     QRectF rect = QRectF(0, 0, this->boundingRect().width(), this->boundingRect().height() - m_pTextItem->boundingRect().height());
-    QColor background = blackboard.background.isValid() ? blackboard.background : QColor(0, 100, 168);
     painter->setOpacity(0.3);
     painter->fillRect(rect, background);
     painter->setOpacity(1);
@@ -484,7 +512,6 @@ void GroupNode::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
     qreal width = ZenoStyle::scaleWidth(16);
     QSvgRenderer svgRender(m_svgByte);
     svgRender.render(painter, QRectF(boundingRect().bottomRight() - QPointF(width, width), boundingRect().bottomRight()));
-    */
 }
 
 QVariant GroupNode::itemChange(GraphicsItemChange change, const QVariant &value) {
@@ -509,6 +536,38 @@ QVariant GroupNode::itemChange(GraphicsItemChange change, const QVariant &value)
             this->setSelected(false);
     }
     return ZenoNode::itemChange(change, value);
+}
+
+void GroupNode::onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
+{
+    if (topLeft.data(ROLE_PARAM_NAME) == "title")
+    {
+        QString title = topLeft.data(ROLE_PARAM_VALUE).toString();
+        m_pTextItem->setText(title);
+    }
+    else if (topLeft.data(ROLE_PARAM_NAME) == "background")
+    {
+        UI_VECTYPE background = topLeft.data(ROLE_PARAM_VALUE).value<UI_VECTYPE>();
+        if (background.size() == 3)
+        {
+            QPalette palette = m_pTextItem->palette();
+            QColor col = QColor::fromRgbF(background[0], background[1], background[2]);
+            palette.setColor(QPalette::Window, col);
+            m_pTextItem->setPalette(palette);
+            setSvgData(col.name());
+        }
+    }
+    else if (topLeft.data(ROLE_PARAM_NAME) == "size")
+    {
+        auto sizeVec = topLeft.data(ROLE_PARAM_VALUE).value<UI_VECTYPE>();
+        QSizeF size(sizeVec[0], sizeVec[1]);
+        if (size != this->size()) {
+            resize(size);
+            emit nodePosChangedSignal();
+        }
+        if (size.width() != m_pTextItem->boundingRect().width())
+            m_pTextItem->resize(QSizeF(size.width(), m_pTextItem->boundingRect().height()));
+    }
 }
 
 void GroupNode::setSvgData(QString color) 

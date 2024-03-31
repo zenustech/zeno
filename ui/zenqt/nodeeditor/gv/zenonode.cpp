@@ -1041,8 +1041,8 @@ void ZenoNode::onMarkDataChanged(bool bDirty)
     {
         clrMarker = QColor(0, 0, 0, 0);
     }
-    ZASSERT_EXIT(m_dirtyMarker);
-    m_dirtyMarker->setColors(false, clrMarker);
+    if (m_dirtyMarker)
+        m_dirtyMarker->setColors(false, clrMarker);
     updateWhole();
 }
 
@@ -1109,7 +1109,8 @@ void ZenoNode::onZoomed()
     }
     if (m_bodyWidget)
         m_bodyWidget->setBorder(ZenoStyle::scaleWidth(2), QColor(18, 20, 22));
-    m_dirtyMarker->resize(m_dirtyMarker->rect().width(), ZenoStyle::scaleWidth(3));
+    if (m_dirtyMarker)
+        m_dirtyMarker->resize(m_dirtyMarker->rect().width(), ZenoStyle::scaleWidth(3));
 }
 
 void ZenoNode::setGroupNode(GroupNode *pNode) 

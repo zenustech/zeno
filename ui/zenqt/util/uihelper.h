@@ -89,7 +89,7 @@ public:
     static QVector<qreal> scaleFactors();
     static QString UiHelper::getNaiveParamPath(const QModelIndex& param, int dim = -1);
 
-    static QPair<zeno::NodesData, zeno::LinksData> dumpNodes(const QModelIndexList& nodeIndice, const QModelIndexList& linkIndice);
+    static zeno::NodesData dumpNodes(const QModelIndexList& nodeIndice);
     static void reAllocIdents(const QString& targetSubgraph,
                                const zeno::NodesData& inNodes,
                                const zeno::LinksData& inLinks,

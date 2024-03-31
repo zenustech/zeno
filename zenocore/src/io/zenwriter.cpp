@@ -13,7 +13,7 @@ namespace zenoio
     {
     }
 
-    ZENO_API std::string ZenWriter::dumpToClipboard(const zeno::GraphData& graph)
+    ZENO_API std::string ZenWriter::dumpToClipboard(const zeno::NodesData& nodes)
     {
         rapidjson::StringBuffer s;
         RAPIDJSON_WRITER writer(s);
@@ -22,7 +22,7 @@ namespace zenoio
             writer.Key("nodes");
             {
                 JsonObjScope _batch(writer);
-                for (const auto& [name, node_] : graph.nodes)
+                for (const auto& [name, node_] : nodes)
                 {
                     if (node_.type == zeno::NoVersionNode) {
                         continue;

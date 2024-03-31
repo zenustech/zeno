@@ -8,15 +8,11 @@
 #include "model/graphsmanager.h"
 #include "zenomainwindow.h"
 #include "util/uihelper.h"
+#include "variantptr.h"
 
-
-//need to refactor data structure.
-
-#if 0
-ZenoBlackboardPropWidget::ZenoBlackboardPropWidget(const QPersistentModelIndex &index, const QPersistentModelIndex &subIndex, QWidget *parent)
+ZenoBlackboardPropWidget::ZenoBlackboardPropWidget(const QPersistentModelIndex &index, QWidget *parent)
     : QWidget(parent), 
     m_idx(index), 
-    m_subgIdx(subIndex),
     m_pColor(nullptr),  
     m_pTitle(nullptr)
 {
@@ -25,34 +21,48 @@ ZenoBlackboardPropWidget::ZenoBlackboardPropWidget(const QPersistentModelIndex &
     pGroupLayout->setColumnStretch(1, 1);
     pGroupLayout->setColumnStretch(2, 3);
     pGroupLayout->setSpacing(10);
-    PARAMS_INFO params = m_idx.data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
-    BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
-    insertRow("background", PARAM_CONTROL::CONTROL_PURE_COLOR, info.background, 0, pGroupLayout);
-    insertRow("title", PARAM_CONTROL::CONTROL_MULTILINE_STRING, info.title, 1, pGroupLayout);
-    //insertRow("content", PARAM_CONTROL::CONTROL_MULTILINE_STRING, info.content, 2, pGroupLayout);
-    IGraphsModel *pModel = zenoApp->graphsManager()->currentModel();
-    connect(pModel, SIGNAL(_dataChanged(const QModelIndex &, const QModelIndex &, int)), this,SLOT(onDataChanged(const QModelIndex &, const QModelIndex &, int)));
+    if (ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS)))
+    {
+        auto index = paramsM->index(paramsM->indexFromName("background", true), 0);
+        if (index.isValid())
+        {
+            insertRow("background", zeno::ColorVec, index.data(ROLE_PARAM_VALUE), 0, pGroupLayout);
+        }
+        index = paramsM->index(paramsM->indexFromName("title", true), 0);
+        if (index.isValid())
+        {
+            insertRow("title", zeno::Multiline, index.data(ROLE_PARAM_VALUE), 1, pGroupLayout);
+        }
+        connect(paramsM, &ParamsModel::dataChanged, this, &ZenoBlackboardPropWidget::onDataChanged);
+    }
 }
 
 ZenoBlackboardPropWidget::~ZenoBlackboardPropWidget() 
 {
 }
 
-void ZenoBlackboardPropWidget::onDataChanged(const QModelIndex &subGpIdx, const QModelIndex &idx, int role) {
-    if (m_idx != idx)
+void ZenoBlackboardPropWidget::onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles) {
+    if (roles.isEmpty())
         return;
-    if (role == ROLE_PARAMS_NO_DESC) {
-        PARAMS_INFO params = idx.data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
-        BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
-        if (m_pTitle)
-            m_pTitle->setText(info.title);
-        if (m_pColor)
-            m_pColor->setStyleSheet(QString("background-color:%1; border:0;").arg(info.background.name()));
+    if (roles[0] == ROLE_PARAM_VALUE ) {
+        if (topLeft.data(ROLE_PARAM_NAME).toString() == "title")
+        {
+            m_pTitle->setText(topLeft.data(ROLE_PARAM_VALUE).toString());
+        }
+        else if (topLeft.data(ROLE_PARAM_NAME).toString() == "background")
+        {
+            auto val = topLeft.data(ROLE_PARAM_VALUE).value<UI_VECTYPE>();
+            if (val.size() == 3)
+            {
+                QColor col = QColor::fromRgbF(val[0], val[1], val[2]);
+                m_pColor->setStyleSheet(QString("background-color:%1; border:0;").arg(col.name()));
+            }
+        }
     }
 
 }
 
-void ZenoBlackboardPropWidget::insertRow(const QString &desc, const PARAM_CONTROL &ctrl, const QVariant &value, int row,QGridLayout *pGroupLayout) {    
+void ZenoBlackboardPropWidget::insertRow(const QString &desc, const zeno::ParamControl&ctrl, const QVariant &value, int row,QGridLayout *pGroupLayout) {
     ZTextLabel *pLabel = new ZTextLabel(desc);
     pLabel->setFont(QApplication::font());
     pLabel->setTextColor(QColor(255, 255, 255, 255 * 0.7));
@@ -67,25 +77,16 @@ void ZenoBlackboardPropWidget::insertRow(const QString &desc, const PARAM_CONTRO
 
     CallbackCollection cbSet;
     cbSet.cbEditFinished = [=](QVariant newValue) {
-        IGraphsModel *pModel = zenoApp->graphsManager()->currentModel();
-        if (!pModel)
-            return;
-        PARAMS_INFO params = m_idx.data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
-        BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
-        if (desc == "title") {
-            info.title = newValue.value<QString>();
-        } /*else if (desc == "content") {
-            info.content = newValue.value<QString>();
-        } */else if (desc == "background") {
-            info.background = newValue.value<QColor>();
+        if (ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS)))
+        {
+            auto index = paramsM->index(paramsM->indexFromName(desc, true), 0);
+            if (!index.isValid())
+                return;
+            UiHelper::qIndexSetData(index, newValue, ROLE_PARAM_VALUE);
         }
-        pModel->updateBlackboard(m_idx.data(ROLE_NODE_NAME).toString(), QVariant::fromValue(info), m_subgIdx, true);
     };
-
-    cbSet.cbSwitch = [=](bool bOn) {
-        zenoApp->getMainWindow()->setInDlgEventLoop(bOn); //deal with ubuntu dialog slow problem when update viewport.
-    };
-    QWidget *pControl = zenoui::createWidget(value, ctrl, UiHelper::getControlDesc(ctrl), cbSet, QVariant()); 
+    zeno::ParamType type = desc == "title" ? zeno::Param_String : zeno::Param_Vec3f;
+    QWidget *pControl = zenoui::createWidget(value, ctrl, type, cbSet, zeno::ControlProperty());
     pControl->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred));
     if (desc == "title") {
         m_pTitle = qobject_cast<ZTextEdit *>(pControl);
@@ -95,4 +96,3 @@ void ZenoBlackboardPropWidget::insertRow(const QString &desc, const PARAM_CONTRO
     if (pControl)
         pGroupLayout->addWidget(pControl, row, 2, Qt::AlignVCenter);
 }
-#endif

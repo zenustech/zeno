@@ -12,7 +12,7 @@ namespace zenoio
     public:
         ZENO_API ZenWriter();
         ZENO_API std::string dumpProgramStr(zeno::GraphData graph, AppSettings settings);
-        ZENO_API std::string dumpToClipboard(const zeno::GraphData& nodes);
+        ZENO_API std::string dumpToClipboard(const zeno::NodesData& nodes);
     };
 }
 

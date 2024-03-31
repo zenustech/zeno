@@ -326,6 +326,8 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
                 }
                 return zeno::Node_SubgraphNode;
             }
+            if (spNode && spNode->m_nodecls == "Group")
+                return zeno::Node_Group;
             return zeno::Node_Normal;
         }
         case ROLE_NODE_CATEGORY:
@@ -1064,4 +1066,34 @@ void GraphModel::setLocked(bool bLocked)
 bool GraphModel::isLocked() const
 {
     return m_bLocked;
+}
+
+void GraphModel::importNodes(const zeno::NodesData& nodes, const zeno::LinksData& links, const QPointF& pos)
+{
+    if (nodes.empty())
+        return;
+    std::shared_ptr<zeno::Graph> spGraph = m_wpCoreGraph.lock();
+    if (!spGraph)
+        return;
+    std::map<std::string, std::string> old2new;
+    QPointF offset = pos - QPointF(nodes.begin()->second.uipos.first, nodes.begin()->second.uipos.second);
+    unRegisterCoreNotify();
+    for (auto [name, node] : nodes) {
+        std::string cate = node.asset.has_value() ? "assets" : "";
+        std::shared_ptr<zeno::INode> spNode = spGraph->createNode(node.cls, "", cate);
+        node.name = spNode->m_name;
+        spNode->init(node);
+        spNode->set_pos({ spNode->m_pos.first + offset.x(), spNode->m_pos.second + offset.y()});
+        old2new[name] = spNode->m_name;
+        _appendNode(spNode);
+    }
+    registerCoreNotify();
+    //import edges
+    for (auto link : links) {
+        if (old2new.find(link.outNode) == old2new.end() || old2new.find(link.inNode) == old2new.end())
+            continue;
+        link.inNode = old2new[link.inNode];
+        link.outNode = old2new[link.outNode];
+        addLink(link);
+    }
 }

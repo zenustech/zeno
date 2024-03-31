@@ -38,7 +38,6 @@ public:
     bool nodePosChanged(ZenoNode *);
     void onZoomed() override;
     QRectF boundingRect() const override;
-    void onUpdateParamsNotDesc() override;
     void appendChildItem(ZenoNode *item);
     void updateChildItemsPos();
     QVector<ZenoNode *> getChildItems();
@@ -57,7 +56,8 @@ protected:
     void hoverMoveEvent(QGraphicsSceneHoverEvent *event) override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
     QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
-
+private slots:
+    void onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
 private:
     bool isDragArea(QPointF pos);
     void updateClidItem(bool isAdd, const QString nodeId);

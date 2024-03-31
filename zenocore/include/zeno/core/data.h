@@ -101,6 +101,17 @@ namespace zeno {
         int minorVer;
     };
 
+    struct GroupInfo
+    {
+        vec2f sz;
+        std::string title;
+        std::string content;
+        //params
+        bool special = false;
+        std::vector<std::string> items;
+        vec3f background;     //hex format
+    };
+
     struct NodeData {
         std::string name;
         std::string cls;
@@ -111,6 +122,7 @@ namespace zeno {
         //if current node is a subgraph node, which means type =NodeStatus::SubgraphNode.
         std::optional<GraphData> subgraph;
         std::optional<AssetInfo> asset;
+        std::optional<GroupInfo> group;
 
         std::pair<float, float> uipos;
         bool bView = false;
@@ -128,17 +140,6 @@ namespace zeno {
     using NodeDescs = std::map<std::string, NodeDesc>;
 
     using NodeCates = std::map<std::string, std::vector<std::string>>;
-
-    struct GroupInfo
-    {
-        std::pair<float, float> sz;
-        std::string title;
-        std::string content;
-        //params
-        bool special = false;
-        std::vector<std::string> items;
-        std::string background;     //hex format
-    };
 
     struct TimelineInfo {
         int beginFrame = 0;
