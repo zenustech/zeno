@@ -1438,6 +1438,8 @@ void ZenoSubGraphScene::rearrangeGraph(bool bHorional)
         }
     }
     else {
+        //折叠状态下的竖向排列
+
         qreal xcenter = 0.;
         if (layerNodes.isEmpty())
             return;
@@ -1446,6 +1448,11 @@ void ZenoSubGraphScene::rearrangeGraph(bool bHorional)
         qreal yspace = 300.;
         QSizeF sz = getLayerHeight(bHorional, layerNodes[0], hspace);
         xcenter = sz.width() / 2;
+
+        QFont nameFont = QApplication::font();
+        nameFont.setWeight(QFont::Normal);
+        nameFont.setPointSize(20);
+        QFontMetrics metrics(nameFont);
 
         qreal y = 0;
         for (int i = 0; i < layerNodes.size(); i++)
@@ -1460,7 +1467,13 @@ void ZenoSubGraphScene::rearrangeGraph(bool bHorional)
                 ZASSERT_EXIT(m_nodes.find(node) != m_nodes.end());
                 ZenoNode* pNode = m_nodes[node];
                 pNode->setPos(x, y);
+                QString name = pNode->nodeId();
                 x += pNode->boundingRect().width(); //TOFIX: 好像没算上左边名称的长度
+
+                //折叠状态下，名字没有纳入布局（多重布局比较麻烦，尤其是调整位置的时候）
+                int nameLength = metrics.horizontalAdvance(name);
+                x += nameLength;
+
                 x += hspace;
             }
             y = y + sz.height() + yspace;
