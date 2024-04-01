@@ -21,6 +21,9 @@ struct NodeItem : public QObject
 public:
     //temp cached data for spNode->...
     QString name;
+    QString dispName;
+    QString dispIcon;
+    zeno::ObjPath uuidPath;
     QString cls;
     QPointF pos;
 

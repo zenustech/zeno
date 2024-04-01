@@ -22,7 +22,7 @@ struct PortalIn : zeno::INode {
 };
 
 ZENDEFNODE(PortalIn, {
-    {"port"},
+    {{"", "port", "", PrimarySocket}},
     {},
     {{"string", "name", "RenameMe!"}},
     {"layout"},
@@ -58,7 +58,7 @@ struct Route : zeno::INode {
 };
 
 ZENDEFNODE(Route, {
-    {"input"},
+    {{"", "input", "", PrimarySocket}},
     {"output"},
     {},
     {"layout"},
@@ -78,7 +78,7 @@ struct Clone : zeno::INode {
 };
 
 ZENDEFNODE(Clone, {
-    {"object"},
+    {{"", "object", "", PrimarySocket}},
     {"newObject"},
     {},
     {"lifecycle"},
@@ -119,7 +119,7 @@ struct MoveClone : zeno::INode {
 };
 
 ZENDEFNODE(MoveClone, {
-    {"object"},
+    {{"", "object", "", PrimarySocket}},
     {"newObject"},
     {},
     {"lifecycle"},
@@ -139,7 +139,7 @@ struct MoveDelete : zeno::INode {
 };
 
 ZENDEFNODE(MoveDelete, {
-    {"object"},
+    {{"", "object", "", PrimarySocket}},
     {},
     {},
     {"lifecycle"},
@@ -177,7 +177,10 @@ struct SetUserData : zeno::INode {
 };
 
 ZENDEFNODE(SetUserData, {
-    {"object", "data"},
+    {
+        {"", "object", "", PrimarySocket},
+        {"", "data", "", PrimarySocket},
+    },
     {"object"},
     {{"string", "key", ""}},
     {"deprecated"},
@@ -193,7 +196,9 @@ struct SetUserData2 : zeno::INode {
 };
 
 ZENDEFNODE(SetUserData2, {
-    {"object", {"string", "key", ""}, "data"},
+    {{"", "object", "", PrimarySocket},
+     {"string", "key", ""},
+     {"", "data", "", PrimarySocket}},
     {"object"},
     {},
     {"lifecycle"},
@@ -211,7 +216,7 @@ struct GetUserData : zeno::INode {
 };
 
 ZENDEFNODE(GetUserData, {
-    {"object"},
+    {{"", "object", "", PrimarySocket}},
     {"data", {"bool", "hasValue"}},
     {{"string", "key", ""}},
     {"deprecated"},
@@ -229,7 +234,8 @@ struct GetUserData2 : zeno::INode {
 };
 
 ZENDEFNODE(GetUserData2, {
-                            {"object",{"string", "key", ""}},
+                            {{"", "object", "", PrimarySocket},
+                             {"string", "key", ""}},
                             {"data", {"bool", "hasValue"}},
                             {},
                             {"lifecycle"},
@@ -245,7 +251,7 @@ struct DelUserData : zeno::INode {
 };
 
 ZENDEFNODE(DelUserData, {
-    {"object"},
+    {{"", "object", "", PrimarySocket}},
     {},
     {{"string", "key", ""}},
     {"deprecated"},
@@ -261,7 +267,7 @@ struct DelUserData2 : zeno::INode {
 };
 
 ZENDEFNODE(DelUserData2, {
-    {{"string", "key", ""}, "object"},
+    {{"string", "key", ""}, {"", "object", "", PrimarySocket}},
     {"object"},
     {},
     {"lifecycle"},
@@ -277,7 +283,10 @@ struct CopyAllUserData : zeno::INode {
 };
 
 ZENDEFNODE(CopyAllUserData, {
-    {"dst", "src"},
+    {
+        {"", "dst", "", PrimarySocket},
+        {"", "src", "", PrimarySocket},
+    },
     {"dst"},
     {},
     {"lifecycle"},

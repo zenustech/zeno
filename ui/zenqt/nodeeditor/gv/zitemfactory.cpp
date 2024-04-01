@@ -85,8 +85,8 @@ namespace zenoui
                 const QString text = UiHelper::variantToString(value);
 
                 ZEditableTextItem* pLineEdit = new ZEditableTextItem(text);
-                pLineEdit->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(100, zenoui::g_ctrlHeight)));
-                pLineEdit->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
+                pLineEdit->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(64, zenoui::g_ctrlHeight)));
+                pLineEdit->setSizePolicy(QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
                 pLineEdit->setNumSlider(scene, UiHelper::getSlideStep("", type));
 
                 QObject::connect(pLineEdit, &ZEditableTextItem::editingFinished, [=]() {

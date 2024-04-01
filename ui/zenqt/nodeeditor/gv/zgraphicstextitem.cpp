@@ -76,6 +76,10 @@ QPainterPath ZGraphicsTextItem::shape() const
     return path;
 }
 
+qreal ZGraphicsTextItem::textLength() const {
+    return document()->size().width();
+}
+
 void ZGraphicsTextItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
     QGraphicsTextItem::mousePressEvent(event);
@@ -133,9 +137,17 @@ ZSimpleTextItem::ZSimpleTextItem(const QString& text, QGraphicsItem* parent)
 #endif
 }
 
+ZSimpleTextItem::ZSimpleTextItem(const QString& text, const QFont& font, const QColor& color, QGraphicsItem* parent)
+    : base(text, parent)
+{
+    setBrush(color);
+    setFont(font);
+    updateBoundingRect();
+    setAcceptHoverEvents(false);
+}
+
 ZSimpleTextItem::~ZSimpleTextItem()
 {
-
 }
 
 QRectF ZSimpleTextItem::boundingRect() const
@@ -349,10 +361,10 @@ ZSocketPlainTextItem::ZSocketPlainTextItem(
     , m_viewSockIdx(viewSockIdx)
     , m_socket(nullptr)
 {
-    setBrush(QColor("#dee6ed"));
+    setBrush(QColor("#AAAAAA"));
     QFont font = QApplication::font();
     font.setPointSize(12);
-    font.setWeight(QFont::DemiBold);
+    font.setWeight(QFont::Light);
     setFont(font);
     updateBoundingRect();
 
@@ -367,17 +379,9 @@ QVariant ZSocketPlainTextItem::itemChange(GraphicsItemChange change, const QVari
 
 void ZSocketPlainTextItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* pItem, QWidget* pWidget)
 {
-    bool bMarked = false;//? m_viewSockIdx.data(ROLE_VPARAM_COMMAND).toBool();
-    if (bMarked)
-    {
-        setBrush(QColor("#599EED"));
-    }
-    else
-    {
-        setBrush(QColor("#dee6ed"));
-    }
     _base::paint(painter, pItem, pWidget);
 }
+
 
 ZEditableTextItem::ZEditableTextItem(const QString &text, QGraphicsItem *parent)
     : _base(parent)
@@ -385,6 +389,7 @@ ZEditableTextItem::ZEditableTextItem(const QString &text, QGraphicsItem *parent)
     , m_bShowSlider(false)
     , m_pSlider(nullptr)
     , m_bValidating(false)
+    , m_bTextLengthAsBounding(false)
 {
     _base::setText(text);
     initUI(text);
@@ -396,8 +401,14 @@ ZEditableTextItem::ZEditableTextItem(QGraphicsItem* parent)
     , m_bShowSlider(false)
     , m_pSlider(nullptr)
     , m_bValidating(false)
+    , m_bTextLengthAsBounding(false)
 {
     initUI("");
+}
+
+ZEditableTextItem::~ZEditableTextItem() {
+    int j;
+    j = 0;
 }
 
 void ZEditableTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
@@ -435,7 +446,7 @@ void ZEditableTextItem::initUI(const QString& text)
     setCursor(Qt::IBeamCursor);
 
     QFont font = QApplication::font();
-    font.setPointSize(10);
+    font.setPointSize(8);
     font.setWeight(QFont::Medium);
     setFont(font);
 
@@ -450,6 +461,18 @@ void ZEditableTextItem::initUI(const QString& text)
 
     QTextDocument *pDoc = this->document();
     connect(pDoc, SIGNAL(contentsChanged()), this, SLOT(onContentsChanged()));
+}
+
+QRectF ZEditableTextItem::boundingRect() const
+{
+    if (m_bTextLengthAsBounding) {
+        qreal w = document()->size().width();
+        qreal h = document()->size().height();
+        return QRectF(0, 0, w, h);
+    }
+    else {
+        return _base::boundingRect();
+    }
 }
 
 QGraphicsView* ZEditableTextItem::_getFocusViewByCursor()
@@ -493,6 +516,8 @@ void ZEditableTextItem::onContentsChanged()
         }
         iVal = 0;
     }
+    update();
+    emit contentsChanged();
 }
 
 void ZEditableTextItem::setValidator(const QValidator* pValidator)
@@ -508,6 +533,10 @@ QString ZEditableTextItem::text() const
 bool ZEditableTextItem::showSlider() const
 {
     return m_bShowSlider;
+}
+
+void ZEditableTextItem::setTextLengthAsBounding(bool bOn) {
+    m_bTextLengthAsBounding = bOn;
 }
 
 void ZEditableTextItem::setNumSlider(QGraphicsScene* pScene, const QVector<qreal>& steps)

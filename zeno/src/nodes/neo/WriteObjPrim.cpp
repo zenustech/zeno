@@ -67,7 +67,7 @@ struct WriteObjPrim : INode {
 
 ZENDEFNODE(WriteObjPrim,
         { /* inputs: */ {
-        {"primitive", "prim"},
+        {"primitive", "prim", "", PrimarySocket},
         {"writepath", "path"},
         }, /* outputs: */ {
         {"primitive", "prim"},

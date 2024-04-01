@@ -10,7 +10,7 @@ class ZLayoutBackground : public ZGraphicsLayoutItem<QGraphicsWidget>
     Q_OBJECT
 public:
     ZLayoutBackground(QGraphicsItem* parent = nullptr, Qt::WindowFlags wFlags = Qt::WindowFlags());
-    ~ZLayoutBackground();
+    virtual ~ZLayoutBackground();
     QRectF boundingRect() const override;
     void setBorder(qreal width, const QColor& clrBorder);
     void setGeometry(const QRectF& rect) override;
@@ -18,6 +18,7 @@ public:
     void setRadius(int lt, int rt, int lb, int rb);
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
     void toggle(bool bSelected);
+    void setLinearGradient(QColor from, QColor to);
 
 signals:
     void doubleClicked();
@@ -41,8 +42,12 @@ private:
     QColor m_clrNormal, m_clrHovered, m_clrSelected;
     QColor m_color;
     QColor m_clrBorder;
+
+    QColor m_linearFrom, m_linearTo;
+
     bool m_bFixRadius;
     bool m_bSelected;
+    bool m_bBasedOnGradient;
 };
 
 

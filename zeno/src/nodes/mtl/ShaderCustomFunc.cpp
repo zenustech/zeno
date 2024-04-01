@@ -125,8 +125,8 @@ struct ShaderInvokeFunc : ShaderNodeClone<ShaderInvokeFunc> {
 
 ZENDEFNODE(ShaderInvokeFunc, {
     {
-        {"ShaderCustomFuncObject", "func"},
-        {"list", "args"},
+        {"ShaderCustomFuncObject", "func", "", PrimarySocket},
+        {"list", "args", "", PrimarySocket},
     },
     {
         {"shader", "out"},

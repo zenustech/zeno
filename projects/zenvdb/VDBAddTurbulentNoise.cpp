@@ -143,7 +143,7 @@ struct VDBAddPerlinNoise : INode {
 
 ZENO_DEFNODE(VDBAddPerlinNoise)(
      { /* inputs: */ {
-     "inoutSDF",
+     {"", "inoutSDF", "", PrimarySocket},
      {"float", "strength", "1.0"},
      {"float", "scale", "8.0"},
      {"vec3f", "scaling", "1,1,1"},
@@ -282,7 +282,7 @@ struct VDBAddTurbulentNoise : INode {
 
 ZENO_DEFNODE(VDBAddTurbulentNoise)(
      { /* inputs: */ {
-     "inoutSDF",
+     {"", "inoutSDF", "", PrimarySocket},
      {"float", "strength", "3.0"},
      {"float", "scale", "16.0"},
      {"vec3f", "scaling", "1,1,1"},

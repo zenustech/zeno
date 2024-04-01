@@ -139,17 +139,17 @@ void ZenoApplication::initFonts()
     //    QFont font("Segoe UI", 10);
     //    setFont(font);
     //}
-    QFontDatabase::addApplicationFont(":/font/MiSans/MiSans-Thin.ttf");
-    QFontDatabase::addApplicationFont(":/font/MiSans/MiSans-Semibold.ttf");
-    QFontDatabase::addApplicationFont(":/font/MiSans/MiSans-Regular.ttf");
-    QFontDatabase::addApplicationFont(":/font/MiSans/MiSans-Normal.ttf");
-    QFontDatabase::addApplicationFont(":/font/MiSans/MiSans-Medium.ttf");
-    QFontDatabase::addApplicationFont(":/font/MiSans/MiSans-Light.ttf");
-    QFontDatabase::addApplicationFont(":/font/MiSans/MiSans-Heavy.ttf");
-    QFontDatabase::addApplicationFont(":/font/MiSans/MiSans-ExtraLight.ttf");
-    QFontDatabase::addApplicationFont(":/font/MiSans/MiSans-Demibold.ttf");
-    QFontDatabase::addApplicationFont(":/font/MiSans/MiSans-Bold.ttf");
-    QFont font("MiSans", 10);
+    //QFontDatabase::addApplicationFont(":/font/MiSans/MiSans-Thin.ttf");
+    //QFontDatabase::addApplicationFont(":/font/MiSans/MiSans-Semibold.ttf");
+    //QFontDatabase::addApplicationFont(":/font/MiSans/MiSans-Regular.ttf");
+    //QFontDatabase::addApplicationFont(":/font/MiSans/MiSans-Normal.ttf");
+    //QFontDatabase::addApplicationFont(":/font/MiSans/MiSans-Medium.ttf");
+    //QFontDatabase::addApplicationFont(":/font/MiSans/MiSans-Light.ttf");
+    //QFontDatabase::addApplicationFont(":/font/MiSans/MiSans-Heavy.ttf");
+    //QFontDatabase::addApplicationFont(":/font/MiSans/MiSans-ExtraLight.ttf");
+    //QFontDatabase::addApplicationFont(":/font/MiSans/MiSans-Demibold.ttf");
+    //QFontDatabase::addApplicationFont(":/font/MiSans/MiSans-Bold.ttf");
+    QFont font("Microsoft Sans Serif", 10);
     setFont(font);
 }
 

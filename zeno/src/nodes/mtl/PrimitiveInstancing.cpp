@@ -128,8 +128,8 @@ namespace zeno
         SetInstancing,
         {
             {
-                {"primitive", "prim"},
-                {"instancing", "inst"},
+                {"primitive", "prim", "", PrimarySocket},
+                {"instancing", "inst", "", PrimarySocket},
             },
             {
                 {"primitive", "prim"},
@@ -178,7 +178,7 @@ namespace zeno
         BecomeRtInst,
         {
             {
-                {"object"},
+                {"", "object", "", PrimarySocket},
                 {"bool", "isInst", "1"},
                 {"string", "instID", "Inst1"},
                 {"enum XYZ YXZ YZX ZYX ZXY XZY", "onbType", "XYZ"},
@@ -211,7 +211,7 @@ namespace zeno
         BindRtInst,
         {
             {
-                {"object"},
+                {"", "object", "", PrimarySocket},
                 {"string", "instID", "Inst1"},
             },
             {

@@ -23,15 +23,19 @@ struct PrimitiveSimplePoints : zeno::INode {
   }
 };
 
-ZENDEFNODE(PrimitiveSimplePoints,
-    { /* inputs: */ {
-    "prim",
-    }, /* outputs: */ {
-    "prim",
-    }, /* params: */ {
-    }, /* category: */ {
-    "primitive",
-    }});
+ZENDEFNODE(PrimitiveSimplePoints, {
+    {
+        {"", "prim", "", PrimarySocket},
+    },
+    {
+        "prim",
+    },
+    {
+    },
+    {
+        "primitive",
+    }
+});
 
 
 struct PrimitiveSimpleLines : zeno::INode {
@@ -47,15 +51,16 @@ struct PrimitiveSimpleLines : zeno::INode {
   }
 };
 
-ZENDEFNODE(PrimitiveSimpleLines,
-    { /* inputs: */ {
-    "prim",
-    }, /* outputs: */ {
-    "prim",
-    }, /* params: */ {
-    }, /* category: */ {
-    "primitive",
-    }});
+ZENDEFNODE(PrimitiveSimpleLines, {
+    {
+        {"", "prim", "", PrimarySocket},
+    },
+    {
+        "prim",
+    },
+    {},
+    {"primitive"}
+});
 
 
 struct PrimitiveFarSimpleLines : zeno::INode {
@@ -71,15 +76,18 @@ struct PrimitiveFarSimpleLines : zeno::INode {
   }
 };
 
-ZENDEFNODE(PrimitiveFarSimpleLines,
-    { /* inputs: */ {
-    "prim",
-    }, /* outputs: */ {
-    "prim",
-    }, /* params: */ {
-    }, /* category: */ {
+ZENDEFNODE(PrimitiveFarSimpleLines, {
+    {
+        {"", "prim", "", PrimarySocket},
+    },
+    {
+        "prim",
+    },
+    {},
+    {
     "primitive",
-    }});
+    }
+});
 
 struct PrimitiveNearSimpleLines : zeno::INode {
   virtual void apply() override {
@@ -94,15 +102,18 @@ struct PrimitiveNearSimpleLines : zeno::INode {
   }
 };
 
-ZENDEFNODE(PrimitiveNearSimpleLines,
-    { /* inputs: */ {
-    "prim",
-    }, /* outputs: */ {
-    "prim",
-    }, /* params: */ {
-    }, /* category: */ {
-    "primitive",
-    }});
+ZENDEFNODE(PrimitiveNearSimpleLines,{
+    {
+        {"", "prim", "", PrimarySocket},
+    },
+    {
+        "prim",
+    },
+    {},
+    {
+        "primitive",
+    }
+});
 
 
 struct PrimitiveSimpleTris : zeno::INode {
@@ -118,15 +129,19 @@ struct PrimitiveSimpleTris : zeno::INode {
   }
 };
 
-ZENDEFNODE(PrimitiveSimpleTris,
-    { /* inputs: */ {
-    "prim",
-    }, /* outputs: */ {
-    "prim",
-    }, /* params: */ {
-    }, /* category: */ {
-    "primitive",
-    }});
+ZENDEFNODE(PrimitiveSimpleTris, {
+    {
+        "prim",
+    },
+    {
+        "prim",
+    },
+    {
+    },
+    {
+        "primitive",
+    }
+});
 
 
 struct PrimitiveSimpleQuads : zeno::INode {
@@ -142,15 +157,18 @@ struct PrimitiveSimpleQuads : zeno::INode {
   }
 };
 
-ZENDEFNODE(PrimitiveSimpleQuads,
-    { /* inputs: */ {
-    "prim",
-    }, /* outputs: */ {
-    "prim",
-    }, /* params: */ {
-    }, /* category: */ {
+ZENDEFNODE(PrimitiveSimpleQuads, {
+    {
+        "prim",
+    },
+    {
+        "prim",
+    },
+    {},
+    {
     "primitive",
-    }});
+    }
+});
 
 
 struct PrimitiveClearConnect : zeno::INode {
@@ -177,15 +195,19 @@ struct PrimitiveClearConnect : zeno::INode {
   }
 };
 
-ZENDEFNODE(PrimitiveClearConnect,
-    { /* inputs: */ {
-    "prim", {"enum edges faces tris quads polys points all","type", "all"}
-    }, /* outputs: */ {
-    "prim",
-    }, /* params: */ {
-    }, /* category: */ {
-    "primitive",
-    }});
+ZENDEFNODE(PrimitiveClearConnect, {
+    {
+        "prim",
+        {"enum edges faces tris quads polys points all","type", "all"}
+    },
+    {
+        "prim",
+    },
+    {},
+    {
+        "primitive",
+    }
+});
 
 struct PrimitiveLineSimpleLink : zeno::INode {
     virtual void apply() override {
@@ -205,7 +227,7 @@ struct PrimitiveLineSimpleLink : zeno::INode {
 
 ZENDEFNODE(PrimitiveLineSimpleLink, {
     {
-    {"PrimitiveObject", "prim"},
+    {"PrimitiveObject", "prim", "", PrimarySocket},
     },
     {
     {"PrimitiveObject", "prim"},
@@ -241,7 +263,7 @@ struct PrimitiveSplitEdges : zeno::INode { // TODO: use PrimSplitFaces to replac
 };
 
 ZENDEFNODE(PrimitiveSplitEdges, {
-    {"prim"},
+    {{"", "prim", "", PrimarySocket}},
     {"prim"},
     {},
     {"deprecated"},
@@ -275,16 +297,20 @@ struct PrimitiveFaceToEdges : zeno::INode {
   }
 };
 
-ZENDEFNODE(PrimitiveFaceToEdges,
-    { /* inputs: */ {
-    "prim",
-    }, /* outputs: */ {
-    "prim",
-    }, /* params: */ {
-    {"bool", "clearFaces", "1"},
-    }, /* category: */ {
+ZENDEFNODE(PrimitiveFaceToEdges, {
+    {
+        {"", "prim", "", PrimarySocket},
+    },
+    {
+        "prim",
+    },
+    {
+        {"bool", "clearFaces", "1"},
+    },
+    {
     "deprecated",
-    }});
+    }
+});
 
 
 struct PrimitiveFlipPoly : zeno::INode {

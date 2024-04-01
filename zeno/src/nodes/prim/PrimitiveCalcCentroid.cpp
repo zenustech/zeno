@@ -54,7 +54,7 @@ struct PrimitiveCalcCentroid : zeno::INode {
 
 ZENDEFNODE(PrimitiveCalcCentroid, {
     {
-    {"PrimitiveObject", "prim"},
+    {"PrimitiveObject", "prim", "", PrimarySocket},
     },
     {
     {"vec3f", "centroid"},

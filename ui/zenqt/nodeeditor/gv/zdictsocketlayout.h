@@ -5,11 +5,13 @@
 
 class ZenoImageItem;
 class ZDictPanel;
+class ZLayoutBackground;
+class SocketBackgroud;
 
 class ZDictSocketLayout : public ZSocketLayout
 {
 public:
-    ZDictSocketLayout(const QPersistentModelIndex& paramIdx, bool bInput);
+    ZDictSocketLayout(const QPersistentModelIndex& paramIdx, bool bInput, SocketBackgroud* parentItem);
     ~ZDictSocketLayout();
     void initUI(const CallbackForSocket& cbSock) override;
     ZenoSocketItem* socketItemByIdx(const QModelIndex& sockIdx, const QString keyName) const override;

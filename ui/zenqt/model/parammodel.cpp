@@ -73,7 +73,7 @@ QVariant ParamsModel::data(const QModelIndex& index, int role) const
     case ROLE_PARAM_TYPE:       return param.type;
     case ROLE_PARAM_VALUE:      return param.value;
     case ROLE_PARAM_CONTROL:    return param.control;
-    case ROLE_SOCKET_TYPE:return param.connectProp;
+    case ROLE_SOCKET_TYPE:      return param.connectProp;
     case ROLE_ISINPUT:          return param.bInput;
     case ROLE_NODEIDX:          return m_nodeIdx;
     case ROLE_LINKS:            return QVariant::fromValue(param.links);
@@ -483,6 +483,18 @@ bool ParamsModel::removeRows(int row, int count, const QModelIndex& parent)
     m_items.removeAt(row);
     endRemoveRows();
     return true;
+}
+
+void ParamsModel::getDegrees(int& inDegrees, int& outDegrees) {
+    inDegrees = outDegrees = 0;
+    for (auto item : m_items) {
+        if (item.bInput) {
+            inDegrees += item.links.size();
+        }
+        else {
+            outDegrees += item.links.size();
+        }
+    }
 }
 
 int ParamsModel::getParamlinkCount(const QModelIndex& paramIdx)

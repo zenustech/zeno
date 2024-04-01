@@ -32,6 +32,7 @@
 #include <zeno/io/zenreader.h>
 //#include "nodeeditor/gv/pythonmaterialnode.h"
 
+
 ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
     : QGraphicsScene(parent)
     , m_tempLink(nullptr)
@@ -81,7 +82,7 @@ void ZenoSubGraphScene::initModel(GraphModel* pGraphM)
         addItem(pNode);
         const QString& nodeid = pNode->nodeId();
         m_nodes[nodeid] = pNode;
-        if (pNode->nodeName() == "Group") 
+        if (pNode->nodeClass() == "Group") 
         {
             blackboardVect << pNode;
         }
@@ -182,6 +183,11 @@ void ZenoSubGraphScene::initModel(GraphModel* pGraphM)
     QAbstractItemModel* pLinkModel = m_model->getLinkModel();
     connect(pLinkModel, &QAbstractItemModel::rowsInserted, this, &ZenoSubGraphScene::onLinkInserted);
     connect(pLinkModel, &QAbstractItemModel::rowsAboutToBeRemoved, this, &ZenoSubGraphScene::onLinkAboutToBeRemoved);
+}
+
+void ZenoSubGraphScene::onNodePositionChanged(const ZenoNode* pNode)
+{
+    emit nodePosChanged(pNode);
 }
 
 void ZenoSubGraphScene::initLink(const QModelIndex& linkIdx)
@@ -512,7 +518,10 @@ void ZenoSubGraphScene::select(const QModelIndexList &indexs)
     {
         const QString &id = index.data(ROLE_NODE_NAME).toString();
         if (m_nodes.find(id) != m_nodes.end());
+        {
+            ZASSERT_EXIT(m_nodes[id]);
             m_nodes[id]->setSelected(true);
+        }
     }
     afterSelectionChanged();
 }
@@ -525,6 +534,15 @@ ZenoNode* ZenoSubGraphScene::markError(const QString& nodeName)
     //pNode->setSelected(true);
     m_errNodes.append(nodeName);
     return pNode;
+}
+
+QList<ZenoNode*> ZenoSubGraphScene::getNodesItem() const
+{
+    QList<ZenoNode*> items;
+    for (auto& [_, node] : m_nodes) {
+        items.append(node);
+    }
+    return items;
 }
 
 void ZenoSubGraphScene::clearMark()
@@ -1097,6 +1115,8 @@ void ZenoSubGraphScene::onRowsAboutToBeRemoved(const QModelIndex& parent, int fi
             pGroup->removeChildItem(pNode);
         }
 
+        emit nodeAboutToRemoved(pNode);
+
         removeItem(pNode);
         delete pNode;
         m_nodes.erase(id);
@@ -1141,6 +1161,7 @@ void ZenoSubGraphScene::onRowsInserted(const QModelIndex& parent, int first, int
             }
         }
     }
+    emit nodeInserted(pNode);
 }
 
 void ZenoSubGraphScene::selectObjViaNodes() {
@@ -1309,4 +1330,170 @@ void ZenoSubGraphScene::updateNodeStatus(bool &bOn, int option)
 void ZenoSubGraphScene::keyReleaseEvent(QKeyEvent* event)
 {
     QGraphicsScene::keyReleaseEvent(event);
+}
+
+void ZenoSubGraphScene::rearrangeGraph(bool bHorional)
+{
+    QMap<QString, int> nodeLayers;   //保存已处理节点的层次。
+    QQueue<QString> queue;           //记录当前入度为0的节点，按先进先出的顺序。
+    QVector<QStringList> layerNodes;    //记录各层次的所有节点
+    QMap<QString, int> nodeIndegree;    //记录所有节点的入度。
+
+    //首先遍历整张图，求得所有节点的入度，并把入度为0的节点加入queue。
+    for (int i = 0; i < m_model->rowCount(); i++)
+    {
+        QModelIndex idx = m_model->index(i);
+        const QString& name = idx.data(ROLE_NODE_NAME).toString();
+        ZASSERT_EXIT(!name.isEmpty());
+        int degree = UiHelper::getIndegree(idx);
+        nodeIndegree[name] = degree;
+        if (degree == 0)
+            queue.push_back(name);
+    }
+
+    while (!queue.isEmpty())
+    {
+        //出列!
+        QString node = queue.takeFirst();
+        //如果想知道node所在的层次，需要找node的前继节点中最深的层次，然后加1
+        QStringList prevNodes = UiHelper::findPreviousNode(m_model, node);
+        int maxDepth = 0, currLayer = 0;
+        if (!prevNodes.isEmpty())
+        {
+            for (auto prevNode : prevNodes) {
+                ZASSERT_EXIT(nodeLayers.find(prevNode) != nodeLayers.end());
+                maxDepth = qMax(maxDepth, nodeLayers[prevNode]);
+            }
+            currLayer = maxDepth + 1;
+        }
+
+        nodeLayers[node] = currLayer;
+        if (layerNodes.size() < currLayer + 1) {
+            layerNodes.resize(currLayer + 1);
+        }
+        layerNodes[currLayer].append(node);
+
+        //node的后继者的入度全部减一。
+        QStringList successorNodes = UiHelper::findSuccessorNode(m_model, node);
+        for (auto successorNode : successorNodes)
+        {
+            int indegree = --nodeIndegree[successorNode];
+            ZASSERT_EXIT(indegree >= 0);
+            if (indegree == 0)
+            {
+                queue.append(successorNode);
+                nodeIndegree.remove(successorNode);
+            }
+        }
+    }
+
+    //将所有节点展开或折叠
+    bool bCollasped = !bHorional;
+    for (auto& [name, pNode] : m_nodes)
+    {
+        UiHelper::qIndexSetData(pNode->index(), bCollasped, ROLE_COLLASPED);
+    }
+
+    auto getLayerHeight = [&](bool bHorizonal, const QStringList& nodes, qreal space) -> QSizeF {
+        qreal W = 0, H = 0;
+        if (bHorizonal)
+        {
+            for (QString node : nodes)
+            {
+                ZASSERT_EXIT(m_nodes.find(node) != m_nodes.end(), QSizeF());
+                ZenoNode* pNodeItem = m_nodes[node];
+                QRectF rc = pNodeItem->boundingRect();
+                H += rc.height();
+                W = qMax(rc.width(), W);
+            }
+            H += (nodes.size() - 1) * space;
+            
+        }
+        else {
+            for (QString node : nodes)
+            {
+                //todo
+                ZASSERT_EXIT(m_nodes.find(node) != m_nodes.end(), QSizeF());
+                ZenoNode* pNodeItem = m_nodes[node];
+                QRectF rc = pNodeItem->boundingRect();
+                W += rc.width();
+                H = qMax(rc.height(), H);
+            }
+            W += (nodes.size() - 1) * space;
+        }
+        return QSizeF(W, H);
+    };
+
+    if (bHorional)
+    {
+        qreal ycenter = 0.;
+        if (layerNodes.isEmpty())
+            return;
+        //决定中轴线的位置。
+        qreal vspace = 150.;
+        qreal xspace = 300.;
+        QSizeF sz = getLayerHeight(bHorional, layerNodes[0], vspace);
+        ycenter = sz.height() / 2;
+
+        qreal x = 0;
+        for (int i = 0; i < layerNodes.size(); i++)
+        {
+            sz = getLayerHeight(bHorional, layerNodes[i], vspace);
+            ZASSERT_EXIT(!sz.isEmpty());
+            qreal y = ycenter - sz.height() / 2;    //start pos
+
+            //为每个节点设置位置
+            for (QString node : layerNodes[i])
+            {
+                ZASSERT_EXIT(m_nodes.find(node) != m_nodes.end());
+                ZenoNode* pNode = m_nodes[node];
+                pNode->setPos(x, y);
+                y += pNode->boundingRect().height();
+                y += vspace;
+            }
+            x = x + sz.width() + xspace;
+        }
+    }
+    else {
+        //折叠状态下的竖向排列
+
+        qreal xcenter = 0.;
+        if (layerNodes.isEmpty())
+            return;
+        //决定中轴线的位置。
+        qreal hspace = 150.;
+        qreal yspace = 300.;
+        QSizeF sz = getLayerHeight(bHorional, layerNodes[0], hspace);
+        xcenter = sz.width() / 2;
+
+        QFont nameFont = QApplication::font();
+        nameFont.setWeight(QFont::Normal);
+        nameFont.setPointSize(20);
+        QFontMetrics metrics(nameFont);
+
+        qreal y = 0;
+        for (int i = 0; i < layerNodes.size(); i++)
+        {
+            sz = getLayerHeight(bHorional, layerNodes[i], hspace);
+            ZASSERT_EXIT(!sz.isEmpty());
+            qreal x = xcenter - sz.width() / 2;    //start pos
+
+            //为每个节点设置位置
+            for (QString node : layerNodes[i])
+            {
+                ZASSERT_EXIT(m_nodes.find(node) != m_nodes.end());
+                ZenoNode* pNode = m_nodes[node];
+                pNode->setPos(x, y);
+                QString name = pNode->nodeId();
+                x += pNode->boundingRect().width(); //TOFIX: 好像没算上左边名称的长度
+
+                //折叠状态下，名字没有纳入布局（多重布局比较麻烦，尤其是调整位置的时候）
+                int nameLength = metrics.horizontalAdvance(name);
+                x += nameLength;
+
+                x += hspace;
+            }
+            y = y + sz.height() + yspace;
+        }
+    }
 }

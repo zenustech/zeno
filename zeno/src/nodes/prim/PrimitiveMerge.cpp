@@ -164,7 +164,10 @@ struct PrimitiveMerge : zeno::INode {
 };
 
 ZENDEFNODE(PrimitiveMerge, {
-    {"listPrim", "dst"},
+    {
+        {"", "dst", "", PrimarySocket},
+        {"", "listPrim", "", PrimarySocket},
+    },
     {"prim"},
     {},
     {"deprecated"},

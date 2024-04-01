@@ -110,8 +110,8 @@ struct PrimForceTrail : INode {
 
 ZENDEFNODE(PrimForceTrail, {
     {
-    {"PrimitiveObject", "prim"},
-    {"PrimitiveObject", "trailPrim"},
+    {"PrimitiveObject", "prim", "", PrimarySocket},
+    {"PrimitiveObject", "trailPrim", "", PrimarySocket},
     {"string", "forceAttr", "force"},
     {"float", "attractForce", "0.5"},
     {"float", "driftForce", "1"},

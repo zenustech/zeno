@@ -41,6 +41,7 @@ public:
     QHash<int, QByteArray> roleNames() const override;
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
     bool removeRows(int row, int count, const QModelIndex& parent = QModelIndex()) override;
+    void getDegrees(int& inDegrees, int& outDegrees);
 
     //api:
     void setNodeIdx(const QModelIndex& nodeIdx);

@@ -68,7 +68,7 @@ struct JsonGetArraySize : zeno::INode {
 };
 ZENDEFNODE(JsonGetArraySize, {
     {
-        {"json"},
+        {"", "json", "", PrimarySocket},
     },
     {
         "size",
@@ -89,7 +89,7 @@ struct JsonGetArrayItem : zeno::INode {
 };
 ZENDEFNODE(JsonGetArrayItem, {
     {
-        {"json"},
+        {"", "json", "", PrimarySocket},
         {"int", "index"}
     },
     {
@@ -142,7 +142,7 @@ struct JsonGetChild : zeno::INode {
 };
 ZENDEFNODE(JsonGetChild, {
     {
-        {"json"},
+        {"", "json", "", PrimarySocket},
         {"string", "name"},
         {"enum json int float string vec2f vec3f vec4f", "type"},
     },
@@ -162,7 +162,7 @@ struct JsonGetInt : zeno::INode {
 };
 ZENDEFNODE(JsonGetInt, {
     {
-        {"json"},
+        {"", "json", "", PrimarySocket},
     },
     {
         "value",
@@ -181,7 +181,7 @@ struct JsonGetFloat : zeno::INode {
 };
 ZENDEFNODE(JsonGetFloat, {
     {
-        {"json"},
+        {"", "json", "", PrimarySocket},
     },
     {
         "value",
@@ -200,7 +200,7 @@ struct JsonGetString : zeno::INode {
 };
 ZENDEFNODE(JsonGetString, {
     {
-        {"json"},
+        {"", "json", "", PrimarySocket},
     },
     {
         "string",
@@ -218,7 +218,7 @@ struct JsonGetTypeName : zeno::INode {
 };
 ZENDEFNODE(JsonGetTypeName, {
     {
-        {"json"},
+        {"", "json", "", PrimarySocket},
     },
     {
         "string",
@@ -279,7 +279,7 @@ struct JsonData : zeno::INode {
 };
 ZENDEFNODE(JsonData, {
     {
-        {"json"},
+        {"", "json", "", PrimarySocket},
         {"string", "path"},
     },
     {
@@ -390,7 +390,7 @@ struct JsonGetData : zeno::INode {
 };
 ZENDEFNODE(JsonGetData, {
     {
-        {"json"},
+        {"", "json", "", PrimarySocket},
         {"multiline_string", "paths"},
     },
     {

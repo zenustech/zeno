@@ -61,7 +61,7 @@ class ZGraphicsLayout
 {
 public:
     ZGraphicsLayout(bool bHor);
-    ~ZGraphicsLayout();
+    virtual ~ZGraphicsLayout();
     void addItem(QGraphicsItem* item);
     void addItem(QGraphicsItem* item, Qt::Alignment flag);
     int count() const;
@@ -94,6 +94,7 @@ public:
     static ZGraphicsLayout* visitRoot(ZGraphicsLayout* currentLayout);
     void clearCacheSize();
     void setDebugName(const QString& dbgName);
+    QString getDebugName() const;
     void hide();
     void show();
     bool isHide() const;

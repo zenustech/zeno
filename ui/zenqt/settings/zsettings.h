@@ -6,6 +6,7 @@ const char* const zsEditor = "Zeno";
 
 const char *const zsShowGrid = "ShowGrid";
 const char *const zsSnapGrid = "SnapGrid";
+const char* const zsShowThumbnail = "ShowThumbnail";
 const char *const zsTraceErrorNode = "TraceErrorNode";
 const char *const zsShortCut = "ShortCut";
 const char *const zsShortCutStyle = "ShortCutStyle";

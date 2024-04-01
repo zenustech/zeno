@@ -64,7 +64,7 @@ struct SetPhysicalCamera : INode {
 
 ZENO_DEFNODE(SetPhysicalCamera)({
     {
-        "camera",
+        {"", "camera", "", PrimarySocket},
         {"float", "aperture", "2"},
         {"float", "shutter_speed", "0.04"},
         {"float", "iso", "150"},

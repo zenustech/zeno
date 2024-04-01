@@ -24,6 +24,7 @@ public:
     QRectF boundingRect() const override;
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
     QPainterPath shape() const override;
+    qreal textLength() const;
 
 signals:
     void editingFinished();
@@ -56,6 +57,7 @@ class ZSimpleTextItem : public QGraphicsSimpleTextItem
 public:
     explicit ZSimpleTextItem(QGraphicsItem* parent = nullptr);
     explicit ZSimpleTextItem(const QString& text, QGraphicsItem* parent = nullptr);
+    explicit ZSimpleTextItem(const QString& text, const QFont& font, const QColor& color, QGraphicsItem* parent = nullptr);
     ~ZSimpleTextItem();
 
     QRectF boundingRect() const override;
@@ -104,11 +106,14 @@ class ZEditableTextItem : public ZGraphicsLayoutItem<ZGraphicsTextItem>
 public:
     ZEditableTextItem(const QString& text, QGraphicsItem* parent = nullptr);
     ZEditableTextItem(QGraphicsItem* parent = nullptr);
+    ~ZEditableTextItem();
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
     void setValidator(const QValidator* pValidator);
     void setNumSlider(QGraphicsScene* pScene, const QVector<qreal>& steps);
+    void setTextLengthAsBounding(bool bOn);
     QString text() const;
     bool showSlider() const;
+    QRectF boundingRect() const override;
 
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
@@ -123,6 +128,9 @@ protected:
 private slots:
     void onContentsChanged();
 
+signals:
+    void contentsChanged();
+
 private:
     void initUI(const QString& text);
     QGraphicsView* _getFocusViewByCursor();
@@ -134,6 +142,7 @@ private:
     bool m_bFocusIn;
     bool m_bValidating;
     bool m_bShowSlider;
+    bool m_bTextLengthAsBounding;
 };
 
 class ZenoSocketItem;

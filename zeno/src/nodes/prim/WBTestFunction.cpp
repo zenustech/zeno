@@ -87,8 +87,8 @@ struct testPoly2 : INode {
 ZENDEFNODE(testPoly2, {
     /* inputs: */
     {
-        "prim",
-        "list",
+        {"", "prim", "", PrimarySocket},
+        {"", "list", "", PrimarySocket},
     },
     /* outputs: */
     {
@@ -118,7 +118,7 @@ struct PrimMarkTrisIdx : INode {
 ZENDEFNODE(PrimMarkTrisIdx, {
     /* inputs: */
     {
-        "prim",
+        {"", "prim", "", PrimarySocket},
         {"string", "idxName", "index"},
     },
     /* outputs: */
@@ -142,7 +142,7 @@ struct PrimGetTrisSize : INode {
 ZENDEFNODE(PrimGetTrisSize, {
     /* inputs: */
     {
-        "prim",
+        {"", "prim", "", PrimarySocket},
     },
     /* outputs: */
     {
@@ -181,7 +181,7 @@ struct PrimPointTris : INode {
 ZENDEFNODE(PrimPointTris, {
     /* inputs: */
     {
-        "prim",
+        {"", "prim", "", PrimarySocket},
         {"int", "pointID", "0"},
     },
     /* outputs: */
@@ -206,7 +206,7 @@ struct PrimTriPoints : INode {
 ZENDEFNODE(PrimTriPoints, {
     /* inputs: */
     {
-        "prim",
+        {"", "prim", "", PrimarySocket},
         {"int", "trisID", "0"},
     },
     /* outputs: */
@@ -233,7 +233,7 @@ struct DictEraseItem : zeno::INode {
 ZENDEFNODE(DictEraseItem, {
     /* inputs: */
     {
-        {"DictObject", "dict"},
+        {"DictObject", "dict", "", PrimarySocket},
         {"string", "key"},
     },
     /* outputs: */
@@ -470,8 +470,8 @@ struct Grid2DSample_M : zeno::INode {
 ZENDEFNODE(Grid2DSample_M, {
     /* inputs: */
     {
-        {"PrimitiveObject", "grid"},
-        {"PrimitiveObject", "grid2"},
+        {"PrimitiveObject", "grid", "", PrimarySocket},
+        {"PrimitiveObject", "grid2", "", PrimarySocket},
         {"int", "nx", "1"},
         {"int", "ny", "1"},
         {"float", "h", "1"},
@@ -516,7 +516,7 @@ struct GaussianGrid : INode {
 
 ZENDEFNODE(GaussianGrid, {
     {
-        {"prim"},
+        {"", "prim", "", PrimarySocket},
         {"int", "nx", "10"},
         {"int", "ny", "10"},
         {"float", "SigmaX", "1"},

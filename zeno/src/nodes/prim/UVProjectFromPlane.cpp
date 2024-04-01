@@ -79,8 +79,8 @@ struct UVProjectFromPlane : zeno::INode {
 
 ZENDEFNODE(UVProjectFromPlane, {
     {
-        {"PrimitiveObject", "prim"},
-        {"PrimitiveObject", "refPlane"},
+        {"PrimitiveObject", "prim", "", PrimarySocket},
+        {"PrimitiveObject", "refPlane", "", PrimarySocket},
     },
     {
         {"PrimitiveObject", "outPrim"}
@@ -309,8 +309,8 @@ struct PrimSample2D : zeno::INode {
 };
 ZENDEFNODE(PrimSample2D, {
     {
-        {"PrimitiveObject", "prim"},
-        {"PrimitiveObject", "image"},
+        {"PrimitiveObject", "prim", "", PrimarySocket},
+        {"PrimitiveObject", "image", "", PrimarySocket},
         {"string", "uvChannel", "uv"},
         {"enum vertex tris loopsuv", "uvSource", "vertex"},
         {"string", "targetChannel", "clr"},
@@ -549,7 +549,7 @@ struct ImageFlipVertical : INode {
 };
 ZENDEFNODE(ImageFlipVertical, {
     {
-        {"image"},
+        {"", "image", "", PrimarySocket},
     },
     {
         {"image"},
@@ -680,7 +680,7 @@ struct WriteImageFile : INode {
 };
 ZENDEFNODE(WriteImageFile, {
     {
-        {"image"},
+        {"", "image", "", PrimarySocket},
         {"writepath", "path"},
         {"enum png jpg exr pfm", "type", "png"},
         {"mask"},
@@ -770,7 +770,7 @@ struct WriteImageFile_v2 : INode {
 };
 ZENDEFNODE(WriteImageFile_v2, {
     {
-        {"image"},
+        {"", "image", "", PrimarySocket},
         {"writepath", "path"},
         {"enum png jpg exr pfm", "type", "png"},
         {"mask"},
@@ -851,7 +851,7 @@ struct ImageFloatGaussianBlur : INode {
 
 ZENDEFNODE(ImageFloatGaussianBlur, {
     {
-        {"image"},
+        {"", "image", "", PrimarySocket},
     },
     {
         {"image"},
@@ -929,7 +929,7 @@ struct PrimLoadExrToChannel : INode {
 ZENDEFNODE(PrimLoadExrToChannel, {
     {
         {"readpath", "path", ""},
-        {"prim"},
+        {"", "prim", "", PrimarySocket},
         {"string", "channel", "clr"},
     },
     {

@@ -57,7 +57,7 @@ struct PrimitiveReduction : zeno::INode {
 };
 ZENDEFNODE(PrimitiveReduction,
     { /* inputs: */ {
-    "prim",
+    {"", "prim", "", PrimarySocket},
     }, /* outputs: */ {
     "result",
     }, /* params: */ {
@@ -84,7 +84,7 @@ struct PrimReduction : zeno::INode {
 };
 ZENDEFNODE(PrimReduction,{
     {
-        {"prim"},
+        {"", "prim", "", PrimarySocket},
         {"string", "attrName", "pos"},
         {"enum avg max min absmax", "op", "avg"},
     },
@@ -121,7 +121,7 @@ struct PrimitiveBoundingBox : zeno::INode {
 
 ZENDEFNODE(PrimitiveBoundingBox,
     { /* inputs: */ {
-    {"PrimitiveObject", "prim"},
+    {"PrimitiveObject", "prim", "", PrimarySocket},
     {"float", "exWidth", "0"},
     }, /* outputs: */ {
     {"vec3f", "bmin"}, {"vec3f", "bmax"},

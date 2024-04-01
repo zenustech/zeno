@@ -19,7 +19,7 @@ struct DictSize : zeno::INode {
 };
 
 ZENDEFNODE(DictSize, {
-    {{"DictObject", "dict"}},
+    {{"DictObject", "dict", "", PrimarySocket}},
     {{"int", "size"}},
     {},
     {"dict"},
@@ -41,7 +41,7 @@ struct DictGetItem : zeno::INode {
 };
 
 ZENDEFNODE(DictGetItem, {
-    {{"DictObject", "dict"}, {"string", "key"}, {"IObject", "defl"}},
+    {{"DictObject", "dict", "", PrimarySocket}, {"string", "key"}, {"IObject", "defl", "", PrimarySocket}},
     {{"zany", "object"}},
     {},
     {"dict"},
@@ -74,7 +74,7 @@ struct DictSetItem : zeno::INode {
 };
 
 ZENDEFNODE(DictSetItem, {
-    {{"DictObject", "dict"}, {"string", "key"}, {"zany", "object"}},
+    {{"DictObject", "dict", "", PrimarySocket}, {"string", "key"}, {"zany", "object", "", PrimarySocket}},
     {{"DictObject", "dict"}},
     {},
     {"dict"},
@@ -91,20 +91,6 @@ struct MakeDict : zeno::INode {
 ZENDEFNODE(MakeDict, {
     {{"dict", "objs", "", zeno::PrimarySocket}},
     {{"DictObject", "dict"}},
-    {},
-    {"dict"},
-});
-
-struct MultiMakeDict : zeno::INode {
-    virtual void apply() override {
-        auto lst = get_input2<zeno::DictObject>("dict");
-        set_output("dict", std::move(lst));
-    }
-};
-
-ZENDEFNODE(MultiMakeDict, {
-    {{"DictObject", "dict"}},
-    {"dict"},
     {},
     {"dict"},
 });
@@ -166,8 +152,8 @@ struct ZipListAsDict : zeno::INode {
 
 ZENDEFNODE(ZipListAsDict, {
     {
-        {"ListObject", "keys"},
-        {"ListObject", "values"},
+        {"ListObject", "keys", "", PrimarySocket},
+        {"ListObject", "values", "", PrimarySocket},
     },
     {{"DictObject", "dict"}},
     {},
@@ -187,7 +173,8 @@ struct DictUnion : zeno::INode {
 };
 
 ZENDEFNODE(DictUnion, {
-    {{"DictObject", "dict1"}, {"DictObject", "dict2"}},
+    {{"DictObject", "dict1", "", PrimarySocket},
+     {"DictObject", "dict2", "", PrimarySocket}},
     {{"DictObject", "dict"}},
     {},
     {"dict"},

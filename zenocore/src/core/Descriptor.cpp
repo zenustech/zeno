@@ -30,8 +30,16 @@ ZENO_API Descriptor::Descriptor(
   std::vector<SocketDescriptor> const &outputs,
   std::vector<ParamDescriptor> const &params,
   std::vector<std::string> const &categories,
-  std::string const &doc)
-  : inputs(inputs), outputs(outputs), params(params), categories(categories), doc(doc) {
+  std::string const &displayName,
+  std::string const &iconResPath,
+  std::string const& doc)
+  : inputs(inputs)
+  , outputs(outputs)
+  , params(params)
+  , categories(categories)
+  , doc(doc)
+  , displayName(displayName)
+  , iconResPath(iconResPath) {
     //this->inputs.push_back("SRC");
     //this->inputs.push_back("COND");  // deprecated
     //this->outputs.push_back("DST");

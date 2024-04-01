@@ -19,13 +19,15 @@ class ZenoGraphsEditor;
 class ZenoSubGraphScene;
 class GroupNode;
 class ParamsModel;
+class StatusGroup;
+class StatusButton;
 
 class ZenoNode : public ZLayoutBackground
 {
     Q_OBJECT
     typedef ZLayoutBackground _base;
 
-  public:
+public:
     struct _param_ctrl
     {
         ZSimpleTextItem* param_name;
@@ -46,7 +48,7 @@ public:
 
     void initUI(ZenoSubGraphScene* pScene, const QModelIndex& subGIdx, const QModelIndex& index);
 
-    QPersistentModelIndex index() { return m_index; }
+    QPersistentModelIndex index() const { return m_index; }
     QPersistentModelIndex subgIndex() { return m_subGpIndex; }
     QModelIndex getSocketIndex(QGraphicsItem* uiitem, bool bSocketText) const;
     QPointF getSocketPos(const QModelIndex& sockIdx, const QString keyName = "");
@@ -55,7 +57,8 @@ public:
     void markError(bool isError);
 
     QString nodeId() const;
-    QString nodeName() const;
+    QString nodeClass() const;
+    QString nodeUuid() const;
     QPointF nodePos() const;
     void updateNodePos(const QPointF &pos, bool enableTransaction = true);
     virtual void onUpdateParamsNotDesc();
@@ -127,23 +130,31 @@ protected:
     ZLayoutBackground* m_bodyWidget;
     ZLayoutBackground* m_headerWidget;
 
+    ZLayoutBackground* m_mainHeaderBg;
+    ZGraphicsLayout* m_topInputSockets;
+    ZGraphicsLayout* m_bottomOutputSockets;
+
 private slots:
     void onCustomNameChanged();
 
 private:
+    ZLayoutBackground* initMainHeaderBg();
+    ZGraphicsLayout* initVerticalSockets(bool bInput);
     void _drawBorderWangStyle(QPainter* painter);
     ZSocketLayout* getSocketLayout(bool bInput, const QString& sockName);
+    ZSocketLayout* getSocketLayout(bool bInput, int idx);
     bool removeSocketLayout(bool bInput, const QString& sockName);
     void focusOnNode(const QModelIndex& nodeIdx);
 
     ZenoGraphsEditor* getEditorViewByViewport(QWidget* pWidget);
     QGraphicsItem* initSocketWidget(ZenoSubGraphScene* scene, const QModelIndex& paramIdx);
     void updateWhole();
-    ZSocketLayout* addSocket(const QModelIndex& idx, bool bInput, ZenoSubGraphScene* pScene);
+    SocketBackgroud* addSocket(const QModelIndex& idx, bool bInput, ZenoSubGraphScene* pScene);
     void onUpdateFrame(QGraphicsItem* pContrl, int nFrame, QVariant val);
     void onPasteSocketRefSlot(QModelIndex toIndex);
 
     QVector<ZSocketLayout*> getSocketLayouts(bool bInput) const;
+    QVector<ZenoSocketItem*> getSocketItems(bool bInput) const;
 
     QPersistentModelIndex m_index;
     QPersistentModelIndex m_subGpIndex;
@@ -156,8 +167,9 @@ private:
     ZGraphicsTextItem* m_NameItem;
     ZSimpleTextItem* m_pCategoryItem;
     ZSimpleTextItem *m_NameItemTip;
-    ZenoMinStatusBtnItem* m_pStatusWidgets;
-    ZLayoutBackground* m_dirtyMarker;
+    StatusGroup* m_pStatusWidgets;
+    //StatusGroup* m_pStatusWidgets2;
+    QGraphicsPolygonItem* m_statusMarker;
 
     QGraphicsRectItem* m_border;
     ZGraphicsLayout* m_bodyLayout;

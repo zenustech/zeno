@@ -37,18 +37,22 @@ struct PrimitiveFillAttr : INode {
   }
 };
 
-ZENDEFNODE(PrimitiveFillAttr,
-    { /* inputs: */ {
-    "prim",
-    {"NumericObject", "value"},
-    }, /* outputs: */ {
-    "prim",
-    }, /* params: */ {
-    {"string", "attrName", "pos"},
-    {"enum float float3 none", "attrType", "none"},
-    }, /* category: */ {
+ZENDEFNODE(PrimitiveFillAttr,{
+    {
+        {"","prim", "", PrimarySocket},
+        {"NumericObject", "value"},
+    },
+    {
+        "prim",
+    },
+    {
+        {"string", "attrName", "pos"},
+        {"enum float float3 none", "attrType", "none"},
+    },
+    {
     "deprecated",
-    }});
+    }
+});
 
 
 static void print_cout(float x) {
@@ -79,16 +83,20 @@ struct PrimitivePrintAttr : INode {
   }
 };
 
-ZENDEFNODE(PrimitivePrintAttr,
-    { /* inputs: */ {
-    "prim",
-    }, /* outputs: */ {
-    "prim",
-    }, /* params: */ {
-    {"string", "attrName", "pos"},
-    }, /* category: */ {
-    "deprecated",
-    }});
+ZENDEFNODE(PrimitivePrintAttr,{
+    {
+        {"","prim", "", PrimarySocket},
+    },
+    {
+        "prim",
+    },
+    {
+        {"string", "attrName", "pos"},
+    },
+    {
+        "deprecated",
+    }
+});
 
 
 // deprecated: use PrimitiveRandomAttr instead
@@ -125,23 +133,27 @@ struct PrimitiveRandomizeAttr : INode {
   }
 };
 
-ZENDEFNODE(PrimitiveRandomizeAttr,
-    { /* inputs: */ {
-    "prim",
-    }, /* outputs: */ {
-    "prim",
-    }, /* params: */ {
-    {"string", "attrName", "pos"},
-    {"enum float float3", "attrType", "float3"},
-    {"float", "min", "-1"},
-    {"float", "minY", "-1"},
-    {"float", "minZ", "-1"},
-    {"float", "max", "1"},
-    {"float", "maxY", "1"},
-    {"float", "maxZ", "1"},
-    }, /* category: */ {
-    "deprecated",
-    }});
+ZENDEFNODE(PrimitiveRandomizeAttr, {
+    {
+        {"", "prim", "", PrimarySocket},
+    },
+    {
+        "prim",
+    },
+    {
+        {"string", "attrName", "pos"},
+        {"enum float float3", "attrType", "float3"},
+        {"float", "min", "-1"},
+        {"float", "minY", "-1"},
+        {"float", "minZ", "-1"},
+        {"float", "max", "1"},
+        {"float", "maxY", "1"},
+        {"float", "maxZ", "1"},
+    },
+    {
+        "deprecated",
+    }
+});
 
 
 struct PrimitiveRandomAttr : INode {
@@ -177,18 +189,22 @@ struct PrimitiveRandomAttr : INode {
   }
 };
 
-ZENDEFNODE(PrimitiveRandomAttr,
-    { /* inputs: */ {
-    "prim",
-    {"NumericObject", "min", "-1"},
-    {"NumericObject", "max", "1"},
-    }, /* outputs: */ {
-    "prim",
-    }, /* params: */ {
-    {"string", "attrName", "pos"},
-    {"enum float float3", "attrType", ""},
-    }, /* category: */ {
-    "deprecated",
-    }});
+ZENDEFNODE(PrimitiveRandomAttr, {
+    {
+        {"", "prim", "", PrimarySocket},
+        {"NumericObject", "min", "-1"},
+        {"NumericObject", "max", "1"},
+    },
+    {
+        "prim",
+    },
+    {
+        {"string", "attrName", "pos"},
+        {"enum float float3", "attrType", ""},
+    },
+    {
+        "deprecated",
+    }
+});
 
 }

@@ -91,6 +91,24 @@ ZENO_API std::string INode::get_ident() const
     return m_name;
 }
 
+ZENO_API std::string INode::get_show_name() const {
+    if (nodeClass && nodeClass->desc) {
+        std::string dispName = nodeClass->desc->displayName;
+        if (!dispName.empty())
+            return dispName;
+    }
+    return m_nodecls;
+}
+
+ZENO_API std::string INode::get_show_icon() const {
+    if (nodeClass && nodeClass->desc) {
+        return nodeClass->desc->iconResPath;
+    }
+    else {
+        return "";
+    }
+}
+
 ZENO_API ObjPath INode::get_path() const {
     std::list<std::string> path;
     path.push_front(m_name);
@@ -626,7 +644,8 @@ ZENO_API void INode::initParams(const NodeData& dat)
     {
         std::shared_ptr<IParam> sparam = get_input_param(param.name);
         if (!sparam) {
-            zeno::log_warn("input param `{}` is not registerd in current zeno version");
+            //legacy zsg有大量此类参数，导致占用输出，因此先屏蔽
+            //zeno::log_warn("input param `{}` is not registerd in current zeno version");
             continue;
         }
         sparam->defl = param.defl;
@@ -638,7 +657,7 @@ ZENO_API void INode::initParams(const NodeData& dat)
     {
         std::shared_ptr<IParam> sparam = get_output_param(param.name);
         if (!sparam) {
-            zeno::log_warn("output param `{}` is not registerd in current zeno version");
+            //zeno::log_warn("output param `{}` is not registerd in current zeno version");
             continue;
         }
         sparam->defl = param.defl;

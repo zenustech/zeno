@@ -36,14 +36,22 @@ public:
     void select(const QStringList& nodes);
     void select(const QModelIndexList &nodes);
     ZenoNode* markError(const QString& nodeName);
+    QList<ZenoNode*> getNodesItem() const;
     void clearMark();
     QGraphicsItem* getNode(const QString& nodeName);
     void collectNodeSelChanged(const QString& name, bool bSelected);
     GraphModel* getGraphModel() const;
+    void onNodePositionChanged(const ZenoNode* pNode);
+    void rearrangeGraph(bool bHorional);
 
     // FIXME temp function for merge
     void selectObjViaNodes();
     void updateKeyFrame();
+
+signals:
+    void nodePosChanged(const ZenoNode* pNode);
+    void nodeInserted(const ZenoNode* pNode);
+    void nodeAboutToRemoved(const ZenoNode* pNode);
 
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;

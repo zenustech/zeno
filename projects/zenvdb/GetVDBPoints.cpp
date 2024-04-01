@@ -52,7 +52,7 @@ struct GetVDBPoints : zeno::INode {
 
 static int defGetVDBPoints = zeno::defNodeClass<GetVDBPoints>("GetVDBPoints",
     { /* inputs: */ {
-        "grid",
+        {"", "grid", "", PrimarySocket},
     }, /* outputs: */ {
         "pars",
     }, /* params: */ {
@@ -257,7 +257,7 @@ struct VDBPointsToPrimitive : zeno::INode {
 
 static int defVDBPointsToPrimitive = zeno::defNodeClass<VDBPointsToPrimitive>("VDBPointsToPrimitive",
     { /* inputs: */ {
-        "grid",
+        {"", "grid", "", PrimarySocket},
     }, /* outputs: */ {
         "prim",
     }, /* params: */ {
@@ -330,7 +330,8 @@ struct GetVDBPointsDroplets : zeno::INode {
 
 static int defGetVDBPointsDroplets = zeno::defNodeClass<GetVDBPointsDroplets>("GetVDBPointsDroplets",
     { /* inputs: */ {
-        "grid","sdf"
+        {"", "grid", "", PrimarySocket},
+        {"", "sdf", "", PrimarySocket},
     }, /* outputs: */ {
         "prim",
     }, /* params: */ {
@@ -347,7 +348,10 @@ struct ConvertTo_VDBPointsGrid_PrimitiveObject : VDBPointsToPrimitive {
 };
 
 ZENO_DEFOVERLOADNODE(ConvertTo, _VDBPointsGrid_PrimitiveObject, typeid(VDBPointsGrid).name(), typeid(PrimitiveObject).name())({
-        {"grid", "prim"},
+        {
+            {"", "grid", "", PrimarySocket},
+            {"", "prim", "", PrimarySocket},
+        },
         {},
         {},
         {"primitive"},

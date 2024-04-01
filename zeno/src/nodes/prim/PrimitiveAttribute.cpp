@@ -36,16 +36,19 @@ struct PrimitiveAddAttr : zeno::INode {
     }
 };
 
-ZENDEFNODE(PrimitiveAddAttr,
-    { /* inputs: */ {
-    "prim","fillValue",
-    }, /* outputs: */ {
-    "prim",
-    }, /* params: */ {
-    {"string", "name", "clr"},
-    {"enum float float3", "type", "float3"},
-    {"string", "pybisgreat", "DEPRECATED! USE PrimFillAttr INSTEAD"},
-    }, /* category: */ {
+ZENDEFNODE(PrimitiveAddAttr, 
+    { 
+        {
+            {"", "fillValue", "", PrimarySocket},
+            {"", "prim", "", PrimarySocket},
+        }, 
+    {"prim"},
+    {
+        {"string", "name", "clr"},
+        {"enum float float3", "type", "float3"},
+        {"string", "pybisgreat", "DEPRECATED! USE PrimFillAttr INSTEAD"},
+    },
+    {
     "deprecated",
     } });
 
@@ -66,13 +69,15 @@ struct PrimitiveDelAttr : zeno::INode {
 };
 
 ZENDEFNODE(PrimitiveDelAttr,
-    { /* inputs: */ {
-    "prim",
-    }, /* outputs: */ {
-    "prim",
-    }, /* params: */ {
-    {"string", "name", "nrm"},
-    }, /* category: */ {
+    {
+        {
+            {"", "prim", "", PrimarySocket},
+        },
+    {"prim"}, 
+    {
+        {"string", "name", "nrm"},
+    },
+    {
     "primitive",
     } });
 
@@ -106,17 +111,20 @@ struct PrimitiveGetAttrValue : zeno::INode {
     }
 };
 
-ZENDEFNODE(PrimitiveGetAttrValue,
-    { /* inputs: */ {
-    "prim",{"int","index","0"},
-    }, /* outputs: */ {
-    "value",
-    }, /* params: */ {
-    {"string", "name", "pos"},
-    {"enum float float3", "type", "float3"},
-    }, /* category: */ {
-    "deprecated",
-    } });
+ZENDEFNODE(PrimitiveGetAttrValue, {
+    {
+        {"", "prim", "", PrimarySocket},
+        {"int","index","0"},
+    }, 
+    {
+        "value",
+    },
+    {
+        {"string", "name", "pos"},
+        {"enum float float3", "type", "float3"},
+    },
+    {"deprecated"} 
+});
 
 struct PrimitiveSetAttrValue : zeno::INode {
     virtual void apply() override {
@@ -146,15 +154,22 @@ struct PrimitiveSetAttrValue : zeno::INode {
     }
 };
 
-ZENDEFNODE(PrimitiveSetAttrValue,
-    { /* inputs: */ {
-    "prim",{"int","index","0"},{"float","value"},
-    }, /* outputs: */ {
-    "prim",
-    }, /* params: */ {
-    {"string", "name", "pos"},
-    {"enum float float3", "type", "float3"},
-    }, /* category: */ {
+ZENDEFNODE(PrimitiveSetAttrValue,{ 
+    {
+        {"", "prim", "", PrimarySocket},
+        {"int","index","0"},
+        {"float","value"},
+    }, 
+    {
+        "prim",
+    },
+    {
+        {"string", "name", "pos"},
+        {"enum float float3", "type", "float3"},
+    },
+    {
     "deprecated",
-    } });
+    }
+});
+
 }

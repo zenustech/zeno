@@ -201,7 +201,7 @@ struct PrimitiveTriangulate : INode {
 
 ZENDEFNODE(PrimitiveTriangulate,
         { /* inputs: */ {
-        {"primitive", "prim"},
+        {"primitive", "prim", "", PrimarySocket},
         }, /* outputs: */ {
         {"primitive", "prim"},
         }, /* params: */ {
@@ -306,7 +306,7 @@ struct PrimTriangulateIntoPolys : INode {
 
 ZENDEFNODE(PrimTriangulateIntoPolys,
         { /* inputs: */ {
-            {"primitive", "prim"},
+            {"primitive", "prim", "", PrimarySocket},
         }, /* outputs: */ {
             {"primitive", "prim"},
         }, /* params: */ {

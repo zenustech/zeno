@@ -1,6 +1,7 @@
 #include "zsocketlayout.h"
 #include "zenosocketitem.h"
 #include "zlayoutbackground.h"
+#include "socketbackground.h"
 #include "zgraphicstextitem.h"
 #include "zassert.h"
 #include "style/zenostyle.h"
@@ -12,7 +13,7 @@
 #include "util/uihelper.h"
 
 
-ZSocketLayout::ZSocketLayout(const QPersistentModelIndex& viewSockIdx, bool bInput)
+ZSocketLayout::ZSocketLayout(const QPersistentModelIndex& viewSockIdx, bool bInput, SocketBackgroud* parentItem)
     : ZGraphicsLayout(true)
     , m_text(nullptr)
     , m_control(nullptr)
@@ -20,6 +21,7 @@ ZSocketLayout::ZSocketLayout(const QPersistentModelIndex& viewSockIdx, bool bInp
     , m_bInput(bInput)
     , m_bEditable(false)
     , m_paramIdx(viewSockIdx)
+    , m_parentItem(parentItem)
 {
     //TODO: deprecated or refactor.
 #if 0
@@ -36,6 +38,8 @@ ZSocketLayout::ZSocketLayout(const QPersistentModelIndex& viewSockIdx, bool bInp
 
 ZSocketLayout::~ZSocketLayout()
 {
+    int j;
+    j = 0;
 }
 
 void ZSocketLayout::initUI(const CallbackForSocket& cbSock)
@@ -61,12 +65,13 @@ void ZSocketLayout::initUI(const CallbackForSocket& cbSock)
             SOCKPROP_LEGACY != m_paramIdx.data(ROLE_PARAM_SOCKPROP))
         {
             bEnableNode = true;
-    }
+        }
     }
 
-    QSizeF szSocket(10, 20);
+    setContentsMargin(0, 15, 0, 0);
+
+    QSizeF szSocket(14, 14);//(10, 20);
     m_socket = new ZenoSocketItem(m_paramIdx, ZenoStyle::dpiScaledSize(szSocket));
-
     zeno::SocketType sockType = (zeno::SocketType)m_paramIdx.data(ROLE_SOCKET_TYPE).toInt();
     m_socket->setVisible(sockType != zeno::NoSocket);
     m_socket->setZValue(ZVALUE_ELEMENT);
@@ -76,18 +81,6 @@ void ZSocketLayout::initUI(const CallbackForSocket& cbSock)
             cbSock.cbOnSockClicked(m_socket, lnkProp);
         });
     }
-    QObject::connect(m_socket, &ZenoSocketItem::netLabelClicked, [=]() {
-        if (cbSock.cbOnSockNetlabelClicked)
-            cbSock.cbOnSockNetlabelClicked(m_socket->netLabel());
-    });
-    QObject::connect(m_socket, &ZenoSocketItem::netLabelEditFinished, [=]() {
-        if (cbSock.cbOnSockNetlabelEdited)
-            cbSock.cbOnSockNetlabelEdited(m_socket);
-    });
-    QObject::connect(m_socket, &ZenoSocketItem::netLabelMenuActionTriggered, [=](QAction* pAction) {
-        if (cbSock.cbActionTriggered)
-            cbSock.cbActionTriggered(pAction, m_paramIdx);
-    });
 
     if (m_bEditable && bEnableNode)
     {
@@ -95,7 +88,6 @@ void ZSocketLayout::initUI(const CallbackForSocket& cbSock)
             UiHelper::qIndexSetData(m_paramIdx, newText, ROLE_PARAM_NAME);
         };
         ZSocketEditableItem *pItem = new ZSocketEditableItem(m_paramIdx, sockName, m_bInput, cbSock.cbOnSockClicked, cbFuncRenameSock);
-        setSpacing(ZenoStyle::dpiScaled(32));
         if (!m_bInput) 
         {
             pItem->setAlignment(Qt::AlignVCenter | Qt::AlignRight);
@@ -105,22 +97,29 @@ void ZSocketLayout::initUI(const CallbackForSocket& cbSock)
     else
     {
         m_text = new ZSocketPlainTextItem(m_paramIdx, sockName, m_bInput, cbSock.cbOnSockClicked);
-        setSpacing(ZenoStyle::dpiScaled(32));
         m_text->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, zenoui::g_ctrlHeight)));
         m_text->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed));
     }
     m_text->setToolTip(toolTip);
 
+    m_parentItem->setSocketItem(m_socket);
+
     if (m_bInput)
     {
-        addItem(m_socket, Qt::AlignVCenter);
+        //addItem(m_socket, Qt::AlignVCenter);
         addItem(m_text, Qt::AlignVCenter);
+        int xoffset = 0;
+        int yoffset = 0;
+        m_socket->setPos(xoffset, yoffset);
     }
     else
     {
         addSpacing(-1, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred));
         addItem(m_text, Qt::AlignVCenter);
-        addItem(m_socket, Qt::AlignVCenter);
+        int xoffset = 0;//12 + m_text->boundingRect().width();
+        int yoffset = 0;//4;
+        m_socket->setPos(xoffset, yoffset);
+        //addItem(m_socket, Qt::AlignVCenter);
     }
 
     setSpacing(ZenoStyle::dpiScaled(8));
@@ -135,7 +134,7 @@ void ZSocketLayout::setControl(QGraphicsItem* pControl)
     if (align == Qt::AlignLeft)
         addItem(m_control, Qt::AlignLeft | Qt::AlignVCenter);
     else
-        addItem(m_control, Qt::AlignRight);
+        addItem(m_control, Qt::AlignVCenter);//, Qt::AlignRight);
 }
 
 QGraphicsItem* ZSocketLayout::socketText() const
@@ -218,7 +217,7 @@ void ZSocketLayout::updateSockNameToolTip(const QString &tip)
 
 ////////////////////////////////////////////////////////////////////////////////////
 ZGroupSocketLayout::ZGroupSocketLayout(const QPersistentModelIndex &viewSockIdx, bool bInput) :
-    ZSocketLayout(viewSockIdx, bInput)
+    ZSocketLayout(viewSockIdx, bInput, nullptr)
 {
 }
 

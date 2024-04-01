@@ -24,7 +24,7 @@ struct MakePrimitiveFromList : zeno::INode {
 
 ZENDEFNODE(MakePrimitiveFromList,
     { /* inputs: */ {
-    {"ListObject", "list"},
+    {"ListObject", "list", "", PrimarySocket},
     }, /* outputs: */ {
     "prim",
     }, /* params: */ {

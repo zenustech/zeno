@@ -474,7 +474,9 @@ ZENDEFNODE(CreateCube, {
     {{"prim", "prim"}},
     {},
     {"create"},
-    {"创建一个立方体"},
+    {"Cube"},
+    {":/icons/node/box.svg"},
+    {"创建一个立方体"}
 });
 
 struct CreateDisk : zeno::INode {

@@ -177,7 +177,7 @@ struct TransformPrimitive : zeno::INode {//zhxx happy node
 
 ZENDEFNODE(TransformPrimitive, {
     {
-    {"PrimitiveObject", "prim"},
+    {"PrimitiveObject", "prim", "", PrimarySocket},
     {"vec3f", "translation", "0,0,0"},
     {"vec3f", "eulerXYZ", "0,0,0"},
     {"vec4f", "quatRotation", "0,0,0,1"},

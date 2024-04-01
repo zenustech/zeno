@@ -112,6 +112,8 @@ private:
     ZToolBarButton *pUnfold;
     ZToolBarButton *pSnapGrid;
     ZToolBarButton *pShowGrid;
+    ZToolBarButton *pShowThumb;
+    ZToolBarButton *pRearrangeGraph;
     ZToolBarButton *pCustomParam;
     ZToolBarButton *pGroup;
     ZToolBarButton *pLinkLineShape;

@@ -37,12 +37,12 @@ enum ZVALUE_ORDER
 	ZVALUE_GRID_SMALL,
 	ZVALUE_GRID_BIG,
 	ZVALUE_BLACKBOARD = -8,
-	ZVALUE_LINK,	//numeric value influence the actual effect...
 	ZVALUE_CORE_ITEM,
 	ZVALUE_LOCKED_BG,
 	ZVALUE_LOCKED_CP,
 	ZVALUE_LOCKED_ELEM,
 	ZVALUE_BACKGROUND = 0,
+	ZVALUE_LINK,	//numeric value influence the actual effect...
 	ZVALUE_LINK_ABOVE,		//for dict panel socket.
 	ZVALUE_NODE_BORDER,
 	ZVALUE_COMPONENT,

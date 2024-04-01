@@ -233,8 +233,10 @@ struct ParticlesMaskedWrangle : zeno::INode {
 };
 
 ZENDEFNODE(ParticlesMaskedWrangle, {
-    {{"PrimitiveObject", "prim"},
-     {"string", "zfxCode"}, {"DictObject:NumericObject", "params"}, {"string", "maskAttr", "mask"}},
+    {{"PrimitiveObject", "prim", "", PrimarySocket},
+     {"string", "zfxCode"},
+     {"DictObject:NumericObject", "params", "", PrimarySocket},
+     {"string", "maskAttr", "mask"}},
     {{"PrimitiveObject", "prim"}},
     {},
     {"zenofx"},

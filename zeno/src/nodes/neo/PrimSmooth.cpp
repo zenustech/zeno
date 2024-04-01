@@ -24,7 +24,7 @@ struct PrimSmooth : INode {
 
 ZENDEFNODE(PrimSmooth, {
     {
-    {"PrimitiveObject", "prim"},
+    {"PrimitiveObject", "prim", "", PrimarySocket},
     },
     {
     {"PrimitiveObject", "prim"},

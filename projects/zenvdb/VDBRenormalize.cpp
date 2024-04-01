@@ -40,7 +40,7 @@ namespace zeno {
 
 static int defVDBRenormalizeSDF = zeno::defNodeClass<VDBRenormalizeSDF>("VDBRenormalizeSDF",
      { /* inputs: */ {
-     "inoutSDF", 
+     {"", "inoutSDF", "", PrimarySocket},
      }, /* outputs: */ {
      "inoutSDF",
      }, /* params: */ {
@@ -93,8 +93,8 @@ struct VDBSmooth : zeno::INode {
 
 ZENO_DEFNODE(VDBSmooth)(
     { /* inputs: */ {
-    "inoutVDB",
-    "MaskGrid",
+    {"", "inoutVDB", "", PrimarySocket},
+    {"", "MaskGrid", "", PrimarySocket},
     {"enum Mean Gaussian Median", "type", "Gaussian"},
     {"int", "width", "1"},
     {"int", "iterations", "1"},
@@ -121,7 +121,7 @@ struct  VDBSmoothSDF : zeno::INode { /* cihou old graph */
 
 static int defVDBSmoothSDF = zeno::defNodeClass<VDBSmoothSDF>("VDBSmoothSDF",
      { /* inputs: */ {
-     "inoutSDF", 
+     {"", "inoutSDF", "", PrimarySocket},
      }, /* outputs: */ {
      "inoutSDF",
      }, /* params: */ {
@@ -145,7 +145,8 @@ struct  VDBDilateTopo : zeno::INode {
 
 static int defVDBDilateTopo = zeno::defNodeClass<VDBDilateTopo>("VDBDilateTopo",
      { /* inputs: */ {
-     "inField", {"int", "layers",} 
+     {"", "inField", "", PrimarySocket},
+     {"int", "layers",}
      }, /* outputs: */ {
        "oField"
      }, /* params: */ {
@@ -173,7 +174,7 @@ struct VDBErodeSDF : zeno::INode {
 
 static int defVDBErodeSDF = zeno::defNodeClass<VDBErodeSDF>("VDBErodeSDF",
      { /* inputs: */ {
-     "inoutSDF", {"float", "depth"}, 
+     {"", "inoutSDF", "", PrimarySocket}, {"float", "depth"},
      }, /* outputs: */ {
        "inoutSDF",
      }, /* params: */ {

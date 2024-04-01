@@ -204,6 +204,7 @@ namespace zenoio
 
     zeno::ParamInfo ZenReader::_parseSocket(
         const bool bInput,
+        const bool bSubnetNode,
         const std::string& id,
         const std::string& nodeCls,
         const std::string& inSock,

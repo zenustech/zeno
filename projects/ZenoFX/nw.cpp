@@ -176,7 +176,7 @@ struct NumericWrangle : zeno::INode {
 };
 
 ZENDEFNODE(NumericWrangle, {
-    {{"DictObject:NumericObject", "params"}, {"string", "zfxCode"}},
+    {{"DictObject:NumericObject", "params", "", PrimarySocket}, {"string", "zfxCode"}},
     {{"DictObject:NumericObject", "result"}},
     {},
     {"zenofx"},

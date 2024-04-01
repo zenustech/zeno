@@ -40,14 +40,18 @@ struct Descriptor {
   std::vector<ParamDescriptor> params;
   std::vector<std::string> categories;
   std::string doc;
+  std::string displayName;
+  std::string iconResPath;
 
   ZENO_API Descriptor();
   ZENO_API Descriptor(
-	  std::vector<SocketDescriptor> const &inputs,
-	  std::vector<SocketDescriptor> const &outputs,
-	  std::vector<ParamDescriptor> const &params,
-	  std::vector<std::string> const &categories,
-      std::string const &doc = "");
+      std::vector<SocketDescriptor> const &inputs,
+      std::vector<SocketDescriptor> const &outputs,
+      std::vector<ParamDescriptor> const &params,
+      std::vector<std::string> const &categories,
+      std::string const &displayName = "",
+      std::string const &iconResPath = "",
+      std::string const& doc = "");
 };
 
 }

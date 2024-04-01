@@ -956,6 +956,16 @@ void ZenoGraphsEditor::onTreeItemSelectionChanged(const QItemSelection &selected
 void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool bChecked)
 {
     int actionType = pAction->property("ActionType").toInt();
+    if (actionType == ZenoMainWindow::ACTION_SHOWTHUMB)
+    {
+        ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
+        pView->showThumbnail(bChecked);
+    }
+    if (actionType == ZenoMainWindow::ACTION_REARRANGE_GRAPH)
+    {
+        ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
+        pView->rearrangeGraph();
+    }
     if (actionType == ZenoMainWindow::ACTION_COLLASPE)
     {
 #if 0

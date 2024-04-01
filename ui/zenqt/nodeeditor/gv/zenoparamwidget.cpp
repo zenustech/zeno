@@ -1369,7 +1369,6 @@ QSizeF ZenoBoardTextLayoutItem::sizeHint(Qt::SizeHint which, const QSizeF& const
     return constraint;
 }
 
-
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 ZenoMinStatusBtnItem::ZenoMinStatusBtnItem(const StatusComponent& statusComp, QGraphicsItem* parent)
     : _base(parent)

@@ -77,6 +77,17 @@ struct APP_SETTINGS
     //todo: other settings.
 };
 
+struct RoundRectInfo
+{
+    QRectF rc;
+    qreal W = 0.;
+    qreal H = 0.;
+    qreal ltradius = 0.;
+    qreal lbradius = 0.;
+    qreal rtradius = 0.;
+    qreal rbradius = 0.;
+};
+
 enum SearchType : unsigned int
 {
     SEARCH_SUBNET,
@@ -137,7 +148,10 @@ enum SOCKET_PROPERTY {
 enum MODEL_ROLE {
     ROLE_NODE_NAME = Qt::UserRole + 1,  //node name, like `box1`, `cube1`...
     ROLE_CLASS_NAME,    //asset name, or node class name, like `CreateCube`.
+    ROLE_NODE_UUID_PATH,
+    ROLE_NODE_DISPLAY_NAME,     //the name displayed on node ui.
     ROLE_NODE_CATEGORY,
+    ROLE_NODE_DISPLAY_ICON,     //the res path, like `:/icons/add.svg`.
     ROLE_PARAMS,        //paramsmodel
     ROLE_SUBGRAPH,      //get the subgraph by the subgraph node.
     ROLE_GRAPH,         //get the graph which owns the current node index.

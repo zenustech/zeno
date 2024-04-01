@@ -40,7 +40,7 @@ return mat;
 
 ZENDEFNODE(ShaderCihouUnrealEngine, {
     {
-        {"MaterialObject", "mtl"},
+        {"MaterialObject", "mtl", "", PrimarySocket},
     },
     {
         {"string", "code"},

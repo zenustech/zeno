@@ -76,6 +76,7 @@ namespace zenoio {
 
     zeno::ParamInfo ZsgReader::_parseSocket(
         const bool bInput,
+        const bool bSubnetNode,
         const std::string& id,
         const std::string& nodeCls,
         const std::string& inSock,
@@ -133,7 +134,8 @@ namespace zenoio {
             }
             else if (inputObj.IsObject())
             {
-                zeno::ParamInfo param = _parseSocket(true, id, nodeName, inSock, inputObj, links);
+                bool bSubnet = ret.cls == "Subnet";
+                zeno::ParamInfo param = _parseSocket(true, bSubnet, id, nodeName, inSock, inputObj, links);
                 ret.inputs.push_back(param);
             }
             else
@@ -166,7 +168,7 @@ namespace zenoio {
             }
             else if (outObj.IsObject())
             {
-                zeno::ParamInfo param = _parseSocket(false, id, nodeName, outParam, outObj, links);
+                zeno::ParamInfo param = _parseSocket(false, false, id, nodeName, outParam, outObj, links);
                 ret.outputs.push_back(param);
             }
             else
@@ -238,7 +240,7 @@ namespace zenoio {
                     for (const auto& input : inputs)
                     {
                         std::string socketName = input.name.GetString();
-                        _parseSocket(true, "", nodeCls, socketName, input.value, lnks);
+                        _parseSocket(true, false, "", nodeCls, socketName, input.value, lnks);
                     }
                 }
             }
@@ -277,7 +279,7 @@ namespace zenoio {
                     for (const auto& param : params)
                     {
                         std::string socketName = param.name.GetString();
-                        _parseSocket(true, "", nodeCls, socketName, param.value, lnks);
+                        _parseSocket(true, false, "", nodeCls, socketName, param.value, lnks);
                     }
                 }
             }
@@ -316,7 +318,7 @@ namespace zenoio {
                     for (const auto& output : outputs)
                     {
                         std::string socketName = output.name.GetString();
-                        _parseSocket("", nodeCls, socketName, false, output.value, lnks);
+                        _parseSocket("", false, nodeCls, socketName, false, output.value, lnks);
                     }
                 }
             }

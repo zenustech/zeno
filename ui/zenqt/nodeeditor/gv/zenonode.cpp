@@ -36,6 +36,9 @@
 #include "nodeeditor/gv/zdictsocketlayout.h"
 #include "zassert.h"
 #include "widgets/ztimeline.h"
+#include "socketbackground.h"
+#include "statusgroup.h"
+#include "statusbutton.h"
 
 
 ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
@@ -43,6 +46,9 @@ ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
     , m_renderParams(params)
     , m_bodyWidget(nullptr)
     , m_headerWidget(nullptr)
+    , m_mainHeaderBg(nullptr)
+    , m_topInputSockets(nullptr)
+    , m_bottomOutputSockets(nullptr)
     , m_border(new QGraphicsRectItem)
     , m_NameItem(nullptr)
     , m_bError(false)
@@ -56,7 +62,7 @@ ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
     , m_pStatusWidgets(nullptr)
     , m_bVisible(true)
     , m_NameItemTip(nullptr)
-    , m_dirtyMarker(nullptr)
+    , m_statusMarker(nullptr)
 {
     setFlags(ItemIsMovable | ItemIsSelectable);
     setAcceptHoverEvents(true);
@@ -133,13 +139,19 @@ void ZenoNode::initUI(ZenoSubGraphScene* pScene, const QModelIndex& subGIdx, con
     m_subGpIndex = QPersistentModelIndex(subGIdx);
     zeno::NodeType type = static_cast<zeno::NodeType>(m_index.data(ROLE_NODETYPE).toInt());
 
+    m_topInputSockets = initVerticalSockets(true);
+    m_mainHeaderBg = initMainHeaderBg();
     m_headerWidget = initHeaderWidget();
     m_bodyWidget = initBodyWidget(pScene);
+    m_bottomOutputSockets = initVerticalSockets(false);
 
     ZGraphicsLayout* mainLayout = new ZGraphicsLayout(false);
     mainLayout->setDebugName("mainLayout");
+    mainLayout->addLayout(m_topInputSockets);
+    mainLayout->addItem(m_mainHeaderBg);
     mainLayout->addItem(m_headerWidget);
     mainLayout->addItem(m_bodyWidget);
+    mainLayout->addLayout(m_bottomOutputSockets);
 
     mainLayout->setSpacing(0);
     setLayout(mainLayout);
@@ -148,21 +160,20 @@ void ZenoNode::initUI(ZenoSubGraphScene* pScene, const QModelIndex& subGIdx, con
     const QString &id = m_index.data(ROLE_NODE_NAME).toString();
     setPos(pos);
 
-    bool bCollasped = m_index.data(ROLE_COLLASPED).toBool();
-    if (bCollasped)
-        onCollaspeUpdated(true);
-
     // setPos will send geometry, but it's not supposed to happend during initialization.
     setFlag(ItemSendsGeometryChanges);
     setFlag(ItemSendsScenePositionChanges);
 
-    updateWhole();
+    bool bCollasped = m_index.data(ROLE_COLLASPED).toBool();
+    onCollaspeUpdated(bCollasped);
+
+    //updateWhole();
 
     if (type == zeno::Node_Group) {
         setZValue(ZVALUE_BLACKBOARD);
     } else {
-        //set color for normal node(background)
-        setColors(false, QColor("#000000"), QColor("#000000"), QColor("#000000"));
+        //set no color for normal node(background)
+        setColors(false, QColor(0, 0, 0, 0));
     }
 
     if (m_index.data(ROLE_NODE_DIRTY).toBool())
@@ -172,14 +183,145 @@ void ZenoNode::initUI(ZenoSubGraphScene* pScene, const QModelIndex& subGIdx, con
     m_border->hide();
 
     m_bUIInited = true;
-    onZoomed();
+    //onZoomed();
+}
+
+ZGraphicsLayout* ZenoNode::initVerticalSockets(bool bInput)
+{
+    ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(m_index.data(ROLE_PARAMS));
+    ZASSERT_EXIT(paramsM, nullptr);
+
+    ZGraphicsLayout* pSocketLayout = new ZGraphicsLayout(true);
+    pSocketLayout->addSpacing(-1);
+    for (int r = 0; r < paramsM->rowCount(); r++)
+    {
+        const QModelIndex& paramIdx = paramsM->index(r, 0);
+        if (paramIdx.data(ROLE_ISINPUT).toBool() != bInput)
+            continue;
+
+        if (paramIdx.data(ROLE_SOCKET_TYPE) != zeno::PrimarySocket)
+            continue;
+
+        QSizeF szSocket(14, 14);
+        ZenoSocketItem* socket = new ZenoSocketItem(paramIdx, ZenoStyle::dpiScaledSize(szSocket));
+        socket->setBrush(QColor("#CECCCC"), QColor("#CECCCC"));
+        pSocketLayout->addItem(socket);
+        pSocketLayout->addSpacing(-1);
+
+        QObject::connect(socket, &ZenoSocketItem::clicked, [=](bool bInput, zeno::LinkFunction lnkProp) {
+            emit socketClicked(socket, lnkProp);
+        });
+    }
+    return pSocketLayout;
+}
+
+ZLayoutBackground* ZenoNode::initMainHeaderBg()
+{
+    ZLayoutBackground* headerWidget = new ZLayoutBackground;
+    headerWidget->setRadius(10, 10, 10, 10);
+
+    zeno::NodeType type = static_cast<zeno::NodeType>(m_index.data(ROLE_NODETYPE).toInt());
+
+    QColor clrBgFrom, clrBgTo;
+    if (type == zeno::NoVersionNode) {
+        clrBgFrom = clrBgTo = QColor(83, 83, 85);
+    }
+    else if (type == zeno::Node_SubgraphNode) {
+        clrBgFrom = QColor("#1A5447");
+        clrBgTo = QColor("#289880");
+    }
+    else if (type == zeno::Node_AssetInstance || type == zeno::Node_AssetReference) {
+        clrBgFrom = clrBgTo = QColor("#d69b3c");
+    }
+    else {
+        clrBgFrom = QColor("#1A5779");
+        clrBgTo = QColor("#2082BA");
+    }
+
+    headerWidget->setLinearGradient(clrBgFrom, clrBgTo);
+
+    const QString& dispName = m_index.data(ROLE_NODE_DISPLAY_NAME).toString();
+    ZASSERT_EXIT(!dispName.isEmpty(), headerWidget);
+    const QString& name = m_index.data(ROLE_NODE_NAME).toString();
+    const QString& nodeCls = m_index.data(ROLE_CLASS_NAME).toString();
+    const QString& iconResPath = m_index.data(ROLE_NODE_DISPLAY_ICON).toString();
+
+    QFont font2 = QApplication::font();
+    font2.setPointSize(18);
+    font2.setWeight(QFont::Normal);
+
+    ZGraphicsLayout* pHLayout = new ZGraphicsLayout(true);
+    pHLayout->setDebugName("Main Header HLayout");
+
+    RoundRectInfo buttonShapeInfo;
+    buttonShapeInfo.W = ZenoStyle::dpiScaled(24.);
+    buttonShapeInfo.H = ZenoStyle::dpiScaled(64.);
+    buttonShapeInfo.ltradius = ZenoStyle::dpiScaled(9.);
+    buttonShapeInfo.lbradius = ZenoStyle::dpiScaled(9.);
+
+    ZGraphicsLayout* pNameLayout = new ZGraphicsLayout(false);
+    pNameLayout->setContentsMargin(5, 10, 5, 10);
+
+    const QSizeF szIcon = ZenoStyle::dpiScaledSize(QSizeF(36, 36));
+    if (!iconResPath.isEmpty())
+    {
+        ImageElement elem;
+        elem.image = elem.imageHovered = elem.imageOn = elem.imageOnHovered = iconResPath;
+        auto node_icon = new ZenoImageItem(elem, szIcon);
+        pNameLayout->addItem(node_icon, Qt::AlignHCenter);
+    }
+    else {
+        pNameLayout->addSpacing(36);
+    }
+
+    auto pCategoryItem = new ZSimpleTextItem(nodeCls);
+    pCategoryItem->setBrush(QColor("#AB6E40"));
+    font2.setPointSize(10);
+    pCategoryItem->setFont(font2);
+    pCategoryItem->updateBoundingRect();
+    pCategoryItem->setAcceptHoverEvents(false);
+
+    pNameLayout->addItem(pCategoryItem);
+
+    pHLayout->addLayout(pNameLayout);
+
+    buttonShapeInfo.ltradius = buttonShapeInfo.lbradius = 0.;
+    buttonShapeInfo.rtradius = buttonShapeInfo.rbradius = ZenoStyle::dpiScaled(9.);
+
+    StatusGroup* pStatusWidgets = new StatusGroup(buttonShapeInfo);
+    bool bView = m_index.data(ROLE_NODE_ISVIEW).toBool();
+    pStatusWidgets->setView(bView);
+    connect(pStatusWidgets, &StatusGroup::toggleChanged, this, &ZenoNode::onOptionsBtnToggled);
+
+    pHLayout->addItem(pStatusWidgets);
+
+    headerWidget->setLayout(pHLayout);
+    headerWidget->setZValue(ZVALUE_BACKGROUND);
+
+    //创建可以显示的名字组
+    font2.setPointSize(20);
+
+    auto nameItem = new ZEditableTextItem(name, headerWidget);
+    nameItem->setDefaultTextColor(QColor("#CCCCCC"));
+    nameItem->setTextLengthAsBounding(true);
+    nameItem->setBackground(QColor(0, 0, 0, 0));
+    nameItem->setFont(font2);
+    qreal txtWid = nameItem->boundingRect().width();
+    nameItem->setPos(-txtWid - 2, 14);
+
+    connect(nameItem, &ZEditableTextItem::contentsChanged, this, [=]() {
+        qreal ww = nameItem->textLength();
+        nameItem->setPos(-ww - 2, 14);
+    });
+
+    return headerWidget;
 }
 
 ZLayoutBackground* ZenoNode::initHeaderWidget()
 {
     ZLayoutBackground* headerWidget = new ZLayoutBackground;
     auto headerBg = m_renderParams.headerBg;
-    headerWidget->setRadius(headerBg.lt_radius, headerBg.rt_radius, headerBg.lb_radius, headerBg.rb_radius);
+    headerWidget->setRadius(headerBg.lt_radius, 10, headerBg.lb_radius, 0);
     qreal bdrWidth = ZenoStyle::dpiScaled(headerBg.border_witdh);
     headerWidget->setBorder(bdrWidth, headerBg.clr_border);
 
@@ -187,59 +329,88 @@ ZLayoutBackground* ZenoNode::initHeaderWidget()
 
     zeno::NodeType type = static_cast<zeno::NodeType>(m_index.data(ROLE_NODETYPE).toInt());
 
-    QColor clrHeaderBg;
-    if (type == zeno::NoVersionNode)
-        clrHeaderBg = QColor(83, 83, 85);
-    else if (type == zeno::Node_SubgraphNode)
-        clrHeaderBg = QColor("#1D5F51");
-    else if (type == zeno::Node_AssetInstance || type == zeno::Node_AssetReference)
-        clrHeaderBg = QColor("#d69b3c");
-    else
-        clrHeaderBg = headerBg.clr_normal;
+    QColor clrBgFrom, clrBgTo;
+    if (type == zeno::NoVersionNode) {
+        clrBgFrom = clrBgTo = QColor(83, 83, 85);
+    }
+    else if (type == zeno::Node_SubgraphNode) {
+        clrBgFrom = QColor("#1A5447");
+        clrBgTo = QColor("#289880");
+    }
+    else if (type == zeno::Node_AssetInstance || type == zeno::Node_AssetReference) {
+        clrBgFrom = clrBgTo = QColor("#d69b3c");
+    }
+    else {
+        clrBgFrom = QColor("#1A5779");
+        clrBgTo = QColor("#2082BA");
+    }
 
-    headerWidget->setColors(headerBg.bAcceptHovers, clrHeaderBg, clrHeaderBg, clrHeaderBg);
+    //headerWidget->setColors(headerBg.bAcceptHovers, clrHeaderBg, clrHeaderBg, clrHeaderBg);
+    headerWidget->setLinearGradient(clrBgFrom, clrBgTo);
+
     headerWidget->setBorder(ZenoStyle::dpiScaled(headerBg.border_witdh), headerBg.clr_border);
 
     const QString& nodeCls = m_index.data(ROLE_CLASS_NAME).toString();
     const QString& name = m_index.data(ROLE_NODE_NAME).toString();
-    ZASSERT_EXIT(!name.isEmpty(), headerWidget);
+    const QString& dispName = m_index.data(ROLE_NODE_DISPLAY_NAME).toString();
+    ZASSERT_EXIT(!dispName.isEmpty(), headerWidget);
+    const QString& iconResPath = m_index.data(ROLE_NODE_DISPLAY_ICON).toString();
 
     const QString& category = m_index.data(ROLE_NODE_CATEGORY).toString();
 
-    ZGraphicsLayout* pNameLayout = new ZGraphicsLayout(false);
-    qreal margin = ZenoStyle::dpiScaled(10);
-    pNameLayout->setContentsMargin(margin, margin, margin, margin);
-
     QFont font2 = QApplication::font();
-    font2.setPointSize(16);
-    font2.setWeight(QFont::DemiBold);
+    font2.setPointSize(18);
+    font2.setWeight(QFont::Normal);
 
-    m_NameItem = new ZGraphicsTextItem(name, font2, QColor("#FFFFFF"), this);
-    m_NameItem->installEventFilter(this);
-    connect(m_NameItem, &ZGraphicsTextItem::editingFinished, this, &ZenoNode::onCustomNameChanged);
+    auto clsItem = new ZSimpleTextItem(nodeCls, font2, QColor("#F1E9E9"));
 
-    pNameLayout->addItem(m_NameItem);
-    //if (!category.isEmpty())
+    //qreal margin = ZenoStyle::dpiScaled(10);
+    //pNameLayout->setContentsMargin(margin, margin, margin, margin);
+
+    ZGraphicsLayout* pHLayout = new ZGraphicsLayout(true);
+    pHLayout->setDebugName("Header HLayout");
+    pHLayout->addSpacing(ZenoStyle::dpiScaled(16.));
+
+    //icons
+
+    //ZGraphicsLayout* pNameLayout = new ZGraphicsLayout(true);
+    const QSizeF szIcon = ZenoStyle::dpiScaledSize(QSizeF(36, 36));
+    if (!iconResPath.isEmpty())
     {
-        m_pCategoryItem = new ZSimpleTextItem(category.isEmpty() ? nodeCls : category + ":" + nodeCls);
-        m_pCategoryItem->setBrush(QColor("#AB6E40"));
-        font2.setPointSize(12);
-        m_pCategoryItem->setFont(font2);
-        m_pCategoryItem->updateBoundingRect();
-        m_pCategoryItem->setAcceptHoverEvents(false);
-        pNameLayout->addItem(m_pCategoryItem);
+        ImageElement elem;
+        elem.image = elem.imageHovered = elem.imageOn = elem.imageOnHovered = iconResPath;
+        auto node_icon = new ZenoImageItem(elem, szIcon);
+        pHLayout->addItem(node_icon, Qt::AlignVCenter);
     }
-    m_pStatusWidgets = new ZenoMinStatusBtnItem(m_renderParams.status);
+    else
+    {
+        pHLayout->addSpacing(szIcon.width());
+    }
+
+    //pNameLayout->addSpacing(-1);
+    const qreal W_status = ZenoStyle::dpiScaled(22.);
+    const qreal H_status = ZenoStyle::dpiScaled(50.);
+    const qreal radius = ZenoStyle::dpiScaled(9.);
+
+    RoundRectInfo buttonShapeInfo;
+    buttonShapeInfo.W = ZenoStyle::dpiScaled(22.);
+    buttonShapeInfo.H = ZenoStyle::dpiScaled(50.);
+    buttonShapeInfo.rtradius = ZenoStyle::dpiScaled(9.);
+
+    m_pStatusWidgets = new StatusGroup(buttonShapeInfo);
     bool bView = m_index.data(ROLE_NODE_ISVIEW).toBool();
     m_pStatusWidgets->setView(bView);
     connect(m_pStatusWidgets, SIGNAL(toggleChanged(STATUS_BTN, bool)), this, SLOT(onOptionsBtnToggled(STATUS_BTN, bool)));
 
-    ZGraphicsLayout* pHLayout = new ZGraphicsLayout(true);
-    pHLayout->setDebugName("Header HLayout");
-    pHLayout->addSpacing(10);
-    pHLayout->addLayout(pNameLayout);
-    pHLayout->addSpacing(100, QSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed));
-    pHLayout->addItem(m_pStatusWidgets);
+    //pHLayout->addLayout(pNameLayout);
+    pHLayout->addSpacing(ZenoStyle::dpiScaled(5.));
+    pHLayout->addItem(clsItem, Qt::AlignVCenter);
+
+    //补充一些距离
+    pHLayout->addSpacing(szIcon.width() + ZenoStyle::dpiScaled(20.));
+
+    //pHLayout->addSpacing(100, QSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed));
+    pHLayout->addItem(m_pStatusWidgets, Qt::AlignRight);
 
     headerWidget->setLayout(pHLayout);
     headerWidget->setZValue(ZVALUE_BACKGROUND);
@@ -255,6 +426,28 @@ ZLayoutBackground* ZenoNode::initHeaderWidget()
             }
         });
     }
+
+    m_statusMarker = new QGraphicsPolygonItem(headerWidget);
+    QPolygonF points;
+    points.append(QPointF(0, 0));
+    points.append(QPointF(15, 0));
+    points.append(QPointF(0, 15));
+    m_statusMarker->setPolygon(points);
+    m_statusMarker->setBrush(QBrush(QColor("#EAED4B")));
+    m_statusMarker->setPen(Qt::NoPen);
+    m_statusMarker->setPos(QPointF(0, 0));
+
+    //创建可以显示的名字组，并且不纳入header的布局，仅仅设置相对位置
+    font2.setPointSize(20);
+
+    auto nameItem = new ZEditableTextItem(name, headerWidget);
+    nameItem->setDefaultTextColor(QColor("#868686"));
+    nameItem->setTextLengthAsBounding(true);
+    nameItem->setBackground(QColor(0, 0, 0, 0));
+    nameItem->setFont(font2);
+    qreal txtHeight = nameItem->boundingRect().height();
+    nameItem->setPos(14, -txtHeight - 2);
+
     return headerWidget;
 }
 
@@ -263,7 +456,7 @@ ZLayoutBackground* ZenoNode::initBodyWidget(ZenoSubGraphScene* pScene)
     ZLayoutBackground* bodyWidget = new ZLayoutBackground(this);
     const auto& bodyBg = m_renderParams.bodyBg;
     bodyWidget->setRadius(bodyBg.lt_radius, bodyBg.rt_radius, bodyBg.lb_radius, bodyBg.rb_radius);
-    bodyWidget->setColors(bodyBg.bAcceptHovers, bodyBg.clr_normal);
+    bodyWidget->setColors(bodyBg.bAcceptHovers, QColor("#2A2A2A"));
 
     qreal bdrWidth = ZenoStyle::dpiScaled(bodyBg.border_witdh);
     bodyWidget->setBorder(ZenoStyle::scaleWidth(2), QColor(18, 20, 22));
@@ -291,13 +484,7 @@ ZLayoutBackground* ZenoNode::initBodyWidget(ZenoSubGraphScene* pScene)
     m_outputsLayout = initSockets(paramsM, false, pScene);
     m_bodyLayout->addLayout(m_outputsLayout);
 
-    m_dirtyMarker = new ZLayoutBackground;
-    m_dirtyMarker->setColors(false, QColor(0, 0, 0, 0));
-    m_dirtyMarker->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
-    m_dirtyMarker->setGeometry(QRectF(0, 0, 1, 3));
-
     m_bodyLayout->addSpacing(13, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
-    m_bodyLayout->addItem(m_dirtyMarker);
 
     bodyWidget->setLayout(m_bodyLayout);
     return bodyWidget;
@@ -342,13 +529,25 @@ QVector<ZSocketLayout*> ZenoNode::getSocketLayouts(bool bInput) const
     if (bInput) {
         for (int i = 0; i < m_inputsLayout->count(); i++) {
             ZGvLayoutItem* pItem = m_inputsLayout->itemAt(i);
-            layouts.push_back(static_cast<ZSocketLayout*>(pItem->pLayout));
+            if (pItem->type == Type_Layout) {
+                layouts.push_back(static_cast<ZSocketLayout*>(pItem->pLayout));
+            }
+            else {
+                auto pBgItem = static_cast<ZLayoutBackground*>(pItem->pItem);
+                layouts.push_back(static_cast<ZSocketLayout*>(pBgItem->layout()));
+            }
         }
     }
     else {
         for (int i = 0; i < m_outputsLayout->count(); i++) {
             ZGvLayoutItem* pItem = m_outputsLayout->itemAt(i);
-            layouts.push_back(static_cast<ZSocketLayout*>(pItem->pLayout));
+            if (pItem->type == Type_Layout) {
+                layouts.push_back(static_cast<ZSocketLayout*>(pItem->pLayout));
+            }
+            else {
+                auto pBgItem = static_cast<ZLayoutBackground*>(pItem->pItem);
+                layouts.push_back(static_cast<ZSocketLayout*>(pBgItem->layout()));
+            }
         }
     }
     return layouts;
@@ -368,9 +567,7 @@ void ZenoNode::onLayoutChanged()
         const QModelIndex& paramIdx = paramsM->index(r, 0);
         if (!paramIdx.data(ROLE_ISINPUT).toBool())
             continue;
-
-        ZSocketLayout* pSocketLayout = addSocket(paramIdx, true, pScene);
-        m_inputsLayout->addLayout(pSocketLayout);
+        m_inputsLayout->addItem(addSocket(paramIdx, true, pScene));
     }
 
     m_outputsLayout->clear();
@@ -379,9 +576,7 @@ void ZenoNode::onLayoutChanged()
         const QModelIndex& paramIdx = paramsM->index(r, 0);
         if (paramIdx.data(ROLE_ISINPUT).toBool())
             continue;
-
-        ZSocketLayout* pSocketLayout = addSocket(paramIdx, false, pScene);
-        m_outputsLayout->addLayout(pSocketLayout);
+        m_outputsLayout->addItem(addSocket(paramIdx, false, pScene));
     }
 
     updateWhole();
@@ -419,6 +614,20 @@ ZSocketLayout* ZenoNode::getSocketLayout(bool bInput, const QString& name)
             return layouts[i];
     }
     return nullptr;
+}
+
+ZSocketLayout* ZenoNode::getSocketLayout(bool bInput, int idx)
+{
+    ZGraphicsLayout* groupLayout = bInput ? m_inputsLayout : m_outputsLayout;
+    ZGvLayoutItem* pItem = groupLayout->itemAt(idx);
+    ZASSERT_EXIT(pItem, nullptr);
+    if (pItem->type == Type_Layout) {
+        return static_cast<ZSocketLayout*>(pItem->pLayout);
+    }
+    else {
+        auto pBgItem = static_cast<ZLayoutBackground*>(pItem->pItem);
+        return static_cast<ZSocketLayout*>(pBgItem->layout());
+    }
 }
 
 bool ZenoNode::removeSocketLayout(bool bInput, const QString& name)
@@ -596,14 +805,10 @@ void ZenoNode::onParamInserted(const QModelIndex& parent, int first, int last)
         QModelIndex paramIdx = paramsM->index(r, 0, parent);
         bool bInput = paramIdx.data(ROLE_ISINPUT).toBool();
         ZGraphicsLayout* pSocketsLayout = bInput ? m_inputsLayout : m_outputsLayout;
-        ZSocketLayout* pSocketLayout = addSocket(paramIdx, bInput, pScene);
-        ZASSERT_EXIT(pSocketLayout);
-        pSocketsLayout->addLayout(pSocketLayout);
+        pSocketsLayout->addItem(addSocket(paramIdx, bInput, pScene));
         updateWhole();
     }
 }
-
-
 
 void ZenoNode::onViewParamAboutToBeMoved(const QModelIndex& parent, int start, int end, const QModelIndex& destination, int row)
 {
@@ -681,15 +886,15 @@ ZGraphicsLayout* ZenoNode::initSockets(ParamsModel* pModel, const bool bInput, Z
         const QModelIndex& paramIdx = pModel->index(r, 0);
         if (paramIdx.data(ROLE_ISINPUT).toBool() != bInput)
             continue;
-
-        ZSocketLayout *pSocketLayout = addSocket(paramIdx, bInput, pScene);
-        pSocketsLayout->addLayout(pSocketLayout);
+        pSocketsLayout->addItem(addSocket(paramIdx, bInput, pScene));
     }
     return pSocketsLayout;
 }
 
-ZSocketLayout* ZenoNode::addSocket(const QModelIndex& paramIdx, bool bInput, ZenoSubGraphScene* pScene)
+SocketBackgroud* ZenoNode::addSocket(const QModelIndex& paramIdx, bool bInput, ZenoSubGraphScene* pScene)
 {
+    SocketBackgroud* pBackground = new SocketBackgroud(bInput);
+
     QPersistentModelIndex perSockIdx = paramIdx;
 
     CallbackForSocket cbSocket;
@@ -724,13 +929,13 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& paramIdx, bool bInput, Zen
     ZSocketLayout* pMiniLayout = nullptr;
     if ((type == zeno::Param_Dict || type == zeno::Param_List) && 
         ctrl != zeno::NoMultiSockPanel) {
-        pMiniLayout = new ZDictSocketLayout(paramIdx, bInput);
+        pMiniLayout = new ZDictSocketLayout(paramIdx, bInput, pBackground);
     }
     else if (ctrl == zeno::Seperator) {
         pMiniLayout = new ZGroupSocketLayout(paramIdx, bInput);
     }
     else {
-        pMiniLayout = new ZSocketLayout(paramIdx, bInput);
+        pMiniLayout = new ZSocketLayout(paramIdx, bInput, pBackground);
         qreal margin = ZenoStyle::dpiScaled(16);
         if (bInput)
             pMiniLayout->setContentsMargin(0, 0, 0, margin);
@@ -749,7 +954,8 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& paramIdx, bool bInput, Zen
         }
     }
 
-    return pMiniLayout;
+    pBackground->setLayout(pMiniLayout);
+    return pBackground;
 }
 
 Callback_OnButtonClicked ZenoNode::registerButtonCallback(const QModelIndex& paramIdx)
@@ -858,7 +1064,7 @@ void ZenoNode::onSocketLinkChanged(const QModelIndex& paramIdx, bool bInput, boo
     {
         QString sockName = paramIdx.data(ROLE_PARAM_NAME).toString();
         // special case, we need to show the button param.
-        if (this->nodeName() == "GenerateCommands" && sockName == "source")
+        if (this->nodeClass() == "GenerateCommands" && sockName == "source")
             return;
 
         ZSocketLayout* pSocketLayout = getSocketLayout(bInput, sockName);
@@ -885,32 +1091,83 @@ void ZenoNode::markError(bool isError)
     update();
 }
 
-ZenoSocketItem* ZenoNode::getSocketItem(const QModelIndex& sockIdx, const QString keyName)
+
+QVector<ZenoSocketItem*> ZenoNode::getSocketItems(bool bInput) const
 {
-    for (ZSocketLayout* socklayout : getSocketLayouts(true))
+    QVector<ZenoSocketItem*> sockets;
+    bool bCollasped = m_index.data(ROLE_COLLASPED).toBool();
+    if (bCollasped)
     {
-        if (ZenoSocketItem* pItem = socklayout->socketItemByIdx(sockIdx, keyName))
+        ZGraphicsLayout* socketsLayout = bInput ? m_topInputSockets : m_bottomOutputSockets;
+        for (int i = 0; i < socketsLayout->count(); i++)
         {
-            return pItem;
+            ZGvLayoutItem* layoutitem = socketsLayout->itemAt(i);
+            if (layoutitem->type == Type_Item)
+            {
+                if (ZenoSocketItem* pSocket = qgraphicsitem_cast<ZenoSocketItem*>(layoutitem->pItem))
+                {
+                    sockets.append(pSocket);
+                }
+            }
         }
     }
-    for (ZSocketLayout* socklayout : getSocketLayouts(false))
+    else
     {
-        if (ZenoSocketItem* pItem = socklayout->socketItemByIdx(sockIdx, keyName))
-            return pItem;
+        auto socks = getSocketLayouts(bInput);
+        for (ZSocketLayout* sock : socks)
+        {
+            ZenoSocketItem* pSocketItem = sock->socketItem();
+            sockets.append(pSocketItem);
+        }
     }
-    return nullptr;
+    return sockets;
+}
+
+ZenoSocketItem* ZenoNode::getSocketItem(const QModelIndex& sockIdx, const QString keyName)
+{
+    bool bCollasped = m_index.data(ROLE_COLLASPED).toBool();
+    const bool bInput = sockIdx.data(ROLE_ISINPUT).toBool();
+    if (bCollasped)
+    {
+        ZGraphicsLayout* socketsLayout = bInput ? m_topInputSockets : m_bottomOutputSockets;
+        for (int i = 0; i < socketsLayout->count(); i++)
+        {
+            ZGvLayoutItem* layoutitem = socketsLayout->itemAt(i);
+            if (layoutitem->type == Type_Item)
+            {
+                if (ZenoSocketItem* pSocket = qgraphicsitem_cast<ZenoSocketItem*>(layoutitem->pItem))
+                {
+                    if (pSocket->paramIndex() == sockIdx)
+                        return pSocket;
+                }
+            }
+        }
+        return nullptr;
+    }
+    else
+    {
+        for (ZSocketLayout* socklayout : getSocketLayouts(true))
+        {
+            if (ZenoSocketItem* pItem = socklayout->socketItemByIdx(sockIdx, keyName))
+            {
+                return pItem;
+            }
+        }
+        for (ZSocketLayout* socklayout : getSocketLayouts(false))
+        {
+            if (ZenoSocketItem* pItem = socklayout->socketItemByIdx(sockIdx, keyName))
+                return pItem;
+        }
+        return nullptr;
+    }
 }
 
 ZenoSocketItem* ZenoNode::getNearestSocket(const QPointF& pos, bool bInput)
 {
     ZenoSocketItem* pItem = nullptr;
     float minDist = std::numeric_limits<float>::max();
-    auto socks = getSocketLayouts(bInput);
-    for (ZSocketLayout* sock : socks)
+    for (ZenoSocketItem* pSocketItem : getSocketItems(bInput))
     {
-        //todo: socket now is a children of sockettext.
-        ZenoSocketItem* pSocketItem = sock->socketItem();
         if (!pSocketItem || !pSocketItem->isEnabled())
             continue;
 
@@ -974,18 +1231,17 @@ QPointF ZenoNode::getSocketPos(const QModelIndex& sockIdx, const QString keyName
 
     bool bCollasped = m_index.data(ROLE_COLLASPED).toBool();
     const bool bInput = sockIdx.data(ROLE_ISINPUT).toBool();
-    /*
     if (bCollasped)
     {
-        QRectF rc = m_headerWidget->sceneBoundingRect();
-        if (bInput) {
-            return QPointF(rc.left(), rc.center().y());
-        } else {
-            return QPointF(rc.right(), rc.center().y());
+        if (ZenoSocketItem* pSocket = getSocketItem(sockIdx, ""))
+        {
+            return pSocket->center();
         }
+        //zeno::log_warn("socket pos error");
+        QPointF pos = this->sceneBoundingRect().topLeft() + QPointF(10,10);
+        return pos;
     }
     else
-    */
     {
         for (ZSocketLayout* socklayout : getSocketLayouts(bInput))
         {
@@ -1005,10 +1261,16 @@ QString ZenoNode::nodeId() const
     return m_index.data(ROLE_NODE_NAME).toString();
 }
 
-QString ZenoNode::nodeName() const
+QString ZenoNode::nodeClass() const
 {
     ZASSERT_EXIT(m_index.isValid(), "");
     return m_index.data(ROLE_CLASS_NAME).toString();
+}
+
+QString ZenoNode::nodeUuid() const
+{
+    ZASSERT_EXIT(m_index.isValid(), "");
+    return "";
 }
 
 QPointF ZenoNode::nodePos() const
@@ -1032,18 +1294,8 @@ void ZenoNode::onUpdateParamsNotDesc()
 
 void ZenoNode::onMarkDataChanged(bool bDirty)
 {
-    QColor clrMarker;
-    if (bDirty && bShowDataChanged)
-    {
-        clrMarker = QColor(240, 215, 4);
-    }
-    else
-    {
-        clrMarker = QColor(0, 0, 0, 0);
-    }
-    if (m_dirtyMarker)
-        m_dirtyMarker->setColors(false, clrMarker);
-    updateWhole();
+    m_statusMarker->setVisible(bDirty);
+    update();
 }
 
 void ZenoNode::setMoving(bool isMoving)
@@ -1078,9 +1330,9 @@ void ZenoNode::onZoomed()
             if (it->second.param_name)
                 it->second.param_name->setVisible(bVisible);
         }
-        if (m_NameItem) {
-            m_NameItem->setVisible(bVisible);
-        }
+        //if (m_NameItem) {
+        //    m_NameItem->setVisible(bVisible);
+        //}
         if (m_bVisible) {
             updateWhole();
         }
@@ -1096,21 +1348,20 @@ void ZenoNode::onZoomed()
     }
     else if (m_NameItemTip == nullptr) 
     {
-        m_NameItemTip = new ZSimpleTextItem(m_NameItem->toPlainText(), this);
+        const QString& nodeCls = m_index.data(ROLE_CLASS_NAME).toString();
+        m_NameItemTip = new ZSimpleTextItem(nodeCls, this);
         m_NameItemTip->setBrush(QColor("#FFFFFF"));
         m_NameItemTip->setFlag(QGraphicsItem::ItemIgnoresTransformations);
         m_NameItemTip->show();
     }
     if (m_NameItemTip) 
     {
-        if (m_NameItemTip->text() != m_NameItem->toPlainText())
-            m_NameItemTip->setText(m_NameItem->toPlainText());
-        m_NameItemTip->setPos(QPointF(m_NameItem->pos().x(), -ZenoStyle::scaleWidth(36)));
+        //if (m_NameItemTip->text() != m_NameItem->toPlainText())
+        //    m_NameItemTip->setText(m_NameItem->toPlainText());
+        //m_NameItemTip->setPos(QPointF(m_NameItem->pos().x(), -ZenoStyle::scaleWidth(36)));
     }
     if (m_bodyWidget)
         m_bodyWidget->setBorder(ZenoStyle::scaleWidth(2), QColor(18, 20, 22));
-    if (m_dirtyMarker)
-        m_dirtyMarker->resize(m_dirtyMarker->rect().width(), ZenoStyle::scaleWidth(3));
 }
 
 void ZenoNode::setGroupNode(GroupNode *pNode) 
@@ -1323,7 +1574,7 @@ void ZenoNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
         }
         m_NameItem->setFocus();
     }
-    else if (items.contains(m_headerWidget))
+    else if (items.contains(m_headerWidget) || items.contains(m_mainHeaderBg))
     {
         onCollaspeBtnClicked();
     }
@@ -1350,7 +1601,7 @@ void ZenoNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
             }
         }
         // for temp support to show handler via transform node
-        else if (nodeName().contains("TransformPrimitive"))
+        else if (nodeClass().contains("TransformPrimitive"))
         {
             QVector<DisplayWidget*> views = zenoApp->getMainWindow()->viewports();
             for (auto pDisplay : views)
@@ -1417,14 +1668,17 @@ QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant &value)
         m_bMoving = true;
         ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(scene());
         bool isSnapGrid = ZenoSettingsManager::GetInstance().getValue(zsSnapGrid).toBool();
-        if (pScene && isSnapGrid)
-        {
-            QPointF pos = value.toPointF();
-            int x = pos.x(), y = pos.y();
-            x = x - x % SCENE_GRID_SIZE;
-            y = y - y % SCENE_GRID_SIZE;
-            return QPointF(x, y);
+        if (pScene) {
+            if (isSnapGrid)
+            {
+                QPointF pos = value.toPointF();
+                int x = pos.x(), y = pos.y();
+                x = x - x % SCENE_GRID_SIZE;
+                y = y - y % SCENE_GRID_SIZE;
+                return QPointF(x, y);
+            }
         }
+        
     }
     else if (change == QGraphicsItem::ItemPositionHasChanged)
     {
@@ -1432,6 +1686,10 @@ QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant &value)
         m_lastMoving = value.toPointF();
         emit inSocketPosChanged();
         emit outSocketPosChanged();
+        ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(scene());
+        if (pScene) {
+            pScene->onNodePositionChanged(this);
+        }
     }
     else if (change == ItemScenePositionHasChanged)
     {
@@ -1495,56 +1753,17 @@ void ZenoNode::onCollaspeBtnClicked()
 
 void ZenoNode::onCollaspeUpdated(bool collasped)
 {
-    if (collasped)
-    {
-        //m_bodyWidget->hide();
-        for (int i = 0; i < m_inputsLayout->count(); i++) {
-            ZGvLayoutItem* pItem = m_inputsLayout->itemAt(i);
-            ZSocketLayout* pLayout = static_cast<ZSocketLayout*>(pItem->pLayout);
-            ZASSERT_EXIT(pLayout);
-            auto idx = pLayout->viewSocketIdx();
-            auto prop = (zeno::SocketType)idx.data(ROLE_SOCKET_TYPE).toInt();
-            if (prop != zeno::PrimarySocket) {
-                pLayout->hide();
-            }
-        }
-
-        for (int i = 0; i < m_outputsLayout->count(); i++) {
-            ZGvLayoutItem* pItem = m_outputsLayout->itemAt(i);
-            ZSocketLayout* pLayout = static_cast<ZSocketLayout*>(pItem->pLayout);
-            ZASSERT_EXIT(pLayout);
-            auto idx = pLayout->viewSocketIdx();
-            auto prop = (zeno::SocketType)idx.data(ROLE_SOCKET_TYPE).toInt();
-            if (prop != zeno::PrimarySocket) {
-                pLayout->hide();
-            }
-        }
+    m_mainHeaderBg->setVisible(collasped);
+    m_headerWidget->setVisible(!collasped);
+    m_bodyWidget->setVisible(!collasped);
+    m_statusMarker->setVisible(!collasped);
+    if (collasped) {
+        m_topInputSockets->show();
+        m_bottomOutputSockets->show();
     }
-    else
-    {
-        for (int i = 0; i < m_inputsLayout->count(); i++) {
-            ZGvLayoutItem* pItem = m_inputsLayout->itemAt(i);
-            ZSocketLayout* pLayout = static_cast<ZSocketLayout*>(pItem->pLayout);
-            ZASSERT_EXIT(pLayout);
-            auto idx = pLayout->viewSocketIdx();
-            auto prop = (zeno::SocketType)idx.data(ROLE_SOCKET_TYPE).toInt();
-            if (prop != zeno::PrimarySocket) {
-                pLayout->show();
-                pLayout->setSocketVisible(prop == zeno::ParamSocket);
-            }
-        }
-
-        for (int i = 0; i < m_outputsLayout->count(); i++) {
-            ZGvLayoutItem* pItem = m_outputsLayout->itemAt(i);
-            ZSocketLayout* pLayout = static_cast<ZSocketLayout*>(pItem->pLayout);
-            ZASSERT_EXIT(pLayout);
-            auto idx = pLayout->viewSocketIdx();
-            auto prop = (zeno::SocketType)idx.data(ROLE_SOCKET_TYPE).toInt();
-            ZASSERT_EXIT(prop == zeno::PrimarySocket);
-            if (prop != zeno::PrimarySocket) {
-                pLayout->hide();
-            }
-        }
+    else {
+        m_topInputSockets->hide();
+        m_bottomOutputSockets->hide();
     }
     updateWhole();
     update();

@@ -63,8 +63,8 @@ struct PrimBarycentricInterp : INode {
 
 ZENDEFNODE(PrimBarycentricInterp, {
                                       {
-                                          "Particles",
-                                          "MeshPrim",
+                                          {"", "Particles", "", PrimarySocket},
+                                          {"", "MeshPrim", "", PrimarySocket},
                                           {"string", "triIdTag", "bvh_id"},
                                           {"string", "weightTag", "bvh_ws"},
                                       },

@@ -149,8 +149,9 @@ struct PrimitivePerlinNoiseAttr : INode {
 
 ZENDEFNODE(PrimitivePerlinNoiseAttr,
     { /* inputs: */ {
-    "prim","seed",
-    {"float", "freq", "1.0"},
+        {"", "prim", "", PrimarySocket},
+        {"", "seed", "", PrimarySocket},
+        {"float", "freq", "1.0"},
     }, /* outputs: */ {
     "prim",
     }, /* params: */ {
@@ -179,7 +180,7 @@ struct GetPerlinNoise : INode{
 };
 ZENDEFNODE(GetPerlinNoise,
     { /* inputs: */ {
-    {"vec3f","vec3"},"seed",{"float", "freq", "1.0"},
+    {"vec3f","vec3"},{"", "seed", "", PrimarySocket},{"float", "freq", "1.0"},
     }, /* outputs: */ {
     "noise",
     }, /* params: */ {

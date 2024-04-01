@@ -39,7 +39,7 @@ struct PrimDecodeUVs : INode {
 
 ZENO_DEFNODE(PrimDecodeUVs)({
     {
-        "prim",
+        {"", "prim", "", PrimarySocket}
     },
     {
         "prim",
@@ -58,7 +58,7 @@ struct PrimLoopUVsToVerts : INode {
 
 ZENO_DEFNODE(PrimLoopUVsToVerts)({
     {
-        "prim",
+        {"", "prim", "", PrimarySocket},
     },
     {
         "prim",
@@ -98,7 +98,7 @@ struct PrimUVVertsToLoopsuv : INode {
 
 ZENO_DEFNODE(PrimUVVertsToLoopsuv)({
     {
-        "prim",
+        {"", "prim", "", PrimarySocket},
     },
     {
         "prim",
@@ -165,7 +165,7 @@ struct PrimUVEdgeDuplicate : INode {
 
 ZENO_DEFNODE(PrimUVEdgeDuplicate)({
      {
-         "prim",
+         {"", "prim", "", PrimarySocket},
          {"bool", "writeUVToVertex", "1"},
      },
      {

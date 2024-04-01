@@ -152,7 +152,7 @@ struct VDBExplosiveTurbulentNoise : INode {
 
 ZENO_DEFNODE(VDBExplosiveTurbulentNoise)(
      { /* inputs: */ {
-     "inoutSDF",
+     {"", "inoutSDF", "", PrimarySocket},
      {"float", "strength", "1.0"},
      {"float", "scale", "8.0"},
      {"vec3f", "scaling", "1,1,1"},

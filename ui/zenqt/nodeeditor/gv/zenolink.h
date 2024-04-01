@@ -31,6 +31,9 @@ public:
     virtual QPointF getSrcPos() const = 0;
     virtual QPointF getDstPos() const = 0;
 
+protected:
+    bool m_bothCollaspedNode = false;
+
 private:
     static constexpr float BEZIER = 0.5f, WIDTH = 1;
 

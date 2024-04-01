@@ -15,6 +15,7 @@
 #include "widgets/znumslider.h"
 #include "widgets/zspinboxslider.h"
 #include "nodeeditor/gv/zenosvgitem.h"
+#include "zlayoutbackground.h"
 
 
 class ZenoTextLayoutItem;

@@ -21,6 +21,7 @@
 #include "viewport/cameracontrol.h"
 #include "model/GraphModel.h"
 #include "zenowelcomepage.h"
+#include "thumbnailview.h"
 
 
 bool sceneMenuEvent(
@@ -504,7 +505,7 @@ void _ZenoSubGraphView::contextMenuEvent(QContextMenuEvent* event)
 void _ZenoSubGraphView::drawGrid(QPainter* painter, const QRectF& rect)
 {
     //background color
-    painter->fillRect(rect, QColor("#1d1d1d"));
+    painter->fillRect(rect, QColor("#1A1A1A"));
     bool showGrid = ZenoSettingsManager::GetInstance().getValue(zsShowGrid).toBool();
     if (showGrid)
     {
@@ -648,6 +649,7 @@ void LayerPathWidget::onPathItemClicked()
 ZenoSubGraphView::ZenoSubGraphView(QWidget* parent)
     : QWidget(parent)
     , m_prop(nullptr)
+    , m_thumbnail(nullptr)
     , m_floatPanelShow(false)
     , m_stackedView(new QStackedWidget)
 {
@@ -815,6 +817,9 @@ void ZenoSubGraphView::resetPath(const QStringList& path, const QString& objId, 
             pCurrentView->focusOn(name, pos, isError);
         }
     }
+
+    bool bShowThumbnail = ZenoSettingsManager::GetInstance().getValue(zsShowThumbnail).toBool();
+    showThumbnail(bShowThumbnail);
 }
 
 void ZenoSubGraphView::setZoom(const qreal& scale)
@@ -833,6 +838,82 @@ void ZenoSubGraphView::focusOn(const QString& nodeId)
 {
     auto pView = getCurrentView();
     pView->focusOn(nodeId, QPointF(), false);
+}
+
+void ZenoSubGraphView::rearrangeGraph()
+{
+    auto pView = getCurrentView();
+    if (pView)
+    {
+        bool bHor = true;
+        if (QMessageBox::question(nullptr, tr("rearrangement graph"), tr("Do you want to rearrange all nodes with Vertical alignment")) == QMessageBox::Yes)
+            bHor = false;
+
+        ZenoSubGraphScene* scene = qobject_cast<ZenoSubGraphScene*>(pView->scene());
+        if (scene)
+        {
+            scene->rearrangeGraph(bHor);
+        }
+    }
+}
+
+void ZenoSubGraphView::showThumbnail(bool bChecked)
+{
+    bool bShowThumbnail = bChecked;
+    auto pView = getCurrentView();
+    if (!pView)
+        return;
+
+    ZenoSubGraphScene* scene = qobject_cast<ZenoSubGraphScene*>(pView->scene());
+    if (!scene)
+        return;
+
+    if (!m_thumbnail)
+    {
+        m_thumbnail = new ThumbnailView(this);
+        connect(m_thumbnail, &ThumbnailView::navigatorChanged, this, &ZenoSubGraphView::onNavigatorChanged);
+    }
+
+    if (bShowThumbnail) {
+        m_thumbnail->resetScene(scene);
+        m_thumbnail->move(this->width() - m_thumbnail->width(), this->height() - m_thumbnail->height());
+        m_thumbnail->show();
+    }
+    else {
+        m_thumbnail->hide();
+    }
+}
+
+void ZenoSubGraphView::onNavigatorChanged(QRectF rcNav, QRectF rcOri)
+{
+    auto pView = getCurrentView();
+    if (!pView)
+        return;
+
+    ZenoSubGraphScene* scene = qobject_cast<ZenoSubGraphScene*>(pView->scene());
+    if (!scene)
+        return;
+
+    QRectF actualSceneRc = scene->sceneRect();
+    QRectF viewRc = pView->sceneRect();
+
+    if (rcOri.width() > 0 && rcOri.height() > 0)
+    {
+        qreal hscale = rcNav.width() / rcOri.width();
+        qreal vscale = rcNav.height() / rcOri.height();
+        qreal hrelpos = (rcNav.left() - rcOri.left()) / rcNav.width();
+        qreal vrelpos = (rcNav.top() - rcOri.top()) / rcNav.height();
+
+        QPointF actualLT = actualSceneRc.topLeft();
+        QPointF offset(actualSceneRc.width() * hrelpos, actualSceneRc.height() * vrelpos);
+        QPointF viewLT = actualLT + offset;
+
+        qreal boundWidth = actualSceneRc.width() * hscale;
+        qreal boundHeight = actualSceneRc.height() * vscale;
+        QRectF rcView(viewLT, QSizeF(boundWidth, boundHeight));
+        pView->fitInView(rcView, Qt::KeepAspectRatio);
+        editor_factor = pView->transform().m11();
+    }
 }
 
 void ZenoSubGraphView::showFloatPanel(GraphModel* subgraph, const QModelIndexList &nodes) {
@@ -909,5 +990,6 @@ void ZenoSubGraphView::resizeEvent(QResizeEvent *event) {
         m_prop->resize(m_prop->width(), this->height() * 1.0);
         m_prop->move(this->width() - m_prop->width(), 0);
     }
+    //showThumbnail();
     QWidget::resizeEvent(event);
 }

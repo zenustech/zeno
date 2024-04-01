@@ -60,10 +60,13 @@ void NodeItem::init(GraphModel* pGraphM, std::shared_ptr<zeno::INode> spNode)
     this->params = new ParamsModel(spNode, this);
     this->name = QString::fromStdString(spNode->get_name());
     this->cls = QString::fromStdString(spNode->get_nodecls());
+    this->dispName = QString::fromStdString(spNode->get_show_name());
+    this->dispIcon = QString::fromStdString(spNode->get_show_icon());
     this->bView = spNode->is_view();
     this->runState.bDirty = spNode->is_dirty();
     auto pair = spNode->get_pos();
     this->pos = QPointF(pair.first, pair.second);
+    this->uuidPath = spNode->get_uuid_path();
     if (std::shared_ptr<zeno::SubnetNode> subnetnode = std::dynamic_pointer_cast<zeno::SubnetNode>(spNode))
     {
         GraphModel* parentM = qobject_cast<GraphModel*>(this->parent());
@@ -223,8 +226,6 @@ QString GraphModel::name() const
     return m_graphName;
 }
 
-
-
 QString GraphModel::owner() const
 {
     if (auto pItem = qobject_cast<NodeItem*>(parent()))
@@ -250,6 +251,15 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
         case Qt::DisplayRole:
         case ROLE_NODE_NAME: {
             return item->name;
+        }
+        case ROLE_NODE_DISPLAY_NAME: {
+            return item->dispName;
+        }
+        case ROLE_NODE_DISPLAY_ICON: {
+            return item->dispIcon;
+        }
+        case ROLE_NODE_UUID_PATH: {
+            return QVariant::fromValue(item->uuidPath);
         }
         case ROLE_CLASS_NAME: {
             return item->cls;
@@ -288,9 +298,9 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
         case ROLE_NODEDATA:
         {
             zeno::NodeData data;
-            std::shared_ptr<zeno::INode> spNode = item->m_wpNode.lock();
-            data = spNode->exportInfo();
-            return QVariant::fromValue(data);
+            auto spNode = item->m_wpNode.lock();
+            ZASSERT_EXIT(spNode, QVariant());
+            return QVariant::fromValue(spNode->exportInfo());
         }
         case ROLE_NODE_STATUS:
         {

@@ -88,7 +88,8 @@ struct CacheVDBGrid : zeno::INode {
 
 ZENDEFNODE(CacheVDBGrid,
     { /* inputs: */ {
-    "inGrid", "frameNum",
+    {"", "inGrid", "", PrimarySocket},
+    "frameNum",
     }, /* outputs: */ {
     "outGrid",
     }, /* params: */ {
