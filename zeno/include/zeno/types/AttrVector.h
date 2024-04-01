@@ -506,6 +506,10 @@ struct AttrVector {
             std::visit([&](auto &val) { val.clear(); }, val);
         }
     }
+    void clear_with_attr() {
+        values.clear();
+        attrs = {};
+    }
 };
 
 }
