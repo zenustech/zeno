@@ -232,6 +232,8 @@ void sample2D(std::vector<zeno::vec3f> &coord, std::vector<T> &field, std::vecto
             int gid_x = std::floor( ( uv[0] - bmin[0] ) / Lx );
             int gid_y = std::floor( ( uv[2] - bmin[2] ) / Ly );
             uv2 = ( uv - (bmin + zeno::vec3f{gid_x * Lx, 0, gid_y * Ly}) ) / h;
+            uv2 = zeno::min(zeno::max(uv2, zeno::vec3f(0.00, 0.0, 0.00)),
+                            zeno::vec3f((float)nx - 1.01, 0.0, (float)ny - 1.01));
         } else {
             uv2 = (uv - bmin) / h;
             uv2 = zeno::min(zeno::max(uv2, zeno::vec3f(0.01, 0.0, 0.01)),

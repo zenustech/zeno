@@ -1,10 +1,10 @@
+#ifdef ZENO_ENABLE_OPTIX
 #include "optixPathTracer.h"
 #include "vec_math.h"
 #include "xinxinoptixapi.h"
 #include "zeno/utils/vec.h"
 #include <limits>
 #include <memory>
-#ifdef ZENO_ENABLE_OPTIX
 #include "../../xinxinoptix/xinxinoptixapi.h"
 #include "../../xinxinoptix/SDK/sutil/sutil.h"
 #include <zeno/types/PrimitiveObject.h>
@@ -694,6 +694,11 @@ struct GraphicsManager {
                 float evnTexStrength = prim_in->userData().get2<float>("evnTexStrength");
                 bool enableHdr = prim_in->userData().get2<bool>("enable");
                 if (!path.empty()) {
+                    std::string need_remove_tex;
+                    if (OptixUtil::sky_tex.has_value() && OptixUtil::sky_tex.value() != path) {
+                        need_remove_tex = OptixUtil::sky_tex.value();
+                        OptixUtil::removeTexture(need_remove_tex);
+                    }
                     OptixUtil::sky_tex = path;
                     OptixUtil::addTexture(path);
                 }
@@ -1198,9 +1203,11 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     int texid=0;
                     for(auto tex:mtldet->tex2Ds)
                     {
-                        OptixUtil::addTexture(tex->path.c_str());
-                        shaderTex.emplace_back(tex->path);
-                        texid++;
+                        if (cachedMeshesMaterials.count(mtldet->mtlidkey) > 0) {
+                            OptixUtil::addTexture(tex->path.c_str());
+                            shaderTex.emplace_back(tex->path);
+                            texid++;
+                        }
                     }
 
                     ShaderPrepared shaderP; 

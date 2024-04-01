@@ -12,29 +12,6 @@ ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv) {
     prim->polys.reserve(prim->polys.size() + prim->tris.size() +
                         prim->quads.size() + prim->lines.size() +
                         prim->points.size());
-    bool tri_has_mat = prim->tris.has_attr("matid");
-    bool quad_has_mat = prim->quads.has_attr("matid");
-    std::vector<int> matid;
-    matid.resize(prim->polys.size() + prim->tris.size() +
-                 prim->quads.size() + prim->lines.size() +
-                 prim->points.size());
-    matid.assign(matid.size(), -1);
-
-    bool tri_has_faceset = prim->tris.has_attr("faceset");
-    bool quad_has_faceset = prim->quads.has_attr("faceset");
-    std::vector<int> faceset;
-    faceset.resize(prim->polys.size() + prim->tris.size() +
-                 prim->quads.size() + prim->lines.size() +
-                 prim->points.size());
-    faceset.assign(faceset.size(), -1);
-
-    bool tri_has_abcpath = prim->tris.has_attr("abcpath");
-    bool quad_has_abcpath = prim->quads.has_attr("abcpath");
-    std::vector<int> abcpath;
-    abcpath.resize(prim->polys.size() + prim->tris.size() +
-                 prim->quads.size() + prim->lines.size() +
-                 prim->points.size());
-    abcpath.assign(abcpath.size(), -1);
 
     int old_loop_base = prim->loops.size();
     int polynum = prim->polys.size();
@@ -46,21 +23,18 @@ ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv) {
             prim->loops.push_back(ind[1]);
             prim->loops.push_back(ind[2]);
             prim->polys.push_back({base + i * 3, 3});
-            if(tri_has_mat)
-                matid[polynum + i] = prim->tris.attr<int>("matid")[i];
-            if (tri_has_faceset)
-                faceset[polynum + i] = prim->tris.attr<int>("faceset")[i];
-            if (tri_has_abcpath)
-                abcpath[polynum + i] = prim->tris.attr<int>("abcpath")[i];
         }
+        prim->polys.update();
 
-        prim->tris.foreach_attr([&](auto const &key, auto const &arr) {
+        prim->tris.foreach_attr<AttrAcceptAll>([&](auto const &key, auto const &arr) {
             if (key == "uv0" || key == "uv1" || key == "uv2") {
                 return;
             }
             using T = std::decay_t<decltype(arr[0])>;
             auto &newarr = prim->polys.add_attr<T>(key);
-            newarr.insert(newarr.end(), arr.begin(), arr.end());
+            for (auto i = 0; i < arr.size(); i++) {
+                newarr[polynum + i] = arr[i];
+            }
         });
     }
 
@@ -74,24 +48,22 @@ ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv) {
             prim->loops.push_back(ind[2]);
             prim->loops.push_back(ind[3]);
             prim->polys.push_back({base + i * 4, 4});
-            if(quad_has_mat)
-                matid[polynum + i] = prim->quads.attr<int>("matid")[i];
-            if (quad_has_faceset)
-                faceset[polynum + i] = prim->quads.attr<int>("faceset")[i];
-            if (quad_has_abcpath)
-                abcpath[polynum + i] = prim->quads.attr<int>("abcpath")[i];
         }
+        prim->polys.update();
 
-        prim->quads.foreach_attr([&](auto const &key, auto const &arr) {
+        prim->quads.foreach_attr<AttrAcceptAll>([&](auto const &key, auto const &arr) {
             if (key == "uv0" || key == "uv1" || key == "uv2" || key == "uv3") {
                 return;
             }
             using T = std::decay_t<decltype(arr[0])>;
             auto &newarr = prim->polys.add_attr<T>(key);
-            newarr.insert(newarr.end(), arr.begin(), arr.end());
+            for (auto i = 0; i < arr.size(); i++) {
+                newarr[polynum + i] = arr[i];
+            }
         });
     }
 
+    polynum = prim->polys.size();
     if (prim->lines.size()) {
         int base = prim->loops.size();
         for (int i = 0; i < prim->lines.size(); i++) {
@@ -100,14 +72,18 @@ ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv) {
             prim->loops.push_back(ind[1]);
             prim->polys.push_back({base + i * 2, 2});
         }
+        prim->polys.update();
 
         prim->lines.foreach_attr([&](auto const &key, auto const &arr) {
             using T = std::decay_t<decltype(arr[0])>;
             auto &newarr = prim->polys.add_attr<T>(key);
-            newarr.insert(newarr.end(), arr.begin(), arr.end());
+            for (auto i = 0; i < arr.size(); i++) {
+                newarr[polynum + i] = arr[i];
+            }
         });
     }
 
+    polynum = prim->polys.size();
     if (prim->points.size()) {
         int base = prim->loops.size();
         for (int i = 0; i < prim->points.size(); i++) {
@@ -115,11 +91,14 @@ ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv) {
             prim->loops.push_back(ind);
             prim->polys.push_back({base + i, 1});
         }
+        prim->polys.update();
 
         prim->points.foreach_attr([&](auto const &key, auto const &arr) {
             using T = std::decay_t<decltype(arr[0])>;
             auto &newarr = prim->polys.add_attr<T>(key);
-            newarr.insert(newarr.end(), arr.begin(), arr.end());
+            for (auto i = 0; i < arr.size(); i++) {
+                newarr[polynum + i] = arr[i];
+            }
         });
     }
 
@@ -148,33 +127,22 @@ ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv) {
             for (auto i = 0; i < prim->loops.size(); i++) {
                 vec2f uv = prim->uvs[loopsuv[i]];
                 if (mapping.count({uv[0], uv[1]}) == false) {
-                    mapping[{uv[0], uv[1]}] = loopsuv[i];
+                    auto index = mapping.size();
+                    mapping[{uv[0], uv[1]}] = index;
                 }
                 loopsuv[i] = mapping[{uv[0], uv[1]}];
             }
+            prim->uvs.resize(mapping.size());
+            for (auto const&[uv, index]: mapping) {
+                prim->uvs[index] = {std::get<0>(uv), std::get<1>(uv)};
+            }
         }
     }
-    prim->polys.add_attr<int>("matid");
-    for(int i=0;i<matid.size();i++)
-    {
-        prim->polys.attr<int>("matid")[i] = matid[i];
-    }
-    prim->polys.add_attr<int>("faceset");
-    for(int i=0;i<faceset.size();i++)
-    {
-        prim->polys.attr<int>("faceset")[i] = faceset[i];
-    }
 
-    prim->polys.add_attr<int>("abcpath");
-    for(int i=0;i<abcpath.size();i++)
-    {
-        prim->polys.attr<int>("abcpath")[i] = abcpath[i];
-    }
-
-    prim->tris.clear();
-    prim->quads.clear();
-    prim->lines.clear();
-    prim->points.clear();
+    prim->tris.clear_with_attr();
+    prim->quads.clear_with_attr();
+    prim->lines.clear_with_attr();
+    prim->points.clear_with_attr();
 }
 
 namespace {

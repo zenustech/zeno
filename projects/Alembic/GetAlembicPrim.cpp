@@ -40,18 +40,6 @@ ZENDEFNODE(CountAlembicPrims, {
     {"alembic"},
 });
 
-void flipFrontBack(std::shared_ptr<PrimitiveObject> &prim) {
-    for (auto i = 0; i < prim->polys.size(); i++) {
-        auto [base, cnt] = prim->polys[i];
-        for (int j = 0; j < (cnt / 2); j++) {
-            std::swap(prim->loops[base + j], prim->loops[base + cnt - 1 - j]);
-            if (prim->loops.has_attr("uvs")) {
-                std::swap(prim->loops.attr<int>("uvs")[base + j], prim->loops.attr<int>("uvs")[base + cnt - 1 - j]);
-            }
-        }
-    }
-}
-
 std::shared_ptr<PrimitiveObject> get_alembic_prim(std::shared_ptr<zeno::ABCTree> abctree, int index) {
     std::shared_ptr<PrimitiveObject> prim;
     abctree->visitPrims([&] (auto const &p) {
@@ -171,7 +159,7 @@ struct GetAlembicPrim : INode {
             prim = get_alembic_prim(abctree, index);
         }
         if (get_input2<bool>("flipFrontBack")) {
-            flipFrontBack(prim);
+            primFlipFaces(prim.get());
         }
         if (get_input2<bool>("triangulate")) {
             zeno::primTriangulate(prim.get());
@@ -210,7 +198,7 @@ struct AllAlembicPrim : INode {
         }
         auto outprim = zeno::primMerge(prims->getRaw<PrimitiveObject>());
         if (get_input2<bool>("flipFrontBack")) {
-            flipFrontBack(outprim);
+            primFlipFaces(outprim.get());
         }
         if (get_input2<int>("triangulate") == 1) {
             zeno::primTriangulate(outprim.get());
@@ -247,7 +235,7 @@ struct AlembicPrimList : INode {
         auto new_prims = std::make_shared<zeno::ListObject>();
         if (get_input2<bool>("splitByFaceset")) {
             for (auto &prim: prims->arr) {
-                auto list = abc_split_by_name(std::dynamic_pointer_cast<PrimitiveObject>(prim), true);
+                auto list = abc_split_by_name(std::dynamic_pointer_cast<PrimitiveObject>(prim), false);
                 new_prims->arr.insert(new_prims->arr.end(), list->arr.begin(), list->arr.end());
             }
         }
@@ -309,7 +297,7 @@ struct AlembicPrimList : INode {
         for (auto &prim: new_prims->arr) {
             auto _prim = std::dynamic_pointer_cast<PrimitiveObject>(prim);
             if (get_input2<bool>("flipFrontBack")) {
-                flipFrontBack(_prim);
+                primFlipFaces(_prim.get());
             }
             if (get_input2<bool>("splitByFaceset") && get_input2<bool>("killDeadVerts")) {
                 primKillDeadVerts(_prim.get());
@@ -370,13 +358,13 @@ struct GetAlembicCamera : INode {
         float focal_length = cam_info.value().focal_length;
 
         set_output("pos", std::make_shared<NumericObject>(zeno::vec3f((float)pos.x, (float)pos.y, (float)pos.z)));
-        set_output("up", std::make_shared<NumericObject>(zeno::vec3f((float)up.x, (float)up.y, (float)up.z)));
-        set_output("right", std::make_shared<NumericObject>(zeno::vec3f((float)right.x, (float)right.y, (float)right.z)));
 
-        auto _up = zeno::vec3f((float)up.x, (float)up.y, (float)up.z);
-        auto _right = zeno::vec3f((float)right.x, (float)right.y, (float)right.z);
+        auto _up = zeno::normalize(zeno::vec3f((float)up.x, (float)up.y, (float)up.z));
+        auto _right = zeno::normalize(zeno::vec3f((float)right.x, (float)right.y, (float)right.z));
         auto view = zeno::cross(_up, _right);
-        set_output("view", std::make_shared<NumericObject>(view));
+        set_output2("up", _up);
+        set_output2("right", _right);
+        set_output2("view", view);
 
         set_output("focal_length", std::make_shared<NumericObject>(focal_length));
         set_output("near", std::make_shared<NumericObject>((float)cam_info.value()._near));
@@ -436,9 +424,16 @@ struct ImportAlembicPrim : INode {
             }
             double start, _end;
             GetArchiveStartAndEndTime(archive, start, _end);
+            TimeAndSamplesMap timeMap;
+            Alembic::Util::uint32_t numSamplings = archive.getNumTimeSamplings();
+            for (Alembic::Util::uint32_t s = 0; s < numSamplings; ++s)             {
+                timeMap.add(archive.getTimeSampling(s),
+                            archive.getMaxNumSamplesForTimeSamplingIndex(s));
+            }
             auto obj = archive.getTop();
             bool read_face_set = get_input2<bool>("read_face_set");
-            traverseABC(obj, *abctree, frameid, read_done, read_face_set, "");
+            bool outOfRangeAsEmpty = get_input2<bool>("outOfRangeAsEmpty");
+            traverseABC(obj, *abctree, frameid, read_done, read_face_set, "", timeMap, ObjectVisibility::kVisibilityDeferred, outOfRangeAsEmpty);
         }
         bool use_xform = get_input2<bool>("use_xform");
         auto index = get_input2<int>("index");
@@ -462,7 +457,7 @@ struct ImportAlembicPrim : INode {
                 outprim = get_alembic_prim(abctree, index);
             }
         }
-        flipFrontBack(outprim);
+        primFlipFaces(outprim.get());
         if (get_input2<bool>("triangulate")) {
             zeno::primTriangulate(outprim.get());
         }
@@ -479,6 +474,7 @@ ZENDEFNODE(ImportAlembicPrim, {
         {"bool", "use_xform", "0"},
         {"bool", "triangulate", "0"},
         {"bool", "read_face_set", "0"},
+        {"bool", "outOfRangeAsEmpty", "0"},
     },
     {
         "prim",

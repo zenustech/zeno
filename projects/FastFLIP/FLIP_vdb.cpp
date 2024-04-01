@@ -3273,7 +3273,7 @@ void FLIP_vdb::custom_move_points_and_set_flip_vel(
 
   if (has_valid_solid) {
     voxel_center_solid_normal->setTree(std::make_shared<openvdb::Vec3fTree>(
-        in_solid_sdf->tree(), /*bgval*/ openvdb::Vec3f(0),
+        in_liquid_sdf->tree(), /*bgval*/ openvdb::Vec3f(0),
         openvdb::TopologyCopy()));
   }
 
