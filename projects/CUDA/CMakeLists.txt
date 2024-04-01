@@ -172,6 +172,8 @@ target_sources(zeno PRIVATE
   utils/Tracing.cu
   utils/Noise.cu
   utils/Groom.cpp
+
+  graph/Task.cpp
 )
 
 add_subdirectory(remesh)
