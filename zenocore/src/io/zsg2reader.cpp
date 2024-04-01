@@ -106,7 +106,7 @@ bool Zsg2Reader::_parseSubGraph(
     {
         const std::string& nodeid = node.name.GetString();
         const zeno::NodeData& nodeData = _parseNode(graphPath, nodeid, node.value, subgraphDatas, subgData.links);
-        subgData.nodes.insert(std::make_pair(nodeid, nodeData));
+        subgData.nodes.insert(std::make_pair(nodeData.name, nodeData));
     }
     return true;
 }
