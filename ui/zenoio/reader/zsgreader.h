@@ -20,6 +20,7 @@ public:
     bool importSubgraphs(const QString& fn, IAcceptor* pAcceptor, const QMap<QString, QString>& graphs, IGraphsModel* pModel);
     bool importNodes(IGraphsModel* pModel, const QModelIndex& subgIdx, const QString& nodeJson, const QPointF& targetPos, IAcceptor* pAcceptor);
     PtrLayoutNode _readLayout(const rapidjson::Value& objValue);
+    bool readRenderSettings(const QString& fn, ZENO_RECORD_RUN_INITPARAM& param);
 
 private:
     ZsgReader();

@@ -334,6 +334,7 @@ inline void createRTProgramGroups(OptixDeviceContext &context, OptixModule &_mod
                 ) );
 }
 struct cuTexture{
+    std::string md5;
     cudaArray_t gpuImageArray;
     cudaTextureObject_t texture;
     cuTexture(){gpuImageArray = nullptr;texture=0;}
@@ -847,9 +848,23 @@ inline void addTexture(std::string path)
         g_tex[path] = makeCudaTexture(img, nx, ny, nc);
         stbi_image_free(img);
     }
+    g_tex[path]->md5 = md5Hash;
 
     for (auto i = g_tex.begin(); i != g_tex.end(); i++) {
         zeno::log_info("-{}", i->first);
+    }
+}
+inline void removeTexture(std::string path) {
+    if (path.size()) {
+        md5_path_mapping.erase(g_tex[path]->md5);
+        g_tex.erase(path);
+        sky_nx_map.erase(path);
+        sky_ny_map.erase(path);
+        sky_cdf_map.erase(path);
+        sky_pdf_map.erase(path);
+        sky_start_map.erase(path);
+        sky_avg_map.erase(path);
+        g_tex_last_write_time.erase(path);
     }
 }
 

@@ -723,13 +723,6 @@
     </message>
 </context>
 <context>
-    <name>HeatMapPreview</name>
-    <message>
-        <source>Show parts of image that have actually been viewed with more than 100% zoom</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
     <name>ImageGroupBox</name>
     <message>
         <source>Select an image</source>
@@ -1060,17 +1053,6 @@
     <message>
         <source>TextLabel</source>
         <translation type="unfinished">文字标签</translation>
-    </message>
-</context>
-<context>
-    <name>NodesListView</name>
-    <message>
-        <source>Nodes</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Center On</source>
-        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -1650,55 +1632,11 @@
     <name>ScreenshotPopup</name>
     <message>
         <source>Cancel</source>
-        <translation type="unfinished">取消</translation>
+        <translation type="obsolete">取消</translation>
     </message>
     <message>
         <source>Save</source>
-        <translation type="unfinished">保存</translation>
-    </message>
-    <message>
-        <source>Export to Image</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Output:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Output file path</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Select an output file</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Select</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>100%</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>150%</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>200%</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>None</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>20 px</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>50 px</source>
-        <translation type="unfinished"></translation>
+        <translation type="obsolete">保存</translation>
     </message>
 </context>
 <context>
@@ -3285,6 +3223,14 @@ the save action will lose them, we recommand you choose &quot;Save As&quot; to s
         <source>Path to Save</source>
         <translation type="obsolete">文件保存路径</translation>
     </message>
+    <message>
+        <source>zsg path</source>
+        <translation>资源路径</translation>
+    </message>
+    <message>
+        <source>Whether to use $ZSG replace zsg file path?</source>
+        <translation>检测到路径与zsg工程在同一目录，是否使用$ZSG作为相对路径？</translation>
+    </message>
 </context>
 <context>
     <name>ZenoPlayer</name>
@@ -3516,6 +3462,10 @@ All Files (*)</source>
     </message>
     <message>
         <source>Separated by &apos;|&apos;, such as : W1|W2|W3...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>String mapping</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -3778,149 +3728,10 @@ All Files (*)</source>
     </message>
 </context>
 <context>
-    <name>connector</name>
-    <message>
-        <source>Docking</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Custom Docks</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Default Connector</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Custom Connector</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Dark</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>custom</name>
-    <message>
-        <source>Enabled Visual Connector</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>default</name>
-    <message>
-        <source>Enabled Visual Connector</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Create Default Edge</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>edges</name>
-    <message>
-        <source>Curved Edges</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Edge Endings</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Ortho Edges</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
     <name>navigable</name>
     <message>
         <source>Image</source>
-        <translation type="unfinished">图片</translation>
-    </message>
-    <message>
-        <source>Navigable Sample</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Grid</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>nodes</name>
-    <message>
-        <source>Default Nodes</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Custom Nodes</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Dark</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>resizer</name>
-    <message>
-        <source>Resizer Sample</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>style</name>
-    <message>
-        <source>Dark</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>tools</name>
-    <message>
-        <source>Small</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Medium</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Large</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Clear heat map</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Increase preview size</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Decrease preview size</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>topology</name>
-    <message>
-        <source>Dark</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Small</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Medium</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Large</source>
-        <translation type="unfinished"></translation>
+        <translation type="obsolete">图片</translation>
     </message>
 </context>
 </TS>

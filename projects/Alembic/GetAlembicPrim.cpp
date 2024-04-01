@@ -358,13 +358,13 @@ struct GetAlembicCamera : INode {
         float focal_length = cam_info.value().focal_length;
 
         set_output("pos", std::make_shared<NumericObject>(zeno::vec3f((float)pos.x, (float)pos.y, (float)pos.z)));
-        set_output("up", std::make_shared<NumericObject>(zeno::vec3f((float)up.x, (float)up.y, (float)up.z)));
-        set_output("right", std::make_shared<NumericObject>(zeno::vec3f((float)right.x, (float)right.y, (float)right.z)));
 
-        auto _up = zeno::vec3f((float)up.x, (float)up.y, (float)up.z);
-        auto _right = zeno::vec3f((float)right.x, (float)right.y, (float)right.z);
+        auto _up = zeno::normalize(zeno::vec3f((float)up.x, (float)up.y, (float)up.z));
+        auto _right = zeno::normalize(zeno::vec3f((float)right.x, (float)right.y, (float)right.z));
         auto view = zeno::cross(_up, _right);
-        set_output("view", std::make_shared<NumericObject>(view));
+        set_output2("up", _up);
+        set_output2("right", _right);
+        set_output2("view", view);
 
         set_output("focal_length", std::make_shared<NumericObject>(focal_length));
         set_output("near", std::make_shared<NumericObject>((float)cam_info.value()._near));
@@ -424,10 +424,16 @@ struct ImportAlembicPrim : INode {
             }
             double start, _end;
             GetArchiveStartAndEndTime(archive, start, _end);
+            TimeAndSamplesMap timeMap;
+            Alembic::Util::uint32_t numSamplings = archive.getNumTimeSamplings();
+            for (Alembic::Util::uint32_t s = 0; s < numSamplings; ++s)             {
+                timeMap.add(archive.getTimeSampling(s),
+                            archive.getMaxNumSamplesForTimeSamplingIndex(s));
+            }
             auto obj = archive.getTop();
             bool read_face_set = get_input2<bool>("read_face_set");
             bool outOfRangeAsEmpty = get_input2<bool>("outOfRangeAsEmpty");
-            traverseABC(obj, *abctree, frameid, read_done, read_face_set, "", outOfRangeAsEmpty);
+            traverseABC(obj, *abctree, frameid, read_done, read_face_set, "", timeMap, ObjectVisibility::kVisibilityDeferred, outOfRangeAsEmpty);
         }
         bool use_xform = get_input2<bool>("use_xform");
         auto index = get_input2<int>("index");
