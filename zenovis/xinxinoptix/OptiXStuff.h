@@ -854,7 +854,14 @@ inline void addTexture(std::string path)
 }
 inline void removeTexture(std::string path) {
     if (path.size()) {
-        md5_path_mapping.erase(g_tex[path]->md5);
+        if (g_tex.count(path)) {
+            zeno::log_info("removeTexture: {}", path);
+            std::cout << "removeTexture :" << path << std::endl;
+            md5_path_mapping.erase(g_tex[path]->md5);
+        }
+        else {
+            zeno::log_error("removeTexture: {} not exists!", path);
+        }
         g_tex.erase(path);
         sky_nx_map.erase(path);
         sky_ny_map.erase(path);
