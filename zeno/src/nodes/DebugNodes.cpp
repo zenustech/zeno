@@ -256,4 +256,30 @@ ZENDEFNODE(Group, {
     {"layout"},
     });
 
+struct CustomNode : zeno::INode {
+    virtual void apply() override {
+
+    }
+};
+
+ZENDEFINE(CustomNode, {
+    {
+        {
+            "Default",
+            {
+                {
+                    "Group1",
+                    {
+                        {"param1", zeno::Param_Null, zeno::PrimarySocket},
+                        {"param2", zeno::Param_Prim, zeno::PrimarySocket},
+                        {"param3", zeno::Param_Null, zeno::NoSocket}
+                    }
+                }
+            }
+        }
+    },
+    "debug",
+    "CUI",
+});
+
 }

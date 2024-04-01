@@ -62,15 +62,54 @@ namespace zeno {
 
     struct ParamInfo {
         std::string name;
-        std::string tooltip;
-        std::vector<EdgeInfo> links;
-        zvariant defl;      //optional? because no defl on output.
-        ParamControl control = NullControl;
         ParamType type = Param_Null;
-        SocketProperty prop = Socket_Normal;
         SocketType socketType = NoSocket;
+        zvariant defl;
+        ParamControl control = NullControl;
         std::optional<ControlProperty> ctrlProps;
+
+        std::vector<EdgeInfo> links;
+        SocketProperty prop = Socket_Normal;
+
+        std::string tooltip;
         bool bInput = true;
+
+        ParamInfo() {}
+        ParamInfo(std::string name, ParamType type, SocketType sockType, std::string tooltip = "")
+            : name(name)
+            , type(type)
+            , socketType(sockType)
+            , tooltip(tooltip)
+        {
+        }
+        ParamInfo(std::string name, ParamType type, SocketType sockType, zvariant defl, ParamControl ctrl, ControlProperty props, std::string tooltip = "")
+            : name(name)
+            , type(type)
+            , socketType(sockType)
+            , defl(defl)
+            , control(ctrl)
+            , ctrlProps(props)
+            , tooltip(tooltip)
+        {
+        }
+    };
+
+    struct ParamGroup {
+        std::string name;
+        std::vector<ParamInfo> params;
+    };
+
+    struct ParamTab {
+        std::string name;
+        std::vector<ParamGroup> groups;
+    };
+
+    struct CustomUI {
+        std::vector<ParamTab> params;   //custom ui
+        std::string category;   //node category
+        std::string nickname;
+        std::string iconResPath;
+        std::string doc;
     };
 
     struct ParamUpdateInfo {

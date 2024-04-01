@@ -529,39 +529,9 @@ ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls, std::s
     return node;
 }
 
-ZENO_API std::shared_ptr<INode> Graph::createSubnetNode(std::string const& cls)
-{
-    //todo: deprecated
-    auto subcl = std::make_unique<ImplSubnetNodeClass>();
-    std::string const& name = generateNewName(cls);
-    auto node = subcl->new_instance(this, name);
-    node->graph = this;
-    node->nodeClass = subcl.get();
-
-    auto subnetnode = std::dynamic_pointer_cast<SubnetNode>(node);
-    //subnetnode->subnetClass = std::move(subcl);
-
-    m_nodes[node->get_uuid()] = node;
-    CALLBACK_NOTIFY(createSubnetNode, subnetnode)
-    return node;
-}
-
 ZENO_API Graph* Graph::addSubnetNode(std::string const& id) {
     //deprecated:
     return nullptr;
-#if 0
-    auto subcl = std::make_unique<ImplSubnetNodeClass>();
-    auto node = subcl->new_instance(id);
-    node->graph = this;
-    node->name = id;
-    node->nodeClass = subcl.get();
-    auto subnode = static_cast<SubnetNode*>(node.get());
-    subnode->subgraph->session = this->session;
-    subnode->subnetClass = std::move(subcl);
-    auto subg = subnode->subgraph.get();
-    nodes[id] = std::move(node);
-    return subg;
-#endif
 }
 
 std::set<std::string> Graph::getSubInputs()

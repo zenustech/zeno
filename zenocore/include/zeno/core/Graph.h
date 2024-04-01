@@ -68,9 +68,6 @@ struct Graph : std::enable_shared_from_this<Graph> {
     ZENO_API bool removeNode(std::string const& name);
     CALLBACK_REGIST(removeNode, void, const std::string&)
 
-    ZENO_API std::shared_ptr<INode> createSubnetNode(std::string const& name);
-    CALLBACK_REGIST(createSubnetNode, void, std::weak_ptr<zeno::INode>)
-
     ZENO_API bool addLink(const EdgeInfo& edge);
     CALLBACK_REGIST(addLink, bool, EdgeInfo)
 

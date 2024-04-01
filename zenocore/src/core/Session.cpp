@@ -30,13 +30,25 @@ struct ImplNodeClass : INodeClass {
     ImplNodeClass(std::shared_ptr<INode>(*ctor)(), Descriptor const &desc, std::string const &name)
         : INodeClass(desc, name), ctor(ctor) {}
 
+    ImplNodeClass(std::shared_ptr<INode>(*ctor)(), CustomUI const& customui, std::string const& name)
+        : INodeClass(customui, name), ctor(ctor) {}
+
     virtual std::shared_ptr<INode> new_instance(Graph* pGraph, std::string const &name) const override {
         std::shared_ptr<INode> spNode = ctor();
         spNode->initUuid(pGraph, classname);
 
-        std::vector<SocketDescriptor> inputs = desc->inputs;
-        std::vector<ParamDescriptor> params = desc->params;
-        std::vector<SocketDescriptor> outputs = desc->outputs;
+        std::vector<SocketDescriptor> inputs;
+        std::vector<ParamDescriptor> params;
+        std::vector<SocketDescriptor> outputs;
+
+        if (desc) {
+            inputs = desc->inputs;
+            params = desc->params;
+            outputs = desc->outputs;
+        }
+        else {
+            //custom ui
+        }
 
         std::shared_ptr<SubnetNode> spSubnet = std::dynamic_pointer_cast<SubnetNode>(spNode);
 
@@ -128,13 +140,31 @@ ZENO_API void Session::defNodeClass(std::shared_ptr<INode>(*ctor)(), std::string
     if (nodeClasses.find(clsname) != nodeClasses.end()) {
         log_error("node class redefined: `{}`\n", clsname);
     }
+    if (desc.categories.size() > 1) {
+        zeno::log_critical("categories.size() > 1 {}", clsname);
+    }
     auto cls = std::make_unique<ImplNodeClass>(ctor, desc, clsname);
     nodeClasses.emplace(clsname, std::move(cls));
+}
+
+ZENO_API void Session::defNodeClass2(std::shared_ptr<INode>(*ctor)(), std::string const& nodecls, CustomUI const& customui) {
+    if (nodeClasses.find(nodecls) != nodeClasses.end()) {
+        log_error("node class redefined: `{}`\n", nodecls);
+    }
+    auto cls = std::make_unique<ImplNodeClass>(ctor, customui, nodecls);
+    nodeClasses.emplace(nodecls, std::move(cls));
 }
 
 ZENO_API INodeClass::INodeClass(Descriptor const &desc, std::string const& classname)
         : desc(std::make_unique<Descriptor>(desc))
         , classname(classname){
+}
+
+ZENO_API INodeClass::INodeClass(CustomUI const &customui, std::string const& classname)
+    : desc(nullptr)
+    , m_customui(customui)
+    , classname(classname)
+{
 }
 
 ZENO_API INodeClass::~INodeClass() = default;
@@ -238,11 +268,20 @@ void Session::initNodeCates() {
     for (auto const& [key, cls] : nodeClasses) {
         if (!key.empty() && key.front() == '^')
             continue;
-        Descriptor& desc = *cls->desc;
-        for (std::string cate : desc.categories) {
+        if (!cls->desc) {
+            std::string cate = cls->m_customui.category;
             if (m_cates.find(cate) == m_cates.end())
                 m_cates.insert(std::make_pair(cate, std::vector<std::string>()));
             m_cates[cate].push_back(key);
+        }
+        else
+        {
+            Descriptor& desc = *cls->desc;
+            for (std::string cate : desc.categories) {
+                if (m_cates.find(cate) == m_cates.end())
+                    m_cates.insert(std::make_pair(cate, std::vector<std::string>()));
+                m_cates[cate].push_back(key);
+            }
         }
     }
 }
