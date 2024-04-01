@@ -798,7 +798,7 @@ struct GraphicsManager {
     }
 
     void add_object(std::shared_ptr<zeno::IObject> obj) {
-        if (obj->key.empty())
+        if (obj->key().empty())
             return;
         if (!scene->drawOptions->updateMatlOnly) {
             if (auto cam = std::dynamic_pointer_cast<zeno::CameraObject>(obj)) {
@@ -807,16 +807,16 @@ struct GraphicsManager {
         }
 
         auto& wtf = graphics.m_curr;
-        auto it = wtf.find(obj->key);
+        auto it = wtf.find(obj->key());
         if (it == wtf.end()) {
-            auto ig = std::make_unique<ZxxGraphic>(obj->key, obj.get());
-            graphics.m_curr.insert(std::make_pair(obj->key, std::move(ig)));
+            auto ig = std::make_unique<ZxxGraphic>(obj->key(), obj.get());
+            graphics.m_curr.insert(std::make_pair(obj->key(), std::move(ig)));
         }
         else {
-            auto ig = std::make_unique<ZxxGraphic>(obj->key, obj.get());
+            auto ig = std::make_unique<ZxxGraphic>(obj->key(), obj.get());
             if (!ig)
                 return;
-            ig->key = obj->key;
+            ig->key = obj->key();
             it->second = std::move(ig);
         }
     }

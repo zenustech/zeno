@@ -40,25 +40,25 @@ struct GraphicsManager {
     }
 
     bool add_object(std::shared_ptr<zeno::IObject> obj) {
-        if (!obj || obj->key.empty()) return false;
+        if (!obj || obj->key().empty()) return false;
 
         auto& wtf = graphics.m_curr.m_curr;
-        auto it = wtf.find(obj->key);
+        auto it = wtf.find(obj->key());
         if (it == wtf.end()) {
-            zeno::log_debug("load_object: loading graphics [{}]", obj->key);
+            zeno::log_debug("load_object: loading graphics [{}]", obj->key());
             auto ig = makeGraphic(scene, obj.get());
             if (!ig)
                 return false;
             zeno::log_debug("load_object: loaded graphics to {}", ig.get());
-            ig->nameid = obj->key;
+            ig->nameid = obj->key();
             ig->objholder = obj;
-            graphics.m_curr.m_curr.insert(std::make_pair(obj->key, std::move(ig)));
+            graphics.m_curr.m_curr.insert(std::make_pair(obj->key(), std::move(ig)));
         }
         else {
             auto ig = makeGraphic(scene, obj.get());
             if (!ig)
                 return false;
-            ig->nameid = obj->key;
+            ig->nameid = obj->key();
             ig->objholder = obj;
             it->second = std::move(ig);
         }

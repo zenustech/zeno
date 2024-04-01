@@ -56,7 +56,7 @@ struct RenderEngineBate : RenderEngine {
         if (bView)
             graphicsMan->add_object(spObj);
         else
-            graphicsMan->remove_object(spObj->key);
+            graphicsMan->remove_object(spObj->key());
     }
 
     void update() override {

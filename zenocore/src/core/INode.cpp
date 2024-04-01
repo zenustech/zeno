@@ -187,10 +187,10 @@ void INode::mark_dirty_objs()
     for (auto const& [name, param] : outputs_)
     {
         if (auto spObj = std::dynamic_pointer_cast<IObject>(param->result)) {
-            if (spObj->key.empty()) {
+            if (spObj->key().empty()) {
                 continue;
             }
-            getSession().objsMan->collect_removing_objs(spObj->key);
+            getSession().objsMan->collect_removing_objs(spObj->key());
         }
     }
 }
@@ -226,10 +226,10 @@ ZENO_API void INode::unregisterObjs()
     for (auto const& [name, param] : outputs_)
     {
         if (auto spObj = std::dynamic_pointer_cast<IObject>(param->result)) {
-            if (spObj->key.empty()) {
+            if (spObj->key().empty()) {
                 continue;
             }
-            getSession().objsMan->removeObject(spObj->key);
+            getSession().objsMan->removeObject(spObj->key());
         }
     }
 }
@@ -242,8 +242,8 @@ ZENO_API void INode::registerObjToManager()
             if (std::dynamic_pointer_cast<NumericObject>(spObj)) {
                 return;
             }
-            assert(!spObj->key.empty());
-            getSession().objsMan->collectingObject(spObj->key, spObj, shared_from_this(), m_bView);
+            assert(!spObj->key().empty());
+            getSession().objsMan->collectingObject(spObj->key(), spObj, shared_from_this(), m_bView);
         }
     }
 }
@@ -256,9 +256,9 @@ zany INode::get_output_result(std::shared_ptr<INode> outNode, std::string out_pa
     zany outResult = outNode->get_output(out_param);
     if (bCopy && outResult) {
         outResult = outResult->clone();
-        if (outResult->key.empty()) {
-            outResult->key = generateUUID();
-        }
+        //if (outResult->key().empty()) {
+        //    outResult->key = generateUUID();
+        //}
     }
     return outResult;
 }
