@@ -1,6 +1,7 @@
 #include "zeno/utils/vec.h"
 #include <limits>
 #include <memory>
+#ifdef ZENO_ENABLE_OPTIX
 #include "optixPathTracer.h"
 #include "vec_math.h"
 #include "xinxinoptixapi.h"
