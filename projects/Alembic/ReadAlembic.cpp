@@ -129,8 +129,209 @@ static void read_velocity(std::shared_ptr<PrimitiveObject> prim, V3fArraySampleP
         }
     }
 }
-
-static void read_attributes(std::shared_ptr<PrimitiveObject> prim, ICompoundProperty arbattrs, const ISampleSelector &iSS, bool read_done) {
+template<typename T>
+void attr_from_data(std::shared_ptr<PrimitiveObject> prim, GeometryScope scope, std::string attr_name, std::vector<T> &data) {
+    if (scope == GeometryScope::kUniformScope) {
+        if (prim->polys.size() == data.size()) {
+            auto &attr = prim->polys.add_attr<T>(attr_name);
+            for (auto i = 0; i < prim->polys.size(); i++) {
+                attr[i] = data[i];
+            }
+        }
+        else if (prim->polys.size() * 2 == data.size()) {
+            auto &attr = prim->polys.add_attr<zeno::vec<2, T>>(attr_name);
+            for (auto i = 0; i < prim->polys.size(); i++) {
+                attr[i] = {data[2 * i], data[2 * i + 1]};
+            }
+        }
+        else if (prim->polys.size() * 3 == data.size()) {
+            auto &attr = prim->polys.add_attr<zeno::vec<3, T>>(attr_name);
+            for (auto i = 0; i < prim->polys.size(); i++) {
+                attr[i] = {data[3 * i], data[3 * i + 1], data[3 * i + 2]};
+            }
+        }
+        else if (prim->polys.size() * 4 == data.size()) {
+            auto &attr = prim->polys.add_attr<zeno::vec<4, T>>(attr_name);
+            for (auto i = 0; i < prim->polys.size(); i++) {
+                attr[i] = {data[4 * i], data[4 * i + 1], data[4 * i + 2], data[4 * i + 3]};
+            }
+        }
+        else {
+            log_warn("[alembic] can not load {} attr {}: {} in kUniformScope scope.", typeid(data[0]).name(), attr_name, data.size());
+        }
+    }
+    else if (scope == GeometryScope::kFacevaryingScope) {
+        if (prim->loops.size() == data.size()) {
+            auto &attr = prim->loops.add_attr<T>(attr_name);
+            for (auto i = 0; i < prim->loops.size(); i++) {
+                attr[i] = data[i];
+            }
+        }
+        else if (prim->loops.size() * 2 == data.size()) {
+            auto &attr = prim->loops.add_attr<zeno::vec<2, T>>(attr_name);
+            for (auto i = 0; i < prim->loops.size(); i++) {
+                attr[i] = {data[2 * i], data[2 * i + 1]};
+            }
+        }
+        else if (prim->loops.size() * 3 == data.size()) {
+            auto &attr = prim->loops.add_attr<zeno::vec<3, T>>(attr_name);
+            for (auto i = 0; i < prim->loops.size(); i++) {
+                attr[i] = {data[3 * i], data[3 * i + 1], data[3 * i + 2]};
+            }
+        }
+        else if (prim->loops.size() * 4 == data.size()) {
+            auto &attr = prim->loops.add_attr<zeno::vec<4, T>>(attr_name);
+            for (auto i = 0; i < prim->loops.size(); i++) {
+                attr[i] = {data[4 * i], data[4 * i + 1], data[4 * i + 2], data[4 * i + 3]};
+            }
+        }
+        else {
+            log_warn("[alembic] can not load {} attr {}: {} in kFacevaryingScope scope.", typeid(data[0]).name(), attr_name, data.size());
+        }
+    }
+    else {
+        if (prim->verts.size() == data.size()) {
+            auto &attr = prim->verts.add_attr<T>(attr_name);
+            for (auto i = 0; i < prim->verts.size(); i++) {
+                attr[i] = data[i];
+            }
+        }
+        else if (prim->verts.size() * 2 == data.size()) {
+            auto &attr = prim->verts.add_attr<zeno::vec<2, T>>(attr_name);
+            for (auto i = 0; i < prim->verts.size(); i++) {
+                attr[i] = {data[2 * i], data[2 * i + 1]};
+            }
+        }
+        else if (prim->verts.size() * 3 == data.size()) {
+            auto &attr = prim->verts.add_attr<zeno::vec<3, T>>(attr_name);
+            for (auto i = 0; i < prim->verts.size(); i++) {
+                attr[i] = {data[3 * i], data[3 * i + 1], data[3 * i + 2]};
+            }
+        }
+        else if (prim->verts.size() * 4 == data.size()) {
+            auto &attr = prim->verts.add_attr<zeno::vec<4, T>>(attr_name);
+            for (auto i = 0; i < prim->verts.size(); i++) {
+                attr[i] = {data[4 * i], data[4 * i + 1], data[4 * i + 2], data[4 * i + 3]};
+            }
+        }
+        else if (prim->polys.size() == data.size()) {
+            auto &attr = prim->polys.add_attr<T>(attr_name);
+            for (auto i = 0; i < prim->polys.size(); i++) {
+                attr[i] = data[i];
+            }
+        }
+        else if (prim->polys.size() * 2 == data.size()) {
+            auto &attr = prim->polys.add_attr<zeno::vec<2, T>>(attr_name);
+            for (auto i = 0; i < prim->polys.size(); i++) {
+                attr[i] = {data[2 * i], data[2 * i + 1]};
+            }
+        }
+        else if (prim->polys.size() * 3 == data.size()) {
+            auto &attr = prim->polys.add_attr<zeno::vec<3, T>>(attr_name);
+            for (auto i = 0; i < prim->polys.size(); i++) {
+                attr[i] = {data[3 * i], data[3 * i + 1], data[3 * i + 2]};
+            }
+        }
+        else if (prim->polys.size() * 4 == data.size()) {
+            auto &attr = prim->polys.add_attr<zeno::vec<4, T>>(attr_name);
+            for (auto i = 0; i < prim->polys.size(); i++) {
+                attr[i] = {data[4 * i], data[4 * i + 1], data[4 * i + 2], data[4 * i + 3]};
+            }
+        }
+        else if (prim->loops.size() == data.size()) {
+            auto &attr = prim->loops.add_attr<T>(attr_name);
+            for (auto i = 0; i < prim->loops.size(); i++) {
+                attr[i] = data[i];
+            }
+        }
+        else if (prim->loops.size() * 2 == data.size()) {
+            auto &attr = prim->loops.add_attr<zeno::vec<2, T>>(attr_name);
+            for (auto i = 0; i < prim->loops.size(); i++) {
+                attr[i] = {data[2 * i], data[2 * i + 1]};
+            }
+        }
+        else if (prim->loops.size() * 3 == data.size()) {
+            auto &attr = prim->loops.add_attr<zeno::vec<3, T>>(attr_name);
+            for (auto i = 0; i < prim->loops.size(); i++) {
+                attr[i] = {data[3 * i], data[3 * i + 1], data[3 * i + 2]};
+            }
+        }
+        else if (prim->loops.size() * 4 == data.size()) {
+            auto &attr = prim->loops.add_attr<zeno::vec<4, T>>(attr_name);
+            for (auto i = 0; i < prim->loops.size(); i++) {
+                attr[i] = {data[4 * i], data[4 * i + 1], data[4 * i + 2], data[4 * i + 3]};
+            }
+        }
+        else {
+            if (scope == GeometryScope::kVaryingScope) {
+                log_warn("[alembic] can not load {} attr {}: {} in kVaryingScope scope.", typeid(data[0]).name(), attr_name, data.size());
+            }
+            else if (scope == GeometryScope::kVertexScope) {
+                log_warn("[alembic] can not load {} attr {}: {} in kVertexScope scope.", typeid(data[0]).name(), attr_name, data.size());
+            }
+            else if (scope == GeometryScope::kUnknownScope) {
+                log_warn("[alembic] can not load {} attr {}: {} in kUnknownScope scope.", typeid(data[0]).name(), attr_name, data.size());
+            }
+        }
+    }
+}
+template<typename T>
+void attr_from_data_vec(std::shared_ptr<PrimitiveObject> prim, GeometryScope scope, std::string attr_name, std::vector<T> &data) {
+    if (scope == GeometryScope::kUniformScope) {
+        if (prim->polys.size() == data.size()) {
+            auto &attr = prim->polys.add_attr<T>(attr_name);
+            for (auto i = 0; i < prim->polys.size(); i++) {
+                attr[i] = data[i];
+            }
+        }
+        else {
+            log_warn("[alembic] can not load {} attr {}: {} in kUniformScope scope.", typeid(data[0]).name(), attr_name, data.size());
+        }
+    }
+    else if (scope == GeometryScope::kFacevaryingScope) {
+        if (prim->loops.size() == data.size()) {
+            auto &attr = prim->loops.add_attr<T>(attr_name);
+            for (auto i = 0; i < prim->loops.size(); i++) {
+                attr[i] = data[i];
+            }
+        }
+        else {
+            log_warn("[alembic] can not load {} attr {}: {} in kFacevaryingScope scope.", typeid(data[0]).name(), attr_name, data.size());
+        }
+    }
+    else {
+        if (prim->verts.size() == data.size()) {
+            auto &attr = prim->verts.add_attr<T>(attr_name);
+            for (auto i = 0; i < prim->verts.size(); i++) {
+                attr[i] = data[i];
+            }
+        }
+        else if (prim->polys.size() == data.size()) {
+            auto &attr = prim->polys.add_attr<T>(attr_name);
+            for (auto i = 0; i < prim->polys.size(); i++) {
+                attr[i] = data[i];
+            }
+        }
+        else if (prim->loops.size() == data.size()) {
+            auto &attr = prim->loops.add_attr<T>(attr_name);
+            for (auto i = 0; i < prim->loops.size(); i++) {
+                attr[i] = data[i];
+            }
+        }
+        else {
+            if (scope == GeometryScope::kVaryingScope) {
+                log_warn("[alembic] can not load {} attr {}: {} in kVaryingScope scope.", typeid(data[0]).name(), attr_name, data.size());
+            }
+            else if (scope == GeometryScope::kVertexScope) {
+                log_warn("[alembic] can not load {} attr {}: {} in kVertexScope scope.", typeid(data[0]).name(), attr_name, data.size());
+            }
+            else if (scope == GeometryScope::kUnknownScope) {
+                log_warn("[alembic] can not load {} attr {}: {} in kUnknownScope scope.", typeid(data[0]).name(), attr_name, data.size());
+            }
+        }
+    }
+}
+static void read_attributes2(std::shared_ptr<PrimitiveObject> prim, ICompoundProperty arbattrs, const ISampleSelector &iSS, bool read_done) {
     if (!arbattrs) {
         return;
     }
@@ -149,48 +350,7 @@ static void read_attributes(std::shared_ptr<PrimitiveObject> prim, ICompoundProp
             if (!read_done) {
                 log_info("[alembic] float attr {}, len {}.", p.getName(), data.size());
             }
-
-            if (prim->verts.size() == data.size()) {
-                auto &attr = prim->add_attr<float>(p.getName());
-                for (auto i = 0; i < prim->verts.size(); i++) {
-                    attr[i] = data[i];
-                }
-            }
-            else if (prim->verts.size() * 3 == data.size()) {
-                auto &attr = prim->add_attr<zeno::vec3f>(p.getName());
-                for (auto i = 0; i < prim->verts.size(); i++) {
-                    attr[i] = { data[ 3 * i], data[3 * i + 1], data[3 * i + 2]};
-                }
-            }
-            else if (prim->polys.size() == data.size()) {
-                auto &attr = prim->polys.add_attr<float>(p.getName());
-                for (auto i = 0; i < prim->polys.size(); i++) {
-                    attr[i] = data[i];
-                }
-            }
-            else if (prim->polys.size() * 3 == data.size()) {
-                auto &attr = prim->polys.add_attr<zeno::vec3f>(p.getName());
-                for (auto i = 0; i < prim->polys.size(); i++) {
-                    attr[i] = { data[ 3 * i], data[3 * i + 1], data[3 * i + 2]};
-                }
-            }
-            else if (prim->loops.size() == data.size()) {
-                auto &attr = prim->loops.add_attr<float>(p.getName());
-                for (auto i = 0; i < prim->loops.size(); i++) {
-                    attr[i] = data[i];
-                }
-            }
-            else if (prim->loops.size() * 3 == data.size()) {
-                auto &attr = prim->loops.add_attr<zeno::vec3f>(p.getName());
-                for (auto i = 0; i < prim->loops.size(); i++) {
-                    attr[i] = { data[ 3 * i], data[3 * i + 1], data[3 * i + 2]};
-                }
-            }
-            else {
-                if (!read_done) {
-                    log_warn("[alembic] can not load float attr {}: {}.", p.getName(), data.size());
-                }
-            }
+            attr_from_data(prim, samp.getScope(), p.getName(), data);
         }
         else if (IInt32GeomParam::matches(p)) {
             IInt32GeomParam param(arbattrs, p.getName());
@@ -202,136 +362,54 @@ static void read_attributes(std::shared_ptr<PrimitiveObject> prim, ICompoundProp
                 data[i] = samp.getVals()->get()[i];
             }
             if (!read_done) {
-                log_info("[alembic] i32 attr {}, len {}.", p.getName(), data.size());
+                log_info("[alembic] int attr {}, len {}.", p.getName(), data.size());
             }
-
-            if (prim->verts.size() == data.size()) {
-                auto &attr = prim->add_attr<int>(p.getName());
-                for (auto i = 0; i < prim->verts.size(); i++) {
-                    attr[i] = data[i];
-                }
-            }
-            else if (prim->loops.size() == data.size()) {
-                auto &attr = prim->loops.add_attr<int>(p.getName());
-                for (auto i = 0; i < prim->loops.size(); i++) {
-                    attr[i] = data[i];
-                }
-            }
-            else if (prim->polys.size() == data.size()) {
-                auto &attr = prim->polys.add_attr<int>(p.getName());
-                for (auto i = 0; i < prim->polys.size(); i++) {
-                    attr[i] = data[i];
-                }
-            }
-            else {
-                if (!read_done) {
-                    log_warn("[alembic] can not load int attr {}:{}.", p.getName(), data.size());
-                }
-            }
+            attr_from_data(prim, samp.getScope(), p.getName(), data);
         }
         else if (IV3fGeomParam::matches(p)) {
             IV3fGeomParam param(arbattrs, p.getName());
-            if (!read_done) {
-                log_info("[alembic] vec3f attr {}.", p.getName());
-            }
+
             IV3fGeomParam::Sample samp = param.getIndexedValue(iSS);
-            if (prim->verts.size() == samp.getVals()->size()) {
-                auto &attr = prim->add_attr<zeno::vec3f>(p.getName());
-                for (auto i = 0; i < prim->verts.size(); i++) {
-                    auto v = samp.getVals()->get()[i];
-                    attr[i] = {v[0], v[1], v[2]};
-                }
+            std::vector<vec3f> data;
+            data.resize(samp.getVals()->size());
+            for (auto i = 0; i < samp.getVals()->size(); i++) {
+                auto v = samp.getVals()->get()[i];
+                data[i] = {v[0], v[1], v[2]};
             }
-            else if (prim->loops.size() == samp.getVals()->size()) {
-                auto &attr = prim->loops.add_attr<zeno::vec3f>(p.getName());
-                for (auto i = 0; i < prim->loops.size(); i++) {
-                    auto v = samp.getVals()->get()[i];
-                    attr[i] = {v[0], v[1], v[2]};
-                }
+            if (!read_done) {
+                log_info("[alembic] V3f attr {}, len {}.", p.getName(), data.size());
             }
-            else if (prim->polys.size() == samp.getVals()->size()) {
-                auto &attr = prim->polys.add_attr<zeno::vec3f>(p.getName());
-                for (auto i = 0; i < prim->polys.size(); i++) {
-                    auto v = samp.getVals()->get()[i];
-                    attr[i] = {v[0], v[1], v[2]};
-                }
-            }
-            else {
-                if (!read_done) {
-                    log_warn("[alembic] can not load vec3f attr {}:{}.", p.getName(), int(samp.getVals()->size()));
-                }
-            }
+            attr_from_data_vec(prim, samp.getScope(), p.getName(), data);
         }
         else if (IN3fGeomParam::matches(p)) {
-            if (!read_done) {
-                log_info("[alembic] IN3fGeomParam attr {}.", p.getName());
-            }
             IN3fGeomParam param(arbattrs, p.getName());
+
             IN3fGeomParam::Sample samp = param.getIndexedValue(iSS);
-            if (prim->verts.size() == samp.getVals()->size()) {
-                auto &attr = prim->add_attr<zeno::vec3f>(p.getName());
-                for (auto i = 0; i < prim->verts.size(); i++) {
-                    auto v = samp.getVals()->get()[i];
-                    attr[i] = {v[0], v[1], v[2]};
-                }
+            std::vector<vec3f> data;
+            data.resize(samp.getVals()->size());
+            for (auto i = 0; i < samp.getVals()->size(); i++) {
+                auto v = samp.getVals()->get()[i];
+                data[i] = {v[0], v[1], v[2]};
             }
-            else if (prim->loops.size() == samp.getVals()->size()) {
-                auto &attr = prim->loops.add_attr<zeno::vec3f>(p.getName());
-                for (auto i = 0; i < prim->loops.size(); i++) {
-                    auto v = samp.getVals()->get()[i];
-                    attr[i] = {v[0], v[1], v[2]};
-                }
+            if (!read_done) {
+                log_info("[alembic] N3f attr {}, len {}.", p.getName(), data.size());
             }
-            else if (prim->polys.size() == samp.getVals()->size()) {
-                auto &attr = prim->polys.add_attr<zeno::vec3f>(p.getName());
-                for (auto i = 0; i < prim->polys.size(); i++) {
-                    auto v = samp.getVals()->get()[i];
-                    attr[i] = {v[0], v[1], v[2]};
-                }
-            }
-            else {
-                if (!read_done) {
-                    log_warn("[alembic] can not load N3f attr {}:{}.", p.getName(), int(samp.getVals()->size()));
-                }
-            }
+            attr_from_data_vec(prim, samp.getScope(), p.getName(), data);
         }
         else if (IC3fGeomParam::matches(p)) {
-            if (!read_done) {
-                log_info("[alembic] IC3fGeomParam attr {}.", p.getName());
-            }
             IC3fGeomParam param(arbattrs, p.getName());
+
             IC3fGeomParam::Sample samp = param.getIndexedValue(iSS);
-            if (prim->verts.size() == samp.getVals()->size()) {
-                auto &attr = prim->add_attr<zeno::vec3f>(p.getName());
-                for (auto i = 0; i < prim->verts.size(); i++) {
-                    auto v = samp.getVals()->get()[i];
-                    attr[i] = {v[0], v[1], v[2]};
-                }
+            std::vector<vec3f> data;
+            data.resize(samp.getVals()->size());
+            for (auto i = 0; i < samp.getVals()->size(); i++) {
+                auto v = samp.getVals()->get()[i];
+                data[i] = {v[0], v[1], v[2]};
             }
-            else if (prim->loops.size() == samp.getVals()->size()) {
-                auto &attr = prim->loops.add_attr<zeno::vec3f>(p.getName());
-                for (auto i = 0; i < prim->loops.size(); i++) {
-                    auto v = samp.getVals()->get()[i];
-                    attr[i] = {v[0], v[1], v[2]};
-                }
-            }
-            else if (prim->polys.size() == samp.getVals()->size()) {
-                auto &attr = prim->polys.add_attr<zeno::vec3f>(p.getName());
-                for (auto i = 0; i < prim->polys.size(); i++) {
-                    auto v = samp.getVals()->get()[i];
-                    attr[i] = {v[0], v[1], v[2]};
-                }
-            }
-            else {
-                if (!read_done) {
-                    log_warn("[alembic] can not load C3f attr {}:{}.", p.getName(), int(samp.getVals()->size()));
-                }
-            }
-        }
-        else {
             if (!read_done) {
-                log_warn("[alembic] can not load attr {}..", p.getName());
+                log_info("[alembic] C3f attr {}, len {}.", p.getName(), data.size());
             }
+            attr_from_data_vec(prim, samp.getScope(), p.getName(), data);
         }
     }
 }
@@ -560,7 +638,7 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(
         }
     }
     ICompoundProperty arbattrs = mesh.getArbGeomParams();
-    read_attributes(prim, arbattrs, iSS, read_done);
+    read_attributes2(prim, arbattrs, iSS, read_done);
     ICompoundProperty usrData = mesh.getUserProperties();
     read_user_data(prim, usrData, iSS, read_done);
 
@@ -709,7 +787,7 @@ static std::shared_ptr<PrimitiveObject> foundABCSubd(Alembic::AbcGeom::ISubDSche
         }
     }
     ICompoundProperty arbattrs = subd.getArbGeomParams();
-    read_attributes(prim, arbattrs, iSS, read_done);
+    read_attributes2(prim, arbattrs, iSS, read_done);
     ICompoundProperty usrData = subd.getUserProperties();
     read_user_data(prim, usrData, iSS, read_done);
 
@@ -805,7 +883,7 @@ static std::shared_ptr<PrimitiveObject> foundABCPoints(Alembic::AbcGeom::IPoints
     }
     read_velocity(prim, mesamp.getVelocities(), read_done);
     ICompoundProperty arbattrs = mesh.getArbGeomParams();
-    read_attributes(prim, arbattrs, iSS, read_done);
+    read_attributes2(prim, arbattrs, iSS, read_done);
     ICompoundProperty usrData = mesh.getUserProperties();
     read_user_data(prim, usrData, iSS, read_done);
     return prim;
@@ -850,7 +928,7 @@ static std::shared_ptr<PrimitiveObject> foundABCCurves(Alembic::AbcGeom::ICurves
         }
     }
     ICompoundProperty arbattrs = mesh.getArbGeomParams();
-    read_attributes(prim, arbattrs, iSS, read_done);
+    read_attributes2(prim, arbattrs, iSS, read_done);
     ICompoundProperty usrData = mesh.getUserProperties();
     read_user_data(prim, usrData, iSS, read_done);
     return prim;

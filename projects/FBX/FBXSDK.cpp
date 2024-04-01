@@ -2,6 +2,7 @@
 #include <memory>
 #include <sstream>
 #include <stack>
+#include <numeric>
 
 #include <zeno/zeno.h>
 #include <zeno/core/IObject.h>
@@ -359,9 +360,47 @@ void PrintAttribute(FbxNodeAttribute* pAttribute) {
 //
 //    printf("</node>\n");
 //}
-bool GetMesh(FbxNode* pNode, std::shared_ptr<PrimitiveObject> prim) {
+
+template<typename T>
+void getAttr(T* arr, std::string name, std::shared_ptr<PrimitiveObject> prim) {
+    if (arr->GetMappingMode() == FbxLayerElement::EMappingMode::eByControlPoint) {
+        zeno::log_info("{}, eByControlPoint", name);
+        auto &attr = prim->verts.add_attr<vec3f>(name);
+        for (auto i = 0; i < prim->verts.size(); i++) {
+            int pIndex = i;
+            if (arr->GetReferenceMode() == FbxLayerElement::EReferenceMode::eIndexToDirect) {
+                pIndex = arr->GetIndexArray().GetAt(i);
+            }
+            auto x = arr->GetDirectArray().GetAt(pIndex)[0];
+            auto y = arr->GetDirectArray().GetAt(pIndex)[1];
+            auto z = arr->GetDirectArray().GetAt(pIndex)[2];
+            attr[i] = vec3f(x, y, z);
+        }
+    }
+    else if (arr->GetMappingMode() == FbxLayerElement::EMappingMode::eByPolygonVertex) {
+        zeno::log_info("{}, eByPolygonVertex", name);
+        auto &attr = prim->loops.add_attr<vec3f>(name);
+        for (auto i = 0; i < prim->loops.size(); i++) {
+            int pIndex = i;
+            if (arr->GetReferenceMode() == FbxLayerElement::EReferenceMode::eIndexToDirect) {
+                pIndex = arr->GetIndexArray().GetAt(i);
+            }
+            auto x = arr->GetDirectArray().GetAt(pIndex)[0];
+            auto y = arr->GetDirectArray().GetAt(pIndex)[1];
+            auto z = arr->GetDirectArray().GetAt(pIndex)[2];
+            attr[i] = vec3f(x, y, z);
+        }
+    }
+}
+
+bool GetMesh(FbxNode* pNode, std::shared_ptr<PrimitiveObject> prim, std::string name) {
     FbxMesh* pMesh = pNode->GetMesh();
     if (!pMesh) return false;
+    std::string nodeName = pNode->GetName();
+    if (name.size() > 0 && nodeName != name) {
+        return false;
+    }
+    prim->userData().set2("RootName", nodeName);
 
     FbxAMatrix bindMatrix = pNode->EvaluateGlobalTransform();
     auto s = bindMatrix.GetS();
@@ -433,6 +472,50 @@ bool GetMesh(FbxNode* pNode, std::shared_ptr<PrimitiveObject> prim) {
             ud.set2(zeno::format("boneName_{}", i), bone_names[i]);
         }
     }
+    if (pMesh->GetElementUVCount() > 0) {
+        auto* arr = pMesh->GetElementUV(0);
+        std::string name = "uv";
+        if (arr->GetMappingMode() == FbxLayerElement::EMappingMode::eByControlPoint) {
+            zeno::log_info("{}, eByControlPoint", name);
+            auto &attr = prim->verts.add_attr<vec3f>(name);
+            for (auto i = 0; i < prim->verts.size(); i++) {
+                int pIndex = i;
+                if (arr->GetReferenceMode() == FbxLayerElement::EReferenceMode::eIndexToDirect) {
+                    pIndex = arr->GetIndexArray().GetAt(i);
+                }
+                auto x = arr->GetDirectArray().GetAt(pIndex)[0];
+                auto y = arr->GetDirectArray().GetAt(pIndex)[1];
+                attr[i] = vec3f(x, y, 0);
+            }
+        }
+        else if (arr->GetMappingMode() == FbxLayerElement::EMappingMode::eByPolygonVertex) {
+            zeno::log_info("{}, eByPolygonVertex", name);
+            if (arr->GetReferenceMode() == FbxLayerElement::EReferenceMode::eDirect) {
+                auto &uvs = prim->loops.add_attr<int>("uvs");
+                std::iota(uvs.begin(), uvs.end(), 0);
+                prim->uvs.resize(prim->loops.size());
+            }
+            else if (arr->GetReferenceMode() == FbxLayerElement::EReferenceMode::eIndexToDirect) {
+                auto &uvs = prim->loops.add_attr<int>("uvs");
+                for (auto i = 0; i < prim->loops.size(); i++) {
+                    uvs[i] = arr->GetIndexArray().GetAt(i);
+                }
+                int count = arr->GetDirectArray().GetCount();
+                prim->uvs.resize(count);
+            }
+            for (auto i = 0; i < prim->uvs.size(); i++) {
+                auto x = arr->GetDirectArray().GetAt(i)[0];
+                auto y = arr->GetDirectArray().GetAt(i)[1];
+                prim->uvs[i] = vec2f(x, y);
+            }
+        }
+    }
+    if (pMesh->GetElementNormalCount() > 0) {
+        getAttr(pMesh->GetElementNormal(0), "nrm", prim);
+    }
+    if (pMesh->GetElementTangentCount() > 0) {
+        getAttr(pMesh->GetElementTangent(0), "tang", prim);
+    }
     return true;
 }
 
@@ -476,9 +559,26 @@ struct NewFBXImportSkin : INode {
         auto &ud = prim->userData();
         ud.set2("version", vec3i(major, minor, revision));
         FbxNode* lRootNode = lScene->GetRootNode();
+        std::vector<std::string> availableRootNames;
         if(lRootNode) {
             for(int i = 0; i < lRootNode->GetChildCount(); i++) {
-                if (GetMesh(lRootNode->GetChild(i), prim)) {
+                auto pNode = lRootNode->GetChild(i);
+                FbxMesh* pMesh = pNode->GetMesh();
+                if (pMesh) {
+                    std::string meshName = pNode->GetName();
+                    availableRootNames.emplace_back(meshName);
+                }
+            }
+            ud.set2("AvailableRootName_count", int(availableRootNames.size()));
+            for (int i = 0; i < availableRootNames.size(); i++) {
+                ud.set2(format("AvailableRootName_{}", i), availableRootNames[i]);
+            }
+        }
+        auto rootName = get_input2<std::string>("rootName");
+        if(lRootNode) {
+            for(int i = 0; i < lRootNode->GetChildCount(); i++) {
+                auto pNode = lRootNode->GetChild(i);
+                if (GetMesh(pNode, prim, rootName)) {
                     break;
                 }
             }
@@ -497,6 +597,7 @@ struct NewFBXImportSkin : INode {
 ZENDEFNODE(NewFBXImportSkin, {
     {
         {"readpath", "path"},
+        {"string", "rootName", ""},
         {"bool", "ConvertUnits", "1"},
     },
     {
@@ -812,6 +913,182 @@ ZENDEFNODE(NewFBXImportAnimation, {
     {},
     {"primitive"},
 });
+
+struct NewFBXImportCamera : INode {
+    virtual void apply() override {
+        int frameid;
+        if (has_input("frameid")) {
+            frameid = std::lround(get_input2<float>("frameid"));
+        } else {
+            frameid = getGlobalState()->frameid;
+        }
+        float fps = get_input2<float>("fps");
+        float t = float(frameid) / fps;
+        FbxTime curTime;       // The time for each key in the animation curve(s)
+        curTime.SetSecondDouble(t);   // Starting time
+
+        // Change the following filename to a suitable filename value.
+        auto lFilename = get_input2<std::string>("path");
+
+        // Initialize the SDK manager. This object handles all our memory management.
+        FbxManager* lSdkManager = FbxManager::Create();
+
+        // Create the IO settings object.
+        FbxIOSettings *ios = FbxIOSettings::Create(lSdkManager, IOSROOT);
+        lSdkManager->SetIOSettings(ios);
+        // Destroy the SDK manager and all the other objects it was handling.
+        zeno::scope_exit sp([=]() { lSdkManager->Destroy(); });
+
+        // Create an importer using the SDK manager.
+        FbxImporter* lImporter = FbxImporter::Create(lSdkManager,"");
+
+        // Use the first argument as the filename for the importer.
+        if(!lImporter->Initialize(lFilename.c_str(), -1, lSdkManager->GetIOSettings())) {
+            printf("Call to FbxImporter::Initialize() failed.\n");
+            printf("Error returned: %s\n\n", lImporter->GetStatus().GetErrorString());
+            exit(-1);
+        }
+        int major, minor, revision;
+        lImporter->GetFileVersion(major, minor, revision);
+
+        // Create a new scene so that it can be populated by the imported file.
+        FbxScene* lScene = FbxScene::Create(lSdkManager,"myScene");
+
+        // Import the contents of the file into the scene.
+        lImporter->Import(lScene);
+
+        // The file is imported; so get rid of the importer.
+        lImporter->Destroy();
+
+        // Print the nodes of the scene and their attributes recursively.
+        // Note that we are not printing the root node because it should
+        // not contain any attributes.
+        auto prim = std::make_shared<PrimitiveObject>();
+        auto &ud = prim->userData();
+        ud.set2("version", vec3i(major, minor, revision));
+
+        FbxArray<FbxString*> animationStackNames;
+        std::vector<std::string> clip_names;
+        lScene->FillAnimStackNameArray(animationStackNames);
+        for (auto i = 0; i < animationStackNames.GetCount(); i++) {
+            clip_names.emplace_back(animationStackNames[i]->Buffer());
+        }
+        for (auto i = 0; i < clip_names.size(); i++) {
+            ud.set2(format("avail_anim_clip_{}", i), clip_names[i]);
+        }
+        ud.set2("avail_anim_clip_count", int(clip_names.size()));
+
+        auto clip_name = get_input2<std::string>("clipName");
+        if (clip_name == "") {
+            clip_name = lScene->ActiveAnimStackName.Get().Buffer();
+        }
+
+        int stack_index = int(std::find(clip_names.begin(), clip_names.end(), clip_name) - clip_names.begin());
+        if (stack_index == clip_names.size()) {
+            zeno::log_error("FBX: Can not find clip name");
+        }
+
+
+        FbxAnimStack* animStack = lScene->GetSrcObject<FbxAnimStack>(stack_index);
+        ud.set2("clipinfo.name", std::string(animStack->GetName()));
+
+
+        lScene->SetCurrentAnimationStack(animStack);
+
+        FbxTime mStart, mStop;
+        FbxTakeInfo* lCurrentTakeInfo = lScene->GetTakeInfo(*(animationStackNames[stack_index]));
+        float src_fps = 0;
+        if (lCurrentTakeInfo)  {
+            mStart = lCurrentTakeInfo->mLocalTimeSpan.GetStart();
+            mStop = lCurrentTakeInfo->mLocalTimeSpan.GetStop();
+            int frameCount = lCurrentTakeInfo->mLocalTimeSpan.GetDuration().GetFrameCount();
+            src_fps = frameCount / lCurrentTakeInfo->mLocalTimeSpan.GetDuration().GetSecondDouble();
+        }
+        else {
+            // Take the time line value
+            FbxTimeSpan lTimeLineTimeSpan;
+            lScene->GetGlobalSettings().GetTimelineDefaultTimeSpan(lTimeLineTimeSpan);
+
+            mStart = lTimeLineTimeSpan.GetStart();
+            mStop  = lTimeLineTimeSpan.GetStop();
+            int frameCount = lTimeLineTimeSpan.GetDuration().GetFrameCount();
+            src_fps = frameCount / lTimeLineTimeSpan.GetDuration().GetSecondDouble();
+        }
+
+        ud.set2("clipinfo.source_range", vec2f(mStart.GetSecondDouble(), mStop.GetSecondDouble()));
+        ud.set2("clipinfo.source_fps", src_fps);
+        ud.set2("clipinfo.fps", fps);
+
+        {
+            auto node_count = lScene->GetNodeCount();
+            for (int j = 0; j < node_count; ++j) {
+                auto pNode = lScene->GetNode(j);
+                FbxAMatrix lGlobalPosition = pNode->EvaluateGlobalTransform(curTime);
+                FbxMatrix transformMatrix;
+                memcpy(&transformMatrix, &lGlobalPosition, sizeof(FbxMatrix));
+                auto t = transformMatrix.GetRow(3);
+                auto pos = vec3f(t[0], t[1], t[2]);
+
+                auto r0 = transformMatrix.GetRow(0);
+                auto r1 = transformMatrix.GetRow(1);
+                auto r2 = transformMatrix.GetRow(2);
+                auto view = vec3f(r0[0], r0[1], r0[2]);
+                auto up = vec3f(r1[0], r1[1], r1[2]);
+                auto right = vec3f(r2[0], r2[1], r2[2]);
+                FbxCamera* pCamera = pNode->GetCamera();
+                if (pCamera) {
+                    set_output2("pos", pos);
+                    set_output2("right", right);
+                    set_output2("up", up);
+                    set_output2("view", view);
+
+                    float focal_length = pCamera->FocalLength.Get();
+                    set_output2("focal_length", focal_length);
+                    float m_ha = pCamera->GetApertureWidth() * 25.4; // inch -> mm
+                    float m_va = pCamera->GetApertureHeight() * 25.4; // inch -> mm
+                    set_output2("horizontalAperture", m_ha);
+                    set_output2("verticalAperture", m_va);
+                    auto m_nx = get_input2<float>("nx");
+                    auto m_ny = get_input2<float>("ny");
+                    float c_aspect = m_ha/m_va;
+                    float u_aspect = m_nx/m_ny;
+                    float fov_y = glm::degrees(2.0f * std::atan(m_va/(u_aspect/c_aspect) / (2.0f * focal_length)));
+                    set_output2("fov_y", fov_y);
+                    float _near = pCamera->NearPlane.Get();
+                    float _far = pCamera->FarPlane.Get();
+                    set_output2("near", _near);
+                    set_output2("far", _far);
+                }
+            }
+        }
+    }
+};
+
+ZENDEFNODE(NewFBXImportCamera, {
+    {
+        {"readpath", "path"},
+        {"string", "clipName", ""},
+        {"frameid"},
+        {"float", "fps", "25"},
+        {"bool", "ConvertUnits", "1"},
+        {"int", "nx", "1920"},
+        {"int", "ny", "1080"},
+    },
+    {
+        "pos",
+        "up",
+        "view",
+        "right",
+        "fov_y",
+        "focal_length",
+        "horizontalAperture",
+        "verticalAperture",
+        "near",
+        "far",
+    },
+    {},
+    {"primitive"},
+});
 struct NewFBXBoneDeform : INode {
     std::vector<std::string> getBoneNames(PrimitiveObject *prim) {
         auto boneName_count = prim->userData().get2<int>("boneName_count");
@@ -866,6 +1143,10 @@ struct NewFBXBoneDeform : INode {
         auto p = transform * glm::vec4(pos[0], pos[1], pos[2], 1);
         return {p.x, p.y, p.z};
     }
+    vec3f transform_nrm(glm::mat4 &transform, vec3f pos) {
+        auto p = glm::transpose(glm::inverse(transform)) * glm::vec4(pos[0], pos[1], pos[2], 0);
+        return {p.x, p.y, p.z};
+    }
     virtual void apply() override {
         auto geometryToDeform = get_input2<PrimitiveObject>("GeometryToDeform");
         auto geometryToDeformBoneNames = getBoneNames(geometryToDeform.get());
@@ -907,6 +1188,23 @@ struct NewFBXBoneDeform : INode {
             }
             prim->verts[i] = pos / w;
         }
+        if (prim->verts.attr_is<vec3f>("nrm")) {
+            auto &nrms = prim->verts.attr<vec3f>("nrm");
+            for (auto i = 0; i < vert_count; i++) {
+                glm::mat4 matrix(0);
+                float w = 0;
+                for (auto j = 0; j < 4; j++) {
+                    if (bi[i][j] < 0) {
+                        continue;
+                    }
+                    matrix += matrixs[bi[i][j]] * bw[i][j];
+                    w += bw[i][j];
+                }
+                matrix = matrix / w;
+                auto nrm = transform_nrm(matrix, nrms[i]);
+                nrms[i] = zeno::normalize(nrm );
+            }
+        }
 
         set_output("prim", prim);
     }
@@ -923,6 +1221,86 @@ ZENDEFNODE(NewFBXBoneDeform, {
     },
     {},
     {"primitive"},
+});
+
+
+struct NormalView : INode {
+    virtual void apply() override {
+        auto prim = get_input2<PrimitiveObject>("prim");
+        auto &nrms = prim->verts.attr<vec3f>("nrm");
+        auto scale = get_input2<float>("scale");
+        auto normals = std::make_shared<zeno::PrimitiveObject>();
+        normals->verts.resize(prim->verts.size() * 2);
+        for (auto i = 0; i < prim->verts.size(); i++) {
+            normals->verts[i] = prim->verts[i];
+            normals->verts[i + prim->size()] = prim->verts[i] + nrms[i] * scale;
+        }
+        normals->lines.resize(prim->verts.size());
+        for (auto i = 0; i < prim->verts.size(); i++) {
+            normals->lines[i] = vec2i(i, i + prim->verts.size());
+        }
+        set_output("normals", normals);
+    }
+};
+
+ZENDEFNODE(NormalView, {
+    {
+        "prim",
+        {"float", "scale", "0.01"},
+    },
+    {
+        "normals",
+    },
+    {},
+    {"debug"},
+});
+
+struct BoneTransformView : INode {
+    virtual void apply() override {
+        auto bones = get_input2<PrimitiveObject>("bones");
+        auto view = std::make_shared<zeno::PrimitiveObject>();
+        auto scale = get_input2<float>("scale");
+        auto index = get_input2<int>("index");
+        view->verts.resize(bones->verts.size() * 6);
+        auto &transform_r0 = bones->verts.attr<vec3f>("transform_r0");
+        auto &transform_r1 = bones->verts.attr<vec3f>("transform_r1");
+        auto &transform_r2 = bones->verts.attr<vec3f>("transform_r2");
+        auto &clr = view->verts.add_attr<vec3f>("clr");
+        for (auto i = 0; i < bones->verts.size(); i++) {
+            view->verts[i * 6 + 0] = bones->verts[i];
+            view->verts[i * 6 + 1] = bones->verts[i] + transform_r0[i] * scale;
+            view->verts[i * 6 + 2] = bones->verts[i];
+            view->verts[i * 6 + 3] = bones->verts[i] + transform_r1[i] * scale;
+            view->verts[i * 6 + 4] = bones->verts[i];
+            view->verts[i * 6 + 5] = bones->verts[i] + transform_r2[i] * scale;
+            clr[i * 6 + 0] = {0.8, 0.2, 0.2};
+            clr[i * 6 + 1] = {0.8, 0.2, 0.2};
+            clr[i * 6 + 2] = {0.2, 0.8, 0.2};
+            clr[i * 6 + 3] = {0.2, 0.8, 0.2};
+            clr[i * 6 + 4] = {0.2, 0.2, 0.8};
+            clr[i * 6 + 5] = {0.2, 0.2, 0.8};
+        }
+        view->loops.resize(view->verts.size());
+        std::iota(view->loops.begin(), view->loops.end(), 0);
+        view->polys.resize(bones->verts.size() * 3);
+        for (auto i = 0; i < bones->verts.size() * 3; i++) {
+            view->polys[i] = {i * 2, 2};
+        }
+        set_output("view", view);
+    }
+};
+
+ZENDEFNODE(BoneTransformView, {
+    {
+        "bones",
+        {"float", "scale", "0.1"},
+        {"int", "index", "-1"},
+    },
+    {
+        "view",
+    },
+    {},
+    {"debug"},
 });
 }
 #endif

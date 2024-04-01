@@ -37,7 +37,7 @@ void write_velocity(std::shared_ptr<PrimitiveObject> prim, T& mesh_samp) {
 static void write_normal(std::shared_ptr<PrimitiveObject> prim, OPolyMeshSchema::Sample& mesh_samp) {
     if (prim->verts.has_attr("nrm")) {
         auto &nrm = (std::vector<N3f>&)prim->verts.attr<vec3f>("nrm");
-        ON3fGeomParam::Sample oNormalsSample(nrm, kFacevaryingScope);
+        ON3fGeomParam::Sample oNormalsSample(nrm, kVaryingScope);
         mesh_samp.setNormals(oNormalsSample);
     }
 }
@@ -186,8 +186,18 @@ ZENDEFNODE(WriteAlembic, {
     {"deprecated"},
 });
 
-template<typename T1, typename T2>
-void write_attrs(std::map<std::string, std::any> &attrs, std::string path, std::shared_ptr<PrimitiveObject> prim, T1& schema, T2& samp) {
+template<typename T1>
+void write_attrs(
+        std::map<std::string, std::any> &verts_attrs
+        , std::map<std::string, std::any> &loops_attrs
+        , std::map<std::string, std::any> &polys_attrs
+        , std::string path
+        , std::shared_ptr<PrimitiveObject> prim
+        , T1& schema
+        , int frameid
+        , int real_frame_start
+        , std::map<int, vec3i> &prim_size_per_frame
+) {
     OCompoundProperty arbAttrs = schema.getArbGeomParams();
     prim->verts.foreach_attr<std::variant<vec3f, float, int>>([&](auto const &key, auto &arr) {
         if (key == "v" || key == "nrm") {
@@ -196,8 +206,14 @@ void write_attrs(std::map<std::string, std::any> &attrs, std::string path, std::
         std::string full_key = path + '/' + key;
         using T = std::decay_t<decltype(arr[0])>;
         if constexpr (std::is_same_v<T, zeno::vec3f>) {
-            if (attrs.count(full_key) == 0) {
-                attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kVaryingScope, 3);
+            if (verts_attrs.count(full_key) == 0) {
+                verts_attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kVaryingScope, 3);
+                for (auto i = real_frame_start; i < frameid; i++) {
+                    auto samp = OFloatGeomParam::Sample();
+                    std::vector<float> v(std::get<0>(prim_size_per_frame[i]) * 3);
+                    samp.setVals(v);
+                    std::any_cast<OFloatGeomParam>(verts_attrs[full_key]).set(samp);
+                }
             }
             auto samp = OFloatGeomParam::Sample();
             std::vector<float> v(arr.size() * 3);
@@ -207,30 +223,51 @@ void write_attrs(std::map<std::string, std::any> &attrs, std::string path, std::
                 v[i * 3 + 2] = arr[i][2];
             }
             samp.setVals(v);
-            std::any_cast<OFloatGeomParam>(attrs[full_key]).set(samp);
+            std::any_cast<OFloatGeomParam>(verts_attrs[full_key]).set(samp);
         } else if constexpr (std::is_same_v<T, float>) {
-            if (attrs.count(full_key) == 0) {
-                attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kVaryingScope, 1);
+            if (verts_attrs.count(full_key) == 0) {
+                verts_attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kVaryingScope, 1);
+                for (auto i = real_frame_start; i < frameid; i++) {
+                    auto samp = OFloatGeomParam::Sample();
+                    std::vector<float> v(std::get<0>(prim_size_per_frame[i]));
+                    samp.setVals(v);
+                    std::any_cast<OFloatGeomParam>(verts_attrs[full_key]).set(samp);
+                }
             }
             auto samp = OFloatGeomParam::Sample();
             samp.setVals(arr);
-            std::any_cast<OFloatGeomParam>(attrs[full_key]).set(samp);
+            std::any_cast<OFloatGeomParam>(verts_attrs[full_key]).set(samp);
         } else if constexpr (std::is_same_v<T, int>) {
-            if (attrs.count(full_key) == 0) {
-                attrs[full_key] = OInt32GeomParam (arbAttrs.getPtr(), key, false, kVaryingScope, 1);
+            if (verts_attrs.count(full_key) == 0) {
+                verts_attrs[full_key] = OInt32GeomParam (arbAttrs.getPtr(), key, false, kVaryingScope, 1);
+                for (auto i = real_frame_start; i < frameid; i++) {
+                    auto samp = OInt32GeomParam::Sample();
+                    std::vector<int> v(std::get<0>(prim_size_per_frame[i]));
+                    samp.setVals(v);
+                    std::any_cast<OInt32GeomParam >(verts_attrs[full_key]).set(samp);
+                }
             }
             auto samp = OInt32GeomParam::Sample();
             samp.setVals(arr);
-            std::any_cast<OInt32GeomParam>(attrs[full_key]).set(samp);
+            std::any_cast<OInt32GeomParam>(verts_attrs[full_key]).set(samp);
         }
     });
     if (prim->loops.size() > 0) {
         prim->loops.foreach_attr<std::variant<vec3f, float, int>>([&](auto const &key, auto &arr) {
+            if (key == "uvs") {
+                return;
+            }
             std::string full_key = path + '/' + key;
             using T = std::decay_t<decltype(arr[0])>;
             if constexpr (std::is_same_v<T, zeno::vec3f>) {
-                if (attrs.count(full_key) == 0) {
-                    attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kFacevaryingScope, 3);
+                if (loops_attrs.count(full_key) == 0) {
+                    loops_attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kFacevaryingScope, 3);
+                    for (auto i = real_frame_start; i < frameid; i++) {
+                        auto samp = OFloatGeomParam::Sample();
+                        std::vector<float> v(std::get<1>(prim_size_per_frame[i]) * 3);
+                        samp.setVals(v);
+                        std::any_cast<OFloatGeomParam>(loops_attrs[full_key]).set(samp);
+                    }
                 }
                 auto samp = OFloatGeomParam::Sample();
                 std::vector<float> v(arr.size() * 3);
@@ -240,21 +277,33 @@ void write_attrs(std::map<std::string, std::any> &attrs, std::string path, std::
                     v[i * 3 + 2] = arr[i][2];
                 }
                 samp.setVals(v);
-                std::any_cast<OFloatGeomParam>(attrs[full_key]).set(samp);
+                std::any_cast<OFloatGeomParam>(loops_attrs[full_key]).set(samp);
             } else if constexpr (std::is_same_v<T, float>) {
-                if (attrs.count(full_key) == 0) {
-                    attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kFacevaryingScope, 1);
+                if (loops_attrs.count(full_key) == 0) {
+                    loops_attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kFacevaryingScope, 1);
+                    for (auto i = real_frame_start; i < frameid; i++) {
+                        auto samp = OFloatGeomParam::Sample();
+                        std::vector<float> v(std::get<1>(prim_size_per_frame[i]));
+                        samp.setVals(v);
+                        std::any_cast<OFloatGeomParam>(loops_attrs[full_key]).set(samp);
+                    }
                 }
                 auto samp = OFloatGeomParam::Sample();
                 samp.setVals(arr);
-                std::any_cast<OFloatGeomParam>(attrs[full_key]).set(samp);
+                std::any_cast<OFloatGeomParam>(loops_attrs[full_key]).set(samp);
             } else if constexpr (std::is_same_v<T, int>) {
-                if (attrs.count(full_key) == 0) {
-                    attrs[full_key] = OInt32GeomParam (arbAttrs.getPtr(), key, false, kFacevaryingScope, 1);
+                if (loops_attrs.count(full_key) == 0) {
+                    loops_attrs[full_key] = OInt32GeomParam (arbAttrs.getPtr(), key, false, kFacevaryingScope, 1);
+                    for (auto i = real_frame_start; i < frameid; i++) {
+                        auto samp = OInt32GeomParam::Sample();
+                        std::vector<int> v(std::get<1>(prim_size_per_frame[i]));
+                        samp.setVals(v);
+                        std::any_cast<OInt32GeomParam>(loops_attrs[full_key]).set(samp);
+                    }
                 }
                 auto samp = OInt32GeomParam::Sample();
                 samp.setVals(arr);
-                std::any_cast<OInt32GeomParam>(attrs[full_key]).set(samp);
+                std::any_cast<OInt32GeomParam>(loops_attrs[full_key]).set(samp);
             }
         });
     }
@@ -266,8 +315,14 @@ void write_attrs(std::map<std::string, std::any> &attrs, std::string path, std::
             std::string full_key = path + '/' + key;
             using T = std::decay_t<decltype(arr[0])>;
             if constexpr (std::is_same_v<T, zeno::vec3f>) {
-                if (attrs.count(full_key) == 0) {
-                    attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kUniformScope, 3);
+                if (polys_attrs.count(full_key) == 0) {
+                    polys_attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kUniformScope, 3);
+                    for (auto i = real_frame_start; i < frameid; i++) {
+                        auto samp = OFloatGeomParam::Sample();
+                        std::vector<float> v(std::get<2>(prim_size_per_frame[i]) * 3);
+                        samp.setVals(v);
+                        std::any_cast<OFloatGeomParam>(polys_attrs[full_key]).set(samp);
+                    }
                 }
                 auto samp = OFloatGeomParam::Sample();
                 std::vector<float> v(arr.size() * 3);
@@ -277,65 +332,45 @@ void write_attrs(std::map<std::string, std::any> &attrs, std::string path, std::
                     v[i * 3 + 2] = arr[i][2];
                 }
                 samp.setVals(v);
-                std::any_cast<OFloatGeomParam>(attrs[full_key]).set(samp);
+                std::any_cast<OFloatGeomParam>(polys_attrs[full_key]).set(samp);
             } else if constexpr (std::is_same_v<T, float>) {
-                if (attrs.count(full_key) == 0) {
-                    attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kUniformScope, 1);
+                if (polys_attrs.count(full_key) == 0) {
+                    polys_attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kUniformScope, 1);
+                    for (auto i = real_frame_start; i < frameid; i++) {
+                        auto samp = OFloatGeomParam::Sample();
+                        std::vector<float> v(std::get<2>(prim_size_per_frame[i]));
+                        samp.setVals(v);
+                        std::any_cast<OFloatGeomParam>(polys_attrs[full_key]).set(samp);
+                    }
                 }
                 auto samp = OFloatGeomParam::Sample();
                 samp.setVals(arr);
-                std::any_cast<OFloatGeomParam>(attrs[full_key]).set(samp);
+                std::any_cast<OFloatGeomParam>(polys_attrs[full_key]).set(samp);
             } else if constexpr (std::is_same_v<T, int>) {
-                if (attrs.count(full_key) == 0) {
-                    attrs[full_key] = OInt32GeomParam (arbAttrs.getPtr(), key, false, kUniformScope, 1);
+                if (polys_attrs.count(full_key) == 0) {
+                    polys_attrs[full_key] = OInt32GeomParam (arbAttrs.getPtr(), key, false, kUniformScope, 1);
+                    for (auto i = real_frame_start; i < frameid; i++) {
+                        auto samp = OInt32GeomParam::Sample();
+                        std::vector<int> v(std::get<2>(prim_size_per_frame[i]));
+                        samp.setVals(v);
+                        std::any_cast<OInt32GeomParam>(polys_attrs[full_key]).set(samp);
+                    }
                 }
                 auto samp = OInt32GeomParam::Sample();
                 samp.setVals(arr);
-                std::any_cast<OInt32GeomParam>(attrs[full_key]).set(samp);
-            }
-        });
-    }
-    if (prim->tris.size() > 0) {
-        prim->tris.foreach_attr<std::variant<vec3f, float, int>>([&](auto const &key, auto &arr) {
-            if (key == "faceset" || key == "matid" || key == "abcpath") {
-                return;
-            }
-            // zeno::log_info("{} {}", key, int(arr.size()));
-            std::string full_key = path + '/' + key;
-            using T = std::decay_t<decltype(arr[0])>;
-            if constexpr (std::is_same_v<T, zeno::vec3f>) {
-                if (attrs.count(full_key) == 0) {
-                    attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kUniformScope, 3);
-                }
-                auto samp = OFloatGeomParam::Sample();
-                std::vector<float> v(arr.size() * 3);
-                for (auto i = 0; i < arr.size(); i++) {
-                    v[i * 3 + 0] = arr[i][0];
-                    v[i * 3 + 1] = arr[i][1];
-                    v[i * 3 + 2] = arr[i][2];
-                }
-                samp.setVals(v);
-                std::any_cast<OFloatGeomParam>(attrs[full_key]).set(samp);
-            } else if constexpr (std::is_same_v<T, float>) {
-                // zeno::log_info("std::is_same_v<T, float>");
-                if (attrs.count(full_key) == 0) {
-                    attrs[full_key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kUniformScope, 1);
-                }
-                auto samp = OFloatGeomParam::Sample();
-                samp.setVals(arr);
-                std::any_cast<OFloatGeomParam>(attrs[full_key]).set(samp);
-            } else if constexpr (std::is_same_v<T, int>) {
-                if (attrs.count(full_key) == 0) {
-                    attrs[full_key] = OInt32GeomParam (arbAttrs.getPtr(), key, false, kUniformScope, 1);
-                }
-                auto samp = OInt32GeomParam::Sample();
-                samp.setVals(arr);
-                std::any_cast<OInt32GeomParam>(attrs[full_key]).set(samp);
+                std::any_cast<OInt32GeomParam>(polys_attrs[full_key]).set(samp);
             }
         });
     }
 }
-void write_user_data(std::map<std::string, std::any> &user_attrs, std::string path, std::shared_ptr<PrimitiveObject> prim, OCompoundProperty& user) {
+void write_user_data(
+        std::map<std::string, std::any> &user_attrs
+        , std::string path
+        , std::shared_ptr<PrimitiveObject> prim
+        , OCompoundProperty& user
+        , int frameid
+        , int real_frame_start
+) {
     auto &ud = prim->userData();
     for (const auto& [key, value] : ud.m_data) {
         std::string full_key = path + '/' + key;
@@ -353,6 +388,11 @@ void write_user_data(std::map<std::string, std::any> &user_attrs, std::string pa
                 auto p = OInt32Property(user, key);
                 p.setTimeSampling(1);
                 user_attrs[full_key] = p;
+                if (real_frame_start != frameid) {
+                    for (auto i = real_frame_start; i < frameid; i++) {
+                        p.set({});
+                    }
+                }
             }
             std::any_cast<OInt32Property>(user_attrs[full_key]).set(ud.get2<int>(key));
         }
@@ -361,6 +401,11 @@ void write_user_data(std::map<std::string, std::any> &user_attrs, std::string pa
                 auto p = OFloatProperty(user, key);
                 p.setTimeSampling(1);
                 user_attrs[full_key] = p;
+                if (real_frame_start != frameid) {
+                    for (auto i = real_frame_start; i < frameid; i++) {
+                        p.set({});
+                    }
+                }
             }
             std::any_cast<OFloatProperty>(user_attrs[full_key]).set(ud.get2<float>(key));
         }
@@ -369,6 +414,11 @@ void write_user_data(std::map<std::string, std::any> &user_attrs, std::string pa
                 auto p = OV2iProperty(user, key);
                 p.setTimeSampling(1);
                 user_attrs[full_key] = p;
+                if (real_frame_start != frameid) {
+                    for (auto i = real_frame_start; i < frameid; i++) {
+                        p.set({});
+                    }
+                }
             }
             auto v = ud.get2<vec2i>(key);
             std::any_cast<OV2iProperty>(user_attrs[full_key]).set(Imath::V2i(v[0], v[1]));
@@ -378,6 +428,11 @@ void write_user_data(std::map<std::string, std::any> &user_attrs, std::string pa
                 auto p = OV3iProperty(user, key);
                 p.setTimeSampling(1);
                 user_attrs[full_key] = p;
+                if (real_frame_start != frameid) {
+                    for (auto i = real_frame_start; i < frameid; i++) {
+                        p.set({});
+                    }
+                }
             }
             auto v = ud.get2<vec3i>(key);
             std::any_cast<OV3iProperty>(user_attrs[full_key]).set(Imath::V3i(v[0], v[1], v[2]));
@@ -387,6 +442,11 @@ void write_user_data(std::map<std::string, std::any> &user_attrs, std::string pa
                 auto p = OV2fProperty(user, key);
                 p.setTimeSampling(1);
                 user_attrs[full_key] = p;
+                if (real_frame_start != frameid) {
+                    for (auto i = real_frame_start; i < frameid; i++) {
+                        p.set({});
+                    }
+                }
             }
             auto v = ud.get2<vec2f>(key);
             std::any_cast<OV2fProperty>(user_attrs[full_key]).set(Imath::V2f(v[0], v[1]));
@@ -396,6 +456,11 @@ void write_user_data(std::map<std::string, std::any> &user_attrs, std::string pa
                 auto p = OV3fProperty(user, key);
                 p.setTimeSampling(1);
                 user_attrs[full_key] = p;
+                if (real_frame_start != frameid) {
+                    for (auto i = real_frame_start; i < frameid; i++) {
+                        p.set({});
+                    }
+                }
             }
             auto v = ud.get2<vec3f>(key);
             std::any_cast<OV3fProperty>(user_attrs[full_key]).set(Imath::V3f(v[0], v[1], v[2]));
@@ -405,6 +470,11 @@ void write_user_data(std::map<std::string, std::any> &user_attrs, std::string pa
                 auto p = OStringProperty(user, key);
                 p.setTimeSampling(1);
                 user_attrs[full_key] = p;
+                if (real_frame_start != frameid) {
+                    for (auto i = real_frame_start; i < frameid; i++) {
+                        p.set({});
+                    }
+                }
             }
             std::any_cast<OStringProperty>(user_attrs[full_key]).set(ud.get2<std::string>(key));
         }
@@ -467,10 +537,14 @@ struct WriteAlembic2 : INode {
     OArchive archive;
     OPolyMesh meshyObj;
     std::string usedPath;
-    std::map<std::string, std::any> attrs;
+    std::map<std::string, std::any> verts_attrs;
+    std::map<std::string, std::any> loops_attrs;
+    std::map<std::string, std::any> polys_attrs;
     std::map<std::string, std::any> user_attrs;
     std::map<std::string, OFaceSet> o_faceset;
     std::map<std::string, OFaceSetSchema> o_faceset_schema;
+    std::map<int, vec3i> prim_size_per_frame;
+    int real_frame_start = -1;
 
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
@@ -499,13 +573,20 @@ struct WriteAlembic2 : INode {
                 "Zeno : " + getGlobalState()->zeno_version,
                 "None"
             );
-            archive.addTimeSampling(TimeSampling(1.0/fps, frame_start / fps));
+            real_frame_start = -1;
             meshyObj = OPolyMesh( OObject( archive, 1 ), "mesh" );
-            attrs.clear();
+            verts_attrs.clear();
+            loops_attrs.clear();
+            polys_attrs.clear();
             user_attrs.clear();
+            prim_size_per_frame.clear();
         }
         if (!(frame_start <= frameid && frameid <= frame_end)) {
             return;
+        }
+        if (real_frame_start == -1) {
+            real_frame_start = frameid;
+            archive.addTimeSampling(TimeSampling(1.0/fps, real_frame_start / fps));
         }
         if (archive.valid() == false) {
             zeno::makeError("Not init. Check whether in correct correct frame range.");
@@ -520,7 +601,7 @@ struct WriteAlembic2 : INode {
             write_faceset(prim, mesh, o_faceset, o_faceset_schema);
 
             OCompoundProperty user = mesh.getUserProperties();
-            write_user_data(user_attrs, "", prim, user);
+            write_user_data(user_attrs, "", prim, user, frameid, real_frame_start);
 
             mesh.setTimeSampling(1);
 
@@ -536,7 +617,17 @@ struct WriteAlembic2 : INode {
             std::vector<int32_t> vertex_index_per_face;
             std::vector<int32_t> vertex_count_per_face;
 
-            if (prim->loops.size()) {
+            if (prim->tris.size()) {
+                zeno::primPolygonate(prim.get(), true);
+            }
+            {
+                {
+                    prim_size_per_frame[frameid] = {
+                        int(prim->verts.size()),
+                        int(prim->loops.size()),
+                        int(prim->polys.size()),
+                    };
+                }
                 for (const auto& [start, size]: prim->polys) {
                     for (auto i = 0; i < size; i++) {
                         vertex_index_per_face.push_back(prim->loops[start + i]);
@@ -569,7 +660,7 @@ struct WriteAlembic2 : INode {
                             uvsamp);
                     write_velocity(prim, mesh_samp);
                     write_normal(prim, mesh_samp);
-                    write_attrs(attrs, "", prim, mesh, mesh_samp);
+                    write_attrs(verts_attrs, loops_attrs, polys_attrs, "", prim, mesh, frameid, real_frame_start, prim_size_per_frame);
                     mesh.set( mesh_samp );
                 }
                 else {
@@ -579,55 +670,7 @@ struct WriteAlembic2 : INode {
                             Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ));
                     write_velocity(prim, mesh_samp);
                     write_normal(prim, mesh_samp);
-                    write_attrs(attrs, "", prim, mesh, mesh_samp);
-                    mesh.set( mesh_samp );
-                }
-            }
-            else {
-                for (auto i = 0; i < prim->tris.size(); i++) {
-                    vertex_index_per_face.push_back(prim->tris[i][0]);
-                    vertex_index_per_face.push_back(prim->tris[i][1]);
-                    vertex_index_per_face.push_back(prim->tris[i][2]);
-                }
-                vertex_count_per_face.resize(prim->tris.size(), 3);
-                if (prim->tris.has_attr("uv0")) {
-                    std::vector<zeno::vec2f> uv_data;
-                    std::vector<uint32_t> uv_indices;
-                    auto& uv0 = prim->tris.attr<zeno::vec3f>("uv0");
-                    auto& uv1 = prim->tris.attr<zeno::vec3f>("uv1");
-                    auto& uv2 = prim->tris.attr<zeno::vec3f>("uv2");
-                    for (auto i = 0; i < prim->tris.size(); i++) {
-                        uv_data.emplace_back(uv0[i][0], uv0[i][1]);
-                        uv_data.emplace_back(uv1[i][0], uv1[i][1]);
-                        uv_data.emplace_back(uv2[i][0], uv2[i][1]);
-                        uv_indices.push_back(uv_indices.size());
-                        uv_indices.push_back(uv_indices.size());
-                        uv_indices.push_back(uv_indices.size());
-                    }
-
-                    // UVs and Normals use GeomParams, which can be written or read
-                    // as indexed or not, as you'd like.
-                    OV2fGeomParam::Sample uvsamp;
-                    uvsamp.setVals(V2fArraySample( (const V2f *)uv_data.data(), uv_data.size()));
-                    uvsamp.setIndices(UInt32ArraySample( uv_indices.data(), uv_indices.size() ));
-                    uvsamp.setScope(kFacevaryingScope);
-                    OPolyMeshSchema::Sample mesh_samp(
-                    V3fArraySample( ( const V3f * )prim->verts.data(), prim->verts.size() ),
-                            Int32ArraySample( vertex_index_per_face.data(), vertex_index_per_face.size() ),
-                            Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ),
-                            uvsamp);
-                    write_velocity(prim, mesh_samp);
-                    write_normal(prim, mesh_samp);
-                    write_attrs(attrs, "", prim, mesh, mesh_samp);
-                    mesh.set( mesh_samp );
-                } else {
-                    OPolyMeshSchema::Sample mesh_samp(
-                    V3fArraySample( ( const V3f * )prim->verts.data(), prim->verts.size() ),
-                            Int32ArraySample( vertex_index_per_face.data(), vertex_index_per_face.size() ),
-                            Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ));
-                    write_velocity(prim, mesh_samp);
-                    write_normal(prim, mesh_samp);
-                    write_attrs(attrs, "", prim, mesh, mesh_samp);
+                    write_attrs(verts_attrs, loops_attrs, polys_attrs, "", prim, mesh, frameid, real_frame_start, prim_size_per_frame);
                     mesh.set( mesh_samp );
                 }
             }
@@ -655,10 +698,14 @@ struct WriteAlembicPrims : INode {
     OArchive archive;
     std::string usedPath;
     std::map<std::string, OPolyMesh> meshyObjs;
-    std::map<std::string, std::any> attrs;
+    std::map<std::string, std::any> verts_attrs;
+    std::map<std::string, std::any> loops_attrs;
+    std::map<std::string, std::any> polys_attrs;
     std::map<std::string, std::any> user_attrs;
     std::map<std::string, std::map<std::string, OFaceSet>> o_faceset;
     std::map<std::string, std::map<std::string, OFaceSetSchema>> o_faceset_schema;
+    std::map<std::string, std::map<int, vec3i>> prim_size_per_frame;
+    int real_frame_start = -1;
 
     virtual void apply() override {
         std::vector<std::shared_ptr<PrimitiveObject>> prims;
@@ -751,12 +798,15 @@ struct WriteAlembicPrims : INode {
                 "Zeno : " + getGlobalState()->zeno_version,
                 "None"
             );
-            archive.addTimeSampling(TimeSampling(1.0/fps, frame_start / fps));
             meshyObjs.clear();
-            attrs.clear();
+            verts_attrs.clear();
+            loops_attrs.clear();
+            polys_attrs.clear();
             user_attrs.clear();
             o_faceset.clear();
             o_faceset_schema.clear();
+            prim_size_per_frame.clear();
+            real_frame_start = -1;
             for (auto prim: new_prims) {
                 auto path = prim->userData().get2<std::string>("abcpath_0");
                 if (!starts_with(path, "/ABC/")) {
@@ -780,6 +830,10 @@ struct WriteAlembicPrims : INode {
         if (!(frame_start <= frameid && frameid <= frame_end)) {
             return;
         }
+        if (real_frame_start == -1) {
+            real_frame_start = frameid;
+            archive.addTimeSampling(TimeSampling(1.0/fps, real_frame_start / fps));
+        }
         if (archive.valid() == false) {
             zeno::makeError("Not init. Check whether in correct correct frame range.");
         }
@@ -798,7 +852,7 @@ struct WriteAlembicPrims : INode {
                 write_faceset(prim, mesh, o_faceset[path], o_faceset_schema[path]);
 
                 OCompoundProperty user = mesh.getUserProperties();
-                write_user_data(user_attrs, path, prim, user);
+                write_user_data(user_attrs, path, prim, user, frameid, real_frame_start);
 
                 mesh.setTimeSampling(1);
 
@@ -814,7 +868,17 @@ struct WriteAlembicPrims : INode {
                 std::vector<int32_t> vertex_index_per_face;
                 std::vector<int32_t> vertex_count_per_face;
 
-                if (prim->loops.size()) {
+                if (prim->tris.size()) {
+                    zeno::primPolygonate(prim.get(), true);
+                }
+                {
+                    {
+                        prim_size_per_frame[path][frameid] = {
+                            int(prim->verts.size()),
+                            int(prim->loops.size()),
+                            int(prim->polys.size()),
+                        };
+                    }
                     for (const auto& [start, size]: prim->polys) {
                         for (auto i = 0; i < size; i++) {
                             vertex_index_per_face.push_back(prim->loops[start + i]);
@@ -847,7 +911,7 @@ struct WriteAlembicPrims : INode {
                                 uvsamp);
                         write_velocity(prim, mesh_samp);
                         write_normal(prim, mesh_samp);
-                        write_attrs(attrs, path, prim, mesh, mesh_samp);
+                        write_attrs(verts_attrs, loops_attrs, polys_attrs, path, prim, mesh, frameid, real_frame_start, prim_size_per_frame[path]);
                         mesh.set( mesh_samp );
                     }
                     else {
@@ -857,55 +921,7 @@ struct WriteAlembicPrims : INode {
                                 Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ));
                         write_velocity(prim, mesh_samp);
                         write_normal(prim, mesh_samp);
-                        write_attrs(attrs, path, prim, mesh, mesh_samp);
-                        mesh.set( mesh_samp );
-                    }
-                }
-                else {
-                    for (auto i = 0; i < prim->tris.size(); i++) {
-                        vertex_index_per_face.push_back(prim->tris[i][0]);
-                        vertex_index_per_face.push_back(prim->tris[i][1]);
-                        vertex_index_per_face.push_back(prim->tris[i][2]);
-                    }
-                    vertex_count_per_face.resize(prim->tris.size(), 3);
-                    if (prim->tris.has_attr("uv0")) {
-                        std::vector<zeno::vec2f> uv_data;
-                        std::vector<uint32_t> uv_indices;
-                        auto& uv0 = prim->tris.attr<zeno::vec3f>("uv0");
-                        auto& uv1 = prim->tris.attr<zeno::vec3f>("uv1");
-                        auto& uv2 = prim->tris.attr<zeno::vec3f>("uv2");
-                        for (auto i = 0; i < prim->tris.size(); i++) {
-                            uv_data.emplace_back(uv0[i][0], uv0[i][1]);
-                            uv_data.emplace_back(uv1[i][0], uv1[i][1]);
-                            uv_data.emplace_back(uv2[i][0], uv2[i][1]);
-                            uv_indices.push_back(uv_indices.size());
-                            uv_indices.push_back(uv_indices.size());
-                            uv_indices.push_back(uv_indices.size());
-                        }
-
-                        // UVs and Normals use GeomParams, which can be written or read
-                        // as indexed or not, as you'd like.
-                        OV2fGeomParam::Sample uvsamp;
-                        uvsamp.setVals(V2fArraySample( (const V2f *)uv_data.data(), uv_data.size()));
-                        uvsamp.setIndices(UInt32ArraySample( uv_indices.data(), uv_indices.size() ));
-                        uvsamp.setScope(kFacevaryingScope);
-                        OPolyMeshSchema::Sample mesh_samp(
-                        V3fArraySample( ( const V3f * )prim->verts.data(), prim->verts.size() ),
-                                Int32ArraySample( vertex_index_per_face.data(), vertex_index_per_face.size() ),
-                                Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ),
-                                uvsamp);
-                        write_velocity(prim, mesh_samp);
-                        write_normal(prim, mesh_samp);
-                        write_attrs(attrs, path, prim, mesh, mesh_samp);
-                        mesh.set( mesh_samp );
-                    } else {
-                        OPolyMeshSchema::Sample mesh_samp(
-                        V3fArraySample( ( const V3f * )prim->verts.data(), prim->verts.size() ),
-                                Int32ArraySample( vertex_index_per_face.data(), vertex_index_per_face.size() ),
-                                Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ));
-                        write_velocity(prim, mesh_samp);
-                        write_normal(prim, mesh_samp);
-                        write_attrs(attrs, path, prim, mesh, mesh_samp);
+                        write_attrs(verts_attrs, loops_attrs, polys_attrs, path, prim, mesh, frameid, real_frame_start, prim_size_per_frame[path]);
                         mesh.set( mesh_samp );
                     }
                 }
