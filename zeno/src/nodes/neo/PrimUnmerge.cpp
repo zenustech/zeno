@@ -5,6 +5,8 @@
 #include <zeno/types/StringObject.h>
 #include <zeno/para/parallel_reduce.h>
 #include <zeno/para/parallel_for.h>
+#include <zeno/types/UserData.h>
+#include "zeno/utils/log.h"
 
 namespace zeno {
 
@@ -153,6 +155,152 @@ ZENO_API std::vector<std::shared_ptr<PrimitiveObject>> primUnmergeVerts(Primitiv
     return primList;
 }
 
+std::set<int> get_attr_on_faces(PrimitiveObject *prim, std::string tagAttr, bool skip_negative_number) {
+    std::set<int> set;
+    if (prim->tris.size()) {
+        auto &attr = prim->tris.attr<int>(tagAttr);
+        for (auto i = 0; i < prim->tris.size(); i++) {
+            if (skip_negative_number && attr[i] < 0) {
+                continue;
+            }
+            set.insert(attr[i]);
+        }
+    }
+    if (prim->polys.size()) {
+        auto &attr = prim->polys.attr<int>(tagAttr);
+        for (auto i = 0; i < prim->polys.size(); i++) {
+            if (skip_negative_number && attr[i] < 0) {
+                continue;
+            }
+            set.insert(attr[i]);
+        }
+    }
+    return set;
+}
+
+void remap_attr_on_faces(PrimitiveObject *prim, std::string tagAttr, std::map<int, int> mapping) {
+    if (prim->tris.size()) {
+        auto &attr = prim->tris.attr<int>(tagAttr);
+        for (auto i = 0; i < prim->tris.size(); i++) {
+            if (mapping.count(attr[i])) {
+                attr[i] = mapping[attr[i]];
+            }
+        }
+    }
+    if (prim->polys.size()) {
+        auto &attr = prim->polys.attr<int>(tagAttr);
+        for (auto i = 0; i < prim->polys.size(); i++) {
+            if (mapping.count(attr[i])) {
+                attr[i] = mapping[attr[i]];
+            }
+        }
+    }
+}
+
+ZENO_API std::vector<std::shared_ptr<PrimitiveObject>> primUnmergeFaces(PrimitiveObject *prim, std::string tagAttr) {
+    if (!prim->verts.size()) return {};
+
+    if (prim->tris.size() > 0 && prim->polys.size() > 0) {
+        primPolygonate(prim, true);
+    }
+
+    std::vector<std::shared_ptr<PrimitiveObject>> list;
+
+    std::map<int, std::vector<int>> mapping;
+    if (prim->tris.size() > 0) {
+        auto &attr = prim->tris.attr<int>(tagAttr);
+        for (auto i = 0; i < prim->tris.size(); i++) {
+            if (mapping.count(attr[i]) == 0) {
+                mapping[attr[i]] = {};
+            }
+            mapping[attr[i]].push_back(i);
+        }
+        for (auto &[key, val]: mapping) {
+            auto new_prim = std::dynamic_pointer_cast<PrimitiveObject>(prim->clone());
+            new_prim->tris.resize(val.size());
+            for (auto i = 0; i < val.size(); i++) {
+                new_prim->tris[i] = prim->tris[val[i]];
+            }
+            new_prim->tris.foreach_attr<AttrAcceptAll>([&](auto const &key, auto &arr) {
+                using T = std::decay_t<decltype(arr[0])>;
+                auto &attr = prim->tris.attr<T>(key);
+                for (auto i = 0; i < arr.size(); i++) {
+                    arr[i] = attr[val[i]];
+                }
+            });
+            list.push_back(new_prim);
+        }
+    }
+    else if (prim->polys.size() > 0) {
+        auto &attr = prim->polys.attr<int>(tagAttr);
+        for (auto i = 0; i < prim->polys.size(); i++) {
+            if (mapping.count(attr[i]) == 0) {
+                mapping[attr[i]] = {};
+            }
+            mapping[attr[i]].push_back(i);
+        }
+        for (auto &[key, val]: mapping) {
+            auto new_prim = std::dynamic_pointer_cast<PrimitiveObject>(prim->clone());
+            new_prim->polys.resize(val.size());
+            for (auto i = 0; i < val.size(); i++) {
+                new_prim->polys[i] = prim->polys[val[i]];
+            }
+            new_prim->polys.foreach_attr<AttrAcceptAll>([&](auto const &key, auto &arr) {
+                using T = std::decay_t<decltype(arr[0])>;
+                auto &attr = prim->polys.attr<T>(key);
+                for (auto i = 0; i < arr.size(); i++) {
+                    arr[i] = attr[val[i]];
+                }
+            });
+            list.push_back(new_prim);
+        }
+    }
+    for (auto i = 0; i < list.size(); i++) {
+        primKillDeadVerts(list[i].get());
+        // remove unused abcpath
+        {
+            auto abcpath_set = get_attr_on_faces(list[i].get(), "abcpath", true);
+            std::map<int, int> mapping;
+            std::vector<std::string> abcpaths;
+            for (auto &k: abcpath_set) {
+                mapping[k] = abcpaths.size();
+                abcpaths.push_back(list[i]->userData().get2<std::string>(format("abcpath_{}", k)));
+            }
+            remap_attr_on_faces(list[i].get(), "abcpath", mapping);
+            auto old_abcpath_count = list[i]->userData().get2<int>("abcpath_count", 0);
+            for (int j = 0; j < old_abcpath_count; j++) {
+                list[i]->userData().del(format("abcpath_{}", j));
+            }
+
+            for (int j = 0; j < abcpaths.size(); j++) {
+                list[i]->userData().set2(format("abcpath_{}", j), abcpaths[j]);
+            }
+            list[i]->userData().set2("abcpath_count", int(abcpath_set.size()));
+        }
+        // remove unused faceset
+        {
+            auto abcpath_set = get_attr_on_faces(list[i].get(), "faceset", true);
+            std::map<int, int> mapping;
+            std::vector<std::string> abcpaths;
+            for (auto &k: abcpath_set) {
+                mapping[k] = abcpaths.size();
+                abcpaths.push_back(list[i]->userData().get2<std::string>(format("faceset_{}", k)));
+            }
+            remap_attr_on_faces(list[i].get(), "faceset", mapping);
+            auto old_abcpath_count = list[i]->userData().get2<int>("faceset_count", 0);
+            for (int j = 0; j < old_abcpath_count; j++) {
+                list[i]->userData().del(format("faceset_{}", j));
+            }
+
+            for (int j = 0; j < abcpaths.size(); j++) {
+                list[i]->userData().set2(format("faceset_{}", j), abcpaths[j]);
+            }
+            list[i]->userData().set2("faceset_count", int(abcpath_set.size()));
+        }
+    }
+    return list;
+}
+
 namespace {
 
 struct PrimUnmerge : INode {
@@ -164,7 +312,13 @@ struct PrimUnmerge : INode {
         if (get_input2<bool>("preSimplify")) {
             primSimplifyTag(prim.get(), tagAttr);
         }
-        auto primList = primUnmergeVerts(prim.get(), tagAttr);
+        std::vector<std::shared_ptr<PrimitiveObject>> primList;
+        if (method == "verts") {
+            primList = primUnmergeVerts(prim.get(), tagAttr);
+        }
+        else {
+            primList = primUnmergeFaces(prim.get(), tagAttr);
+        }
 
         auto listPrim = std::make_shared<ListObject>();
         for (auto &primPtr: primList) {

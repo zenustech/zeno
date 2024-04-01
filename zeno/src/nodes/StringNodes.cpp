@@ -10,6 +10,7 @@
 #include <zeno/utils/logger.h>
 #include <string_view>
 #include <regex>
+#include <charconv>
 
 namespace zeno {
 namespace {
@@ -251,7 +252,6 @@ ZENDEFNODE(StringRegexMatch, {
     {"string"},
 });
 
-
 struct StringSplitAndMerge: zeno::INode{
     
     std::vector<std::string> split(const std::string& s, std::string seperator)
@@ -300,10 +300,93 @@ ZENDEFNODE(StringSplitAndMerge, {
         {"string", "output"}
     },
     {},
-    {"string"},
+    {"deprecated"},
 });
 
+std::vector<std::string_view> stringsplit(std::string_view str, std::string_view delims = " ")//do not keep empty
+{
+	std::vector<std::string_view> output;
+        size_t pos = 0;
+        size_t posbegin = 0;
+        std::string_view word;
+        while ((pos = str.find(delims, pos)) != std::string_view::npos) {
+            word = str.substr(posbegin, pos-posbegin);
+            output.push_back(word);
+            pos += delims.length();
+            posbegin = pos;
+        }
+        if (posbegin < str.length()) { 
+            word = str.substr(posbegin);
+            output.push_back(word);
+        }
+	return output;
+}
 
+struct StringSplitAndMerge2: zeno::INode{
+    virtual void apply() override {
+        auto str = get_input2<std::string>("String");
+        auto separator = get_input2<std::string>("Separator");
+        auto mergeMethod = get_input2<std::string>("Merge Method");
+        auto mergeIndex = get_input2<std::string>("Merge index");
+        auto clipCountFromStart = get_input2<int>("Clip Count From Start");
+        auto clipCountFromEnd = get_input2<int>("Clip Count From End");
+        auto remainSeparator = get_input2<bool>("Remain Separator");
+        auto splitStr = stringsplit(str, separator);
+        std::string output;
+        output.reserve(str.size());
+        if (mergeMethod == "Custom_Index_Merge") {
+            std::vector<std::string_view> mergeIndexList = stringsplit(mergeIndex, ",");
+            for (size_t j = 0; j < mergeIndexList.size(); ++j) {
+                auto idx = mergeIndexList[j];
+                if (idx.empty()) continue;
+                int i;
+                auto result = std::from_chars(idx.data(), idx.data() + idx.size(), i);
+                if (result.ec == std::errc::invalid_argument || result.ec == std::errc::result_out_of_range || result.ptr != idx.data() + idx.size()) {
+                    throw std::runtime_error("[StringSplitAndMerge2] Merge index is not a valid number.");//invalid_argument, result_out_of_range, or not all characters are parsed(eg. 123a)
+                }
+                if (i < 0) i = splitStr.size() + i;
+                if (i < 0 || i >= splitStr.size()) {
+                    throw std::runtime_error("[StringSplitAndMerge2] Merge index is out of range.");
+                }
+                output += splitStr[i];
+                if (remainSeparator && j != mergeIndexList.size() - 1) {
+                    output += separator;
+                }
+            }
+        }
+        else if (mergeMethod == "Clip_And_Merge") {
+            int start = std::max(0, clipCountFromStart);
+            int end = std::max(start, static_cast<int>(splitStr.size()) - clipCountFromEnd);
+            for (int i = start; i < end; ++i) {
+                output += splitStr[i];
+                if (remainSeparator && i != end - 1) {
+                    output += separator;
+                }
+            }
+        }
+        else {
+            throw std::runtime_error("[StringSplitAndMerge2] Unknown merge method.");
+        }
+        set_output2("string", output);
+    }
+};
+
+ZENDEFNODE(StringSplitAndMerge2, {
+    {
+        {"multiline_string", "String", ""},
+        {"string", "Separator", "_"},
+        {"enum Custom_Index_Merge Clip_And_Merge", "Merge Method", "Custom_Index_Merge"},
+        {"string", "Merge index", "0,1"},
+        {"int", "Clip Count From Start", "0"},
+        {"int", "Clip Count From End", "0"},
+        {"bool", "Remain Separator", "false"},
+    },
+    {
+        {"string", "string"}
+    },
+    {},
+    {"string"},
+});
 
 struct FormatString : zeno::INode {
     virtual void apply() override {
@@ -596,6 +679,12 @@ struct SubString : zeno::INode {//slice...
         auto string = get_input2<std::string>("string");
         auto start = get_input2<int>("start");
         auto length = get_input2<int>("length");
+        if (start < 0) {
+            start = string.size() + start;
+        }
+        if (start < 0 || start >= string.size()) {
+            throw std::runtime_error("[SubString] start is out of range.");
+        }
         auto output = string.substr(start, length);
         set_output2("string", output);
     }
@@ -708,19 +797,17 @@ ZENDEFNODE(StringSplitPath, {
     {"string"},
 });
 
-struct StringInsert : zeno::INode {//if start is greater than string length, insert at the end; if start is less than 0, reverse counting from the end
+struct StringInsert : zeno::INode {//if start is less than 0, reverse counting from the end
     virtual void apply() override {
         auto string = get_input2<std::string>("string");
         auto substring = get_input2<std::string>("substring");
         auto start = get_input2<int>("start");
         auto output = string;
         if (start < 0) {
-            start = output.size() + start;
-            if (start < 0) {
-                start = 0;
-            }
-        } else if (start > output.size()) {
-            start = output.size();
+            start = output.size() + start + 1;
+        } 
+        if (start < 0 || start > string.size()) {
+            throw std::runtime_error("[StringInsert] start is out of range.");
         }
         output.insert(start, substring);
         set_output2("string", output);
@@ -767,6 +854,135 @@ ZENDEFNODE(StringTrim, {
         {"string", "string", ""},
         {"bool", "trimleft", "true"},
         {"bool", "trimright", "true"},
+    },
+    {{"string", "string"},
+    },
+    {},
+    {"string"},
+});
+
+struct StringDeleteOrReplace : zeno::INode {
+    virtual void apply() override {
+        std::string multiline_string = get_input2<std::string>("String");
+        std::string oldString = get_input2<std::string>("oldString");
+        std::string RefString = get_input2<std::string>("RefString");
+        auto N = get_input2<int>("N");
+        std::string newString = get_input2<std::string>("newString");
+        bool UseLastRefString = get_input2<bool>("UseLastRefString");
+        std::string output = multiline_string;
+        if(oldString == "AllRefString") {
+            output = strreplace(multiline_string, RefString, newString);
+        }
+        else if(oldString == "First_N_characters") {
+            if(N >= 0 && N <= multiline_string.size()) {
+                output.replace(0, N, newString);
+            }
+            else {
+                //zeno::log_error("[StringDeleteOrReplace] N is out of range.");
+                throw std::runtime_error("[StringDeleteOrReplace] N is out of range.");
+            }
+        }
+        else if(oldString == "Last_N_characters") {
+            if(N >= 0 && N <= multiline_string.size()) {
+                output.replace(multiline_string.size() - N, N, newString);
+            }
+            else {
+                throw std::runtime_error("[StringDeleteOrReplace] N is out of range.");
+            }
+        }
+        else if(oldString == "All_characters_before_RefString") {
+            auto pos = UseLastRefString ? multiline_string.rfind(RefString) : multiline_string.find(RefString);
+            if(pos != std::string::npos) {
+                output.replace(0, pos, newString);
+            }
+            else {
+                throw std::runtime_error("[StringDeleteOrReplace] RefString not found.");
+            }
+        }
+        else if(oldString == "N_characters_before_RefString") {
+            auto pos = UseLastRefString ? multiline_string.rfind(RefString) : multiline_string.find(RefString);
+            if(pos != std::string::npos && pos >= N) {
+                output.replace(pos - N, N, newString);
+            }
+            else {
+                throw std::runtime_error("[StringDeleteOrReplace] RefString not found or N is too large.");
+            }
+        }
+        else if(oldString == "All_characters_after_RefString") {
+            auto pos = UseLastRefString ? multiline_string.rfind(RefString) : multiline_string.find(RefString);
+            if(pos != std::string::npos) {
+                output.replace(pos + RefString.size(), multiline_string.size() - pos - RefString.size(), newString);
+            }
+            else {
+                throw std::runtime_error("[StringDeleteOrReplace] RefString not found.");
+            }
+        }
+        else if(oldString == "N_characters_after_RefString") {
+            auto pos = UseLastRefString ? multiline_string.rfind(RefString) : multiline_string.find(RefString);
+            if(pos != std::string::npos && pos + RefString.size() + N <= multiline_string.size()) {
+                output.replace(pos + RefString.size(), N, newString);
+            }
+            else {
+                throw std::runtime_error("[StringDeleteOrReplace] RefString not found or N is too large.");
+            }
+        }
+        set_output2("string", output);
+    }
+};
+
+ZENDEFNODE(StringDeleteOrReplace, {
+    {
+        {"multiline_string", "String", ""},
+        {"enum AllRefString First_N_characters  Last_N_characters All_characters_before_RefString  N_characters_before_RefString All_characters_after_RefString N_characters_after_RefString", "oldString", "AllRefString"},
+        {"string", "RefString", ""},
+        {"bool", "UseLastRefString", "false"},
+        {"int", "N", "1"},
+        {"string", "newString", ""},
+    },
+    {{"string", "string"},
+    },
+    {},
+    {"string"},
+});
+
+struct StringEditNumber : zeno::INode {
+    virtual void apply() override {
+        auto string = get_input2<std::string>("String");
+        auto method = get_input2<std::string>("Method");
+        if (method == "Remove_all_numbers") {
+            string.erase(std::remove_if(string.begin(), string.end(), [](char c) { return std::isdigit(c); }), string.end());
+        }
+        else if (method == "Remove_all_non_numbers") {
+            string.erase(std::remove_if(string.begin(), string.end(), [](unsigned char c) { return !std::isdigit(c); }), string.end());
+        }
+        else if (method == "Remove_last_number") {
+            auto it = std::find_if(string.rbegin(), string.rend(), [](unsigned char c) { return std::isdigit(c); });
+            if (it != string.rend()) {
+            string.erase((it+1).base());
+            }
+        }
+        else if (method == "Return_last_number") {
+            std::string num = "";
+            bool number_found = false;
+            for (auto it = string.rbegin(); it != string.rend(); ++it) {
+                if (std::isdigit(*it)) {
+                    num = *it + num;
+                    number_found = true;
+                } else if (number_found) {
+                    break;
+                }
+            }
+            string = num;
+        }
+        set_output2("string", string);
+        
+    }
+};
+
+ZENDEFNODE(StringEditNumber, {
+    {
+        {"multiline_string", "String", ""},
+        {"enum Remove_all_numbers Remove_all_non_numbers Remove_last_number Return_last_number_Sequence", "Method", "Remove_all_numbers"},
     },
     {{"string", "string"},
     },

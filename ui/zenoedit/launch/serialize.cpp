@@ -15,7 +15,8 @@ QSet<QString> lightCameraNodes({
     "CameraEval", "CameraNode", "CihouMayaCameraFov", "ExtractCameraData", "GetAlembicCamera","MakeCamera",
     "LightNode", "BindLight", "ProceduralSky", "HDRSky",
     });
-QString matlNode = "ShaderFinalize";
+
+std::set<std::string> matNodeNames = {"ShaderFinalize", "ShaderVolume", "ShaderVolumeHomogeneous"};
 
 static QString nameMangling(const QString& prefix, const QString& ident) {
     if (prefix.isEmpty())
@@ -49,7 +50,8 @@ void resolveOutputSocket(
         AddStringList({"addNodeOutput", mockNode, outSock}, writer);
 
         //add link from source output node    to    mockNode(ExtractDict).
-        AddStringList({"bindNodeInput", mockNode, mockSocket, outNodeId, dictlistName}, writer);
+        const QString& mockOutNode = nameMangling(graphIdPrefix, outNodeId);
+        AddStringList({"bindNodeInput", mockNode, mockSocket, mockOutNode, dictlistName}, writer);
 
         realOutputId = mockNode;
         realOutputSock = outSock;
@@ -415,7 +417,7 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
             }
             else
             {
-                if ((launchParam.applyLightAndCameraOnly && !lightCameraNodes.contains(name) || launchParam.applyMaterialOnly && name != matlNode) && !pGraphsModel->IsSubGraphNode(idx))
+                if ((launchParam.applyLightAndCameraOnly && !lightCameraNodes.contains(name) || launchParam.applyMaterialOnly && matNodeNames.count(name.toStdString())==0) && !pGraphsModel->IsSubGraphNode(idx))
                 {
                     continue;
                 }
