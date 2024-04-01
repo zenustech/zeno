@@ -203,8 +203,8 @@ struct FrameBufferRender {
         intermediate_fbo->bind();
         CHECK_GL(glBindTexture(GL_TEXTURE_2D, screen_tex->tex));
         CHECK_GL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL));
-        CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
-        CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+        CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
+        CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
         CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, screen_tex->tex, 0));	// we only need a color buffer
         if(!intermediate_fbo->complete()) printf("fbo error\n");
         CHECK_GL(glBindTexture(GL_TEXTURE_2D, 0));
