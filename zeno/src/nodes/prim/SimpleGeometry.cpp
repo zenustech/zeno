@@ -1420,7 +1420,6 @@ struct CreateCapsule : zeno::INode {
 
         auto position = get_input2<zeno::vec3f>("position");
         auto scaleSize = get_input2<zeno::vec3f>("scaleSize");
-        auto rotation = get_input2<zeno::vec3f>("rotate");
         auto radius = get_input2<float>("radius");
         auto height = get_input2<float>("height"); // height doesn't include radius
         auto halfRows = get_input2<int>("halfRows");
@@ -1523,11 +1522,10 @@ ZENDEFNODE(CreateCapsule, {
     {
         {"vec3f", "position", "0, 0, 0"},
         {"vec3f", "scaleSize", "1, 1, 1"},
-        {"vec3f", "rotate", "0, 0, 0"},
         {"float", "radius", "1"},
         {"float", "height", "2"},
-        {"int", "halfRows", "32"}
-        {"int", "columns", "16"},
+        {"int", "halfRows", "16"},
+        {"int", "columns", "32"},
     },
     {"prim"},
     {},

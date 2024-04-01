@@ -55,8 +55,6 @@ void EvalUSDPrim::_onEvalFinished() {
 }
 
 void EvalUSDPrim::_onEvalClicked() {
-	std::cout << "you clicked eval button!" << std::endl;
-	
 	_getNodeInputs();
 	if (mUSDPath.empty() || mPrimPath.empty()) {
 		std::cout << "[EvalUSDPrim] [Warn] found USD path or prim path is empty" << std::endl;
@@ -86,28 +84,31 @@ void EvalUSDPrim::_onEvalClicked() {
 
 	auto mainGraph = Zeno_GetGraph("main");
 
+	ZENO_HANDLE primNode = 0;
 	if (primType == "Sphere") {
-		_emitCreateSphereNode(mainGraph);
+		primNode = _emitCreateSphereNode(mainGraph);
 	} else if (primType == "Capsule"){
-		_emitCreateCapsuleNode(mainGraph);
+		primNode = _emitCreateCapsuleNode(mainGraph);
 	} else if (primType == "Cube"){
-		_emitCreateCubeNode(mainGraph);
+		primNode = _emitCreateCubeNode(mainGraph);
 	} else if (primType == "Cylinder"){
-		_emitCreateCylinderNode(mainGraph);
+		primNode = _emitCreateCylinderNode(mainGraph);
 	} else if (primType == "Cone"){
-		_emitCreateConeNode(mainGraph);
+		primNode = _emitCreateConeNode(mainGraph);
 	} else if (primType == "Plane"){
-		_emitCreatePlaneNode(mainGraph);
+		primNode = _emitCreatePlaneNode(mainGraph);
 	} else if (primType == "Mesh") {
 		;
 	}
+
+	_emitPrimitiveTransformNodes(mainGraph, primNode);
 }
 
-void EvalUSDPrim::_emitCreateSphereNode(ZENO_HANDLE targetGraph) {
+ZENO_HANDLE EvalUSDPrim::_emitCreateSphereNode(ZENO_HANDLE targetGraph) {
 	ZENO_HANDLE newNode = Zeno_AddNode(targetGraph, "CreateSphere");
 	if (newNode == 0) {
 		std::cout << "failed to emit CreateSphere node" << std::endl;
-		return;
+		return 0;
 	}
 
 	ZENO_HANDLE curNode = index().internalId();
@@ -120,14 +121,16 @@ void EvalUSDPrim::_emitCreateSphereNode(ZENO_HANDLE targetGraph) {
 	Zeno_SetInputDefl(targetGraph, newNode, "radius", radius);
 	Zeno_SetPos(targetGraph, newNode, nodePos);
 	Zeno_SetView(targetGraph, newNode, true);
+
+	return newNode;
 }
 
 // TODO: we need a CreateCapsule node
-void EvalUSDPrim::_emitCreateCapsuleNode(ZENO_HANDLE targetGraph){
+ZENO_HANDLE EvalUSDPrim::_emitCreateCapsuleNode(ZENO_HANDLE targetGraph){
 	ZENO_HANDLE newNode = Zeno_AddNode(targetGraph, "CreateCapsule");
 	if (newNode == 0) {
 		std::cout << "failed to emit CreateCapsule node" << std::endl;
-		return;
+		return 0;
 	}
 	ZENO_HANDLE curNode = index().internalId();
 	std::pair<float, float> nodePos;
@@ -163,13 +166,15 @@ void EvalUSDPrim::_emitCreateCapsuleNode(ZENO_HANDLE targetGraph){
 			Zeno_SetView(targetGraph, transNode, true);
 		}
 	}
+
+	return newNode;
 }
 
-void EvalUSDPrim::_emitCreateCubeNode(ZENO_HANDLE targetGraph){
+ZENO_HANDLE EvalUSDPrim::_emitCreateCubeNode(ZENO_HANDLE targetGraph){
 	ZENO_HANDLE newNode = Zeno_AddNode(targetGraph, "CreateCube");
 	if (newNode == 0) {
 		std::cout << "failed to emit CreateCube node" << std::endl;
-		return;
+		return 0;
 	}
 
 	ZENO_HANDLE curNode = index().internalId();
@@ -181,13 +186,15 @@ void EvalUSDPrim::_emitCreateCubeNode(ZENO_HANDLE targetGraph){
 	Zeno_SetInputDefl(targetGraph, newNode, "size", size);
 	Zeno_SetPos(targetGraph, newNode, nodePos);
 	Zeno_SetView(targetGraph, newNode, true);
+
+	return newNode;
 }
 
-void EvalUSDPrim::_emitCreateCylinderNode(ZENO_HANDLE targetGraph){
+ZENO_HANDLE EvalUSDPrim::_emitCreateCylinderNode(ZENO_HANDLE targetGraph){
 	ZENO_HANDLE newNode = Zeno_AddNode(targetGraph, "CreateCylinder");
 	if (newNode == 0) {
 		std::cout << "failed to emit CreateCylinder node" << std::endl;
-		return;
+		return 0;
 	}
 	ZENO_HANDLE curNode = index().internalId();
 	std::pair<float, float> nodePos;
@@ -225,13 +232,15 @@ void EvalUSDPrim::_emitCreateCylinderNode(ZENO_HANDLE targetGraph){
 			Zeno_SetView(targetGraph, transNode, true);
 		}
 	}
+
+	return newNode;
 }
 
-void EvalUSDPrim::_emitCreateConeNode(ZENO_HANDLE targetGraph){
+ZENO_HANDLE EvalUSDPrim::_emitCreateConeNode(ZENO_HANDLE targetGraph){
 	ZENO_HANDLE newNode = Zeno_AddNode(targetGraph, "CreateCone");
 	if (newNode == 0) {
 		std::cout << "failed to emit CreateCone node" << std::endl;
-		return;
+		return 0;
 	}
 
 	ZENO_HANDLE curNode = index().internalId();
@@ -270,13 +279,15 @@ void EvalUSDPrim::_emitCreateConeNode(ZENO_HANDLE targetGraph){
 			Zeno_SetView(targetGraph, transNode, true);
 		}
 	}
+
+	return newNode;
 }
 
-void EvalUSDPrim::_emitCreatePlaneNode(ZENO_HANDLE targetGraph){
+ZENO_HANDLE EvalUSDPrim::_emitCreatePlaneNode(ZENO_HANDLE targetGraph){
 	ZENO_HANDLE newNode = Zeno_AddNode(targetGraph, "CreatePlane");
 	if (newNode == 0) {
 		std::cout << "failed to emit CreatePlane node" << std::endl;
-		return;
+		return 0;
 	}
 	ZENO_HANDLE curNode = index().internalId();
 	std::pair<float, float> nodePos;
@@ -303,13 +314,169 @@ void EvalUSDPrim::_emitCreatePlaneNode(ZENO_HANDLE targetGraph){
 	Zeno_SetInputDefl(targetGraph, newNode, "size", 1);
 	Zeno_SetPos(targetGraph, newNode, nodePos);
 	Zeno_SetView(targetGraph, newNode, true);
+
+	return newNode;
 }
 
-void EvalUSDPrim::_emitPrimitiveTransformNode(ZENO_HANDLE targetGraph) {
+// return root node of the entire transform link
+void EvalUSDPrim::_emitPrimitiveTransformNodes(ZENO_HANDLE targetGraph, ZENO_HANDLE lastNode) {
 	auto xform = pxr::UsdGeomXform(mUSDPrim);
 	bool resetXformStack;
 	auto xformOps = xform.GetOrderedXformOps(&resetXformStack);
+	ZENO_HANDLE curNode = index().internalId();
+	bool isLastNodeTransform = false;
 
-	// TODO: traverse and parse xform ops into PrimitiveTransform nodes
-	;
+	// get next generate position
+	std::pair<float, float> nodePos;
+	if (lastNode != 0) {
+		Zeno_GetPos(targetGraph, lastNode, nodePos);
+	} else {
+		Zeno_GetPos(targetGraph, curNode, nodePos);
+	}
+	nodePos.first += 100.0f;
+
+	// traverse and parse xformOps into PrimitiveTransform nodes
+	for (auto& op: xformOps) {
+		auto opType = op.GetOpType();
+		if (opType == pxr::UsdGeomXformOp::TypeInvalid) {
+			std::cout << "[EvalUSDPrim][Warn] found invalid op type while evaling xform ops" << std::endl;
+			continue;
+		}
+
+		auto precision = op.GetPrecision();
+		pxr::VtValue vecValue;
+		ZENO_HANDLE newNode = 0;
+		ZVARIANT finalVec;
+
+		op.Get(&vecValue);
+		if (opType == pxr::UsdGeomXformOp::TypeTransform) {
+			continue; // we don't support matrix node yet, so skip it
+		} else if (opType == pxr::UsdGeomXformOp::TypeTranslate) {
+			finalVec = _parseVector3(precision, vecValue);
+		} else if (opType == pxr::UsdGeomXformOp::TypeOrient) {
+			finalVec = _parseVector4(precision, vecValue);
+		} else if (opType == pxr::UsdGeomXformOp::TypeScale){
+			finalVec = _parseVector3(precision, vecValue);
+		} else if (opType >= pxr::UsdGeomXformOp::TypeRotateXYZ && opType <= pxr::UsdGeomXformOp::TypeRotateZYX) {
+			finalVec = _parseVector3(precision, vecValue);
+		} else if (opType >= pxr::UsdGeomXformOp::TypeRotateX && opType <= pxr::UsdGeomXformOp::TypeRotateZ) {
+			finalVec = _parseScalar(precision, vecValue);
+			float euler = std::get<float>(finalVec);
+			if (opType == pxr::UsdGeomXformOp::TypeRotateX) {
+				finalVec = zeno::vec3f(euler, 0.0f, 0.0f);
+			} else if (opType == pxr::UsdGeomXformOp::TypeRotateY) {
+				finalVec = zeno::vec3f(0.0f, euler, 0.0f);
+			} else { // Z axis
+				finalVec = zeno::vec3f(0.0f, 0.0f, euler);
+			}
+		}
+
+		newNode = _makeTransformNode(targetGraph, opType, finalVec);
+		if (newNode == 0) {
+			std::cout << "[EvalUSDPrim][_emitPrimitiveTransformNodes] failed to eval transform" << std::endl;
+			continue;
+		}
+
+		if (lastNode != 0) {
+			if (isLastNodeTransform) {
+				Zeno_AddLink(targetGraph, lastNode, "outPrim", newNode, "prim");
+			} else {
+				// CreateXXX nodes
+				Zeno_AddLink(targetGraph, lastNode, "prim", newNode, "prim");
+			}
+		}
+		lastNode = newNode;
+		isLastNodeTransform = true;
+
+		Zeno_SetPos(targetGraph, newNode, nodePos);
+		Zeno_SetView(targetGraph, newNode, true);
+		nodePos.first += 100.0f;
+	}
+}
+
+float EvalUSDPrim::_parseScalar(pxr::UsdGeomXformOp::Precision precision, const pxr::VtValue& value) {
+	float ret;
+	if (precision == pxr::UsdGeomXformOp::PrecisionDouble) {
+		ret = static_cast<float>(value.Get<double>());
+	} else if (precision == pxr::UsdGeomXformOp::PrecisionFloat) {
+		ret = value.Get<float>();
+	} else {
+		pxr::GfHalf v = value.Get<pxr::GfHalf>();
+		ret = float(v);
+	}
+	return ret;
+}
+
+zeno::vec3f EvalUSDPrim::_parseVector3(pxr::UsdGeomXformOp::Precision precision, const pxr::VtValue& vecValue) {
+	zeno::vec3f ret;
+	if (precision == pxr::UsdGeomXformOp::PrecisionDouble) {
+		pxr::GfVec3d vec = vecValue.Get<pxr::GfVec3d>();
+		ret = zeno::vec3f{ (float)vec[0], (float)vec[1], (float)vec[2] };
+	} else if (precision == pxr::UsdGeomXformOp::PrecisionFloat) {
+		pxr::GfVec3f vec = vecValue.Get<pxr::GfVec3f>();
+		ret = { vec[0], vec[1], vec[2] };
+	} else {
+		pxr::GfVec3h vec = vecValue.Get<pxr::GfVec3h>();
+		ret = { (float)vec[0], (float)vec[1], (float)vec[2] };
+	}
+	return ret;
+}
+
+zeno::vec4f EvalUSDPrim::_parseVector4(pxr::UsdGeomXformOp::Precision precision, const pxr::VtValue& vecValue) {
+	zeno::vec4f ret;
+	if (precision == pxr::UsdGeomXformOp::PrecisionDouble) {
+		pxr::GfVec4d vec = vecValue.Get<pxr::GfVec4d>();
+		ret = { (float)vec[0], (float)vec[1], (float)vec[2] , (float)vec[3] };
+	} else if (precision == pxr::UsdGeomXformOp::PrecisionFloat) {
+		pxr::GfVec4f vec = vecValue.Get<pxr::GfVec4f>();
+		ret = { vec[0], vec[1], vec[2] , vec[3]};
+	} else {
+		pxr::GfVec4h vec = vecValue.Get<pxr::GfVec4h>();
+		ret = { (float)vec[0], (float)vec[1], (float)vec[2] , (float)vec[3] };
+	}
+	return ret;
+}
+
+ZENO_HANDLE EvalUSDPrim::_makeTransformNode(ZENO_HANDLE main, const pxr::UsdGeomXformOp::Type& transType, const ZVARIANT& transVec) {
+	ZENO_HANDLE newNode = Zeno_AddNode(main, "PrimitiveTransform"); 
+	if (newNode == 0) {
+		std::cout << "failed to create node named PrimitiveTransform" << std::endl;
+		return 0;
+	}
+
+	if (transType == pxr::UsdGeomXformOp::TypeTranslate) {
+		Zeno_SetInputDefl(main, newNode, "translation", std::get<zeno::vec3f>(transVec));
+	} else if (transType == pxr::UsdGeomXformOp::TypeScale) {
+		Zeno_SetInputDefl(main, newNode, "scaling", std::get<zeno::vec3f>(transVec));
+	} else if (transType >= pxr::UsdGeomXformOp::TypeRotateX && transType <= pxr::UsdGeomXformOp::TypeRotateZ) {
+		// only need to rotate one axis, so we don't care rotation order here
+		Zeno_SetInputDefl(main, newNode, "eulerXYZ", std::get<zeno::vec3f>(transVec));
+	} else if (transType == pxr::UsdGeomXformOp::TypeRotateXYZ) {
+		Zeno_SetInputDefl(main, newNode, "eulerXYZ", std::get<zeno::vec3f>(transVec));
+		Zeno_SetParam(main, newNode, "EulerRotationOrder", "XYZ");
+	} else if (transType == pxr::UsdGeomXformOp::TypeRotateXZY) {
+		Zeno_SetInputDefl(main, newNode, "eulerXYZ", std::get<zeno::vec3f>(transVec));
+		Zeno_SetParam(main, newNode, "EulerRotationOrder", "XZY");
+	} else if (transType == pxr::UsdGeomXformOp::TypeRotateYXZ) {
+		Zeno_SetInputDefl(main, newNode, "eulerXYZ", std::get<zeno::vec3f>(transVec));
+		Zeno_SetParam(main, newNode, "EulerRotationOrder", "YXZ");
+	} else if (transType == pxr::UsdGeomXformOp::TypeRotateYZX) {
+		Zeno_SetInputDefl(main, newNode, "eulerXYZ", std::get<zeno::vec3f>(transVec));
+		Zeno_SetParam(main, newNode, "EulerRotationOrder", "YZX");
+	} else if (transType == pxr::UsdGeomXformOp::TypeRotateZXY) {
+		Zeno_SetInputDefl(main, newNode, "eulerXYZ", std::get<zeno::vec3f>(transVec));
+		Zeno_SetParam(main, newNode, "EulerRotationOrder", "ZXY");
+	} else if (transType == pxr::UsdGeomXformOp::TypeRotateZYX) {
+		Zeno_SetInputDefl(main, newNode, "eulerXYZ", std::get<zeno::vec3f>(transVec));
+		Zeno_SetParam(main, newNode, "EulerRotationOrder", "ZYX");
+	} else if (transType == pxr::UsdGeomXformOp::TypeOrient) {
+		Zeno_SetInputDefl(main, newNode, "quatRotation", std::get<zeno::vec4f>(transVec));
+	} else if (transType == pxr::UsdGeomXformOp::TypeTransform) {
+		; // ?? We don't support a single matrix node here, so...
+	} else {
+		Zeno_DeleteNode(main, newNode);
+		return 0;
+	}
+
+	return newNode;
 }

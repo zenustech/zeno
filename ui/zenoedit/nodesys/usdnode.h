@@ -13,6 +13,7 @@
 #include <pxr/usd/usdGeom/sphere.h>
 #include <pxr/usd/usdGeom/mesh.h>
 #include <pxr/usd/usdGeom/xform.h>
+#include <pxr/usd/usdGeom/xformOp.h>
 #include <pxr/usd/usdGeom/cylinder.h>
 #include <pxr/usd/usdGeom/cone.h>
 #include <pxr/usd/usdGeom/capsule.h>
@@ -46,13 +47,19 @@ private:
 	void _onEvalFinished();
 
 	/*** Basic Geometry Node Generation ***/
-	void _emitCreateSphereNode(ZENO_HANDLE targetGraph);
-	void _emitCreateCapsuleNode(ZENO_HANDLE targetGraph);
-	void _emitCreateCubeNode(ZENO_HANDLE targetGraph);
-	void _emitCreateCylinderNode(ZENO_HANDLE targetGraph);
-	void _emitCreateConeNode(ZENO_HANDLE targetGraph);
-	void _emitCreatePlaneNode(ZENO_HANDLE targetGraph);
-	void _emitPrimitiveTransformNode(ZENO_HANDLE targetGraph);
+	ZENO_HANDLE _emitCreateSphereNode(ZENO_HANDLE targetGraph);
+	ZENO_HANDLE _emitCreateCapsuleNode(ZENO_HANDLE targetGraph);
+	ZENO_HANDLE _emitCreateCubeNode(ZENO_HANDLE targetGraph);
+	ZENO_HANDLE _emitCreateCylinderNode(ZENO_HANDLE targetGraph);
+	ZENO_HANDLE _emitCreateConeNode(ZENO_HANDLE targetGraph);
+	ZENO_HANDLE _emitCreatePlaneNode(ZENO_HANDLE targetGraph);
+
+	void _emitPrimitiveTransformNodes(ZENO_HANDLE targetGraph, ZENO_HANDLE lastNode);
+
+	float _parseScalar(pxr::UsdGeomXformOp::Precision, const pxr::VtValue& vecValue);
+	zeno::vec3f _parseVector3(pxr::UsdGeomXformOp::Precision, const pxr::VtValue& vecValue);
+	zeno::vec4f _parseVector4(pxr::UsdGeomXformOp::Precision, const pxr::VtValue& vecValue);
+	ZENO_HANDLE _makeTransformNode(ZENO_HANDLE mainGraph, const pxr::UsdGeomXformOp::Type& transType, const ZVARIANT& transVec);
 
 	std::string mUSDPath;
 	std::string mPrimPath;
