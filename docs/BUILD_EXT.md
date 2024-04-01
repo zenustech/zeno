@@ -88,6 +88,7 @@ cd vcpkg
 .\vcpkg install openblas:x64-windows
 .\vcpkg install hdf5:x64-windows
 .\vcpkg install opencv4[core,jpeg,png,tiff,webp]:x64-windows
+.\vcpkg install cryptopp:x64-windows
 ```
 
 > Notice that you must install the `English Pack` for VS2019 for vcpkg to work. This can be done by clicking the `Language` panel in the VS2019 installer. (JOKE: the maintainer of vcpkg speaks Chinese too..)

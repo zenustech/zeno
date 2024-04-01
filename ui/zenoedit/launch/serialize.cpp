@@ -46,7 +46,8 @@ void resolveOutputSocket(
         AddStringList({"addNodeOutput", mockNode, outSock}, writer);
 
         //add link from source output node    to    mockNode(ExtractDict).
-        AddStringList({"bindNodeInput", mockNode, mockSocket, outNodeId, dictlistName}, writer);
+        const QString& mockOutNode = nameMangling(graphIdPrefix, outNodeId);
+        AddStringList({"bindNodeInput", mockNode, mockSocket, mockOutNode, dictlistName}, writer);
 
         realOutputId = mockNode;
         realOutputSock = outSock;

@@ -17,8 +17,8 @@
 #include <rapidjson/document.h>
 
 
-//--record true --zsg "C:\zeno\framenum.zsg" --cachePath "C:\tmp" --sframe 0 --frame 10 --sample 1 --optix 1 --path "C:\recordpath" --pixel 4500x3500 --aov 0 --needDenoise 0
-
+//--record true --zsg "C:\zeno-master\render_param.zsg" --cachePath "C:\tmp" --sframe 0 --frame 10 --sample 1 --optix 1 --path "C:\recordpath" --pixel 4500x3500 --aov 0 --needDenoise 0
+//--record true --zsg "C:\zeno-master\render_param.zsg" --cachePath "C:\tmp" --optix 1
 
 static int calcFrameCountByAudio(std::string path, int fps) {
     //auto *pFlie;
@@ -77,19 +77,19 @@ int record_main(const QCoreApplication& app)
         {"pixel", "pixel", "set record image pixel"},
         {"path", "path", "record dir"},
         {"audio", "audio", "audio path"},
-        {"bitrate", "bitrate", "bitrate"},
-        {"fps", "fps", "fps"},
+        {"bitrate", "bitrate", "bitrate", "2000"},
+        {"fps", "fps", "fps", "24"},
         {"configFilePath", "configFilePath", "configFilePath"},
         {"cachePath", "cachePath", "cachePath"},
         {"cacheNum", "cacheNum", "cacheNum"},
         {"exitWhenRecordFinish", "exitWhenRecordFinish", "exitWhenRecordFinish"},
-        {"optix", "optix", "optix mode"},
-        {"video", "video", "export video"},
-        {"aov", "aov", "aov"},
-        {"exr", "exr", "exr"},
-        {"needDenoise", "needDenoise", "needDenoise"},
-        {"videoname", "videoname", "export video's name"},
-        {"subzsg", "subgraphzsg", "subgraph zsg file path"},
+        {"optix", "optix", "optix mode", "0"},
+        {"video", "video", "export video", "0"},
+        {"aov", "aov", "aov", "0"},
+        {"exr", "exr", "exr", "0"},
+        {"needDenoise", "needDenoise", "needDenoise", "0"},
+        {"videoname", "videoname", "export video's name", "output.mp4"},
+        {"subzsg", "subgraphzsg", "subgraph zsg file path", ""},
         {"cacheautorm", "cacheautoremove", "remove cache after render"},
         {"paramsPath", "paramsPath", "paramsPath"},
         {"paramsJson", "paramsJson", "paramsJson"},
@@ -97,7 +97,11 @@ int record_main(const QCoreApplication& app)
     cmdParser.process(app);
 
     if (cmdParser.isSet("zsg"))
+    {
         param.sZsgPath = cmdParser.value("zsg");
+        //先解析zsg里面的渲染参数
+        ZsgReader::getInstance().readRenderSettings(param.sZsgPath, param);
+    }
     if (cmdParser.isSet("record"))
         param.bRecord = cmdParser.value("record").toLower() == "true";
     if (cmdParser.isSet("frame"))
@@ -159,18 +163,39 @@ int record_main(const QCoreApplication& app)
             param.iFrame = count;
         }
     }
-    param.iBitrate = cmdParser.isSet("bitrate") ? cmdParser.value("bitrate").toInt() : 20000;
-    param.iFps = cmdParser.isSet("fps") ? cmdParser.value("fps").toInt() : 24;
-    param.bOptix = cmdParser.isSet("optix") ? cmdParser.value("optix").toInt() : 0;
-    param.isExportVideo = cmdParser.isSet("video") ? cmdParser.value("video").toInt() : 0;
-    param.needDenoise = cmdParser.isSet("needDenoise") ? cmdParser.value("needDenoise").toInt() : 0;
-    int enableAOV = cmdParser.isSet("aov") ? cmdParser.value("aov").toInt() : 0;
-    param.export_exr = cmdParser.isSet("exr") && cmdParser.value("exr").toInt() != 0;
+
+    //parse render params:
+    if (cmdParser.isSet("bitrate")) {
+        param.iBitrate = cmdParser.value("bitrate").toInt();
+    }
+    if (cmdParser.isSet("fps")) {
+        param.iFps = cmdParser.value("fps").toInt();
+    }
+    if (cmdParser.isSet("optix")) {
+        param.bOptix = cmdParser.value("optix").toInt();
+    }
+    if (cmdParser.isSet("video")) {
+        param.isExportVideo = cmdParser.value("video").toInt();
+    }
+    if (cmdParser.isSet("needDenoise")) {
+        param.needDenoise = cmdParser.value("needDenoise").toInt();
+    }
+    if (cmdParser.isSet("aov")) {
+        param.bAov = cmdParser.value("aov").toInt();
     auto& ud = zeno::getSession().userData();
-    ud.set2("output_aov", enableAOV != 0);
+        ud.set2("output_aov", param.bAov != 0);
+    }
+    if (cmdParser.isSet("exr")) {
+        param.export_exr = cmdParser.value("exr").toInt() != 0;
+        auto& ud = zeno::getSession().userData();
     ud.set2("output_exr", param.export_exr);
-    param.videoName = cmdParser.isSet("videoname") ? cmdParser.value("videoname") : "output.mp4";
-    param.subZsg = cmdParser.isSet("subzsg") ? cmdParser.value("subzsg") : "";
+    }
+    if (cmdParser.isSet("videoname")) {
+        param.videoName = cmdParser.value("videoname");
+    }
+    if (cmdParser.isSet("subzsg")) {
+        param.subZsg = cmdParser.value("subzsg");
+    }
 
     if (cmdParser.isSet("paramsJson"))
     {
@@ -220,11 +245,16 @@ int record_main(const QCoreApplication& app)
         std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
         QString zenCacheDir = mgr->cachePath();
         ZERROR_EXIT(!zenCacheDir.isEmpty(), -1);
-        QStringList args = QCoreApplication::arguments();
 
-        int idxCachePath = args.indexOf("--cachePath");
-        ZERROR_EXIT(idxCachePath != -1 && idxCachePath + 1 < args.length(), -1);
-        args[idxCachePath + 1] = zenCacheDir;
+        QStringList cmdArgs = QCoreApplication::arguments();
+        QStringList args;
+
+        int idxCachePath = cmdArgs.indexOf("--cachePath");
+        if (idxCachePath == -1)
+        {
+            zeno::log_error("no cache path offered, please specifiy with --cachePath");
+            return -1;
+        }
 
         auto pGraphs = zenoApp->graphsManagment();
         ZERROR_EXIT(pGraphs, -1);
@@ -245,22 +275,85 @@ int record_main(const QCoreApplication& app)
             }
         }
 
-        ZERROR_EXIT(args[1] == "--record", -1);
-        args[1] = "--optixcmd";
-        args[2] = QString::number(0);      //no need tcp
+        args.append("--optixcmd");
+        args.append("0");
+
+        args.append("--zsg");
+        args.append(param.sZsgPath);
+
+        args.append("--cachePath");
+        args.append(zenCacheDir);
+
         args.append("--cacheautorm");
-        args.append(QString::number(launchparam.autoRmCurcache));
+        args.append("1");
+
         args.append("--optixShowBackground");
         args.append(QString::number(pGraphs->userdataInfo().optix_show_background));
+
+        args.append("--frame");
+        args.append(QString::number(param.iFrame));
+
+        args.append("--sframe");
+        args.append(QString::number(param.iSFrame));
+
+        args.append("--sample");
+        args.append(QString::number(param.iSample));
+
+        args.append("--pixel");
+        args.append(param.sPixel);
+
+        args.append("--path");
+        args.append(param.sPath);
+
+        args.append("--audio");
+        args.append(param.audioPath);
+
+        args.append("--bitrate");
+        args.append(QString::number(param.iBitrate));
+
+        args.append("--fps");
+        args.append(QString::number(param.iFps));
+
+        args.append("--configFilePath");
+        args.append(param.configFilePath);
+
+        args.append("--cacheNum");
+        args.append(QString::number(launchparam.cacheNum));
+
+        args.append("--exitWhenRecordFinish");
+        args.append(QString::number(param.exitWhenRecordFinish));
+
+        args.append("--optix");
+        args.append(QString::number(param.bOptix));
+
+        args.append("--video");
+        args.append(QString::number(param.isExportVideo));
+
         args.append("--aov");
-        args.append(QString::number(enableAOV));
+        args.append(QString::number(param.bAov));
+
         args.append("--exr");
         args.append(QString::number(param.export_exr));
+
         args.append("--toViewNodesList");
         args.append(QString::fromStdString(toViewNodesList));
         args.append("--toViewNodesIsOnceList");
         args.append(QString::fromStdString(toViewNodesIsOnceList));
-        args.removeAt(0);
+
+        args.append("--needDenoise");
+        args.append(QString::number(param.needDenoise));
+
+        args.append("--videoname");
+        args.append(param.videoName);
+
+        args.append("--subzsg");
+        args.append(param.subZsg);
+
+        args.append("--paramsPath");
+        args.append(launchparam.paramPath);
+
+        args.append("--paramsJson");
+        args.append(param.paramsJson);
 
         optixProc->setInputChannelMode(QProcess::InputChannelMode::ManagedInputChannel);
         optixProc->setReadChannel(QProcess::ProcessChannel::StandardOutput);
