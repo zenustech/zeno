@@ -70,7 +70,18 @@ namespace {
 
 struct CreateCube : zeno::INode {
     virtual void apply() override {
-        auto prim = std::make_shared<zeno::PrimitiveObject>("Cube");
+        auto prim = std::dynamic_pointer_cast<zeno::PrimitiveObject>(get_output("prim"));
+        if (prim) {
+            prim->verts.clear();
+            prim->verts.clear_attrs();
+            prim->tris.clear();
+            prim->tris.clear_attrs();
+            prim->polys.clear();
+            prim->loops.clear();
+            mark_param_modified("prim", true);
+        }
+        else
+            prim = std::make_shared<zeno::PrimitiveObject>("Cube");
         auto size = get_input2<float>("size");
         auto div_w = get_input2<int>("div_w");
         auto div_h = get_input2<int>("div_h");

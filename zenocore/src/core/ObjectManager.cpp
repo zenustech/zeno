@@ -56,7 +56,13 @@ namespace zeno {
     ZENO_API void ObjectManager::removeObject(const std::string& id)
     {
         std::lock_guard lck(m_mtx);
-        m_lastUnregisterObjs.push_back(id); //先标记，下一次run的时候在去m_objects中移除
+        m_lastUnregisterObjs.insert(id); //先标记，下一次run的时候在去m_objects中移除
+    }
+
+    ZENO_API void ObjectManager::revertRemoveObject(const std::string& id)
+    {
+        std::lock_guard lck(m_mtx);
+        m_lastUnregisterObjs.erase(id); //有一种情况是apply时仅对obj进行modify，此时需要将apply之前加入的待删除obj的id移除，无需下次运行时清除该obj
     }
 
     ZENO_API void ObjectManager::notifyTransfer(std::shared_ptr<IObject> obj)
@@ -115,12 +121,8 @@ namespace zeno {
     ZENO_API void ObjectManager::clearLastUnregisterObjs()
     {
         for (auto& key : m_lastUnregisterObjs)
-        {
-            if (m_objects.find(key) != m_objects.end()) {
+            if (m_objects.find(key) != m_objects.end())
                 m_objects.erase(key);
-            }
-            m_remove.insert(key);
-        }
         m_lastUnregisterObjs.clear();
     }
 
@@ -150,16 +152,24 @@ namespace zeno {
         }
     }
 
-    ZENO_API void ObjectManager::markObjInteractive(std::set<std::string>& newobjKeys)
+    ZENO_API void ObjectManager::collect_modify_objs(std::set<std::string>& newobjKeys, bool isView)
     {
         std::lock_guard lck(m_mtx);
-        m_modify = newobjKeys;
+        if (isView)
+            m_modify.insert(newobjKeys.begin(), newobjKeys.end());;
     }
 
-    ZENO_API void ObjectManager::unmarkObjInteractive(std::set<std::string>& removeobjKeys)
+    ZENO_API void ObjectManager::remove_modify_objs(std::set<std::string>& removeobjKeys)
     {
         std::lock_guard lck(m_mtx);
         m_modify.clear();
+    }
+
+    ZENO_API void ObjectManager::collect_modify_objs(std::string newobjKey, bool isView)
+    {
+        std::lock_guard lck(m_mtx);
+        if (isView)
+            m_modify.insert(newobjKey);;
     }
 
     ZENO_API void ObjectManager::getModifyObjsInfo(std::map<std::string, std::shared_ptr<zeno::IObject>>& modifyInteractiveObjs)

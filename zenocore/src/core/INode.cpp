@@ -244,6 +244,10 @@ ZENO_API void INode::registerObjToManager()
             }
             assert(!spObj->key().empty());
             getSession().objsMan->collectingObject(spObj->key(), spObj, shared_from_this(), m_bView);
+            if (param->m_idModify) {
+                getSession().objsMan->collect_modify_objs(spObj->key(), m_bView); //如果是修改obj，还需要添加到objManager的modify集合中(需要在具体apply函数中设置m_idModify为true)
+                getSession().objsMan->revertRemoveObject(spObj->key());           //如果是对param的obj进行modify，不需要去objManager中unregiste该对象，撤销unregiste时removeObj
+            }
         }
     }
 }
@@ -387,6 +391,10 @@ ZENO_API void INode::doApply() {
         registerObjToManager();//如果只是打view，也是需要加到manager的。
         return;
     }
+    zeno::scope_exit spe([&] {//apply时根据情况将IParam标记为modified，退出时将所有IParam标记为未modified
+        for (auto const& [name, param] : outputs_)
+            param->m_idModify = false;
+        });
 
     unregisterObjs();
 
@@ -707,6 +715,12 @@ ZENO_API std::pair<float, float> INode::get_pos() const {
 
 ZENO_API bool INode::in_asset_file() const {
     return getSession().assets->isAssetGraph(this->graph->shared_from_this());
+}
+
+ZENO_API void INode::mark_param_modified(std::string paramName, bool modified)
+{
+    if (std::shared_ptr<IParam> primParam = get_output_param("prim"))
+        primParam->m_idModify = modified;
 }
 
 ZENO_API bool INode::set_input(std::string const& param, zany obj) {

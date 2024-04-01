@@ -46,7 +46,6 @@ struct CallbackForSocket
 struct CallbackCollection
 {
     Callback_EditFinished cbEditFinished;
-    Callback_EditFinishedWithSlider cbEditFinishedWithSlider;
     CALLBACK_SWITCH cbSwitch;
     Callback_NodeSelected cbNodeSelected;
     Callback_GetIndexData cbGetIndexData;

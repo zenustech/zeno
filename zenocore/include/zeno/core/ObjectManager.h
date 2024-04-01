@@ -65,6 +65,7 @@ public:
 
     ZENO_API void removeObject(const std::string& id);
     CALLBACK_REGIST(removeObject, void, std::string)
+    ZENO_API void revertRemoveObject(const std::string& id);
 
     ZENO_API void notifyTransfer(std::shared_ptr<IObject> obj);
     CALLBACK_REGIST(notifyTransfer, void, std::shared_ptr<IObject>)
@@ -88,8 +89,9 @@ public:
     ZENO_API void remove_attach_node_by_removing_objs();
 
     //viewport interactive obj
-    ZENO_API void markObjInteractive(std::set<std::string>& newobjKeys);
-    ZENO_API void unmarkObjInteractive(std::set<std::string>& removeobjKeys);
+    ZENO_API void collect_modify_objs(std::string newobjKey, bool isView);
+    ZENO_API void collect_modify_objs(std::set<std::string>& newobjKeys, bool isView);
+    ZENO_API void remove_modify_objs(std::set<std::string>& removeobjKeys);
     ZENO_API void getModifyObjsInfo(std::map<std::string, std::shared_ptr<zeno::IObject>>& modifyInteractiveObjs);  //interactive objs
 
 private:
@@ -109,7 +111,7 @@ private:
     std::set<std::string> m_remove;         //äÖÈ¾¶ËÐèÒªÒÆ³ýµÄobj
     std::set<std::string> m_modify;         //äÖÈ¾¶Ë(viewport)µÄ interactive obj
 
-    std::vector<std::string> m_lastUnregisterObjs;
+    std::set<std::string> m_lastUnregisterObjs;
 
     mutable std::mutex m_mtx;
 };
