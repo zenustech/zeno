@@ -10,6 +10,7 @@
 #include <optional>
 #include <unordered_set>
 #include <unordered_map>
+#include <zeno/types/ListObject.h>
 
 namespace zenovis {
 
@@ -51,6 +52,10 @@ struct Scene : zeno::disable_copy {
     bool cameraFocusOnNode(std::string const &nodeid, zeno::vec3f &center, float &radius);
     static void loadGLAPI(void *procaddr);
     void* getOptixImg(int &w, int &h);
+
+    void convertListObjs(std::shared_ptr<zeno::IObject>const& objToBeConvert,
+        std::map<std::string, std::shared_ptr<zeno::IObject>>& dirtyListItems,
+        std::set<std::string>& allListItems, bool isDirty); //将listObj中dirty元素和全部元素展平
 };
 
 } // namespace zenovis

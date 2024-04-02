@@ -343,19 +343,34 @@ ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
             }
             if (!bDirectLink)
             {
+                auto oldinput = std::dynamic_pointer_cast<ListObject>(in_param->result);
+
                 spList = std::make_shared<ListObject>();
+                int indx = 0;
                 for (const auto& spLink : in_param->links)
                 {
                     //list的情况下，keyName是不是没意义，顺序怎么维持？
                     std::shared_ptr<IParam> out_param = spLink->fromparam.lock();
                     std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
+                    if (outNode->is_dirty()) {  //list中的元素是dirty的，重新计算并加入list
+                        GraphException::translated([&] {
+                            outNode->doApply();
+                        }, outNode.get());
 
-                    GraphException::translated([&] {
-                        outNode->doApply();
-                    }, outNode.get());
-
-                    zany outResult = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
-                    spList->arr.push_back(outResult);
+                        zany outResult = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
+                        spList->arr.push_back(outResult);
+                        spList->dirtyIndice.insert(indx);
+                    } else {                    //list中的元素不是dirty的，从旧list中直接取出加入新list
+                        if (oldinput && oldinput->nodeNameArrItemMap.find(outNode->m_name) != oldinput->nodeNameArrItemMap.end()) {
+                            int itemIdx = oldinput->nodeNameArrItemMap[outNode->m_name];
+                            if (oldinput->arr.size() > itemIdx)
+                                spList->arr.push_back(oldinput->arr[itemIdx]);
+                            else
+                                continue;
+                        }else
+                            continue;
+                    }
+                    spList->nodeNameArrItemMap.insert(std::make_pair(outNode->m_name, indx++));
                 }
             }
             in_param->result = spList;

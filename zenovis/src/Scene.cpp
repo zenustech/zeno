@@ -69,6 +69,27 @@ void* Scene::getOptixImg(int& w, int& h)
 #endif
 }
 
+void Scene::convertListObjs(std::shared_ptr<zeno::IObject>const& objToBeConvert, std::map<std::string, std::shared_ptr<zeno::IObject>>& dirtyListItems, std::set<std::string>& allListItems, bool isDirty)
+{
+    if (std::shared_ptr<zeno::ListObject> lst = std::dynamic_pointer_cast<zeno::ListObject>(objToBeConvert)) {
+        for (int i = 0; i < lst->arr.size(); i++) {
+            if (lst->dirtyIndice.count(i)) {
+                convertListObjs(lst->arr[i], dirtyListItems, allListItems, true);
+                continue;
+            }
+            convertListObjs(lst->arr[i], dirtyListItems, allListItems, false);
+        }
+        return;
+    }
+    if (!objToBeConvert)
+        return;
+    else {
+        if (isDirty)
+            dirtyListItems.insert(std::make_pair(objToBeConvert->key, objToBeConvert));
+        allListItems.insert(objToBeConvert->key);
+    }
+}
+
 bool Scene::cameraFocusOnNode(std::string const &nodeid, zeno::vec3f &center, float &radius) {
     for (auto const &[key, ptr]: this->objectsMan->pairs()) {
         if (nodeid == key.substr(0, key.find_first_of(':'))) {

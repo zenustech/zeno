@@ -20,7 +20,7 @@ namespace zeno {
     struct RenderObjsInfo {
         SharedObjects newObjs;
         SharedObjects modifyObjs;
-        std::set<std::string> remObjs;
+        SharedObjects remObjs;
         SharedObjects lightObjs;    //TODO:
         SharedObjects allObjects;
 
@@ -95,7 +95,6 @@ public:
     ZENO_API void getModifyObjsInfo(std::map<std::string, std::shared_ptr<zeno::IObject>>& modifyInteractiveObjs);  //interactive objs
 
 private:
-    void convertToView(zany const& objToBeConvert, SharedObjects& objConvertResult, std::set<std::string>& keyConvertResult, bool convertKeyOnly = false);
     void clear();
 
     std::map<std::string, int> m_objRegister;
