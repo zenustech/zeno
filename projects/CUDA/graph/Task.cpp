@@ -38,7 +38,7 @@ void python_evaluate(const std::string& fmtStr, const std::vector<const char*> a
 // #if defined(ZENO_WITH_PYTHON3) or ZS_PYTHON_FOUND
     std::string evalStmt = "print(\'" + fmtStr + "\'";
     if (args.size()) {
-      evalStmt += ").format("+std::string(args[0]);
+      evalStmt += ".format("+std::string(args[0]);
       for (int i = 1; i != args.size(); ++i)
           evalStmt += ", " + std::string(args[i]);
       evalStmt += ")";
