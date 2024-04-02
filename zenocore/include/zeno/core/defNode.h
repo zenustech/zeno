@@ -13,6 +13,15 @@ namespace zeno {
     //};
 //}
 
+#define ZENO_DEFNODE2(Class) \
+    static struct _Def##Class { \
+        _Def##Class(::zeno::CustomUI const &desc) {\
+            ::zeno::getSession().defNodeClass2([] () -> std::shared_ptr<::zeno::INode> { \
+                return std::make_shared<Class>(); }, #Class, desc); \
+        } \
+    } _def##Class
+
+
 #define ZENO_DEFNODE(Class) \
     static struct _Def##Class { \
         _Def##Class(::zeno::Descriptor const &desc) { \
@@ -32,6 +41,9 @@ inline int defNodeClass(std::string const &id, Descriptor const &desc = {}) {
 // deprecated:
 #define ZENDEFNODE(Class, ...) \
     ZENO_DEFNODE(Class)(__VA_ARGS__);
+
+#define ZENDEFINE(Class, ...) \
+    ZENO_DEFNODE2(Class)(__VA_ARGS__);
 
 // deprecated:
 #define ZENO_DEFOVERLOADNODE(Class, PostFix, ...) \

@@ -229,9 +229,9 @@ namespace zeno {
             return;
         else {
             if (convertKeyOnly)
-                keyConvertResult.insert(objToBeConvert->key);
+                keyConvertResult.insert(objToBeConvert->key());
             else
-                objConvertResult.insert(std::make_pair(objToBeConvert->key, objToBeConvert));
+                objConvertResult.insert(std::make_pair(objToBeConvert->key(), objToBeConvert));
         }
     }
 

@@ -15,7 +15,7 @@ struct UserData;
 struct IObject {
     using polymorphic_base_type = IObject;
 
-    std::string key;
+
     mutable std::any m_userData;
 
 #ifndef ZENO_APIFREE
@@ -31,6 +31,7 @@ struct IObject {
     ZENO_API virtual bool assign(IObject const *other);
     ZENO_API virtual bool move_assign(IObject *other);
     ZENO_API virtual std::string method_node(std::string const &op);
+    ZENO_API virtual std::string key();
 
     ZENO_API UserData &userData() const;
 #else
@@ -63,27 +64,31 @@ struct IObjectClone : CustomBase {
     //using has_iobject_clone = std::true_type;
 
     IObjectClone() {
-        key = newObjKey();
+        m_key = newObjKey();
     }
 
     IObjectClone(const IObjectClone& rhs) : CustomBase(rhs) {
         m_prefix = rhs.m_prefix;
-        key = newObjKey();
+        m_key = newObjKey();
     }
 
     IObjectClone(const std::string& prefix) : m_prefix(prefix) {
-        key = newObjKey();
+        m_key = newObjKey();
     }
 
     virtual std::shared_ptr<IObject> clone() const override {
         auto spClonedObj = std::make_shared<Derived>(static_cast<Derived const &>(*this));
         spClonedObj->m_prefix = m_prefix;
-        spClonedObj->key = newObjKey();
+        spClonedObj->m_key = newObjKey();
         return spClonedObj;
     }
 
     virtual std::shared_ptr<IObject> move_clone() override {
         return std::make_shared<Derived>(static_cast<Derived &&>(*this));
+    }
+
+    virtual std::string key() override {
+        return m_key;
     }
 
     virtual bool assign(IObject const *other) override {
@@ -115,6 +120,7 @@ struct IObjectClone : CustomBase {
     }
 
     std::string m_prefix;
+    std::string m_key;
 };
 
 using zany = std::shared_ptr<IObject>;

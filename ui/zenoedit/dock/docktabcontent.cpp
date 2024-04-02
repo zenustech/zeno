@@ -982,20 +982,7 @@ void DockContent_View::initConnections()
         m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_SCREEN_SHOOT, true);
     });
     connect(m_background, &QCheckBox::stateChanged, this, [=](int state) {
-        auto &ud = zeno::getSession().userData();
-        ud.set2("optix_show_background", state > 0);
-
-        {
-            Zenovis *pZenoVis = m_pDisplay->getZenoVis();
-            ZASSERT_EXIT(pZenoVis);
-            auto session = pZenoVis->getSession();
-            ZASSERT_EXIT(session);
-            auto scene = session->get_scene();
-            ZASSERT_EXIT(scene);
-            scene->objectsMan->needUpdateLight = true;
-            m_pDisplay->setSimpleRenderOption();
-            zenoApp->getMainWindow()->updateViewport();
-        }
+        m_pDisplay->onSetBackground(state > 0);
     });
 
     connect(m_resizeViewport, &ZToolBarButton::clicked, this, [=]() {

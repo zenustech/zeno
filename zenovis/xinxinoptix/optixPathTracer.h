@@ -19,8 +19,8 @@ enum RayType
 enum VisibilityMask {
     NothingMask    = 0u,
     DefaultMatMask = 1u << 0,
-    VolumeMatMask  = 1u << 1,
-    LightMatMask   = 1u << 2,
+    LightMatMask   = 1u << 1,
+    VolumeMatMask  = 1u << 2,
     EverythingMask = 255u
 }; 
 
@@ -269,6 +269,10 @@ struct HitGroupData
     uint16_t dc_index;
     uint16_t vol_depth=999;
     float vol_extinction=1.0f;
+    
+    bool equiangular  = false;
+    bool multiscatter = false;
+
     //float4* vertices;
 #ifdef USE_SHORT_COMPACT
     ushort2* uv;

@@ -105,17 +105,71 @@ struct PrimMarkIndex : INode {
         int base = get_input<NumericObject>("base")->get<int>();
         int step = get_input<NumericObject>("step")->get<int>();
         auto type = get_input<StringObject>("type")->get();
+        auto scope = get_input2<std::string>("scope");
 
         if (type == "float") {
-            auto &tag = prim->verts.add_attr<float>(tagAttr);
-            parallel_for((size_t)0, tag.size(), [&] (size_t i) {
-                tag[i] = float(base + i * step);
-            });
-        } else {
-            auto &tag = prim->verts.add_attr<int>(tagAttr);
-            parallel_for((size_t)0, tag.size(), [&] (size_t i) {
-                tag[i] = base + i * step;
-            });
+            if (scope == "vert") {
+                auto &tag = prim->verts.add_attr<float>(tagAttr);
+                parallel_for((size_t)0, tag.size(), [&] (size_t i) {
+                    tag[i] = float(base + i * step);
+                });
+            }
+            else if (scope == "tri") {
+                auto &tag = prim->tris.add_attr<float>(tagAttr);
+                parallel_for((size_t)0, tag.size(), [&] (size_t i) {
+                    tag[i] = float(base + i * step);
+                });
+            }
+            else if (scope == "loop") {
+                auto &tag = prim->loops.add_attr<float>(tagAttr);
+                parallel_for((size_t)0, tag.size(), [&] (size_t i) {
+                    tag[i] = float(base + i * step);
+                });
+            }
+            else if (scope == "poly") {
+                auto &tag = prim->polys.add_attr<float>(tagAttr);
+                parallel_for((size_t)0, tag.size(), [&] (size_t i) {
+                    tag[i] = float(base + i * step);
+                });
+            }
+            else if (scope == "line") {
+                auto &tag = prim->lines.add_attr<float>(tagAttr);
+                parallel_for((size_t)0, tag.size(), [&] (size_t i) {
+                    tag[i] = float(base + i * step);
+                });
+            }
+        }
+        else {
+            if (scope == "vert") {
+                auto &tag = prim->verts.add_attr<int>(tagAttr);
+                parallel_for((size_t)0, tag.size(), [&] (size_t i) {
+                    tag[i] = base + i * step;
+                });
+            }
+            else if (scope == "tri") {
+                auto &tag = prim->tris.add_attr<int>(tagAttr);
+                parallel_for((size_t)0, tag.size(), [&] (size_t i) {
+                    tag[i] = base + i * step;
+                });
+            }
+            else if (scope == "loop") {
+                auto &tag = prim->loops.add_attr<int>(tagAttr);
+                parallel_for((size_t)0, tag.size(), [&] (size_t i) {
+                    tag[i] = base + i * step;
+                });
+            }
+            else if (scope == "poly") {
+                auto &tag = prim->polys.add_attr<int>(tagAttr);
+                parallel_for((size_t)0, tag.size(), [&] (size_t i) {
+                    tag[i] = base + i * step;
+                });
+            }
+            else if (scope == "line") {
+                auto &tag = prim->lines.add_attr<int>(tagAttr);
+                parallel_for((size_t)0, tag.size(), [&] (size_t i) {
+                    tag[i] = base + i * step;
+                });
+            }
         }
 
         set_output("prim", std::move(prim));
@@ -130,6 +184,7 @@ ZENDEFNODE(PrimMarkIndex, {
     {"enum int float", "type", "int"},
     {"int", "base", "0"},
     {"int", "step", "1"},
+    {"enum vert tri loop poly line", "scope", "vert"},
     },
     {
     {"PrimitiveObject", "prim"},

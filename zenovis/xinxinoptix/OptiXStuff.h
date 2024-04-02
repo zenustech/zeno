@@ -29,6 +29,8 @@
 #include "zeno/utils/log.h"
 #include "zeno/utils/string.h"
 #include <filesystem>
+#include <cryptopp/md5.h>
+#include <cryptopp/hex.h>
 
 //#include <GLFW/glfw3.h>
 
@@ -332,6 +334,7 @@ inline void createRTProgramGroups(OptixDeviceContext &context, OptixModule &_mod
                 ) );
 }
 struct cuTexture{
+    std::string md5;
     cudaArray_t gpuImageArray;
     cudaTextureObject_t texture;
     cuTexture(){gpuImageArray = nullptr;texture=0;}
@@ -491,9 +494,31 @@ inline std::map<std::string, std::pair<uint, uint>> g_vdb_indice_visible;
 
 inline std::map<uint, std::vector<std::string>> g_vdb_list_for_each_shader;
 
+inline std::vector<std::tuple<std::string, glm::mat4>> volumeTrans;
+inline std::vector<std::tuple<std::string, std::shared_ptr<VolumeWrapper>>> volumeBoxs;
+
+inline bool preloadVolumeBox(std::string& key, std::string& matid, glm::mat4& transform) {
+
+    volumeTrans.push_back( {matid, transform} );
+    return true;
+}
+
+inline bool processVolumeBox() {
+
+    volumeBoxs.clear();
+    for (auto& [key, val] : volumeTrans) {
+        auto volume_ptr = std::make_shared<VolumeWrapper>();
+        volume_ptr->transform = val;
+        buildVolumeAccel(volume_ptr->accel, *volume_ptr, context);
+        volumeBoxs.emplace_back( std::tuple{ key, volume_ptr } );
+    }
+    volumeTrans.clear();
+    return true;
+}
+
 inline bool preloadVDB(const zeno::TextureObjectVDB& texVDB, 
                        uint index_of_shader, uint index_inside_shader,
-                       const glm::f64mat4& transform, 
+                       const glm::mat4& transform, 
                        std::string& combined_key)
 {
     auto path = texVDB.path;
@@ -539,7 +564,7 @@ inline bool preloadVDB(const zeno::TextureObjectVDB& texVDB,
 
         auto& cached = g_vdb_cached_map[vdb_key];
 
-        if (transform == g_vdb_cached_map[vdb_key]->transform && fileTime == cached->file_time && texVDB.eleType == cached->type) {
+        if (transform == cached->transform && fileTime == cached->file_time && texVDB.eleType == cached->type) {
 
             g_vdb_indice_visible[vdb_key] = std::make_pair(index_of_shader, index_inside_shader);
             return true;
@@ -588,6 +613,7 @@ inline std::vector<float> loadIES(const std::string& path, float& coneAngle)
 }
 inline std::map<std::string, std::shared_ptr<cuTexture>> g_tex;
 inline std::map<std::string, std::filesystem::file_time_type> g_tex_last_write_time;
+inline std::map<std::string, std::string> md5_path_mapping;
 inline std::optional<std::string> sky_tex;
 inline std::map<std::string, int> sky_nx_map;
 inline std::map<std::string, int> sky_ny_map;
@@ -660,7 +686,16 @@ inline void calc_sky_cdf_map(int nx, int ny, int nc, T *img) {
         }
     }
 }
-
+static std::string calculateMD5(const std::vector<char>& input) {
+    CryptoPP::byte digest[CryptoPP::MD5::DIGESTSIZE];
+    CryptoPP::MD5().CalculateDigest(digest, (const CryptoPP::byte*)input.data(), input.size());
+    CryptoPP::HexEncoder encoder;
+    std::string output;
+    encoder.Attach(new CryptoPP::StringSink(output));
+    encoder.Put(digest, sizeof(digest));
+    encoder.MessageEnd();
+    return output;
+}
 inline void addTexture(std::string path)
 {
     zeno::log_debug("loading texture :{}", path);
@@ -676,6 +711,20 @@ inline void addTexture(std::string path)
         if(g_tex.count(path)) {
             return;
         }
+    }
+    auto input = readData(native_path);
+    std::string md5Hash = calculateMD5(input);
+    zeno::log_info("path {} md5 {} tex", path, md5Hash);
+    std::cout << "path" << path << "md5" << md5Hash << std::endl;
+
+    if (md5_path_mapping.count(md5Hash)) {
+        g_tex[path] = g_tex[md5_path_mapping[md5Hash]];
+        std::cout << "reuse" << std::endl;
+        zeno::log_info("path {} reuse {} tex", path, md5_path_mapping[md5Hash]);
+        return;
+    }
+    else {
+        md5_path_mapping[md5Hash] = path;
     }
     int nx, ny, nc;
     stbi_set_flip_vertically_on_load(true);
@@ -799,9 +848,23 @@ inline void addTexture(std::string path)
         g_tex[path] = makeCudaTexture(img, nx, ny, nc);
         stbi_image_free(img);
     }
+    g_tex[path]->md5 = md5Hash;
 
     for (auto i = g_tex.begin(); i != g_tex.end(); i++) {
         zeno::log_info("-{}", i->first);
+    }
+}
+inline void removeTexture(std::string path) {
+    if (path.size()) {
+        md5_path_mapping.erase(g_tex[path]->md5);
+        g_tex.erase(path);
+        sky_nx_map.erase(path);
+        sky_ny_map.erase(path);
+        sky_cdf_map.erase(path);
+        sky_pdf_map.erase(path);
+        sky_start_map.erase(path);
+        sky_avg_map.erase(path);
+        g_tex_last_write_time.erase(path);
     }
 }
 
@@ -812,7 +875,7 @@ struct OptixShaderCore {
     raii<OptixProgramGroup>   m_radiance_hit_group  {};
     raii<OptixProgramGroup>   m_occlusion_hit_group {};
 
-    std::string _source;
+    const char* _source;
 
     std::string _hittingEntry;
     std::string _shadingEntry;
@@ -849,7 +912,7 @@ struct OptixShaderCore {
         std::string tmp_name = "MatShader.cu";
         tmp_name = "$" + std::to_string(idx) + tmp_name;
          
-        if(createModule(module.reset(), context, _source.c_str(), tmp_name.c_str(), macro, _c_group))
+        if(createModule(module.reset(), context, _source, tmp_name.c_str(), macro, _c_group))
         {
             std::cout<<"module created"<<std::endl;
 

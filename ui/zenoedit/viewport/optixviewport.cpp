@@ -333,6 +333,21 @@ void OptixWorker::onCleanUpScene()
     m_zenoVis->cleanUpScene();
 }
 
+void OptixWorker::onSetBackground(bool bShowBg)
+{
+    auto& ud = zeno::getSession().userData();
+    ud.set2("optix_show_background", bShowBg);
+
+    ZASSERT_EXIT(m_zenoVis);
+    auto session = m_zenoVis->getSession();
+    ZASSERT_EXIT(session);
+    auto scene = session->get_scene();
+    ZASSERT_EXIT(scene);
+    scene->objectsMan->needUpdateLight = true;
+    scene->drawOptions->simpleRender = true;
+    updateFrame();
+}
+
 void OptixWorker::onSetData(
     float aperture,
     float shutter_speed,
@@ -414,7 +429,7 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(this, &ZOptixViewport::sig_modifyLightData, m_worker, &OptixWorker::onModifyLightData);
     connect(this, &ZOptixViewport::sig_updateCameraProp, m_worker, &OptixWorker::onUpdateCameraProp);
     connect(this, &ZOptixViewport::sig_cleanUpScene, m_worker, &OptixWorker::onCleanUpScene);
-
+    connect(this, &ZOptixViewport::sig_setBackground, m_worker, &OptixWorker::onSetBackground);
     connect(this, &ZOptixViewport::sig_setdata_on_optix_thread, m_worker, &OptixWorker::onSetData);
 
     setRenderSeparately(false, false);
@@ -559,6 +574,11 @@ void ZOptixViewport::setNumSamples(int samples)
     if (scene) {
         scene->drawOptions->num_samples = samples;
     }
+}
+
+void ZOptixViewport::showBackground(bool bShow)
+{
+    emit sig_setBackground(bShow);
 }
 
 void ZOptixViewport::resizeEvent(QResizeEvent* event)

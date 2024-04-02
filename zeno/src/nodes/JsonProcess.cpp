@@ -2,15 +2,16 @@
 // Created by zh on 2023/11/14.
 //
 
-#include <zeno/zeno.h>
-#include <tinygltf/json.hpp>
-#include "zeno/utils/fileio.h"
-#include "zeno/utils/string.h"
-#include "zeno/types/ListObject.h"
 #include "zeno/types/DictObject.h"
+#include "zeno/types/ListObject.h"
+#include "zeno/utils/fileio.h"
+#include "zeno/utils/log.h"
+#include "zeno/utils/string.h"
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <tinygltf/json.hpp>
+#include <zeno/zeno.h>
 
 using Json = nlohmann::json;
 
@@ -40,6 +41,25 @@ ZENDEFNODE(ReadJson, {
         "json"
     },
 });
+//P:/jielidou/EP028/HDRI/Light/ok_light.json
+struct PrintJson : zeno::INode {
+  virtual void apply() override {
+    auto out_json = std::make_shared<JsonObject>();
+    auto json = get_input<JsonObject>("json");
+    std::cerr << "print json: " << to_string(json->json) << std::endl;
+  }
+};
+ZENDEFNODE(PrintJson, {
+     {
+         "json",
+     },
+     {
+     },
+     {},
+     {
+         "json"
+     },
+ });
 struct ReadJsonFromString : zeno::INode {
     virtual void apply() override {
         auto json = std::make_shared<JsonObject>();
