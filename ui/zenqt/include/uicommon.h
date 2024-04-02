@@ -512,4 +512,6 @@ Q_DECLARE_METATYPE(NodeState)
 
 Q_DECLARE_METATYPE(zeno::ObjPath)
 
+Q_DECLARE_METATYPE(zeno::CustomUI)
+
 #endif

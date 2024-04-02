@@ -92,6 +92,7 @@ void ZenoApplication::initMetaTypes()
     QMetaType::registerEqualsComparator<CURVES_DATA>();
     qRegisterMetaType<NodeState>();
     qRegisterMetaType<zeno::ObjPath>();
+    qRegisterMetaType<zeno::CustomUI>();
 }
 
 void ZenoApplication::initStyleSheets()

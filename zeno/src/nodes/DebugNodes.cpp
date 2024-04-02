@@ -278,6 +278,9 @@ ZENDEFINE(CustomNode, {
             }
         }
     },
+    {
+        {"output1", zeno::Param_Null, zeno::PrimarySocket},
+    },
     "debug",
     "CUI",
 });
