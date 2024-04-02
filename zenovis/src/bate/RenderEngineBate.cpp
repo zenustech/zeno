@@ -43,7 +43,7 @@ struct RenderEngineBate : RenderEngine {
         graphicsMan->load_objects(scene->objectsMan->pairsShared());
     }
 
-    void draw() override {
+    void draw(bool record) override {
         auto guard = setupState();
         CHECK_GL(glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE));
         glDepthFunc(GL_GREATER);
@@ -51,8 +51,10 @@ struct RenderEngineBate : RenderEngine {
         CHECK_GL(glClearColor(scene->drawOptions->bgcolor.r, scene->drawOptions->bgcolor.g,
                               scene->drawOptions->bgcolor.b, 0.0f));
         CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-        fbr->generate_buffers();
-        fbr->bind();
+        if (!record) {
+            fbr->generate_buffers();
+            fbr->bind();
+        }
 
         auto bindVao = opengl::scopeGLBindVertexArray(vao->vao);
         graphicsMan->draw();
@@ -83,9 +85,11 @@ struct RenderEngineBate : RenderEngine {
             CHECK_GL(glClear(GL_DEPTH_BUFFER_BIT));
             scene->drawOptions->handler->draw();
         }
-        fbr->unbind();
-        fbr->draw_to_screen();
-        fbr->destroy_buffers();
+        if (!record) {
+            fbr->unbind();
+            fbr->draw_to_screen();
+            fbr->destroy_buffers();
+        }
     }
 };
 
