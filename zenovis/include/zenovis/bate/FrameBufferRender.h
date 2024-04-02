@@ -39,49 +39,6 @@ using std::vector;
 using std::unordered_map;
 using std::unordered_set;
 
-static void load_buffer_to_image(unsigned int* ids, int w, int h, const std::string& file_name = "output.ppm") {
-    unordered_map<unsigned int, vec3i> color_set;
-    color_set[0] = {20, 20, 20};
-    color_set[1] = {90, 20, 20};
-    color_set[1047233823] = {10, 10, 10};
-
-    auto random_color = [](std::default_random_engine &e) -> vec3i{
-        std::uniform_int_distribution<int> u(0, 255);
-        auto r = u(e);
-        auto g = u(e);
-        auto b = u(e);
-        return {r, g, b};
-    };
-
-    unordered_map<unsigned int, int> obj_count;
-
-    std::ofstream os;
-    os.open(file_name, std::ios::out);
-    os << "P3\n" << w << " " << h << "\n255\n";
-    for (int j = h - 1; j >= 0; --j) {
-        for (int i = 0; i < w; ++i) {
-            auto id = ids[w * j + i];
-            vec3i color;
-            if (color_set.find(id) != color_set.end()) {
-                color = color_set[id];
-                obj_count[id]++;
-            }
-            else {
-                printf("found obj id : %u\n", id);
-                std::default_random_engine e(id);
-                color = random_color(e);
-                color_set[id] = color;
-            }
-            os << color[0] << " " << color[1] << " " << color[2] << "\t";
-        }
-        os << "\n";
-    }
-    for (auto [key, value] : obj_count)
-        printf("obj id: %u, count: %d, color: (%d, %d, %d)\n", key, value, color_set[key][0],
-               color_set[key][1], color_set[key][2]);
-    printf("load done.\n");
-}
-
 static const char * vert_code = R"(
     #version 330 core
     layout (location = 0) in vec2 aPos;
@@ -247,18 +204,6 @@ struct FrameBufferRender {
         CHECK_GL(glBindTexture(GL_TEXTURE_2D, screen_tex->tex)); // use the now resolved color attachment as the quad's texture
         CHECK_GL(glDrawArrays(GL_TRIANGLES, 0, 6));
         glEnable(GL_MULTISAMPLE);
-    }
-
-    void save_image() {
-        return;
-        int width = w;
-        int height = h;
-        CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, intermediate_fbo->fbo));
-        auto pixels = std::vector<uint8_t>(width * height * 4);
-        CHECK_GL(glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels.data()));
-        stbi_flip_vertically_on_write(true);
-        stbi_write_png("output.png", width, height, 3, pixels.data(), 0);
-        CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
     }
 };
 }
