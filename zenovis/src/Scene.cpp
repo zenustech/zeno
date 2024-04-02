@@ -85,8 +85,8 @@ void Scene::convertListObjs(std::shared_ptr<zeno::IObject>const& objToBeConvert,
         return;
     else {
         if (isDirty)
-            dirtyListItems.insert(std::make_pair(objToBeConvert->key, objToBeConvert));
-        allListItems.insert(objToBeConvert->key);
+            dirtyListItems.insert(std::make_pair(objToBeConvert->key(), objToBeConvert));
+        allListItems.insert(objToBeConvert->key());
     }
 }
 
