@@ -55,8 +55,8 @@ void python_evaluate(const std::string& fmtStr, const std::vector<const char*> a
     fmt::print("assembled cmd str: {}\n", evalStmt);
 
     PyObject *sys = PyImport_ImportModule("sys");
-    PyObject *stdout = PyObject_GetAttrString(sys, "stdout");
-    PyObject *output = PyObject_GetAttrString(stdout, "getvalue");
+    PyObject *stdOut = PyObject_GetAttrString(sys, "stdout");
+    PyObject *output = PyObject_GetAttrString(stdOut, "getvalue");
     PyObject *result = PyObject_CallObject(output, NULL);
 
     // Convert the captured output to a C++ string
@@ -64,7 +64,7 @@ void python_evaluate(const std::string& fmtStr, const std::vector<const char*> a
     std::string result_str(result_cstr);
 
     // Print the captured output in C++
-    std::cout << "Captured Python output: " << result_str << std::endl;
+    fmt::print("Captured Python output: {}\n", result_str);
 
     // Restore the original stdout
     PyRun_SimpleString("sys.stdout = old_stdout");

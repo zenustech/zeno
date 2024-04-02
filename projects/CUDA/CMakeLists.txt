@@ -174,8 +174,13 @@ target_sources(zeno PRIVATE
   utils/Noise.cu
   utils/Groom.cpp
 
+)
+
+if (ZS_PYTHON_FOUND)
+target_sources(zeno PRIVATE
   graph/Task.cpp
 )
+endif(ZS_PYTHON_FOUND)
 
 add_subdirectory(remesh)
 add_subdirectory(cluster)
