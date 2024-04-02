@@ -10,6 +10,9 @@
 #include <fstream>
 #include <random>
 #include <sstream>
+
+#include <tinygltf/json.hpp>
+
 #include <zeno/core/Graph.h>
 #include <zeno/extra/assetDir.h>
 #include <zeno/funcs/PrimitiveUtils.h>
@@ -31,7 +34,7 @@ using GenericWorkAttribute =
 struct WorkNode : IObject {
   //
   std::string tag;
-  std::string workItems;
+  std::vector<std::string> workItems;
   std::map<std::string, std::shared_ptr<WorkNode>> deps;
   // reserved
   std::map<std::string, GenericWorkAttribute> attributes;
@@ -55,6 +58,7 @@ std::string python_evaluate(const std::string &fmtStr,
   }
   std::string tail = std::string("{}") + fmt::format("), \'{}\')", optionStr);
 
+  Py_Initialize();
   PyRun_SimpleString(
       "import sys\n"
       "from io import StringIO\n"
@@ -188,7 +192,10 @@ struct CommandGenerator : INode {
     /// store in descriptor
     auto ret = std::make_shared<WorkNode>();
     ret->tag = tag;
-    ret->workItems = cmdScripts;
+    std::istringstream iss(cmdScripts);
+    std::string line;
+    while (std::getline(iss, line))
+      ret->workItems.push_back(line);
     for (auto &&arg : deps->get())
       if (auto ptr = std::dynamic_pointer_cast<WorkNode>(arg); ptr)
         ret->deps[ptr->tag] = ptr;
@@ -214,7 +221,63 @@ ZENO_DEFNODE(CommandGenerator)
   },
   /* outputs: */
   {
-      {"JobNode", "job"},
+      {"WorkNode", "job"},
+  },
+  /* params: */
+  {},
+  /* category: */
+  {
+      "task",
+  }});
+
+struct WriteTaskDependencyGraph : INode {
+  using Json = nlohmann::json;
+  static void process_node(std::vector<Json> &jsons, WorkNode *node) {
+    Json json;
+    json["name"] = node->tag;
+    json["cmds"] = node->workItems;
+    std::vector<std::string> depWorkNames;
+    for (auto &&[tag, node] : node->deps)
+      depWorkNames.push_back(node->tag);
+    json["deps"] = depWorkNames;
+    Json j;
+    j[node->tag] = json;
+    jsons.push_back(j);
+
+    for (auto &&[tag, node] : node->deps)
+      process_node(jsons, node.get());
+  }
+  void apply() override {
+    auto node = get_input<WorkNode>("job");
+    auto filename = get_input2<std::string>("json_file_path");
+
+    std::vector<Json> jsons;
+    process_node(jsons, node.get());
+    Json json = Json(jsons);
+
+    std::ofstream file(filename);
+    if (file.is_open()) {
+      // dump(4) prints the JSON data with an indentation of 4 spaces
+      file << json.dump(4);
+      file.close();
+      fmt::print("Task Dependency Graph [{}] written to {} in json\n",
+                 node->tag, filename);
+    } else {
+      throw std::runtime_error(
+          fmt::format("Could not open file [{}] for writing.", filename));
+    }
+    set_output("job", node);
+  }
+};
+ZENO_DEFNODE(WriteTaskDependencyGraph)
+({/* inputs: */
+  {
+      {"WorkNode", "job"},
+      {"writepath", "json_file_path", ""},
+  },
+  /* outputs: */
+  {
+      {"WorkNode", "job"},
   },
   /* params: */
   {},
