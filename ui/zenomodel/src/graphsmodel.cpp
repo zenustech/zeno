@@ -463,6 +463,13 @@ QVariant GraphsModel::data(const QModelIndex& index, int role) const
                 return pSubgModel->mtlid();
             }
         }
+        case ROLE_FORK_LOCKSTATUS:
+        {
+            if (SubGraphModel* pSubgModel = subGraph(m_row2Key[index.row()]))
+            {
+                return pSubgModel->forkLocked();
+            }
+        }
     }
     return QVariant();
 }
@@ -512,6 +519,14 @@ bool GraphsModel::setData(const QModelIndex& index, const QVariant& value, int r
         if (SubGraphModel* pModel = subGraph(name))
         {
             pModel->setMtlid(value.toString());
+        }
+    }
+    else if (role == ROLE_FORK_LOCKSTATUS)
+    {
+        const QString& name = data(index, Qt::DisplayRole).toString();
+        if (SubGraphModel* pModel = subGraph(name))
+        {
+            pModel->setForkLock(value.toBool());
         }
     }
 	return false;
@@ -909,6 +924,11 @@ QModelIndex GraphsModel::fork(const QModelIndex& subgIdx, const QModelIndex &sub
     const QString& subnetName = subnetNodeIdx.data(ROLE_OBJNAME).toString();
     SubGraphModel* pModel = subGraph(subnetName);
     ZASSERT_EXIT(pModel, QModelIndex());
+    if (pModel->forkLocked())
+    {
+        zeno::log_error("{} fork behavior is locked", subnetName.toStdString());
+        return QModelIndex();
+    }
 
     NODE_DATA subnetData = _fork(subnetName);
     SubGraphModel *pCurrentModel = subGraph(subgIdx.row());
@@ -926,6 +946,8 @@ QModelIndex GraphsModel::forkMaterial(const QModelIndex& currSubgIdx, const QMod
     if (!subnetNodeIdx.isValid())
         return QModelIndex();
     QModelIndex index = fork(currSubgIdx, subnetNodeIdx);
+    if (!index.isValid())
+        return QModelIndex();
     ModelSetData(index, OPT_VIEW, ROLE_OPTIONS);
     
     QString name = index.data(ROLE_OBJNAME).toString();
@@ -964,6 +986,8 @@ NODE_DATA GraphsModel::_fork(const QString& forkSubgName)
 {
     SubGraphModel* pModel = subGraph(forkSubgName);
     ZASSERT_EXIT(pModel, NODE_DATA());
+    if (pModel->forkLocked())
+        return NodesMgr::newNodeData(this, forkSubgName);
 
     QMap<QString, NODE_DATA> nodes;
     QMap<QString, NODE_DATA> oldGraphsToNew;
@@ -1040,6 +1064,7 @@ NODE_DATA GraphsModel::_fork(const QString& forkSubgName)
     SubGraphModel* pForkModel = new SubGraphModel(this);
     pForkModel->setName(forkName);
     pForkModel->setType(pModel->type());
+    pForkModel->setForkLock(pModel->forkLocked());
     appendSubGraph(pForkModel);
 
     NODES_DATA newNodes;

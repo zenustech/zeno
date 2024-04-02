@@ -36,8 +36,7 @@ static CONTROL_ITEM_INFO controlList[] = {
     {"Integer Vector 3",    CONTROL_VEC3_INT,       "vec3i", ":/icons/parameter_control_integerVector3.svg"},
     {"Integer Vector 2",    CONTROL_VEC2_INT,       "vec2i", ":/icons/parameter_control_integerVector2.svg"},
     {"Color",               CONTROL_COLOR,          "color", ":/icons/parameter_control_color.svg"},
-    {"Pure Color",          CONTROL_PURE_COLOR,     "color", ":/icons/parameter_control_color.svg"},
-    {"Color Vec3f",         CONTROL_COLOR_VEC3F,    "color", ":/icons/parameter_control_color.svg"},
+    {"Color Vec3f",         CONTROL_COLOR_VEC3F,    "vec3f", ":/icons/parameter_control_color.svg"},
     {"Curve",               CONTROL_CURVE,          "curve", ":/icons/parameter_control_curve.svg"},
     {"SpinBox",             CONTROL_HSPINBOX,       "int", ":/icons/parameter_control_spinbox.svg"},
     {"DoubleSpinBox", CONTROL_HDOUBLESPINBOX, "float", ":/icons/parameter_control_spinbox.svg"},
@@ -213,14 +212,17 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeU
         auto item = m_ui->itemsTable->currentItem();
         if (item) {
             int row = item->row() - 1;
+            QTableWidgetItem* pPreItem = m_ui->itemsTable->item(row, 0);
+            if (!pPreItem)
+                return;
             disconnect(m_ui->itemsTable, SIGNAL(cellChanged(int, int)), this,
                        SLOT(onComboTableItemsCellChanged(int, int)));
             QString text = item->text();
-            item->setText(m_ui->itemsTable->item(row, 0)->text());
+            item->setText(pPreItem->text());
             connect(m_ui->itemsTable, SIGNAL(cellChanged(int, int)), this,
                     SLOT(onComboTableItemsCellChanged(int, int)));
-            m_ui->itemsTable->item(row, 0)->setText(text);
-            m_ui->itemsTable->setCurrentItem(m_ui->itemsTable->item(row, 0));
+            pPreItem->setText(text);
+            m_ui->itemsTable->setCurrentItem(pPreItem);
         }
     });
 
@@ -349,7 +351,8 @@ void ZEditParamLayoutDlg::onComboTableItemsCellChanged(int row, int column)
     if (row == m_ui->itemsTable->rowCount() - 1)
     {
         m_ui->itemsTable->insertRow(m_ui->itemsTable->rowCount());
-        m_ui->m_pUpButton->setEnabled(true);
+        if (row != 0)
+            m_ui->m_pUpButton->setEnabled(true);
     }
 
     //update control.

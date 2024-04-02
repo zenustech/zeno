@@ -1041,7 +1041,7 @@
     </message>
     <message>
         <source>Preferences</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">首选项</translation>
     </message>
 </context>
 <context>
@@ -2040,15 +2040,15 @@
     </message>
     <message>
         <source>Separated by &apos;,&apos;, such as: N1, N2, N3...</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">以逗号分割，例如：N1, N2, N3...</translation>
     </message>
     <message>
         <source>Preset Subgraph</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">预设子图</translation>
     </message>
     <message>
         <source>key words</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">关键字</translation>
     </message>
 </context>
 <context>
@@ -2059,19 +2059,19 @@
     </message>
     <message>
         <source>Material Names:</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">材质名称：</translation>
     </message>
     <message>
         <source>Key Words:</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">关键字：</translation>
     </message>
     <message>
         <source>Material File Path:</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">材质文件路径：</translation>
     </message>
     <message>
         <source>Match Inputs:</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">匹配输入参数：</translation>
     </message>
     <message>
         <source>Ok</source>
@@ -2080,6 +2080,17 @@
     <message>
         <source>Cancel</source>
         <translation type="unfinished">取消</translation>
+    </message>
+</context>
+<context>
+    <name>ZOptixCameraSetting</name>
+    <message>
+        <source>ACES</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Exposure</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -2094,7 +2105,7 @@
     </message>
     <message>
         <source>Preferences</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">首选项</translation>
     </message>
 </context>
 <context>
@@ -2113,7 +2124,7 @@
     </message>
     <message>
         <source>Shortcuts</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">快捷键</translation>
     </message>
     <message>
         <source>Layout Manage</source>
@@ -2381,7 +2392,19 @@
     </message>
     <message>
         <source>Trans to Preset Subgrah</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">转为预设子图</translation>
+    </message>
+    <message>
+        <source>Fork unlocked</source>
+        <translation type="unfinished">Fork解锁</translation>
+    </message>
+    <message>
+        <source>Fork locked</source>
+        <translation type="unfinished">Fork锁定</translation>
+    </message>
+    <message>
+        <source>Trans to Normal Subgrah</source>
+        <translation type="unfinished">转为普通子图</translation>
     </message>
 </context>
 <context>
@@ -2867,6 +2890,14 @@
         <source>import preset subnet</source>
         <translation type="unfinished">导入预设子图</translation>
     </message>
+    <message>
+        <source>Create Subgraph</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Already has a subgraph called %1</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ZenoImagePanel</name>
@@ -3192,6 +3223,14 @@ the save action will lose them, we recommand you choose &quot;Save As&quot; to s
         <source>Path to Save</source>
         <translation type="obsolete">文件保存路径</translation>
     </message>
+    <message>
+        <source>zsg path</source>
+        <translation>资源路径</translation>
+    </message>
+    <message>
+        <source>Whether to use $ZSG replace zsg file path?</source>
+        <translation>检测到路径与zsg工程在同一目录，是否使用$ZSG作为相对路径？</translation>
+    </message>
 </context>
 <context>
     <name>ZenoPlayer</name>
@@ -3415,14 +3454,18 @@ All Files (*)</source>
     </message>
     <message>
         <source>Preset Subgraph</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">预设子图</translation>
     </message>
     <message>
         <source>key words</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">关键字</translation>
     </message>
     <message>
         <source>Separated by &apos;|&apos;, such as : W1|W2|W3...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>String mapping</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -3439,6 +3482,14 @@ All Files (*)</source>
     <message>
         <source>add Link</source>
         <translation>添加连接</translation>
+    </message>
+    <message>
+        <source>Delete Subgraph</source>
+        <translation type="unfinished">删除子图</translation>
+    </message>
+    <message>
+        <source>Do you want to delete the subgraph &apos;%1&apos;</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>

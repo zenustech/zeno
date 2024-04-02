@@ -1,10 +1,10 @@
+#ifdef ZENO_ENABLE_OPTIX
 #include "optixPathTracer.h"
 #include "vec_math.h"
 #include "xinxinoptixapi.h"
 #include "zeno/utils/vec.h"
 #include <limits>
 #include <memory>
-#ifdef ZENO_ENABLE_OPTIX
 #include "../../xinxinoptix/xinxinoptixapi.h"
 #include "../../xinxinoptix/SDK/sutil/sutil.h"
 #include <zeno/types/PrimitiveObject.h>
@@ -73,7 +73,6 @@ struct GraphicsManager {
             std::string shader;
             std::string extensions;
             std::string mtlidkey;
-            std::string transform;
             std::string parameters;
         };
 
@@ -252,6 +251,28 @@ struct GraphicsManager {
                     }
 
                     printf("After loading sphere %s for ray tracing... \n", key.c_str());
+                    return;
+                }
+
+                auto is_vbox = prim_in_lslislSp->userData().has("vbox");
+                if (is_vbox) {
+                    auto& ud = prim_in_lslislSp->userData();
+                    auto mtlid = ud.get2<std::string>("mtlid", "Default");
+
+                    auto row0 = ud.get2<zeno::vec4f>("_transform_row0");
+                    auto row1 = ud.get2<zeno::vec4f>("_transform_row1");
+                    auto row2 = ud.get2<zeno::vec4f>("_transform_row2");
+                    auto row3 = ud.get2<zeno::vec4f>("_transform_row3");
+
+                    glm::mat4 vbox_transform;
+                    auto transform_ptr = glm::value_ptr(vbox_transform);
+
+                    memcpy(transform_ptr, row0.data(), sizeof(float)*4);
+                    memcpy(transform_ptr+4, row1.data(), sizeof(float)*4);
+                    memcpy(transform_ptr+8, row2.data(), sizeof(float)*4);  
+                    memcpy(transform_ptr+12, row3.data(), sizeof(float)*4);
+
+                    OptixUtil::preloadVolumeBox(key, mtlid, vbox_transform);
                     return;
                 }
 
@@ -472,7 +493,7 @@ struct GraphicsManager {
             }
             else if (auto mtl = dynamic_cast<zeno::MaterialObject *>(obj))
             {
-                det = DetMaterial{mtl->tex2Ds, mtl->tex3Ds, mtl->common, mtl->frag, mtl->extensions, mtl->mtlidkey, mtl->transform, mtl->parameters};
+                det = DetMaterial{mtl->tex2Ds, mtl->tex3Ds, mtl->common, mtl->frag, mtl->extensions, mtl->mtlidkey, mtl->parameters};
             }
         }
 
@@ -673,6 +694,11 @@ struct GraphicsManager {
                 float evnTexStrength = prim_in->userData().get2<float>("evnTexStrength");
                 bool enableHdr = prim_in->userData().get2<bool>("enable");
                 if (!path.empty()) {
+                    std::string need_remove_tex;
+                    if (OptixUtil::sky_tex.has_value() && OptixUtil::sky_tex.value() != path) {
+                        need_remove_tex = OptixUtil::sky_tex.value();
+                        OptixUtil::removeTexture(need_remove_tex);
+                    }
                     OptixUtil::sky_tex = path;
                     OptixUtil::addTexture(path);
                 }
@@ -1119,11 +1145,11 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
             //for (auto const &[key, obj]: graphicsMan->graphics)
             for(auto const &[matkey, mtldet] : matMap)
-            {
+            {       
                     bool has_vdb = false;
                     if (mtldet->tex3Ds.size() > 0) {
-                        glm::f64mat4 linear_transform(1.0);  
-                        prepareVolumeTransform(mtldet->transform, linear_transform);
+                        glm::mat4 linear_transform(1.0);  
+                        //prepareVolumeTransform(mtldet->, linear_transform);
                         
                         std::vector<std::string> g_vdb_list_for_this_shader;
                         g_vdb_list_for_this_shader.reserve(mtldet->tex3Ds.size());
@@ -1149,9 +1175,11 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                             OptixUtil::g_vdb_list_for_each_shader[_volume_shader_list.size()] = (g_vdb_list_for_this_shader);
                         }
                     }
+
+                    const bool isVol = mtldet->parameters.find("vol") != std::string::npos;
                     
-                    const auto& selected_source = has_vdb? _volume_shader_template : _default_shader_template;
-                    const auto& selected_callable = has_vdb? _volume_callable_template : _default_callable_template; 
+                    const auto& selected_source = isVol? _volume_shader_template : _default_shader_template;
+                    const auto& selected_callable = isVol? _volume_callable_template : _default_callable_template; 
 
                     std::string callable;
                     auto common_code = mtldet->common;
@@ -1175,9 +1203,11 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     int texid=0;
                     for(auto tex:mtldet->tex2Ds)
                     {
-                        OptixUtil::addTexture(tex->path.c_str());
-                        shaderTex.emplace_back(tex->path);
-                        texid++;
+                        if (cachedMeshesMaterials.count(mtldet->mtlidkey) > 0) {
+                            OptixUtil::addTexture(tex->path.c_str());
+                            shaderTex.emplace_back(tex->path);
+                            texid++;
+                        }
                     }
 
                     ShaderPrepared shaderP; 
@@ -1189,7 +1219,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                         shaderP.matid = mtldet->mtlidkey;
                         shaderP.tex_names = shaderTex;
 
-                    if (has_vdb) {
+                    if (isVol) {
                         
                         shaderP.mark = ShaderMaker::Volume;
                         _volume_shader_list.push_back(std::make_shared<ShaderPrepared>(shaderP));
@@ -1248,6 +1278,10 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     auto combinedID = ref->matid + ":" + std::to_string((ref->mark));
                     matIDtoShaderIndex[combinedID] = i;
                 }
+
+            if (meshNeedUpdate) {
+                OptixUtil::processVolumeBox();
+            }
 
             if (matNeedUpdate)
             {
@@ -1312,7 +1346,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         if (lightNeedUpdate || matNeedUpdate || meshNeedUpdate || staticNeedUpdate) {
 
             lightNeedUpdate = false;
-            xinxinoptix::buildRootIAS();
+            xinxinoptix::updateRootIAS();
 
             matNeedUpdate = false;
             meshNeedUpdate = false;

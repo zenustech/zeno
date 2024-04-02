@@ -39,6 +39,7 @@ if (ZS_PYTHON_FOUND AND ZENO_WITH_PyZpc)
   get_target_property(ZENO_BIN_DIR zeno RUNTIME_OUTPUT_DIRECTORY)
   add_custom_target(copy_py)
   add_dependencies(zeno copy_py)
+  add_dependencies(copy_py zpc_jit_py)
   # message(STATUS "retrieved python impl: ${Python3_INTERPRETER_ID}")
   message(STATUS "python3 libraries: ${ZS_OVERWRITE_PYTHON_LIBRARIES}")
   message(STATUS "python3 include directories: ${ZS_OVERWRITE_PYTHON_INCLUDE_DIR}")
@@ -46,7 +47,9 @@ if (ZS_PYTHON_FOUND AND ZENO_WITH_PyZpc)
   add_custom_command(
     TARGET copy_py
     POST_BUILD
-    COMMAND ${ZS_OVERWRITE_PYTHON_EXECUTABLE} -m pip install ${CMAKE_CURRENT_SOURCE_DIR}/zpc_jit
+    COMMAND 
+    ${CMAKE_COMMAND} -E env ZENO_BIN_DIR="${ZENO_BIN_DIR}"
+    ${ZS_OVERWRITE_PYTHON_EXECUTABLE} -m pip install ${CMAKE_CURRENT_SOURCE_DIR}/zpc_jit --user
     COMMENT "installing pyzpc into the specified conda environment: ${ZS_OVERWRITE_PYTHON_EXECUTABLE}"
   )
   if (WIN32)
@@ -170,7 +173,14 @@ target_sources(zeno PRIVATE
   utils/Tracing.cu
   utils/Noise.cu
   utils/Groom.cpp
+
 )
+
+if (ZS_PYTHON_FOUND)
+target_sources(zeno PRIVATE
+  graph/Task.cpp
+)
+endif(ZS_PYTHON_FOUND)
 
 add_subdirectory(remesh)
 add_subdirectory(cluster)

@@ -327,7 +327,10 @@ void ZenoParamPathEdit::mousePressEvent(QGraphicsSceneMouseEvent *event)
         }
 
         if (!zsgDir.isEmpty() && path.indexOf(zsgDir) != -1)
-            path.replace(zsgDir, "=$ZSG");
+        {
+            if (QMessageBox::question(nullptr, tr("zsg path"), tr("Whether to use $ZSG replace zsg file path?")) == QMessageBox::Yes)
+                path.replace(zsgDir, "=$ZSG");
+        }
 
         setText(path);
     }

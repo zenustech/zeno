@@ -1176,6 +1176,16 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
                 for (QPersistentModelIndex nodeIdx : nodes)
                 {
                     QString id = nodeIdx.data(ROLE_OBJID).toString();
+                    QString cls = nodeIdx.data(ROLE_OBJNAME).toString();
+                    const QModelIndex& idx = pGraphsModel->index(cls);
+                    if (idx.isValid() && idx.data(ROLE_SUBGRAPH_TYPE).toInt() == SUBGRAPH_METERIAL)
+                    {
+                        int button = QMessageBox::question(nullptr, tr("Delete Subgraph"), tr("Do you want to delete the subgraph '%1'").arg(cls));
+                        if (button == QMessageBox::Yes) {
+                            pGraphsModel->removeSubGraph(cls);
+                            continue;
+                        }
+                    }
                     pGraphsModel->removeNode(id, m_subgIdx, true);
                 }
                 if (nodes.isEmpty() && !netLabels.isEmpty())

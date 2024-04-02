@@ -188,7 +188,10 @@ bool ZsgReader::_parseSubGraph(const QString& name, const rapidjson::Value& subg
     int type = SUBGRAPH_TYPE::SUBGRAPH_NOR;
     if (subgraph.HasMember("type"))
         type = subgraph["type"].GetInt();
-    pAcceptor->BeginSubgraph(name, type);
+    bool bForkLocked = false;
+    if (subgraph.HasMember("forkLock"))
+        bForkLocked = subgraph["forkLock"].GetBool();
+    pAcceptor->BeginSubgraph(name, type, bForkLocked);
 
     const auto& nodes = subgraph["nodes"];
     if (nodes.IsNull())
@@ -386,6 +389,77 @@ void ZsgReader::_parseTimeline(const rapidjson::Value& jsonTimeline, IAcceptor* 
     }
 
     pAcceptor->setTimeInfo(info);
+}
+
+bool ZsgReader::readRenderSettings(const QString& fn, ZENO_RECORD_RUN_INITPARAM& param)
+{
+    QFile file(fn);
+    bool ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
+    if (!ret) {
+        zeno::log_error("cannot open zsg file: {} ({})", fn.toStdString(),
+            file.errorString().toStdString());
+        return false;
+    }
+
+    rapidjson::Document doc;
+    QByteArray bytes = file.readAll();
+    doc.Parse(bytes);
+    if (!doc.IsObject() || !doc.HasMember("graph") || !doc.HasMember("settings"))
+    {
+        zeno::log_error("zsg json file is corrupted");
+        return false;
+    }
+
+    const rapidjson::Value& viewSettings = doc["views"];
+    if (viewSettings.HasMember("timeline"))
+    {
+        const rapidjson::Value& jsonTimeline = viewSettings["timeline"];
+        ZASSERT_EXIT(jsonTimeline.HasMember(timeline::start_frame) && jsonTimeline[timeline::start_frame].IsInt(), false);
+        ZASSERT_EXIT(jsonTimeline.HasMember(timeline::end_frame) && jsonTimeline[timeline::end_frame].IsInt(), false);
+        param.iSFrame = jsonTimeline[timeline::start_frame].GetInt();
+        int endFrame = jsonTimeline[timeline::end_frame].GetInt();
+        param.iFrame = endFrame - param.iSFrame + 1;
+    }
+
+    const rapidjson::Value& jsonSettings = doc["settings"];
+    if (jsonSettings.HasMember("recordinfo"))
+    {
+        const rapidjson::Value& jsonRecordInfo = jsonSettings["recordinfo"];
+        ZASSERT_EXIT(jsonRecordInfo.HasMember(recordinfo::record_path) && jsonRecordInfo[recordinfo::record_path].IsString() &&
+            jsonRecordInfo.HasMember(recordinfo::videoname) && jsonRecordInfo[recordinfo::videoname].IsString() &&
+            jsonRecordInfo.HasMember(recordinfo::fps) && jsonRecordInfo[recordinfo::fps].IsInt() &&
+            jsonRecordInfo.HasMember(recordinfo::bitrate) && jsonRecordInfo[recordinfo::bitrate].IsInt() &&
+            jsonRecordInfo.HasMember(recordinfo::numMSAA) && jsonRecordInfo[recordinfo::numMSAA].IsInt() &&
+            jsonRecordInfo.HasMember(recordinfo::numOptix) && jsonRecordInfo[recordinfo::numOptix].IsInt() &&
+            jsonRecordInfo.HasMember(recordinfo::width) && jsonRecordInfo[recordinfo::width].IsInt() &&
+            jsonRecordInfo.HasMember(recordinfo::height) && jsonRecordInfo[recordinfo::height].IsInt() &&
+            jsonRecordInfo.HasMember(recordinfo::bExportVideo) && jsonRecordInfo[recordinfo::bExportVideo].IsBool() &&
+            jsonRecordInfo.HasMember(recordinfo::needDenoise) && jsonRecordInfo[recordinfo::needDenoise].IsBool() &&
+            jsonRecordInfo.HasMember(recordinfo::bAutoRemoveCache) && jsonRecordInfo[recordinfo::bAutoRemoveCache].IsBool() &&
+            jsonRecordInfo.HasMember(recordinfo::bAov) && jsonRecordInfo[recordinfo::bAov].IsBool(), false);
+
+        param.sPath = jsonRecordInfo[recordinfo::record_path].GetString();
+        param.videoName = jsonRecordInfo[recordinfo::videoname].GetString();
+        if (param.videoName.isEmpty()) {
+            //界面上的设置默认是空的，保存的时候也是空的，这里给个默认
+            param.videoName = "output.mp4";
+        }
+        param.iFps = jsonRecordInfo[recordinfo::fps].GetInt();
+        param.iBitrate = jsonRecordInfo[recordinfo::bitrate].GetInt();
+        //jsonRecordInfo[recordinfo::numMSAA].GetInt();
+        param.iSample = jsonRecordInfo[recordinfo::numOptix].GetInt();
+        int width = jsonRecordInfo[recordinfo::width].GetInt();
+        int height = jsonRecordInfo[recordinfo::height].GetInt();
+        param.sPixel = QString("%1x%2").arg(width).arg(height);
+        param.isExportVideo = jsonRecordInfo[recordinfo::bExportVideo].GetBool();
+        param.needDenoise = jsonRecordInfo[recordinfo::needDenoise].GetBool();
+        //jsonRecordInfo[recordinfo::bAutoRemoveCache].GetBool();
+        param.bAov = jsonRecordInfo[recordinfo::bAov].GetBool();
+        if (jsonRecordInfo.HasMember(recordinfo::bExr))
+            param.export_exr = jsonRecordInfo[recordinfo::bExr].GetBool();
+        else
+            param.export_exr = false;
+    }
 }
 
 void ZsgReader::_parseSettings(const rapidjson::Value& jsonSettings, IAcceptor* pAcceptor)

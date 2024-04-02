@@ -848,9 +848,18 @@ struct ImageGray : INode {
                 float avg = (v[0] + v[1] + v[2]) / 3;
                 v = vec3f(avg);
             }
-            else if(mode=="Luminace"){
+            else if(mode=="Luminance"){
                 float lumi = 0.3 * v[0] + 0.59 * v[1] + 0.11 * v[2];//(GIMP/PS)
                 v =vec3f(lumi);
+            }
+            else if(mode=="Red"){
+                v = vec3f(v[0]);
+            }
+            else if(mode=="Green"){
+                v = vec3f(v[1]);
+            }
+            else if(mode=="Blue"){
+                v = vec3f(v[2]);
             }
             else if(mode=="MaxComponent"){
                 float max = std::max(v[0], std::max(v[1], v[2]));
@@ -867,7 +876,7 @@ struct ImageGray : INode {
 ZENDEFNODE(ImageGray, {
     {
         {"image"},
-        {"enum Average Luminace MaxComponent MinComponent", "mode", "Average"},
+        {"enum Average Luminance Red Green Blue MaxComponent MinComponent", "mode", "Average"},
     },
     {
         {"image"}

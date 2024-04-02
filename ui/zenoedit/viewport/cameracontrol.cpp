@@ -7,6 +7,7 @@
 #include "nodesview/zenographseditor.h"
 #include <zeno/types/UserData.h>
 #include "settings/zenosettingsmanager.h"
+#include <cmath>
 
 
 using std::string;
@@ -29,6 +30,15 @@ CameraControl::CameraControl(
 
 void CameraControl::setRes(QVector2D res) {
     m_res = res;
+}
+
+float CameraControl::getRoll() const {
+    auto *scene = m_zenovis->getSession()->get_scene();
+    return scene->camera->m_roll;
+}
+void CameraControl::setRoll(float roll) {
+    auto *scene = m_zenovis->getSession()->get_scene();
+    scene->camera->m_roll = roll;
 }
 
 float CameraControl::getTheta() const {
@@ -277,6 +287,7 @@ void CameraControl::resizeTransformHandler(int dir)
 void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
 {
     bool ctrl_pressed = event->modifiers() & Qt::ControlModifier;
+    bool alt_pressed = event->modifiers() & Qt::AltModifier;
 
     auto session = m_zenovis->getSession();
     auto scene = session->get_scene();
@@ -316,6 +327,15 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
         setCenter({float(center.x()), float(center.y()), float(center.z())});
         m_lastMidButtonPos = QPointF(xpos, ypos);
     }
+    else if (!bTransform && alt_pressed && (event->buttons() & Qt::MiddleButton)) {
+        float ratio = QApplication::desktop()->devicePixelRatio();
+        float dy = ypos - m_lastMidButtonPos.y();
+        dy *= ratio / m_res[1];
+        float roll = getRoll();
+        roll += dy;
+        setRoll(roll);
+        m_lastMidButtonPos = QPointF(xpos, ypos);
+    }
     else if (!bTransform && (event->buttons() & (rotateButton | moveButton))) {
         float ratio = QApplication::desktop()->devicePixelRatio();
         float dx = xpos - m_lastMidButtonPos.x(), dy = ypos - m_lastMidButtonPos.y();
@@ -345,7 +365,22 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
         } else if ((rotateKey == modifiers) && (event->buttons() & rotateButton)) {
             setOrthoMode(false);
             setTheta(getTheta() - dy * M_PI);
-            setPhi(getPhi() + dx * M_PI);
+            if (int(abs(getTheta()) / M_PI) % 2 == 0) {
+                if (glm::fract(abs(getTheta()) / M_PI) < 0.5) {
+                    setPhi(getPhi() + dx * M_PI);
+                }
+                else {
+                    setPhi(getPhi() - dx * M_PI);
+                }
+            }
+            else {
+                if (glm::fract(abs(getTheta()) / M_PI) < 0.5) {
+                    setPhi(getPhi() - dx * M_PI);
+                }
+                else {
+                    setPhi(getPhi() + dx * M_PI);
+                }
+            }
         }
         m_lastMidButtonPos = QPointF(xpos, ypos);
     } else if (event->buttons() & Qt::LeftButton) {

@@ -770,6 +770,13 @@ void DisplayWidget::onSetCamera(zenovis::ZOptixCameraSettingInfo value)
     }
 }
 
+void DisplayWidget::onSetBackground(bool bShowBackground)
+{
+    if (!m_bGLView) {
+        m_optixView->showBackground(bShowBackground);
+    }
+}
+
 zenovis::ZOptixCameraSettingInfo DisplayWidget::getCamera() const
 {
     if (!m_bGLView) {
