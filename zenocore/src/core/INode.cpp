@@ -244,6 +244,10 @@ ZENO_API void INode::registerObjToManager()
             }
             assert(!spObj->key().empty());
             getSession().objsMan->collectingObject(spObj->key(), spObj, shared_from_this(), m_bView);
+            if (param->m_idModify) {
+                getSession().objsMan->collect_modify_objs(spObj->key(), m_bView); //如果是修改obj，还需要添加到objManager的modify集合中(需要在具体apply函数中设置m_idModify为true)
+                getSession().objsMan->revertRemoveObject(spObj->key());           //如果是对param的obj进行modify，不需要去objManager中unregiste该对象，撤销unregiste时removeObj
+            }
         }
     }
 }
@@ -339,19 +343,34 @@ ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
             }
             if (!bDirectLink)
             {
+                auto oldinput = std::dynamic_pointer_cast<ListObject>(in_param->result);
+
                 spList = std::make_shared<ListObject>();
+                int indx = 0;
                 for (const auto& spLink : in_param->links)
                 {
                     //list的情况下，keyName是不是没意义，顺序怎么维持？
                     std::shared_ptr<IParam> out_param = spLink->fromparam.lock();
                     std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
+                    if (outNode->is_dirty()) {  //list中的元素是dirty的，重新计算并加入list
+                        GraphException::translated([&] {
+                            outNode->doApply();
+                        }, outNode.get());
 
-                    GraphException::translated([&] {
-                        outNode->doApply();
-                    }, outNode.get());
-
-                    zany outResult = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
-                    spList->arr.push_back(outResult);
+                        zany outResult = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
+                        spList->arr.push_back(outResult);
+                        spList->dirtyIndice.insert(indx);
+                    } else {                    //list中的元素不是dirty的，从旧list中直接取出加入新list
+                        if (oldinput && oldinput->nodeNameArrItemMap.find(outNode->m_name) != oldinput->nodeNameArrItemMap.end()) {
+                            int itemIdx = oldinput->nodeNameArrItemMap[outNode->m_name];
+                            if (oldinput->arr.size() > itemIdx)
+                                spList->arr.push_back(oldinput->arr[itemIdx]);
+                            else
+                                continue;
+                        }else
+                            continue;
+                    }
+                    spList->nodeNameArrItemMap.insert(std::make_pair(outNode->m_name, indx++));
                 }
             }
             in_param->result = spList;
@@ -387,6 +406,10 @@ ZENO_API void INode::doApply() {
         registerObjToManager();//如果只是打view，也是需要加到manager的。
         return;
     }
+    zeno::scope_exit spe([&] {//apply时根据情况将IParam标记为modified，退出时将所有IParam标记为未modified
+        for (auto const& [name, param] : outputs_)
+            param->m_idModify = false;
+        });
 
     unregisterObjs();
 
@@ -668,8 +691,20 @@ ZENO_API void INode::initParams(const NodeData& dat)
 }
 
 ZENO_API bool INode::has_input(std::string const &id) const {
-    auto param = get_input_param(id);
-    return param != nullptr;
+    auto it = inputs_.find(id);
+    if (it != inputs_.end()) {
+        if (it->second->type == Param_Null)
+            return std::visit([&](auto const& arg) {
+                using T = std::decay_t<decltype(arg)>;
+                if constexpr (std::is_same_v<T, std::string>) {
+                    if (arg == "" && !it->second->result)   //如果类型为Param_Null，初始值为空且输入obj为空，返回false
+                        return false;
+                }
+                return true;
+            }, it->second->defl);
+        return true;
+    }
+    return false;
 }
 
 ZENO_API zany INode::get_input(std::string const &id) const {
@@ -695,6 +730,12 @@ ZENO_API std::pair<float, float> INode::get_pos() const {
 
 ZENO_API bool INode::in_asset_file() const {
     return getSession().assets->isAssetGraph(this->graph->shared_from_this());
+}
+
+ZENO_API void INode::mark_param_modified(std::string paramName, bool modified)
+{
+    if (std::shared_ptr<IParam> primParam = get_output_param("prim"))
+        primParam->m_idModify = modified;
 }
 
 ZENO_API bool INode::set_input(std::string const& param, zany obj) {

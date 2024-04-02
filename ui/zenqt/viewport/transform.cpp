@@ -537,12 +537,12 @@ void FakeTransformer::toScale() {
 
 void FakeTransformer::markObjectsInteractive() {
     m_status = true;
-    zeno::getSession().objsMan->markObjInteractive(m_objectsKeys);
+    zeno::getSession().objsMan->collect_modify_objs(m_objectsKeys, true);
 }
 
 void FakeTransformer::unmarkObjectsInteractive() {
     m_status = false;
-    zeno::getSession().objsMan->unmarkObjInteractive(m_objectsKeys);
+    zeno::getSession().objsMan->remove_modify_objs(m_objectsKeys);
 }
 
 void FakeTransformer::resizeHandler(int dir) {

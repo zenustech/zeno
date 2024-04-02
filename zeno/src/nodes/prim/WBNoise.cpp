@@ -1133,8 +1133,8 @@ struct erode_noise_sparse_convolution : INode {
 
         auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
         auto pulsenum = get_input2<int>("pulsenum");
-        auto attrName = get_input2<std::string>("attrName:");
-        auto attrType = get_input2<std::string>("attrType:");
+        auto attrName = get_input2<std::string>("attrName");
+        auto attrType = get_input2<std::string>("attrType");
         auto seed = get_input2<int>("seed");
 
         if (!terrain->has_attr(attrName)) {
@@ -1309,7 +1309,7 @@ struct Noise_gabor_2d : INode {
     void apply() override {
 
         auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
-        auto attrName = get_input2<std::string>("attrName:");
+        auto attrName = get_input2<std::string>("attrName");
 
         auto a_ = get_input2<float>("a_");
         auto F_0_ = get_input2<float>("frequency");

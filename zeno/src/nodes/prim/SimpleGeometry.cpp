@@ -70,7 +70,18 @@ namespace {
 
 struct CreateCube : zeno::INode {
     virtual void apply() override {
-        auto prim = std::make_shared<zeno::PrimitiveObject>("Cube");
+        auto prim = std::dynamic_pointer_cast<zeno::PrimitiveObject>(get_output("prim"));
+        if (prim) {
+            prim->verts.clear();
+            prim->verts.clear_attrs();
+            prim->tris.clear();
+            prim->tris.clear_attrs();
+            prim->polys.clear();
+            prim->loops.clear();
+            mark_param_modified("prim", true);
+        }
+        else
+            prim = std::make_shared<zeno::PrimitiveObject>("Cube");
         auto size = get_input2<float>("size");
         auto div_w = get_input2<int>("div_w");
         auto div_h = get_input2<int>("div_h");
@@ -1014,10 +1025,10 @@ struct CreateTorus : zeno::INode {
         glm::mat4 transform = glm::mat4 (1.0);
         transform = glm::translate(transform, glm::vec3(position[0], position[1], position[2]));
 
-            auto order = get_input2<std::string>("EulerRotationOrder:");
+            auto order = get_input2<std::string>("EulerRotationOrder");
             auto orderTyped = magic_enum::enum_cast<EulerAngle::RotationOrder>(order).value_or(EulerAngle::RotationOrder::YXZ);
 
-            auto measure = get_input2<std::string>("EulerAngleMeasure:");
+            auto measure = get_input2<std::string>("EulerAngleMeasure");
             auto measureTyped = magic_enum::enum_cast<EulerAngle::Measure>(measure).value_or(EulerAngle::Measure::Radians);
 
             glm::vec3 eularAngleXYZ = glm::vec3(rotate[0], rotate[1], rotate[2]);

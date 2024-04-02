@@ -915,6 +915,10 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     }
 
     void load_objects(const zeno::RenderObjsInfo& objs) override {
+        std::map<std::string, std::shared_ptr<zeno::IObject>> dirtyListItems;   //本次运行list中dirty(new + modify)的元素
+        std::set<std::string> allListItems;                                     //本次运行list中全部元素
+        std::set<std::string> removeListItems;                                  //本次运行list中要删除的元素
+
         //light update condition
         bool bUpdateLight = !objs.empty();
         if (bUpdateLight) {
@@ -923,17 +927,34 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             scene->drawOptions->needRefresh = true;
         }
 
+        //处理单个Object
         size_t idx = 0;
         for (auto [key, spObj] : objs.newObjs) {
-            graphicsMan->add_object(spObj);
-            graphicsMan->objOrder[key] = idx++;
+            if (auto lst = std::dynamic_pointer_cast<zeno::ListObject>(spObj))
+                scene->convertListObjs(spObj, dirtyListItems, allListItems, true);
+            else {
+                graphicsMan->add_object(spObj);
+                graphicsMan->objOrder[key] = idx++;
+            }
         }
         for (auto [key, spObj] : objs.modifyObjs) {
             graphicsMan->add_object(spObj);
         }
-        for (auto key : objs.remObjs) {
-            graphicsMan->remove_object(key);
+        for (auto [key, spObj] : objs.remObjs) {
+            if (auto lst = std::dynamic_pointer_cast<zeno::ListObject>(spObj))
+                scene->convertListObjs(spObj, std::map<std::string, std::shared_ptr<zeno::IObject>>(), removeListItems, true);
+            else
+                graphicsMan->remove_object(key);
         }
+        //处理ListObject中的元素
+        for (auto [key, spObj] : dirtyListItems)                        //增加新元素
+        {
+            graphicsMan->add_object(spObj);
+            graphicsMan->objOrder[key] = idx++;
+        }
+        for (auto& key : removeListItems)
+            if (allListItems.find(key) == allListItems.end())           //该元素本次已不再使用，才删除
+                graphicsMan->remove_object(key);
 
         bool bUpdateMesh = !objs.empty();
         if (bUpdateMesh) {
