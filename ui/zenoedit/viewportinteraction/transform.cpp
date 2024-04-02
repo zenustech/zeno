@@ -331,6 +331,17 @@ void FakeTransformer::createNewTransformNode(NodeLocation& node_location) {
     node_sync.updateNodeVisibility(new_node_location.value());
 }
 
+void FakeTransformer::createNewTransformNodeNameWhenMissing(std::string const &node_name) {
+    auto& node_sync = NodeSyncMgr::GetInstance();
+    auto prim_node_location = node_sync.searchNodeOfPrim(node_name);
+    auto& prim_node = prim_node_location->node;
+    if (!node_sync.checkNodeType(prim_node, "PrimitiveTransform")) {
+        auto linked_transform_node = node_sync.checkNodeLinkedSpecificNode(prim_node, "PrimitiveTransform");
+        if (!linked_transform_node.has_value()) {
+            createNewTransformNode(prim_node_location.value());
+        }
+    }
+}
 
 void FakeTransformer::syncToTransformNode(NodeLocation& node_location,
                                           const std::string& obj_name) {
@@ -451,6 +462,7 @@ void FakeTransformer::toTranslate() {
         m_operation = TransOpt::TRANSLATE;
         auto scene = session->get_scene();
         ZASSERT_EXIT(scene);
+        createNewTransformNodeNameWhenMissing(m_objects.begin()->first);
         m_handler = zenovis::makeTransHandler(scene, zeno::other_to_vec<3>(m_objects_center), zeno::other_to_vec<3>(m_localX), zeno::other_to_vec<3>(m_localY), m_handler_scale);
     }
     session->set_handler(m_handler);
@@ -470,6 +482,7 @@ void FakeTransformer::toRotate() {
         m_operation = TransOpt::ROTATE;
         auto scene = session->get_scene();
         ZASSERT_EXIT(scene);
+        createNewTransformNodeNameWhenMissing(m_objects.begin()->first);
         m_handler = zenovis::makeRotateHandler(scene, zeno::other_to_vec<3>(m_objects_center), zeno::other_to_vec<3>(m_localX), zeno::other_to_vec<3>(m_localY), m_handler_scale);
     }
     session->set_handler(m_handler);
@@ -489,6 +502,7 @@ void FakeTransformer::toScale() {
         m_operation = TransOpt::SCALE;
         auto scene = session->get_scene();
         ZASSERT_EXIT(scene);
+        createNewTransformNodeNameWhenMissing(m_objects.begin()->first);
         m_handler = zenovis::makeScaleHandler(scene, zeno::other_to_vec<3>(m_objects_center), zeno::other_to_vec<3>(m_localX), zeno::other_to_vec<3>(m_localY), m_handler_scale);
     }
     session->set_handler(m_handler);

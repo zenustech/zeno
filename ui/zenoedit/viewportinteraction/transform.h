@@ -59,6 +59,7 @@ private:
     void rotate(glm::vec3 start_vec, glm::vec3 end_vec, glm::vec3 axis);
 
     void createNewTransformNode(NodeLocation& node_location);
+    void createNewTransformNodeNameWhenMissing(std::string const&node_name);
     void syncToTransformNode(NodeLocation& node_location,
                              const std::string& obj_name);
 
