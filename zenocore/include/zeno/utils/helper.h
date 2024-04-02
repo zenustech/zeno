@@ -25,6 +25,7 @@ namespace zeno {
     ZENO_API std::string objPathToStr(ObjPath path);
     bool getParamInfo(const CustomUI& customui, std::vector<ParamInfo>& inputs, std::vector<ParamInfo>& outputs);
     CustomUI descToCustomui(const Descriptor& desc);
+    void initControlsByType(CustomUI& ui);
 }
 
 

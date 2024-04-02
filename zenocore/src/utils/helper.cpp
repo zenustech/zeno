@@ -234,6 +234,8 @@ namespace zeno {
                     param.ctrlProps = props;
                 }
             }
+            if (param.type != Param_Null && param.control == NullControl)
+                param.control = getDefaultControl(param.type);
             param.tooltip = param_desc.doc;
             param.prop = Socket_Normal;
             default.params.emplace_back(std::move(param));
@@ -271,6 +273,20 @@ namespace zeno {
         tab.groups.emplace_back(std::move(default));
         ui.tabs.emplace_back(std::move(tab));
         return ui;
+    }
+
+    void initControlsByType(CustomUI& ui) {
+        for (ParamTab& tab : ui.tabs)
+        {
+            for (ParamGroup& group : tab.groups)
+            {
+                for (ParamInfo& param : group.params)
+                {
+                    if (param.type != Param_Null && param.control == NullControl)
+                        param.control = getDefaultControl(param.type);
+                }
+            }
+        }
     }
 
     bool getParamInfo(const CustomUI& customui, std::vector<ParamInfo>& inputs, std::vector<ParamInfo>& outputs) {

@@ -92,7 +92,7 @@ ZENO_API void Session::defNodeClass(std::shared_ptr<INode>(*ctor)(), std::string
     if (nodeClasses.find(clsname) != nodeClasses.end()) {
         log_error("node class redefined: `{}`\n", clsname);
     }
-    const CustomUI& ui = descToCustomui(desc);
+    CustomUI ui = descToCustomui(desc);
     auto cls = std::make_unique<ImplNodeClass>(ctor, ui, clsname);
     nodeClasses.emplace(clsname, std::move(cls));
 }
@@ -101,10 +101,11 @@ ZENO_API void Session::defNodeClass2(std::shared_ptr<INode>(*ctor)(), std::strin
     if (nodeClasses.find(nodecls) != nodeClasses.end()) {
         log_error("node class redefined: `{}`\n", nodecls);
     }
-    auto cls = std::make_unique<ImplNodeClass>(ctor, customui, nodecls);
+    CustomUI ui = customui;
+    initControlsByType(ui);
+    auto cls = std::make_unique<ImplNodeClass>(ctor, ui, nodecls);
     nodeClasses.emplace(nodecls, std::move(cls));
 }
-
 
 
 ZENO_API INodeClass::INodeClass(CustomUI const &customui, std::string const& classname)

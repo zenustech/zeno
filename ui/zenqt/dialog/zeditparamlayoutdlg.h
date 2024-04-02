@@ -82,14 +82,8 @@ private:
     Ui::EditParamLayoutDlg* m_ui;
     const QPersistentModelIndex m_nodeIdx;
     static const int rowValueControl = 3;
-    bool m_bSubgraphNode;
-
-    QMap<QString, QString> m_renameRecord;
-    QVector<QUndoCommand*> m_commandSeq;
 
     zeno::ParamsUpdateInfo m_paramsUpdate;
-
-    bool m_bNodeUI;
 };
 
 #endif
