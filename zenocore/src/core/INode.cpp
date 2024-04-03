@@ -416,7 +416,7 @@ ZENO_API void INode::doApply() {
         return;
     }
     zeno::scope_exit spe([&] {//apply时根据情况将IParam标记为modified，退出时将所有IParam标记为未modified
-        for (auto const& [name, param] : outputs_)
+        for (auto const& [name, param] : m_outputs)
             param->m_idModify = false;
         });
 
@@ -698,8 +698,8 @@ ZENO_API void INode::initParams(const NodeData& dat)
 }
 
 ZENO_API bool INode::has_input(std::string const &id) const {
-    auto it = inputs_.find(id);
-    if (it != inputs_.end()) {
+    auto it = m_inputs.find(id);
+    if (it != m_inputs.end()) {
         if (it->second->type == Param_Null)
             return std::visit([&](auto const& arg) {
                 using T = std::decay_t<decltype(arg)>;
