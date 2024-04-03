@@ -40,7 +40,7 @@ ZenoGraphsEditor::ZenoGraphsEditor(ZenoMainWindow* pMainWin)
 
     auto graphsMgm = zenoApp->graphsManager();
     if (graphsMgm) {
-        resetModel();
+        resetAssetsModel();
     }
 }
 
@@ -82,9 +82,7 @@ void ZenoGraphsEditor::initUI()
     m_ui->graphsViewTab->setDocumentMode(false);
     initRecentFiles();
 
-    m_pWelcomPage = new ZenoWelcomePage(this);
-    m_pWelcomPage->initRecentFiles();
-    m_pWelcomPage->hide();
+    showWelcomPage();
 }
 
 void ZenoGraphsEditor::initModel()
@@ -109,7 +107,7 @@ void ZenoGraphsEditor::initModel()
 void ZenoGraphsEditor::initSignals()
 {
     auto graphsMgr = zenoApp->graphsManager();
-    connect(&*graphsMgr, SIGNAL(modelInited()), this, SLOT(resetModel()));
+    connect(graphsMgr, SIGNAL(modelInited()), this, SLOT(resetMainModel()));
     connect(graphsMgr->logModel(), &QStandardItemModel::rowsInserted, this, &ZenoGraphsEditor::onLogInserted);
 
     connect(m_selection, &QItemSelectionModel::selectionChanged, this, &ZenoGraphsEditor::onSideBtnToggleChanged);
@@ -155,55 +153,48 @@ void ZenoGraphsEditor::initRecentFiles()
     //m_ui->welcomePage->initRecentFiles();
 }
 
-void ZenoGraphsEditor::resetModel()
+void ZenoGraphsEditor::resetMainModel()
+{
+    auto mgr = zenoApp->graphsManager();
+    ZASSERT_EXIT(mgr);
+    GraphsTreeModel* pModel = mgr->currentModel();
+    if (!pModel) {
+        onModelCleared();
+        return;
+    }
+
+    m_ui->mainTree->setModel(pModel);
+    connect(m_ui->mainTree->selectionModel(), &QItemSelectionModel::selectionChanged, this, &ZenoGraphsEditor::onTreeItemSelectionChanged);
+    m_ui->mainTree->setSelectionMode(QAbstractItemView::ExtendedSelection);
+    m_ui->graphsViewTab->clear();
+    connect(pModel, &GraphsTreeModel::modelClear, this, &ZenoGraphsEditor::onModelCleared);
+
+    activateTab({ "main" });
+    m_ui->mainTree->expandAll();
+    m_ui->mainStacked->setCurrentIndex(1);
+}
+
+void ZenoGraphsEditor::resetAssetsModel()
 {
     auto mgr = zenoApp->graphsManager();
     ZASSERT_EXIT(mgr);
     GraphsTreeModel* pModel = mgr->currentModel();
     auto assets = mgr->assetsModel();
-    if (!pModel || !assets) {
-        onModelCleared();
-        return;
-    }
+    ZASSERT_EXIT(assets);
 
-    //SubListSortProxyModel* treeProxyModel = new SubListSortProxyModel(this);
-    //treeProxyModel->setSourceModel(pModel);
-    //treeProxyModel->setDynamicSortFilter(true);
-    m_ui->mainTree->setModel(pModel);
-    //treeProxyModel->sort(0, Qt::AscendingOrder);
     m_ui->assetsList->setSelectionMode(QAbstractItemView::ExtendedSelection);
-    connect(m_ui->mainTree->selectionModel(), &QItemSelectionModel::selectionChanged, this, &ZenoGraphsEditor::onTreeItemSelectionChanged);
-
-    //SubListSortProxyModel* proxyModel = new SubListSortProxyModel(this);    
-    //proxyModel->setSourceModel(assets);
-    //proxyModel->setDynamicSortFilter(true);
     m_ui->assetsList->setModel(assets);
-    //proxyModel->sort(0, Qt::AscendingOrder);
-    m_ui->mainTree->setSelectionMode(QAbstractItemView::ExtendedSelection);
 
-    ZSubnetListItemDelegate *delegate = new ZSubnetListItemDelegate(assets, this);
+    ZSubnetListItemDelegate* delegate = new ZSubnetListItemDelegate(assets, this);
     m_ui->assetsList->setItemDelegate(delegate);
     connect(m_ui->assetsList->selectionModel(), &QItemSelectionModel::selectionChanged, this, [=]() {
         QModelIndexList lst = m_ui->assetsList->selectionModel()->selectedIndexes();
         //delegate->setSelectedIndexs(lst);
-        if (lst.size() == 1) 
+        if (lst.size() == 1)
         {
-            onListItemActivated(lst.first());
+            onAssetItemActivated(lst.first());
         }
     });
-
-    m_ui->graphsViewTab->clear();
-
-    connect(pModel, &GraphsTreeModel::modelClear, this, &ZenoGraphsEditor::onModelCleared);
-    /*
-    connect(assets, SIGNAL(rowsAboutToBeRemoved(const QModelIndex&, int, int)), this, SLOT(onAssetsToRemove(const QModelIndex&, int, int)));
-    connect(pModel, SIGNAL(rowsAboutToBeRemoved(const QModelIndex&, int, int)), this, SLOT(onSubGraphsToRemove(const QModelIndex&, int, int)));
-    connect(pModel, SIGNAL(modelReset()), this, SLOT(onModelReset()));
-    connect(assets, SIGNAL(graphRenamed(const QString&, const QString&)), this, SLOT(onSubGraphRename(const QString&, const QString&)));
-    */
-    activateTab({ "main" });
-
-    m_ui->mainTree->expandAll();
 }
 
 void ZenoGraphsEditor::onModelCleared()
@@ -509,10 +500,11 @@ void ZenoGraphsEditor::closeMaterialTab()
     */
 }
 
-void ZenoGraphsEditor::onListItemActivated(const QModelIndex& index)
+void ZenoGraphsEditor::onAssetItemActivated(const QModelIndex& index)
 {
     const QString& subgraphName = index.data().toString();
     activateTab({ subgraphName });
+    m_ui->mainStacked->setCurrentIndex(1);
 }
 
 void ZenoGraphsEditor::selectTab(const QString& objpath, const QString& path, std::vector<QString> & objIds)
@@ -538,20 +530,12 @@ ZenoSubGraphView* ZenoGraphsEditor::getCurrentSubGraphView()
 
 void ZenoGraphsEditor::showWelcomPage()
 {
-    for (int i = 0; i < m_ui->graphsViewTab->count(); i++)
-    {
-        delete m_ui->graphsViewTab->widget(i);
-        m_ui->graphsViewTab->removeTab(i);
-    }
-    m_ui->splitter->replaceWidget(1, m_pWelcomPage);
-    m_ui->splitter->setStretchFactor(1, 5);
+    m_ui->mainStacked->setCurrentIndex(0);
 }
 
 bool ZenoGraphsEditor::welComPageShowed()
 {
-    if (ZenoWelcomePage* page = qobject_cast<ZenoWelcomePage*>(m_ui->splitter->widget(1)))
-        return true;
-    return false;
+    return m_ui->mainStacked->currentIndex() == 0;
 }
 
 void ZenoGraphsEditor::activateTab(const QStringList& subgpath, const QString& focusNode, bool isError)
