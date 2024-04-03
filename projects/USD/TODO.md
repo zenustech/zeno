@@ -26,9 +26,10 @@
   * [ ] 加一个mesh纹理支持
   * [ ] 支持骨骼 Skeleton导入，并用骨骼初始化mesh的transform
   * [ ] 支持动画 SkelAnimation导入 并且支持多帧播放
-* [ ] 支持层级引入 例如import一个根节点 其下的叶节点也一并导入(sublayer??)
+* [ ] 支持递归引入 例如import一个根节点 其下的叶节点也一并导入(sublayer??)
 * [x] 支持编辑USD prim: 目前方案是导入时转换为等价的zeno节点树
 * [ ] 支持导出USD prim
+* [ ] prim可见性为inherited处理
 # mtlx @hcx
 * [ ] Material/mtlx
 * [ ] Shader
@@ -36,14 +37,18 @@
 * [x] CylinderLight
 * [x] DiskLight
 * [x] ~~DistantLight: 目前不支持无形光源 暂时忽略~~
-* [x] DomeLight: 暂无特性 先做一个简单支持
-* [ ] RectLight
+* [x] DomeLight: 简单支持了一下
+* [x] RectLight
 * [x] SphereLight
 * [ ] GeometryLight
 * [ ] Camera
 # instancing
 * [ ] 实现实例化 USD instancing
 # 进阶以及可选
+* [ ] Scope?
+* [ ] OpenVDBAsset?
+* [ ] Volume?
+* [ ] SkelRoot?
 * [ ] xformop列表编辑: 已经支持了xform序列转换 还要支持导出
 * [ ] Collapse功能|节点支持
 * [ ] 其他USD合成操作

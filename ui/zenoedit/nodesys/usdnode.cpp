@@ -9,7 +9,7 @@ std::string getOutNameOfGeoNode(ZENO_HANDLE targetGraph, ZENO_HANDLE node) {
 	*/
 	std::string name;
 	Zeno_GetName(targetGraph, node, name);
-	name = "PrimitiveTransform" ? "outPrim" : "prim";
+	name = (name == "PrimitiveTransform") ? "outPrim" : "prim";
 	return name;
 }
 
@@ -139,11 +139,12 @@ void EvalUSDPrim::_onEvalClicked() {
 			primNode = geoNode + lightNode;
 		}
 	} else if (primType == "DomeLight") {
-		// this type is not fully supported yet
+		// I think this type is not fully supported yet
 		auto geoNode = _emitCreateSphereNode(mainGraph, true);
 		auto lightNode = _emitLightNode(mainGraph, "Diffuse", "TriangleMesh");
 		if (geoNode && lightNode) {
-			Zeno_AddLink(mainGraph, geoNode, getOutNameOfGeoNode(mainGraph, geoNode), lightNode, "prim");
+			Zeno_SetInputDefl(mainGraph, geoNode, "isFlipFace", true); // emit inside the sphere
+			Zeno_AddLink(mainGraph, geoNode, "prim", lightNode, "prim");
 			Zeno_SetView(mainGraph, lightNode, true);
 			primNode = lightNode;
 		} else {
@@ -154,7 +155,24 @@ void EvalUSDPrim::_onEvalClicked() {
 		// this type is not support yet
 		zeno::log_warn("DistantLight is not supported by zeno yet.");
 	} else if (primType == "RectLight") {
-		;
+		/*
+		* Description from USD doc about RectLight:
+		* Light emitted from one side of a rectangle.
+		* The rectangle is centered in the XY plane and emits light along the - Z axis.
+		* The rectangle is 1 unit in length in the X and Y axis.
+		* In the default position, a texture file's min coordinates should be at (+X, +Y) and max coordinates at (-X, -Y).
+		*/
+		// this type is not fully supported yet
+		auto geoNode = _emitCreatePlaneNode(mainGraph, true);
+		auto lightNode = _emitLightNode(mainGraph, "Diffuse", "TriangleMesh");
+		if (geoNode && lightNode) {
+			Zeno_AddLink(mainGraph, geoNode, "prim", lightNode, "prim");
+			Zeno_SetView(mainGraph, lightNode, true);
+			primNode = lightNode;
+		} else {
+			zeno::log_warn("failed to create CreatePlane or LightNode while evaling prim " + mPrimPath);
+			primNode = geoNode + lightNode;
+		}
 	} else if (primType == "SphereLight") {
 		// this type is not fully supported yet
 		auto geoNode = _emitCreateSphereNode(mainGraph, true);
@@ -407,21 +425,33 @@ ZENO_HANDLE EvalUSDPrim::_emitCreateConeNode(ZENO_HANDLE targetGraph){
 	return newNode;
 }
 
-ZENO_HANDLE EvalUSDPrim::_emitCreatePlaneNode(ZENO_HANDLE targetGraph){
+ZENO_HANDLE EvalUSDPrim::_emitCreatePlaneNode(ZENO_HANDLE targetGraph, bool isLightGeo){
 	char axis;
-	double length, width;
+	double height, width;
 	pxr::UsdAttribute attr;
-	pxr::VtValue axisValue;
-	attr = mUSDPrim.GetAttribute(pxr::TfToken("axis"));
-	if (!attr.HasValue()) return 0;
-	attr.Get(&axisValue);
-	axis = axisValue.Get<pxr::TfToken>().GetString()[0];
+	pxr::VtValue val;
+	if (isLightGeo) { // RectLight
+		axis = 'Z';
 
-	attr = mUSDPrim.GetAttribute(pxr::TfToken("length"));
-	attr.Get(&length);
+		attr = mUSDPrim.GetAttribute(pxr::TfToken("inputs:height"));
+		attr.Get(&val);
+		height = static_cast<double>(val.Get<float>());
 
-	attr = mUSDPrim.GetAttribute(pxr::TfToken("width"));
-	attr.Get(&width);
+		attr = mUSDPrim.GetAttribute(pxr::TfToken("inputs:width"));
+		attr.Get(&val);
+		width = static_cast<double>(val.Get<float>());
+	} else { // Plane
+		attr = mUSDPrim.GetAttribute(pxr::TfToken("axis"));
+		if (!attr.HasValue()) return 0;
+		attr.Get(&val);
+		axis = val.Get<pxr::TfToken>().GetString()[0];
+
+		attr = mUSDPrim.GetAttribute(pxr::TfToken("length"));
+		attr.Get(&height);
+
+		attr = mUSDPrim.GetAttribute(pxr::TfToken("width"));
+		attr.Get(&width);
+	}
 
 	ZENO_HANDLE newNode = Zeno_AddNode(targetGraph, "CreatePlane");
 	if (newNode == 0) {
@@ -432,19 +462,15 @@ ZENO_HANDLE EvalUSDPrim::_emitCreatePlaneNode(ZENO_HANDLE targetGraph){
 	std::pair<float, float> nodePos;
 	Zeno_GetPos(targetGraph, curNode, nodePos);
 
-	auto plane = pxr::UsdGeomPlane(mUSDPrim);
-
-	plane.GetWidthAttr().Get(&width);
-	plane.GetLengthAttr().Get(&length);
-	Zeno_SetInputDefl(targetGraph, newNode, "scaleSize", zeno::vec3f(length, 1.0f, width));
+	Zeno_SetInputDefl(targetGraph, newNode, "scaleSize", zeno::vec3f(width, 1.0f, height));
 	// Yeah, we don't need to add the PrimitiveTransform node :)
 	if (axis == 'X') {
 		Zeno_SetInputDefl(targetGraph, newNode, "rotate", zeno::vec3f(90.0f, 0.0f, 0.0f));
 	} else if (axis == 'Z') {
-		Zeno_SetInputDefl(targetGraph, newNode, "rotate", zeno::vec3f(0.0f, 0.0f, 90.0f));
+		Zeno_SetInputDefl(targetGraph, newNode, "rotate", isLightGeo ? zeno::vec3f(-90.0f, 180.0f, 0.0f) : zeno::vec3f(0.0f, 0.0f, 90.0f));
 	}
 
-	Zeno_SetInputDefl(targetGraph, newNode, "size", 1);
+	Zeno_SetInputDefl(targetGraph, newNode, "size", 1.0f);
 	Zeno_SetPos(targetGraph, newNode, nodePos);
 	Zeno_SetView(targetGraph, newNode, true);
 

@@ -52,7 +52,7 @@ private:
 	ZENO_HANDLE _emitCreateCubeNode(ZENO_HANDLE);
 	ZENO_HANDLE _emitCreateCylinderNode(ZENO_HANDLE, bool isLightGeo = false);
 	ZENO_HANDLE _emitCreateConeNode(ZENO_HANDLE);
-	ZENO_HANDLE _emitCreatePlaneNode(ZENO_HANDLE);
+	ZENO_HANDLE _emitCreatePlaneNode(ZENO_HANDLE, bool isLightGeo = false);
 	ZENO_HANDLE _emitCreateDiskNode(ZENO_HANDLE, bool isLightGeo = false);
 	ZENO_HANDLE _emitImportUSDMeshNode(ZENO_HANDLE);
 
