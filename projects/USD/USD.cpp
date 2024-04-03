@@ -145,14 +145,8 @@ void _handleUSDCommonLightAttributes(const pxr::UsdPrim& usdPrim, zeno::Primitiv
 
 // converting USD mesh to zeno mesh
 void _convertMeshFromUSDToZeno(const pxr::UsdPrim& usdPrim, zeno::PrimitiveObject& zPrim) {
-    /*
-    * Converting mesh
-    */
     const std::string& typeName = usdPrim.GetTypeName().GetString();
 
-    /*
-    * TODO: these codes will be refactored
-    */
     if (typeName == "Mesh") {
         /*** Load from USD prim ***/
         const auto& usdMesh = pxr::UsdGeomMesh(usdPrim);
@@ -282,222 +276,8 @@ void _convertMeshFromUSDToZeno(const pxr::UsdPrim& usdPrim, zeno::PrimitiveObjec
                 start += verFaceCount;
             }
         } else {
-            // TODO: points, lines and errors to be considered
+            // TODO: points, lines and error types to be considered
             ;
-        }
-    }
-    else if (typeName == "Sphere") {
-        auto sphere = pxr::UsdGeomSphere(usdPrim);
-        pxr::VtValue radiusValue;
-        sphere.GetRadiusAttr().Get(&radiusValue);
-        float radius = static_cast<float>(radiusValue.Get<double>());
-
-        auto& verts = zPrim.verts;
-        auto& polys = zPrim.polys;
-        auto& loops = zPrim.loops;
-        auto& uvs = zPrim.uvs; // TODO
-        auto& norms = verts.add_attr<zeno::vec3f>("nrm");
-
-        const int ROWS = 32;
-        const int COLUMNS = 32;
-
-        verts.emplace_back(0.0f, radius, 0.0f);
-        norms.emplace_back(0.0f, 1.0f, 0.0f);
-        for (int row = 1; row < ROWS; row++) {
-            float v = 1.0f * row / ROWS;
-            float theta = M_PI * v;
-            for (int column = 0; column < COLUMNS; column++) {
-                float u = 1.0f * column / COLUMNS;
-                float phi = M_PI * 2 * u;
-                float x = radius * sin(theta) * cos(phi);
-                float y = radius * cos(theta);
-                float z = radius * -sin(theta) * sin(phi);
-                verts.emplace_back(x, y, z);
-                norms.emplace_back(zeno::normalize(zeno::vec3f(x, y, z)));
-            }
-        }
-        verts.emplace_back(0.0f, -radius, 0.0f);
-        norms.emplace_back(0.0f, -1.0f, 0.0f);
-
-        // setup sphere poly indices
-        {
-            //head
-            for (auto column = 0; column < COLUMNS; column++) {
-                if (column == COLUMNS - 1) {
-                    loops.emplace_back(0);
-                    loops.emplace_back(COLUMNS);
-                    loops.emplace_back(1);
-                    polys.emplace_back(column * 3, 3);
-                } else {
-                    loops.emplace_back(0);
-                    loops.emplace_back(column + 1);
-                    loops.emplace_back(column + 2);
-                    polys.emplace_back(column * 3, 3);
-                }
-            }
-            //body
-            for (auto row = 1; row < ROWS - 1; row++) {
-                for (auto column = 0; column < COLUMNS; column++) {
-                    if (column == COLUMNS - 1) {
-                        loops.emplace_back((row - 1) * COLUMNS + 1);
-                        loops.emplace_back((row - 1) * COLUMNS + COLUMNS);
-                        loops.emplace_back(row * COLUMNS + COLUMNS);
-                        loops.emplace_back(row * COLUMNS + 1);
-                        polys.emplace_back(COLUMNS * 3 + (row - 1) * COLUMNS * 4 + column * 4, 4);
-                    } else {
-                        loops.emplace_back((row - 1) * COLUMNS + column + 2);
-                        loops.emplace_back((row - 1) * COLUMNS + column + 1);
-                        loops.emplace_back(row * COLUMNS + column + 1);
-                        loops.emplace_back(row * COLUMNS + column + 2);
-                        polys.emplace_back(loops.size() - 4, 4);
-                    }
-                }
-            }
-            //tail
-            for (auto column = 0; column < COLUMNS; column++) {
-                if (column == COLUMNS - 1) {
-                    loops.emplace_back((ROWS - 2) * COLUMNS + 1);
-                    loops.emplace_back((ROWS - 2) * COLUMNS + column + 1);
-                    loops.emplace_back((ROWS - 1) * COLUMNS + 1);
-                    polys.emplace_back(COLUMNS * 3 + (ROWS - 2) * COLUMNS * 4 + column * 3, 3);
-                } else {
-                    loops.emplace_back((ROWS - 2) * COLUMNS + column + 2);
-                    loops.emplace_back((ROWS - 2) * COLUMNS + column + 1);
-                    loops.emplace_back((ROWS - 1) * COLUMNS + 1);
-                    polys.emplace_back(loops.size() - 3, 3);
-                }
-            }
-        }
-
-    }
-    else if (typeName == "Cube") {
-        auto sizeAttr = usdPrim.GetAttribute(pxr::TfToken("size"));
-        double size, halfSize;
-        sizeAttr.Get(&size);
-        halfSize = size * 0.5;
-
-        // use quad mode as default
-        auto& verts = zPrim.verts;
-        auto& polys = zPrim.polys;
-        auto& loops = zPrim.loops;
-
-        // TODO: support uv
-        // auto& uvs = zPrim.uvs;
-
-        for (int y = -1; y <= 1; y += 2) {
-            for (int z = -1; z <= 1; z += 2) {
-                for (int x = -1; x <= 1; x += 2) {
-                    verts.emplace_back(x * halfSize, y * halfSize, z * halfSize);
-                }
-            }
-        }
-
-        static const int CUBE_FACE_INDICES[] = {
-                4, 6, 7, 5, // up
-                0, 1, 3, 2, // down
-                0, 2, 6, 4, // left
-                1, 5, 7, 3, // right
-                0, 4, 5, 1, // front
-                2, 3, 7, 6 // back
-        };
-        int faceStartIndex = 0;
-        for (int i = 0; i < 6; ++i) {
-            for (int j = 0; j < 4; ++j) {
-                loops.emplace_back(CUBE_FACE_INDICES[i * 4 + j]);
-            }
-            polys.emplace_back(faceStartIndex, 4);
-            faceStartIndex += 4;
-        }
-        // TODO: normals ?
-    }
-    else if (typeName == "Cylinder") {
-        auto cylinder = pxr::UsdGeomCylinder(usdPrim);
-        
-        /*** Read from USD ***/
-        char axis;
-        float height;
-        float radius;
-        pxr::VtValue heightValue;
-        pxr::VtValue radiusValue;
-        pxr::VtValue axisValue;
-        cylinder.GetHeightAttr().Get(&heightValue);
-        cylinder.GetRadiusAttr().Get(&radiusValue);
-        cylinder.GetAxisAttr().Get(&axisValue);
-        height = static_cast<float>(heightValue.Get<double>());
-        radius = static_cast<float>(radiusValue.Get<double>());
-        axis = axisValue.Get<pxr::TfToken>().GetString()[0];
-
-        auto& verts = zPrim.verts;
-        auto& tris = zPrim.tris;
-
-        /*** Constructing cylinder ***/
-        const int COLUMNS = 32;
-        // vertices of the top
-        for (size_t i = 0; i < COLUMNS; i++) {
-            float rad = 2.0f * M_PI * i / COLUMNS;
-            float r0 = cos(rad) * radius;
-            float r1 = -sin(rad) * radius;
-            float h = 0.5f * height;
-            if (axis == 'Z') {
-                std::swap(r1, h);
-            } else if (axis == 'X') {
-                std::swap(r0, h);
-            } else {
-                // we use Y-axis as default, no need to exchange
-            }
-            verts.emplace_back(r0, h, r1);
-        }
-        // vertices of the bottom
-        for (size_t i = 0; i < COLUMNS; i++) {
-            float rad = 2.0f * M_PI * i / COLUMNS;
-            float r0 = cos(rad) * radius;
-            float r1 = -sin(rad) * radius;
-            float h = -0.5f * height;
-            if (axis == 'Z') {
-                std::swap(r1, h);
-            } else if (axis == 'X') {
-                std::swap(r0, h);
-            } else {
-                // we use Y-axis as default, no need to exchange
-            }
-            verts.emplace_back(r0, h, r1);
-        }
-        if (axis == 'Z') {
-            verts.emplace_back(0.0f, 0.0f, 0.5f * height);
-            verts.emplace_back(0.0f, 0.0f, -0.5f * height);
-        } else if (axis == 'X') {
-            verts.emplace_back(0.5f * height, 0.0f, 0.0f);
-            verts.emplace_back(-0.5f * height, 0.0f, 0.0f);
-        } else {
-            verts.emplace_back(0.0f, 0.5f * height, 0.0f);
-            verts.emplace_back(0.0f, -0.5f * height, 0.0f);
-        }
-
-        for (size_t i = 0; i < COLUMNS; i++) {
-            if (axis != 'Y') {
-                tris.emplace_back(COLUMNS * 2, (i + 1) % COLUMNS, i); // top
-                tris.emplace_back(i + COLUMNS, (i + 1) % COLUMNS + COLUMNS, COLUMNS * 2 + 1); // bottom
-
-                // side
-                size_t _0 = i;
-                size_t _1 = (i + 1) % COLUMNS;
-                size_t _2 = (i + 1) % COLUMNS + COLUMNS;
-                size_t _3 = i + COLUMNS;
-                tris.emplace_back(_1, _2, _0);
-                tris.emplace_back(_2, _3, _0);
-            }
-            else {
-                tris.emplace_back(COLUMNS * 2, i, (i + 1) % COLUMNS); // top
-                tris.emplace_back(i + COLUMNS, COLUMNS * 2 + 1, (i + 1) % COLUMNS + COLUMNS); // bottom
-
-                // side
-                size_t _0 = i;
-                size_t _1 = (i + 1) % COLUMNS;
-                size_t _2 = (i + 1) % COLUMNS + COLUMNS;
-                size_t _3 = i + COLUMNS;
-                tris.emplace_back(_1, _0, _2);
-                tris.emplace_back(_2, _0, _3);
-            }
         }
     }
     else if (typeName == "CylinderLight") {
@@ -715,242 +495,6 @@ void _convertMeshFromUSDToZeno(const pxr::UsdPrim& usdPrim, zeno::PrimitiveObjec
     else if (typeName == "GeometryLight") {
         ;
     }
-    else if (typeName == "Cone") {
-        auto cone = pxr::UsdGeomCone(usdPrim);
-
-        /*** Read from USD ***/
-        char axis;
-        float height;
-        float radius;
-        pxr::VtValue heightValue;
-        pxr::VtValue radiusValue;
-        pxr::VtValue axisValue;
-        cone.GetHeightAttr().Get(&heightValue);
-        cone.GetRadiusAttr().Get(&radiusValue);
-        cone.GetAxisAttr().Get(&axisValue);
-        height = static_cast<float>(heightValue.Get<double>());
-        radius = static_cast<float>(radiusValue.Get<double>());
-        axis = axisValue.Get<pxr::TfToken>().GetString()[0];
-
-        auto& verts = zPrim.verts;
-        auto& tris = zPrim.tris;
-        /*** Constructing cylinder ***/
-        const int COLUMNS = 32;
-        // vertices of the bottom
-        for (size_t i = 0; i < COLUMNS; i++) {
-            float rad = 2.0f * M_PI * i / COLUMNS;
-            float r0 = cos(rad) * radius;
-            float r1 = -sin(rad) * radius;
-            float h = -0.5f * height;
-            if (axis == 'Z') {
-                std::swap(r1, h);
-            } else if (axis == 'X') {
-                std::swap(r0, h);
-            } else {
-                // we use Y-axis as default, no need to exchange
-            }
-            verts.emplace_back(r0, h, r1);
-        }
-        if (axis == 'Z') {
-            verts.emplace_back(0.0f, 0.0f, 0.5f * height);
-            verts.emplace_back(0.0f, 0.0f, -0.5f * height);
-        }
-        else if (axis == 'X') {
-            verts.emplace_back(0.5f * height, 0.0f, 0.0f);
-            verts.emplace_back(-0.5f * height, 0.0f, 0.0f);
-        }
-        else {
-            verts.emplace_back(0.0f, 0.5f * height, 0.0f);
-            verts.emplace_back(0.0f, -0.5f * height, 0.0f);
-        }
-
-        for (size_t i = 0; i < COLUMNS; i++) {
-            if (axis != 'Y') {
-                tris.emplace_back(COLUMNS, (i + 1) % COLUMNS, i);
-                tris.emplace_back(i, (i + 1) % COLUMNS, COLUMNS + 1);
-            }
-            else {
-                tris.emplace_back(COLUMNS, i, (i + 1) % COLUMNS);
-                tris.emplace_back(i, COLUMNS + 1, (i + 1) % COLUMNS);
-            }
-        }
-    }
-    else if (typeName == "Capsule") {
-        auto capsule = pxr::UsdGeomCapsule(usdPrim);
-
-        /*** Read from USD ***/
-        char axis;
-        float height; // in USD capsule, the height doesn't include the radius of two spheres
-        float radius;
-        pxr::VtValue tempValue;
-        capsule.GetHeightAttr().Get(&tempValue);
-        height = static_cast<float>(tempValue.Get<double>());
-        capsule.GetRadiusAttr().Get(&tempValue);
-        radius = static_cast<float>(tempValue.Get<double>());
-        capsule.GetAxisAttr().Get(&tempValue);
-        axis = tempValue.Get<pxr::TfToken>().GetString()[0];
-
-        auto& verts = zPrim.verts;
-        auto& polys = zPrim.polys;
-        auto& loops = zPrim.loops;
-        auto& uvs = zPrim.uvs;
-        auto& norms = verts.add_attr<zeno::vec3f>("nrm");
-
-        const int COLUMNS = 32;
-        const int HALF_ROWS = 16;
-        const int ROWS = HALF_ROWS * 2;
-
-        verts.emplace_back(0.0f, 0.5f * height + radius, 0.0f); // top point
-        norms.emplace_back(0.0f, 1.0f, 0.0f);
-        // top half-sphere
-        for (int row = 1; row < HALF_ROWS; row++) {
-            float v = 1.0f * row / ROWS;
-            float theta = M_PI * v;
-            for (int column = 0; column < COLUMNS; column++) {
-                float u = 1.0f * column / COLUMNS;
-                float phi = M_PI * 2 * u;
-                float x = radius * sin(theta) * cos(phi);
-                float y = radius * cos(theta);
-                float z = radius * -sin(theta) * sin(phi);
-                verts.emplace_back(x, y + 0.5f * height, z);
-                norms.emplace_back(zeno::normalize(zeno::vec3f(x, y, z)));
-            }
-        }
-        // down half-sphere
-        for (int row = HALF_ROWS; row < ROWS; row++) {
-            float v = 1.0f * row / ROWS;
-            float theta = M_PI * v;
-            for (int column = 0; column < COLUMNS; column++) {
-                float u = 1.0f * column / COLUMNS;
-                float phi = M_PI * 2 * u;
-                float x = radius * sin(theta) * cos(phi);
-                float y = radius * cos(theta);
-                float z = radius * -sin(theta) * sin(phi);
-                verts.emplace_back(x, y - 0.5f * height, z);
-                norms.emplace_back(zeno::normalize(zeno::vec3f(x, y, z)));
-            }
-        }
-        verts.emplace_back(0.0f, -0.5f * height - radius, 0.0f);
-        norms.emplace_back(0.0f, -1.0f, 0.0f);
-
-        // setup capsule poly indices
-        {
-            //head
-            for (auto column = 0; column < COLUMNS; column++) {
-                if (column == COLUMNS - 1) {
-                    loops.emplace_back(0);
-                    loops.emplace_back(COLUMNS);
-                    loops.emplace_back(1);
-                    polys.emplace_back(column * 3, 3);
-                }
-                else {
-                    loops.emplace_back(0);
-                    loops.emplace_back(column + 1);
-                    loops.emplace_back(column + 2);
-                    polys.emplace_back(column * 3, 3);
-                }
-            }
-            //body
-            for (auto row = 1; row < ROWS - 1; row++) {
-                for (auto column = 0; column < COLUMNS; column++) {
-                    if (column == COLUMNS - 1) {
-                        loops.emplace_back((row - 1) * COLUMNS + 1);
-                        loops.emplace_back((row - 1) * COLUMNS + COLUMNS);
-                        loops.emplace_back(row * COLUMNS + COLUMNS);
-                        loops.emplace_back(row * COLUMNS + 1);
-                        polys.emplace_back(COLUMNS * 3 + (row - 1) * COLUMNS * 4 + column * 4, 4);
-                    }
-                    else {
-                        loops.emplace_back((row - 1) * COLUMNS + column + 2);
-                        loops.emplace_back((row - 1) * COLUMNS + column + 1);
-                        loops.emplace_back(row * COLUMNS + column + 1);
-                        loops.emplace_back(row * COLUMNS + column + 2);
-                        polys.emplace_back(loops.size() - 4, 4);
-                    }
-                }
-            }
-            //tail
-            for (auto column = 0; column < COLUMNS; column++) {
-                if (column == COLUMNS - 1) {
-                    loops.emplace_back((ROWS - 2) * COLUMNS + 1);
-                    loops.emplace_back((ROWS - 2) * COLUMNS + column + 1);
-                    loops.emplace_back((ROWS - 1) * COLUMNS + 1);
-                    polys.emplace_back(COLUMNS * 3 + (ROWS - 2) * COLUMNS * 4 + column * 3, 3);
-                }
-                else {
-                    loops.emplace_back((ROWS - 2) * COLUMNS + column + 2);
-                    loops.emplace_back((ROWS - 2) * COLUMNS + column + 1);
-                    loops.emplace_back((ROWS - 1) * COLUMNS + 1);
-                    polys.emplace_back(loops.size() - 3, 3);
-                }
-            }
-        }
-    }
-    else if (typeName == "Plane") {
-        auto plane = pxr::UsdGeomPlane(usdPrim);
-
-        char axis;
-        bool doubleSided; // TODO
-        float length;
-        float width;
-        pxr::VtValue tempValue;
-
-        plane.GetDoubleSidedAttr().Get(&doubleSided);
-
-        plane.GetAxisAttr().Get(&tempValue);
-        axis = tempValue.Get<pxr::TfToken>().GetString()[0];
-
-        plane.GetLengthAttr().Get(&tempValue);
-        length = static_cast<float>(tempValue.Get<double>());
-
-        plane.GetWidthAttr().Get(&tempValue);
-        width = static_cast<float>(tempValue.Get<double>());
-
-        auto& verts = zPrim.verts;
-        auto& tris = zPrim.tris;
-        auto& uvs = verts.add_attr<zeno::vec3f>("uv");
-        auto& normals = verts.add_attr<zeno::vec3f>("nrm");
-
-        if (axis == 'Z') {
-            verts.emplace_back(-0.5f * width, 0.5f * length, 0.0f);
-            verts.emplace_back(0.5f * width, 0.5f * length, 0.0f);
-            verts.emplace_back(-0.5f * width, -0.5f * length, 0.0f);
-            verts.emplace_back(0.5f * width, -0.5f * length, 0.0f);
-            for (int i = 0; i < 4; ++i) {
-                normals.emplace_back(0.0f, 0.0f, 1.0f);
-            }
-        } else if (axis == 'X') {
-            verts.emplace_back(0.0f, 0.5f * length, 0.5f * width);
-            verts.emplace_back(0.0f, 0.5f * length, -0.5f * width);
-            verts.emplace_back(0.0f, -0.5f * length, 0.5f * width);
-            verts.emplace_back(0.0f, -0.5f * length, -0.5f * width);
-            for (int i = 0; i < 4; ++i) {
-                normals.emplace_back(1.0f, 0.0f, 0.0f);
-            }
-        } else {
-            verts.emplace_back(-0.5f * width, 0.0f, -0.5f * length);
-            verts.emplace_back(0.5f * width, 0.0f, -0.5f * length);
-            verts.emplace_back(-0.5f * width, 0.0f, 0.5f * length);
-            verts.emplace_back(0.5f * width, 0.0f, 0.5f * length);
-            for (int i = 0; i < 4; ++i) {
-                normals.emplace_back(0.0f, 1.0f, 0.0f);
-            }
-        }
-
-        // uvs
-        uvs.emplace_back(0.0f, 0.0f, 0.0f);
-        uvs.emplace_back(1.0f, 0.0f, 0.0f);
-        uvs.emplace_back(0.0f, 1.0f, 0.0f);
-        uvs.emplace_back(1.0f, 1.0f, 0.0f);
-
-        // indices
-        tris.emplace_back(0, 2, 1);
-        tris.emplace_back(1, 2, 3);
-    }
-    else {
-        // other geometry types are not supported yet
-        std::cout << "Found not-supported geom type: " << typeName << std::endl;
-    }
 }
 
 zeno::MatrixObject _getTransformMartrixFromUSDPrim(const pxr::UsdPrim& usdPrim) {
@@ -1085,11 +629,56 @@ ZENDEFNODE(ImportUSDPrim,
             {"string", "USDDescription"},
             {"string", "primPath"}
         },
+    /* outputs */
+    {
+        {"primitive", "prim"},
+        {"Matrix", "xformMatrix"},
+        //{"skeleton"}, // USDPrimKeeper
+    },
+    /* params */
+    {},
+    /* category */
+    {"USD"}
+    }
+);
+
+// return a zeno mesh prim from the given USD mesh prim path
+struct ImportUSDMesh: zeno::INode {
+    virtual void apply() override {
+        std::string& usdPath = get_input2<zeno::StringObject>("USDDescription")->get();
+        std::string& primPath = get_input2<zeno::StringObject>("primPath")->get();
+
+        auto stage = pxr::UsdStage::Open(usdPath);
+        if (stage == nullptr) {
+            std::cout << "failed to find usd description for " << usdPath;
+            return;
+        }
+
+        auto prim = stage->GetPrimAtPath(pxr::SdfPath(primPath));
+        if (!prim.IsValid()) {
+            std::cout << "[ImportUSDPrim] failed to import prim at " << primPath << std::endl;
+            return;
+        }
+
+        auto zPrim = std::make_shared<zeno::PrimitiveObject>();
+        zeno::UserData& primData = zPrim->userData();
+
+        // converting mesh
+        _convertMeshFromUSDToZeno(prim, *zPrim);
+
+        set_output2("prim", std::move(zPrim));
+    }
+};
+ZENDEFNODE(ImportUSDMesh,
+    {
+        /* inputs */
+        {
+            {"string", "USDDescription"},
+            {"string", "primPath"}
+        },
         /* outputs */
         {
-            {"primitive", "prim"},
-            {"Matrix", "xformMatrix"},
-            //{"skeleton"}, // USDPrimKeeper
+            {"primitive", "prim"}
         },
         /* params */
         {},
@@ -1368,7 +957,7 @@ ZENDEFNODE(EvalUSDPrim,
     {
         /* inputs */
         {
-            {"string", "USDDescription"},
+            {"readpath", "USDDescription"},
             {"string", "primPath"}
         },
         /* outputs */

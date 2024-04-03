@@ -106,6 +106,27 @@ vec3f colorTemperatureToRGB(float temperatureInKelvins)
     return retColor;
 }
 
+struct ColorTemperatureToRGB : INode {
+    virtual void apply() override {
+        float temp = get_input2<float>("temperature");
+
+        set_output2("color", std::move(colorTemperatureToRGB(temp)));
+    }
+};
+
+ZENDEFNODE(ColorTemperatureToRGB, {
+    {
+        {"float", "temperature", "3500"},
+    },
+    {
+        {"vec3f", "color"},
+    },
+    {
+    },
+    {"shader"},
+    });
+
+
 struct Blackbody : INode {
     virtual void apply() override {
         float temperature = get_input2<float>("temperature");
