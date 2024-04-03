@@ -174,6 +174,7 @@ target_sources(zeno PRIVATE
   utils/Noise.cu
   utils/Groom.cpp
 
+  graph/BasicTask.cpp
 )
 
 if (ZS_PYTHON_FOUND)
