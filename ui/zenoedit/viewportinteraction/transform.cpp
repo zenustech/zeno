@@ -316,7 +316,7 @@ void FakeTransformer::startTransform() {
     markObjectsInteractive();
 }
 
-void FakeTransformer::createNewTransformNode(NodeLocation& node_location) {
+void FakeTransformer::createNewTransformNode(NodeLocation& node_location, const std::string& obj_name) {
     auto& node_sync = NodeSyncMgr::GetInstance();
 
     auto out_sock = node_sync.getPrimSockName(node_location);
@@ -329,6 +329,21 @@ void FakeTransformer::createNewTransformNode(NodeLocation& node_location) {
     node_sync.updateNodeVisibility(node_location);
     // make new node visible
     node_sync.updateNodeVisibility(new_node_location.value());
+    if (m_objects.count(obj_name)) {
+        zeno::vec3f centroid = {};
+        auto prim = m_objects[obj_name];
+        for (auto i = 0; i < prim->verts.size(); i++) {
+            centroid += prim->verts[i];
+        }
+        centroid /= prim->verts.size();
+        QVector<double> pivotPos = {
+            centroid[0],
+            centroid[1],
+            centroid[2]
+        };
+        node_sync.updateNodeInputVec(new_node_location.value(), "pivotPos", pivotPos);
+        node_sync.updateNodeInputString(new_node_location.value(), "pivot", "custom");
+    }
 }
 
 void FakeTransformer::createNewTransformNodeNameWhenMissing(std::string const &node_name) {
@@ -338,7 +353,7 @@ void FakeTransformer::createNewTransformNodeNameWhenMissing(std::string const &n
     if (!node_sync.checkNodeType(prim_node, "PrimitiveTransform")) {
         auto linked_transform_node = node_sync.checkNodeLinkedSpecificNode(prim_node, "PrimitiveTransform");
         if (!linked_transform_node.has_value()) {
-            createNewTransformNode(prim_node_location.value());
+            createNewTransformNode(prim_node_location.value(), node_name);
         }
     }
 }
@@ -431,7 +446,7 @@ void FakeTransformer::endTransform(bool moved) {
                 // prim comes from another type node
                 auto linked_transform_node = node_sync.checkNodeLinkedSpecificNode(prim_node, "PrimitiveTransform");
                 if (!linked_transform_node.has_value()) {
-                    createNewTransformNode(prim_node_location.value());
+                    createNewTransformNode(prim_node_location.value(), obj_name);
                     linked_transform_node = node_sync.checkNodeLinkedSpecificNode(prim_node, "PrimitiveTransform");
                 }
                 syncToTransformNode(linked_transform_node.value(), obj_name);

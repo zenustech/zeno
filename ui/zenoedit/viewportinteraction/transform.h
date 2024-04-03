@@ -58,7 +58,7 @@ private:
     // 计算rotate并调用doTransform
     void rotate(glm::vec3 start_vec, glm::vec3 end_vec, glm::vec3 axis);
 
-    void createNewTransformNode(NodeLocation& node_location);
+    void createNewTransformNode(NodeLocation& node_location, const std::string& _obj_name);
     void createNewTransformNodeNameWhenMissing(std::string const&node_name);
     void syncToTransformNode(NodeLocation& node_location,
                              const std::string& obj_name);
