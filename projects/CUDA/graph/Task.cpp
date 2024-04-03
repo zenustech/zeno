@@ -104,6 +104,58 @@ std::string python_evaluate(const std::string &fmtStr,
 
   return std::string(result_cstr);
 }
+
+std::string python_evaluate(const std::string &script,
+                            const std::shared_ptr<ListObject> &args) {
+
+  Py_Initialize();
+
+  // pass arguments
+  std::vector<wchar_t *> as;
+  bool invalid = false;
+  for (auto &&arg : args->get())
+    if (auto ptr = dynamic_cast<StringObject *>(arg.get()); ptr != nullptr)
+      as.push_back(Py_DecodeLocale(ptr->get().c_str(), NULL));
+    else
+      invalid = true;
+  // throw std::runtime_error(
+  //     "there exists an argument not of StringObject type!");
+  PyObject *pyargs = PyList_New(as.size());
+  for (int i = 0; i < as.size(); ++i)
+    PyList_SetItem(pyargs, i, PyUnicode_FromWideChar(as[i], wcslen(as[i])));
+
+  PyObject *sys = PyImport_ImportModule("sys");
+  PyObject_SetAttrString(sys, "argv", pyargs);
+
+  Py_DECREF(pyargs);
+  for (auto a : as)
+    PyMem_Free(a);
+
+  PyRun_SimpleString(
+      "import sys\n"
+      "from io import StringIO\n"
+      "old_stdout = sys.stdout\n" // Backup the original stdout
+      "sys.stdout = StringIO()\n" // Replace stdout with a StringIO object
+                                  // to capture outputs
+  );
+
+  PyRun_SimpleString(script.data());
+
+  PyObject *stdOut = PyObject_GetAttrString(sys, "stdout");
+  PyObject *output = PyObject_GetAttrString(stdOut, "getvalue");
+  PyObject *result = PyObject_CallObject(output, NULL);
+
+  // Convert the captured output to a C++ string
+  const char *result_cstr = PyUnicode_AsUTF8(result);
+
+  // Restore the original stdout
+  PyRun_SimpleString("sys.stdout = old_stdout");
+
+  // Finalize the Python interpreter
+  Py_Finalize();
+
+  return std::string(result_cstr);
+}
 } // namespace detail
 
 struct CommandGenerator : INode {
@@ -300,6 +352,42 @@ ZENO_DEFNODE(WriteTaskDependencyGraph)
   /* outputs: */
   {
       {"job"},
+  },
+  /* params: */
+  {},
+  /* category: */
+  {
+      "task",
+  }});
+
+struct CapturePyScriptOutput : INode {
+  void apply() override {
+    auto script = get_input2<std::string>("script");
+
+    auto args = has_input("arguments") ? get_input<ListObject>("arguments")
+                                       : std::make_shared<ListObject>();
+
+    ///
+    auto cmdScripts = detail::python_evaluate(script, args);
+
+    set_output("output", std::make_shared<StringObject>(cmdScripts));
+  }
+};
+
+ZENO_DEFNODE(CapturePyScriptOutput)
+({/* inputs: */
+  {
+      {"multiline_string", "script",
+       "import sys\r"
+       "argc = len(sys.argv)\r"
+       "print('argc: ', argc)\r"
+       "for i in range(argc):\r"
+       "	print('arg[', i, ']: ', sys.argv[i])\r"},
+      {"list", "arguments"},
+  },
+  /* outputs: */
+  {
+      {"string", "output"},
   },
   /* params: */
   {},
