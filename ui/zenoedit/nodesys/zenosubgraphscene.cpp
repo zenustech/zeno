@@ -265,6 +265,10 @@ ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilPa
     {
         return new PythonMaterialNode(params);
     }
+    else if (descName == "PrimitiveTransform")
+    {
+        return new PrimitiveTransform(params);
+    }
     else
     {
         return new ZenoNode(params);

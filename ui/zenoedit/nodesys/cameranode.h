@@ -33,5 +33,18 @@ private slots:
     void onEditClicked();
 };
 
+class PrimitiveTransform : public ZenoNode
+{
+Q_OBJECT
+public:
+    PrimitiveTransform(const NodeUtilParam& params, QGraphicsItem* parent = nullptr);
+    ~PrimitiveTransform();
+
+protected:
+    ZGraphicsLayout* initCustomParamWidgets() override;
+
+private slots:
+    void onCentroidClicked();
+};
 
 #endif

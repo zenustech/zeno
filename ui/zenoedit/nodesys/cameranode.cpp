@@ -244,3 +244,98 @@ ZGraphicsLayout* LightNode::initCustomParamWidgets()
 
     return pHLayout;
 }
+
+PrimitiveTransform::PrimitiveTransform(const NodeUtilParam& params, QGraphicsItem* parent)
+        : ZenoNode(params, parent) {
+}
+
+PrimitiveTransform::~PrimitiveTransform() {
+
+}
+
+ZGraphicsLayout* PrimitiveTransform::initCustomParamWidgets() {
+    ZGraphicsLayout* pHLayout = new ZGraphicsLayout(true);
+
+    {
+        ZSimpleTextItem* pNameItem = new ZSimpleTextItem("sync");
+        pNameItem->setBrush(m_renderParams.socketClr.color());
+        pNameItem->setFont(m_renderParams.socketFont);
+        pNameItem->updateBoundingRect();
+
+        pHLayout->addItem(pNameItem);
+
+        QGraphicsWidget *widget = new QGraphicsWidget;
+        QGraphicsLinearLayout *layout = new QGraphicsLinearLayout(widget);
+        layout->setContentsMargins(20, 0, 0, 0);
+        widget->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
+        pHLayout->addItem(widget);
+
+        ZenoParamPushButton* pCentroidBtn = new ZenoParamPushButton("Centroid", -1, QSizePolicy::Expanding);
+        layout->addItem(pCentroidBtn);
+        connect(pCentroidBtn, SIGNAL(clicked()), this, SLOT(onCentroidClicked()));
+
+        ZenoParamPushButton* pWorldBtn = new ZenoParamPushButton("World", -1, QSizePolicy::Expanding);
+        layout->addItem(pWorldBtn);
+
+        ZenoParamPushButton* pToOriginBtn = new ZenoParamPushButton("ToOrigin", -1, QSizePolicy::Expanding);
+        layout->addItem(pToOriginBtn);
+
+        _param_ctrl param;
+        param.param_name = pNameItem;
+        param.param_control = pCentroidBtn;
+        param.ctrl_layout = pHLayout;
+        addParam(param);
+    }
+
+    return pHLayout;
+}
+
+void PrimitiveTransform::onCentroidClicked() {
+    INPUT_SOCKETS inputs = index().data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+
+    const QString& nodeid = this->nodeId();
+    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    ZASSERT_EXIT(pModel);
+
+    ZenoMainWindow *pWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(pWin);
+
+    // it seems no sense when we have multiple viewport but only one node.
+    // which info of viewport will be synced to this node.
+    DisplayWidget* pDisplay = pWin->getCurrentViewport();
+    if (pDisplay) {
+        auto pZenoVis = pDisplay->getZenoVis();
+        ZASSERT_EXIT(pZenoVis);
+        auto sess = pZenoVis->getSession();
+        ZASSERT_EXIT(sess);
+
+        auto scene = sess->get_scene();
+        ZASSERT_EXIT(scene);
+
+        // pivot to custom
+        {
+            INPUT_SOCKET pos = inputs["pivot"];
+            PARAM_UPDATE_INFO info;
+            info.name = "pivot";
+            info.oldValue = pos.info.defaultValue;
+            info.newValue = QVariant::fromValue(QString::fromUtf8("custom"));
+            pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
+        }
+        zeno::vec3f centroid;
+        // get prim centroid
+        {
+            // FIXME
+            centroid = {0, 0, 0};
+        }
+        // set node ui param
+        {
+            UI_VECTYPE vec({ centroid[0], centroid[1], centroid[2] });
+            INPUT_SOCKET pos = inputs["pivotPos"];
+            PARAM_UPDATE_INFO info;
+            info.name = "pivotPos";
+            info.oldValue = pos.info.defaultValue;
+            info.newValue = QVariant::fromValue(vec);
+            pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
+        }
+    }
+}
