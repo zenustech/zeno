@@ -481,11 +481,13 @@ ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls, std::s
     CORE_API_BATCH
 
     std::string tempName;
-    auto cl = safe_at(getSession().nodeClasses, cls, "node class name").get();
-    if (cl && !cl->m_customui.nickname.empty())
-        tempName = cl->m_customui.nickname;
-    else
-        tempName = cls;
+    if (cate != "assets") {
+        auto cl = safe_at(getSession().nodeClasses, cls, "node class name").get();
+        if (cl && !cl->m_customui.nickname.empty())
+            tempName = cl->m_customui.nickname;
+        else
+            tempName = cls;
+    }
 
     if (name.empty())
         name = generateNewName(tempName);
@@ -502,6 +504,7 @@ ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls, std::s
             nodecls = "DeprecatedNode";
         }
 
+        auto cl = safe_at(getSession().nodeClasses, cls, "node class name").get();
         node = cl->new_instance(this, name);
         node->nodeClass = cl;
         uuid = node->get_uuid();
