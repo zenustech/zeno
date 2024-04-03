@@ -243,6 +243,9 @@ struct WriteTaskDependencyGraph : INode {
       return;
     records.insert(node);
 
+    for (auto &&[tag, node] : node->deps)
+      process_node(jsons, node.get(), records);
+
     Json json;
     json["name"] = node->tag;
     json["cmds"] = node->workItems;
@@ -253,9 +256,6 @@ struct WriteTaskDependencyGraph : INode {
     Json j;
     j[node->tag] = json;
     jsons.push_back(j);
-
-    for (auto &&[tag, node] : node->deps)
-      process_node(jsons, node.get(), records);
   }
   void apply() override {
     std::vector<WorkNode *> nodes;
