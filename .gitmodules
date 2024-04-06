@@ -34,3 +34,6 @@
 [submodule "projects/CUDA/projects/CUDA/zpc_jit"]
 	path = projects/CUDA/zpc_jit
 	url = https://github.com/zenustech/POC_zpc_jit.git
+[submodule "ui/3rdparty/Qt-Advanced-Docking-System"]
+	path = ui/3rdparty/Qt-Advanced-Docking-System
+	url = https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System.git

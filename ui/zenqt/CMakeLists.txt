@@ -50,7 +50,7 @@ endif()
 
 
 target_link_libraries(zenqt PRIVATE Threads::Threads)
-target_link_libraries(zenqt PRIVATE Qt5::Widgets Qt5::OpenGL Qt5::Svg Qt5::Network Qt5::Quick)
+target_link_libraries(zenqt PRIVATE Qt5::Widgets Qt5::OpenGL Qt5::Svg Qt5::Network Qt5::Quick qt5advanceddocking)
 
 if (WIN32)
     target_link_libraries(zenqt PRIVATE Dbghelp Version)
@@ -58,7 +58,7 @@ if (WIN32)
 endif()
 
 target_link_libraries(zenqt PRIVATE zenocore zenovis)
-target_include_directories(zenqt PRIVATE . ./include ../3rdparty/include)
+target_include_directories(zenqt PRIVATE . ./include ../3rdparty/include ../3rdparty/Qt-Advanced-Docking-System/src)
 
 if (WIN32)
     if (CMAKE_BUILD_TYPE STREQUAL "Debug")

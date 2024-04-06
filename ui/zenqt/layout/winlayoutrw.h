@@ -6,6 +6,7 @@
 #include <util/jsonhelper.h>
 #include "layout/docktabcontent.h"
 #include <zeno/io/zsg2reader.h>
+#include "DockWidget.h"
 
 
 struct LayerOutNode;
@@ -35,14 +36,14 @@ struct LayerOutNode {
     PtrLayoutNode pLeft;
     PtrLayoutNode pRight;
     LayoutNodeType type;
-    QDockWidget* pWidget;
+    ads::CDockWidget* pWidget;
     QStringList tabs;
     QRectF geom;
     QVector<DockContentWidgetInfo> widgetInfos;
 };
 
-PtrLayoutNode findNode(PtrLayoutNode root, QDockWidget*pWidget);
-PtrLayoutNode findParent(PtrLayoutNode root, QDockWidget*pWidget);
+PtrLayoutNode findNode(PtrLayoutNode root, ads::CDockWidget* pWidget);
+PtrLayoutNode findParent(PtrLayoutNode root, ads::CDockWidget* pWidget);
 void writeLayout(PtrLayoutNode root, const QSize& szMainwin, const QString& filePath);
 QString exportLayout(PtrLayoutNode root, const QSize& szMainwin);
 PtrLayoutNode readLayoutFile(const QString& filePath);

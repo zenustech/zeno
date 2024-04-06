@@ -8,6 +8,7 @@
 #include "layout/winlayoutrw.h"
 #include <QTcpSocket>
 #include <QLocalSocket>
+#include "DockManager.h"
 
 
 class ZenoDockWidget;
@@ -103,6 +104,15 @@ public:
         //View Camera
         ACTION_NODE_CAMERA,
         //Window
+        ACTION_NODE_EDITOR,
+        ACTION_GL_VIEWPORT,
+        ACTION_NODE_PARAMETERS,
+        ACTION_OBJECT_DATA,
+        ACTION_LOG,
+        ACTION_OPTIX_VIEW,
+        ACTION_IMAGE,
+        ACTION_COMMAND_ARGS,
+        ACTION_OPEN_PATH,
         ACTION_SAVE_LAYOUT,
         ACTION_LAYOUT_MANAGE,
         //Help
@@ -182,10 +192,10 @@ protected:
 private:
     void init(PANEL_TYPE onlyView);
     void initMenu();
-    void initLive();
     void initDocks(PANEL_TYPE onlyView);
+    void initAllDockWidgets();
     void initWindowProperty();
-    void initDocksWidget(ZDockWidget* pCake, PtrLayoutNode root);
+    void initDocksWidget(ads::CDockAreaWidget* cakeArea, ads::CDockWidget* pCake, PtrLayoutNode root);
     void _resizeDocks(PtrLayoutNode root);
     void resetDocks(PtrLayoutNode root);
     void initTimelineDock();
@@ -208,6 +218,7 @@ private:
     void killOptix();
     DisplayWidget* getOnlyViewport() const;
     bool resetProc();
+    void onCreatePanel(int actionType);
 
     ZTimeline* m_pTimeline;
     PtrLayoutNode m_layoutRoot;
@@ -223,6 +234,8 @@ private:
     bool m_bOptixProcRecording = false;
 
     bool m_bRecordByCommandLine = false;
+
+    ads::CDockManager* m_pDockManager;
 };
 
 #endif

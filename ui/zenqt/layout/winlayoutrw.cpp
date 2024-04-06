@@ -11,7 +11,7 @@
 #include "util/apphelper.h"
 
 
-PtrLayoutNode findNode(PtrLayoutNode root, QDockWidget* pWidget)
+PtrLayoutNode findNode(PtrLayoutNode root, ads::CDockWidget* pWidget)
 {
     PtrLayoutNode pNode;
     if (root->pWidget != nullptr)
@@ -35,7 +35,7 @@ PtrLayoutNode findNode(PtrLayoutNode root, QDockWidget* pWidget)
     return nullptr;
 }
 
-PtrLayoutNode findParent(PtrLayoutNode root, QDockWidget* pWidget)
+PtrLayoutNode findParent(PtrLayoutNode root, ads::CDockWidget* pWidget)
 {
     if ((root->pLeft && root->pLeft->pWidget == pWidget) ||
         (root->pRight && root->pRight->pWidget == pWidget))
@@ -59,6 +59,8 @@ PtrLayoutNode findParent(PtrLayoutNode root, QDockWidget* pWidget)
 
 void _writeLayout(PtrLayoutNode root, const QSize& szMainwin, PRETTY_WRITER& writer, void(*cbDumpTabsToZsg)(QDockWidget*, RAPIDJSON_WRITER&))
 {
+    //TODO
+#if 0
     writer.StartObject();
     zeno::scope_exit sp([&]() { writer.EndObject(); });
 
@@ -126,6 +128,7 @@ void _writeLayout(PtrLayoutNode root, const QSize& szMainwin, PRETTY_WRITER& wri
             writer.EndObject();
         }
     }
+#endif
 }
 
 QString exportLayout(PtrLayoutNode root, const QSize& szMainwin)

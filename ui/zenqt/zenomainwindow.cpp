@@ -54,6 +54,8 @@
 #include <zeno/core/Session.h>
 #include <zeno/utils/api.h>
 #include "calculation/calculationmgr.h"
+#include "DockAreaWidget.h"
+#include "DockWidget.h"
 
 
 const QString g_latest_layout = "LatestLayout";
@@ -68,6 +70,7 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags, PANEL_TYP
     , m_layoutRoot(nullptr)
     , m_nResizeTimes(0)
     , m_bOnlyOptix(false)
+    , m_pDockManager(nullptr)
 {
     init(onlyView);
     setContextMenuPolicy(Qt::NoContextMenu);
@@ -91,7 +94,6 @@ void ZenoMainWindow::init(PANEL_TYPE onlyView)
     m_ui->setupUi(this);
 
     initMenu();
-    initLive();
     initDocks(onlyView);
     initWindowProperty();
 
@@ -154,10 +156,6 @@ void ZenoMainWindow::updateNativeWinTitle(const QString& title)
             wid->setWindowTitle(title);
         }
     }
-}
-
-void ZenoMainWindow::initLive() {
-
 }
 
 void ZenoMainWindow::initMenu()
@@ -283,6 +281,18 @@ void ZenoMainWindow::onMenuActionTriggered(bool bTriggered)
         onCheckUpdate();
         break;
     }
+    case ACTION_NODE_EDITOR:
+    case ACTION_OBJECT_DATA:
+    case ACTION_GL_VIEWPORT:
+    case ACTION_OPEN_PATH:
+    case ACTION_NODE_PARAMETERS:
+    case ACTION_LOG:
+    case ACTION_IMAGE:
+    case ACTION_COMMAND_ARGS:
+    {
+        onCreatePanel(actionType);
+        break;
+    }
     default: {
         dispatchCommand(pAction, bTriggered);
         break;
@@ -346,8 +356,10 @@ void ZenoMainWindow::saveDockLayout()
         QLineEdit::Normal, "layout_1", &bOk);
     if (bOk)
     {
+        ZASSERT_EXIT(m_pDockManager);
+
         QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
-        settings.beginGroup("layout");
+        //settings.beginGroup("layout");
         if (settings.childGroups().indexOf(name) != -1)
         {
             QMessageBox msg(QMessageBox::Question, "", tr("alreday has same layout, override?"),
@@ -360,11 +372,19 @@ void ZenoMainWindow::saveDockLayout()
             }
         }
 
-        QString layoutInfo = exportLayout(m_layoutRoot, size());
-        settings.beginGroup(name);
-        settings.setValue("content", layoutInfo);
-        settings.endGroup();
-        settings.endGroup();
+        QString layoutInfo;// = exportLayout(m_layoutRoot, size());
+
+        //QByteArray xmldata = m_pDockManager->saveState();
+        //layoutInfo = QString::fromUtf8(xmldata, xmldata.size());
+
+        m_pDockManager->addPerspective(name);
+
+        //settings.beginGroup(name);
+        //settings.setValue("content", layoutInfo);
+        m_pDockManager->savePerspectives(settings);
+
+        //settings.endGroup();
+        //settings.endGroup();
         loadSavedLayout();
     }
 }
@@ -392,22 +412,23 @@ void ZenoMainWindow::resetDocks(PtrLayoutNode root)
         return;
 
     m_layoutRoot.reset();
-    auto docks = findChildren<ZDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
-    for (ZDockWidget *pDock : docks) {
-        pDock->close();
-        //pDock->testCleanupGL();
-        //delete pDock;
+
+    for (auto pair : m_pDockManager->dockWidgetsMap())
+    {
+        pair->closeDockWidget();
     }
 
     m_layoutRoot = root;
-    ZDockWidget* cake = new ZDockWidget(this);
-    addDockWidget(Qt::TopDockWidgetArea, cake);
-    initDocksWidget(cake, m_layoutRoot);
+
+    ads::CDockWidget* cake = new ads::CDockWidget(UiHelper::generateUuid("dock"));
+    ads::CDockAreaWidget* cakeArea = m_pDockManager->addDockWidget(ads::TopDockWidgetArea, cake);
+    initDocksWidget(cakeArea, cake, m_layoutRoot);
     m_nResizeTimes = 2;
 }
 
 void ZenoMainWindow::_resizeDocks(PtrLayoutNode root)
 {
+#if 0
     if (!root)
         return;
 
@@ -427,9 +448,10 @@ void ZenoMainWindow::_resizeDocks(PtrLayoutNode root)
         _resizeDocks(root->pLeft);
         _resizeDocks(root->pRight);
     }
+#endif
 }
 
-void ZenoMainWindow::initDocksWidget(ZDockWidget* pLeft, PtrLayoutNode root)
+void ZenoMainWindow::initDocksWidget(ads::CDockAreaWidget* cakeArea, ads::CDockWidget* pLeft, PtrLayoutNode root)
 {
     if (!root)
         return;
@@ -437,30 +459,107 @@ void ZenoMainWindow::initDocksWidget(ZDockWidget* pLeft, PtrLayoutNode root)
     if (root->type == NT_HOR || root->type == NT_VERT)
     {
         //skip optix view when enable ZENO_OPTIX_PROC
-        ZDockWidget* pRight = new ZDockWidget(this);
+        ads::CDockWidget* pRight = new ads::CDockWidget(UiHelper::generateUuid("dock"));
         Qt::Orientation ori = root->type == NT_HOR ? Qt::Horizontal : Qt::Vertical;
-        splitDockWidget(pLeft, pRight, ori);
-        initDocksWidget(pLeft, root->pLeft);
-        initDocksWidget(pRight, root->pRight);
+
+        ads::CDockAreaWidget *pLeftArea = cakeArea, *pRightArea = nullptr;
+        qreal leftS = 0., rightS = 0.;
+        if (root->type == NT_HOR)
+        {
+            pRightArea = m_pDockManager->addDockWidget(ads::RightDockWidgetArea, pRight, cakeArea);
+            leftS = root->pLeft->geom.width();
+            rightS = root->pRight->geom.width();
+        }
+        else
+        {
+            pRightArea = m_pDockManager->addDockWidget(ads::BottomDockWidgetArea, pRight, cakeArea);
+            leftS = root->pLeft->geom.height();
+            rightS = root->pRight->geom.height();
+        }
+
+        initDocksWidget(pLeftArea, pLeft, root->pLeft);
+        initDocksWidget(pRightArea, pRight, root->pRight);
+
+        m_pDockManager->setSplitterSizes(pLeftArea, { (int)leftS *10000, (int)rightS*10000});
     }
     else if (root->type == NT_ELEM)
     {
         int dockContentViewIndex = 0;
         root->pWidget = pLeft;
-        for (QString tab : root->tabs)
+        for (int i = 0; i < root->tabs.length(); i++)//QString tab : root->tabs)
         {
-            PANEL_TYPE type = ZDockWidget::title2Type(tab);
-            if (type != PANEL_EMPTY)
+            const QString& tab = root->tabs[i];
+            ads::CDockWidget* pDockElem = nullptr;
+            if (i == 0)
             {
-                if ((type == PANEL_GL_VIEW || type == PANEL_OPTIX_VIEW) && root->widgetInfos.size() != 0)
-                {
-                    if (dockContentViewIndex < root->widgetInfos.size())
-                        pLeft->onAddTab(type, root->widgetInfos[dockContentViewIndex++]);
-                }
-                else {
-                    pLeft->onAddTab(type);
-                }
+                pDockElem = pLeft;
+                pDockElem->setObjectName(tab);
+                pDockElem->setWindowTitle(tab);
             }
+            else
+                pDockElem = new ads::CDockWidget(tab);
+
+            PANEL_TYPE type = ZDockWidget::title2Type(tab);
+            switch (type)
+            {
+            case PANEL_GL_VIEW:
+            {
+                auto pView = new DockContent_View(true);
+                pView->initUI();
+                pDockElem->setWidget(pView);
+                break;
+            }
+            case PANEL_EDITOR:
+            {
+                auto pEditor = new DockContent_Editor;
+                pEditor->initUI();
+                pDockElem->setWidget(pEditor);
+                break;
+            }
+            case PANEL_NODE_PARAMS:
+            {
+                auto pParams = new DockContent_Parameter;
+                pParams->initUI();
+                pDockElem->setWidget(pParams);
+                break;
+            }
+            case PANEL_NODE_DATA:
+            {
+                auto pObjectData = new ZenoSpreadsheet;
+                pDockElem->setWidget(pObjectData);
+                break;
+            }
+            case PANEL_LOG:
+            {
+                auto pLog = new DockContent_Log;
+                pLog->initUI();
+                pDockElem->setWidget(pLog);
+                break;
+            }
+            case PANEL_IMAGE:
+            {
+                auto pImage = new DockContent_Image;
+                pImage->initUI();
+                pDockElem->setWidget(pImage);
+                break;
+            }
+            case PANEL_OPTIX_VIEW:
+            {
+                break;
+            }
+            case PANEL_COMMAND_PARAMS:
+            {
+                break;
+            }
+            case PANEL_OPEN_PATH:
+            {
+                break;
+            }
+
+            }
+
+            if (i > 0)
+                m_pDockManager->addDockWidgetTabToArea(pDockElem, cakeArea);
         }
     }
 }
@@ -474,7 +573,7 @@ void ZenoMainWindow::initCustomLayoutAction(const QStringList &list, bool isDefa
         QAction *pCustomLayout_ = new QAction(name);
         connect(pCustomLayout_, &QAction::triggered, this, [=]() { 
             loadDockLayout(name, isDefault); 
-            updateLatestLayout(name);
+            //updateLatestLayout(name);
         });
         actions.append(pCustomLayout_);
     }
@@ -576,57 +675,91 @@ void ZenoMainWindow::updateLatestLayout(const QString &layout)
     settings.endGroup();
 }
 
+void ZenoMainWindow::initAllDockWidgets()
+{
+    ads::CDockWidget* pDock1 = new ads::CDockWidget(tr("Node Editor"));
+    DockContent_Editor* pEditor = new DockContent_Editor;
+    pEditor->initUI();
+    pDock1->setWidget(pEditor);
+    ads::CDockAreaWidget* pAreaWid = m_pDockManager->addDockWidget(ads::TopDockWidgetArea, pDock1);
+
+    ads::CDockWidget* pDock2 = new ads::CDockWidget(tr("GL Viewport"));
+    DockContent_View* pViewport = new DockContent_View(true);
+    pViewport->initUI();
+    pDock2->setWidget(pViewport);
+    m_pDockManager->addDockWidget(ads::TopDockWidgetArea, pDock2, pAreaWid);
+
+    ads::CDockWidget* pDock3 = new ads::CDockWidget(tr("Node Parameters"));
+    DockContent_Parameter* parameters = new DockContent_Parameter;
+    parameters->initUI();
+    pDock3->setWidget(parameters);
+    m_pDockManager->addDockWidget(ads::TopDockWidgetArea, pDock3);
+
+    ads::CDockWidget* pDock4 = new ads::CDockWidget(tr("Log"));
+    DockContent_Log* logger = new DockContent_Log;
+    logger->initUI();
+    pDock4->setWidget(logger);
+    m_pDockManager->addDockWidget(ads::TopDockWidgetArea, pDock4);
+
+    ads::CDockWidget* pDock5 = new ads::CDockWidget(tr("Object Data"));
+    ZenoSpreadsheet* pObjectData = new ZenoSpreadsheet;
+    pDock5->setWidget(pObjectData);
+    m_pDockManager->addDockWidget(ads::TopDockWidgetArea, pDock5);
+
+    ads::CDockWidget* pDock6 = new ads::CDockWidget(tr("Image"));
+    DockContent_Image* pImage = new DockContent_Image;
+    pImage->initUI();
+    m_pDockManager->addDockWidget(ads::TopDockWidgetArea, pDock6);
+}
+
 void ZenoMainWindow::initDocks(PANEL_TYPE onlyView)
 {
-    if (onlyView != PANEL_EMPTY)
-    {
-        m_layoutRoot = std::make_shared<LayerOutNode>();
-        m_layoutRoot->type = NT_ELEM;
-        m_bOnlyOptix = onlyView == PANEL_OPTIX_VIEW;
+    QWidget* pCentral = new QWidget;
 
-        ZDockWidget* onlyWid = new ZDockWidget(this);
-        if (onlyView == PANEL_GL_VIEW || onlyView == PANEL_OPTIX_VIEW)
-            onlyWid->setCurrentWidget(onlyView);
+    QVBoxLayout* pVLayout = new QVBoxLayout;
+    pVLayout->setContentsMargins(0, 0, 0, 0);
+    pVLayout->setMargin(0);
 
-        addDockWidget(Qt::TopDockWidgetArea, onlyWid);
-        m_layoutRoot->type = NT_ELEM;
-        m_layoutRoot->pWidget = onlyWid;
+    QWidget* docks = new QWidget;
+    docks->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding));
 
-        initTimelineDock();
+    QVBoxLayout* pWidLayout = new QVBoxLayout;
 
-        return;
-    }
-    /*m_layoutRoot = std::make_shared<LayerOutNode>();
-    m_layoutRoot->type = NT_ELEM;
-
-    ZDockWidget* viewDock = new ZDockWidget(this);
-    viewDock->setCurrentWidget(PANEL_VIEW);
-    viewDock->setObjectName("viewDock");
-
-    ZDockWidget *logDock = new ZDockWidget(this);
-    logDock->setCurrentWidget(PANEL_LOG);
-    logDock->setObjectName("logDock");
-
-    ZDockWidget *paramDock = new ZDockWidget(this);
-    paramDock->setCurrentWidget(PANEL_NODE_PARAMS);
-    paramDock->setObjectName("paramDock");
-
-    ZDockWidget* editorDock = new ZDockWidget(this);
-    editorDock->setCurrentWidget(PANEL_EDITOR);
-    editorDock->setObjectName("editorDock");
-
-    addDockWidget(Qt::TopDockWidgetArea, viewDock);
-    m_layoutRoot->type = NT_ELEM;
-    m_layoutRoot->pWidget = viewDock;
-
-    SplitDockWidget(viewDock, editorDock, Qt::Vertical);
-    SplitDockWidget(viewDock, logDock, Qt::Horizontal);
-    SplitDockWidget(editorDock, paramDock, Qt::Horizontal);
-
-    //paramDock->hide();
-    logDock->hide();*/
-
+    m_pDockManager = new ads::CDockManager(docks);
     QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
+    m_pDockManager->loadPerspectives(settings);
+
+    pWidLayout->addWidget(m_pDockManager);
+    pWidLayout->setContentsMargins(0, 0, 0, 0);
+    pWidLayout->setMargin(0);
+    docks->setLayout(pWidLayout);
+
+    m_pTimeline = new ZTimeline;
+
+    pVLayout->addWidget(docks);
+    pVLayout->addWidget(m_pTimeline);
+    pCentral->setLayout(pVLayout);
+
+    setCentralWidget(pCentral);
+
+    //initAllDockWidgets();
+    //m_pDockManager->openPerspective("layout_4");
+
+    //if (onlyView != PANEL_EMPTY)
+    //{
+    //    m_layoutRoot = std::make_shared<LayerOutNode>();
+    //    m_layoutRoot->type = NT_ELEM;
+    //    m_bOnlyOptix = onlyView == PANEL_OPTIX_VIEW;
+    //    ZDockWidget* onlyWid = new ZDockWidget(this);
+    //    if (onlyView == PANEL_GL_VIEW || onlyView == PANEL_OPTIX_VIEW)
+    //        onlyWid->setCurrentWidget(onlyView);
+    //    addDockWidget(Qt::TopDockWidgetArea, onlyWid);
+    //    m_layoutRoot->type = NT_ELEM;
+    //    m_layoutRoot->pWidget = onlyWid;
+    //    initTimelineDock();
+    //    return;
+    //}
+
     settings.beginGroup("layout");
     settings.beginGroup(g_latest_layout);
     QString name;
@@ -636,8 +769,71 @@ void ZenoMainWindow::initDocks(PANEL_TYPE onlyView)
     settings.endGroup();
     settings.endGroup();
     loadDockLayout(name, false);
+}
 
-    initTimelineDock();
+void ZenoMainWindow::onCreatePanel(int actionType)
+{
+    ZASSERT_EXIT(m_pDockManager);
+
+    QWidget* pWid = nullptr;
+    QString title;
+    switch (actionType)
+    {
+    case ACTION_NODE_EDITOR: {
+        auto pFloatWidget = new DockContent_Editor;
+        pFloatWidget->initUI();
+        pWid = pFloatWidget;
+        title = tr("Node Editor");
+        break;
+    }
+    case ACTION_OBJECT_DATA: {
+        auto pObjectData = new ZenoSpreadsheet;
+        pWid = pObjectData;
+        title = tr("Object Data");
+        break;
+    }
+    case ACTION_GL_VIEWPORT: {
+        auto pView = new DockContent_View(true);
+        pView->initUI();
+        pWid = pView;
+        title = tr("GL Viewport");
+        break;
+    }
+    case ACTION_OPEN_PATH: {
+        break;
+    }
+    case ACTION_NODE_PARAMETERS: {
+        auto pParams = new DockContent_Parameter;
+        pParams->initUI();
+        pWid = pParams;
+        title = tr("Node Parameters");
+        break;
+    }
+    case ACTION_LOG: {
+        auto pLog = new DockContent_Log;
+        pLog->initUI();
+        pWid = pLog;
+        title = tr("Log");
+        break;
+    }
+    case ACTION_IMAGE: {
+        auto pImage = new DockContent_Image;
+        pImage->initUI();
+        pWid = pImage;
+        title = tr("Image");
+        break;
+    }
+    case ACTION_COMMAND_ARGS: {
+        break;
+    }
+    }
+
+    if (pWid)
+    {
+        ads::CDockWidget* pDock = new ads::CDockWidget(title);
+        pDock->setWidget(pWid);
+        m_pDockManager->addDockWidgetFloating(pDock);
+    }
 }
 
 void ZenoMainWindow::initTimelineDock()
@@ -974,6 +1170,7 @@ void ZenoMainWindow::onRunFinished()
 
 void ZenoMainWindow::onCloseDock()
 {
+#if 0
     ZDockWidget *pDockWidget = qobject_cast<ZDockWidget *>(sender());
     ZASSERT_EXIT(pDockWidget);
     pDockWidget->close();
@@ -1003,10 +1200,12 @@ void ZenoMainWindow::onCloseDock()
     {
         m_layoutRoot = nullptr;
     }
+#endif
 }
 
 void ZenoMainWindow::SplitDockWidget(ZDockWidget* after, ZDockWidget* dockwidget, Qt::Orientation orientation)
 {
+#if 0
     splitDockWidget(after, dockwidget, orientation);
 
     PtrLayoutNode spRoot = findNode(m_layoutRoot, after);
@@ -1022,10 +1221,12 @@ void ZenoMainWindow::SplitDockWidget(ZDockWidget* after, ZDockWidget* dockwidget
     spRoot->pRight = std::make_shared<LayerOutNode>();
     spRoot->pRight->pWidget = dockwidget;
     spRoot->pRight->type = NT_ELEM;
+#endif
 }
 
 void ZenoMainWindow::onSplitDock(bool bHorzontal)
 {
+#if 0
     ZDockWidget* pDockWidget = qobject_cast<ZDockWidget*>(sender());
     ZDockWidget* pDock = new ZDockWidget(this);
 
@@ -1035,6 +1236,7 @@ void ZenoMainWindow::onSplitDock(bool bHorzontal)
     pDock->setCurrentWidget(PANEL_EDITOR);
     //pDock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
     SplitDockWidget(pDockWidget, pDock, bHorzontal ? Qt::Horizontal : Qt::Vertical);
+#endif
 }
 
 void ZenoMainWindow::openFileDialog()
@@ -1134,20 +1336,20 @@ void ZenoMainWindow::closeEvent(QCloseEvent *event)
 
 bool ZenoMainWindow::event(QEvent* event)
 {
-    if (QEvent::LayoutRequest == event->type())
-    {
-        //resizing have to be done after fitting layout, which follows by LayoutRequest.
-        //it seems that after `m_nResizeTimes` times, the resize action can be valid...
-        if (m_nResizeTimes > 0 && m_layoutRoot)
-        {
-            --m_nResizeTimes;
-            if (m_nResizeTimes == 0)
-            {
-                _resizeDocks(m_layoutRoot);
-                return true;
-            }
-        }
-    }
+    //if (QEvent::LayoutRequest == event->type())
+    //{
+    //    //resizing have to be done after fitting layout, which follows by LayoutRequest.
+    //    //it seems that after `m_nResizeTimes` times, the resize action can be valid...
+    //    if (m_nResizeTimes > 0 && m_layoutRoot)
+    //    {
+    //        --m_nResizeTimes;
+    //        if (m_nResizeTimes == 0)
+    //        {
+    //            _resizeDocks(m_layoutRoot);
+    //            return true;
+    //        }
+    //    }
+    //}
     if (event->type() == QEvent::HoverMove) {
         if (m_bOnlyOptix) {
             DisplayWidget* pWid = getCurrentViewport();
@@ -1612,6 +1814,16 @@ void ZenoMainWindow::setActionProperty()
     m_ui->actionForest->setProperty("ActionType", ACTION_FOREST);
     m_ui->actionLake->setProperty("ActionType", ACTION_LAKE);
     m_ui->actionSee->setProperty("ActionType", ACTION_SEA);
+    
+    m_ui->actionNode_Editor->setProperty("ActionType", ACTION_NODE_EDITOR);
+    m_ui->actionGL_Viewport->setProperty("ActionType", ACTION_GL_VIEWPORT);
+    m_ui->actionNode_Parameters->setProperty("ActionType", ACTION_NODE_PARAMETERS);
+    m_ui->actionObject_data->setProperty("ActionType", ACTION_OBJECT_DATA);
+    m_ui->actionLog->setProperty("ActionType", ACTION_LOG);
+    m_ui->actionOptixView->setProperty("ActionType", ACTION_OPTIX_VIEW);
+    m_ui->actionOpenPath->setProperty("ActionType", ACTION_OPEN_PATH);
+    m_ui->actionImage->setProperty("ActionType", ACTION_IMAGE);
+
     m_ui->actionNode_Camera->setProperty("ActionType", ACTION_NODE_CAMERA);
     m_ui->actionSave_Layout->setProperty("ActionType", ACTION_SAVE_LAYOUT);
     m_ui->actionLayout_Manager->setProperty("ActionType", ACTION_LAYOUT_MANAGE);

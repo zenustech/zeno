@@ -23,7 +23,7 @@
      <x>0</x>
      <y>0</y>
      <width>809</width>
-     <height>23</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -92,6 +92,16 @@
       <string>Custom Layout</string>
      </property>
     </widget>
+    <addaction name="actionNode_Editor"/>
+    <addaction name="actionGL_Viewport"/>
+    <addaction name="actionNode_Parameters"/>
+    <addaction name="actionObject_data"/>
+    <addaction name="actionLog"/>
+    <addaction name="actionOptixView"/>
+    <addaction name="actionImage"/>
+    <addaction name="actionCommandArgs"/>
+    <addaction name="actionOpenPath"/>
+    <addaction name="separator"/>
     <addaction name="actionSave_Layout"/>
     <addaction name="menuCustom_Layout"/>
     <addaction name="actionLayout_Manager"/>
@@ -333,6 +343,51 @@ border-top: 1px solid black;</string>
   <action name="actionSave_Layout">
    <property name="text">
     <string>Save Layout</string>
+   </property>
+  </action>
+  <action name="actionNode_Editor">
+   <property name="text">
+    <string>Node Editor</string>
+   </property>
+  </action>
+  <action name="actionGL_Viewport">
+   <property name="text">
+    <string>GL Viewport</string>
+   </property>
+  </action>
+  <action name="actionNode_Parameters">
+   <property name="text">
+    <string>Node Parameters</string>
+   </property>
+  </action>
+  <action name="actionObject_data">
+   <property name="text">
+    <string>Object Data</string>
+   </property>
+  </action>
+  <action name="actionLog">
+   <property name="text">
+    <string>Log</string>
+   </property>
+  </action>
+  <action name="actionOptixView">
+   <property name="text">
+    <string>Optix View</string>
+   </property>
+  </action>
+  <action name="actionImage">
+   <property name="text">
+    <string>Image</string>
+   </property>
+  </action>
+  <action name="actionCommandArgs">
+   <property name="text">
+    <string>Command Args</string>
+   </property>
+  </action>
+  <action name="actionOpenPath">
+   <property name="text">
+    <string>Open path</string>
    </property>
   </action>
   <action name="actionScreen_Shoot">
