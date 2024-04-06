@@ -97,6 +97,17 @@ void ZenoApplication::initMetaTypes()
 
 void ZenoApplication::initStyleSheets()
 {
+#if 0
+    QFile f(":qdarkstyle/dark/darkstyle.qss");
+    if (!f.exists()) {
+        printf("Unable to set stylesheet, file not found\n");
+    }
+    else {
+        f.open(QFile::ReadOnly | QFile::Text);
+        QTextStream ts(&f);
+        setStyleSheet(ts.readAll());
+    }
+#else
     QString qss;
     qss += readQss(":/stylesheet/qlabel.qss");
     qss += readQss(":/stylesheet/qlineedit.qss");
@@ -110,6 +121,7 @@ void ZenoApplication::initStyleSheets()
     qss += readQss(":/stylesheet/checkbox.qss");
     qss += readQss(":/stylesheet/tabwidget.qss");
     setStyleSheet(qss);
+#endif
 }
 
 void ZenoApplication::initFonts()

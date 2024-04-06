@@ -727,7 +727,9 @@ void ZenoMainWindow::initDocks(PANEL_TYPE onlyView)
 
     m_pDockManager = new ads::CDockManager(docks);
     QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
-    m_pDockManager->loadPerspectives(settings);
+    //m_pDockManager->loadPerspectives(settings);
+
+    m_pDockManager->setStyleSheet("");
 
     pWidLayout->addWidget(m_pDockManager);
     pWidLayout->setContentsMargins(0, 0, 0, 0);
