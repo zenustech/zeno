@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 #include <zeno/utils/Error.h>
+#include <iostream>
 
 namespace zenovis::opengl {
 
@@ -43,6 +44,7 @@ static void _check_opengl_error(const char *file, int line, const char *hint) {
     if (err != GL_NO_ERROR) {
 #endif
         auto msg = get_opengl_error_string(err);
+        std::cerr << (std::string)file + ':' + std::to_string(line) + ": " + hint + ": " + msg << std::endl;
         throw zeno::makeError((std::string)file + ':' + std::to_string(line) +
                               ": " + hint + ": " + msg);
     }
