@@ -13,6 +13,8 @@
 #include "zenovis/Camera.h"
 #include <zeno/core/Session.h>
 #include <zeno/extra/GlobalState.h>
+#include "viewportinteraction/nodesync.h"
+#include <zeno/para/parallel_reduce.h>
 
 CameraNode::CameraNode(const NodeUtilParam& params, int pattern, QGraphicsItem* parent)
     : ZenoNode(params, parent)
@@ -321,11 +323,39 @@ void PrimitiveTransform::onCentroidClicked() {
             info.newValue = QVariant::fromValue(QString::fromUtf8("custom"));
             pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
         }
-        zeno::vec3f centroid;
+        zeno::vec3f centroid = {0, 0, 0};
         // get prim centroid
         {
-            // FIXME
-            centroid = {0, 0, 0};
+            // get link node id
+            auto& node_sync = zeno::NodeSyncMgr::GetInstance();
+            auto node_loc = node_sync.searchNode(nodeid.toStdString());
+            auto links = node_sync.getInputNodes(node_loc.value().node, "prim");
+            if (links.size() == 1) {
+                // FIXME: node id -> prim
+                ZenoMainWindow *pWin = zenoApp->getMainWindow();
+                ZASSERT_EXIT(pWin);
+                QVector<DisplayWidget *> views = pWin->viewports();
+                for (auto pDisplay : views)
+                {
+                    auto pZenoVis = pDisplay->getZenoVis();
+                    ZASSERT_EXIT(pZenoVis);
+                    auto *scene = pZenoVis->getSession()->get_scene();
+                    scene->selected.clear();
+                    std::string node_id = links[0].get_node_id().toStdString();
+                    for (auto const &[key, ptr] : scene->objectsMan->pairs()) {
+                        if (node_id == key.substr(0, key.find_first_of(':'))) {
+                            auto prim = dynamic_cast<zeno::PrimitiveObject*>(ptr);
+                            if (prim != nullptr && prim->verts.size()) {
+                                centroid = zeno::parallel_reduce_sum(prim->verts.begin(), prim->verts.end(), [&] (zeno::vec3f const &pos) {
+                                    return pos;
+                                });
+                                centroid /= prim->verts.size();
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
         }
         // set node ui param
         {
