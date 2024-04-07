@@ -103,6 +103,7 @@ private:
     bool m_bOnceOn;
     bool m_bBypassOn;
     bool m_bViewOn;
+    ZenoNode* m_pUnfoldNode;
 };
 
 #endif

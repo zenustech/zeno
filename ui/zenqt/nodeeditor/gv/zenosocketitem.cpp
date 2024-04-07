@@ -40,8 +40,6 @@ ZenoSocketItem::ZenoSocketItem(
 
 ZenoSocketItem::~ZenoSocketItem()
 {
-    int j;
-    j = 0;
 }
 
 int ZenoSocketItem::type() const
@@ -169,6 +167,16 @@ void ZenoSocketItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
             emit clicked(m_bInput, lnkProp);
         }
     }
+}
+
+QVariant ZenoSocketItem::itemChange(GraphicsItemChange change, const QVariant& value)
+{
+    if (change == QGraphicsItem::ItemVisibleHasChanged)
+    {
+        if (m_bHovered && !this->isVisible())
+            m_bHovered = false;
+    }
+    return value;
 }
 
 QString ZenoSocketItem::netLabel() const

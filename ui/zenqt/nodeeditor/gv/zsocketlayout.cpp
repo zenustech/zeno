@@ -38,8 +38,6 @@ ZSocketLayout::ZSocketLayout(const QPersistentModelIndex& viewSockIdx, bool bInp
 
 ZSocketLayout::~ZSocketLayout()
 {
-    int j;
-    j = 0;
 }
 
 void ZSocketLayout::initUI(const CallbackForSocket& cbSock)
