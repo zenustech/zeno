@@ -92,8 +92,8 @@ ZENO_API std::string INode::get_ident() const
 }
 
 ZENO_API std::string INode::get_show_name() const {
-    if (nodeClass && nodeClass->desc) {
-        std::string dispName = nodeClass->desc->displayName;
+    if (nodeClass) {
+        std::string dispName = nodeClass->m_customui.nickname;
         if (!dispName.empty())
             return dispName;
     }
@@ -101,11 +101,20 @@ ZENO_API std::string INode::get_show_name() const {
 }
 
 ZENO_API std::string INode::get_show_icon() const {
-    if (nodeClass && nodeClass->desc) {
-        return nodeClass->desc->iconResPath;
+    if (nodeClass) {
+        return nodeClass->m_customui.iconResPath;
     }
     else {
         return "";
+    }
+}
+
+ZENO_API CustomUI INode::get_customui() const {
+    if (nodeClass) {
+        return nodeClass->m_customui;
+    }
+    else {
+        return CustomUI();
     }
 }
 
@@ -167,7 +176,7 @@ ZENO_API void INode::mark_dirty(bool bOn)
 {
     m_dirty = bOn;
     if (m_dirty) {
-        for (auto& [name, param] : outputs_) {
+        for (auto& [name, param] : m_outputs) {
             for (auto link : param->links) {
                 auto inParam = link->toparam.lock();
                 assert(inParam);
@@ -184,7 +193,7 @@ ZENO_API void INode::mark_dirty(bool bOn)
 
 void INode::mark_dirty_objs()
 {
-    for (auto const& [name, param] : outputs_)
+    for (auto const& [name, param] : m_outputs)
     {
         if (auto spObj = std::dynamic_pointer_cast<IObject>(param->result)) {
             if (spObj->key().empty()) {
@@ -204,7 +213,7 @@ ZENO_API void INode::preApply() {
         return;
 
     //TODO: the param order should be arranged by the descriptors.
-    for (const auto& [name, param] : inputs_) {
+    for (const auto& [name, param] : m_inputs) {
         bool ret = requireInput(param);
         if (!ret)
             zeno::log_warn("the param {} may not be initialized", name);
@@ -223,7 +232,7 @@ ZENO_API void INode::preApply() {
 
 ZENO_API void INode::unregisterObjs()
 {
-    for (auto const& [name, param] : outputs_)
+    for (auto const& [name, param] : m_outputs)
     {
         if (auto spObj = std::dynamic_pointer_cast<IObject>(param->result)) {
             if (spObj->key().empty()) {
@@ -236,7 +245,7 @@ ZENO_API void INode::unregisterObjs()
 
 ZENO_API void INode::registerObjToManager()
 {
-    for (auto const& [name, param] : outputs_)
+    for (auto const& [name, param] : m_outputs)
     {
         if (auto spObj = std::dynamic_pointer_cast<IObject>(param->result)) {
             if (std::dynamic_pointer_cast<NumericObject>(spObj)) {
@@ -244,6 +253,10 @@ ZENO_API void INode::registerObjToManager()
             }
             assert(!spObj->key().empty());
             getSession().objsMan->collectingObject(spObj->key(), spObj, shared_from_this(), m_bView);
+            if (param->m_idModify) {
+                getSession().objsMan->collect_modify_objs(spObj->key(), m_bView); //如果是修改obj，还需要添加到objManager的modify集合中(需要在具体apply函数中设置m_idModify为true)
+                getSession().objsMan->revertRemoveObject(spObj->key());           //如果是对param的obj进行modify，不需要去objManager中unregiste该对象，撤销unregiste时removeObj
+            }
         }
     }
 }
@@ -339,19 +352,34 @@ ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
             }
             if (!bDirectLink)
             {
+                auto oldinput = std::dynamic_pointer_cast<ListObject>(in_param->result);
+
                 spList = std::make_shared<ListObject>();
+                int indx = 0;
                 for (const auto& spLink : in_param->links)
                 {
                     //list的情况下，keyName是不是没意义，顺序怎么维持？
                     std::shared_ptr<IParam> out_param = spLink->fromparam.lock();
                     std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
+                    if (outNode->is_dirty()) {  //list中的元素是dirty的，重新计算并加入list
+                        GraphException::translated([&] {
+                            outNode->doApply();
+                        }, outNode.get());
 
-                    GraphException::translated([&] {
-                        outNode->doApply();
-                    }, outNode.get());
-
-                    zany outResult = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
-                    spList->arr.push_back(outResult);
+                        zany outResult = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
+                        spList->arr.push_back(outResult);
+                        spList->dirtyIndice.insert(indx);
+                    } else {                    //list中的元素不是dirty的，从旧list中直接取出加入新list
+                        if (oldinput && oldinput->nodeNameArrItemMap.find(outNode->m_name) != oldinput->nodeNameArrItemMap.end()) {
+                            int itemIdx = oldinput->nodeNameArrItemMap[outNode->m_name];
+                            if (oldinput->arr.size() > itemIdx)
+                                spList->arr.push_back(oldinput->arr[itemIdx]);
+                            else
+                                continue;
+                        }else
+                            continue;
+                    }
+                    spList->nodeNameArrItemMap.insert(std::make_pair(outNode->m_name, indx++));
                 }
             }
             in_param->result = spList;
@@ -387,6 +415,10 @@ ZENO_API void INode::doApply() {
         registerObjToManager();//如果只是打view，也是需要加到manager的。
         return;
     }
+    zeno::scope_exit spe([&] {//apply时根据情况将IParam标记为modified，退出时将所有IParam标记为未modified
+        for (auto const& [name, param] : m_outputs)
+            param->m_idModify = false;
+        });
 
     unregisterObjs();
 
@@ -404,27 +436,26 @@ ZENO_API std::vector<std::shared_ptr<IParam>> INode::get_input_params() const
     std::vector<std::shared_ptr<IParam>> params;
     //TODO: 如果参数deprecated，是否还需要加入inputs_? 要
     if (m_nodecls != "DeprecatedNode") {
-        const auto& desc = nodeClass->desc;
-        for (auto param : desc->inputs) {
-            auto it = inputs_.find(param.name);
-            if (it == inputs_.end()) {
-                zeno::log_warn("unknown param {}", param.name);
-                continue;
+
+        for (const ParamTab& tab : nodeClass->m_customui.tabs)
+        {
+            for (const ParamGroup& group : tab.groups)
+            {
+                for (const ParamInfo& param : group.params)
+                {
+                    auto it = m_inputs.find(param.name);
+                    if (it == m_inputs.end()) {
+                        zeno::log_warn("unknown param {}", param.name);
+                        continue;
+                    }
+                    params.push_back(it->second);
+                }
             }
-            params.push_back(it->second);
-        }
-        for (auto param : desc->params) {
-            auto it = inputs_.find(param.name);
-            if (it == inputs_.end()) {
-                zeno::log_warn("unknown param {}", param.name);
-                continue;
-            }
-            params.push_back(it->second);
         }
     }
     else {
         //TODO: the order of deprecated node.
-        for (auto& [name, param] : inputs_) {
+        for (auto& [name, param] : m_inputs) {
             params.push_back(param);
         }
     }
@@ -435,10 +466,9 @@ ZENO_API std::vector<std::shared_ptr<IParam>> INode::get_output_params() const
 {
     std::vector<std::shared_ptr<IParam>> params;
     if (m_nodecls != "DeprecatedNode") {
-        const auto& desc = nodeClass->desc;
-        for (auto param : desc->outputs) {
-            auto it = outputs_.find(param.name);
-            if (it == outputs_.end()) {
+        for (auto param : nodeClass->m_customui.outputs) {
+            auto it = m_outputs.find(param.name);
+            if (it == m_outputs.end()) {
                 zeno::log_warn("unknown param {}", param.name);
                 continue;
             }
@@ -446,7 +476,7 @@ ZENO_API std::vector<std::shared_ptr<IParam>> INode::get_output_params() const
         }
     }
     else {
-        for (auto& [name, param] : outputs_) {
+        for (auto& [name, param] : m_outputs) {
             params.push_back(param);
         }
     }
@@ -459,23 +489,23 @@ ZENO_API void INode::set_input_defl(std::string const& name, zvariant defl) {
 }
 
 ZENO_API std::shared_ptr<IParam> INode::get_input_param(std::string const& param) const {
-    auto it = inputs_.find(param);
-    if (it != inputs_.end())
+    auto it = m_inputs.find(param);
+    if (it != m_inputs.end())
         return it->second;
     return nullptr;
 }
 
 void INode::add_input_param(std::shared_ptr<IParam> param) {
-    inputs_.insert(std::make_pair(param->name, param));
+    m_inputs.insert(std::make_pair(param->name, param));
 }
 
 void INode::add_output_param(std::shared_ptr<IParam> param) {
-    outputs_.insert(std::make_pair(param->name, param));
+    m_outputs.insert(std::make_pair(param->name, param));
 }
 
 ZENO_API std::shared_ptr<IParam> INode::get_output_param(std::string const& param) const {
-    auto it = outputs_.find(param);
-    if (it != outputs_.end())
+    auto it = m_outputs.find(param);
+    if (it != m_outputs.end())
         return it->second;
     return nullptr;
 }
@@ -545,7 +575,7 @@ ZENO_API NodeData INode::exportInfo() const
 
 ZENO_API bool INode::update_param(const std::string& param, const zvariant& new_value) {
     CORE_API_BATCH
-    std::shared_ptr<IParam> spParam = safe_at(inputs_, param, "miss input param `" + param + "` on node `" + m_name + "`");
+    std::shared_ptr<IParam> spParam = safe_at(m_inputs, param, "miss input param `" + param + "` on node `" + m_name + "`");
     if (!zeno::isEqual(spParam->defl, new_value, spParam->type))
     {
         zvariant old_value = spParam->defl;
@@ -581,25 +611,25 @@ void INode::directly_setinputs(std::map<std::string, zany> inputs)
 
 std::map<std::string, zany> INode::getoutputs()
 {
-    std::map<std::string, zany> outputs;
-    for (const auto& [name, param] : outputs_) {
-        outputs.insert(std::make_pair(name, param->result));
+    std::map<std::string, zany> output_res;
+    for (const auto& [name, param] : this->m_outputs) {
+        output_res.insert(std::make_pair(name, param->result));
     }
-    return outputs;
+    return output_res;
 }
 
 std::vector<std::pair<std::string, zany>> INode::getinputs()
 {
-    std::vector<std::pair<std::string, zany>> inputs;
-    for (const auto& [name, param] : inputs_) {
-        inputs.push_back(std::make_pair(name, param->result));
+    std::vector<std::pair<std::string, zany>> input_res;
+    for (const auto& [name, param] : this->m_inputs) {
+        input_res.push_back(std::make_pair(name, param->result));
     }
-    return inputs;
+    return input_res;
 }
 
 std::pair<std::string, std::string> INode::getinputbound(std::string const& param, std::string const& msg) const
 {
-    std::shared_ptr<IParam> spParam = safe_at(inputs_, param, "miss input param `" + param + "` on node `" + m_name + "`");
+    std::shared_ptr<IParam> spParam = safe_at(m_inputs, param, "miss input param `" + param + "` on node `" + m_name + "`");
     if (!spParam->links.empty()) {
         auto lnk = *spParam->links.begin();
         auto outparam = lnk->fromparam.lock();
@@ -617,11 +647,11 @@ std::pair<std::string, std::string> INode::getinputbound(std::string const& para
 
 std::vector<std::pair<std::string, zany>> INode::getoutputs2()
 {
-    std::vector<std::pair<std::string, zany>> outputs;
-    for (const auto& [name, param] : outputs_) {
-        outputs.push_back(std::make_pair(name, param->result));
+    std::vector<std::pair<std::string, zany>> output_res;
+    for (const auto& [name, param] : this->m_outputs) {
+        output_res.push_back(std::make_pair(name, param->result));
     }
-    return outputs;
+    return output_res;
 }
 
 ZENO_API void INode::init(const NodeData& dat)
@@ -668,8 +698,20 @@ ZENO_API void INode::initParams(const NodeData& dat)
 }
 
 ZENO_API bool INode::has_input(std::string const &id) const {
-    auto param = get_input_param(id);
-    return param != nullptr;
+    auto it = m_inputs.find(id);
+    if (it != m_inputs.end()) {
+        if (it->second->type == Param_Null)
+            return std::visit([&](auto const& arg) {
+                using T = std::decay_t<decltype(arg)>;
+                if constexpr (std::is_same_v<T, std::string>) {
+                    if (arg == "" && !it->second->result)   //如果类型为Param_Null，初始值为空且输入obj为空，返回false
+                        return false;
+                }
+                return true;
+            }, it->second->defl);
+        return true;
+    }
+    return false;
 }
 
 ZENO_API zany INode::get_input(std::string const &id) const {
@@ -697,8 +739,14 @@ ZENO_API bool INode::in_asset_file() const {
     return getSession().assets->isAssetGraph(this->graph->shared_from_this());
 }
 
+ZENO_API void INode::mark_param_modified(std::string paramName, bool modified)
+{
+    if (std::shared_ptr<IParam> primParam = get_output_param("prim"))
+        primParam->m_idModify = modified;
+}
+
 ZENO_API bool INode::set_input(std::string const& param, zany obj) {
-    std::shared_ptr<IParam> spParam = safe_at(inputs_, param, "miss input param `" + param + "` on node `" + m_name + "`");
+    std::shared_ptr<IParam> spParam = safe_at(m_inputs, param, "miss input param `" + param + "` on node `" + m_name + "`");
     spParam->result = obj;
     return true;
 }
@@ -708,13 +756,13 @@ ZENO_API bool INode::has_output(std::string const& name) const {
 }
 
 ZENO_API bool INode::set_output(std::string const & param, zany obj) {
-    std::shared_ptr<IParam> spParam = safe_at(outputs_, param, "miss output param `" + param + "` on node `" + m_name + "`");
+    std::shared_ptr<IParam> spParam = safe_at(m_outputs, param, "miss output param `" + param + "` on node `" + m_name + "`");
     spParam->result = obj;
     return true;
 }
 
 ZENO_API zany INode::get_output(std::string const& param) {
-    std::shared_ptr<IParam> spParam = safe_at(outputs_, param, "miss output param `" + param + "` on node `" + m_name + "`");
+    std::shared_ptr<IParam> spParam = safe_at(m_outputs, param, "miss output param `" + param + "` on node `" + m_name + "`");
     return spParam->result;
 }
 

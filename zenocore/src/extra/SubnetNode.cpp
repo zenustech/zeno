@@ -20,7 +20,7 @@ ZENO_API void SubnetNode::initParams(const NodeData& dat)
 {
     for (const ParamInfo& param : dat.inputs)
     {
-        if (inputs_.find(param.name) != inputs_.end())
+        if (m_inputs.find(param.name) != m_inputs.end())
             continue;
         std::shared_ptr<IParam> sparam = std::make_shared<IParam>();
         sparam->defl = param.defl;
@@ -36,7 +36,7 @@ ZENO_API void SubnetNode::initParams(const NodeData& dat)
 
     for (const ParamInfo& param : dat.outputs)
     {
-        if (outputs_.find(param.name) != outputs_.end())
+        if (m_outputs.find(param.name) != m_outputs.end())
             continue;
         std::shared_ptr<IParam> sparam = std::make_shared<IParam>();
         sparam->defl = param.defl;
@@ -71,10 +71,10 @@ ZENO_API void SubnetNode::add_param(bool bInput, const ParamInfo& param)
 ZENO_API void SubnetNode::remove_param(bool bInput, const std::string& name)
 {
     if (bInput) {
-        inputs_.erase(name);
+        m_inputs.erase(name);
     }
     else {
-        outputs_.erase(name);
+        m_outputs.erase(name);
     }
 }
 
@@ -91,8 +91,8 @@ ZENO_API std::vector<std::shared_ptr<IParam>> SubnetNode::get_input_params() con
 {
     std::vector<std::shared_ptr<IParam>> params;
     for (auto param : m_input_names) {
-        auto it = inputs_.find(param);
-        if (it == inputs_.end()) {
+        auto it = m_inputs.find(param);
+        if (it == m_inputs.end()) {
             zeno::log_warn("unknown param {}", param);
             continue;
         }
@@ -105,8 +105,8 @@ ZENO_API std::vector<std::shared_ptr<IParam>> SubnetNode::get_output_params() co
 {
     std::vector<std::shared_ptr<IParam>> params;
     for (auto param : m_output_names) {
-        auto it = outputs_.find(param);
-        if (it == outputs_.end()) {
+        auto it = m_outputs.find(param);
+        if (it == m_outputs.end()) {
             zeno::log_warn("unknown param {}", param);
             continue;
         }
@@ -132,7 +132,7 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
         const std::string oldname = _pair.oldName;
         const std::string newname = param.name;
 
-        auto& in_outputs = param.bInput ? inputs_ : outputs_;
+        auto& in_outputs = param.bInput ? m_inputs : m_outputs;
         auto& new_params = param.bInput ? changes.new_inputs : changes.new_outputs;
         auto& remove_params = param.bInput ? changes.remove_inputs : changes.remove_outputs;
         auto& rename_params = param.bInput ? changes.rename_inputs : changes.rename_outputs;
@@ -194,7 +194,7 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
 
     //the left names are the names of params which will be removed.
     for (auto rem_name : inputs_old) {
-        inputs_.erase(rem_name);
+        m_inputs.erase(rem_name);
         changes.remove_inputs.insert(rem_name);
     }
     //update the names.
@@ -206,7 +206,7 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
     changes.inputs = m_input_names;
 
     for (auto rem_name : outputs_old) {
-        outputs_.erase(rem_name);
+        m_outputs.erase(rem_name);
         changes.remove_outputs.insert(rem_name);
     }
     m_output_names.clear();

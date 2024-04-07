@@ -480,10 +480,19 @@ ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls, std::s
 {
     CORE_API_BATCH
 
+    std::string tempName;
+    if (cate != "assets") {
+        auto cl = safe_at(getSession().nodeClasses, cls, "node class name").get();
+        if (cl && !cl->m_customui.nickname.empty())
+            tempName = cl->m_customui.nickname;
+        else
+            tempName = cls;
+    }
+
     if (name.empty())
-        name = generateNewName(cls);
+        name = generateNewName(tempName);
     else
-        name = generateNewName(cls, name);
+        name = generateNewName(tempName, name);
 
     std::string uuid;
     std::shared_ptr<INode> node;
@@ -494,7 +503,8 @@ ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls, std::s
         if (it == nodeClass.end()) {
             nodecls = "DeprecatedNode";
         }
-        auto cl = safe_at(getSession().nodeClasses, nodecls, "node class name").get();
+
+        auto cl = safe_at(getSession().nodeClasses, cls, "node class name").get();
         node = cl->new_instance(this, name);
         node->nodeClass = cl;
         uuid = node->get_uuid();
@@ -638,12 +648,12 @@ ZENO_API bool Graph::removeNode(std::string const& name) {
 
     //remove links first
     std::vector<EdgeInfo> remLinks;
-    for (const auto& [_, spParam] : spNode->inputs_) {
+    for (const auto& [_, spParam] : spNode->m_inputs) {
         for (std::shared_ptr<ILink> spLink : spParam->links) {
             remLinks.push_back(getEdgeInfo(spLink));
         }
     }
-    for (const auto& [_, spParam] : spNode->outputs_) {
+    for (const auto& [_, spParam] : spNode->m_outputs) {
         for (std::shared_ptr<ILink> spLink : spParam->links) {
             remLinks.push_back(getEdgeInfo(spLink));
         }

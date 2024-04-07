@@ -112,7 +112,7 @@ void ZenoPropPanel::clearLayout()
         {
             disconnect(paramsModel, &QStandardItemModel::rowsInserted, this, &ZenoPropPanel::onViewParamInserted);
             disconnect(paramsModel, &QStandardItemModel::rowsAboutToBeRemoved, this, &ZenoPropPanel::onViewParamAboutToBeRemoved);
-            disconnect(paramsModel, &QStandardItemModel::dataChanged, this, &ZenoPropPanel::onViewParamDataChanged);
+            disconnect(paramsModel, &QStandardItemModel::dataChanged, this, &ZenoPropPanel::onCustomParamDataChanged);
             disconnect(paramsModel, &QStandardItemModel::rowsMoved, this, &ZenoPropPanel::onViewParamsMoved);
         }
     }
@@ -127,14 +127,14 @@ void ZenoPropPanel::reset(GraphModel* subgraph, const QModelIndexList& nodes, bo
 
     RetryScope scope(m_bReentry);
 
-    clearLayout();
-    QVBoxLayout *pMainLayout = qobject_cast<QVBoxLayout *>(this->layout());
-
     if (!select || nodes.size() != 1)
     {
-        update();
+        //update();
         return;
     }
+
+    clearLayout();
+    QVBoxLayout* pMainLayout = qobject_cast<QVBoxLayout*>(this->layout());
 
     m_model = subgraph;
     m_idx = nodes[0];
@@ -147,7 +147,7 @@ void ZenoPropPanel::reset(GraphModel* subgraph, const QModelIndexList& nodes, bo
 
     connect(paramsModel, &QStandardItemModel::rowsInserted, this, &ZenoPropPanel::onViewParamInserted);
     connect(paramsModel, &QStandardItemModel::rowsAboutToBeRemoved, this, &ZenoPropPanel::onViewParamAboutToBeRemoved);
-    connect(paramsModel, &QStandardItemModel::dataChanged, this, &ZenoPropPanel::onViewParamDataChanged);
+    connect(paramsModel, &QStandardItemModel::dataChanged, this, &ZenoPropPanel::onCustomParamDataChanged);
     connect(paramsModel, &QStandardItemModel::rowsMoved, this, &ZenoPropPanel::onViewParamsMoved);
     connect(paramsModel, &QStandardItemModel::modelAboutToBeReset, this, [=]() {
         //clear all
@@ -173,8 +173,8 @@ void ZenoPropPanel::reset(GraphModel* subgraph, const QModelIndexList& nodes, bo
     QStandardItem* root = paramsModel->invisibleRootItem();
     if (!root) return;
 
-    QStandardItem* pRoot = root->child(0);
-    if (!pRoot) return;
+    QStandardItem* pInputs = root->child(0);
+    if (!pInputs) return;
 
     m_tabWidget = new QTabWidget;
     m_tabWidget->tabBar()->setProperty("cssClass", "propanel");
@@ -188,9 +188,9 @@ void ZenoPropPanel::reset(GraphModel* subgraph, const QModelIndexList& nodes, bo
     m_tabWidget->setFont(font); //bug in qss font setting.
     m_tabWidget->tabBar()->setDrawBase(false);
 
-    for (int i = 0; i < pRoot->rowCount(); i++)
+    for (int i = 0; i < pInputs->rowCount(); i++)
     {
-        QStandardItem* pTabItem = pRoot->child(i);
+        QStandardItem* pTabItem = pInputs->child(i);
         syncAddTab(m_tabWidget, pTabItem, i);
     }
 
@@ -321,7 +321,7 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
         {
             if (!AppHelper::updateCurve(paramItem->data(ROLE_PARAM_VALUE), newValue))
             {
-                onViewParamDataChanged(perIdx, perIdx, QVector<int>() << ROLE_PARAM_VALUE);
+                onCustomParamDataChanged(perIdx, perIdx, QVector<int>() << ROLE_PARAM_VALUE);
                 return;
             }
         }
@@ -439,8 +439,10 @@ bool ZenoPropPanel::syncAddTab(QTabWidget* pTabWidget, QStandardItem* pTabItem, 
     } 
     else 
     {
-        if (VPARAM_GROUP == pTabItem->data(ROLE_ELEMENT_TYPE).toInt())
-            syncAddGroup(pTabLayout, pTabItem, row);
+        for (int j = 0; j < pTabItem->rowCount(); j++) {
+            QStandardItem* pGroupItem = pTabItem->child(j);
+            syncAddGroup(pTabLayout, pGroupItem, j);
+        }
     }
 
     pTabLayout->addStretch();
@@ -540,7 +542,7 @@ void ZenoPropPanel::onViewParamAboutToBeRemoved(const QModelIndex& parent, int f
     }
 }
 
-void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
+void ZenoPropPanel::onCustomParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
 {
     if (topLeft.data(ROLE_ELEMENT_TYPE) != VPARAM_PARAM || !m_idx.isValid() || m_controls.isEmpty())
         return;

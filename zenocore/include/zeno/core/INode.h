@@ -35,17 +35,9 @@ public:
     std::string m_uuid;
     std::pair<float, float> m_pos;
 
-    /*
-    std::map<std::string, std::pair<std::string, std::string>> inputBounds;
-    std::map<std::string, zany> inputs;
-    std::map<std::string, zany> outputs;    //考虑到参数名字会被更改，放在这里需要调整key，麻烦
-    */
+    std::map<std::string, std::shared_ptr<IParam>> m_inputs;
+    std::map<std::string, std::shared_ptr<IParam>> m_outputs;
 
-    std::map<std::string, std::shared_ptr<IParam>> inputs_;
-    std::map<std::string, std::shared_ptr<IParam>> outputs_;
-
-    //std::set<std::string> kframes;
-    //std::set<std::string> formulas;
     zany muted_output;
 
     ZENO_API INode();
@@ -69,6 +61,7 @@ public:
     ZENO_API std::string get_ident() const;
     ZENO_API std::string get_show_name() const;
     ZENO_API std::string get_show_icon() const;
+    ZENO_API CustomUI get_customui() const;
     ZENO_API ObjPath get_path() const;
     ZENO_API ObjPath get_uuid_path() const { return m_uuidPath; }
     ZENO_API std::string get_uuid() const;
@@ -102,6 +95,8 @@ public:
     ZENO_API std::pair<float, float> get_pos() const;
 
     ZENO_API bool in_asset_file() const;
+
+    ZENO_API void mark_param_modified(std::string paramName, bool modified);    //修改IParam的modify标志位，表示该param是new的obj还是修改原有obj
 
     //END new api
 

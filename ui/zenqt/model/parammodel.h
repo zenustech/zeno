@@ -59,7 +59,6 @@ public:
     //temp:
     QStandardItemModel* customParamModel();
     void batchModifyParams(const zeno::ParamsUpdateInfo& params);
-    void resetCustomParamModel();
 
     int getParamlinkCount(const QModelIndex& paramIdx);
     int numOfInputParams() const;
@@ -68,8 +67,12 @@ signals:
     void linkAboutToBeInserted(const zeno::EdgeInfo& link);
     void linkAboutToBeRemoved(const zeno::EdgeInfo& link);
 
+private slots:
+    void onCustomModelDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles = QVector<int>());
+
 private:
     void initParamItems();
+    void initCustomUI(const zeno::CustomUI& customui);
     GraphModel* parentGraph() const;
 
     QPersistentModelIndex m_nodeIdx;
@@ -79,6 +82,7 @@ private:
 
     std::weak_ptr<zeno::INode> m_wpNode;
     std::string cbUpdateParam;
+    mutable bool m_bReentry = false;
 };
 
 

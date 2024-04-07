@@ -10,6 +10,9 @@ namespace zeno {
 struct ListObject : IObjectClone<ListObject> {
   std::vector<zany> arr;
 
+  std::set<int> dirtyIndice;                        //该list下dirty的obj的index
+  std::map<std::string, int> nodeNameArrItemMap;    //obj所在的节点名到obj在arr中索引的map
+
   ListObject() = default;
 
   explicit ListObject(std::vector<zany> arrin) : arr(std::move(arrin)) {

@@ -14,8 +14,8 @@ namespace zeno {
             std::vector<std::shared_ptr<IParam>> get_input_params() const override {
                 std::vector<std::shared_ptr<IParam>> params;
                 for (auto param : m_input_names) {
-                    auto it = inputs_.find(param);
-                    if (it == inputs_.end()) {
+                    auto it = m_inputs.find(param);
+                    if (it == m_inputs.end()) {
                         zeno::log_warn("unknown param {}", param);
                         continue;
                     }
@@ -27,8 +27,8 @@ namespace zeno {
             std::vector<std::shared_ptr<IParam>> get_output_params() const override {
                 std::vector<std::shared_ptr<IParam>> params;
                 for (auto param : m_output_names) {
-                    auto it = outputs_.find(param);
-                    if (it == outputs_.end()) {
+                    auto it = m_outputs.find(param);
+                    if (it == m_outputs.end()) {
                         zeno::log_warn("unknown param {}", param);
                         continue;
                     }

@@ -24,9 +24,9 @@ static CONTROL_ITEM_INFO controlList[] = {
     {"String",              zeno::Lineedit,     zeno::Param_String, ":/icons/parameter_control_string.svg"},
     {"Boolean",             zeno::Checkbox,     zeno::Param_Bool,   ":/icons/parameter_control_boolean.svg"},
     {"Multiline String",    zeno::Multiline,    zeno::Param_String, ":/icons/parameter_control_string.svg"},
-    {"read path",                   zeno::ReadPathEdit,     zeno::Param_String, ":/icons/parameter_control_fold.svg"},
-    {"write path",                   zeno::WritePathEdit,     zeno::Param_String, ":/icons/parameter_control_fold.svg"},
-    {"directory",                   zeno::DirectoryPathEdit,     zeno::Param_String, ":/icons/parameter_control_fold.svg"},
+    {"read path",           zeno::ReadPathEdit, zeno::Param_String, ":/icons/parameter_control_fold.svg"},
+    {"write path",          zeno::WritePathEdit,zeno::Param_String, ":/icons/parameter_control_fold.svg"},
+    {"directory",       zeno::DirectoryPathEdit,zeno::Param_String, ":/icons/parameter_control_fold.svg"},
     {"Enum",                zeno::Combobox,     zeno::Param_String, ":/icons/parameter_control_enum.svg"},
     {"Float Vector 4",      zeno::Vec4edit,     zeno::Param_Vec4f,  ":/icons/parameter_control_floatVector4.svg"},
     {"Float Vector 3",      zeno::Vec3edit,     zeno::Param_Vec3f,  ":/icons/parameter_control_floatVector3.svg"},
@@ -130,7 +130,6 @@ void ParamTreeItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem 
 
 ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, QWidget* parent)
     : QDialog(parent)
-    , m_bSubgraphNode(false)
     //, m_paramsLayoutM(pModel)
 {
     m_ui = new Ui::EditParamLayoutDlg;

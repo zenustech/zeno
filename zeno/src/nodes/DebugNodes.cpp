@@ -272,11 +272,43 @@ ZENDEFINE(CustomNode, {
                     {
                         {"param1", zeno::Param_Null, zeno::PrimarySocket},
                         {"param2", zeno::Param_Prim, zeno::PrimarySocket},
-                        {"param3", zeno::Param_Null, zeno::NoSocket}
+                        {"param3", zeno::Param_Int,  zeno::NoSocket, 2, zeno::Lineedit, {}}
+                    }
+                },
+                {
+                    "Group2",
+                    {
+                        {"param4", zeno::Param_String, zeno::PrimarySocket, "", zeno::Multiline, {}},
+                        {"param5", zeno::Param_Prim, zeno::PrimarySocket},
+                        {"param6", zeno::Param_Null, zeno::NoSocket}
                     }
                 }
             }
-        }
+        },
+        {
+            "Default2",
+            {
+                {
+                    "Group3",
+                    {
+                        {"param7", zeno::Param_Null, zeno::PrimarySocket},
+                        {"param8", zeno::Param_Prim, zeno::PrimarySocket},
+                        {"param9", zeno::Param_Null, zeno::NoSocket}
+                    }
+                },
+                {
+                    "Group4",
+                    {
+                        {"param10", zeno::Param_Null, zeno::PrimarySocket},
+                        {"param11", zeno::Param_Prim, zeno::PrimarySocket},
+                        {"param12", zeno::Param_Null, zeno::NoSocket}
+                    }
+                }
+            }
+        },
+    },
+    {
+        {"output1", zeno::Param_Null, zeno::PrimarySocket},
     },
     "debug",
     "CUI",

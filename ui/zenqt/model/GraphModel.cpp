@@ -343,9 +343,9 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
         case ROLE_NODE_CATEGORY:
         {
             std::shared_ptr<zeno::INode> spNode = item->m_wpNode.lock();
-            if (spNode->nodeClass && !spNode->nodeClass->desc->categories.empty())
+            if (spNode->nodeClass)
             {
-                return QString::fromStdString(spNode->nodeClass->desc->categories.front());
+                return QString::fromStdString(spNode->nodeClass->m_customui.category);
             }
             else
             {

@@ -989,9 +989,6 @@ QGraphicsItem* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const QModel
             QMessageBox::warning(nullptr, tr("Warning"), tr("Set data failed!"));
         }
     };
-    auto cbUpdateSocketDefldWithSlider = [=](QVariant newValue) {
-        //TODO: need this anymore?
-    };
 
     auto cbSwith = [=](bool bOn) {
         zenoApp->getMainWindow()->setInDlgEventLoop(bOn);
@@ -1015,7 +1012,6 @@ QGraphicsItem* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const QModel
 
     CallbackCollection cbSet;
     cbSet.cbEditFinished = cbUpdateSocketDefl;
-    cbSet.cbEditFinishedWithSlider = cbUpdateSocketDefldWithSlider;
     cbSet.cbSwitch = cbSwith;
     cbSet.cbGetIndexData = cbGetIndexData;
     cbSet.cbGetZsgDir = cbGetZsgDir;

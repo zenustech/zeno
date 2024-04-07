@@ -105,8 +105,9 @@ namespace zeno {
     };
 
     struct CustomUI {
-        std::vector<ParamTab> params;   //custom ui
-        std::string category;   //node category
+        std::vector<ParamTab> tabs;   //custom ui for input params
+        std::vector<ParamInfo> outputs;
+        std::string category;
         std::string nickname;
         std::string iconResPath;
         std::string doc;

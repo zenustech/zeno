@@ -39,11 +39,12 @@ public:
     bool welComPageShowed();
 
 public slots:
-	void resetModel();
+    void resetMainModel();
+    void resetAssetsModel();
     void sideButtonToggled(bool bToggled);
     void onSideBtnToggleChanged(const QItemSelection& selected, const QItemSelection& deselected);
     void onCurrentChanged(const QModelIndex& current, const QModelIndex& previous);
-    void onListItemActivated(const QModelIndex& index);
+    void onAssetItemActivated(const QModelIndex& index);
     void onTreeItemActivated(const QModelIndex& index);
     void onSearchItemClicked(const QModelIndex& index);
     void onAssetOptionClicked();
@@ -87,8 +88,6 @@ private:
     QItemSelectionModel* m_selection;
     QStandardItemModel* m_sideBarModel;
     int m_searchOpts;
-
-    ZenoWelcomePage* m_pWelcomPage;
 };
 
 

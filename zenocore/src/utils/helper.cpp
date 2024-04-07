@@ -204,6 +204,95 @@ namespace zeno {
         return ret;
     }
 
+    CustomUI descToCustomui(const Descriptor& desc) {
+        CustomUI ui;
+
+        ui.nickname = desc.displayName;
+        ui.iconResPath = desc.iconResPath;
+        ui.doc = desc.doc;
+        if (!desc.categories.empty())
+            ui.category = desc.categories[0];   //很多cate都只有一个
+
+        ParamGroup default;
+        for (const SocketDescriptor& param_desc : desc.inputs) {
+            ParamInfo param;
+            param.name = param_desc.name;
+            param.type = zeno::convertToType(param_desc.type);
+            param.defl = zeno::str2var(param_desc.defl, param.type);
+            param.socketType = param_desc.socketType;
+            if (param_desc.control != NullControl)
+                param.control = param_desc.control;
+            if (starts_with(param_desc.type, "enum ")) {
+                //compatible with old case of combobox items.
+                param.type = Param_String;
+                param.control = Combobox;
+                std::vector<std::string> items = split_str(param_desc.type, ' ');
+                if (!items.empty()) {
+                    items.erase(items.begin());
+                    ControlProperty props = ControlProperty();
+                    props.items = items;
+                    param.ctrlProps = props;
+                }
+            }
+            if (param.type != Param_Null && param.control == NullControl)
+                param.control = getDefaultControl(param.type);
+            param.tooltip = param_desc.doc;
+            param.prop = Socket_Normal;
+            default.params.emplace_back(std::move(param));
+        }
+        for (const ParamDescriptor& param_desc : desc.params) {
+            ParamInfo param;
+            param.name = param_desc.name;
+            param.type = zeno::convertToType(param_desc.type);
+            param.defl = zeno::str2var(param_desc.defl, param.type);
+            param.socketType = NoSocket;
+            //其他控件估计是根据类型推断的。
+            if (starts_with(param_desc.type, "enum ")) {
+                //compatible with old case of combobox items.
+                param.type = Param_String;
+                param.control = Combobox;
+                std::vector<std::string> items = split_str(param_desc.type, ' ');
+                if (!items.empty()) {
+                    items.erase(items.begin());
+                    ControlProperty props = ControlProperty();
+                    props.items = items;
+                    param.ctrlProps = props;
+                }
+            }
+            param.tooltip = param_desc.doc;
+            default.params.emplace_back(std::move(param));
+        }
+        for (const SocketDescriptor& param_desc : desc.outputs) {
+            ParamInfo param;
+            param.name = param_desc.name;
+            param.type = zeno::convertToType(param_desc.type);
+            param.socketType = PrimarySocket;
+            ui.outputs.emplace_back(std::move(param));
+        }
+        ParamTab tab;
+        tab.groups.emplace_back(std::move(default));
+        ui.tabs.emplace_back(std::move(tab));
+        return ui;
+    }
+
+    void initControlsByType(CustomUI& ui) {
+        for (ParamTab& tab : ui.tabs)
+        {
+            for (ParamGroup& group : tab.groups)
+            {
+                for (ParamInfo& param : group.params)
+                {
+                    if (param.type != Param_Null && param.control == NullControl)
+                        param.control = getDefaultControl(param.type);
+                }
+            }
+        }
+    }
+
+    bool getParamInfo(const CustomUI& customui, std::vector<ParamInfo>& inputs, std::vector<ParamInfo>& outputs) {
+        return false;
+    }
+
     zany strToZAny(std::string const& defl, ParamType const& type) {
         switch (type) {
         case Param_String: {
