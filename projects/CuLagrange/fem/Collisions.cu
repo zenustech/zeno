@@ -302,12 +302,12 @@ struct VisualizeBvh : INode {
                     "vec3f size assumption broken");
       Resource::copy(zs::MemoryEntity{MemoryLocation{memsrc_e::host, -1},
                                       (void *)pos.data()},
-                     zs::MemoryEntity{MemoryLocation{memsrc_e::device, 0},
+                     zs::MemoryEntity{MemoryLocation{memsrc_e::device},
                                       (void *)dVerts.data()},
                      sizeof(zeno::vec3f) * pos.size());
       Resource::copy(zs::MemoryEntity{MemoryLocation{memsrc_e::host, -1},
                                       (void *)lines.data()},
-                     zs::MemoryEntity{MemoryLocation{memsrc_e::device, 0},
+                     zs::MemoryEntity{MemoryLocation{memsrc_e::device},
                                       (void *)dLines.data()},
                      sizeof(zeno::vec2i) * lines.size());
     }

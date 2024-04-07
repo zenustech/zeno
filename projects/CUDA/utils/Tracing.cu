@@ -217,7 +217,7 @@ struct ComputeVertexAO : INode {
             zsbvh->et = ZenoLinearBvh::surface;
 
             auto &bvh = zsbvh->bvh;
-            zs::Vector<bv_t> bvs{indices.size(), memsrc_e::device, 0};
+            zs::Vector<bv_t> bvs{indices.size(), memsrc_e::device};
             retrieve_bounding_volumes(pol, range(pos), range(indices), bvs);
             bvh.build(pol, bvs);
             sceneData.set(zs_bvh_tag, zsbvh);

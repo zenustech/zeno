@@ -30,7 +30,7 @@ struct ZSPartitionForZSParticles : INode {
 
         bool cached = get_param<std::string>("strategy") == "cache" ? true : false;
         if (!table->requestRebuild && cached && table->hasTags()) {
-            zs::Vector<int> bRebuild{1, memsrc_e::device, 0};
+            zs::Vector<int> bRebuild{1, memsrc_e::device};
             bRebuild.setVal(0);
             cudaPol(range(table->numBoundaryEntries()), // table->getTags(),
                     [tags = proxy<execspace_e::cuda>(table->getTags()),

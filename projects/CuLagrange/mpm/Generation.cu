@@ -1470,7 +1470,7 @@ ZENDEFNODE(UpdatePrimitiveAttrFromZSParticles,
 struct MakeZSPartition : INode {
     void apply() override {
         auto partition = std::make_shared<ZenoPartition>();
-        partition->get() = typename ZenoPartition::table_t{(std::size_t)1, zs::memsrc_e::device, 0};
+        partition->get() = typename ZenoPartition::table_t{(std::size_t)1, zs::memsrc_e::device};
         partition->requestRebuild = false;
         partition->rebuilt = false;
         set_output("ZSPartition", partition);
@@ -1503,7 +1503,7 @@ struct MakeZSGrid : INode {
         else
             throw std::runtime_error(fmt::format("unrecognized transfer scheme [{}]\n", grid->transferScheme));
 
-        grid->get() = typename ZenoGrid::grid_t{tags, dx, 1, zs::memsrc_e::device, 0};
+        grid->get() = typename ZenoGrid::grid_t{tags, dx, 1, zs::memsrc_e::device};
 
         using traits = zs::grid_traits<typename ZenoGrid::grid_t>;
         fmt::print("grid of dx [{}], side_length [{}], block_size [{}]\n", grid->get().dx, traits::side_length,
@@ -1546,19 +1546,19 @@ struct MakeZSLevelSet : INode {
             throw std::runtime_error(fmt::format("unrecognized transfer scheme [{}]\n", ls->transferScheme));
 
         if (cateStr == "collocated") {
-            auto tmp = typename ZenoLevelSet::spls_t{tags, 1, zs::memsrc_e::device, 0};
+            auto tmp = typename ZenoLevelSet::spls_t{tags, 1, zs::memsrc_e::device};
             tmp.scale(dx);
             // tmp.reset(zs::cuda_exec(), 0);
             ls->getLevelSet() = std::move(tmp);
         } else if (cateStr == "cellcentered") {
-            auto tmp = typename ZenoLevelSet::spls_t{tags, 1, zs::memsrc_e::device, 0};
+            auto tmp = typename ZenoLevelSet::spls_t{tags, 1, zs::memsrc_e::device};
             tmp.scale(dx);
             auto trans = zs::vec<float, 3>::constant(-dx / 2);
             tmp.translate(trans);
             // tmp.reset(zs::cuda_exec(), 0);
             ls->getLevelSet() = std::move(tmp);
         } else if (cateStr == "staggered") {
-            auto tmp = typename ZenoLevelSet::spls_t{tags, 1, zs::memsrc_e::device, 0};
+            auto tmp = typename ZenoLevelSet::spls_t{tags, 1, zs::memsrc_e::device};
             tmp.scale(dx);
             // tmp.reset(zs::cuda_exec(), 0);
             ls->getLevelSet() = std::move(tmp);
@@ -1759,7 +1759,7 @@ struct ZSParticlesToPrimitiveObject : INode {
         /// verts
         for (auto &&prop : zspars.getPropertyTags()) {
             if (prop.numChannels == 3) {
-                zs::Vector<zs::vec<float, 3>> dst{size, memsrc_e::device, 0};
+                zs::Vector<zs::vec<float, 3>> dst{size, memsrc_e::device};
                 cudaExec(zs::range(size),
                          [zspars = zs::proxy<execspace_e::cuda>({}, zspars), dst = zs::proxy<execspace_e::cuda>(dst),
                           name = prop.name] __device__(size_t pi) mutable {
@@ -1774,7 +1774,7 @@ struct ZSParticlesToPrimitiveObject : INode {
                 copy(zs::mem_device, prim->add_attr<zeno::vec3f>(propName).data(), dst.data(),
                      sizeof(zeno::vec3f) * size);
             } else if (prop.numChannels == 1) {
-                zs::Vector<float> dst{size, memsrc_e::device, 0};
+                zs::Vector<float> dst{size, memsrc_e::device};
                 cudaExec(zs::range(size),
                          [zspars = zs::proxy<execspace_e::cuda>({}, zspars), dst = zs::proxy<execspace_e::cuda>(dst),
                           name = prop.name] __device__(size_t pi) mutable { dst[pi] = zspars(name, pi); });
@@ -1790,7 +1790,7 @@ struct ZSParticlesToPrimitiveObject : INode {
             auto numEle = zseles.size();
             switch (zsprim->category) {
             case ZenoParticles::curve: {
-                zs::Vector<zs::vec<int, 2>> dst{numEle, memsrc_e::device, 0};
+                zs::Vector<zs::vec<int, 2>> dst{numEle, memsrc_e::device};
                 cudaExec(zs::range(numEle), [zseles = zs::proxy<execspace_e::cuda>({}, zseles),
                                              dst = zs::proxy<execspace_e::cuda>(dst)] __device__(size_t ei) mutable {
                     dst[ei] = zseles.pack<2>("inds", ei).reinterpret_bits<int>();
@@ -1801,7 +1801,7 @@ struct ZSParticlesToPrimitiveObject : INode {
                 copy(zs::mem_device, lines.data(), dst.data(), sizeof(zeno::vec2i) * numEle);
             } break;
             case ZenoParticles::surface: {
-                zs::Vector<zs::vec<int, 3>> dst{numEle, memsrc_e::device, 0};
+                zs::Vector<zs::vec<int, 3>> dst{numEle, memsrc_e::device};
                 cudaExec(zs::range(numEle), [zseles = zs::proxy<execspace_e::cuda>({}, zseles),
                                              dst = zs::proxy<execspace_e::cuda>(dst)] __device__(size_t ei) mutable {
                     dst[ei] = zseles.pack<3>("inds", ei).reinterpret_bits<int>();
@@ -1812,7 +1812,7 @@ struct ZSParticlesToPrimitiveObject : INode {
                 copy(zs::mem_device, tris.data(), dst.data(), sizeof(zeno::vec3i) * numEle);
             } break;
             case ZenoParticles::tet: {
-                zs::Vector<zs::vec<int, 4>> dst{numEle, memsrc_e::device, 0};
+                zs::Vector<zs::vec<int, 4>> dst{numEle, memsrc_e::device};
                 cudaExec(zs::range(numEle), [zseles = zs::proxy<execspace_e::cuda>({}, zseles),
                                              dst = zs::proxy<execspace_e::cuda>(dst)] __device__(size_t ei) mutable {
                     dst[ei] = zseles.pack<4>("inds", ei).reinterpret_bits<int>();

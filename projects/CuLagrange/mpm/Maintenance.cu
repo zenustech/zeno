@@ -178,10 +178,10 @@ struct RefineMeshParticles : INode {
         auto &pars = parObjPtr->getParticles();
         auto &eles = parObjPtr->getQuadraturePoints();
 
-        Vector<int> vertCnt{1, memsrc_e::device, 0},
-            eleCnt{1, memsrc_e::device, 0};
-        Vector<int> vertOffsets{1, memsrc_e::device, 0},
-            eleOffsets{1, memsrc_e::device, 0};
+        Vector<int> vertCnt{1, memsrc_e::device},
+            eleCnt{1, memsrc_e::device};
+        Vector<int> vertOffsets{1, memsrc_e::device},
+            eleOffsets{1, memsrc_e::device};
         int prevVertCnt{}, prevEleCnt{};
 
         auto probeSize = [&]() {
@@ -371,15 +371,15 @@ struct RefineMeshParticles : INode {
                 using int3 = zs::vec<int, 3>;
                 using float3 = zs::vec<float, 3>;
                 // edges(<v0, v1>) is stored in _activeKeys
-                HashTable<int, 2, int> edgeTable{1, memsrc_e::device, 0};
+                HashTable<int, 2, int> edgeTable{1, memsrc_e::device};
                 // i-th edge adjacent elements
-                Vector<int2> edgeEles{1, memsrc_e::device, 0};
+                Vector<int2> edgeEles{1, memsrc_e::device};
                 // i-th edge's local edge number within the tri element (i.e. 0, 1, 2)
-                Vector<char2> edgeLocalNosInEle{1, memsrc_e::device, 0};
+                Vector<char2> edgeLocalNosInEle{1, memsrc_e::device};
                 // local edge number within the element
-                Vector<int3> eleSplitVertNos{1, memsrc_e::device, 0};
+                Vector<int3> eleSplitVertNos{1, memsrc_e::device};
 
-                Vector<int> vertCnt{1, memsrc_e::device, 0}, eleCnt{1, memsrc_e::device, 0};
+                Vector<int> vertCnt{1, memsrc_e::device}, eleCnt{1, memsrc_e::device};
                 int prevVertCnt{}, curVertCnt{}, prevEleCnt{};
 
                 const bool hasNormalProperty = pars.hasProperty("nrm");

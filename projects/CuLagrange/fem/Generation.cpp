@@ -410,7 +410,7 @@ struct ToBoundaryPrimitive : INode {
               });
       auto seCnt = surfEdgeCnt.getVal();
       surfEdges.resize(seCnt);
-      surfEdges = surfEdges.clone({zs::memsrc_e::device, 0});
+      surfEdges = surfEdges.clone({zs::memsrc_e::device});
 #else
             auto comp = [](const auto &x, const auto &y) {
                 return x[0] < y[0] ? 1 : (x[0] == y[0] && x[1] < y[1] ? 1 : 0);
@@ -434,7 +434,7 @@ struct ToBoundaryPrimitive : INode {
                 sv("inds", 1, no) = reinterpret_bits<float>(edge[1]);
                 no++;
             }
-            surfEdges = surfEdges.clone({zs::memsrc_e::device, 0});
+            surfEdges = surfEdges.clone({zs::memsrc_e::device});
 #endif
             // surface vert indices
             auto &surfVerts = (*zsbou)[ZenoParticles::s_surfVertTag];
@@ -443,11 +443,11 @@ struct ToBoundaryPrimitive : INode {
                 surfVerts("inds", pointNo) = zs::reinterpret_bits<float>(pointNo);
             });
             // surface info
-            surfVerts = surfVerts.clone({zs::memsrc_e::device, 0});
+            surfVerts = surfVerts.clone({zs::memsrc_e::device});
         }
 
-        eles = eles.clone({memsrc_e::device, 0});
-        pars = pars.clone({memsrc_e::device, 0});
+        eles = eles.clone({memsrc_e::device});
+        pars = pars.clone({memsrc_e::device});
 
         set_output("ZSParticles", zsbou);
     }
@@ -686,11 +686,11 @@ struct ToZSTetrahedra : INode {
             // surfVerts("w", pointNo) = pointAreas[pointNo]; // point area (weight)
         });
 
-        pars = pars.clone({zs::memsrc_e::device, 0});
-        eles = eles.clone({zs::memsrc_e::device, 0});
-        surfaces = surfaces.clone({zs::memsrc_e::device, 0});
-        surfEdges = surfEdges.clone({zs::memsrc_e::device, 0});
-        surfVerts = surfVerts.clone({zs::memsrc_e::device, 0});
+        pars = pars.clone({zs::memsrc_e::device});
+        eles = eles.clone({zs::memsrc_e::device});
+        surfaces = surfaces.clone({zs::memsrc_e::device});
+        surfEdges = surfEdges.clone({zs::memsrc_e::device});
+        surfVerts = surfVerts.clone({zs::memsrc_e::device});
 
         // auto cudaExec = cuda_exec();
         // constexpr auto cuda_space = zs::execspace_e::cuda;
@@ -842,8 +842,8 @@ struct ToZSTriMesh : INode {
             }
         });
 
-        pars = pars.clone({zs::memsrc_e::device, 0});
-        eles = eles.clone({zs::memsrc_e::device, 0});
+        pars = pars.clone({zs::memsrc_e::device});
+        eles = eles.clone({zs::memsrc_e::device});
 
         set_output("ZSParticles", std::move(zstris));
     }
@@ -1024,7 +1024,7 @@ struct ToZSSurfaceMesh : INode {
       });
       auto seCnt = surfEdgeCnt.getVal();
       surfEdges.resize(seCnt);
-      surfEdges = surfEdges.clone({zs::memsrc_e::device, 0});
+      surfEdges = surfEdges.clone({zs::memsrc_e::device});
 #else
             auto comp = [](const auto &x, const auto &y) {
                 return x[0] < y[0] ? 1 : (x[0] == y[0] && x[1] < y[1] ? 1 : 0);
@@ -1114,7 +1114,7 @@ struct ToZSSurfaceMesh : INode {
                 sv("inds", 1, no, int_c) = edge[1];
                 no++;
             }
-            surfEdges = surfEdges.clone({zs::memsrc_e::device, 0});
+            surfEdges = surfEdges.clone({zs::memsrc_e::device});
 
             if (withBending) {
                 float bendingStrength = 0.f;
@@ -1165,7 +1165,7 @@ struct ToZSSurfaceMesh : INode {
                         bes("k", beNo) = k_bend;
                     }
                 });
-                bendingEdges = bendingEdges.clone({zs::memsrc_e::device, 0});
+                bendingEdges = bendingEdges.clone({zs::memsrc_e::device});
             }
 #endif
             // surface vert indices
@@ -1175,10 +1175,10 @@ struct ToZSSurfaceMesh : INode {
                 surfVerts("inds", pointNo) = zs::reinterpret_bits<float>(pointNo);
             });
 
-            pars = pars.clone({zs::memsrc_e::device, 0});
-            eles = eles.clone({zs::memsrc_e::device, 0});
-            surfEdges = surfEdges.clone({zs::memsrc_e::device, 0});
-            surfVerts = surfVerts.clone({zs::memsrc_e::device, 0});
+            pars = pars.clone({zs::memsrc_e::device});
+            eles = eles.clone({zs::memsrc_e::device});
+            surfEdges = surfEdges.clone({zs::memsrc_e::device});
+            surfVerts = surfVerts.clone({zs::memsrc_e::device});
         })(tag);
 
         set_output("ZSParticles", std::move(zstris));
@@ -1309,9 +1309,9 @@ struct ToZSStrands : INode {
             surfVerts("inds", pointNo) = zs::reinterpret_bits<float>(pointNo);
         });
 
-        pars = pars.clone({zs::memsrc_e::device, 0});
-        eles = eles.clone({zs::memsrc_e::device, 0});
-        surfVerts = surfVerts.clone({zs::memsrc_e::device, 0});
+        pars = pars.clone({zs::memsrc_e::device});
+        eles = eles.clone({zs::memsrc_e::device});
+        surfVerts = surfVerts.clone({zs::memsrc_e::device});
 
         set_output("ZSParticles", std::move(zsstrands));
     }

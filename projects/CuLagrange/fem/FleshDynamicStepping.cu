@@ -1321,7 +1321,7 @@ struct FleshDynamicStepping : INode {
                 act_buffer.tuple(dim_c<2>,"act",i) = vec2(act_[i][0],act_[i][1]);
         });
 
-        act_buffer = act_buffer.clone({zs::memsrc_e::device, 0});
+        act_buffer = act_buffer.clone({zs::memsrc_e::device});
 
         auto driven_tag = get_input2<std::string>("driven_tag");
         auto bone_driven_weight = get_input2<float>("driven_weight");
