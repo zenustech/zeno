@@ -331,7 +331,7 @@ void PrimitiveTransform::onCentroidClicked() {
             auto node_loc = node_sync.searchNode(nodeid.toStdString());
             auto links = node_sync.getInputNodes(node_loc.value().node, "prim");
             if (links.size() == 1) {
-                // FIXME: node id -> prim
+                // node id -> prim
                 ZenoMainWindow *pWin = zenoApp->getMainWindow();
                 ZASSERT_EXIT(pWin);
                 QVector<DisplayWidget *> views = pWin->viewports();
