@@ -295,6 +295,24 @@ struct JsonData : zeno::INode {
             float w = float(json->json["w"]);
             set_output2("out", vec4f(x, y, z, w));
         }
+        else if (type == "vec2i") {
+            auto x = int(json->json["x"]);
+            auto y = int(json->json["y"]);
+            set_output2("out", vec2i(x, y));
+        }
+        else if (type == "vec3i") {
+            auto x = int(json->json["x"]);
+            auto y = int(json->json["y"]);
+            auto z = int(json->json["z"]);
+            set_output2("out", vec3i(x, y, z));
+        }
+        else if (type == "vec4i") {
+            auto x = int(json->json["x"]);
+            auto y = int(json->json["y"]);
+            auto z = int(json->json["z"]);
+            auto w = int(json->json["w"]);
+            set_output2("out", vec4i(x, y, z, w));
+        }
     }
 };
 ZENDEFNODE(JsonData, {
@@ -402,6 +420,48 @@ struct JsonGetData : zeno::INode {
                     float z = float(json->json["z"]);
                     float w = float(json->json["w"]);
                     dict->lut[new_name] = std::make_shared<NumericObject>(vec4f(x, y, z, w));
+                }
+            }
+            else if (type == "vec2i") {
+                if (json->json.is_array()) {
+                    auto x = int(json->json[0]);
+                    auto y = int(json->json[1]);
+                    dict->lut[new_name] = std::make_shared<NumericObject>(vec2i(x, y));
+                }
+                else {
+                    auto x = int(json->json["x"]);
+                    auto y = int(json->json["y"]);
+                    dict->lut[new_name] = std::make_shared<NumericObject>(vec2i(x, y));
+                }
+            }
+            else if (type == "vec3i") {
+                if (json->json.is_array()) {
+                    auto x = int(json->json[0]);
+                    auto y = int(json->json[1]);
+                    auto z = int(json->json[2]);
+                    dict->lut[new_name] = std::make_shared<NumericObject>(vec3i(x, y, z));
+                }
+                else {
+                    auto x = int(json->json["x"]);
+                    auto y = int(json->json["y"]);
+                    auto z = int(json->json["z"]);
+                    dict->lut[new_name] = std::make_shared<NumericObject>(vec3i(x, y, z));
+                }
+            }
+            else if (type == "vec4i") {
+                if (json->json.is_array()) {
+                    auto x = int(json->json[0]);
+                    auto y = int(json->json[1]);
+                    auto z = int(json->json[2]);
+                    auto w = int(json->json[3]);
+                    dict->lut[new_name] = std::make_shared<NumericObject>(vec4i(x, y, z, w));
+                }
+                else {
+                    auto x = int(json->json["x"]);
+                    auto y = int(json->json["y"]);
+                    auto z = int(json->json["z"]);
+                    auto w = int(json->json["w"]);
+                    dict->lut[new_name] = std::make_shared<NumericObject>(vec4i(x, y, z, w));
                 }
             }
         }
