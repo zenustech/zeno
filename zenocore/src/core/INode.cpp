@@ -372,13 +372,20 @@ ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
                         zany outResult = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
                         spList->arr.push_back(outResult);
                         spList->dirtyIndice.insert(indx);
-                    } else {                    //list中的元素不是dirty的，从旧list中直接取出加入新list
-                        if (oldinput && oldinput->nodeNameArrItemMap.find(outNode->m_name) != oldinput->nodeNameArrItemMap.end()) {
-                            int itemIdx = oldinput->nodeNameArrItemMap[outNode->m_name];
-                            if (oldinput->arr.size() > itemIdx)
-                                spList->arr.push_back(oldinput->arr[itemIdx]);
-                            else
-                                continue;
+                    } else {
+                        if (oldinput) {
+                            if (oldinput->nodeNameArrItemMap.find(outNode->m_name) != oldinput->nodeNameArrItemMap.end())   //不是新的link，直接加入
+                            {
+                                int itemIdx = oldinput->nodeNameArrItemMap[outNode->m_name];
+                                if (oldinput->arr.size() > itemIdx)
+                                    spList->arr.push_back(oldinput->arr[itemIdx]);
+                                else
+                                    continue;
+                            }
+                            else {  //是的新的link，拷贝param的输出
+                                zany outResult = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
+                                spList->arr.push_back(outResult);
+                            }
                         }else
                             continue;
                     }

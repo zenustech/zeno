@@ -52,7 +52,10 @@ void FakeTransformer::addObject(const std::string& name) {
     auto scene = sess->get_scene();
     ZASSERT_EXIT(scene);
 
-    auto spobj = zeno::getSession().objsMan->getObj(name);
+    auto it = scene->lastAllItems.find(name);
+    if (it == scene->lastAllItems.end())
+        return;
+    auto spobj = it->second;
     if (!spobj)
         return;
     auto object = dynamic_cast<PrimitiveObject*>(spobj.get());

@@ -69,24 +69,61 @@ void* Scene::getOptixImg(int& w, int& h)
 #endif
 }
 
-void Scene::convertListObjs(std::shared_ptr<zeno::IObject>const& objToBeConvert, std::map<std::string, std::shared_ptr<zeno::IObject>>& dirtyListItems, std::set<std::string>& allListItems, bool isDirty)
+void Scene::convertListObjsRender(std::shared_ptr<zeno::IObject>const& objToBeConvert, std::map<std::string, std::shared_ptr<zeno::IObject>>& allListItems,
+    std::set<std::string>& allListItemsKeys, bool convertKeyOnly, std::string listNamePath, std::string listIdxPath)
 {
     if (std::shared_ptr<zeno::ListObject> lst = std::dynamic_pointer_cast<zeno::ListObject>(objToBeConvert)) {
         for (int i = 0; i < lst->arr.size(); i++) {
+            std::shared_ptr<zeno::IObject> const& arrItem = lst->arr[i];
+            std::string idxpath = listIdxPath + '/' + std::to_string(i);
+            std::string namepath = listNamePath + '/' + arrItem->nodeId;
             if (lst->dirtyIndice.count(i)) {
-                convertListObjs(lst->arr[i], dirtyListItems, allListItems, true);
+                convertListObjsRender(arrItem, allListItems, allListItemsKeys, convertKeyOnly, namepath, idxpath);
                 continue;
             }
-            convertListObjs(lst->arr[i], dirtyListItems, allListItems, false);
+            convertListObjsRender(arrItem, allListItems, allListItemsKeys, convertKeyOnly, namepath, idxpath);
         }
         return;
     }
     if (!objToBeConvert)
         return;
     else {
-        if (isDirty)
-            dirtyListItems.insert(std::make_pair(objToBeConvert->key(), objToBeConvert));
-        allListItems.insert(objToBeConvert->key());
+        if (convertKeyOnly)
+            allListItemsKeys.insert(objToBeConvert->key());
+        else {
+            objToBeConvert->listitemNameIndex = listNamePath;
+            objToBeConvert->listitemNumberIndex = listIdxPath;
+            allListItems.insert(std::make_pair(objToBeConvert->key(), objToBeConvert));
+            lastAllItems.insert(std::make_pair(objToBeConvert->key(), objToBeConvert));
+        }
+    }
+}
+
+void Scene::convertListObjs(std::shared_ptr<zeno::IObject>const& objToBeConvert, std::map<std::string, std::shared_ptr<zeno::IObject>>& allListItems)
+{
+    if (std::shared_ptr<zeno::ListObject> lst = std::dynamic_pointer_cast<zeno::ListObject>(objToBeConvert)) {
+        for (int i = 0; i < lst->arr.size(); i++)
+            convertListObjs(lst->arr[i], allListItems);
+        return;
+    }
+    if (!objToBeConvert)
+        return;
+    else {
+        allListItems.insert(std::make_pair(objToBeConvert->key(), objToBeConvert));
+    }
+}
+
+void zenovis::Scene::convertListObjs(std::shared_ptr<zeno::IObject>const& objToBeConvert, std::vector<std::pair<std::string, std::shared_ptr<zeno::IObject>>>& allListItems)
+{
+    if (std::shared_ptr<zeno::ListObject> lst = std::dynamic_pointer_cast<zeno::ListObject>(objToBeConvert)) {
+        for (int i = 0; i < lst->arr.size(); i++)
+            convertListObjs(lst->arr[i], allListItems);
+        return;
+    }
+    if (!objToBeConvert)
+        return;
+    else {
+        allListItems.emplace_back(objToBeConvert->key(), objToBeConvert);
     }
 }
 
@@ -125,8 +162,15 @@ void Scene::draw() {
     if (renderMan->getDefaultEngineName() != "optx")
     {
         //only for gl engnine
+        std::set<std::string> modifyObjsKeys;
         zeno::RenderObjsInfo objs;
-        zeno::getSession().objsMan->getModifyObjsInfo(objs.modifyObjs);
+        zeno::getSession().objsMan->getModifyObjsInfo(modifyObjsKeys);
+        for (auto& key: modifyObjsKeys)
+        {
+            auto it = lastAllItems.find(key);
+            if (it != lastAllItems.end())
+                objs.modifyObjs.insert(std::make_pair(key, it->second));
+        }
         renderMan->getEngine()->load_objects(objs);
 
         //CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
