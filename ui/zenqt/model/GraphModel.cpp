@@ -416,7 +416,13 @@ bool GraphModel::setData(const QModelIndex& index, const QVariant& value, int ro
         }
         case ROLE_INPUTS:
         {
-
+            PARAMS_INFO paramsInfo = value.value<PARAMS_INFO>();
+            for (auto&[key, param] : paramsInfo)
+            {
+                QModelIndex idx = item->params->paramIdx(key, true);
+                item->params->setData(idx, UiHelper::zvarToQVar(param.defl) , ROLE_PARAM_VALUE);
+            }
+            return true;
         }
     }
     return false;
