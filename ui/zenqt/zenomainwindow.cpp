@@ -56,6 +56,7 @@
 #include "calculation/calculationmgr.h"
 #include "DockAreaWidget.h"
 #include "DockWidget.h"
+#include "DockContainerWidget.h"
 
 
 const QString g_latest_layout = "LatestLayout";
@@ -2134,10 +2135,66 @@ QString ZenoMainWindow::getOpenFileByDialog() {
 
 void ZenoMainWindow::onNodesSelected(GraphModel* subgraph, const QModelIndexList &nodes, bool select) {
     //dispatch to all property panel.
-    auto docks = findChildren<ZDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
-    for (ZDockWidget* dock : docks) {
+    for (ads::CDockWidget* dock : m_pDockManager->dockWidgetsMap())
+    {
         if (dock->isVisible())
-            dock->onNodesSelected(subgraph, nodes, select);
+        {
+            QWidget* wid = dock->widget();
+            if (DockContent_Parameter* prop = qobject_cast<DockContent_Parameter*>(wid))
+            {
+                if (select && nodes.size() <= 1) {
+                        prop->onNodesSelected(subgraph, nodes, select);
+                }
+            }
+            else if (ZenoSpreadsheet* panel = qobject_cast<ZenoSpreadsheet*>(wid))
+            {
+                if (select && nodes.size() == 1)
+                {
+                    const QModelIndex& idx = nodes[0];
+                    QString nodeId = idx.data(ROLE_NODE_NAME).toString();
+
+                    ZenoMainWindow* pWin = zenoApp->getMainWindow();
+                    ZASSERT_EXIT(pWin);
+                    QVector<DisplayWidget*> views = pWin->viewports();
+                    for (auto pDisplay : views)
+                    {
+                        auto pZenoVis = pDisplay->getZenoVis();
+                        ZASSERT_EXIT(pZenoVis);
+                        auto* scene = pZenoVis->getSession()->get_scene();
+                        scene->selected.clear();
+                        std::string nodeid = nodeId.toStdString();
+                        for (auto const& [key, ptr] : scene->objectsMan->pairs()) {
+                            if (nodeid == key.substr(0, key.find_first_of(':'))) {
+                                scene->selected.insert(key);
+                            }
+                        }
+                        onPrimitiveSelected(scene->selected);
+                        pDisplay->updateFrame();
+                    }
+                }
+            }
+            else if (DockContent_Editor* editor = qobject_cast<DockContent_Editor*>(wid)) {
+                if (select && nodes.size() <= 1)
+                {
+                    editor->getEditor()->showFloatPanel(subgraph, nodes);
+                }
+            }
+            else if (DockContent_View* view = qobject_cast<DockContent_View*>(wid)) {
+                view->getDisplayWid()->onNodeSelected(subgraph, nodes, select);
+            }
+            else if (ZenoImagePanel* image = qobject_cast<ZenoImagePanel*>(wid))
+            {
+                if (select && nodes.size() == 1)
+                {
+                    const QModelIndex& idx = nodes[0];
+                    image->setPrim(idx.data(ROLE_NODE_NAME).toString().toStdString());
+                }
+                if (!select)
+                {
+                    image->clear();
+                }
+            }
+        }
     }
 }
 
