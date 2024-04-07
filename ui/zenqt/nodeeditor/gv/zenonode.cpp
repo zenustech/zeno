@@ -204,7 +204,7 @@ ZGraphicsLayout* ZenoNode::initVerticalSockets(bool bInput)
 
         QSizeF szSocket(14, 14);
         ZenoSocketItem* socket = new ZenoSocketItem(paramIdx, ZenoStyle::dpiScaledSize(szSocket));
-        socket->setBrush(QColor("#CECCCC"), QColor("#CECCCC"));
+        socket->setBrush(QColor("#C4C2C2"), QColor("#FFFFFF"));
         pSocketLayout->addItem(socket);
         pSocketLayout->addSpacing(-1);
 
@@ -527,6 +527,8 @@ QVector<ZSocketLayout*> ZenoNode::getSocketLayouts(bool bInput) const
 {
     QVector<ZSocketLayout*> layouts;
     if (bInput) {
+        if (!m_inputsLayout)
+            return layouts;
         for (int i = 0; i < m_inputsLayout->count(); i++) {
             ZGvLayoutItem* pItem = m_inputsLayout->itemAt(i);
             if (pItem->type == Type_Layout) {
@@ -539,6 +541,8 @@ QVector<ZSocketLayout*> ZenoNode::getSocketLayouts(bool bInput) const
         }
     }
     else {
+        if (!m_outputsLayout)
+            return layouts;
         for (int i = 0; i < m_outputsLayout->count(); i++) {
             ZGvLayoutItem* pItem = m_outputsLayout->itemAt(i);
             if (pItem->type == Type_Layout) {
@@ -1290,8 +1294,11 @@ void ZenoNode::onUpdateParamsNotDesc()
 
 void ZenoNode::onMarkDataChanged(bool bDirty)
 {
-    m_statusMarker->setVisible(bDirty);
-    update();
+    if (m_statusMarker)
+    {
+        m_statusMarker->setVisible(bDirty);
+        update();
+    }
 }
 
 void ZenoNode::setMoving(bool isMoving)
@@ -1752,7 +1759,8 @@ void ZenoNode::onCollaspeUpdated(bool collasped)
     m_mainHeaderBg->setVisible(collasped);
     m_headerWidget->setVisible(!collasped);
     m_bodyWidget->setVisible(!collasped);
-    m_statusMarker->setVisible(!collasped);
+    if (m_statusMarker)
+        m_statusMarker->setVisible(!collasped);
     if (collasped) {
         m_topInputSockets->show();
         m_bottomOutputSockets->show();
