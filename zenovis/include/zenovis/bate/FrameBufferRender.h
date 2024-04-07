@@ -1,22 +1,14 @@
 #pragma once
 
-#include "zeno/funcs/PrimitiveTools.h"
 #include "zenovis/Camera.h"
 #include "zenovis/Scene.h"
 #include "IGraphic.h"
 #include "zenovis/ShaderManager.h"
-#include "zenovis/ObjectsManager.h"
 #include "zenovis/opengl/buffer.h"
 #include "zenovis/opengl/shader.h"
 #include "zenovis/opengl/texture.h"
 #include "zenovis/opengl/vao.h"
 #include "zenovis/DrawOptions.h"
-#include "stb_image_write.h"
-
-#include <unordered_map>
-#include <fstream>
-#include <random>
-#include <algorithm>
 
 namespace zenovis {
 
@@ -30,14 +22,9 @@ using opengl::Program;
 using zeno::vec2i;
 using zeno::vec3i;
 using zeno::vec3f;
-using zeno::PrimitiveObject;
 
 using std::unique_ptr;
 using std::make_unique;
-using std::string;
-using std::vector;
-using std::unordered_map;
-using std::unordered_set;
 
 static const char * vert_code = R"(
     #version 330 core
@@ -79,8 +66,6 @@ static float quadVertices[] = {   // vertex attributes for a quad that fills the
     1.0f,  1.0f,  1.0f, 1.0f
 };
 
-// TODO: Test record video
-// TODE: Test pciker
 struct FrameBufferRender {
     Scene* scene;
 
@@ -122,9 +107,6 @@ struct FrameBufferRender {
     }
 
     void generate_buffers() {
-//        if (w == scene->camera->m_nx || h == scene->camera->m_ny || s == scene->drawOptions->msaa_samples) {
-//            return;
-//        }
         // generate framebuffer
         fbo = make_unique<FBO>();
         CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo->fbo));
