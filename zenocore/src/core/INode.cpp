@@ -253,6 +253,8 @@ ZENO_API void INode::registerObjToManager()
                 return;
             }
             assert(!spObj->key().empty());
+            param->result->nodeId = m_name;
+
             getSession().objsMan->collectingObject(spObj->key(), spObj, shared_from_this(), m_bView);
             if (param->m_idModify) {
                 getSession().objsMan->collect_modify_objs(spObj->key(), m_bView); //如果是修改obj，还需要添加到objManager的modify集合中(需要在具体apply函数中设置m_idModify为true)

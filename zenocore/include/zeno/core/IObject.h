@@ -15,6 +15,9 @@ struct UserData;
 struct IObject {
     using polymorphic_base_type = IObject;
 
+    std::string listitemNameIndex;      //记录在list中的nodeid构成的层级索引，如果不是某个list下元素则为自身nodeid
+    std::string listitemNumberIndex;    //记录在list中的序号构成的层级索引，如果不是某个list下元素则为空
+    std::string nodeId;     //该对象来自哪个node
 
     mutable std::any m_userData;
 
