@@ -570,8 +570,8 @@ constexpr REAL get_vertex_triangle_distance(const VECTOR3& v0, const VECTOR3& v1
         auto b0 = x13.dot(x43);
         auto b1 = x23.dot(x43);
         auto detA = A00 * A11 - A01 * A01;
-        bary[0] = ( A11 * b0 - A01 * b1) / detA;
-        bary[1] = (-A01 * b0 + A00 * b1) / detA;
+        bary[0] = ( A11 * b0 - A01 * b1) / (detA + eps);
+        bary[1] = (-A01 * b0 + A00 * b1) / (detA + eps);
         bary[2] = 1 - bary[0] - bary[1];
     }
 
@@ -587,8 +587,8 @@ constexpr REAL get_vertex_triangle_distance(const VECTOR3& v0, const VECTOR3& v1
         auto b0 = x13.dot(x43);
         auto b1 = x23.dot(x43);
         detA = A00 * A11 - A01 * A01;
-        bary[0] = ( A11 * b0 - A01 * b1) / detA;
-        bary[1] = (-A01 * b0 + A00 * b1) / detA;
+        bary[0] = ( A11 * b0 - A01 * b1) / (detA + eps);
+        bary[1] = (-A01 * b0 + A00 * b1) / (detA + eps);
         bary[2] = 1 - bary[0] - bary[1];
     }
 
@@ -604,8 +604,8 @@ constexpr REAL get_vertex_triangle_distance(const VECTOR3& v0, const VECTOR3& v1
         auto b1 = -x43.dot(x31);
         auto detA = A00 * A11 - A01 * A01;
 
-        bary[0] = ( A11 * b0 - A01 * b1) / detA;
-        bary[1] = (-A01 * b0 + A00 * b1) / detA;
+        bary[0] = ( A11 * b0 - A01 * b1) / (detA + eps);
+        bary[1] = (-A01 * b0 + A00 * b1) / (detA + eps);
         // }else { // the two edge is almost parallel
 
         // }
