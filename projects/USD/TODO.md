@@ -13,8 +13,8 @@
 * [x] 支持XformOp导入为链式操作
   * [x] 基本变换支持：位移、缩放、欧拉旋转
   * [x] 支持orient
-  * [ ] 支持xformOp中的reset、revert操作
-  * [ ] 支持xformOp中的Matrix信息
+  * [ ] 支持xformOp中的Matrix类型导入 - 写好了ImportUSDPrimMatrix 准备吐节点
+  * [ ] 支持xformOp中的reset、revert操作??
 * [x] Cube导入
 * [x] Sphere导入
 * [x] Cylinder导入
@@ -23,13 +23,13 @@
 * [x] Plane导入
 * [ ] 实现Mesh导入构建
   * [x] 基础的mesh导入: 吐一个ImportUSDMesh节点
-  * [ ] 加一个mesh纹理支持
+  * [ ] mesh纹理支持
   * [ ] 支持骨骼 Skeleton导入，并用骨骼初始化mesh的transform
   * [ ] 支持动画 SkelAnimation导入 并且支持多帧播放
-* [ ] 支持递归引入 例如import一个根节点 其下的叶节点也一并导入(sublayer??)
+* [ ] 支持递归引入 例如import一个根节点 其下的叶节点也一并导入
 * [x] 支持编辑USD prim: 目前方案是导入时转换为等价的zeno节点树
 * [ ] 支持导出USD prim
-* [ ] prim可见性为inherited处理
+* [ ] prim可见性为inherited的处理
 # mtlx @hcx
 * [ ] Material/mtlx
 * [ ] Shader
@@ -40,8 +40,8 @@
 * [x] DomeLight: 简单支持了一下
 * [x] RectLight
 * [x] SphereLight
-* [ ] GeometryLight
-* [ ] Camera
+* [x] light texture支持: DomeLight RectLight
+* [x] Camera: 简单支持了一下 暂无fov
 # instancing
 * [ ] 实现实例化 USD instancing
 # 进阶以及可选
