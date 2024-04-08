@@ -124,7 +124,7 @@ struct ZSParticlesTwoWrangler : zeno::INode {
 
         auto &currentContext = Cuda::context(0);
         currentContext.setContext();
-        auto cudaPol = cuda_exec().device(0).sync(true);
+        auto cudaPol = cuda_exec().sync(true);
 
         /// symbols
         {

@@ -19,7 +19,7 @@ struct MaintainSpatialAccelerator : INode {
         using namespace zs;
         using bv_t = typename ZenoParticles::lbvh_t::Box;
 
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
 
         const auto &verts = zstets->getParticles();
         if (zstets->isMeshPrimitive()) {
@@ -114,7 +114,7 @@ struct VisualizeBvh : INode {
     auto level = get_input2<int>("level");
     auto target = get_param<std::string>("target");
 
-    auto cudaPol = cuda_exec().device(0);
+    auto cudaPol = cuda_exec();
     auto prim = std::make_shared<PrimitiveObject>();
     Vector<bv_t> extractedBvs{verts.get_allocator(), 1};
     Vector<int> bvCnt{verts.get_allocator(), 1};

@@ -152,7 +152,7 @@ struct ZSParticleParticleWrangler : INode {
 
         auto &currentContext = Cuda::context(0);
         currentContext.setContext();
-        auto cudaPol = cuda_exec().device(0).sync(true);
+        auto cudaPol = cuda_exec().sync(true);
 
         auto prog = compiler.compile(code, opts);
         auto jitCode = assembler.assemble(prog->assembly);

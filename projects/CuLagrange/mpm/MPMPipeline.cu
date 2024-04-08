@@ -26,7 +26,7 @@ struct ZSPartitionForZSParticles : INode {
         auto &partition = table->get();
         auto zsgrid = get_input<ZenoGrid>("ZSGrid");
         auto &grid = zsgrid->get();
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
 
         bool cached = get_param<std::string>("strategy") == "cache" ? true : false;
         if (!table->requestRebuild && cached && table->hasTags()) {
@@ -170,7 +170,7 @@ struct ExpandZSPartition : INode {
         // at least 27 bits for 3d[-1, 1] range
         Vector<i32> dirs{partition.get_allocator(), (std::size_t)prevCnt};
         dirs.reset(0);
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
         registerNewBlockEntries(cudaPol, partition, dirs, 0, prevCnt);
 
         static_assert(grid_traits<grid_t>::is_power_of_two, "grid side_length should be power of two");
@@ -251,7 +251,7 @@ struct ZSGridFromZSPartition : INode {
         grid.resize(cnt);
 
         using namespace zs;
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
         // clear grid
         cudaPol(Collapse{cnt, ZenoGrid::grid_t::block_space()},
                 [grid = proxy<execspace_e::cuda>({}, grid)] __device__(int bi, int ci) mutable {
@@ -847,7 +847,7 @@ struct UpdateZSGrid : INode {
 
         Vector<float> velSqr{1, zs::memsrc_e::um, 0};
         velSqr[0] = 0;
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
 
         if (zsgrid->isPicStyle())
             cudaPol(Collapse{partition.size(), ZenoGrid::grid_t::block_space()},
@@ -1097,7 +1097,7 @@ struct ZSReturnMapping : INode {
         auto parObjPtrs = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
 
         using namespace zs;
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
 
         for (auto &&parObjPtr : parObjPtrs) {
             auto &pars = parObjPtr->getParticles();

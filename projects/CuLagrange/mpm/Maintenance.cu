@@ -24,7 +24,7 @@ struct ComputeParticleVolume : INode {
         auto &ibs = buckets->get();
 
         using namespace zs;
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
         bool first = true;
 
         for (auto &&parObjPtr : parObjPtrs)
@@ -112,7 +112,7 @@ struct PushOutZSParticles : INode {
         fmt::print(fg(fmt::color::green), "begin executing PushOutZSParticles\n");
         auto parObjPtrs = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
         using namespace zs;
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
         auto zsls = get_input<ZenoLevelSet>("ZSLevelSet");
         auto dis = get_input2<float>("dis");
 
@@ -163,7 +163,7 @@ struct RefineMeshParticles : INode {
     auto parObjPtrs = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
 
     using namespace zs;
-    auto cudaPol = cuda_exec().device(0);
+    auto cudaPol = cuda_exec();
 
     /// the biggest distance among particles should be no greater than 'dx'
     auto dx = get_input2<float>("dx");
@@ -351,7 +351,7 @@ struct RefineMeshParticles : INode {
         auto parObjPtrs = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
 
         using namespace zs;
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
 
         /// the biggest distance among particles should be no greater than 'dx'
         auto dx = get_input2<float>("dx");
@@ -701,7 +701,7 @@ struct UpdateZSPrimitiveSequence : INode {
         auto zsprimseq = get_input<ZenoParticles>("ZSPrimitiveSequence");
         auto dt = get_input2<float>("stepdt");
 
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
 
         auto numV = zsprimseq->numParticles();
         auto sprayedOffset = zsprimseq->sprayedOffset;

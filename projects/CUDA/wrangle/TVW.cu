@@ -124,7 +124,7 @@ struct ZSTileVectorWrangler : zeno::INode {
 
         auto &currentContext = Cuda::context(0);
         currentContext.setContext();
-        auto cudaPol = cuda_exec().device(0).sync(true);
+        auto cudaPol = cuda_exec().sync(true);
 
         /// symbols
         auto def_sym = [&opts](std::string key, int dim) {

@@ -935,6 +935,7 @@ struct MakeUnifiedIPCSystem : INode {
             zsboundary = get_input<ZenoParticles>("ZSBoundaryPrimitives");
 
         auto cudaPol = zs::cuda_exec();
+        fmt::print("check cuda pol dev id: {}\n", cudaPol.getProcid());
         for (auto zstet : zstets) {
             if (!zstet->hasImage(ZenoParticles::s_particleTag)) {
                 auto &loVerts = zstet->getParticles();

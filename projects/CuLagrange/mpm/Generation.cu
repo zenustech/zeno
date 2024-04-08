@@ -1013,7 +1013,7 @@ struct BuildPrimitiveSequence : INode {
         if (!next->asBoundary)
             throw std::runtime_error(fmt::format("incoming prim is not used as a boundary!\n"));
 
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
         if (has_input<ZenoParticles>("ZSPrimitiveSequence")) {
             zsprimseq = get_input<ZenoParticles>("ZSPrimitiveSequence");
             auto numV = zsprimseq->numParticles();
@@ -1753,7 +1753,7 @@ struct ZSParticlesToPrimitiveObject : INode {
         prim->resize(size);
 
         using namespace zs;
-        auto cudaExec = cuda_exec().device(0);
+        auto cudaExec = cuda_exec();
 
         static_assert(sizeof(zs::vec<float, 3>) == sizeof(zeno::vec3f), "zeno::vec3f != zs::vec<float, 3>");
         /// verts
@@ -1844,7 +1844,7 @@ struct WriteZSParticles : zeno::INode {
         fmt::print(fg(fmt::color::green), "begin executing WriteZSParticles\n");
         auto &pars = get_input<ZenoParticles>("ZSParticles")->getParticles();
         auto path = get_input2<std::string>("path");
-        auto cudaExec = zs::cuda_exec().device(0);
+        auto cudaExec = zs::cuda_exec();
         zs::Vector<zs::vec<float, 3>> pos{pars.size(), zs::memsrc_e::um, 0};
         zs::Vector<float> vms{pars.size(), zs::memsrc_e::um, 0};
         cudaExec(zs::range(pars.size()),
@@ -1896,7 +1896,7 @@ struct ComputeVonMises : INode {
         auto model = zspars->getModel();
         auto option = get_param<int>("by_log1p(base10)");
 
-        auto cudaExec = zs::cuda_exec().device(0);
+        auto cudaExec = zs::cuda_exec();
         zs::match(
             [&](auto &elasticModel)
                 -> std::enable_if_t<std::is_same_v<RM_CVREF_T(elasticModel), zs::StvkWithHencky<float>>> {
