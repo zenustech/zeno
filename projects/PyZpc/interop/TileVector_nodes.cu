@@ -16,7 +16,7 @@ typename TV::value_type extractScalarFromTileVector(const TV &tv, zs::SmallStrin
     auto pol = zs::cuda_exec();
     using tv_t = RM_CVREF_T(tv);
     using val_t = typename tv_t::value_type;
-    zs::Vector<val_t> res{1, zs::memsrc_e::device, 0};
+    zs::Vector<val_t> res{1, zs::memsrc_e::device};
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     pol(range(1), [tv = proxy<space>({}, tv), res = proxy<space>(res), tagName = SmallString{tagName}, index = index,

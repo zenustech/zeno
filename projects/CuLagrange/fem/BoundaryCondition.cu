@@ -60,7 +60,7 @@ struct ApplyBoundaryOnVertices : INode {
 
         using namespace zs;
 
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
 
         /// init BC status
         cudaPol(Collapse{verts.size()}, [verts = proxy<execspace_e::cuda>({}, verts)] __device__(int vi) mutable {
@@ -165,7 +165,7 @@ struct MoveTowards : INode {
         if (!next->asBoundary)
             throw std::runtime_error(fmt::format("incoming prim is not used as a boundary!\n"));
 
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
         if (has_input<ZenoParticles>("ZSBoundaryPrimitive")) {
             zsprimseq = get_input<ZenoParticles>("ZSBoundaryPrimitive");
             auto numV = zsprimseq->numParticles();

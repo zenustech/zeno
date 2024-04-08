@@ -38,7 +38,7 @@ struct ZSParticleNeighborWrangler : INode {
 
         auto &currentContext = Cuda::context(0);
         currentContext.setContext();
-        auto cudaPol = cuda_exec().device(0).sync(true);
+        auto cudaPol = cuda_exec().sync(true);
 
         auto code = get_input<StringObject>("zfxCode")->get();
 
@@ -258,7 +258,7 @@ struct ZSParticleNeighborWrangler : INode {
                                               (unsigned short)(targetParPtr->getPropertyOffset(transTag(name)) + dimid),
                                               (unsigned short)isNeighborProperty};
         }
-        auto daccessors = haccessors.clone({zs::memsrc_e::device, 0});
+        auto daccessors = haccessors.clone({zs::memsrc_e::device});
 
         /// params
         zs::Vector<zs::f32> hparams{prog->params.size()};
@@ -269,7 +269,7 @@ struct ZSParticleNeighborWrangler : INode {
             auto value = parvals.at(it - parnames.begin());
             hparams[i] = value;
         }
-        zs::Vector<zs::f32> dparams = hparams.clone({zs::memsrc_e::device, 0});
+        zs::Vector<zs::f32> dparams = hparams.clone({zs::memsrc_e::device});
 
         void *function;
         cuModuleGetFunction((CUfunction *)&function, (CUmodule)_cuModule, "zpc_particle_neighbor_wrangler_kernel");

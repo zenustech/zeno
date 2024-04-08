@@ -567,7 +567,7 @@ struct ToZSCloth : INode {
                 pars("beta", pi) = 0; // for positional adjustment
             });
 
-            pars = pars.clone({memsrc_e::device, 0});
+            pars = pars.clone({memsrc_e::device});
         }
         zscloth->elements = typename ZenoParticles::particles_t{eleTags, eleSize, memsrc_e::host};
         auto &eles = zscloth->getQuadraturePoints(); // tilevector
@@ -1462,12 +1462,12 @@ struct ToBoundaryParticles : INode {
                 surfVerts("inds", pointNo) = zs::reinterpret_bits<float>(pointNo);
             });
             // surface info
-            surfEdges = surfEdges.clone({zs::memsrc_e::device, 0});
-            surfVerts = surfVerts.clone({zs::memsrc_e::device, 0});
+            surfEdges = surfEdges.clone({zs::memsrc_e::device});
+            surfVerts = surfVerts.clone({zs::memsrc_e::device});
         }
 
-        eles = eles.clone({memsrc_e::device, 0});
-        pars = pars.clone({memsrc_e::device, 0});
+        eles = eles.clone({memsrc_e::device});
+        pars = pars.clone({memsrc_e::device});
 
         fmt::print(fg(fmt::color::cyan), "done executing ToBoundaryParticles\n");
         set_output("ZSParticles", outParticles);
@@ -1544,13 +1544,13 @@ struct ToZSLevelSet : INode {
             // pass in FloatGrid::Ptr
             zs::OpenVDBStruct gridPtr = get_input<VDBFloatGrid>("VDBGrid")->m_grid;
             ls->getLevelSet() =
-                basic_ls_t{zs::convert_floatgrid_to_sparse_grid(gridPtr, zs::MemoryProperty{zs::memsrc_e::device, 0})};
+                basic_ls_t{zs::convert_floatgrid_to_sparse_grid(gridPtr, zs::MemoryProperty{zs::memsrc_e::device, -1})};
         } else if (has_input<VDBFloat3Grid>("VDBGrid")) {
             // pass in FloatGrid::Ptr
 #if 0
             zs::OpenVDBStruct gridPtr = get_input<VDBFloat3Grid>("VDBGrid")->m_grid;
             ls->getLevelSet() =
-                basic_ls_t{zs::convert_vec3fgrid_to_sparse_grid(gridPtr, zs::MemoryProperty{zs::memsrc_e::device, 0})};
+                basic_ls_t{zs::convert_vec3fgrid_to_sparse_grid(gridPtr, zs::MemoryProperty{zs::memsrc_e::device, -1})};
 #else
             throw std::runtime_error("does not support conversion from vec3fgrid to sparsegrid");
 #endif
@@ -1559,7 +1559,7 @@ struct ToZSLevelSet : INode {
             auto path = get_param<std::string>("path");
             auto gridPtr = zs::load_vec3fgrid_from_vdb_file(path);
             ls->getLevelSet() = basic_ls_t{
-                zs::convert_vec3fgrid_to_sparse_grid(gridPtr, zs::MemoryProperty{zs::memsrc_e::device, 0})};
+                zs::convert_vec3fgrid_to_sparse_grid(gridPtr, zs::MemoryProperty{zs::memsrc_e::device, -1})};
 #else
             throw std::runtime_error("does not support conversion from vec3fgrid to sparsegrid");
 #endif

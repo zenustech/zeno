@@ -358,13 +358,13 @@ struct GetAlembicCamera : INode {
         float focal_length = cam_info.value().focal_length;
 
         set_output("pos", std::make_shared<NumericObject>(zeno::vec3f((float)pos.x, (float)pos.y, (float)pos.z)));
-        set_output("up", std::make_shared<NumericObject>(zeno::vec3f((float)up.x, (float)up.y, (float)up.z)));
-        set_output("right", std::make_shared<NumericObject>(zeno::vec3f((float)right.x, (float)right.y, (float)right.z)));
 
-        auto _up = zeno::vec3f((float)up.x, (float)up.y, (float)up.z);
-        auto _right = zeno::vec3f((float)right.x, (float)right.y, (float)right.z);
+        auto _up = zeno::normalize(zeno::vec3f((float)up.x, (float)up.y, (float)up.z));
+        auto _right = zeno::normalize(zeno::vec3f((float)right.x, (float)right.y, (float)right.z));
         auto view = zeno::cross(_up, _right);
-        set_output("view", std::make_shared<NumericObject>(view));
+        set_output2("up", _up);
+        set_output2("right", _right);
+        set_output2("view", view);
 
         set_output("focal_length", std::make_shared<NumericObject>(focal_length));
         set_output("near", std::make_shared<NumericObject>((float)cam_info.value()._near));

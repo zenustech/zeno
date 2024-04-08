@@ -732,7 +732,7 @@ int UnifiedIPCSystem::SystemHessian<T>::buildPreconditioner(zs::CudaExecutionPol
         exit(0);
     }
 
-    inversePm = inversePm.clone({memsrc_e::device, 0});
+    inversePm = inversePm.clone({memsrc_e::device});
 
     auto inversePmRef = inversePm;
     PmBak = Pm;

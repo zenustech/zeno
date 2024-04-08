@@ -55,7 +55,7 @@ float prim_reduce(typename ZenoParticles::particles_t &verts, float e, TransOp t
     auto offset = verts.getPropertyOffset(attrToReduce);
     const auto nwarps = count_warps(verts.size());
 
-    auto cudaPol = cuda_exec().device(0);
+    auto cudaPol = cuda_exec();
 
     Vector<float> res{verts.get_allocator(), nwarps};
     // cudaPol(res, [e] ZS_LAMBDA(auto &v) { v = e; });

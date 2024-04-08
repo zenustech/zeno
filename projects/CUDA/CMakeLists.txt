@@ -26,6 +26,10 @@ find_package(Eigen3 REQUIRED)
 set(WHEREAMI_BUILD_SHARED_LIBS ON)
 add_subdirectory(zpc)
 
+if (ZS_PYTHON_FOUND)
+  target_link_libraries(zeno PRIVATE zpc_jit_py)
+endif(ZS_PYTHON_FOUND)
+
 if (ZS_PYTHON_FOUND AND ZENO_WITH_PyZpc)
 
   if (DEFINED CMAKE_LIBRARY_OUTPUT_DIRECTORY)
@@ -39,6 +43,7 @@ if (ZS_PYTHON_FOUND AND ZENO_WITH_PyZpc)
   get_target_property(ZENO_BIN_DIR zeno RUNTIME_OUTPUT_DIRECTORY)
   add_custom_target(copy_py)
   add_dependencies(zeno copy_py)
+  add_dependencies(copy_py zpc_jit_py)
   # message(STATUS "retrieved python impl: ${Python3_INTERPRETER_ID}")
   message(STATUS "python3 libraries: ${ZS_OVERWRITE_PYTHON_LIBRARIES}")
   message(STATUS "python3 include directories: ${ZS_OVERWRITE_PYTHON_INCLUDE_DIR}")
@@ -172,7 +177,15 @@ target_sources(zeno PRIVATE
   utils/Tracing.cu
   utils/Noise.cu
   utils/Groom.cpp
+
+  graph/BasicTask.cpp
 )
+
+if (ZS_PYTHON_FOUND)
+target_sources(zeno PRIVATE
+  graph/Task.cpp
+)
+endif(ZS_PYTHON_FOUND)
 
 add_subdirectory(remesh)
 add_subdirectory(cluster)
