@@ -13,18 +13,21 @@
 ZenoWelcomePage::ZenoWelcomePage(QWidget* parent)
 	: QWidget(parent)
 {
-	m_ui = new Ui::WelcomePage;
-	m_ui->setupUi(this);
-    QPalette palette = this->palette();
-    palette.setColor(QPalette::Background, QColor("#2d3239"));
-    setPalette(palette);
+    m_ui = new Ui::WelcomePage;
+    m_ui->setupUi(this);
+
+    //setProperty("cssClass", "zenowelcomepage");
+
+    //QPalette palette = this->palette();
+    //palette.setColor(QPalette::Background, QColor("#1F1F1F"));
+    //setPalette(palette);
 
     QSize iconSize(ZenoStyle::dpiScaled(24), ZenoStyle::dpiScaled(24));
     m_ui->btnNew->setIconSize(iconSize);
     m_ui->btnOpen->setIconSize(iconSize);
     m_ui->btnNew->setIcon(QIcon(":/icons/file_newfile.svg"));
     m_ui->btnOpen->setIcon(QIcon(":/icons/file_openfile.svg"));
-	m_ui->btnNew->setProperty("cssClass", "welcomepage");
+    m_ui->btnNew->setProperty("cssClass", "welcomepage");
     m_ui->btnOpen->setProperty("cssClass", "welcomepage");
     m_ui->lblCurrVer->setProperty("cssClass", "welcomepage");
     m_ui->lblLink->setProperty("cssClass", "welcomepage");
@@ -213,6 +216,14 @@ void ZenoWelcomePage::initRecentFiles()
             });
         }
     }
+}
+
+void ZenoWelcomePage::paintEvent(QPaintEvent* event)
+{
+    QStyleOption opt;
+    opt.init(this);
+    QPainter p(this);
+    style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 }
 
 void ZenoWelcomePage::deleteItem(QLayout *layout) {

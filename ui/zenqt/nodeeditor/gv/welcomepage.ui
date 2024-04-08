@@ -60,7 +60,7 @@
         <number>0</number>
        </property>
        <item>
-        <widget class="QSvgWidget" name="lblLogoIcon">
+        <widget class="QSvgWidget" name="lblLogoIcon" native="true">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
            <horstretch>0</horstretch>
@@ -700,6 +700,11 @@
    <extends>QLabel</extends>
    <header>widgets/zlabel.h</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>QSvgWidget</class>
+   <extends>QWidget</extends>
+   <header>qsvgwidget.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

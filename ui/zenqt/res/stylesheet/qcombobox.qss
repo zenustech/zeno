@@ -3,7 +3,7 @@ QComboBox {
     padding: 3px 5px;
 	font-size: 9pt;
     color: #A3B1C0;
-    background: #191D21;
+    background: rgb(56,56,56);
 	font-weight: 400;
 }
 

@@ -10,8 +10,11 @@ class ZContentWidget : public QWidget
 	Q_OBJECT
 public:
     ZContentWidget(QWidget* parent = nullptr);
-	virtual QSize sizeHint() const override;
+    virtual QSize sizeHint() const override;
     virtual QSize minimumSizeHint() const override;
+
+protected:
+    void paintEvent(QPaintEvent* event) override;
 };
 
 class ZScrollArea : public QScrollArea

@@ -1,7 +1,11 @@
+QLineEdit {
+    background: rgb(56,56,56);
+}
+
 QLineEdit[cssClass="dark"] {
     border: 1px solid #252525;
     padding: 0 4px;
-    background: #252525;
+    background: rgb(56,56,56);
     selection-background-color: #4B9EF4;
 	font-size: 9pt;;
     font-weight: 500;
@@ -43,7 +47,7 @@ QLineEdit[cssClass="proppanel"]
 
 QLineEdit[cssClass="proppanel"]:focus
 {
-    border: 1px solid #4B9EF4;
+    /*border: 1px solid #4B9EF4;*/
     color: rgba(255,255,255,1.0);
 }
 
@@ -65,7 +69,7 @@ QLineEdit[cssClass="zenonode"]:focus
 
 QLineEdit[cssClass="FCurve-lineedit"] {
     border: 1px solid #252525;
-    background-color: rgb(23, 23, 26);
+    background-color: rgb(56,56,56);
     selection-background-color: #4B9EF4;
 	font-size: 9pt;;
     font-weight: 500;
@@ -78,16 +82,16 @@ QLineEdit[cssClass="FCurve-lineedit"]:focus {
 
 QLineEdit[cssClass="zeno2_2_lineedit"]{
     border: 0;
-    background-color: #191D21;
+    background-color: rgb(56,56,56);
     selection-background-color: #4B9EF4;
     color: #C3D2DF;
-	font-size: 9pt;;
-    font-weight: 500;
+	font-size: 9pt;
+    font-weight: 300;
 	padding: 3px 5px;
 }
 
 QLineEdit[cssClass="zeno2_2_lineedit"][setKey="null"] {
-    background-color: #191D21;
+    background-color: rgb(56,56,56);
 }
 
 QLineEdit[cssClass="zeno2_2_lineedit"][setKey="true"] {
@@ -99,7 +103,7 @@ QLineEdit[cssClass="zeno2_2_lineedit"][setKey="false"] {
 }
 
 QLineEdit[cssClass="zeno2_2_lineedit"]:focus {
-    border: 2px solid #4B9EF4;
+    /*border: 2px solid #4B9EF4;*/
     color: #FFFFFF;
 }
 
@@ -120,7 +124,7 @@ QLineEdit[cssClass="path_edit"]:disabled{
 
 QLineEdit[cssClass="path_edit"] {
     border: 0;
-    background-color: #191D21;
+    background-color: rgb(56,56,56);
     selection-background-color: #4B9EF4;
     color: #C3D2DF;
 	font-size: 9pt;;
@@ -134,12 +138,12 @@ QLineEdit[cssClass="path_edit"]:focus {
 }
 
 QTextEdit {
-    background-color: rgb(25, 29, 33);
+    background-color: rgb(56,56,56);
     color: #FFFFFF;
 }
 
 QTextEdit[cssClass="proppanel"] {
-    background-color: #191D21;
+    background-color: rgb(56,56,56);
     color: #FFFFFF;
 }
 
@@ -165,13 +169,13 @@ QTextEdit#m_notesText, QTextEdit#m_notesText:focus {
 QPlainTextEdit[cssClass="logpanel"]
 {
     color: #A3B1C0; 
-    background-color: rgb(24,29,33); 
+    background-color: rgb(37,37,37); 
     border: 1px solid rgb(18,20,22);
     font-family:'Arial';
     font-size: 13pt;
 }
 
-QLineEdit[cssClass = "blackboard_title"]
+QLineEdit[cssClass="blackboard_title"]
 {
 	background-color:rgba(24,29,33,0);
 	color:rgba(255,255,255,1.0);

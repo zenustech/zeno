@@ -5,7 +5,7 @@ QScrollArea[cssClass="proppanel"]
 
 QDialog
 {
-    background: rgb(45,50,57);
+    background: rgb(31,31,31);
 }
 
 QDialog .QPushButton
@@ -51,7 +51,7 @@ QDialog QLabel[cssClass = "bold"]
 
 QDialog QLineEdit{
     border: 0;
-    background-color: #191D21;
+    background-color: rgb(31,31,31);
     selection-background-color: #4B9EF4;
     color: #FFFFFF;
 	font-size: 9pt;
@@ -86,7 +86,7 @@ QDialog QSpinBox
 	font-weight: 400;
 	border: 0;
 	color: #FFFFFF;
-	background-color: #191D21;
+	background-color: rgb(31,31,31);
 }
 
 QDialog QSpinBox:focus{
@@ -109,7 +109,7 @@ QDialog QSpinBox:disabled {
 
 QDialog QTableWidget
 {
-	background-color: #191D21;
+	background-color: rgb(31,31,31);
 	color: #FFFFFF;
 	font-size: 9pt;
 	gridline-color:rgb(115,123,133);
@@ -117,7 +117,7 @@ QDialog QTableWidget
 
 QDialog QTableWidget::item
 {
-	background-color: #191D21;
+	background-color: rgb(31,31,31);
 }
 
 QDialog QTableWidget::item:selected
@@ -135,12 +135,12 @@ QTableWidget[cssClass="select_subgraph"]
 
 QTableWidget[cssClass="select_subgraph"] QHeaderView
 {
-	background-color: rgb(45,50,57);
+	background-color: rgb(31,31,31);
 }
 
 QTableWidget[cssClass="select_subgraph"] QHeaderView:section
 {
-	background-color: rgb(45,50,57);
+	background-color: rgb(31,31,31);
 	border:0;
 	border-bottom: 1px solid rgb(115,123,133);
 }
@@ -187,7 +187,7 @@ QTableWidget[cssClass="commandParams"] QHeaderView:section:horizontal:last
 
 QTableWidget[cssClass="commandParams"]::item
 {
-	background-color: #191D21;
+	background-color: rgb(31,31,31);
 	border: 0;
 	padding:0px 6px;
 }
@@ -209,12 +209,12 @@ QWidget[cssClass="ZTimeline"]
 
 QDialog[cssClass="F-Curve"]
 {
-    background: rgb(45,50,57);
+    background: rgb(31,31,31);
 }
 
 QDialog QTreeView, QDialog QListWidget
 {
-    alternate-background-color: #191D21;
+    alternate-background-color: rgb(31,31,31);
 	background-color: #22252C;
 	font-size: 9pt;
 	color: #A3B1C0;
@@ -226,7 +226,7 @@ QDialog QTreeView, QDialog QListWidget
 QTreeView, QListWidget
 {
     alternate-background-color: #191D21;
-	background-color: rgb(45,50,57);
+	background-color: rgb(31,31,31);
 	font-size: 9pt;
 	color: #A3B1C0;
 	font-weight: 400;
@@ -284,7 +284,6 @@ QTreeView::branch:hover:!selected
 
 QWidget[cssClass = "welcomepage_link"]
 {
-	border:1px solid #24282E;
     background: #24282E;
     border-radius: 8px;
 	border:1px solid #24282E;
@@ -296,6 +295,35 @@ QWidget {
     background-color: rgb(31,31,31);
 }
 --------------------------------------------------------------------------- */
+
+QWidget[cssClass="centralwidget"] {
+    background-color: rgb(31,31,31);
+}
+
+ZenoWelcomePage {
+    background-color: rgb(31,31,31);
+}
+
+QWidget[cssClass="docktoolbar"] {
+    background-color: rgb(31,31,31);
+}
+
+ZTimeline {
+    background-color: rgb(31,31,31);
+    border:1px solid rgb(61,61,61);
+}
+
+ZenoPropPanel {
+    background-color: rgb(31,31,31);
+}
+
+ZContentWidget {
+    background-color: rgb(31,31,31);
+}
+
+LayerPathWidget {
+    background-color: rgba(31,31,31, 0);
+}
 
 /*
 QSplitter {

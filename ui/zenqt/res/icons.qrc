@@ -1,6 +1,11 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource>
     <file>icons/node/box.svg</file>
+    <file>icons/adsdock/vsdark/close-button.svg</file>
+    <file>icons/adsdock/vsdark/close-button-disabled.svg</file>
+    <file>icons/adsdock/vsdark/detach-button.svg</file>
+    <file>icons/adsdock/vsdark/detach-button-disabled.svg</file>
+    <file>icons/adsdock/vsdark/tabs-menu-button.svg</file>
     <file>icons/add.svg</file>
     <file>icons/add-on.svg</file>
     <file>icons/addpanel.svg</file>

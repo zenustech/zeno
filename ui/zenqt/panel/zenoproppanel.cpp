@@ -55,11 +55,6 @@ ZenoPropPanel::ZenoPropPanel(QWidget* parent)
     pVLayout->setContentsMargins(QMargins(0, 0, 0, 0));
     setLayout(pVLayout);
     setFocusPolicy(Qt::ClickFocus);
-
-    QPalette palette = this->palette();
-    palette.setBrush(QPalette::Window, QColor("#2d3239"));
-    setPalette(palette);
-    setAutoFillBackground(true);
 }
 
 ZenoPropPanel::~ZenoPropPanel()
@@ -346,7 +341,7 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
     ZTextLabel* pLabel = new ZTextLabel(paramName);
 
     QFont font = QApplication::font();
-    font.setWeight(QFont::DemiBold);
+    font.setWeight(QFont::Light);
     pLabel->setFont(font);
     pLabel->setToolTip(paramItem->data(ROLE_PARAM_TOOLTIP).toString());
 
@@ -931,6 +926,14 @@ bool ZenoPropPanel::eventFilter(QObject *obj, QEvent *event)
         }
     }
     return QWidget::eventFilter(obj, event);
+}
+
+void ZenoPropPanel::paintEvent(QPaintEvent* event)
+{
+    QStyleOption opt;
+    opt.init(this);
+    QPainter p(this);
+    style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 }
 
 void ZenoPropPanel::setKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &keys) 

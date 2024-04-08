@@ -95,7 +95,7 @@ namespace zenoui
                 pTextEdit->setText(value.toString());
 
                 QPalette pal = pTextEdit->palette();
-                pal.setColor(QPalette::Base, QColor(25, 29, 33));
+                pal.setColor(QPalette::Base, QColor(61, 61, 61));
                 pTextEdit->setPalette(pal);
 
                 QObject::connect(pTextEdit, &ZTextEdit::editFinished, [=]() {
@@ -242,7 +242,7 @@ namespace zenoui
                         margin: -8px 0;\
                     }\
                     QSlider::add-page:horizontal {\
-                        background: #191D21;\
+                        background: rgb(61,61,61);\
                     }\
                     \
                     QSlider::sub-page:horizontal {\

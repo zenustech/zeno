@@ -82,17 +82,20 @@ class LayerPathWidget : public QWidget
 	Q_OBJECT
 public:
     LayerPathWidget(QWidget* parent = nullptr);
-	void setPath(const QStringList& path);
-	QStringList path() const;
+    void setPath(const QStringList& path);
+    QStringList path() const;
+
+protected:
+    void paintEvent(QPaintEvent* event) override;
 
 signals:
     void pathUpdated(QStringList);
 
 private slots:
-	void onPathItemClicked();
+    void onPathItemClicked();
 
 private:
-	QStringList m_path;
+    QStringList m_path;
 };
 
 class ZenoSubGraphView : public QWidget

@@ -183,7 +183,7 @@ namespace zeno {
 
     struct TimelineInfo {
         int beginFrame = 0;
-        int endFrame = 0;
+        int endFrame = 100;
         int currFrame = 0;
         bool bAlways = true;
         int timelinefps = 24;

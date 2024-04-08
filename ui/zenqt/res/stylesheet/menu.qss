@@ -47,7 +47,7 @@ QMenu[cssClass="menuButton"]::item {
 }
 
 QMenuBar {
-    background-color: #191D21;
+    background-color: rgb(31,31,31);
     spacing: 3px;
     color: #bbbec3;
     border-bottom: 1px solid black;

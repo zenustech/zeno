@@ -32,12 +32,14 @@ ZTimeline::ZTimeline(QWidget* parent)
     m_ui->comboBox->setProperty("cssClass", "newstyle");
  
     setFocusPolicy(Qt::ClickFocus);
-    //QPalette pal = palette();
-    //pal.setColor(QPalette::Window, QColor(42, 42, 42));
-    //setAutoFillBackground(true);
-    //setPalette(pal);
 
-    int deflFrom = 0, deflTo = 0;
+    int deflFrom = 0, deflTo = 100;
+
+    m_ui->editFrom->setProperty("cssClass", "FCurve-lineedit");
+    m_ui->editTo->setProperty("cssClass", "FCurve-lineedit");
+    m_ui->fpsEdit->setProperty("cssClass", "FCurve-lineedit");
+    m_ui->editFrame->setProperty("cssClass", "FCurve-lineedit");
+
     m_ui->editFrom->setText(QString::number(deflFrom));
     m_ui->editTo->setText(QString::number(deflTo));
     m_ui->timeliner->setFromTo(deflFrom, deflTo);
@@ -357,9 +359,8 @@ void ZTimeline::updateCachedFrame()
 
 void ZTimeline::paintEvent(QPaintEvent* event)
 {
-    QPainter painter(this);
-    QPen pen(QColor("#000000"), 1);
-    painter.setPen(pen);
-    painter.setBrush(QColor("#2d3239"));
-    painter.drawRect(rect().adjusted(0, 0, -1, -1));
+    QStyleOption opt;
+    opt.init(this);
+    QPainter p(this);
+    style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 }

@@ -15,12 +15,16 @@ public:
 	ZenoWelcomePage(QWidget* parent = nullptr);
 	void initRecentFiles();
 
+protected:
+    void paintEvent(QPaintEvent* event) override;
+
 signals:
 	void newRequest();
 	void openRequest();
 
- private:
+private:
     void deleteItem(QLayout *layout);
+
 private:
 	void initSignals();
 	Ui::WelcomePage* m_ui;

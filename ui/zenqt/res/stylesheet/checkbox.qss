@@ -1,5 +1,5 @@
 QCheckBox::indicator:unchecked:disabled{
-	background-color:#3C424E;
+	background-color: rgb(56,56,56);
 	image:url();
 }
 
@@ -12,6 +12,7 @@ QCheckBox::indicator
 	width:20px;
 	height:20px;
 }
+
 QCheckBox::indicator:unchecked
 {
 	image:url(:/icons/checkbox-idle.svg);

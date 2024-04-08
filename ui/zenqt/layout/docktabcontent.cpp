@@ -158,7 +158,8 @@ void DockToolbarWidget::initUI()
     pLayout->setSpacing(0);
     pLayout->setContentsMargins(0, 0, 0, 0);
 
-    QWidget *pToolbar = new QWidget;
+    QWidget* pToolbar = new QWidget;
+    pToolbar->setProperty("cssClass", "docktoolbar");
     pToolbar->setFixedHeight(ZenoStyle::dpiScaled(sToolbarHeight));
     pToolbar->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 

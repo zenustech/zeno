@@ -530,7 +530,7 @@ void _ZenoSubGraphView::drawGrid(QPainter* painter, const QRectF& rect)
         if (scale >= 0.1)
         {
             QPen pen;
-            pen.setColor(QColor("#1F2933"));
+            pen.setColor(QColor("#222222"));
             pen.setWidthF(pen.widthF() / scale);
             painter->setPen(pen);
             painter->drawLines(innerLines.data(), innerLines.size());
@@ -559,11 +559,14 @@ LayerPathWidget::LayerPathWidget(QWidget* parent)
     pLayout->setSpacing(10);
     pLayout->setContentsMargins(25, 5, 25, 5);
     setLayout(pLayout);
+}
 
-    setAutoFillBackground(true);
-    QPalette pal = palette();
-    pal.setColor(QPalette::Window, QColor(30, 30, 30));
-    setPalette(pal);
+void LayerPathWidget::paintEvent(QPaintEvent* event)
+{
+    QStyleOption opt;
+    opt.init(this);
+    QPainter p(this);
+    style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 }
 
 void LayerPathWidget::setPath(const QStringList& path)

@@ -113,6 +113,6 @@ QTabBar[cssClass = "graphicsediter"]::tab:!selected {
 }
 
 QTabBar[cssClass = "graphicsediter"]::tab:selected {
-    background: #191D21;
+    background: rgb(61,61,61);
     color: #C3D2DF;
 }

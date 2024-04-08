@@ -12,10 +12,15 @@ QLabel[cssClass="proppanel-nodename"]
 	color: rgba(255, 255, 255, 0.5);
 }
 
+QWidget[cssClass="proppanel-section-header"]
+{
+    background-color: rgb(56,56,56)
+}
+
 QLabel[cssClass="proppanel-sectionname"]
 {
-	font-weight: 500;
-	color: rgba(187, 206, 220, 1.0);
+	font-weight: 300;
+	color: #AAAAAA;
 }
 
 QLabel[cssClass="proppanel-itemname"]

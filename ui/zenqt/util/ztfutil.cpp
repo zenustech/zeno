@@ -488,7 +488,7 @@ NodeUtilParam ZtfUtil::toUtilParam(const NodeParam& nodeParam)
     font.setPointSize(10);
     param.lineEditParam.font = font;
     QPalette palette;
-    palette.setColor(QPalette::Base, QColor(25, 29, 33));
+    palette.setColor(QPalette::Base, QColor(61,61,61));
     //palette.setColor(QPalette::Active, QPalette::WindowText, QColor(228, 228, 228));
     //palette.setColor(QPalette::Inactive, QPalette::WindowText, QColor(158, 158, 158));
     clr = QColor(255, 255, 255);
@@ -504,8 +504,8 @@ NodeUtilParam ZtfUtil::toUtilParam(const NodeParam& nodeParam)
     param.comboboxParam.itemBgHovered = QColor(23, 160, 252);
     param.comboboxParam.itemBgSelected = QColor(23, 160, 252);
     param.comboboxParam.margins = QMargins(ZenoStyle::dpiScaled(8), 0, 0, 0);
-    palette.setColor(QPalette::Base, QColor(25, 29, 33));
-    palette.setColor(QPalette::Window, QColor(25, 29, 33));
+    palette.setColor(QPalette::Base, QColor(61,61,61));
+    palette.setColor(QPalette::Window, QColor(61,61,61));
     palette.setColor(QPalette::Text, Qt::white);
     palette.setColor(QPalette::Active, QPalette::WindowText, QColor());
     palette.setColor(QPalette::Inactive, QPalette::WindowText, QColor());

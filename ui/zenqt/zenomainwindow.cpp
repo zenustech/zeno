@@ -99,15 +99,6 @@ void ZenoMainWindow::init(PANEL_TYPE onlyView)
     initDocks(onlyView);
     initWindowProperty();
 
-    addToolBar(Qt::LeftToolBarArea, new FakeToolbar(false));
-    addToolBar(Qt::RightToolBarArea, new FakeToolbar(false));
-    addToolBar(Qt::BottomToolBarArea, new FakeToolbar(true));
-    addToolBar(Qt::TopToolBarArea, new FakeToolbar(true));
-
-    QPalette pal = palette();
-    pal.setColor(QPalette::Window, QColor(11, 11, 11));
-    setAutoFillBackground(true);
-    setPalette(pal);
     setAcceptDrops(true);
 
     m_ui->statusbar->showMessage(tr("Status Bar"));
@@ -726,10 +717,11 @@ void ZenoMainWindow::initAllDockWidgets()
 void ZenoMainWindow::initDocks(PANEL_TYPE onlyView)
 {
     QWidget* pCentral = new QWidget;
+    pCentral->setProperty("cssClass", "centralwidget");
 
     QVBoxLayout* pVLayout = new QVBoxLayout;
-    pVLayout->setContentsMargins(0, 0, 0, 0);
-    pVLayout->setMargin(0);
+    pVLayout->setContentsMargins(5, 5, 5, 5);
+    pVLayout->setSpacing(0);
 
     QWidget* docks = new QWidget;
     docks->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding));
@@ -748,10 +740,13 @@ void ZenoMainWindow::initDocks(PANEL_TYPE onlyView)
     pWidLayout->setMargin(0);
     docks->setLayout(pWidLayout);
 
+    QVBoxLayout* paddingLayout = new QVBoxLayout;
+    paddingLayout->setContentsMargins(2, 2, 2, 2);
     m_pTimeline = new ZTimeline;
+    paddingLayout->addWidget(m_pTimeline);
 
     pVLayout->addWidget(docks);
-    pVLayout->addWidget(m_pTimeline);
+    pVLayout->addLayout(paddingLayout);
     pCentral->setLayout(pVLayout);
 
     setCentralWidget(pCentral);

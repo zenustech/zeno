@@ -21,6 +21,14 @@ QSize ZContentWidget::minimumSizeHint() const
     return sz;
 }
 
+void ZContentWidget::paintEvent(QPaintEvent* event)
+{
+    QStyleOption opt;
+    opt.init(this);
+    QPainter p(this);
+    style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
+}
+
 
 ZScrollArea::ZScrollArea(QWidget* parent)
     : QScrollArea(parent)
@@ -106,11 +114,7 @@ void ZExpandableSection::setContentLayout(QLayout* contentLayout)
 {
     ZContentWidget* contentWidget = new ZContentWidget;
     contentWidget->setLayout(contentLayout);
-    contentWidget->setAutoFillBackground(true);
     contentWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    QPalette pal = this->palette();
-    pal.setColor(QPalette::Window, QColor("#2d3239"));
-    contentWidget->setPalette(pal);
 
     m_contentArea->setWidget(contentWidget);
     update();
@@ -125,6 +129,7 @@ void ZExpandableSection::updateGeo()
 QWidget* ZExpandableSection::initTitleWidget(const QString& title)
 {
 	QWidget* pWidget = new QWidget;
+    pWidget->setProperty("cssClass", "proppanel-section-header");
 
 	QVBoxLayout* pLayout = new QVBoxLayout;
 
@@ -149,10 +154,6 @@ QWidget* ZExpandableSection::initTitleWidget(const QString& title)
 
 	pWidget->setLayout(pLayout);
 
-	pWidget->setAutoFillBackground(true);
-	QPalette pal = this->palette();
-	pal.setColor(QPalette::Window, QColor(60, 66, 78));
-	pWidget->setPalette(pal);
 	pWidget->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 
 	connect(m_collaspBtn, &ZIconLabel::toggled, this, &ZExpandableSection::toggle);

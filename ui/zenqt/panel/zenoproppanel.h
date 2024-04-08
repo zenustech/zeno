@@ -40,8 +40,9 @@ public slots:
     void onViewParamsMoved(const QModelIndex &parent, int start, int end, const QModelIndex &destination, int destRow);
     void onSettings();
 
-  protected:
+protected:
     bool eventFilter(QObject *obj, QEvent *event);
+    void paintEvent(QPaintEvent* event) override;
 
 private:
     void clearLayout();
