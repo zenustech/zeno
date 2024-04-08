@@ -490,9 +490,14 @@ struct XPBDSolveSmooth : INode {
                                 continue;
 
                             if(isnan(imps[i].norm())) {
-                                printf("nan imps detected : %f %f %f %f %f %f %f\n",
+                                printf("nan imps detected : %f %f %f %f %f %f %f\nvs : %d %d %d %d\n%f\t%f\t%f\n%f\t%f\t%f\n%f\t%f\t%f\n%f\t%f\t%f\n",
                                     (float)imps[i][0],(float)imps[i][1],(float)imps[i][2],
-                                    (float)bary[0],(float)bary[1],(float)bary[2],(float)bary[3]);
+                                    (float)bary[0],(float)bary[1],(float)bary[2],(float)bary[3],
+                                    inds[0],inds[1],inds[2],inds[3],
+                                    (float)ps[0][0],(float)ps[0][1],(float)ps[0][2],
+                                    (float)ps[1][0],(float)ps[1][1],(float)ps[1][2],
+                                    (float)ps[2][0],(float)ps[2][1],(float)ps[2][2],
+                                    (float)ps[3][0],(float)ps[3][1],(float)ps[3][2]);
                                 return;
                             }
                             atomic_add(exec_tag,&dp_count[inds[i]],(int)1);
