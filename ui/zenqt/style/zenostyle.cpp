@@ -93,6 +93,7 @@ QSize ZenoStyle::sizeFromContents(ContentsType type, const QStyleOption* option,
 
 void ZenoStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption* option, QPainter* painter, const QWidget* w) const
 {
+#if 0
     switch (pe) {
         case PE_ComboBoxLineEdit: {
             if (const QStyleOptionFrame *editOption = qstyleoption_cast<const QStyleOptionFrame *>(option))
@@ -149,6 +150,7 @@ void ZenoStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption* option, Q
             return;
         }
     }
+#endif
     return base::drawPrimitive(pe, option, painter, w);
 }
 
@@ -160,6 +162,7 @@ void ZenoStyle::drawItemText(QPainter* painter, const QRect& rect, int flags, co
 
 void ZenoStyle::drawControl(ControlElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const
 {
+#if 0
     if (CE_ZenoComboBoxLabel == element)
     {
         if (const ZStyleOptionComboBox *cb = qstyleoption_cast<const ZStyleOptionComboBox*>(option))
@@ -187,6 +190,7 @@ void ZenoStyle::drawControl(ControlElement element, const QStyleOption* option, 
     {
 		return base::drawControl(element, option, painter, widget);
     }
+#endif
     return base::drawControl(element, option, painter, widget);
 }
 
@@ -293,6 +297,7 @@ QRect ZenoStyle::rect_ZToolButtonArrow(const QStyleOptionComplex* option, const 
 
 QRect ZenoStyle::subControlRect(ComplexControl cc, const QStyleOptionComplex* option, SubControl sc, const QWidget* widget) const
 {
+#if 0
     if (cc == CC_ComboBox && sc == SC_ComboBoxEditField)
     {
         ZComboBox* pCombobox = qobject_cast<ZComboBox*>(const_cast<QWidget*>(widget));
@@ -315,6 +320,7 @@ QRect ZenoStyle::subControlRect(ComplexControl cc, const QStyleOptionComplex* op
             return rc;
         }
     }
+#endif
     return base::subControlRect(cc, option, sc, widget);
 }
 

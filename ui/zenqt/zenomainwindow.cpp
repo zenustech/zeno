@@ -57,6 +57,7 @@
 #include "DockAreaWidget.h"
 #include "DockWidget.h"
 #include "DockContainerWidget.h"
+#include "DockManager.h"
 
 
 const QString g_latest_layout = "LatestLayout";
@@ -485,6 +486,13 @@ void ZenoMainWindow::initDocksWidget(ads::CDockAreaWidget* cakeArea, ads::CDockW
     }
     else if (root->type == NT_ELEM)
     {
+        //cakeArea->setLineWidth(1);
+        //cakeArea->setFrameShape(QFrame::Box);
+
+        //QPalette pal;
+        //pal.setColor(QPalette::WindowText, QColor("#3D3D3D"));
+        //cakeArea->setPalette(pal);
+
         int dockContentViewIndex = 0;
         root->pWidget = pLeft;
         for (int i = 0; i < root->tabs.length(); i++)//QString tab : root->tabs)
@@ -500,6 +508,9 @@ void ZenoMainWindow::initDocksWidget(ads::CDockAreaWidget* cakeArea, ads::CDockW
             else
                 pDockElem = new ads::CDockWidget(tab);
 
+            //pDockElem->setLineWidth(0);
+            //pDockElem->setFrameShape(QFrame::NoFrame);
+
             PANEL_TYPE type = ZDockWidget::title2Type(tab);
             switch (type)
             {
@@ -507,41 +518,41 @@ void ZenoMainWindow::initDocksWidget(ads::CDockAreaWidget* cakeArea, ads::CDockW
             {
                 auto pView = new DockContent_View(true);
                 pView->initUI();
-                pDockElem->setWidget(pView);
+                pDockElem->setWidget(pView, ads::CDockWidget::ForceNoScrollArea);
                 break;
             }
             case PANEL_EDITOR:
             {
                 auto pEditor = new DockContent_Editor;
                 pEditor->initUI();
-                pDockElem->setWidget(pEditor);
+                pDockElem->setWidget(pEditor, ads::CDockWidget::ForceNoScrollArea);
                 break;
             }
             case PANEL_NODE_PARAMS:
             {
                 auto pParams = new DockContent_Parameter;
                 pParams->initUI();
-                pDockElem->setWidget(pParams);
+                pDockElem->setWidget(pParams, ads::CDockWidget::ForceNoScrollArea);
                 break;
             }
             case PANEL_NODE_DATA:
             {
                 auto pObjectData = new ZenoSpreadsheet;
-                pDockElem->setWidget(pObjectData);
+                pDockElem->setWidget(pObjectData, ads::CDockWidget::ForceNoScrollArea);
                 break;
             }
             case PANEL_LOG:
             {
                 auto pLog = new DockContent_Log;
                 pLog->initUI();
-                pDockElem->setWidget(pLog);
+                pDockElem->setWidget(pLog, ads::CDockWidget::ForceNoScrollArea);
                 break;
             }
             case PANEL_IMAGE:
             {
                 auto pImage = new DockContent_Image;
                 pImage->initUI();
-                pDockElem->setWidget(pImage);
+                pDockElem->setWidget(pImage, ads::CDockWidget::ForceNoScrollArea);
                 break;
             }
             case PANEL_OPTIX_VIEW:
@@ -556,7 +567,6 @@ void ZenoMainWindow::initDocksWidget(ads::CDockAreaWidget* cakeArea, ads::CDockW
             {
                 break;
             }
-
             }
 
             if (i > 0)
@@ -730,7 +740,8 @@ void ZenoMainWindow::initDocks(PANEL_TYPE onlyView)
     QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
     //m_pDockManager->loadPerspectives(settings);
 
-    m_pDockManager->setStyleSheet("");
+    const QString& cssDocks = zenoApp->readQss(":/stylesheet/visual_studio_dark.css");
+    m_pDockManager->setStyleSheet(cssDocks);
 
     pWidLayout->addWidget(m_pDockManager);
     pWidLayout->setContentsMargins(0, 0, 0, 0);

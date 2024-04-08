@@ -8,7 +8,6 @@
 #include "layout/winlayoutrw.h"
 #include <QTcpSocket>
 #include <QLocalSocket>
-#include "DockManager.h"
 
 
 class ZenoDockWidget;
@@ -18,6 +17,13 @@ class LiveTcpServer;
 class LiveHttpServer;
 class LiveSignalsBridge;
 class ViewportWidget;
+
+namespace ads
+{
+    class CDockManager;
+    class CDockAreaWidget;
+    class CDockWidget;
+}
 
 namespace Ui
 {
@@ -135,8 +141,8 @@ public:
         ACTION_GROUP,
         ACTION_SHOWTHUMB,
         ACTION_REARRANGE_GRAPH,
-
     };
+
 signals:
     void recentFilesChanged(const QObject *sender);
     void visObjectsUpdated(ViewportWidget* viewport, int frameid);

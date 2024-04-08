@@ -6,11 +6,15 @@
 #include <util/jsonhelper.h>
 #include "layout/docktabcontent.h"
 #include <zeno/io/zsg2reader.h>
-#include "DockWidget.h"
 
 
 struct LayerOutNode;
 typedef std::shared_ptr<LayerOutNode> PtrLayoutNode;
+
+namespace ads
+{
+    class CDockWidget;
+}
 
 enum LayoutNodeType
 {

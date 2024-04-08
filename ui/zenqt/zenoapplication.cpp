@@ -113,12 +113,12 @@ void ZenoApplication::initStyleSheets()
     qss += readQss(":/stylesheet/qlineedit.qss");
     qss += readQss(":/stylesheet/menu.qss");
     qss += readQss(":/stylesheet/qcombobox.qss");
-    qss += readQss(":/stylesheet/qwidget.qss");
     qss += readQss(":/stylesheet/pushbutton.qss");
     qss += readQss(":/stylesheet/scrollbar.qss");
     qss += readQss(":/stylesheet/spinbox.qss");
     qss += readQss(":/stylesheet/mainwindow.qss");
     qss += readQss(":/stylesheet/checkbox.qss");
+    qss += readQss(":/stylesheet/qwidget.qss");
     qss += readQss(":/stylesheet/tabwidget.qss");
     setStyleSheet(qss);
 #endif

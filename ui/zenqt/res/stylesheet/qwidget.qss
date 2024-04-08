@@ -290,3 +290,53 @@ QWidget[cssClass = "welcomepage_link"]
 	border:1px solid #24282E;
 	padding-left: 20px;
 }
+
+/* QWidget ----------------------------------------------------------------
+QWidget {
+    background-color: rgb(31,31,31);
+}
+--------------------------------------------------------------------------- */
+
+/*
+QSplitter {
+    background-color: #455364;
+    spacing: 0px;
+    padding: 0px;
+    margin: 0px;
+}
+
+QSplitter::handle {
+    width: 3px;
+    background-color: rgb(255,0,0);
+    border: 0px solid #19232D;
+    spacing: 0px;
+    padding: 0px;
+    margin: 0px;
+}
+
+QSplitter::handle:horizontal {
+    background-color: rgb(31,31,31);
+    width: 3px;
+}
+
+QSplitter::handle:horizontal:hover {
+    background-color: rgb(0,120,212);
+    width: 3px;
+}
+
+QSplitter::handle:vertical {
+    background-color: rgb(31,31,31);
+    height: 3px;
+}
+
+QSplitter::handle:vertical:hover {
+    background-color: rgb(0,120,212);
+    height: 3px;
+}
+
+
+.QFrame {
+  border-radius: 0px;
+  border: 1px solid #00FF00;
+}
+*/

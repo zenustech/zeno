@@ -12,5 +12,8 @@
         <file>stylesheet/mainwindow.qss</file>
         <file>stylesheet/checkbox.qss</file>
         <file>stylesheet/tabwidget.qss</file>
+        <file>stylesheet/default.css</file>
+        <file>stylesheet/visual_studio_light.css</file>
+        <file>stylesheet/visual_studio_dark.css</file>
     </qresource>
 </RCC>

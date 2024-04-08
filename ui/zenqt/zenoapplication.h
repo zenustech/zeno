@@ -26,12 +26,12 @@ public:
     std::shared_ptr<ProcessClipboard> procClipboard() const;
     QStandardItemModel* logModel() const;
     bool isUIApplication() const { return m_bUIApp; }
+    QString readQss(const QString& qssPath);
 
 private slots:
     void onThreadLogReady(const QString& msg);
 
 private:
-    QString readQss(const QString& qssPath);
     void initMetaTypes();
 
     std::shared_ptr<ZWidgetErrStream> m_spUILogStream;
