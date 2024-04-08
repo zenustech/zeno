@@ -16,7 +16,7 @@
 using Json = nlohmann::json;
 
 namespace zeno {
-struct JsonObject : IObject {
+struct JsonObject : IObjectClone<JsonObject> {
     Json json;
 };
 struct ReadJson : zeno::INode {
@@ -41,25 +41,209 @@ ZENDEFNODE(ReadJson, {
         "json"
     },
 });
-//P:/jielidou/EP028/HDRI/Light/ok_light.json
-struct PrintJson : zeno::INode {
+
+struct WriteJson : zeno::INode {
+    virtual void apply() override {
+        auto _json = get_input2<JsonObject>("json");
+        auto path = get_input2<std::string>("path");
+        file_put_content(path, _json->json.dump());
+    }
+};
+ZENDEFNODE(WriteJson, {
+    {
+        "json",
+        {"writepath", "path"},
+    },
+    {
+    },
+    {},
+    {
+        "json"
+    },
+});
+static Json iobject_to_json(std::shared_ptr<IObject> iObject) {
+    Json json;
+    if (objectIsLiterial<int>(iObject)) {
+        json = objectToLiterial<int>(iObject);
+    }
+    else if (objectIsLiterial<vec2i>(iObject)) {
+        auto value = objectToLiterial<vec2i>(iObject);
+        json = { value[0], value[1]};
+    }
+    else if (objectIsLiterial<vec3i>(iObject)) {
+        auto value = objectToLiterial<vec3i>(iObject);
+        json = { value[0], value[1], value[2]};
+    }
+    else if (objectIsLiterial<vec4i>(iObject)) {
+        auto value = objectToLiterial<vec4i>(iObject);
+        json = { value[0], value[1], value[2], value[3]};
+    }
+    else if (objectIsLiterial<float>(iObject)) {
+        json = objectToLiterial<float>(iObject);
+    }
+    else if (objectIsLiterial<vec2f>(iObject)) {
+        auto value = objectToLiterial<vec2f>(iObject);
+        json = { value[0], value[1]};
+    }
+    else if (objectIsLiterial<vec3f>(iObject)) {
+        auto value = objectToLiterial<vec3f>(iObject);
+        json = { value[0], value[1], value[2]};
+    }
+    else if (objectIsLiterial<vec4f>(iObject)) {
+        auto value = objectToLiterial<vec4f>(iObject);
+        json = { value[0], value[1], value[2], value[3]};
+    }
+    else if (objectIsLiterial<std::string>(iObject)) {
+        json = objectToLiterial<std::string>(iObject);
+    }
+    else if (auto list = std::dynamic_pointer_cast<ListObject>(iObject)) {
+        for (auto iObj: list->arr) {
+            json.push_back(iobject_to_json(iObj));
+        }
+    }
+    else if (auto dict = std::dynamic_pointer_cast<DictObject>(iObject)) {
+        for (auto [key, iObj]: dict->lut) {
+            json[key] = iobject_to_json(iObj);
+        }
+    }
+    else if (auto sub_json = std::dynamic_pointer_cast<JsonObject>(iObject)) {
+        json = sub_json->json;
+    }
+    return std::move(json);
+}
+struct FormJson : zeno::INode {
   virtual void apply() override {
-    auto out_json = std::make_shared<JsonObject>();
-    auto json = get_input<JsonObject>("json");
-    std::cerr << "print json: " << to_string(json->json) << std::endl;
+      auto _json = std::make_shared<JsonObject>();
+      auto iObject = get_input("iObject");
+      _json->json = iobject_to_json(iObject);
+      set_output2("json", _json);
   }
 };
-ZENDEFNODE(PrintJson, {
+ZENDEFNODE(FormJson, {
      {
-         "json",
+         "iObject",
      },
      {
+         "json",
      },
      {},
      {
          "json"
      },
  });
+
+struct JsonToString : zeno::INode {
+  virtual void apply() override {
+    auto json = get_input<JsonObject>("json");
+    set_output2("out", json->json.dump());
+  }
+};
+ZENDEFNODE(JsonToString, {
+     {
+         "json",
+     },
+     {
+         "out"
+     },
+     {},
+     {
+         "json"
+     },
+ });
+struct JsonSetDataSimple : zeno::INode {
+    virtual void apply() override {
+        auto in_json = std::make_shared<JsonObject>();
+        if (has_input<JsonObject>("json")) {
+            in_json = get_input<JsonObject>("json");
+        }
+
+        auto path = get_input2<std::string>("path");
+        auto names = split_str(path, '/');
+        Json *tmp_json = &in_json->json;
+        for (auto & name : names) {
+            if (tmp_json->is_array()) {
+                tmp_json = &tmp_json->operator[](std::stoi(name));
+            }
+            else {
+                tmp_json = &tmp_json->operator[](name);
+            }
+        }
+        auto value = get_input("value");
+        *tmp_json = iobject_to_json(value);
+
+        set_output2("json", in_json);
+    }
+};
+
+ZENDEFNODE(JsonSetDataSimple, {
+    {
+        {"json"},
+        {"string", "path"},
+        "value",
+    },
+    {
+        {"json"},
+    },
+    {},
+    {
+        "json"
+    },
+});
+
+
+struct JsonSetData : zeno::INode {
+    virtual void apply() override {
+        auto in_json = std::make_shared<JsonObject>();
+        if (has_input<JsonObject>("json")) {
+            in_json = get_input<JsonObject>("json");
+        }
+        auto multi_path = get_input2<std::string>("paths");
+        std::istringstream iss(multi_path);
+        std::vector<std::string> paths;
+        std::string line;
+        while (std::getline(iss, line)) {
+            line = zeno::trim_string(line);
+            if (line.size()) {
+                paths.push_back(line);
+            }
+        }
+        auto dict = get_input<DictObject>("dict");
+        for (auto &path: paths) {
+            auto strings = zeno::split_str(path, ':');
+            auto names = split_str(strings[0], '/');
+
+            Json *tmp_json = &in_json->json;
+            for (auto & name : names) {
+                if (tmp_json->is_array()) {
+                    tmp_json = &tmp_json->operator[](std::stoi(name));
+                }
+                else {
+                    tmp_json = &tmp_json->operator[](name);
+                }
+            }
+            std::string new_name = zeno::trim_string(strings[1]);
+            *tmp_json = iobject_to_json(dict->lut[new_name]);
+        }
+
+        set_output2("json", in_json);
+    }
+};
+
+ZENDEFNODE(JsonSetData, {
+    {
+        {"json"},
+        {"string", "path"},
+        {"dict", "dict"},
+    },
+    {
+        {"json"},
+    },
+    {},
+    {
+        "json"
+    },
+});
+
 struct ReadJsonFromString : zeno::INode {
     virtual void apply() override {
         auto json = std::make_shared<JsonObject>();
