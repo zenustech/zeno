@@ -8,7 +8,7 @@ namespace zeno {
         };
 
         ZENDEFNODE(PythonNode, {
-            {{"string", "script"},{"list", "args"}},
+            {{"string", "script", "", ParamSocket, Multiline},{"list", "args"}},
             {},
             {},
             {"command"},
@@ -42,7 +42,7 @@ namespace zeno {
                 {"string", "keyWords"},
                 {"string", "materialPath", "", zeno::ParamSocket, zeno::ReadPathEdit},
                 {"string", "matchInputs"}, 
-                {"string", "script"}
+                {"string", "script", "", ParamSocket, Multiline}
             },
             {},
             {},
