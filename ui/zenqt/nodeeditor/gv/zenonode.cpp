@@ -204,7 +204,7 @@ ZGraphicsLayout* ZenoNode::initVerticalSockets(bool bInput)
 
         QSizeF szSocket(14, 14);
         ZenoSocketItem* socket = new ZenoSocketItem(paramIdx, ZenoStyle::dpiScaledSize(szSocket));
-        socket->setBrush(QColor("#CECCCC"), QColor("#CECCCC"));
+        socket->setBrush(QColor("#C4C2C2"), QColor("#FFFFFF"));
         pSocketLayout->addItem(socket);
         pSocketLayout->addSpacing(-1);
 
@@ -527,6 +527,8 @@ QVector<ZSocketLayout*> ZenoNode::getSocketLayouts(bool bInput) const
 {
     QVector<ZSocketLayout*> layouts;
     if (bInput) {
+        if (!m_inputsLayout)
+            return layouts;
         for (int i = 0; i < m_inputsLayout->count(); i++) {
             ZGvLayoutItem* pItem = m_inputsLayout->itemAt(i);
             if (pItem->type == Type_Layout) {
@@ -539,6 +541,8 @@ QVector<ZSocketLayout*> ZenoNode::getSocketLayouts(bool bInput) const
         }
     }
     else {
+        if (!m_outputsLayout)
+            return layouts;
         for (int i = 0; i < m_outputsLayout->count(); i++) {
             ZGvLayoutItem* pItem = m_outputsLayout->itemAt(i);
             if (pItem->type == Type_Layout) {
@@ -1042,18 +1046,34 @@ QGraphicsItem* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const QModel
 
 void ZenoNode::onSocketLinkChanged(const QModelIndex& paramIdx, bool bInput, bool bAdded, const QString keyName)
 {
-    ZenoSocketItem* pSocket = getSocketItem(paramIdx, keyName);
+    ZenoSocketItem* pSocket = nullptr;
+    for (ZSocketLayout* socklayout : getSocketLayouts(bInput))
+    {
+        if (ZenoSocketItem* pItem = socklayout->socketItemByIdx(paramIdx, keyName))
+        {
+            pSocket = pItem;
+            break;
+        }
+    }
+    //ZenoSocketItem* pSocket = getSocketItem(paramIdx, keyName);
     if (pSocket == nullptr)
         return;
 
     QModelIndex idx = pSocket->paramIndex();
     // the removal of links from socket is executed before the removal of link itself.
     PARAM_LINKS links = idx.data(ROLE_LINKS).value<PARAM_LINKS>();
+    ZenoSocketItem::SOCK_STATUS status = ZenoSocketItem::STATUS_UNKNOWN;
     if (bAdded) {
-        pSocket->setSockStatus(ZenoSocketItem::STATUS_CONNECTED);
+        status = ZenoSocketItem::STATUS_CONNECTED;
     } else {
         if (links.isEmpty())
-            pSocket->setSockStatus(ZenoSocketItem::STATUS_NOCONN);
+            status = ZenoSocketItem::STATUS_NOCONN;
+    }
+    if (status != ZenoSocketItem::STATUS_UNKNOWN)
+    {
+        pSocket->setSockStatus(status);
+        if (auto pItem = getTopBottomSocketItem(paramIdx, bInput))
+            pItem->setSockStatus(status);
     }
 
     if (bInput)
@@ -1119,40 +1139,40 @@ QVector<ZenoSocketItem*> ZenoNode::getSocketItems(bool bInput) const
     return sockets;
 }
 
+ZenoSocketItem* ZenoNode::getTopBottomSocketItem(const QModelIndex& sockIdx, bool bInput)
+{
+    ZGraphicsLayout* socketsLayout = bInput ? m_topInputSockets : m_bottomOutputSockets;
+    for (int i = 0; i < socketsLayout->count(); i++)
+    {
+        ZGvLayoutItem* layoutitem = socketsLayout->itemAt(i);
+        if (layoutitem->type == Type_Item)
+        {
+            if (ZenoSocketItem* pSocket = qgraphicsitem_cast<ZenoSocketItem*>(layoutitem->pItem))
+            {
+                if (pSocket->paramIndex() == sockIdx)
+                    return pSocket;
+            }
+        }
+    }
+    return nullptr;
+}
+
 ZenoSocketItem* ZenoNode::getSocketItem(const QModelIndex& sockIdx, const QString keyName)
 {
     bool bCollasped = m_index.data(ROLE_COLLASPED).toBool();
     const bool bInput = sockIdx.data(ROLE_ISINPUT).toBool();
     if (bCollasped)
     {
-        ZGraphicsLayout* socketsLayout = bInput ? m_topInputSockets : m_bottomOutputSockets;
-        for (int i = 0; i < socketsLayout->count(); i++)
-        {
-            ZGvLayoutItem* layoutitem = socketsLayout->itemAt(i);
-            if (layoutitem->type == Type_Item)
-            {
-                if (ZenoSocketItem* pSocket = qgraphicsitem_cast<ZenoSocketItem*>(layoutitem->pItem))
-                {
-                    if (pSocket->paramIndex() == sockIdx)
-                        return pSocket;
-                }
-            }
-        }
-        return nullptr;
+        return getTopBottomSocketItem(sockIdx, bInput);
     }
     else
     {
-        for (ZSocketLayout* socklayout : getSocketLayouts(true))
+        for (ZSocketLayout* socklayout : getSocketLayouts(bInput))
         {
             if (ZenoSocketItem* pItem = socklayout->socketItemByIdx(sockIdx, keyName))
             {
                 return pItem;
             }
-        }
-        for (ZSocketLayout* socklayout : getSocketLayouts(false))
-        {
-            if (ZenoSocketItem* pItem = socklayout->socketItemByIdx(sockIdx, keyName))
-                return pItem;
         }
         return nullptr;
     }
@@ -1290,8 +1310,11 @@ void ZenoNode::onUpdateParamsNotDesc()
 
 void ZenoNode::onMarkDataChanged(bool bDirty)
 {
-    m_statusMarker->setVisible(bDirty);
-    update();
+    if (m_statusMarker)
+    {
+        m_statusMarker->setVisible(bDirty);
+        update();
+    }
 }
 
 void ZenoNode::setMoving(bool isMoving)
@@ -1344,7 +1367,7 @@ void ZenoNode::onZoomed()
     }
     else if (m_NameItemTip == nullptr) 
     {
-        const QString& nodeCls = m_index.data(ROLE_CLASS_NAME).toString();
+        const QString& nodeCls = m_index.data(ROLE_NODE_NAME).toString();
         m_NameItemTip = new ZSimpleTextItem(nodeCls, this);
         m_NameItemTip->setBrush(QColor("#FFFFFF"));
         m_NameItemTip->setFlag(QGraphicsItem::ItemIgnoresTransformations);
@@ -1752,7 +1775,8 @@ void ZenoNode::onCollaspeUpdated(bool collasped)
     m_mainHeaderBg->setVisible(collasped);
     m_headerWidget->setVisible(!collasped);
     m_bodyWidget->setVisible(!collasped);
-    m_statusMarker->setVisible(!collasped);
+    if (m_statusMarker)
+        m_statusMarker->setVisible(!collasped);
     if (collasped) {
         m_topInputSockets->show();
         m_bottomOutputSockets->show();

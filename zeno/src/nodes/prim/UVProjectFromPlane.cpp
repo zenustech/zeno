@@ -446,7 +446,7 @@ struct ReadImageFile : INode {//todo: select custom color space
 };
 ZENDEFNODE(ReadImageFile, {
     {
-        {"readpath", "path"},
+        {"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
         {"bool", "Linearize Non-linear Images", "1"},
     },
     {
@@ -522,7 +522,7 @@ struct ReadImageFile_v2 : INode {
 };
 ZENDEFNODE(ReadImageFile_v2, {
     {
-        {"readpath", "path"},
+        {"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
         {"bool", "srgb_to_linear", "0"},
     },
     {
@@ -680,7 +680,7 @@ struct WriteImageFile : INode {
 ZENDEFNODE(WriteImageFile, {
     {
         {"", "image", "", PrimarySocket},
-        {"writepath", "path"},
+        {"string", "path", "", zeno::ParamSocket, zeno::WritePathEdit},
         {"enum png jpg exr pfm", "type", "png"},
         {"mask"},
         {"bool", "gamma", "1"},
@@ -770,7 +770,7 @@ struct WriteImageFile_v2 : INode {
 ZENDEFNODE(WriteImageFile_v2, {
     {
         {"", "image", "", PrimarySocket},
-        {"writepath", "path"},
+        {"string", "path", "", zeno::ParamSocket, zeno::WritePathEdit},
         {"enum png jpg exr pfm", "type", "png"},
         {"mask"},
         {"bool", "linear_to_srgb_when_save", "0"},
@@ -894,7 +894,7 @@ struct EnvMapRot : INode {
 };
 ZENDEFNODE(EnvMapRot, {
     {
-        {"readpath", "path", ""},
+        {"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
         {"vec3f", "dir", "1, 1, 1"},
     },
     {
@@ -927,7 +927,7 @@ struct PrimLoadExrToChannel : INode {
 
 ZENDEFNODE(PrimLoadExrToChannel, {
     {
-        {"readpath", "path", ""},
+        {"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
         {"", "prim", "", PrimarySocket},
         {"string", "channel", "clr"},
     },

@@ -60,7 +60,7 @@ struct ExportUVObjPrimitive :  zeno::INode  {
 ZENDEFNODE(ExportUVObjPrimitive,
 {   /* inputs: */ 
     {
-        {"writepath", "path"},
+        {"string", "path", "", zeno::ParamSocket, zeno::WritePathEdit},
         "prim",
     }, 
     /* outputs: */ 

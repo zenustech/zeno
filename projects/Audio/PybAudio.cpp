@@ -34,7 +34,7 @@ namespace {
 
     ZENDEFNODE(FFPlayAudioFile, {
         {
-            {"readpath", "path"},
+            {"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
             {"bool", "nodisp", "0"},
             {"bool", "wait", "0"},
         },

@@ -174,6 +174,8 @@ ZENO_API bool INode::is_view() const
 
 ZENO_API void INode::mark_dirty(bool bOn)
 {
+    if (m_dirty == bOn)
+        return;
     m_dirty = bOn;
     if (m_dirty) {
         for (auto& [name, param] : m_outputs) {

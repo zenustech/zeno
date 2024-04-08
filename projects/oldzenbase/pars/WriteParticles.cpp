@@ -37,9 +37,9 @@ struct WriteParticles : zeno::INode {
 static int defWriteParticles = zeno::defNodeClass<WriteParticles>("WriteParticles",
     { /* inputs: */ {
     "pars",
+     {"string", "path", "", NoSocket, WritePathEdit},
     }, /* outputs: */ {
     }, /* params: */ {
-    {"writepath", "path", ""},
     }, /* category: */ {
     "deprecated",
     }});

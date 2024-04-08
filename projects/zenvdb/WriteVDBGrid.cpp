@@ -22,9 +22,9 @@ struct WriteVDBGrid : zeno::INode {
 static int defWriteVDBGrid = zeno::defNodeClass<WriteVDBGrid>("WriteVDBGrid",
     { /* inputs: */ {
     {"", "data", "", PrimarySocket},
+    {"string", "path", "", NoSocket, WritePathEdit},
     }, /* outputs: */ {
     }, /* params: */ {
-    {"writepath", "path", ""},
     }, /* category: */ {
     "deprecated",
     }});
@@ -58,7 +58,7 @@ struct WriteVDB : ExportVDBGrid {
 static int defWriteVDB = zeno::defNodeClass<WriteVDB>("WriteVDB",
     { /* inputs: */ {
     "data",
-    {"writepath", "path"},
+    {"string", "path", "", zeno::ParamSocket, zeno::WritePathEdit},
     }, /* outputs: */ {
     }, /* params: */ {
     }, /* category: */ {

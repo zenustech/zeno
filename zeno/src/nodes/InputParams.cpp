@@ -259,7 +259,7 @@ struct ParamFileParser : zeno::INode {
 ZENDEFNODE(ParamFileParser, {
     {
         "formatList",
-        {"writepath", "configFilePath"},
+        {"string", "configFilePath", "", zeno::ParamSocket, zeno::WritePathEdit},
      },
     {
         {"DictObject", "params"},

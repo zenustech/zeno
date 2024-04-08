@@ -280,7 +280,7 @@ struct FBXSDKVisibility : zeno::INode {
 ZENDEFNODE(FBXSDKVisibility,
            {       /* inputs: */
             {
-                {"readpath", "path"},
+                {"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
                 {"bool", "inherit", "false"},
             },  /* outputs: */
             {
@@ -596,7 +596,7 @@ struct NewFBXImportSkin : INode {
 
 ZENDEFNODE(NewFBXImportSkin, {
     {
-        {"readpath", "path"},
+        {"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
         {"string", "rootName", ""},
         {"bool", "ConvertUnits", "1"},
     },
@@ -722,7 +722,7 @@ struct NewFBXImportSkeleton : INode {
 
 ZENDEFNODE(NewFBXImportSkeleton, {
     {
-        {"readpath", "path"},
+        {"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
         {"bool", "ConvertUnits", "1"},
     },
     {
@@ -901,7 +901,7 @@ struct NewFBXImportAnimation : INode {
 
 ZENDEFNODE(NewFBXImportAnimation, {
     {
-        {"readpath", "path"},
+        {"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
         {"string", "clipName", ""},
         {"frameid"},
         {"float", "fps", "25"},
@@ -1066,7 +1066,7 @@ struct NewFBXImportCamera : INode {
 
 ZENDEFNODE(NewFBXImportCamera, {
     {
-        {"readpath", "path"},
+        {"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
         {"string", "clipName", ""},
         {"frameid"},
         {"float", "fps", "25"},

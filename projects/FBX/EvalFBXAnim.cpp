@@ -459,9 +459,9 @@ struct EvalBlenderFile : zeno::INode {
 ZENDEFNODE(EvalBlenderFile,
            {       /* inputs: */
             {
-                {"readpath", "script_file"},
-                {"readpath", "blender_file"},
-                {"readpath", "output_path"},
+                {"string", "script_file", "", zeno::ParamSocket, zeno::ReadPathEdit},
+                {"string", "blender_file", "", zeno::ParamSocket, zeno::ReadPathEdit},
+                {"string", "output_path", "", zeno::ParamSocket, zeno::ReadPathEdit},
             },  /* outputs: */
             {
                 "fake"

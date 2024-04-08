@@ -240,7 +240,8 @@ struct VDBWrangle : zeno::INode {
 };
 
 ZENDEFNODE(VDBWrangle, {
-    {{"VDBGrid", "grid", "", PrimarySocket}, {"string", "zfxCode"},
+    {{"VDBGrid", "grid", "", PrimarySocket}, 
+     {"string", "zfxCode", "", ParamSocket, Multiline},
      {"enum true false","ModifyActive","false"},
      {"enum true false","ChangeBackground","false"},
      {"DictObject:NumericObject", "params", "", PrimarySocket}},

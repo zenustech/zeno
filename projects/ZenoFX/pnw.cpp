@@ -403,7 +403,7 @@ ZENDEFNODE(ParticlesNeighborWrangle, {
     {{"PrimitiveObject", "prim", "", PrimarySocket},
      {"PrimitiveObject", "primNei", "", PrimarySocket},
      {"HashGrid", "hashGrid"},
-     {"string", "zfxCode"},
+     {"string", "zfxCode", "", ParamSocket, Multiline},
      {"DictObject:NumericObject", "params", "", PrimarySocket}},
     {{"PrimitiveObject", "prim"}},
     {},

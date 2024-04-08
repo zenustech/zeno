@@ -52,6 +52,7 @@ struct ImplNodeClass : INodeClass {
                     sparam->defl = param.defl;
                     sparam->socketType = param.socketType;
                     sparam->control = param.control;
+                    sparam->optCtrlprops = param.ctrlProps;
                     spNode->add_input_param(sparam);
                 }
             }

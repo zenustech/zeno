@@ -33,15 +33,13 @@ ZenoSocketItem::ZenoSocketItem(
         setData(GVKEY_SIZEHINT, m_size);
         setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
     }
-    setBrush(QColor("#CCA44E"), QColor("#CCA44E"));
+    setBrush(QColor("#CCA44E"), QColor("#FFF000"));
     setSockStatus(STATUS_NOCONN);
     setAcceptHoverEvents(true);
 }
 
 ZenoSocketItem::~ZenoSocketItem()
 {
-    int j;
-    j = 0;
 }
 
 int ZenoSocketItem::type() const
@@ -171,6 +169,16 @@ void ZenoSocketItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
     }
 }
 
+QVariant ZenoSocketItem::itemChange(GraphicsItemChange change, const QVariant& value)
+{
+    if (change == QGraphicsItem::ItemVisibleHasChanged)
+    {
+        if (m_bHovered && !this->isVisible())
+            m_bHovered = false;
+    }
+    return value;
+}
+
 QString ZenoSocketItem::netLabel() const
 {
     return "";
@@ -186,7 +194,7 @@ void ZenoSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
 
 #ifdef BASED_ON_SPEHERE
     QRectF rc(m_innerSockMargin, m_innerSockMargin, m_size.width(), m_size.height());
-    bool bOn = m_status == STATUS_TRY_CONN || m_status == STATUS_CONNECTED;
+    bool bOn = m_status == STATUS_TRY_CONN || m_status == STATUS_CONNECTED || m_bHovered;
     painter->setPen(Qt::NoPen);
     painter->setBrush(bOn ? m_brushOn : m_brush);
     painter->drawEllipse(rc);
