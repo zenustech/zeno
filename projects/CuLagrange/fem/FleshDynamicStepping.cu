@@ -1489,10 +1489,11 @@ struct FleshDynamicStepping : INode {
         // auto max_collision_pairs = tris.size() / 10; 
         dtiles_t etemp(eles.get_allocator(), {
                 // {"H", 12 * 12},
-                    {"ActInv",3*3},\
+                    {"ActInv",3*3},
                     {"dfiber",3},
                     // {"muscle_ID",1},
-                    {"is_inverted",1}
+                    {"is_inverted",1},
+                    {"fiberStretch",1}
                 }, eles.size()
         );
 
@@ -1593,6 +1594,12 @@ struct FleshDynamicStepping : INode {
         if(!eles.hasProperty("Act"))
             eles.append_channels(cudaPol,{{"Act",1}});
 
+
+        if(!eles.hasProperty("fiberStretch"))
+            eles.append_channels(cudaPol,{{"fiberStretch",1}});
+
+        TILEVEC_OPS::fill(cudaPol,eles,"fiberStretch",1.f);
+        
         if(!eles.hasProperty("fiber"))
             fmt::print(fg(fmt::color::red),"the quadrature has no \"fiber\"\n");
         if(!verts.hasProperty(muscle_id_tag))
@@ -1665,13 +1672,17 @@ struct FleshDynamicStepping : INode {
                             verts.template pack<3>("x",inds[3]),
                             eles.template pack<3,3>("IB",ei));
                         auto dfiber = F * fiber;
+                        auto dfiberN = dfiber.norm();
+                        auto fiberN = fiber.norm();
                         dfiber = dfiber / dfiber.norm();
                         etemp.tuple(dim_c<3>,"dfiber",ei) = dfiber;
+                        eles("fiberStretch",ei) = dfiberN / fiberN;
                     }
                 }else{
                     fiber = zs::vec<T,3>(1.0,0.0,0.0);
                     act = vec3{1,1,1};
                     eles("Act",ei) = (T)0.0;
+                    
                 }
                 if(fabs(fiber.norm() - 1.0) > 0.1) {
                     printf("invalid fiber[%d] detected : %f %f %f\n",(int)ei,
