@@ -27,8 +27,8 @@ ZENO_API void primKillDeadVerts(PrimitiveObject *prim);
 ZENO_API void primDecodeUVs(PrimitiveObject *prim);
 ZENO_API void primLoopUVsToVerts(PrimitiveObject *prim);
 
-ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::PrimitiveObject *> const &primList, std::string const &tagAttr = {});
-ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMergeWithFacesetMatid(std::vector<zeno::PrimitiveObject *> const &primList, std::string const &tagAttr = {});
+ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::PrimitiveObject *> const &primList, std::string const &tagAttr = {}, bool tag_on_vert = true, bool tag_on_face = false);
+ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMergeWithFacesetMatid(std::vector<zeno::PrimitiveObject *> const &primList, std::string const &tagAttr = {}, bool tag_on_vert = true, bool tag_on_face = false);
 ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPrim, PrimitiveObject *meshPrim, std::string dirAttr = {}, std::string tanAttr = {}, std::string radAttr = {}, std::string onbType = "XYZ", float radius = 1.f, bool copyParsAttr = true, bool copyMeshAttr = true);
 
 ZENO_API void primLineSort(PrimitiveObject *prim, bool reversed = false);
