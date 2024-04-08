@@ -285,7 +285,11 @@ struct FrameBufferPicker : IPicker {
         // construct prim set
         // use focus_prim if focus_prim_name is not empty else all prims
         vector<std::pair<string, std::shared_ptr<zeno::IObject>>> prims, prims_shared;
-        zeno::getSession().objsMan->export_all_view_objs(prims_shared);
+        std::map<std::string, std::shared_ptr<zeno::IObject>> tmp;
+        zeno::getSession().objsMan->export_all_view_objs(tmp);
+        for (auto& [key, obj]:tmp)
+            scene->convertListObjs(obj, prims_shared);
+
         if (!focus_prim_name.empty()) {
             std::shared_ptr<zeno::IObject> focus_prim;
             for (const auto& [k, v] : prims_shared) {

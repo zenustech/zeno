@@ -74,33 +74,40 @@ struct GraphicsManager {
     }
 
     void load_objects2(const zeno::RenderObjsInfo& objs) {
-        std::map<std::string, std::shared_ptr<zeno::IObject>> dirtyListItems;   //本次运行list中dirty(new + modify)的元素
-        std::set<std::string> allListItems;                                     //本次运行list中全部元素
-        std::set<std::string> removeListItems;                                  //本次运行list中要删除的元素
+        std::map<std::string, std::shared_ptr<zeno::IObject>> listItems;
+        std::set<std::string> removeListItems;                                              //本次运行list中要删除的元素
 
         //处理单个Object
         for (auto [key, spObj] : objs.newObjs) {
             if (auto lst = std::dynamic_pointer_cast<zeno::ListObject>(spObj))
-                scene->convertListObjs(spObj, dirtyListItems, allListItems, true);
-            else
+                scene->convertListObjsRender(spObj, listItems, std::set<std::string>(), false, spObj->nodeId);
+            else {
                 add_object(spObj);
+                scene->lastAllItems.insert(std::make_pair(key, spObj));
+            }
         }
         for (auto [key, spObj] : objs.modifyObjs) {
             add_object(spObj);
         }
         for (auto [key, spObj] : objs.remObjs) {
             if (auto lst = std::dynamic_pointer_cast<zeno::ListObject>(spObj))
-                scene->convertListObjs(spObj, std::map<std::string, std::shared_ptr<zeno::IObject>>(), removeListItems, true);
-            else
+                scene->convertListObjsRender(spObj, listItems, removeListItems, true, spObj->nodeId);
+            else {
                 remove_object(key);
+                scene->lastAllItems.erase(key);
+            }
         }
-
-        //处理ListObject中的元素
-        for (auto [key, spObj] : dirtyListItems)                        //增加新元素
+        //处理ListObject
+        for (auto [key, spObj] : listItems)                        //增加新元素
+        {
             add_object(spObj);
+        }
         for (auto& key:removeListItems)
-            if (allListItems.find(key) == allListItems.end())           //该元素本次已不再使用，才删除
+            if (listItems.find(key) == listItems.end())           //该元素本次已不再使用，才删除
+            {
                 remove_object(key);
+                scene->lastAllItems.erase(key);
+            }
     }
 
     bool load_objects(std::vector<std::pair<std::string, std::shared_ptr<zeno::IObject>>> const &objs) {
