@@ -31,7 +31,7 @@ struct ReadJson : zeno::INode {
 };
 ZENDEFNODE(ReadJson, {
     {
-        {"readpath", "path"},
+        {"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
     },
     {
         "json",

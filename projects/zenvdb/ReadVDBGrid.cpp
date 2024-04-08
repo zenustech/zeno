@@ -140,14 +140,14 @@ struct ReadVDBGrid : zeno::INode {
   }
 };
 static int defReadVDBGrid = zeno::defNodeClass<ReadVDBGrid>(
-    "ReadVDBGrid", {/* inputs: */ {}, /* outputs: */
+    "ReadVDBGrid", {/* inputs: */ {
+                        {"string", "type", "", NoSocket},
+                        {"string", "path", "", NoSocket, ReadPathEdit},}, /* outputs: */
                     {
                         "data",
                     },
                     /* params: */
                     {
-                        {"string", "type", ""},
-                        {"readpath", "path", ""},
                     },
                     /* category: */
                     {
@@ -178,7 +178,7 @@ struct ReadVDB : ImportVDBGrid {
 };
 static int defReadVDB = zeno::defNodeClass<ReadVDB>("ReadVDB",
     { /* inputs: */ {
-    {"readpath", "path"},
+    {"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
     }, /* outputs: */ {
     "data",
     }, /* params: */ {

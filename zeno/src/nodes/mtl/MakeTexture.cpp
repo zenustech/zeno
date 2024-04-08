@@ -96,7 +96,7 @@ namespace zeno
 		MakeTexture2D,
 		{
 			{
-				{"readpath", "path"},
+				{"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
 				{"heatmap"},
 				{(std::string) "enum " + texWrapping, "wrapS", "REPEAT"},
 				{(std::string) "enum " + texWrapping, "wrapT", "REPEAT"},
@@ -151,7 +151,7 @@ namespace zeno
 		MakeTextureVDB,
 		{
 			{
-				{"readpath", "path"},
+				{"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
 				{"string", "channel", "0"},
 				{"enum " + MakeTextureVDB::dataTypeListString(), MakeTextureVDB::dataTypeKey, MakeTextureVDB::dataTypeDefaultString()},
 			},

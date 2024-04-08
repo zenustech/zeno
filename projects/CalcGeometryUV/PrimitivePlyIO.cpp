@@ -102,8 +102,8 @@ ZENDEFNODE(
         // inputs
         {
             {
-                "readpath",
-                "path",
+                "string",
+                "path" , "", zeno::ParamSocket, zeno::ReadPathEdit
             },
         },
         // outpus

@@ -341,7 +341,7 @@ struct SmartTexture2D : ShaderNodeClone<SmartTexture2D>
 
 ZENDEFNODE(SmartTexture2D, {
     {
-        {"readpath", "path"},
+        {"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
         {"heatmap"},
         {(std::string) "enum " + SmartTexture2D::texWrapping, "wrapS", "REPEAT"},
         {(std::string) "enum " + SmartTexture2D::texWrapping, "wrapT", "REPEAT"},

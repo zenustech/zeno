@@ -453,12 +453,12 @@ ZENDEFNODE(WriteCustomVAT, {
         {"prim"},
         {"frameid"},
         {"bool", "UnrealEngine", "1"},
+        {"string", "path", "", NoSocket, WritePathEdit},
     },
     {
         {"prim"},
     },
     {
-        {"writepath", "path", ""},
         {"int", "frameStart", "0"},
         {"int", "frameEnd", "100"},
     },
@@ -500,12 +500,12 @@ struct ReadCustomVAT : INode {
 ZENDEFNODE(ReadCustomVAT, {
     {
         {"frameid"},
+        {"string", "path", "", NoSocket, ReadPathEdit},
     },
-    {
+    { 
         {"prim"},
     },
     {
-        {"readpath", "path", ""},
     },
     {"primitive"},
 });
@@ -529,7 +529,7 @@ struct ReadVATFile : INode {
 
 ZENDEFNODE(ReadVATFile, {
     {
-        {"readpath", "path"},
+        {"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
     },
     {
         {"PrimitiveObject", "image"},

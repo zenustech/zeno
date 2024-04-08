@@ -109,7 +109,7 @@ struct ReadObjPrimitive : zeno::INode {
 
 ZENDEFNODE(ReadObjPrimitive,
         { /* inputs: */ {
-        {"readpath", "path"},
+        {"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
         }, /* outputs: */ {
         "prim",
         }, /* params: */ {
@@ -122,7 +122,7 @@ struct ImportObjPrimitive : ReadObjPrimitive {
 
 ZENDEFNODE(ImportObjPrimitive,
         { /* inputs: */ {
-        {"readpath", "path"},
+        {"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
         }, /* outputs: */ {
         "prim",
         }, /* params: */ {
@@ -182,7 +182,7 @@ struct WriteObjPrimitive : zeno::INode {
 
 ZENDEFNODE(WriteObjPrimitive,
         { /* inputs: */ {
-        {"writepath", "path"},
+        {"string", "path", "", zeno::ParamSocket, zeno::WritePathEdit},
         "prim",
         }, /* outputs: */ {
         }, /* params: */ {
@@ -201,7 +201,7 @@ struct ExportObjPrimitive : WriteObjPrimitive {
 
 ZENDEFNODE(ExportObjPrimitive,
         { /* inputs: */ {
-        {"writepath", "path"},
+        {"string", "path", "", zeno::ParamSocket, zeno::WritePathEdit},
         "prim",
         }, /* outputs: */ {
         }, /* params: */ {
@@ -329,7 +329,7 @@ struct ReadObjPrimitiveDict : zeno::INode {
 
 ZENDEFNODE(ReadObjPrimitiveDict,
         { /* inputs: */ {
-        {"readpath", "path"},
+        {"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
         }, /* outputs: */ {
         "prim",
         "dict",

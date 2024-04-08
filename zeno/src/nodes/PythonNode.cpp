@@ -37,7 +37,13 @@ namespace zeno {
         };
 
         ZENDEFNODE(PythonMaterialNode, {
-            {{"string", "nameList"},{"string", "keyWords"},{"readpath", "materialPath"},{"string", "matchInputs"}, {"string", "script"}},
+            {
+                {"string", "nameList"},
+                {"string", "keyWords"},
+                {"string", "materialPath", "", zeno::ParamSocket, zeno::ReadPathEdit},
+                {"string", "matchInputs"}, 
+                {"string", "script"}
+            },
             {},
             {},
             {"command"},

@@ -382,8 +382,8 @@ ZENO_DEFNODE(LightNode)({
         {"bool", "invertdir", "0"},
         {"bool", "doubleside", "0"},
 
-        {"readpath", "profile"},
-        {"readpath", "texturePath"},
+        {"string", "profile", "", zeno::ParamSocket, zeno::ReadPathEdit},
+        {"string", "texturePath", "", zeno::ParamSocket, zeno::ReadPathEdit},
         {"float",  "textureGamma", "1.0"},
         {"float", "visibleIntensity", "-1.0"},
 
