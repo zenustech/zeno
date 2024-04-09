@@ -6,14 +6,13 @@
 * [ ] 摸索各个平台和编译器的构建(linux cmake vs)+写文档 @hcx
 * [ ] 考虑将USD封装为lib库 @hcx
 # 编辑方案
-* [x] 最终决定: 将USD prim用等价UI节点的方式eval出来
-* [ ] 其他坑点有待研究
+* [x] 最终决定: 将USD prim等价转换为zeno节点系统 用户编辑节点即可实现USD编辑
 # 几何相关
 * [x] 下面这些全部用UI吐节点的方式实现
 * [x] 支持XformOp导入为链式操作
   * [x] 基本变换支持：位移、缩放、欧拉旋转
   * [x] 支持orient
-  * [ ] 支持xformOp中的Matrix类型导入 - 写好了ImportUSDPrimMatrix 准备吐节点
+  * [x] 支持xformOp中的Matrix类型导入
   * [ ] 支持xformOp中的reset、revert操作??
 * [x] Cube导入
 * [x] Sphere导入

@@ -60,9 +60,9 @@ private:
 
 	ZENO_HANDLE _emitCameraNode(std::any, ZENO_HANDLE);
 
-	void _emitPrimitiveTransformNodes(std::any, ZENO_HANDLE targetGraph, ZENO_HANDLE lastNode);
+	ZENO_HANDLE _emitPrimitiveTransformNodes(std::any, ZENO_HANDLE targetGraph, ZENO_HANDLE lastNode);
 
-	ZENO_HANDLE _makeTransformNode(ZENO_HANDLE mainGraph, std::any transType, const ZVARIANT& transVec);
+	ZENO_HANDLE _makeTransformNode(ZENO_HANDLE mainGraph, const std::pair<float, float>&, std::any transType, const ZVARIANT& transVec);
 
 	std::string mUSDPath;
 	std::string mPrimPath;

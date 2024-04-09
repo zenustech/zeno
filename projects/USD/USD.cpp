@@ -360,9 +360,8 @@ struct ImportUSDPrimMatrix : zeno::INode {
 
         pxr::VtValue matVal;
         attr.Get(&matVal);
-        std::string matType = matVal.GetTypeName();
-
         glm::mat4 realMat;
+        std::string matType = matVal.GetTypeName();
         if (matType == "GfMatrix4d") {
             pxr::GfMatrix4d mat = matVal.Get<pxr::GfMatrix4d>();
             double* vp = mat.data();
