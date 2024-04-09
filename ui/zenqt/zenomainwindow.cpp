@@ -277,6 +277,7 @@ void ZenoMainWindow::onMenuActionTriggered(bool bTriggered)
     case ACTION_NODE_EDITOR:
     case ACTION_OBJECT_DATA:
     case ACTION_GL_VIEWPORT:
+    case ACTION_OPTIX_VIEW:
     case ACTION_OPEN_PATH:
     case ACTION_NODE_PARAMETERS:
     case ACTION_LOG:
@@ -807,6 +808,13 @@ void ZenoMainWindow::onCreatePanel(int actionType)
         pView->initUI();
         pWid = pView;
         title = tr("GL Viewport");
+        break;
+    }
+    case ACTION_OPTIX_VIEW: {
+        auto pView = new DockContent_View(false);
+        pView->initUI();
+        pWid = pView;
+        title = tr("Optix Viewport");
         break;
     }
     case ACTION_OPEN_PATH: {
