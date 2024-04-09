@@ -253,11 +253,16 @@ void write_attrs(
         }
     });
     if (prim->loops.size() > 0) {
-        prim->loops.foreach_attr<std::variant<vec3f, float, int>>([&](auto const &key, auto &arr) {
-            if (key == "uvs") {
+        prim->loops.foreach_attr<std::variant<vec3f, float, int>>([&](auto const &_key, auto &arr) {
+            if (_key == "uvs") {
                 return;
             }
+            std::string key = _key;
             std::string full_key = path + '/' + key;
+            if (verts_attrs.count(full_key)) {
+                key += "_loops";
+                full_key = path + '/' + key;
+            }
             using T = std::decay_t<decltype(arr[0])>;
             if constexpr (std::is_same_v<T, zeno::vec3f>) {
                 if (loops_attrs.count(full_key) == 0) {
@@ -308,11 +313,16 @@ void write_attrs(
         });
     }
     if (prim->polys.size() > 0) {
-        prim->polys.foreach_attr<std::variant<vec3f, float, int>>([&](auto const &key, auto &arr) {
-            if (key == "faceset" || key == "matid" || key == "abcpath") {
+        prim->polys.foreach_attr<std::variant<vec3f, float, int>>([&](auto const &_key, auto &arr) {
+            if (_key == "faceset" || _key == "matid" || _key == "abcpath") {
                 return;
             }
+            std::string key = _key;
             std::string full_key = path + '/' + key;
+            if (verts_attrs.count(full_key) || loops_attrs.count(full_key)) {
+                key += "_polys";
+                full_key = path + '/' + key;
+            }
             using T = std::decay_t<decltype(arr[0])>;
             if constexpr (std::is_same_v<T, zeno::vec3f>) {
                 if (polys_attrs.count(full_key) == 0) {
