@@ -743,6 +743,7 @@ void ZenoMainWindow::initDocks(PANEL_TYPE onlyView)
     QVBoxLayout* paddingLayout = new QVBoxLayout;
     paddingLayout->setContentsMargins(2, 2, 2, 2);
     m_pTimeline = new ZTimeline;
+    initTimeline();
     paddingLayout->addWidget(m_pTimeline);
 
     pVLayout->addWidget(docks);
@@ -845,11 +846,8 @@ void ZenoMainWindow::onCreatePanel(int actionType)
     }
 }
 
-void ZenoMainWindow::initTimelineDock()
+void ZenoMainWindow::initTimeline()
 {
-    m_pTimeline = new ZTimeline;
-    setCentralWidget(m_pTimeline);
-
     connect(m_pTimeline, &ZTimeline::playForward, this, [=](bool bPlaying) {
         QVector<DisplayWidget*> views = viewports();
         for (DisplayWidget* view : views) {

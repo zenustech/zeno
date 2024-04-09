@@ -204,7 +204,7 @@ private:
     void initDocksWidget(ads::CDockAreaWidget* cakeArea, ads::CDockWidget* pCake, PtrLayoutNode root);
     void _resizeDocks(PtrLayoutNode root);
     void resetDocks(PtrLayoutNode root);
-    void initTimelineDock();
+    void initTimeline();
     void recordRecentFile(const QString& filePath);
     void saveLayout2();
     void SplitDockWidget(ZDockWidget* after, ZDockWidget* dockwidget, Qt::Orientation orientation);
