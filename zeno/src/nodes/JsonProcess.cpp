@@ -210,7 +210,7 @@ struct JsonSetData : zeno::INode {
         auto dict = get_input<DictObject>("dict");
         for (auto &path: paths) {
             auto strings = zeno::split_str(path, ':');
-            auto names = split_str(strings[0], '/');
+            auto names = split_str(strings[1], '/');
 
             Json *tmp_json = &in_json->json;
             for (auto & name : names) {
@@ -221,7 +221,7 @@ struct JsonSetData : zeno::INode {
                     tmp_json = &tmp_json->operator[](name);
                 }
             }
-            std::string new_name = zeno::trim_string(strings[1]);
+            std::string new_name = zeno::trim_string(strings[0]);
             *tmp_json = iobject_to_json(dict->lut[new_name]);
         }
 
@@ -232,7 +232,7 @@ struct JsonSetData : zeno::INode {
 ZENDEFNODE(JsonSetData, {
     {
         {"json"},
-        {"string", "path"},
+        {"multiline_string", "paths", "input_name:json_path"},
         {"dict", "dict"},
     },
     {
@@ -655,7 +655,7 @@ struct JsonGetData : zeno::INode {
 ZENDEFNODE(JsonGetData, {
     {
         {"json"},
-        {"multiline_string", "paths"},
+        {"multiline_string", "paths", "json_path:vec3f:output_name"},
     },
     {
         {"DictObject", "outs"}
