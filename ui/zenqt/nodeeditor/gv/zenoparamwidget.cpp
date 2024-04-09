@@ -645,12 +645,14 @@ void ZenoParamComboBox::setItems(const QStringList& items)
 
 void ZenoParamComboBox::onBeforeShowPopup()
 {
-    setZValue(ZVALUE_POPUPWIDGET);
+    if (auto parent = parentItem())
+        parent->setZValue(parent->zValue() + 1);
 }
 
 void ZenoParamComboBox::onAfterHidePopup()
 {
-    setZValue(ZVALUE_ELEMENT);
+    if (auto parent = parentItem())
+        parent->setZValue(parent->zValue() - 1);
 }
 
 void ZenoParamComboBox::setText(const QString& text)

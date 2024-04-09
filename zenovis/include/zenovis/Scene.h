@@ -53,9 +53,15 @@ struct Scene : zeno::disable_copy {
     static void loadGLAPI(void *procaddr);
     void* getOptixImg(int &w, int &h);
 
-    void convertListObjs(std::shared_ptr<zeno::IObject>const& objToBeConvert,
-        std::map<std::string, std::shared_ptr<zeno::IObject>>& dirtyListItems,
-        std::set<std::string>& allListItems, bool isDirty); //将listObj中dirty元素和全部元素展平
+    //渲染前展平所有对象
+    void convertListObjsRender(std::shared_ptr<zeno::IObject>const& objToBeConvert,     //展平对象并构建索引(如果是list中的元素)
+        std::map<std::string, std::shared_ptr<zeno::IObject>>& allListItems,
+        std::set<std::string>& allListItemsKeys, bool convertKeyOnly = false, std::string listNamePath = "", std::string listIdxPath = "");
+    void convertListObjs(std::shared_ptr<zeno::IObject>const& objToBeConvert,           //仅展平对象
+        std::vector<std::pair<std::string, std::shared_ptr<zeno::IObject>>>& allListItems);
+    void convertListObjs(std::shared_ptr<zeno::IObject>const& objToBeConvert,           //仅展平对象
+        std::map<std::string, std::shared_ptr<zeno::IObject>>& allListItems);
+    std::unordered_map <std::string, std::shared_ptr<zeno::IObject>> lastAllItems;      //本次运行的所有元素(单个对象+list中对象)
 };
 
 } // namespace zenovis

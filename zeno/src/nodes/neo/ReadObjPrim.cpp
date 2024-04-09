@@ -143,7 +143,7 @@ struct ReadObjPrim : INode {
 
 ZENDEFNODE(ReadObjPrim,
         { /* inputs: */ {
-        {"readpath", "path"},
+        {"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
         }, /* outputs: */ {
         {"primitive", "prim"},
         }, /* params: */ {
@@ -170,7 +170,7 @@ struct MustReadObjPrim : INode {
 
 ZENDEFNODE(MustReadObjPrim,
         { /* inputs: */ {
-        {"readpath", "path"},
+        {"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
         }, /* outputs: */ {
         {"primitive", "prim"},
         }, /* params: */ {

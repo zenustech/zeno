@@ -187,7 +187,20 @@ namespace zenoio
                 node_idx_set[cls] = 1;
             }
             int newIdNum = node_idx_set[cls]++;
-            const std::string& newName = cls + std::to_string(newIdNum);
+            std::string newName;;
+            if (cls == "SubInput" || cls == "SubOutput")
+            {
+                for (const auto& info : nodeData.inputs)
+                {
+                    if (info.name == "name")
+                    {
+                        newName = std::get<std::string>(info.defl);
+                        break;
+                    }
+                }
+            }
+            else
+                newName = cls + std::to_string(newIdNum);
 
             old2new.insert(std::make_pair(oldName, newName));
 

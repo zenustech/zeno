@@ -1141,7 +1141,7 @@ struct ReadAlembic : INode {
 
 ZENDEFNODE(ReadAlembic, {
     {
-        {"readpath", "path"},
+        {"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
         {"bool", "read_face_set", "1"},
         {"bool", "outOfRangeAsEmpty", "0"},
         {"frameid"},

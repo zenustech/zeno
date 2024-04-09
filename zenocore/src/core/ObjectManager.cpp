@@ -172,12 +172,10 @@ namespace zeno {
             m_modify.insert(newobjKey);;
     }
 
-    ZENO_API void ObjectManager::getModifyObjsInfo(std::map<std::string, std::shared_ptr<zeno::IObject>>& modifyInteractiveObjs)
+    ZENO_API void ObjectManager::getModifyObjsInfo(std::set<std::string>& modifyInteractiveObjs)
     {
         std::lock_guard lck(m_mtx);
-        for (auto& key : m_modify)
-            if (m_objects.find(key) != m_objects.end())
-                modifyInteractiveObjs.insert(std::make_pair(key, m_objects[key].obj));
+        modifyInteractiveObjs = m_modify;
     }
 
     ZENO_API void ObjectManager::export_loading_objs(RenderObjsInfo& info)
@@ -210,13 +208,13 @@ namespace zeno {
         }
     }
 
-    ZENO_API void ObjectManager::export_all_view_objs(std::vector<std::pair<std::string, std::shared_ptr<zeno::IObject>>>& info)
+    ZENO_API void ObjectManager::export_all_view_objs(std::map<std::string, std::shared_ptr<zeno::IObject>>& info)
     {
         std::lock_guard lck(m_mtx);
         for (auto& key : m_viewObjs) {
             auto& it = m_objects.find(key);
             if (it != m_objects.end())
-                info.emplace_back(key, it->second.obj);
+                info.emplace(std::make_pair(key, it->second.obj));
         }
     }
 

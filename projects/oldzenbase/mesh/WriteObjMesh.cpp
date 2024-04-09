@@ -47,9 +47,9 @@ struct WriteObjMesh : zeno::INode {
 static int defWriteObjMesh = zeno::defNodeClass<WriteObjMesh>("WriteObjMesh",
     { /* inputs: */ {
     "mesh",
+    {"string", "path", "", NoSocket, WritePathEdit}
     }, /* outputs: */ {
     }, /* params: */ {
-    {"writepath", "path", ""},
     }, /* category: */ {
     "deprecated",
     }});

@@ -153,10 +153,10 @@ struct ReadObjMesh : zeno::INode {
 
 static int defReadObjMesh = zeno::defNodeClass<ReadObjMesh>("ReadObjMesh",
     { /* inputs: */ {
+            {"string", "path", "", NoSocket, ReadPathEdit}
     }, /* outputs: */ {
     "mesh",
     }, /* params: */ {
-    {"readpath", "path", ""},
     }, /* category: */ {
     "deprecated",
     }});

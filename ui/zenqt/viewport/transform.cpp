@@ -52,7 +52,10 @@ void FakeTransformer::addObject(const std::string& name) {
     auto scene = sess->get_scene();
     ZASSERT_EXIT(scene);
 
-    auto spobj = zeno::getSession().objsMan->getObj(name);
+    auto it = scene->lastAllItems.find(name);
+    if (it == scene->lastAllItems.end())
+        return;
+    auto spobj = it->second;
     if (!spobj)
         return;
     auto object = dynamic_cast<PrimitiveObject*>(spobj.get());
@@ -315,7 +318,7 @@ void FakeTransformer::startTransform() {
 }
 
 void FakeTransformer::createNewTransformNode(NodeLocation& node_location,
-                                             const std::string& obj_name) {
+                                             const std::string& obj_name, const std::string& path) {
     auto& node_sync = NodeSyncMgr::GetInstance();
 
     auto out_sock = node_sync.getPrimSockName(node_location);
@@ -356,6 +359,8 @@ void FakeTransformer::createNewTransformNode(NodeLocation& node_location,
     node_sync.updateNodeInputVec(new_node_location.value(),
                                  "quatRotation",
                                  rotate);
+
+    node_sync.updateNodeInputString(new_node_location.value(), "path", path);
 
     // make node not visible
     node_sync.updateNodeVisibility(node_location);
@@ -443,10 +448,21 @@ void FakeTransformer::endTransform(bool moved) {
         ZASSERT_EXIT(pGraphs);
         pGraphs->setApiRunningEnable(false);
 #endif
+        std::string primitiveTransformPath;
 
         for (auto &[obj_name, obj] : m_objects) {
             auto& node_sync = NodeSyncMgr::GetInstance();
-            auto prim_node_location = node_sync.searchNodeOfPrim(obj_name);
+            std::optional<NodeLocation> prim_node_location;
+
+            if (!obj->listitemNumberIndex.empty())    //this item comes from a list
+            {
+                auto namepath = obj->listitemNameIndex;
+                prim_node_location = node_sync.searchNode(namepath.substr(0, namepath.find_first_of("/")));
+                primitiveTransformPath += namepath + "(index:" + obj->listitemNumberIndex + ")" + ";";
+            }
+            else {                                  //this item is single
+                prim_node_location = node_sync.searchNode(obj_name);
+            }
             auto& prim_node = prim_node_location->node;
             if (node_sync.checkNodeType(prim_node, "PrimitiveTransform") &&
                 // prim comes from a exist TransformPrimitive node
@@ -464,7 +480,7 @@ void FakeTransformer::endTransform(bool moved) {
                     syncToTransformNode(linked_transform_node.value(), obj_name);
                 else
                     // prim doesn't link to a exist TransformPrimitive node
-                    createNewTransformNode(prim_node_location.value(), obj_name);
+                    createNewTransformNode(prim_node_location.value(), obj_name, primitiveTransformPath);
             }
         }
     }

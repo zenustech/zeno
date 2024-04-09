@@ -82,7 +82,7 @@ public:
 
     ZENO_API void export_loading_objs(RenderObjsInfo& info);
     ZENO_API void export_all_view_objs(RenderObjsInfo& info);
-    ZENO_API void export_all_view_objs(std::vector<std::pair<std::string, std::shared_ptr<zeno::IObject>>>& info);
+    ZENO_API void export_all_view_objs(std::map<std::string, std::shared_ptr<zeno::IObject>>& info);
     ZENO_API std::shared_ptr<IObject> getObj(std::string name);
     ZENO_API void clear_last_run();
     ZENO_API void collect_removing_objs(const std::string& objkey);
@@ -92,7 +92,7 @@ public:
     ZENO_API void collect_modify_objs(std::string newobjKey, bool isView);
     ZENO_API void collect_modify_objs(std::set<std::string>& newobjKeys, bool isView);
     ZENO_API void remove_modify_objs(std::set<std::string>& removeobjKeys);
-    ZENO_API void getModifyObjsInfo(std::map<std::string, std::shared_ptr<zeno::IObject>>& modifyInteractiveObjs);  //interactive objs
+    ZENO_API void getModifyObjsInfo(std::set<std::string>& modifyInteractiveObjs);  //interactive objs
 
 private:
     void clear();

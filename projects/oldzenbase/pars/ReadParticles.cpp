@@ -53,10 +53,10 @@ struct ReadParticles : zeno::INode {
 
 static int defReadParticles = zeno::defNodeClass<ReadParticles>("ReadParticles",
     { /* inputs: */ {
+        {"string", "path", "", NoSocket, ReadPathEdit}
     }, /* outputs: */ {
     "pars",
     }, /* params: */ {
-    {"readpath", "path", ""},
     }, /* category: */ {
     "deprecated",
     }});

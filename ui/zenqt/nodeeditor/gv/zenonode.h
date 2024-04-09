@@ -54,6 +54,7 @@ public:
     QPointF getSocketPos(const QModelIndex& sockIdx, const QString keyName = "");
     ZenoSocketItem* getNearestSocket(const QPointF& pos, bool bInput);
     ZenoSocketItem* getSocketItem(const QModelIndex& sockIdx, const QString keyName);
+    ZenoSocketItem* getTopBottomSocketItem(const QModelIndex& sockIdx, bool bInput);
     void markError(bool isError);
 
     QString nodeId() const;

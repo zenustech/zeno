@@ -40,6 +40,7 @@ ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
     , m_bBypassOn(false)
     , m_bViewOn(false)
     , m_model(nullptr)
+    , m_pUnfoldNode(nullptr)
 {
     ZtfUtil &inst = ZtfUtil::GetInstance();
     m_nodeParams = inst.toUtilParam(inst.loadZtf(":/templates/node-example.xml"));
@@ -835,6 +836,12 @@ void ZenoSubGraphScene::onSocketAbsorted(const QPointF& mousePos)
 
 void ZenoSubGraphScene::onTempLinkClosed()
 {
+    if (m_pUnfoldNode)
+    {
+        m_pUnfoldNode->onCollaspeBtnClicked();
+        m_pUnfoldNode = nullptr;
+    }
+
     if (!m_tempLink)
         return;
 
@@ -1009,6 +1016,23 @@ void ZenoSubGraphScene::onTempLinkClosed()
 
 void ZenoSubGraphScene::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
+    if (m_tempLink && event->button() == Qt::RightButton)
+    {
+        auto catchedItems = items(event->scenePos());
+        for (QGraphicsItem* item : catchedItems)
+        {
+            if (ZenoNode* pNode = qgraphicsitem_cast<ZenoNode*>(item))
+            {
+                bool bCollasped = pNode->index().data(ROLE_COLLASPED).toBool();
+                if (bCollasped)
+                {
+                    pNode->onCollaspeBtnClicked();
+                    m_pUnfoldNode = pNode;
+                }
+                break;
+            }
+        }
+    }
     QGraphicsScene::mousePressEvent(event);
 }
 
