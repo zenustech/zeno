@@ -226,6 +226,16 @@ ZENO_API bool Session::is_auto_run() const {
     return m_bAutoRun;
 }
 
+ZENO_API void Session::set_Rerun(bool bOn)
+{
+    m_bRerun = bOn;
+}
+
+ZENO_API bool Session::is_Rerun() const
+{
+    return m_bRerun;
+}
+
 void Session::initNodeCates() {
     for (auto const& [key, cls] : nodeClasses) {
         if (!key.empty() && key.front() == '^')

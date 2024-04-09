@@ -336,8 +336,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
 
     m_btnRun = new ZToolMenuButton(this);
     m_btnRun->addAction(tr("Run"), ":/icons/run_all.svg");
-    m_btnRun->addAction(tr("RunLightCamera"), ":/icons/run_lightcamera.svg");
-    m_btnRun->addAction(tr("RunMaterial"), ":/icons/run_material.svg");
+    m_btnRun->addAction(tr("ReRun"), ":/icons/run_all2.svg");
     m_btnKill = new ZTextIconButton(tr("Running..."), this);
 
     QFont fnt = QApplication::font();
@@ -617,8 +616,31 @@ void DockContent_Editor::initConnections()
 
         m_btnRun->setVisible(false);
         m_btnKill->setVisible(true);
-
+        if (m_btnRun->text() == tr("ReRun"))
+            zeno::getSession().set_Rerun(true);
+        else
+            zeno::getSession().set_Rerun(false);
         zenoApp->calculationMgr()->run();
+    });
+    connect(m_btnRun, &ZToolMenuButton::textChanged, this, [=]() {
+        QString text = m_btnRun->text();
+        QColor clr;
+        QColor hoverClr;
+        if (text == tr("Run"))
+        {
+            clr = QColor("#1978E6");
+            hoverClr = QColor("#599EED");
+            m_btnRun->setIcon(ZenoStyle::dpiScaledSize(QSize(16, 16)), ":/icons/run_all_btn.svg",
+                ":/icons/run_all_btn.svg", "", "");
+        }
+        else if (text == tr("ReRun"))
+        {
+            clr = QColor("#E67B19");
+            hoverClr = QColor("#EDA059");
+            m_btnRun->setIcon(ZenoStyle::dpiScaledSize(QSize(16, 16)), ":/icons/run_all_btn.svg",
+                ":/icons/run_all_btn.svg", "", "");
+        }
+        m_btnRun->setBackgroundClr(clr, hoverClr, clr, clr);
     });
 
     connect(zenoApp->calculationMgr(), &CalculationMgr::calcFinished, this, [=](bool bSucceed, zeno::ObjPath, QString) {

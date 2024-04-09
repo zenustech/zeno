@@ -200,6 +200,10 @@
         <source>Run</source>
         <translation>运行</translation>
     </message>
+	<message>
+        <source>ReRun</source>
+        <translation>重新运行</translation>
+    </message>
     <message>
         <source>Kill</source>
         <translation type="vanished">终止</translation>
