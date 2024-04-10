@@ -199,6 +199,25 @@ extern "C" __global__ void __raygen__rg()
         float3 ray_origin    = eye_shake;
         float3 ray_direction = terminal_point - eye_shake; 
         ray_direction = normalize(ray_direction);
+        int panorama = 1;
+        int hemisphere = 1;
+        if (panorama) {
+            float phi = (float(idx.x) + subpixel_jitter.x) / float(w) * 2.0f * M_PIf;
+            if (hemisphere) {
+                phi = ((float(idx.x) + subpixel_jitter.x) / float(w) + 0.5f) * M_PIf;
+            }
+            float theta = (float(idx.y) + subpixel_jitter.y) / float(h) * M_PIf;
+            float y = -cosf(theta);
+            float z = sinf(theta) * cosf(phi);
+            float x = sinf(theta) * sinf(-phi);
+
+            mat3 camera_transform = mat3(
+                    cam.right.x, cam.up.x, -cam.front.x,
+                    cam.right.y, cam.up.y, -cam.front.y,
+                    cam.right.z, cam.up.z, -cam.front.z
+            );
+            ray_direction = camera_transform * make_float3(x, y, z);
+        }
 
         RadiancePRD prd;
         prd.pixel_area   = cam.height/(float)(h)/(cam.focal_length);
