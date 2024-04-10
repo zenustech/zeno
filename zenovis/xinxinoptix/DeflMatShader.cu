@@ -30,6 +30,27 @@ static __inline__ __device__ bool isBadVector(const float3& vector) {
     return isBadVector(reinterpret_cast<const vec3&>(vector));
 }
 
+__inline__ __device__ void cihouSphereInstanceAux(MatInput& attrs) {
+
+    if (params.sphereInstAuxLutBuffer != 0 && optixGetInstanceId() < params.firstSoloSphereOffset) {
+
+        auto lut = reinterpret_cast<unsigned long long*>(params.sphereInstAuxLutBuffer);
+        assert(lut != nullptr);
+
+        auto tmp = lut[optixGetInstanceId()];
+        auto auxBuffer = reinterpret_cast<float3*>(tmp);
+        assert(auxBuffer != nullptr);
+
+        attrs.clr = {};
+        attrs.tang = {};
+        attrs.instPos = {}; //rt_data->instPos[inst_idx2];
+        attrs.instNrm = {}; //rt_data->instNrm[inst_idx2];
+        attrs.instUv = {}; //rt_data->instUv[inst_idx2];
+        attrs.instClr = auxBuffer[optixGetPrimitiveIndex()];
+        attrs.instTang = {}; //rt_data->instTang[inst_idx2];
+    }
+}
+
 extern "C" __global__ void __anyhit__shadow_cutout()
 {
 
@@ -72,15 +93,8 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     attrs.nrm = N;
     attrs.uv = sphereUV(_normal_object_, false);
 
-    attrs.clr = {};
-    attrs.tang = {};
-    attrs.instPos = {}; //rt_data->instPos[inst_idx2];
-    attrs.instNrm = {}; //rt_data->instNrm[inst_idx2];
-    attrs.instUv = {}; //rt_data->instUv[inst_idx2];
-    attrs.instClr = {}; //rt_data->instClr[inst_idx2];
-    attrs.instTang = {}; //rt_data->instTang[inst_idx2];
+    cihouSphereInstanceAux(attrs);
 
-    unsigned short isLight = 0;
 #else
     size_t inst_idx = optixGetInstanceIndex();
     size_t vert_aux_offset = rt_data->auxOffset[inst_idx];
@@ -140,7 +154,6 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     attrs.instClr =  decodeColor( rt_data->instClr[inst_idx] );
     attrs.instTang = decodeColor( rt_data->instTang[inst_idx]);
 
-    unsigned short isLight = 0;//rt_data->lightMark[vert_aux_offset + primIdx];
 #endif
 
     attrs.pos = attrs.pos + vec3(params.cam.eye);
@@ -184,7 +197,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
         opacity = 0;
     //opacity = clamp(opacity, 0.0f, 0.99f);
     // Stochastic alpha test to get an alpha blend effect.
-    if (opacity >0.99f || isLight == 1) // No need to calculate an expensive random number if the test is going to fail anyway.
+    if (opacity >0.99f) // No need to calculate an expensive random number if the test is going to fail anyway.
     {
         optixIgnoreIntersection();
         return;
@@ -294,9 +307,8 @@ extern "C" __global__ void __closesthit__radiance()
     HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
     MatInput attrs{};
     float estimation = 0;
-#if (_SPHERE_)
 
-    unsigned short isLight = 0;
+#if (_SPHERE_)
 
     float4 q;
     // sphere center (q.x, q.y, q.z), sphere radius q.w
@@ -332,13 +344,7 @@ extern "C" __global__ void __closesthit__radiance()
     attrs.nrm = N;
     attrs.uv = sphereUV(objNorm, false);
 
-    attrs.clr = {};
-    attrs.tang = {};
-    attrs.instPos = {}; //rt_data->instPos[inst_idx2];
-    attrs.instNrm = {}; //rt_data->instNrm[inst_idx2];
-    attrs.instUv = {}; //rt_data->instUv[inst_idx2];
-    attrs.instClr = {}; //rt_data->instClr[inst_idx2];
-    attrs.instTang = {}; //rt_data->instTang[inst_idx2];
+    cihouSphereInstanceAux(attrs);
 
 #else
 
@@ -350,8 +356,6 @@ extern "C" __global__ void __closesthit__radiance()
     //size_t vidx0 = rt_data->vidx[tri_idx_offset * 3 + 0];
     //size_t vidx1 = rt_data->vidx[tri_idx_offset * 3 + 1];
     //size_t vidx2 = rt_data->vidx[tri_idx_offset * 3 + 2];
-
-    unsigned short isLight = 0;//rt_data->lightMark[vert_aux_offset + primIdx];
 
     float3 _vertices_[3];
     optixGetTriangleVertexData( gas, primIdx, sbtGASIndex, 0, _vertices_);
