@@ -3,8 +3,13 @@ option(ZENO_PARALLEL_STL "Enable parallel STL in ZENO" OFF)
 option(ZENO_ENABLE_OPENMP "Enable OpenMP in ZENO for parallelism" ON)
 option(ZENO_ENABLE_MAGICENUM "Enable magicenum in ZENO for enum reflection" OFF)
 option(ZENO_ENABLE_BACKWARD "Enable ZENO fault handler for traceback" OFF)
+option(ZENO_ENABLE_ZENOCORE "Change zeno compile way" OFF)
 
-file(GLOB_RECURSE source CONFIGURE_DEPENDS include/*.h src/*.cpp)
+if(ZENO_ENABLE_ZENOCORE)
+    file(GLOB_RECURSE source CONFIGURE_DEPENDS include/*.h src/*.cpp)
+else()
+    file(GLOB_RECURSE source CONFIGURE_DEPENDS include/*.h src/*.cpp zenocore/src/*.cpp)
+endif()
 
 if (ZENO_BUILD_SHARED)
     add_library(zeno SHARED ${source})
@@ -76,6 +81,10 @@ endif()
 
 if (ZENO_ENABLE_MAGICENUM)
     target_compile_definitions(zeno PUBLIC -DZENO_ENABLE_MAGICENUM)
+endif()
+
+if (ZENO_ENABLE_ZENOCORE)
+add_subdirectory(zenocore)
 endif()
 
 #if (ZENO_NO_WARNING)
