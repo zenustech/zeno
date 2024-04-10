@@ -117,21 +117,5 @@ if (ZENO_WITH_PYTHON3)
 endif()
 
 
-if(DEFINED ZENO_USD_ROOT)
-    file(GLOB USD_SOURCE *.cpp *.h)
-    set(TBB_ROOT_DIR ${ZENO_USD_ROOT})
-    find_package(USD REQUIRED HINTS ${ZENO_USD_ROOT} NAMES pxr)
-    # find_package(MaterialX REQUIRED HINTS ${ZENO_USD_ROOT})
-    # find_package(TBB REQUIRED COMPONENTS tbb)
-    target_include_directories(zenoedit PRIVATE ${ZENO_USD_DEV_ROOT})
-    if(USD_FOUND)
-        # this is only for VS
-        set_property(TARGET zenoedit PROPERTY VS_DEBUGGER_ENVIRONMENT "path=$(path)" ${ZENO_USD_ROOT}/bin ${ZENO_USD_ROOT}/lib)
-
-        target_include_directories(zenoedit PRIVATE ${PXR_INCLUDE_DIRS})
-        target_link_directories(zenoedit PRIVATE ${ZENO_USD_ROOT}/lib)
-        target_link_libraries(zenoedit PRIVATE tbb usd_ar usd_arch usd_kind usd_usdLux usd_usdGeom usd_pcp usd_usdUtils usd_usd usd_usdShade usd_sdf usd_ts usd_tf usd_vt usd_usdSkel usd_usdImaging usd_gf)
-    endif()
-endif()
 
 add_custom_command(TARGET zenoedit PRE_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJECT_SOURCE_DIR}/hdr ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/hdr)

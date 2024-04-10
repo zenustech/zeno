@@ -1,57 +1,37 @@
-#
-# XXX Please using '/' slash for file path on windows
-#
-# -DZENO_LIVESYNC=ON
-#      sync server
-#
-# -DZENO_WITH_USD=ON
-#
-# -DZENO_USD_VERBOSE=ON
-#      verbose message for dev
-#
-# -DZENO_USD_ROOT=""
-#      usd building dir, e.g. c:/src/usd-build
-#
-# -DZENO_USD_DEV_ROOT=""
-#      not used for production
-#
-
-file(GLOB USD_SOURCE *.cpp *.h)
-zeno_disable_warning(${USD_SOURCE})
-target_sources(zeno PRIVATE ${USD_SOURCE})
-target_include_directories(zeno PRIVATE .)
-
-if(DEFINED ZENO_USD_DEV_ROOT)
-    file(GLOB DEV_SOURCE ${ZENO_USD_DEV_ROOT}/*.cpp ${ZENO_USD_DEV_ROOT}/*.h)
-    message(STATUS "Dev Root ${ZENO_USD_DEV_ROOT} Get ${DEV_SOURCE}")
-    target_include_directories(zeno PRIVATE ${ZENO_USD_DEV_ROOT})
-    target_sources(zeno PRIVATE ${DEV_SOURCE})
-else()
-    file(GLOB DEV_SOURCE ${CMAKE_CURRENT_LIST_DIR}/dev/*.cpp ${CMAKE_CURRENT_LIST_DIR}/dev/*.h)
-    target_include_directories(zeno PRIVATE ${CMAKE_CURRENT_LIST_DIR}/dev)
-    target_sources(zeno PRIVATE ${DEV_SOURCE})
+if(NOT ZENO_ENABLE_ZENOCORE)
+    message(FATAL_ERROR "You MUST set ZENO_ENABLE_ZENOCORE=ON when USD enable")
 endif()
+file(GLOB USD_SOURCE USD.cpp USD.h)
+add_library(zeno_usd SHARED ${USD_SOURCE})
+target_include_directories(zeno_usd PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(zeno_usd PUBLIC zenocore)
+target_include_directories(zeno_usd PUBLIC ../../zeno/include ../../zeno/tpls/include)
 
 if(DEFINED ZENO_USD_ROOT)
     set(TBB_ROOT_DIR ${ZENO_USD_ROOT})
     find_package(USD REQUIRED HINTS ${ZENO_USD_ROOT} NAMES pxr)
-    # find_package(MaterialX REQUIRED HINTS ${ZENO_USD_ROOT})
-    # find_package(TBB REQUIRED COMPONENTS tbb)
-    target_include_directories(zeno PRIVATE ${ZENO_USD_DEV_ROOT})
     if(USD_FOUND)
         # this is only for VS
-        set_property(TARGET zenoedit PROPERTY VS_DEBUGGER_ENVIRONMENT "path=$(path)" ${ZENO_USD_ROOT}/bin ${ZENO_USD_ROOT}/lib)
+        #set_property(TARGET zenoedit PROPERTY VS_DEBUGGER_ENVIRONMENT "path=$(path)" ${ZENO_USD_ROOT}/bin ${ZENO_USD_ROOT}/lib)
 
-        target_include_directories(zeno PRIVATE ${PXR_INCLUDE_DIRS})
-        target_link_directories(zeno PRIVATE ${ZENO_USD_ROOT}/lib)
-        target_link_libraries(zeno PRIVATE tbb usd_ar usd_arch usd_kind usd_usdLux usd_usdGeom usd_pcp usd_usdUtils usd_usd usd_usdShade usd_sdf usd_ts usd_tf usd_vt usd_usdSkel usd_usdImaging usd_gf)
+        target_include_directories(zeno_usd PRIVATE ${PXR_INCLUDE_DIRS})
+        target_link_directories(zeno_usd PRIVATE ${ZENO_USD_ROOT}/lib)
+        target_link_libraries(zeno_usd PRIVATE tbb usd_ar usd_arch usd_kind usd_usdLux usd_usdGeom usd_pcp usd_usdUtils usd_usd usd_usdShade usd_sdf usd_ts usd_tf usd_vt usd_usdSkel usd_usdImaging usd_gf)
+    else()
+        message(FATAL_ERROR "USD not found")
     endif()
+else()
+    message(FATAL_ERROR "You must set ZENO_USD_ROOT when ZENO_WITH_USD=ON")
 endif()
 
-if(DEFINED ZENO_USD_VERBOSE)
-    get_cmake_property(_variableNames VARIABLES)
-    list (SORT _variableNames)
-    foreach (_variableName ${_variableNames})
-        message(STATUS "\t\t${_variableName}=${${_variableName}}")
-    endforeach()
+option(ZENO_USDLIB_ONLY "only build zeno usd lib" OFF)
+if(NOT ZENO_USDLIB_ONLY)
+    target_sources(zeno PRIVATE USD_Def.cpp)
+    target_include_directories(zeno PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    target_link_libraries(zeno PRIVATE zeno_usd)
 endif()
+
+#add_library(zenousd_ui SHARED usdnode.cpp usdnode.h)
+#target_include_directories(zenousd_ui PUBLIC .)
+#target_include_directories(zenousd_ui PUBLIC ../../ui/nodesys ../../ui/zenomodel/include )
+#target_link_libraries(zenousd_ui PUBLIC zenomodel)
