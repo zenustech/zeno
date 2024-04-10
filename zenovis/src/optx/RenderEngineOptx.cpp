@@ -1008,7 +1008,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         }
     }
 
-    void draw() override {
+    void draw(bool _) override {
         //std::cout<<"in draw()"<<std::endl;
 #ifdef OPTIX_BASE_GL
         auto guard = setupState();
