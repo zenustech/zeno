@@ -1156,14 +1156,12 @@ void ZenoMainWindow::solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param, LAUN
     RecordVideoMgr* recordMgr = new RecordVideoMgr(this);
     recordMgr->setParent(viewWidget);
     recordMgr->setRecordInfo(recInfo);
-    connect(this, &ZenoMainWindow::runFinished, this, [=]() {
-        connect(recordMgr, &RecordVideoMgr::recordFailed, this, []() {
-            zeno::log_info("process exited with {}", -1);
-            QApplication::exit(-1);
-            });
-        connect(recordMgr, &RecordVideoMgr::recordFinished, this, []() {
-            QApplication::exit(0);
-            });
+    connect(recordMgr, &RecordVideoMgr::recordFailed, this, []() {
+        zeno::log_info("process exited with {}", -1);
+    QApplication::exit(-1);
+        });
+    connect(recordMgr, &RecordVideoMgr::recordFinished, this, []() {
+        QApplication::exit(0);
         });
     viewWidget->moveToFrame(recInfo.frameRange.first);      // first, set the time frame start end.
     this->toggleTimelinePlay(true);          // and then play.
