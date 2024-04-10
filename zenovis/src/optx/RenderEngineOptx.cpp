@@ -781,7 +781,9 @@ struct GraphicsManager {
                             ud.get2<float>("shutter_speed"),
                             ud.get2<float>("iso"),
                             ud.get2<bool>("aces"),
-                            ud.get2<bool>("exposure")
+                            ud.get2<bool>("exposure"),
+                            ud.get2<bool>("panorama_camera"),
+                            ud.get2<bool>("panorama_hemisphere")
                         );
                     }
                 }
@@ -821,7 +823,9 @@ struct GraphicsManager {
                                 ud.get2<float>("shutter_speed"),
                                 ud.get2<float>("iso"),
                                 ud.get2<bool>("aces"),
-                                ud.get2<bool>("exposure")
+                                ud.get2<bool>("exposure"),
+                                ud.get2<bool>("panorama_camera"),
+                                ud.get2<bool>("panorama_hemisphere")
                             );
                         }
                     }
@@ -1063,7 +1067,9 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 cam.zOptixCameraSettingInfo.shutter_speed,
                 cam.zOptixCameraSettingInfo.iso,
                 cam.zOptixCameraSettingInfo.aces,
-                cam.zOptixCameraSettingInfo.exposure
+                cam.zOptixCameraSettingInfo.exposure,
+                cam.zOptixCameraSettingInfo.panorama_camera,
+                cam.zOptixCameraSettingInfo.panorama_hemisphere
             );
         }
 

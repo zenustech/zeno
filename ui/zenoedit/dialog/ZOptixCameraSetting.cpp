@@ -44,6 +44,14 @@ ZOptixCameraSetting::ZOptixCameraSetting(zenovis::ZOptixCameraSettingInfo &info,
     m_exposure->setStyleSheet("color: white;");
     m_exposure->setChecked(info.exposure);
 
+    QCheckBox *m_panorama_camera = new QCheckBox(tr("PanoramaCamera"));
+    m_panorama_camera->setStyleSheet("color: white;");
+    m_panorama_camera->setChecked(info.panorama_camera);
+
+    QCheckBox *m_panorama_hemisphere = new QCheckBox(tr("PanoramaHemisphere"));
+    m_panorama_hemisphere->setStyleSheet("color: white;");
+    m_panorama_hemisphere->setChecked(info.panorama_hemisphere);
+
     mainLayout->addWidget(new QLabel("Aperture"));
     mainLayout->addWidget(m_aperture);
     mainLayout->addWidget(new QLabel("ShutterSpeed"));
@@ -52,6 +60,8 @@ ZOptixCameraSetting::ZOptixCameraSetting(zenovis::ZOptixCameraSettingInfo &info,
     mainLayout->addWidget(m_iso);
     mainLayout->addWidget(m_aces);
     mainLayout->addWidget(m_exposure);
+    mainLayout->addWidget(m_panorama_camera);
+    mainLayout->addWidget(m_panorama_hemisphere);
 
     mainLayout->addLayout(buttonLayout);
 
@@ -77,6 +87,12 @@ ZOptixCameraSetting::ZOptixCameraSetting(zenovis::ZOptixCameraSettingInfo &info,
     });
     connect(m_exposure, &QCheckBox::stateChanged, this, [&](int state) {
         info.exposure = state == Qt::Checked;
+    });
+    connect(m_panorama_camera, &QCheckBox::stateChanged, this, [&](int state) {
+        info.panorama_camera = state == Qt::Checked;
+    });
+    connect(m_panorama_hemisphere, &QCheckBox::stateChanged, this, [&](int state) {
+        info.panorama_hemisphere = state == Qt::Checked;
     });
 
 }

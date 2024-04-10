@@ -52,12 +52,14 @@ void Camera::setCamera(zeno::CameraData const &cam) {
     this->m_need_sync = true;
 }
 
-void Camera::setPhysicalCamera(float aperture, float shutter_speed, float iso, bool aces, bool exposure) {
+void Camera::setPhysicalCamera(float aperture, float shutter_speed, float iso, bool aces, bool exposure, bool panorama_camera, bool panorama_hemisphere) {
     this->zOptixCameraSettingInfo.aperture = aperture;
     this->zOptixCameraSettingInfo.shutter_speed = shutter_speed;
     this->zOptixCameraSettingInfo.iso = iso;
     this->zOptixCameraSettingInfo.aces = aces;
     this->zOptixCameraSettingInfo.exposure = exposure;
+    this->zOptixCameraSettingInfo.panorama_camera = panorama_camera;
+    this->zOptixCameraSettingInfo.panorama_hemisphere = panorama_hemisphere;
 }
 
 static glm::mat4 MakeInfReversedZProjRH(float fovY_radians, float aspectWbyH, float zNear) {

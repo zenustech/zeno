@@ -44,7 +44,7 @@ public slots:
     void onCleanUpScene();
     void onSetBackground(bool bShowBg);
 
-    void onSetData(float, float, float, bool, bool);
+    void onSetData(float, float, float, bool, bool, bool, bool);
 
 private:
     Zenovis *m_zenoVis;
@@ -108,7 +108,7 @@ signals:
     void sig_updateCameraProp(float aperture, float disPlane, UI_VECTYPE skipParam = UI_VECTYPE());
     void sig_cleanUpScene();
     void sig_setBackground(bool bShowBg);
-    void sig_setdata_on_optix_thread(float, float, float, bool, bool);
+    void sig_setdata_on_optix_thread(float, float, float, bool, bool, bool, bool);
 
 public slots:
     void onFrameRunFinished(int frame);

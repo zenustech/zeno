@@ -58,6 +58,8 @@ struct SetPhysicalCamera : INode {
         ud.set2("iso", get_input2<float>("iso"));
         ud.set2("aces", get_input2<bool>("aces"));
         ud.set2("exposure", get_input2<bool>("exposure"));
+        ud.set2("panorama_camera", get_input2<bool>("panorama_camera"));
+        ud.set2("panorama_hemisphere", get_input2<bool>("panorama_hemisphere"));
 
         set_output("camera", std::move(camera));
     }
@@ -71,6 +73,9 @@ ZENO_DEFNODE(SetPhysicalCamera)({
         {"float", "iso", "150"},
         {"bool", "aces", "0"},
         {"bool", "exposure", "0"},
+        {"bool", "exposure", "0"},
+        {"bool", "panorama_camera", "0"},
+        {"bool", "panorama_hemisphere", "0"},
     },
     {
             {"CameraObject", "camera"},
