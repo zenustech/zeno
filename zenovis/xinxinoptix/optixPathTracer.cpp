@@ -37,6 +37,7 @@
 #include <zeno/para/parallel_scan.h>
 #include <zeno/utils/log.h>
 #include <zeno/utils/zeno_p.h>
+#include <zeno/utils/fileio.h>
 #include <zeno/types/MaterialObject.h>
 #include <zeno/types/UserData.h>
 #include "optixSphere.h"
@@ -3854,12 +3855,13 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
             for (auto i = 0; i < w * h * 3; i++) {
                 data.push_back(int(ptr[i]));
             }
-            std::string native_path = std::filesystem::u8path(path + "_mask.png").string();
+            std::string native_path = zeno::create_directories_when_write_file(path + "_mask.png");
             stbi_flip_vertically_on_write(1);
             stbi_write_png(native_path.c_str(), w, h, 3, data.data(),0);
         }
         // AOV
         if (enable_output_aov) {
+            zeno::create_directories_when_write_file(exr_path);
             SaveMultiLayerEXR(
                     {
                             (float*)optixgetimg_extra("color"),
@@ -3884,22 +3886,23 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         }
         else {
             if (enable_output_exr) {
+                zeno::create_directories_when_write_file(exr_path);
                 save_exr((float3 *)optixgetimg_extra("color"), w, h, exr_path);
             }
             else {
-                std::string jpg_native_path = std::filesystem::u8path(path).string();
+                std::string jpg_native_path = zeno::create_directories_when_write_file(path);
                 stbi_write_jpg(jpg_native_path.c_str(), w, h, 4, p, 100);
                 if (denoise) {
                     const float* _albedo_buffer = reinterpret_cast<float*>(state.albedo_buffer_p.handle);
                     //SaveEXR(_albedo_buffer, w, h, 4, 0, (path+".albedo.exr").c_str(), nullptr);
                     auto a_path = path + ".albedo.pfm";
-                    std::string native_a_path = std::filesystem::u8path(a_path).string();
+                    std::string native_a_path = zeno::create_directories_when_write_file(a_path);
                     write_pfm(native_a_path, w, h, _albedo_buffer);
 
                     const float* _normal_buffer = reinterpret_cast<float*>(state.normal_buffer_p.handle);
                     //SaveEXR(_normal_buffer, w, h, 4, 0, (path+".normal.exr").c_str(), nullptr);
                     auto n_path = path + ".normal.pfm";
-                    std::string native_n_path = std::filesystem::u8path(n_path).string();
+                    std::string native_n_path = zeno::create_directories_when_write_file(n_path);
                     write_pfm(native_n_path, w, h, _normal_buffer);
                 }
             }
