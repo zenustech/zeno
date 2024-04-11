@@ -1,12 +1,10 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
-#include <zeno/funcs/PrimitiveUtils.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/utils/variantswitch.h>
 #include <zeno/utils/arrayindex.h>
-#include <zeno/utils/string.h>
-#include <zeno/utils/log.h>
 #include <zeno/utils/vec.h>
+#include <zeno/utils/fileio.h>
 #include <fstream>
 
 namespace zeno {
@@ -48,6 +46,7 @@ struct WritePrimToCSV : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         auto path = get_input<StringObject>("path")->get();
+        path = create_directories_when_write_file(path);
         std::ofstream fout(path);
         auto memb = invoker_variant(array_index(
                 {"verts", "points", "lines", "tris", "quads", "loops", "polys"},

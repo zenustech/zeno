@@ -46,6 +46,7 @@ struct WriteJson : zeno::INode {
     virtual void apply() override {
         auto _json = get_input2<JsonObject>("json");
         auto path = get_input2<std::string>("path");
+        path = create_directories_when_write_file(path);
         file_put_content(path, _json->json.dump());
     }
 };
