@@ -3,6 +3,7 @@
 //
 #include <ImfMultiPartOutputFile.h>
 #include <ImfOutputFile.h>
+#include <ImfInputFile.h>
 #include <ImfChannelList.h>
 #include <ImfHeader.h>
 #include <ImfRgbaFile.h>
@@ -17,6 +18,7 @@
 #include <filesystem>
 #include <zeno/utils/log.h>
 #include <zeno/utils/image_proc.h>
+#include <zeno/utils/string.h>
 #include "zeno/types/DictObject.h"
 #include <zeno/utils/fileio.h>
 
@@ -256,6 +258,121 @@ ZENDEFNODE(WriteExr, {
         {"dict", "channels"},
     },
     {
+    },
+    {},
+    {"comp"},
+});
+struct ReadExr : INode {
+    std::pair<std::string, int> get_output_name(std::string name) {
+        std::string output_name;
+        int channel = 0;
+
+        if (zeno::ends_with(name, ".R")) {
+            output_name = name.substr(0, name.size() - 2);
+            channel = 0;
+        }
+        else if (zeno::ends_with(name, ".G")) {
+            output_name = name.substr(0, name.size() - 2);
+            channel = 1;
+        }
+        else if (zeno::ends_with(name, ".B")) {
+            output_name = name.substr(0, name.size() - 2);
+            channel = 2;
+        }
+        else if (name == "R") {
+            output_name = "";
+            channel = 0;
+        }
+        else if (name == "G") {
+            output_name = "";
+            channel = 1;
+        }
+        else if (name == "B") {
+            output_name = "";
+            channel = 2;
+        }
+        else {
+            output_name = name;
+            channel = 0;
+        }
+        return {output_name, channel};
+
+    }
+    virtual void apply() override {
+        using namespace Imf;
+        using namespace Imath;
+        auto path = get_input2<std::string>("path");
+        // Open the EXR file
+        InputFile exrFile(path.c_str());
+
+        // Get the header information
+        const Header& exrHeader = exrFile.header();
+
+        // Get the data window size
+        Box2i dataWindow = exrHeader.dataWindow();
+        int width = dataWindow.max.x - dataWindow.min.x + 1;
+        int height = dataWindow.max.y - dataWindow.min.y + 1;
+
+        // Get the channel names
+        std::vector<std::string> channelNames;
+        const ChannelList& channels = exrHeader.channels();
+        std::map<std::string, std::shared_ptr<PrimitiveObject>> lut;
+        for (auto it = channels.begin(); it != channels.end(); it++) {
+            channelNames.emplace_back(it.name());
+            std::string name = it.name();
+            auto [output_name, _] = get_output_name(name);
+            if (lut.count(output_name) == 0) {
+                auto img = std::make_shared<zeno::PrimitiveObject>();
+                img->verts.resize(width * height);
+                img->userData().set2("isImage", 1);
+                img->userData().set2("w", width);
+                img->userData().set2("h", height);
+
+                lut[output_name] = img;
+            }
+        }
+
+        // Read each channel and store the pixel data in a vector
+        std::vector<std::vector<float>> pixelData(channelNames.size());
+        FrameBuffer frameBuffer;
+        for (size_t i = 0; i < channelNames.size(); ++i) {
+            pixelData[i].resize(width * height);
+
+            // Define a frame buffer for the current channel
+            frameBuffer.insert(channelNames[i].c_str(),
+                               Slice(FLOAT,               // Data type
+                                     (char*)&pixelData[i][0], // Pointer to data
+                                     sizeof(float) * 1,      // Stride (1 channel)
+                                     sizeof(float) * width)); // xStride
+        }
+        // Read the pixel data
+        exrFile.setFrameBuffer(frameBuffer);
+        exrFile.readPixels(dataWindow.min.y, dataWindow.max.y);
+        for (size_t k = 0; k < channelNames.size(); ++k) {
+            auto name = channelNames[k];
+            auto [output_name, c] = get_output_name(name);
+            auto img = lut[output_name];
+            for (auto j = 0; j < height; j++) {
+                for (auto i = 0; i < width; i++) {
+                    auto index = j * width + i;
+                    img->verts[index][c] = pixelData[k][index];
+                }
+            }
+        }
+
+        auto dict = std::make_shared<zeno::DictObject>();
+        for (auto [k, v]: lut) {
+            dict->lut[k] = std::dynamic_pointer_cast<IObject>(v);
+        }
+        set_output("channels", std::move(dict));
+    }
+};
+ZENDEFNODE(ReadExr, {
+    {
+        {"readpath", "path"},
+    },
+    {
+        {"dict", "channels"},
     },
     {},
     {"comp"},
