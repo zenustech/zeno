@@ -123,6 +123,32 @@ macro (zeno_dbg_msvc project)
     endif()
 endmacro()
 
+if (ZENO_WITH_PYTHON3)
+    find_package(Python3 COMPONENTS Development REQUIRED)
+    get_filename_component(Python3_HOME_PATH ${Python3_INCLUDE_DIRS}/.. ABSOLUTE)
+    get_filename_component(Python3_NAME ${Python3_HOME_PATH} NAME)
+
+    message(STATUS "copying python3 env into bin dir: ${Python3_HOME_PATH}")
+    message(STATUS "python3 dir name: ${Python3_NAME}")
+    message(STATUS "pythons lib:" ${Python3_LIBRARIES})
+
+    file(COPY ${Python3_HOME_PATH} DESTINATION ${ZENO_OUTPUT_DIR})
+
+    file(GLOB Python3_DLLS
+        "${Python3_HOME_PATH}/Python*.dll"
+    )
+    file(COPY ${Python3_DLLS} DESTINATION ${ZENO_OUTPUT_DIR})
+
+    #message(STATUS "Python3_dlls: "${Python3_DLLS})
+
+    set(Zeno_Python3_HOME ${ZENO_OUTPUT_DIR}/${Python3_NAME})
+
+    message(STATUS "python3 dir home: ${Zeno_Python3_HOME}")
+
+    add_definitions(-DZENO_PYTHON_HOME="${Zeno_Python3_HOME}")
+    add_definitions(-DZENO_PYTHON_MODULE_DIR="${Zeno_Python3_HOME}/Lib")
+endif()
+
 ## --- begin cihou wxl cuda
 if (ZENO_WITH_CUDA)        # must move enable_language ahead to here
     message(STATUS "CUDA_PATH: "$ENV{CUDA_PATH})

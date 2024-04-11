@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
 
     startUp(true);
 #ifdef ZENO_WITH_PYTHON3
-    initPythonEnv(argv[0]);
+    //initPythonEnv(argv[0]);
 #endif
 
     if (argc >= 3 && !strcmp(argv[1], "-optix")) {

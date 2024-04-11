@@ -174,6 +174,7 @@ static int runner_start(std::string const &progJson, int sessionid, const LAUNCH
                                 }
                                 else
                                 {
+                                    writer.Null();
                                     zeno::log_error("parse obj error");
                                 }
                                 idx++;
