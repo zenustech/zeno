@@ -1,6 +1,14 @@
 //
 // Created by zh on 2023/7/31.
 //
+#include <ImfMultiPartOutputFile.h>
+#include <ImfOutputFile.h>
+#include <ImfChannelList.h>
+#include <ImfHeader.h>
+#include <ImfRgbaFile.h>
+#include <ImfArray.h>
+#include <half.h>
+
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/NumericObject.h>
@@ -9,6 +17,8 @@
 #include <filesystem>
 #include <zeno/utils/log.h>
 #include <zeno/utils/image_proc.h>
+#include "zeno/types/DictObject.h"
+#include <zeno/utils/fileio.h>
 
 #include <png.h>
 #include <cstdio>
@@ -149,6 +159,103 @@ ZENDEFNODE(ReadPNG16, {
     },
     {
         {"PrimitiveObject", "image"},
+    },
+    {},
+    {"comp"},
+});
+
+static void SaveMultiLayerEXR(
+        std::vector<float*> pixels
+        , int width
+        , int height
+        , std::vector<std::string> channels
+        , const char* exrFilePath
+) {
+    using namespace Imath;
+    using namespace Imf;
+
+    Header header(width, height);
+    ChannelList channelList;
+
+    const char *std_suffix = "RGB";
+    for (auto channel: channels) {
+        for (int i = 0; i < 3; i++) {
+            std::string name = zeno::format("{}{}", channel, std_suffix[i]);
+            channelList.insert(name, Channel(HALF));
+        }
+    }
+
+    header.channels() = channelList;
+
+    OutputFile file (exrFilePath, header);
+    FrameBuffer frameBuffer;
+
+    std::vector<std::vector<half>> data;
+    for (float *rgb: pixels) {
+        std::vector<half> r(width * height);
+        std::vector<half> g(width * height);
+        std::vector<half> b(width * height);
+        for (auto i = 0; i < width * height; i++) {
+            r[i] = rgb[3 * i + 0];
+            g[i] = rgb[3 * i + 1];
+            b[i] = rgb[3 * i + 2];
+        }
+        zeno::image_flip_vertical(r.data(), width, height);
+        zeno::image_flip_vertical(g.data(), width, height);
+        zeno::image_flip_vertical(b.data(), width, height);
+        data.push_back(std::move(r));
+        data.push_back(std::move(g));
+        data.push_back(std::move(b));
+    }
+
+    for (auto i = 0; i < channels.size(); i++) {
+        for (auto j = 0; j < 3; j++) {
+            std::string name = zeno::format("{}{}", channels[i], std_suffix[j]);
+            frameBuffer.insert (name, Slice ( HALF, (char*) data[i * 3 + j].data(), sizeof (half) * 1, sizeof (half) * width));
+        }
+    }
+
+    file.setFrameBuffer (frameBuffer);
+    file.writePixels (height);
+}
+struct WriteExr : INode {
+    virtual void apply() override {
+        auto path = get_input2<std::string>("path");
+        create_directories_when_write_file(path);
+        std::vector<float*> pixels;
+        std::vector<std::string> channels;
+        std::vector<std::pair<int, int>> width_heights;
+        auto dict = get_input<DictObject>("channels");
+        for (auto &[k, v]: dict->lut) {
+            if (k.size()) {
+                channels.push_back(k+'.');
+            }
+            else {
+                channels.push_back(k);
+            }
+            auto img = std::dynamic_pointer_cast<PrimitiveObject>(v);
+            if (!img || !img->userData().get2<int>("isImage", 0)) {
+                throw zeno::makeError("input not image");
+            }
+            int w = img->userData().get2<int>("w");
+            int h = img->userData().get2<int>("h");
+            width_heights.emplace_back(w, h);
+            pixels.push_back(reinterpret_cast<float *>(img->verts.data()));
+        }
+        for (auto i = 1; i < width_heights.size(); i++) {
+            if (width_heights[i] != width_heights[0]) {
+                throw zeno::makeError("input image as different size!");
+            }
+        }
+        SaveMultiLayerEXR(pixels, width_heights[0].first, width_heights[0].second, channels, path.c_str());
+    }
+};
+ZENDEFNODE(WriteExr, {
+    {
+        {"writepath", "path"},
+        {"dict", "channels"},
+    },
+    {
     },
     {},
     {"comp"},
