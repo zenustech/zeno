@@ -3,10 +3,10 @@
 #include <zeno/funcs/PrimitiveUtils.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/utils/vec.h>
+#include <zeno/utils/fileio.h>
 #include <string_view>
 #include <fstream>
 #include <iomanip>
-#include <filesystem>
 
 namespace fs = std::filesystem;
 
@@ -49,12 +49,7 @@ struct WriteObjPrim : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         auto path = get_input<StringObject>("path")->get();
-
-        auto folderPath = fs::path(path).parent_path();
-
-        if (!fs::exists(folderPath)) {
-            fs::create_directories(folderPath);
-        }
+        path = create_directories_when_write_file(path);
 
         if (get_param<bool>("polygonate")) {
             primPolygonate(prim.get());

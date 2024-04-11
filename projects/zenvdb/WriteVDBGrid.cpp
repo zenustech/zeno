@@ -2,7 +2,7 @@
 #include <zeno/VDBGrid.h>
 #include <zeno/StringObject.h>
 #include <zeno/ZenoInc.h>
-#include <filesystem>
+#include "zeno/utils/fileio.h"
 
 namespace fs = std::filesystem;
 
@@ -14,6 +14,7 @@ namespace zeno {
 struct WriteVDBGrid : zeno::INode {
   virtual void apply() override {
     auto path = get_param<std::string>("path");
+    path = create_directories_when_write_file(path);
     auto data = get_input<VDBGrid>("data");
     data->output(path);
   }
