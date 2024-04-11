@@ -696,10 +696,8 @@ struct GraphicsManager {
                 float evnTexStrength = prim_in->userData().get2<float>("evnTexStrength");
                 bool enableHdr = prim_in->userData().get2<bool>("enable");
                 if (!path.empty()) {
-                    std::string need_remove_tex;
                     if (OptixUtil::sky_tex.has_value() && OptixUtil::sky_tex.value() != path) {
-                        need_remove_tex = OptixUtil::sky_tex.value();
-                        OptixUtil::removeTexture(need_remove_tex);
+                        OptixUtil::removeTexture(OptixUtil::sky_tex.value());
                     }
                     OptixUtil::sky_tex = path;
                     OptixUtil::addTexture(path);
@@ -1104,7 +1102,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         }
     }
 
-    void draw() override {
+    void draw(bool _) override {
         //std::cout<<"in draw()"<<std::endl;
 #ifdef OPTIX_BASE_GL
         auto guard = setupState();
@@ -1240,6 +1238,30 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             } // preserve material names for materials-only updating case 
 
             //for (auto const &[key, obj]: graphicsMan->graphics)
+            // Auto unload unused texure
+            {
+                std::vector<std::string> realNeedTexPaths;
+                for(auto const &[matkey, mtldet] : matMap) {
+                    for(auto tex: mtldet->tex2Ds) {
+                        if (cachedMeshesMaterials.count(mtldet->mtlidkey) > 0 || cachedSphereMaterials.count(mtldet->mtlidkey) > 0) {
+                            realNeedTexPaths.emplace_back(tex->path);
+                        }
+                    }
+                }
+                std::vector<std::string> needToRemoveTexPaths;
+                for(auto const &[tex, _]: OptixUtil::g_tex) {
+                    if (std::find(realNeedTexPaths.begin(), realNeedTexPaths.end(), tex) != realNeedTexPaths.end()) {
+                        continue;
+                    }
+                    if (OptixUtil::sky_tex.has_value() && tex == OptixUtil::sky_tex.value()) {
+                        continue;
+                    }
+                    needToRemoveTexPaths.emplace_back(tex);
+                }
+                for (const auto& need_remove_tex: needToRemoveTexPaths) {
+                    OptixUtil::removeTexture(need_remove_tex);
+                }
+            }
             for(auto const &[matkey, mtldet] : matMap)
             {       
                     bool has_vdb = false;

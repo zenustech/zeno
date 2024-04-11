@@ -24,7 +24,7 @@ struct ComputeParticleVolume : INode {
         auto &ibs = buckets->get();
 
         using namespace zs;
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
         bool first = true;
 
         for (auto &&parObjPtr : parObjPtrs)
@@ -112,7 +112,7 @@ struct PushOutZSParticles : INode {
         fmt::print(fg(fmt::color::green), "begin executing PushOutZSParticles\n");
         auto parObjPtrs = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
         using namespace zs;
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
         auto zsls = get_input<ZenoLevelSet>("ZSLevelSet");
         auto dis = get_input2<float>("dis");
 
@@ -163,7 +163,7 @@ struct RefineMeshParticles : INode {
     auto parObjPtrs = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
 
     using namespace zs;
-    auto cudaPol = cuda_exec().device(0);
+    auto cudaPol = cuda_exec();
 
     /// the biggest distance among particles should be no greater than 'dx'
     auto dx = get_input2<float>("dx");
@@ -178,10 +178,10 @@ struct RefineMeshParticles : INode {
         auto &pars = parObjPtr->getParticles();
         auto &eles = parObjPtr->getQuadraturePoints();
 
-        Vector<int> vertCnt{1, memsrc_e::device, 0},
-            eleCnt{1, memsrc_e::device, 0};
-        Vector<int> vertOffsets{1, memsrc_e::device, 0},
-            eleOffsets{1, memsrc_e::device, 0};
+        Vector<int> vertCnt{1, memsrc_e::device},
+            eleCnt{1, memsrc_e::device};
+        Vector<int> vertOffsets{1, memsrc_e::device},
+            eleOffsets{1, memsrc_e::device};
         int prevVertCnt{}, prevEleCnt{};
 
         auto probeSize = [&]() {
@@ -351,7 +351,7 @@ struct RefineMeshParticles : INode {
         auto parObjPtrs = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
 
         using namespace zs;
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
 
         /// the biggest distance among particles should be no greater than 'dx'
         auto dx = get_input2<float>("dx");
@@ -371,15 +371,15 @@ struct RefineMeshParticles : INode {
                 using int3 = zs::vec<int, 3>;
                 using float3 = zs::vec<float, 3>;
                 // edges(<v0, v1>) is stored in _activeKeys
-                HashTable<int, 2, int> edgeTable{1, memsrc_e::device, 0};
+                HashTable<int, 2, int> edgeTable{1, memsrc_e::device};
                 // i-th edge adjacent elements
-                Vector<int2> edgeEles{1, memsrc_e::device, 0};
+                Vector<int2> edgeEles{1, memsrc_e::device};
                 // i-th edge's local edge number within the tri element (i.e. 0, 1, 2)
-                Vector<char2> edgeLocalNosInEle{1, memsrc_e::device, 0};
+                Vector<char2> edgeLocalNosInEle{1, memsrc_e::device};
                 // local edge number within the element
-                Vector<int3> eleSplitVertNos{1, memsrc_e::device, 0};
+                Vector<int3> eleSplitVertNos{1, memsrc_e::device};
 
-                Vector<int> vertCnt{1, memsrc_e::device, 0}, eleCnt{1, memsrc_e::device, 0};
+                Vector<int> vertCnt{1, memsrc_e::device}, eleCnt{1, memsrc_e::device};
                 int prevVertCnt{}, curVertCnt{}, prevEleCnt{};
 
                 const bool hasNormalProperty = pars.hasProperty("nrm");
@@ -701,7 +701,7 @@ struct UpdateZSPrimitiveSequence : INode {
         auto zsprimseq = get_input<ZenoParticles>("ZSPrimitiveSequence");
         auto dt = get_input2<float>("stepdt");
 
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
 
         auto numV = zsprimseq->numParticles();
         auto sprayedOffset = zsprimseq->sprayedOffset;

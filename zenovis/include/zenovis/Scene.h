@@ -41,7 +41,7 @@ struct Scene : zeno::disable_copy {
     Scene();
     ~Scene();
 
-    void draw();
+    void draw(bool record);
     bool loadFrameObjects(int frameid);
     void switchRenderEngine(std::string const &name);
     std::vector<char> record_frame_offline(int hdrSize = 1, int rgbComps = 3);

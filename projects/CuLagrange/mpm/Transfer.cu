@@ -992,7 +992,7 @@ struct ZSParticleToZSGrid : INode {
         auto stepDt = get_input<zeno::NumericObject>("dt")->get<float>();
 
         using namespace zs;
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
 
         for (auto &&parObjPtr : parObjPtrs) {
             auto &pars = parObjPtr->getParticles();
@@ -1079,7 +1079,7 @@ struct ZSGridToZSParticle : INode {
         auto stepDt = get_input<NumericObject>("dt")->get<float>();
 
         using namespace zs;
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
 
         using grid_t = RM_CVREF_T(grid);
         if (table->hasTags()) {
@@ -1588,7 +1588,7 @@ struct ZSBoundaryPrimitiveToZSGrid : INode {
         auto &grid = zsgrid->get();
 
         using namespace zs;
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
 
         if (zsgrid->transferScheme != "boundary")
             throw std::runtime_error("grid is not of boundary type!");

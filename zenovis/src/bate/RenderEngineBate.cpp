@@ -8,14 +8,15 @@
 #include <zenovis/bate/IGraphic.h>
 #include <zenovis/opengl/vao.h>
 #include <zenovis/opengl/scope.h>
+#include "zenovis/bate/FrameBufferRender.h"
 
 namespace zenovis::bate {
-
 struct RenderEngineBate : RenderEngine {
     std::unique_ptr<opengl::VAO> vao;
     std::unique_ptr<GraphicsManager> graphicsMan;
     std::vector<std::unique_ptr<IGraphicDraw>> hudGraphics;
     std::unique_ptr<IGraphicDraw> primHighlight;
+    std::unique_ptr<FrameBufferRender> fbr;
     Scene *scene;
 
     int bateEnginIdx = 0;
@@ -37,6 +38,7 @@ struct RenderEngineBate : RenderEngine {
 
         vao = std::make_unique<opengl::VAO>();
         graphicsMan = std::make_unique<GraphicsManager>(scene);
+        fbr = std::make_unique<FrameBufferRender>(scene);
 
         hudGraphics.push_back(makeGraphicGrid(scene));
         hudGraphics.push_back(makeGraphicAxis(scene));
@@ -52,7 +54,7 @@ struct RenderEngineBate : RenderEngine {
         graphicsMan->update_objs(zeno::getSession().globalComm->getCurrentFrameObjs(), zeno::getSession().globalComm->getNeedUpdateToviewObjs(), bateEnginIdx);
     }
 
-    void draw() override {
+    void draw(bool record) override {
         auto guard = setupState();
         CHECK_GL(glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE));
         glDepthFunc(GL_GREATER);
@@ -60,6 +62,10 @@ struct RenderEngineBate : RenderEngine {
         CHECK_GL(glClearColor(scene->drawOptions->bgcolor.r, scene->drawOptions->bgcolor.g,
                               scene->drawOptions->bgcolor.b, 0.0f));
         CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+        if (!record) {
+            fbr->generate_buffers();
+            fbr->bind();
+        }
 
         auto bindVao = opengl::scopeGLBindVertexArray(vao->vao);
         graphicsMan->draw();
@@ -89,6 +95,11 @@ struct RenderEngineBate : RenderEngine {
         if (!scene->selected.empty() && scene->drawOptions->handler) {
             CHECK_GL(glClear(GL_DEPTH_BUFFER_BIT));
             scene->drawOptions->handler->draw();
+        }
+        if (!record) {
+            fbr->unbind();
+            fbr->draw_to_screen();
+            fbr->destroy_buffers();
         }
     }
 };

@@ -65,7 +65,7 @@ struct ReduceZsVector : INode {
                 auto pol = zs::cuda_exec();
                 using vector_t = RM_CVREF_T(vector);
                 using val_t = typename vector_t::value_type;
-                zs::Vector<val_t> res{1, zs::memsrc_e::device, 0};
+                zs::Vector<val_t> res{1, zs::memsrc_e::device};
                 if (opStr == "add")
                     zs::reduce(pol, std::begin(vector), std::end(vector), std::begin(res), static_cast<val_t>(0),
                                zs::plus<val_t>{});

@@ -24,6 +24,8 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     auto att_instTang = attrs.instTang;
     auto att_rayLength = attrs.rayLength;
 
+
+
     vec3 b = normalize(cross(attrs.T, attrs.N));
     vec3 t = normalize(cross(attrs.N, b));
     vec3 n = normalize(attrs.N);
@@ -37,6 +39,12 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     auto att_LoV      = dot(att_L, att_V);
     auto att_reflectance = attrs.reflectance;
     auto att_fresnel  = attrs.fresnel;
+    auto att_worldNrm = n;
+    auto att_worldTan = t;
+    auto att_worldBTn = b;
+    auto att_camFront = vec3(params.cam.front);
+    auto att_camUp    = vec3(params.cam.up);
+    auto att_camRight = vec3(params.cam.right);
 
 #ifndef _FALLBACK_
 
