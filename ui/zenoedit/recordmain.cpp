@@ -17,7 +17,7 @@
 #include <rapidjson/document.h>
 
 
-//--record true --zsg "C:\zeno-master\render_param.zsg" --cachePath "C:\tmp" --sframe 0 --frame 10 --sample 1 --optix 1 --path "C:\recordpath" --pixel 4500x3500 --aov 0 --needDenoise 0
+//--record true --zsg "C:\zeno-master\render_param.zsg" --cachePath "C:\tmp" --sframe 0 --frame 10 --sample 1 --optix 0 --path "C:\recordpath" --pixel 4500x3500 --aov 0 --needDenoise 0
 //--record true --zsg "C:\zeno-master\render_param.zsg" --cachePath "C:\tmp" --optix 1
 
 static int calcFrameCountByAudio(std::string path, int fps) {
@@ -203,11 +203,9 @@ int record_main(const QCoreApplication& app)
     }
 
     if (!param.bOptix) {
-        //gl normal recording may not be work in cmd mode.
         ZenoMainWindow tempWindow(nullptr, 0, !param.bOptix ? PANEL_GL_VIEW : PANEL_EMPTY);
-        tempWindow.showMaximized();
-        tempWindow.solidRunRender(param,launchparam);
-
+        tempWindow.hide();
+        tempWindow.solidRunRender(param, launchparam);
         //idle
         return app.exec();
     }
