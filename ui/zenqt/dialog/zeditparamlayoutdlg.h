@@ -60,11 +60,7 @@ private slots:
     void onLabelEditFinished();
     void onHintEditFinished();
     void onParamTreeDeleted();
-    void onMinEditFinished();
-    void onMaxEditFinished();
-    void onStepEditFinished();
     void onControlItemChanged(int);
-    void onComboTableItemsCellChanged(int row, int column);
     void onViewParamDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
     void onSocketTypeChanged(int idx);
 
@@ -74,7 +70,6 @@ private:
     QIcon getIcon(const QStandardItem *pItem);
     void proxyModelSetData(const QModelIndex& index, const QVariant& newValue, int role);
     void switchStackProperties(int ctrl, QStandardItem *pItem);
-    void updateSliderInfo();
     void initModel(const QStandardItemModel* pModel);
 
     QStandardItemModel* m_paramsLayoutM;

@@ -170,46 +170,8 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, QWidget* pa
     QShortcut* shortcut = new QShortcut(QKeySequence(Qt::Key_Delete), m_ui->paramsView);
     connect(shortcut, SIGNAL(activated()), this, SLOT(onParamTreeDeleted()));
 
-    connect(m_ui->btnChooseCoreParam, SIGNAL(clicked(bool)), this, SLOT(onChooseParamClicked()));
-    connect(m_ui->editMin, SIGNAL(editingFinished()), this, SLOT(onMinEditFinished()));
-    connect(m_ui->editMax, SIGNAL(editingFinished()), this, SLOT(onMaxEditFinished()));
-    connect(m_ui->editStep, SIGNAL(editingFinished()), this, SLOT(onStepEditFinished()));
     connect(m_ui->cbControl, SIGNAL(currentIndexChanged(int)), this, SLOT(onControlItemChanged(int)));
     connect(m_ui->cbSocketType, SIGNAL(currentIndexChanged(int)), this, SLOT(onSocketTypeChanged(int)));
-
-    m_ui->itemsTable->setHorizontalHeaderLabels({ tr("Item Name") });
-    connect(m_ui->itemsTable, SIGNAL(cellChanged(int, int)), this, SLOT(onComboTableItemsCellChanged(int, int)));
-
-    m_ui->m_pUpButton->setFixedWidth(32);
-    m_ui->m_pUpButton->setEnabled(false);
-    m_ui->m_pUpButton->setIcon(QIcon(":/icons/moveUp.svg"));
-    connect(m_ui->itemsTable, &QTableWidget::itemSelectionChanged, this, [=]() {
-        m_ui->m_pUpButton->setEnabled(true);
-        auto item = m_ui->itemsTable->currentItem();
-        if (item) {
-            int row = item->row();
-            if (row == 0) {
-                m_ui->m_pUpButton->setEnabled(false);
-            }
-        } else {
-            m_ui->m_pUpButton->setEnabled(false);
-        }
-    });
-
-    connect(m_ui->m_pUpButton, &QPushButton::clicked, this, [=]() {
-        auto item = m_ui->itemsTable->currentItem();
-        if (item) {
-            int row = item->row() - 1;
-            disconnect(m_ui->itemsTable, SIGNAL(cellChanged(int, int)), this,
-                       SLOT(onComboTableItemsCellChanged(int, int)));
-            QString text = item->text();
-            item->setText(m_ui->itemsTable->item(row, 0)->text());
-            connect(m_ui->itemsTable, SIGNAL(cellChanged(int, int)), this,
-                    SLOT(onComboTableItemsCellChanged(int, int)));
-            m_ui->itemsTable->item(row, 0)->setText(text);
-            m_ui->itemsTable->setCurrentItem(m_ui->itemsTable->item(row, 0));
-        }
-    });
 
     connect(m_paramsLayoutM, &QStandardItemModel::dataChanged, this, &ZEditParamLayoutDlg::onViewParamDataChanged);
 }
@@ -235,11 +197,12 @@ void ZEditParamLayoutDlg::initModel(const QStandardItemModel* pModel)
 
 void ZEditParamLayoutDlg::initUI() 
 {
+    m_ui->editHint->setProperty("cssClass", "dark");
+    m_ui->editName->setProperty("cssClass", "dark");
+    m_ui->editLabel->setProperty("cssClass", "dark");
     m_ui->labelCreateControl->setProperty("cssClass", "bold");
     m_ui->labelPrameter->setProperty("cssClass", "bold");
     m_ui->labelSetting->setProperty("cssClass", "bold");
-    m_ui->label_11->setProperty("cssClass", "bold");
-    m_ui->btnChooseCoreParam->setProperty("cssClass", "CoreParam");
     m_ui->listConctrl->setFixedWidth(ZenoStyle::dpiScaled(296));
     m_ui->paramsView->setFixedWidth(ZenoStyle::dpiScaled(296));
     m_ui->labelSetting->setMinimumWidth(ZenoStyle::dpiScaled(296));
@@ -301,65 +264,6 @@ QIcon ZEditParamLayoutDlg::getIcon(const QStandardItem *pItem)
     return QIcon();
 }
 
-void ZEditParamLayoutDlg::onComboTableItemsCellChanged(int row, int column)
-{
-    //dump to item.
-    QModelIndex layerIdx = m_ui->paramsView->currentIndex();
-    QString value = layerIdx.data(ROLE_PARAM_VALUE).toString();
-    if (!layerIdx.isValid() && layerIdx.data(ROLE_VPARAM_TYPE) != VPARAM_PARAM)
-        return;
-
-    QStringList lst;
-    for (int r = 0; r < m_ui->itemsTable->rowCount(); r++)
-    {
-        QTableWidgetItem* pItem = m_ui->itemsTable->item(r, 0);
-        if (pItem && !pItem->text().isEmpty()) {
-            if (lst.contains(pItem->text())) 
-            {
-                QMessageBox::information(this, tr("Info"), tr("The %1 item already exists").arg(pItem->text()));
-                disconnect(m_ui->itemsTable, SIGNAL(cellChanged(int, int)), this, SLOT(onComboTableItemsCellChanged(int, int)));
-                pItem->setText("");
-                connect(m_ui->itemsTable, SIGNAL(cellChanged(int, int)), this, SLOT(onComboTableItemsCellChanged(int, int)));
-                return;
-            }
-            lst.append(pItem->text());
-        }
-    }
-    if (lst.isEmpty())
-        return;
-
-    zeno::ControlProperty properties = layerIdx.data(ROLE_PARAM_CTRL_PROPERTIES).value<zeno::ControlProperty>();
-    std::vector<std::string> items;
-    for (const auto& item : lst)
-    {
-        items.push_back(item.toStdString());
-    }
-    properties.items = items;
-
-    proxyModelSetData(layerIdx, QVariant::fromValue(properties), ROLE_PARAM_CTRL_PROPERTIES);
-
-    if (row == m_ui->itemsTable->rowCount() - 1)
-    {
-        m_ui->itemsTable->insertRow(m_ui->itemsTable->rowCount());
-        m_ui->m_pUpButton->setEnabled(true);
-    }
-
-    //update control.
-    QLayoutItem *pLayoutItem = m_ui->gridLayout->itemAtPosition(rowValueControl, 1);
-    if (pLayoutItem) {
-        QComboBox *pControl = qobject_cast<QComboBox *>(pLayoutItem->widget());
-        if (pControl) {
-            pControl->clear();
-            pControl->addItems(lst);
-            if (lst.contains(value)) {
-                pControl->setCurrentText(value);
-            } else {
-                proxyModelSetData(layerIdx, lst[0], ROLE_PARAM_VALUE);
-            }
-        }
-    }
-}
-
 void ZEditParamLayoutDlg::proxyModelSetData(const QModelIndex& index, const QVariant& newValue, int role)
 {
     //TODO: ?
@@ -369,28 +273,20 @@ void ZEditParamLayoutDlg::proxyModelSetData(const QModelIndex& index, const QVar
 
 void ZEditParamLayoutDlg::onParamTreeDeleted()
 {
-    if (m_ui->itemsTable->hasFocus()) {
-        int row = m_ui->itemsTable->currentRow();
-        if (row < m_ui->itemsTable->rowCount() - 1) {
-            m_ui->itemsTable->removeRow(row);
-            onComboTableItemsCellChanged(row, 0);
-        }
-    } else {
-        QModelIndex idx = m_ui->paramsView->currentIndex();
-        bool bEditable = true;//TODO:
-        if (!idx.isValid() || !idx.parent().isValid() || !bEditable)
+    QModelIndex idx = m_ui->paramsView->currentIndex();
+    bool bEditable = true;//TODO:
+    if (!idx.isValid() || !idx.parent().isValid() || !bEditable)
+        return;
+
+    QString existedName = idx.data(ROLE_MAP_TO_PARAMNAME).toString();
+    if (!existedName.isEmpty()) {
+        int flag = QMessageBox::question(this, "", "The current item is mapped to a existing param, are you sure to delete it?", QMessageBox::Yes | QMessageBox::No);
+        if (flag & QMessageBox::No) {
             return;
-
-        QString existedName = idx.data(ROLE_MAP_TO_PARAMNAME).toString();
-        if (!existedName.isEmpty()) {
-            int flag = QMessageBox::question(this, "", "The current item is mapped to a existing param, are you sure to delete it?", QMessageBox::Yes | QMessageBox::No);
-            if (flag & QMessageBox::No) {
-                return;
-            }
         }
-
-        m_paramsLayoutM->removeRow(idx.row(), idx.parent());
     }
+
+    m_paramsLayoutM->removeRow(idx.row(), idx.parent());
 }
 
 void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const QModelIndex& previous)
@@ -417,12 +313,10 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
     if (type == VPARAM_TAB)
     {
         m_ui->cbControl->setEnabled(false);
-        m_ui->stackProperties->setCurrentIndex(0);
     }
     else if (type == VPARAM_GROUP)
     {
         m_ui->cbControl->setEnabled(false);
-        m_ui->stackProperties->setCurrentIndex(0);
     }
     else if (type == VPARAM_PARAM)
     {
@@ -485,8 +379,6 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
                 m_ui->cbSocketType->setEnabled(false);
             }
         }
-
-        m_ui->itemsTable->setRowCount(0);
 
         switchStackProperties(ctrl, pCurrentItem);
     }
@@ -595,11 +487,9 @@ void ZEditParamLayoutDlg::switchStackProperties(int ctrl, QStandardItem* pItem)
                 QStringList items;
                 for (auto item : pros.items.value())
                     items.push_back(QString::fromStdString(item));
-                m_ui->itemsTable->setRowCount(items.size() + 1);
                 QString value = pItem->data(ROLE_PARAM_VALUE).toString();
                 for (int r = 0; r < items.size(); r++) {
                     QTableWidgetItem *newItem = new QTableWidgetItem(items[r]);
-                    m_ui->itemsTable->setItem(r, 0, newItem);
                     QLayoutItem *pLayoutItem = m_ui->gridLayout->itemAtPosition(rowValueControl, 1);
                     if (pLayoutItem) {
                         QComboBox *pControl = qobject_cast<QComboBox *>(pLayoutItem->widget());
@@ -609,28 +499,18 @@ void ZEditParamLayoutDlg::switchStackProperties(int ctrl, QStandardItem* pItem)
                         }
                     }
                 }
-        } else {
-                m_ui->itemsTable->setRowCount(1);
         }
-        m_ui->stackProperties->setCurrentIndex(1);
     } 
     else if (ctrl == zeno::Slider ||
              ctrl == zeno::SpinBox ||
              ctrl == zeno::SpinBoxSlider ||
              ctrl == zeno::DoubleSpinBox)
     {
-        m_ui->stackProperties->setCurrentIndex(2);
         if (!pros.ranges.has_value()) {
             std::array<float, 3> ranges = { 0.0, 100.0,1.0 };;
             pros.ranges = ranges;
             pItem->setData(QVariant::fromValue(pros), ROLE_PARAM_CTRL_PROPERTIES);
         }
-        m_ui->editStep->setText(QString::number(pros.ranges->at(2)));
-        m_ui->editMin->setText(QString::number(pros.ranges->at(0)));
-        m_ui->editMax->setText(QString::number(pros.ranges->at(1)));
-    }
-    else {
-        m_ui->stackProperties->setCurrentIndex(0);
     }
 }
 
@@ -711,21 +591,6 @@ void ZEditParamLayoutDlg::onHintEditFinished()
 
 }
 
-void ZEditParamLayoutDlg::onMinEditFinished()
-{
-    QModelIndex layerIdx = m_ui->paramsView->currentIndex();
-    if (!layerIdx.isValid() && layerIdx.data(ROLE_VPARAM_TYPE) != VPARAM_PARAM)
-        return;
-
-    zeno::ControlProperty properties = layerIdx.data(ROLE_PARAM_CTRL_PROPERTIES).value<zeno::ControlProperty>();
-    qreal from = m_ui->editMin->text().toDouble();
-    auto ranges = properties.ranges.value();
-    ranges[0] = from;
-    properties.ranges = ranges;
-    proxyModelSetData(layerIdx, QVariant::fromValue(properties), ROLE_PARAM_CTRL_PROPERTIES);
-    updateSliderInfo();
-}
-
 void ZEditParamLayoutDlg::onSocketTypeChanged(int idx)
 {
     const QModelIndex& currIdx = m_ui->paramsView->currentIndex();
@@ -743,21 +608,6 @@ void ZEditParamLayoutDlg::onSocketTypeChanged(int idx)
     else if (socketType == tr("Parameter Socket")) {
         pItem->setData(zeno::ParamSocket, ROLE_SOCKET_TYPE);
     }
-}
-
-void ZEditParamLayoutDlg::onMaxEditFinished()
-{
-    QModelIndex layerIdx = m_ui->paramsView->currentIndex();
-    if (!layerIdx.isValid() && layerIdx.data(ROLE_VPARAM_TYPE) != VPARAM_PARAM)
-        return;
-
-    zeno::ControlProperty properties = layerIdx.data(ROLE_PARAM_CTRL_PROPERTIES).value<zeno::ControlProperty>();
-    qreal to = m_ui->editMax->text().toDouble();
-    auto ranges = properties.ranges.value();
-    ranges[1] = to;
-    properties.ranges = ranges;
-    proxyModelSetData(layerIdx, QVariant::fromValue(properties), ROLE_PARAM_CTRL_PROPERTIES);
-    updateSliderInfo();
 }
 
 void ZEditParamLayoutDlg::onControlItemChanged(int idx)
@@ -802,21 +652,6 @@ void ZEditParamLayoutDlg::onControlItemChanged(int idx)
         switchStackProperties(ctrl, pItem);
         pItem->setData(getIcon(pItem), Qt::DecorationRole);
     }
-}
-
-void ZEditParamLayoutDlg::onStepEditFinished()
-{
-    QModelIndex layerIdx = m_ui->paramsView->currentIndex();
-    if (!layerIdx.isValid() && layerIdx.data(ROLE_VPARAM_TYPE) != VPARAM_PARAM)
-        return;
-
-    zeno::ControlProperty properties = layerIdx.data(ROLE_PARAM_CTRL_PROPERTIES).value<zeno::ControlProperty>();
-    qreal step = m_ui->editStep->text().toDouble();
-    auto ranges = properties.ranges.value();
-    ranges[0] = step;
-    properties.ranges = ranges;
-    m_paramsLayoutM->setData(layerIdx, QVariant::fromValue(properties), ROLE_PARAM_CTRL_PROPERTIES);
-    updateSliderInfo();
 }
 
 zeno::ParamsUpdateInfo ZEditParamLayoutDlg::getEdittedUpdateInfo() const
@@ -878,36 +713,4 @@ void ZEditParamLayoutDlg::onOk()
 void ZEditParamLayoutDlg::onCancel()
 {
     reject();
-}
-
-void ZEditParamLayoutDlg::updateSliderInfo()
-{
-    SLIDER_INFO info;
-    info.step = m_ui->editStep->text().toDouble();
-    info.min = m_ui->editMin->text().toDouble();
-    info.max = m_ui->editMax->text().toDouble();
-    //update control.
-    QLayoutItem* pLayoutItem = m_ui->gridLayout->itemAtPosition(rowValueControl, 1);
-    if (pLayoutItem) {
-        if (QDoubleSpinBox* pControl = qobject_cast<QDoubleSpinBox*>(pLayoutItem->widget()))
-        {
-            pControl->setRange(info.min, info.max);
-            pControl->setSingleStep(info.step);
-        }
-        else if (ZSpinBoxSlider* pControl = qobject_cast<ZSpinBoxSlider*>(pLayoutItem->widget()))
-        {
-            pControl->setRange(info.min, info.max);
-            pControl->setSingleStep(info.step);
-        }
-        else if (QSpinBox* pControl = qobject_cast<QSpinBox*>(pLayoutItem->widget()))
-        {
-            pControl->setRange(info.min, info.max);
-            pControl->setSingleStep(info.step);
-        }
-        else if (QSlider* pControl = qobject_cast<QSlider*>(pLayoutItem->widget()))
-        {
-            pControl->setRange(info.min, info.max);
-            pControl->setSingleStep(info.step);
-        }
-    }
 }
