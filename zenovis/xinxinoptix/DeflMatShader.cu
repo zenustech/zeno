@@ -967,6 +967,10 @@ extern "C" __global__ void __closesthit__radiance()
     }
 
     prd->radiance += mats.emission;
+    if(length(mats.emission)>0)
+    {
+      prd->done = true;
+    }
 }
 
 extern "C" __global__ void __closesthit__occlusion()
