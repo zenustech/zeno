@@ -1289,12 +1289,7 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
                 auto fov = scene->camera->m_fov;
                 auto cz = glm::length(scene->camera->m_lodcenter);
                 if (depth != 0) {
-//                    depth = depth * 2 - 1;
-//                    cz = 2 * _near * _far / ((_far + _near) - depth * (_far - _near));
-                    glm::vec4 ndc = {0, 0, depth, 1};
-                    glm::vec4 clip_c = glm::inverse(scene->camera->m_proj) * ndc;
-                    clip_c /= clip_c.w;
-                    cz = -clip_c.z;
+                    cz = scene->camera->m_near / depth;
                 }
                 auto w = scene->camera->m_nx;
                 auto h = scene->camera->m_ny;
