@@ -1,5 +1,5 @@
 #pragma once
-
+#ifdef ZENO_ENABLE_USD
 #include "zenonode.h"
 
 /*** Zeno headers ***/
@@ -45,3 +45,5 @@ private:
 private slots:
 	void _onEvalClicked();
 };
+
+#endif

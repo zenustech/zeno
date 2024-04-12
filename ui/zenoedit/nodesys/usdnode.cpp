@@ -1,3 +1,4 @@
+#ifdef ZENO_ENABLE_USD
 #include "usdnode.h"
 /*** USD headers ***/
 #include <pxr/pxr.h>
@@ -852,3 +853,4 @@ ZENO_HANDLE EvalUSDPrim::_makeTransformNode(ZENO_HANDLE main, const std::pair<fl
 	Zeno_SetPos(main, newNode, nodePos);
 	return newNode;
 }
+#endif

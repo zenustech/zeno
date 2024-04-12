@@ -4,6 +4,7 @@ endif()
 
 file(GLOB USD_SOURCE USD.cpp USD.h)
 add_library(zeno_usd SHARED ${USD_SOURCE})
+target_compile_definitions(zeno_usd PRIVATE -DDLLEXPORT)
 
 target_include_directories(zeno_usd PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
