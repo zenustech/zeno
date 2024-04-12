@@ -783,7 +783,8 @@ struct GraphicsManager {
                             ud.get2<bool>("aces"),
                             ud.get2<bool>("exposure"),
                             ud.get2<bool>("panorama_camera"),
-                            ud.get2<bool>("panorama_hemisphere")
+                            ud.get2<bool>("panorama_vr180"),
+                            ud.get2<float>("pupillary_distance")
                         );
                     }
                 }
@@ -825,7 +826,8 @@ struct GraphicsManager {
                                 ud.get2<bool>("aces"),
                                 ud.get2<bool>("exposure"),
                                 ud.get2<bool>("panorama_camera"),
-                                ud.get2<bool>("panorama_hemisphere")
+                                ud.get2<bool>("panorama_vr180"),
+                                ud.get2<float>("pupillary_distance")
                             );
                         }
                     }
@@ -1069,7 +1071,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 cam.zOptixCameraSettingInfo.aces,
                 cam.zOptixCameraSettingInfo.exposure,
                 cam.zOptixCameraSettingInfo.panorama_camera,
-                cam.zOptixCameraSettingInfo.panorama_hemisphere
+                cam.zOptixCameraSettingInfo.panorama_vr180,
+                cam.zOptixCameraSettingInfo.pupillary_distance
             );
         }
 

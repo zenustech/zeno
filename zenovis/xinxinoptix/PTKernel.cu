@@ -207,14 +207,14 @@ extern "C" __global__ void __raygen__rg()
                     cam.right.y, cam.up.y, -cam.front.y,
                     cam.right.z, cam.up.z, -cam.front.z
             );
-            if (params.physical_camera_panorama_hemisphere) {
+            if (params.physical_camera_panorama_vr180) {
                 int idxx = idx.x >= w/2? idx.x - w/2 : idx.x;
                 phi = ((float(idxx) + subpixel_jitter.x) / float(w / 2) + 0.5f) * M_PIf;
                 if (idx.x < w / 2) {
-                    ray_origin = camera_transform * make_float3(-0.03f, 0.0f, 0.0f);
+                    ray_origin = camera_transform * make_float3(-params.physical_camera_pupillary_distance, 0.0f, 0.0f);
                 }
                 else {
-                    ray_origin = camera_transform * make_float3(0.03f, 0.0f, 0.0f);
+                    ray_origin = camera_transform * make_float3(params.physical_camera_pupillary_distance, 0.0f, 0.0f);
                 }
             }
             float theta = (float(idx.y) + subpixel_jitter.y) / float(h) * M_PIf;
