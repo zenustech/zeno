@@ -200,21 +200,28 @@ extern "C" __global__ void __raygen__rg()
         float3 ray_direction = terminal_point - eye_shake; 
         ray_direction = normalize(ray_direction);
         if (params.physical_camera_panorama_camera) {
-            float3 ray_origin    = make_float3(0.0f, 0.0f, 0.0f);
+            ray_origin    = make_float3(0.0f, 0.0f, 0.0f);
             float phi = (float(idx.x) + subpixel_jitter.x) / float(w) * 2.0f * M_PIf;
+            mat3 camera_transform = mat3(
+                    cam.right.x, cam.up.x, -cam.front.x,
+                    cam.right.y, cam.up.y, -cam.front.y,
+                    cam.right.z, cam.up.z, -cam.front.z
+            );
             if (params.physical_camera_panorama_hemisphere) {
-                phi = ((float(idx.x) + subpixel_jitter.x) / float(w) + 0.5f) * M_PIf;
+                int idxx = idx.x >= w/2? idx.x - w/2 : idx.x;
+                phi = ((float(idxx) + subpixel_jitter.x) / float(w / 2) + 0.5f) * M_PIf;
+                if (idx.x < w / 2) {
+                    ray_origin = camera_transform * make_float3(-0.03f, 0.0f, 0.0f);
+                }
+                else {
+                    ray_origin = camera_transform * make_float3(0.03f, 0.0f, 0.0f);
+                }
             }
             float theta = (float(idx.y) + subpixel_jitter.y) / float(h) * M_PIf;
             float y = -cosf(theta);
             float z = sinf(theta) * cosf(phi);
             float x = sinf(theta) * sinf(-phi);
 
-            mat3 camera_transform = mat3(
-                    cam.right.x, cam.up.x, -cam.front.x,
-                    cam.right.y, cam.up.y, -cam.front.y,
-                    cam.right.z, cam.up.z, -cam.front.z
-            );
             ray_direction = camera_transform * make_float3(x, y, z);
         }
 
