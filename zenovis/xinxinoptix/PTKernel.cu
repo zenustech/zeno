@@ -200,6 +200,7 @@ extern "C" __global__ void __raygen__rg()
         float3 ray_direction = terminal_point - eye_shake; 
         ray_direction = normalize(ray_direction);
         if (params.physical_camera_panorama_camera) {
+            float3 ray_origin    = make_float3(0.0f, 0.0f, 0.0f);
             float phi = (float(idx.x) + subpixel_jitter.x) / float(w) * 2.0f * M_PIf;
             if (params.physical_camera_panorama_hemisphere) {
                 phi = ((float(idx.x) + subpixel_jitter.x) / float(w) + 0.5f) * M_PIf;
