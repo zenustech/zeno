@@ -40,21 +40,17 @@ namespace zeno {
 
 
         static int defPythonInit = getSession().eventCallbacks->hookEvent("init", [] {
+#if 0
             log_debug("Initializing Python...");
             std::wstring homedir = s2ws(std::string(ZENO_PYTHON_HOME));
             Py_SetPythonHome(homedir.c_str());
-            //static std::string execenvvar = "zenoedit_executable=" + getConfigVariable("EXECFILE") + "\0";
-            //putenv(execenvvar.data());
-#ifdef _WIN32
-            //Py_SetProgramName(s2ws(getAssetDir(ZENO_PYTHON_MODULE_DIR, "ze/zenobundlepython.bat")).c_str());
-#else
-            //Py_SetProgramName(s2ws(getAssetDir(ZENO_PYTHON_MODULE_DIR, "ze/zenobundlepython.sh")).c_str());
-#endif
+            static std::string execName = getConfigVariable("EXECFILE");
+
+            Py_SetProgramName(s2ws(execName).c_str());
+
             Py_Initialize();
+
             std::string libpath(ZENO_PYTHON_MODULE_DIR);
-#ifdef _WIN32
-            libpath = replace_all(libpath, "\\", "\\\\");
-#endif
             std::string dllfile = ZENO_PYTHON_DLL_FILE;
             if (PyRun_SimpleString(("__import__('sys').path.insert(0, '" + libpath + "'); import ze; ze.init_zeno_lib('" + dllfile + "')").c_str()) < 0) {
                 log_warn("Failed to initialize Python module");
@@ -63,6 +59,7 @@ namespace zeno {
             log_debug("Initialized Python successfully!");
 
             //getSession().userData().set("subprogram_python", std::make_shared<GenericObject<int(*)(int, char**)>>(subprogram_python_main));
+#endif
             });
 
         static int defPythonExit = getSession().eventCallbacks->hookEvent("exit", [] {
@@ -211,7 +208,6 @@ namespace zeno {
 
         struct PythonNode : zeno::INode {
             void apply() override {
-                Py_Initialize();
                 auto args = has_input("args") ? get_input<DictObject>("args") : std::make_shared<DictObject>();
                 auto path = has_input("path") ? get_input2<std::string>("path") : "";
                 int ret;
