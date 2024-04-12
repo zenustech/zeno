@@ -33,13 +33,16 @@ if (ZENO_BENCHMARKING)
     target_compile_definitions(zeno PUBLIC -DZENO_BENCHMARKING)
 endif()
 
+# only work without CUDA option.
+#if (ZENO_DEBUG_MSVC)
+#    zeno_dbg_msvc(zeno)
+#endif()
+
 if (ZENO_WITH_PYTHON3)
-    message(STATUS "python3 libraries for zeno: ${Python3_LIBRARIES}")
-    message(STATUS "python3 include directories for zeno: ${Python3_INCLUDE_DIRS}")
-    target_link_libraries(zeno PRIVATE C:/zeno-master/Debug/bin/Python310/libs/python3_d.lib)
-    target_link_libraries(zeno PRIVATE C:/zeno-master/Debug/bin/Python310/libs/python310_d.lib)
-    target_link_libraries(zeno PRIVATE C:/zeno-master/Debug/bin/Python310/libs/_tkinter.lib)
-    target_include_directories(zeno PRIVATE C:/zeno-master/Debug/bin/Python310/include)
+    message(STATUS "python3 libraries for zenoedit: ${Python3_LIBRARIES}")
+    message(STATUS "python3 include directories for zenoedit: ${Python3_INCLUDE_DIRS}")
+    target_link_libraries(zeno PRIVATE ${Python3_LIBRARIES})
+    target_include_directories(zeno PRIVATE ${Python3_INCLUDE_DIRS})
 endif()
 
 if (ZENO_PARALLEL_STL)

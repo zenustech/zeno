@@ -1,3 +1,4 @@
+#ifdef ZENO_WITH_PYTHON3
 #include <Python.h>
 #include <zeno/zeno.h>
 #include <zeno/types/DictObject.h>
@@ -40,8 +41,8 @@ namespace zeno {
 
         static int defPythonInit = getSession().eventCallbacks->hookEvent("init", [] {
             log_debug("Initializing Python...");
-
-            Py_SetPythonHome(s2ws(std::string(ZENO_PYTHON_HOME)).c_str());
+            std::wstring homedir = s2ws(std::string(ZENO_PYTHON_HOME));
+            Py_SetPythonHome(homedir.c_str());
             //static std::string execenvvar = "zenoedit_executable=" + getConfigVariable("EXECFILE") + "\0";
             //putenv(execenvvar.data());
 #ifdef _WIN32
@@ -50,7 +51,7 @@ namespace zeno {
             //Py_SetProgramName(s2ws(getAssetDir(ZENO_PYTHON_MODULE_DIR, "ze/zenobundlepython.sh")).c_str());
 #endif
             Py_Initialize();
-            std::string libpath = getAssetDir(ZENO_PYTHON_MODULE_DIR);
+            std::string libpath(ZENO_PYTHON_MODULE_DIR);
 #ifdef _WIN32
             libpath = replace_all(libpath, "\\", "\\\\");
 #endif
@@ -60,6 +61,7 @@ namespace zeno {
                 return;
             }
             log_debug("Initialized Python successfully!");
+
             //getSession().userData().set("subprogram_python", std::make_shared<GenericObject<int(*)(int, char**)>>(subprogram_python_main));
             });
 
@@ -359,3 +361,4 @@ namespace zeno {
             });
     }
 }
+#endif

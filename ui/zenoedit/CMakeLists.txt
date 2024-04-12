@@ -48,10 +48,8 @@ if (ZENO_WITH_PYTHON3)
     #find_package(Python3 COMPONENTS Development REQUIRED)
     message(STATUS "python3 libraries for zenoedit: ${Python3_LIBRARIES}")
     message(STATUS "python3 include directories for zenoedit: ${Python3_INCLUDE_DIRS}")
-    target_link_libraries(zenoedit PRIVATE C:/zeno-master/Debug/bin/Python310/libs/python3_d.lib)
-    target_link_libraries(zenoedit PRIVATE C:/zeno-master/Debug/bin/Python310/libs/python310_d.lib)
-    target_link_libraries(zenoedit PRIVATE C:/zeno-master/Debug/bin/Python310/libs/_tkinter.lib)
-    target_include_directories(zenoedit PRIVATE C:/zeno-master/Debug/bin/Python310/include)
+    target_link_libraries(zenoedit PRIVATE ${Python3_LIBRARIES})
+    target_include_directories(zenoedit PRIVATE ${Python3_INCLUDE_DIRS})
 endif()
 #ENDIF
 

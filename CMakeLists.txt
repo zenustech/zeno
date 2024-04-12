@@ -139,14 +139,17 @@ if (ZENO_WITH_PYTHON3)
     )
     file(COPY ${Python3_DLLS} DESTINATION ${ZENO_OUTPUT_DIR})
 
-    #message(STATUS "Python3_dlls: "${Python3_DLLS})
-
     set(Zeno_Python3_HOME ${ZENO_OUTPUT_DIR}/${Python3_NAME})
+    set(Zeno_Python3_LIB ${Zeno_Python3_HOME}/Lib)
+    #set(Zeno_Python3_HOME ${Python3_HOME_PATH})
 
     message(STATUS "python3 dir home: ${Zeno_Python3_HOME}")
 
+    #copy ze module to zeno Python home
+    file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/projects/Python/Lib/ze DESTINATION ${Zeno_Python3_LIB})
+
     add_definitions(-DZENO_PYTHON_HOME="${Zeno_Python3_HOME}")
-    add_definitions(-DZENO_PYTHON_MODULE_DIR="${Zeno_Python3_HOME}/Lib")
+    add_definitions(-DZENO_PYTHON_MODULE_DIR="${Zeno_Python3_LIB}")
 endif()
 
 ## --- begin cihou wxl cuda
