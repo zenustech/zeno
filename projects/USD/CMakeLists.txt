@@ -1,37 +1,30 @@
 if(NOT ZENO_ENABLE_ZENOCORE)
     message(FATAL_ERROR "You MUST set ZENO_ENABLE_ZENOCORE=ON when USD enable")
 endif()
+
 file(GLOB USD_SOURCE USD.cpp USD.h)
 add_library(zeno_usd SHARED ${USD_SOURCE})
+
 target_include_directories(zeno_usd PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(zeno_usd PUBLIC zenocore)
+
 target_include_directories(zeno_usd PUBLIC ../../zeno/include ../../zeno/tpls/include)
+target_link_libraries(zeno_usd PUBLIC zenocore)
 
-if(DEFINED ZENO_USD_ROOT)
+find_package(USD REQUIRED HINTS ${ZENO_USD_ROOT} NAMES pxr)
+if(USD_FOUND)
     set(TBB_ROOT_DIR ${ZENO_USD_ROOT})
-    find_package(USD REQUIRED HINTS ${ZENO_USD_ROOT} NAMES pxr)
-    if(USD_FOUND)
-        # this is only for VS
-        #set_property(TARGET zenoedit PROPERTY VS_DEBUGGER_ENVIRONMENT "path=$(path)" ${ZENO_USD_ROOT}/bin ${ZENO_USD_ROOT}/lib)
-
-        target_include_directories(zeno_usd PRIVATE ${PXR_INCLUDE_DIRS})
-        target_link_directories(zeno_usd PRIVATE ${ZENO_USD_ROOT}/lib)
-        target_link_libraries(zeno_usd PRIVATE tbb usd_ar usd_arch usd_kind usd_usdLux usd_usdGeom usd_pcp usd_usdUtils usd_usd usd_usdShade usd_sdf usd_ts usd_tf usd_vt usd_usdSkel usd_usdImaging usd_gf)
-    else()
-        message(FATAL_ERROR "USD not found")
+    # this is only for VS
+    if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+        set_property(TARGET zenoedit PROPERTY VS_DEBUGGER_ENVIRONMENT "path=$(path)" ${ZENO_USD_ROOT}/bin ${ZENO_USD_ROOT}/lib)
     endif()
+    target_include_directories(zeno_usd PRIVATE ${PXR_INCLUDE_DIRS})
+    target_link_directories(zeno_usd PRIVATE ${ZENO_USD_ROOT}/lib)
+    target_link_libraries(zeno_usd PRIVATE tbb usd_ar usd_arch usd_kind usd_usdLux usd_usdGeom usd_pcp usd_usdUtils usd_usd usd_usdShade usd_sdf usd_ts usd_tf usd_vt usd_usdSkel usd_usdImaging usd_gf)
 else()
-    message(FATAL_ERROR "You must set ZENO_USD_ROOT when ZENO_WITH_USD=ON")
+    message(FATAL_ERROR "USD not found")
 endif()
 
-option(ZENO_USDLIB_ONLY "only build zeno usd lib" OFF)
-if(NOT ZENO_USDLIB_ONLY)
-    target_sources(zeno PRIVATE USD_Def.cpp)
-    target_include_directories(zeno PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-    target_link_libraries(zeno PRIVATE zeno_usd)
-endif()
+target_sources(zeno PRIVATE USD_Def.cpp)
 
-#add_library(zenousd_ui SHARED usdnode.cpp usdnode.h)
-#target_include_directories(zenousd_ui PUBLIC .)
-#target_include_directories(zenousd_ui PUBLIC ../../ui/nodesys ../../ui/zenomodel/include )
-#target_link_libraries(zenousd_ui PUBLIC zenomodel)
+target_include_directories(zeno PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(zeno PRIVATE zeno_usd)

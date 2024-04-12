@@ -1,4 +1,30 @@
 #include "usdnode.h"
+/*** USD headers ***/
+#include <pxr/pxr.h>
+#include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usd/primRange.h>
+#include <pxr/usd/usd/relationship.h>
+
+#include <pxr/usd/usdGeom/camera.h>
+#include <pxr/usd/usdGeom/capsule.h>
+#include <pxr/usd/usdGeom/cone.h>
+#include <pxr/usd/usdGeom/cylinder.h>
+#include <pxr/usd/usdGeom/mesh.h>
+#include <pxr/usd/usdGeom/plane.h>
+#include <pxr/usd/usdGeom/sphere.h>
+#include <pxr/usd/usdGeom/xform.h>
+#include <pxr/usd/usdGeom/xformOp.h>
+
+#include <pxr/usd/usdLux/cylinderLight.h>
+#include <pxr/usd/usdLux/diskLight.h>
+#include <pxr/usd/usdLux/distantLight.h>
+#include <pxr/usd/usdLux/domeLight.h>
+#include <pxr/usd/usdLux/geometryLight.h>
+#include <pxr/usd/usdLux/rectLight.h>
+#include <pxr/usd/usdLux/sphereLight.h>
+
 
 #include <zeno/utils/eulerangle.h>
 

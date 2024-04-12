@@ -84,7 +84,7 @@ if (ZENO_ENABLE_MAGICENUM)
 endif()
 
 if (ZENO_ENABLE_ZENOCORE)
-add_subdirectory(zenocore)
+    add_subdirectory(zenocore)
 endif()
 
 #if (ZENO_NO_WARNING)
