@@ -1,5 +1,0 @@
-cmake_minimum_required(VERSION 3.22)
-target_sources(zeno PRIVATE teachmain.cpp)
-add_library(TestNode SHARED TestNode.h TestNode.cpp)
-target_include_directories(TestNode PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../../zeno/include")
-target_link_libraries(zeno PRIVATE TestNode)
