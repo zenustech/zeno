@@ -211,10 +211,10 @@ extern "C" __global__ void __raygen__rg()
                 int idxx = idx.x >= w/2? idx.x - w/2 : idx.x;
                 phi = ((float(idxx) + subpixel_jitter.x) / float(w / 2) + 0.5f) * M_PIf;
                 if (idx.x < w / 2) {
-                    ray_origin = camera_transform * make_float3(-params.physical_camera_pupillary_distance, 0.0f, 0.0f);
+                    ray_origin = camera_transform * make_float3(-params.physical_camera_pupillary_distance / 2.0f, 0.0f, 0.0f);
                 }
                 else {
-                    ray_origin = camera_transform * make_float3(params.physical_camera_pupillary_distance, 0.0f, 0.0f);
+                    ray_origin = camera_transform * make_float3(params.physical_camera_pupillary_distance / 2.0f, 0.0f, 0.0f);
                 }
             }
             float theta = (float(idx.y) + subpixel_jitter.y) / float(h) * M_PIf;
