@@ -194,6 +194,7 @@ target_compile_options(zeno
             )
 if (ZENO_BUILD_EDITOR OR ZENO_BUILD_DESIGNER)
     message(STATUS "Building Zeno UI Library")
+    add_subdirectory(ui/3rdparty)
     add_subdirectory(ui/zenoui)
     add_subdirectory(ui/zenoio)
     add_subdirectory(ui/zenomodel)
