@@ -32,10 +32,10 @@ void initPythonEnv(const char* progName)
         exit(1);
     }
 
-#ifdef WIN32
-    std::wstring homedir = s2ws(std::string(ZENO_PYTHON_HOME));
-    Py_SetPythonHome(homedir.c_str());
-#endif
+//#ifdef WIN32
+//    std::wstring homedir = s2ws(std::string(ZENO_PYTHON_HOME));
+//    Py_SetPythonHome(homedir.c_str());
+//#endif
 
     Py_SetProgramName(program);
 
