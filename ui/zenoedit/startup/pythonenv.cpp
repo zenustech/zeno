@@ -45,14 +45,6 @@ void initPythonEnv(const char* progName)
         fprintf(stderr, "Error: could not import module 'zeno'\n");
     }
 
-    QString tempCode;
-    tempCode = "import zeno; gra = zeno.graph('main')";
-
-    if (PyRun_SimpleString(tempCode.toUtf8()) < 0) {
-        zeno::log_warn("Failed to initialize zeno api for ui control");
-        return;
-    }
-
     std::string libpath(ZENO_PYTHON_MODULE_DIR);
     std::string dllfile = ZENO_PYTHON_DLL_FILE;
     if (PyRun_SimpleString(("__import__('sys').path.insert(0, '" + libpath + "'); import ze; ze.init_zeno_lib('" + dllfile + "')").c_str()) < 0) {
