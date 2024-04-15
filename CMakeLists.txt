@@ -124,32 +124,40 @@ macro (zeno_dbg_msvc project)
 endmacro()
 
 if (ZENO_WITH_PYTHON3)
-    find_package(Python3 COMPONENTS Development REQUIRED)
-    get_filename_component(Python3_HOME_PATH ${Python3_INCLUDE_DIRS}/.. ABSOLUTE)
-    get_filename_component(Python3_NAME ${Python3_HOME_PATH} NAME)
+    if (WIN32)
+        find_package(Python3 COMPONENTS Development REQUIRED)
+        message("****************************************************************")
+        message(STATUS "cPython3_INCLUDE_DIRS: ${Python3_INCLUDE_DIRS}")
+        get_filename_component(Python3_HOME_PATH ${Python3_INCLUDE_DIRS}/.. ABSOLUTE)
+        get_filename_component(Python3_NAME ${Python3_HOME_PATH} NAME)
 
-    message(STATUS "copying python3 env into bin dir: ${Python3_HOME_PATH}")
-    message(STATUS "python3 dir name: ${Python3_NAME}")
-    message(STATUS "pythons lib:" ${Python3_LIBRARIES})
+        message(STATUS "copying python3 env into bin dir: ${Python3_HOME_PATH}")
+        message(STATUS "python3 dir name: ${Python3_NAME}")
+        message(STATUS "pythons lib:" ${Python3_LIBRARIES})
 
-    file(COPY ${Python3_HOME_PATH} DESTINATION ${ZENO_OUTPUT_DIR})
+        file(COPY ${Python3_HOME_PATH} DESTINATION ${ZENO_OUTPUT_DIR})
 
-    file(GLOB Python3_DLLS
-        "${Python3_HOME_PATH}/Python*.dll"
-    )
-    file(COPY ${Python3_DLLS} DESTINATION ${ZENO_OUTPUT_DIR})
+        file(GLOB Python3_DLLS
+            "${Python3_HOME_PATH}/Python*.dll"
+        )
+        file(COPY ${Python3_DLLS} DESTINATION ${ZENO_OUTPUT_DIR})
 
-    set(Zeno_Python3_HOME ${ZENO_OUTPUT_DIR}/${Python3_NAME})
-    set(Zeno_Python3_LIB ${Zeno_Python3_HOME}/Lib)
-    #set(Zeno_Python3_HOME ${Python3_HOME_PATH})
+        set(Zeno_Python3_HOME ${ZENO_OUTPUT_DIR}/${Python3_NAME})
+        set(Zeno_Python3_LIB ${Zeno_Python3_HOME}/Lib)
+        #set(Zeno_Python3_HOME ${Python3_HOME_PATH})
 
-    message(STATUS "python3 dir home: ${Zeno_Python3_HOME}")
+        message(STATUS "python3 dir home: ${Zeno_Python3_HOME}")
 
-    #copy ze module to zeno Python home
-    file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/projects/Python/Lib/ze DESTINATION ${Zeno_Python3_LIB})
+        #copy ze module to zeno Python home
+        file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/projects/Python/Lib/ze DESTINATION ${Zeno_Python3_LIB})
 
-    add_definitions(-DZENO_PYTHON_HOME="${Zeno_Python3_HOME}")
-    add_definitions(-DZENO_PYTHON_MODULE_DIR="${Zeno_Python3_LIB}")
+        add_definitions(-DZENO_PYTHON_HOME="${Zeno_Python3_HOME}")
+        add_definitions(-DZENO_PYTHON_MODULE_DIR="${Zeno_Python3_LIB}")
+    else ()
+        find_package(Python3 COMPONENTS Development REQUIRED)
+        message("****************************************************************")
+        message(STATUS "cPython3_INCLUDE_DIRS: ${Python3_INCLUDE_DIRS}")
+    endif()
 endif()
 
 ## --- begin cihou wxl cuda
