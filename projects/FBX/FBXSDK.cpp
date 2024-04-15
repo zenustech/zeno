@@ -516,6 +516,18 @@ bool GetMesh(FbxNode* pNode, std::shared_ptr<PrimitiveObject> prim, std::string 
     if (pMesh->GetElementTangentCount() > 0) {
         getAttr(pMesh->GetElementTangent(0), "tang", prim);
     }
+    if (pMesh->GetElementMaterialCount() > 0) {
+        auto &faceset = prim->polys.add_attr<int>("faceset");
+        for (auto i = 0; i < numPolygons; ++i) {
+            faceset[i] = pMesh->GetElementMaterial()->GetIndexArray().GetAt(i);
+        }
+        auto mat_count = pNode->GetMaterialCount();
+        ud.set2("faceset_count", mat_count);
+        for (auto i = 0; i < mat_count; i++) {
+            FbxSurfaceMaterial* material = pNode->GetMaterial(i);
+            ud.set2(format("faceset_{}", i), material->GetName());
+        }
+    }
     return true;
 }
 
