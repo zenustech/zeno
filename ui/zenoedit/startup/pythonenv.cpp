@@ -32,8 +32,10 @@ void initPythonEnv(const char* progName)
         exit(1);
     }
 
+#ifdef WIN32
     std::wstring homedir = s2ws(std::string(ZENO_PYTHON_HOME));
     Py_SetPythonHome(homedir.c_str());
+#endif
 
     Py_SetProgramName(program);
 
@@ -45,7 +47,11 @@ void initPythonEnv(const char* progName)
         fprintf(stderr, "Error: could not import module 'zeno'\n");
     }
 
+#ifdef WIN32
     std::string libpath(ZENO_PYTHON_MODULE_DIR);
+#else
+    std::string libpath;
+#endif
     std::string dllfile = ZENO_PYTHON_DLL_FILE;
     if (PyRun_SimpleString(("__import__('sys').path.insert(0, '" + libpath + "'); import ze; ze.init_zeno_lib('" + dllfile + "')").c_str()) < 0) {
         zeno::log_warn("Failed to initialize Python module");
