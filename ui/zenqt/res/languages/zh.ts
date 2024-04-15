@@ -465,6 +465,10 @@
 </context>
 <context>
     <name>EditParamLayoutDlg</name>
+	<message>
+		<source>outputs</source>
+		<translation type="unfinished">输出</translation>
+	</message>
     <message>
         <source>Edit Parameter Layout</source>
         <translation type="unfinished">编辑参数布局</translation>

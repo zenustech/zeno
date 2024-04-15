@@ -50,16 +50,22 @@ public:
     ZEditParamLayoutDlg(QStandardItemModel* pModel, QWidget* parent = nullptr);
     zeno::ParamsUpdateInfo getEdittedUpdateInfo() const;
 
+protected:
+    bool eventFilter(QObject* obj, QEvent* event) override;
+
 private slots:
-    void onBtnAdd();
+    void onBtnAddInputs();
+    void onBtnAddOutputs();
     void onApply();
     void onOk();
     void onCancel();
     void onTreeCurrentChanged(const QModelIndex& current, const QModelIndex& previous);
+    void onOutputsListCurrentChanged(const QModelIndex& current, const QModelIndex& previous);
     void onNameEditFinished();      //name lineedit.
     void onLabelEditFinished();
     void onHintEditFinished();
     void onParamTreeDeleted();
+    void onOutputsListDeleted();
     void onControlItemChanged(int);
     void onViewParamDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
     void onSocketTypeChanged(int idx);
@@ -72,7 +78,8 @@ private:
     void switchStackProperties(int ctrl, QStandardItem *pItem);
     void initModel(const QStandardItemModel* pModel);
 
-    QStandardItemModel* m_paramsLayoutM;
+    QStandardItemModel * m_paramsLayoutM_inputs;
+    QStandardItemModel * m_paramsLayoutM_outputs;
 
     Ui::EditParamLayoutDlg* m_ui;
     const QPersistentModelIndex m_nodeIdx;

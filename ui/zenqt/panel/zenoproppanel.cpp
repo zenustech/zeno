@@ -859,6 +859,7 @@ void ZenoPropPanel::onSettings()
     connect(pEditLayout, &QAction::triggered, [=]() {
         if (!m_idx.isValid())
             return;
+        ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS));
 
         QStandardItemModel* viewParams = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS))->customParamModel();
         ZASSERT_EXIT(viewParams);
@@ -868,10 +869,12 @@ void ZenoPropPanel::onSettings()
             QMessageBox::information(this, tr("Info"), tr("Cannot edit parameters!"));
             return;
         }
-        //TODO
-        //IGraphsModel* pGraphsModel = zenoApp->graphsManager()->currentModel();
-        //ZEditParamLayoutDlg dlg(viewParams, false, m_idx, pGraphsModel, this);
-        //dlg.exec();
+        ZEditParamLayoutDlg dlg(viewParams, this);
+        if (QDialog::Accepted == dlg.exec())
+        {
+            zeno::ParamsUpdateInfo info = dlg.getEdittedUpdateInfo();
+            paramsM->batchModifyParams(info);
+        }
     });
     pMenu->exec(QCursor::pos());
 }
