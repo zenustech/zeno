@@ -208,6 +208,10 @@ namespace zeno {
 
         struct PythonNode : zeno::INode {
             void apply() override {
+                bool onlyui_gen = get_param<bool>("onlyui");
+                if (onlyui_gen)
+                    return;
+
                 auto args = has_input("args") ? get_input<DictObject>("args") : std::make_shared<DictObject>();
                 auto path = has_input("path") ? get_input2<std::string>("path") : "";
                 int ret;
@@ -323,7 +327,9 @@ namespace zeno {
             {
                 {"dict", "rets"},
             },
-            {},
+            {
+                {"bool", "onlyui", "false"}
+            },
             {"command"},
         });
 

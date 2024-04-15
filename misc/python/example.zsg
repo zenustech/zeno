@@ -55,7 +55,15 @@
                             }
                         }
                     },
-                    "params": {},
+                    "params": {
+                        "onlyui": {
+                            "value": false,
+                            "control": {
+                                "name": "Boolean"
+                            },
+                            "type": "bool"
+                        }
+                    },
                     "outputs": {
                         "rets": {
                             "property": "dict-panel",
@@ -72,8 +80,8 @@
                         }
                     },
                     "uipos": [
-                        1754.8146818242122,
-                        613.3544838031883
+                        1754.814697265625,
+                        613.3544921875
                     ],
                     "options": []
                 },
@@ -199,8 +207,8 @@
                         }
                     },
                     "uipos": [
-                        3356.7911522803217,
-                        475.6649627953951
+                        3356.791259765625,
+                        475.66497802734377
                     ],
                     "options": []
                 },
@@ -234,10 +242,12 @@
                         }
                     },
                     "uipos": [
-                        2326.3410537180618,
-                        862.4133555454712
+                        2326.341064453125,
+                        862.413330078125
                     ],
-                    "options": []
+                    "options": [
+                        "VIEW"
+                    ]
                 },
                 "b28c219-PythonNode": {
                     "name": "PythonNode",
@@ -280,7 +290,15 @@
                             }
                         }
                     },
-                    "params": {},
+                    "params": {
+                        "onlyui": {
+                            "value": false,
+                            "control": {
+                                "name": "Boolean"
+                            },
+                            "type": "bool"
+                        }
+                    },
                     "outputs": {
                         "rets": {
                             "property": "dict-panel",
@@ -297,8 +315,8 @@
                         }
                     },
                     "uipos": [
-                        3249.287856914215,
-                        31.915710913252754
+                        3249.287841796875,
+                        31.91571044921875
                     ],
                     "options": [
                         "collapsed"
@@ -331,8 +349,8 @@
                         }
                     },
                     "uipos": [
-                        3732.9138299299359,
-                        7.520595496829735
+                        3732.913818359375,
+                        7.520595550537109
                     ],
                     "options": []
                 },
@@ -384,7 +402,15 @@
                             }
                         }
                     },
-                    "params": {},
+                    "params": {
+                        "onlyui": {
+                            "value": false,
+                            "control": {
+                                "name": "Boolean"
+                            },
+                            "type": "bool"
+                        }
+                    },
                     "outputs": {
                         "rets": {
                             "property": "dict-panel",
@@ -401,8 +427,8 @@
                         }
                     },
                     "uipos": [
-                        1719.2043007077287,
-                        -421.11849416768407
+                        1954.5572344889188,
+                        -573.6620387836889
                     ],
                     "options": []
                 },
@@ -436,8 +462,8 @@
                         }
                     },
                     "uipos": [
-                        1248.947635783255,
-                        -246.5332786924276
+                        1484.3005206217313,
+                        -399.07681844677486
                     ],
                     "options": []
                 },
@@ -468,8 +494,8 @@
                         }
                     },
                     "uipos": [
-                        2212.6061016423989,
-                        -100.11032658400655
+                        2447.9590899576689,
+                        -252.65386770214594
                     ],
                     "options": []
                 },
@@ -503,37 +529,24 @@
                         }
                     },
                     "uipos": [
-                        1244.5835899003988,
-                        58.59400530276503
+                        1479.9365069498563,
+                        -93.94953344311273
                     ],
                     "options": []
                 },
                 "da71a5b5-Group": {
                     "name": "Group",
-                    "inputs": {
-                        "SRC": {
-                            "link": null,
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        }
-                    },
+                    "inputs": {},
                     "params": {},
-                    "outputs": {
-                        "DST": {
-                            "type": ""
-                        }
-                    },
+                    "outputs": {},
                     "uipos": [
-                        1704.8146818242122,
-                        565.3266287115578
+                        1704.814697265625,
+                        565.3265991210938
                     ],
                     "options": [],
                     "blackboard": {
-                        "width": 981.526371893849,
-                        "height": 764.7946389073804,
+                        "width": 981.5263671875,
+                        "height": 764.7946166992188,
                         "title": "脚本产生prim然后输出",
                         "background": "#0064a8",
                         "items": [
@@ -544,30 +557,17 @@
                 },
                 "267cc922-Group": {
                     "name": "Group",
-                    "inputs": {
-                        "SRC": {
-                            "link": null,
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        }
-                    },
+                    "inputs": {},
                     "params": {},
-                    "outputs": {
-                        "DST": {
-                            "type": ""
-                        }
-                    },
+                    "outputs": {},
                     "uipos": [
-                        1194.5835899003988,
-                        -471.11849416768407
+                        1429.9365069498563,
+                        -623.6620387836889
                     ],
                     "options": [],
                     "blackboard": {
-                        "width": 1450.022511742,
-                        "height": 906.6411833763948,
+                        "width": 1450.0224609375,
+                        "height": 906.6411743164063,
                         "title": "输入变量然后输出",
                         "background": "#0064a8",
                         "items": [
@@ -623,7 +623,15 @@
                             }
                         }
                     },
-                    "params": {},
+                    "params": {
+                        "onlyui": {
+                            "value": false,
+                            "control": {
+                                "name": "Boolean"
+                            },
+                            "type": "bool"
+                        }
+                    },
                     "outputs": {
                         "rets": {
                             "property": "dict-panel",
@@ -640,8 +648,8 @@
                         }
                     },
                     "uipos": [
-                        65.30203709910006,
-                        -113.65040260763436
+                        -21.90620622470351,
+                        895.043068249239
                     ],
                     "options": []
                 },
@@ -767,8 +775,8 @@
                         }
                     },
                     "uipos": [
-                        -420.74195475055697,
-                        34.94609343164893
+                        -507.95018968417619,
+                        1043.6395686459676
                     ],
                     "options": []
                 },
@@ -802,15 +810,308 @@
                         }
                     },
                     "uipos": [
-                        542.2720453455268,
-                        256.84725070520616
+                        455.0637873666051,
+                        1265.5407336545125
                     ],
-                    "options": [
-                        "VIEW"
-                    ]
+                    "options": []
                 },
                 "2451060f-Group": {
                     "name": "Group",
+                    "inputs": {},
+                    "params": {},
+                    "outputs": {},
+                    "uipos": [
+                        -557.9501896841762,
+                        845.043068249239
+                    ],
+                    "options": [],
+                    "blackboard": {
+                        "width": 1373.0140380859376,
+                        "height": 852.3662109375,
+                        "title": "传对象",
+                        "background": "#0064a8",
+                        "items": [
+                            "82aa8cfe-Route",
+                            "b3c9151a-PythonNode",
+                            "b580cd18-CreateCube"
+                        ]
+                    }
+                },
+                "97cbcda9-PythonNode": {
+                    "name": "PythonNode",
+                    "inputs": {
+                        "script": {
+                            "link": null,
+                            "type": "string",
+                            "default-value": "import zeno\n\n\nmain = zeno.graph(\"main\")\nnode = main.node(\"89209b40-CreateCube\")\n\nnode.hasNormal = %1\nnode.div_w = %2",
+                            "control": {
+                                "name": "Multiline String"
+                            }
+                        },
+                        "path": {
+                            "link": null,
+                            "type": "readpath",
+                            "default-value": null,
+                            "control": {
+                                "name": "read path"
+                            }
+                        },
+                        "args": {
+                            "property": "dict-panel",
+                            "dictlist-panel": {
+                                "collasped": false,
+                                "keys": {
+                                    "obj0": {
+                                        "link": "main:79bff130-NumericInt:[node]/outputs/value"
+                                    },
+                                    "obj1": {
+                                        "link": "main:7b4b5951-NumericFloat:[node]/outputs/value"
+                                    }
+                                }
+                            },
+                            "link": null,
+                            "type": "dict",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {
+                        "onlyui": {
+                            "value": true,
+                            "control": {
+                                "name": "Boolean"
+                            },
+                            "type": "bool"
+                        }
+                    },
+                    "outputs": {
+                        "rets": {
+                            "property": "dict-panel",
+                            "dictlist-panel": {
+                                "collasped": false,
+                                "keys": {}
+                            },
+                            "type": "dict"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        0.43668443832166306,
+                        -548.6075547136225
+                    ],
+                    "options": []
+                },
+                "79bff130-NumericInt": {
+                    "name": "NumericInt",
+                    "inputs": {
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {
+                        "value": {
+                            "value": 1,
+                            "control": {
+                                "name": "Integer"
+                            },
+                            "type": "int"
+                        }
+                    },
+                    "outputs": {
+                        "value": {
+                            "type": "int"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -547.1720378550592,
+                        -416.22679621566797
+                    ],
+                    "options": []
+                },
+                "7b4b5951-NumericFloat": {
+                    "name": "NumericFloat",
+                    "inputs": {
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {
+                        "value": {
+                            "value": 51.0,
+                            "control": {
+                                "name": "Float"
+                            },
+                            "type": "float"
+                        }
+                    },
+                    "outputs": {
+                        "value": {
+                            "type": "float"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -566.3647956759087,
+                        -76.373521826602
+                    ],
+                    "options": []
+                },
+                "89209b40-CreateCube": {
+                    "name": "CreateCube",
+                    "inputs": {
+                        "position": {
+                            "link": null,
+                            "type": "vec3f",
+                            "default-value": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 3"
+                            }
+                        },
+                        "scaleSize": {
+                            "link": null,
+                            "type": "vec3f",
+                            "default-value": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 3"
+                            }
+                        },
+                        "rotate": {
+                            "link": null,
+                            "type": "vec3f",
+                            "default-value": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 3"
+                            }
+                        },
+                        "hasNormal": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": true,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "hasVertUV": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "isFlipFace": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "div_w": {
+                            "link": null,
+                            "type": "int",
+                            "default-value": 51,
+                            "control": {
+                                "name": "Integer"
+                            }
+                        },
+                        "div_h": {
+                            "link": null,
+                            "type": "int",
+                            "default-value": 2,
+                            "control": {
+                                "name": "Integer"
+                            }
+                        },
+                        "div_d": {
+                            "link": null,
+                            "type": "int",
+                            "default-value": 2,
+                            "control": {
+                                "name": "Integer"
+                            }
+                        },
+                        "size": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "quads": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "prim": {
+                            "type": ""
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        526.8757237617506,
+                        -366.37799167050266
+                    ],
+                    "options": []
+                },
+                "19411a6d-Blackboard": {
+                    "name": "Blackboard",
                     "inputs": {
                         "SRC": {
                             "link": null,
@@ -828,20 +1129,16 @@
                         }
                     },
                     "uipos": [
-                        -470.74195475055697,
-                        -163.65040260763437
+                        -633.6035714587931,
+                        -687.6038758444856
                     ],
                     "options": [],
                     "blackboard": {
-                        "width": 1373.0140000960838,
-                        "height": 852.3661892242594,
-                        "title": "传对象",
-                        "background": "#0064a8",
-                        "items": [
-                            "82aa8cfe-Route",
-                            "b3c9151a-PythonNode",
-                            "b580cd18-CreateCube"
-                        ]
+                        "special": false,
+                        "width": 1620.7966360097349,
+                        "height": 1070.1060319098079,
+                        "title": "吐节点",
+                        "content": "这里是前端吐节点的教程，方式是：\n1. 首先先点Generate，这样可以将PythonNode依赖的计算链在计算进程跑完，然后回送到PythonNode的ui端。\n2. 再点Execute，仅执行PythonNode的script脚本\n\n如果args没有连节点，步骤一可以省去。\n\n所以，Script相当于一个模板代码。"
                     }
                 }
             },
@@ -28272,7 +28569,13 @@
                     ""
                 ]
             ],
-            "params": [],
+            "params": [
+                [
+                    "bool",
+                    "onlyui",
+                    "0"
+                ]
+            ],
             "outputs": [
                 [
                     "dict",
@@ -40732,7 +41035,7 @@
                             "x": 0.0022818027064204218,
                             "y": 0.020813623443245889,
                             "width": 0.592127799987793,
-                            "height": 0.22043518722057343
+                            "height": 0.14380322396755219
                         },
                         "tabs": [
                             {
@@ -40756,7 +41059,7 @@
                             "x": 0.596691370010376,
                             "y": 0.020813623443245889,
                             "width": 0.40102681517601015,
-                            "height": 0.22043518722057343
+                            "height": 0.14380322396755219
                         },
                         "tabs": [
                             "Logger",
@@ -40770,9 +41073,9 @@
                 "widget": {
                     "geometry": {
                         "x": 0.0022818027064204218,
-                        "y": 0.2450331151485443,
+                        "y": 0.16840113699436189,
                         "width": 0.9954363703727722,
-                        "height": 0.6461684107780457
+                        "height": 0.7228003740310669
                     },
                     "tabs": [
                         "Editor"
