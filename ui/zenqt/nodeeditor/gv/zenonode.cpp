@@ -51,7 +51,7 @@ ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
     , m_bottomOutputSockets(nullptr)
     , m_border(new QGraphicsRectItem)
     , m_NameItem(nullptr)
-    , m_bError(false)
+    , m_nodeStatus(zeno::Node_DirtyReadyToRun)
     , m_bEnableSnap(false)
     , m_bMoving(false)
     , m_bodyLayout(nullptr)
@@ -63,6 +63,7 @@ ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
     , m_bVisible(true)
     , m_NameItemTip(nullptr)
     , m_statusMarker(nullptr)
+    , m_errorTip(nullptr)
 {
     setFlags(ItemIsMovable | ItemIsSelectable);
     setAcceptHoverEvents(true);
@@ -427,15 +428,17 @@ ZLayoutBackground* ZenoNode::initHeaderWidget()
         });
     }
 
+    const NodeState& state = m_index.data(ROLE_NODE_RUN_STATE).value<NodeState>();
+
     m_statusMarker = new QGraphicsPolygonItem(headerWidget);
     QPolygonF points;
     points.append(QPointF(0, 0));
     points.append(QPointF(15, 0));
     points.append(QPointF(0, 15));
     m_statusMarker->setPolygon(points);
-    m_statusMarker->setBrush(QBrush(QColor("#EAED4B")));
     m_statusMarker->setPen(Qt::NoPen);
     m_statusMarker->setPos(QPointF(0, 0));
+    markNodeStatus(state.runstatus);
 
     //创建可以显示的名字组，并且不纳入header的布局，仅仅设置相对位置
     font2.setPointSize(20);
@@ -494,28 +497,7 @@ void ZenoNode::onRunStateChanged()
 {
     const NodeState& state = m_index.data(ROLE_NODE_RUN_STATE).value<NodeState>();
     this->onMarkDataChanged(state.bDirty);
-    switch (state.runstatus) {
-        case zeno::Node_Pending:
-        {
-            this->markError(false);
-            break;
-        }
-        case zeno::Node_RunError:
-        {
-            this->markError(true);
-            break;
-        }
-        case zeno::Node_Running:
-        {
-            this->markError(false);
-            break;
-        }
-        case zeno::Node_RunSucceed:
-        {
-            this->markError(false);
-            break;
-        }
-    }
+    markNodeStatus(state.runstatus);
 }
 
 void ZenoNode::onLayoutAboutToBeChanged()
@@ -1092,18 +1074,46 @@ void ZenoNode::onSocketLinkChanged(const QModelIndex& paramIdx, bool bInput, boo
     }
 }
 
-void ZenoNode::markError(bool isError)
+void ZenoNode::markNodeStatus(zeno::NodeRunStatus status)
 {
-    m_bError = isError;
-    ZASSERT_EXIT(m_headerWidget);
+    m_nodeStatus = status;
     QColor clrHeaderBg;
-    if (m_bError)
-        clrHeaderBg = QColor(200, 84, 79);
-    else if (m_index.data(ROLE_NODETYPE) == zeno::Node_SubgraphNode)
-        clrHeaderBg = QColor("#1D5F51");
-    else
-        clrHeaderBg = m_renderParams.headerBg.clr_normal;
-    m_headerWidget->setColors(false, clrHeaderBg, QColor(), QColor());
+    if (m_nodeStatus == zeno::Node_RunError)
+    {
+        qreal szIcon = ZenoStyle::dpiScaled(64);
+        if (!m_errorTip) {
+            m_errorTip = new ZenoImageItem(":/icons/node/error.svg", "", "",
+                QSize(szIcon, szIcon), this);
+        }
+        m_errorTip->setPos(QPointF(-szIcon/2., -szIcon/2.));
+        m_errorTip->setZValue(ZVALUE_ERRORTIP);
+        m_errorTip->show();
+    }
+    else {
+        if (m_errorTip)
+            m_errorTip->hide();
+
+        switch (m_nodeStatus)
+        {
+        case zeno::Node_RunSucceed: {
+            m_statusMarker->setBrush(QBrush(QColor("#319E36")));
+            break;
+        }
+        case zeno::Node_Pending: {
+            m_statusMarker->setBrush(QBrush(QColor("#868686")));
+            break;
+        }
+        case zeno::Node_DirtyReadyToRun: {
+            m_statusMarker->setBrush(QBrush(QColor("#EAED4B")));
+            break;
+        }
+        case zeno::Node_Running: {
+            m_statusMarker->setBrush(QBrush(QColor("#02F8F8")));
+            break;
+        }
+        }
+        m_statusMarker->update();
+    }
     update();
 }
 
@@ -1310,11 +1320,11 @@ void ZenoNode::onUpdateParamsNotDesc()
 
 void ZenoNode::onMarkDataChanged(bool bDirty)
 {
-    if (m_statusMarker)
-    {
-        m_statusMarker->setVisible(bDirty);
-        update();
-    }
+    //if (m_statusMarker)
+    //{
+    //    m_statusMarker->setVisible(bDirty);
+    //    update();
+    //}
 }
 
 void ZenoNode::setMoving(bool isMoving)

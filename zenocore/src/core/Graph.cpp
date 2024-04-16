@@ -764,6 +764,7 @@ ZENO_API bool Graph::removeLink(const EdgeInfo& edge) {
     std::shared_ptr<INode> outNode = getNode(edge.outNode);
     if (!outNode)
         return false;
+
     std::shared_ptr<INode> inNode = getNode(edge.inNode);
     if (!inNode)
         return false;

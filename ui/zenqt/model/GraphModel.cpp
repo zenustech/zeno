@@ -64,6 +64,7 @@ void NodeItem::init(GraphModel* pGraphM, std::shared_ptr<zeno::INode> spNode)
     this->dispIcon = QString::fromStdString(spNode->get_show_icon());
     this->bView = spNode->is_view();
     this->runState.bDirty = spNode->is_dirty();
+    this->runState.runstatus = spNode->get_run_status();
     auto pair = spNode->get_pos();
     this->pos = QPointF(pair.first, pair.second);
     this->uuidPath = spNode->get_uuid_path();

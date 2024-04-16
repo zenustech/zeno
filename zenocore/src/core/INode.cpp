@@ -172,10 +172,22 @@ ZENO_API bool INode::is_view() const
     return m_bView;
 }
 
+void INode::reportStatus(bool bDirty, NodeRunStatus status) {
+    m_status = status;
+    m_dirty = bDirty;
+    zeno::getSession().reportNodeStatus(m_uuidPath, bDirty, status);
+}
+
 ZENO_API void INode::mark_dirty(bool bOn)
 {
+    scope_exit sp([&] {
+        m_status = Node_DirtyReadyToRun;  //修改了数据，标脏，并置为此状态。（后续在计算过程中不允许修改数据，所以markDirty理论上是前端驱动）
+        reportStatus(m_dirty, m_status);
+    });
+
     if (m_dirty == bOn)
         return;
+
     m_dirty = bOn;
     if (m_dirty) {
         for (auto& [name, param] : m_outputs) {
@@ -190,7 +202,7 @@ ZENO_API void INode::mark_dirty(bool bOn)
             }
         }
     }
-    CALLBACK_NOTIFY(mark_dirty, m_dirty)
+    //CALLBACK_NOTIFY(mark_dirty, m_dirty)
 }
 
 void INode::mark_dirty_objs()
@@ -209,10 +221,10 @@ void INode::mark_dirty_objs()
 ZENO_API void INode::complete() {}
 
 ZENO_API void INode::preApply() {
-
-    m_status = Node_Pending;
     if (!m_dirty)
         return;
+
+    reportStatus(true, Node_Pending);
 
     //TODO: the param order should be arranged by the descriptors.
     for (const auto& [name, param] : m_inputs) {
@@ -226,7 +238,7 @@ ZENO_API void INode::preApply() {
 #ifdef ZENO_BENCHMARKING
         Timer _(m_name);
 #endif
-        m_status = Node_Running;
+        reportStatus(true, Node_Running);
         apply();
     }
     log_debug("==> leave {}", m_name);
@@ -237,10 +249,11 @@ ZENO_API void INode::unregisterObjs()
     for (auto const& [name, param] : m_outputs)
     {
         if (auto spObj = std::dynamic_pointer_cast<IObject>(param->result)) {
-            if (spObj->key().empty()) {
+            const std::string& key = spObj->key();
+            if (key.empty()) {
                 continue;
             }
-            getSession().objsMan->removeObject(spObj->key());
+            getSession().objsMan->removeObject(key);
         }
     }
 }
@@ -254,13 +267,14 @@ ZENO_API void INode::registerObjToManager()
             if (std::dynamic_pointer_cast<NumericObject>(spObj)) {
                 return;
             }
-            assert(!spObj->key().empty());
+            const std::string& key = spObj->key();
+            assert(!key.empty());
             param->result->nodeId = m_name;
 
-            getSession().objsMan->collectingObject(spObj->key(), spObj, shared_from_this(), m_bView);
+            getSession().objsMan->collectingObject(key, spObj, shared_from_this(), m_bView);
             if (param->m_idModify) {
-                getSession().objsMan->collect_modify_objs(spObj->key(), m_bView); //如果是修改obj，还需要添加到objManager的modify集合中(需要在具体apply函数中设置m_idModify为true)
-                getSession().objsMan->revertRemoveObject(spObj->key());           //如果是对param的obj进行modify，不需要去objManager中unregiste该对象，撤销unregiste时removeObj
+                getSession().objsMan->collect_modify_objs(key, m_bView); //如果是修改obj，还需要添加到objManager的modify集合中(需要在具体apply函数中设置m_idModify为true)
+                getSession().objsMan->revertRemoveObject(key);           //如果是对param的obj进行modify，不需要去objManager中unregiste该对象，撤销unregiste时removeObj
             }
         }
     }
@@ -433,14 +447,9 @@ ZENO_API void INode::doApply() {
         });
 
     unregisterObjs();
-
     preApply();
-
     registerObjToManager();
-
-    mark_dirty(false);
-    m_status = Node_RunSucceed;
-    zeno::getSession().reportNodeStatus(shared_from_this());
+    reportStatus(false, Node_RunSucceed);
 }
 
 ZENO_API std::vector<std::shared_ptr<IParam>> INode::get_input_params() const

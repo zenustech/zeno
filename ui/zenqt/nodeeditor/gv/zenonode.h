@@ -55,7 +55,7 @@ public:
     ZenoSocketItem* getNearestSocket(const QPointF& pos, bool bInput);
     ZenoSocketItem* getSocketItem(const QModelIndex& sockIdx, const QString keyName);
     ZenoSocketItem* getTopBottomSocketItem(const QModelIndex& sockIdx, bool bInput);
-    void markError(bool isError);
+    void markNodeStatus(zeno::NodeRunStatus status);
 
     QString nodeId() const;
     QString nodeClass() const;
@@ -169,6 +169,7 @@ private:
     ZSimpleTextItem* m_pCategoryItem;
     ZSimpleTextItem *m_NameItemTip;
     StatusGroup* m_pStatusWidgets;
+    ZenoImageItem* m_errorTip;
     //StatusGroup* m_pStatusWidgets2;
     QGraphicsPolygonItem* m_statusMarker;
 
@@ -180,7 +181,7 @@ private:
     //when initui, zenonode should not emit any signals.
     bool m_bUIInited;
 
-    bool m_bError;
+    zeno::NodeRunStatus m_nodeStatus;
     bool m_bEnableSnap;
     bool m_bMoving;     //pos change flag.
     QPointF m_lastMoving;    //last moving pos.

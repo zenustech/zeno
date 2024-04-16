@@ -119,7 +119,8 @@ protected:
 private:
     zany process(std::shared_ptr<IParam> in_param);
     zany get_output_result(std::shared_ptr<INode> outNode, std::string out_param, bool bCopy);
-    
+    void reportStatus(bool bDirty, NodeRunStatus status);
+
     float resolve(const std::string& formulaOrKFrame, const ParamType type);
     template<class T, class E> zany resolveVec(const zvariant& defl, const ParamType type);
 
@@ -200,7 +201,7 @@ public:
 
 private:
     ObjPath m_uuidPath;
-    NodeRunStatus m_status = Node_NoRun;
+    NodeRunStatus m_status = Node_DirtyReadyToRun;
     bool m_bView = false;
     bool m_dirty = true;
 };

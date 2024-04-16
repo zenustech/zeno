@@ -29,10 +29,10 @@ ParamsModel::ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent)
             }
             Qt::MatchFlags flags = Qt::MatchRecursive | Qt::MatchCaseSensitive;
             auto pItems = m_customParamsM->findItems(QString::fromStdString(name), flags);
-            ZASSERT_EXIT(pItems.size() <= 1);
             for (auto pItem : pItems)
             {
-                pItem->setData(newValue, ROLE_PARAM_VALUE);
+                if (pItem->data(ROLE_ISINPUT).toBool())
+                    pItem->setData(newValue, ROLE_PARAM_VALUE);
             }
     });
 }

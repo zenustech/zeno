@@ -159,10 +159,10 @@ ZENO_API void Session::registerNodeCallback(F_NodeStatus func)
     m_funcNodeStatus = func;
 }
 
-void Session::reportNodeStatus(std::shared_ptr<INode> spNode)
+void Session::reportNodeStatus(const ObjPath& path, bool bDirty, NodeRunStatus status)
 {
-    if (spNode && m_funcNodeStatus) {
-        m_funcNodeStatus(spNode->get_uuid_path(), spNode->is_dirty(), spNode->get_run_status());
+    if (m_funcNodeStatus) {
+        m_funcNodeStatus(path, bDirty, status);
     }
 }
 

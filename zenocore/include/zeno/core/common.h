@@ -143,11 +143,11 @@ namespace zeno {
 
     enum NodeRunStatus
     {
-        Node_NoRun,
-        Node_Pending,
-        Node_Running,
-        Node_RunError,
-        Node_RunSucceed
+        Node_DirtyReadyToRun,       //已标脏，但还没执行计算。  （dirty)
+        Node_Pending,               //已进入计算，但还须等待前序计算依赖。(dirty)
+        Node_Running,               //进入apply   (dirty)
+        Node_RunError,              //计算错误      (dirty)
+        Node_RunSucceed             //计算成功并完成   (no dirty)
     };
 
     enum ZSG_VERSION

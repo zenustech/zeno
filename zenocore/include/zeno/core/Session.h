@@ -69,7 +69,7 @@ struct Session {
     ZENO_API int registerObjId(const std::string& objprefix);
     ZENO_API void registerRunTrigger(std::function<void()> func);
     ZENO_API void registerNodeCallback(F_NodeStatus func);
-    void reportNodeStatus(std::shared_ptr<INode> spNode);
+    void reportNodeStatus(const ObjPath& path, bool bDirty, NodeRunStatus status);
 
 private:
     void initNodeCates();

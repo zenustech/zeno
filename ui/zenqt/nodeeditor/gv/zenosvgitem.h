@@ -21,6 +21,7 @@ public:
 
 private:
     QSizeF m_size;
+    QString m_normal;
 };
 
 class ZenoImageItem : public QGraphicsObject
