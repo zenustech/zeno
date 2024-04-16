@@ -331,8 +331,31 @@ void NewFBXImportSkin::onNodeClicked() {
         auto content = fbxObj->userData().get2<std::string>("material");
         Json json = Json::parse(content);
         for (auto i = 0; i < json.size(); i++) {
-            zeno::log_info("{}: {}", i, json[i]["mat_name"]);
-
+            std::string mat_name = json[i]["mat_name"];
+            if (Zeno_GetGraph(mat_name)) {
+                continue;
+            }
+            ZENO_HANDLE subG = Zeno_CreateGraph(mat_name,1);
+            ZENO_HANDLE shader = Zeno_AddNode(subG,"ShaderFinalize");
+            Zeno_SetInputDefl(subG,shader,"mtlid",mat_name);
+            ZENO_HANDLE sub_output = Zeno_AddNode(subG, "SubOutput");
+            Zeno_AddLink(subG, shader, "mtl", sub_output, "port");
+            if (json[i].contains("diffuse_tex")) {
+                ZENO_HANDLE tex = Zeno_AddNode(subG,"SmartTexture2D");
+                std::string path = json[i]["diffuse_tex"];
+                Zeno_SetInputDefl(subG, tex, "path", path);
+                Zeno_SetInputDefl(subG,tex,"post_process",std::string("srgb"));
+                Zeno_AddLink(subG, tex, "out", shader, "basecolor");
+            }
+            if (json[i].contains("normal_map_tex")) {
+                ZENO_HANDLE tex = Zeno_AddNode(subG,"SmartTexture2D");
+                std::string path = json[i]["normal_map_tex"];
+                Zeno_SetInputDefl(subG, tex, "path", path);
+                Zeno_SetInputDefl(subG,tex,"post_process",std::string("normal_map"));
+                Zeno_AddLink(subG, tex, "out", shader, "normal");
+            }
+            ZENO_HANDLE subg = Zeno_AddNode(hGraph, mat_name);
+            Zeno_SetView(hGraph, subg, true);
         }
     }
 }
