@@ -21,6 +21,21 @@ private slots:
     void onPartClicked();
 };
 
+class NewFBXImportSkin : public ZenoNode
+{
+    Q_OBJECT
+public:
+    NewFBXImportSkin(const NodeUtilParam& params, QGraphicsItem* parent = nullptr);
+    ~NewFBXImportSkin();
+
+protected:
+    ZGraphicsLayout* initCustomParamWidgets() override;
+
+private slots:
+    void onNodeClicked();
+    void onPartClicked();
+};
+
 class EvalBlenderFile : public ZenoNode
 {
     Q_OBJECT

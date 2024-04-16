@@ -242,6 +242,104 @@ void ReadFBXPrim::onPartClicked()
     GenerateFBX();
 }
 
+NewFBXImportSkin::NewFBXImportSkin(const NodeUtilParam& params, QGraphicsItem* parent)
+    : ZenoNode(params, parent)
+{
+}
+
+NewFBXImportSkin::~NewFBXImportSkin()
+{
+
+}
+
+ZGraphicsLayout* NewFBXImportSkin::initCustomParamWidgets()
+{
+    ZGraphicsLayout* pHLayout = new ZGraphicsLayout(true);
+
+    ZGraphicsLayout* pHLayoutNode = new ZGraphicsLayout(true);
+    ZGraphicsLayout* pHLayoutPart = new ZGraphicsLayout(true);
+
+    ZSimpleTextItem* pNodeItem = new ZSimpleTextItem("node");
+    pNodeItem->setBrush(m_renderParams.socketClr.color());
+    pNodeItem->setFont(m_renderParams.socketFont);
+    pNodeItem->updateBoundingRect();
+    pHLayoutNode->addItem(pNodeItem);
+
+    ZSimpleTextItem* pPartItem = new ZSimpleTextItem("part");
+    pPartItem->setBrush(m_renderParams.socketClr.color());
+    pPartItem->setFont(m_renderParams.socketFont);
+    pPartItem->updateBoundingRect();
+    pHLayoutPart->addItem(pPartItem);
+
+    ZenoParamPushButton* pNodeBtn = new ZenoParamPushButton("Generate", -1, QSizePolicy::Expanding);
+    pHLayoutNode->addItem(pNodeBtn);
+    connect(pNodeBtn, SIGNAL(clicked()), this, SLOT(onNodeClicked()));
+
+    ZenoParamPushButton* pPartBtn = new ZenoParamPushButton("Generate", -1, QSizePolicy::Expanding);
+    pHLayoutPart->addItem(pPartBtn);
+    connect(pPartBtn, SIGNAL(clicked()), this, SLOT(onPartClicked()));
+
+    _param_ctrl paramNode;
+    _param_ctrl paramPart;
+    paramNode.param_name = pNodeItem;
+    paramNode.param_control = pNodeBtn;
+    paramNode.ctrl_layout = pHLayoutNode;
+
+    paramPart.param_name = pPartItem;
+    paramPart.param_control = pPartBtn;
+    paramPart.ctrl_layout = pHLayoutPart;
+
+    addParam(paramNode);
+    addParam(paramPart);
+
+    pHLayout->addLayout(pHLayoutNode);
+    pHLayout->addLayout(pHLayoutPart);
+
+    return pHLayout;
+}
+
+void NewFBXImportSkin::onNodeClicked() {
+    ZENO_HANDLE hGraph = Zeno_GetGraph("main");
+
+    // Get ReadFBXPrim ident
+    ZENO_HANDLE fbxNode = index().internalId();
+
+    // Get the position of current ReadFBXPrim node
+    std::pair<float, float> fbxNodePos;
+    Zeno_GetPos(hGraph, fbxNode, fbxNodePos);
+
+    // Get FBX Path
+    ZVARIANT path; std::string type;
+    Zeno_GetInputDefl(hGraph, fbxNode, "path", path, type);
+
+    // Get FBX HintPath
+    ZVARIANT rootName;
+    Zeno_GetInputDefl(hGraph, fbxNode, "rootName", rootName, type);
+
+    std::string get_path = std::get<std::string>(path);
+    std::string get_rootName = std::get<std::string>(rootName);
+
+    auto outs = zeno::TempNodeSimpleCaller("NewFBXImportSkin")
+            .set2("path", get_path)
+            .set2("rootName", get_rootName)
+            .set2<bool>("ConvertUnits", true)
+            .call();
+    zeno::log_info("ReadFBXPrim Caller End");
+    auto fbxObj = outs.get("prim");
+
+    if(fbxObj) {
+        auto content = fbxObj->userData().get2<std::string>("material");
+        Json json = Json::parse(content);
+        for (auto i = 0; i < json.size(); i++) {
+            zeno::log_info("{}: {}", i, json[i]["mat_name"]);
+
+        }
+    }
+}
+
+void NewFBXImportSkin::onPartClicked() {
+}
+
 EvalBlenderFile::EvalBlenderFile(const NodeUtilParam& params, QGraphicsItem* parent)
     : ZenoNode(params, parent)
 {

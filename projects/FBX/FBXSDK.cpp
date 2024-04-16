@@ -18,6 +18,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <tinygltf/json.hpp>
+using Json = nlohmann::json;
 
 namespace FBX{
     void GetChildNodePathRecursive(FbxNode* node, std::string& path) {
@@ -523,10 +525,37 @@ bool GetMesh(FbxNode* pNode, std::shared_ptr<PrimitiveObject> prim, std::string 
         }
         auto mat_count = pNode->GetMaterialCount();
         ud.set2("faceset_count", mat_count);
+        Json mat_json;
         for (auto i = 0; i < mat_count; i++) {
             FbxSurfaceMaterial* material = pNode->GetMaterial(i);
             ud.set2(format("faceset_{}", i), material->GetName());
+            Json json;
+            json["mat_name"] = material->GetName();
+            {
+                FbxProperty diff_property = material->FindProperty(FbxSurfaceMaterial::sDiffuse);
+                if (diff_property.IsValid()) {
+                    int textureCount = diff_property.GetSrcObjectCount<FbxTexture>();
+                    for (int i = 0; i < textureCount; ++i) {
+                        FbxFileTexture* texture = FbxCast<FbxFileTexture>(diff_property.GetSrcObject<FbxTexture>(i));
+                        if (texture) {
+                            json["diffuse_tex"] = texture->GetFileName();
+                        }
+                    }
+                }
+                FbxProperty normal_property = material->FindProperty(FbxSurfaceMaterial::sNormalMap);
+                if (normal_property.IsValid()) {
+                    int textureCount = normal_property.GetSrcObjectCount<FbxTexture>();
+                    for (int i = 0; i < textureCount; ++i) {
+                        FbxFileTexture* texture = FbxCast<FbxFileTexture>(normal_property.GetSrcObject<FbxTexture>(i));
+                        if (texture) {
+                            json["normal_map_tex"] = texture->GetFileName();
+                        }
+                    }
+                }
+            }
+            mat_json.push_back(json);
         }
+        ud.set2("material", mat_json.dump());
     }
     return true;
 }
@@ -550,7 +579,8 @@ struct NewFBXImportSkin : INode {
         if(!lImporter->Initialize(lFilename.c_str(), -1, lSdkManager->GetIOSettings())) {
             printf("Call to FbxImporter::Initialize() failed.\n");
             printf("Error returned: %s\n\n", lImporter->GetStatus().GetErrorString());
-            exit(-1);
+            set_output("prim", std::shared_ptr<PrimitiveObject>());
+            return;
         }
         int major, minor, revision;
         lImporter->GetFileVersion(major, minor, revision);

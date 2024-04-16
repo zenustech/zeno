@@ -245,6 +245,10 @@ ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilPa
     {
         return new ReadFBXPrim(params);
     }
+    else if(descName == "NewFBXImportSkin")
+    {
+        return new NewFBXImportSkin(params);
+    }
     else if(descName == "LiveMeshNode")
     {
         return new LiveMeshNode(params);
