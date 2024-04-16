@@ -545,7 +545,7 @@ sys.stdout = catchOutErr\n\
 sys.stderr = catchOutErr\n\
 "; //this is python code to redirect stdouts/stderr
 
-    Py_Initialize();
+    //Py_Initialize();
     PyObject* pModule = PyImport_AddModule("__main__"); //create main module
     PyRun_SimpleString(stdOutErr.c_str()); //invoke code to redirect
 

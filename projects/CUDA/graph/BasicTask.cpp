@@ -1,4 +1,6 @@
 #include "Task.hpp"
+#include <queue>
+#include <stack>
 #include <tinygltf/json.hpp>
 
 namespace zeno {
@@ -25,6 +27,43 @@ struct WriteTaskDependencyGraph : INode {
     j[node->tag] = json;
     jsons.push_back(j);
   }
+  static void process_node_bfs(std::vector<Json> &jsons, WorkNode *node,
+                               std::set<WorkNode *> &records) {
+    std::queue<WorkNode *> que;
+    std::stack<WorkNode *> orderedNodes;
+
+    que.push(node);
+
+    while (!que.empty()) {
+      auto n = que.front();
+      que.pop();
+
+      if (records.find(n) != records.end())
+        return;
+      records.insert(n);
+
+      orderedNodes.push(n);
+
+      for (auto &&[tag, no] : n->deps)
+        que.push(no.get());
+    }
+
+    while (!orderedNodes.empty()) {
+      auto n = orderedNodes.top();
+      orderedNodes.pop();
+
+      Json json;
+      json["name"] = n->tag;
+      json["cmds"] = n->workItems;
+      std::vector<std::string> depWorkNames;
+      for (auto &&[tag, node] : n->deps)
+        depWorkNames.push_back(node->tag);
+      json["deps"] = depWorkNames;
+      Json j;
+      j[n->tag] = json;
+      jsons.push_back(j);
+    }
+  }
   void apply() override {
     std::vector<WorkNode *> nodes;
     auto jobs = get_input("job");
@@ -41,7 +80,7 @@ struct WriteTaskDependencyGraph : INode {
 
     std::set<WorkNode *> records;
     for (auto &node : nodes)
-      process_node(jsons, node, records);
+      process_node_bfs(jsons, node, records);
 
     Json json = Json(jsons);
 
