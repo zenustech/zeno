@@ -2,10 +2,11 @@
 #include "zenosocketitem.h"
 
 
-SocketBackgroud::SocketBackgroud(bool bInput, QGraphicsItem* parent, Qt::WindowFlags wFlags)
+SocketBackgroud::SocketBackgroud(bool bInput, bool bPanelLayout, QGraphicsItem* parent, Qt::WindowFlags wFlags)
     : ZLayoutBackground(parent, wFlags)
     , m_socket(nullptr)
     , m_bInput(bInput)
+    , m_bPanelLayout(bPanelLayout)
 {
     setColors(false, QColor(0, 0, 0, 0));
     connect(this, &SocketBackgroud::geometryChanged, this, &SocketBackgroud::onGeometryChanged);
@@ -31,6 +32,11 @@ void SocketBackgroud::onGeometryChanged()
     else {
         x = rc.right() - m_socket->getSize().width() / 2;
     }
+
+    if (m_bPanelLayout) {
+        y = 0.;
+    }
+
     QPointF newPos = QPointF(x, y);
     m_socket->setPos(newPos);
 }

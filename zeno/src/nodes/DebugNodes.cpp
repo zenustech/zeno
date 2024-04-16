@@ -223,7 +223,7 @@ struct MockRunning : zeno::INode {
 };
 
 ZENDEFNODE(MockRunning, {
-    {{"SRC"},
+    {{"list", "SRC"},
      {"int", "wait seconds", "1", zeno::NoSocket, zeno::SpinBox}
     },
     {"DST"},

@@ -879,8 +879,6 @@ ZGraphicsLayout* ZenoNode::initSockets(ParamsModel* pModel, const bool bInput, Z
 
 SocketBackgroud* ZenoNode::addSocket(const QModelIndex& paramIdx, bool bInput, ZenoSubGraphScene* pScene)
 {
-    SocketBackgroud* pBackground = new SocketBackgroud(bInput);
-
     QPersistentModelIndex perSockIdx = paramIdx;
 
     CallbackForSocket cbSocket;
@@ -912,15 +910,15 @@ SocketBackgroud* ZenoNode::addSocket(const QModelIndex& paramIdx, bool bInput, Z
         bSocketEnable = false;
     }
 
+    SocketBackgroud* pBackground = nullptr;
     ZSocketLayout* pMiniLayout = nullptr;
     if ((type == zeno::Param_Dict || type == zeno::Param_List) && 
         ctrl != zeno::NoMultiSockPanel) {
+        pBackground = new SocketBackgroud(bInput, true);
         pMiniLayout = new ZDictSocketLayout(paramIdx, bInput, pBackground);
     }
-    else if (ctrl == zeno::Seperator) {
-        pMiniLayout = new ZGroupSocketLayout(paramIdx, bInput);
-    }
     else {
+        pBackground = new SocketBackgroud(bInput, false);
         pMiniLayout = new ZSocketLayout(paramIdx, bInput, pBackground);
         qreal margin = ZenoStyle::dpiScaled(16);
         if (bInput)
