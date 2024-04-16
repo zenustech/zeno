@@ -134,7 +134,8 @@ ZENDEFNODE(EvalUSDPrim,
         /* inputs */
         {
             {"readpath", "USDDescription"},
-            {"string", "primPath"}
+            {"string", "primPath"},
+            {"bool", "isRecursive", "0"},
         },
         /* outputs */
         {

@@ -8,6 +8,14 @@
 #include <zenomodel/include/graphsmanagment.h>
 #include <any>
 
+struct NodePos {
+	float x;
+	float y;
+	NodePos nextInternalPos() const;
+	NodePos nextLevelPos() const;
+	NodePos nextBrotherPos() const;
+};
+
 class EvalUSDPrim: public ZenoNode {
 	Q_OBJECT
 public:
@@ -18,29 +26,35 @@ protected:
 	ZGraphicsLayout* initCustomParamWidgets() override;
 
 private:
+	void _setNodePos(ZENO_HANDLE, ZENO_HANDLE, const NodePos&);
+
 	void _getNodeInputs();
 	void _onEvalFinished();
+	ZENO_HANDLE _parsePrim(/* pxr::UsdStageRefPtr */ std::any scene, /* pxr::UsdPrim */ std::any, const NodePos& nodePos);
+	ZENO_HANDLE _dfsParse(ZENO_HANDLE father, /* pxr::UsdStageRefPtr */ std::any scene, /* pxr::UsdPrim */ std::any prim, const NodePos& nodePos);
 
 	/*** Basic Geometry Node Generation ***/
-	ZENO_HANDLE _emitCreateSphereNode(std::any, ZENO_HANDLE, bool isLightGeo = false);
-	ZENO_HANDLE _emitCreateCapsuleNode(std::any, ZENO_HANDLE);
-	ZENO_HANDLE _emitCreateCubeNode(std::any, ZENO_HANDLE);
-	ZENO_HANDLE _emitCreateCylinderNode(std::any, ZENO_HANDLE, bool isLightGeo = false);
-	ZENO_HANDLE _emitCreateConeNode(std::any, ZENO_HANDLE);
-	ZENO_HANDLE _emitCreatePlaneNode(std::any, ZENO_HANDLE, bool isLightGeo = false);
-	ZENO_HANDLE _emitCreateDiskNode(std::any, ZENO_HANDLE, bool isLightGeo = false);
-	ZENO_HANDLE _emitImportUSDMeshNode(std::any, ZENO_HANDLE);
+	ZENO_HANDLE _emitCreateSphereNode(/* pxr::UsdPrim */ std::any, ZENO_HANDLE, const NodePos&, bool isLightGeo = false);
+	ZENO_HANDLE _emitCreateCapsuleNode(/* pxr::UsdPrim */ std::any, ZENO_HANDLE, const NodePos&);
+	ZENO_HANDLE _emitCreateCubeNode(/* pxr::UsdPrim */ std::any, ZENO_HANDLE, const NodePos&);
+	ZENO_HANDLE _emitCreateCylinderNode(/* pxr::UsdPrim */ std::any, ZENO_HANDLE, const NodePos&, bool isLightGeo = false);
+	ZENO_HANDLE _emitCreateConeNode(/* pxr::UsdPrim */ std::any, ZENO_HANDLE, const NodePos&);
+	ZENO_HANDLE _emitCreatePlaneNode(/* pxr::UsdPrim */ std::any, ZENO_HANDLE, const NodePos&, bool isLightGeo = false);
+	ZENO_HANDLE _emitCreateDiskNode(/* pxr::UsdPrim */ std::any, ZENO_HANDLE, const NodePos&, bool isLightGeo = false);
+	ZENO_HANDLE _emitImportUSDMeshNode(/* pxr::UsdPrim */ std::any, ZENO_HANDLE, const NodePos&);
 
-	ZENO_HANDLE _emitLightNode(std::any, ZENO_HANDLE, const std::string& lightType, const std::string& shapeType);
+	ZENO_HANDLE _emitLightNode(/* pxr::UsdPrim */ std::any, ZENO_HANDLE, const NodePos& nodePos, const std::string& lightType, const std::string& shapeType);
 
-	ZENO_HANDLE _emitCameraNode(std::any, ZENO_HANDLE);
+	ZENO_HANDLE _emitCameraNode(/* pxr::UsdPrim */ std::any, ZENO_HANDLE, const NodePos& nodePos);
 
-	ZENO_HANDLE _emitPrimitiveTransformNodes(std::any, ZENO_HANDLE targetGraph, ZENO_HANDLE lastNode);
+	ZENO_HANDLE _emitPrimitiveTransformNodes(/* pxr::UsdPrim */ std::any, ZENO_HANDLE targetGraph, const NodePos& nodePos, ZENO_HANDLE lastNode);
 
-	ZENO_HANDLE _makeTransformNode(ZENO_HANDLE mainGraph, const std::pair<float, float>&, std::any transType, const ZVARIANT& transVec);
+	ZENO_HANDLE _makeTransformNode(ZENO_HANDLE mainGraph, const NodePos& nodePos, /* pxr::UsdGeomXformOp::Type */ std::any transType, const ZVARIANT& transValue);
 
 	std::string mUSDPath;
 	std::string mPrimPath;
+	bool mIsRecursive = false;
+	NodePos mLastNodePos;
 
 private slots:
 	void _onEvalClicked();
