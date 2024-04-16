@@ -2,9 +2,9 @@ find_package(Qt5 COMPONENTS Widgets OpenGL Network REQUIRED)
 
 message(STATUS "Found Qt5 version ${Qt5_VERSION}: ${Qt5_DIR}")
 
-if (ZENO_WITH_PYTHON3)
-    find_package(Python3 COMPONENTS Development REQUIRED)
-endif()
+#if (ZENO_WITH_PYTHON3)
+#    find_package(Python3 COMPONENTS Development REQUIRED)
+#endif()
 
 #add_custom_target(
 #    clean_resource_file
@@ -45,10 +45,11 @@ endif()
 
 #BEGIN PYTHON IMPORT
 if (ZENO_WITH_PYTHON3)
-message(STATUS "python3 libraries for zenoedit: ${Python3_LIBRARIES}")
-message(STATUS "python3 include directories for zenoedit: ${Python3_INCLUDE_DIRS}")
-target_link_libraries(zenoedit PRIVATE ${Python3_LIBRARIES})
-target_include_directories(zenoedit PRIVATE ${Python3_INCLUDE_DIRS})
+    #find_package(Python3 COMPONENTS Development REQUIRED)
+    message(STATUS "python3 libraries for zenoedit: ${Python3_LIBRARIES}")
+    message(STATUS "python3 include directories for zenoedit: ${Python3_INCLUDE_DIRS}")
+    target_link_libraries(zenoedit PRIVATE ${Python3_LIBRARIES})
+    target_include_directories(zenoedit PRIVATE ${Python3_INCLUDE_DIRS})
 endif()
 #ENDIF
 
