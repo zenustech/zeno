@@ -16,16 +16,18 @@ struct WriteTaskDependencyGraph : INode {
     for (auto &&[tag, node] : node->deps)
       process_node(jsons, node.get(), records);
 
-    Json json;
-    json["name"] = node->tag;
-    json["cmds"] = node->workItems;
-    std::vector<std::string> depWorkNames;
-    for (auto &&[tag, node] : node->deps)
-      depWorkNames.push_back(node->tag);
-    json["deps"] = depWorkNames;
-    Json j;
-    j[node->tag] = json;
-    jsons.push_back(j);
+    if (!node->tag.empty()) { // skip empty job
+      Json json;
+      json["name"] = node->tag;
+      json["cmds"] = node->workItems;
+      std::vector<std::string> depWorkNames;
+      for (auto &&[tag, node] : node->deps)
+        depWorkNames.push_back(node->tag);
+      json["deps"] = depWorkNames;
+      Json j;
+      j[node->tag] = json;
+      jsons.push_back(j);
+    }
   }
   static void process_node_bfs(std::vector<Json> &jsons, WorkNode *node,
                                std::set<WorkNode *> &records) {
@@ -52,16 +54,18 @@ struct WriteTaskDependencyGraph : INode {
       auto n = orderedNodes.top();
       orderedNodes.pop();
 
-      Json json;
-      json["name"] = n->tag;
-      json["cmds"] = n->workItems;
-      std::vector<std::string> depWorkNames;
-      for (auto &&[tag, node] : n->deps)
-        depWorkNames.push_back(node->tag);
-      json["deps"] = depWorkNames;
-      Json j;
-      j[n->tag] = json;
-      jsons.push_back(j);
+      if (!n->tag.empty()) { // skip empty job
+        Json json;
+        json["name"] = n->tag;
+        json["cmds"] = n->workItems;
+        std::vector<std::string> depWorkNames;
+        for (auto &&[tag, node] : n->deps)
+          depWorkNames.push_back(node->tag);
+        json["deps"] = depWorkNames;
+        Json j;
+        j[n->tag] = json;
+        jsons.push_back(j);
+      }
     }
   }
   void apply() override {
