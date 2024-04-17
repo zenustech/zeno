@@ -41,7 +41,7 @@ struct WriteTaskDependencyGraph : INode {
       que.pop();
 
       if (records.find(n) != records.end())
-        return;
+        continue;
       records.insert(n);
 
       orderedNodes.push(n);
