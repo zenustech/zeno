@@ -38,10 +38,32 @@ public:
     void setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const override;
     void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
 
+    std::function<bool(QString)> m_isGlobalUniqueFunc;
+
 private:
     QStandardItemModel* m_model;
 };
 
+class outputListItemDelegate : public QStyledItemDelegate
+{
+    Q_OBJECT
+public:
+    explicit outputListItemDelegate(QStandardItemModel* model, QObject* parent = nullptr);
+    ~outputListItemDelegate();
+
+    // editing
+    QWidget* createEditor(QWidget* parent,
+        const QStyleOptionViewItem& option,
+        const QModelIndex& index) const override;
+
+    void setModelData(QWidget* editor, QAbstractItemModel* model, const QModelIndex& index) const override;
+    void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
+
+    std::function<bool(QString)> m_isGlobalUniqueFunc;
+
+private:
+    QStandardItemModel* m_model;
+};
 
 class ZEditParamLayoutDlg : public QDialog
 {
@@ -67,7 +89,8 @@ private slots:
     void onParamTreeDeleted();
     void onOutputsListDeleted();
     void onControlItemChanged(int);
-    void onViewParamDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
+    void onParamsViewParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
+    void onOutputsViewParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
     void onSocketTypeChanged(int idx);
 
 private:
@@ -77,6 +100,8 @@ private:
     void proxyModelSetData(const QModelIndex& index, const QVariant& newValue, int role);
     void switchStackProperties(int ctrl, QStandardItem *pItem);
     void initModel(const QStandardItemModel* pModel);
+
+    std::function<bool(QString)> m_isGlobalUniqueFunc;
 
     QStandardItemModel * m_paramsLayoutM_inputs;
     QStandardItemModel * m_paramsLayoutM_outputs;

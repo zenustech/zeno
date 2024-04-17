@@ -811,25 +811,25 @@ zeno::NodeData GraphModel::createNode(const QString& nodeCls, const QString& cat
         QString uuid = m_name2uuid[nodeName];
         ZASSERT_EXIT(m_nodes.find(uuid) != m_nodes.end(), node);
 
-        zeno::ParamsUpdateInfo updateInfo;
+        //zeno::ParamsUpdateInfo updateInfo;
 
-        zeno::ParamUpdateInfo info;
-        info.param.bInput = true;
-        info.param.name = "input1";
-        info.param.socketType = zeno::PrimarySocket;
-        updateInfo.push_back(info);
+        //zeno::ParamUpdateInfo info;
+        //info.param.bInput = true;
+        //info.param.name = "input1";
+        //info.param.socketType = zeno::PrimarySocket;
+        //updateInfo.push_back(info);
 
-        info.param.bInput = true;
-        info.param.name = "input2";
-        info.param.socketType = zeno::PrimarySocket;
-        updateInfo.push_back(info);
+        //info.param.bInput = true;
+        //info.param.name = "input2";
+        //info.param.socketType = zeno::PrimarySocket;
+        //updateInfo.push_back(info);
 
-        info.param.bInput = false;
-        info.param.name = "output1";
-        info.param.socketType = zeno::PrimarySocket;
-        updateInfo.push_back(info);
+        //info.param.bInput = false;
+        //info.param.name = "output1";
+        //info.param.socketType = zeno::PrimarySocket;
+        //updateInfo.push_back(info);
 
-        m_nodes[uuid]->params->batchModifyParams(updateInfo);
+        //m_nodes[uuid]->params->batchModifyParams(updateInfo);
     }
 
     return node;

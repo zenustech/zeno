@@ -1114,6 +1114,13 @@
     </message>
 </context>
 <context>
+    <name>outputListItemDelegate</name>
+    <message>
+        <source>The param name already exists</source>
+        <translation>参数名字已存在</translation>
+    </message>
+</context>
+<context>
     <name>PropertyPane</name>
     <message>
         <source>Inspector</source>
