@@ -357,6 +357,76 @@ void NewFBXImportSkin::onNodeClicked() {
             ZENO_HANDLE subg = Zeno_AddNode(hGraph, mat_name);
             Zeno_SetView(hGraph, subg, true);
         }
+        if (Zeno_GetGraph("FacesetToMatid") == 0) {
+            ZENO_HANDLE subG = Zeno_CreateGraph("FacesetToMatid", 0);
+            ZENO_HANDLE input = Zeno_AddNode(subG,"SubInput");
+            {
+                Zeno_SetParam(subG, input, "name", std::string("prim"));
+            }
+            ZENO_HANDLE prim_copy_attr = Zeno_AddNode(subG, "PrimCopyAttr");
+            {
+                Zeno_AddLink(subG, input, "port", prim_copy_attr, "prim");
+                Zeno_SetInputDefl(subG, prim_copy_attr, "sourceName", std::string("faceset"));
+                Zeno_SetInputDefl(subG, prim_copy_attr, "targetName", std::string("matid"));
+                Zeno_SetInputDefl(subG, prim_copy_attr, "scope", std::string("poly"));
+            }
+            ZENO_HANDLE get_faceset_count = Zeno_AddNode(subG, "GetUserData2");
+            {
+                Zeno_AddLink(subG, prim_copy_attr, "prim", get_faceset_count, "object");
+                Zeno_SetInputDefl(subG, get_faceset_count, "key", std::string("faceset_count"));
+            }
+            ZENO_HANDLE set_matNum = Zeno_AddNode(subG, "SetUserData2");
+            {
+                Zeno_AddLink(subG, prim_copy_attr, "prim", set_matNum, "object");
+                Zeno_SetInputDefl(subG, set_matNum, "key", std::string("matNum"));
+                Zeno_AddLink(subG, get_faceset_count, "data", set_matNum, "data");
+            }
+            ZENO_HANDLE begin_for = Zeno_AddNode(subG, "BeginFor");
+            {
+                Zeno_AddLink(subG, get_faceset_count, "data", begin_for, "count");
+                Zeno_AddLink(subG, set_matNum, "DST", begin_for, "SRC");
+            }
+            ZENO_HANDLE faceset_ = Zeno_AddNode(subG, "StringFormatNumStr");
+            {
+                Zeno_SetInputDefl(subG, faceset_, "str", std::string("faceset_{}"));
+                Zeno_AddLink(subG, begin_for, "index", faceset_, "num_str");
+                Zeno_AddLink(subG, begin_for, "DST", faceset_, "SRC");
+            }
+            ZENO_HANDLE get_mat_name = Zeno_AddNode(subG, "GetUserData2");
+            {
+                Zeno_AddLink(subG, set_matNum, "object", get_mat_name, "object");
+                Zeno_AddLink(subG, faceset_, "str", get_mat_name, "key");
+                Zeno_AddLink(subG, faceset_, "DST", get_mat_name, "SRC");
+            }
+            ZENO_HANDLE material_ = Zeno_AddNode(subG, "StringFormatNumStr");
+            {
+                Zeno_SetInputDefl(subG, material_, "str", std::string("Material_{}"));
+                Zeno_AddLink(subG, begin_for, "index", material_, "num_str");
+                Zeno_AddLink(subG, get_mat_name, "DST", material_, "SRC");
+            }
+            ZENO_HANDLE set_mat_name = Zeno_AddNode(subG, "SetUserData2");
+            {
+                Zeno_AddLink(subG, set_matNum, "object", set_mat_name, "object");
+                Zeno_AddLink(subG, material_, "str", set_mat_name, "key");
+                Zeno_AddLink(subG, get_mat_name, "data", set_mat_name, "data");
+                Zeno_AddLink(subG, material_, "DST", set_mat_name, "SRC");
+            }
+            ZENO_HANDLE end_for = Zeno_AddNode(subG, "EndFor");
+            {
+                Zeno_AddLink(subG, begin_for, "FOR", end_for, "FOR");
+                Zeno_AddLink(subG, set_mat_name, "DST", end_for, "SRC");
+            }
+            ZENO_HANDLE sub_output = Zeno_AddNode(subG, "SubOutput"); {
+                Zeno_AddLink(subG, set_mat_name, "object", sub_output, "port");
+                Zeno_AddLink(subG, end_for, "DST", sub_output, "SRC");
+            }
+        }
+        ZENO_HANDLE faceset2matid = Zeno_AddNode(hGraph, "FacesetToMatid");
+        {
+            Zeno_AddLink(hGraph, fbxNode, "prim", faceset2matid, "prim");
+            Zeno_SetView(hGraph, faceset2matid, true);
+        }
+
     }
 }
 
