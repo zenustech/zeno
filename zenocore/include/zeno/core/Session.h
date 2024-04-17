@@ -55,6 +55,7 @@ struct Session {
 
     ZENO_API UserData &userData() const;
     ZENO_API std::shared_ptr<Graph> createGraph(const std::string& name);
+    ZENO_API void resetMainGraph();
     ZENO_API bool run();
     ZENO_API void set_auto_run(bool bOn);
     ZENO_API bool is_auto_run() const;

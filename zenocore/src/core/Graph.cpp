@@ -463,15 +463,24 @@ ZENO_API std::string Graph::updateNodeName(const std::string oldName, const std:
 ZENO_API void Graph::clear()
 {
     m_nodes.clear();
-    m_name2uuid.clear();
     nodesToExec.clear();
+    portalIns.clear();
+    portals.clear();
+
+    subInputNodes.clear();
+    subOutputNodes.clear();
+    m_name2uuid.clear();
     node_set.clear();
+    frame_nodes.clear();
+    subnet_nodes.clear();
+    asset_nodes.clear();
+    subinput_nodes.clear();
+    suboutput_nodes.clear();
+    m_viewnodes.clear();
+
     optParentSubgNode = std::nullopt;
     ctx.reset();
     dirtyChecker.reset();
-    portalIns.clear();
-    portals.clear();
-    //m_name = "";  keep name.
 
     CALLBACK_NOTIFY(clear)
 }

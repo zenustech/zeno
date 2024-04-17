@@ -122,6 +122,11 @@ ZENO_API std::shared_ptr<Graph> Session::createGraph(const std::string& name) {
     return graph;
 }
 
+ZENO_API void Session::resetMainGraph() {
+    mainGraph.reset();
+    mainGraph = std::make_shared<Graph>("main");
+}
+
 ZENO_API void Session::setApiLevelEnable(bool bEnable)
 {
     m_bApiLevelEnable = bEnable;
