@@ -70,6 +70,9 @@ void CalculationMgr::onNodeStatusReported(zeno::ObjPath uuidPath, NodeState stat
         const QModelIndex targetNode = pMainTree->getIndexByUuidPath(uuidPath);
         if (targetNode.isValid()) {
             UiHelper::qIndexSetData(targetNode, QVariant::fromValue(state), ROLE_NODE_RUN_STATE);
+            if (!m_bMultiThread) {
+                zenoApp->processEvents();
+            }
         }
     }
 }
@@ -77,8 +80,11 @@ void CalculationMgr::onNodeStatusReported(zeno::ObjPath uuidPath, NodeState stat
 void CalculationMgr::onCalcFinished(bool bSucceed, zeno::ObjPath nodeUuidPath, QString msg)
 {
     //确保此时计算线程不再跑逻辑，这里暂时是代码上约束，也就是CalcWorker::run()走完就发信号。
-    m_thread.quit();
-    m_thread.wait();
+    if (m_bMultiThread)
+    {
+        m_thread.quit();
+        m_thread.wait();
+    }
     emit calcFinished(bSucceed, nodeUuidPath, msg);
 }
 
@@ -86,6 +92,9 @@ void CalculationMgr::run()
 {
     if (m_bMultiThread) {
         m_thread.start();
+    }
+    else {
+        m_worker->run();
     }
 }
 
