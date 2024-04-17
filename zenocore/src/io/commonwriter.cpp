@@ -162,6 +162,14 @@ namespace zenoio
 
                     writer.Key("in-key");
                     writer.String(link.inKey.c_str());
+
+                    writer.Key("property");
+                    if (link.lnkfunc == zeno::Link_Copy) {
+                        writer.String("copy");
+                    }
+                    else {
+                        writer.String("ref");
+                    }
                 }
                 writer.EndArray();
             }

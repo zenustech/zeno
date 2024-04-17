@@ -273,14 +273,16 @@ namespace zenoio
             auto& arr = sockObj["links"].GetArray();
             for (int i = 0; i < arr.Size(); i++) {
                 auto& linkObj = arr[i];
-                const std::string outnode = linkObj["out-node"].GetString();
-                const std::string outsock = linkObj["out-socket"].GetString();
-                const std::string outkey = linkObj["out-key"].GetString();
-                const std::string innode = id;
-                const std::string insock = inSock;
-                const std::string inkey = linkObj["in-key"].GetString();
+                const std::string& outnode = linkObj["out-node"].GetString();
+                const std::string& outsock = linkObj["out-socket"].GetString();
+                const std::string& outkey = linkObj["out-key"].GetString();
+                const std::string& innode = id;
+                const std::string& insock = inSock;
+                const std::string& inkey = linkObj["in-key"].GetString();
+                const std::string& property = linkObj["property"].GetString();
 
-                zeno::EdgeInfo link = { outnode, outsock, outkey, innode, insock, inkey };
+                zeno::LinkFunction prop = property == "copy" ? zeno::Link_Copy : zeno::Link_Ref;
+                zeno::EdgeInfo link = { outnode, outsock, outkey, innode, insock, inkey, prop };
                 param.links.push_back(link);
                 links.push_back(link);
             }

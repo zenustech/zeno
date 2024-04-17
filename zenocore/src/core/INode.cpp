@@ -563,6 +563,7 @@ ZENO_API NodeData INode::exportInfo() const
             info.inNode = m_name;
             info.inParam = param.name;
             info.inKey = link->tokey;
+            info.lnkfunc = link->lnkProp;
             param.links.push_back(info);
         }
         node.inputs.push_back(param);
@@ -587,6 +588,7 @@ ZENO_API NodeData INode::exportInfo() const
             info.outNode = m_name;
             info.outParam = param.name;
             info.outKey = link->fromkey;
+            info.lnkfunc = link->lnkProp;
             param.links.push_back(info);
         }
         node.outputs.push_back(param);
