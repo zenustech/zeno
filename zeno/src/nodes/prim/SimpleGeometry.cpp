@@ -1436,14 +1436,20 @@ struct RemoveFolder : zeno::INode {
     virtual void apply() override {
         namespace fs = std::filesystem;
         auto folderPath = fs::u8path(get_input2<std::string>("folderPath"));
-        std::error_code errorCode;
-        fs::remove_all(folderPath, errorCode);
+        if (fs::exists(folderPath)) {
+            std::error_code errorCode;
+            fs::remove_all(folderPath, errorCode);
+            if (get_input2<bool>("clean")) {
+                fs::create_directories(folderPath);
+            }
+        }
     }
 };
 
 ZENDEFNODE(RemoveFolder, {
     {
-        {"directory", "folderPath"}
+        {"directory", "folderPath"},
+        {"bool", "clean", "false"},
     },
     {},
     {},
