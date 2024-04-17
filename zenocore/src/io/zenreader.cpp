@@ -202,6 +202,37 @@ namespace zenoio
         return retNode;
     }
 
+    void ZenReader::_parseInputs(
+        const std::string& id,
+        const std::string& nodeName,
+        const rapidjson::Value& inputs,
+        zeno::NodeData& ret,
+        zeno::LinksData& links)
+    {
+        for (const auto& inObj : inputs.GetObject())
+        {
+            const std::string& inSock = inObj.name.GetString();
+            const auto& inputObj = inObj.value;
+
+            if (inputObj.IsNull())
+            {
+                zeno::ParamInfo param;
+                param.name = inSock;
+                ret.inputs.push_back(param);
+            }
+            else if (inputObj.IsObject())
+            {
+                bool bSubnet = ret.cls == "Subnet";
+                zeno::ParamInfo param = _parseSocket(true, bSubnet, id, nodeName, inSock, inputObj, links);
+                ret.inputs.push_back(param);
+            }
+            else
+            {
+                zeno::log_error("unknown format");
+            }
+        }
+    }
+
     zeno::ParamInfo ZenReader::_parseSocket(
         const bool bInput,
         const bool bSubnetNode,
