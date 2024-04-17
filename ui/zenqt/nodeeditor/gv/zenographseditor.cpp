@@ -150,7 +150,7 @@ void ZenoGraphsEditor::initSignals()
 
 void ZenoGraphsEditor::initRecentFiles()
 {
-    //m_ui->welcomePage->initRecentFiles();
+    m_ui->welcomePage->initRecentFiles();
 }
 
 void ZenoGraphsEditor::resetMainModel()
@@ -199,6 +199,7 @@ void ZenoGraphsEditor::resetAssetsModel()
 
 void ZenoGraphsEditor::onModelCleared()
 {
+    m_ui->mainStacked->setCurrentWidget(m_ui->welcomeScrollPage);
     m_ui->searchEdit->clear();
 }
 
