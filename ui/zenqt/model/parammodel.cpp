@@ -6,6 +6,8 @@
 #include "model/LinkModel.h"
 #include "model/GraphModel.h"
 #include "variantptr.h"
+#include "model/graphsmanager.h"
+#include "model/graphstreemodel.h"
 
 
 ParamsModel::ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent)
@@ -185,6 +187,7 @@ bool ParamsModel::setData(const QModelIndex& index, const QVariant& value, int r
         if (spNode) {
             zeno::zvariant defl = UiHelper::qvarToZVar(value, param.type);
             spNode->update_param(param.name.toStdString(), defl);
+            GraphsManager::instance().currentModel()->markDirty(true);
             return true;        //the dataChanged signal will be emitted by registered callback function.
         }
         return false;
@@ -201,6 +204,7 @@ bool ParamsModel::setData(const QModelIndex& index, const QVariant& value, int r
     }
 
     emit dataChanged(index, index, QVector<int>{role});
+    GraphsManager::instance().currentModel()->markDirty(true);
     return true;
 }
 

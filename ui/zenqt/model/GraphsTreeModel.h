@@ -61,6 +61,12 @@ public:
     //util methods
     bool isDirty() const;
     void clearDirty();
+    inline void markDirty(bool dirty) {
+        if (m_dirty != dirty) {
+            m_dirty = dirty;
+            emit dirtyChanged();
+        }
+    }
     QList<SEARCH_RESULT> search(const QString& content, int searchType, int searchOpts) const;
     QList<SEARCH_RESULT> searchByUuidPath(const zeno::ObjPath& uuidPath);
 
@@ -78,6 +84,7 @@ private:
     QModelIndex innerIndex(const QModelIndex& treeIdx) const;
 
     GraphModel* m_main;
+    bool m_dirty;
 };
 
 #endif

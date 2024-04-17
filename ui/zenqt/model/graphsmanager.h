@@ -20,7 +20,7 @@ public:
     ~GraphsManager();
 
     void createGraphs(const zenoio::ZSG_PARSE_RESULT ioresult);
-    GraphsTreeModel* currentModel() const;
+    inline GraphsTreeModel* currentModel() const { return m_model; }
     AssetsModel* assetsModel() const;
     QStandardItemModel* logModel() const;
     GraphModel* getGraph(const QStringList& objPath) const;

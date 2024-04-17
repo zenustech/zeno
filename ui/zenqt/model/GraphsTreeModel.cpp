@@ -8,6 +8,7 @@
 GraphsTreeModel::GraphsTreeModel(QObject* parent)
     : QAbstractItemModel(parent)
     , m_main(nullptr)
+    , m_dirty(false)
 {
 }
 
@@ -292,12 +293,15 @@ QModelIndex GraphsTreeModel::getIndexByPath(const QStringList& objPath)
 }
 
 bool GraphsTreeModel::isDirty() const {
-    //TODO
-    return false;
+    return m_dirty;
 }
 
 void GraphsTreeModel::clearDirty() {
-    //TODO
+    if (m_dirty)
+    {
+        m_dirty = false;
+        emit dirtyChanged();
+    }
 }
 
 QList<SEARCH_RESULT> GraphsTreeModel::search(const QString& content, int searchType, int searchOpts) const

@@ -46,11 +46,6 @@ void GraphsManager::registerCoreNotify() {
 
 }
 
-GraphsTreeModel* GraphsManager::currentModel() const
-{
-    return m_model;
-}
-
 AssetsModel* GraphsManager::assetsModel() const
 {
     return m_assets;
@@ -118,6 +113,7 @@ GraphsTreeModel* GraphsManager::openZsgFile(const QString& fn, zenoio::ERR_CODE&
     newFile();
 
     emit fileOpened(fn);
+    m_model->markDirty(false);
     return m_model;
 }
 
