@@ -91,6 +91,7 @@ void CalculationMgr::run()
 
 void CalculationMgr::kill()
 {
+    zeno::getSession().interrupt();
     zeno::getSession().globalState->set_working(false);
 }
 

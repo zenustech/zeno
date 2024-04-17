@@ -57,6 +57,9 @@ struct Session {
     ZENO_API std::shared_ptr<Graph> createGraph(const std::string& name);
     ZENO_API void resetMainGraph();
     ZENO_API bool run();
+    ZENO_API void interrupt();
+    ZENO_API bool is_interrupted() const;
+    //ZENO_API 
     ZENO_API void set_auto_run(bool bOn);
     ZENO_API bool is_auto_run() const;
     ZENO_API std::string dumpDescriptorsJSON() const;
@@ -79,6 +82,7 @@ private:
     int m_apiLevel = 0;
     bool m_bApiLevelEnable = true;
     bool m_bAutoRun = false;
+    bool m_bInterrupted = false;
 
     std::function<void()> m_callbackRunTrigger;
     F_NodeStatus m_funcNodeStatus;

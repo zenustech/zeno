@@ -184,7 +184,16 @@ ZENO_API void Session::switchToFrame(int frameid)
     globalState->updateFrameId(frameid);
 }
 
+ZENO_API void Session::interrupt() {
+    m_bInterrupted = true;
+}
+
+ZENO_API bool Session::is_interrupted() const {
+    return m_bInterrupted;
+}
+
 ZENO_API bool Session::run() {
+    m_bInterrupted = false;
     globalState->set_working(true);
 
     zeno::log_info("Session::run()");

@@ -252,6 +252,10 @@ ZENO_API void INode::preApply() {
             zeno::log_warn("the param {} may not be initialized", name);
     }
 
+    if (zeno::getSession().is_interrupted()) {
+        throw makeError<InterruputError>(m_uuidPath);
+    }
+
     log_debug("==> enter {}", m_name);
     {
 #ifdef ZENO_BENCHMARKING
