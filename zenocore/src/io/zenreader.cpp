@@ -279,7 +279,10 @@ namespace zenoio
                 const std::string& innode = id;
                 const std::string& insock = inSock;
                 const std::string& inkey = linkObj["in-key"].GetString();
-                const std::string& property = linkObj["property"].GetString();
+                std::string property = "copy";
+                if (linkObj.HasMember("property")) {
+                    property = linkObj["property"].GetString();
+                }
 
                 zeno::LinkFunction prop = property == "copy" ? zeno::Link_Copy : zeno::Link_Ref;
                 zeno::EdgeInfo link = { outnode, outsock, outkey, innode, insock, inkey, prop };
