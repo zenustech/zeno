@@ -178,6 +178,25 @@ void INode::reportStatus(bool bDirty, NodeRunStatus status) {
     zeno::getSession().reportNodeStatus(m_uuidPath, bDirty, status);
 }
 
+void INode::mark_previous_ref_dirty() {
+    mark_dirty(true);
+    //不仅要自身标脏，如果前面的节点是以引用的方式连接，说明前面的节点都可能被污染了，所有都要标脏。
+    for (const auto& [name, param] : m_inputs) {
+        for (const auto& link : param->links) {
+            if (link->lnkProp == Link_Ref) {
+                auto spOutParam = link->fromparam.lock();
+                auto spPreviusNode = spOutParam->m_wpNode.lock();
+                spPreviusNode->mark_previous_ref_dirty();
+            }
+        }
+    }
+}
+
+void INode::onInterrupted() {
+    mark_dirty(true);
+    mark_previous_ref_dirty();
+}
+
 ZENO_API void INode::mark_dirty(bool bOn)
 {
     scope_exit sp([&] {

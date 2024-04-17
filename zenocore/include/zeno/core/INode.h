@@ -98,6 +98,9 @@ public:
 
     ZENO_API void mark_param_modified(std::string paramName, bool modified);    //修改IParam的modify标志位，表示该param是new的obj还是修改原有obj
 
+    void onInterrupted();
+    void mark_previous_ref_dirty();
+
     //END new api
 
     void add_input_param(std::shared_ptr<IParam> param);
