@@ -146,6 +146,7 @@ private:
     ZSocketLayout* getSocketLayout(bool bInput, int idx);
     bool removeSocketLayout(bool bInput, const QString& sockName);
     void focusOnNode(const QModelIndex& nodeIdx);
+    void _drawShadow(QPainter* painter);
 
     ZenoGraphsEditor* getEditorViewByViewport(QWidget* pWidget);
     QGraphicsItem* initSocketWidget(ZenoSubGraphScene* scene, const QModelIndex& paramIdx);

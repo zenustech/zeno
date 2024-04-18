@@ -91,6 +91,7 @@ void ZenoNode::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, 
         painter->setPen(pen);
         painter->drawPath(path);
     }
+    _drawShadow(painter);
 }
 
 void ZenoNode::_drawBorderWangStyle(QPainter* painter)
@@ -120,6 +121,57 @@ void ZenoNode::_drawBorderWangStyle(QPainter* painter)
     rc.adjust(-offset, -offset, offset, offset);
     path = UiHelper::getRoundPath(rc, m_renderParams.headerBg.lt_radius, m_renderParams.headerBg.rt_radius, m_renderParams.bodyBg.lb_radius, m_renderParams.bodyBg.rb_radius, true);
     painter->drawPath(path);
+}
+
+void ZenoNode::_drawShadow(QPainter* painter)
+{
+    QRectF rc = boundingRect();
+    qreal offset = ZenoStyle::dpiScaled(4);
+    if (m_bError)
+    {
+        rc.adjust(2, 2, -2, -2);
+    }
+    else
+    {
+        offset += 16;
+        rc.adjust(offset, offset, 0, 0);
+    }
+
+    if (m_topInputSockets && !m_topInputSockets->isHide())
+    {
+        int toffset = 0;
+        int boffset = 0;
+        if (m_topInputSockets->count() > 0)
+            toffset = m_topInputSockets->geometry().height();
+        if (m_bottomOutputSockets->count() > 0)
+            boffset = m_bottomOutputSockets->geometry().height();
+
+        rc.adjust(0, toffset, 0, -boffset);
+    }
+    QColor color= m_bError ? QColor(192, 36, 36) : QColor(0, 0, 0);
+    bool bCollasped = m_index.data(ROLE_COLLASPED).toBool();
+    int radius = 8;
+    for (int i = 0; i < 16; i++)
+    {
+        QPainterPath path;
+        rc.adjust(-1, -1, 1, 1);
+        if (!bCollasped)
+        {
+            path = UiHelper::getRoundPath(rc, 0, radius, 0, 0, true);
+        }
+        else
+        {
+            path = UiHelper::getRoundPath(rc, radius, radius, radius, radius, true);
+        }
+        radius += 1;
+        color.setAlpha(200 - qSqrt(i) * 50);
+        QPen pen;
+        pen.setJoinStyle(Qt::MiterJoin);
+        pen.setWidth(1);
+        pen.setColor(color);
+        painter->setPen(pen);
+        painter->drawPath(path);
+    }
 }
 
 QRectF ZenoNode::boundingRect() const
