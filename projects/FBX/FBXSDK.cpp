@@ -1265,6 +1265,63 @@ ZENDEFNODE(NewFBXBoneDeform, {
     {"primitive"},
 });
 
+float sqr(float v) {
+    return v * v;
+}
+struct TwoBoneIK : INode {
+    virtual void apply() override {
+        auto root = get_input2<vec3f>("root");
+        auto joint = get_input2<vec3f>("joint");
+        auto end = get_input2<vec3f>("end");
+        auto effector = get_input2<vec3f>("effector");
+        vec3f jointTarget = has_input<vec3f>("jointTarget")? get_input2<vec3f>("jointTarget") : joint;
+        vec3f output_joint = {};
+        vec3f output_end = {};
+
+        auto root_to_effect = effector - root;
+        auto root_to_jointTarget = jointTarget - root;
+
+        auto upper_limb_length = zeno::length(root - joint);
+        auto lower_limb_length = zeno::length(joint - end);
+        auto desired_length = zeno::length(root_to_effect);
+        if (desired_length < abs(upper_limb_length - lower_limb_length)) {
+            output_end = root + normalize(root_to_effect) * abs(upper_limb_length - lower_limb_length);
+            output_end = root + normalize(root_to_effect) * upper_limb_length;
+        }
+        else if (desired_length > upper_limb_length + lower_limb_length) {
+            output_end = root + normalize(root_to_effect) * (upper_limb_length + lower_limb_length);
+            output_joint = root + normalize(root_to_effect) * upper_limb_length;
+        }
+        else {
+            output_end = effector;
+
+            vec3f to_pole = normalize(cross(cross(root_to_effect, root_to_jointTarget), root_to_effect));
+            float cos_theta = (sqr(upper_limb_length) + sqr(desired_length) - sqr(lower_limb_length)) / (2.0f * upper_limb_length * desired_length);
+            float sin_theta = sqrt(1 - sqr(cos_theta));
+            output_joint = root + normalize(root_to_effect) * cos_theta + to_pole * sin_theta;
+        }
+
+        set_output2("end", output_end);
+        set_output2("joint", output_joint);
+    }
+};
+
+ZENDEFNODE(TwoBoneIK, {
+    {
+        {"vec3f", "root", "0, 2, 0"},
+        {"vec3f", "joint", "0, 1, 0.01"},
+        {"vec3f", "end", "0, 0, 0"},
+        {"vec3f", "effector", "0, 0.2, 0.2"},
+        { "jointTarget" },
+    },
+    {
+        "joint",
+        "end",
+    },
+    {},
+    {"primitive"},
+});
+
 
 struct NormalView : INode {
     virtual void apply() override {
