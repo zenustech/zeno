@@ -49,7 +49,7 @@ ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
     , m_mainHeaderBg(nullptr)
     , m_topInputSockets(nullptr)
     , m_bottomOutputSockets(nullptr)
-    , m_border(new QGraphicsRectItem)
+    //, m_border(new QGraphicsRectItem)
     , m_NameItem(nullptr)
     , m_nodeStatus(zeno::Node_DirtyReadyToRun)
     , m_bEnableSnap(false)
@@ -78,19 +78,6 @@ void ZenoNode::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, 
     if (isSelected())
     {
         _drawBorderWangStyle(painter);
-    }
-    zeno::NodeType type = static_cast<zeno::NodeType>(m_index.data(ROLE_NODETYPE).toInt());
-    if (type == zeno::Node_Normal || type == zeno::SubInput || type == zeno::SubOutput) {
-        painter->setRenderHint(QPainter::Antialiasing, true);
-        QRectF r = m_headerWidget->boundingRect();
-        qreal brWidth = ZenoStyle::scaleWidth(2);
-        r.adjust(-brWidth / 2, -brWidth / 2, brWidth / 2, brWidth / 2);
-        QPainterPath path;
-        path.addRect(r);
-        QPen pen(QColor(18,20,22), brWidth);
-        pen.setJoinStyle(Qt::MiterJoin);
-        painter->setPen(pen);
-        painter->drawPath(path);
     }
     _drawShadow(painter);
 }
@@ -128,7 +115,7 @@ void ZenoNode::_drawShadow(QPainter* painter)
 {
     QRectF rc = boundingRect();
     qreal offset = ZenoStyle::dpiScaled(4);
-    if (m_bError)
+    if (m_nodeStatus == zeno::Node_RunError)
     {
         rc.adjust(2, 2, -2, -2);
     }
@@ -149,7 +136,7 @@ void ZenoNode::_drawShadow(QPainter* painter)
 
         rc.adjust(0, toffset, 0, -boffset);
     }
-    QColor color= m_bError ? QColor(192, 36, 36) : QColor(0, 0, 0);
+    QColor color= m_nodeStatus == zeno::Node_RunError ? QColor(192, 36, 36) : QColor(0, 0, 0);
     bool bCollasped = m_index.data(ROLE_COLLASPED).toBool();
     int radius = 8;
     for (int i = 0; i < 16; i++)
@@ -232,8 +219,8 @@ void ZenoNode::initUI(ZenoSubGraphScene* pScene, const QModelIndex& subGIdx, con
     if (m_index.data(ROLE_NODE_DIRTY).toBool())
         onMarkDataChanged(true);
 
-    m_border->setZValue(ZVALUE_NODE_BORDER);
-    m_border->hide();
+    //m_border->setZValue(ZVALUE_NODE_BORDER);
+    //m_border->hide();
 
     m_bUIInited = true;
     //onZoomed();
@@ -375,7 +362,7 @@ ZLayoutBackground* ZenoNode::initHeaderWidget()
     ZLayoutBackground* headerWidget = new ZLayoutBackground;
     auto headerBg = m_renderParams.headerBg;
     headerWidget->setRadius(headerBg.lt_radius, 10, headerBg.lb_radius, 0);
-    qreal bdrWidth = ZenoStyle::dpiScaled(headerBg.border_witdh);
+    qreal bdrWidth = 0;// ZenoStyle::dpiScaled(headerBg.border_witdh);
     headerWidget->setBorder(bdrWidth, headerBg.clr_border);
 
     ZASSERT_EXIT(m_index.isValid(), nullptr);
@@ -401,7 +388,7 @@ ZLayoutBackground* ZenoNode::initHeaderWidget()
     //headerWidget->setColors(headerBg.bAcceptHovers, clrHeaderBg, clrHeaderBg, clrHeaderBg);
     headerWidget->setLinearGradient(clrBgFrom, clrBgTo);
 
-    headerWidget->setBorder(ZenoStyle::dpiScaled(headerBg.border_witdh), headerBg.clr_border);
+    //headerWidget->setBorder(ZenoStyle::dpiScaled(headerBg.border_witdh), headerBg.clr_border);
 
     const QString& nodeCls = m_index.data(ROLE_CLASS_NAME).toString();
     const QString& name = m_index.data(ROLE_NODE_NAME).toString();
@@ -513,8 +500,8 @@ ZLayoutBackground* ZenoNode::initBodyWidget(ZenoSubGraphScene* pScene)
     bodyWidget->setRadius(bodyBg.lt_radius, bodyBg.rt_radius, bodyBg.lb_radius, bodyBg.rb_radius);
     bodyWidget->setColors(bodyBg.bAcceptHovers, QColor("#2A2A2A"));
 
-    qreal bdrWidth = ZenoStyle::dpiScaled(bodyBg.border_witdh);
-    bodyWidget->setBorder(ZenoStyle::scaleWidth(2), QColor(18, 20, 22));
+    qreal bdrWidth = 0;// ZenoStyle::dpiScaled(bodyBg.border_witdh);
+    //bodyWidget->setBorder(ZenoStyle::scaleWidth(2), QColor(18, 20, 22));
 
     m_bodyLayout = new ZGraphicsLayout(false);
     m_bodyLayout->setDebugName("Body Layout");
@@ -1439,8 +1426,8 @@ void ZenoNode::onZoomed()
         //    m_NameItemTip->setText(m_NameItem->toPlainText());
         //m_NameItemTip->setPos(QPointF(m_NameItem->pos().x(), -ZenoStyle::scaleWidth(36)));
     }
-    if (m_bodyWidget)
-        m_bodyWidget->setBorder(ZenoStyle::scaleWidth(2), QColor(18, 20, 22));
+    //if (m_bodyWidget)
+    //    m_bodyWidget->setBorder(ZenoStyle::scaleWidth(2), QColor(18, 20, 22));
 }
 
 void ZenoNode::setGroupNode(GroupNode *pNode) 

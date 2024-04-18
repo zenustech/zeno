@@ -174,7 +174,7 @@ private:
     //StatusGroup* m_pStatusWidgets2;
     QGraphicsPolygonItem* m_statusMarker;
 
-    QGraphicsRectItem* m_border;
+    //QGraphicsRectItem* m_border;
     ZGraphicsLayout* m_bodyLayout;
     ZGraphicsLayout* m_inputsLayout;
     ZGraphicsLayout* m_outputsLayout;
