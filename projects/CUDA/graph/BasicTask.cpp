@@ -1,4 +1,5 @@
 #include "Task.hpp"
+#include "zensim/omp/execution/ExecutionPolicy.hpp"
 #include <queue>
 #include <stack>
 #include <tinygltf/json.hpp>
@@ -68,6 +69,123 @@ struct WriteTaskDependencyGraph : INode {
       }
     }
   }
+
+  static void process_node_topo(std::vector<Json> &jsons, WorkNode *node,
+                                std::set<WorkNode *> &records) {
+    puts("Iteration");
+    std::map<WorkNode *, int> indegrees;
+    std::map<WorkNode *, std::vector<WorkNode *>> successors;
+    std::map<WorkNode *, int> depths;
+    /// calculate depths and initial indegrees
+    std::set<WorkNode *> visited;
+    std::queue<WorkNode *> que;
+
+    que.push(node);
+    depths[node] = 0;
+
+    while (!que.empty()) {
+      auto n = que.front();
+      que.pop();
+
+      if (visited.find(n) != visited.end())
+        continue;
+      visited.insert(n);
+
+      int indD = n->deps.size(), numVisited = 0;
+
+      auto d = depths[n];
+      for (auto &&[tag, no] : n->deps) {
+        if (records.find(no.get()) != records.end()) {
+          numVisited++;
+        } else {
+          que.push(no.get());
+          //
+          successors[no.get()].push_back(n);
+          depths[no.get()] = d + 1;
+        }
+      }
+      indegrees[n] = indD - numVisited;
+    }
+
+    /// topology sort
+    std::vector<WorkNode *> zeroInDegree;
+    zeroInDegree.reserve(visited.size());
+    std::vector<WorkNode *> expandCandidates;
+    expandCandidates.reserve(visited.size()); // double buffer
+    std::vector<WorkNode *> orderedNodes;     // result
+
+    // gather candidates
+    for (const auto &[n, inDegree] : indegrees)
+      if (inDegree == 0 && records.find(n) == records.end()) {
+        zeroInDegree.push_back(n);
+        records.insert(n);
+      }
+
+    while (!zeroInDegree.empty()) {
+#if 0
+      fmt::print("\tnext batch\n\t");
+      for (const auto &n : zeroInDegree) {
+        fmt::print("{} ", n->tag);
+      }
+      fmt::print("\n");
+#endif
+
+      // update indegrees
+      for (const auto &n : zeroInDegree) {
+        for (const auto &suc : successors[n])
+          --indegrees[suc];
+      }
+      // further order candidates by their depths
+      std::sort(std::begin(zeroInDegree), std::end(zeroInDegree),
+                [&depths](WorkNode *l, WorkNode *r) {
+                  return depths[l] > depths[r];
+                });
+#if 0
+      fmt::print("\t\tordered batch\n\t\t");
+      for (const auto &n : zeroInDegree) {
+        fmt::print("{} ", n->tag);
+      }
+      fmt::print("\n");
+#endif
+      // gather candidates
+      expandCandidates.clear();
+      for (const auto &n : zeroInDegree) {
+        orderedNodes.push_back(n); // result
+
+        // fmt::print("expanding {}: ", n->tag);
+        for (const auto &suc : successors[n]) {
+          // fmt::print("->[{}] ", suc->tag);
+          if (indegrees[suc] == 0 && records.find(suc) == records.end()) {
+            expandCandidates.push_back(suc);
+            records.insert(suc);
+            // fmt::print("accept; ");
+          } //  else
+            // fmt::print("reject (ind {}, inserted {}); ", indegrees[suc],
+            //            records.find(suc) != records.end());
+        }
+        // fmt::print("\n");
+      }
+      std::swap(zeroInDegree, expandCandidates);
+    }
+
+    // if (orderedNodes.size() != nNodes)
+    //   fmt::print("there exists loop in the dependency graph.");
+
+    for (auto n : orderedNodes) {
+      if (!n->tag.empty()) { // skip empty job
+        Json json;
+        json["name"] = n->tag;
+        json["cmds"] = n->workItems;
+        std::vector<std::string> depWorkNames;
+        for (auto &&[tag, node] : n->deps)
+          depWorkNames.push_back(node->tag);
+        json["deps"] = depWorkNames;
+        Json j;
+        j[n->tag] = json;
+        jsons.push_back(j);
+      }
+    }
+  }
   void apply() override {
     std::vector<WorkNode *> nodes;
     auto jobs = get_input("job");
@@ -84,7 +202,7 @@ struct WriteTaskDependencyGraph : INode {
 
     std::set<WorkNode *> records;
     for (auto &node : nodes)
-      process_node_bfs(jsons, node, records);
+      process_node_topo(jsons, node, records);
 
     Json json = Json(jsons);
 
