@@ -71,6 +71,7 @@ class ZEditParamLayoutDlg : public QDialog
 public:
     ZEditParamLayoutDlg(QStandardItemModel* pModel, QWidget* parent = nullptr);
     zeno::ParamsUpdateInfo getEdittedUpdateInfo() const;
+    zeno::CustomUI getCustomUiInfo() const;
 
 protected:
     bool eventFilter(QObject* obj, QEvent* event) override;
@@ -111,6 +112,7 @@ private:
     static const int rowValueControl = 3;
 
     zeno::ParamsUpdateInfo m_paramsUpdate;
+    zeno::CustomUI m_customUi;
 };
 
 #endif

@@ -187,6 +187,7 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, QWidget* pa
     }
     initModel(pModel);
     initIcon(m_paramsLayoutM_inputs->invisibleRootItem());
+    initIcon(m_paramsLayoutM_outputs->invisibleRootItem());
 
     m_ui->paramsView->setModel(m_paramsLayoutM_inputs);
     m_ui->outputsView->setModel(m_paramsLayoutM_outputs);
@@ -255,11 +256,13 @@ void ZEditParamLayoutDlg::initModel(const QStandardItemModel* pModel)
     };
     QStandardItem* inputsItem = pModel->item(0, 0);
     m_paramsLayoutM_inputs->appendRow(cloneItem(cloneItem, inputsItem));
-    //for (int r = 0; r < pModel->rowCount(); r++)
-    //{
-    //    QStandardItem* newItem = pModel->item(1, 0);
-    //    m_paramsLayoutM_inputs->appendRow(cloneItem(cloneItem, newItem));
-    //}
+
+    QStandardItem* outputsItem = pModel->item(1, 0);
+    for (int r = 0; r < outputsItem->rowCount(); r++)
+    {
+        QStandardItem* newItem = outputsItem->child(r);
+        m_paramsLayoutM_outputs->appendRow(cloneItem(cloneItem, newItem));
+    }
 }
 
 void ZEditParamLayoutDlg::initUI() 
@@ -351,7 +354,7 @@ void ZEditParamLayoutDlg::onParamTreeDeleted()
     VPARAM_TYPE type = (VPARAM_TYPE)idx.data(ROLE_ELEMENT_TYPE).toInt();
     if (type == VPARAM_ROOT ||
         type == VPARAM_TAB && idx.data(Qt::DisplayRole).toString() == "Default" ||
-        type == VPARAM_GROUP && idx.data(Qt::DisplayRole).toString() == "inputs")   //不允许删除默认root-tab-group输入
+        type == VPARAM_GROUP && idx.data(Qt::DisplayRole).toString() == "inputs")   //不允许删除默认root-tab-group输入组
         return;
     m_paramsLayoutM_inputs->removeRow(idx.row(), idx.parent());
 }
@@ -594,7 +597,7 @@ void ZEditParamLayoutDlg::onBtnAddInputs()
         }
         CONTROL_ITEM_INFO ctrl = getControlByName(ctrlName);
         QString newParamName = UiHelper::getUniqueName(existNames, ctrl.name);
-        if (layerIdx.data(Qt::DisplayRole).toString() == "inputs")  //判断是否和已有输出重名
+        if (layerIdx.data(Qt::DisplayRole).toString() == "inputs")  //如果是增加输入参数，判断是否和已有输入重名
             for (int r = 0; r < m_paramsLayoutM_outputs->rowCount(); r++)
                 if (QStandardItem* pChildItem = m_paramsLayoutM_outputs->invisibleRootItem()->child(r))
                     if (newParamName == pChildItem->data(ROLE_PARAM_NAME).toString()) {
@@ -908,6 +911,11 @@ zeno::ParamsUpdateInfo ZEditParamLayoutDlg::getEdittedUpdateInfo() const
     return m_paramsUpdate;
 }
 
+zeno::CustomUI ZEditParamLayoutDlg::getCustomUiInfo() const
+{
+    return m_customUi;
+}
+
 bool ZEditParamLayoutDlg::eventFilter(QObject* obj, QEvent* event)
 {
     if (obj == m_ui->paramsView && event->type() == QEvent::KeyPress)
@@ -934,6 +942,8 @@ void ZEditParamLayoutDlg::onApply()
 {
     //temp case: for only inputs and outputs.
     m_paramsUpdate.clear();
+    zeno::CustomUI customui;
+    m_customUi = customui;
     QStandardItem* pRoot = m_paramsLayoutM_inputs->item(0);
     QStandardItem* pDefautTab = pRoot->child(0);
     QStandardItem* pInputsGroup = pDefautTab->child(0);
@@ -955,6 +965,7 @@ void ZEditParamLayoutDlg::onApply()
 
         m_paramsUpdate.push_back({ param, existName.toStdString() });
     }
+    std::vector<zeno::ParamInfo> outputs;
     for (int i = 0; i < m_paramsLayoutM_outputs->rowCount(); i++)
     {
         QStandardItem* pItem = m_paramsLayoutM_outputs->item(i);
@@ -971,9 +982,40 @@ void ZEditParamLayoutDlg::onApply()
         const QString& existName = pItem->data(ROLE_MAP_TO_PARAMNAME).toString();
 
         m_paramsUpdate.push_back({ param, existName.toStdString() });
+        outputs.push_back(param);
     }
 
     //m_model->batchModifyParams(params);
+    //for custom UI:
+    for (int i = 0; i < pRoot->rowCount(); i++)
+    {
+        auto tabItem = pRoot->child(i);
+        zeno::ParamTab tabInfo;
+        tabInfo.name = tabItem->data(ROLE_PARAM_NAME).toString().toStdString();
+        for (int j = 0; j < tabItem->rowCount(); j++)
+        {
+            auto groupItem = tabItem->child(j);
+            zeno::ParamGroup groupInfo;
+            groupInfo.name = groupItem->data(ROLE_PARAM_NAME).toString().toStdString();
+            for (int k = 0; k < groupItem->rowCount(); k++)
+            {
+                auto paramItem = groupItem->child(k);
+                zeno::ParamInfo paramInfo;
+                paramInfo.name = paramItem->data(ROLE_PARAM_NAME).toString().toStdString();
+                paramInfo.defl = UiHelper::qvarToZVar(paramItem->data(ROLE_PARAM_VALUE), paramInfo.type);
+                paramInfo.control = (zeno::ParamControl)paramItem->data(ROLE_PARAM_CONTROL).toInt();
+                paramInfo.type = (zeno::ParamType)paramItem->data(ROLE_PARAM_TYPE).toInt();
+                paramInfo.socketType = (zeno::SocketType)paramItem->data(ROLE_SOCKET_TYPE).toInt();
+                paramInfo.ctrlProps = paramItem->data(ROLE_PARAM_CTRL_PROPERTIES).value<zeno::ControlProperty>();
+                paramInfo.tooltip = paramItem->data(ROLE_PARAM_TOOLTIP).toString().toStdString();
+
+                groupInfo.params.push_back(paramInfo);
+            }
+            tabInfo.groups.push_back(groupInfo);
+        }
+        m_customUi.tabs.push_back(tabInfo);
+    }
+    m_customUi.outputs = outputs;
 }
 
 void ZEditParamLayoutDlg::onOk()
