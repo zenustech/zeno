@@ -139,5 +139,22 @@ int main(int argc, char *argv[])
     ZenoMainWindow mainWindow;
     zeno::getSession().eventCallbacks->triggerEvent("editorConstructed");
     mainWindow.showMaximized();
+    if (argc >= 2) {
+        QCommandLineParser cmdParser;
+        cmdParser.addHelpOption();
+        cmdParser.addOptions({
+            {"zsg", "zsg", "zsg"},
+            {"paramsJson", "paramsJson", "paramsJson"}
+        });
+        cmdParser.process(a);
+        QString zsgPath;
+        if (cmdParser.isSet("zsg"))
+            zsgPath = cmdParser.value("zsg");
+        QString paramsJson;
+        if (cmdParser.isSet("paramsJson"))
+            paramsJson = cmdParser.value("paramsJson");
+        if (!zsgPath.isEmpty())
+            mainWindow.openFileAndUpdateParam(zsgPath, paramsJson);
+    }
     return a.exec();
 }
