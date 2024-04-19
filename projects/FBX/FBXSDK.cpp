@@ -18,6 +18,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
 #include <tinygltf/json.hpp>
 using Json = nlohmann::json;
 
@@ -951,6 +952,95 @@ ZENDEFNODE(NewFBXImportAnimation, {
     },
     {
         "prim",
+    },
+    {},
+    {"primitive"},
+});
+
+struct AnimationMix : INode {
+    virtual void apply() override {
+        auto anim_from = get_input2<PrimitiveObject>("anim_from");
+        auto anim_to = get_input2<PrimitiveObject>("anim_to");
+        auto mix_value = get_input2<float>("mix_value");
+        if (anim_from->userData().get2<int>("boneName_count") != anim_to->userData().get2<int>("boneName_count")) {
+            throw zeno::makeError("anim_from anim_to not matching");
+        }
+        auto anim = std::dynamic_pointer_cast<PrimitiveObject>(anim_from->clone());
+        auto &verts_from = anim_from->verts;
+        auto &transform_r0_from = anim_from->verts.add_attr<vec3f>("transform_r0");
+        auto &transform_r1_from = anim_from->verts.add_attr<vec3f>("transform_r1");
+        auto &transform_r2_from = anim_from->verts.add_attr<vec3f>("transform_r2");
+        auto &verts_to = anim_to->verts;
+        auto &transform_r0_to = anim_to->verts.add_attr<vec3f>("transform_r0");
+        auto &transform_r1_to = anim_to->verts.add_attr<vec3f>("transform_r1");
+        auto &transform_r2_to = anim_to->verts.add_attr<vec3f>("transform_r2");
+        auto &verts = anim->verts;
+        auto &transform_r0 = anim->verts.add_attr<vec3f>("transform_r0");
+        auto &transform_r1 = anim->verts.add_attr<vec3f>("transform_r1");
+        auto &transform_r2 = anim->verts.add_attr<vec3f>("transform_r2");
+        for (auto i = 0; i < anim->verts.size(); i++) {
+            verts[i] = mix(verts_from[i], verts_to[i], mix_value);
+            if (get_input2<bool>("decompose")) {
+                glm::mat4 matrix_from;
+                matrix_from[0] = {transform_r0_from[i][0], transform_r0_from[i][1], transform_r0_from[i][2], 0};
+                matrix_from[1] = {transform_r1_from[i][0], transform_r1_from[i][1], transform_r1_from[i][2], 0};
+                matrix_from[2] = {transform_r2_from[i][0], transform_r2_from[i][1], transform_r2_from[i][2], 0};
+                matrix_from[3] = {verts_from[i][0], verts_from[i][1], verts_from[i][2], 1};
+                glm::vec3 from_Scale;
+                glm::quat from_Orientation;
+                glm::vec3 from_Translation;
+                glm::vec3 from_Skew;
+                glm::vec4 from_Perspective;
+                glm::decompose(matrix_from, from_Scale, from_Orientation, from_Translation, from_Skew, from_Perspective);
+                from_Orientation = glm::conjugate(from_Orientation);
+
+                glm::mat4 matrix_to;
+                matrix_to[0] = {transform_r0_to[i][0], transform_r0_to[i][1], transform_r0_to[i][2], 0};
+                matrix_to[1] = {transform_r1_to[i][0], transform_r1_to[i][1], transform_r1_to[i][2], 0};
+                matrix_to[2] = {transform_r2_to[i][0], transform_r2_to[i][1], transform_r2_to[i][2], 0};
+                matrix_to[3] = {verts_to[i][0], verts_to[i][1], verts_to[i][2], 1};
+                glm::vec3 to_Scale;
+                glm::quat to_Orientation;
+                glm::vec3 to_Translation;
+                glm::vec3 to_Skew;
+                glm::vec4 to_Perspective;
+                glm::decompose(matrix_from, to_Scale, to_Orientation, to_Translation, to_Skew, to_Perspective);
+                to_Orientation = glm::conjugate(to_Orientation);
+                glm::vec3 mixed_Scale = glm::mix(from_Scale, to_Scale, mix_value);
+                glm::quat mixed_Orientation = glm::slerp(from_Orientation, to_Orientation, mix_value);
+                glm::vec3 mixed_Translation = glm::mix(from_Translation, to_Translation, mix_value);
+
+                glm::mat4 transformMatrix = glm::mat4(1.0f);
+                transformMatrix = glm::scale(transformMatrix, mixed_Scale);
+                transformMatrix = glm::mat4_cast(mixed_Orientation) * transformMatrix;
+                transformMatrix = glm::translate(transformMatrix, mixed_Translation);
+                auto r0 = transformMatrix[0];
+                auto r1 = transformMatrix[1];
+                auto r2 = transformMatrix[2];
+
+                transform_r0[i] = vec3f(r0[0], r0[1], r0[2]);
+                transform_r1[i] = vec3f(r1[0], r1[1], r1[2]);
+                transform_r2[i] = vec3f(r2[0], r2[1], r2[2]);
+            }
+            else {
+                transform_r0[i] = mix(transform_r0_from[i], transform_r0_to[i], mix_value);
+                transform_r1[i] = mix(transform_r1_from[i], transform_r1_to[i], mix_value);
+                transform_r2[i] = mix(transform_r2_from[i], transform_r2_to[i], mix_value);
+            }
+        }
+        set_output("anim", anim);
+    }
+};
+
+ZENDEFNODE(AnimationMix, {
+    {
+        {"prim", "anim_from"},
+        {"prim", "anim_to"},
+        {"float", "mix_value", "0.5"},
+        {"bool", "decompose", "true"},
+    },
+    {
+        "anim",
     },
     {},
     {"primitive"},
