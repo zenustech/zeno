@@ -61,7 +61,7 @@ public:
     ZENO_API std::string get_ident() const;
     ZENO_API std::string get_show_name() const;
     ZENO_API std::string get_show_icon() const;
-    ZENO_API CustomUI get_customui() const;
+    ZENO_API virtual CustomUI get_customui() const;
     ZENO_API ObjPath get_path() const;
     ZENO_API ObjPath get_uuid_path() const { return m_uuidPath; }
     ZENO_API std::string get_uuid() const;

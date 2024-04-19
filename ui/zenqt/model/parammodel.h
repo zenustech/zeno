@@ -81,7 +81,6 @@ private:
     QVector<ParamItem> m_items;
 
     QStandardItemModel* m_customParamsM;
-    zeno::CustomUI m_customui;
 
     std::weak_ptr<zeno::INode> m_wpNode;
     std::string cbUpdateParam;

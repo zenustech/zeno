@@ -72,10 +72,7 @@ void ParamsModel::initParamItems()
     }
 
     //init custom param model.
-    if (m_customui.tabs.size() == 0)
-        initCustomUI(spNode->get_customui());
-    else
-        initCustomUI(m_customui);
+    initCustomUI(spNode->get_customui());
 }
 
 void ParamsModel::initCustomUI(const zeno::CustomUI& customui)
@@ -92,12 +89,14 @@ void ParamsModel::initCustomUI(const zeno::CustomUI& customui)
         const QString& tabName = tab.name.empty() ? "Default" : QString::fromStdString(tab.name);
         QStandardItem* pTab = new QStandardItem(tabName);
         pTab->setData(VPARAM_TAB, ROLE_ELEMENT_TYPE);
+        pTab->setData(tabName, ROLE_PARAM_NAME);
 
         for (const zeno::ParamGroup& group : tab.groups)
         {
             const QString& groupName = group.name.empty() ? "inputs" : QString::fromStdString(group.name);
             QStandardItem* pGroup = new QStandardItem(groupName);
             pGroup->setData(VPARAM_GROUP, ROLE_ELEMENT_TYPE);
+            pGroup->setData(groupName, ROLE_PARAM_NAME);
 
             for (const zeno::ParamInfo& param : group.params)
             {
@@ -540,7 +539,9 @@ void ParamsModel::batchModifyParams(const zeno::ParamsUpdateInfo& params)
 
 void ParamsModel::resetCustomUi(zeno::CustomUI& customui)
 {
-    m_customui = customui;
+    auto spNode = m_wpNode.lock();
+    if (std::shared_ptr<zeno::SubnetNode> sbn = std::dynamic_pointer_cast<zeno::SubnetNode>(spNode))
+        sbn->setCustomUi(customui);
 }
 
 bool ParamsModel::removeRows(int row, int count, const QModelIndex& parent)

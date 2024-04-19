@@ -324,6 +324,11 @@ ZENO_API void Graph::init(const GraphData& graph) {
                 }
             }
         }
+        else if (node.cls == "Subnet")
+        {
+            if (std::shared_ptr<zeno::SubnetNode> sbn = std::dynamic_pointer_cast<zeno::SubnetNode>(spNode))
+                sbn->setCustomUi(node.customUi);
+        }
     }
     //import edges
     for (const auto& link : graph.links) {

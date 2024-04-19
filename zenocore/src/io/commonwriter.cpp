@@ -97,6 +97,83 @@ namespace zenoio
             // TODO
         }
         //TODO: custom ui for panel
+        else if (node.cls == "Subnet")
+        {
+            auto customUiDumpParam = [](const zeno::ParamInfo& param, RAPIDJSON_WRITER& writer) {
+                writer.Key(param.name.c_str());
+                JsonObjScope scopeparams(writer);
+                writer.Key("name");
+                writer.String(param.name.c_str());
+                writer.Key("type");
+                writer.Int(param.type);
+                writer.Key("socketType");
+                writer.Int(param.socketType);
+                writer.Key("default-value");
+                writeZVariant(param.defl, param.type, writer);
+                writer.Key("control");
+                writer.Int(param.control);
+                writer.Key("controlProps");
+                {
+                    if (param.ctrlProps.has_value()) {
+                        JsonObjScope scopeCtrlProps(writer);
+                        writer.Key("items");
+                        if (param.ctrlProps->items.has_value()) {
+                            writer.StartArray();
+                            for (auto& v : param.ctrlProps->items.value())
+                                writer.String(v.c_str());
+                        }
+                        else
+                            writer.Null();
+                        writer.Key("ranges");
+                        if (param.ctrlProps->ranges.has_value()) {
+                            JsonObjScope scopeRange(writer);
+                            writer.Key("min");
+                            writer.Double(param.ctrlProps->ranges.value()[0]);
+                            writer.Key("max");
+                            writer.Double(param.ctrlProps->ranges.value()[1]);
+                            writer.Key("step");
+                            writer.Double(param.ctrlProps->ranges.value()[2]);
+                        }
+                        else
+                            writer.Null();
+                    }
+                    else
+                        writer.Null();
+                }
+                writer.Key("tooltip");
+                writer.String(param.tooltip.c_str());
+            };
+            writer.Key("subnet-customUi");
+            JsonObjScope scopeui(writer);
+            writer.Key("nickname");
+            writer.String(node.customUi.nickname.c_str());
+            writer.Key("iconResPath");
+            writer.String(node.customUi.iconResPath.c_str());
+            writer.Key("category");
+            writer.String(node.customUi.category.c_str());
+            writer.Key("doc");
+            writer.String(node.customUi.doc.c_str());
+            writer.Key("outputs");
+            {
+                JsonObjScope scopegroup(writer);
+                for (const zeno::ParamInfo& output : node.customUi.outputs)
+                    customUiDumpParam(output, writer);
+            }
+            writer.Key("tabs");
+            JsonObjScope scopetabs(writer);
+            for (const zeno::ParamTab& tab : node.customUi.tabs)
+            {
+                writer.Key(tab.name.c_str());
+                JsonObjScope scopetab(writer);
+                for (const zeno::ParamGroup& group : tab.groups)
+                {
+                    writer.Key(group.name.c_str());
+                    JsonObjScope scopegroup(writer);
+                    for (const zeno::ParamInfo& param : group.params)
+                        customUiDumpParam(param, writer);
+                }
+            }
+        }
 
         if (node.subgraph.has_value() && node.type == zeno::Node_SubgraphNode)
         {

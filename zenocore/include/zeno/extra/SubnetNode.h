@@ -16,6 +16,8 @@ struct SubnetNode : INode {
     std::vector<std::string> m_input_names;
     std::vector<std::string> m_output_names;
 
+    CustomUI m_customUi;
+
     ZENO_API SubnetNode();
     ZENO_API ~SubnetNode();
 
@@ -29,6 +31,9 @@ struct SubnetNode : INode {
     ZENO_API bool isAssetsNode() const;
     ZENO_API void apply() override;
     ZENO_API NodeData exportInfo() const override;
+
+    ZENO_API CustomUI get_customui() const override;
+    ZENO_API void setCustomUi(const CustomUI& ui);
 };
 
 }
