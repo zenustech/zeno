@@ -46,6 +46,12 @@ ZENO_ERROR  Zeno_RemoveLink(
         const std::string& inSock
 );
 
+ZENO_ERROR Zeno_GetOutSocketNames(
+    ZENO_HANDLE hSubg,
+    ZENO_HANDLE hNode,
+    std::vector<std::string>& res
+);
+
 ZENO_ERROR  Zeno_GetOutNodes(
     ZENO_HANDLE hSubg,
         ZENO_HANDLE hNode,

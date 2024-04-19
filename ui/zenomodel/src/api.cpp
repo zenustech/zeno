@@ -250,6 +250,26 @@ ZENO_ERROR Zeno_RemoveLink(ZENO_HANDLE hSubg,
     return Err_NoError;
 }
 
+ZENO_ERROR Zeno_GetOutSocketNames(
+    ZENO_HANDLE hSubg,
+    ZENO_HANDLE hNode,
+    std::vector<std::string>& res) {
+    IGraphsModel* pModel = GraphsManagment::instance().currentModel();
+    if (!pModel)
+        return Err_ModelNull;
+
+    QModelIndex idx = pModel->nodeIndex(hSubg, hNode);
+    if (!idx.isValid())
+        return Err_NodeNotExist;
+
+    OUTPUT_SOCKETS outputs = idx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
+    for (auto& sock : outputs) {
+        res.push_back(sock.key().toStdString());
+    }
+
+    return Err_NoError;
+}
+
 ZENO_ERROR Zeno_GetOutNodes(
         ZENO_HANDLE hSubg,
         ZENO_HANDLE hNode,
