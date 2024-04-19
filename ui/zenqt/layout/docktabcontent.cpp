@@ -617,9 +617,7 @@ void DockContent_Editor::initConnections()
         m_btnRun->setVisible(false);
         m_btnKill->setVisible(true);
         if (m_btnRun->text() == tr("ReRun"))
-            zeno::getSession().set_Rerun(true);
-        else
-            zeno::getSession().set_Rerun(false);
+            zeno::getSession().set_Rerun();
         zenoApp->calculationMgr()->run();
     });
     connect(m_btnRun, &ZToolMenuButton::textChanged, this, [=]() {

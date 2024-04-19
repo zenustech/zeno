@@ -226,14 +226,9 @@ ZENO_API bool Session::is_auto_run() const {
     return m_bAutoRun;
 }
 
-ZENO_API void Session::set_Rerun(bool bOn)
+ZENO_API void Session::set_Rerun()
 {
-    m_bRerun = bOn;
-}
-
-ZENO_API bool Session::is_Rerun() const
-{
-    return m_bRerun;
+    mainGraph->markDirtyAll();
 }
 
 void Session::initNodeCates() {

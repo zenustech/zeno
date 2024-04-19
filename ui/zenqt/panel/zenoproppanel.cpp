@@ -208,6 +208,8 @@ void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, in
     {
         QStandardItem* root = paramsModel->invisibleRootItem();
         ZASSERT_EXIT(root);
+        if (root->rowCount() == 2)  //临时修复，paramsModel中 m_customParamsM->appendRow(pOutputs) 时会触发重复添加tab，第二次收到信号时返回
+            return;
         QStandardItem* pRoot = root->child(0);
         if (!pRoot) return;
 

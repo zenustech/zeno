@@ -167,7 +167,10 @@ void outputListItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem
 
 
 ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, QWidget* parent)
-    : QDialog(parent)
+    : QDialog(parent),
+    m_isGlobalUniqueFunc(nullptr),
+    m_paramsLayoutM_inputs(new QStandardItemModel(this)),
+    m_paramsLayoutM_outputs(new QStandardItemModel(this))
     //, m_paramsLayoutM(pModel)
 {
     m_ui = new Ui::EditParamLayoutDlg;
@@ -242,8 +245,6 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, QWidget* pa
 
 void ZEditParamLayoutDlg::initModel(const QStandardItemModel* pModel)
 {
-    m_paramsLayoutM_inputs = new QStandardItemModel(this);
-    m_paramsLayoutM_outputs = new QStandardItemModel(this);
     auto cloneItem = [](auto const& cloneItem, QStandardItem* pItem)->QStandardItem* {
         QStandardItem* newItem = pItem->clone();
         for (int i = 0; i < pItem->rowCount(); i++)
@@ -655,7 +656,7 @@ void ZEditParamLayoutDlg::onBtnAddOutputs()
     if (!pDefautlTab || pDefautlTab->rowCount() < 1)
         return;
     QStandardItem* pDefaultGroup = pDefautlTab->child(0);
-    if (!pDefaultGroup || pDefaultGroup->rowCount() < 1)
+    if (!pDefaultGroup)
         return;
     for (int r = 0; r < pDefaultGroup->rowCount(); r++) {   //和已有inputs参数名比较是否重名
         if (QStandardItem* pChildItem = pDefaultGroup->child(r)) {

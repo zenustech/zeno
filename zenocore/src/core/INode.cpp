@@ -460,7 +460,7 @@ ZENO_API void INode::doOnlyApply() {
 
 ZENO_API void INode::doApply() {
 
-    if (!m_dirty && !zeno::getSession().is_Rerun()) {
+    if (!m_dirty) {
         registerObjToManager();//如果只是打view，也是需要加到manager的。
         return;
     }
