@@ -43,7 +43,7 @@ struct PrintNumeric : zeno::INode {
 };
 
 ZENDEFNODE(PrintNumeric, {
-    {{"NumericObject", "value"}},
+    {{"NumericObject", "value", "0", PrimarySocket}},
     {{"NumericObject", "value"}},
     {{"string", "hint", "PrintNumeric"}},
     {"numeric"},

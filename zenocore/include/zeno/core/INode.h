@@ -111,6 +111,8 @@ public:
 
 protected:
     ZENO_API virtual void complete();
+    //preApply是先解决所有输入参数（依赖）的求值问题
+    ZENO_API virtual void preApply();
     ZENO_API virtual void apply() = 0;
     ZENO_API virtual void unregisterObjs();
     ZENO_API virtual void registerObjToManager();
@@ -131,9 +133,6 @@ public:
     //为名为ds的输入参数，求得这个参数在依赖边的求值下的值，或者没有依赖边下的默认值。
     ZENO_API bool requireInput(std::string const &ds);
     ZENO_API bool requireInput(std::shared_ptr<IParam> param);
-
-    //preApply是先解决所有输入参数的求值问题，再调用apply执行具体算法。
-    ZENO_API virtual void preApply();
 
     ZENO_API Graph *getThisGraph() const;
     ZENO_API Session *getThisSession() const;

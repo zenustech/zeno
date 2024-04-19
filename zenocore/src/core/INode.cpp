@@ -251,20 +251,6 @@ ZENO_API void INode::preApply() {
         if (!ret)
             zeno::log_warn("the param {} may not be initialized", name);
     }
-
-    if (zeno::getSession().is_interrupted()) {
-        throw makeError<InterruputError>(m_uuidPath);
-    }
-
-    log_debug("==> enter {}", m_name);
-    {
-#ifdef ZENO_BENCHMARKING
-        Timer _(m_name);
-#endif
-        reportStatus(true, Node_Running);
-        apply();
-    }
-    log_debug("==> leave {}", m_name);
 }
 
 ZENO_API void INode::unregisterObjs()
@@ -304,7 +290,8 @@ ZENO_API void INode::registerObjToManager()
 }
 
 ZENO_API bool INode::requireInput(std::string const& ds) {
-    return requireInput(get_input_param(ds));
+    auto param = get_input_param(ds);
+    return requireInput(param);
 }
 
 zany INode::get_output_result(std::shared_ptr<INode> outNode, std::string out_param, bool bCopy) {
@@ -324,7 +311,7 @@ ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
 
     if (in_param->links.empty()) {
         in_param->result = process(in_param);
-        return true;
+        return true;    //旧版本的requireInput指的是是否有连线，如果想兼容旧版本，这里可以返回false，但使用量不多，所以就修改它的定义。
     }
 
     switch (in_param->type)
@@ -470,7 +457,23 @@ ZENO_API void INode::doApply() {
         });
 
     unregisterObjs();
+
     preApply();
+
+    if (zeno::getSession().is_interrupted()) {
+        throw makeError<InterruputError>(m_uuidPath);
+    }
+
+    log_debug("==> enter {}", m_name);
+    {
+#ifdef ZENO_BENCHMARKING
+        Timer _(m_name);
+#endif
+        reportStatus(true, Node_Running);
+        apply();
+    }
+    log_debug("==> leave {}", m_name);
+
     registerObjToManager();
     reportStatus(false, Node_RunSucceed);
 }

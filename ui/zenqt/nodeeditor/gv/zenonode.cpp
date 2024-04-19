@@ -177,6 +177,10 @@ void ZenoNode::initUI(ZenoSubGraphScene* pScene, const QModelIndex& subGIdx, con
     ZASSERT_EXIT(index.isValid());
     m_index = QPersistentModelIndex(index);
     m_subGpIndex = QPersistentModelIndex(subGIdx);
+
+    const QStringList& path = m_index.data(ROLE_OBJPATH).toStringList();
+    m_dbgName = path.join("/");
+
     zeno::NodeType type = static_cast<zeno::NodeType>(m_index.data(ROLE_NODETYPE).toInt());
 
     m_topInputSockets = initVerticalSockets(true);
