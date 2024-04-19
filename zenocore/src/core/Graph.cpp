@@ -324,6 +324,11 @@ ZENO_API void Graph::init(const GraphData& graph) {
                 }
             }
         }
+        else if (node.cls == "Subnet")
+        {
+            if (std::shared_ptr<zeno::SubnetNode> sbn = std::dynamic_pointer_cast<zeno::SubnetNode>(spNode))
+                sbn->setCustomUi(node.customUi);
+        }
     }
     //import edges
     for (const auto& link : graph.links) {
@@ -364,6 +369,19 @@ void Graph::markDirtyWhenFrameChanged()
     for (const std::string& uuid : nodes) {
         auto spSubnetNode = std::dynamic_pointer_cast<SubnetNode>(m_nodes[uuid]);
         spSubnetNode->subgraph->markDirtyWhenFrameChanged();
+    }
+}
+
+void Graph::markDirtyAll()
+{
+    for (const auto& [uuid, node] : m_nodes) {
+        node->mark_dirty(true);
+    }
+    std::set<std::string> nodes = subnet_nodes;
+    nodes.insert(asset_nodes.begin(), asset_nodes.end());
+    for (const std::string& uuid : nodes) {
+        auto spSubnetNode = std::dynamic_pointer_cast<SubnetNode>(m_nodes[uuid]);
+        spSubnetNode->subgraph->markDirtyAll();
     }
 }
 

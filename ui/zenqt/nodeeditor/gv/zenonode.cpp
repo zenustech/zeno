@@ -1508,6 +1508,7 @@ void ZenoNode::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
                 if (QDialog::Accepted == dlg.exec())
                 {
                     zeno::ParamsUpdateInfo info = dlg.getEdittedUpdateInfo();
+                    paramsM->resetCustomUi(dlg.getCustomUiInfo());
                     paramsM->batchModifyParams(info);
                 }
             }

@@ -208,6 +208,8 @@ void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, in
     {
         QStandardItem* root = paramsModel->invisibleRootItem();
         ZASSERT_EXIT(root);
+        if (root->rowCount() == 2)  //临时修复，paramsModel中 m_customParamsM->appendRow(pOutputs) 时会触发重复添加tab，第二次收到信号时返回
+            return;
         QStandardItem* pRoot = root->child(0);
         if (!pRoot) return;
 
@@ -859,6 +861,7 @@ void ZenoPropPanel::onSettings()
     connect(pEditLayout, &QAction::triggered, [=]() {
         if (!m_idx.isValid())
             return;
+        ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS));
 
         QStandardItemModel* viewParams = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS))->customParamModel();
         ZASSERT_EXIT(viewParams);
@@ -868,10 +871,13 @@ void ZenoPropPanel::onSettings()
             QMessageBox::information(this, tr("Info"), tr("Cannot edit parameters!"));
             return;
         }
-        //TODO
-        //IGraphsModel* pGraphsModel = zenoApp->graphsManager()->currentModel();
-        //ZEditParamLayoutDlg dlg(viewParams, false, m_idx, pGraphsModel, this);
-        //dlg.exec();
+        ZEditParamLayoutDlg dlg(viewParams, this);
+        if (QDialog::Accepted == dlg.exec())
+        {
+            zeno::ParamsUpdateInfo info = dlg.getEdittedUpdateInfo();
+            paramsM->resetCustomUi(dlg.getCustomUiInfo());
+            paramsM->batchModifyParams(info);
+        }
     });
     pMenu->exec(QCursor::pos());
 }

@@ -164,6 +164,8 @@ namespace zeno {
         std::optional<AssetInfo> asset;
         std::optional<GroupInfo> group;
 
+        CustomUI customUi;
+
         std::pair<float, float> uipos;
         bool bView = false;
         NodeType type;

@@ -7,6 +7,7 @@
 #include "uicommon.h"
 #include <zeno/core/data.h>
 #include <zeno/core/INode.h>
+#include <zeno/extra/SubnetNode.h>
 
 class GraphModel;
 
@@ -59,6 +60,7 @@ public:
     //temp:
     QStandardItemModel* customParamModel();
     void batchModifyParams(const zeno::ParamsUpdateInfo& params);
+    void resetCustomUi(zeno::CustomUI& customui);
 
     int getParamlinkCount(const QModelIndex& paramIdx);
     int numOfInputParams() const;

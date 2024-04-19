@@ -12,6 +12,9 @@ namespace zeno {
 ZENO_API SubnetNode::SubnetNode() : subgraph(std::make_shared<Graph>(""))
 {
     subgraph->optParentSubgNode = this;
+
+    auto cl = safe_at(getSession().nodeClasses, "Subnet", "node class name").get();
+    m_customUi = cl->m_customui;
 }
 
 ZENO_API SubnetNode::~SubnetNode() = default;
@@ -283,8 +286,20 @@ ZENO_API NodeData SubnetNode::exportInfo() const {
     else {
         node.subgraph = subgraph->exportGraph();
         node.type = Node_SubgraphNode;
+
+        node.customUi = m_customUi;
     }
     return node;
+}
+
+ZENO_API CustomUI SubnetNode::get_customui() const
+{
+    return m_customUi;
+}
+
+ZENO_API void SubnetNode::setCustomUi(const CustomUI& ui)
+{
+    m_customUi = ui;
 }
 
 }

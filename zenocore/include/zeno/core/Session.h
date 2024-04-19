@@ -62,6 +62,7 @@ struct Session {
     //ZENO_API 
     ZENO_API void set_auto_run(bool bOn);
     ZENO_API bool is_auto_run() const;
+    ZENO_API void set_Rerun();
     ZENO_API std::string dumpDescriptorsJSON() const;
     ZENO_API zeno::NodeCates dumpCoreCates();
     ZENO_API void defNodeClass(std::shared_ptr<INode>(*ctor)(), std::string const &id, Descriptor const &desc = {});

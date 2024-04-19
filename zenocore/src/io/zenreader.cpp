@@ -169,6 +169,94 @@ namespace zenoio
             }*/
             //TODO: import group.
         //}
+        else if (cls == "Subnet")
+        {
+            auto readCustomUiParam = [](zeno::ParamInfo& paramInfo, const rapidjson::Value& param) {
+                if (!param.IsNull()) {
+                    auto paramValue = param.GetObject();
+                    paramInfo.type = (zeno::ParamType)paramValue["type"].GetInt();
+                    paramInfo.socketType = (zeno::SocketType)paramValue["socketType"].GetInt();
+                    paramInfo.defl = zenoio::jsonValueToZVar(paramValue["default-value"], paramInfo.type);
+                    paramInfo.control = (zeno::ParamControl)paramValue["control"].GetInt();
+                    if (!paramValue["controlProps"].IsNull() && paramValue.HasMember("items") && paramValue.HasMember("ranges")) {
+                        zeno::ControlProperty controlProps;
+                        auto ctrlProps = paramValue["controlProps"].GetObject();
+                        if (!ctrlProps["items"].IsNull()) {
+                            std::vector<std::string> items;
+                            auto arr = ctrlProps["items"].GetArray();
+                            for (int i = 0; i < arr.Size(); i++)
+                                items.push_back(arr[i].GetString());
+                            controlProps.items = items;
+                        }
+                        if (!ctrlProps["ranges"].IsNull()) {
+                            auto range = ctrlProps["ranges"].GetObject();
+                            std::array<float, 3> ranges = { range["min"].GetDouble(), range["max"].GetDouble(), range["step"].GetDouble() };
+                            controlProps.ranges = ranges;
+                        }
+                        paramInfo.ctrlProps = controlProps;
+                    }
+                    paramInfo.tooltip = paramValue["tooltip"].GetString();
+                }
+            };
+            if (objValue.HasMember("subnet-customUi")) {
+                zeno::CustomUI ui;
+
+                const rapidjson::Value& val = objValue["subnet-customUi"];
+                if (!val.IsNull())
+                {
+
+                    auto cusomui = val.GetObject();
+                    if (cusomui.HasMember("tabs") && !cusomui["tabs"].IsNull())
+                    {
+                        auto tabs = cusomui["tabs"].GetObject();
+                        for (const auto& tab : tabs)
+                        {
+                            zeno::ParamTab paramTab;
+                            paramTab.name = tab.name.GetString();
+                            if (!tab.value.IsNull())
+                            {
+                                auto groups = tab.value.GetObject();
+                                for (const auto& group: groups)
+                                {
+                                    zeno::ParamGroup paramGroup;
+                                    paramGroup.name = group.name.GetString();
+                                    if (!group.value.IsNull())
+                                    {
+                                        auto params = group.value.GetObject();
+                                        for (const auto& param: params)
+                                        {
+                                            zeno::ParamInfo paramInfo;
+                                            paramInfo.name = param.name.GetString();
+                                            readCustomUiParam(paramInfo, param.value);
+                                            paramGroup.params.push_back(paramInfo);
+                                        }
+                                    }
+                                    paramTab.groups.push_back(paramGroup);
+                                }
+                            }
+                            ui.tabs.push_back(paramTab);
+                        }
+                    }
+                    if (cusomui.HasMember("outputs"))
+                    {
+                        auto outputs = cusomui["outputs"].GetObject();
+                        for (const auto& output : outputs)
+                        {
+                            zeno::ParamInfo paramInfo;
+                            paramInfo.name = output.name.GetString();
+                            readCustomUiParam(paramInfo, output.value);
+                            ui.outputs.push_back(paramInfo);
+                        }
+
+                    }
+                    ui.nickname = cusomui["nickname"].GetString();
+                    ui.iconResPath = cusomui["iconResPath"].GetString();
+                    ui.category = cusomui["category"].GetString();
+                    ui.doc = cusomui["doc"].GetString();
+                }
+                retNode.customUi = ui;
+            }
+        }
 
         if (objValue.HasMember("subnet")) {
             zeno::GraphData subgraph;
