@@ -322,7 +322,39 @@ void ZPlainLogPanel::initMsgs()
     }
 }
 
+void ZPlainLogPanel::contextMenuEvent(QContextMenuEvent* event)
+{
+    QMenu menu;
+    if (this->textCursor().hasSelection())
+    {
+        QString text = this->textCursor().selectedText();
+        menu.addAction(tr("Start Program"), this, [=]() {
+            QString str = R"(\")";
+            QString newStr = R"(""")";
+            QString cmd = text;
+            cmd = cmd.replace(str, newStr);
+            QProcess process;
+            auto cmdArgs = process.splitCommand(cmd);
+            process.setProgram(cmdArgs.takeFirst());
+            QStringList args;
+            for (int i = 0; i < cmdArgs.size(); i++)
+            {
+                QString arg = cmdArgs.at(i);
+                if (arg == "--zsg" || arg == "--paramsJson")
+                {
+                    args << arg << cmdArgs.at(++i);
+                }
+            }
+            process.setArguments(args);
+            if (!process.startDetached())
+                zeno::log_error("Program start error!");
+        });
 
+        menu.addAction(tr("&Copy"), this, &ZPlainLogPanel::copy, QKeySequence::Copy);
+    }
+    menu.addAction(tr("Select All"), this, &ZPlainLogPanel::selectAll, QKeySequence::SelectAll);
+    menu.exec(cursor().pos());
+}
 
 ZlogPanel::ZlogPanel(QWidget* parent)
     : QWidget(parent)
