@@ -26,7 +26,7 @@ struct ZSVDBToNavierStokesGrid : INode {
     void apply() override {
         auto vdbgrid = get_input<VDBFloatGrid>("VDB");
 
-        auto spg = zs::convert_floatgrid_to_sparse_grid(vdbgrid->m_grid, zs::MemoryHandle{zs::memsrc_e::device, 0});
+        auto spg = zs::convert_floatgrid_to_sparse_grid(vdbgrid->m_grid, zs::MemoryProperty{zs::memsrc_e::device, -1});
         spg.append_channels(zs::cuda_exec(), {
                                                  {"v0", 3}, // velocity
                                                  {"v1", 3},

@@ -434,14 +434,14 @@ struct MakeCuOcean : zeno::INode {
         using vec2 = typename OceanFFT::vec2;
         using vec3 = typename OceanFFT::vec3;
         const size_t s = cuOceanObj->meshSize * cuOceanObj->meshSize;
-        cuOceanObj->prevHf = zs::Vector<vec2>{s, zs::memsrc_e::device, 0};
-        cuOceanObj->curHf = zs::Vector<vec2>{s, zs::memsrc_e::device, 0};
+        cuOceanObj->prevHf = zs::Vector<vec2>{s, zs::memsrc_e::device};
+        cuOceanObj->curHf = zs::Vector<vec2>{s, zs::memsrc_e::device};
 
         // create FFT plan
         cufftPlan2d(&(cuOceanObj->fftPlan), cuOceanObj->meshSize, cuOceanObj->meshSize, CUFFT_C2C);
 
-        cuOceanObj->d_h0 = zs::Vector<float2>{(size_t)cuOceanObj->spectrumSize, zs::memsrc_e::device, 0};
-        cuOceanObj->d_ht = zs::Vector<float2>{s, zs::memsrc_e::device, 0};
+        cuOceanObj->d_h0 = zs::Vector<float2>{(size_t)cuOceanObj->spectrumSize, zs::memsrc_e::device};
+        cuOceanObj->d_ht = zs::Vector<float2>{s, zs::memsrc_e::device};
         // cudaMalloc((void**)&(cuOceanObj->d_h0), sizeof(float2)*cuOceanObj->spectrumSize);
         // cudaMalloc((void**)&(cuOceanObj->d_ht), sizeof(float2)*cuOceanObj->meshSize*cuOceanObj->meshSize);
 
@@ -450,8 +450,8 @@ struct MakeCuOcean : zeno::INode {
 
         // cudaMalloc((void**)&(cuOceanObj->Dx), sizeof(float2) *cuOceanObj->meshSize*cuOceanObj->meshSize);
         // cudaMalloc((void**)&(cuOceanObj->Dz), sizeof(float2) *cuOceanObj->meshSize*cuOceanObj->meshSize);
-        cuOceanObj->Dx = zs::Vector<float2>{s, zs::memsrc_e::device, 0};
-        cuOceanObj->Dz = zs::Vector<float2>{s, zs::memsrc_e::device, 0};
+        cuOceanObj->Dx = zs::Vector<float2>{s, zs::memsrc_e::device};
+        cuOceanObj->Dz = zs::Vector<float2>{s, zs::memsrc_e::device};
 
         cuOceanObj->g_hDz = (float2 *)malloc(sizeof(float2) * cuOceanObj->meshSize * cuOceanObj->meshSize);
         cuOceanObj->g_hDx = (float2 *)malloc(sizeof(float2) * cuOceanObj->meshSize * cuOceanObj->meshSize);
@@ -459,20 +459,20 @@ struct MakeCuOcean : zeno::INode {
         cuOceanObj->g_hDx2 = (float2 *)malloc(sizeof(float2) * cuOceanObj->meshSize * cuOceanObj->meshSize);
 
         // begin patch
-        cuOceanObj->prevDx = zs::Vector<vec2>{s, zs::memsrc_e::device, 0};
-        cuOceanObj->curDx = zs::Vector<vec2>{s, zs::memsrc_e::device, 0};
-        cuOceanObj->prevDz = zs::Vector<vec2>{s, zs::memsrc_e::device, 0};
-        cuOceanObj->curDz = zs::Vector<vec2>{s, zs::memsrc_e::device, 0};
+        cuOceanObj->prevDx = zs::Vector<vec2>{s, zs::memsrc_e::device};
+        cuOceanObj->curDx = zs::Vector<vec2>{s, zs::memsrc_e::device};
+        cuOceanObj->prevDz = zs::Vector<vec2>{s, zs::memsrc_e::device};
+        cuOceanObj->curDz = zs::Vector<vec2>{s, zs::memsrc_e::device};
 
         // for ->primObj conversion
-        cuOceanObj->d_inpos = zs::Vector<vec3>{zs::memsrc_e::device, 0};
-        cuOceanObj->d_pos = zs::Vector<vec3>{zs::memsrc_e::device, 0};
-        cuOceanObj->d_vel = zs::Vector<vec3>{zs::memsrc_e::device, 0};
-        cuOceanObj->d_fftpos = zs::Vector<vec3>{zs::memsrc_e::device, 0};
-        cuOceanObj->d_Dpos = zs::Vector<vec3>{zs::memsrc_e::device, 0};
-        cuOceanObj->d_mapx = zs::Vector<vec3>{zs::memsrc_e::device, 0};
-        cuOceanObj->d_repos = zs::Vector<vec3>{zs::memsrc_e::device, 0};
-        cuOceanObj->d_revel = zs::Vector<vec3>{zs::memsrc_e::device, 0};
+        cuOceanObj->d_inpos = zs::Vector<vec3>{zs::memsrc_e::device};
+        cuOceanObj->d_pos = zs::Vector<vec3>{zs::memsrc_e::device};
+        cuOceanObj->d_vel = zs::Vector<vec3>{zs::memsrc_e::device};
+        cuOceanObj->d_fftpos = zs::Vector<vec3>{zs::memsrc_e::device};
+        cuOceanObj->d_Dpos = zs::Vector<vec3>{zs::memsrc_e::device};
+        cuOceanObj->d_mapx = zs::Vector<vec3>{zs::memsrc_e::device};
+        cuOceanObj->d_repos = zs::Vector<vec3>{zs::memsrc_e::device};
+        cuOceanObj->d_revel = zs::Vector<vec3>{zs::memsrc_e::device};
         // end patch
 
         cuOceanObj->h_h0 = (float2 *)malloc(sizeof(float2) * cuOceanObj->spectrumSize);

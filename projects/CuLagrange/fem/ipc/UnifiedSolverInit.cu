@@ -455,10 +455,10 @@ UnifiedIPCSystem::UnifiedIPCSystem(std::vector<ZenoParticles *> zsprims,
       // mollify
       PPM{estNumCps}, PEM{estNumCps}, EEM{estNumCps},
       // friction
-      FPP{estNumCps}, fricPP{{{"basis", 6}, {"fn", 1}}, estNumCps, zs::memsrc_e::device, 0}, FPE{estNumCps},
-      fricPE{{{"basis", 6}, {"fn", 1}, {"yita", 1}}, estNumCps, zs::memsrc_e::device, 0}, FPT{estNumCps},
-      fricPT{{{"basis", 6}, {"fn", 1}, {"beta", 2}}, estNumCps, zs::memsrc_e::device, 0}, FEE{estNumCps},
-      fricEE{{{"basis", 6}, {"fn", 1}, {"gamma", 2}}, estNumCps, zs::memsrc_e::device, 0},
+      FPP{estNumCps}, fricPP{{{"basis", 6}, {"fn", 1}}, estNumCps, zs::memsrc_e::device}, FPE{estNumCps},
+      fricPE{{{"basis", 6}, {"fn", 1}, {"yita", 1}}, estNumCps, zs::memsrc_e::device}, FPT{estNumCps},
+      fricPT{{{"basis", 6}, {"fn", 1}, {"beta", 2}}, estNumCps, zs::memsrc_e::device}, FEE{estNumCps},
+      fricEE{{{"basis", 6}, {"fn", 1}, {"gamma", 2}}, estNumCps, zs::memsrc_e::device},
       // temporary buffer
       temp{zsprims[0]->getParticles<true>().get_allocator(), 1},
       //
@@ -935,6 +935,7 @@ struct MakeUnifiedIPCSystem : INode {
             zsboundary = get_input<ZenoParticles>("ZSBoundaryPrimitives");
 
         auto cudaPol = zs::cuda_exec();
+        fmt::print("check cuda pol dev id: {}\n", cudaPol.getProcid());
         for (auto zstet : zstets) {
             if (!zstet->hasImage(ZenoParticles::s_particleTag)) {
                 auto &loVerts = zstet->getParticles();

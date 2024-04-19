@@ -132,6 +132,9 @@ static void read_velocity(std::shared_ptr<PrimitiveObject> prim, V3fArraySampleP
 template<typename T>
 void attr_from_data(std::shared_ptr<PrimitiveObject> prim, GeometryScope scope, std::string attr_name, std::vector<T> &data) {
     if (scope == GeometryScope::kUniformScope) {
+        if (zeno::ends_with(attr_name, "_polys")) {
+            attr_name = attr_name.substr(0, attr_name.size() - 6);
+        }
         if (prim->polys.size() == data.size()) {
             auto &attr = prim->polys.add_attr<T>(attr_name);
             for (auto i = 0; i < prim->polys.size(); i++) {
@@ -161,6 +164,9 @@ void attr_from_data(std::shared_ptr<PrimitiveObject> prim, GeometryScope scope, 
         }
     }
     else if (scope == GeometryScope::kFacevaryingScope) {
+        if (zeno::ends_with(attr_name, "_loops")) {
+            attr_name = attr_name.substr(0, attr_name.size() - 6);
+        }
         if (prim->loops.size() == data.size()) {
             auto &attr = prim->loops.add_attr<T>(attr_name);
             for (auto i = 0; i < prim->loops.size(); i++) {

@@ -52,8 +52,15 @@ void Scene::cleanUpScene()
 {
     if (objectsMan)
         objectsMan->clear_objects();
-    if (renderMan && renderMan->getEngine())
-        renderMan->getEngine()->update();
+
+    if (!renderMan)
+        return;
+
+    RenderEngine* pEngine = renderMan->getEngine();
+    if (pEngine) {
+        pEngine->update();
+        pEngine->cleanupOptix();
+    }
 }
 
 void Scene::switchRenderEngine(std::string const &name) {
@@ -158,7 +165,7 @@ bool Scene::loadFrameObjects(int frameid) {
     return inserted;
 }
 
-void Scene::draw() {
+void Scene::draw(bool record) {
     if (renderMan->getDefaultEngineName() != "optx")
     {
         //only for gl engnine
@@ -180,7 +187,7 @@ void Scene::draw() {
     }
 
     zeno::log_trace("scene redraw {}x{}", camera->m_nx, camera->m_ny);
-    renderMan->getEngine()->draw();
+    renderMan->getEngine()->draw(record);
 }
 
 std::vector<char> Scene::record_frame_offline(int hdrSize, int rgbComps) {
@@ -200,8 +207,8 @@ std::vector<char> Scene::record_frame_offline(int hdrSize, int rgbComps) {
     bool bOptix = renderMan->getDefaultEngineName() == "optx";
     if (bOptix)
     {
-        draw();
-        return std::vector<char>();
+        draw(false);
+        return {};
     }
 
     std::vector<char> pixels(camera->m_nx * camera->m_ny * rgbComps * hdrSize);
@@ -233,7 +240,7 @@ std::vector<char> Scene::record_frame_offline(int hdrSize, int rgbComps) {
 
         {
             auto bindDrawBuf = opengl::scopeGLDrawBuffer(GL_COLOR_ATTACHMENT0);
-            draw();
+            draw(true);
         }
 
         if (glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {

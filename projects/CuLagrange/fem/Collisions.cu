@@ -19,7 +19,7 @@ struct MaintainSpatialAccelerator : INode {
         using namespace zs;
         using bv_t = typename ZenoParticles::lbvh_t::Box;
 
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
 
         const auto &verts = zstets->getParticles();
         if (zstets->isMeshPrimitive()) {
@@ -114,7 +114,7 @@ struct VisualizeBvh : INode {
     auto level = get_input2<int>("level");
     auto target = get_param<std::string>("target");
 
-    auto cudaPol = cuda_exec().device(0);
+    auto cudaPol = cuda_exec();
     auto prim = std::make_shared<PrimitiveObject>();
     Vector<bv_t> extractedBvs{verts.get_allocator(), 1};
     Vector<int> bvCnt{verts.get_allocator(), 1};
@@ -302,12 +302,12 @@ struct VisualizeBvh : INode {
                     "vec3f size assumption broken");
       Resource::copy(zs::MemoryEntity{MemoryLocation{memsrc_e::host, -1},
                                       (void *)pos.data()},
-                     zs::MemoryEntity{MemoryLocation{memsrc_e::device, 0},
+                     zs::MemoryEntity{MemoryLocation{memsrc_e::device},
                                       (void *)dVerts.data()},
                      sizeof(zeno::vec3f) * pos.size());
       Resource::copy(zs::MemoryEntity{MemoryLocation{memsrc_e::host, -1},
                                       (void *)lines.data()},
-                     zs::MemoryEntity{MemoryLocation{memsrc_e::device, 0},
+                     zs::MemoryEntity{MemoryLocation{memsrc_e::device},
                                       (void *)dLines.data()},
                      sizeof(zeno::vec2i) * lines.size());
     }

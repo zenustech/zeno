@@ -57,14 +57,14 @@ namespace zeno {
     auto to_device_vector(const std::vector<T> &hv, bool copy = true) {
         using namespace zs;
         if constexpr (zs::is_vec<T>::value) {
-            zs::Vector<zs::vec<typename T::value_type, std::tuple_size_v<T>>> dv{hv.size(), memsrc_e::device, 0};
+            zs::Vector<zs::vec<typename T::value_type, std::tuple_size_v<T>>> dv{hv.size(), memsrc_e::device};
             if (copy) {
                 Resource::copy(MemoryEntity{dv.memoryLocation(), (void *)dv.data()},
                                MemoryEntity{MemoryLocation{memsrc_e::host, -1}, (void *)hv.data()}, hv.size() * sizeof(T));
             }
             return dv;
         } else {
-            zs::Vector<T> dv{hv.size(), memsrc_e::device, 0};
+            zs::Vector<T> dv{hv.size(), memsrc_e::device};
             if (copy) {
                 Resource::copy(MemoryEntity{dv.memoryLocation(), (void *)dv.data()},
                                MemoryEntity{MemoryLocation{memsrc_e::host, -1}, (void *)hv.data()}, hv.size() * sizeof(T));

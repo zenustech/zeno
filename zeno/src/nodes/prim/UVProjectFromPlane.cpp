@@ -20,7 +20,6 @@
 #include <tinygltf/stb_image_write.h>
 #include <vector>
 #include <glm/glm.hpp>
-//#include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform.hpp>
 
 static const float eps = 0.0001f;
@@ -696,6 +695,7 @@ struct WriteImageFile_v2 : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
         auto path = get_input2<std::string>("path");
+        path = create_directories_when_write_file(path);
         auto type = get_input2<std::string>("type");
         auto &ud = image->userData();
         int w = ud.get2<int>("w");
@@ -723,14 +723,12 @@ struct WriteImageFile_v2 : INode {
             data[n * i + 3] = (char)(255 * alpha[i]);
         }
         if(type == "jpg"){
-            std::string native_path = std::filesystem::u8path(path).string();
             stbi_flip_vertically_on_write(1);
-            stbi_write_jpg(native_path.c_str(), w, h, n, data.data(), 100);
+            stbi_write_jpg(path.c_str(), w, h, n, data.data(), 100);
         }
         else if(type == "png"){
-            std::string native_path = std::filesystem::u8path(path).string();
             stbi_flip_vertically_on_write(1);
-            stbi_write_png(native_path.c_str(), w, h, n, data.data(),0);
+            stbi_write_png(path.c_str(), w, h, n, data.data(),0);
         }
         else if(type == "exr"){
             std::vector<float> data2(w * h * n);
@@ -749,8 +747,7 @@ struct WriteImageFile_v2 : INode {
             }
 
             const char* err;
-            std::string native_path = std::filesystem::u8path(path).string();
-            int ret = SaveEXR(data2.data(),w,h,n,0,native_path.c_str(),&err);
+            int ret = SaveEXR(data2.data(),w,h,n,0,path.c_str(),&err);
 
             if (ret != TINYEXR_SUCCESS) {
                 zeno::log_error("Error saving EXR file: {}\n", err);

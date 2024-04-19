@@ -128,8 +128,8 @@ struct ZSSolveShallowWaterHeight : INode {
         auto h_old = pars.begin(height_attr);
         auto u = pars.begin(u_attr);
         auto w = pars.begin(w_attr);
-        zs::Vector<float> h_new_{nc, zs::memsrc_e::device, 0}, h_rk_{nc, zs::memsrc_e::device, 0},
-            flx_{nc, zs::memsrc_e::device, 0}, flz_{nc, zs::memsrc_e::device, 0};
+        zs::Vector<float> h_new_{nc, zs::memsrc_e::device}, h_rk_{nc, zs::memsrc_e::device},
+            flx_{nc, zs::memsrc_e::device}, flz_{nc, zs::memsrc_e::device};
 
         {
             auto h_new = h_new_.data();
@@ -474,8 +474,8 @@ struct ZSSolveShallowWaterMomentum : INode {
         auto h = pars.begin(height_attr);
         auto u_old = pars.begin(u_attr);
         auto w_old = pars.begin(w_attr);
-        zs::Vector<float> u_new_{nc, zs::memsrc_e::device, 0}, w_new_{nc, zs::memsrc_e::device, 0},
-            u_rk_{nc, zs::memsrc_e::device, 0}, w_rk_{nc, zs::memsrc_e::device, 0};
+        zs::Vector<float> u_new_{nc, zs::memsrc_e::device}, w_new_{nc, zs::memsrc_e::device},
+            u_rk_{nc, zs::memsrc_e::device}, w_rk_{nc, zs::memsrc_e::device};
 
         {
             auto u_new = u_new_.data();

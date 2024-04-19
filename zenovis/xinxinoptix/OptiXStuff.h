@@ -29,6 +29,7 @@
 #include "zeno/utils/log.h"
 #include "zeno/utils/string.h"
 #include <filesystem>
+#define CRYPTOPP_ENABLE_NAMESPACE_WEAK 1
 #include <cryptopp/md5.h>
 #include <cryptopp/hex.h>
 
@@ -687,8 +688,8 @@ inline void calc_sky_cdf_map(int nx, int ny, int nc, T *img) {
     }
 }
 static std::string calculateMD5(const std::vector<char>& input) {
-    CryptoPP::byte digest[CryptoPP::MD5::DIGESTSIZE];
-    CryptoPP::MD5().CalculateDigest(digest, (const CryptoPP::byte*)input.data(), input.size());
+    CryptoPP::byte digest[CryptoPP::Weak::MD5::DIGESTSIZE];
+    CryptoPP::Weak::MD5().CalculateDigest(digest, (const CryptoPP::byte*)input.data(), input.size());
     CryptoPP::HexEncoder encoder;
     std::string output;
     encoder.Attach(new CryptoPP::StringSink(output));
@@ -714,12 +715,9 @@ inline void addTexture(std::string path)
     }
     auto input = readData(native_path);
     std::string md5Hash = calculateMD5(input);
-    zeno::log_info("path {} md5 {} tex", path, md5Hash);
-    std::cout << "path" << path << "md5" << md5Hash << std::endl;
 
     if (md5_path_mapping.count(md5Hash)) {
         g_tex[path] = g_tex[md5_path_mapping[md5Hash]];
-        std::cout << "reuse" << std::endl;
         zeno::log_info("path {} reuse {} tex", path, md5_path_mapping[md5Hash]);
         return;
     }
@@ -856,7 +854,14 @@ inline void addTexture(std::string path)
 }
 inline void removeTexture(std::string path) {
     if (path.size()) {
-        md5_path_mapping.erase(g_tex[path]->md5);
+        if (g_tex.count(path)) {
+            zeno::log_info("removeTexture: {}", path);
+            std::cout << "removeTexture :" << path << std::endl;
+            md5_path_mapping.erase(g_tex[path]->md5);
+        }
+        else {
+            zeno::log_error("removeTexture: {} not exists!", path);
+        }
         g_tex.erase(path);
         sky_nx_map.erase(path);
         sky_ny_map.erase(path);
@@ -1061,7 +1066,7 @@ inline void createPipeline()
     }
     uint32_t max_trace_depth = 2;
     uint32_t max_cc_depth = 0;
-    uint32_t max_dc_depth = 0;
+    uint32_t max_dc_depth = 1;
     uint32_t direct_callable_stack_size_from_traversal;
     uint32_t direct_callable_stack_size_from_state;
     uint32_t continuation_stack_size;

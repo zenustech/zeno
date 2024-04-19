@@ -17,6 +17,7 @@ in vec3 iColor;
 in vec3 iNormal;
 in vec3 iTexCoord;
 in vec3 iTangent;
+in vec3 posRWS;
 out vec4 fColor;
 
 void pixarONB(vec3 n, out vec3 b1, out vec3 b2) {
@@ -93,7 +94,7 @@ void main() {
   if (mSmoothShading) {
     normal = normalize(iNormal);
   } else {
-    normal = normalize(cross(dFdx(position), dFdy(position)));
+    normal = normalize(cross(dFdx(posRWS), dFdy(posRWS)));
   }
   vec3 viewdir = -calcRayDir(position);
   vec3 albedo = iColor;
