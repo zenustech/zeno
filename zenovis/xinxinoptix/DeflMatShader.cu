@@ -921,7 +921,7 @@ extern "C" __global__ void __closesthit__radiance()
 
     prd->direction = normalize(wi);
 
-    prd->origin = dot(prd->direction, prd->geometryNormal) < 0? backPos : frontPos;
+    prd->origin = dot(prd->direction, prd->geometryNormal) < 0.0f ? backPos : frontPos;
 
     if (prd->medium != DisneyBSDF::vacuum) {
         prd->_mask_ = (uint8_t)(EverythingMask ^ VolumeMatMask);
