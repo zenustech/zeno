@@ -318,7 +318,7 @@ float DielectricFresnel(float cosThetaI, float eta)
   float eta2 = eta * eta;
 
   float cos2t = 1.0f - sin2 / eta2;
-  if(cos2t < 0) return 1.0f;
+  if(cos2t < 0.0f) return 1.0f;
 
   float t0 = sqrt(cos2t);
   float t1 = eta * t0;

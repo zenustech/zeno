@@ -921,16 +921,7 @@ extern "C" __global__ void __closesthit__radiance()
 
     prd->direction = normalize(wi);
 
-    if(mats.thin<0.5f && mats.doubleSide<0.5f){
-        //auto p_prim = vec3(prd->origin) + optixGetRayTmax() * vec3(prd->direction);
-        //float3 p = p_prim;
-        prd->origin = next_ray_is_going_inside? backPos : frontPos;
-    }
-    else {
-        //auto p_prim = vec3(prd->origin) + optixGetRayTmax() * vec3(prd->direction);
-        //float3 p = p_prim;
-        prd->origin = dot(prd->direction, prd->geometryNormal) < 0? backPos : frontPos;
-    }
+    prd->origin = dot(prd->direction, prd->geometryNormal) < 0? backPos : frontPos;
 
     if (prd->medium != DisneyBSDF::vacuum) {
         prd->_mask_ = (uint8_t)(EverythingMask ^ VolumeMatMask);
