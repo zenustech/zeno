@@ -1066,7 +1066,7 @@ inline void createPipeline()
     }
     uint32_t max_trace_depth = 2;
     uint32_t max_cc_depth = 0;
-    uint32_t max_dc_depth = 0;
+    uint32_t max_dc_depth = 1;
     uint32_t direct_callable_stack_size_from_traversal;
     uint32_t direct_callable_stack_size_from_state;
     uint32_t continuation_stack_size;

@@ -91,6 +91,10 @@ struct RenderEngineBate : RenderEngine {
             fbr->destroy_buffers();
         }
     }
+
+    void cleanupOptix() override {
+
+    }
 };
 
 static auto definer = RenderManager::registerRenderEngine<RenderEngineBate>("bate");
