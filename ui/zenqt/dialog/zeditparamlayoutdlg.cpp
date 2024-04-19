@@ -538,14 +538,6 @@ void ZEditParamLayoutDlg::onBtnAddInputs()
     VPARAM_TYPE type = (VPARAM_TYPE)layerIdx.data(ROLE_ELEMENT_TYPE).toInt();
     auto pItem = m_paramsLayoutM_inputs->itemFromIndex(layerIdx);
     ZASSERT_EXIT(pItem);
-    QStringList existNames;
-    for (int r = 0; r < pItem->rowCount(); r++)
-    {
-        QStandardItem* pChildItem = pItem->child(r);
-        ZASSERT_EXIT(pChildItem);
-        QString _name = pChildItem->data(ROLE_PARAM_NAME).toString();
-        existNames.append(_name);
-    }
 
     if (ctrlName == "Tab")
     {
@@ -554,6 +546,7 @@ void ZEditParamLayoutDlg::onBtnAddInputs()
             QMessageBox::information(this, tr("Error"), tr("create tab needs to place under the root"));
             return;
         }
+        QStringList existNames = getExistingNames(true, VPARAM_TAB);
         QString newTabName = UiHelper::getUniqueName(existNames, "Tab");
         auto pNewItem = new QStandardItem(newTabName);
         pNewItem->setData(VPARAM_TAB, ROLE_ELEMENT_TYPE);
@@ -568,6 +561,7 @@ void ZEditParamLayoutDlg::onBtnAddInputs()
             QMessageBox::information(this, tr("Error "), tr("create group needs to place under the tab"));
             return;
         }
+        QStringList existNames = getExistingNames(true, VPARAM_GROUP);
         QString newGroupName = UiHelper::getUniqueName(existNames, "Group");
         auto pNewItem = new QStandardItem(newGroupName);
         pNewItem->setData(VPARAM_GROUP, ROLE_ELEMENT_TYPE);
@@ -588,6 +582,7 @@ void ZEditParamLayoutDlg::onBtnAddInputs()
             return;
         }
         CONTROL_ITEM_INFO ctrl = getControlByName(ctrlName);
+        QStringList existNames = getExistingNames(true, VPARAM_PARAM);
         QString newParamName = UiHelper::getUniqueName(existNames, ctrl.name);
         if (layerIdx.data(Qt::DisplayRole).toString() == "inputs")  //如果是增加输入参数，判断是否和已有输出重名
         {
@@ -600,6 +595,7 @@ void ZEditParamLayoutDlg::onBtnAddInputs()
                 }
             }
         }
+
         auto pNewItem = new QStandardItem(newParamName);
         pNewItem->setData(newParamName, ROLE_PARAM_NAME);
         pNewItem->setData(ctrl.ctrl, ROLE_PARAM_CONTROL);
@@ -932,33 +928,55 @@ bool ZEditParamLayoutDlg::eventFilter(QObject* obj, QEvent* event)
     return QDialog::eventFilter(obj, event);
 }
 
+QStringList ZEditParamLayoutDlg::getExistingNames(bool bInput, VPARAM_TYPE type) const
+{
+    QStringList existNames;
+    if (bInput)
+    {
+        QStandardItem* pRoot = m_paramsLayoutM_inputs->item(0);
+        for (int i = 0; i < pRoot->rowCount(); i++)
+        {
+            auto tabItem = pRoot->child(i);
+            if (type == VPARAM_TAB) {
+                existNames.append(tabItem->text());
+                continue;
+            }
+
+            for (int j = 0; j < tabItem->rowCount(); j++)
+            {
+                auto groupItem = tabItem->child(j);
+                if (type == VPARAM_GROUP) {
+                    existNames.append(groupItem->text());
+                    continue;
+                }
+
+                for (int k = 0; k < groupItem->rowCount(); k++)
+                {
+                    auto paramItem = groupItem->child(k);
+                    if (type == VPARAM_PARAM) {
+                        existNames.append(paramItem->data(ROLE_PARAM_NAME).toString());
+                    }
+                }
+            }
+        }
+    }
+    else
+    {
+        for (int i = 0; i < m_paramsLayoutM_outputs->rowCount(); i++)
+        {
+            QStandardItem* pItem = m_paramsLayoutM_outputs->item(i);
+            existNames.append(pItem->data(ROLE_PARAM_NAME).toString());
+        }
+    }
+    return existNames;
+}
+
 void ZEditParamLayoutDlg::onApply()
 {
-    //temp case: for only inputs and outputs.
     m_paramsUpdate.clear();
     zeno::CustomUI customui;
     m_customUi = customui;
-    QStandardItem* pRoot = m_paramsLayoutM_inputs->item(0);
-    QStandardItem* pDefautTab = pRoot->child(0);
-    QStandardItem* pInputsGroup = pDefautTab->child(0);
 
-    for (int i = 0; i < pInputsGroup->rowCount(); i++)
-    {
-        QStandardItem* pItem = pInputsGroup->child(i);
-        zeno::ParamInfo param;
-
-        param.bInput = true;
-        param.control = (zeno::ParamControl)pItem->data(ROLE_PARAM_CONTROL).toInt();
-        param.type = (zeno::ParamType)pItem->data(ROLE_PARAM_TYPE).toInt();
-        param.defl = UiHelper::qvarToZVar(pItem->data(ROLE_PARAM_VALUE), param.type);
-        param.name = pItem->data(ROLE_PARAM_NAME).toString().toStdString();
-        param.tooltip = pItem->data(ROLE_PARAM_TOOLTIP).toString().toStdString();
-        param.socketType = (zeno::SocketType)pItem->data(ROLE_SOCKET_TYPE).toInt();
-        param.ctrlProps = pItem->data(ROLE_PARAM_CTRL_PROPERTIES).value<zeno::ControlProperty>();
-        const QString& existName = pItem->data(ROLE_MAP_TO_PARAMNAME).toString();
-
-        m_paramsUpdate.push_back({ param, existName.toStdString() });
-    }
     std::vector<zeno::ParamInfo> outputs;
     for (int i = 0; i < m_paramsLayoutM_outputs->rowCount(); i++)
     {
@@ -981,6 +999,7 @@ void ZEditParamLayoutDlg::onApply()
 
     //m_model->batchModifyParams(params);
     //for custom UI:
+    QStandardItem* pRoot = m_paramsLayoutM_inputs->item(0);
     for (int i = 0; i < pRoot->rowCount(); i++)
     {
         auto tabItem = pRoot->child(i);
@@ -1004,6 +1023,9 @@ void ZEditParamLayoutDlg::onApply()
                 paramInfo.tooltip = paramItem->data(ROLE_PARAM_TOOLTIP).toString().toStdString();
 
                 groupInfo.params.push_back(paramInfo);
+
+                const QString& existName = paramItem->data(ROLE_MAP_TO_PARAMNAME).toString();
+                m_paramsUpdate.push_back({ paramInfo, existName.toStdString() });
             }
             tabInfo.groups.push_back(groupInfo);
         }

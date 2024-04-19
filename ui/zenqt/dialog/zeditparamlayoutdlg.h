@@ -102,6 +102,8 @@ private:
     void switchStackProperties(int ctrl, QStandardItem *pItem);
     void initModel(const QStandardItemModel* pModel);
 
+    QStringList getExistingNames(bool bInput, VPARAM_TYPE type) const;
+
     std::function<bool(QString)> m_isGlobalUniqueFunc;
 
     QStandardItemModel * m_paramsLayoutM_inputs;
