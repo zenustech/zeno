@@ -164,7 +164,7 @@ class NodeSyncMgr {
 
     // other tool functions
     std::string getPrimSockName(const std::string& node_type);
-    std::string getPrimSockName(NodeLocation& node_location);
+    std::string getPrimSockName(const QModelIndex& nodeIdx);
 
     NodeSyncMgr(const NodeSyncMgr &) = delete;
     const NodeSyncMgr &operator=(const NodeSyncMgr &) = delete;
@@ -175,6 +175,7 @@ class NodeSyncMgr {
         registerDefaultSocketName();
     };
     void registerDefaultSocketName() {
+        //写这代码真老六
         m_prim_sock_map["BindMaterial"] = "object";
         m_prim_sock_map["TransformPrimitive"] = "outPrim";
     }
