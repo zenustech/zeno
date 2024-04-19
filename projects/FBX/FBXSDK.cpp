@@ -1274,11 +1274,12 @@ struct TwoBoneIK : INode {
         auto joint = get_input2<vec3f>("joint");
         auto end = get_input2<vec3f>("end");
         auto effector = get_input2<vec3f>("effector");
-        vec3f jointTarget = has_input<vec3f>("jointTarget")? get_input2<vec3f>("jointTarget") : joint;
+        vec3f jointTarget = has_input2<vec3f>("jointTarget")? get_input2<vec3f>("jointTarget") : joint;
         vec3f output_joint = {};
         vec3f output_end = {};
 
         auto root_to_effect = effector - root;
+        auto root_to_end = end - root;
         auto root_to_jointTarget = jointTarget - root;
 
         auto upper_limb_length = zeno::length(root - joint);
@@ -1286,7 +1287,7 @@ struct TwoBoneIK : INode {
         auto desired_length = zeno::length(root_to_effect);
         if (desired_length < abs(upper_limb_length - lower_limb_length)) {
             output_end = root + normalize(root_to_effect) * abs(upper_limb_length - lower_limb_length);
-            output_end = root + normalize(root_to_effect) * upper_limb_length;
+            output_joint = root + normalize(root_to_effect) * upper_limb_length;
         }
         else if (desired_length > upper_limb_length + lower_limb_length) {
             output_end = root + normalize(root_to_effect) * (upper_limb_length + lower_limb_length);
@@ -1295,14 +1296,25 @@ struct TwoBoneIK : INode {
         else {
             output_end = effector;
 
-            vec3f to_pole = normalize(cross(cross(root_to_effect, root_to_jointTarget), root_to_effect));
+            vec3f to_right = normalize(cross(root_to_effect, root_to_jointTarget));
+            if (!has_input<vec3f>("jointTarget")) {
+                to_right = normalize(cross(root_to_end, root_to_jointTarget));
+            }
+
+            vec3f to_pole = normalize(cross(to_right, root_to_effect));
             float cos_theta = (sqr(upper_limb_length) + sqr(desired_length) - sqr(lower_limb_length)) / (2.0f * upper_limb_length * desired_length);
             float sin_theta = sqrt(1 - sqr(cos_theta));
             output_joint = root + normalize(root_to_effect) * cos_theta + to_pole * sin_theta;
         }
+        auto prim = std::make_shared<PrimitiveObject>();
+        prim->verts.resize(3);
+        prim->verts[0] = root;
+        prim->verts[1] = output_joint;
+        prim->verts[2] = output_end;
+        prim->lines.emplace_back(0, 1);
+        prim->lines.emplace_back(1, 2);
 
-        set_output2("end", output_end);
-        set_output2("joint", output_joint);
+        set_output2("prim", prim);
     }
 };
 
@@ -1315,8 +1327,9 @@ ZENDEFNODE(TwoBoneIK, {
         { "jointTarget" },
     },
     {
-        "joint",
-        "end",
+        "prim",
+//        "joint",
+//        "end",
     },
     {},
     {"primitive"},
