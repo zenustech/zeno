@@ -246,15 +246,7 @@ ZGraphicsLayout* ZenoNode::initVerticalSockets(bool bInput)
         if (paramIdx.data(ROLE_SOCKET_TYPE) != zeno::PrimarySocket)
             continue;
 
-        QSizeF szSocket(14, 14);
-        ZenoSocketItem* socket = new ZenoSocketItem(paramIdx, ZenoStyle::dpiScaledSize(szSocket));
-        socket->setBrush(QColor("#C4C2C2"), QColor("#FFFFFF"));
-        pSocketLayout->addItem(socket);
-        pSocketLayout->addSpacing(-1);
-
-        QObject::connect(socket, &ZenoSocketItem::clicked, [=](bool bInput, zeno::LinkFunction lnkProp) {
-            emit socketClicked(socket, lnkProp);
-        });
+        addOnlySocketToLayout(pSocketLayout, paramIdx);
     }
     return pSocketLayout;
 }
@@ -582,12 +574,32 @@ QVector<ZSocketLayout*> ZenoNode::getSocketLayouts(bool bInput) const
     return layouts;
 }
 
+void ZenoNode::addOnlySocketToLayout(ZGraphicsLayout* pSocketLayout, const QModelIndex& paramIdx)
+{
+    QSizeF szSocket(14, 14);
+    ZenoSocketItem* socket = new ZenoSocketItem(paramIdx, ZenoStyle::dpiScaledSize(szSocket));
+    socket->setBrush(QColor("#C4C2C2"), QColor("#FFFFFF"));
+    pSocketLayout->addItem(socket);
+    pSocketLayout->addSpacing(-1);
+
+    QObject::connect(socket, &ZenoSocketItem::clicked, [=](bool bInput, zeno::LinkFunction lnkProp) {
+        emit socketClicked(socket, lnkProp);
+    });
+}
+
 void ZenoNode::onLayoutChanged()
 {
     ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(this->scene());
     ZASSERT_EXIT(pScene);
 
     m_inputsLayout->clear();
+    m_topInputSockets->clear();
+    m_outputsLayout->clear();
+    m_bottomOutputSockets->clear();
+
+    m_topInputSockets->addSpacing(-1);
+    m_bottomOutputSockets->addSpacing(-1);
+
     ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(m_index.data(ROLE_PARAMS));
     ZASSERT_EXIT(paramsM);
 
@@ -597,18 +609,22 @@ void ZenoNode::onLayoutChanged()
         if (!paramIdx.data(ROLE_ISINPUT).toBool())
             continue;
         m_inputsLayout->addItem(addSocket(paramIdx, true, pScene));
+        if (paramIdx.data(ROLE_SOCKET_TYPE) == zeno::PrimarySocket)
+            addOnlySocketToLayout(m_topInputSockets, paramIdx);
     }
 
-    m_outputsLayout->clear();
     for (int r = 0; r < paramsM->rowCount(); r++)
     {
         const QModelIndex& paramIdx = paramsM->index(r, 0);
         if (paramIdx.data(ROLE_ISINPUT).toBool())
             continue;
         m_outputsLayout->addItem(addSocket(paramIdx, false, pScene));
+        if (paramIdx.data(ROLE_SOCKET_TYPE) == zeno::PrimarySocket)
+            addOnlySocketToLayout(m_bottomOutputSockets, paramIdx);
     }
 
-    updateWhole();
+    bool bCollasped = m_index.data(ROLE_COLLASPED).toBool();
+    onCollaspeUpdated(bCollasped);
 }
 
 ZGraphicsLayout* ZenoNode::initCustomParamWidgets()

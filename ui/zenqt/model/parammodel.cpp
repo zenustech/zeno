@@ -86,14 +86,14 @@ void ParamsModel::initCustomUI(const zeno::CustomUI& customui)
     pInputs->setEditable(false);
     for (const zeno::ParamTab& tab : customui.tabs)
     {
-        const QString& tabName = tab.name.empty() ? "Default" : QString::fromStdString(tab.name);
+        const QString& tabName = QString::fromStdString(tab.name);
         QStandardItem* pTab = new QStandardItem(tabName);
         pTab->setData(VPARAM_TAB, ROLE_ELEMENT_TYPE);
         pTab->setData(tabName, ROLE_PARAM_NAME);
 
         for (const zeno::ParamGroup& group : tab.groups)
         {
-            const QString& groupName = group.name.empty() ? "inputs" : QString::fromStdString(group.name);
+            const QString& groupName = QString::fromStdString(group.name);
             QStandardItem* pGroup = new QStandardItem(groupName);
             pGroup->setData(VPARAM_GROUP, ROLE_ELEMENT_TYPE);
             pGroup->setData(groupName, ROLE_PARAM_NAME);
@@ -535,6 +535,26 @@ void ParamsModel::batchModifyParams(const zeno::ParamsUpdateInfo& params)
     }
     //resetCustomParamModel();
     emit layoutChanged();
+}
+
+void ParamsModel::test_customparamsmodel() const
+{
+    QStandardItem* pRoot = m_customParamsM->invisibleRootItem();
+    for (int i = 0; i < pRoot->rowCount(); i++)
+    {
+        QStandardItem* pItem = pRoot->child(i);
+        QString wtf = pItem->text();
+        for (int j = 0; j < pItem->rowCount(); j++)
+        {
+            QStandardItem* ppItem = pItem->child(j);
+            wtf = ppItem->text();
+            for (int k = 0; k < ppItem->rowCount(); k++)
+            {
+                QStandardItem* pppItem = ppItem->child(k);
+                wtf = pppItem->text();
+            }
+        }
+    }
 }
 
 void ParamsModel::resetCustomUi(zeno::CustomUI& customui)

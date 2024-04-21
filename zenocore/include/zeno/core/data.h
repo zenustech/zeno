@@ -95,12 +95,12 @@ namespace zeno {
     };
 
     struct ParamGroup {
-        std::string name;
+        std::string name = "Group1";
         std::vector<ParamInfo> params;
     };
 
     struct ParamTab {
-        std::string name;
+        std::string name = "Tab1";
         std::vector<ParamGroup> groups;
     };
 

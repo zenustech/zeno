@@ -810,26 +810,38 @@ zeno::NodeData GraphModel::createNode(const QString& nodeCls, const QString& cat
         QString nodeName = QString::fromStdString(spNode->get_name());
         QString uuid = m_name2uuid[nodeName];
         ZASSERT_EXIT(m_nodes.find(uuid) != m_nodes.end(), node);
+        auto paramsM = m_nodes[uuid]->params;
 
-        //zeno::ParamsUpdateInfo updateInfo;
+        zeno::ParamsUpdateInfo updateInfo;
 
-        //zeno::ParamUpdateInfo info;
-        //info.param.bInput = true;
-        //info.param.name = "input1";
-        //info.param.socketType = zeno::PrimarySocket;
-        //updateInfo.push_back(info);
+        zeno::ParamUpdateInfo info;
+        info.param.bInput = true;
+        info.param.name = "input1";
+        info.param.socketType = zeno::PrimarySocket;
+        updateInfo.push_back(info);
 
-        //info.param.bInput = true;
-        //info.param.name = "input2";
-        //info.param.socketType = zeno::PrimarySocket;
-        //updateInfo.push_back(info);
+        info.param.bInput = true;
+        info.param.name = "input2";
+        info.param.socketType = zeno::PrimarySocket;
+        updateInfo.push_back(info);
 
-        //info.param.bInput = false;
-        //info.param.name = "output1";
-        //info.param.socketType = zeno::PrimarySocket;
-        //updateInfo.push_back(info);
+        info.param.bInput = false;
+        info.param.name = "output1";
+        info.param.socketType = zeno::PrimarySocket;
+        updateInfo.push_back(info);
 
-        //m_nodes[uuid]->params->batchModifyParams(updateInfo);
+        zeno::CustomUI customui = node.customUi;
+        if (!customui.tabs.empty() &&
+            !customui.tabs[0].groups.empty())
+        {
+            auto& group = customui.tabs[0].groups[0].params;
+            group.push_back(updateInfo[0].param);
+            group.push_back(updateInfo[1].param);
+            customui.outputs.push_back(updateInfo[2].param);
+        }
+
+        paramsM->resetCustomUi(customui);
+        paramsM->batchModifyParams(updateInfo);
     }
 
     return node;

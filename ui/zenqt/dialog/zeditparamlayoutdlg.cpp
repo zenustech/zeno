@@ -351,10 +351,11 @@ void ZEditParamLayoutDlg::onParamTreeDeleted()
     if (!idx.isValid() || !idx.parent().isValid() || !bEditable)
         return;
 
+    //TODO: 没有不允许删除的组，只是剩下最后一个的时候不能删。
     VPARAM_TYPE type = (VPARAM_TYPE)idx.data(ROLE_ELEMENT_TYPE).toInt();
     if (type == VPARAM_ROOT ||
         type == VPARAM_TAB && idx.data(Qt::DisplayRole).toString() == "Default" ||
-        type == VPARAM_GROUP && idx.data(Qt::DisplayRole).toString() == "inputs")   //不允许删除默认root-tab-group输入组
+        type == VPARAM_GROUP && idx.data(Qt::DisplayRole).toString() == "inputs")
         return;
     m_paramsLayoutM_inputs->removeRow(idx.row(), idx.parent());
 }
@@ -441,18 +442,14 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
 
         {
             BlockSignalScope scope(m_ui->cbSocketType);
-            if (parentName == "input") {
-                m_ui->cbSocketType->setEnabled(true);
-                if (zeno::NoSocket == socketType)
-                    m_ui->cbSocketType->setCurrentText(tr("No Socket"));
-                else if (zeno::PrimarySocket == socketType)
-                    m_ui->cbSocketType->setCurrentText(tr("Primary Socket"));
-                else if (zeno::ParamSocket == socketType)
-                    m_ui->cbSocketType->setCurrentText(tr("Parameter Socket"));
-            }
-            else if (parentName == "output") {
-                m_ui->cbSocketType->setEnabled(false);
-            }
+
+            m_ui->cbSocketType->setEnabled(true);
+            if (zeno::NoSocket == socketType)
+                m_ui->cbSocketType->setCurrentText(tr("No Socket"));
+            else if (zeno::PrimarySocket == socketType)
+                m_ui->cbSocketType->setCurrentText(tr("Primary Socket"));
+            else if (zeno::ParamSocket == socketType)
+                m_ui->cbSocketType->setCurrentText(tr("Parameter Socket"));
         }
 
         switchStackProperties(ctrl, pCurrentItem);
@@ -518,6 +515,14 @@ void ZEditParamLayoutDlg::onOutputsListCurrentChanged(const QModelIndex& current
 
     {
         BlockSignalScope scope(m_ui->cbSocketType);
+
+        if (zeno::NoSocket == socketType)
+            m_ui->cbSocketType->setCurrentText(tr("No Socket"));
+        else if (zeno::PrimarySocket == socketType)
+            m_ui->cbSocketType->setCurrentText(tr("Primary Socket"));
+        else if (zeno::ParamSocket == socketType)
+            m_ui->cbSocketType->setCurrentText(tr("Parameter Socket"));
+
         m_ui->cbSocketType->setEnabled(false);
     }
 
@@ -662,12 +667,14 @@ void ZEditParamLayoutDlg::onBtnAddOutputs()
             }
         }
     }
+
     auto pNewItem = new QStandardItem(newParamName);
     pNewItem->setData(newParamName, ROLE_PARAM_NAME);
     pNewItem->setData(ctrl.ctrl, ROLE_PARAM_CONTROL);
     pNewItem->setData(ctrl.type, ROLE_PARAM_TYPE);
     pNewItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
     pNewItem->setData(UiHelper::initDefaultValue(ctrl.type), ROLE_PARAM_VALUE);
+    pNewItem->setData(zeno::PrimarySocket, ROLE_SOCKET_TYPE);
 
     //init properties.
     switch (ctrl.ctrl)
@@ -684,6 +691,7 @@ void ZEditParamLayoutDlg::onBtnAddOutputs()
             break;
         }
     }
+
     m_paramsLayoutM_outputs->appendRow(pNewItem);
     pNewItem->setData(getIcon(pNewItem), Qt::DecorationRole);
 }
