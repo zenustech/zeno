@@ -71,8 +71,7 @@ public:
     CALLBACK_REGIST(set_view, void, bool)
     ZENO_API bool is_view() const;
 
-    ZENO_API void mark_dirty(bool bOn);
-    CALLBACK_REGIST(mark_dirty, void, bool)
+    ZENO_API void mark_dirty(bool bOn, bool bWholeSubnet = true);
     ZENO_API bool is_dirty() const { return m_dirty; }
     ZENO_API NodeRunStatus get_run_status() const { return m_status; }
 

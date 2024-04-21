@@ -377,12 +377,6 @@ void Graph::markDirtyAll()
     for (const auto& [uuid, node] : m_nodes) {
         node->mark_dirty(true);
     }
-    std::set<std::string> nodes = subnet_nodes;
-    nodes.insert(asset_nodes.begin(), asset_nodes.end());
-    for (const std::string& uuid : nodes) {
-        auto spSubnetNode = std::dynamic_pointer_cast<SubnetNode>(m_nodes[uuid]);
-        spSubnetNode->subgraph->markDirtyAll();
-    }
 }
 
 std::string Graph::generateNewName(const std::string& node_cls)

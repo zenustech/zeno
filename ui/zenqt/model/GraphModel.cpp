@@ -51,12 +51,6 @@ void NodeItem::init(GraphModel* pGraphM, std::shared_ptr<zeno::INode> spNode)
         emit pGraphM->dataChanged(idx, idx, QVector<int>{ ROLE_NODE_ISVIEW });
     });
 
-    m_cbMarkDirty = spNode->register_mark_dirty([=](bool bDirty) {
-        this->runState.bDirty = bDirty;
-        QModelIndex idx = pGraphM->indexFromName(this->name);
-        emit pGraphM->dataChanged(idx, idx, QVector<int>{ ROLE_NODE_DIRTY });
-    });
-
     this->params = new ParamsModel(spNode, this);
     this->name = QString::fromStdString(spNode->get_name());
     this->cls = QString::fromStdString(spNode->get_nodecls());

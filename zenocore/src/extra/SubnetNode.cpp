@@ -244,6 +244,13 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
     return changes;
 }
 
+void SubnetNode::mark_subnetdirty(bool bOn)
+{
+    if (bOn) {
+        subgraph->markDirtyAll();
+    }
+}
+
 ZENO_API void SubnetNode::apply() {
     for (auto const &subinput_node: subgraph->getSubInputs()) {
         auto subinput = subgraph->getNode(subinput_node);

@@ -197,7 +197,7 @@ void INode::onInterrupted() {
     mark_previous_ref_dirty();
 }
 
-ZENO_API void INode::mark_dirty(bool bOn)
+ZENO_API void INode::mark_dirty(bool bOn, bool bWholeSubnet)
 {
     scope_exit sp([&] {
         m_status = Node_DirtyReadyToRun;  //修改了数据，标脏，并置为此状态。（后续在计算过程中不允许修改数据，所以markDirty理论上是前端驱动）
@@ -221,7 +221,16 @@ ZENO_API void INode::mark_dirty(bool bOn)
             }
         }
     }
-    //CALLBACK_NOTIFY(mark_dirty, m_dirty)
+
+    if (m_nodecls == "Subnet" && bWholeSubnet)
+    {
+        SubnetNode* pSubnetNode = dynamic_cast<SubnetNode*>(this);
+        pSubnetNode->mark_subnetdirty(bOn);
+    }
+    if (graph->optParentSubgNode.has_value())
+    {
+        graph->optParentSubgNode.value()->mark_dirty(true, false);
+    }
 }
 
 void INode::mark_dirty_objs()
