@@ -145,29 +145,27 @@
        <widget class="QWidget" name="horizontalLayoutWidget_2">
         <layout class="QHBoxLayout" name="horizontalLayout_4">
          <item>
-          <widget class="QPushButton" name="btnAddOutput">
-           <property name="contextMenuPolicy">
-            <enum>Qt::DefaultContextMenu</enum>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">image:url(://icons/search_arrow.svg)</string>
-           </property>
-           <property name="text">
-            <string/>
-           </property>
-           <property name="autoDefault">
-            <bool>false</bool>
-           </property>
-          </widget>
-         </item>
-         <item>
           <layout class="QVBoxLayout" name="verticalLayout_3">
            <item>
-            <widget class="QLabel" name="labelPrameter_2">
-             <property name="text">
-              <string>outputs</string>
+            <layout class="QHBoxLayout" name="horizontalLayout_6">
+             <property name="topMargin">
+              <number>10</number>
              </property>
-            </widget>
+             <item>
+              <widget class="QLabel" name="labelPrameter_2">
+               <property name="text">
+                <string>outputs</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="btnAddOutput">
+               <property name="text">
+                <string>Add</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
            </item>
            <item>
             <widget class="QListView" name="outputsView"/>

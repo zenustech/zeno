@@ -19,6 +19,7 @@
 static CONTROL_ITEM_INFO controlList[] = {
     {"Tab",                 zeno::NullControl,  zeno::Param_Null,   ":/icons/parameter_control_tab.svg"},
     {"Group",               zeno::NullControl,  zeno::Param_Null,   ":/icons/parameter_control_group.svg"},
+    {"object",              zeno::NullControl,  zeno::Param_Null,   ""},
     {"Integer",             zeno::Lineedit,     zeno::Param_Int,    ":/icons/parameter_control_integer.svg"},
     {"Float",               zeno::Lineedit,     zeno::Param_Float,  ":/icons/parameter_control_float.svg"},
     {"String",              zeno::Lineedit,     zeno::Param_String, ":/icons/parameter_control_string.svg"},
@@ -630,67 +631,17 @@ void ZEditParamLayoutDlg::onBtnAddInputs()
 
 void ZEditParamLayoutDlg::onBtnAddOutputs()
 {
-    QModelIndex ctrlIdx = m_ui->listConctrl->currentIndex();
-    if (!ctrlIdx.isValid())
-        return;
-    QString ctrlName = ctrlIdx.data().toString();
-    if (ctrlName == "Tab" || ctrlName == "Group")
-        return;
-
     auto root = m_paramsLayoutM_outputs->invisibleRootItem();
-    QStringList existNames;
-    for (int r = 0; r < m_paramsLayoutM_outputs->rowCount(); r++)
-    {
-        QStandardItem* pChildItem = root->child(r);
-        ZASSERT_EXIT(pChildItem);
-        QString _name = pChildItem->data(ROLE_PARAM_NAME).toString();
-        existNames.append(_name);
-    }
-
-    CONTROL_ITEM_INFO ctrl = getControlByName(ctrlName);
-    QString newParamName = UiHelper::getUniqueName(existNames, ctrl.name);
-
-    QStandardItem* pRoot = m_paramsLayoutM_inputs->item(0);
-    if (!pRoot || pRoot->rowCount() < 1)
-        return;
-    QStandardItem* pDefautlTab = pRoot->child(0);
-    if (!pDefautlTab || pDefautlTab->rowCount() < 1)
-        return;
-    QStandardItem* pDefaultGroup = pDefautlTab->child(0);
-    if (!pDefaultGroup)
-        return;
-    for (int r = 0; r < pDefaultGroup->rowCount(); r++) {   //和已有inputs参数名比较是否重名
-        if (QStandardItem* pChildItem = pDefaultGroup->child(r)) {
-            if (newParamName == pChildItem->data(ROLE_PARAM_NAME).toString()) {
-                existNames.append(newParamName);
-                newParamName = UiHelper::getUniqueName(existNames, ctrl.name);
-            }
-        }
-    }
+    QStringList existNames = getExistingNames(false, VPARAM_PARAM);
+    QString newParamName = UiHelper::getUniqueName(existNames, "object");
 
     auto pNewItem = new QStandardItem(newParamName);
     pNewItem->setData(newParamName, ROLE_PARAM_NAME);
-    pNewItem->setData(ctrl.ctrl, ROLE_PARAM_CONTROL);
-    pNewItem->setData(ctrl.type, ROLE_PARAM_TYPE);
+    pNewItem->setData(zeno::NullControl, ROLE_PARAM_CONTROL);
+    pNewItem->setData(zeno::Param_Null, ROLE_PARAM_TYPE);
     pNewItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
-    pNewItem->setData(UiHelper::initDefaultValue(ctrl.type), ROLE_PARAM_VALUE);
+    pNewItem->setData(QVariant(), ROLE_PARAM_VALUE);
     pNewItem->setData(zeno::PrimarySocket, ROLE_SOCKET_TYPE);
-
-    //init properties.
-    switch (ctrl.ctrl)
-    {
-        case zeno::SpinBoxSlider:
-        case zeno::SpinBox:
-        case zeno::DoubleSpinBox:
-        case zeno::Slider:
-        {
-            std::array<float, 3> ranges = { 0.0, 100.0,1.0};
-            zeno::ControlProperty pros;
-            pros.ranges = ranges;
-            pNewItem->setData(QVariant::fromValue(pros), ROLE_PARAM_CTRL_PROPERTIES);
-            break;
-        }
-    }
 
     m_paramsLayoutM_outputs->appendRow(pNewItem);
     pNewItem->setData(getIcon(pNewItem), Qt::DecorationRole);
