@@ -5,6 +5,7 @@
 #include <typeinfo>
 #include <string>
 #include <memory>
+#include <zeno/core/common.h>
 
 namespace zeno {
 
@@ -43,6 +44,13 @@ struct KeyError : Error {
 
     ZENO_API explicit KeyError(std::string_view key, std::string_view hint) noexcept;
     ZENO_API ~KeyError() noexcept override;
+};
+
+struct InterruputError : Error {
+    ObjPath m_node;
+
+    ZENO_API explicit InterruputError(ObjPath const &node) noexcept;
+    ZENO_API ~InterruputError() noexcept override;
 };
 
 struct IndexError : Error {

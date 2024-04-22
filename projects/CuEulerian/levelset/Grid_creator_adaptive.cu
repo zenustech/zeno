@@ -38,12 +38,12 @@ struct ZSMakeAdaptiveGrid : INode {
     if (auto str = get_input2<std::string>("category"); str == "vdb") {
       auto &ag = zsAG->beginVdbGrid();
 
-      ag.level(dim_c<0>) = RM_CVREF_T(ag.level(dim_c<0>))(
-          {{attr, nc}}, 0, zs::memsrc_e::device, 0);
-      ag.level(dim_c<1>) = RM_CVREF_T(ag.level(dim_c<1>))(
-          {{attr, nc}}, 0, zs::memsrc_e::device, 0);
-      ag.level(dim_c<2>) = RM_CVREF_T(ag.level(dim_c<2>))(
-          {{attr, nc}}, 0, zs::memsrc_e::device, 0);
+      ag.level(dim_c<0>) =
+          RM_CVREF_T(ag.level(dim_c<0>))({{attr, nc}}, 0, zs::memsrc_e::device);
+      ag.level(dim_c<1>) =
+          RM_CVREF_T(ag.level(dim_c<1>))({{attr, nc}}, 0, zs::memsrc_e::device);
+      ag.level(dim_c<2>) =
+          RM_CVREF_T(ag.level(dim_c<2>))({{attr, nc}}, 0, zs::memsrc_e::device);
       ag.scale(dx);
       ag._background = bg;
 
@@ -55,12 +55,12 @@ struct ZSMakeAdaptiveGrid : INode {
     } else {
       auto &ag = zsAG->beginTileTree();
 
-      ag.level(dim_c<0>) = RM_CVREF_T(ag.level(dim_c<0>))(
-          {{attr, nc}}, 0, zs::memsrc_e::device, 0);
-      ag.level(dim_c<1>) = RM_CVREF_T(ag.level(dim_c<1>))(
-          {{attr, nc}}, 0, zs::memsrc_e::device, 0);
-      ag.level(dim_c<2>) = RM_CVREF_T(ag.level(dim_c<2>))(
-          {{attr, nc}}, 0, zs::memsrc_e::device, 0);
+      ag.level(dim_c<0>) =
+          RM_CVREF_T(ag.level(dim_c<0>))({{attr, nc}}, 0, zs::memsrc_e::device);
+      ag.level(dim_c<1>) =
+          RM_CVREF_T(ag.level(dim_c<1>))({{attr, nc}}, 0, zs::memsrc_e::device);
+      ag.level(dim_c<2>) =
+          RM_CVREF_T(ag.level(dim_c<2>))({{attr, nc}}, 0, zs::memsrc_e::device);
       ag.scale(dx);
       ag._background = bg;
 
@@ -125,7 +125,7 @@ struct ZSAdaptiveGridToVDB : INode {
         fmt::print(fg(fmt::color::green), "(restred) ag cnts: {}, {}, {}\n",
                    nodeCnts[0], nodeCnts[1], nodeCnts[2]);
 
-        ag = ag_.clone({memsrc_e::device, 0});
+        ag = ag_.clone({memsrc_e::device});
       }
 
       if (num_ch == 3) {
@@ -161,7 +161,7 @@ struct ZSAdaptiveGridToVDB : INode {
         // restructure_adaptive_grid(pol, ag, vdb);
       } else {
         auto pol = cuda_exec();
-        auto ag_ = ag.clone({memsrc_e::device, 0});
+        auto ag_ = ag.clone({memsrc_e::device});
         ag_.restructure(pol, vdb);
         // restructure_adaptive_grid(pol, ag, vdb);
       }
@@ -234,11 +234,11 @@ struct ZSVDBToAdaptiveGrid : INode {
       if (vdbType == "FloatGrid") {
         auto vdb_ = std::dynamic_pointer_cast<VDBFloatGrid>(vdb);
         ag = zs::convert_floatgrid_to_adaptive_grid(
-            vdb_->m_grid, zs::MemoryHandle{zs::memsrc_e::device, 0}, attr);
+            vdb_->m_grid, zs::MemoryHandle{zs::memsrc_e::device, -1}, attr);
       } else if (vdbType == "Vec3fGrid") {
         auto vdb_ = std::dynamic_pointer_cast<VDBFloat3Grid>(vdb);
         ag = zs::convert_float3grid_to_adaptive_grid(
-            vdb_->m_grid, zs::MemoryHandle{zs::memsrc_e::device, 0}, attr);
+            vdb_->m_grid, zs::MemoryHandle{zs::memsrc_e::device, -1}, attr);
       } else {
         throw std::runtime_error("Input VDB must be a FloatGrid or Vec3fGrid!");
       }

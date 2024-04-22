@@ -55,9 +55,14 @@ struct Session {
 
     ZENO_API UserData &userData() const;
     ZENO_API std::shared_ptr<Graph> createGraph(const std::string& name);
+    ZENO_API void resetMainGraph();
     ZENO_API bool run();
+    ZENO_API void interrupt();
+    ZENO_API bool is_interrupted() const;
+    //ZENO_API 
     ZENO_API void set_auto_run(bool bOn);
     ZENO_API bool is_auto_run() const;
+    ZENO_API void set_Rerun();
     ZENO_API std::string dumpDescriptorsJSON() const;
     ZENO_API zeno::NodeCates dumpCoreCates();
     ZENO_API void defNodeClass(std::shared_ptr<INode>(*ctor)(), std::string const &id, Descriptor const &desc = {});
@@ -69,7 +74,7 @@ struct Session {
     ZENO_API int registerObjId(const std::string& objprefix);
     ZENO_API void registerRunTrigger(std::function<void()> func);
     ZENO_API void registerNodeCallback(F_NodeStatus func);
-    void reportNodeStatus(std::shared_ptr<INode> spNode);
+    void reportNodeStatus(const ObjPath& path, bool bDirty, NodeRunStatus status);
 
 private:
     void initNodeCates();
@@ -78,6 +83,7 @@ private:
     int m_apiLevel = 0;
     bool m_bApiLevelEnable = true;
     bool m_bAutoRun = false;
+    bool m_bInterrupted = false;
 
     std::function<void()> m_callbackRunTrigger;
     F_NodeStatus m_funcNodeStatus;

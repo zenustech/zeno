@@ -9,105 +9,125 @@
 namespace zeno {
 
 struct IBeginFor : zeno::INode {
-private:
-    bool m_is_break = false;
-    //bool m_updated = false;
-
-protected:
     virtual bool isContinue() const = 0;
-    virtual void update() = 0;
-    virtual void execute() = 0;
-
-public:
-    void breakThisFor() {
-        m_is_break = true;
-    }
-
-    bool checkIsContinue() const {
-        return !m_is_break && isContinue();
-    }
-
-    void doUpdate() {
-        //m_updated = true;
-        update();
-    }
-
-    virtual void apply() override final {
-        //if (!m_updated)
-            //throw makeError("BeginFor and EndFor not enclosed! "
-                            //"Don't VIEW any nodes between BeginFor and EndFor, "
-                            //"VIEW the EndFor node instead");
-        m_is_break = false;
-        execute();
-    }
+    virtual void updateIndex() = 0;
+    virtual void resetIndex() = 0;
 };
 
 
 struct BeginFor : IBeginFor {
     int m_index = 0;
     int m_count = 0;
-    
-    virtual bool isContinue() const override final {
-        return m_index < m_count;
+
+    void apply() override {
+        set_output("index", std::make_shared<NumericObject>(m_index));
     }
 
-    virtual void execute() override final {
-        m_index = 0;
-        m_count = get_input<zeno::NumericObject>("count")->get<int>();
-        set_output("FOR", std::make_shared<zeno::DummyObject>());
-        if (has_output("index")) {
-            set_output("index", std::make_shared<zeno::NumericObject>());
-        }
+    bool isContinue() const override {
+        return m_index < getCount();
     }
 
-    virtual void update() override final {
-        auto ret = std::make_shared<zeno::NumericObject>();
-        ret->set(m_index);
-        set_output("index", std::move(ret));
+    void updateIndex() override {
         m_index++;
+        if (m_index < getCount())
+            mark_dirty(true);
+    }
+
+    void resetIndex() override {
+        m_index = 0;
+        mark_dirty(true);
+    }
+
+    int getCount() const {
+        int count = get_input<zeno::NumericObject>("count")->get<int>();
+        return count;
     }
 };
 
 ZENDEFNODE(BeginFor, {
     {{"int", "count"}},
-    {{"int", "index"}, "FOR"},
-    {},
+    {{"int", "index"}},
+    {{"string", "For End", ""}},
     {"control"},
 });
 
 
-struct EndFor : zeno::ContextManagedNode {
-    virtual void post_do_apply() {}
+struct BeginForEach : IBeginFor {
+    int m_index = 0;
 
-    virtual void preApply() override {
-        auto [sn, ss] = getinputbound("FOR", "input socket of EndFor");
-        auto fore = dynamic_cast<IBeginFor *>(graph->m_nodes.at(sn).get());
-        if (!fore) {
-            throw Exception("EndFor::FOR must be conn to BeginFor::FOR!\n");
-        }
-        graph->applyNode(sn);
-        std::unique_ptr<zeno::Context> old_ctx = nullptr;
-        while (fore->checkIsContinue()) {
-            fore->doUpdate();
-            push_context();
-            INode::preApply();
-            post_do_apply();
-            old_ctx = pop_context();
-        }
-        if (old_ctx) {
-            // auto-valid the nodes in last iteration when refered from outside
-            graph->ctx->mergeVisited(*old_ctx);
-            old_ctx = nullptr;
+    bool isContinue() const override final {
+        return m_index < getCount();
+    }
+
+    void apply() override {
+        if (isContinue())
+        {
+            std::shared_ptr<zeno::ListObject> list = get_input<zeno::ListObject>("objects");
+            set_output("object", list->arr.at(m_index));
+            set_output("index", std::make_shared<NumericObject>(m_index));
         }
     }
 
-    virtual void apply() override {}
+    void resetIndex() override {
+        m_index = 0;
+        mark_dirty(true);
+    }
+
+    virtual void updateIndex() override final {
+        m_index++;
+        if (m_index < getCount())
+            mark_dirty(true);
+    }
+
+    int getCount() const {
+        std::shared_ptr<zeno::ListObject> list = get_input<zeno::ListObject>("objects");
+        return list->arr.size();
+    }
+
+};
+
+ZENDEFNODE(BeginForEach, {
+    {
+        {"list", "objects", "", PrimarySocket},
+    },
+    {"object", {"int", "index"}},
+    {{"string", "For End", ""}},
+    {"control"},
+});
+
+
+
+struct EndFor : INode {
+
+    virtual void preApply() override {
+        //do nothing.
+    }
+
+    virtual void apply() override {
+        requireInput("For Begin");
+        std::string forbegin = get_input<zeno::StringObject>("For Begin")->get();
+
+        graph->applyNode(forbegin);
+
+        std::shared_ptr<IBeginFor> spBegin = std::dynamic_pointer_cast<IBeginFor>(graph->getNode(forbegin));
+        if (!spBegin) {
+            throw makeError<KeyError>("No matched For Begin", "");
+        }
+
+        spBegin->resetIndex();
+
+        while (spBegin->isContinue()) {
+            requireInput("object");
+            //do something else
+            spBegin->updateIndex();
+        }
+    }
 };
 
 ZENDEFNODE(EndFor, {
-    {{"", "FOR", "", PrimarySocket}},
+    {{"", "object", "", PrimarySocket}},
     {},
-    {},
+    {{"string", "For Begin", ""}},
     {"control"},
 });
 
@@ -120,7 +140,7 @@ struct BreakFor : zeno::INode {
             throw Exception("BreakFor::FOR must be conn to BeginFor::FOR!\n");
         }
         if (!has_input("breaks") || get_input2<bool>("breaks")) {
-            fore->breakThisFor();  // will still keep going the rest of loop body? yes
+            //fore->breakThisFor();  // will still keep going the rest of loop body? yes
         }
     }
 
@@ -134,154 +154,115 @@ ZENDEFNODE(BreakFor, {
     {"control"},
 });
 
-struct BeginForEach : IBeginFor {
-    int m_index = 0;
-    std::shared_ptr<zeno::ListObject> m_list;
-    zany m_accumate;
 
-    virtual bool isContinue() const override final {
-        return m_index < m_list->arr.size();
-    }
 
-    virtual void execute() override final {
-        m_index = 0;
-        m_list = get_input<zeno::ListObject>("list");
-        if (has_input("accumate"))
-            m_accumate = get_input("accumate");
-        set_output("FOR", std::make_shared<zeno::DummyObject>());
-    }
-
-    virtual void update() override final {
-        auto ret = std::make_shared<zeno::NumericObject>();
-        ret->set(m_index);
-        set_output("index", std::move(ret));
-        auto obj = m_list->arr[m_index];
-        set_output("object", std::move(obj));
-        m_index++;
-        if (m_accumate)
-            set_output("accumate", std::move(m_accumate));
-    }
-};
-
-ZENDEFNODE(BeginForEach, {
-    {
-        {"", "list", "", PrimarySocket},
-        {"", "accumate", "", PrimarySocket},
-    },
-    {"object", "accumate", {"int", "index"}, "FOR"},
-    {},
-    {"control"},
-});
-
-struct EndForEach : EndFor {
+struct EndForEach : INode {
     std::vector<zany> result;
     std::vector<zany> dropped_result;
 
-    virtual void post_do_apply() override {
-        bool accept = true;
-        if (requireInput("accept")) {
-            accept = evaluate_condition(get_input("accept").get());
-        }
-        if (requireInput("object")) {
-            auto obj = get_input("object");
-            if (accept)
-                result.push_back(std::move(obj));
-            else
-                dropped_result.push_back(std::move(obj));
-        }
-        if (requireInput("list")) {
-            if (accept) {
-                auto listObj = get_input<zeno::ListObject>("list");
-                for(auto obj : listObj->arr)
-                    result.push_back(std::move(obj));
-            }
-            else{
-                auto listObj = get_input<zeno::ListObject>("list");
-                for(auto obj : listObj->arr)
-                    dropped_result.push_back(std::move(obj));
-            }
-        }
-        if (requireInput("accumate")) {
-            auto [sn, ss] = getinputbound("FOR", "input socket of EndForEach");
-            auto fore = dynamic_cast<BeginForEach *>(graph->m_nodes.at(sn).get());
-            if (!fore) {
-                throw Exception("EndForEach::FOR must be conn to BeginForEach::FOR (when accumate used)!\n");
-            }
-            auto accumate = get_input("accumate");
-            fore->m_accumate = std::move(accumate);
-        }
+    void preApply() override {
+        //do nothing.
     }
 
-    virtual void preApply() override {
-        EndFor::preApply();
-        if (get_param<bool>("doConcat")) {
-            decltype(result) newres;
-            for (auto &xs: result) {
-                for (auto &x: safe_dynamic_cast<ListObject>(xs, "do concat ")->arr)
-                    newres.push_back(std::move(x));
-            }
-            result = std::move(newres);
-            decltype(dropped_result) dropped_newres;
-            for (auto &xs: dropped_result) {
-                for (auto &x: safe_dynamic_cast<ListObject>(xs, "do concat ")->arr)
-                    dropped_newres.push_back(std::move(x));
-            }
-            dropped_result = std::move(dropped_newres);
+    void apply() override {
+        requireInput("For Begin");
+        std::string forbegin = get_input<zeno::StringObject>("For Begin")->get();
+        std::shared_ptr<IBeginFor> spBegin = std::dynamic_pointer_cast<IBeginFor>(graph->getNode(forbegin));
+        if (!spBegin) {
+            throw makeError<KeyError>("No matched For Begin", "");
         }
+
+        graph->applyNode(forbegin);
+
+        std::vector<zany> result;
+        std::vector<zany> dropped_result;
+
+        spBegin->resetIndex();
+
+        while (spBegin->isContinue()) {
+            requireInput("object");
+            requireInput("objects");
+
+            bool accept = true;
+            if (requireInput("accept")) {
+                accept = evaluate_condition(get_input("accept").get());
+            }
+
+            if (auto obj = get_input("object")) {
+                if (accept)
+                    result.push_back(std::move(obj));
+                else
+                    dropped_result.push_back(std::move(obj));
+            }
+
+            if (has_input("objects")) {
+                auto listObj = get_input<zeno::ListObject>("objects");
+                if (accept) {
+                    for (auto obj : listObj->arr)
+                        result.push_back(std::move(obj));
+                }
+                else {
+                    for (auto obj : listObj->arr)
+                        dropped_result.push_back(std::move(obj));
+                }
+            }
+
+            spBegin->updateIndex();
+        }
+
         auto list = std::make_shared<ListObject>();
         list->arr = std::move(result);
         set_output("list", std::move(list));
+
         auto dropped_list = std::make_shared<ListObject>();
         dropped_list->arr = std::move(dropped_result);
         set_output("droppedList", std::move(dropped_list));
-
-        auto [sn, ss] = getinputbound("FOR", "input socket of EndForEach");
-        if (auto fore = dynamic_cast<BeginForEach*>(graph->m_nodes.at(sn).get()); fore) {
-            if (fore->m_accumate)
-                set_output("accumate", std::move(fore->m_accumate));
-        }
     }
+
 };
 
 ZENDEFNODE(EndForEach, {
     {
-        {"", "FOR", "", PrimarySocket},
         {"", "object", "", PrimarySocket},
-        {"", "list", "", PrimarySocket},
-        {"", "accumate", "", PrimarySocket},
+        {"list", "objects", "", PrimarySocket},
         {"bool", "accept", "1"}
     },
-    {"list", "droppedList", "accumate"},
-    {{"bool", "doConcat", "0"}},
+    {"list", "droppedList"},
+    {{"bool", "doConcat", "0"},
+     {"string", "For Begin", ""}},
     {"control"},
 });
 
 
-struct BeginSubstep : IBeginFor {
+struct BeginSubstep : INode {
     float m_total = 0;
     float m_mindt = 0;
     float m_elapsed = 0;
     bool m_ever_called = false;
 
-    virtual bool isContinue() const override final {
-        return m_elapsed < m_total;
+    void apply() override {
+
     }
 
-    virtual void execute() override final {
-        m_elapsed = 0;
-        m_ever_called = false;
-        m_total = get_input<zeno::NumericObject>("total_dt")->get<float>();
-        auto min_scale = has_input("min_scale") ?
-            get_input<zeno::NumericObject>("min_scale")->get<float>() : 0.05f;
-        m_mindt = m_total * min_scale;
-        set_output("FOR", std::make_shared<zeno::DummyObject>());
-    }
+    //virtual bool isContinue() const override final {
+    //    return m_elapsed < m_total;
+    //}
 
-    virtual void update() override final {
-        auto ret = std::make_shared<zeno::NumericObject>();
-        ret->set(m_elapsed);
-        set_output("elapsed_time", std::move(ret));
-    }
+    //virtual void execute() override final {
+    //    m_elapsed = 0;
+    //    m_ever_called = false;
+    //    m_total = get_input<zeno::NumericObject>("total_dt")->get<float>();
+    //    auto min_scale = has_input("min_scale") ?
+    //        get_input<zeno::NumericObject>("min_scale")->get<float>() : 0.05f;
+    //    m_mindt = m_total * min_scale;
+    //    set_output("FOR", std::make_shared<zeno::DummyObject>());
+    //}
+
+    //virtual void update() override final {
+    //    auto ret = std::make_shared<zeno::NumericObject>();
+    //    ret->set(m_elapsed);
+    //    set_output("elapsed_time", std::move(ret));
+    //}
 };
 
 ZENDEFNODE(BeginSubstep, {

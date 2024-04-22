@@ -38,10 +38,32 @@ public:
     void setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const override;
     void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
 
+    std::function<bool(QString)> m_isGlobalUniqueFunc;
+
 private:
     QStandardItemModel* m_model;
 };
 
+class outputListItemDelegate : public QStyledItemDelegate
+{
+    Q_OBJECT
+public:
+    explicit outputListItemDelegate(QStandardItemModel* model, QObject* parent = nullptr);
+    ~outputListItemDelegate();
+
+    // editing
+    QWidget* createEditor(QWidget* parent,
+        const QStyleOptionViewItem& option,
+        const QModelIndex& index) const override;
+
+    void setModelData(QWidget* editor, QAbstractItemModel* model, const QModelIndex& index) const override;
+    void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
+
+    std::function<bool(QString)> m_isGlobalUniqueFunc;
+
+private:
+    QStandardItemModel* m_model;
+};
 
 class ZEditParamLayoutDlg : public QDialog
 {
@@ -49,23 +71,27 @@ class ZEditParamLayoutDlg : public QDialog
 public:
     ZEditParamLayoutDlg(QStandardItemModel* pModel, QWidget* parent = nullptr);
     zeno::ParamsUpdateInfo getEdittedUpdateInfo() const;
+    zeno::CustomUI getCustomUiInfo() const;
+
+protected:
+    bool eventFilter(QObject* obj, QEvent* event) override;
 
 private slots:
-    void onBtnAdd();
+    void onBtnAddInputs();
+    void onBtnAddOutputs();
     void onApply();
     void onOk();
     void onCancel();
     void onTreeCurrentChanged(const QModelIndex& current, const QModelIndex& previous);
+    void onOutputsListCurrentChanged(const QModelIndex& current, const QModelIndex& previous);
     void onNameEditFinished();      //name lineedit.
     void onLabelEditFinished();
     void onHintEditFinished();
     void onParamTreeDeleted();
-    void onMinEditFinished();
-    void onMaxEditFinished();
-    void onStepEditFinished();
+    void onOutputsListDeleted();
     void onControlItemChanged(int);
-    void onComboTableItemsCellChanged(int row, int column);
-    void onViewParamDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
+    void onParamsViewParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
+    void onOutputsViewParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
     void onSocketTypeChanged(int idx);
 
 private:
@@ -74,16 +100,21 @@ private:
     QIcon getIcon(const QStandardItem *pItem);
     void proxyModelSetData(const QModelIndex& index, const QVariant& newValue, int role);
     void switchStackProperties(int ctrl, QStandardItem *pItem);
-    void updateSliderInfo();
     void initModel(const QStandardItemModel* pModel);
 
-    QStandardItemModel* m_paramsLayoutM;
+    QStringList getExistingNames(bool bInput, VPARAM_TYPE type) const;
+
+    std::function<bool(QString)> m_isGlobalUniqueFunc;
+
+    QStandardItemModel * m_paramsLayoutM_inputs;
+    QStandardItemModel * m_paramsLayoutM_outputs;
 
     Ui::EditParamLayoutDlg* m_ui;
     const QPersistentModelIndex m_nodeIdx;
     static const int rowValueControl = 3;
 
     zeno::ParamsUpdateInfo m_paramsUpdate;
+    zeno::CustomUI m_customUi;
 };
 
 #endif

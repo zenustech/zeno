@@ -94,7 +94,7 @@ void StatusGroup::setOptions(int options)
 
 void StatusGroup::setView(bool isView)
 {
-
+    m_view->toggle(isView);
 }
 
 void StatusGroup::onZoomed()

@@ -13,6 +13,7 @@ ZenoSvgItem::ZenoSvgItem(QGraphicsItem *parent)
 ZenoSvgItem::ZenoSvgItem(const QString &image, QGraphicsItem *parent)
     : QGraphicsSvgItem(image, parent)
     , m_size(-1.0, -1.0)
+    , m_normal(image)
 {
 }
 

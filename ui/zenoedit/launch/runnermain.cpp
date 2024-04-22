@@ -27,6 +27,7 @@
 #include <zeno/funcs/ParseObjectFromUi.h>
 #include "startup/zstartup.h"
 #include <zeno/types/ListObject.h>
+#include <zeno/types/DictObject.h>
 #include <zenomodel/include/jsonhelper.h>
 
 namespace {
@@ -153,17 +154,16 @@ static int runner_start(std::string const &progJson, int sessionid, const LAUNCH
                 const auto& sourceInput = graph->getNodeInput(ident, ds);
                 if (ident.find("PythonNode") > 0 && ds == "args")
                 {
-                    auto list = std::dynamic_pointer_cast<zeno::ListObject>(sourceInput);
+                    auto dict = std::dynamic_pointer_cast<zeno::DictObject>(sourceInput);
                     writer.Key("args");
                     {
                         JsonObjBatch argBatch(writer);
                         int idx = 0;
-                        for (const auto& obj : list->arr)
+                        for (const auto& [key, obj] : dict->lut)
                         {
-                            QString paramName = "arg" + QString::number(idx);
                             std::shared_ptr<zeno::NumericObject> num = std::dynamic_pointer_cast<zeno::NumericObject>(obj);
                             if (num) {
-                                writer.Key(paramName.toUtf8());
+                                writer.Key(key.c_str());
                                 if (std::get_if<float>(&num->value))
                                 {
                                     writer.Double(num->get<float>());
@@ -174,6 +174,7 @@ static int runner_start(std::string const &progJson, int sessionid, const LAUNCH
                                 }
                                 else
                                 {
+                                    writer.Null();
                                     zeno::log_error("parse obj error");
                                 }
                                 idx++;
@@ -182,7 +183,7 @@ static int runner_start(std::string const &progJson, int sessionid, const LAUNCH
                             {
                                 std::shared_ptr<zeno::StringObject> pStr = std::dynamic_pointer_cast<zeno::StringObject>(obj);
                                 if (pStr) {
-                                    writer.Key(paramName.toUtf8());
+                                    writer.Key(key.c_str());
                                     writer.String(pStr->get().c_str());
                                     idx++;
                                 }

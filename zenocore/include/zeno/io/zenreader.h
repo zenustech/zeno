@@ -23,6 +23,14 @@ namespace zenoio
             const rapidjson::Value& sockObj,
             zeno::LinksData& links) override;
 
+
+        void _parseInputs(
+            const std::string& id,
+            const std::string& nodeName,
+            const rapidjson::Value& inputs,
+            zeno::NodeData& ret,
+            zeno::LinksData& links) override;
+
         bool _parseGraph(
             const rapidjson::Value& graph,
             const zeno::AssetsData& assets,

@@ -37,6 +37,7 @@
 #include <zeno/para/parallel_scan.h>
 #include <zeno/utils/log.h>
 #include <zeno/utils/zeno_p.h>
+#include <zeno/utils/fileio.h>
 #include <zeno/types/MaterialObject.h>
 #include <zeno/types/UserData.h>
 #include "optixSphere.h"
@@ -773,24 +774,26 @@ void updateSphereXAS() {
     optix_instances.reserve(sphereInstanceGroupAgentList.size() + SphereTransformedTable.size());
     const float mat3r4c[12] = {1,0,0,0,0,1,0,0,0,0,1,0};
 
-    size_t instance_idx = 0u;
-    size_t sbt_offset = 0u;
+	std::vector<CUdeviceptr> aux_lut;
+	aux_lut.reserve(sphereInstanceGroupAgentList.size());
 
     for (auto& sphereAgent : sphereInstanceGroupAgentList) {
 
         if (sphereAgent->inst_sphere_gas_handle == 0) continue;
 
+		sphereAgent->updateAux();
+		aux_lut.push_back(sphereAgent->aux_buffer.handle);
+
         OptixInstance inst{};
-        ++instance_idx;
 
         auto combinedID = sphereAgent->base.materialID + ":" + std::to_string(ShaderMaker::Sphere);
         auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
 
-        sbt_offset = shader_index * RAY_TYPE_COUNT;
+        auto sbt_offset = shader_index * RAY_TYPE_COUNT;
 
         inst.flags = OPTIX_INSTANCE_FLAG_NONE;
         inst.sbtOffset = sbt_offset;
-        inst.instanceId = instance_idx;
+        inst.instanceId = optix_instances.size();
         inst.visibilityMask = DefaultMatMask; 
         inst.traversableHandle = sphereAgent->inst_sphere_gas_handle;
 
@@ -798,21 +801,33 @@ void updateSphereXAS() {
         optix_instances.push_back( inst );
     }
 
-    if (uniformed_sphere_gas_handle != 0) {
+	if (aux_lut.size() > 0) {
+
+		auto data_size = sizeof(CUdeviceptr) * aux_lut.size();
+		sphereInstanceAuxLutBuffer.resize(data_size);
+		cudaMemcpy((void*)sphereInstanceAuxLutBuffer.handle, aux_lut.data(), data_size, cudaMemcpyHostToDevice);
+
+	} else {
+		sphereInstanceAuxLutBuffer.reset();
+	}
+
+	state.params.firstSoloSphereOffset = optix_instances.size();
+	state.params.sphereInstAuxLutBuffer = (void*)sphereInstanceAuxLutBuffer.handle;
+
+	if (uniformed_sphere_gas_handle != 0) {
 
         for(auto& [key, dsphere] : SphereTransformedTable) {
 
             auto combinedID = dsphere.materialID + ":" + std::to_string(ShaderMaker::Sphere);
             auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
 
-            sbt_offset = shader_index * RAY_TYPE_COUNT;
+            auto sbt_offset = shader_index * RAY_TYPE_COUNT;
             
             OptixInstance inst{};
-            ++instance_idx;
             
             inst.flags = OPTIX_INSTANCE_FLAG_NONE;
             inst.sbtOffset = sbt_offset;
-            inst.instanceId = instance_idx;
+            inst.instanceId = optix_instances.size();
             inst.visibilityMask = DefaultMatMask;
             inst.traversableHandle = uniformed_sphere_gas_handle;
 
@@ -3516,8 +3531,15 @@ void UpdateInst()
             auto sia = std::make_shared<SphereInstanceAgent>(sphereInstanceBase);
 
             sia->radius_list = std::vector<float>(element_count, sphereInstanceBase.radius);
+			sia->aux_list = std::vector<float>(element_count * 3, 0);
+
             for (size_t i=0; i<element_count; ++i) {
                 sia->radius_list[i] *= instTrs.tang[3*i +0];
+
+				sia->aux_list[i*3+0] = instTrs.clr[3*i +0];
+				sia->aux_list[i*3+1] = instTrs.clr[3*i +1];
+				sia->aux_list[i*3+2] = instTrs.clr[3*i +2];
+
             }
 
             sia->center_list.resize(element_count);
@@ -3833,12 +3855,13 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
             for (auto i = 0; i < w * h * 3; i++) {
                 data.push_back(int(ptr[i]));
             }
-            std::string native_path = std::filesystem::u8path(path + "_mask.png").string();
+            std::string native_path = zeno::create_directories_when_write_file(path + "_mask.png");
             stbi_flip_vertically_on_write(1);
             stbi_write_png(native_path.c_str(), w, h, 3, data.data(),0);
         }
         // AOV
         if (enable_output_aov) {
+            zeno::create_directories_when_write_file(exr_path);
             SaveMultiLayerEXR(
                     {
                             (float*)optixgetimg_extra("color"),
@@ -3863,22 +3886,23 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         }
         else {
             if (enable_output_exr) {
+                zeno::create_directories_when_write_file(exr_path);
                 save_exr((float3 *)optixgetimg_extra("color"), w, h, exr_path);
             }
             else {
-                std::string jpg_native_path = std::filesystem::u8path(path).string();
+                std::string jpg_native_path = zeno::create_directories_when_write_file(path);
                 stbi_write_jpg(jpg_native_path.c_str(), w, h, 4, p, 100);
                 if (denoise) {
                     const float* _albedo_buffer = reinterpret_cast<float*>(state.albedo_buffer_p.handle);
                     //SaveEXR(_albedo_buffer, w, h, 4, 0, (path+".albedo.exr").c_str(), nullptr);
                     auto a_path = path + ".albedo.pfm";
-                    std::string native_a_path = std::filesystem::u8path(a_path).string();
+                    std::string native_a_path = zeno::create_directories_when_write_file(a_path);
                     write_pfm(native_a_path, w, h, _albedo_buffer);
 
                     const float* _normal_buffer = reinterpret_cast<float*>(state.normal_buffer_p.handle);
                     //SaveEXR(_normal_buffer, w, h, 4, 0, (path+".normal.exr").c_str(), nullptr);
                     auto n_path = path + ".normal.pfm";
-                    std::string native_n_path = std::filesystem::u8path(n_path).string();
+                    std::string native_n_path = zeno::create_directories_when_write_file(n_path);
                     write_pfm(native_n_path, w, h, _normal_buffer);
                 }
             }

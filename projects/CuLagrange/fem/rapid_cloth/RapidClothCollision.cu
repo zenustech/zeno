@@ -567,7 +567,7 @@ void RapidClothSystem::consColoring(zs::CudaExecutionPolicy &pol)
     nConsColor = iter; 
 #else 
     int iter = 0; 
-    zs::Vector<int> done{1, memsrc_e::device, 0};
+    zs::Vector<int> done{1, memsrc_e::device};
     auto update = 
         [&] (int iter) -> bool {
         done.setVal(1);  

@@ -529,12 +529,8 @@ void ZenoSubGraphScene::select(const QModelIndexList &indexs)
 
 ZenoNode* ZenoSubGraphScene::markError(const QString& nodeName)
 {
-    ZASSERT_EXIT(m_nodes.find(nodeName) != m_nodes.end(), nullptr);
-    ZenoNode *pNode = m_nodes[nodeName];
-    pNode->markError(true);
-    //pNode->setSelected(true);
-    m_errNodes.append(nodeName);
-    return pNode;
+    //Deprecated
+    return nullptr;
 }
 
 QList<ZenoNode*> ZenoSubGraphScene::getNodesItem() const
@@ -548,14 +544,7 @@ QList<ZenoNode*> ZenoSubGraphScene::getNodesItem() const
 
 void ZenoSubGraphScene::clearMark()
 {
-    for (QString name : m_errNodes)
-    {
-        if (m_nodes.find(name) != m_nodes.end())
-        {
-            m_nodes[name]->markError(false);
-        }
-    }
-    m_errNodes.clear();
+    //Deprecated
 }
 
 void ZenoSubGraphScene::undo()

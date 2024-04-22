@@ -122,6 +122,11 @@ ZENO_API std::shared_ptr<Graph> Session::createGraph(const std::string& name) {
     return graph;
 }
 
+ZENO_API void Session::resetMainGraph() {
+    mainGraph.reset();
+    mainGraph = std::make_shared<Graph>("main");
+}
+
 ZENO_API void Session::setApiLevelEnable(bool bEnable)
 {
     m_bApiLevelEnable = bEnable;
@@ -159,10 +164,10 @@ ZENO_API void Session::registerNodeCallback(F_NodeStatus func)
     m_funcNodeStatus = func;
 }
 
-void Session::reportNodeStatus(std::shared_ptr<INode> spNode)
+void Session::reportNodeStatus(const ObjPath& path, bool bDirty, NodeRunStatus status)
 {
-    if (spNode && m_funcNodeStatus) {
-        m_funcNodeStatus(spNode->get_uuid_path(), spNode->is_dirty(), spNode->get_run_status());
+    if (m_funcNodeStatus) {
+        m_funcNodeStatus(path, bDirty, status);
     }
 }
 
@@ -179,7 +184,16 @@ ZENO_API void Session::switchToFrame(int frameid)
     globalState->updateFrameId(frameid);
 }
 
+ZENO_API void Session::interrupt() {
+    m_bInterrupted = true;
+}
+
+ZENO_API bool Session::is_interrupted() const {
+    return m_bInterrupted;
+}
+
 ZENO_API bool Session::run() {
+    m_bInterrupted = false;
     globalState->set_working(true);
 
     zeno::log_info("Session::run()");
@@ -210,6 +224,11 @@ ZENO_API void Session::set_auto_run(bool bOn) {
 
 ZENO_API bool Session::is_auto_run() const {
     return m_bAutoRun;
+}
+
+ZENO_API void Session::set_Rerun()
+{
+    mainGraph->markDirtyAll();
 }
 
 void Session::initNodeCates() {

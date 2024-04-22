@@ -61,7 +61,7 @@ public:
     ZENO_API std::string get_ident() const;
     ZENO_API std::string get_show_name() const;
     ZENO_API std::string get_show_icon() const;
-    ZENO_API CustomUI get_customui() const;
+    ZENO_API virtual CustomUI get_customui() const;
     ZENO_API ObjPath get_path() const;
     ZENO_API ObjPath get_uuid_path() const { return m_uuidPath; }
     ZENO_API std::string get_uuid() const;
@@ -71,8 +71,7 @@ public:
     CALLBACK_REGIST(set_view, void, bool)
     ZENO_API bool is_view() const;
 
-    ZENO_API void mark_dirty(bool bOn);
-    CALLBACK_REGIST(mark_dirty, void, bool)
+    ZENO_API void mark_dirty(bool bOn, bool bWholeSubnet = true);
     ZENO_API bool is_dirty() const { return m_dirty; }
     ZENO_API NodeRunStatus get_run_status() const { return m_status; }
 
@@ -98,6 +97,9 @@ public:
 
     ZENO_API void mark_param_modified(std::string paramName, bool modified);    //修改IParam的modify标志位，表示该param是new的obj还是修改原有obj
 
+    void onInterrupted();
+    void mark_previous_ref_dirty();
+
     //END new api
 
     void add_input_param(std::shared_ptr<IParam> param);
@@ -108,6 +110,8 @@ public:
 
 protected:
     ZENO_API virtual void complete();
+    //preApply是先解决所有输入参数（依赖）的求值问题
+    ZENO_API virtual void preApply();
     ZENO_API virtual void apply() = 0;
     ZENO_API virtual void unregisterObjs();
     ZENO_API virtual void registerObjToManager();
@@ -119,7 +123,8 @@ protected:
 private:
     zany process(std::shared_ptr<IParam> in_param);
     zany get_output_result(std::shared_ptr<INode> outNode, std::string out_param, bool bCopy);
-    
+    void reportStatus(bool bDirty, NodeRunStatus status);
+
     float resolve(const std::string& formulaOrKFrame, const ParamType type);
     template<class T, class E> zany resolveVec(const zvariant& defl, const ParamType type);
 
@@ -127,9 +132,6 @@ public:
     //为名为ds的输入参数，求得这个参数在依赖边的求值下的值，或者没有依赖边下的默认值。
     ZENO_API bool requireInput(std::string const &ds);
     ZENO_API bool requireInput(std::shared_ptr<IParam> param);
-
-    //preApply是先解决所有输入参数的求值问题，再调用apply执行具体算法。
-    ZENO_API virtual void preApply();
 
     ZENO_API Graph *getThisGraph() const;
     ZENO_API Session *getThisSession() const;
@@ -200,7 +202,7 @@ public:
 
 private:
     ObjPath m_uuidPath;
-    NodeRunStatus m_status = Node_NoRun;
+    NodeRunStatus m_status = Node_DirtyReadyToRun;
     bool m_bView = false;
     bool m_dirty = true;
 };

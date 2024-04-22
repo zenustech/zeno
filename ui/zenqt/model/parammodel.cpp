@@ -6,6 +6,8 @@
 #include "model/LinkModel.h"
 #include "model/GraphModel.h"
 #include "variantptr.h"
+#include "model/graphsmanager.h"
+#include "model/graphstreemodel.h"
 
 
 ParamsModel::ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent)
@@ -29,10 +31,10 @@ ParamsModel::ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent)
             }
             Qt::MatchFlags flags = Qt::MatchRecursive | Qt::MatchCaseSensitive;
             auto pItems = m_customParamsM->findItems(QString::fromStdString(name), flags);
-            ZASSERT_EXIT(pItems.size() <= 1);
             for (auto pItem : pItems)
             {
-                pItem->setData(newValue, ROLE_PARAM_VALUE);
+                if (pItem->data(ROLE_ISINPUT).toBool())
+                    pItem->setData(newValue, ROLE_PARAM_VALUE);
             }
     });
 }
@@ -76,24 +78,25 @@ void ParamsModel::initParamItems()
 void ParamsModel::initCustomUI(const zeno::CustomUI& customui)
 {
     if (m_customParamsM)
-        return;
-
-    m_customParamsM = new QStandardItemModel(this);
-    m_customParamsM->clear();
+        m_customParamsM->clear();
+    else
+        m_customParamsM = new QStandardItemModel(this);
 
     QStandardItem* pInputs = new QStandardItem("inputs");
     pInputs->setEditable(false);
     for (const zeno::ParamTab& tab : customui.tabs)
     {
-        const QString& tabName = tab.name.empty() ? "Default" : QString::fromStdString(tab.name);
+        const QString& tabName = QString::fromStdString(tab.name);
         QStandardItem* pTab = new QStandardItem(tabName);
         pTab->setData(VPARAM_TAB, ROLE_ELEMENT_TYPE);
+        pTab->setData(tabName, ROLE_PARAM_NAME);
 
         for (const zeno::ParamGroup& group : tab.groups)
         {
-            const QString& groupName = tab.name.empty() ? "inputs" : QString::fromStdString(group.name);
+            const QString& groupName = QString::fromStdString(group.name);
             QStandardItem* pGroup = new QStandardItem(groupName);
             pGroup->setData(VPARAM_GROUP, ROLE_ELEMENT_TYPE);
+            pGroup->setData(groupName, ROLE_PARAM_NAME);
 
             for (const zeno::ParamInfo& param : group.params)
             {
@@ -185,6 +188,7 @@ bool ParamsModel::setData(const QModelIndex& index, const QVariant& value, int r
         if (spNode) {
             zeno::zvariant defl = UiHelper::qvarToZVar(value, param.type);
             spNode->update_param(param.name.toStdString(), defl);
+            GraphsManager::instance().currentModel()->markDirty(true);
             return true;        //the dataChanged signal will be emitted by registered callback function.
         }
         return false;
@@ -201,6 +205,7 @@ bool ParamsModel::setData(const QModelIndex& index, const QVariant& value, int r
     }
 
     emit dataChanged(index, index, QVector<int>{role});
+    GraphsManager::instance().currentModel()->markDirty(true);
     return true;
 }
 
@@ -438,8 +443,8 @@ QStandardItemModel* ParamsModel::customParamModel()
 
 void ParamsModel::batchModifyParams(const zeno::ParamsUpdateInfo& params)
 {
-    if (params.empty())
-        return;
+    //if (params.empty())   //可能是删除到空的情况，无需return
+    //    return;
 
     auto spNode = m_wpNode.lock();
     ZASSERT_EXIT(spNode);
@@ -530,6 +535,33 @@ void ParamsModel::batchModifyParams(const zeno::ParamsUpdateInfo& params)
     }
     //resetCustomParamModel();
     emit layoutChanged();
+}
+
+void ParamsModel::test_customparamsmodel() const
+{
+    QStandardItem* pRoot = m_customParamsM->invisibleRootItem();
+    for (int i = 0; i < pRoot->rowCount(); i++)
+    {
+        QStandardItem* pItem = pRoot->child(i);
+        QString wtf = pItem->text();
+        for (int j = 0; j < pItem->rowCount(); j++)
+        {
+            QStandardItem* ppItem = pItem->child(j);
+            wtf = ppItem->text();
+            for (int k = 0; k < ppItem->rowCount(); k++)
+            {
+                QStandardItem* pppItem = ppItem->child(k);
+                wtf = pppItem->text();
+            }
+        }
+    }
+}
+
+void ParamsModel::resetCustomUi(zeno::CustomUI& customui)
+{
+    auto spNode = m_wpNode.lock();
+    if (std::shared_ptr<zeno::SubnetNode> sbn = std::dynamic_pointer_cast<zeno::SubnetNode>(spNode))
+        sbn->setCustomUi(customui);
 }
 
 bool ParamsModel::removeRows(int row, int count, const QModelIndex& parent)

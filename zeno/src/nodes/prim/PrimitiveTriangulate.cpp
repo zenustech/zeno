@@ -8,6 +8,9 @@
 namespace zeno {
 
 ZENO_API void primTriangulateQuads(PrimitiveObject *prim) {
+    if (prim->quads.size() == 0) {
+        return;
+    }
     auto base = prim->tris.size();
     prim->tris.resize(base + prim->quads.size() * 2);
     bool hasmat = prim->quads.has_attr("matid");
@@ -160,10 +163,9 @@ ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv, bool has_line
           }
         });
     }
-    prim->loops.clear();
-    prim->polys.clear();
-    prim->loops.erase_attr("uvs");
-    prim->uvs.clear();
+    prim->loops.clear_with_attr();
+    prim->polys.clear_with_attr();
+    prim->uvs.clear_with_attr();
   });
 }
 

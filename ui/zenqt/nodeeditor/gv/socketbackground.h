@@ -9,7 +9,7 @@ class SocketBackgroud : public ZLayoutBackground
 {
     Q_OBJECT
 public:
-    SocketBackgroud(bool bInput, QGraphicsItem* parent = nullptr, Qt::WindowFlags wFlags = Qt::WindowFlags());
+    SocketBackgroud(bool bInput, bool bPanelLayout, QGraphicsItem* parent = nullptr, Qt::WindowFlags wFlags = Qt::WindowFlags());
     void setSocketItem(ZenoSocketItem* pSocket);
 
 private slots:
@@ -18,6 +18,7 @@ private slots:
 private:
     ZenoSocketItem* m_socket;
     bool m_bInput;
+    bool m_bPanelLayout;
 };
 
 

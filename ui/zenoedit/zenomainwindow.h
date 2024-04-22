@@ -55,6 +55,7 @@ public:
     void sortRecentFile(QStringList &lst);
     bool isOnlyOptixWindow() const;
     bool isRecordByCommandLine() const;
+    void openFileAndUpdateParam(const QString& path, const QString& paramJson);
 
     QLineEdit* selected = nullptr;
     ZenoLights* lightPanel = nullptr;

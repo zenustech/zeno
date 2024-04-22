@@ -1011,6 +1011,34 @@ struct PrimitiveDelAttrs : zeno::INode {
         auto prim = get_input<PrimitiveObject>("prim");
         auto invert = get_input2<bool>("invert");
         auto nameString = get_input2<std::string>("names");
+        auto scope = get_input2<std::string>("scope");
+        bool flag_verts = false;
+        bool flag_tris = false;
+        bool flag_lines = false;
+        bool flag_loops = false;
+        bool flag_polys = false;
+        if (scope == "vert") {
+            flag_verts = true;
+        }
+        else if (scope == "tri") {
+            flag_tris = true;
+        }
+        else if (scope == "loop") {
+            flag_loops = true;
+        }
+        else if (scope == "poly") {
+            flag_polys = true;
+        }
+        else if (scope == "line") {
+            flag_lines = true;
+        }
+        else {
+            flag_verts = true;
+            flag_tris = true;
+            flag_lines = true;
+            flag_loops = true;
+            flag_polys = true;
+        }
 
         std::vector<std::string> names;
         std::istringstream ss(nameString);
@@ -1021,11 +1049,11 @@ struct PrimitiveDelAttrs : zeno::INode {
 
         if (!invert) {
             for(std::string attr : names) {
-                prim->verts.attrs.erase(attr);
-                prim->tris.attrs.erase(attr);
-                prim->lines.attrs.erase(attr);
-                prim->loops.attrs.erase(attr);
-                prim->polys.attrs.erase(attr);
+                if (flag_verts) prim->verts.attrs.erase(attr);
+                if (flag_tris)  prim->tris.attrs.erase(attr);
+                if (flag_lines) prim->lines.attrs.erase(attr);
+                if (flag_loops) prim->loops.attrs.erase(attr);
+                if (flag_polys) prim->polys.attrs.erase(attr);
             }
         } else {
             std::vector<std::string> myKeys = prim->verts.attr_keys();
@@ -1036,11 +1064,11 @@ struct PrimitiveDelAttrs : zeno::INode {
             myKeys.erase(reserve_attr, myKeys.end());
 
             for(std::string attr : myKeys){
-                prim->verts.attrs.erase(attr);
-                prim->tris.attrs.erase(attr);
-                prim->lines.attrs.erase(attr);
-                prim->loops.attrs.erase(attr);
-                prim->polys.attrs.erase(attr);
+                if (flag_verts) prim->verts.attrs.erase(attr);
+                if (flag_tris)  prim->tris.attrs.erase(attr);
+                if (flag_lines) prim->lines.attrs.erase(attr);
+                if (flag_loops) prim->loops.attrs.erase(attr);
+                if (flag_polys) prim->polys.attrs.erase(attr);
             }
         }
 
@@ -1052,6 +1080,7 @@ ZENDEFNODE(PrimitiveDelAttrs,
                    {"", "prim", "", PrimarySocket},
                    {"bool", "invert", "0"},
                    {"string", "names", "name_1 name_2"},
+                   {"enum vert tri loop poly line all", "scope", "all"},
                }, /* outputs: */ {
                    "prim",
                }, /* params: */ {

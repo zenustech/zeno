@@ -37,6 +37,7 @@ struct GraphException {
         } catch (GraphException const &ge) {
             throw ge;
         } catch (...) {
+            pNode->onInterrupted();
             throw GraphException{ pNode->get_uuid_path(), param, std::current_exception() };
         }
     }

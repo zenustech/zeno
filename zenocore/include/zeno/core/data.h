@@ -95,12 +95,12 @@ namespace zeno {
     };
 
     struct ParamGroup {
-        std::string name;
+        std::string name = "Group1";
         std::vector<ParamInfo> params;
     };
 
     struct ParamTab {
-        std::string name;
+        std::string name = "Tab1";
         std::vector<ParamGroup> groups;
     };
 
@@ -163,6 +163,8 @@ namespace zeno {
         std::optional<GraphData> subgraph;
         std::optional<AssetInfo> asset;
         std::optional<GroupInfo> group;
+
+        CustomUI customUi;
 
         std::pair<float, float> uipos;
         bool bView = false;

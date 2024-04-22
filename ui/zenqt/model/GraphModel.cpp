@@ -51,12 +51,6 @@ void NodeItem::init(GraphModel* pGraphM, std::shared_ptr<zeno::INode> spNode)
         emit pGraphM->dataChanged(idx, idx, QVector<int>{ ROLE_NODE_ISVIEW });
     });
 
-    m_cbMarkDirty = spNode->register_mark_dirty([=](bool bDirty) {
-        this->runState.bDirty = bDirty;
-        QModelIndex idx = pGraphM->indexFromName(this->name);
-        emit pGraphM->dataChanged(idx, idx, QVector<int>{ ROLE_NODE_DIRTY });
-    });
-
     this->params = new ParamsModel(spNode, this);
     this->name = QString::fromStdString(spNode->get_name());
     this->cls = QString::fromStdString(spNode->get_nodecls());
@@ -64,6 +58,7 @@ void NodeItem::init(GraphModel* pGraphM, std::shared_ptr<zeno::INode> spNode)
     this->dispIcon = QString::fromStdString(spNode->get_show_icon());
     this->bView = spNode->is_view();
     this->runState.bDirty = spNode->is_dirty();
+    this->runState.runstatus = spNode->get_run_status();
     auto pair = spNode->get_pos();
     this->pos = QPointF(pair.first, pair.second);
     this->uuidPath = spNode->get_uuid_path();
@@ -125,6 +120,7 @@ void GraphModel::registerCoreNotify()
         ZASSERT_EXIT(m_uuid2Row.find(uuid) != m_uuid2Row.end(), false);
         int row = m_uuid2Row[uuid];
         removeRow(row);
+        GraphsManager::instance().currentModel()->markDirty(true);
     });
 
     m_cbAddLink = coreGraph->register_addLink([&](zeno::EdgeInfo edge) -> bool {
@@ -669,6 +665,8 @@ void GraphModel::_addLink(const zeno::EdgeInfo link)
         fromParams->addLink(from, linkIdx);
         toParams->addLink(to, linkIdx);
     }
+
+    GraphsManager::instance().currentModel()->markDirty(true);
 }
 
 QVariant GraphModel::removeLink(const QString& nodeName, const QString& paramName, bool bInput)
@@ -761,6 +759,7 @@ bool GraphModel::_removeLink(const zeno::EdgeInfo& edge)
         ZASSERT_EXIT(linkIdx == linkIdx2, false);
         m_linkModel->removeRow(linkIdx.row());
     }
+    GraphsManager::instance().currentModel()->markDirty(true);
     return true;
 }
 
@@ -783,6 +782,7 @@ void GraphModel::_updateName(const QString& oldName, const QString& newName)
     QModelIndex idx = createIndex(row, 0);
     emit dataChanged(idx, idx, QVector<int>{ ROLE_NODE_NAME });
     emit nameUpdated(idx, oldName);
+    GraphsManager::instance().currentModel()->markDirty(true);
 }
 
 zeno::NodeData GraphModel::createNode(const QString& nodeCls, const QString& cate, const QPointF& pos)
@@ -804,6 +804,7 @@ zeno::NodeData GraphModel::createNode(const QString& nodeCls, const QString& cat
         QString nodeName = QString::fromStdString(spNode->get_name());
         QString uuid = m_name2uuid[nodeName];
         ZASSERT_EXIT(m_nodes.find(uuid) != m_nodes.end(), node);
+        auto paramsM = m_nodes[uuid]->params;
 
         zeno::ParamsUpdateInfo updateInfo;
 
@@ -823,7 +824,18 @@ zeno::NodeData GraphModel::createNode(const QString& nodeCls, const QString& cat
         info.param.socketType = zeno::PrimarySocket;
         updateInfo.push_back(info);
 
-        m_nodes[uuid]->params->batchModifyParams(updateInfo);
+        zeno::CustomUI customui = node.customUi;
+        if (!customui.tabs.empty() &&
+            !customui.tabs[0].groups.empty())
+        {
+            auto& group = customui.tabs[0].groups[0].params;
+            group.push_back(updateInfo[0].param);
+            group.push_back(updateInfo[1].param);
+            customui.outputs.push_back(updateInfo[2].param);
+        }
+
+        paramsM->resetCustomUi(customui);
+        paramsM->batchModifyParams(updateInfo);
     }
 
     return node;
@@ -854,6 +866,8 @@ void GraphModel::_appendNode(std::shared_ptr<zeno::INode> spNode)
     endInsertRows();
 
     pItem->params->setNodeIdx(createIndex(nRows, 0));
+
+    GraphsManager::instance().currentModel()->markDirty(true);
 }
 
 void GraphModel::appendSubgraphNode(QString name, QString cls, NODE_DESCRIPTOR desc, GraphModel* subgraph, const QPointF& pos)

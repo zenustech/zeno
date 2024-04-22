@@ -71,7 +71,7 @@ static void set_special_attr_remap(PrimitiveObject *p, std::string attr_name, st
     }
 }
 ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMergeWithFacesetMatid(std::vector<zeno::PrimitiveObject *> const &primList,
-                                                          std::string const &tagAttr) {
+                                                          std::string const &tagAttr, bool tag_on_vert, bool tag_on_face) {
     std::vector<std::string> matNameList(0);
     std::unordered_map<std::string, int> facesetNameMap;
     std::unordered_map<std::string, int> abcpathNameMap;
@@ -132,7 +132,7 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMergeWithFacesetMatid(std::v
         }
         set_special_attr_remap(p, "abcpath", abcpathNameMap);
     }
-    auto outprim = primMerge(primList, tagAttr);
+    auto outprim = primMerge(primList, tagAttr, tag_on_vert, tag_on_face);
 
     for (auto &p : primList) {
         outprim->userData().merge(p->userData());
@@ -166,7 +166,7 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMergeWithFacesetMatid(std::v
     return outprim;
 }
 ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::PrimitiveObject *> const &primList,
-                                                          std::string const &tagAttr) {
+                                                          std::string const &tagAttr, bool tag_on_vert, bool tag_on_face) {
     //zeno::log_critical("asdfjhl {}", primList.size());
     //throw;
     int poly_flag = 0;
@@ -240,14 +240,13 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
         outprim->polys.resize(polytotal);
 
         if (tagAttr.size()) {
-            outprim->verts.add_attr<int>(tagAttr);
-            outprim->points.add_attr<int>(tagAttr);
-            outprim->lines.add_attr<int>(tagAttr);
-            outprim->tris.add_attr<int>(tagAttr);
-            outprim->quads.add_attr<int>(tagAttr);
-            outprim->loops.add_attr<int>(tagAttr);
-            outprim->uvs.add_attr<int>(tagAttr);
-            outprim->polys.add_attr<int>(tagAttr);
+            if (tag_on_vert) {
+                outprim->verts.add_attr<int>(tagAttr);
+            }
+            if (tag_on_face) {
+                outprim->tris.add_attr<int>(tagAttr);
+                outprim->polys.add_attr<int>(tagAttr);
+            }
         }
         for (size_t primIdx = 0; primIdx < primList.size(); primIdx++) {
             auto const &prim = primList[primIdx];
@@ -320,7 +319,7 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
             };
             core(std::true_type{}, prim->verts.values);
             prim->verts.foreach_attr<AttrAcceptAll>(core);
-            if (tagAttr.size()) {
+            if (tag_on_vert && tagAttr.size()) {
                 auto &outarr = outprim->verts.attr<int>(tagAttr);
                 for (size_t i = 0; i < prim->verts.size(); i++) {
                     outarr[base + i] = primIdx;
@@ -368,12 +367,12 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
             };
             core(std::true_type{}, prim->points.values);
             prim->points.foreach_attr<AttrAcceptAll>(core);
-            if (tagAttr.size()) {
-                auto &outarr = outprim->points.attr<int>(tagAttr);
-                for (size_t i = 0; i < prim->points.size(); i++) {
-                    outarr[base + i] = primIdx;
-                }
-            }
+//            if (tagAttr.size()) {
+//                auto &outarr = outprim->points.attr<int>(tagAttr);
+//                for (size_t i = 0; i < prim->points.size(); i++) {
+//                    outarr[base + i] = primIdx;
+//                }
+//            }
         });
 
         parallel_for(primList.size(), [&](size_t primIdx) {
@@ -416,12 +415,12 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
             };
             core(std::true_type{}, prim->lines.values);
             prim->lines.foreach_attr<AttrAcceptAll>(core);
-            if (tagAttr.size()) {
-                auto &outarr = outprim->lines.attr<int>(tagAttr);
-                for (size_t i = 0; i < prim->lines.size(); i++) {
-                    outarr[base + i] = primIdx;
-                }
-            }
+//            if (tagAttr.size()) {
+//                auto &outarr = outprim->lines.attr<int>(tagAttr);
+//                for (size_t i = 0; i < prim->lines.size(); i++) {
+//                    outarr[base + i] = primIdx;
+//                }
+//            }
         });
 
         parallel_for(primList.size(), [&](size_t primIdx) {
@@ -464,7 +463,7 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
             };
             core(std::true_type{}, prim->tris.values);
             prim->tris.foreach_attr<AttrAcceptAll>(core);
-            if (tagAttr.size()) {
+            if (tag_on_face && tagAttr.size()) {
                 auto &outarr = outprim->tris.attr<int>(tagAttr);
                 for (size_t i = 0; i < prim->tris.size(); i++) {
                     outarr[base + i] = primIdx;
@@ -512,12 +511,12 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
             };
             core(std::true_type{}, prim->quads.values);
             prim->quads.foreach_attr<AttrAcceptAll>(core);
-            if (tagAttr.size()) {
-                auto &outarr = outprim->quads.attr<int>(tagAttr);
-                for (size_t i = 0; i < prim->quads.size(); i++) {
-                    outarr[base + i] = primIdx;
-                }
-            }
+//            if (tagAttr.size()) {
+//                auto &outarr = outprim->quads.attr<int>(tagAttr);
+//                for (size_t i = 0; i < prim->quads.size(); i++) {
+//                    outarr[base + i] = primIdx;
+//                }
+//            }
         });
 
         parallel_for(primList.size(), [&](size_t primIdx) {
@@ -572,12 +571,12 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
             };
             core(std::true_type{}, prim->loops.values);
             prim->loops.foreach_attr<AttrAcceptAll>(core);
-            if (tagAttr.size()) {
-                auto &outarr = outprim->loops.attr<int>(tagAttr);
-                for (size_t i = 0; i < prim->loops.size(); i++) {
-                    outarr[base + i] = primIdx;
-                }
-            }
+//            if (tagAttr.size()) {
+//                auto &outarr = outprim->loops.attr<int>(tagAttr);
+//                for (size_t i = 0; i < prim->loops.size(); i++) {
+//                    outarr[base + i] = primIdx;
+//                }
+//            }
         });
 
         parallel_for(primList.size(), [&](size_t primIdx) {
@@ -601,12 +600,12 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
             };
             core(std::true_type{}, prim->uvs.values);
             prim->uvs.foreach_attr<AttrAcceptAll>(core);
-            if (tagAttr.size()) {
-                auto &outarr = outprim->uvs.attr<int>(tagAttr);
-                for (size_t i = 0; i < prim->uvs.size(); i++) {
-                    outarr[base + i] = primIdx;
-                }
-            }
+//            if (tagAttr.size()) {
+//                auto &outarr = outprim->uvs.attr<int>(tagAttr);
+//                for (size_t i = 0; i < prim->uvs.size(); i++) {
+//                    outarr[base + i] = primIdx;
+//                }
+//            }
         });
 
         parallel_for(primList.size(), [&](size_t primIdx) {
@@ -649,7 +648,7 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
             };
             core(std::true_type{}, prim->polys.values);
             prim->polys.foreach_attr<AttrAcceptAll>(core);
-            if (tagAttr.size()) {
+            if (tag_on_face && tagAttr.size()) {
                 auto &outarr = outprim->polys.attr<int>(tagAttr);
                 for (size_t i = 0; i < prim->polys.size(); i++) {
                     outarr[base + i] = primIdx;
@@ -668,8 +667,21 @@ struct PrimMerge : INode {
         auto primList = get_input<ListObject>("listPrim")->getRaw<PrimitiveObject>();
         auto tagAttr = get_input<StringObject>("tagAttr")->get();
         //initialize
+        bool tag_on_vert = false;
+        bool tag_on_face = false;
+        auto tag_scope = get_input2<std::string>("tag_scope");
+        if (tag_scope == "vert") {
+            tag_on_vert = true;
+        }
+        else if (tag_scope == "face") {
+            tag_on_face = true;
+        }
+        else {
+            tag_on_vert = true;
+            tag_on_face = true;
+        }
 
-        auto outprim = primMergeWithFacesetMatid(primList, tagAttr);
+        auto outprim = primMergeWithFacesetMatid(primList, tagAttr, tag_on_vert, tag_on_face);
 
         //auto outprim = std::make_shared<PrimitiveObject>(*primList[0]);
         set_output("prim", std::move(outprim));
@@ -677,16 +689,17 @@ struct PrimMerge : INode {
 };
 
 ZENDEFNODE(PrimMerge, {
-                          {
-                              {"list", "listPrim", "", PrimarySocket},
-                              {"string", "tagAttr", ""},
-                          },
-                          {
-                              {"primitive", "prim"},
-                          },
-                          {},
-                          {"primitive"},
-                      });
+  {
+      {"list", "listPrim", "", PrimarySocket},
+      {"string", "tagAttr", ""},
+      {"enum vert face vert_face", "tag_scope", "vert"},
+  },
+  {
+      {"primitive", "prim"},
+  },
+  {},
+  {"primitive"},
+});
 
 } // namespace
 } // namespace zeno

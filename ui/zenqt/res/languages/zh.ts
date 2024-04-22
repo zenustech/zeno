@@ -200,6 +200,10 @@
         <source>Run</source>
         <translation>运行</translation>
     </message>
+	<message>
+        <source>ReRun</source>
+        <translation>重新运行</translation>
+    </message>
     <message>
         <source>Kill</source>
         <translation type="vanished">终止</translation>
@@ -461,6 +465,10 @@
 </context>
 <context>
     <name>EditParamLayoutDlg</name>
+	<message>
+		<source>outputs</source>
+		<translation type="unfinished">输出</translation>
+	</message>
     <message>
         <source>Edit Parameter Layout</source>
         <translation type="unfinished">编辑参数布局</translation>
@@ -1100,6 +1108,13 @@
         <source>Info</source>
         <translation>信息</translation>
     </message>
+    <message>
+        <source>The param name already exists</source>
+        <translation>参数名字已存在</translation>
+    </message>
+</context>
+<context>
+    <name>outputListItemDelegate</name>
     <message>
         <source>The param name already exists</source>
         <translation>参数名字已存在</translation>

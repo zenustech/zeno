@@ -172,10 +172,41 @@ ZENO_API bool INode::is_view() const
     return m_bView;
 }
 
-ZENO_API void INode::mark_dirty(bool bOn)
+void INode::reportStatus(bool bDirty, NodeRunStatus status) {
+    m_status = status;
+    m_dirty = bDirty;
+    zeno::getSession().reportNodeStatus(m_uuidPath, bDirty, status);
+}
+
+void INode::mark_previous_ref_dirty() {
+    mark_dirty(true);
+    //不仅要自身标脏，如果前面的节点是以引用的方式连接，说明前面的节点都可能被污染了，所有都要标脏。
+    for (const auto& [name, param] : m_inputs) {
+        for (const auto& link : param->links) {
+            if (link->lnkProp == Link_Ref) {
+                auto spOutParam = link->fromparam.lock();
+                auto spPreviusNode = spOutParam->m_wpNode.lock();
+                spPreviusNode->mark_previous_ref_dirty();
+            }
+        }
+    }
+}
+
+void INode::onInterrupted() {
+    mark_dirty(true);
+    mark_previous_ref_dirty();
+}
+
+ZENO_API void INode::mark_dirty(bool bOn, bool bWholeSubnet)
 {
+    scope_exit sp([&] {
+        m_status = Node_DirtyReadyToRun;  //修改了数据，标脏，并置为此状态。（后续在计算过程中不允许修改数据，所以markDirty理论上是前端驱动）
+        reportStatus(m_dirty, m_status);
+    });
+
     if (m_dirty == bOn)
         return;
+
     m_dirty = bOn;
     if (m_dirty) {
         for (auto& [name, param] : m_outputs) {
@@ -190,7 +221,16 @@ ZENO_API void INode::mark_dirty(bool bOn)
             }
         }
     }
-    CALLBACK_NOTIFY(mark_dirty, m_dirty)
+
+    if (m_nodecls == "Subnet" && bWholeSubnet)
+    {
+        SubnetNode* pSubnetNode = dynamic_cast<SubnetNode*>(this);
+        pSubnetNode->mark_subnetdirty(bOn);
+    }
+    if (graph->optParentSubgNode.has_value())
+    {
+        graph->optParentSubgNode.value()->mark_dirty(true, false);
+    }
 }
 
 void INode::mark_dirty_objs()
@@ -209,10 +249,10 @@ void INode::mark_dirty_objs()
 ZENO_API void INode::complete() {}
 
 ZENO_API void INode::preApply() {
-
-    m_status = Node_Pending;
     if (!m_dirty)
         return;
+
+    reportStatus(true, Node_Pending);
 
     //TODO: the param order should be arranged by the descriptors.
     for (const auto& [name, param] : m_inputs) {
@@ -220,16 +260,6 @@ ZENO_API void INode::preApply() {
         if (!ret)
             zeno::log_warn("the param {} may not be initialized", name);
     }
-
-    log_debug("==> enter {}", m_name);
-    {
-#ifdef ZENO_BENCHMARKING
-        Timer _(m_name);
-#endif
-        m_status = Node_Running;
-        apply();
-    }
-    log_debug("==> leave {}", m_name);
 }
 
 ZENO_API void INode::unregisterObjs()
@@ -237,10 +267,11 @@ ZENO_API void INode::unregisterObjs()
     for (auto const& [name, param] : m_outputs)
     {
         if (auto spObj = std::dynamic_pointer_cast<IObject>(param->result)) {
-            if (spObj->key().empty()) {
+            const std::string& key = spObj->key();
+            if (key.empty()) {
                 continue;
             }
-            getSession().objsMan->removeObject(spObj->key());
+            getSession().objsMan->removeObject(key);
         }
     }
 }
@@ -254,20 +285,22 @@ ZENO_API void INode::registerObjToManager()
             if (std::dynamic_pointer_cast<NumericObject>(spObj)) {
                 return;
             }
-            assert(!spObj->key().empty());
+            const std::string& key = spObj->key();
+            assert(!key.empty());
             param->result->nodeId = m_name;
 
-            getSession().objsMan->collectingObject(spObj->key(), spObj, shared_from_this(), m_bView);
+            getSession().objsMan->collectingObject(key, spObj, shared_from_this(), m_bView);
             if (param->m_idModify) {
-                getSession().objsMan->collect_modify_objs(spObj->key(), m_bView); //如果是修改obj，还需要添加到objManager的modify集合中(需要在具体apply函数中设置m_idModify为true)
-                getSession().objsMan->revertRemoveObject(spObj->key());           //如果是对param的obj进行modify，不需要去objManager中unregiste该对象，撤销unregiste时removeObj
+                getSession().objsMan->collect_modify_objs(key, m_bView); //如果是修改obj，还需要添加到objManager的modify集合中(需要在具体apply函数中设置m_idModify为true)
+                getSession().objsMan->revertRemoveObject(key);           //如果是对param的obj进行modify，不需要去objManager中unregiste该对象，撤销unregiste时removeObj
             }
         }
     }
 }
 
 ZENO_API bool INode::requireInput(std::string const& ds) {
-    return requireInput(get_input_param(ds));
+    auto param = get_input_param(ds);
+    return requireInput(param);
 }
 
 zany INode::get_output_result(std::shared_ptr<INode> outNode, std::string out_param, bool bCopy) {
@@ -287,7 +320,7 @@ ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
 
     if (in_param->links.empty()) {
         in_param->result = process(in_param);
-        return true;
+        return true;    //旧版本的requireInput指的是是否有连线，如果想兼容旧版本，这里可以返回false，但使用量不多，所以就修改它的定义。
     }
 
     switch (in_param->type)
@@ -436,11 +469,22 @@ ZENO_API void INode::doApply() {
 
     preApply();
 
-    registerObjToManager();
+    if (zeno::getSession().is_interrupted()) {
+        throw makeError<InterruputError>(m_uuidPath);
+    }
 
-    mark_dirty(false);
-    m_status = Node_RunSucceed;
-    zeno::getSession().reportNodeStatus(shared_from_this());
+    log_debug("==> enter {}", m_name);
+    {
+#ifdef ZENO_BENCHMARKING
+        Timer _(m_name);
+#endif
+        reportStatus(true, Node_Running);
+        apply();
+    }
+    log_debug("==> leave {}", m_name);
+
+    registerObjToManager();
+    reportStatus(false, Node_RunSucceed);
 }
 
 ZENO_API std::vector<std::shared_ptr<IParam>> INode::get_input_params() const
@@ -554,6 +598,7 @@ ZENO_API NodeData INode::exportInfo() const
             info.inNode = m_name;
             info.inParam = param.name;
             info.inKey = link->tokey;
+            info.lnkfunc = link->lnkProp;
             param.links.push_back(info);
         }
         node.inputs.push_back(param);
@@ -578,6 +623,7 @@ ZENO_API NodeData INode::exportInfo() const
             info.outNode = m_name;
             info.outParam = param.name;
             info.outKey = link->fromkey;
+            info.lnkfunc = link->lnkProp;
             param.links.push_back(info);
         }
         node.outputs.push_back(param);

@@ -25,7 +25,7 @@ namespace zenoio
             const rapidjson::Value& sockObj,
             zeno::LinksData& links);
 
-        void _parseInputs(
+        virtual void _parseInputs(
             const std::string& id,
             const std::string& nodeName,
             const rapidjson::Value& inputs,

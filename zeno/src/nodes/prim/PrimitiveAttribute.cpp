@@ -78,7 +78,7 @@ ZENDEFNODE(PrimitiveDelAttr,
         {"string", "name", "nrm"},
     },
     {
-    "primitive",
+    "deprecated",
     } });
 
 struct PrimitiveGetAttrValue : zeno::INode {

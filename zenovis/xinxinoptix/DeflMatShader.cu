@@ -30,6 +30,27 @@ static __inline__ __device__ bool isBadVector(const float3& vector) {
     return isBadVector(reinterpret_cast<const vec3&>(vector));
 }
 
+__inline__ __device__ void cihouSphereInstanceAux(MatInput& attrs) {
+
+    if (params.sphereInstAuxLutBuffer != 0 && optixGetInstanceId() < params.firstSoloSphereOffset) {
+
+        auto lut = reinterpret_cast<unsigned long long*>(params.sphereInstAuxLutBuffer);
+        assert(lut != nullptr);
+
+        auto tmp = lut[optixGetInstanceId()];
+        auto auxBuffer = reinterpret_cast<float3*>(tmp);
+        assert(auxBuffer != nullptr);
+
+        attrs.clr = {};
+        attrs.tang = {};
+        attrs.instPos = {}; //rt_data->instPos[inst_idx2];
+        attrs.instNrm = {}; //rt_data->instNrm[inst_idx2];
+        attrs.instUv = {}; //rt_data->instUv[inst_idx2];
+        attrs.instClr = auxBuffer[optixGetPrimitiveIndex()];
+        attrs.instTang = {}; //rt_data->instTang[inst_idx2];
+    }
+}
+
 extern "C" __global__ void __anyhit__shadow_cutout()
 {
 
@@ -72,15 +93,8 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     attrs.nrm = N;
     attrs.uv = sphereUV(_normal_object_, false);
 
-    attrs.clr = {};
-    attrs.tang = {};
-    attrs.instPos = {}; //rt_data->instPos[inst_idx2];
-    attrs.instNrm = {}; //rt_data->instNrm[inst_idx2];
-    attrs.instUv = {}; //rt_data->instUv[inst_idx2];
-    attrs.instClr = {}; //rt_data->instClr[inst_idx2];
-    attrs.instTang = {}; //rt_data->instTang[inst_idx2];
+    cihouSphereInstanceAux(attrs);
 
-    unsigned short isLight = 0;
 #else
     size_t inst_idx = optixGetInstanceIndex();
     size_t vert_aux_offset = rt_data->auxOffset[inst_idx];
@@ -140,7 +154,6 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     attrs.instClr =  decodeColor( rt_data->instClr[inst_idx] );
     attrs.instTang = decodeColor( rt_data->instTang[inst_idx]);
 
-    unsigned short isLight = 0;//rt_data->lightMark[vert_aux_offset + primIdx];
 #endif
 
     attrs.pos = attrs.pos + vec3(params.cam.eye);
@@ -184,7 +197,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
         opacity = 0;
     //opacity = clamp(opacity, 0.0f, 0.99f);
     // Stochastic alpha test to get an alpha blend effect.
-    if (opacity >0.99f || isLight == 1) // No need to calculate an expensive random number if the test is going to fail anyway.
+    if (opacity >0.99f) // No need to calculate an expensive random number if the test is going to fail anyway.
     {
         optixIgnoreIntersection();
         return;
@@ -294,9 +307,8 @@ extern "C" __global__ void __closesthit__radiance()
     HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
     MatInput attrs{};
     float estimation = 0;
-#if (_SPHERE_)
 
-    unsigned short isLight = 0;
+#if (_SPHERE_)
 
     float4 q;
     // sphere center (q.x, q.y, q.z), sphere radius q.w
@@ -332,13 +344,7 @@ extern "C" __global__ void __closesthit__radiance()
     attrs.nrm = N;
     attrs.uv = sphereUV(objNorm, false);
 
-    attrs.clr = {};
-    attrs.tang = {};
-    attrs.instPos = {}; //rt_data->instPos[inst_idx2];
-    attrs.instNrm = {}; //rt_data->instNrm[inst_idx2];
-    attrs.instUv = {}; //rt_data->instUv[inst_idx2];
-    attrs.instClr = {}; //rt_data->instClr[inst_idx2];
-    attrs.instTang = {}; //rt_data->instTang[inst_idx2];
+    cihouSphereInstanceAux(attrs);
 
 #else
 
@@ -350,8 +356,6 @@ extern "C" __global__ void __closesthit__radiance()
     //size_t vidx0 = rt_data->vidx[tri_idx_offset * 3 + 0];
     //size_t vidx1 = rt_data->vidx[tri_idx_offset * 3 + 1];
     //size_t vidx2 = rt_data->vidx[tri_idx_offset * 3 + 2];
-
-    unsigned short isLight = 0;//rt_data->lightMark[vert_aux_offset + primIdx];
 
     float3 _vertices_[3];
     optixGetTriangleVertexData( gas, primIdx, sbtGASIndex, 0, _vertices_);
@@ -436,6 +440,7 @@ extern "C" __global__ void __closesthit__radiance()
     attrs.V = -(ray_dir);
     //MatOutput mats = evalMaterial(rt_data->textures, rt_data->uniforms, attrs);
     MatOutput mats = optixDirectCall<MatOutput, cudaTextureObject_t[], float4*, const MatInput&>( rt_data->dc_index, rt_data->textures, rt_data->uniforms, attrs );
+    prd->mask_value = mats.mask_value;
 
     if (prd->test_distance) {
     
@@ -524,36 +529,34 @@ extern "C" __global__ void __closesthit__radiance()
     
     if(prd->isSS == true) {
         mats.basecolor = vec3(1.0f);
-        mats.roughness = 1.0;
-        mats.anisotropic = 0;
-        mats.sheen = 0;
-        mats.clearcoat = 0;
-        mats.specTrans = 0;
-        mats.ior = 1;
-    }
-    if(prd->isSS == true && mats.subsurface>0 && dot(-normalize(ray_dir), N)>0)
-    {
-       prd->attenuation2 = make_float3(0,0,0);
-       prd->attenuation = make_float3(0,0,0);
-       prd->radiance = make_float3(0,0,0);
-       prd->done = true;
-       return;
-    }
-    if(prd->isSS == true  && mats.subsurface==0 )
-    {
-        prd->passed = true;
-        prd->samplePdf = 1.0f;
-        prd->radiance = make_float3(0.0f, 0.0f, 0.0f);
-        prd->readMat(prd->sigma_t, prd->ss_alpha);
-        auto trans = DisneyBSDF::Transmission2(prd->sigma_s(), prd->sigma_t, prd->channelPDF, optixGetRayTmax(), true);
-        prd->attenuation2 *= trans;
-        prd->attenuation *= trans;
-        //prd->origin = P;
-        prd->direction = ray_dir;
-        //auto n = prd->geometryNormal;
-        //n = faceforward(n, -ray_dir, n);
-        prd->_tmin_ = optixGetRayTmax();
-        return;
+        mats.roughness = 1.0f;
+        mats.anisotropic = 0.0f;
+        mats.sheen = 0.0f;
+        mats.clearcoat = 0.0f;
+        mats.specTrans = 0.0f;
+        mats.ior = 1.0f;
+        if(mats.subsurface==0.0f){
+            prd->passed = true;
+            prd->samplePdf = 1.0f;
+            prd->radiance = make_float3(0.0f, 0.0f, 0.0f);
+            prd->readMat(prd->sigma_t, prd->ss_alpha);
+            auto trans = DisneyBSDF::Transmission2(prd->sigma_s(), prd->sigma_t, prd->channelPDF, optixGetRayTmax(), true);
+            prd->attenuation2 *= trans;
+            prd->attenuation *= trans;
+            //prd->origin = P;
+            prd->direction = ray_dir;
+            //auto n = prd->geometryNormal;
+            //n = faceforward(n, -ray_dir, n);
+            prd->_tmin_ = optixGetRayTmax();
+            return;
+        }
+        if(mats.subsurface>0.0f && dot(normalize(ray_dir),N)<0.0f){
+            prd->attenuation2 = make_float3(0.0f,0.0f,0.0f);
+            prd->attenuation = make_float3(0.0f,0.0f,0.0f);
+            prd->radiance = make_float3(0.0f,0.0f,0.0f);
+            prd->done = true;
+            return;
+        }
     }
 
     prd->attenuation2 = prd->attenuation;
@@ -561,34 +564,8 @@ extern "C" __global__ void __closesthit__radiance()
     prd->prob2 = prd->prob;
     prd->passed = false;
 
-    if(mats.opacity>0.99f)
+    if(mats.opacity > 0.99f || rnd(prd->seed)<mats.opacity)
     {
-
-        if (prd->curMatIdx > 0) {
-          vec3 sigma_t, ss_alpha;
-          //vec3 sigma_t, ss_alpha;
-          prd->readMat(sigma_t, ss_alpha);
-          if (ss_alpha.x < 0.0f) { // is inside Glass
-            prd->attenuation *= DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
-          } else {
-            prd->attenuation *= DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), true);
-          }
-        }
-        prd->attenuation2 = prd->attenuation;
-        prd->passed = true;
-        prd->adepth++;
-        //prd->samplePdf = 0.0f;
-        prd->radiance = make_float3(0.0f);
-        prd->alphaHit = true;
-        prd->_tmin_ = optixGetRayTmax();
-        return;
-    }
-    if(mats.opacity<=0.99f)
-    {
-      //we have some simple transparent thing
-      //roll a dice to see if just pass
-      if(rnd(prd->seed)<mats.opacity)
-      {
         if (prd->curMatIdx > 0) {
           vec3 sigma_t, ss_alpha;
           //vec3 sigma_t, ss_alpha;
@@ -611,8 +588,8 @@ extern "C" __global__ void __closesthit__radiance()
         prd->prob *= 1;
         prd->countEmitted = false;
         return;
-      }
     }
+
     if(prd->depth==0&&mats.flatness>0.5)
     {
         prd->radiance = make_float3(0.0f);
@@ -962,6 +939,10 @@ extern "C" __global__ void __closesthit__radiance()
     }
 
     prd->radiance += mats.emission;
+    if(length(mats.emission)>0)
+    {
+      prd->done = true;
+    }
 }
 
 extern "C" __global__ void __closesthit__occlusion()

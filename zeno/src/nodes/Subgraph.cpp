@@ -46,12 +46,9 @@ ZENDEFNODE(SubInput, {
 
 struct SubOutput : zeno::INode {
     virtual void complete() override {
-        //auto name = get_param<std::string>("name");
-        //graph->subOutputNodes[name] = myname;
     }
 
     virtual void apply() override {
-        //set_output("_OUT_port", get_input("port"));
     }
 };
 

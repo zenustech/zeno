@@ -1261,11 +1261,8 @@ void ZenoMainWindow::openFileDialog()
         return;
     if (!resetProc())
         return;
-    //todo: path validation
-    if (saveQuit()) 
-    {
-        openFile(filePath);
-    }
+
+    openFile(filePath);
 }
 
 void ZenoMainWindow::onNewFile() {
@@ -1408,9 +1405,7 @@ void ZenoMainWindow::dropEvent(QDropEvent* event)
         return;
     }
 
-    if (saveQuit()) {
-        openFile(filePath);
-    }
+    openFile(filePath);
 }
 
 void ZenoMainWindow::onZenovisFrameUpdate(bool bGLView, int frameid)
@@ -1613,6 +1608,9 @@ void ZenoMainWindow::exportGraph()
 
 bool ZenoMainWindow::openFile(QString filePath)
 {
+    if (!saveQuit())
+        return false;
+
     auto pGraphs = zenoApp->graphsManager();
     zenoio::ERR_CODE code = zenoio::PARSE_NOERROR;
     GraphsTreeModel* pModel = pGraphs->openZsgFile(filePath, code);
@@ -1658,19 +1656,18 @@ void ZenoMainWindow::loadRecentFiles()
             connect(action, &QAction::triggered, this, [=]() {
                 if (!resetProc())
                     return;
-                if (saveQuit()) {
-                    if (!QFileInfo::exists(path)) {
-                        int flag = QMessageBox::question(nullptr, "", tr("the file does not exies, do you want to remove it?"), QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
-                        if (flag & QMessageBox::Yes) {
-                            QSettings _settings(QSettings::UserScope, zsCompanyName, zsEditor);
-                            _settings.beginGroup("Recent File List");
-                            _settings.remove(key);
-                            m_ui->menuRecent_Files->removeAction(action);
-                            emit recentFilesChanged(this);
-                        }
-                    } else {
-                        openFile(path);
+
+                if (!QFileInfo::exists(path)) {
+                    int flag = QMessageBox::question(nullptr, "", tr("the file does not exies, do you want to remove it?"), QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+                    if (flag & QMessageBox::Yes) {
+                        QSettings _settings(QSettings::UserScope, zsCompanyName, zsEditor);
+                        _settings.beginGroup("Recent File List");
+                        _settings.remove(key);
+                        m_ui->menuRecent_Files->removeAction(action);
+                        emit recentFilesChanged(this);
                     }
+                } else {
+                    openFile(path);
                 }
             });
         }
@@ -1916,7 +1913,7 @@ bool ZenoMainWindow::saveQuit() {
     auto pGraphsMgm = zenoApp->graphsManager();
     ZASSERT_EXIT(pGraphsMgm, true);
     GraphsTreeModel* pModel = pGraphsMgm->currentModel();
-    if (!zeno::envconfig::get("OPEN") /* <- don't annoy me when I'm debugging via ZENO_OPEN */ && pModel && pModel->isDirty()) {
+    if (pModel && pModel->isDirty()) {
         QMessageBox msgBox(QMessageBox::Question, tr("Save"), tr("Save changes?"), QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel, this);
         QPalette pal = msgBox.palette();
         pal.setBrush(QPalette::WindowText, QColor(0, 0, 0));

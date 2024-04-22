@@ -10,10 +10,8 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
-#include <string.h>
 
 #include "tinyexr.h"
-#include <filesystem>
 #include "zeno/utils/fileio.h"
 
 static bool SaveEXR(const float* rgb, int width, int height, const char* outfilename) {
@@ -318,7 +316,6 @@ static vector<vector<vec3f>> read_vat(const std::string &path) {
 struct WriteCustomVAT : INode {
     std::vector<std::shared_ptr<PrimitiveObject>> prims;
     virtual void apply() override {
-        std::string path = get_param<std::string>("path");
         int frameid;
         if (has_input("frameid")) {
             frameid = get_param<int>("frameid");
@@ -364,6 +361,7 @@ struct WriteCustomVAT : INode {
                 }
             }
             std::string path = get_param<std::string>("path");
+
             write_vat(v, path);
 
             vector<vector<vec3f>> nrms;

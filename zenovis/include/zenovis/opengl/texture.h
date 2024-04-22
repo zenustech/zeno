@@ -124,5 +124,13 @@ struct FBO : zeno::disable_copy {
                                         texture.target, texture.tex, 0));
     }
 };
-
+struct RenderObject : zeno::disable_copy {
+    unsigned int rbo;
+    explicit RenderObject() {
+        CHECK_GL(glGenRenderbuffers(1, &rbo));
+    }
+    ~RenderObject() {
+        CHECK_GL(glDeleteRenderbuffers(1, &rbo));
+    }
+};
 } // namespace zenovis::opengl

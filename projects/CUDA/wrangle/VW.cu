@@ -118,7 +118,7 @@ struct ZSVolumeWrangler : zeno::INode {
 
         auto &currentContext = Cuda::context(0);
         currentContext.setContext();
-        auto cudaPol = cuda_exec().device(0).sync(true);
+        auto cudaPol = cuda_exec().sync(true);
 
         /// symbols
         auto def_sym = [&opts](std::string key, int dim, bool isDoubleBuffer) {
@@ -266,7 +266,7 @@ struct ZSVolumeWrangler : zeno::INode {
         getchar();
 #endif
             }
-            auto daccessors = haccessors.clone({zs::memsrc_e::device, 0});
+            auto daccessors = haccessors.clone({zs::memsrc_e::device});
 
             /// params
             zs::Vector<zs::f32> hparams{prog->params.size()};
@@ -277,7 +277,7 @@ struct ZSVolumeWrangler : zeno::INode {
                 auto value = parvals.at(it - parnames.begin());
                 hparams[i] = value;
             }
-            zs::Vector<zs::f32> dparams = hparams.clone({zs::memsrc_e::device, 0});
+            zs::Vector<zs::f32> dparams = hparams.clone({zs::memsrc_e::device});
 
             void *function;
             cuModuleGetFunction((CUfunction *)&function, (CUmodule)_cuModule, "zpc_particle_wrangler_kernel");

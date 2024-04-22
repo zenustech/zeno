@@ -324,6 +324,11 @@ ZENO_API void Graph::init(const GraphData& graph) {
                 }
             }
         }
+        else if (node.cls == "Subnet")
+        {
+            if (std::shared_ptr<zeno::SubnetNode> sbn = std::dynamic_pointer_cast<zeno::SubnetNode>(spNode))
+                sbn->setCustomUi(node.customUi);
+        }
     }
     //import edges
     for (const auto& link : graph.links) {
@@ -364,6 +369,13 @@ void Graph::markDirtyWhenFrameChanged()
     for (const std::string& uuid : nodes) {
         auto spSubnetNode = std::dynamic_pointer_cast<SubnetNode>(m_nodes[uuid]);
         spSubnetNode->subgraph->markDirtyWhenFrameChanged();
+    }
+}
+
+void Graph::markDirtyAll()
+{
+    for (const auto& [uuid, node] : m_nodes) {
+        node->mark_dirty(true);
     }
 }
 
@@ -463,15 +475,24 @@ ZENO_API std::string Graph::updateNodeName(const std::string oldName, const std:
 ZENO_API void Graph::clear()
 {
     m_nodes.clear();
-    m_name2uuid.clear();
     nodesToExec.clear();
+    portalIns.clear();
+    portals.clear();
+
+    subInputNodes.clear();
+    subOutputNodes.clear();
+    m_name2uuid.clear();
     node_set.clear();
+    frame_nodes.clear();
+    subnet_nodes.clear();
+    asset_nodes.clear();
+    subinput_nodes.clear();
+    suboutput_nodes.clear();
+    m_viewnodes.clear();
+
     optParentSubgNode = std::nullopt;
     ctx.reset();
     dirtyChecker.reset();
-    portalIns.clear();
-    portals.clear();
-    //m_name = "";  keep name.
 
     CALLBACK_NOTIFY(clear)
 }
@@ -764,6 +785,7 @@ ZENO_API bool Graph::removeLink(const EdgeInfo& edge) {
     std::shared_ptr<INode> outNode = getNode(edge.outNode);
     if (!outNode)
         return false;
+
     std::shared_ptr<INode> inNode = getNode(edge.inNode);
     if (!inNode)
         return false;

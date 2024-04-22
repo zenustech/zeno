@@ -1,6 +1,7 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource>
     <file>icons/node/box.svg</file>
+    <file>icons/node/error.svg</file>
     <file>icons/adsdock/vsdark/close-button.svg</file>
     <file>icons/adsdock/vsdark/close-button-disabled.svg</file>
     <file>icons/adsdock/vsdark/detach-button.svg</file>
@@ -365,6 +366,7 @@
     <file>icons/run_lightcamera_btn.svg</file>
     <file>icons/run_material_btn.svg</file>
 	<file>icons/run_all.svg</file>
+	<file>icons/run_all2.svg</file>
     <file>icons/run_lightcamera.svg</file>
     <file>icons/run_material.svg</file>
     <file>icons/down_arrow.svg</file>

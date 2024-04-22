@@ -5,7 +5,6 @@
 #include <zeno/utils/fileio.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/extra/GlobalState.h>
-#include <zeno/types/ListObject.h>
 #include <zeno/utils/string.h>
 #include <zeno/utils/logger.h>
 #include <string_view>
@@ -105,6 +104,7 @@ struct FileWriteString
     virtual void apply() override
     {
         auto path = get_input<zeno::StringObject>("path")->get();
+        path = create_directories_when_write_file(path);
         auto str = get_input<zeno::StringObject>("str")->get();
         zeno::file_put_content(path, str);
     }

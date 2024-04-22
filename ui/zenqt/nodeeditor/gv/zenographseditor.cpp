@@ -150,7 +150,7 @@ void ZenoGraphsEditor::initSignals()
 
 void ZenoGraphsEditor::initRecentFiles()
 {
-    //m_ui->welcomePage->initRecentFiles();
+    m_ui->welcomePage->initRecentFiles();
 }
 
 void ZenoGraphsEditor::resetMainModel()
@@ -199,6 +199,7 @@ void ZenoGraphsEditor::resetAssetsModel()
 
 void ZenoGraphsEditor::onModelCleared()
 {
+    m_ui->mainStacked->setCurrentWidget(m_ui->welcomeScrollPage);
     m_ui->searchEdit->clear();
 }
 
@@ -979,7 +980,6 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
     else if (actionType == ZenoMainWindow::ACTION_CUSTOM_UI) 
     {
         //need to refactor
-#if 0
         ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
         if (pView)
         {
@@ -989,18 +989,23 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
             {
                 QModelIndex nodeIdx = nodes[0];
                 //only subgraph node
-                if (!m_model->IsSubGraphNode(nodeIdx)) 
+                if (nodeIdx.data(ROLE_NODETYPE) != zeno::Node_SubgraphNode)
                 {
                     QMessageBox::information(this, tr("Info"), tr("Cannot edit parameters!"));
                     return;
                 }
-                QStandardItemModel* viewParams = QVariantPtr<QStandardItemModel>::asPtr(nodeIdx.data(ROLE_NODE_PARAMS));
+                QStandardItemModel* viewParams = QVariantPtr<ParamsModel>::asPtr(nodeIdx.data(ROLE_PARAMS))->customParamModel();
                 ZASSERT_EXIT(viewParams);
-                ZEditParamLayoutDlg dlg(viewParams, true, nodeIdx, m_model, this);
-                dlg.exec();
+                ZEditParamLayoutDlg dlg(viewParams, this);
+                if (QDialog::Accepted == dlg.exec())
+                {
+                    ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(nodeIdx.data(ROLE_PARAMS));
+                    paramsM->resetCustomUi(dlg.getCustomUiInfo());
+                    zeno::ParamsUpdateInfo info = dlg.getEdittedUpdateInfo();
+                    paramsM->batchModifyParams(info);
+                }
             }
         }
-#endif
     } 
     else if (actionType == ZenoMainWindow::ACTION_GROUP) 
     {

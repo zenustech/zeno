@@ -212,7 +212,7 @@ QDialog[cssClass="F-Curve"]
     background: rgb(31,31,31);
 }
 
-QDialog QTreeView, QDialog QListWidget
+QDialog QTreeView, QDialog QListWidget, QListView
 {
     alternate-background-color: rgb(31,31,31);
 	background-color: #22252C;
@@ -245,12 +245,12 @@ QTreeView::item, QListWidget::item
 	border:1px solid transparent;
 }
 
-QTreeView::item:hover, QListWidget::item:hover
+QTreeView::item:hover, QListWidget::item:hover, QListView::item:hover
 {
 	background-color: rgba(52,67,97,0.8);
 }
 
-QTreeView::item:selected, QListWidget::item:selected
+QTreeView::item:selected, QListWidget::item:selected, QListView::item::selected
 {
 	background-color: #344361;
 	color:#8f9ba8;

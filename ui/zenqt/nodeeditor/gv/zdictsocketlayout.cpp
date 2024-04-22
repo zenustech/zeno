@@ -10,6 +10,7 @@
 #include "zdictpanel.h"
 #include "zassert.h"
 #include "control/common_id.h"
+#include "socketbackground.h"
 
 
 ZDictSocketLayout::ZDictSocketLayout(const QPersistentModelIndex& paramIdx, bool bInput, SocketBackgroud* parentItem)
@@ -30,24 +31,12 @@ void ZDictSocketLayout::initUI(const CallbackForSocket& cbSock)
     //TODO: refactor about zdict panel layout.
     const QString& sockName = m_paramIdx.data(ROLE_PARAM_NAME).toString();
 
-    QSizeF szSocket(10, 20);
+    QSizeF szSocket(14, 14);
     m_socket = new ZenoSocketItem(m_paramIdx, ZenoStyle::dpiScaledSize(szSocket));
     m_socket->setZValue(ZVALUE_ELEMENT);
     QObject::connect(m_socket, &ZenoSocketItem::clicked, [=](bool bInput, zeno::LinkFunction lnkProp) {
         cbSock.cbOnSockClicked(m_socket, lnkProp);
-        });
-    QObject::connect(m_socket, &ZenoSocketItem::netLabelClicked, [=]() {
-        if (cbSock.cbOnSockNetlabelClicked)
-            cbSock.cbOnSockNetlabelClicked(m_socket->netLabel());
-        });
-    QObject::connect(m_socket, &ZenoSocketItem::netLabelEditFinished, [=]() {
-        if (cbSock.cbOnSockNetlabelEdited)
-            cbSock.cbOnSockNetlabelEdited(m_socket);
-        });
-    QObject::connect(m_socket, &ZenoSocketItem::netLabelMenuActionTriggered, [=](QAction* pAction) {
-        if (cbSock.cbActionTriggered)
-            cbSock.cbActionTriggered(pAction, m_paramIdx);
-        });
+    });
 
     m_text = new ZSocketPlainTextItem(m_paramIdx, sockName, m_bInput, cbSock.cbOnSockClicked);
     m_text->setToolTip(m_paramIdx.data(ROLE_PARAM_TOOLTIP).toString());
@@ -67,9 +56,12 @@ void ZDictSocketLayout::initUI(const CallbackForSocket& cbSock)
     pHLayout->setDebugName("dict socket");
     pHLayout->setSpacing(ZenoStyle::dpiScaled(8));
 
+    m_parentItem->setSocketItem(m_socket);
+
+    setContentsMargin(0, 15, 0, 0);
+
     if (bInput)
     {
-        pHLayout->addItem(m_socket, Qt::AlignVCenter);
         pHLayout->addItem(m_text, Qt::AlignVCenter);
         pHLayout->addItem(m_collaspeBtn, Qt::AlignVCenter);
     }
@@ -78,7 +70,6 @@ void ZDictSocketLayout::initUI(const CallbackForSocket& cbSock)
         pHLayout->addSpacing(-1, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred));
         pHLayout->addItem(m_collaspeBtn);
         pHLayout->addItem(m_text);
-        pHLayout->addItem(m_socket);
     }
 
     QObject::connect(m_collaspeBtn, &ZenoImageItem::toggled, [=](bool bChecked) {
@@ -86,7 +77,7 @@ void ZDictSocketLayout::initUI(const CallbackForSocket& cbSock)
         ZGraphicsLayout::updateHierarchy(pHLayout);
         if (cbSock.cbOnSockLayoutChanged)
             cbSock.cbOnSockLayoutChanged();
-        });
+    });
 
     addLayout(pHLayout);
     addItem(m_panel);

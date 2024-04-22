@@ -46,11 +46,6 @@ void GraphsManager::registerCoreNotify() {
 
 }
 
-GraphsTreeModel* GraphsManager::currentModel() const
-{
-    return m_model;
-}
-
 AssetsModel* GraphsManager::assetsModel() const
 {
     return m_assets;
@@ -118,6 +113,7 @@ GraphsTreeModel* GraphsManager::openZsgFile(const QString& fn, zenoio::ERR_CODE&
     newFile();
 
     emit fileOpened(fn);
+    m_model->markDirty(false);
     return m_model;
 }
 
@@ -129,6 +125,7 @@ bool GraphsManager::isInitializing() const
 void GraphsManager::createGraphs(const zenoio::ZSG_PARSE_RESULT ioresult)
 {
     ZASSERT_EXIT(m_assets);
+    zeno::getSession().resetMainGraph();
     zeno::getSession().mainGraph->init(ioresult.mainGraph);
 }
 
@@ -173,7 +170,8 @@ GraphsTreeModel* GraphsManager::newFile()
 
     if (!m_model) {
         m_model = new GraphsTreeModel(this);
-        m_main = new GraphModel(zeno::getSession().mainGraph, m_model, this);
+        auto& sess = zeno::getSession();
+        m_main = new GraphModel(sess.mainGraph, m_model, this);
         m_model->init(m_main);
     }
 
@@ -222,6 +220,7 @@ void GraphsManager::clear()
         m_main->clear();
         delete m_main;
         m_main = nullptr;
+        zeno::getSession().resetMainGraph();
     }
 
     emit fileClosed();

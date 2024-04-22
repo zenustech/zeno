@@ -55,7 +55,7 @@ public:
     ZenoSocketItem* getNearestSocket(const QPointF& pos, bool bInput);
     ZenoSocketItem* getSocketItem(const QModelIndex& sockIdx, const QString keyName);
     ZenoSocketItem* getTopBottomSocketItem(const QModelIndex& sockIdx, bool bInput);
-    void markError(bool isError);
+    void markNodeStatus(zeno::NodeRunStatus status);
 
     QString nodeId() const;
     QString nodeClass() const;
@@ -147,6 +147,7 @@ private:
     bool removeSocketLayout(bool bInput, const QString& sockName);
     void focusOnNode(const QModelIndex& nodeIdx);
     void _drawShadow(QPainter* painter);
+    void addOnlySocketToLayout(ZGraphicsLayout* pSocketLayout, const QModelIndex& paramIdx);
 
     ZenoGraphsEditor* getEditorViewByViewport(QWidget* pWidget);
     QGraphicsItem* initSocketWidget(ZenoSubGraphScene* scene, const QModelIndex& paramIdx);
@@ -170,10 +171,11 @@ private:
     ZSimpleTextItem* m_pCategoryItem;
     ZSimpleTextItem *m_NameItemTip;
     StatusGroup* m_pStatusWidgets;
+    ZenoImageItem* m_errorTip;
     //StatusGroup* m_pStatusWidgets2;
     QGraphicsPolygonItem* m_statusMarker;
 
-    QGraphicsRectItem* m_border;
+    //QGraphicsRectItem* m_border;
     ZGraphicsLayout* m_bodyLayout;
     ZGraphicsLayout* m_inputsLayout;
     ZGraphicsLayout* m_outputsLayout;
@@ -181,10 +183,11 @@ private:
     //when initui, zenonode should not emit any signals.
     bool m_bUIInited;
 
-    bool m_bError;
+    zeno::NodeRunStatus m_nodeStatus;
     bool m_bEnableSnap;
     bool m_bMoving;     //pos change flag.
     QPointF m_lastMoving;    //last moving pos.
+    QString m_dbgName;      //only used to debug.
 
     // when zoom out the view, the view of node will be displayed as text with large size font.
     // it's convenient to view all nodes in big scale picture, but it also brings some problem.

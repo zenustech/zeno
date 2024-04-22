@@ -20,10 +20,10 @@ ZENO_API void primFlipFaces(PrimitiveObject *prim) {
             std::swap(tri[2], tri[0]);
         });
         if (prim->tris.attr_is<vec3f>("uv0")) {
-            auto &uv1 = prim->tris.add_attr<vec3f>("uv1");
+            auto &uv0 = prim->tris.add_attr<vec3f>("uv0");
             auto &uv2 = prim->tris.add_attr<vec3f>("uv2");
             for (auto i = 0; i < prim->tris.size(); i++) {
-                std::swap(uv1[i], uv2[i]);
+                std::swap(uv0[i], uv2[i]);
             }
         }
     }

@@ -376,7 +376,7 @@ void ZGraphicsLayout::clear()
             item->pLayout->clear();
         }
         else if (item->type == Type_Item) {
-            //delete item->pItem;
+            delete item->pItem;
         }
         m_items.removeFirst();
     }
