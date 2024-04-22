@@ -324,12 +324,12 @@ ZLayoutBackground* ZenoNode::initMainHeaderBg()
     buttonShapeInfo.ltradius = buttonShapeInfo.lbradius = 0.;
     buttonShapeInfo.rtradius = buttonShapeInfo.rbradius = ZenoStyle::dpiScaled(9.);
 
-    StatusGroup* pStatusWidgets = new StatusGroup(buttonShapeInfo);
+    m_pMainStatusWidgets = new StatusGroup(buttonShapeInfo);
     bool bView = m_index.data(ROLE_NODE_ISVIEW).toBool();
-    pStatusWidgets->setView(bView);
-    connect(pStatusWidgets, &StatusGroup::toggleChanged, this, &ZenoNode::onOptionsBtnToggled);
+    m_pMainStatusWidgets->setView(bView);
+    connect(m_pMainStatusWidgets, &StatusGroup::toggleChanged, this, &ZenoNode::onOptionsBtnToggled);
 
-    pHLayout->addItem(pStatusWidgets);
+    pHLayout->addItem(m_pMainStatusWidgets);
 
     headerWidget->setLayout(pHLayout);
     headerWidget->setZValue(ZVALUE_BACKGROUND);
@@ -1865,6 +1865,12 @@ void ZenoNode::onViewUpdated(bool bView)
         m_pStatusWidgets->blockSignals(true);
         m_pStatusWidgets->setView(bView);
         m_pStatusWidgets->blockSignals(false);
+    }
+    if (m_pMainStatusWidgets)
+    {
+        m_pMainStatusWidgets->blockSignals(true);
+        m_pMainStatusWidgets->setView(bView);
+        m_pMainStatusWidgets->blockSignals(false);
     }
 }
 

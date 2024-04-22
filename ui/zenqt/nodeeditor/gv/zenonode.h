@@ -171,6 +171,7 @@ private:
     ZSimpleTextItem* m_pCategoryItem;
     ZSimpleTextItem *m_NameItemTip;
     StatusGroup* m_pStatusWidgets;
+    StatusGroup* m_pMainStatusWidgets;
     ZenoImageItem* m_errorTip;
     //StatusGroup* m_pStatusWidgets2;
     QGraphicsPolygonItem* m_statusMarker;
