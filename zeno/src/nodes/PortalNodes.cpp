@@ -193,7 +193,7 @@ struct SetUserData2 : zeno::INode {
 };
 
 ZENDEFNODE(SetUserData2, {
-    {"object", {"string", "key", ""}, "data"},
+    {"object", {"string", "key", ""}, {"string","data",""}},
     {"object"},
     {},
     {"lifecycle"},
