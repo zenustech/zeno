@@ -324,12 +324,12 @@ ZLayoutBackground* ZenoNode::initMainHeaderBg()
     buttonShapeInfo.ltradius = buttonShapeInfo.lbradius = 0.;
     buttonShapeInfo.rtradius = buttonShapeInfo.rbradius = ZenoStyle::dpiScaled(9.);
 
-    StatusGroup* pStatusWidgets = new StatusGroup(buttonShapeInfo);
+    m_pMainStatusWidgets = new StatusGroup(buttonShapeInfo);
     bool bView = m_index.data(ROLE_NODE_ISVIEW).toBool();
-    pStatusWidgets->setView(bView);
-    connect(pStatusWidgets, &StatusGroup::toggleChanged, this, &ZenoNode::onOptionsBtnToggled);
+    m_pMainStatusWidgets->setView(bView);
+    connect(m_pMainStatusWidgets, &StatusGroup::toggleChanged, this, &ZenoNode::onOptionsBtnToggled);
 
-    pHLayout->addItem(pStatusWidgets);
+    pHLayout->addItem(m_pMainStatusWidgets);
 
     headerWidget->setLayout(pHLayout);
     headerWidget->setZValue(ZVALUE_BACKGROUND);
@@ -1442,9 +1442,10 @@ void ZenoNode::onZoomed()
     }
     if (m_NameItemTip) 
     {
-        //if (m_NameItemTip->text() != m_NameItem->toPlainText())
-        //    m_NameItemTip->setText(m_NameItem->toPlainText());
-        //m_NameItemTip->setPos(QPointF(m_NameItem->pos().x(), -ZenoStyle::scaleWidth(36)));
+        QString name = m_index.data(ROLE_NODE_NAME).toString();
+        if (m_NameItemTip->text() != name)
+            m_NameItemTip->setText(name);
+        m_NameItemTip->setPos(QPointF(m_headerWidget->pos().x(), -ZenoStyle::scaleWidth(36)));
     }
     //if (m_bodyWidget)
     //    m_bodyWidget->setBorder(ZenoStyle::scaleWidth(2), QColor(18, 20, 22));
@@ -1864,6 +1865,12 @@ void ZenoNode::onViewUpdated(bool bView)
         m_pStatusWidgets->blockSignals(true);
         m_pStatusWidgets->setView(bView);
         m_pStatusWidgets->blockSignals(false);
+    }
+    if (m_pMainStatusWidgets)
+    {
+        m_pMainStatusWidgets->blockSignals(true);
+        m_pMainStatusWidgets->setView(bView);
+        m_pMainStatusWidgets->blockSignals(false);
     }
 }
 
