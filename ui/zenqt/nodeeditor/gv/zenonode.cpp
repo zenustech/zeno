@@ -1427,9 +1427,10 @@ void ZenoNode::onZoomed()
     }
     if (m_NameItemTip) 
     {
-        //if (m_NameItemTip->text() != m_NameItem->toPlainText())
-        //    m_NameItemTip->setText(m_NameItem->toPlainText());
-        //m_NameItemTip->setPos(QPointF(m_NameItem->pos().x(), -ZenoStyle::scaleWidth(36)));
+        QString name = m_index.data(ROLE_NODE_NAME).toString();
+        if (m_NameItemTip->text() != name)
+            m_NameItemTip->setText(name);
+        m_NameItemTip->setPos(QPointF(m_headerWidget->pos().x(), -ZenoStyle::scaleWidth(36)));
     }
     if (m_bodyWidget)
         m_bodyWidget->setBorder(ZenoStyle::scaleWidth(2), QColor(18, 20, 22));
