@@ -16,6 +16,7 @@ namespace zenoio
         void dumpNode(const zeno::NodeData& data, RAPIDJSON_WRITER& writer);
         void dumpSocket(zeno::ParamInfo info, RAPIDJSON_WRITER& writer);
         void dumpTimeline(zeno::TimelineInfo info, RAPIDJSON_WRITER& writer);
+        void dumpCustomUI(zeno::CustomUI customUi, RAPIDJSON_WRITER& writer);
     };
 }
 

@@ -90,6 +90,7 @@ ZENO_API void AssetsMgr::createAsset(const zeno::ZenoAsset asset) {
     }
     newAsst.inputs = asset.inputs;
     newAsst.outputs = asset.outputs;
+    newAsst.m_customui = asset.m_customui;
 
     if (m_assets.find(asset.info.name) != m_assets.end()) {
         m_assets[asset.info.name] = newAsst;
@@ -320,6 +321,7 @@ ZENO_API std::shared_ptr<INode> AssetsMgr::newInstance(Graph* pGraph, const std:
     spNode->subgraph = assetGraph;
     spNode->m_nodecls = assetName;
     spNode->m_name = nodeName;
+    spNode->m_customUi = assets.m_customui;
 
     for (const ParamInfo& param : assets.inputs)
     {

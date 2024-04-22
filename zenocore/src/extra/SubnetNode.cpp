@@ -293,9 +293,8 @@ ZENO_API NodeData SubnetNode::exportInfo() const {
     else {
         node.subgraph = subgraph->exportGraph();
         node.type = Node_SubgraphNode;
-
-        node.customUi = m_customUi;
     }
+    node.customUi = m_customUi;
     return node;
 }
 

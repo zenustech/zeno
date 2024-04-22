@@ -10,12 +10,14 @@ struct Asset {
     std::shared_ptr<Graph> sharedGraph;
     std::vector<ParamInfo> inputs;
     std::vector<ParamInfo> outputs;
+    CustomUI m_customui;
 };
 
 struct ZenoAsset {
     std::vector<ParamInfo> inputs;
     std::vector<ParamInfo> outputs;
     AssetInfo info;
+    CustomUI m_customui;
     std::optional<GraphData> optGraph;
 };
 

@@ -894,15 +894,17 @@ void ZenoGraphsEditor::onCommandDispatched(QAction* pAction, bool bTriggered)
 void ZenoGraphsEditor::onAssetsCustomParamsClicked(const QString& assetsName)
 {
     auto& assetsMgr = zeno::getSession().assets;
-    zeno::Asset assets = assetsMgr->getAsset(assetsName.toStdString());
+    zeno::Asset asset = assetsMgr->getAsset(assetsName.toStdString());
 
-    auto paramsM = UiHelper::genParamsModel(assets.inputs, assets.outputs);
-    ZEditParamLayoutDlg dlg(paramsM, this);
+    QStandardItemModel paramsM;
+    UiHelper::newCustomModel(&paramsM, asset.m_customui);
+    ZEditParamLayoutDlg dlg(&paramsM, this);
     if (QDialog::Accepted == dlg.exec())
     {
         auto graphsMgr = zenoApp->graphsManager();
         zeno::ParamsUpdateInfo info = dlg.getEdittedUpdateInfo();
-        graphsMgr->updateAssets(assetsName, info);
+        zeno::CustomUI customui = dlg.getCustomUiInfo();
+        graphsMgr->updateAssets(assetsName, info, customui);
     }
 }
 

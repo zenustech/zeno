@@ -368,13 +368,13 @@ zeno::NodeCates GraphsManager::getCates() const
     return cates;
 }
 
-void GraphsManager::updateAssets(const QString& assetsName, zeno::ParamsUpdateInfo info)
+void GraphsManager::updateAssets(const QString& assetsName, zeno::ParamsUpdateInfo info, const zeno::CustomUI& customui)
 {
     zeno::getSession().assets->updateAssets(assetsName.toStdString(), info);
     //update to each assets node on the tree
     GraphModel* mainM = m_model->getGraphByPath({"main"});
     ZASSERT_EXIT(mainM);
-    mainM->syncToAssetsInstance(assetsName, info);
+    mainM->syncToAssetsInstance(assetsName, info, customui);
 }
 
 zeno::ZSG_VERSION GraphsManager::ioVersion() const

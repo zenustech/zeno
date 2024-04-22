@@ -988,7 +988,7 @@ bool GraphModel::removeRows(int row, int count, const QModelIndex& parent)
     return true;
 }
 
-void GraphModel::syncToAssetsInstance(const QString& assetsName, zeno::ParamsUpdateInfo info)
+void GraphModel::syncToAssetsInstance(const QString& assetsName, zeno::ParamsUpdateInfo info, const zeno::CustomUI& customui)
 {
     QModelIndexList results = match(QModelIndex(), ROLE_CLASS_NAME, assetsName);
     for (QModelIndex res : results) {
@@ -996,6 +996,7 @@ void GraphModel::syncToAssetsInstance(const QString& assetsName, zeno::ParamsUpd
         if (type == zeno::Node_AssetInstance) {
             ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(res.data(ROLE_PARAMS));
             ZASSERT_EXIT(paramsM);
+            paramsM->resetCustomUi(customui);
             paramsM->batchModifyParams(info);
         }
     }
@@ -1006,7 +1007,7 @@ void GraphModel::syncToAssetsInstance(const QString& assetsName, zeno::ParamsUpd
         ZASSERT_EXIT(m_nodes.find(uuid) != m_nodes.end());
         GraphModel* pSubgM = m_nodes[uuid]->optSubgraph.value();
         ZASSERT_EXIT(pSubgM);
-        pSubgM->syncToAssetsInstance(assetsName, info);
+        pSubgM->syncToAssetsInstance(assetsName, info, customui);
     }
 }
 

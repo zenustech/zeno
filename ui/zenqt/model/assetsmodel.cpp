@@ -5,6 +5,7 @@
 #include <zeno/io/zdawriter.h>
 #include <zeno/utils/log.h>
 #include <zeno/io/zdareader.h>
+#include "zassert.h"
 
 
 AssetsModel::AssetsModel(QObject* parent)
@@ -145,16 +146,20 @@ void AssetsModel::newAsset(const zeno::AssetInfo info)
     std::vector<zeno::ParamInfo>& inputs = asset.inputs;
     std::vector<zeno::ParamInfo>& outputs = asset.outputs;
 
+    zeno::ParamGroup defaultGroup;
+
     zeno::ParamInfo param;
     param.name = "input1";
     param.bInput = true;
     param.socketType = zeno::PrimarySocket;
     inputs.push_back(param);
+    defaultGroup.params.push_back(param);
 
     param.name = "input2";
     param.bInput = true;
     param.socketType = zeno::PrimarySocket;
     inputs.push_back(param);
+    defaultGroup.params.push_back(param);
 
     param.name = "output1";
     param.bInput = false;
@@ -165,6 +170,11 @@ void AssetsModel::newAsset(const zeno::AssetInfo info)
     param.bInput = false;
     param.socketType = zeno::PrimarySocket;
     outputs.push_back(param);
+
+    zeno::ParamTab tab;
+    tab.groups.emplace_back(std::move(defaultGroup));
+    asset.m_customui.tabs.emplace_back(std::move(tab));
+    asset.m_customui.outputs = outputs;
 
     assets->createAsset(asset);
     saveAsset(QString::fromStdString(info.name));
@@ -189,6 +199,7 @@ void AssetsModel::saveAsset(const QString& name)
     zasset.optGraph = asset.sharedGraph->exportGraph();
     zasset.inputs = asset.inputs;
     zasset.outputs = asset.outputs;
+    zasset.m_customui = asset.m_customui;
 
     zenoio::ZdaWriter writer;
     const std::string& content = writer.dumpAsset(zasset);
