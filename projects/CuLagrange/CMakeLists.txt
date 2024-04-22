@@ -38,6 +38,7 @@ target_sources(zeno PRIVATE
   pbd/ConstraintsBuilder.cu
   pbd/ConstraintsSolver.cu
   pbd/CollisionSolver.cu
+  pbd/ConstraintsUpdator.cu
 )
 
 # fem-cloth
@@ -125,4 +126,6 @@ target_sources(zeno PRIVATE
   geometry/Intersections.cu # CHECK THIS
   geometry/Detangle.cu
   geometry/HalfEdgeStructures.cu
+
+  geometry/ShapeMatching.cu
 )
