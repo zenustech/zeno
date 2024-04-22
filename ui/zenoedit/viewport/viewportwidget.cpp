@@ -133,6 +133,12 @@ void ViewportWidget::testCleanUp()
     m_fakeTrans.reset();
 }
 
+void ViewportWidget::cleanUpView()
+{
+    if (m_zenovis)
+        m_zenovis->cleanupView();
+}
+
 namespace {
 struct OpenGLProcAddressHelper {
     inline static QGLContext *ctx;
