@@ -340,7 +340,7 @@ ZLayoutBackground* ZenoNode::initMainHeaderBg()
     auto nameItem = new ZEditableTextItem(name, headerWidget);
     nameItem->setDefaultTextColor(QColor("#CCCCCC"));
     nameItem->setTextLengthAsBounding(true);
-    nameItem->setBackground(QColor(0, 0, 0, 0));
+    //nameItem->setBackground(QColor(0, 0, 0, 0));
     nameItem->setFont(font2);
     qreal txtWid = nameItem->boundingRect().width();
     nameItem->setPos(-txtWid - 2, 14);
@@ -1396,8 +1396,9 @@ bool ZenoNode::isMoving() {
 void ZenoNode::onZoomed()
 {
     m_pStatusWidgets->onZoomed();
+    qreal factor = 0.2;
     bool bVisible = true;
-    if (editor_factor < 0.2) {
+    if (editor_factor < factor) {
         bVisible = false;
     }
     if (m_bVisible != bVisible) {
@@ -1424,7 +1425,7 @@ void ZenoNode::onZoomed()
         }
     }
 
-    if (editor_factor < 0.1 || editor_factor > 0.2) 
+    if (editor_factor < 0.1 || editor_factor > 0.25) 
     {
         if (m_NameItemTip) 
         {
@@ -1436,8 +1437,14 @@ void ZenoNode::onZoomed()
     {
         const QString& nodeCls = m_index.data(ROLE_NODE_NAME).toString();
         m_NameItemTip = new ZSimpleTextItem(nodeCls, this);
-        m_NameItemTip->setBrush(QColor("#FFFFFF"));
+
+        QFont font2 = QApplication::font();
+        font2.setPointSize(14);
+        font2.setWeight(QFont::Normal);
+
+        m_NameItemTip->setBrush(QColor("#CCCCCC"));
         m_NameItemTip->setFlag(QGraphicsItem::ItemIgnoresTransformations);
+        m_NameItemTip->setFont(font2);
         m_NameItemTip->show();
     }
     if (m_NameItemTip) 
