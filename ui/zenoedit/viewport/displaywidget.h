@@ -28,7 +28,7 @@ public:
     QSize sizeHint() const override;
     Zenovis* getZenoVis() const;
     void runAndRecord(const VideoRecInfo& info);
-    void testCleanUp();
+    void cleanupView();
     void cleanUpScene();
     void beforeRun();
     void afterRun();

@@ -95,6 +95,10 @@ struct RenderEngineBate : RenderEngine {
     void cleanupOptix() override {
 
     }
+
+    void cleanupWhenExit() override {
+
+    }
 };
 
 static auto definer = RenderManager::registerRenderEngine<RenderEngineBate>("bate");

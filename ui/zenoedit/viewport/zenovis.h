@@ -54,6 +54,7 @@ public:
     void setLoopPlaying(bool enable);
     bool isLoopPlaying();
     void cleanUpScene();
+    void cleanupView();
 
 //private:
     void doFrameUpdate();
