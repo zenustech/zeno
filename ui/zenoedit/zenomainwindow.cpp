@@ -1387,16 +1387,8 @@ void ZenoMainWindow::closeEvent(QCloseEvent *event)
         //clean up opengl components.
 
         auto docks = findChildren<ZTabDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
-        for (ZTabDockWidget *pDock : docks) {
-            pDock->close();
-            try {
-                //pDock->testCleanupGL();
-            } catch (...) {
-                //QString errMsg = QString::fromLatin1(e.what());
-                int j;
-                j = 0;
-            }
-            //delete pDock;
+        for (ZTabDockWidget* pDock : docks) {
+            pDock->cleanupView();
         }
 
         // trigger destroy event
