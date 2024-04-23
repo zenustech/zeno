@@ -55,6 +55,7 @@ ZenoImageItem::ZenoImageItem(const ImageElement& elem, const QSizeF& sz, QGraphi
     , m_bToggled(false)
     , m_bHovered(false)
     , m_bCheckable(false)
+    , m_bClickable(true)
 {
     setAcceptHoverEvents(true);
     m_svg = new ZenoSvgItem(m_normal, this);
@@ -71,6 +72,7 @@ ZenoImageItem::ZenoImageItem(const QString &normal, const QString &hovered, cons
     , m_bToggled(false)
     , m_bHovered(false)
     , m_bCheckable(false)
+    , m_bClickable(true)
 {
     setAcceptHoverEvents(true);
     m_svg = new ZenoSvgItem(m_normal, this);
@@ -128,6 +130,11 @@ void ZenoImageItem::setCheckable(bool bCheckable)
     m_bCheckable = bCheckable;
 }
 
+void ZenoImageItem::setClickable(bool bClickable)
+{
+    m_bClickable = bClickable;
+}
+
 void ZenoImageItem::setHovered(bool bHovered)
 {
     m_bHovered = bHovered;
@@ -162,8 +169,11 @@ void ZenoImageItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
 void ZenoImageItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
     _base::mouseReleaseEvent(event);
-    toggle(!m_bToggled);
-    emit clicked();
+    if (m_bClickable)
+    {
+        toggle(!m_bToggled);
+        emit clicked();
+    }
 }
 
 void ZenoImageItem::hoverEnterEvent(QGraphicsSceneHoverEvent* event)

@@ -132,6 +132,7 @@ protected:
     ZLayoutBackground* m_headerWidget;
 
     ZLayoutBackground* m_mainHeaderBg;
+
     ZGraphicsLayout* m_topInputSockets;
     ZGraphicsLayout* m_bottomOutputSockets;
 
@@ -140,6 +141,7 @@ private slots:
 
 private:
     ZLayoutBackground* initMainHeaderBg();
+    ZGraphicsLayout* initNameLayout();
     ZGraphicsLayout* initVerticalSockets(bool bInput);
     void _drawBorderWangStyle(QPainter* painter);
     ZSocketLayout* getSocketLayout(bool bInput, const QString& sockName);
@@ -177,6 +179,7 @@ private:
     QGraphicsPolygonItem* m_statusMarker;
 
     //QGraphicsRectItem* m_border;
+    ZGraphicsLayout* m_expandNameLayout;
     ZGraphicsLayout* m_bodyLayout;
     ZGraphicsLayout* m_inputsLayout;
     ZGraphicsLayout* m_outputsLayout;

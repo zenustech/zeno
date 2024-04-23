@@ -64,6 +64,7 @@ ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
     , m_NameItemTip(nullptr)
     , m_statusMarker(nullptr)
     , m_errorTip(nullptr)
+    , m_expandNameLayout(nullptr)
 {
     setFlags(ItemIsMovable | ItemIsSelectable);
     setAcceptHoverEvents(true);
@@ -122,7 +123,8 @@ void ZenoNode::_drawShadow(QPainter* painter)
     else
     {
         offset += 16;
-        rc.adjust(offset, offset, 0, 0);
+        qreal topoffset = 45;   //顶部有一个名字布局
+        rc.adjust(offset, topoffset, 0, 0);
     }
 
     if (m_topInputSockets && !m_topInputSockets->isHide())
@@ -185,6 +187,7 @@ void ZenoNode::initUI(ZenoSubGraphScene* pScene, const QModelIndex& subGIdx, con
 
     m_topInputSockets = initVerticalSockets(true);
     m_mainHeaderBg = initMainHeaderBg();
+    m_expandNameLayout = initNameLayout();
     m_headerWidget = initHeaderWidget();
     m_bodyWidget = initBodyWidget(pScene);
     m_bottomOutputSockets = initVerticalSockets(false);
@@ -192,6 +195,8 @@ void ZenoNode::initUI(ZenoSubGraphScene* pScene, const QModelIndex& subGIdx, con
     ZGraphicsLayout* mainLayout = new ZGraphicsLayout(false);
     mainLayout->setDebugName("mainLayout");
     mainLayout->addLayout(m_topInputSockets);
+    mainLayout->addLayout(m_expandNameLayout);
+    mainLayout->addSpacing(6);
     mainLayout->addItem(m_mainHeaderBg);
     mainLayout->addItem(m_headerWidget);
     mainLayout->addItem(m_bodyWidget);
@@ -262,12 +267,10 @@ ZLayoutBackground* ZenoNode::initMainHeaderBg()
     if (type == zeno::NoVersionNode) {
         clrBgFrom = clrBgTo = QColor(83, 83, 85);
     }
-    else if (type == zeno::Node_SubgraphNode) {
+    else if (type == zeno::Node_SubgraphNode || type == zeno::Node_AssetInstance || 
+        type == zeno::Node_AssetReference) {
         clrBgFrom = QColor("#1A5447");
         clrBgTo = QColor("#289880");
-    }
-    else if (type == zeno::Node_AssetInstance || type == zeno::Node_AssetReference) {
-        clrBgFrom = clrBgTo = QColor("#d69b3c");
     }
     else {
         clrBgFrom = QColor("#1A5779");
@@ -369,12 +372,10 @@ ZLayoutBackground* ZenoNode::initHeaderWidget()
     if (type == zeno::NoVersionNode) {
         clrBgFrom = clrBgTo = QColor(83, 83, 85);
     }
-    else if (type == zeno::Node_SubgraphNode) {
+    else if (type == zeno::Node_SubgraphNode || type == zeno::Node_AssetInstance || 
+        type == zeno::Node_AssetReference) {
         clrBgFrom = QColor("#1A5447");
         clrBgTo = QColor("#289880");
-    }
-    else if (type == zeno::Node_AssetInstance || type == zeno::Node_AssetReference) {
-        clrBgFrom = clrBgTo = QColor("#d69b3c");
     }
     else {
         clrBgFrom = QColor("#1A5779");
@@ -475,18 +476,48 @@ ZLayoutBackground* ZenoNode::initHeaderWidget()
     m_statusMarker->setPos(QPointF(0, 0));
     markNodeStatus(state.runstatus);
 
-    //创建可以显示的名字组，并且不纳入header的布局，仅仅设置相对位置
-    font2.setPointSize(20);
+    return headerWidget;
+}
 
-    auto nameItem = new ZEditableTextItem(name, headerWidget);
+ZGraphicsLayout* ZenoNode::initNameLayout()
+{
+    ZGraphicsLayout* pHLayout = new ZGraphicsLayout(true);
+    const QString& name = m_index.data(ROLE_NODE_NAME).toString();
+
+    QFont font2 = QApplication::font();
+    font2.setPointSize(20);
+    font2.setWeight(QFont::Normal);
+
+    auto nameItem = new ZEditableTextItem(name);
     nameItem->setDefaultTextColor(QColor("#868686"));
     nameItem->setTextLengthAsBounding(true);
-    nameItem->setBackground(QColor(0, 0, 0, 0));
     nameItem->setFont(font2);
-    qreal txtHeight = nameItem->boundingRect().height();
-    nameItem->setPos(14, -txtHeight - 2);
 
-    return headerWidget;
+    connect(nameItem, &ZEditableTextItem::contentsChanged, this, [=]() {
+        updateWhole();
+    });
+
+    pHLayout->addItem(nameItem);
+
+    zeno::NodeType type = (zeno::NodeType)m_index.data(ROLE_NODETYPE).toInt();
+    if (type == zeno::Node_AssetInstance || type == zeno::Node_AssetReference)
+    {
+        GraphModel* pSubgraph = m_index.data(ROLE_SUBGRAPH).value<GraphModel*>();
+        ZASSERT_EXIT(pSubgraph, pHLayout);
+        bool bLock = pSubgraph->isLocked();
+        ZenoImageItem* pLockItem = new ZenoImageItem(":/icons/lock.svg", "", ":/icons/unlock.svg", QSizeF(20, 20));
+        pLockItem->setCheckable(true);
+        pLockItem->toggle(!bLock);
+        pLockItem->setClickable(false);
+        pHLayout->addItem(pLockItem, Qt::AlignVCenter);
+
+        connect(pSubgraph, &GraphModel::lockStatusChanged, this, [=]() {
+            bool bLock = pSubgraph->isLocked();
+            pLockItem->toggle(!bLock);
+        });
+    }
+    pHLayout->addSpacing(-1);
+    return pHLayout;
 }
 
 ZLayoutBackground* ZenoNode::initBodyWidget(ZenoSubGraphScene* pScene)
@@ -1856,10 +1887,14 @@ void ZenoNode::onCollaspeUpdated(bool collasped)
     if (collasped) {
         m_topInputSockets->show();
         m_bottomOutputSockets->show();
+        if (m_expandNameLayout)
+            m_expandNameLayout->hide();
     }
     else {
         m_topInputSockets->hide();
         m_bottomOutputSockets->hide();
+        if (m_expandNameLayout)
+            m_expandNameLayout->show();
     }
     updateWhole();
     update();

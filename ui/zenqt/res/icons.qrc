@@ -12,20 +12,20 @@
     <file>icons/addpanel.svg</file>
     <file>icons/addpanel-on.svg</file>
     <file>icons/addkeybtn.svg</file>
-	<file>icons/body_bg.svg</file>
-	<file>icons/collaspe.svg</file>
-	<file>icons/collaspe-hovered.svg</file>
+    <file>icons/body_bg.svg</file>
+    <file>icons/collaspe.svg</file>
+    <file>icons/collaspe-hovered.svg</file>
     <file>icons/uncollaspe.svg</file>
-	<file>icons/header_back_board_blue.svg</file>
-	<file>icons/header_back_board_blue_hovered.svg</file>
-	<file>icons/mute.svg</file>
-	<file>icons/prep.svg</file>
-	<file>icons/socket-on.svg</file>
-	<file>icons/socket-hover.svg</file>
+    <file>icons/header_back_board_blue.svg</file>
+    <file>icons/header_back_board_blue_hovered.svg</file>
+    <file>icons/mute.svg</file>
+    <file>icons/prep.svg</file>
+    <file>icons/socket-on.svg</file>
+    <file>icons/socket-hover.svg</file>
     <file>icons/socket-off.svg</file>
     <file>icons/socket-on-hover.svg</file>
-	<file>icons/view.svg</file>
-	<file>icons/playforward.svg</file>
+    <file>icons/view.svg</file>
+    <file>icons/playforward.svg</file>
     <file>icons/playforward_hover.svg</file>
     <file>icons/playforward_on.svg</file>
     <file>icons/playforward_on_hover.svg</file>
@@ -62,73 +62,73 @@
     <file>icons/rotate.png</file>
     <file>icons/move.png</file>
     <file>icons/scale.png</file>
-	<file>icons/loop_on.png</file>
-	<file>icons/loop_off.png</file>
+    <file>icons/loop_on.png</file>
+    <file>icons/loop_off.png</file>
     <file>icons/magnet.png</file>
     <file>icons/magnet_grid.png</file>
     <file>icons/magnet_point.png</file>
     <file>icons/checked.png</file>
     <file>icons/checked.svg</file>
     <file>icons/zenus.png</file>
-	<file>icons/downarrow.png</file>
-	<file>icons/search_arrow.svg</file>
-	<file>icons/search_arrow_backward.svg</file>
-	<file>icons/closebtn.svg</file>
-	<file>icons/closebtn_on.svg</file>
-	<file>icons/once.svg</file>
-	<file>icons/min_MUTE_dark.svg</file>
-	<file>icons/min_ONCE_dark.svg</file>
-	<file>icons/min_VIEW_dark.svg</file>
-	<file>icons/min_dark.svg</file>
-	<file>icons/min_MUTE_light.svg</file>
-	<file>icons/min_CACHE_light.svg</file>
-	<file>icons/min_ONCE_light.svg</file>
-	<file>icons/min_VIEW_light.svg</file>
-	<file>icons/MUTE_dark.svg</file>
-	<file>icons/MUTE_light.svg</file>
-	<file>icons/ONCE_dark.svg</file>
-	<file>icons/ONCE_light.svg</file>
-	<file>icons/VIEW_dark.svg</file>
-	<file>icons/VIEW_light.svg</file>
-	<file>icons/CACHE_dark.svg</file>
-	<file>icons/CACHE_light.svg</file>
-	<file>icons/ic_openfile.svg</file>
-	<file>icons/ic_openfile-on.svg</file>
-	<file>icons/ic_MUTE.svg</file>
-	<file>icons/ic_ONCE.svg</file>
-	<file>icons/ic_VIEW.svg</file>
+    <file>icons/downarrow.png</file>
+    <file>icons/search_arrow.svg</file>
+    <file>icons/search_arrow_backward.svg</file>
+    <file>icons/closebtn.svg</file>
+    <file>icons/closebtn_on.svg</file>
+    <file>icons/once.svg</file>
+    <file>icons/min_MUTE_dark.svg</file>
+    <file>icons/min_ONCE_dark.svg</file>
+    <file>icons/min_VIEW_dark.svg</file>
+    <file>icons/min_dark.svg</file>
+    <file>icons/min_MUTE_light.svg</file>
+    <file>icons/min_CACHE_light.svg</file>
+    <file>icons/min_ONCE_light.svg</file>
+    <file>icons/min_VIEW_light.svg</file>
+    <file>icons/MUTE_dark.svg</file>
+    <file>icons/MUTE_light.svg</file>
+    <file>icons/ONCE_dark.svg</file>
+    <file>icons/ONCE_light.svg</file>
+    <file>icons/VIEW_dark.svg</file>
+    <file>icons/VIEW_light.svg</file>
+    <file>icons/CACHE_dark.svg</file>
+    <file>icons/CACHE_light.svg</file>
+    <file>icons/ic_openfile.svg</file>
+    <file>icons/ic_openfile-on.svg</file>
+    <file>icons/ic_MUTE.svg</file>
+    <file>icons/ic_ONCE.svg</file>
+    <file>icons/ic_VIEW.svg</file>
     <file>icons/ic_File.svg</file>
     <file>icons/subnetbtn.svg</file>
     <file>icons/dockOption.svg</file>
-	<file>icons/dir_arrow.svg</file>
-	<file>icons/forward.svg</file>
-	<file>icons/backward.svg</file>
-	<file>icons/treeview.svg</file>
-	<file>icons/ic_color-picker.svg</file>
-	<file>icons/ic_direction_pullDown.svg</file>
-	<file>icons/spinbox-downbutton.svg</file>
-	<file>icons/spinbox-upbutton.svg</file>
-	<file>icons/spinbox-downbutton-hover.svg</file>
-	<file>icons/spinbox-upbutton-hover.svg</file>
-	<file>icons/circle-selector.svg</file>
-	<file>icons/ic_layout_container.svg</file>
-	<file>icons/ic_sidemenu_subnet.svg</file>
-	<file>icons/ic_sidemenu_subnet_on.svg</file>
-	<file>icons/ic_sidemenu_tree.svg</file>
-	<file>icons/ic_sidemenu_tree_on.svg</file>
-	<file>icons/ic_sidemenu_search.svg</file>
-	<file>icons/ic_sidemenu_search_on.svg</file>
-	<file>icons/more.svg</file>
-	<file>icons/more_on.svg</file>
-	<file>icons/home.svg</file>
-	<file>icons/home-on.svg</file>
-	<file>icons/subnet.svg</file>
-	<file>icons/subnet-on.svg</file>
-	<file>icons/socket-on2.svg</file>
-	<file>icons/ic_pop_down.svg</file>
-	<file>icons/ic_pop_down-on.svg</file>
-	<file>icons/ic_parameter_fold.svg</file>
-	<file>icons/ic_parameter_unfold.svg</file>
+    <file>icons/dir_arrow.svg</file>
+    <file>icons/forward.svg</file>
+    <file>icons/backward.svg</file>
+    <file>icons/treeview.svg</file>
+    <file>icons/ic_color-picker.svg</file>
+    <file>icons/ic_direction_pullDown.svg</file>
+    <file>icons/spinbox-downbutton.svg</file>
+    <file>icons/spinbox-upbutton.svg</file>
+    <file>icons/spinbox-downbutton-hover.svg</file>
+    <file>icons/spinbox-upbutton-hover.svg</file>
+    <file>icons/circle-selector.svg</file>
+    <file>icons/ic_layout_container.svg</file>
+    <file>icons/ic_sidemenu_subnet.svg</file>
+    <file>icons/ic_sidemenu_subnet_on.svg</file>
+    <file>icons/ic_sidemenu_tree.svg</file>
+    <file>icons/ic_sidemenu_tree_on.svg</file>
+    <file>icons/ic_sidemenu_search.svg</file>
+    <file>icons/ic_sidemenu_search_on.svg</file>
+    <file>icons/more.svg</file>
+    <file>icons/more_on.svg</file>
+    <file>icons/home.svg</file>
+    <file>icons/home-on.svg</file>
+    <file>icons/subnet.svg</file>
+    <file>icons/subnet-on.svg</file>
+    <file>icons/socket-on2.svg</file>
+    <file>icons/ic_pop_down.svg</file>
+    <file>icons/ic_pop_down-on.svg</file>
+    <file>icons/ic_parameter_fold.svg</file>
+    <file>icons/ic_parameter_unfold.svg</file>
     <file>icons/ic_handle_aligned.svg</file>
     <file>icons/ic_handle_aligned-on.svg</file>
     <file>icons/ic_handle_asymmetry.svg</file>
@@ -193,8 +193,8 @@
     <file>icons/subnet-general.svg</file>
     <file>icons/always-on.svg</file>
     <file>icons/always-off.svg</file>
-	<file>icons/Always.svg</file>
-	<file>icons/AlwaysOn.svg</file>
+    <file>icons/Always.svg</file>
+    <file>icons/AlwaysOn.svg</file>
     <file>icons/run-off.svg</file>
     <file>icons/run-on.svg</file>
     <file>icons/kill-on.svg</file>
@@ -318,8 +318,8 @@
     <file>icons/viewToolbar_record_idle.svg</file>
     <file>icons/viewToolbar_record_light.svg</file>
     <file>icons/viewToolbar_record_recording.svg</file>
-	<file>icons/viewToolbar_record_recordOffClick.svg</file>
-	<file>icons/viewToolbar_record_recordOffHover.svg</file>
+    <file>icons/viewToolbar_record_recordOffClick.svg</file>
+    <file>icons/viewToolbar_record_recordOffHover.svg</file>
     <file>icons/viewToolbar_rotate_idle.svg</file>
     <file>icons/viewToolbar_rotate_light.svg</file>
     <file>icons/viewToolbar_scale_idle.svg</file>
@@ -330,7 +330,7 @@
     <file>icons/viewToolbar_smoothshading_light.svg</file>
     <file>icons/viewToolbar_wireframe_idle.svg</file>
     <file>icons/viewToolbar_wireframe_light.svg</file>
-	<file>icons/parameter_control_tab.svg</file>
+    <file>icons/parameter_control_tab.svg</file>
     <file>icons/parameter_control_group.svg</file>
     <file>icons/parameter_control_integer.svg</file>
     <file>icons/parameter_control_float.svg</file>
@@ -348,8 +348,8 @@
     <file>icons/parameter_control_curve.svg</file>
     <file>icons/parameter_control_spinbox.svg</file>
     <file>icons/parameter_control_slider.svg</file>
-	<file>icons/parameter_control_divider.svg</file>
-	<file>icons/file_newfile.svg</file>
+    <file>icons/parameter_control_divider.svg</file>
+    <file>icons/file_newfile.svg</file>
     <file>icons/file_openfile.svg</file>
     <file>icons/file_zsgfile.svg</file>
     <file>icons/welcome_document.svg</file>
@@ -360,20 +360,22 @@
     <file>icons/ZENO-logo256.png</file>
     <file>icons/ZENO-logo128.png</file>
     <file>icons/ZENO-logo64.png</file>
-	<file>icons/update_main.png</file>
-	<file>icons/update-reboot.png</file>
-	<file>icons/run_all_btn.svg</file>
+    <file>icons/update_main.png</file>
+    <file>icons/update-reboot.png</file>
+    <file>icons/run_all_btn.svg</file>
     <file>icons/run_lightcamera_btn.svg</file>
     <file>icons/run_material_btn.svg</file>
-	<file>icons/run_all.svg</file>
-	<file>icons/run_all2.svg</file>
+    <file>icons/run_all.svg</file>
+    <file>icons/run_all2.svg</file>
     <file>icons/run_lightcamera.svg</file>
     <file>icons/run_material.svg</file>
     <file>icons/down_arrow.svg</file>
     <file>icons/RunKill.svg</file>
     <file>icons/RunKill_on.svg</file>
-	<file>icons/always_checkbox.svg</file>
-	<file>icons/always_checkbox_on.svg</file>
-	<file>icons/checkbox-disable.svg</file>
+    <file>icons/always_checkbox.svg</file>
+    <file>icons/always_checkbox_on.svg</file>
+    <file>icons/checkbox-disable.svg</file>
+    <file>icons/lock.svg</file>
+    <file>icons/unlock.svg</file>
 </qresource>
 </RCC>

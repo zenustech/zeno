@@ -38,6 +38,7 @@ public:
     bool isHovered() const;
     bool isToggled() const;
     void setCheckable(bool bCheckable);
+    void setClickable(bool bClickable);
 
 signals:
     void clicked();
@@ -63,6 +64,7 @@ protected:
     bool m_bToggled;
     bool m_bHovered;
     bool m_bCheckable;
+    bool m_bClickable;
 };
 
 #endif

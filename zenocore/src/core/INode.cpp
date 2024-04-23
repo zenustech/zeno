@@ -222,11 +222,12 @@ ZENO_API void INode::mark_dirty(bool bOn, bool bWholeSubnet)
         }
     }
 
-    if (m_nodecls == "Subnet" && bWholeSubnet)
+    if (SubnetNode* pSubnetNode = dynamic_cast<SubnetNode*>(this))
     {
-        SubnetNode* pSubnetNode = dynamic_cast<SubnetNode*>(this);
-        pSubnetNode->mark_subnetdirty(bOn);
+        if (bWholeSubnet)
+            pSubnetNode->mark_subnetdirty(bOn);
     }
+
     if (graph->optParentSubgNode.has_value())
     {
         graph->optParentSubgNode.value()->mark_dirty(true, false);
