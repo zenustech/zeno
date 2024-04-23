@@ -761,7 +761,7 @@ void detect_self_imminent_PT_close_proximity(Pol& pol,
             skip_rest = skip_too_close_pair_at_rest_configuration,
             use_collision_group = use_collision_group,
             eps = eps,
-            Xtag = Xtag,
+            XtagOffset = verts.getPropertyOffset(Xtag),
             xtag = xtag,
             verts = proxy<space>({},verts),
             tris = proxy<space>({},tris),
@@ -847,10 +847,10 @@ void detect_self_imminent_PT_close_proximity(Pol& pol,
 #endif
                 
                     if(has_rest_shape && skip_rest) {
-                        auto rp = verts.pack(dim_c<3>,Xtag,vi);
+                        auto rp = verts.pack(dim_c<3>,XtagOffset,vi);
                         vec3 rts[3] = {};
                         for(int i = 0;i != 3;++i)
-                            rts[i] = verts.pack(dim_c<3>,Xtag,tri[i]);
+                            rts[i] = verts.pack(dim_c<3>,XtagOffset,tri[i]);
 
                         auto is_same_collision_group = true;
                         if(use_collision_group && has_collision_group) 

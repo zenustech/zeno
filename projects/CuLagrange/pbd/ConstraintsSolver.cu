@@ -764,7 +764,6 @@ struct XPBDSolveSmoothAll : INode {
         TILEVEC_OPS::fill(cudaPol,verts,"w",0);
 
         auto iter_id = get_input2<int>("iter_id");
-        
 
         for(auto& constraint_ptr : constraint_ptr_list) {
             auto category = constraint_ptr->readMeta(CONSTRAINT_KEY,wrapt<category_c>{});
@@ -889,6 +888,10 @@ struct XPBDSolveSmoothAll : INode {
             }
 
             if(category == category_c::edge_length_constraint || category == category_c::dihedral_bending_constraint || category == category_c::long_range_attachment) {
+                // if(category == category_c::edge_length_constraint)
+                //     std::cout << "solve edge length constraint" << std::endl;
+                // if(category == category_c::dihedral_bending_constraint)
+                //     std::cout << "solve dihedral bending constraint" << std::endl;
                 cudaPol(zs::range(cquads.size()),[
                     cquads = proxy<space>({},cquads),
                     dt = dt,
@@ -1067,6 +1070,8 @@ struct XPBDSolveSmoothAll : INode {
             }
 
             if(category == category_c::vertex_pin_to_cell_constraint) {
+                // std::cout << "solve vertex cell pin constraint" << std::endl;
+
                 auto target = constraint_ptr->readMeta<ZenoParticles*>(CONSTRAINT_TARGET);
                 const auto& kverts = target->getParticles();
                 const auto& ktris = target->getQuadraturePoints();
@@ -1102,7 +1107,6 @@ struct XPBDSolveSmoothAll : INode {
                     ptagOffet = verts.getPropertyOffset(ptag),
                     ktris = ktris.begin("inds",dim_c<3>,int_c),
                     enable_sliding = enable_sliding,
-                    // weight_sum = proxy<space>(weight_sum),
                     wOffset = verts.getPropertyOffset("w"),
                     stiffnessOffset = cquads.getPropertyOffset("relative_stiffness"),
                     verts = proxy<space>({},verts)] ZS_LAMBDA(int ci) mutable {
@@ -1121,8 +1125,6 @@ struct XPBDSolveSmoothAll : INode {
                             bs[i] = cell_buffer.pack(dim_c<3>,"v",ktri[i]) + as[i];
                         }
 
-
-
                         auto tp = vec3::zeros();
                         for(int i = 0;i != 3;++i) {
                             tp += as[i] * bary[i];
@@ -1130,23 +1132,28 @@ struct XPBDSolveSmoothAll : INode {
                         }
 
                         auto dp = tp - verts.pack(dim_c<3>,ptagOffet,vi);
-                        
-                        if(enable_sliding) {
-                            auto avg_nrm = vec3::zeros();
-                            for(int i = 0;i != 3;++i) {
-                                avg_nrm += cell_buffer.pack(dim_c<3>,"nrm",ktri[i]);
-                            }
-                            avg_nrm = avg_nrm.normalized();
 
-                            auto dp_normal = dp.dot(avg_nrm) * avg_nrm;
-                            auto dp_tangent = dp - dp_normal;
-                            if(dp_tangent.norm() < static_cast<T>(0.1))
-                                dp_tangent = vec3::zeros();
-                            else
-                                dp_tangent *= static_cast<T>(0.5);
-                            // dp -= dp_tangent * 0.5;
-                            dp = dp_tangent + dp_normal;
-                        }
+                        // auto dpn = dp.norm();
+                        // if(dpn > 0.1) {
+                        //     printf("dp[%d,%d] : %f\n",vi,kti,(float)dpn);
+                        // }
+                        
+                        // if(enable_sliding) {
+                        //     auto avg_nrm = vec3::zeros();
+                        //     for(int i = 0;i != 3;++i) {
+                        //         avg_nrm += cell_buffer.pack(dim_c<3>,"nrm",ktri[i]);
+                        //     }
+                        //     avg_nrm = avg_nrm.normalized();
+
+                        //     auto dp_normal = dp.dot(avg_nrm) * avg_nrm;
+                        //     auto dp_tangent = dp - dp_normal;
+                        //     if(dp_tangent.norm() < static_cast<T>(0.1))
+                        //         dp_tangent = vec3::zeros();
+                        //     else
+                        //         dp_tangent *= static_cast<T>(0.5);
+                        //     // dp -= dp_tangent * 0.5;
+                        //     dp = dp_tangent + dp_normal;
+                        // }
 
                         // atomic_add(exec_tag,&weight_sum[vi],w);
                         atomic_add(exec_tag,&verts(wOffset,vi),w);

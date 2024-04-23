@@ -1331,12 +1331,12 @@ struct FleshDynamicStepping : INode {
             {"inds",1},
             {"w",4},
             {"strength",1},
-            {"cnorm",1}},0,zs::memsrc_e::device,0);
+            {"cnorm",1}},0,zs::memsrc_e::device);
 
         auto bverts = typename ZenoParticles::particles_t({
             {"x",3},
             {"intersect",1},
-            {"strength",1}},0,zs::memsrc_e::device,0);
+            {"strength",1}},0,zs::memsrc_e::device);
         if(has_input<ZenoParticles>("driven_boudary") && zsparticles->hasAuxData(driven_tag)){
             auto zsbones = get_input<ZenoParticles>("driven_boudary");
             const auto& zsbones_verts = zsbones->getParticles();
@@ -1362,7 +1362,7 @@ struct FleshDynamicStepping : INode {
             TILEVEC_OPS::copy(cudaPol,inbbw,"strength",bbw,"strength");
             TILEVEC_OPS::copy(cudaPol,inbbw,"cnorm",bbw,"cnorm");
         }
-        // bverts = bverts.clone({zs::memsrc_e::device,0});
+        // bverts = bverts.clone({zs::memsrc_e::device});
         // std::cout << "bverts.size() = " << bverts.size() << std::endl;
 
         auto kverts = typename ZenoParticles::particles_t({
@@ -1372,10 +1372,10 @@ struct FleshDynamicStepping : INode {
                 {"binderStiffness",1},
                 {planeConsIDTag,1},
                 {"nrm",3},
-                {"area",1}},0,zs::memsrc_e::device,0);
+                {"area",1}},0,zs::memsrc_e::device);
         auto ktris = typename ZenoParticles::particles_t({
                 {"inds",3},
-                {"nrm",3}},0,zs::memsrc_e::device,0);
+                {"nrm",3}},0,zs::memsrc_e::device);
 
         dtiles_t gia_res{points.get_allocator(),{
             {"ring_mask",1},

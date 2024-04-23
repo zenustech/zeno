@@ -105,7 +105,7 @@ virtual void apply() override {
         {"lambda",1},
         {"damping_coeff",1},
         {"tclr",1}
-    }, 0, zs::memsrc_e::device,0);
+    }, 0, zs::memsrc_e::device);
     auto &eles = constraint->getQuadraturePoints();
     constraint->setMeta(CONSTRAINT_TARGET,source.get());
 
@@ -1207,32 +1207,36 @@ virtual void apply() override {
         zs::bht<int,2,int> binder_set{verts.get_allocator(),verts.size()};
         binder_set.reset(cudaPol,true);
 
+        if(!verts.hasProperty("pinSuccess"))
+            verts.append_channels(cudaPol,{{"pinSuccess",1}});
+        TILEVEC_OPS::fill(cudaPol,verts,"pinSuccess",0.f);
+
         cudaPol(zs::range(verts.size()),[
-            verts = proxy<space>({},verts),
-            has_pin_group = has_pin_group,
-            eps = eps,
-            pin_group_name = zs::SmallString(pin_group_name),
-            ktris = proxy<space>({},ktris),
-            kverts = proxy<space>({},kverts),
-            binder_set = proxy<space>(binder_set),
-            binder_buffer = proxy<space>({},binder_buffer),
-            cell_buffer = proxy<space>({},cell_buffer),
-            cellBvh = proxy<space>(cellBvh)] ZS_LAMBDA(int vi) mutable {
-               auto p = verts.pack(dim_c<3>,"x",vi);
-               if(verts("minv",vi) < eps)
-                    return;
+                verts = proxy<space>({},verts),
+                has_pin_group = has_pin_group,
+                eps = eps,
+                pin_group_name = zs::SmallString(pin_group_name),
+                ktris = proxy<space>({},ktris),
+                kverts = proxy<space>({},kverts),
+                binder_set = proxy<space>(binder_set),
+                binder_buffer = proxy<space>({},binder_buffer),
+                cell_buffer = proxy<space>({},cell_buffer),
+                cellBvh = proxy<space>(cellBvh)] ZS_LAMBDA(int vi) mutable {
+            auto p = verts.pack(dim_c<3>,"x",vi);
+            if(verts("minv",vi) < eps)
+                return;
 
-               if(has_pin_group && verts(pin_group_name,vi) < eps) {
-                    // printf("ignore V[%d] excluded by pingroup\n",vi);
-                    return;
-               }
-               auto bv = bv_t{p,p};
-               int closest_kti = -1;
-               T closest_toc = std::numeric_limits<T>::max();
-               zs::vec<T,6> closest_bary = {};
-               T min_toc_dist = std::numeric_limits<T>::max();
+            if(has_pin_group && verts(pin_group_name,vi) < eps) {
+                // printf("ignore V[%d] excluded by pingroup\n",vi);
+                return;
+            }
+            auto bv = bv_t{p,p};
+            int closest_kti = -1;
+            T closest_toc = std::numeric_limits<T>::max();
+            zs::vec<T,6> closest_bary = {};
+            T min_toc_dist = std::numeric_limits<T>::max();
 
-               auto do_close_proximity_detection = [&](int kti) mutable {
+            auto do_close_proximity_detection = [&](int kti) mutable {
                     auto ktri = ktris.pack(dim_c<3>,"inds",kti,int_c);
                     vec3 as[3] = {};
                     vec3 bs[3] = {};
@@ -1244,7 +1248,7 @@ virtual void apply() override {
 
                     zs::vec<T,6> prism_bary{};
                     T toc{};
-                    if(!compute_vertex_prism_barycentric_weights(p,as[0],as[1],as[2],bs[0],bs[1],bs[2],toc,prism_bary,(T)0.1))
+                    if(!compute_vertex_prism_barycentric_weights(p,as[0],as[1],as[2],bs[0],bs[1],bs[2],toc,prism_bary,(T)0.001))
                         return;           
 
                     auto toc_dist = zs::abs(toc - (T)0.5);
@@ -1254,16 +1258,39 @@ virtual void apply() override {
                         closest_bary = prism_bary;
                         closest_kti = kti;
                     }                    
-               };
-               cellBvh.iter_neighbors(bv,do_close_proximity_detection);
-               if(closest_kti >= 0) {
+            };
+            cellBvh.iter_neighbors(bv,do_close_proximity_detection);
+            if(closest_kti >= 0) {
                 auto id = binder_set.insert(vec2i{vi,closest_kti});
                 binder_buffer.tuple(dim_c<6>,"bary",id) = closest_bary;
+                verts("pinSuccess",vi) = 1.f;
+
+                auto ktri = ktris.pack(dim_c<3>,"inds",closest_kti,int_c);
+                vec3 as[3] = {};
+                vec3 bs[3] = {};
+
+                for(int i = 0;i != 3;++i) {
+                    as[i] = cell_buffer.pack(dim_c<3>,"x",ktri[i]);
+                    bs[i] = cell_buffer.pack(dim_c<3>,"v",ktri[i]) + as[i];
+                }  
+                
+                auto tp = vec3::zeros();
+                for(int i = 0;i != 3;++i) {
+                    tp += as[i] * closest_bary[i];
+                    tp += bs[i] * closest_bary[i + 3];
+                }
+
+                auto diffp = (p - tp).norm();
+                if(diffp > 0.1) {
+                    printf("too big prism and point difference : %d %d %f\n",vi,closest_kti,diffp);
+                }
             }
         });
 
         eles.append_channels(cudaPol,{{"inds",2},{"bary",6}});
         eles.resize(binder_set.size());
+
+        std::cout << "nunber of cell pin anchors : " << eles.size() << std::endl;
         
         cudaPol(zip(zs::range(binder_set.size()),binder_set._activeKeys),[
             binder_buffer = proxy<space>({},binder_buffer),
