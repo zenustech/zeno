@@ -115,6 +115,16 @@ QString ZenoSocketItem::nodeIdent() const
 void ZenoSocketItem::setHovered(bool bHovered)
 {
     m_bHovered = bHovered;
+    if (m_bHovered && m_paramIdx.isValid())
+    {
+        QString name = m_paramIdx.data(ROLE_PARAM_NAME).toString();
+        this->setToolTip(name);
+    }
+    else
+    {
+        this->setToolTip("");
+    }
+
     update();
 }
 
