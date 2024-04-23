@@ -59,6 +59,8 @@ namespace zenoio
                     }
                 }
             }
+
+            dumpCustomUI(asset.m_customui, writer);
         }
 
         strJson = s.GetString();

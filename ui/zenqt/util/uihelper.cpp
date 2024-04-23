@@ -1770,6 +1770,75 @@ QStandardItemModel* UiHelper::genParamsModel(const std::vector<zeno::ParamInfo>&
     return customParamsM;
 }
 
+void UiHelper::newCustomModel(QStandardItemModel* customParamsM, const zeno::CustomUI& customui)
+{
+    ZASSERT_EXIT(customParamsM);
+
+    customParamsM->clear();
+
+    QStandardItem* pInputs = new QStandardItem("inputs");
+    pInputs->setEditable(false);
+    for (const zeno::ParamTab& tab : customui.tabs)
+    {
+        const QString& tabName = QString::fromStdString(tab.name);
+        QStandardItem* pTab = new QStandardItem(tabName);
+        pTab->setData(VPARAM_TAB, ROLE_ELEMENT_TYPE);
+        pTab->setData(tabName, ROLE_PARAM_NAME);
+
+        for (const zeno::ParamGroup& group : tab.groups)
+        {
+            const QString& groupName = QString::fromStdString(group.name);
+            QStandardItem* pGroup = new QStandardItem(groupName);
+            pGroup->setData(VPARAM_GROUP, ROLE_ELEMENT_TYPE);
+            pGroup->setData(groupName, ROLE_PARAM_NAME);
+
+            for (const zeno::ParamInfo& param : group.params)
+            {
+                QStandardItem* paramItem = new QStandardItem(QString::fromStdString(param.name));
+                paramItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
+
+                const QString& paramName = QString::fromStdString(param.name);
+                paramItem->setData(paramName, Qt::DisplayRole);
+                paramItem->setData(paramName, ROLE_PARAM_NAME);
+                paramItem->setData(paramName, ROLE_MAP_TO_PARAMNAME);
+                paramItem->setData(UiHelper::zvarToQVar(param.defl), ROLE_PARAM_VALUE);
+                paramItem->setData(param.control, ROLE_PARAM_CONTROL);
+                paramItem->setData(param.type, ROLE_PARAM_TYPE);
+                paramItem->setData(true, ROLE_ISINPUT);
+                paramItem->setData(param.socketType, ROLE_SOCKET_TYPE);
+                if (param.ctrlProps.has_value())
+                    paramItem->setData(QVariant::fromValue(param.ctrlProps.value()), ROLE_PARAM_CTRL_PROPERTIES);
+                pGroup->appendRow(paramItem);
+            }
+            pTab->appendRow(pGroup);
+        }
+        pInputs->appendRow(pTab);
+    }
+
+    QStandardItem* pOutputs = new QStandardItem("output");
+    pOutputs->setEditable(false);
+    for (const zeno::ParamInfo& param : customui.outputs)
+    {
+        const QString& paramName = QString::fromStdString(param.name);
+        QStandardItem* paramItem = new QStandardItem(paramName);
+        paramItem->setData(paramName, Qt::DisplayRole);
+        paramItem->setData(paramName, ROLE_PARAM_NAME);
+        paramItem->setData(paramName, ROLE_MAP_TO_PARAMNAME);
+        paramItem->setData(UiHelper::zvarToQVar(param.defl), ROLE_PARAM_VALUE);
+        paramItem->setData(param.control, ROLE_PARAM_CONTROL);
+        paramItem->setData(param.type, ROLE_PARAM_TYPE);
+        paramItem->setData(false, ROLE_ISINPUT);
+        paramItem->setData(param.socketType, ROLE_SOCKET_TYPE);
+        if (param.ctrlProps.has_value())
+            paramItem->setData(QVariant::fromValue(param.ctrlProps.value()), ROLE_PARAM_CTRL_PROPERTIES);
+        pOutputs->appendRow(paramItem);
+        paramItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
+        paramItem->setEditable(true);
+    }
+    customParamsM->appendRow(pInputs);
+    customParamsM->appendRow(pOutputs);
+}
+
 static std::string getZenoVersion()
 {
     const char *date = __DATE__;

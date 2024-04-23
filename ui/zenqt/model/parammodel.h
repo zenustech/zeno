@@ -60,7 +60,7 @@ public:
     //temp:
     QStandardItemModel* customParamModel();
     void batchModifyParams(const zeno::ParamsUpdateInfo& params);
-    void resetCustomUi(zeno::CustomUI& customui);
+    void resetCustomUi(const zeno::CustomUI& customui);
 
     int getParamlinkCount(const QModelIndex& paramIdx);
     int numOfInputParams() const;

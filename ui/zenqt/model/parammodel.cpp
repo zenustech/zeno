@@ -77,75 +77,14 @@ void ParamsModel::initParamItems()
 
 void ParamsModel::initCustomUI(const zeno::CustomUI& customui)
 {
-    if (m_customParamsM)
+    if (m_customParamsM) {
         m_customParamsM->clear();
-    else
+    }
+    else {
         m_customParamsM = new QStandardItemModel(this);
-
-    QStandardItem* pInputs = new QStandardItem("inputs");
-    pInputs->setEditable(false);
-    for (const zeno::ParamTab& tab : customui.tabs)
-    {
-        const QString& tabName = QString::fromStdString(tab.name);
-        QStandardItem* pTab = new QStandardItem(tabName);
-        pTab->setData(VPARAM_TAB, ROLE_ELEMENT_TYPE);
-        pTab->setData(tabName, ROLE_PARAM_NAME);
-
-        for (const zeno::ParamGroup& group : tab.groups)
-        {
-            const QString& groupName = QString::fromStdString(group.name);
-            QStandardItem* pGroup = new QStandardItem(groupName);
-            pGroup->setData(VPARAM_GROUP, ROLE_ELEMENT_TYPE);
-            pGroup->setData(groupName, ROLE_PARAM_NAME);
-
-            for (const zeno::ParamInfo& param : group.params)
-            {
-                QStandardItem* paramItem = new QStandardItem(QString::fromStdString(param.name));
-                paramItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
-
-                const QString& paramName = QString::fromStdString(param.name);
-                paramItem->setData(paramName, Qt::DisplayRole);
-                paramItem->setData(paramName, ROLE_PARAM_NAME);
-                paramItem->setData(paramName, ROLE_MAP_TO_PARAMNAME);
-                paramItem->setData(UiHelper::zvarToQVar(param.defl), ROLE_PARAM_VALUE);
-                paramItem->setData(param.control, ROLE_PARAM_CONTROL);
-                paramItem->setData(param.type, ROLE_PARAM_TYPE);
-                paramItem->setData(true, ROLE_ISINPUT);
-                paramItem->setData(param.socketType, ROLE_SOCKET_TYPE);
-                if (param.ctrlProps.has_value())
-                    paramItem->setData(QVariant::fromValue(param.ctrlProps.value()), ROLE_PARAM_CTRL_PROPERTIES);
-                pGroup->appendRow(paramItem);
-            }
-            pTab->appendRow(pGroup);
-        }
-        pInputs->appendRow(pTab);
+        connect(m_customParamsM, &QStandardItemModel::dataChanged, this, &ParamsModel::onCustomModelDataChanged);
     }
-
-    QStandardItem* pOutputs = new QStandardItem("output");
-    pOutputs->setEditable(false);
-    for (const zeno::ParamInfo& param : customui.outputs)
-    {
-        const QString& paramName = QString::fromStdString(param.name);
-        QStandardItem* paramItem = new QStandardItem(paramName);
-        paramItem->setData(paramName, Qt::DisplayRole);
-        paramItem->setData(paramName, ROLE_PARAM_NAME);
-        paramItem->setData(paramName, ROLE_MAP_TO_PARAMNAME);
-        paramItem->setData(UiHelper::zvarToQVar(param.defl), ROLE_PARAM_VALUE);
-        paramItem->setData(param.control, ROLE_PARAM_CONTROL);
-        paramItem->setData(param.type, ROLE_PARAM_TYPE);
-        paramItem->setData(false, ROLE_ISINPUT);
-        paramItem->setData(param.socketType, ROLE_SOCKET_TYPE);
-        if (param.ctrlProps.has_value())
-            paramItem->setData(QVariant::fromValue(param.ctrlProps.value()), ROLE_PARAM_CTRL_PROPERTIES);
-        pOutputs->appendRow(paramItem);
-        paramItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
-        paramItem->setEditable(true);
-    }
-
-    m_customParamsM->appendRow(pInputs);
-    m_customParamsM->appendRow(pOutputs);
-
-    connect(m_customParamsM, &QStandardItemModel::dataChanged, this, &ParamsModel::onCustomModelDataChanged);
+    UiHelper::newCustomModel(m_customParamsM, customui);
 }
 
 void ParamsModel::onCustomModelDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
@@ -557,7 +496,7 @@ void ParamsModel::test_customparamsmodel() const
     }
 }
 
-void ParamsModel::resetCustomUi(zeno::CustomUI& customui)
+void ParamsModel::resetCustomUi(const zeno::CustomUI& customui)
 {
     auto spNode = m_wpNode.lock();
     if (std::shared_ptr<zeno::SubnetNode> sbn = std::dynamic_pointer_cast<zeno::SubnetNode>(spNode))

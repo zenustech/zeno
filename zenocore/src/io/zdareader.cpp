@@ -13,7 +13,9 @@ namespace zenoio
     }
 
     bool ZdaReader::_parseMainGraph(const rapidjson::Document& doc, zeno::GraphData& ret) {
-        if (!doc.HasMember("name") || !doc.HasMember("version") || !doc.HasMember("graph") ||
+        if (!doc.HasMember("name") ||
+            !doc.HasMember("version") ||
+            !doc.HasMember("graph") ||
             !doc.HasMember("Parameters"))
         {
             return false;
@@ -38,7 +40,7 @@ namespace zenoio
             m_asset.info.minorVer = std::stoi(vervec[1]);
         }
 
-        zeno::AssetsData assets;//todo
+        zeno::AssetsData assets;
         if (!m_bDelayReadGraphData)
         {
             if (!_parseGraph(doc["graph"], assets, ret))
@@ -46,6 +48,8 @@ namespace zenoio
         }
 
         _parseParams(doc["Parameters"], m_asset.inputs, m_asset.outputs);
+
+        m_asset.m_customui = _parseCustomUI(doc["subnet-customUi"]);
 
         ret.type = zeno::Subnet_Normal;
         ret.name = m_asset.info.name;

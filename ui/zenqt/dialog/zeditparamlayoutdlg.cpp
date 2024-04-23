@@ -168,11 +168,10 @@ void outputListItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem
 
 
 ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, QWidget* parent)
-    : QDialog(parent),
-    m_isGlobalUniqueFunc(nullptr),
-    m_paramsLayoutM_inputs(new QStandardItemModel(this)),
-    m_paramsLayoutM_outputs(new QStandardItemModel(this))
-    //, m_paramsLayoutM(pModel)
+    : QDialog(parent)
+    , m_isGlobalUniqueFunc(nullptr)
+    , m_paramsLayoutM_inputs(new QStandardItemModel(this))
+    , m_paramsLayoutM_outputs(new QStandardItemModel(this))
 {
     m_ui = new Ui::EditParamLayoutDlg;
     m_ui->setupUi(this);
@@ -255,14 +254,19 @@ void ZEditParamLayoutDlg::initModel(const QStandardItemModel* pModel)
         }
         return newItem;
     };
-    QStandardItem* inputsItem = pModel->item(0, 0);
-    m_paramsLayoutM_inputs->appendRow(cloneItem(cloneItem, inputsItem));
 
-    QStandardItem* outputsItem = pModel->item(1, 0);
-    for (int r = 0; r < outputsItem->rowCount(); r++)
+    if (QStandardItem* inputsItem = pModel->item(0, 0))
     {
-        QStandardItem* newItem = outputsItem->child(r);
-        m_paramsLayoutM_outputs->appendRow(cloneItem(cloneItem, newItem));
+        m_paramsLayoutM_inputs->appendRow(cloneItem(cloneItem, inputsItem));
+    }
+
+    if (QStandardItem* outputsItem = pModel->item(1, 0))
+    {
+        for (int r = 0; r < outputsItem->rowCount(); r++)
+        {
+            QStandardItem* newItem = outputsItem->child(r);
+            m_paramsLayoutM_outputs->appendRow(cloneItem(cloneItem, newItem));
+        }
     }
 }
 

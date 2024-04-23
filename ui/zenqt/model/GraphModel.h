@@ -105,7 +105,7 @@ public:
 
     //test functions:
     void updateParamName(QModelIndex nodeIdx, int row, QString newName);
-    void syncToAssetsInstance(const QString& assetsName, zeno::ParamsUpdateInfo info);
+    void syncToAssetsInstance(const QString& assetsName, zeno::ParamsUpdateInfo info, const zeno::CustomUI& customui);
     void syncToAssetsInstance(const QString& assetsName);
     void updateAssetInstance(const std::shared_ptr<zeno::Graph> spGraph);
     void removeParam(QModelIndex nodeIdx, int row);
