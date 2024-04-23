@@ -71,7 +71,7 @@ void ZSubnetListItemDelegate::paint(QPainter* painter, const QStyleOptionViewIte
     textColor = QColor("#C3D2DF");
     if (opt.state & QStyle::State_Selected)
     {
-        bgColor = QColor(59, 64, 73);
+        bgColor = QColor(61, 61, 61);
         borderColor = QColor(27, 145, 225);
 
         painter->fillRect(rc, bgColor);
@@ -80,8 +80,8 @@ void ZSubnetListItemDelegate::paint(QPainter* painter, const QStyleOptionViewIte
     }
     else if (opt.state & QStyle::State_MouseOver)
     {
-        bgColor = QColor(59, 64, 73);
-        painter->fillRect(rc, bgColor);
+        //bgColor = QColor(61, 61, 61);
+        //painter->fillRect(rc, bgColor);
     }
 
     if (!opt.icon.isNull())

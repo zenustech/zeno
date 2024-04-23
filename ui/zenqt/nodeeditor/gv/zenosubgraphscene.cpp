@@ -815,11 +815,11 @@ void ZenoSubGraphScene::onSocketAbsorted(const QPointF& mousePos)
         if (pSocket)
         {
             pos = pSocket->center();
+            m_tempLink->setAdsortedSocket(pSocket);
+            m_tempLink->setFloatingPos(pos);
+            QString paramName = pSocket->paramIndex().data(ROLE_PARAM_NAME).toString();
+            ZToolTip::showText(QCursor::pos() + QPoint(ZenoStyle::dpiScaled(10), 0), paramName);
         }
-        m_tempLink->setAdsortedSocket(pSocket);
-        m_tempLink->setFloatingPos(pos);
-        QString paramName = pSocket->paramIndex().data(ROLE_PARAM_NAME).toString();
-        ZToolTip::showText(QCursor::pos() + QPoint(ZenoStyle::dpiScaled(10), 0), paramName);
     }
     else
     {

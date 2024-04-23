@@ -317,7 +317,6 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pGroup = new ZToolBarButton(false, ":/icons/nodeEditor_blackboard_unselected.svg", ":/icons/nodeEditor_blackboard_selected.svg");
     pSearchBtn = new ZToolBarButton(true, ":/icons/toolbar_search_idle.svg", ":/icons/toolbar_search_light.svg");
     pSettings = new ZToolBarButton(false, ":/icons/toolbar_localSetting_idle.svg", ":/icons/toolbar_localSetting_light.svg");
-    pLinkLineShape = new ZToolBarButton(true, ":/icons/timeline-curvemap.svg",":/icons/timeline-curvemap.svg");
     //pTestApi = new ZToolBarButton(false, ":/icons/timeline-curvemap.svg", ":/icons/timeline-curvemap.svg");
     pAlways = new QCheckBox(tr("Auto"), this);
     pAlways->setChecked(false);
@@ -369,10 +368,8 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     ZenoSettingsManager::GetInstance().setValue(zsShowThumbnail, false);
 
     pSnapGrid->setChecked(ZenoSettingsManager::GetInstance().getValue(zsSnapGrid).toBool());
-    pLinkLineShape->setChecked(ZenoSettingsManager::GetInstance().getValue(zsLinkLineShape).toBool());
     pShowGrid->setToolTip(pShowGrid->isChecked() ? tr("Hide Grid") : tr("Show Grid"));
     pSnapGrid->setToolTip(pSnapGrid->isChecked() ? tr("UnSnap Grid") : tr("Snap Grid"));
-    pLinkLineShape->setToolTip(pLinkLineShape->isChecked() ? tr("Straight Link") : tr("Curve Link"));
 
     zeno::ControlProperty props;
     std::vector<std::string> items;
@@ -419,7 +416,6 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pToolLayout->addWidget(pShowGrid);
     pToolLayout->addWidget(pCustomParam);
     pToolLayout->addWidget(pGroup);
-    pToolLayout->addWidget(pLinkLineShape);
     pToolLayout->addWidget(pShowThumb);
     pToolLayout->addWidget(pRearrangeGraph);
     //pToolLayout->addWidget(pTestApi);     //TOFIX: 添加此项竟然导致最大化窗口无效，要研究布局细节。
@@ -522,11 +518,6 @@ void DockContent_Editor::initConnections()
         QAction act;
         act.setProperty("ActionType", ZenoMainWindow::ACTION_REARRANGE_GRAPH);
         m_pEditor->onAction(&act);
-    });
-    connect(pLinkLineShape, &ZToolBarButton::toggled, this, [=](bool bChecked) {
-        if (m_pEditor->welComPageShowed())
-            return;
-        ZenoSettingsManager::GetInstance().setValue(zsLinkLineShape, bChecked);
     });
     if (pTestApi) {
         connect(pTestApi, &ZToolBarButton::clicked, this, [=]() {
@@ -664,11 +655,6 @@ void DockContent_Editor::initConnections()
         else if (name == zsShowThumbnail)
         {
             pShowThumb->setChecked(ZenoSettingsManager::GetInstance().getValue(name).toBool());
-        }
-        else if (name == zsLinkLineShape)
-        {
-            pLinkLineShape->setChecked(ZenoSettingsManager::GetInstance().getValue(name).toBool());
-            pLinkLineShape->setToolTip(pLinkLineShape->isChecked() ? tr("Straight Link") : tr("Curve Link"));
         }
         else if (name == zsSubgraphType)
         {

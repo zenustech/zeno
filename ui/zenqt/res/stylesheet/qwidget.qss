@@ -247,12 +247,12 @@ QTreeView::item, QListWidget::item
 
 QTreeView::item:hover, QListWidget::item:hover, QListView::item:hover
 {
-	background-color: rgba(52,67,97,0.8);
+	background-color: rgba(61,61,61);
 }
 
 QTreeView::item:selected, QListWidget::item:selected, QListView::item::selected
 {
-	background-color: #344361;
+	background-color: rgb(61,61,61);
 	color:#8f9ba8;
 }
 
@@ -273,13 +273,13 @@ QTreeView::branch:open:has-children:has-siblings
 QTreeView::branch:selected,
 QTreeView::branch:selected 
 {
-    background-color: rgb(52,67,97);
+    background-color: rgb(61,61,61);
 }
 
 QTreeView::branch:hover:!selected,
 QTreeView::branch:hover:!selected  
 {
-    background-color: rgba(52,67,97,0.8);	
+    background-color: rgb(61,61,61);	
 }
 
 QWidget[cssClass = "welcomepage_link"]
