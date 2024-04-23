@@ -993,13 +993,20 @@ void GraphModel::syncToAssetsInstance(const QString& assetsName, zeno::ParamsUpd
     QModelIndexList results = match(QModelIndex(), ROLE_CLASS_NAME, assetsName);
     for (QModelIndex res : results) {
         zeno::NodeType type = (zeno::NodeType)res.data(ROLE_NODETYPE).toInt();
-        if (type == zeno::Node_AssetInstance) {
+        if (type == zeno::Node_AssetInstance || type == zeno::Node_AssetReference) {
             ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(res.data(ROLE_PARAMS));
             ZASSERT_EXIT(paramsM);
             paramsM->resetCustomUi(customui);
             paramsM->batchModifyParams(info);
         }
     }
+
+    const QStringList& path = currentPath();
+    if (!path.isEmpty() && path[0] != "main") {
+        return;
+    }
+
+    syncToAssetsInstance(assetsName);
 
     for (QString subgnode : m_subgNodes) {
         ZASSERT_EXIT(m_name2uuid.find(subgnode) != m_name2uuid.end());

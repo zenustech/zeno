@@ -127,11 +127,15 @@ ZENO_API std::vector<Asset> AssetsMgr::getAssets() const {
     return assets;
 }
 
-ZENO_API void AssetsMgr::updateAssets(const std::string name, ParamsUpdateInfo info) {
+ZENO_API void AssetsMgr::updateAssets(const std::string name, ParamsUpdateInfo info, const zeno::CustomUI& customui)
+{
     if (m_assets.find(name) == m_assets.end()) {
         return;
     }
     auto& assets = m_assets[name];
+    if (!assets.sharedGraph)
+        return;
+
     std::set<std::string> inputs_old, outputs_old;
 
     std::set<std::string> input_names;
@@ -248,6 +252,7 @@ ZENO_API void AssetsMgr::updateAssets(const std::string name, ParamsUpdateInfo i
         else
             assets.outputs.push_back(pair.param);
     }
+    assets.m_customui = customui;
 }
 
 std::shared_ptr<Graph> AssetsMgr::forkAssetGraph(std::shared_ptr<Graph> assetGraph, std::shared_ptr<SubnetNode> subNode)

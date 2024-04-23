@@ -894,7 +894,11 @@ void ZenoGraphsEditor::onCommandDispatched(QAction* pAction, bool bTriggered)
 void ZenoGraphsEditor::onAssetsCustomParamsClicked(const QString& assetsName)
 {
     auto& assetsMgr = zeno::getSession().assets;
-    zeno::Asset asset = assetsMgr->getAsset(assetsName.toStdString());
+    auto& name = assetsName.toStdString();
+    zeno::Asset asset = assetsMgr->getAsset(name);
+
+    //ensure the graph be loaded.
+    assetsMgr->getAssetGraph(name, true);
 
     QStandardItemModel paramsM;
     UiHelper::newCustomModel(&paramsM, asset.m_customui);

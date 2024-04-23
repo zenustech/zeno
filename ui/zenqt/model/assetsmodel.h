@@ -28,6 +28,7 @@ public:
     void init(const zeno::AssetsData& assets);
     void clear();
     Q_INVOKABLE GraphModel* getAssetGraph(const QString& graphName);
+    GraphModel* getAssetGraph(int i) const;
 
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;

@@ -43,6 +43,13 @@ void AssetsModel::clear()
 
 }
 
+GraphModel* AssetsModel::getAssetGraph(int i) const
+{
+    if (i < 0 || i >= m_assets.length())
+        return nullptr;
+    return m_assets[i].pGraphM;
+}
+
 GraphModel* AssetsModel::getAssetGraph(const QString& graphName)
 {
     for (int i = 0; i < m_assets.length(); i++) {
