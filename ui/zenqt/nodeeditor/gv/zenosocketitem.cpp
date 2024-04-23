@@ -4,6 +4,7 @@
 #include "style/zenostyle.h"
 #include "uicommon.h"
 #include "zassert.h"
+#include "widgets/ztooltip.h"
 
 #define BASED_ON_SPEHERE
 
@@ -115,6 +116,16 @@ QString ZenoSocketItem::nodeIdent() const
 void ZenoSocketItem::setHovered(bool bHovered)
 {
     m_bHovered = bHovered;
+    if (m_bHovered && m_paramIdx.isValid())
+    {
+        QString name = m_paramIdx.data(ROLE_PARAM_NAME).toString();
+        ZToolTip::showText(QCursor::pos() + QPoint(ZenoStyle::dpiScaled(10), 0), name);
+    }
+    else
+    {
+        ZToolTip::hideText();
+    }
+
     update();
 }
 

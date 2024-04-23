@@ -30,6 +30,7 @@
 #include "widgets/ztimeline.h"
 #include "zenosubgraphview.h"
 #include <zeno/io/zenreader.h>
+#include "widgets/ztooltip.h"
 //#include "nodeeditor/gv/pythonmaterialnode.h"
 
 
@@ -783,6 +784,8 @@ void ZenoSubGraphScene::onSocketAbsorted(const QPointF& mousePos)
                 pos = pSocket->center();
                 m_tempLink->setAdsortedSocket(pSocket);
                 m_tempLink->setFloatingPos(pos);
+                QString paramName = pSocket->paramIndex().data(ROLE_PARAM_NAME).toString();
+                ZToolTip::showText(QCursor::pos() + QPoint(10, 20), paramName);
                 return;
             }
         }
@@ -815,11 +818,14 @@ void ZenoSubGraphScene::onSocketAbsorted(const QPointF& mousePos)
         }
         m_tempLink->setAdsortedSocket(pSocket);
         m_tempLink->setFloatingPos(pos);
+        QString paramName = pSocket->paramIndex().data(ROLE_PARAM_NAME).toString();
+        ZToolTip::showText(QCursor::pos() + QPoint(ZenoStyle::dpiScaled(10), 0), paramName);
     }
     else
     {
         m_tempLink->setAdsortedSocket(nullptr);
         m_tempLink->setFloatingPos(pos);
+        ZToolTip::hideText();
     }
 }
 
