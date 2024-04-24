@@ -10,6 +10,7 @@
 #include "LinkModel.h"
 #include <zeno/core/Graph.h>
 #include <optional>
+#include "command.h"
 
 class GraphModel;
 class GraphsTreeModel;
@@ -100,6 +101,7 @@ public:
     void clear();
     void undo();
     void redo();
+    void mainUndoStackPush(QUndoCommand* cmd);
     void beginTransaction(const QString& name);
     void endTransaction();
 
@@ -128,6 +130,13 @@ signals:
     void lockStatusChanged();
 
 private:
+    //undo, redo
+    zeno::NodeData _createNodeImpl(zeno::NodeData& nodedata, std::weak_ptr<zeno::Graph> wpGraph, zeno::GraphData& graphData, bool endTransaction = false);
+    bool _removeNodeImpl(const QString& name, std::weak_ptr<zeno::Graph> wpGraph, bool endTransaction = false);
+    std::optional<QUndoStack> m_undoRedoStack;
+    friend class AddNodeCommand;
+    friend class RemoveNodeCommand;
+
     void registerCoreNotify();
     void unRegisterCoreNotify();
     void _appendNode(std::shared_ptr<zeno::INode> spNode);

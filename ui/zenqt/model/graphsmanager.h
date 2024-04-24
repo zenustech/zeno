@@ -27,6 +27,7 @@ public:
     GraphsTreeModel* openZsgFile(const QString &fn, zenoio::ERR_CODE& code);
     bool saveFile(const QString& filePath, APP_SETTINGS settings);
     bool isInitializing() const;
+    bool isImporting() const;
     GraphsTreeModel* newFile();
     void importGraph(const QString& fn);
     void importSubGraphs(const QString& fn, const QMap<QString, QString>& map);
@@ -77,7 +78,8 @@ private:
     zeno::TimelineInfo m_timerInfo;
     QVector<ZenoSubGraphScene*> m_scenes;
     zeno::ZSG_VERSION m_version;
-    bool m_bIniting = false;
+    bool m_bIniting;
+    bool m_bImporting;
 };
 
 #endif

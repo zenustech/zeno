@@ -170,6 +170,7 @@ namespace zeno {
         bool bView = false;
         NodeType type;
         bool bCollasped = false;
+        std::string cate;
     };
 
     struct NodeDesc {

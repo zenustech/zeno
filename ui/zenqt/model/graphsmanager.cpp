@@ -25,6 +25,8 @@ GraphsManager::GraphsManager(QObject* parent)
     , m_assets(nullptr)
     , m_main(nullptr)
     , m_version(zeno::VER_3)
+    , m_bIniting(false)
+    , m_bImporting(false)
 {
     m_logModel = new QStandardItemModel(this);
     m_model = new GraphsTreeModel(this);
@@ -122,6 +124,11 @@ bool GraphsManager::isInitializing() const
     return m_bIniting;
 }
 
+bool GraphsManager::isImporting() const
+{
+    return m_bImporting;
+}
+
 void GraphsManager::createGraphs(const zenoio::ZSG_PARSE_RESULT ioresult)
 {
     ZASSERT_EXIT(m_assets);
@@ -191,11 +198,15 @@ GraphsTreeModel* GraphsManager::newFile()
 
 void GraphsManager::importGraph(const QString& fn)
 {
+    m_bImporting = true;
+    zeno::scope_exit sp([=] { m_bImporting = false; });
     //todo: the function needs to be refactor.
 }
 
 void GraphsManager::importSubGraphs(const QString& fn, const QMap<QString, QString>& map)
 {
+    m_bImporting = true;
+    zeno::scope_exit sp([=] { m_bImporting = false; });
     //todo: the function needs to be refactor.
 }
 
