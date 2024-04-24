@@ -89,11 +89,11 @@ private:
     QColor m_bg;
     QRectF m_boundingRect;
     _padding m_padding;
-    Qt::Alignment m_alignment;
-    qreal m_fixedWidth;
-    Qt::CursorShape m_hoverCursor;
-    bool m_bRight;
-    bool m_bHovered;
+    Qt::Alignment m_alignment = Qt::AlignLeft;
+    qreal m_fixedWidth = -1;
+    Qt::CursorShape m_hoverCursor = Qt::ArrowCursor;
+    bool m_bRight = false;
+    bool m_bHovered = false;
 #ifdef DEBUG_TEXTITEM
     QString m_text;
 #endif

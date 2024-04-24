@@ -113,11 +113,6 @@ void ZGraphicsTextItem::focusOutEvent(QFocusEvent* event)
 
 ZSimpleTextItem::ZSimpleTextItem(QGraphicsItem* parent)
     : base(parent)
-    , m_fixedWidth(-1)
-    , m_bRight(false)
-    , m_bHovered(false)
-    , m_alignment(Qt::AlignLeft)
-    , m_hoverCursor(Qt::ArrowCursor)
 {
     setFlags(ItemIsFocusable | ItemIsSelectable);
     setAcceptHoverEvents(true);
@@ -125,10 +120,6 @@ ZSimpleTextItem::ZSimpleTextItem(QGraphicsItem* parent)
 
 ZSimpleTextItem::ZSimpleTextItem(const QString& text, QGraphicsItem* parent)
     : base(text, parent)
-    , m_fixedWidth(-1)
-    , m_bRight(false)
-    , m_bHovered(false)
-    , m_alignment(Qt::AlignLeft)
 {
     setAcceptHoverEvents(true);
     updateBoundingRect();

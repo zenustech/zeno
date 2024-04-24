@@ -8,7 +8,7 @@
 #include "zdictpanel.h"
 
 
-#define CURRENT_DEBUG_LAYOUT "dict"
+#define CURRENT_DEBUG_LAYOUT "Header HLayout"
 
 
 ZGraphicsLayout::ZGraphicsLayout(bool bHor)
