@@ -17,6 +17,7 @@ struct RenderEngine {
     virtual void draw(bool record) = 0;
     virtual void update() = 0;
     virtual void cleanupOptix() = 0;
+    virtual void cleanupWhenExit() = 0;
 
     virtual void addObject(std::shared_ptr<zeno::IObject> spObj) {}
     virtual void removeObject(const std::string& key) {}

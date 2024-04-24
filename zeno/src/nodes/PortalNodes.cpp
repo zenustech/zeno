@@ -196,9 +196,7 @@ struct SetUserData2 : zeno::INode {
 };
 
 ZENDEFNODE(SetUserData2, {
-    {{"", "object", "", PrimarySocket},
-     {"string", "key", ""},
-     {"", "data", "", PrimarySocket}},
+    {"object", {"string", "key", ""}, {"string","data",""}},
     {"object"},
     {},
     {"lifecycle"},

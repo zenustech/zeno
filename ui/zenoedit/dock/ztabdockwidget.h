@@ -47,7 +47,7 @@ public:
     void onPrimitiveSelected(const std::unordered_set<std::string>& primids);
     void onUpdateViewport(const QString& action);
     void updateLights();
-    void testCleanupGL();
+    void cleanupView();
 
     static PANEL_TYPE title2Type(const QString &title);
 

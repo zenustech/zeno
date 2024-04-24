@@ -47,6 +47,7 @@ struct Scene : zeno::disable_copy {
     bool loadFrameObjects(int frameid);
     void load_objects(const zeno::RenderObjsInfo& objs);
     void cleanUpScene();
+    void cleanupView();
     void switchRenderEngine(std::string const &name);
     std::vector<char> record_frame_offline(int hdrSize = 1, int rgbComps = 3);
     bool cameraFocusOnNode(std::string const &nodeid, zeno::vec3f &center, float &radius);

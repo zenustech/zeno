@@ -21,6 +21,7 @@
 #include <filesystem>
 #include <zeno/utils/string.h>
 #include <zeno/utils/scope_exit.h>
+#include <numeric>
 
 #ifdef ZENO_WITH_PYTHON3
     #include <Python.h>
@@ -416,6 +417,62 @@ static void read_attributes2(std::shared_ptr<PrimitiveObject> prim, ICompoundPro
                 log_info("[alembic] C3f attr {}, len {}.", p.getName(), data.size());
             }
             attr_from_data_vec(prim, samp.getScope(), p.getName(), data);
+        }
+        else if (IC4fGeomParam::matches(p)) {
+            IC4fGeomParam param(arbattrs, p.getName());
+
+            IC4fGeomParam::Sample samp = param.getIndexedValue(iSS);
+            std::vector<vec4f> data;
+            data.resize(samp.getVals()->size());
+            std::vector<vec3f> data_xyz(samp.getVals()->size());
+            std::vector<float> data_w(samp.getVals()->size());
+            for (auto i = 0; i < samp.getVals()->size(); i++) {
+                auto v = samp.getVals()->get()[i];
+                data[i] = {v[0], v[1], v[2], v[3]};
+                data_xyz[i] = {v[0], v[1], v[2]};
+                data_w[i] = v[3];
+            }
+            if (!read_done) {
+                log_info("[alembic] C4f attr {}, len {}.", p.getName(), data.size());
+            }
+            attr_from_data_vec(prim, samp.getScope(), p.getName(), data);
+            attr_from_data_vec(prim, samp.getScope(), p.getName() + "_rgb", data_xyz);
+            attr_from_data_vec(prim, samp.getScope(), p.getName() + "_a", data_w);
+        }
+        else {
+            log_info("[alembic] unknown attr {}.", p.getName());
+            zeno::log_info("getExtent {} ", p.getDataType().getExtent());
+            zeno::log_info("getNumBytes {} ", p.getDataType().getNumBytes());
+            zeno::log_info("getPod {} ", p.getDataType().getPod());
+        }
+    }
+    {
+        if (prim->loops.attr_keys<AttrAcceptAll>().size() == 0) {
+            return;
+        }
+        if (prim->loops.attr_keys<AttrAcceptAll>().size() == 1 && prim->loops.has_attr("uvs")) {
+            return;
+        }
+        if (!prim->loops.has_attr("uvs")) {
+            prim->loops.add_attr<int>("uvs");
+            prim->uvs.emplace_back();
+        }
+        {
+            std::vector<vec2f> uvs(prim->loops.size());
+            auto &uv_index = prim->loops.attr<int>("uvs");
+            for (auto i = 0; i < prim->loops.size(); i++) {
+                uvs[i] = prim->uvs[uv_index[i]];
+            }
+            prim->uvs.values = uvs;
+            std::iota(uv_index.begin(), uv_index.end(), 0);
+            prim->loops.foreach_attr<AttrAcceptAll>([&] (auto const &key, auto &arr) {
+                if (key == "uvs") {
+                    return;
+                }
+                using T = std::decay_t<decltype(arr[0])>;
+                auto &attr = prim->uvs.add_attr<T>(key);
+                std::copy(arr.begin(), arr.end(), attr.begin());
+            });
         }
     }
 }
@@ -1358,7 +1415,7 @@ ZENDEFNODE(PrimsFilterInUserdata, {
         {"bool", "fuzzy", "0"},
     },
     {
-        {"out"},
+        {"list", "out"},
     },
     {},
     {"alembic"},

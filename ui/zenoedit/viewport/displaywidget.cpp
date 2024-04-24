@@ -84,10 +84,12 @@ void DisplayWidget::initRecordMgr()
             [=](int frameid) { zeno::log_info("frame {} has been recorded", frameid); });
 }
 
-void DisplayWidget::testCleanUp()
+void DisplayWidget::cleanupView()
 {
     if (m_glView)
-        m_glView->testCleanUp();
+        m_glView->cleanUpView();
+    else
+        m_optixView->cleanupView();
 }
 
 void DisplayWidget::cleanUpScene()
