@@ -120,6 +120,16 @@ void Zenovis::cleanUpScene()
     pScene->cleanUpScene();
 }
 
+void Zenovis::cleanupView()
+{
+    if (!session)
+        return;
+
+    auto pScene = session->get_scene();
+    ZASSERT_EXIT(pScene);
+    pScene->cleanupView();
+}
+
 void Zenovis::startPlay(bool bPlaying)
 {
     m_playing = bPlaying;
