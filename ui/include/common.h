@@ -40,7 +40,9 @@ struct RECORD_SETTING
     bool bMask;
     bool bExr;
 
-    RECORD_SETTING() : fps(24), bitrate(200000), numMSAA(0), numOptix(1), width(1280), height(720), bExportVideo(false), needDenoise(false), bAutoRemoveCache(true), bAov(false), bExr(false), bMask(false) {}
+    QString exePath;
+
+    RECORD_SETTING() : fps(24), bitrate(200000), numMSAA(0), numOptix(1), width(1280), height(720), bExportVideo(false), needDenoise(false), bAutoRemoveCache(true), bAov(false), bExr(false), bMask(false){}
 };
 
 struct LAYOUT_SETTING {

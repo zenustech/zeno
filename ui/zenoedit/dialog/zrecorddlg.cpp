@@ -6,6 +6,7 @@
 #include "zeno/utils/UserData.h"
 #include "zassert.h"
 #include "settings/zsettings.h"
+#include <zenoui/comctrl/zpathedit.h>
 
 
 ZRecordVideoDlg::ZRecordVideoDlg(QWidget* parent)
@@ -38,6 +39,14 @@ ZRecordVideoDlg::ZRecordVideoDlg(QWidget* parent)
 
     m_ui->cbPresets->addItems({"540P", "720P", "1080P", "2K", "4K"});
     m_ui->cbPresets->setCurrentIndex(1);
+    CALLBACK_SWITCH cbSwitch = [=](bool bOn) {
+        zenoApp->getMainWindow()->setInDlgEventLoop(bOn); //deal with ubuntu dialog slow problem when update viewport.
+    };
+    m_exePath = new ZPathEdit(cbSwitch, this);
+    m_exePath->setProperty("control", CONTROL_READPATH);
+    m_exePath->setText(info.exePath);
+    m_ui->m_sendToServerWidget->layout()->addWidget(m_exePath);
+    m_ui->m_sendToServerWidget->hide();
 
     QSettings settings(zsCompanyName, zsEditor);
     bool enableCache = settings.value("zencache-enable").isValid() ? settings.value("zencache-enable").toBool() : true;
@@ -66,6 +75,9 @@ ZRecordVideoDlg::ZRecordVideoDlg(QWidget* parent)
 
     connect(m_ui->btnGroup, SIGNAL(accepted()), this, SLOT(accept()));
     connect(m_ui->btnGroup, SIGNAL(rejected()), this, SLOT(reject()));
+    connect(m_ui->m_chkSendToServer, &QCheckBox::stateChanged, this, [&]() {
+        m_ui->m_sendToServerWidget->setVisible(m_ui->m_chkSendToServer->isChecked());
+    });
 }
 
 bool ZRecordVideoDlg::getInfo(VideoRecInfo &info)
@@ -87,6 +99,12 @@ bool ZRecordVideoDlg::getInfo(VideoRecInfo &info)
     info.bExportEXR = m_ui->cbExportEXR->checkState() == Qt::Checked;
     info.needDenoise = m_ui->cbNeedDenoise->checkState() == Qt::Checked;
     info.bAutoRemoveCache = m_ui->cbRemoveAfterRender->checkState() == Qt::Checked;
+    info.bSendToServer = m_ui->m_chkSendToServer->checkState() == Qt::Checked;
+    if (info.bSendToServer)
+    {
+        info.exePath = m_exePath->text();
+        info.taskName = m_ui->m_taskName->text();
+    }
     if (path.isEmpty())
     {
         QTemporaryDir dir;
@@ -127,6 +145,7 @@ bool ZRecordVideoDlg::getInfo(VideoRecInfo &info)
     record_settings.bAov = m_ui->cbAOV->checkState() == Qt::Checked;
     record_settings.bMask = m_ui->cbMask->checkState() == Qt::Checked;
     record_settings.bExr = info.bExportEXR;
+    record_settings.exePath = info.exePath;
 
     zenoApp->graphsManagment()->setRecordSettings(record_settings);
 
