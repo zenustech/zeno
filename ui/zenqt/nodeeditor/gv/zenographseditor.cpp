@@ -80,6 +80,7 @@ void ZenoGraphsEditor::initUI()
     connect(pPageListButton, &ZIconLabel::clicked, this, &ZenoGraphsEditor::onPageListClicked);
     m_ui->graphsViewTab->setCornerWidget(pPageListButton);
     m_ui->graphsViewTab->setDocumentMode(false);
+    m_ui->graphsViewTab->setContextMenuPolicy(Qt::CustomContextMenu);
     initRecentFiles();
 
     showWelcomPage();
@@ -124,6 +125,7 @@ void ZenoGraphsEditor::initSignals()
             closeMaterialTab();
         }
     });
+    connect(m_ui->graphsViewTab, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(showContextMenu(const QPoint&)));
     connect(m_ui->searchEdit, SIGNAL(textChanged(const QString&)), this, SLOT(onSearchEdited(const QString&)));
     connect(m_ui->searchResView, SIGNAL(clicked(const QModelIndex&)), this, SLOT(onSearchItemClicked(const QModelIndex&)));
 
@@ -539,6 +541,65 @@ bool ZenoGraphsEditor::welComPageShowed()
     return m_ui->mainStacked->currentIndex() == 0;
 }
 
+void ZenoGraphsEditor::showInGraphicalShell(const QString& pathIn)
+{
+    const QFileInfo fileInfo(pathIn);
+#if defined(Q_OS_WIN)
+    QStringList param;
+    if (!fileInfo.isDir())
+        param += QLatin1String("/select,");
+    param += QDir::toNativeSeparators(fileInfo.canonicalFilePath());
+    QProcess::startDetached("explorer", param);
+#elif defined(Q_OS_MAC)
+
+#else
+        //    // we cannot select a file here, because no file browser really supports it...
+    //    const QString folder = fileInfo.isDir() ? fileInfo.absoluteFilePath() : fileInfo.filePath();
+    //    const QString app = UnixUtils::fileBrowser(ICore::settings());
+    //    QProcess browserProc;
+    //    const QString browserArgs = UnixUtils::substituteFileBrowserParameters(app, folder);
+    //    bool success = browserProc.startDetached(browserArgs);
+    //    const QString error = QString::fromLocal8Bit(browserProc.readAllStandardError());
+    //    success = success && error.isEmpty();
+    //    if (!success)
+    //        showGraphicalShellError(parent, app, error);
+#endif
+}
+
+void ZenoGraphsEditor::showContextMenu(const QPoint& pt)
+{
+    if (pt.isNull())
+        return;
+
+    int tabIndex = m_ui->graphsViewTab->tabBar()->tabAt(pt);
+    QMenu menu(this);
+
+    menu.addAction(tr("Close"), [=]() {
+        QTabBar* tab = m_ui->graphsViewTab->tabBar();
+        int idx = m_ui->graphsViewTab->currentIndex();
+        m_ui->graphsViewTab->removeTab(idx);
+    });
+
+    menu.addAction(tr("Copy Full Path"), [=]() {
+        QTabBar* tab = m_ui->graphsViewTab->tabBar();
+        int idx = m_ui->graphsViewTab->currentIndex();
+        QString fullPath = tab->tabToolTip(idx);
+
+        QMimeData* pMimeData = new QMimeData;
+        pMimeData->setText(fullPath);
+        QApplication::clipboard()->setMimeData(pMimeData);
+    });
+
+    menu.addAction(tr("Open Containing Folder"), [=]() {
+        QTabBar* tab = m_ui->graphsViewTab->tabBar();
+        int idx = m_ui->graphsViewTab->currentIndex();
+        QString fullPath = tab->tabToolTip(idx);
+        showInGraphicalShell(fullPath);
+    });
+
+    menu.exec(m_ui->graphsViewTab->tabBar()->mapToGlobal(pt));
+}
+
 void ZenoGraphsEditor::activateTab(const QStringList& subgpath, const QString& focusNode, bool isError)
 {
     //objpath is a path like /main, /main/aaa or asset name like `PresetMatrial`.
@@ -546,6 +607,18 @@ void ZenoGraphsEditor::activateTab(const QStringList& subgpath, const QString& f
     int idx = tabIndexOfName(showName);
     auto graphsMgm = zenoApp->graphsManager();
     GraphModel* pGraphM = graphsMgm->getGraph(subgpath);
+
+    QString resPath;
+    if (showName != "main") {
+        AssetsModel* pAssets = graphsMgm->assetsModel();
+        zeno::AssetInfo info = pAssets->getAsset(showName);
+        resPath = QString::fromStdString(info.path);
+    }
+    else {
+        resPath = graphsMgm->zsgPath();
+    }
+    resPath.replace('/', '\\');
+
     ZASSERT_EXIT(pGraphM);
     if (idx == -1)
     {
@@ -565,6 +638,7 @@ void ZenoGraphsEditor::activateTab(const QStringList& subgpath, const QString& f
             m_ui->splitter->replaceWidget(1, m_ui->graphsViewTab);
 
         idx = m_ui->graphsViewTab->addTab(pView, showName);
+        m_ui->graphsViewTab->setTabToolTip(idx, resPath);
 
         QString tabIcon;
         if (showName == "main")

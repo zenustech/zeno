@@ -71,6 +71,7 @@ private slots:
     void onMenuActionTriggered(QAction* pAction);
     void onNewAsset();
     void onPageListClicked();
+    void showContextMenu(const QPoint&);
 
 private:
     void initUI();
@@ -81,6 +82,7 @@ private:
     int tabIndexOfName(const QString& subGraphName);
     void markSubgError(const QStringList &lst);
     void closeMaterialTab();
+    void showInGraphicalShell(const QString& pathIn);
 
     ZenoMainWindow* m_mainWin;
     Ui::GraphsEditor* m_ui;
