@@ -57,11 +57,21 @@ std::optional<NodeLocation> NodeSyncMgr::searchNodeOfPrim(const std::string& pri
     if (!graph_model) {
         return {};
     }
-    std::set<ObjPath> nodeNameSet = zeno::getSession().objsMan->getAttachNodes(prim_name);
+
+    const auto& objsMan = zeno::getSession().objsMan;
+    std::set<ObjPath> nodeNameSet = objsMan->getAttachNodes(prim_name);
     if (nodeNameSet.empty())
         return {};
-    auto search_result = graph_model->searchByUuidPath(*nodeNameSet.begin());
-    return NodeLocation(search_result[0].targetIdx, search_result[0].subGraph);
+
+    for (auto nodepath : nodeNameSet)
+    {
+        auto spNode = zeno::getSession().mainGraph->getNode(nodepath);
+        if (spNode->is_view()) {
+            auto search_result = graph_model->searchByUuidPath(*nodeNameSet.begin());
+            return NodeLocation(search_result[0].targetIdx, search_result[0].subGraph);
+        }
+    }
+    return {};
 }
 
 std::optional<NodeLocation> NodeSyncMgr::searchNode(const std::string& node_id) {

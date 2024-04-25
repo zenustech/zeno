@@ -21,35 +21,43 @@ namespace zeno {
     {
     }
 
-    ZENO_API void ObjectManager::collectingObject(const std::string& id, std::shared_ptr<IObject> obj, std::shared_ptr<INode> view_node, bool bView)
+    ZENO_API void ObjectManager::collectingObject(std::shared_ptr<IObject> obj, std::shared_ptr<INode> attachNode, bool bView)
     {
         std::lock_guard lck(m_mtx);
 
-        zeno::getSession().globalState->setCalcObjStatus(zeno::Collecting);
+        const std::string& objId = obj->key();
+        if (objId.empty())
+            return;
 
-        auto it = m_objects.find(id);
-        auto path = view_node->get_uuid_path();
-        if (it == m_objects.end()) {
+        //zeno::getSession().globalState->setCalcObjStatus(zeno::Collecting);
+        auto it = m_objects.find(objId);
+        auto path = attachNode->get_uuid_path();
+        bool bExist = it != m_objects.end();
+        if (!bExist) {
             _ObjInfo info;
             info.obj = obj;
             info.attach_nodes.insert(path);
-            m_objects.insert(std::make_pair(id, info));
+            m_objects.insert(std::make_pair(objId, info));
         }
         else {
             it->second.obj = obj;
             it->second.attach_nodes.insert(path);
         }
+
+        //仅处理view的对象，不view的可能没必要加进来。
         if (bView) {
-            m_viewObjs.insert(id);
-            if (m_lastViewObjs.find(id) != m_lastViewObjs.end()) {
-                m_lastViewObjs.erase(id);   //上一次运行有view，这一次也有view
+            m_viewObjs.insert(objId);
+            if (m_lastViewObjs.find(objId) != m_lastViewObjs.end()) {
+                m_lastViewObjs.erase(objId);
+                //上一次运行有view，这一次也有view，如果节点状态是运行态，说明是修改对象
+                if (Node_Running == attachNode->get_run_status()) {
+                    m_modify.insert(objId);
+                }
             }
             else {
                 //上一次没有view，这次有view，要么就是新增，要么就是重新打view
-                m_newAdded.insert(id);
+                m_newAdded.insert(objId);
             }
-        }
-        else {
         }
     }
 
@@ -91,6 +99,7 @@ namespace zeno {
 
     ZENO_API std::set<ObjPath> ObjectManager::getAttachNodes(const std::string& id)
     {
+        std::lock_guard lck(m_mtx);
         auto it = m_objects.find(id);
         if (it != m_objects.end())
         {
@@ -126,6 +135,18 @@ namespace zeno {
         m_lastUnregisterObjs.clear();
     }
 
+    ZENO_API void ObjectManager::clear()
+    {
+        m_objects.clear();
+        m_viewObjs.clear();
+        m_lastViewObjs.clear();
+        m_removing_objs.clear();
+        m_newAdded.clear();
+        m_remove.clear();
+        m_modify.clear();
+        m_frameData.clear();
+    }
+
     ZENO_API void ObjectManager::clear_last_run()
     {
         std::lock_guard lck(m_mtx);
@@ -152,20 +173,20 @@ namespace zeno {
         }
     }
 
-    ZENO_API void ObjectManager::collect_modify_objs(std::set<std::string>& newobjKeys, bool isView)
+    ZENO_API void ObjectManager::collect_modify_objs(const std::set<std::string>& newobjKeys, bool isView)
     {
         std::lock_guard lck(m_mtx);
         if (isView)
             m_modify.insert(newobjKeys.begin(), newobjKeys.end());;
     }
 
-    ZENO_API void ObjectManager::remove_modify_objs(std::set<std::string>& removeobjKeys)
+    ZENO_API void ObjectManager::remove_modify_objs(const std::set<std::string>& removeobjKeys)
     {
         std::lock_guard lck(m_mtx);
         m_modify.clear();
     }
 
-    ZENO_API void ObjectManager::collect_modify_objs(std::string newobjKey, bool isView)
+    ZENO_API void ObjectManager::collect_modify_objs(const std::string& newobjKey, bool isView)
     {
         std::lock_guard lck(m_mtx);
         if (isView)
@@ -224,11 +245,6 @@ namespace zeno {
         if (m_objects.find(name) != m_objects.end())
             return m_objects[name].obj;
         return nullptr;
-    }
-
-    void ObjectManager::clear()
-    {
-        //todo
     }
 
 }

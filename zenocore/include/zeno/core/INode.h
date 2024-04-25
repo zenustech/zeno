@@ -95,8 +95,6 @@ public:
 
     ZENO_API bool in_asset_file() const;
 
-    ZENO_API void mark_param_modified(std::string paramName, bool modified);    //修改IParam的modify标志位，表示该param是new的obj还是修改原有obj
-
     void onInterrupted();
     void mark_previous_ref_dirty();
 
@@ -113,7 +111,6 @@ protected:
     //preApply是先解决所有输入参数（依赖）的求值问题
     ZENO_API virtual void preApply();
     ZENO_API virtual void apply() = 0;
-    ZENO_API virtual void unregisterObjs();
     ZENO_API virtual void registerObjToManager();
     ZENO_API std::vector<std::pair<std::string, zany>> getinputs();
     ZENO_API std::vector<std::pair<std::string, zany>> getoutputs2();

@@ -59,8 +59,9 @@ public:
     ZENO_API void beforeRun();
     ZENO_API void afterRun();
     ZENO_API void clearLastUnregisterObjs();
+    ZENO_API void clear();
 
-    ZENO_API void collectingObject(const std::string& id, std::shared_ptr<IObject> obj, std::shared_ptr<INode> view_node, bool bView);
+    ZENO_API void collectingObject(std::shared_ptr<IObject> obj, std::shared_ptr<INode> view_node, bool bView);
     CALLBACK_REGIST(collectingObject, void, std::shared_ptr<IObject>, bool)
 
     ZENO_API void removeObject(const std::string& id);
@@ -89,14 +90,12 @@ public:
     ZENO_API void remove_attach_node_by_removing_objs();
 
     //viewport interactive obj
-    ZENO_API void collect_modify_objs(std::string newobjKey, bool isView);
-    ZENO_API void collect_modify_objs(std::set<std::string>& newobjKeys, bool isView);
-    ZENO_API void remove_modify_objs(std::set<std::string>& removeobjKeys);
+    ZENO_API void collect_modify_objs(const std::string& newobjKey, bool isView);
+    ZENO_API void collect_modify_objs(const std::set<std::string>& newobjKeys, bool isView);
+    ZENO_API void remove_modify_objs(const std::set<std::string>& removeobjKeys);
     ZENO_API void getModifyObjsInfo(std::set<std::string>& modifyInteractiveObjs);  //interactive objs
 
 private:
-    void clear();
-
     std::map<std::string, int> m_objRegister;
 
     ViewObjects m_objects;  //记录所有当前计算的对象，当切换帧的时候，可能使得部分依赖帧的对象重算。
@@ -108,7 +107,7 @@ private:
 
     std::set<std::string> m_newAdded;       //渲染端需要新增的obj
     std::set<std::string> m_remove;         //渲染端需要移除的obj
-    std::set<std::string> m_modify;         //渲染端(viewport)的 interactive obj
+    std::set<std::string> m_modify;         //渲染端更改的obj
 
     std::set<std::string> m_lastUnregisterObjs;
 

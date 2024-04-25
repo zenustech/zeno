@@ -27,7 +27,7 @@ namespace zeno
             guid.Data4[3], guid.Data4[4], guid.Data4[5],
             guid.Data4[6], guid.Data4[7]);
 
-        std::string res = prefix + '-' + std::string(buf);
+        std::string res = std::string(buf) + '-' + prefix;
         return std::move(res);
 #elif defined(__linux__)
         char buf[GUID_LEN] = { 0 };

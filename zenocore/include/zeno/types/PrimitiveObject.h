@@ -147,7 +147,6 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
     std::shared_ptr<InstancingObject> inst;
 
     PrimitiveObject() {}
-    PrimitiveObject(const std::string& prefix) : IObjectClone<PrimitiveObject>(prefix) {}
 
     // deprecated:
     template <class Accept = std::variant<vec3f, float>, class F>

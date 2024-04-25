@@ -229,6 +229,7 @@ ZENO_API bool Session::is_auto_run() const {
 ZENO_API void Session::set_Rerun()
 {
     mainGraph->markDirtyAll();
+    objsMan->clear();
 }
 
 void Session::initNodeCates() {

@@ -461,8 +461,11 @@ void FakeTransformer::endTransform(bool moved) {
                 primitiveTransformPath += namepath + "(index:" + obj->listitemNumberIndex + ")" + ";";
             }
             else {                                  //this item is single
-                prim_node_location = node_sync.searchNode(obj_name);
+                prim_node_location = node_sync.searchNodeOfPrim(obj_name);
             }
+            if (!prim_node_location.has_value())
+                break;
+
             auto& prim_node = prim_node_location->node;
             if (node_sync.checkNodeType(prim_node, "PrimitiveTransform") &&
                 // prim comes from a exist TransformPrimitive node

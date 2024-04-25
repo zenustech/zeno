@@ -34,6 +34,10 @@ ZENO_API std::string IObject::key() {
     return "";
 }
 
+ZENO_API bool IObject::update_key(const std::string& key) {
+    return false;
+}
+
 ZENO_API UserData &IObject::userData() const {
     if (!m_userData.has_value())
         m_userData.emplace<UserData>();

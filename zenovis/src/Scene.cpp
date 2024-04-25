@@ -156,8 +156,11 @@ bool Scene::cameraFocusOnNode(std::string const &nodeid, zeno::vec3f &center, fl
 }
 
 void Scene::load_objects(const zeno::RenderObjsInfo& objs) {
-    if (renderMan && renderMan->getEngine())
-        renderMan->getEngine()->load_objects(objs);
+    if (renderMan)
+    {
+        if (RenderEngine* pEngine = renderMan->getEngine())
+            pEngine->load_objects(objs);
+    }
 }
 
 bool Scene::loadFrameObjects(int frameid) {
@@ -179,18 +182,6 @@ bool Scene::loadFrameObjects(int frameid) {
 void Scene::draw(bool record) {
     if (renderMan->getDefaultEngineName() != "optx")
     {
-        //only for gl engnine
-        std::set<std::string> modifyObjsKeys;
-        zeno::RenderObjsInfo objs;
-        zeno::getSession().objsMan->getModifyObjsInfo(modifyObjsKeys);
-        for (auto& key: modifyObjsKeys)
-        {
-            auto it = lastAllItems.find(key);
-            if (it != lastAllItems.end())
-                objs.modifyObjs.insert(std::make_pair(key, it->second));
-        }
-        renderMan->getEngine()->load_objects(objs);
-
         //CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
         auto offset = camera->m_block_window? camera->viewport_offset : zeno::vec2i(0, 0);
         CHECK_GL(glViewport(offset[0], offset[1], camera->m_nx, camera->m_ny));

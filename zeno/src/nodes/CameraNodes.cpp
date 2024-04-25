@@ -211,7 +211,6 @@ struct LightNode : INode {
                 prim->verts.clear();
                 prim->verts.clear_attrs();
                 prim->tris.clear();
-                mark_param_modified("prim", true);
             }
             else {
                 prim = std::make_shared<zeno::PrimitiveObject>();

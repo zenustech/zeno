@@ -263,38 +263,31 @@ ZENO_API void INode::preApply() {
     }
 }
 
-ZENO_API void INode::unregisterObjs()
-{
-    for (auto const& [name, param] : m_outputs)
-    {
-        if (auto spObj = std::dynamic_pointer_cast<IObject>(param->result)) {
-            const std::string& key = spObj->key();
-            if (key.empty()) {
-                continue;
-            }
-            getSession().objsMan->removeObject(key);
-        }
-    }
-}
-
 ZENO_API void INode::registerObjToManager()
 {
     for (auto const& [name, param] : m_outputs)
     {
         if (auto spObj = std::dynamic_pointer_cast<IObject>(param->result)) {
 
-            if (std::dynamic_pointer_cast<NumericObject>(spObj)) {
+            if (std::dynamic_pointer_cast<NumericObject>(spObj) ||
+                std::dynamic_pointer_cast<StringObject>(spObj)) {
                 return;
             }
+
+            if (spObj->key().empty())
+            {
+                //如果当前节点是引用前继节点产生的obj，则obj.key不为空，此时就必须沿用之前的id，
+                //以表示“引用”，否则如果新建id，obj指针可能是同一个，会在manager引起混乱。
+                spObj->update_key(m_uuid);
+            }
+
             const std::string& key = spObj->key();
             assert(!key.empty());
             param->result->nodeId = m_name;
 
-            getSession().objsMan->collectingObject(key, spObj, shared_from_this(), m_bView);
-            if (param->m_idModify) {
-                getSession().objsMan->collect_modify_objs(key, m_bView); //如果是修改obj，还需要添加到objManager的modify集合中(需要在具体apply函数中设置m_idModify为true)
-                getSession().objsMan->revertRemoveObject(key);           //如果是对param的obj进行modify，不需要去objManager中unregiste该对象，撤销unregiste时removeObj
-            }
+            auto& objsMan = getSession().objsMan;
+            std::shared_ptr<INode> spNode = shared_from_this();
+            objsMan->collectingObject(spObj, spNode, m_bView);
         }
     }
 }
@@ -461,12 +454,11 @@ ZENO_API void INode::doApply() {
         registerObjToManager();//如果只是打view，也是需要加到manager的。
         return;
     }
+
     zeno::scope_exit spe([&] {//apply时根据情况将IParam标记为modified，退出时将所有IParam标记为未modified
         for (auto const& [name, param] : m_outputs)
             param->m_idModify = false;
         });
-
-    unregisterObjs();
 
     preApply();
 
@@ -784,12 +776,6 @@ ZENO_API std::pair<float, float> INode::get_pos() const {
 
 ZENO_API bool INode::in_asset_file() const {
     return getSession().assets->isAssetGraph(this->graph->shared_from_this());
-}
-
-ZENO_API void INode::mark_param_modified(std::string paramName, bool modified)
-{
-    if (std::shared_ptr<IParam> primParam = get_output_param("prim"))
-        primParam->m_idModify = modified;
 }
 
 ZENO_API bool INode::set_input(std::string const& param, zany obj) {
