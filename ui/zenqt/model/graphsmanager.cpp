@@ -300,6 +300,20 @@ QGraphicsScene* GraphsManager::gvScene(const QModelIndex& subgIdx) const
     */
 }
 
+QMap<QStringList, QGraphicsScene*> GraphsManager::gvSubScenes(const QStringList& graphName) const
+{
+    QMap<QStringList, QGraphicsScene*> pathSceneMap;
+    QString graphPath = graphName.join("");
+    for (auto scene : m_scenes) {
+        auto pModel = scene->getGraphModel();
+        auto path = pModel->currentPath();
+        if (path.join("").contains(graphPath)) {
+            pathSceneMap.insert(path, scene);
+        }
+    }
+    return pathSceneMap;
+}
+
 void GraphsManager::addScene(const QModelIndex& subgIdx, ZenoSubGraphScene* scene)
 {
     //TODO: deprecated

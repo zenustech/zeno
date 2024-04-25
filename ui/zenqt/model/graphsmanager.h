@@ -38,6 +38,7 @@ public:
     void updateAssets(const QString& assetsName, zeno::ParamsUpdateInfo info, const zeno::CustomUI& customui);
     QGraphicsScene* gvScene(const QStringList& graphName) const;
     QGraphicsScene* gvScene(const QModelIndex& subgIdx) const;
+    QMap<QStringList, QGraphicsScene*> gvSubScenes(const QStringList& graphName) const;
     void addScene(const QModelIndex& subgIdx, ZenoSubGraphScene* scene);
     void addScene(const QStringList& graphPath, ZenoSubGraphScene* scene);
     bool removeScene(const QStringList& graphPat);
