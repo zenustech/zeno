@@ -1096,10 +1096,11 @@ void DisplayWidget::sendTaskToServer(const VideoRecInfo& info)
     }
     file.write(str.toUtf8());
     file.close();
-    //python cmd
-    cmd = "python  O:/send.py --file " + filePath + " --name " + info.taskName;
-    QProcess process;
-    process.execute(cmd);
+    //python script
+    QString script = R"(import os
+os.system("python O:/send.py --file %1 --name %2"))";
+    script = script.arg(filePath, info.taskName);
+    AppHelper::pythonExcute(script);
     file.remove();
 }
 
