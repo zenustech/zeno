@@ -80,7 +80,7 @@ std::optional<NodeLocation> NodeSyncMgr::checkNodeLinkedSpecificNode(const QMode
     auto this_outputs = node.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
     auto this_node_id = node.data(ROLE_OBJID).toString(); // TransformPrimitive-1f4erf21
     auto this_node_type = this_node_id.section("-", 1); // TransformPrimitive
-    auto prim_sock_name = getPrimSockName(this_node_type.toStdString());
+    auto prim_sock_name = getPrimSockName(node);
 
     QString sockName = QString::fromLocal8Bit(prim_sock_name.c_str());
     if (this_outputs.find(sockName) == this_outputs.end())
@@ -199,6 +199,7 @@ void NodeSyncMgr::updateNodeParamString(NodeLocation node_location,
 }
 
 std::string NodeSyncMgr::getPrimSockName(const std::string& node_type) {
+    //6666666666666666666666666666
     if (m_prim_sock_map.find(node_type) != m_prim_sock_map.end())
         return m_prim_sock_map[node_type];
     //return "prim";
@@ -208,21 +209,12 @@ std::string NodeSyncMgr::getPrimSockName(const std::string& node_type) {
     return desc.outputs.firstKey().toStdString();
 }
 
-std::string NodeSyncMgr::getPrimSockName(NodeLocation& node_location) {
-    auto node_type = node_location.node.data(ROLE_OBJID).toString().section("-", 1);
-
-    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-    ZASSERT_EXIT(pGraphsModel, "prim");
-    if (pGraphsModel->IsSubGraphNode(node_location.node))
-    {
-        NODE_DESC desc;
-        pGraphsModel->getDescriptor(node_location.node.data(ROLE_OBJNAME).toString(), desc);
-        OUTPUT_SOCKETS descOutput = desc.outputs;
-        descOutput.remove("DST");
-        return descOutput.firstKey().toStdString();
-    }
-    else {
-        return getPrimSockName(node_type.toStdString());
+std::string NodeSyncMgr::getPrimSockName(const QModelIndex& nodeIdx) {
+    auto node_type = nodeIdx.data(ROLE_OBJID).toString().section("-", 1);
+    OUTPUT_SOCKETS outputs = nodeIdx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
+    ZASSERT_EXIT(!outputs.isEmpty(), "");
+    QString name = outputs.begin()->key();
+    return name.toStdString();
     }
 }
 

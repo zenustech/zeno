@@ -118,10 +118,12 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
     if (event->button() == Qt::MiddleButton) {
         middle_button_pressed = true;
     }
+    auto m_picker = this->m_picker.lock();
+    auto m_transformer = this->m_transformer.lock();
     if (scene->camera->m_need_sync) {
         scene->camera->m_need_sync = false;
         if (bool(m_picker) && scene->camera->m_auto_radius) {
-            this->m_picker->set_picked_depth_callback([&] (float depth, int x, int y) {
+            m_picker->set_picked_depth_callback([&] (float depth, int x, int y) {
                 if (depth < 0.001f) {
                     return;
                 }
@@ -135,7 +137,7 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
             });
             int mid_x = int(this->res().x() * 0.5);
             int mid_y = int(this->res().y() * 0.5);
-            this->m_picker->pick_depth(mid_x, mid_y);
+            m_picker->pick_depth(mid_x, mid_y);
         }
     }
     int button = Qt::NoButton;
@@ -229,6 +231,7 @@ void CameraControl::lookTo(int dir) {
 }
 
 void CameraControl::clearTransformer() {
+    auto m_transformer = this->m_transformer.lock();
     if (!m_transformer)
         return;
     m_transformer->clear();
@@ -236,6 +239,7 @@ void CameraControl::clearTransformer() {
 
 void CameraControl::changeTransformOperation(const QString &node)
 {
+    auto m_transformer = this->m_transformer.lock();
     if (!m_transformer)
         return;
 
@@ -259,6 +263,7 @@ void CameraControl::changeTransformOperation(const QString &node)
 
 void CameraControl::changeTransformOperation(int mode)
 {
+    auto m_transformer = this->m_transformer.lock();
     if (!m_transformer)
         return;
 
@@ -273,6 +278,7 @@ void CameraControl::changeTransformOperation(int mode)
 
 void CameraControl::changeTransformCoordSys()
 {
+    auto m_transformer = this->m_transformer.lock();
     if (!m_transformer)
         return;
     m_transformer->changeCoordSys();
@@ -281,6 +287,7 @@ void CameraControl::changeTransformCoordSys()
 
 void CameraControl::resizeTransformHandler(int dir)
 {
+    auto m_transformer = this->m_transformer.lock();
     if (!m_transformer)
         return;
     m_transformer->resizeHandler(dir);
@@ -289,6 +296,7 @@ void CameraControl::resizeTransformHandler(int dir)
 
 void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
 {
+    auto m_transformer = this->m_transformer.lock();
     bool ctrl_pressed = event->modifiers() & Qt::ControlModifier;
     bool alt_pressed = event->modifiers() & Qt::AltModifier;
 
@@ -470,6 +478,7 @@ void CameraControl::fakeWheelEvent(QWheelEvent *event) {
 void CameraControl::fakeMouseDoubleClickEvent(QMouseEvent *event)
 {
     auto pos = event->pos();
+    auto m_picker = this->m_picker.lock();
     if (!m_picker)
         return;
     auto scene = m_zenovis->getSession()->get_scene();
@@ -588,7 +597,8 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
         middle_button_pressed = false;
     }
     if (event->button() == Qt::LeftButton) {
-
+        auto m_transformer = this->m_transformer.lock();
+        auto m_picker = this->m_picker.lock();
         //if (Zenovis::GetInstance().m_bAddPoint == true) {
         //float x = (float)event->x() / m_res.x();
         //float y = (float)event->y() / m_res.y();

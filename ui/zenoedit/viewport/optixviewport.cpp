@@ -332,6 +332,11 @@ void OptixWorker::needUpdateCamera()
     m_pTimer->start(m_sampleFeq);
 }
 
+void OptixWorker::onCleanUpView()
+{
+    m_zenoVis->cleanupView();
+}
+
 void OptixWorker::onSetBackground(bool bShowBg)
 {
     auto& ud = zeno::getSession().userData();
@@ -428,6 +433,7 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(this, &ZOptixViewport::sig_modifyLightData, m_worker, &OptixWorker::onModifyLightData);
     connect(this, &ZOptixViewport::sig_updateCameraProp, m_worker, &OptixWorker::onUpdateCameraProp);
     connect(this, &ZOptixViewport::sig_updateEngine, m_worker, &OptixWorker::onUpdateEngine);
+    connect(this, &ZOptixViewport::sig_cleanUpView, m_worker, &OptixWorker::onCleanUpView);
     connect(this, &ZOptixViewport::sig_setBackground, m_worker, &OptixWorker::onSetBackground);
     connect(this, &ZOptixViewport::sig_setdata_on_optix_thread, m_worker, &OptixWorker::onSetData);
 
@@ -495,6 +501,11 @@ void ZOptixViewport::killThread()
 void ZOptixViewport::setSlidFeq(int feq)
 {
     emit sig_setSlidFeq(feq);
+}
+
+void ZOptixViewport::cleanupView()
+{
+    emit sig_cleanUpView();
 }
 
 void ZOptixViewport::modifyLightData(UI_VECTYPE pos, UI_VECTYPE scale, UI_VECTYPE rotate, UI_VECTYPE color, float intensity, QString name, UI_VECTYPE skipParam)

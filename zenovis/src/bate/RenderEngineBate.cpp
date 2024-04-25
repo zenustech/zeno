@@ -18,6 +18,7 @@ struct RenderEngineBate : RenderEngine {
     std::unique_ptr<IGraphicDraw> primHighlight;
     std::unique_ptr<FrameBufferRender> fbr;
     Scene *scene;
+    bool released = false;
 
     int bateEnginIdx = 0;
     int getEnginIdx() {
@@ -55,6 +56,9 @@ struct RenderEngineBate : RenderEngine {
     }
 
     void draw(bool record) override {
+        if (released) {
+            return;
+        }
         auto guard = setupState();
         CHECK_GL(glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE));
         glDepthFunc(GL_GREATER);
@@ -101,6 +105,20 @@ struct RenderEngineBate : RenderEngine {
             fbr->draw_to_screen();
             fbr->destroy_buffers();
         }
+    }
+
+    void cleanupOptix() override {
+
+    }
+
+    void cleanupWhenExit() override {
+        released = true;
+        scene->shaderMan = nullptr;
+        vao = nullptr;
+        graphicsMan = nullptr;
+        hudGraphics.clear();
+        primHighlight = nullptr;
+        fbr = nullptr;
     }
 };
 

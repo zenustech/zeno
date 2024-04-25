@@ -25,6 +25,7 @@ public:
     ViewportWidget(QWidget* parent = nullptr);
     ~ViewportWidget();
     void testCleanUp();
+    void cleanUpView();
     void initializeGL() override;
     void resizeGL(int nx, int ny) override;
     void paintGL() override;

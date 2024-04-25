@@ -334,7 +334,7 @@ void FakeTransformer::createNewTransformNode(NodeLocation& node_location,
                                              const std::string& obj_name, const std::string listitemGroupPath) {
     auto& node_sync = NodeSyncMgr::GetInstance();
 
-    auto out_sock = node_sync.getPrimSockName(node_location);
+    auto out_sock = node_sync.getPrimSockName(node_location.node);
     auto new_node_location = node_sync.generateNewNode(node_location,
                                                        "PrimitiveTransform",
                                                        out_sock,
