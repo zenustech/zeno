@@ -1070,7 +1070,7 @@ void DisplayWidget::sendTaskToServer(const VideoRecInfo& info)
             writer.Key(key.toUtf8());
             {
                 JsonObjBatch objBatch1(writer);
-                writer.Key("cmd");
+                writer.Key("cmds");
                 {
                     JsonArrayBatch cmdBatch(writer);
                     writer.String(cmd.toUtf8());
@@ -1100,7 +1100,7 @@ void DisplayWidget::sendTaskToServer(const VideoRecInfo& info)
     cmd = "python  O:/send.py --file " + filePath + " --name " + info.taskName;
     QProcess process;
     process.execute(cmd);
-    file.remove();
+    //file.remove();
 }
 
 void DisplayWidget::onFrameFinish(int frame)
