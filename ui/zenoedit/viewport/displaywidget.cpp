@@ -1100,7 +1100,7 @@ void DisplayWidget::sendTaskToServer(const VideoRecInfo& info)
     cmd = "python  O:/send.py --file " + filePath + " --name " + info.taskName;
     QProcess process;
     process.execute(cmd);
-    //file.remove();
+    file.remove();
 }
 
 void DisplayWidget::onFrameFinish(int frame)
