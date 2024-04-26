@@ -538,7 +538,6 @@ ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls, const 
     }
 
     node->graph = this;
-    node->m_cate = cate;
     node->m_pos = pos;
     node->mark_dirty(true);
     m_name2uuid[name] = uuid;

@@ -314,22 +314,6 @@ void ZenoMainWindow::dispatchCommand(QAction* pAction, bool bTriggered)
             }
         }
     }
-    //for (ZDockWidget* pDock : docks)
-    //{
-    //    if (!pViewport)
-    //        pViewport = pDock->getUniqueViewport();
-    //    if (!pEditor)
-    //        pEditor = pDock->getAnyEditor();
-    //    for (int i = 0; i < pDock->count(); i++)
-    //    {
-    //        DisplayWidget* pDisplay = qobject_cast<DisplayWidget*>(pDock->widget(i));
-    //        if (pDisplay)
-    //        {
-    //            int actionType = pAction->property("ActionType").toInt();
-    //            //pDisplay->onCommandDispatched(actionType, bTriggered);
-    //        }
-    //    }
-    //}
     if (pEditor)
     {
         pEditor->onCommandDispatched(pAction, bTriggered);

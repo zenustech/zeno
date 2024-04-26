@@ -122,6 +122,11 @@ public:
     bool isLocked() const;
     void importNodes(const zeno::NodesData& nodes, const zeno::LinksData& links, const QPointF& pos);
 
+    //undo, redo
+    zeno::NodeData _createNodeImpl(const QString& cate, zeno::NodeData& nodedata, zeno::GraphData& graphData, bool endTransaction = false);
+    bool _removeNodeImpl(const QString& name, bool endTransaction = false);
+    std::weak_ptr<zeno::INode> getWpNode(QString& nodename);
+
 signals:
     void reloaded();
     void clearLayout();
@@ -130,12 +135,7 @@ signals:
     void lockStatusChanged();
 
 private:
-    //undo, redo
-    zeno::NodeData _createNodeImpl(zeno::NodeData& nodedata, std::weak_ptr<zeno::Graph> wpGraph, zeno::GraphData& graphData, bool endTransaction = false);
-    bool _removeNodeImpl(const QString& name, std::weak_ptr<zeno::Graph> wpGraph, bool endTransaction = false);
     std::optional<QUndoStack*> m_undoRedoStack;
-    friend class AddNodeCommand;
-    friend class RemoveNodeCommand;
 
     void registerCoreNotify();
     void unRegisterCoreNotify();

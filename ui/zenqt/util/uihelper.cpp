@@ -1839,7 +1839,7 @@ void UiHelper::newCustomModel(QStandardItemModel* customParamsM, const zeno::Cus
     customParamsM->appendRow(pOutputs);
 }
 
-void UiHelper::parseUpdateInfo(zeno::ParamsUpdateInfo& infos, const zeno::CustomUI& customui)
+void UiHelper::parseUpdateInfo(const zeno::CustomUI& customui, zeno::ParamsUpdateInfo& infos)
 {
     for (const zeno::ParamTab& tab : customui.tabs)
     {

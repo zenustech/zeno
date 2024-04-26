@@ -80,9 +80,9 @@ GraphModel::GraphModel(std::shared_ptr<zeno::Graph> spGraph, GraphsTreeModel* pT
     : QAbstractListModel(parent)
     , m_wpCoreGraph(spGraph)
     , m_pTree(pTree)
-    , m_undoRedoStack(new QUndoStack(this))
 {
     m_graphName = QString::fromStdString(spGraph->getName());
+    m_undoRedoStack = m_graphName == "main" || spGraph->isAssets() ? new QUndoStack(this) : nullptr;
     m_linkModel = new LinkModel(this);
     registerCoreNotify();
 
@@ -806,9 +806,8 @@ zeno::NodeData GraphModel::createNode(const QString& nodeCls, const QString& cat
 {
     zeno::NodeData nodedata;
     nodedata.cls = nodeCls.toStdString();
-    nodedata.cate = cate.toStdString();
     nodedata.uipos = { pos.x(), pos.y() };
-    return _createNodeImpl(nodedata, std::weak_ptr<zeno::Graph>(), zeno::GraphData(), true);
+    return _createNodeImpl(cate, nodedata, zeno::GraphData(), true);
 }
 
 void GraphModel::_appendNode(std::shared_ptr<zeno::INode> spNode)
@@ -840,7 +839,7 @@ void GraphModel::_appendNode(std::shared_ptr<zeno::INode> spNode)
     GraphsManager::instance().currentModel()->markDirty(true);
 }
 
-zeno::NodeData GraphModel::_createNodeImpl(zeno::NodeData& nodedata, std::weak_ptr<zeno::Graph> wpGraph, zeno::GraphData& graphData, bool endTransaction)
+zeno::NodeData GraphModel::_createNodeImpl(const QString& cate, zeno::NodeData& nodedata, zeno::GraphData& graphData, bool endTransaction)
 {
     bool bEnableIoProc = GraphsManager::instance().isInitializing() || GraphsManager::instance().isImporting();
     if (bEnableIoProc)
@@ -849,18 +848,20 @@ zeno::NodeData GraphModel::_createNodeImpl(zeno::NodeData& nodedata, std::weak_p
     if (endTransaction)
     {
         auto currtPath = currentPath();
-        AddNodeCommand* pCmd = new AddNodeCommand(nodedata, currtPath);
-        GraphsManager::instance().getGraph({currtPath[0]})->pushToplevelStack(pCmd);
-        //m_undoRedoStack->push(pCmd);
-        return pCmd->getNodeData();
+        AddNodeCommand* pCmd = new AddNodeCommand(cate, nodedata, currtPath);
+        if (auto topLevelGraph = GraphsManager::instance().getGraph({ currtPath[0] }))
+        {
+            topLevelGraph->pushToplevelStack(pCmd);
+            return pCmd->getNodeData();
+        }
         return zeno::NodeData();
     }
     else {
-        std::shared_ptr<zeno::Graph> spGraph = wpGraph.lock();
+        std::shared_ptr<zeno::Graph> spGraph = m_wpCoreGraph.lock();
         if (!spGraph)
             return zeno::NodeData();
 
-        std::shared_ptr<zeno::INode> spNode = spGraph->createNode(nodedata.cls, "", nodedata.cate, nodedata.uipos);
+        std::shared_ptr<zeno::INode> spNode = spGraph->createNode(nodedata.cls, "", cate.toStdString(), nodedata.uipos);
 
         zeno::NodeData node = spNode->exportInfo();
 
@@ -874,7 +875,7 @@ zeno::NodeData GraphModel::_createNodeImpl(zeno::NodeData& nodedata, std::weak_p
                 node.customUi = nodedata.customUi;
                 //create input/output in subnet
                 zeno::ParamsUpdateInfo updateInfo;
-                UiHelper::parseUpdateInfo(updateInfo, nodedata.customUi);
+                UiHelper::parseUpdateInfo(nodedata.customUi, updateInfo);
                 paramsM->resetCustomUi(nodedata.customUi);
                 paramsM->batchModifyParams(updateInfo);
                 for (auto& [name, nodedata] : graphData.nodes)
@@ -884,7 +885,7 @@ zeno::NodeData GraphModel::_createNodeImpl(zeno::NodeData& nodedata, std::weak_p
                         cur.append(QString::fromStdString(spNode->get_name()));
                         GraphModel* model = GraphsManager::instance().getGraph(cur);
                         if (model)
-                            model->_createNodeImpl(nodedata, subnetNode->subgraph, nodedata.subgraph.value(), false);
+                            model->_createNodeImpl(cate, nodedata, nodedata.subgraph.value(), false);
                     }
                     else if (nodedata.cls == "SubInput" || nodedata.cls == "SubOutput") {   //dont create, just update subinput/output pos
                         auto ioNode = subnetNode->subgraph->getNode(name);
@@ -892,7 +893,7 @@ zeno::NodeData GraphModel::_createNodeImpl(zeno::NodeData& nodedata, std::weak_p
                             ioNode->set_pos(nodedata.uipos);
                     }
                     else {
-                        subnetNode->subgraph->createNode(nodedata.cls, "", nodedata.cate, { nodedata.uipos.first, nodedata.uipos.second });
+                        subnetNode->subgraph->createNode(nodedata.cls, "", cate.toStdString(), {nodedata.uipos.first, nodedata.uipos.second});
                     }
                 }
             }
@@ -901,7 +902,7 @@ zeno::NodeData GraphModel::_createNodeImpl(zeno::NodeData& nodedata, std::weak_p
     }
 }
 
-bool GraphModel::_removeNodeImpl(const QString& name, std::weak_ptr<zeno::Graph> wpGraph, bool endTransaction)
+bool GraphModel::_removeNodeImpl(const QString& name, bool endTransaction)
 {
     bool bEnableIoProc = GraphsManager::instance().isInitializing() || GraphsManager::instance().isImporting();
     if (bEnableIoProc)
@@ -917,18 +918,33 @@ bool GraphModel::_removeNodeImpl(const QString& name, std::weak_ptr<zeno::Graph>
                 auto currtPath = currentPath();
                 auto nodedata = spNode->exportInfo();
                 RemoveNodeCommand* pCmd = new RemoveNodeCommand(nodedata, currentPath());
-                GraphsManager::instance().getGraph({ currtPath[0]})->pushToplevelStack(pCmd);
+                if (auto topLevelGraph = GraphsManager::instance().getGraph({ currtPath[0] }))
+                {
+                    topLevelGraph->pushToplevelStack(pCmd);
+                    return true;
+                }
                 //m_undoRedoStack->push(pCmd);
-                return true;
             }
         }
         return false;
     }
     else {
-        auto spCoreGraph = wpGraph.lock();
+        auto spCoreGraph = m_wpCoreGraph.lock();
         ZASSERT_EXIT(spCoreGraph, false);
         if (spCoreGraph)
             return spCoreGraph->removeNode(name.toStdString());
+    }
+}
+
+std::weak_ptr<zeno::INode> GraphModel::getWpNode(QString& nodename)
+{
+    auto& it = m_name2uuid.find(nodename);
+    if (it != m_name2uuid.end() && m_nodes.find(it.value()) != m_nodes.end())
+    {
+        if (NodeItem* item = m_nodes[it.value()])
+        {
+            return item->m_wpNode;
+        }
     }
 }
 
@@ -960,7 +976,7 @@ void GraphModel::appendSubgraphNode(QString name, QString cls, NODE_DESCRIPTOR d
 bool GraphModel::removeNode(const QString& name)
 {
     if (m_name2uuid.find(name) != m_name2uuid.end() && m_nodes.find(m_name2uuid[name]) != m_nodes.end()) {
-        return _removeNodeImpl(name, std::weak_ptr<zeno::Graph>(), true);
+        return _removeNodeImpl(name, true);
     }
     return false;
 }

@@ -9,7 +9,7 @@
 class AddNodeCommand : public QUndoCommand
 {
 public:
-    AddNodeCommand(zeno::NodeData& nodedata, QStringList& graphPath);
+    AddNodeCommand(const QString& cate, zeno::NodeData& nodedata, QStringList& graphPath);
     ~AddNodeCommand();
     void redo() override;
     void undo() override;
@@ -20,6 +20,7 @@ private:
     QStringList m_graphPath;
     zeno::NodeData m_nodeData;
     std::pair<float, float> m_pos;
+    QString m_cate;
 };
 
 class RemoveNodeCommand : public QUndoCommand
@@ -35,6 +36,7 @@ private:
     QStringList m_graphPath;
     zeno::NodeData m_nodeData;
     zeno::GraphData m_graphData;
+    QString m_cate;
 };
 
 #endif

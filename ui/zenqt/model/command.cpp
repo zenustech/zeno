@@ -2,12 +2,13 @@
 #include "variantptr.h"
 
 
-AddNodeCommand::AddNodeCommand(zeno::NodeData& nodedata, QStringList& graphPath)
+AddNodeCommand::AddNodeCommand(const QString& cate, zeno::NodeData& nodedata, QStringList& graphPath)
     : QUndoCommand()
     , m_model(GraphsManager::instance().getGraph(graphPath))
     , m_graphPath(graphPath)
     , m_nodeData(nodedata)
     , m_pos(nodedata.uipos)
+    , m_cate(cate)
 {
     if (m_nodeData.cls == "Subnet") //init subnet default socket
     {
@@ -46,7 +47,7 @@ void AddNodeCommand::redo()
     m_model = GraphsManager::instance().getGraph(m_graphPath);
     if (m_model) {
         m_nodeData.uipos = m_pos;
-        m_nodeData = m_model->_createNodeImpl(m_nodeData, m_model->m_wpCoreGraph, zeno::GraphData(), false);
+        m_nodeData = m_model->_createNodeImpl(m_cate, m_nodeData, zeno::GraphData(), false);
     }
 }
 
@@ -54,13 +55,11 @@ void AddNodeCommand::undo()
 {
     if (m_model) {
         auto nodename = QString::fromStdString(m_nodeData.name);
-        auto& it = m_model->m_name2uuid.find(nodename);
-        if (it != m_model->m_name2uuid.end() && m_model->m_nodes.find(it.value()) != m_model->m_nodes.end())
+        if (auto spnode = m_model->getWpNode(nodename).lock())
         {
-            if (auto spnode = m_model->m_nodes[it.value()]->m_wpNode.lock())
-                m_pos = spnode->get_pos();
+            m_pos = spnode->get_pos();
         }
-        m_model->_removeNodeImpl(nodename, m_model->m_wpCoreGraph);
+        m_model->_removeNodeImpl(nodename);
     }
 }
 
@@ -76,6 +75,7 @@ RemoveNodeCommand::RemoveNodeCommand(zeno::NodeData& nodeData, QStringList& grap
     , m_nodeData(nodeData)
     , m_graphPath(graphPath)
     , m_graphData()
+    , m_cate("")
 {
     //m_id = m_data[ROLE_OBJID].toString();
 
@@ -103,21 +103,18 @@ void RemoveNodeCommand::redo()
 {
     if (m_model) {
         auto nodename = QString::fromStdString(m_nodeData.name);
-        if (m_nodeData.cls == "Subnet")  //如果删除subnetnode，记录graphData，undo时恢复
-        {
-            auto& it = m_model->m_name2uuid.find(nodename);
-            if (it != m_model->m_name2uuid.end() && m_model->m_nodes.find(it.value()) != m_model->m_nodes.end())
+        //if (m_nodeData.cls == "Subnet")  
+        //{
+            auto wpSubnetNode = m_model->getWpNode(nodename);   //如果删除subnetnode/assets，记录graphData，undo时恢复
+            if (auto spSubnetNode = wpSubnetNode.lock())
             {
-                auto wpSubnetNode = m_model->m_nodes[it.value()]->m_wpNode;
-                if (auto spSubnetNode = wpSubnetNode.lock())
-                {
-                    if (std::shared_ptr<zeno::SubnetNode> subnetNode = std::dynamic_pointer_cast<zeno::SubnetNode>(spSubnetNode)) {
-                        m_graphData = subnetNode->subgraph->exportGraph();
-                    }
+                if (std::shared_ptr<zeno::SubnetNode> subnetNode = std::dynamic_pointer_cast<zeno::SubnetNode>(spSubnetNode)) {
+                    m_graphData = subnetNode->subgraph->exportGraph();
+                    m_cate = subnetNode->isAssetsNode() ? "assets" : "";
                 }
             }
-        }
-        m_model->_removeNodeImpl(QString::fromStdString(m_nodeData.name), m_model->m_wpCoreGraph);
+        //}
+        m_model->_removeNodeImpl(QString::fromStdString(m_nodeData.name));
     }
 }
 
@@ -125,5 +122,5 @@ void RemoveNodeCommand::undo()
 {
     m_model = GraphsManager::instance().getGraph(m_graphPath);
     if (m_model)
-        m_nodeData = m_model->_createNodeImpl(m_nodeData, m_model->m_wpCoreGraph, m_graphData, false);
+        m_nodeData = m_model->_createNodeImpl(m_cate, m_nodeData, m_graphData, false);
 }

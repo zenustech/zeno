@@ -32,7 +32,6 @@ public:
 
     std::string m_name;
     std::string m_nodecls;
-    std::string m_cate;
     std::string m_uuid;
     std::pair<float, float> m_pos;
 
