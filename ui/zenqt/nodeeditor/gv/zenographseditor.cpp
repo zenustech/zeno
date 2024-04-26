@@ -1221,15 +1221,21 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
     else if (actionType == ZenoMainWindow::ACTION_UNDO) 
     {
         //TODO: refactor undo/redo
-        GraphModel* pModel = GraphsManager::instance().getGraph({"main"});
-        if (pModel)
-            pModel->undo();
+        if (m_ui->graphsViewTab->count() > 0)
+        {
+            GraphModel* pModel = GraphsManager::instance().getGraph({ m_ui->graphsViewTab->tabText(m_ui->graphsViewTab->currentIndex()) });
+            if (pModel)
+                pModel->undo();
+        }
     }
     else if (actionType == ZenoMainWindow::ACTION_REDO) 
     {
-        GraphModel* pModel = GraphsManager::instance().getGraph({ "main" });
-        if (pModel)
-            pModel->redo();
+        if (m_ui->graphsViewTab->count() > 0)
+        {
+            GraphModel* pModel = GraphsManager::instance().getGraph({ m_ui->graphsViewTab->tabText(m_ui->graphsViewTab->currentIndex()) });
+            if (pModel)
+                pModel->redo();
+        }
     }
     else if (actionType == ZenoMainWindow::ACTION_SELECT_NODE) 
     {

@@ -566,6 +566,7 @@ ZENO_API NodeData INode::exportInfo() const
     node.name = m_name;
     node.bView = m_bView;
     node.uipos = m_pos;
+    node.cate = m_cate;
     //TODO: node type
     if (node.subgraph.has_value())
         node.type = Node_SubgraphNode;

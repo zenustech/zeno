@@ -7,6 +7,7 @@ AddNodeCommand::AddNodeCommand(zeno::NodeData& nodedata, QStringList& graphPath)
     , m_model(GraphsManager::instance().getGraph(graphPath))
     , m_graphPath(graphPath)
     , m_nodeData(nodedata)
+    , m_pos(nodedata.uipos)
 {
     if (m_nodeData.cls == "Subnet") //init subnet default socket
     {
@@ -44,6 +45,7 @@ void AddNodeCommand::redo()
 {
     m_model = GraphsManager::instance().getGraph(m_graphPath);
     if (m_model) {
+        m_nodeData.uipos = m_pos;
         m_nodeData = m_model->_createNodeImpl(m_nodeData, m_model->m_wpCoreGraph, zeno::GraphData(), false);
     }
 }
@@ -52,6 +54,12 @@ void AddNodeCommand::undo()
 {
     if (m_model) {
         auto nodename = QString::fromStdString(m_nodeData.name);
+        auto& it = m_model->m_name2uuid.find(nodename);
+        if (it != m_model->m_name2uuid.end() && m_model->m_nodes.find(it.value()) != m_model->m_nodes.end())
+        {
+            if (auto spnode = m_model->m_nodes[it.value()]->m_wpNode.lock())
+                m_pos = spnode->get_pos();
+        }
         m_model->_removeNodeImpl(nodename, m_model->m_wpCoreGraph);
     }
 }

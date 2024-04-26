@@ -101,7 +101,7 @@ public:
     void clear();
     void undo();
     void redo();
-    void mainUndoStackPush(QUndoCommand* cmd);
+    void pushToplevelStack(QUndoCommand* cmd);
     void beginTransaction(const QString& name);
     void endTransaction();
 
@@ -133,7 +133,7 @@ private:
     //undo, redo
     zeno::NodeData _createNodeImpl(zeno::NodeData& nodedata, std::weak_ptr<zeno::Graph> wpGraph, zeno::GraphData& graphData, bool endTransaction = false);
     bool _removeNodeImpl(const QString& name, std::weak_ptr<zeno::Graph> wpGraph, bool endTransaction = false);
-    std::optional<QUndoStack> m_undoRedoStack;
+    std::optional<QUndoStack*> m_undoRedoStack;
     friend class AddNodeCommand;
     friend class RemoveNodeCommand;
 

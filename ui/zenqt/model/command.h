@@ -19,6 +19,7 @@ private:
     GraphModel* m_model;
     QStringList m_graphPath;
     zeno::NodeData m_nodeData;
+    std::pair<float, float> m_pos;
 };
 
 class RemoveNodeCommand : public QUndoCommand

@@ -599,30 +599,35 @@ void GraphModel::undo()
 {
     zeno::getSession().beginApiCall();
     zeno::scope_exit scope([=]() { zeno::getSession().endApiCall(); });
-    m_undoRedoStack->undo();
+    if (m_undoRedoStack.has_value())
+        m_undoRedoStack.value()->undo();
 }
 
 void GraphModel::redo()
 {
     zeno::getSession().beginApiCall();
     zeno::scope_exit scope([=]() { zeno::getSession().endApiCall(); });
-    m_undoRedoStack->redo();
+    if (m_undoRedoStack.has_value())
+        m_undoRedoStack.value()->redo();
 }
 
-void GraphModel::mainUndoStackPush(QUndoCommand* cmd)
+void GraphModel::pushToplevelStack(QUndoCommand* cmd)
 {
-    m_undoRedoStack->push(cmd);
+    if (m_undoRedoStack.has_value())
+        m_undoRedoStack.value()->push(cmd);
 }
 
 void GraphModel::beginTransaction(const QString& name)
 {
-    m_undoRedoStack->beginMacro(name);
+    if (m_undoRedoStack.has_value())
+        m_undoRedoStack.value()->beginMacro(name);
     zeno::getSession().beginApiCall();
 }
 
 void GraphModel::endTransaction()
 {
-    m_undoRedoStack->endMacro();
+    if (m_undoRedoStack.has_value())
+        m_undoRedoStack.value()->endMacro();
     zeno::getSession().endApiCall();
 }
 
@@ -843,10 +848,12 @@ zeno::NodeData GraphModel::_createNodeImpl(zeno::NodeData& nodedata, std::weak_p
 
     if (endTransaction)
     {
-        AddNodeCommand* pCmd = new AddNodeCommand(nodedata, currentPath());
-        GraphsManager::instance().getGraph({"main"})->mainUndoStackPush(pCmd);
+        auto currtPath = currentPath();
+        AddNodeCommand* pCmd = new AddNodeCommand(nodedata, currtPath);
+        GraphsManager::instance().getGraph({currtPath[0]})->pushToplevelStack(pCmd);
         //m_undoRedoStack->push(pCmd);
         return pCmd->getNodeData();
+        return zeno::NodeData();
     }
     else {
         std::shared_ptr<zeno::Graph> spGraph = wpGraph.lock();
@@ -907,13 +914,15 @@ bool GraphModel::_removeNodeImpl(const QString& name, std::weak_ptr<zeno::Graph>
             auto spNode = m_nodes[m_name2uuid[name]]->m_wpNode.lock();
             if (spNode)
             {
+                auto currtPath = currentPath();
                 auto nodedata = spNode->exportInfo();
                 RemoveNodeCommand* pCmd = new RemoveNodeCommand(nodedata, currentPath());
-                GraphsManager::instance().getGraph({ "main" })->mainUndoStackPush(pCmd);
+                GraphsManager::instance().getGraph({ currtPath[0]})->pushToplevelStack(pCmd);
                 //m_undoRedoStack->push(pCmd);
+                return true;
             }
         }
-        return true;
+        return false;
     }
     else {
         auto spCoreGraph = wpGraph.lock();
