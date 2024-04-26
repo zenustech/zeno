@@ -21,6 +21,10 @@ struct VideoRecInfo
     bool bRecordByCommandLine = false;
     bool bAutoRemoveCache = false;
     bool bExportEXR = false;
+
+    bool bSendToServer = false;
+    QString exePath;
+    QString taskName;
 };
 Q_DECLARE_METATYPE(VideoRecInfo);
 

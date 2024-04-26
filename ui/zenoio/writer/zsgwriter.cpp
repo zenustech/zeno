@@ -613,6 +613,8 @@ void ZsgWriter::dumpSettings(const APP_SETTINGS settings, RAPIDJSON_WRITER& writ
         writer.Bool(info.bAov);
         writer.Key(recordinfo::bExr);
         writer.Bool(info.bExr);
+        writer.Key(recordinfo::exePath);
+        writer.String(info.exePath.toUtf8());
         writer.EndObject();
 
         writer.Key("layoutinfo");
