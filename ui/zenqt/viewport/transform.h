@@ -98,7 +98,7 @@ private:
     }
 
 private:
-    std::unordered_map<std::string, PrimitiveObject*> m_objects;
+    std::unordered_map<std::string, std::weak_ptr<PrimitiveObject>> m_objects;
     std::set<std::string> m_objectsKeys;
 
     glm::vec3 m_objects_center;

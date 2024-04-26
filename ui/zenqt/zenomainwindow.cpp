@@ -938,6 +938,21 @@ void ZenoMainWindow::onCalcFinished(bool bSucceed, zeno::ObjPath nodeUuidPath, Q
     }
 }
 
+void ZenoMainWindow::justLoadObjects()
+{
+    for (ads::CDockWidget* dock : m_pDockManager->dockWidgetsMap())
+    {
+        if (dock->isVisible())
+        {
+            QWidget* wid = dock->widget();
+            if (DockContent_View* view = qobject_cast<DockContent_View*>(wid)) {
+                view->getDisplayWid()->onJustLoadObjects();
+            }
+        }
+    }
+
+}
+
 void ZenoMainWindow::onMaximumTriggered()
 {
     ZDockWidget* pDockWidget = qobject_cast<ZDockWidget*>(sender());
