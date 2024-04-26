@@ -237,7 +237,7 @@ struct PrimitiveConvexDecompositionV : zeno::INode {
 
         // save output
         auto listPrim = std::make_shared<zeno::ListObject>();
-        listPrim->arr.clear();
+        listPrim->clear();
 
 
         unsigned int nConvexHulls = interfaceVHACD->GetNConvexHulls();
@@ -279,7 +279,7 @@ struct PrimitiveConvexDecompositionV : zeno::INode {
             }
 
             if(good_ch_flag) {
-                listPrim->arr.push_back(std::move(outprim));
+                listPrim->push_back(std::move(outprim));
             }
         }
 
@@ -364,7 +364,7 @@ struct PrimitiveConvexDecomposition : zeno::INode {
         size_t nClusters = hacd.GetNClusters();
 
         auto listPrim = std::make_shared<zeno::ListObject>();
-        listPrim->arr.clear();
+        listPrim->clear();
 
         printf("hacd got %d clusters\n", nClusters);
         for (size_t c = 0; c < nClusters; c++) {
@@ -396,7 +396,7 @@ struct PrimitiveConvexDecomposition : zeno::INode {
                 outprim->tris[i] = zeno::vec3i(p.X(), p.Y(), p.Z());
             }
 
-            listPrim->arr.push_back(std::move(outprim));
+            listPrim->push_back(std::move(outprim));
         }
 
         set_output("listPrim", std::move(listPrim));
@@ -600,9 +600,9 @@ struct BulletMakeGlueObjectList : zeno::INode {
             auto object = std::make_shared<BulletObject>(
                 mass, trans->trans, comp);
             object->body->setDamping(0, 0);
-            objectList->arr.push_back(std::move(object));
+            objectList->push_back(std::move(object));
         }
-        log_debug("glueobjeclist length={}", objectList->arr.size());
+        log_debug("glueobjeclist length={}", objectList->size());
         set_output("objectList", std::move(objectList));
     }
 };
@@ -1972,14 +1972,14 @@ struct BulletMultiBodyGetTransform : zeno::INode {
     virtual void apply() override {
         auto object = get_input<BulletMultiBodyObject>("object");
         auto transList = std::make_shared<zeno::ListObject>();
-        transList->arr.clear();
+        transList->clear();
 
         for (size_t i = 0; i < object->multibody->getNumLinks(); i++) {
             auto trans = std::make_shared<BulletTransform>();
             trans->trans = object->multibody->getLink(i).m_collider->getWorldTransform();
             std::cout<< "\nlink #" << i << ": " << trans->trans.getOrigin()[0] << "," << trans->trans.getOrigin()[1] << "," << trans->trans.getOrigin()[2] << "\n";
             std::cout << trans->trans.getRotation()[0] << "," << trans->trans.getRotation()[1] << "," << trans->trans.getRotation()[2] << "," << trans->trans.getRotation()[3] << std::endl;
-            transList->arr.push_back(trans);
+            transList->push_back(trans);
         }
         set_output("transList", std::move(transList));
     }
@@ -1998,10 +1998,10 @@ struct BulletMultiBodyWorldGetTransformShapes : zeno::INode {
         auto graphicsVisualMap = get_input<zeno::DictObject>("visualMap");
 
         auto transList = std::make_shared<zeno::ListObject>();
-        transList->arr.clear();
+        transList->clear();
 
         auto visualList = std::make_shared<zeno::ListObject>();
-        visualList->arr.clear();
+        visualList->clear();
 
         int numCollisionObjects = world->dynamicsWorld->getNumCollisionObjects();
         for (size_t i = 0; i < numCollisionObjects; i++) {
@@ -2015,8 +2015,8 @@ struct BulletMultiBodyWorldGetTransformShapes : zeno::INode {
             std::cout << linkTrans->trans.getRotation()[0] << "," << linkTrans->trans.getRotation()[1] << "," << linkTrans->trans.getRotation()[2] << "," << linkTrans->trans.getRotation()[3] << std::endl;
 
             if (graphicsIndex >= 0) {
-                transList->arr.push_back(linkTrans);
-                visualList->arr.push_back(graphicsVisualMap->lut.at(std::to_string(graphicsIndex)));
+                transList->push_back(linkTrans);
+                visualList->push_back(graphicsVisualMap->lut.at(std::to_string(graphicsIndex)));
             }
         }
 
@@ -2846,10 +2846,10 @@ struct BulletCalcInverseKinematics : zeno::INode {
 		    }
 	    }
         auto outputPoses = std::make_shared<ListObject>();
-        outputPoses->arr.clear();
+        outputPoses->clear();
         for (size_t i = 0; i < startingPositions.size(); i++){
             auto p = std::make_shared<zeno::NumericObject>(float(startingPositions[i]));
-            outputPoses->arr.push_back(p);
+            outputPoses->push_back(p);
         }
 	    set_output("poses", std::move(outputPoses));
     }
@@ -3315,18 +3315,18 @@ ZENDEFNODE(BulletMultiBodyAddLinkForce, {
 
 
         auto output_jac_linear = std::make_shared<ListObject>();
-        output_jac_linear->arr.clear();
+        output_jac_linear->clear();
         for (size_t i = 0; i < jacobian_linear.size(); i++) {
             auto p = std::make_shared<zeno::NumericObject>(
                 float(jacobian_linear[i]));
-            output_jac_linear->arr.push_back(p);
+            output_jac_linear->push_back(p);
         }
         auto output_jac_angular = std::make_shared<ListObject>();
-        output_jac_angular->arr.clear();
+        output_jac_angular->clear();
         for (size_t i = 0; i < jacobian_angular.size(); i++) {
             auto p = std::make_shared<zeno::NumericObject>(
                 float(jacobian_angular[i]));
-            output_jac_angular->arr.push_back(p);
+            output_jac_angular->push_back(p);
         }
         set_output("object", std::move(object));
         set_output("jacobian_linear", std::move(output_jac_linear));
@@ -3394,7 +3394,7 @@ struct BulletMultiBodyCalculateMassMatrix : zeno::INode {
                         int element = (totDofs)*i + j;
                         auto p = std::make_shared<zeno::NumericObject>(
                             float(massMatrix(i, j)));
-                        output_mass_matrix->arr.push_back(p);
+                        output_mass_matrix->push_back(p);
                     }
                 }
             }
@@ -3480,10 +3480,10 @@ struct BulletMultiBodyGetContactPoints : zeno::INode {
                 pA->set<zeno::vec3f>(zeno::vec3f(ptA.x(), ptA.y(), ptA.z()));
                 pB->set<zeno::vec3f>(zeno::vec3f(ptB.x(), ptB.y(), ptB.z()));
 
-                contactPairsList->arr.push_back(pA);
-                contactPairsList->arr.push_back(pB);
+                contactPairsList->push_back(pA);
+                contactPairsList->push_back(pB);
             }
-            contactList->arr.push_back(contactPairsList);
+            contactList->push_back(contactPairsList);
         }
         set_output("world", std::move(world));
         set_output("contactPointsList", std::move(contactList));

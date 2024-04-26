@@ -2,6 +2,7 @@
 
 #include <zeno/funcs/PrimitiveTools.h>
 #include <zeno/types/UserData.h>
+#include <zeno/core/Session.h>
 #include <zenovis/ObjectsManager.h>
 #include "util/uihelper.h"
 #include "zenomainwindow.h"
@@ -52,12 +53,11 @@ void FakeTransformer::addObject(const std::string& name) {
     auto scene = sess->get_scene();
     ZASSERT_EXIT(scene);
 
-    auto it = scene->lastAllItems.find(name);
-    if (it == scene->lastAllItems.end())
-        return;
-    auto spobj = it->second;
+    auto& objsMan = zeno::getSession().objsMan;
+    auto spobj = objsMan->getObj(name);
     if (!spobj)
         return;
+
     auto object = dynamic_cast<PrimitiveObject*>(spobj.get());
     auto& user_data = object->userData();
     if (!user_data.has("_pivot")) {

@@ -209,7 +209,7 @@ struct AlembicToSoftBodyVAT: public INode {
                 } else {
                     abctree->visitPrims([&] (auto const &p) {
                         auto np = std::static_pointer_cast<PrimitiveObject>(p->clone());
-                        prims->arr.push_back(np);
+                        prims->push_back(np);
                     });
                 }
                 auto mergedPrim = zeno::primMerge(prims->getRaw<PrimitiveObject>());
@@ -217,7 +217,7 @@ struct AlembicToSoftBodyVAT: public INode {
                     primFlipFaces(mergedPrim.get());
                 }
                 zeno::primTriangulate(mergedPrim.get());
-                frameList->arr.push_back(mergedPrim);
+                frameList->push_back(mergedPrim);
                 auto bbox = parallel_reduce_minmax(mergedPrim->verts.begin(), mergedPrim->verts.end());
                 temp_bboxs.push_back(bbox.first);
                 temp_bboxs.push_back(bbox.second);
@@ -229,7 +229,7 @@ struct AlembicToSoftBodyVAT: public INode {
             for (int32_t idx = frameStart; idx < frameEnd; ++idx) {
                 zeno::log_info("Processing frame {} / {} ...", idx + 1, frameEnd);
                 const int32_t frameIndex = idx - frameStart;
-                auto mergedPrim = safe_dynamic_cast<zeno::PrimitiveObject>(frameList->arr[frameIndex]);
+                auto mergedPrim = safe_dynamic_cast<zeno::PrimitiveObject>(frameList->get(frameIndex));
                 // Save first frame mesh to obj
                 if (frameIndex == 0) {
                     vatWidth = std::min(mergedPrim->verts.size(), (size_t)8192);
@@ -409,7 +409,7 @@ struct AlembicToDynamicRemeshVAT : public INode {
         } else {
           abctree->visitPrims([&] (auto const &p) {
             auto np = std::static_pointer_cast<PrimitiveObject>(p->clone());
-            prims->arr.push_back(np);
+            prims->push_back(np);
           });
         }
         auto mergedPrim = zeno::primMerge(prims->getRaw<PrimitiveObject>());
@@ -418,7 +418,7 @@ struct AlembicToDynamicRemeshVAT : public INode {
         }
         zeno::primTriangulate(mergedPrim.get());
         maxTriNum = zeno::max(mergedPrim->tris.size(), maxTriNum);
-        frameList->arr.push_back(mergedPrim);
+        frameList->push_back(mergedPrim);
         auto bbox = parallel_reduce_minmax(mergedPrim->verts.begin(), mergedPrim->verts.end());
         temp_bboxs.push_back(bbox.first);
         temp_bboxs.push_back(bbox.second);
@@ -438,7 +438,7 @@ struct AlembicToDynamicRemeshVAT : public INode {
       for (int32_t idx = frameStart; idx < frameEnd; ++idx) {
         zeno::log_info("Processing frame {} / {} ...", idx + 1, frameEnd);
         const int32_t frameIndex = idx - frameStart;
-        auto mergedPrim = safe_dynamic_cast<zeno::PrimitiveObject>(frameList->arr[frameIndex]);
+        auto mergedPrim = safe_dynamic_cast<zeno::PrimitiveObject>(frameList->get(frameIndex));
         spaceToAlign = vatWidth * rowsPerFrame - mergedPrim->tris.size() * 3;
         zeno::primCalcNormal(mergedPrim.get());
         auto& nrm_ref = mergedPrim->verts.attr<vec3f>("nrm");

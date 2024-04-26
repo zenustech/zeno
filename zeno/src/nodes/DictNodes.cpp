@@ -230,7 +230,7 @@ struct DictGetKeyList : zeno::INode {
         for (auto const &[k, v]: dict->lut) {
             auto so = std::make_shared<zeno::StringObject>();
             so->set(k);
-            keys->arr.push_back(std::move(so));
+            keys->push_back(std::move(so));
         }
         set_output("keys", std::move(keys));
     }

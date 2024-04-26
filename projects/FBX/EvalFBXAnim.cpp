@@ -530,13 +530,13 @@ struct EvalFBXAnim : zeno::INode {
                 auto visibilityData = fbxData->iVisibility.lut[path];
                 auto listVisData = zeno::safe_dynamic_cast<zeno::ListObject>(visibilityData);
                 bool is_visibility;
-                auto length_m1 = listVisData->arr.size() - 1;
+                auto length_m1 = listVisData->size() - 1;
                 if(frameid <=0){
-                    is_visibility = zeno::safe_dynamic_cast<zeno::NumericObject>(listVisData->arr[0])->get<int>();
+                    is_visibility = zeno::safe_dynamic_cast<zeno::NumericObject>(listVisData->get(0))->get<int>();
                 }else if(frameid >= (length_m1)){
-                    is_visibility = zeno::safe_dynamic_cast<zeno::NumericObject>(listVisData->arr[length_m1])->get<int>();
+                    is_visibility = zeno::safe_dynamic_cast<zeno::NumericObject>(listVisData->get(length_m1))->get<int>();
                 }else{
-                    is_visibility = zeno::safe_dynamic_cast<zeno::NumericObject>(listVisData->arr[frameid])->get<int>();
+                    is_visibility = zeno::safe_dynamic_cast<zeno::NumericObject>(listVisData->get(frameid))->get<int>();
                 }
                 isVisibility->set(is_visibility);
             }else{
@@ -612,7 +612,7 @@ struct EvalFBXAnim : zeno::INode {
                     dnrmAttr.emplace_back(dnrm.x, dnrm.y, dnrm.z);
                 }
 
-                bsPrimsOrigin->arr.emplace_back(bsprim);
+                bsPrimsOrigin->emplace_back(bsprim);
             }
         }
 //        TIMER_END(BlendShapeCreate)
@@ -685,7 +685,7 @@ struct EvalFBXAnim : zeno::INode {
                         }
                     }
 
-                    bsPrims->arr.emplace_back(bsprim);
+                    bsPrims->emplace_back(bsprim);
                 }
             }else{
                 std::cout << "BlendShape NotFound MorphKey " << meshName << "\n";
@@ -693,7 +693,7 @@ struct EvalFBXAnim : zeno::INode {
         }
 //        TIMER_END(BlendShapeEval)
 
-        //zeno::log_info("Frame {} Prims Num {} Mesh Name {}", anim.m_CurrentFrame, bsPrims->arr.size(), meshName);
+        //zeno::log_info("Frame {} Prims Num {} Mesh Name {}", anim.m_CurrentFrame, bsPrims->size(), meshName);
         auto data2write = std::make_shared<SFBXData>();
         *data2write = anim.m_FbxData;
 

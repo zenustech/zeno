@@ -63,7 +63,7 @@ struct BeginForEach : IBeginFor {
         if (isContinue())
         {
             std::shared_ptr<zeno::ListObject> list = get_input<zeno::ListObject>("objects");
-            set_output("object", list->arr.at(m_index));
+            set_output("object", list->get(m_index));
             set_output("index", std::make_shared<NumericObject>(m_index));
         }
     }
@@ -81,7 +81,7 @@ struct BeginForEach : IBeginFor {
 
     int getCount() const {
         std::shared_ptr<zeno::ListObject> list = get_input<zeno::ListObject>("objects");
-        return list->arr.size();
+        return list->size();
     }
 
 };
@@ -157,8 +157,6 @@ ZENDEFNODE(BreakFor, {
 
 
 struct EndForEach : INode {
-    std::vector<zany> result;
-    std::vector<zany> dropped_result;
 
     void preApply() override {
         //do nothing.
@@ -174,8 +172,8 @@ struct EndForEach : INode {
 
         graph->applyNode(forbegin);
 
-        std::vector<zany> result;
-        std::vector<zany> dropped_result;
+        auto list = std::make_shared<ListObject>();
+        auto dropped_list = std::make_shared<ListObject>();
 
         spBegin->resetIndex();
 
@@ -190,32 +188,27 @@ struct EndForEach : INode {
 
             if (auto obj = get_input("object")) {
                 if (accept)
-                    result.push_back(std::move(obj));
+                    list->push_back(std::move(obj));
                 else
-                    dropped_result.push_back(std::move(obj));
+                    dropped_list->push_back(std::move(obj));
             }
 
             if (has_input("objects")) {
                 auto listObj = get_input<zeno::ListObject>("objects");
                 if (accept) {
-                    for (auto obj : listObj->arr)
-                        result.push_back(std::move(obj));
+                    for (auto obj : listObj->get())
+                        list->push_back(std::move(obj));
                 }
                 else {
-                    for (auto obj : listObj->arr)
-                        dropped_result.push_back(std::move(obj));
+                    for (auto obj : listObj->get())
+                        dropped_list->push_back(std::move(obj));
                 }
             }
 
             spBegin->updateIndex();
         }
 
-        auto list = std::make_shared<ListObject>();
-        list->arr = std::move(result);
         set_output("list", std::move(list));
-
-        auto dropped_list = std::make_shared<ListObject>();
-        dropped_list->arr = std::move(dropped_result);
         set_output("droppedList", std::move(dropped_list));
     }
 

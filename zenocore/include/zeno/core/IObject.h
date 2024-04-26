@@ -19,6 +19,8 @@ struct IObject {
     std::string listitemNumberIndex;    //记录在list中的序号构成的层级索引，如果不是某个list下元素则为空
     std::string nodeId;     //该对象来自哪个node
 
+    IObject* m_parent = nullptr;
+
     mutable std::any m_userData;
 
 #ifndef ZENO_APIFREE
@@ -36,6 +38,8 @@ struct IObject {
     ZENO_API virtual std::string method_node(std::string const &op);
     ZENO_API virtual std::string key();
     ZENO_API virtual bool update_key(const std::string& key);
+    ZENO_API virtual void set_parent(IObject* spParent);
+    ZENO_API virtual IObject* get_parent() const;
     ZENO_API UserData &userData() const;
 #else
     virtual ~IObject() = default;

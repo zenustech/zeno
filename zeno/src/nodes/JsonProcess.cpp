@@ -98,7 +98,7 @@ static Json iobject_to_json(std::shared_ptr<IObject> iObject) {
         json = objectToLiterial<std::string>(iObject);
     }
     else if (auto list = std::dynamic_pointer_cast<ListObject>(iObject)) {
-        for (auto iObj: list->arr) {
+        for (auto iObj: list->get()) {
             json.push_back(iobject_to_json(iObj));
         }
     }

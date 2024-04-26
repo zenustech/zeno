@@ -261,7 +261,7 @@ struct BulletGlueRigidBodies : zeno::INode {
                 cpdChildMasses[compId].push_back(bodyPtr->getMass());
                 // cpdOrigins[compId] += (bodyPtr->getMass() * bodyPtr->getCenterOfMassPosition());
 
-                primList->arr.push_back(rbs[rbi]->userData().get("prim"));
+                primList->push_back(rbs[rbi]->userData().get("prim"));
             }
         });
         //pol(zip(cpdOrigins, cpdMasses), [](auto &weightedOrigin, float weight) { weightedOrigin /= weight; });
@@ -459,18 +459,18 @@ struct BulletUpdateCpdChildPrimTrans : zeno::INode {
                 });
 
                 if (!hasVisualPrimlist) {
-                    initialPrimList->arr.push_back(prim);
-                    primlist->arr.push_back(visPrim);
+                    initialPrimList->push_back(prim);
+                    primlist->push_back(visPrim);
                 }
 
-                translationList->arr.push_back(std::make_shared<NumericObject>(translate));
-                rotationList->arr.push_back(std::make_shared<NumericObject>(rotation)); // x, y, z, w
+                translationList->push_back(std::make_shared<NumericObject>(translate));
+                rotationList->push_back(std::make_shared<NumericObject>(rotation)); // x, y, z, w
 #if DEBUG_CPD
-                centerlist->arr.push_back(std::make_shared<NumericObject>(other_to_vec<3>(rbTrans.getOrigin())));
+                centerlist->push_back(std::make_shared<NumericObject>(other_to_vec<3>(rbTrans.getOrigin())));
                 btVector3 aabbMin, aabbMax;
                 cpdBody->body->getAabb(aabbMin, aabbMax);
-                minlist->arr.push_back(std::make_shared<NumericObject>(other_to_vec<3>(aabbMin)));
-                maxlist->arr.push_back(std::make_shared<NumericObject>(other_to_vec<3>(aabbMax)));
+                minlist->push_back(std::make_shared<NumericObject>(other_to_vec<3>(aabbMin)));
+                maxlist->push_back(std::make_shared<NumericObject>(other_to_vec<3>(aabbMax)));
 #endif
 
                 continue;
@@ -482,16 +482,16 @@ struct BulletUpdateCpdChildPrimTrans : zeno::INode {
             if (cpdPrims.size() != btcpdShape->getNumChildShapes())
                 throw std::runtime_error(
                     fmt::format("the number of child shapes [{}] and prim objs [{}] in compound [{}] mismatch!",
-                                btcpdShape->getNumChildShapes(), cpdPrimlist->arr.size(), cpi));
+                                btcpdShape->getNumChildShapes(), cpdPrimlist->size(), cpi));
 
             btTransform cpdTrans = cpdBody->getWorldTransform();
 
 #if DEBUG_CPD
-            centerlist->arr.push_back(std::make_shared<NumericObject>(other_to_vec<3>(cpdTrans.getOrigin())));
+            centerlist->push_back(std::make_shared<NumericObject>(other_to_vec<3>(cpdTrans.getOrigin())));
             btVector3 aabbMin, aabbMax;
             cpdBody->body->getAabb(aabbMin, aabbMax);
-            minlist->arr.push_back(std::make_shared<NumericObject>(other_to_vec<3>(aabbMin)));
-            maxlist->arr.push_back(std::make_shared<NumericObject>(other_to_vec<3>(aabbMax)));
+            minlist->push_back(std::make_shared<NumericObject>(other_to_vec<3>(aabbMin)));
+            maxlist->push_back(std::make_shared<NumericObject>(other_to_vec<3>(aabbMax)));
 #endif
 
 #if DEBUG_CPD
@@ -541,12 +541,12 @@ struct BulletUpdateCpdChildPrimTrans : zeno::INode {
                 });
 
                 if (!hasVisualPrimlist) {
-                    initialPrimList->arr.push_back(prim);
-                    primlist->arr.push_back(visPrim);
+                    initialPrimList->push_back(prim);
+                    primlist->push_back(visPrim);
                 }
 
-                translationList->arr.push_back(std::make_shared<NumericObject>(translate));
-                rotationList->arr.push_back(std::make_shared<NumericObject>(rotation)); // x, y, z, w
+                translationList->push_back(std::make_shared<NumericObject>(translate));
+                rotationList->push_back(std::make_shared<NumericObject>(rotation)); // x, y, z, w
             }
         }
 
@@ -856,7 +856,7 @@ struct BulletMaintainCompoundsAndConstraints : zeno::INode {
                 cpdChildMasses[compId].push_back(bodyPtr->getMass());
                 // cpdOrigins[compId] += (bodyPtr->getMass() * bodyPtr->getCenterOfMassPosition());
 
-                primList->arr.push_back(rbs[rbi]->userData().get("prim"));
+                primList->push_back(rbs[rbi]->userData().get("prim"));
             }
         });
 
@@ -1347,7 +1347,7 @@ struct BulletMaintainRigidBodiesAndConstraints : zeno::INode {
                 cpdChildMasses[compId].push_back(bodyPtr->getMass());
                 // cpdOrigins[compId] += (bodyPtr->getMass() * bodyPtr->getCenterOfMassPosition());
 
-                primList->arr.push_back(rbs[rbi]->userData().get("prim"));
+                primList->push_back(rbs[rbi]->userData().get("prim"));
             }
         });
 

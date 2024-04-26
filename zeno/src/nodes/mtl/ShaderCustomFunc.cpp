@@ -84,10 +84,10 @@ struct ShaderInvokeFunc : ShaderNodeClone<ShaderInvokeFunc> {
     virtual int determineType(EmissionPass *em) override {
         auto func = get_input<ShaderCustomFuncObject>("func");
         auto args = get_input<ListObject>("args");
-        if (args->arr.size() != func->argTypes.size())
+        if (args->size() != func->argTypes.size())
             throw zeno::Exception("expect " + std::to_string(func->argTypes.size())
                                   + " arguments in call to " + func->name + ", got "
-                                  + std::to_string(args->arr.size()));
+                                  + std::to_string(args->size()));
         auto argTyIt = func->argTypes.begin();
         for (auto const &arg: args->get<IObject>()) {
             auto ourType = *argTyIt++;

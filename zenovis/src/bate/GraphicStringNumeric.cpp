@@ -60,7 +60,7 @@ struct GraphicList final : IGraphic {
     Scene *scene;
 
     explicit GraphicList(Scene *scene_, zeno::ListObject *lst) : scene(scene_) {
-        zeno::log_info("ToView got ListObject with size: {}", lst->arr.size());
+        zeno::log_info("ToView got ListObject with size: {}", lst->size());
     }
 };
 
