@@ -980,20 +980,14 @@ DisplayWidget *ZenoMainWindow::getOptixWidget() const
 QVector<DisplayWidget*> ZenoMainWindow::viewports() const
 {
     QVector<DisplayWidget*> views;
-    auto docks = findChildren<ZDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
-    for (ZDockWidget* pDock : docks)
+    for (ads::CDockWidget* dock : m_pDockManager->dockWidgetsMap())
     {
-        if (pDock->isVisible())
-            views.append(pDock->viewports());
-    }
-
-    //top level floating windows.
-    QWidgetList lst = QApplication::topLevelWidgets();
-    for (auto wid : lst)
-    {
-        if (ZDockWidget* pFloatWin = qobject_cast<ZDockWidget*>(wid))
+        if (dock->isVisible())
         {
-            views.append(pFloatWin->viewports());
+            QWidget* wid = dock->widget();
+            if (DockContent_View* view = qobject_cast<DockContent_View*>(wid)) {
+                views.append(view->getDisplayWid());
+            }
         }
     }
     return views;
