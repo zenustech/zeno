@@ -529,36 +529,34 @@ extern "C" __global__ void __closesthit__radiance()
     
     if(prd->isSS == true) {
         mats.basecolor = vec3(1.0f);
-        mats.roughness = 1.0;
-        mats.anisotropic = 0;
-        mats.sheen = 0;
-        mats.clearcoat = 0;
-        mats.specTrans = 0;
-        mats.ior = 1;
-    }
-    if(prd->isSS == true && mats.subsurface>0 && dot(-normalize(ray_dir), N)>0)
-    {
-       prd->attenuation2 = make_float3(0,0,0);
-       prd->attenuation = make_float3(0,0,0);
-       prd->radiance = make_float3(0,0,0);
-       prd->done = true;
-       return;
-    }
-    if(prd->isSS == true  && mats.subsurface==0 )
-    {
-        prd->passed = true;
-        prd->samplePdf = 1.0f;
-        prd->radiance = make_float3(0.0f, 0.0f, 0.0f);
-        prd->readMat(prd->sigma_t, prd->ss_alpha);
-        auto trans = DisneyBSDF::Transmission2(prd->sigma_s(), prd->sigma_t, prd->channelPDF, optixGetRayTmax(), true);
-        prd->attenuation2 *= trans;
-        prd->attenuation *= trans;
-        //prd->origin = P;
-        prd->direction = ray_dir;
-        //auto n = prd->geometryNormal;
-        //n = faceforward(n, -ray_dir, n);
-        prd->_tmin_ = optixGetRayTmax();
-        return;
+        mats.roughness = 1.0f;
+        mats.anisotropic = 0.0f;
+        mats.sheen = 0.0f;
+        mats.clearcoat = 0.0f;
+        mats.specTrans = 0.0f;
+        mats.ior = 1.0f;
+        if(mats.subsurface==0.0f){
+            prd->passed = true;
+            prd->samplePdf = 1.0f;
+            prd->radiance = make_float3(0.0f, 0.0f, 0.0f);
+            prd->readMat(prd->sigma_t, prd->ss_alpha);
+            auto trans = DisneyBSDF::Transmission2(prd->sigma_s(), prd->sigma_t, prd->channelPDF, optixGetRayTmax(), true);
+            prd->attenuation2 *= trans;
+            prd->attenuation *= trans;
+            //prd->origin = P;
+            prd->direction = ray_dir;
+            //auto n = prd->geometryNormal;
+            //n = faceforward(n, -ray_dir, n);
+            prd->_tmin_ = optixGetRayTmax();
+            return;
+        }
+        if(mats.subsurface>0.0f && dot(normalize(ray_dir),N)<0.0f){
+            prd->attenuation2 = make_float3(0.0f,0.0f,0.0f);
+            prd->attenuation = make_float3(0.0f,0.0f,0.0f);
+            prd->radiance = make_float3(0.0f,0.0f,0.0f);
+            prd->done = true;
+            return;
+        }
     }
 
     prd->attenuation2 = prd->attenuation;
@@ -566,34 +564,8 @@ extern "C" __global__ void __closesthit__radiance()
     prd->prob2 = prd->prob;
     prd->passed = false;
 
-    if(mats.opacity>0.99f)
+    if(mats.opacity > 0.99f || rnd(prd->seed)<mats.opacity)
     {
-
-        if (prd->curMatIdx > 0) {
-          vec3 sigma_t, ss_alpha;
-          //vec3 sigma_t, ss_alpha;
-          prd->readMat(sigma_t, ss_alpha);
-          if (ss_alpha.x < 0.0f) { // is inside Glass
-            prd->attenuation *= DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
-          } else {
-            prd->attenuation *= DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), true);
-          }
-        }
-        prd->attenuation2 = prd->attenuation;
-        prd->passed = true;
-        prd->adepth++;
-        //prd->samplePdf = 0.0f;
-        prd->radiance = make_float3(0.0f);
-        prd->alphaHit = true;
-        prd->_tmin_ = optixGetRayTmax();
-        return;
-    }
-    if(mats.opacity<=0.99f)
-    {
-      //we have some simple transparent thing
-      //roll a dice to see if just pass
-      if(rnd(prd->seed)<mats.opacity)
-      {
         if (prd->curMatIdx > 0) {
           vec3 sigma_t, ss_alpha;
           //vec3 sigma_t, ss_alpha;
@@ -616,8 +588,8 @@ extern "C" __global__ void __closesthit__radiance()
         prd->prob *= 1;
         prd->countEmitted = false;
         return;
-      }
     }
+
     if(prd->depth==0&&mats.flatness>0.5)
     {
         prd->radiance = make_float3(0.0f);
@@ -967,6 +939,10 @@ extern "C" __global__ void __closesthit__radiance()
     }
 
     prd->radiance += mats.emission;
+    if(length(mats.emission)>0)
+    {
+      prd->done = true;
+    }
 }
 
 extern "C" __global__ void __closesthit__occlusion()

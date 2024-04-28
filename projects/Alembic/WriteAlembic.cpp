@@ -15,6 +15,7 @@
 #include "zeno/utils/string.h"
 #include "zeno/types/ListObject.h"
 #include "zeno/utils/log.h"
+#include "zeno/utils/fileio.h"
 #include "zeno/funcs/PrimitiveUtils.h"
 #include "zeno/extra/TempNode.h"
 #include <numeric>
@@ -569,11 +570,8 @@ struct WriteAlembic2 : INode {
         int frame_start = get_input2<int>("frame_start");
         int frame_end = get_input2<int>("frame_end");
         std::string path = get_input2<std::string>("path");
-        auto folderPath = fs::path(path).parent_path();
+        path = create_directories_when_write_file(path);
 
-        if (!fs::exists(folderPath)) {
-            fs::create_directories(folderPath);
-        }
         if (usedPath != path) {
             usedPath = path;
             archive = CreateArchiveWithInfo(
@@ -738,11 +736,8 @@ struct WriteAlembicPrims : INode {
         int frame_start = get_input2<int>("frame_start");
         int frame_end = get_input2<int>("frame_end");
         std::string path = get_input2<std::string>("path");
-        auto folderPath = fs::path(path).parent_path();
+        path = create_directories_when_write_file(path);
 
-        if (!fs::exists(folderPath)) {
-            fs::create_directories(folderPath);
-        }
         std::vector<std::shared_ptr<PrimitiveObject>> new_prims;
 
         {

@@ -84,10 +84,12 @@ void DisplayWidget::initRecordMgr()
             [=](int frameid) { zeno::log_info("frame {} has been recorded", frameid); });
 }
 
-void DisplayWidget::testCleanUp()
+void DisplayWidget::cleanupView()
 {
     if (m_glView)
-        m_glView->testCleanUp();
+        m_glView->cleanUpView();
+    else
+        m_optixView->cleanupView();
 }
 
 void DisplayWidget::cleanUpScene()
@@ -840,6 +842,12 @@ void DisplayWidget::onRecord()
             QMessageBox::warning(nullptr, tr("Record"), tr("The output path is invalid, please choose another path."));
             return;
         }
+        //send task to server
+        if (recInfo.bSendToServer)
+        {
+            sendTaskToServer(recInfo);
+            return;
+        }
         //validation.
 
         LAUNCH_PARAM launchParam;
@@ -1007,6 +1015,93 @@ void DisplayWidget::onRecord()
         }
     }
     m_sliderFeq = curSlidFeq;
+}
+
+void DisplayWidget::sendTaskToServer(const VideoRecInfo& info)
+{
+    QString cmd = info.exePath + " --record " + "true";
+    if (!zenoApp->graphsManagment())
+        return;
+    QString path = zenoApp->graphsManagment()->zsgPath();
+    if (!path.startsWith("O:") && !path.startsWith("M:") && !path.startsWith("P:"))
+    {
+        //copy zsg
+        QString destFileDir = "O:/sendToServer/" + info.taskName + QString::number(QDateTime::currentDateTime().toTime_t());
+        QFileInfo fileInfo(path);
+        QString fileName = fileInfo.fileName();
+        QDir dir(destFileDir);
+        dir.mkpath(destFileDir);
+        QString destFilePath = dir.filePath(fileName);
+        QFile sourceFile(path);
+        if (!sourceFile.copy(destFilePath)) {
+            zeno::log_error("Failed to copy file");
+            return;
+        }
+        else
+            path = destFilePath;
+    }
+    //task cmd
+    cmd = cmd + " --zsg " + path;
+    cmd = cmd + " --sample " + QString::number(info.numOptix);
+    cmd = cmd + " --optix " + "1";
+    cmd = cmd + " --path " + info.record_path;
+    cmd = cmd +  " --pixel " + QString("%1x%2").arg(info.res[0]).arg(info.res[1]);
+    cmd = cmd + " --aov " + "0";
+    cmd = cmd +  " --needDenoise " + QString::number(info.needDenoise);
+    cmd = cmd +  " --exr " + QString::number(info.bExportEXR);
+    cmd = cmd +  " --videoname " + info.videoname;
+    cmd = cmd +  " --video " + QString::number(info.bExportVideo);
+    cmd = cmd + " --cachePath " + "C:/tmp/";
+    if (zenoApp->getMainWindow())
+    {
+        auto timelineInfo = zenoApp->getMainWindow()->timelineInfo();
+        cmd = cmd +  " --sframe " + QString::number(timelineInfo.beginFrame);
+        cmd = cmd +  " --frame " + QString::number(timelineInfo.endFrame - timelineInfo.beginFrame + 1);
+    }
+
+    //save json file
+    rapidjson::StringBuffer s;
+    RAPIDJSON_WRITER writer(s);
+    {
+        JsonArrayBatch arrayBatch(writer);
+        {
+            JsonObjBatch objBatch(writer);
+            QString key = info.taskName + ":all";
+            writer.Key(key.toUtf8());
+            {
+                JsonObjBatch objBatch1(writer);
+                writer.Key("cmds");
+                {
+                    JsonArrayBatch cmdBatch(writer);
+                    writer.String(cmd.toUtf8());
+                }
+                writer.Key("deps");
+                {
+                    JsonArrayBatch depsBatch(writer);
+                }
+                writer.Key("name");
+                writer.String(key.toUtf8());
+            }
+        }
+    }
+    QString str = QString::fromUtf8(s.GetString());
+    QFileInfo fileInfo(path);
+    QString filePath = fileInfo.dir().absolutePath() + "/"+ info.taskName + ".json";
+    QFile file(filePath);
+    zeno::log_debug("saving {} chars to file [{}]", str.size(), filePath.toStdString());
+    if (!file.open(QIODevice::WriteOnly)) {
+        zeno::log_error("Failed to open file for write: {} ({})", filePath.toStdString(),
+            file.errorString().toStdString());
+        return;
+    }
+    file.write(str.toUtf8());
+    file.close();
+    //python script
+    QString script = R"(import os
+os.system("python O:/send.py --file %1 --name %2"))";
+    script = script.arg(filePath, info.taskName);
+    AppHelper::pythonExcute(script);
+    file.remove();
 }
 
 void DisplayWidget::onFrameFinish(int frame)

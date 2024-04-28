@@ -28,7 +28,7 @@ public:
     QSize sizeHint() const override;
     Zenovis* getZenoVis() const;
     void runAndRecord(const VideoRecInfo& info);
-    void testCleanUp();
+    void cleanupView();
     void cleanUpScene();
     void beforeRun();
     void afterRun();
@@ -106,6 +106,7 @@ private slots:
 private:
     bool isOptxRendering() const;
     void initRecordMgr();
+    void sendTaskToServer(const VideoRecInfo& info);
 
     ViewportWidget* m_glView;
 #ifdef ZENO_OPTIX_PROC

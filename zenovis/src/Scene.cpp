@@ -48,12 +48,30 @@ Scene::Scene()
         switchRenderEngine("bate");
 }
 
+void Scene::cleanupView()
+{
+    if (!renderMan)
+        return;
+
+    RenderEngine* pEngine = renderMan->getEngine();
+    if (pEngine) {
+        pEngine->cleanupWhenExit();
+    }
+}
+
 void Scene::cleanUpScene()
 {
     if (objectsMan)
         objectsMan->clear_objects();
-    if (renderMan && renderMan->getEngine())
-        renderMan->getEngine()->update();
+
+    if (!renderMan)
+        return;
+
+    RenderEngine* pEngine = renderMan->getEngine();
+    if (pEngine) {
+        pEngine->update();
+        pEngine->cleanupOptix();
+    }
 }
 
 void Scene::switchRenderEngine(std::string const &name) {

@@ -42,6 +42,7 @@ public slots:
     void onModifyLightData(UI_VECTYPE pos, UI_VECTYPE scale, UI_VECTYPE rotate, UI_VECTYPE color, float intensity, QString nodename, UI_VECTYPE skipParam);
     void onUpdateCameraProp(float aperture, float disPlane, UI_VECTYPE skipParam = UI_VECTYPE());
     void onCleanUpScene();
+    void onCleanUpView();
     void onSetBackground(bool bShowBg);
 
     void onSetData(float, float, float, bool, bool, bool, bool, float);
@@ -84,6 +85,7 @@ public:
     void setSlidFeq(int feq);
     void modifyLightData(UI_VECTYPE pos, UI_VECTYPE scale, UI_VECTYPE rotate, UI_VECTYPE color, float intensity, QString name, UI_VECTYPE skipParam);
     void cleanUpScene();
+    void cleanupView();
 
     zenovis::ZOptixCameraSettingInfo getdata_from_optix_thread();
     void setdata_on_optix_thread(zenovis::ZOptixCameraSettingInfo value);
@@ -107,6 +109,7 @@ signals:
     void sig_modifyLightData(UI_VECTYPE pos, UI_VECTYPE scale, UI_VECTYPE rotate, UI_VECTYPE color, float intensity, QString name, UI_VECTYPE skipParam);
     void sig_updateCameraProp(float aperture, float disPlane, UI_VECTYPE skipParam = UI_VECTYPE());
     void sig_cleanUpScene();
+    void sig_cleanUpView();
     void sig_setBackground(bool bShowBg);
     void sig_setdata_on_optix_thread(float, float, float, bool, bool, bool, bool, float);
 

@@ -51,6 +51,7 @@ int optixcmd(const QCoreApplication& app, int port)
         {"video", "video", "export video"},
         {"aov", "aov", "aov"},
         {"exr", "exr", "exr"},
+        {"mask", "mask", "mask"},
         {"needDenoise", "needDenoise", "needDenoise"},
         {"videoname", "videoname", "export video's name"},
         {"subzsg", "subgraphzsg", "subgraph zsg file path"},
@@ -116,6 +117,8 @@ int optixcmd(const QCoreApplication& app, int port)
     ud.set2("output_aov", enableAOV != 0);
     ud.set2("output_exr", exportExr != 0);
     ud.set2("optix_show_background", optixShowBackground);
+    int enableMask = cmdParser.isSet("mask") ? cmdParser.value("mask").toInt() : 0;
+    ud.set2("output_mask", enableMask != 0);
     param.videoName = cmdParser.isSet("videoname") ? cmdParser.value("videoname") : "output.mp4";
     param.subZsg = cmdParser.isSet("subzsg") ? cmdParser.value("subzsg") : "";
 #else

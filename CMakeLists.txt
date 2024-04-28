@@ -123,6 +123,18 @@ macro (zeno_dbg_msvc project)
     endif()
 endmacro()
 
+if (ZENO_WITH_PYTHON3)
+    find_package(Python3 COMPONENTS Development REQUIRED)
+    message("****************************************************************")
+    message(STATUS "cPython3_INCLUDE_DIRS: ${Python3_INCLUDE_DIRS}")
+    message(STATUS "pythons lib:" ${Python3_LIBRARIES})
+
+    set(Zeno_Python3_LIB ${ZENO_OUTPUT_DIR}/Lib)
+    #copy ze module to zeno Python home
+    file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/projects/Python/Lib/ze DESTINATION ${Zeno_Python3_LIB})
+    add_definitions(-DZENO_PYTHON_MODULE_DIR="${Zeno_Python3_LIB}")
+endif()
+
 ## --- begin cihou wxl cuda
 if (ZENO_WITH_CUDA)        # must move enable_language ahead to here
     message(STATUS "CUDA_PATH: "$ENV{CUDA_PATH})

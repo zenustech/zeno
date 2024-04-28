@@ -45,6 +45,10 @@ int main(int argc, char *argv[])
     return a.exec();
 #endif
 
+#ifdef ZENO_WITH_PYTHON3
+    initPythonEnv(argv[0]);
+#endif
+
     if (argc >= 3 && !strcmp(argv[1], "--optixcmd")) {
         extern int optixcmd(const QCoreApplication & app, int port);
         int port = atoi(argv[2]);
@@ -80,9 +84,6 @@ int main(int argc, char *argv[])
     }
 
     startUp(true);
-#ifdef ZENO_WITH_PYTHON3
-    initPythonEnv(argv[0]);
-#endif
 
     if (argc >= 3 && !strcmp(argv[1], "-optix")) {
         //MessageBox(0, "runner", "runner", MB_OK);
@@ -139,5 +140,22 @@ int main(int argc, char *argv[])
     ZenoMainWindow mainWindow;
     zeno::getSession().eventCallbacks->triggerEvent("editorConstructed");
     mainWindow.showMaximized();
+    if (argc >= 2) {
+        QCommandLineParser cmdParser;
+        cmdParser.addHelpOption();
+        cmdParser.addOptions({
+            {"zsg", "zsg", "zsg"},
+            {"paramsJson", "paramsJson", "paramsJson"}
+        });
+        cmdParser.process(a);
+        QString zsgPath;
+        if (cmdParser.isSet("zsg"))
+            zsgPath = cmdParser.value("zsg");
+        QString paramsJson;
+        if (cmdParser.isSet("paramsJson"))
+            paramsJson = cmdParser.value("paramsJson");
+        if (!zsgPath.isEmpty())
+            mainWindow.openFileAndUpdateParam(zsgPath, paramsJson);
+    }
     return a.exec();
 }
