@@ -30,7 +30,7 @@ struct ImplNodeClass : INodeClass {
     ImplNodeClass(std::shared_ptr<INode>(*ctor)(), CustomUI const& customui, std::string const& name)
         : INodeClass(customui, name), ctor(ctor) {}
 
-    virtual std::shared_ptr<INode> new_instance(Graph* pGraph, std::string const &name) const override {
+    virtual std::shared_ptr<INode> new_instance(std::shared_ptr<Graph> pGraph, std::string const &name) const override {
         std::shared_ptr<INode> spNode = ctor();
         spNode->initUuid(pGraph, classname);
 
