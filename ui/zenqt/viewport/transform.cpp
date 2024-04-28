@@ -43,45 +43,6 @@ zenovis::Session* FakeTransformer::session() const
     return session;
 }
 
-void FakeTransformer::addObject(const std::string& name) {
-    if (name.empty())
-        return;
-
-    auto& objsMan = zeno::getSession().objsMan;
-    auto spobj = objsMan->getObj(name);
-    if (!spobj)
-        return;
-
-    auto object = std::dynamic_pointer_cast<PrimitiveObject>(spobj);
-    auto& user_data = object->userData();
-    if (!user_data.has("_pivot")) {
-        zeno::vec3f bmin, bmax;
-        std::tie(bmin, bmax) = zeno::primBoundingBox(object.get());
-        zeno::vec3f translate = { 0, 0, 0 };
-        user_data.setLiterial("_translate", translate);
-        zeno::vec4f rotate = { 0, 0, 0, 1 };
-        user_data.setLiterial("_rotate", rotate);
-        zeno::vec3f scale = { 1, 1, 1 };
-        user_data.setLiterial("_scale", scale);
-        auto bboxCenter = (bmin + bmax) / 2;
-        user_data.set2("_pivot", bboxCenter);
-        if (object->has_attr("pos") && !object->has_attr("_origin_pos")) {
-            auto& pos = object->attr<zeno::vec3f>("pos");
-            object->verts.add_attr<zeno::vec3f>("_origin_pos") = pos;
-        }
-        if (object->has_attr("nrm") && !object->has_attr("_origin_nrm")) {
-            auto& nrm = object->attr<zeno::vec3f>("nrm");
-            object->verts.add_attr<zeno::vec3f>("_origin_nrm") = nrm;
-        }
-    }
-    m_pivot = zeno::vec_to_other<glm::vec3>(user_data.get2<vec3f>("_pivot"));
-    m_objects_center *= m_objects.size();
-    m_objects_center += m_pivot + zeno::vec_to_other<glm::vec3>(user_data.get2<vec3f>("_translate"));
-    m_objects[name] = object;
-    m_objects_center /= m_objects.size();
-    m_objectsKeys.insert(name);
-}
-
 void FakeTransformer::addObject(const std::unordered_set<std::string>& names) {
     for (const auto& name : names) {
         addObject(name);
@@ -93,7 +54,7 @@ void FakeTransformer::removeObject(const std::string& name) {
     auto p = m_objects.find(name);
     if (p == m_objects.end())
         return;
-    auto object = p->second.lock();
+    auto object = p->second;
     if (!object)
         return;
 
@@ -309,11 +270,6 @@ bool FakeTransformer::isTransforming() const {
     return m_status;
 }
 
-void FakeTransformer::startTransform() {
-     _objects_center_start = m_objects_center;
-    markObjectsInteractive();
-}
-
 void FakeTransformer::createNewTransformNode(NodeLocation& node_location,
                                              const std::string& obj_name, const std::string& path) {
     auto& node_sync = NodeSyncMgr::GetInstance();
@@ -324,7 +280,7 @@ void FakeTransformer::createNewTransformNode(NodeLocation& node_location,
                                                        out_sock,
                                                        "prim");
 
-    auto spObj = m_objects[obj_name].lock();
+    auto spObj = m_objects[obj_name];
     auto user_data = spObj->userData();
 
     auto translate_vec3 = user_data.getLiterial<zeno::vec3f>("_translate");
@@ -371,7 +327,7 @@ void FakeTransformer::syncToTransformNode(NodeLocation& node_location,
                                           const std::string& obj_name) {
     auto& node_sync = NodeSyncMgr::GetInstance();
 
-    auto spObj = m_objects[obj_name].lock();
+    auto spObj = m_objects[obj_name];
     ZASSERT_EXIT(spObj);
     auto user_data = spObj->userData();
     auto translate_data = user_data.getLiterial<zeno::vec3f>("_translate");
@@ -407,10 +363,11 @@ void FakeTransformer::syncToTransformNode(NodeLocation& node_location,
 }
 
 void FakeTransformer::endTransform(bool moved) {
+
     if (moved) {
         // write transform info to objects' user data
         for (auto &[obj_name, obj] : m_objects) {
-            auto spObj = obj.lock();
+            auto spObj = obj;
             ZASSERT_EXIT(spObj);
 
             auto& user_data = spObj->userData();
@@ -437,10 +394,9 @@ void FakeTransformer::endTransform(bool moved) {
                 user_data.setLiterial("_scale", scale);
             }
         }
-
+#if 0
         // sync to node system
         //TODO:
-#if 0
         zeno::scope_exit sp([] {
             IGraphsModel *pGraphs = zenoApp->graphsManager()->currentModel();
             if (pGraphs)
@@ -450,13 +406,13 @@ void FakeTransformer::endTransform(bool moved) {
         IGraphsModel *pGraphs = zenoApp->graphsManager()->currentModel();
         ZASSERT_EXIT(pGraphs);
         pGraphs->setApiRunningEnable(false);
-#endif
+
         std::string primitiveTransformPath;
 
         for (auto &[obj_name, obj] : m_objects) {
             auto& node_sync = NodeSyncMgr::GetInstance();
             std::optional<NodeLocation> prim_node_location;
-            auto spObj = obj.lock();
+            auto spObj = obj;
 
             if (!spObj->listitemNumberIndex.empty())    //this item comes from a list
             {
@@ -490,7 +446,9 @@ void FakeTransformer::endTransform(bool moved) {
                     createNewTransformNode(prim_node_location.value(), obj_name, primitiveTransformPath);
             }
         }
+#endif
     }
+
     unmarkObjectsInteractive();
 
     m_trans = {0, 0, 0};
@@ -648,6 +606,7 @@ void FakeTransformer::clear() {
     m_rotate = {0, 0, 0, 1};
     m_operation = NONE;
     m_handler = nullptr;
+    m_transNode.reset();
 
     auto session = this->session();
     ZASSERT_EXIT(session);
@@ -684,10 +643,69 @@ void FakeTransformer::rotate(glm::vec3 start_vec, glm::vec3 end_vec, glm::vec3 a
     doTransform();
 }
 
+void FakeTransformer::startTransform() {
+    _objects_center_start = m_objects_center;
+    markObjectsInteractive();
+}
+
+void FakeTransformer::addObject(const std::string& name) {
+    if (name.empty())
+        return;
+
+    std::shared_ptr<PrimitiveObject> transformObj;
+
+    auto& objsMan = zeno::getSession().objsMan;
+
+    m_objnodeinfo = objsMan->getObjectAndViewNode(name);
+    std::shared_ptr<PrimitiveObject> viewobject = std::dynamic_pointer_cast<PrimitiveObject>(m_objnodeinfo.spObj);
+    ZASSERT_EXIT(viewobject && m_objnodeinfo.spViewNode);
+
+    const std::string& nodecls = m_objnodeinfo.spViewNode->get_nodecls();
+
+    std::shared_ptr<PrimitiveObject> object;
+    if (nodecls != "PrimitiveTransform" && nodecls != "TransformPrimitive") {
+        object = std::dynamic_pointer_cast<PrimitiveObject>(viewobject->clone());
+    }
+    else {
+        object = viewobject;
+        m_transNode = m_objnodeinfo.spViewNode;
+    }
+
+    auto& user_data = object->userData();
+    if (!user_data.has("_pivot")) {
+        zeno::vec3f bmin, bmax;
+        std::tie(bmin, bmax) = zeno::primBoundingBox(object.get());
+        zeno::vec3f translate = { 0, 0, 0 };
+        user_data.setLiterial("_translate", translate);
+        zeno::vec4f rotate = { 0, 0, 0, 1 };
+        user_data.setLiterial("_rotate", rotate);
+        zeno::vec3f scale = { 1, 1, 1 };
+        user_data.setLiterial("_scale", scale);
+        auto bboxCenter = (bmin + bmax) / 2;
+        user_data.set2("_pivot", bboxCenter);
+        if (object->has_attr("pos") && !object->has_attr("_origin_pos")) {
+            auto& pos = object->attr<zeno::vec3f>("pos");
+            object->verts.add_attr<zeno::vec3f>("_origin_pos") = pos;
+        }
+        if (object->has_attr("nrm") && !object->has_attr("_origin_nrm")) {
+            auto& nrm = object->attr<zeno::vec3f>("nrm");
+            object->verts.add_attr<zeno::vec3f>("_origin_nrm") = nrm;
+        }
+    }
+    m_pivot = zeno::vec_to_other<glm::vec3>(user_data.get2<vec3f>("_pivot"));
+    m_objects_center *= m_objects.size();
+    m_objects_center += m_pivot + zeno::vec_to_other<glm::vec3>(user_data.get2<vec3f>("_translate"));
+    m_objects[name] = object;
+    m_objects_center /= m_objects.size();
+    m_objectsKeys.insert(name);
+}
+
 void FakeTransformer::doTransform() {
     // qDebug() << "transformer's objects count " << m_objects.size();
+    ZASSERT_EXIT(!m_objects.empty());
+
     for (auto &[obj_name, obj] : m_objects) {
-        auto spObj = obj.lock();
+        auto spObj = obj;
         ZASSERT_EXIT(spObj);
         auto& user_data = spObj->userData();
         user_data.del("_bboxMin");
@@ -737,8 +755,71 @@ void FakeTransformer::doTransform() {
     }
     m_objects_center = _objects_center_start + m_trans;
     m_handler->setCenter({m_objects_center[0], m_objects_center[1], m_objects_center[2]});
-    auto mainWin = zenoApp->getMainWindow();
-    mainWin->justLoadObjects();
+
+    //TODO: list case
+    auto spObj = m_objects.begin()->second;
+
+    if (!m_transNode) {
+        std::shared_ptr<INode> spOriNode = m_objnodeinfo.spViewNode;
+        std::shared_ptr<Graph> spGraph = spOriNode->getThisGraph();
+        ZASSERT_EXIT(spGraph);
+        m_transNode = spGraph->createNode("PrimitiveTransform");
+        ZASSERT_EXIT(m_transNode);
+
+        spObj->update_key(m_transNode->get_uuid());
+
+        //把连线关系,view等设置更改。
+        EdgeInfo edge;
+        edge.outNode = spOriNode->get_name();
+        edge.outParam = spOriNode->get_viewobject_output_param();
+        edge.inNode = m_transNode->get_name();
+        edge.inParam = "prim";
+        spGraph->addLink(edge);
+
+        spOriNode->set_view(false);
+        m_transNode->set_view(true);
+
+        zany originalObj = m_objnodeinfo.spObj;
+        //原始的对象要隐藏
+        auto& objectsMan = zeno::getSession().objsMan;
+        //只是为了标记一下view隐藏
+        objectsMan->remove_rendering_obj(originalObj);
+
+        //把obj设置到新的transform节点的output端。
+        std::string outputparam = m_transNode->get_viewobject_output_param();
+        std::shared_ptr<IParam> spParam = m_transNode->get_output_param(outputparam);
+        m_transNode->set_result(false, outputparam, spObj);
+    }
+
+    {
+        //1.直接填写transform的信息
+        auto& user_data = spObj->userData();
+        auto trans = user_data.getLiterial<zeno::vec3f>("_translate");
+        trans += other_to_vec<3>(m_trans);
+
+        auto scale = user_data.getLiterial<zeno::vec3f>("_scale");
+        for (int i = 0; i < 3; i++)
+            scale[i] *= m_scale[i];
+        user_data.setLiterial("_scale", scale);
+
+        auto rotate = user_data.getLiterial<zeno::vec4f>("_rotate");
+        auto pre_q = glm::quat(rotate[3], rotate[0], rotate[1], rotate[2]);
+        auto dif_q = glm::quat(m_rotate[3], m_rotate[0], m_rotate[1], m_rotate[2]);
+        auto res_q = glm::toQuat(glm::toMat4(dif_q) * glm::toMat4(pre_q));
+        rotate = vec4f(res_q.x, res_q.y, res_q.z, res_q.w);
+
+        m_transNode->update_param("translation", trans);
+        m_transNode->update_param("scaling", scale);
+        m_transNode->update_param("quatRotation", rotate);
+
+        //2.登记新的obj到
+        auto& objectsMan = zeno::getSession().objsMan;
+        objectsMan->collectingObject(spObj, m_transNode, true);
+
+        //3.渲染端更新加载
+        auto mainWin = zenoApp->getMainWindow();
+        mainWin->justLoadObjects();
+    }
 }
 
 }

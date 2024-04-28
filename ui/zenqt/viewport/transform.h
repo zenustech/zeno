@@ -98,8 +98,11 @@ private:
     }
 
 private:
-    std::unordered_map<std::string, std::weak_ptr<PrimitiveObject>> m_objects;
+    std::unordered_map<std::string, std::shared_ptr<PrimitiveObject>> m_objects;
     std::set<std::string> m_objectsKeys;
+
+    std::shared_ptr<INode> m_transNode;
+    ObjectNodeInfo m_objnodeinfo;
 
     glm::vec3 m_objects_center;
 

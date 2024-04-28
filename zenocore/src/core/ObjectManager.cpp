@@ -173,6 +173,14 @@ namespace zeno {
         }
     }
 
+    ZENO_API void ObjectManager::remove_rendering_obj(zany spObj)
+    {
+        std::string key = spObj->key();
+        if (key.empty())
+            return;
+        m_remove.insert(key);
+    }
+
     ZENO_API void ObjectManager::collect_modify_objs(const std::set<std::string>& newobjKeys, bool isView)
     {
         std::lock_guard lck(m_mtx);
@@ -197,6 +205,11 @@ namespace zeno {
     {
         std::lock_guard lck(m_mtx);
         modifyInteractiveObjs = m_modify;
+    }
+
+    ZENO_API void ObjectManager::syncObjNodeInfo(zany spObj, std::shared_ptr<INode> spNode)
+    {
+        std::lock_guard lck(m_mtx);
     }
 
     ZENO_API void ObjectManager::export_loading_objs(RenderObjsInfo& info)
@@ -245,6 +258,28 @@ namespace zeno {
         if (m_objects.find(name) != m_objects.end())
             return m_objects[name].obj;
         return nullptr;
+    }
+
+    ZENO_API ObjectNodeInfo ObjectManager::getObjectAndViewNode(const std::string& name)
+    {
+        ObjectNodeInfo info;
+
+        std::lock_guard lck(m_mtx);
+        auto iter = m_objects.find(name);
+        if (iter == m_objects.end())
+            return info;
+
+        info.spObj = iter->second.obj;
+        auto& mainG = getSession().mainGraph;
+        for (auto nodepath : iter->second.attach_nodes) {
+            auto spNode = mainG->getNode(nodepath);
+            if (spNode->is_view())
+            {
+                info.spViewNode = spNode;
+                break;
+            }
+        }
+        return info;
     }
 
 }

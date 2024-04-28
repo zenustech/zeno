@@ -550,6 +550,27 @@ ZENO_API std::shared_ptr<IParam> INode::get_output_param(std::string const& para
     return nullptr;
 }
 
+ZENO_API void INode::set_result(bool bInput, const std::string& name, zany spObj) {
+    if (bInput) {
+        auto param = safe_at(m_inputs, name, "");
+        param->result = spObj;
+    }
+    else {
+        auto param = safe_at(m_outputs, name, "");
+        param->result = spObj;
+    }
+}
+
+ZENO_API std::string INode::get_viewobject_output_param() const {
+    //现在暂时还没有什么标识符用于指定哪个输出口是对应输出view obj的
+    //一般都是默认第一个输出obj，暂时这么规定，后续可能用标识符。
+    auto params = get_output_params();
+    if (!params.empty())
+        return params[0]->name;
+    else
+        return "";
+}
+
 ZENO_API NodeData INode::exportInfo() const
 {
     NodeData node;
