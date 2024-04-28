@@ -18,6 +18,11 @@
 #include <pxr/usd/usdGeom/sphere.h>
 #include <pxr/usd/usdGeom/xform.h>
 #include <pxr/usd/usdGeom/xformOp.h>
+#include <pxr/usd/usdGeom/xformable.h>
+#include <pxr/usd/usdGeom/xformCommonAPI.h>
+
+#include <pxr/usd/usdShade/material.h>
+#include <pxr/usd/usdShade/shader.h>
 
 #include <pxr/usd/usdLux/cylinderLight.h>
 #include <pxr/usd/usdLux/diskLight.h>
@@ -101,24 +106,17 @@ void link(ZENO_HANDLE mainGraph, ZENO_HANDLE from, const std::string& outputSock
 }
 
 ZENO_HANDLE markPrimInfo(ZENO_HANDLE mainGraph, ZENO_HANDLE nodeToMark, const pxr::UsdPrim& prim) {
-	auto makeString = Zeno_AddNode(mainGraph, "MakeString");
-	if (makeString == 0) {
-		zeno::log_error("failed to create node: MakeString");
-		return nodeToMark;
-	}
-
-	auto data = Zeno_AddNode(mainGraph, "SetUserData2");
-	if (data == 0) {
+	auto setData2 = Zeno_AddNode(mainGraph, "SetUserData2");
+	if (setData2 == 0) {
 		zeno::log_error("failed to create node: SetUserData2");
 		return nodeToMark;
 	}
 
-	link(mainGraph, nodeToMark, getFirstOutSocketName(mainGraph, nodeToMark), data, "object");
-	Zeno_SetInputDefl(mainGraph, data, "key", std::string("usdPrimName"));
-	Zeno_SetParam(mainGraph, makeString, "value", prim.GetName().GetString());
-	link(mainGraph, makeString, "value", data, "data");
+	link(mainGraph, nodeToMark, getFirstOutSocketName(mainGraph, nodeToMark), setData2, "object");
+	Zeno_SetInputDefl(mainGraph, setData2, "key", std::string("usdPrimName"));
+	Zeno_SetInputDefl(mainGraph, setData2, "data", prim.GetName().GetString());
 
-	return data;
+	return setData2;
 }
 
 EvalUSDPrim::EvalUSDPrim(const NodeUtilParam& params, QGraphicsItem* parent)
@@ -189,7 +187,7 @@ ZENO_HANDLE EvalUSDPrim::_parsePrimNoXform(ZENO_HANDLE mainGraph, std::any _stag
 	std::string primType = "";
 	primType = usdPrim.GetTypeName();
 	if (primType.empty()) {
-		zeno::log_warn("failed to read prim type of " + mPrimPath);
+		zeno::log_warn("failed to read prim type of " + usdPrim.GetPath().GetString());
 		return 0;
 	}
 
@@ -224,7 +222,7 @@ ZENO_HANDLE EvalUSDPrim::_parsePrimNoXform(ZENO_HANDLE mainGraph, std::any _stag
 			primNode = lightNode;
 		}
 		else {
-			zeno::log_warn("failed to create CreateCylinder or LightNode while evaling prim " + mPrimPath);
+			zeno::log_warn("failed to create CreateCylinder or LightNode while evaling prim " + usdPrim.GetPath().GetString());
 			primNode = geoNode + lightNode;
 		}
 	}
@@ -241,7 +239,7 @@ ZENO_HANDLE EvalUSDPrim::_parsePrimNoXform(ZENO_HANDLE mainGraph, std::any _stag
 			primNode = lightNode;
 		}
 		else {
-			zeno::log_warn("failed to create CreateDisk or LightNode while evaling prim " + mPrimPath);
+			zeno::log_warn("failed to create CreateDisk or LightNode while evaling prim " + usdPrim.GetPath().GetString());
 			primNode = geoNode + lightNode;
 		}
 	}
@@ -255,7 +253,7 @@ ZENO_HANDLE EvalUSDPrim::_parsePrimNoXform(ZENO_HANDLE mainGraph, std::any _stag
 			primNode = lightNode;
 		}
 		else {
-			zeno::log_warn("failed to create CreateSphere or LightNode while evaling prim " + mPrimPath);
+			zeno::log_warn("failed to create CreateSphere or LightNode while evaling prim " + usdPrim.GetPath().GetString());
 			primNode = geoNode + lightNode;
 		}
 	}
@@ -279,7 +277,7 @@ ZENO_HANDLE EvalUSDPrim::_parsePrimNoXform(ZENO_HANDLE mainGraph, std::any _stag
 			primNode = lightNode;
 		}
 		else {
-			zeno::log_warn("failed to create CreatePlane or LightNode while evaling prim " + mPrimPath);
+			zeno::log_warn("failed to create CreatePlane or LightNode while evaling prim " + usdPrim.GetPath().GetString());
 			primNode = geoNode + lightNode;
 		}
 	}
@@ -292,12 +290,18 @@ ZENO_HANDLE EvalUSDPrim::_parsePrimNoXform(ZENO_HANDLE mainGraph, std::any _stag
 			primNode = lightNode;
 		}
 		else {
-			zeno::log_warn("failed to create CreateSphere or LightNode while evaling prim " + mPrimPath);
+			zeno::log_warn("failed to create CreateSphere or LightNode while evaling prim " + usdPrim.GetPath().GetString());
 			primNode = geoNode + lightNode;
 		}
 	}
 	else if (primType == "Camera") {
 		primNode = _emitCameraNode(usdPrim, mainGraph);
+	}
+	else if (primType == "Material") {
+		primNode = _emitMaterialNode(usdPrim, mainGraph);
+	}
+	else if (primType == "Shader") {
+		;
 	}
 
 	return primNode;
@@ -343,7 +347,9 @@ ZENO_HANDLE EvalUSDPrim::_dfsParse(ZENO_HANDLE mainGraph, std::any scene, std::a
 	finalNode = _emitPrimitiveTransformNodes(usdPrim, mainGraph, finalNode);
 
 	// record prim path into the user data
-	finalNode = markPrimInfo(mainGraph, finalNode, usdPrim);
+	if (finalNode) {
+		finalNode = markPrimInfo(mainGraph, finalNode, usdPrim);
+	}
 
 	return finalNode;
 }
@@ -369,7 +375,7 @@ void EvalUSDPrim::_onEvalClicked() {
 
 	auto usdPrim = stage->GetPrimAtPath(pxr::SdfPath(mPrimPath));
 	if (!usdPrim.IsValid()) {
-		zeno::log_warn("failed to load usd prim at " + mPrimPath);
+		zeno::log_error("failed to load usd prim at " + mPrimPath);
 		return;
 	}
 
@@ -380,7 +386,9 @@ void EvalUSDPrim::_onEvalClicked() {
 	else {
 		rootNode = _parsePrimNoXform(mainGraph, stage, usdPrim);
 		rootNode = _emitPrimitiveTransformNodes(usdPrim, mainGraph, rootNode); // parse xformOps
-		rootNode = markPrimInfo(mainGraph, rootNode, usdPrim);
+		if (rootNode) {
+			rootNode = markPrimInfo(mainGraph, rootNode, usdPrim);
+		}
 	}
 
 	if (rootNode != 0) {
@@ -689,6 +697,7 @@ ZENO_HANDLE EvalUSDPrim::_emitCreateDiskNode(std::any prim, ZENO_HANDLE targetGr
 }
 
 ZENO_HANDLE EvalUSDPrim::_emitImportUSDMeshNode(std::any prim, ZENO_HANDLE targetGraph) {
+	pxr::UsdPrim usdPrim = std::any_cast<pxr::UsdPrim>(prim);
 	ZENO_HANDLE newNode = Zeno_AddNode(targetGraph, "ImportUSDMesh");
 	if (newNode == 0) {
 		zeno::log_error("failed to emit ImportUSDMesh node");
@@ -696,9 +705,89 @@ ZENO_HANDLE EvalUSDPrim::_emitImportUSDMeshNode(std::any prim, ZENO_HANDLE targe
 	}
 
 	Zeno_SetInputDefl(targetGraph, newNode, "USDDescription", mUSDPath);
-	Zeno_SetInputDefl(targetGraph, newNode, "primPath", mPrimPath);
+	Zeno_SetInputDefl(targetGraph, newNode, "primPath", usdPrim.GetPath().GetString());
 
 	return newNode;
+}
+
+ZENO_HANDLE EvalUSDPrim::_emitMaterialNode(std::any prim, ZENO_HANDLE targetGraph) {
+	pxr::UsdPrim matPrim = std::any_cast<pxr::UsdPrim>(prim);
+	pxr::UsdShadeMaterial mat = pxr::UsdShadeMaterial(matPrim);
+
+	// TODO: support volume and displacement type
+	auto outputs = mat.GetSurfaceOutputs();
+	if (outputs.size() == 0) {
+		zeno::log_error("no surface output found in material " + mat.GetPath().GetString());
+		return 0;
+	}
+
+	pxr::UsdShadeConnectableAPI source;
+	pxr::TfToken sourceName;
+	pxr::UsdShadeAttributeType shadeType;
+	if (!outputs[0].GetConnectedSource(&source, &sourceName, &shadeType)) {
+		zeno::log_error("failed to get surface output source info from material " + mat.GetPath().GetString());
+		return 0;
+	}
+
+	pxr::UsdShadeShader shader = pxr::UsdShadeShader(source.GetPrim());
+	auto shaderNode = _emitSurfaceShaderNode(shader, targetGraph);
+	if (shaderNode == 0) {
+		return 0;
+	}
+
+	auto matNode = Zeno_AddNode(targetGraph, "BindMaterial");
+	if (matNode == 0) {
+		zeno::log_error("failed to create node BindMaterial");
+		return 0;
+	}
+	
+	// TODO: set binding object and material
+	ZVARIANT ret;
+	std::string type;
+	Zeno_GetInputDefl(targetGraph, shaderNode, "mtlid", ret, type);
+
+	// TODO: maybe we should usd a map to maintain the relationship between material and mtlid, so that the materials can be reused
+	Zeno_SetInputDefl(targetGraph, matNode, "mtlid", ret);
+
+	return matNode;
+}
+
+void EvalUSDPrim::_shaderTraverse(std::any prim, ZENO_HANDLE targetGraph, ZENO_HANDLE shaderNode, const std::string& inputSock) {
+	;
+}
+
+ZENO_HANDLE EvalUSDPrim::_emitSurfaceShaderNode(std::any prim, ZENO_HANDLE targetGraph) {
+	pxr::UsdShadeShader shader = std::any_cast<pxr::UsdShadeShader>(prim);
+	if (shader.GetImplementationSource().GetString() != "id") {
+		zeno::log_error("we don't support shader implmentation source other than id");
+		return 0;
+	}
+
+	pxr::TfToken shaderID;
+	if (!shader.GetShaderId(&shaderID) || shaderID.GetString() != "UsdPreviewSurface") {
+		zeno::log_error("unsupported shader id " + shader.GetPath().GetString());
+		return 0;
+	}
+
+	auto useSpecularWorkflowInput = shader.GetInput(pxr::TfToken("useSpecularWorkflow"));
+	int useSpecularWorkflow;
+	useSpecularWorkflowInput.Get(&useSpecularWorkflow);
+	if (useSpecularWorkflow == 0) {
+		zeno::log_error("surface shader without specular workflow is not supported");
+		return 0;
+	}
+
+	auto diffuseInput = shader.GetInput(pxr::TfToken("diffuseColor"));
+	auto specularInput = shader.GetInput(pxr::TfToken("specularColor"));
+	auto roughnessInput = shader.GetInput(pxr::TfToken("roughness"));
+
+	ZENO_HANDLE shaderNode = Zeno_AddNode(targetGraph, "ShaderFinalize");
+	if (shaderNode == 0) {
+		zeno::log_error("failed to create node ShaderFinalize");
+		return 0;
+	}
+
+	return shaderNode;
 }
 
 ZENO_HANDLE EvalUSDPrim::_emitLightNode(std::any prim, ZENO_HANDLE targetGraph, const std::string& lightType, const std::string& shapeType) {
@@ -812,12 +901,15 @@ ZENO_HANDLE EvalUSDPrim::_emitCameraNode(std::any prim, ZENO_HANDLE targetGraph)
 	return newNode;
 }
 
-// return root node of the entire transform link
+// return the root node of the transform link
 ZENO_HANDLE EvalUSDPrim::_emitPrimitiveTransformNodes(std::any prim, ZENO_HANDLE targetGraph, ZENO_HANDLE lastNode) {
 	pxr::UsdPrim usdPrim = std::any_cast<pxr::UsdPrim>(prim);
 	auto xform = pxr::UsdGeomXform(usdPrim);
+
 	bool resetXformStack;
 	auto xformOps = xform.GetOrderedXformOps(&resetXformStack);
+	auto xformable = pxr::UsdGeomXformable(usdPrim);
+	auto api = pxr::UsdGeomXformCommonAPI(usdPrim);
 
 	// traverse and parse xformOps into PrimitiveTransform nodes
 	for (auto& op: xformOps) {
@@ -826,34 +918,54 @@ ZENO_HANDLE EvalUSDPrim::_emitPrimitiveTransformNodes(std::any prim, ZENO_HANDLE
 			zeno::log_warn("found invalid op type while evaling xform ops");
 			continue;
 		}
-		auto precision = op.GetPrecision();
-		pxr::VtValue vecValue;
-		ZVARIANT finalVec;
 
-		op.Get(&vecValue);
-		if (opType == pxr::UsdGeomXformOp::TypeTransform) {
-			finalVec = op.GetName(); // we don't parse matrix here, let ImportUSDPrimMatrix node do it
-		} else if (opType == pxr::UsdGeomXformOp::TypeTranslate) {
-			finalVec = _parseVector3(precision, vecValue);
-		} else if (opType == pxr::UsdGeomXformOp::TypeOrient) {
-			finalVec = _parseQuatVector(precision, vecValue);
-		} else if (opType == pxr::UsdGeomXformOp::TypeScale){
-			finalVec = _parseVector3(precision, vecValue);
-		} else if (opType >= pxr::UsdGeomXformOp::TypeRotateXYZ && opType <= pxr::UsdGeomXformOp::TypeRotateZYX) {
-			finalVec = _parseVector3(precision, vecValue);
-		} else if (opType >= pxr::UsdGeomXformOp::TypeRotateX && opType <= pxr::UsdGeomXformOp::TypeRotateZ) {
-			finalVec = _parseScalar(precision, vecValue);
-			float euler = std::get<float>(finalVec);
-			if (opType == pxr::UsdGeomXformOp::TypeRotateX) {
-				finalVec = zeno::vec3f(euler, 0.0f, 0.0f);
-			} else if (opType == pxr::UsdGeomXformOp::TypeRotateY) {
-				finalVec = zeno::vec3f(0.0f, euler, 0.0f);
-			} else { // Z axis
-				finalVec = zeno::vec3f(0.0f, 0.0f, euler);
+		if (op.IsInverseOp()) {
+			// inverse operation should
+			opType = pxr::UsdGeomXformOp::TypeTransform;
+		}
+
+		// dirty check, will find be better way in the future :)
+		std::string opName = op.GetOpName().GetString();
+		if (opName.size() > 4){
+			opName = opName.substr(opName.size() - 4);
+			if (opName == "ivot") { // pivot || Pivot
+				// ignore pivot operation for now
+				continue;
 			}
 		}
 
-		ZENO_HANDLE newNode = _makeTransformNode(targetGraph, opType, finalVec);
+		auto precision = op.GetPrecision();
+		pxr::VtValue vecValue;
+		ZVARIANT transValue;
+
+		op.Get(&vecValue);
+		if (opType == pxr::UsdGeomXformOp::TypeTransform) {
+			// we don't parse matrix here, let 'ImportUSDPrimMatrix' node do it
+			transValue = (op.IsInverseOp() ? "!" : "0") + op.GetName().GetString() + "|" + usdPrim.GetPath().GetString(); // valString = "!attribute name|prim path" storing three parameters
+		} else if (opType == pxr::UsdGeomXformOp::TypeTranslate) {
+			transValue = _parseVector3(precision, vecValue);
+		} else if (opType == pxr::UsdGeomXformOp::TypeOrient) {
+			transValue = _parseQuatVector(precision, vecValue);
+		} else if (opType == pxr::UsdGeomXformOp::TypeScale){
+			transValue = _parseVector3(precision, vecValue);
+		} else if (opType >= pxr::UsdGeomXformOp::TypeRotateXYZ && opType <= pxr::UsdGeomXformOp::TypeRotateZYX) {
+			transValue = _parseVector3(precision, vecValue);
+		} else if (opType >= pxr::UsdGeomXformOp::TypeRotateX && opType <= pxr::UsdGeomXformOp::TypeRotateZ) {
+			transValue = _parseScalar(precision, vecValue);
+			float euler = std::get<float>(transValue);
+			if (opType == pxr::UsdGeomXformOp::TypeRotateX) {
+				transValue = zeno::vec3f(euler, 0.0f, 0.0f);
+			} else if (opType == pxr::UsdGeomXformOp::TypeRotateY) {
+				transValue = zeno::vec3f(0.0f, euler, 0.0f);
+			} else { // Z axis
+				transValue = zeno::vec3f(0.0f, 0.0f, euler);
+			}
+		}
+		else {
+			std::cout << "unknown optype for prim " << usdPrim.GetPath() << " " << opType << std::endl;
+		}
+
+		ZENO_HANDLE newNode = _makeTransformNode(targetGraph, opType, transValue);
 		if (newNode == 0) {
 			continue;
 		}
@@ -871,7 +983,7 @@ ZENO_HANDLE EvalUSDPrim::_makeTransformNode(ZENO_HANDLE main, std::any transT, c
 	auto transType = std::any_cast<const pxr::UsdGeomXformOp::Type&>(transT);
 	ZENO_HANDLE newNode = Zeno_AddNode(main, "PrimitiveTransform"); 
 	if (newNode == 0) {
-		zeno::log_warn("failed to create node named PrimitiveTransform");
+		zeno::log_error("failed to create node named PrimitiveTransform");
 		return 0;
 	}
 
@@ -879,16 +991,23 @@ ZENO_HANDLE EvalUSDPrim::_makeTransformNode(ZENO_HANDLE main, std::any transT, c
 		// add node to parse matrix and link to the input
 		auto importNode = Zeno_AddNode(main, "ImportUSDPrimMatrix");
 		if (importNode == 0) {
-			zeno::log_warn("failed to create node: ImportUSDPrimMatrix");
+			zeno::log_error("failed to create node: ImportUSDPrimMatrix");
 			return newNode;
 		}
 
-		const std::string& attrName = std::get<std::string>(transValue);
+		const std::string& valString = std::get<std::string>(transValue);
+		size_t splitCharIndex = valString.find_first_of('|'); // valString = "attribute name|prim path"
+		if (splitCharIndex <= 0 || splitCharIndex >= valString.size() - 1) {
+			zeno::log_error("invalid value string when creating ImportUSDPrimMatrix node");
+		}
+		else {
+			Zeno_SetInputDefl(main, importNode, "USDDescription", mUSDPath);
+			Zeno_SetInputDefl(main, importNode, "primPath", valString.substr(splitCharIndex + 1));
+			Zeno_SetInputDefl(main, importNode, "opName", valString.substr(1, splitCharIndex - 1));
+			Zeno_SetInputDefl(main, importNode, "isInversedOp", bool(valString[0] == '!'));
+			link(main, importNode, "Matrix", newNode, "Matrix");
+		}
 
-		Zeno_SetInputDefl(main, importNode, "USDDescription", mUSDPath);
-		Zeno_SetInputDefl(main, importNode, "primPath", mPrimPath);
-		Zeno_SetInputDefl(main, importNode, "attribute", attrName);
-		link(main, importNode, "Matrix", newNode, "Matrix");
 		return newNode;
 	}
 

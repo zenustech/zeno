@@ -32,4 +32,5 @@ private:
 	std::map<int, int> mDepthToSize;
 	ZENO_HANDLE mRootNode;
 	ZENO_HANDLE mMainGraph;
+	int mSizeOfNodes;
 };

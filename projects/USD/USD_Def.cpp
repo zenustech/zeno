@@ -4,7 +4,7 @@ ZENDEFNODE(ReadUSD,
     {
         /* inputs */
         {
-            {"readpath", "path"}
+            {"readpath", "path", ""}
         },
         /* outputs */
         {
@@ -20,8 +20,8 @@ ZENDEFNODE(ImportUSDMesh,
     {
         /* inputs */
         {
-            {"string", "USDDescription"},
-            {"string", "primPath"}
+            {"string", "USDDescription", ""},
+            {"string", "primPath", ""}
         },
         /* outputs */
         {
@@ -37,9 +37,10 @@ ZENDEFNODE(ImportUSDPrimMatrix,
     {
         /* inputs */
         {
-            {"string", "USDDescription"},
-            {"string", "primPath"},
-            {"string", "attribute"}
+            {"string", "USDDescription", ""},
+            {"string", "primPath", ""},
+            {"string", "opName", ""},
+            {"bool", "isInversedOp", "0"},
         },
     /* outputs */
     {
@@ -55,7 +56,7 @@ ZENDEFNODE(ViewUSDTree,
     {
         /* inputs */
         {
-            {"string", "USDDescription"}
+            {"string", "USDDescription", ""}
         },
     /* outputs */
     {
@@ -69,7 +70,7 @@ ZENDEFNODE(USDShowAllPrims,
 {
     /* inputs */
     {
-        {"string", "USDDescription"}
+        {"string", "USDDescription", ""}
     },
 /* outputs */
 {
@@ -83,7 +84,7 @@ ZENDEFNODE(ShowPrimUserData,
     {
     /* inputs */
     {
-        {"primitive", "prim"},
+        {"primitive", "prim", ""},
     },
     /* outputs */
     {
@@ -98,8 +99,8 @@ ZENDEFNODE(ShowUSDPrimAttribute,
     {
         /* inputs */
         {
-            {"string", "USDDescription"},
-            {"string", "primPath"},
+            {"string", "USDDescription", ""},
+            {"string", "primPath", ""},
             {"string", "attributeName", ""}
         },
         /* outputs */
@@ -116,8 +117,8 @@ ZENDEFNODE(ShowUSDPrimRelationShip,
     {
         /* inputs */
         {
-            {"string", "USDDescription"},
-            {"string", "primPath"}
+            {"string", "USDDescription", ""},
+            {"string", "primPath", ""}
         },
     /* outputs */
     {
@@ -133,8 +134,8 @@ ZENDEFNODE(EvalUSDPrim,
     {
         /* inputs */
         {
-            {"readpath", "USDDescription"},
-            {"string", "primPath"},
+            {"readpath", "USDDescription", ""},
+            {"string", "primPath", ""},
             {"bool", "isRecursive", "0"},
         },
         /* outputs */

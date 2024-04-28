@@ -76,6 +76,7 @@ void _convertMeshFromUSDToZeno(const pxr::UsdPrim& usdPrim, zeno::PrimitiveObjec
         auto vertUVs = usdPrim.GetAttribute(pxr::TfToken("primvars:st"));
         auto orient = usdMesh.GetOrientationAttr();
         auto doubleSided = usdMesh.GetDoubleSidedAttr();
+        auto vertColor = usdMesh.GetDisplayColorAttr();
 
         bool isDoubleSided;
         doubleSided.Get(&isDoubleSided); // TODO: double sided
@@ -119,6 +120,18 @@ void _convertMeshFromUSDToZeno(const pxr::UsdPrim& usdPrim, zeno::PrimitiveObjec
         points.Get(&pointValues);
         for (const auto& point : pointValues) {
             verts.emplace_back(point.data()[0], point.data()[1], point.data()[2]);
+        }
+
+        if (vertColor.HasValue()) {
+            pxr::VtArray<pxr::GfVec3f> _cc;
+            vertColor.Get(&_cc);
+            if (_cc.size() > 0) {
+                zeno::vec3f meshColor = { _cc[0][0], _cc[0][1], _cc[0][2] };
+                auto& vColors = verts.add_attr<zeno::vec3f>("clr");
+                for (const auto& vert : verts) {
+                    vColors.emplace_back(meshColor);
+                }
+            }
         }
 
         if (vertUVs.HasValue()) {
@@ -302,43 +315,41 @@ void ImportUSDMesh::apply() {
 void ImportUSDPrimMatrix::apply() {
     std::string& usdPath = get_input2<zeno::StringObject>("USDDescription")->get();
     std::string& primPath = get_input2<zeno::StringObject>("primPath")->get();
-    std::string& attrName = get_input2<zeno::StringObject>("attribute")->get();
+    std::string& opAttrName = get_input2<zeno::StringObject>("opName")->get();
+    bool isInversedOp = get_input2<bool>("isInversedOp");
 
     auto stage = pxr::UsdStage::Open(usdPath);
     if (stage == nullptr) {
-        zeno::log_warn("failed to find usd description for " + usdPath);
+        zeno::log_error("failed to find usd description for " + usdPath);
         return;
     }
 
     auto prim = stage->GetPrimAtPath(pxr::SdfPath(primPath));
     if (!prim.IsValid()) {
-        zeno::log_warn("[ImportUSDPrim] failed to import prim at " + primPath);
+        zeno::log_error("[ImportUSDPrim] failed to import prim at " + primPath);
         return;
     }
 
-    auto attr = prim.GetAttribute(pxr::TfToken(attrName));
-    if (!attr.HasValue()) {
-        zeno::log_warn("failed to find attribute " + attrName + " from " + primPath);
+    auto attr = prim.GetAttribute(pxr::TfToken(opAttrName));
+    if (!attr.IsValid()) {
+        zeno::log_error("failed to get attribute named " + opAttrName);
         return;
     }
 
-    pxr::VtValue matVal;
-    attr.Get(&matVal);
+    auto op = pxr::UsdGeomXformOp(attr);
+    if (op.GetOpType() == pxr::UsdGeomXformOp::TypeInvalid) {
+        zeno::log_error("failed to parse xformOp cause it is an invalid type " + primPath);
+        return;
+    }
+
+    pxr::VtValue mVal;
+    attr.Get(&mVal);
+
+    pxr::GfMatrix4d __ = pxr::UsdGeomXformOp::GetOpTransform(op.GetOpType(), mVal, isInversedOp);
+    double* vp = __.data();
     glm::mat4 realMat;
-    std::string matType = matVal.GetTypeName();
-    if (matType == "GfMatrix4d") {
-        pxr::GfMatrix4d mat = matVal.Get<pxr::GfMatrix4d>();
-        double* vp = mat.data();
-        for (int i = 0; i < 16; ++i) realMat[i / 4][i % 4] = static_cast<float>(vp[i]);
-    }
-    else if (matType == "GfMatrix4f") {
-        pxr::GfMatrix4f mat = matVal.Get<pxr::GfMatrix4f>();
-        float* vp = mat.data();
-        for (int i = 0; i < 16; ++i) realMat[i / 4][i % 4] = vp[i];
-    }
-    else {
-        zeno::log_warn("unexpected attribute type for matrix: " + matType);
-        return;
+    for (int i = 0; i < 16; ++i) {
+        realMat[i / 4][i % 4] = static_cast<float>(vp[i]);
     }
 
     auto mat = std::make_shared<zeno::MatrixObject>();

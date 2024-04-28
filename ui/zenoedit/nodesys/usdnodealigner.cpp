@@ -24,6 +24,7 @@ USDNodeAligner::USDNodeAligner() {
 	mDepthToSize.clear();
 	mRootNode = 0;
 	mMainGraph = 0;
+	mSizeOfNodes = 0;
 }
 
 void USDNodeAligner::setupGraph(ZENO_HANDLE mainGraph, ZENO_HANDLE rootNode) {
@@ -42,6 +43,8 @@ void USDNodeAligner::doAlign(const std::pair<float, float>& anchorPos) {
 	}
 
 	_beforeDFS();
+
+	std::cout << "size of nodes " << mSizeOfNodes << std::endl;
 
 	int maxDepth = mDepthToSize.size();
 	if (maxDepth == 0) {
@@ -62,6 +65,7 @@ void USDNodeAligner::doAlign(const std::pair<float, float>& anchorPos) {
 	mDepthToSize.clear();
 	mRootNode = 0;
 	mMainGraph = 0;
+	mSizeOfNodes = 0;
 }
 
 void USDNodeAligner::_beforeDFS() {
@@ -78,6 +82,7 @@ void USDNodeAligner::_beforeDFS() {
 	mLinkMap[mRootNode].mDepth = 0;
 
 	while (!tobeVisited.empty()) {
+		++mSizeOfNodes;
 		auto handle = tobeVisited.front();
 		tobeVisited.pop();
 		auto& node = mLinkMap[handle];
