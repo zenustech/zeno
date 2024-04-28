@@ -14,6 +14,7 @@
 #include "zeno/utils/log.h"
 #include <zeno/types/UserData.h>
 #include "zeno/types/PrimitiveObject.h"
+#include <zeno/types/PrimitiveUtils.h>
 #include "zeno/utils/scope_exit.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -493,6 +494,7 @@ bool GetMesh(FbxNode* pNode, std::shared_ptr<PrimitiveObject> prim, std::string 
         }
         else if (arr->GetMappingMode() == FbxLayerElement::EMappingMode::eByPolygonVertex) {
             zeno::log_info("{}, eByPolygonVertex", name);
+            zeno::log_info("arr->GetReferenceMode(): {}", arr->GetReferenceMode());
             if (arr->GetReferenceMode() == FbxLayerElement::EReferenceMode::eDirect) {
                 auto &uvs = prim->loops.add_attr<int>("uvs");
                 std::iota(uvs.begin(), uvs.end(), 0);
@@ -1503,6 +1505,109 @@ ZENDEFNODE(BoneTransformView, {
     },
     {},
     {"debug"},
+});
+// Create a cube mesh.
+FbxNode* CreateSkin(FbxScene* pScene, char* pName, std::shared_ptr<PrimitiveObject> prim) {
+    FbxMesh* lMesh = FbxMesh::Create(pScene, pName);
+
+    // Create control points.
+    lMesh->InitControlPoints(prim->verts.size());
+    FbxVector4* lControlPoints = lMesh->GetControlPoints();
+    for (auto i = 0; i < prim->verts.size(); i++) {
+        lControlPoints[i] = FbxVector4(prim->verts[i][0], prim->verts[i][1], prim->verts[i][2]);
+    }
+
+    if (prim->verts.has_attr("nrm")) {
+        FbxGeometryElementNormal* lGeometryElementNormal= lMesh->CreateElementNormal();
+        lGeometryElementNormal->SetMappingMode(FbxGeometryElement::eByControlPoint);
+        lGeometryElementNormal->SetReferenceMode(FbxGeometryElement::eDirect);
+        auto &nrm = prim->verts.attr<vec3f>("nrm");
+        for (auto i = 0; i < prim->verts.size(); i++) {
+            lGeometryElementNormal->GetDirectArray().Add(FbxVector4(nrm[i][0], nrm[i][1], nrm[i][2]));
+        }
+    }
+
+    // Create UV for Diffuse channel.
+    if (prim->loops.has_attr("uvs")) {
+        FbxGeometryElementUV* lUVDiffuseElement = lMesh->CreateElementUV( "DiffuseUV");
+        lUVDiffuseElement->SetMappingMode(FbxGeometryElement::eByPolygonVertex);
+        lUVDiffuseElement->SetReferenceMode(FbxGeometryElement::eIndexToDirect);
+        for (auto i = 0; i < prim->uvs.size(); i++) {
+            lUVDiffuseElement->GetDirectArray().Add(FbxVector2(prim->uvs[i][0], prim->uvs[i][1]));
+        }
+
+        lUVDiffuseElement->GetIndexArray().SetCount(prim->loops.size());
+        auto &uvs = prim->loops.attr<int>("uvs");
+        for (auto i = 0; i < uvs.size(); i++) {
+            lUVDiffuseElement->GetIndexArray().SetAt(i, uvs[i]);
+        }
+    }
+
+    // Create polygons. Assign texture and texture UV indices.
+    for (auto i = 0; i < prim->polys.size(); i++) {
+        lMesh->BeginPolygon(-1, -1, -1, false);
+        auto poly = prim->polys[i];
+        for (auto j = 0; j < poly[1]; j++) {
+            lMesh->AddPolygon(prim->loops[poly[0] + j]);
+        }
+        lMesh->EndPolygon();
+    }
+
+    // create a FbxNode
+    FbxNode* lNode = FbxNode::Create(pScene,pName);
+
+    // set the node attribute
+    lNode->SetNodeAttribute(lMesh);
+
+    // set the shading mode to view texture
+    lNode->SetShadingMode(FbxNode::eTextureShading);
+
+    // rescale the cube
+//    lNode->LclScaling.Set(FbxVector4(0.3, 0.3, 0.3));
+
+    // return the FbxNode
+    return lNode;
+}
+
+struct NewFBXWrite : INode {
+    virtual void apply() override {
+        auto skin = get_input2<PrimitiveObject>("skin");
+        if (skin->tris.size()) {
+            primPolygonate(skin.get(), true);
+        }
+        FbxManager* manager = FbxManager::Create();
+        FbxIOSettings* ios = FbxIOSettings::Create(manager, IOSROOT);
+        manager->SetIOSettings(ios);
+
+        // 创建一个场景
+        FbxScene* scene = FbxScene::Create(manager, "MyScene");
+
+        FbxNode* lSkin = CreateSkin(scene, "Mesh", skin);
+        scene->GetRootNode()->AddChild(lSkin);
+
+        // 导出场景到FBX文件
+        int fileFormat = manager->GetIOPluginRegistry()->FindWriterIDByDescription("FBX ascii");
+        FbxExporter* exporter = FbxExporter::Create(manager, "");
+        exporter->Initialize(get_input2<std::string>("path").c_str(), fileFormat, manager->GetIOSettings());
+        exporter->Export(scene);
+        exporter->Destroy();
+
+        // 清理
+        scene->Destroy();
+        manager->Destroy();
+    }
+};
+
+ZENDEFNODE(NewFBXWrite, {
+    {
+        "skin",
+        "skeleton",
+        {"readpath", "path", "test0428.fbx"},
+    },
+    {
+    },
+    {},
+    {"FBX"},
 });
 }
 #endif
