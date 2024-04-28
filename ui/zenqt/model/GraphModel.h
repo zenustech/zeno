@@ -125,6 +125,8 @@ public:
     //undo, redo
     zeno::NodeData _createNodeImpl(const QString& cate, zeno::NodeData& nodedata, zeno::GraphData& graphData, bool endTransaction = false);
     bool _removeNodeImpl(const QString& name, bool endTransaction = false);
+    void _addLinkImpl(const zeno::EdgeInfo& link, bool endTransaction = false);
+    void _removeLinkImpl(const zeno::EdgeInfo& link, bool endTransaction = false);
     std::weak_ptr<zeno::INode> getWpNode(QString& nodename);
 
 signals:

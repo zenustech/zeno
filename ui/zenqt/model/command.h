@@ -39,4 +39,18 @@ private:
     QString m_cate;
 };
 
+class LinkCommand : public QUndoCommand
+{
+public:
+    LinkCommand(bool bAddLink, const zeno::EdgeInfo& link, QStringList& graphPath);
+    void redo() override;
+    void undo() override;
+
+private:
+    const bool m_bAdd;
+    const zeno::EdgeInfo m_link;
+    GraphModel* m_model;
+    QStringList m_graphPath;
+};
+
 #endif
