@@ -884,18 +884,18 @@ extern "C" __global__ void __closesthit__radiance()
     float3 frontPos, backPos;
     SelfIntersectionAvoidance::offsetSpawnPoint( frontPos, backPos, wldPos, prd->geometryNormal, wldOffset );
 
-    shadowPRD.origin = dot(-ray_dir, wldNorm) > 0 ? frontPos : backPos;
+    shadowPRD.origin = dot(wi, vec3(wldNorm)) > 0 ? frontPos : backPos;
     //auto shadingP = rtgems::offset_ray(shadowPRD.origin + params.cam.eye,  prd->geometryNormal); // world space
     
-    shadowPRD.origin = frontPos;
-    if(mats.subsurface>0 && (mats.thin>0.5 || mats.doubleSide>0.5) && istransmission){
-        shadowPRD.origin = backPos; //rtgems::offset_ray(P,  -prd->geometryNormal);
-    }
+    //shadowPRD.origin = frontPos;
+    //if(mats.subsurface>0 && (mats.thin>0.5 || mats.doubleSide>0.5) && istransmission){
+        //shadowPRD.origin = backPos; //rtgems::offset_ray(P,  -prd->geometryNormal);
+    //}
     
-    auto shadingP = rtgems::offset_ray(P + params.cam.eye,  prd->geometryNormal); // world space
-    if(mats.subsurface>0 && (mats.thin>0.5 || mats.doubleSide>0.5) && istransmission){
-        shadingP = rtgems::offset_ray(P + params.cam.eye,  -prd->geometryNormal);
-    }
+    auto shadingP = rtgems::offset_ray(P + params.cam.eye, dot(wi, vec3(wldNorm)) > 0 ? wldNorm:-wldNorm); // world space
+    //if(mats.subsurface>0 && (mats.thin>0.5 || mats.doubleSide>0.5) && istransmission){
+        //shadingP = rtgems::offset_ray(P + params.cam.eye,  -prd->geometryNormal);
+    //}
 
     prd->radiance = {};
     prd->direction = normalize(wi);
@@ -909,6 +909,7 @@ extern "C" __global__ void __closesthit__radiance()
     }
 
     prd->lightmask = DefaultMatMask;
+    shadowPRD.ShadowNormal = dot(wi, vec3(prd->geometryNormal)) > 0 ? prd->geometryNormal:-prd->geometryNormal;
     DirectLighting<true>(prd, shadowPRD, shadingP, ray_dir, evalBxDF, &taskAux, dummy_prt);
     if(mats.shadowReceiver > 0.5f)
     {
