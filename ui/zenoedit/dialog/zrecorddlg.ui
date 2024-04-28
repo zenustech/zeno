@@ -181,26 +181,6 @@
     </widget>
    </item>
    <item>
-    <widget class="QCheckBox" name="cbPanoramaCamera">
-     <property name="text">
-      <string>PanoramaCamera</string>
-     </property>
-     <property name="checked">
-      <bool>false</bool>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QCheckBox" name="cbHemisphere">
-     <property name="text">
-      <string>Hemisphere</string>
-     </property>
-     <property name="checked">
-      <bool>false</bool>
-     </property>
-    </widget>
-   </item>
-   <item>
     <spacer name="verticalSpacer">
      <property name="orientation">
       <enum>Qt::Vertical</enum>
