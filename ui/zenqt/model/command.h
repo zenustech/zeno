@@ -35,7 +35,6 @@ private:
     GraphModel* m_model;
     QStringList m_graphPath;
     zeno::NodeData m_nodeData;
-    zeno::GraphData m_graphData;
     QString m_cate;
 };
 

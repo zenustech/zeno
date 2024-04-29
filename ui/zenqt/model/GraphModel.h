@@ -102,8 +102,8 @@ public:
     void undo();
     void redo();
     void pushToplevelStack(QUndoCommand* cmd);
-    void beginTransaction(const QString& name);
-    void endTransaction();
+    void beginMacro(const QString& name);
+    void endMacro();
 
     //test functions:
     void updateParamName(QModelIndex nodeIdx, int row, QString newName);
@@ -122,8 +122,9 @@ public:
     bool isLocked() const;
     void importNodes(const zeno::NodesData& nodes, const zeno::LinksData& links, const QPointF& pos);
 
+    GraphModel* getTopLevelGraph(const QStringList& currentPath);
     //undo, redo
-    zeno::NodeData _createNodeImpl(const QString& cate, zeno::NodeData& nodedata, zeno::GraphData& graphData, bool endTransaction = false);
+    zeno::NodeData _createNodeImpl(const QString& cate, zeno::NodeData& nodedata, bool endTransaction = false);
     bool _removeNodeImpl(const QString& name, bool endTransaction = false);
     void _addLinkImpl(const zeno::EdgeInfo& link, bool endTransaction = false);
     void _removeLinkImpl(const zeno::EdgeInfo& link, bool endTransaction = false);

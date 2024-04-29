@@ -47,7 +47,7 @@ void AddNodeCommand::redo()
     m_model = GraphsManager::instance().getGraph(m_graphPath);
     if (m_model) {
         m_nodeData.uipos = m_pos;
-        m_nodeData = m_model->_createNodeImpl(m_cate, m_nodeData, zeno::GraphData(), false);
+        m_nodeData = m_model->_createNodeImpl(m_cate, m_nodeData, false);
     }
 }
 
@@ -74,7 +74,6 @@ RemoveNodeCommand::RemoveNodeCommand(zeno::NodeData& nodeData, QStringList& grap
     , m_model(GraphsManager::instance().getGraph(graphPath))
     , m_nodeData(nodeData)
     , m_graphPath(graphPath)
-    , m_graphData()
     , m_cate("")
 {
     //m_id = m_data[ROLE_OBJID].toString();
@@ -104,8 +103,7 @@ void RemoveNodeCommand::redo()
     if (m_model) {
         auto nodename = QString::fromStdString(m_nodeData.name);
         auto spNode = m_model->getWpNode(nodename).lock();
-        if (std::shared_ptr<zeno::SubnetNode> subnetNode = std::dynamic_pointer_cast<zeno::SubnetNode>(spNode)) {   //if is subnet/assets£¬record graphData
-            m_graphData = subnetNode->subgraph->exportGraph();
+        if (std::shared_ptr<zeno::SubnetNode> subnetNode = std::dynamic_pointer_cast<zeno::SubnetNode>(spNode)) {   //if is subnet/assets£¬record cate
             m_cate = subnetNode->isAssetsNode() ? "assets" : "";
         }
         m_model->_removeNodeImpl(QString::fromStdString(m_nodeData.name));
@@ -116,7 +114,7 @@ void RemoveNodeCommand::undo()
 {
     m_model = GraphsManager::instance().getGraph(m_graphPath);
     if (m_model)
-        m_nodeData = m_model->_createNodeImpl(m_cate, m_nodeData, m_graphData, false);
+        m_nodeData = m_model->_createNodeImpl(m_cate, m_nodeData, false);
 }
 
 LinkCommand::LinkCommand(bool bAddLink, const zeno::EdgeInfo& link, QStringList& graphPath)

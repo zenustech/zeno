@@ -616,13 +616,13 @@ void GraphModel::pushToplevelStack(QUndoCommand* cmd)
         m_undoRedoStack.value()->push(cmd);
 }
 
-void GraphModel::beginTransaction(const QString& name)
+void GraphModel::beginMacro(const QString& name)
 {
     auto curpath = currentPath();
     if (curpath.size() > 1)   //不是顶层graph，则调用顶层graph
     {
-        if (GraphModel* topLevelGraph = GraphsManager::instance().getGraph({ curpath[0]}))
-            topLevelGraph->beginTransaction(name);
+        if (GraphModel* topLevelGraph = getTopLevelGraph(curpath))
+            topLevelGraph->beginMacro(name);
     }
     else {
         if (m_undoRedoStack.has_value() && m_undoRedoStack.value())
@@ -631,13 +631,13 @@ void GraphModel::beginTransaction(const QString& name)
     }
 }
 
-void GraphModel::endTransaction()
+void GraphModel::endMacro()
 {
     auto curpath = currentPath();
     if (curpath.size() > 1)   //不是顶层graph，则调用顶层graph
     {
-        if (GraphModel* topLevelGraph = GraphsManager::instance().getGraph({ curpath[0] }))
-            topLevelGraph->endTransaction();
+        if (GraphModel* topLevelGraph = getTopLevelGraph(curpath))
+            topLevelGraph->endMacro();
     }
     else {
         if (m_undoRedoStack.has_value() && m_undoRedoStack.value())
@@ -819,7 +819,7 @@ zeno::NodeData GraphModel::createNode(const QString& nodeCls, const QString& cat
     zeno::NodeData nodedata;
     nodedata.cls = nodeCls.toStdString();
     nodedata.uipos = { pos.x(), pos.y() };
-    return _createNodeImpl(cate, nodedata, zeno::GraphData(), true);
+    return _createNodeImpl(cate, nodedata, true);
 }
 
 void GraphModel::_appendNode(std::shared_ptr<zeno::INode> spNode)
@@ -851,7 +851,7 @@ void GraphModel::_appendNode(std::shared_ptr<zeno::INode> spNode)
     GraphsManager::instance().currentModel()->markDirty(true);
 }
 
-zeno::NodeData GraphModel::_createNodeImpl(const QString& cate, zeno::NodeData& nodedata, zeno::GraphData& graphData, bool endTransaction)
+zeno::NodeData GraphModel::_createNodeImpl(const QString& cate, zeno::NodeData& nodedata, bool endTransaction)
 {
     bool bEnableIoProc = GraphsManager::instance().isInitializing() || GraphsManager::instance().isImporting();
     if (bEnableIoProc)
@@ -861,7 +861,7 @@ zeno::NodeData GraphModel::_createNodeImpl(const QString& cate, zeno::NodeData& 
     {
         auto currtPath = currentPath();
         AddNodeCommand* pCmd = new AddNodeCommand(cate, nodedata, currtPath);
-        if (auto topLevelGraph = GraphsManager::instance().getGraph({ currtPath[0] }))
+        if (auto topLevelGraph = getTopLevelGraph(currtPath))
         {
             topLevelGraph->pushToplevelStack(pCmd);
             return pCmd->getNodeData();
@@ -877,7 +877,7 @@ zeno::NodeData GraphModel::_createNodeImpl(const QString& cate, zeno::NodeData& 
         if (!spNode)
             return zeno::NodeData();
 
-        zeno::NodeData node = spNode->exportInfo();
+        zeno::NodeData node;
 
         if (nodedata.cls == "Subnet") {
             QString nodeName = QString::fromStdString(spNode->get_name());
@@ -886,38 +886,44 @@ zeno::NodeData GraphModel::_createNodeImpl(const QString& cate, zeno::NodeData& 
             auto paramsM = m_nodes[uuid]->params;
 
             if (std::shared_ptr<zeno::SubnetNode> subnetNode = std::dynamic_pointer_cast<zeno::SubnetNode>(spNode)) {
-                node.customUi = nodedata.customUi;
                 //create input/output in subnet
                 zeno::ParamsUpdateInfo updateInfo;
                 UiHelper::parseUpdateInfo(nodedata.customUi, updateInfo);
                 paramsM->resetCustomUi(nodedata.customUi);
                 paramsM->batchModifyParams(updateInfo);
 
-                for (auto& [name, nodedata] : graphData.nodes)
+                if (nodedata.subgraph.has_value())
                 {
-                    if (nodedata.cls == "Subnet") {   //if is subnet, create recursively
-                        QStringList cur = currentPath();
-                        cur.append(QString::fromStdString(spNode->get_name()));
-                        GraphModel* model = GraphsManager::instance().getGraph(cur);
-                        if (model)
-                            model->_createNodeImpl(cate, nodedata, nodedata.subgraph.value(), false);
+                    for (auto& [name, nodedata] : nodedata.subgraph.value().nodes)
+                    {
+                        if (nodedata.cls == "Subnet") {   //if is subnet, create recursively
+                            QStringList cur = currentPath();
+                            cur.append(QString::fromStdString(spNode->get_name()));
+                            GraphModel* model = GraphsManager::instance().getGraph(cur);
+                            if (model)
+                                model->_createNodeImpl(cate, nodedata, false);
+                        }
+                        else if (nodedata.cls == "SubInput" || nodedata.cls == "SubOutput") {   //dont create, just update subinput/output pos
+                            auto ioNode = subnetNode->subgraph->getNode(name);
+                            if (ioNode)
+                                ioNode->set_pos(nodedata.uipos);
+                        }
+                        else if (nodedata.asset.has_value()) {  //if is asset
+                            subnetNode->subgraph->createNode(nodedata.cls, name, true, {nodedata.uipos.first, nodedata.uipos.second});
+                        }
+                        else {
+                            subnetNode->subgraph->createNode(nodedata.cls, name, false, {nodedata.uipos.first, nodedata.uipos.second});
+                        }
                     }
-                    else if (nodedata.cls == "SubInput" || nodedata.cls == "SubOutput") {   //dont create, just update subinput/output pos
-                        auto ioNode = subnetNode->subgraph->getNode(name);
-                        if (ioNode)
-                            ioNode->set_pos(nodedata.uipos);
-                    }
-                    else if (nodedata.asset.has_value()) {  //if is asset
-                        subnetNode->subgraph->createNode(nodedata.cls, name, true, {nodedata.uipos.first, nodedata.uipos.second});
-                    }
-                    else {
-                        subnetNode->subgraph->createNode(nodedata.cls, name, false, {nodedata.uipos.first, nodedata.uipos.second});
+                    for (zeno::EdgeInfo oldLink : nodedata.subgraph.value().links) {
+                        subnetNode->subgraph->addLink(oldLink);
                     }
                 }
-                for (zeno::EdgeInfo oldLink : graphData.links) {
-                    subnetNode->subgraph->addLink(oldLink);
-                }
+                node = spNode->exportInfo();
             }
+        }
+        else {
+            node = spNode->exportInfo();
         }
         return node;
     }
@@ -939,7 +945,7 @@ bool GraphModel::_removeNodeImpl(const QString& name, bool endTransaction)
                 auto nodedata = spNode->exportInfo();
                 auto currtPath = currentPath();
                 RemoveNodeCommand* pCmd = new RemoveNodeCommand(nodedata, currtPath);
-                if (auto topLevelGraph = GraphsManager::instance().getGraph({ currtPath[0] }))
+                if (auto topLevelGraph = getTopLevelGraph(currtPath))
                 {
                     topLevelGraph->pushToplevelStack(pCmd);
                     return true;
@@ -962,7 +968,7 @@ bool GraphModel::_removeNodeImpl(const QString& name, bool endTransaction)
                 {
                     auto currtPath = currentPath();
                     LinkCommand* pCmd = new LinkCommand(false, edge, currentPath());
-                    if (auto topLevelGraph = GraphsManager::instance().getGraph({ currtPath[0] }))
+                    if (auto topLevelGraph = getTopLevelGraph(currtPath))
                         topLevelGraph->pushToplevelStack(pCmd);
                 }
             }
@@ -986,7 +992,7 @@ void GraphModel::_addLinkImpl(const zeno::EdgeInfo& link, bool endTransaction)
     {
         LinkCommand* pCmd = new LinkCommand(true, link, currentPath());
         auto currtPath = currentPath();
-        if (auto topLevelGraph = GraphsManager::instance().getGraph({ currtPath[0] }))
+        if (auto topLevelGraph = getTopLevelGraph(currtPath))
         {
             topLevelGraph->pushToplevelStack(pCmd);
         }
@@ -1009,7 +1015,7 @@ void GraphModel::_removeLinkImpl(const zeno::EdgeInfo& link, bool endTransaction
     {
         LinkCommand* pCmd = new LinkCommand(false, link, currentPath());
         auto currtPath = currentPath();
-        if (auto topLevelGraph = GraphsManager::instance().getGraph({ currtPath[0] }))
+        if (auto topLevelGraph = getTopLevelGraph(currtPath))
         {
             topLevelGraph->pushToplevelStack(pCmd);
         }
@@ -1300,4 +1306,9 @@ void GraphModel::importNodes(const zeno::NodesData& nodes, const zeno::LinksData
         link.outNode = old2new[link.outNode];
         addLink(link);
     }
+}
+
+GraphModel* GraphModel::getTopLevelGraph(const QStringList& currentPath)
+{
+    return GraphsManager::instance().getGraph({ currentPath[0] });
 }
