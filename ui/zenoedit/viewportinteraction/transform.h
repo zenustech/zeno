@@ -102,13 +102,13 @@ private:
 private:
     std::unordered_map<std::string, PrimitiveObject*> m_objects;
 
-    glm::vec3 m_objects_center;
+    glm::vec3 m_self_center;
+    glm::vec3 m_self_X;
+    glm::vec3 m_self_Y;
 
     glm::vec3 m_pivot;
     glm::vec3 m_localXOrg;
     glm::vec3 m_localYOrg;
-    glm::vec3 m_localX;
-    glm::vec3 m_localY;
     glm::vec3 m_trans;
     glm::vec4 m_rotate;
     glm::vec3 m_scale;
