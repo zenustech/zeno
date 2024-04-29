@@ -759,6 +759,11 @@ void FakeTransformer::doTransform() {
     //TODO: list case
     auto spObj = m_objects.begin()->second;
 
+    scope_exit scope([]() {
+        zeno::getSession().setDisableRunning(false);
+    });
+    zeno::getSession().setDisableRunning(true);
+
     if (!m_transNode) {
         std::shared_ptr<INode> spOriNode = m_objnodeinfo.spViewNode;
         std::shared_ptr<Graph> spGraph = spOriNode->getThisGraph();

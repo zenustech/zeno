@@ -134,13 +134,13 @@ ZENO_API void Session::setApiLevelEnable(bool bEnable)
 
 ZENO_API void Session::beginApiCall()
 {
-    if (!m_bApiLevelEnable) return;
+    if (!m_bApiLevelEnable || m_bDisableRunning) return;
     m_apiLevel++;
 }
 
 ZENO_API void Session::endApiCall()
 {
-    if (!m_bApiLevelEnable) return;
+    if (!m_bApiLevelEnable || m_bDisableRunning) return;
     m_apiLevel--;
     if (m_apiLevel == 0) {
         if (m_bAutoRun) {
@@ -152,6 +152,11 @@ ZENO_API void Session::endApiCall()
             }
         }
     }
+}
+
+ZENO_API void Session::setDisableRunning(bool bOn)
+{
+    m_bDisableRunning = bOn;
 }
 
 ZENO_API void Session::registerRunTrigger(std::function<void()> func)
@@ -193,6 +198,9 @@ ZENO_API bool Session::is_interrupted() const {
 }
 
 ZENO_API bool Session::run() {
+    if (m_bDisableRunning)
+        return false;
+
     m_bInterrupted = false;
     globalState->set_working(true);
 

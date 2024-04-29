@@ -70,6 +70,7 @@ struct Session {
     ZENO_API void setApiLevelEnable(bool bEnable);
     ZENO_API void beginApiCall();
     ZENO_API void endApiCall();
+    ZENO_API void setDisableRunning(bool bOn);
     ZENO_API void switchToFrame(int frameid);
     ZENO_API int registerObjId(const std::string& objprefix);
     ZENO_API void registerRunTrigger(std::function<void()> func);
@@ -84,6 +85,7 @@ private:
     bool m_bApiLevelEnable = true;
     bool m_bAutoRun = false;
     bool m_bInterrupted = false;
+    bool m_bDisableRunning = false;
 
     std::function<void()> m_callbackRunTrigger;
     F_NodeStatus m_funcNodeStatus;
