@@ -431,8 +431,8 @@ namespace DisneyBSDF{
         if(reflect){
 
           if(diffPr > 0.0f){
-            vec3 d = EvaluateDiffuse(thin? mat.basecolor : mix(mat.basecolor,mat.sssColor,mat.subsurface), mat.subsurface, mat.roughness, mat.sheen,Csheen, wo, wi, wm, tmpPdf) * dielectricWt;
-            //vec3 d = BRDFBasics::EvalDisneyDiffuse(thin? mat.basecolor : mix(mat.basecolor,mat.sssColor,mat.subsurface), mat.subsurface, mat.roughness, mat.sheen,Csheen, wo, wi, wm, tmpPdf) * dielectricWt;
+            //vec3 d = EvaluateDiffuse(thin? mat.basecolor : mix(mat.basecolor,mat.sssColor,mat.subsurface), mat.subsurface, mat.roughness, mat.sheen,Csheen, wo, wi, wm, tmpPdf) * dielectricWt;
+            vec3 d = BRDFBasics::EvalDisneyDiffuse(thin? mat.basecolor : mix(mat.basecolor,mat.sssColor,mat.subsurface), mat.subsurface, mat.roughness, mat.sheen,Csheen, wo, wi, wm, tmpPdf) * dielectricWt;
             dterm = dterm + d;
             f = f + d;
             fPdf += tmpPdf * diffPr ;
