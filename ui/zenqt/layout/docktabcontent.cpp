@@ -260,14 +260,7 @@ void DockContent_Parameter::onNodesSelected(GraphModel* subgraph, const QModelIn
             const QAbstractItemModel* pSubgModel = idx.model();
             if (pSubgModel)
             {
-                connect(pSubgModel, &QAbstractItemModel::dataChanged, this, [=](const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles) {
-                    if (roles.isEmpty())
-                        return;
-                    int role = roles[0];
-                    if (role != ROLE_NODE_NAME)
-                        return;
-                    m_pNameLineEdit->setText(idx.data(ROLE_NODE_NAME).toString());
-                });
+                connect(pSubgModel, &QAbstractItemModel::dataChanged, this, &DockContent_Parameter::onDataChanged, Qt::UniqueConnection);;
                 if (const GraphModel* pModel = qobject_cast<const GraphModel*>(pSubgModel))
                 {
                     this->setEnabled(!pModel->isLocked());
@@ -284,6 +277,15 @@ void DockContent_Parameter::onNodesSelected(GraphModel* subgraph, const QModelIn
         m_plblName->setText("");
         m_pNameLineEdit->setText("");
     }
+}
+void DockContent_Parameter::onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
+{
+    if (roles.isEmpty() || !topLeft.isValid())
+        return;
+    int role = roles[0];
+    if (role != ROLE_NODE_NAME)
+        return;
+    m_pNameLineEdit->setText(topLeft.data(ROLE_NODE_NAME).toString());
 }
 
 void DockContent_Parameter::onPrimitiveSelected(const std::unordered_set<std::string>& primids)

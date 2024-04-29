@@ -225,6 +225,7 @@ private:
     DisplayWidget* getOnlyViewport() const;
     bool resetProc();
     void onCreatePanel(int actionType);
+    void assetsWatcher();
 
     ZTimeline* m_pTimeline;
     PtrLayoutNode m_layoutRoot;

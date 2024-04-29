@@ -39,6 +39,7 @@
 #include "socketbackground.h"
 #include "statusgroup.h"
 #include "statusbutton.h"
+#include "model/assetsmodel.h"
 
 
 ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
@@ -123,8 +124,7 @@ void ZenoNode::_drawShadow(QPainter* painter)
     else
     {
         offset += 16;
-        qreal topoffset = 45;   //顶部有一个名字布局
-        rc.adjust(offset, topoffset, 0, 0);
+        rc.adjust(offset, offset, -2, -2);
     }
 
     if (m_topInputSockets && !m_topInputSockets->isHide())
@@ -140,6 +140,11 @@ void ZenoNode::_drawShadow(QPainter* painter)
     }
     QColor color= m_nodeStatus == zeno::Node_RunError ? QColor(192, 36, 36) : QColor(0, 0, 0);
     bool bCollasped = m_index.data(ROLE_COLLASPED).toBool();
+    if (!bCollasped)
+    {
+        qreal topoffset = 45;   //顶部有一个名字布局
+        rc.adjust(0, topoffset, 0, 0);
+    }
     int radius = 8;
     for (int i = 0; i < 16; i++)
     {
@@ -495,6 +500,18 @@ ZGraphicsLayout* ZenoNode::initNameLayout()
 
     connect(nameItem, &ZEditableTextItem::contentsChanged, this, [=]() {
         updateWhole();
+    });
+    connect(nameItem, &ZEditableTextItem::editingFinished, this, [=]() {
+        QString newVal = nameItem->text();
+        if (GraphModel* pModel = QVariantPtr<GraphModel>::asPtr(m_index.data(ROLE_GRAPH)))
+        {
+            QString name = pModel->updateNodeName(m_index, newVal);
+            if (name != newVal)
+            {
+                QMessageBox::warning(nullptr, tr("Rename warring"), tr("The name %1 is existed").arg(newVal));
+                nameItem->setText(name);
+            }
+        }
     });
 
     pHLayout->addItem(nameItem);
@@ -1568,6 +1585,35 @@ void ZenoNode::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
                 }
             }
         });
+        QAction* saveAsset = new QAction(tr("Save as asset"));
+        nodeMenu->addAction(saveAsset);
+        connect(saveAsset, &QAction::triggered, this, [=]() {
+            QString name = m_index.data(ROLE_NODE_NAME).toString();
+            AssetsModel* pModel = zenoApp->graphsManager()->assetsModel();
+            if (pModel->getAssetGraph(name))
+            {
+                QMessageBox::warning(nullptr, tr("Save as asset"), tr("Asset %1 is existed").arg(name));
+                return;
+            }
+            zeno::ZenoAsset asset;
+            asset.info.name = name.toStdString();
+            QString dirPath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+            QString path = dirPath + "/ZENO/assets/" + name + ".zda";
+            path = QFileDialog::getSaveFileName(nullptr, "File to Open", path, "All Files(*);;");
+            if (path.isEmpty())
+                return;
+            asset.info.path = path.toStdString();
+            asset.info.majorVer = 1;
+            asset.info.minorVer = 0;
+            zeno::NodeData data = m_index.data(ROLE_NODEDATA).value<zeno::NodeData>();
+            asset.inputs = data.inputs;
+            asset.outputs = data.outputs;
+            asset.optGraph = data.subgraph;
+            asset.m_customui = data.customUi;
+            auto& assets = zeno::getSession().assets;
+            assets->createAsset(asset);
+            pModel->saveAsset(name);
+        });
 
         nodeMenu->exec(QCursor::pos());
         nodeMenu->deleteLater();
@@ -1582,6 +1628,16 @@ void ZenoNode::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
         nodeMenu->addAction(pLock);
         connect(pLock, &QAction::triggered, this, [=]() {
             pSubgGraphM->setLocked(!bLocked);
+        });
+        QAction* pEditParam = new QAction(tr("Custom Params"));
+        nodeMenu->addAction(pEditParam);
+        connect(pEditParam, &QAction::triggered, this, [=]() {
+            ZenoGraphsEditor* pEditor = getEditorViewByViewport(event->widget());
+            if (pEditor)
+            {
+                QString assetName = m_index.data(ROLE_CLASS_NAME).toString();
+                pEditor->onAssetsCustomParamsClicked(assetName);
+            }
         });
         nodeMenu->exec(QCursor::pos());
         nodeMenu->deleteLater();

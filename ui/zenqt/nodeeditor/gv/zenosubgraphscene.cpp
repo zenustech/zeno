@@ -287,7 +287,7 @@ void ZenoSubGraphScene::onNameUpdated(const QModelIndex& nodeIdx, const QString&
     ZASSERT_EXIT(newName != oldName);
     m_nodes[newName] = m_nodes[oldName];
     m_nodes.erase(oldName);
-    m_nodes[newName]->onNameUpdated(newName);
+    //m_nodes[newName]->onNameUpdated(newName);
 }
 
 void ZenoSubGraphScene::onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
