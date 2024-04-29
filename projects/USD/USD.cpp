@@ -65,150 +65,110 @@ struct USDPrimKeeper : zeno::IObject {
 void _convertMeshFromUSDToZeno(const pxr::UsdPrim& usdPrim, zeno::PrimitiveObject& zPrim) {
     const std::string& typeName = usdPrim.GetTypeName().GetString();
 
-    if (typeName == "Mesh") {
-        /*** Load from USD prim ***/
-        const auto& usdMesh = pxr::UsdGeomMesh(usdPrim);
-        auto verCounts = usdMesh.GetFaceVertexCountsAttr();
-        auto verIndices = usdMesh.GetFaceVertexIndicesAttr();
-        auto points = usdMesh.GetPointsAttr();
-        auto usdNormals = usdMesh.GetNormalsAttr();
-        auto extent = usdMesh.GetExtentAttr(); // bounding box
-        auto vertUVs = usdPrim.GetAttribute(pxr::TfToken("primvars:st"));
-        auto orient = usdMesh.GetOrientationAttr();
-        auto doubleSided = usdMesh.GetDoubleSidedAttr();
-        auto vertColor = usdMesh.GetDisplayColorAttr();
+    if (typeName != "Mesh") {
+        return;
+    }
 
-        bool isDoubleSided;
-        doubleSided.Get(&isDoubleSided); // TODO: double sided
+    /*** Read from USD prim ***/
+    const auto& usdMesh = pxr::UsdGeomMesh(usdPrim);
+    auto extent = usdMesh.GetExtentAttr(); // bounding box
 
-        // decide whether we use left handed order to construct faces
-        pxr::TfToken faceOrder;
-        usdMesh.GetOrientationAttr().Get(&faceOrder);
-        bool isReversedFaceOrder = (faceOrder.GetString() == "leftHanded");
+    bool isDoubleSided;
+    usdMesh.GetDoubleSidedAttr().Get(&isDoubleSided); // TODO: double sided
 
-        /*
-        * vertexCountPerFace indicates the vertex count of each face of mesh
-        * -1: not initialized
-        * 0: mesh including triangles, quads or polys simutaneously, treat as poly, 0 1 2 is NOT included 
-        * 1: point
-        * 2: line
-        * 3: triangle
-        * 4: quad
-        * 5 and 5+: poly
-        * a mesh with 0 | 1 | 2 and 3 | 3+ will crash this code
-        */
-        int vertexCountPerFace = -1;
-        pxr::VtArray<int> verCountValues;
-        verCounts.Get(&verCountValues);
-        for (const int& verCount : verCountValues) {
-            if (vertexCountPerFace == -1){ // initialize face vertex count
-                vertexCountPerFace = verCount;
+    // decide whether we use left handed order to construct faces
+    pxr::TfToken faceOrder;
+    usdMesh.GetOrientationAttr().Get(&faceOrder);
+    bool isReversedFaceOrder = (faceOrder.GetString() == "leftHanded");
+
+    /*** Zeno Prim definition ***/
+    auto& verts = zPrim.verts;
+
+    /*** Start setting up mesh ***/
+    pxr::VtArray<pxr::GfVec3f> pointValues;
+    usdMesh.GetPointsAttr().Get(&pointValues);
+    for (const auto& point : pointValues) {
+        verts.emplace_back(point.data()[0], point.data()[1], point.data()[2]);
+    }
+
+    auto vertColor = usdMesh.GetDisplayColorAttr();
+    if (vertColor.HasValue()) {
+        pxr::VtArray<pxr::GfVec3f> _cc;
+        vertColor.Get(&_cc);
+        if (_cc.size() > 0) {
+            zeno::vec3f meshColor = { _cc[0][0], _cc[0][1], _cc[0][2] };
+            auto& vColors = verts.add_attr<zeno::vec3f>("clr");
+            for (auto& vColor: vColors) {
+                vColor = meshColor;
+            }
+        }
+    }
+
+    auto usdNormals = usdMesh.GetNormalsAttr();
+    if (usdNormals.HasValue()) {
+        auto& norms = zPrim.verts.add_attr<zeno::vec3f>("nrm");
+        pxr::VtArray<pxr::GfVec3f> normalValues;
+        usdNormals.Get(&normalValues);
+        for (const auto& normalValue : normalValues) {
+            norms.emplace_back(normalValue.data()[0], normalValue.data()[1], normalValue.data()[2]);
+        }
+    }
+
+    // constructing faces, treat all meshes as poly
+    pxr::VtArray<int> faceSizeValues; // numbers of vertices for each face
+    pxr::VtArray<int> usdIndices;
+    usdMesh.GetFaceVertexCountsAttr().Get(&faceSizeValues);
+    usdMesh.GetFaceVertexIndicesAttr().Get(&usdIndices);
+    auto& polys = zPrim.polys;
+    auto& loops = zPrim.loops;
+    int start = 0;
+    for (int faceSize : faceSizeValues) {
+        for (int subFaceIndex = 0; subFaceIndex < faceSize; ++subFaceIndex) {
+            if (isReversedFaceOrder) {
+                loops.emplace_back(usdIndices[start + faceSize - 1 - subFaceIndex]);
             } else {
-                if (vertexCountPerFace != verCount) {
-                    // this is a poly mesh
-                    vertexCountPerFace = 0;
-                    break;
-                }
+                loops.emplace_back(usdIndices[start + subFaceIndex]);
             }
         }
+        polys.emplace_back(start, faceSize);
+        start += faceSize;
+    }
 
-        /*** Zeno Prim definition ***/
-        auto& verts = zPrim.verts;
+    auto vertUVs = usdPrim.GetAttribute(pxr::TfToken("primvars:st"));
+    if (vertUVs.HasValue()) {
+        pxr::VtArray<pxr::GfVec2f> usdUVs;
+        vertUVs.Get(&usdUVs);
 
-        /*** Start setting up mesh ***/
-        pxr::VtArray<pxr::GfVec3f> pointValues;
-        points.Get(&pointValues);
-        for (const auto& point : pointValues) {
-            verts.emplace_back(point.data()[0], point.data()[1], point.data()[2]);
+        auto& uvs = zPrim.uvs;
+        uvs.resize(usdUVs.size());
+        for (int i = 0; i < usdUVs.size(); ++i) {
+            uvs[i] = {usdUVs[i][0], usdUVs[i][1]};
         }
 
-        if (vertColor.HasValue()) {
-            pxr::VtArray<pxr::GfVec3f> _cc;
-            vertColor.Get(&_cc);
-            if (_cc.size() > 0) {
-                zeno::vec3f meshColor = { _cc[0][0], _cc[0][1], _cc[0][2] };
-                auto& vColors = verts.add_attr<zeno::vec3f>("clr");
-                for (const auto& vert : verts) {
-                    vColors.emplace_back(meshColor);
-                }
+        auto uvIndicesAttr = usdPrim.GetAttribute(pxr::TfToken("primvars:st:indices"));
+        if (uvIndicesAttr.HasValue()) {
+            pxr::VtArray<int> usdUVIndices;
+            uvIndicesAttr.Get(&usdUVIndices);
+
+            if (usdUVIndices.size() != loops.size()) {
+                zeno::log_error("found incorrect number of st:indices {}", usdUVIndices.size());
+            }
+
+            auto& uvIndices = zPrim.loops.add_attr<int>("uvs");
+            for (int i = 0; i < uvIndices.size(); ++i) {
+                uvIndices[i] = usdUVIndices[i];
             }
         }
-
-        if (vertUVs.HasValue()) {
-            auto& uvs = verts.add_attr<zeno::vec2f>("uvs");
-            pxr::VtArray<pxr::GfVec2f> uvValues;
-            vertUVs.Get(&uvValues);
-            for (const auto& uvValue : uvValues) {
-                uvs.emplace_back(uvValue.data()[0], uvValue.data()[1]);
-            }
-        }
-
-        if (usdNormals.HasValue()) {
-            auto& norms = zPrim.verts.add_attr<zeno::vec3f>("nrm");
-            pxr::VtArray<pxr::GfVec3f> normalValues;
-            usdNormals.Get(&normalValues);
-            for (const auto& normalValue : normalValues) {
-                norms.emplace_back(normalValue.data()[0], normalValue.data()[1], normalValue.data()[2]);
-            }
-        }
-
-        pxr::VtArray<int> indexValues;
-        verIndices.Get(&indexValues);
-
-        if (vertexCountPerFace == 3) { // triangle mesh
-            auto& tris = zPrim.tris;
-            for (int start = 0; start < indexValues.size(); start += vertexCountPerFace) {
-                if (isReversedFaceOrder) {
-                    tris.emplace_back(
-                        indexValues[start],
-                        indexValues[start + 2],
-                        indexValues[start + 1]
-                    );
-                } else {
-                    tris.emplace_back(
-                        indexValues[start],
-                        indexValues[start + 1],
-                        indexValues[start + 2]
-                    );
+        else {
+            if (usdUVs.size() == loops.size()) {
+                auto& uvIndices = zPrim.loops.add_attr<int>("uvs");
+                for (int i = 0; i < uvIndices.size(); ++i) {
+                    uvIndices[i] = i;
                 }
             }
-        } else if (vertexCountPerFace == 4) { // quad mesh
-            auto& quads = zPrim.quads;
-            for (int start = 0; start < indexValues.size(); start += vertexCountPerFace) {
-                if (isReversedFaceOrder) {
-                    quads.emplace_back(
-                        indexValues[start + 3],
-                        indexValues[start + 2],
-                        indexValues[start + 1],
-                        indexValues[start]
-                    );
-                } else {
-                    quads.emplace_back(
-                        indexValues[start],
-                        indexValues[start + 1],
-                        indexValues[start + 2],
-                        indexValues[start + 3]
-                    );
-                }
+            else {
+                zeno::log_error("invalid st size for mesh: {}", usdUVs.size());
             }
-        } else if (vertexCountPerFace >= 5 || vertexCountPerFace == 0) { // poly mesh
-            auto& polys = zPrim.polys;
-            auto& loops = zPrim.loops;
-            int start = 0;
-            for (int verFaceCount : verCountValues) {
-                for (int subFaceIndex = 0; subFaceIndex < verFaceCount; ++subFaceIndex) {
-                    if (isReversedFaceOrder) {
-                        loops.emplace_back(indexValues[start + verFaceCount - 1 - subFaceIndex]);
-                    } else {
-                        loops.emplace_back(indexValues[start + subFaceIndex]);
-                    }
-                }
-                polys.emplace_back(start, verFaceCount);
-                start += verFaceCount;
-            }
-        } else {
-            // TODO: points, lines and error types to be considered
-            ;
         }
     }
 }

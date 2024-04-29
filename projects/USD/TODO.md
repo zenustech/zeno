@@ -1,6 +1,7 @@
 # 近期重要性排序
-* [ ] 材质shader
+* [ ] 材质shader解析
 * [ ] 骨骼+动画
+* [ ] 支持帧
 * [ ] 导出
 * [ ] BlendShape
 * [ ] import性能优化
@@ -65,23 +66,18 @@
   * 节点系统完全转译回USD可能会遇到信息不保真的问题
 * [ ] prim可见性为inherited的处理
 # mtlx
-* [ ] Material | mtlx
-  * material有三种output: surface volume displacement 目前先考虑支持surface
-  * surface的输出可以通过GetSuraceOutputs获取，它会给出用了哪一个shader的outputs.surface
-  * 通过output.GetPrim()拿到shader shader可以拿到它有哪些input 以及id 一般surface shader的id是UsdPreviewSurface
-  * shader的input和material output形式一样 都可以拿到 一般是字面值或者texture采样的输出或者primvar diffuse、specular、roughness之类的
-  * texture采样shader的类型一般是UsdUVTexture 输入一般是获取uv值的shader的output
-  * 获取uv值的shader类型一般是UsdPrimvarReader或者带一个_float2 输入叫作st 这个st应该是来自顶点数据
-  * 用SmartTexture2D + ShaderFinalize 可以覆盖这些功能
+* [ ] Material支持
+  * [x] 基础解析功能
+  * [ ] 全局材质表和mesh绑定映射自动化
+  * [ ] 对于primvar类型input的处理: 可以用ShaderInputAttr来做
+  * [ ] 注意：SpecularColor在zeno里面暂时没有 MetalColor也没有启用
+* [ ] mtlx
+
 /HumanFemale_Group/KidThinButtonDown/Looks/KidThinButtonDownMat
 * [ ] mesh中的material:binding属性会写使用的material的prim path
   * /HumanFemale_Group/KidThinButtonDown/Looks/KidThinButtonDownMat
-  * /HumanFemale_Group/KidThinButtonDown/Looks/ButtonMat/ButtonSurf
-  * /HumanFemale_Group/HumanFemale/Looks/ScleraMat
-  * /HumanFemale_Group/HumanFemale/Looks/NailMat
-  * /HumanFemale_Group/HumanFemale/Looks/IrisMat
-  * /HumanFemale_Group/HumanFemale/Looks/PupilMat
-  * /HumanFemale_Group/HumanFemale/Looks/CorneaMat
+  * /HumanFemale_Group/KidThinButtonDown/Geom/Render/ButtonDownRenderMesh_sbdv
+  * /HumanFemale_Group/HumanFemale/Geom/Body/Body_sbdv
   * /HumanFemale_Group/HumanFemale/Looks/HumanFemaleMat
 * [ ] 对应mesh
   * /HumanFemale_Group/HumanFemale/Geom/Face/Eyes/REye/Sclera_sbdv

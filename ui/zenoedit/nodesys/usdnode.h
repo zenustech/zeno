@@ -34,7 +34,7 @@ private:
 	ZENO_HANDLE _emitImportUSDMeshNode(/* pxr::UsdPrim */ std::any, ZENO_HANDLE);
 
 	ZENO_HANDLE _emitMaterialNode(/* pxr::UsdPrim */ std::any, ZENO_HANDLE);
-	void _shaderTraverse(/* pxr::UsdPrim */ std::any, ZENO_HANDLE, ZENO_HANDLE, const std::string&);
+	void _handleShaderInput(/* pxr::UsdPrim */ std::any, const std::string&, ZENO_HANDLE, ZENO_HANDLE, const std::string&);
 	ZENO_HANDLE _emitSurfaceShaderNode(/* pxr::UsdPrim */ std::any, ZENO_HANDLE);
 
 	ZENO_HANDLE _emitLightNode(/* pxr::UsdPrim */ std::any, ZENO_HANDLE, const std::string& lightType, const std::string& shapeType);

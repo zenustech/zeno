@@ -752,8 +752,81 @@ ZENO_HANDLE EvalUSDPrim::_emitMaterialNode(std::any prim, ZENO_HANDLE targetGrap
 	return matNode;
 }
 
-void EvalUSDPrim::_shaderTraverse(std::any prim, ZENO_HANDLE targetGraph, ZENO_HANDLE shaderNode, const std::string& inputSock) {
-	;
+void EvalUSDPrim::_handleShaderInput(std::any prim, const std::string& inputName, ZENO_HANDLE targetGraph, ZENO_HANDLE shaderNode, const std::string& inputSock) {
+	auto shader = std::any_cast<pxr::UsdShadeShader>(prim);
+	auto input = shader.GetInput(pxr::TfToken(inputName));
+
+	if (input.HasConnectedSource()) {
+		pxr::UsdShadeConnectableAPI source;
+		pxr::TfToken sourceName;
+		pxr::UsdShadeAttributeType sourceType;
+		input.GetConnectedSource(&source, &sourceName, &sourceType);
+
+		auto primOfSource = source.GetPrim();
+		auto shaderOfSource = pxr::UsdShadeShader(primOfSource);
+		pxr::TfToken shaderID;
+		if (!shaderOfSource.GetShaderId(&shaderID) || shaderID.GetString() != "UsdUVTexture") { // only allows textures for now
+			zeno::log_error("unexpected shader id of source input " + shaderID.GetString());
+			return;
+		}
+
+		auto texNode = Zeno_AddNode(targetGraph, "SmartTexture2D");
+		if (!texNode) {
+			zeno::log_error("failed to create node SmartTexture2D");
+			return;
+		}
+
+		pxr::VtValue temp;
+		shaderOfSource.GetInput(pxr::TfToken("file")).Get(&temp);
+		Zeno_SetInputDefl(targetGraph, texNode, "path", temp.Get<pxr::SdfAssetPath>().GetResolvedPath());
+
+		// TODO: warpS, warpT and filtering
+		;
+
+		auto outputs = shaderOfSource.GetOutputs();
+		if (outputs.size() == 0) {
+			zeno::log_error("failed to get outputs from shader " + shaderOfSource.GetPath().GetString());
+		}
+		else {
+			auto& output = outputs[0];
+			const static std::map<std::string, std::string> USD_TO_ZENO_TEX_FORMAT = {
+				{"rgba", "vec4"},
+				{"rgb", "vec3"},
+				{"r", "R"},
+				{"g", "G"},
+				{"b", "B"},
+				{"a", "A"}
+			};
+
+			std::string outputName = output.GetBaseName().GetString();
+			auto iter = USD_TO_ZENO_TEX_FORMAT.find(outputName);
+			if (iter == USD_TO_ZENO_TEX_FORMAT.end()) {
+				zeno::log_error("invalid output format {} from shader {}", outputName, source.GetPath().GetString());
+			}
+			else {
+				Zeno_SetInputDefl(targetGraph, texNode, "type", iter->second);
+			}
+		}
+
+		link(targetGraph, texNode, "out", shaderNode, inputSock);
+	}
+	else { // constant value
+		pxr::VtValue val;
+		input.Get(&val);
+
+		const std::string& valType = val.GetTypeName();
+		if (valType == "GfVec3f") {
+			pxr::GfVec3f pv = val.Get<pxr::GfVec3f>();
+			Zeno_SetInputDefl(targetGraph, shaderNode, inputSock, zeno::vec3f({pv[0], pv[1], pv[2]}));
+		}
+		else if (valType == "float") {
+			Zeno_SetInputDefl(targetGraph, shaderNode, inputSock, val.Get<float>());
+		}
+		else {
+			zeno::log_error("unsupported value type from shader " + valType);
+			return;
+		}
+	}
 }
 
 ZENO_HANDLE EvalUSDPrim::_emitSurfaceShaderNode(std::any prim, ZENO_HANDLE targetGraph) {
@@ -777,15 +850,20 @@ ZENO_HANDLE EvalUSDPrim::_emitSurfaceShaderNode(std::any prim, ZENO_HANDLE targe
 		return 0;
 	}
 
-	auto diffuseInput = shader.GetInput(pxr::TfToken("diffuseColor"));
-	auto specularInput = shader.GetInput(pxr::TfToken("specularColor"));
-	auto roughnessInput = shader.GetInput(pxr::TfToken("roughness"));
-
 	ZENO_HANDLE shaderNode = Zeno_AddNode(targetGraph, "ShaderFinalize");
 	if (shaderNode == 0) {
 		zeno::log_error("failed to create node ShaderFinalize");
 		return 0;
 	}
+
+	_handleShaderInput(shader, "diffuseColor", targetGraph, shaderNode, "basecolor");
+	_handleShaderInput(shader, "roughness", targetGraph, shaderNode, "roughness");
+	/*
+	* zeno doesn't have specular color support for now
+	* metal color neither
+	* but let's mark it here
+	*/
+	_handleShaderInput(shader, "specularColor", targetGraph, shaderNode, "metalColor");
 
 	return shaderNode;
 }
