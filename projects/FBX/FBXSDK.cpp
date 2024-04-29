@@ -2,6 +2,7 @@
 #include <memory>
 #include <sstream>
 #include <stack>
+#include <vector>
 #include <numeric>
 
 #include <zeno/zeno.h>
@@ -1569,6 +1570,57 @@ FbxNode* CreateSkin(FbxScene* pScene, char* pName, std::shared_ptr<PrimitiveObje
     return lNode;
 }
 
+void createSkeleton(FbxScene* scene, std::shared_ptr<PrimitiveObject> prim) {
+    std::vector<FbxNode*> boneNodes;
+    boneNodes.reserve(prim->verts.size() + 1);
+    {
+        FbxSkeleton* SkeletonAttribute = FbxSkeleton::Create(scene, "RootNode");
+        SkeletonAttribute->SetSkeletonType(FbxSkeleton::eRoot);
+        FbxNode* BoneNode = FbxNode::Create(scene, "RootNode");
+        BoneNode->SetNodeAttribute(SkeletonAttribute);
+        boneNodes.push_back(BoneNode);
+    }
+    auto &transform_r0 = prim->verts.add_attr<vec3f>("transform_r0");
+    auto &transform_r1 = prim->verts.add_attr<vec3f>("transform_r1");
+    auto &transform_r2 = prim->verts.add_attr<vec3f>("transform_r2");
+    for (auto i = 0; i < prim->verts.size(); i++) {
+        auto boneName = prim->userData().get2<std::string>(format("boneName_{}", i));
+        FbxSkeleton* SkeletonAttribute = FbxSkeleton::Create(scene, boneName.c_str());
+        SkeletonAttribute->SetSkeletonType(FbxSkeleton::eLimbNode);
+        FbxNode* BoneNode = FbxNode::Create(scene, boneName.c_str());
+        BoneNode->SetNodeAttribute(SkeletonAttribute);
+        auto pos = prim->verts[i];
+        glm::mat4 matrix;
+        matrix[0] = {transform_r0[i][0], transform_r0[i][1], transform_r0[i][2], 0};
+        matrix[1] = {transform_r1[i][0], transform_r1[i][1], transform_r1[i][2], 0};
+        matrix[2] = {transform_r2[i][0], transform_r2[i][1], transform_r2[i][2], 0};
+        matrix[3] = {pos[0], pos[1], pos[2], 1};
+        glm::vec3 Scale;
+        glm::quat Orientation;
+        glm::vec3 Translation;
+        glm::vec3 Skew;
+        glm::vec4 Perspective;
+        glm::decompose(matrix, Scale, Orientation, Translation, Skew, Perspective);
+        glm::vec3 rot = glm::eulerAngles(Orientation);
+
+        BoneNode->LclTranslation.Set(FbxDouble3(pos[0], pos[1], pos[2]));
+        BoneNode->LclRotation.Set(FbxDouble3(rot[0], rot[1], rot[2]));
+        BoneNode->LclScaling.Set(FbxDouble3(Scale[0], Scale[1], Scale[2]));
+        boneNodes.push_back(BoneNode);
+    }
+    std::set<int> has_parent;
+    for (auto i = 0; i < prim->loops.size() / 2; i++) {
+        auto p = prim->loops[i * 2 + 0] + 1;
+        auto c = prim->loops[i * 2 + 1] + 1;
+        boneNodes[p]->AddChild(boneNodes[c]);
+        has_parent.insert(c);
+    }
+    for (auto i = 0; i < prim->verts.size(); i++) {
+        if (has_parent.count(i+1) == 0) {
+            boneNodes[0]->AddChild(boneNodes[i+1]);
+        }
+    }
+}
 struct NewFBXWrite : INode {
     virtual void apply() override {
         FbxManager* manager = FbxManager::Create();
@@ -1604,17 +1656,17 @@ struct NewFBXWrite : INode {
     }
 };
 
-ZENDEFNODE(NewFBXWrite, {
-    {
-        "skin",
-        "skeleton",
-        {"readpath", "path", "test0428.fbx"},
-        {"bool", "ConvertUnits", "1"},
-    },
-    {
-    },
-    {},
-    {"FBX"},
-});
+//ZENDEFNODE(NewFBXWrite, {
+//    {
+//        "skin",
+//        "skeleton",
+//        {"readpath", "path", "test0428.fbx"},
+//        {"bool", "ConvertUnits", "1"},
+//    },
+//    {
+//    },
+//    {},
+//    {"FBX"},
+//});
 }
 #endif
