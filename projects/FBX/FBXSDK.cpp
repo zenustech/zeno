@@ -1571,19 +1571,25 @@ FbxNode* CreateSkin(FbxScene* pScene, char* pName, std::shared_ptr<PrimitiveObje
 
 struct NewFBXWrite : INode {
     virtual void apply() override {
-        auto skin = get_input2<PrimitiveObject>("skin");
-        if (skin->tris.size()) {
-            primPolygonate(skin.get(), true);
-        }
         FbxManager* manager = FbxManager::Create();
         FbxIOSettings* ios = FbxIOSettings::Create(manager, IOSROOT);
         manager->SetIOSettings(ios);
 
         // 创建一个场景
         FbxScene* scene = FbxScene::Create(manager, "MyScene");
-
-        FbxNode* lSkin = CreateSkin(scene, "Mesh", skin);
-        scene->GetRootNode()->AddChild(lSkin);
+        {
+            auto skin = get_input2<PrimitiveObject>("skin");
+            if (skin->tris.size()) {
+                primPolygonate(skin.get(), true);
+            }
+            if (get_input2<bool>("ConvertUnits")) {
+                for (auto i = 0; i < skin->verts.size(); i++) {
+                    skin->verts[i] *= 100.0f;
+                }
+            }
+            FbxNode* lSkin = CreateSkin(scene, "Mesh", skin);
+            scene->GetRootNode()->AddChild(lSkin);
+        }
 
         // 导出场景到FBX文件
         int fileFormat = manager->GetIOPluginRegistry()->FindWriterIDByDescription("FBX ascii");
@@ -1603,6 +1609,7 @@ ZENDEFNODE(NewFBXWrite, {
         "skin",
         "skeleton",
         {"readpath", "path", "test0428.fbx"},
+        {"bool", "ConvertUnits", "1"},
     },
     {
     },
