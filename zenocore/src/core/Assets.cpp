@@ -269,7 +269,7 @@ std::shared_ptr<Graph> AssetsMgr::forkAssetGraph(std::shared_ptr<Graph> assetGra
         {
             if (m_assets.find(cls) != m_assets.end()) {
                 //asset node
-                auto spNewSubnetNode = newGraph->createNode(cls, name, "assets", spNode->get_pos());
+                auto spNewSubnetNode = newGraph->createNode(cls, name, true, spNode->get_pos());
             }
             else {
                 std::shared_ptr<INode> spNewNode = newGraph->createNode(cls, name);
