@@ -43,23 +43,8 @@ struct RenderEngineBate : RenderEngine {
     ~RenderEngineBate() {
     }
 
-    void addObject(std::shared_ptr<zeno::IObject> spObj) override {
-        graphicsMan->add_object(spObj);
-    }
-
-    void removeObject(const std::string& key) override {
-        graphicsMan->remove_object(key);
-    }
-
     void load_objects(const zeno::RenderObjsInfo& objs) override {
         graphicsMan->load_objects2(objs);
-    }
-
-    void viewObject(std::shared_ptr<zeno::IObject> spObj, bool bView) override {
-        if (bView)
-            graphicsMan->add_object(spObj);
-        else
-            graphicsMan->remove_object(spObj->key());
     }
 
     void update() override {

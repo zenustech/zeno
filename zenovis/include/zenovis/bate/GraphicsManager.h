@@ -39,42 +39,50 @@ struct GraphicsManager {
         return false;
     }
 
-    bool add_object(std::shared_ptr<zeno::IObject> obj) {
-
+    bool add_object(zeno::zany obj) {
         if (auto spList = std::dynamic_pointer_cast<zeno::ListObject>(obj)) {
             return add_listobj(spList);
         }
 
-        if (!obj || obj->key().empty()) return false;
+        const std::string& key = obj->key();
+        if (!obj || key.empty())
+            return false;
 
         auto& wtf = graphics.m_curr.m_curr;
-        auto it = wtf.find(obj->key());
+        auto it = wtf.find(key);
         if (it == wtf.end()) {
-            zeno::log_debug("load_object: loading graphics [{}]", obj->key());
+            zeno::log_debug("load_object: loading graphics [{}]", key);
             auto ig = makeGraphic(scene, obj.get());
             if (!ig)
                 return false;
             zeno::log_debug("load_object: loaded graphics to {}", ig.get());
-            ig->nameid = obj->key();
+            ig->nameid = key;
             ig->objholder = obj;
-            graphics.m_curr.m_curr.insert(std::make_pair(obj->key(), std::move(ig)));
+            graphics.m_curr.m_curr.insert(std::make_pair(key, std::move(ig)));
         }
         else {
             auto ig = makeGraphic(scene, obj.get());
             if (!ig)
                 return false;
-            ig->nameid = obj->key();
+            ig->nameid = key;
             ig->objholder = obj;
             it->second = std::move(ig);
         }
         return true;
     }
 
-    bool remove_object(std::string key) {
-        auto& wtf = graphics.m_curr.m_curr;
-        if (wtf.find(key) == wtf.end())
+    bool remove_object(zeno::zany spObj) {
+        if (auto spList = std::dynamic_pointer_cast<zeno::ListObject>(spObj)) {
+            return remove_listobj(spList);
+        }
+
+        const std::string& key = spObj->key();
+        auto& graphics_ = graphics.m_curr.m_curr;
+        auto iter = graphics_.find(key);
+        if (iter == graphics_.end())
             return false;
-        wtf.erase(key);
+
+        graphics_.erase(key);
         return true;
     }
 
@@ -94,11 +102,23 @@ struct GraphicsManager {
         return true;
     }
 
-    void load_objects2(const zeno::RenderObjsInfo& objs) {
-        std::map<std::string, std::shared_ptr<zeno::IObject>> listItems;
-        std::set<std::string> removeListItems;                                              //本次运行list中要删除的元素
+    bool remove_listobj(std::shared_ptr<zeno::ListObject> spList) {
+        for (auto obj : spList->get()) {
+            if (auto listobj = std::dynamic_pointer_cast<zeno::ListObject>(obj)) {
+                bool ret = remove_listobj(listobj);
+                if (!ret)
+                    return ret;
+            }
+            else {
+                bool ret = remove_object(obj);
+                if (!ret)
+                    return ret;
+            }
+        }
+        return true;
+    }
 
-        //处理单个Object
+    void load_objects2(const zeno::RenderObjsInfo& objs) {
         for (auto [key, spObj] : objs.newObjs) {
             add_object(spObj);
         }
@@ -106,7 +126,7 @@ struct GraphicsManager {
             add_object(spObj);
         }
         for (auto [key, spObj] : objs.remObjs) {
-            remove_object(key);
+            remove_object(spObj);
         }
     }
 
