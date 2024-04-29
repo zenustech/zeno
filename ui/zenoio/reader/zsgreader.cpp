@@ -494,6 +494,8 @@ void ZsgReader::_parseSettings(const rapidjson::Value& jsonSettings, IAcceptor* 
         info.bAov = jsonRecordInfo[recordinfo::bAov].GetBool();
         if (jsonRecordInfo.HasMember(recordinfo::bExr) && jsonRecordInfo[recordinfo::bExr].IsBool())
             info.bExr = jsonRecordInfo[recordinfo::bExr].GetBool();
+        if (jsonRecordInfo.HasMember(recordinfo::exePath))
+            info.exePath = jsonRecordInfo[recordinfo::exePath].GetString();
         pAcceptor->setRecordInfo(info);
     }
     if (jsonSettings.HasMember("layoutinfo") && jsonSettings["layoutinfo"].IsObject())

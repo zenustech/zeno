@@ -105,6 +105,7 @@ private slots:
 private:
     bool isOptxRendering() const;
     void initRecordMgr();
+    void sendTaskToServer(const VideoRecInfo& info);
 
     ViewportWidget* m_glView;
 #ifdef ZENO_OPTIX_PROC
