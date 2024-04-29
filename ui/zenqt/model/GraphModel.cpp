@@ -792,10 +792,12 @@ zeno::NodeData GraphModel::createNode(const QString& nodeCls, const QString& cat
     if (!spGraph)
         return node;
 
+    bool bAsset = cate == "assets";
+
     std::shared_ptr<zeno::INode> spNode = spGraph->createNode(
         nodeCls.toStdString(),
         "",
-        cate.toStdString(),
+        bAsset,
         {pos.x(), pos.y()});
 
     node = spNode->exportInfo();
@@ -1117,8 +1119,8 @@ void GraphModel::importNodes(const zeno::NodesData& nodes, const zeno::LinksData
     QPointF offset = pos - QPointF(nodes.begin()->second.uipos.first, nodes.begin()->second.uipos.second);
     unRegisterCoreNotify();
     for (auto [name, node] : nodes) {
-        std::string cate = node.asset.has_value() ? "assets" : "";
-        std::shared_ptr<zeno::INode> spNode = spGraph->createNode(node.cls, "", cate);
+        bool bAsset = node.asset.has_value();
+        std::shared_ptr<zeno::INode> spNode = spGraph->createNode(node.cls, "", bAsset);
         node.name = spNode->m_name;
         spNode->init(node);
         spNode->set_pos({ spNode->m_pos.first + offset.x(), spNode->m_pos.second + offset.y()});

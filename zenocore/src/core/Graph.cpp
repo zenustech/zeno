@@ -262,8 +262,8 @@ ZENO_API void Graph::init(const GraphData& graph) {
     m_name = graph.name;
     //import nodes first.
     for (const auto& [name, node] : graph.nodes) {
-        std::string cate = node.asset.has_value() ? "assets" : "";
-        std::shared_ptr<INode> spNode = createNode(node.cls, name, cate);
+        bool bAssets = node.asset.has_value();
+        std::shared_ptr<INode> spNode = createNode(node.cls, name, bAssets);
         spNode->init(node);
         if (node.cls == "SubInput") {
             //TODO
@@ -379,38 +379,37 @@ void Graph::markDirtyAll()
     }
 }
 
-std::string Graph::generateNewName(const std::string& node_cls)
+std::string Graph::generateNewName(const std::string& node_cls, const std::string& origin_name, bool bAssets)
 {
     if (node_set.find(node_cls) == node_set.end())
         node_set.insert(std::make_pair(node_cls, std::set<std::string>()));
 
     auto& nodes = node_set[node_cls];
-    int i = 1;
-    while (true) {
-        std::string new_name = node_cls + std::to_string(i++);
-        if (nodes.find(new_name) == nodes.end()) {
-            nodes.insert(new_name);
-            return new_name;
+
+    if (!origin_name.empty() && m_name2uuid.find(origin_name) == m_name2uuid.end())
+    {
+        nodes.insert(origin_name);
+        return origin_name;
+    }
+
+    std::string tempName = node_cls;
+    if (!bAssets) {
+        auto& nodeClass = getSession().nodeClasses;
+        auto it = nodeClass.find(node_cls);
+        if (it != nodeClass.end()) {
+            auto cl = it->second.get();
+            if (cl && !cl->m_customui.nickname.empty())
+                tempName = cl->m_customui.nickname;
         }
     }
-    return "";
-}
 
-std::string Graph::generateNewName(const std::string& node_cls, std::string specific_name)
-{
-    if (node_set.find(node_cls) == node_set.end())
-        node_set.insert(std::make_pair(node_cls, std::set<std::string>()));
-
-    std::string new_name = specific_name;
-    auto& nodes = node_set[node_cls];
     int i = 1;
     while (true) {
-        
+        std::string new_name = tempName + std::to_string(i++);
         if (nodes.find(new_name) == nodes.end()) {
             nodes.insert(new_name);
             return new_name;
         }
-        new_name = specific_name + "(" + std::to_string(i++) + ")";
     }
     return "";
 }
@@ -497,29 +496,15 @@ ZENO_API void Graph::clear()
     CALLBACK_NOTIFY(clear)
 }
 
-ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls, std::string name, std::string cate, std::pair<float, float> pos)
+ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls, const std::string& orgin_name, bool bAssets, std::pair<float, float> pos)
 {
     CORE_API_BATCH
 
-    std::string tempName = cls;
-    if (cate != "assets") {
-        auto& nodeClass = getSession().nodeClasses;
-        auto it = nodeClass.find(cls);
-        if (it != nodeClass.end()) {
-            auto cl = it->second.get();
-            if (cl && !cl->m_customui.nickname.empty())
-                tempName = cl->m_customui.nickname;
-        }
-    }
-
-    if (name.empty())
-        name = generateNewName(tempName);
-    else
-        name = generateNewName(tempName, name);
+    const std::string& name = generateNewName(cls, orgin_name, bAssets);
 
     std::string uuid;
     std::shared_ptr<INode> node;
-    if (cate != "assets") {
+    if (!bAssets) {
         auto& nodeClass = getSession().nodeClasses;
         std::string nodecls = cls;
         auto it = nodeClass.find(nodecls);
