@@ -60,6 +60,14 @@ void Camera::setPhysicalCamera(float aperture, float shutter_speed, float iso, b
     this->zOptixCameraSettingInfo.exposure = exposure;
 }
 
+static glm::mat4 MakeInfReversedZProjRH(float fovY_radians, float aspectWbyH, float zNear) {
+    float f = 1.0f / tan(fovY_radians / 2.0f);
+    return glm::mat4(
+            f / aspectWbyH, 0.0f,  0.0f,  0.0f,
+            0.0f,    f,  0.0f,  0.0f,
+            0.0f, 0.0f,  0.0f, -1.0f,
+            0.0f, 0.0f, zNear,  0.0f);
+}
 void Camera::placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up) {
     front = glm::normalize(front);
     up = glm::normalize(up);
@@ -74,7 +82,7 @@ void Camera::placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up) {
         m_proj = glm::orthoZO(-radius * getAspect(), radius * getAspect(), -radius,
                 radius, m_far, m_near);
     } else {
-        m_proj = glm::perspectiveZO(glm::radians(m_fov), getAspect(), m_far, m_near);
+        m_proj = MakeInfReversedZProjRH(glm::radians(m_fov), getAspect(), 0.001);
     }
 }
 
@@ -99,7 +107,7 @@ void Camera::updateMatrix() {
 void Camera::setResolution(int nx, int ny) {
     m_nx = nx;
     m_ny = ny;
-    m_proj = glm::perspectiveZO(glm::radians(m_fov), getAspect(), m_far, m_near);
+    m_proj = MakeInfReversedZProjRH(glm::radians(m_fov), getAspect(), m_near);
 }
 void Camera::setResolutionInfo(bool block, int nx, int ny)
 {

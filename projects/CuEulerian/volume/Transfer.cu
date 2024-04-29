@@ -158,12 +158,12 @@ struct PrimitiveToZSLevelSet : INode {
 
         using namespace zs;
         const auto dx = get_input2<float>("dx");
-        Vector<TV> xs{pos.size(), memsrc_e::device, 0}, elePos{numEles, memsrc_e::device, 0};
+        Vector<TV> xs{pos.size(), memsrc_e::device}, elePos{numEles, memsrc_e::device};
         copy(zs::mem_device, (void *)xs.data(), (void *)pos.data(), sizeof(zeno::vec3f) * pos.size());
         auto cudaPol = cuda_exec().device(0);
         {
             if (quads.size()) {
-                Vector<zs::vec<int, 4>> inds{numEles, memsrc_e::device, 0};
+                Vector<zs::vec<int, 4>> inds{numEles, memsrc_e::device};
                 copy(zs::mem_device, (void *)inds.data(), (void *)quads.data(), sizeof(zeno::vec4i) * numEles);
                 cudaPol(range(elePos.size()),
                         [elePos = proxy<execspace_e::cuda>(elePos), xs = proxy<execspace_e::cuda>(xs),
@@ -172,7 +172,7 @@ struct PrimitiveToZSLevelSet : INode {
                             elePos[ei] = (xs[is[0]] + xs[is[1]] + xs[is[2]] + xs[is[3]]) / 4.f;
                         });
             } else if (tris.size()) {
-                Vector<zs::vec<int, 3>> inds{numEles, memsrc_e::device, 0};
+                Vector<zs::vec<int, 3>> inds{numEles, memsrc_e::device};
                 copy(zs::mem_device, (void *)inds.data(), (void *)tris.data(), sizeof(zeno::vec3i) * numEles);
                 cudaPol(range(elePos.size()),
                         [elePos = proxy<execspace_e::cuda>(elePos), xs = proxy<execspace_e::cuda>(xs),
@@ -181,7 +181,7 @@ struct PrimitiveToZSLevelSet : INode {
                             elePos[ei] = (xs[is[0]] + xs[is[1]] + xs[is[2]]) / 3.f;
                         });
             } else if (lines.size()) {
-                Vector<zs::vec<int, 2>> inds{numEles, memsrc_e::device, 0};
+                Vector<zs::vec<int, 2>> inds{numEles, memsrc_e::device};
                 copy(zs::mem_device, (void *)inds.data(), (void *)lines.data(), sizeof(zeno::vec2i) * numEles);
                 cudaPol(range(elePos.size()),
                         [elePos = proxy<execspace_e::cuda>(elePos), xs = proxy<execspace_e::cuda>(xs),
@@ -196,15 +196,15 @@ struct PrimitiveToZSLevelSet : INode {
         const float thickness = get_input2<float>("thickness");
         const int nvoxels = (int)std::ceil(thickness * 1.45f / dx);
         auto zsspls = std::make_shared<ZenoLevelSet>();
-        zsspls->getLevelSet() = ZenoLevelSet::basic_ls_t{std::make_shared<SpLsT>(dx, memsrc_e::device, 0)};
+        zsspls->getLevelSet() = ZenoLevelSet::basic_ls_t{std::make_shared<SpLsT>(dx, memsrc_e::device)};
         SpLsT &ls = zsspls->getSparseLevelSet(zs::wrapv<SpLsT::category>{});
 
         // at most one block per particle
         ls._backgroundValue = dx * 2;
-        ls._table = typename SpLsT::table_t{pos.size() + numEles, memsrc_e::device, 0};
+        ls._table = typename SpLsT::table_t{pos.size() + numEles, memsrc_e::device};
         ls._table.reset(true);
 
-        Vector<IV> mi{1, memsrc_e::device, 0}, ma{1, memsrc_e::device, 0};
+        Vector<IV> mi{1, memsrc_e::device}, ma{1, memsrc_e::device};
         mi.setVal(IV::uniform(limits<int>::max()));
         ma.setVal(IV::uniform(limits<int>::lowest()));
         iterate(cudaPol, nvoxels, xs, ls, mi, ma);
@@ -217,7 +217,7 @@ struct PrimitiveToZSLevelSet : INode {
         fmt::print("{} grid blocks. surface mesh ibox: [{}, {}, {}] - [{}, {}, {}]\n", nblocks, ls._min[0], ls._min[1],
                    ls._min[2], ls._max[0], ls._max[1], ls._max[2]);
 
-        ls._grid = typename SpLsT::grid_t{{{"sdf", 1}}, dx, nblocks, memsrc_e::device, 0};
+        ls._grid = typename SpLsT::grid_t{{{"sdf", 1}}, dx, nblocks, memsrc_e::device};
         // clear grid
         cudaPol(Collapse{nblocks, ls.block_size},
                 [grid = proxy<execspace_e::cuda>({}, ls._grid), thickness,

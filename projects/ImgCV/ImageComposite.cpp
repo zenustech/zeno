@@ -193,7 +193,7 @@ struct Blend: INode {//optimize
 #pragma omp parallel for
                 for (int i = 0; i < imagesize; i++) {
                 vec3f opacity = zeno::clamp(mask->verts[i] * maskopacity, 0, 1);
-                float alpha = BlendMode<float>((blendalpha[i] * opacity1), basealpha[i],//还需要检查   在调整weight的时候  会有变化吗
+                float alpha = BlendMode<float>((blendalpha[i] * opacity1), basealpha[i],
                 (blendalpha[i] * opacity1), basealpha[i], (basealpha[i] * opacity2), opacity, alphamode);
                 image2alpha[i] = alpha;
                 }

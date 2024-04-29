@@ -252,7 +252,7 @@ struct PointsToZSParticles : INode {
                 }
             });
 
-            pars = pars.clone({memsrc_e::device, 0});
+            pars = pars.clone({memsrc_e::device});
         }
 
         set_output("ZSParticles", outParticles);
@@ -369,7 +369,7 @@ struct PointsToZSParticles2 : INode {
                 }
             });
 
-            pars = pars.clone({memsrc_e::device, 0});
+            pars = pars.clone({memsrc_e::device});
         }
 
         set_output("ZSParticles", outParticles);

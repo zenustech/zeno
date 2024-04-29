@@ -569,8 +569,8 @@ struct ZenoPartition : IObjectClone<ZenoPartition> {
     void reserveTags() {
         auto numEntries = (std::size_t)table.size();
         if (!hasTags()) {
-            tags = tag_t{numEntries, zs::memsrc_e::device, 0};
-            boundaryIndices = indices_t{numEntries, zs::memsrc_e::device, 0};
+            tags = tag_t{numEntries, zs::memsrc_e::device};
+            boundaryIndices = indices_t{numEntries, zs::memsrc_e::device};
         }
     }
     void clearTags() {

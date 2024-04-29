@@ -15,6 +15,7 @@
 #include "zeno/utils/string.h"
 #include "zeno/types/ListObject.h"
 #include "zeno/utils/log.h"
+#include "zeno/utils/fileio.h"
 #include "zeno/funcs/PrimitiveUtils.h"
 #include "zeno/extra/TempNode.h"
 #include <numeric>
@@ -253,11 +254,16 @@ void write_attrs(
         }
     });
     if (prim->loops.size() > 0) {
-        prim->loops.foreach_attr<std::variant<vec3f, float, int>>([&](auto const &key, auto &arr) {
-            if (key == "uvs") {
+        prim->loops.foreach_attr<std::variant<vec3f, float, int>>([&](auto const &_key, auto &arr) {
+            if (_key == "uvs") {
                 return;
             }
+            std::string key = _key;
             std::string full_key = path + '/' + key;
+            if (verts_attrs.count(full_key)) {
+                key += "_loops";
+                full_key = path + '/' + key;
+            }
             using T = std::decay_t<decltype(arr[0])>;
             if constexpr (std::is_same_v<T, zeno::vec3f>) {
                 if (loops_attrs.count(full_key) == 0) {
@@ -308,11 +314,16 @@ void write_attrs(
         });
     }
     if (prim->polys.size() > 0) {
-        prim->polys.foreach_attr<std::variant<vec3f, float, int>>([&](auto const &key, auto &arr) {
-            if (key == "faceset" || key == "matid" || key == "abcpath") {
+        prim->polys.foreach_attr<std::variant<vec3f, float, int>>([&](auto const &_key, auto &arr) {
+            if (_key == "faceset" || _key == "matid" || _key == "abcpath") {
                 return;
             }
+            std::string key = _key;
             std::string full_key = path + '/' + key;
+            if (verts_attrs.count(full_key) || loops_attrs.count(full_key)) {
+                key += "_polys";
+                full_key = path + '/' + key;
+            }
             using T = std::decay_t<decltype(arr[0])>;
             if constexpr (std::is_same_v<T, zeno::vec3f>) {
                 if (polys_attrs.count(full_key) == 0) {
@@ -559,11 +570,8 @@ struct WriteAlembic2 : INode {
         int frame_start = get_input2<int>("frame_start");
         int frame_end = get_input2<int>("frame_end");
         std::string path = get_input2<std::string>("path");
-        auto folderPath = fs::path(path).parent_path();
+        path = create_directories_when_write_file(path);
 
-        if (!fs::exists(folderPath)) {
-            fs::create_directories(folderPath);
-        }
         if (usedPath != path) {
             usedPath = path;
             archive = CreateArchiveWithInfo(
@@ -728,11 +736,8 @@ struct WriteAlembicPrims : INode {
         int frame_start = get_input2<int>("frame_start");
         int frame_end = get_input2<int>("frame_end");
         std::string path = get_input2<std::string>("path");
-        auto folderPath = fs::path(path).parent_path();
+        path = create_directories_when_write_file(path);
 
-        if (!fs::exists(folderPath)) {
-            fs::create_directories(folderPath);
-        }
         std::vector<std::shared_ptr<PrimitiveObject>> new_prims;
 
         {

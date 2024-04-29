@@ -133,6 +133,15 @@ void ViewportWidget::testCleanUp()
     m_fakeTrans.reset();
 }
 
+void ViewportWidget::cleanUpView()
+{
+    if (m_zenovis)
+        m_zenovis->cleanupView();
+
+    m_picker = nullptr;
+    m_fakeTrans = nullptr;
+}
+
 namespace {
 struct OpenGLProcAddressHelper {
     inline static QGLContext *ctx;

@@ -30,7 +30,7 @@ struct ApplyGridBoundaryOnZSGrid : INode {
 
         using namespace zs;
 
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
         auto typeStr = get_param<std::string>("type");
         collider_e type =
             typeStr == "sticky" ? collider_e::Sticky : (typeStr == "slip" ? collider_e::Slip : collider_e::Separate);
@@ -123,7 +123,7 @@ struct ApplyBoundaryOnZSGrid : INode {
 
         using namespace zs;
 
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
 
         if (has_input<ZenoBoundary>("ZSBoundary")) {
             auto boundary = get_input<ZenoBoundary>("ZSBoundary");
@@ -364,7 +364,7 @@ struct ComputeParticleBeta : INode {
         fmt::print(fg(fmt::color::green), "begin executing ComputeParticleBeta\n");
 
         using namespace zs;
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
         auto parObjPtrs = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
         auto &partition = get_input<ZenoPartition>("ZSPartition")->get();
         auto stepDt = get_input<zeno::NumericObject>("dt")->get<float>();
@@ -586,7 +586,7 @@ struct ApplyWindImpulseOnZSGrid : INode {
         auto windDensity = get_input2<float>("windDensity");
 
         match([&](const auto &velLsPtr) {
-            auto cudaPol = cuda_exec().device(0);
+            auto cudaPol = cuda_exec();
             for (auto &&parObjPtr : parObjPtrs) {
                 auto &pars = parObjPtr->getParticles();
                 if (parObjPtr->category == ZenoParticles::surface || parObjPtr->category == ZenoParticles::tracker) {

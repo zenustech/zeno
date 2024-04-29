@@ -81,7 +81,7 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
             giNeedUpdate = true;
     }
 
-    void draw() override {
+    void draw(bool _) override {
         auto guard = setupState();
         auto const &cam = *scene->camera;
         auto const &opt = *scene->drawOptions;
@@ -121,6 +121,14 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
 
     ~RenderEngineZhxx() override {
         zenvis::finalize();
+    }
+
+    void cleanupOptix() override {
+
+    }
+
+    void cleanupWhenExit() override {
+
     }
 };
 

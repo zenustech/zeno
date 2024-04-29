@@ -108,7 +108,7 @@ void Session::set_smooth_shading(bool smooth) {
 }
 
 void Session::new_frame() {
-    impl->scene->draw();
+    impl->scene->draw(false);
     //for (auto const &task: impl->render_tasks) {
         //task();
     //}

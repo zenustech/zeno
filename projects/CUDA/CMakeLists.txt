@@ -26,6 +26,10 @@ find_package(Eigen3 REQUIRED)
 set(WHEREAMI_BUILD_SHARED_LIBS ON)
 add_subdirectory(zpc)
 
+if (ZS_PYTHON_FOUND)
+  target_link_libraries(zeno PRIVATE zpc_jit_py)
+endif(ZS_PYTHON_FOUND)
+
 if (ZS_PYTHON_FOUND AND ZENO_WITH_PyZpc)
 
   if (DEFINED CMAKE_LIBRARY_OUTPUT_DIRECTORY)
@@ -143,7 +147,6 @@ set_target_properties(zeno
   PROPERTIES
   CUDA_SEPARABLE_COMPILATION ON
   CUDA_RESOLVE_DEVICE_SYMBOLS ON
-  CUDA_ARCHITECTURES ${ZS_CUDA_ARCH}
 )
 
 #
@@ -174,6 +177,7 @@ target_sources(zeno PRIVATE
   utils/Noise.cu
   utils/Groom.cpp
 
+  graph/BasicTask.cpp
 )
 
 if (ZS_PYTHON_FOUND)
