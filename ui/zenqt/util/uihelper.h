@@ -99,6 +99,7 @@ public:
                                zeno::LinksData& outLinks);
     static QStandardItemModel* genParamsModel(const std::vector<zeno::ParamInfo>& inputs, const std::vector<zeno::ParamInfo>& outputs);
     static void newCustomModel(QStandardItemModel* customParamsM, const zeno::CustomUI& customui);
+    static void parseUpdateInfo(const zeno::CustomUI& customui, zeno::ParamsUpdateInfo& infos);
 
     static void saveProject(const QString& name);
     static QStringList stdlistToQStringList(const zeno::ObjPath& objpath);

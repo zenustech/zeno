@@ -715,23 +715,26 @@ void ZenoSubGraphView::onRowsAboutToBeRemoved(const QModelIndex& parent, int fir
             GraphModel* pSubnetModel = idx.data(ROLE_SUBGRAPH).value<GraphModel*>();;
             auto graphsMgr = zenoApp->graphsManager();
             auto path = pSubnetModel->currentPath();
-            ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(graphsMgr->gvScene(path));
-            if (pScene)
+            auto subScenes = graphsMgr->gvSubScenes(path);
+            for (auto& it = subScenes.begin(); it != subScenes.end(); it++) //É¾³ý /path µÄsceneÊ±,ÒÆ³ý×Óscene, /path/xxx/...
             {
-                for (int i = m_stackedView->count() -1; i >= 0 ; --i)
+                if (ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(it.value()))
                 {
-                    QWidget* pWidget = m_stackedView->widget(i);
-                    _ZenoSubGraphView* pView = qobject_cast<_ZenoSubGraphView*>(pWidget);
-                    if (pView && pView->scene() == pScene)
+                    for (int i = m_stackedView->count() -1; i >= 0 ; --i)
                     {
-                        m_stackedView->removeWidget(pView);
-                        delete pView;
-                        pView = nullptr;
-                        break;
+                        QWidget* pWidget = m_stackedView->widget(i);
+                        _ZenoSubGraphView* pView = qobject_cast<_ZenoSubGraphView*>(pWidget);
+                        if (pView && pView->scene() == pScene)
+                        {
+                            m_stackedView->removeWidget(pView);
+                            delete pView;
+                            pView = nullptr;
+                            break;
+                        }
                     }
+                    pScene->setParent(nullptr);
+                    graphsMgr->removeScene(it.key());
                 }
-                pScene->setParent(nullptr);
-                graphsMgr->removeScene(path);
             }
         }
     }

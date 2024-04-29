@@ -616,6 +616,7 @@ ZENO_API GraphData Graph::exportGraph() const {
     }
     else {
         graph.type = Subnet_Normal;
+        graph.links = exportLinks();
     }
 
     for (auto& [uuid, node] : m_nodes) {

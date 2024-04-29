@@ -1839,6 +1839,42 @@ void UiHelper::newCustomModel(QStandardItemModel* customParamsM, const zeno::Cus
     customParamsM->appendRow(pOutputs);
 }
 
+void UiHelper::parseUpdateInfo(const zeno::CustomUI& customui, zeno::ParamsUpdateInfo& infos)
+{
+    for (const zeno::ParamTab& tab : customui.tabs)
+    {
+        for (const zeno::ParamGroup& group : tab.groups)
+        {
+            for (const zeno::ParamInfo& param : group.params)
+            {
+                zeno::ParamInfo info;
+                info.bInput = true;
+                info.control = param.control;
+                info.type = param.type;
+                info.defl = param.defl;
+                info.name = param.name;
+                info.tooltip = param.tooltip;
+                info.socketType = param.socketType;
+                info.ctrlProps = param.ctrlProps;
+                infos.push_back({ info, ""});
+            }
+        }
+    }
+    for (const zeno::ParamInfo& param : customui.outputs)
+    {
+        zeno::ParamInfo info;
+        info.bInput = false;
+        info.control = param.control;
+        info.type = param.type;
+        info.defl = param.defl;
+        info.name = param.name;
+        info.tooltip = param.tooltip;
+        info.socketType = param.socketType;
+        info.ctrlProps = param.ctrlProps;
+        infos.push_back({ info, ""});
+    }
+}
+
 static std::string getZenoVersion()
 {
     const char *date = __DATE__;

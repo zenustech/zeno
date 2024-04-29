@@ -303,19 +303,14 @@ void ZenoMainWindow::dispatchCommand(QAction* pAction, bool bTriggered)
     auto docks = findChildren<ZDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
     DisplayWidget* pViewport = nullptr;
     ZenoGraphsEditor* pEditor = nullptr;
-    for (ZDockWidget* pDock : docks)
+    for (ads::CDockWidget* dock : m_pDockManager->dockWidgetsMap())
     {
-        if (!pViewport)
-            pViewport = pDock->getUniqueViewport();
-        if (!pEditor)
-            pEditor = pDock->getAnyEditor();
-        for (int i = 0; i < pDock->count(); i++)
+        if (dock->isVisible())
         {
-            DisplayWidget* pDisplay = qobject_cast<DisplayWidget*>(pDock->widget(i));
-            if (pDisplay)
+            QWidget* wid = dock->widget();
+            if (DockContent_Editor* e = qobject_cast<DockContent_Editor*>(wid))
             {
-                int actionType = pAction->property("ActionType").toInt();
-                //pDisplay->onCommandDispatched(actionType, bTriggered);
+                pEditor = e->getEditor();
             }
         }
     }
