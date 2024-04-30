@@ -102,16 +102,16 @@ private:
 private:
     std::unordered_map<std::string, PrimitiveObject*> m_objects;
 
-    glm::vec3 m_self_center;
-    glm::vec3 m_self_X;
-    glm::vec3 m_self_Y;
+    glm::vec3 m_self_center = {};
+    glm::vec3 m_self_X = {1, 0, 0};
+    glm::vec3 m_self_Y = {0, 1, 0};
 
-    glm::vec3 m_pivot;
-    glm::vec3 m_localXOrg;
-    glm::vec3 m_localYOrg;
-    glm::vec3 m_trans;
-    glm::vec4 m_rotate;
-    glm::vec3 m_scale;
+    glm::vec3 m_pivot = {};
+    glm::vec3 m_localXOrg = {1, 0, 0};
+    glm::vec3 m_localYOrg = {0, 1, 0};
+    glm::vec3 m_trans = {};
+    glm::vec4 m_rotate = {0, 0, 0, 1};
+    glm::vec3 m_scale = {1, 1, 1};
 
     glm::vec3 m_trans_start;
     glm::vec3 m_rotate_start;
@@ -120,11 +120,11 @@ private:
     glm::vec3 _objects_localX_start;
     glm::vec3 _objects_localY_start;
 
-    bool m_isTransforming;
-    TransOpt m_operation;
+    bool m_isTransforming = false;
+    TransOpt m_operation = TransOpt::NONE;
     int m_operation_mode;
     zenovis::COORD_SYS m_coord_sys;
-    float m_handler_scale;
+    float m_handler_scale = 1;
     std::shared_ptr<zenovis::IGraphicHandler> m_handler;
     ViewportWidget* m_viewport;
 };

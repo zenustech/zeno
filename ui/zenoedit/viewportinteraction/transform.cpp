@@ -13,19 +13,7 @@
 namespace zeno {
 
 FakeTransformer::FakeTransformer(ViewportWidget* viewport)
-    : m_self_center(0.0f)
-      , m_pivot(0.0f)
-      , m_localXOrg(1, 0, 0)
-      , m_localYOrg(0, 1, 0)
-      , m_self_X(1, 0, 0)
-      , m_self_Y(0, 1, 0)
-      , m_trans(0.0f)
-      , m_scale(1.0f)
-      , m_rotate({0, 0, 0, 1})
-      , m_isTransforming(false)
-      , m_operation(TransOpt::NONE)
-      , m_handler_scale(1.f)
-      , m_viewport(viewport)
+    : m_viewport(viewport)
 {
 }
 
