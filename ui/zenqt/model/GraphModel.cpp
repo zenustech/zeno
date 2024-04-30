@@ -1029,6 +1029,43 @@ void GraphModel::_removeLinkImpl(const zeno::EdgeInfo& link, bool endTransaction
     }
 }
 
+bool GraphModel::setModelData(const QModelIndex& index, const QVariant& newValue, int role)
+{
+    zeno::getSession().beginApiCall();
+    zeno::scope_exit scope([=]() { zeno::getSession().endApiCall(); });
+
+    const auto& oldVal = index.data(role);
+    ModelDataCommand* pcmd = new ModelDataCommand(index, oldVal, newValue, role, currentPath());
+    if (auto topLevelGraph = getTopLevelGraph(currentPath()))
+    {
+        topLevelGraph->pushToplevelStack(pcmd);
+    }
+    return true;
+}
+
+void GraphModel::_setViewImpl(const QModelIndex& idx, bool bOn, bool endTransaction)
+{
+    bool bEnableIoProc = GraphsManager::instance().isInitializing() || GraphsManager::instance().isImporting();
+    if (bEnableIoProc)
+        endTransaction = false;
+
+    if (endTransaction)
+    {
+        auto currtPath = currentPath();
+        NodeStatusCommand* pCmd = new NodeStatusCommand(true, idx.data(ROLE_NODE_NAME).toString(), bOn, currtPath);
+        if (auto topLevelGraph = getTopLevelGraph(currtPath))
+            topLevelGraph->pushToplevelStack(pCmd);
+    }
+    else {
+        auto spCoreGraph = m_wpCoreGraph.lock();
+        ZASSERT_EXIT(spCoreGraph);
+        NodeItem* item = m_nodes[m_row2uuid[idx.row()]];
+        auto spCoreNode = item->m_wpNode.lock();
+        ZASSERT_EXIT(spCoreNode);
+        spCoreNode->set_view(bOn);
+    }
+}
+
 std::weak_ptr<zeno::INode> GraphModel::getWpNode(QString& nodename)
 {
     auto it = m_name2uuid.find(nodename);
@@ -1076,12 +1113,7 @@ bool GraphModel::removeNode(const QString& name)
 
 void GraphModel::setView(const QModelIndex& idx, bool bOn)
 {
-    auto spCoreGraph = m_wpCoreGraph.lock();
-    ZASSERT_EXIT(spCoreGraph);
-    NodeItem* item = m_nodes[m_row2uuid[idx.row()]];
-    auto spCoreNode = item->m_wpNode.lock();
-    ZASSERT_EXIT(spCoreNode);
-    spCoreNode->set_view(bOn);
+    _setViewImpl(idx, bOn, true);
 }
 
 void GraphModel::setMute(const QModelIndex& idx, bool bOn)
