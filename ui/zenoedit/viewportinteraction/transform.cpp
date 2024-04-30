@@ -429,10 +429,11 @@ void FakeTransformer::toTranslate() {
     else {
         auto session = this->session();
         ZASSERT_EXIT(session);
-        m_operation = TransOpt::TRANSLATE;
         auto scene = session->get_scene();
         ZASSERT_EXIT(scene);
+        addObjects(scene->selected);
         if (m_objects.empty()) return;
+        m_operation = TransOpt::TRANSLATE;
         createNewTransformNodeNameWhenMissing(m_objects.begin()->first);
         m_handler = zenovis::makeTransHandler(scene, zeno::other_to_vec<3>(m_self_center), zeno::other_to_vec<3>(m_self_X), zeno::other_to_vec<3>(m_self_Y), m_handler_scale);
         session->set_handler(m_handler);
@@ -447,10 +448,11 @@ void FakeTransformer::toRotate() {
     else {
         auto session = this->session();
         ZASSERT_EXIT(session);
-        m_operation = TransOpt::ROTATE;
         auto scene = session->get_scene();
         ZASSERT_EXIT(scene);
+        addObjects(scene->selected);
         if (m_objects.empty()) return;
+        m_operation = TransOpt::ROTATE;
         createNewTransformNodeNameWhenMissing(m_objects.begin()->first);
         m_handler = zenovis::makeRotateHandler(scene, zeno::other_to_vec<3>(m_self_center), zeno::other_to_vec<3>(m_self_X), zeno::other_to_vec<3>(m_self_Y), m_handler_scale);
         session->set_handler(m_handler);
@@ -465,10 +467,11 @@ void FakeTransformer::toScale() {
     else {
         auto session = this->session();
         ZASSERT_EXIT(session);
-        m_operation = TransOpt::SCALE;
         auto scene = session->get_scene();
         ZASSERT_EXIT(scene);
+        addObjects(scene->selected);
         if (m_objects.empty()) return;
+        m_operation = TransOpt::SCALE;
         createNewTransformNodeNameWhenMissing(m_objects.begin()->first);
         m_handler = zenovis::makeScaleHandler(scene, zeno::other_to_vec<3>(m_self_center), zeno::other_to_vec<3>(m_self_X), zeno::other_to_vec<3>(m_self_Y), m_handler_scale);
         session->set_handler(m_handler);
