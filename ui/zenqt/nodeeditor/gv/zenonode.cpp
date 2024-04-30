@@ -764,7 +764,7 @@ void ZenoNode::onParamDataChanged(const QModelIndex& topLeft, const QModelIndex&
     if (!m_index.isValid())
         return;
 
-    ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(m_index.data(ROLE_PARAMS));
+     ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(m_index.data(ROLE_PARAMS));
     if (!paramsM)
         return;
 

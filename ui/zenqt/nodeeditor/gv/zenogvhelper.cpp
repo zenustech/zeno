@@ -106,7 +106,7 @@ void ZenoGvHelper::setValue(QGraphicsItem* item, zeno::ParamType type, const QVa
             }
             else if (ZVecEditorItem* pEditor = qobject_cast<ZVecEditorItem*>(pItem))
             {
-                if (value.canConvert<CURVES_DATA>()) {
+                if (value.canConvert<UI_VECSTRING>()) {
                     return;
                 }
                 bool bFloat = (zeno::Param_Vec2f == type || zeno::Param_Vec3f == type || zeno::Param_Vec4f == type);
@@ -139,7 +139,7 @@ void ZenoGvHelper::setValue(QGraphicsItem* item, zeno::ParamType type, const QVa
             QGraphicsTextItem* pItem = qgraphicsitem_cast<QGraphicsTextItem*>(item);
             if (type == zeno::Param_Float)
             {
-                if (value.canConvert<CURVES_DATA>()) {
+                if (value.canConvert<UI_VECSTRING>()) {
                     return;
                 } else {
                     pItem->setPlainText(UiHelper::variantToString(value));

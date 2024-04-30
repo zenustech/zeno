@@ -944,19 +944,21 @@ void ZenoPropPanel::paintEvent(QPaintEvent* event)
 
 void ZenoPropPanel::setKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &keys) 
 {
-    CURVES_DATA newVal;
-    if (ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).type() == QVariant::String)
-        newVal = JsonHelper::parseCurves(ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).toString());
+    QVariant val = ctrl.m_viewIdx.data(ROLE_PARAM_VALUE);
+    CURVES_DATA newVal = JsonHelper::parseCurves(val);
     UI_VECTYPE vec;
     if (ZLineEdit *lineEdit = qobject_cast<ZLineEdit *>(ctrl.pControl)) {
         vec << lineEdit->text().toFloat();
     } else if (ZVecEditor *lineEdit = qobject_cast<ZVecEditor *>(ctrl.pControl)) {
         vec = lineEdit->text();
     }
+   
     for (int i = 0; i < vec.size(); i++) {
         QString key = curve_util::getCurveKey(i);
-        if (newVal.contains(key) && !keys.contains(key))
+        if (/*newVal.contains(key) && */!keys.contains(key))
+        {
             continue;
+        }
         if (!newVal.contains(key) || (!newVal[key].visible && newVal[key].points.size() < 2))
             newVal[key] = CURVE_DATA();
 
@@ -964,15 +966,15 @@ void ZenoPropPanel::setKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &k
         getDelfCurveData(newVal[key], vec.at(i), visible, key);
     }
     
-    UiHelper::qIndexSetData(ctrl.m_viewIdx, JsonHelper::dumpCurves(newVal), ROLE_PARAM_VALUE);
+    JsonHelper::dumpCurves(newVal, val);
+    UiHelper::qIndexSetData(ctrl.m_viewIdx, val, ROLE_PARAM_VALUE);
     updateTimelineKeys(newVal);
 }
 
 void ZenoPropPanel::delKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &keys) 
 {
-    CURVES_DATA val;
-    if (ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).type() == QVariant::String)
-        val = JsonHelper::parseCurves(ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).toString());
+    QVariant var = ctrl.m_viewIdx.data(ROLE_PARAM_VALUE);
+    CURVES_DATA val = JsonHelper::parseCurves(var);
     ZenoMainWindow *mainWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(mainWin);
     ZTimeline *timeline = mainWin->timeline();
@@ -1017,7 +1019,8 @@ void ZenoPropPanel::delKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &k
     }
     else 
     {
-        newVal = JsonHelper::dumpCurves(val);
+        JsonHelper::dumpCurves(val, var);
+        newVal = var;
     }
 
     UiHelper::qIndexSetData(ctrl.m_viewIdx, newVal, ROLE_PARAM_VALUE);
@@ -1029,15 +1032,14 @@ void ZenoPropPanel::editKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &
     ZCurveMapEditor *pEditor = new ZCurveMapEditor(true);
     connect(pEditor, &ZCurveMapEditor::finished, this, [=](int result) {
         CURVES_DATA newCurves = pEditor->curves();
-        CURVES_DATA val;
-        if (ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).type() == QVariant::String)
-            val = JsonHelper::parseCurves(ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).toString());
+        QVariant var = ctrl.m_viewIdx.data(ROLE_PARAM_VALUE);
+        CURVES_DATA val = JsonHelper::parseCurves(var);
         QVariant newVal;
         if (!newCurves.isEmpty() || val.size() != keys.size()) {
             for (const QString &key : keys) {
                 if (newCurves.contains(key))
                     val[key] = newCurves[key];
-                else {
+                /*else {
                     val[key] = CURVE_DATA();
                     if (ZVecEditor *lineEdit = qobject_cast<ZVecEditor *>(ctrl.pControl)) {
                         UI_VECTYPE vec = lineEdit->text();
@@ -1045,9 +1047,10 @@ void ZenoPropPanel::editKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &
                         if (vec.size() > idx)
                             getDelfCurveData(val[key], vec.at(idx), false, key);
                     }
-                }
+                }*/
             }
-            newVal = JsonHelper::dumpCurves(val);
+            JsonHelper::dumpCurves(val, var);
+            newVal = var;
         } else
         {
             if (ZLineEdit *lineEdit = qobject_cast<ZLineEdit *>(ctrl.pControl)) {
@@ -1076,9 +1079,8 @@ void ZenoPropPanel::editKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &
 
 void ZenoPropPanel::clearKeyFrame(const _PANEL_CONTROL& ctrl, const QStringList& keys)
 {
-    CURVES_DATA val;
-    if (ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).type() == QVariant::String)
-        val = JsonHelper::parseCurves(ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).toString());
+    QVariant var = ctrl.m_viewIdx.data(ROLE_PARAM_VALUE);
+    CURVES_DATA val = JsonHelper::parseCurves(var);
     int emptySize = 0;
 
     for (auto &curve : val) {
@@ -1114,7 +1116,8 @@ void ZenoPropPanel::clearKeyFrame(const _PANEL_CONTROL& ctrl, const QStringList&
     }
     else
     {
-        newVal = JsonHelper::dumpCurves(val);
+        JsonHelper::dumpCurves(val, var);
+        newVal = var;
     }
 
     UiHelper::qIndexSetData(ctrl.m_viewIdx, newVal, ROLE_PARAM_VALUE);
@@ -1156,9 +1159,9 @@ QStringList ZenoPropPanel::getKeys(const QObject *obj, const _PANEL_CONTROL &ctr
                 if (!key.isEmpty())
                     keys << key;
             }
-        } else if (ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).type() == QVariant::String)
+        } else if (ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).userType() == QMetaTypeId<UI_VECSTRING>::qt_metatype_id())
         {
-            CURVES_DATA val = JsonHelper::parseCurves(ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).toString());
+            CURVES_DATA val = JsonHelper::parseCurves(ctrl.m_viewIdx.data(ROLE_PARAM_VALUE));
             keys << val.keys();
         }
     } else if (ZVecEditor *vecEdit = qobject_cast<ZVecEditor *>(ctrl.pControl)) //control vec
@@ -1172,9 +1175,7 @@ QStringList ZenoPropPanel::getKeys(const QObject *obj, const _PANEL_CONTROL &ctr
 }
 
 CURVES_DATA ZenoPropPanel::getCurvesData(const QPersistentModelIndex &perIdx, const QStringList &keys) {
-    CURVES_DATA val;
-    if (perIdx.data(ROLE_PARAM_VALUE).type() == QVariant::String)
-        val = JsonHelper::parseCurves(perIdx.data(ROLE_PARAM_VALUE).toString());
+    CURVES_DATA val = JsonHelper::parseCurves(perIdx.data(ROLE_PARAM_VALUE));
     CURVES_DATA curves;
     for (auto key : keys) {
         if (val.contains(key)) {

@@ -184,6 +184,30 @@ QVariant UiHelper::zvarToQVar(const zeno::zvariant& var)
             vec.push_back(arg[3]);
             qVar = QVariant::fromValue(vec);
         }
+        else if constexpr (std::is_same_v<T, zeno::vec2s>)
+        {
+            UI_VECSTRING vec;
+            vec.push_back(QString::fromStdString(arg[0]));
+            vec.push_back(QString::fromStdString(arg[1]));
+            qVar = QVariant::fromValue(vec);
+        }
+        else if constexpr (std::is_same_v<T, zeno::vec3s>)
+        {
+            UI_VECSTRING vec;
+            vec.push_back(QString::fromStdString(arg[0]));
+            vec.push_back(QString::fromStdString(arg[1]));
+            vec.push_back(QString::fromStdString(arg[2]));
+            qVar = QVariant::fromValue(vec);
+        }
+        else if constexpr (std::is_same_v<T, zeno::vec4s>)
+        {
+            UI_VECSTRING vec;
+            vec.push_back(QString::fromStdString(arg[0]));
+            vec.push_back(QString::fromStdString(arg[1]));
+            vec.push_back(QString::fromStdString(arg[2]));
+            vec.push_back(QString::fromStdString(arg[3]));
+            qVar = QVariant::fromValue(vec);
+        }
         else 
         {
             //TODO
@@ -803,13 +827,28 @@ QString UiHelper::variantToString(const QVariant& var)
 	}
 	else if (var.type() == QVariant::UserType)
     {
-        UI_VECTYPE vec = var.value<UI_VECTYPE>();
-        if (vec.isEmpty()) {
-            zeno::log_warn("unexpected qt variant {}", var.typeName());
-        } else {
+        if (var.userType() == QMetaTypeId<UI_VECTYPE>::qt_metatype_id())
+        {
+            UI_VECTYPE vec = var.value<UI_VECTYPE>();
+            if (vec.isEmpty()) {
+                zeno::log_warn("unexpected qt variant {}", var.typeName());
+            }
+            else {
+                QString res;
+                for (int i = 0; i < vec.size(); i++) {
+                    res.append(QString::number(vec[i]));
+                    if (i < vec.size() - 1)
+                        res.append(",");
+                }
+                return res;
+            }
+        }
+        else if (var.userType() == QMetaTypeId<UI_VECSTRING>::qt_metatype_id())
+        {
+            UI_VECSTRING vec = var.value<UI_VECSTRING>();
             QString res;
             for (int i = 0; i < vec.size(); i++) {
-                res.append(QString::number(vec[i]));
+                res.append(vec[i]);
                 if (i < vec.size() - 1)
                     res.append(",");
             }

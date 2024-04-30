@@ -33,8 +33,18 @@ ParamsModel::ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent)
             auto pItems = m_customParamsM->findItems(QString::fromStdString(name), flags);
             for (auto pItem : pItems)
             {
+                auto oldVal = pItem->data(ROLE_PARAM_VALUE);
                 if (pItem->data(ROLE_ISINPUT).toBool())
+                {
+                    if (newValue.type() == QVariant::UserType)
+                    {
+                        QString newStr = UiHelper::variantToString(newValue);
+                        QString oldStr = UiHelper::variantToString(oldVal);
+                        if (oldStr == newStr)
+                            continue;
+                    }
                     pItem->setData(newValue, ROLE_PARAM_VALUE);
+                }
             }
     });
 }

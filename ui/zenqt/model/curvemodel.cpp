@@ -62,7 +62,7 @@ void CurveModel::initItems(CURVE_DATA const &curvedat)
         pItem->setData(HDL_ASYM, ROLE_TYPE);
         appendRow(pItem);
     }
-}
+     }
 
 void CurveModel::resetRange(const CURVE_RANGE& rg)
 {

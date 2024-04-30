@@ -5,6 +5,7 @@
 #include <zeno/funcs/ParseObjectFromUi.h>
 #include "uihelper.h"
 #include "zassert.h"
+#include "util/curveutil.h"
 
 using namespace zeno::iotags;
 using namespace zeno::iotags::curve;
@@ -390,6 +391,37 @@ namespace JsonHelper
         return curves;
     }
 
+    CURVES_DATA parseCurves(const QVariant& val)
+    {
+        if (val.userType() == QMetaTypeId<UI_VECSTRING>::qt_metatype_id())
+        {
+            UI_VECSTRING strVec = val.value<UI_VECSTRING>();
+            CURVES_DATA curves;
+            for (int i = 0; i < strVec.size(); i++)
+            {
+                QString key = curve_util::getCurveKey(i);
+                bool ok = false;
+                QString str = strVec.at(i);
+                if (str.startsWith("="))
+                    continue;
+                str.toFloat(&ok);
+                if (ok)
+                    continue;
+                CURVES_DATA data = parseCurves(str);
+                curves[key] = data[key];
+            }
+            return curves;
+        }
+        else if (val.type() == QVariant::String)
+        {
+            return parseCurves(val.toString());
+        }
+        else
+        {
+            return CURVES_DATA();
+        }
+    }
+
     CurveModel* _parseCurveModel(QString channel, const rapidjson::Value& jsonCurve, QObject* parentRef)
     {
         ZASSERT_EXIT(jsonCurve.HasMember(key_range), nullptr);
@@ -548,6 +580,45 @@ namespace JsonHelper
         }
         writer.EndObject();
         return QString::fromUtf8(s.GetString());
+    }
+
+    void JsonHelper::dumpCurves(const CURVES_DATA& curves, QVariant& val)
+    {
+        if (curves.isEmpty())
+            return;
+        UI_VECSTRING vec;
+        if (val.canConvert<UI_VECSTRING>())
+        {
+            vec = val.value<UI_VECSTRING>();
+        }
+        else if (val.canConvert<UI_VECTYPE>())
+        {
+            UI_VECTYPE data = val.value<UI_VECTYPE>();
+            for (int i = 0; i < data.size(); i++)
+            {
+                vec << UiHelper::variantToString(data.at(i));
+            }
+        }
+        else
+        {
+            vec << UiHelper::variantToString(val);
+        }
+        for (auto curve : curves) {
+            CURVES_DATA data;
+            data[curve.key] = curve;
+            QString val = dumpCurves(data);
+            QString key = curve.key;
+            int idx = key == "x" ? 0 : key == "y" ? 1 : key == "z" ? 2 : 3;
+            if (vec.size() > idx)
+            {
+                vec[idx] = val;
+            }
+        }
+
+        if (vec.size() == 1)
+            val = QVariant::fromValue(vec.first());
+        else
+            val = QVariant::fromValue(vec);
     }
 
     bool JsonHelper::parseHeatmap(const QString& json, int& nres, QString& grad)
