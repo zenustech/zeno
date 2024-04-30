@@ -422,63 +422,57 @@ void FakeTransformer::endTransform(bool moved) {
 }
 
 void FakeTransformer::toTranslate() {
-    if (m_objects.empty()) return;
-
-    auto session = this->session();
-    ZASSERT_EXIT(session);
-
     if (m_operation == TransOpt::TRANSLATE) {
         m_operation = TransOpt::NONE;
         m_handler = nullptr;
     }
     else {
+        auto session = this->session();
+        ZASSERT_EXIT(session);
         m_operation = TransOpt::TRANSLATE;
         auto scene = session->get_scene();
         ZASSERT_EXIT(scene);
+        if (m_objects.empty()) return;
         createNewTransformNodeNameWhenMissing(m_objects.begin()->first);
         m_handler = zenovis::makeTransHandler(scene, zeno::other_to_vec<3>(m_self_center), zeno::other_to_vec<3>(m_self_X), zeno::other_to_vec<3>(m_self_Y), m_handler_scale);
+        session->set_handler(m_handler);
     }
-    session->set_handler(m_handler);
 }
 
 void FakeTransformer::toRotate() {
-    if (m_objects.empty()) return;
-
-    auto session = this->session();
-    ZASSERT_EXIT(session);
-
     if (m_operation == TransOpt::ROTATE) {
         m_operation = TransOpt::NONE;
         m_handler = nullptr;
     }
     else {
+        auto session = this->session();
+        ZASSERT_EXIT(session);
         m_operation = TransOpt::ROTATE;
         auto scene = session->get_scene();
         ZASSERT_EXIT(scene);
+        if (m_objects.empty()) return;
         createNewTransformNodeNameWhenMissing(m_objects.begin()->first);
         m_handler = zenovis::makeRotateHandler(scene, zeno::other_to_vec<3>(m_self_center), zeno::other_to_vec<3>(m_self_X), zeno::other_to_vec<3>(m_self_Y), m_handler_scale);
+        session->set_handler(m_handler);
     }
-    session->set_handler(m_handler);
 }
 
 void FakeTransformer::toScale() {
-    if (m_objects.empty()) return;
-
-    auto session = this->session();
-    ZASSERT_EXIT(session);
-
     if (m_operation == TransOpt::SCALE) {
         m_operation = TransOpt::NONE;
         m_handler = nullptr;
     }
     else {
+        auto session = this->session();
+        ZASSERT_EXIT(session);
         m_operation = TransOpt::SCALE;
         auto scene = session->get_scene();
         ZASSERT_EXIT(scene);
+        if (m_objects.empty()) return;
         createNewTransformNodeNameWhenMissing(m_objects.begin()->first);
         m_handler = zenovis::makeScaleHandler(scene, zeno::other_to_vec<3>(m_self_center), zeno::other_to_vec<3>(m_self_X), zeno::other_to_vec<3>(m_self_Y), m_handler_scale);
+        session->set_handler(m_handler);
     }
-    session->set_handler(m_handler);
 }
 
 void FakeTransformer::markObjectInteractive(const std::string& obj_name) {
