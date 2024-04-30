@@ -62,7 +62,6 @@ struct Scene : zeno::disable_copy {
         std::vector<std::pair<std::string, std::shared_ptr<zeno::IObject>>>& allListItems);
     void convertListObjs(std::shared_ptr<zeno::IObject>const& objToBeConvert,           //仅展平对象
         std::map<std::string, std::shared_ptr<zeno::IObject>>& allListItems);
-    std::unordered_map <std::string, std::shared_ptr<zeno::IObject>> lastAllItems;      //本次运行的所有元素(单个对象+list中对象)
 };
 
 } // namespace zenovis

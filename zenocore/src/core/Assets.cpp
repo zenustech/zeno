@@ -300,7 +300,7 @@ ZENO_API bool AssetsMgr::isAssetGraph(std::shared_ptr<Graph> spGraph) const
     return false;
 }
 
-ZENO_API std::shared_ptr<INode> AssetsMgr::newInstance(Graph* pGraph, const std::string& assetName, const std::string& nodeName, bool createInAsset) {
+ZENO_API std::shared_ptr<INode> AssetsMgr::newInstance(std::shared_ptr<Graph> pGraph, const std::string& assetName, const std::string& nodeName, bool createInAsset) {
     if (m_assets.find(assetName) == m_assets.end()) {
         return nullptr;
     }
@@ -312,7 +312,6 @@ ZENO_API std::shared_ptr<INode> AssetsMgr::newInstance(Graph* pGraph, const std:
     assert(assets.sharedGraph);
 
     std::shared_ptr<SubnetNode> spNode = std::make_shared<SubnetNode>();
-    spNode->graph = pGraph;
     spNode->initUuid(pGraph, assetName);
     std::shared_ptr<Graph> assetGraph;
     if (!createInAsset) {

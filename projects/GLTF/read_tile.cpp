@@ -260,10 +260,10 @@ static std::shared_ptr<PrimitiveObject> read_gltf_model(std::string path, bool n
                 }
             }
         }
-        prims->arr.push_back(prim);
+        prims->push_back(prim);
     }
     if (need_transform) {
-        for (auto i = 0; i < prims->arr.size(); i++) {
+        for (auto i = 0; i < prims->size(); i++) {
             auto prim = prims->getRaw<PrimitiveObject>()[i];
             auto m = node_acc_transforms[mesh_link_node[i]];
             for (auto &v: prim->verts) {
@@ -339,7 +339,7 @@ struct ReadTile : INode {
             for (auto i = 0; i < prim->verts.size(); i++) {
                 prim->verts[i] += - bc + vec3f(ct[0], ct[2], -ct[1]);
             }
-            list->arr.push_back(prim);
+            list->push_back(prim);
         }
         auto pPrims = list->getRaw<PrimitiveObject>();
         auto output = primMerge(pPrims);

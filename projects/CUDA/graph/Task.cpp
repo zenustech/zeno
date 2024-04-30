@@ -219,7 +219,7 @@ struct CommandGenerator : INode {
 
     auto cmds = std::make_shared<ListObject>();
     for (auto &&item : ret->workItems)
-      cmds->arr.push_back(std::make_shared<StringObject>(item));
+      cmds->push_back(std::make_shared<StringObject>(item));
     set_output("cmd_scripts", cmds);
     set_output("job", ret);
   }

@@ -78,6 +78,7 @@ public slots:
     void onMouseHoverMoved();
     void onDockViewAction(bool triggered);
     void onCalcFinished(bool bSucceed, zeno::ObjPath, QString);
+    void onJustLoadObjects();
 
 signals:
     void frameUpdated(int new_frame);

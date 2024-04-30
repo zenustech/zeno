@@ -528,7 +528,7 @@ struct LiveMeshNode : INode {
                     if(outDict) {
                         prims_dict->lut[key] = prim;
                     }else{
-                        prims_list->arr.emplace_back(prim);
+                        prims_list->emplace_back(prim);
                     }
                 }
             }else{

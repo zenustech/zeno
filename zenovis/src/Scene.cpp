@@ -91,11 +91,11 @@ void Scene::convertListObjsRender(std::shared_ptr<zeno::IObject>const& objToBeCo
     std::set<std::string>& allListItemsKeys, bool convertKeyOnly, std::string listNamePath, std::string listIdxPath)
 {
     if (std::shared_ptr<zeno::ListObject> lst = std::dynamic_pointer_cast<zeno::ListObject>(objToBeConvert)) {
-        for (int i = 0; i < lst->arr.size(); i++) {
-            std::shared_ptr<zeno::IObject> const& arrItem = lst->arr[i];
+        for (int i = 0; i < lst->size(); i++) {
+            std::shared_ptr<zeno::IObject> const& arrItem = lst->get(i);
             std::string idxpath = listIdxPath + '/' + std::to_string(i);
             std::string namepath = listNamePath + '/' + arrItem->nodeId;
-            if (lst->dirtyIndice.count(i)) {
+            if (lst->has_dirty(i)) {
                 convertListObjsRender(arrItem, allListItems, allListItemsKeys, convertKeyOnly, namepath, idxpath);
                 continue;
             }
@@ -112,7 +112,6 @@ void Scene::convertListObjsRender(std::shared_ptr<zeno::IObject>const& objToBeCo
             objToBeConvert->listitemNameIndex = listNamePath;
             objToBeConvert->listitemNumberIndex = listIdxPath;
             allListItems.insert(std::make_pair(objToBeConvert->key(), objToBeConvert));
-            lastAllItems.insert(std::make_pair(objToBeConvert->key(), objToBeConvert));
         }
     }
 }
@@ -120,8 +119,8 @@ void Scene::convertListObjsRender(std::shared_ptr<zeno::IObject>const& objToBeCo
 void Scene::convertListObjs(std::shared_ptr<zeno::IObject>const& objToBeConvert, std::map<std::string, std::shared_ptr<zeno::IObject>>& allListItems)
 {
     if (std::shared_ptr<zeno::ListObject> lst = std::dynamic_pointer_cast<zeno::ListObject>(objToBeConvert)) {
-        for (int i = 0; i < lst->arr.size(); i++)
-            convertListObjs(lst->arr[i], allListItems);
+        for (int i = 0; i < lst->size(); i++)
+            convertListObjs(lst->get(i), allListItems);
         return;
     }
     if (!objToBeConvert)
@@ -134,8 +133,8 @@ void Scene::convertListObjs(std::shared_ptr<zeno::IObject>const& objToBeConvert,
 void zenovis::Scene::convertListObjs(std::shared_ptr<zeno::IObject>const& objToBeConvert, std::vector<std::pair<std::string, std::shared_ptr<zeno::IObject>>>& allListItems)
 {
     if (std::shared_ptr<zeno::ListObject> lst = std::dynamic_pointer_cast<zeno::ListObject>(objToBeConvert)) {
-        for (int i = 0; i < lst->arr.size(); i++)
-            convertListObjs(lst->arr[i], allListItems);
+        for (int i = 0; i < lst->size(); i++)
+            convertListObjs(lst->get(i), allListItems);
         return;
     }
     if (!objToBeConvert)

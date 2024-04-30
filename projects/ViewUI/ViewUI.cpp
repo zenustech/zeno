@@ -124,9 +124,9 @@ struct MakeViewUILayout : zeno::INode {
         document.AddMember("stretchIndex", stretchIndex, document.GetAllocator());
 
         auto list = get_input<zeno::ListObject>("uiList").get();
-        zeno::log_info("UI List size {}", int(list->arr.size()));
+        zeno::log_info("UI List size {}", int(list->size()));
         rapidjson::Value arr(rapidjson::kArrayType);
-        for (int i = 0; i < list->arr.size(); i++)
+        for (int i = 0; i < list->size(); i++)
         {
             std::string str = ((zeno::StringObject *)(list->arr[i].get()))->get();
             //zeno::log_info("Subjson:{}", str);

@@ -38,6 +38,14 @@ ZENO_API bool IObject::update_key(const std::string& key) {
     return false;
 }
 
+ZENO_API void IObject::set_parent(IObject* spParent) {
+    m_parent = spParent;
+}
+
+ZENO_API IObject* IObject::get_parent() const {
+    return m_parent;
+}
+
 ZENO_API UserData &IObject::userData() const {
     if (!m_userData.has_value())
         m_userData.emplace<UserData>();

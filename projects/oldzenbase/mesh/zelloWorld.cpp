@@ -23,7 +23,7 @@ struct StringToMesh : zeno::INode {
             auto &tris = prim->tris;
             read_obj_file(pos, uv, norm, tris, path.c_str());
             prim->resize(pos.size());
-            alphaset->arr.push_back(prim);
+            alphaset->push_back(prim);
         }
         auto spacing = get_input("spacing")->as<zeno::NumericObject>()->get<float>();
         auto list = std::make_shared<zeno::ListObject>();
@@ -39,11 +39,11 @@ struct StringToMesh : zeno::INode {
                 auto vec = zeno::IObject::make<zeno::NumericObject>();
                 vec->set<zeno::vec3f>(zeno::vec3f((float)count * spacing, 0.0f,0.0f));
                 //auto p = zeno::IObject::make<PrimitiveObject>();
-                auto const &obj = smart_any_cast<std::shared_ptr<IObject>>(alphaset->arr[idx]);
+                auto const &obj = smart_any_cast<std::shared_ptr<IObject>>(alphaset->get(idx));
                 auto p = obj->clone();
                 //p->copy(dynamic_cast<PrimitiveObject *>(obj.get()));
-                list->arr.push_back(std::move(p));
-                list2->arr.push_back(std::move(vec));
+                list->push_back(std::move(p));
+                list2->push_back(std::move(vec));
             }
             count++;
         }

@@ -11,13 +11,17 @@ namespace zeno {
 struct PortalIn : zeno::INode {
     virtual void complete() override {
         auto name = get_param<std::string>("name");
-        graph->portalIns[name] = this->m_name;
+        std::shared_ptr<Graph> spGraph = getThisGraph();
+        assert(spGraph);
+        spGraph->portalIns[name] = this->m_name;
     }
 
     virtual void apply() override {
         auto name = get_param<std::string>("name");
         auto obj = get_input("port");
-        graph->portals[name] = std::move(obj);
+        std::shared_ptr<Graph> spGraph = getThisGraph();
+        assert(spGraph);
+        spGraph->portals[name] = std::move(obj);
     }
 };
 
@@ -31,9 +35,11 @@ ZENDEFNODE(PortalIn, {
 struct PortalOut : zeno::INode {
     virtual void apply() override {
         auto name = get_param<std::string>("name");
-        auto depnode = zeno::safe_at(graph->portalIns, name, "PortalIn");
-        graph->applyNode(depnode);
-        auto obj = zeno::safe_at(graph->portals, name, "portal object");
+        std::shared_ptr<Graph> spGraph = getThisGraph();
+        assert(spGraph);
+        auto depnode = zeno::safe_at(spGraph->portalIns, name, "PortalIn");
+        spGraph->applyNode(depnode);
+        auto obj = zeno::safe_at(spGraph->portals, name, "portal object");
         set_output("port", std::move(obj));
     }
 };

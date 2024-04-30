@@ -220,8 +220,7 @@ ZENO_API std::map<std::string, zany> Graph::callTempNode(std::string const &id,
 
     auto cl = safe_at(getSession().nodeClasses, id, "node class name").get();
     const std::string& name = generateUUID();
-    auto se = cl->new_instance(this, name);
-    se->graph = const_cast<Graph*>(this);
+    auto se = cl->new_instance(shared_from_this(), name);
     se->directly_setinputs(inputs);
     se->doOnlyApply();
     return se->getoutputs();
@@ -513,13 +512,13 @@ ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls, const 
         }
 
         auto cl = safe_at(getSession().nodeClasses, nodecls, "node class name").get();
-        node = cl->new_instance(this, name);
+        node = cl->new_instance(shared_from_this(), name);
         node->nodeClass = cl;
         uuid = node->get_uuid();
     }
     else {
         bool isCurrentGraphAsset = getSession().assets->isAssetGraph(shared_from_this());
-        node = getSession().assets->newInstance(this, cls, name, isCurrentGraphAsset);
+        node = getSession().assets->newInstance(shared_from_this(), cls, name, isCurrentGraphAsset);
         uuid = node->get_uuid();
         asset_nodes.insert(uuid);
     }
@@ -537,7 +536,6 @@ ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls, const 
         suboutput_nodes.insert(uuid);
     }
 
-    node->graph = this;
     node->m_pos = pos;
     node->mark_dirty(true);
     m_name2uuid[name] = uuid;
@@ -598,7 +596,11 @@ ZENO_API std::shared_ptr<INode> Graph::getNode(ObjPath path) {
         //subnet
         if (std::shared_ptr<SubnetNode> subnetNode = std::dynamic_pointer_cast<SubnetNode>(it->second))
         {
-            return subnetNode->graph->getNode(path);
+            auto spGraph = subnetNode->getGraph().lock();
+            if (spGraph)
+                return spGraph->getNode(path);
+            else
+                return nullptr;
         }
     }
     return it->second;

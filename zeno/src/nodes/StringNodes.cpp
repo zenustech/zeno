@@ -394,7 +394,7 @@ struct FormatString : zeno::INode {
 
         auto list = get_input<zeno::ListObject>("args");
         std::string output = formatStr;
-        for (auto obj : list->arr)
+        for (auto obj : list->get())
         {
             std::shared_ptr<zeno::NumericObject> num = std::dynamic_pointer_cast<zeno::NumericObject>(obj);
             if (num) {
@@ -551,7 +551,7 @@ struct StringToList : zeno::INode {
         for(const auto &string : strings) {
             auto obj = std::make_unique<StringObject>();
             obj->set(string);
-            list->arr.push_back(std::move(obj));
+            list->push_back(std::move(obj));
         }
         set_output("list", std::move(list));
     }

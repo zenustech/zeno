@@ -68,10 +68,10 @@ struct CreateBezierCurve : zeno::INode {
        
         if (has_input<zeno::ListObject>("CustomPoints")) {        
             auto list = get_input<zeno::ListObject>("CustomPoints");
-            int iSize = list->arr.size();
+            int iSize = list->size();
             if (iSize > 0) {
                 for (int i = 0; i < iSize; i++) {
-                    zeno::PrimitiveObject *obj = dynamic_cast<zeno::PrimitiveObject *>(list->arr[i].get());
+                    zeno::PrimitiveObject *obj = dynamic_cast<zeno::PrimitiveObject *>(list->get(i).get());
                     for (auto p : obj->verts) {
                         inputPoint.push_back(p);
                     }

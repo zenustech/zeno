@@ -322,7 +322,7 @@ struct PrimUnmerge : INode {
 
         auto listPrim = std::make_shared<ListObject>();
         for (auto &primPtr: primList) {
-            listPrim->arr.push_back(std::move(primPtr));
+            listPrim->push_back(std::move(primPtr));
         }
         set_output("listPrim", std::move(listPrim));
     }

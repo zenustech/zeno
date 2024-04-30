@@ -220,17 +220,17 @@ static std::shared_ptr<PrimitiveObject> readMp3(std::string path) {
 
             auto output_H = std::make_shared<ListObject>();
             for (int i = 0; i < 43 - H.size(); i++) {
-                output_H->arr.emplace_back(std::make_shared<NumericObject>((float)0));
+                output_H->emplace_back(std::make_shared<NumericObject>((float)0));
             }
             for (const auto & h: H) {
-                output_H->arr.emplace_back(std::make_shared<NumericObject>((float)h));
+                output_H->emplace_back(std::make_shared<NumericObject>((float)h));
             }
             set_output("H", output_H);
 
             auto output_E = std::make_shared<ListObject>();
             for (const auto& spectrum: spectrums) {
                 double e = spectrum.real() * spectrum.real() + spectrum.imag() * spectrum.imag();
-                output_E->arr.emplace_back(std::make_shared<NumericObject>((float)e));
+                output_E->emplace_back(std::make_shared<NumericObject>((float)e));
             }
             set_output("E", output_E);
         }

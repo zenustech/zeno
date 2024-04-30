@@ -174,7 +174,7 @@ namespace zeno
             treeObj->to_primitive_lines(prim.get(), res);
             for(auto p:res)
             {
-                primList->arr.push_back(p);
+                primList->push_back(p);
             }
 
             set_output("prim", std::move(primList));
