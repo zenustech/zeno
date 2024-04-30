@@ -269,7 +269,7 @@ namespace zeno {
         if (iter == m_objects.end())
             return info;
 
-        info.spObj = iter->second.obj;
+        info.transformingObj = iter->second.obj;
         auto& mainG = getSession().mainGraph;
         for (auto nodepath : iter->second.attach_nodes) {
             auto spNode = mainG->getNode(nodepath);

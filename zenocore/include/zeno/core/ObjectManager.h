@@ -30,7 +30,8 @@ namespace zeno {
     };
 
     struct ObjectNodeInfo {
-        std::shared_ptr<IObject> spObj;
+        std::optional<zany> rootObj;        //list/dict case.
+        zany transformingObj;
         std::shared_ptr<INode> spViewNode;
     };
 

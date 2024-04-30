@@ -606,7 +606,6 @@ void FakeTransformer::clear() {
     m_rotate = {0, 0, 0, 1};
     m_operation = NONE;
     m_handler = nullptr;
-    m_transNode.reset();
 
     auto session = this->session();
     ZASSERT_EXIT(session);
@@ -657,18 +656,20 @@ void FakeTransformer::addObject(const std::string& name) {
     auto& objsMan = zeno::getSession().objsMan;
 
     m_objnodeinfo = objsMan->getObjectAndViewNode(name);
-    std::shared_ptr<PrimitiveObject> viewobject = std::dynamic_pointer_cast<PrimitiveObject>(m_objnodeinfo.spObj);
-    ZASSERT_EXIT(viewobject && m_objnodeinfo.spViewNode);
+    std::shared_ptr<PrimitiveObject> transObj = std::dynamic_pointer_cast<PrimitiveObject>(m_objnodeinfo.transformingObj);
+    if (!transObj) {
+        //todo: maybe the transforming obj is a memeber of list object.
+        return;
+    }
 
     const std::string& nodecls = m_objnodeinfo.spViewNode->get_nodecls();
 
     std::shared_ptr<PrimitiveObject> object;
     if (nodecls != "PrimitiveTransform" && nodecls != "TransformPrimitive") {
-        object = std::dynamic_pointer_cast<PrimitiveObject>(viewobject->clone());
+        object = std::dynamic_pointer_cast<PrimitiveObject>(transObj->clone());
     }
     else {
-        object = viewobject;
-        m_transNode = m_objnodeinfo.spViewNode;
+        object = transObj;
     }
 
     auto& user_data = object->userData();
@@ -764,36 +765,37 @@ void FakeTransformer::doTransform() {
     });
     zeno::getSession().setDisableRunning(true);
 
-    if (!m_transNode) {
+    std::shared_ptr<INode> transNode = m_objnodeinfo.spViewNode;
+    if (!transNode) {
         std::shared_ptr<INode> spOriNode = m_objnodeinfo.spViewNode;
         std::shared_ptr<Graph> spGraph = spOriNode->getThisGraph();
         ZASSERT_EXIT(spGraph);
-        m_transNode = spGraph->createNode("PrimitiveTransform");
-        ZASSERT_EXIT(m_transNode);
+        transNode = spGraph->createNode("PrimitiveTransform");
+        ZASSERT_EXIT(transNode);
 
-        spObj->update_key(m_transNode->get_uuid());
+        spObj->update_key(transNode->get_uuid());
 
         //把连线关系,view等设置更改。
         EdgeInfo edge;
         edge.outNode = spOriNode->get_name();
         edge.outParam = spOriNode->get_viewobject_output_param();
-        edge.inNode = m_transNode->get_name();
+        edge.inNode = transNode->get_name();
         edge.inParam = "prim";
         spGraph->addLink(edge);
 
         spOriNode->set_view(false);
-        m_transNode->set_view(true);
+        transNode->set_view(true);
 
-        zany originalObj = m_objnodeinfo.spObj;
+        zany originalObj = m_objnodeinfo.transformingObj;
         //原始的对象要隐藏
         auto& objectsMan = zeno::getSession().objsMan;
         //只是为了标记一下view隐藏
         objectsMan->remove_rendering_obj(originalObj);
 
         //把obj设置到新的transform节点的output端。
-        std::string outputparam = m_transNode->get_viewobject_output_param();
-        std::shared_ptr<IParam> spParam = m_transNode->get_output_param(outputparam);
-        m_transNode->set_result(false, outputparam, spObj);
+        std::string outputparam = transNode->get_viewobject_output_param();
+        std::shared_ptr<IParam> spParam = transNode->get_output_param(outputparam);
+        transNode->set_result(false, outputparam, spObj);
     }
 
     {
@@ -813,13 +815,13 @@ void FakeTransformer::doTransform() {
         auto res_q = glm::toQuat(glm::toMat4(dif_q) * glm::toMat4(pre_q));
         rotate = vec4f(res_q.x, res_q.y, res_q.z, res_q.w);
 
-        m_transNode->update_param("translation", trans);
-        m_transNode->update_param("scaling", scale);
-        m_transNode->update_param("quatRotation", rotate);
+        transNode->update_param("translation", trans);
+        transNode->update_param("scaling", scale);
+        transNode->update_param("quatRotation", rotate);
 
         //2.登记新的obj到
         auto& objectsMan = zeno::getSession().objsMan;
-        objectsMan->collectingObject(spObj, m_transNode, true);
+        objectsMan->collectingObject(spObj, transNode, true);
 
         //3.渲染端更新加载
         auto mainWin = zenoApp->getMainWindow();
