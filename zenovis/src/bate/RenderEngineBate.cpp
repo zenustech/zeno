@@ -103,6 +103,7 @@ struct RenderEngineBate : RenderEngine {
     void cleanupWhenExit() override {
         released = true;
         scene->shaderMan = nullptr;
+        scene->drawOptions->handler = nullptr;
         vao = nullptr;
         graphicsMan = nullptr;
         hudGraphics.clear();
