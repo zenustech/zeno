@@ -127,6 +127,7 @@ private:
     float m_handler_scale = 1;
     std::shared_ptr<zenovis::IGraphicHandler> m_handler;
     ViewportWidget* m_viewport;
+    glm::mat4 last_transform_matrix = glm::mat4(1);
 };
 
 }

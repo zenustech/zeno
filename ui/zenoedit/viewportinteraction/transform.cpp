@@ -60,14 +60,6 @@ void FakeTransformer::addObject(const std::string& name) {
         user_data.set2("_pivot", bboxCenter);
         user_data.set2("_localX", vec3f(1, 0, 0));
         user_data.set2("_localY", vec3f(0, 1, 0));
-        if (object->has_attr("pos") && !object->has_attr("_origin_pos")) {
-            auto &pos = object->attr<zeno::vec3f>("pos");
-            object->verts.add_attr<zeno::vec3f>("_origin_pos") = pos;
-        }
-        if (object->has_attr("nrm") && !object->has_attr("_origin_nrm")) {
-            auto &nrm = object->attr<zeno::vec3f>("nrm");
-            object->verts.add_attr<zeno::vec3f>("_origin_nrm") = nrm;
-        }
     }
     m_pivot = zeno::vec_to_other<glm::vec3>(user_data.get2<vec3f>("_pivot"));
     m_localXOrg = zeno::vec_to_other<glm::vec3>(user_data.get2<vec3f>("_localX"));
@@ -690,33 +682,32 @@ void FakeTransformer::doTransform() {
         auto scale_matrix = glm::scale(scale * m_scale);
         auto transform_matrix = pivot_to_world *  translate_matrix *  rotate_matrix * scale_matrix * pivot_to_local;
 
-        if (obj->has_attr("_origin_pos")) {
+        {
             // transform pos
             auto &pos = obj->attr<zeno::vec3f>("pos");
-            auto &opos = obj->attr<zeno::vec3f>("_origin_pos");
 #pragma omp parallel for
             // for (auto &po : pos) {
             for (auto i = 0; i < pos.size(); ++i) {
-                auto p = zeno::vec_to_other<glm::vec3>(opos[i]);
-                auto t = transform_matrix * glm::vec4(p, 1.0f);
+                auto p = zeno::vec_to_other<glm::vec3>(pos[i]);
+                auto t = transform_matrix * glm::inverse(last_transform_matrix) * glm::vec4(p, 1.0f);
                 auto pt = glm::vec3(t) / t.w;
                 pos[i] = zeno::other_to_vec<3>(pt);
             }
         }
-        if (obj->has_attr("_origin_nrm")) {
+        if (obj->has_attr("nrm")) {
             // transform nrm
             auto &nrm = obj->attr<zeno::vec3f>("nrm");
-            auto &onrm = obj->attr<zeno::vec3f>("_origin_nrm");
 #pragma omp parallel for
             // for (auto &vec : nrm) {
             for (auto i = 0; i < nrm.size(); ++i) {
                 auto n = zeno::vec_to_other<glm::vec3>(nrm[i]);
-                glm::mat3 norm_matrix(transform_matrix);
+                glm::mat3 norm_matrix(transform_matrix * glm::inverse(last_transform_matrix));
                 norm_matrix = glm::transpose(glm::inverse(norm_matrix));
                 auto t = glm::normalize(norm_matrix * n);
-                onrm[i] = zeno::other_to_vec<3>(t);
+                nrm[i] = zeno::other_to_vec<3>(t);
             }
         }
+        last_transform_matrix = transform_matrix;
     }
     {
         auto pivot_to_world = glm::mat3(1);
