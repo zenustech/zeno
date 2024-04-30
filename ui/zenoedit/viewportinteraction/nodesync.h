@@ -10,6 +10,7 @@
 #include "timeline/ztimeline.h"
 #include <zenomodel/include/nodeparammodel.h>
 #include "variantptr.h"
+#include "glm/ext/quaternion_float.hpp"
 
 namespace zeno {
 struct NodeLocation{
@@ -52,10 +53,11 @@ class NodeSyncMgr {
     // get input or output
     std::vector<NodeLocation> getInputNodes(const QModelIndex& node,
                                             const std::string& input_name);
-    std::string getInputValString(const QModelIndex& node,
-                                  const std::string& input_name);
-    std::string getParamValString(const QModelIndex& node,
-                                  const std::string& param_name);
+    std::string getInputValString(const QModelIndex& node, const std::string& input_name);
+    UI_VECTYPE getInputValVec(const QModelIndex& node, const std::string& input_name);
+    glm::vec3 getInputValVec3(const QModelIndex& node, const std::string& input_name);
+    glm::quat getInputValQuat(const QModelIndex& node, const std::string& input_name);
+    std::string getParamValString(const QModelIndex& node, const std::string& param_name);
 
     // node update functions
     void updateNodeVisibility(NodeLocation& node_location);

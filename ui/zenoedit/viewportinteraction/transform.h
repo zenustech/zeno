@@ -119,6 +119,9 @@ private:
     glm::vec3 _objects_center_start;
     glm::vec3 _objects_localX_start;
     glm::vec3 _objects_localY_start;
+    glm::vec3 _objects_translation;
+    glm::vec3 _objects_scaling;
+    glm::quat _objects_rotation;
 
     bool m_isTransforming = false;
     TransOpt m_operation = TransOpt::NONE;

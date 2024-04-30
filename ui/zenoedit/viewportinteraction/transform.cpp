@@ -46,6 +46,8 @@ void FakeTransformer::addObject(const std::string& name) {
         return;
 
     auto object = dynamic_cast<PrimitiveObject*>(scene->objectsMan->get(name).value());
+    m_objects[name] = object;
+    createNewTransformNodeNameWhenMissing(name);
     auto& user_data = object->userData();
     if (!user_data.has("_pivot")) {
         zeno::vec3f bmin, bmax;
@@ -61,13 +63,22 @@ void FakeTransformer::addObject(const std::string& name) {
         user_data.set2("_localX", vec3f(1, 0, 0));
         user_data.set2("_localY", vec3f(0, 1, 0));
     }
-    m_pivot = zeno::vec_to_other<glm::vec3>(user_data.get2<vec3f>("_pivot"));
-    m_localXOrg = zeno::vec_to_other<glm::vec3>(user_data.get2<vec3f>("_localX"));
-    m_localYOrg = zeno::vec_to_other<glm::vec3>(user_data.get2<vec3f>("_localY"));
-    auto rot = user_data.get2<vec4f>("_rotate");
-    auto quat = glm::quat(rot[3], rot[0], rot[1], rot[2]);
-    m_self_X = glm::toMat3(quat) * m_localXOrg;
-    m_self_Y = glm::toMat3(quat) * m_localYOrg;
+    auto& node_sync = NodeSyncMgr::GetInstance();
+    auto prim_node_location = node_sync.searchNodeOfPrim(name);
+    auto prim_node = prim_node_location->node;
+    if (!node_sync.checkNodeType(prim_node, "PrimitiveTransform")) {
+        // prim comes from another type node
+        prim_node = node_sync.checkNodeLinkedSpecificNode(prim_node, "PrimitiveTransform")->node;
+    }
+
+    m_pivot = node_sync.getInputValVec3(prim_node, "pivotPos");
+    m_localXOrg = node_sync.getInputValVec3(prim_node, "localX");
+    m_localYOrg = node_sync.getInputValVec3(prim_node, "localY");
+    _objects_translation = node_sync.getInputValVec3(prim_node, "translation");
+    _objects_scaling = node_sync.getInputValVec3(prim_node, "scaling");
+    _objects_rotation = node_sync.getInputValQuat(prim_node, "quatRotation");
+    m_self_X = glm::toMat3(_objects_rotation) * m_localXOrg;
+    m_self_Y = glm::toMat3(_objects_rotation) * m_localYOrg;
 
     auto pivot_to_world = glm::mat3(1);
     pivot_to_world[0] = m_localXOrg;
@@ -75,8 +86,7 @@ void FakeTransformer::addObject(const std::string& name) {
     pivot_to_world[2] = glm::cross(m_localXOrg, m_localYOrg);
 
     m_self_center *= m_objects.size();
-    m_self_center += m_pivot + pivot_to_world * zeno::vec_to_other<glm::vec3>(user_data.get2<vec3f>("_translate"));
-    m_objects[name] = object;
+    m_self_center += m_pivot + pivot_to_world * node_sync.getInputValVec3(prim_node, "translation");
     m_self_center /= m_objects.size();
 }
 
@@ -434,7 +444,6 @@ void FakeTransformer::toTranslate() {
         addObjects(scene->selected);
         if (m_objects.empty()) return;
         m_operation = TransOpt::TRANSLATE;
-        createNewTransformNodeNameWhenMissing(m_objects.begin()->first);
         m_handler = zenovis::makeTransHandler(scene, zeno::other_to_vec<3>(m_self_center), zeno::other_to_vec<3>(m_self_X), zeno::other_to_vec<3>(m_self_Y), m_handler_scale);
         session->set_handler(m_handler);
     }
@@ -453,7 +462,6 @@ void FakeTransformer::toRotate() {
         addObjects(scene->selected);
         if (m_objects.empty()) return;
         m_operation = TransOpt::ROTATE;
-        createNewTransformNodeNameWhenMissing(m_objects.begin()->first);
         m_handler = zenovis::makeRotateHandler(scene, zeno::other_to_vec<3>(m_self_center), zeno::other_to_vec<3>(m_self_X), zeno::other_to_vec<3>(m_self_Y), m_handler_scale);
         session->set_handler(m_handler);
     }
@@ -472,7 +480,6 @@ void FakeTransformer::toScale() {
         addObjects(scene->selected);
         if (m_objects.empty()) return;
         m_operation = TransOpt::SCALE;
-        createNewTransformNodeNameWhenMissing(m_objects.begin()->first);
         m_handler = zenovis::makeScaleHandler(scene, zeno::other_to_vec<3>(m_self_center), zeno::other_to_vec<3>(m_self_X), zeno::other_to_vec<3>(m_self_Y), m_handler_scale);
         session->set_handler(m_handler);
     }
@@ -639,6 +646,13 @@ void FakeTransformer::doTransform() {
     auto pivot_to_local = glm::inverse(pivot_to_world);
 
     for (auto &[obj_name, obj] : m_objects) {
+        auto& node_sync = NodeSyncMgr::GetInstance();
+        auto prim_node_location = node_sync.searchNodeOfPrim(obj_name);
+        auto prim_node = prim_node_location->node;
+        if (!node_sync.checkNodeType(prim_node, "PrimitiveTransform")) {
+            // prim comes from another type node
+            prim_node = node_sync.checkNodeLinkedSpecificNode(prim_node, "PrimitiveTransform")->node;
+        }
         auto& user_data = obj->userData();
         user_data.del("_bboxMin");
         user_data.del("_bboxMax");
@@ -720,10 +734,6 @@ void FakeTransformer::doTransform() {
             else {
                 // prim comes from another type node
                 auto linked_transform_node = node_sync.checkNodeLinkedSpecificNode(prim_node, "PrimitiveTransform");
-                if (!linked_transform_node.has_value()) {
-                    createNewTransformNode(prim_node_location.value(), obj_name);
-                    linked_transform_node = node_sync.checkNodeLinkedSpecificNode(prim_node, "PrimitiveTransform");
-                }
                 syncToTransformNode(linked_transform_node.value(), obj_name);
             }
         }

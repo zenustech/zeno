@@ -127,6 +127,21 @@ std::string NodeSyncMgr::getInputValString(const QModelIndex& node,
     auto inputs = node.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
     return inputs[input_name.c_str()].info.defaultValue.value<QString>().toStdString();
 }
+UI_VECTYPE NodeSyncMgr::getInputValVec(const QModelIndex& node, const std::string& input_name) {
+    auto inputs = node.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+    return inputs[input_name.c_str()].info.defaultValue.value<UI_VECTYPE>();
+}
+glm::vec3 NodeSyncMgr::getInputValVec3(const QModelIndex& node, const std::string& input_name) {
+    auto inputs = node.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+    auto vec = inputs[input_name.c_str()].info.defaultValue.value<UI_VECTYPE>();
+    return glm::vec3(vec[0], vec[1], vec[2]);
+}
+
+glm::quat NodeSyncMgr::getInputValQuat(const QModelIndex& node, const std::string& input_name) {
+    auto inputs = node.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+    auto vec = inputs[input_name.c_str()].info.defaultValue.value<UI_VECTYPE>();
+    return glm::quat(vec[3], vec[0], vec[1], vec[2]);
+}
 
 std::string NodeSyncMgr::getParamValString(const QModelIndex& node,
                                            const std::string& param_name) {
