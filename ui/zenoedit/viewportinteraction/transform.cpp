@@ -338,12 +338,12 @@ void FakeTransformer::createNewTransformNodeNameWhenMissing(std::string const &n
     }
 }
 
-void FakeTransformer::syncToTransformNode(NodeLocation& node_location,
-                                          const std::string& obj_name) {
+void FakeTransformer::syncToTransformNode(NodeLocation& node_location, const std::string& obj_name) {
     auto& node_sync = NodeSyncMgr::GetInstance();
 
     auto user_data = m_objects[obj_name]->userData();
     auto translate_data = user_data.getLiterial<zeno::vec3f>("_translate");
+    translate_data += other_to_vec<3>(m_trans);
     QVector<double> translate = {
         translate_data[0],
         translate_data[1],
@@ -354,6 +354,9 @@ void FakeTransformer::syncToTransformNode(NodeLocation& node_location,
                                  translate);
     // update scaling
     auto scaling_data = user_data.getLiterial<zeno::vec3f>("_scale");
+    for (int i = 0; i < 3; i++) {
+        scaling_data[i] *= m_scale[i];
+    }
     QVector<double> scaling = {
         scaling_data[0],
         scaling_data[1],
@@ -364,6 +367,10 @@ void FakeTransformer::syncToTransformNode(NodeLocation& node_location,
                                  scaling);
     // update rotate
     auto rotate_data = user_data.getLiterial<zeno::vec4f>("_rotate");
+    auto pre_q = glm::quat(rotate_data[3], rotate_data[0], rotate_data[1], rotate_data[2]);
+    auto dif_q = glm::quat(m_rotate[3], m_rotate[0], m_rotate[1], m_rotate[2]);
+    auto res_q = glm::toQuat(glm::toMat4(dif_q) * glm::toMat4(pre_q));
+    rotate_data = vec4f(res_q.x, res_q.y, res_q.z, res_q.w);
     QVector<double> rotate = {
         rotate_data[0],
         rotate_data[1],
@@ -401,35 +408,6 @@ void FakeTransformer::endTransform(bool moved) {
                 for (int i = 0; i < 3; i++)
                     scale[i] *= m_scale[i];
                 user_data.setLiterial("_scale", scale);
-            }
-        }
-
-        // sync to node system
-        zeno::scope_exit sp([] {
-            IGraphsModel *pGraphs = zenoApp->graphsManagment()->currentModel();
-            if (pGraphs)
-                pGraphs->setApiRunningEnable(true);
-        });
-        //only update nodes.
-        IGraphsModel *pGraphs = zenoApp->graphsManagment()->currentModel();
-        ZASSERT_EXIT(pGraphs);
-        pGraphs->setApiRunningEnable(false);
-
-        for (auto &[obj_name, obj] : m_objects) {
-            auto& node_sync = NodeSyncMgr::GetInstance();
-            auto prim_node_location = node_sync.searchNodeOfPrim(obj_name);
-            auto& prim_node = prim_node_location->node;
-            if (node_sync.checkNodeType(prim_node, "PrimitiveTransform")) {
-                syncToTransformNode(prim_node_location.value(), obj_name);
-            }
-            else {
-                // prim comes from another type node
-                auto linked_transform_node = node_sync.checkNodeLinkedSpecificNode(prim_node, "PrimitiveTransform");
-                if (!linked_transform_node.has_value()) {
-                    createNewTransformNode(prim_node_location.value(), obj_name);
-                    linked_transform_node = node_sync.checkNodeLinkedSpecificNode(prim_node, "PrimitiveTransform");
-                }
-                syncToTransformNode(linked_transform_node.value(), obj_name);
             }
         }
     }
@@ -722,6 +700,38 @@ void FakeTransformer::doTransform() {
         m_self_Y = cur_rot * _objects_localY_start;
     }
     m_handler->setCenter(other_to_vec<3>(m_self_center), other_to_vec<3>(m_self_X), other_to_vec<3>(m_self_Y));
+    // sync to panel
+    {
+        // sync to node system
+        zeno::scope_exit sp([] {
+            IGraphsModel *pGraphs = zenoApp->graphsManagment()->currentModel();
+            if (pGraphs)
+                pGraphs->setApiRunningEnable(true);
+        });
+        //only update nodes.
+        IGraphsModel *pGraphs = zenoApp->graphsManagment()->currentModel();
+        ZASSERT_EXIT(pGraphs);
+        pGraphs->setApiRunningEnable(false);
+
+        for (auto &[obj_name, obj] : m_objects) {
+            auto& node_sync = NodeSyncMgr::GetInstance();
+            auto prim_node_location = node_sync.searchNodeOfPrim(obj_name);
+            auto& prim_node = prim_node_location->node;
+            if (node_sync.checkNodeType(prim_node, "PrimitiveTransform")) {
+                syncToTransformNode(prim_node_location.value(), obj_name);
+            }
+            else {
+                // prim comes from another type node
+                auto linked_transform_node = node_sync.checkNodeLinkedSpecificNode(prim_node, "PrimitiveTransform");
+                if (!linked_transform_node.has_value()) {
+                    createNewTransformNode(prim_node_location.value(), obj_name);
+                    linked_transform_node = node_sync.checkNodeLinkedSpecificNode(prim_node, "PrimitiveTransform");
+                }
+                syncToTransformNode(linked_transform_node.value(), obj_name);
+            }
+        }
+
+    }
 }
 
 }
