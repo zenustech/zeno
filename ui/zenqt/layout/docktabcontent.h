@@ -82,7 +82,8 @@ protected:
     void initToolbar(QHBoxLayout* pToolLayout) override;
     QWidget* initWidget() override;
     void initConnections() override;
-
+private slots:
+    void onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
 private:
     QLabel* m_plblName;
     ZToolBarButton* m_pSettingBtn;

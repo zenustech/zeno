@@ -300,6 +300,21 @@ ZENO_API bool AssetsMgr::isAssetGraph(std::shared_ptr<Graph> spGraph) const
     return false;
 }
 
+ZENO_API bool AssetsMgr::generateAssetName(std::string& name)
+{
+    std::string new_name = name;
+    if (m_assets.find(new_name) == m_assets.end()) {
+        return false;
+    }
+    int i = 1;
+    while (m_assets.find(new_name) != m_assets.end())
+    {
+        new_name = name + "(" + std::to_string(i++) + ")";
+    }
+    name = new_name;
+    return true;
+}
+
 ZENO_API std::shared_ptr<INode> AssetsMgr::newInstance(std::shared_ptr<Graph> pGraph, const std::string& assetName, const std::string& nodeName, bool createInAsset) {
     if (m_assets.find(assetName) == m_assets.end()) {
         return nullptr;

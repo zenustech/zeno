@@ -58,7 +58,8 @@
 #include "DockWidget.h"
 #include "DockContainerWidget.h"
 #include "DockManager.h"
-
+#include <zeno/io/zdareader.h>
+#include <QFileSystemWatcher> 
 
 const QString g_latest_layout = "LatestLayout";
 
@@ -84,6 +85,9 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags, PANEL_TYP
         openFile(p);
     }
 //#endif
+#ifdef _WIN32
+    assetsWatcher();
+#endif
 }
 
 ZenoMainWindow::~ZenoMainWindow()
@@ -849,6 +853,36 @@ void ZenoMainWindow::onCreatePanel(int actionType)
     }
 }
 
+void ZenoMainWindow::assetsWatcher()
+{
+    QFileSystemWatcher* fileWatcher = new QFileSystemWatcher(this);
+    QString watchpath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+    watchpath = watchpath + "/Zeno/assets";
+    fileWatcher->addPath(watchpath);
+    QDir dir(watchpath);
+    QFileInfoList infoList = dir.entryInfoList({ "*.zda" });
+    for (const auto& info : infoList)
+    {
+        QString path = info.absoluteFilePath();
+        fileWatcher->addPath(info.absoluteFilePath());
+    }
+    connect(fileWatcher, &QFileSystemWatcher::fileChanged, this, [=](const QString& path) {
+        if (QMessageBox::question(this, tr("File Changed"), tr("The File %1 has been changed, do you want to update now?").arg(path)) == QMessageBox::Yes)
+        {
+            zenoio::ZdaReader reader;
+            reader.setDelayReadGraph(true);
+            zeno::scope_exit sp([&] {reader.setDelayReadGraph(false); });
+
+            zenoio::ZSG_PARSE_RESULT result = reader.openFile(path.toStdString());
+            if (result.code == zenoio::PARSE_NOERROR) {
+                zeno::ZenoAsset zasset = reader.getParsedAsset();
+                zasset.info.path = path.toStdString();
+                zeno::getSession().assets->createAsset(zasset);
+            }
+        }
+    });
+}
+
 void ZenoMainWindow::initTimeline()
 {
     connect(m_pTimeline, &ZTimeline::playForward, this, [=](bool bPlaying) {
@@ -1472,7 +1506,28 @@ void ZenoMainWindow::onCheckUpdate()
 void ZenoMainWindow::importGraph(bool bPreset)
 {
     //in the new arch, import Graph means import assets.
-    //TODO:
+    QString filePath = QFileDialog::getOpenFileName(this, "File to Open", "", "Zeno Asset File (*.zda)");
+    if (!filePath.isEmpty())
+    {
+        std::string zdaPath = filePath.toStdString();
+        zenoio::ZdaReader reader;
+        reader.setDelayReadGraph(true);
+        zeno::scope_exit sp([&] {reader.setDelayReadGraph(false); });
+
+        zenoio::ZSG_PARSE_RESULT result = reader.openFile(zdaPath);
+        if (result.code == zenoio::PARSE_NOERROR) {
+            zeno::ZenoAsset zasset = reader.getParsedAsset();
+            zasset.info.path = zdaPath;
+            auto& assets =  zeno::getSession().assets;
+            std::string name = zasset.info.name;
+            if (assets->generateAssetName(name))
+            {
+                zeno::log_warn("asset {} is existed, renamed to {}", zasset.info.name, name);
+                zasset.info.name = name;
+            }
+            zeno::getSession().assets->createAsset(zasset);
+        }
+    }
 #if 0
     QString filePath = getOpenFileByDialog();
     if (filePath.isEmpty())

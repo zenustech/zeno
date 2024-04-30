@@ -54,6 +54,7 @@ struct AssetsMgr : std::enable_shared_from_this<AssetsMgr> {
 
 
     ZENO_API bool isAssetGraph(std::shared_ptr<Graph> spGraph) const;
+    ZENO_API bool generateAssetName(std::string& name);
 
 private:
     void initAssetsInfo();
