@@ -10,6 +10,7 @@
 #include "LinkModel.h"
 #include <zeno/core/Graph.h>
 #include <optional>
+#include "command.h"
 
 class GraphModel;
 class GraphsTreeModel;
@@ -100,8 +101,9 @@ public:
     void clear();
     void undo();
     void redo();
-    void beginTransaction(const QString& name);
-    void endTransaction();
+    void pushToplevelStack(QUndoCommand* cmd);
+    void beginMacro(const QString& name);
+    void endMacro();
 
     //test functions:
     void updateParamName(QModelIndex nodeIdx, int row, QString newName);
@@ -120,6 +122,14 @@ public:
     bool isLocked() const;
     void importNodes(const zeno::NodesData& nodes, const zeno::LinksData& links, const QPointF& pos);
 
+    GraphModel* getTopLevelGraph(const QStringList& currentPath);
+    //undo, redo
+    zeno::NodeData _createNodeImpl(const QString& cate, zeno::NodeData& nodedata, bool endTransaction = false);
+    bool _removeNodeImpl(const QString& name, bool endTransaction = false);
+    void _addLinkImpl(const zeno::EdgeInfo& link, bool endTransaction = false);
+    void _removeLinkImpl(const zeno::EdgeInfo& link, bool endTransaction = false);
+    std::weak_ptr<zeno::INode> getWpNode(QString& nodename);
+
 signals:
     void reloaded();
     void clearLayout();
@@ -128,6 +138,8 @@ signals:
     void lockStatusChanged();
 
 private:
+    std::optional<QUndoStack*> m_undoRedoStack;
+
     void registerCoreNotify();
     void unRegisterCoreNotify();
     void _appendNode(std::shared_ptr<zeno::INode> spNode);

@@ -33,10 +33,11 @@ namespace zeno {
 
 ZENO_API INode::INode() {}
 
-void INode::initUuid(Graph* pGraph, const std::string nodecls) {
+void INode::initUuid(std::shared_ptr<Graph> pGraph, const std::string nodecls) {
     m_nodecls = nodecls;
-    m_uuid = generateUUID(nodecls);
     this->graph = pGraph;
+
+    m_uuid = generateUUID(nodecls);
     std::list<std::string> path;
     path.push_front(m_uuid);
     while (pGraph) {
@@ -50,7 +51,7 @@ void INode::initUuid(Graph* pGraph, const std::string nodecls) {
             auto pSubnetNode = pGraph->optParentSubgNode.value();
             assert(pSubnetNode);
             path.push_front(pSubnetNode->m_uuid);
-            pGraph = pSubnetNode->graph;
+            pGraph = pSubnetNode->graph.lock();
         }
     }
     m_uuidPath = ObjPath(path);
@@ -58,8 +59,8 @@ void INode::initUuid(Graph* pGraph, const std::string nodecls) {
 
 ZENO_API INode::~INode() = default;
 
-ZENO_API Graph *INode::getThisGraph() const {
-    return graph;
+ZENO_API std::shared_ptr<Graph> INode::getThisGraph() const {
+    return graph.lock();
 }
 
 ZENO_API Session *INode::getThisSession() const {
@@ -122,7 +123,7 @@ ZENO_API ObjPath INode::get_path() const {
     std::list<std::string> path;
     path.push_front(m_name);
 
-    Graph* pGraph = graph;
+    std::shared_ptr<Graph> pGraph = graph.lock();
 
     while (pGraph) {
         const std::string name = pGraph->getName();
@@ -136,7 +137,7 @@ ZENO_API ObjPath INode::get_path() const {
             auto pSubnetNode = pGraph->optParentSubgNode.value();
             assert(pSubnetNode);
             path.push_front(pSubnetNode->m_name);
-            pGraph = pSubnetNode->graph;
+            pGraph = pSubnetNode->graph.lock();
         }
     }
     return ObjPath(path);
@@ -164,7 +165,9 @@ ZENO_API void INode::set_view(bool bOn)
     m_bView = bOn;
     CALLBACK_NOTIFY(set_view, m_bView)
 
-    graph->viewNodeUpdated(m_name, bOn);
+    std::shared_ptr<Graph> spGraph = graph.lock();
+    assert(spGraph);
+    spGraph->viewNodeUpdated(m_name, bOn);
 }
 
 ZENO_API bool INode::is_view() const
@@ -228,9 +231,11 @@ ZENO_API void INode::mark_dirty(bool bOn, bool bWholeSubnet)
             pSubnetNode->mark_subnetdirty(bOn);
     }
 
-    if (graph->optParentSubgNode.has_value())
+    std::shared_ptr<Graph> spGraph = graph.lock();
+    assert(spGraph);
+    if (spGraph->optParentSubgNode.has_value())
     {
-        graph->optParentSubgNode.value()->mark_dirty(true, false);
+        spGraph->optParentSubgNode.value()->mark_dirty(true, false);
     }
 }
 
@@ -399,26 +404,12 @@ ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
                         }, outNode.get());
 
                         zany outResult = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
-                        spList->arr.push_back(outResult);
-                        spList->dirtyIndice.insert(indx);
+                        spList->push_back(outResult);
+                        //spList->dirtyIndice.insert(indx);
                     } else {
-                        if (oldinput) {
-                            if (oldinput->nodeNameArrItemMap.find(outNode->m_name) != oldinput->nodeNameArrItemMap.end())   //不是新的link，直接加入
-                            {
-                                int itemIdx = oldinput->nodeNameArrItemMap[outNode->m_name];
-                                if (oldinput->arr.size() > itemIdx)
-                                    spList->arr.push_back(oldinput->arr[itemIdx]);
-                                else
-                                    continue;
-                            }
-                            else {  //是的新的link，拷贝param的输出
-                                zany outResult = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
-                                spList->arr.push_back(outResult);
-                            }
-                        }else
-                            continue;
+                        zany outResult = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
+                        spList->push_back(outResult);
                     }
-                    spList->nodeNameArrItemMap.insert(std::make_pair(outNode->m_name, indx++));
                 }
             }
             in_param->result = spList;
@@ -559,6 +550,27 @@ ZENO_API std::shared_ptr<IParam> INode::get_output_param(std::string const& para
     return nullptr;
 }
 
+ZENO_API void INode::set_result(bool bInput, const std::string& name, zany spObj) {
+    if (bInput) {
+        auto param = safe_at(m_inputs, name, "");
+        param->result = spObj;
+    }
+    else {
+        auto param = safe_at(m_outputs, name, "");
+        param->result = spObj;
+    }
+}
+
+ZENO_API std::string INode::get_viewobject_output_param() const {
+    //现在暂时还没有什么标识符用于指定哪个输出口是对应输出view obj的
+    //一般都是默认第一个输出obj，暂时这么规定，后续可能用标识符。
+    auto params = get_output_params();
+    if (!params.empty())
+        return params[0]->name;
+    else
+        return "";
+}
+
 ZENO_API NodeData INode::exportInfo() const
 {
     NodeData node;
@@ -631,7 +643,11 @@ ZENO_API bool INode::update_param(const std::string& param, const zvariant& new_
     {
         zvariant old_value = spParam->defl;
         spParam->defl = new_value;
-        graph->onNodeParamUpdated(spParam, old_value, new_value);
+
+        std::shared_ptr<Graph> spGraph = graph.lock();
+        assert(spGraph);
+
+        spGraph->onNodeParamUpdated(spParam, old_value, new_value);
         CALLBACK_NOTIFY(update_param, param, old_value, new_value)
         mark_dirty(true);
         return true;
@@ -713,8 +729,11 @@ ZENO_API void INode::init(const NodeData& dat)
 
     m_pos = dat.uipos;
     m_bView = dat.bView;
-    if (m_bView)
-        graph->viewNodeUpdated(m_name, m_bView);
+    if (m_bView) {
+        std::shared_ptr<Graph> spGraph = graph.lock();
+        assert(spGraph);
+        spGraph->viewNodeUpdated(m_name, m_bView);
+    }
     initParams(dat);
     m_dirty = true;
 }
@@ -775,7 +794,9 @@ ZENO_API std::pair<float, float> INode::get_pos() const {
 }
 
 ZENO_API bool INode::in_asset_file() const {
-    return getSession().assets->isAssetGraph(this->graph->shared_from_this());
+    std::shared_ptr<Graph> spGraph = graph.lock();
+    assert(spGraph);
+    return getSession().assets->isAssetGraph(spGraph);
 }
 
 ZENO_API bool INode::set_input(std::string const& param, zany obj) {
@@ -913,7 +934,10 @@ ZENO_API zany INode::get_formula(std::string const &id) const
 }
 
 ZENO_API TempNodeCaller INode::temp_node(std::string const &id) {
-    return TempNodeCaller(graph, id);
+    //TODO: deprecated
+    std::shared_ptr<Graph> spGraph = graph.lock();
+    assert(spGraph);
+    return TempNodeCaller(spGraph.get(), id);
 }
 
 float INode::resolve(const std::string& formulaOrKFrame, const ParamType type)

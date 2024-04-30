@@ -393,6 +393,15 @@ void DisplayWidget::onCalcFinished(bool bSucceed, zeno::ObjPath, QString) {
     }
 }
 
+void DisplayWidget::onJustLoadObjects() {
+    if (m_bGLView) {
+        m_glView->load_objects();
+    }
+    else {
+        m_optixView->load_objects();
+    }
+}
+
 void DisplayWidget::updateFrame(const QString &action) // cihou optix
 {
     ZenoMainWindow *mainWin = zenoApp->getMainWindow();

@@ -27,7 +27,6 @@ struct IParam;
 
 struct INode : std::enable_shared_from_this<INode> {
 public:
-    Graph *graph = nullptr;
     INodeClass *nodeClass = nullptr;
 
     std::string m_name;
@@ -65,7 +64,8 @@ public:
     ZENO_API ObjPath get_path() const;
     ZENO_API ObjPath get_uuid_path() const { return m_uuidPath; }
     ZENO_API std::string get_uuid() const;
-    void initUuid(Graph* pGraph, const std::string nodecls);
+    ZENO_API std::weak_ptr<Graph> getGraph() const { return graph; }
+    void initUuid(std::shared_ptr<Graph> pGraph, const std::string nodecls);
 
     ZENO_API void set_view(bool bOn);
     CALLBACK_REGIST(set_view, void, bool)
@@ -79,7 +79,9 @@ public:
     ZENO_API virtual std::vector<std::shared_ptr<IParam>> get_output_params() const;
     ZENO_API std::shared_ptr<IParam> get_input_param(std::string const& name) const;
     ZENO_API std::shared_ptr<IParam> get_output_param(std::string const& name) const;
+    ZENO_API std::string get_viewobject_output_param() const;
     ZENO_API virtual NodeData exportInfo() const;
+    ZENO_API void set_result(bool bInput, const std::string& name, zany spObj);
 
     ZENO_API bool update_param(const std::string& name, const zvariant& new_value);
     CALLBACK_REGIST(update_param, void, const std::string&, zvariant, zvariant)
@@ -130,7 +132,7 @@ public:
     ZENO_API bool requireInput(std::string const &ds);
     ZENO_API bool requireInput(std::shared_ptr<IParam> param);
 
-    ZENO_API Graph *getThisGraph() const;
+    ZENO_API std::shared_ptr<Graph> getThisGraph() const;
     ZENO_API Session *getThisSession() const;
     ZENO_API GlobalState *getGlobalState() const;
 
@@ -200,6 +202,7 @@ public:
 private:
     ObjPath m_uuidPath;
     NodeRunStatus m_status = Node_DirtyReadyToRun;
+    std::weak_ptr<Graph> graph;
     bool m_bView = false;
     bool m_dirty = true;
 };

@@ -37,14 +37,16 @@ ZENDEFNODE(FuncBegin, {
 
 struct FuncEnd : zeno::ContextManagedNode {
     virtual void preApply() override {
+        std::shared_ptr<Graph> spGraph = getThisGraph();
+        assert(spGraph);
         FuncBegin *fore = nullptr;
         {
             auto [sn, ss] = getinputbound("FUNC");
-            fore = dynamic_cast<FuncBegin *>(graph->m_nodes.at(sn).get());
+            fore = dynamic_cast<FuncBegin *>(spGraph->m_nodes.at(sn).get());
             if (!fore) {
                 throw makeError("FuncEnd::FUNC must be conn to FuncBegin::FUNC!");
             }
-            graph->applyNode(sn);
+            spGraph->applyNode(sn);
         }
         auto func = std::make_shared<zeno::FunctionObject>();
         func->func = [this, fore] (zeno::FunctionObject::DictType const &args) {
@@ -107,13 +109,15 @@ ZENDEFNODE(FuncSimpleBegin, {
 struct FuncSimpleEnd : zeno::ContextManagedNode {
     virtual void preApply() override {
         FuncSimpleBegin *fore = nullptr;
+        std::shared_ptr<Graph> spGraph = getThisGraph();
+        assert(spGraph);
         {
             auto [sn, ss] = getinputbound("FUNC");
-            fore = dynamic_cast<FuncSimpleBegin *>(graph->m_nodes.at(sn).get());
+            fore = dynamic_cast<FuncSimpleBegin *>(spGraph->m_nodes.at(sn).get());
             if (!fore) {
                 throw makeError("FuncSimpleEnd::FUNC must be conn to FuncSimpleBegin::FUNC!");
             }
-            graph->applyNode(sn);
+            spGraph->applyNode(sn);
         }
         auto func = std::make_shared<zeno::FunctionObject>();
         func->func = [this, fore] (zeno::FunctionObject::DictType const &args) {

@@ -100,7 +100,7 @@ namespace FBX{
             auto no_vis = std::make_shared<zeno::NumericObject>();
             no_vis->set(visibility);
             //std::cout << "visibility: " << visibility << " time: " << frameNumber << "\n";
-            vis->arr.push_back(no_vis);
+            vis->push_back(no_vis);
         }
         dictObj->lut[full_path] = vis;
 
@@ -227,7 +227,7 @@ struct FBXSDKVisibility : zeno::INode {
                         for(int frameNumber=startFrame; frameNumber<=endFrame; frameNumber++) {
                             auto no_vis = std::make_shared<zeno::NumericObject>();
                             no_vis->set(showValue);
-                            vis->arr.push_back(no_vis);
+                            vis->push_back(no_vis);
                         }
                         vis_dict->lut[full_path] = vis;
                     }
@@ -243,7 +243,7 @@ struct FBXSDKVisibility : zeno::INode {
                         for(int frameNumber=startFrame; frameNumber<=endFrame; frameNumber++) {
                             auto no_vis = std::make_shared<zeno::NumericObject>();
                             no_vis->set(visNode);
-                            vis->arr.push_back(no_vis);
+                            vis->push_back(no_vis);
                         }
                         vis_dict->lut[full_path] = vis;
                     }

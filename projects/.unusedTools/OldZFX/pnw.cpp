@@ -90,8 +90,8 @@ struct ParticlesNeighborWrangle : zeno::INode {
         auto params = get_input<zeno::ListObject>("params");
         std::vector<float> pars;
         std::vector<std::string> parnames;
-        for (int i = 0; i < params->arr.size(); i++) {
-            auto const &obj = params->arr[i];
+        for (int i = 0; i < params->size(); i++) {
+            auto const &obj = params[i];
             std::ostringstream keyss; keyss << "arg" << i;
             auto key = keyss.str();
             auto par = dynamic_cast<zeno::NumericObject *>(obj.get());

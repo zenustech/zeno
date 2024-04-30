@@ -12,7 +12,7 @@ struct ObjTimeShift : INode {
         auto offset = get_input2<int>("offset");
         std::shared_ptr<IObject> prevObj;
         auto &objseq = has_input("customList") ?
-            get_input<ListObject>("customList")->arr : m_objseq;
+            get_input<ListObject>("customList")->get() : m_objseq;
         if (offset < 0) {
             objseq.resize(1);
             prevObj = std::move(objseq[0]);
