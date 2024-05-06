@@ -1075,9 +1075,13 @@ QGraphicsItem* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const QModel
                 return;
             }
         }
-        if (!UiHelper::qIndexSetData(perIdx, newValue, ROLE_PARAM_VALUE))
+        QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
+        if (GraphModel* model = qobject_cast<GraphModel*>(pModel))
         {
-            QMessageBox::warning(nullptr, tr("Warning"), tr("Set data failed!"));
+            if (!model->setModelData(perIdx, newValue, ROLE_PARAM_VALUE))
+            {
+                QMessageBox::warning(nullptr, tr("Warning"), tr("Set data failed!"));
+            }
         }
     };
 
@@ -1808,9 +1812,15 @@ void ZenoNode::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
         m_bMoving = false;
         QPointF newPos = this->scenePos();
         QPointF oldPos = m_index.data(ROLE_OBJPOS).toPointF();
+
+        QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
+        GraphModel* model = qobject_cast<GraphModel*>(pModel);
+        if (!model)
+            return;
+
         if (newPos != oldPos)
         {
-            UiHelper::qIndexSetData(m_index, m_lastMoving, ROLE_OBJPOS);
+            model->setModelData(m_index, m_lastMoving, ROLE_OBJPOS);
 
             emit inSocketPosChanged();
             emit outSocketPosChanged();
@@ -1823,7 +1833,7 @@ void ZenoNode::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
                 if (item == this || !dynamic_cast<ZenoNode*>(item))
                     continue;
                 ZenoNode *pNode = dynamic_cast<ZenoNode *>(item);
-                UiHelper::qIndexSetData(pNode->index(), pNode->scenePos(), ROLE_OBJPOS);
+                model->setModelData(pNode->index(), pNode->scenePos(), ROLE_OBJPOS);
             }
         }
     }
@@ -1930,7 +1940,11 @@ void ZenoNode::onOptionsBtnToggled(STATUS_BTN btn, bool toggled)
 void ZenoNode::onCollaspeBtnClicked()
 {
     bool bCollasped = m_index.data(ROLE_COLLASPED).toBool();
-    UiHelper::qIndexSetData(m_index, !bCollasped, ROLE_COLLASPED);
+    QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
+    if (GraphModel* model = qobject_cast<GraphModel*>(pModel))
+    {
+        model->setModelData(m_index, !bCollasped, ROLE_COLLASPED);
+    }
 }
 
 void ZenoNode::onCollaspeUpdated(bool collasped)

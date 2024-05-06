@@ -128,6 +128,8 @@ public:
     bool _removeNodeImpl(const QString& name, bool endTransaction = false);
     void _addLinkImpl(const zeno::EdgeInfo& link, bool endTransaction = false);
     void _removeLinkImpl(const zeno::EdgeInfo& link, bool endTransaction = false);
+    bool setModelData(const QModelIndex& index, const QVariant& newValue, int role);
+    void _setViewImpl(const QModelIndex& idx, bool bOn, bool endTransaction = false);
     std::weak_ptr<zeno::INode> getWpNode(QString& nodename);
 
 signals:
