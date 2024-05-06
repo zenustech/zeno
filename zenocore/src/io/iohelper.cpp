@@ -251,7 +251,7 @@ namespace zenoio
             else if (val.IsString()) {
                 std::string sval(val.GetString());
                 if (!sval.empty())
-                    defl = std::stof(sval);
+                    defl = sval;
                 else
                     defl = 0;
             }
@@ -272,7 +272,7 @@ namespace zenoio
             {
                 std::string sval(val.GetString());
                 if (!sval.empty())
-                    defl = std::stof(sval);
+                    defl = sval;
                 else
                     defl = (float)0.0;
             }
@@ -466,12 +466,18 @@ namespace zenoio
                 if (std::holds_alternative<int>(defl))
                 {
                     val = (std::get<int>(defl));
+                    writer.Int(val);
                 }
                 else if (std::holds_alternative<float>(defl))
                 {
                     val = (std::get<float>(defl));
+                    writer.Int(val);
                 }
-                writer.Int(val);
+                else if (std::holds_alternative<std::string>(defl))
+                {
+                    std::string str = (std::get<std::string>(defl));
+                    writer.String(str.c_str());
+                }
                 break;
             }
             case zeno::Param_Float:
@@ -480,12 +486,18 @@ namespace zenoio
                 if (std::holds_alternative<int>(defl))
                 {
                     val = (std::get<int>(defl));
+                    writer.Double(val);
                 }
                 else if (std::holds_alternative<float>(defl))
                 {
                     val = (std::get<float>(defl));
+                    writer.Double(val);
                 }
-                writer.Double(val);
+                else if (std::holds_alternative<std::string>(defl))
+                {
+                    std::string str = (std::get<std::string>(defl));
+                    writer.String(str.c_str());
+                }
                 break;
             }
             case zeno::Param_Bool:

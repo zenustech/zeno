@@ -190,8 +190,11 @@ bool AppHelper::updateCurve(QVariant oldVal, QVariant& newValue)
             oldVal = QVariant::fromValue(oldVec);
         }
     }
-    JsonHelper::dumpCurves(curves, oldVal);
-    newValue = oldVal;
+    if (bUpdate)
+    {
+        JsonHelper::dumpCurves(curves, oldVal);
+        newValue = oldVal;
+    }
     return bUpdate;
 }
 
