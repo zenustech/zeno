@@ -108,7 +108,7 @@ struct AABBVoronoi : INode {
                         isBoundary = true;
                     } else {
                         if (auto ncid = neigh[i] - 1; ncid > cid) {
-                            neighs->arr.push_back(objectFromLiterial(vec2i(cid, ncid)));
+                            neighs->push_back(objectFromLiterial(vec2i(cid, ncid)));
                         }
                     }
                     int len = f_vert[j];
@@ -121,13 +121,13 @@ struct AABBVoronoi : INode {
                 }
 
                 prim->userData().set("isBoundary", std::make_shared<NumericObject>(isBoundary));
-                pieces->arr.push_back(std::move(prim));
+                pieces->push_back(std::move(prim));
 
                 cid++;
             } while (cl.inc());
         }
 
-        log_info("AABBVoronoi got {} pieces, {} neighs", pieces->arr.size(), neighs->arr.size());
+        log_info("AABBVoronoi got {} pieces, {} neighs", pieces->size(), neighs->size());
 
         if (triangulate) {
             for (auto const &prim: pieces->get<PrimitiveObject>()) {
@@ -216,8 +216,8 @@ struct VoronoiFracture : AABBVoronoi {
         auto primListC = std::make_shared<ListObject>();
         std::map<int, int> dictD;
         for (auto const &[key, prim]: dictC) {
-            dictD[key] = primListC->arr.size();
-            primListC->arr.push_back(prim);
+            dictD[key] = primListC->size();
+            primListC->push_back(prim);
         }
 
         auto neighListC = std::make_shared<ListObject>();
@@ -227,12 +227,12 @@ struct VoronoiFracture : AABBVoronoi {
                     zeno::vec2i c2(xit->second, yit->second);
                     //log_trace("VoronoiFracture: neigh {} and {}", c2[0], c2[1]);
                     //auto ret = std::make_shared<NumericObject>(); ret->set(c2);
-                    neighListC->arr.push_back(objectFromLiterial(c2));
+                    neighListC->push_back(objectFromLiterial(c2));
                 }
             }
         }
 
-        log_info("VoronoiFracture got {} pieces, {} neighs", primListC->arr.size(), neighListC->arr.size());
+        log_info("VoronoiFracture got {} pieces, {} neighs", primListC->size(), neighListC->size());
 
         set_output("primList", std::move(primListC));
         set_output("neighList", std::move(neighListC));
@@ -282,10 +282,10 @@ ZENO_DEFNODE(VoronoiFracture)({
             //auto *prim1lst = static_cast<ListObject *>(outputs.at("primList").get());
             //auto *neigh1lst = static_cast<ListObject *>(outputs.at("neighList").get());
             //for (auto const &nei1li: neigh1lst->getLiterial<vec2i>()) {
-                //neighfinlst->arr.push_back(std::make_shared<NumericObject>(nei1li + redprimcount));
+                //neighfinlst->push_back(std::make_shared<NumericObject>(nei1li + redprimcount));
             //}
             //for (auto const &prim1li: prim1lst->get<PrimitiveObject>()) {
-                //primfinlst->arr.push_back(prim1li);
+                //primfinlst->push_back(prim1li);
                 //redprimcount++;
             //}
             //islandid++;
@@ -345,7 +345,7 @@ struct SimplifyVoroNeighborList : INode {
         }
 
         for (auto const &[x, y]: edges) {
-            newNeighList->arr.push_back(objectFromLiterial(vec2i(x, y)));
+            newNeighList->push_back(objectFromLiterial(vec2i(x, y)));
         }
         set_output("newNeighList", std::move(newNeighList));
     }

@@ -139,7 +139,7 @@ get_xformed_prims(
                 auto pos = Imath::V4d(p[0], p[1], p[2], 1) * mat;
                 p = zeno::vec3f((float)pos.x, (float)pos.y, (float)pos.z);
             }
-            prims->arr.push_back(prim);
+            prims->push_back(prim);
         }
     }
     return prims;
@@ -193,7 +193,7 @@ struct AllAlembicPrim : INode {
         } else {
             abctree->visitPrims([&] (auto const &p) {
                 auto np = std::static_pointer_cast<PrimitiveObject>(p->clone());
-                prims->arr.push_back(np);
+                prims->push_back(np);
             });
         }
         auto outprim = zeno::primMerge(prims->getRaw<PrimitiveObject>());
@@ -229,14 +229,18 @@ struct AlembicPrimList : INode {
         } else {
             abctree->visitPrims([&] (auto const &p) {
                 auto np = std::static_pointer_cast<PrimitiveObject>(p->clone());
-                prims->arr.push_back(np);
+                prims->push_back(np);
             });
         }
         auto new_prims = std::make_shared<zeno::ListObject>();
+
+        std::vector<zany> arr;
+
         if (get_input2<bool>("splitByFaceset")) {
-            for (auto &prim: prims->arr) {
+            for (auto &prim: prims->get()) {
                 auto list = abc_split_by_name(std::dynamic_pointer_cast<PrimitiveObject>(prim), false);
-                new_prims->arr.insert(new_prims->arr.end(), list->arr.begin(), list->arr.end());
+                auto listarr = list->get();
+                arr.insert(arr.end(), listarr.begin(), listarr.end());
             }
         }
         else {
@@ -246,7 +250,7 @@ struct AlembicPrimList : INode {
         auto pathExclude = zeno::split_str(get_input2<std::string>("pathExclude"), {' ', '\n'});
         auto facesetInclude = zeno::split_str(get_input2<std::string>("facesetInclude"), {' ', '\n'});
         auto facesetExclude = zeno::split_str(get_input2<std::string>("facesetExclude"), {' ', '\n'});
-        for (auto it = new_prims->arr.begin(); it != new_prims->arr.end();) {
+        for (auto it = arr.begin(); it != arr.end();) {
             auto np = std::dynamic_pointer_cast<PrimitiveObject>(*it);
             auto abc_path = np->userData().template get2<std::string>("abcpath_0");
             bool contain = false;
@@ -291,10 +295,10 @@ struct AlembicPrimList : INode {
             if (contain) {
                 ++it;
             } else {
-                it = new_prims->arr.erase(it);
+                it = arr.erase(it);
             }
         }
-        for (auto &prim: new_prims->arr) {
+        for (auto &prim: arr) {
             auto _prim = std::dynamic_pointer_cast<PrimitiveObject>(prim);
             if (get_input2<bool>("flipFrontBack")) {
                 primFlipFaces(_prim.get());
@@ -306,6 +310,7 @@ struct AlembicPrimList : INode {
                 zeno::primTriangulate(_prim.get());
             }
         }
+        new_prims->set(arr);
         set_output("prims", std::move(new_prims));
     }
 };
@@ -445,7 +450,7 @@ struct ImportAlembicPrim : INode {
             } else {
                 abctree->visitPrims([&] (auto const &p) {
                     auto np = std::static_pointer_cast<PrimitiveObject>(p->clone());
-                    prims->arr.push_back(np);
+                    prims->push_back(np);
                 });
             }
             outprim = zeno::primMerge(prims->getRaw<PrimitiveObject>());

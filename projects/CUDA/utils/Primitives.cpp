@@ -2639,7 +2639,7 @@ struct PrimitiveUnfuse : INode {
             auto primList = primUnmergeVerts(resPrim.get(), tag);
             auto listPrim = std::make_shared<ListObject>();
             for (auto &primPtr : primList) {
-                listPrim->arr.push_back(std::move(primPtr));
+                listPrim->push_back(std::move(primPtr));
             }
             set_output("partitioned_prim", std::move(listPrim));
         } else {
@@ -2674,7 +2674,7 @@ struct PrimitiveUnmerge : INode {
 
         auto listPrim = std::make_shared<ListObject>();
         for (auto &primPtr : primList) {
-            listPrim->arr.push_back(std::move(primPtr));
+            listPrim->push_back(std::move(primPtr));
         }
         set_output("listPrim", std::move(listPrim));
     }

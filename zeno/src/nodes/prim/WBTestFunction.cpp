@@ -169,7 +169,7 @@ struct PrimPointTris : INode {
                 x[2] = ind[2];
                 x[3] = i;
                 num->set<vec4i>(x);
-                list->arr.push_back(num);
+                list->push_back(num);
             }
         }
         set_output("list", std::move(list));

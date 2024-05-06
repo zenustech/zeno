@@ -1281,36 +1281,36 @@ struct ReadLightFromFile : zeno::INode {
                if(num%dl==0){
                    LIGHT_STR_SPLIT_V3F
                    //printf("Light: Pos %.2f %.2f %.2f\n", tmp[0], tmp[1], tmp[2]);
-                   posList->arr.push_back(no);
+                   posList->push_back(no);
                }
                if(num%dl==1){
                    LIGHT_STR_SPLIT_V3F
                    //printf("Light: Rot %.2f %.2f %.2f\n", tmp[0], tmp[1], tmp[2]);
-                   rotList->arr.push_back(no);
+                   rotList->push_back(no);
                }
                if(num%dl==2){
                    LIGHT_STR_SPLIT_V3F
                    //printf("Light: Scl %.2f %.2f %.2f\n", tmp[0], tmp[1], tmp[2]);
-                   sclList->arr.push_back(no);
+                   sclList->push_back(no);
                }
                if(num%dl==3){
                    LIGHT_STR_SPLIT_V3F
                    //printf("Light: Col %.2f %.2f %.2f\n", tmp[0], tmp[1], tmp[2]);
-                   colList->arr.push_back(no);
+                   colList->push_back(no);
                }
                if(num%dl==4){
                    auto no = std::make_shared<zeno::NumericObject>();
                    float tmp = (float)atof(l.c_str());
                    no->set(tmp);
                    //printf("Light: Int %.2f\n", tmp);
-                   intList->arr.push_back(no);
+                   intList->push_back(no);
                }
                if(num%dl==5){
                    auto no = std::make_shared<zeno::NumericObject>();
                    float tmp = (float)atof(l.c_str());
                    no->set(tmp);
                    //printf("Light: Exp %.2f\n", tmp);
-                   expList->arr.push_back(no);
+                   expList->push_back(no);
                }
 
                num++;

@@ -14,27 +14,31 @@ struct ContextManagedNode : INode {
 
     void push_context() {
         assert(!m_ctx);
-        m_ctx = std::move(graph->ctx);
+        std::shared_ptr<Graph> spGraph = getThisGraph();
+        assert(spGraph);
+        m_ctx = std::move(spGraph->ctx);
         if (m_ctx) {
-            graph->ctx = std::make_unique<Context>(*m_ctx);
+            spGraph->ctx = std::make_unique<Context>(*m_ctx);
         }
         else {
             // Context may be another subgraph, which has been cleared,
             // here, we construct a temp context for calling for func.
-            graph->ctx = std::make_unique<Context>();
+            spGraph->ctx = std::make_unique<Context>();
             bNewContext = true;
         }
     }
 
     std::unique_ptr<Context> pop_context() {
+        std::shared_ptr<Graph> spGraph = getThisGraph();
+        assert(spGraph);
         if (bNewContext) {
-            graph->ctx.reset();
+            spGraph->ctx.reset();
             bNewContext = false;
             return nullptr;
         }
         assert(m_ctx);
-        auto old_ctx = std::move(graph->ctx);
-        graph->ctx = std::move(m_ctx);
+        auto old_ctx = std::move(spGraph->ctx);
+        spGraph->ctx = std::move(m_ctx);
         return old_ctx;
     }
 };

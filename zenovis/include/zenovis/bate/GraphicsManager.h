@@ -39,75 +39,95 @@ struct GraphicsManager {
         return false;
     }
 
-    bool add_object(std::shared_ptr<zeno::IObject> obj) {
-        if (!obj || obj->key().empty()) return false;
+    bool add_object(zeno::zany obj) {
+        if (auto spList = std::dynamic_pointer_cast<zeno::ListObject>(obj)) {
+            return add_listobj(spList);
+        }
+
+        const std::string& key = obj->key();
+        if (!obj || key.empty())
+            return false;
 
         auto& wtf = graphics.m_curr.m_curr;
-        auto it = wtf.find(obj->key());
+        auto it = wtf.find(key);
         if (it == wtf.end()) {
-            zeno::log_debug("load_object: loading graphics [{}]", obj->key());
+            zeno::log_debug("load_object: loading graphics [{}]", key);
             auto ig = makeGraphic(scene, obj.get());
             if (!ig)
                 return false;
             zeno::log_debug("load_object: loaded graphics to {}", ig.get());
-            ig->nameid = obj->key();
+            ig->nameid = key;
             ig->objholder = obj;
-            graphics.m_curr.m_curr.insert(std::make_pair(obj->key(), std::move(ig)));
+            graphics.m_curr.m_curr.insert(std::make_pair(key, std::move(ig)));
         }
         else {
             auto ig = makeGraphic(scene, obj.get());
             if (!ig)
                 return false;
-            ig->nameid = obj->key();
+            ig->nameid = key;
             ig->objholder = obj;
             it->second = std::move(ig);
         }
         return true;
     }
 
-    bool remove_object(std::string key) {
-        auto& wtf = graphics.m_curr.m_curr;
-        if (wtf.find(key) == wtf.end())
+    bool remove_object(zeno::zany spObj) {
+        if (auto spList = std::dynamic_pointer_cast<zeno::ListObject>(spObj)) {
+            return remove_listobj(spList);
+        }
+
+        const std::string& key = spObj->key();
+        auto& graphics_ = graphics.m_curr.m_curr;
+        auto iter = graphics_.find(key);
+        if (iter == graphics_.end())
             return false;
-        wtf.erase(key);
+
+        graphics_.erase(key);
+        return true;
+    }
+
+    bool add_listobj(std::shared_ptr<zeno::ListObject> spList) {
+        for (auto obj : spList->get()) {
+            if (auto listobj = std::dynamic_pointer_cast<zeno::ListObject>(obj)) {
+                bool ret = add_listobj(listobj);
+                if (!ret)
+                    return ret;
+            }
+            else {
+                bool ret = add_object(obj);
+                if (!ret)
+                    return ret;
+            }
+        }
+        return true;
+    }
+
+    bool remove_listobj(std::shared_ptr<zeno::ListObject> spList) {
+        for (auto obj : spList->get()) {
+            if (auto listobj = std::dynamic_pointer_cast<zeno::ListObject>(obj)) {
+                bool ret = remove_listobj(listobj);
+                if (!ret)
+                    return ret;
+            }
+            else {
+                bool ret = remove_object(obj);
+                if (!ret)
+                    return ret;
+            }
+        }
         return true;
     }
 
     void load_objects2(const zeno::RenderObjsInfo& objs) {
-        std::map<std::string, std::shared_ptr<zeno::IObject>> listItems;
-        std::set<std::string> removeListItems;                                              //本次运行list中要删除的元素
-
-        //处理单个Object
         for (auto [key, spObj] : objs.newObjs) {
-            if (auto lst = std::dynamic_pointer_cast<zeno::ListObject>(spObj))
-                scene->convertListObjsRender(spObj, listItems, std::set<std::string>(), false, spObj->nodeId);
-            else {
-                add_object(spObj);
-                scene->lastAllItems.insert(std::make_pair(key, spObj));
-            }
+            add_object(spObj);
         }
         for (auto [key, spObj] : objs.modifyObjs) {
             add_object(spObj);
         }
         for (auto [key, spObj] : objs.remObjs) {
-            if (auto lst = std::dynamic_pointer_cast<zeno::ListObject>(spObj))
-                scene->convertListObjsRender(spObj, listItems, removeListItems, true, spObj->nodeId);
-            else {
-                remove_object(key);
-                scene->lastAllItems.erase(key);
-            }
+            remove_object(spObj);
         }
-        //处理ListObject
-        for (auto [key, spObj] : listItems)                        //增加新元素
-        {
-            add_object(spObj);
-        }
-        for (auto& key:removeListItems)
-            if (listItems.find(key) == listItems.end())           //该元素本次已不再使用，才删除
-            {
-                remove_object(key);
-                scene->lastAllItems.erase(key);
-            }
     }
 
     bool load_objects(std::vector<std::pair<std::string, std::shared_ptr<zeno::IObject>>> const &objs) {

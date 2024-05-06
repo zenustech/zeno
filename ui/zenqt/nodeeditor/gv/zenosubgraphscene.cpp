@@ -874,8 +874,8 @@ void ZenoSubGraphScene::onTempLinkClosed()
                 }
             }
 
-            m_model->beginTransaction(tr("add Link"));
-            zeno::scope_exit sp([=]() { m_model->endTransaction(); });
+            m_model->beginMacro(tr("add Link"));
+            zeno::scope_exit sp([=]() { m_model->endMacro(); });
 
             //dict panel.
             SOCKET_PROPERTY inProp = (SOCKET_PROPERTY)inSockIdx.data(ROLE_PARAM_SOCKPROP).toInt();
@@ -1268,8 +1268,8 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
 
             if (!nodes.isEmpty() || !links.isEmpty() || !netLabels.isEmpty())
             {
-                m_model->beginTransaction("remove nodes and links");
-                zeno::scope_exit scope([=]() { m_model->endTransaction(); });
+                m_model->beginMacro("remove nodes and links");
+                zeno::scope_exit scope([=]() { m_model->endMacro(); });
 
                 for (QPersistentModelIndex linkIdx : links)
                 {

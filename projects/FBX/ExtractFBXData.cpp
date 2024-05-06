@@ -100,13 +100,13 @@ struct ExtractMatTexList : zeno::INode {
         for(auto&p: tl){
             auto s = std::make_shared<zeno::StringObject>();
             s->value = p;
-            lo->arr.emplace_back(s);
+            lo->emplace_back(s);
         }
 
         //for(auto&l: lo->arr){
         //    zeno::log_info("Tex: {}", std::any_cast<std::string>(l));
         //}
-        //zeno::log_info(">>>>> Get TexLen {}", lo->arr.size());
+        //zeno::log_info(">>>>> Get TexLen {}", lo->size());
 
         name->set(mat->matName);
 
@@ -170,7 +170,7 @@ struct ExtractMatData : zeno::INode {
 
 //        TIMER_START(MakeDatas)
         for(auto [k, v]: data->iFbxData.value){
-            datas->arr.push_back(v);
+            datas->push_back(v);
         }
         matName->set(data->sMaterial.matName);
 //        TIMER_END(MakeDatas)
@@ -194,7 +194,7 @@ struct ExtractMatData : zeno::INode {
         for(auto& path: texList){
             auto strObj = std::make_shared<zeno::StringObject>();
             strObj->value = path;
-            texLists->arr.emplace_back(strObj);
+            texLists->emplace_back(strObj);
         }
         for(auto&[matPropName, index]: texMap){
             auto numeric_obj = std::make_shared<zeno::NumericObject>();

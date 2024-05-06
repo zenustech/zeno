@@ -195,7 +195,7 @@ struct ZGL_StateGetKeys : INode {
         } else {
             auto keys = std::make_shared<ListObject>();
             for (auto const &key: state->pressed_keys) {
-                keys->arr.push_back(std::make_shared<StringObject>(key));
+                keys->push_back(std::make_shared<StringObject>(key));
             }
             set_output("keys", std::move(keys));
         }

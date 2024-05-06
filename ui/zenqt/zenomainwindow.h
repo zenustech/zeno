@@ -184,6 +184,7 @@ public slots:
     void onCheckUpdate();
     void onFrameSwitched(int frameid);
     void onCalcFinished(bool bSucceed, zeno::ObjPath nodeUuidPath, QString msg);
+    void justLoadObjects();
 
 protected:
     void resizeEvent(QResizeEvent* event) override;

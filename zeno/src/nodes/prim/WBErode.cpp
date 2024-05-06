@@ -152,7 +152,7 @@ struct erode_rand_color : INode {
         {
             auto num = std::make_shared<zeno::NumericObject>();
             num->set<int>(perm[i]);
-            list->arr.push_back(num);
+            list->push_back(num);
         }
         set_output("list", std::move(list));
     }
@@ -202,7 +202,7 @@ struct erode_rand_dir : INode {
         {
             auto num = std::make_shared<zeno::NumericObject>();
             num->set<int>(dirs[i]);
-            list->arr.push_back(num);
+            list->push_back(num);
         }
         set_output("list", std::move(list));
     }

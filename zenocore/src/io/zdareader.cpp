@@ -49,7 +49,8 @@ namespace zenoio
 
         _parseParams(doc["Parameters"], m_asset.inputs, m_asset.outputs);
 
-        m_asset.m_customui = _parseCustomUI(doc["subnet-customUi"]);
+        if (doc.HasMember("subnet-customUi"))
+            m_asset.m_customui = _parseCustomUI(doc["subnet-customUi"]);
 
         ret.type = zeno::Subnet_Normal;
         ret.name = m_asset.info.name;

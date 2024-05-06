@@ -226,11 +226,11 @@ struct PrimitiveTransform : zeno::INode {
             }
             auto i = std::stoi(idx);
             if (auto list = std::dynamic_pointer_cast<ListObject>(cur_root)) {
-                if (i >= list->arr.size()) {
+                if (i >= list->size()) {
                     zeno::log_warn("out of range");
                     return std::nullopt;
                 }
-                cur_root = list->arr[i];
+                cur_root = list->get(i);
             }
             else {
                 return cur_root;
@@ -310,7 +310,7 @@ struct PrimitiveTransform : zeno::INode {
             user_data.del("_bboxMax");
         }
         else if (auto list = std::dynamic_pointer_cast<ListObject>(iObject)) {
-            for (auto& item : list->arr) {
+            for (auto& item : list->get()) {
                 transformObj(item, matrix, pivotType, pivotPos, localX, localY, translate, rotation, scaling);
             }
         }
@@ -414,8 +414,8 @@ struct PrimitiveTransform : zeno::INode {
             else {                                  // if path is empty, transform all
                 std::function<void(std::shared_ptr<IObject> const&)> transformList = [&](std::shared_ptr<IObject> const& p) -> void {
                     if (ListObject* lst = dynamic_cast<ListObject*>(p.get())) {
-                        for (size_t i = 0; i < lst->arr.size(); i++)
-                            transformList(lst->arr[i]);
+                        for (size_t i = 0; i < lst->size(); i++)
+                            transformList(lst->get(i));
                         return;
                     }
                     if (!p)

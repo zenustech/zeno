@@ -57,48 +57,48 @@ struct PrimToList : INode {
 
         if (attr.empty()) {
             if (type == "verts") {
-                lst->arr.resize(prim->verts.size());
+                lst->resize(prim->verts.size());
                 for (size_t i = 0; i < prim->verts.size(); i++) {
-                    lst->arr[i] = std::make_shared<NumericObject>(prim->verts[i]);
+                    lst->set(i, std::make_shared<NumericObject>(prim->verts[i]));
                 }
             } else if (type == "points") {
-                lst->arr.resize(prim->points.size());
+                lst->resize(prim->points.size());
                 for (size_t i = 0; i < prim->points.size(); i++) {
-                    lst->arr[i] = std::make_shared<NumericObject>(prim->points[i]);
+                    lst->set(i, std::make_shared<NumericObject>(prim->points[i]));
                 }
             } else if (type == "lines") {
-                lst->arr.resize(prim->lines.size());
+                lst->resize(prim->lines.size());
                 for (size_t i = 0; i < prim->lines.size(); i++) {
-                    lst->arr[i] = std::make_shared<NumericObject>(prim->lines[i]);
+                    lst->set(i, std::make_shared<NumericObject>(prim->lines[i]));
                 }
             } else if (type == "tris") {
-                lst->arr.resize(prim->tris.size());
+                lst->resize(prim->tris.size());
                 for (size_t i = 0; i < prim->tris.size(); i++) {
-                    lst->arr[i] = std::make_shared<NumericObject>(prim->tris[i]);
+                    lst->set(i, std::make_shared<NumericObject>(prim->tris[i]));
                 }
             } else if (type == "quads") {
-                lst->arr.resize(prim->quads.size());
+                lst->resize(prim->quads.size());
                 for (size_t i = 0; i < prim->quads.size(); i++) {
-                    lst->arr[i] = std::make_shared<NumericObject>(prim->quads[i]);
+                    lst->set(i, std::make_shared<NumericObject>(prim->quads[i]));
                 }
             } else if (type == "polys") {
-                lst->arr.resize(prim->polys.size());
+                lst->resize(prim->polys.size());
                 for (size_t i = 0; i < prim->polys.size(); i++) {
-                    lst->arr[i] = std::make_shared<NumericObject>(prim->polys[i]);
+                    lst->set(i, std::make_shared<NumericObject>(prim->polys[i]));
                 }
             } else if (type == "loops") {
-                lst->arr.resize(prim->loops.size());
+                lst->resize(prim->loops.size());
                 for (size_t i = 0; i < prim->loops.size(); i++) {
-                    lst->arr[i] = std::make_shared<NumericObject>(prim->loops[i]);
+                    lst->set(i, std::make_shared<NumericObject>(prim->loops[i]));
                 }
             } else {
                 throw makeError("invalid type " + type);
             }
         } else {
             auto fun = [&] (auto const &arr) {
-                lst->arr.resize(arr.size());
+                lst->resize(arr.size());
                 for (size_t i = 0; i < arr.size(); i++) {
-                    lst->arr[i] = std::make_shared<NumericObject>(arr[i]);
+                    lst->set(i, std::make_shared<NumericObject>(arr[i]));
                 }
             };
             if (type == "verts") {
@@ -146,39 +146,39 @@ struct PrimUpdateFromList : INode {
 
         if (attr.empty()) {
             if (type == "verts") {
-                prim->verts.resize(lst->arr.size());
+                prim->verts.resize(lst->size());
                 for (size_t i = 0; i < prim->verts.size(); i++) {
-                    prim->verts[i] = objectToLiterial<vec3f>(lst->arr[i]);
+                    prim->verts[i] = objectToLiterial<vec3f>(lst->get(i));
                 }
             } else if (type == "points") {
-                prim->points.resize(lst->arr.size());
+                prim->points.resize(lst->size());
                 for (size_t i = 0; i < prim->points.size(); i++) {
-                    prim->points[i] = objectToLiterial<int>(lst->arr[i]);
+                    prim->points[i] = objectToLiterial<int>(lst->get(i));
                 }
             } else if (type == "lines") {
-                prim->lines.resize(lst->arr.size());
+                prim->lines.resize(lst->size());
                 for (size_t i = 0; i < prim->lines.size(); i++) {
-                    prim->lines[i] = objectToLiterial<vec2i>(lst->arr[i]);
+                    prim->lines[i] = objectToLiterial<vec2i>(lst->get(i));
                 }
             } else if (type == "tris") {
-                prim->tris.resize(lst->arr.size());
+                prim->tris.resize(lst->size());
                 for (size_t i = 0; i < prim->tris.size(); i++) {
-                    prim->tris[i] = objectToLiterial<vec3i>(lst->arr[i]);
+                    prim->tris[i] = objectToLiterial<vec3i>(lst->get(i));
                 }
             } else if (type == "quads") {
-                prim->quads.resize(lst->arr.size());
+                prim->quads.resize(lst->size());
                 for (size_t i = 0; i < prim->quads.size(); i++) {
-                    prim->quads[i] = objectToLiterial<vec4i>(lst->arr[i]);
+                    prim->quads[i] = objectToLiterial<vec4i>(lst->get(i));
                 }
             } else if (type == "polys") {
-                prim->polys.resize(lst->arr.size());
+                prim->polys.resize(lst->size());
                 for (size_t i = 0; i < prim->polys.size(); i++) {
-                    prim->polys[i] = objectToLiterial<vec2i>(lst->arr[i]);
+                    prim->polys[i] = objectToLiterial<vec2i>(lst->get(i));
                 }
             } else if (type == "loops") {
-                prim->loops.resize(lst->arr.size());
+                prim->loops.resize(lst->size());
                 for (size_t i = 0; i < prim->loops.size(); i++) {
-                    prim->loops[i] = objectToLiterial<int>(lst->arr[i]);
+                    prim->loops[i] = objectToLiterial<int>(lst->get(i));
                 }
             } else {
                 throw makeError("invalid type " + type);
@@ -187,29 +187,29 @@ struct PrimUpdateFromList : INode {
             auto fun = [&] (auto &arr) {
                 using T = std::decay_t<decltype(arr[0])>;
                 for (size_t i = 0; i < arr.size(); i++) {
-                    arr[i] = objectToLiterial<T>(lst->arr[i]);
+                    arr[i] = objectToLiterial<T>(lst->get(i));
                 }
             };
             if (type == "verts") {
-                prim->verts.resize(lst->arr.size());
+                prim->verts.resize(lst->size());
                 prim->verts.attr_visit(attr, fun);
             } else if (type == "points") {
-                prim->points.resize(lst->arr.size());
+                prim->points.resize(lst->size());
                 prim->points.attr_visit(attr, fun);
             } else if (type == "lines") {
-                prim->lines.resize(lst->arr.size());
+                prim->lines.resize(lst->size());
                 prim->lines.attr_visit(attr, fun);
             } else if (type == "tris") {
-                prim->tris.resize(lst->arr.size());
+                prim->tris.resize(lst->size());
                 prim->tris.attr_visit(attr, fun);
             } else if (type == "quads") {
-                prim->quads.resize(lst->arr.size());
+                prim->quads.resize(lst->size());
                 prim->quads.attr_visit(attr, fun);
             } else if (type == "polys") {
-                prim->polys.resize(lst->arr.size());
+                prim->polys.resize(lst->size());
                 prim->polys.attr_visit(attr, fun);
             } else if (type == "loops") {
-                prim->loops.resize(lst->arr.size());
+                prim->loops.resize(lst->size());
                 prim->loops.attr_visit(attr, fun);
             } else {
                 throw makeError("invalid type " + type);

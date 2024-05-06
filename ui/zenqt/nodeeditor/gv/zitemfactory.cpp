@@ -237,21 +237,18 @@ namespace zenoui
                 UI_VECTYPE vec = value.value<UI_VECTYPE>();
 
                 int dim = -1;
-                bool bFloat = false;
+                bool bFloat = type == zeno::Param_Vec2f || type == zeno::Param_Vec3f || type == zeno::Param_Vec4f;
                 if (ctrl == zeno::Vec2edit)
                 {
                     dim = 2;
-                    bFloat = type == zeno::Param_Vec2f;
                 }
                 else if (ctrl == zeno::Vec3edit)
                 {
                     dim = 3;
-                    bFloat = type == zeno::Param_Vec3f;
                 }
                 else if (ctrl == zeno::Vec4edit)
                 {
                     dim = 4;
-                    bFloat = type == zeno::Param_Vec4f;
                 }
                 if (vec.size() != dim)
                 {

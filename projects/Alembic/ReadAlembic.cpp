@@ -1188,12 +1188,12 @@ struct ReadAlembic : INode {
             abctree->visitPrims([&] (auto const &p) {
                 auto &ud = p->userData();
                 auto _abc_path = ud.template get2<std::string>("abcpath_0", "");
-                namelist->arr.push_back(std::make_shared<StringObject>(_abc_path));
+                namelist->push_back(std::make_shared<StringObject>(_abc_path));
             });
             auto &ud = abctree->userData();
-            ud.set2("prim_count", int(namelist->arr.size()));
-            for (auto i = 0; i < namelist->arr.size(); i++) {
-                auto n = namelist->arr[i];
+            ud.set2("prim_count", int(namelist->size()));
+            for (auto i = 0; i < namelist->size(); i++) {
+                auto n = namelist->get(i);
                 ud.set2(zeno::format("path_{:04}", i), n);
             }
             set_output("namelist", namelist);
@@ -1253,7 +1253,7 @@ std::shared_ptr<ListObject> abc_split_by_name(std::shared_ptr<PrimitiveObject> p
                 new_prim->userData().del(zeno::format("faceset_{}", j));
             }
             prim_set_faceset(new_prim.get(), name);
-            list->arr.push_back(new_prim);
+            list->push_back(new_prim);
         }
     }
     else if (prim->tris.size()) {
@@ -1280,7 +1280,7 @@ std::shared_ptr<ListObject> abc_split_by_name(std::shared_ptr<PrimitiveObject> p
                 new_prim->userData().del(zeno::format("faceset_{}", j));
             }
             prim_set_faceset(new_prim.get(), name);
-            list->arr.push_back(new_prim);
+            list->push_back(new_prim);
         }
     }
     return list;
@@ -1293,7 +1293,7 @@ struct AlembicSplitByName: INode {
             auto namelist = std::make_shared<zeno::ListObject>();
             for (auto f = 0; f < faceset_count; f++) {
                 auto name = prim->userData().get2<std::string>(zeno::format("faceset_{}", f));
-                namelist->arr.push_back(std::make_shared<StringObject>(name));
+                namelist->push_back(std::make_shared<StringObject>(name));
             }
             set_output("namelist", namelist);
         }
@@ -1399,7 +1399,7 @@ struct PrimsFilterInUserdata: INode {
             }
             bool insert = (contain && this_contain) || (!contain && !this_contain);
             if (insert) {
-                out_list->arr.push_back(p);
+                out_list->push_back(p);
             }
         }
         set_output("out", out_list);
@@ -1481,7 +1481,7 @@ struct PrimsFilterInUserdataPython: INode {
             int need_insert = PyLong_AsLong(pValue);
 
             if (need_insert > 0) {
-                out_list->arr.push_back(p);
+                out_list->push_back(p);
             }
         }
         set_output("out", out_list);

@@ -197,7 +197,7 @@ struct ParamFileParser : zeno::INode {
                 perror(path.c_str());
                 abort();
             }
-            for (auto &ptr: formatList->arr) {
+            for (auto &ptr: formatList->get()) {
                 auto p = std::static_pointer_cast<ParamFormatInfo>(ptr);
                 if (saved_names.count(p->name)) {
                     continue;

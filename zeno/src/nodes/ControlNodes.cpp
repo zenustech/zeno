@@ -63,7 +63,7 @@ struct BeginForEach : IBeginFor {
         if (isContinue())
         {
             std::shared_ptr<zeno::ListObject> list = get_input<zeno::ListObject>("objects");
-            set_output("object", list->arr.at(m_index));
+            set_output("object", list->get(m_index));
             set_output("index", std::make_shared<NumericObject>(m_index));
         }
     }
@@ -81,7 +81,7 @@ struct BeginForEach : IBeginFor {
 
     int getCount() const {
         std::shared_ptr<zeno::ListObject> list = get_input<zeno::ListObject>("objects");
-        return list->arr.size();
+        return list->size();
     }
 
 };
@@ -107,9 +107,12 @@ struct EndFor : INode {
         requireInput("For Begin");
         std::string forbegin = get_input<zeno::StringObject>("For Begin")->get();
 
-        graph->applyNode(forbegin);
+        std::shared_ptr<Graph> spGraph = getThisGraph();
+        assert(spGraph);
 
-        std::shared_ptr<IBeginFor> spBegin = std::dynamic_pointer_cast<IBeginFor>(graph->getNode(forbegin));
+        spGraph->applyNode(forbegin);
+
+        std::shared_ptr<IBeginFor> spBegin = std::dynamic_pointer_cast<IBeginFor>(spGraph->getNode(forbegin));
         if (!spBegin) {
             throw makeError<KeyError>("No matched For Begin", "");
         }
@@ -135,7 +138,9 @@ ZENDEFNODE(EndFor, {
 struct BreakFor : zeno::INode {
     virtual void apply() override {
         auto [sn, ss] = getinputbound("FOR", "input socket of BreakFor");
-        auto fore = dynamic_cast<IBeginFor *>(graph->m_nodes.at(sn).get());
+        std::shared_ptr<Graph> spGraph = getThisGraph();
+        assert(spGraph);
+        auto fore = dynamic_cast<IBeginFor *>(spGraph->m_nodes.at(sn).get());
         if (!fore) {
             throw Exception("BreakFor::FOR must be conn to BeginFor::FOR!\n");
         }
@@ -157,8 +162,6 @@ ZENDEFNODE(BreakFor, {
 
 
 struct EndForEach : INode {
-    std::vector<zany> result;
-    std::vector<zany> dropped_result;
 
     void preApply() override {
         //do nothing.
@@ -167,15 +170,17 @@ struct EndForEach : INode {
     void apply() override {
         requireInput("For Begin");
         std::string forbegin = get_input<zeno::StringObject>("For Begin")->get();
-        std::shared_ptr<IBeginFor> spBegin = std::dynamic_pointer_cast<IBeginFor>(graph->getNode(forbegin));
+        std::shared_ptr<Graph> spGraph = getThisGraph();
+        assert(spGraph);
+        std::shared_ptr<IBeginFor> spBegin = std::dynamic_pointer_cast<IBeginFor>(spGraph->getNode(forbegin));
         if (!spBegin) {
             throw makeError<KeyError>("No matched For Begin", "");
         }
 
-        graph->applyNode(forbegin);
+        spGraph->applyNode(forbegin);
 
-        std::vector<zany> result;
-        std::vector<zany> dropped_result;
+        auto list = std::make_shared<ListObject>();
+        auto dropped_list = std::make_shared<ListObject>();
 
         spBegin->resetIndex();
 
@@ -190,32 +195,27 @@ struct EndForEach : INode {
 
             if (auto obj = get_input("object")) {
                 if (accept)
-                    result.push_back(std::move(obj));
+                    list->push_back(std::move(obj));
                 else
-                    dropped_result.push_back(std::move(obj));
+                    dropped_list->push_back(std::move(obj));
             }
 
             if (has_input("objects")) {
                 auto listObj = get_input<zeno::ListObject>("objects");
                 if (accept) {
-                    for (auto obj : listObj->arr)
-                        result.push_back(std::move(obj));
+                    for (auto obj : listObj->get())
+                        list->push_back(std::move(obj));
                 }
                 else {
-                    for (auto obj : listObj->arr)
-                        dropped_result.push_back(std::move(obj));
+                    for (auto obj : listObj->get())
+                        dropped_list->push_back(std::move(obj));
                 }
             }
 
             spBegin->updateIndex();
         }
 
-        auto list = std::make_shared<ListObject>();
-        list->arr = std::move(result);
         set_output("list", std::move(list));
-
-        auto dropped_list = std::make_shared<ListObject>();
-        dropped_list->arr = std::move(dropped_result);
         set_output("droppedList", std::move(dropped_list));
     }
 
@@ -275,7 +275,9 @@ ZENDEFNODE(BeginSubstep, {
 struct SubstepDt : zeno::INode {
     void apply() override {
         auto [sn, ss] = getinputbound("FOR", "input socket of SubstepDt");
-        auto fore = dynamic_cast<BeginSubstep *>(graph->m_nodes.at(sn).get());
+        std::shared_ptr<Graph> spGraph = getThisGraph();
+        assert(spGraph);
+        auto fore = dynamic_cast<BeginSubstep *>(spGraph->m_nodes.at(sn).get());
         if (!fore) {
             throw Exception("SubstepDt::FOR must be conn to BeginSubstep::FOR!\n");
         }
