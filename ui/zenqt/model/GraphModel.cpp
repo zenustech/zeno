@@ -869,6 +869,11 @@ zeno::NodeData GraphModel::_createNodeImpl(const QString& cate, zeno::NodeData& 
         return zeno::NodeData();
     }
     else {
+        auto updateInputs = [](zeno::NodeData& nodedata, std::shared_ptr<zeno::INode> spNode) {
+            for (auto& param : nodedata.inputs)
+                spNode->update_param(param.name, param.defl);
+        };
+
         std::shared_ptr<zeno::Graph> spGraph = m_wpCoreGraph.lock();
         if (!spGraph)
             return zeno::NodeData();
@@ -909,22 +914,29 @@ zeno::NodeData GraphModel::_createNodeImpl(const QString& cate, zeno::NodeData& 
                                 ioNode->set_pos(nodedata.uipos);
                         }
                         else if (nodedata.asset.has_value()) {  //if is asset
-                            subnetNode->subgraph->createNode(nodedata.cls, name, true, {nodedata.uipos.first, nodedata.uipos.second});
+                            std::shared_ptr<zeno::INode> spNode = subnetNode->subgraph->createNode(nodedata.cls, name, true, {nodedata.uipos.first, nodedata.uipos.second});
+                            if (spNode)
+                                updateInputs(nodedata, spNode);
                         }
                         else {
-                            subnetNode->subgraph->createNode(nodedata.cls, name, false, {nodedata.uipos.first, nodedata.uipos.second});
+                            std::shared_ptr<zeno::INode> spNode = subnetNode->subgraph->createNode(nodedata.cls, name, false, {nodedata.uipos.first, nodedata.uipos.second});
+                            if (spNode)
+                                updateInputs(nodedata, spNode);
                         }
                     }
                     for (zeno::EdgeInfo oldLink : nodedata.subgraph.value().links) {
                         subnetNode->subgraph->addLink(oldLink);
                     }
                 }
+                updateInputs(nodedata, spNode);
                 node = spNode->exportInfo();
             }
         }
         else {
+            updateInputs(nodedata, spNode);
             node = spNode->exportInfo();
         }
+
         return node;
     }
 }
