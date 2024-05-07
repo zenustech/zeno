@@ -295,16 +295,6 @@ struct PrimitiveTransform : zeno::INode {
                     nrm[i] = zeno::other_to_vec<3>(n);
                 }
             }
-
-            auto& user_data = prim->userData();
-            user_data.setLiterial("_translate", translate);
-            user_data.setLiterial("_rotate", rotation);
-            user_data.setLiterial("_scale", scaling);
-            user_data.set2("_pivot", _pivot);
-            user_data.set2("_localX", lX);
-            user_data.set2("_localY", lY);
-            user_data.del("_bboxMin");
-            user_data.del("_bboxMax");
         }
         else if (auto list = std::dynamic_pointer_cast<ListObject>(iObject)) {
             for (auto &item : list->arr) {

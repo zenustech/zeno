@@ -48,21 +48,6 @@ void FakeTransformer::addObject(const std::string& name) {
     auto object = dynamic_cast<PrimitiveObject*>(scene->objectsMan->get(name).value());
     m_objects[name] = object;
     createNewTransformNodeNameWhenMissing(name);
-    auto& user_data = object->userData();
-    if (!user_data.has("_pivot")) {
-        zeno::vec3f bmin, bmax;
-        std::tie(bmin, bmax) = zeno::primBoundingBox(object);
-        zeno::vec3f translate = {0, 0, 0};
-        user_data.setLiterial("_translate", translate);
-        zeno::vec4f rotate = {0, 0, 0, 1};
-        user_data.setLiterial("_rotate", rotate);
-        zeno::vec3f scale = {1, 1, 1};
-        user_data.setLiterial("_scale", scale);
-        auto bboxCenter = (bmin + bmax) / 2;
-        user_data.set2("_pivot", bboxCenter);
-        user_data.set2("_localX", vec3f(1, 0, 0));
-        user_data.set2("_localY", vec3f(0, 1, 0));
-    }
     auto& node_sync = NodeSyncMgr::GetInstance();
     auto prim_node_location = node_sync.searchNodeOfPrim(name);
     auto prim_node = prim_node_location->node;
@@ -88,6 +73,21 @@ void FakeTransformer::addObject(const std::string& name) {
     m_self_center *= m_objects.size();
     m_self_center += m_pivot + pivot_to_world * node_sync.getInputValVec3(prim_node, "translation");
     m_self_center /= m_objects.size();
+    {
+        auto lX = m_localXOrg;
+        auto lY = m_localYOrg;
+        auto lZ = glm::cross(lX, lY);
+        auto pivot_to_world = glm::mat4(1);
+        pivot_to_world[0] = {lX[0], lX[1], lX[2], 0};
+        pivot_to_world[1] = {lY[0], lY[1], lY[2], 0};
+        pivot_to_world[2] = {lZ[0], lZ[1], lZ[2], 0};
+        pivot_to_world[3] = {m_pivot[0], m_pivot[1], m_pivot[2], 1};
+        auto pivot_to_local = glm::inverse(pivot_to_world);
+        auto translate_matrix = glm::translate(_objects_translation);
+        auto rotate_matrix = glm::toMat4(_objects_rotation);
+        auto scale_matrix = glm::scale(_objects_scaling);
+        last_transform_matrix = pivot_to_world * translate_matrix *  rotate_matrix * scale_matrix * pivot_to_local;
+    }
 }
 
 void FakeTransformer::addObjects(const std::unordered_set<std::string>& names) {
@@ -352,8 +352,7 @@ void FakeTransformer::syncToTransformNode(NodeLocation& node_location, const std
     auto& node_sync = NodeSyncMgr::GetInstance();
 
     auto user_data = m_objects[obj_name]->userData();
-    auto translate_data = user_data.getLiterial<zeno::vec3f>("_translate");
-    translate_data += other_to_vec<3>(m_trans);
+    auto translate_data = _objects_translation + m_trans;
     QVector<double> translate = {
         translate_data[0],
         translate_data[1],
@@ -363,7 +362,7 @@ void FakeTransformer::syncToTransformNode(NodeLocation& node_location, const std
                                  "translation",
                                  translate);
     // update scaling
-    auto scaling_data = user_data.getLiterial<zeno::vec3f>("_scale");
+    auto scaling_data = _objects_scaling;
     for (int i = 0; i < 3; i++) {
         scaling_data[i] *= m_scale[i];
     }
@@ -376,11 +375,10 @@ void FakeTransformer::syncToTransformNode(NodeLocation& node_location, const std
                                  "scaling",
                                  scaling);
     // update rotate
-    auto rotate_data = user_data.getLiterial<zeno::vec4f>("_rotate");
-    auto pre_q = glm::quat(rotate_data[3], rotate_data[0], rotate_data[1], rotate_data[2]);
+    auto pre_q = _objects_rotation;
     auto dif_q = glm::quat(m_rotate[3], m_rotate[0], m_rotate[1], m_rotate[2]);
     auto res_q = glm::toQuat(glm::toMat4(dif_q) * glm::toMat4(pre_q));
-    rotate_data = vec4f(res_q.x, res_q.y, res_q.z, res_q.w);
+    auto rotate_data = vec4f(res_q.x, res_q.y, res_q.z, res_q.w);
     QVector<double> rotate = {
         rotate_data[0],
         rotate_data[1],
@@ -399,25 +397,18 @@ void FakeTransformer::endTransform(bool moved) {
             auto& user_data = obj->userData();
 
             if (m_operation == TransOpt::TRANSLATE) {
-                auto trans = user_data.getLiterial<zeno::vec3f>("_translate");
-                trans += other_to_vec<3>(m_trans);
-                user_data.setLiterial("_translate", trans);
+                _objects_translation += m_trans;
             }
 
             if (m_operation == TransOpt::ROTATE) {
-                auto rotate = user_data.getLiterial<zeno::vec4f>("_rotate");
-                auto pre_q = glm::quat(rotate[3], rotate[0], rotate[1], rotate[2]);
+                auto pre_q = _objects_rotation;
                 auto dif_q = glm::quat(m_rotate[3], m_rotate[0], m_rotate[1], m_rotate[2]);
-                auto res_q = glm::toQuat(glm::toMat4(dif_q) * glm::toMat4(pre_q));
-                rotate = vec4f(res_q.x, res_q.y, res_q.z, res_q.w);
-                user_data.setLiterial("_rotate", rotate);
+                _objects_rotation = glm::toQuat(glm::toMat4(dif_q) * glm::toMat4(pre_q));
             }
 
             if (m_operation == TransOpt::SCALE) {
-                auto scale = user_data.getLiterial<zeno::vec3f>("_scale");
                 for (int i = 0; i < 3; i++)
-                    scale[i] *= m_scale[i];
-                user_data.setLiterial("_scale", scale);
+                    _objects_scaling[i] *= m_scale[i];
             }
         }
     }
@@ -653,22 +644,12 @@ void FakeTransformer::doTransform() {
             // prim comes from another type node
             prim_node = node_sync.checkNodeLinkedSpecificNode(prim_node, "PrimitiveTransform")->node;
         }
-        auto& user_data = obj->userData();
-        user_data.del("_bboxMin");
-        user_data.del("_bboxMax");
-
-        // get transform info
-        auto translate = zeno::vec_to_other<glm::vec3>(user_data.getLiterial<zeno::vec3f>("_translate"));
-        auto rotate = zeno::vec_to_other<glm::vec4>(user_data.getLiterial<zeno::vec4f>("_rotate"));
-        auto scale = zeno::vec_to_other<glm::vec3>(user_data.getLiterial<zeno::vec3f>("_scale"));
-        auto pre_quaternion = glm::quat(rotate[3], rotate[0], rotate[1], rotate[2]);
-        auto pre_rotate_matrix = glm::toMat4(pre_quaternion);
 
         // do this transform
-        auto translate_matrix = glm::translate(translate + m_trans);
+        auto translate_matrix = glm::translate(_objects_translation + m_trans);
         auto cur_quaternion = glm::quat(m_rotate[3], m_rotate[0], m_rotate[1], m_rotate[2]);
-        auto rotate_matrix = glm::toMat4(cur_quaternion) * pre_rotate_matrix;
-        auto scale_matrix = glm::scale(scale * m_scale);
+        auto rotate_matrix = glm::toMat4(cur_quaternion) * glm::toMat4(_objects_rotation);
+        auto scale_matrix = glm::scale(_objects_scaling * m_scale);
         auto transform_matrix = pivot_to_world *  translate_matrix *  rotate_matrix * scale_matrix * pivot_to_local;
 
         {
