@@ -7,8 +7,6 @@
 
 ZLineEdit::ZLineEdit(QWidget* parent)
     : QLineEdit(parent)
-    , m_pSlider(nullptr)
-    , m_bShowingSlider(false)
     , m_bHasRightBtn(false)
     , m_pButton(nullptr)
     , m_bIconHover(false)
@@ -19,8 +17,6 @@ ZLineEdit::ZLineEdit(QWidget* parent)
 
 ZLineEdit::ZLineEdit(const QString& text, QWidget* parent)
     : QLineEdit(text, parent)
-    , m_pSlider(nullptr)
-    , m_bShowingSlider(false)
     , m_bHasRightBtn(false)
     , m_pButton(nullptr)
     , m_bIconHover(false)
@@ -32,11 +28,6 @@ void ZLineEdit::init()
 {
     connect(this, SIGNAL(editingFinished()), this, SIGNAL(textEditFinished()));
     //connect(this, &ZLineEdit::textChanged, this, &ZLineEdit::editingFinished);
-}
-
-void ZLineEdit::setShowingSlider(bool bShow)
-{
-    m_bShowingSlider = bShow;
 }
 
 void ZLineEdit::setIcons(const QString& icNormal, const QString& icHover)
@@ -54,72 +45,9 @@ void ZLineEdit::setIcons(const QString& icNormal, const QString& icHover)
     connect(m_pButton, SIGNAL(clicked(bool)), this, SIGNAL(btnClicked()));
 }
 
-void ZLineEdit::setNumSlider(const QVector<qreal>& steps)
-{
-    if (steps.isEmpty())
-        return;
-
-    m_steps = steps;
-    m_pSlider = new ZNumSlider(m_steps, this);
-    m_pSlider->setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
-    m_pSlider->hide();
-
-    connect(m_pSlider, &ZNumSlider::numSlided, this, [=](qreal val) {
-        bool bOk = false;
-        qreal num = this->text().toFloat(&bOk);
-        if (bOk)
-        {
-            num = num + val;
-            QString newText = QString::number(num);
-            setText(newText);
-            emit editingFinished();
-        }
-    });
-    connect(m_pSlider, &ZNumSlider::slideFinished, this, [=]() {
-        setShowingSlider(false);
-        emit editingFinished();
-    });
-}
-
 void ZLineEdit::mouseReleaseEvent(QMouseEvent* event)
 {
     QLineEdit::mouseReleaseEvent(event);
-}
-
-void ZLineEdit::popupSlider()
-{
-    if (!m_pSlider)
-        return;
-
-    QSize sz = m_pSlider->size();
-    QRect rc = QApplication::desktop()->screenGeometry();
-    static const int _yOffset = ZenoStyle::dpiScaled(20);
-
-    QPoint pos = this->cursor().pos();
-    pos.setY(std::min(pos.y(), rc.bottom() - sz.height() / 2 - _yOffset));
-    pos -= QPoint(0, sz.height() / 2);
-
-    m_pSlider->move(pos);
-    m_pSlider->show();
-    m_pSlider->activateWindow();
-    m_pSlider->setFocus();
-    m_pSlider->raise();
-    setShowingSlider(true);
-}
-
-bool ZLineEdit::event(QEvent* event)
-{
-    if (event->type() == QEvent::KeyPress)
-    {
-        QKeyEvent* k = (QKeyEvent*)event;
-        if (m_pSlider && k->key() == Qt::Key_Shift)
-        {
-            popupSlider();
-            k->accept();
-            return true;
-        }
-    }
-    return QLineEdit::event(event);
 }
 
 void ZLineEdit::keyPressEvent(QKeyEvent* event)
@@ -127,21 +55,10 @@ void ZLineEdit::keyPressEvent(QKeyEvent* event)
     QLineEdit::keyPressEvent(event);
 }
 
-void ZLineEdit::keyReleaseEvent(QKeyEvent* event)
-{
-    int k = event->key();
-    if (k == Qt::Key_Shift && m_pSlider)
-    {
-        m_pSlider->hide();
-        setShowingSlider(false);
-    }
-    QLineEdit::keyReleaseEvent(event);
-}
-
 void ZLineEdit::paintEvent(QPaintEvent* event)
 {
     QLineEdit::paintEvent(event);
-    if (m_bShowingSlider)
+    if (hasFocus())
     {
         QPainter p(this);
         QRect rc = rect();
@@ -149,6 +66,29 @@ void ZLineEdit::paintEvent(QPaintEvent* event)
         p.setRenderHint(QPainter::Antialiasing, false);
         p.drawRect(rc.adjusted(0,0,-1,-1));
     }
+}
+
+void ZLineEdit::wheelEvent(QWheelEvent* event)
+{
+    if (hasFocus())
+    {
+        bool ok;
+        double num = text().toDouble(&ok);
+        if (ok)
+        {
+            if (event->delta() > 0)
+            {
+                num += 0.1;
+            }
+            else {
+                num -= 0.1;
+            }
+            setText(QString::number(num));
+        }
+        event->accept();
+        return;
+    }
+    QLineEdit::wheelEvent(event);
 }
 
 bool ZLineEdit::eventFilter(QObject *obj, QEvent *event) {
