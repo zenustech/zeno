@@ -65,39 +65,45 @@ VideoRecInfo AppHelper::getRecordInfo(const ZENO_RECORD_RUN_INITPARAM& param)
 QVector<QString> AppHelper::getKeyFrameProperty(const QVariant& val)
 {
     QVector<QString> ret;
-    if (val.type() == QVariant::String)
+    CURVES_DATA curves = JsonHelper::parseCurves(val);
+    if (val.canConvert<UI_VECSTRING>())
     {
-        CURVES_DATA curves = JsonHelper::parseCurves(val.toString());
-        ret.resize(curves.size());
-        ZenoMainWindow* mainWin = zenoApp->getMainWindow();
-        ZASSERT_EXIT(mainWin, ret);
-        ZTimeline* timeline = mainWin->timeline();
-        ZASSERT_EXIT(timeline, ret);
-        for (int i = 0; i < ret.size(); i++)
+        auto strVec = val.value<UI_VECSTRING>();
+        ret.resize(strVec.size());
+    }
+    else if (val.type() == QVariant::String)
+    {
+        ret.resize(1);
+    }
+    ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(mainWin, ret);
+    ZTimeline* timeline = mainWin->timeline();
+    ZASSERT_EXIT(timeline, ret);
+    for (int i = 0; i < ret.size(); i++)
+    {
+        QString property = "null";
+        const QString& key = curve_util::getCurveKey(i);
+        if (curves.contains(key))
         {
-            QString property = "null";
-            const QString& key = curve_util::getCurveKey(i);
-            if (curves.contains(key))
-            {
-                CURVE_DATA data = curves[key];
+            CURVE_DATA data = curves[key];
 
-                if (data.visible)
-                {
-                    property = "false";
-                    int x = timeline->value();
-                    for (const auto& p : data.points) {
-                        int px = p.point.x();
-                        if (px == x) {
-                            property = "true";
-                            break;
-                        }
+            if (data.visible)
+            {
+                property = "false";
+                int x = timeline->value();
+                for (const auto& p : data.points) {
+                    int px = p.point.x();
+                    if (px == x) {
+                        property = "true";
+                        break;
                     }
                 }
-
             }
-            ret[i] = property;
+
         }
+        ret[i] = property;
     }
+
     if (ret.isEmpty())
         ret << "null";
     return ret;
@@ -105,32 +111,37 @@ QVector<QString> AppHelper::getKeyFrameProperty(const QVariant& val)
 
 bool AppHelper::getCurveValue(QVariant& val)
 {
-    if (val.type() == QVariant::String)
+    CURVES_DATA curves = JsonHelper::parseCurves(val);
+    if (curves.isEmpty())
+        return false;
+    ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(mainWin, false);
+    ZTimeline* timeline = mainWin->timeline();
+    ZASSERT_EXIT(timeline, false);
+    int nFrame = timeline->value();
+    if (val.canConvert<UI_VECSTRING>())
     {
-        ZenoMainWindow* mainWin = zenoApp->getMainWindow();
-        ZASSERT_EXIT(mainWin, false);
-        ZTimeline* timeline = mainWin->timeline();
-        ZASSERT_EXIT(timeline, false);
-        int nFrame = timeline->value();
-        CURVES_DATA curves = JsonHelper::parseCurves(val.toString());
-        if (curves.size() > 1)
+        auto strVec = val.value<UI_VECSTRING>();
+        UI_VECTYPE newVal;
+        newVal.resize(strVec.size());
+        for (int i = 0; i < newVal.size(); i++)
         {
-            UI_VECTYPE newVal;
-            newVal.resize(curves.size());
-            for (int i = 0; i < newVal.size(); i++)
+            QString key = curve_util::getCurveKey(i);
+            if (curves.contains(key))
             {
-                QString key = curve_util::getCurveKey(i);
-                if (curves.contains(key))
-                {
-                    newVal[i] = curves[key].eval(nFrame);
-                }
+                newVal[i] = curves[key].eval(nFrame);
             }
-            val = QVariant::fromValue(newVal);
+            else
+            {
+                newVal[i] = strVec[i].toFloat();
+            }
         }
-        else if (curves.contains("x"))
-        {
-            val = QVariant::fromValue(curves["x"].eval(nFrame));
-        }
+        val = QVariant::fromValue(newVal);
+        return true;
+    }
+    else if (val.type() == QVariant::String && curves.contains("x"))
+    {
+        val = QVariant::fromValue(curves["x"].eval(nFrame));
         return true;
     }
     return false;
@@ -138,40 +149,53 @@ bool AppHelper::getCurveValue(QVariant& val)
 
 bool AppHelper::updateCurve(QVariant oldVal, QVariant& newValue)
 {
-    if (oldVal.type() == QVariant::String)
+    CURVES_DATA curves = JsonHelper::parseCurves(oldVal);
+    if (curves.isEmpty())
+        return true;
+    bool bUpdate = false;
+    UI_VECTYPE datas;
+    //vec
+    if (newValue.canConvert<UI_VECTYPE>())
     {
-        bool bUpdate = false;
-        CURVES_DATA curves = JsonHelper::parseCurves(oldVal.toString());
-        UI_VECTYPE datas;
-        //vec
-        if (newValue.canConvert<UI_VECTYPE>())
-        {
-            datas = newValue.value<UI_VECTYPE>();
-        }
-        //float
-        else
-        {
-            datas << newValue.toFloat();
-        }
-        ZenoMainWindow* mainWin = zenoApp->getMainWindow();
-        ZASSERT_EXIT(mainWin, false);
-        ZTimeline* timeline = mainWin->timeline();
-        ZASSERT_EXIT(timeline, false);
-        int nFrame = timeline->value();
-        for (int i = 0; i < datas.size(); i++) {
-            QString key = curve_util::getCurveKey(i);
-            if (curves.contains(key))
-            {
-                CURVE_DATA& curve = curves[key];
-                QPointF pos(nFrame, datas.at(i));
-                if (curve_util::updateCurve(pos, curve))
-                    bUpdate = true;
-            }
-        }
-        newValue = JsonHelper::dumpCurves(curves);
-        return bUpdate;
+        datas = newValue.value<UI_VECTYPE>();
     }
-    return true;
+    //float
+    else
+    {
+        datas << newValue.toFloat();
+    }
+    UI_VECSTRING oldVec;
+    if (oldVal.canConvert<UI_VECSTRING>())
+    {
+        oldVec = oldVal.value<UI_VECSTRING>();
+    }
+    ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(mainWin, false);
+    ZTimeline* timeline = mainWin->timeline();
+    ZASSERT_EXIT(timeline, false);
+    int nFrame = timeline->value();
+    for (int i = 0; i < datas.size(); i++) {
+        QString key = curve_util::getCurveKey(i);
+        if (curves.contains(key))
+        {
+            CURVE_DATA& curve = curves[key];
+            QPointF pos(nFrame, datas.at(i));
+            if (curve_util::updateCurve(pos, curve))
+                bUpdate = true;
+        }
+        else if (oldVec.size() > i && oldVec[i].toFloat() != datas[i])
+        {
+            bUpdate = true;
+            oldVec[i] = QString::number(datas[i]);
+            oldVal = QVariant::fromValue(oldVec);
+        }
+    }
+    if (bUpdate)
+    {
+        JsonHelper::dumpCurves(curves, oldVal);
+        newValue = oldVal;
+    }
+    return bUpdate;
 }
 
 void AppHelper::dumpTabsToZsg(QDockWidget* dockWidget, RAPIDJSON_WRITER& writer)

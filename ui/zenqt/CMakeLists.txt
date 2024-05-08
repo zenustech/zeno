@@ -50,7 +50,7 @@ endif()
 
 
 target_link_libraries(zenqt PRIVATE Threads::Threads)
-target_link_libraries(zenqt PRIVATE Qt5::Widgets Qt5::OpenGL Qt5::Svg Qt5::Network Qt5::Quick qt5advanceddocking)
+target_link_libraries(zenqt PRIVATE Qt5::Widgets Qt5::OpenGL Qt5::Svg Qt5::Network Qt5::Quick qt5advanceddocking QCodeEditor)
 
 if (WIN32)
     target_link_libraries(zenqt PRIVATE Dbghelp Version)

@@ -398,6 +398,15 @@ namespace zenoui
                 pItemWidget = pSpinBox;
                 break;
             }
+            case zeno::CodeEditor:
+            {
+                ZenoParamCodeEditor* pEditor = new ZenoParamCodeEditor(value.toString());
+                pItemWidget = pEditor;
+                QObject::connect(pEditor, &ZenoParamCodeEditor::editFinished, [=](const QString& text) {
+                    cbSet.cbEditFinished(text);
+                });
+                break;
+            }
             default:
             {
                 return nullptr;

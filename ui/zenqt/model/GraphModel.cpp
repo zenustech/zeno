@@ -11,6 +11,7 @@
 #include <zeno/core/data.h>
 #include <zeno/core/IParam.h>
 #include "util/uihelper.h"
+#include "util/jsonhelper.h"
 
 
 NodeItem::NodeItem(QObject* parent) : QObject(parent)
@@ -357,6 +358,20 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
         case ROLE_COLLASPED:
         {
             return item->bCollasped;
+        }
+        case ROLE_KEYFRAMES: 
+        {
+           QVector<int> keys;
+            for (const zeno::ParamInfo& info : item->params->getInputs()) {
+                QVariant value = UiHelper::zvarToQVar(info.defl);
+                auto curves = JsonHelper::parseCurves(value);
+                for (CURVE_DATA& curve : curves)
+                {
+                    keys << curve.pointBases();
+                }
+            }
+            keys.erase(std::unique(keys.begin(), keys.end()), keys.end());
+            return QVariant::fromValue(keys);
         }
         default:
             return QVariant();
