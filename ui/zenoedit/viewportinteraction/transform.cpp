@@ -57,8 +57,8 @@ void FakeTransformer::addObject(const std::string& name) {
     }
 
     m_init_pivot = node_sync.getInputValVec3(prim_node, "pivotPos");
-    m_init_localXOrg = node_sync.getInputValVec3(prim_node, "localX");
-    m_init_localYOrg = node_sync.getInputValVec3(prim_node, "localY");
+    m_init_localXOrg = glm::normalize(node_sync.getInputValVec3(prim_node, "localX"));
+    m_init_localYOrg = glm::normalize(node_sync.getInputValVec3(prim_node, "localY"));
     _transaction_start_translation = node_sync.getInputValVec3(prim_node, "translation");
     _transaction_start_scaling = node_sync.getInputValVec3(prim_node, "scaling");
     _transaction_start_rotation = node_sync.getInputValQuat(prim_node, "quatRotation");
