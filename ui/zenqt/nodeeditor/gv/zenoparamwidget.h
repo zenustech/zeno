@@ -14,6 +14,7 @@
 #include "widgets/zlineedit.h"
 #include "widgets/znumslider.h"
 #include "widgets/zspinboxslider.h"
+#include "widgets/zcodeeditor.h"
 #include "nodeeditor/gv/zenosvgitem.h"
 #include "zlayoutbackground.h"
 
@@ -358,6 +359,20 @@ class ZenoParamDoubleSpinBox : public ZenoParamWidget
   private:
     QDoubleSpinBox *m_pSpinBox;
 };
+
+class ZenoParamCodeEditor : public ZenoParamWidget
+{
+    Q_OBJECT
+public:
+    ZenoParamCodeEditor(const QString& text, ZCodeEditor::CodeHighLighter = ZCodeEditor::HighLight_Python, ZCodeEditor::CodeCompleter = ZCodeEditor::Completer_Python, QGraphicsItem* parent = nullptr);
+    QString text() const;
+    void setText(const QString& text);
+signals:
+    void editFinished(const QString& text);
+private:
+    ZCodeEditor* m_pCodeEditor;
+};
+
 
 class ZenoParamGroupLine : public QGraphicsItem
 {

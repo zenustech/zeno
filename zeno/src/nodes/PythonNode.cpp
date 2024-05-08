@@ -320,7 +320,7 @@ namespace zeno {
 
         ZENDEFNODE(PythonNode, {
             {
-                {"string", "script", "", ParamSocket, Multiline},
+                {"string", "script", "", ParamSocket, CodeEditor},
                 {"readpath", "path"},
                 {"dict", "args"}
             },

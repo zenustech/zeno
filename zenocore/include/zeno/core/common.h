@@ -132,6 +132,7 @@ namespace zeno {
         PythonEditor,
         PushButton,
         Seperator,
+        CodeEditor,
         NoMultiSockPanel,   //disable dist/list panel
     };
 

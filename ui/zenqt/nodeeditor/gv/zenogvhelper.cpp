@@ -87,6 +87,10 @@ void ZenoGvHelper::setValue(QGraphicsItem* item, zeno::ParamType type, const QVa
             {
                 pMultiStrEdit->setText(value.toString());
             }
+            else if (ZenoParamCodeEditor* pCodeEdit = qobject_cast<ZenoParamCodeEditor*>(pItem))
+            {
+                pCodeEdit->setText(value.toString());
+            }
             else if (ZenoParamPushButton* pBtn = qobject_cast<ZenoParamPushButton*>(pItem))
             {
                 //nothing need to be done.

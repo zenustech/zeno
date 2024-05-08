@@ -21,7 +21,7 @@
 #include "widgets/zpathedit.h"
 #include "util/uihelper.h"
 #include "util/jsonhelper.h"
-
+#include "widgets/zcodeeditor.h"
 
 namespace zenoui
 {
@@ -342,6 +342,14 @@ namespace zenoui
                     cbSet.cbEditFinished(value);
                 });
                 return pSlider;
+            }
+            case zeno::CodeEditor:
+            {
+                ZCodeEditor* pCodeEditor = new ZCodeEditor(value.toString());
+                QObject::connect(pCodeEditor, &ZCodeEditor::editFinished, [=](const QString& text) {
+                    cbSet.cbEditFinished(text);
+                });
+                return pCodeEditor;
             }
             default:
                 return nullptr;

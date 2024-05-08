@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<root>
+    <section name="Keyword">
+        <name>zeno</name>
+    </section>
+    <section name="Function">
+        <name>graph</name>
+        <name>createGraph</name>
+        <name>removeGraph</name>
+        <name>forkMaterial</name>
+        <name>forkGraph</name>
+        <name>renameGraph</name>
+
+        <name>name</name>
+        <name>objCls</name>
+        <name>ident</name>
+
+        <name>createNode</name>
+        <name>deleteNode</name>
+        <name>node</name>
+        <name>addLink</name>
+        <name>removeLink</name>
+    </section>
+</root>

@@ -95,6 +95,10 @@ namespace zenoio
         {
             return zeno::SpinBoxSlider;
         }
+        else if (descName == "CodeEditor")
+        {
+            return zeno::CodeEditor;
+        }
         else if (descName == "Dict Panel")
         {
             return zeno::NullControl;    //deprecated.

@@ -465,6 +465,7 @@ namespace zeno {
         case zeno::SpinBoxSlider:       return "SpinBoxSlider";
         case zeno::Seperator:           return "group-line";
         case zeno::PythonEditor:        return "PythonEditor";
+        case zeno::CodeEditor:        return "CodeEditor";
         default:
             return "";
         }

@@ -15,5 +15,6 @@
         <file>stylesheet/default.css</file>
         <file>stylesheet/visual_studio_light.css</file>
         <file>stylesheet/visual_studio_dark.css</file>
+        <file>stylesheet/drakula.xml</file>
     </qresource>
 </RCC>
