@@ -76,7 +76,9 @@
 %token PI
 %token COMMA
 %token SIN
+%token SINH
 %token COS
+%token COSH
 %token REF
 %token LITERAL
 %token RAND
@@ -134,7 +136,9 @@ func: RAND LPAREN RPAREN {
 
 /* Ò»Ôªº¯Êý */
 unaryfunc: SIN LPAREN exp RPAREN { $$ = std::sin($3); }
+    | SINH LPAREN exp RPAREN { $$ = std::sinh($3); }
     | COS LPAREN exp RPAREN { $$ = std::cos($3); }
+    | COSH LPAREN exp RPAREN { $$ = std::cosh($3); }
     | REF LPAREN LITERAL RPAREN { $$ = driver.callRef($3); }
     ;
 

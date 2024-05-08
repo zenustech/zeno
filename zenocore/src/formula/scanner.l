@@ -99,7 +99,9 @@ id      ({alpha})+
 ","       { return zeno::Parser::make_COMMA(loc); }
 "|"       { return zeno::Parser::make_ABS(loc); }
 "sin"     { return zeno::Parser::make_SIN(loc); }
+"sinh"    { return zeno::Parser::make_SINH(loc); }
 "cos"     { return zeno::Parser::make_COS(loc); }
+"cosh"     { return zeno::Parser::make_COSH(loc); }
 "ref"     { return zeno::Parser::make_REF(loc); }
 "rand"    { return zeno::Parser::make_RAND(loc); }
 {string}  { return zeno::Parser::make_LITERAL(yytext,loc); }

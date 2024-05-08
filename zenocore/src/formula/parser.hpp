@@ -497,17 +497,19 @@ namespace  zeno  {
     TOKEN_PI = 264,                // PI
     TOKEN_COMMA = 265,             // COMMA
     TOKEN_SIN = 266,               // SIN
-    TOKEN_COS = 267,               // COS
-    TOKEN_REF = 268,               // REF
-    TOKEN_LITERAL = 269,           // LITERAL
-    TOKEN_RAND = 270,              // RAND
-    TOKEN_ADD = 271,               // ADD
-    TOKEN_SUB = 273,               // SUB
-    TOKEN_MUL = 275,               // MUL
-    TOKEN_DIV = 277,               // DIV
-    TOKEN_ABS = 279,               // ABS
-    TOKEN_NEG = 281,               // NEG
-    TOKEN_LPAREN = 282             // LPAREN
+    TOKEN_SINH = 267,              // SINH
+    TOKEN_COS = 268,               // COS
+    TOKEN_COSH = 269,              // COSH
+    TOKEN_REF = 270,               // REF
+    TOKEN_LITERAL = 271,           // LITERAL
+    TOKEN_RAND = 272,              // RAND
+    TOKEN_ADD = 273,               // ADD
+    TOKEN_SUB = 275,               // SUB
+    TOKEN_MUL = 277,               // MUL
+    TOKEN_DIV = 279,               // DIV
+    TOKEN_ABS = 281,               // ABS
+    TOKEN_NEG = 283,               // NEG
+    TOKEN_LPAREN = 284             // LPAREN
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -524,7 +526,7 @@ namespace  zeno  {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 28, ///< Number of tokens.
+        YYNTOKENS = 30, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // END
         S_YYerror = 1,                           // error
@@ -538,30 +540,32 @@ namespace  zeno  {
         S_PI = 9,                                // PI
         S_COMMA = 10,                            // COMMA
         S_SIN = 11,                              // SIN
-        S_COS = 12,                              // COS
-        S_REF = 13,                              // REF
-        S_LITERAL = 14,                          // LITERAL
-        S_RAND = 15,                             // RAND
-        S_ADD = 16,                              // ADD
-        S_17_ = 17,                              // "+"
-        S_SUB = 18,                              // SUB
-        S_19_ = 19,                              // "-"
-        S_MUL = 20,                              // MUL
-        S_21_ = 21,                              // "*"
-        S_DIV = 22,                              // DIV
-        S_23_ = 23,                              // "/"
-        S_ABS = 24,                              // ABS
-        S_25_ = 25,                              // "|"
-        S_NEG = 26,                              // NEG
-        S_LPAREN = 27,                           // LPAREN
-        S_YYACCEPT = 28,                         // $accept
-        S_calclist = 29,                         // calclist
-        S_exp = 30,                              // exp
-        S_factor = 31,                           // factor
-        S_zenvar = 32,                           // zenvar
-        S_func = 33,                             // func
-        S_unaryfunc = 34,                        // unaryfunc
-        S_term = 35                              // term
+        S_SINH = 12,                             // SINH
+        S_COS = 13,                              // COS
+        S_COSH = 14,                             // COSH
+        S_REF = 15,                              // REF
+        S_LITERAL = 16,                          // LITERAL
+        S_RAND = 17,                             // RAND
+        S_ADD = 18,                              // ADD
+        S_19_ = 19,                              // "+"
+        S_SUB = 20,                              // SUB
+        S_21_ = 21,                              // "-"
+        S_MUL = 22,                              // MUL
+        S_23_ = 23,                              // "*"
+        S_DIV = 24,                              // DIV
+        S_25_ = 25,                              // "/"
+        S_ABS = 26,                              // ABS
+        S_27_ = 27,                              // "|"
+        S_NEG = 28,                              // NEG
+        S_LPAREN = 29,                           // LPAREN
+        S_YYACCEPT = 30,                         // $accept
+        S_calclist = 31,                         // calclist
+        S_exp = 32,                              // exp
+        S_factor = 33,                           // factor
+        S_zenvar = 34,                           // zenvar
+        S_func = 35,                             // func
+        S_unaryfunc = 36,                        // unaryfunc
+        S_term = 37                              // term
       };
     };
 
@@ -1069,6 +1073,21 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
+      make_SINH (location_type l)
+      {
+        return symbol_type (token::TOKEN_SINH, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_SINH (const location_type& l)
+      {
+        return symbol_type (token::TOKEN_SINH, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
       make_COS (location_type l)
       {
         return symbol_type (token::TOKEN_COS, std::move (l));
@@ -1079,6 +1098,21 @@ switch (yykind)
       make_COS (const location_type& l)
       {
         return symbol_type (token::TOKEN_COS, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_COSH (location_type l)
+      {
+        return symbol_type (token::TOKEN_COSH, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_COSH (const location_type& l)
+      {
+        return symbol_type (token::TOKEN_COSH, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -1561,7 +1595,7 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 59,     ///< Last index in yytable_.
+      yylast_ = 69,     ///< Last index in yytable_.
       yynnts_ = 8,  ///< Number of nonterminal symbols.
       yyfinal_ = 2 ///< Termination state number.
     };
@@ -1611,10 +1645,10 @@ switch (yykind)
        2,     2,     2,     2,     2,     2,     1,     2,     3,     4,
        5,     6,     7,     8,     9,    10,    11,    12,    13,    14,
       15,    16,    17,    18,    19,    20,    21,    22,    23,    24,
-      25,    26,    27
+      25,    26,    27,    28,    29
     };
     // Last valid token kind.
-    const int code_max = 282;
+    const int code_max = 284;
 
     if (t <= 0)
       return symbol_kind::S_YYEOF;
@@ -1767,7 +1801,7 @@ switch (yykind)
 
 #line 10 "parser.y"
 } //  zeno 
-#line 1771 "parser.hpp"
+#line 1805 "parser.hpp"
 
 
 
