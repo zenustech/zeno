@@ -81,16 +81,6 @@ private:
         }
     }
 
-    template <class T>
-    static void print_vec3(std::string name, T& vec) {
-        qDebug() << name.c_str() << ": " << vec[0] << " " << vec[1] << " " << vec[2];
-    }
-
-    template <class T>
-    static void print_vec4(std::string name, T& vec) {
-        qDebug() << name.c_str() << ": " << vec[0] << " " << vec[1] << " " << vec[2] << " " << vec[3];
-    }
-
     static std::optional<glm::vec3> hitOnPlane(glm::vec3 ori, glm::vec3 dir, glm::vec3 n, glm::vec3 p) {
         auto t = glm::dot((p - ori), n) / glm::dot(dir, n);
         if (t > 0)
@@ -102,16 +92,16 @@ private:
 private:
     std::unordered_map<std::string, PrimitiveObject*> m_objects;
 
-    glm::vec3 m_self_center = {};
-    glm::vec3 m_self_X = {1, 0, 0};
-    glm::vec3 m_self_Y = {0, 1, 0};
+    glm::vec3 m_cur_self_center = {};
+    glm::vec3 m_cur_self_X = {1, 0, 0};
+    glm::vec3 m_cur_self_Y = {0, 1, 0};
 
-    glm::vec3 m_pivot = {};
-    glm::vec3 m_localXOrg = {1, 0, 0};
-    glm::vec3 m_localYOrg = {0, 1, 0};
-    glm::vec3 m_trans = {};
-    glm::vec4 m_rotate = {0, 0, 0, 1};
-    glm::vec3 m_scale = {1, 1, 1};
+    glm::vec3 m_init_pivot = {};
+    glm::vec3 m_init_localXOrg = {1, 0, 0};
+    glm::vec3 m_init_localYOrg = {0, 1, 0};
+    glm::vec3 m_transaction_trans = {};
+    glm::vec4 m_transaction_rotate = {0, 0, 0, 1};
+    glm::vec3 m_transaction_scale = {1, 1, 1};
 
     glm::vec3 m_trans_start;
     glm::vec3 m_rotate_start;
@@ -119,9 +109,9 @@ private:
     glm::vec3 _objects_center_start;
     glm::vec3 _objects_localX_start;
     glm::vec3 _objects_localY_start;
-    glm::vec3 _objects_translation;
-    glm::vec3 _objects_scaling;
-    glm::quat _objects_rotation;
+    glm::vec3 _transaction_start_translation;
+    glm::vec3 _transaction_start_scaling;
+    glm::quat _transaction_start_rotation;
 
     bool m_isTransforming = false;
     TransOpt m_operation = TransOpt::NONE;
