@@ -32,6 +32,65 @@ bool sceneMenuEvent(
     const QList<QGraphicsItem*>& items);
 
 
+ZFloatPanel::ZFloatPanel(QWidget* parent) : 
+    _base(parent)
+    , m_bMove(false)
+    , m_pressPos(0,0)
+{
+    this->setAttribute(Qt::WA_Hover, true);
+}
+
+void ZFloatPanel::mousePressEvent(QMouseEvent* event)
+{
+    m_bMove = isDragArea();
+    m_pressPos = event->pos();
+    _base::mousePressEvent(event);
+}
+
+void ZFloatPanel::mouseMoveEvent(QMouseEvent* event)
+{
+    if (m_bMove)
+    {
+        QPoint pos = event->pos();
+        int offset = pos.x() - m_pressPos.x();
+        this->resize(this->width() - offset, this->height());
+        QPoint oldPos = this->pos();
+        this->move(oldPos.x() + offset, oldPos.y());
+    }
+    _base::mouseMoveEvent(event);
+}
+
+void ZFloatPanel::mouseReleaseEvent(QMouseEvent* event)
+{
+    m_bMove = false;
+    _base::mouseReleaseEvent(event);
+}
+
+bool ZFloatPanel::event(QEvent* event)
+{
+    if (event->type() == QEvent::HoverMove)
+    {
+       isDragArea();
+    }
+    return _base::event(event);
+}
+
+bool ZFloatPanel::isDragArea()
+{
+    int diff = cursor().pos().x() - this->pos().x();
+    bool ret = diff > 0 && diff < 20;
+    if (ret)
+    {
+        setCursor(Qt::SizeHorCursor);
+    }
+    else
+    {
+        setCursor(Qt::ArrowCursor);
+    }
+    return ret;
+}
+
+
 _ZenoSubGraphView::_ZenoSubGraphView(QWidget *parent)
     : QGraphicsView(parent)
     , m_scene(nullptr)
@@ -929,7 +988,7 @@ void ZenoSubGraphView::showFloatPanel(GraphModel* subgraph, const QModelIndexLis
             m_lastSelectedNode = QModelIndex();
         } else if (m_prop == nullptr || nodes[0] != m_lastSelectedNode) {
             if (m_prop == nullptr) {
-                m_prop = new DockContent_Parameter(this);
+                m_prop = new ZFloatPanel(this);
                 m_prop->initUI();
                 m_prop->resize(this->width() * 0.2, this->height());
                 m_prop->setMinimumWidth(300);

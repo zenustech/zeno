@@ -84,6 +84,7 @@ protected:
     void initConnections() override;
 private slots:
     void onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
+    void onNodeRemoved(QString nodeName);
 private:
     QLabel* m_plblName;
     ZToolBarButton* m_pSettingBtn;

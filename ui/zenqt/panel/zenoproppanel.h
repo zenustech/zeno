@@ -44,6 +44,9 @@ protected:
     bool eventFilter(QObject *obj, QEvent *event);
     void paintEvent(QPaintEvent* event) override;
 
+private slots:
+    void onNodeRemoved(QString nodeName);
+
 private:
     void clearLayout();
     bool syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout* pGroupLayout, QStandardItem* paramItem, int row);

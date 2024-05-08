@@ -257,14 +257,15 @@ void DockContent_Parameter::onNodesSelected(GraphModel* subgraph, const QModelIn
         if (!nodes.isEmpty())
         {
             const QModelIndex& idx = nodes[0];
-            const QAbstractItemModel* pSubgModel = idx.model();
-            if (pSubgModel)
+            //const QAbstractItemModel* pSubgModel = idx.model();
+            if (subgraph)
             {
-                connect(pSubgModel, &QAbstractItemModel::dataChanged, this, &DockContent_Parameter::onDataChanged, Qt::UniqueConnection);;
-                if (const GraphModel* pModel = qobject_cast<const GraphModel*>(pSubgModel))
+                connect(subgraph, &QAbstractItemModel::dataChanged, this, &DockContent_Parameter::onDataChanged, Qt::UniqueConnection);
+                if (const GraphModel* pModel = qobject_cast<const GraphModel*>(subgraph))
                 {
                     this->setEnabled(!pModel->isLocked());
                 }
+                connect(subgraph, &GraphModel::nodeRemoved, this, &DockContent_Parameter::onNodeRemoved, Qt::UniqueConnection);
                 //TODO: When Switch node, the connection should be cleared.
             }
 
@@ -274,8 +275,8 @@ void DockContent_Parameter::onNodesSelected(GraphModel* subgraph, const QModelIn
                 return;
             }
         }
-        m_plblName->setText("");
-        m_pNameLineEdit->setText("");
+        //m_plblName->setText("");
+        //m_pNameLineEdit->setText("");
     }
 }
 void DockContent_Parameter::onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
@@ -286,6 +287,14 @@ void DockContent_Parameter::onDataChanged(const QModelIndex& topLeft, const QMod
     if (role != ROLE_NODE_NAME)
         return;
     m_pNameLineEdit->setText(topLeft.data(ROLE_NODE_NAME).toString());
+}
+
+void DockContent_Parameter::onNodeRemoved(QString nodeName)
+{
+    if (m_pNameLineEdit->text() != nodeName)
+        return;
+    m_plblName->setText("");
+    m_pNameLineEdit->setText("");
 }
 
 void DockContent_Parameter::onPrimitiveSelected(const std::unordered_set<std::string>& primids)

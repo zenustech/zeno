@@ -122,7 +122,7 @@ void ZenoPropPanel::reset(GraphModel* subgraph, const QModelIndexList& nodes, bo
 
     RetryScope scope(m_bReentry);
 
-    if (!select || nodes.size() != 1)
+    if (!select || nodes.size() != 1 || m_idx == nodes[0])
     {
         //update();
         return;
@@ -157,7 +157,7 @@ void ZenoPropPanel::reset(GraphModel* subgraph, const QModelIndexList& nodes, bo
         }
     });
 
-    //TODO: get the notify when this node has been removed.
+    connect(m_model, &GraphModel::nodeRemoved, this, &ZenoPropPanel::onNodeRemoved, Qt::UniqueConnection);
     //connect(pModel, &IGraphsModel::_rowsRemoved, this, [=]() {
     //    clearLayout();
     //});
@@ -941,6 +941,13 @@ void ZenoPropPanel::paintEvent(QPaintEvent* event)
     QPainter p(this);
     style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 }
+
+void ZenoPropPanel::onNodeRemoved(QString nodeName)
+{
+    if (m_idx.row() < 0)
+        clearLayout();
+}
+
 
 void ZenoPropPanel::setKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &keys) 
 {
