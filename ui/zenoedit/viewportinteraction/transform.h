@@ -100,7 +100,7 @@ private:
     glm::vec3 m_init_localXOrg = {1, 0, 0};
     glm::vec3 m_init_localYOrg = {0, 1, 0};
     glm::vec3 m_transaction_trans = {};
-    glm::vec4 m_transaction_rotate = {0, 0, 0, 1};
+    glm::quat m_transaction_rotate = {1, 0, 0, 0};
     glm::vec3 m_transaction_scale = {1, 1, 1};
 
     glm::vec3 m_trans_start;

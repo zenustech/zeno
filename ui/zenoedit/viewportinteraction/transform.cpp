@@ -376,7 +376,7 @@ void FakeTransformer::syncToTransformNode(NodeLocation& node_location, const std
                                  scaling);
     // update rotate
     auto pre_q = _transaction_start_rotation;
-    auto dif_q = glm::quat(m_transaction_rotate[3], m_transaction_rotate[0], m_transaction_rotate[1], m_transaction_rotate[2]);
+    auto dif_q = m_transaction_rotate;
     auto res_q = glm::toQuat(glm::toMat4(dif_q) * glm::toMat4(pre_q));
     auto rotate_data = vec4f(res_q.x, res_q.y, res_q.z, res_q.w);
     QVector<double> rotate = {
@@ -402,7 +402,7 @@ void FakeTransformer::endTransform(bool moved) {
 
             if (m_operation == TransOpt::ROTATE) {
                 auto pre_q = _transaction_start_rotation;
-                auto dif_q = glm::quat(m_transaction_rotate[3], m_transaction_rotate[0], m_transaction_rotate[1], m_transaction_rotate[2]);
+                auto dif_q = m_transaction_rotate;
                 _transaction_start_rotation = glm::toQuat(glm::toMat4(dif_q) * glm::toMat4(pre_q));
             }
 
@@ -416,7 +416,7 @@ void FakeTransformer::endTransform(bool moved) {
 
     m_transaction_trans = {0, 0, 0};
     m_transaction_scale = {1, 1, 1};
-    m_transaction_rotate = {0, 0, 0, 1};
+    m_transaction_rotate = {1, 0, 0, 0};
 
     m_operation_mode = zenovis::INTERACT_NONE;
     m_handler->setMode(zenovis::INTERACT_NONE);
@@ -619,8 +619,7 @@ void FakeTransformer::rotate(glm::vec3 start_vec, glm::vec3 end_vec, glm::vec3 a
     if (glm::dot(cross_vec, axis) < 0)
         direct = -1.0f;
     float angle = acos(fmin(fmax(glm::dot(start_vec, end_vec), -1.0f), 1.0f));
-    glm::quat q(glm::rotate(angle * direct, axis));
-    m_transaction_rotate = {q.x, q.y, q.z, q.w};
+    m_transaction_rotate = glm::quat(glm::rotate(angle * direct, axis));
     doTransform();
 }
 
@@ -647,7 +646,7 @@ void FakeTransformer::doTransform() {
 
         // do this transform
         auto translate_matrix = glm::translate(_transaction_start_translation + m_transaction_trans);
-        auto cur_quaternion = glm::quat(m_transaction_rotate[3], m_transaction_rotate[0], m_transaction_rotate[1], m_transaction_rotate[2]);
+        auto cur_quaternion = m_transaction_rotate;
         auto rotate_matrix = glm::toMat4(cur_quaternion) * glm::toMat4(_transaction_start_rotation);
         auto scale_matrix = glm::scale(_transaction_start_scaling * m_transaction_scale);
         auto transform_matrix = pivot_to_world *  translate_matrix *  rotate_matrix * scale_matrix * pivot_to_local;
@@ -686,7 +685,7 @@ void FakeTransformer::doTransform() {
         pivot_to_world[2] = glm::cross(m_init_localXOrg, m_init_localYOrg);
         m_cur_self_center = _objects_center_start + pivot_to_world * m_transaction_trans;
 
-        auto cur_quaternion = glm::quat(m_transaction_rotate[3], m_transaction_rotate[0], m_transaction_rotate[1], m_transaction_rotate[2]);
+        auto cur_quaternion = m_transaction_rotate;
         auto cur_rot = glm::toMat3(cur_quaternion);
         m_cur_self_X = cur_rot * _objects_localX_start;
         m_cur_self_Y = cur_rot * _objects_localY_start;
