@@ -52,4 +52,38 @@ private:
     QStringList m_graphPath;
 };
 
+class ModelDataCommand : public QUndoCommand
+{
+public:
+    ModelDataCommand(const QModelIndex& index, const QVariant& oldData, const QVariant& newData, int role, QStringList& graphPath);
+    void redo() override;
+    void undo() override;
+
+private:
+    const QVariant m_oldData;
+    const QVariant m_newData;
+    const int m_role;
+    QStringList m_graphPath;
+
+    GraphModel* m_model;
+    QString m_nodeName;
+    QString m_paramName;
+};
+
+class NodeStatusCommand : public QUndoCommand
+{
+public:
+    NodeStatusCommand(bool isSetView, const QString& name, bool bOn, QStringList& graphPath);
+    void redo() override;
+    void undo() override;
+
+private:
+    bool m_isSetView;
+    bool m_On;
+    QStringList m_graphPath;
+
+    GraphModel* m_model;
+    QString m_nodeName;
+};
+
 #endif

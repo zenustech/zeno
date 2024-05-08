@@ -155,3 +155,109 @@ void LinkCommand::undo()
             m_model->_addLinkImpl(m_link);
     }
 }
+
+ModelDataCommand::ModelDataCommand(const QModelIndex& index, const QVariant& oldData, const QVariant& newData, int role, QStringList& graphPath)
+    : m_oldData(oldData)
+    , m_newData(newData)
+    , m_role(role)
+    , m_graphPath(graphPath)
+    , m_model(nullptr)
+    , m_nodeName("")
+    , m_paramName("")
+{
+    m_nodeName = index.data(ROLE_NODE_NAME).toString();
+    if (m_role == ROLE_PARAM_VALUE)  //index of paramsModel, need record paramName
+        m_paramName = index.data(ROLE_PARAM_NAME).toString();
+}
+
+void ModelDataCommand::redo()
+{
+    m_model = GraphsManager::instance().getGraph(m_graphPath);
+    if (m_model)
+    {
+        auto nodeIdx = m_model->indexFromName(m_nodeName);
+        if (nodeIdx.isValid())
+        {
+            if (m_role == ROLE_OBJPOS || m_role == ROLE_COLLASPED)
+            {
+                m_model->setData(nodeIdx, m_newData, m_role);
+            }else if (m_role == ROLE_PARAM_VALUE)
+            {
+                if (ParamsModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(nodeIdx.data(ROLE_PARAMS)))
+                {
+                    auto paramIdx = paramsModel->paramIdx(m_paramName, true);
+                    paramsModel->setData(paramIdx, m_newData, m_role);
+                }
+            }
+        }
+    }
+}
+
+void ModelDataCommand::undo()
+{
+    m_model = GraphsManager::instance().getGraph(m_graphPath);
+    if (m_model)
+    {
+        auto nodeIdx = m_model->indexFromName(m_nodeName);
+        if (nodeIdx.isValid())
+        {
+            if (m_role == ROLE_OBJPOS || m_role == ROLE_COLLASPED)
+            {
+                m_model->setData(nodeIdx, m_oldData, m_role);
+            }
+            else if (m_role == ROLE_PARAM_VALUE)
+            {
+                if (ParamsModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(nodeIdx.data(ROLE_PARAMS)))
+                {
+                    auto paramIdx = paramsModel->paramIdx(m_paramName, true);
+                    paramsModel->setData(paramIdx, m_oldData, m_role);
+                }
+            }
+        }
+    }
+}
+
+NodeStatusCommand::NodeStatusCommand(bool isSetView, const QString& name, bool bOn, QStringList& graphPath)
+    : m_On(bOn)
+    , m_graphPath(graphPath)
+    , m_model(nullptr)
+    , m_nodeName(name)
+    , m_isSetView(isSetView)
+{
+}
+
+void NodeStatusCommand::redo()
+{
+    m_model = GraphsManager::instance().getGraph(m_graphPath);
+    if (m_model)
+    {
+        auto idx = m_model->indexFromName(m_nodeName);
+        if (idx.isValid()) {
+            if (m_isSetView)
+            {
+                m_model->_setViewImpl(idx, m_On);
+            }
+            else {
+                //m_model->_setMuteImpl(idx, m_On);
+            }
+        }
+    }
+}
+
+void NodeStatusCommand::undo()
+{
+    m_model = GraphsManager::instance().getGraph(m_graphPath);
+    if (m_model)
+    {
+        auto idx = m_model->indexFromName(m_nodeName);
+        if (idx.isValid()) {
+            if (m_isSetView)
+            {
+                m_model->_setViewImpl(idx, !m_On);
+            }
+            else {
+                //m_model->_setMuteImpl(idx, !m_On);
+            }
+        }
+    }
+}
