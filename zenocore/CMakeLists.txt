@@ -6,11 +6,7 @@ option(ZENO_ENABLE_BACKWARD "Enable ZENO fault handler for traceback" OFF)
 
 file(GLOB_RECURSE source CONFIGURE_DEPENDS include/*.h src/*.cpp)
 
-if (ZENO_BUILD_SHARED)
-    add_library(zenocore SHARED ${source})
-else()
-    add_library(zenocore OBJECT ${source})
-endif()
+add_library(zenocore SHARED ${source})
 
 if (ZENO_DEBUG_MSVC)
     zeno_dbg_msvc(zenocore)

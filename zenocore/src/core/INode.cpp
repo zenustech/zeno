@@ -27,6 +27,7 @@
 #include <zeno/utils/uuid.h>
 #include <zeno/extra/SubnetNode.h>
 #include <zeno/extra/GraphException.h>
+#include <zeno/formula/formula.h>
 
 
 namespace zeno {
@@ -945,12 +946,10 @@ float INode::resolve(const std::string& formulaOrKFrame, const ParamType type)
     int frame = getGlobalState()->getFrameId();
     if (zeno::starts_with(formulaOrKFrame, "=")) {
         std::string code = formulaOrKFrame.substr(1);
-        auto res = getThisGraph()->callTempNode(
-            "NumericEval", { {"zfxCode", objectFromLiterial(code)}, {"resType", objectFromLiterial("float")} }).at("result");
-        assert(res);
-        std::shared_ptr<zeno::NumericObject> num = std::dynamic_pointer_cast<zeno::NumericObject>(res);
-        float fVal = num->get<float>();
-        return fVal;
+        Formula fmla(code);
+        float res = 0.;
+        int ret = fmla.parse(res);
+        return res;
     }
     else if (zany curve = zeno::parseCurveObj(formulaOrKFrame)) {
         std::shared_ptr<zeno::CurveObject> curves = std::dynamic_pointer_cast<zeno::CurveObject>(curve);
