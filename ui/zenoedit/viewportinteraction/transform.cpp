@@ -582,7 +582,7 @@ void FakeTransformer::clear() {
     m_objects.clear();
     m_transaction_trans = {0, 0, 0};
     m_transaction_scale = {1, 1, 1};
-    m_transaction_rotate = {0, 0, 0, 1};
+    m_transaction_rotate = {1, 0, 0, 0};
     m_operation = TransOpt::NONE;
     m_handler = nullptr;
 
