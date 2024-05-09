@@ -88,6 +88,7 @@ private slots:
 private:
     QLabel* m_plblName;
     ZToolBarButton* m_pSettingBtn;
+    ZToolBarButton* m_pFixBtn;
     ZLineEdit *m_pNameLineEdit;
 };
 

@@ -213,7 +213,8 @@ void DockContent_Parameter::initToolbar(QHBoxLayout* pToolLayout)
     m_pNameLineEdit = new ZLineEdit;
     m_pNameLineEdit->setProperty("cssClass", "zeno2_2_lineedit");
 
-    ZToolBarButton* pFixBtn = new ZToolBarButton(false, ":/icons/fixpanel.svg", ":/icons/fixpanel-on.svg");
+    m_pFixBtn = new ZToolBarButton(true, ":/icons/fixpanel.svg", ":/icons/fixpanel-on.svg");
+    m_pFixBtn->setChecked(false);
     ZToolBarButton* pWikiBtn = new ZToolBarButton(false, ":/icons/wiki.svg", ":/icons/wiki-on.svg");
     m_pSettingBtn = new ZToolBarButton(false, ":/icons/settings.svg", ":/icons/settings-on.svg");
 
@@ -221,7 +222,7 @@ void DockContent_Parameter::initToolbar(QHBoxLayout* pToolLayout)
     pToolLayout->addWidget(m_plblName);
     pToolLayout->addWidget(m_pNameLineEdit);
     pToolLayout->addStretch();
-    pToolLayout->addWidget(pFixBtn);
+    pToolLayout->addWidget(m_pFixBtn);
     pToolLayout->addWidget(pWikiBtn);
     pToolLayout->addWidget(m_pSettingBtn);
 }
@@ -249,6 +250,8 @@ void DockContent_Parameter::initConnections()
 
 void DockContent_Parameter::onNodesSelected(GraphModel* subgraph, const QModelIndexList& nodes, bool select)
 {
+    if (m_pFixBtn->isChecked())
+        return;
     if (ZenoPropPanel* prop = findChild<ZenoPropPanel*>())
     {
         auto pModel = zenoApp->graphsManager()->currentModel();
