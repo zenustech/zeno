@@ -11,6 +11,25 @@ class LayerPathWidget;
 class ZenoSearchBar;
 class ThumbnailView;
 
+class ZFloatPanel : public DockContent_Parameter 
+{
+    Q_OBJECT
+    typedef DockContent_Parameter _base;
+public:
+    ZFloatPanel(QWidget* parent = nullptr);
+protected:
+    void mousePressEvent(QMouseEvent* event) override;
+    void mouseMoveEvent(QMouseEvent* event) override;
+    void mouseReleaseEvent(QMouseEvent* event) override;
+    bool event(QEvent* event) override;
+private:
+    bool isDragArea();
+
+private:
+    bool m_bMove;
+    QPoint m_pressPos;
+};
+
 class _ZenoSubGraphView : public QGraphicsView
 {
     Q_OBJECT

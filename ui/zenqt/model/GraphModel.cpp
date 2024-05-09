@@ -1215,7 +1215,7 @@ bool GraphModel::removeRows(int row, int count, const QModelIndex& parent)
 
     endRemoveRows();
 
-    emit nodeRemoved(id);
+    emit nodeRemoved(name);
     return true;
 }
 

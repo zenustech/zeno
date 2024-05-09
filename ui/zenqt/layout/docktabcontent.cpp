@@ -213,7 +213,8 @@ void DockContent_Parameter::initToolbar(QHBoxLayout* pToolLayout)
     m_pNameLineEdit = new ZLineEdit;
     m_pNameLineEdit->setProperty("cssClass", "zeno2_2_lineedit");
 
-    ZToolBarButton* pFixBtn = new ZToolBarButton(false, ":/icons/fixpanel.svg", ":/icons/fixpanel-on.svg");
+    m_pFixBtn = new ZToolBarButton(true, ":/icons/fixpanel.svg", ":/icons/fixpanel-on.svg");
+    m_pFixBtn->setChecked(false);
     ZToolBarButton* pWikiBtn = new ZToolBarButton(false, ":/icons/wiki.svg", ":/icons/wiki-on.svg");
     m_pSettingBtn = new ZToolBarButton(false, ":/icons/settings.svg", ":/icons/settings-on.svg");
 
@@ -221,7 +222,7 @@ void DockContent_Parameter::initToolbar(QHBoxLayout* pToolLayout)
     pToolLayout->addWidget(m_plblName);
     pToolLayout->addWidget(m_pNameLineEdit);
     pToolLayout->addStretch();
-    pToolLayout->addWidget(pFixBtn);
+    pToolLayout->addWidget(m_pFixBtn);
     pToolLayout->addWidget(pWikiBtn);
     pToolLayout->addWidget(m_pSettingBtn);
 }
@@ -249,6 +250,8 @@ void DockContent_Parameter::initConnections()
 
 void DockContent_Parameter::onNodesSelected(GraphModel* subgraph, const QModelIndexList& nodes, bool select)
 {
+    if (m_pFixBtn->isChecked())
+        return;
     if (ZenoPropPanel* prop = findChild<ZenoPropPanel*>())
     {
         auto pModel = zenoApp->graphsManager()->currentModel();
@@ -257,14 +260,15 @@ void DockContent_Parameter::onNodesSelected(GraphModel* subgraph, const QModelIn
         if (!nodes.isEmpty())
         {
             const QModelIndex& idx = nodes[0];
-            const QAbstractItemModel* pSubgModel = idx.model();
-            if (pSubgModel)
+            //const QAbstractItemModel* pSubgModel = idx.model();
+            if (subgraph)
             {
-                connect(pSubgModel, &QAbstractItemModel::dataChanged, this, &DockContent_Parameter::onDataChanged, Qt::UniqueConnection);;
-                if (const GraphModel* pModel = qobject_cast<const GraphModel*>(pSubgModel))
+                connect(subgraph, &QAbstractItemModel::dataChanged, this, &DockContent_Parameter::onDataChanged, Qt::UniqueConnection);
+                if (const GraphModel* pModel = qobject_cast<const GraphModel*>(subgraph))
                 {
                     this->setEnabled(!pModel->isLocked());
                 }
+                connect(subgraph, &GraphModel::nodeRemoved, this, &DockContent_Parameter::onNodeRemoved, Qt::UniqueConnection);
                 //TODO: When Switch node, the connection should be cleared.
             }
 
@@ -274,8 +278,8 @@ void DockContent_Parameter::onNodesSelected(GraphModel* subgraph, const QModelIn
                 return;
             }
         }
-        m_plblName->setText("");
-        m_pNameLineEdit->setText("");
+        //m_plblName->setText("");
+        //m_pNameLineEdit->setText("");
     }
 }
 void DockContent_Parameter::onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
@@ -286,6 +290,14 @@ void DockContent_Parameter::onDataChanged(const QModelIndex& topLeft, const QMod
     if (role != ROLE_NODE_NAME)
         return;
     m_pNameLineEdit->setText(topLeft.data(ROLE_NODE_NAME).toString());
+}
+
+void DockContent_Parameter::onNodeRemoved(QString nodeName)
+{
+    if (m_pNameLineEdit->text() != nodeName)
+        return;
+    m_plblName->setText("");
+    m_pNameLineEdit->setText("");
 }
 
 void DockContent_Parameter::onPrimitiveSelected(const std::unordered_set<std::string>& primids)
