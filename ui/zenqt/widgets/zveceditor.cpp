@@ -23,6 +23,44 @@ bool ZVecEditor::eventFilter(QObject *watched, QEvent *event) {
                 return true;
             }
         }
+    }else if (event->type() == QEvent::FocusIn)
+    {
+        for (int i = 0; i < m_editors.size(); i++) {
+            if (m_editors[i] != watched) {
+                m_editors[i]->hide();
+            }
+        }
+    }
+    else if (event->type() == QEvent::FocusOut)
+    {
+        if (ZLineEdit* edit = qobject_cast<ZLineEdit*>(watched))
+        {
+            if (!edit->hasFocus())
+            {
+                for (int i = 0; i < m_editors.size(); i++) {
+                    if (m_editors[i] != watched) {
+                        m_editors[i]->show();
+                    }
+                }
+            }
+        }
+    }else if (event->type() == QEvent::KeyPress)
+    {
+        if (QKeyEvent* e = static_cast<QKeyEvent*>(event))
+        {
+            if (e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter || e->key() == Qt::Key_Escape)
+            {
+                if (ZLineEdit* edit = qobject_cast<ZLineEdit*>(watched))
+                {
+                    edit->clearFocus();
+                    for (int i = 0; i < m_editors.size(); i++) {
+                        if (m_editors[i] != watched) {
+                            m_editors[i]->show();
+                        }
+                    }
+                }
+            }
+        }
     }
     return QWidget::eventFilter(watched, event);
 }
@@ -45,7 +83,6 @@ void ZVecEditor::initUI(const QVariant &vec) {
             m_editors[i]->installEventFilter(this);
         }
 
-        m_editors[i]->setNumSlider(UiHelper::getSlideStep("", m_bFloat ? zeno::Param_Float : zeno::Param_Int));
         //m_editors[i]->setFixedWidth(ZenoStyle::dpiScaled(64));
         m_editors[i]->setProperty("cssClass", m_styleCls);
         if (vec.canConvert<UI_VECTYPE>())

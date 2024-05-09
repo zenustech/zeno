@@ -259,6 +259,8 @@ namespace zeno {
                     param.ctrlProps = props;
                 }
             }
+            if (param.type != Param_Null && param.control == NullControl)
+                param.control = getDefaultControl(param.type);
             param.tooltip = param_desc.doc;
             default.params.emplace_back(std::move(param));
         }
