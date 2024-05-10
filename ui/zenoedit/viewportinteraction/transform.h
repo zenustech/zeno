@@ -112,10 +112,6 @@ private:
 
     glm::vec3 m_trans_start;
     glm::vec3 m_rotate_start;
-    // glm::vec3 m_scale_start;
-    glm::vec3 _objects_center_start;
-    glm::vec3 _objects_localX_start;
-    glm::vec3 _objects_localY_start;
 
     bool m_isTransforming = false;
     TransOpt m_operation = TransOpt::NONE;
@@ -141,7 +137,7 @@ private:
         return glm::inverse(get_pivot_to_world());
     }
 
-    glm::mat4 get_local_transform() {
+    glm::mat4 get_cur_local_transform() {
         auto S = glm::scale(_transaction_scale * m_transaction_start_scaling);
         auto R = glm::toMat4(_transaction_rotate) * glm::toMat4(m_transaction_start_rotation);
         auto T = glm::translate(_transaction_trans + m_transaction_start_translation);
@@ -149,20 +145,43 @@ private:
     }
 
     glm::vec3 get_cur_self_center() {
-        auto transform = get_pivot_to_world() * get_local_transform() * get_pivot_to_local();
+        auto transform = get_pivot_to_world() * get_cur_local_transform() * get_pivot_to_local();
         auto pos = transform * glm::vec4(m_init_pivot, 1);
         return {pos.x, pos.y, pos.z};
     }
 
     glm::vec3 get_cur_self_X() {
-        auto transform = get_pivot_to_world() * get_local_transform() * get_pivot_to_local();
+        auto transform = get_pivot_to_world() * get_cur_local_transform() * get_pivot_to_local();
         auto dir = transform * glm::vec4(m_init_localXOrg, 0);
-        return {dir.x, dir.y, dir.z};
+        return glm::normalize(glm::vec3(dir.x, dir.y, dir.z));
     }
     glm::vec3 get_cur_self_Y() {
-        auto transform = get_pivot_to_world() * get_local_transform() * get_pivot_to_local();
+        auto transform = get_pivot_to_world() * get_cur_local_transform() * get_pivot_to_local();
         auto dir = transform * glm::vec4(m_init_localYOrg, 0);
-        return {dir.x, dir.y, dir.z};
+        return glm::normalize(glm::vec3(dir.x, dir.y, dir.z));
+    }
+
+    glm::mat4 get_transaction_start_transform() {
+        auto S = glm::scale(m_transaction_start_scaling);
+        auto R = glm::toMat4(m_transaction_start_rotation);
+        auto T = glm::translate(m_transaction_start_translation);
+        return T * R * S;
+    }
+    glm::vec3 get_transaction_start_center() {
+        auto transform = get_pivot_to_world() * get_transaction_start_transform() * get_pivot_to_local();
+        auto pos = transform * glm::vec4(m_init_pivot, 1);
+        return {pos.x, pos.y, pos.z};
+    }
+
+    glm::vec3 get_transaction_start_X() {
+        auto transform = get_pivot_to_world() * get_transaction_start_transform() * get_pivot_to_local();
+        auto dir = transform * glm::vec4(m_init_localXOrg, 0);
+        return glm::normalize(glm::vec3(dir.x, dir.y, dir.z));
+    }
+    glm::vec3 get_transaction_start_Y() {
+        auto transform = get_pivot_to_world() * get_transaction_start_transform() * get_pivot_to_local();
+        auto dir = transform * glm::vec4(m_init_localYOrg, 0);
+        return glm::normalize(glm::vec3(dir.x, dir.y, dir.z));
     }
 };
 

@@ -157,8 +157,8 @@ void FakeTransformer::transform(QVector3D camera_pos, QVector3D ray_dir, glm::ve
     auto y_axis = glm::vec3(0, 1, 0);
     auto z_axis = glm::vec3(0, 0, 1);
 
-    auto localX = _objects_localX_start;
-    auto localY = _objects_localY_start;
+    auto localX = get_transaction_start_X();
+    auto localY = get_transaction_start_Y();
     auto localZ = glm::cross(localX, localY);
     auto cur_to_world = glm::mat3(1);
     cur_to_world[0] = localX;
@@ -294,9 +294,6 @@ bool FakeTransformer::isTransforming() const {
 }
 
 void FakeTransformer::startTransform() {
-    _objects_center_start = get_cur_self_center();
-    _objects_localX_start = get_cur_self_X();
-    _objects_localY_start = get_cur_self_Y();
     markObjectsInteractive();
 }
 
@@ -606,8 +603,8 @@ void FakeTransformer::rotate(glm::vec3 start_vec, glm::vec3 end_vec, glm::vec3 a
         direct = -1.0f;
     float angle = acos(fmin(fmax(glm::dot(start_vec, end_vec), -1.0f), 1.0f));
     {
-        auto localX = _objects_localX_start;
-        auto localY = _objects_localY_start;
+        auto localX = get_transaction_start_X();
+        auto localY = get_transaction_start_Y();
         auto localZ = glm::cross(localX, localY);
         auto cur_to_world = glm::mat3(1);
         cur_to_world[0] = localX;
