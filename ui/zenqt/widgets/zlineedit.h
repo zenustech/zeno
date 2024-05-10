@@ -20,9 +20,15 @@ protected:
     void wheelEvent(QWheelEvent* event) override;
     bool eventFilter(QObject *obj, QEvent *event) override;
 
+    void resizeEvent(QResizeEvent* event) override;
+
 signals:
     void btnClicked();
     void textEditFinished();
+
+public slots:
+    void sltHintSelected(QString itemSelected);
+    void sltSetFocus();
 
 private:
     void init();
@@ -32,6 +38,8 @@ private:
     QString m_iconNormal;
     QString m_iconHover;
     bool m_bIconHover;
+
+    bool m_bShowHintList;
 };
 
 #endif

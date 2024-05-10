@@ -4,12 +4,17 @@
 #include <QSvgRenderer>
 #include "curvemap/zcurvemapeditor.h"
 #include "util/uihelper.h"
+#include "zenoapplication.h"
+#include "zenomainwindow.h"
+#include "panel/ZenoHintListWidget.h"
+#include "panel/zenoproppanel.h"
 
 ZLineEdit::ZLineEdit(QWidget* parent)
     : QLineEdit(parent)
     , m_bHasRightBtn(false)
     , m_pButton(nullptr)
     , m_bIconHover(false)
+    , m_bShowHintList(true)
 
 {
     init();
@@ -24,10 +29,50 @@ ZLineEdit::ZLineEdit(const QString& text, QWidget* parent)
     init();
 }
 
+void ZLineEdit::sltHintSelected(QString itemSelected)
+{
+    blockSignals(true);
+    setText(itemSelected);
+    blockSignals(false);
+    setFocus();
+    disconnect(&ZenoPropPanel::getHintListInstance(), &ZenoHintListWidget::hintSelected, this, &ZLineEdit::sltHintSelected);
+    disconnect(&ZenoPropPanel::getHintListInstance(), &ZenoHintListWidget::escPressedHide, this, &ZLineEdit::sltSetFocus);
+}
+
+void ZLineEdit::sltSetFocus()
+{
+    setFocus();
+}
+
 void ZLineEdit::init()
 {
     connect(this, SIGNAL(editingFinished()), this, SIGNAL(textEditFinished()));
-    //connect(this, &ZLineEdit::textChanged, this, &ZLineEdit::editingFinished);
+    connect(this, &QLineEdit::textChanged, this, [&](const QString& text) {
+        if (hasFocus() && m_bShowHintList)
+        {
+            ZenoHintListWidget* listView = &ZenoPropPanel::getHintListInstance();
+
+            QFontMetrics metrics(this->font());
+            const QPoint& mainWinGlobalPos = zenoApp->getMainWindow()->mapToGlobal(QPoint(0,0));
+            QPoint globalPos = this->mapToGlobal(QPoint(0, 0));
+            globalPos.setX(globalPos.x() - mainWinGlobalPos.x() + metrics.width(text));
+            globalPos.setY(globalPos.y() - mainWinGlobalPos.y() + height());
+
+            //≤‚ ‘
+            QStringList items;
+            items << "1111" << "2222" << "3333" << "4444" << "5555" << "6666" << "7777" << "8888" << "9999" << "1100";
+            listView->setData(items);
+
+            listView->move(globalPos);
+            if (!listView->isVisible())
+            {
+                connect(&ZenoPropPanel::getHintListInstance(), &ZenoHintListWidget::hintSelected, this, &ZLineEdit::sltHintSelected, Qt::UniqueConnection);
+                connect(&ZenoPropPanel::getHintListInstance(), &ZenoHintListWidget::escPressedHide, this, &ZLineEdit::sltSetFocus, Qt::UniqueConnection);
+                listView->show();
+                listView->clearCurrentItem();
+            }
+        }
+    });
 }
 
 void ZLineEdit::setIcons(const QString& icNormal, const QString& icHover)
@@ -52,6 +97,27 @@ void ZLineEdit::mouseReleaseEvent(QMouseEvent* event)
 
 void ZLineEdit::keyPressEvent(QKeyEvent* event)
 {
+    if (hasFocus() && m_bShowHintList)
+    {
+        ZenoHintListWidget* listView = &ZenoPropPanel::getHintListInstance();
+        if (listView->isVisible())
+        {
+            if (event->key() == Qt::Key_Down) {
+                listView->setActive();
+                event->accept();
+                return;
+            }
+            else if (event->key() == Qt::Key_Escape)
+            {
+                listView->hide();
+                setFocus();
+                disconnect(&ZenoPropPanel::getHintListInstance(), &ZenoHintListWidget::hintSelected, this, &ZLineEdit::sltHintSelected);
+                disconnect(&ZenoPropPanel::getHintListInstance(), &ZenoHintListWidget::escPressedHide, this, &ZLineEdit::sltSetFocus);
+                event->accept();
+                return;
+            }
+        }
+    }
     QLineEdit::keyPressEvent(event);
 }
 
@@ -112,4 +178,13 @@ bool ZLineEdit::eventFilter(QObject *obj, QEvent *event) {
         }
     }
     return QLineEdit::eventFilter(obj, event);
+}
+
+void ZLineEdit::resizeEvent(QResizeEvent* event)
+{
+    if (ZenoPropPanel::getHintListInstance().isVisible())
+    {
+        ZenoPropPanel::getHintListInstance().hide();
+    }
+    QLineEdit::resizeEvent(event);
 }

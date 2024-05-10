@@ -85,6 +85,12 @@ bool ZenoPropPanel::updateCustomName(const QString &value, QString &oldValue)
     return UiHelper::qIndexSetData(m_idx, value, ROLE_NODE_NAME);
 }
 
+ZenoHintListWidget& ZenoPropPanel::getHintListInstance()
+{
+    static ZenoHintListWidget hintList;
+    return hintList;
+}
+
 void ZenoPropPanel::clearLayout()
 {
     setUpdatesEnabled(false);

@@ -4,6 +4,8 @@
 #include "zlineedit.h"
 #include "util/curveutil.h"
 #include <zeno/utils/log.h>
+#include "panel/ZenoHintListWidget.h"
+#include "panel/zenoproppanel.h"
 
 
 ZVecEditor::ZVecEditor(const QVariant &vec, bool bFloat, int deflSize, QString styleCls, QWidget *parent)
@@ -23,7 +25,8 @@ bool ZVecEditor::eventFilter(QObject *watched, QEvent *event) {
                 return true;
             }
         }
-    }else if (event->type() == QEvent::FocusIn)
+    }
+    else if (event->type() == QEvent::FocusIn)
     {
         for (int i = 0; i < m_editors.size(); i++) {
             if (m_editors[i] != watched) {
@@ -33,18 +36,18 @@ bool ZVecEditor::eventFilter(QObject *watched, QEvent *event) {
     }
     else if (event->type() == QEvent::FocusOut)
     {
-        if (ZLineEdit* edit = qobject_cast<ZLineEdit*>(watched))
+        if (!ZenoPropPanel::getHintListInstance().isVisible())
         {
-            if (!edit->hasFocus())
+            if (ZLineEdit* edit = qobject_cast<ZLineEdit*>(watched))
             {
-                for (int i = 0; i < m_editors.size(); i++) {
-                    if (m_editors[i] != watched) {
-                        m_editors[i]->show();
-                    }
+                if (!edit->hasFocus())
+                {
+                    showNoFocusLineEdits();
                 }
             }
         }
-    }else if (event->type() == QEvent::KeyPress)
+    }
+    else if (event->type() == QEvent::KeyPress)
     {
         if (QKeyEvent* e = static_cast<QKeyEvent*>(event))
         {
@@ -52,10 +55,16 @@ bool ZVecEditor::eventFilter(QObject *watched, QEvent *event) {
             {
                 if (ZLineEdit* edit = qobject_cast<ZLineEdit*>(watched))
                 {
-                    edit->clearFocus();
-                    for (int i = 0; i < m_editors.size(); i++) {
-                        if (m_editors[i] != watched) {
-                            m_editors[i]->show();
+                    if (ZenoPropPanel::getHintListInstance().isVisible())
+                    {
+                        ZenoPropPanel::getHintListInstance().hide();
+                    }
+                    else {
+                        edit->clearFocus();
+                        for (int i = 0; i < m_editors.size(); i++) {
+                            if (m_editors[i] != watched) {
+                                m_editors[i]->show();
+                            }
                         }
                     }
                 }
@@ -93,6 +102,7 @@ void ZVecEditor::initUI(const QVariant &vec) {
         pLayout->addWidget(m_editors[i]);
         connect(m_editors[i], &ZLineEdit::editingFinished, this, &ZVecEditor::editingFinished);
     }
+    connect(&ZenoPropPanel::getHintListInstance(), &ZenoHintListWidget::clickOutSideHide, this, &ZVecEditor::showNoFocusLineEdits);
     setLayout(pLayout);
     setStyleSheet("ZVecEditor { background: transparent; } ");
 }
@@ -186,6 +196,15 @@ void ZVecEditor::setVec(const QVariant& vec, bool bFloat)
                 setText(vec.value<UI_VECTYPE>().at(i), m_editors[i]);
             else if (vec.canConvert<UI_VECSTRING>())
                 setText(vec.value<UI_VECSTRING>().at(i), m_editors[i]);
+        }
+    }
+}
+
+void ZVecEditor::showNoFocusLineEdits()
+{
+    for (int i = 0; i < m_editors.size(); i++) {
+        if (!m_editors[i]->isVisible()) {
+            m_editors[i]->show();
         }
     }
 }
