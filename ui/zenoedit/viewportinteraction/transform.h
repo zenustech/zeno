@@ -99,10 +99,6 @@ private:
 private:
     std::unordered_map<std::string, PrimitiveObject*> m_objects;
 
-    glm::vec3 m_cur_self_center = {};
-    glm::vec3 m_cur_self_X = {1, 0, 0};
-    glm::vec3 m_cur_self_Y = {0, 1, 0};
-
     glm::vec3 m_init_pivot = {};
     glm::vec3 m_init_localXOrg = {1, 0, 0};
     glm::vec3 m_init_localYOrg = {0, 1, 0};
