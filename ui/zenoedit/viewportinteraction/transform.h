@@ -9,6 +9,8 @@
 #include <QtWidgets>
 
 #include <glm/glm.hpp>
+#include <glm/gtx/transform.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 #include <unordered_map>
 
@@ -43,7 +45,6 @@ public:
     TransOpt getTransOpt();
     void setTransOpt(TransOpt opt);
     bool isTransformMode() const;
-    glm::vec3 getCenter() const;
     void clear();
 
 private:
@@ -80,6 +81,12 @@ private:
             qDebug() << mat[i][0] << " " << mat[i][1] << " " << mat[i][2] << " " << mat[i][3];
         }
     }
+    static void print_mat3(std::string name, glm::mat3 mat) {
+        qDebug() << name.c_str() << ":";
+        for (int i=0; i<3; i++) {
+            qDebug() << mat[i][0] << " " << mat[i][1] << " " << mat[i][2];
+        }
+    }
 
     static std::optional<glm::vec3> hitOnPlane(glm::vec3 ori, glm::vec3 dir, glm::vec3 n, glm::vec3 p) {
         auto t = glm::dot((p - ori), n) / glm::dot(dir, n);
@@ -99,9 +106,13 @@ private:
     glm::vec3 m_init_pivot = {};
     glm::vec3 m_init_localXOrg = {1, 0, 0};
     glm::vec3 m_init_localYOrg = {0, 1, 0};
-    glm::vec3 m_transaction_trans = {};
-    glm::quat m_transaction_rotate = {1, 0, 0, 0};
-    glm::vec3 m_transaction_scale = {1, 1, 1};
+    glm::vec3 m_transaction_start_translation;
+    glm::vec3 m_transaction_start_scaling;
+    glm::quat m_transaction_start_rotation;
+
+    glm::vec3 _transaction_trans = {};
+    glm::quat _transaction_rotate = {1, 0, 0, 0};
+    glm::vec3 _transaction_scale = {1, 1, 1};
 
     glm::vec3 m_trans_start;
     glm::vec3 m_rotate_start;
@@ -109,9 +120,6 @@ private:
     glm::vec3 _objects_center_start;
     glm::vec3 _objects_localX_start;
     glm::vec3 _objects_localY_start;
-    glm::vec3 _transaction_start_translation;
-    glm::vec3 _transaction_start_scaling;
-    glm::quat _transaction_start_rotation;
 
     bool m_isTransforming = false;
     TransOpt m_operation = TransOpt::NONE;
@@ -121,6 +129,45 @@ private:
     std::shared_ptr<zenovis::IGraphicHandler> m_handler;
     ViewportWidget* m_viewport;
     glm::mat4 last_transform_matrix = glm::mat4(1);
+
+    glm::mat4 get_pivot_to_world() {
+        auto lX = m_init_localXOrg;
+        auto lY = m_init_localYOrg;
+        auto lZ = glm::cross(lX, lY);
+        auto pivot_to_world = glm::mat4(1);
+        pivot_to_world[0] = {lX[0], lX[1], lX[2], 0};
+        pivot_to_world[1] = {lY[0], lY[1], lY[2], 0};
+        pivot_to_world[2] = {lZ[0], lZ[1], lZ[2], 0};
+        pivot_to_world[3] = {m_init_pivot[0], m_init_pivot[1], m_init_pivot[2], 1};
+        return pivot_to_world;
+    }
+    glm::mat4 get_pivot_to_local() {
+        return glm::inverse(get_pivot_to_world());
+    }
+
+    glm::mat4 get_local_transform() {
+        auto S = glm::scale(_transaction_scale * m_transaction_start_scaling);
+        auto R = glm::toMat4(_transaction_rotate) * glm::toMat4(m_transaction_start_rotation);
+        auto T = glm::translate(_transaction_trans + m_transaction_start_translation);
+        return T * R * S;
+    }
+
+    glm::vec3 get_cur_self_center() {
+        auto transform = get_pivot_to_world() * get_local_transform() * get_pivot_to_local();
+        auto pos = transform * glm::vec4(m_init_pivot, 1);
+        return {pos.x, pos.y, pos.z};
+    }
+
+    glm::vec3 get_cur_self_X() {
+        auto transform = get_pivot_to_world() * get_local_transform() * get_pivot_to_local();
+        auto dir = transform * glm::vec4(m_init_localXOrg, 0);
+        return {dir.x, dir.y, dir.z};
+    }
+    glm::vec3 get_cur_self_Y() {
+        auto transform = get_pivot_to_world() * get_local_transform() * get_pivot_to_local();
+        auto dir = transform * glm::vec4(m_init_localYOrg, 0);
+        return {dir.x, dir.y, dir.z};
+    }
 };
 
 }

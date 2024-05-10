@@ -59,11 +59,11 @@ void FakeTransformer::addObject(const std::string& name) {
     m_init_pivot = node_sync.getInputValVec3(prim_node, "pivotPos");
     m_init_localXOrg = glm::normalize(node_sync.getInputValVec3(prim_node, "localX"));
     m_init_localYOrg = glm::normalize(node_sync.getInputValVec3(prim_node, "localY"));
-    _transaction_start_translation = node_sync.getInputValVec3(prim_node, "translation");
-    _transaction_start_scaling = node_sync.getInputValVec3(prim_node, "scaling");
-    _transaction_start_rotation = node_sync.getInputValQuat(prim_node, "quatRotation");
-    m_cur_self_X = glm::toMat3(_transaction_start_rotation) * m_init_localXOrg;
-    m_cur_self_Y = glm::toMat3(_transaction_start_rotation) * m_init_localYOrg;
+    m_transaction_start_translation = node_sync.getInputValVec3(prim_node, "translation");
+    m_transaction_start_scaling = node_sync.getInputValVec3(prim_node, "scaling");
+    m_transaction_start_rotation = node_sync.getInputValQuat(prim_node, "quatRotation");
+    m_cur_self_X = glm::toMat3(m_transaction_start_rotation) * m_init_localXOrg;
+    m_cur_self_Y = glm::toMat3(m_transaction_start_rotation) * m_init_localYOrg;
 
     auto pivot_to_world = glm::mat3(1);
     pivot_to_world[0] = m_init_localXOrg;
@@ -83,9 +83,9 @@ void FakeTransformer::addObject(const std::string& name) {
         pivot_to_world[2] = {lZ[0], lZ[1], lZ[2], 0};
         pivot_to_world[3] = {m_init_pivot[0], m_init_pivot[1], m_init_pivot[2], 1};
         auto pivot_to_local = glm::inverse(pivot_to_world);
-        auto translate_matrix = glm::translate(_transaction_start_translation);
-        auto rotate_matrix = glm::toMat4(_transaction_start_rotation);
-        auto scale_matrix = glm::scale(_transaction_start_scaling);
+        auto translate_matrix = glm::translate(m_transaction_start_translation);
+        auto rotate_matrix = glm::toMat4(m_transaction_start_rotation);
+        auto scale_matrix = glm::scale(m_transaction_start_scaling);
         last_transform_matrix = pivot_to_world * translate_matrix *  rotate_matrix * scale_matrix * pivot_to_local;
     }
 }
@@ -165,10 +165,12 @@ void FakeTransformer::transform(QVector3D camera_pos, QVector3D ray_dir, glm::ve
     auto y_axis = glm::vec3(0, 1, 0);
     auto z_axis = glm::vec3(0, 0, 1);
 
-    auto localZ = glm::cross(m_cur_self_X, m_cur_self_Y);
+    auto localX = _objects_localX_start;
+    auto localY = _objects_localY_start;
+    auto localZ = glm::cross(localX, localY);
     auto cur_to_world = glm::mat3(1);
-    cur_to_world[0] = m_cur_self_X;
-    cur_to_world[1] = m_cur_self_Y;
+    cur_to_world[0] = localX;
+    cur_to_world[1] = localY;
     cur_to_world[2] = localZ;
     auto cur_to_local = glm::inverse(cur_to_world);
 
@@ -187,27 +189,27 @@ void FakeTransformer::transform(QVector3D camera_pos, QVector3D ray_dir, glm::ve
             }
         }
         else if (m_operation_mode == zenovis::INTERACT_Y) {
-            auto cur_pos = hitOnPlane(ori, dir, z_axis, m_cur_self_center);
+            auto cur_pos = hitOnPlane(ori, dir, localZ, m_cur_self_center);
             if (cur_pos.has_value())
                 translate(m_trans_start, cur_pos.value(), y_axis, cur_to_local, cur_to_world, pivot_to_local);
         }
         else if (m_operation_mode == zenovis::INTERACT_Z) {
-            auto cur_pos = hitOnPlane(ori, dir, y_axis, m_cur_self_center);
+            auto cur_pos = hitOnPlane(ori, dir, localY, m_cur_self_center);
             if (cur_pos.has_value())
                 translate(m_trans_start, cur_pos.value(), z_axis, cur_to_local, cur_to_world, pivot_to_local);
         }
         else if (m_operation_mode == zenovis::INTERACT_XY) {
-            auto cur_pos = hitOnPlane(ori, dir, z_axis, m_cur_self_center);
+            auto cur_pos = hitOnPlane(ori, dir, localZ, m_cur_self_center);
             if (cur_pos.has_value())
                 translate(m_trans_start, cur_pos.value(), {1, 1, 0}, cur_to_local, cur_to_world, pivot_to_local);
         }
         else if (m_operation_mode == zenovis::INTERACT_YZ) {
-            auto cur_pos = hitOnPlane(ori, dir, x_axis, m_cur_self_center);
+            auto cur_pos = hitOnPlane(ori, dir, localX, m_cur_self_center);
             if (cur_pos.has_value())
                 translate(m_trans_start, cur_pos.value(), {0, 1, 1}, cur_to_local, cur_to_world, pivot_to_local);
         }
         else if (m_operation_mode == zenovis::INTERACT_XZ) {
-            auto cur_pos = hitOnPlane(ori, dir, y_axis, m_cur_self_center);
+            auto cur_pos = hitOnPlane(ori, dir, localY, m_cur_self_center);
             if (cur_pos.has_value())
                 translate(m_trans_start, cur_pos.value(), {1, 0, 1}, cur_to_local, cur_to_world, pivot_to_local);
         }
@@ -219,27 +221,27 @@ void FakeTransformer::transform(QVector3D camera_pos, QVector3D ray_dir, glm::ve
     }
     else if (m_operation == TransOpt::ROTATE) {
         if (m_operation_mode == zenovis::INTERACT_YZ) {
-            auto cur_pos = hitOnPlane(ori, dir, x_axis, m_cur_self_center);
+            auto cur_pos = hitOnPlane(ori, dir, localX, m_cur_self_center);
             if (cur_pos.has_value()) {
                 auto start_vec = m_rotate_start - m_cur_self_center;
                 auto end_vec = cur_pos.value() - m_cur_self_center;
-                rotate(start_vec, end_vec, x_axis);
+                rotate(start_vec, end_vec, localX);
             }
         }
         else if (m_operation_mode == zenovis::INTERACT_XZ) {
-            auto cur_pos = hitOnPlane(ori, dir, y_axis, m_cur_self_center);
+            auto cur_pos = hitOnPlane(ori, dir, localY, m_cur_self_center);
             if (cur_pos.has_value()) {
                 auto start_vec = m_rotate_start - m_cur_self_center;
                 auto end_vec = cur_pos.value() - m_cur_self_center;
-                rotate(start_vec, end_vec, y_axis);
+                rotate(start_vec, end_vec, localY);
             }
         }
         else if (m_operation_mode == zenovis::INTERACT_XY){
-            auto cur_pos = hitOnPlane(ori, dir, z_axis, m_cur_self_center);
+            auto cur_pos = hitOnPlane(ori, dir, localZ, m_cur_self_center);
             if (cur_pos.has_value()) {
                 auto start_vec = m_rotate_start - m_cur_self_center;
                 auto end_vec = cur_pos.value() - m_cur_self_center;
-                rotate(start_vec, end_vec, z_axis);
+                rotate(start_vec, end_vec, localZ);
             }
         }
         else {
@@ -352,7 +354,7 @@ void FakeTransformer::syncToTransformNode(NodeLocation& node_location, const std
     auto& node_sync = NodeSyncMgr::GetInstance();
 
     auto user_data = m_objects[obj_name]->userData();
-    auto translate_data = _transaction_start_translation + m_transaction_trans;
+    auto translate_data = m_transaction_start_translation + _transaction_trans;
     QVector<double> translate = {
         translate_data[0],
         translate_data[1],
@@ -362,9 +364,9 @@ void FakeTransformer::syncToTransformNode(NodeLocation& node_location, const std
                                  "translation",
                                  translate);
     // update scaling
-    auto scaling_data = _transaction_start_scaling;
+    auto scaling_data = m_transaction_start_scaling;
     for (int i = 0; i < 3; i++) {
-        scaling_data[i] *= m_transaction_scale[i];
+        scaling_data[i] *= _transaction_scale[i];
     }
     QVector<double> scaling = {
         scaling_data[0],
@@ -375,8 +377,8 @@ void FakeTransformer::syncToTransformNode(NodeLocation& node_location, const std
                                  "scaling",
                                  scaling);
     // update rotate
-    auto pre_q = _transaction_start_rotation;
-    auto dif_q = m_transaction_rotate;
+    auto pre_q = m_transaction_start_rotation;
+    auto dif_q = _transaction_rotate;
     auto res_q = glm::toQuat(glm::toMat4(dif_q) * glm::toMat4(pre_q));
     auto rotate_data = vec4f(res_q.x, res_q.y, res_q.z, res_q.w);
     QVector<double> rotate = {
@@ -397,26 +399,26 @@ void FakeTransformer::endTransform(bool moved) {
             auto& user_data = obj->userData();
 
             if (m_operation == TransOpt::TRANSLATE) {
-                _transaction_start_translation += m_transaction_trans;
+                m_transaction_start_translation += _transaction_trans;
             }
 
             if (m_operation == TransOpt::ROTATE) {
-                auto pre_q = _transaction_start_rotation;
-                auto dif_q = m_transaction_rotate;
-                _transaction_start_rotation = glm::toQuat(glm::toMat4(dif_q) * glm::toMat4(pre_q));
+                auto pre_q = m_transaction_start_rotation;
+                auto dif_q = _transaction_rotate;
+                m_transaction_start_rotation = glm::toQuat(glm::toMat4(dif_q) * glm::toMat4(pre_q));
             }
 
             if (m_operation == TransOpt::SCALE) {
                 for (int i = 0; i < 3; i++)
-                    _transaction_start_scaling[i] *= m_transaction_scale[i];
+                    m_transaction_start_scaling[i] *= _transaction_scale[i];
             }
         }
     }
     unmarkObjectsInteractive();
 
-    m_transaction_trans = {0, 0, 0};
-    m_transaction_scale = {1, 1, 1};
-    m_transaction_rotate = {1, 0, 0, 0};
+    _transaction_trans = {0, 0, 0};
+    _transaction_scale = {1, 1, 1};
+    _transaction_rotate = {1, 0, 0, 0};
 
     m_operation_mode = zenovis::INTERACT_NONE;
     m_handler->setMode(zenovis::INTERACT_NONE);
@@ -574,15 +576,11 @@ bool FakeTransformer::isTransformMode() const {
     return m_operation != TransOpt::NONE;
 }
 
-glm::vec3 FakeTransformer::getCenter() const {
-    return m_cur_self_center;
-}
-
 void FakeTransformer::clear() {
     m_objects.clear();
-    m_transaction_trans = {0, 0, 0};
-    m_transaction_scale = {1, 1, 1};
-    m_transaction_rotate = {1, 0, 0, 0};
+    _transaction_trans = {0, 0, 0};
+    _transaction_scale = {1, 1, 1};
+    _transaction_rotate = {1, 0, 0, 0};
     m_operation = TransOpt::NONE;
     m_handler = nullptr;
 
@@ -598,7 +596,7 @@ void FakeTransformer::translate(glm::vec3 start, glm::vec3 end, glm::vec3 axis, 
     diff *= axis;
     diff = to_world * diff; // diff in world space
     diff = org_to_local * diff; // diff in pivot local space
-    m_transaction_trans = diff;
+    _transaction_trans = diff;
     doTransform();
 }
 
@@ -606,7 +604,7 @@ void FakeTransformer::scale(float scale_size, vec3i axis) {
     glm::vec3 scale(1.0f);
     for (int i = 0; i < 3; i++)
         if (axis[i] == 1) scale[i] = std::max(scale_size, 0.1f);
-    m_transaction_scale = scale;
+    _transaction_scale = scale;
     doTransform();
 }
 
@@ -619,7 +617,17 @@ void FakeTransformer::rotate(glm::vec3 start_vec, glm::vec3 end_vec, glm::vec3 a
     if (glm::dot(cross_vec, axis) < 0)
         direct = -1.0f;
     float angle = acos(fmin(fmax(glm::dot(start_vec, end_vec), -1.0f), 1.0f));
-    m_transaction_rotate = glm::quat(glm::rotate(angle * direct, axis));
+    {
+        auto localX = _objects_localX_start;
+        auto localY = _objects_localY_start;
+        auto localZ = glm::cross(localX, localY);
+        auto cur_to_world = glm::mat3(1);
+        cur_to_world[0] = localX;
+        cur_to_world[1] = localY;
+        cur_to_world[2] = localZ;
+        axis = glm::inverse(cur_to_world) * axis;
+    }
+    _transaction_rotate = glm::quat(glm::rotate(angle * direct, axis));
     doTransform();
 }
 
@@ -645,10 +653,10 @@ void FakeTransformer::doTransform() {
         }
 
         // do this transform
-        auto translate_matrix = glm::translate(_transaction_start_translation + m_transaction_trans);
-        auto cur_quaternion = m_transaction_rotate;
-        auto rotate_matrix = glm::toMat4(cur_quaternion) * glm::toMat4(_transaction_start_rotation);
-        auto scale_matrix = glm::scale(_transaction_start_scaling * m_transaction_scale);
+        auto translate_matrix = glm::translate(m_transaction_start_translation + _transaction_trans);
+        auto cur_quaternion = _transaction_rotate;
+        auto rotate_matrix = glm::toMat4(cur_quaternion) * glm::toMat4(m_transaction_start_rotation);
+        auto scale_matrix = glm::scale(m_transaction_start_scaling * _transaction_scale);
         auto transform_matrix = pivot_to_world *  translate_matrix *  rotate_matrix * scale_matrix * pivot_to_local;
 
         {
@@ -683,10 +691,10 @@ void FakeTransformer::doTransform() {
         pivot_to_world[0] = m_init_localXOrg;
         pivot_to_world[1] = m_init_localYOrg;
         pivot_to_world[2] = glm::cross(m_init_localXOrg, m_init_localYOrg);
-        m_cur_self_center = _objects_center_start + pivot_to_world * m_transaction_trans;
+        m_cur_self_center = _objects_center_start + pivot_to_world * _transaction_trans;
 
-        auto cur_quaternion = m_transaction_rotate;
-        auto cur_rot = glm::toMat3(cur_quaternion);
+        auto cur_rot = glm::toMat3(_transaction_rotate);
+        cur_rot = pivot_to_world * cur_rot * glm::inverse(pivot_to_world);
         m_cur_self_X = cur_rot * _objects_localX_start;
         m_cur_self_Y = cur_rot * _objects_localY_start;
     }
