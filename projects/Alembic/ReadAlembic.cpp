@@ -1218,6 +1218,10 @@ ZENDEFNODE(ReadAlembic, {
 });
 
 std::shared_ptr<ListObject> abc_split_by_name(std::shared_ptr<PrimitiveObject> prim, bool add_when_none) {
+    auto list = std::make_shared<ListObject>();
+    if (prim->verts.size() == 0) {
+        return list;
+    }
     int faceset_count = prim->userData().get2<int>("faceset_count");
     if (add_when_none && faceset_count == 0) {
         auto name = prim->userData().get2<std::string>("_abc_name");
@@ -1228,7 +1232,6 @@ std::shared_ptr<ListObject> abc_split_by_name(std::shared_ptr<PrimitiveObject> p
     for (auto f = 0; f < faceset_count; f++) {
         faceset_map[f] = {};
     }
-    auto list = std::make_shared<ListObject>();
     if (prim->polys.size()) {
         auto &faceset = prim->polys.add_attr<int>("faceset");
         for (auto j = 0; j < faceset.size(); j++) {
