@@ -1,8 +1,11 @@
 #pragma once
 
 #include <QtWidgets>
+#include "widgets/zlineedit.h"
 
 #define SideLength 12
+#define minWidth 80
+#define minHeight 150
 
 class TriangleButton : public QWidget {
     Q_OBJECT
@@ -30,18 +33,31 @@ public:
     ZenoHintListWidget();
     void setData(QStringList items);
     void setActive();
+
+    void resetCurrentItem();
     void clearCurrentItem();
+
+    void resetSize();
+    void setCurrentZlineEdit(ZLineEdit* linedit);
+
+    QString getCurrentText();
+
+    void setCalcPropPanelPosFunc(std::function<QPoint()> func);
+    QPoint getPropPanelPos();
 
 public slots:
     void sltItemSelect(const QModelIndex& selectedIdx);
 signals:
     void hintSelected(QString);
+    void resizeFinished();
+
     void escPressedHide();
-    void clickOutSideHide();
+    void clickOutSideHide(QWidget*);
 
 protected:
     bool eventFilter(QObject* watched, QEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event)override;
+    void mouseReleaseEvent(QMouseEvent* event)override;
     void paintEvent(QPaintEvent* event) override;
 private:
     bool m_resizing = false;
@@ -49,4 +65,8 @@ private:
     QListView* m_listView;
     QStringListModel* m_model;
     QWidget* m_button;
+
+    ZLineEdit* m_currentLineEdit;
+
+    std::function<QPoint()> m_getPropPanelPosfunc;
 };

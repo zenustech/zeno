@@ -42,7 +42,10 @@ bool ZVecEditor::eventFilter(QObject *watched, QEvent *event) {
             {
                 if (!edit->hasFocus())
                 {
-                    showNoFocusLineEdits();
+                    for (int i = 0; i < m_editors.size(); i++) {
+                        if (!m_editors[i]->isVisible())
+                            m_editors[i]->show();
+                    }
                 }
             }
         }
@@ -51,13 +54,14 @@ bool ZVecEditor::eventFilter(QObject *watched, QEvent *event) {
     {
         if (QKeyEvent* e = static_cast<QKeyEvent*>(event))
         {
-            if (e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter || e->key() == Qt::Key_Escape)
+            if (e->key() == Qt::Key_Escape)
             {
                 if (ZLineEdit* edit = qobject_cast<ZLineEdit*>(watched))
                 {
-                    if (ZenoPropPanel::getHintListInstance().isVisible())
+                    ZenoHintListWidget* hintlist = &ZenoPropPanel::getHintListInstance();
+                    if (hintlist->isVisible())
                     {
-                        ZenoPropPanel::getHintListInstance().hide();
+                        hintlist->hide();
                     }
                     else {
                         edit->clearFocus();
@@ -67,6 +71,26 @@ bool ZVecEditor::eventFilter(QObject *watched, QEvent *event) {
                             }
                         }
                     }
+                }
+            }else if (e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter)
+            {
+                if (ZLineEdit* edit = qobject_cast<ZLineEdit*>(watched))
+                {
+                    ZenoHintListWidget* hintlist = &ZenoPropPanel::getHintListInstance();
+                    if (hintlist->isVisible())
+                    {
+                        hintlist->hide();
+                        edit->setText(hintlist->getCurrentText());
+                    }
+                    else {
+                        edit->clearFocus();
+                        for (int i = 0; i < m_editors.size(); i++) {
+                            if (m_editors[i] != watched) {
+                                m_editors[i]->show();
+                            }
+                        }
+                    }
+                    return true;
                 }
             }
         }
@@ -200,11 +224,17 @@ void ZVecEditor::setVec(const QVariant& vec, bool bFloat)
     }
 }
 
-void ZVecEditor::showNoFocusLineEdits()
+void ZVecEditor::showNoFocusLineEdits(QWidget* lineEdit)
 {
-    for (int i = 0; i < m_editors.size(); i++) {
-        if (!m_editors[i]->isVisible()) {
-            m_editors[i]->show();
+    if (lineEdit)
+    {
+        for (int i = 0; i < m_editors.size(); i++) {
+            if (m_editors[i] == lineEdit)
+                return;
+        }
+        for (int i = 0; i < m_editors.size(); i++) {
+            if (!m_editors[i]->isVisible())
+                m_editors[i]->show();
         }
     }
 }

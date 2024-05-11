@@ -1,13 +1,12 @@
 #include "ZenoHintListWidget.h"
-#include "zenoapplication.h"
-#include "zenomainwindow.h"
 
 ZenoHintListWidget::ZenoHintListWidget()
-    : QWidget(zenoApp->getMainWindow())
+    : QWidget(nullptr)
     , m_listView(new QListView(this))
     , m_model(new QStringListModel(this))
+    , m_currentLineEdit(nullptr)
 {
-    setMinimumSize({ 80,150 });
+    setMinimumSize({ minWidth,minHeight });
     setWindowFlags(windowFlags() | Qt::FramelessWindowHint| Qt::WindowStaysOnTopHint);
 
     QVBoxLayout* pLayout = new QVBoxLayout(this);
@@ -38,17 +37,52 @@ void ZenoHintListWidget::setData(QStringList items) {
 
 void ZenoHintListWidget::setActive() {
     m_listView->setFocus();
+    resetCurrentItem();
+};
+
+void ZenoHintListWidget::resetCurrentItem()
+{
     QItemSelectionModel* selModel = m_listView->selectionModel();
     const QModelIndex& first = m_model->index(0, 0);
     if (first.isValid())
         selModel->setCurrentIndex(first, QItemSelectionModel::SelectCurrent);
-};
+}
 
 void ZenoHintListWidget::clearCurrentItem() {
     QItemSelectionModel* selModel = m_listView->selectionModel();
     selModel->clearCurrentIndex();
     selModel->clearSelection();
 };
+
+void ZenoHintListWidget::resetSize()
+{
+    setGeometry(x(), y(), minWidth, minHeight);
+    m_button->move(width() - SideLength, height() - SideLength);
+}
+
+void ZenoHintListWidget::setCurrentZlineEdit(ZLineEdit* linedit)
+{
+    m_currentLineEdit = linedit;
+}
+
+QString ZenoHintListWidget::getCurrentText()
+{
+    QItemSelectionModel* selModel = m_listView->selectionModel();
+    const QModelIndex& curr = selModel->currentIndex();
+    if (curr.isValid())
+        return curr.data(Qt::DisplayRole).toString();
+    return "";
+}
+
+void ZenoHintListWidget::setCalcPropPanelPosFunc(std::function<QPoint()> func)
+{
+    m_getPropPanelPosfunc = func;
+}
+
+QPoint ZenoHintListWidget::getPropPanelPos()
+{
+    return m_getPropPanelPosfunc();
+}
 
 void ZenoHintListWidget::sltItemSelect(const QModelIndex& selectedIdx) {
     if (selectedIdx.isValid())
@@ -102,8 +136,8 @@ bool ZenoHintListWidget::eventFilter(QObject* watched, QEvent* event)
                 }
                 else if (e->key() == Qt::Key_Escape)
                 {
-                    emit escPressedHide();
                     this->hide();
+                    emit escPressedHide();
                     return true;
                 }
             }
@@ -115,15 +149,7 @@ bool ZenoHintListWidget::eventFilter(QObject* watched, QEvent* event)
         {
             if (QMouseEvent* e = static_cast<QMouseEvent*>(event))
             {
-                if (ZLineEdit* edit = qobject_cast<ZLineEdit*>(watched))
-                {
-                    if (edit->hasFocus())
-                    {
-                        hide();
-                        return true;
-                    }
-                }
-                else if (QWidget* wid = qobject_cast<QWidget*>(watched)) //点击区域不在内部则hide
+                if (QWidget* wid = qobject_cast<QWidget*>(watched)) //点击区域不在内部则hide
                 {
                     const QPoint& globalPos = wid->mapToGlobal(e->pos());
                     const QPoint& lefttop = mapToGlobal(QPoint(0, 0));
@@ -131,7 +157,7 @@ bool ZenoHintListWidget::eventFilter(QObject* watched, QEvent* event)
                     if (globalPos.x() < lefttop.x() || globalPos.x() > rightbottom.x() || globalPos.y() < lefttop.y() || globalPos.y() > rightbottom.y())
                     {
                         hide();
-                        clickOutSideHide();
+                        emit clickOutSideHide(wid);
                     }
                 }
             }
@@ -149,6 +175,15 @@ void ZenoHintListWidget::mouseMoveEvent(QMouseEvent* event)
     }
 }
 
+void ZenoHintListWidget::mouseReleaseEvent(QMouseEvent* event)
+{
+    if (m_resizing)
+    {
+        emit resizeFinished();
+    }
+    QWidget::mouseReleaseEvent(event);
+}
+
 void ZenoHintListWidget::paintEvent(QPaintEvent* event)
 {
     QWidget::paintEvent(event);
@@ -156,4 +191,5 @@ void ZenoHintListWidget::paintEvent(QPaintEvent* event)
     painter.fillRect(rect(), "#22252C");
     painter.setPen(Qt::black);
     painter.drawRect(QRect(0, 0, width() - 1, height() - 1));
+    QWidget::paintEvent(event);
 }

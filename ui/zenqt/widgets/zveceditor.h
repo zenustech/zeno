@@ -24,7 +24,7 @@ signals:
 
 public slots:
 	void setVec(const QVariant& vec, bool bFloat);
-    void showNoFocusLineEdits();
+    void showNoFocusLineEdits(QWidget* lineEdit);
 
 protected:
     bool eventFilter(QObject *watched, QEvent *event);

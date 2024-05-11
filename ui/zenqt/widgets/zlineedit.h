@@ -19,8 +19,7 @@ protected:
     void paintEvent(QPaintEvent* event) override;
     void wheelEvent(QWheelEvent* event) override;
     bool eventFilter(QObject *obj, QEvent *event) override;
-
-    void resizeEvent(QResizeEvent* event) override;
+    void focusOutEvent(QFocusEvent* event) override;
 
 signals:
     void btnClicked();
