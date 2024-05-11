@@ -27,6 +27,7 @@
 #include "viewport/zenovis.h"
 
 
+#if 0
 ZDockWidget::ZDockWidget(ZenoMainWindow* mainWin, Qt::WindowFlags flags)
     : _base(mainWin, flags)
     , m_tabWidget(new ZDockTabWidget)
@@ -644,3 +645,4 @@ bool ZDockWidget::isTopLevelWin()
 {
     return false;
 }
+#endif

@@ -59,7 +59,7 @@ PtrLayoutNode findParent(PtrLayoutNode root, ads::CDockWidget* pWidget)
 
 void _writeLayout(PtrLayoutNode root, const QSize& szMainwin, PRETTY_WRITER& writer, void(*cbDumpTabsToZsg)(QDockWidget*, RAPIDJSON_WRITER&))
 {
-    //TODO
+    //DEPRECATED LEGACY && TODO
 #if 0
     writer.StartObject();
     zeno::scope_exit sp([&]() { writer.EndObject(); });
