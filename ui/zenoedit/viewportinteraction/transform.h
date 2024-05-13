@@ -110,8 +110,7 @@ private:
     glm::quat _transaction_rotate = {1, 0, 0, 0};
     glm::vec3 _transaction_scale = {1, 1, 1};
 
-    glm::vec3 m_trans_start;
-    glm::vec3 m_rotate_start;
+    glm::vec3 m_move_start;
 
     bool m_isTransforming = false;
     TransOpt m_operation = TransOpt::NONE;

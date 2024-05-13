@@ -103,7 +103,7 @@ bool FakeTransformer::calcTransformStart(glm::vec3 ori, glm::vec3 dir, glm::vec3
             t = hitOnPlane(ori, dir, x_axis, get_cur_self_center());
         else
             t = hitOnPlane(ori, dir, front, get_cur_self_center());
-        if (t.has_value()) m_trans_start = t.value();
+        if (t.has_value()) m_move_start = t.value();
         else return false;
     }
     else if (m_operation == TransOpt::ROTATE) {
@@ -115,7 +115,7 @@ bool FakeTransformer::calcTransformStart(glm::vec3 ori, glm::vec3 dir, glm::vec3
             t = hitOnPlane(ori, dir, z_axis, get_cur_self_center());
         else
             t = m_handler->getIntersect(ori, dir);
-        if (t.has_value()) m_rotate_start = t.value();
+        if (t.has_value()) m_move_start = t.value();
         else return false;
     }
     return true;
@@ -177,45 +177,45 @@ void FakeTransformer::transform(QVector3D camera_pos, QVector3D ray_dir, glm::ve
         if (m_operation_mode == zenovis::INTERACT_X) {
             auto cur_pos = hitOnPlane(ori, dir, localZ, get_cur_self_center());
             if (cur_pos.has_value()) {
-                translate(m_trans_start, cur_pos.value(), x_axis, cur_to_local, cur_to_world, pivot_to_local);
+                translate(m_move_start, cur_pos.value(), x_axis, cur_to_local, cur_to_world, pivot_to_local);
             }
         }
         else if (m_operation_mode == zenovis::INTERACT_Y) {
             auto cur_pos = hitOnPlane(ori, dir, localZ, get_cur_self_center());
             if (cur_pos.has_value())
-                translate(m_trans_start, cur_pos.value(), y_axis, cur_to_local, cur_to_world, pivot_to_local);
+                translate(m_move_start, cur_pos.value(), y_axis, cur_to_local, cur_to_world, pivot_to_local);
         }
         else if (m_operation_mode == zenovis::INTERACT_Z) {
             auto cur_pos = hitOnPlane(ori, dir, localY, get_cur_self_center());
             if (cur_pos.has_value())
-                translate(m_trans_start, cur_pos.value(), z_axis, cur_to_local, cur_to_world, pivot_to_local);
+                translate(m_move_start, cur_pos.value(), z_axis, cur_to_local, cur_to_world, pivot_to_local);
         }
         else if (m_operation_mode == zenovis::INTERACT_XY) {
             auto cur_pos = hitOnPlane(ori, dir, localZ, get_cur_self_center());
             if (cur_pos.has_value())
-                translate(m_trans_start, cur_pos.value(), {1, 1, 0}, cur_to_local, cur_to_world, pivot_to_local);
+                translate(m_move_start, cur_pos.value(), {1, 1, 0}, cur_to_local, cur_to_world, pivot_to_local);
         }
         else if (m_operation_mode == zenovis::INTERACT_YZ) {
             auto cur_pos = hitOnPlane(ori, dir, localX, get_cur_self_center());
             if (cur_pos.has_value())
-                translate(m_trans_start, cur_pos.value(), {0, 1, 1}, cur_to_local, cur_to_world, pivot_to_local);
+                translate(m_move_start, cur_pos.value(), {0, 1, 1}, cur_to_local, cur_to_world, pivot_to_local);
         }
         else if (m_operation_mode == zenovis::INTERACT_XZ) {
             auto cur_pos = hitOnPlane(ori, dir, localY, get_cur_self_center());
             if (cur_pos.has_value())
-                translate(m_trans_start, cur_pos.value(), {1, 0, 1}, cur_to_local, cur_to_world, pivot_to_local);
+                translate(m_move_start, cur_pos.value(), {1, 0, 1}, cur_to_local, cur_to_world, pivot_to_local);
         }
         else {
             auto cur_pos = hitOnPlane(ori, dir, front, get_cur_self_center());
             if (cur_pos.has_value())
-                translate(m_trans_start, cur_pos.value(), {1, 1, 1}, cur_to_local, cur_to_world, pivot_to_local);
+                translate(m_move_start, cur_pos.value(), {1, 1, 1}, cur_to_local, cur_to_world, pivot_to_local);
         }
     }
     else if (m_operation == TransOpt::ROTATE) {
         if (m_operation_mode == zenovis::INTERACT_YZ) {
             auto cur_pos = hitOnPlane(ori, dir, localX, get_cur_self_center());
             if (cur_pos.has_value()) {
-                auto start_vec = m_rotate_start - get_cur_self_center();
+                auto start_vec = m_move_start - get_cur_self_center();
                 auto end_vec = cur_pos.value() - get_cur_self_center();
                 rotate(start_vec, end_vec, localX);
             }
@@ -223,7 +223,7 @@ void FakeTransformer::transform(QVector3D camera_pos, QVector3D ray_dir, glm::ve
         else if (m_operation_mode == zenovis::INTERACT_XZ) {
             auto cur_pos = hitOnPlane(ori, dir, localY, get_cur_self_center());
             if (cur_pos.has_value()) {
-                auto start_vec = m_rotate_start - get_cur_self_center();
+                auto start_vec = m_move_start - get_cur_self_center();
                 auto end_vec = cur_pos.value() - get_cur_self_center();
                 rotate(start_vec, end_vec, localY);
             }
@@ -231,13 +231,13 @@ void FakeTransformer::transform(QVector3D camera_pos, QVector3D ray_dir, glm::ve
         else if (m_operation_mode == zenovis::INTERACT_XY){
             auto cur_pos = hitOnPlane(ori, dir, localZ, get_cur_self_center());
             if (cur_pos.has_value()) {
-                auto start_vec = m_rotate_start - get_cur_self_center();
+                auto start_vec = m_move_start - get_cur_self_center();
                 auto end_vec = cur_pos.value() - get_cur_self_center();
                 rotate(start_vec, end_vec, localZ);
             }
         }
         else {
-            auto start_vec = m_rotate_start - get_cur_self_center();
+            auto start_vec = m_move_start - get_cur_self_center();
             auto test = m_handler->getIntersect(ori, dir);
             glm::vec3 end_vec;
             if (test.has_value())
