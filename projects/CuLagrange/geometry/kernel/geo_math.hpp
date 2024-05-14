@@ -285,6 +285,7 @@ namespace zeno { namespace LSL_GEO {
     ///////////////////////////////////////////////////////////////////////
     constexpr VECTOR3 get_vertex_triangle_barycentric_coordinates(const VECTOR3 vertices[4])
     {
+#if 1
         const VECTOR3 v0 = vertices[1];
         const VECTOR3 v1 = vertices[2];
         const VECTOR3 v2 = vertices[3];
@@ -304,6 +305,31 @@ namespace zeno { namespace LSL_GEO {
                                     n.dot(nc) / n.l2NormSqr());
 
         return barycentric;
+#else
+        constexpr auto eps = 1e-6;
+        const auto& v1 = vertices[1];
+        const auto& v2 = vertices[2];
+        const auto& v3 = vertices[3];
+        const auto& v4 = vertices[0];
+
+        auto x13 = v1 - v3;
+        auto x23 = v2 - v3;
+        auto x43 = v4 - v3;
+        auto A00 = x13.dot(x13);
+        auto A01 = x13.dot(x23);
+        auto A11 = x23.dot(x23);
+        auto b0 = x13.dot(x43);
+        auto b1 = x23.dot(x43);
+        auto detA = A00 * A11 - A01 * A01;
+
+        VECTOR3 bary{};
+
+        bary[0] = ( A11 * b0 - A01 * b1) / detA;
+        bary[1] = (-A01 * b0 + A00 * b1) / detA;
+        bary[2] = 1 - bary[0] - bary[1];
+
+        return bary;        
+#endif
     }
 
 

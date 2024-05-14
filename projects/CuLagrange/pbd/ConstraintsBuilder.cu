@@ -449,67 +449,117 @@ virtual void apply() override {
 
     if(type == "follow_animation_constraint") {
         constexpr auto eps = 1e-6;
+        auto use_hard_constraint = get_input2<bool>("use_hard_constraint");
         constraint->setMeta(CONSTRAINT_KEY,category_c::follow_animation_constraint);
+        constraint->setMeta(PBD_USE_HARD_CONSTRAINT,use_hard_constraint);
+
         if(!has_input<ZenoParticles>("target")) {
             std::cout << "no target specify while adding follow animation constraint" << std::endl;
             throw std::runtime_error("no target specify while adding follow animation constraint");
         }
+
+        auto animaskGroupName = get_input2<std::string>("group_name");
+        if(!verts.hasProperty(animaskGroupName)) {
+            std::cout << "the zcloth should has \'ani_mask\' nodal attribute" << std::endl;
+            throw std::runtime_error("the zcloth should has \'ani_mask\' nodal attribute");
+        }
+
         auto target = get_input<ZenoParticles>("target");
         if(target->getParticles().size() != verts.size()) {
             std::cout << "the size of target and the cloth not match : " << target->getParticles().size() << "\t" << source->getParticles().size() << std::endl;
             throw std::runtime_error("the size of the target and source not matched");
         }
         const auto& kverts = target->getParticles();
-        if(!kverts.hasProperty("ani_mask")) {
-            std::cout << "the animation target should has \'ani_mask\' nodal attribute" << std::endl;
-            throw std::runtime_error("the animation target should has \'ani_mask\' nodal attribute");
-        }
 
-        zs::Vector<zs::vec<int,1>> point_topos{quads.get_allocator(),0};
-        point_topos.resize(verts.size());
-        cudaPol(zip(zs::range(point_topos.size()),point_topos),[] ZS_LAMBDA(const auto& id,auto& pi) mutable {pi = id;});
+        zs::Vector<zs::vec<int,1>> point_topos{verts.get_allocator(),0};
+        zs:bht<int,1,int> pin_point_set{verts.get_allocator(),verts.size()};
+        pin_point_set.reset(cudaPol,true);
+
+        cudaPol(zs::range(verts.size()),[
+            verts = proxy<space>({},verts),
+            gname = zs::SmallString(animaskGroupName),
+            pin_point_set = proxy<space>(pin_point_set)] ZS_LAMBDA(int vi) mutable {
+                auto gtag = verts(gname,vi);
+                if(gtag > 1e-6)
+                    pin_point_set.insert(vi);
+        });
+
+        point_topos.resize(pin_point_set.size());
+        cudaPol(zip(zs::range(pin_point_set.size()),pin_point_set._activeKeys),[
+            point_topos = proxy<space>(point_topos)
+        ] ZS_LAMBDA(const auto& id,const auto& pvec) mutable {
+            point_topos[id] = pvec;
+        });
         // std::cout << "nm binder point : " << point_topos.size() << std::endl;
         if(do_constraint_topological_coloring) {
             topological_coloring(cudaPol,point_topos,colors,false);
             sort_topology_by_coloring_tag(cudaPol,colors,reordered_map,color_offset);
         }
 
-        eles.resize(verts.size());
+        eles.resize(point_topos.size());
         // we need an extra 'inds' tag, in case the source and animation has different topo
         eles.append_channels(cudaPol,{{"inds",1},{"follow_weight",1}});
         cudaPol(zs::range(eles.size()),[
-            kverts = proxy<space>({},kverts),
+            verts = proxy<space>({},verts),
+            animaskOffset = verts.getPropertyOffset(animaskGroupName),
             do_constraint_topological_coloring = do_constraint_topological_coloring,
+            use_hard_constraint = use_hard_constraint,
             reordered_map = proxy<space>(reordered_map),
             point_topos = proxy<space>(point_topos),
             eles = proxy<space>({},eles)] ZS_LAMBDA(int oei) mutable {
                 auto ei = do_constraint_topological_coloring ? reordered_map[oei] : oei;
                 auto pi = point_topos[ei][0];
 
-                auto am = kverts("ani_mask",pi);
+                auto am = verts(animaskOffset,pi);
                 am = am > 1 ? 1 : am;
                 am = am < 0 ? 0 : am;
-                eles("follow_weight",oei) = 1 - am;
+
+                if(use_hard_constraint) {
+                    am = am > 0.5 ? 1 : 0;
+                }
+                eles("follow_weight",oei) = am;
                 eles("inds",oei) = zs::reinterpret_bits<float>(pi);
+                if(use_hard_constraint)
+                    verts("minv",pi) = am > 0.5 ? 0 : verts("minv",pi);
         });
         // not sure about effect by increasing the nodal mass
-        cudaPol(zs::range(verts.size()),[
-            verts = proxy<space>({},verts),
-            kverts = proxy<space>({},kverts)] ZS_LAMBDA(int vi) mutable {
-                verts("minv",vi) = (1 - kverts("ani_mask",vi)) * verts("minv",vi);
-        });
+        // cudaPol(zs::range(eles.size()),[
+        //     verts = proxy<space>({},verts),
+        //     use_hard_constraint = use_hard_constraint,
+        //     followWeightOffset = eles.getPropertyOffset("follow_weight"),
+        //     eles = proxy<space>({},eles)] ZS_LAMBDA(int ei) mutable {
+        //         auto vi = reinterpret_bits<int>(eles("inds",ei));
+        //         if(use_hard_constraint)
+        //             verts("minv",vi) = eles(followWeightOffset,ci) > 0.5 ? 0 : verts("minv",vi);
+        // });
 
         // TILEVEC_OPS::copy(cudaPol,eles,"inds",eles,"vis_inds");
         constraint->setMeta(CONSTRAINT_TARGET,target.get());
     }   
 
     if(type == "reference_dcd_collision_constraint") {
+        constexpr auto exec_tag = wrapv<space>{};
         constexpr auto eps = 1e-6;
         constexpr auto MAX_IMMINENT_COLLISION_PAIRS = 200000;
         auto dcd_source_xtag = get_input2<std::string>("dcd_source_xtag");
         constraint->setMeta(CONSTRAINT_KEY,category_c::dcd_collision_constraint);
         eles.append_channels(cudaPol,{{"inds",4},{"bary",4},{"type",1}});
         eles.resize(MAX_IMMINENT_COLLISION_PAIRS);
+
+        if(!source->hasAuxData(DCD_COUNTER_BUFFER)) {
+            (*source)[DCD_COUNTER_BUFFER] = dtiles_t{verts.get_allocator(),{
+                {"cnt",1}
+            },verts.size()};
+        }
+        if(!source->hasAuxData(COLLISION_BUFFER)) {
+            (*source)[COLLISION_BUFFER] = dtiles_t{verts.get_allocator(),{
+                {"inds",4},{"bary",4},{"type",1}
+            },MAX_IMMINENT_COLLISION_PAIRS};
+        }
+        auto& collision_buffer = (*source)[COLLISION_BUFFER];
+        auto& collision_counter = (*source)[DCD_COUNTER_BUFFER];
+        // cudaPol(zs::range(collision_counter),[] ZS_LAMBDA(auto& cnt) {cnt = 0;});
+        TILEVEC_OPS::fill(cudaPol,collision_counter,"cnt",0.f);
 
         auto among_same_group = get_input2<bool>("among_same_group");
         auto among_different_groups = get_input2<bool>("among_different_groups");
@@ -634,8 +684,19 @@ virtual void apply() override {
             });
         }
 
-        zs::bht<int,2,int> csPT{verts.get_allocator(),(size_t)MAX_IMMINENT_COLLISION_PAIRS};csPT.reset(cudaPol,true);
-        zs::bht<int,2,int> csEE{edges.get_allocator(),(size_t)MAX_IMMINENT_COLLISION_PAIRS};csEE.reset(cudaPol,true);
+        if(!source->hasMeta(COLLSIION_CSPT_SET)) {
+            source->setMeta(COLLSIION_CSPT_SET,zs::bht<int,2,int>{verts.get_allocator(),(size_t)MAX_IMMINENT_COLLISION_PAIRS});
+        }
+        auto&csPT = source->readMeta<zs::bht<int,2,int> &>(COLLSIION_CSPT_SET);
+        csPT.reset(cudaPol,true);
+
+        if(!source->hasMeta(COLLISION_CSEE_SET)) {
+            source->setMeta(COLLISION_CSEE_SET,zs::bht<int,2,int>{verts.get_allocator(),(size_t)MAX_IMMINENT_COLLISION_PAIRS});
+        }
+        auto&csEE = source->readMeta<zs::bht<int,2,int> &>(COLLISION_CSEE_SET);
+        csEE.reset(cudaPol,true);
+
+        // zs::bht<int,2,int> csEE{edges.get_allocator(),(size_t)MAX_IMMINENT_COLLISION_PAIRS};csEE.reset(cudaPol,true);
 
     
         auto triBvh = bvh_t{};
@@ -647,7 +708,7 @@ virtual void apply() override {
             imminent_collision_thickness,
             0,
             triBvh,
-            eles,
+            collision_buffer,
             csPT,
             true,
             true,
@@ -665,34 +726,36 @@ virtual void apply() override {
             imminent_collision_thickness,
             csPT.size(),
             edgeBvh,
-            eles,csEE,
+            collision_buffer,csEE,
             true,
             true,
             group_strategy);
+
+
         // std::cout << "nm_imminent_csEE : " << csEE.size() << std::endl;
-        // std::cout << "csEE + csPT = " << csPT.size() + csEE.size() << std::endl;
-        if(!verts.hasProperty("dcd_collision_tag"))
-            verts.append_channels(cudaPol,{{"dcd_collision_tag",1}});
-        cudaPol(zs::range(verts.size()),[
+        auto nm_dcd_collisions = csPT.size() + csEE.size();
+        eles.resize(nm_dcd_collisions);
+        TILEVEC_OPS::copy(cudaPol,collision_buffer,"inds",eles,"inds");
+        TILEVEC_OPS::copy(cudaPol,collision_buffer,"bary",eles,"bary");
+        TILEVEC_OPS::copy(cudaPol,collision_buffer,"type",eles,"type");
+
+
+        cudaPol(zs::range(nm_dcd_collisions),[
+            nm_verts = verts.size(),
+            exec_tag = exec_tag,
             verts = proxy<space>({},verts),
-            vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int vi) mutable {
-                verts("dcd_collision_tag",vi) = vtemp("dcd_collision_tag",vi);
+            minvOffset = verts.getPropertyOffset("minv"),
+            indsOffset = eles.getPropertyOffset("inds"),
+            collision_counter = proxy<space>({},collision_counter),
+            eles = proxy<space>({},eles)] ZS_LAMBDA(const auto& ci) mutable {
+                auto inds = eles.pack(dim_c<4>,indsOffset,ci,int_c);
+                for(int i = 0;i != 4;++i)
+                    if(inds[i] < nm_verts && verts(minvOffset,inds[i]) > 1e-5 && inds[i] > -1) {
+                        atomic_add(exec_tag,&collision_counter("cnt",inds[i]),1.f);
+                    }
         });
 
-        if(has_input_collider) {
-            auto collider = get_input<ZenoParticles>("target");
-            auto& kverts = collider->getParticles();
-            if(!kverts.hasProperty("dcd_collision_tag"))
-                kverts.append_channels(cudaPol,{{"dcd_collision_tag",1}});
-            cudaPol(zs::range(kverts.size()),[
-                kverts = proxy<space>({},kverts),
-                voffset = verts.size(),
-                vtemp = proxy<space>({},vtemp)] ZS_LAMBDA(int kvi) mutable {
-                    kverts("dcd_collision_tag",kvi) = vtemp("dcd_collision_tag",kvi + voffset);
-            });                
-        }
-
-        constraint->setMeta<size_t>(NM_DCD_COLLISIONS,csEE.size() + csPT.size());
+        constraint->setMeta<size_t>(NM_DCD_COLLISIONS,(size_t)nm_dcd_collisions);
         constraint->setMeta(GLOBAL_DCD_THICKNESS,imminent_collision_thickness);
     }
 
@@ -867,7 +930,6 @@ virtual void apply() override {
                 proximity_buffer(typeOffset,id + buffer_offset) = zs::reinterpret_bits<float>((int)1);
                 proximity_buffer.tuple(dim_c<3>,hitPointOffset,id + buffer_offset) = kp;
                 proximity_buffer.tuple(dim_c<3>,hitVelocityOffset,id + buffer_offset) = kv;
-                // proximity_buffer.tuple(dim_c<3>,hitNormalOffset,id) = hit_normal;
         });
 
 
@@ -915,12 +977,6 @@ virtual void apply() override {
 
                 hit_point = bary[2] * kps[0] + bary[3] * kps[1];
                 hit_velocity = bary[2] * kvs[0] + bary[3] * kvs[1];
-
-                // auto hit_normal = bary[0] * ps[0] + bary[1] * ps[1] + bary[2] * kps[0] + bary[3] * kps[1];
-                // if(hit_normal.norm() > eps)
-                //     hit_normal = hit_normal.normalized();
-                // else
-                //     hit_normal = (ps[1] - ps[0]).cross(kps[1] - kps[0]).normalized();
 
                 proximity_buffer.tuple(dim_c<4>,baryOffset,id + buffer_offset) = bary;
                 proximity_buffer.tuple(dim_c<4>,indsOffset,id + buffer_offset) = inds.reinterpret_bits(float_c);
@@ -1136,7 +1192,7 @@ virtual void apply() override {
                     auto ws = compute_vertex_tetrahedron_barycentric_weights(p,ktps[0],ktps[1],ktps[2],ktps[3]);
 
                     T epsilon = zs::limits<float>::epsilon();
-                    if(ws[0] > epsilon && ws[1] > epsilon && ws[2] > epsilon && ws[3] > epsilon){
+                    if(ws[0] > -epsilon && ws[1] > -epsilon && ws[2] > -epsilon && ws[3] > -epsilon){
                         embed_kti = kti;
                         bary = ws;
                         found = true;
@@ -1157,6 +1213,8 @@ virtual void apply() override {
     }
 
     if(type == "point_cell_pin") {
+        auto use_hard_constraint = get_input2<bool>("use_hard_constraint");
+
         constexpr auto eps = 1e-6;
         constraint->setMeta(CONSTRAINT_KEY,category_c::vertex_pin_to_cell_constraint);
 
@@ -1177,6 +1235,7 @@ virtual void apply() override {
         if(!target->hasAuxData(TARGET_CELL_BUFFER)) {
             (*target)[TARGET_CELL_BUFFER] = dtiles_t{kverts.get_allocator(),{
                 {"cx",3},
+                // {"px",3},
                 {"x",3},
                 {"v",3},
                 {"nrm",3}
@@ -1212,6 +1271,7 @@ virtual void apply() override {
         TILEVEC_OPS::fill(cudaPol,verts,"pinSuccess",0.f);
 
         cudaPol(zs::range(verts.size()),[
+                use_hard_constraint = use_hard_constraint,
                 verts = proxy<space>({},verts),
                 has_pin_group = has_pin_group,
                 eps = eps,
@@ -1223,7 +1283,7 @@ virtual void apply() override {
                 cell_buffer = proxy<space>({},cell_buffer),
                 cellBvh = proxy<space>(cellBvh)] ZS_LAMBDA(int vi) mutable {
             auto p = verts.pack(dim_c<3>,"x",vi);
-            if(verts("minv",vi) < eps)
+            if(verts("minv",vi) < eps && !use_hard_constraint)
                 return;
 
             if(has_pin_group && verts(pin_group_name,vi) < eps) {
@@ -1264,6 +1324,8 @@ virtual void apply() override {
                 auto id = binder_set.insert(vec2i{vi,closest_kti});
                 binder_buffer.tuple(dim_c<6>,"bary",id) = closest_bary;
                 verts("pinSuccess",vi) = 1.f;
+                if(use_hard_constraint)
+                    verts("minv",vi) = 0;
 
                 auto ktri = ktris.pack(dim_c<3>,"inds",closest_kti,int_c);
                 vec3 as[3] = {};

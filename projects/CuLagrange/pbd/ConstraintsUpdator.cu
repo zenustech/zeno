@@ -52,7 +52,7 @@ virtual void apply() override {
     auto type = constraint->readMeta(CONSTRAINT_KEY,wrapt<category_c>{});
     // auto do_frame_interpolation = get_input2<bool>("do_frame_interpolation");
 
-    if(type == category_c::vertex_pin_to_cell_constraint) {
+    // if(type == category_c::vertex_pin_to_cell_constraint || type == category_c) {
             std::cout << "update constraint " << type << std::endl;
             auto target = get_input<ZenoParticles>("target");
     // switch(type) {
@@ -71,14 +71,17 @@ virtual void apply() override {
 
             const auto& kverts = target->getParticles();
             auto& ckverts = ctarget->getParticles();
+            if(!ckverts.hasProperty("px")) {
+                ckverts.append_channels(cudaPol,{{"px",3}});
+            }
+            TILEVEC_OPS::copy(cudaPol,ckverts,"x",ckverts,"px");
             TILEVEC_OPS::copy(cudaPol,kverts,"x",ckverts,"x");
-            TILEVEC_OPS::copy(cudaPol,kverts,"px",ckverts,"px");
-            std::cout << "Update ckverts " << std::endl;
     //         break;
     // }
 
-    }
+    // }
     set_output("constraint",constraint);
+    set_output("source",source);
 }
 
 };
@@ -88,7 +91,7 @@ ZENDEFNODE(UpdateConstraintTarget, {{
     {"target"},
     {"constraint"}
 },
-{{"constraint"}},
+{{"source"},{"constraint"}},
 { 
     // {"string","groupID",""},
 },
