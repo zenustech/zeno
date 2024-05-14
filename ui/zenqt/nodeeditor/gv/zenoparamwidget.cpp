@@ -134,6 +134,7 @@ void ZenoParamLineEdit::setNumSlider(QGraphicsScene* pScene, const QVector<qreal
         emit editingFinished();
     });
     connect(m_pSlider, &ZGraphicsNumSliderItem::slideFinished, this, [=]() {
+        m_pLineEdit->setShowingSlider(false);
         emit editingFinished();
     });
     m_pSlider->setZValue(1000);
@@ -208,6 +209,7 @@ void ZenoParamLineEdit::keyPressEvent(QKeyEvent* event)
 
             m_pSlider->setPos(pos);
             m_pSlider->show();
+            m_pLineEdit->setShowingSlider(true);
         }
     }
     ZenoParamWidget::keyPressEvent(event);
@@ -220,6 +222,7 @@ void ZenoParamLineEdit::keyReleaseEvent(QKeyEvent* event)
         if (m_pSlider)
         {
             m_pSlider->hide();
+            m_pLineEdit->setShowingSlider(false);
         }
     }
     ZenoParamWidget::keyReleaseEvent(event);

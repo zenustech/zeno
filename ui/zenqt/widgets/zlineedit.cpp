@@ -9,6 +9,8 @@
 
 ZLineEdit::ZLineEdit(QWidget* parent)
     : QLineEdit(parent)
+    , m_pSlider(nullptr)
+    , m_bShowingSlider(false)
     , m_bHasRightBtn(false)
     , m_pButton(nullptr)
     , m_bIconHover(false)
@@ -20,6 +22,8 @@ ZLineEdit::ZLineEdit(QWidget* parent)
 
 ZLineEdit::ZLineEdit(const QString& text, QWidget* parent)
     : QLineEdit(text, parent)
+    , m_pSlider(nullptr)
+    , m_bShowingSlider(false)
     , m_bHasRightBtn(false)
     , m_pButton(nullptr)
     , m_bIconHover(false)
@@ -72,6 +76,16 @@ void ZLineEdit::init()
     });
 }
 
+void ZLineEdit::setShowingSlider(bool bShow)
+{
+    m_bShowingSlider = bShow;
+}
+
+bool ZLineEdit::showingSlider()
+{
+    return m_bShowingSlider;
+}
+
 void ZLineEdit::setIcons(const QString& icNormal, const QString& icHover)
 {
     m_iconNormal = icNormal;
@@ -87,10 +101,96 @@ void ZLineEdit::setIcons(const QString& icNormal, const QString& icHover)
     connect(m_pButton, SIGNAL(clicked(bool)), this, SIGNAL(btnClicked()));
 }
 
+void ZLineEdit::setNumSlider(const QVector<qreal>& steps)
+{
+    if (steps.isEmpty())
+        return;
+
+    m_steps = steps;
+    m_pSlider = new ZNumSlider(m_steps, this);
+    m_pSlider->setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
+    m_pSlider->hide();
+
+    connect(m_pSlider, &ZNumSlider::numSlided, this, [=](qreal val) {
+        bool bOk = false;
+    qreal num = this->text().toFloat(&bOk);
+    if (bOk)
+    {
+        num = num + val;
+        QString newText = QString::number(num);
+        setText(newText);
+        emit editingFinished();
+    }
+        });
+    connect(m_pSlider, &ZNumSlider::slideFinished, this, [=]() {
+        setShowingSlider(false);
+    emit editingFinished();
+        });
+}
+
 void ZLineEdit::mouseReleaseEvent(QMouseEvent* event)
 {
     ZenoPropPanel::getHintListInstance().setCurrentZlineEdit(this);
+    if (event->button() == Qt::MiddleButton && m_pSlider)
+    {
+        m_bShowHintList = true;
+
+        m_pSlider->hide();
+        setShowingSlider(false);
+        event->accept();
+        return;
+    }
     QLineEdit::mouseReleaseEvent(event);
+}
+
+void ZLineEdit::mousePressEvent(QMouseEvent* event)
+{
+    if (event->button() == Qt::MiddleButton && m_pSlider) {
+        m_bShowHintList = false;
+
+        QPoint globalpos = mapToGlobal(event->pos());
+        popupSlider();
+        globalpos.setX(globalpos.x() - m_pSlider->width() / 2 - (hasFocus() ? width() : 0 ));
+        globalpos.setY(globalpos.y() - m_pSlider->height() / 2);
+
+        m_pSlider->move(globalpos);
+        qApp->sendEvent(m_pSlider, event);
+        event->accept();
+        return;
+    }
+    QLineEdit::mousePressEvent(event);
+}
+
+void ZLineEdit::mouseMoveEvent(QMouseEvent* event)
+{
+    if (m_pSlider && m_pSlider->isVisible())
+    {
+        qApp->sendEvent(m_pSlider, event);
+        return;
+    }
+    QLineEdit::mouseMoveEvent(event);
+}
+
+void ZLineEdit::popupSlider()
+{
+    if (!m_pSlider)
+        return;
+
+    QSize sz = m_pSlider->size();
+    QRect rc = QApplication::desktop()->screenGeometry();
+    static const int _yOffset = ZenoStyle::dpiScaled(20);
+
+    QPoint pos = this->cursor().pos();
+    pos.setY(std::min(pos.y(), rc.bottom() - sz.height() / 2 - _yOffset));
+    pos -= QPoint(0, sz.height() / 2);
+
+    setShowingSlider(true);
+
+    m_pSlider->move(pos);
+    m_pSlider->show();
+    m_pSlider->activateWindow();
+    m_pSlider->setFocus();
+    m_pSlider->raise();
 }
 
 void ZLineEdit::keyPressEvent(QKeyEvent* event)

@@ -40,7 +40,7 @@ bool ZVecEditor::eventFilter(QObject *watched, QEvent *event) {
         {
             if (ZLineEdit* edit = qobject_cast<ZLineEdit*>(watched))
             {
-                if (!edit->hasFocus())
+                if (!edit->hasFocus() && !edit->showingSlider())
                 {
                     for (int i = 0; i < m_editors.size(); i++) {
                         if (!m_editors[i]->isVisible())
@@ -116,6 +116,7 @@ void ZVecEditor::initUI(const QVariant &vec) {
             m_editors[i]->installEventFilter(this);
         }
 
+        m_editors[i]->setNumSlider(UiHelper::getSlideStep("", m_bFloat ? zeno::Param_Float : zeno::Param_Int));
         //m_editors[i]->setFixedWidth(ZenoStyle::dpiScaled(64));
         m_editors[i]->setProperty("cssClass", m_styleCls);
         if (vec.canConvert<UI_VECTYPE>())

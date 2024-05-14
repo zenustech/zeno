@@ -38,6 +38,7 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     pSunLightLayout->addWidget(sunLongitudeLabel);
 
     sunLongitude->setProperty("cssClass", "proppanel");
+    sunLongitude->setNumSlider({ .1, 1, 10 });
     pSunLightLayout->addWidget(sunLongitude);
 
     QLabel* sunLatitudeLabel = new QLabel(tr("Latitude: "));
@@ -45,6 +46,7 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     pSunLightLayout->addWidget(sunLatitudeLabel);
 
     sunLatitude->setProperty("cssClass", "proppanel");
+    sunLatitude->setNumSlider({ .1, 1, 10 });
     pSunLightLayout->addWidget(sunLatitude);
 
     QLabel* sunSoftnessLabel = new QLabel(tr("Softness: "));
@@ -52,6 +54,7 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     pSunLightLayout->addWidget(sunSoftnessLabel);
 
     sunSoftness->setProperty("cssClass", "proppanel");
+    sunSoftness->setNumSlider({ 0.01, .1 });
     pSunLightLayout->addWidget(sunSoftness);
 
     QHBoxLayout* pWindLayout = new QHBoxLayout;
@@ -62,6 +65,7 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     pWindLayout->addWidget(sunWindLongLabel);
 
     windLong->setProperty("cssClass", "proppanel");
+    windLong->setNumSlider({ .1, 1, 10 });
     pWindLayout->addWidget(windLong);
 
     QLabel* sunWindLatLabel = new QLabel(tr("WindLat: "));
@@ -69,6 +73,7 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     pWindLayout->addWidget(sunWindLatLabel);
 
     windLat->setProperty("cssClass", "proppanel");
+    windLat->setNumSlider({ .1, 1, 10 });
     pWindLayout->addWidget(windLat);
 
     QLabel* timeStartLabel = new QLabel(tr("TimeStart: "));
@@ -76,6 +81,7 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     pWindLayout->addWidget(timeStartLabel);
 
     timeStart->setProperty("cssClass", "proppanel");
+    timeStart->setNumSlider({ .1, 1, 10 });
     pWindLayout->addWidget(timeStart);
 
     QLabel* timeSpeedLabel = new QLabel(tr("TimeSpeed: "));
@@ -83,6 +89,7 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     pWindLayout->addWidget(timeSpeedLabel);
 
     timeSpeed->setProperty("cssClass", "proppanel");
+    timeSpeed->setNumSlider({ .1, 1, 10 });
     pWindLayout->addWidget(timeSpeed);
 
     QHBoxLayout* pLightLayout = new QHBoxLayout;
@@ -93,6 +100,7 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     pLightLayout->addWidget(sunLightIntensityLabel);
 
     sunLightIntensity->setProperty("cssClass", "proppanel");
+    sunLightIntensity->setNumSlider({ .1, 1, 10 });
     pLightLayout->addWidget(sunLightIntensity);
 
     QLabel* colorTemperatureMixLabel = new QLabel(tr("colorTemperatureMix: "));
@@ -100,6 +108,7 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     pLightLayout->addWidget(colorTemperatureMixLabel);
 
     colorTemperatureMix->setProperty("cssClass", "proppanel");
+    colorTemperatureMix->setNumSlider({ .1, 1, 10 });
     pLightLayout->addWidget(colorTemperatureMix);
 
     QLabel* colorTemperatureLabel = new QLabel(tr("colorTemperature: "));
@@ -107,6 +116,7 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     pLightLayout->addWidget(colorTemperatureLabel);
 
     colorTemperature->setProperty("cssClass", "proppanel");
+    colorTemperature->setNumSlider({ 10, 100 });
     pLightLayout->addWidget(colorTemperature);
 
     QHBoxLayout* pTitleLayout = new QHBoxLayout;
@@ -257,10 +267,13 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
         pPosLayout->addWidget(posZEdit);
         pMainLayout->addLayout(pPosLayout);
 
+        posXEdit->setNumSlider({ .0001, .001, .01, .1, 1, 10, 100 });
         posXEdit->setProperty("cssClass", "proppanel");
         posXEdit->setValidator(new QDoubleValidator);
+        posYEdit->setNumSlider({ .0001, .001, .01, .1, 1, 10, 100 });
         posYEdit->setProperty("cssClass", "proppanel");
         posYEdit->setValidator(new QDoubleValidator);
+        posZEdit->setNumSlider({ .0001, .001, .01, .1, 1, 10, 100 });
         posZEdit->setProperty("cssClass", "proppanel");
         posZEdit->setValidator(new QDoubleValidator);
     }
@@ -287,10 +300,13 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
         pScaleLayout->addWidget(scaleZEdit);
         pMainLayout->addLayout(pScaleLayout);
 
+        scaleXEdit->setNumSlider({ .0001, .001, .01, .1, 1, 10, 100 });
         scaleXEdit->setProperty("cssClass", "proppanel");
         scaleXEdit->setValidator(new QDoubleValidator);
+        scaleYEdit->setNumSlider({ .0001, .001, .01, .1, 1, 10, 100 });
         scaleYEdit->setProperty("cssClass", "proppanel");
         scaleYEdit->setValidator(new QDoubleValidator);
+        scaleZEdit->setNumSlider({ .0001, .001, .01, .1, 1, 10, 100 });
         scaleZEdit->setProperty("cssClass", "proppanel");
         scaleZEdit->setValidator(new QDoubleValidator);
     }
@@ -317,10 +333,13 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
         pRotateLayout->addWidget(rotateZEdit);
         pMainLayout->addLayout(pRotateLayout);
 
+        rotateXEdit->setNumSlider({ .1, 1, 10, });
         rotateXEdit->setProperty("cssClass", "proppanel");
         rotateXEdit->setValidator(new QDoubleValidator);
+        rotateYEdit->setNumSlider({ .1, 1, 10, });
         rotateYEdit->setProperty("cssClass", "proppanel");
         rotateYEdit->setValidator(new QDoubleValidator);
+        rotateZEdit->setNumSlider({ .1, 1, 10, });
         rotateZEdit->setProperty("cssClass", "proppanel");
         rotateZEdit->setValidator(new QDoubleValidator);
     }
@@ -347,10 +366,13 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
         pColorLayout->addWidget(colorZEdit);
         pMainLayout->addLayout(pColorLayout);
 
+        colorXEdit->setNumSlider({ .01, .1, });
         colorXEdit->setProperty("cssClass", "proppanel");
         colorXEdit->setValidator(new QDoubleValidator);
+        colorYEdit->setNumSlider({ .01, .1, });
         colorYEdit->setProperty("cssClass", "proppanel");
         colorYEdit->setValidator(new QDoubleValidator);
+        colorZEdit->setNumSlider({ .01, .1, });
         colorZEdit->setProperty("cssClass", "proppanel");
         colorZEdit->setValidator(new QDoubleValidator);
     }
@@ -368,6 +390,7 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
 
         pMainLayout->addLayout(pMouseSenLayout);
 
+        intensityEdit->setNumSlider({ 1, 10, 100, });
         intensityEdit->setProperty("cssClass", "proppanel");
         intensityEdit->setValidator(new QDoubleValidator);
     }
@@ -385,6 +408,7 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
 
         pMainLayout->addLayout(pCamAperture);
 
+        camApertureEdit->setNumSlider({ .0001, .001, .01, .1, 1, 10, 100 });
         camApertureEdit->setProperty("cssClass", "proppanel");
         camApertureEdit->setValidator(new QDoubleValidator);
     }
@@ -402,6 +426,7 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
 
         pMainLayout->addLayout(pCamDisPlane);
 
+        camDisPlaneEdit->setNumSlider({ .0001, .001, .01, .1, 1, 10, 100 });
         camDisPlaneEdit->setProperty("cssClass", "proppanel");
         camDisPlaneEdit->setValidator(new QDoubleValidator);
     }
