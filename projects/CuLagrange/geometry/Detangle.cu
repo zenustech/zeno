@@ -111,6 +111,7 @@ struct Detangle2 : zeno::INode {
         dtiles_t kvtemp{verts.get_allocator(),{
             {"x",3},
             {"collision_cancel",1},
+            {"collision_group",1}
         },0};
         dtiles_t kttemp{tris.get_allocator(),{
             {"inds",3},
@@ -128,6 +129,9 @@ struct Detangle2 : zeno::INode {
 
         auto detangle_with_boundary = get_input2<bool>("detangle_with_boundary");
         auto do_self_detangle = get_input2<bool>("do_self_detangle");
+
+        auto among_same_group = get_input2<bool>("among_same_group");
+        auto among_different_group = get_input2<bool>("among_different_group");
 
         if(has_input<ZenoParticles>("kboundary") && detangle_with_boundary) {
             auto kboundary = get_input<ZenoParticles>("kboundary");
@@ -149,6 +153,8 @@ struct Detangle2 : zeno::INode {
                 kxtag = zs::SmallString(kxtag),
                 kpxtag = zs::SmallString(kpxtag),
                 kverts = proxy<space>({},kverts),
+                has_collision_group = kverts.hasProperty(collision_group_name),
+                collision_group_name = zs::SmallString(collision_group_name),
                 hasKCollisionCancel = kverts.hasProperty("colllision_cancel"),
                 kvtemp = proxy<space>({},kvtemp)] ZS_LAMBDA(int kvi) mutable {
                     auto kvert = kverts.pack(dim_c<3>,kpxtag,kvi) * (1 - alpha) + kverts.pack(dim_c<3>,kxtag,kvi) * alpha;
@@ -157,6 +163,11 @@ struct Detangle2 : zeno::INode {
                         kvtemp("collision_cancel",kvi) = kverts("collision_cancel",kvi);
                     else
                         kvtemp("collision_cancel",kvi) = 0;
+                    if(has_collision_group) {
+                        kvtemp("collision_group",kvi) = kverts(collision_group_name,kvi);
+                    }else {
+                        kvtemp("collision_group",kvi) = -1.0f;
+                    }
             });
             kttemp.resize(ktris.size());    
             TILEVEC_OPS::copy<3>(cudaExec,ktris,"inds",kttemp,"inds");
@@ -184,6 +195,8 @@ struct Detangle2 : zeno::INode {
 
             auto kbvs = retrieve_bounding_volumes(cudaExec,kvtemp,ktris,wrapv<3>{},(T)0,"x");
             ktri_bvh.build(cudaExec,kbvs);     
+
+            // std::cout << "detangle build bvh : " << kbvs.size() << std::endl;
         }
 
         int nm_intersections = 0;
@@ -275,14 +288,18 @@ struct Detangle2 : zeno::INode {
                     // std::cout << "retrive_intersections_between_edges_and_ktris" << std::endl;
                     if(do_proximity_detection) {
                         retrieve_intersection_with_edge_tri_pairs(cudaExec,
-                            verts,xtag,
+                            verts,xtag,collision_group_name,
                             edges,
-                            kvtemp,"x",
+                            kvtemp,"x","collision_group",
                             kttemp,
                             ktri_bvh,
                             csEKT,
                             icm_grad,
-                            false);
+                            false,
+                            among_same_group,
+                            among_different_group);
+
+                        // std::cout << "do EKT intersection detection : " << csEKT.size() << "\t" << kvtemp.size() << "\t" << kttemp.size() << std::endl;
                     }
                     if(iter == 0)
                         nm_kinematic_intersection += csEKT.size();
@@ -414,14 +431,16 @@ struct Detangle2 : zeno::INode {
 
                     if(do_proximity_detection) {
                         retrieve_intersection_with_edge_tri_pairs(cudaExec,
-                            kvtemp,"x",
+                            kvtemp,"x","collision_group",
                             kedges,
-                            verts,xtag,
+                            verts,xtag,collision_group_name,
                             tris,
                             tri_bvh,
                             csKET,
                             icm_grad,
-                            false);
+                            false,
+                            among_same_group,
+                            among_different_group);
                     }
                     #ifdef TIMING_DETANGLE
                     timer.tock("retrieve_intersection_with_KET_pairs");
@@ -429,7 +448,7 @@ struct Detangle2 : zeno::INode {
 
 
                     // nm_intersections += csET.size();
-                    // std::cout << "finish retrive_intersections_between_kedges_and_tris" << std::endl;
+                    // std::cout << "do TKE intersection detection" << csKET.size() << "\t" << kvtemp.size() << "\t" << kedges.size() << std::endl;
 
                     if(csKET.size() > 0)
                         has_kine_intersection = true;
@@ -564,7 +583,9 @@ struct Detangle2 : zeno::INode {
                         skip_distance,
                         false,
                         skip_too_close_pair_at_rest_shape,
-                        use_collision_group); 
+                        use_collision_group,
+                        among_same_group,
+                        among_different_group); 
                 }
 
                 // std::cout << "nm_self_intersections_ET : " << csET.size() << std::endl;
@@ -802,7 +823,9 @@ ZENDEFNODE(Detangle2, {
         {"bool","enforce_self_intersection_normal","0"},
         {"bool","detangle_with_boundary","1"},
         {"bool","do_self_detangle","1"},
-        {"bool","skip_animation_intersection","1"}
+        {"bool","skip_animation_intersection","1"},
+        {"bool","among_same_group","1"},
+        {"bool","among_different_group","1"}
     },
     {
         {"zsparticles"}
