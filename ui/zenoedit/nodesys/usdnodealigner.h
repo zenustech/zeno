@@ -1,6 +1,7 @@
 #pragma once
 #include <zenomodel/include/api.h>
 
+#include <vector>
 #include <map>
 #include <set>
 
@@ -12,25 +13,30 @@ public:
 		int mDepth = 0;
 	};
 
+	struct TreeInfo {
+		std::map<int, int> mDepthToSize;
+		ZENO_HANDLE mRootNode;
+		ZENO_HANDLE mGraph;
+	};
+
 	static USDNodeAligner& instance();
 
-	void setupGraph(ZENO_HANDLE mainGraph, ZENO_HANDLE rootNode);
+	void setGraphAnchor(ZENO_HANDLE graph, const std::pair<float, float>& anthorPos);
 
-	void addChild(ZENO_HANDLE parent, ZENO_HANDLE child);
+	void addChild(ZENO_HANDLE graph, ZENO_HANDLE parent, ZENO_HANDLE child);
 
-	void doAlign(const std::pair<float, float>& anchorPos);
+	void doAlign();
 
 private:
 	static USDNodeAligner* _instance;
 
 	USDNodeAligner();
 
-	void _beforeDFS();
-	void _DFS(const std::pair<float, float>& rootPos, std::vector<int>& visitMap, ZENO_HANDLE curNodeHandle);
+	void _buildTree(std::map<ZENO_HANDLE, TreeNode>& graphNodes, ZENO_HANDLE graphHandle, ZENO_HANDLE rootNode);
+	void _DFS(TreeInfo& tree, std::map<ZENO_HANDLE, TreeNode>& graphNodes, const std::pair<float, float>& rootPos, std::vector<int>& visitMap, ZENO_HANDLE curNodeHandle);
 
-	std::map<ZENO_HANDLE, TreeNode> mLinkMap;
-	std::map<int, int> mDepthToSize;
-	ZENO_HANDLE mRootNode;
-	ZENO_HANDLE mMainGraph;
+	std::map<ZENO_HANDLE, std::map<ZENO_HANDLE, TreeNode>> mGraphToNodes; // arr[graph handle][zeno handle] = TreeNode()
+	std::map<ZENO_HANDLE, std::pair<float, float>> mGraphToAnchor;
+	std::vector<TreeInfo> mTrees;
 	int mSizeOfNodes;
 };

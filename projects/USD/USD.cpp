@@ -12,10 +12,20 @@
 #include <pxr/usd/usdGeom/sphere.h>
 #include <pxr/usd/usdGeom/mesh.h>
 #include <pxr/usd/usdGeom/xform.h>
+#include <pxr/usd/usdGeom/xformable.h>
+#include <pxr/usd/usdGeom/xformCache.h>
 #include <pxr/usd/usdGeom/cylinder.h>
 #include <pxr/usd/usdGeom/cone.h>
 #include <pxr/usd/usdGeom/capsule.h>
 #include <pxr/usd/usdGeom/plane.h>
+
+#include "pxr/usd/usdSkel/skeleton.h"
+#include "pxr/usd/usdSkel/skeletonQuery.h"
+#include "pxr/usd/usdSkel/animQuery.h"
+#include "pxr/usd/usdSkel/bindingAPI.h"
+#include "pxr/usd/usdSkel/cache.h"
+#include "pxr/usd/usdSkel/root.h"
+#include "pxr/usd/usdSkel/utils.h"
 
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/matrix4f.h>
@@ -61,8 +71,28 @@ struct USDPrimKeeper : zeno::IObject {
     pxr::UsdPrim mPrim;
 };
 
+void _skinningCalculation(pxr::VtArray<pxr::GfVec3f>& points, const pxr::UsdGeomMesh& mesh, float time) {
+    pxr::UsdSkelCache skelCache;
+    pxr::UsdSkelBindingAPI skelBinding(mesh);
+    pxr::UsdSkelSkeletonQuery query = skelCache.GetSkelQuery(skelBinding.GetInheritedSkeleton());
+
+    // parameters for LBS calculation
+    pxr::VtArray<pxr::GfMatrix4d> skinningTransforms;
+    pxr::GfMatrix4d geomBindTransform(1.0);
+    pxr::VtArray<int> jointIndices;
+    pxr::VtArray<float> jointWeights;
+
+    query.ComputeSkinningTransforms(&skinningTransforms, time);
+    int jointIndicesPrimvar = skelBinding.GetJointIndicesPrimvar().GetElementSize();
+    skelBinding.GetGeomBindTransformAttr().Get(&geomBindTransform, time);
+    skelBinding.GetJointIndicesAttr().Get(&jointIndices, time);
+    skelBinding.GetJointWeightsAttr().Get(&jointWeights, time);
+
+    pxr::UsdSkelSkinPointsLBS(geomBindTransform, pxr::TfMakeSpan(skinningTransforms), pxr::TfMakeSpan(jointIndices), pxr::TfMakeSpan(jointWeights), jointIndicesPrimvar, pxr::TfMakeSpan(points));
+}
+
 // converting USD mesh to zeno mesh
-void _convertMeshFromUSDToZeno(const pxr::UsdPrim& usdPrim, zeno::PrimitiveObject& zPrim) {
+void _convertMeshFromUSDToZeno(const pxr::UsdPrim& usdPrim, zeno::PrimitiveObject& zPrim, float time) {
     const std::string& typeName = usdPrim.GetTypeName().GetString();
 
     if (typeName != "Mesh") {
@@ -86,7 +116,8 @@ void _convertMeshFromUSDToZeno(const pxr::UsdPrim& usdPrim, zeno::PrimitiveObjec
 
     /*** Start setting up mesh ***/
     pxr::VtArray<pxr::GfVec3f> pointValues;
-    usdMesh.GetPointsAttr().Get(&pointValues);
+    usdMesh.GetPointsAttr().Get(&pointValues, time);
+    _skinningCalculation(pointValues, usdMesh, time);
     for (const auto& point : pointValues) {
         verts.emplace_back(point.data()[0], point.data()[1], point.data()[2]);
     }
@@ -249,11 +280,16 @@ void ReadUSD::apply() {
 void ImportUSDMesh::apply() {
     std::string& usdPath = get_input2<zeno::StringObject>("USDDescription")->get();
     std::string& primPath = get_input2<zeno::StringObject>("primPath")->get();
+    float frame = get_input2<float>("frame");
 
     auto stage = pxr::UsdStage::Open(usdPath);
     if (stage == nullptr) {
         std::cout << "failed to find usd description for " << usdPath;
         return;
+    }
+
+    if (frame < 0.0f) {
+        frame = pxr::UsdTimeCode::Default().GetValue();
     }
 
     auto prim = stage->GetPrimAtPath(pxr::SdfPath(primPath));
@@ -266,7 +302,7 @@ void ImportUSDMesh::apply() {
     zeno::UserData& primData = zPrim->userData();
 
     // converting mesh
-    _convertMeshFromUSDToZeno(prim, *zPrim);
+    _convertMeshFromUSDToZeno(prim, *zPrim, frame);
 
     set_output2("prim", std::move(zPrim));
 }
@@ -276,6 +312,7 @@ void ImportUSDPrimMatrix::apply() {
     std::string& usdPath = get_input2<zeno::StringObject>("USDDescription")->get();
     std::string& primPath = get_input2<zeno::StringObject>("primPath")->get();
     std::string& opAttrName = get_input2<zeno::StringObject>("opName")->get();
+    float frameTime = get_input2<float>("frame");
     bool isInversedOp = get_input2<bool>("isInversedOp");
 
     auto stage = pxr::UsdStage::Open(usdPath);
@@ -302,8 +339,12 @@ void ImportUSDPrimMatrix::apply() {
         return;
     }
 
+    if (frameTime < 0.0f) {
+        frameTime = pxr::UsdTimeCode::Default().GetValue();
+    }
+
     pxr::VtValue mVal;
-    attr.Get(&mVal);
+    attr.Get(&mVal, frameTime);
 
     pxr::GfMatrix4d __ = pxr::UsdGeomXformOp::GetOpTransform(op.GetOpType(), mVal, isInversedOp);
     double* vp = __.data();
@@ -489,7 +530,7 @@ void ShowUSDPrimRelationShip::apply() {
         pxr::SdfPathVector targets;
         relation.GetTargets(&targets);
         if (targets.size() == 0) {
-            continue;
+            // continue;
         }
         std::cout << "[Relation Name] " << relation.GetName() << std::endl;
         for (auto& target : targets) {

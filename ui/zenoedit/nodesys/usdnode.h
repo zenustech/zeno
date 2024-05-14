@@ -22,6 +22,7 @@ private:
 	void _onEvalFinished(); // clean up context
 	ZENO_HANDLE _parsePrimNoXform(ZENO_HANDLE mainGraph, /* pxr::UsdStageRefPtr */ std::any scene, /* pxr::UsdPrim */ std::any);
 	ZENO_HANDLE _dfsParse(ZENO_HANDLE mainGraph, /* pxr::UsdStageRefPtr */ std::any scene, /* pxr::UsdPrim */ std::any prim);
+	ZENO_HANDLE _singleParse(ZENO_HANDLE mainGraph, /* pxr::UsdStageRefPtr */ std::any scene, /* pxr::UsdPrim */ std::any prim);
 
 	/*** Basic Geometry Node Generation ***/
 	ZENO_HANDLE _emitCreateSphereNode(/* pxr::UsdPrim */ std::any, ZENO_HANDLE, bool isLightGeo = false);
@@ -34,8 +35,8 @@ private:
 	ZENO_HANDLE _emitImportUSDMeshNode(/* pxr::UsdPrim */ std::any, ZENO_HANDLE);
 
 	ZENO_HANDLE _emitMaterialNode(/* pxr::UsdPrim */ std::any, ZENO_HANDLE);
-	void _handleShaderInput(/* pxr::UsdPrim */ std::any, const std::string&, ZENO_HANDLE, ZENO_HANDLE, const std::string&);
 	ZENO_HANDLE _emitSurfaceShaderNode(/* pxr::UsdPrim */ std::any, ZENO_HANDLE);
+	void _handleShaderInput(/* pxr::UsdPrim */ std::any, const std::string&, ZENO_HANDLE, ZENO_HANDLE, const std::string&);
 
 	ZENO_HANDLE _emitLightNode(/* pxr::UsdPrim */ std::any, ZENO_HANDLE, const std::string& lightType, const std::string& shapeType);
 
@@ -48,7 +49,6 @@ private:
 	std::string mUSDPath;
 	std::string mPrimPath;
 	bool mIsRecursive = false;
-
 private slots:
 	void _onEvalClicked();
 };

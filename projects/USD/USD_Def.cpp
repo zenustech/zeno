@@ -21,7 +21,8 @@ ZENDEFNODE(ImportUSDMesh,
         /* inputs */
         {
             {"string", "USDDescription", ""},
-            {"string", "primPath", ""}
+            {"string", "primPath", ""},
+            {"float", "frame", "-1"}
         },
         /* outputs */
         {
@@ -40,6 +41,7 @@ ZENDEFNODE(ImportUSDPrimMatrix,
             {"string", "USDDescription", ""},
             {"string", "primPath", ""},
             {"string", "opName", ""},
+            {"float", "frame", "-1"},
             {"bool", "isInversedOp", "0"},
         },
     /* outputs */

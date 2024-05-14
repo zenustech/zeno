@@ -23,6 +23,7 @@
 
 #include <pxr/usd/usdShade/material.h>
 #include <pxr/usd/usdShade/shader.h>
+#include <pxr/usd/usdShade/materialBindingAPI.h>
 
 #include <pxr/usd/usdLux/cylinderLight.h>
 #include <pxr/usd/usdLux/diskLight.h>
@@ -102,10 +103,10 @@ std::string getFirstOutSocketName(ZENO_HANDLE targetGraph, ZENO_HANDLE node) {
 
 void link(ZENO_HANDLE mainGraph, ZENO_HANDLE from, const std::string& outputSocket, ZENO_HANDLE to, const std::string& inputSocket) {
 	Zeno_AddLink(mainGraph, from, outputSocket, to, inputSocket);
-	USDNodeAligner::instance().addChild(to, from);
+	USDNodeAligner::instance().addChild(mainGraph, to, from);
 }
 
-ZENO_HANDLE markPrimInfo(ZENO_HANDLE mainGraph, ZENO_HANDLE nodeToMark, const pxr::UsdPrim& prim) {
+ZENO_HANDLE markPrimInfo(ZENO_HANDLE mainGraph, ZENO_HANDLE nodeToMark, const pxr::UsdPrim& prim, bool isFullPath = false) {
 	auto setData2 = Zeno_AddNode(mainGraph, "SetUserData2");
 	if (setData2 == 0) {
 		zeno::log_error("failed to create node: SetUserData2");
@@ -114,7 +115,7 @@ ZENO_HANDLE markPrimInfo(ZENO_HANDLE mainGraph, ZENO_HANDLE nodeToMark, const px
 
 	link(mainGraph, nodeToMark, getFirstOutSocketName(mainGraph, nodeToMark), setData2, "object");
 	Zeno_SetInputDefl(mainGraph, setData2, "key", std::string("usdPrimName"));
-	Zeno_SetInputDefl(mainGraph, setData2, "data", prim.GetName().GetString());
+	Zeno_SetInputDefl(mainGraph, setData2, "data", isFullPath ? prim.GetPath().GetString() : prim.GetName().GetString());
 
 	return setData2;
 }
@@ -172,6 +173,8 @@ void EvalUSDPrim::_getNodeInputs() {
 }
 
 void EvalUSDPrim::_onEvalFinished() {
+	/** clean up everything **/
+
 	mUSDPath = "";
 	mPrimPath = "";
 	mIsRecursive = false;
@@ -298,11 +301,13 @@ ZENO_HANDLE EvalUSDPrim::_parsePrimNoXform(ZENO_HANDLE mainGraph, std::any _stag
 		primNode = _emitCameraNode(usdPrim, mainGraph);
 	}
 	else if (primType == "Material") {
-		primNode = _emitMaterialNode(usdPrim, mainGraph);
+		_emitMaterialNode(usdPrim, mainGraph);
+		primNode = 0; // material nodes are setting on an individual subgraph, disabled its mark
 	}
+	/* Shaders will not be translated
 	else if (primType == "Shader") {
 		;
-	}
+	}*/
 
 	return primNode;
 }
@@ -354,6 +359,19 @@ ZENO_HANDLE EvalUSDPrim::_dfsParse(ZENO_HANDLE mainGraph, std::any scene, std::a
 	return finalNode;
 }
 
+ZENO_HANDLE EvalUSDPrim::_singleParse(ZENO_HANDLE mainGraph, std::any scene, std::any prim) {
+	auto stage = std::any_cast<pxr::UsdStageRefPtr>(scene);
+	auto usdPrim = std::any_cast<pxr::UsdPrim>(prim);
+
+	ZENO_HANDLE rootNode = _parsePrimNoXform(mainGraph, stage, usdPrim);
+	rootNode = _emitPrimitiveTransformNodes(usdPrim, mainGraph, rootNode); // parse xformOps
+	if (rootNode) {
+		rootNode = markPrimInfo(mainGraph, rootNode, usdPrim);
+	}
+
+	return rootNode;
+}
+
 void EvalUSDPrim::_onEvalClicked() {
 	_getNodeInputs();
 	if (mUSDPath.empty() || mPrimPath.empty()) {
@@ -382,28 +400,23 @@ void EvalUSDPrim::_onEvalClicked() {
 	ZENO_HANDLE rootNode = 0;
 	if (mIsRecursive) {
 		rootNode = _dfsParse(mainGraph, stage, usdPrim);
-	}
-	else {
-		rootNode = _parsePrimNoXform(mainGraph, stage, usdPrim);
-		rootNode = _emitPrimitiveTransformNodes(usdPrim, mainGraph, rootNode); // parse xformOps
-		if (rootNode) {
-			rootNode = markPrimInfo(mainGraph, rootNode, usdPrim);
-		}
+	} else {
+		rootNode = _singleParse(mainGraph, stage, usdPrim);
 	}
 
-	if (rootNode != 0) {
-		USDNodeAligner::instance().setupGraph(mainGraph, rootNode);
-
-		ZENO_HANDLE me = index().internalId();
-		std::pair<float, float> anchor;
-		Zeno_GetPos(mainGraph, me, anchor);
-		anchor.first += 300.0f; // don't cover my button
-
-		USDNodeAligner::instance().doAlign(anchor);
+	if (rootNode) {
+		Zeno_SetView(mainGraph, rootNode, true);
 	}
-	else {
-		zeno::log_warn("no node generated, skip graph aligning");
-	}
+
+	// get button position
+	ZENO_HANDLE me = index().internalId();
+	std::pair<float, float> anchor;
+	Zeno_GetPos(mainGraph, me, anchor);
+	anchor.first += 500.0f; // don't cover my button
+	USDNodeAligner::instance().setGraphAnchor(mainGraph, anchor);
+
+	// since materials has its own output mode and returns 0 as node handle, we should always align the graph whatever the value of rootNode is
+	USDNodeAligner::instance().doAlign();
 
 	_onEvalFinished();
 }
@@ -437,7 +450,6 @@ ZENO_HANDLE EvalUSDPrim::_emitCreateSphereNode(std::any prim, ZENO_HANDLE target
 	return newNode;
 }
 
-// TODO: we need a CreateCapsule node
 ZENO_HANDLE EvalUSDPrim::_emitCreateCapsuleNode(std::any prim, ZENO_HANDLE targetGraph){
 	pxr::UsdPrim usdPrim = std::any_cast<pxr::UsdPrim>(prim);
 	pxr::UsdAttribute attr;
@@ -707,12 +719,43 @@ ZENO_HANDLE EvalUSDPrim::_emitImportUSDMeshNode(std::any prim, ZENO_HANDLE targe
 	Zeno_SetInputDefl(targetGraph, newNode, "USDDescription", mUSDPath);
 	Zeno_SetInputDefl(targetGraph, newNode, "primPath", usdPrim.GetPath().GetString());
 
+	// Considering mesh material
+	pxr::UsdGeomMesh mesh = pxr::UsdGeomMesh(usdPrim);
+	pxr::UsdShadeMaterialBindingAPI bind = pxr::UsdShadeMaterialBindingAPI(mesh);
+	pxr::UsdShadeMaterial meshMat = bind.ComputeBoundMaterial();
+
+	const std::string& matName = meshMat.GetPath().GetName();
+	if (matName.size() == 0) {
+		// no material to bind, ignore it
+	}
+	else {
+		// we don't construct the binding material here, only bind its name
+		// the binding material will be constructed when we read "Material" in stage
+		ZENO_HANDLE bindMatNode = Zeno_AddNode(targetGraph, "BindMaterial");
+		link(targetGraph, newNode, "prim", bindMatNode, "object");
+		Zeno_SetInputDefl(targetGraph, bindMatNode, "mtlid", matName);
+		newNode = bindMatNode;
+	}
+
 	return newNode;
 }
 
 ZENO_HANDLE EvalUSDPrim::_emitMaterialNode(std::any prim, ZENO_HANDLE targetGraph) {
 	pxr::UsdPrim matPrim = std::any_cast<pxr::UsdPrim>(prim);
 	pxr::UsdShadeMaterial mat = pxr::UsdShadeMaterial(matPrim);
+
+	std::string matName = "USDMat_" + matPrim.GetName().GetString();
+	ZENO_HANDLE matGraph = Zeno_GetGraph(matName);
+	if (matGraph) { // seems the material subgraph already exists
+		zeno::log_info("subgraph named {} already exists, skip generation", matName);
+		return 0;
+	}
+
+	matGraph = Zeno_CreateGraph(matName);
+	if (matGraph == 0) {
+		zeno::log_error("failed to create subgraph {}", matName);
+		return 0;
+	}
 
 	// TODO: support volume and displacement type
 	auto outputs = mat.GetSurfaceOutputs();
@@ -730,26 +773,73 @@ ZENO_HANDLE EvalUSDPrim::_emitMaterialNode(std::any prim, ZENO_HANDLE targetGrap
 	}
 
 	pxr::UsdShadeShader shader = pxr::UsdShadeShader(source.GetPrim());
-	auto shaderNode = _emitSurfaceShaderNode(shader, targetGraph);
+	auto shaderNode = _emitSurfaceShaderNode(shader, matGraph);
 	if (shaderNode == 0) {
 		return 0;
 	}
 
-	auto matNode = Zeno_AddNode(targetGraph, "BindMaterial");
-	if (matNode == 0) {
-		zeno::log_error("failed to create node BindMaterial");
+	Zeno_SetInputDefl(matGraph, shaderNode, "mtlid", mat.GetPath().GetName());
+
+	shaderNode = markPrimInfo(matGraph, shaderNode, matPrim, true);
+
+	// create an output node to enable this subgraph
+	auto output = Zeno_AddNode(matGraph, "SubOutput");
+	if (output == 0) {
+		zeno::log_error("failed to create node SubOutput in subgraph {}", matName);
 		return 0;
 	}
-	
-	// TODO: set binding object and material
-	ZVARIANT ret;
-	std::string type;
-	Zeno_GetInputDefl(targetGraph, shaderNode, "mtlid", ret, type);
+	link(matGraph, shaderNode, "object", output, "port");
+	Zeno_SetView(matGraph, output, true);
 
-	// TODO: maybe we should usd a map to maintain the relationship between material and mtlid, so that the materials can be reused
-	Zeno_SetInputDefl(targetGraph, matNode, "mtlid", ret);
+	// call the subgraph by adding its node into main graph
+	auto matCollectionNode = Zeno_AddNode(targetGraph, matName);
+	if (matCollectionNode) {
+		Zeno_SetView(targetGraph, matCollectionNode, true);
+	} else {
+		zeno::log_error("failed to create node {}", matName);
+		// no return here, it's ok to go on
+	}
 
-	return matNode;
+	return shaderNode;
+}
+
+ZENO_HANDLE EvalUSDPrim::_emitSurfaceShaderNode(std::any prim, ZENO_HANDLE targetGraph) {
+	pxr::UsdShadeShader shader = std::any_cast<pxr::UsdShadeShader>(prim);
+	if (shader.GetImplementationSource().GetString() != "id") {
+		zeno::log_error("we don't support shader implmentation source other than id");
+		return 0;
+	}
+
+	pxr::TfToken shaderID;
+	if (!shader.GetShaderId(&shaderID) || shaderID.GetString() != "UsdPreviewSurface") {
+		zeno::log_error("unsupported shader id " + shader.GetPath().GetString());
+		return 0;
+	}
+
+	auto useSpecularWorkflowInput = shader.GetInput(pxr::TfToken("useSpecularWorkflow"));
+	int useSpecularWorkflow;
+	useSpecularWorkflowInput.Get(&useSpecularWorkflow);
+	if (useSpecularWorkflow == 0) {
+		zeno::log_error("surface shader without specular workflow is not supported");
+		return 0;
+	}
+
+	ZENO_HANDLE shaderNode = Zeno_AddNode(targetGraph, "ShaderFinalize");
+	if (shaderNode == 0) {
+		zeno::log_error("failed to create node ShaderFinalize");
+		return 0;
+	}
+
+	_handleShaderInput(shader, "diffuseColor", targetGraph, shaderNode, "basecolor");
+	_handleShaderInput(shader, "roughness", targetGraph, shaderNode, "roughness");
+	/*
+	* zeno doesn't have specular color support for now
+	* metal color neither
+	* but let's mark it here
+	*/
+	_handleShaderInput(shader, "specularColor", targetGraph, shaderNode, "metalColor");
+
+	return shaderNode;
 }
 
 void EvalUSDPrim::_handleShaderInput(std::any prim, const std::string& inputName, ZENO_HANDLE targetGraph, ZENO_HANDLE shaderNode, const std::string& inputSock) {
@@ -817,7 +907,7 @@ void EvalUSDPrim::_handleShaderInput(std::any prim, const std::string& inputName
 		const std::string& valType = val.GetTypeName();
 		if (valType == "GfVec3f") {
 			pxr::GfVec3f pv = val.Get<pxr::GfVec3f>();
-			Zeno_SetInputDefl(targetGraph, shaderNode, inputSock, zeno::vec3f({pv[0], pv[1], pv[2]}));
+			Zeno_SetInputDefl(targetGraph, shaderNode, inputSock, zeno::vec3f({ pv[0], pv[1], pv[2] }));
 		}
 		else if (valType == "float") {
 			Zeno_SetInputDefl(targetGraph, shaderNode, inputSock, val.Get<float>());
@@ -827,45 +917,6 @@ void EvalUSDPrim::_handleShaderInput(std::any prim, const std::string& inputName
 			return;
 		}
 	}
-}
-
-ZENO_HANDLE EvalUSDPrim::_emitSurfaceShaderNode(std::any prim, ZENO_HANDLE targetGraph) {
-	pxr::UsdShadeShader shader = std::any_cast<pxr::UsdShadeShader>(prim);
-	if (shader.GetImplementationSource().GetString() != "id") {
-		zeno::log_error("we don't support shader implmentation source other than id");
-		return 0;
-	}
-
-	pxr::TfToken shaderID;
-	if (!shader.GetShaderId(&shaderID) || shaderID.GetString() != "UsdPreviewSurface") {
-		zeno::log_error("unsupported shader id " + shader.GetPath().GetString());
-		return 0;
-	}
-
-	auto useSpecularWorkflowInput = shader.GetInput(pxr::TfToken("useSpecularWorkflow"));
-	int useSpecularWorkflow;
-	useSpecularWorkflowInput.Get(&useSpecularWorkflow);
-	if (useSpecularWorkflow == 0) {
-		zeno::log_error("surface shader without specular workflow is not supported");
-		return 0;
-	}
-
-	ZENO_HANDLE shaderNode = Zeno_AddNode(targetGraph, "ShaderFinalize");
-	if (shaderNode == 0) {
-		zeno::log_error("failed to create node ShaderFinalize");
-		return 0;
-	}
-
-	_handleShaderInput(shader, "diffuseColor", targetGraph, shaderNode, "basecolor");
-	_handleShaderInput(shader, "roughness", targetGraph, shaderNode, "roughness");
-	/*
-	* zeno doesn't have specular color support for now
-	* metal color neither
-	* but let's mark it here
-	*/
-	_handleShaderInput(shader, "specularColor", targetGraph, shaderNode, "metalColor");
-
-	return shaderNode;
 }
 
 ZENO_HANDLE EvalUSDPrim::_emitLightNode(std::any prim, ZENO_HANDLE targetGraph, const std::string& lightType, const std::string& shapeType) {
