@@ -601,17 +601,8 @@ void FakeTransformer::rotate(glm::vec3 start_vec, glm::vec3 end_vec, glm::vec3 a
     float direct = 1.0f;
     if (glm::dot(cross_vec, axis) < 0)
         direct = -1.0f;
-    float angle = acos(fmin(fmax(glm::dot(start_vec, end_vec), -1.0f), 1.0f));
-    {
-        auto localX = get_transaction_start_X();
-        auto localY = get_transaction_start_Y();
-        auto localZ = glm::cross(localX, localY);
-        auto cur_to_world = glm::mat3(1);
-        cur_to_world[0] = localX;
-        cur_to_world[1] = localY;
-        cur_to_world[2] = localZ;
-        axis = glm::inverse(cur_to_world) * axis;
-    }
+    float angle = acos(zeno::clamp(glm::dot(start_vec, end_vec), -1.0f, 1.0f));
+    axis = glm::mat3(get_pivot_to_local()) * axis;
     _transaction_rotate = glm::quat(glm::rotate(angle * direct, axis));
     doTransform();
 }
