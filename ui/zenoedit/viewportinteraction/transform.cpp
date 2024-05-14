@@ -60,25 +60,11 @@ void FakeTransformer::addObject(const std::string& name) {
     m_transaction_start_scaling = node_sync.getInputValVec3(prim_node, "scaling");
     m_transaction_start_rotation = node_sync.getInputValQuat(prim_node, "quatRotation");
 
-    auto pivot_to_world = glm::mat3(1);
-    pivot_to_world[0] = m_init_localXOrg;
-    pivot_to_world[1] = m_init_localYOrg;
-    pivot_to_world[2] = glm::cross(m_init_localXOrg, m_init_localYOrg);
-
     {
-        auto lX = m_init_localXOrg;
-        auto lY = m_init_localYOrg;
-        auto lZ = glm::cross(lX, lY);
-        auto pivot_to_world = glm::mat4(1);
-        pivot_to_world[0] = {lX[0], lX[1], lX[2], 0};
-        pivot_to_world[1] = {lY[0], lY[1], lY[2], 0};
-        pivot_to_world[2] = {lZ[0], lZ[1], lZ[2], 0};
-        pivot_to_world[3] = {m_init_pivot[0], m_init_pivot[1], m_init_pivot[2], 1};
-        auto pivot_to_local = glm::inverse(pivot_to_world);
         auto translate_matrix = glm::translate(m_transaction_start_translation);
         auto rotate_matrix = glm::toMat4(m_transaction_start_rotation);
         auto scale_matrix = glm::scale(m_transaction_start_scaling);
-        last_transform_matrix = pivot_to_world * translate_matrix *  rotate_matrix * scale_matrix * pivot_to_local;
+        last_transform_matrix = get_pivot_to_world() * translate_matrix *  rotate_matrix * scale_matrix * get_pivot_to_local();
     }
 }
 
@@ -166,12 +152,7 @@ void FakeTransformer::transform(QVector3D camera_pos, QVector3D ray_dir, glm::ve
     cur_to_world[2] = localZ;
     auto cur_to_local = glm::inverse(cur_to_world);
 
-    auto localZOrg = glm::cross(m_init_localXOrg, m_init_localYOrg);
-    auto pivot_to_world = glm::mat3(1);
-    pivot_to_world[0] = m_init_localXOrg;
-    pivot_to_world[1] = m_init_localYOrg;
-    pivot_to_world[2] = localZOrg;
-    auto pivot_to_local = glm::inverse(pivot_to_world);
+    auto pivot_to_local = get_pivot_to_local();
 
     if (m_operation == TransOpt::TRANSLATE) {
         if (m_operation_mode == zenovis::INTERACT_X) {
@@ -608,16 +589,8 @@ void FakeTransformer::rotate(glm::vec3 start_vec, glm::vec3 end_vec, glm::vec3 a
 }
 
 void FakeTransformer::doTransform() {
-    // qDebug() << "transformer's objects count " << m_objects.size();
-    auto lX = m_init_localXOrg;
-    auto lY = m_init_localYOrg;
-    auto lZ = glm::cross(lX, lY);
-    auto pivot_to_world = glm::mat4(1);
-    pivot_to_world[0] = {lX[0], lX[1], lX[2], 0};
-    pivot_to_world[1] = {lY[0], lY[1], lY[2], 0};
-    pivot_to_world[2] = {lZ[0], lZ[1], lZ[2], 0};
-    pivot_to_world[3] = {m_init_pivot[0], m_init_pivot[1], m_init_pivot[2], 1};
-    auto pivot_to_local = glm::inverse(pivot_to_world);
+    auto pivot_to_world = get_pivot_to_world();
+    auto pivot_to_local = get_pivot_to_local();
 
     for (auto &[obj_name, obj] : m_objects) {
         auto& node_sync = NodeSyncMgr::GetInstance();
