@@ -95,6 +95,24 @@ void ParamsModel::initCustomUI(const zeno::CustomUI& customui)
         connect(m_customParamsM, &QStandardItemModel::dataChanged, this, &ParamsModel::onCustomModelDataChanged);
     }
     UiHelper::newCustomModel(m_customParamsM, customui);
+
+    //m_customParamsM创建后需更新初始值
+    QStandardItem* pInputsRoot = m_customParamsM->item(0);
+    for (int i = 0; i < pInputsRoot->rowCount(); i++)
+    {
+        auto tabItem = pInputsRoot->child(i);
+        for (int j = 0; j < tabItem->rowCount(); j++)
+        {
+            auto groupItem = tabItem->child(j);
+            for (int k = 0; k < groupItem->rowCount(); k++)
+            {
+                auto paramItem = groupItem->child(k);
+                int row = indexFromName(paramItem->data(ROLE_PARAM_NAME).toString(), true);
+                if (row != -1)
+                    paramItem->setData(m_items[row].value, ROLE_PARAM_VALUE);
+            }
+        }
+    }
 }
 
 void ParamsModel::onCustomModelDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)

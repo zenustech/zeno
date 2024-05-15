@@ -19,13 +19,14 @@ protected:
     void mouseMoveEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
     void focusOutEvent(QFocusEvent* event) override;
-    bool eventFilter(QObject* watched, QEvent* event) override;
 
 signals:
     void numSlided(qreal);
     void slideFinished();
 
 private:
+    bool activateLabel(QPoint& pos, bool pressed = false);
+
     QVector<qreal> m_scales;
     QPoint m_lastPos;
     bool m_currScale;
