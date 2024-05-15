@@ -331,14 +331,15 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
             //if (!AppHelper::updateCurve(paramItem->data(ROLE_PARAM_VALUE), newValue))
             //{
                 //onCustomParamDataChanged(perIdx, perIdx, QVector<int>() << ROLE_PARAM_VALUE);
+                //return;
+            //}
             QStandardItemModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS))->customParamModel();
             BlockSignalScope scope(paramsModel); //setDataÊ±ÐèÆÁ±ÎdataChangeÐÅºÅ
             paramsModel->setData(perIdx, newValue, ROLE_PARAM_VALUE);
-            return;
-            //}
         }
-        UiHelper::qIndexSetData(perIdx, newValue, ROLE_PARAM_VALUE);
-        //AppHelper::modifyOptixObjDirectly(newValue, m_idx, perIdx, true);
+        ParamsModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS));
+        const QModelIndex& idx = paramsModel->paramIdx(perIdx.data(ROLE_PARAM_NAME).toString(), true);
+        UiHelper::qIndexSetData(idx, newValue, ROLE_PARAM_VALUE);
     };
     cbSet.cbSwitch = [=](bool bOn) {
         zenoApp->getMainWindow()->setInDlgEventLoop(bOn);   //deal with ubuntu dialog slow problem when update viewport.
