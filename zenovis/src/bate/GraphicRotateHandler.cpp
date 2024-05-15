@@ -90,10 +90,10 @@ struct RotateHandler final : IGraphicHandler {
         bound = dist / 5.0f * scale;
 
         constexpr float color_factor = 0.8f;
-        vec3f color_yz = vec3f(0.8, 0.2, 0.2) * (hover_mode == INTERACT_YZ ? 1.0 : color_factor);
-        vec3f color_xz = vec3f(0.2, 0.6, 0.2) * (hover_mode == INTERACT_XZ ? 1.0 : color_factor);
-        vec3f color_xy = vec3f(0.2, 0.2, 0.8) * (hover_mode == INTERACT_XY ? 1.0 : color_factor);
-        vec3f color_xyz = vec3f(1.0, 1.0, 1.0) * (hover_mode == INTERACT_XYZ ? 1.0 : color_factor);
+        vec3f color_yz = vec3f(0.8, 0.2, 0.2) * (hover_mode == OPERATION_MODE::INTERACT_YZ ? 1.0 : color_factor);
+        vec3f color_xz = vec3f(0.2, 0.6, 0.2) * (hover_mode == OPERATION_MODE::INTERACT_XZ ? 1.0 : color_factor);
+        vec3f color_xy = vec3f(0.2, 0.2, 0.8) * (hover_mode == OPERATION_MODE::INTERACT_XY ? 1.0 : color_factor);
+        vec3f color_xyz = vec3f(1.0, 1.0, 1.0) * (hover_mode == OPERATION_MODE::INTERACT_XYZ ? 1.0 : color_factor);
 
         lines_prog = scene->shaderMan->compile_program(vert_code, frag_code);
 
@@ -108,22 +108,22 @@ struct RotateHandler final : IGraphicHandler {
 
         float size = 0.02f;
 
-        if (mode == INTERACT_NONE || mode == INTERACT_YZ)
+        if (mode == OPERATION_MODE::INTERACT_NONE || mode == OPERATION_MODE::INTERACT_YZ)
             drawCircle(center, y_axis, z_axis, color_yz, bound, bound * size, vbo);
 
-        if (mode == INTERACT_NONE || mode == INTERACT_XZ)
+        if (mode == OPERATION_MODE::INTERACT_NONE || mode == OPERATION_MODE::INTERACT_XZ)
             drawCircle(center, z_axis, x_axis, color_xz, bound, bound * size, vbo);
 
-        if (mode == INTERACT_NONE || mode == INTERACT_XY)
+        if (mode == OPERATION_MODE::INTERACT_NONE || mode == OPERATION_MODE::INTERACT_XY)
             drawCircle(center, x_axis, y_axis, color_xy, bound, bound * size, vbo);
 
         lines_prog->set_uniform("alpha", 0.3f);
 
-        if (mode == INTERACT_NONE || mode == INTERACT_XYZ)
+        if (mode == OPERATION_MODE::INTERACT_NONE || mode == OPERATION_MODE::INTERACT_XYZ)
             drawSphere(center, color_xyz, bound * 0.9f, vbo, ibo);
     }
 
-    virtual int collisionTest(glm::vec3 ray_origin, glm::vec3 ray_direction) override {
+    virtual OPERATION_MODE collisionTest(glm::vec3 ray_origin, glm::vec3 ray_direction) override {
         auto x_axis = zeno::vec_to_other<glm::vec3>(localX);
         auto y_axis = zeno::vec_to_other<glm::vec3>(localY);
         auto z_axis = glm::cross(x_axis, y_axis);
@@ -137,25 +137,25 @@ struct RotateHandler final : IGraphicHandler {
 
         // xy handler
         if (rayIntersectRing(ray_origin, ray_direction, ctr, o_radius, i_radius, y_axis, z_axis, thickness, model_matrix)) {
-            return INTERACT_YZ;
+            return OPERATION_MODE::INTERACT_YZ;
         }
 
         // yz handler
         if (rayIntersectRing(ray_origin, ray_direction, ctr, o_radius, i_radius, z_axis, x_axis, thickness, model_matrix)) {
-            return INTERACT_XZ;
+            return OPERATION_MODE::INTERACT_XZ;
         }
 
         // xz handler
         if (rayIntersectRing(ray_origin, ray_direction, ctr, o_radius, i_radius, x_axis, y_axis, thickness, model_matrix)) {
-            return INTERACT_XY;
+            return OPERATION_MODE::INTERACT_XY;
         }
 
         // xyz handler
         if (rayIntersectSphere(ray_origin, ray_direction, zeno::vec_to_other<glm::vec3>(center), i_radius).has_value()) {
-            return INTERACT_XYZ;
+            return OPERATION_MODE::INTERACT_XYZ;
         }
 
-        return INTERACT_NONE;
+        return OPERATION_MODE::INTERACT_NONE;
     }
 
     virtual void setCenter(zeno::vec3f c, zeno::vec3f x, zeno::vec3f y) override {

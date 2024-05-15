@@ -114,7 +114,7 @@ private:
 
     bool m_isTransforming = false;
     TransOpt m_operation = TransOpt::NONE;
-    int m_operation_mode;
+    zenovis::OPERATION_MODE m_operation_mode;
     zenovis::COORD_SYS m_coord_sys;
     float m_handler_scale = 1;
     std::shared_ptr<zenovis::IGraphicHandler> m_handler;

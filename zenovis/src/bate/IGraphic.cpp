@@ -14,18 +14,18 @@
 
 namespace zenovis {
 
-void IGraphicHandler::setMode(int interact_mode) 
+void IGraphicHandler::setMode(OPERATION_MODE interact_mode)
 { 
     mode = interact_mode; 
 }
 
-int IGraphicHandler::handleClick(glm::vec3 ori, glm::vec3 dir) 
+OPERATION_MODE IGraphicHandler::handleClick(glm::vec3 ori, glm::vec3 dir)
 { 
     mode = collisionTest(ori, dir); 
     return mode; 
 }
 
-int IGraphicHandler::handleHover(glm::vec3 ori, glm::vec3 dir) 
+OPERATION_MODE IGraphicHandler::handleHover(glm::vec3 ori, glm::vec3 dir)
 { 
     hover_mode = collisionTest(ori, dir);
     return hover_mode;

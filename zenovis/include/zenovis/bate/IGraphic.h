@@ -20,7 +20,7 @@ namespace zenovis {
 
 struct Scene;
 
-enum {
+enum class OPERATION_MODE {
     INTERACT_X,
     INTERACT_Y,
     INTERACT_Z,
@@ -49,17 +49,17 @@ struct IGraphicDraw : IGraphic {
 };
 
 struct IGraphicHandler : IGraphicDraw {
-    int mode = INTERACT_NONE;
-    int hover_mode = INTERACT_NONE;
+    OPERATION_MODE mode = OPERATION_MODE::INTERACT_NONE;
+    OPERATION_MODE hover_mode = OPERATION_MODE::INTERACT_NONE;
 
-    virtual int collisionTest(glm::vec3 ori, glm::vec3 dir) = 0;
+    virtual OPERATION_MODE collisionTest(glm::vec3 ori, glm::vec3 dir) = 0;
     virtual void setCenter(zeno::vec3f center, zeno::vec3f localX, zeno::vec3f localY) = 0;
     virtual void setCoordSys(COORD_SYS coord_sys) = 0;
     virtual void resize(float scale) = 0;
     virtual std::optional<glm::vec3> getIntersect(glm::vec3 ori, glm::vec3 dir) = 0;
-    virtual void setMode(int interact_mode);
-    virtual int handleClick(glm::vec3 ori, glm::vec3 dir);
-    virtual int handleHover(glm::vec3 ori, glm::vec3 dir);
+    virtual void setMode(OPERATION_MODE interact_mode);
+    virtual OPERATION_MODE handleClick(glm::vec3 ori, glm::vec3 dir);
+    virtual OPERATION_MODE handleHover(glm::vec3 ori, glm::vec3 dir);
 };
 
 struct IPicker : IGraphicDraw {
