@@ -76,6 +76,7 @@ private:
     ZenoNode* createNode(const QModelIndex& idx, const NodeUtilParam& params);
     void initLink(const QModelIndex& linkIdx);
     void updateNodeStatus(int option);
+    void removeNodeCache();
 
     NodeUtilParam m_nodeParams;
     QPersistentModelIndex m_subgIdx;      //index to the subgraphmodel or node in "graphsModel"
