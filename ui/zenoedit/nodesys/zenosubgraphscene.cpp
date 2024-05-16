@@ -1237,7 +1237,23 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
     }
     else if (!event->isAccepted() && uKey == ZenoSettingsManager::GetInstance().getShortCut(ShortCut_Cache))
     {
-        updateNodeStatus(OPT_CACHE);
+        removeNodeCache();
+    }
+}
+
+void ZenoSubGraphScene::removeNodeCache()
+{
+    for (const QModelIndex& idx : selectNodesIndice())
+    {
+        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+        ZASSERT_EXIT(pGraphsModel);
+        STATUS_UPDATE_INFO info;
+        int options = idx.data(ROLE_OPTIONS).toInt();
+        info.oldValue = options;
+        options &= (~(int)OPT_CACHE);
+        info.role = ROLE_OPTIONS;
+        info.newValue = options;
+        pGraphsModel->updateNodeStatus(idx.data(ROLE_OBJID).toString(), info, m_subgIdx);
     }
 }
 
