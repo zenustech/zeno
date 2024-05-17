@@ -42,9 +42,6 @@
 ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
     : QGraphicsScene(parent)
     , m_tempLink(nullptr)
-    , m_bOnceOn(false)
-    , m_bBypassOn(false)
-    , m_bViewOn(false)
 {
     ZtfUtil &inst = ZtfUtil::GetInstance();
     m_nodeParams = inst.toUtilParam(inst.loadZtf(":/templates/node-example.xml"));
@@ -1232,21 +1229,40 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
     } 
     else if (!event->isAccepted() && uKey == ZenoSettingsManager::GetInstance().getShortCut(ShortCut_Once)) 
     {
-        updateNodeStatus(m_bOnceOn, OPT_ONCE);
+        updateNodeStatus(OPT_ONCE);
     } 
     else if (!event->isAccepted() && uKey == ZenoSettingsManager::GetInstance().getShortCut(ShortCut_Bypass))
     {
-        updateNodeStatus(m_bBypassOn, OPT_MUTE);
+        updateNodeStatus(OPT_MUTE);
     } 
     else if (!event->isAccepted() && uKey == ZenoSettingsManager::GetInstance().getShortCut(ShortCut_View)) 
     {
-        updateNodeStatus(m_bViewOn, OPT_VIEW);
+        updateNodeStatus(OPT_VIEW);
+    }
+    else if (!event->isAccepted() && uKey == ZenoSettingsManager::GetInstance().getShortCut(ShortCut_Cache))
+    {
+        removeNodeCache();
     }
 }
 
-void ZenoSubGraphScene::updateNodeStatus(bool &bOn, int option) 
+void ZenoSubGraphScene::removeNodeCache()
 {
-    bOn = !bOn;
+    for (const QModelIndex& idx : selectNodesIndice())
+    {
+        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+        ZASSERT_EXIT(pGraphsModel);
+        STATUS_UPDATE_INFO info;
+        int options = idx.data(ROLE_OPTIONS).toInt();
+        info.oldValue = options;
+        options &= (~(int)OPT_CACHE);
+        info.role = ROLE_OPTIONS;
+        info.newValue = options;
+        pGraphsModel->updateNodeStatus(idx.data(ROLE_OBJID).toString(), info, m_subgIdx);
+    }
+}
+
+void ZenoSubGraphScene::updateNodeStatus(int option) 
+{
     for (const QModelIndex &idx : selectNodesIndice()) 
     {
         IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
@@ -1254,10 +1270,10 @@ void ZenoSubGraphScene::updateNodeStatus(bool &bOn, int option)
         STATUS_UPDATE_INFO info;
         int options = idx.data(ROLE_OPTIONS).toInt();
         info.oldValue = options;
-        if (bOn)
-            options |= option;
-        else
+        if (options & option)
             options &= (~option);
+        else
+            options |= option;
         info.role = ROLE_OPTIONS;
         info.newValue = options;
         pGraphsModel->updateNodeStatus(idx.data(ROLE_OBJID).toString(), info, m_subgIdx);
