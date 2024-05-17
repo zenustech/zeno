@@ -472,7 +472,7 @@ ZENO_API std::string Graph::updateNodeName(const std::string oldName, const std:
     //update refer
     const auto& referMgr = getSession().referManager;
     std::string newPath = spNode->get_path_str();
-    referMgr->updateReferInfo(spNode->m_uuid, oldPath, newPath);
+    referMgr->updateReferParam(oldPath, newPath);
     return name;
 }
 
@@ -729,9 +729,9 @@ ZENO_API bool Graph::removeNode(std::string const& name) {
     m_name2uuid.erase(name);
     //remove refer info
     const auto& referMgr = getSession().referManager;
-    referMgr->removeReferInfo(uuid);//删除的是引用节点
+    referMgr->removeReferParam(uuid);//删除的是引用节点
     std::string path = spNode->get_path_str();
-    referMgr->removeReferPath(uuid, path);//删除的是被引用的节点
+    referMgr->removeBeReferedParam(uuid, path);//删除的是被引用的节点
     CALLBACK_NOTIFY(removeNode, name)
     return true;
 }

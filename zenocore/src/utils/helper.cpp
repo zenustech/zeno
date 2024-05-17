@@ -379,7 +379,9 @@ namespace zeno {
         while (std::regex_match(str, match, words_regex))
         {
             std::string val = match[1].str();
-            result.emplace(val);
+            std::regex rgx(".x|.y|.z|.w");
+            std::string newVal = std::regex_replace(val, rgx, "");
+            result.emplace(newVal);
             val = "ref(\"" + val + "\")";
             str.replace(str.find(val), val.size(), "");
         }

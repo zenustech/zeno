@@ -109,6 +109,8 @@ public:
     std::map<std::string, zany> getoutputs();
     void mark_dirty_objs();
 
+    void checkReference(std::shared_ptr<IParam> spParam);
+
 protected:
     ZENO_API virtual void complete();
     //preApply是先解决所有输入参数（依赖）的求值问题
@@ -127,7 +129,6 @@ private:
 
     float resolve(const std::string& formulaOrKFrame, const ParamType type);
     template<class T, class E> zany resolveVec(const zvariant& defl, const ParamType type);
-    void checkReference(std::shared_ptr<IParam> spParam);
 
 public:
     //为名为ds的输入参数，求得这个参数在依赖边的求值下的值，或者没有依赖边下的默认值。

@@ -16,6 +16,7 @@
 #include "zassert.h"
 #include "variantptr.h"
 #include "model/parammodel.h"
+#include <zeno/core/ReferManager.h>
 
 
 GraphsManager::GraphsManager(QObject* parent)
@@ -134,6 +135,7 @@ void GraphsManager::createGraphs(const zenoio::ZSG_PARSE_RESULT ioresult)
     ZASSERT_EXIT(m_assets);
     zeno::getSession().resetMainGraph();
     zeno::getSession().mainGraph->init(ioresult.mainGraph);
+    zeno::getSession().referManager->init(zeno::getSession().mainGraph);
 }
 
 bool GraphsManager::saveFile(const QString& filePath, APP_SETTINGS)

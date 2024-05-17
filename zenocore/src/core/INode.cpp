@@ -783,7 +783,6 @@ ZENO_API void INode::initParams(const NodeData& dat)
         sparam->control = param.control;
         sparam->optCtrlprops = param.ctrlProps;
         sparam->m_wpNode = shared_from_this();
-        checkReference(sparam);
     }
     for (const ParamInfo& param : dat.outputs)
     {
@@ -1024,11 +1023,9 @@ void INode::checkReference(std::shared_ptr<IParam> spParam)
     if (bRef)
     {
         if (bExits)
-        {
-            referMgr->updateReferPath(key);
-        }
+            referMgr->updateBeReferedParam(key);
         else
-            referMgr->removeReferInfo(key);//位包含引用参数时需要删除信息
+            referMgr->removeReferParam(key);//位包含引用参数时需要删除信息
     }
     if (!bRef && bExits)
     {
