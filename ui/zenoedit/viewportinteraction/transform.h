@@ -115,7 +115,7 @@ private:
     bool m_isTransforming = false;
     TransOpt m_operation = TransOpt::NONE;
     zenovis::OPERATION_MODE m_operation_mode;
-    zenovis::COORD_SYS m_coord_sys;
+    zenovis::COORD_SYS m_coord_sys = zenovis::COORD_SYS::LOCAL_COORD_SYS;
     float m_handler_scale = 1;
     std::shared_ptr<zenovis::IGraphicHandler> m_handler;
     ViewportWidget* m_viewport;
@@ -150,11 +150,17 @@ private:
     }
 
     glm::vec3 get_cur_self_X() {
+        if (m_coord_sys == zenovis::COORD_SYS::WORLD_COORD_SYS) {
+            return {1, 0, 0};
+        }
         auto transform = get_pivot_to_world() * get_cur_local_transform() * get_pivot_to_local();
         auto dir = transform * glm::vec4(m_init_localXOrg, 0);
         return glm::normalize(glm::vec3(dir.x, dir.y, dir.z));
     }
     glm::vec3 get_cur_self_Y() {
+        if (m_coord_sys == zenovis::COORD_SYS::WORLD_COORD_SYS) {
+            return {0, 1, 0};
+        }
         auto transform = get_pivot_to_world() * get_cur_local_transform() * get_pivot_to_local();
         auto dir = transform * glm::vec4(m_init_localYOrg, 0);
         return glm::normalize(glm::vec3(dir.x, dir.y, dir.z));
@@ -173,11 +179,17 @@ private:
     }
 
     glm::vec3 get_transaction_start_X() {
+        if (m_coord_sys == zenovis::COORD_SYS::WORLD_COORD_SYS) {
+            return {1, 0, 0};
+        }
         auto transform = get_pivot_to_world() * get_transaction_start_transform() * get_pivot_to_local();
         auto dir = transform * glm::vec4(m_init_localXOrg, 0);
         return glm::normalize(glm::vec3(dir.x, dir.y, dir.z));
     }
     glm::vec3 get_transaction_start_Y() {
+        if (m_coord_sys == zenovis::COORD_SYS::WORLD_COORD_SYS) {
+            return {0, 1, 0};
+        }
         auto transform = get_pivot_to_world() * get_transaction_start_transform() * get_pivot_to_local();
         auto dir = transform * glm::vec4(m_init_localYOrg, 0);
         return glm::normalize(glm::vec3(dir.x, dir.y, dir.z));

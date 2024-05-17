@@ -164,10 +164,6 @@ struct RotateHandler final : IGraphicHandler {
         localY = y;
     }
 
-    virtual void setCoordSys(COORD_SYS c) override {
-        coord_sys = c;
-    }
-
     virtual std::optional<glm::vec3> getIntersect(glm::vec3 ray_origin, glm::vec3 ray_direction) override {
         auto intersect = rayIntersectSphere(ray_origin, ray_direction,
                                     zeno::vec_to_other<glm::vec3>(center), bound * 0.9f);

@@ -209,10 +209,6 @@ struct TransHandler final : IGraphicHandler {
         localY = y;
     }
 
-    virtual void setCoordSys(COORD_SYS c) override {
-        coord_sys = c;
-    }
-
     virtual std::optional<glm::vec3> getIntersect(glm::vec3 ray_origin, glm::vec3 ray_direction) override {
         return std::nullopt;
     }
