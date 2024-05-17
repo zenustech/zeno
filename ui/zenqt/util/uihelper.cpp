@@ -1680,20 +1680,25 @@ QVector<qreal> UiHelper::scaleFactors()
 
 QString UiHelper::getNaiveParamPath(const QModelIndex& param, int dim)
 {
-    //TODO: adjust
-    QString str = param.data(ROLE_OBJPATH).toString();
-    QString subgName, name, paramPath;
-    getSocketInfo(str, subgName, name, paramPath);
+    auto nodeIdx = param.data(ROLE_NODEIDX).toModelIndex();
+    if (!nodeIdx.isValid())
+        return "";
+    QStringList list = nodeIdx.data(ROLE_OBJPATH).toStringList();
+    QString paramName = param.data(ROLE_PARAM_NAME).toString();
     if (dim == 0) {
-        paramPath += "/x";
+        paramName += ".x";
     }
     else if (dim == 1) {
-        paramPath += "/y";
+        paramName += ".y";
     }
     else if (dim == 2) {
-        paramPath += "/z";
+        paramName += ".z";
     }
-    return QString("%1/%2").arg(name).arg(paramPath);
+    else if (dim == 3) {
+        paramName += ".w";
+    }
+    list << paramName;
+    return list.join("/");
 }
 
 zeno::NodesData UiHelper::dumpNodes(const QModelIndexList &nodeIndice)

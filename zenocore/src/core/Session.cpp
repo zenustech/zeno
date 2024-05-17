@@ -19,6 +19,7 @@
 #include "rapidjson/stringbuffer.h"
 #include <zeno/extra/SubnetNode.h>
 #include <zeno/extra/GraphException.h>
+#include <zeno/core/ReferManager.h>
 
 namespace zeno {
 
@@ -83,6 +84,7 @@ ZENO_API Session::Session()
     , mainGraph(std::make_shared<Graph>("main"))
     , assets(std::make_shared<AssetsMgr>())
     , objsMan(std::make_unique<ObjectManager>())
+    , referManager(std::make_shared<ReferManager>())
 {
     initNodeCates();
 }
@@ -125,6 +127,8 @@ ZENO_API std::shared_ptr<Graph> Session::createGraph(const std::string& name) {
 ZENO_API void Session::resetMainGraph() {
     mainGraph.reset();
     mainGraph = std::make_shared<Graph>("main");
+    referManager.reset();
+    referManager = std::make_shared<ReferManager>();
 }
 
 ZENO_API void Session::setApiLevelEnable(bool bEnable)

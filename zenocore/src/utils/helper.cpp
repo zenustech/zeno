@@ -1,5 +1,5 @@
 #include <zeno/utils/helper.h>
-
+#include <regex>
 
 namespace zeno {
 
@@ -289,6 +289,101 @@ namespace zeno {
                 }
             }
         }
+    }
+
+    std::set<std::string> zeno::getReferPaths(const zvariant& val)
+    {
+        return std::visit([](const auto& arg)->std::set<std::string> {
+            using T = std::decay_t<decltype(arg)>;
+            std::set<std::string> paths;
+            if constexpr (std::is_same_v<T, std::string>) {
+                paths = getReferPath(arg);
+            }
+            else if constexpr (std::is_same_v<T, zeno::vec2s> || std::is_same_v<T, zeno::vec3s> || std::is_same_v<T, zeno::vec4s>)
+            {
+                for (int i = 0; i < arg.size(); i++)
+                {
+                    auto res = getReferPath(arg[i]);
+                    paths.insert(res.begin(), res.end());
+                }
+            }
+            return paths;
+        }, val);
+    }
+
+    std::string absolutePath(std::string currentPath, const std::string& path)
+    {
+        if (zeno::starts_with(path, "main/"))
+            return path;
+        if (starts_with(path, "./"))
+            return currentPath + path.substr(1, path.size() - 1);
+        auto vec = split_str(path, '/');
+        std::string tmpPath;
+        if (zeno::ends_with(currentPath, "/"))
+            currentPath = currentPath.substr(0, currentPath.size() - 1);
+        for (int i = vec.size() - 1; i >= 0; i--)
+        {
+            if (vec[i] == "..")
+            {
+                currentPath = currentPath.substr(0, currentPath.find_last_of("/"));
+            }
+            else
+            {
+                if (tmpPath.empty())
+                    tmpPath = vec[i];
+                else
+                    tmpPath = vec[i] + "/" + tmpPath;
+            }
+        }
+        return currentPath + "/" + tmpPath;
+    }
+
+    std::string zeno::relativePath(std::string currentPath, const std::string& path)
+    {
+        if (path.find(currentPath) != std::string::npos)
+        {
+            std::regex pattern(currentPath);
+            return std::regex_replace(path, pattern, ".");
+        }
+        std::string str;
+        if (zeno::ends_with(currentPath, "/"))
+            currentPath = currentPath.substr(0, currentPath.size() - 1);
+        int pos = currentPath.find_last_of("/");
+        while (pos != std::string::npos)
+        {
+            if (path.find(currentPath) == std::string::npos)
+            {
+                if (str.empty())
+                    str = "..";
+                else
+                    str = "../" + str;
+
+                currentPath = currentPath.substr(0, pos);
+                pos = currentPath.find_last_of("/");
+            }
+            else
+            {
+                break;
+            }
+        }
+        std::regex regx(currentPath);
+        return std::regex_replace(path, regx, str);
+    }
+
+    std::set<std::string> getReferPath(const std::string& path)
+    {
+        std::regex words_regex(".*ref\\(\"(.*)\"\\).*");
+        std::set<std::string> result;
+        std::string str = path;
+        std::smatch match;
+        while (std::regex_match(str, match, words_regex))
+        {
+            std::string val = match[1].str();
+            result.emplace(val);
+            val = "ref(\"" + val + "\")";
+            str.replace(str.find(val), val.size(), "");
+        }
+        return result;
     }
 
     bool getParamInfo(const CustomUI& customui, std::vector<ParamInfo>& inputs, std::vector<ParamInfo>& outputs) {

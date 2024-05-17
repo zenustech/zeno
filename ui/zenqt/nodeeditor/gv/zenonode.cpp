@@ -503,6 +503,9 @@ ZGraphicsLayout* ZenoNode::initNameLayout()
     });
     connect(nameItem, &ZEditableTextItem::editingFinished, this, [=]() {
         QString newVal = nameItem->text();
+        QString oldName = m_index.data(ROLE_NODE_NAME).toString();
+        if (newVal == oldName)
+            return;
         if (GraphModel* pModel = QVariantPtr<GraphModel>::asPtr(m_index.data(ROLE_GRAPH)))
         {
             QString name = pModel->updateNodeName(m_index, newVal);
