@@ -58,41 +58,22 @@ void ZNumSlider::keyReleaseEvent(QKeyEvent* event)
     event->accept();
 }
 
-bool ZNumSlider::eventFilter(QObject* watched, QEvent* event)
-{
-    if (event->type() == QEvent::Enter)
-    {
-        ZTextLabel* pLabel = qobject_cast<ZTextLabel*>(watched);
-        if (pLabel)
-        {
-            bool bOK = false;
-            qreal scale = pLabel->text().toFloat(&bOK);
-            if (bOK)
-            {
-                m_currLabel = pLabel;
-            }
-        }
-    }
-    return QWidget::eventFilter(watched, event);
-}
-
 void ZNumSlider::mousePressEvent(QMouseEvent* event)
 {
-    QWidget::mousePressEvent(event);
     m_lastPos = event->pos();
-    for (auto label : m_labels)
-    {
-        if (label != m_currLabel)
-            label->setTransparent(true);
-    }
+    activateLabel(mapFromGlobal(event->globalPos()), true);
+    QWidget::mousePressEvent(event);
 }
 
 void ZNumSlider::mouseMoveEvent(QMouseEvent* event)
 {
-    QPointF pos = event->pos();
+    QPoint pos = mapFromGlobal(event->globalPos());
+    if (activateLabel(pos))
+        return;
+
     if (m_currLabel)
     {
-        qreal dx = pos.x() - m_lastPos.x();
+        qreal dx = event->pos().x() - m_lastPos.x();
         static const int speed_factor = 15;
         if (std::abs(dx) > speed_factor)
         {
@@ -113,4 +94,33 @@ void ZNumSlider::mouseReleaseEvent(QMouseEvent* event)
 		if (label != m_currLabel)
 			label->setTransparent(false);
 	}
+}
+
+bool ZNumSlider::activateLabel(QPoint& pos, bool pressed)
+{
+    for (ZTextLabel* label : m_labels)
+    {
+        if (label)
+        {
+            if (label->geometry().contains(pos.x(), pos.y()))
+            {
+                bool bOK = false;
+                qreal scale = label->text().toFloat(&bOK);
+                if (bOK)
+                {
+                    if (pressed || label != m_currLabel)
+                    {
+                        if (m_currLabel)
+                        {
+                            qApp->sendEvent(m_currLabel, new QEvent(QEvent::Leave));
+                        }
+                        m_currLabel = label;
+                        qApp->sendEvent(m_currLabel, new QEvent(QEvent::Enter));
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    return false;
 }

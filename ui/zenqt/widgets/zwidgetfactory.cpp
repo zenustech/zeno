@@ -42,6 +42,7 @@ namespace zenoui
 
                 pLineEdit->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
                 pLineEdit->setProperty("cssClass", "zeno2_2_lineedit");
+                pLineEdit->setNumSlider(UiHelper::getSlideStep("", type));
                 QObject::connect(pLineEdit, &ZLineEdit::editingFinished, [=]() {
                     // be careful about the dynamic type.
                     QString text = pLineEdit->text();

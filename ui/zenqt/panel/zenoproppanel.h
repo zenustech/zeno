@@ -4,6 +4,8 @@
 #include <QtWidgets>
 #include "uicommon.h"
 #include "nodeeditor/gv/callbackdef.h"
+#include "ZenoHintListWidget.h"
+#include "widgets/zlineedit.h"
 
 class IGraphsModel;
 
@@ -32,6 +34,8 @@ public:
     virtual QSize sizeHint() const override;
     virtual QSize minimumSizeHint() const override;
     bool updateCustomName(const QString &value, QString &oldValue);
+
+    static ZenoHintListWidget& getHintListInstance();
 
 public slots:
     void onCustomParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);

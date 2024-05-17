@@ -85,6 +85,12 @@ bool ZenoPropPanel::updateCustomName(const QString &value, QString &oldValue)
     return UiHelper::qIndexSetData(m_idx, value, ROLE_NODE_NAME);
 }
 
+ZenoHintListWidget& ZenoPropPanel::getHintListInstance()
+{
+    static ZenoHintListWidget hintlist;
+    return hintlist;
+}
+
 void ZenoPropPanel::clearLayout()
 {
     setUpdatesEnabled(false);
@@ -127,6 +133,8 @@ void ZenoPropPanel::reset(GraphModel* subgraph, const QModelIndexList& nodes, bo
         //update();
         return;
     }
+    ZenoHintListWidget* hintlist = &getHintListInstance();
+    hintlist->setParent(nullptr);
 
     clearLayout();
     QVBoxLayout* pMainLayout = qobject_cast<QVBoxLayout*>(this->layout());
@@ -193,6 +201,10 @@ void ZenoPropPanel::reset(GraphModel* subgraph, const QModelIndexList& nodes, bo
     pMainLayout->setSpacing(0);
 
     update();
+
+    hintlist->setParent(m_tabWidget);
+    hintlist->resetSize();
+    hintlist->setCalcPropPanelPosFunc([this]() -> QPoint {return m_tabWidget->mapToGlobal(QPoint(0, 0)); });
 }
 
 void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, int last)
@@ -316,14 +328,18 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
     cbSet.cbEditFinished = [=](QVariant newValue) {
         if (bFloat)
         {
-            if (!AppHelper::updateCurve(paramItem->data(ROLE_PARAM_VALUE), newValue))
-            {
-                onCustomParamDataChanged(perIdx, perIdx, QVector<int>() << ROLE_PARAM_VALUE);
-                return;
-            }
+            //if (!AppHelper::updateCurve(paramItem->data(ROLE_PARAM_VALUE), newValue))
+            //{
+                //onCustomParamDataChanged(perIdx, perIdx, QVector<int>() << ROLE_PARAM_VALUE);
+                //return;
+            //}
+            QStandardItemModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS))->customParamModel();
+            BlockSignalScope scope(paramsModel); //setDataÊ±ÐèÆÁ±ÎdataChangeÐÅºÅ
+            paramsModel->setData(perIdx, newValue, ROLE_PARAM_VALUE);
         }
-        UiHelper::qIndexSetData(perIdx, newValue, ROLE_PARAM_VALUE);
-        //AppHelper::modifyOptixObjDirectly(newValue, m_idx, perIdx, true);
+        ParamsModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS));
+        const QModelIndex& idx = paramsModel->paramIdx(perIdx.data(ROLE_PARAM_NAME).toString(), true);
+        UiHelper::qIndexSetData(idx, newValue, ROLE_PARAM_VALUE);
     };
     cbSet.cbSwitch = [=](bool bOn) {
         zenoApp->getMainWindow()->setInDlgEventLoop(bOn);   //deal with ubuntu dialog slow problem when update viewport.
