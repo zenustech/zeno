@@ -164,6 +164,8 @@ namespace zeno {
         float, zeno::vec2f, zeno::vec3f, zeno::vec4f,
         zeno::vec2s, zeno::vec3s, zeno::vec4s, std::string>;
 
+    using AttrValue = std::variant<float, int, vec3f, vec2f, vec4f, std::string>;
+
     using ctrlpropvalue = std::variant<
         std::vector<std::string>,
         int,
