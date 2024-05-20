@@ -234,8 +234,6 @@ namespace zenoui
             case zeno::Vec3edit:
             case zeno::Vec4edit:
             {
-                UI_VECTYPE vec = value.value<UI_VECTYPE>();
-
                 int dim = -1;
                 bool bFloat = type == zeno::Param_Vec2f || type == zeno::Param_Vec3f || type == zeno::Param_Vec4f;
                 if (ctrl == zeno::Vec2edit)
@@ -250,12 +248,24 @@ namespace zenoui
                 {
                     dim = 4;
                 }
-                if (vec.size() != dim)
+                QVariant var;
+                //if (vec.size() != dim)
                 {
-                    vec.resize(dim);
+                    if (value.canConvert<UI_VECTYPE>())
+                    {
+                        auto vec = value.value<UI_VECTYPE>();
+                        vec.resize(dim);
+                        var = QVariant::fromValue(vec);
+                    }
+                    else if(value.canConvert<UI_VECSTRING>())
+                    {
+                        auto vec = value.value<UI_VECSTRING>();
+                        vec.resize(dim);
+                        var = QVariant::fromValue(vec);
+                    }
                 }
 
-                ZVecEditorItem* pVecEditor = new ZVecEditorItem(QVariant::fromValue(vec), bFloat, m_nodeParams.lineEditParam, scene);
+                ZVecEditorItem* pVecEditor = new ZVecEditorItem(var, bFloat, m_nodeParams.lineEditParam, scene);
                 pVecEditor->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, zenoui::g_ctrlHeight)));
                 pVecEditor->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed));
                 pVecEditor->setData(GVKEY_TYPE, type);

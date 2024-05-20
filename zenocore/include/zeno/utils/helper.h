@@ -26,6 +26,10 @@ namespace zeno {
     bool getParamInfo(const CustomUI& customui, std::vector<ParamInfo>& inputs, std::vector<ParamInfo>& outputs);
     CustomUI descToCustomui(const Descriptor& desc);
     void initControlsByType(CustomUI& ui);
+    std::string absolutePath(std::string currentPath, const std::string& path);
+    std::string relativePath(std::string currentPath, const std::string& path);
+    std::set<std::string> getReferPath(const std::string& path);
+    std::set<std::string> getReferPaths(const zvariant& val);
 }
 
 

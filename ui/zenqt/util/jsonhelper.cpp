@@ -407,6 +407,10 @@ namespace JsonHelper
                 str.toFloat(&ok);
                 if (ok)
                     continue;
+                rapidjson::Document doc;
+                doc.Parse(str.toStdString().c_str());
+                if (!doc.IsObject())
+                    continue;
                 CURVES_DATA data = parseCurves(str);
                 curves[key] = data[key];
             }

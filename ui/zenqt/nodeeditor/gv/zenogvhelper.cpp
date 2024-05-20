@@ -110,9 +110,9 @@ void ZenoGvHelper::setValue(QGraphicsItem* item, zeno::ParamType type, const QVa
             }
             else if (ZVecEditorItem* pEditor = qobject_cast<ZVecEditorItem*>(pItem))
             {
-                if (value.canConvert<UI_VECSTRING>()) {
-                    return;
-                }
+                //if (value.canConvert<UI_VECSTRING>()) {
+                //    return;
+                //}
                 bool bFloat = (zeno::Param_Vec2f == type || zeno::Param_Vec3f == type || zeno::Param_Vec4f == type);
                 pEditor->setVec(value, bFloat, pScene);
             }

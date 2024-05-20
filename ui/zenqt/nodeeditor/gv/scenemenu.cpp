@@ -92,12 +92,12 @@ bool sceneMenuEvent(
         {
             bool bInput = selParam.data(ROLE_ISINPUT).toBool();
             QString paramName = selParam.data(ROLE_PARAM_NAME).toString();
-            QString type = selParam.data(ROLE_PARAM_TYPE).toString();
+            int type = selParam.data(ROLE_PARAM_TYPE).toInt();
 
             QMenu* socketMenu = new QMenu;
 
             //check whether it's a vector param.
-            if (type.startsWith("vec2")) {
+            if (type == zeno::Param_Vec2i || type == zeno::Param_Vec2f) {
                 QMenu* pCopyElem = new QMenu(socketMenu);
                 pCopyElem->setTitle(QObject::tr("copy vec param"));
 
@@ -106,13 +106,13 @@ bool sceneMenuEvent(
 
                 QObject::connect(copy_x, &QAction::triggered, [=]() {
                     QString str = UiHelper::getNaiveParamPath(selParam, 0);
-                    QString refExpression = QString("ref(%1)").arg(str);
+                    QString refExpression = QString("ref(\"%1\")").arg(str);
                     dumpToClipboard(refExpression);
                 });
 
                 QObject::connect(copy_y, &QAction::triggered, [=]() {
                     QString str = UiHelper::getNaiveParamPath(selParam, 1);
-                    QString refExpression = QString("ref(%1)").arg(str);
+                    QString refExpression = QString("ref(\"%1\")").arg(str);
                     dumpToClipboard(refExpression);
                 });
 
@@ -120,7 +120,7 @@ bool sceneMenuEvent(
                 pCopyElem->addAction(copy_y);
                 socketMenu->addAction(pCopyElem->menuAction());
             }
-            else if (type.startsWith("vec3")) {
+            else if (type == zeno::Param_Vec3i || type == zeno::Param_Vec3f) {
                 QMenu* pCopyElem = new QMenu(socketMenu);
                 pCopyElem->setTitle(QObject::tr("copy vec param"));
 
@@ -130,19 +130,19 @@ bool sceneMenuEvent(
 
                 QObject::connect(copy_x, &QAction::triggered, [=]() {
                     QString str = UiHelper::getNaiveParamPath(selParam, 0);
-                    QString refExpression = QString("ref(%1)").arg(str);
+                    QString refExpression = QString("ref(\"%1\")").arg(str);
                     dumpToClipboard(refExpression);
                 });
 
                 QObject::connect(copy_y, &QAction::triggered, [=]() {
                     QString str = UiHelper::getNaiveParamPath(selParam, 1);
-                    QString refExpression = QString("ref(%1)").arg(str);
+                    QString refExpression = QString("ref(\"%1\")").arg(str);
                     dumpToClipboard(refExpression);
                 });
 
                 QObject::connect(copy_z, &QAction::triggered, [=]() {
                     QString str = UiHelper::getNaiveParamPath(selParam, 2);
-                    QString refExpression = QString("ref(%1)").arg(str);
+                    QString refExpression = QString("ref(\"%1\")").arg(str);
                     dumpToClipboard(refExpression);
                 });
 
@@ -152,7 +152,7 @@ bool sceneMenuEvent(
                 pCopyElem->addAction(copy_z);
                 socketMenu->addAction(pCopyElem->menuAction());
             }
-            else if (type.startsWith("vec4")) {
+            else if (type == zeno::Param_Vec4i || type == zeno::Param_Vec4f) {
                 QMenu* pCopyElem = new QMenu(socketMenu);
                 pCopyElem->setTitle(QObject::tr("copy vec param"));
 
@@ -163,25 +163,25 @@ bool sceneMenuEvent(
 
                 QObject::connect(copy_x, &QAction::triggered, [=]() {
                     QString str = UiHelper::getNaiveParamPath(selParam, 0);
-                    QString refExpression = QString("ref(%1)").arg(str);
+                    QString refExpression = QString("ref(\"%1\")").arg(str);
                     dumpToClipboard(refExpression);
                 });
 
                 QObject::connect(copy_y, &QAction::triggered, [=]() {
                     QString str = UiHelper::getNaiveParamPath(selParam, 1);
-                    QString refExpression = QString("ref(%1)").arg(str);
+                    QString refExpression = QString("ref(\"%1\")").arg(str);
                     dumpToClipboard(refExpression);
                 });
 
                 QObject::connect(copy_z, &QAction::triggered, [=]() {
                     QString str = UiHelper::getNaiveParamPath(selParam, 2);
-                    QString refExpression = QString("ref(%1)").arg(str);
+                    QString refExpression = QString("ref(\"%1\")").arg(str);
                     dumpToClipboard(refExpression);
                 });
 
                 QObject::connect(copy_w, &QAction::triggered, [=]() {
                     QString str = UiHelper::getNaiveParamPath(selParam, 3);
-                    QString refExpression = QString("ref(%1)").arg(str);
+                    QString refExpression = QString("ref(\"%1\")").arg(str);
                     dumpToClipboard(refExpression);
                 });
 
@@ -195,9 +195,9 @@ bool sceneMenuEvent(
             }
 
             //paste action for editable param
-            if (type.startsWith("float") ||
-                type.startsWith("int") ||
-                type.startsWith("string"))
+            if (type == zeno::Param_Float || 
+                type == zeno::Param_Int || 
+                type == zeno::Param_String)
             {
                 const QMimeData* pMimeData_ = QApplication::clipboard()->mimeData();
                 if (pMimeData_ && pMimeData_->text().startsWith("ref("))
@@ -243,7 +243,7 @@ bool sceneMenuEvent(
                     }
 
                     QString str = UiHelper::getNaiveParamPath(selParam);
-                    QString refExpression = QString("ref(%1)").arg(str);
+                    QString refExpression = QString("ref(\"%1\")").arg(str);
                     dumpToClipboard(refExpression);
                 });
                 socketMenu->addAction(pCopyRef);

@@ -62,6 +62,7 @@ public:
     ZENO_API std::string get_show_icon() const;
     ZENO_API virtual CustomUI get_customui() const;
     ZENO_API ObjPath get_path() const;
+    ZENO_API std::string get_path_str() const;
     ZENO_API ObjPath get_uuid_path() const { return m_uuidPath; }
     ZENO_API std::string get_uuid() const;
     ZENO_API std::weak_ptr<Graph> getGraph() const { return graph; }
@@ -107,6 +108,8 @@ public:
     void directly_setinputs(std::map<std::string, zany> inputs);
     std::map<std::string, zany> getoutputs();
     void mark_dirty_objs();
+
+    void checkReference(std::shared_ptr<IParam> spParam);
 
 protected:
     ZENO_API virtual void complete();
