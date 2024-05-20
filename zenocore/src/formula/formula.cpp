@@ -89,7 +89,7 @@ float Formula::callRef(const std::string& ref) {
     else
     {
         //vec refer
-        std::regex rgx(".x|.y|.z|.w");
+        std::regex rgx("(\\.x|\\.y|\\.z|\\.w)$");
         if (!std::regex_search(param, rgx))
         {
             zeno::log_error("reference param {} error", param);

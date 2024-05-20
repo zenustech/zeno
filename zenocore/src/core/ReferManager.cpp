@@ -273,9 +273,8 @@ namespace zeno {
                         //如果是数字，需要将整个refer替换
                         if (std::regex_match(newVal, num_rgx))
                         {
-                            std::string s = "ref(\"" + str + "\")";
-                            int idx = arg.find(s);
-                            arg.replace(idx, s.size(), newVal);
+                            arg = newVal;
+                            break;
                         }
                         else
                         {
