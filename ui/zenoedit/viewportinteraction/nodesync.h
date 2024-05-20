@@ -171,6 +171,21 @@ class NodeSyncMgr {
     NodeSyncMgr(const NodeSyncMgr &) = delete;
     const NodeSyncMgr &operator=(const NodeSyncMgr &) = delete;
 
+    static void beginTransaction(const QString& name) {
+        auto graph_model = zenoApp->graphsManagment()->currentModel();
+        if (!graph_model) {
+            return;
+        }
+        graph_model->beginTransaction(name);
+    };
+    static void endTransaction() {
+        auto graph_model = zenoApp->graphsManagment()->currentModel();
+        if (!graph_model) {
+            return;
+        }
+        graph_model->endTransaction();
+    };
+
   private:
     std::unordered_map<std::string, std::string> m_prim_sock_map;
     NodeSyncMgr() {

@@ -275,11 +275,13 @@ bool FakeTransformer::isTransforming() const {
 }
 
 void FakeTransformer::startTransform() {
+    NodeSyncMgr::beginTransaction("Transforming");
     markObjectsInteractive();
 }
 
 void FakeTransformer::createNewTransformNode(NodeLocation& node_location, const std::string& obj_name) {
     auto& node_sync = NodeSyncMgr::GetInstance();
+    NodeSyncMgr::beginTransaction("create node");
 
     auto out_sock = node_sync.getPrimSockName(node_location.node);
     auto new_node_location = node_sync.generateNewNode(node_location,
@@ -306,6 +308,7 @@ void FakeTransformer::createNewTransformNode(NodeLocation& node_location, const 
         node_sync.updateNodeInputVec(new_node_location.value(), "pivotPos", pivotPos);
         node_sync.updateNodeInputString(new_node_location.value(), "pivot", "custom");
     }
+    NodeSyncMgr::endTransaction();
 }
 
 void FakeTransformer::createNewTransformNodeNameWhenMissing(std::string const &node_name) {
@@ -389,6 +392,7 @@ void FakeTransformer::endTransform(bool moved) {
 
     m_operation_mode = zenovis::OPERATION_MODE::INTERACT_NONE;
     m_handler->setMode(zenovis::OPERATION_MODE::INTERACT_NONE);
+    NodeSyncMgr::endTransaction();
 }
 
 void FakeTransformer::toTranslate() {
