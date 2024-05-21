@@ -4,15 +4,13 @@
 #include "zenoapplication.h"
 #include <zenomodel/include/graphsmanagment.h>
 #include "zenomainwindow.h"
-#include "viewport/viewportwidget.h"
-#include <glm/gtx/euler_angles.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 #include "viewport/displaywidget.h"
-#include <viewport/zenovis.h>
 #include "zenovis/Session.h"
 #include "zenovis/Camera.h"
 #include <zeno/core/Session.h>
 #include <zeno/extra/GlobalState.h>
+
+using zeno::NodeSyncMgr;
 
 CameraNode::CameraNode(const NodeUtilParam& params, int pattern, QGraphicsItem* parent)
     : ZenoNode(params, parent)
@@ -270,7 +268,7 @@ ZGraphicsLayout* PrimitiveTransform::initCustomParamWidgets() {
         widget->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
         pHLayout->addItem(widget);
 
-        ZenoParamPushButton* pCentroidBtn = new ZenoParamPushButton("Centroid", -1, QSizePolicy::Expanding);
+        ZenoParamPushButton* pCentroidBtn = new ZenoParamPushButton("SetCentroid", -1, QSizePolicy::Expanding);
         layout->addItem(pCentroidBtn);
         connect(pCentroidBtn, SIGNAL(clicked()), this, SLOT(onCentroidClicked()));
 
@@ -321,11 +319,43 @@ void PrimitiveTransform::onCentroidClicked() {
             info.newValue = QVariant::fromValue(QString::fromUtf8("custom"));
             pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
         }
-        zeno::vec3f centroid;
+        zeno::vec3f centroid = {};
         // get prim centroid
         {
             // FIXME
-            centroid = {0, 0, 0};
+            {
+                std::string primid;
+                for (auto const &[key, ptr] : scene->objectsMan->pairs()) {
+                   if (nodeid.toStdString() == key.substr(0, key.find_first_of(':'))) {
+                       primid = key;
+                       break;
+                   }
+                }
+                if (primid.empty()) {
+                    auto& node_sync = NodeSyncMgr::GetInstance();
+                    auto prim_node_location = node_sync.searchNodeOfPrim(nodeid.toStdString());
+                    if (prim_node_location.has_value()) {
+                        auto link_nodes = node_sync.getInputNodes(prim_node_location.value().node, "prim");
+                        if (link_nodes.size()) {
+                            auto nodeid = link_nodes[0].get_node_id();
+                            for (auto const &[key, ptr] : scene->objectsMan->pairs()) {
+                                if (nodeid.toStdString() == key.substr(0, key.find_first_of(':'))) {
+                                    primid = key;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (primid.size()) {
+                    auto prim = dynamic_cast<zeno::PrimitiveObject*>(scene->objectsMan->get(primid).value());
+                    for (auto i = 0; i < prim->verts.size(); i++) {
+                        centroid += prim->verts[i];
+                    }
+                    centroid /= prim->verts.size();
+                }
+            }
         }
         // set node ui param
         {
