@@ -268,15 +268,13 @@ ZGraphicsLayout* PrimitiveTransform::initCustomParamWidgets() {
         widget->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
         pHLayout->addItem(widget);
 
-        ZenoParamPushButton* pCentroidBtn = new ZenoParamPushButton("SetCentroid", -1, QSizePolicy::Expanding);
+        ZenoParamPushButton* pCentroidBtn = new ZenoParamPushButton("MovePivotToCentroid", -1, QSizePolicy::Expanding);
         layout->addItem(pCentroidBtn);
-        connect(pCentroidBtn, SIGNAL(clicked()), this, SLOT(onCentroidClicked()));
+        connect(pCentroidBtn, SIGNAL(clicked()), this, SLOT(movePivotToCentroid()));
 
-        ZenoParamPushButton* pWorldBtn = new ZenoParamPushButton("World", -1, QSizePolicy::Expanding);
-        layout->addItem(pWorldBtn);
-
-        ZenoParamPushButton* pToOriginBtn = new ZenoParamPushButton("ToOrigin", -1, QSizePolicy::Expanding);
+        ZenoParamPushButton* pToOriginBtn = new ZenoParamPushButton("MoveCentroidToOrigin", -1, QSizePolicy::Expanding);
         layout->addItem(pToOriginBtn);
+        connect(pToOriginBtn, SIGNAL(clicked()), this, SLOT(moveCentroidToOrigin()));
 
         _param_ctrl param;
         param.param_name = pNameItem;
@@ -288,7 +286,7 @@ ZGraphicsLayout* PrimitiveTransform::initCustomParamWidgets() {
     return pHLayout;
 }
 
-void PrimitiveTransform::onCentroidClicked() {
+void PrimitiveTransform::movePivotToCentroid() {
     INPUT_SOCKETS inputs = index().data(ROLE_INPUTS).value<INPUT_SOCKETS>();
 
     const QString& nodeid = this->nodeId();
@@ -301,6 +299,7 @@ void PrimitiveTransform::onCentroidClicked() {
     // it seems no sense when we have multiple viewport but only one node.
     // which info of viewport will be synced to this node.
     DisplayWidget* pDisplay = pWin->getCurrentViewport();
+    zeno::vec3f centroid = {};
     if (pDisplay) {
         auto pZenoVis = pDisplay->getZenoVis();
         ZASSERT_EXIT(pZenoVis);
@@ -319,10 +318,8 @@ void PrimitiveTransform::onCentroidClicked() {
             info.newValue = QVariant::fromValue(QString::fromUtf8("custom"));
             pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
         }
-        zeno::vec3f centroid = {};
         // get prim centroid
         {
-            // FIXME
             {
                 std::string primid;
                 for (auto const &[key, ptr] : scene->objectsMan->pairs()) {
@@ -367,5 +364,29 @@ void PrimitiveTransform::onCentroidClicked() {
             info.newValue = QVariant::fromValue(vec);
             pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
         }
+    }
+}
+
+void PrimitiveTransform::moveCentroidToOrigin() {
+    movePivotToCentroid();
+    // set node ui param
+    {
+        IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+        ZASSERT_EXIT(pModel);
+        INPUT_SOCKETS inputs = index().data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+        glm::vec3 pivotPos;
+        {
+            INPUT_SOCKET pos = inputs["pivotPos"];
+            auto pivot_pos = pos.info.defaultValue.value<UI_VECTYPE>();
+            pivotPos = { float(pivot_pos[0]), float(pivot_pos[1]), float(pivot_pos[2]) };
+        }
+
+        UI_VECTYPE vec({ -pivotPos[0], -pivotPos[1], -pivotPos[2] });
+        INPUT_SOCKET translation = inputs["translation"];
+        PARAM_UPDATE_INFO info;
+        info.name = "translation";
+        info.oldValue = translation.info.defaultValue;
+        info.newValue = QVariant::fromValue(vec);
+        pModel->updateSocketDefl(nodeId(), info, this->subgIndex(), true);
     }
 }

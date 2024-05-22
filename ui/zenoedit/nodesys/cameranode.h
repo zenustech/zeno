@@ -2,6 +2,7 @@
 #define __CAMERA_NODE_H__
 
 #include "zenonode.h"
+#include "zeno/utils/vec.h"
 
 class CameraNode : public ZenoNode
 {
@@ -44,7 +45,8 @@ protected:
     ZGraphicsLayout* initCustomParamWidgets() override;
 
 private slots:
-    void onCentroidClicked();
+    void movePivotToCentroid();
+    void moveCentroidToOrigin();
 };
 
 #endif
