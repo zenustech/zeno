@@ -380,8 +380,19 @@ void PrimitiveTransform::moveCentroidToOrigin() {
             auto pivot_pos = pos.info.defaultValue.value<UI_VECTYPE>();
             pivotPos = { float(pivot_pos[0]), float(pivot_pos[1]), float(pivot_pos[2]) };
         }
+        auto translate = - pivotPos;
+        auto localX = inputs["localX"].info.defaultValue.value<UI_VECTYPE>();
+        auto localY = inputs["localY"].info.defaultValue.value<UI_VECTYPE>();
+        auto lX = glm::normalize(glm::vec3(localX[0], localX[1], localX[2]));
+        auto lY = glm::normalize(glm::vec3(localY[0], localY[1], localY[2]));
+        auto lZ = glm::cross(lX, lY);
+        auto pivot_to_world = glm::mat3(1);
+        pivot_to_world[0] = {lX[0], lX[1], lX[2]};
+        pivot_to_world[1] = {lY[0], lY[1], lY[2]};
+        pivot_to_world[2] = {lZ[0], lZ[1], lZ[2]};
+        translate = glm::inverse(pivot_to_world) * translate;
 
-        UI_VECTYPE vec({ -pivotPos[0], -pivotPos[1], -pivotPos[2] });
+        UI_VECTYPE vec({ translate[0], translate[1], translate[2] });
         INPUT_SOCKET translation = inputs["translation"];
         PARAM_UPDATE_INFO info;
         info.name = "translation";
