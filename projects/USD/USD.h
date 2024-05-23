@@ -11,9 +11,6 @@
     #define USD_API
 #endif
 
-struct ReadUSD : zeno::INode {
-    USD_API virtual void apply() override;
-};
 struct ImportUSDMesh : zeno::INode {
     USD_API virtual void apply() override;
 };
@@ -25,9 +22,6 @@ struct ViewUSDTree : zeno::INode {
     USD_API virtual void apply() override;
 };
 struct USDShowAllPrims : zeno::INode {
-    USD_API virtual void apply() override;
-};
-struct ShowPrimUserData : zeno::INode {
     USD_API virtual void apply() override;
 };
 struct ShowUSDPrimAttribute : zeno::INode {
