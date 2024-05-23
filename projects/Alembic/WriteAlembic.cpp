@@ -674,7 +674,9 @@ struct WriteAlembic2 : INode {
                             uvsamp);
                     write_velocity(prim, mesh_samp);
                     write_normal(prim, mesh_samp);
-                    write_attrs(verts_attrs, loops_attrs, polys_attrs, "", prim, mesh, frameid, real_frame_start, prim_size_per_frame);
+                    if (get_input2<bool>("outputToMaya") == false) {
+                        write_attrs(verts_attrs, loops_attrs, polys_attrs, "", prim, mesh, frameid, real_frame_start, prim_size_per_frame);
+                    }
                     mesh.set( mesh_samp );
                 }
                 else {
@@ -684,7 +686,9 @@ struct WriteAlembic2 : INode {
                             Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ));
                     write_velocity(prim, mesh_samp);
                     write_normal(prim, mesh_samp);
-                    write_attrs(verts_attrs, loops_attrs, polys_attrs, "", prim, mesh, frameid, real_frame_start, prim_size_per_frame);
+                    if (get_input2<bool>("outputToMaya") == false) {
+                        write_attrs(verts_attrs, loops_attrs, polys_attrs, "", prim, mesh, frameid, real_frame_start, prim_size_per_frame);
+                    }
                     mesh.set( mesh_samp );
                 }
             }
@@ -707,7 +711,9 @@ struct WriteAlembic2 : INode {
             }
             samp.setIds(Alembic::Abc::UInt64ArraySample(ids.data(), ids.size()));
             write_velocity(prim, samp);
-            write_attrs(verts_attrs, loops_attrs, polys_attrs, "", prim, points, frameid, real_frame_start, prim_size_per_frame);
+            if (get_input2<bool>("outputToMaya") == false) {
+                write_attrs(verts_attrs, loops_attrs, polys_attrs, "", prim, points, frameid, real_frame_start, prim_size_per_frame);
+            }
             points.set( samp );
         }
     }
@@ -723,6 +729,7 @@ ZENDEFNODE(WriteAlembic2, {
         {"float", "fps", "25"},
         {"bool", "flipFrontBack", "1"},
         {"bool", "outputPoint", "0"},
+        {"bool", "outputToMaya", "0"},
     },
     {
     },
@@ -944,7 +951,9 @@ struct WriteAlembicPrims : INode {
                                 uvsamp);
                         write_velocity(prim, mesh_samp);
                         write_normal(prim, mesh_samp);
-                        write_attrs(verts_attrs, loops_attrs, polys_attrs, path, prim, mesh, frameid, real_frame_start, prim_size_per_frame[path]);
+                        if (get_input2<bool>("outputToMaya") == false) {
+                            write_attrs(verts_attrs, loops_attrs, polys_attrs, path, prim, mesh, frameid, real_frame_start, prim_size_per_frame[path]);
+                        }
                         mesh.set( mesh_samp );
                     }
                     else {
@@ -954,7 +963,9 @@ struct WriteAlembicPrims : INode {
                                 Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ));
                         write_velocity(prim, mesh_samp);
                         write_normal(prim, mesh_samp);
-                        write_attrs(verts_attrs, loops_attrs, polys_attrs, path, prim, mesh, frameid, real_frame_start, prim_size_per_frame[path]);
+                        if (get_input2<bool>("outputToMaya") == false) {
+                            write_attrs(verts_attrs, loops_attrs, polys_attrs, path, prim, mesh, frameid, real_frame_start, prim_size_per_frame[path]);
+                        }
                         mesh.set( mesh_samp );
                     }
                 }
@@ -973,6 +984,7 @@ ZENDEFNODE(WriteAlembicPrims, {
         {"int", "frame_end", "100"},
         {"float", "fps", "25"},
         {"bool", "flipFrontBack", "1"},
+        {"bool", "outputToMaya", "0"},
     },
     {
     },
