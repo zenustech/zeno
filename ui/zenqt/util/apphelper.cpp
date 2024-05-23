@@ -200,6 +200,9 @@ bool AppHelper::updateCurve(QVariant oldVal, QVariant& newValue)
 
 void AppHelper::dumpTabsToZsg(QDockWidget* dockWidget, RAPIDJSON_WRITER& writer)
 {
+    //not QDockWidget but ads::CDockWidget
+    //TODO: refacror.
+#if 0
     if (ZDockWidget* tabDockwidget = qobject_cast<ZDockWidget*>(dockWidget))
     {
         for (int i = 0; i < tabDockwidget->count(); i++)
@@ -257,4 +260,5 @@ void AppHelper::dumpTabsToZsg(QDockWidget* dockWidget, RAPIDJSON_WRITER& writer)
             }
         }
     }
+#endif
 }

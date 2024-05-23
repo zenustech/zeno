@@ -161,7 +161,6 @@ public slots:
     bool saveAs();
     void onMaximumTriggered();
     void onMenuActionTriggered(bool bTriggered);
-    void onSplitDock(bool);
     void onCloseDock();
     void importGraph(bool bPreset = false);
     void exportGraph();
@@ -208,7 +207,6 @@ private:
     void initTimeline();
     void recordRecentFile(const QString& filePath);
     void saveLayout2();
-    void SplitDockWidget(ZDockWidget* after, ZDockWidget* dockwidget, Qt::Orientation orientation);
     QString getOpenFileByDialog();
     void setActionProperty();
     void screenShoot();
@@ -223,7 +221,6 @@ private:
     void updateShortCut(QStringList keys);
     void shortCutDlg();
     void killOptix();
-    DisplayWidget* getOnlyViewport() const;
     bool resetProc();
     void onCreatePanel(int actionType);
     void assetsWatcher();

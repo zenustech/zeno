@@ -8,26 +8,7 @@
 #include <zeno/io/iocommon.h>
 #include "layout/winlayoutrw.h"
 
-class ZenoMainWindow;
-class DisplayWidget;
-class ZenoGraphsEditor;
-class ZDockTabWidget;   //may confuse with ZDockWidget...
-
-enum PANEL_TYPE
-{
-    PANEL_EMPTY,
-    PANEL_GL_VIEW,
-    PANEL_EDITOR,
-    PANEL_NODE_PARAMS,
-    PANEL_NODE_DATA,
-    PANEL_LOG,
-    PANEL_LIGHT,
-    PANEL_IMAGE,
-    PANEL_OPTIX_VIEW,
-    PANEL_COMMAND_PARAMS,
-    PANEL_OPEN_PATH
-};
-
+#if 0
 class ZDockWidget : public QDockWidget
 {
     Q_OBJECT
@@ -89,5 +70,6 @@ private:
     Qt::WindowFlags m_newFlags;
     ZDockTabWidget* m_tabWidget;
 };
+#endif
 
 #endif

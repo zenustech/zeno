@@ -147,7 +147,7 @@ void ZenoMainWindow::updateNativeWinTitle(const QString& title)
     QWidgetList lst = QApplication::topLevelWidgets();
     for (auto wid : lst)
     {
-        if (qobject_cast<ZDockWidget*>(wid) ||
+        if (qobject_cast<ads::CDockWidget*>(wid) ||
             qobject_cast<ZenoMainWindow*>(wid))
         {
             wid->setWindowTitle(title);
@@ -304,7 +304,6 @@ void ZenoMainWindow::dispatchCommand(QAction* pAction, bool bTriggered)
         return;
 
     //dispatch to every panel.
-    auto docks = findChildren<ZDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
     DisplayWidget* pViewport = nullptr;
     ZenoGraphsEditor* pEditor = nullptr;
     for (ads::CDockWidget* dock : m_pDockManager->dockWidgetsMap())
@@ -502,7 +501,7 @@ void ZenoMainWindow::initDocksWidget(ads::CDockAreaWidget* cakeArea, ads::CDockW
             //pDockElem->setLineWidth(0);
             //pDockElem->setFrameShape(QFrame::NoFrame);
 
-            PANEL_TYPE type = ZDockWidget::title2Type(tab);
+            PANEL_TYPE type = UiHelper::title2Type(tab);
             switch (type)
             {
             case PANEL_GL_VIEW:
@@ -979,20 +978,11 @@ void ZenoMainWindow::justLoadObjects()
             }
         }
     }
-
 }
 
 void ZenoMainWindow::onMaximumTriggered()
 {
-    ZDockWidget* pDockWidget = qobject_cast<ZDockWidget*>(sender());
-    auto docks = findChildren<ZDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
-    for (ZDockWidget* pDock : docks)
-    {
-        if (pDock != pDockWidget)
-        {
-            pDock->close();
-        }
-    }
+    //TODO
 }
 
 DisplayWidget *ZenoMainWindow::getOptixWidget() const
@@ -1024,21 +1014,16 @@ QVector<DisplayWidget*> ZenoMainWindow::viewports() const
 
 DisplayWidget* ZenoMainWindow::getCurrentViewport() const
 {
-    auto docks = findChildren<ZDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
-    QVector<DisplayWidget*> vec;
-    for (ZDockWidget* pDock : docks)
+    for (ads::CDockWidget* dock : m_pDockManager->dockWidgetsMap())
     {
-        if (pDock->isVisible())
+        if (dock->isVisible())
         {
-            if (ZDockTabWidget* tabwidget = qobject_cast<ZDockTabWidget*>(pDock->widget()))
-            {
-                if (DockContent_View* wid = qobject_cast<DockContent_View*>(tabwidget->currentWidget()))
+            QWidget* wid = dock->widget();
+            if (DockContent_View* view = qobject_cast<DockContent_View*>(wid)) {
+                DisplayWidget* pView = view->getDisplayWid();
+                if (pView && pView->isCurrent())
                 {
-                    DisplayWidget* pView = wid->getDisplayWid();
-                    if (pView && pView->isCurrent())
-                    {
-                        return pView;
-                    }
+                    return pView;
                 }
             }
         }
@@ -1099,21 +1084,6 @@ void ZenoMainWindow::onRunTriggered(bool applyLightAndCameraOnly, bool applyMate
         m_pTimeline->updateCachedFrame();
     }
 #endif
-}
-
-DisplayWidget* ZenoMainWindow::getOnlyViewport() const
-{
-    //find the only optix viewport
-    QVector<DisplayWidget*> views;
-    auto docks = findChildren<ZDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
-    for (ZDockWidget* pDock : docks)
-    {
-        views.append(pDock->viewports());
-    }
-    ZASSERT_EXIT(views.size() == 1, nullptr);
-
-    DisplayWidget* pView = views[0];
-    return pView;
 }
 
 bool ZenoMainWindow::resetProc()
@@ -1200,25 +1170,31 @@ void ZenoMainWindow::updateViewport(const QString& action)
 
 ZenoGraphsEditor* ZenoMainWindow::getAnyEditor() const
 {
-    auto docks2 = findChildren<ZDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
-    for (auto dock : docks2)
+    ZenoGraphsEditor* pEditor = nullptr;
+    for (ads::CDockWidget* dock : m_pDockManager->dockWidgetsMap())
     {
-        if (!dock->isVisible())
-            continue;
-        ZenoGraphsEditor* pEditor = dock->getAnyEditor();
-        if (pEditor)
-            return pEditor;
+        if (dock->isVisible())
+        {
+            QWidget* wid = dock->widget();
+            if (DockContent_Editor* e = qobject_cast<DockContent_Editor*>(wid))
+            {
+                pEditor = e->getEditor();
+                break;
+            }
+        }
     }
-    return nullptr;
+    return pEditor;
 }
 
 void ZenoMainWindow::onRunFinished()
 {
+#if 0
     auto docks2 = findChildren<ZDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
     for (auto dock : docks2)
     {
         dock->onRunFinished();
     }
+#endif
 }
 
 void ZenoMainWindow::onCloseDock()
@@ -1253,42 +1229,6 @@ void ZenoMainWindow::onCloseDock()
     {
         m_layoutRoot = nullptr;
     }
-#endif
-}
-
-void ZenoMainWindow::SplitDockWidget(ZDockWidget* after, ZDockWidget* dockwidget, Qt::Orientation orientation)
-{
-#if 0
-    splitDockWidget(after, dockwidget, orientation);
-
-    PtrLayoutNode spRoot = findNode(m_layoutRoot, after);
-    ZASSERT_EXIT(spRoot);
-
-    spRoot->type = (orientation == Qt::Vertical ? NT_VERT : NT_HOR);
-    spRoot->pWidget = nullptr;
-
-    spRoot->pLeft = std::make_shared<LayerOutNode>();
-    spRoot->pLeft->pWidget = after;
-    spRoot->pLeft->type = NT_ELEM;
-
-    spRoot->pRight = std::make_shared<LayerOutNode>();
-    spRoot->pRight->pWidget = dockwidget;
-    spRoot->pRight->type = NT_ELEM;
-#endif
-}
-
-void ZenoMainWindow::onSplitDock(bool bHorzontal)
-{
-#if 0
-    ZDockWidget* pDockWidget = qobject_cast<ZDockWidget*>(sender());
-    ZDockWidget* pDock = new ZDockWidget(this);
-
-    //QLayout* pLayout = this->layout();
-    //QMainWindowLayout* pWinLayout = qobject_cast<QMainWindowLayout*>(pLayout);
-
-    pDock->setCurrentWidget(PANEL_EDITOR);
-    //pDock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
-    SplitDockWidget(pDockWidget, pDock, bHorzontal ? Qt::Horizontal : Qt::Vertical);
 #endif
 }
 
@@ -1343,8 +1283,6 @@ void ZenoMainWindow::closeEvent(QCloseEvent *event)
     bool autoClean = settings.value("zencache-autoclean").isValid() ? settings.value("zencache-autoclean").toBool() : true;
     bool autoRemove = settings.value("zencache-autoremove").isValid() ? settings.value("zencache-autoremove").toBool() : false;
 
-    //TODO: clean issues.
-
     bool isClose = this->saveQuit();
     // todo: event->ignore() when saveQuit returns false?
     if (isClose) 
@@ -1357,21 +1295,6 @@ void ZenoMainWindow::closeEvent(QCloseEvent *event)
         settings.setValue("content", layoutInfo);
         settings.endGroup();
         settings.endGroup();
-
-        //clean up opengl components.
-
-        auto docks = findChildren<ZDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
-        for (ZDockWidget *pDock : docks) {
-            pDock->close();
-            try {
-                //pDock->testCleanupGL();
-            } catch (...) {
-                //QString errMsg = QString::fromLatin1(e.what());
-                int j;
-                j = 0;
-            }
-            //delete pDock;
-        }
 
         // trigger destroy event
         zeno::getSession().eventCallbacks->triggerEvent("beginDestroy");
@@ -1994,21 +1917,17 @@ bool ZenoMainWindow::saveQuit() {
 void ZenoMainWindow::saveQuitShowWelcom()
 {
     saveQuit();
-    auto docks = findChildren<ZDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
-    for (ZDockWidget* pDock : docks)
+    ZenoGraphsEditor* pEditor = nullptr;
+    for (ads::CDockWidget* dock : m_pDockManager->dockWidgetsMap())
     {
-        if (pDock->isVisible())
+        if (dock->isVisible())
         {
-            if (ZDockTabWidget* tabwidget = qobject_cast<ZDockTabWidget*>(pDock->widget()))
+            QWidget* wid = dock->widget();
+            if (DockContent_Editor* e = qobject_cast<DockContent_Editor*>(wid))
             {
-                for (int i = 0; i < tabwidget->count(); i++)
-                {
-                    if (DockContent_Editor* pEditor = qobject_cast<DockContent_Editor*>(tabwidget->widget(i)))
-                    {
-                        if (ZenoGraphsEditor* editor = pEditor->getEditor()) {
-                            editor->showWelcomPage();
-                        }
-                    }
+                pEditor = e->getEditor();
+                if (pEditor) {
+                    pEditor->showWelcomPage();
                 }
             }
         }
@@ -2143,20 +2062,13 @@ void ZenoMainWindow::initUserdata(USERDATA_SETTING info)
 {
     auto& ud = zeno::getSession().userData();
     ud.set2("optix_show_background", info.optix_show_background);
-    auto docks = findChildren<ZDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
-    QVector<DisplayWidget*> vec;
-    for (ZDockWidget* pDock : docks)
+    for (ads::CDockWidget* dock : m_pDockManager->dockWidgetsMap())
     {
-        if (pDock->isVisible())
+        if (dock->isVisible())
         {
-            if (ZDockTabWidget* tabwidget = qobject_cast<ZDockTabWidget*>(pDock->widget()))
-            {
-                for (int i = 0; i < tabwidget->count(); i++)
-                {
-                    QWidget* wid = tabwidget->widget(i);
-                    if (DockContent_View* pView = qobject_cast<DockContent_View*>(wid))
-                        pView->setOptixBackgroundState(info.optix_show_background);
-                }
+            QWidget* wid = dock->widget();
+            if (DockContent_View* view = qobject_cast<DockContent_View*>(wid)) {
+                view->setOptixBackgroundState(info.optix_show_background);
             }
         }
     }
@@ -2277,21 +2189,31 @@ void ZenoMainWindow::onNodesSelected(GraphModel* subgraph, const QModelIndexList
 }
 
 void ZenoMainWindow::onPrimitiveSelected(const std::unordered_set<std::string>& primids) {
-    //dispatch to all property panel.
-    auto docks = findChildren<ZDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
-    for (ZDockWidget* dock : docks) {
-        if (dock->isVisible())
-            dock->onPrimitiveSelected(primids);
+    for (ads::CDockWidget* dock : m_pDockManager->dockWidgetsMap())
+    {
+        if (ZenoSpreadsheet* panel = qobject_cast<ZenoSpreadsheet*>(dock->widget()))
+        {
+            if (primids.size() == 1) {
+                panel->setPrim(*primids.begin());
+            }
+            else {
+                panel->clear();
+            }
+        }
     }
 }
 
 void ZenoMainWindow::updateLightList() {
-    auto docks = findChildren<ZDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
-    for (ZDockWidget* dock : docks) {
-        if (dock->isVisible())
-            dock->updateLights();
+
+    for (ads::CDockWidget* dock : m_pDockManager->dockWidgetsMap())
+    {
+        if (ZenoLights* panel = qobject_cast<ZenoLights*>(dock->widget()))
+        {
+            panel->updateLights();
+        }
     }
 }
+
 void ZenoMainWindow::doFrameUpdate(int frame) {
     //TODO: deprecated.
     std::cout << "====== Frame " << frame << "\n";

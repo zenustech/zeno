@@ -2005,3 +2005,39 @@ int UiHelper::getIndegree(const QModelIndex& nodeIdx)
     paramsM->getDegrees(inDegrees, outDegrees);
     return inDegrees;
 }
+
+PANEL_TYPE UiHelper::title2Type(const QString& title)
+{
+    PANEL_TYPE type = PANEL_EMPTY;
+    if (title == QObject::tr("Parameter") || title == "Parameter") {
+        type = PANEL_NODE_PARAMS;
+    }
+    else if (title == QObject::tr("View") || title == "View" || title == QObject::tr("Scene Viewport") || title == "Scene Viewport") {
+        type = PANEL_GL_VIEW;
+    }
+    else if (title == QObject::tr("Editor") || title == "Editor" || title == QObject::tr("Node Editor") || title == "Node Editor") {
+        type = PANEL_EDITOR;
+    }
+    else if (title == QObject::tr("Data") || title == "Data" || title == QObject::tr("Spreadsheet") || title == "Spreadsheet") {
+        type = PANEL_NODE_DATA;
+    }
+    else if (title == QObject::tr("Logger") || title == "Logger" || title == QObject::tr("Log") || title == "Log") {
+        type = PANEL_LOG;
+    }
+    else if (title == QObject::tr("Light") || title == "Light") {
+        type = PANEL_LIGHT;
+    }
+    else if (title == QObject::tr("Image") || title == "Image") {
+        type = PANEL_IMAGE;
+    }
+    else if (title == QObject::tr("Optix") || title == "Optix") {
+        type = PANEL_OPTIX_VIEW;
+    }
+    else if (title == QObject::tr("Command Params") || title == "Command Params") {
+        type = PANEL_COMMAND_PARAMS;
+    }
+    else if (title == QObject::tr("Open Path") || title == "Open Path") {
+        type = PANEL_OPEN_PATH;
+    }
+    return type;
+}

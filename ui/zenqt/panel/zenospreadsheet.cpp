@@ -181,22 +181,24 @@ void ZenoSpreadsheet::setPrim(std::string primid) {
     auto scene = pZenovis->getSession()->get_scene();
     ZASSERT_EXIT(scene);
 
-    bool found = false;
-    for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
-        if (key != primid) {
-            continue;
-        }
-        if (auto obj = dynamic_cast<zeno::PrimitiveObject *>(ptr)) {
-            found = true;
-            size_t sizeUserData = obj->userData().size();
-            size_t num_attrs = obj->num_attrs();
-            size_t num_vert = obj->verts.size();
-            size_t num_tris = obj->tris.size();
-            size_t num_loops = obj->loops.size();
-            size_t num_polys = obj->polys.size();
-            size_t num_lines = obj->lines.size();
+    auto& pObjsMan = zeno::getSession().objsMan;
+    zeno::zany pObject = pObjsMan->getObj(primid);
+    if (!pObject)
+    {
+        this->dataModel->setModelData(nullptr);
+        return;
+    }
 
-            QString statusInfo = QString("Vertex: %1, Triangle: %2, Loops: %3, Poly: %4, Lines: %5, UserData: %6, Attribute: %7")
+    if (auto obj = dynamic_cast<zeno::PrimitiveObject *>(pObject.get())) {
+        size_t sizeUserData = obj->userData().size();
+        size_t num_attrs = obj->num_attrs();
+        size_t num_vert = obj->verts.size();
+        size_t num_tris = obj->tris.size();
+        size_t num_loops = obj->loops.size();
+        size_t num_polys = obj->polys.size();
+        size_t num_lines = obj->lines.size();
+
+        QString statusInfo = QString("Vertex: %1, Triangle: %2, Loops: %3, Poly: %4, Lines: %5, UserData: %6, Attribute: %7")
                 .arg(num_vert)
                 .arg(num_tris)
                 .arg(num_loops)
@@ -204,14 +206,9 @@ void ZenoSpreadsheet::setPrim(std::string primid) {
                 .arg(num_lines)
                 .arg(sizeUserData)
                 .arg(num_attrs);
-            pStatusBar->setText(statusInfo);
-            this->dataModel->setModelData(obj);
-        }
+        pStatusBar->setText(statusInfo);
+        this->dataModel->setModelData(obj);
     }
-    if (found == false) {
-        this->dataModel->setModelData(nullptr);
-    }
-
 }
 
 bool ZenoSpreadsheet::eventFilter(QObject* watched, QEvent* event)

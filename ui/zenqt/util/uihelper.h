@@ -106,6 +106,7 @@ public:
     static QStringList findPreviousNode(GraphModel* pModel, const QString& node);
     static QStringList findSuccessorNode(GraphModel* pModel, const QString& node);
     static int getIndegree(const QModelIndex& nodeIdx);
+    static PANEL_TYPE title2Type(const QString& title);
 
 private:
     static std::pair<qreal, qreal> getRxx2(QRectF r, qreal xRadius, qreal yRadius, bool AbsoluteSize);
