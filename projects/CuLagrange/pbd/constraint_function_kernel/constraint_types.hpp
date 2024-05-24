@@ -5,6 +5,10 @@ namespace zeno { namespace PBD_CONSTRAINT {
 constexpr auto CONSTRAINT_KEY = "XPBD_CONSTRAINT";
 constexpr auto CONSTRAINT_TARGET = "XPBD_CONSTRAINT_TARGET";
 constexpr auto CONSTRAINT_COLOR_OFFSET = "XPBD_CONSTRAINT_OFFSET";
+constexpr auto CONSTRAINT_UPDATE_INDEX_BUFFER = "CONSTRAINT_UPDATE_INDEX_BUFFER";
+constexpr auto CONSTRAINT_UPDATE_OFFSETS = "CONSTRAINT_UPDATE_OFFSETS";
+constexpr auto CONSTRAINT_UPDATE_BUFFER = "CONSTRAINT_Update_BUFFER";
+
 
 constexpr auto NM_DCD_COLLISIONS = "NM_DCD_COLLISIONS";
 constexpr auto DCD_COUNTER_BUFFER = "DCD_COUNTER_BUFFER";
@@ -34,6 +38,7 @@ constexpr auto SHAPE_MATCHING_MATRIX_BUFFER = "SHAPE_MATCHING_MATRIX_BUFFER";
 enum category_c : int {
     shape_matching_constraint,
     long_range_attachment,
+    vertex_pin_to_vertex_constraint,
     edge_length_constraint,
     isometric_bending_constraint,
     dihedral_bending_constraint,

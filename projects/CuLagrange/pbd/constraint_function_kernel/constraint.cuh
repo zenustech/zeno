@@ -389,7 +389,7 @@ namespace zeno { namespace CONSTRAINT {
        const VECTOR3d& pp2,
        const VECTOR3d& pp3,
        const SCALER& restAngle,
-       const SCALER& restAngleSign,
+    //    const SCALER& restAngleSign,
        const SCALER& xpbd_affliation,
        const SCALER& dt,
        const SCALER& kdamp_ratio,
