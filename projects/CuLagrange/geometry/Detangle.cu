@@ -42,7 +42,7 @@ struct Detangle2 : zeno::INode {
         constexpr auto DETANGLE_CS_KET_BUFFER_KEY = "DETANGLE_CS_KET_BUFFER_KEY";
         constexpr auto DETANGLE_TRI_BVH_BUFFER_KEY = "DETANGLE_TRI_BVH_BUFFER_KEY";
         constexpr auto DETANGLE_ICM_GRADIENT_BUFFER_KEY = "DETANGLE_ICM_GRADIENT_BUFFER_KEY";
-        constexpr auto DEFAULT_MAX_DETANGLE_INTERSECTION_PAIR = 10000;
+        constexpr auto DEFAULT_MAX_DETANGLE_INTERSECTION_PAIR = 100000;
 
         auto zsparticles = get_input<ZenoParticles>("zsparticles");
         auto& verts = zsparticles->getParticles();
@@ -750,6 +750,7 @@ struct Detangle2 : zeno::INode {
                 std::cout << "nm_intersections : " << nm_intersections << std::endl;
                 std::cout << "nm_kin_intersections : " << nm_kinematic_intersection << std::endl;
             }
+
 
             auto gradInfNorm = TILEVEC_OPS::inf_norm<3>(cudaExec,verts,"grad");
             if(gradInfNorm < 1e-3)
