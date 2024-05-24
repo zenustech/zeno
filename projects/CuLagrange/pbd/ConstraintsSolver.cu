@@ -256,8 +256,8 @@ struct XPBDSolve : INode {
                             minv[i] = verts("minv",quad[i]);
                         }
 
-                        auto ra = cquads("ra",coffset + gi);
-                        auto ras = cquads("sign",coffset + gi);
+                        auto ra = cquads("r",coffset + gi);
+                        // auto ras = cquads("sign",coffset + gi);
                         vec3 dp[4] = {};
                         // if(!CONSTRAINT::solve_DihedralConstraint(
                         //     p[0],minv[0],
@@ -278,7 +278,7 @@ struct XPBDSolve : INode {
                             p[3],minv[3],
                             pp[0],pp[1],pp[2],pp[3],
                             ra,
-                            ras,
+                            // ras,
                             alpha,
                             dt,
                             kd,
@@ -935,8 +935,8 @@ struct XPBDSolveSmoothAll : INode {
                     affiliationOffset = cquads.getPropertyOffset("xpbd_affiliation"),
                     dampingOffset = cquads.getPropertyOffset("damping_coeff"),
                     indsOffset = cquads.getPropertyOffset("inds"),
-                    // rOffset = cquads.getPropertyOffset("r"),
-                    restScaleOffset = cquads.getPropertyOffset("rest_scale"),
+                    rOffset = cquads.getPropertyOffset("r"),
+                    // restScaleOffset = cquads.getPropertyOffset("rest_scale"),
                     // weight_sum = proxy<space>(weight_sum),
                     ptagOffset = verts.getPropertyOffset(ptag),
                     pptagOffset = verts.getPropertyOffset(pptag),
@@ -957,12 +957,13 @@ struct XPBDSolveSmoothAll : INode {
                             auto pp1 = verts.pack(dim_c<3>,pptagOffset,edge[1]);
                             auto  minv0 = verts(minvOffset,edge[0]);
                             auto minv1 = verts(minvOffset,edge[1]);
-                            auto rest_scale = cquads(restScaleOffset,ci);
-                            auto r = cquads("r",ci) * rest_scale;
+                            // auto rest_scale = cquads(restScaleOffset,ci);
+                            // auto r = cquads("r",ci) * rest_scale;
+                            auto r = cquads(rOffset,ci);
                             vec3 dp[2] = {};
 
                             auto lambda = (T)0;
-                            bool do_stretch_resistence_only = category == category_c::long_range_attachment;
+                            bool do_stretch_resistence_only = (category == category_c::long_range_attachment);
                             if(!CONSTRAINT::solve_DistanceConstraint(
                                 p0,minv0,
                                 p1,minv1,
@@ -977,8 +978,8 @@ struct XPBDSolveSmoothAll : INode {
                                     return;
                             // printf("smooth stretch update : %f %f\n",(float)dp[0].norm(),(float)dp[1].norm());
                             for(int i = 0;i != 2;++i) {
-                                if(isnan(dp[i].norm()))
-                                    printf("nan dp[%d] detected at bending\n",i);
+                                // if(isnan(dp[i].norm()))
+                                //     printf("nan dp[%d] detected at bending\n",i);
                                 // atomic_add(exec_tag,&weight_sum[edge[i]],w);
                                 atomic_add(exec_tag,&verts(wOffset,edge[i]),w);
                                 for(int d = 0;d != 3;++d)
@@ -996,9 +997,10 @@ struct XPBDSolveSmoothAll : INode {
                                 pp[i] = verts.pack(dim_c<3>,pptagOffset,quad[i]);
                                 minv[i] = verts(minvOffset,quad[i]);
                             }
-                            auto rest_scale = cquads(restScaleOffset,ci);
-                            auto ra = cquads("ra",ci) * rest_scale;
-                            auto ras = cquads("sign",ci);
+                            // auto rest_scale = cquads(restScaleOffset,ci);
+                            // auto ra = cquads("ra",ci) * rest_scale;
+                            // auto ras = cquads("sign",ci);
+                            auto ra = cquads(rOffset,ci);
                             vec3 dp[4] = {};
                             auto lambda = (T)0;
                             if(!CONSTRAINT::solve_DihedralConstraint(
@@ -1008,7 +1010,7 @@ struct XPBDSolveSmoothAll : INode {
                                 p[3],minv[3],
                                 pp[0],pp[1],pp[2],pp[3],
                                 ra,
-                                ras,
+                                // ras,
                                 aff,
                                 dt,
                                 kd,
@@ -1016,8 +1018,8 @@ struct XPBDSolveSmoothAll : INode {
                                 dp[0],dp[1],dp[2],dp[3]))
                                     return;    
                             for(int i = 0;i != 4;++i) {
-                                if(isnan(dp[i].norm()))
-                                    printf("nan dp[%d] detected at bending\n",i);
+                                // if(isnan(dp[i].norm()))
+                                //     printf("nan dp[%d] detected at bending\n",i);
                                 // atomic_add(exec_tag,&weight_sum[quad[i]],w);
                                 atomic_add(exec_tag,&verts(wOffset,quad[i]),w);
                                 for(int d = 0;d != 3;++d)
@@ -1026,6 +1028,81 @@ struct XPBDSolveSmoothAll : INode {
                         }
                 });
             }
+            
+            if(category == category_c::vertex_pin_to_vertex_constraint) {
+                auto target = constraint_ptr->readMeta<ZenoParticles*>(CONSTRAINT_TARGET);
+                const auto& kverts = target->getParticles();
+
+                auto substep_id = get_input2<int>("substep_id");
+                auto nm_substeps = get_input2<int>("nm_substeps");
+                auto anim_w = (float)(substep_id + 1) / (float)nm_substeps;
+                auto anim_pw = (float)(substep_id) / (float)nm_substeps;
+
+                cudaPol(zs::range(cquads.size()),[
+                    cquads = proxy<space>({},cquads),
+                    stiffnessOffset = cquads.getPropertyOffset("relative_stiffness"),
+                    affiliationOffset = cquads.getPropertyOffset("xpbd_affiliation"),
+                    dampingOffset = cquads.getPropertyOffset("damping_coeff"),
+                    cquadsIndsOffset = cquads.getPropertyOffset("inds"),
+                    cquadsROffset = cquads.getPropertyOffset("r"),
+                    dt = dt,
+                    anim_w = anim_w,
+                    anim_pw = anim_pw,
+                    verts = view<space>(verts),
+                    ptagOffset = verts.getPropertyOffset(ptag),
+                    pptagOffset = verts.getPropertyOffset(pptag),
+                    dptagOffset = verts.getPropertyOffset(dptag),
+                    minvOffset = verts.getPropertyOffset("minv"),
+                    wOffset = verts.getPropertyOffset("w"),
+                    kverts = proxy<space>({},kverts),
+                    kptagOffset = kverts.getPropertyOffset("x"),
+                    kpptagOffset = kverts.getPropertyOffset("px")] ZS_LAMBDA(int ei) mutable {
+                        auto w = cquads(stiffnessOffset,ei);
+                        auto inds = cquads.pack(dim_c<2>,cquadsIndsOffset,ei,int_c);
+                        auto r = cquads(cquadsROffset,ei);
+                        auto aff = cquads(affiliationOffset,ei);
+                        auto kd = cquads(dampingOffset,ei);
+
+                        auto vi = inds[0];
+                        auto kvi = inds[1];
+                        if(kvi < 0)
+                            return;
+
+                        auto p = verts.pack(dim_c<3>,ptagOffset,vi);
+                        auto pp = verts.pack(dim_c<3>,pptagOffset,vi);
+                        auto kp = anim_w * kverts.pack(dim_c<3>,kptagOffset,kvi) + (1.f - anim_w) * kverts.pack(dim_c<3>,kpptagOffset,kvi);
+                        auto kpp = anim_pw * kverts.pack(dim_c<3>,kptagOffset,kvi) + (1.f - anim_pw) * kverts.pack(dim_c<3>,kpptagOffset,kvi);
+
+                        auto minv = verts(minvOffset,vi);
+                        if(minv < 1e-6)
+                            return;
+                        auto kminv = 0.f;
+
+                        auto lambda = (T)0.0;
+                        bool do_stretch_resistence_only = true;
+                        vec3 dp[2] = {};
+
+                        if(!CONSTRAINT::solve_DistanceConstraint(
+                            p,minv,
+                            kp,kminv,
+                            pp,kpp,
+                            r,
+                            aff,
+                            kd,
+                            dt,
+                            lambda,
+                            dp[0],dp[1],
+                            do_stretch_resistence_only))
+                                return; 
+
+                        // atomic_add(exec_tag,&verts(wOffset,vi),w);
+                        verts(wOffset,vi) += w;
+                        verts.tuple(dim_c<3>,dptagOffset,vi) = verts.pack(dim_c<3>,dptagOffset,vi) + dp[0];
+                        // for(int d = 0;d != 3;++d)
+                        //     atomic_add(exec_tag,&verts(dptagOffset + d,vi),dp[0][d]);
+                });
+            }
+
 
             if(category == category_c::self_dcd_collision_constraint) {
                 const auto& tris = zsparticles->getQuadraturePoints();
@@ -1141,24 +1218,28 @@ struct XPBDSolveSmoothAll : INode {
                     cell_buffer = proxy<space>({},cell_buffer),
                     dptagOffset = verts.getPropertyOffset(dptag),
                     ptagOffset = verts.getPropertyOffset(ptag),
+                    cquadsIndsOffset = cquads.getPropertyOffset("inds"),
+                    cquadsBaryOffset = cquads.getPropertyOffset("bary"),
+                    cellBufferXOffset = cell_buffer.getPropertyOffset("x"),
+                    cellBufferVOffset = cell_buffer.getPropertyOffset("v"),
                     ktris = ktris.begin("inds",dim_c<3>,int_c),
                     enable_sliding = enable_sliding,
                     wOffset = verts.getPropertyOffset("w"),
                     stiffnessOffset = cquads.getPropertyOffset("relative_stiffness"),
                     verts = proxy<space>({},verts)] ZS_LAMBDA(int ci) mutable {
                         auto w = cquads(stiffnessOffset,ci);
-                        auto pair = cquads.pack(dim_c<2>,"inds",ci,int_c);
+                        auto pair = cquads.pack(dim_c<2>,cquadsIndsOffset,ci,int_c);
                         auto vi = pair[0];
                         auto kti = pair[1];
                         auto ktri = ktris[kti];
 
-                        auto bary = cquads.pack(dim_c<6>,"bary",ci);
+                        auto bary = cquads.pack(dim_c<6>,cquadsBaryOffset,ci);
                         vec3 as[3] = {};
                         vec3 bs[3] = {};
 
                         for(int i = 0;i != 3;++i) {
-                            as[i] = cell_buffer.pack(dim_c<3>,"x",ktri[i]);
-                            bs[i] = cell_buffer.pack(dim_c<3>,"v",ktri[i]) + as[i];
+                            as[i] = cell_buffer.pack(dim_c<3>,cellBufferXOffset,ktri[i]);
+                            bs[i] = cell_buffer.pack(dim_c<3>,cellBufferVOffset,ktri[i]) + as[i];
                         }
 
                         auto tp = vec3::zeros();
@@ -1466,7 +1547,7 @@ struct XPBDSolveSmoothAll : INode {
                     verts.tuple(dim_c<3>,dptagOffset,vi) = verts.pack(dim_c<3>,dptagOffset,vi) / verts(wOffset,vi);
                 else
                     verts.tuple(dim_c<3>,dptagOffset,vi) = vec3::zeros();
-                verts.tuple(dim_c<3>,ptagOffset,vi) = verts.pack(dim_c<3>,ptagOffset,vi) + verts.pack(dim_c<3>,dptagOffset,vi);
+                verts.tuple(dim_c<3>,ptagOffset,vi) = verts.pack(dim_c<3>,ptagOffset,vi) + 2.f * verts.pack(dim_c<3>,dptagOffset,vi);
         });
 
         set_output("zsparticles",get_input("zsparticles"));
