@@ -10,6 +10,8 @@
 #include <set>
 #include <map>
 #include <zeno/types/CurveObject.h>
+#include <zeno/types/DictObject.h>
+#include <zeno/types/ListObject.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/core/data.h>
 #include <zeno/utils/uuid.h>
@@ -24,9 +26,9 @@ struct Session;
 struct GlobalState;
 struct TempNodeCaller;
 struct CoreParam;
-struct InputParam;
+struct ObjectParam;
 struct PrimitiveParam;
-struct OutputParam;
+struct ObjectParam;
 
 class INode : public std::enable_shared_from_this<INode>
 {
@@ -121,7 +123,9 @@ protected:
     ZENO_API virtual void initParams(const NodeData& dat);
 
 private:
-    zany process(std::shared_ptr<CoreParam> in_param);
+    zvariant process(PrimitiveParam* in_param);
+    std::shared_ptr<DictObject> processDict(ObjectParam* in_param);
+    std::shared_ptr<ListObject> processList(ObjectParam* in_param);
     zany get_output_result(std::shared_ptr<INode> outNode, std::string out_param, bool bCopy);
     void reportStatus(bool bDirty, NodeRunStatus status);
 
@@ -131,7 +135,6 @@ private:
 public:
     //为名为ds的输入参数，求得这个参数在依赖边的求值下的值，或者没有依赖边下的默认值。
     ZENO_API bool requireInput(std::string const &ds);
-    ZENO_API bool requireInput(std::shared_ptr<CoreParam> param);
 
     ZENO_API std::shared_ptr<Graph> getThisGraph() const;
     ZENO_API Session *getThisSession() const;
@@ -206,10 +209,10 @@ private:
     std::string m_uuid;
     std::pair<float, float> m_pos;
 
-    std::map<std::string, std::unique_ptr<InputParam>> m_inputObjs;
+    std::map<std::string, std::unique_ptr<ObjectParam>> m_inputObjs;
     std::map<std::string, std::unique_ptr<PrimitiveParam>> m_inputPrims;
     std::map<std::string, std::unique_ptr<PrimitiveParam>> m_outputPrims;
-    std::map<std::string, std::unique_ptr<OutputParam>> m_outputObjs;
+    std::map<std::string, std::unique_ptr<ObjectParam>> m_outputObjs;
 
     ObjPath m_uuidPath;
     NodeRunStatus m_status = Node_DirtyReadyToRun;

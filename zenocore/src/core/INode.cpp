@@ -40,8 +40,8 @@ void INode::initUuid(std::shared_ptr<Graph> pGraph, const std::string nodecls) {
     this->graph = pGraph;
 
     m_uuid = generateUUID(nodecls);
-    std::list<std::string> path;
-    path.push_front(m_uuid);
+    ObjPath path;
+    path += m_uuid;
     while (pGraph) {
         const std::string name = pGraph->getName();
         if (name == "main") {
@@ -52,11 +52,11 @@ void INode::initUuid(std::shared_ptr<Graph> pGraph, const std::string nodecls) {
                 break;
             auto pSubnetNode = pGraph->optParentSubgNode.value();
             assert(pSubnetNode);
-            path.push_front(pSubnetNode->m_uuid);
+            path = (pSubnetNode->m_uuid) + "/" + path;
             pGraph = pSubnetNode->graph.lock();
         }
     }
-    m_uuidPath = ObjPath(path);
+    m_uuidPath = path;
 }
 
 ZENO_API INode::~INode() = default;
@@ -116,15 +116,15 @@ ZENO_API CustomUI INode::get_customui() const {
 }
 
 ZENO_API ObjPath INode::get_path() const {
-    std::list<std::string> path;
-    path.push_front(m_name);
+    ObjPath path;
+    path = m_name;
 
     std::shared_ptr<Graph> pGraph = graph.lock();
 
     while (pGraph) {
         const std::string name = pGraph->getName();
         if (name == "main") {
-            path.push_front("main");
+            path = "/main" + path;
             break;
         }
         else {
@@ -132,11 +132,11 @@ ZENO_API ObjPath INode::get_path() const {
                 break;
             auto pSubnetNode = pGraph->optParentSubgNode.value();
             assert(pSubnetNode);
-            path.push_front(pSubnetNode->m_name);
+            path = pSubnetNode->m_name + "/" + path;
             pGraph = pSubnetNode->graph.lock();
         }
     }
-    return ObjPath(path);
+    return path;
 }
 
 ZENO_API std::string zeno::INode::get_path_str() const
@@ -208,6 +208,8 @@ void INode::reportStatus(bool bDirty, NodeRunStatus status) {
 void INode::mark_previous_ref_dirty() {
     mark_dirty(true);
     //不仅要自身标脏，如果前面的节点是以引用的方式连接，说明前面的节点都可能被污染了，所有都要标脏。
+    //TODO: 由端口而不是边控制。
+    /*
     for (const auto& [name, param] : m_inputs) {
         for (const auto& link : param->links) {
             if (link->lnkProp == Link_Ref) {
@@ -217,6 +219,7 @@ void INode::mark_previous_ref_dirty() {
             }
         }
     }
+    */
 }
 
 void INode::onInterrupted() {
@@ -236,9 +239,20 @@ ZENO_API void INode::mark_dirty(bool bOn, bool bWholeSubnet)
 
     m_dirty = bOn;
     if (m_dirty) {
-        for (auto& [name, param] : m_outputs) {
+        for (auto& [name, param] : m_outputObjs) {
             for (auto link : param->links) {
-                auto inParam = link->toparam.lock();
+                auto inParam = link->toparam;
+                assert(inParam);
+                if (inParam) {
+                    auto inNode = inParam->m_wpNode.lock();
+                    assert(inNode);
+                    inNode->mark_dirty(m_dirty);
+                }
+            }
+        }
+        for (auto& [name, param] : m_outputPrims) {
+            for (auto link : param->links) {
+                auto inParam = link->toparam;
                 assert(inParam);
                 if (inParam) {
                     auto inNode = inParam->m_wpNode.lock();
@@ -265,13 +279,13 @@ ZENO_API void INode::mark_dirty(bool bOn, bool bWholeSubnet)
 
 void INode::mark_dirty_objs()
 {
-    for (auto const& [name, param] : m_outputs)
+    for (auto const& [name, param] : m_outputObjs)
     {
-        if (auto spObj = std::dynamic_pointer_cast<IObject>(param->result)) {
-            if (spObj->key().empty()) {
+        if (param->spObject) {
+            if (param->spObject->key().empty()) {
                 continue;
             }
-            getSession().objsMan->collect_removing_objs(spObj->key());
+            getSession().objsMan->collect_removing_objs(param->spObject->key());
         }
     }
 }
@@ -285,8 +299,13 @@ ZENO_API void INode::preApply() {
     reportStatus(true, Node_Pending);
 
     //TODO: the param order should be arranged by the descriptors.
-    for (const auto& [name, param] : m_inputs) {
-        bool ret = requireInput(param);
+    for (const auto& [name, param] : m_inputObjs) {
+        bool ret = requireInput(name);
+        if (!ret)
+            zeno::log_warn("the param {} may not be initialized", name);
+    }
+    for (const auto& [name, param] : m_inputPrims) {
+        bool ret = requireInput(name);
         if (!ret)
             zeno::log_warn("the param {} may not be initialized", name);
     }
@@ -294,36 +313,31 @@ ZENO_API void INode::preApply() {
 
 ZENO_API void INode::registerObjToManager()
 {
-    for (auto const& [name, param] : m_outputs)
+    for (auto const& [name, param] : m_outputObjs)
     {
-        if (auto spObj = std::dynamic_pointer_cast<IObject>(param->result)) {
-
-            if (std::dynamic_pointer_cast<NumericObject>(spObj) ||
-                std::dynamic_pointer_cast<StringObject>(spObj)) {
+        if (param->spObject)
+        {
+            if (std::dynamic_pointer_cast<NumericObject>(param->spObject) ||
+                std::dynamic_pointer_cast<StringObject>(param->spObject)) {
                 return;
             }
 
-            if (spObj->key().empty())
+            if (param->spObject->key().empty())
             {
                 //如果当前节点是引用前继节点产生的obj，则obj.key不为空，此时就必须沿用之前的id，
                 //以表示“引用”，否则如果新建id，obj指针可能是同一个，会在manager引起混乱。
-                spObj->update_key(m_uuid);
+                param->spObject->update_key(m_uuid);
             }
 
-            const std::string& key = spObj->key();
+            const std::string& key = param->spObject->key();
             assert(!key.empty());
-            param->result->nodeId = m_name;
+            param->spObject->nodeId = m_name;
 
             auto& objsMan = getSession().objsMan;
             std::shared_ptr<INode> spNode = shared_from_this();
-            objsMan->collectingObject(spObj, spNode, m_bView);
+            objsMan->collectingObject(param->spObject, spNode, m_bView);
         }
     }
-}
-
-ZENO_API bool INode::requireInput(std::string const& ds) {
-    auto param = get_input_param(ds);
-    return requireInput(param);
 }
 
 zany INode::get_output_result(std::shared_ptr<INode> outNode, std::string out_param, bool bCopy) {
@@ -337,123 +351,80 @@ zany INode::get_output_result(std::shared_ptr<INode> outNode, std::string out_pa
     return outResult;
 }
 
-ZENO_API bool INode::requireInput(std::shared_ptr<CoreParam> in_param) {
-    if (!in_param)
-        return false;
-
-    if (in_param->links.empty()) {
-        in_param->result = process(in_param);
-        return true;    //旧版本的requireInput指的是是否有连线，如果想兼容旧版本，这里可以返回false，但使用量不多，所以就修改它的定义。
-    }
-
-    switch (in_param->type)
-    {
-        case Param_Dict:
-        {
-            std::shared_ptr<DictObject> spDict;
-            //连接的元素是list还是list of list的规则，参照Graph::addLink下注释。
-            bool bDirecyLink = false;
-            const auto& inLinks = in_param->links;
-            if (inLinks.size() == 1)
-            {
-                std::shared_ptr<CoreLink> spLink = inLinks.front();
-                std::shared_ptr<CoreParam> out_param = spLink->fromparam.lock();
-                std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
-
-                if (out_param->type == in_param->type && !spLink->tokey.empty())
-                {
-                    bDirecyLink = true;
-                    GraphException::translated([&] {
-                        outNode->doApply();
-                    }, outNode.get());
-                    zany outResult = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
-                    spDict = std::dynamic_pointer_cast<DictObject>(outResult);
-                }
-            }
-            if (!bDirecyLink)
-            {
-                spDict = std::make_shared<DictObject>();
-                for (const auto& spLink : in_param->links)
-                {
-                    const std::string& keyName = spLink->tokey;
-                    std::shared_ptr<CoreParam> out_param = spLink->fromparam.lock();
-                    std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
-
-                    GraphException::translated([&] {
-                        outNode->doApply();
-                    }, outNode.get());
-
-                    zany outResult = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
-                    spDict->lut[keyName] = outResult;
-                }
-            }
-            in_param->result = spDict;
-            break;
+ZENO_API bool INode::requireInput(std::string const& ds) {
+    // 目前假设输入对象和输入数值，不能重名（不难实现，老节点直接改）。
+    auto iter = m_inputObjs.find(ds);
+    if (iter != m_inputObjs.end()) {
+        ObjectParam* in_param = iter->second.get();
+        if (in_param->links.empty()) {
+            //节点如果定义了对象，但没有边连上去，是否要看节点apply如何处理？
         }
-        case Param_List:
-        {
-            std::shared_ptr<ListObject> spList;
-            bool bDirectLink = false;
-            if (in_param->links.size() == 1)
+        else {
+            switch (in_param->type)
             {
-                std::shared_ptr<CoreLink> spLink = in_param->links.front();
-                std::shared_ptr<CoreParam> out_param = spLink->fromparam.lock();
-                std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
-
-                if (out_param->type == in_param->type && !spLink->tokey.empty()) {
-                    bDirectLink = true;
-
-                    GraphException::translated([&] {
-                        outNode->doApply();
-                    }, outNode.get());
-
-                    zany outResult = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
-                    spList = std::dynamic_pointer_cast<ListObject>(outResult);
-                }
-            }
-            if (!bDirectLink)
-            {
-                auto oldinput = std::dynamic_pointer_cast<ListObject>(in_param->result);
-
-                spList = std::make_shared<ListObject>();
-                int indx = 0;
-                for (const auto& spLink : in_param->links)
+                case Param_Dict:
                 {
-                    //list的情况下，keyName是不是没意义，顺序怎么维持？
-                    std::shared_ptr<CoreParam> out_param = spLink->fromparam.lock();
-                    std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
-                    if (outNode->is_dirty()) {  //list中的元素是dirty的，重新计算并加入list
+                    in_param->spObject = processDict(in_param);
+                    break;
+                }
+                case Param_List:
+                {
+                    in_param->spObject = processList(in_param);
+                    break;
+                }
+                default:
+                {
+                    if (in_param->links.size() == 1)
+                    {
+                        std::shared_ptr<CoreLink> spLink = *in_param->links.begin();
+                        ObjectParam* out_param = spLink->fromparam;
+                        std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
+
                         GraphException::translated([&] {
                             outNode->doApply();
                         }, outNode.get());
 
-                        zany outResult = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
-                        spList->push_back(outResult);
-                        //spList->dirtyIndice.insert(indx);
-                    } else {
-                        zany outResult = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
-                        spList->push_back(outResult);
+                        zany outResult = out_param->spObject;
+                        //观察端口属性
+                        //TODO
+                        if (in_param->socketType == Socket_Clone) {
+
+                        }
+                        else if (in_param->socketType == Socket_Owning) {
+
+                        }
+                        else if (in_param->socketType == Socket_ReadOnly) {
+
+                        }
+
+                        //in_param->spObject = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
                     }
                 }
             }
-            in_param->result = spList;
-            //同上
-            break;
         }
-        default:
-        {
-            if (in_param->links.size() == 1)
-            {
-                std::shared_ptr<CoreLink> spLink = *in_param->links.begin();
-                std::shared_ptr<CoreParam> out_param = spLink->fromparam.lock();
-                std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
-
-                GraphException::translated([&] {
-                    outNode->doApply();
-                }, outNode.get());
-
-                in_param->result = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
+    }
+    else {
+        auto iter2 = m_inputPrims.find(ds);
+        if (iter2 != m_inputPrims.end()) {
+            PrimitiveParam* in_param = iter2->second.get();
+            if (in_param->links.empty()) {
+                in_param->result = process(in_param);
+                //旧版本的requireInput指的是是否有连线，如果想兼容旧版本，这里可以返回false，但使用量不多，所以就修改它的定义。
             }
+            else {
+                if (in_param->links.size() == 1) {
+                    std::shared_ptr<ParamLink> spLink = *in_param->links.begin();
+                    std::shared_ptr<INode> outNode = spLink->fromparam->m_wpNode.lock();
+
+                    GraphException::translated([&] {
+                        outNode->doApply();
+                    }, outNode.get());
+                    //数值基本类型，直接复制。
+                    in_param->result = spLink->fromparam->result;
+                }
+            }
+        } else {
+            return false;
         }
     }
     return true;
@@ -1047,17 +1018,108 @@ template<class T, class E> zany INode::resolveVec(const zvariant& defl, const Pa
     }
 }
 
-zany INode::process(std::shared_ptr<CoreParam> in_param)
+std::shared_ptr<DictObject> INode::processDict(ObjectParam* in_param) {
+    std::shared_ptr<DictObject> spDict;
+    //连接的元素是list还是list of list的规则，参照Graph::addLink下注释。
+    bool bDirecyLink = false;
+    const auto& inLinks = in_param->links;
+    if (inLinks.size() == 1)
+    {
+        std::shared_ptr<CoreLink> spLink = inLinks.front();
+        std::shared_ptr<CoreParam> out_param = spLink->fromparam.lock();
+        std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
+
+        if (out_param->type == in_param->type && !spLink->tokey.empty())
+        {
+            bDirecyLink = true;
+            GraphException::translated([&] {
+                outNode->doApply();
+                }, outNode.get());
+            zany outResult = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
+            spDict = std::dynamic_pointer_cast<DictObject>(outResult);
+        }
+    }
+    if (!bDirecyLink)
+    {
+        spDict = std::make_shared<DictObject>();
+        for (const auto& spLink : in_param->links)
+        {
+            const std::string& keyName = spLink->tokey;
+            std::shared_ptr<CoreParam> out_param = spLink->fromparam.lock();
+            std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
+
+            GraphException::translated([&] {
+                outNode->doApply();
+                }, outNode.get());
+
+            zany outResult = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
+            spDict->lut[keyName] = outResult;
+        }
+    }
+    return spDict;
+}
+
+std::shared_ptr<ListObject> INode::processList(ObjectParam* in_param) {
+    std::shared_ptr<ListObject> spList;
+    bool bDirectLink = false;
+    if (in_param->links.size() == 1)
+    {
+        std::shared_ptr<CoreLink> spLink = in_param->links.front();
+        std::shared_ptr<CoreParam> out_param = spLink->fromparam.lock();
+        std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
+
+        if (out_param->type == in_param->type && !spLink->tokey.empty()) {
+            bDirectLink = true;
+
+            GraphException::translated([&] {
+                outNode->doApply();
+                }, outNode.get());
+
+            zany outResult = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
+            spList = std::dynamic_pointer_cast<ListObject>(outResult);
+        }
+    }
+    if (!bDirectLink)
+    {
+        auto oldinput = std::dynamic_pointer_cast<ListObject>(in_param->result);
+
+        spList = std::make_shared<ListObject>();
+        int indx = 0;
+        for (const auto& spLink : in_param->links)
+        {
+            //list的情况下，keyName是不是没意义，顺序怎么维持？
+            std::shared_ptr<CoreParam> out_param = spLink->fromparam.lock();
+            std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
+            if (outNode->is_dirty()) {  //list中的元素是dirty的，重新计算并加入list
+                GraphException::translated([&] {
+                    outNode->doApply();
+                    }, outNode.get());
+
+                zany outResult = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
+                spList->push_back(outResult);
+                //spList->dirtyIndice.insert(indx);
+            }
+            else {
+                zany outResult = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
+                spList->push_back(outResult);
+            }
+        }
+    }
+    return spList;
+}
+
+zvariant INode::process(PrimitiveParam* in_param)
 {
     if (!in_param) {
         return nullptr;
     }
 
     int frame = getGlobalState()->getFrameId();
-    zany result;
+    //zany result;
 
     const ParamType type = in_param->type;
     const zvariant defl = in_param->defl;
+    zvariant result;
 
     switch (type) {
         case Param_Int:
@@ -1070,7 +1132,7 @@ zany INode::process(std::shared_ptr<CoreParam> in_param)
             {
                 std::string str = std::get<std::string>(defl);
                 float fVal = resolve(str, type);
-                result = std::make_shared<zeno::NumericObject>(fVal);
+                result = fVal;
             }
             else if (std::holds_alternative<int>(defl))
             {
