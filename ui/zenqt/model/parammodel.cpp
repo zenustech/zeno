@@ -2,7 +2,7 @@
 #include "zassert.h"
 #include "util/uihelper.h"
 #include <zeno/core/data.h>
-#include <zeno/core/IParam.h>
+#include <zeno/core/CoreParam.h>
 #include "model/LinkModel.h"
 #include "model/GraphModel.h"
 #include "variantptr.h"
@@ -53,8 +53,8 @@ void ParamsModel::initParamItems()
 {
     auto spNode = m_wpNode.lock();
     ZASSERT_EXIT(spNode);
-    std::vector<std::shared_ptr<zeno::IParam>> inputs = spNode->get_input_params();
-    for (std::shared_ptr<zeno::IParam> spParam : inputs) {
+    std::vector<std::shared_ptr<zeno::CoreParam>> inputs = spNode->get_input_params();
+    for (std::shared_ptr<zeno::CoreParam> spParam : inputs) {
         ParamItem item;
         item.bInput = true;
         item.control = spParam->control;
@@ -69,8 +69,8 @@ void ParamsModel::initParamItems()
         m_items.append(item);
     }
 
-    std::vector<std::shared_ptr<zeno::IParam>> outputs = spNode->get_output_params();
-    for (std::shared_ptr<zeno::IParam> spParam : outputs) {
+    std::vector<std::shared_ptr<zeno::CoreParam>> outputs = spNode->get_output_params();
+    for (std::shared_ptr<zeno::CoreParam> spParam : outputs) {
         ParamItem item;
         item.bInput = false;
         item.m_wpParam = spParam;
@@ -461,7 +461,7 @@ void ParamsModel::batchModifyParams(const zeno::ParamsUpdateInfo& params)
 
     //reconstruct links.
     for (int r = 0; r < m_items.size(); r++) {
-        std::shared_ptr<zeno::IParam> spParam = m_items[r].m_wpParam.lock();
+        std::shared_ptr<zeno::CoreParam> spParam = m_items[r].m_wpParam.lock();
         for (auto spLink : spParam->links) {
             auto spFrom = spLink->fromparam.lock();
             auto spTo = spLink->toparam.lock();

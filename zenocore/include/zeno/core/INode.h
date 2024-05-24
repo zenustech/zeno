@@ -23,19 +23,15 @@ struct Scene;
 struct Session;
 struct GlobalState;
 struct TempNodeCaller;
-struct IParam;
+struct CoreParam;
+struct InputParam;
+struct PrimitiveParam;
+struct OutputParam;
 
-struct INode : std::enable_shared_from_this<INode> {
+class INode : public std::enable_shared_from_this<INode>
+{
 public:
     INodeClass *nodeClass = nullptr;
-
-    std::string m_name;
-    std::string m_nodecls;
-    std::string m_uuid;
-    std::pair<float, float> m_pos;
-
-    std::map<std::string, std::shared_ptr<IParam>> m_inputs;
-    std::map<std::string, std::shared_ptr<IParam>> m_outputs;
 
     zany muted_output;
 
@@ -54,8 +50,6 @@ public:
 
     //BEGIN new api
     ZENO_API void init(const NodeData& dat);
-    ZENO_API void set_input_defl(std::string const& name, zvariant defl);
-    ZENO_API zvariant get_input_defl(std::string const& name);
     ZENO_API std::string get_nodecls() const;
     ZENO_API std::string get_ident() const;
     ZENO_API std::string get_show_name() const;
@@ -76,10 +70,14 @@ public:
     ZENO_API bool is_dirty() const { return m_dirty; }
     ZENO_API NodeRunStatus get_run_status() const { return m_status; }
 
-    ZENO_API virtual std::vector<std::shared_ptr<IParam>> get_input_params() const;
-    ZENO_API virtual std::vector<std::shared_ptr<IParam>> get_output_params() const;
-    ZENO_API std::shared_ptr<IParam> get_input_param(std::string const& name) const;
-    ZENO_API std::shared_ptr<IParam> get_output_param(std::string const& name) const;
+    //ZENO_API virtual std::vector<std::shared_ptr<CoreParam>> get_input_params() const;
+    ZENO_API ObjectParams get_input_object_params() const;
+    ZENO_API ObjectParams get_output_object_params() const;
+    ZENO_API CustomUI get_input_primitive_params() const;
+    ZENO_API PrimitveParams get_output_primitivie_params() const;
+    //ZENO_API virtual std::vector<std::shared_ptr<CoreParam>> get_output_params() const;
+    //ZENO_API std::shared_ptr<CoreParam> get_input_param(std::string const& name) const;
+    //ZENO_API std::shared_ptr<CoreParam> get_output_param(std::string const& name) const;
     ZENO_API std::string get_viewobject_output_param() const;
     ZENO_API virtual NodeData exportInfo() const;
     ZENO_API void set_result(bool bInput, const std::string& name, zany spObj);
@@ -103,13 +101,13 @@ public:
 
     //END new api
 
-    void add_input_param(std::shared_ptr<IParam> param);
-    void add_output_param(std::shared_ptr<IParam> param);
+    void add_input_param(std::shared_ptr<CoreParam> param);
+    void add_output_param(std::shared_ptr<CoreParam> param);
     void directly_setinputs(std::map<std::string, zany> inputs);
     std::map<std::string, zany> getoutputs();
     void mark_dirty_objs();
 
-    void checkReference(std::shared_ptr<IParam> spParam);
+    void checkReference(std::shared_ptr<CoreParam> spParam);
 
 protected:
     ZENO_API virtual void complete();
@@ -123,7 +121,7 @@ protected:
     ZENO_API virtual void initParams(const NodeData& dat);
 
 private:
-    zany process(std::shared_ptr<IParam> in_param);
+    zany process(std::shared_ptr<CoreParam> in_param);
     zany get_output_result(std::shared_ptr<INode> outNode, std::string out_param, bool bCopy);
     void reportStatus(bool bDirty, NodeRunStatus status);
 
@@ -133,7 +131,7 @@ private:
 public:
     //为名为ds的输入参数，求得这个参数在依赖边的求值下的值，或者没有依赖边下的默认值。
     ZENO_API bool requireInput(std::string const &ds);
-    ZENO_API bool requireInput(std::shared_ptr<IParam> param);
+    ZENO_API bool requireInput(std::shared_ptr<CoreParam> param);
 
     ZENO_API std::shared_ptr<Graph> getThisGraph() const;
     ZENO_API Session *getThisSession() const;
@@ -203,6 +201,16 @@ public:
     ZENO_API TempNodeCaller temp_node(std::string const &id);
 
 private:
+    std::string m_name;
+    std::string m_nodecls;
+    std::string m_uuid;
+    std::pair<float, float> m_pos;
+
+    std::map<std::string, std::unique_ptr<InputParam>> m_inputObjs;
+    std::map<std::string, std::unique_ptr<PrimitiveParam>> m_inputPrims;
+    std::map<std::string, std::unique_ptr<PrimitiveParam>> m_outputPrims;
+    std::map<std::string, std::unique_ptr<OutputParam>> m_outputObjs;
+
     ObjPath m_uuidPath;
     NodeRunStatus m_status = Node_DirtyReadyToRun;
     std::weak_ptr<Graph> graph;

@@ -60,6 +60,15 @@ namespace zeno {
         }
     };
 
+    struct ParamObject {
+        std::string name;
+        ParamType type = Param_Null;
+        std::vector<EdgeInfo> links;
+        SocketProperty prop = Socket_Normal;
+        bool bInput = true;
+    };
+
+    //primitive
     struct ParamInfo {
         std::string name;
         ParamType type = Param_Null;
@@ -104,9 +113,9 @@ namespace zeno {
         std::vector<ParamGroup> groups;
     };
 
+    //CustomUI is structure for input params of primitive types, like vec3f int string, etc.
     struct CustomUI {
         std::vector<ParamTab> tabs;   //custom ui for input params
-        std::vector<ParamInfo> outputs;
         std::string category;
         std::string nickname;
         std::string iconResPath;
@@ -152,19 +161,22 @@ namespace zeno {
         vec3f background;     //hex format
     };
 
+    using ObjectParams = std::vector<ParamObject>;
+    using PrimitveParams = std::vector<ParamInfo>;
+
     struct NodeData {
         std::string name;
         std::string cls;
 
-        std::vector<ParamInfo> inputs;
-        std::vector<ParamInfo> outputs;
+        ObjectParams inputObjs;
+        CustomUI customUi;   //custom ui for input params
+        PrimitveParams outputPrims;
+        ObjectParams outputObjs;
 
         //if current node is a subgraph node, which means type =NodeStatus::SubgraphNode.
         std::optional<GraphData> subgraph;
         std::optional<AssetInfo> asset;
         std::optional<GroupInfo> group;
-
-        CustomUI customUi;
 
         std::pair<float, float> uipos;
         bool bView = false;

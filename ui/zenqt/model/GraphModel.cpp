@@ -9,7 +9,7 @@
 #include <zeno/extra/SubnetNode.h>
 #include <zeno/core/Assets.h>
 #include <zeno/core/data.h>
-#include <zeno/core/IParam.h>
+#include <zeno/core/CoreParam.h>
 #include "util/uihelper.h"
 #include "util/jsonhelper.h"
 

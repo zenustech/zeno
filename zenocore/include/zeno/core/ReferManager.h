@@ -10,7 +10,7 @@
 
 namespace zeno {
     struct INode;
-    struct IParam;
+    struct CoreParam;
     struct Graph;
 
     struct ReferManager
@@ -19,7 +19,7 @@ namespace zeno {
         ReferManager();
         ~ReferManager();
         ZENO_API void init(const std::shared_ptr<Graph>& pGraph);
-        void addReferInfo(std::shared_ptr <IParam> spParam);
+        void addReferInfo(std::shared_ptr <CoreParam> spParam);
         //当删除了引用了其他参数的节点后，需删除对应信息
         void removeReferParam(const std::string& uuid_param);
         //当删除了被引用的节点后，需删除对应信息
@@ -39,7 +39,7 @@ namespace zeno {
         std::set<std::string> referPaths(const std::string& currPath, const zvariant& val) const;
         bool updateParamValue(const std::string& oldVal, const std::string& newVal, const std::string& currentPath, zvariant& arg);
 
-        std::map <std::string, std::shared_ptr<IParam>> m_referParams;//<引用参数uuid/param, 参数ptr>
+        std::map <std::string, std::shared_ptr<CoreParam>> m_referParams;//<引用参数uuid/param, 参数ptr>
         std::map <std::string, std::set<std::string>> m_referedUuidParams;//<被引用参数uuid/param, 引用参数uuid/param 集合>
         bool m_bModify;
 

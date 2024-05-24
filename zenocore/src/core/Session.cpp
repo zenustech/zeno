@@ -9,7 +9,7 @@
 #include <zeno/types/UserData.h>
 #include <zeno/core/Graph.h>
 #include <zeno/core/INode.h>
-#include <zeno/core/IParam.h>
+#include <zeno/core/CoreParam.h>
 #include <zeno/utils/safe_at.h>
 #include <zeno/utils/logger.h>
 #include <zeno/utils/string.h>
@@ -46,7 +46,7 @@ struct ImplNodeClass : INodeClass {
             {
                 for (const ParamInfo& param : group.params)
                 {
-                    std::shared_ptr<IParam> sparam = std::make_shared<IParam>();
+                    std::shared_ptr<CoreParam> sparam = std::make_shared<CoreParam>();
                     sparam->name = param.name;
                     sparam->m_wpNode = spNode;
                     sparam->type = param.type;
@@ -61,7 +61,7 @@ struct ImplNodeClass : INodeClass {
 
         for (const ParamInfo& param : m_customui.outputs)
         {
-            std::shared_ptr<IParam> sparam = std::make_shared<IParam>();
+            std::shared_ptr<CoreParam> sparam = std::make_shared<CoreParam>();
             sparam->name = param.name;
             sparam->m_wpNode = spNode;
             sparam->type = param.type;

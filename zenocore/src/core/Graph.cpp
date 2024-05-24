@@ -15,7 +15,7 @@
 #include <zeno/extra/DirtyChecker.h>
 #include <zeno/utils/Error.h>
 #include <zeno/utils/log.h>
-#include <zeno/core/IParam.h>
+#include <zeno/core/CoreParam.h>
 #include <zeno/utils/uuid.h>
 #include <zeno/utils/helper.h>
 #include <iostream>
@@ -101,7 +101,7 @@ ZENO_API void Graph::runGraph() {
     applyNodes(m_viewnodes);
 }
 
-void Graph::onNodeParamUpdated(std::shared_ptr<IParam> spParam, zvariant old_value, zvariant new_value) {
+void Graph::onNodeParamUpdated(std::shared_ptr<CoreParam> spParam, zvariant old_value, zvariant new_value) {
     assert(spParam);
     if (Param_String == spParam->type) {
         auto spNode = spParam->m_wpNode.lock();
@@ -274,7 +274,7 @@ ZENO_API void Graph::init(const GraphData& graph) {
         else if (node.cls == "Group") {
             if (node.group.has_value())
             {
-                std::shared_ptr<IParam> param = spNode->get_input_param("title");
+                std::shared_ptr<CoreParam> param = spNode->get_input_param("title");
                 if (param)
                 {
                     param->defl = node.group->title;
@@ -336,19 +336,19 @@ ZENO_API void Graph::init(const GraphData& graph) {
         std::shared_ptr<INode> inNode = getNode(link.inNode);
         assert(outNode && inNode);
 
-        std::shared_ptr<IParam> outParam = outNode->get_output_param(link.outParam);
+        std::shared_ptr<CoreParam> outParam = outNode->get_output_param(link.outParam);
         if (!outParam) {
             //zeno::log_warn("no output param `{}` on node `{}`", link.outParam, link.outNode);
             continue;
         }
 
-        std::shared_ptr<IParam> inParam = inNode->get_input_param(link.inParam);
+        std::shared_ptr<CoreParam> inParam = inNode->get_input_param(link.inParam);
         if (!inParam) {
             //zeno::log_warn("no input param `{}` on node `{}`", link.inParam, link.inNode);
             continue;
         }
 
-        std::shared_ptr<ILink> spLink = std::make_shared<zeno::ILink>();
+        std::shared_ptr<CoreLink> spLink = std::make_shared<zeno::CoreLink>();
         spLink->fromparam = outParam;
         spLink->toparam = inParam;
         spLink->fromkey = link.outKey;
@@ -702,12 +702,12 @@ ZENO_API bool Graph::removeNode(std::string const& name) {
     //remove links first
     std::vector<EdgeInfo> remLinks;
     for (const auto& [_, spParam] : spNode->m_inputs) {
-        for (std::shared_ptr<ILink> spLink : spParam->links) {
+        for (std::shared_ptr<CoreLink> spLink : spParam->links) {
             remLinks.push_back(getEdgeInfo(spLink));
         }
     }
     for (const auto& [_, spParam] : spNode->m_outputs) {
-        for (std::shared_ptr<ILink> spLink : spParam->links) {
+        for (std::shared_ptr<CoreLink> spLink : spParam->links) {
             remLinks.push_back(getEdgeInfo(spLink));
         }
     }
@@ -751,8 +751,8 @@ ZENO_API bool Graph::addLink(const EdgeInfo& edge) {
     if (!inNode)
         return false;
 
-    std::shared_ptr<IParam> outParam = outNode->get_output_param(edge.outParam);
-    std::shared_ptr<IParam> inParam = inNode->get_input_param(edge.inParam);
+    std::shared_ptr<CoreParam> outParam = outNode->get_output_param(edge.outParam);
+    std::shared_ptr<CoreParam> inParam = inNode->get_input_param(edge.inParam);
     if (!outParam || !inParam)
         return false;
 
@@ -797,7 +797,7 @@ ZENO_API bool Graph::addLink(const EdgeInfo& edge) {
     if (bRemOldLinks)
         removeLinks(inNode->get_name(), true, inParam->name);
 
-    std::shared_ptr<ILink> spLink = std::make_shared<ILink>();
+    std::shared_ptr<CoreLink> spLink = std::make_shared<CoreLink>();
     spLink->fromparam = outParam;
     spLink->toparam = inParam;
     spLink->fromkey = adjustEdge.outKey;
@@ -824,10 +824,10 @@ ZENO_API bool Graph::removeLink(const EdgeInfo& edge) {
     if (!inNode)
         return false;
 
-    std::shared_ptr<IParam> outParam = outNode->get_output_param(edge.outParam);
-    std::shared_ptr<IParam> inParam = inNode->get_input_param(edge.inParam);
+    std::shared_ptr<CoreParam> outParam = outNode->get_output_param(edge.outParam);
+    std::shared_ptr<CoreParam> inParam = inNode->get_input_param(edge.inParam);
 
-    outParam->links.remove_if([&](std::shared_ptr<ILink> spLink) {
+    outParam->links.remove_if([&](std::shared_ptr<CoreLink> spLink) {
         auto _out_param = spLink->fromparam.lock();
         auto _in_param = spLink->toparam.lock();
         if (_out_param == outParam && _in_param == inParam) {
@@ -836,7 +836,7 @@ ZENO_API bool Graph::removeLink(const EdgeInfo& edge) {
         return false;
     });
 
-    inParam->links.remove_if([&](std::shared_ptr<ILink> spLink) {
+    inParam->links.remove_if([&](std::shared_ptr<CoreLink> spLink) {
         auto _out_param = spLink->fromparam.lock();
         auto _in_param = spLink->toparam.lock();
         if (_out_param == outParam && _in_param == inParam) {
@@ -855,7 +855,7 @@ ZENO_API bool Graph::removeLinks(const std::string nodename, bool bInput, const 
     CORE_API_BATCH
 
     std::shared_ptr<INode> spNode = getNode(nodename);
-    std::shared_ptr<IParam> spParam;
+    std::shared_ptr<CoreParam> spParam;
     if (bInput)
         spParam = spNode->get_input_param(paramname);
     else
@@ -888,8 +888,8 @@ ZENO_API bool Graph::updateLink(const EdgeInfo& edge, bool bInput, const std::st
     if (!inNode)
         return false;
 
-    std::shared_ptr<IParam> outParam = outNode->get_output_param(edge.outParam);
-    std::shared_ptr<IParam> inParam = inNode->get_input_param(edge.inParam);
+    std::shared_ptr<CoreParam> outParam = outNode->get_output_param(edge.outParam);
+    std::shared_ptr<CoreParam> inParam = inNode->get_input_param(edge.inParam);
 
     if (bInput) {
         for (auto spLink : inParam->links) {
@@ -913,8 +913,8 @@ ZENO_API bool Graph::moveUpLinkKey(const EdgeInfo& edge, bool bInput, const std:
     if (!inNode)
         return false;
 
-    std::shared_ptr<IParam> outParam = outNode->get_output_param(edge.outParam);
-    std::shared_ptr<IParam> inParam = inNode->get_input_param(edge.inParam);
+    std::shared_ptr<CoreParam> outParam = outNode->get_output_param(edge.outParam);
+    std::shared_ptr<CoreParam> inParam = inNode->get_input_param(edge.inParam);
     if (!inParam || !outParam)
         return false;
 

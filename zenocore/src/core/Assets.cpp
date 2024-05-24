@@ -1,6 +1,6 @@
 #include <zeno/core/Assets.h>
 #include <zeno/extra/SubnetNode.h>
-#include <zeno/core/IParam.h>
+#include <zeno/core/CoreParam.h>
 #include <filesystem>
 #include <zeno/io/zdareader.h>
 #ifdef _WIN32
@@ -344,7 +344,7 @@ ZENO_API std::shared_ptr<INode> AssetsMgr::newInstance(std::shared_ptr<Graph> pG
 
     for (const ParamInfo& param : assets.inputs)
     {
-        std::shared_ptr<IParam> sparam = std::make_shared<IParam>();
+        std::shared_ptr<CoreParam> sparam = std::make_shared<CoreParam>();
         sparam->defl = param.defl;
         sparam->name = param.name;
         sparam->type = param.type;
@@ -357,7 +357,7 @@ ZENO_API std::shared_ptr<INode> AssetsMgr::newInstance(std::shared_ptr<Graph> pG
 
     for (const ParamInfo& param : assets.outputs)
     {
-        std::shared_ptr<IParam> sparam = std::make_shared<IParam>();
+        std::shared_ptr<CoreParam> sparam = std::make_shared<CoreParam>();
         sparam->defl = param.defl;
         sparam->name = param.name;
         sparam->type = param.type;
@@ -387,7 +387,7 @@ ZENO_API void zeno::AssetsMgr::updateAssetInstance(const std::string& assetName,
 
     for (const ParamInfo& param : assets.inputs)
     {
-        std::shared_ptr<IParam> sparam = std::make_shared<IParam>();
+        std::shared_ptr<CoreParam> sparam = std::make_shared<CoreParam>();
         sparam->defl = param.defl;
         sparam->name = param.name;
         sparam->type = param.type;
@@ -400,7 +400,7 @@ ZENO_API void zeno::AssetsMgr::updateAssetInstance(const std::string& assetName,
 
     for (const ParamInfo& param : assets.outputs)
     {
-        std::shared_ptr<IParam> sparam = std::make_shared<IParam>();
+        std::shared_ptr<CoreParam> sparam = std::make_shared<CoreParam>();
         sparam->defl = param.defl;
         sparam->name = param.name;
         sparam->type = param.type;

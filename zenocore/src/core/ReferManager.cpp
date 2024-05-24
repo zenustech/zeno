@@ -1,7 +1,7 @@
 #include <zeno/core/ReferManager.h>
 #include <zeno/core/Graph.h>
 #include <zeno/core/Session.h>
-#include <zeno/core/IParam.h>
+#include <zeno/core/CoreParam.h>
 #include <zeno/core/INode.h>
 #include <zeno/extra/SubnetNode.h>
 #include <zeno/utils/helper.h>
@@ -31,7 +31,7 @@ namespace zeno {
         }
     }
 
-    void ReferManager::addReferInfo(std::shared_ptr <IParam> spParam)
+    void ReferManager::addReferInfo(std::shared_ptr <CoreParam> spParam)
     {
         auto spNode = spParam->m_wpNode.lock();
         if (!spNode)

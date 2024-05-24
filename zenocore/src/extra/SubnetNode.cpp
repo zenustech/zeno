@@ -4,7 +4,7 @@
 #include <zeno/extra/SubnetNode.h>
 #include <zeno/types/DummyObject.h>
 #include <zeno/utils/log.h>
-#include <zeno/core/IParam.h>
+#include <zeno/core/CoreParam.h>
 #include <zeno/core/Assets.h>
 
 namespace zeno {
@@ -25,7 +25,7 @@ ZENO_API void SubnetNode::initParams(const NodeData& dat)
     {
         if (m_inputs.find(param.name) != m_inputs.end())
             continue;
-        std::shared_ptr<IParam> sparam = std::make_shared<IParam>();
+        std::shared_ptr<CoreParam> sparam = std::make_shared<CoreParam>();
         sparam->defl = param.defl;
         sparam->name = param.name;
         sparam->type = param.type;
@@ -41,7 +41,7 @@ ZENO_API void SubnetNode::initParams(const NodeData& dat)
     {
         if (m_outputs.find(param.name) != m_outputs.end())
             continue;
-        std::shared_ptr<IParam> sparam = std::make_shared<IParam>();
+        std::shared_ptr<CoreParam> sparam = std::make_shared<CoreParam>();
         sparam->defl = param.defl;
         sparam->name = param.name;
         sparam->type = param.type;
@@ -58,7 +58,7 @@ ZENO_API void SubnetNode::initParams(const NodeData& dat)
 
 ZENO_API void SubnetNode::add_param(bool bInput, const ParamInfo& param)
 {
-    std::shared_ptr<IParam> sparam = std::make_shared<IParam>();
+    std::shared_ptr<CoreParam> sparam = std::make_shared<CoreParam>();
     sparam->name = param.name;
     sparam->m_wpNode = shared_from_this();
     sparam->type = param.type;
@@ -90,9 +90,9 @@ ZENO_API bool SubnetNode::isAssetsNode() const {
     return subgraph->isAssets();
 }
 
-ZENO_API std::vector<std::shared_ptr<IParam>> SubnetNode::get_input_params() const
+ZENO_API std::vector<std::shared_ptr<CoreParam>> SubnetNode::get_input_params() const
 {
-    std::vector<std::shared_ptr<IParam>> params;
+    std::vector<std::shared_ptr<CoreParam>> params;
     for (auto param : m_input_names) {
         auto it = m_inputs.find(param);
         if (it == m_inputs.end()) {
@@ -104,9 +104,9 @@ ZENO_API std::vector<std::shared_ptr<IParam>> SubnetNode::get_input_params() con
     return params;
 }
 
-ZENO_API std::vector<std::shared_ptr<IParam>> SubnetNode::get_output_params() const
+ZENO_API std::vector<std::shared_ptr<CoreParam>> SubnetNode::get_output_params() const
 {
-    std::vector<std::shared_ptr<IParam>> params;
+    std::vector<std::shared_ptr<CoreParam>> params;
     for (auto param : m_output_names) {
         auto it = m_outputs.find(param);
         if (it == m_outputs.end()) {
@@ -153,7 +153,7 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
                 remove_params.insert(newname);
             }
 
-            std::shared_ptr<IParam> sparam = std::make_shared<IParam>();
+            std::shared_ptr<CoreParam> sparam = std::make_shared<CoreParam>();
             sparam->defl = param.defl;
             sparam->name = newname;
             sparam->type = param.type;
@@ -254,7 +254,7 @@ void SubnetNode::mark_subnetdirty(bool bOn)
 ZENO_API void SubnetNode::apply() {
     for (auto const &subinput_node: subgraph->getSubInputs()) {
         auto subinput = subgraph->getNode(subinput_node);
-        std::shared_ptr<IParam> spParam = get_input_param(subinput_node);
+        std::shared_ptr<CoreParam> spParam = get_input_param(subinput_node);
         if (spParam) {
             bool ret = subinput->set_output("port", spParam->result);
             assert(ret);

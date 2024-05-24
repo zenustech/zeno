@@ -20,7 +20,7 @@
 #include <zeno/utils/logger.h>
 #include <zeno/utils/uuid.h>
 #include <zeno/extra/GlobalState.h>
-#include <zeno/core/IParam.h>
+#include <zeno/core/CoreParam.h>
 #include <zeno/DictObject.h>
 #include <zeno/ListObject.h>
 #include <zeno/utils/helper.h>
@@ -76,12 +76,6 @@ ZENO_API GlobalState *INode::getGlobalState() const {
 ZENO_API void INode::doComplete() {
     set_output("DST", std::make_shared<DummyObject>());
     complete();
-}
-
-ZENO_API zvariant INode::get_input_defl(std::string const& name)
-{
-    std::shared_ptr<IParam> param = get_input_param(name);
-    return param->defl;
 }
 
 ZENO_API std::string INode::get_nodecls() const
@@ -343,7 +337,7 @@ zany INode::get_output_result(std::shared_ptr<INode> outNode, std::string out_pa
     return outResult;
 }
 
-ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
+ZENO_API bool INode::requireInput(std::shared_ptr<CoreParam> in_param) {
     if (!in_param)
         return false;
 
@@ -362,8 +356,8 @@ ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
             const auto& inLinks = in_param->links;
             if (inLinks.size() == 1)
             {
-                std::shared_ptr<ILink> spLink = inLinks.front();
-                std::shared_ptr<IParam> out_param = spLink->fromparam.lock();
+                std::shared_ptr<CoreLink> spLink = inLinks.front();
+                std::shared_ptr<CoreParam> out_param = spLink->fromparam.lock();
                 std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
 
                 if (out_param->type == in_param->type && !spLink->tokey.empty())
@@ -382,7 +376,7 @@ ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
                 for (const auto& spLink : in_param->links)
                 {
                     const std::string& keyName = spLink->tokey;
-                    std::shared_ptr<IParam> out_param = spLink->fromparam.lock();
+                    std::shared_ptr<CoreParam> out_param = spLink->fromparam.lock();
                     std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
 
                     GraphException::translated([&] {
@@ -402,8 +396,8 @@ ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
             bool bDirectLink = false;
             if (in_param->links.size() == 1)
             {
-                std::shared_ptr<ILink> spLink = in_param->links.front();
-                std::shared_ptr<IParam> out_param = spLink->fromparam.lock();
+                std::shared_ptr<CoreLink> spLink = in_param->links.front();
+                std::shared_ptr<CoreParam> out_param = spLink->fromparam.lock();
                 std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
 
                 if (out_param->type == in_param->type && !spLink->tokey.empty()) {
@@ -426,7 +420,7 @@ ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
                 for (const auto& spLink : in_param->links)
                 {
                     //list的情况下，keyName是不是没意义，顺序怎么维持？
-                    std::shared_ptr<IParam> out_param = spLink->fromparam.lock();
+                    std::shared_ptr<CoreParam> out_param = spLink->fromparam.lock();
                     std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
                     if (outNode->is_dirty()) {  //list中的元素是dirty的，重新计算并加入list
                         GraphException::translated([&] {
@@ -450,8 +444,8 @@ ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
         {
             if (in_param->links.size() == 1)
             {
-                std::shared_ptr<ILink> spLink = *in_param->links.begin();
-                std::shared_ptr<IParam> out_param = spLink->fromparam.lock();
+                std::shared_ptr<CoreLink> spLink = *in_param->links.begin();
+                std::shared_ptr<CoreParam> out_param = spLink->fromparam.lock();
                 std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
 
                 GraphException::translated([&] {
@@ -501,9 +495,9 @@ ZENO_API void INode::doApply() {
     reportStatus(false, Node_RunSucceed);
 }
 
-ZENO_API std::vector<std::shared_ptr<IParam>> INode::get_input_params() const
+ZENO_API std::vector<std::shared_ptr<CoreParam>> INode::get_input_params() const
 {
-    std::vector<std::shared_ptr<IParam>> params;
+    std::vector<std::shared_ptr<CoreParam>> params;
     //TODO: 如果参数deprecated，是否还需要加入inputs_? 要
     if (m_nodecls != "DeprecatedNode") {
 
@@ -532,9 +526,9 @@ ZENO_API std::vector<std::shared_ptr<IParam>> INode::get_input_params() const
     return params;
 }
 
-ZENO_API std::vector<std::shared_ptr<IParam>> INode::get_output_params() const
+ZENO_API std::vector<std::shared_ptr<CoreParam>> INode::get_output_params() const
 {
-    std::vector<std::shared_ptr<IParam>> params;
+    std::vector<std::shared_ptr<CoreParam>> params;
     if (m_nodecls != "DeprecatedNode") {
         for (auto param : nodeClass->m_customui.outputs) {
             auto it = m_outputs.find(param.name);
@@ -553,27 +547,22 @@ ZENO_API std::vector<std::shared_ptr<IParam>> INode::get_output_params() const
     return params;
 }
 
-ZENO_API void INode::set_input_defl(std::string const& name, zvariant defl) {
-    std::shared_ptr<IParam> param = get_input_param(name);
-    param->defl = defl;
-}
-
-ZENO_API std::shared_ptr<IParam> INode::get_input_param(std::string const& param) const {
+ZENO_API std::shared_ptr<CoreParam> INode::get_input_param(std::string const& param) const {
     auto it = m_inputs.find(param);
     if (it != m_inputs.end())
         return it->second;
     return nullptr;
 }
 
-void INode::add_input_param(std::shared_ptr<IParam> param) {
+void INode::add_input_param(std::shared_ptr<CoreParam> param) {
     m_inputs.insert(std::make_pair(param->name, param));
 }
 
-void INode::add_output_param(std::shared_ptr<IParam> param) {
+void INode::add_output_param(std::shared_ptr<CoreParam> param) {
     m_outputs.insert(std::make_pair(param->name, param));
 }
 
-ZENO_API std::shared_ptr<IParam> INode::get_output_param(std::string const& param) const {
+ZENO_API std::shared_ptr<CoreParam> INode::get_output_param(std::string const& param) const {
     auto it = m_outputs.find(param);
     if (it != m_outputs.end())
         return it->second;
@@ -668,7 +657,7 @@ ZENO_API NodeData INode::exportInfo() const
 
 ZENO_API bool INode::update_param(const std::string& param, const zvariant& new_value) {
     CORE_API_BATCH
-    std::shared_ptr<IParam> spParam = safe_at(m_inputs, param, "miss input param `" + param + "` on node `" + m_name + "`");
+    std::shared_ptr<CoreParam> spParam = safe_at(m_inputs, param, "miss input param `" + param + "` on node `" + m_name + "`");
     if (!zeno::isEqual(spParam->defl, new_value, spParam->type))
     {
         zvariant old_value = spParam->defl;
@@ -695,9 +684,9 @@ ZENO_API params_change_info INode::update_editparams(const ParamsUpdateInfo& par
 void INode::directly_setinputs(std::map<std::string, zany> inputs)
 {
     for (auto& [name, val] : inputs) {
-        std::shared_ptr<IParam> sparam = get_input_param(name);
+        std::shared_ptr<CoreParam> sparam = get_input_param(name);
         if (!sparam) {
-            sparam = std::make_shared<IParam>();
+            sparam = std::make_shared<CoreParam>();
             sparam->name = name;
             sparam->m_wpNode = shared_from_this();
             sparam->type = Param_Null;
@@ -727,7 +716,7 @@ std::vector<std::pair<std::string, zany>> INode::getinputs()
 
 std::pair<std::string, std::string> INode::getinputbound(std::string const& param, std::string const& msg) const
 {
-    std::shared_ptr<IParam> spParam = safe_at(m_inputs, param, "miss input param `" + param + "` on node `" + m_name + "`");
+    std::shared_ptr<CoreParam> spParam = safe_at(m_inputs, param, "miss input param `" + param + "` on node `" + m_name + "`");
     if (!spParam->links.empty()) {
         auto lnk = *spParam->links.begin();
         auto outparam = lnk->fromparam.lock();
@@ -773,7 +762,7 @@ ZENO_API void INode::initParams(const NodeData& dat)
 {
     for (const ParamInfo& param : dat.inputs)
     {
-        std::shared_ptr<IParam> sparam = get_input_param(param.name);
+        std::shared_ptr<CoreParam> sparam = get_input_param(param.name);
         if (!sparam) {
             //legacy zsg有大量此类参数，导致占用输出，因此先屏蔽
             //zeno::log_warn("input param `{}` is not registerd in current zeno version");
@@ -786,7 +775,7 @@ ZENO_API void INode::initParams(const NodeData& dat)
     }
     for (const ParamInfo& param : dat.outputs)
     {
-        std::shared_ptr<IParam> sparam = get_output_param(param.name);
+        std::shared_ptr<CoreParam> sparam = get_output_param(param.name);
         if (!sparam) {
             //zeno::log_warn("output param `{}` is not registerd in current zeno version");
             continue;
@@ -804,7 +793,7 @@ ZENO_API bool INode::has_input(std::string const &id) const {
 }
 
 ZENO_API zany INode::get_input(std::string const &id) const {
-    std::shared_ptr<IParam> param = get_input_param(id);
+    std::shared_ptr<CoreParam> param = get_input_param(id);
     return param ? param->result : nullptr;
 }
 
@@ -831,7 +820,7 @@ ZENO_API bool INode::in_asset_file() const {
 }
 
 ZENO_API bool INode::set_input(std::string const& param, zany obj) {
-    std::shared_ptr<IParam> spParam = safe_at(m_inputs, param, "miss input param `" + param + "` on node `" + m_name + "`");
+    std::shared_ptr<CoreParam> spParam = safe_at(m_inputs, param, "miss input param `" + param + "` on node `" + m_name + "`");
     spParam->result = obj;
     return true;
 }
@@ -841,13 +830,13 @@ ZENO_API bool INode::has_output(std::string const& name) const {
 }
 
 ZENO_API bool INode::set_output(std::string const & param, zany obj) {
-    std::shared_ptr<IParam> spParam = safe_at(m_outputs, param, "miss output param `" + param + "` on node `" + m_name + "`");
+    std::shared_ptr<CoreParam> spParam = safe_at(m_outputs, param, "miss output param `" + param + "` on node `" + m_name + "`");
     spParam->result = obj;
     return true;
 }
 
 ZENO_API zany INode::get_output(std::string const& param) {
-    std::shared_ptr<IParam> spParam = safe_at(m_outputs, param, "miss output param `" + param + "` on node `" + m_name + "`");
+    std::shared_ptr<CoreParam> spParam = safe_at(m_outputs, param, "miss output param `" + param + "` on node `" + m_name + "`");
     return spParam->result;
 }
 
@@ -1011,7 +1000,7 @@ float INode::resolve(const std::string& formulaOrKFrame, const ParamType type)
     }
 }
 
-void INode::checkReference(std::shared_ptr<IParam> spParam)
+void INode::checkReference(std::shared_ptr<CoreParam> spParam)
 {
     const auto& referMgr = getSession().referManager;
     std::string key = spParam->m_wpNode.lock()->m_uuid + "/" + spParam->name;
@@ -1058,7 +1047,7 @@ template<class T, class E> zany INode::resolveVec(const zvariant& defl, const Pa
     }
 }
 
-zany INode::process(std::shared_ptr<IParam> in_param)
+zany INode::process(std::shared_ptr<CoreParam> in_param)
 {
     if (!in_param) {
         return nullptr;
