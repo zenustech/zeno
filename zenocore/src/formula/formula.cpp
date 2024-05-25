@@ -74,8 +74,10 @@ float Formula::callRef(const std::string& ref) {
         zeno::log_error("reference {} error", path);
         return NAN;
     }
-    std::string key = pNode->m_uuid + "/" + param;
-    if (zeno::getSession().referManager->isReferSelf(key))
+    std::string uuid_path = zeno::objPathToStr(pNode->get_uuid_path());
+    std::regex rgx("(\\.x|\\.y|\\.z|\\.w)$");
+    std::string paramName = std::regex_replace(param, rgx, "");
+    if (zeno::getSession().referManager->isReferSelf(uuid_path, paramName))
     {
         zeno::log_error("{} refer loop", path);
         return NAN;
@@ -89,14 +91,12 @@ float Formula::callRef(const std::string& ref) {
     else
     {
         //vec refer
-        std::regex rgx("(\\.x|\\.y|\\.z|\\.w)$");
-        if (!std::regex_search(param, rgx))
+        if (param == paramName)
         {
             zeno::log_error("reference param {} error", param);
             return NAN;
         }
-        std::string name = std::regex_replace(param, rgx, "");
-        if (auto spParam = pNode->get_input_param(name))
+        if (auto spParam = pNode->get_input_param(paramName))
         {
             if (pNode->requireInput(spParam))
             {
