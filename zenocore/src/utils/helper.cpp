@@ -217,11 +217,33 @@ namespace zeno {
     }
 
     ZENO_API std::string objPathToStr(ObjPath path) {
-        std::string ret;
+        std::string ret = path.front();
+        path.pop_front();
         for (auto item : path) {
             ret += "/" + item;
         }
         return ret;
+    }
+
+    ObjPath zeno::strToObjPath(const std::string& str)
+    {
+        ObjPath path;
+        std::string token;
+        for (char c : str) {
+            if (c == '/') {
+                if (token.size() > 0) {
+                    path.push_back(token);
+                    token = {};
+                }
+            }
+            else {
+                token.push_back(c);
+            }
+        }
+        if (token.size() > 0) {
+            path.push_back(token);
+        }
+        return path;
     }
 
     CustomUI descToCustomui(const Descriptor& desc) {
@@ -333,7 +355,7 @@ namespace zeno {
 
     std::string absolutePath(std::string currentPath, const std::string& path)
     {
-        if (zeno::starts_with(path, "main/"))
+        if (!zeno::starts_with(path, "./") && !zeno::starts_with(path, "../"))
             return path;
         if (starts_with(path, "./"))
             return currentPath + path.substr(1, path.size() - 1);

@@ -84,7 +84,7 @@ ZENO_API Session::Session()
     , mainGraph(std::make_shared<Graph>("main"))
     , assets(std::make_shared<AssetsMgr>())
     , objsMan(std::make_unique<ObjectManager>())
-    , referManager(std::make_shared<ReferManager>())
+    , referManager(std::make_unique<ReferManager>())
 {
     initNodeCates();
 }
@@ -128,7 +128,7 @@ ZENO_API void Session::resetMainGraph() {
     mainGraph.reset();
     mainGraph = std::make_shared<Graph>("main");
     referManager.reset();
-    referManager = std::make_shared<ReferManager>();
+    referManager = std::make_unique<ReferManager>();
 }
 
 ZENO_API void Session::setApiLevelEnable(bool bEnable)

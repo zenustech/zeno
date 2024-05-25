@@ -139,34 +139,6 @@ ZENO_API ObjPath INode::get_path() const {
     return path;
 }
 
-ZENO_API std::string zeno::INode::get_path_str() const
-{
-    ObjPath path = get_path();
-    std::stringstream ss;
-    auto p = path.begin(), end = path.end();
-    if (p != end)
-        ss << *p++;
-    for (; p != end; ++p) {
-        ss << '/' << *p;
-    }
-    return ss.str();
-    /*std::string path = m_name;
-    std::shared_ptr<Graph> pGraph = graph.lock();
-    if (!pGraph)
-        return path;
-    else
-        path = pGraph->getName() + "/" + path;
-
-    while (pGraph->optParentSubgNode.has_value())
-    {
-        auto pSubnetNode = pGraph->optParentSubgNode.value();
-        assert(pSubnetNode);
-        path = pSubnetNode->m_name+ "/" + path;
-        pGraph = pSubnetNode->graph.lock();
-    }
-    return path;*/
-}
-
 std::string INode::get_uuid() const
 {
     return m_uuid;
@@ -692,7 +664,7 @@ ZENO_API bool INode::update_param(const std::string& param, const zvariant& new_
         spGraph->onNodeParamUpdated(spParam.get(), old_value, new_value);
         CALLBACK_NOTIFY(update_param, param, old_value, new_value)
         mark_dirty(true);
-        checkReference(spParam);
+        getSession().referManager->checkReference(m_uuidPath, spParam->name);
         return true;
     }
     return false;
@@ -1065,7 +1037,7 @@ float INode::resolve(const std::string& formulaOrKFrame, const ParamType type)
     if (zeno::starts_with(formulaOrKFrame, "=")) {
         std::string code = formulaOrKFrame.substr(1);
         std::set<std::string>paths = zeno::getReferPath(code);
-        std::string currPath = get_path_str();
+        std::string currPath = zeno::objPathToStr(get_path());
         currPath = currPath.substr(0, currPath.find_last_of("/"));
         for (auto& path : paths)
         {
@@ -1096,33 +1068,6 @@ float INode::resolve(const std::string& formulaOrKFrame, const ParamType type)
             float fVal = std::stoi(formulaOrKFrame);
             return fVal;
         }
-    }
-}
-
-void INode::checkReference(std::shared_ptr<CoreParam> spParam)
-{
-    const auto& referMgr = getSession().referManager;
-    std::string key = spParam->m_wpNode.lock()->m_uuid + "/" + spParam->name;
-    bool bRef = referMgr->isRefered(key);//是否引用了其他参数
-    bool bBeRef = referMgr->isBeRefered(key);//是否被其他参数引用
-    std::set<std::string> paths = zeno::getReferPaths(spParam->defl);
-    bool bExits = !paths.empty();
-
-    if (bRef)
-    {
-        if (bExits)
-            referMgr->updateBeReferedParam(key);
-        else
-            referMgr->removeReferParam(key);//位包含引用参数时需要删除信息
-    }
-    if (!bRef && bExits)
-    {
-        referMgr->addReferInfo(spParam);
-    }
-    if (bBeRef)
-    {
-        //被引用的参数数据更新时，引用该参数的节点需要标脏
-        referMgr->updateDirty(key);
     }
 }
 

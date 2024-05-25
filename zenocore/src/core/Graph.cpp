@@ -454,7 +454,7 @@ ZENO_API std::string Graph::updateNodeName(const std::string oldName, const std:
     }
 
     auto spNode = m_nodes[uuid];
-    std::string oldPath = spNode->get_path_str();
+    std::string oldPath = zeno::objPathToStr(spNode->get_path());
     std::string name = newName;
     if (m_name2uuid.find(name) != m_name2uuid.end()) {
         name = generateNewName(spNode->get_nodecls());
@@ -475,8 +475,9 @@ ZENO_API std::string Graph::updateNodeName(const std::string oldName, const std:
     CALLBACK_NOTIFY(updateNodeName, oldName, name)
     //update refer
     const auto& referMgr = getSession().referManager;
-    std::string newPath = spNode->get_path_str();
-    referMgr->updateReferParam(oldPath, newPath);
+    std::string newPath = zeno::objPathToStr(spNode->get_path());
+    std::string uuid_path = zeno::objPathToStr(spNode->get_uuid_path());
+    referMgr->updateReferParam(oldPath, newPath, uuid_path);
     return name;
 }
 
@@ -606,7 +607,7 @@ ZENO_API std::shared_ptr<INode> Graph::getNode(ObjPath path) {
         //subnet
         if (std::shared_ptr<SubnetNode> subnetNode = std::dynamic_pointer_cast<SubnetNode>(it->second))
         {
-            auto spGraph = subnetNode->getGraph().lock();
+            auto spGraph = subnetNode->subgraph;
             if (spGraph)
                 return spGraph->getNode(path);
             else
@@ -733,9 +734,9 @@ ZENO_API bool Graph::removeNode(std::string const& name) {
     m_name2uuid.erase(name);
     //remove refer info
     const auto& referMgr = getSession().referManager;
-    referMgr->removeReferParam(uuid);//删除的是引用节点
-    std::string path = spNode->get_path_str();
-    referMgr->removeBeReferedParam(uuid, path);//删除的是被引用的节点
+    std::string path = zeno::objPathToStr(spNode->get_path());
+    auto objPath = zeno::objPathToStr(spNode->get_uuid_path());
+    referMgr->removeReference(path, objPath);
     CALLBACK_NOTIFY(removeNode, name)
     return true;
 }

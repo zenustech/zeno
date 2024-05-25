@@ -10,7 +10,7 @@
 
 namespace zeno {
     struct INode;
-    struct CoreParam;
+    struct IParam;
     struct Graph;
 
     struct ReferManager
@@ -19,28 +19,23 @@ namespace zeno {
         ReferManager();
         ~ReferManager();
         ZENO_API void init(const std::shared_ptr<Graph>& pGraph);
-        void addReferInfo(std::shared_ptr <CoreParam> spParam);
-        //当删除了引用了其他参数的节点后，需删除对应信息
-        void removeReferParam(const std::string& uuid_param);
-        //当删除了被引用的节点后，需删除对应信息
-        void removeBeReferedParam(const std::string& uuid_param, const std::string& path);
+        void checkReference(const ObjPath& uuid_path, const std::string& param);
+        void removeReference(const std::string& path, const std::string& uuid_path, const std::string& param = "");
         //当被引用的节点名称修改后，需要更新数据
-        void updateReferParam(const std::string& oldPath, const std::string& newPath);
-        //当引用的参数修改后，需要更新m_referedUuidParams
-        void updateBeReferedParam(const std::string& uuid_param);
-        //被引用的参数更新时需要对引用的节点标脏
-        void updateDirty(const std::string& uuid_param);
-
-        bool isRefered(const std::string& key) const;//是否引用其它参数
-        bool isBeRefered(const std::string& key) const;//参数是否被引用
-        bool isReferSelf(const std::string& key) const;//是否循环引用
-
+        void updateReferParam(const std::string& oldPath, const std::string& newPath, const std::string& uuid_path, const std::string& param = "");
+        bool isReferSelf(const std::string& uuid_path, const std::string& param) const;//是否循环引用
     private:
-        std::set<std::string> referPaths(const std::string& currPath, const zvariant& val) const;
-        bool updateParamValue(const std::string& oldVal, const std::string& newVal, const std::string& currentPath, zvariant& arg);
+        void addReferInfo(const std::set<std::pair<std::string, std::string>>& referedParams, const std::string& referPath);
+        //当引用的参数修改后，需要更新数据
+        void updateReferedInfo(const std::string& uuid_path, const std::string& param, const std::set<std::pair<std::string, std::string>>& referedParams);
+        //被引用的参数更新时需要对引用的节点标脏
+        void updateDirty(const std::string& uuid_path, const std::string& param);
+        std::set<std::pair<std::string, std::string>> getAllReferedParams(const std::string& uuid_param) const;
 
-        std::map <std::string, std::shared_ptr<CoreParam>> m_referParams;//<引用参数uuid/param, 参数ptr>
-        std::map <std::string, std::set<std::string>> m_referedUuidParams;//<被引用参数uuid/param, 引用参数uuid/param 集合>
+        std::set<std::pair<std::string, std::string>> referPaths(const std::string& currPath, const zvariant& val) const;
+        bool updateParamValue(const std::string& oldVal, const std::string& newVal, const std::string& currentPath, zvariant& arg);
+    private:
+        std::map <std::string, std::map<std::string, std::set<std::string> > > m_referInfos; //<被引用参数uuidpath, <被引用参数, 引用参数params>>
         bool m_bModify;
 
     };

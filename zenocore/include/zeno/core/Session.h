@@ -45,7 +45,7 @@ struct Session {
     std::unique_ptr<ObjectManager> const objsMan;
     std::shared_ptr<Graph> mainGraph;
     std::shared_ptr<AssetsMgr> assets;
-    std::shared_ptr<ReferManager> referManager;
+    std::unique_ptr<ReferManager> referManager;
 
     ZENO_API Session();
     ZENO_API ~Session();

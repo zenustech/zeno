@@ -24,223 +24,314 @@ namespace zeno {
             {
                 init(subnetNode->subgraph);
             }
+            auto objPath = spNode->get_uuid_path();
+            auto uuid_path = zeno::objPathToStr(objPath);
+            auto namePath = spNode->get_path();
+            namePath.pop_back();
+            auto currPath = zeno::objPathToStr(namePath);
             for (auto& [key, spParam] : spNode->m_inputs)
             {
-                spNode->checkReference(spParam);
+                auto paths = referPaths(currPath, spParam->defl);
+                if (!paths.empty())
+                {
+                    auto uuid_param = uuid_path + "/" + spParam->name;
+                    addReferInfo(paths, uuid_param);
+                }
             }
         }
     }
 
-    void ReferManager::addReferInfo(std::shared_ptr <CoreParam> spParam)
+    void zeno::ReferManager::checkReference(const ObjPath& objPath, const std::string& param)
     {
-        auto spNode = spParam->m_wpNode.lock();
+        auto spNode = getSession().mainGraph->getNode(objPath);
         if (!spNode)
             return;
-        std::string key = spNode->m_uuid + "/" + spParam->name;
-        if (m_referParams.find(key) != m_referParams.end())
+        auto spParam = spNode->get_input_param(param);
+        if (!spParam)
             return;
-        m_referParams[key] = spParam;
-        std::string currPath = spNode->get_path_str();
-        currPath = currPath.substr(0, currPath.find_last_of("/"));
-        std::set<std::string> paths = referPaths(currPath, spParam->defl);
-        for (const std::string& path : paths)
+        auto namePath = spNode->get_path();
+        namePath.pop_back();
+        auto currPath = zeno::objPathToStr(namePath);
+        auto uuid_path = zeno::objPathToStr(objPath);
+        auto paths = referPaths(currPath, spParam->defl);
+        updateReferedInfo(uuid_path, param, paths);
+        //被引用的参数数据更新时，引用该参数的节点需要标脏
+        updateDirty(uuid_path, param);
+    }
+
+    void zeno::ReferManager::removeReference(const std::string& path, const std::string& uuid_path, const std::string& param)
+    {
+        //若删除的节点/参数被引用了
+        std::set<std::string> updateParams;
+        bool bRemoveNode = param.empty();
+        for (auto iter = m_referInfos.begin(); iter != m_referInfos.end();)
         {
-            m_referedUuidParams[path].emplace(key);
+            if ((bRemoveNode && !starts_with(iter->first, uuid_path)) || (!bRemoveNode && iter->first != uuid_path))
+            {
+                iter++;
+                continue;
+            }
+            if (bRemoveNode)
+            {
+                for (auto &[param_key, paths] : iter->second)
+                {
+                    updateParams.insert(paths.begin(), paths.end());
+                }
+                iter = m_referInfos.erase(iter);
+                continue;
+            }
+            else
+            {
+                auto param_it = iter->second.find(param);
+                if (param_it != iter->second.end())
+                {
+                    updateParams.insert(param_it->second.begin(), param_it->second.end());
+                    m_referInfos[iter->first].erase(param_it);
+                    if (m_referInfos[iter->first].empty())
+                    {
+                        iter = m_referInfos.erase(iter);
+                        continue;
+                    }
+                }
+            }
+            iter++;
+        }
+        for (auto &uuid_param : updateParams)
+        {
+            int idx = uuid_param.find_last_of("/");
+            auto path_str = uuid_param.substr(0, idx);
+            auto param = uuid_param.substr(idx + 1, uuid_param.size() - idx);
+            auto objPath = zeno::strToObjPath(path_str);
+            auto spNode = getSession().mainGraph->getNode(objPath);
+            if (!spNode)
+                continue;
+            auto spParam = spNode->get_input_param(param);
+            if (!spParam)
+                continue;
+            std::string currPath = zeno::objPathToStr(spNode->get_path());
+            currPath = currPath.substr(0, currPath.find_last_of("/"));
+            auto val = spParam->defl;
+            if (updateParamValue(path, "0", currPath, val))
+            {
+                spNode->update_param(param, val);
+                zeno::log_warn("the value of {} has been reseted", uuid_param);
+            }
+        }
+        //若删除的节点/参数引用了其他参数
+        for (auto& iter = m_referInfos.begin(); iter != m_referInfos.end();)
+        {
+            for (auto param_it = iter->second.begin(); param_it != iter->second.end();)
+            {
+                for (auto it = param_it->second.begin(); it != param_it->second.end();)
+                {
+                    std::string left_str = *it;
+                    std::string right_str;
+                    if (bRemoveNode)
+                    {
+                        left_str = left_str.substr(0, left_str.find_last_of("/"));
+                        right_str = uuid_path;
+                    }
+                    else 
+                    {
+                        right_str = uuid_path + "/" + param;
+                    }
+                    if (starts_with(left_str, right_str))
+                    {
+                        it = m_referInfos[iter->first][param_it->first].erase(it);
+                    }
+                    else
+                    {
+                        it++;
+                    }
+                }
+                if (m_referInfos[iter->first][param_it->first].empty())
+                {
+                    param_it = m_referInfos[iter->first].erase(param_it);
+                }
+                else
+                {
+                    param_it++;
+                }
+            }
+            if (m_referInfos[iter->first].empty())
+            {
+                iter = m_referInfos.erase(iter);
+            }
+            else
+            {
+                iter++;
+            }
         }
     }
 
-    void ReferManager::removeReferParam(const std::string& uuid_param)
+    void ReferManager::addReferInfo(const std::set<std::pair<std::string, std::string>>& referedParams, const std::string& referPath)
     {
-            if (m_referParams.empty())
-                return;
-            std::set<std::string> removeItems;
-            for (auto& [key, spParam] : m_referParams)
-            {
-                if (key.find(uuid_param) != std::string::npos)
-                {
-                    removeItems.insert(key);
-                    updateBeReferedParam(key);
-                }
-            }
-            //remove refer info
-            for (const auto& item : removeItems)
-            {
-                m_referParams.erase(item);
-            }
+        for (const auto&param : referedParams)
+        {
+            if (m_referInfos.find(param.first) == m_referInfos.end())
+                m_referInfos[param.first] = std::map<std::string, std::set<std::string> >();
+            if (m_referInfos[param.first].find(param.second) == m_referInfos[param.first].end())
+                m_referInfos[param.first][param.second] = std::set<std::string>();
+            m_referInfos[param.first][param.second].emplace(referPath);
+        }
     }
 
-    void ReferManager::removeBeReferedParam(const std::string& uuid_param, const std::string& path)
+    std::set<std::pair<std::string, std::string>> zeno::ReferManager::getAllReferedParams(const std::string& uuid_param) const
     {
-        if (m_bModify)
-            return;
-        m_bModify = true;
-        if (m_referedUuidParams.empty())
-            return;
-        std::set<std::string> removeItems;
-        for (auto& [key, val] : m_referedUuidParams)
+        std::set<std::pair<std::string, std::string>> referedParams;
+        for (auto& [key, val] : m_referInfos)
         {
-            if (key.find(uuid_param) != std::string::npos)
+            for (auto& [param_key, paths] : val)
+            {
+                for (auto& path : paths)
+                {
+                    if (uuid_param == path)
+                        referedParams.emplace(std::make_pair(key, param_key));
+                }
+            }
+        }
+        return referedParams;
+    }
+
+    void ReferManager::updateReferParam(const std::string& oldPath, const std::string& newPath, const std::string& uuid_path, const std::string& param)
+    {
+        bool bUpdateNode = param.empty();
+        std::set<std::string> referParams;
+        for (auto it = m_referInfos.begin(); it != m_referInfos.end(); it++)
+        {
+            if ((bUpdateNode && !starts_with(it->first, uuid_path)) || (!bUpdateNode && it->first != uuid_path))
+                continue;
+            if (bUpdateNode)
+            {
+                for (auto &[param_key, paths] : it->second)
+                {
+                    referParams.insert(paths.begin(), paths.end());
+                }
+            }
+            else 
+            {
+                const auto& param_it = it->second.find(param);
+                if (param_it != it->second.end())
+                {
+                    referParams.insert(param_it->second.begin(), param_it->second.end());
+                }
+            }
+        }
+        for (const auto& uuid_param : referParams)
+        {
+            auto idx = uuid_param.find_last_of("/");
+            auto uuid_path = uuid_param.substr(0, idx);
+            auto param = uuid_param.substr(idx + 1, uuid_param.size() - idx);
+            auto objPath = zeno::strToObjPath(uuid_path);
+            auto spNode = getSession().mainGraph->getNode(objPath);
+            if (!spNode)
+            {
+                continue;
+            }
+            auto spParam = spNode->get_input_param(param);
+            if (!spParam)
+            {
+                continue;
+            }
+            auto val = spParam->defl;
+            std::string currentPath = zeno::objPathToStr(spNode->get_path());
+            currentPath = currentPath.substr(0, currentPath.find_last_of("/"));
+            bool bUpate = updateParamValue(oldPath, newPath, currentPath, val);
+            if (bUpate)
             {
                 //update param value
-                for (auto& info_key : val)
-                {
-                    if (m_referParams.find(info_key) != m_referParams.end())
-                    {
-                        auto spParam = m_referParams[info_key];
-                        //update param value
-                        auto spNode = spParam->m_wpNode.lock();
-                        std::string currPath = spNode->get_path_str();
-                        currPath = currPath.substr(0, currPath.find_last_of("/"));
-                        auto val = spParam->defl;
-                        if (updateParamValue(path, "0", currPath, val))
-                        {
-                            removeItems.insert(key);
-                            if (zeno::getReferPaths(val).empty())
-                                m_referParams.erase(info_key);
-                            spNode->update_param(spParam->name, val);
-                        }
-                    }
-                }
-            }
-        }
-        for (const auto& item : removeItems)
-        {
-            m_referedUuidParams.erase(item);
-        }
-        m_bModify = false;
-    }
-
-    void ReferManager::updateReferParam(const std::string& oldPath, const std::string& newPath)
-    {
-        for (auto& [key, spParam] : m_referParams)
-        {
-            if (auto spNode = spParam->m_wpNode.lock())
-            {
-                auto val = spParam->defl;
-                std::string currentPath = spNode->get_path_str();
-                currentPath = currentPath.substr(0, currentPath.find_last_of("/"));
-                bool bUpate = updateParamValue(oldPath, newPath, currentPath, val);
-                if (bUpate)
-                {
-                    //update param value
-                    auto pNode = spParam->m_wpNode.lock();
-                    if (pNode)
-                        pNode->update_param(spParam->name, val);
-                }
+                auto pNode = spParam->m_wpNode.lock();
+                if (pNode)
+                    pNode->update_param(spParam->name, val);
             }
         }
     }
 
-    void zeno::ReferManager::updateBeReferedParam(const std::string& key)
+    void zeno::ReferManager::updateReferedInfo(const std::string& uuid_path, const std::string& param, const std::set<std::pair<std::string, std::string>>& referedParams)
     {
         if (m_bModify)
             return;
         m_bModify = true;
-        if (m_referParams.find(key) != m_referParams.end())
+        //get all refered params
+        auto uuid_param = uuid_path + "/" + param;
+        std::set<std::pair<std::string, std::string>> referedParams_old = getAllReferedParams(uuid_param);
+        //remove info
+        for (auto& it : referedParams_old)
         {
-            if (const auto& spParam = m_referParams[key])
+            if (referedParams.find(it) == referedParams.end())
             {
-                if (const auto& spNode = spParam->m_wpNode.lock())
-                {
-                    auto currPath = spNode->get_path_str();
-                    currPath = currPath.substr(0, currPath.find_last_of("/"));
-                    auto paths = referPaths(currPath, spParam->defl);
-                    std::set<std::string> removeItems;
-                    for (auto& [referKey, vals] : m_referedUuidParams)
-                    {
-                        for (auto& path : vals)
-                        {
-                            if (path == key && paths.find(referKey) == paths.end())
-                                removeItems.emplace(referKey);
-                        }
-                    }
-                    for (auto& path : paths)
-                    {
-                        if (m_referedUuidParams.find(path) == m_referedUuidParams.end())
-                        {
-                            m_referedUuidParams[path] = std::set<std::string>();
-                        }
-                        if (m_referedUuidParams[path].find(key) == m_referedUuidParams[path].end())
-                            m_referedUuidParams[path].emplace(key);
-                    }
-                    for (auto& item : removeItems)
-                    {
-                        m_referedUuidParams[item].erase(key);
-                        if (m_referedUuidParams[item].empty())
-                            m_referedUuidParams.erase(item);
-                    }
-                }
+                m_referInfos[it.first][it.second].erase(uuid_param);
+                if (m_referInfos[it.first][it.second].empty())
+                    m_referInfos[it.first].erase(it.second);
+                if (m_referInfos[it.first].empty())
+                    m_referInfos.erase(it.first);
             }
-            
         }
+        //add info
+        std::set<std::pair<std::string, std::string>> referedParams_add;
+        for (auto &it : referedParams)
+        {
+            if (referedParams_old.find(it) == referedParams_old.end())
+            {
+                referedParams_add.emplace(it);
+            }
+        }
+        if (!referedParams_add.empty())
+            addReferInfo(referedParams_add, uuid_param);
         m_bModify = false;
     }
 
-    bool ReferManager::isReferSelf(const std::string& key) const
+    bool ReferManager::isReferSelf(const std::string& uuid_path, const std::string& param) const
     {
-        auto it = m_referParams.find(key);
-        while (it != m_referParams.end())
-        {
-            if (const auto& spParam = it->second)
+        auto uuid_param = uuid_path + "/" + param;
+        auto referSelf = [uuid_param, this](const auto& referSelf, const std::string& key)->bool {
+            auto referedParams = getAllReferedParams(key);
+            for (auto& it : referedParams)
             {
-                if (const auto& spNode = spParam->m_wpNode.lock())
-                {
-                    std::string currPath = spNode->get_path_str();
-                    currPath = currPath.substr(0, currPath.find_last_of("/"));
-                    auto paths = referPaths(currPath, spParam->defl);
-                    for (const auto& path : paths)
-                    {
-                        if (path == key)
-                        {
-                            return true;
-                        }
-                        else
-                        {
-                            it = m_referParams.find(path);
-                        }
-                    }
-                }
+                auto path = it.first + "/" + it.second;
+                if (path == uuid_param || referSelf(referSelf, path))
+                    return true;
             }
-        }
-        return false;
+            return false;
+        };
+        return referSelf(referSelf, uuid_param);
     }
 
 
-    bool ReferManager::isRefered(const std::string& key) const
+    void ReferManager::updateDirty(const std::string& uuid_path, const std::string& param)
     {
-        return m_referParams.find(key) != m_referParams.end();
-    }
-
-    bool zeno::ReferManager::isBeRefered(const std::string& key) const
-    {
-        return m_referedUuidParams.find(key) != m_referedUuidParams.end();
-    }
-
-    void ReferManager::updateDirty(const std::string& key)
-    {
-        auto it = m_referedUuidParams.find(key);
-        if (it != m_referedUuidParams.end())
+        auto iter = m_referInfos.find(uuid_path);
+        if (iter != m_referInfos.end())
         {
-            for (auto& path : it->second)
+            auto param_it = iter->second.find(param);
+            if (param_it != iter->second.end())
             {
-                auto iter_info = m_referParams.find(path);
-                if (iter_info != m_referParams.end())
+                if (isReferSelf(uuid_path, param))
                 {
-                    const auto& spParam = iter_info->second;
-                    if (auto spNode = spParam->m_wpNode.lock())
-                    {
+                    zeno::log_error("{} refer loop", param);
+                    return;
+                }
+                for (auto& path : param_it->second)
+                {
+                    int idx = path.find_last_of("/");
+                    auto nodePath = path.substr(0, idx);
+                    auto param = path.substr(idx + 1, path.size() - idx);
+                    auto objPath = zeno::strToObjPath(nodePath);
+                    auto spNode = getSession().mainGraph->getNode(objPath);
+                    if (!spNode)
+                        continue;
+                    if (!spNode->is_dirty())
                         spNode->mark_dirty(true);
-                        //该节点被其他参数引用的情况下，也要标脏
-                        updateDirty(path);
-                    }
+                    //该节点被其他参数引用的情况下，也要标脏
+                    updateDirty(nodePath, param);
                 }
             }
         }
     }
 
-    std::set<std::string> ReferManager::referPaths(const std::string& currPath, const zvariant& val) const
+    std::set <std::pair<std::string, std::string>> ReferManager::referPaths(const std::string& currPath, const zvariant& val) const
     {
-        std::set<std::string> res;
+        std::set <std::pair<std::string, std::string>> res;
         std::set<std::string> paths = zeno::getReferPaths(val);
         for (auto& val : paths)
         {
@@ -250,8 +341,8 @@ namespace zeno {
             std::string param = absolutePath.substr(idx + 1, val.size() - idx);
             if (auto spNode = getSession().mainGraph->getNodeByPath(path))
             {
-                path = spNode->m_uuid + "/" + param;
-                res.emplace(path);
+                path = zeno::objPathToStr(spNode->get_uuid_path());
+                res.emplace(std::make_pair(path, param));
             }
         }
         return res;
@@ -274,6 +365,7 @@ namespace zeno {
                         if (std::regex_match(newVal, num_rgx))
                         {
                             arg = newVal;
+                            bUpdate = true;
                             break;
                         }
                         else
