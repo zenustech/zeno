@@ -174,8 +174,8 @@ namespace zeno {
 
     EdgeInfo getEdgeInfo(std::shared_ptr<CoreLink> spLink) {
         EdgeInfo edge;
-        auto spOutParam = spLink->fromparam.lock();
-        auto spInParam = spLink->toparam.lock();
+        auto spOutParam = spLink->fromparam;
+        auto spInParam = spLink->toparam;
         if (!spOutParam || !spInParam)
             return edge;
 
@@ -189,6 +189,26 @@ namespace zeno {
         const std::string& inNode = spInNode->get_name();
         const std::string& inParam = spInParam->name;
         edge = { outNode, outParam, spLink->fromkey, inNode, inParam, spLink->tokey };
+        return edge;
+    }
+
+    EdgeInfo getEdgeInfo(std::shared_ptr<ParamLink> spLink) {
+        EdgeInfo edge;
+        auto spOutParam = spLink->fromparam;
+        auto spInParam = spLink->toparam;
+        if (!spOutParam || !spInParam)
+            return edge;
+
+        auto spOutNode = spOutParam->m_wpNode.lock();
+        auto spInNode = spInParam->m_wpNode.lock();
+        if (!spOutNode || !spInNode)
+            return edge;
+
+        const std::string& outNode = spOutNode->get_name();
+        const std::string& outParam = spOutParam->name;
+        const std::string& inNode = spInNode->get_name();
+        const std::string& inParam = spInParam->name;
+        edge = { outNode, outParam, "", inNode, inParam, ""};
         return edge;
     }
 

@@ -101,7 +101,7 @@ ZENO_API void Graph::runGraph() {
     applyNodes(m_viewnodes);
 }
 
-void Graph::onNodeParamUpdated(std::shared_ptr<CoreParam> spParam, zvariant old_value, zvariant new_value) {
+void Graph::onNodeParamUpdated(PrimitiveParam* spParam, zvariant old_value, zvariant new_value) {
     assert(spParam);
     if (Param_String == spParam->type) {
         auto spNode = spParam->m_wpNode.lock();
@@ -219,12 +219,16 @@ ZENO_API std::map<std::string, zany> Graph::callSubnetNode(std::string const &id
 ZENO_API std::map<std::string, zany> Graph::callTempNode(std::string const &id,
         std::map<std::string, zany> inputs) {
 
+    //DEPRECARED.
+    return {};
+#if 0
     auto cl = safe_at(getSession().nodeClasses, id, "node class name").get();
     const std::string& name = generateUUID();
     auto se = cl->new_instance(shared_from_this(), name);
     se->directly_setinputs(inputs);
     se->doOnlyApply();
     return se->getoutputs();
+#endif
 }
 
 ZENO_API void Graph::addNodeOutput(std::string const& id, std::string const& par) {

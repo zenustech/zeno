@@ -70,7 +70,7 @@ namespace {
 
 struct CreateCube : zeno::INode {
     virtual void apply() override {
-        auto prim = std::dynamic_pointer_cast<zeno::PrimitiveObject>(get_output("prim"));
+        auto prim = std::dynamic_pointer_cast<zeno::PrimitiveObject>(get_output_obj("prim"));
         if (prim) {
             prim->verts.clear();
             prim->verts.clear_attrs();

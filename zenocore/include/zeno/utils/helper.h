@@ -21,6 +21,7 @@ namespace zeno {
     bool isEqual(const zvariant& lhs, const zvariant& rhs, ParamType const type);
     zany strToZAny(std::string const& defl, ParamType const& type);
     EdgeInfo getEdgeInfo(std::shared_ptr<CoreLink> spLink);
+    EdgeInfo getEdgeInfo(std::shared_ptr<ParamLink> spLink);
     std::string generateObjKey(std::shared_ptr<IObject> spObject);
     ZENO_API std::string objPathToStr(ObjPath path);
     bool getParamInfo(const CustomUI& customui, std::vector<ParamInfo>& inputs, std::vector<ParamInfo>& outputs);

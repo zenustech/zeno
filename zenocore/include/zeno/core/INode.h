@@ -40,15 +40,10 @@ public:
     ZENO_API INode();
     ZENO_API virtual ~INode();
 
-    //INode(INode const &) = delete;
-    //INode &operator=(INode const &) = delete;
-    //INode(INode &&) = delete;
-    //INode &operator=(INode &&) = delete;
-
     ZENO_API void doComplete();
     ZENO_API void doApply();
     ZENO_API void doOnlyApply();
-    ZENO_API zany resolveInput(std::string const& id);
+    ZENO_API zvariant resolveInput(std::string const& id);
 
     //BEGIN new api
     ZENO_API void init(const NodeData& dat);
@@ -75,11 +70,16 @@ public:
     //ZENO_API virtual std::vector<std::shared_ptr<CoreParam>> get_input_params() const;
     ZENO_API ObjectParams get_input_object_params() const;
     ZENO_API ObjectParams get_output_object_params() const;
-    ZENO_API CustomUI get_input_primitive_params() const;
+    ZENO_API PrimitveParams get_input_primitive_params() const;
     ZENO_API PrimitveParams get_output_primitivie_params() const;
     //ZENO_API virtual std::vector<std::shared_ptr<CoreParam>> get_output_params() const;
+    ZENO_API ParamInfo get_input_prim_param(std::string const& name) const;
+    ZENO_API ParamObject get_input_obj_param(std::string const& name) const;
+    ZENO_API ParamInfo get_output_prim_param(std::string const& name) const;
+    ZENO_API ParamObject get_output_obj_param(std::string const& name) const;
     //ZENO_API std::shared_ptr<CoreParam> get_input_param(std::string const& name) const;
     //ZENO_API std::shared_ptr<CoreParam> get_output_param(std::string const& name) const;
+
     ZENO_API std::string get_viewobject_output_param() const;
     ZENO_API virtual NodeData exportInfo() const;
     ZENO_API void set_result(bool bInput, const std::string& name, zany spObj);
@@ -102,13 +102,14 @@ public:
     void mark_previous_ref_dirty();
 
     //END new api
+    bool add_input_prim_param(ParamInfo param);
+    bool add_input_obj_param(ParamObject param);
+    bool add_output_prim_param(ParamInfo param);
+    bool add_output_obj_param(ParamObject param);
 
-    void add_input_param(std::shared_ptr<CoreParam> param);
-    void add_output_param(std::shared_ptr<CoreParam> param);
-    void directly_setinputs(std::map<std::string, zany> inputs);
-    std::map<std::string, zany> getoutputs();
+    //void add_input_param(std::shared_ptr<CoreParam> param);
+    //void add_output_param(std::shared_ptr<CoreParam> param);
     void mark_dirty_objs();
-
     void checkReference(std::shared_ptr<CoreParam> spParam);
 
 protected:
@@ -117,9 +118,6 @@ protected:
     ZENO_API virtual void preApply();
     ZENO_API virtual void apply() = 0;
     ZENO_API virtual void registerObjToManager();
-    ZENO_API std::vector<std::pair<std::string, zany>> getinputs();
-    ZENO_API std::vector<std::pair<std::string, zany>> getoutputs2();
-    ZENO_API std::pair<std::string, std::string> getinputbound(std::string const& name, std::string const& msg = "") const;
     ZENO_API virtual void initParams(const NodeData& dat);
 
 private:
@@ -130,7 +128,7 @@ private:
     void reportStatus(bool bDirty, NodeRunStatus status);
 
     float resolve(const std::string& formulaOrKFrame, const ParamType type);
-    template<class T, class E> zany resolveVec(const zvariant& defl, const ParamType type);
+    template<class T, class E> T resolveVec(const zvariant& defl, const ParamType type);
 
 public:
     //为名为ds的输入参数，求得这个参数在依赖边的求值下的值，或者没有依赖边下的默认值。
@@ -141,11 +139,10 @@ public:
     ZENO_API GlobalState *getGlobalState() const;
 
     ZENO_API bool has_input(std::string const &id) const;
-    ZENO_API bool set_input(std::string const& name, zany obj);
     ZENO_API zany get_input(std::string const &id) const;
-    ZENO_API bool has_output(std::string const& name) const;
     ZENO_API bool set_output(std::string const &id, zany obj);
-    ZENO_API zany get_output(std::string const& sock_name);
+    ZENO_API bool set_primitive_output(std::string const& id, const zvariant& val);
+    ZENO_API zany get_output_obj(std::string const& sock_name);
 
     ZENO_API bool has_keyframe(std::string const &id) const;
     ZENO_API zany get_keyframe(std::string const &id) const;

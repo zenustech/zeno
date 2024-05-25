@@ -63,6 +63,7 @@ namespace zeno {
     struct ParamObject {
         std::string name;
         ParamType type = Param_Null;
+        SocketType socketType = Socket_Clone;
         std::vector<EdgeInfo> links;
         SocketProperty prop = Socket_Normal;
         bool bInput = true;
@@ -169,7 +170,8 @@ namespace zeno {
         std::string cls;
 
         ObjectParams inputObjs;
-        CustomUI customUi;   //custom ui for input params
+        CustomUI customUi;   //custom ui for input params,just a template or mapping of input params data.
+        PrimitveParams inputPrims;
         PrimitveParams outputPrims;
         ObjectParams outputObjs;
 

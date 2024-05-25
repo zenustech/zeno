@@ -194,7 +194,7 @@ struct LightNode : INode {
         auto shapeEnum = magic_enum::enum_cast<LightShape>(shapeString).value_or(LightShape::Plane);
         auto shapeOrder = magic_enum::enum_integer(shapeEnum);
 
-        auto prim = std::dynamic_pointer_cast<zeno::PrimitiveObject>(get_output("prim"));
+        auto prim = std::dynamic_pointer_cast<zeno::PrimitiveObject>(get_output_obj("prim"));
 
         if (has_input("prim")) {
             auto mesh = get_input<PrimitiveObject>("prim");
