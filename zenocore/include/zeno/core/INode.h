@@ -105,11 +105,13 @@ public:
     bool add_input_obj_param(ParamObject param);
     bool add_output_prim_param(ParamInfo param);
     bool add_output_obj_param(ParamObject param);
+    void init_object_link(bool bInput, const std::string& paramname, std::shared_ptr<ObjectLink> spLink);
+    void init_primitive_link(bool bInput, const std::string& paramname, std::shared_ptr<PrimitiveLink> spLink);
+    bool isPrimitiveType(bool bInput, const std::string& param_name, bool& bExist);
 
     //void add_input_param(std::shared_ptr<CoreParam> param);
     //void add_output_param(std::shared_ptr<CoreParam> param);
     void mark_dirty_objs();
-    void checkReference(std::shared_ptr<CoreParam> spParam);
 
 protected:
     ZENO_API virtual void complete();
@@ -120,10 +122,10 @@ protected:
     ZENO_API virtual void initParams(const NodeData& dat);
 
 private:
-    zvariant process(PrimitiveParam* in_param);
+    zvariant processPrimitive(PrimitiveParam* in_param);
     std::shared_ptr<DictObject> processDict(ObjectParam* in_param);
     std::shared_ptr<ListObject> processList(ObjectParam* in_param);
-    zany get_output_result(std::shared_ptr<INode> outNode, std::string out_param, bool bCopy);
+    bool receiveOutputObj(ObjectParam* in_param, zany outputObj);
     void reportStatus(bool bDirty, NodeRunStatus status);
 
     float resolve(const std::string& formulaOrKFrame, const ParamType type);

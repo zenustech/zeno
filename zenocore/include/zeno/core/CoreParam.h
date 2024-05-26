@@ -17,16 +17,15 @@
 
 namespace zeno {
 
-struct CoreLink {
+struct ObjectLink {
     ObjectParam* fromparam = nullptr;  //IParam stored as unique ptr in the INode, so we need no smart pointer.
     ObjectParam* toparam = nullptr;
     std::string fromkey;    //for dict/list 对于list来说，keyName好像不合适，不过ILink本来就存在于links里面，已经是列表储存了。
     std::string tokey;
-    //LinkFunction lnkProp = Link_Copy;
 };
 
 
-struct ParamLink {
+struct PrimitiveLink {
     PrimitiveParam* fromparam = nullptr;
     PrimitiveParam* toparam = nullptr;
 };
@@ -42,7 +41,7 @@ struct CoreParam {
 };
 
 struct ObjectParam : CoreParam {
-    std::list<std::shared_ptr<CoreLink>> links;
+    std::list<std::shared_ptr<ObjectLink>> links;
     zany spObject;
 
     ParamObject export() {
@@ -61,7 +60,7 @@ struct ObjectParam : CoreParam {
 struct PrimitiveParam : CoreParam {
     zvariant defl;
     zvariant result;
-    std::list<std::shared_ptr<ParamLink>> links;
+    std::list<std::shared_ptr<PrimitiveLink>> links;
     ParamControl control = NullControl;
     std::optional<ControlProperty> optCtrlprops;
 

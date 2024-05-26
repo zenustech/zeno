@@ -172,7 +172,7 @@ namespace zeno {
         return zvariant();
     }
 
-    EdgeInfo getEdgeInfo(std::shared_ptr<CoreLink> spLink) {
+    EdgeInfo getEdgeInfo(std::shared_ptr<ObjectLink> spLink) {
         EdgeInfo edge;
         auto spOutParam = spLink->fromparam;
         auto spInParam = spLink->toparam;
@@ -192,7 +192,7 @@ namespace zeno {
         return edge;
     }
 
-    EdgeInfo getEdgeInfo(std::shared_ptr<ParamLink> spLink) {
+    EdgeInfo getEdgeInfo(std::shared_ptr<PrimitiveLink> spLink) {
         EdgeInfo edge;
         auto spOutParam = spLink->fromparam;
         auto spInParam = spLink->toparam;

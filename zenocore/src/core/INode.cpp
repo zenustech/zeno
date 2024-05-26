@@ -312,15 +312,186 @@ ZENO_API void INode::registerObjToManager()
     }
 }
 
-zany INode::get_output_result(std::shared_ptr<INode> outNode, std::string out_param, bool bCopy) {
-    zany outResult = outNode->get_output_obj(out_param);
-    if (bCopy && outResult) {
-        outResult = outResult->clone();
-        //if (outResult->key().empty()) {
-        //    outResult->key = generateUUID();
-        //}
+std::shared_ptr<DictObject> INode::processDict(ObjectParam* in_param) {
+    std::shared_ptr<DictObject> spDict;
+    //连接的元素是list还是list of list的规则，参照Graph::addLink下注释。
+    bool bDirecyLink = false;
+    const auto& inLinks = in_param->links;
+    if (inLinks.size() == 1)
+    {
+        std::shared_ptr<ObjectLink> spLink = inLinks.front();
+        auto out_param = spLink->fromparam;
+        std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
+
+        if (out_param->type == in_param->type && !spLink->tokey.empty())
+        {
+            bDirecyLink = true;
+            GraphException::translated([&] {
+                outNode->doApply();
+                }, outNode.get());
+            zany outResult = outNode->get_output_obj(out_param->name);
+            spDict = std::dynamic_pointer_cast<DictObject>(outResult);
+        }
     }
-    return outResult;
+    if (!bDirecyLink)
+    {
+        spDict = std::make_shared<DictObject>();
+        for (const auto& spLink : in_param->links)
+        {
+            const std::string& keyName = spLink->tokey;
+            auto out_param = spLink->fromparam;
+            std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
+
+            GraphException::translated([&] {
+                outNode->doApply();
+                }, outNode.get());
+
+            zany outResult = outNode->get_output_obj(out_param->name);
+            spDict->lut[keyName] = outResult;
+        }
+    }
+    return spDict;
+}
+
+std::shared_ptr<ListObject> INode::processList(ObjectParam* in_param) {
+    std::shared_ptr<ListObject> spList;
+    bool bDirectLink = false;
+    if (in_param->links.size() == 1)
+    {
+        std::shared_ptr<ObjectLink> spLink = in_param->links.front();
+        auto out_param = spLink->fromparam;
+        std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
+
+        if (out_param->type == in_param->type && !spLink->tokey.empty()) {
+            bDirectLink = true;
+
+            GraphException::translated([&] {
+                outNode->doApply();
+                }, outNode.get());
+
+            zany outResult = outNode->get_output_obj(out_param->name);
+            spList = std::dynamic_pointer_cast<ListObject>(outResult);
+        }
+    }
+    if (!bDirectLink)
+    {
+        spList = std::make_shared<ListObject>();
+        int indx = 0;
+        for (const auto& spLink : in_param->links)
+        {
+            //list的情况下，keyName是不是没意义，顺序怎么维持？
+            auto out_param = spLink->fromparam;
+            std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
+            if (outNode->is_dirty()) {  //list中的元素是dirty的，重新计算并加入list
+                GraphException::translated([&] {
+                    outNode->doApply();
+                    }, outNode.get());
+
+                zany outResult = outNode->get_output_obj(out_param->name);
+                spList->push_back(outResult);
+                //spList->dirtyIndice.insert(indx);
+            }
+            else {
+                zany outResult = outNode->get_output_obj(out_param->name);
+                spList->push_back(outResult);
+            }
+        }
+    }
+    return spList;
+}
+
+zvariant INode::processPrimitive(PrimitiveParam* in_param)
+{
+    if (!in_param) {
+        return nullptr;
+    }
+
+    int frame = getGlobalState()->getFrameId();
+    //zany result;
+
+    const ParamType type = in_param->type;
+    const zvariant defl = in_param->defl;
+    zvariant result;
+
+    switch (type) {
+    case Param_Int:
+    case Param_Float:
+    case Param_Bool:
+    {
+        //先不考虑int float的划分,直接按variant的值来。
+        zvariant resolve_value;
+        if (std::holds_alternative<std::string>(defl))
+        {
+            std::string str = std::get<std::string>(defl);
+            float fVal = resolve(str, type);
+            result = fVal;
+        }
+        else if (std::holds_alternative<int>(defl))
+        {
+            result = defl;
+        }
+        else if (std::holds_alternative<float>(defl))
+        {
+            result = defl;
+        }
+        else
+        {
+            //error, throw expection.
+        }
+        break;
+    }
+    case Param_String:
+    {
+        if (std::holds_alternative<std::string>(defl))
+        {
+            result = defl;
+        }
+        else {
+            //error, throw expection.
+        }
+        break;
+    }
+    case Param_Vec2f:   result = resolveVec<vec2f, vec2s>(defl, type);  break;
+    case Param_Vec2i:   result = resolveVec<vec2i, vec2s>(defl, type);  break;
+    case Param_Vec3f:   result = resolveVec<vec3f, vec3s>(defl, type);  break;
+    case Param_Vec3i:   result = resolveVec<vec3i, vec3s>(defl, type);  break;
+    case Param_Vec4f:   result = resolveVec<vec4f, vec4s>(defl, type);  break;
+    case Param_Vec4i:   result = resolveVec<vec4i, vec4s>(defl, type);  break;
+    case Param_Heatmap:
+    {
+        //TODO: heatmap的结构体要整合到zvariant.
+        //if (std::holds_alternative<std::string>(defl))
+        //    result = zeno::parseHeatmapObj(std::get<std::string>(defl));
+        break;
+    }
+    //这里指的是基础类型的List/Dict.
+    case Param_List:
+    {
+        //TODO: List现在还没有ui支持，而且List是泛型容器，对于非Literal值不好设定默认值。
+        break;
+    }
+    case Param_Dict:
+    {
+        break;
+    }
+    }
+    return result;
+}
+
+bool INode::receiveOutputObj(ObjectParam* in_param, zany outputObj) {
+    //观察端口属性
+    //TODO
+    if (in_param->socketType == Socket_Clone) {
+        in_param->spObject = outputObj->clone();
+        //TODO: list/dict case.
+    }
+    else if (in_param->socketType == Socket_Owning) {
+        in_param->spObject = outputObj->move_clone();
+    }
+    else if (in_param->socketType == Socket_ReadOnly) {
+        in_param->spObject = outputObj;
+        //TODO: readonly property on object.
+    }
 }
 
 ZENO_API bool INode::requireInput(std::string const& ds) {
@@ -336,12 +507,14 @@ ZENO_API bool INode::requireInput(std::string const& ds) {
             {
                 case Param_Dict:
                 {
-                    in_param->spObject = processDict(in_param);
+                    std::shared_ptr<DictObject> outDict = processDict(in_param);
+                    receiveOutputObj(in_param, outDict);
                     break;
                 }
                 case Param_List:
                 {
-                    in_param->spObject = processList(in_param);
+                    std::shared_ptr<ListObject> outList = processList(in_param);
+                    receiveOutputObj(in_param, outList);
                     break;
                 }
                 case Param_Curve:
@@ -352,7 +525,7 @@ ZENO_API bool INode::requireInput(std::string const& ds) {
                 {
                     if (in_param->links.size() == 1)
                     {
-                        std::shared_ptr<CoreLink> spLink = *in_param->links.begin();
+                        std::shared_ptr<ObjectLink> spLink = *in_param->links.begin();
                         ObjectParam* out_param = spLink->fromparam;
                         std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
 
@@ -360,19 +533,7 @@ ZENO_API bool INode::requireInput(std::string const& ds) {
                             outNode->doApply();
                         }, outNode.get());
 
-                        zany outResult = out_param->spObject;
-                        //观察端口属性
-                        //TODO
-                        if (in_param->socketType == Socket_Clone) {
-                            in_param->spObject = outResult->clone();
-                        }
-                        else if (in_param->socketType == Socket_Owning) {
-                            in_param->spObject = outResult->move_clone();
-                        }
-                        else if (in_param->socketType == Socket_ReadOnly) {
-                            in_param->spObject = outResult;
-                            //TODO: readonly property on object.
-                        }
+                        receiveOutputObj(in_param, out_param->spObject);
                     }
                 }
             }
@@ -383,12 +544,12 @@ ZENO_API bool INode::requireInput(std::string const& ds) {
         if (iter2 != m_inputPrims.end()) {
             PrimitiveParam* in_param = iter2->second.get();
             if (in_param->links.empty()) {
-                in_param->result = process(in_param);
+                in_param->result = processPrimitive(in_param);
                 //旧版本的requireInput指的是是否有连线，如果想兼容旧版本，这里可以返回false，但使用量不多，所以就修改它的定义。
             }
             else {
                 if (in_param->links.size() == 1) {
-                    std::shared_ptr<ParamLink> spLink = *in_param->links.begin();
+                    std::shared_ptr<PrimitiveLink> spLink = *in_param->links.begin();
                     std::shared_ptr<INode> outNode = spLink->fromparam->m_wpNode.lock();
 
                     GraphException::translated([&] {
@@ -606,6 +767,51 @@ ZENO_API void INode::set_result(bool bInput, const std::string& name, zany spObj
     else {
         auto& param = safe_at(m_outputObjs, name, "");
         param->spObject = spObj;
+    }
+}
+
+void INode::init_object_link(bool bInput, const std::string& paramname, std::shared_ptr<ObjectLink> spLink) {
+    auto iter = bInput ? m_inputObjs.find(paramname) : m_outputObjs.find(paramname);
+    if (bInput)
+        spLink->toparam = iter->second.get();
+    else
+        spLink->fromparam = iter->second.get();
+    iter->second->links.emplace_back(spLink);
+}
+
+void INode::init_primitive_link(bool bInput, const std::string& paramname, std::shared_ptr<PrimitiveLink> spLink) {
+    auto iter = bInput ? m_inputPrims.find(paramname) : m_outputPrims.find(paramname);
+    if (bInput)
+        spLink->toparam = iter->second.get();
+    else
+        spLink->fromparam = iter->second.get();
+    iter->second->links.emplace_back(spLink);
+}
+
+bool INode::isPrimitiveType(bool bInput, const std::string& param_name, bool& bExist) {
+    if (bInput) {
+        if (m_inputObjs.find(param_name) != m_inputObjs.end()) {
+            bExist = true;
+            return true;
+        }
+        else if (m_inputPrims.find(param_name) != m_inputPrims.end()) {
+            bExist = true;
+            return false;
+        }
+        bExist = false;
+        return false;
+    }
+    else {
+        if (m_outputObjs.find(param_name) != m_outputObjs.end()) {
+            bExist = true;
+            return true;
+        }
+        else if (m_outputObjs.find(param_name) != m_outputObjs.end()) {
+            bExist = true;
+            return false;
+        }
+        bExist = false;
+        return false;
     }
 }
 
@@ -1089,174 +1295,6 @@ template<class T, class E> T INode::resolveVec(const zvariant& defl, const Param
         //error, throw expection.
         throw makeError<TypeError>(typeid(T));
     }
-}
-
-std::shared_ptr<DictObject> INode::processDict(ObjectParam* in_param) {
-    std::shared_ptr<DictObject> spDict;
-    //连接的元素是list还是list of list的规则，参照Graph::addLink下注释。
-    bool bDirecyLink = false;
-    const auto& inLinks = in_param->links;
-    if (inLinks.size() == 1)
-    {
-        std::shared_ptr<CoreLink> spLink = inLinks.front();
-        auto out_param = spLink->fromparam;
-        std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
-
-        if (out_param->type == in_param->type && !spLink->tokey.empty())
-        {
-            bDirecyLink = true;
-            GraphException::translated([&] {
-                outNode->doApply();
-                }, outNode.get());
-            zany outResult = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
-            spDict = std::dynamic_pointer_cast<DictObject>(outResult);
-        }
-    }
-    if (!bDirecyLink)
-    {
-        spDict = std::make_shared<DictObject>();
-        for (const auto& spLink : in_param->links)
-        {
-            const std::string& keyName = spLink->tokey;
-            auto out_param = spLink->fromparam;
-            std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
-
-            GraphException::translated([&] {
-                outNode->doApply();
-                }, outNode.get());
-
-            zany outResult = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
-            spDict->lut[keyName] = outResult;
-        }
-    }
-    return spDict;
-}
-
-std::shared_ptr<ListObject> INode::processList(ObjectParam* in_param) {
-    std::shared_ptr<ListObject> spList;
-    bool bDirectLink = false;
-    if (in_param->links.size() == 1)
-    {
-        std::shared_ptr<CoreLink> spLink = in_param->links.front();
-        auto out_param = spLink->fromparam;
-        std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
-
-        if (out_param->type == in_param->type && !spLink->tokey.empty()) {
-            bDirectLink = true;
-
-            GraphException::translated([&] {
-                outNode->doApply();
-                }, outNode.get());
-
-            zany outResult = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
-            spList = std::dynamic_pointer_cast<ListObject>(outResult);
-        }
-    }
-    if (!bDirectLink)
-    {
-        auto oldinput = std::dynamic_pointer_cast<ListObject>(in_param->result);
-
-        spList = std::make_shared<ListObject>();
-        int indx = 0;
-        for (const auto& spLink : in_param->links)
-        {
-            //list的情况下，keyName是不是没意义，顺序怎么维持？
-            auto out_param = spLink->fromparam;
-            std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
-            if (outNode->is_dirty()) {  //list中的元素是dirty的，重新计算并加入list
-                GraphException::translated([&] {
-                    outNode->doApply();
-                    }, outNode.get());
-
-                zany outResult = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
-                spList->push_back(outResult);
-                //spList->dirtyIndice.insert(indx);
-            }
-            else {
-                zany outResult = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
-                spList->push_back(outResult);
-            }
-        }
-    }
-    return spList;
-}
-
-zvariant INode::process(PrimitiveParam* in_param)
-{
-    if (!in_param) {
-        return nullptr;
-    }
-
-    int frame = getGlobalState()->getFrameId();
-    //zany result;
-
-    const ParamType type = in_param->type;
-    const zvariant defl = in_param->defl;
-    zvariant result;
-
-    switch (type) {
-        case Param_Int:
-        case Param_Float:
-        case Param_Bool:
-        {
-            //先不考虑int float的划分,直接按variant的值来。
-            zvariant resolve_value;
-            if (std::holds_alternative<std::string>(defl))
-            {
-                std::string str = std::get<std::string>(defl);
-                float fVal = resolve(str, type);
-                result = fVal;
-            }
-            else if (std::holds_alternative<int>(defl))
-            {
-                result = defl;
-            }
-            else if (std::holds_alternative<float>(defl))
-            {
-                result = defl;
-            }
-            else
-            {
-                //error, throw expection.
-            }
-            break;
-        }
-        case Param_String:
-        {
-            if (std::holds_alternative<std::string>(defl))
-            {
-                result = defl;
-            }
-            else {
-                //error, throw expection.
-            }
-            break;
-        }
-        case Param_Vec2f:   result = resolveVec<vec2f, vec2s>(defl, type);  break;
-        case Param_Vec2i:   result = resolveVec<vec2i, vec2s>(defl, type);  break;
-        case Param_Vec3f:   result = resolveVec<vec3f, vec3s>(defl, type);  break;
-        case Param_Vec3i:   result = resolveVec<vec3i, vec3s>(defl, type);  break;
-        case Param_Vec4f:   result = resolveVec<vec4f, vec4s>(defl, type);  break;
-        case Param_Vec4i:   result = resolveVec<vec4i, vec4s>(defl, type);  break;
-        case Param_Heatmap:
-        {
-            //TODO: heatmap的结构体要整合到zvariant.
-            //if (std::holds_alternative<std::string>(defl))
-            //    result = zeno::parseHeatmapObj(std::get<std::string>(defl));
-            break;
-        }
-        //这里指的是基础类型的List/Dict.
-        case Param_List:
-        {
-            //TODO: List现在还没有ui支持，而且List是泛型容器，对于非Literal值不好设定默认值。
-            break;
-        }
-        case Param_Dict:
-        {
-            break;
-        }
-    }
-    return result;
 }
 
 }
