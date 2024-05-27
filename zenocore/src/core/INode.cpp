@@ -815,6 +815,137 @@ bool INode::isPrimitiveType(bool bInput, const std::string& param_name, bool& bE
     }
 }
 
+std::vector<EdgeInfo> INode::getLinks() const {
+    std::vector<EdgeInfo> remLinks;
+    for (const auto& [_, spParam] : m_inputObjs) {
+        for (std::shared_ptr<ObjectLink> spLink : spParam->links) {
+            remLinks.push_back(getEdgeInfo(spLink));
+        }
+    }
+    for (const auto& [_, spParam] : m_inputPrims) {
+        for (std::shared_ptr<PrimitiveLink> spLink : spParam->links) {
+            remLinks.push_back(getEdgeInfo(spLink));
+        }
+    }
+    for (const auto& [_, spParam] : m_outputObjs) {
+        for (std::shared_ptr<ObjectLink> spLink : spParam->links) {
+            remLinks.push_back(getEdgeInfo(spLink));
+        }
+    }
+    for (const auto& [_, spParam] : m_outputPrims) {
+        for (std::shared_ptr<PrimitiveLink> spLink : spParam->links) {
+            remLinks.push_back(getEdgeInfo(spLink));
+        }
+    }
+    return remLinks;
+}
+
+std::vector<EdgeInfo> INode::getLinksByParam(bool bInput, const std::string& param_name) const {
+    std::vector<EdgeInfo> links;
+
+    auto objects = bInput ? m_inputObjs : m_outputObjs;
+    auto primtives = bInput ? m_inputPrims : m_outputPrims;
+
+    auto iter = objects.find(param_name);
+    if (iter != objects.end()) {
+        for (auto spLink : iter->second->links) {
+            links.push_back(getEdgeInfo(spLink));
+        }
+    }
+    else {
+        auto iter2 = primtives.find(param_name);
+        if (iter2 != primtives.end()) {
+            for (auto spLink : iter2->second->links) {
+                links.push_back(getEdgeInfo(spLink));
+            }
+        }
+    }
+    return links;
+}
+
+bool INode::updateLinkKey(bool bInput, const std::string& param_name, const std::string& oldkey, const std::string& newkey)
+{
+    auto objects = bInput ? m_inputObjs : m_outputObjs;
+    auto iter = objects.find(param_name);
+    if (iter != objects.end()) {
+        for (auto spLink : iter->second->links) {
+            if (spLink->tokey == oldkey) {
+                spLink->tokey = newkey;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool INode::moveUpLinkKey(bool bInput, const std::string& param_name, const std::string& key)
+{
+    auto objects = bInput ? m_inputObjs : m_outputObjs;
+    auto iter = objects.find(param_name);
+    if (iter != objects.end()) {
+        for (auto it = iter->second->links.begin(); it != iter->second->links.end(); it++) {
+            if ((*it)->tokey == key) {
+                auto it_ = std::prev(it);
+                std::swap(*it, *it_);
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool INode::removeLink(bool bInput, const EdgeInfo& edge) {
+    if (bInput) {
+        if (edge.bObjLink) {
+            auto iter = m_inputObjs.find(edge.inParam);
+            if (iter == m_inputObjs.end())
+                return false;
+            for (auto spLink : iter->second->links) {
+                if (spLink->fromparam->name == edge.outParam && spLink->fromkey == edge.outKey) {
+                    iter->second->links.remove(spLink);
+                    return true;
+                }
+            }
+        }
+        else {
+            auto iter = m_inputPrims.find(edge.inParam);
+            if (iter == m_inputPrims.end())
+                return false;
+            for (auto spLink : iter->second->links) {
+                if (spLink->fromparam->name == edge.outParam) {
+                    iter->second->links.remove(spLink);
+                    return true;
+                }
+            }
+        }
+    }
+    else {
+        if (edge.bObjLink) {
+            auto iter = m_outputObjs.find(edge.inParam);
+            if (iter == m_outputObjs.end())
+                return false;
+            for (auto spLink : iter->second->links) {
+                if (spLink->toparam->name == edge.inParam && spLink->tokey == edge.inKey) {
+                    iter->second->links.remove(spLink);
+                    return true;
+                }
+            }
+        }
+        else {
+            auto iter = m_outputPrims.find(edge.inParam);
+            if (iter == m_outputPrims.end())
+                return false;
+            for (auto spLink : iter->second->links) {
+                if (spLink->toparam->name == edge.inParam) {
+                    iter->second->links.remove(spLink);
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
 ZENO_API std::string INode::get_viewobject_output_param() const {
     //现在暂时还没有什么标识符用于指定哪个输出口是对应输出view obj的
     //一般都是默认第一个输出obj，暂时这么规定，后续可能用标识符。

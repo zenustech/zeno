@@ -174,6 +174,7 @@ namespace zeno {
 
     EdgeInfo getEdgeInfo(std::shared_ptr<ObjectLink> spLink) {
         EdgeInfo edge;
+        edge.bObjLink = true;
         auto spOutParam = spLink->fromparam;
         auto spInParam = spLink->toparam;
         if (!spOutParam || !spInParam)
@@ -194,6 +195,7 @@ namespace zeno {
 
     EdgeInfo getEdgeInfo(std::shared_ptr<PrimitiveLink> spLink) {
         EdgeInfo edge;
+        edge.bObjLink = false;
         auto spOutParam = spLink->fromparam;
         auto spInParam = spLink->toparam;
         if (!spOutParam || !spInParam)

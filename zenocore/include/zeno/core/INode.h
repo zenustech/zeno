@@ -29,6 +29,9 @@ struct CoreParam;
 struct ObjectParam;
 struct PrimitiveParam;
 struct ObjectParam;
+struct ObjectLink;
+struct PrimitiveLink;
+
 
 class INode : public std::enable_shared_from_this<INode>
 {
@@ -66,18 +69,14 @@ public:
     ZENO_API bool is_dirty() const { return m_dirty; }
     ZENO_API NodeRunStatus get_run_status() const { return m_status; }
 
-    //ZENO_API virtual std::vector<std::shared_ptr<CoreParam>> get_input_params() const;
     ZENO_API ObjectParams get_input_object_params() const;
     ZENO_API ObjectParams get_output_object_params() const;
     ZENO_API PrimitveParams get_input_primitive_params() const;
     ZENO_API PrimitveParams get_output_primitivie_params() const;
-    //ZENO_API virtual std::vector<std::shared_ptr<CoreParam>> get_output_params() const;
     ZENO_API ParamPrimitive get_input_prim_param(std::string const& name) const;
     ZENO_API ParamObject get_input_obj_param(std::string const& name) const;
     ZENO_API ParamPrimitive get_output_prim_param(std::string const& name) const;
     ZENO_API ParamObject get_output_obj_param(std::string const& name) const;
-    //ZENO_API std::shared_ptr<CoreParam> get_input_param(std::string const& name) const;
-    //ZENO_API std::shared_ptr<CoreParam> get_output_param(std::string const& name) const;
 
     ZENO_API std::string get_viewobject_output_param() const;
     ZENO_API virtual NodeData exportInfo() const;
@@ -108,9 +107,11 @@ public:
     void init_object_link(bool bInput, const std::string& paramname, std::shared_ptr<ObjectLink> spLink);
     void init_primitive_link(bool bInput, const std::string& paramname, std::shared_ptr<PrimitiveLink> spLink);
     bool isPrimitiveType(bool bInput, const std::string& param_name, bool& bExist);
-
-    //void add_input_param(std::shared_ptr<CoreParam> param);
-    //void add_output_param(std::shared_ptr<CoreParam> param);
+    std::vector<EdgeInfo> getLinks() const;
+    std::vector<EdgeInfo> getLinksByParam(bool bInput, const std::string& param_name) const;
+    bool updateLinkKey(bool bInput, const std::string& param_name, const std::string& oldkey, const std::string& newkey);
+    bool moveUpLinkKey(bool bInput, const std::string& param_name, const std::string& key);
+    bool removeLink(bool bInput, const EdgeInfo& edge);
     void mark_dirty_objs();
 
 protected:

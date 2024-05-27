@@ -29,10 +29,12 @@ namespace zeno {
         std::string inKey;
 
         LinkFunction lnkfunc = Link_Copy;
+        bool bObjLink = true;
 
         bool operator==(const EdgeInfo& rhs) const {
             return outNode == rhs.outNode && outParam == rhs.outParam && outKey == rhs.outKey &&
-                inNode == rhs.inNode && inParam == rhs.inParam && inKey == rhs.inKey;
+                inNode == rhs.inNode && inParam == rhs.inParam && inKey == rhs.inKey &&
+                bObjLink == rhs.bObjLink;
         }
         bool operator<(const EdgeInfo& rhs) const {
 
